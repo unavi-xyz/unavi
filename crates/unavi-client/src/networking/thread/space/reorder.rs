@@ -5,13 +5,9 @@ use super::PFrameDatagram;
 /// Number of slots in the reorder buffer.
 const REORDER_BUFFER_SIZE: usize = 3;
 
-/// Maximum sequence gap before skipping ahead.
-const MAX_SEQ_GAP: u16 = 8;
-
 /// Reorder buffer for handling out-of-order P-frame delivery.
 ///
 /// Buffers up to [`REORDER_BUFFER_SIZE`] frames to handle network reordering.
-/// Skips ahead if the gap exceeds [`MAX_SEQ_GAP`].
 #[derive(Default)]
 pub struct PFrameReorderBuffer {
     /// Current I-frame ID we're expecting P-frames for.
@@ -27,7 +23,7 @@ impl PFrameReorderBuffer {
     pub fn reset(&mut self, new_iframe_id: u16) {
         self.iframe_id = new_iframe_id;
         self.last_applied = 0;
-        self.pending = [None, None, None];
+        self.pending = Default::default();
     }
 
     /// Current I-frame ID this buffer is tracking.
@@ -37,7 +33,7 @@ impl PFrameReorderBuffer {
 
     /// Process an incoming P-frame. Returns frames ready to apply in order.
     pub fn insert(&mut self, frame: PFrameDatagram) -> ReadyFrames {
-        let mut ready = ReadyFrames::new();
+        let mut ready = ReadyFrames::default();
 
         // Wrong I-frame window: discard.
         if frame.iframe_id != self.iframe_id {
@@ -70,7 +66,7 @@ impl PFrameReorderBuffer {
             // Out of order: check gap size.
             let gap = frame.seq.wrapping_sub(expected);
 
-            if gap <= MAX_SEQ_GAP && (gap as usize) <= REORDER_BUFFER_SIZE {
+            if gap as usize <= REORDER_BUFFER_SIZE {
                 // Buffer the frame.
                 let slot = (frame.seq as usize - 1) % REORDER_BUFFER_SIZE;
                 self.pending[slot] = Some(frame);
@@ -78,7 +74,7 @@ impl PFrameReorderBuffer {
                 // Gap too large: skip ahead.
                 self.last_applied = frame.seq;
                 ready.push(frame);
-                self.pending = [None, None, None];
+                self.pending = Default::default();
             }
         }
 
@@ -105,19 +101,13 @@ impl PFrameReorderBuffer {
 }
 
 /// Collection of frames ready to be applied, in order.
+#[derive(Default)]
 pub struct ReadyFrames {
     frames: [Option<PFrameDatagram>; REORDER_BUFFER_SIZE + 1],
     len: usize,
 }
 
 impl ReadyFrames {
-    const fn new() -> Self {
-        Self {
-            frames: [None, None, None, None],
-            len: 0,
-        }
-    }
-
     fn push(&mut self, frame: PFrameDatagram) {
         if self.len < self.frames.len() {
             self.frames[self.len] = Some(frame);
@@ -187,12 +177,12 @@ mod tests {
         buf.reset(1);
 
         // Receive frame 1.
-        let ready: Vec<_> = buf.insert(make_frame(1, 1)).collect();
-        assert_eq!(ready.len(), 1);
+        let ready = buf.insert(make_frame(1, 1)).count();
+        assert_eq!(ready, 1);
 
         // Skip frame 2, receive frame 3.
-        let ready: Vec<_> = buf.insert(make_frame(1, 3)).collect();
-        assert_eq!(ready.len(), 0); // buffered
+        let ready = buf.insert(make_frame(1, 3)).count();
+        assert_eq!(ready, 0); // buffered
 
         // Now receive frame 2.
         let ready: Vec<_> = buf.insert(make_frame(1, 2)).collect();
@@ -207,8 +197,8 @@ mod tests {
         buf.reset(1);
 
         // Receive frame 1.
-        let ready: Vec<_> = buf.insert(make_frame(1, 1)).collect();
-        assert_eq!(ready.len(), 1);
+        let ready = buf.insert(make_frame(1, 1)).count();
+        assert_eq!(ready, 1);
 
         // Skip many frames, receive frame 20.
         let ready: Vec<_> = buf.insert(make_frame(1, 20)).collect();
@@ -222,19 +212,19 @@ mod tests {
         buf.reset(1);
 
         // Receive frames for iframe 1.
-        let ready: Vec<_> = buf.insert(make_frame(1, 1)).collect();
-        assert_eq!(ready.len(), 1);
+        let ready = buf.insert(make_frame(1, 1)).count();
+        assert_eq!(ready, 1);
 
         // Reset to new iframe.
         buf.reset(2);
 
         // Old iframe frames are rejected.
-        let ready: Vec<_> = buf.insert(make_frame(1, 2)).collect();
-        assert_eq!(ready.len(), 0);
+        let ready = buf.insert(make_frame(1, 2)).count();
+        assert_eq!(ready, 0);
 
         // New iframe frames are accepted.
-        let ready: Vec<_> = buf.insert(make_frame(2, 1)).collect();
-        assert_eq!(ready.len(), 1);
+        let ready = buf.insert(make_frame(2, 1)).count();
+        assert_eq!(ready, 1);
     }
 
     #[test]
@@ -242,11 +232,11 @@ mod tests {
         let mut buf = PFrameReorderBuffer::default();
         buf.reset(1);
 
-        let ready: Vec<_> = buf.insert(make_frame(1, 1)).collect();
-        assert_eq!(ready.len(), 1);
+        let ready = buf.insert(make_frame(1, 1)).count();
+        assert_eq!(ready, 1);
 
         // Duplicate frame 1 should be rejected.
-        let ready: Vec<_> = buf.insert(make_frame(1, 1)).collect();
-        assert_eq!(ready.len(), 0);
+        let ready = buf.insert(make_frame(1, 1)).count();
+        assert_eq!(ready, 0);
     }
 }

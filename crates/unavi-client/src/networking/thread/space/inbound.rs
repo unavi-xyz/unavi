@@ -1,6 +1,9 @@
 //! Inbound connection handler - receives poses from a remote player.
 
-use std::sync::{Arc, atomic::Ordering};
+use std::{
+    sync::{Arc, atomic::Ordering},
+    time::Duration,
+};
 
 use anyhow::bail;
 use bevy::log::{info, warn};
@@ -149,6 +152,8 @@ async fn recv_pframes(
             }
 
             *state.pose.pframe.lock() = Some(ready_frame);
+
+            n0_future::time::sleep(Duration::from_millis(10)).await;
         }
     }
 }

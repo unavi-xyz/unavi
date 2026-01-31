@@ -3,7 +3,7 @@ use bevy::{
     window::{CursorGrabMode, CursorOptions, PrimaryWindow},
 };
 use schminput::prelude::*;
-use schminput_rebinding::{DefaultSchminputRebindingPlugins, config::ConfigFilePath};
+use schminput_rebinding::DefaultSchminputRebindingPlugins;
 
 #[cfg(not(target_family = "wasm"))]
 mod config;
@@ -16,6 +16,8 @@ impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         #[cfg(not(target_family = "wasm"))]
         {
+            use schminput_rebinding::config::ConfigFilePath;
+
             let config_path = ConfigFilePath::Config {
                 app_name: "unavi",
                 file_name: "input.toml",

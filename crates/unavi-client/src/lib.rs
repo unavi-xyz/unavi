@@ -116,14 +116,10 @@ impl Plugin for UnaviPlugin {
         }
 
         app.insert_resource(ClearColor(Color::BLACK))
+            .add_systems(Startup, (icon::set_window_icon, scene::spawn_scene))
             .add_systems(
-                Startup,
-                (
-                    icon::set_window_icon,
-                    scene::spawn_lights,
-                    scene::spawn_scene,
-                ),
-            )
-            .add_systems(FixedUpdate, async_commands::apply_async_commands);
+                FixedUpdate,
+                (async_commands::apply_async_commands, scene::spawn_player),
+            );
     }
 }

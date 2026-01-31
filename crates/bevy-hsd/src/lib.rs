@@ -6,6 +6,7 @@ pub mod hydration;
 mod load;
 mod merge;
 pub mod stage;
+mod stage_nodes;
 
 pub struct HsdPlugin;
 
@@ -17,6 +18,7 @@ impl Plugin for HsdPlugin {
                 (load::load_stages, compile::compile_stages).chain(),
                 compile::material::compile_materials,
                 compile::mesh::compile_meshes,
+                stage_nodes::stage_nodes_loaded,
             ),
         );
     }
@@ -41,6 +43,10 @@ struct StageCompiled(bool);
 #[derive(Component, Default)]
 #[relationship_target(relationship = StageNode, linked_spawn)]
 struct StageNodes(Vec<Entity>);
+
+/// Whether all stage nodes have their deps loaded.
+#[derive(Component)]
+pub struct StageNodesLoaded;
 
 #[derive(Component)]
 #[relationship(relationship_target = StageNodes)]

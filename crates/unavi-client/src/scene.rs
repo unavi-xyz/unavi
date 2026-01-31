@@ -1,13 +1,29 @@
-use avian3d::prelude::*;
 use bevy::{
     light::{CascadeShadowConfigBuilder, light_consts::lux},
     prelude::*,
 };
+use bevy_hsd::StageNodesLoaded;
 use bevy_vrm::mtoon::MtoonSun;
 use unavi_player::LocalPlayerSpawner;
 
-pub fn spawn_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
+pub fn spawn_player(
+    asset_server: Res<AssetServer>,
+    new_stages: Query<(), Added<StageNodesLoaded>>,
+    mut commands: Commands,
+    mut spawned: Local<bool>,
+) {
+    if *spawned || new_stages.is_empty() {
+        return;
+    }
+
+    LocalPlayerSpawner::default().spawn(&mut commands, &asset_server);
+
+    *spawned = true;
+}
+
+pub fn spawn_scene(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
     ambient.brightness = lux::OVERCAST_DAY;
+
     commands.spawn((
         CascadeShadowConfigBuilder {
             #[cfg(not(target_family = "wasm"))]
@@ -28,15 +44,5 @@ pub fn spawn_lights(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
         },
         Transform::from_xyz(-0.9, 10.0, 3.8).looking_at(Vec3::ZERO, Vec3::Y),
         MtoonSun,
-    ));
-}
-
-pub fn spawn_scene(asset_server: Res<AssetServer>, mut commands: Commands) {
-    LocalPlayerSpawner::default().spawn(&mut commands, &asset_server);
-
-    commands.spawn((
-        Collider::half_space(Vec3::Y),
-        RigidBody::Static,
-        Transform::default(),
     ));
 }

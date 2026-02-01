@@ -6,8 +6,8 @@ use iroh::{EndpointAddr, EndpointId};
 use xdid::{core::did::Did, resolver::DidResolver};
 
 /// The default WDS DID, compiled at build time.
-/// Set via `REMOTE_WDS` environment variable during build.
-const DEFAULT_REMOTE_WDS: &str = match option_env!("REMOTE_WDS") {
+/// Set via `UNAVI_REMOTE_WDS` environment variable during build.
+const DEFAULT_REMOTE_WDS: &str = match option_env!("UNAVI_REMOTE_WDS") {
     Some(did) => did,
     None => "did:web:localhost%3A5000",
 };

@@ -27,6 +27,12 @@ in
       description = "deployment channel";
     };
 
+    domain = mkOption {
+      type = types.str;
+      default = deployInfo.${cfg.channel}.services.unavi_server.domain;
+      description = "Server domain for DID generation";
+    };
+
     port = mkOption {
       type = types.port;
       default = deployInfo.${cfg.channel}.services.unavi_server.port;
@@ -74,6 +80,7 @@ in
         WorkingDirectory = cfg.dataDir;
         Restart = "always";
         RestartSec = "10s";
+        Environment = "UNAVI_DOMAIN=${cfg.domain}";
 
         NoNewPrivileges = true;
         PrivateTmp = true;

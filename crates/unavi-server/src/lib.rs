@@ -70,7 +70,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 }
 
 fn create_did(port: u16) -> (Did, String) {
-    let domain = std::env::var("DOMAIN").unwrap_or_else(|_| format!("localhost:{port}"));
+    let domain = std::env::var("UNAVI_DOMAIN").unwrap_or_else(|_| format!("localhost:{port}"));
     let domain_encoded = domain.replace(':', "%3A");
     let did = Did {
         method_name: MethodName("web".into()),

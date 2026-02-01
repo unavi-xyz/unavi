@@ -118,6 +118,59 @@
         AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
         CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
       };
+
+      nativeArgs = {
+        inherit cargoArtifacts;
+        doCheck = false;
+
+        preBuild = ''
+          ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+        '';
+
+        postInstall = ''
+          mkdir -p $out/bin/assets
+          cp -r crates/${pname}/assets/* $out/bin/assets/
+          rm -rf $out/bin/assets/wasm/test $out/bin/assets/wasm/example
+          cp LICENSE $out
+        '';
+      };
+
+      channels = lib.filter (c: deployInfo.${c} ? services) (builtins.attrNames deployInfo);
+
+      mkNativePackage =
+        channel:
+        pkgs.crane.buildPackage (
+          cargoArgs
+          // nativeArgs
+          // {
+            pname = "${pname}-${channel}";
+            UNAVI_REMOTE_WDS = remoteWds channel;
+          }
+        );
+
+      mkWebPackage =
+        channel:
+        pkgs.crane.buildTrunkPackage (
+          cargoArgs
+          // webArgs
+          // {
+            pname = "${pname}-web-${channel}";
+            UNAVI_REMOTE_WDS = remoteWds channel;
+          }
+        );
+
+      channelPackages = lib.listToAttrs (
+        lib.concatMap (c: [
+          {
+            name = "${pname}-${c}";
+            value = mkNativePackage c;
+          }
+          {
+            name = "${pname}-web-${c}";
+            value = mkWebPackage c;
+          }
+        ]) channels
+      );
     in
     {
       checks = {
@@ -133,43 +186,9 @@
       };
 
       packages = {
-        "${pname}" = pkgs.crane.buildPackage (
-          cargoArgs
-          // {
-            inherit cargoArtifacts;
-            doCheck = false;
-
-            preBuild = ''
-              ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
-            '';
-
-            postInstall = ''
-              mkdir -p $out/bin/assets
-              cp -r crates/${pname}/assets/* $out/bin/assets/
-              rm -rf $out/bin/assets/wasm/test $out/bin/assets/wasm/example
-
-              cp LICENSE $out
-            '';
-          }
-        );
-
+        "${pname}" = pkgs.crane.buildPackage (cargoArgs // nativeArgs);
         "${pname}-web" = pkgs.crane.buildTrunkPackage (cargoArgs // webArgs // { pname = "${pname}-web"; });
-        "${pname}-web-beta" = pkgs.crane.buildTrunkPackage (
-          cargoArgs
-          // webArgs
-          // {
-            pname = "${pname}-web-beta";
-            REMOTE_WDS = remoteWds "beta";
-          }
-        );
-        "${pname}-web-stable" = pkgs.crane.buildTrunkPackage (
-          cargoArgs
-          // webArgs
-          // {
-            pname = "${pname}-web-stable";
-            REMOTE_WDS = remoteWds "stable";
-          }
-        );
-      };
+      }
+      // channelPackages;
     };
 }

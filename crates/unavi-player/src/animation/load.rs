@@ -6,7 +6,7 @@ use bevy_gltf_kun::import::gltf::{
 };
 use bevy_vrm::{BoneName, animations::vrm::VRM_ANIMATION_TARGETS};
 
-use crate::animation::mixamo::MIXAMO_BONE_NAMES;
+use crate::animation::{bone_mask_group, mixamo::MIXAMO_BONE_NAMES};
 
 use super::AnimationName;
 
@@ -39,6 +39,13 @@ pub fn load_animation_nodes(
     for (entity, animations) in to_load.iter() {
         let mut graph = AnimationGraph::default();
         let mut animation_nodes = HashMap::default();
+
+        // Setup mask groups for all VRM bones.
+        // This allows us to selectively disable animation for tracked bones.
+        for (bone_name, &target_id) in VRM_ANIMATION_TARGETS.iter() {
+            let mask_group = bone_mask_group(*bone_name);
+            graph.add_target_to_mask_group(target_id, mask_group);
+        }
 
         let mut failed = false;
 

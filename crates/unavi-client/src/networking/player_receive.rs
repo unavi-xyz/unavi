@@ -3,14 +3,21 @@ use std::{collections::HashMap, sync::atomic::Ordering};
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
 use iroh::EndpointId;
-use unavi_player::AvatarBones;
+use unavi_player::{
+    AvatarBones,
+    animation::{AvatarAnimationNodes, bone_mask_group},
+};
 
 use crate::networking::{event::PlayerInboundState, thread::space::DEFAULT_TICKRATE};
 
-/// Target bone rotations for interpolation.
+/// Tracks which bones are masked from animation and their target rotations.
 #[derive(Component, Default)]
-pub struct BoneRotationTargets {
-    pub targets: HashMap<BoneName, Quat>,
+pub struct TrackedBoneState {
+    /// Bones currently masked from animation (controlled by network).
+    pub masked: u64,
+    /// Target rotations to interpolate toward.
+    pub target: HashMap<BoneName, Quat>,
+    /// Interpolation speed (tickrate in Hz).
     pub speed: f32,
 }
 
@@ -78,26 +85,33 @@ pub fn lerp_to_target(time: Res<Time>, mut query: Query<(&mut Transform, &Transf
     }
 }
 
-/// Receives bone poses and updates [`BoneRotationTargets`].
+/// Receives bone poses and updates animation masks.
+///
+/// When a bone appears in the I-frame, it gets masked from animation.
+/// When a bone disappears, animation is re-enabled for it.
 pub fn receive_remote_bones(
     players: Query<(&PlayerInboundState, &Children), With<RemotePlayer>>,
-    mut avatar_targets: Query<&mut BoneRotationTargets>,
+    mut avatars: Query<(
+        &AvatarAnimationNodes,
+        &AnimationGraphHandle,
+        &mut TrackedBoneState,
+    )>,
+    mut graphs: ResMut<Assets<AnimationGraph>>,
 ) {
     for (state, children) in &players {
-        let Some(avatar_entity) = children
-            .iter()
-            .find(|child| avatar_targets.contains(*child))
-        else {
+        let Some(avatar_entity) = children.iter().find(|c| avatars.contains(*c)) else {
             continue;
         };
-
-        let Ok(mut targets) = avatar_targets.get_mut(avatar_entity) else {
+        let Ok((nodes, graph_handle, mut bone_state)) = avatars.get_mut(avatar_entity) else {
+            continue;
+        };
+        let Some(graph) = graphs.get_mut(graph_handle.id()) else {
             continue;
         };
 
         // Update speed from tickrate.
         let hz = state.tickrate.load(Ordering::Relaxed);
-        targets.speed = f32::from(hz);
+        bone_state.speed = f32::from(hz);
 
         let Some(iframe) = state.pose.iframe.try_lock() else {
             continue;
@@ -106,45 +120,77 @@ pub fn receive_remote_bones(
             continue;
         };
 
-        let pframe = state.pose.pframe.try_lock();
-        if let Some(ref pframe) = pframe
-            && let Some(pframe) = pframe.as_ref()
-            && pframe.iframe_id == iframe.id
+        // Build new mask from I-frame bones.
+        let mut new_mask: u64 = 0;
+        bone_state.target.clear();
+
         {
-            for bone in &pframe.pose.bones {
-                targets.targets.insert(bone.id, bone.transform.rot.into());
+            let pframe = state.pose.pframe.try_lock();
+            if let Some(ref pframe) = pframe
+                && let Some(pframe) = pframe.as_ref()
+                && pframe.iframe_id == iframe.id
+            {
+                for bone in &pframe.pose.bones {
+                    let group = bone_mask_group(bone.id);
+                    new_mask |= 1 << group;
+                    bone_state.target.insert(bone.id, bone.transform.rot.into());
+                }
+            } else {
+                for bone in &iframe.pose.bones {
+                    let group = bone_mask_group(bone.id);
+                    new_mask |= 1 << group;
+                    bone_state.target.insert(bone.id, bone.transform.rot.into());
+                }
             }
-        } else {
-            for bone in &iframe.pose.bones {
-                targets.targets.insert(bone.id, bone.transform.rot.into());
+        }
+
+        // Update animation node masks if changed.
+        if new_mask != bone_state.masked {
+            let added = new_mask & !bone_state.masked;
+            let removed = bone_state.masked & !new_mask;
+
+            for &node_idx in nodes.0.values() {
+                let node = &mut graph[node_idx];
+
+                // Add mask for newly tracked bones (disable animation).
+                if added != 0 {
+                    node.mask |= added;
+                }
+
+                // Remove mask for no-longer-tracked bones (enable animation).
+                if removed != 0 {
+                    node.mask &= !removed;
+                }
             }
+
+            bone_state.masked = new_mask;
         }
     }
 }
 
-/// Interpolates bone rotations towards [`BoneRotationTargets`].
-pub fn slerp_bone_rotations(
+/// Interpolates tracked bone rotations toward their targets.
+pub fn slerp_to_target(
     time: Res<Time>,
     players: Query<&Children, With<RemotePlayer>>,
-    avatars: Query<(&AvatarBones, &BoneRotationTargets)>,
+    avatars: Query<(&AvatarBones, &TrackedBoneState)>,
     mut bone_transforms: Query<&mut Transform, With<BoneName>>,
 ) {
     for children in &players {
-        let Some((bones, targets)) = children.iter().find_map(|child| avatars.get(child).ok())
-        else {
+        let Some((bones, state)) = children.iter().find_map(|c| avatars.get(c).ok()) else {
             continue;
         };
 
-        let t = (targets.speed * time.delta_secs()).min(1.0);
+        let t = (state.speed * time.delta_secs()).min(1.0);
 
-        for (bone_name, &target_rot) in &targets.targets {
-            let Some(&bone_entity) = bones.get(bone_name) else {
+        for (&bone_name, &target_rot) in &state.target {
+            let Some(&bone_entity) = bones.get(&bone_name) else {
                 continue;
             };
-            let Ok(mut bone_transform) = bone_transforms.get_mut(bone_entity) else {
+            let Ok(mut transform) = bone_transforms.get_mut(bone_entity) else {
                 continue;
             };
-            bone_transform.rotation = bone_transform.rotation.slerp(target_rot, t);
+
+            transform.rotation = transform.rotation.slerp(target_rot, t);
         }
     }
 }

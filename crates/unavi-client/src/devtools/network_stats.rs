@@ -176,12 +176,18 @@ pub fn update_bandwidth_stats(mut stats: ResMut<NetworkStats>) {
         // Calculate upload ratios.
         let total_tracked = peer_stats.iframe_bytes + peer_stats.pframe_bytes;
         if total_tracked > 0 {
-            let raw_iframe_ratio = peer_stats.iframe_bytes as f32 / total_tracked as f32;
-            let raw_pframe_ratio = peer_stats.pframe_bytes as f32 / total_tracked as f32;
-            peer_stats.iframe_upload_ratio =
-                ema(peer_stats.iframe_upload_ratio, raw_iframe_ratio, SMOOTHING_ALPHA);
-            peer_stats.pframe_upload_ratio =
-                ema(peer_stats.pframe_upload_ratio, raw_pframe_ratio, SMOOTHING_ALPHA);
+            let iframe_ratio = peer_stats.iframe_bytes as f32 / total_tracked as f32;
+            let pframe_ratio = peer_stats.pframe_bytes as f32 / total_tracked as f32;
+            peer_stats.iframe_upload_ratio = ema(
+                peer_stats.iframe_upload_ratio,
+                iframe_ratio,
+                SMOOTHING_ALPHA,
+            );
+            peer_stats.pframe_upload_ratio = ema(
+                peer_stats.pframe_upload_ratio,
+                pframe_ratio,
+                SMOOTHING_ALPHA,
+            );
         }
 
         // Calculate download bandwidth.
@@ -195,8 +201,11 @@ pub fn update_bandwidth_stats(mut stats: ResMut<NetworkStats>) {
             .map(|(_, bytes)| bytes)
             .sum();
         let raw_download = total_download as f32;
-        peer_stats.download_bytes_per_sec =
-            ema(peer_stats.download_bytes_per_sec, raw_download, SMOOTHING_ALPHA);
+        peer_stats.download_bytes_per_sec = ema(
+            peer_stats.download_bytes_per_sec,
+            raw_download,
+            SMOOTHING_ALPHA,
+        );
 
         peer_stats.last_update = now;
     }
@@ -235,8 +244,11 @@ pub fn update_tickrate_stats(mut stats: ResMut<NetworkStats>) {
                     .sum::<f32>()
                     / intervals.len() as f32;
                 let raw_latency = avg_interval + variance.sqrt();
-                peer_stats.estimated_latency_ms =
-                    ema(peer_stats.estimated_latency_ms, raw_latency, SMOOTHING_ALPHA);
+                peer_stats.estimated_latency_ms = ema(
+                    peer_stats.estimated_latency_ms,
+                    raw_latency,
+                    SMOOTHING_ALPHA,
+                );
             }
         }
     }

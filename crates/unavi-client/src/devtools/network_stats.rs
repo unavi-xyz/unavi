@@ -11,6 +11,9 @@ use super::events::{NETWORK_EVENTS, NetworkEvent};
 const BANDWIDTH_WINDOW_SIZE: usize = 60; // 1 second at 60 FPS.
 const TICKRATE_WINDOW_SIZE: usize = 120; // 2 seconds at 60 FPS.
 
+/// Smoothing factor for EMA. Lower = smoother but more lag.
+const SMOOTHING_ALPHA: f32 = 0.15;
+
 #[derive(Debug, Clone)]
 pub struct PeerNetworkStats {
     // Bandwidth tracking.
@@ -166,13 +169,19 @@ pub fn update_bandwidth_stats(mut stats: ResMut<NetworkStats>) {
             .iter()
             .map(|(_, bytes)| bytes)
             .sum();
-        peer_stats.upload_bytes_per_sec = total_upload as f32;
+        let raw_upload = total_upload as f32;
+        peer_stats.upload_bytes_per_sec =
+            ema(peer_stats.upload_bytes_per_sec, raw_upload, SMOOTHING_ALPHA);
 
         // Calculate upload ratios.
         let total_tracked = peer_stats.iframe_bytes + peer_stats.pframe_bytes;
         if total_tracked > 0 {
-            peer_stats.iframe_upload_ratio = peer_stats.iframe_bytes as f32 / total_tracked as f32;
-            peer_stats.pframe_upload_ratio = peer_stats.pframe_bytes as f32 / total_tracked as f32;
+            let raw_iframe_ratio = peer_stats.iframe_bytes as f32 / total_tracked as f32;
+            let raw_pframe_ratio = peer_stats.pframe_bytes as f32 / total_tracked as f32;
+            peer_stats.iframe_upload_ratio =
+                ema(peer_stats.iframe_upload_ratio, raw_iframe_ratio, SMOOTHING_ALPHA);
+            peer_stats.pframe_upload_ratio =
+                ema(peer_stats.pframe_upload_ratio, raw_pframe_ratio, SMOOTHING_ALPHA);
         }
 
         // Calculate download bandwidth.
@@ -185,7 +194,9 @@ pub fn update_bandwidth_stats(mut stats: ResMut<NetworkStats>) {
             .iter()
             .map(|(_, bytes)| bytes)
             .sum();
-        peer_stats.download_bytes_per_sec = total_download as f32;
+        let raw_download = total_download as f32;
+        peer_stats.download_bytes_per_sec =
+            ema(peer_stats.download_bytes_per_sec, raw_download, SMOOTHING_ALPHA);
 
         peer_stats.last_update = now;
     }
@@ -202,7 +213,9 @@ pub fn update_tickrate_stats(mut stats: ResMut<NetworkStats>) {
             .retain(|timestamp| *timestamp > cutoff);
 
         let tick_count = peer_stats.tick_samples.len();
-        peer_stats.effective_tickrate = tick_count as f32;
+        let raw_tickrate = tick_count as f32;
+        peer_stats.effective_tickrate =
+            ema(peer_stats.effective_tickrate, raw_tickrate, SMOOTHING_ALPHA);
 
         // Estimate latency from tickrate variance (simple heuristic).
         if tick_count > 2 {
@@ -221,7 +234,9 @@ pub fn update_tickrate_stats(mut stats: ResMut<NetworkStats>) {
                     .map(|i| (i - avg_interval).powi(2))
                     .sum::<f32>()
                     / intervals.len() as f32;
-                peer_stats.estimated_latency_ms = avg_interval + variance.sqrt();
+                let raw_latency = avg_interval + variance.sqrt();
+                peer_stats.estimated_latency_ms =
+                    ema(peer_stats.estimated_latency_ms, raw_latency, SMOOTHING_ALPHA);
             }
         }
     }
@@ -246,4 +261,9 @@ pub fn detect_dropped_frames(mut stats: ResMut<NetworkStats>) {
             ConnectionQuality::Poor
         };
     }
+}
+
+/// Exponential moving average for smoothing display values.
+fn ema(current: f32, new_value: f32, alpha: f32) -> f32 {
+    alpha.mul_add(new_value, (1.0 - alpha) * current)
 }

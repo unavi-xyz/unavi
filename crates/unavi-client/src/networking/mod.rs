@@ -20,6 +20,7 @@ impl Plugin for NetworkingPlugin {
 
         app.insert_resource(nt)
             .insert_resource(TrackedBones(TrackedBones::full()))
+            // .insert_resource(TrackedBones(TrackedBones::left_hand()))
             // .insert_resource(TrackedBones::default())
             .add_systems(
                 FixedUpdate,
@@ -27,14 +28,15 @@ impl Plugin for NetworkingPlugin {
                     event::recv_network_event,
                     player_publish::publish_player_transforms,
                     player_receive::receive_player_transforms,
-                ),
+                )
+                    .after(unavi_player::animation::weights::play_avatar_animations),
             )
             .add_systems(Update, player_receive::lerp_to_target)
             .add_systems(
                 PostUpdate,
                 (
                     player_receive::receive_remote_bones,
-                    player_receive::slerp_bone_rotations,
+                    player_receive::slerp_to_target,
                 )
                     .chain(),
             )

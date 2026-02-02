@@ -8,7 +8,7 @@ use unavi_player::{
 };
 
 use crate::networking::{
-    player_receive::{BoneRotationTargets, RemotePlayer, TransformTarget},
+    player_receive::{RemotePlayer, TrackedBoneState, TransformTarget},
     thread::{InboundState, NetworkEvent, NetworkingThread},
 };
 
@@ -38,16 +38,15 @@ pub fn recv_network_event(
                     .id();
 
                 let avatar = AvatarSpawner::new().spawn(&mut commands, &asset_server);
-                let _animations = default_character_animations(&asset_server);
+                let animations = default_character_animations(&asset_server);
 
                 commands.entity(avatar).insert((
                     AverageVelocity {
                         target: Some(entity),
                         ..Default::default()
                     },
-                    BoneRotationTargets::default(),
-                    // TODO fix animation application to avoid tracked bones
-                    // animations,
+                    TrackedBoneState::default(),
+                    animations,
                     Transform::default(),
                 ));
 

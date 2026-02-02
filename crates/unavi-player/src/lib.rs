@@ -77,10 +77,10 @@ impl Plugin for PlayerPlugin {
         .add_systems(
             FixedUpdate,
             (
+                animation::grounded::sync_grounded_state,
                 animation::load::load_animation_nodes,
                 animation::velocity::calc_average_velocity,
-                animation::grounded::sync_grounded_state,
-                animation::weights::play_avatar_animations.run_if(animation::is_desktop_mode),
+                animation::weights::play_avatar_animations,
                 config::apply_config_to_controller,
             ),
         );

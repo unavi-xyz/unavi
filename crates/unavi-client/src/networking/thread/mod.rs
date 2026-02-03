@@ -120,7 +120,12 @@ async fn thread_loop(
     command_rx: &mut tokio::sync::mpsc::Receiver<NetworkCommand>,
     event_tx: &tokio::sync::mpsc::Sender<NetworkEvent>,
 ) -> anyhow::Result<()> {
-    let endpoint = Endpoint::builder().bind().await?;
+    let endpoint = Endpoint::builder();
+
+    #[cfg(feature = "mdns")]
+    let endpoint = endpoint.discovery(iroh::discovery::mdns::MdnsDiscovery::builder());
+
+    let endpoint = endpoint.bind().await?;
     info!("Local endpoint: {}", endpoint.id());
 
     let gossip = Gossip::builder().spawn(endpoint.clone());

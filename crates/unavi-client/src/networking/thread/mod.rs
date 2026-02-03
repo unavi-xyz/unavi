@@ -16,7 +16,7 @@ use wds::{Blobs, DataStore, actor::Actor, identity::Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::networking::thread::space::{
-    DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram, PlayerIFrame, PlayerPFrame,
+    IFrameMsg, MAX_TICKRATE, PFrameDatagram, PlayerIFrame, PlayerPFrame,
 };
 
 mod join;
@@ -24,13 +24,13 @@ mod publish_beacon;
 mod remote_wds;
 pub mod space;
 
-#[expect(unused)]
 pub enum NetworkCommand {
     Join(Hash),
     Leave(Hash),
     PublishBeacon { id: Hash, ttl: Duration },
     PublishIFrame(PlayerIFrame),
     PublishPFrame(PlayerPFrame),
+    SetPeerTickrate { peer: EndpointId, tickrate: u8 },
     Shutdown,
 }
 
@@ -77,6 +77,7 @@ impl NetworkingThread {
 
 pub struct OutboundConn {
     task: AbortOnDropHandle<()>,
+    pub tickrate: Arc<AtomicU8>,
 }
 
 #[derive(Debug)]
@@ -89,7 +90,7 @@ impl Default for InboundState {
     fn default() -> Self {
         Self {
             pose: PoseState::default(),
-            tickrate: AtomicU8::new(DEFAULT_TICKRATE),
+            tickrate: AtomicU8::new(MAX_TICKRATE),
         }
     }
 }
@@ -233,6 +234,14 @@ async fn thread_loop(
                     pose,
                 };
                 *state.pose.pframe.lock() = Some(msg);
+            }
+            NetworkCommand::SetPeerTickrate { peer, tickrate } => {
+                state
+                    .outbound
+                    .read_async(&peer, |_, conn| {
+                        conn.tickrate.store(tickrate, Ordering::Relaxed);
+                    })
+                    .await;
             }
             NetworkCommand::Shutdown => {
                 if let Err(err) = store.shutdown().await {

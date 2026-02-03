@@ -11,7 +11,7 @@ use iroh::{EndpointId, endpoint::Connection};
 use tracing::debug;
 
 use super::{
-    ControlMsg, DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram, buffer::CONTROL_MSG_MAX_SIZE,
+    ControlMsg, IFrameMsg, MAX_TICKRATE, PFrameDatagram, buffer::CONTROL_MSG_MAX_SIZE,
     reorder::PFrameReorderBuffer,
 };
 use crate::networking::thread::{InboundState, NetworkEvent};
@@ -180,7 +180,7 @@ async fn respond_tickrate(
         bail!("expected TickrateRequest, got {request:?}");
     };
 
-    let effective = their_hz.min(DEFAULT_TICKRATE);
+    let effective = their_hz.min(MAX_TICKRATE);
     state.tickrate.store(effective, Ordering::Relaxed);
 
     let ack = ControlMsg::TickrateAck { hz: effective };

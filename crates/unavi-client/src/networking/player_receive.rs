@@ -8,7 +8,7 @@ use unavi_player::{
     animation::{AvatarAnimationNodes, bone_mask_group},
 };
 
-use crate::networking::{event::PlayerInboundState, thread::space::DEFAULT_TICKRATE};
+use crate::networking::{event::PlayerInboundState, thread::space::MAX_TICKRATE};
 
 /// Tracks which bones are masked from animation and their target rotations.
 #[derive(Component, Default)]
@@ -34,7 +34,7 @@ impl Default for TransformTarget {
         Self {
             translation: Vec3::ZERO,
             rotation: Quat::IDENTITY,
-            speed: f32::from(DEFAULT_TICKRATE),
+            speed: f32::from(MAX_TICKRATE),
         }
     }
 }

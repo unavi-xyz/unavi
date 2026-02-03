@@ -17,6 +17,6 @@ def main [
   [
     { cmd: {|| cargo run -p unavi-server } }
     { cmd: {|| sleep 1sec; do $run_client } }
-    { cmd: {|| sleep 3sec; do $run_client } }
+    { cmd: {|| sleep 4sec; do $run_client } }
   ] | par-each { |it| do $it.cmd }
 }

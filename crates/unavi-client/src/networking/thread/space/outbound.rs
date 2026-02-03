@@ -15,7 +15,7 @@ use iroh::{EndpointAddr, EndpointId, endpoint::SendStream};
 use n0_future::task::AbortOnDropHandle;
 
 use super::{
-    ControlMsg, DEFAULT_TICKRATE, IFrameMsg, PFrameDatagram,
+    ControlMsg, IFrameMsg, MAX_TICKRATE, PFrameDatagram,
     buffer::{CONTROL_MSG_MAX_SIZE, SendBuffer},
 };
 use crate::networking::thread::{NetworkThreadState, OutboundConn, PoseState};
@@ -28,7 +28,7 @@ pub async fn handle_outbound(state: NetworkThreadState, peer: EndpointAddr) -> a
     let (ctrl_tx, ctrl_rx) = connection.open_bi().await?;
     let iframe_stream = connection.open_uni().await?;
 
-    let tickrate = Arc::new(AtomicU8::new(DEFAULT_TICKRATE));
+    let tickrate = Arc::new(AtomicU8::new(MAX_TICKRATE));
 
     // Spawn the main task that handles all sending.
     let task = {
@@ -53,6 +53,7 @@ pub async fn handle_outbound(state: NetworkThreadState, peer: EndpointAddr) -> a
     // Register in outbound map.
     let conn = OutboundConn {
         task: AbortOnDropHandle::new(task),
+        tickrate,
     };
 
     if let Err((_, existing)) = state.outbound.insert_async(peer.id, conn).await {
@@ -177,9 +178,7 @@ async fn handle_tickrate(
     tickrate: &AtomicU8,
 ) -> anyhow::Result<()> {
     // Send our desired tickrate.
-    let request = ControlMsg::TickrateRequest {
-        hz: DEFAULT_TICKRATE,
-    };
+    let request = ControlMsg::TickrateRequest { hz: MAX_TICKRATE };
     let mut ctrl_buf = [0u8; CONTROL_MSG_MAX_SIZE];
     let bytes = postcard::to_slice(&request, &mut ctrl_buf)?;
     let len = u32::try_from(bytes.len())?;
@@ -204,7 +203,7 @@ async fn handle_tickrate(
     };
 
     // Use the minimum of requested and acknowledged.
-    let effective = hz.min(DEFAULT_TICKRATE);
+    let effective = hz.min(MAX_TICKRATE);
     tickrate.store(effective, Ordering::Relaxed);
     info!(hz = effective, "tickrate negotiated");
 

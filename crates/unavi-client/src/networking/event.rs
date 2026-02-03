@@ -8,6 +8,7 @@ use unavi_player::{
 };
 
 use crate::networking::{
+    PlayerTickrateConfig,
     player_receive::{RemotePlayer, TrackedBoneState, TransformTarget},
     thread::{InboundState, NetworkEvent, NetworkingThread},
 };
@@ -31,8 +32,10 @@ pub fn recv_network_event(
                     .spawn((
                         RemotePlayer(id),
                         PlayerInboundState(state),
+                        PlayerTickrateConfig::default(),
                         Grounded(true),
                         Transform::default(),
+                        Visibility::default(),
                         TransformTarget::default(),
                     ))
                     .id();

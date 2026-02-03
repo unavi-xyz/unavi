@@ -4,7 +4,7 @@
 def main [
   --debug-network
 ] {
-  let client_features = if $debug_network { ["--features", "devtools-network"] } else { [] }
+  let client_features = if $debug_network { ["--features", "devtools-network", "--features", "mdns"] } else { [] }
   let client_args = if $debug_network { ["--debug-network"] } else { [] }
 
   cargo build -p unavi-server

@@ -17,15 +17,28 @@ use crate::networking::thread::{
 
 const IFRAME_FREQ: u64 = DEFAULT_TICKRATE as u64 * 3;
 
+/// Position change threshold in meters.
+const POS_EPSILON: f32 = 0.001;
+/// Rotation change threshold in radians.
+const ROT_EPSILON: f32 = 0.005;
+
 /// How often we publish our pose to the network thread.
 /// From there it will be broadcasted to peers at variable rates.
 const PUBLISH_INTERVAL: Duration = Duration::from_millis(1000 / DEFAULT_TICKRATE as u64);
 
-/// Stores the last I-frame positions for P-frame delta encoding.
+/// Stores the last I-frame positions for P-frame delta encoding,
+/// and last-sent transforms for epsilon filtering.
 #[derive(Default)]
 pub(super) struct IFrameBaseline {
     root: Vec3,
-    bones: HashMap<BoneName, Vec3>,
+    root_rot: Quat,
+    bones: HashMap<BoneName, (Vec3, Quat)>,
+}
+
+/// Returns true if the transform has changed beyond epsilon thresholds.
+fn transform_changed(current_pos: Vec3, current_rot: Quat, last_pos: Vec3, last_rot: Quat) -> bool {
+    current_pos.distance_squared(last_pos) > POS_EPSILON * POS_EPSILON
+        || current_rot.angle_between(last_rot) > ROT_EPSILON
 }
 
 pub(super) fn publish_player_transforms(
@@ -79,12 +92,15 @@ pub(super) fn publish_player_transforms(
                         transform: IFrameTransform::new(bone_tr.translation, bone_tr.rotation),
                     });
 
-                    baseline.bones.insert(*bone_name, bone_tr.translation);
+                    baseline
+                        .bones
+                        .insert(*bone_name, (bone_tr.translation, bone_tr.rotation));
                 }
             }
         }
 
         baseline.root = root_pos;
+        baseline.root_rot = root_rot;
 
         let frame = PlayerIFrame {
             root: IFrameTransform::new(root_pos, root_rot),
@@ -95,7 +111,7 @@ pub(super) fn publish_player_transforms(
             error!(?err, "send error");
         }
     } else {
-        // Build P-frame with delta positions.
+        // Build P-frame with delta positions, filtering unchanged bones.
         let mut bones = Vec::with_capacity(tracked_bones.0.len());
 
         if let Some(avatar_bones) = bones_map {
@@ -103,11 +119,21 @@ pub(super) fn publish_player_transforms(
                 if let Some(&bone_entity) = avatar_bones.get(bone_name)
                     && let Ok(bone_tr) = bone_transforms.get(bone_entity)
                 {
-                    let baseline_pos = baseline
+                    let (baseline_pos, last_rot) = baseline
                         .bones
                         .get(bone_name)
                         .copied()
-                        .unwrap_or(bone_tr.translation);
+                        .unwrap_or((bone_tr.translation, bone_tr.rotation));
+
+                    // Skip bones that haven't changed beyond epsilon.
+                    if !transform_changed(
+                        bone_tr.translation,
+                        bone_tr.rotation,
+                        baseline_pos,
+                        last_rot,
+                    ) {
+                        continue;
+                    }
 
                     bones.push(BonePose {
                         id: *bone_name,
@@ -117,6 +143,11 @@ pub(super) fn publish_player_transforms(
                             bone_tr.rotation,
                         ),
                     });
+
+                    // Update baseline for next P-frame comparison.
+                    baseline
+                        .bones
+                        .insert(*bone_name, (bone_tr.translation, bone_tr.rotation));
                 }
             }
         }

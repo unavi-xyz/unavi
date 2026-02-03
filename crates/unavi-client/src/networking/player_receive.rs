@@ -13,11 +13,8 @@ use crate::networking::{event::PlayerInboundState, thread::space::DEFAULT_TICKRA
 /// Tracks which bones are masked from animation and their target rotations.
 #[derive(Component, Default)]
 pub struct TrackedBoneState {
-    /// Bones currently masked from animation (controlled by network).
     pub masked: u64,
-    /// Target rotations to interpolate toward.
     pub target: HashMap<BoneName, Quat>,
-    /// Interpolation speed (tickrate in Hz).
     pub speed: f32,
 }
 
@@ -42,12 +39,16 @@ impl Default for TransformTarget {
     }
 }
 
+fn speed_from_hz(hz: u8) -> f32 {
+    f32::from(hz) / 1.5
+}
+
 /// Receives network data and updates [`TransformTarget`].
 pub fn receive_player_transforms(mut players: Query<(&PlayerInboundState, &mut TransformTarget)>) {
     for (state, mut target) in &mut players {
         // Update speed from negotiated tickrate.
         let hz = state.tickrate.load(Ordering::Relaxed);
-        target.speed = f32::from(hz);
+        target.speed = speed_from_hz(hz);
 
         let Some(iframe) = state.pose.iframe.try_lock() else {
             continue;
@@ -111,7 +112,7 @@ pub fn receive_remote_bones(
 
         // Update speed from tickrate.
         let hz = state.tickrate.load(Ordering::Relaxed);
-        bone_state.speed = f32::from(hz);
+        bone_state.speed = speed_from_hz(hz);
 
         let Some(iframe) = state.pose.iframe.try_lock() else {
             continue;
@@ -120,50 +121,46 @@ pub fn receive_remote_bones(
             continue;
         };
 
-        // Build new mask from I-frame bones.
-        let mut new_mask: u64 = 0;
-        bone_state.target.clear();
-
+        let pframe = state.pose.pframe.try_lock();
+        if let Some(ref pframe) = pframe
+            && let Some(pframe) = pframe.as_ref()
+            && pframe.iframe_id == iframe.id
         {
-            let pframe = state.pose.pframe.try_lock();
-            if let Some(ref pframe) = pframe
-                && let Some(pframe) = pframe.as_ref()
-                && pframe.iframe_id == iframe.id
-            {
-                for bone in &pframe.pose.bones {
-                    let group = bone_mask_group(bone.id);
-                    new_mask |= 1 << group;
-                    bone_state.target.insert(bone.id, bone.transform.rot.into());
-                }
-            } else {
-                for bone in &iframe.pose.bones {
-                    let group = bone_mask_group(bone.id);
-                    new_mask |= 1 << group;
-                    bone_state.target.insert(bone.id, bone.transform.rot.into());
-                }
+            for bone in &pframe.pose.bones {
+                bone_state.target.insert(bone.id, bone.transform.rot.into());
             }
-        }
+        } else {
+            // Build new mask from I-frame bones.
+            let mut new_mask: u64 = 0;
+            bone_state.target.clear();
 
-        // Update animation node masks if changed.
-        if new_mask != bone_state.masked {
-            let added = new_mask & !bone_state.masked;
-            let removed = bone_state.masked & !new_mask;
-
-            for &node_idx in nodes.0.values() {
-                let node = &mut graph[node_idx];
-
-                // Add mask for newly tracked bones (disable animation).
-                if added != 0 {
-                    node.mask |= added;
-                }
-
-                // Remove mask for no-longer-tracked bones (enable animation).
-                if removed != 0 {
-                    node.mask &= !removed;
-                }
+            for bone in &iframe.pose.bones {
+                let group = bone_mask_group(bone.id);
+                new_mask |= 1 << group;
+                bone_state.target.insert(bone.id, bone.transform.rot.into());
             }
 
-            bone_state.masked = new_mask;
+            // Update animation node masks if changed.
+            if new_mask != bone_state.masked {
+                let added = new_mask & !bone_state.masked;
+                let removed = bone_state.masked & !new_mask;
+
+                for &node_idx in nodes.0.values() {
+                    let node = &mut graph[node_idx];
+
+                    // Add mask for newly tracked bones (disable animation).
+                    if added != 0 {
+                        node.mask |= added;
+                    }
+
+                    // Remove mask for no-longer-tracked bones (enable animation).
+                    if removed != 0 {
+                        node.mask &= !removed;
+                    }
+                }
+
+                bone_state.masked = new_mask;
+            }
         }
     }
 }

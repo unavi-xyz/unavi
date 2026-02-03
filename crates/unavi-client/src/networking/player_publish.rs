@@ -10,12 +10,12 @@ use unavi_player::{AvatarBones, LocalPlayer, PlayerConfig, PlayerEntities, Playe
 use crate::networking::thread::{
     NetworkCommand, NetworkingThread,
     space::{
-        BonePose, DEFAULT_TICKRATE, IFrameTransform, PFrameRootTransform, PFrameTransform,
+        BonePose, IFrameTransform, MAX_TICKRATE, PFrameRootTransform, PFrameTransform,
         PlayerIFrame, PlayerPFrame,
     },
 };
 
-const IFRAME_FREQ: u64 = DEFAULT_TICKRATE as u64 * 3;
+const IFRAME_FREQ: u64 = MAX_TICKRATE as u64 * 3;
 
 /// Position change threshold in meters.
 const POS_EPSILON: f32 = 0.001;
@@ -24,7 +24,7 @@ const ROT_EPSILON: f32 = 0.005;
 
 /// How often we publish our pose to the network thread.
 /// From there it will be broadcasted to peers at variable rates.
-const PUBLISH_INTERVAL: Duration = Duration::from_millis(1000 / DEFAULT_TICKRATE as u64);
+const PUBLISH_INTERVAL: Duration = Duration::from_millis(1000 / MAX_TICKRATE as u64);
 
 /// Stores the last I-frame positions for P-frame delta encoding,
 /// and last-sent transforms for epsilon filtering.

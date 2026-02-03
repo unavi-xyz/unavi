@@ -28,7 +28,8 @@ pub use types::{
 };
 
 pub const ALPN: &[u8] = b"wired/space";
-pub const DEFAULT_TICKRATE: u8 = 20;
+pub const MAX_TICKRATE: u8 = 20;
+pub const MIN_TICKRATE: u8 = 5;
 
 /// Protocol handler for accepting inbound pose connections.
 #[derive(Debug, Clone)]

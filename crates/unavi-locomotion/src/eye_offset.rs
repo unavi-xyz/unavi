@@ -2,10 +2,11 @@ use avian3d::prelude::Collider;
 use bevy::prelude::*;
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use bevy_vrm::{BoneName, VrmInstanceId, first_person::SetupFirstPerson};
+use unavi_avatar::Avatar;
 
 use crate::{
-    Avatar, PlayerEntities, PlayerRig, TrackedPose,
-    config::{PlayerConfig, WorldScale},
+    AgentEntities, AgentRig, TrackedPose,
+    config::{AgentConfig, WorldScale},
 };
 
 /// Marker to track which avatars have been processed for eye offset.
@@ -17,12 +18,12 @@ pub fn setup_vrm_eye_offset(
     mut commands: Commands,
     scene_spawner: Res<SceneSpawner>,
     avatars: Query<(Entity, &VrmInstanceId, &ChildOf), (With<Avatar>, Without<EyeOffsetProcessed>)>,
-    rigs: Query<&ChildOf, With<PlayerRig>>,
-    mut local_players: Query<(&mut PlayerConfig, &PlayerEntities)>,
+    rigs: Query<&ChildOf, With<AgentRig>>,
+    mut local_agents: Query<(&mut AgentConfig, &AgentEntities)>,
     mut transforms: Query<&mut Transform>,
     mut tracked_poses: Query<&mut TrackedPose>,
-    mut colliders: Query<&mut Collider, With<PlayerRig>>,
-    mut sensor_shapes: Query<&mut TnuaAvian3dSensorShape, With<PlayerRig>>,
+    mut colliders: Query<&mut Collider, With<AgentRig>>,
+    mut sensor_shapes: Query<&mut TnuaAvian3dSensorShape, With<AgentRig>>,
     bones: Query<(&BoneName, &GlobalTransform)>,
 ) {
     for (avatar_ent, vrm_instance_id, avatar_parent) in avatars.iter() {
@@ -33,7 +34,7 @@ pub fn setup_vrm_eye_offset(
         let Ok(rig_parent) = rigs.get(avatar_parent.parent()) else {
             continue;
         };
-        let player_entity = rig_parent.parent();
+        let agent_entity = rig_parent.parent();
 
         let mut left_eye = None;
         let mut right_eye = None;
@@ -47,7 +48,7 @@ pub fn setup_vrm_eye_offset(
                 continue;
             };
 
-            let y = bone_transform.translation().y - 0.02; // Adjustment for feet mesh
+            let y = bone_transform.translation().y - 0.02; // Adjustment for feet mesh.
             lowest_y = lowest_y.min(y);
 
             match bone_name {
@@ -60,7 +61,7 @@ pub fn setup_vrm_eye_offset(
             }
         }
 
-        let Ok((mut config, entities)) = local_players.get_mut(player_entity) else {
+        let Ok((mut config, entities)) = local_agents.get_mut(agent_entity) else {
             continue;
         };
 
@@ -91,15 +92,8 @@ pub fn setup_vrm_eye_offset(
         config.vrm_height = Some(vrm_height);
         config.vrm_radius = Some(vrm_radius);
 
-        // Create WorldScale resource to scale world objects.
-        // If VRM is taller than real_height, world shrinks so player feels taller.
         let _world_scale = WorldScale::new(config.real_height, vrm_height);
-        // TODO: Properly calculate and apply world scale
-        // info!(
-        //     "Setting world scale: ({:.4}m real) ({:.4}m vrm) = {:.4}",
-        //     config.real_height, vrm_height, world_scale.0
-        // );
-        // commands.insert_resource(world_scale);
+        // TODO: Properly calculate and apply world scale.
 
         let avatar_y_in_rig = -vrm_height / 2.0 - lowest_y / 2.0;
 

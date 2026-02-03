@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 /// Calculates the exponential moving average (EMA) of the velocity,
-/// via changes in [Transform].
+/// via changes in [`Transform`].
 #[derive(Component)]
 pub struct AverageVelocity {
     pub alpha: f32,
@@ -25,11 +25,11 @@ impl Default for AverageVelocity {
     }
 }
 
-/// Calculates average velocity for entities with `AverageVelocity` component.
+/// Calculates average velocity for entities with [`AverageVelocity`] component.
 ///
 /// # Panics
 ///
-/// Panics if the velocity target entity does not have a `Transform` component.
+/// Panics if the velocity target entity does not have a [`Transform`] component.
 pub fn calc_average_velocity(
     mut velocities: Query<(Entity, &mut AverageVelocity)>,
     time: Res<Time>,

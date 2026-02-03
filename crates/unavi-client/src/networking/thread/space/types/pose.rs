@@ -1,4 +1,4 @@
-//! Player pose types for networking.
+//! Agent pose types for networking.
 
 use bevy::math::{Quat, Vec3};
 use bevy_vrm::BoneName;
@@ -70,18 +70,18 @@ pub struct BonePose<T> {
     pub transform: T,
 }
 
-/// Complete player pose with root and optional bones.
+/// Complete agent pose with root and optional bones.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PlayerPose<T> {
+pub struct AgentPose<T> {
     pub root: T,
     pub bones: Vec<BonePose<T>>,
 }
 
-pub type PlayerIFrame = PlayerPose<IFrameTransform>;
+pub type AgentIFrame = AgentPose<IFrameTransform>;
 
-/// P-frame player pose with delta root and delta bones.
+/// P-frame agent pose with delta root and delta bones.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PlayerPFrame {
+pub struct AgentPFrame {
     pub root: PFrameRootTransform,
     pub bones: Vec<BonePose<PFrameTransform>>,
 }

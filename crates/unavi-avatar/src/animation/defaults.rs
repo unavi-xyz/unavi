@@ -2,9 +2,10 @@ use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_gltf_kun::import::gltf::{animation::RawGltfAnimation, loader::GltfLoaderSettings};
 use unavi_assets::default_animations_path;
 
-use crate::animation::AnimationName;
-
-use super::load::{AvatarAnimation, AvatarAnimationClips};
+use super::{
+    AnimationName,
+    load::{AvatarAnimation, AvatarAnimationClips},
+};
 
 #[must_use]
 pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimationClips {

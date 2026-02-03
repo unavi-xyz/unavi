@@ -159,7 +159,7 @@ async fn handle_gossip_inbound(
                     };
 
                 let join = signed_join.payload()?;
-                info!(player = %join.endpoint.id, "Got join broadcast");
+                info!(endpoint = %join.endpoint.id, "got join broadcast");
 
                 // Verify signature.
                 let Ok(sig_bytes) = signed_join.signature().try_into() else {
@@ -176,13 +176,13 @@ async fn handle_gossip_inbound(
                     continue;
                 }
 
-                // Spawn connection to player.
+                // Spawn connection to peer.
                 if state.outbound.get_async(&join.endpoint.id).await.is_some() {
-                    // Already connected to player.
+                    // Already connected to peer.
                     continue;
                 }
 
-                info!(endpoint = %join.endpoint.id, "Player joined");
+                info!(endpoint = %join.endpoint.id, "peer joined");
 
                 // Outbound handler will register itself in state.outbound.
                 let state = state.clone();

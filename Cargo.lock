@@ -1944,20 +1944,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_rich_text3d"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4d2a20437b6f1c9ef6371b0ff07731d42b565ce4713c4244c84d36c3e65f497"
-dependencies = [
- "bevy",
- "cosmic-text",
- "rustc-hash 2.1.1",
- "sys-locale",
- "thiserror 2.0.17",
- "zeno",
-]
-
-[[package]]
 name = "bevy_scene"
 version = "0.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13129,6 +13115,17 @@ name = "unavi-assets"
 version = "0.0.16"
 
 [[package]]
+name = "unavi-avatar"
+version = "0.0.16"
+dependencies = [
+ "bevy",
+ "bevy_gltf_kun",
+ "bevy_vrm",
+ "paste",
+ "unavi-assets",
+]
+
+[[package]]
 name = "unavi-client"
 version = "0.0.16"
 dependencies = [
@@ -13163,8 +13160,9 @@ dependencies = [
  "tokio",
  "tracing",
  "unavi-assets",
+ "unavi-avatar",
  "unavi-input",
- "unavi-player",
+ "unavi-locomotion",
  "unavi-portal",
  "unavi-script",
  "unavi-wasm-compat",
@@ -13211,20 +13209,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-player"
+name = "unavi-locomotion"
 version = "0.0.16"
 dependencies = [
  "avian3d",
  "bevy",
  "bevy-tnua",
  "bevy-tnua-avian3d",
- "bevy_gltf_kun",
- "bevy_rich_text3d",
  "bevy_vrm",
- "directories",
- "paste",
- "rand 0.9.2",
- "unavi-assets",
+ "unavi-avatar",
  "unavi-input",
  "unavi-portal",
  "web-sys",

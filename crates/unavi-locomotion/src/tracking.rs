@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-/// Source of tracking data for the player.
+/// Source of tracking data for the agent.
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum TrackingSource {
     /// Desktop mode: keyboard/mouse input drives animations and head tracking.
@@ -58,7 +58,7 @@ pub struct TrackedHand {
     pub is_left: bool,
 }
 
-/// Syncs [`TrackedPose`] to [Transform] for all tracked entities.
+/// Syncs [`TrackedPose`] to [`Transform`] for all tracked entities.
 pub(crate) fn sync_tracked_pose_to_transform(
     mut tracked: Query<(&TrackedPose, &mut Transform), Changed<TrackedPose>>,
 ) {

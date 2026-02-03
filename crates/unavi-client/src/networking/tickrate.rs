@@ -1,10 +1,10 @@
-//! Distance-based tickrate adjustment for outbound player data.
+//! Distance-based tickrate adjustment for outbound agent data.
 
 use bevy::prelude::*;
-use unavi_player::{LocalPlayer, PlayerEntities, PlayerRig};
+use unavi_locomotion::{AgentEntities, AgentRig, LocalAgent};
 
 use crate::networking::{
-    player_receive::RemotePlayer,
+    agent_receive::RemoteAgent,
     thread::{
         NetworkCommand, NetworkingThread,
         space::{MAX_TICKRATE, MIN_TICKRATE},
@@ -14,14 +14,14 @@ use crate::networking::{
 /// Distance at which tickrate reaches minimum (in meters).
 const MAX_DISTANCE: f32 = 64.0;
 
-/// Per-player tickrate configuration.
+/// Per-agent tickrate configuration.
 #[derive(Component, Clone)]
-pub struct PlayerTickrateConfig {
+pub struct AgentTickrateConfig {
     pub min: u8,
     pub max: u8,
 }
 
-impl Default for PlayerTickrateConfig {
+impl Default for AgentTickrateConfig {
     fn default() -> Self {
         Self {
             min: MIN_TICKRATE,
@@ -39,15 +39,15 @@ fn tickrate_for_distance(distance: f32, min: u8, max: u8) -> u8 {
     rate.round() as u8
 }
 
-/// Updates peer tickrates based on distance from local player.
+/// Updates peer tickrates based on distance from local agent.
 /// Runs on a timer to avoid excessive updates.
 pub fn update_peer_tickrates(
     nt: Res<NetworkingThread>,
-    local_player: Query<&PlayerEntities, With<LocalPlayer>>,
-    body_transforms: Query<&GlobalTransform, With<PlayerRig>>,
-    remote_players: Query<(&RemotePlayer, &Transform, &PlayerTickrateConfig)>,
+    local_agent: Query<&AgentEntities, With<LocalAgent>>,
+    body_transforms: Query<&GlobalTransform, With<AgentRig>>,
+    remote_agents: Query<(&RemoteAgent, &Transform, &AgentTickrateConfig)>,
 ) {
-    let Ok(entities) = local_player.single() else {
+    let Ok(entities) = local_agent.single() else {
         return;
     };
     let Ok(local_tr) = body_transforms.get(entities.body) else {
@@ -55,7 +55,7 @@ pub fn update_peer_tickrates(
     };
     let local_pos = local_tr.translation();
 
-    for (remote, remote_tr, config) in &remote_players {
+    for (remote, remote_tr, config) in &remote_agents {
         let distance = local_pos.distance(remote_tr.translation);
         let tickrate = tickrate_for_distance(distance, config.min, config.max);
 

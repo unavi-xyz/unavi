@@ -2,15 +2,15 @@ use std::time::Duration;
 
 use bevy::{prelude::*, time::common_conditions::on_timer};
 
+mod agent_publish;
+mod agent_receive;
 mod event;
 mod lifecycle;
-mod player_publish;
-mod player_receive;
 pub mod thread;
 mod tickrate;
 
-pub use player_publish::TrackedBones;
-pub use tickrate::PlayerTickrateConfig;
+pub use agent_publish::TrackedBones;
+pub use tickrate::AgentTickrateConfig;
 
 pub struct NetworkingPlugin {
     pub wds_in_memory: bool,
@@ -23,29 +23,28 @@ impl Plugin for NetworkingPlugin {
         });
 
         app.insert_resource(nt)
-            // .insert_resource(TrackedBones(TrackedBones::full()))
             .insert_resource(TrackedBones::default())
             .add_systems(
                 FixedUpdate,
                 (
                     event::recv_network_event,
-                    player_publish::publish_player_transforms,
-                    player_receive::receive_player_transforms,
+                    agent_publish::publish_agent_transforms,
+                    agent_receive::receive_agent_transforms,
                 )
-                    .after(unavi_player::animation::weights::play_avatar_animations),
+                    .after(unavi_avatar::animation::weights::play_avatar_animations),
             )
             .add_systems(
                 Update,
                 (
-                    player_receive::lerp_to_target,
+                    agent_receive::lerp_to_target,
                     tickrate::update_peer_tickrates.run_if(on_timer(Duration::from_secs(2))),
                 ),
             )
             .add_systems(
                 PostUpdate,
                 (
-                    player_receive::receive_remote_bones,
-                    player_receive::slerp_to_target,
+                    agent_receive::receive_remote_bones,
+                    agent_receive::slerp_to_target,
                 )
                     .chain(),
             )

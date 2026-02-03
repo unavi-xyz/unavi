@@ -2,12 +2,12 @@ use avian3d::prelude::Collider;
 use bevy::prelude::*;
 use bevy_tnua::TnuaConfig;
 
-use crate::{ControlScheme, ControlSchemeConfig, PlayerEntities};
+use crate::{AgentEntities, ControlScheme, ControlSchemeConfig};
 
-/// Player configuration parameters.
+/// Agent configuration parameters.
 #[derive(Component, Clone, Debug)]
-pub struct PlayerConfig {
-    /// User's real height, headset to ground.
+pub struct AgentConfig {
+    /// Real height, headset to ground.
     pub real_height: f32,
     /// Sprint multiplier.
     pub sprint_multi: f32,
@@ -20,7 +20,7 @@ pub struct PlayerConfig {
     pub vrm_radius: Option<f32>,
 }
 
-impl Default for PlayerConfig {
+impl Default for AgentConfig {
     fn default() -> Self {
         Self {
             real_height: DEFAULT_HEIGHT,
@@ -33,7 +33,7 @@ impl Default for PlayerConfig {
     }
 }
 
-impl PlayerConfig {
+impl AgentConfig {
     #[must_use]
     pub fn effective_vrm_height(&self) -> f32 {
         self.vrm_height.unwrap_or(self.real_height)
@@ -65,19 +65,17 @@ pub const DEFAULT_WALK_SPEED: f32 = 4.0;
 
 /// World scale factor resource.
 ///
-/// This scales world objects to match player perception.
+/// This scales world objects to match agent perception.
 ///
 /// # Formula
 /// `WorldScale = real_height / vrm_height`
 ///
 /// # Behavior
-/// - If VRM is **taller** than `real_height` → scale < 1.0 → world shrinks → player feels taller
-/// - If VRM is **shorter** than `real_height` → scale > 1.0 → world grows → player feels shorter
+/// - If VRM is **taller** than `real_height` → scale < 1.0 → world shrinks →
+///   agent feels taller
+/// - If VRM is **shorter** than `real_height` → scale > 1.0 → world grows →
+///   agent feels shorter
 /// - If VRM matches `real_height` → scale = 1.0 → no adjustment needed
-///
-/// # Example
-/// - `real_height` = 1.7m, `vrm_height` = 2.0m → scale = 0.85
-/// - World objects at 0.85x size make tall avatar feel appropriate
 #[derive(Resource, Default)]
 pub struct WorldScale(pub f32);
 
@@ -88,13 +86,12 @@ impl WorldScale {
     }
 }
 
-// Apply player config changes to character controller.
 pub fn apply_config_to_controller(
-    local_player: Query<(&PlayerConfig, &PlayerEntities), Changed<PlayerConfig>>,
+    local_agent: Query<(&AgentConfig, &AgentEntities), Changed<AgentConfig>>,
     mut bodies: Query<(&TnuaConfig<ControlScheme>, &mut Collider)>,
     mut controller_configs: ResMut<Assets<ControlSchemeConfig>>,
 ) {
-    let Ok((config, entities)) = local_player.single() else {
+    let Ok((config, entities)) = local_agent.single() else {
         return;
     };
 
@@ -105,7 +102,7 @@ pub fn apply_config_to_controller(
         return;
     };
 
-    info!("Applying player config");
+    info!("Applying agent config");
 
     let shape = collider.shape_mut();
     shape.clone_from(

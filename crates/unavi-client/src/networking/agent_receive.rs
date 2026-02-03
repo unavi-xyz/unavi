@@ -3,12 +3,9 @@ use std::{collections::HashMap, sync::atomic::Ordering};
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
 use iroh::EndpointId;
-use unavi_player::{
-    AvatarBones,
-    animation::{AvatarAnimationNodes, bone_mask_group},
-};
+use unavi_avatar::{AvatarAnimationNodes, AvatarBones, bone_mask_group};
 
-use crate::networking::{event::PlayerInboundState, thread::space::MAX_TICKRATE};
+use crate::networking::{event::AgentInboundState, thread::space::MAX_TICKRATE};
 
 /// Tracks which bones are masked from animation and their target rotations.
 #[derive(Component, Default)]
@@ -19,7 +16,7 @@ pub struct TrackedBoneState {
 }
 
 #[derive(Component, Deref)]
-pub struct RemotePlayer(pub EndpointId);
+pub struct RemoteAgent(pub EndpointId);
 
 /// Target transform for interpolation.
 #[derive(Component)]
@@ -44,8 +41,8 @@ fn speed_from_hz(hz: u8) -> f32 {
 }
 
 /// Receives network data and updates [`TransformTarget`].
-pub fn receive_player_transforms(mut players: Query<(&PlayerInboundState, &mut TransformTarget)>) {
-    for (state, mut target) in &mut players {
+pub fn receive_agent_transforms(mut agents: Query<(&AgentInboundState, &mut TransformTarget)>) {
+    for (state, mut target) in &mut agents {
         // Update speed from negotiated tickrate.
         let hz = state.tickrate.load(Ordering::Relaxed);
         target.speed = speed_from_hz(hz);
@@ -91,7 +88,7 @@ pub fn lerp_to_target(time: Res<Time>, mut query: Query<(&mut Transform, &Transf
 /// When a bone appears in the I-frame, it gets masked from animation.
 /// When a bone disappears, animation is re-enabled for it.
 pub fn receive_remote_bones(
-    players: Query<(&PlayerInboundState, &Children), With<RemotePlayer>>,
+    agents: Query<(&AgentInboundState, &Children), With<RemoteAgent>>,
     mut avatars: Query<(
         &AvatarAnimationNodes,
         &AnimationGraphHandle,
@@ -99,7 +96,7 @@ pub fn receive_remote_bones(
     )>,
     mut graphs: ResMut<Assets<AnimationGraph>>,
 ) {
-    for (state, children) in &players {
+    for (state, children) in &agents {
         let Some(avatar_entity) = children.iter().find(|c| avatars.contains(*c)) else {
             continue;
         };
@@ -168,11 +165,11 @@ pub fn receive_remote_bones(
 /// Interpolates tracked bone rotations toward their targets.
 pub fn slerp_to_target(
     time: Res<Time>,
-    players: Query<&Children, With<RemotePlayer>>,
+    agents: Query<&Children, With<RemoteAgent>>,
     avatars: Query<(&AvatarBones, &TrackedBoneState)>,
     mut bone_transforms: Query<&mut Transform, With<BoneName>>,
 ) {
-    for children in &players {
+    for children in &agents {
         let Some((bones, state)) = children.iter().find_map(|c| avatars.get(c).ok()) else {
             continue;
         };

@@ -39,7 +39,8 @@ pub fn join_home_space(
 }
 
 /// Attempt to discover a populated space to join.
-/// Else, join the user's home.
+/// Else, join the agent's home.
+///
 /// Temporary measure until proper space traversal exists.
 async fn discover_or_home(
     local_actor: Actor,

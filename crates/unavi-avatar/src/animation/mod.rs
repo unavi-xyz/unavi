@@ -1,15 +1,16 @@
+//! Avatar animation loading and retargeting.
+
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
 
 pub mod defaults;
-pub mod grounded;
 pub mod load;
 mod mixamo;
 pub mod velocity;
 pub mod weights;
 
 pub use load::AvatarAnimationNodes;
-use weights::{AnimationWeights, TargetAnimationWeights};
+pub use velocity::AverageVelocity;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub enum AnimationName {
@@ -27,7 +28,7 @@ pub enum AnimationName {
 #[derive(Component)]
 pub struct AnimationPlayerInitialized;
 
-/// Initializes animation components when `AnimationPlayer` is added.
+/// Initializes animation components when [`AnimationPlayer`] is added.
 pub fn init_animation_players(
     mut commands: Commands,
     animation_players: Query<
@@ -41,16 +42,13 @@ pub fn init_animation_players(
             continue;
         };
 
-        commands.entity(entity).insert((
-            AnimationWeights::default(),
-            TargetAnimationWeights::default(),
-            graph.clone(),
-            AnimationPlayerInitialized,
-        ));
+        commands
+            .entity(entity)
+            .insert((graph.clone(), AnimationPlayerInitialized));
     }
 }
 
-/// Returns a unique mask group ID (0-53) for each VRM bone.
+/// Returns a unique mask group ID (0-54) for each VRM bone.
 /// Used for animation masking to disable animation on tracked bones.
 #[must_use]
 pub const fn bone_mask_group(bone: BoneName) -> u32 {

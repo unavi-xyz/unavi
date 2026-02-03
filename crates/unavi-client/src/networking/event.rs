@@ -2,19 +2,16 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 use bevy_wds::{LocalActor, LocalBlobs, RemoteActor};
-use unavi_player::{
-    AvatarSpawner, Grounded,
-    animation::{defaults::default_character_animations, velocity::AverageVelocity},
-};
+use unavi_avatar::{AvatarSpawner, AverageVelocity, Grounded, default_character_animations};
 
 use crate::networking::{
-    PlayerTickrateConfig,
-    player_receive::{RemotePlayer, TrackedBoneState, TransformTarget},
+    AgentTickrateConfig,
+    agent_receive::{RemoteAgent, TrackedBoneState, TransformTarget},
     thread::{InboundState, NetworkEvent, NetworkingThread},
 };
 
 #[derive(Component, Deref)]
-pub struct PlayerInboundState(Arc<InboundState>);
+pub struct AgentInboundState(Arc<InboundState>);
 
 pub fn recv_network_event(
     mut commands: Commands,
@@ -25,14 +22,14 @@ pub fn recv_network_event(
 ) {
     while let Ok(event) = nt.event_rx.try_recv() {
         match event {
-            NetworkEvent::PlayerJoin { id, state } => {
-                info!(%id, "spawning player");
+            NetworkEvent::AgentJoin { id, state } => {
+                info!(%id, "spawning agent");
 
                 let entity = commands
                     .spawn((
-                        RemotePlayer(id),
-                        PlayerInboundState(state),
-                        PlayerTickrateConfig::default(),
+                        RemoteAgent(id),
+                        AgentInboundState(state),
+                        AgentTickrateConfig::default(),
                         Grounded(true),
                         Transform::default(),
                         Visibility::default(),
@@ -55,8 +52,8 @@ pub fn recv_network_event(
 
                 commands.entity(entity).add_child(avatar);
             }
-            NetworkEvent::PlayerLeave(_id) => {
-                // TODO despawn player
+            NetworkEvent::AgentLeave(_id) => {
+                // TODO: Despawn agent.
             }
             NetworkEvent::SetLocalBlobs(blobs) => {
                 for ent in local_blobs {

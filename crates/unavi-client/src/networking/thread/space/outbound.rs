@@ -1,4 +1,4 @@
-//! Outbound connection handler - sends our poses to a remote player.
+//! Outbound connection handler - sends our poses to a remote peer.
 
 use std::{
     sync::{

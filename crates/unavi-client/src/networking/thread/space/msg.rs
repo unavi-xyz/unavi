@@ -2,14 +2,14 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::types::{PlayerIFrame, PlayerPFrame};
+use super::types::{AgentIFrame, AgentPFrame};
 
 /// I-frame message sent over reliable stream.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct IFrameMsg {
     /// Monotonic counter (wraps at `u16::MAX`).
     pub id: u16,
-    pub pose: PlayerIFrame,
+    pub pose: AgentIFrame,
 }
 
 /// P-frame datagram sent unreliably.
@@ -20,7 +20,7 @@ pub struct PFrameDatagram {
     /// Monotonic sequence number within the current I-frame window.
     /// Resets to 1 when a new I-frame is sent.
     pub seq: u16,
-    pub pose: PlayerPFrame,
+    pub pose: AgentPFrame,
 }
 
 /// Control stream messages for tickrate negotiation.

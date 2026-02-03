@@ -28,7 +28,7 @@ mod record_builder;
 
 pub use record_builder::RecordResult;
 
-/// Authenticated agent for WDS operations.
+/// Authenticated actor for WDS operations.
 ///
 /// An actor targets a specific WDS host and performs authenticated operations.
 /// The same [`Identity`] can be shared across multiple actors targeting

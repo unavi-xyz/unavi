@@ -87,7 +87,7 @@ where
         for hash in missing_hashes {
             let iroh_hash: iroh_blobs::Hash = hash.into();
             debug!(%hash, "fetching missing blob");
-            if let Err(e) = blobs
+            if let Err(err) = blobs
                 .remote()
                 .fetch(
                     blob_conn.clone(),
@@ -98,7 +98,7 @@ where
                 )
                 .await
             {
-                warn!(%hash, error = %e, "failed to fetch blob");
+                warn!(%hash, ?err, "failed to fetch blob");
             }
         }
     }

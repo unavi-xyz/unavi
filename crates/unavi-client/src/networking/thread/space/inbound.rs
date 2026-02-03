@@ -1,4 +1,4 @@
-//! Inbound connection handler - receives poses from a remote player.
+//! Inbound connection handler - receives poses from a remote agent.
 
 use std::{
     sync::{Arc, atomic::Ordering},
@@ -35,7 +35,7 @@ pub async fn handle_inbound(
         .map_err(|_| anyhow::anyhow!("failed to insert inbound state"))?;
 
     event_tx
-        .send(NetworkEvent::PlayerJoin {
+        .send(NetworkEvent::AgentJoin {
             id: remote,
             state: Arc::clone(&state),
         })

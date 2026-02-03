@@ -140,14 +140,14 @@ mod tests {
 
     use super::*;
     use crate::networking::thread::space::types::{
-        F16Pos, PFrameRootTransform, PackedQuat, PlayerPFrame,
+        AgentPFrame, F16Pos, PFrameRootTransform, PackedQuat,
     };
 
     fn make_frame(iframe_id: u16, seq: u16) -> PFrameDatagram {
         PFrameDatagram {
             iframe_id,
             seq,
-            pose: PlayerPFrame {
+            pose: AgentPFrame {
                 root: PFrameRootTransform {
                     pos: F16Pos {
                         x: f16::ZERO,

@@ -63,7 +63,7 @@ macro_rules! leg {
 }
 
 /// Wrapper around [`TargetChain`].
-/// Allows us to re-use code for both [`MIXAMO_ANIMATION_TARGETS`] and [`MIXAMO_BONE_NAMES`].
+/// Allows code re-use for both animation targets and bone names.
 #[derive(Clone)]
 struct ChainWrapper<'a> {
     chain: TargetChain,
@@ -120,65 +120,8 @@ fn create_chain() -> ChainWrapper<'static> {
     chain
 }
 
-// pub static MIXAMO_ANIMATION_TARGETS: LazyLock<HashMap<BoneName, AnimationTargetId>> =
-//     LazyLock::new(|| {
-//         let chain = create_chain();
-//         let (_, targets) = chain.into_maps();
-//         targets
-//     });
-
 pub static MIXAMO_BONE_NAMES: LazyLock<HashMap<BoneName, &'static str>> = LazyLock::new(|| {
     let chain = create_chain();
     let (names, _) = chain.into_maps();
     names
 });
-
-#[cfg(test)]
-mod tests {
-    // TODO: This test sometimes fails from a panic while running the main bevy schedule
-    // use bevy::{gltf::GltfPlugin, prelude::*, render::mesh::skinning::SkinnedMeshInverseBindposes};
-    //
-    // use super::*;
-    //
-    // #[test]
-    // fn test_mixamo_targets() {
-    //     let mut app = App::new();
-    //
-    //     app.add_plugins((
-    //         MinimalPlugins,
-    //         AssetPlugin {
-    //             file_path: "../unavi-client/assets".to_string(),
-    //             ..default()
-    //         },
-    //         AnimationPlugin,
-    //         GltfPlugin::default(),
-    //     ));
-    //
-    //     app.init_asset::<Scene>();
-    //     app.init_asset::<SkinnedMeshInverseBindposes>();
-    //
-    //     let asset_server = app.world().get_resource::<AssetServer>().expect("value expected");
-    //     let _ = asset_server.load::<AnimationClip>("character-animations.glb#Animation0");
-    //
-    //     app.add_systems(
-    //         Update,
-    //         |assets: Res<Assets<AnimationClip>>,
-    //          time: Res<Time>,
-    //          mut exit: EventWriter<AppExit>| {
-    //             if time.elapsed_seconds() > 15.0 {
-    //                 panic!("Took too long");
-    //             }
-    //
-    //             if let Some((_, clip)) = assets.iter().next() {
-    //                 for (name, target) in MIXAMO_ANIMATION_TARGETS.iter() {
-    //                     assert!(clip.curves_for_target(*target).is_some(), "name={:?}", name);
-    //                 }
-    //
-    //                 exit.send_default();
-    //             }
-    //         },
-    //     );
-    //
-    //     app.run();
-    // }
-}

@@ -16,7 +16,7 @@ use wds::{Blobs, DataStore, actor::Actor, identity::Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::networking::thread::space::{
-    IFrameMsg, MAX_TICKRATE, PFrameDatagram, PlayerIFrame, PlayerPFrame,
+    AgentIFrame, AgentPFrame, IFrameMsg, MAX_TICKRATE, PFrameDatagram,
 };
 
 mod join;
@@ -28,8 +28,8 @@ pub enum NetworkCommand {
     Join(Hash),
     Leave(Hash),
     PublishBeacon { id: Hash, ttl: Duration },
-    PublishIFrame(PlayerIFrame),
-    PublishPFrame(PlayerPFrame),
+    PublishIFrame(AgentIFrame),
+    PublishPFrame(AgentPFrame),
     SetPeerTickrate { peer: EndpointId, tickrate: u8 },
     Shutdown,
 }
@@ -39,11 +39,11 @@ pub enum NetworkEvent {
     AddRemoteActor(Actor),
     SetLocalActor(Actor),
     SetLocalBlobs(Blobs),
-    PlayerJoin {
+    AgentJoin {
         id: EndpointId,
         state: Arc<InboundState>,
     },
-    PlayerLeave(EndpointId),
+    AgentLeave(EndpointId),
 }
 
 #[derive(Resource)]

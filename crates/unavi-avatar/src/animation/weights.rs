@@ -1,12 +1,11 @@
+//! Animation weight blending for locomotion.
+
 use bevy::{animation::ActiveAnimation, platform::collections::HashMap, prelude::*};
 
-use crate::{
-    Avatar, Grounded,
-    animation::velocity::AverageVelocity,
-    config::{DEFAULT_SPRINT_MULTI, DEFAULT_WALK_SPEED},
+use super::{
+    AnimationName, AnimationPlayerInitialized, AvatarAnimationNodes, velocity::AverageVelocity,
 };
-
-use super::{AnimationName, AvatarAnimationNodes};
+use crate::{Avatar, Grounded};
 
 #[derive(Component, Clone, Default, Deref, DerefMut)]
 pub struct AnimationWeights(pub HashMap<AnimationName, f32>);
@@ -15,11 +14,27 @@ pub struct AnimationWeights(pub HashMap<AnimationName, f32>);
 #[derive(Component, Clone, Default, Deref, DerefMut)]
 pub struct TargetAnimationWeights(pub HashMap<AnimationName, f32>);
 
+/// Initializes weight tracking on animation players.
+pub fn init_animation_weights(
+    mut commands: Commands,
+    players: Query<Entity, (With<AnimationPlayerInitialized>, Without<AnimationWeights>)>,
+) {
+    for entity in &players {
+        commands.entity(entity).insert((
+            AnimationWeights::default(),
+            TargetAnimationWeights::default(),
+        ));
+    }
+}
+
 // Animation blending constants.
 const BLEND_HALFLIFE_SECS: f32 = 0.1;
 const WEIGHT_THRESHOLD: f32 = 0.02;
 
 // Locomotion blend thresholds (in m/s).
+pub const DEFAULT_WALK_SPEED: f32 = 4.0;
+pub const DEFAULT_SPRINT_MULTI: f32 = 1.75;
+
 const WALK_START: f32 = DEFAULT_WALK_SPEED / 4.0;
 const SPRINT_START: f32 = DEFAULT_WALK_SPEED * ((DEFAULT_SPRINT_MULTI - 1.0) * 0.5 + 1.0);
 const SPRINT_END: f32 = DEFAULT_WALK_SPEED * DEFAULT_SPRINT_MULTI;
@@ -31,7 +46,7 @@ struct MotionState {
     forward_speed: f32,
     /// Signed strafe velocity (positive = left, negative = right).
     strafe_speed: f32,
-    /// Whether player is grounded.
+    /// Whether agent is grounded.
     is_grounded: bool,
 }
 

@@ -10,6 +10,6 @@ pub use f16_pos::F16Pos;
 pub use f32_pos::F32Pos;
 pub use i8_pos::I8Pos;
 pub use pose::{
-    BonePose, IFrameTransform, PFrameRootTransform, PFrameTransform, PlayerIFrame, PlayerPFrame,
+    AgentIFrame, AgentPFrame, BonePose, IFrameTransform, PFrameRootTransform, PFrameTransform,
 };
 pub use quat::PackedQuat;

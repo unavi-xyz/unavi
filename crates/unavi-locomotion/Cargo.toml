@@ -1,7 +1,7 @@
 [package]
 edition.workspace    = true
 license.workspace    = true
-name                 = "unavi-player"
+name                 = "unavi-locomotion"
 publish              = false
 repository.workspace = true
 version.workspace    = true
@@ -17,17 +17,10 @@ avian3d.workspace  = true
 bevy               = { default-features = true, workspace = true }
 bevy-tnua          = "0.28.0"
 bevy-tnua-avian3d  = "0.9.0"
-bevy_gltf_kun      = { git = "https://github.com/unavi-xyz/gltf_kun" }
 bevy_vrm.workspace = true
-paste              = "1.0.15"
-unavi-assets.path  = "../unavi-assets"
+unavi-avatar.path  = "../unavi-avatar"
 unavi-input.path   = "../unavi-input"
 unavi-portal.path  = "../unavi-portal"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 web-sys = { features = ["Navigator", "Window"], workspace = true }
-
-[dev-dependencies]
-bevy_rich_text3d      = "0.5.1"
-directories.workspace = true
-rand.workspace        = true

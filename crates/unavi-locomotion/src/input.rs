@@ -34,8 +34,8 @@ const fn sensitivity() -> f32 {
 }
 
 use crate::{
-    ControlScheme, PlayerEntities, PlayerRig,
-    config::PlayerConfig,
+    AgentEntities, AgentRig, ControlScheme,
+    config::AgentConfig,
     tracking::{TrackedHead, TrackedPose},
 };
 
@@ -45,14 +45,13 @@ pub struct TargetBodyInput(Vec3);
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct TargetHeadInput(Vec2);
 
-pub fn handle_player_teleport(
+pub fn handle_agent_teleport(
     event: On<PortalTeleport>,
     mut target_body: ResMut<TargetBodyInput>,
     mut target_head: ResMut<TargetHeadInput>,
-    mut players: Query<&mut LinearVelocity, With<PlayerRig>>,
+    mut agents: Query<&mut LinearVelocity, With<AgentRig>>,
 ) {
-    // Only apply to players.
-    let Ok(mut velocity) = players.get_mut(event.entity) else {
+    let Ok(mut velocity) = agents.get_mut(event.entity) else {
         return;
     };
 
@@ -76,8 +75,8 @@ pub fn handle_player_teleport(
 /// Applies mouse/keyboard input to the tracked head pose (desktop mode).
 pub fn apply_head_input(
     look_action: Query<&Vec2ActionValue, With<LookAction>>,
-    players: Query<&PlayerEntities>,
-    mut rigs: Query<&mut Transform, With<PlayerRig>>,
+    agents: Query<&AgentEntities>,
+    mut rigs: Query<&mut Transform, With<AgentRig>>,
     mut tracked_heads: Query<&mut TrackedPose, With<TrackedHead>>,
     mut target: ResMut<TargetHeadInput>,
     time: Res<Time>,
@@ -93,7 +92,7 @@ pub fn apply_head_input(
     target.0 += action.any * delta * sensitivity();
     target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
 
-    for entities in players.iter() {
+    for entities in agents.iter() {
         if let Ok(mut rig_transform) = rigs.get_mut(entities.body) {
             let yaw = Quat::from_rotation_y(-target.x);
             rig_transform.rotation = rig_transform.rotation.lerp(yaw, S);
@@ -108,15 +107,15 @@ pub fn apply_head_input(
 
 /// Applies movement input to the physics controller (all modes).
 pub fn apply_body_input(
-    players: Query<(&PlayerEntities, &PlayerConfig)>,
+    agents: Query<(&AgentEntities, &AgentConfig)>,
     jump_action: Query<&BoolActionValue, With<JumpAction>>,
     move_action: Query<&Vec2ActionValue, With<MoveAction>>,
     sprint_action: Query<&BoolActionValue, With<SprintAction>>,
-    rigs: Query<&Transform, With<PlayerRig>>,
-    mut controllers: Query<&mut TnuaController<ControlScheme>, With<PlayerRig>>,
+    rigs: Query<&Transform, With<AgentRig>>,
+    mut controllers: Query<&mut TnuaController<ControlScheme>, With<AgentRig>>,
     mut target: ResMut<TargetBodyInput>,
 ) {
-    for (entities, config) in players.iter() {
+    for (entities, config) in agents.iter() {
         let Ok(rig_transform) = rigs.get(entities.body) else {
             continue;
         };

@@ -6,9 +6,7 @@ use bevy_gltf_kun::import::gltf::{
 };
 use bevy_vrm::{BoneName, animations::vrm::VRM_ANIMATION_TARGETS};
 
-use crate::animation::{bone_mask_group, mixamo::MIXAMO_BONE_NAMES};
-
-use super::AnimationName;
+use super::{AnimationName, bone_mask_group, mixamo::MIXAMO_BONE_NAMES};
 
 #[derive(Component, Clone)]
 pub struct AvatarAnimationClips(pub HashMap<AnimationName, AvatarAnimation>);
@@ -26,7 +24,8 @@ pub struct AvatarAnimationNodes(pub HashMap<AnimationName, AnimationNodeIndex>);
 ///
 /// # Panics
 ///
-/// Panics if a mixamo node handle exists in the GLTF but the corresponding node asset is not found.
+/// Panics if a mixamo node handle exists in the GLTF but the corresponding
+/// node asset is not found.
 pub fn load_animation_nodes(
     gltfs: Res<Assets<GltfKun>>,
     mut clips: ResMut<Assets<AnimationClip>>,
@@ -73,7 +72,6 @@ pub fn load_animation_nodes(
                 let Some((bone_name, _)) =
                     MIXAMO_BONE_NAMES.iter().find(|(_, v)| **v == mixamo_name)
                 else {
-                    // warn!("Unknown animation leaf name: {leaf_name}");
                     continue;
                 };
 
@@ -85,7 +83,6 @@ pub fn load_animation_nodes(
                 // Retarget the animation.
                 let vrm_target = VRM_ANIMATION_TARGETS[bone_name];
 
-                // TODO: fix translation animations - scale out of mixamo size to avatar size?
                 if let RawChannelData::Rotation { timestamps, values } = &channel.data {
                     // Get Mixamo rest pose.
                     let Some(mixamo_node_handle) = gltf.named_nodes.get(mixamo_name) else {

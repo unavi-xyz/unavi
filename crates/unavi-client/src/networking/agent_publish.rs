@@ -5,13 +5,14 @@ use std::{
 
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
-use unavi_player::{AvatarBones, LocalPlayer, PlayerConfig, PlayerEntities, PlayerRig};
+use unavi_avatar::AvatarBones;
+use unavi_locomotion::{AgentConfig, AgentEntities, AgentRig, LocalAgent};
 
 use crate::networking::thread::{
     NetworkCommand, NetworkingThread,
     space::{
-        BonePose, IFrameTransform, MAX_TICKRATE, PFrameRootTransform, PFrameTransform,
-        PlayerIFrame, PlayerPFrame,
+        AgentIFrame, AgentPFrame, BonePose, IFrameTransform, MAX_TICKRATE, PFrameRootTransform,
+        PFrameTransform,
     },
 };
 
@@ -41,11 +42,11 @@ fn transform_changed(current_pos: Vec3, current_rot: Quat, last_pos: Vec3, last_
         || current_rot.angle_between(last_rot) > ROT_EPSILON
 }
 
-pub(super) fn publish_player_transforms(
+pub(super) fn publish_agent_transforms(
     nt: Res<NetworkingThread>,
-    local_player: Query<(&PlayerConfig, &PlayerEntities), With<LocalPlayer>>,
+    local_agent: Query<(&AgentConfig, &AgentEntities), With<LocalAgent>>,
     avatar_bones: Query<&AvatarBones>,
-    body_transforms: Query<&GlobalTransform, (With<PlayerRig>, Without<BoneName>)>,
+    body_transforms: Query<&GlobalTransform, (With<AgentRig>, Without<BoneName>)>,
     bone_transforms: Query<&Transform, With<BoneName>>,
     tracked_bones: Res<TrackedBones>,
     time: Res<Time>,
@@ -60,7 +61,7 @@ pub(super) fn publish_player_transforms(
     *last = now;
     *count += 1;
 
-    let Ok((config, entities)) = local_player.single() else {
+    let Ok((config, entities)) = local_agent.single() else {
         return;
     };
 
@@ -102,7 +103,7 @@ pub(super) fn publish_player_transforms(
         baseline.root = root_pos;
         baseline.root_rot = root_rot;
 
-        let frame = PlayerIFrame {
+        let frame = AgentIFrame {
             root: IFrameTransform::new(root_pos, root_rot),
             bones,
         };
@@ -125,7 +126,6 @@ pub(super) fn publish_player_transforms(
                         .copied()
                         .unwrap_or((bone_tr.translation, bone_tr.rotation));
 
-                    // Skip bones that haven't changed beyond epsilon.
                     if !transform_changed(
                         bone_tr.translation,
                         bone_tr.rotation,
@@ -144,7 +144,6 @@ pub(super) fn publish_player_transforms(
                         ),
                     });
 
-                    // Update baseline for next P-frame comparison.
                     baseline
                         .bones
                         .insert(*bone_name, (bone_tr.translation, bone_tr.rotation));
@@ -152,7 +151,7 @@ pub(super) fn publish_player_transforms(
             }
         }
 
-        let frame = PlayerPFrame {
+        let frame = AgentPFrame {
             root: PFrameRootTransform::new(root_pos, baseline.root, root_rot),
             bones,
         };

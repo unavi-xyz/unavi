@@ -84,7 +84,7 @@ impl Plugin for UnaviPlugin {
             bevy_wds::WdsPlugin,
             bevy_hsd::HsdPlugin,
             unavi_input::InputPlugin,
-            unavi_player::PlayerPlugin,
+            unavi_locomotion::LocomotionPlugin,
             unavi_portal::PortalPlugin,
             #[cfg(not(target_family = "wasm"))]
             unavi_script::ScriptPlugin,
@@ -119,7 +119,7 @@ impl Plugin for UnaviPlugin {
             .add_systems(Startup, (icon::set_window_icon, scene::spawn_scene))
             .add_systems(
                 FixedUpdate,
-                (async_commands::apply_async_commands, scene::spawn_player),
+                (async_commands::apply_async_commands, scene::spawn_agent),
             );
     }
 }

@@ -1,4 +1,4 @@
-//! Real-time networking for players within a space.
+//! Real-time networking for agents within a space.
 //!
 //! Each connection is unidirectional for pose data:
 //! - Sender opens connection, sends I-frames (stream) and P-frames (datagrams)
@@ -24,7 +24,7 @@ pub mod types;
 
 pub use msg::{ControlMsg, IFrameMsg, PFrameDatagram};
 pub use types::{
-    BonePose, IFrameTransform, PFrameRootTransform, PFrameTransform, PlayerIFrame, PlayerPFrame,
+    AgentIFrame, AgentPFrame, BonePose, IFrameTransform, PFrameRootTransform, PFrameTransform,
 };
 
 pub const ALPN: &[u8] = b"wired/space";

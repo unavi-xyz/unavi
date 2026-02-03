@@ -4,9 +4,9 @@ use bevy::{
 };
 use bevy_hsd::StageNodesLoaded;
 use bevy_vrm::mtoon::MtoonSun;
-use unavi_player::LocalPlayerSpawner;
+use unavi_locomotion::LocalAgentSpawner;
 
-pub fn spawn_player(
+pub fn spawn_agent(
     asset_server: Res<AssetServer>,
     new_stages: Query<(), Added<StageNodesLoaded>>,
     mut commands: Commands,
@@ -16,7 +16,7 @@ pub fn spawn_player(
         return;
     }
 
-    LocalPlayerSpawner::default().spawn(&mut commands, &asset_server);
+    LocalAgentSpawner::default().spawn(&mut commands, &asset_server);
 
     *spawned = true;
 }

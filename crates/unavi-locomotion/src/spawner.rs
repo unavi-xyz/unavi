@@ -12,39 +12,37 @@ use bevy_tnua::{
 };
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
+use unavi_avatar::{AvatarSpawner, AverageVelocity, default_character_animations};
 use unavi_portal::{PortalTraveler, create::PORTAL_RENDER_LAYER};
 
 use crate::{
-    ControlScheme, ControlSchemeConfig, Grounded, LocalPlayer, PlayerCamera, PlayerEntities,
-    PlayerRig,
-    animation::{defaults::default_character_animations, velocity::AverageVelocity},
-    avatar_spawner::AvatarSpawner,
-    config::PlayerConfig,
+    AgentCamera, AgentEntities, AgentRig, ControlScheme, ControlSchemeConfig, Grounded, LocalAgent,
+    config::AgentConfig,
     tracking::{TrackedHead, TrackedPose, TrackingSource},
 };
 
-/// Builder for spawning a local player entity.
+/// Builder for spawning a local agent entity.
 #[derive(Default)]
-pub struct LocalPlayerSpawner {
-    pub config: Option<PlayerConfig>,
+pub struct LocalAgentSpawner {
+    pub config: Option<AgentConfig>,
     pub tracking_source: Option<TrackingSource>,
     pub vrm_asset: Option<String>,
 }
 
-pub struct SpawnedPlayer {
+pub struct SpawnedAgent {
     pub body: Entity,
     pub camera: Entity,
     pub root: Entity,
 }
 
-impl LocalPlayerSpawner {
+impl LocalAgentSpawner {
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
     #[must_use]
-    pub const fn with_config(mut self, config: PlayerConfig) -> Self {
+    pub const fn with_config(mut self, config: AgentConfig) -> Self {
         self.config = Some(config);
         self
     }
@@ -61,7 +59,7 @@ impl LocalPlayerSpawner {
         self
     }
 
-    pub fn spawn(&self, commands: &mut Commands, asset_server: &AssetServer) -> SpawnedPlayer {
+    pub fn spawn(&self, commands: &mut Commands, asset_server: &AssetServer) -> SpawnedAgent {
         let config = self.config.clone().unwrap_or_default();
         let tracking_source = self.tracking_source.unwrap_or_default();
 
@@ -69,7 +67,7 @@ impl LocalPlayerSpawner {
 
         let body = commands
             .spawn((
-                PlayerRig,
+                AgentRig,
                 Grounded(true),
                 RigidBody::Dynamic,
                 Collider::capsule(config.effective_vrm_radius(), config.effective_vrm_height()),
@@ -105,13 +103,11 @@ impl LocalPlayerSpawner {
             .add_child(camera)
             .id();
 
-        // Spawn avatar using AvatarSpawner.
         let avatar = AvatarSpawner {
             vrm_asset: self.vrm_asset.clone(),
         }
         .spawn(commands, asset_server);
 
-        // Add local-player-specific components.
         let animations = default_character_animations(asset_server);
         commands.entity(avatar).insert((
             AverageVelocity {
@@ -121,7 +117,6 @@ impl LocalPlayerSpawner {
             animations,
         ));
 
-        // Position avatar relative to rig.
         commands.entity(avatar).insert(Transform::from_xyz(
             0.0,
             -config.effective_vrm_height() / 2.0,
@@ -132,8 +127,8 @@ impl LocalPlayerSpawner {
 
         let root = commands
             .spawn((
-                LocalPlayer,
-                PlayerEntities {
+                LocalAgent,
+                AgentEntities {
                     avatar,
                     camera,
                     body,
@@ -147,7 +142,7 @@ impl LocalPlayerSpawner {
             .add_child(body)
             .id();
 
-        SpawnedPlayer { body, camera, root }
+        SpawnedAgent { body, camera, root }
     }
 }
 
@@ -157,7 +152,7 @@ fn spawn_camera(commands: &mut Commands, #[allow(unused)] asset_server: &AssetSe
 
     let camera = commands
         .spawn((
-            PlayerCamera,
+            AgentCamera,
             Camera::default(),
             Projection::Perspective(PerspectiveProjection {
                 near: 0.001,

@@ -12,7 +12,7 @@ devtools         = ["devtools-bevy", "devtools-network"]
 devtools-bevy    = ["bevy/bevy_dev_tools"]
 devtools-network = []
 mdns             = ["iroh/discovery-local-network"]
-webgpu           = ["bevy/webgpu", "unavi-player/webgpu"]
+webgpu           = ["bevy/webgpu", "unavi-avatar/webgpu", "unavi-locomotion/webgpu"]
 
 [lints]
 workspace = true
@@ -47,8 +47,9 @@ serde.workspace        = true
 time.workspace         = true
 tracing                = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
 unavi-assets.path      = "../unavi-assets"
+unavi-avatar.path      = "../unavi-avatar"
 unavi-input.path       = "../unavi-input"
-unavi-player.path      = "../unavi-player"
+unavi-locomotion.path  = "../unavi-locomotion"
 unavi-portal.path      = "../unavi-portal"
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wds.path               = "../wds"

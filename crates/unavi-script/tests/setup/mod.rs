@@ -59,5 +59,6 @@ pub fn construct_script(app: &mut App) {
 
 pub fn tick_app(app: &mut App) {
     app.update();
-    std::thread::sleep(2 * TICK);
+    // Sleep to allow any async behaviors to run.
+    std::thread::sleep(Duration::from_millis(500));
 }

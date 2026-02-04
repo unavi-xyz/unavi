@@ -104,7 +104,7 @@ pub async fn upload_blob(
                 }
 
                 tx.execute(
-                    "INSERT INTO blob_pins (hash, owner, expires, size) VALUES (?, ?, ?, ?)",
+                    "INSERT OR IGNORE INTO blob_pins (hash, owner, expires, size) VALUES (?, ?, ?, ?)",
                     params![&hash_str, &did_str, expires, blob_len],
                 )?;
 

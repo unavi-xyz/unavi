@@ -203,6 +203,7 @@
                       cargo-workspaces
                       deploy-rs.packages.${system}.default
                       doctl
+                      nushell
                       rustup
                       sops
                       terraform

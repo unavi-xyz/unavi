@@ -21,9 +21,10 @@ jobs:
           extra-conf: extra-experimental-features = pipe-operators
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix develop --command "cargo check --examples --tests --all-features"
-      - run: nix develop --command "cargo nextest run --all-features"
-      - run: nix develop --command "cargo clippy --fix --all-features --allow-staged --allow-dirty --no-deps"
+      - run: nix develop --command cargo check --examples --tests --all-features
+      - run: nix develop --command nu scripts/build-wasm.nu
+      - run: nix develop --command cargo nextest run --all-features
+      - run: nix develop --command cargo clippy --fix --all-features --allow-staged --allow-dirty --no-deps
       - run: nix fmt
       - name: Commit changes
         run: |

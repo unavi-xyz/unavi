@@ -36,6 +36,7 @@
             ]
           ) root)
           ../../LICENSE
+          ../../Trunk.toml
           ../../scripts
           ../wds/migrations
           ./assets
@@ -48,6 +49,8 @@
       cargoArgs = rec {
         inherit pname;
         inherit src;
+
+        doCheck = false;
 
         cargoExtraArgs = "-p ${pname}";
         strictDeps = true;
@@ -88,40 +91,13 @@
       };
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
-
-      webArgs = {
-        wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_106;
-        trunkIndexPath = "./crates/unavi-client/index.html";
-
-        inherit cargoArtifacts;
+      cargoArtifactsWeb = pkgs.crane.buildDepsOnly cargoArgs // {
+        CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
         doCheck = false;
-
-        nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [ pkgs.trunk ];
-
-        preBuild = ''
-          ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
-        '';
-
-        buildPhaseCommand = ''
-          ${pkgs.nushell}/bin/nu scripts/build-web.nu --release
-        '';
-
-        postInstall = ''
-          cp LICENSE $out
-        '';
-
-        installPhaseCommand = ''
-          cp -r dist $out
-        '';
-
-        CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";
-        AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
-        CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
       };
 
-      nativeArgs = {
+      nativeArgs = cargoArgs // {
         inherit cargoArtifacts;
-        doCheck = false;
 
         preBuild = ''
           ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
@@ -135,13 +111,40 @@
         '';
       };
 
+      webArgs = cargoArgs // {
+        cargoArtifacts = cargoArtifactsWeb;
+
+        nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [ pkgs.trunk ];
+        wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_106;
+
+        preBuild = ''
+          ls -l
+          ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+        '';
+
+        buildPhaseCargoCommand = ''
+          ${pkgs.nushell}/bin/nu scripts/build-web.nu --release
+        '';
+
+        installPhaseCommand = ''
+          cp -r dist $out
+        '';
+
+        postInstall = ''
+          cp LICENSE $out
+        '';
+
+        CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";
+        AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
+        CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
+      };
+
       channels = lib.filter (c: deployInfo.${c} ? services) (builtins.attrNames deployInfo);
 
       mkNativePackage =
         channel:
         pkgs.crane.buildPackage (
-          cargoArgs
-          // nativeArgs
+          nativeArgs
           // {
             pname = "${pname}-${channel}";
             UNAVI_REMOTE_WDS = remoteWds channel;
@@ -151,8 +154,7 @@
       mkWebPackage =
         channel:
         pkgs.crane.buildTrunkPackage (
-          cargoArgs
-          // webArgs
+          webArgs
           // {
             pname = "${pname}-web-${channel}";
             UNAVI_REMOTE_WDS = remoteWds channel;
@@ -186,8 +188,8 @@
       };
 
       packages = {
-        "${pname}" = pkgs.crane.buildPackage (cargoArgs // nativeArgs);
-        "${pname}-web" = pkgs.crane.buildTrunkPackage (cargoArgs // webArgs // { pname = "${pname}-web"; });
+        "${pname}" = pkgs.crane.buildPackage nativeArgs;
+        "${pname}-web" = pkgs.crane.buildTrunkPackage (webArgs // { pname = "${pname}-web"; });
       }
       // channelPackages;
     };

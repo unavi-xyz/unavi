@@ -9,8 +9,9 @@ def main [
     (run-external "trunk" "build"
       "--dist" "dist-webgl"
       "--public-url" "/webgl/"
+      "crates/unavi-client/index.html"
       ...$trunk_args
-      "crates/unavi-client/index.html")
+    )
   }
   print $"  | WebGL build time: ($time_webgl)"
 
@@ -20,8 +21,9 @@ def main [
       "--dist" "dist-webgpu"
       "--public-url" "/webgpu/"
       "--features" "webgpu"
+      "crates/unavi-client/index.html"
       ...$trunk_args
-      "crates/unavi-client/index.html")
+    )
   }
   print $"  | WebGPU build time: ($time_webgpu)"
 

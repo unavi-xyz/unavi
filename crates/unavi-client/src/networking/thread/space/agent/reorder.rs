@@ -1,6 +1,6 @@
 //! P-frame reorder buffer for handling out-of-order UDP delivery.
 
-use super::PFrameDatagram;
+use crate::networking::thread::space::msg::PFrameDatagram;
 
 /// Number of slots in the reorder buffer.
 const REORDER_BUFFER_SIZE: usize = 3;
@@ -140,7 +140,9 @@ mod tests {
 
     use super::*;
     use crate::networking::thread::space::types::{
-        AgentPFrame, F16Pos, PFrameRootTransform, PackedQuat,
+        f16_pos::F16Pos,
+        pose::{AgentPFrame, PFrameRootTransform},
+        quat::PackedQuat,
     };
 
     fn make_frame(iframe_id: u16, seq: u16) -> PFrameDatagram {

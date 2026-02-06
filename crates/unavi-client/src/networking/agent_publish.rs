@@ -8,24 +8,16 @@ use bevy_vrm::BoneName;
 use unavi_avatar::AvatarBones;
 use unavi_locomotion::{AgentConfig, AgentEntities, AgentRig, LocalAgent};
 
-use crate::networking::thread::{
-    NetworkCommand, NetworkingThread,
-    space::{
-        AgentIFrame, AgentPFrame, BonePose, IFrameTransform, MAX_TICKRATE, PFrameRootTransform,
-        PFrameTransform,
+use crate::networking::{
+    publish_utils::{IFRAME_FREQ, PUBLISH_INTERVAL, transform_changed},
+    thread::{
+        NetworkCommand, NetworkingThread,
+        space::types::pose::{
+            AgentIFrame, AgentPFrame, BonePose, IFrameTransform, PFrameRootTransform,
+            PFrameTransform,
+        },
     },
 };
-
-const IFRAME_FREQ: u64 = MAX_TICKRATE as u64 * 3;
-
-/// Position change threshold in meters.
-const POS_EPSILON: f32 = 0.001;
-/// Rotation change threshold in radians.
-const ROT_EPSILON: f32 = 0.005;
-
-/// How often we publish our pose to the network thread.
-/// From there it will be broadcasted to peers at variable rates.
-const PUBLISH_INTERVAL: Duration = Duration::from_millis(1000 / MAX_TICKRATE as u64);
 
 /// Stores the last I-frame positions for P-frame delta encoding,
 /// and last-sent transforms for epsilon filtering.
@@ -34,12 +26,6 @@ pub(super) struct IFrameBaseline {
     root: Vec3,
     root_rot: Quat,
     bones: HashMap<BoneName, (Vec3, Quat)>,
-}
-
-/// Returns true if the transform has changed beyond epsilon thresholds.
-fn transform_changed(current_pos: Vec3, current_rot: Quat, last_pos: Vec3, last_rot: Quat) -> bool {
-    current_pos.distance_squared(last_pos) > POS_EPSILON * POS_EPSILON
-        || current_rot.angle_between(last_rot) > ROT_EPSILON
 }
 
 pub(super) fn publish_agent_transforms(

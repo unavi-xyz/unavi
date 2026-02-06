@@ -6,6 +6,8 @@ mod agent_publish;
 mod agent_receive;
 mod event;
 mod lifecycle;
+mod object_publish;
+mod publish_utils;
 pub mod thread;
 mod tickrate;
 
@@ -30,6 +32,9 @@ impl Plugin for NetworkingPlugin {
                     event::recv_network_event,
                     agent_publish::publish_agent_transforms,
                     agent_receive::receive_agent_transforms,
+                    object_publish::detect_dynamic_objects,
+                    object_publish::detect_removed_objects,
+                    object_publish::publish_object_physics,
                 )
                     .after(unavi_avatar::animation::weights::play_avatar_animations),
             )

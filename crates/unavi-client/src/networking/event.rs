@@ -68,9 +68,11 @@ pub fn recv_network_event(
                 commands.spawn(LocalActor(actor));
             }
             NetworkEvent::AddRemoteActor(actor) => {
-                // TODO handle disconnects / multiple adds
-
+                // TODO: Handle disconnects / multiple adds.
                 commands.spawn(RemoteActor(actor));
+            }
+            NetworkEvent::ObjectOwnershipChanged { .. } | NetworkEvent::ObjectPoseUpdate { .. } => {
+                // TODO: Handle object ownership/pose updates.
             }
         }
     }

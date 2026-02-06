@@ -10,11 +10,15 @@ use bevy::log::{info, warn};
 use iroh::{EndpointId, endpoint::Connection};
 use tracing::debug;
 
-use super::{
-    ControlMsg, IFrameMsg, MAX_TICKRATE, PFrameDatagram, buffer::CONTROL_MSG_MAX_SIZE,
-    reorder::PFrameReorderBuffer,
+use super::reorder::PFrameReorderBuffer;
+use crate::networking::thread::{
+    InboundState, NetworkEvent,
+    space::{
+        MAX_TICKRATE,
+        buffer::CONTROL_MSG_MAX_SIZE,
+        msg::{ControlMsg, Datagram, IFrameMsg},
+    },
 };
-use crate::networking::thread::{InboundState, NetworkEvent};
 
 pub async fn handle_inbound(
     event_tx: tokio::sync::mpsc::Sender<NetworkEvent>,
@@ -108,10 +112,18 @@ async fn recv_pframes(
 
     loop {
         let datagram = conn.read_datagram().await?;
-        let msg: PFrameDatagram = match postcard::from_bytes(&datagram) {
-            Ok(msg) => msg,
+        let tagged: Datagram = match postcard::from_bytes(&datagram) {
+            Ok(d) => d,
             Err(err) => {
-                warn!(?err, "invalid P-frame datagram");
+                warn!(?err, "invalid datagram");
+                continue;
+            }
+        };
+
+        let msg = match tagged {
+            Datagram::AgentPFrame(msg) => msg,
+            Datagram::ObjectPFrame(_) => {
+                // TODO: Handle object P-frames on inbound.
                 continue;
             }
         };

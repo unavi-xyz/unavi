@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 
 use crate::{
-    Layer, LayerEnabled, Opinion, OpinionAttrs, OpinionTarget, Stage, StageCompiled, StageLayers,
-    StageLoaded, StageNode, StageNodes,
+    Layer, LayerEnabled, NodeIndex, Opinion, OpinionAttrs, OpinionTarget, Stage, StageCompiled,
+    StageLayers, StageLoaded, StageNode, StageNodes,
 };
 
 pub fn load_stages(
@@ -31,9 +31,11 @@ pub fn load_stages(
 
             // Spawn opinions.
             for opinion in &layer_data.opinions {
-                let node_ent = node_ents
-                    .entry(opinion.node)
-                    .or_insert_with(|| commands.spawn(StageNode { stage: stage_ent }).id());
+                let node_ent = node_ents.entry(opinion.node).or_insert_with(|| {
+                    commands
+                        .spawn((StageNode { stage: stage_ent }, NodeIndex(opinion.node)))
+                        .id()
+                });
 
                 commands.spawn((
                     Opinion { layer: layer_ent },

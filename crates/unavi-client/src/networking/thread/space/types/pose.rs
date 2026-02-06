@@ -5,7 +5,7 @@ use bevy_vrm::BoneName;
 use postcard::experimental::max_size::MaxSize;
 use serde::{Deserialize, Serialize};
 
-use super::{F16Pos, F32Pos, I8Pos, PackedQuat};
+use super::{f16_pos::F16Pos, f32_pos::F32Pos, i8_pos::I8Pos, quat::PackedQuat};
 
 /// I-frame transform: full precision position and rotation.
 #[derive(Clone, Copy, Debug, MaxSize, Serialize, Deserialize)]

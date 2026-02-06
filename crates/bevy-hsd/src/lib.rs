@@ -42,7 +42,7 @@ struct StageCompiled(bool);
 
 #[derive(Component, Default)]
 #[relationship_target(relationship = StageNode, linked_spawn)]
-struct StageNodes(Vec<Entity>);
+pub struct StageNodes(Vec<Entity>);
 
 /// Whether all stage nodes have their deps loaded.
 #[derive(Component)]
@@ -50,10 +50,13 @@ pub struct StageNodesLoaded;
 
 #[derive(Component)]
 #[relationship(relationship_target = StageNodes)]
-struct StageNode {
+pub struct StageNode {
     #[relationship]
-    stage: Entity,
+    pub stage: Entity,
 }
+
+#[derive(Component, Clone, Copy, Debug)]
+pub struct NodeIndex(pub i64);
 
 #[derive(Component, Default)]
 #[relationship_target(relationship = Layer, linked_spawn)]

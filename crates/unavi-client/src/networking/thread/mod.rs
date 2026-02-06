@@ -12,11 +12,19 @@ use iroh::{Endpoint, EndpointId};
 use iroh_gossip::Gossip;
 use n0_future::task::AbortOnDropHandle;
 use parking_lot::Mutex;
-use wds::{Blobs, DataStore, actor::Actor, identity::Identity};
+use time::OffsetDateTime;
+use wds::{Blobs, DataStore, actor::Actor, identity::Identity, signed_bytes::IrohSigner};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::networking::thread::space::{
-    AgentIFrame, AgentPFrame, IFrameMsg, MAX_TICKRATE, PFrameDatagram,
+    MAX_TICKRATE, SpaceHandle,
+    gossip::{ObjectClaimBroadcast, ObjectReleaseBroadcast, SpaceGossipMsg},
+    msg::{IFrameMsg, ObjectIFrameMsg, ObjectPFrameDatagram, ObjectPose, PFrameDatagram},
+    types::{
+        object_id::ObjectId,
+        physics_state::{PhysicsIFrame, PhysicsPFrame},
+        pose::{AgentIFrame, AgentPFrame},
+    },
 };
 
 mod join;
@@ -25,12 +33,22 @@ mod remote_wds;
 pub mod space;
 
 pub enum NetworkCommand {
+    // Space commands.
     Join(Hash),
     Leave(Hash),
     PublishBeacon { id: Hash, ttl: Duration },
+
+    // Agent pose commands.
     PublishIFrame(AgentIFrame),
     PublishPFrame(AgentPFrame),
     SetPeerTickrate { peer: EndpointId, tickrate: u8 },
+
+    // Object commands.
+    ClaimObject(ObjectId),
+    ReleaseObject(ObjectId),
+    PublishObjectIFrame(Vec<(ObjectId, PhysicsIFrame)>),
+    PublishObjectPFrame(Vec<(ObjectId, PhysicsPFrame)>),
+
     Shutdown,
 }
 
@@ -39,11 +57,23 @@ pub enum NetworkEvent {
     AddRemoteActor(Actor),
     SetLocalActor(Actor),
     SetLocalBlobs(Blobs),
+
+    // Agent events.
     AgentJoin {
         id: EndpointId,
         state: Arc<InboundState>,
     },
     AgentLeave(EndpointId),
+
+    // Object events.
+    ObjectOwnershipChanged {
+        object_id: ObjectId,
+        owner: Option<EndpointId>,
+    },
+    ObjectPoseUpdate {
+        source: EndpointId,
+        objects: Vec<(ObjectId, PhysicsIFrame)>,
+    },
 }
 
 #[derive(Resource)]
@@ -101,18 +131,31 @@ pub struct PoseState {
     pub pframe: Mutex<Option<PFrameDatagram>>,
 }
 
+#[derive(Debug, Default)]
+pub struct ObjectPoseState {
+    pub iframe: Mutex<Option<ObjectIFrameMsg>>,
+    pub pframe: Mutex<Option<ObjectPFrameDatagram>>,
+}
+
 #[derive(Clone)]
 pub struct NetworkThreadState {
     pub endpoint: Endpoint,
     pub gossip: Gossip,
     pub local_actor: Actor,
     pub remote_actor: Option<Actor>,
+    pub event_tx: tokio::sync::mpsc::Sender<NetworkEvent>,
 
     pub outbound: Arc<scc::HashMap<EndpointId, OutboundConn>>,
     pub _inbound: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
 
+    /// Per-space gossip senders and ownership tables.
+    pub spaces: Arc<scc::HashMap<Hash, SpaceHandle>>,
+
     pub iframe_id: Arc<AtomicU16>,
     pub pose: Arc<PoseState>,
+
+    pub object_iframe_id: Arc<AtomicU16>,
+    pub object_pose: Arc<ObjectPoseState>,
 }
 
 #[expect(clippy::too_many_lines)]
@@ -187,11 +230,15 @@ async fn thread_loop(
         gossip,
         local_actor,
         remote_actor,
+        event_tx: event_tx.clone(),
         outbound: Arc::default(),
         _inbound: inbound,
-        // Initialize ID at a random value, to avoid leaking playtime information.
+        spaces: Arc::default(),
+        // Initialize IDs at random values to avoid leaking playtime.
         iframe_id: Arc::new(AtomicU16::new(rand::random())),
         pose: Arc::default(),
+        object_iframe_id: Arc::new(AtomicU16::new(rand::random())),
+        object_pose: Arc::default(),
     };
 
     while let Some(cmd) = command_rx.recv().await {
@@ -243,6 +290,87 @@ async fn thread_loop(
                     })
                     .await;
             }
+
+            NetworkCommand::ClaimObject(object_id) => {
+                let record_hash = object_id.record_hash();
+                let endpoint_id = state.endpoint.id();
+                let now = OffsetDateTime::now_utc().unix_timestamp().cast_unsigned() * 1000;
+
+                if let Some(entry) = state.spaces.get_async(&record_hash).await {
+                    let handle = entry.get();
+                    if handle.ownership.try_claim(object_id, endpoint_id, now, 0) {
+                        let claim = SpaceGossipMsg::ObjectClaim(ObjectClaimBroadcast {
+                            object_id,
+                            claimer: endpoint_id,
+                            timestamp: now,
+                            seq: 0,
+                        });
+                        if let Err(err) = broadcast_gossip(&state, &claim, &handle.gossip_tx).await
+                        {
+                            error!(?err, "failed to broadcast claim");
+                        }
+                        let _ = event_tx.try_send(NetworkEvent::ObjectOwnershipChanged {
+                            object_id,
+                            owner: Some(endpoint_id),
+                        });
+                    }
+                } else {
+                    warn!(?record_hash, "claim for unknown space");
+                }
+            }
+            NetworkCommand::ReleaseObject(object_id) => {
+                let record_hash = object_id.record_hash();
+                let endpoint_id = state.endpoint.id();
+                let now = OffsetDateTime::now_utc().unix_timestamp().cast_unsigned() * 1000;
+
+                if let Some(entry) = state.spaces.get_async(&record_hash).await {
+                    let handle = entry.get();
+                    if handle.ownership.release(object_id, endpoint_id) {
+                        let release = SpaceGossipMsg::ObjectRelease(ObjectReleaseBroadcast {
+                            object_id,
+                            releaser: endpoint_id,
+                            timestamp: now,
+                        });
+                        if let Err(err) =
+                            broadcast_gossip(&state, &release, &handle.gossip_tx).await
+                        {
+                            error!(?err, "failed to broadcast release");
+                        }
+                        let _ = event_tx.try_send(NetworkEvent::ObjectOwnershipChanged {
+                            object_id,
+                            owner: None,
+                        });
+                    }
+                }
+            }
+            NetworkCommand::PublishObjectIFrame(objects) => {
+                let id = state.object_iframe_id.fetch_add(1, Ordering::Relaxed) + 1;
+                let now = OffsetDateTime::now_utc().unix_timestamp().cast_unsigned() * 1000;
+                let msg = ObjectIFrameMsg {
+                    id,
+                    timestamp: now,
+                    objects: objects
+                        .into_iter()
+                        .map(|(id, state)| ObjectPose { id, state })
+                        .collect(),
+                };
+                *state.object_pose.iframe.lock() = Some(msg);
+            }
+            NetworkCommand::PublishObjectPFrame(objects) => {
+                let iframe_id = state.object_iframe_id.load(Ordering::Relaxed);
+                let now = OffsetDateTime::now_utc().unix_timestamp().cast_unsigned() * 1000;
+                let msg = ObjectPFrameDatagram {
+                    iframe_id,
+                    seq: 0,
+                    timestamp: now,
+                    objects: objects
+                        .into_iter()
+                        .map(|(id, state)| ObjectPose { id, state })
+                        .collect(),
+                };
+                *state.object_pose.pframe.lock() = Some(msg);
+            }
+
             NetworkCommand::Shutdown => {
                 if let Err(err) = store.shutdown().await {
                     error!(?err, "error shutting down data store");
@@ -255,5 +383,19 @@ async fn thread_loop(
 
     info!("Graceful exit");
 
+    Ok(())
+}
+
+/// Sign and broadcast a gossip message.
+async fn broadcast_gossip(
+    state: &NetworkThreadState,
+    msg: &SpaceGossipMsg,
+    gossip_tx: &iroh_gossip::api::GossipSender,
+) -> anyhow::Result<()> {
+    use wds::signed_bytes::Signable;
+
+    let signed = msg.sign(&IrohSigner(state.endpoint.secret_key()))?;
+    let bytes = postcard::to_stdvec(&signed)?;
+    gossip_tx.broadcast(bytes.into()).await?;
     Ok(())
 }

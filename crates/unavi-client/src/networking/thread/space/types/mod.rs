@@ -1,15 +1,10 @@
 //! Quantized types for efficient pose serialization.
 
-mod f16_pos;
-mod f32_pos;
-mod i8_pos;
-mod pose;
-mod quat;
-
-pub use f16_pos::F16Pos;
-pub use f32_pos::F32Pos;
-pub use i8_pos::I8Pos;
-pub use pose::{
-    AgentIFrame, AgentPFrame, BonePose, IFrameTransform, PFrameRootTransform, PFrameTransform,
-};
-pub use quat::PackedQuat;
+pub mod f16_pos;
+pub mod f32_pos;
+pub mod i8_pos;
+pub mod object_id;
+pub mod physics_state;
+pub mod pose;
+pub mod quat;
+pub mod velocity;

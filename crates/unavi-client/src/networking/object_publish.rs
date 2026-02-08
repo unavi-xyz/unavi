@@ -31,6 +31,9 @@ pub struct DynamicObject {
     pub claimed: bool,
 }
 
+#[derive(Component)]
+pub struct Grabbed;
+
 /// Detect newly-compiled `StageNode` entities with [`RigidBody::Dynamic`].
 pub fn detect_dynamic_objects(
     mut commands: Commands,

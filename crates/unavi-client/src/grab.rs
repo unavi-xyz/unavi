@@ -1,11 +1,12 @@
 use std::{collections::HashMap, time::Duration};
 
+use avian3d::prelude::LinearVelocity;
 use bevy::{picking::pointer::PointerId, prelude::*};
 use unavi_locomotion::AgentCamera;
 
 use crate::networking::object_publish::DynamicObject;
 
-const MAX_GRAB_DISTANCE: f32 = 10.0;
+const MAX_GRAB_DISTANCE: f32 = 6.0;
 const GRAB_COOLDOWN: Duration = Duration::from_millis(100);
 
 /// Tracked 3D transforms of pointers.
@@ -91,21 +92,29 @@ pub fn track_mouse_pointer(
 pub fn move_grabbed_objects(
     grabbed: Res<GrabbedObjects>,
     locations: Res<PointerLocations3d>,
-    mut dyn_objs: Query<&mut Transform, With<DynamicObject>>,
+    mut dyn_objs: Query<(&Transform, &mut LinearVelocity), With<DynamicObject>>,
+    time: Res<Time>,
 ) {
+    let dt = time.delta_secs();
+    if dt == 0.0 {
+        return;
+    }
+
     for (pointer_id, grab_state) in &grabbed.0 {
         let Some(pointer_tr) = locations.0.get(pointer_id) else {
             warn!(?pointer_id, "pointer transform not found");
             continue;
         };
 
-        let Ok(mut obj_tr) = dyn_objs.get_mut(grab_state.entity) else {
+        let Ok((obj_tr, mut obj_vel)) = dyn_objs.get_mut(grab_state.entity) else {
             warn!(entity = %grab_state.entity, "object transform not found");
             continue;
         };
 
-        // TODO move through physics space
+        let target = pointer_tr.translation + pointer_tr.rotation * grab_state.offset;
+        let delta = target - obj_tr.translation;
 
-        obj_tr.translation = pointer_tr.translation + pointer_tr.rotation * grab_state.offset;
+        // Set velocity to reach target position, physics handles collisions.
+        obj_vel.0 = delta / dt;
     }
 }

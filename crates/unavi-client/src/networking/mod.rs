@@ -6,7 +6,7 @@ mod agent_publish;
 mod agent_receive;
 mod event;
 mod lifecycle;
-mod object_publish;
+pub mod object_publish;
 mod publish_utils;
 pub mod thread;
 mod tickrate;

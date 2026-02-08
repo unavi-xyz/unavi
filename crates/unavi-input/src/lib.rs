@@ -56,9 +56,13 @@ pub struct JumpAction;
 #[derive(Component, Clone, Copy)]
 pub struct SprintAction;
 
+#[derive(Component, Clone, Copy)]
+pub struct SqueezeAction;
+
 fn setup_actions(mut cmds: Commands) {
     let set = cmds.spawn(ActionSet::new("core", "core", 0)).id();
     cmds.spawn((
+        MoveAction,
         Action::new("move", "Move", set),
         Vec2ActionValue::new(),
         KeyboardBindings::new().add_dpad(
@@ -71,31 +75,37 @@ fn setup_actions(mut cmds: Commands) {
             GamepadBindingSource::LeftStickX,
             GamepadBindingSource::LeftStickX,
         ),
-        MoveAction,
     ));
     cmds.spawn((
+        LookAction,
         Action::new("look", "Look", set),
         Vec2ActionValue::new(),
-        MouseBindings::new().delta_motion(),
         GamepadBindings::new().add_stick(
             GamepadBindingSource::RightStickX,
             GamepadBindingSource::RightStickY,
         ),
-        LookAction,
+        MouseBindings::new().delta_motion(),
     ));
     cmds.spawn((
+        JumpAction,
         Action::new("jump", "Jump", set),
+        BoolActionValue::new(),
         GamepadBindings::new().bind(GamepadBinding::new(GamepadBindingSource::South)),
         KeyboardBindings::new().bind(KeyboardBinding::new(KeyCode::Space)),
-        BoolActionValue::new(),
-        JumpAction,
     ));
     cmds.spawn((
-        Action::new("sprint", "Sprint", set),
-        GamepadBindings::new().bind(GamepadBinding::new(GamepadBindingSource::LeftTrigger)),
-        KeyboardBindings::new().bind(KeyboardBinding::new(KeyCode::ShiftLeft)),
-        BoolActionValue::new(),
         SprintAction,
+        Action::new("sprint", "Sprint", set),
+        BoolActionValue::new(),
+        GamepadBindings::new().bind(GamepadBinding::new(GamepadBindingSource::LeftStickClick)),
+        KeyboardBindings::new().bind(KeyboardBinding::new(KeyCode::ShiftLeft)),
+    ));
+    cmds.spawn((
+        SqueezeAction,
+        Action::new("squeeze", "Squeeze", set),
+        BoolActionValue::new(),
+        GamepadBindings::new().bind(GamepadBinding::new(GamepadBindingSource::RightTrigger)),
+        MouseBindings::new().bind(MouseButtonBinding::new(MouseButton::Left)),
     ));
 }
 

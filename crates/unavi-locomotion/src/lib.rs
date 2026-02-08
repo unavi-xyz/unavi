@@ -33,7 +33,7 @@ mod bones;
 pub mod config;
 mod eye_offset;
 mod grounded;
-mod input;
+mod movement;
 mod spawner;
 pub mod tracking;
 
@@ -54,15 +54,15 @@ impl Plugin for LocomotionPlugin {
             AvatarPlugin,
         ))
         .init_state::<CursorGrabState>()
-        .init_resource::<input::TargetBodyInput>()
-        .init_resource::<input::TargetHeadInput>()
-        .add_observer(input::handle_agent_teleport)
+        .init_resource::<movement::TargetBodyInput>()
+        .init_resource::<movement::TargetHeadInput>()
+        .add_observer(movement::handle_agent_teleport)
         .add_systems(
             Update,
             (
                 eye_offset::setup_vrm_eye_offset,
-                input::apply_head_input.run_if(in_state(CursorGrabState::Locked)),
-                input::apply_body_input,
+                movement::apply_head_input.run_if(in_state(CursorGrabState::Locked)),
+                movement::apply_body_input,
                 tracking::sync_tracked_pose_to_transform,
                 bones::apply_head_tracking,
             )

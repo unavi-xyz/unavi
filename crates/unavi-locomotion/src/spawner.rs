@@ -70,6 +70,7 @@ impl LocalAgentSpawner {
                 AgentRig,
                 Grounded(true),
                 RigidBody::Dynamic,
+                Pickable::IGNORE,
                 Collider::capsule(config.effective_vrm_radius(), config.effective_vrm_height()),
                 TnuaController::<ControlScheme>::default(),
                 TnuaConfig::<ControlScheme>(asset_server.add(ControlSchemeConfig {

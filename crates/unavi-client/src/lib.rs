@@ -12,6 +12,7 @@ mod async_commands;
 #[cfg(feature = "devtools-network")]
 mod devtools;
 mod fade;
+mod grab;
 mod icon;
 mod networking;
 mod scene;
@@ -80,6 +81,7 @@ impl Plugin for UnaviPlugin {
         app.add_plugins((
             default_plugins,
             avian3d::PhysicsPlugins::default(),
+            avian3d::picking::PhysicsPickingPlugin,
             fade::FadePlugin,
             bevy_wds::WdsPlugin,
             bevy_hsd::HsdPlugin,
@@ -116,10 +118,17 @@ impl Plugin for UnaviPlugin {
         }
 
         app.insert_resource(ClearColor(Color::BLACK))
+            .init_resource::<grab::GrabbedObjects>()
+            .init_resource::<grab::PointerLocations3d>()
+            .add_observer(grab::handle_grab_click)
             .add_systems(Startup, (icon::set_window_icon, scene::spawn_scene))
             .add_systems(
                 FixedUpdate,
                 (async_commands::apply_async_commands, scene::spawn_agent),
+            )
+            .add_systems(
+                Update,
+                (grab::track_mouse_pointer, grab::move_grabbed_objects).chain(),
             );
     }
 }

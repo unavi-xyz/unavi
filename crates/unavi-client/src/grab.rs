@@ -1,13 +1,15 @@
 use std::{collections::HashMap, time::Duration};
 
-use avian3d::prelude::LinearVelocity;
+use avian3d::prelude::{GravityScale, LinearVelocity};
 use bevy::{picking::pointer::PointerId, prelude::*};
 use unavi_locomotion::AgentCamera;
 
-use crate::networking::object_publish::DynamicObject;
+use crate::networking::object_publish::{DynamicObject, Grabbed};
 
-const MAX_GRAB_DISTANCE: f32 = 6.0;
 const GRAB_COOLDOWN: Duration = Duration::from_millis(100);
+const GRAB_DEAD_ZONE: f32 = 0.001;
+const GRAB_SMOOTHING: f32 = 20.0;
+const MAX_GRAB_DISTANCE: f32 = 6.0;
 
 /// Tracked 3D transforms of pointers.
 /// On desktop, will be the camera's centered frontal ray.
@@ -25,10 +27,11 @@ struct GrabState {
 
 pub fn handle_grab_click(
     event: On<Pointer<Click>>,
-    dyn_objs: Query<(&DynamicObject, &Transform)>,
+    mut commands: Commands,
     mut grabbed: ResMut<GrabbedObjects>,
     locations: Res<PointerLocations3d>,
     time: Res<Time>,
+    dyn_objs: Query<(&DynamicObject, &Transform)>,
     mut last_grab: Local<Duration>,
 ) {
     if event.button != PointerButton::Primary {
@@ -41,12 +44,13 @@ pub fn handle_grab_click(
     }
 
     // Drop the currently grabbed object (if any).
-    if grabbed.0.remove(&event.pointer_id).is_some() {
+    if let Some(prev) = grabbed.0.remove(&event.pointer_id) {
+        commands.entity(prev.entity).remove::<Grabbed>();
         return;
     }
 
     let target_ent = event.event().entity;
-    let Ok((found, obj_tr)) = dyn_objs.get(target_ent) else {
+    let Ok((obj, obj_tr)) = dyn_objs.get(target_ent) else {
         return;
     };
 
@@ -58,7 +62,7 @@ pub fn handle_grab_click(
         return;
     };
 
-    info!(pointer = ?event.pointer_id, object = %found.object_id.index, "grabbing object");
+    info!(pointer = ?event.pointer_id, object = %obj.object_id.index, "grabbing object");
 
     // Store offset in pointer's local space so it stays correct when rotating.
     let offset =
@@ -72,6 +76,8 @@ pub fn handle_grab_click(
         },
     );
     *last_grab = now;
+
+    commands.entity(target_ent).insert(Grabbed);
 
     // TODO claim ownership over network
 }
@@ -113,8 +119,33 @@ pub fn move_grabbed_objects(
 
         let target = pointer_tr.translation + pointer_tr.rotation * grab_state.offset;
         let delta = target - obj_tr.translation;
+        let dist = delta.length();
 
-        // Set velocity to reach target position, physics handles collisions.
-        obj_vel.0 = delta / dt;
+        // Dead zone to prevent jitter when close to target.
+        obj_vel.0 = if dist < GRAB_DEAD_ZONE {
+            Vec3::ZERO
+        } else {
+            delta * GRAB_SMOOTHING
+        };
     }
+}
+
+pub fn setup_grabbed_hooks(world: &mut World) {
+    world
+        .register_component_hooks::<Grabbed>()
+        .on_add(|mut world, context| {
+            if let Some(mut gravity) = world.get_mut::<GravityScale>(context.entity) {
+                gravity.0 = 0.0;
+            } else {
+                world
+                    .commands()
+                    .entity(context.entity)
+                    .insert(GravityScale(0.0));
+            }
+        })
+        .on_remove(|mut world, context| {
+            if let Some(mut gravity) = world.get_mut::<GravityScale>(context.entity) {
+                gravity.0 = 1.0;
+            }
+        });
 }

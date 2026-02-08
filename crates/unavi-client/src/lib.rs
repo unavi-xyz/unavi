@@ -121,7 +121,14 @@ impl Plugin for UnaviPlugin {
             .init_resource::<grab::GrabbedObjects>()
             .init_resource::<grab::PointerLocations3d>()
             .add_observer(grab::handle_grab_click)
-            .add_systems(Startup, (icon::set_window_icon, scene::spawn_scene))
+            .add_systems(
+                Startup,
+                (
+                    grab::setup_grabbed_hooks,
+                    icon::set_window_icon,
+                    scene::spawn_scene,
+                ),
+            )
             .add_systems(
                 FixedUpdate,
                 (async_commands::apply_async_commands, scene::spawn_agent),

@@ -2,13 +2,19 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 use bevy_wds::{LocalActor, LocalBlobs, RemoteActor};
+use iroh::EndpointId;
 use unavi_avatar::{AvatarSpawner, AverageVelocity, Grounded, default_character_animations};
 
 use crate::networking::{
     AgentTickrateConfig,
     agent_receive::{RemoteAgent, TrackedBoneState, TransformTarget},
+    object_publish::{DynObjectId, Grabbed, LocallyOwned},
     thread::{InboundState, NetworkEvent, NetworkingThread},
 };
+
+/// Our local endpoint ID for ownership comparison.
+#[derive(Resource)]
+pub struct LocalEndpointId(pub EndpointId);
 
 #[derive(Component, Deref)]
 pub struct AgentInboundState(Arc<InboundState>);
@@ -19,9 +25,16 @@ pub fn recv_network_event(
     asset_server: Res<AssetServer>,
     local_actors: Query<Entity, With<LocalActor>>,
     local_blobs: Query<Entity, With<LocalBlobs>>,
+    local_endpoint: Option<Res<LocalEndpointId>>,
+    dyn_objects: Query<(Entity, &DynObjectId)>,
+    locally_owned: Query<(), With<LocallyOwned>>,
+    mut object_transforms: Query<&mut Transform, With<DynObjectId>>,
 ) {
     while let Ok(event) = nt.event_rx.try_recv() {
         match event {
+            NetworkEvent::SetLocalEndpoint(id) => {
+                commands.insert_resource(LocalEndpointId(id));
+            }
             NetworkEvent::AgentJoin { id, state } => {
                 info!(%id, "spawning agent");
 
@@ -56,13 +69,13 @@ pub fn recv_network_event(
                 // TODO: Despawn agent.
             }
             NetworkEvent::SetLocalBlobs(blobs) => {
-                for ent in local_blobs {
+                for ent in local_blobs.iter() {
                     commands.entity(ent).despawn();
                 }
                 commands.spawn(LocalBlobs(blobs));
             }
             NetworkEvent::SetLocalActor(actor) => {
-                for ent in local_actors {
+                for ent in local_actors.iter() {
                     commands.entity(ent).despawn();
                 }
                 commands.spawn(LocalActor(actor));
@@ -71,8 +84,52 @@ pub fn recv_network_event(
                 // TODO: Handle disconnects / multiple adds.
                 commands.spawn(RemoteActor(actor));
             }
-            NetworkEvent::ObjectOwnershipChanged { .. } | NetworkEvent::ObjectPoseUpdate { .. } => {
-                // TODO: Handle object ownership/pose updates.
+            NetworkEvent::ObjectOwnershipChanged { object_id, owner } => {
+                let is_local = local_endpoint.as_ref().is_some_and(|e| owner == Some(e.0));
+
+                if is_local {
+                    info!(object = %object_id.index, "claimed object (local)");
+                } else if let Some(remote) = owner {
+                    info!(object = %object_id.index, owner = %remote, "object claimed by remote");
+                } else {
+                    info!(object = %object_id.index, "object released");
+                }
+
+                for (entity, dyn_id) in dyn_objects.iter() {
+                    if dyn_id.0 != object_id {
+                        continue;
+                    }
+
+                    if is_local {
+                        commands.entity(entity).insert(LocallyOwned);
+                    } else if owner.is_some() {
+                        // Remote claimed - add Grabbed to prevent local grab.
+                        commands.entity(entity).insert(Grabbed);
+                        commands.entity(entity).remove::<LocallyOwned>();
+                    } else {
+                        // Released (owner disconnected) - remove both.
+                        commands.entity(entity).remove::<(Grabbed, LocallyOwned)>();
+                    }
+                }
+            }
+            NetworkEvent::ObjectPoseUpdate { objects, .. } => {
+                for (object_id, state) in objects {
+                    for (entity, dyn_id) in dyn_objects.iter() {
+                        if dyn_id.0 != object_id {
+                            continue;
+                        }
+
+                        // Only apply remote physics to non-owned objects.
+                        if locally_owned.contains(entity) {
+                            continue;
+                        }
+
+                        if let Ok(mut transform) = object_transforms.get_mut(entity) {
+                            transform.translation = state.pos.into();
+                            transform.rotation = state.rot.into();
+                        }
+                    }
+                }
             }
         }
     }

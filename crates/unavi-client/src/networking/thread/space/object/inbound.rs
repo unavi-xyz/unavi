@@ -9,7 +9,11 @@ use iroh::EndpointId;
 
 use crate::networking::thread::{
     NetworkEvent,
-    space::{msg::ObjectIFrameMsg, types::object_id::ObjectId},
+    space::{
+        datagram::SharedObjectBaselines,
+        msg::ObjectIFrameMsg,
+        types::{object_id::ObjectId, physics_state::PhysicsBaseline},
+    },
 };
 
 /// Handle a single object's dedicated bistream.
@@ -20,6 +24,7 @@ pub async fn handle_object_stream(
     object_id: ObjectId,
     _send: iroh::endpoint::SendStream,
     mut recv: iroh::endpoint::RecvStream,
+    baselines: SharedObjectBaselines,
 ) -> anyhow::Result<()> {
     debug!(?object_id, "object stream initialized");
 
@@ -36,6 +41,11 @@ pub async fn handle_object_stream(
 
         let msg: ObjectIFrameMsg = postcard::from_bytes(&buf)?;
         debug!(id = msg.id, ?object_id, "received object I-frame");
+
+        // Update baseline for P-frame decoding.
+        baselines
+            .write()
+            .update(object_id, msg.id, PhysicsBaseline::from(&msg.state));
 
         // Send event with the received physics state.
         let _ = event_tx.try_send(NetworkEvent::ObjectPoseUpdate {

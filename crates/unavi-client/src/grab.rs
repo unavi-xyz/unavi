@@ -4,7 +4,10 @@ use avian3d::prelude::{GravityScale, LinearVelocity};
 use bevy::{picking::pointer::PointerId, prelude::*};
 use unavi_locomotion::AgentCamera;
 
-use crate::networking::object_publish::{DynamicObject, Grabbed};
+use crate::networking::{
+    object_publish::{DynObjectId, Grabbed, LocallyOwned},
+    thread::{NetworkCommand, NetworkingThread},
+};
 
 const GRAB_COOLDOWN: Duration = Duration::from_millis(100);
 const GRAB_DEAD_ZONE: f32 = 0.001;
@@ -31,7 +34,9 @@ pub fn handle_grab_click(
     mut grabbed: ResMut<GrabbedObjects>,
     locations: Res<PointerLocations3d>,
     time: Res<Time>,
-    dyn_objs: Query<(&DynamicObject, &Transform)>,
+    nt: Res<NetworkingThread>,
+    dyn_objs: Query<(&DynObjectId, &Transform), Without<Grabbed>>,
+    locally_owned: Query<(), With<LocallyOwned>>,
     mut last_grab: Local<Duration>,
 ) {
     if event.button != PointerButton::Primary {
@@ -51,6 +56,7 @@ pub fn handle_grab_click(
 
     let target_ent = event.event().entity;
     let Ok((obj, obj_tr)) = dyn_objs.get(target_ent) else {
+        // Not a dynamic object or already grabbed
         return;
     };
 
@@ -62,7 +68,7 @@ pub fn handle_grab_click(
         return;
     };
 
-    info!(pointer = ?event.pointer_id, object = %obj.object_id.index, "grabbing object");
+    info!(pointer = ?event.pointer_id, object = %obj.0.index, "grabbing object");
 
     // Store offset in pointer's local space so it stays correct when rotating.
     let offset =
@@ -79,7 +85,12 @@ pub fn handle_grab_click(
 
     commands.entity(target_ent).insert(Grabbed);
 
-    // TODO claim ownership over network
+    // Only send claim if not already locally owned.
+    if !locally_owned.contains(target_ent)
+        && let Err(err) = nt.command_tx.try_send(NetworkCommand::ClaimObject(obj.0))
+    {
+        error!(?err, "failed to send claim");
+    }
 }
 
 pub fn track_mouse_pointer(
@@ -98,7 +109,7 @@ pub fn track_mouse_pointer(
 pub fn move_grabbed_objects(
     grabbed: Res<GrabbedObjects>,
     locations: Res<PointerLocations3d>,
-    mut dyn_objs: Query<(&Transform, &mut LinearVelocity), With<DynamicObject>>,
+    mut dyn_objs: Query<(&Transform, &mut LinearVelocity), With<DynObjectId>>,
     time: Res<Time>,
 ) {
     let dt = time.delta_secs();

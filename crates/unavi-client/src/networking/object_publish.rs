@@ -25,12 +25,14 @@ use crate::{
 };
 
 /// Marks a [`StageNode`] as a tracked dynamic object.
-#[derive(Component)]
-pub struct DynamicObject {
-    pub object_id: ObjectId,
-    pub claimed: bool,
-}
+#[derive(Component, Clone, Copy)]
+pub struct DynObjectId(pub ObjectId);
 
+/// Marker for objects we own locally.
+#[derive(Component)]
+pub struct LocallyOwned;
+
+/// Marker for grabbed objects (local or remote).
 #[derive(Component)]
 pub struct Grabbed;
 
@@ -39,7 +41,7 @@ pub fn detect_dynamic_objects(
     mut commands: Commands,
     new_bodies: Query<
         (Entity, &StageNode, &NodeIndex, &RigidBody),
-        (Added<RigidBody>, Without<DynamicObject>),
+        (Added<RigidBody>, Without<DynObjectId>),
     >,
     spaces: Query<&Space>,
 ) {
@@ -55,34 +57,25 @@ pub fn detect_dynamic_objects(
 
         let object_id = ObjectId::new(space.0, node_index.0);
 
-        commands.entity(entity).insert(DynamicObject {
-            object_id,
-            claimed: false,
-        });
+        commands.entity(entity).insert(DynObjectId(object_id));
     }
 }
 
-/// Release ownership when a dynamic object loses its rigid body or
+/// Clean up dynamic object component when rigid body is removed or
 /// changes from dynamic.
 pub fn detect_removed_objects(
     mut commands: Commands,
-    nt: Res<NetworkingThread>,
-    objects: Query<(Entity, &DynamicObject, Option<&RigidBody>)>,
+    objects: Query<(Entity, &DynObjectId, Option<&RigidBody>)>,
 ) {
-    for (entity, dyn_obj, rigid_body) in &objects {
+    for (entity, _dyn_obj, rigid_body) in &objects {
         let dominated = rigid_body.is_none_or(|rb| *rb != RigidBody::Dynamic);
         if !dominated {
             continue;
         }
 
-        if let Err(err) = nt
-            .command_tx
-            .try_send(NetworkCommand::ReleaseObject(dyn_obj.object_id))
-        {
-            error!(?err, "failed to send release");
-        }
-
-        commands.entity(entity).remove::<DynamicObject>();
+        commands
+            .entity(entity)
+            .remove::<(DynObjectId, LocallyOwned, Grabbed)>();
     }
 }
 
@@ -93,12 +86,15 @@ pub struct ObjectBaselines(HashMap<ObjectId, PhysicsBaseline>);
 /// Publish physics state for owned dynamic objects.
 pub fn publish_object_physics(
     nt: Res<NetworkingThread>,
-    objects: Query<(
-        &DynamicObject,
-        &Transform,
-        Option<&LinearVelocity>,
-        Option<&AngularVelocity>,
-    )>,
+    objects: Query<
+        (
+            &DynObjectId,
+            &Transform,
+            Option<&LinearVelocity>,
+            Option<&AngularVelocity>,
+        ),
+        With<LocallyOwned>,
+    >,
     time: Res<Time>,
     mut last: Local<Duration>,
     mut count: Local<u64>,
@@ -117,17 +113,13 @@ pub fn publish_object_physics(
         let mut frames = Vec::new();
 
         for (dyn_obj, transform, lin_vel, ang_vel) in &objects {
-            if !dyn_obj.claimed {
-                continue;
-            }
-
             let pos = transform.translation;
             let rot = transform.rotation;
             let vel = lin_vel.map_or(Vec3::ZERO, |v| v.0);
             let avel = ang_vel.map_or(Vec3::ZERO, |v| v.0);
 
             baselines.0.insert(
-                dyn_obj.object_id,
+                dyn_obj.0,
                 PhysicsBaseline {
                     pos,
                     vel,
@@ -136,7 +128,7 @@ pub fn publish_object_physics(
             );
 
             frames.push((
-                dyn_obj.object_id,
+                dyn_obj.0,
                 PhysicsIFrame {
                     pos: pos.into(),
                     rot: rot.into(),
@@ -157,16 +149,12 @@ pub fn publish_object_physics(
         let mut frames = Vec::new();
 
         for (dyn_obj, transform, lin_vel, ang_vel) in &objects {
-            if !dyn_obj.claimed {
-                continue;
-            }
-
             let pos = transform.translation;
             let rot = transform.rotation;
             let vel = lin_vel.map_or(Vec3::ZERO, |v| v.0);
             let avel = ang_vel.map_or(Vec3::ZERO, |v| v.0);
 
-            let baseline = baselines.0.get(&dyn_obj.object_id);
+            let baseline = baselines.0.get(&dyn_obj.0);
             let (base_pos, base_vel, base_ang_vel) =
                 baseline.map_or((pos, vel, avel), |b| (b.pos, b.vel, b.ang_vel));
 
@@ -179,7 +167,7 @@ pub fn publish_object_physics(
             }
 
             frames.push((
-                dyn_obj.object_id,
+                dyn_obj.0,
                 PhysicsPFrame {
                     pos: F16Pos::from_delta(pos, base_pos),
                     rot: rot.into(),

@@ -89,11 +89,11 @@ pub async fn send_object_iframe(
 
     #[cfg(feature = "devtools-network")]
     {
-        use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+        use crate::devtools::events::{Channel, NETWORK_EVENTS, NetworkEvent};
         let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Upload {
             peer,
             bytes: bytes.len() + 4,
-            is_iframe: true,
+            channel: Channel::Stream,
         });
     }
 
@@ -122,11 +122,11 @@ pub fn send_object_pframe(
 
     #[cfg(feature = "devtools-network")]
     {
-        use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+        use crate::devtools::events::{Channel, NETWORK_EVENTS, NetworkEvent};
         let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Upload {
             peer,
             bytes: bytes.len(),
-            is_iframe: false,
+            channel: Channel::Datagram,
         });
     }
 

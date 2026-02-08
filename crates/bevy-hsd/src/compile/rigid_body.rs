@@ -18,7 +18,7 @@ pub fn parse_rigid_body_attrs(attrs: &Attrs, node: Entity, commands: &mut Comman
         if kind == RigidBody::Dynamic {
             commands
                 .entity(node)
-                .insert((LinearDamping(0.4), AngularDamping(0.4)));
+                .insert((LinearDamping(0.2), AngularDamping(0.2)));
         }
 
         commands.entity(node).insert(kind);

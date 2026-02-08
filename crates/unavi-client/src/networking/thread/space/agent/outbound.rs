@@ -1,6 +1,7 @@
 //! Outbound connection handler - sends our poses to a remote peer.
 
 use std::{
+    collections::HashMap,
     sync::{
         Arc,
         atomic::{AtomicU8, Ordering},
@@ -14,12 +15,14 @@ use bytes::Bytes;
 use iroh::{EndpointAddr, EndpointId, endpoint::SendStream};
 use n0_future::task::AbortOnDropHandle;
 
+use super::super::object::outbound::{open_object_stream, send_object_iframe};
 use crate::networking::thread::{
-    NetworkThreadState, OutboundConn, PoseState,
+    NetworkThreadState, ObjectPoseState, OutboundConn, PoseState,
     space::{
         ALPN, MAX_TICKRATE,
         buffer::{CONTROL_MSG_MAX_SIZE, DATAGRAM_MAX_SIZE, SendBuffer},
         msg::{AgentIFrameMsg, AgentPFrameDatagram, ControlMsg, Datagram, StreamInit},
+        types::object_id::ObjectId,
     },
 };
 
@@ -40,19 +43,21 @@ pub async fn handle_outbound(state: NetworkThreadState, peer: EndpointAddr) -> a
 
     let task = {
         let tickrate = Arc::clone(&tickrate);
-        let pose = Arc::clone(&state.pose);
+        let agent_pose = Arc::clone(&state.pose);
+        let object_pose = Arc::clone(&state.object_pose);
         let conn = connection.clone();
 
         n0_future::task::spawn(async move {
             let result = tokio::select! {
                 r = send_agent_frames(
                     &tickrate,
-                    pose,
+                    agent_pose,
                     agent_iframe_stream,
                     &conn,
                     peer.id,
                 ) => r,
                 r = handle_tickrate(ctrl_tx, ctrl_rx, &tickrate) => r,
+                r = stream_owned_objects(&tickrate, object_pose, &conn, peer.id) => r,
             };
 
             if let Err(err) = result {
@@ -167,11 +172,11 @@ async fn send_iframe(
 
     #[cfg(feature = "devtools-network")]
     {
-        use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+        use crate::devtools::events::{Channel, NETWORK_EVENTS, NetworkEvent};
         let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Upload {
             peer,
             bytes: bytes.len() + 4,
-            is_iframe: true,
+            channel: Channel::Stream,
         });
     }
 
@@ -197,11 +202,11 @@ fn send_datagram(
 
     #[cfg(feature = "devtools-network")]
     {
-        use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+        use crate::devtools::events::{Channel, NETWORK_EVENTS, NetworkEvent};
         let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Upload {
             peer,
             bytes: bytes.len(),
-            is_iframe: false,
+            channel: Channel::Datagram,
         });
     }
 
@@ -259,4 +264,71 @@ pub async fn send_stream_init(stream: &mut SendStream, init: &StreamInit) -> any
     stream.write_all(&len.to_le_bytes()).await?;
     stream.write_all(bytes).await?;
     Ok(())
+}
+
+/// Stream owned objects to a peer.
+///
+/// Opens a dedicated stream for each claimed object and sends I-frames.
+/// P-frames are sent as datagrams when I-frame hasn't changed.
+async fn stream_owned_objects(
+    tickrate: &AtomicU8,
+    object_pose: Arc<ObjectPoseState>,
+    conn: &iroh::endpoint::Connection,
+    peer: EndpointId,
+) -> anyhow::Result<()> {
+    // Track open streams per object.
+    let mut streams: HashMap<ObjectId, SendStream> = HashMap::new();
+    // Track last sent I-frame ID per object.
+    let mut last_iframes: HashMap<ObjectId, u16> = HashMap::new();
+
+    loop {
+        let hz = tickrate.load(Ordering::Relaxed).max(1);
+        let duration = Duration::from_secs_f32(1.0 / f32::from(hz));
+        n0_future::time::sleep(duration).await;
+
+        // Collect I-frames and P-frames to send.
+        let mut iframes_to_send = Vec::new();
+        let mut pframes_to_send = Vec::new();
+        object_pose.iframes.iter_sync(|object_id, iframe| {
+            iframes_to_send.push((*object_id, iframe.clone()));
+            true
+        });
+        object_pose.pframes.iter_sync(|object_id, pframe| {
+            pframes_to_send.push((*object_id, pframe.clone()));
+            true
+        });
+
+        for (object_id, iframe) in iframes_to_send {
+            // Check if I-frame changed.
+            if last_iframes.get(&object_id) == Some(&iframe.id) {
+                // I-frame unchanged - send P-frame as datagram if available.
+                if let Some((_, pframe)) = pframes_to_send.iter().find(|(id, _)| *id == object_id)
+                    && let Err(err) =
+                        super::super::object::outbound::send_object_pframe(conn, pframe, peer)
+                {
+                    warn!(?err, ?object_id, "failed to send object P-frame");
+                }
+                continue;
+            }
+
+            // Open stream if needed.
+            let stream = if let Some(s) = streams.get_mut(&object_id) {
+                s
+            } else {
+                let (send, _recv) = open_object_stream(conn, object_id, peer).await?;
+                streams.insert(object_id, send);
+                streams.get_mut(&object_id).expect("just inserted")
+            };
+
+            // Send I-frame.
+            if let Err(err) = send_object_iframe(stream, &iframe, peer).await {
+                warn!(?err, ?object_id, "failed to send object I-frame");
+                // Remove stream on error (will be reopened on next tick).
+                streams.remove(&object_id);
+                continue;
+            }
+
+            last_iframes.insert(object_id, iframe.id);
+        }
+    }
 }

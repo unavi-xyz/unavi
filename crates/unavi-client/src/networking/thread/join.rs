@@ -155,6 +155,9 @@ async fn handle_gossip_inbound(
             }
             Event::NeighborDown(n) => {
                 info!("-neighbor: {n}");
+
+                // Release all objects owned by this neighbor across all spaces.
+                release_objects_owned_by(state, n).await;
             }
             Event::Lagged => bail!("lagged"),
             Event::Received(msg) => {
@@ -338,5 +341,29 @@ async fn handle_claim_sync(state: &NetworkThreadState, sync: &ClaimSyncBroadcast
                     owner: Some(claim.owner),
                 });
         }
+    }
+}
+
+/// Release all objects owned by an endpoint across all spaces.
+async fn release_objects_owned_by(state: &NetworkThreadState, endpoint: iroh::EndpointId) {
+    // Collect released objects first to avoid holding locks during event sends.
+    let mut released = Vec::new();
+
+    state.spaces.iter_sync(|_, handle| {
+        let objects = handle.ownership.objects_owned_by(endpoint);
+        for object_id in objects {
+            handle.ownership.remove_all_by(endpoint);
+            released.push(object_id);
+        }
+        true
+    });
+
+    for object_id in released {
+        let _ = state
+            .event_tx
+            .try_send(NetworkEvent::ObjectOwnershipChanged {
+                object_id,
+                owner: None,
+            });
     }
 }

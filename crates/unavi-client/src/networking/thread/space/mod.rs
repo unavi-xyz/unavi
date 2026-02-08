@@ -18,6 +18,7 @@ use crate::networking::thread::{InboundState, NetworkEvent};
 
 pub mod agent;
 pub mod buffer;
+pub mod datagram;
 pub mod gossip;
 pub mod msg;
 pub mod object;
@@ -54,7 +55,12 @@ impl ProtocolHandler for SpaceProtocol {
 
         // Create and register inbound state for agent data.
         let state = Arc::new(InboundState::default());
-        if let Err(_) = self.inbound.insert_async(remote, Arc::clone(&state)).await {
+        if self
+            .inbound
+            .insert_async(remote, Arc::clone(&state))
+            .await
+            .is_err()
+        {
             warn!("failed to insert inbound state for {remote}");
         }
 
@@ -95,12 +101,23 @@ async fn handle_inbound_connection(
 ) -> anyhow::Result<()> {
     let remote = connection.remote_id();
 
-    // Spawn datagram handler for P-frames.
+    // Shared baselines for object P-frame decoding.
+    let object_baselines: datagram::SharedObjectBaselines = Arc::default();
+
+    // Spawn datagram handler for P-frames (agent and object).
     let conn_clone = connection.clone();
     let agent_state_clone = Arc::clone(&agent_state);
+    let event_tx_clone = event_tx.clone();
+    let baselines_clone = Arc::clone(&object_baselines);
     let datagram_handle = n0_future::task::spawn(async move {
-        if let Err(err) =
-            agent::inbound::recv_pframes(&conn_clone, &agent_state_clone, remote).await
+        if let Err(err) = datagram::handle_datagrams(
+            &conn_clone,
+            &agent_state_clone,
+            event_tx_clone,
+            baselines_clone,
+            remote,
+        )
+        .await
         {
             debug!(?err, "datagram handler closed");
         }
@@ -137,9 +154,10 @@ async fn handle_inbound_connection(
                             }
                             StreamInit::Object { object_id } => {
                                 let event_tx = event_tx.clone();
+                                let baselines = Arc::clone(&object_baselines);
                                 n0_future::task::spawn(async move {
                                     if let Err(err) = object::inbound::handle_object_stream(
-                                        event_tx, remote, object_id, send, recv,
+                                        event_tx, remote, object_id, send, recv, baselines,
                                     )
                                     .await
                                     {

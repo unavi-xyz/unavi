@@ -28,7 +28,7 @@ use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::networking::thread::space::{
     MAX_TICKRATE, SpaceHandle,
-    gossip::{ObjectClaimBroadcast, ObjectReleaseBroadcast, SpaceGossipMsg},
+    gossip::{ObjectClaimBroadcast, SpaceGossipMsg},
     msg::{AgentIFrameMsg, AgentPFrameDatagram, ObjectIFrameMsg, ObjectPFrameDatagram},
     types::{
         object_id::ObjectId,
@@ -52,7 +52,6 @@ pub enum NetworkCommand {
     SetPeerTickrate { peer: EndpointId, tickrate: u8 },
 
     ClaimObject(ObjectId),
-    ReleaseObject(ObjectId),
     PublishObjectIFrame(Vec<(ObjectId, PhysicsIFrame)>),
     PublishObjectPFrame(Vec<(ObjectId, PhysicsPFrame)>),
 
@@ -64,6 +63,7 @@ pub enum NetworkEvent {
     AddRemoteActor(Actor),
     SetLocalActor(Actor),
     SetLocalBlobs(Blobs),
+    SetLocalEndpoint(EndpointId),
 
     // Agent events.
     AgentJoin {
@@ -185,6 +185,10 @@ async fn thread_loop(
 
     let endpoint = endpoint.bind().await?;
     info!("Local endpoint: {}", endpoint.id());
+
+    event_tx
+        .send(NetworkEvent::SetLocalEndpoint(endpoint.id()))
+        .await?;
 
     let gossip = Gossip::builder().spawn(endpoint.clone());
     let inbound = Arc::new(scc::HashMap::default());
@@ -329,31 +333,6 @@ async fn thread_loop(
                     }
                 } else {
                     warn!(?record_hash, "claim for unknown space");
-                }
-            }
-            NetworkCommand::ReleaseObject(object_id) => {
-                let record_hash = object_id.record_hash();
-                let endpoint_id = state.endpoint.id();
-                let now = now_millis();
-
-                if let Some(entry) = state.spaces.get_async(&record_hash).await {
-                    let handle = entry.get();
-                    if handle.ownership.release(object_id, endpoint_id) {
-                        let release = SpaceGossipMsg::ObjectRelease(ObjectReleaseBroadcast {
-                            object_id,
-                            releaser: endpoint_id,
-                            timestamp: now,
-                        });
-                        if let Err(err) =
-                            broadcast_gossip(&state, &release, &handle.gossip_tx).await
-                        {
-                            error!(?err, "failed to broadcast release");
-                        }
-                        let _ = event_tx.try_send(NetworkEvent::ObjectOwnershipChanged {
-                            object_id,
-                            owner: None,
-                        });
-                    }
                 }
             }
             NetworkCommand::PublishObjectIFrame(objects) => {

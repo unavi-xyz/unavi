@@ -4,16 +4,24 @@ use std::sync::{LazyLock, Mutex};
 
 use iroh::EndpointId;
 
+/// Channel type for bandwidth tracking.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Channel {
+    Datagram,
+    Stream,
+}
+
 /// Network monitoring event types.
 pub enum NetworkEvent {
     Download {
         peer: EndpointId,
         bytes: usize,
+        channel: Channel,
     },
     Upload {
         peer: EndpointId,
         bytes: usize,
-        is_iframe: bool,
+        channel: Channel,
     },
     ValidTick {
         peer: EndpointId,

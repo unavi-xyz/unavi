@@ -19,8 +19,8 @@ pub struct PeerNetworkStats {
     // Bandwidth tracking.
     pub upload_bytes_per_sec: f32,
     pub download_bytes_per_sec: f32,
-    pub iframe_upload_ratio: f32,
-    pub pframe_upload_ratio: f32,
+    pub stream_ratio: f32,
+    pub datagram_ratio: f32,
 
     // Tickrate tracking.
     pub effective_tickrate: f32,
@@ -36,8 +36,8 @@ pub struct PeerNetworkStats {
     // Internal tracking.
     pub(crate) upload_samples: VecDeque<(Instant, usize)>,
     pub(crate) download_samples: VecDeque<(Instant, usize)>,
-    pub(crate) iframe_bytes: usize,
-    pub(crate) pframe_bytes: usize,
+    pub(crate) stream_bytes: usize,
+    pub(crate) datagram_bytes: usize,
     pub(crate) tick_samples: VecDeque<Instant>,
     pub(crate) last_update: Instant,
 }
@@ -55,8 +55,8 @@ impl Default for PeerNetworkStats {
         Self {
             upload_bytes_per_sec: 0.0,
             download_bytes_per_sec: 0.0,
-            iframe_upload_ratio: 0.0,
-            pframe_upload_ratio: 0.0,
+            stream_ratio: 0.0,
+            datagram_ratio: 0.0,
             effective_tickrate: 0.0,
             total_frames_received: 0,
             dropped_frames: 0,
@@ -64,8 +64,8 @@ impl Default for PeerNetworkStats {
             estimated_latency_ms: 0.0,
             upload_samples: VecDeque::with_capacity(BANDWIDTH_WINDOW_SIZE),
             download_samples: VecDeque::with_capacity(BANDWIDTH_WINDOW_SIZE),
-            iframe_bytes: 0,
-            pframe_bytes: 0,
+            stream_bytes: 0,
+            datagram_bytes: 0,
             tick_samples: VecDeque::with_capacity(TICKRATE_WINDOW_SIZE),
             last_update: Instant::now(),
         }
@@ -73,14 +73,13 @@ impl Default for PeerNetworkStats {
 }
 
 impl PeerNetworkStats {
-    pub fn record_upload(&mut self, bytes: usize, is_iframe: bool) {
+    pub fn record_upload(&mut self, bytes: usize, channel: super::events::Channel) {
         let now = Instant::now();
         self.upload_samples.push_back((now, bytes));
 
-        if is_iframe {
-            self.iframe_bytes += bytes;
-        } else {
-            self.pframe_bytes += bytes;
+        match channel {
+            super::events::Channel::Stream => self.stream_bytes += bytes,
+            super::events::Channel::Datagram => self.datagram_bytes += bytes,
         }
 
         // Keep only recent samples.
@@ -89,9 +88,14 @@ impl PeerNetworkStats {
         }
     }
 
-    pub fn record_download(&mut self, bytes: usize) {
+    pub fn record_download(&mut self, bytes: usize, channel: super::events::Channel) {
         let now = Instant::now();
         self.download_samples.push_back((now, bytes));
+
+        match channel {
+            super::events::Channel::Stream => self.stream_bytes += bytes,
+            super::events::Channel::Datagram => self.datagram_bytes += bytes,
+        }
 
         // Keep only recent samples.
         while self.download_samples.len() > BANDWIDTH_WINDOW_SIZE {
@@ -131,17 +135,21 @@ pub fn collect_network_events(mut stats: ResMut<NetworkStats>) {
 
     while let Ok(event) = guard.try_recv() {
         match event {
-            NetworkEvent::Download { peer, bytes } => {
-                stats.get_or_create_peer(peer).record_download(bytes);
+            NetworkEvent::Download {
+                peer,
+                bytes,
+                channel,
+            } => {
+                stats
+                    .get_or_create_peer(peer)
+                    .record_download(bytes, channel);
             }
             NetworkEvent::Upload {
                 peer,
                 bytes,
-                is_iframe,
+                channel,
             } => {
-                stats
-                    .get_or_create_peer(peer)
-                    .record_upload(bytes, is_iframe);
+                stats.get_or_create_peer(peer).record_upload(bytes, channel);
             }
             NetworkEvent::ValidTick { peer } => {
                 stats.get_or_create_peer(peer).record_tick();
@@ -173,21 +181,14 @@ pub fn update_bandwidth_stats(mut stats: ResMut<NetworkStats>) {
         peer_stats.upload_bytes_per_sec =
             ema(peer_stats.upload_bytes_per_sec, raw_upload, SMOOTHING_ALPHA);
 
-        // Calculate upload ratios.
-        let total_tracked = peer_stats.iframe_bytes + peer_stats.pframe_bytes;
+        // Calculate channel ratios.
+        let total_tracked = peer_stats.stream_bytes + peer_stats.datagram_bytes;
         if total_tracked > 0 {
-            let iframe_ratio = peer_stats.iframe_bytes as f32 / total_tracked as f32;
-            let pframe_ratio = peer_stats.pframe_bytes as f32 / total_tracked as f32;
-            peer_stats.iframe_upload_ratio = ema(
-                peer_stats.iframe_upload_ratio,
-                iframe_ratio,
-                SMOOTHING_ALPHA,
-            );
-            peer_stats.pframe_upload_ratio = ema(
-                peer_stats.pframe_upload_ratio,
-                pframe_ratio,
-                SMOOTHING_ALPHA,
-            );
+            let stream_ratio = peer_stats.stream_bytes as f32 / total_tracked as f32;
+            let datagram_ratio = peer_stats.datagram_bytes as f32 / total_tracked as f32;
+            peer_stats.stream_ratio = ema(peer_stats.stream_ratio, stream_ratio, SMOOTHING_ALPHA);
+            peer_stats.datagram_ratio =
+                ema(peer_stats.datagram_ratio, datagram_ratio, SMOOTHING_ALPHA);
         }
 
         // Calculate download bandwidth.

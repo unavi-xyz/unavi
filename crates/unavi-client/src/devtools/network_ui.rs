@@ -67,9 +67,9 @@ pub fn update_network_stats_text(
         let download_kb = peer_stats.download_bytes_per_sec / 1024.0;
 
         #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-        let iframe_pct = (peer_stats.iframe_upload_ratio * 100.0) as u32;
+        let stream_pct = (peer_stats.stream_ratio * 100.0) as u32;
         #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
-        let pframe_pct = (peer_stats.pframe_upload_ratio * 100.0) as u32;
+        let datagram_pct = (peer_stats.datagram_ratio * 100.0) as u32;
 
         let drop_pct = if peer_stats.total_frames_received > 0 {
             (peer_stats.dropped_frames as f32 / peer_stats.total_frames_received as f32) * 100.0
@@ -93,7 +93,7 @@ pub fn update_network_stats_text(
 
         let stats_text = format!(
             "Peer: {}\n\
-             ↑ Upload:   {:.1} KB/s (I: {}%, P: {}%)\n\
+             ↑ Upload:   {:.1} KB/s (S: {}%, D: {}%)\n\
              ↓ Download: {:.1} KB/s\n\
              Tickrate:   {:.1} Hz\n\
              Dropped:    {} ({:.1}%)\n\
@@ -101,8 +101,8 @@ pub fn update_network_stats_text(
              Quality:    {}",
             peer_id.fmt_short(),
             upload_kb,
-            iframe_pct,
-            pframe_pct,
+            stream_pct,
+            datagram_pct,
             download_kb,
             peer_stats.effective_tickrate,
             peer_stats.dropped_frames,

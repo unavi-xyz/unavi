@@ -1,22 +1,20 @@
-//! Inbound connection handler - receives poses from a remote agent.
+//! Inbound stream handlers for agent data.
 //!
 //! Stream routing is handled by `SpaceProtocol` in mod.rs.
-//! This module provides the individual stream handlers.
+//! Datagram handling is in `datagram.rs`.
 
-use std::{sync::atomic::Ordering, time::Duration};
+use std::sync::atomic::Ordering;
 
 use anyhow::bail;
-use bevy::log::{info, warn};
-use iroh::{EndpointId, endpoint::Connection};
-use tracing::debug;
+use bevy::log::info;
+use iroh::EndpointId;
 
-use super::reorder::PFrameReorderBuffer;
 use crate::networking::thread::{
     InboundState,
     space::{
         MAX_TICKRATE,
         buffer::CONTROL_MSG_MAX_SIZE,
-        msg::{AgentIFrameMsg, ControlMsg, Datagram},
+        msg::{AgentIFrameMsg, ControlMsg},
     },
 };
 
@@ -47,10 +45,11 @@ pub async fn recv_iframes(
 
         #[cfg(feature = "devtools-network")]
         {
-            use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
+            use crate::devtools::events::{Channel, NETWORK_EVENTS, NetworkEvent};
             let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Download {
                 peer: remote,
                 bytes: buf.len() + 4,
+                channel: Channel::Stream,
             });
             let _ = NETWORK_EVENTS
                 .0
@@ -61,74 +60,6 @@ pub async fn recv_iframes(
     }
 
     Ok(())
-}
-
-/// Receives P-frames from datagrams (unreliable).
-pub async fn recv_pframes(
-    conn: &Connection,
-    state: &InboundState,
-    #[cfg_attr(not(feature = "devtools-network"), expect(unused))] remote: EndpointId,
-) -> anyhow::Result<()> {
-    let mut reorder = PFrameReorderBuffer::default();
-
-    loop {
-        let datagram = conn.read_datagram().await?;
-        let tagged: Datagram = match postcard::from_bytes(&datagram) {
-            Ok(d) => d,
-            Err(err) => {
-                warn!(?err, "invalid datagram");
-                continue;
-            }
-        };
-
-        let msg = match tagged {
-            Datagram::AgentPFrame(msg) => msg,
-            Datagram::ObjectPFrame(_) => {
-                // TODO: Handle object P-frames on inbound.
-                continue;
-            }
-        };
-
-        let current_iframe_id = state.pose.iframe.lock().as_ref().map_or(0, |f| f.id);
-
-        if msg.iframe_id != current_iframe_id {
-            #[cfg(feature = "devtools-network")]
-            {
-                use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
-                let _ = NETWORK_EVENTS
-                    .0
-                    .try_send(NetworkEvent::DroppedFrame { peer: remote });
-            }
-
-            debug!(
-                pframe_id = msg.iframe_id,
-                current_iframe_id, "dropping stale P-frame"
-            );
-            continue;
-        }
-
-        if msg.iframe_id != reorder.iframe_id() {
-            reorder.reset(msg.iframe_id);
-        }
-
-        for ready_frame in reorder.insert(msg) {
-            #[cfg(feature = "devtools-network")]
-            {
-                use crate::devtools::events::{NETWORK_EVENTS, NetworkEvent};
-                let _ = NETWORK_EVENTS.0.try_send(NetworkEvent::Download {
-                    peer: remote,
-                    bytes: datagram.len(),
-                });
-                let _ = NETWORK_EVENTS
-                    .0
-                    .try_send(NetworkEvent::ValidTick { peer: remote });
-            }
-
-            *state.pose.pframe.lock() = Some(ready_frame);
-
-            n0_future::time::sleep(Duration::from_millis(10)).await;
-        }
-    }
 }
 
 /// Responds to tickrate negotiation requests.

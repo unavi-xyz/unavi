@@ -1,4 +1,4 @@
-use avian3d::prelude::RigidBody;
+use avian3d::prelude::{AngularDamping, LinearDamping, RigidBody};
 use bevy::prelude::*;
 
 use crate::stage::Attrs;
@@ -15,8 +15,18 @@ pub fn parse_rigid_body_attrs(attrs: &Attrs, node: Entity, commands: &mut Comman
             }
         };
 
+        if kind == RigidBody::Dynamic {
+            commands
+                .entity(node)
+                .insert((LinearDamping(0.4), AngularDamping(0.4)));
+        }
+
         commands.entity(node).insert(kind);
     } else {
-        commands.entity(node).remove::<RigidBody>();
+        commands
+            .entity(node)
+            .remove::<RigidBody>()
+            .remove::<AngularDamping>()
+            .remove::<LinearDamping>();
     }
 }

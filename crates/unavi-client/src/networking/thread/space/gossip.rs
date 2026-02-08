@@ -52,6 +52,28 @@ pub struct ObjectReleaseBroadcast {
 
 impl Signable for ObjectReleaseBroadcast {}
 
+/// Single claim entry for sync broadcast.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ClaimEntry {
+    pub object_id: ObjectId,
+    pub owner: EndpointId,
+    pub timestamp: OwnershipTimestamp,
+    pub seq: u32,
+}
+
+/// Broadcast current claims for catch-up sync.
+///
+/// Sent on `NeighborUp` to help new peers learn about existing claims.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ClaimSyncBroadcast {
+    /// Sender's endpoint ID.
+    pub sender: EndpointId,
+    /// All current claims known to the sender.
+    pub claims: Vec<ClaimEntry>,
+}
+
+impl Signable for ClaimSyncBroadcast {}
+
 /// Unified gossip message envelope for space protocol.
 ///
 /// All messages are signed with [`SignedBytes`] before broadcast.
@@ -62,6 +84,7 @@ pub enum SpaceGossipMsg {
     Join(JoinBroadcast),
     ObjectClaim(ObjectClaimBroadcast),
     ObjectRelease(ObjectReleaseBroadcast),
+    ClaimSync(ClaimSyncBroadcast),
 }
 
 impl Signable for SpaceGossipMsg {}
@@ -73,6 +96,7 @@ impl SpaceGossipMsg {
             Self::Join(m) => m.endpoint.id,
             Self::ObjectClaim(m) => m.claimer,
             Self::ObjectRelease(m) => m.releaser,
+            Self::ClaimSync(m) => m.sender,
         }
     }
 }

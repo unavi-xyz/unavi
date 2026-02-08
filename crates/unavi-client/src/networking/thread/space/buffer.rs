@@ -77,26 +77,19 @@ const OBJECT_ID_SIZE: usize = ObjectId::POSTCARD_MAX_SIZE;
 const OBJECT_IFRAME_SIZE: usize = PhysicsIFrame::POSTCARD_MAX_SIZE;
 const OBJECT_PFRAME_SIZE: usize = PhysicsPFrame::POSTCARD_MAX_SIZE;
 
-/// Object pose sizes (id + state).
-const OBJECT_IFRAME_POSE_SIZE: usize = OBJECT_ID_SIZE + OBJECT_IFRAME_SIZE;
-const OBJECT_PFRAME_POSE_SIZE: usize = OBJECT_ID_SIZE + OBJECT_PFRAME_SIZE;
-
-/// Maximum number of dynamic objects per message.
-pub const MAX_OBJECTS: usize = 64;
-
-/// Maximum serialized size of an [`ObjectIFrameMsg`].
+/// Maximum serialized size of an [`ObjectIFrameMsg`] (single object per stream).
+/// Object ID is known from `StreamInit::Object`, not included in each message.
 pub const OBJECT_IFRAME_MSG_MAX_SIZE: usize = size_of::<u16>()  // id
     + size_of::<u64>()                                          // timestamp
-    + VEC_LEN_VARINT_MAX                                        // objects vec length
-    + (OBJECT_IFRAME_POSE_SIZE * MAX_OBJECTS)                   // objects
+    + OBJECT_IFRAME_SIZE                                        // state
     ;
 
-/// Maximum serialized size of an [`ObjectPFrameDatagram`].
+/// Maximum serialized size of an [`ObjectPFrameDatagram`] (single object per datagram).
 pub const OBJECT_PFRAME_MSG_MAX_SIZE: usize = size_of::<u16>()  // iframe_id
     + size_of::<u16>()                                          // seq
     + size_of::<u64>()                                          // timestamp
-    + VEC_LEN_VARINT_MAX                                        // objects vec length
-    + (OBJECT_PFRAME_POSE_SIZE * MAX_OBJECTS)                   // objects
+    + OBJECT_ID_SIZE                                            // object_id
+    + OBJECT_PFRAME_SIZE                                        // state
     ;
 
 /// Enum discriminant for [`Datagram`] (postcard varint, < 128 variants).

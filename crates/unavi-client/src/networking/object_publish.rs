@@ -31,11 +31,9 @@ pub struct DynamicObject {
     pub claimed: bool,
 }
 
-/// Detect newly-compiled `StageNode` entities with [`RigidBody::Dynamic`]
-/// and claim ownership over the network.
+/// Detect newly-compiled `StageNode` entities with [`RigidBody::Dynamic`].
 pub fn detect_dynamic_objects(
     mut commands: Commands,
-    nt: Res<NetworkingThread>,
     new_bodies: Query<
         (Entity, &StageNode, &NodeIndex, &RigidBody),
         (Added<RigidBody>, Without<DynamicObject>),
@@ -56,18 +54,8 @@ pub fn detect_dynamic_objects(
 
         commands.entity(entity).insert(DynamicObject {
             object_id,
-            claimed: true,
+            claimed: false,
         });
-
-        // TODO only claim if not already owned
-        //      init ownership doc from network first
-
-        if let Err(err) = nt
-            .command_tx
-            .try_send(NetworkCommand::ClaimObject(object_id))
-        {
-            error!(?err, "failed to send claim");
-        }
     }
 }
 

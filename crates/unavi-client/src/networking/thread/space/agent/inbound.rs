@@ -1,9 +1,9 @@
 //! Inbound connection handler - receives poses from a remote agent.
+//!
+//! Stream routing is handled by `SpaceProtocol` in mod.rs.
+//! This module provides the individual stream handlers.
 
-use std::{
-    sync::{Arc, atomic::Ordering},
-    time::Duration,
-};
+use std::{sync::atomic::Ordering, time::Duration};
 
 use anyhow::bail;
 use bevy::log::{info, warn};
@@ -12,55 +12,16 @@ use tracing::debug;
 
 use super::reorder::PFrameReorderBuffer;
 use crate::networking::thread::{
-    InboundState, NetworkEvent,
+    InboundState,
     space::{
         MAX_TICKRATE,
         buffer::CONTROL_MSG_MAX_SIZE,
-        msg::{ControlMsg, Datagram, AgentIFrameMsg},
+        msg::{AgentIFrameMsg, ControlMsg, Datagram},
     },
 };
 
-pub async fn handle_inbound(
-    event_tx: tokio::sync::mpsc::Sender<NetworkEvent>,
-    inbound_map: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
-    connection: Connection,
-) -> anyhow::Result<()> {
-    let remote = connection.remote_id();
-    info!("inbound connection from {remote}");
-
-    let (ctrl_tx, ctrl_rx) = connection.accept_bi().await?;
-    let iframe_stream = connection.accept_uni().await?;
-
-    // Create and register inbound state.
-    let state = Arc::new(InboundState::default());
-    inbound_map
-        .insert_async(remote, Arc::clone(&state))
-        .await
-        .map_err(|_| anyhow::anyhow!("failed to insert inbound state"))?;
-
-    event_tx
-        .send(NetworkEvent::AgentJoin {
-            id: remote,
-            state: Arc::clone(&state),
-        })
-        .await?;
-
-    // Run receive tasks.
-    let result = tokio::select! {
-        r = recv_iframes(iframe_stream, &state, remote) => r,
-        r = recv_pframes(&connection, &state, remote) => r,
-        r = respond_tickrate(ctrl_tx, ctrl_rx, &state) => r,
-    };
-
-    // Cleanup on disconnect.
-    let _ = inbound_map.remove_async(&remote).await;
-    info!("inbound connection closed: {remote}");
-
-    result
-}
-
 /// Receives I-frames from the reliable stream.
-async fn recv_iframes(
+pub async fn recv_iframes(
     mut stream: iroh::endpoint::RecvStream,
     state: &InboundState,
     #[cfg_attr(not(feature = "devtools-network"), expect(unused))] remote: EndpointId,
@@ -103,7 +64,7 @@ async fn recv_iframes(
 }
 
 /// Receives P-frames from datagrams (unreliable).
-async fn recv_pframes(
+pub async fn recv_pframes(
     conn: &Connection,
     state: &InboundState,
     #[cfg_attr(not(feature = "devtools-network"), expect(unused))] remote: EndpointId,
@@ -171,7 +132,7 @@ async fn recv_pframes(
 }
 
 /// Responds to tickrate negotiation requests.
-async fn respond_tickrate(
+pub async fn respond_tickrate(
     mut tx: iroh::endpoint::SendStream,
     mut rx: iroh::endpoint::RecvStream,
     state: &InboundState,

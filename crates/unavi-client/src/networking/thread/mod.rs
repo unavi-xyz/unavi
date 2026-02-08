@@ -13,13 +13,23 @@ use iroh_gossip::Gossip;
 use n0_future::task::AbortOnDropHandle;
 use parking_lot::Mutex;
 use time::OffsetDateTime;
-use wds::{Blobs, DataStore, actor::Actor, identity::Identity, signed_bytes::IrohSigner};
+
+/// Returns the current time as milliseconds since Unix epoch.
+fn now_millis() -> u64 {
+    (OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000) as u64
+}
+use wds::{
+    Blobs, DataStore,
+    actor::Actor,
+    identity::Identity,
+    signed_bytes::{IrohSigner, Signable},
+};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::networking::thread::space::{
     MAX_TICKRATE, SpaceHandle,
     gossip::{ObjectClaimBroadcast, ObjectReleaseBroadcast, SpaceGossipMsg},
-    msg::{AgentPFrameDatagram, AgentIFrameMsg, ObjectIFrameMsg, ObjectPFrameDatagram, ObjectPose},
+    msg::{AgentIFrameMsg, AgentPFrameDatagram, ObjectIFrameMsg, ObjectPFrameDatagram},
     types::{
         object_id::ObjectId,
         physics_state::{PhysicsIFrame, PhysicsPFrame},
@@ -33,17 +43,14 @@ mod remote_wds;
 pub mod space;
 
 pub enum NetworkCommand {
-    // Space commands.
     Join(Hash),
     Leave(Hash),
     PublishBeacon { id: Hash, ttl: Duration },
 
-    // Agent pose commands.
     PublishAgentIFrame(AgentIFrame),
     PublishAgentPFrame(AgentPFrame),
     SetPeerTickrate { peer: EndpointId, tickrate: u8 },
 
-    // Object commands.
     ClaimObject(ObjectId),
     ReleaseObject(ObjectId),
     PublishObjectIFrame(Vec<(ObjectId, PhysicsIFrame)>),
@@ -105,9 +112,12 @@ impl NetworkingThread {
     }
 }
 
+/// Connection state for outbound streaming (agent and object).
 pub struct OutboundConn {
-    task: AbortOnDropHandle<()>,
+    pub task: AbortOnDropHandle<()>,
     pub tickrate: Arc<AtomicU8>,
+    /// The underlying connection for opening object streams.
+    pub connection: iroh::endpoint::Connection,
 }
 
 #[derive(Debug)]
@@ -131,10 +141,13 @@ pub struct PoseState {
     pub pframe: Mutex<Option<AgentPFrameDatagram>>,
 }
 
+/// Per-object pose state for outbound streaming.
 #[derive(Debug, Default)]
 pub struct ObjectPoseState {
-    pub iframe: Mutex<Option<ObjectIFrameMsg>>,
-    pub pframe: Mutex<Option<ObjectPFrameDatagram>>,
+    /// Map of object ID to its current I-frame.
+    pub iframes: scc::HashMap<ObjectId, ObjectIFrameMsg>,
+    /// Map of object ID to its current P-frame.
+    pub pframes: scc::HashMap<ObjectId, ObjectPFrameDatagram>,
 }
 
 #[derive(Clone)]
@@ -145,6 +158,7 @@ pub struct NetworkThreadState {
     pub remote_actor: Option<Actor>,
     pub event_tx: tokio::sync::mpsc::Sender<NetworkEvent>,
 
+    /// Outbound connections (one per peer, used for both agent and object streams).
     pub outbound: Arc<scc::HashMap<EndpointId, OutboundConn>>,
     pub _inbound: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
 
@@ -225,6 +239,7 @@ async fn thread_loop(
             .await?;
     }
 
+    // Initialize IDs at random values to avoid leaking playtime.
     let state = NetworkThreadState {
         endpoint,
         gossip,
@@ -234,7 +249,6 @@ async fn thread_loop(
         outbound: Arc::default(),
         _inbound: inbound,
         spaces: Arc::default(),
-        // Initialize IDs at random values to avoid leaking playtime.
         iframe_id: Arc::new(AtomicU16::new(rand::random())),
         pose: Arc::default(),
         object_iframe_id: Arc::new(AtomicU16::new(rand::random())),
@@ -290,11 +304,10 @@ async fn thread_loop(
                     })
                     .await;
             }
-
             NetworkCommand::ClaimObject(object_id) => {
                 let record_hash = object_id.record_hash();
                 let endpoint_id = state.endpoint.id();
-                let now = OffsetDateTime::now_utc().unix_timestamp().cast_unsigned() * 1000;
+                let now = now_millis();
 
                 if let Some(entry) = state.spaces.get_async(&record_hash).await {
                     let handle = entry.get();
@@ -321,7 +334,7 @@ async fn thread_loop(
             NetworkCommand::ReleaseObject(object_id) => {
                 let record_hash = object_id.record_hash();
                 let endpoint_id = state.endpoint.id();
-                let now = OffsetDateTime::now_utc().unix_timestamp().cast_unsigned() * 1000;
+                let now = now_millis();
 
                 if let Some(entry) = state.spaces.get_async(&record_hash).await {
                     let handle = entry.get();
@@ -345,30 +358,29 @@ async fn thread_loop(
             }
             NetworkCommand::PublishObjectIFrame(objects) => {
                 let id = state.object_iframe_id.fetch_add(1, Ordering::Relaxed) + 1;
-                let now = OffsetDateTime::now_utc().unix_timestamp().cast_unsigned() * 1000;
-                let msg = ObjectIFrameMsg {
-                    id,
-                    timestamp: now,
-                    objects: objects
-                        .into_iter()
-                        .map(|(id, state)| ObjectPose { id, state })
-                        .collect(),
-                };
-                *state.object_pose.iframe.lock() = Some(msg);
+                let now = now_millis();
+                for (object_id, physics_state) in objects {
+                    let msg = ObjectIFrameMsg {
+                        id,
+                        timestamp: now,
+                        state: physics_state,
+                    };
+                    let _ = state.object_pose.iframes.upsert_sync(object_id, msg);
+                }
             }
             NetworkCommand::PublishObjectPFrame(objects) => {
                 let iframe_id = state.object_iframe_id.load(Ordering::Relaxed);
-                let now = OffsetDateTime::now_utc().unix_timestamp().cast_unsigned() * 1000;
-                let msg = ObjectPFrameDatagram {
-                    iframe_id,
-                    seq: 0,
-                    timestamp: now,
-                    objects: objects
-                        .into_iter()
-                        .map(|(id, state)| ObjectPose { id, state })
-                        .collect(),
-                };
-                *state.object_pose.pframe.lock() = Some(msg);
+                let now = now_millis();
+                for (object_id, physics_state) in objects {
+                    let msg = ObjectPFrameDatagram {
+                        iframe_id,
+                        seq: 0,
+                        timestamp: now,
+                        object_id,
+                        state: physics_state,
+                    };
+                    let _ = state.object_pose.pframes.upsert_sync(object_id, msg);
+                }
             }
 
             NetworkCommand::Shutdown => {
@@ -392,8 +404,6 @@ async fn broadcast_gossip(
     msg: &SpaceGossipMsg,
     gossip_tx: &iroh_gossip::api::GossipSender,
 ) -> anyhow::Result<()> {
-    use wds::signed_bytes::Signable;
-
     let signed = msg.sign(&IrohSigner(state.endpoint.secret_key()))?;
     let bytes = postcard::to_stdvec(&signed)?;
     gossip_tx.broadcast(bytes.into()).await?;

@@ -105,6 +105,17 @@ impl ObjectOwnership {
             .write()
             .retain(|_, record| record.owner != endpoint);
     }
+
+    /// Get all current claims.
+    ///
+    /// Used for catch-up sync when a new neighbor joins.
+    pub fn all_claims(&self) -> Vec<(ObjectId, OwnershipRecord)> {
+        self.inner
+            .read()
+            .iter()
+            .map(|(&id, record)| (id, record.clone()))
+            .collect()
+    }
 }
 
 #[cfg(test)]

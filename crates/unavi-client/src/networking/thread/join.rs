@@ -22,7 +22,7 @@ use crate::{
         NetworkEvent, NetworkThreadState,
         space::{
             SpaceHandle,
-            gossip::{JoinBroadcast, SpaceGossipMsg},
+            gossip::{ClaimEntry, ClaimSyncBroadcast, JoinBroadcast, SpaceGossipMsg},
             ownership::ObjectOwnership,
         },
     },
@@ -148,6 +148,10 @@ async fn handle_gossip_inbound(
                 let signed = join.sign(&IrohSigner(state.endpoint.secret_key()))?;
                 let bytes = postcard::to_stdvec(&signed)?;
                 tx.broadcast(bytes.into()).await?;
+
+                // Broadcast current claims for catch-up.
+                // TODO: Move to per-connection init not gossip broadcasts
+                broadcast_claim_sync(state, tx).await;
             }
             Event::NeighborDown(n) => {
                 info!("-neighbor: {n}");
@@ -194,6 +198,9 @@ async fn handle_gossip_inbound(
                     SpaceGossipMsg::ObjectRelease(release) => {
                         handle_object_release(state, &release).await;
                     }
+                    SpaceGossipMsg::ClaimSync(sync) => {
+                        handle_claim_sync(state, &sync).await;
+                    }
                 }
             }
         }
@@ -211,11 +218,13 @@ async fn handle_join_broadcast(state: &NetworkThreadState, join: JoinBroadcast) 
 
     info!(endpoint = %join.endpoint.id, "peer joined");
 
-    let state = state.clone();
+    // Spawn outbound connection handler (handles both agent and object streams).
+    let state_clone = state.clone();
     let remote = join.endpoint;
     n0_future::task::spawn(async move {
-        if let Err(err) = super::space::agent::outbound::handle_outbound(state, remote).await {
-            error!(?err, "error handling space outbound");
+        if let Err(err) = super::space::agent::outbound::handle_outbound(state_clone, remote).await
+        {
+            error!(?err, "error handling outbound connection");
         }
     });
 }
@@ -266,5 +275,68 @@ async fn handle_object_release(
                 object_id: release.object_id,
                 owner: None,
             });
+    }
+}
+
+/// Broadcast current claims for catch-up sync to new neighbors.
+async fn broadcast_claim_sync(state: &NetworkThreadState, tx: &iroh_gossip::api::GossipSender) {
+    // Collect claims from all spaces using sync iteration.
+    let mut claims = Vec::new();
+
+    state.spaces.iter_sync(|_, handle| {
+        for (object_id, record) in handle.ownership.all_claims() {
+            claims.push(ClaimEntry {
+                object_id,
+                owner: record.owner,
+                timestamp: record.timestamp,
+                seq: record.seq,
+            });
+        }
+        true
+    });
+
+    if claims.is_empty() {
+        return;
+    }
+
+    let sync = SpaceGossipMsg::ClaimSync(ClaimSyncBroadcast {
+        sender: state.endpoint.id(),
+        claims,
+    });
+
+    if let Ok(signed) = sync.sign(&IrohSigner(state.endpoint.secret_key()))
+        && let Ok(bytes) = postcard::to_stdvec(&signed)
+    {
+        if let Err(err) = tx.broadcast(bytes.into()).await {
+            warn!(?err, "failed to broadcast claim sync");
+        } else {
+            debug!("broadcast claim sync");
+        }
+    }
+}
+
+/// Handle incoming claim sync broadcast.
+async fn handle_claim_sync(state: &NetworkThreadState, sync: &ClaimSyncBroadcast) {
+    debug!(sender = %sync.sender, count = sync.claims.len(), "received claim sync");
+
+    for claim in &sync.claims {
+        let record_hash = claim.object_id.record_hash();
+
+        let Some(entry) = state.spaces.get_async(&record_hash).await else {
+            continue;
+        };
+
+        let handle = entry.get();
+        if handle
+            .ownership
+            .try_claim(claim.object_id, claim.owner, claim.timestamp, claim.seq)
+        {
+            let _ = state
+                .event_tx
+                .try_send(NetworkEvent::ObjectOwnershipChanged {
+                    object_id: claim.object_id,
+                    owner: Some(claim.owner),
+                });
+        }
     }
 }

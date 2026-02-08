@@ -19,7 +19,7 @@ use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 use crate::networking::thread::space::{
     MAX_TICKRATE, SpaceHandle,
     gossip::{ObjectClaimBroadcast, ObjectReleaseBroadcast, SpaceGossipMsg},
-    msg::{IFrameMsg, ObjectIFrameMsg, ObjectPFrameDatagram, ObjectPose, PFrameDatagram},
+    msg::{AgentPFrameDatagram, AgentIFrameMsg, ObjectIFrameMsg, ObjectPFrameDatagram, ObjectPose},
     types::{
         object_id::ObjectId,
         physics_state::{PhysicsIFrame, PhysicsPFrame},
@@ -39,8 +39,8 @@ pub enum NetworkCommand {
     PublishBeacon { id: Hash, ttl: Duration },
 
     // Agent pose commands.
-    PublishIFrame(AgentIFrame),
-    PublishPFrame(AgentPFrame),
+    PublishAgentIFrame(AgentIFrame),
+    PublishAgentPFrame(AgentPFrame),
     SetPeerTickrate { peer: EndpointId, tickrate: u8 },
 
     // Object commands.
@@ -127,8 +127,8 @@ impl Default for InboundState {
 
 #[derive(Debug, Default)]
 pub struct PoseState {
-    pub iframe: Mutex<Option<IFrameMsg>>,
-    pub pframe: Mutex<Option<PFrameDatagram>>,
+    pub iframe: Mutex<Option<AgentIFrameMsg>>,
+    pub pframe: Mutex<Option<AgentPFrameDatagram>>,
 }
 
 #[derive(Debug, Default)]
@@ -268,14 +268,14 @@ async fn thread_loop(
                     }
                 });
             }
-            NetworkCommand::PublishIFrame(pose) => {
+            NetworkCommand::PublishAgentIFrame(pose) => {
                 let id = state.iframe_id.fetch_add(1, Ordering::Relaxed) + 1;
-                let msg = IFrameMsg { id, pose };
+                let msg = AgentIFrameMsg { id, pose };
                 *state.pose.iframe.lock() = Some(msg);
             }
-            NetworkCommand::PublishPFrame(pose) => {
+            NetworkCommand::PublishAgentPFrame(pose) => {
                 let iframe_id = state.iframe_id.load(Ordering::Relaxed);
-                let msg = PFrameDatagram {
+                let msg = AgentPFrameDatagram {
                     iframe_id,
                     seq: 0,
                     pose,

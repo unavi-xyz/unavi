@@ -33,7 +33,7 @@ pub struct DynamicObject {
 
 /// Detect newly-compiled `StageNode` entities with [`RigidBody::Dynamic`]
 /// and claim ownership over the network.
-pub(super) fn detect_dynamic_objects(
+pub fn detect_dynamic_objects(
     mut commands: Commands,
     nt: Res<NetworkingThread>,
     new_bodies: Query<
@@ -59,6 +59,9 @@ pub(super) fn detect_dynamic_objects(
             claimed: true,
         });
 
+        // TODO only claim if not already owned
+        //      init ownership doc from network first
+
         if let Err(err) = nt
             .command_tx
             .try_send(NetworkCommand::ClaimObject(object_id))
@@ -70,7 +73,7 @@ pub(super) fn detect_dynamic_objects(
 
 /// Release ownership when a dynamic object loses its rigid body or
 /// changes from dynamic.
-pub(super) fn detect_removed_objects(
+pub fn detect_removed_objects(
     mut commands: Commands,
     nt: Res<NetworkingThread>,
     objects: Query<(Entity, &DynamicObject, Option<&RigidBody>)>,
@@ -94,10 +97,10 @@ pub(super) fn detect_removed_objects(
 
 /// Per-object baseline state for P-frame delta encoding.
 #[derive(Default)]
-pub(super) struct ObjectBaselines(HashMap<ObjectId, PhysicsBaseline>);
+pub struct ObjectBaselines(HashMap<ObjectId, PhysicsBaseline>);
 
 /// Publish physics state for owned dynamic objects.
-pub(super) fn publish_object_physics(
+pub fn publish_object_physics(
     nt: Res<NetworkingThread>,
     objects: Query<(
         &DynamicObject,

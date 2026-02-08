@@ -19,7 +19,7 @@ use crate::networking::thread::{
     space::{
         ALPN, MAX_TICKRATE,
         buffer::{CONTROL_MSG_MAX_SIZE, DATAGRAM_MAX_SIZE, ObjectSendBuffer, SendBuffer},
-        msg::{ControlMsg, Datagram, IFrameMsg, ObjectIFrameMsg, PFrameDatagram},
+        msg::{AgentPFrameDatagram, ControlMsg, Datagram, AgentIFrameMsg, ObjectIFrameMsg},
     },
 };
 
@@ -150,7 +150,7 @@ async fn send_agent_tick(
         let pframe_lock = pose.pframe.lock();
         if let Some(pframe_msg) = pframe_lock.as_ref() {
             *pframe_seq = pframe_seq.wrapping_add(1);
-            let msg = PFrameDatagram {
+            let msg = AgentPFrameDatagram {
                 iframe_id: *last_iframe,
                 seq: *pframe_seq,
                 pose: pframe_msg.pose.clone(),
@@ -219,7 +219,7 @@ async fn send_object_tick(
 }
 
 async fn send_iframe(
-    msg: &IFrameMsg,
+    msg: &AgentIFrameMsg,
     stream: &mut SendStream,
     #[cfg_attr(not(feature = "devtools-network"), expect(unused))] peer: EndpointId,
     buf: &mut [u8],

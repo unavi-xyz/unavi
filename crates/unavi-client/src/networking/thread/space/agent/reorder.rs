@@ -1,6 +1,6 @@
 //! P-frame reorder buffer for handling out-of-order UDP delivery.
 
-use crate::networking::thread::space::msg::PFrameDatagram;
+use crate::networking::thread::space::msg::AgentPFrameDatagram;
 
 /// Number of slots in the reorder buffer.
 const REORDER_BUFFER_SIZE: usize = 3;
@@ -15,7 +15,7 @@ pub struct PFrameReorderBuffer {
     /// Last successfully applied sequence number.
     last_applied: u16,
     /// Pending frames waiting for earlier frames.
-    pending: [Option<PFrameDatagram>; REORDER_BUFFER_SIZE],
+    pending: [Option<AgentPFrameDatagram>; REORDER_BUFFER_SIZE],
 }
 
 impl PFrameReorderBuffer {
@@ -32,7 +32,7 @@ impl PFrameReorderBuffer {
     }
 
     /// Process an incoming P-frame. Returns frames ready to apply in order.
-    pub fn insert(&mut self, frame: PFrameDatagram) -> ReadyFrames {
+    pub fn insert(&mut self, frame: AgentPFrameDatagram) -> ReadyFrames {
         let mut ready = ReadyFrames::default();
 
         // Wrong I-frame window: discard.
@@ -103,12 +103,12 @@ impl PFrameReorderBuffer {
 /// Collection of frames ready to be applied, in order.
 #[derive(Default)]
 pub struct ReadyFrames {
-    frames: [Option<PFrameDatagram>; REORDER_BUFFER_SIZE + 1],
+    frames: [Option<AgentPFrameDatagram>; REORDER_BUFFER_SIZE + 1],
     len: usize,
 }
 
 impl ReadyFrames {
-    fn push(&mut self, frame: PFrameDatagram) {
+    fn push(&mut self, frame: AgentPFrameDatagram) {
         if self.len < self.frames.len() {
             self.frames[self.len] = Some(frame);
             self.len += 1;
@@ -117,7 +117,7 @@ impl ReadyFrames {
 }
 
 impl Iterator for ReadyFrames {
-    type Item = PFrameDatagram;
+    type Item = AgentPFrameDatagram;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.len == 0 {
@@ -145,8 +145,8 @@ mod tests {
         quat::PackedQuat,
     };
 
-    fn make_frame(iframe_id: u16, seq: u16) -> PFrameDatagram {
-        PFrameDatagram {
+    fn make_frame(iframe_id: u16, seq: u16) -> AgentPFrameDatagram {
+        AgentPFrameDatagram {
             iframe_id,
             seq,
             pose: AgentPFrame {

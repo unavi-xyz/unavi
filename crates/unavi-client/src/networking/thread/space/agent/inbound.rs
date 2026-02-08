@@ -16,7 +16,7 @@ use crate::networking::thread::{
     space::{
         MAX_TICKRATE,
         buffer::CONTROL_MSG_MAX_SIZE,
-        msg::{ControlMsg, Datagram, IFrameMsg},
+        msg::{ControlMsg, Datagram, AgentIFrameMsg},
     },
 };
 
@@ -82,7 +82,7 @@ async fn recv_iframes(
         let mut buf = vec![0u8; len];
         stream.read_exact(&mut buf).await?;
 
-        let msg: IFrameMsg = postcard::from_bytes(&buf)?;
+        let msg: AgentIFrameMsg = postcard::from_bytes(&buf)?;
 
         #[cfg(feature = "devtools-network")]
         {

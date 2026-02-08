@@ -10,7 +10,7 @@ use super::types::{
 
 /// I-frame message sent over reliable stream.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct IFrameMsg {
+pub struct AgentIFrameMsg {
     /// Monotonic counter (wraps at `u16::MAX`).
     pub id: u16,
     pub pose: AgentIFrame,
@@ -18,7 +18,7 @@ pub struct IFrameMsg {
 
 /// P-frame datagram sent unreliably.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PFrameDatagram {
+pub struct AgentPFrameDatagram {
     /// Must match the latest I-frame ID to be accepted.
     pub iframe_id: u16,
     /// Monotonic sequence number within the current I-frame window.
@@ -76,6 +76,6 @@ pub struct ObjectPFrameDatagram {
 /// Tagged datagram for multiplexing agent and object P-frames.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Datagram {
-    AgentPFrame(PFrameDatagram),
+    AgentPFrame(AgentPFrameDatagram),
     ObjectPFrame(ObjectPFrameDatagram),
 }

@@ -94,7 +94,10 @@ pub(super) fn publish_agent_transforms(
             bones,
         };
 
-        if let Err(err) = nt.command_tx.try_send(NetworkCommand::PublishIFrame(frame)) {
+        if let Err(err) = nt
+            .command_tx
+            .try_send(NetworkCommand::PublishAgentIFrame(frame))
+        {
             error!(?err, "send error");
         }
     } else {
@@ -142,7 +145,10 @@ pub(super) fn publish_agent_transforms(
             bones,
         };
 
-        if let Err(err) = nt.command_tx.try_send(NetworkCommand::PublishPFrame(frame)) {
+        if let Err(err) = nt
+            .command_tx
+            .try_send(NetworkCommand::PublishAgentPFrame(frame))
+        {
             error!(?err, "send error");
         }
     }

@@ -1,4 +1,4 @@
-//! Dynamic object networking - real-time physics state streaming.
+//! Dynamic object networking - real-time physics state streaming.object
 //!
 //! Objects are owned by a single agent at a time. The owner streams
 //! physics updates to all peers, who locally simulate and correct

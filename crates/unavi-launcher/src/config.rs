@@ -23,12 +23,15 @@ impl UpdateChannel {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
     pub update_channel: UpdateChannel,
+    #[serde(default)]
+    pub xr_mode: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             update_channel: UpdateChannel::Beta,
+            xr_mode: false,
         }
     }
 }

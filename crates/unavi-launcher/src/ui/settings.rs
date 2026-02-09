@@ -10,6 +10,7 @@ pub fn Settings() -> Element {
     let nav = navigator();
     let mut current_beta = use_signal(|| crate::CONFIG.get().update_channel.is_beta());
     let initial_beta = use_hook(|| current_beta);
+    let mut xr_mode = use_signal(|| crate::CONFIG.get().xr_mode);
 
     let toggle_beta = move |_| {
         if let Err(e) = CONFIG.update(|c| {
@@ -22,6 +23,16 @@ pub fn Settings() -> Element {
             error!("Failed to save config: {e}");
         } else {
             current_beta.set(!current_beta());
+        }
+    };
+
+    let toggle_xr = move |_| {
+        if let Err(e) = CONFIG.update(|c| {
+            c.xr_mode = !c.xr_mode;
+        }) {
+            error!("Failed to save config: {e}");
+        } else {
+            xr_mode.set(!xr_mode());
         }
     };
 
@@ -42,6 +53,14 @@ pub fn Settings() -> Element {
                     onchange: toggle_beta,
                 }
                 " Beta releases"
+            }
+            label {
+                input {
+                    r#type: "checkbox",
+                    checked: xr_mode,
+                    onchange: toggle_xr,
+                }
+                " XR mode"
             }
         }
 

@@ -17,6 +17,8 @@ mod icon;
 mod networking;
 mod scene;
 mod space;
+#[cfg(not(target_family = "wasm"))]
+mod xr;
 
 bitflags! {
     #[derive(Clone, Copy, Debug, Default)]
@@ -31,9 +33,11 @@ pub struct UnaviPlugin {
     pub debug: DebugFlags,
     pub in_memory: bool,
     pub log_level: Level,
+    pub xr: bool,
 }
 
 impl Plugin for UnaviPlugin {
+    #[expect(clippy::too_many_lines)]
     fn build(&self, app: &mut App) {
         #[cfg(not(target_family = "wasm"))]
         {
@@ -61,25 +65,38 @@ impl Plugin for UnaviPlugin {
             });
 
         #[cfg(not(target_family = "wasm"))]
-        let default_plugins = default_plugins
-            .set(AssetPlugin {
-                file_path: assets::assets_dir().to_string_lossy().to_string(),
-                ..default()
-            })
-            .disable::<WebAssetPlugin>();
+        {
+            let default_plugins = default_plugins
+                .set(AssetPlugin {
+                    file_path: assets::assets_dir().to_string_lossy().to_string(),
+                    ..default()
+                })
+                .disable::<WebAssetPlugin>();
+
+            if self.xr {
+                app.add_plugins((
+                    bevy_mod_openxr::add_xr_plugins(default_plugins),
+                    xr::UnaviXrPlugin,
+                ));
+            } else {
+                app.add_plugins(default_plugins);
+            }
+        }
 
         #[cfg(target_family = "wasm")]
-        let default_plugins = default_plugins
-            .set(AssetPlugin {
-                meta_check: bevy::asset::AssetMetaCheck::Never,
-                ..default()
-            })
-            .set(WebAssetPlugin {
-                silence_startup_warning: true,
-            });
+        {
+            let default_plugins = default_plugins
+                .set(AssetPlugin {
+                    meta_check: bevy::asset::AssetMetaCheck::Never,
+                    ..default()
+                })
+                .set(WebAssetPlugin {
+                    silence_startup_warning: true,
+                });
+            app.add_plugins(default_plugins);
+        }
 
         app.add_plugins((
-            default_plugins,
             avian3d::PhysicsPlugins::default(),
             avian3d::picking::PhysicsPickingPlugin,
             fade::FadePlugin,
@@ -88,8 +105,6 @@ impl Plugin for UnaviPlugin {
             unavi_input::InputPlugin,
             unavi_locomotion::LocomotionPlugin,
             unavi_portal::PortalPlugin,
-            #[cfg(not(target_family = "wasm"))]
-            unavi_script::ScriptPlugin,
             networking::NetworkingPlugin {
                 wds_in_memory: self.in_memory,
             },
@@ -99,6 +114,11 @@ impl Plugin for UnaviPlugin {
             brightness: lux::OVERCAST_DAY,
             ..default()
         });
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            app.add_plugins(unavi_script::ScriptPlugin);
+        }
 
         #[cfg(feature = "devtools-bevy")]
         {

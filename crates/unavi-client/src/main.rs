@@ -11,11 +11,6 @@ use unavi_client::DebugFlags;
 #[command(version)]
 #[allow(clippy::struct_excessive_bools)]
 struct Args {
-    /// Runs certain functions, like the local WDS, in-memory.
-    /// Useful for running multiple clients on the same machine.
-    #[arg(long, default_value_t = false)]
-    in_memory: bool,
-
     /// Enable debug logging.
     #[arg(long, default_value_t = false)]
     debug_log: bool,
@@ -34,6 +29,15 @@ struct Args {
     #[cfg(feature = "devtools-bevy")]
     #[arg(long, default_value_t = false)]
     debug_physics: bool,
+
+    /// Runs certain functions, like the local WDS, in-memory.
+    /// Useful for running multiple clients on the same machine.
+    #[arg(long, default_value_t = false)]
+    in_memory: bool,
+
+    /// Runs in XR mode.
+    #[arg(long, default_value_t = false)]
+    xr: bool,
 }
 
 fn main() {
@@ -108,6 +112,7 @@ fn main() {
             debug,
             in_memory: args.in_memory,
             log_level,
+            xr: args.xr,
         })
         .run();
 

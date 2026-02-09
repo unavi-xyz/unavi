@@ -1,9 +1,10 @@
 //! Outbound object stream handler - sends physics state to remote peers.
 //!
-//! For each claimed object, opens a dedicated bistream on the existing connection:
-//! 1. Send `StreamInit::Object { object_id }` to identify the stream
-//! 2. Send I-frames reliably on the stream (without `object_id`, it's known from init)
-//! 3. Send P-frames as datagrams (tagged with object ID for routing)
+//! For each claimed object, opens two streams:
+//! 1. Control bistream for tickrate negotiation + grab state
+//! 2. I-frame unistream for physics data
+//!
+//! P-frames are sent as datagrams (tagged with object ID for routing).
 
 use std::{
     collections::{HashMap, HashSet},
@@ -24,7 +25,10 @@ use crate::networking::thread::{
     space::{
         MAX_OBJECT_TICKRATE,
         buffer::{CONTROL_MSG_MAX_SIZE, DATAGRAM_MAX_SIZE, OBJECT_IFRAME_MSG_MAX_SIZE},
-        msg::{Datagram, ObjectControlMsg, ObjectIFrameMsg, ObjectPFrameDatagram, StreamInit},
+        msg::{
+            Datagram, ObjectControlMsg, ObjectIFrameMsg, ObjectPFrameDatagram, StreamInit,
+            read_control, write_control,
+        },
         types::object_id::ObjectId,
     },
 };
@@ -37,32 +41,48 @@ pub struct LocalGrabbedObjects(pub HashSet<ObjectId>);
 
 /// Per-object stream context.
 struct ObjectStreamContext {
-    send: iroh::endpoint::SendStream,
+    ctrl_tx: iroh::endpoint::SendStream,
+    ctrl_rx: iroh::endpoint::RecvStream,
+    iframe_tx: iroh::endpoint::SendStream,
+    /// The negotiated tickrate from remote peer.
+    tickrate: u8,
+    /// The last tickrate we requested.
+    last_requested_tickrate: u8,
     last_iframe_id: u16,
     last_grabbed: bool,
 }
 
-/// Open a new object stream for a claimed object on an existing connection.
-pub async fn open_object_stream(
+/// Open control and iframe streams for a claimed object.
+async fn open_object_streams(
     connection: &Connection,
     object_id: ObjectId,
     peer: EndpointId,
-) -> anyhow::Result<(iroh::endpoint::SendStream, iroh::endpoint::RecvStream)> {
-    debug!(?object_id, ?peer, "opening object stream");
+) -> anyhow::Result<ObjectStreamContext> {
+    debug!(?object_id, ?peer, "opening object streams");
 
-    let (mut send, recv) = connection.open_bi().await?;
+    // Open control bistream.
+    let (mut ctrl_tx, ctrl_rx) = connection.open_bi().await?;
+    write_stream_init(&mut ctrl_tx, &StreamInit::ObjectControl { object_id }).await?;
 
-    // Send stream init with object ID.
-    write_stream_init(&mut send, &StreamInit::Object { object_id }).await?;
+    // Open iframe unistream.
+    let mut iframe_tx = connection.open_uni().await?;
+    write_stream_init(&mut iframe_tx, &StreamInit::ObjectIFrame { object_id }).await?;
 
-    debug!(?object_id, ?peer, "object stream opened");
+    debug!(?object_id, ?peer, "object streams opened");
 
-    Ok((send, recv))
+    Ok(ObjectStreamContext {
+        ctrl_tx,
+        ctrl_rx,
+        iframe_tx,
+        tickrate: MAX_OBJECT_TICKRATE,
+        last_requested_tickrate: MAX_OBJECT_TICKRATE,
+        last_iframe_id: 0,
+        last_grabbed: false,
+    })
 }
 
 /// Send an object I-frame on its dedicated stream.
-/// Object ID is not included - it's known from the `StreamInit` sent at stream creation.
-pub async fn send_object_iframe(
+async fn send_object_iframe(
     stream: &mut iroh::endpoint::SendStream,
     msg: &ObjectIFrameMsg,
     #[cfg_attr(not(feature = "devtools-network"), expect(unused))] peer: EndpointId,
@@ -90,7 +110,6 @@ pub async fn send_object_iframe(
 }
 
 /// Send an object P-frame as a datagram.
-/// Object ID is included in the datagram for routing (datagrams are shared).
 pub fn send_object_pframe(
     connection: &Connection,
     msg: &ObjectPFrameDatagram,
@@ -120,22 +139,56 @@ pub fn send_object_pframe(
     Ok(())
 }
 
-/// Write a control message on an object stream.
-async fn write_control(
-    stream: &mut iroh::endpoint::SendStream,
+/// Try to read a control message from the recv stream (non-blocking).
+async fn try_read_control(
+    rx: &mut iroh::endpoint::RecvStream,
+    buf: &mut [u8],
+) -> Option<ObjectControlMsg> {
+    match tokio::time::timeout(Duration::from_millis(1), read_control::<ObjectControlMsg>(rx, buf))
+        .await
+    {
+        Ok(Ok(msg)) => Some(msg),
+        _ => None,
+    }
+}
+
+/// Handle incoming control messages and respond appropriately.
+async fn handle_incoming_control(ctx: &mut ObjectStreamContext, object_id: ObjectId) {
+    let mut buf = [0u8; CONTROL_MSG_MAX_SIZE];
+    while let Some(msg) = try_read_control(&mut ctx.ctrl_rx, &mut buf).await {
+        match msg {
+            ObjectControlMsg::TickrateRequest { hz } => {
+                let effective = hz.min(MAX_OBJECT_TICKRATE);
+                ctx.tickrate = effective;
+                debug!(hz = effective, ?object_id, "object tickrate negotiated");
+
+                let ack = ObjectControlMsg::TickrateAck { hz: effective };
+                if let Err(err) = write_control(&mut ctx.ctrl_tx, &ack, &mut buf).await {
+                    warn!(?err, ?object_id, "failed to send tickrate ack");
+                }
+            }
+            ObjectControlMsg::TickrateAck { hz } => {
+                ctx.tickrate = hz;
+            }
+            ObjectControlMsg::GrabStateChanged { .. } => {
+                // Outbound doesn't need to handle this.
+            }
+        }
+    }
+}
+
+/// Send a control message on the object control stream.
+async fn send_control(
+    ctx: &mut ObjectStreamContext,
     msg: &ObjectControlMsg,
 ) -> anyhow::Result<()> {
     let mut buf = [0u8; CONTROL_MSG_MAX_SIZE];
-    let bytes = postcard::to_slice(msg, &mut buf)?;
-    let len = u32::try_from(bytes.len())?;
-    stream.write_all(&len.to_le_bytes()).await?;
-    stream.write_all(bytes).await?;
-    Ok(())
+    write_control(&mut ctx.ctrl_tx, msg, &mut buf).await
 }
 
 /// Stream objects to a peer.
 ///
-/// Opens a dedicated stream for each claimed object and sends I-frames.
+/// Opens dedicated control and iframe streams for each claimed object.
 /// P-frames are sent as datagrams when I-frame hasn't changed.
 /// Sends grab state changes when objects are grabbed/released locally.
 pub async fn stream_objects(
@@ -144,15 +197,30 @@ pub async fn stream_objects(
     conn: &Connection,
     peer: EndpointId,
 ) -> anyhow::Result<()> {
-    // Track open streams and state per object.
     let mut streams: HashMap<ObjectId, ObjectStreamContext> = HashMap::new();
 
     loop {
         let duration = Duration::from_secs_f32(1.0 / f32::from(MAX_OBJECT_TICKRATE));
         n0_future::time::sleep(duration).await;
 
-        // Get current grabbed objects.
         let grabbed_objects = grabbed_rx.borrow_and_update().clone();
+
+        // Handle incoming control messages and send tickrate updates.
+        for (object_id, ctx) in streams.iter_mut() {
+            handle_incoming_control(ctx, *object_id).await;
+
+            // Check if tickrate needs updating.
+            if let Some(desired) = object_pose.tickrates.read_sync(object_id, |_, hz| *hz) {
+                if ctx.last_requested_tickrate != desired {
+                    let msg = ObjectControlMsg::TickrateRequest { hz: desired };
+                    if let Err(err) = send_control(ctx, &msg).await {
+                        warn!(?err, ?object_id, "failed to send tickrate request");
+                    } else {
+                        ctx.last_requested_tickrate = desired;
+                    }
+                }
+            }
+        }
 
         // Collect I-frames and P-frames to send.
         let mut iframes_to_send = Vec::new();
@@ -176,7 +244,7 @@ pub async fn stream_objects(
                 let msg = ObjectControlMsg::GrabStateChanged {
                     grabbed: is_grabbed,
                 };
-                if let Err(err) = write_control(&mut ctx.send, &msg).await {
+                if let Err(err) = send_control(ctx, &msg).await {
                     warn!(?err, ?object_id, "failed to send grab state");
                     streams.remove(&object_id);
                     continue;
@@ -197,25 +265,18 @@ pub async fn stream_objects(
                 continue;
             }
 
-            // Open stream if needed.
+            // Open streams if needed.
             let ctx = if let Some(ctx) = streams.get_mut(&object_id) {
                 ctx
             } else {
-                let (send, _recv) = open_object_stream(conn, object_id, peer).await?;
-                streams.insert(
-                    object_id,
-                    ObjectStreamContext {
-                        send,
-                        last_iframe_id: 0,
-                        last_grabbed: false,
-                    },
-                );
+                let new_ctx = open_object_streams(conn, object_id, peer).await?;
+                streams.insert(object_id, new_ctx);
                 let ctx = streams.get_mut(&object_id).expect("just inserted");
 
                 // Send initial grab state if grabbed.
                 if is_grabbed {
                     let msg = ObjectControlMsg::GrabStateChanged { grabbed: true };
-                    if let Err(err) = write_control(&mut ctx.send, &msg).await {
+                    if let Err(err) = send_control(ctx, &msg).await {
                         warn!(?err, ?object_id, "failed to send initial grab state");
                         streams.remove(&object_id);
                         continue;
@@ -227,9 +288,8 @@ pub async fn stream_objects(
             };
 
             // Send I-frame.
-            if let Err(err) = send_object_iframe(&mut ctx.send, &iframe, peer).await {
+            if let Err(err) = send_object_iframe(&mut ctx.iframe_tx, &iframe, peer).await {
                 warn!(?err, ?object_id, "failed to send object I-frame");
-                // Remove stream on error (will be reopened on next tick).
                 streams.remove(&object_id);
                 continue;
             }

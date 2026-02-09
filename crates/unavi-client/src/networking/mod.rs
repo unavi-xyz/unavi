@@ -43,6 +43,7 @@ impl Plugin for NetworkingPlugin {
                 (
                     agent_receive::lerp_to_target,
                     tickrate::update_peer_tickrates.run_if(on_timer(Duration::from_secs(2))),
+                    tickrate::update_object_tickrates.run_if(on_timer(Duration::from_secs(2))),
                 ),
             )
             .add_systems(

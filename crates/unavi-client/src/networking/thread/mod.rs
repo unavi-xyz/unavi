@@ -56,6 +56,7 @@ pub enum NetworkCommand {
     ClaimObject(ObjectId),
     PublishObjectIFrame(Vec<(ObjectId, PhysicsIFrame)>),
     PublishObjectPFrame(Vec<(ObjectId, PhysicsPFrame)>),
+    SetObjectTickrate { object_id: ObjectId, tickrate: u8 },
     UpdateGrabbedObjects(HashSet<ObjectId>),
 
     Shutdown,
@@ -125,6 +126,8 @@ impl NetworkingThread {
 pub struct OutboundConn {
     pub task: AbortOnDropHandle<()>,
     pub tickrate: Arc<AtomicU8>,
+    /// Watch channel to notify the control stream of tickrate changes.
+    pub tickrate_tx: tokio::sync::watch::Sender<u8>,
     /// The underlying connection for opening object streams.
     pub connection: iroh::endpoint::Connection,
 }
@@ -157,6 +160,8 @@ pub struct ObjectPoseState {
     pub iframes: scc::HashMap<ObjectId, ObjectIFrameMsg>,
     /// Map of object ID to its current P-frame.
     pub pframes: scc::HashMap<ObjectId, ObjectPFrameDatagram>,
+    /// Map of object ID to its target tickrate (set by ECS distance system).
+    pub tickrates: scc::HashMap<ObjectId, u8>,
 }
 
 #[derive(Clone)]
@@ -319,6 +324,7 @@ async fn thread_loop(
                     .outbound
                     .read_async(&peer, |_, conn| {
                         conn.tickrate.store(tickrate, Ordering::Relaxed);
+                        let _ = conn.tickrate_tx.send(tickrate);
                     })
                     .await;
             }
@@ -374,6 +380,9 @@ async fn thread_loop(
                     };
                     let _ = state.object_pose.pframes.upsert_sync(object_id, msg);
                 }
+            }
+            NetworkCommand::SetObjectTickrate { object_id, tickrate } => {
+                let _ = state.object_pose.tickrates.upsert_sync(object_id, tickrate);
             }
             NetworkCommand::UpdateGrabbedObjects(objects) => {
                 let _ = grabbed_objects_tx.send(objects);

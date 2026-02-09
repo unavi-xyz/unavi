@@ -145,7 +145,7 @@ async fn handle_inbound_connection(
                                 let state = Arc::clone(&agent_state);
                                 n0_future::task::spawn(async move {
                                     if let Err(err) =
-                                        agent::inbound::handle_tickrate_request(send, recv, &state).await
+                                        agent::inbound::handle_control_stream(send, recv, &state).await
                                     {
                                         debug!(?err, "control stream closed");
                                     }
@@ -154,18 +154,20 @@ async fn handle_inbound_connection(
                             StreamInit::AgentIFrame => {
                                 warn!("received AgentIFrame on bistream, expected unistream");
                             }
-                            StreamInit::Object { object_id } => {
+                            StreamInit::ObjectControl { object_id } => {
                                 let event_tx = event_tx.clone();
-                                let baselines = Arc::clone(&object_baselines);
                                 n0_future::task::spawn(async move {
-                                    if let Err(err) = object::inbound::recv_object_stream(
-                                        event_tx, remote, object_id, send, recv, baselines,
+                                    if let Err(err) = object::inbound::recv_object_control(
+                                        event_tx, object_id, send, recv,
                                     )
                                     .await
                                     {
-                                        debug!(?err, "object stream closed");
+                                        debug!(?err, "object control stream closed");
                                     }
                                 });
+                            }
+                            StreamInit::ObjectIFrame { .. } => {
+                                warn!("received ObjectIFrame on bistream, expected unistream");
                             }
                         }
                     }
@@ -201,8 +203,21 @@ async fn handle_inbound_connection(
                             StreamInit::AgentControl => {
                                 warn!("received AgentControl on unistream, expected bistream");
                             }
-                            StreamInit::Object { .. } => {
-                                warn!("received Object on unistream, expected bistream");
+                            StreamInit::ObjectControl { .. } => {
+                                warn!("received ObjectControl on unistream, expected bistream");
+                            }
+                            StreamInit::ObjectIFrame { object_id } => {
+                                let event_tx = event_tx.clone();
+                                let baselines = Arc::clone(&object_baselines);
+                                n0_future::task::spawn(async move {
+                                    if let Err(err) = object::inbound::recv_object_iframes(
+                                        event_tx, remote, object_id, recv, baselines,
+                                    )
+                                    .await
+                                    {
+                                        debug!(?err, "object iframe stream closed");
+                                    }
+                                });
                             }
                         }
                     }

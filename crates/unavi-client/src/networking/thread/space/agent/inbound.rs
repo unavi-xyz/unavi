@@ -5,8 +5,7 @@
 
 use std::sync::atomic::Ordering;
 
-use anyhow::bail;
-use bevy::log::info;
+use bevy::log::debug;
 use iroh::EndpointId;
 
 use crate::networking::thread::{
@@ -14,7 +13,7 @@ use crate::networking::thread::{
     space::{
         MAX_AGENT_TICKRATE,
         buffer::CONTROL_MSG_MAX_SIZE,
-        msg::{AgentIFrameMsg, ControlMsg},
+        msg::{AgentIFrameMsg, ControlMsg, read_control, write_control},
     },
 };
 
@@ -34,7 +33,7 @@ pub async fn recv_agent_iframes(
 
         let len = u32::from_le_bytes(len_buf) as usize;
         if len > 64 * 1024 {
-            bail!("I-frame message too large: {len}");
+            anyhow::bail!("I-frame message too large: {len}");
         }
 
         // Read message.
@@ -62,46 +61,29 @@ pub async fn recv_agent_iframes(
     Ok(())
 }
 
-/// Handle tickrate negotiation request (responder side).
-pub async fn handle_tickrate_request(
+/// Handle control stream (responder side) - continuous loop.
+/// Receives tickrate requests and sends acks.
+pub async fn handle_control_stream(
     mut tx: iroh::endpoint::SendStream,
     mut rx: iroh::endpoint::RecvStream,
     state: &InboundState,
 ) -> anyhow::Result<()> {
-    let mut len_buf = [0u8; 4];
-    rx.read_exact(&mut len_buf).await?;
-    let len = u32::from_le_bytes(len_buf) as usize;
-
-    if len > CONTROL_MSG_MAX_SIZE {
-        bail!("control message too large: {len}");
-    }
-
-    let mut recv_buf = [0u8; CONTROL_MSG_MAX_SIZE];
-    rx.read_exact(&mut recv_buf[..len]).await?;
-
-    let request: ControlMsg = postcard::from_bytes(&recv_buf[..len])?;
-    let ControlMsg::TickrateRequest { hz: their_hz } = request else {
-        bail!("expected TickrateRequest, got {request:?}");
-    };
-
-    let effective = their_hz.min(MAX_AGENT_TICKRATE);
-    state.tickrate.store(effective, Ordering::Relaxed);
-
-    let ack = ControlMsg::TickrateAck { hz: effective };
-    let mut send_buf = [0u8; CONTROL_MSG_MAX_SIZE];
-    let bytes = postcard::to_slice(&ack, &mut send_buf)?;
-    let len = u32::try_from(bytes.len())?;
-    tx.write_all(&len.to_le_bytes()).await?;
-    tx.write_all(bytes).await?;
-
-    info!(hz = effective, "agent tickrate negotiated (inbound)");
+    let mut buf = [0u8; CONTROL_MSG_MAX_SIZE];
 
     loop {
-        let mut len_buf = [0u8; 4];
-        if rx.read_exact(&mut len_buf).await.is_err() {
-            break;
+        let msg: ControlMsg = read_control(&mut rx, &mut buf).await?;
+
+        match msg {
+            ControlMsg::TickrateRequest { hz } => {
+                let effective = hz.min(MAX_AGENT_TICKRATE);
+                state.tickrate.store(effective, Ordering::Relaxed);
+
+                write_control(&mut tx, &ControlMsg::TickrateAck { hz: effective }, &mut buf).await?;
+                debug!(hz = effective, "agent tickrate updated (inbound)");
+            }
+            ControlMsg::TickrateAck { hz } => {
+                state.tickrate.store(hz, Ordering::Relaxed);
+            }
         }
     }
-
-    Ok(())
 }

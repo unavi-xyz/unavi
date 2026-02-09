@@ -5,10 +5,11 @@ use std::sync::{Arc, atomic::AtomicU8};
 use bevy::log::{error, info, warn};
 use iroh::{EndpointAddr, endpoint::SendStream};
 use n0_future::task::AbortOnDropHandle;
+use tokio::sync::watch;
 
 use super::{
     ALPN, MAX_AGENT_TICKRATE,
-    agent::outbound::{negotiate_tickrate, stream_agent},
+    agent::outbound::{handle_control_stream, stream_agent},
     msg::StreamInit,
     object::outbound::stream_objects,
 };
@@ -29,6 +30,7 @@ pub async fn connect_to_peer(state: NetworkThreadState, peer: EndpointAddr) -> a
     write_stream_init(&mut agent_iframe_stream, &StreamInit::AgentIFrame).await?;
 
     let tickrate = Arc::new(AtomicU8::new(MAX_AGENT_TICKRATE));
+    let (tickrate_tx, tickrate_rx) = watch::channel(MAX_AGENT_TICKRATE);
 
     let task = {
         let tickrate = Arc::clone(&tickrate);
@@ -46,7 +48,7 @@ pub async fn connect_to_peer(state: NetworkThreadState, peer: EndpointAddr) -> a
                     &conn,
                     peer.id,
                 ) => r,
-                r = negotiate_tickrate(ctrl_tx, ctrl_rx, &tickrate) => r,
+                r = handle_control_stream(ctrl_tx, ctrl_rx, &tickrate, tickrate_rx) => r,
                 r = stream_objects(object_pose, grabbed_rx, &conn, peer.id) => r,
             };
 
@@ -61,6 +63,7 @@ pub async fn connect_to_peer(state: NetworkThreadState, peer: EndpointAddr) -> a
     let conn = OutboundConn {
         task: AbortOnDropHandle::new(task),
         tickrate,
+        tickrate_tx,
         connection,
     };
 

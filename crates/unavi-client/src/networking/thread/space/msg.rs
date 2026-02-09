@@ -13,7 +13,8 @@ use super::types::{
 pub enum StreamInit {
     AgentControl,
     AgentIFrame,
-    Object { object_id: ObjectId },
+    ObjectControl { object_id: ObjectId },
+    ObjectIFrame { object_id: ObjectId },
 }
 
 /// I-frame message sent over reliable stream.
@@ -35,13 +36,41 @@ pub struct AgentPFrameDatagram {
     pub pose: AgentPFrame,
 }
 
-/// Control stream messages for tickrate negotiation.
+/// Control stream messages for agent tickrate negotiation.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum ControlMsg {
     /// Request a tickrate. Sender proposes their desired Hz.
     TickrateRequest { hz: u8 },
     /// Acknowledge tickrate. Receiver responds with effective Hz.
     TickrateAck { hz: u8 },
+}
+
+/// Read a control message from a stream.
+pub async fn read_control<T: serde::de::DeserializeOwned>(
+    rx: &mut iroh::endpoint::RecvStream,
+    buf: &mut [u8],
+) -> anyhow::Result<T> {
+    let mut len_buf = [0u8; 4];
+    rx.read_exact(&mut len_buf).await?;
+    let len = u32::from_le_bytes(len_buf) as usize;
+    if len > buf.len() {
+        anyhow::bail!("control message too large: {len}");
+    }
+    rx.read_exact(&mut buf[..len]).await?;
+    Ok(postcard::from_bytes(&buf[..len])?)
+}
+
+/// Write a control message to a stream.
+pub async fn write_control<T: serde::Serialize>(
+    tx: &mut iroh::endpoint::SendStream,
+    msg: &T,
+    buf: &mut [u8],
+) -> anyhow::Result<()> {
+    let bytes = postcard::to_slice(msg, buf)?;
+    let len = u32::try_from(bytes.len())?;
+    tx.write_all(&len.to_le_bytes()).await?;
+    tx.write_all(bytes).await?;
+    Ok(())
 }
 
 /// Control messages for object streams.

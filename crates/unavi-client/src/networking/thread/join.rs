@@ -225,8 +225,7 @@ async fn handle_join_broadcast(state: &NetworkThreadState, join: JoinBroadcast) 
     let state_clone = state.clone();
     let remote = join.endpoint;
     n0_future::task::spawn(async move {
-        if let Err(err) = super::space::agent::outbound::handle_outbound(state_clone, remote).await
-        {
+        if let Err(err) = super::space::outbound::connect_to_peer(state_clone, remote).await {
             error!(?err, "error handling outbound connection");
         }
     });
@@ -236,7 +235,7 @@ async fn handle_object_claim(
     state: &NetworkThreadState,
     claim: &super::space::gossip::ObjectClaimBroadcast,
 ) {
-    let record_hash = claim.object_id.record_hash();
+    let record_hash = claim.object_id.record;
 
     let Some(entry) = state.spaces.get_async(&record_hash).await else {
         warn!(?record_hash, "claim for unknown space");
@@ -261,7 +260,7 @@ async fn handle_object_release(
     state: &NetworkThreadState,
     release: &super::space::gossip::ObjectReleaseBroadcast,
 ) {
-    let record_hash = release.object_id.record_hash();
+    let record_hash = release.object_id.record;
 
     let Some(entry) = state.spaces.get_async(&record_hash).await else {
         return;
@@ -286,17 +285,20 @@ async fn broadcast_claim_sync(state: &NetworkThreadState, tx: &iroh_gossip::api:
     // Collect claims from all spaces using sync iteration.
     let mut claims = Vec::new();
 
-    state.spaces.iter_sync(|_, handle| {
-        for (object_id, record) in handle.ownership.all_claims() {
-            claims.push(ClaimEntry {
-                object_id,
-                owner: record.owner,
-                timestamp: record.timestamp,
-                seq: record.seq,
-            });
-        }
-        true
-    });
+    state
+        .spaces
+        .iter_async(|_, handle| {
+            for (object_id, record) in handle.ownership.all_claims() {
+                claims.push(ClaimEntry {
+                    object_id,
+                    owner: record.owner,
+                    timestamp: record.timestamp,
+                    seq: record.seq,
+                });
+            }
+            true
+        })
+        .await;
 
     if claims.is_empty() {
         return;
@@ -323,7 +325,7 @@ async fn handle_claim_sync(state: &NetworkThreadState, sync: &ClaimSyncBroadcast
     debug!(sender = %sync.sender, count = sync.claims.len(), "received claim sync");
 
     for claim in &sync.claims {
-        let record_hash = claim.object_id.record_hash();
+        let record_hash = claim.object_id.record;
 
         let Some(entry) = state.spaces.get_async(&record_hash).await else {
             continue;
@@ -349,14 +351,17 @@ async fn release_objects_owned_by(state: &NetworkThreadState, endpoint: iroh::En
     // Collect released objects first to avoid holding locks during event sends.
     let mut released = Vec::new();
 
-    state.spaces.iter_sync(|_, handle| {
-        let objects = handle.ownership.objects_owned_by(endpoint);
-        for object_id in objects {
-            handle.ownership.remove_all_by(endpoint);
-            released.push(object_id);
-        }
-        true
-    });
+    state
+        .spaces
+        .iter_async(|_, handle| {
+            let objects = handle.ownership.objects_owned_by(endpoint);
+            for object_id in objects {
+                handle.ownership.remove_all_by(endpoint);
+                released.push(object_id);
+            }
+            true
+        })
+        .await;
 
     for object_id in released {
         let _ = state

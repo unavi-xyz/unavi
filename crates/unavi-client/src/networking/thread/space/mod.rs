@@ -22,13 +22,15 @@ pub mod datagram;
 pub mod gossip;
 pub mod msg;
 pub mod object;
+pub mod outbound;
 pub mod ownership;
 pub mod types;
 
 /// ALPN for space protocol (agent and object sync).
 pub const ALPN: &[u8] = b"wired/space";
 
-pub const MAX_TICKRATE: u8 = 20;
+pub const MAX_AGENT_TICKRATE: u8 = 20;
+pub const MAX_OBJECT_TICKRATE: u8 = 10;
 pub const MIN_TICKRATE: u8 = 5;
 
 /// Per-space shared state for gossip and ownership.
@@ -143,7 +145,7 @@ async fn handle_inbound_connection(
                                 let state = Arc::clone(&agent_state);
                                 n0_future::task::spawn(async move {
                                     if let Err(err) =
-                                        agent::inbound::respond_tickrate(send, recv, &state).await
+                                        agent::inbound::handle_tickrate_request(send, recv, &state).await
                                     {
                                         debug!(?err, "control stream closed");
                                     }
@@ -156,7 +158,7 @@ async fn handle_inbound_connection(
                                 let event_tx = event_tx.clone();
                                 let baselines = Arc::clone(&object_baselines);
                                 n0_future::task::spawn(async move {
-                                    if let Err(err) = object::inbound::handle_object_stream(
+                                    if let Err(err) = object::inbound::recv_object_stream(
                                         event_tx, remote, object_id, send, recv, baselines,
                                     )
                                     .await
@@ -190,7 +192,7 @@ async fn handle_inbound_connection(
                                 let state = Arc::clone(&agent_state);
                                 n0_future::task::spawn(async move {
                                     if let Err(err) =
-                                        agent::inbound::recv_iframes(recv, &state, remote).await
+                                        agent::inbound::recv_agent_iframes(recv, &state, remote).await
                                     {
                                         debug!(?err, "iframe stream closed");
                                     }

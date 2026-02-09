@@ -4,10 +4,10 @@ use std::time::Duration;
 
 use bevy::math::{Quat, Vec3};
 
-use crate::networking::thread::space::MAX_TICKRATE;
+use crate::networking::thread::space::MAX_AGENT_TICKRATE;
 
 /// How many ticks between I-frames.
-pub const IFRAME_FREQ: u64 = MAX_TICKRATE as u64 * 3;
+pub const IFRAME_FREQ: u64 = MAX_AGENT_TICKRATE as u64 * 3;
 
 /// Position change threshold in meters.
 pub const POS_EPSILON: f32 = 0.001;
@@ -18,7 +18,7 @@ pub const VEL_EPSILON: f32 = 0.01;
 
 /// How often we publish state to the network thread.
 /// From there it will be broadcasted to peers at variable rates.
-pub const PUBLISH_INTERVAL: Duration = Duration::from_millis(1000 / MAX_TICKRATE as u64);
+pub const PUBLISH_INTERVAL: Duration = Duration::from_millis(1000 / MAX_AGENT_TICKRATE as u64);
 
 /// Returns true if position or rotation changed beyond thresholds.
 pub fn transform_changed(

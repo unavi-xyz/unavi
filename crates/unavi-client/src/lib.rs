@@ -120,6 +120,7 @@ impl Plugin for UnaviPlugin {
         app.insert_resource(ClearColor(Color::BLACK))
             .init_resource::<grab::GrabbedObjects>()
             .init_resource::<grab::PointerLocations3d>()
+            .init_resource::<networking::thread::space::object::outbound::LocalGrabbedObjects>()
             .add_observer(grab::handle_grab_click)
             .add_systems(
                 Startup,

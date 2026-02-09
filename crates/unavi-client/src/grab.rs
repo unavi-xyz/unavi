@@ -6,7 +6,7 @@ use unavi_locomotion::AgentCamera;
 
 use crate::networking::{
     object_publish::{DynObjectId, Grabbed, LocallyOwned},
-    thread::{NetworkCommand, NetworkingThread},
+    thread::{NetworkCommand, NetworkingThread, space::object::outbound::LocalGrabbedObjects},
 };
 
 const GRAB_COOLDOWN: Duration = Duration::from_millis(100);
@@ -25,6 +25,7 @@ pub struct GrabbedObjects(HashMap<PointerId, GrabState>);
 
 struct GrabState {
     entity: Entity,
+    object_id: crate::networking::thread::space::types::object_id::ObjectId,
     offset: Vec3,
 }
 
@@ -32,6 +33,7 @@ pub fn handle_grab_click(
     event: On<Pointer<Click>>,
     mut commands: Commands,
     mut grabbed: ResMut<GrabbedObjects>,
+    mut local_grabbed: ResMut<LocalGrabbedObjects>,
     locations: Res<PointerLocations3d>,
     time: Res<Time>,
     nt: Res<NetworkingThread>,
@@ -51,6 +53,12 @@ pub fn handle_grab_click(
     // Drop the currently grabbed object (if any).
     if let Some(prev) = grabbed.0.remove(&event.pointer_id) {
         commands.entity(prev.entity).remove::<Grabbed>();
+        local_grabbed.0.remove(&prev.object_id);
+
+        // Send updated grabbed objects to network thread.
+        let _ = nt.command_tx.try_send(NetworkCommand::UpdateGrabbedObjects(
+            local_grabbed.0.clone(),
+        ));
         return;
     }
 
@@ -78,12 +86,19 @@ pub fn handle_grab_click(
         event.pointer_id,
         GrabState {
             entity: target_ent,
+            object_id: obj.0,
             offset,
         },
     );
     *last_grab = now;
 
     commands.entity(target_ent).insert(Grabbed);
+    local_grabbed.0.insert(obj.0);
+
+    // Send updated grabbed objects to network thread.
+    let _ = nt.command_tx.try_send(NetworkCommand::UpdateGrabbedObjects(
+        local_grabbed.0.clone(),
+    ));
 
     // Only send claim if not already locally owned.
     if !locally_owned.contains(target_ent)

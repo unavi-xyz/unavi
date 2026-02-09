@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     sync::{
         Arc,
         atomic::{AtomicU8, AtomicU16, Ordering},
@@ -15,8 +16,9 @@ use parking_lot::Mutex;
 use time::OffsetDateTime;
 
 /// Returns the current time as milliseconds since Unix epoch.
+#[expect(clippy::cast_possible_truncation)]
 fn now_millis() -> u64 {
-    (OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000) as u64
+    (OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000).cast_unsigned() as u64
 }
 use wds::{
     Blobs, DataStore,
@@ -27,7 +29,7 @@ use wds::{
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::networking::thread::space::{
-    MAX_TICKRATE, SpaceHandle,
+    MAX_AGENT_TICKRATE, SpaceHandle,
     gossip::{ObjectClaimBroadcast, SpaceGossipMsg},
     msg::{AgentIFrameMsg, AgentPFrameDatagram, ObjectIFrameMsg, ObjectPFrameDatagram},
     types::{
@@ -54,6 +56,7 @@ pub enum NetworkCommand {
     ClaimObject(ObjectId),
     PublishObjectIFrame(Vec<(ObjectId, PhysicsIFrame)>),
     PublishObjectPFrame(Vec<(ObjectId, PhysicsPFrame)>),
+    UpdateGrabbedObjects(HashSet<ObjectId>),
 
     Shutdown,
 }
@@ -80,6 +83,12 @@ pub enum NetworkEvent {
     ObjectPoseUpdate {
         source: EndpointId,
         objects: Vec<(ObjectId, PhysicsIFrame)>,
+    },
+
+    /// Object grab state changed from remote owner.
+    ObjectGrabChanged {
+        object_id: ObjectId,
+        grabbed: bool,
     },
 }
 
@@ -130,7 +139,7 @@ impl Default for InboundState {
     fn default() -> Self {
         Self {
             pose: PoseState::default(),
-            tickrate: AtomicU8::new(MAX_TICKRATE),
+            tickrate: AtomicU8::new(MAX_AGENT_TICKRATE),
         }
     }
 }
@@ -158,7 +167,7 @@ pub struct NetworkThreadState {
     pub remote_actor: Option<Actor>,
     pub event_tx: tokio::sync::mpsc::Sender<NetworkEvent>,
 
-    /// Outbound connections (one per peer, used for both agent and object streams).
+    /// Outbound connections
     pub outbound: Arc<scc::HashMap<EndpointId, OutboundConn>>,
     pub _inbound: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
 
@@ -170,6 +179,9 @@ pub struct NetworkThreadState {
 
     pub object_iframe_id: Arc<AtomicU16>,
     pub object_pose: Arc<ObjectPoseState>,
+
+    /// Watch channel for broadcasting grabbed objects to outbound streams.
+    pub grabbed_objects_rx: tokio::sync::watch::Receiver<HashSet<ObjectId>>,
 }
 
 #[expect(clippy::too_many_lines)]
@@ -244,6 +256,7 @@ async fn thread_loop(
     }
 
     // Initialize IDs at random values to avoid leaking playtime.
+    let (grabbed_objects_tx, grabbed_objects_rx) = tokio::sync::watch::channel(HashSet::default());
     let state = NetworkThreadState {
         endpoint,
         gossip,
@@ -257,6 +270,7 @@ async fn thread_loop(
         pose: Arc::default(),
         object_iframe_id: Arc::new(AtomicU16::new(rand::random())),
         object_pose: Arc::default(),
+        grabbed_objects_rx,
     };
 
     while let Some(cmd) = command_rx.recv().await {
@@ -309,7 +323,7 @@ async fn thread_loop(
                     .await;
             }
             NetworkCommand::ClaimObject(object_id) => {
-                let record_hash = object_id.record_hash();
+                let record_hash = object_id.record;
                 let endpoint_id = state.endpoint.id();
                 let now = now_millis();
 
@@ -360,6 +374,9 @@ async fn thread_loop(
                     };
                     let _ = state.object_pose.pframes.upsert_sync(object_id, msg);
                 }
+            }
+            NetworkCommand::UpdateGrabbedObjects(objects) => {
+                let _ = grabbed_objects_tx.send(objects);
             }
 
             NetworkCommand::Shutdown => {

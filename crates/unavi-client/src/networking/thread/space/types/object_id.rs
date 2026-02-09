@@ -1,5 +1,6 @@
 //! Unique identifier for dynamic objects within a space.
 
+use blake3::Hash;
 use postcard::experimental::max_size::MaxSize;
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +11,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ObjectId {
     /// WDS record ID (blake3 hash).
-    pub record: [u8; 32],
+    pub record: Hash,
     /// Index within the record.
     pub index: i64,
 }
@@ -20,16 +21,8 @@ impl MaxSize for ObjectId {
 }
 
 impl ObjectId {
-    pub const fn new(record: blake3::Hash, index: i64) -> Self {
-        Self {
-            record: *record.as_bytes(),
-            index,
-        }
-    }
-
-    /// Get the record hash.
-    pub const fn record_hash(&self) -> blake3::Hash {
-        blake3::Hash::from_bytes(self.record)
+    pub const fn new(record: Hash, index: i64) -> Self {
+        Self { record, index }
     }
 }
 
@@ -42,9 +35,9 @@ mod tests {
         let record = blake3::hash(b"test record");
         let id = ObjectId::new(record, 42);
 
-        assert_eq!(id.record, *record.as_bytes());
+        assert_eq!(id.record, record);
         assert_eq!(id.index, 42);
-        assert_eq!(id.record_hash(), record);
+        assert_eq!(id.record, record);
     }
 
     #[test]

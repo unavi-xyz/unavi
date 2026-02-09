@@ -160,6 +160,10 @@ pub struct TrackedBones(pub HashSet<BoneName>);
 
 #[allow(unused)]
 impl TrackedBones {
+    pub fn desktop() -> Self {
+        Self(HashSet::from([BoneName::Head]))
+    }
+
     /// Returns a set containing left hand and all left finger bones.
     pub fn left_hand() -> HashSet<BoneName> {
         HashSet::from([

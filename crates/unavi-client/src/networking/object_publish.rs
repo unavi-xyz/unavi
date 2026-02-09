@@ -10,6 +10,7 @@ use bevy_hsd::{NodeIndex, StageNode};
 
 use crate::{
     networking::{
+        object_receive::ObjectTransformTarget,
         publish_utils::{IFRAME_FREQ, PUBLISH_INTERVAL, transform_changed, velocity_changed},
         thread::{
             NetworkCommand, NetworkingThread,
@@ -75,7 +76,7 @@ pub fn detect_removed_objects(
 
         commands
             .entity(entity)
-            .remove::<(DynObjectId, LocallyOwned, Grabbed)>();
+            .remove::<(DynObjectId, LocallyOwned, Grabbed, ObjectTransformTarget)>();
     }
 }
 

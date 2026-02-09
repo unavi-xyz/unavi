@@ -77,6 +77,7 @@
           [
             alsa-lib
             libxkbcommon
+            openxr-loader
             udev
             vulkan-loader
             wayland

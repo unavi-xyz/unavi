@@ -1,7 +1,8 @@
 //! Object inbound streaming - receives physics state from remote owners.
 //!
-//! Object ID is known from `StreamInit::Object` sent by `SpaceProtocol`.
-//! I-frames are received on the dedicated bistream.
+//! Object ID is known from `StreamInit::ObjectControl` or `StreamInit::ObjectIFrame`.
+//! Control messages are received on the control bistream.
+//! I-frames are received on the dedicated unistream.
 //! P-frames are received as datagrams (handled in `SpaceProtocol`).
 
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
@@ -15,7 +16,7 @@ use crate::networking::thread::{
         MAX_OBJECT_TICKRATE,
         buffer::CONTROL_MSG_MAX_SIZE,
         datagram::SharedObjectBaselines,
-        msg::{ObjectControlMsg, ObjectIFrameMsg},
+        msg::{ObjectControlMsg, ObjectIFrameMsg, read_control, write_control},
         types::{object_id::ObjectId, physics_state::PhysicsBaseline},
     },
 };
@@ -27,46 +28,77 @@ pub struct ObjectInboundState {
     pub grabbed: AtomicBool,
 }
 
-/// Receive object stream data (I-frames and control messages).
-/// Object ID is known from `StreamInit::Object`, passed by caller.
-pub async fn recv_object_stream(
+/// Receive object control stream (tickrate + grab state).
+pub async fn recv_object_control(
     event_tx: tokio::sync::mpsc::Sender<NetworkEvent>,
-    source: EndpointId,
     object_id: ObjectId,
-    mut send: iroh::endpoint::SendStream,
-    mut recv: iroh::endpoint::RecvStream,
-    baselines: SharedObjectBaselines,
+    mut tx: iroh::endpoint::SendStream,
+    mut rx: iroh::endpoint::RecvStream,
 ) -> anyhow::Result<()> {
-    debug!(?object_id, "object stream initialized");
+    debug!(?object_id, "object control stream initialized");
 
     let state = ObjectInboundState::default();
+    let mut buf = [0u8; CONTROL_MSG_MAX_SIZE];
 
     // Send initial tickrate request.
     let request = ObjectControlMsg::TickrateRequest {
         hz: MAX_OBJECT_TICKRATE,
     };
-    write_control(&mut send, &request).await?;
+    write_control(&mut tx, &request, &mut buf).await?;
 
-    // Receive messages (I-frames or control messages).
+    // Continuous loop: receive control messages.
+    loop {
+        let msg: ObjectControlMsg = read_control(&mut rx, &mut buf).await?;
+
+        match msg {
+            ObjectControlMsg::TickrateRequest { hz } => {
+                let effective = hz.min(MAX_OBJECT_TICKRATE);
+                state.tickrate.store(effective, Ordering::Relaxed);
+
+                write_control(
+                    &mut tx,
+                    &ObjectControlMsg::TickrateAck { hz: effective },
+                    &mut buf,
+                )
+                .await?;
+                debug!(hz = effective, ?object_id, "object tickrate updated");
+            }
+            ObjectControlMsg::TickrateAck { hz } => {
+                state.tickrate.store(hz, Ordering::Relaxed);
+            }
+            ObjectControlMsg::GrabStateChanged { grabbed } => {
+                let prev = state.grabbed.swap(grabbed, Ordering::Relaxed);
+                if prev != grabbed {
+                    let _ = event_tx.try_send(NetworkEvent::ObjectGrabChanged {
+                        object_id,
+                        grabbed,
+                    });
+                }
+            }
+        }
+    }
+}
+
+/// Receive object I-frames from the unistream.
+pub async fn recv_object_iframes(
+    event_tx: tokio::sync::mpsc::Sender<NetworkEvent>,
+    source: EndpointId,
+    object_id: ObjectId,
+    mut rx: iroh::endpoint::RecvStream,
+    baselines: SharedObjectBaselines,
+) -> anyhow::Result<()> {
+    debug!(?object_id, "object iframe stream initialized");
+
     loop {
         let mut len_buf = [0u8; 4];
-        if recv.read_exact(&mut len_buf).await.is_err() {
+        if rx.read_exact(&mut len_buf).await.is_err() {
             break;
         }
 
         let len = u32::from_le_bytes(len_buf) as usize;
         let mut buf = vec![0u8; len];
-        recv.read_exact(&mut buf).await?;
+        rx.read_exact(&mut buf).await?;
 
-        // Try to parse as control message first (they're smaller).
-        if len <= CONTROL_MSG_MAX_SIZE
-            && let Ok(ctrl) = postcard::from_bytes::<ObjectControlMsg>(&buf)
-        {
-            handle_control(&ctrl, &state, &event_tx, object_id);
-            continue;
-        }
-
-        // Parse as I-frame.
         let msg: ObjectIFrameMsg = postcard::from_bytes(&buf)?;
         debug!(id = msg.id, ?object_id, "received object I-frame");
 
@@ -83,43 +115,4 @@ pub async fn recv_object_stream(
     }
 
     Ok(())
-}
-
-async fn write_control(
-    send: &mut iroh::endpoint::SendStream,
-    msg: &ObjectControlMsg,
-) -> anyhow::Result<()> {
-    let mut buf = [0u8; CONTROL_MSG_MAX_SIZE];
-    let bytes = postcard::to_slice(msg, &mut buf)?;
-    let len = u32::try_from(bytes.len())?;
-    send.write_all(&len.to_le_bytes()).await?;
-    send.write_all(bytes).await?;
-    Ok(())
-}
-
-fn handle_control(
-    msg: &ObjectControlMsg,
-    state: &ObjectInboundState,
-    event_tx: &tokio::sync::mpsc::Sender<NetworkEvent>,
-    object_id: ObjectId,
-) {
-    match msg {
-        ObjectControlMsg::TickrateRequest { hz } => {
-            let effective = (*hz).min(MAX_OBJECT_TICKRATE);
-            state.tickrate.store(effective, Ordering::Relaxed);
-            debug!(hz = effective, ?object_id, "object tickrate negotiated");
-        }
-        ObjectControlMsg::TickrateAck { hz } => {
-            state.tickrate.store(*hz, Ordering::Relaxed);
-        }
-        ObjectControlMsg::GrabStateChanged { grabbed } => {
-            let prev = state.grabbed.swap(*grabbed, Ordering::Relaxed);
-            if prev != *grabbed {
-                let _ = event_tx.try_send(NetworkEvent::ObjectGrabChanged {
-                    object_id,
-                    grabbed: *grabbed,
-                });
-            }
-        }
-    }
 }

@@ -8,17 +8,17 @@ use std::{
     time::Duration,
 };
 
-use anyhow::bail;
-use bevy::log::{debug, info};
+use bevy::log::{debug, info, warn};
 use bytes::Bytes;
 use iroh::{EndpointId, endpoint::SendStream};
+use tokio::sync::watch;
 
 use crate::networking::thread::{
     PoseState,
     space::{
         MAX_AGENT_TICKRATE,
         buffer::{CONTROL_MSG_MAX_SIZE, DATAGRAM_MAX_SIZE, SendBuffer},
-        msg::{AgentIFrameMsg, AgentPFrameDatagram, ControlMsg, Datagram},
+        msg::{AgentIFrameMsg, AgentPFrameDatagram, ControlMsg, Datagram, read_control, write_control},
     },
 };
 
@@ -154,45 +154,60 @@ fn write_datagram(
     Ok(())
 }
 
-/// Negotiate tickrate with remote peer (initiator side).
-pub async fn negotiate_tickrate(
+/// Handle control stream (initiator side) - continuous loop.
+/// Sends tickrate requests when `tickrate_rx` changes, handles acks.
+pub async fn handle_control_stream(
     mut tx: SendStream,
     mut rx: iroh::endpoint::RecvStream,
     tickrate: &AtomicU8,
+    mut tickrate_rx: watch::Receiver<u8>,
 ) -> anyhow::Result<()> {
-    let request = ControlMsg::TickrateRequest {
-        hz: MAX_AGENT_TICKRATE,
-    };
-    let mut ctrl_buf = [0u8; CONTROL_MSG_MAX_SIZE];
-    let bytes = postcard::to_slice(&request, &mut ctrl_buf)?;
-    let len = u32::try_from(bytes.len())?;
-    tx.write_all(&len.to_le_bytes()).await?;
-    tx.write_all(bytes).await?;
+    let mut buf = [0u8; CONTROL_MSG_MAX_SIZE];
 
-    let mut len_buf = [0u8; 4];
-    rx.read_exact(&mut len_buf).await?;
-    let len = u32::from_le_bytes(len_buf) as usize;
+    // Send initial tickrate request.
+    let initial_hz = *tickrate_rx.borrow();
+    write_control(&mut tx, &ControlMsg::TickrateRequest { hz: initial_hz }, &mut buf).await?;
 
-    if len > CONTROL_MSG_MAX_SIZE {
-        bail!("control message too large: {len}");
-    }
-
-    let mut recv_buf = [0u8; CONTROL_MSG_MAX_SIZE];
-    rx.read_exact(&mut recv_buf[..len]).await?;
-
-    let ack: ControlMsg = postcard::from_bytes(&recv_buf[..len])?;
+    // Wait for ack.
+    let ack: ControlMsg = read_control(&mut rx, &mut buf).await?;
     let ControlMsg::TickrateAck { hz } = ack else {
-        bail!("expected TickrateAck, got {ack:?}");
+        anyhow::bail!("expected TickrateAck, got {ack:?}");
     };
 
     let effective = hz.min(MAX_AGENT_TICKRATE);
     tickrate.store(effective, Ordering::Relaxed);
     info!(hz = effective, "agent tickrate negotiated");
 
+    // Continuous loop: send updates when tickrate changes.
     loop {
-        let mut len_buf = [0u8; 4];
-        if rx.read_exact(&mut len_buf).await.is_err() {
-            break;
+        tokio::select! {
+            changed = tickrate_rx.changed() => {
+                if changed.is_err() {
+                    break;
+                }
+                let hz = *tickrate_rx.borrow();
+                if let Err(err) = write_control(
+                    &mut tx,
+                    &ControlMsg::TickrateRequest { hz },
+                    &mut buf,
+                ).await {
+                    warn!(?err, "failed to send tickrate request");
+                    break;
+                }
+            }
+            msg = read_control::<ControlMsg>(&mut rx, &mut buf) => {
+                match msg {
+                    Ok(ControlMsg::TickrateAck { hz }) => {
+                        let effective = hz.min(MAX_AGENT_TICKRATE);
+                        tickrate.store(effective, Ordering::Relaxed);
+                        debug!(hz = effective, "tickrate updated");
+                    }
+                    Ok(ControlMsg::TickrateRequest { .. }) => {
+                        // Initiator shouldn't receive requests.
+                    }
+                    Err(_) => break,
+                }
+            }
         }
     }
 

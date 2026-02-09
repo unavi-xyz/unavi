@@ -1,13 +1,14 @@
-//! Distance-based tickrate adjustment for outbound agent data.
+//! Distance-based tickrate adjustment for outbound agent and object data.
 
 use bevy::prelude::*;
 use unavi_locomotion::{AgentEntities, AgentRig, LocalAgent};
 
 use crate::networking::{
     agent_receive::RemoteAgent,
+    object_publish::{DynObjectId, LocallyOwned},
     thread::{
         NetworkCommand, NetworkingThread,
-        space::{MAX_AGENT_TICKRATE, MIN_TICKRATE},
+        space::{MAX_AGENT_TICKRATE, MAX_OBJECT_TICKRATE, MIN_TICKRATE},
     },
 };
 
@@ -61,6 +62,32 @@ pub fn update_peer_tickrates(
 
         let _ = nt.command_tx.try_send(NetworkCommand::SetPeerTickrate {
             peer: remote.0,
+            tickrate,
+        });
+    }
+}
+
+/// Updates remote object tickrates based on distance from local agent.
+pub fn update_object_tickrates(
+    nt: Res<NetworkingThread>,
+    local_agent: Query<&AgentEntities, With<LocalAgent>>,
+    body_transforms: Query<&GlobalTransform, With<AgentRig>>,
+    remote_objects: Query<(&DynObjectId, &Transform), Without<LocallyOwned>>,
+) {
+    let Ok(entities) = local_agent.single() else {
+        return;
+    };
+    let Ok(local_tr) = body_transforms.get(entities.body) else {
+        return;
+    };
+    let local_pos = local_tr.translation();
+
+    for (dyn_obj, object_tr) in &remote_objects {
+        let distance = local_pos.distance(object_tr.translation);
+        let tickrate = tickrate_for_distance(distance, MIN_TICKRATE, MAX_OBJECT_TICKRATE);
+
+        let _ = nt.command_tx.try_send(NetworkCommand::SetObjectTickrate {
+            object_id: dyn_obj.0,
             tickrate,
         });
     }

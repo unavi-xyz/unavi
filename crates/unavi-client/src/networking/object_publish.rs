@@ -81,8 +81,62 @@ pub fn detect_removed_objects(
 }
 
 /// Per-object baseline state for P-frame delta encoding.
-#[derive(Default)]
+#[derive(Resource, Default)]
 pub struct ObjectBaselines(HashMap<ObjectId, PhysicsBaseline>);
+
+/// Send immediate I-frame when claiming an object.
+///
+/// This ensures remote peers have a baseline right away, so P-frames can be
+/// processed immediately instead of waiting for the next scheduled I-frame.
+pub fn publish_initial_object_iframe(
+    nt: Res<NetworkingThread>,
+    new_claims: Query<
+        (
+            &DynObjectId,
+            &Transform,
+            Option<&LinearVelocity>,
+            Option<&AngularVelocity>,
+        ),
+        Added<LocallyOwned>,
+    >,
+    mut baselines: ResMut<ObjectBaselines>,
+) {
+    let mut frames = Vec::new();
+
+    for (dyn_obj, transform, lin_vel, ang_vel) in &new_claims {
+        let pos = transform.translation;
+        let rot = transform.rotation;
+        let vel = lin_vel.map_or(Vec3::ZERO, |v| v.0);
+        let avel = ang_vel.map_or(Vec3::ZERO, |v| v.0);
+
+        baselines.0.insert(
+            dyn_obj.0,
+            PhysicsBaseline {
+                pos,
+                vel,
+                ang_vel: avel,
+            },
+        );
+
+        frames.push((
+            dyn_obj.0,
+            PhysicsIFrame {
+                pos: pos.into(),
+                rot: rot.into(),
+                vel: vel.into(),
+                ang_vel: avel.into(),
+            },
+        ));
+    }
+
+    if !frames.is_empty()
+        && let Err(err) = nt
+            .command_tx
+            .try_send(NetworkCommand::PublishObjectIFrame(frames))
+    {
+        error!(?err, "send error");
+    }
+}
 
 /// Publish physics state for owned dynamic objects.
 pub fn publish_object_physics(
@@ -99,7 +153,7 @@ pub fn publish_object_physics(
     time: Res<Time>,
     mut last: Local<Duration>,
     mut count: Local<u64>,
-    mut baselines: Local<ObjectBaselines>,
+    mut baselines: ResMut<ObjectBaselines>,
 ) {
     let now = time.elapsed();
     if now.saturating_sub(*last) < PUBLISH_INTERVAL {

@@ -73,11 +73,13 @@ impl ObjectOwnership {
     }
 
     /// Get current owner of an object.
+    #[cfg(test)]
     pub fn owner(&self, object_id: ObjectId) -> Option<EndpointId> {
         self.inner.read().get(&object_id).map(|r| r.owner)
     }
 
     /// Check if a specific endpoint owns the object.
+    #[cfg(test)]
     pub fn is_owner(&self, object_id: ObjectId, endpoint: EndpointId) -> bool {
         self.owner(object_id) == Some(endpoint)
     }

@@ -18,7 +18,9 @@ use crate::networking::thread::{
     space::{
         MAX_AGENT_TICKRATE,
         buffer::{CONTROL_MSG_MAX_SIZE, DATAGRAM_MAX_SIZE, SendBuffer},
-        msg::{AgentIFrameMsg, AgentPFrameDatagram, ControlMsg, Datagram, read_control, write_control},
+        msg::{
+            AgentIFrameMsg, AgentPFrameDatagram, ControlMsg, Datagram, read_control, write_control,
+        },
     },
 };
 
@@ -135,7 +137,7 @@ fn write_datagram(
     let bytes = postcard::to_slice(msg, buf)?;
 
     if conn.datagram_send_buffer_space() < bytes.len() {
-        debug!("datagram buffer full, dropping P-frame");
+        warn!("datagram buffer full, dropping agent P-frame");
         return Ok(());
     }
 
@@ -166,7 +168,12 @@ pub async fn handle_control_stream(
 
     // Send initial tickrate request.
     let initial_hz = *tickrate_rx.borrow();
-    write_control(&mut tx, &ControlMsg::TickrateRequest { hz: initial_hz }, &mut buf).await?;
+    write_control(
+        &mut tx,
+        &ControlMsg::TickrateRequest { hz: initial_hz },
+        &mut buf,
+    )
+    .await?;
 
     // Wait for ack.
     let ack: ControlMsg = read_control(&mut rx, &mut buf).await?;

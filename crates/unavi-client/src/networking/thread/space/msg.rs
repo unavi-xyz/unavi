@@ -61,7 +61,7 @@ pub async fn read_control<T: serde::de::DeserializeOwned>(
 }
 
 /// Write a control message to a stream.
-pub async fn write_control<T: serde::Serialize>(
+pub async fn write_control<T: serde::Serialize + Send + Sync>(
     tx: &mut iroh::endpoint::SendStream,
     msg: &T,
     buf: &mut [u8],

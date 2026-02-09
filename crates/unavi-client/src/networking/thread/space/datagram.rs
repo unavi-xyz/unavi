@@ -90,7 +90,13 @@ pub async fn handle_datagrams(
                 handle_agent_pframe(msg, agent_state, &mut agent_reorder, remote).await;
             }
             Datagram::ObjectPFrame(pframe) => {
-                handle_object_pframe(pframe, &object_baselines, &event_tx, &mut object_reorders, remote);
+                handle_object_pframe(
+                    pframe,
+                    &object_baselines,
+                    &event_tx,
+                    &mut object_reorders,
+                    remote,
+                );
             }
         }
     }
@@ -103,8 +109,6 @@ fn handle_object_pframe(
     reorders: &mut HashMap<ObjectId, PFrameReorderBuffer<ObjectPFrameDatagram>>,
     source: EndpointId,
 ) {
-    debug!("incoming obj pframe");
-
     let Some(baseline) = baselines.read().get(&pframe.object_id, pframe.iframe_id) else {
         debug!(
             object_id = ?pframe.object_id,

@@ -12,7 +12,7 @@ use crate::networking::{
 const GRAB_COOLDOWN: Duration = Duration::from_millis(100);
 const GRAB_DEAD_ZONE: f32 = 0.001;
 const GRAB_SMOOTHING: f32 = 20.0;
-const MAX_GRAB_DISTANCE: f32 = 6.0;
+const MAX_GRAB_DISTANCE: f32 = 4.0;
 
 /// Tracked 3D transforms of pointers.
 /// On desktop, will be the camera's centered frontal ray.

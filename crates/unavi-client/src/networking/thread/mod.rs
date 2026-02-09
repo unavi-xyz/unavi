@@ -44,6 +44,7 @@ mod publish_beacon;
 mod remote_wds;
 pub mod space;
 
+#[expect(unused, reason = "leave")]
 pub enum NetworkCommand {
     Join(Hash),
     Leave(Hash),
@@ -128,8 +129,6 @@ pub struct OutboundConn {
     pub tickrate: Arc<AtomicU8>,
     /// Watch channel to notify the control stream of tickrate changes.
     pub tickrate_tx: tokio::sync::watch::Sender<u8>,
-    /// The underlying connection for opening object streams.
-    pub connection: iroh::endpoint::Connection,
 }
 
 #[derive(Debug)]
@@ -381,7 +380,10 @@ async fn thread_loop(
                     let _ = state.object_pose.pframes.upsert_sync(object_id, msg);
                 }
             }
-            NetworkCommand::SetObjectTickrate { object_id, tickrate } => {
+            NetworkCommand::SetObjectTickrate {
+                object_id,
+                tickrate,
+            } => {
                 let _ = state.object_pose.tickrates.upsert_sync(object_id, tickrate);
             }
             NetworkCommand::UpdateGrabbedObjects(objects) => {

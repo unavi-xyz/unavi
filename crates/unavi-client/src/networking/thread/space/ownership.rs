@@ -133,9 +133,8 @@ mod tests {
     }
 
     fn make_object(id: u8) -> ObjectId {
-        let mut record = [0u8; 32];
-        record[0] = id;
-        ObjectId { record, index: 0 }
+        let record = blake3::hash(&[id]);
+        ObjectId::new(record, 0)
     }
 
     #[test]

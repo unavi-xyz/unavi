@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use avian3d::dynamics::rigid_body::{AngularVelocity, LinearVelocity};
 use bevy::prelude::*;
 use bevy_wds::{LocalActor, LocalBlobs, RemoteActor};
 use iroh::EndpointId;
@@ -29,6 +30,7 @@ pub fn recv_network_event(
     dyn_objects: Query<(Entity, &DynObjectId)>,
     locally_owned: Query<(), With<LocallyOwned>>,
     mut object_transforms: Query<&mut Transform, With<DynObjectId>>,
+    mut velocities: Query<(&mut LinearVelocity, &mut AngularVelocity), With<DynObjectId>>,
 ) {
     while let Ok(event) = nt.event_rx.try_recv() {
         match event {
@@ -103,8 +105,8 @@ pub fn recv_network_event(
                     if is_local {
                         commands.entity(entity).insert(LocallyOwned);
                     } else if owner.is_some() {
-                        // Remote claimed - add Grabbed to prevent local grab.
-                        commands.entity(entity).insert(Grabbed);
+                        // Remote claimed - don't add Grabbed here, wait for
+                        // ObjectGrabChanged.
                         commands.entity(entity).remove::<LocallyOwned>();
                     } else {
                         // Released (owner disconnected) - remove both.
@@ -128,6 +130,30 @@ pub fn recv_network_event(
                             transform.translation = state.pos.into();
                             transform.rotation = state.rot.into();
                         }
+
+                        // Apply velocities for smooth prediction/interpolation.
+                        if let Ok((mut lin_vel, mut ang_vel)) = velocities.get_mut(entity) {
+                            lin_vel.0 = state.vel.into();
+                            ang_vel.0 = state.ang_vel.into();
+                        }
+                    }
+                }
+            }
+            NetworkEvent::ObjectGrabChanged { object_id, grabbed } => {
+                for (entity, dyn_id) in dyn_objects.iter() {
+                    if dyn_id.0 != object_id {
+                        continue;
+                    }
+
+                    // Don't modify grab state of locally owned objects.
+                    if locally_owned.contains(entity) {
+                        continue;
+                    }
+
+                    if grabbed {
+                        commands.entity(entity).insert(Grabbed);
+                    } else {
+                        commands.entity(entity).remove::<Grabbed>();
                     }
                 }
             }

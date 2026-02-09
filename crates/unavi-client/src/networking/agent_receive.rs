@@ -5,7 +5,7 @@ use bevy_vrm::BoneName;
 use iroh::EndpointId;
 use unavi_avatar::{AvatarAnimationNodes, AvatarBones, bone_mask_group};
 
-use crate::networking::{event::AgentInboundState, thread::space::MAX_TICKRATE};
+use crate::networking::{event::AgentInboundState, thread::space::MAX_AGENT_TICKRATE};
 
 /// Tracks which bones are masked from animation and their target rotations.
 #[derive(Component, Default)]
@@ -31,7 +31,7 @@ impl Default for TransformTarget {
         Self {
             translation: Vec3::ZERO,
             rotation: Quat::IDENTITY,
-            speed: f32::from(MAX_TICKRATE),
+            speed: f32::from(MAX_AGENT_TICKRATE),
         }
     }
 }

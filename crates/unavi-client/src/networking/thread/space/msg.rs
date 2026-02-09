@@ -44,6 +44,17 @@ pub enum ControlMsg {
     TickrateAck { hz: u8 },
 }
 
+/// Control messages for object streams.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum ObjectControlMsg {
+    /// Request a tickrate for this object.
+    TickrateRequest { hz: u8 },
+    /// Acknowledge tickrate.
+    TickrateAck { hz: u8 },
+    /// Notify grab state changed.
+    GrabStateChanged { grabbed: bool },
+}
+
 // Object messages.
 
 /// Object I-frame message for a single object (sent on its dedicated stream).

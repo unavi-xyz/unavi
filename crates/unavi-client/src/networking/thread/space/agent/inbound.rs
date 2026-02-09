@@ -1,4 +1,4 @@
-//! Inbound stream handlers for agent data.
+//! Agent inbound streaming - receives agent data from remote peers.
 //!
 //! Stream routing is handled by `SpaceProtocol` in mod.rs.
 //! Datagram handling is in `datagram.rs`.
@@ -12,14 +12,14 @@ use iroh::EndpointId;
 use crate::networking::thread::{
     InboundState,
     space::{
-        MAX_TICKRATE,
+        MAX_AGENT_TICKRATE,
         buffer::CONTROL_MSG_MAX_SIZE,
         msg::{AgentIFrameMsg, ControlMsg},
     },
 };
 
-/// Receives I-frames from the reliable stream.
-pub async fn recv_iframes(
+/// Receive agent I-frames from the reliable stream.
+pub async fn recv_agent_iframes(
     mut stream: iroh::endpoint::RecvStream,
     state: &InboundState,
     #[cfg_attr(not(feature = "devtools-network"), expect(unused))] remote: EndpointId,
@@ -62,8 +62,8 @@ pub async fn recv_iframes(
     Ok(())
 }
 
-/// Responds to tickrate negotiation requests.
-pub async fn respond_tickrate(
+/// Handle tickrate negotiation request (responder side).
+pub async fn handle_tickrate_request(
     mut tx: iroh::endpoint::SendStream,
     mut rx: iroh::endpoint::RecvStream,
     state: &InboundState,
@@ -84,7 +84,7 @@ pub async fn respond_tickrate(
         bail!("expected TickrateRequest, got {request:?}");
     };
 
-    let effective = their_hz.min(MAX_TICKRATE);
+    let effective = their_hz.min(MAX_AGENT_TICKRATE);
     state.tickrate.store(effective, Ordering::Relaxed);
 
     let ack = ControlMsg::TickrateAck { hz: effective };
@@ -94,7 +94,7 @@ pub async fn respond_tickrate(
     tx.write_all(&len.to_le_bytes()).await?;
     tx.write_all(bytes).await?;
 
-    info!(hz = effective, "tickrate negotiated (inbound)");
+    info!(hz = effective, "agent tickrate negotiated (inbound)");
 
     loop {
         let mut len_buf = [0u8; 4];

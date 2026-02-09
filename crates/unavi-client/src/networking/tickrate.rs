@@ -7,7 +7,7 @@ use crate::networking::{
     agent_receive::RemoteAgent,
     thread::{
         NetworkCommand, NetworkingThread,
-        space::{MAX_TICKRATE, MIN_TICKRATE},
+        space::{MAX_AGENT_TICKRATE, MIN_TICKRATE},
     },
 };
 
@@ -25,7 +25,7 @@ impl Default for AgentTickrateConfig {
     fn default() -> Self {
         Self {
             min: MIN_TICKRATE,
-            max: MAX_TICKRATE,
+            max: MAX_AGENT_TICKRATE,
         }
     }
 }

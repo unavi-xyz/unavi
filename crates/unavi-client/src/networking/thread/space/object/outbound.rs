@@ -5,68 +5,55 @@
 //! 2. Send I-frames reliably on the stream (without `object_id`, it's known from init)
 //! 3. Send P-frames as datagrams (tagged with object ID for routing)
 
-use std::sync::{Arc, atomic::AtomicU8};
-
-use bevy::log::debug;
-use bytes::Bytes;
-use iroh::{EndpointId, endpoint::Connection};
-
-use crate::networking::thread::space::{
-    MAX_TICKRATE,
-    buffer::{DATAGRAM_MAX_SIZE, OBJECT_IFRAME_MSG_MAX_SIZE},
-    msg::{Datagram, ObjectIFrameMsg, ObjectPFrameDatagram, StreamInit},
-    types::object_id::ObjectId,
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+    time::Duration,
 };
 
-use super::super::agent::outbound::send_stream_init;
+use bevy::{
+    log::{debug, warn},
+    prelude::Resource,
+};
+use bytes::Bytes;
+use iroh::{EndpointId, endpoint::Connection};
+use tokio::sync::watch;
 
-/// State for a single object's outbound stream.
-///
-/// Each object stream has its own tickrate that can be adjusted based on
-/// distance. The receiver calculates distance to the object and sends
-/// `ControlMsg::TickrateRequest` to adjust the update rate.
-pub struct ObjectStreamState {
-    pub object_id: ObjectId,
-    /// Current tickrate for this object stream.
-    /// Receiver can request lower tickrate for distant objects.
-    pub tickrate: Arc<AtomicU8>,
-    pub iframe_id: u16,
-    pub pframe_seq: u16,
-}
+use crate::networking::thread::{
+    ObjectPoseState,
+    space::{
+        MAX_OBJECT_TICKRATE,
+        buffer::{CONTROL_MSG_MAX_SIZE, DATAGRAM_MAX_SIZE, OBJECT_IFRAME_MSG_MAX_SIZE},
+        msg::{Datagram, ObjectControlMsg, ObjectIFrameMsg, ObjectPFrameDatagram, StreamInit},
+        types::object_id::ObjectId,
+    },
+};
 
-impl ObjectStreamState {
-    pub fn new(object_id: ObjectId) -> Self {
-        Self {
-            object_id,
-            tickrate: Arc::new(AtomicU8::new(MAX_TICKRATE)),
-            iframe_id: 0,
-            pframe_seq: 0,
-        }
-    }
+use super::super::outbound::write_stream_init;
 
-    /// Update tickrate based on distance-based request.
-    ///
-    /// The effective tickrate is the minimum of local preference and remote request.
-    #[expect(unused)]
-    pub fn update_tickrate(&self, requested_hz: u8) {
-        use std::sync::atomic::Ordering;
-        let effective = requested_hz.min(MAX_TICKRATE);
-        self.tickrate.store(effective, Ordering::Relaxed);
-    }
+/// Track grabbed objects for network sync.
+#[derive(Resource, Default)]
+pub struct LocalGrabbedObjects(pub HashSet<ObjectId>);
+
+/// Per-object stream context.
+struct ObjectStreamContext {
+    send: iroh::endpoint::SendStream,
+    last_iframe_id: u16,
+    last_grabbed: bool,
 }
 
 /// Open a new object stream for a claimed object on an existing connection.
 pub async fn open_object_stream(
     connection: &Connection,
     object_id: ObjectId,
-    #[cfg_attr(not(feature = "devtools-network"), expect(unused))] peer: EndpointId,
+    peer: EndpointId,
 ) -> anyhow::Result<(iroh::endpoint::SendStream, iroh::endpoint::RecvStream)> {
     debug!(?object_id, ?peer, "opening object stream");
 
     let (mut send, recv) = connection.open_bi().await?;
 
     // Send stream init with object ID.
-    send_stream_init(&mut send, &StreamInit::Object { object_id }).await?;
+    write_stream_init(&mut send, &StreamInit::Object { object_id }).await?;
 
     debug!(?object_id, ?peer, "object stream opened");
 
@@ -131,4 +118,123 @@ pub fn send_object_pframe(
     }
 
     Ok(())
+}
+
+/// Write a control message on an object stream.
+async fn write_control(
+    stream: &mut iroh::endpoint::SendStream,
+    msg: &ObjectControlMsg,
+) -> anyhow::Result<()> {
+    let mut buf = [0u8; CONTROL_MSG_MAX_SIZE];
+    let bytes = postcard::to_slice(msg, &mut buf)?;
+    let len = u32::try_from(bytes.len())?;
+    stream.write_all(&len.to_le_bytes()).await?;
+    stream.write_all(bytes).await?;
+    Ok(())
+}
+
+/// Stream objects to a peer.
+///
+/// Opens a dedicated stream for each claimed object and sends I-frames.
+/// P-frames are sent as datagrams when I-frame hasn't changed.
+/// Sends grab state changes when objects are grabbed/released locally.
+pub async fn stream_objects(
+    object_pose: Arc<ObjectPoseState>,
+    mut grabbed_rx: watch::Receiver<HashSet<ObjectId>>,
+    conn: &Connection,
+    peer: EndpointId,
+) -> anyhow::Result<()> {
+    // Track open streams and state per object.
+    let mut streams: HashMap<ObjectId, ObjectStreamContext> = HashMap::new();
+
+    loop {
+        let duration = Duration::from_secs_f32(1.0 / f32::from(MAX_OBJECT_TICKRATE));
+        n0_future::time::sleep(duration).await;
+
+        // Get current grabbed objects.
+        let grabbed_objects = grabbed_rx.borrow_and_update().clone();
+
+        // Collect I-frames and P-frames to send.
+        let mut iframes_to_send = Vec::new();
+        let mut pframes_to_send = Vec::new();
+        object_pose.iframes.iter_sync(|object_id, iframe| {
+            iframes_to_send.push((*object_id, iframe.clone()));
+            true
+        });
+        object_pose.pframes.iter_sync(|object_id, pframe| {
+            pframes_to_send.push((*object_id, pframe.clone()));
+            true
+        });
+
+        for (object_id, iframe) in iframes_to_send {
+            let is_grabbed = grabbed_objects.contains(&object_id);
+
+            // Check if we need to send grab state change.
+            if let Some(ctx) = streams.get_mut(&object_id)
+                && ctx.last_grabbed != is_grabbed
+            {
+                let msg = ObjectControlMsg::GrabStateChanged {
+                    grabbed: is_grabbed,
+                };
+                if let Err(err) = write_control(&mut ctx.send, &msg).await {
+                    warn!(?err, ?object_id, "failed to send grab state");
+                    streams.remove(&object_id);
+                    continue;
+                }
+                ctx.last_grabbed = is_grabbed;
+            }
+
+            // Check if I-frame changed.
+            if let Some(ctx) = streams.get(&object_id)
+                && ctx.last_iframe_id == iframe.id
+            {
+                // I-frame unchanged - send P-frame as datagram if available.
+                if let Some((_, pframe)) = pframes_to_send.iter().find(|(id, _)| *id == object_id)
+                    && let Err(err) = send_object_pframe(conn, pframe, peer)
+                {
+                    warn!(?err, ?object_id, "failed to send object P-frame");
+                }
+                continue;
+            }
+
+            // Open stream if needed.
+            let ctx = if let Some(ctx) = streams.get_mut(&object_id) {
+                ctx
+            } else {
+                let (send, _recv) = open_object_stream(conn, object_id, peer).await?;
+                streams.insert(
+                    object_id,
+                    ObjectStreamContext {
+                        send,
+                        last_iframe_id: 0,
+                        last_grabbed: false,
+                    },
+                );
+                let ctx = streams.get_mut(&object_id).expect("just inserted");
+
+                // Send initial grab state if grabbed.
+                if is_grabbed {
+                    let msg = ObjectControlMsg::GrabStateChanged { grabbed: true };
+                    if let Err(err) = write_control(&mut ctx.send, &msg).await {
+                        warn!(?err, ?object_id, "failed to send initial grab state");
+                        streams.remove(&object_id);
+                        continue;
+                    }
+                    ctx.last_grabbed = true;
+                }
+
+                streams.get_mut(&object_id).expect("just inserted")
+            };
+
+            // Send I-frame.
+            if let Err(err) = send_object_iframe(&mut ctx.send, &iframe, peer).await {
+                warn!(?err, ?object_id, "failed to send object I-frame");
+                // Remove stream on error (will be reopened on next tick).
+                streams.remove(&object_id);
+                continue;
+            }
+
+            ctx.last_iframe_id = iframe.id;
+        }
+    }
 }

@@ -8,7 +8,7 @@ use crate::networking::{
     object_publish::{DynObjectId, LocallyOwned},
     thread::{
         NetworkCommand, NetworkingThread,
-        space::{MAX_AGENT_TICKRATE, MAX_OBJECT_TICKRATE, MIN_TICKRATE},
+        space::{MAX_AGENT_TICKRATE, MAX_OBJECT_TICKRATE, MIN_AGENT_TICKRATE, MIN_OBJECT_TICKRATE},
     },
 };
 
@@ -25,7 +25,7 @@ pub struct AgentTickrateConfig {
 impl Default for AgentTickrateConfig {
     fn default() -> Self {
         Self {
-            min: MIN_TICKRATE,
+            min: MIN_AGENT_TICKRATE,
             max: MAX_AGENT_TICKRATE,
         }
     }
@@ -84,7 +84,7 @@ pub fn update_object_tickrates(
 
     for (dyn_obj, object_tr) in &remote_objects {
         let distance = local_pos.distance(object_tr.translation);
-        let tickrate = tickrate_for_distance(distance, MIN_TICKRATE, MAX_OBJECT_TICKRATE);
+        let tickrate = tickrate_for_distance(distance, MIN_OBJECT_TICKRATE, MAX_OBJECT_TICKRATE);
 
         let _ = nt.command_tx.try_send(NetworkCommand::SetObjectTickrate {
             object_id: dyn_obj.0,

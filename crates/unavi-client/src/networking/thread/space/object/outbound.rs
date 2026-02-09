@@ -50,6 +50,8 @@ struct ObjectStreamContext {
     last_requested_tickrate: u8,
     last_iframe_id: u16,
     last_grabbed: bool,
+    /// Sequence number for P-frames, reset on I-frame change.
+    pframe_seq: u16,
 }
 
 /// Open control and iframe streams for a claimed object.
@@ -78,6 +80,7 @@ async fn open_object_streams(
         last_requested_tickrate: MAX_OBJECT_TICKRATE,
         last_iframe_id: 0,
         last_grabbed: false,
+        pframe_seq: 0,
     })
 }
 
@@ -253,14 +256,19 @@ pub async fn stream_objects(
             }
 
             // Check if I-frame changed.
-            if let Some(ctx) = streams.get(&object_id)
+            if let Some(ctx) = streams.get_mut(&object_id)
                 && ctx.last_iframe_id == iframe.id
             {
                 // I-frame unchanged - send P-frame as datagram if available.
-                if let Some((_, pframe)) = pframes_to_send.iter().find(|(id, _)| *id == object_id)
-                    && let Err(err) = send_object_pframe(conn, pframe, peer)
-                {
-                    warn!(?err, ?object_id, "failed to send object P-frame");
+                if let Some((_, pframe)) = pframes_to_send.iter().find(|(id, _)| *id == object_id) {
+                    ctx.pframe_seq = ctx.pframe_seq.wrapping_add(1);
+                    let msg = ObjectPFrameDatagram {
+                        seq: ctx.pframe_seq,
+                        ..pframe.clone()
+                    };
+                    if let Err(err) = send_object_pframe(conn, &msg, peer) {
+                        warn!(?err, ?object_id, "failed to send object P-frame");
+                    }
                 }
                 continue;
             }
@@ -295,6 +303,7 @@ pub async fn stream_objects(
             }
 
             ctx.last_iframe_id = iframe.id;
+            ctx.pframe_seq = 0;
         }
     }
 }

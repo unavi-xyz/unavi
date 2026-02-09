@@ -10,6 +10,7 @@ use crate::networking::{
     AgentTickrateConfig,
     agent_receive::{RemoteAgent, TrackedBoneState, TransformTarget},
     object_publish::{DynObjectId, Grabbed, LocallyOwned},
+    object_receive::ObjectTransformTarget,
     thread::{InboundState, NetworkEvent, NetworkingThread},
 };
 
@@ -27,10 +28,16 @@ pub fn recv_network_event(
     local_actors: Query<Entity, With<LocalActor>>,
     local_blobs: Query<Entity, With<LocalBlobs>>,
     local_endpoint: Option<Res<LocalEndpointId>>,
-    dyn_objects: Query<(Entity, &DynObjectId)>,
+    dyn_objects: Query<(
+        Entity,
+        &DynObjectId,
+        &Transform,
+        Option<&LinearVelocity>,
+        Option<&AngularVelocity>,
+    )>,
     locally_owned: Query<(), With<LocallyOwned>>,
-    mut object_transforms: Query<&mut Transform, With<DynObjectId>>,
-    mut velocities: Query<(&mut LinearVelocity, &mut AngularVelocity), With<DynObjectId>>,
+    object_targets: Query<(), With<ObjectTransformTarget>>,
+    mut object_targets_mut: Query<&mut ObjectTransformTarget>,
 ) {
     while let Ok(event) = nt.event_rx.try_recv() {
         match event {
@@ -97,7 +104,7 @@ pub fn recv_network_event(
                     info!(object = %object_id.index, "object released");
                 }
 
-                for (entity, dyn_id) in dyn_objects.iter() {
+                for (entity, dyn_id, transform, lin_vel, ang_vel) in dyn_objects.iter() {
                     if dyn_id.0 != object_id {
                         continue;
                     }
@@ -105,8 +112,15 @@ pub fn recv_network_event(
                     if is_local {
                         commands.entity(entity).insert(LocallyOwned);
                     } else if owner.is_some() {
-                        // Remote claimed - don't add Grabbed here, wait for
-                        // ObjectGrabChanged.
+                        // Remote claimed - sync target to current transform to
+                        // avoid lerping from stale position.
+                        let synced_target =
+                            ObjectTransformTarget::from_current(transform, lin_vel, ang_vel);
+                        if let Ok(mut target) = object_targets_mut.get_mut(entity) {
+                            *target = synced_target;
+                        } else {
+                            commands.entity(entity).insert(synced_target);
+                        }
                         commands.entity(entity).remove::<LocallyOwned>();
                     } else {
                         // Released (owner disconnected) - remove both.
@@ -116,7 +130,7 @@ pub fn recv_network_event(
             }
             NetworkEvent::ObjectPoseUpdate { objects, .. } => {
                 for (object_id, state) in objects {
-                    for (entity, dyn_id) in dyn_objects.iter() {
+                    for (entity, dyn_id, ..) in dyn_objects.iter() {
                         if dyn_id.0 != object_id {
                             continue;
                         }
@@ -126,21 +140,26 @@ pub fn recv_network_event(
                             continue;
                         }
 
-                        if let Ok(mut transform) = object_transforms.get_mut(entity) {
-                            transform.translation = state.pos.into();
-                            transform.rotation = state.rot.into();
-                        }
+                        let new_target = ObjectTransformTarget {
+                            translation: state.pos.into(),
+                            rotation: state.rot.into(),
+                            linear_velocity: state.vel.into(),
+                            angular_velocity: state.ang_vel.into(),
+                        };
 
-                        // Apply velocities for smooth prediction/interpolation.
-                        if let Ok((mut lin_vel, mut ang_vel)) = velocities.get_mut(entity) {
-                            lin_vel.0 = state.vel.into();
-                            ang_vel.0 = state.ang_vel.into();
+                        // Add or update target for lerping.
+                        if object_targets.contains(entity) {
+                            if let Ok(mut target) = object_targets_mut.get_mut(entity) {
+                                *target = new_target;
+                            }
+                        } else {
+                            commands.entity(entity).insert(new_target);
                         }
                     }
                 }
             }
             NetworkEvent::ObjectGrabChanged { object_id, grabbed } => {
-                for (entity, dyn_id) in dyn_objects.iter() {
+                for (entity, dyn_id, ..) in dyn_objects.iter() {
                     if dyn_id.0 != object_id {
                         continue;
                     }

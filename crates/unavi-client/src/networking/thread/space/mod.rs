@@ -24,6 +24,7 @@ pub mod msg;
 pub mod object;
 pub mod outbound;
 pub mod ownership;
+pub mod reorder;
 pub mod types;
 
 /// ALPN for space protocol (agent and object sync).
@@ -31,7 +32,8 @@ pub const ALPN: &[u8] = b"wired/space";
 
 pub const MAX_AGENT_TICKRATE: u8 = 20;
 pub const MAX_OBJECT_TICKRATE: u8 = 10;
-pub const MIN_TICKRATE: u8 = 5;
+pub const MIN_AGENT_TICKRATE: u8 = 5;
+pub const MIN_OBJECT_TICKRATE: u8 = 2;
 
 /// Per-space shared state for gossip and ownership.
 pub struct SpaceHandle {

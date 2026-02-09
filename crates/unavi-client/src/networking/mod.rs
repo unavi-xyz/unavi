@@ -7,6 +7,7 @@ mod agent_receive;
 mod event;
 mod lifecycle;
 pub mod object_publish;
+mod object_receive;
 mod publish_utils;
 pub mod thread;
 mod tickrate;
@@ -25,7 +26,7 @@ impl Plugin for NetworkingPlugin {
         });
 
         app.insert_resource(nt)
-            .insert_resource(TrackedBones::default())
+            .insert_resource(TrackedBones::desktop())
             .add_systems(
                 FixedUpdate,
                 (
@@ -42,6 +43,7 @@ impl Plugin for NetworkingPlugin {
                 Update,
                 (
                     agent_receive::lerp_to_target,
+                    object_receive::lerp_objects_to_target,
                     tickrate::update_peer_tickrates.run_if(on_timer(Duration::from_secs(2))),
                     tickrate::update_object_tickrates.run_if(on_timer(Duration::from_secs(2))),
                 ),

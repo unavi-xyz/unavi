@@ -64,11 +64,9 @@ pub fn lerp_objects_to_target(
         transform.rotation = transform.rotation.slerp(target.rotation, t);
 
         if let Some(mut lin_vel) = lin_vel {
-            // lin_vel.0 = lin_vel.0.lerp(target.linear_velocity, t);
             lin_vel.0 = target.linear_velocity;
         }
         if let Some(mut ang_vel) = ang_vel {
-            // ang_vel.0 = ang_vel.0.lerp(target.angular_velocity, t);
             ang_vel.0 = target.angular_velocity;
         }
     }

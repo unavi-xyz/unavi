@@ -1,6 +1,6 @@
 //! Physics state types for dynamic object serialization.
 
-use bevy::math::{Quat, Vec3};
+use bevy::math::Vec3;
 use postcard::experimental::max_size::MaxSize;
 use serde::{Deserialize, Serialize};
 
@@ -22,17 +22,6 @@ pub struct PhysicsIFrame {
     pub ang_vel: F32Vel,
 }
 
-impl PhysicsIFrame {
-    pub fn new(pos: Vec3, rot: Quat, vel: Vec3, ang_vel: Vec3) -> Self {
-        Self {
-            pos: pos.into(),
-            rot: rot.into(),
-            vel: vel.into(),
-            ang_vel: ang_vel.into(),
-        }
-    }
-}
-
 /// Delta physics state for P-frames.
 ///
 /// Contains deltas relative to the I-frame baseline for position and velocities.
@@ -50,26 +39,6 @@ impl MaxSize for PhysicsPFrame {
         + PackedQuat::POSTCARD_MAX_SIZE
         + F16Vel::POSTCARD_MAX_SIZE
         + F16Vel::POSTCARD_MAX_SIZE;
-}
-
-impl PhysicsPFrame {
-    /// Create from current state and I-frame baseline.
-    pub fn new(
-        current_pos: Vec3,
-        baseline_pos: Vec3,
-        rot: Quat,
-        current_vel: Vec3,
-        baseline_vel: Vec3,
-        current_ang_vel: Vec3,
-        baseline_ang_vel: Vec3,
-    ) -> Self {
-        Self {
-            pos: F16Pos::from_delta(current_pos, baseline_pos),
-            rot: rot.into(),
-            vel: F16Vel::from_delta(current_vel, baseline_vel),
-            ang_vel: F16Vel::from_delta(current_ang_vel, baseline_ang_vel),
-        }
-    }
 }
 
 /// Baseline state for computing P-frame deltas.
@@ -92,6 +61,8 @@ impl From<&PhysicsIFrame> for PhysicsBaseline {
 
 #[cfg(test)]
 mod tests {
+    use bevy::math::Quat;
+
     use super::*;
 
     #[test]
@@ -101,7 +72,12 @@ mod tests {
         let vel = Vec3::new(0.5, 0.0, -0.5);
         let ang_vel = Vec3::new(0.1, 0.2, 0.0);
 
-        let iframe = PhysicsIFrame::new(pos, rot, vel, ang_vel);
+        let iframe = PhysicsIFrame {
+            pos: pos.into(),
+            rot: rot.into(),
+            vel: vel.into(),
+            ang_vel: ang_vel.into(),
+        };
 
         let pos_back: Vec3 = iframe.pos.into();
         assert!((pos_back - pos).length() < 0.001);
@@ -121,15 +97,12 @@ mod tests {
         let current_ang_vel = Vec3::new(0.15, 0.25, 0.05);
         let rot = Quat::IDENTITY;
 
-        let pframe = PhysicsPFrame::new(
-            current_pos,
-            baseline_pos,
-            rot,
-            current_vel,
-            baseline_vel,
-            current_ang_vel,
-            baseline_ang_vel,
-        );
+        let pframe = PhysicsPFrame {
+            pos: F16Pos::from_delta(current_pos, baseline_pos),
+            rot: rot.into(),
+            vel: F16Vel::from_delta(current_vel, baseline_vel),
+            ang_vel: F16Vel::from_delta(current_ang_vel, baseline_ang_vel),
+        };
 
         // Reconstruct and verify.
         let reconstructed_pos = pframe.pos.apply_to(baseline_pos);

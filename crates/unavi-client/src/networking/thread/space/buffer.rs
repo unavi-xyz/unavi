@@ -50,14 +50,14 @@ pub const CONTROL_MSG_MAX_SIZE: usize = 8;
 /// Pre-allocated buffers for outbound serialization.
 pub struct SendBuffer {
     pub iframe: [u8; IFRAME_MSG_MAX_SIZE],
-    pub pframe: [u8; PFRAME_MSG_MAX_SIZE],
+    pub _pframe: [u8; PFRAME_MSG_MAX_SIZE],
 }
 
 impl SendBuffer {
     pub const fn new() -> Self {
         Self {
             iframe: [0u8; IFRAME_MSG_MAX_SIZE],
-            pframe: [0u8; PFRAME_MSG_MAX_SIZE],
+            _pframe: [0u8; PFRAME_MSG_MAX_SIZE],
         }
     }
 }
@@ -102,25 +102,4 @@ pub const DATAGRAM_MAX_SIZE: usize =
 
 const fn const_max(a: usize, b: usize) -> usize {
     if a > b { a } else { b }
-}
-
-/// Pre-allocated buffers for object outbound serialization.
-pub struct ObjectSendBuffer {
-    pub iframe: [u8; OBJECT_IFRAME_MSG_MAX_SIZE],
-    pub pframe: [u8; OBJECT_PFRAME_MSG_MAX_SIZE],
-}
-
-impl ObjectSendBuffer {
-    pub const fn new() -> Self {
-        Self {
-            iframe: [0u8; OBJECT_IFRAME_MSG_MAX_SIZE],
-            pframe: [0u8; OBJECT_PFRAME_MSG_MAX_SIZE],
-        }
-    }
-}
-
-impl Default for ObjectSendBuffer {
-    fn default() -> Self {
-        Self::new()
-    }
 }

@@ -123,7 +123,7 @@ pub fn send_object_pframe(
     let bytes = postcard::to_slice(&tagged, &mut buf)?;
 
     if connection.datagram_send_buffer_space() < bytes.len() {
-        debug!("datagram buffer full, dropping object P-frame");
+        warn!("datagram buffer full, dropping object P-frame");
         return Ok(());
     }
 
@@ -147,8 +147,11 @@ async fn try_read_control(
     rx: &mut iroh::endpoint::RecvStream,
     buf: &mut [u8],
 ) -> Option<ObjectControlMsg> {
-    match tokio::time::timeout(Duration::from_millis(1), read_control::<ObjectControlMsg>(rx, buf))
-        .await
+    match tokio::time::timeout(
+        Duration::from_millis(1),
+        read_control::<ObjectControlMsg>(rx, buf),
+    )
+    .await
     {
         Ok(Ok(msg)) => Some(msg),
         _ => None,
@@ -181,10 +184,7 @@ async fn handle_incoming_control(ctx: &mut ObjectStreamContext, object_id: Objec
 }
 
 /// Send a control message on the object control stream.
-async fn send_control(
-    ctx: &mut ObjectStreamContext,
-    msg: &ObjectControlMsg,
-) -> anyhow::Result<()> {
+async fn send_control(ctx: &mut ObjectStreamContext, msg: &ObjectControlMsg) -> anyhow::Result<()> {
     let mut buf = [0u8; CONTROL_MSG_MAX_SIZE];
     write_control(&mut ctx.ctrl_tx, msg, &mut buf).await
 }
@@ -209,18 +209,18 @@ pub async fn stream_objects(
         let grabbed_objects = grabbed_rx.borrow_and_update().clone();
 
         // Handle incoming control messages and send tickrate updates.
-        for (object_id, ctx) in streams.iter_mut() {
+        for (object_id, ctx) in &mut streams {
             handle_incoming_control(ctx, *object_id).await;
 
             // Check if tickrate needs updating.
-            if let Some(desired) = object_pose.tickrates.read_sync(object_id, |_, hz| *hz) {
-                if ctx.last_requested_tickrate != desired {
-                    let msg = ObjectControlMsg::TickrateRequest { hz: desired };
-                    if let Err(err) = send_control(ctx, &msg).await {
-                        warn!(?err, ?object_id, "failed to send tickrate request");
-                    } else {
-                        ctx.last_requested_tickrate = desired;
-                    }
+            if let Some(desired) = object_pose.tickrates.read_sync(object_id, |_, hz| *hz)
+                && ctx.last_requested_tickrate != desired
+            {
+                let msg = ObjectControlMsg::TickrateRequest { hz: desired };
+                if let Err(err) = send_control(ctx, &msg).await {
+                    warn!(?err, ?object_id, "failed to send tickrate request");
+                } else {
+                    ctx.last_requested_tickrate = desired;
                 }
             }
         }

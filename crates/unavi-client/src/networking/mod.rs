@@ -27,6 +27,7 @@ impl Plugin for NetworkingPlugin {
 
         app.insert_resource(nt)
             .insert_resource(TrackedBones::desktop())
+            .init_resource::<object_publish::ObjectBaselines>()
             .add_systems(
                 FixedUpdate,
                 (
@@ -35,6 +36,7 @@ impl Plugin for NetworkingPlugin {
                     agent_receive::receive_agent_transforms,
                     object_publish::detect_dynamic_objects,
                     object_publish::detect_removed_objects,
+                    object_publish::publish_initial_object_iframe,
                     object_publish::publish_object_physics,
                 )
                     .after(unavi_avatar::animation::weights::play_avatar_animations),

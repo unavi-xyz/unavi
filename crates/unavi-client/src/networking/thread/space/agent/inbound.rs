@@ -78,7 +78,12 @@ pub async fn handle_control_stream(
                 let effective = hz.min(MAX_AGENT_TICKRATE);
                 state.tickrate.store(effective, Ordering::Relaxed);
 
-                write_control(&mut tx, &ControlMsg::TickrateAck { hz: effective }, &mut buf).await?;
+                write_control(
+                    &mut tx,
+                    &ControlMsg::TickrateAck { hz: effective },
+                    &mut buf,
+                )
+                .await?;
                 debug!(hz = effective, "agent tickrate updated (inbound)");
             }
             ControlMsg::TickrateAck { hz } => {

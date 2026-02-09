@@ -64,7 +64,6 @@ pub async fn connect_to_peer(state: NetworkThreadState, peer: EndpointAddr) -> a
         task: AbortOnDropHandle::new(task),
         tickrate,
         tickrate_tx,
-        connection,
     };
 
     if let Err((_, existing)) = state.outbound.insert_async(peer.id, conn).await {

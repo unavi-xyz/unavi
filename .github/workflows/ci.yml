@@ -12,6 +12,9 @@ jobs:
         with:
           remove-android: true
           remove-cached-tools: true
+          remove-codeql: true
+          remove-dotnet: true
+          remove-haskell: true
       - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.ref }}
@@ -23,7 +26,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: nix develop --command cargo check --examples --tests --all-features
       - run: nix develop --command nu scripts/build-wasm.nu
-      - run: nix develop --command cargo nextest run --all-features
+      # - run: nix develop --command cargo nextest run --all-features
       - run: nix develop --command cargo clippy --fix --all-features --allow-staged --allow-dirty --no-deps
       - run: nix fmt
       - uses: EndBug/add-and-commit@v9

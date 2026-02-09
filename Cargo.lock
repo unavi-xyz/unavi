@@ -199,7 +199,7 @@ dependencies = [
  "bitflags 2.10.0",
  "cc",
  "cesu8",
- "jni",
+ "jni 0.21.1",
  "jni-sys",
  "libc",
  "log",
@@ -1356,6 +1356,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_egui"
+version = "0.38.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dadb9d5008b404675548c5b0da4e2b2440fb7b91ac789f79185041b9538c73d0"
+dependencies = [
+ "bevy_app",
+ "bevy_camera",
+ "bevy_derive",
+ "bevy_ecs",
+ "bevy_input",
+ "bevy_log",
+ "bevy_math",
+ "bevy_platform",
+ "bevy_reflect",
+ "bevy_time",
+ "bevy_utils",
+ "bevy_window",
+ "bevy_winit",
+ "crossbeam-channel",
+ "egui",
+ "getrandom 0.3.4",
+ "image",
+ "js-sys",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "winit",
+]
+
+[[package]]
 name = "bevy_encase_derive"
 version = "0.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1701,6 +1731,32 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ef8e4b7e61dfe7719bb03c884dc270cd46a82efb40f93e9933b990c5c190c59"
 
 [[package]]
+name = "bevy_mod_openxr"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1ead3d12dc1c364bc8f5d063c8cd82df23a3d6261807abecfbbca70ca3cb2c15"
+dependencies = [
+ "android_system_properties",
+ "ash",
+ "bevy_app",
+ "bevy_camera",
+ "bevy_derive",
+ "bevy_ecs",
+ "bevy_log",
+ "bevy_math",
+ "bevy_mod_xr",
+ "bevy_platform",
+ "bevy_render",
+ "bevy_transform",
+ "jni 0.20.0",
+ "ndk-context",
+ "openxr",
+ "thiserror 2.0.17",
+ "wgpu",
+ "wgpu-hal",
+]
+
+[[package]]
 name = "bevy_mod_outline"
 version = "0.11.0"
 source = "git+https://github.com/komadori/bevy_mod_outline?branch=bevy-0.17#9b509abe41ac1d2b882adaf63855e24a20ced3ff"
@@ -1712,6 +1768,24 @@ dependencies = [
  "nonmax",
  "thiserror 1.0.69",
  "wgpu-types",
+]
+
+[[package]]
+name = "bevy_mod_xr"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4107b79e3e3b38bc57a7c3fceb465300070b4bc3d2ebd839a9e04468b06cc11c"
+dependencies = [
+ "bevy_app",
+ "bevy_camera",
+ "bevy_color",
+ "bevy_derive",
+ "bevy_ecs",
+ "bevy_gizmos",
+ "bevy_log",
+ "bevy_math",
+ "bevy_render",
+ "bevy_transform",
 ]
 
 [[package]]
@@ -2305,6 +2379,26 @@ dependencies = [
  "web-sys",
  "wgpu-types",
  "winit",
+]
+
+[[package]]
+name = "bevy_xr_utils"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f82cd353262258aae6048ccad3544b8a978a301d9eb954d66efef6dccc91dfa9"
+dependencies = [
+ "bevy_app",
+ "bevy_color",
+ "bevy_derive",
+ "bevy_ecs",
+ "bevy_gizmos",
+ "bevy_log",
+ "bevy_math",
+ "bevy_mod_openxr",
+ "bevy_mod_xr",
+ "bevy_transform",
+ "openxr",
+ "openxr_mndx_xdev_space",
 ]
 
 [[package]]
@@ -3230,7 +3324,7 @@ dependencies = [
  "core-foundation-sys",
  "coreaudio-rs",
  "dasp_sample",
- "jni",
+ "jni 0.21.1",
  "js-sys",
  "libc",
  "mach2",
@@ -3876,7 +3970,7 @@ dependencies = [
  "dioxus-cli-config",
  "http",
  "infer",
- "jni",
+ "jni 0.21.1",
  "ndk 0.9.0",
  "ndk-context",
  "ndk-sys 0.6.0+11769913",
@@ -3978,7 +4072,7 @@ dependencies = [
  "generational-box",
  "global-hotkey",
  "infer",
- "jni",
+ "jni 0.21.1",
  "lazy-js-bundle",
  "libc",
  "muda",
@@ -4491,6 +4585,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ecolor"
+version = "0.33.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71ddb8ac7643d1dba1bb02110e804406dd459a838efcb14011ced10556711a8e"
+dependencies = [
+ "emath",
+]
+
+[[package]]
 name = "ed25519"
 version = "3.0.0-rc.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4515,6 +4618,23 @@ dependencies = [
  "signature 3.0.0-rc.6",
  "subtle",
  "zeroize",
+]
+
+[[package]]
+name = "egui"
+version = "0.33.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6a9b567d356674e9a5121ed3fedfb0a7c31e059fe71f6972b691bcd0bfc284e3"
+dependencies = [
+ "ahash",
+ "bitflags 2.10.0",
+ "emath",
+ "epaint",
+ "log",
+ "nohash-hasher",
+ "profiling",
+ "smallvec",
+ "unicode-segmentation",
 ]
 
 [[package]]
@@ -4546,6 +4666,12 @@ dependencies = [
  "subtle",
  "zeroize",
 ]
+
+[[package]]
+name = "emath"
+version = "0.33.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "491bdf728bf25ddd9ad60d4cf1c48588fa82c013a2440b91aa7fc43e34a07c32"
 
 [[package]]
 name = "embed-resource"
@@ -4711,6 +4837,22 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.113",
+]
+
+[[package]]
+name = "epaint"
+version = "0.33.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "009d0dd3c2163823a0abdb899451ecbc78798dec545ee91b43aff1fa790bab62"
+dependencies = [
+ "ab_glyph",
+ "ahash",
+ "ecolor",
+ "emath",
+ "log",
+ "nohash-hasher",
+ "parking_lot",
+ "profiling",
 ]
 
 [[package]]
@@ -7254,6 +7396,20 @@ dependencies = [
 
 [[package]]
 name = "jni"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "039022cdf4d7b1cf548d31f60ae783138e5fd42013f6271049d7df7afadef96c"
+dependencies = [
+ "cesu8",
+ "combine",
+ "jni-sys",
+ "log",
+ "thiserror 1.0.69",
+ "walkdir",
+]
+
+[[package]]
+name = "jni"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a87aa2bb7d2af34197c04845522473242e1aa17c12f4935d5856491a7fb8c97"
@@ -8058,6 +8214,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "mint"
+version = "0.5.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e53debba6bda7a793e5f99b8dacf19e626084f525f7829104ba9898f367d85ff"
+
+[[package]]
 name = "mio"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8474,6 +8636,12 @@ name = "nodrop"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72ef4a56884ca558e5ddb05a1d1e7e1bfd9a68d9ed024c21704cc98872dae1bb"
+
+[[package]]
+name = "nohash-hasher"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2bf50223579dc7cdcfb3bfcacf7069ff68243f8c363f62ffa99cf000a6b9c451"
 
 [[package]]
 name = "nom"
@@ -9008,7 +9176,7 @@ version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8b61bebd49e5d43f5f8cc7ee2891c16e0f41ec7954d36bcb6c14c5e0de867fb"
 dependencies = [
- "jni",
+ "jni 0.21.1",
  "ndk 0.8.0",
  "ndk-context",
  "num-derive",
@@ -9117,6 +9285,38 @@ dependencies = [
  "libc",
  "pkg-config",
  "vcpkg",
+]
+
+[[package]]
+name = "openxr"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2a2d6934d2508f94fd4cbda6c2a326f111f60ce59fd9136df6d478564397dd40"
+dependencies = [
+ "libc",
+ "libloading 0.8.9",
+ "ndk-context",
+ "openxr-sys",
+]
+
+[[package]]
+name = "openxr-sys"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f10e7e38c47f2175fc39363713b656db899fa0b4a14341029702cbdfa6f44d05"
+dependencies = [
+ "cmake",
+ "libc",
+ "mint",
+]
+
+[[package]]
+name = "openxr_mndx_xdev_space"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc03c3948dceb287224eaa9079a5d4f690e91b43a2385da6c686edf0f850408a"
+dependencies = [
+ "openxr",
 ]
 
 [[package]]
@@ -11052,7 +11252,7 @@ checksum = "19787cda76408ec5404443dc8b31795c87cd8fec49762dc75fa727740d34acc1"
 dependencies = [
  "core-foundation 0.10.1",
  "core-foundation-sys",
- "jni",
+ "jni 0.21.1",
  "log",
  "once_cell",
  "rustls",
@@ -11073,7 +11273,7 @@ checksum = "1d99feebc72bae7ab76ba994bb5e121b8d83d910ca40b36e0921f53becc41784"
 dependencies = [
  "core-foundation 0.10.1",
  "core-foundation-sys",
- "jni",
+ "jni 0.21.1",
  "log",
  "once_cell",
  "rustls",
@@ -11222,19 +11422,26 @@ dependencies = [
 [[package]]
 name = "schminput"
 version = "0.4.0"
-source = "git+https://github.com/oelison/Schminput#e401ae1157faa294222d57bc484901258843884f"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "266570ca44f21af75bafadef1560b1d7baa5ab660b421151ea48710231eb81f2"
 dependencies = [
  "atomicow",
  "bevy",
+ "bevy_mod_openxr",
+ "bevy_mod_xr",
+ "openxr",
 ]
 
 [[package]]
 name = "schminput_rebinding"
 version = "0.4.0"
-source = "git+https://github.com/oelison/Schminput#e401ae1157faa294222d57bc484901258843884f"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "054eebce5dcdbbcf9cde9089b49f2b24795376e84bb26c29b93c6059208bd600"
 dependencies = [
  "atomicow",
  "bevy",
+ "bevy_egui",
+ "bevy_mod_xr",
  "dirs 5.0.1",
  "schminput",
  "toml_edit 0.22.27",
@@ -12322,7 +12529,7 @@ dependencies = [
  "gdkwayland-sys",
  "gdkx11-sys",
  "gtk",
- "jni",
+ "jni 0.21.1",
  "lazy_static",
  "libc",
  "log",
@@ -13134,7 +13341,10 @@ dependencies = [
  "bevy",
  "bevy-hsd",
  "bevy-wds",
+ "bevy_mod_openxr",
+ "bevy_mod_xr",
  "bevy_vrm",
+ "bevy_xr_utils",
  "bitflags 2.10.0",
  "blake3",
  "bytemuck",
@@ -14228,7 +14438,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00f1243ef785213e3a32fa0396093424a3a6ea566f9948497e5a2309261a4c97"
 dependencies = [
  "core-foundation 0.10.1",
- "jni",
+ "jni 0.21.1",
  "log",
  "ndk-context",
  "objc2 0.6.3",
@@ -14365,6 +14575,7 @@ dependencies = [
  "js-sys",
  "log",
  "naga",
+ "parking_lot",
  "portable-atomic",
  "profiling",
  "raw-window-handle 0.6.2",
@@ -14403,6 +14614,7 @@ dependencies = [
  "smallvec",
  "thiserror 2.0.17",
  "wgpu-core-deps-apple",
+ "wgpu-core-deps-emscripten",
  "wgpu-core-deps-wasm",
  "wgpu-core-deps-windows-linux-android",
  "wgpu-hal",
@@ -14414,6 +14626,15 @@ name = "wgpu-core-deps-apple"
 version = "26.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18ae5fbde6a4cbebae38358aa73fcd6e0f15c6144b67ef5dc91ded0db125dbdf"
+dependencies = [
+ "wgpu-hal",
+]
+
+[[package]]
+name = "wgpu-core-deps-emscripten"
+version = "26.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d7670e390f416006f746b4600fdd9136455e3627f5bd763abf9a65daa216dd2d"
 dependencies = [
  "wgpu-hal",
 ]
@@ -15461,7 +15682,7 @@ dependencies = [
  "html5ever",
  "http",
  "javascriptcore-rs",
- "jni",
+ "jni 0.21.1",
  "kuchikiki",
  "libc",
  "ndk 0.9.0",

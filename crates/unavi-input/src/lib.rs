@@ -73,8 +73,10 @@ fn setup_actions(mut cmds: Commands) {
         ),
         GamepadBindings::new().add_stick(
             GamepadBindingSource::LeftStickX,
-            GamepadBindingSource::LeftStickX,
+            GamepadBindingSource::LeftStickY,
         ),
+        #[cfg(not(target_family = "wasm"))]
+        OxrBindings::new().bindings(OCULUS_TOUCH_PROFILE, ["/user/hand/left/input/thumbstick"]),
     ));
     cmds.spawn((
         LookAction,
@@ -85,6 +87,8 @@ fn setup_actions(mut cmds: Commands) {
             GamepadBindingSource::RightStickY,
         ),
         MouseBindings::new().delta_motion(),
+        #[cfg(not(target_family = "wasm"))]
+        OxrBindings::new().bindings(OCULUS_TOUCH_PROFILE, ["/user/hand/right/input/thumbstick"]),
     ));
     cmds.spawn((
         JumpAction,

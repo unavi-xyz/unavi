@@ -9,7 +9,14 @@ version.workspace    = true
 [lints]
 workspace = true
 
+[features]
+
 [dependencies]
 bevy                = { default-features = true, workspace = true }
-schminput           = { git = "https://github.com/oelison/Schminput" }
-schminput_rebinding = { git = "https://github.com/oelison/Schminput" }
+schminput_rebinding = "0.4.0"
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+schminput = "0.4.0"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+schminput = { features = ["xr"], version = "0.4.0" }

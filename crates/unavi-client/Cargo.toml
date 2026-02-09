@@ -66,6 +66,9 @@ wasm-bindgen-futures = "0.4"
 web-sys              = { features = ["Location", "UrlSearchParams"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
+bevy_mod_openxr       = "0.4.0"
+bevy_mod_xr           = "0.4.0"
+bevy_xr_utils         = "0.4.0"
 directories.workspace = true
 iroh                  = { default-features = true, workspace = true }
 reqwest               = { features = ["blocking"], workspace = true }

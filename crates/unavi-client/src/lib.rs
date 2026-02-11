@@ -98,7 +98,6 @@ impl Plugin for UnaviPlugin {
 
         app.add_plugins((
             avian3d::PhysicsPlugins::default(),
-            avian3d::picking::PhysicsPickingPlugin,
             fade::FadePlugin,
             bevy_wds::WdsPlugin,
             bevy_hsd::HsdPlugin,

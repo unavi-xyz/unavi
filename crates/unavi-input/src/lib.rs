@@ -6,6 +6,7 @@ pub mod actions;
 #[cfg(not(target_family = "wasm"))]
 mod config;
 pub mod cursor_lock;
+pub mod raycast;
 
 pub use schminput;
 
@@ -40,6 +41,13 @@ impl Plugin for InputPlugin {
         app.add_plugins((DefaultSchminputPlugins, DefaultSchminputRebindingPlugins))
             .init_state::<cursor_lock::CursorGrabState>()
             .add_systems(Startup, actions::setup_actions)
-            .add_systems(Update, cursor_lock::cursor_grab);
+            .add_systems(Update, cursor_lock::cursor_grab)
+            .add_systems(FixedUpdate, raycast::read_raycast_input);
     }
 }
+
+#[derive(EntityEvent)]
+pub struct SqueezeDown(pub Entity);
+
+#[derive(EntityEvent)]
+pub struct SqueezeUp(pub Entity);

@@ -13389,6 +13389,7 @@ dependencies = [
 name = "unavi-input"
 version = "0.0.16"
 dependencies = [
+ "avian3d",
  "bevy",
  "schminput",
  "schminput_rebinding",

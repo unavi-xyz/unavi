@@ -12,6 +12,7 @@ workspace = true
 [features]
 
 [dependencies]
+avian3d.workspace   = true
 bevy                = { default-features = true, workspace = true }
 schminput_rebinding = "0.4.0"
 

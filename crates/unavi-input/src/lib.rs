@@ -47,7 +47,13 @@ impl Plugin for InputPlugin {
 }
 
 #[derive(EntityEvent)]
-pub struct SqueezeDown(pub Entity);
+pub struct SqueezeDown {
+    pub entity: Entity,
+    pub pointer: Entity,
+}
 
 #[derive(EntityEvent)]
-pub struct SqueezeUp(pub Entity);
+pub struct SqueezeUp {
+    pub entity: Entity,
+    pub pointer: Entity,
+}

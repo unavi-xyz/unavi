@@ -114,7 +114,10 @@ impl LocalAgentSpawner {
                 RayCaster::new(Vec3::ZERO, Dir3::NEG_Z)
                     .with_max_hits(1)
                     .with_solidness(false)
-                    .with_max_distance(4.0),
+                    .with_max_distance(4.0)
+                    .with_query_filter(
+                        SpatialQueryFilter::default().with_excluded_entities([body]),
+                    ),
             ));
         }
 

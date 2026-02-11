@@ -138,9 +138,9 @@ impl Plugin for UnaviPlugin {
 
         app.insert_resource(ClearColor(Color::BLACK))
             .init_resource::<grab::GrabbedObjects>()
-            .init_resource::<grab::PointerLocations3d>()
             .init_resource::<networking::thread::space::object::outbound::LocalGrabbedObjects>()
-            .add_observer(grab::handle_grab_click)
+            .add_observer(grab::handle_squeeze_down)
+            .add_observer(grab::handle_squeeze_up)
             .add_systems(
                 Startup,
                 (
@@ -153,9 +153,6 @@ impl Plugin for UnaviPlugin {
                 FixedUpdate,
                 (async_commands::apply_async_commands, scene::spawn_agent),
             )
-            .add_systems(
-                Update,
-                (grab::track_mouse_pointer, grab::move_grabbed_objects).chain(),
-            );
+            .add_systems(Update, grab::move_grabbed_objects);
     }
 }

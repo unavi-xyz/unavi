@@ -42,6 +42,7 @@ pub struct PoseActions {
     pub right_pose: Entity,
 }
 
+#[expect(clippy::too_many_lines)]
 pub(crate) fn setup_actions(mut cmds: Commands) {
     let core_set = cmds.spawn(ActionSet::new("core", "core", 0)).id();
 

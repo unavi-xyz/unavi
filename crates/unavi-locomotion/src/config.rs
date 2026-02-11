@@ -18,6 +18,7 @@ pub struct AgentConfig {
     pub vrm_height: Option<f32>,
     /// VRM avatar's shoulder width in meters (for capsule radius).
     pub vrm_radius: Option<f32>,
+    pub xr: bool,
 }
 
 impl Default for AgentConfig {
@@ -29,6 +30,7 @@ impl Default for AgentConfig {
             jump_height: DEFAULT_JUMP,
             vrm_height: None,
             vrm_radius: None,
+            xr: false,
         }
     }
 }

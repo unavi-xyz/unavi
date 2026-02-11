@@ -1,4 +1,4 @@
-use avian3d::prelude::{Collider, LockedAxes, RigidBody};
+use avian3d::prelude::{Collider, LockedAxes, RayCaster, RigidBody};
 use bevy::{
     camera::{Exposure, visibility::RenderLayers},
     pbr::{Atmosphere, AtmosphereSettings},
@@ -103,6 +103,15 @@ impl LocalAgentSpawner {
             ))
             .add_child(camera)
             .id();
+
+        if config.xr {
+            // In XR mode, spawn tracked hands.
+        } else {
+            // In desktop mode, raycast input from the head.
+            commands
+                .entity(tracked_head)
+                .insert(RayCaster::new(Vec3::ZERO, Dir3::NEG_Z));
+        }
 
         let avatar = AvatarSpawner {
             vrm_asset: self.vrm_asset.clone(),

@@ -151,7 +151,11 @@ impl Plugin for UnaviPlugin {
             )
             .add_systems(
                 FixedUpdate,
-                (async_commands::apply_async_commands, scene::spawn_agent),
+                (
+                    async_commands::apply_async_commands,
+                    grab::update_crosshair_mode,
+                    scene::spawn_agent,
+                ),
             )
             .add_systems(Update, grab::move_grabbed_objects);
     }

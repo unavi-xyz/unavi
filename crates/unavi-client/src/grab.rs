@@ -1,8 +1,8 @@
 use std::{collections::HashMap, time::Duration};
 
-use avian3d::prelude::{AngularVelocity, GravityScale, LinearVelocity};
+use avian3d::prelude::{AngularVelocity, GravityScale, LinearVelocity, RayHits};
 use bevy::prelude::*;
-use unavi_input::{SqueezeDown, SqueezeUp};
+use unavi_input::{SqueezeDown, SqueezeUp, crosshair::CrosshairMode, raycast::PrimaryRaycastInput};
 
 use crate::networking::{
     object_publish::{DynObjectId, Grabbed, LocallyOwned},
@@ -147,8 +147,7 @@ pub fn move_grabbed_objects(
         let obj_tr = obj_transform.compute_transform();
 
         // Position tracking
-        let target_pos =
-            pointer_tr.translation + pointer_tr.rotation * grab_state.position_offset;
+        let target_pos = pointer_tr.translation + pointer_tr.rotation * grab_state.position_offset;
         let delta = target_pos - obj_tr.translation;
         let dist = delta.length();
 
@@ -197,4 +196,25 @@ pub fn setup_grabbed_hooks(world: &mut World) {
                 gravity.0 = 1.0;
             }
         });
+}
+
+pub fn update_crosshair_mode(
+    mut crosshair: Query<&mut CrosshairMode>,
+    ray: Query<&RayHits, With<PrimaryRaycastInput>>,
+
+    grabbable: Query<(), With<DynObjectId>>,
+) {
+    let Ok(hits) = ray.single() else { return };
+
+    let Ok(mut mode) = crosshair.single_mut() else {
+        return;
+    };
+
+    if let Some(hit) = hits.iter().next()
+        && grabbable.contains(hit.entity)
+    {
+        *mode = CrosshairMode::Active;
+    } else {
+        *mode = CrosshairMode::Inactive;
+    }
 }

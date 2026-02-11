@@ -5,7 +5,7 @@ use schminput_rebinding::DefaultSchminputRebindingPlugins;
 pub mod actions;
 #[cfg(not(target_family = "wasm"))]
 mod config;
-mod crosshair;
+pub mod crosshair;
 pub mod cursor_lock;
 pub mod raycast;
 
@@ -45,11 +45,11 @@ impl Plugin for InputPlugin {
                 Startup,
                 (actions::setup_actions, crosshair::spawn_crosshair),
             )
-            .add_systems(FixedUpdate, raycast::read_raycast_input)
             .add_systems(
-                Update,
-                (cursor_lock::cursor_grab, crosshair::lerp_fixed_targets),
-            );
+                FixedUpdate,
+                (raycast::read_raycast_input, crosshair::set_crosshair_mesh),
+            )
+            .add_systems(Update, cursor_lock::cursor_grab);
     }
 }
 

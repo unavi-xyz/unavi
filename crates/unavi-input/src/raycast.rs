@@ -2,11 +2,7 @@ use avian3d::prelude::*;
 use bevy::prelude::*;
 use schminput::BoolActionValue;
 
-use crate::{
-    SqueezeDown, SqueezeUp,
-    actions::CoreActions,
-    crosshair::{Crosshair, FixedTargetTranslation},
-};
+use crate::{SqueezeDown, SqueezeUp, actions::CoreActions, crosshair::Crosshair};
 
 #[derive(Component)]
 pub struct PrimaryRaycastInput;
@@ -16,10 +12,7 @@ pub(crate) fn read_raycast_input(
     core_actions: Res<CoreActions>,
     raycaster: Query<(Entity, &RayHits, &GlobalTransform), With<PrimaryRaycastInput>>,
     bool_input: Query<&BoolActionValue>,
-    mut crosshair: Query<
-        (&mut Visibility, &mut FixedTargetTranslation, &mut Transform),
-        With<Crosshair>,
-    >,
+    mut crosshair: Query<(&mut Visibility, &mut Transform), With<Crosshair>>,
     mut is_squeezing: Local<bool>,
     mut squeeze_target: Local<Option<Entity>>,
 ) {
@@ -44,30 +37,25 @@ pub(crate) fn read_raycast_input(
         *squeeze_target = None;
     }
 
+    let Ok((mut crosshair_vis, mut crosshair_tr)) = crosshair.single_mut() else {
+        return;
+    };
+
     // Max hits should be set to 1.
     debug_assert!(ray_hits.iter().count() <= 1);
 
     let Some(hit) = ray_hits.iter().next() else {
-        if let Ok((mut visibility, ..)) = crosshair.single_mut() {
-            *visibility = Visibility::Hidden;
-        }
+        *crosshair_vis = Visibility::Hidden;
         return;
     };
 
-    if let Ok((mut visibility, mut target, mut crosshair_tr)) = crosshair.single_mut() {
-        let raycast_tr = raycast_global.compute_transform();
-        target.0 = raycast_tr.translation + (raycast_tr.forward() * hit.distance);
+    *crosshair_vis = Visibility::Visible;
 
-        if *visibility == Visibility::Hidden {
-            *visibility = Visibility::Visible;
-            // Instantly snap to correct position.
-            crosshair_tr.translation = target.0;
-        }
-        crosshair_tr.translation = target.0;
+    let raycast_tr = raycast_global.compute_transform();
+    crosshair_tr.translation = raycast_tr.translation + (raycast_tr.forward() * hit.distance);
 
-        let up = arbitrary_up(hit.normal);
-        *crosshair_tr = crosshair_tr.looking_to(up, hit.normal);
-    }
+    let up = arbitrary_up(hit.normal);
+    *crosshair_tr = crosshair_tr.looking_to(up, hit.normal);
 
     if !was_squeezing && *is_squeezing {
         commands

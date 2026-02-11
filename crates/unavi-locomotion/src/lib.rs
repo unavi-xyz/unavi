@@ -27,7 +27,6 @@ use bevy::{post_process::auto_exposure::AutoExposurePlugin, prelude::*};
 use bevy_tnua::prelude::*;
 use bevy_tnua_avian3d::TnuaAvian3dPlugin;
 use unavi_avatar::{AvatarPlugin, Grounded};
-use unavi_input::CursorGrabState;
 
 mod bones;
 pub mod config;
@@ -40,6 +39,7 @@ pub mod tracking;
 pub use config::{AgentConfig, WorldScale};
 pub use spawner::LocalAgentSpawner;
 pub use tracking::{TrackedHand, TrackedHead, TrackedPose, TrackingSource};
+use unavi_input::cursor_lock::CursorGrabState;
 
 /// Main locomotion plugin.
 pub struct LocomotionPlugin;
@@ -53,7 +53,6 @@ impl Plugin for LocomotionPlugin {
             TnuaAvian3dPlugin::new(FixedUpdate),
             AvatarPlugin,
         ))
-        .init_state::<CursorGrabState>()
         .init_resource::<movement::TargetBodyInput>()
         .init_resource::<movement::TargetHeadInput>()
         .add_observer(movement::handle_agent_teleport)

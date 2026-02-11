@@ -16,6 +16,7 @@ pub fn spawn_agent(
         return;
     }
 
+    // TODO pass in xr mode to spawner config
     LocalAgentSpawner::default().spawn(&mut commands, &asset_server);
 
     *spawned = true;

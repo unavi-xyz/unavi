@@ -3,7 +3,10 @@ use std::f32::consts::FRAC_PI_2;
 use avian3d::prelude::LinearVelocity;
 use bevy::prelude::*;
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
-use unavi_input::{JumpAction, LookAction, MoveAction, SprintAction, schminput::prelude::*};
+use unavi_input::{
+    actions::{JumpAction, LookAction, MoveAction, SprintAction},
+    schminput::{BoolActionValue, Vec2ActionValue},
+};
 use unavi_portal::teleport::PortalTeleport;
 
 const SENSITIVITY: f32 = 0.08;

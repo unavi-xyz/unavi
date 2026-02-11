@@ -1,4 +1,4 @@
-use avian3d::prelude::{Collider, LockedAxes, RayCaster, RigidBody};
+use avian3d::prelude::*;
 use bevy::{
     camera::{Exposure, visibility::RenderLayers},
     pbr::{Atmosphere, AtmosphereSettings},
@@ -13,6 +13,7 @@ use bevy_tnua::{
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
 use unavi_avatar::{AvatarSpawner, AverageVelocity, default_character_animations};
+use unavi_input::raycast::PrimaryRaycastInput;
 use unavi_portal::{PortalTraveler, create::PORTAL_RENDER_LAYER};
 
 use crate::{
@@ -108,9 +109,13 @@ impl LocalAgentSpawner {
             // In XR mode, spawn tracked hands.
         } else {
             // In desktop mode, raycast input from the head.
-            commands
-                .entity(tracked_head)
-                .insert(RayCaster::new(Vec3::ZERO, Dir3::NEG_Z));
+            commands.entity(tracked_head).insert((
+                PrimaryRaycastInput,
+                RayCaster::new(Vec3::ZERO, Dir3::NEG_Z)
+                    .with_max_hits(1)
+                    .with_solidness(false)
+                    .with_max_distance(4.0),
+            ));
         }
 
         let avatar = AvatarSpawner {

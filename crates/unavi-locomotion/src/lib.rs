@@ -70,8 +70,8 @@ impl Plugin for LocomotionPlugin {
         .add_systems(
             FixedUpdate,
             (
-                grounded::sync_grounded_state,
                 config::apply_config_to_controller,
+                grounded::sync_grounded_state,
             ),
         );
     }

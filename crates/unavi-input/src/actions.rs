@@ -14,13 +14,29 @@ pub struct JumpAction;
 pub struct SprintAction;
 
 #[derive(Component, Clone, Copy)]
-pub struct SqueezeAction;
+pub struct SqueezeLeftAction;
+
+#[derive(Component, Clone, Copy)]
+pub struct SqueezeRightAction;
+
+#[derive(Component)]
+pub struct HandLeft;
+
+#[derive(Component)]
+pub struct HandRight;
+
+#[cfg(not(target_family = "wasm"))]
+#[derive(Resource)]
+pub struct PoseActions {
+    pub left_pose: Entity,
+    pub right_pose: Entity,
+}
 
 pub(crate) fn setup_actions(mut cmds: Commands) {
-    let set = cmds.spawn(ActionSet::new("core", "core", 0)).id();
+    let core_set = cmds.spawn(ActionSet::new("core", "core", 0)).id();
     cmds.spawn((
         MoveAction,
-        Action::new("move", "Move", set),
+        Action::new("move", "Move", core_set),
         Vec2ActionValue::new(),
         KeyboardBindings::new().add_dpad(
             KeyCode::KeyW,
@@ -37,7 +53,7 @@ pub(crate) fn setup_actions(mut cmds: Commands) {
     ));
     cmds.spawn((
         LookAction,
-        Action::new("look", "Look", set),
+        Action::new("look", "Look", core_set),
         Vec2ActionValue::new(),
         GamepadBindings::new().add_stick(
             GamepadBindingSource::RightStickX,
@@ -49,23 +65,64 @@ pub(crate) fn setup_actions(mut cmds: Commands) {
     ));
     cmds.spawn((
         JumpAction,
-        Action::new("jump", "Jump", set),
+        Action::new("jump", "Jump", core_set),
         BoolActionValue::new(),
         GamepadBindings::new().bind(GamepadBinding::new(GamepadBindingSource::South)),
         KeyboardBindings::new().bind(KeyboardBinding::new(KeyCode::Space)),
     ));
     cmds.spawn((
         SprintAction,
-        Action::new("sprint", "Sprint", set),
+        Action::new("sprint", "Sprint", core_set),
         BoolActionValue::new(),
         GamepadBindings::new().bind(GamepadBinding::new(GamepadBindingSource::LeftStickClick)),
         KeyboardBindings::new().bind(KeyboardBinding::new(KeyCode::ShiftLeft)),
     ));
+
     cmds.spawn((
-        SqueezeAction,
-        Action::new("squeeze", "Squeeze", set),
+        SqueezeLeftAction,
+        Action::new("squeeze_l", "Squeeze Left", core_set),
+        BoolActionValue::new(),
+        #[cfg(not(target_family = "wasm"))]
+        OxrBindings::new().bindings(OCULUS_TOUCH_PROFILE, ["/user/hand/left/input/squeeze"]),
+    ));
+
+    // Right squeeze is used for mouse input.
+    cmds.spawn((
+        SqueezeRightAction,
+        Action::new("squeeze_r", "Squeeze Right", core_set),
         BoolActionValue::new(),
         GamepadBindings::new().bind(GamepadBinding::new(GamepadBindingSource::RightTrigger)),
         MouseBindings::new().bind(MouseButtonBinding::new(MouseButton::Left)),
+        #[cfg(not(target_family = "wasm"))]
+        OxrBindings::new().bindings(OCULUS_TOUCH_PROFILE, ["/user/hand/right/input/squeeze"]),
     ));
+
+    #[cfg(not(target_family = "wasm"))]
+    {
+        let pose_set = cmds.spawn(ActionSet::new("pose", "Poses", 0)).id();
+        let left_hand = cmds.spawn(HandLeft).id();
+        let right_hand = cmds.spawn(HandRight).id();
+        let left_pose = cmds
+            .spawn((
+                Action::new("hand_left_pose", "Left Hand Pose", pose_set),
+                OxrBindings::new()
+                    .bindings(OCULUS_TOUCH_PROFILE, ["/user/hand/left/input/grip/pose"]),
+                AttachSpaceToEntity(left_hand),
+                SpaceActionValue::new(),
+            ))
+            .id();
+        let right_pose = cmds
+            .spawn((
+                Action::new("hand_right_pose", "Right Hand Pose", pose_set),
+                OxrBindings::new()
+                    .bindings(OCULUS_TOUCH_PROFILE, ["/user/hand/right/input/aim/pose"]),
+                AttachSpaceToEntity(right_hand),
+                SpaceActionValue::new(),
+            ))
+            .id();
+        cmds.insert_resource(PoseActions {
+            left_pose,
+            right_pose,
+        });
+    }
 }

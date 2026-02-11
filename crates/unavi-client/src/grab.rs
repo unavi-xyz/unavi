@@ -15,7 +15,7 @@ use crate::networking::{
 const GRAB_COOLDOWN: Duration = Duration::from_millis(100);
 const GRAB_DEAD_ZONE: f32 = 0.001;
 const GRAB_ROTATION_DEAD_ZONE: f32 = 0.01;
-const GRAB_SMOOTHING: f32 = 20.0;
+const GRAB_SMOOTHING: f32 = 10.0;
 
 #[derive(Resource, Default)]
 pub struct GrabbedObjects(HashMap<Entity, GrabState>);

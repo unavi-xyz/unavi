@@ -45,11 +45,11 @@ impl Plugin for InputPlugin {
                 Startup,
                 (actions::setup_actions, crosshair::spawn_crosshair),
             )
+            .add_systems(FixedUpdate, crosshair::set_crosshair_mesh)
             .add_systems(
-                FixedUpdate,
-                (raycast::read_raycast_input, crosshair::set_crosshair_mesh),
-            )
-            .add_systems(Update, cursor_lock::cursor_grab);
+                Update,
+                (raycast::read_raycast_input, cursor_lock::cursor_grab),
+            );
     }
 }
 

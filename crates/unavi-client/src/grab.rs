@@ -1,6 +1,6 @@
 use std::{collections::HashMap, time::Duration};
 
-use avian3d::prelude::{GravityScale, LinearVelocity};
+use avian3d::prelude::{AngularVelocity, GravityScale, LinearVelocity};
 use bevy::prelude::*;
 use unavi_input::{SqueezeDown, SqueezeUp};
 
@@ -14,6 +14,7 @@ use crate::networking::{
 
 const GRAB_COOLDOWN: Duration = Duration::from_millis(100);
 const GRAB_DEAD_ZONE: f32 = 0.001;
+const GRAB_ROTATION_DEAD_ZONE: f32 = 0.01;
 const GRAB_SMOOTHING: f32 = 20.0;
 
 #[derive(Resource, Default)]
@@ -22,7 +23,8 @@ pub struct GrabbedObjects(HashMap<Entity, GrabState>);
 struct GrabState {
     entity: Entity,
     object_id: ObjectId,
-    offset: Vec3,
+    position_offset: Vec3,
+    rotation_offset: Quat,
 }
 
 pub fn handle_squeeze_up(
@@ -82,15 +84,18 @@ pub fn handle_squeeze_down(
     let pointer_tr = pointer_transform.compute_transform();
     let obj_tr = obj_transform.compute_transform();
 
-    // Store offset in pointer's local space so it stays correct when rotating.
-    let offset = pointer_tr.rotation.inverse() * (obj_tr.translation - pointer_tr.translation);
+    // Store offsets in pointer's local space so they stay correct when rotating.
+    let position_offset =
+        pointer_tr.rotation.inverse() * (obj_tr.translation - pointer_tr.translation);
+    let rotation_offset = pointer_tr.rotation.inverse() * obj_tr.rotation;
 
     grabbed.0.insert(
         event.pointer,
         GrabState {
             entity: target_ent,
             object_id: obj.0,
-            offset,
+            position_offset,
+            rotation_offset,
         },
     );
     *last_grab = now;
@@ -114,7 +119,7 @@ pub fn handle_squeeze_down(
 pub fn move_grabbed_objects(
     grabbed: Res<GrabbedObjects>,
     time: Res<Time>,
-    mut dyn_objs: Query<&mut LinearVelocity, With<DynObjectId>>,
+    mut dyn_objs: Query<(&mut LinearVelocity, &mut AngularVelocity), With<DynObjectId>>,
     transforms: Query<&GlobalTransform>,
 ) {
     let dt = time.delta_secs();
@@ -123,7 +128,7 @@ pub fn move_grabbed_objects(
     }
 
     for (pointer, grab_state) in &grabbed.0 {
-        let Ok(mut obj_vel) = dyn_objs.get_mut(grab_state.entity) else {
+        let Ok((mut obj_vel, mut obj_ang_vel)) = dyn_objs.get_mut(grab_state.entity) else {
             warn!(entity = %grab_state.entity, "object velocity not found");
             continue;
         };
@@ -141,15 +146,35 @@ pub fn move_grabbed_objects(
         let pointer_tr = pointer_transform.compute_transform();
         let obj_tr = obj_transform.compute_transform();
 
-        let target = pointer_tr.translation + pointer_tr.rotation * grab_state.offset;
-        let delta = target - obj_tr.translation;
+        // Position tracking
+        let target_pos =
+            pointer_tr.translation + pointer_tr.rotation * grab_state.position_offset;
+        let delta = target_pos - obj_tr.translation;
         let dist = delta.length();
 
-        // Dead zone to prevent jitter when close to target.
         obj_vel.0 = if dist < GRAB_DEAD_ZONE {
             Vec3::ZERO
         } else {
             delta * GRAB_SMOOTHING
+        };
+
+        // Rotation tracking
+        let target_rotation = pointer_tr.rotation * grab_state.rotation_offset;
+        let mut rotation_diff = target_rotation * obj_tr.rotation.inverse();
+
+        // Ensure shortest path (quaternion double-cover: q and -q are the same rotation)
+        if rotation_diff.w < 0.0 {
+            rotation_diff = -rotation_diff;
+        }
+
+        let rotation_diff = rotation_diff.normalize();
+        let (axis, angle) = rotation_diff.to_axis_angle();
+
+        // Check for valid axis (can be NaN when angle is ~0)
+        obj_ang_vel.0 = if angle.abs() < GRAB_ROTATION_DEAD_ZONE || !axis.is_finite() {
+            Vec3::ZERO
+        } else {
+            axis * angle * GRAB_SMOOTHING
         };
     }
 }

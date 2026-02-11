@@ -22,7 +22,7 @@ use crate::{
     tracking::{TrackedHead, TrackedPose, TrackingSource},
 };
 
-const RAYCAST_GRAB_DISTANCE: f32 = 3.5;
+const RAYCAST_GRAB_DISTANCE: f32 = 3.0;
 
 /// Builder for spawning a local agent entity.
 #[derive(Default)]

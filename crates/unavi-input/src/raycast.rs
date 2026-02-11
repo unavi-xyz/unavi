@@ -10,13 +10,13 @@ pub struct PrimaryRaycastInput;
 pub(crate) fn read_raycast_input(
     mut commands: Commands,
     core_actions: Res<CoreActions>,
-    raycaster: Query<(Entity, &RayHits, &GlobalTransform), With<PrimaryRaycastInput>>,
+    raycaster: Query<(Entity, &RayCaster, &RayHits), With<PrimaryRaycastInput>>,
     bool_input: Query<&BoolActionValue>,
     mut crosshair: Query<(&mut Visibility, &mut Transform), With<Crosshair>>,
     mut is_squeezing: Local<bool>,
     mut squeeze_target: Local<Option<Entity>>,
 ) {
-    let Ok((pointer, ray_hits, raycast_global)) = raycaster.single() else {
+    let Ok((pointer, ray, ray_hits)) = raycaster.single() else {
         return;
     };
 
@@ -51,8 +51,7 @@ pub(crate) fn read_raycast_input(
 
     *crosshair_vis = Visibility::Visible;
 
-    let raycast_tr = raycast_global.compute_transform();
-    crosshair_tr.translation = raycast_tr.translation + (raycast_tr.forward() * hit.distance);
+    crosshair_tr.translation = ray.global_origin() + (ray.global_direction() * hit.distance);
 
     let up = arbitrary_up(hit.normal);
     *crosshair_tr = crosshair_tr.looking_to(up, hit.normal);

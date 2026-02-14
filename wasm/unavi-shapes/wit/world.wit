@@ -1,0 +1,12 @@
+package unavi:shapes;
+
+world guest {
+  include wired:prelude/lib;
+  export api;
+}
+
+interface api {
+  resource cuboid-builder {
+    constructor();
+  }
+}

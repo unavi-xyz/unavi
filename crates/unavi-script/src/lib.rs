@@ -3,10 +3,9 @@ use wasmtime::Config;
 
 mod api;
 mod asset;
-mod commands;
 mod event;
-mod execute;
 mod load;
+mod runtime;
 
 pub use event::LoadScriptAsset;
 
@@ -30,26 +29,26 @@ impl Plugin for ScriptPlugin {
         app.register_asset_loader(asset::WasmLoader)
             .init_asset::<asset::Wasm>()
             .add_message::<event::LoadScriptAsset>()
-            .add_observer(commands::cleanup_vobjects)
             .add_systems(
                 PreUpdate,
                 (
-                    commands::apply_wasm_commands,
-                    execute::increment_epochs,
-                    (
-                        commands::system::tick_script_cycle,
-                        commands::system::start_script_cycle,
-                    )
-                        .chain(),
+                    // commands::apply_wasm_commands,
+                    runtime::increment_epochs,
+                    // (
+                    //     commands::system::tick_script_cycle,
+                    //     commands::system::start_script_cycle,
+                    // )
+                    //     .chain(),
                 ),
             )
             .add_systems(
                 FixedUpdate,
                 (
                     event::handle_load_events,
-                    execute::init::begin_init_scripts,
-                    execute::init::end_init_scripts,
                     load::load_scripts,
+                    runtime::init::begin_init_scripts,
+                    runtime::init::end_init_scripts,
+                    runtime::tick::tick_scripts,
                 ),
             );
     }

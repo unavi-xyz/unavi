@@ -1,5 +1,5 @@
 package test:stall;
 
 world guest {
-  include wired:ecs/guest;
+  include wired:script/guest;
 }

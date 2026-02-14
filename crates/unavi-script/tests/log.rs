@@ -11,32 +11,28 @@ fn script_log() {
     let mut app = setup::setup_test_app("log");
     construct_script(&mut app);
 
-    // Execute script startup.
-    tick_app(&mut app);
-    assert_eq!(n_startup_logs(), 1);
-    assert!(!has_update_log());
+    for _ in 0..5 {
+        tick_app(&mut app);
+    }
 
-    // Execute script update.
-    tick_app(&mut app);
-    assert_eq!(n_startup_logs(), 1);
-    assert!(has_update_log());
+    let n_inits = LOGS
+        .logs
+        .lock()
+        .expect("test value expected")
+        .iter()
+        .filter(|line| line.contains("test:log") && line.contains("hello from init"))
+        .count();
+
+    assert_eq!(n_inits, 1, "has 1 startup log");
+
+    let n_ticks = LOGS
+        .logs
+        .lock()
+        .expect("test value expected")
+        .iter()
+        .filter(|line| line.contains("test:log") && line.contains("hello from tick"))
+        .count();
+    assert!(n_ticks > 1, "has tick logs");
 
     assert!(!has_error_log());
-}
-
-fn n_startup_logs() -> usize {
-    LOGS.logs
-        .lock()
-        .expect("test value expected")
-        .iter()
-        .filter(|line| line.contains("test:log") && line.contains("hello from startup"))
-        .count()
-}
-
-fn has_update_log() -> bool {
-    LOGS.logs
-        .lock()
-        .expect("test value expected")
-        .iter()
-        .any(|line| line.contains("test:log") && line.contains("hello from update"))
 }

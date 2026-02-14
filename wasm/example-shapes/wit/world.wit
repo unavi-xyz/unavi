@@ -1,0 +1,6 @@
+package example:shapes;
+
+world guest {
+  import unavi:shapes/api;
+  include wired:script/guest;
+}

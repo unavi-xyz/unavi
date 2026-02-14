@@ -4933,6 +4933,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-shapes"
+version = "0.0.16"
+dependencies = [
+ "wit-bindgen 0.50.0",
+]
+
+[[package]]
 name = "exr"
 version = "1.74.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13422,6 +13429,13 @@ dependencies = [
  "wds",
  "xdid",
  "zeroize",
+]
+
+[[package]]
+name = "unavi-shapes"
+version = "0.0.16"
+dependencies = [
+ "wit-bindgen 0.50.0",
 ]
 
 [[package]]

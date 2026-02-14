@@ -922,7 +922,6 @@ dependencies = [
  "iroh-blobs",
  "loro",
  "loro-surgeon",
- "rand 0.9.2",
  "smol_str 0.3.5",
  "tokio",
  "unavi-wasm-compat",
@@ -7021,7 +7020,7 @@ dependencies = [
 [[package]]
 name = "iroh-blobs"
 version = "0.97.0"
-source = "git+https://github.com/kayhhh/iroh-blobs#7c4a168301767b8782b3af477252052417edd5c7"
+source = "git+https://github.com/k-43/iroh-blobs#7c4a168301767b8782b3af477252052417edd5c7"
 dependencies = [
  "arrayvec",
  "bao-tree",
@@ -7881,16 +7880,12 @@ name = "loro-schema"
 version = "0.0.16"
 dependencies = [
  "blake3",
- "bytes 1.11.0",
  "loro",
- "paste",
  "postcard",
  "ron 0.9.0",
- "rstest 0.25.0",
  "serde",
  "smol_str 0.3.5",
  "thiserror 2.0.17",
- "tracing",
 ]
 
 [[package]]
@@ -10988,20 +10983,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ron"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fd490c5b18261893f14449cbd28cb9c0b637aebf161cd77900bfdedaff21ec32"
-dependencies = [
- "bitflags 2.10.0",
- "once_cell",
- "serde",
- "serde_derive",
- "typeid",
- "unicode-ident",
-]
-
-[[package]]
 name = "roxmltree"
 version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13415,8 +13396,6 @@ dependencies = [
  "bevy",
  "bevy_async_task",
  "futures 0.3.31",
- "n0-future",
- "parking_lot",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -14347,10 +14326,8 @@ dependencies = [
  "p256",
  "p384",
  "parking_lot",
- "paste",
  "postcard",
  "rand 0.9.2",
- "ron 0.12.0",
  "rstest 0.26.1",
  "rusqlite",
  "scc",

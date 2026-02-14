@@ -18,7 +18,6 @@ bytemuck.workspace = true
 bytes.workspace    = true
 loro.workspace     = true
 loro-surgeon.path  = "../loro-surgeon"
-rand.workspace     = true
 smol_str.workspace = true
 wired-schemas.path = "../wired-schemas"
 

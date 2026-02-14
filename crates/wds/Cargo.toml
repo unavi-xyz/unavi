@@ -26,10 +26,8 @@ n0-future.workspace   = true
 p256                  = { default-features = false, features = ["ecdsa"], version = "0.13.2" }
 p384                  = { default-features = false, features = ["ecdsa"], version = "0.13.1" }
 parking_lot.workspace = true
-paste                 = "1.0.15"
 postcard.workspace    = true
 rand.workspace        = true
-ron                   = "0.12.0"
 rusqlite              = { features = ["bundled"], version = "0.38" }
 scc.workspace         = true
 serde.workspace       = true

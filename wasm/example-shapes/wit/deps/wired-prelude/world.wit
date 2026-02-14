@@ -1,7 +1,0 @@
-package wired:prelude;
-
-world guest {
-  include wired:ecs/guest;
-  include wired:math/prelude;
-  include wired:scene/prelude;
-}

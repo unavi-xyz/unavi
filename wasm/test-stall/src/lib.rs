@@ -1,7 +1,8 @@
-use exports::wired::ecs::guest_api::{Guest, GuestScript};
-use wired_ecs::prelude::*;
+use crate::exports::wired::script::guest_api::{Guest, GuestScript};
 
-wired_ecs::generate_bindgen!();
+wit_bindgen::generate!({
+    generate_all,
+});
 
 struct World;
 
@@ -9,31 +10,24 @@ impl Guest for World {
     type Script = Script;
 }
 
-struct Script {
-    app: App,
-}
+struct Script;
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let mut app = App::default();
-        app.add_system(Schedule::Startup, on_startup)
-            .add_system(Schedule::Update, on_update);
-        Self { app }
+        println!("hello from init");
+        Self
     }
 
-    fn exec_system(&self, id: SystemId, data: Vec<ParamData>) {
-        self.app.exec_system(id, data);
+    fn tick(&self) {
+        #[expect(clippy::empty_loop)]
+        loop {
+            // Do nothing
+        }
     }
-}
 
-fn on_startup() {
-    println!("hello from startup");
-}
+    fn render(&self) {}
 
-fn on_update() {
-    loop {
-        println!("hello from update");
-    }
+    fn drop(&self) {}
 }
 
 export!(World);

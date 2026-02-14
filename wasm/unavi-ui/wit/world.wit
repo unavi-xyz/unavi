@@ -1,5 +1,0 @@
-package unavi:ui;
-
-world guest {
-  include wired:ecs/guest;
-}

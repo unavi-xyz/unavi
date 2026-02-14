@@ -52,13 +52,10 @@ pub fn construct_script(app: &mut App) {
     // Execute script constructor.
     tick_app(app);
     tick_app(app);
-
-    // Init script cycle.
-    tick_app(app);
 }
 
 pub fn tick_app(app: &mut App) {
     app.update();
     // Sleep to allow any async behaviors to run.
-    std::thread::sleep(Duration::from_millis(500));
+    std::thread::sleep(Duration::from_millis(300));
 }

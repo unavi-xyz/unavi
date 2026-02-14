@@ -1,5 +1,5 @@
 package test:log;
 
 world guest {
-  include wired:ecs/guest;
+  include wired:script/guest;
 }

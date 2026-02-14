@@ -1,5 +1,0 @@
-package test:log;
-
-world guest {
-  include wired:prelude/guest;
-}

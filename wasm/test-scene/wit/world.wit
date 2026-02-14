@@ -1,6 +1,0 @@
-package test:scene;
-
-world guest {
-  include wired:ecs/guest;
-  include wired:scene/prelude;
-}

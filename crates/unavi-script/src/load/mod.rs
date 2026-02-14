@@ -10,12 +10,8 @@ use wasmtime_wasi::WasiCtxBuilder;
 
 use crate::{
     ScriptEngine, WasmBinary, WasmEngine,
-    api::wired::ecs::ComponentWrite,
     asset::Wasm,
-    commands::{
-        WasmCommand,
-        system::{RuntimeCtx, ScriptCycles, ScriptRuntime, StartupSystems, VSystemDependencies},
-    },
+    runtime::{RuntimeCtx, ScriptRuntime},
 };
 
 pub mod log;
@@ -23,11 +19,7 @@ pub mod state;
 
 pub mod bindings {
     wasmtime::component::bindgen!({
-        world: "guest",
-        path: "../../protocol/wit/wired-ecs",
-        with: {
-            "wired:ecs/types": crate::api::wired::ecs::wired::ecs::types,
-        },
+        path: "../../protocol/wit/wired-script",
         imports: {
             default: async,
         },
@@ -43,17 +35,11 @@ type LoadResult = anyhow::Result<(Entity, bindings::Guest)>;
 pub struct LoadingScript;
 
 #[derive(Component)]
-#[require(Executing, StartupSystems, VSystemDependencies, ScriptCycles)]
+#[require(Executing)]
 pub struct LoadedScript(pub Arc<bindings::Guest>);
 
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct Executing(bool);
-
-#[derive(Component)]
-pub struct ScriptCommands(pub tokio::sync::mpsc::Receiver<WasmCommand>);
-
-#[derive(Component)]
-pub struct ComponentWriteReceiver(pub tokio::sync::broadcast::Receiver<ComponentWrite>);
 
 pub fn load_scripts(
     mut commands: Commands,
@@ -76,7 +62,7 @@ pub fn load_scripts(
         };
 
         let name = name.map_or_else(|| "unknown".to_string(), std::string::ToString::to_string);
-        info!("Instantiating script {name}");
+        info!(name, "instantiating script");
 
         let (stdout, stdout_stream) = ScriptStdout::new();
         let (stderr, stderr_stream) = ScriptStderr::new();
@@ -85,11 +71,7 @@ pub fn load_scripts(
             .stderr(stderr_stream)
             .build();
 
-        let RuntimeDataResult {
-            rt,
-            commands_recv,
-            write_recv,
-        } = RuntimeData::spawn();
+        let RuntimeDataResult { rt } = RuntimeData::spawn();
 
         let state = StoreState::new(wasi_ctx, rt);
 
@@ -100,12 +82,7 @@ pub fn load_scripts(
 
         let rt = ScriptRuntime::new(store, stdout, stderr);
         let ctx = Arc::clone(&rt.ctx);
-        commands.entity(ent).insert((
-            LoadingScript,
-            rt,
-            ScriptCommands(commands_recv),
-            ComponentWriteReceiver(write_recv),
-        ));
+        commands.entity(ent).insert((LoadingScript, rt));
 
         pool.spawn(async move {
             let mut ctx = ctx.lock().await;

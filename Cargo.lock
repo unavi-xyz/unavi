@@ -4934,16 +4934,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "example-shapes"
-version = "0.0.16"
-dependencies = [
- "postcard",
- "serde",
- "wired-ecs",
- "wit-bindgen 0.50.0",
-]
-
-[[package]]
 name = "exr"
 version = "1.74.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12621,32 +12611,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-ecs"
-version = "0.0.16"
-dependencies = [
- "postcard",
- "serde",
- "wired-ecs",
- "wit-bindgen 0.50.0",
-]
-
-[[package]]
 name = "test-log"
 version = "0.0.16"
 dependencies = [
- "postcard",
- "serde",
- "wired-ecs",
- "wit-bindgen 0.50.0",
-]
-
-[[package]]
-name = "test-scene"
-version = "0.0.16"
-dependencies = [
- "postcard",
- "serde",
- "wired-ecs",
  "wit-bindgen 0.50.0",
 ]
 
@@ -12654,9 +12621,6 @@ dependencies = [
 name = "test-stall"
 version = "0.0.16"
 dependencies = [
- "postcard",
- "serde",
- "wired-ecs",
  "wit-bindgen 0.50.0",
 ]
 
@@ -13452,6 +13416,7 @@ dependencies = [
  "bevy_async_task",
  "futures 0.3.31",
  "n0-future",
+ "parking_lot",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -13478,16 +13443,6 @@ dependencies = [
  "wds",
  "xdid",
  "zeroize",
-]
-
-[[package]]
-name = "unavi-ui"
-version = "0.0.16"
-dependencies = [
- "postcard",
- "serde",
- "wired-ecs",
- "wit-bindgen 0.50.0",
 ]
 
 [[package]]
@@ -15507,27 +15462,6 @@ checksum = "3f3fd376f71958b862e7afb20cfe5a22830e1963462f3a17f49d82a6c1d1f42d"
 dependencies = [
  "bitflags 2.10.0",
  "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "wired-ecs"
-version = "0.0.16"
-dependencies = [
- "bytemuck",
- "postcard",
- "serde",
- "wired-ecs-derive",
- "wit-bindgen 0.50.0",
-]
-
-[[package]]
-name = "wired-ecs-derive"
-version = "0.0.16"
-dependencies = [
- "proc-macro-crate 3.4.0",
- "proc-macro2",
- "quote",
- "syn 2.0.113",
 ]
 
 [[package]]

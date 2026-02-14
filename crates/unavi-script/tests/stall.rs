@@ -11,30 +11,28 @@ fn script_stall() {
     let mut app = setup::setup_test_app("stall");
     construct_script(&mut app);
 
-    // Execute script startup.
-    tick_app(&mut app);
     assert_eq!(
         LOGS.logs
             .lock()
             .expect("test value expected")
             .iter()
-            .filter(|line| line.contains("test:stall") && line.contains("hello from startup"))
+            .filter(|line| line.contains("test:stall") && line.contains("hello from init"))
             .count(),
         1
     );
 
-    // Execute script update.
+    // Execute script tick.
     // Should never complete, but the Bevy ECS should go on fine.
-    tick_app(&mut app);
-    tick_app(&mut app);
-    tick_app(&mut app);
+    for _ in 0..5 {
+        tick_app(&mut app);
+    }
     assert!(
         !LOGS
             .logs
             .lock()
             .expect("test value expected")
             .iter()
-            .any(|line| line.contains("test:stall") && line.contains("hello from update"))
+            .any(|line| line.contains("test:stall") && line.contains("hello from tick"))
     );
 
     assert!(!has_error_log());

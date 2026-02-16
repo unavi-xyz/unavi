@@ -1,6 +1,6 @@
 use crate::{
     exports::wired::script::guest_api::{Guest, GuestScript},
-    unavi::shapes::api::CuboidBuilder,
+    unavi::shapes::api::Cuboid,
 };
 
 wit_bindgen::generate!({
@@ -17,7 +17,7 @@ struct Script;
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let cube = CuboidBuilder::new();
+        let _cube = Cuboid::new(1.0, 1.0, 1.0).mesh();
 
         Self
     }

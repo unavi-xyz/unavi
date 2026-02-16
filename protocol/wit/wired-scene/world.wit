@@ -7,14 +7,58 @@ world prelude {
 interface types {
   use wired:math/types.{vec3};
 
-  record node-id {
-    /// The document the node belongs to.
-    doc: list<u8>,
-    /// The local in-document node ID.
-    id: s64,
+  resource node {
+    constructor();
+
+    id: func() -> u64;
+    document: func() -> list<u8>;
+
+    mesh: func() -> option<mesh>;
+    set-mesh: func(value: option<mesh>);
   }
 
-  resource node {
-    id: func() -> node-id;
+  resource material {
+    constructor();
+  }
+
+  enum primitive-topology {
+    point-list,
+    line-list,
+    line-strip,
+    triangle-list,
+    triangle-strip,
+  }
+
+  variant indices {
+    half(list<u16>),
+    full(list<u32>)
+  }
+
+  resource mesh {
+    constructor();
+  
+    topology: func() -> primitive-topology;
+    set-topology: func(value: primitive-topology);
+
+    indices: func() -> option<indices>;
+    set-indices: func(value: option<indices>);
+
+    positions: func() -> option<list<f32>>;
+    set-positions: func(values: option<list<f32>>);
+
+    normals: func() -> option<list<f32>>;
+    set-normals: func(values: option<list<f32>>);
+
+    tangents: func() -> option<list<f32>>;
+    set-tangents: func(values: option<list<f32>>);
+
+    colors: func() -> option<list<f32>>;
+    set-colors: func(values: option<list<f32>>);
+
+    uv0: func() -> option<list<f32>>;
+    set-uv0: func(values: option<list<f32>>);
+
+    uv1: func() -> option<list<f32>>;
+    set-uv1: func(values: option<list<f32>>);
   }
 }

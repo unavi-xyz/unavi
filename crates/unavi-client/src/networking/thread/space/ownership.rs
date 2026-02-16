@@ -89,9 +89,9 @@ impl ObjectOwnership {
         self.inner
             .read()
             .iter()
-            .filter_map(|(&id, record)| {
+            .filter_map(|(id, record)| {
                 if record.owner == endpoint {
-                    Some(id)
+                    Some(id.clone())
                 } else {
                     None
                 }
@@ -115,7 +115,7 @@ impl ObjectOwnership {
         self.inner
             .read()
             .iter()
-            .map(|(&id, record)| (id, record.clone()))
+            .map(|(id, record)| (id.clone(), record.clone()))
             .collect()
     }
 }
@@ -136,7 +136,7 @@ mod tests {
 
     fn make_object(id: u8) -> ObjectId {
         let record = blake3::hash(&[id]);
-        ObjectId::new(record, 0)
+        ObjectId::new(record, "alice".into())
     }
 
     #[test]
@@ -145,7 +145,7 @@ mod tests {
         let obj = make_object(1);
         let peer1 = make_endpoint(1);
 
-        assert!(ownership.try_claim(obj, peer1, 1000, 0));
+        assert!(ownership.try_claim(obj.clone(), peer1, 1000, 0));
         assert!(ownership.is_owner(obj, peer1));
     }
 
@@ -156,8 +156,8 @@ mod tests {
         let peer1 = make_endpoint(1);
         let peer2 = make_endpoint(2);
 
-        assert!(ownership.try_claim(obj, peer1, 1000, 0));
-        assert!(ownership.try_claim(obj, peer2, 2000, 0));
+        assert!(ownership.try_claim(obj.clone(), peer1, 1000, 0));
+        assert!(ownership.try_claim(obj.clone(), peer2, 2000, 0));
         assert!(ownership.is_owner(obj, peer2));
     }
 
@@ -168,8 +168,8 @@ mod tests {
         let peer1 = make_endpoint(1);
         let peer2 = make_endpoint(2);
 
-        assert!(ownership.try_claim(obj, peer1, 2000, 0));
-        assert!(!ownership.try_claim(obj, peer2, 1000, 0));
+        assert!(ownership.try_claim(obj.clone(), peer1, 2000, 0));
+        assert!(!ownership.try_claim(obj.clone(), peer2, 1000, 0));
         assert!(ownership.is_owner(obj, peer1));
     }
 
@@ -180,8 +180,8 @@ mod tests {
         let peer1 = make_endpoint(1);
         let peer2 = make_endpoint(2);
 
-        assert!(ownership.try_claim(obj, peer1, 1000, 0));
-        assert!(ownership.try_claim(obj, peer2, 1000, 1));
+        assert!(ownership.try_claim(obj.clone(), peer1, 1000, 0));
+        assert!(ownership.try_claim(obj.clone(), peer2, 1000, 1));
         assert!(ownership.is_owner(obj, peer2));
     }
 
@@ -192,9 +192,9 @@ mod tests {
         let peer1 = make_endpoint(1);
         let peer2 = make_endpoint(2);
 
-        assert!(ownership.try_claim(obj, peer1, 1000, 0));
+        assert!(ownership.try_claim(obj.clone(), peer1, 1000, 0));
         // Same timestamp and seq, peer2 has higher ID.
-        assert!(ownership.try_claim(obj, peer2, 1000, 0));
+        assert!(ownership.try_claim(obj.clone(), peer2, 1000, 0));
         assert!(ownership.is_owner(obj, peer2));
     }
 
@@ -205,9 +205,9 @@ mod tests {
         let peer1 = make_endpoint(1);
         let peer2 = make_endpoint(2);
 
-        assert!(ownership.try_claim(obj, peer1, 1000, 0));
-        assert!(!ownership.release(obj, peer2)); // Wrong owner.
-        assert!(ownership.release(obj, peer1));
+        assert!(ownership.try_claim(obj.clone(), peer1, 1000, 0));
+        assert!(!ownership.release(obj.clone(), peer2)); // Wrong owner.
+        assert!(ownership.release(obj.clone(), peer1));
         assert!(ownership.owner(obj).is_none());
     }
 
@@ -221,9 +221,9 @@ mod tests {
         let obj2 = make_object(2);
         let obj3 = make_object(3);
 
-        ownership.try_claim(obj1, peer1, 1000, 0);
-        ownership.try_claim(obj2, peer1, 1000, 0);
-        ownership.try_claim(obj3, peer2, 1000, 0);
+        ownership.try_claim(obj1.clone(), peer1, 1000, 0);
+        ownership.try_claim(obj2.clone(), peer1, 1000, 0);
+        ownership.try_claim(obj3.clone(), peer2, 1000, 0);
 
         ownership.remove_all_by(peer1);
 

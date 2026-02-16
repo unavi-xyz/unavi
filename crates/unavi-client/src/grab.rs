@@ -79,7 +79,7 @@ pub fn handle_squeeze_down(
         return;
     };
 
-    info!(pointer = %event.pointer, object = %obj.0.index, "grabbing object");
+    info!(pointer = %event.pointer, object = %obj.0.node, "grabbing object");
 
     let pointer_tr = pointer_transform.compute_transform();
     let obj_tr = obj_transform.compute_transform();
@@ -93,7 +93,7 @@ pub fn handle_squeeze_down(
         event.pointer,
         GrabState {
             entity: target_ent,
-            object_id: obj.0,
+            object_id: obj.0.clone(),
             position_offset,
             rotation_offset,
         },
@@ -101,7 +101,7 @@ pub fn handle_squeeze_down(
     *last_grab = now;
 
     commands.entity(target_ent).insert(Grabbed);
-    local_grabbed.0.insert(obj.0);
+    local_grabbed.0.insert(obj.0.clone());
 
     // Send updated grabbed objects to network thread.
     let _ = nt.command_tx.try_send(NetworkCommand::UpdateGrabbedObjects(
@@ -110,7 +110,7 @@ pub fn handle_squeeze_down(
 
     // Only send claim if not already locally owned.
     if !locally_owned.contains(target_ent)
-        && let Err(err) = nt.command_tx.try_send(NetworkCommand::ClaimObject(obj.0))
+        && let Err(err) = nt.command_tx.try_send(NetworkCommand::ClaimObject(obj.0.clone()))
     {
         error!(?err, "failed to send claim");
     }

@@ -1,9 +1,9 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use bevy::{mesh::Indices, prelude::*};
 use bevy_hsd::{
     hydration::topology::HydratedTopology,
-    stage::{LayerData, OpinionData, StageData},
+    stage::{LayerData, StageData},
 };
 use blake3::Hash;
 use bytemuck::cast_slice;
@@ -60,19 +60,14 @@ pub fn default_stage() -> (Blobs, StageData) {
         LoroValue::String("dynamic".into()),
     );
 
+    let mut opinions = HashMap::new();
+    opinions.insert("ground".to_string(), LoroValue::Map(ground));
+    opinions.insert("dyn_cube".to_string(), LoroValue::Map(dyn_cube));
+
     let stage = StageData {
         layers: vec![LayerData {
             enabled: true,
-            opinions: vec![
-                OpinionData {
-                    node: 0,
-                    attrs: ground,
-                },
-                OpinionData {
-                    node: 1,
-                    attrs: dyn_cube,
-                },
-            ],
+            opinions: opinions.into(),
         }],
     };
 

@@ -6,7 +6,12 @@ world guest {
 }
 
 interface api {
-  resource cuboid-builder {
-    constructor();
+  use wired:math/types.{vec3};
+  use wired:scene/types.{mesh};
+
+  resource cuboid {
+    constructor(x-length: f32, y-length: f32, z-length: f32);
+
+    mesh: func() -> mesh;
   }
 }

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 
 use crate::{
-    Layer, LayerEnabled, NodeIndex, Opinion, OpinionAttrs, OpinionTarget, Stage, StageCompiled,
+    Layer, LayerEnabled, NodeId, Opinion, OpinionAttrs, OpinionTarget, Stage, StageCompiled,
     StageLayers, StageLoaded, StageNode, StageNodes,
 };
 
@@ -21,7 +21,7 @@ pub fn load_stages(
         commands.entity(stage_ent).despawn_related::<StageNodes>();
 
         // Create new layers.
-        let mut node_ents: HashMap<i64, Entity> = HashMap::new();
+        let mut node_ents: HashMap<String, Entity> = HashMap::new();
 
         for layer_data in &stage.0.layers {
             // Spawn layer entity.
@@ -30,17 +30,22 @@ pub fn load_stages(
                 .id();
 
             // Spawn opinions.
-            for opinion in &layer_data.opinions {
-                let node_ent = node_ents.entry(opinion.node).or_insert_with(|| {
+            for (node_id, attrs) in layer_data.opinions.iter() {
+                let node_ent = node_ents.entry(node_id.clone()).or_insert_with(|| {
                     commands
-                        .spawn((StageNode { stage: stage_ent }, NodeIndex(opinion.node)))
+                        .spawn((StageNode { stage: stage_ent }, NodeId(node_id.into())))
                         .id()
                 });
+
+                let Some(attrs) = attrs.as_map() else {
+                    // Invalid type.
+                    continue;
+                };
 
                 commands.spawn((
                     Opinion { layer: layer_ent },
                     OpinionTarget(*node_ent),
-                    OpinionAttrs(opinion.attrs.clone()),
+                    OpinionAttrs(attrs.clone()),
                 ));
             }
         }

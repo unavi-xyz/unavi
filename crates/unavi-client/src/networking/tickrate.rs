@@ -87,7 +87,7 @@ pub fn update_object_tickrates(
         let tickrate = tickrate_for_distance(distance, MIN_OBJECT_TICKRATE, MAX_OBJECT_TICKRATE);
 
         let _ = nt.command_tx.try_send(NetworkCommand::SetObjectTickrate {
-            object_id: dyn_obj.0,
+            object_id: dyn_obj.0.clone(),
             tickrate,
         });
     }

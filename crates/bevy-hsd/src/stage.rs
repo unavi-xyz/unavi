@@ -13,16 +13,9 @@ pub struct StageData {
 #[derive(Debug, Clone, Hydrate, Reconcile)]
 pub struct LayerData {
     pub enabled: bool,
-    pub opinions: Vec<OpinionData>,
+    pub opinions: LoroMapValue,
 }
 
-#[derive(Debug, Clone, Hydrate, Reconcile)]
-pub struct OpinionData {
-    pub attrs: LoroMapValue,
-    pub node: i64,
-}
-
-/// Typed attributes, hydrated from merged [`LoroMapValue`] during compilation.
 #[derive(Debug, Clone, Default, Hydrate, Reconcile)]
 pub struct Attrs {
     #[loro(rename = "collider/params", default)]

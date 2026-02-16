@@ -245,12 +245,12 @@ async fn handle_object_claim(
     let handle = entry.get();
     if handle
         .ownership
-        .try_claim(claim.object_id, claim.claimer, claim.timestamp, claim.seq)
+        .try_claim(claim.object_id.clone(), claim.claimer, claim.timestamp, claim.seq)
     {
         let _ = state
             .event_tx
             .try_send(NetworkEvent::ObjectOwnershipChanged {
-                object_id: claim.object_id,
+                object_id: claim.object_id.clone(),
                 owner: Some(claim.claimer),
             });
     }
@@ -269,12 +269,12 @@ async fn handle_object_release(
     let handle = entry.get();
     if handle
         .ownership
-        .release(release.object_id, release.releaser)
+        .release(release.object_id.clone(), release.releaser)
     {
         let _ = state
             .event_tx
             .try_send(NetworkEvent::ObjectOwnershipChanged {
-                object_id: release.object_id,
+                object_id: release.object_id.clone(),
                 owner: None,
             });
     }
@@ -334,12 +334,12 @@ async fn handle_claim_sync(state: &NetworkThreadState, sync: &ClaimSyncBroadcast
         let handle = entry.get();
         if handle
             .ownership
-            .try_claim(claim.object_id, claim.owner, claim.timestamp, claim.seq)
+            .try_claim(claim.object_id.clone(), claim.owner, claim.timestamp, claim.seq)
         {
             let _ = state
                 .event_tx
                 .try_send(NetworkEvent::ObjectOwnershipChanged {
-                    object_id: claim.object_id,
+                    object_id: claim.object_id.clone(),
                     owner: Some(claim.owner),
                 });
         }

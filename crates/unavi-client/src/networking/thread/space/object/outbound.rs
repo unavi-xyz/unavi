@@ -64,11 +64,11 @@ async fn open_object_streams(
 
     // Open control bistream.
     let (mut ctrl_tx, ctrl_rx) = connection.open_bi().await?;
-    write_stream_init(&mut ctrl_tx, &StreamInit::ObjectControl { object_id }).await?;
+    write_stream_init(&mut ctrl_tx, &StreamInit::ObjectControl { object_id: object_id.clone() }).await?;
 
     // Open iframe unistream.
     let mut iframe_tx = connection.open_uni().await?;
-    write_stream_init(&mut iframe_tx, &StreamInit::ObjectIFrame { object_id }).await?;
+    write_stream_init(&mut iframe_tx, &StreamInit::ObjectIFrame { object_id: object_id.clone() }).await?;
 
     debug!(?object_id, ?peer, "object streams opened");
 
@@ -210,7 +210,7 @@ pub async fn stream_objects(
 
         // Handle incoming control messages and send tickrate updates.
         for (object_id, ctx) in &mut streams {
-            handle_incoming_control(ctx, *object_id).await;
+            handle_incoming_control(ctx, object_id.clone()).await;
 
             // Check if tickrate needs updating.
             if let Some(desired) = object_pose.tickrates.read_sync(object_id, |_, hz| *hz)
@@ -229,11 +229,11 @@ pub async fn stream_objects(
         let mut iframes_to_send = Vec::new();
         let mut pframes_to_send = Vec::new();
         object_pose.iframes.iter_sync(|object_id, iframe| {
-            iframes_to_send.push((*object_id, iframe.clone()));
+            iframes_to_send.push((object_id.clone(), iframe.clone()));
             true
         });
         object_pose.pframes.iter_sync(|object_id, pframe| {
-            pframes_to_send.push((*object_id, pframe.clone()));
+            pframes_to_send.push((object_id.clone(), pframe.clone()));
             true
         });
 
@@ -277,8 +277,8 @@ pub async fn stream_objects(
             let ctx = if let Some(ctx) = streams.get_mut(&object_id) {
                 ctx
             } else {
-                let new_ctx = open_object_streams(conn, object_id, peer).await?;
-                streams.insert(object_id, new_ctx);
+                let new_ctx = open_object_streams(conn, object_id.clone(), peer).await?;
+                streams.insert(object_id.clone(), new_ctx);
                 let ctx = streams.get_mut(&object_id).expect("just inserted");
 
                 // Send initial grab state if grabbed.

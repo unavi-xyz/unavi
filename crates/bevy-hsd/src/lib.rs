@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use loro::LoroMapValue;
+use smol_str::SmolStr;
 
 mod compile;
 pub mod hydration;
@@ -55,8 +56,8 @@ pub struct StageNode {
     pub stage: Entity,
 }
 
-#[derive(Component, Clone, Copy, Debug)]
-pub struct NodeIndex(pub i64);
+#[derive(Component, Clone, Debug)]
+pub struct NodeId(pub SmolStr);
 
 #[derive(Component, Default)]
 #[relationship_target(relationship = Layer, linked_spawn)]

@@ -13,4 +13,6 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+bevy_math             = "0.17.3"
+bevy_mesh             = "0.17.3"
 wit-bindgen.workspace = true

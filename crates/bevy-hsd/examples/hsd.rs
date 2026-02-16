@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use avian3d::{PhysicsPlugins, prelude::PhysicsDebugPlugin};
 use bevy::{
     mesh::Indices,
@@ -6,7 +8,7 @@ use bevy::{
 };
 use bevy_hsd::{
     HsdPlugin, Stage,
-    stage::{LayerData, OpinionData, StageData},
+    stage::{LayerData, StageData},
 };
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_wds::{LocalBlobs, WdsPlugin};
@@ -136,10 +138,13 @@ fn load_hsd(mut commands: Commands) {
         ),
     );
 
+    let mut opinions = HashMap::new();
+    opinions.insert("node_a".to_string(), LoroValue::Map(attrs));
+
     let stage = StageData {
         layers: vec![LayerData {
             enabled: true,
-            opinions: vec![OpinionData { node: 0, attrs }],
+            opinions: opinions.into(),
         }],
     };
 

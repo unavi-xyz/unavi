@@ -97,11 +97,11 @@ pub fn recv_network_event(
                 let is_local = local_endpoint.as_ref().is_some_and(|e| owner == Some(e.0));
 
                 if is_local {
-                    info!(object = %object_id.index, "claimed object (local)");
+                    info!(object = %object_id.node, "claimed object (local)");
                 } else if let Some(remote) = owner {
-                    info!(object = %object_id.index, owner = %remote, "object claimed by remote");
+                    info!(object = %object_id.node, owner = %remote, "object claimed by remote");
                 } else {
-                    info!(object = %object_id.index, "object released");
+                    info!(object = %object_id.node, "object released");
                 }
 
                 for (entity, dyn_id, transform, lin_vel, ang_vel) in dyn_objects.iter() {

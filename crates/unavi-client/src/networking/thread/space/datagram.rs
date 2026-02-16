@@ -118,8 +118,8 @@ fn handle_object_pframe(
         return;
     };
 
-    let object_id = pframe.object_id;
-    let reorder = reorders.entry(object_id).or_default();
+    let object_id = pframe.object_id.clone();
+    let reorder = reorders.entry(object_id.clone()).or_default();
 
     if pframe.iframe_id != reorder.iframe_id() {
         reorder.reset(pframe.iframe_id);
@@ -136,7 +136,7 @@ fn handle_object_pframe(
 
         let _ = event_tx.try_send(NetworkEvent::ObjectPoseUpdate {
             source,
-            objects: vec![(object_id, reconstructed)],
+            objects: vec![(object_id.clone(), reconstructed)],
         });
     }
 }

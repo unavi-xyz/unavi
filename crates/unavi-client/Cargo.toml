@@ -44,6 +44,7 @@ postcard.workspace     = true
 rand.workspace         = true
 scc.workspace          = true
 serde.workspace        = true
+smol_str.workspace     = true
 time.workspace         = true
 tracing                = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
 unavi-assets.path      = "../unavi-assets"

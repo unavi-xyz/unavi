@@ -70,7 +70,7 @@ pub async fn recv_object_control(
                 let prev = state.grabbed.swap(grabbed, Ordering::Relaxed);
                 if prev != grabbed {
                     let _ =
-                        event_tx.try_send(NetworkEvent::ObjectGrabChanged { object_id, grabbed });
+                        event_tx.try_send(NetworkEvent::ObjectGrabChanged { object_id: object_id.clone(), grabbed });
                 }
             }
         }
@@ -103,12 +103,12 @@ pub async fn recv_object_iframes(
         // Update baseline for P-frame decoding.
         baselines
             .write()
-            .update(object_id, msg.id, PhysicsBaseline::from(&msg.state));
+            .update(object_id.clone(), msg.id, PhysicsBaseline::from(&msg.state));
 
         // Send event with the received physics state.
         let _ = event_tx.try_send(NetworkEvent::ObjectPoseUpdate {
             source,
-            objects: vec![(object_id, msg.state)],
+            objects: vec![(object_id.clone(), msg.state)],
         });
     }
 

@@ -13318,6 +13318,7 @@ dependencies = [
  "reqwest 0.13.1",
  "scc",
  "serde",
+ "smol_str 0.3.5",
  "time",
  "tokio",
  "tracing",
@@ -13435,6 +13436,8 @@ dependencies = [
 name = "unavi-shapes"
 version = "0.0.16"
 dependencies = [
+ "bevy_math",
+ "bevy_mesh",
  "wit-bindgen 0.50.0",
 ]
 

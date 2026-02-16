@@ -6,7 +6,7 @@ use std::{collections::HashMap, time::Duration};
 use avian3d::dynamics::rigid_body::{AngularVelocity, LinearVelocity};
 use avian3d::prelude::RigidBody;
 use bevy::prelude::*;
-use bevy_hsd::{NodeIndex, StageNode};
+use bevy_hsd::{NodeId, StageNode};
 
 use crate::{
     networking::{
@@ -26,7 +26,7 @@ use crate::{
 };
 
 /// Marks a [`StageNode`] as a tracked dynamic object.
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone)]
 pub struct DynObjectId(pub ObjectId);
 
 /// Marker for objects we own locally.
@@ -41,12 +41,12 @@ pub struct Grabbed;
 pub fn detect_dynamic_objects(
     mut commands: Commands,
     new_bodies: Query<
-        (Entity, &StageNode, &NodeIndex, &RigidBody),
+        (Entity, &StageNode, &NodeId, &RigidBody),
         (Added<RigidBody>, Without<DynObjectId>),
     >,
     spaces: Query<&Space>,
 ) {
-    for (entity, stage_node, node_index, rigid_body) in &new_bodies {
+    for (entity, stage_node, node_id, rigid_body) in &new_bodies {
         if *rigid_body != RigidBody::Dynamic {
             continue;
         }
@@ -56,7 +56,7 @@ pub fn detect_dynamic_objects(
             continue;
         };
 
-        let object_id = ObjectId::new(space.0, node_index.0);
+        let object_id = ObjectId::new(space.0, node_id.0.clone());
 
         commands.entity(entity).insert(DynObjectId(object_id));
     }
@@ -110,7 +110,7 @@ pub fn publish_initial_object_iframe(
         let avel = ang_vel.map_or(Vec3::ZERO, |v| v.0);
 
         baselines.0.insert(
-            dyn_obj.0,
+            dyn_obj.0.clone(),
             PhysicsBaseline {
                 pos,
                 vel,
@@ -119,7 +119,7 @@ pub fn publish_initial_object_iframe(
         );
 
         frames.push((
-            dyn_obj.0,
+            dyn_obj.0.clone(),
             PhysicsIFrame {
                 pos: pos.into(),
                 rot: rot.into(),
@@ -174,7 +174,7 @@ pub fn publish_object_physics(
             let avel = ang_vel.map_or(Vec3::ZERO, |v| v.0);
 
             baselines.0.insert(
-                dyn_obj.0,
+                dyn_obj.0.clone(),
                 PhysicsBaseline {
                     pos,
                     vel,
@@ -183,7 +183,7 @@ pub fn publish_object_physics(
             );
 
             frames.push((
-                dyn_obj.0,
+                dyn_obj.0.clone(),
                 PhysicsIFrame {
                     pos: pos.into(),
                     rot: rot.into(),
@@ -222,7 +222,7 @@ pub fn publish_object_physics(
             }
 
             frames.push((
-                dyn_obj.0,
+                dyn_obj.0.clone(),
                 PhysicsPFrame {
                     pos: F16Pos::from_delta(pos, base_pos),
                     rot: rot.into(),

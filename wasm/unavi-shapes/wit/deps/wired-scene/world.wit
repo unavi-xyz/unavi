@@ -10,7 +10,7 @@ interface types {
   resource node {
     constructor();
 
-    id: func() -> u64;
+    id: func() -> string;
     document: func() -> list<u8>;
 
     mesh: func() -> option<mesh>;

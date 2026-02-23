@@ -3,7 +3,7 @@ use bevy_wds::{LocalActor, RemoteActor};
 use loro_surgeon::Reconcile;
 use time::OffsetDateTime;
 use wds::actor::Actor;
-use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_SPACE, SCHEMA_STAGE};
+use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
 
 use crate::{
     networking::thread::{NetworkCommand, NetworkingThread},
@@ -131,7 +131,7 @@ async fn create_and_join_home(
             map.insert("name", format!("{did}'s Home"))?;
             Ok(())
         })?
-        .add_schema("hsd", &*SCHEMA_STAGE, |doc| {
+        .add_schema("hsd", &*SCHEMA_HSD, |doc| {
             let map = doc.get_map("hsd");
             stage.reconcile(&map)?;
             Ok(())

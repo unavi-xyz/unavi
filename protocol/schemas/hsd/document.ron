@@ -1,0 +1,41 @@
+(
+    id: "hsd/document",
+    version: 0,
+    layout: Struct({
+        "materials": List(Struct({
+            "alpha_cutoff": Optional(F64),
+            "alpha_mode": Optional(String),
+            "base_color": Optional(List(F64)),
+            "base_color_texture": Optional(BlobRef),
+            "double_sided": Optional(Bool),
+            "metallic": Optional(F64),
+            "metallic_roughness_texture": Optional(BlobRef),
+            "normal_texture": Optional(BlobRef),
+            "occlusion_texture": Optional(BlobRef),
+            "roughness": Optional(F64),
+        })),
+        "meshes": List(Struct({
+            "attributes": Map(BlobRef),
+            "indices": BlobRef,
+            "topology": I64,
+        })),
+        "nodes": Tree(Struct({
+            "collider": Optional(Struct({
+                "params": List(F64),
+                "shape": String,
+            })),
+            "material": Optional(String),
+            "mesh": Optional(String),
+            "rigid_body": Optional(Struct({
+                "friction": Optional(F64),
+                "kind": String,
+                "mass": Optional(F64),
+                "restitution": Optional(F64),
+            })),
+            "rotation": Optional(List(F64)),
+            "scale": Optional(List(F64)),
+            "scripts": Optional(List(BlobRef)),
+            "translation": Optional(List(F64)),
+        })),
+    }),
+)

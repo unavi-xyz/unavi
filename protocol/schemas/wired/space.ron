@@ -4,7 +4,7 @@
     layout: Struct({
         "name": String,
         "objects": List(Struct({
-            "record": Binary,
+            "record": RecordId,
             "rotation": Optional(List(F64)),
             "scale": Optional(List(F64)),
             "translation": Optional(List(F64)),

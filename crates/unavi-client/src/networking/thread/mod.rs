@@ -334,7 +334,10 @@ async fn thread_loop(
 
                 if let Some(entry) = state.spaces.get_async(&record_hash).await {
                     let handle = entry.get();
-                    if handle.ownership.try_claim(object_id.clone(), endpoint_id, now, 0) {
+                    if handle
+                        .ownership
+                        .try_claim(object_id.clone(), endpoint_id, now, 0)
+                    {
                         let claim = SpaceGossipMsg::ObjectClaim(ObjectClaimBroadcast {
                             object_id: object_id.clone(),
                             claimer: endpoint_id,

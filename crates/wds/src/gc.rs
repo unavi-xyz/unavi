@@ -171,8 +171,35 @@ impl StoreContext {
                     return Ok(());
                 }
 
-                // Pin is expired - delete it and release quota for envelopes.
                 let tx = conn.transaction()?;
+
+                // Check if any other pinned record by this owner depends
+                // on this record. If so, extend our pin to match (same
+                // pattern as gc_single_blob_pin for blob deps).
+                let max_parent_expires: Option<i64> = tx
+                    .query_row(
+                        "SELECT MAX(p.expires) FROM record_record_deps d
+                         JOIN record_pins p ON d.record_id = p.record_id
+                         WHERE d.dep_record_id = ?
+                           AND p.owner = ?
+                           AND p.expires > ?",
+                        params![&record_id, &owner, now],
+                        |row| row.get(0),
+                    )
+                    .ok()
+                    .flatten();
+
+                if let Some(new_expires) = max_parent_expires {
+                    tx.execute(
+                        "UPDATE record_pins SET expires = ?
+                         WHERE owner = ? AND record_id = ?",
+                        params![new_expires, &owner, &record_id],
+                    )?;
+                    tx.commit()?;
+                    return Ok(());
+                }
+
+                // No parent record needs this - delete the pin.
 
                 let total_size: i64 = tx
                     .query_row(
@@ -209,6 +236,11 @@ impl StoreContext {
                     tx.execute(
                         "DELETE FROM record_blob_deps WHERE record_id = ?",
                         params![&record_id],
+                    )?;
+                    tx.execute(
+                        "DELETE FROM record_record_deps
+                         WHERE record_id = ? OR dep_record_id = ?",
+                        params![&record_id, &record_id],
                     )?;
                     tx.execute(
                         "DELETE FROM record_schemas WHERE record_id = ?",

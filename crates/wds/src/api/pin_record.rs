@@ -81,11 +81,30 @@ pub async fn pin_record(
 
                 for blob_hash in blob_deps {
                     if let Err(e) = pin_or_extend_blob(&tx, &did_str, &blob_hash, expires) {
-                        // Log but don't fail - blob might have been deleted.
                         tracing::warn!(
                             blob = %blob_hash,
                             error = %e,
                             "failed to auto-pin blob dependency"
+                        );
+                    }
+                }
+
+                // Auto-pin record dependencies with the same expiration.
+                let record_deps: Vec<String> = {
+                    let mut stmt = tx.prepare(
+                        "SELECT dep_record_id FROM record_record_deps WHERE record_id = ?",
+                    )?;
+                    stmt.query_map(params![&record_id], |row| row.get(0))?
+                        .filter_map(Result::ok)
+                        .collect()
+                };
+
+                for dep_record_id in record_deps {
+                    if let Err(e) = pin_or_extend_record(&tx, &did_str, &dep_record_id, expires) {
+                        tracing::warn!(
+                            record = %dep_record_id,
+                            error = %e,
+                            "failed to auto-pin record dependency"
                         );
                     }
                 }
@@ -162,6 +181,45 @@ fn pin_or_extend_blob(
             )?;
         }
         // If blob doesn't exist at all, silently skip (it may have been GC'd).
+    }
+
+    Ok(())
+}
+
+/// Pins or extends a record pin for the given owner.
+fn pin_or_extend_record(
+    conn: &rusqlite::Connection,
+    owner: &str,
+    record_id: &str,
+    expires: i64,
+) -> anyhow::Result<()> {
+    let updated = conn.execute(
+        "UPDATE record_pins SET expires = MAX(expires, ?)
+         WHERE owner = ? AND record_id = ?",
+        params![expires, owner, record_id],
+    )?;
+
+    if updated == 0 {
+        // Check if any envelopes exist for this record.
+        let total_size: i64 = conn
+            .query_row(
+                "SELECT COALESCE(SUM(size), 0) FROM envelopes
+                 WHERE record_id = ?",
+                params![record_id],
+                |row| row.get(0),
+            )
+            .unwrap_or(0);
+
+        if total_size > 0 {
+            reserve_bytes(conn, owner, total_size)
+                .map_err(|_| anyhow::anyhow!("quota exceeded for record dependency"))?;
+        }
+
+        conn.execute(
+            "INSERT INTO record_pins (record_id, owner, expires)
+             VALUES (?, ?, ?)",
+            params![record_id, owner, expires],
+        )?;
     }
 
     Ok(())

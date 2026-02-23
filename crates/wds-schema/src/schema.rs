@@ -47,8 +47,8 @@ impl Schema {
 pub enum Field {
     Any,
     Binary,
-    /// 32-byte binary blake3 hash referencing a blob.
-    BlobRef,
+    /// 32-byte blake3 blob ID.
+    BlobId,
     Bool,
     F64,
     I64,
@@ -57,6 +57,8 @@ pub enum Field {
     Map(Box<Self>),
     MovableList(Box<Self>),
     Optional(Box<Self>),
+    /// 32-byte blake3 record ID.
+    RecordId,
     Restricted {
         actions: Vec<Action>,
         value: Box<Self>,

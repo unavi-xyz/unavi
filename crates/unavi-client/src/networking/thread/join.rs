@@ -243,10 +243,12 @@ async fn handle_object_claim(
     };
 
     let handle = entry.get();
-    if handle
-        .ownership
-        .try_claim(claim.object_id.clone(), claim.claimer, claim.timestamp, claim.seq)
-    {
+    if handle.ownership.try_claim(
+        claim.object_id.clone(),
+        claim.claimer,
+        claim.timestamp,
+        claim.seq,
+    ) {
         let _ = state
             .event_tx
             .try_send(NetworkEvent::ObjectOwnershipChanged {
@@ -332,10 +334,12 @@ async fn handle_claim_sync(state: &NetworkThreadState, sync: &ClaimSyncBroadcast
         };
 
         let handle = entry.get();
-        if handle
-            .ownership
-            .try_claim(claim.object_id.clone(), claim.owner, claim.timestamp, claim.seq)
-        {
+        if handle.ownership.try_claim(
+            claim.object_id.clone(),
+            claim.owner,
+            claim.timestamp,
+            claim.seq,
+        ) {
             let _ = state
                 .event_tx
                 .try_send(NetworkEvent::ObjectOwnershipChanged {

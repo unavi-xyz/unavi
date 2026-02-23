@@ -14,7 +14,6 @@ anyhow.workspace   = true
 blake3.workspace   = true
 bytes.workspace    = true
 loro.workspace     = true
-loro-schema.path   = "../loro-schema"
 loro-surgeon.path  = "../loro-surgeon"
 postcard.workspace = true
 rand.workspace     = true
@@ -22,6 +21,7 @@ ron.workspace      = true
 serde              = { features = ["derive"], workspace = true }
 smol_str.workspace = true
 time.workspace     = true
+wds-schema.path    = "../wds-schema"
 xdid.workspace     = true
 
 [dev-dependencies]

@@ -5,7 +5,7 @@ use postcard::experimental::max_size::MaxSize;
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 
-/// Maximum byte length for a node name in an ObjectId.
+/// Maximum byte length for a node name in an `ObjectId`.
 const MAX_NODE_NAME_LEN: usize = 64;
 
 /// Unique identifier for a dynamic object.

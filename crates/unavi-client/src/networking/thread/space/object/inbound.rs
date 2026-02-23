@@ -69,8 +69,10 @@ pub async fn recv_object_control(
             ObjectControlMsg::GrabStateChanged { grabbed } => {
                 let prev = state.grabbed.swap(grabbed, Ordering::Relaxed);
                 if prev != grabbed {
-                    let _ =
-                        event_tx.try_send(NetworkEvent::ObjectGrabChanged { object_id: object_id.clone(), grabbed });
+                    let _ = event_tx.try_send(NetworkEvent::ObjectGrabChanged {
+                        object_id: object_id.clone(),
+                        grabbed,
+                    });
                 }
             }
         }

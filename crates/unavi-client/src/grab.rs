@@ -110,7 +110,9 @@ pub fn handle_squeeze_down(
 
     // Only send claim if not already locally owned.
     if !locally_owned.contains(target_ent)
-        && let Err(err) = nt.command_tx.try_send(NetworkCommand::ClaimObject(obj.0.clone()))
+        && let Err(err) = nt
+            .command_tx
+            .try_send(NetworkCommand::ClaimObject(obj.0.clone()))
     {
         error!(?err, "failed to send claim");
     }

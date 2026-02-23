@@ -64,11 +64,23 @@ async fn open_object_streams(
 
     // Open control bistream.
     let (mut ctrl_tx, ctrl_rx) = connection.open_bi().await?;
-    write_stream_init(&mut ctrl_tx, &StreamInit::ObjectControl { object_id: object_id.clone() }).await?;
+    write_stream_init(
+        &mut ctrl_tx,
+        &StreamInit::ObjectControl {
+            object_id: object_id.clone(),
+        },
+    )
+    .await?;
 
     // Open iframe unistream.
     let mut iframe_tx = connection.open_uni().await?;
-    write_stream_init(&mut iframe_tx, &StreamInit::ObjectIFrame { object_id: object_id.clone() }).await?;
+    write_stream_init(
+        &mut iframe_tx,
+        &StreamInit::ObjectIFrame {
+            object_id: object_id.clone(),
+        },
+    )
+    .await?;
 
     debug!(?object_id, ?peer, "object streams opened");
 

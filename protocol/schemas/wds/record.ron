@@ -4,7 +4,7 @@
     layout: Struct({
         "creator": String,
         "nonce": Binary,
-        "schemas": Map(BlobRef),
+        "schemas": Map(BlobId),
         "timestamp": I64,
     }),
 )

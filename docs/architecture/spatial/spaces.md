@@ -45,10 +45,10 @@ Different objects can be owned by different users.
 ## Entering a Space
 
 1. Resolve the Space record by DID URL
-2. Read the object manifest
-3. Fetch and instantiate each HSD document
-4. Run physics, scripts, and rendering in the shared sandbox
-5. Sync edits to individual HSDs via [WDS](../data/wds.md)
+1. Read the object manifest
+1. Fetch and instantiate each HSD document
+1. Run physics, scripts, and rendering in the shared sandbox
+1. Sync edits to individual HSDs via [WDS](../data/wds.md)
 
 ## Hypermedia Controls
 

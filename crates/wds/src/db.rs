@@ -5,7 +5,10 @@ use rusqlite::Connection;
 use time::OffsetDateTime;
 use tokio::sync::Mutex;
 
-const MIGRATIONS: &[&str] = &[include_str!("../migrations/001_initial.sql")];
+const MIGRATIONS: &[&str] = &[
+    include_str!("../migrations/001_initial.sql"),
+    include_str!("../migrations/002_record_deps.sql"),
+];
 
 #[derive(Clone)]
 pub struct Database {

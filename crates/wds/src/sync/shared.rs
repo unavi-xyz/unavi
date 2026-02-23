@@ -4,9 +4,9 @@ use anyhow::ensure;
 use blake3::Hash;
 use iroh_blobs::api::Store;
 use loro::{LoroDoc, LoroValue, VersionVector};
-use loro_schema::{Field, Schema};
 use rusqlite::{Connection, params};
 use smol_str::SmolStr;
+use wds_schema::{Field, Schema};
 use wired_schemas::{
     SCHEMA_ACL, SCHEMA_RECORD,
     surg::{Acl, Record},
@@ -115,7 +115,7 @@ async fn validate_schemas(
     Ok(schemas)
 }
 
-/// Extracts all [`Field::BlobRef`] values from a Loro document by walking the schemas.
+/// Extracts all [`Field::BlobId`] values from a Loro document by walking the schemas.
 /// Returns hashes as hex strings (for database storage).
 fn extract_blob_refs(doc: &LoroDoc, schemas: &BTreeMap<SmolStr, Schema>) -> HashSet<String> {
     let mut refs = HashSet::new();
@@ -128,7 +128,7 @@ fn extract_blob_refs(doc: &LoroDoc, schemas: &BTreeMap<SmolStr, Schema>) -> Hash
 
 fn collect_blob_refs(value: &LoroValue, field: &Field, refs: &mut HashSet<String>) {
     match field {
-        Field::BlobRef => {
+        Field::BlobId => {
             if let LoroValue::Binary(bytes) = value {
                 let slice: &[u8] = bytes.as_ref();
                 if let Ok(arr) = <&[u8; 32]>::try_from(slice) {
@@ -176,7 +176,84 @@ fn collect_blob_refs(value: &LoroValue, field: &Field, refs: &mut HashSet<String
             }
         }
         Field::Restricted { value: inner, .. } => collect_blob_refs(value, inner, refs),
-        Field::Any | Field::Binary | Field::Bool | Field::F64 | Field::I64 | Field::String => {}
+        Field::Any
+        | Field::Binary
+        | Field::Bool
+        | Field::F64
+        | Field::I64
+        | Field::RecordId
+        | Field::String => {}
+    }
+}
+
+/// Extracts all [`Field::RecordId`] values from a Loro document.
+/// Returns hashes as hex strings (for database storage).
+fn extract_record_refs(doc: &LoroDoc, schemas: &BTreeMap<SmolStr, Schema>) -> HashSet<String> {
+    let mut refs = HashSet::new();
+    for (container_name, schema) in schemas {
+        let value = doc.get_map(container_name.as_str()).get_deep_value();
+        collect_record_refs(&value, schema.layout(), &mut refs);
+    }
+    refs
+}
+
+fn collect_record_refs(value: &LoroValue, field: &Field, refs: &mut HashSet<String>) {
+    match field {
+        Field::RecordId => {
+            if let LoroValue::Binary(bytes) = value {
+                let slice: &[u8] = bytes.as_ref();
+                if let Ok(arr) = <&[u8; 32]>::try_from(slice) {
+                    refs.insert(Hash::from_bytes(*arr).to_string());
+                }
+            }
+        }
+        Field::Optional(inner) => {
+            if !matches!(value, LoroValue::Null) {
+                collect_record_refs(value, inner, refs);
+            }
+        }
+        Field::List(inner) | Field::MovableList(inner) => {
+            if let LoroValue::List(items) = value {
+                for item in items.iter() {
+                    collect_record_refs(item, inner, refs);
+                }
+            }
+        }
+        Field::Map(inner) => {
+            if let LoroValue::Map(map) = value {
+                for val in map.values() {
+                    collect_record_refs(val, inner, refs);
+                }
+            }
+        }
+        Field::Struct(fields) => {
+            if let LoroValue::Map(map) = value {
+                for (key, inner_field) in fields {
+                    if let Some(val) = map.get(key.as_str()) {
+                        collect_record_refs(val, inner_field, refs);
+                    }
+                }
+            }
+        }
+        Field::Tree(inner) => {
+            if let LoroValue::List(nodes) = value {
+                for node in nodes.iter() {
+                    if let LoroValue::Map(m) = node
+                        && let Some(meta) = m.get("meta")
+                    {
+                        collect_record_refs(meta, inner, refs);
+                    }
+                }
+            }
+        }
+        Field::Restricted { value: inner, .. } => collect_record_refs(value, inner, refs),
+        Field::Any
+        | Field::Binary
+        | Field::BlobId
+        | Field::Bool
+        | Field::F64
+        | Field::I64
+        | Field::String => {}
     }
 }
 
@@ -194,6 +271,7 @@ struct StoreEnvelopeParams {
     record: Record,
     acl: Acl,
     blob_refs: HashSet<String>,
+    record_refs: HashSet<String>,
 }
 
 /// Executes the database transaction to store an envelope.
@@ -237,6 +315,7 @@ fn store_envelope_tx(conn: &mut Connection, params: StoreEnvelopeParams) -> anyh
 
     update_acl_read_index(&tx, &params.record_id, &params.acl)?;
     update_blob_ref_deps(&tx, &params.record_id, &params.blob_refs)?;
+    update_record_ref_deps(&tx, &params.record_id, &params.record_refs)?;
 
     tx.commit()?;
     Ok(())
@@ -301,6 +380,26 @@ fn update_blob_ref_deps(
     Ok(())
 }
 
+/// Updates record ref dependencies for a record.
+fn update_record_ref_deps(
+    tx: &rusqlite::Transaction<'_>,
+    record_id: &str,
+    record_refs: &HashSet<String>,
+) -> anyhow::Result<()> {
+    tx.execute(
+        "DELETE FROM record_record_deps WHERE record_id = ?",
+        params![record_id],
+    )?;
+    for dep_id in record_refs {
+        tx.execute(
+            "INSERT OR IGNORE INTO record_record_deps (record_id, dep_record_id)
+             VALUES (?, ?)",
+            params![record_id, dep_id],
+        )?;
+    }
+    Ok(())
+}
+
 /// Stores an envelope with quota tracking and schema validation.
 pub async fn store_envelope(
     db: &Database,
@@ -357,6 +456,7 @@ pub async fn store_envelope(
     )
     .await?;
     let blob_refs = extract_blob_refs(&new_doc, &schemas);
+    let record_refs = extract_record_refs(&new_doc, &schemas);
 
     let params = StoreEnvelopeParams {
         record_id: record_id.to_string(),
@@ -372,6 +472,7 @@ pub async fn store_envelope(
         record,
         acl: Acl::load(&new_doc).map_err(WdsError::Other)?,
         blob_refs,
+        record_refs,
     };
 
     db.call_mut(move |conn| store_envelope_tx(conn, params))

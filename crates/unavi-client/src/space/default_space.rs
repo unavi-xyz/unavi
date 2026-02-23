@@ -4,7 +4,7 @@ use bevy::{mesh::Indices, prelude::*};
 use blake3::Hash;
 use bytemuck::cast_slice;
 use bytes::Bytes;
-use loro::LoroMap;
+use loro::{LoroList, LoroMap, LoroTree};
 
 #[derive(Default)]
 pub struct Blobs(pub HashSet<Bytes>);
@@ -20,20 +20,17 @@ impl Blobs {
 
 /// Write default HSD scene into the provided map.
 /// Returns blob data that must be uploaded.
-pub fn default_stage(hsd: &LoroMap) -> Blobs {
+pub fn default_space(hsd: &LoroMap) -> Blobs {
     let mut blobs = Blobs::default();
 
-    // --- Materials ---
     let materials = hsd
-        .get_or_create_container("materials", loro::LoroList::new())
+        .get_or_create_container("materials", LoroList::new())
         .expect("materials list");
 
-    // Ground material (index 0): grey.
-    let mat0 = materials
-        .push_container(loro::LoroMap::new())
-        .expect("push mat");
+    // Ground material (index 0)
+    let mat0 = materials.push_container(LoroMap::new()).expect("push mat");
     mat0.insert_container("base_color", {
-        let l = loro::LoroList::new();
+        let l = LoroList::new();
         l.push(0.5).expect("push");
         l.push(0.5).expect("push");
         l.push(0.5).expect("push");
@@ -42,9 +39,8 @@ pub fn default_stage(hsd: &LoroMap) -> Blobs {
     .expect("base_color");
     mat0.insert("roughness", 0.9).expect("roughness");
 
-    // --- Meshes ---
     let meshes = hsd
-        .get_or_create_container("meshes", loro::LoroList::new())
+        .get_or_create_container("meshes", LoroList::new())
         .expect("meshes list");
 
     // Ground mesh (index 0).
@@ -55,9 +51,8 @@ pub fn default_stage(hsd: &LoroMap) -> Blobs {
     let cube_dims = Vec3::splat(0.5);
     let cube_mesh_idx = push_cuboid_mesh(&mut blobs, &meshes, cube_dims);
 
-    // --- Nodes ---
     let nodes = hsd
-        .get_or_create_container("nodes", loro::LoroTree::new())
+        .get_or_create_container("nodes", LoroTree::new())
         .expect("nodes tree");
 
     // Ground node.
@@ -67,7 +62,7 @@ pub fn default_stage(hsd: &LoroMap) -> Blobs {
     ground.insert("material", 0i64).expect("material");
     ground
         .insert_container("translation", {
-            let l = loro::LoroList::new();
+            let l = LoroList::new();
             l.push(0.0).expect("push");
             l.push(-1.0).expect("push");
             l.push(0.0).expect("push");
@@ -75,12 +70,12 @@ pub fn default_stage(hsd: &LoroMap) -> Blobs {
         })
         .expect("translation");
     let ground_collider = ground
-        .get_or_create_container("collider", loro::LoroMap::new())
+        .get_or_create_container("collider", LoroMap::new())
         .expect("collider");
     ground_collider.insert("shape", "cuboid").expect("shape");
     ground_collider
         .insert_container("size", {
-            let l = loro::LoroList::new();
+            let l = LoroList::new();
             l.push(f64::from(ground_dims.x)).expect("push");
             l.push(f64::from(ground_dims.y)).expect("push");
             l.push(f64::from(ground_dims.z)).expect("push");
@@ -88,7 +83,7 @@ pub fn default_stage(hsd: &LoroMap) -> Blobs {
         })
         .expect("size");
     let ground_rb = ground
-        .get_or_create_container("rigid_body", loro::LoroMap::new())
+        .get_or_create_container("rigid_body", LoroMap::new())
         .expect("rigid_body");
     ground_rb.insert("kind", "static").expect("kind");
 
@@ -97,7 +92,7 @@ pub fn default_stage(hsd: &LoroMap) -> Blobs {
     let cube = nodes.get_meta(cube_id).expect("meta");
     cube.insert("mesh", cube_mesh_idx).expect("mesh");
     cube.insert_container("translation", {
-        let l = loro::LoroList::new();
+        let l = LoroList::new();
         l.push(-2.0).expect("push");
         l.push(5.0).expect("push");
         l.push(-10.0).expect("push");
@@ -105,12 +100,12 @@ pub fn default_stage(hsd: &LoroMap) -> Blobs {
     })
     .expect("translation");
     let cube_collider = cube
-        .get_or_create_container("collider", loro::LoroMap::new())
+        .get_or_create_container("collider", LoroMap::new())
         .expect("collider");
     cube_collider.insert("shape", "cuboid").expect("shape");
     cube_collider
         .insert_container("size", {
-            let l = loro::LoroList::new();
+            let l = LoroList::new();
             l.push(f64::from(cube_dims.x)).expect("push");
             l.push(f64::from(cube_dims.y)).expect("push");
             l.push(f64::from(cube_dims.z)).expect("push");
@@ -118,7 +113,7 @@ pub fn default_stage(hsd: &LoroMap) -> Blobs {
         })
         .expect("size");
     let cube_rb = cube
-        .get_or_create_container("rigid_body", loro::LoroMap::new())
+        .get_or_create_container("rigid_body", LoroMap::new())
         .expect("rigid_body");
     cube_rb.insert("kind", "dynamic").expect("kind");
 
@@ -127,16 +122,14 @@ pub fn default_stage(hsd: &LoroMap) -> Blobs {
 
 /// Push a cuboid mesh into the meshes list, returning the
 /// index (as i64 for Loro).
-fn push_cuboid_mesh(blobs: &mut Blobs, meshes: &loro::LoroList, dims: Vec3) -> i64 {
+fn push_cuboid_mesh(blobs: &mut Blobs, meshes: &LoroList, dims: Vec3) -> i64 {
     let cube = Cuboid::new(dims.x, dims.y, dims.z).mesh().build();
 
-    let mesh_map = meshes
-        .push_container(loro::LoroMap::new())
-        .expect("push mesh");
+    let mesh_map = meshes.push_container(LoroMap::new()).expect("push mesh");
     mesh_map.insert("topology", 3i64).expect("topology");
 
     let attrs = mesh_map
-        .get_or_create_container("attributes", loro::LoroMap::new())
+        .get_or_create_container("attributes", LoroMap::new())
         .expect("attrs");
 
     // Indices.

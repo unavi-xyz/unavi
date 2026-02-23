@@ -1,24 +1,81 @@
 package wired:scene;
 
 world prelude {
+  import context;
   import types;
 }
 
+/// Ambient context provided by the host to each script.
+interface context {
+  use types.{document, node};
+
+  /// The node this script is attached to.
+  self-node: func() -> node;
+
+  /// The document this script's node belongs to.
+  self-document: func() -> document;
+}
+
 interface types {
-  use wired:math/types.{vec3};
+  use wired:math/types.{vec3, quat, transform};
+
+  /// An HSD document. Opaque handle to the host-managed
+  /// Loro CRDT document.
+  resource document {
+    create-node: func() -> node;
+    create-mesh: func() -> mesh;
+    create-material: func() -> material;
+    roots: func() -> list<node>;
+  }
 
   resource node {
-    constructor();
+    name: func() -> option<string>;
+    set-name: func(value: option<string>);
 
-    id: func() -> string;
-    document: func() -> list<u8>;
+    /// Local transform relative to parent.
+    translation: func() -> vec3;
+    set-translation: func(value: vec3);
+    rotation: func() -> quat;
+    set-rotation: func(value: quat);
+    scale: func() -> vec3;
+    set-scale: func(value: vec3);
+    transform: func() -> transform;
+    set-transform: func(value: transform);
 
+    /// Global transform, computed by the host. Read-only.
+    global-transform: func() -> transform;
+
+    /// Scene graph hierarchy.
+    parent: func() -> option<node>;
+    children: func() -> list<node>;
+    add-child: func(child: node);
+    remove-child: func(child: node);
+
+    /// Mesh and material.
     mesh: func() -> option<mesh>;
     set-mesh: func(value: option<mesh>);
+    material: func() -> option<material>;
+    set-material: func(value: option<material>);
+
+    /// Physics.
+    collider: func() -> option<collider>;
+    set-collider: func(value: option<collider>);
+    rigid-body: func() -> option<rigid-body-kind>;
+    set-rigid-body: func(value: option<rigid-body-kind>);
   }
 
   resource material {
-    constructor();
+    name: func() -> option<string>;
+    set-name: func(value: option<string>);
+
+    base-color: func() -> list<f32>;
+    set-base-color: func(value: list<f32>);
+    metallic: func() -> f32;
+    set-metallic: func(value: f32);
+    roughness: func() -> f32;
+    set-roughness: func(value: f32);
+    double-sided: func() -> bool;
+    set-double-sided: func(value: bool);
   }
 
   enum primitive-topology {
@@ -31,12 +88,13 @@ interface types {
 
   variant indices {
     half(list<u16>),
-    full(list<u32>)
+    full(list<u32>),
   }
 
   resource mesh {
-    constructor();
-  
+    name: func() -> option<string>;
+    set-name: func(value: option<string>);
+
     topology: func() -> primitive-topology;
     set-topology: func(value: primitive-topology);
 
@@ -60,5 +118,22 @@ interface types {
 
     uv1: func() -> option<list<f32>>;
     set-uv1: func(values: option<list<f32>>);
+  }
+
+  variant collider {
+    cuboid(vec3),
+    sphere(f32),
+    capsule(collider-capsule),
+  }
+
+  record collider-capsule {
+    radius: f32,
+    half-height: f32,
+  }
+
+  enum rigid-body-kind {
+    dynamic,
+    fixed,
+    kinematic,
   }
 }

@@ -3,5 +3,11 @@
     version: 0,
     layout: Struct({
         "name": String,
+        "objects": List(Struct({
+            "record": Binary,
+            "rotation": Optional(List(F64)),
+            "scale": Optional(List(F64)),
+            "translation": Optional(List(F64)),
+        })),
     }),
 )

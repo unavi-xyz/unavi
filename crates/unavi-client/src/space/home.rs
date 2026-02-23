@@ -1,6 +1,7 @@
+use std::cell::RefCell;
+
 use bevy::prelude::*;
 use bevy_wds::{LocalActor, RemoteActor};
-use loro_surgeon::Reconcile;
 use time::OffsetDateTime;
 use wds::actor::Actor;
 use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
@@ -120,7 +121,7 @@ async fn create_and_join_home(
 ) -> anyhow::Result<()> {
     let did = local_actor.identity().did();
 
-    let (blobs, stage) = default_stage();
+    let blobs = RefCell::new(None);
 
     let res = local_actor
         .create_record()
@@ -132,13 +133,15 @@ async fn create_and_join_home(
             Ok(())
         })?
         .add_schema("hsd", &*SCHEMA_HSD, |doc| {
-            let map = doc.get_map("hsd");
-            stage.reconcile(&map)?;
+            let hsd = doc.get_map("hsd");
+            *blobs.borrow_mut() = Some(default_stage(&hsd));
             Ok(())
         })?
         .sync_to(remote_actor.clone())
         .send()
         .await?;
+
+    let blobs = blobs.into_inner().unwrap_or_default();
 
     for bytes in blobs.0 {
         if let Some(remote_actor) = &remote_actor

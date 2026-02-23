@@ -1,192 +1,142 @@
 use bevy::{
     asset::RenderAssetUsages,
-    mesh::{Indices, PrimitiveTopology, VertexAttributeValues},
+    mesh::{Indices, MeshVertexAttribute, PrimitiveTopology, VertexAttributeValues},
     prelude::*,
 };
 use bevy_wds::{BlobDep, BlobDeps, BlobDepsLoaded, BlobRequest, BlobResponse};
 use bytemuck::{Pod, PodCastError, try_cast_slice};
 use bytes::Bytes;
+use smol_str::SmolStr;
 
-use crate::{compile::material::MaterialParams, stage::Attrs};
+use crate::{CompiledMesh, data::HsdMesh};
 
-pub fn parse_mesh_attrs(attrs: &Attrs, node: Entity, commands: &mut Commands) {
-    if let Some(points) = attrs.mesh_points
-        && let Some(indices) = attrs.mesh_indices
-        && let Some(topology) = attrs.mesh_topology
-    {
-        let points = commands
-            .spawn((BlobDep { target: node }, BlobRequest(points.0)))
-            .id();
-        let indices = commands
-            .spawn((BlobDep { target: node }, BlobRequest(indices.0)))
-            .id();
+/// For each newly-added `HsdMesh`, spawn `BlobDep` entities and
+/// insert `MeshParams`.
+pub fn parse_mesh_data(mut commands: Commands, meshes: Query<(Entity, &HsdMesh), Added<HsdMesh>>) {
+    for (ent, mesh) in &meshes {
+        let mut attr_entities = Vec::new();
 
-        let colors = attrs.mesh_colors.map(|hash| {
+        for (name, hash) in &mesh.attributes {
+            let dep = commands
+                .spawn((
+                    BlobDep { target: ent },
+                    BlobRequest(hash.0),
+                    MeshAttrName(name.clone()),
+                ))
+                .id();
+            attr_entities.push(dep);
+        }
+
+        let indices_ent = mesh.indices.map(|hash| {
             commands
-                .spawn((BlobDep { target: node }, BlobRequest(hash.0)))
+                .spawn((BlobDep { target: ent }, BlobRequest(hash.0)))
                 .id()
         });
 
-        let normals = attrs.mesh_normals.map(|hash| {
-            commands
-                .spawn((BlobDep { target: node }, BlobRequest(hash.0)))
-                .id()
+        commands.entity(ent).insert(MeshParams {
+            topology: mesh.topology.0,
+            attr_deps: attr_entities,
+            indices: indices_ent,
         });
-
-        let tangents = attrs.mesh_tangents.map(|hash| {
-            commands
-                .spawn((BlobDep { target: node }, BlobRequest(hash.0)))
-                .id()
-        });
-
-        let uv_0 = attrs.mesh_uv_0.map(|hash| {
-            commands
-                .spawn((BlobDep { target: node }, BlobRequest(hash.0)))
-                .id()
-        });
-        let uv_1 = attrs.mesh_uv_1.map(|hash| {
-            commands
-                .spawn((BlobDep { target: node }, BlobRequest(hash.0)))
-                .id()
-        });
-
-        commands.entity(node).insert(MeshParams {
-            topology: topology.0,
-            points,
-            indices,
-            colors,
-            normals,
-            tangents,
-            uv_0,
-            uv_1,
-        });
-    } else {
-        commands.entity(node).remove::<Mesh3d>();
     }
 }
 
-macro_rules! insert_mesh_attr {
-    (
-        $blobs:expr,
-        $mesh:expr,
-        $params:expr,
-        $param:ident,
-        $attr:expr,
-        $values:path,
-    ) => {
-        if let Some(param) = $params.$param
-            && let Ok(Some(bytes)) = $blobs.get_mut(param).map(|mut b| b.0.take())
-        {
-            match bytes_to_vec(&bytes) {
-                Ok(v) => $mesh.insert_attribute($attr, $values(v)),
-                Err(err) => warn!(?err, concat!("invalid ", stringify!($param), " buffer")),
-            };
-        }
-    };
-}
+/// Name tag for mesh attribute blob deps.
+#[derive(Component)]
+pub struct MeshAttrName(SmolStr);
 
 #[derive(Component)]
 #[require(BlobDeps)]
 pub struct MeshParams {
     topology: PrimitiveTopology,
-    points: Entity,
-    indices: Entity,
-    colors: Option<Entity>,
-    normals: Option<Entity>,
-    tangents: Option<Entity>,
-    uv_0: Option<Entity>,
-    uv_1: Option<Entity>,
+    attr_deps: Vec<Entity>,
+    indices: Option<Entity>,
+}
+
+/// Map HSD attribute names to Bevy mesh attributes.
+fn mesh_attr_id(name: &str) -> Option<(MeshVertexAttribute, MeshAttrKind)> {
+    match name {
+        "POSITION" => Some((Mesh::ATTRIBUTE_POSITION, MeshAttrKind::Float32x3)),
+        "NORMAL" => Some((Mesh::ATTRIBUTE_NORMAL, MeshAttrKind::Float32x3)),
+        "TANGENT" => Some((Mesh::ATTRIBUTE_TANGENT, MeshAttrKind::Float32x4)),
+        "COLOR" => Some((Mesh::ATTRIBUTE_COLOR, MeshAttrKind::Float32x4)),
+        "UV_0" => Some((Mesh::ATTRIBUTE_UV_0, MeshAttrKind::Float32x2)),
+        "UV_1" => Some((Mesh::ATTRIBUTE_UV_1, MeshAttrKind::Float32x2)),
+        _ => {
+            warn!("unknown mesh attribute: {name}");
+            None
+        }
+    }
+}
+
+enum MeshAttrKind {
+    Float32x2,
+    Float32x3,
+    Float32x4,
 }
 
 pub fn compile_meshes(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
-    loaded: Query<(Entity, &MeshParams, Option<&MaterialParams>), Added<BlobDepsLoaded>>,
+    loaded: Query<(Entity, &MeshParams), Added<BlobDepsLoaded>>,
     mut blobs: Query<&mut BlobResponse>,
-    mut default_material: Local<Option<Handle<StandardMaterial>>>,
+    attr_names: Query<&MeshAttrName>,
 ) {
-    for (ent, params, mat_params) in loaded {
+    for (ent, params) in &loaded {
         let mut mesh = Mesh::new(params.topology, RenderAssetUsages::all());
 
-        let Ok(Some(indices)) = blobs.get_mut(params.indices).map(|mut b| b.0.take()) else {
-            continue;
-        };
-        let indices = match bytes_to_vec(&indices) {
-            Ok(s) => s,
-            Err(err) => {
-                warn!(?err, "invalid indices");
+        // Insert indices.
+        if let Some(idx_ent) = params.indices {
+            let Ok(Some(bytes)) = blobs.get_mut(idx_ent).map(|mut b| b.0.take()) else {
                 continue;
-            }
-        };
-        mesh.insert_indices(Indices::U32(indices));
+            };
+            let indices = match bytes_to_vec::<u32>(&bytes) {
+                Ok(s) => s,
+                Err(err) => {
+                    warn!(?err, "invalid indices");
+                    continue;
+                }
+            };
+            mesh.insert_indices(Indices::U32(indices));
+        }
 
-        let Ok(Some(points)) = blobs.get_mut(params.points).map(|mut b| b.0.take()) else {
-            continue;
-        };
-        let points = match bytes_to_vec(&points) {
-            Ok(s) => s,
-            Err(err) => {
-                warn!(?err, "invalid points");
+        // Insert attributes.
+        for &dep_ent in &params.attr_deps {
+            let Ok(name) = attr_names.get(dep_ent) else {
                 continue;
-            }
-        };
-        mesh.insert_attribute(
-            Mesh::ATTRIBUTE_POSITION,
-            VertexAttributeValues::Float32x3(points),
-        );
+            };
+            let Ok(Some(bytes)) = blobs.get_mut(dep_ent).map(|mut b| b.0.take()) else {
+                continue;
+            };
 
-        insert_mesh_attr!(
-            blobs,
-            mesh,
-            params,
-            colors,
-            Mesh::ATTRIBUTE_COLOR,
-            VertexAttributeValues::Float32x4,
-        );
-        insert_mesh_attr!(
-            blobs,
-            mesh,
-            params,
-            normals,
-            Mesh::ATTRIBUTE_NORMAL,
-            VertexAttributeValues::Float32x3,
-        );
-        insert_mesh_attr!(
-            blobs,
-            mesh,
-            params,
-            tangents,
-            Mesh::ATTRIBUTE_TANGENT,
-            VertexAttributeValues::Float32x4,
-        );
-        insert_mesh_attr!(
-            blobs,
-            mesh,
-            params,
-            uv_0,
-            Mesh::ATTRIBUTE_UV_0,
-            VertexAttributeValues::Float32x2,
-        );
-        insert_mesh_attr!(
-            blobs,
-            mesh,
-            params,
-            uv_1,
-            Mesh::ATTRIBUTE_UV_1,
-            VertexAttributeValues::Float32x2,
-        );
+            let Some((attr, kind)) = mesh_attr_id(&name.0) else {
+                continue;
+            };
+
+            match kind {
+                MeshAttrKind::Float32x2 => match bytes_to_vec::<[f32; 2]>(&bytes) {
+                    Ok(v) => mesh.insert_attribute(attr, VertexAttributeValues::Float32x2(v)),
+                    Err(err) => {
+                        warn!(?err, "invalid {} buffer", name.0);
+                    }
+                },
+                MeshAttrKind::Float32x3 => match bytes_to_vec::<[f32; 3]>(&bytes) {
+                    Ok(v) => mesh.insert_attribute(attr, VertexAttributeValues::Float32x3(v)),
+                    Err(err) => {
+                        warn!(?err, "invalid {} buffer", name.0);
+                    }
+                },
+                MeshAttrKind::Float32x4 => match bytes_to_vec::<[f32; 4]>(&bytes) {
+                    Ok(v) => mesh.insert_attribute(attr, VertexAttributeValues::Float32x4(v)),
+                    Err(err) => {
+                        warn!(?err, "invalid {} buffer", name.0);
+                    }
+                },
+            }
+        }
 
         let handle = asset_server.add(mesh);
-
-        let mut ent = commands.entity(ent);
-        ent.insert(Mesh3d(handle));
-
-        if mat_params.is_none() {
-            let mat = default_material
-                .get_or_insert_with(|| asset_server.add(StandardMaterial::default()))
-                .clone();
-            ent.insert(MeshMaterial3d(mat));
-        }
+        commands.entity(ent).insert(CompiledMesh(handle));
     }
 }
 

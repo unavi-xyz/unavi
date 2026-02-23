@@ -6,7 +6,7 @@ use std::{collections::HashMap, time::Duration};
 use avian3d::dynamics::rigid_body::{AngularVelocity, LinearVelocity};
 use avian3d::prelude::RigidBody;
 use bevy::prelude::*;
-use bevy_hsd::{NodeId, StageNode};
+use bevy_hsd::{HsdChild, NodeId};
 
 use crate::{
     networking::{
@@ -25,7 +25,7 @@ use crate::{
     space::Space,
 };
 
-/// Marks a [`StageNode`] as a tracked dynamic object.
+/// Marks an HSD node as a tracked dynamic object.
 #[derive(Component, Clone)]
 pub struct DynObjectId(pub ObjectId);
 
@@ -37,21 +37,21 @@ pub struct LocallyOwned;
 #[derive(Component)]
 pub struct Grabbed;
 
-/// Detect newly-compiled `StageNode` entities with [`RigidBody::Dynamic`].
+/// Detect newly-compiled HSD node entities with [`RigidBody::Dynamic`].
 pub fn detect_dynamic_objects(
     mut commands: Commands,
     new_bodies: Query<
-        (Entity, &StageNode, &NodeId, &RigidBody),
+        (Entity, &HsdChild, &NodeId, &RigidBody),
         (Added<RigidBody>, Without<DynObjectId>),
     >,
     spaces: Query<&Space>,
 ) {
-    for (entity, stage_node, node_id, rigid_body) in &new_bodies {
+    for (entity, hsd_child, node_id, rigid_body) in &new_bodies {
         if *rigid_body != RigidBody::Dynamic {
             continue;
         }
 
-        let Ok(space) = spaces.get(stage_node.stage) else {
+        let Ok(space) = spaces.get(hsd_child.doc) else {
             warn!(%entity, "dynamic object has no space");
             continue;
         };

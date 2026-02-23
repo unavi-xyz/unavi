@@ -1,103 +1,60 @@
-use std::{borrow::Cow, collections::HashMap};
-
 use bevy::prelude::*;
-use loro::LoroValue;
-use loro_surgeon::Hydrate;
 
 use crate::{
-    LayerEnabled, LayerOpinions, LayerStrength, OpinionAttrs, OpinionTarget, Stage, StageCompiled,
-    StageLayers, merge::merge_values, stage::Attrs,
+    CompiledMaterial, CompiledMesh, HsdChild, HsdMaterialEntities, HsdMeshEntities, MaterialRef,
+    MeshRef,
 };
 
-mod collider;
+pub mod collider;
 pub mod material;
 pub mod mesh;
-mod rigid_body;
-mod xform;
+pub mod rigid_body;
 
-pub fn compile_stages(
-    layers: Query<(&LayerEnabled, &LayerStrength, &LayerOpinions)>,
-    opinions: Query<(&OpinionTarget, &OpinionAttrs)>,
-    stages: Query<(&mut StageCompiled, &StageLayers), With<Stage>>,
+/// Assign compiled Mesh3d/MeshMaterial3d to nodes that
+/// reference compiled resource entities.
+pub fn compile_nodes(
+    asset_server: Res<AssetServer>,
     mut commands: Commands,
+    nodes: Query<(Entity, &HsdChild, Option<&MeshRef>, Option<&MaterialRef>), Without<Mesh3d>>,
+    mesh_ents: Query<&HsdMeshEntities>,
+    mat_ents: Query<&HsdMaterialEntities>,
+    compiled_meshes: Query<&CompiledMesh>,
+    compiled_mats: Query<&CompiledMaterial>,
+    mut default_material: Local<Option<Handle<StandardMaterial>>>,
 ) {
-    for (mut compiled, stage_layers) in stages {
-        if compiled.0 {
+    for (node_ent, hsd_child, mesh_ref, mat_ref) in &nodes {
+        let Some(MeshRef(mesh_idx)) = mesh_ref else {
+            continue;
+        };
+
+        let Ok(mesh_list) = mesh_ents.get(hsd_child.doc) else {
+            continue;
+        };
+
+        let Some(&mesh_ent) = mesh_list.0.get(*mesh_idx) else {
+            continue;
+        };
+
+        let Ok(compiled_mesh) = compiled_meshes.get(mesh_ent) else {
+            continue;
+        };
+
+        let mut ent = commands.entity(node_ent);
+        ent.insert(Mesh3d(compiled_mesh.0.clone()));
+
+        // Apply compiled material or default.
+        if let Some(MaterialRef(mat_idx)) = mat_ref
+            && let Ok(mat_list) = mat_ents.get(hsd_child.doc)
+            && let Some(&mat_ent) = mat_list.0.get(*mat_idx)
+            && let Ok(compiled_mat) = compiled_mats.get(mat_ent)
+        {
+            ent.insert(MeshMaterial3d(compiled_mat.0.clone()));
             continue;
         }
 
-        // Read layers.
-        let mut resolved_layers = Vec::with_capacity(stage_layers.len());
-
-        for layer_ent in stage_layers.iter() {
-            let Ok((enabled, strength, layer_opinions)) = layers.get(layer_ent) else {
-                continue;
-            };
-
-            if !enabled.0 {
-                continue;
-            }
-
-            resolved_layers.push((strength.0, layer_opinions.0.clone()));
-        }
-
-        resolved_layers.sort_by(|a, b| a.0.cmp(&b.0));
-        debug_assert!(
-            resolved_layers.first().map(|(i, _)| *i).unwrap_or_default()
-                <= resolved_layers.last().map(|(i, _)| *i).unwrap_or_default(),
-            "layers not sorted in correct order"
-        );
-
-        // Merge layer opinions into raw LoroValues.
-        let mut node_attrs = HashMap::<Entity, HashMap<&str, Cow<LoroValue>>>::new();
-
-        for (_, layer_opinions) in resolved_layers {
-            for opinion_ent in layer_opinions {
-                let Ok((target, attrs)) = opinions.get(opinion_ent) else {
-                    continue;
-                };
-
-                let target_attrs = node_attrs.entry(target.0).or_default();
-
-                for (key, next) in attrs.0.iter() {
-                    let Some(prev) = target_attrs.remove(key.as_str()) else {
-                        target_attrs.insert(key, Cow::Borrowed(next));
-                        continue;
-                    };
-
-                    let out = merge_values(prev, next);
-                    target_attrs.insert(key, out);
-                }
-            }
-        }
-
-        // Apply node attributes by hydrating merged values to typed Attrs.
-        for (node_ent, raw_attrs) in node_attrs {
-            let node = commands.entity(node_ent).id();
-
-            // Convert merged HashMap to LoroMapValue for hydration.
-            let merged_map: loro::LoroMapValue = raw_attrs
-                .into_iter()
-                .map(|(k, v)| (k.to_string(), v.into_owned()))
-                .collect::<std::collections::HashMap<_, _>>()
-                .into();
-
-            // Hydrate to typed Attrs.
-            let attrs = match Attrs::hydrate(&LoroValue::Map(merged_map)) {
-                Ok(a) => a,
-                Err(err) => {
-                    warn!(?err, "failed to hydrate attrs");
-                    continue;
-                }
-            };
-
-            collider::parse_collider_attrs(&attrs, node, &mut commands);
-            material::parse_material_attrs(&attrs, node, &mut commands);
-            mesh::parse_mesh_attrs(&attrs, node, &mut commands);
-            rigid_body::parse_rigid_body_attrs(&attrs, node, &mut commands);
-            xform::parse_xform_attrs(&attrs, node, &mut commands);
-        }
-
-        compiled.0 = true;
+        let mat = default_material
+            .get_or_insert_with(|| asset_server.add(StandardMaterial::default()))
+            .clone();
+        ent.insert(MeshMaterial3d(mat));
     }
 }

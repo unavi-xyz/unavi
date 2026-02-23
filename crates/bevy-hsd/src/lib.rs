@@ -1,13 +1,13 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
-use loro::LoroMapValue;
+use loro::{Frontiers, LoroDoc};
 use smol_str::SmolStr;
 
 mod compile;
+pub mod data;
+mod hydrate;
 pub mod hydration;
-mod load;
-mod merge;
-pub mod stage;
-mod stage_nodes;
 
 pub struct HsdPlugin;
 
@@ -16,87 +16,70 @@ impl Plugin for HsdPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                (load::load_stages, compile::compile_stages).chain(),
-                compile::material::compile_materials,
-                compile::mesh::compile_meshes,
-                stage_nodes::stage_nodes_loaded,
-            ),
+                hydrate::hydrate_hsd_docs,
+                (
+                    compile::material::parse_material_data,
+                    compile::mesh::parse_mesh_data,
+                    compile::collider::parse_collider_data,
+                    compile::rigid_body::parse_rigid_body_data,
+                ),
+                (
+                    compile::material::compile_materials,
+                    compile::mesh::compile_meshes,
+                ),
+                compile::compile_nodes,
+            )
+                .chain(),
         );
     }
 }
 
-/// A stage is an ordered collection of layers and nodes.
-/// Lazily compiles layers into a single composed state.
+/// Source of truth. Insert on an entity to create an HSD
+/// scene. All child entities are cleaned up when removed.
 #[derive(Component)]
-#[require(StageLoaded, StageCompiled, StageLayers, StageNodes)]
-pub struct Stage(pub stage::StageData);
+#[require(HsdVersion, HsdChildren, HsdMeshEntities, HsdMaterialEntities)]
+pub struct HsdDoc(pub Arc<LoroDoc>);
 
-/// Lazy loading flag.
-/// Set to false to re-load stage data into the ECS.
+/// Tracks doc version for change detection.
 #[derive(Component, Default)]
-struct StageLoaded(bool);
+struct HsdVersion(Option<Frontiers>);
 
-/// Lazy compilation flag.
-/// Set to false to re-compile the stage scene from ECS data.
+/// Relationship target for all HSD-spawned entities.
 #[derive(Component, Default)]
-struct StageCompiled(bool);
-
-#[derive(Component, Default)]
-#[relationship_target(relationship = StageNode, linked_spawn)]
-pub struct StageNodes(Vec<Entity>);
-
-/// Whether all stage nodes have their deps loaded.
-#[derive(Component)]
-pub struct StageNodesLoaded;
+#[relationship_target(relationship = HsdChild, linked_spawn)]
+pub struct HsdChildren(Vec<Entity>);
 
 #[derive(Component)]
-#[relationship(relationship_target = StageNodes)]
-pub struct StageNode {
+#[relationship(relationship_target = HsdChildren)]
+pub struct HsdChild {
     #[relationship]
-    pub stage: Entity,
+    pub doc: Entity,
 }
 
+/// Node identity.
 #[derive(Component, Clone, Debug)]
 pub struct NodeId(pub SmolStr);
 
+/// Index reference from a node to a mesh resource entity.
+#[derive(Component)]
+pub struct MeshRef(pub usize);
+
+/// Index reference from a node to a material resource entity.
+#[derive(Component)]
+pub struct MaterialRef(pub usize);
+
+/// Compiled mesh handle stored on a mesh resource entity.
+#[derive(Component)]
+pub struct CompiledMesh(pub Handle<Mesh>);
+
+/// Compiled material handle stored on a material resource entity.
+#[derive(Component)]
+pub struct CompiledMaterial(pub Handle<StandardMaterial>);
+
+/// Ordered list of mesh resource entities on the doc entity.
 #[derive(Component, Default)]
-#[relationship_target(relationship = Layer, linked_spawn)]
-struct StageLayers(Vec<Entity>);
+pub struct HsdMeshEntities(pub Vec<Entity>);
 
-/// A layer is a collection of opinions.
-#[derive(Component)]
-#[relationship(relationship_target = StageLayers)]
-#[require(LayerEnabled, LayerStrength, LayerOpinions)]
-struct Layer {
-    #[relationship]
-    stage: Entity,
-}
-
-#[derive(Component)]
-struct LayerEnabled(bool);
-
-impl Default for LayerEnabled {
-    fn default() -> Self {
-        Self(true)
-    }
-}
-
+/// Ordered list of material resource entities on the doc entity.
 #[derive(Component, Default)]
-struct LayerStrength(usize);
-
-#[derive(Component, Default)]
-#[relationship_target(relationship = Opinion, linked_spawn)]
-struct LayerOpinions(Vec<Entity>);
-
-#[derive(Component)]
-#[relationship(relationship_target = LayerOpinions)]
-struct Opinion {
-    #[relationship]
-    layer: Entity,
-}
-
-#[derive(Component)]
-struct OpinionTarget(Entity);
-
-#[derive(Component)]
-struct OpinionAttrs(LoroMapValue);
+pub struct HsdMaterialEntities(pub Vec<Entity>);

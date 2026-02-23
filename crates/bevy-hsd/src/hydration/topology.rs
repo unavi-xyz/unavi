@@ -5,6 +5,12 @@ use loro_surgeon::{Hydrate, HydrateError, Reconcile, ReconcileError, loro::LoroM
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct HydratedTopology(pub PrimitiveTopology);
 
+impl Default for HydratedTopology {
+    fn default() -> Self {
+        Self(PrimitiveTopology::TriangleList)
+    }
+}
+
 impl Hydrate for HydratedTopology {
     fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
         let LoroValue::I64(num) = value else {

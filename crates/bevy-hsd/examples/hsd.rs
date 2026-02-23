@@ -129,8 +129,8 @@ fn load_hsd(mut commands: Commands) {
         .expect("nodes tree");
     let node_id = nodes.create(None).expect("create node");
     let meta = nodes.get_meta(node_id).expect("meta");
-    meta.insert("mesh", 0i64).expect("mesh ref");
-    meta.insert("material", 0i64).expect("material ref");
+    meta.insert("mesh", 0).expect("mesh ref");
+    meta.insert("material", 0).expect("material ref");
     meta.insert_container("translation", {
         let list = loro::LoroList::new();
         list.push(0.0).expect("push");

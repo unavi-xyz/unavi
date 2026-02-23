@@ -8,7 +8,7 @@ use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
 
 use crate::{
     networking::thread::{NetworkCommand, NetworkingThread},
-    space::{beacon::Beacon, default_stage::default_stage},
+    space::{beacon::Beacon, default_space::default_space},
 };
 
 pub fn join_home_space(
@@ -134,7 +134,7 @@ async fn create_and_join_home(
         })?
         .add_schema("hsd", &*SCHEMA_HSD, |doc| {
             let hsd = doc.get_map("hsd");
-            *blobs.borrow_mut() = Some(default_stage(&hsd));
+            *blobs.borrow_mut() = Some(default_space(&hsd));
             Ok(())
         })?
         .sync_to(remote_actor.clone())

@@ -346,6 +346,8 @@ fn find_restrictions_recursive<'a>(
 mod tests {
     use std::collections::BTreeMap;
 
+    use loro::LoroTree;
+
     use super::*;
 
     #[test]
@@ -413,26 +415,24 @@ mod tests {
 
     #[test]
     fn test_validate_tree() {
-        let mut node_map = std::collections::HashMap::new();
-        let mut meta_map = std::collections::HashMap::new();
-        meta_map.insert("name".to_string(), LoroValue::String("node1".into()));
-        node_map.insert("meta".to_string(), LoroValue::Map(meta_map.into()));
-        node_map.insert("id".to_string(), LoroValue::String("123".into()));
+        let tree = LoroTree::default();
+        let leaf_id = tree.create(None).expect("leaf");
 
-        let nodes = vec![LoroValue::Map(node_map.into())];
-        let value = LoroValue::List(nodes.into());
+        let meta = tree.get_meta(leaf_id).expect("meta");
+        meta.insert("key1", LoroValue::String("value1".into()))
+            .expect("insert");
+
+        let value = tree.get_value_with_meta();
 
         let mut fields = BTreeMap::new();
-        fields.insert("name".into(), Box::new(Field::String));
+        fields.insert("key1".into(), Box::new(Field::String));
 
-        assert!(
-            validate_value(
-                &value,
-                &Field::Tree(Box::new(Field::Struct(fields))),
-                "test"
-            )
-            .is_ok()
-        );
+        validate_value(
+            &value,
+            &Field::Tree(Box::new(Field::Struct(fields))),
+            "test",
+        )
+        .expect("valid");
     }
 
     #[test]

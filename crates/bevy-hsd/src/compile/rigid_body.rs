@@ -1,11 +1,14 @@
 use avian3d::prelude::{AngularDamping, LinearDamping, RigidBody};
 use bevy::prelude::*;
 
-use crate::stage::Attrs;
+use crate::data::HsdRigidBody;
 
-pub fn parse_rigid_body_attrs(attrs: &Attrs, node: Entity, commands: &mut Commands) {
-    if let Some(kind) = &attrs.rigid_body_kind {
-        let kind = match kind.as_str() {
+pub fn parse_rigid_body_data(
+    mut commands: Commands,
+    bodies: Query<(Entity, &HsdRigidBody), Added<HsdRigidBody>>,
+) {
+    for (ent, data) in &bodies {
+        let kind = match data.kind.as_str() {
             "dynamic" => RigidBody::Dynamic,
             "static" => RigidBody::Static,
             "kinematic" => RigidBody::Kinematic,
@@ -15,18 +18,15 @@ pub fn parse_rigid_body_attrs(attrs: &Attrs, node: Entity, commands: &mut Comman
             }
         };
 
-        if kind == RigidBody::Dynamic {
-            commands
-                .entity(node)
-                .insert((LinearDamping(0.2), AngularDamping(0.2)));
-        }
+        let mut ent = commands.entity(ent);
+        ent.insert(kind);
 
-        commands.entity(node).insert(kind);
-    } else {
-        commands
-            .entity(node)
-            .remove::<RigidBody>()
-            .remove::<AngularDamping>()
-            .remove::<LinearDamping>();
+        if kind == RigidBody::Dynamic {
+            #[expect(clippy::cast_possible_truncation)]
+            let linear = data.linear_damping.map_or(0.2, |v| v as f32);
+            #[expect(clippy::cast_possible_truncation)]
+            let angular = data.angular_damping.map_or(0.2, |v| v as f32);
+            ent.insert((LinearDamping(linear), AngularDamping(angular)));
+        }
     }
 }

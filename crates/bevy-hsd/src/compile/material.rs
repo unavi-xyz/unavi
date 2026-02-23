@@ -1,47 +1,56 @@
 use bevy::prelude::*;
 use bevy_wds::{BlobDep, BlobDeps, BlobDepsLoaded, BlobRequest, BlobResponse};
 
-use crate::stage::Attrs;
+use crate::{CompiledMaterial, data::HsdMaterial};
 
-pub fn parse_material_attrs(attrs: &Attrs, node: Entity, commands: &mut Commands) {
-    if attrs.material_base_color.is_some()
-        || attrs.material_base_color_texture.is_some()
-        || attrs.material_double_sided.is_some()
-        || attrs.material_metallic.is_some()
-        || attrs.material_metallic_roughness_texture.is_some()
-        || attrs.material_normal_texture.is_some()
-        || attrs.material_occlusion_texture.is_some()
-        || attrs.material_roughness.is_some()
-    {
-        let base_color = attrs.material_base_color.map(Color::srgb_from_array);
-        let double_sided = attrs.material_double_sided;
-        let metallic = attrs.material_metallic;
-        let roughness = attrs.material_roughness;
+/// For each newly-added `HsdMaterial`, spawn `BlobDep` entities
+/// and insert `MaterialParams`.
+pub fn parse_material_data(
+    mut commands: Commands,
+    materials: Query<(Entity, &HsdMaterial), Added<HsdMaterial>>,
+) {
+    for (ent, mat) in &materials {
+        #[expect(clippy::cast_possible_truncation)]
+        let base_color = mat.base_color.as_ref().and_then(|c| {
+            if c.len() >= 3 {
+                Some(Color::srgb(c[0] as f32, c[1] as f32, c[2] as f32))
+            } else {
+                None
+            }
+        });
 
-        let base_color_texture = attrs.material_base_color_texture.map(|hash| {
+        #[expect(clippy::cast_possible_truncation)]
+        let metallic = mat.metallic.map(|v| v as f32);
+        #[expect(clippy::cast_possible_truncation)]
+        let roughness = mat.roughness.map(|v| v as f32);
+
+        let base_color_texture = mat.base_color_texture.map(|hash| {
             commands
-                .spawn((BlobDep { target: node }, BlobRequest(hash.0)))
-                .id()
-        });
-        let metallic_roughness_texture = attrs.material_metallic_roughness_texture.map(|hash| {
-            commands
-                .spawn((BlobDep { target: node }, BlobRequest(hash.0)))
-                .id()
-        });
-        let normal_texture = attrs.material_normal_texture.map(|hash| {
-            commands
-                .spawn((BlobDep { target: node }, BlobRequest(hash.0)))
-                .id()
-        });
-        let occlusion_texture = attrs.material_occlusion_texture.map(|hash| {
-            commands
-                .spawn((BlobDep { target: node }, BlobRequest(hash.0)))
+                .spawn((BlobDep { target: ent }, BlobRequest(hash.0)))
                 .id()
         });
 
-        commands.entity(node).insert(MaterialParams {
+        let metallic_roughness_texture = mat.metallic_roughness_texture.map(|hash| {
+            commands
+                .spawn((BlobDep { target: ent }, BlobRequest(hash.0)))
+                .id()
+        });
+
+        let normal_texture = mat.normal_texture.map(|hash| {
+            commands
+                .spawn((BlobDep { target: ent }, BlobRequest(hash.0)))
+                .id()
+        });
+
+        let occlusion_texture = mat.occlusion_texture.map(|hash| {
+            commands
+                .spawn((BlobDep { target: ent }, BlobRequest(hash.0)))
+                .id()
+        });
+
+        commands.entity(ent).insert(MaterialParams {
             base_color,
-            double_sided,
+            double_sided: mat.double_sided,
             metallic,
             roughness,
             base_color_texture,
@@ -49,10 +58,6 @@ pub fn parse_material_attrs(attrs: &Attrs, node: Entity, commands: &mut Commands
             _normal_texture: normal_texture,
             _occlusion_texture: occlusion_texture,
         });
-    } else {
-        commands
-            .entity(node)
-            .remove::<MeshMaterial3d<StandardMaterial>>();
     }
 }
 
@@ -75,7 +80,7 @@ pub fn compile_materials(
     loaded: Query<(Entity, &MaterialParams), Added<BlobDepsLoaded>>,
     mut blobs: Query<&mut BlobResponse>,
 ) {
-    for (ent, params) in loaded {
+    for (ent, params) in &loaded {
         let mut material = StandardMaterial::default();
 
         if let Some(value) = params.base_color {
@@ -95,13 +100,13 @@ pub fn compile_materials(
             let Ok(Some(_bytes)) = blobs.get_mut(value).map(|mut b| b.0.take()) else {
                 continue;
             };
-            // TODO load image details from HSD
+            // TODO: load image details from HSD
             let image = Image::default();
             let handle = asset_server.add(image);
             material.base_color_texture = Some(handle);
         }
 
         let handle = asset_server.add(material);
-        commands.entity(ent).insert(MeshMaterial3d(handle));
+        commands.entity(ent).insert(CompiledMaterial(handle));
     }
 }

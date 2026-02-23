@@ -17,7 +17,7 @@ impl Plugin for SpacePlugin {
             (
                 home::join_home_space,
                 publish_beacons::publish_beacons,
-                spawn::spawn_space_stage,
+                spawn::spawn_space_hsd,
             ),
         );
     }

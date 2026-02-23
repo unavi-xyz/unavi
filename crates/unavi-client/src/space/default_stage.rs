@@ -1,15 +1,10 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use bevy::{mesh::Indices, prelude::*};
-use bevy_hsd::{
-    hydration::topology::HydratedTopology,
-    stage::{LayerData, StageData},
-};
 use blake3::Hash;
 use bytemuck::cast_slice;
 use bytes::Bytes;
-use loro::{LoroMapValue, LoroValue};
-use loro_surgeon::Reconcile;
+use loro::LoroMap;
 
 #[derive(Default)]
 pub struct Blobs(pub HashSet<Bytes>);
@@ -23,125 +18,156 @@ impl Blobs {
     }
 }
 
-pub fn default_stage() -> (Blobs, StageData) {
+/// Write default HSD scene into the provided map.
+/// Returns blob data that must be uploaded.
+pub fn default_stage(hsd: &LoroMap) -> Blobs {
     let mut blobs = Blobs::default();
 
-    let mut ground = new_cuboid(&mut blobs, Vec3::new(50.0, 1.0, 50.0));
-    ground.make_mut().insert(
-        "xform/pos".to_string(),
-        LoroValue::List(
-            vec![
-                LoroValue::Double(0.0),
-                LoroValue::Double(-1.0),
-                LoroValue::Double(0.0),
-            ]
-            .into(),
-        ),
-    );
-    ground.make_mut().insert(
-        "rigid_body/kind".to_string(),
-        LoroValue::String("static".into()),
-    );
+    // --- Materials ---
+    let materials = hsd
+        .get_or_create_container("materials", loro::LoroList::new())
+        .expect("materials list");
 
-    let mut dyn_cube = new_cuboid(&mut blobs, Vec3::splat(0.5));
-    dyn_cube.make_mut().insert(
-        "xform/pos".to_string(),
-        LoroValue::List(
-            vec![
-                LoroValue::Double(-2.0),
-                LoroValue::Double(5.0),
-                LoroValue::Double(-10.0),
-            ]
-            .into(),
-        ),
-    );
-    dyn_cube.make_mut().insert(
-        "rigid_body/kind".to_string(),
-        LoroValue::String("dynamic".into()),
-    );
+    // Ground material (index 0): grey.
+    let mat0 = materials
+        .push_container(loro::LoroMap::new())
+        .expect("push mat");
+    mat0.insert_container("base_color", {
+        let l = loro::LoroList::new();
+        l.push(0.5).expect("push");
+        l.push(0.5).expect("push");
+        l.push(0.5).expect("push");
+        l
+    })
+    .expect("base_color");
+    mat0.insert("roughness", 0.9).expect("roughness");
 
-    let mut opinions = HashMap::new();
-    opinions.insert("ground".to_string(), LoroValue::Map(ground));
-    opinions.insert("dyn_cube".to_string(), LoroValue::Map(dyn_cube));
+    // --- Meshes ---
+    let meshes = hsd
+        .get_or_create_container("meshes", loro::LoroList::new())
+        .expect("meshes list");
 
-    let stage = StageData {
-        layers: vec![LayerData {
-            enabled: true,
-            opinions: opinions.into(),
-        }],
-    };
+    // Ground mesh (index 0).
+    let ground_dims = Vec3::new(50.0, 1.0, 50.0);
+    let ground_mesh_idx = push_cuboid_mesh(&mut blobs, &meshes, ground_dims);
 
-    (blobs, stage)
+    // Dyn cube mesh (index 1).
+    let cube_dims = Vec3::splat(0.5);
+    let cube_mesh_idx = push_cuboid_mesh(&mut blobs, &meshes, cube_dims);
+
+    // --- Nodes ---
+    let nodes = hsd
+        .get_or_create_container("nodes", loro::LoroTree::new())
+        .expect("nodes tree");
+
+    // Ground node.
+    let ground_id = nodes.create(None).expect("create ground");
+    let ground = nodes.get_meta(ground_id).expect("meta");
+    ground.insert("mesh", ground_mesh_idx).expect("mesh");
+    ground.insert("material", 0i64).expect("material");
+    ground
+        .insert_container("translation", {
+            let l = loro::LoroList::new();
+            l.push(0.0).expect("push");
+            l.push(-1.0).expect("push");
+            l.push(0.0).expect("push");
+            l
+        })
+        .expect("translation");
+    let ground_collider = ground
+        .get_or_create_container("collider", loro::LoroMap::new())
+        .expect("collider");
+    ground_collider.insert("shape", "cuboid").expect("shape");
+    ground_collider
+        .insert_container("size", {
+            let l = loro::LoroList::new();
+            l.push(f64::from(ground_dims.x)).expect("push");
+            l.push(f64::from(ground_dims.y)).expect("push");
+            l.push(f64::from(ground_dims.z)).expect("push");
+            l
+        })
+        .expect("size");
+    let ground_rb = ground
+        .get_or_create_container("rigid_body", loro::LoroMap::new())
+        .expect("rigid_body");
+    ground_rb.insert("kind", "static").expect("kind");
+
+    // Dynamic cube node.
+    let cube_id = nodes.create(None).expect("create cube");
+    let cube = nodes.get_meta(cube_id).expect("meta");
+    cube.insert("mesh", cube_mesh_idx).expect("mesh");
+    cube.insert_container("translation", {
+        let l = loro::LoroList::new();
+        l.push(-2.0).expect("push");
+        l.push(5.0).expect("push");
+        l.push(-10.0).expect("push");
+        l
+    })
+    .expect("translation");
+    let cube_collider = cube
+        .get_or_create_container("collider", loro::LoroMap::new())
+        .expect("collider");
+    cube_collider.insert("shape", "cuboid").expect("shape");
+    cube_collider
+        .insert_container("size", {
+            let l = loro::LoroList::new();
+            l.push(f64::from(cube_dims.x)).expect("push");
+            l.push(f64::from(cube_dims.y)).expect("push");
+            l.push(f64::from(cube_dims.z)).expect("push");
+            l
+        })
+        .expect("size");
+    let cube_rb = cube
+        .get_or_create_container("rigid_body", loro::LoroMap::new())
+        .expect("rigid_body");
+    cube_rb.insert("kind", "dynamic").expect("kind");
+
+    blobs
 }
 
-fn new_cuboid(blobs: &mut Blobs, dims: Vec3) -> LoroMapValue {
-    let mut attrs = LoroMapValue::default();
+/// Push a cuboid mesh into the meshes list, returning the
+/// index (as i64 for Loro).
+fn push_cuboid_mesh(blobs: &mut Blobs, meshes: &loro::LoroList, dims: Vec3) -> i64 {
     let cube = Cuboid::new(dims.x, dims.y, dims.z).mesh().build();
 
-    attrs.make_mut().insert(
-        "mesh/topology".to_string(),
-        HydratedTopology(cube.primitive_topology())
-            .to_loro_value()
-            .expect("always exists"),
-    );
+    let mesh_map = meshes
+        .push_container(loro::LoroMap::new())
+        .expect("push mesh");
+    mesh_map.insert("topology", 3i64).expect("topology");
 
+    let attrs = mesh_map
+        .get_or_create_container("attributes", loro::LoroMap::new())
+        .expect("attrs");
+
+    // Indices.
     let Some(Indices::U32(indices)) = cube.indices() else {
         unreachable!()
     };
-    attrs.make_mut().insert(
-        "mesh/indices".to_string(),
-        LoroValue::Binary(
-            blobs
-                .add_blob(cast_slice(indices).to_vec())
-                .as_bytes()
-                .to_vec()
-                .into(),
-        ),
-    );
+    let hash = blobs.add_blob(cast_slice(indices).to_vec());
+    mesh_map
+        .insert("indices", hash.as_bytes().to_vec())
+        .expect("indices");
 
+    // Position.
     let Some(points) = cube.attribute(Mesh::ATTRIBUTE_POSITION) else {
         unreachable!()
     };
-    attrs.make_mut().insert(
-        "mesh/points".to_string(),
-        LoroValue::Binary(
-            blobs
-                .add_blob(points.get_bytes().to_vec())
-                .as_bytes()
-                .to_vec()
-                .into(),
-        ),
-    );
+    let hash = blobs.add_blob(points.get_bytes().to_vec());
+    attrs
+        .insert("POSITION", hash.as_bytes().to_vec())
+        .expect("position");
 
+    // Normals.
     let Some(normals) = cube.attribute(Mesh::ATTRIBUTE_NORMAL) else {
         unreachable!()
     };
-    attrs.make_mut().insert(
-        "mesh/normals".to_string(),
-        LoroValue::Binary(
-            blobs
-                .add_blob(normals.get_bytes().to_vec())
-                .as_bytes()
-                .to_vec()
-                .into(),
-        ),
-    );
-
-    attrs.make_mut().insert(
-        "collider/shape".to_string(),
-        LoroValue::String("cuboid".into()),
-    );
-    attrs.make_mut().insert(
-        "collider/params".to_string(),
-        LoroValue::List(
-            vec![
-                LoroValue::Double(f64::from(dims.x)),
-                LoroValue::Double(f64::from(dims.y)),
-                LoroValue::Double(f64::from(dims.z)),
-            ]
-            .into(),
-        ),
-    );
-
+    let hash = blobs.add_blob(normals.get_bytes().to_vec());
     attrs
+        .insert("NORMAL", hash.as_bytes().to_vec())
+        .expect("normal");
+
+    // Return index (0-based).
+    #[expect(clippy::cast_possible_wrap)]
+    let idx = (meshes.len() - 1) as i64;
+    idx
 }

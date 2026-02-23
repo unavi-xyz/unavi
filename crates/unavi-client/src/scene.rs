@@ -2,17 +2,17 @@ use bevy::{
     light::{CascadeShadowConfigBuilder, light_consts::lux},
     prelude::*,
 };
-use bevy_hsd::StageNodesLoaded;
+use bevy_hsd::NodeId;
 use bevy_vrm::mtoon::MtoonSun;
 use unavi_locomotion::LocalAgentSpawner;
 
 pub fn spawn_agent(
     asset_server: Res<AssetServer>,
-    new_stages: Query<(), Added<StageNodesLoaded>>,
+    new_nodes: Query<(), (With<NodeId>, Added<Mesh3d>)>,
     mut commands: Commands,
     mut spawned: Local<bool>,
 ) {
-    if *spawned || new_stages.is_empty() {
+    if *spawned || new_nodes.is_empty() {
         return;
     }
 

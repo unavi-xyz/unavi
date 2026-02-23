@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::sync::Arc;
 
 use avian3d::{PhysicsPlugins, prelude::PhysicsDebugPlugin};
 use bevy::{
@@ -6,15 +6,12 @@ use bevy::{
     pbr::{Atmosphere, AtmosphereSettings},
     prelude::*,
 };
-use bevy_hsd::{
-    HsdPlugin, Stage,
-    stage::{LayerData, StageData},
-};
+use bevy_hsd::HsdPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_wds::{LocalBlobs, WdsPlugin};
 use bytemuck::cast_slice;
 use iroh_blobs::store::mem::MemStore;
-use loro::{LoroBinaryValue, LoroMapValue, LoroValue};
+use loro::LoroDoc;
 
 fn main() {
     App::new()
@@ -61,111 +58,115 @@ fn load_hsd(mut commands: Commands) {
     let store = rx.recv().expect("recv");
     commands.spawn(LocalBlobs(store.blobs().clone()));
 
-    let mut attrs = LoroMapValue::default();
+    let doc = LoroDoc::new();
+    let hsd = doc.get_map("hsd");
 
-    attrs.make_mut().insert(
-        "xform/pos".to_string(),
-        LoroValue::List(
-            vec![
-                LoroValue::Double(0.0),
-                LoroValue::Double(-0.5),
-                LoroValue::Double(0.0),
-            ]
-            .into(),
-        ),
-    );
+    // Add a material.
+    let materials = hsd
+        .get_or_create_container("materials", loro::LoroList::new())
+        .expect("materials list");
+    let mat_map = materials
+        .push_container(loro::LoroMap::new())
+        .expect("push mat");
+    mat_map
+        .insert_container("base_color", {
+            let list = loro::LoroList::new();
+            list.push(0.4).expect("push");
+            list.push(0.3).expect("push");
+            list.push(0.7).expect("push");
+            list
+        })
+        .expect("base_color");
+    mat_map.insert("metallic", 0.8).expect("metallic");
+    mat_map.insert("roughness", 0.4).expect("roughness");
 
-    attrs.make_mut().insert(
-        "material/base_color".to_string(),
-        LoroValue::List(
-            vec![
-                LoroValue::Double(0.4),
-                LoroValue::Double(0.3),
-                LoroValue::Double(0.7),
-            ]
-            .into(),
-        ),
-    );
-
-    attrs
-        .make_mut()
-        .insert("material/metallic".to_string(), LoroValue::Double(0.8));
-    attrs
-        .make_mut()
-        .insert("material/roughness".to_string(), LoroValue::Double(0.4));
-
-    attrs.make_mut().insert(
-        "mesh/topology".to_string(),
-        LoroValue::I64(
-            3, // TriangleList
-        ),
-    );
-
+    // Add a mesh.
     let x_length = 2.0;
     let y_length = 0.5;
     let z_length = 1.0;
     let cube = Cuboid::new(x_length, y_length, z_length).mesh().build();
 
+    let meshes = hsd
+        .get_or_create_container("meshes", loro::LoroList::new())
+        .expect("meshes list");
+    let mesh_map = meshes
+        .push_container(loro::LoroMap::new())
+        .expect("push mesh");
+    mesh_map.insert("topology", 3i64).expect("topology");
+
+    // Attributes map.
+    let attrs = mesh_map
+        .get_or_create_container("attributes", loro::LoroMap::new())
+        .expect("attrs");
+
     let Some(Indices::U32(indices)) = cube.indices() else {
         unreachable!()
     };
-    let indices_bytes = cast_slice(indices);
-    add_blob_ref(&store, &mut attrs, "mesh/indices", indices_bytes);
+    let indices_hash = add_blob(&store, cast_slice(indices));
+    mesh_map
+        .insert("indices", indices_hash.as_bytes().to_vec())
+        .expect("indices");
 
     let Some(points) = cube.attribute(Mesh::ATTRIBUTE_POSITION) else {
         unreachable!()
     };
-    add_blob_ref(&store, &mut attrs, "mesh/points", points.get_bytes());
+    let hash = add_blob(&store, points.get_bytes());
+    attrs
+        .insert("POSITION", hash.as_bytes().to_vec())
+        .expect("position");
 
     let Some(normals) = cube.attribute(Mesh::ATTRIBUTE_NORMAL) else {
         unreachable!()
     };
-    add_blob_ref(&store, &mut attrs, "mesh/normals", normals.get_bytes());
+    let hash = add_blob(&store, normals.get_bytes());
+    attrs
+        .insert("NORMAL", hash.as_bytes().to_vec())
+        .expect("normal");
 
-    attrs.make_mut().insert(
-        "collider/shape".to_string(),
-        LoroValue::String("cuboid".into()),
-    );
-    attrs.make_mut().insert(
-        "collider/params".to_string(),
-        LoroValue::List(
-            vec![
-                LoroValue::Double(x_length.into()),
-                LoroValue::Double(y_length.into()),
-                LoroValue::Double(z_length.into()),
-            ]
-            .into(),
-        ),
-    );
+    // Add a node.
+    let nodes = hsd
+        .get_or_create_container("nodes", loro::LoroTree::new())
+        .expect("nodes tree");
+    let node_id = nodes.create(None).expect("create node");
+    let meta = nodes.get_meta(node_id).expect("meta");
+    meta.insert("mesh", 0i64).expect("mesh ref");
+    meta.insert("material", 0i64).expect("material ref");
+    meta.insert_container("translation", {
+        let list = loro::LoroList::new();
+        list.push(0.0).expect("push");
+        list.push(-0.5).expect("push");
+        list.push(0.0).expect("push");
+        list
+    })
+    .expect("translation");
 
-    let mut opinions = HashMap::new();
-    opinions.insert("node_a".to_string(), LoroValue::Map(attrs));
+    // Collider.
+    let collider = meta
+        .get_or_create_container("collider", loro::LoroMap::new())
+        .expect("collider");
+    collider.insert("shape", "cuboid").expect("shape");
+    collider
+        .insert_container("size", {
+            let list = loro::LoroList::new();
+            list.push(f64::from(x_length)).expect("push");
+            list.push(f64::from(y_length)).expect("push");
+            list.push(f64::from(z_length)).expect("push");
+            list
+        })
+        .expect("size");
 
-    let stage = StageData {
-        layers: vec![LayerData {
-            enabled: true,
-            opinions: opinions.into(),
-        }],
-    };
-
-    commands.spawn(Stage(stage));
+    commands.spawn(bevy_hsd::HsdDoc(Arc::new(doc)));
 
     // Keep store alive in memory.
     commands.spawn(BlobStore(store));
 }
 
-fn add_blob_ref(store: &MemStore, attrs: &mut LoroMapValue, key: impl Into<String>, bytes: &[u8]) {
+fn add_blob(store: &MemStore, bytes: &[u8]) -> blake3::Hash {
     let hash = blake3::hash(bytes);
-
     let store = store.clone();
     let bytes = bytes.to_vec();
     unavi_wasm_compat::spawn_thread(async move {
         store.add_bytes(bytes).await.expect("add bytes");
     });
-
-    let mut bin_value = LoroBinaryValue::default();
-    *bin_value.make_mut() = hash.as_bytes().to_vec();
-    attrs
-        .make_mut()
-        .insert(key.into(), LoroValue::Binary(bin_value));
+    hash
 }

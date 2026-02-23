@@ -21,7 +21,8 @@ impl Guest for World {
 }
 
 fn convert_bevy_mesh(mut in_mesh: BevyMesh) -> Mesh {
-    let out_mesh = Mesh::new();
+    let doc = wired::scene::context::self_document();
+    let out_mesh = doc.create_mesh();
 
     let topology = match in_mesh.primitive_topology() {
         BevyTopology::PointList => PrimitiveTopology::PointList,

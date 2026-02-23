@@ -18,8 +18,10 @@ remote) storing records and blobs. User-operated, peer-to-peer sync.
 
 ### Spatial
 
-[**HSD**](./spatial/hsd.md) - HyperSpace Documents. Spatial hypermedia format,
-analogous to HTML. Defines 3D geometry, entities, blob references.
+[**HSD**](./spatial/hsd.md) - HyperSpace Documents. The atomic unit of spatial
+content, analogous to HTML. Self-contained 3D objects with geometry,
+materials, physics, and embedded scripts.
 
-[**Spaces**](./spatial/spaces.md) - 3D environments. Records following Space
-schema. Support slots (composition) and portals (linking).
+[**Spaces**](./spatial/spaces.md) - Simulation sandboxes. Shared environments
+where multiple HSD documents coexist. Support slots (composition) and
+portals (linking).

@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
+use loro::LoroDoc;
 use wasmtime::component::ResourceTable;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
-// const MAX_COMMANDS: usize = 256;
-// const MAX_WRITE: usize = 1024;
+use crate::api::wired::scene::WiredSceneRt;
 
 pub struct StoreState {
     wasi: WasiCtx,
@@ -10,27 +12,24 @@ pub struct StoreState {
     pub rt: RuntimeData,
 }
 
-pub struct RuntimeData {}
+pub struct RuntimeData {
+    wired_scene: WiredSceneRt,
+}
 
 pub struct RuntimeDataResult {
     pub rt: RuntimeData,
-    // pub write_recv: tokio::sync::broadcast::Receiver<ComponentWrite>,
 }
 
 impl RuntimeData {
     pub fn spawn() -> RuntimeDataResult {
-        // let (commands_send, commands_recv) = tokio::sync::mpsc::channel(MAX_COMMANDS);
-        // let (write_send, write_recv) = tokio::sync::broadcast::channel(MAX_WRITE);
+        let doc = Arc::new(LoroDoc::new()); // TODO
 
         RuntimeDataResult {
             rt: Self {
-                // wired_ecs: WiredEcsData {
-                //     commands: commands_send,
-                //     write: write_send,
-                //     components: Vec::new(),
-                //     entity_id: 0,
-                //     systems: Vec::new(),
-                // },
+                wired_scene: WiredSceneRt {
+                    table: ResourceTable::default(),
+                    doc,
+                },
             },
         }
     }

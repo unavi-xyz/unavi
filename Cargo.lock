@@ -13404,6 +13404,8 @@ dependencies = [
  "bevy",
  "bevy_async_task",
  "futures 0.3.31",
+ "loro",
+ "smol_str 0.3.5",
  "tokio",
  "tracing",
  "tracing-subscriber",

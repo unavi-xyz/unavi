@@ -4,7 +4,9 @@ use avian3d::dynamics::rigid_body::{AngularVelocity, LinearVelocity};
 use bevy::prelude::*;
 use bevy_wds::{LocalActor, LocalBlobs, RemoteActor};
 use iroh::EndpointId;
-use unavi_avatar::{AvatarSpawner, AverageVelocity, Grounded, default_character_animations};
+use unavi_avatar::{
+    Avatar, AverageVelocity, Grounded, default_character_animations,
+};
 
 use crate::networking::{
     AgentTickrateConfig,
@@ -59,7 +61,7 @@ pub fn recv_network_event(
                     ))
                     .id();
 
-                let avatar = AvatarSpawner::new().spawn(&mut commands, &asset_server);
+                let avatar = commands.spawn(Avatar).id();
                 let animations = default_character_animations(&asset_server);
 
                 commands.entity(avatar).insert((

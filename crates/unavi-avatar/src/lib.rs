@@ -5,7 +5,7 @@
 
 use std::collections::HashMap;
 
-use bevy::prelude::*;
+use bevy::{ecs::lifecycle::HookContext, ecs::world::DeferredWorld, prelude::*};
 use bevy_vrm::{BoneName, VrmInstance, VrmPlugins};
 use unavi_assets::default_avatar_path;
 
@@ -44,49 +44,35 @@ impl Plugin for AvatarPlugin {
     }
 }
 
+/// Optional VRM model path override for an avatar.
+#[derive(Component, Clone, Deref)]
+pub struct VrmPath(pub String);
+
 /// Marker for an avatar entity.
+/// Spawning an entity with `Avatar` loads and attaches the VRM model.
+/// Use `VrmPath` to override the default model.
 #[derive(Component, Default)]
-#[require(Transform, GlobalTransform, Visibility)]
+#[require(AvatarBones, Transform, GlobalTransform, Visibility)]
+#[component(on_add = on_avatar_added)]
 pub struct Avatar;
+
+fn on_avatar_added(mut world: DeferredWorld, ctx: HookContext) {
+    let entity = ctx.entity;
+    let vrm_path = world
+        .get::<VrmPath>(entity)
+        .map(|p| p.0.clone())
+        .unwrap_or_else(default_avatar_path);
+    let asset_server = world.resource::<AssetServer>().clone();
+    let vrm_handle = asset_server.load(vrm_path);
+    world
+        .commands()
+        .entity(entity)
+        .insert(VrmInstance(vrm_handle));
+}
 
 /// Whether the entity is grounded (not airborne).
 #[derive(Component, Default)]
 pub struct Grounded(pub bool);
-
-/// Builder for spawning a visual avatar entity.
-#[derive(Default)]
-pub struct AvatarSpawner {
-    pub vrm_asset: Option<String>,
-}
-
-impl AvatarSpawner {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    #[must_use]
-    pub fn with_vrm(mut self, vrm_asset: impl Into<String>) -> Self {
-        self.vrm_asset = Some(vrm_asset.into());
-        self
-    }
-
-    /// Spawns a visual avatar entity.
-    /// Returns the avatar entity ID.
-    pub fn spawn(&self, commands: &mut Commands, asset_server: &AssetServer) -> Entity {
-        let vrm_path = self.vrm_asset.clone().unwrap_or_else(default_avatar_path);
-        let vrm_handle = asset_server.load(vrm_path);
-
-        commands
-            .spawn((
-                Avatar,
-                AvatarBones::default(),
-                VrmInstance(vrm_handle),
-                Transform::default(),
-            ))
-            .id()
-    }
-}
 
 /// Maps tracked poses to VRM avatar bones.
 #[derive(Component, Default, Deref, DerefMut)]

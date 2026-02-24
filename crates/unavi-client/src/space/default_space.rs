@@ -31,9 +31,9 @@ pub fn default_space(hsd: &LoroMap) -> Blobs {
     let mat0 = materials.push_container(LoroMap::new()).expect("push mat");
     mat0.insert_container("base_color", {
         let l = LoroList::new();
-        l.push(0.5).expect("push");
-        l.push(0.5).expect("push");
-        l.push(0.5).expect("push");
+        l.push(1.0).expect("push");
+        l.push(1.0).expect("push");
+        l.push(1.0).expect("push");
         l
     })
     .expect("base_color");

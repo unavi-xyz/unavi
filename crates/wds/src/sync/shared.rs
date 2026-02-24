@@ -3,10 +3,10 @@ use std::collections::{BTreeMap, HashSet};
 use anyhow::ensure;
 use blake3::Hash;
 use iroh_blobs::api::Store;
-use loro::{LoroDoc, LoroValue, VersionVector};
+use loro::{LoroDoc, LoroMap, LoroTree, LoroValue, VersionVector};
 use rusqlite::{Connection, params};
 use smol_str::SmolStr;
-use wds_schema::{Field, Schema};
+use wds_schema::{Field, Schema, unwrap_restricted};
 use wired_schemas::{
     SCHEMA_ACL, SCHEMA_RECORD,
     surg::{Acl, Record},
@@ -115,12 +115,54 @@ async fn validate_schemas(
     Ok(schemas)
 }
 
-/// Extracts all [`Field::BlobId`] values from a Loro document by walking the schemas.
-/// Returns hashes as hex strings (for database storage).
+/// Resolve the deep value of a root map, properly including
+/// tree node metadata. Loro's `get_deep_value()` calls
+/// `LoroTree::get_value()` on tree sub-containers, which
+/// omits metadata. This function uses `get_value_with_meta()`
+/// for tree fields instead.
+fn resolve_deep_value(map: &LoroMap, layout: &Field) -> LoroValue {
+    let inner = unwrap_restricted(layout);
+
+    let Field::Struct(fields) = inner else {
+        return map.get_deep_value();
+    };
+
+    let has_trees = fields
+        .values()
+        .any(|f| matches!(unwrap_restricted(f), Field::Tree(_)));
+
+    if !has_trees {
+        return map.get_deep_value();
+    }
+
+    let base = map.get_deep_value();
+    let LoroValue::Map(base_map) = &base else {
+        return base;
+    };
+
+    let mut result: std::collections::HashMap<String, LoroValue> = base_map
+        .iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect();
+
+    for (key, field) in fields {
+        if matches!(unwrap_restricted(field), Field::Tree(_))
+            && let Ok(tree) = map.get_or_create_container(key.as_str(), LoroTree::new())
+        {
+            result.insert(key.to_string(), tree.get_value_with_meta());
+        }
+    }
+
+    LoroValue::Map(result.into())
+}
+
+/// Extracts all [`Field::BlobId`] values from a Loro document
+/// by walking the schemas. Returns hashes as hex strings.
 fn extract_blob_refs(doc: &LoroDoc, schemas: &BTreeMap<SmolStr, Schema>) -> HashSet<String> {
     let mut refs = HashSet::new();
     for (container_name, schema) in schemas {
-        let value = doc.get_map(container_name.as_str()).get_deep_value();
+        let map = doc.get_map(container_name.as_str());
+        let value = resolve_deep_value(&map, schema.layout());
         collect_blob_refs(&value, schema.layout(), &mut refs);
     }
     refs
@@ -186,12 +228,13 @@ fn collect_blob_refs(value: &LoroValue, field: &Field, refs: &mut HashSet<String
     }
 }
 
-/// Extracts all [`Field::RecordId`] values from a Loro document.
-/// Returns hashes as hex strings (for database storage).
+/// Extracts all [`Field::RecordId`] values from a Loro
+/// document. Returns hashes as hex strings.
 fn extract_record_refs(doc: &LoroDoc, schemas: &BTreeMap<SmolStr, Schema>) -> HashSet<String> {
     let mut refs = HashSet::new();
     for (container_name, schema) in schemas {
-        let value = doc.get_map(container_name.as_str()).get_deep_value();
+        let map = doc.get_map(container_name.as_str());
+        let value = resolve_deep_value(&map, schema.layout());
         collect_record_refs(&value, schema.layout(), &mut refs);
     }
     refs

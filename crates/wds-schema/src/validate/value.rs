@@ -1,59 +1,18 @@
-//! Container-level schema validation for Loro documents.
-//!
-//! This module provides type validation for individual containers. For document-level
-//! validation with Restricted field authorization, use [`crate::Validator`].
+//! Type validation for [`LoroValue`] against [`Field`] layouts.
 
-use loro::{
-    LoroValue, ValueOrContainer,
-    event::{Diff, ListDiffItem, MapDelta},
-};
-use smol_str::SmolStr;
-use thiserror::Error;
+use loro::LoroValue;
 
-use crate::schema::{Field, Schema};
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ChangeType {
-    Create,
-    Update,
-    Delete,
-}
-
-#[derive(Debug, Error)]
-pub enum ValidationError {
-    #[error("missing field: {0}")]
-    MissingField(SmolStr),
-    #[error("type mismatch at {path}: expected {expected}")]
-    TypeMismatch {
-        path: String,
-        expected: &'static str,
-    },
-    #[error("invalid element at {path}[{index}]")]
-    InvalidElement {
-        path: String,
-        index: usize,
-        #[source]
-        source: Box<Self>,
-    },
-    #[error("invalid field {path}.{key}")]
-    InvalidField {
-        path: String,
-        key: SmolStr,
-        #[source]
-        source: Box<Self>,
-    },
-    #[error("access denied at {path}: {action} requires authorization")]
-    AccessDenied { path: String, action: &'static str },
-}
+use super::ValidationError;
+use crate::Field;
 
 /// Validate a [`LoroValue`] against a [`Field`] layout.
 ///
-/// This performs type-only validation. For Restricted field authorization,
+/// Performs type-only validation. For Restricted field authorization,
 /// use [`crate::Validator`].
 ///
 /// # Errors
 ///
-/// Returns [`ValidationError`] if the value doesn't match the field type.
+/// Returns [`ValidationError`] if the value doesn't match the field.
 #[expect(clippy::too_many_lines)]
 pub fn validate_value(value: &LoroValue, field: &Field, path: &str) -> Result<(), ValidationError> {
     match field {
@@ -161,7 +120,6 @@ pub fn validate_value(value: &LoroValue, field: &Field, path: &str) -> Result<()
                             )?;
                         }
                         None => {
-                            // Optional fields can be absent; non-optional fields cannot.
                             if !matches!(inner_field.as_ref(), Field::Optional(_)) {
                                 return Err(ValidationError::MissingField(key.clone()));
                             }
@@ -177,8 +135,9 @@ pub fn validate_value(value: &LoroValue, field: &Field, path: &str) -> Result<()
         },
         Field::Tree(inner) => match value {
             // Tree's deep value is a list of node objects.
-            // Each node has: id, parent, fractional_index, index, meta.
-            // We validate the "meta" field which contains user data.
+            // Each node has: id, parent, fractional_index,
+            // index, meta.
+            // We validate the "meta" field (user data).
             LoroValue::List(nodes) => {
                 for (i, node) in nodes.iter().enumerate() {
                     if let LoroValue::Map(node_map) = node
@@ -200,145 +159,9 @@ pub fn validate_value(value: &LoroValue, field: &Field, path: &str) -> Result<()
                 expected: "tree",
             }),
         },
-        // For type validation, Restricted just validates the inner type.
+        // For type validation, Restricted validates inner.
         // Authorization is handled by Validator.
         Field::Restricted { value: inner, .. } => validate_value(value, inner, path),
-    }
-}
-
-/// # Errors
-///
-/// Returns [`ValidationError`] if any value in the diff doesn't match the schema.
-pub fn validate_container_diff(
-    diff: &Diff<'_>,
-    schema: &Schema,
-    container_name: &str,
-) -> Result<(), ValidationError> {
-    match diff {
-        Diff::Map(map_delta) => validate_map_diff(map_delta, schema.layout(), container_name),
-        Diff::List(items) => validate_list_diff(items, schema.layout(), container_name),
-        _ => Ok(()),
-    }
-}
-
-fn validate_map_diff(
-    map_delta: &MapDelta<'_>,
-    field: &Field,
-    path: &str,
-) -> Result<(), ValidationError> {
-    let inner = unwrap_restricted(field);
-
-    let (struct_fields, map_inner) = match inner {
-        Field::Struct(fields) => (Some(fields), None),
-        Field::Map(inner) => (None, Some(inner.as_ref())),
-        _ => (None, None),
-    };
-
-    for (key, new_value) in &map_delta.updated {
-        let field_path = format!("{path}.{key}");
-
-        if let Some(value) = new_value {
-            if let Some(fields) = struct_fields {
-                let key_smol: SmolStr = key.to_string().into();
-                if let Some(expected_field) = fields.get(&key_smol) {
-                    validate_value_or_container(value, expected_field, &field_path)?;
-                }
-            } else if let Some(expected) = map_inner {
-                validate_value_or_container(value, expected, &field_path)?;
-            }
-        }
-    }
-    Ok(())
-}
-
-fn validate_list_diff(
-    items: &[ListDiffItem],
-    field: &Field,
-    path: &str,
-) -> Result<(), ValidationError> {
-    let inner = unwrap_restricted(field);
-    let item_field = match inner {
-        Field::List(inner) | Field::MovableList(inner) => Some(inner.as_ref()),
-        _ => None,
-    };
-
-    for item in items {
-        if let ListDiffItem::Insert { insert, .. } = item
-            && let Some(expected) = item_field
-        {
-            for (i, value) in insert.iter().enumerate() {
-                let elem_path = format!("{path}[{i}]");
-                validate_value_or_container(value, expected, &elem_path)?;
-            }
-        }
-    }
-    Ok(())
-}
-
-#[must_use]
-pub fn unwrap_restricted(field: &Field) -> &Field {
-    match field {
-        Field::Restricted { value, .. } => unwrap_restricted(value),
-        Field::Optional(inner) => unwrap_restricted(inner),
-        other => other,
-    }
-}
-
-fn validate_value_or_container(
-    value: &ValueOrContainer,
-    field: &Field,
-    path: &str,
-) -> Result<(), ValidationError> {
-    let loro_value = value.get_deep_value();
-    validate_value(&loro_value, field, path)
-}
-
-#[must_use]
-pub const fn change_type_name(ct: ChangeType) -> &'static str {
-    match ct {
-        ChangeType::Create => "create",
-        ChangeType::Update => "update",
-        ChangeType::Delete => "delete",
-    }
-}
-
-#[must_use]
-pub fn find_restrictions_for_path<'a>(
-    field: &'a Field,
-    path: &str,
-) -> Vec<(&'a Vec<crate::Action>, &'a Field)> {
-    let mut restrictions = Vec::new();
-    // Strip container name prefix (e.g., "acl.manage" -> ".manage").
-    let relative_path = path.find('.').map_or("", |dot_pos| &path[dot_pos..]);
-    find_restrictions_recursive(field, relative_path, &mut restrictions);
-    restrictions
-}
-
-fn find_restrictions_recursive<'a>(
-    field: &'a Field,
-    remaining_path: &str,
-    out: &mut Vec<(&'a Vec<crate::Action>, &'a Field)>,
-) {
-    match field {
-        Field::Restricted { actions, value } => {
-            out.push((actions, value));
-            find_restrictions_recursive(value, remaining_path, out);
-        }
-        Field::Struct(fields) => {
-            if let Some(rest) = remaining_path.strip_prefix('.') {
-                if let Some((key, after)) = rest.split_once('.') {
-                    if let Some(inner) = fields.get(key) {
-                        find_restrictions_recursive(inner, &format!(".{after}"), out);
-                    }
-                } else if let Some(inner) = fields.get(rest) {
-                    find_restrictions_recursive(inner, "", out);
-                }
-            }
-        }
-        Field::Map(inner) | Field::List(inner) | Field::MovableList(inner) | Field::Tree(inner) => {
-            find_restrictions_recursive(inner, remaining_path, out);
-        }
-        _ => {}
     }
 }
 
@@ -346,45 +169,67 @@ fn find_restrictions_recursive<'a>(
 mod tests {
     use std::collections::BTreeMap;
 
-    use loro::LoroTree;
+    use loro::{LoroTree, LoroValue};
 
     use super::*;
+    use crate::Field;
 
     #[test]
-    fn test_validate_bool() {
+    fn validate_bool() {
         let value = LoroValue::Bool(true);
         assert!(validate_value(&value, &Field::Bool, "test").is_ok());
         assert!(validate_value(&value, &Field::I64, "test").is_err());
     }
 
     #[test]
-    fn test_validate_any() {
+    fn validate_any() {
         let value = LoroValue::I64(42);
         assert!(validate_value(&value, &Field::Any, "test").is_ok());
     }
 
     #[test]
-    fn test_validate_list() {
-        let items = vec![LoroValue::String("a".into()), LoroValue::String("b".into())];
-        let value = LoroValue::List(items.into());
-
-        assert!(validate_value(&value, &Field::List(Box::new(Field::String)), "test").is_ok());
-        assert!(validate_value(&value, &Field::List(Box::new(Field::I64)), "test").is_err());
+    fn validate_f64() {
+        let value = LoroValue::Double(3.14);
+        assert!(validate_value(&value, &Field::F64, "test").is_ok());
+        assert!(validate_value(&value, &Field::I64, "test").is_err());
     }
 
     #[test]
-    fn test_validate_movable_list() {
+    fn validate_string() {
+        let value = LoroValue::String("hello".into());
+        assert!(validate_value(&value, &Field::String, "test").is_ok());
+        assert!(validate_value(&value, &Field::I64, "test").is_err());
+    }
+
+    #[test]
+    fn validate_binary() {
+        let value = LoroValue::Binary(vec![1, 2, 3].into());
+        assert!(validate_value(&value, &Field::Binary, "test").is_ok());
+        assert!(validate_value(&value, &Field::String, "test").is_err());
+    }
+
+    #[test]
+    fn validate_list() {
+        let items = vec![LoroValue::String("a".into()), LoroValue::String("b".into())];
+        let value = LoroValue::List(items.into());
+
+        assert!(validate_value(&value, &Field::List(Box::new(Field::String)), "test",).is_ok());
+        assert!(validate_value(&value, &Field::List(Box::new(Field::I64)), "test",).is_err());
+    }
+
+    #[test]
+    fn validate_movable_list() {
         let items = vec![LoroValue::I64(1), LoroValue::I64(2), LoroValue::I64(3)];
         let value = LoroValue::List(items.into());
 
-        assert!(validate_value(&value, &Field::MovableList(Box::new(Field::I64)), "test").is_ok());
+        assert!(validate_value(&value, &Field::MovableList(Box::new(Field::I64)), "test",).is_ok());
         assert!(
-            validate_value(&value, &Field::MovableList(Box::new(Field::String)), "test").is_err()
+            validate_value(&value, &Field::MovableList(Box::new(Field::String)), "test",).is_err()
         );
     }
 
     #[test]
-    fn test_validate_struct() {
+    fn validate_struct_valid() {
         let mut map = std::collections::HashMap::new();
         map.insert("name".to_string(), LoroValue::String("test".into()));
         map.insert("age".to_string(), LoroValue::I64(42));
@@ -394,27 +239,35 @@ mod tests {
         fields.insert("name".into(), Box::new(Field::String));
         fields.insert("age".into(), Box::new(Field::I64));
 
-        assert!(validate_value(&value, &Field::Struct(fields.clone()), "test").is_ok());
-
-        let mut bad_fields = BTreeMap::new();
-        bad_fields.insert("name".into(), Box::new(Field::String));
-        bad_fields.insert("age".into(), Box::new(Field::String));
-        assert!(validate_value(&value, &Field::Struct(bad_fields), "test").is_err());
+        assert!(validate_value(&value, &Field::Struct(fields), "test",).is_ok());
     }
 
     #[test]
-    fn test_validate_map_homogeneous() {
+    fn validate_struct_wrong_type() {
+        let mut map = std::collections::HashMap::new();
+        map.insert("name".to_string(), LoroValue::String("test".into()));
+        map.insert("age".to_string(), LoroValue::I64(42));
+        let value = LoroValue::Map(map.into());
+
+        let mut fields = BTreeMap::new();
+        fields.insert("name".into(), Box::new(Field::String));
+        fields.insert("age".into(), Box::new(Field::String));
+        assert!(validate_value(&value, &Field::Struct(fields), "test",).is_err());
+    }
+
+    #[test]
+    fn validate_map_homogeneous() {
         let mut map = std::collections::HashMap::new();
         map.insert("key1".to_string(), LoroValue::String("value1".into()));
         map.insert("key2".to_string(), LoroValue::String("value2".into()));
         let value = LoroValue::Map(map.into());
 
-        assert!(validate_value(&value, &Field::Map(Box::new(Field::String)), "test").is_ok());
-        assert!(validate_value(&value, &Field::Map(Box::new(Field::I64)), "test").is_err());
+        assert!(validate_value(&value, &Field::Map(Box::new(Field::String)), "test",).is_ok());
+        assert!(validate_value(&value, &Field::Map(Box::new(Field::I64)), "test",).is_err());
     }
 
     #[test]
-    fn test_validate_tree() {
+    fn validate_tree_single_node() {
         let tree = LoroTree::default();
         let leaf_id = tree.create(None).expect("leaf");
 
@@ -436,78 +289,160 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_optional_present() {
+    fn validate_tree_multiple_nodes() {
+        let tree = LoroTree::default();
+        let root = tree.create(None).expect("root");
+        let child = tree.create(root).expect("child");
+
+        let root_meta = tree.get_meta(root).expect("meta");
+        root_meta
+            .insert("name", LoroValue::String("root".into()))
+            .expect("insert");
+
+        let child_meta = tree.get_meta(child).expect("meta");
+        child_meta
+            .insert("name", LoroValue::String("child".into()))
+            .expect("insert");
+
+        let value = tree.get_value_with_meta();
+
+        let mut fields = BTreeMap::new();
+        fields.insert("name".into(), Box::new(Field::String));
+
+        validate_value(
+            &value,
+            &Field::Tree(Box::new(Field::Struct(fields))),
+            "test",
+        )
+        .expect("valid");
+    }
+
+    #[test]
+    fn validate_tree_invalid_meta_type() {
+        let tree = LoroTree::default();
+        let node = tree.create(None).expect("node");
+
+        let meta = tree.get_meta(node).expect("meta");
+        meta.insert("count", LoroValue::I64(42)).expect("insert");
+
+        let value = tree.get_value_with_meta();
+
+        let mut fields = BTreeMap::new();
+        fields.insert("count".into(), Box::new(Field::String));
+
+        assert!(
+            validate_value(
+                &value,
+                &Field::Tree(Box::new(Field::Struct(fields))),
+                "test",
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn validate_tree_missing_required_field() {
+        let tree = LoroTree::default();
+        let node = tree.create(None).expect("node");
+
+        let meta = tree.get_meta(node).expect("meta");
+        meta.insert("a", LoroValue::String("hello".into()))
+            .expect("insert");
+
+        let value = tree.get_value_with_meta();
+
+        let mut fields = BTreeMap::new();
+        fields.insert("a".into(), Box::new(Field::String));
+        fields.insert("b".into(), Box::new(Field::String));
+
+        assert!(matches!(
+            validate_value(
+                &value,
+                &Field::Tree(Box::new(Field::Struct(fields))),
+                "test",
+            ),
+            Err(ValidationError::InvalidElement { .. })
+        ));
+    }
+
+    #[test]
+    fn validate_tree_empty() {
+        let value = LoroValue::List(vec![].into());
+
+        let mut fields = BTreeMap::new();
+        fields.insert("name".into(), Box::new(Field::String));
+
+        validate_value(
+            &value,
+            &Field::Tree(Box::new(Field::Struct(fields))),
+            "test",
+        )
+        .expect("empty tree is valid");
+    }
+
+    #[test]
+    fn validate_tree_nested_meta() {
+        let tree = LoroTree::default();
+        let node = tree.create(None).expect("node");
+
+        let meta = tree.get_meta(node).expect("meta");
+        meta.insert("name", LoroValue::String("node".into()))
+            .expect("insert");
+        meta.insert(
+            "tags",
+            LoroValue::List(
+                vec![LoroValue::String("a".into()), LoroValue::String("b".into())].into(),
+            ),
+        )
+        .expect("insert");
+
+        let value = tree.get_value_with_meta();
+
+        let mut fields = BTreeMap::new();
+        fields.insert("name".into(), Box::new(Field::String));
+        fields.insert(
+            "tags".into(),
+            Box::new(Field::List(Box::new(Field::String))),
+        );
+
+        validate_value(
+            &value,
+            &Field::Tree(Box::new(Field::Struct(fields))),
+            "test",
+        )
+        .expect("valid");
+    }
+
+    #[test]
+    fn validate_tree_wrong_value_type() {
+        let value = LoroValue::String("not a tree".into());
+        let field = Field::Tree(Box::new(Field::Struct(BTreeMap::new())));
+        assert!(validate_value(&value, &field, "test").is_err());
+    }
+
+    #[test]
+    fn validate_optional_present() {
         let field = Field::Optional(Box::new(Field::String));
         let value = LoroValue::String("hello".into());
         assert!(validate_value(&value, &field, "test").is_ok());
     }
 
     #[test]
-    fn test_validate_optional_null() {
+    fn validate_optional_null() {
         let field = Field::Optional(Box::new(Field::String));
         let value = LoroValue::Null;
         assert!(validate_value(&value, &field, "test").is_ok());
     }
 
     #[test]
-    fn test_validate_optional_wrong_type() {
+    fn validate_optional_wrong_type() {
         let field = Field::Optional(Box::new(Field::String));
         let value = LoroValue::I64(42);
         assert!(validate_value(&value, &field, "test").is_err());
     }
 
     #[test]
-    fn test_validate_blob_id_valid() {
-        let hash_bytes = vec![0xaf; 32];
-        let value = LoroValue::Binary(hash_bytes.into());
-        assert!(validate_value(&value, &Field::BlobId, "test").is_ok());
-    }
-
-    #[test]
-    fn test_validate_blob_id_invalid_length_short() {
-        let value = LoroValue::Binary(vec![1, 2, 3].into());
-        assert!(validate_value(&value, &Field::BlobId, "test").is_err());
-    }
-
-    #[test]
-    fn test_validate_blob_id_invalid_length_long() {
-        let value = LoroValue::Binary(vec![0; 33].into());
-        assert!(validate_value(&value, &Field::BlobId, "test").is_err());
-    }
-
-    #[test]
-    fn test_validate_blob_id_wrong_type_string() {
-        let value = LoroValue::String("not a binary".into());
-        assert!(validate_value(&value, &Field::BlobId, "test").is_err());
-    }
-
-    #[test]
-    fn test_validate_record_id_valid() {
-        let hash_bytes = vec![0xaf; 32];
-        let value = LoroValue::Binary(hash_bytes.into());
-        assert!(validate_value(&value, &Field::RecordId, "test").is_ok());
-    }
-
-    #[test]
-    fn test_validate_record_id_invalid_length_short() {
-        let value = LoroValue::Binary(vec![1, 2, 3].into());
-        assert!(validate_value(&value, &Field::RecordId, "test").is_err());
-    }
-
-    #[test]
-    fn test_validate_record_id_invalid_length_long() {
-        let value = LoroValue::Binary(vec![0; 33].into());
-        assert!(validate_value(&value, &Field::RecordId, "test").is_err());
-    }
-
-    #[test]
-    fn test_validate_record_id_wrong_type_string() {
-        let value = LoroValue::String("not a binary".into());
-        assert!(validate_value(&value, &Field::RecordId, "test").is_err());
-    }
-
-    #[test]
-    fn test_validate_optional_absent() {
+    fn validate_optional_absent_in_struct() {
         let map = std::collections::HashMap::new();
         let value = LoroValue::Map(map.into());
 
@@ -521,7 +456,7 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_required_absent() {
+    fn validate_required_absent_in_struct() {
         let map = std::collections::HashMap::new();
         let value = LoroValue::Map(map.into());
 
@@ -532,5 +467,65 @@ mod tests {
             validate_value(&value, &Field::Struct(fields), "test"),
             Err(ValidationError::MissingField(_))
         ));
+    }
+
+    #[test]
+    fn validate_blob_id_valid() {
+        let value = LoroValue::Binary(vec![0xaf; 32].into());
+        assert!(validate_value(&value, &Field::BlobId, "test").is_ok());
+    }
+
+    #[test]
+    fn validate_blob_id_too_short() {
+        let value = LoroValue::Binary(vec![1, 2, 3].into());
+        assert!(validate_value(&value, &Field::BlobId, "test").is_err());
+    }
+
+    #[test]
+    fn validate_blob_id_too_long() {
+        let value = LoroValue::Binary(vec![0; 33].into());
+        assert!(validate_value(&value, &Field::BlobId, "test").is_err());
+    }
+
+    #[test]
+    fn validate_blob_id_wrong_type() {
+        let value = LoroValue::String("not binary".into());
+        assert!(validate_value(&value, &Field::BlobId, "test").is_err());
+    }
+
+    #[test]
+    fn validate_record_id_valid() {
+        let value = LoroValue::Binary(vec![0xaf; 32].into());
+        assert!(validate_value(&value, &Field::RecordId, "test").is_ok());
+    }
+
+    #[test]
+    fn validate_record_id_too_short() {
+        let value = LoroValue::Binary(vec![1, 2, 3].into());
+        assert!(validate_value(&value, &Field::RecordId, "test").is_err());
+    }
+
+    #[test]
+    fn validate_record_id_too_long() {
+        let value = LoroValue::Binary(vec![0; 33].into());
+        assert!(validate_value(&value, &Field::RecordId, "test").is_err());
+    }
+
+    #[test]
+    fn validate_record_id_wrong_type() {
+        let value = LoroValue::String("not binary".into());
+        assert!(validate_value(&value, &Field::RecordId, "test").is_err());
+    }
+
+    #[test]
+    fn validate_restricted_delegates_to_inner() {
+        let field = Field::Restricted {
+            actions: vec![],
+            value: Box::new(Field::String),
+        };
+        let good = LoroValue::String("ok".into());
+        let bad = LoroValue::I64(42);
+        assert!(validate_value(&good, &field, "test").is_ok());
+        assert!(validate_value(&bad, &field, "test").is_err());
     }
 }

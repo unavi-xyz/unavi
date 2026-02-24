@@ -37,7 +37,9 @@ anyhow             = "1.0.100"
 avian3d            = "0.4.1"
 axum               = "0.8.8"
 bevy               = "0.17.3"
+bevy_mod_xr        = "0.4.0"
 bevy_vrm           = { git = "https://github.com/unavi-xyz/bevy_vrm" }
+bevy_xr_utils      = "0.4.0"
 blake3             = { features = ["serde"], version = "1.8.2" }
 bytemuck           = "1.24.0"
 bytes              = "1.10.1"

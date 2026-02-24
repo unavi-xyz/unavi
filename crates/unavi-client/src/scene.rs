@@ -4,10 +4,9 @@ use bevy::{
 };
 use bevy_hsd::NodeId;
 use bevy_vrm::mtoon::MtoonSun;
-use unavi_locomotion::LocalAgentSpawner;
+use unavi_locomotion::LocalAgent;
 
 pub fn spawn_agent(
-    asset_server: Res<AssetServer>,
     new_nodes: Query<(), (With<NodeId>, Added<Mesh3d>)>,
     mut commands: Commands,
     mut spawned: Local<bool>,
@@ -16,8 +15,7 @@ pub fn spawn_agent(
         return;
     }
 
-    // TODO pass in xr mode to spawner config
-    LocalAgentSpawner::default().spawn(&mut commands, &asset_server);
+    commands.spawn(LocalAgent);
 
     *spawned = true;
 }

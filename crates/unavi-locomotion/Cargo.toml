@@ -24,3 +24,7 @@ unavi-portal.path  = "../unavi-portal"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 web-sys = { features = ["Navigator", "Window"], workspace = true }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+bevy_mod_xr.workspace   = true
+bevy_xr_utils.workspace = true

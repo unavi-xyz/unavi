@@ -1,6 +1,7 @@
 use avian3d::prelude::*;
 use bevy::{
     camera::{Exposure, visibility::RenderLayers},
+    ecs::{lifecycle::HookContext, world::DeferredWorld},
     pbr::{Atmosphere, AtmosphereSettings},
     post_process::bloom::Bloom,
     prelude::*,
@@ -12,168 +13,121 @@ use bevy_tnua::{
 };
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
-use unavi_avatar::{AvatarSpawner, AverageVelocity, default_character_animations};
+use unavi_avatar::{Avatar, AverageVelocity, VrmPath, default_character_animations};
 use unavi_input::raycast::PrimaryRaycastInput;
 use unavi_portal::{PortalTraveler, create::PORTAL_RENDER_LAYER};
 
 use crate::{
-    AgentCamera, AgentEntities, AgentRig, ControlScheme, ControlSchemeConfig, Grounded, LocalAgent,
-    config::AgentConfig,
-    tracking::{TrackedHead, TrackedPose, TrackingSource},
+    AgentCamera, AgentEntities, AgentRig, ControlScheme, ControlSchemeConfig, Grounded,
+    config::{AgentConfig, XrMode},
+    tracking::{TrackedHead, TrackedPose},
 };
 
 const RAYCAST_GRAB_DISTANCE: f32 = 3.0;
 
-/// Builder for spawning a local agent entity.
-#[derive(Default)]
-pub struct LocalAgentSpawner {
-    pub config: Option<AgentConfig>,
-    pub tracking_source: Option<TrackingSource>,
-    pub vrm_asset: Option<String>,
-}
+pub fn on_local_agent_added(mut world: DeferredWorld, ctx: HookContext) {
+    let root = ctx.entity;
 
-pub struct SpawnedAgent {
-    pub body: Entity,
-    pub camera: Entity,
-    pub root: Entity,
-}
+    let config = world.get::<AgentConfig>(root).cloned().unwrap_or_default();
+    let is_xr = world.get_resource::<XrMode>().is_some();
+    let vrm_path = world.get::<VrmPath>(root).map(|p| p.0.clone());
+    let asset_server = world.resource::<AssetServer>().clone();
 
-impl LocalAgentSpawner {
-    #[must_use]
-    pub fn new() -> Self {
-        Self::default()
-    }
+    let animations = default_character_animations(&asset_server);
 
-    #[must_use]
-    pub const fn with_config(mut self, config: AgentConfig) -> Self {
-        self.config = Some(config);
-        self
-    }
+    // Command phase.
+    let mut commands = world.commands();
 
-    #[must_use]
-    pub const fn with_tracking_source(mut self, source: TrackingSource) -> Self {
-        self.tracking_source = Some(source);
-        self
-    }
+    let camera = spawn_camera(&mut commands, &asset_server, is_xr);
 
-    #[must_use]
-    pub fn with_vrm(mut self, vrm_asset: impl Into<String>) -> Self {
-        self.vrm_asset = Some(vrm_asset.into());
-        self
-    }
-
-    pub fn spawn(&self, commands: &mut Commands, asset_server: &AssetServer) -> SpawnedAgent {
-        let config = self.config.clone().unwrap_or_default();
-        let tracking_source = self.tracking_source.unwrap_or_default();
-
-        let camera = spawn_camera(commands, asset_server);
-
-        let body = commands
-            .spawn((
-                AgentRig,
-                Grounded(true),
-                RigidBody::Dynamic,
-                Pickable::IGNORE,
-                Collider::capsule(config.effective_vrm_radius(), config.effective_vrm_height()),
-                TnuaController::<ControlScheme>::default(),
-                TnuaConfig::<ControlScheme>(asset_server.add(ControlSchemeConfig {
-                    basis: TnuaBuiltinWalkConfig {
-                        float_height: config.float_height(),
-                        max_slope: 55_f32.to_radians(),
-                        ..Default::default()
-                    },
-                    jump: TnuaBuiltinJumpConfig {
-                        height: config.jump_height,
-                        ..Default::default()
-                    },
-                })),
-                TnuaAvian3dSensorShape(Collider::cylinder(
-                    config.effective_vrm_radius() - 0.01,
-                    0.0,
-                )),
-                LockedAxes::ROTATION_LOCKED,
-                Transform::from_xyz(0.0, config.effective_vrm_height() / 2.0, 0.0),
-                PortalTraveler,
-            ))
-            .id();
-
-        let initial_eye_y = config.effective_vrm_height() / 2.0 - 0.1;
-        let tracked_head = commands
-            .spawn((
-                TrackedHead,
-                TrackedPose::new(Vec3::new(0.0, initial_eye_y, 0.0), Quat::IDENTITY),
-                Transform::from_xyz(0.0, initial_eye_y, 0.0),
-            ))
-            .add_child(camera)
-            .id();
-
-        if config.xr {
-            // In XR mode, spawn tracked hands.
-        } else {
-            // In desktop mode, raycast input from the head.
-            commands.entity(tracked_head).insert((
-                PrimaryRaycastInput,
-                RayCaster::new(Vec3::ZERO, Dir3::NEG_Z)
-                    .with_max_hits(1)
-                    .with_solidness(false)
-                    .with_max_distance(RAYCAST_GRAB_DISTANCE)
-                    .with_query_filter(
-                        SpatialQueryFilter::default().with_excluded_entities([body]),
-                    ),
-            ));
-        }
-
-        let avatar = AvatarSpawner {
-            vrm_asset: self.vrm_asset.clone(),
-        }
-        .spawn(commands, asset_server);
-
-        let animations = default_character_animations(asset_server);
-        commands.entity(avatar).insert((
-            AverageVelocity {
-                target: Some(body),
-                ..Default::default()
-            },
-            animations,
-        ));
-
-        commands.entity(avatar).insert(Transform::from_xyz(
-            0.0,
-            -config.effective_vrm_height() / 2.0,
-            0.0,
-        ));
-
-        commands.entity(body).add_children(&[avatar, tracked_head]);
-
-        let root = commands
-            .spawn((
-                LocalAgent,
-                AgentEntities {
-                    avatar,
-                    camera,
-                    body,
-                    tracked_head,
+    let body = commands
+        .spawn((
+            AgentRig,
+            Grounded(true),
+            RigidBody::Dynamic,
+            Pickable::IGNORE,
+            Collider::capsule(config.effective_vrm_radius(), config.effective_vrm_height()),
+            TnuaController::<ControlScheme>::default(),
+            TnuaConfig::<ControlScheme>(asset_server.add(ControlSchemeConfig {
+                basis: TnuaBuiltinWalkConfig {
+                    float_height: config.float_height(),
+                    max_slope: 55_f32.to_radians(),
+                    ..Default::default()
                 },
-                config,
-                tracking_source,
-                Transform::default(),
-                Visibility::default(),
-            ))
-            .add_child(body)
-            .id();
+                jump: TnuaBuiltinJumpConfig {
+                    height: config.jump_height,
+                    ..Default::default()
+                },
+            })),
+            TnuaAvian3dSensorShape(Collider::cylinder(
+                config.effective_vrm_radius() - 0.01,
+                0.0,
+            )),
+            LockedAxes::ROTATION_LOCKED,
+            Transform::from_xyz(0.0, config.effective_vrm_height() / 2.0, 0.0),
+            PortalTraveler,
+        ))
+        .id();
 
-        SpawnedAgent { body, camera, root }
+    let initial_eye_y = config.effective_vrm_height() / 2.0 - 0.1;
+    let tracked_head = commands
+        .spawn((
+            TrackedHead,
+            TrackedPose::new(Vec3::new(0.0, initial_eye_y, 0.0), Quat::IDENTITY),
+            Transform::from_xyz(0.0, initial_eye_y, 0.0),
+        ))
+        .add_child(camera)
+        .id();
+
+    if !is_xr {
+        // Desktop mode: raycast input from the head.
+        commands.entity(tracked_head).insert((
+            PrimaryRaycastInput,
+            RayCaster::new(Vec3::ZERO, Dir3::NEG_Z)
+                .with_max_hits(1)
+                .with_solidness(false)
+                .with_max_distance(RAYCAST_GRAB_DISTANCE)
+                .with_query_filter(SpatialQueryFilter::default().with_excluded_entities([body])),
+        ));
     }
+
+    // Avatar (triggers Avatar's on_add hook).
+    let mut avatar_cmd = commands.spawn(Avatar);
+    if let Some(path) = vrm_path {
+        avatar_cmd.insert(VrmPath(path));
+    }
+    let avatar = avatar_cmd.id();
+
+    commands.entity(avatar).insert((
+        AverageVelocity {
+            target: Some(body),
+            ..Default::default()
+        },
+        animations,
+        Transform::from_xyz(0.0, -config.effective_vrm_height() / 2.0, 0.0),
+    ));
+
+    commands.entity(body).add_children(&[avatar, tracked_head]);
+    commands.entity(root).add_child(body);
+    commands.entity(root).insert(AgentEntities {
+        avatar,
+        camera,
+        body,
+        tracked_head,
+    });
 }
 
-fn spawn_camera(commands: &mut Commands, #[allow(unused)] asset_server: &AssetServer) -> Entity {
+fn spawn_camera(
+    commands: &mut Commands,
+    #[allow(unused)] asset_server: &AssetServer,
+    is_xr: bool,
+) -> Entity {
     let fog_color = Color::Srgba(Srgba::from_u8_array([0, 192, 240, 255]));
     let fog_end = 1000.0;
 
     let camera = commands
         .spawn((
             AgentCamera,
-            Camera::default(),
             Projection::Perspective(PerspectiveProjection {
                 near: 0.001,
                 ..default()
@@ -198,14 +152,20 @@ fn spawn_camera(commands: &mut Commands, #[allow(unused)] asset_server: &AssetSe
         ))
         .id();
 
-    #[cfg(all(target_family = "wasm", not(feature = "webgpu")))]
-    commands.entity(camera).insert((
-        // https://github.com/bevyengine/bevy/issues/14340
-        bevy::post_process::auto_exposure::AutoExposure {
+    if !is_xr {
+        commands.entity(camera).insert(Camera3d::default());
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    commands
+        .entity(camera)
+        .insert((bevy::post_process::auto_exposure::AutoExposure {
             range: -4.0..=4.0,
             ..default()
-        },
-        // Atmospheric shader does not support WebGL, so add a skybox.
+        },));
+
+    #[cfg(all(target_family = "wasm", not(feature = "webgpu")))]
+    commands.entity(camera).insert((
         Mesh3d(asset_server.add(Cuboid::from_size(Vec3::splat(fog_end)).mesh().build())),
         MeshMaterial3d(asset_server.add(StandardMaterial {
             base_color: fog_color,

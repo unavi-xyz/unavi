@@ -36,8 +36,7 @@ mod movement;
 mod spawner;
 pub mod tracking;
 
-pub use config::{AgentConfig, WorldScale};
-pub use spawner::LocalAgentSpawner;
+pub use config::{AgentConfig, WorldScale, XrMode};
 pub use tracking::{TrackedHand, TrackedHead, TrackedPose, TrackingSource};
 use unavi_input::cursor_lock::CursorGrabState;
 
@@ -93,8 +92,12 @@ pub struct AgentEntities {
 }
 
 /// Marker for the local agent entity.
+/// Spawning an entity with `LocalAgent` builds the full agent
+/// hierarchy (body, camera, avatar, tracked head) via lifecycle hook.
 #[derive(Component, Default)]
-#[require(Transform, GlobalTransform, Visibility)]
+#[require(AgentConfig, TrackingSource,
+          Transform, GlobalTransform, Visibility)]
+#[component(on_add = spawner::on_local_agent_added)]
 pub struct LocalAgent;
 
 /// Marker for the physics rig entity.
@@ -104,5 +107,5 @@ pub struct AgentRig;
 
 /// Marker for the agent's camera entity.
 #[derive(Component, Default)]
-#[require(Camera3d, Transform, GlobalTransform, Visibility)]
+#[require(Transform, GlobalTransform, Visibility)]
 pub struct AgentCamera;

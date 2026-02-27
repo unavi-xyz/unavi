@@ -60,8 +60,7 @@ fn on_avatar_added(mut world: DeferredWorld, ctx: HookContext) {
     let entity = ctx.entity;
     let vrm_path = world
         .get::<VrmPath>(entity)
-        .map(|p| p.0.clone())
-        .unwrap_or_else(default_avatar_path);
+        .map_or_else(default_avatar_path, |p| p.0.clone());
     let asset_server = world.resource::<AssetServer>().clone();
     let vrm_handle = asset_server.load(vrm_path);
     world

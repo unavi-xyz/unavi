@@ -29,7 +29,7 @@ pub fn on_local_agent_added(mut world: DeferredWorld, ctx: HookContext) {
     let root = ctx.entity;
 
     let config = world.get::<AgentConfig>(root).cloned().unwrap_or_default();
-    let is_xr = world.get_resource::<XrMode>().is_some();
+    let is_xr = world.get_resource::<XrMode>().is_some_and(|xr| **xr);
     let vrm_path = world.get::<VrmPath>(root).map(|p| p.0.clone());
     let asset_server = world.resource::<AssetServer>().clone();
 
@@ -124,6 +124,9 @@ fn spawn_camera(
 ) -> Entity {
     let fog_color = Color::Srgba(Srgba::from_u8_array([0, 192, 240, 255]));
     let fog_end = 1000.0;
+
+    // TODO in xr mode query and add components to XrCamera
+    // TODO move spawn_camera to its own hook
 
     let camera = commands
         .spawn((

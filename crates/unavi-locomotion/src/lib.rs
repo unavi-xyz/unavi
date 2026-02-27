@@ -35,10 +35,14 @@ mod grounded;
 mod movement;
 mod spawner;
 pub mod tracking;
+#[cfg(not(target_family = "wasm"))]
+mod xr_movement;
 
 pub use config::{AgentConfig, WorldScale, XrMode};
 pub use tracking::{TrackedHand, TrackedHead, TrackedPose, TrackingSource};
 use unavi_input::cursor_lock::CursorGrabState;
+#[cfg(not(target_family = "wasm"))]
+pub use xr_movement::{HmdWorldPose, TurnMode};
 
 /// Main locomotion plugin.
 pub struct LocomotionPlugin;
@@ -52,10 +56,46 @@ impl Plugin for LocomotionPlugin {
             TnuaAvian3dPlugin::new(FixedUpdate),
             AvatarPlugin,
         ))
+        .init_resource::<config::XrMode>()
+        .init_resource::<movement::MovementYaw>()
         .init_resource::<movement::TargetBodyInput>()
         .init_resource::<movement::TargetHeadInput>()
-        .add_observer(movement::handle_agent_teleport)
-        .add_systems(
+        .add_observer(movement::handle_agent_teleport);
+
+        #[cfg(not(target_family = "wasm"))]
+        {
+            app.init_resource::<xr_movement::HmdWorldPose>()
+                .init_resource::<xr_movement::TurnMode>()
+                .init_resource::<xr_movement::SnapTurnReady>();
+
+            let xr_active = |xr: Res<XrMode>| xr.0;
+
+            app.add_systems(Startup, xr_movement::spawn_hmd_tracker.run_if(xr_active));
+
+            app.add_systems(
+                Update,
+                (
+                    eye_offset::setup_vrm_eye_offset,
+                    (
+                        xr_movement::update_hmd_world_pose,
+                        xr_movement::sync_stage_to_body,
+                        xr_movement::apply_xr_turn,
+                        xr_movement::update_movement_yaw,
+                    )
+                        .chain()
+                        .run_if(xr_active),
+                    movement::apply_head_input.run_if(in_state(CursorGrabState::Locked)),
+                    movement::apply_body_input,
+                    xr_movement::update_xr_head_tracking.run_if(xr_active),
+                    tracking::sync_tracked_pose_to_transform,
+                    bones::apply_head_tracking,
+                )
+                    .chain(),
+            );
+        }
+
+        #[cfg(target_family = "wasm")]
+        app.add_systems(
             Update,
             (
                 eye_offset::setup_vrm_eye_offset,
@@ -65,8 +105,9 @@ impl Plugin for LocomotionPlugin {
                 bones::apply_head_tracking,
             )
                 .chain(),
-        )
-        .add_systems(
+        );
+
+        app.add_systems(
             FixedUpdate,
             (
                 config::apply_config_to_controller,
@@ -95,8 +136,7 @@ pub struct AgentEntities {
 /// Spawning an entity with `LocalAgent` builds the full agent
 /// hierarchy (body, camera, avatar, tracked head) via lifecycle hook.
 #[derive(Component, Default)]
-#[require(AgentConfig, TrackingSource,
-          Transform, GlobalTransform, Visibility)]
+#[require(AgentConfig, TrackingSource, Transform, GlobalTransform, Visibility)]
 #[component(on_add = spawner::on_local_agent_added)]
 pub struct LocalAgent;
 

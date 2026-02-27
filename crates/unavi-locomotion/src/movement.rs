@@ -38,9 +38,15 @@ const fn sensitivity() -> f32 {
 
 use crate::{
     AgentEntities, AgentRig, ControlScheme,
-    config::AgentConfig,
+    config::{AgentConfig, XrMode},
     tracking::{TrackedHead, TrackedPose},
 };
+
+/// Forward yaw for movement direction.
+/// Desktop: unused (reads rig rotation directly).
+/// XR: set from HMD yaw each frame.
+#[derive(Resource, Default)]
+pub struct MovementYaw(pub f32);
 
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct TargetBodyInput(Vec3);
@@ -117,6 +123,8 @@ pub fn apply_body_input(
     rigs: Query<&Transform, With<AgentRig>>,
     mut controllers: Query<&mut TnuaController<ControlScheme>, With<AgentRig>>,
     mut target: ResMut<TargetBodyInput>,
+    xr: Res<XrMode>,
+    movement_yaw: Res<MovementYaw>,
 ) {
     for (entities, config) in agents.iter() {
         let Ok(rig_transform) = rigs.get(entities.body) else {
@@ -130,12 +138,23 @@ pub fn apply_body_input(
         controller.initiate_action_feeding();
 
         if let Ok(action) = move_action.single() {
+            const MOVE_THRESHOLD: f32 = 0.6; // TODO configurable for stick drift (same for look)
             const S: f32 = 0.2;
 
-            let input = action.normalize_or_zero();
+            let raw = action.any;
+            let input = if raw.length() < MOVE_THRESHOLD {
+                Vec2::ZERO
+            } else {
+                raw.normalize_or_zero()
+            };
 
-            let dir_f = rig_transform.rotation.mul_vec3(Vec3::NEG_Z);
-            let dir_l = rig_transform.rotation.mul_vec3(Vec3::X);
+            let forward = if xr.0 {
+                Quat::from_rotation_y(movement_yaw.0)
+            } else {
+                rig_transform.rotation
+            };
+            let dir_f = forward * Vec3::NEG_Z;
+            let dir_l = forward * Vec3::X;
 
             let mut dir = Vec3::ZERO;
             dir += dir_f * input.y;

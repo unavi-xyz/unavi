@@ -33,9 +33,9 @@ impl Default for AgentConfig {
     }
 }
 
-/// Inserted when running in XR/VR mode. Absence = desktop.
-#[derive(Resource)]
-pub struct XrMode;
+/// Whether the client is running in XR/VR mode.
+#[derive(Resource, Default, Deref)]
+pub struct XrMode(pub bool);
 
 impl AgentConfig {
     #[must_use]

@@ -19,8 +19,6 @@ interface context {
 interface types {
   use wired:math/types.{vec3, quat, transform};
 
-  /// An HSD document. Opaque handle to the host-managed
-  /// Loro CRDT document.
   resource document {
     create-node: func() -> node;
     create-mesh: func() -> mesh;

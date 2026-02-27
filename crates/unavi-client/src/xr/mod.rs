@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_mod_xr::hand_debug_gizmos::HandGizmosPlugin;
+use bevy_mod_xr::{camera::XrCamera, hand_debug_gizmos::HandGizmosPlugin};
 use bevy_xr_utils::{
     actions::XRUtilsActionsPlugin, tracking_utils::TrackingUtilitiesPlugin,
     transform_utils::TransformUtilitiesPlugin,
@@ -14,6 +14,13 @@ impl Plugin for UnaviXrPlugin {
             HandGizmosPlugin,
             TrackingUtilitiesPlugin,
             TransformUtilitiesPlugin,
-        ));
+        ))
+        .add_systems(FixedUpdate, set_xr_camera_layers);
+    }
+}
+
+fn set_xr_camera_layers(new_xr_cameras: Query<Entity, Added<XrCamera>>) {
+    for entity in new_xr_cameras {
+        info!("GOT XR CAM: {entity}");
     }
 }

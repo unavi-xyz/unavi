@@ -9,6 +9,7 @@ use tracing::Level;
 #[cfg(not(target_family = "wasm"))]
 mod assets;
 mod async_commands;
+mod camera;
 #[cfg(feature = "devtools-network")]
 mod devtools;
 mod fade;
@@ -154,6 +155,7 @@ impl Plugin for UnaviPlugin {
                 FixedUpdate,
                 (
                     async_commands::apply_async_commands,
+                    camera::apply_camera_effects,
                     grab::update_crosshair_mode,
                     scene::spawn_agent,
                 ),

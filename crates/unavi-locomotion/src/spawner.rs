@@ -1,12 +1,5 @@
 use avian3d::prelude::*;
-use bevy::{
-    camera::{Exposure, visibility::RenderLayers},
-    ecs::{lifecycle::HookContext, world::DeferredWorld},
-    pbr::{Atmosphere, AtmosphereSettings},
-    post_process::bloom::Bloom,
-    prelude::*,
-    render::view::Hdr,
-};
+use bevy::{camera::visibility::RenderLayers, prelude::*};
 use bevy_tnua::{
     builtins::{TnuaBuiltinJumpConfig, TnuaBuiltinWalkConfig},
     prelude::*,
@@ -18,27 +11,27 @@ use unavi_input::raycast::PrimaryRaycastInput;
 use unavi_portal::{PortalTraveler, create::PORTAL_RENDER_LAYER};
 
 use crate::{
-    AgentCamera, AgentEntities, AgentRig, ControlScheme, ControlSchemeConfig, Grounded,
+    AgentCamera, AgentEntities, AgentRig, ControlScheme, ControlSchemeConfig, Grounded, LocalAgent,
     config::{AgentConfig, XrMode},
     tracking::{TrackedHead, TrackedPose},
 };
 
 const RAYCAST_GRAB_DISTANCE: f32 = 3.0;
 
-pub fn on_local_agent_added(mut world: DeferredWorld, ctx: HookContext) {
-    let root = ctx.entity;
-
-    let config = world.get::<AgentConfig>(root).cloned().unwrap_or_default();
-    let is_xr = world.get_resource::<XrMode>().is_some_and(|xr| **xr);
-    let vrm_path = world.get::<VrmPath>(root).map(|p| p.0.clone());
-    let asset_server = world.resource::<AssetServer>().clone();
+pub fn on_local_agent_added(
+    event: On<Add, LocalAgent>,
+    asset_server: Res<AssetServer>,
+    xr_mode: Res<XrMode>,
+    agent: Query<(&AgentConfig, Option<&VrmPath>)>,
+    mut commands: Commands,
+) {
+    let Ok((config, vrm_path)) = agent.get(event.entity) else {
+        return;
+    };
 
     let animations = default_character_animations(&asset_server);
 
-    // Command phase.
-    let mut commands = world.commands();
-
-    let camera = spawn_camera(&mut commands, &asset_server, is_xr);
+    let camera = spawn_camera(&mut commands, &asset_server, xr_mode.0);
 
     let body = commands
         .spawn((
@@ -79,7 +72,7 @@ pub fn on_local_agent_added(mut world: DeferredWorld, ctx: HookContext) {
         .add_child(camera)
         .id();
 
-    if !is_xr {
+    if !xr_mode.0 {
         // Desktop mode: raycast input from the head.
         commands.entity(tracked_head).insert((
             PrimaryRaycastInput,
@@ -94,7 +87,7 @@ pub fn on_local_agent_added(mut world: DeferredWorld, ctx: HookContext) {
     // Avatar (triggers Avatar's on_add hook).
     let mut avatar_cmd = commands.spawn(Avatar);
     if let Some(path) = vrm_path {
-        avatar_cmd.insert(VrmPath(path));
+        avatar_cmd.insert(path.clone());
     }
     let avatar = avatar_cmd.id();
 
@@ -108,8 +101,8 @@ pub fn on_local_agent_added(mut world: DeferredWorld, ctx: HookContext) {
     ));
 
     commands.entity(body).add_children(&[avatar, tracked_head]);
-    commands.entity(root).add_child(body);
-    commands.entity(root).insert(AgentEntities {
+    commands.entity(event.entity).add_child(body);
+    commands.entity(event.entity).insert(AgentEntities {
         avatar,
         camera,
         body,
@@ -122,60 +115,21 @@ fn spawn_camera(
     #[allow(unused)] asset_server: &AssetServer,
     is_xr: bool,
 ) -> Entity {
-    let fog_color = Color::Srgba(Srgba::from_u8_array([0, 192, 240, 255]));
-    let fog_end = 1000.0;
+    let camera = if is_xr {
+        commands.spawn_empty().id()
+    } else {
+        commands.spawn(Camera3d::default()).id()
+    };
 
-    // TODO in xr mode query and add components to XrCamera
-    // TODO move spawn_camera to its own hook
-
-    let camera = commands
-        .spawn((
-            AgentCamera,
-            Projection::Perspective(PerspectiveProjection {
-                near: 0.001,
-                ..default()
-            }),
-            Hdr,
-            Exposure::SUNLIGHT,
-            Bloom::OLD_SCHOOL,
-            Msaa::Sample4,
-            Atmosphere::EARTH,
-            AtmosphereSettings::default(),
-            Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
-            RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER])
-                .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
-            DistanceFog {
-                color: fog_color,
-                falloff: FogFalloff::Linear {
-                    start: fog_end * 0.8,
-                    end: fog_end,
-                },
-                ..default()
-            },
-        ))
-        .id();
-
-    if !is_xr {
-        commands.entity(camera).insert(Camera3d::default());
-    }
-
-    #[cfg(not(target_family = "wasm"))]
-    commands
-        .entity(camera)
-        .insert((bevy::post_process::auto_exposure::AutoExposure {
-            range: -4.0..=4.0,
-            ..default()
-        },));
-
-    #[cfg(all(target_family = "wasm", not(feature = "webgpu")))]
     commands.entity(camera).insert((
-        Mesh3d(asset_server.add(Cuboid::from_size(Vec3::splat(fog_end)).mesh().build())),
-        MeshMaterial3d(asset_server.add(StandardMaterial {
-            base_color: fog_color,
-            unlit: true,
-            cull_mode: None,
+        AgentCamera,
+        Projection::Perspective(PerspectiveProjection {
+            near: 0.001,
             ..default()
-        })),
+        }),
+        Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
+        RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER])
+            .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
     ));
 
     camera

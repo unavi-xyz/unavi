@@ -60,7 +60,8 @@ impl Plugin for LocomotionPlugin {
         .init_resource::<movement::MovementYaw>()
         .init_resource::<movement::TargetBodyInput>()
         .init_resource::<movement::TargetHeadInput>()
-        .add_observer(movement::handle_agent_teleport);
+        .add_observer(movement::handle_agent_teleport)
+        .add_observer(spawner::on_local_agent_added);
 
         #[cfg(not(target_family = "wasm"))]
         {
@@ -137,7 +138,6 @@ pub struct AgentEntities {
 /// hierarchy (body, camera, avatar, tracked head) via lifecycle hook.
 #[derive(Component, Default)]
 #[require(AgentConfig, TrackingSource, Transform, GlobalTransform, Visibility)]
-#[component(on_add = spawner::on_local_agent_added)]
 pub struct LocalAgent;
 
 /// Marker for the physics rig entity.

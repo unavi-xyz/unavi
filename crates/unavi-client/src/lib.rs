@@ -105,6 +105,7 @@ impl Plugin for UnaviPlugin {
             bevy_hsd::HsdPlugin,
             unavi_input::InputPlugin,
             unavi_locomotion::LocomotionPlugin,
+            unavi_script::ScriptPlugin,
             unavi_portal::PortalPlugin,
             networking::NetworkingPlugin {
                 wds_in_memory: self.in_memory,
@@ -115,11 +116,6 @@ impl Plugin for UnaviPlugin {
             brightness: lux::OVERCAST_DAY,
             ..default()
         });
-
-        #[cfg(not(target_family = "wasm"))]
-        {
-            app.add_plugins(unavi_script::ScriptPlugin);
-        }
 
         #[cfg(feature = "devtools-bevy")]
         {

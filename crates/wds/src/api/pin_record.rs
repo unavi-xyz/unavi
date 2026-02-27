@@ -11,6 +11,7 @@ use crate::{
     quota::{ensure_quota_exists, reserve_bytes},
 };
 
+#[expect(clippy::too_many_lines)]
 pub async fn pin_record(
     ctx: Arc<StoreContext>,
     WithChannels { inner, tx, .. }: WithChannels<PinRecord, ApiService>,

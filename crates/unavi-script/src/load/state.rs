@@ -13,7 +13,7 @@ pub struct StoreState {
 }
 
 pub struct RuntimeData {
-    wired_scene: WiredSceneRt,
+    pub wired_scene: WiredSceneRt,
 }
 
 pub struct RuntimeDataResult {

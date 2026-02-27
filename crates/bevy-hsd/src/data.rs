@@ -107,6 +107,10 @@ pub struct HsdNode {
 }
 
 /// Hydrate an HSD document from a `LoroMap` (the "hsd" map).
+///
+///  # Errors
+///
+///  Errors if map is invalid.
 pub fn hydrate_hsd(map: &loro::LoroMap) -> Result<HsdData, HydrateError> {
     let value = map.get_deep_value();
     let LoroValue::Map(root) = &value else {

@@ -88,10 +88,7 @@ pub(crate) fn setup_actions(mut cmds: Commands) {
             GamepadBindings::new().bind(GamepadBinding::new(GamepadBindingSource::South)),
             KeyboardBindings::new().bind(KeyboardBinding::new(KeyCode::Space)),
             #[cfg(not(target_family = "wasm"))]
-            OxrBindings::new().bindings(
-                OCULUS_TOUCH_PROFILE,
-                ["/user/hand/left/input/primary/click"],
-            ),
+            OxrBindings::new().bindings(OCULUS_TOUCH_PROFILE, ["/user/hand/right/input/a/click"]),
         ))
         .id();
     let sprint = cmds

@@ -4,9 +4,7 @@ use avian3d::dynamics::rigid_body::{AngularVelocity, LinearVelocity};
 use bevy::prelude::*;
 use bevy_wds::{LocalActor, LocalBlobs, RemoteActor};
 use iroh::EndpointId;
-use unavi_avatar::{
-    Avatar, AverageVelocity, Grounded, default_character_animations,
-};
+use unavi_avatar::{Avatar, AverageVelocity, Grounded, default_character_animations};
 
 use crate::networking::{
     AgentTickrateConfig,

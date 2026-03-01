@@ -56,7 +56,7 @@ jobs:
         run: |
           rm -rf crates/unavi-client/assets/wasm/test
           rm -rf crates/unavi-client/assets/wasm/example
-      - uses: crazy-max/ghaction-chocolatey@v3
+      - uses: crazy-max/ghaction-chocolatey@v4
         with:
           args: install pkgconfiglite wixtoolset
       - uses: dtolnay/rust-toolchain@nightly

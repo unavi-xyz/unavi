@@ -4,8 +4,7 @@ on:
     types: [opened, synchronize]
 jobs:
   claude-review:
-    # Filter out GitHub Actions bot PRs (e.g., automated version bumps)
-    if: github.event.pull_request.user.login != 'github-actions[bot]'
+    if: github.event.pull_request.user.login != 'dependabot'
     runs-on: ubuntu-latest
     permissions:
       contents: read

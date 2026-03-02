@@ -12,6 +12,7 @@ use wds::{Blobs, actor::Actor};
 mod await_blob;
 mod blob_deps;
 mod blob_request;
+pub mod util;
 
 pub struct WdsPlugin;
 
@@ -58,14 +59,14 @@ pub struct BlobResponse(pub Option<Bytes>);
 #[derive(Component)]
 pub struct LocalBlobs(pub Blobs);
 
-/// Singleton actor of the local WDS.
+/// Singleton entity with the local WDS actor.
 #[derive(Component)]
+#[require(SyncTargets)]
 pub struct LocalActor(pub Actor);
 
-/// Actor for a remote WDS.
-/// Used for syncing, data fetching, and discovery.
-#[derive(Component)]
-pub struct RemoteActor(pub Actor);
+/// Remote actors to sync with.
+#[derive(Component, Default)]
+pub struct SyncTargets(pub Vec<Actor>);
 
 #[derive(Event, Clone)]
 pub struct AwaitBlob {

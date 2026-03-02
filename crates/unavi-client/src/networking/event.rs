@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use avian3d::dynamics::rigid_body::{AngularVelocity, LinearVelocity};
 use bevy::prelude::*;
-use bevy_wds::{LocalActor, LocalBlobs, RemoteActor};
+use bevy_wds::{LocalActor, LocalBlobs, SyncTargets};
 use iroh::EndpointId;
 use unavi_avatar::{Avatar, AverageVelocity, Grounded, default_character_animations};
 
@@ -26,7 +26,7 @@ pub fn recv_network_event(
     mut nt: ResMut<NetworkingThread>,
     asset_server: Res<AssetServer>,
     local_actors: Query<Entity, With<LocalActor>>,
-    local_blobs: Query<Entity, With<LocalBlobs>>,
+    mut sync_targets: Query<&mut SyncTargets>,
     local_endpoint: Option<Res<LocalEndpointId>>,
     dyn_objects: Query<(
         Entity,
@@ -77,21 +77,17 @@ pub fn recv_network_event(
             NetworkEvent::AgentLeave(_id) => {
                 // TODO: Despawn agent.
             }
-            NetworkEvent::SetLocalBlobs(blobs) => {
-                for ent in local_blobs.iter() {
-                    commands.entity(ent).despawn();
-                }
-                commands.spawn(LocalBlobs(blobs));
-            }
-            NetworkEvent::SetLocalActor(actor) => {
+            NetworkEvent::SetLocalWds { actor, blobs } => {
                 for ent in local_actors.iter() {
                     commands.entity(ent).despawn();
                 }
-                commands.spawn(LocalActor(actor));
+                commands.spawn((LocalActor(actor), LocalBlobs(blobs)));
             }
             NetworkEvent::AddRemoteActor(actor) => {
                 // TODO: Handle disconnects / multiple adds.
-                commands.spawn(RemoteActor(actor));
+                if let Ok(mut targets) = sync_targets.single_mut() {
+                    targets.0.push(actor);
+                }
             }
             NetworkEvent::ObjectOwnershipChanged { object_id, owner } => {
                 let is_local = local_endpoint.as_ref().is_some_and(|e| owner == Some(e.0));

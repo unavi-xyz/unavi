@@ -51,6 +51,58 @@ let time = timeit {
 
 print $"Total build time: ($time)"
 
+# Plug library component deps using wac.
+# Protocol deps (wired-*) are host-provided; all others are library
+# components that must be composed into their dependents at build time.
+print "Plugging component deps"
+
+let dep_graph = ls $wasm_src | where type == "dir" | each {|crate_dir|
+    let crate = ($crate_dir.name | path basename)
+    let deps_toml = $"($crate_dir.name)/wit/deps.toml"
+    let lib_deps = if ($deps_toml | path exists) {
+        open $deps_toml
+        | columns
+        | where {|c| not ($c | str starts-with "wired-")}
+    } else {
+        []
+    }
+    { crate: $crate, lib_deps: $lib_deps }
+}
+
+# Topological sort: deps are plugged before their dependents,
+# supporting arbitrary depth (C -> B -> A).
+mut sorted = []
+mut remaining = $dep_graph
+while (($remaining | length) > 0) {
+    let done = $sorted | each {|s| $s.crate}
+    let ready = $remaining | where {|item|
+        $item.lib_deps | all {|dep| $done | any {|d| $d == $dep}}
+    }
+    if ($ready | length) == 0 {
+        error make { msg: "circular or missing dep in wasm components" }
+    }
+    $sorted = $sorted | append $ready
+    let ready_crates = $ready | each {|r| $r.crate}
+    $remaining = $remaining | where {|item|
+        not ($ready_crates | any {|r| $r == $item.crate})
+    }
+}
+
+for item in $sorted {
+    if ($item.lib_deps | length) > 0 {
+        let wasm_file = ($item.crate | str replace --all '-' '_') + ".wasm"
+        let wasm_path = $"($wasm_out)/($wasm_file)"
+        mut logs = $"→ Plugging ($item.crate)\n"
+        for dep in $item.lib_deps {
+            let plug_file = ($dep | str replace --all '-' '_') + ".wasm"
+            let plug_path = $"($wasm_out)/($plug_file)"
+            $logs += $"  | --plug ($dep)\n"
+            wac plug $wasm_path --plug $plug_path -o $wasm_path
+        }
+        print $logs
+    }
+}
+
 for file in (ls $wasm_out) {
   let base = ($file.name | path basename | str replace '.wasm' '')
 

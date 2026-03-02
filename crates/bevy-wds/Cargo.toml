@@ -18,3 +18,4 @@ iroh.workspace         = true
 tokio.workspace        = true
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wds.path               = "../wds"
+xdid.workspace         = true

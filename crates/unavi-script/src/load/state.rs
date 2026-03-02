@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use loro::LoroDoc;
+use loro::{LoroDoc, LoroTree, TreeParentId};
 use wasmtime::component::ResourceTable;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
@@ -21,14 +21,24 @@ pub struct RuntimeDataResult {
 }
 
 impl RuntimeData {
-    pub fn spawn() -> RuntimeDataResult {
+    pub fn spawn(actor: Option<wds::actor::Actor>, blobs: Option<wds::Blobs>) -> RuntimeDataResult {
         let doc = Arc::new(LoroDoc::new()); // TODO
+
+        let self_node_id = doc
+            .get_map("hsd")
+            .get_or_create_container("nodes", LoroTree::new())
+            .expect("node tree")
+            .create(TreeParentId::Root)
+            .expect("create self node");
 
         RuntimeDataResult {
             rt: Self {
                 wired_scene: WiredSceneRt {
-                    table: ResourceTable::default(),
+                    actor,
+                    blobs,
                     doc,
+                    self_node_id,
+                    table: ResourceTable::default(),
                 },
             },
         }

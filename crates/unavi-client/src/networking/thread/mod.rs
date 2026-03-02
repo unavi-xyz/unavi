@@ -66,8 +66,7 @@ pub enum NetworkCommand {
 #[expect(unused)]
 pub enum NetworkEvent {
     AddRemoteActor(Actor),
-    SetLocalActor(Actor),
-    SetLocalBlobs(Blobs),
+    SetLocalWds { actor: Actor, blobs: Blobs },
     SetLocalEndpoint(EndpointId),
 
     // Agent events.
@@ -232,9 +231,6 @@ async fn thread_loop(
     };
 
     let blobs = store.blobs().blobs();
-    event_tx
-        .send(NetworkEvent::SetLocalBlobs(blobs.clone()))
-        .await?;
 
     // TODO: save / load keypair from disk
     let signing_key = P256KeyPair::generate();
@@ -250,7 +246,10 @@ async fn thread_loop(
     let remote_actor = remote_host.map(|h| store.remote_actor(identity, h));
 
     event_tx
-        .send(NetworkEvent::SetLocalActor(local_actor.clone()))
+        .send(NetworkEvent::SetLocalWds {
+            actor: local_actor.clone(),
+            blobs: blobs.clone(),
+        })
         .await?;
 
     if let Some(ref remote_actor) = remote_actor {

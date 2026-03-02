@@ -8,6 +8,8 @@ use state::{RuntimeData, RuntimeDataResult, StoreState};
 use wasmtime::{AsContextMut, Store, component::Linker};
 use wasmtime_wasi::WasiCtxBuilder;
 
+use bevy_wds::{LocalActor, LocalBlobs};
+
 use crate::{
     ScriptEngine, WasmBinary, WasmEngine,
     asset::Wasm,
@@ -50,7 +52,12 @@ pub fn load_scripts(
         (Without<LoadingScript>, Without<LoadedScript>),
     >,
     mut pool: TaskPool<LoadResult>,
+    local_actors: Query<&LocalActor>,
+    local_blobs: Query<&LocalBlobs>,
 ) {
+    let actor = local_actors.single().ok().map(|a| a.0.clone());
+    let blobs = local_blobs.single().ok().map(|b| b.0.clone());
+
     for (ent, handle, script, name) in to_load {
         let Ok(engine) = engines.get(script.0) else {
             warn!("Script instantiation failed: engine not found");
@@ -71,7 +78,7 @@ pub fn load_scripts(
             .stderr(stderr_stream)
             .build();
 
-        let RuntimeDataResult { rt } = RuntimeData::spawn();
+        let RuntimeDataResult { rt } = RuntimeData::spawn(actor.clone(), blobs.clone());
 
         let state = StoreState::new(wasi_ctx, rt);
 

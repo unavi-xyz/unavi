@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 
 use bevy::prelude::*;
-use bevy_wds::{LocalActor, RemoteActor};
+use bevy_wds::{LocalActor, SyncTargets};
 use time::OffsetDateTime;
 use wds::actor::Actor;
 use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
@@ -12,8 +12,7 @@ use crate::{
 };
 
 pub fn join_home_space(
-    local_actor: Query<&LocalActor>,
-    remote_actors: Query<&RemoteActor>,
+    local_actor: Query<(&LocalActor, &SyncTargets)>,
     nt: Res<NetworkingThread>,
     mut did_join: Local<bool>,
 ) {
@@ -22,11 +21,12 @@ pub fn join_home_space(
         return;
     }
 
-    let Ok(local_actor) = local_actor.single().map(|x| x.0.clone()) else {
+    let Ok((local_actor, sync_targets)) = local_actor.single() else {
         return;
     };
 
-    let remote_actor = remote_actors.iter().next().map(|x| x.0.clone());
+    let local_actor = local_actor.0.clone();
+    let remote_actor = sync_targets.0.first().cloned();
 
     let command_tx = nt.command_tx.clone();
 

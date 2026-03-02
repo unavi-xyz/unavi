@@ -17,7 +17,7 @@ struct Script;
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let _cube = Cuboid::new(1.0, 1.0, 1.0).mesh();
+        let cube = Cuboid::new(1.0, 1.0, 1.0).mesh();
 
         Self
     }

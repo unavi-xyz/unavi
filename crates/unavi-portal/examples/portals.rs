@@ -78,17 +78,16 @@ fn setup_scene(
     let camera_distance = 8.0;
     let tracked_camera = commands
         .spawn((
-            Camera3d::default(),
+            PanOrbitCamera {
+                focus: Vec3::new(-portal_distance * 0.8, portal_height / 3.0, 0.0),
+                ..default()
+            },
             Transform::from_xyz(
                 portal_distance / 3.0 * camera_distance,
                 portal_height * 0.8 * camera_distance,
                 portal_distance / 2.0 * camera_distance,
             )
             .looking_at(Vec3::ZERO, Vec3::Y),
-            PanOrbitCamera {
-                focus: Vec3::new(-portal_distance * 0.8, portal_height / 3.0, 0.0),
-                ..default()
-            },
             RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER]),
             PortalTraveler,
         ))

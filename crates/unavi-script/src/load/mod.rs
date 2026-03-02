@@ -4,7 +4,7 @@ use anyhow::Context;
 use bevy::prelude::*;
 use bevy_async_task::TaskPool;
 use log::{ScriptStderr, ScriptStdout};
-use state::{RuntimeData, RuntimeDataResult, StoreState};
+use state::{RuntimeData, StoreState};
 use wasmtime::{AsContextMut, Store, component::Linker};
 use wasmtime_wasi::WasiCtxBuilder;
 
@@ -78,8 +78,7 @@ pub fn load_scripts(
             .stderr(stderr_stream)
             .build();
 
-        let RuntimeDataResult { rt } = RuntimeData::spawn(actor.clone(), blobs.clone());
-
+        let rt = RuntimeData::new(actor.clone(), blobs.clone());
         let state = StoreState::new(wasi_ctx, rt);
 
         let mut store = Store::new(&engine.0, state);

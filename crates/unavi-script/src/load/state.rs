@@ -16,13 +16,10 @@ pub struct RuntimeData {
     pub wired_scene: WiredSceneRt,
 }
 
-pub struct RuntimeDataResult {
-    pub rt: RuntimeData,
-}
-
 impl RuntimeData {
-    pub fn spawn(actor: Option<wds::actor::Actor>, blobs: Option<wds::Blobs>) -> RuntimeDataResult {
-        let doc = Arc::new(LoroDoc::new()); // TODO
+    pub fn new(actor: Option<wds::actor::Actor>, blobs: Option<wds::Blobs>) -> Self {
+        // TODO set doc and node from object / hsd
+        let doc = Arc::new(LoroDoc::new());
 
         let self_node_id = doc
             .get_map("hsd")
@@ -31,15 +28,13 @@ impl RuntimeData {
             .create(TreeParentId::Root)
             .expect("create self node");
 
-        RuntimeDataResult {
-            rt: Self {
-                wired_scene: WiredSceneRt {
-                    actor,
-                    blobs,
-                    doc,
-                    self_node_id,
-                    table: ResourceTable::default(),
-                },
+        Self {
+            wired_scene: WiredSceneRt {
+                actor,
+                blobs,
+                doc,
+                self_node_id,
+                table: ResourceTable::default(),
             },
         }
     }

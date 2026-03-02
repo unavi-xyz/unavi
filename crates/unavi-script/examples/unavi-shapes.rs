@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin, util::create_test_wds};
 use unavi_script::{LoadScriptAsset, ScriptPlugin};
 
@@ -12,17 +13,29 @@ fn main() {
             file_path: "../unavi-client/assets".to_string(),
             ..Default::default()
         }),
+        PanOrbitCameraPlugin,
         WdsPlugin,
         ScriptPlugin,
     ))
-    .add_systems(Startup, load_script);
+    .add_systems(Startup, init_scene);
 
-    app.world_mut().spawn((LocalActor(actor), LocalBlobs(blobs)));
+    app.world_mut()
+        .spawn((LocalActor(actor), LocalBlobs(blobs)));
 
     app.run();
 }
 
-fn load_script(mut events: MessageWriter<LoadScriptAsset>) {
+fn init_scene(mut commands: Commands, mut events: MessageWriter<LoadScriptAsset>) {
+    commands.spawn((
+        DirectionalLight::default(),
+        Transform::from_xyz(5.0, 8.0, 1.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
+
+    commands.spawn((
+        PanOrbitCamera::default(),
+        Transform::from_xyz(3.0, 3.0, 2.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
+
     events.write(LoadScriptAsset {
         namespace: "example",
         package: "shapes",

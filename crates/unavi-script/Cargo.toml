@@ -26,4 +26,5 @@ wasmtime-wasi      = { default-features = false, version = "40.0.0" }
 wds.path           = "../wds"
 
 [dev-dependencies]
-tracing-subscriber.workspace = true
+bevy_panorbit_camera.workspace = true
+tracing-subscriber.workspace   = true

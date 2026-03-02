@@ -13394,6 +13394,7 @@ dependencies = [
  "bevy",
  "bevy-wds",
  "bevy_async_task",
+ "bevy_panorbit_camera",
  "blake3",
  "bytes 1.11.0",
  "futures 0.3.31",

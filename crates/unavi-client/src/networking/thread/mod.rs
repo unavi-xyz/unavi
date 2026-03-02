@@ -66,7 +66,10 @@ pub enum NetworkCommand {
 #[expect(unused)]
 pub enum NetworkEvent {
     AddRemoteActor(Actor),
-    SetLocalWds { actor: Actor, blobs: Blobs },
+    SetLocalWds {
+        actor: Actor,
+        blobs: Blobs,
+    },
     SetLocalEndpoint(EndpointId),
 
     // Agent events.

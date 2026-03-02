@@ -16,6 +16,7 @@ pub struct ObjectTransformTarget {
 
 impl ObjectTransformTarget {
     fn speed(&self) -> f32 {
+        // TODO proper per-object speed
         f32::from(MAX_OBJECT_TICKRATE) / 1.5
     }
 

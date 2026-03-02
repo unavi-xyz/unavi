@@ -30,8 +30,11 @@ pub mod bindings {
 }
 
 pub struct WiredSceneRt {
-    pub table: ResourceTable,
+    pub actor: Option<wds::actor::Actor>,
+    pub blobs: Option<wds::Blobs>,
     pub doc: Arc<LoroDoc>,
+    pub self_node_id: TreeID,
+    pub table: ResourceTable,
 }
 
 impl WiredSceneRt {
@@ -57,6 +60,12 @@ impl WiredSceneRt {
             .map_err(|e| anyhow::anyhow!("material list: {e}"))
     }
 
+    pub(super) fn mesh_attrs(&self, index: usize) -> wasmtime::Result<LoroMap> {
+        self.mesh_map(index)?
+            .get_or_create_container("attributes", LoroMap::new())
+            .map_err(|e| anyhow::anyhow!("{e}"))
+    }
+
     fn mesh_map(&self, index: usize) -> wasmtime::Result<LoroMap> {
         let list = self.mesh_list()?;
         match list.get(index) {
@@ -77,6 +86,26 @@ impl WiredSceneRt {
         self.node_tree()?
             .get_meta(id)
             .map_err(|e| anyhow::anyhow!("node meta: {e}"))
+    }
+}
+
+impl bindings::wired::scene::context::Host for WiredSceneRt {
+    async fn self_node(
+        &mut self,
+    ) -> wasmtime::Result<wasmtime::component::Resource<bindings::wired::scene::context::Node>>
+    {
+        let res = self.table.push(node::HostNode {
+            tree_id: self.self_node_id,
+        })?;
+        Ok(res)
+    }
+
+    async fn self_document(
+        &mut self,
+    ) -> wasmtime::Result<wasmtime::component::Resource<bindings::wired::scene::context::Document>>
+    {
+        let res = self.table.push(document::HostDocument)?;
+        Ok(res)
     }
 }
 

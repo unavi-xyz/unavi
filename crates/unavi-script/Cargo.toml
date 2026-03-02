@@ -12,7 +12,10 @@ workspace = true
 [dependencies]
 anyhow.workspace   = true
 bevy               = { default-features = true, workspace = true }
+bevy-wds.path      = "../bevy-wds"
 bevy_async_task    = "0.11.1"
+blake3.workspace   = true
+bytes.workspace    = true
 futures.workspace  = true
 loro.workspace     = true
 smol_str.workspace = true
@@ -20,6 +23,7 @@ tokio.workspace    = true
 tracing.workspace  = true
 wasmtime           = "40.0.0"
 wasmtime-wasi      = { default-features = false, version = "40.0.0" }
+wds.path           = "../wds"
 
 [dev-dependencies]
 tracing-subscriber.workspace = true

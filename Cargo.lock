@@ -985,6 +985,7 @@ dependencies = [
  "tokio",
  "unavi-wasm-compat",
  "wds",
+ "xdid",
 ]
 
 [[package]]
@@ -13391,7 +13392,10 @@ version = "0.0.16"
 dependencies = [
  "anyhow",
  "bevy",
+ "bevy-wds",
  "bevy_async_task",
+ "blake3",
+ "bytes 1.11.0",
  "futures 0.3.31",
  "loro",
  "smol_str 0.3.5",
@@ -13400,6 +13404,7 @@ dependencies = [
  "tracing-subscriber",
  "wasmtime",
  "wasmtime-wasi",
+ "wds",
 ]
 
 [[package]]

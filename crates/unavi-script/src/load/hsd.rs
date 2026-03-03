@@ -1,7 +1,7 @@
 use std::sync::mpsc::Receiver;
 
 use bevy::prelude::*;
-use bevy_hsd::{HsdChild, HsdNodeTreeId, HsdScripts};
+use bevy_hsd::{HsdChild, HsdNodeTreeId, HsdScripts, NodeId};
 use bevy_wds::LocalBlobs;
 use smol_str::SmolStr;
 
@@ -15,12 +15,12 @@ pub struct HsdScriptSource {
     pub tree_id: SmolStr,
 }
 
-type FetchOut = anyhow::Result<(Entity, Entity, SmolStr, bytes::Bytes)>;
+type FetchOut = anyhow::Result<(Entity, Entity, SmolStr, SmolStr, bytes::Bytes)>;
 
 pub fn load_hsd_scripts(
     mut commands: Commands,
     mut wasm_assets: ResMut<Assets<Wasm>>,
-    added: Query<(Entity, &HsdScripts, &HsdChild, &HsdNodeTreeId), Added<HsdScripts>>,
+    added: Query<(Entity, &HsdScripts, &HsdChild, &HsdNodeTreeId, &NodeId), Added<HsdScripts>>,
     engine: Query<Entity, With<WasmEngine>>,
     local_blobs: Query<&LocalBlobs>,
     mut pending: Local<Vec<Receiver<FetchOut>>>,
@@ -31,7 +31,7 @@ pub fn load_hsd_scripts(
 
     let blobs = local_blobs.single().ok().map(|b| b.0.clone());
 
-    for (node_ent, scripts, child, tree_id) in &added {
+    for (node_ent, scripts, child, tree_id, node_id) in &added {
         let Some(ref blobs) = blobs else {
             warn!("no local blobs available for HSD scripts");
             continue;
@@ -40,9 +40,11 @@ pub fn load_hsd_scripts(
         let doc_ent = child.doc;
         let tid: SmolStr = tree_id.0.clone();
 
-        for &hash in &scripts.0 {
+        for (script_idx, &hash) in scripts.0.iter().enumerate() {
             let blobs = blobs.clone();
             let tid = tid.clone();
+            // TODO: better name, from node name or dedicated script name field
+            let name: SmolStr = format!("{}#{script_idx}", node_id.0).into();
             let (tx, rx) = std::sync::mpsc::channel::<FetchOut>();
             pending.push(rx);
 
@@ -50,7 +52,7 @@ pub fn load_hsd_scripts(
                 let result = blobs
                     .get_bytes(hash)
                     .await
-                    .map(|bytes| (node_ent, doc_ent, tid, bytes))
+                    .map(|bytes| (node_ent, doc_ent, tid, name, bytes))
                     .map_err(|e| anyhow::anyhow!("blob fetch: {e}"));
                 let _ = tx.send(result);
             });
@@ -60,9 +62,10 @@ pub fn load_hsd_scripts(
     let mut still_pending = Vec::new();
     for rx in pending.drain(..) {
         match rx.try_recv() {
-            Ok(Ok((node_ent, doc_ent, tree_id, bytes))) => {
+            Ok(Ok((node_ent, doc_ent, tree_id, name, bytes))) => {
                 let handle = wasm_assets.add(Wasm(bytes.to_vec()));
                 commands.spawn((
+                    Name::new(name.to_string()),
                     ScriptEngine(engine_ent),
                     WasmBinary(handle),
                     HsdScriptSource {

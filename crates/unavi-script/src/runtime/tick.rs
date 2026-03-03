@@ -77,6 +77,7 @@ pub fn tick_scripts(
                 .await?;
 
             ctx.flush_logs().await;
+            ctx.store.data().rt.wired_scene.doc.commit();
             drop(ctx);
             drop(span);
 

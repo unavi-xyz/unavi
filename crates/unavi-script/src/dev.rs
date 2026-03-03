@@ -51,11 +51,7 @@ fn load_from_bytes(
     commands.insert_resource(DevWasmHandle(handle));
 }
 
-fn load_from_path(
-    mut commands: Commands,
-    server: Res<AssetServer>,
-    path: Res<DevWasmPath>,
-) {
+fn load_from_path(mut commands: Commands, server: Res<AssetServer>, path: Res<DevWasmPath>) {
     let handle = server.load::<Wasm>(&path.0);
     commands.insert_resource(DevWasmHandle(handle));
 }
@@ -79,7 +75,9 @@ fn upload_and_spawn(
     *pending = still_pending;
 
     let Some(ref dev_handle) = handle else { return };
-    let Some(wasm) = wasm_assets.get(&dev_handle.0) else { return };
+    let Some(wasm) = wasm_assets.get(&dev_handle.0) else {
+        return;
+    };
     let Ok(actor) = actors.single() else { return };
 
     let bytes = bytes::Bytes::from(wasm.0.clone());
@@ -105,9 +103,7 @@ fn spawn_hsd_doc(commands: &mut Commands, hash: blake3::Hash) {
         let scripts = meta
             .get_or_create_container("scripts", LoroList::new())
             .expect("scripts list");
-        scripts
-            .push(hash.as_bytes().to_vec())
-            .expect("push hash");
+        scripts.push(hash.as_bytes().to_vec()).expect("push hash");
         doc.commit();
     }
     commands.spawn(HsdDoc(doc));

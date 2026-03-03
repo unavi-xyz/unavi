@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    CompiledMaterial, CompiledMesh, HsdChild, HsdMaterialEntities, HsdMeshEntities, MaterialRef,
-    MeshRef,
-};
+use crate::{CompiledMaterial, CompiledMesh, HsdChild, HsdEntityMap, MaterialRef, MeshRef};
 
 pub mod collider;
 pub mod material;
@@ -16,8 +13,7 @@ pub fn compile_nodes(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     nodes: Query<(Entity, &HsdChild, Option<&MeshRef>, Option<&MaterialRef>), Without<Mesh3d>>,
-    mesh_ents: Query<&HsdMeshEntities>,
-    mat_ents: Query<&HsdMaterialEntities>,
+    entity_maps: Query<&HsdEntityMap>,
     compiled_meshes: Query<&CompiledMesh>,
     compiled_mats: Query<&CompiledMaterial>,
     mut default_material: Local<Option<Handle<StandardMaterial>>>,
@@ -27,11 +23,11 @@ pub fn compile_nodes(
             continue;
         };
 
-        let Ok(mesh_list) = mesh_ents.get(hsd_child.doc) else {
+        let Ok(map) = entity_maps.get(hsd_child.doc) else {
             continue;
         };
 
-        let Some(&mesh_ent) = mesh_list.0.get(*mesh_idx) else {
+        let Some(&Some(mesh_ent)) = map.meshes.get(*mesh_idx) else {
             continue;
         };
 
@@ -44,8 +40,7 @@ pub fn compile_nodes(
 
         // Apply compiled material or default.
         if let Some(MaterialRef(mat_idx)) = mat_ref
-            && let Ok(mat_list) = mat_ents.get(hsd_child.doc)
-            && let Some(&mat_ent) = mat_list.0.get(*mat_idx)
+            && let Some(&Some(mat_ent)) = map.materials.get(*mat_idx)
             && let Ok(compiled_mat) = compiled_mats.get(mat_ent)
         {
             ent.insert(MeshMaterial3d(compiled_mat.0.clone()));

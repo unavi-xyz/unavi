@@ -1,0 +1,11 @@
+package wired:prelude;
+
+world lib {
+  include wired:math/prelude;
+  include wired:scene/prelude;
+}
+
+world script {
+  include lib;
+  include wired:script/guest;
+}

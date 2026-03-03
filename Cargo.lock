@@ -13441,6 +13441,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-vscreen"
+version = "0.0.16"
+dependencies = [
+ "wit-bindgen 0.50.0",
+]
+
+[[package]]
 name = "unavi-wasm-compat"
 version = "0.0.16"
 dependencies = [

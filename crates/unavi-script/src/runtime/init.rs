@@ -50,6 +50,7 @@ pub fn begin_init_scripts(
                 .with_context(|| format!("construct script {name}"));
 
             ctx.flush_logs().await;
+            ctx.store.data().rt.wired_scene.doc.commit();
 
             ctx.script = Some(script?);
             drop(ctx);

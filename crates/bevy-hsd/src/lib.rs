@@ -1,13 +1,13 @@
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
-use loro::{Frontiers, LoroDoc};
+use loro::LoroDoc;
 use smol_str::SmolStr;
 
 mod compile;
 pub mod data;
 mod hydrate;
-pub mod hydration;
 
 pub struct HsdPlugin;
 
@@ -16,7 +16,9 @@ impl Plugin for HsdPlugin {
         app.add_systems(
             FixedUpdate,
             (
-                hydrate::hydrate_hsd_docs,
+                hydrate::init_script_overlay,
+                hydrate::init_hsd_doc,
+                hydrate::apply_hsd_events,
                 (
                     compile::material::parse_material_data,
                     compile::mesh::parse_mesh_data,
@@ -34,15 +36,11 @@ impl Plugin for HsdPlugin {
     }
 }
 
-/// Source of truth. Insert on an entity to create an HSD
+/// Source-of-truth HSD document. Insert on an entity to create an HSD
 /// scene. All child entities are cleaned up when removed.
 #[derive(Component)]
-#[require(HsdVersion, HsdChildren, HsdMeshEntities, HsdMaterialEntities)]
+#[require(HsdChildren)]
 pub struct HsdDoc(pub Arc<LoroDoc>);
-
-/// Tracks doc version for change detection.
-#[derive(Component, Default)]
-struct HsdVersion(Option<Frontiers>);
 
 /// Relationship target for all HSD-spawned entities.
 #[derive(Component, Default)]
@@ -56,30 +54,76 @@ pub struct HsdChild {
     pub doc: Entity,
 }
 
-/// Node identity.
 #[derive(Component, Clone, Debug)]
 pub struct NodeId(pub SmolStr);
 
-/// Index reference from a node to a mesh resource entity.
+/// Stable Loro tree ID on node entities. Format: "counter@peer".
+#[derive(Component, Clone, Debug)]
+pub struct HsdNodeTreeId(pub SmolStr);
+
+/// Script blob hashes on node entities (Phase 3).
+#[derive(Component, Clone, Debug)]
+pub struct HsdScripts(pub Vec<blake3::Hash>);
+
 #[derive(Component)]
 pub struct MeshRef(pub usize);
 
-/// Index reference from a node to a material resource entity.
 #[derive(Component)]
 pub struct MaterialRef(pub usize);
 
-/// Compiled mesh handle stored on a mesh resource entity.
 #[derive(Component)]
 pub struct CompiledMesh(pub Handle<Mesh>);
 
-/// Compiled material handle stored on a material resource entity.
 #[derive(Component)]
 pub struct CompiledMaterial(pub Handle<StandardMaterial>);
 
-/// Ordered list of mesh resource entities on the doc entity.
+/// Stable mapping from Loro container IDs to Bevy entities.
 #[derive(Component, Default)]
-pub struct HsdMeshEntities(pub Vec<Entity>);
+pub struct HsdEntityMap {
+    pub meshes: Vec<Option<Entity>>,
+    pub materials: Vec<Option<Entity>>,
+    pub nodes: HashMap<SmolStr, Entity>,
+}
 
-/// Ordered list of material resource entities on the doc entity.
-#[derive(Component, Default)]
-pub struct HsdMaterialEntities(pub Vec<Entity>);
+#[derive(Component, Clone)]
+pub struct HsdEventQueue(pub Arc<Mutex<Vec<HsdChange>>>);
+
+/// Keeps the base-to-overlay subscription alive.
+#[derive(Component)]
+pub struct HsdBaseSubscription(pub loro::Subscription);
+
+/// Local-only render doc: copy of `HsdDoc` + future script writes.
+/// Never exported for sync.
+#[derive(Component)]
+pub struct HsdScriptOverlay(pub Arc<LoroDoc>);
+
+/// Keeps the overlay subscription alive.
+#[derive(Component)]
+pub struct HsdSubscription(pub loro::Subscription);
+
+pub enum HsdChange {
+    MaterialAdded,
+    MaterialChanged {
+        index: usize,
+    },
+    MaterialRemoved {
+        index: usize,
+    },
+    MeshAdded,
+    MeshChanged {
+        index: usize,
+    },
+    MeshRemoved {
+        index: usize,
+    },
+    NodeAdded {
+        tree_id: SmolStr,
+        parent_id: Option<SmolStr>,
+    },
+    NodeMetaChanged {
+        tree_id: SmolStr,
+    },
+    NodeRemoved {
+        tree_id: SmolStr,
+    },
+}

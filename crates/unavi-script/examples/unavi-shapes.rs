@@ -38,6 +38,6 @@ fn init_scene(mut commands: Commands) {
 
     commands.spawn((
         PanOrbitCamera::default(),
-        Transform::from_xyz(3.0, 3.0, 2.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(3.0, 8.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 }

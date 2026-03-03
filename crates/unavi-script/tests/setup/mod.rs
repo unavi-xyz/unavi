@@ -5,8 +5,7 @@ use bevy_hsd::HsdPlugin;
 use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin, util::create_test_wds};
 use tracing_subscriber::Layer;
 use unavi_script::{
-    ScriptPlugin,
-    dev::{WasmDevPlugin, WasmSource},
+    ScriptPermissions, ScriptPlugin, SpawnLocalScript, load::local::ScriptSource,
 };
 
 use crate::setup::logs::LOGS;
@@ -18,9 +17,9 @@ const TICK: Duration = Duration::from_millis(100);
 pub fn setup_test_app(package: &'static str, wasm_override: Option<Vec<u8>>) -> App {
     let (actor, blobs) = create_test_wds();
 
-    let wasm_source = wasm_override.map_or_else(
-        || WasmSource::Path(format!("wasm/test/{package}.wasm")),
-        WasmSource::Bytes,
+    let source = wasm_override.map_or_else(
+        || ScriptSource::Path(format!("wasm/test/{package}.wasm")),
+        ScriptSource::Bytes,
     );
 
     let mut app = App::new();
@@ -37,13 +36,17 @@ pub fn setup_test_app(package: &'static str, wasm_override: Option<Vec<u8>>) -> 
         WdsPlugin,
         HsdPlugin,
         ScriptPlugin,
-        WasmDevPlugin(wasm_source),
     ))
     .insert_resource(Time::<Virtual>::from_max_delta(TICK))
     .insert_resource(Time::<Fixed>::from_duration(TICK));
 
     app.world_mut()
         .spawn((LocalActor(actor), LocalBlobs(blobs)));
+
+    app.world_mut().trigger(SpawnLocalScript {
+        permissions: ScriptPermissions::default(),
+        source,
+    });
 
     app
 }

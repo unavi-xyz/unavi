@@ -2,10 +2,7 @@ use bevy::prelude::*;
 use bevy_hsd::HsdPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin, util::create_test_wds};
-use unavi_script::{
-    ScriptPlugin,
-    dev::{WasmDevPlugin, WasmSource},
-};
+use unavi_script::{ScriptPermissions, ScriptPlugin, SpawnLocalScript, load::local::ScriptSource};
 
 fn main() {
     let (actor, blobs) = create_test_wds();
@@ -20,12 +17,16 @@ fn main() {
         WdsPlugin,
         HsdPlugin,
         ScriptPlugin,
-        WasmDevPlugin(WasmSource::Path("wasm/example/shapes.wasm".to_string())),
     ))
     .add_systems(Startup, init_scene);
 
     app.world_mut()
         .spawn((LocalActor(actor), LocalBlobs(blobs)));
+
+    app.world_mut().trigger(SpawnLocalScript {
+        permissions: ScriptPermissions::default(),
+        source: ScriptSource::Path("wasm/example/shapes.wasm".to_string()),
+    });
 
     app.run();
 }

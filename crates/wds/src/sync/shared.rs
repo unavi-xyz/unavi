@@ -8,8 +8,8 @@ use rusqlite::{Connection, params};
 use smol_str::SmolStr;
 use wds_schema::{Field, Schema, unwrap_restricted};
 use wired_schemas::{
-    SCHEMA_ACL, SCHEMA_RECORD,
-    surg::{Acl, Record},
+    schemas::{SCHEMA_ACL, SCHEMA_RECORD},
+    surg::{acl::Acl, record::Record},
 };
 use xdid::{core::did::Did, resolver::DidResolver};
 

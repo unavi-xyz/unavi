@@ -13392,6 +13392,7 @@ version = "0.0.16"
 dependencies = [
  "anyhow",
  "bevy",
+ "bevy-hsd",
  "bevy-wds",
  "bevy_async_task",
  "bevy_panorbit_camera",
@@ -13403,6 +13404,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "unavi-wasm-compat",
  "wasmtime",
  "wasmtime-wasi",
  "wds",

@@ -3,6 +3,7 @@ use std::{sync::Arc, task::Poll};
 use anyhow::Context;
 use bevy::prelude::*;
 use bevy_async_task::TaskPool;
+use bevy_hsd::HsdScriptOverlay;
 use log::{ScriptStderr, ScriptStdout};
 use state::{RuntimeData, StoreState};
 use wasmtime::{AsContextMut, Store, component::Linker};
@@ -16,6 +17,7 @@ use crate::{
     runtime::{RuntimeCtx, ScriptRuntime},
 };
 
+pub mod hsd;
 pub mod log;
 pub mod state;
 
@@ -48,17 +50,34 @@ pub fn load_scripts(
     wasm_assets: Res<Assets<Wasm>>,
     engines: Query<&WasmEngine>,
     to_load: Query<
-        (Entity, &WasmBinary, &ScriptEngine, Option<&Name>),
+        (
+            Entity,
+            &WasmBinary,
+            &ScriptEngine,
+            Option<&Name>,
+            &hsd::HsdScriptSource,
+        ),
         (Without<LoadingScript>, Without<LoadedScript>),
     >,
     mut pool: TaskPool<LoadResult>,
     local_actors: Query<&LocalActor>,
     local_blobs: Query<&LocalBlobs>,
+    overlays: Query<&HsdScriptOverlay>,
 ) {
     let actor = local_actors.single().ok().map(|a| a.0.clone());
     let blobs = local_blobs.single().ok().map(|b| b.0.clone());
 
-    for (ent, handle, script, name) in to_load {
+    for (ent, handle, script, name, source) in to_load {
+        let Ok(overlay) = overlays.get(source.doc_entity) else {
+            warn!("HSD overlay not found for script");
+            continue;
+        };
+
+        let Ok(self_node_id) = loro::TreeID::try_from(source.tree_id.as_str()) else {
+            warn!("invalid tree id: {}", source.tree_id);
+            continue;
+        };
+
         let Ok(engine) = engines.get(script.0) else {
             warn!("Script instantiation failed: engine not found");
             continue;
@@ -78,7 +97,8 @@ pub fn load_scripts(
             .stderr(stderr_stream)
             .build();
 
-        let rt = RuntimeData::new(actor.clone(), blobs.clone());
+        let doc = Arc::clone(&overlay.0);
+        let rt = RuntimeData::new(actor.clone(), blobs.clone(), doc, self_node_id);
         let state = StoreState::new(wasi_ctx, rt);
 
         let mut store = Store::new(&engine.0, state);

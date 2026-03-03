@@ -4,7 +4,7 @@ use loro_surgeon::Hydrate;
 use smol_str::SmolStr;
 
 use crate::{
-    HsdChild, HsdNodeTreeId, MaterialRef, MeshRef, NodeId,
+    HsdChild, HsdNodeTreeId, HsdScripts, MaterialRef, MeshRef, NodeId,
     data::{HsdCollider, HsdNode, HsdNodeData, HsdRigidBody},
 };
 
@@ -43,6 +43,12 @@ pub(super) fn spawn_node_entity(
     }
     if let Some(rb) = &node.data.rigid_body {
         ent.insert(HsdRigidBody::clone(rb));
+    }
+    if let Some(scripts) = &node.data.scripts
+        && !scripts.is_empty()
+    {
+        let hashes: Vec<blake3::Hash> = scripts.iter().map(|h| h.0).collect();
+        ent.insert(HsdScripts(hashes));
     }
 
     ent.id()
@@ -114,6 +120,19 @@ pub(super) fn update_node_components(
         && let Ok(idx) = usize::try_from(idx)
     {
         ecmd.insert(MaterialRef(idx));
+    }
+
+    let hashes: Vec<blake3::Hash> = data
+        .scripts
+        .as_deref()
+        .unwrap_or_default()
+        .iter()
+        .map(|h| h.0)
+        .collect();
+    if hashes.is_empty() {
+        ecmd.remove::<HsdScripts>();
+    } else {
+        ecmd.insert(HsdScripts(hashes));
     }
 }
 

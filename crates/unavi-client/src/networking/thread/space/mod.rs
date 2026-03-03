@@ -97,6 +97,7 @@ impl ProtocolHandler for SpaceProtocol {
 }
 
 /// Handle an inbound space connection, routing streams by `StreamInit`.
+#[allow(clippy::too_many_lines)]
 async fn handle_inbound_connection(
     event_tx: tokio::sync::mpsc::Sender<NetworkEvent>,
     inbound_map: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,

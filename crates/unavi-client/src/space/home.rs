@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_wds::{LocalActor, SyncTargets};
 use time::OffsetDateTime;
 use wds::actor::Actor;
-use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
+use wired_schemas::schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
 
 use crate::{
     networking::thread::{NetworkCommand, NetworkingThread},

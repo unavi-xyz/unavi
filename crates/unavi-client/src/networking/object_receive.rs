@@ -15,7 +15,7 @@ pub struct ObjectTransformTarget {
 }
 
 impl ObjectTransformTarget {
-    fn speed(&self) -> f32 {
+    fn speed() -> f32 {
         // TODO proper per-object speed
         f32::from(MAX_OBJECT_TICKRATE) / 1.5
     }
@@ -60,7 +60,7 @@ pub fn lerp_objects_to_target(
     >,
 ) {
     for (mut transform, target, lin_vel, ang_vel) in &mut query {
-        let t = (target.speed() * time.delta_secs()).min(1.0);
+        let t = (ObjectTransformTarget::speed() * time.delta_secs()).min(1.0);
         transform.translation = transform.translation.lerp(target.translation, t);
         transform.rotation = transform.rotation.slerp(target.rotation, t);
 

@@ -3,11 +3,9 @@ use wasmtime::Config;
 
 mod api;
 mod asset;
-mod event;
+pub mod dev;
 mod load;
 mod runtime;
-
-pub use event::LoadScriptAsset;
 
 pub struct ScriptPlugin;
 
@@ -28,28 +26,19 @@ impl Plugin for ScriptPlugin {
 
         app.register_asset_loader(asset::WasmLoader)
             .init_asset::<asset::Wasm>()
-            .add_message::<event::LoadScriptAsset>()
-            .add_systems(
-                PreUpdate,
-                (
-                    // commands::apply_wasm_commands,
-                    runtime::increment_epochs,
-                    // (
-                    //     commands::system::tick_script_cycle,
-                    //     commands::system::start_script_cycle,
-                    // )
-                    //     .chain(),
-                ),
-            )
+            .add_systems(PreUpdate, runtime::increment_epochs)
             .add_systems(
                 FixedUpdate,
                 (
-                    event::handle_load_events,
+                    load::hsd::load_hsd_scripts,
+                    load::hsd::cleanup_hsd_scripts,
                     load::load_scripts,
                     runtime::init::begin_init_scripts,
                     runtime::init::end_init_scripts,
                     runtime::tick::tick_scripts,
-                ),
+                )
+                    .chain()
+                    .after(bevy_hsd::init_hsd_doc),
             );
     }
 }

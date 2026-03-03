@@ -14,7 +14,7 @@ use iroh_gossip::{
 };
 use time::OffsetDateTime;
 use wds::signed_bytes::{IrohSigner, Signable, SignedBytes};
-use wired_schemas::SCHEMA_BEACON;
+use wired_schemas::schemas::SCHEMA_BEACON;
 
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,

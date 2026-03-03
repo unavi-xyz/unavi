@@ -21,6 +21,7 @@ pub struct LocalEndpointId(pub EndpointId);
 #[derive(Component, Deref)]
 pub struct AgentInboundState(Arc<InboundState>);
 
+#[allow(clippy::too_many_lines)]
 pub fn recv_network_event(
     mut commands: Commands,
     mut nt: ResMut<NetworkingThread>,

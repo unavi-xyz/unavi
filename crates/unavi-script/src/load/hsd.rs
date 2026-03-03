@@ -23,6 +23,7 @@ pub fn load_hsd_scripts(
     added: Query<(Entity, &HsdScripts, &HsdChild, &HsdNodeTreeId, &NodeId), Added<HsdScripts>>,
     engine: Query<Entity, With<WasmEngine>>,
     local_blobs: Query<&LocalBlobs>,
+    doc_names: Query<Option<&Name>>,
     mut pending: Local<Vec<Receiver<FetchOut>>>,
 ) {
     let Ok(engine_ent) = engine.single() else {
@@ -39,12 +40,20 @@ pub fn load_hsd_scripts(
 
         let doc_ent = child.doc;
         let tid: SmolStr = tree_id.0.clone();
+        let doc_name = doc_names
+            .get(doc_ent)
+            .ok()
+            .flatten()
+            .map(|n| n.as_str().to_string());
 
         for (script_idx, &hash) in scripts.0.iter().enumerate() {
             let blobs = blobs.clone();
             let tid = tid.clone();
-            // TODO: better name, from node name or dedicated script name field
-            let name: SmolStr = format!("{}#{script_idx}", node_id.0).into();
+            let name: SmolStr = match &doc_name {
+                Some(n) if scripts.0.len() == 1 => n.clone().into(),
+                Some(n) => format!("{n}#{script_idx}").into(),
+                None => format!("{}#{script_idx}", node_id.0).into(),
+            };
             let (tx, rx) = std::sync::mpsc::channel::<FetchOut>();
             pending.push(rx);
 

@@ -3,12 +3,11 @@ use wasmtime::Config;
 
 mod api;
 mod asset;
-pub mod dev;
-mod load;
+pub mod load;
 pub mod permissions;
 mod runtime;
 
-pub use load::local::SpawnLocalScript;
+pub use load::local::{ScriptSource, SpawnLocalScript};
 pub use permissions::ScriptPermissions;
 
 pub struct ScriptPlugin;

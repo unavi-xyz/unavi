@@ -52,6 +52,7 @@ unavi-avatar.path      = "../unavi-avatar"
 unavi-input.path       = "../unavi-input"
 unavi-locomotion.path  = "../unavi-locomotion"
 unavi-portal.path      = "../unavi-portal"
+unavi-script.path      = "../unavi-script"
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wds.path               = "../wds"
 winit                  = { default-features = false, version = "0.30.12" }
@@ -74,4 +75,3 @@ directories.workspace   = true
 iroh                    = { default-features = true, workspace = true }
 reqwest                 = { features = ["blocking"], workspace = true }
 tokio                   = { features = ["rt", "rt-multi-thread"], workspace = true }
-unavi-script.path       = "../unavi-script"

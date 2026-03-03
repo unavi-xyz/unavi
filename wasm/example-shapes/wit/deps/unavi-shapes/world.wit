@@ -9,9 +9,33 @@ interface api {
   use wired:math/types.{vec3};
   use wired:scene/types.{mesh};
 
+  resource capsule {
+    constructor(radius: f32, height: f32);
+    mesh: func() -> mesh;
+  }
+
+  resource cone {
+    constructor(radius: f32, height: f32);
+    mesh: func() -> mesh;
+  }
+
   resource cuboid {
     constructor(x-length: f32, y-length: f32, z-length: f32);
+    mesh: func() -> mesh;
+  }
 
+  resource cylinder {
+    constructor(radius: f32, height: f32);
+    mesh: func() -> mesh;
+  }
+
+  resource sphere {
+    constructor(radius: f32);
+    mesh: func() -> mesh;
+  }
+
+  resource torus {
+    constructor(minor-radius: f32, major-radius: f32);
     mesh: func() -> mesh;
   }
 }

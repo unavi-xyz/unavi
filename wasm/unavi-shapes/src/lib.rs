@@ -8,7 +8,12 @@ use crate::{
     wired::scene::types::{Indices, Mesh, PrimitiveTopology},
 };
 
+mod capsule;
+mod cone;
 mod cuboid;
+mod cylinder;
+mod sphere;
+mod torus;
 
 wit_bindgen::generate!({
     generate_all,
@@ -17,7 +22,12 @@ wit_bindgen::generate!({
 struct World;
 
 impl Guest for World {
+    type Capsule = capsule::CapsuleWrapped;
+    type Cone = cone::ConeWrapped;
     type Cuboid = cuboid::CuboidWrapped;
+    type Cylinder = cylinder::CylinderWrapped;
+    type Sphere = sphere::SphereWrapped;
+    type Torus = torus::TorusWrapped;
 }
 
 fn convert_bevy_mesh(mut in_mesh: BevyMesh) -> Mesh {

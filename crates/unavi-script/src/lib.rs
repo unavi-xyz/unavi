@@ -5,7 +5,11 @@ mod api;
 mod asset;
 pub mod dev;
 mod load;
+pub mod permissions;
 mod runtime;
+
+pub use load::local::SpawnLocalScript;
+pub use permissions::ScriptPermissions;
 
 pub struct ScriptPlugin;
 
@@ -24,12 +28,15 @@ impl Plugin for ScriptPlugin {
 
         app.world_mut().spawn(WasmEngine(engine));
 
-        app.register_asset_loader(asset::WasmLoader)
+        app.init_resource::<load::local::PendingHandles>()
+            .register_asset_loader(asset::WasmLoader)
             .init_asset::<asset::Wasm>()
+            .add_observer(load::local::on_spawn_local_script)
             .add_systems(PreUpdate, runtime::increment_epochs)
             .add_systems(
                 FixedUpdate,
                 (
+                    load::local::poll_local_scripts,
                     load::hsd::load_hsd_scripts,
                     load::hsd::cleanup_hsd_scripts,
                     load::load_scripts,

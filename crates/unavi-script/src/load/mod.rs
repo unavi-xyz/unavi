@@ -14,10 +14,12 @@ use bevy_wds::{LocalActor, LocalBlobs};
 use crate::{
     ScriptEngine, WasmBinary, WasmEngine,
     asset::Wasm,
+    permissions::ScriptPermissions,
     runtime::{RuntimeCtx, ScriptRuntime},
 };
 
 pub mod hsd;
+pub mod local;
 pub mod log;
 pub mod state;
 
@@ -63,7 +65,11 @@ pub fn load_scripts(
     local_actors: Query<&LocalActor>,
     local_blobs: Query<&LocalBlobs>,
     overlays: Query<&HsdScriptOverlay>,
+    permissions: Query<Option<&ScriptPermissions>>,
 ) {
+    #[cfg(target_family = "wasm")]
+    return;
+
     let actor = local_actors.single().ok().map(|a| a.0.clone());
     let blobs = local_blobs.single().ok().map(|b| b.0.clone());
 
@@ -86,6 +92,13 @@ pub fn load_scripts(
         let Some(wasm) = wasm_assets.get(&handle.0) else {
             continue;
         };
+
+        let perms = permissions
+            .get(source.doc_entity)
+            .ok()
+            .flatten()
+            .cloned()
+            .unwrap_or_default();
 
         let name = name.map_or_else(|| "unknown".to_string(), std::string::ToString::to_string);
         info!(name, "instantiating script");
@@ -112,7 +125,7 @@ pub fn load_scripts(
 
         pool.spawn(async move {
             let mut ctx = ctx.lock().await;
-            let res = instantiate_component(ent, component, &mut ctx)
+            let res = instantiate_component(ent, component, &mut ctx, perms)
                 .await
                 .with_context(|| name)?;
             drop(ctx);
@@ -140,10 +153,11 @@ async fn instantiate_component(
     ent: Entity,
     component: Result<wasmtime::component::Component, anyhow::Error>,
     rt: &mut RuntimeCtx,
+    perms: ScriptPermissions,
 ) -> LoadResult {
     let mut linker = Linker::new(rt.store.engine());
     wasmtime_wasi::p2::add_to_linker_async(&mut linker).context("add wasi to linker")?;
-    crate::api::wired::add_to_linker(&mut linker)?;
+    crate::api::wired::add_to_linker(&mut linker, &perms)?;
 
     let component = component.context("component load")?;
 

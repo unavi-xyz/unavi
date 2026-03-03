@@ -18,6 +18,7 @@ mod icon;
 mod networking;
 mod scene;
 mod space;
+mod system_scripts;
 #[cfg(not(target_family = "wasm"))]
 mod xr;
 
@@ -145,6 +146,7 @@ impl Plugin for UnaviPlugin {
                     grab::setup_grabbed_hooks,
                     icon::set_window_icon,
                     scene::spawn_scene,
+                    system_scripts::spawn_system_scripts,
                 ),
             )
             .add_systems(

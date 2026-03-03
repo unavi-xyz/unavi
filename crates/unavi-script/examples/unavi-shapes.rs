@@ -1,13 +1,16 @@
 use bevy::prelude::*;
+use bevy_hsd::HsdPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin, util::create_test_wds};
-use unavi_script::{LoadScriptAsset, ScriptPlugin};
+use unavi_script::{
+    ScriptPlugin,
+    dev::{WasmDevPlugin, WasmSource},
+};
 
 fn main() {
     let (actor, blobs) = create_test_wds();
 
     let mut app = App::new();
-
     app.add_plugins((
         DefaultPlugins.set(AssetPlugin {
             file_path: "../unavi-client/assets".to_string(),
@@ -15,7 +18,9 @@ fn main() {
         }),
         PanOrbitCameraPlugin,
         WdsPlugin,
+        HsdPlugin,
         ScriptPlugin,
+        WasmDevPlugin(WasmSource::Path("wasm/example/shapes.wasm".to_string())),
     ))
     .add_systems(Startup, init_scene);
 
@@ -25,7 +30,7 @@ fn main() {
     app.run();
 }
 
-fn init_scene(mut commands: Commands, mut events: MessageWriter<LoadScriptAsset>) {
+fn init_scene(mut commands: Commands) {
     commands.spawn((
         DirectionalLight::default(),
         Transform::from_xyz(5.0, 8.0, 1.0).looking_at(Vec3::ZERO, Vec3::Y),
@@ -35,9 +40,4 @@ fn init_scene(mut commands: Commands, mut events: MessageWriter<LoadScriptAsset>
         PanOrbitCamera::default(),
         Transform::from_xyz(3.0, 3.0, 2.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
-
-    events.write(LoadScriptAsset {
-        namespace: "example",
-        package: "shapes",
-    });
 }

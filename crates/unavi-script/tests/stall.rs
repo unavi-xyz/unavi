@@ -8,7 +8,7 @@ mod setup;
 
 #[test]
 fn script_stall() {
-    let mut app = setup::setup_test_app("stall");
+    let mut app = setup::setup_test_app("stall", None);
     construct_script(&mut app);
 
     assert_eq!(
@@ -16,7 +16,7 @@ fn script_stall() {
             .lock()
             .expect("test value expected")
             .iter()
-            .filter(|line| line.contains("test:stall") && line.contains("hello from init"))
+            .filter(|line| line.contains("hello from init"))
             .count(),
         1
     );
@@ -32,7 +32,7 @@ fn script_stall() {
             .lock()
             .expect("test value expected")
             .iter()
-            .any(|line| line.contains("test:stall") && line.contains("hello from tick"))
+            .any(|line| line.contains("hello from tick"))
     );
 
     assert!(!has_error_log());

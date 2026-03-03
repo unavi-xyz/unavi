@@ -101,6 +101,8 @@ pub struct HsdScriptOverlay(pub Arc<LoroDoc>);
 #[derive(Component)]
 pub struct HsdSubscription(pub loro::Subscription);
 
+pub use hydrate::{apply_hsd_events, init_hsd_doc, init_script_overlay};
+
 pub enum HsdChange {
     MaterialAdded,
     MaterialChanged {

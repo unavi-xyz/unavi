@@ -1,7 +1,4 @@
 //! [`loro-surgeon`] types for common Wired schemas.
 
-mod acl;
-mod record;
-
-pub use acl::*;
-pub use record::*;
+pub mod acl;
+pub mod record;

@@ -62,6 +62,9 @@ pub fn init_hsd_doc(
     }
 }
 
+/// # Panics
+///
+/// Panics if the event queue mutex is poisoned.
 pub fn apply_hsd_events(
     mut commands: Commands,
     mut docs: Query<(Entity, &HsdScriptOverlay, &mut HsdEntityMap, &HsdEventQueue)>,

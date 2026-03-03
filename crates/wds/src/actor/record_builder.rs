@@ -8,8 +8,9 @@ use loro::LoroDoc;
 use tracing::warn;
 
 use wired_schemas::{
-    HydratedHash, SCHEMA_ACL, SCHEMA_RECORD, StaticSchema,
-    surg::{Acl, Record},
+    HydratedHash,
+    schemas::{SCHEMA_ACL, SCHEMA_RECORD, StaticSchema},
+    surg::{acl::Acl, record::Record},
 };
 
 use crate::{

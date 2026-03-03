@@ -8,7 +8,7 @@ mod setup;
 
 #[test]
 fn script_log() {
-    let mut app = setup::setup_test_app("log");
+    let mut app = setup::setup_test_app("log", None);
     construct_script(&mut app);
 
     for _ in 0..5 {
@@ -20,7 +20,7 @@ fn script_log() {
         .lock()
         .expect("test value expected")
         .iter()
-        .filter(|line| line.contains("test:log") && line.contains("hello from init"))
+        .filter(|line| line.contains("hello from init"))
         .count();
 
     assert_eq!(n_inits, 1, "has 1 startup log");
@@ -30,7 +30,7 @@ fn script_log() {
         .lock()
         .expect("test value expected")
         .iter()
-        .filter(|line| line.contains("test:log") && line.contains("hello from tick"))
+        .filter(|line| line.contains("hello from tick"))
         .count();
     assert!(n_ticks > 1, "has tick logs");
 

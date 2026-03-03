@@ -7,7 +7,7 @@ use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use tracing::info;
 use xdid::core::did::Did;
 
-use wired_schemas::surg::Acl;
+use wired_schemas::surg::acl::Acl;
 
 use crate::{SessionToken, StoreContext, error::ApiError, sync::SyncMsg};
 

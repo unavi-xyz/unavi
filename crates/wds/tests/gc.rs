@@ -4,7 +4,7 @@ use rstest::rstest;
 use rusqlite::{OptionalExtension, params};
 use time::OffsetDateTime;
 use tracing_test::traced_test;
-use wired_schemas::SCHEMA_HOME;
+use wired_schemas::schemas::SCHEMA_HOME;
 
 use crate::common::{DataStoreCtx, ctx};
 

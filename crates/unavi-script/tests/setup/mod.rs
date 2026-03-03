@@ -1,8 +1,13 @@
 use std::time::Duration;
 
 use bevy::{log::LogPlugin, prelude::*};
+use bevy_hsd::HsdPlugin;
+use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin, util::create_test_wds};
 use tracing_subscriber::Layer;
-use unavi_script::{LoadScriptAsset, ScriptPlugin};
+use unavi_script::{
+    ScriptPlugin,
+    dev::{WasmDevPlugin, WasmSource},
+};
 
 use crate::setup::logs::LOGS;
 
@@ -10,9 +15,15 @@ pub mod logs;
 
 const TICK: Duration = Duration::from_millis(100);
 
-pub fn setup_test_app(package: &'static str) -> App {
-    let mut app = App::new();
+pub fn setup_test_app(package: &'static str, wasm_override: Option<Vec<u8>>) -> App {
+    let (actor, blobs) = create_test_wds();
 
+    let wasm_source = wasm_override.map_or_else(
+        || WasmSource::Path(format!("wasm/test/{package}.wasm")),
+        WasmSource::Bytes,
+    );
+
+    let mut app = App::new();
     app.add_plugins((
         MinimalPlugins,
         AssetPlugin {
@@ -23,39 +34,46 @@ pub fn setup_test_app(package: &'static str) -> App {
             custom_layer: |_| Some(LOGS.clone().boxed()),
             ..Default::default()
         },
+        WdsPlugin,
+        HsdPlugin,
         ScriptPlugin,
+        WasmDevPlugin(wasm_source),
     ))
     .insert_resource(Time::<Virtual>::from_max_delta(TICK))
-    .insert_resource(Time::<Fixed>::from_duration(TICK))
-    .add_systems(
-        Startup,
-        move |mut events: MessageWriter<LoadScriptAsset>| {
-            events.write(LoadScriptAsset {
-                namespace: "test",
-                package,
-            });
-        },
-    );
+    .insert_resource(Time::<Fixed>::from_duration(TICK));
+
+    app.world_mut()
+        .spawn((LocalActor(actor), LocalBlobs(blobs)));
 
     app
 }
 
 pub fn construct_script(app: &mut App) {
-    // Load script asset.
+    // Ticks 1-2: load wasm asset, upload to WDS, spawn HSD doc.
     tick_app(app);
     tick_app(app);
 
-    // Instantiate wasm.
+    // Tick 3: init_script_overlay + init_hsd_doc run (chained).
     tick_app(app);
     tick_app(app);
 
-    // Execute script constructor.
+    // Ticks 5-7: load_hsd_scripts fires, spawns blob fetch task, polls.
+    tick_app(app);
+    tick_app(app);
+    tick_app(app);
+
+    // Ticks 8-10: load_scripts instantiates wasm component.
+    tick_app(app);
+    tick_app(app);
+    tick_app(app);
+
+    // Ticks 11-12: begin_init_scripts / end_init_scripts.
     tick_app(app);
     tick_app(app);
 }
 
 pub fn tick_app(app: &mut App) {
     app.update();
-    // Sleep to allow any async behaviors to run.
+    // Sleep to allow async work to run.
     std::thread::sleep(Duration::from_millis(300));
 }

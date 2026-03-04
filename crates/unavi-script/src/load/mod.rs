@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use bevy_async_task::TaskPool;
 use bevy_hsd::HsdScriptOverlay;
 use log::{ScriptStderr, ScriptStdout};
+use loro::TreeParentId;
 use state::{RuntimeData, StoreState};
 use wasmtime::{AsContextMut, Store, component::Linker};
 use wasmtime_wasi::WasiCtxBuilder;
@@ -13,6 +14,7 @@ use bevy_wds::{LocalActor, LocalBlobs};
 
 use crate::{
     ScriptEngine, WasmBinary, WasmEngine,
+    agent::LocalAgentHsdDoc,
     asset::Wasm,
     permissions::ScriptPermissions,
     runtime::{RuntimeCtx, ScriptRuntime},
@@ -47,7 +49,7 @@ pub struct LoadedScript(pub Arc<bindings::Guest>);
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct Executing(bool);
 
-pub fn load_scripts(
+pub(crate) fn load_scripts(
     mut commands: Commands,
     wasm_assets: Res<Assets<Wasm>>,
     engines: Query<&WasmEngine>,
@@ -66,6 +68,7 @@ pub fn load_scripts(
     local_blobs: Query<&LocalBlobs>,
     overlays: Query<&HsdScriptOverlay>,
     permissions: Query<Option<&ScriptPermissions>>,
+    agent_doc: Option<Res<LocalAgentHsdDoc>>,
 ) {
     #[cfg(target_family = "wasm")]
     return;
@@ -74,16 +77,6 @@ pub fn load_scripts(
     let blobs = local_blobs.single().ok().map(|b| b.0.clone());
 
     for (ent, handle, script, name, source) in to_load {
-        let Ok(overlay) = overlays.get(source.doc_entity) else {
-            warn!("HSD overlay not found for script");
-            continue;
-        };
-
-        let Ok(self_node_id) = loro::TreeID::try_from(source.tree_id.as_str()) else {
-            warn!("invalid tree id: {}", source.tree_id);
-            continue;
-        };
-
         let Ok(engine) = engines.get(script.0) else {
             warn!("Script instantiation failed: engine not found");
             continue;
@@ -110,8 +103,45 @@ pub fn load_scripts(
             .stderr(stderr_stream)
             .build();
 
-        let doc = Arc::clone(&overlay.0);
-        let rt = RuntimeData::new(actor.clone(), blobs.clone(), doc, self_node_id);
+        let (doc, self_node_id, agent_bone_nodes) = if perms.wired_local_agent {
+            let Some(ref ad) = agent_doc else {
+                warn!(name, "wired_local_agent set but LocalAgentHsdDoc not ready");
+                continue;
+            };
+            // Create a fresh root node in the agent doc for this script.
+            let tree = ad
+                .doc
+                .get_map("hsd")
+                .get_or_create_container("nodes", loro::LoroTree::new())
+                .expect("agent nodes tree");
+            let node_id = tree
+                .create(TreeParentId::Root)
+                .expect("create script root node");
+            ad.doc.commit();
+            (
+                Arc::clone(&ad.doc),
+                node_id,
+                Some(Arc::clone(&ad.bone_nodes)),
+            )
+        } else {
+            let Ok(overlay) = overlays.get(source.doc_entity) else {
+                warn!("HSD overlay not found for script");
+                continue;
+            };
+            let Ok(self_node_id) = loro::TreeID::try_from(source.tree_id.as_str()) else {
+                warn!("invalid tree id: {}", source.tree_id);
+                continue;
+            };
+            (Arc::clone(&overlay.0), self_node_id, None)
+        };
+
+        let rt = RuntimeData::new(
+            actor.clone(),
+            blobs.clone(),
+            doc,
+            self_node_id,
+            agent_bone_nodes,
+        );
         let state = StoreState::new(wasi_ctx, rt);
 
         let mut store = Store::new(&engine.0, state);

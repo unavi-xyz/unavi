@@ -22,8 +22,6 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        println!("initializing vscreen");
-
         let _doc = self_document();
         let _base = Cylinder::new(0.2, 0.02);
 

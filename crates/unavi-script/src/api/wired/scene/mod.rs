@@ -10,10 +10,10 @@ use std::sync::Arc;
 use loro::{LoroDoc, LoroList, LoroMap, LoroTree, TreeID};
 use wasmtime_wasi::ResourceTable;
 
-mod document;
+pub mod document;
 mod material;
 mod mesh;
-mod node;
+pub mod node;
 
 pub mod bindings {
     wasmtime::component::bindgen!({

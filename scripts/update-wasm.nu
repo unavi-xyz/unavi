@@ -22,7 +22,7 @@ for dir in (ls $wasm_src | where type == "dir") {
 
   if ("wit/deps.toml" | path exists) {
     print $"→ Updating (basename $dir.name)"
-    rm -r "wit/deps";
+    try { rm -r "wit/deps" };
     wit-deps update;
   }
 

@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use wasmtime::Config;
 
+pub mod agent;
 mod api;
 mod asset;
 pub mod load;

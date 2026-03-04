@@ -1,26 +1,20 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use bevy_vrm::BoneName;
-use loro::TreeID;
 use wasmtime::component::{Resource, ResourceTable};
 
-use crate::api::wired::scene::{document::HostDocument, node::HostNode};
+use crate::{
+    agent::AgentDocEntry,
+    api::wired::scene::{document::HostDocument, node::HostNode},
+};
 
+#[derive(Default)]
 pub struct WiredAgentRt {
-    pub bone_nodes: Arc<HashMap<BoneName, TreeID>>,
+    pub local_agent: Option<Arc<AgentDocEntry>>,
     pub table: ResourceTable,
 }
 
-impl Default for WiredAgentRt {
-    fn default() -> Self {
-        Self {
-            bone_nodes: Arc::new(HashMap::new()),
-            table: ResourceTable::default(),
-        }
-    }
-}
-
-pub struct HostAgent;
+pub struct HostAgent(pub Arc<AgentDocEntry>);
 
 pub mod bindings {
     wasmtime::component::bindgen!({
@@ -102,7 +96,10 @@ use crate::load::state::RuntimeData;
 
 impl bindings::wired::agent::context::Host for RuntimeData {
     async fn local_agent(&mut self) -> wasmtime::Result<Resource<HostAgent>> {
-        Ok(self.wired_agent.table.push(HostAgent)?)
+        let Some(entry) = self.wired_agent.local_agent.clone() else {
+            return Err(anyhow::anyhow!("no local agent available"));
+        };
+        Ok(self.wired_agent.table.push(HostAgent(entry))?)
     }
 }
 
@@ -118,11 +115,15 @@ impl bindings::wired::agent::types::HostAgent for RuntimeData {
 
     async fn bone(
         &mut self,
-        _self_: Resource<HostAgent>,
+        self_: Resource<HostAgent>,
         name: bindings::wired::agent::types::BoneName,
     ) -> wasmtime::Result<Option<Resource<HostNode>>> {
         let vrm_bone = wit_bone_to_vrm(name);
-        let Some(&tree_id) = self.wired_agent.bone_nodes.get(&vrm_bone) else {
+        let tree_id = {
+            let agent = self.wired_agent.table.get(&self_)?;
+            agent.0.bone_nodes.get(&vrm_bone).copied()
+        };
+        let Some(tree_id) = tree_id else {
             return Ok(None);
         };
         Ok(Some(self.wired_scene.table.push(HostNode { tree_id })?))

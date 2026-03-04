@@ -60,9 +60,17 @@ interface types {
     set-collider: func(value: option<collider>);
     rigid-body: func() -> option<rigid-body-kind>;
     set-rigid-body: func(value: option<rigid-body-kind>);
+
+    /// Persist local state to the HSD document.
+    /// Requires `hsd-write` permission; traps otherwise.
+    commit: func();
   }
 
   resource material {
+    /// Persist local state to the HSD document.
+    /// Requires `hsd-write` permission; traps otherwise.
+    commit: func();
+
     name: func() -> option<string>;
     set-name: func(value: option<string>);
 
@@ -90,6 +98,10 @@ interface types {
   }
 
   resource mesh {
+    /// Persist local state to the HSD document.
+    /// Requires `hsd-write` permission; traps otherwise.
+    commit: func();
+
     name: func() -> option<string>;
     set-name: func(value: option<string>);
 

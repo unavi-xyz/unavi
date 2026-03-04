@@ -54,28 +54,6 @@ pub(super) fn spawn_node_entity(
     ent.id()
 }
 
-pub(super) fn spawn_node_from_overlay(
-    doc_ent: Entity,
-    tree_id: &str,
-    hsd_map: &LoroMap,
-    commands: &mut Commands,
-) -> Option<Entity> {
-    let tree = hsd_map
-        .get_or_create_container("nodes", loro::LoroTree::new())
-        .ok()?;
-    let tid = loro::TreeID::try_from(tree_id).ok()?;
-    let meta = tree.get_meta(tid).ok()?;
-    let meta_value = meta.get_deep_value();
-    let data = HsdNodeData::hydrate(&meta_value).ok()?;
-
-    let node = HsdNode {
-        tree_id: tree_id.to_string(),
-        parent_tree_id: None,
-        data,
-    };
-    Some(spawn_node_entity(doc_ent, &node, commands))
-}
-
 pub(super) fn update_node_components(
     ent: Entity,
     tree_id: &str,

@@ -1,116 +1,46 @@
-use bytes::Bytes;
-use loro::{LoroMap, LoroValue, ValueOrContainer};
+use std::sync::Arc;
+
+use bevy::mesh::PrimitiveTopology;
+use bevy_hsd::{MeshInner, SceneEvent};
 use wasmtime::component::Resource;
 
-use super::bindings::wired::scene::types::{Indices, Mesh, PrimitiveTopology};
+use super::bindings::wired::scene::types::{Indices, Mesh, PrimitiveTopology as WitTopology};
 use crate::api::wired::scene::WiredSceneRt;
 
 pub struct HostMesh {
-    pub index: usize,
+    pub inner: Arc<MeshInner>,
 }
 
-// Upload f32 values as a blob; store null if vals is None.
-async fn write_attr(
-    actor: &wds::actor::Actor,
-    attrs: &LoroMap,
-    key: &str,
-    vals: Option<Vec<f32>>,
-) -> wasmtime::Result<()> {
-    match vals {
-        None => attrs
-            .insert(key, LoroValue::Null)
-            .map_err(|e| anyhow::anyhow!("{e}")),
-        Some(v) => {
-            let bytes: Vec<u8> = v.iter().flat_map(|f| f.to_le_bytes()).collect();
-            let hash = actor
-                .upload_blob(Bytes::from(bytes))
-                .await
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
-            attrs
-                .insert(key, hash.as_bytes().to_vec())
-                .map_err(|e| anyhow::anyhow!("{e}"))
-        }
+const fn wit_topo_to_bevy(t: WitTopology) -> PrimitiveTopology {
+    match t {
+        WitTopology::PointList => PrimitiveTopology::PointList,
+        WitTopology::LineList => PrimitiveTopology::LineList,
+        WitTopology::LineStrip => PrimitiveTopology::LineStrip,
+        WitTopology::TriangleList => PrimitiveTopology::TriangleList,
+        WitTopology::TriangleStrip => PrimitiveTopology::TriangleStrip,
     }
 }
 
-// Fetch blob by hash; deserialize as f32 slice.
-async fn read_attr(
-    blobs: &wds::Blobs,
-    attrs: &LoroMap,
-    key: &str,
-) -> wasmtime::Result<Option<Vec<f32>>> {
-    let Some(ValueOrContainer::Value(LoroValue::Binary(hash_bytes))) = attrs.get(key) else {
-        return Ok(None);
-    };
-    let arr: [u8; 32] = hash_bytes[..]
-        .try_into()
-        .map_err(|_| anyhow::anyhow!("invalid hash length"))?;
-    let bytes = blobs
-        .get_bytes(blake3::Hash::from_bytes(arr))
-        .await
-        .map_err(|e| anyhow::anyhow!("{e}"))?;
-    let chunks = bytes.chunks_exact(4);
-    if !chunks.remainder().is_empty() {
-        return Ok(None);
+const fn bevy_topo_to_wit(t: PrimitiveTopology) -> WitTopology {
+    match t {
+        PrimitiveTopology::PointList => WitTopology::PointList,
+        PrimitiveTopology::LineList => WitTopology::LineList,
+        PrimitiveTopology::LineStrip => WitTopology::LineStrip,
+        PrimitiveTopology::TriangleList => WitTopology::TriangleList,
+        PrimitiveTopology::TriangleStrip => WitTopology::TriangleStrip,
     }
-    Ok(Some(
-        chunks
-            .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
-            .collect(),
-    ))
 }
 
 impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
-    async fn name(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<String>> {
-        let index = self.table.get(&self_)?.index;
-        let map = self.mesh_map(index)?;
-        let name = match map.get("name") {
-            Some(ValueOrContainer::Value(LoroValue::String(s))) => Some(s.to_string()),
-            _ => None,
-        };
-        Ok(name)
-    }
-
-    async fn set_name(
-        &mut self,
-        self_: Resource<Mesh>,
-        value: Option<String>,
-    ) -> wasmtime::Result<()> {
-        let index = self.table.get(&self_)?.index;
-        let map = self.mesh_map(index)?;
-        value
-            .map_or_else(
-                || map.insert("name", LoroValue::Null),
-                |s| map.insert("name", s.as_str()),
-            )
-            .map_err(|e| anyhow::anyhow!("{e}"))
-    }
-
-    async fn topology(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<PrimitiveTopology> {
-        let index = self.table.get(&self_)?.index;
-        let map = self.mesh_map(index)?;
-        let topo = match map.get("topology") {
-            Some(ValueOrContainer::Value(LoroValue::I64(i))) => i,
-            _ => 3, // default: TriangleList
-        };
-        let result = match topo {
-            0 => PrimitiveTopology::PointList,
-            1 => PrimitiveTopology::LineList,
-            2 => PrimitiveTopology::LineStrip,
-            4 => PrimitiveTopology::TriangleStrip,
-            _ => PrimitiveTopology::TriangleList,
-        };
-        Ok(result)
-    }
-
-    async fn set_topology(
-        &mut self,
-        self_: Resource<Mesh>,
-        value: PrimitiveTopology,
-    ) -> wasmtime::Result<()> {
-        let index = self.table.get(&self_)?.index;
-        let map = self.mesh_map(index)?;
-        let topo: i64 = match value {
+    async fn commit(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<()> {
+        // TODO verify mesh doc has write perms
+        // if !self.perms.hsd {
+        //     return Err(anyhow::anyhow!("hsd_write permission required for commit"));
+        // }
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        let state = inner.state.lock().expect("mesh state lock");
+        let map = self.mesh_map(inner.index)?;
+        let topo: i64 = match state.topology {
             PrimitiveTopology::PointList => 0,
             PrimitiveTopology::LineList => 1,
             PrimitiveTopology::LineStrip => 2,
@@ -118,32 +48,56 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
             PrimitiveTopology::TriangleStrip => 4,
         };
         map.insert("topology", topo)
-            .map_err(|e| anyhow::anyhow!("{e}"))
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+        if let Some(name) = &state.name {
+            map.insert("name", name.as_str())
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+        }
+        drop(state);
+        self.doc.commit();
+        self.doc.compact_change_store();
+        self.doc.free_history_cache();
+        Ok(())
+    }
+
+    async fn name(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<String>> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        let state = inner.state.lock().expect("mesh state lock");
+        Ok(state.name.clone())
+    }
+
+    async fn set_name(
+        &mut self,
+        self_: Resource<Mesh>,
+        value: Option<String>,
+    ) -> wasmtime::Result<()> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        inner.state.lock().expect("mesh state lock").name = value;
+        self.push_event(SceneEvent::MeshDirty(inner));
+        Ok(())
+    }
+
+    async fn topology(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<WitTopology> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        let state = inner.state.lock().expect("mesh state lock");
+        Ok(bevy_topo_to_wit(state.topology))
+    }
+
+    async fn set_topology(
+        &mut self,
+        self_: Resource<Mesh>,
+        value: WitTopology,
+    ) -> wasmtime::Result<()> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        inner.state.lock().expect("mesh state lock").topology = wit_topo_to_bevy(value);
+        self.push_event(SceneEvent::MeshDirty(inner));
+        Ok(())
     }
 
     async fn indices(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<Indices>> {
-        let index = self.table.get(&self_)?.index;
-        let map = self.mesh_map(index)?;
-        let Some(ValueOrContainer::Value(LoroValue::Binary(hash_bytes))) = map.get("indices")
-        else {
-            return Ok(None);
-        };
-        let arr: [u8; 32] = hash_bytes[..]
-            .try_into()
-            .map_err(|_| anyhow::anyhow!("invalid hash length"))?;
-        let blobs = self
-            .blobs
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        let bytes = blobs
-            .get_bytes(blake3::Hash::from_bytes(arr))
-            .await
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
-        let values: Vec<u32> = bytes
-            .chunks_exact(4)
-            .map(|c| u32::from_le_bytes([c[0], c[1], c[2], c[3]]))
-            .collect();
-        Ok(Some(Indices::Full(values)))
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        let state = inner.state.lock().expect("mesh state lock");
+        Ok(state.indices.clone().map(Indices::Full))
     }
 
     async fn set_indices(
@@ -151,45 +105,21 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         self_: Resource<Mesh>,
         value: Option<Indices>,
     ) -> wasmtime::Result<()> {
-        let index = self.table.get(&self_)?.index;
-        let map = self.mesh_map(index)?;
-        let actor = self
-            .actor
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        match value {
-            None => map
-                .insert("indices", LoroValue::Null)
-                .map_err(|e| anyhow::anyhow!("{e}")),
-            Some(Indices::Half(v)) => {
-                let bytes: Vec<u8> = v.iter().flat_map(|&x| u32::from(x).to_le_bytes()).collect();
-                let hash = actor
-                    .upload_blob(Bytes::from(bytes))
-                    .await
-                    .map_err(|e| anyhow::anyhow!("{e}"))?;
-                map.insert("indices", hash.as_bytes().to_vec())
-                    .map_err(|e| anyhow::anyhow!("{e}"))
-            }
-            Some(Indices::Full(v)) => {
-                let bytes: Vec<u8> = v.iter().flat_map(|i| i.to_le_bytes()).collect();
-                let hash = actor
-                    .upload_blob(Bytes::from(bytes))
-                    .await
-                    .map_err(|e| anyhow::anyhow!("{e}"))?;
-                map.insert("indices", hash.as_bytes().to_vec())
-                    .map_err(|e| anyhow::anyhow!("{e}"))
-            }
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        {
+            let mut state = inner.state.lock().expect("mesh state lock");
+            state.indices = value.map(|v| match v {
+                Indices::Half(h) => h.into_iter().map(u32::from).collect(),
+                Indices::Full(f) => f,
+            });
         }
+        self.push_event(SceneEvent::MeshDirty(inner));
+        Ok(())
     }
 
     async fn colors(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<Vec<f32>>> {
-        let index = self.table.get(&self_)?.index;
-        let attrs = self.mesh_attrs(index)?;
-        let blobs = self
-            .blobs
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        read_attr(&blobs, &attrs, "COLOR").await
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner.state.lock().expect("mesh state lock").colors.clone())
     }
 
     async fn set_colors(
@@ -197,23 +127,15 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         self_: Resource<Mesh>,
         values: Option<Vec<f32>>,
     ) -> wasmtime::Result<()> {
-        let index = self.table.get(&self_)?.index;
-        let attrs = self.mesh_attrs(index)?;
-        let actor = self
-            .actor
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        write_attr(&actor, &attrs, "COLOR", values).await
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        inner.state.lock().expect("mesh state lock").colors = values;
+        self.push_event(SceneEvent::MeshDirty(inner));
+        Ok(())
     }
 
     async fn normals(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<Vec<f32>>> {
-        let index = self.table.get(&self_)?.index;
-        let attrs = self.mesh_attrs(index)?;
-        let blobs = self
-            .blobs
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        read_attr(&blobs, &attrs, "NORMAL").await
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner.state.lock().expect("mesh state lock").normals.clone())
     }
 
     async fn set_normals(
@@ -221,23 +143,20 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         self_: Resource<Mesh>,
         values: Option<Vec<f32>>,
     ) -> wasmtime::Result<()> {
-        let index = self.table.get(&self_)?.index;
-        let attrs = self.mesh_attrs(index)?;
-        let actor = self
-            .actor
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        write_attr(&actor, &attrs, "NORMAL", values).await
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        inner.state.lock().expect("mesh state lock").normals = values;
+        self.push_event(SceneEvent::MeshDirty(inner));
+        Ok(())
     }
 
     async fn positions(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<Vec<f32>>> {
-        let index = self.table.get(&self_)?.index;
-        let attrs = self.mesh_attrs(index)?;
-        let blobs = self
-            .blobs
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        read_attr(&blobs, &attrs, "POSITION").await
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner
+            .state
+            .lock()
+            .expect("mesh state lock")
+            .positions
+            .clone())
     }
 
     async fn set_positions(
@@ -245,23 +164,20 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         self_: Resource<Mesh>,
         values: Option<Vec<f32>>,
     ) -> wasmtime::Result<()> {
-        let index = self.table.get(&self_)?.index;
-        let attrs = self.mesh_attrs(index)?;
-        let actor = self
-            .actor
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        write_attr(&actor, &attrs, "POSITION", values).await
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        inner.state.lock().expect("mesh state lock").positions = values;
+        self.push_event(SceneEvent::MeshDirty(inner));
+        Ok(())
     }
 
     async fn tangents(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<Vec<f32>>> {
-        let index = self.table.get(&self_)?.index;
-        let attrs = self.mesh_attrs(index)?;
-        let blobs = self
-            .blobs
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        read_attr(&blobs, &attrs, "TANGENT").await
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner
+            .state
+            .lock()
+            .expect("mesh state lock")
+            .tangents
+            .clone())
     }
 
     async fn set_tangents(
@@ -269,23 +185,15 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         self_: Resource<Mesh>,
         values: Option<Vec<f32>>,
     ) -> wasmtime::Result<()> {
-        let index = self.table.get(&self_)?.index;
-        let attrs = self.mesh_attrs(index)?;
-        let actor = self
-            .actor
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        write_attr(&actor, &attrs, "TANGENT", values).await
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        inner.state.lock().expect("mesh state lock").tangents = values;
+        self.push_event(SceneEvent::MeshDirty(inner));
+        Ok(())
     }
 
     async fn uv0(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<Vec<f32>>> {
-        let index = self.table.get(&self_)?.index;
-        let attrs = self.mesh_attrs(index)?;
-        let blobs = self
-            .blobs
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        read_attr(&blobs, &attrs, "UV_0").await
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner.state.lock().expect("mesh state lock").uv0.clone())
     }
 
     async fn set_uv0(
@@ -293,23 +201,15 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         self_: Resource<Mesh>,
         values: Option<Vec<f32>>,
     ) -> wasmtime::Result<()> {
-        let index = self.table.get(&self_)?.index;
-        let attrs = self.mesh_attrs(index)?;
-        let actor = self
-            .actor
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        write_attr(&actor, &attrs, "UV_0", values).await
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        inner.state.lock().expect("mesh state lock").uv0 = values;
+        self.push_event(SceneEvent::MeshDirty(inner));
+        Ok(())
     }
 
     async fn uv1(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<Vec<f32>>> {
-        let index = self.table.get(&self_)?.index;
-        let attrs = self.mesh_attrs(index)?;
-        let blobs = self
-            .blobs
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        read_attr(&blobs, &attrs, "UV_1").await
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner.state.lock().expect("mesh state lock").uv1.clone())
     }
 
     async fn set_uv1(
@@ -317,13 +217,10 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         self_: Resource<Mesh>,
         values: Option<Vec<f32>>,
     ) -> wasmtime::Result<()> {
-        let index = self.table.get(&self_)?.index;
-        let attrs = self.mesh_attrs(index)?;
-        let actor = self
-            .actor
-            .clone()
-            .ok_or_else(|| anyhow::anyhow!("no wds"))?;
-        write_attr(&actor, &attrs, "UV_1", values).await
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        inner.state.lock().expect("mesh state lock").uv1 = values;
+        self.push_event(SceneEvent::MeshDirty(inner));
+        Ok(())
     }
 
     async fn drop(&mut self, rep: Resource<Mesh>) -> wasmtime::Result<()> {

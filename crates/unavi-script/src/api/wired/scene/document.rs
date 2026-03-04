@@ -1,3 +1,8 @@
+use std::sync::{Arc, Mutex};
+
+use bevy_hsd::{
+    MaterialInner, MaterialState, MeshInner, MeshState, NodeInner, NodeState, SceneEvent,
+};
 use loro::{LoroMap, LoroValue, TreeParentId};
 use wasmtime::component::Resource;
 
@@ -13,6 +18,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         _self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<Material>> {
+        // Create Loro entry to get stable index.
         let list = self.material_list()?;
         let index = list.len();
         let map: LoroMap = list
@@ -20,13 +26,27 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             .map_err(|e| anyhow::anyhow!("push material: {e}"))?;
         map.insert("base_color", LoroValue::Null)
             .map_err(|e| anyhow::anyhow!("{e}"))?;
-        Ok(self.table.push(HostMaterial { index })?)
+
+        // Create cache entry.
+        let inner = Arc::new(MaterialInner {
+            index,
+            state: Mutex::new(MaterialState::default()),
+            entity: Mutex::new(None),
+        });
+        {
+            let mut mats = self.registry.materials.lock().expect("materials lock");
+            mats.push(Arc::clone(&inner));
+        }
+        self.push_event(SceneEvent::MaterialCreated(Arc::clone(&inner)));
+
+        Ok(self.table.push(HostMaterial { inner })?)
     }
 
     async fn create_mesh(
         &mut self,
         _self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<Mesh>> {
+        // Create Loro entry to get stable index.
         let list = self.mesh_list()?;
         let index = list.len();
         let map: LoroMap = list
@@ -34,29 +54,74 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             .map_err(|e| anyhow::anyhow!("push mesh: {e}"))?;
         map.insert("topology", 3i64)
             .map_err(|e| anyhow::anyhow!("{e}"))?;
-        Ok(self.table.push(HostMesh { index })?)
+
+        // Create cache entry.
+        let inner = Arc::new(MeshInner {
+            index,
+            state: Mutex::new(MeshState::default()),
+            entity: Mutex::new(None),
+        });
+        {
+            let mut meshes = self.registry.meshes.lock().expect("meshes lock");
+            meshes.push(Arc::clone(&inner));
+        }
+        self.push_event(SceneEvent::MeshCreated(Arc::clone(&inner)));
+
+        Ok(self.table.push(HostMesh { inner })?)
     }
 
     async fn create_node(
         &mut self,
         _self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<HostNode>> {
+        // Create Loro tree node to get stable TreeID.
         let tree_id = self
             .node_tree()?
             .create(TreeParentId::Root)
             .map_err(|e| anyhow::anyhow!("create node: {e}"))?;
-        Ok(self.table.push(HostNode { tree_id })?)
+
+        // Create cache entry.
+        let inner = Arc::new(NodeInner {
+            tree_id,
+            state: Mutex::new(NodeState::default()),
+            entity: Mutex::new(None),
+        });
+        self.registry
+            .nodes
+            .lock()
+            .expect("nodes lock")
+            .push(Arc::clone(&inner));
+        self.registry
+            .node_map
+            .lock()
+            .expect("node_map lock")
+            .insert(tree_id, Arc::clone(&inner));
+        self.push_event(SceneEvent::NodeCreated(Arc::clone(&inner)));
+
+        Ok(self.table.push(HostNode { inner })?)
     }
 
     async fn roots(
         &mut self,
         _self_: Resource<Document>,
     ) -> wasmtime::Result<Vec<Resource<HostNode>>> {
-        let tree = self.node_tree()?;
-        let root_ids = tree.children(TreeParentId::Root).unwrap_or_default();
-        let mut out = Vec::with_capacity(root_ids.len());
-        for tree_id in root_ids {
-            out.push(self.table.push(HostNode { tree_id })?);
+        let nodes: Vec<Arc<NodeInner>> = {
+            let all = self.registry.nodes.lock().expect("nodes lock");
+            all.iter()
+                .filter(|n| {
+                    n.state
+                        .lock()
+                        .expect("node state lock")
+                        .parent
+                        .as_ref()
+                        .is_none_or(|w| w.upgrade().is_none())
+                })
+                .cloned()
+                .collect()
+        };
+        let mut out = Vec::with_capacity(nodes.len());
+        for inner in nodes {
+            out.push(self.table.push(HostNode { inner })?);
         }
         Ok(out)
     }

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{CompiledMaterial, CompiledMesh, HsdChild, HsdEntityMap, MaterialRef, MeshRef};
+use crate::{CompiledMaterial, CompiledMesh, HsdChild, MaterialRef, MeshRef, cache::SceneRegistry};
 
 pub mod collider;
 pub mod material;
@@ -13,7 +13,7 @@ pub fn compile_nodes(
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     nodes: Query<(Entity, &HsdChild, Option<&MeshRef>, Option<&MaterialRef>), Without<Mesh3d>>,
-    entity_maps: Query<&HsdEntityMap>,
+    registries: Query<&SceneRegistry>,
     compiled_meshes: Query<&CompiledMesh>,
     compiled_mats: Query<&CompiledMaterial>,
     mut default_material: Local<Option<Handle<StandardMaterial>>>,
@@ -23,11 +23,17 @@ pub fn compile_nodes(
             continue;
         };
 
-        let Ok(map) = entity_maps.get(hsd_child.doc) else {
+        let Ok(registry) = registries.get(hsd_child.doc) else {
             continue;
         };
 
-        let Some(&Some(mesh_ent)) = map.meshes.get(*mesh_idx) else {
+        let mesh_ent = {
+            let meshes = registry.0.meshes.lock().expect("meshes lock");
+            meshes
+                .get(*mesh_idx)
+                .and_then(|inner| *inner.entity.lock().expect("entity lock"))
+        };
+        let Some(mesh_ent) = mesh_ent else {
             continue;
         };
 
@@ -39,8 +45,13 @@ pub fn compile_nodes(
         ent.insert(Mesh3d(compiled_mesh.0.clone()));
 
         // Apply compiled material or default.
-        if let Some(MaterialRef(mat_idx)) = mat_ref
-            && let Some(&Some(mat_ent)) = map.materials.get(*mat_idx)
+        let mat_ent = mat_ref.and_then(|MaterialRef(mat_idx)| {
+            let mats = registry.0.materials.lock().expect("materials lock");
+            mats.get(*mat_idx)
+                .and_then(|inner| *inner.entity.lock().expect("entity lock"))
+        });
+
+        if let Some(mat_ent) = mat_ent
             && let Ok(compiled_mat) = compiled_mats.get(mat_ent)
         {
             ent.insert(MeshMaterial3d(compiled_mat.0.clone()));

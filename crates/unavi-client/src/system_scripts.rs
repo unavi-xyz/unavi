@@ -7,7 +7,8 @@ pub fn spawn_system_scripts(mut commands: Commands) {
     for &path in SYSTEM_SCRIPTS {
         commands.trigger(SpawnLocalScript {
             permissions: ScriptPermissions {
-                wired_player: true,
+                wired_agent: true,
+                wired_local_agent: true,
                 ..Default::default()
             },
             source: ScriptSource::Path(path.to_string()),

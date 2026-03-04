@@ -1,11 +1,13 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
-use bevy_vrm::BoneName;
 use loro::{LoroDoc, TreeID};
 use wasmtime::component::ResourceTable;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
-use crate::api::wired::{agent::WiredAgentRt, scene::WiredSceneRt};
+use crate::{
+    agent::AgentDocEntry,
+    api::wired::{agent::WiredAgentRt, scene::WiredSceneRt},
+};
 
 pub struct StoreState {
     wasi: WasiCtx,
@@ -25,11 +27,11 @@ impl RuntimeData {
         blobs: Option<wds::Blobs>,
         doc: Arc<LoroDoc>,
         self_node_id: TreeID,
-        agent: Option<Arc<HashMap<BoneName, TreeID>>>,
+        agent_entry: Option<Arc<AgentDocEntry>>,
     ) -> Self {
         Self {
             wired_agent: WiredAgentRt {
-                bone_nodes: agent.unwrap_or_else(|| Arc::new(HashMap::new())),
+                local_agent: agent_entry,
                 table: ResourceTable::default(),
             },
             wired_scene: WiredSceneRt {

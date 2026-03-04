@@ -30,4 +30,6 @@ wds.path               = "../wds"
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
+directories.workspace          = true
 tracing-subscriber.workspace   = true
+unavi-avatar.path              = "../unavi-avatar"

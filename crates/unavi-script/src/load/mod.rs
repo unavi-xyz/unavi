@@ -1,11 +1,11 @@
-use std::{sync::Arc, task::Poll};
+use std::{collections::HashMap, sync::Arc, task::Poll};
 
 use anyhow::Context;
 use bevy::prelude::*;
 use bevy_async_task::TaskPool;
-use bevy_hsd::HsdScriptOverlay;
+use bevy_hsd::{HsdDoc, HsdScriptOverlay};
 use log::{ScriptStderr, ScriptStdout};
-use loro::TreeParentId;
+use loro::{LoroTree, TreeParentId};
 use state::{RuntimeData, StoreState};
 use wasmtime::{AsContextMut, Store, component::Linker};
 use wasmtime_wasi::WasiCtxBuilder;
@@ -14,7 +14,7 @@ use bevy_wds::{LocalActor, LocalBlobs};
 
 use crate::{
     ScriptEngine, WasmBinary, WasmEngine,
-    agent::LocalAgentHsdDoc,
+    agent::{AgentDocEntry, AgentHsdDoc, LocalAgentDocs},
     asset::Wasm,
     permissions::ScriptPermissions,
     runtime::{RuntimeCtx, ScriptRuntime},
@@ -68,7 +68,7 @@ pub(crate) fn load_scripts(
     local_blobs: Query<&LocalBlobs>,
     overlays: Query<&HsdScriptOverlay>,
     permissions: Query<Option<&ScriptPermissions>>,
-    agent_doc: Option<Res<LocalAgentHsdDoc>>,
+    agent_docs: Option<Res<LocalAgentDocs>>,
 ) {
     #[cfg(target_family = "wasm")]
     return;
@@ -103,26 +103,51 @@ pub(crate) fn load_scripts(
             .stderr(stderr_stream)
             .build();
 
-        let (doc, self_node_id, agent_bone_nodes) = if perms.wired_local_agent {
-            let Some(ref ad) = agent_doc else {
-                warn!(name, "wired_local_agent set but LocalAgentHsdDoc not ready");
+        let (doc, self_node_id, agent_entry) = if perms.wired_local_agent {
+            let Some(ref ad) = agent_docs else {
+                warn!(name, "wired_local_agent set but LocalAgentDocs not ready");
                 continue;
             };
-            // Create a fresh root node in the agent doc for this script.
-            let tree = ad
-                .doc
-                .get_map("hsd")
-                .get_or_create_container("nodes", loro::LoroTree::new())
-                .expect("agent nodes tree");
-            let node_id = tree
-                .create(TreeParentId::Root)
-                .expect("create script root node");
-            ad.doc.commit();
-            (
-                Arc::clone(&ad.doc),
-                node_id,
-                Some(Arc::clone(&ad.bone_nodes)),
-            )
+
+            // Create a fresh LoroDoc for this script with proxy nodes for all bones.
+            let new_doc = Arc::new(loro::LoroDoc::new());
+            let mut bone_nodes = HashMap::new();
+            {
+                let tree = new_doc
+                    .get_map("hsd")
+                    .get_or_create_container("nodes", LoroTree::new())
+                    .expect("agent nodes tree");
+                for &bone in ad.bone_entities.keys() {
+                    let node_id = tree.create(TreeParentId::Root).expect("bone node");
+                    let meta = tree.get_meta(node_id).expect("meta");
+                    let bone_str = format!("{bone}");
+                    meta.insert("bone_name", bone_str.trim_matches('"'))
+                        .expect("bone_name");
+                    bone_nodes.insert(bone, node_id);
+                }
+                new_doc.commit();
+            }
+
+            let entry = Arc::new(AgentDocEntry {
+                doc: Arc::clone(&new_doc),
+                bone_nodes: Arc::new(bone_nodes),
+            });
+            ad.docs.lock().unwrap().push(Arc::clone(&entry));
+
+            // Spawn HsdDoc so bevy-hsd renders objects scripts create in this doc.
+            commands.spawn((AgentHsdDoc, HsdDoc(Arc::clone(&new_doc))));
+
+            // Fresh root node for the script's "self" node in the agent doc.
+            let self_node_id = {
+                let tree = new_doc
+                    .get_map("hsd")
+                    .get_or_create_container("nodes", LoroTree::new())
+                    .expect("nodes");
+                tree.create(TreeParentId::Root).expect("script root node")
+            };
+            new_doc.commit();
+
+            (new_doc, self_node_id, Some(entry))
         } else {
             let Ok(overlay) = overlays.get(source.doc_entity) else {
                 warn!("HSD overlay not found for script");
@@ -135,13 +160,7 @@ pub(crate) fn load_scripts(
             (Arc::clone(&overlay.0), self_node_id, None)
         };
 
-        let rt = RuntimeData::new(
-            actor.clone(),
-            blobs.clone(),
-            doc,
-            self_node_id,
-            agent_bone_nodes,
-        );
+        let rt = RuntimeData::new(actor.clone(), blobs.clone(), doc, self_node_id, agent_entry);
         let state = StoreState::new(wasi_ctx, rt);
 
         let mut store = Store::new(&engine.0, state);

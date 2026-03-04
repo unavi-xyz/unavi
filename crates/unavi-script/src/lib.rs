@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, transform::TransformSystems};
 use wasmtime::Config;
 
 pub mod agent;
@@ -32,7 +32,16 @@ impl Plugin for ScriptPlugin {
             .register_asset_loader(asset::WasmLoader)
             .init_asset::<asset::Wasm>()
             .add_observer(load::local::on_spawn_local_script)
-            .add_systems(PreUpdate, runtime::increment_epochs)
+            .add_systems(
+                PreUpdate,
+                (runtime::increment_epochs, agent::sync_agent_bone_transforms),
+            )
+            .add_systems(
+                PostUpdate,
+                (agent::parent_bone_proxies, agent::reset_bone_proxies)
+                    .chain()
+                    .before(TransformSystems::Propagate),
+            )
             .add_systems(
                 FixedUpdate,
                 (

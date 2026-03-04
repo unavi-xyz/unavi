@@ -1,3 +1,9 @@
+[unavi-shapes]
+path = "../../unavi-shapes/wit"
+sha256 = "626aa2caa1ecc7c07ae276c873cf0ab526417506cc18fd59d30a990609295c25"
+sha512 = "46bbebc46e33ed7aa94dd880161ae2bace69c7785728ad26d0daa37a193bc322e715de4a0b62a6ad5d03e0ec2cf47be598f458a0e6b909ce05c88e4785934e79"
+deps = ["wired-math", "wired-scene", "wired-script"]
+
 [wired-agent]
 path = "../../../protocol/wit/wired-agent"
 sha256 = "cdd3d2ab925a6184c543ba21795778393dd695d7e4d9b157427700a12b91156d"

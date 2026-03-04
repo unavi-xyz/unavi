@@ -58,12 +58,8 @@ impl GuestScript for Script {
         let t = self.t.get() + 0.04;
         self.t.set(t);
 
-        if let Some(p) = self.cube.parent() {
-            let tr = p.global_transform().translation;
-            println!("parent: {}x {}y {}z", tr.x, tr.y, tr.z);
-        } else {
-            panic!("no parent")
-        }
+        let tr = self.cube.global_transform().translation;
+        println!("{}x {}y {}z", tr.x, tr.y, tr.z);
 
         self.cube.set_translation(Vec3 {
             x: 0.0,

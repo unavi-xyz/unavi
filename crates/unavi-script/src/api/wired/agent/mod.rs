@@ -119,14 +119,18 @@ impl bindings::wired::agent::types::HostAgent for RuntimeData {
         name: bindings::wired::agent::types::BoneName,
     ) -> wasmtime::Result<Option<Resource<HostNode>>> {
         let vrm_bone = wit_bone_to_vrm(name);
-        let tree_id = {
+        let inner = {
             let agent = self.wired_agent.table.get(&self_)?;
-            agent.0.bone_nodes.get(&vrm_bone).copied()
+            let Some(tree_id) = agent.0.bone_nodes.get(&vrm_bone).copied() else {
+                return Ok(None);
+            };
+            let node_map = agent.0.registry.node_map.lock().expect("node_map lock");
+            node_map.get(&tree_id).cloned()
         };
-        let Some(tree_id) = tree_id else {
+        let Some(inner) = inner else {
             return Ok(None);
         };
-        Ok(Some(self.wired_scene.table.push(HostNode { tree_id })?))
+        Ok(Some(self.wired_scene.table.push(HostNode { inner })?))
     }
 
     async fn drop(&mut self, rep: Resource<HostAgent>) -> wasmtime::Result<()> {

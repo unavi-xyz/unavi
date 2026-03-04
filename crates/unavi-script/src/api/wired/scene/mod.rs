@@ -1,14 +1,15 @@
 //! # `wired:scene` API
 //!
-//! Each script is attached to an HSD document.
-//! These APIs interact directly with that underlying Loro document.
-//!
-//! This allows full Read / Write support outside of the Bevy ECS.
+//! Scripts read/write to an in-memory `SceneRegistry` cache.
+//! The HSD Loro document is written only on explicit `commit()`.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
+use bevy_hsd::{SceneEvent, SceneRegistryInner};
 use loro::{LoroDoc, LoroList, LoroMap, LoroTree, TreeID};
 use wasmtime_wasi::ResourceTable;
+
+use crate::permissions::ScriptPermissions;
 
 pub mod document;
 mod material;
@@ -32,9 +33,13 @@ pub mod bindings {
 pub struct WiredSceneRt {
     pub actor: Option<wds::actor::Actor>,
     pub blobs: Option<wds::Blobs>,
+    /// The HSD Loro document (used only by `commit()` and create_* helpers).
     pub doc: Arc<LoroDoc>,
     pub self_node_id: TreeID,
     pub table: ResourceTable,
+    pub registry: Arc<SceneRegistryInner>,
+    pub events: Arc<Mutex<Vec<SceneEvent>>>,
+    pub perms: ScriptPermissions,
 }
 
 impl WiredSceneRt {
@@ -42,7 +47,7 @@ impl WiredSceneRt {
         self.doc.get_map("hsd")
     }
 
-    fn node_tree(&self) -> wasmtime::Result<LoroTree> {
+    pub(super) fn node_tree(&self) -> wasmtime::Result<LoroTree> {
         self.hsd_map()
             .get_or_create_container("nodes", LoroTree::new())
             .map_err(|e| anyhow::anyhow!("node tree: {e}"))
@@ -60,13 +65,7 @@ impl WiredSceneRt {
             .map_err(|e| anyhow::anyhow!("material list: {e}"))
     }
 
-    pub(super) fn mesh_attrs(&self, index: usize) -> wasmtime::Result<LoroMap> {
-        self.mesh_map(index)?
-            .get_or_create_container("attributes", LoroMap::new())
-            .map_err(|e| anyhow::anyhow!("{e}"))
-    }
-
-    fn mesh_map(&self, index: usize) -> wasmtime::Result<LoroMap> {
+    pub(super) fn mesh_map(&self, index: usize) -> wasmtime::Result<LoroMap> {
         let list = self.mesh_list()?;
         match list.get(index) {
             Some(loro::ValueOrContainer::Container(loro::Container::Map(m))) => Ok(m),
@@ -74,7 +73,7 @@ impl WiredSceneRt {
         }
     }
 
-    fn material_map(&self, index: usize) -> wasmtime::Result<LoroMap> {
+    pub(super) fn material_map(&self, index: usize) -> wasmtime::Result<LoroMap> {
         let list = self.material_list()?;
         match list.get(index) {
             Some(loro::ValueOrContainer::Container(loro::Container::Map(m))) => Ok(m),
@@ -82,10 +81,14 @@ impl WiredSceneRt {
         }
     }
 
-    fn node_meta(&self, id: TreeID) -> wasmtime::Result<LoroMap> {
+    pub(super) fn node_meta(&self, id: TreeID) -> wasmtime::Result<LoroMap> {
         self.node_tree()?
             .get_meta(id)
             .map_err(|e| anyhow::anyhow!("node meta: {e}"))
+    }
+
+    pub(super) fn push_event(&self, event: SceneEvent) {
+        self.events.lock().expect("events lock").push(event);
     }
 }
 
@@ -94,10 +97,19 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
         &mut self,
     ) -> wasmtime::Result<wasmtime::component::Resource<bindings::wired::scene::context::Node>>
     {
-        let res = self.table.push(node::HostNode {
-            tree_id: self.self_node_id,
-        })?;
-        Ok(res)
+        let inner = {
+            self.registry
+                .node_map
+                .lock()
+                .expect("node_map lock")
+                .get(&self.self_node_id)
+                .cloned()
+        };
+        if let Some(inner) = inner {
+            let res = self.table.push(node::HostNode { inner })?;
+            return Ok(res);
+        }
+        Err(anyhow::anyhow!("self_node not found in registry"))
     }
 
     async fn self_document(

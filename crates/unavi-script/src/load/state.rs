@@ -1,5 +1,6 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
+use bevy_hsd::{SceneEvent, SceneRegistryInner};
 use loro::{LoroDoc, TreeID};
 use wasmtime::component::ResourceTable;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
@@ -7,6 +8,7 @@ use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 use crate::{
     agent::AgentDocEntry,
     api::wired::{agent::WiredAgentRt, scene::WiredSceneRt},
+    permissions::ScriptPermissions,
 };
 
 pub struct StoreState {
@@ -27,6 +29,9 @@ impl RuntimeData {
         blobs: Option<wds::Blobs>,
         doc: Arc<LoroDoc>,
         self_node_id: TreeID,
+        registry: Arc<SceneRegistryInner>,
+        events: Arc<Mutex<Vec<SceneEvent>>>,
+        perms: ScriptPermissions,
         agent_entry: Option<Arc<AgentDocEntry>>,
     ) -> Self {
         Self {
@@ -40,6 +45,9 @@ impl RuntimeData {
                 doc,
                 self_node_id,
                 table: ResourceTable::default(),
+                registry,
+                events,
+                perms,
             },
         }
     }

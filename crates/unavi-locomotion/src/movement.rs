@@ -3,8 +3,9 @@ use std::f32::consts::FRAC_PI_2;
 use avian3d::prelude::LinearVelocity;
 use bevy::prelude::*;
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
+use unavi_avatar::{AnimationName, AnimationWeights};
 use unavi_input::{
-    actions::{JumpAction, LookAction, MoveAction, SprintAction},
+    actions::{JumpAction, LookAction, MenuAction, MoveAction, SprintAction},
     schminput::{BoolActionValue, Vec2ActionValue},
 };
 use unavi_portal::teleport::PortalTeleport;
@@ -37,7 +38,7 @@ const fn sensitivity() -> f32 {
 }
 
 use crate::{
-    AgentEntities, AgentRig, ControlScheme,
+    AgentEntities, AgentRig, ControlScheme, LocalAgent,
     config::{AgentConfig, XrMode},
     tracking::{TrackedHead, TrackedPose},
 };
@@ -114,6 +115,45 @@ pub fn apply_head_input(
     }
 }
 
+#[derive(Resource, Default)]
+pub struct MenuAnimationState(bool);
+
+pub fn apply_menu_animation(
+    menu_action: Query<&BoolActionValue, With<MenuAction>>,
+    mut animations: Query<(&mut AnimationWeights, &ChildOf)>,
+    local_agent: Query<&AgentEntities, With<LocalAgent>>,
+    mut menu_state: ResMut<MenuAnimationState>,
+    mut prev_state: Local<bool>,
+) {
+    let Ok(AgentEntities { avatar, .. }) = local_agent.single() else {
+        return;
+    };
+
+    let Ok(menu_action) = menu_action.single() else {
+        return;
+    };
+
+    for (mut weights, child_of) in &mut animations {
+        if child_of.parent() != *avatar {
+            continue;
+        }
+
+        let just_pressed = menu_action.any && !*prev_state;
+        *prev_state = menu_action.any;
+
+        if just_pressed {
+            menu_state.0 = !menu_state.0;
+        }
+
+        let menu_weight = if menu_state.0 { 1.0 } else { 0.0 };
+        weights.insert(AnimationName::Menu, menu_weight);
+
+        break;
+    }
+}
+
+const MIN_MENU_MOVEMENT: f32 = 0.1;
+
 /// Applies movement input to the physics controller (all modes).
 pub fn apply_body_input(
     agents: Query<(&AgentEntities, &AgentConfig)>,
@@ -125,6 +165,7 @@ pub fn apply_body_input(
     mut target: ResMut<TargetBodyInput>,
     xr: Res<XrMode>,
     movement_yaw: Res<MovementYaw>,
+    mut menu_state: ResMut<MenuAnimationState>,
 ) {
     for (entities, config) in agents.iter() {
         let Ok(rig_transform) = rigs.get(entities.body) else {
@@ -161,6 +202,10 @@ pub fn apply_body_input(
             dir += dir_l * input.x;
 
             target.0 = target.lerp(dir, S);
+
+            if menu_state.0 && raw.element_sum().abs() > MIN_MENU_MOVEMENT {
+                menu_state.0 = false;
+            }
         }
 
         let is_sprinting = sprint_action

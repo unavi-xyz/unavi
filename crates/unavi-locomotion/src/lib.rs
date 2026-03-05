@@ -57,6 +57,7 @@ impl Plugin for LocomotionPlugin {
             AvatarPlugin,
         ))
         .init_resource::<config::XrMode>()
+        .init_resource::<movement::MenuAnimationState>()
         .init_resource::<movement::MovementYaw>()
         .init_resource::<movement::TargetBodyInput>()
         .init_resource::<movement::TargetHeadInput>()
@@ -87,6 +88,7 @@ impl Plugin for LocomotionPlugin {
                         .run_if(xr_active),
                     movement::apply_head_input.run_if(in_state(CursorGrabState::Locked)),
                     movement::apply_body_input,
+                    movement::apply_menu_animation,
                     xr_movement::update_xr_head_tracking.run_if(xr_active),
                     tracking::sync_tracked_pose_to_transform,
                     bones::apply_head_tracking,
@@ -124,7 +126,6 @@ pub enum ControlScheme {
     Jump(TnuaBuiltinJump),
 }
 
-/// References to agent entity children for efficient lookups.
 #[derive(Component)]
 pub struct AgentEntities {
     pub avatar: Entity,
@@ -133,19 +134,14 @@ pub struct AgentEntities {
     pub tracked_head: Entity,
 }
 
-/// Marker for the local agent entity.
-/// Spawning an entity with `LocalAgent` builds the full agent
-/// hierarchy (body, camera, avatar, tracked head) via lifecycle hook.
 #[derive(Component, Default)]
 #[require(AgentConfig, TrackingSource, Transform, GlobalTransform, Visibility)]
 pub struct LocalAgent;
 
-/// Marker for the physics rig entity.
 #[derive(Component, Default)]
 #[require(Transform, GlobalTransform, Visibility)]
 pub struct AgentRig;
 
-/// Marker for the agent's camera entity.
 #[derive(Component, Default)]
 #[require(Transform, GlobalTransform, Visibility)]
 pub struct AgentCamera;

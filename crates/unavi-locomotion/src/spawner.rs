@@ -84,7 +84,6 @@ pub fn on_local_agent_added(
         ));
     }
 
-    // Avatar (triggers Avatar's on_add hook).
     let mut avatar_cmd = commands.spawn(Avatar);
     if let Some(path) = vrm_path {
         avatar_cmd.insert(path.clone());

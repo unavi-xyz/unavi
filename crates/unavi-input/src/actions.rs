@@ -11,6 +11,9 @@ pub struct LookAction;
 pub struct JumpAction;
 
 #[derive(Component, Clone, Copy)]
+pub struct MenuAction;
+
+#[derive(Component, Clone, Copy)]
 pub struct SprintAction;
 
 #[derive(Component, Clone, Copy)]
@@ -29,6 +32,7 @@ pub struct HandRight;
 pub struct CoreActions {
     pub jump: Entity,
     pub look: Entity,
+    pub menu: Entity,
     pub movement: Entity,
     pub sprint: Entity,
     pub squeeze_left: Entity,
@@ -78,6 +82,15 @@ pub(crate) fn setup_actions(mut cmds: Commands) {
             #[cfg(not(target_family = "wasm"))]
             OxrBindings::new()
                 .bindings(OCULUS_TOUCH_PROFILE, ["/user/hand/right/input/thumbstick"]),
+        ))
+        .id();
+    let menu = cmds
+        .spawn((
+            MenuAction,
+            Action::new("menu", "Menu", core_set),
+            BoolActionValue::new(),
+            GamepadBindings::new().bind(GamepadBinding::new(GamepadBindingSource::West)),
+            KeyboardBindings::new().bind(KeyboardBinding::new(KeyCode::Tab)),
         ))
         .id();
     let jump = cmds
@@ -135,6 +148,7 @@ pub(crate) fn setup_actions(mut cmds: Commands) {
     cmds.insert_resource(CoreActions {
         jump,
         look,
+        menu,
         movement,
         sprint,
         squeeze_left,

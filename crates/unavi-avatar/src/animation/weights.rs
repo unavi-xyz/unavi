@@ -248,25 +248,22 @@ pub fn play_avatar_animations(
             &motion,
         );
 
-        // Custom animations (_Other).
         let mut other_weight = 0.0;
 
-        for (weight, value) in weights.clone().iter() {
-            if matches!(weight, AnimationName::_Other(_)) {
-                other_weight += value;
+        if let Some(value) = weights.get(&AnimationName::Menu) {
+            other_weight += value;
 
-                let mut target_weight = *targets.get(weight).unwrap_or(&0.0);
+            let mut target_weight = *targets.get(&AnimationName::Menu).unwrap_or(&0.0);
 
-                let animation = apply_weight(
-                    weight.clone(),
-                    &mut target_weight,
-                    alpha,
-                    &mut player,
-                    nodes,
-                    &mut weights,
-                );
-                animation.set_speed(0.01);
-            }
+            let animation = apply_weight(
+                AnimationName::Menu,
+                &mut target_weight,
+                alpha,
+                &mut player,
+                nodes,
+                &mut weights,
+            );
+            animation.set_speed(0.01);
         }
 
         // Idle weight from locomotion, reduced by custom animations.

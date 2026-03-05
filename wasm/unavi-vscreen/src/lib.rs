@@ -31,9 +31,8 @@ impl GuestScript for Script {
     }
 
     fn tick(&self) {
-        let delta = self.time.get().elapsed().expect("elapsed").as_secs_f32();
+        let _delta = self.time.get().elapsed().expect("elapsed").as_secs_f32();
         self.time.set(SystemTime::now());
-        println!("<delta> {delta:.4}s");
     }
 
     fn render(&self) {}

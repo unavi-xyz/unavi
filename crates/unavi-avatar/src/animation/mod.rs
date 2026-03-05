@@ -17,11 +17,11 @@ pub enum AnimationName {
     Falling,
     #[default]
     Idle,
+    Menu,
+    Sprint,
     Walk,
     WalkLeft,
     WalkRight,
-    Sprint,
-    _Other(&'static str),
 }
 
 /// Marker to track which animation players have been initialized.

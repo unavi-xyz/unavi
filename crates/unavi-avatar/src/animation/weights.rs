@@ -1,37 +1,17 @@
-//! Animation weight blending for locomotion.
-
 use bevy::{animation::ActiveAnimation, platform::collections::HashMap, prelude::*};
 
-use super::{
-    AnimationName, AnimationPlayerInitialized, AvatarAnimationNodes, velocity::AverageVelocity,
-};
+use super::{AnimationName, AvatarAnimationNodes, velocity::AverageVelocity};
 use crate::{Avatar, Grounded};
 
 #[derive(Component, Clone, Default, Deref, DerefMut)]
 pub struct AnimationWeights(pub HashMap<AnimationName, f32>);
 
-/// Target an animation towards a specific weight.
 #[derive(Component, Clone, Default, Deref, DerefMut)]
 pub struct TargetAnimationWeights(pub HashMap<AnimationName, f32>);
 
-/// Initializes weight tracking on animation players.
-pub fn init_animation_weights(
-    mut commands: Commands,
-    players: Query<Entity, (With<AnimationPlayerInitialized>, Without<AnimationWeights>)>,
-) {
-    for entity in &players {
-        commands.entity(entity).insert((
-            AnimationWeights::default(),
-            TargetAnimationWeights::default(),
-        ));
-    }
-}
-
-// Animation blending constants.
 const BLEND_HALFLIFE_SECS: f32 = 0.1;
 const WEIGHT_THRESHOLD: f32 = 0.02;
 
-// Locomotion blend thresholds (in m/s).
 pub const DEFAULT_WALK_SPEED: f32 = 4.0;
 pub const DEFAULT_SPRINT_MULTI: f32 = 1.75;
 
@@ -73,7 +53,6 @@ fn analyze_motion(velocity: Vec3, transform: &Transform) -> MotionState {
     }
 }
 
-/// Smooth interpolation helper (inverse lerp clamped to 0-1).
 fn inverse_lerp(a: f32, b: f32, v: f32) -> f32 {
     ((v - a) / (b - a)).clamp(0.0, 1.0)
 }
@@ -216,7 +195,7 @@ pub fn play_avatar_animations(
         &ChildOf,
     )>,
 ) {
-    // Exponential blend for snappy ~100ms transitions.
+    // Exponential blend for snappy transitions.
     let alpha = 1.0 - (-time.delta_secs() / BLEND_HALFLIFE_SECS).exp();
 
     for (mut weights, targets, mut player, parent) in &mut animation_players {
@@ -252,7 +231,6 @@ pub fn play_avatar_animations(
 
         if let Some(mut value) = targets.get(&AnimationName::Menu).copied() {
             other_weight += value;
-
             let animation = apply_weight(
                 AnimationName::Menu,
                 &mut value,
@@ -264,7 +242,6 @@ pub fn play_avatar_animations(
             animation.set_speed(0.01);
         }
 
-        // Idle weight from locomotion, reduced by custom animations.
         let mut idle_weight = (loco_weights.idle - other_weight).max(0.0);
 
         apply_weight(

@@ -19,5 +19,6 @@ dist-webgpu/
 dist/
 
 # Other
-.direnv
 *.db
+.direnv
+.envrc

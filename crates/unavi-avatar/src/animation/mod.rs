@@ -3,14 +3,16 @@
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
 
+use crate::animation::{
+    load::AvatarAnimationNodes,
+    weights::{AnimationWeights, TargetAnimationWeights},
+};
+
 pub mod defaults;
 pub mod load;
 mod mixamo;
 pub mod velocity;
 pub mod weights;
-
-pub use load::AvatarAnimationNodes;
-pub use velocity::AverageVelocity;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub enum AnimationName {
@@ -24,11 +26,10 @@ pub enum AnimationName {
     WalkRight,
 }
 
-/// Marker to track which animation players have been initialized.
 #[derive(Component)]
+#[require(AnimationWeights, TargetAnimationWeights)]
 pub struct AnimationPlayerInitialized;
 
-/// Initializes animation components when [`AnimationPlayer`] is added.
 pub fn init_animation_players(
     mut commands: Commands,
     animation_players: Query<
@@ -48,8 +49,6 @@ pub fn init_animation_players(
     }
 }
 
-/// Returns a unique mask group ID (0-54) for each VRM bone.
-/// Used for animation masking to disable animation on tracked bones.
 #[must_use]
 pub const fn bone_mask_group(bone: BoneName) -> u32 {
     match bone {

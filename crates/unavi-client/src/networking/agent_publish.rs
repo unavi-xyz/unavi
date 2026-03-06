@@ -6,7 +6,7 @@ use std::{
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
 use unavi_avatar::AvatarBones;
-use unavi_locomotion::{AgentConfig, AgentEntities, AgentRig, LocalAgent};
+use unavi_agent::{AgentConfig, AgentEntities, AgentRig, LocalAgent};
 
 use crate::networking::{
     publish_utils::{IFRAME_FREQ, PUBLISH_INTERVAL, transform_changed},

@@ -13265,6 +13265,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-agent"
+version = "0.0.16"
+dependencies = [
+ "avian3d",
+ "bevy",
+ "bevy-tnua",
+ "bevy-tnua-avian3d",
+ "bevy_mod_xr",
+ "bevy_vrm",
+ "bevy_xr_utils",
+ "unavi-avatar",
+ "unavi-input",
+ "unavi-portal",
+ "web-sys",
+]
+
+[[package]]
 name = "unavi-assets"
 version = "0.0.16"
 
@@ -13317,10 +13334,10 @@ dependencies = [
  "time",
  "tokio",
  "tracing",
+ "unavi-agent",
  "unavi-assets",
  "unavi-avatar",
  "unavi-input",
- "unavi-locomotion",
  "unavi-portal",
  "unavi-script",
  "unavi-wasm-compat",
@@ -13365,23 +13382,6 @@ dependencies = [
  "toml 0.9.10+spec-1.1.0",
  "tracing",
  "xz2",
-]
-
-[[package]]
-name = "unavi-locomotion"
-version = "0.0.16"
-dependencies = [
- "avian3d",
- "bevy",
- "bevy-tnua",
- "bevy-tnua-avian3d",
- "bevy_mod_xr",
- "bevy_vrm",
- "bevy_xr_utils",
- "unavi-avatar",
- "unavi-input",
- "unavi-portal",
- "web-sys",
 ]
 
 [[package]]

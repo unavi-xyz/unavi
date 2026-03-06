@@ -6,7 +6,7 @@ use std::{
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
 use unavi_avatar::{AvatarBones, AvatarBonesPopulated};
-use unavi_locomotion::{AgentEntities, LocalAgent};
+use unavi_agent::{AgentEntities, LocalAgent};
 use unavi_script::agent::LocalAgentDocs;
 
 pub struct AgentPlugin;

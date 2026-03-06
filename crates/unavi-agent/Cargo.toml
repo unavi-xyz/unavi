@@ -1,7 +1,7 @@
 [package]
 edition.workspace    = true
 license.workspace    = true
-name                 = "unavi-locomotion"
+name                 = "unavi-agent"
 publish              = false
 repository.workspace = true
 version.workspace    = true

@@ -1,4 +1,4 @@
-use std::f32::consts::FRAC_PI_2;
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_6, FRAC_PI_8};
 
 use avian3d::prelude::LinearVelocity;
 use bevy::prelude::*;
@@ -55,6 +55,8 @@ pub struct TargetBodyInput(Vec3);
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct TargetHeadInput(Vec2);
 
+const MENU_YAW_BOUND: f32 = FRAC_PI_2;
+
 pub fn handle_agent_teleport(
     event: On<PortalTeleport>,
     mut target_body: ResMut<TargetBodyInput>,
@@ -82,6 +84,9 @@ pub fn handle_agent_teleport(
     velocity.0 = velocity.rotate_y(-yaw);
 }
 
+#[derive(Resource, Default)]
+pub struct MenuAnimationState(bool);
+
 /// Applies mouse/keyboard input to the tracked head pose (desktop mode).
 pub fn apply_head_input(
     look_action: Query<&Vec2ActionValue, With<LookAction>>,
@@ -89,6 +94,7 @@ pub fn apply_head_input(
     mut rigs: Query<&mut Transform, With<AgentRig>>,
     mut tracked_heads: Query<&mut TrackedPose, With<TrackedHead>>,
     mut target: ResMut<TargetHeadInput>,
+    menu_state: ResMut<MenuAnimationState>,
     time: Res<Time>,
 ) {
     const PITCH_BOUND: f32 = FRAC_PI_2 - 1E-3;
@@ -100,23 +106,38 @@ pub fn apply_head_input(
 
     let delta = time.delta_secs();
     target.0 += action.any * delta * sensitivity();
-    target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
+
+    if menu_state.0 {
+        let menu_pitch_bound_h = PITCH_BOUND - FRAC_PI_6;
+        let menu_pitch_bound_l = -PITCH_BOUND - FRAC_PI_8;
+        target.y = target.y.clamp(menu_pitch_bound_l, menu_pitch_bound_h);
+        target.x = target.x.clamp(-MENU_YAW_BOUND, MENU_YAW_BOUND);
+    } else {
+        target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
+    }
 
     for entities in agents.iter() {
-        if let Ok(mut rig_transform) = rigs.get_mut(entities.body) {
+        // When menu locked, rotate head sideways.
+        // Otherwise, rotate full body.
+        if !menu_state.0
+            && let Ok(mut rig_transform) = rigs.get_mut(entities.body)
+        {
             let yaw = Quat::from_rotation_y(-target.x);
             rig_transform.rotation = rig_transform.rotation.lerp(yaw, S);
         }
 
         if let Ok(mut pose) = tracked_heads.get_mut(entities.tracked_head) {
-            let target_pitch = Quat::from_rotation_x(target.y);
+            let mut target_pitch = Quat::from_rotation_x(target.y);
+
+            if menu_state.0 {
+                let yaw = Quat::from_rotation_y(-target.x);
+                target_pitch += yaw;
+            }
+
             pose.rotation = pose.rotation.lerp(target_pitch, S);
         }
     }
 }
-
-#[derive(Resource, Default)]
-pub struct MenuAnimationState(bool);
 
 pub fn apply_menu_animation(
     menu_action: Query<&BoolActionValue, With<MenuAction>>,

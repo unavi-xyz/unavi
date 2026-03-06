@@ -3,7 +3,7 @@ use std::f32::consts::FRAC_PI_2;
 use avian3d::prelude::LinearVelocity;
 use bevy::prelude::*;
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
-use unavi_avatar::{AnimationName, AnimationWeights};
+use unavi_avatar::{AnimationName, TargetAnimationWeights};
 use unavi_input::{
     actions::{JumpAction, LookAction, MenuAction, MoveAction, SprintAction},
     schminput::{BoolActionValue, Vec2ActionValue},
@@ -120,7 +120,7 @@ pub struct MenuAnimationState(bool);
 
 pub fn apply_menu_animation(
     menu_action: Query<&BoolActionValue, With<MenuAction>>,
-    mut animations: Query<(&mut AnimationWeights, &ChildOf)>,
+    mut animations: Query<(&mut TargetAnimationWeights, &ChildOf)>,
     local_agent: Query<&AgentEntities, With<LocalAgent>>,
     mut menu_state: ResMut<MenuAnimationState>,
     mut prev_state: Local<bool>,

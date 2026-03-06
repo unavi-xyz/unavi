@@ -250,14 +250,12 @@ pub fn play_avatar_animations(
 
         let mut other_weight = 0.0;
 
-        if let Some(value) = weights.get(&AnimationName::Menu) {
+        if let Some(mut value) = targets.get(&AnimationName::Menu).copied() {
             other_weight += value;
-
-            let mut target_weight = *targets.get(&AnimationName::Menu).unwrap_or(&0.0);
 
             let animation = apply_weight(
                 AnimationName::Menu,
-                &mut target_weight,
+                &mut value,
                 alpha,
                 &mut player,
                 nodes,

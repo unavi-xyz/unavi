@@ -1,6 +1,6 @@
 use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_gltf_kun::import::gltf::{animation::RawGltfAnimation, loader::GltfLoaderSettings};
-use unavi_assets::{default_animations_path, default_menu_animation_path};
+use unavi_assets::{default_character_animations_path, default_menu_animation_path};
 
 use super::{
     AnimationName,
@@ -11,44 +11,27 @@ use super::{
 pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimationClips {
     let mut map = HashMap::default();
 
-    let animations_path = default_animations_path();
-    let menu_animation_path = default_menu_animation_path();
-    let gltf = asset_server.load(&animations_path);
-    let menu_gltf = asset_server.load(&menu_animation_path);
+    let path_char = default_character_animations_path();
+    let path_menu = default_menu_animation_path();
 
-    let load_animation = |i: usize| -> AvatarAnimation {
+    let load_animation = |path: &str, i: usize| -> AvatarAnimation {
         let animation = asset_server.load_with_settings::<RawGltfAnimation, GltfLoaderSettings>(
-            format!("{animations_path}#RawAnimation{i}"),
+            format!("{path}#RawAnimation{i}"),
             |settings| {
                 settings.expose_raw_animation_curves = true;
             },
         );
-        AvatarAnimation {
-            gltf: gltf.clone(),
-            animation,
-        }
+        let gltf = asset_server.load(path.to_string());
+        AvatarAnimation { gltf, animation }
     };
 
-    map.insert(AnimationName::Falling, load_animation(0));
-    map.insert(AnimationName::Idle, load_animation(1));
-    map.insert(AnimationName::WalkLeft, load_animation(2));
-    map.insert(AnimationName::WalkRight, load_animation(3));
-    map.insert(AnimationName::Sprint, load_animation(4));
-    map.insert(AnimationName::Walk, load_animation(5));
-
-    let animation = asset_server.load_with_settings::<RawGltfAnimation, GltfLoaderSettings>(
-        format!("{menu_animation_path}#RawAnimation0"),
-        |settings| {
-            settings.expose_raw_animation_curves = true;
-        },
-    );
-    map.insert(
-        AnimationName::Menu,
-        AvatarAnimation {
-            gltf: menu_gltf,
-            animation,
-        },
-    );
+    map.insert(AnimationName::Falling, load_animation(&path_char, 0));
+    map.insert(AnimationName::Idle, load_animation(&path_char, 1));
+    map.insert(AnimationName::WalkLeft, load_animation(&path_char, 2));
+    map.insert(AnimationName::WalkRight, load_animation(&path_char, 3));
+    map.insert(AnimationName::Sprint, load_animation(&path_char, 4));
+    map.insert(AnimationName::Walk, load_animation(&path_char, 5));
+    map.insert(AnimationName::Menu, load_animation(&path_menu, 0));
 
     AvatarAnimationClips(map)
 }

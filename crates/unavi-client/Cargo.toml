@@ -47,10 +47,10 @@ serde.workspace        = true
 smol_str.workspace     = true
 time.workspace         = true
 tracing                = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
+unavi-agent.path       = "../unavi-agent"
 unavi-assets.path      = "../unavi-assets"
 unavi-avatar.path      = "../unavi-avatar"
 unavi-input.path       = "../unavi-input"
-unavi-agent.path       = "../unavi-agent"
 unavi-portal.path      = "../unavi-portal"
 unavi-script.path      = "../unavi-script"
 unavi-wasm-compat.path = "../unavi-wasm-compat"

@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
-/// Calculates the exponential moving average (EMA) of the velocity,
-/// via changes in [`Transform`].
+/// Calculates the moving average of the velocity, via changes in [`Transform`].
 #[derive(Component)]
 pub struct AverageVelocity {
     pub alpha: f32,
@@ -16,7 +15,7 @@ pub struct AverageVelocity {
 impl Default for AverageVelocity {
     fn default() -> Self {
         Self {
-            alpha: 0.4, // Light smoothing, main smoothing in weight blending.
+            alpha: 0.4,
             initialized: false,
             prev_translation: Vec3::default(),
             target: None,
@@ -25,12 +24,7 @@ impl Default for AverageVelocity {
     }
 }
 
-/// Calculates average velocity for entities with [`AverageVelocity`] component.
-///
-/// # Panics
-///
-/// Panics if the velocity target entity does not have a [`Transform`] component.
-pub fn calc_average_velocity(
+pub(crate) fn calc_average_velocity(
     mut velocities: Query<(Entity, &mut AverageVelocity)>,
     time: Res<Time>,
     transforms: Query<&Transform>,

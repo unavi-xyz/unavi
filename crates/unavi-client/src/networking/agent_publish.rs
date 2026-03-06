@@ -5,8 +5,8 @@ use std::{
 
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
-use unavi_avatar::AvatarBones;
 use unavi_agent::{AgentConfig, AgentEntities, AgentRig, LocalAgent};
+use unavi_avatar::bones::AvatarBones;
 
 use crate::networking::{
     publish_utils::{IFRAME_FREQ, PUBLISH_INTERVAL, transform_changed},

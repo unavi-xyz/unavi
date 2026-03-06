@@ -6,7 +6,10 @@ use bevy_tnua::{
 };
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
-use unavi_avatar::{Avatar, AverageVelocity, VrmPath, default_character_animations};
+use unavi_avatar::{
+    Avatar, VrmPath,
+    animation::{defaults::default_character_animations, velocity::AverageVelocity},
+};
 use unavi_input::raycast::PrimaryRaycastInput;
 use unavi_portal::{PortalTraveler, create::PORTAL_RENDER_LAYER};
 

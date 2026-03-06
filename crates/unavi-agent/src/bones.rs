@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
-use unavi_avatar::AvatarBones;
+use unavi_avatar::bones::AvatarBones;
 
 use crate::{
     AgentEntities,

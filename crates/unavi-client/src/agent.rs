@@ -5,8 +5,8 @@ use std::{
 
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
-use unavi_avatar::{AvatarBones, AvatarBonesPopulated};
 use unavi_agent::{AgentEntities, LocalAgent};
+use unavi_avatar::bones::AvatarBones;
 use unavi_script::agent::LocalAgentDocs;
 
 pub struct AgentPlugin;
@@ -22,7 +22,7 @@ impl Plugin for AgentPlugin {
 pub fn init_local_agent_docs(
     mut commands: Commands,
     local_agents: Query<&AgentEntities, With<LocalAgent>>,
-    avatars: Query<&AvatarBones, Added<AvatarBonesPopulated>>,
+    avatars: Query<&AvatarBones, Added<AvatarBones>>,
     existing: Option<Res<LocalAgentDocs>>,
 ) {
     if existing.is_some() {

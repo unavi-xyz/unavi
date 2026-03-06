@@ -12,7 +12,7 @@ use bevy::{
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm::BoneName;
 use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin, util::create_test_wds};
-use unavi_avatar::{Avatar, AvatarBones, AvatarBonesPopulated, AvatarPlugin};
+use unavi_avatar::{Avatar, AvatarPlugin, bones::AvatarBones};
 use unavi_script::{
     ScriptPermissions, ScriptPlugin, SpawnLocalScript, agent::LocalAgentDocs,
     load::local::ScriptSource, permissions::ApiName,
@@ -92,7 +92,7 @@ fn init_scene(mut commands: Commands) {
 /// triggers script load.
 fn init_agent_docs(
     mut commands: Commands,
-    avatars: Query<&AvatarBones, Added<AvatarBonesPopulated>>,
+    avatars: Query<&AvatarBones, Added<AvatarBones>>,
     existing: Option<Res<LocalAgentDocs>>,
 ) {
     if existing.is_some() {

@@ -20,13 +20,7 @@ pub struct AvatarAnimation {
 #[derive(Component, Clone)]
 pub struct AvatarAnimationNodes(pub HashMap<AnimationName, AnimationNodeIndex>);
 
-/// Loads avatar animation nodes from GLTF assets and creates animation graphs.
-///
-/// # Panics
-///
-/// Panics if a mixamo node handle exists in the GLTF but the corresponding
-/// node asset is not found.
-pub fn load_animation_nodes(
+pub(crate) fn load_animation_nodes(
     gltfs: Res<Assets<GltfKun>>,
     mut clips: ResMut<Assets<AnimationClip>>,
     mut commands: Commands,
@@ -126,8 +120,8 @@ pub fn load_animation_nodes(
 
                     let curve = match UnevenSampleAutoCurve::new(samples) {
                         Ok(c) => c,
-                        Err(e) => {
-                            warn!("Failed to retarget {:?}: {e:?}", channel.target_path);
+                        Err(err) => {
+                            warn!("Failed to retarget {:?}: {err:?}", channel.target_path);
                             continue;
                         }
                     };

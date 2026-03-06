@@ -3,7 +3,10 @@ use std::{collections::HashMap, sync::atomic::Ordering};
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
 use iroh::EndpointId;
-use unavi_avatar::{AvatarAnimationNodes, AvatarBones, bone_mask_group};
+use unavi_avatar::{
+    animation::{bone_mask_group, load::AvatarAnimationNodes},
+    bones::AvatarBones,
+};
 
 use crate::networking::{event::AgentInboundState, thread::space::MAX_AGENT_TICKRATE};
 

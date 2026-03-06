@@ -44,10 +44,9 @@ use unavi_input::cursor_lock::CursorGrabState;
 #[cfg(not(target_family = "wasm"))]
 pub use xr_movement::{HmdWorldPose, TurnMode};
 
-/// Main locomotion plugin.
-pub struct LocomotionPlugin;
+pub struct AgentPlugin;
 
-impl Plugin for LocomotionPlugin {
+impl Plugin for AgentPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             #[cfg(not(target_family = "wasm"))]

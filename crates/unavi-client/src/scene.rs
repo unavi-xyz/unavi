@@ -4,7 +4,7 @@ use bevy::{
 };
 use bevy_hsd::NodeId;
 use bevy_vrm::mtoon::MtoonSun;
-use unavi_locomotion::LocalAgent;
+use unavi_agent::LocalAgent;
 
 pub fn spawn_agent(
     new_nodes: Query<(), (With<NodeId>, Added<Mesh3d>)>,

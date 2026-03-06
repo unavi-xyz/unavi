@@ -77,7 +77,7 @@ impl Plugin for UnaviPlugin {
                 .disable::<WebAssetPlugin>();
 
             if self.xr {
-                app.insert_resource(unavi_locomotion::XrMode(true));
+                app.insert_resource(unavi_agent::XrMode(true));
                 app.add_plugins((
                     bevy_mod_openxr::add_xr_plugins(default_plugins),
                     xr::UnaviXrPlugin,
@@ -107,7 +107,7 @@ impl Plugin for UnaviPlugin {
             bevy_wds::WdsPlugin,
             bevy_hsd::HsdPlugin,
             unavi_input::InputPlugin,
-            unavi_locomotion::LocomotionPlugin,
+            unavi_agent::AgentPlugin,
             unavi_script::ScriptPlugin,
             unavi_portal::PortalPlugin,
             networking::NetworkingPlugin {

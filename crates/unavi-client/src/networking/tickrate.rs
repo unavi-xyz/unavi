@@ -1,7 +1,7 @@
 //! Distance-based tickrate adjustment for outbound agent and object data.
 
 use bevy::prelude::*;
-use unavi_locomotion::{AgentEntities, AgentRig, LocalAgent};
+use unavi_agent::{AgentEntities, AgentRig, LocalAgent};
 
 use crate::networking::{
     agent_receive::RemoteAgent,

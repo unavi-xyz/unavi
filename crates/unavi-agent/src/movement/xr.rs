@@ -9,10 +9,10 @@ use bevy_xr_utils::{
 
 use crate::{
     AgentEntities, AgentRig,
+    movement::MovementYaw,
     tracking::{TrackedHead, TrackedPose},
 };
 
-/// HMD world-space pose, updated each frame.
 #[derive(Resource, Default)]
 pub struct HmdWorldPose {
     pub translation: Vec3,
@@ -20,11 +20,17 @@ pub struct HmdWorldPose {
     pub yaw: f32,
 }
 
-/// Snap or smooth turning configuration.
 #[derive(Resource)]
 pub enum TurnMode {
-    Snap { angle: f32, threshold: f32 },
-    Smooth { speed: f32, threshold: f32 },
+    Snap {
+        angle: f32,
+        threshold: f32,
+    },
+    #[expect(unused, reason = "need config option")]
+    Smooth {
+        speed: f32,
+        threshold: f32,
+    },
 }
 
 impl Default for TurnMode {
@@ -40,17 +46,14 @@ impl Default for TurnMode {
 #[derive(Resource, Default)]
 pub struct SnapTurnReady(pub bool);
 
-/// Marker for the `XrTrackedView` entity we spawn.
 #[derive(Component)]
 pub struct HmdTracker;
 
-/// Spawns a single entity that receives HMD pose from
-/// `TrackingUtilitiesPlugin` via `XrTrackedView`.
 pub fn spawn_hmd_tracker(mut commands: Commands) {
     commands.spawn((HmdTracker, XrTrackedView, Transform::default()));
 }
 
-/// Reads HMD root-local transform + `XrTrackingRoot` global
+/// Reads HMD root-local transform + [`XrTrackingRoot`] global
 /// transform to compute world-space HMD pose.
 pub fn update_hmd_world_pose(
     hmd: Query<&Transform, With<HmdTracker>>,
@@ -129,8 +132,8 @@ pub fn apply_xr_turn(
     }
 }
 
-/// Sets `MovementYaw` from HMD yaw for thumbstick-relative movement.
-pub fn update_movement_yaw(pose: Res<HmdWorldPose>, mut yaw: ResMut<super::movement::MovementYaw>) {
+/// Sets [`MovementYaw`] from HMD yaw for thumbstick-relative movement.
+pub fn update_movement_yaw(pose: Res<HmdWorldPose>, mut yaw: ResMut<MovementYaw>) {
     yaw.0 = pose.yaw;
 }
 

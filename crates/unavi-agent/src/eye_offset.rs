@@ -5,15 +5,14 @@ use bevy_vrm::{BoneName, VrmInstanceId, first_person::SetupFirstPerson};
 use unavi_avatar::Avatar;
 
 use crate::{
-    AgentEntities, AgentRig, TrackedPose,
+    AgentEntities, AgentRig,
     config::{AgentConfig, WorldScale},
+    tracking::TrackedPose,
 };
 
-/// Marker to track which avatars have been processed for eye offset.
 #[derive(Component)]
 pub struct EyeOffsetProcessed;
 
-/// Sets up eye offset and tracked head position based on VRM model bones.
 pub fn setup_vrm_eye_offset(
     mut commands: Commands,
     scene_spawner: Res<SceneSpawner>,

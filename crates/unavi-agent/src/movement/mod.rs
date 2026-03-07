@@ -1,47 +1,24 @@
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_6, FRAC_PI_8};
 
-use avian3d::prelude::LinearVelocity;
 use bevy::prelude::*;
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
-use unavi_avatar::animation::{AnimationName, weights::TargetAnimationWeights};
 use unavi_input::{
-    actions::{JumpAction, LookAction, MenuAction, MoveAction, SprintAction},
+    actions::{JumpAction, LookAction, MoveAction, SprintAction},
     schminput::{BoolActionValue, Vec2ActionValue},
 };
-use unavi_portal::teleport::PortalTeleport;
-
-const SENSITIVITY: f32 = 0.08;
-
-#[cfg(target_family = "wasm")]
-fn sensitivity() -> f32 {
-    use std::sync::OnceLock;
-    static IS_FIREFOX: OnceLock<bool> = OnceLock::new();
-
-    let is_firefox = *IS_FIREFOX.get_or_init(|| {
-        web_sys::window()
-            .and_then(|w| w.navigator().user_agent().ok())
-            .is_some_and(|ua| ua.contains("Firefox"))
-    });
-
-    if is_firefox {
-        // Firefox reports different pointer lock deltas, requiring higher sensitivity.
-        SENSITIVITY * 12.0
-    } else {
-        // Other browsers need a lower sensitivity than native.
-        SENSITIVITY * 0.7
-    }
-}
-
-#[cfg(not(target_family = "wasm"))]
-const fn sensitivity() -> f32 {
-    SENSITIVITY
-}
 
 use crate::{
-    AgentEntities, AgentRig, ControlScheme, LocalAgent,
+    AgentEntities, AgentRig, ControlScheme,
     config::{AgentConfig, XrMode},
     tracking::{TrackedHead, TrackedPose},
 };
+
+pub mod grounded;
+pub mod menu;
+mod sensitivity;
+pub mod teleport;
+#[cfg(not(target_family = "wasm"))]
+pub mod xr;
 
 /// Forward yaw for movement direction.
 /// Desktop: unused (reads rig rotation directly).
@@ -54,35 +31,6 @@ pub struct TargetBodyInput(Vec3);
 
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct TargetHeadInput(Vec2);
-
-const MENU_YAW_BOUND: f32 = FRAC_PI_2;
-
-pub fn handle_agent_teleport(
-    event: On<PortalTeleport>,
-    mut target_body: ResMut<TargetBodyInput>,
-    mut target_head: ResMut<TargetHeadInput>,
-    mut agents: Query<&mut LinearVelocity, With<AgentRig>>,
-) {
-    let Ok(mut velocity) = agents.get_mut(event.entity) else {
-        return;
-    };
-
-    // Update target head input.
-    let (mut yaw, pitch, _) = event.delta_rotation.to_euler(EulerRot::YXZ);
-
-    if yaw.is_sign_negative() {
-        yaw -= FRAC_PI_2;
-    } else {
-        yaw += FRAC_PI_2;
-    }
-
-    target_head.0.x += yaw;
-    target_head.0.y += pitch;
-
-    // Update target body input and velocity.
-    target_body.0 = target_body.rotate_y(-yaw);
-    velocity.0 = velocity.rotate_y(-yaw);
-}
 
 #[derive(Resource, Default)]
 pub struct MenuAnimationState(bool);
@@ -105,13 +53,13 @@ pub fn apply_head_input(
     };
 
     let delta = time.delta_secs();
-    target.0 += action.any * delta * sensitivity();
+    target.0 += action.any * delta * sensitivity::sensitivity();
 
     if menu_state.0 {
         let menu_pitch_bound_h = PITCH_BOUND - FRAC_PI_6;
         let menu_pitch_bound_l = -PITCH_BOUND - FRAC_PI_8;
         target.y = target.y.clamp(menu_pitch_bound_l, menu_pitch_bound_h);
-        target.x = target.x.clamp(-MENU_YAW_BOUND, MENU_YAW_BOUND);
+        target.x = target.x.clamp(-menu::MENU_YAW_BOUND, menu::MENU_YAW_BOUND);
     } else {
         target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
     }
@@ -139,41 +87,8 @@ pub fn apply_head_input(
     }
 }
 
-pub fn apply_menu_animation(
-    menu_action: Query<&BoolActionValue, With<MenuAction>>,
-    mut animations: Query<(&mut TargetAnimationWeights, &ChildOf)>,
-    local_agent: Query<&AgentEntities, With<LocalAgent>>,
-    mut menu_state: ResMut<MenuAnimationState>,
-    mut prev_state: Local<bool>,
-) {
-    let Ok(AgentEntities { avatar, .. }) = local_agent.single() else {
-        return;
-    };
-
-    let Ok(menu_action) = menu_action.single() else {
-        return;
-    };
-
-    for (mut weights, child_of) in &mut animations {
-        if child_of.parent() != *avatar {
-            continue;
-        }
-
-        let just_pressed = menu_action.any && !*prev_state;
-        *prev_state = menu_action.any;
-
-        if just_pressed {
-            menu_state.0 = !menu_state.0;
-        }
-
-        let menu_weight = if menu_state.0 { 1.0 } else { 0.0 };
-        weights.insert(AnimationName::Menu, menu_weight);
-
-        break;
-    }
-}
-
-const MIN_MENU_MOVEMENT: f32 = 0.1;
+const MOVE_THRESHOLD: f32 = 0.6; // TODO configurable for stick drift (same for look)
+const S: f32 = 0.2;
 
 /// Applies movement input to the physics controller (all modes).
 pub fn apply_body_input(
@@ -200,9 +115,6 @@ pub fn apply_body_input(
         controller.initiate_action_feeding();
 
         if let Ok(action) = move_action.single() {
-            const MOVE_THRESHOLD: f32 = 0.6; // TODO configurable for stick drift (same for look)
-            const S: f32 = 0.2;
-
             let raw = action.any;
             let input = if raw.length() < MOVE_THRESHOLD {
                 Vec2::ZERO
@@ -224,7 +136,7 @@ pub fn apply_body_input(
 
             target.0 = target.lerp(dir, S);
 
-            if menu_state.0 && raw.element_sum().abs() > MIN_MENU_MOVEMENT {
+            if menu_state.0 && raw.element_sum().abs() > menu::MIN_MENU_MOVEMENT {
                 menu_state.0 = false;
             }
         }

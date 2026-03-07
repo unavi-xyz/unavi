@@ -33,8 +33,7 @@ pub fn on_local_agent_added(
     };
 
     let animations = default_character_animations(&asset_server);
-
-    let camera = spawn_camera(&mut commands, &asset_server, xr_mode.0);
+    let camera = spawn_camera(&mut commands, xr_mode.0);
 
     let body = commands
         .spawn((
@@ -112,11 +111,7 @@ pub fn on_local_agent_added(
     });
 }
 
-fn spawn_camera(
-    commands: &mut Commands,
-    #[allow(unused)] asset_server: &AssetServer,
-    is_xr: bool,
-) -> Entity {
+fn spawn_camera(commands: &mut Commands, is_xr: bool) -> Entity {
     let camera = if is_xr {
         commands.spawn_empty().id()
     } else {

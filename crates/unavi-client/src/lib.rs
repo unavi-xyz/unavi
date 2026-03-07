@@ -77,7 +77,6 @@ impl Plugin for UnaviPlugin {
                 .disable::<WebAssetPlugin>();
 
             if self.xr {
-                app.insert_resource(unavi_agent::XrMode(true));
                 app.add_plugins((
                     bevy_mod_openxr::add_xr_plugins(default_plugins),
                     xr::UnaviXrPlugin,

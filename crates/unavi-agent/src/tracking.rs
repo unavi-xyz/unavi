@@ -1,18 +1,13 @@
 use bevy::prelude::*;
 
-/// Source of tracking data for the agent.
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum TrackingSource {
-    /// Desktop mode: keyboard/mouse input drives animations and head tracking.
     #[default]
     Desktop,
-    /// VR mode: headset and controller tracking drives bone transforms directly.
-    Vr,
-    /// Network mode: bone transforms received from network.
     Network,
+    Xr,
 }
 
-/// A tracked pose (position + rotation) for a body part.
 #[derive(Component, Clone, Copy, Debug, Default)]
 pub struct TrackedPose {
     pub rotation: Quat,
@@ -46,12 +41,10 @@ impl TrackedPose {
     }
 }
 
-/// Marker component for the tracked head entity.
 #[derive(Component, Default)]
 #[require(TrackedPose, Transform)]
 pub struct TrackedHead;
 
-/// Marker component for tracked hands (future use).
 #[derive(Component, Default)]
 #[require(TrackedPose, Transform)]
 pub struct TrackedHand {

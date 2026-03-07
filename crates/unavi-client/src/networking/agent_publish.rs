@@ -5,7 +5,7 @@ use std::{
 
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
-use unavi_agent::{AgentConfig, AgentEntities, AgentRig, LocalAgent};
+use unavi_agent::{AgentEntities, AgentRig, LocalAgent, config::AgentConfig};
 use unavi_avatar::bones::AvatarBones;
 
 use crate::networking::{

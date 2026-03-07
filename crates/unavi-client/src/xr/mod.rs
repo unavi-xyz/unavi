@@ -15,6 +15,7 @@ impl Plugin for UnaviXrPlugin {
             TrackingUtilitiesPlugin,
             TransformUtilitiesPlugin,
         ))
+        .insert_resource(unavi_agent::config::XrMode(true))
         .add_systems(FixedUpdate, set_xr_camera_layers);
     }
 }

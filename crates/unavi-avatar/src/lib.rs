@@ -1,3 +1,6 @@
+//! VRM avatar plugin.
+//! Handles loading avatars and applying animations.
+
 use bevy::prelude::*;
 use bevy_vrm::{VrmInstance, VrmPlugins};
 use unavi_assets::default_avatar_path;
@@ -25,7 +28,7 @@ impl Plugin for AvatarPlugin {
 }
 
 #[derive(Component, Default)]
-#[require(Transform, GlobalTransform, Visibility)]
+#[require(Transform, Visibility)]
 pub struct Avatar;
 
 #[derive(Component, Clone, Deref)]

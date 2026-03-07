@@ -4,19 +4,14 @@ use bevy_tnua::TnuaConfig;
 
 use crate::{AgentEntities, ControlScheme, ControlSchemeConfig};
 
-/// Agent configuration parameters.
 #[derive(Component, Clone, Debug)]
 pub struct AgentConfig {
     /// Real height, headset to ground.
     pub real_height: f32,
-    /// Sprint multiplier.
     pub sprint_multi: f32,
-    /// Walking speed in meters per second.
     pub walk_speed: f32,
     pub jump_height: f32,
-    /// VRM avatar's actual height in meters (measured from bones).
     pub vrm_height: Option<f32>,
-    /// VRM avatar's shoulder width in meters (for capsule radius).
     pub vrm_radius: Option<f32>,
 }
 
@@ -33,7 +28,7 @@ impl Default for AgentConfig {
     }
 }
 
-/// Whether the client is running in XR/VR mode.
+/// Whether the client is running in XR mode.
 #[derive(Resource, Default, Deref)]
 pub struct XrMode(pub bool);
 
@@ -61,25 +56,14 @@ const EXTRA_FLOAT_HEIGHT: f32 = 0.02;
 /// | Adult Male       | 1.70 – 1.78 m |
 /// | Adult Female     | 1.60 – 1.67 m |
 const DEFAULT_HEIGHT: f32 = 1.7;
-const DEFAULT_RADIUS: f32 = 0.5;
+const DEFAULT_RADIUS: f32 = 0.4;
 const DEFAULT_JUMP: f32 = 1.0;
 
 pub const DEFAULT_SPRINT_MULTI: f32 = 1.75;
 pub const DEFAULT_WALK_SPEED: f32 = 4.0;
 
 /// World scale factor resource.
-///
 /// This scales world objects to match agent perception.
-///
-/// # Formula
-/// `WorldScale = real_height / vrm_height`
-///
-/// # Behavior
-/// - If VRM is **taller** than `real_height` → scale < 1.0 → world shrinks →
-///   agent feels taller
-/// - If VRM is **shorter** than `real_height` → scale > 1.0 → world grows →
-///   agent feels shorter
-/// - If VRM matches `real_height` → scale = 1.0 → no adjustment needed
 #[derive(Resource, Default)]
 pub struct WorldScale(pub f32);
 

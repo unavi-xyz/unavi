@@ -34,12 +34,19 @@ pub(super) fn write_f64s(meta: &loro::LoroMap, key: &str, vals: &[f64]) -> wasmt
 }
 
 impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
+    async fn id(
+        &mut self,
+        self_: wasmtime::component::Resource<HostNode>,
+    ) -> wasmtime::Result<String> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner.tree_id.to_string())
+    }
+
     async fn name(&mut self, self_: Resource<HostNode>) -> wasmtime::Result<Option<String>> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         let state = inner.state.lock().expect("node state lock");
         Ok(state.name.clone())
     }
-
     async fn set_name(
         &mut self,
         self_: Resource<HostNode>,
@@ -322,12 +329,15 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         self_: Resource<HostNode>,
     ) -> wasmtime::Result<Option<Resource<Mesh>>> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        let idx = inner.state.lock().expect("node state lock").mesh;
-        let Some(idx) = idx else { return Ok(None) };
+        let state = inner.state.lock().expect("node state lock");
+        let Some(mesh_id) = &state.mesh else {
+            return Ok(None);
+        };
         let mesh_inner: Option<Arc<MeshInner>> = {
             let meshes = self.registry.meshes.lock().expect("meshes lock");
-            meshes.get(idx).cloned()
+            meshes.get(mesh_id).cloned()
         };
+        drop(state);
         let Some(mesh_inner) = mesh_inner else {
             return Ok(None);
         };
@@ -340,13 +350,13 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         value: Option<Resource<Mesh>>,
     ) -> wasmtime::Result<()> {
         let node_inner = Arc::clone(&self.table.get(&self_)?.inner);
-        let idx = match &value {
-            Some(res) => Some(self.table.get(res)?.inner.index),
+        let mesh_id = match &value {
+            Some(res) => Some(self.table.get(res)?.inner.id.clone()),
             None => None,
         };
         {
             let mut state = node_inner.state.lock().expect("node state lock");
-            state.mesh = idx;
+            state.mesh = mesh_id;
         }
         self.push_event(SceneEvent::NodeDirty(node_inner));
         Ok(())
@@ -357,12 +367,15 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         self_: Resource<HostNode>,
     ) -> wasmtime::Result<Option<Resource<Material>>> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        let idx = inner.state.lock().expect("node state lock").material;
-        let Some(idx) = idx else { return Ok(None) };
+        let state = inner.state.lock().expect("node state lock");
+        let Some(mat_id) = &state.material else {
+            return Ok(None);
+        };
         let mat_inner: Option<Arc<MaterialInner>> = {
             let mats = self.registry.materials.lock().expect("materials lock");
-            mats.get(idx).cloned()
+            mats.get(mat_id).cloned()
         };
+        drop(state);
         let Some(mat_inner) = mat_inner else {
             return Ok(None);
         };
@@ -375,13 +388,13 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         value: Option<Resource<Material>>,
     ) -> wasmtime::Result<()> {
         let node_inner = Arc::clone(&self.table.get(&self_)?.inner);
-        let idx = match &value {
-            Some(res) => Some(self.table.get(res)?.inner.index),
+        let mat_id = match &value {
+            Some(res) => Some(self.table.get(res)?.inner.id.clone()),
             None => None,
         };
         {
             let mut state = node_inner.state.lock().expect("node state lock");
-            state.material = idx;
+            state.material = mat_id;
         }
         self.push_event(SceneEvent::NodeDirty(node_inner));
         Ok(())
@@ -513,14 +526,12 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             meta.insert("name", name.as_str())
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
         }
-        #[expect(clippy::cast_possible_wrap)]
-        if let Some(idx) = state.mesh {
-            meta.insert("mesh", idx as i64)
+        if let Some(id) = &state.mesh {
+            meta.insert("mesh", id.to_string())
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
         }
-        #[expect(clippy::cast_possible_wrap)]
-        if let Some(idx) = state.material {
-            meta.insert("material", idx as i64)
+        if let Some(id) = &state.material {
+            meta.insert("material", id.to_string())
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
         }
         drop(state);

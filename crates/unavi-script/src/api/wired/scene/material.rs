@@ -11,11 +11,19 @@ pub struct HostMaterial {
 }
 
 impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
+    async fn id(
+        &mut self,
+        self_: wasmtime::component::Resource<HostMaterial>,
+    ) -> wasmtime::Result<String> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner.id.to_string())
+    }
+
     async fn commit(&mut self, self_: Resource<Material>) -> wasmtime::Result<()> {
         self.check_hsd_write()?;
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         let state = inner.state.lock().expect("material state lock");
-        let map = self.material_map(inner.index)?;
+        let map = self.material_map(&inner.id)?;
 
         let [r, g, b, a] = state.base_color;
         let base_color_list = map

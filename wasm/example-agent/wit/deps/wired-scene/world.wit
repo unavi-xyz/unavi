@@ -32,6 +32,8 @@ interface types {
   }
 
   resource node {
+    id: func() -> string;
+
     name: func() -> option<string>;
     set-name: func(value: option<string>);
 
@@ -72,6 +74,8 @@ interface types {
   }
 
   resource material {
+    id: func() -> string;
+
     name: func() -> option<string>;
     set-name: func(value: option<string>);
 
@@ -106,6 +110,8 @@ interface types {
   }
 
   resource mesh {
+    id: func() -> string;
+
     name: func() -> option<string>;
     set-name: func(value: option<string>);
 

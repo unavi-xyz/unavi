@@ -2,7 +2,7 @@
     id: "hsd/document",
     version: 0,
     layout: Struct({
-        "materials": List(Struct({
+        "materials": Map(Struct({
             "alpha_cutoff": Optional(F64),
             "alpha_mode": Optional(String),
             "base_color": Optional(List(F64)),
@@ -17,7 +17,7 @@
             "occlusion_texture": Optional(BlobId),
             "roughness": Optional(F64),
         })),
-        "meshes": List(Struct({
+        "meshes": Map(Struct({
             "attributes": Map(BlobId),
             "indices": Optional(BlobId),
             "name": Optional(String),
@@ -28,8 +28,8 @@
                 "shape": String,
                 "size": List(F64),
             })),
-            "material": Optional(I64),
-            "mesh": Optional(I64),
+            "material": Optional(String),
+            "mesh": Optional(String),
             "name": Optional(String),
             "rigid_body": Optional(Struct({
                 "angular_damping": Optional(F64),

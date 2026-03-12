@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy::transform::TransformSystems;
 use loro::LoroDoc;
+use smol_str::SmolStr;
 use std::sync::Arc;
 
 pub mod cache;
@@ -13,20 +14,25 @@ pub use cache::{
     SceneEventQueue, SceneRegistry, SceneRegistryInner,
 };
 
+#[derive(Debug)]
 pub enum HsdChange {
-    MaterialAdded,
+    MaterialAdded {
+        id: SmolStr,
+    },
     MaterialChanged {
-        index: usize,
+        id: SmolStr,
     },
     MaterialRemoved {
-        index: usize,
+        id: SmolStr,
     },
-    MeshAdded,
+    MeshAdded {
+        id: SmolStr,
+    },
     MeshChanged {
-        index: usize,
+        id: SmolStr,
     },
     MeshRemoved {
-        index: usize,
+        id: SmolStr,
     },
     NodeAdded {
         tree_id: smol_str::SmolStr,
@@ -87,11 +93,11 @@ pub struct HsdChild {
 }
 
 #[derive(Component, Clone, Debug)]
-pub struct NodeId(pub smol_str::SmolStr);
+pub struct NodeId(pub SmolStr);
 
 /// Stable Loro tree ID on node entities. Format: "counter@peer".
 #[derive(Component, Clone, Debug)]
-pub struct HsdNodeTreeId(pub smol_str::SmolStr);
+pub struct HsdNodeTreeId(pub SmolStr);
 
 /// Script blob hashes on node entities.
 #[derive(Component, Clone, Debug)]
@@ -102,10 +108,10 @@ pub struct HsdScripts(pub Vec<blake3::Hash>);
 pub struct HsdRecordId(pub blake3::Hash);
 
 #[derive(Component)]
-pub struct MeshRef(pub usize);
+pub struct MeshRef(pub SmolStr);
 
 #[derive(Component)]
-pub struct MaterialRef(pub usize);
+pub struct MaterialRef(pub SmolStr);
 
 #[derive(Component)]
 pub struct CompiledMesh(pub Handle<Mesh>);

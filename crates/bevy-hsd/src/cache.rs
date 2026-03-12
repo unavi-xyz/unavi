@@ -6,6 +6,7 @@ use std::{
 use bevy::mesh::PrimitiveTopology;
 use bevy::prelude::*;
 use loro::TreeID;
+use smol_str::SmolStr;
 
 use crate::data::{HsdCollider, HsdRigidBody};
 
@@ -13,8 +14,8 @@ pub struct NodeState {
     pub name: Option<String>,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
-    pub mesh: Option<usize>,
-    pub material: Option<usize>,
+    pub mesh: Option<SmolStr>,
+    pub material: Option<SmolStr>,
     pub collider: Option<HsdCollider>,
     pub rigid_body: Option<HsdRigidBody>,
     pub scripts: Vec<blake3::Hash>,
@@ -77,7 +78,7 @@ impl Default for MeshState {
 pub struct MeshInner {
     pub state: Mutex<MeshState>,
     pub entity: Mutex<Option<Entity>>,
-    pub index: usize,
+    pub id: SmolStr,
 }
 
 pub struct MaterialState {
@@ -103,14 +104,14 @@ impl Default for MaterialState {
 pub struct MaterialInner {
     pub state: Mutex<MaterialState>,
     pub entity: Mutex<Option<Entity>>,
-    pub index: usize,
+    pub id: SmolStr,
 }
 
 pub struct SceneRegistryInner {
     pub nodes: Mutex<Vec<Arc<NodeInner>>>,
     pub node_map: Mutex<HashMap<TreeID, Arc<NodeInner>>>,
-    pub meshes: Mutex<Vec<Arc<MeshInner>>>,
-    pub materials: Mutex<Vec<Arc<MaterialInner>>>,
+    pub meshes: Mutex<HashMap<SmolStr, Arc<MeshInner>>>,
+    pub materials: Mutex<HashMap<SmolStr, Arc<MaterialInner>>>,
 }
 
 impl SceneRegistryInner {
@@ -119,8 +120,8 @@ impl SceneRegistryInner {
         Arc::new(Self {
             nodes: Mutex::new(Vec::new()),
             node_map: Mutex::new(HashMap::new()),
-            meshes: Mutex::new(Vec::new()),
-            materials: Mutex::new(Vec::new()),
+            meshes: Mutex::new(HashMap::new()),
+            materials: Mutex::new(HashMap::new()),
         })
     }
 }
@@ -130,8 +131,8 @@ impl Default for SceneRegistryInner {
         Self {
             nodes: Mutex::new(Vec::new()),
             node_map: Mutex::new(HashMap::new()),
-            meshes: Mutex::new(Vec::new()),
-            materials: Mutex::new(Vec::new()),
+            meshes: Mutex::new(HashMap::new()),
+            materials: Mutex::new(HashMap::new()),
         }
     }
 }

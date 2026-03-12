@@ -33,6 +33,7 @@ impl RuntimeData {
         events: Arc<Mutex<Vec<SceneEvent>>>,
         perms: ScriptPermissions,
         agent_entry: Option<Arc<AgentDocEntry>>,
+        doc_id: blake3::Hash,
     ) -> Self {
         Self {
             wired_agent: WiredAgentRt {
@@ -43,6 +44,7 @@ impl RuntimeData {
                 actor,
                 blobs,
                 doc,
+                doc_id,
                 self_node_id,
                 table: ResourceTable::default(),
                 registry,

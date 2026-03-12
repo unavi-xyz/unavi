@@ -15,7 +15,7 @@ use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin, util::create_test_wds};
 use unavi_avatar::{Avatar, AvatarPlugin, bones::AvatarBones};
 use unavi_script::{
     ScriptPermissions, ScriptPlugin, SpawnLocalScript, agent::LocalAgentDocs,
-    load::local::ScriptSource, permissions::ApiName,
+    load::local::ScriptSource,
 };
 
 /// Copies the VRM from the client's project data dir into the dev assets
@@ -56,7 +56,7 @@ fn main() {
                 ..Default::default()
             })
             .set(LogPlugin {
-                filter: format!("{},loro_internal=off", DEFAULT_FILTER),
+                filter: format!("{DEFAULT_FILTER},loro_internal=off"),
                 ..Default::default()
             }),
         AvatarPlugin,
@@ -108,8 +108,7 @@ fn init_agent_docs(
         docs: Arc::new(Mutex::new(vec![])),
     });
 
-    let mut permissions = ScriptPermissions::default();
-    permissions.api.insert(ApiName::LocalAgent);
+    let permissions = ScriptPermissions::system();
 
     commands.trigger(SpawnLocalScript {
         permissions,

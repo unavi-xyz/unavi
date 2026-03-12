@@ -1,19 +1,20 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use bevy_hsd::HsdDoc;
+use bevy_hsd::{HsdDoc, HsdRecordId};
 use loro::LoroDoc;
 
-use crate::space::SpaceDoc;
+use crate::space::{Space, SpaceDoc};
 
 pub fn spawn_space_hsd(
     mut commands: Commands,
-    to_spawn: Query<(Entity, &SpaceDoc), Without<HsdDoc>>,
+    to_spawn: Query<(Entity, &Space, &SpaceDoc), Without<HsdDoc>>,
 ) {
-    for (ent, doc) in &to_spawn {
+    for (ent, space, doc) in &to_spawn {
         info!(%ent, "Spawning space HSD");
-        commands
-            .entity(ent)
-            .insert(HsdDoc(Arc::new(LoroDoc::clone(&doc.0))));
+        commands.entity(ent).insert((
+            HsdDoc(Arc::new(LoroDoc::clone(&doc.0))),
+            HsdRecordId(space.0),
+        ));
     }
 }

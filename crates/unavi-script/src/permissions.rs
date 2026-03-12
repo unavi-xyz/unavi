@@ -34,3 +34,12 @@ impl Default for ScriptPermissions {
         }
     }
 }
+
+impl ScriptPermissions {
+    #[must_use]
+    pub fn system() -> Self {
+        let mut perms = Self::default();
+        perms.api.insert(ApiName::LocalAgent);
+        perms
+    }
+}

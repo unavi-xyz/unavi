@@ -12,10 +12,7 @@ pub struct HostMaterial {
 
 impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
     async fn commit(&mut self, self_: Resource<Material>) -> wasmtime::Result<()> {
-        // TODO verify mat doc has write perms
-        // if !self.perms.hsd {
-        //     return Err(anyhow::anyhow!("hsd_write permission required for commit"));
-        // }
+        self.check_hsd_write()?;
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         let state = inner.state.lock().expect("material state lock");
         let map = self.material_map(inner.index)?;

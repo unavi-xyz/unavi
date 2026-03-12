@@ -8,16 +8,12 @@ use bevy_hsd::{HsdDoc, HsdNodeTreeId, SceneRegistryInner};
 use bevy_vrm::BoneName;
 use loro::TreeID;
 
-/// Per-script doc + bone-node map + scene registry for one agent-script pair.
 pub struct AgentDocEntry {
     pub doc: Arc<loro::LoroDoc>,
-    /// Maps each VRM bone to its proxy root node in `doc`.
     pub bone_nodes: Arc<HashMap<BoneName, TreeID>>,
-    /// Per-script scene registry (shared with `WiredSceneRt`).
     pub registry: Arc<SceneRegistryInner>,
 }
 
-/// Bevy marker for `HsdDoc` entities that are agent docs (one per script).
 #[derive(Component)]
 pub struct AgentHsdDoc;
 
@@ -25,15 +21,12 @@ pub struct AgentHsdDoc;
 #[derive(Component)]
 pub struct BoneProxy;
 
-/// Inserted by unavi-client when `AvatarBonesPopulated` fires.
 #[derive(Resource)]
 pub struct LocalAgentDocs {
-    /// Maps each VRM bone name to its Bevy entity (set by unavi-client).
     pub bone_entities: Arc<HashMap<BoneName, Entity>>,
     pub docs: Arc<Mutex<Vec<Arc<AgentDocEntry>>>>,
 }
 
-/// Parents newly-hydrated HSD proxy-node entities to their VRM bone entities.
 pub(crate) fn parent_bone_proxies(
     mut commands: Commands,
     agent_doc_entities: Query<(Entity, &HsdDoc, &bevy_hsd::SceneRegistry), With<AgentHsdDoc>>,
@@ -83,7 +76,7 @@ pub(crate) fn parent_bone_proxies(
         let Some((_, &bone_ent)) = ad
             .bone_entities
             .iter()
-            .find(|(b, _)| format!("{b}").trim_matches('"') == bone_name_str.as_str())
+            .find(|(b, _)| b.to_string().trim_matches('"') == bone_name_str.as_str())
         else {
             continue;
         };
@@ -94,8 +87,6 @@ pub(crate) fn parent_bone_proxies(
     }
 }
 
-/// Resets proxy node `Transform` to IDENTITY each `PostUpdate` so that Bevy's
-/// transform propagation uses the parent bone's world transform.
 pub fn reset_bone_proxies(mut proxies: Query<&mut Transform, With<BoneProxy>>) {
     for mut t in &mut proxies {
         *t = Transform::IDENTITY;

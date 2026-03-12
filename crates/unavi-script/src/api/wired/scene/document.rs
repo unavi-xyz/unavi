@@ -11,7 +11,9 @@ use crate::api::wired::scene::{
     WiredSceneRt, material::HostMaterial, mesh::HostMesh, node::HostNode,
 };
 
-pub struct HostDocument;
+pub struct HostDocument {
+    pub id: blake3::Hash,
+}
 
 impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
     async fn create_material(
@@ -124,6 +126,18 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             out.push(self.table.push(HostNode { inner })?);
         }
         Ok(out)
+    }
+
+    async fn id(&mut self, self_: Resource<Document>) -> wasmtime::Result<Vec<u8>> {
+        Ok(self.table.get(&self_)?.id.as_bytes().to_vec())
+    }
+
+    async fn commit(&mut self, _self_: Resource<Document>) -> wasmtime::Result<()> {
+        self.check_hsd_write()?;
+        self.doc.commit();
+        self.doc.compact_change_store();
+        self.doc.free_history_cache();
+        Ok(())
     }
 
     async fn drop(&mut self, rep: Resource<Document>) -> wasmtime::Result<()> {

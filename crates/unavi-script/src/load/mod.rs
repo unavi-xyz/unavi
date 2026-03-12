@@ -4,7 +4,7 @@ use anyhow::Context;
 use bevy::prelude::*;
 use bevy_async_task::TaskPool;
 use bevy_hsd::{
-    HsdDoc, SceneEvent, SceneEventQueue, SceneRegistry, SceneRegistryInner,
+    HsdDoc, HsdRecordId, SceneEvent, SceneEventQueue, SceneRegistry, SceneRegistryInner,
     cache::{NodeInner, NodeState},
 };
 use log::{ScriptStderr, ScriptStdout};
@@ -19,7 +19,7 @@ use crate::{
     ScriptEngine, WasmBinary, WasmEngine,
     agent::{AgentDocEntry, AgentHsdDoc, LocalAgentDocs},
     asset::Wasm,
-    permissions::{ApiName, ScriptPermissions},
+    permissions::{ApiName, HsdPermissions, ScriptPermissions},
     runtime::{RuntimeCtx, ScriptRuntime},
 };
 
@@ -72,6 +72,7 @@ pub(crate) fn load_scripts(
     local_actors: Query<&LocalActor>,
     local_blobs: Query<&LocalBlobs>,
     hsd_docs: Query<&HsdDoc>,
+    hsd_record_ids: Query<&HsdRecordId>,
     registries: Query<&SceneRegistry>,
     event_queues: Query<&SceneEventQueue>,
     permissions: Query<Option<&ScriptPermissions>>,
@@ -93,7 +94,7 @@ pub(crate) fn load_scripts(
             continue;
         };
 
-        let perms = permissions
+        let mut perms = permissions
             .get(source.doc_entity)
             .ok()
             .flatten()
@@ -110,7 +111,7 @@ pub(crate) fn load_scripts(
             .stderr(stderr_stream)
             .build();
 
-        let (doc, self_node_id, registry, events, agent_entry) =
+        let (doc, self_node_id, registry, events, agent_entry, doc_id) =
             if perms.api.contains(&ApiName::LocalAgent) {
                 let Some(ref ad) = agent_docs else {
                     warn!(name, "local agent perms set but LocalAgentDocs not ready");
@@ -206,10 +207,14 @@ pub(crate) fn load_scripts(
                     .expect("events lock")
                     .push(SceneEvent::NodeCreated(self_inner));
 
+                // Synthetic doc_id from the agent doc's peer id.
+                let doc_id = blake3::hash(&new_doc.peer_id().to_le_bytes());
+
                 // Spawn HsdDoc entity with pre-built registry/events.
                 commands.spawn((
                     AgentHsdDoc,
                     HsdDoc(Arc::clone(&new_doc)),
+                    HsdRecordId(doc_id),
                     SceneRegistry(Arc::clone(&agent_registry)),
                     SceneEventQueue(Arc::clone(&agent_events)),
                 ));
@@ -220,6 +225,7 @@ pub(crate) fn load_scripts(
                     agent_registry,
                     agent_events,
                     Some(entry),
+                    doc_id,
                 )
             } else {
                 let Ok(registry) = registries.get(source.doc_entity) else {
@@ -239,14 +245,26 @@ pub(crate) fn load_scripts(
                     .get(source.doc_entity)
                     .map_or_else(|_| Arc::new(loro::LoroDoc::new()), |hsd| Arc::clone(&hsd.0));
 
+                let doc_id = hsd_record_ids
+                    .get(source.doc_entity)
+                    .map_or_else(|_| blake3::hash(b"unknown"), |r| r.0);
+
                 (
                     doc,
                     self_node_id,
                     Arc::clone(&registry.0),
                     Arc::clone(&event_queue.0),
                     None,
+                    doc_id,
                 )
             };
+
+        perms.hsd.insert(
+            doc_id,
+            [HsdPermissions::Read, HsdPermissions::Write]
+                .into_iter()
+                .collect(),
+        );
 
         let rt = RuntimeData::new(
             actor.clone(),
@@ -257,6 +275,7 @@ pub(crate) fn load_scripts(
             events,
             perms.clone(),
             agent_entry,
+            doc_id,
         );
         let state = StoreState::new(wasi_ctx, rt);
 

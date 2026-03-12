@@ -1,14 +1,11 @@
 use bevy::prelude::*;
-use unavi_script::{
-    ScriptPermissions, SpawnLocalScript, load::local::ScriptSource, permissions::ApiName,
-};
+use unavi_script::{ScriptPermissions, SpawnLocalScript, load::local::ScriptSource};
 
 const SYSTEM_SCRIPTS: &[&str] = &["wasm/unavi/vscreen.wasm"];
 
 pub fn spawn_system_scripts(mut commands: Commands) {
     for &path in SYSTEM_SCRIPTS {
-        let mut permissions = ScriptPermissions::default();
-        permissions.api.insert(ApiName::LocalAgent);
+        let permissions = ScriptPermissions::system();
 
         commands.trigger(SpawnLocalScript {
             permissions,

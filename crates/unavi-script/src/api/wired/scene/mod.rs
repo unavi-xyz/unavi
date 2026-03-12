@@ -1,15 +1,10 @@
-//! # `wired:scene` API
-//!
-//! Scripts read/write to an in-memory `SceneRegistry` cache.
-//! The HSD Loro document is written only on explicit `commit()`.
-
 use std::sync::{Arc, Mutex};
 
 use bevy_hsd::{SceneEvent, SceneRegistryInner};
 use loro::{LoroDoc, LoroList, LoroMap, LoroTree, TreeID};
 use wasmtime_wasi::ResourceTable;
 
-use crate::permissions::ScriptPermissions;
+use crate::permissions::{HsdPermissions, ScriptPermissions};
 
 pub mod document;
 mod material;
@@ -33,13 +28,13 @@ pub mod bindings {
 pub struct WiredSceneRt {
     pub actor: Option<wds::actor::Actor>,
     pub blobs: Option<wds::Blobs>,
-    /// The HSD Loro document (used only by `commit()` and create_* helpers).
     pub doc: Arc<LoroDoc>,
-    pub self_node_id: TreeID,
-    pub table: ResourceTable,
-    pub registry: Arc<SceneRegistryInner>,
+    pub doc_id: blake3::Hash,
     pub events: Arc<Mutex<Vec<SceneEvent>>>,
     pub perms: ScriptPermissions,
+    pub registry: Arc<SceneRegistryInner>,
+    pub self_node_id: TreeID,
+    pub table: ResourceTable,
 }
 
 impl WiredSceneRt {
@@ -90,6 +85,19 @@ impl WiredSceneRt {
     pub(super) fn push_event(&self, event: SceneEvent) {
         self.events.lock().expect("events lock").push(event);
     }
+
+    pub(super) fn check_hsd_write(&self) -> wasmtime::Result<()> {
+        if self
+            .perms
+            .hsd
+            .get(&self.doc_id)
+            .is_some_and(|p| p.contains(&HsdPermissions::Write))
+        {
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("hsd write permission required for commit"))
+        }
+    }
 }
 
 impl bindings::wired::scene::context::Host for WiredSceneRt {
@@ -116,7 +124,9 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
         &mut self,
     ) -> wasmtime::Result<wasmtime::component::Resource<bindings::wired::scene::context::Document>>
     {
-        let res = self.table.push(document::HostDocument)?;
+        let res = self
+            .table
+            .push(document::HostDocument { id: self.doc_id })?;
         Ok(res)
     }
 }

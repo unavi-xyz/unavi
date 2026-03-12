@@ -481,10 +481,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     }
 
     async fn commit(&mut self, self_: Resource<HostNode>) -> wasmtime::Result<()> {
-        // TODO check if node document has write permissions
-        // if !self.perms.hsd.contains_key(doc_id) {
-        //     return Err(anyhow::anyhow!("hsd_write permission required for commit"));
-        // }
+        self.check_hsd_write()?;
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         let state = inner.state.lock().expect("node state lock");
         let meta = self.node_meta(inner.tree_id)?;

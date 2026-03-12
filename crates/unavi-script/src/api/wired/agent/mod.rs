@@ -110,7 +110,9 @@ impl bindings::wired::agent::types::HostAgent for RuntimeData {
         &mut self,
         _self_: Resource<HostAgent>,
     ) -> wasmtime::Result<Resource<HostDocument>> {
-        Ok(self.wired_scene.table.push(HostDocument)?)
+        Ok(self.wired_scene.table.push(HostDocument {
+            id: self.wired_scene.doc_id,
+        })?)
     }
 
     async fn bone(

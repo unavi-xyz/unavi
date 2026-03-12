@@ -33,10 +33,7 @@ const fn bevy_topo_to_wit(t: PrimitiveTopology) -> WitTopology {
 
 impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     async fn commit(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<()> {
-        // TODO verify mesh doc has write perms
-        // if !self.perms.hsd {
-        //     return Err(anyhow::anyhow!("hsd_write permission required for commit"));
-        // }
+        self.check_hsd_write()?;
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         let state = inner.state.lock().expect("mesh state lock");
         let map = self.mesh_map(inner.index)?;

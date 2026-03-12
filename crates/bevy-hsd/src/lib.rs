@@ -97,6 +97,10 @@ pub struct HsdNodeTreeId(pub smol_str::SmolStr);
 #[derive(Component, Clone, Debug)]
 pub struct HsdScripts(pub Vec<blake3::Hash>);
 
+/// WDS record ID for an HSD document.
+#[derive(Component, Clone, Copy)]
+pub struct HsdRecordId(pub blake3::Hash);
+
 #[derive(Component)]
 pub struct MeshRef(pub usize);
 

@@ -62,11 +62,12 @@ fn load_hsd(mut commands: Commands) {
     let hsd = doc.get_map("hsd");
 
     // Add a material.
+    let mat_id = "a";
     let materials = hsd
-        .get_or_create_container("materials", loro::LoroList::new())
-        .expect("materials list");
+        .get_or_create_container("materials", loro::LoroMap::new())
+        .expect("materials");
     let mat_map = materials
-        .push_container(loro::LoroMap::new())
+        .insert_container(mat_id, loro::LoroMap::new())
         .expect("push mat");
     mat_map
         .insert_container("base_color", {
@@ -86,11 +87,12 @@ fn load_hsd(mut commands: Commands) {
     let z_length = 1.0;
     let cube = Cuboid::new(x_length, y_length, z_length).mesh().build();
 
+    let mesh_id = "b";
     let meshes = hsd
-        .get_or_create_container("meshes", loro::LoroList::new())
-        .expect("meshes list");
+        .get_or_create_container("meshes", loro::LoroMap::new())
+        .expect("meshes ");
     let mesh_map = meshes
-        .push_container(loro::LoroMap::new())
+        .insert_container(mesh_id, loro::LoroMap::new())
         .expect("push mesh");
     mesh_map.insert("topology", 3i64).expect("topology");
 
@@ -129,8 +131,8 @@ fn load_hsd(mut commands: Commands) {
         .expect("nodes tree");
     let node_id = nodes.create(None).expect("create node");
     let meta = nodes.get_meta(node_id).expect("meta");
-    meta.insert("mesh", 0).expect("mesh ref");
-    meta.insert("material", 0).expect("material ref");
+    meta.insert("mesh", mesh_id).expect("mesh ref");
+    meta.insert("material", mat_id).expect("material ref");
     meta.insert_container("translation", {
         let list = loro::LoroList::new();
         list.push(0.0).expect("push");

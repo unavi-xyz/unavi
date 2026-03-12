@@ -28,15 +28,11 @@ pub(super) fn spawn_node_entity(
         transform,
     ));
 
-    if let Some(idx) = node.data.mesh
-        && let Ok(idx) = usize::try_from(idx)
-    {
-        ent.insert(MeshRef(idx));
+    if let Some(id) = node.data.mesh.clone() {
+        ent.insert(MeshRef(id));
     }
-    if let Some(idx) = node.data.material
-        && let Ok(idx) = usize::try_from(idx)
-    {
-        ent.insert(MaterialRef(idx));
+    if let Some(id) = node.data.material.clone() {
+        ent.insert(MaterialRef(id));
     }
     if let Some(collider) = &node.data.collider {
         ent.insert(HsdCollider::clone(collider));
@@ -89,15 +85,11 @@ pub(super) fn update_node_components(
         MaterialRef,
     )>();
 
-    if let Some(idx) = data.mesh
-        && let Ok(idx) = usize::try_from(idx)
-    {
-        ecmd.insert(MeshRef(idx));
+    if let Some(id) = data.mesh {
+        ecmd.insert(MeshRef(id));
     }
-    if let Some(idx) = data.material
-        && let Ok(idx) = usize::try_from(idx)
-    {
-        ecmd.insert(MaterialRef(idx));
+    if let Some(id) = data.material {
+        ecmd.insert(MaterialRef(id));
     }
 
     let hashes: Vec<blake3::Hash> = data

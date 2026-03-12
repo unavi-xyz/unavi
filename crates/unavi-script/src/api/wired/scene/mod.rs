@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use bevy_hsd::{SceneEvent, SceneRegistryInner};
-use loro::{LoroDoc, LoroList, LoroMap, LoroTree, TreeID};
+use loro::{LoroDoc, LoroMap, LoroTree, TreeID};
 use wasmtime_wasi::ResourceTable;
 
 use crate::permissions::{HsdPermissions, ScriptPermissions};
@@ -42,42 +42,42 @@ impl WiredSceneRt {
         self.doc.get_map("hsd")
     }
 
-    pub(super) fn node_tree(&self) -> wasmtime::Result<LoroTree> {
+    pub(super) fn nodes(&self) -> wasmtime::Result<LoroTree> {
         self.hsd_map()
             .get_or_create_container("nodes", LoroTree::new())
-            .map_err(|e| anyhow::anyhow!("node tree: {e}"))
+            .map_err(|e| anyhow::anyhow!("nodes: {e}"))
     }
 
-    fn mesh_list(&self) -> wasmtime::Result<LoroList> {
+    fn meshes(&self) -> wasmtime::Result<LoroMap> {
         self.hsd_map()
-            .get_or_create_container("meshes", LoroList::new())
-            .map_err(|e| anyhow::anyhow!("mesh list: {e}"))
+            .get_or_create_container("meshes", LoroMap::new())
+            .map_err(|e| anyhow::anyhow!("meshes: {e}"))
     }
 
-    fn material_list(&self) -> wasmtime::Result<LoroList> {
+    fn materials(&self) -> wasmtime::Result<LoroMap> {
         self.hsd_map()
-            .get_or_create_container("materials", LoroList::new())
-            .map_err(|e| anyhow::anyhow!("material list: {e}"))
+            .get_or_create_container("materials", LoroMap::new())
+            .map_err(|e| anyhow::anyhow!("materials: {e}"))
     }
 
-    pub(super) fn mesh_map(&self, index: usize) -> wasmtime::Result<LoroMap> {
-        let list = self.mesh_list()?;
-        match list.get(index) {
+    pub(super) fn mesh_map(&self, id: &str) -> wasmtime::Result<LoroMap> {
+        let list = self.meshes()?;
+        match list.get(id) {
             Some(loro::ValueOrContainer::Container(loro::Container::Map(m))) => Ok(m),
-            _ => Err(anyhow::anyhow!("mesh {index} not found")),
+            _ => Err(anyhow::anyhow!("mesh {id} not found")),
         }
     }
 
-    pub(super) fn material_map(&self, index: usize) -> wasmtime::Result<LoroMap> {
-        let list = self.material_list()?;
-        match list.get(index) {
+    pub(super) fn material_map(&self, id: &str) -> wasmtime::Result<LoroMap> {
+        let list = self.materials()?;
+        match list.get(id) {
             Some(loro::ValueOrContainer::Container(loro::Container::Map(m))) => Ok(m),
-            _ => Err(anyhow::anyhow!("material {index} not found")),
+            _ => Err(anyhow::anyhow!("material {id} not found")),
         }
     }
 
     pub(super) fn node_meta(&self, id: TreeID) -> wasmtime::Result<LoroMap> {
-        self.node_tree()?
+        self.nodes()?
             .get_meta(id)
             .map_err(|e| anyhow::anyhow!("node meta: {e}"))
     }

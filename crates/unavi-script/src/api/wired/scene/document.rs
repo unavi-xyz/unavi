@@ -4,6 +4,8 @@ use bevy_hsd::{
     MaterialInner, MaterialState, MeshInner, MeshState, NodeInner, NodeState, SceneEvent,
 };
 use loro::{LoroMap, LoroValue, TreeParentId};
+use rand::{Rng, distr::Alphanumeric};
+use smol_str::SmolStr;
 use wasmtime::component::Resource;
 
 use super::bindings::wired::scene::types::{Document, Material, Mesh};
@@ -15,29 +17,39 @@ pub struct HostDocument {
     pub id: blake3::Hash,
 }
 
+fn gen_id() -> SmolStr {
+    const MAX_INLINE: usize = 23;
+
+    rand::rng()
+        .sample_iter(&Alphanumeric)
+        .take(MAX_INLINE)
+        .map(char::from)
+        .collect::<SmolStr>()
+}
+
 impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
     async fn create_material(
         &mut self,
         _self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<Material>> {
-        // Create Loro entry to get stable index.
-        let list = self.material_list()?;
-        let index = list.len();
-        let map: LoroMap = list
-            .push_container(LoroMap::new())
+        // Create Loro entry to get stable id.
+        let id = gen_id();
+        let map: LoroMap = self
+            .materials()?
+            .insert_container(&id, LoroMap::new())
             .map_err(|e| anyhow::anyhow!("push material: {e}"))?;
         map.insert("base_color", LoroValue::Null)
             .map_err(|e| anyhow::anyhow!("{e}"))?;
 
         // Create cache entry.
         let inner = Arc::new(MaterialInner {
-            index,
+            id: id.clone(),
             state: Mutex::new(MaterialState::default()),
             entity: Mutex::new(None),
         });
         {
             let mut mats = self.registry.materials.lock().expect("materials lock");
-            mats.push(Arc::clone(&inner));
+            mats.insert(id, Arc::clone(&inner));
         }
         self.push_event(SceneEvent::MaterialCreated(Arc::clone(&inner)));
 
@@ -48,24 +60,24 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         _self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<Mesh>> {
-        // Create Loro entry to get stable index.
-        let list = self.mesh_list()?;
-        let index = list.len();
-        let map: LoroMap = list
-            .push_container(LoroMap::new())
+        // Create Loro entry to get stable id.
+        let id = gen_id();
+        let map: LoroMap = self
+            .meshes()?
+            .insert_container(&id, LoroMap::new())
             .map_err(|e| anyhow::anyhow!("push mesh: {e}"))?;
-        map.insert("topology", 3i64)
+        map.insert("topology", 3i64) // TODO set from enum
             .map_err(|e| anyhow::anyhow!("{e}"))?;
 
         // Create cache entry.
         let inner = Arc::new(MeshInner {
-            index,
+            id: id.clone(),
             state: Mutex::new(MeshState::default()),
             entity: Mutex::new(None),
         });
         {
             let mut meshes = self.registry.meshes.lock().expect("meshes lock");
-            meshes.push(Arc::clone(&inner));
+            meshes.insert(id, Arc::clone(&inner));
         }
         self.push_event(SceneEvent::MeshCreated(Arc::clone(&inner)));
 
@@ -78,7 +90,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
     ) -> wasmtime::Result<Resource<HostNode>> {
         // Create Loro tree node to get stable TreeID.
         let tree_id = self
-            .node_tree()?
+            .nodes()?
             .create(TreeParentId::Root)
             .map_err(|e| anyhow::anyhow!("create node: {e}"))?;
 

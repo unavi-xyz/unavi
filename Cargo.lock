@@ -13409,6 +13409,7 @@ dependencies = [
  "directories",
  "futures 0.3.31",
  "loro",
+ "rand 0.9.2",
  "smol_str 0.3.5",
  "tokio",
  "tracing",

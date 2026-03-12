@@ -7,16 +7,18 @@ use loro::{LoroMap, LoroValue};
 use loro_surgeon::Hydrate;
 use smol_str::SmolStr;
 
-use super::diff::extract_changes_from_diff;
-use super::node::{spawn_node_entity, update_node_components};
+use super::{
+    diff::extract_changes_from_diff,
+    node::{spawn_node_entity, update_node_components},
+};
 use crate::{
-    HsdChange, HsdChild, HsdDoc, HsdNodeTreeId, HsdScripts, HsdSubscription, MaterialRef, MeshRef,
-    NodeId,
+    CompiledMaterial, CompiledMesh, HsdChange, HsdChild, HsdDoc, HsdNodeTreeId, HsdScripts,
+    HsdSubscription, MaterialRef, MeshRef, NodeId,
     cache::{
         MaterialInner, MaterialState, MeshInner, MeshState, NodeInner, NodeState, SceneEvent,
         SceneEventQueue, SceneRegistry, SceneRegistryInner,
     },
-    data::{HsdMaterial, HsdMesh, hydrate_hsd},
+    data::{HsdMaterial, HsdMesh, HsdNodeData, hydrate_hsd},
 };
 
 pub fn init_hsd_doc(
@@ -75,7 +77,7 @@ pub(crate) fn apply_scene_events(
                 locked.drain(..).collect()
             };
             let hsd_map = hsd_doc.0.get_map("hsd");
-            apply_hsd_changes(doc_ent, &changes, &hsd_map, &registry.0, &mut commands);
+            apply_hsd_changes(doc_ent, changes, &hsd_map, &registry.0, &mut commands);
         }
 
         let events: Vec<SceneEvent> = {
@@ -110,7 +112,7 @@ pub(crate) fn sync_ecs_to_cache(
 #[expect(clippy::too_many_lines)]
 fn apply_hsd_changes(
     doc_ent: Entity,
-    changes: &[HsdChange],
+    changes: Vec<HsdChange>,
     hsd_map: &LoroMap,
     registry: &Arc<SceneRegistryInner>,
     commands: &mut Commands,
@@ -227,75 +229,75 @@ fn apply_hsd_changes(
                 }
             }
 
-            HsdChange::MeshAdded => {
-                let index = {
-                    let meshes = registry.meshes.lock().expect("meshes lock");
-                    meshes.len()
-                };
-                let mesh = get_mesh_at(hsd_map, index);
+            HsdChange::MeshAdded { id } => {
+                let mesh = get_mesh_at(hsd_map, &id);
                 if let Some(mesh_data) = mesh {
                     let ent = commands.spawn((HsdChild { doc: doc_ent }, mesh_data)).id();
                     let inner = Arc::new(MeshInner {
-                        index,
+                        id: id.clone(),
                         state: Mutex::new(MeshState::default()),
                         entity: Mutex::new(Some(ent)),
                     });
-                    registry.meshes.lock().expect("meshes lock").push(inner);
+                    registry
+                        .meshes
+                        .lock()
+                        .expect("meshes lock")
+                        .insert(id, inner);
                 } else {
                     let inner = Arc::new(MeshInner {
-                        index,
+                        id: id.clone(),
                         state: Mutex::new(MeshState::default()),
                         entity: Mutex::new(None),
                     });
-                    registry.meshes.lock().expect("meshes lock").push(inner);
+                    registry
+                        .meshes
+                        .lock()
+                        .expect("meshes lock")
+                        .insert(id, inner);
                 }
             }
 
-            HsdChange::MeshRemoved { index } => {
+            HsdChange::MeshRemoved { id } => {
                 let meshes = registry.meshes.lock().expect("meshes lock");
-                if let Some(inner) = meshes.get(*index) {
+                if let Some(inner) = meshes.get(&id) {
                     let ent = *inner.entity.lock().expect("entity lock");
                     if let Some(ent) = ent {
                         commands.entity(ent).despawn();
                     }
                     // Don't remove from vec to preserve indices; just clear entity.
-                    if let Some(inner) = meshes.get(*index) {
+                    if let Some(inner) = meshes.get(&id) {
                         *inner.entity.lock().expect("entity lock") = None;
                     }
                 }
                 drop(meshes);
             }
 
-            HsdChange::MeshChanged { index } => {
+            HsdChange::MeshChanged { id } => {
                 // Despawn old entity, spawn new.
                 let old_ent = {
                     let meshes = registry.meshes.lock().expect("meshes lock");
                     meshes
-                        .get(*index)
+                        .get(&id)
                         .and_then(|i| *i.entity.lock().expect("entity lock"))
                 };
                 if let Some(ent) = old_ent {
                     commands.entity(ent).despawn();
                 }
-                if let Some(mesh_data) = get_mesh_at(hsd_map, *index) {
+                if let Some(mesh_data) = get_mesh_at(hsd_map, &id) {
                     let ent = commands.spawn((HsdChild { doc: doc_ent }, mesh_data)).id();
                     let meshes = registry.meshes.lock().expect("meshes lock");
-                    if let Some(inner) = meshes.get(*index) {
+                    if let Some(inner) = meshes.get(&id) {
                         *inner.entity.lock().expect("entity lock") = Some(ent);
                     }
                 }
             }
 
-            HsdChange::MaterialAdded => {
-                let index = {
-                    let mats = registry.materials.lock().expect("materials lock");
-                    mats.len()
-                };
-                let mat = get_material_at(hsd_map, index);
+            HsdChange::MaterialAdded { id } => {
+                let mat = get_material_at(hsd_map, &id);
                 if let Some(mat_data) = mat {
                     let ent = commands.spawn((HsdChild { doc: doc_ent }, mat_data)).id();
                     let inner = Arc::new(MaterialInner {
-                        index,
+                        id: id.clone(),
                         state: Mutex::new(MaterialState::default()),
                         entity: Mutex::new(Some(ent)),
                     });
@@ -303,10 +305,10 @@ fn apply_hsd_changes(
                         .materials
                         .lock()
                         .expect("materials lock")
-                        .push(inner);
+                        .insert(id, inner);
                 } else {
                     let inner = Arc::new(MaterialInner {
-                        index,
+                        id: id.clone(),
                         state: Mutex::new(MaterialState::default()),
                         entity: Mutex::new(None),
                     });
@@ -314,13 +316,13 @@ fn apply_hsd_changes(
                         .materials
                         .lock()
                         .expect("materials lock")
-                        .push(inner);
+                        .insert(id, inner);
                 }
             }
 
-            HsdChange::MaterialRemoved { index } => {
+            HsdChange::MaterialRemoved { id } => {
                 let mats = registry.materials.lock().expect("materials lock");
-                if let Some(inner) = mats.get(*index) {
+                if let Some(inner) = mats.get(&id) {
                     let ent = *inner.entity.lock().expect("entity lock");
                     if let Some(ent) = ent {
                         commands.entity(ent).despawn();
@@ -330,19 +332,19 @@ fn apply_hsd_changes(
                 drop(mats);
             }
 
-            HsdChange::MaterialChanged { index } => {
+            HsdChange::MaterialChanged { id } => {
                 let old_ent = {
                     let mats = registry.materials.lock().expect("materials lock");
-                    mats.get(*index)
+                    mats.get(&id)
                         .and_then(|i| *i.entity.lock().expect("entity lock"))
                 };
                 if let Some(ent) = old_ent {
                     commands.entity(ent).despawn();
                 }
-                if let Some(mat_data) = get_material_at(hsd_map, *index) {
+                if let Some(mat_data) = get_material_at(hsd_map, &id) {
                     let ent = commands.spawn((HsdChild { doc: doc_ent }, mat_data)).id();
                     let mats = registry.materials.lock().expect("materials lock");
-                    if let Some(inner) = mats.get(*index) {
+                    if let Some(inner) = mats.get(&id) {
                         *inner.entity.lock().expect("entity lock") = Some(ent);
                     }
                 }
@@ -374,11 +376,11 @@ fn apply_scene_event(
                 NodeId(name),
                 state.transform,
             ));
-            if let Some(idx) = state.mesh {
-                ent_cmd.insert(MeshRef(idx));
+            if let Some(id) = state.mesh.clone() {
+                ent_cmd.insert(MeshRef(id));
             }
-            if let Some(idx) = state.material {
-                ent_cmd.insert(MaterialRef(idx));
+            if let Some(id) = state.material.clone() {
+                ent_cmd.insert(MaterialRef(id));
             }
             if let Some(c) = &state.collider {
                 ent_cmd.insert(c.clone());
@@ -413,11 +415,11 @@ fn apply_scene_event(
                 MeshRef,
                 MaterialRef,
             )>();
-            if let Some(idx) = state.mesh {
-                ecmd.insert(MeshRef(idx));
+            if let Some(id) = state.mesh.clone() {
+                ecmd.insert(MeshRef(id));
             }
-            if let Some(idx) = state.material {
-                ecmd.insert(MaterialRef(idx));
+            if let Some(id) = state.material.clone() {
+                ecmd.insert(MaterialRef(id));
             }
             let hashes: Vec<blake3::Hash> = state.scripts.clone();
             drop(state);
@@ -454,7 +456,7 @@ fn apply_scene_event(
             drop(state);
             let handle = asset_server.add(mesh);
             let ent = commands
-                .spawn((HsdChild { doc: doc_ent }, crate::CompiledMesh(handle)))
+                .spawn((HsdChild { doc: doc_ent }, CompiledMesh(handle)))
                 .id();
             *inner.entity.lock().expect("entity lock") = Some(ent);
         }
@@ -466,7 +468,7 @@ fn apply_scene_event(
             let mesh = build_mesh_from_state(&state);
             drop(state);
             let handle = asset_server.add(mesh);
-            commands.entity(ent).insert(crate::CompiledMesh(handle));
+            commands.entity(ent).insert(CompiledMesh(handle));
         }
 
         SceneEvent::MaterialCreated(inner) => {
@@ -475,7 +477,7 @@ fn apply_scene_event(
             drop(state);
             let handle = asset_server.add(mat);
             let ent = commands
-                .spawn((HsdChild { doc: doc_ent }, crate::CompiledMaterial(handle)))
+                .spawn((HsdChild { doc: doc_ent }, CompiledMaterial(handle)))
                 .id();
             *inner.entity.lock().expect("entity lock") = Some(ent);
         }
@@ -487,7 +489,7 @@ fn apply_scene_event(
             let mat = build_material_from_state(&state);
             drop(state);
             let handle = asset_server.add(mat);
-            commands.entity(ent).insert(crate::CompiledMaterial(handle));
+            commands.entity(ent).insert(CompiledMaterial(handle));
         }
     }
 }
@@ -582,12 +584,12 @@ fn full_hydrate(
     };
 
     // Materials.
-    for (index, mat) in hsd_data.materials.iter().enumerate() {
+    for (id, mat) in &hsd_data.materials {
         let ent = commands
             .spawn((HsdChild { doc: doc_ent }, HsdMaterial::clone(mat)))
             .id();
         let inner = Arc::new(MaterialInner {
-            index,
+            id: id.clone(),
             state: Mutex::new(MaterialState::default()),
             entity: Mutex::new(Some(ent)),
         });
@@ -595,20 +597,24 @@ fn full_hydrate(
             .materials
             .lock()
             .expect("materials lock")
-            .push(inner);
+            .insert(id.clone(), inner);
     }
 
     // Meshes.
-    for (index, mesh) in hsd_data.meshes.iter().enumerate() {
+    for (id, mesh) in &hsd_data.meshes {
         let ent = commands
             .spawn((HsdChild { doc: doc_ent }, HsdMesh::clone(mesh)))
             .id();
         let inner = Arc::new(MeshInner {
-            index,
+            id: id.clone(),
             state: Mutex::new(MeshState::default()),
             entity: Mutex::new(Some(ent)),
         });
-        registry.meshes.lock().expect("meshes lock").push(inner);
+        registry
+            .meshes
+            .lock()
+            .expect("meshes lock")
+            .insert(id.clone(), inner);
     }
 
     // Nodes — two passes: spawn then parent.
@@ -626,8 +632,8 @@ fn full_hydrate(
                 .as_ref()
                 .map(std::string::ToString::to_string),
             transform: node_transform_from_data(&node.data),
-            mesh: node.data.mesh.and_then(|i| usize::try_from(i).ok()),
-            material: node.data.material.and_then(|i| usize::try_from(i).ok()),
+            mesh: node.data.mesh.clone(),
+            material: node.data.material.clone(),
             ..Default::default()
         };
         let inner = Arc::new(NodeInner {
@@ -674,20 +680,20 @@ fn node_state_from_hsd(tid: loro::TreeID, hsd_map: &LoroMap) -> NodeState {
         .and_then(|t| t.get_meta(tid).ok())
         .and_then(|m| {
             let v = m.get_deep_value();
-            crate::data::HsdNodeData::hydrate(&v).ok()
+            HsdNodeData::hydrate(&v).ok()
         });
 
     let data = data.unwrap_or_default();
     NodeState {
         name: data.name.as_ref().map(std::string::ToString::to_string),
         transform: node_transform_from_data(&data),
-        mesh: data.mesh.and_then(|i| usize::try_from(i).ok()),
-        material: data.material.and_then(|i| usize::try_from(i).ok()),
+        mesh: data.mesh,
+        material: data.material,
         ..Default::default()
     }
 }
 
-fn node_transform_from_data(data: &crate::data::HsdNodeData) -> Transform {
+fn node_transform_from_data(data: &HsdNodeData) -> Transform {
     super::node::node_transform(data)
 }
 
@@ -709,34 +715,34 @@ fn spawn_node_entity_from_inner(
         NodeId(name),
         state.transform,
     ));
-    if let Some(idx) = state.mesh {
-        ent_cmd.insert(MeshRef(idx));
+    if let Some(id) = state.mesh.clone() {
+        ent_cmd.insert(MeshRef(id));
     }
-    if let Some(idx) = state.material {
-        ent_cmd.insert(MaterialRef(idx));
+    if let Some(id) = state.material.clone() {
+        ent_cmd.insert(MaterialRef(id));
     }
     drop(state);
     ent_cmd.id()
 }
 
-fn get_mesh_at(hsd_map: &LoroMap, index: usize) -> Option<HsdMesh> {
+fn get_mesh_at(hsd_map: &LoroMap, key: &str) -> Option<HsdMesh> {
     let value = hsd_map.get_deep_value();
     let LoroValue::Map(root) = &value else {
         return None;
     };
-    let LoroValue::List(list) = root.get("meshes")? else {
+    let LoroValue::Map(map) = root.get("meshes")? else {
         return None;
     };
-    HsdMesh::hydrate(list.get(index)?).ok()
+    HsdMesh::hydrate(map.get(key)?).ok()
 }
 
-fn get_material_at(hsd_map: &LoroMap, index: usize) -> Option<HsdMaterial> {
+fn get_material_at(hsd_map: &LoroMap, key: &str) -> Option<HsdMaterial> {
     let value = hsd_map.get_deep_value();
     let LoroValue::Map(root) = &value else {
         return None;
     };
-    let LoroValue::List(list) = root.get("materials")? else {
+    let LoroValue::Map(map) = root.get("materials")? else {
         return None;
     };
-    HsdMaterial::hydrate(list.get(index)?).ok()
+    HsdMaterial::hydrate(map.get(key)?).ok()
 }

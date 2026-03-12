@@ -20,6 +20,7 @@ blake3.workspace       = true
 bytes.workspace        = true
 futures.workspace      = true
 loro.workspace         = true
+rand.workspace         = true
 smol_str.workspace     = true
 tokio.workspace        = true
 tracing.workspace      = true

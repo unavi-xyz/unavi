@@ -32,11 +32,19 @@ const fn bevy_topo_to_wit(t: PrimitiveTopology) -> WitTopology {
 }
 
 impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
+    async fn id(
+        &mut self,
+        self_: wasmtime::component::Resource<HostMesh>,
+    ) -> wasmtime::Result<String> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner.id.to_string())
+    }
+
     async fn commit(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<()> {
         self.check_hsd_write()?;
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         let state = inner.state.lock().expect("mesh state lock");
-        let map = self.mesh_map(inner.index)?;
+        let map = self.mesh_map(&inner.id)?;
         let topo: i64 = match state.topology {
             PrimitiveTopology::PointList => 0,
             PrimitiveTopology::LineList => 1,

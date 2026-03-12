@@ -53,9 +53,9 @@ pub struct HsdNodeData {
     #[loro(default)]
     pub collider: Option<HsdCollider>,
     #[loro(default)]
-    pub material: Option<i64>,
+    pub material: Option<SmolStr>,
     #[loro(default)]
-    pub mesh: Option<i64>,
+    pub mesh: Option<SmolStr>,
     #[loro(default)]
     pub name: Option<SmolStr>,
     #[loro(default)]
@@ -92,8 +92,8 @@ pub struct HsdRigidBody {
 }
 
 pub struct HsdData {
-    pub materials: Vec<HsdMaterial>,
-    pub meshes: Vec<HsdMesh>,
+    pub materials: BTreeMap<SmolStr, HsdMaterial>,
+    pub meshes: BTreeMap<SmolStr, HsdMesh>,
     pub nodes: Vec<HsdNode>,
 }
 
@@ -113,13 +113,13 @@ pub(crate) fn hydrate_hsd(map: &loro::LoroMap) -> Result<HsdData, HydrateError> 
     };
 
     let materials = match root.get("materials") {
-        Some(v) => Vec::<HsdMaterial>::hydrate(v)?,
-        None => Vec::new(),
+        Some(v) => BTreeMap::<SmolStr, HsdMaterial>::hydrate(v)?,
+        None => BTreeMap::new(),
     };
 
     let meshes = match root.get("meshes") {
-        Some(v) => Vec::<HsdMesh>::hydrate(v)?,
-        None => Vec::new(),
+        Some(v) => BTreeMap::<SmolStr, HsdMesh>::hydrate(v)?,
+        None => BTreeMap::new(),
     };
 
     let tree = map

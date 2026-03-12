@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
-use bevy_hsd::{SceneEvent, SceneRegistryInner};
+use bevy::prelude::Entity;
+use bevy_hsd::{cache::SceneRegistryInner, hydrate::events::DocChange};
 use loro::{LoroDoc, TreeID};
 use wasmtime::component::ResourceTable;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
@@ -30,10 +31,11 @@ impl RuntimeData {
         doc: Arc<LoroDoc>,
         self_node_id: TreeID,
         registry: Arc<SceneRegistryInner>,
-        events: Arc<Mutex<Vec<SceneEvent>>>,
+        events: Arc<Mutex<Vec<DocChange>>>,
         perms: ScriptPermissions,
         agent_entry: Option<Arc<AgentDocEntry>>,
         doc_id: blake3::Hash,
+        doc_entity: Entity,
     ) -> Self {
         Self {
             wired_agent: WiredAgentRt {
@@ -44,6 +46,7 @@ impl RuntimeData {
                 actor,
                 blobs,
                 doc,
+                doc_entity,
                 doc_id,
                 self_node_id,
                 table: ResourceTable::default(),

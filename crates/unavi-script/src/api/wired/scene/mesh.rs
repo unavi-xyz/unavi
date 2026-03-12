@@ -1,7 +1,7 @@
-use std::sync::Arc;
+use std::sync::{Arc, atomic::Ordering};
 
 use bevy::mesh::PrimitiveTopology;
-use bevy_hsd::{MeshInner, SceneEvent};
+use bevy_hsd::cache::MeshInner;
 use wasmtime::component::Resource;
 
 use super::bindings::wired::scene::types::{Indices, Mesh, PrimitiveTopology as WitTopology};
@@ -78,7 +78,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").name = value;
-        self.push_event(SceneEvent::MeshDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -95,7 +95,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").topology = wit_topo_to_bevy(value);
-        self.push_event(SceneEvent::MeshDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -118,7 +118,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
                 Indices::Full(f) => f,
             });
         }
-        self.push_event(SceneEvent::MeshDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -134,7 +134,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").colors = values;
-        self.push_event(SceneEvent::MeshDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -150,7 +150,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").normals = values;
-        self.push_event(SceneEvent::MeshDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -171,7 +171,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").positions = values;
-        self.push_event(SceneEvent::MeshDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -192,7 +192,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").tangents = values;
-        self.push_event(SceneEvent::MeshDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -208,7 +208,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").uv0 = values;
-        self.push_event(SceneEvent::MeshDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -224,7 +224,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").uv1 = values;
-        self.push_event(SceneEvent::MeshDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 

@@ -3,11 +3,9 @@ use bevy_wds::{BlobDep, BlobDeps, BlobDepsLoaded, BlobRequest, BlobResponse};
 
 use crate::{CompiledMaterial, data::HsdMaterial};
 
-/// For each newly-added `HsdMaterial`, spawn `BlobDep` entities
-/// and insert `MaterialParams`.
 pub fn parse_material_data(
     mut commands: Commands,
-    materials: Query<(Entity, &HsdMaterial), Added<HsdMaterial>>,
+    materials: Query<(Entity, &HsdMaterial), Changed<HsdMaterial>>,
 ) {
     for (ent, mat) in &materials {
         #[expect(clippy::cast_possible_truncation)]
@@ -26,25 +24,25 @@ pub fn parse_material_data(
 
         let base_color_texture = mat.base_color_texture.map(|hash| {
             commands
-                .spawn((BlobDep { target: ent }, BlobRequest(hash.0)))
+                .spawn((BlobDep { owner: ent }, BlobRequest(hash.0)))
                 .id()
         });
 
         let metallic_roughness_texture = mat.metallic_roughness_texture.map(|hash| {
             commands
-                .spawn((BlobDep { target: ent }, BlobRequest(hash.0)))
+                .spawn((BlobDep { owner: ent }, BlobRequest(hash.0)))
                 .id()
         });
 
         let normal_texture = mat.normal_texture.map(|hash| {
             commands
-                .spawn((BlobDep { target: ent }, BlobRequest(hash.0)))
+                .spawn((BlobDep { owner: ent }, BlobRequest(hash.0)))
                 .id()
         });
 
         let occlusion_texture = mat.occlusion_texture.map(|hash| {
             commands
-                .spawn((BlobDep { target: ent }, BlobRequest(hash.0)))
+                .spawn((BlobDep { owner: ent }, BlobRequest(hash.0)))
                 .id()
         });
 
@@ -75,12 +73,13 @@ pub struct MaterialParams {
 }
 
 pub fn compile_materials(
+    mut mat_assets: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
-    loaded: Query<(Entity, &MaterialParams), Added<BlobDepsLoaded>>,
+    loaded: Query<(Entity, &MaterialParams, Option<&CompiledMaterial>), Added<BlobDepsLoaded>>,
     mut blobs: Query<&mut BlobResponse>,
 ) {
-    for (ent, params) in &loaded {
+    for (ent, params, existing) in &loaded {
         let mut material = StandardMaterial::default();
 
         if let Some(value) = params.base_color {
@@ -106,7 +105,23 @@ pub fn compile_materials(
             material.base_color_texture = Some(handle);
         }
 
+        // Update existing asset in-place to preserve handles in referencing nodes.
+        if let Some(CompiledMaterial(handle)) = existing
+            && let Some(asset) = mat_assets.get_mut(handle)
+        {
+            *asset = material;
+            commands
+                .entity(ent)
+                .remove::<BlobDeps>()
+                .remove::<BlobDepsLoaded>();
+            continue;
+        }
+
         let handle = asset_server.add(material);
-        commands.entity(ent).insert(CompiledMaterial(handle));
+        commands
+            .entity(ent)
+            .insert(CompiledMaterial(handle))
+            .remove::<BlobDeps>()
+            .remove::<BlobDepsLoaded>();
     }
 }

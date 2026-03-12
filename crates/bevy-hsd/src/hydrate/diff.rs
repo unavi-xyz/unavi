@@ -1,9 +1,9 @@
 use loro::{ContainerID, Index, TreeExternalDiff, TreeParentId};
 use smol_str::SmolStr;
 
-use crate::HsdChange;
+use super::events::RawHsdChange;
 
-pub(super) fn extract_changes_from_diff(e: &loro::event::DiffEvent, queue: &mut Vec<HsdChange>) {
+pub(super) fn extract_changes_from_diff(e: &loro::event::DiffEvent, queue: &mut Vec<RawHsdChange>) {
     for cd in &e.events {
         let path = cd.path;
 
@@ -11,45 +11,44 @@ pub(super) fn extract_changes_from_diff(e: &loro::event::DiffEvent, queue: &mut 
             loro::event::Diff::Tree(tree_diff) => {
                 for item in &tree_diff.diff {
                     let tree_id = tree_id_str(item.target);
-                    match &item.action {
+                    let change = match &item.action {
                         TreeExternalDiff::Create { parent, .. } => {
                             let parent_id = node_parent_str(parent);
-                            queue.push(HsdChange::NodeAdded { tree_id, parent_id });
+                            RawHsdChange::NodeAdded { tree_id, parent_id }
                         }
-                        TreeExternalDiff::Delete { .. } => {
-                            queue.push(HsdChange::NodeRemoved { tree_id });
-                        }
-                        TreeExternalDiff::Move { .. } => {
-                            queue.push(HsdChange::NodeMetaChanged { tree_id });
-                        }
-                    }
+                        TreeExternalDiff::Delete { .. } => RawHsdChange::NodeRemoved { tree_id },
+                        TreeExternalDiff::Move { .. } => RawHsdChange::NodeChanged { tree_id },
+                    };
+                    queue.push(change);
                 }
             }
 
             loro::event::Diff::Map(map_delta) => {
-                if let Some(tid) = node_tree_id_in_path(path) {
-                    queue.push(HsdChange::NodeMetaChanged { tree_id: tid });
+                if let Some(tree_id) = node_tree_id_in_path(path) {
+                    queue.push(RawHsdChange::NodeChanged { tree_id });
                 } else if let Some(id) = map_id_for_key(path, "meshes") {
-                    queue.push(HsdChange::MeshChanged { id });
+                    queue.push(RawHsdChange::MeshChanged { id });
                 } else if let Some(id) = map_id_for_key(path, "materials") {
-                    queue.push(HsdChange::MaterialChanged { id });
+                    queue.push(RawHsdChange::MaterialChanged { id });
                 } else if path_ends_with_key(path, "meshes") {
                     for (key, val) in &map_delta.updated {
                         let id = SmolStr::from(key.as_ref());
-                        queue.push(if val.is_some() {
-                            HsdChange::MeshAdded { id }
+                        let change = if val.is_some() {
+                            RawHsdChange::MeshAdded { id }
                         } else {
-                            HsdChange::MeshRemoved { id }
-                        });
+                            RawHsdChange::MeshRemoved { id }
+                        };
+                        queue.push(change);
                     }
                 } else if path_ends_with_key(path, "materials") {
                     for (key, val) in &map_delta.updated {
                         let id = SmolStr::from(key.as_ref());
-                        queue.push(if val.is_some() {
-                            HsdChange::MaterialAdded { id }
+                        let change = if val.is_some() {
+                            RawHsdChange::MaterialAdded { id }
                         } else {
-                            HsdChange::MaterialRemoved { id }
-                        });
+                            RawHsdChange::MaterialRemoved { id }
+                        };
+                        queue.push(change);
                     }
                 }
             }

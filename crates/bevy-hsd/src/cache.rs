@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex, Weak},
+    sync::{Arc, Mutex, Weak, atomic::AtomicBool},
 };
 
 use bevy::mesh::PrimitiveTopology;
@@ -10,6 +10,7 @@ use smol_str::SmolStr;
 
 use crate::data::{HsdCollider, HsdRigidBody};
 
+#[derive(Clone)]
 pub struct NodeState {
     pub name: Option<String>,
     pub transform: Transform,
@@ -42,11 +43,13 @@ impl Default for NodeState {
 }
 
 pub struct NodeInner {
-    pub state: Mutex<NodeState>,
+    pub dirty: AtomicBool,
     pub entity: Mutex<Option<Entity>>,
+    pub state: Mutex<NodeState>,
     pub tree_id: TreeID,
 }
 
+#[derive(Clone)]
 pub struct MeshState {
     pub name: Option<String>,
     pub topology: PrimitiveTopology,
@@ -76,11 +79,13 @@ impl Default for MeshState {
 }
 
 pub struct MeshInner {
-    pub state: Mutex<MeshState>,
+    pub dirty: AtomicBool,
     pub entity: Mutex<Option<Entity>>,
     pub id: SmolStr,
+    pub state: Mutex<MeshState>,
 }
 
+#[derive(Clone)]
 pub struct MaterialState {
     pub name: Option<String>,
     pub base_color: [f32; 4],
@@ -102,9 +107,10 @@ impl Default for MaterialState {
 }
 
 pub struct MaterialInner {
-    pub state: Mutex<MaterialState>,
+    pub dirty: AtomicBool,
     pub entity: Mutex<Option<Entity>>,
     pub id: SmolStr,
+    pub state: Mutex<MaterialState>,
 }
 
 pub struct SceneRegistryInner {
@@ -139,20 +145,3 @@ impl Default for SceneRegistryInner {
 
 #[derive(Component, Clone)]
 pub struct SceneRegistry(pub Arc<SceneRegistryInner>);
-
-pub enum SceneEvent {
-    NodeCreated(Arc<NodeInner>),
-    NodeDirty(Arc<NodeInner>),
-    NodeParentChanged {
-        node: Arc<NodeInner>,
-        parent: Option<Arc<NodeInner>>,
-    },
-    NodeDestroyed(Arc<NodeInner>),
-    MeshCreated(Arc<MeshInner>),
-    MeshDirty(Arc<MeshInner>),
-    MaterialCreated(Arc<MaterialInner>),
-    MaterialDirty(Arc<MaterialInner>),
-}
-
-#[derive(Component, Clone)]
-pub struct SceneEventQueue(pub Arc<Mutex<Vec<SceneEvent>>>);

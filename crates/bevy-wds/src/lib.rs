@@ -34,7 +34,7 @@ impl Plugin for WdsPlugin {
 #[derive(Component)]
 #[relationship(relationship_target = BlobDeps)]
 pub struct BlobDep {
-    pub target: Entity,
+    pub owner: Entity,
 }
 
 #[derive(Component, Default)]

@@ -1,11 +1,10 @@
-use std::sync::Arc;
+use std::sync::{Arc, atomic::Ordering};
 
 use bevy::prelude::Transform as BevyTransform;
-use bevy_hsd::{
-    NodeInner, SceneEvent,
-    cache::{MaterialInner, MeshInner},
-};
+use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner};
+use bevy_hsd::hydrate::events::DocChangeKind;
 use loro::LoroList;
+use smol_str::SmolStr;
 use wasmtime::component::Resource;
 
 use super::bindings::wired::scene::types::{
@@ -33,6 +32,10 @@ pub(super) fn write_f64s(meta: &loro::LoroMap, key: &str, vals: &[f64]) -> wasmt
     Ok(())
 }
 
+fn tree_id_smolstr(tid: loro::TreeID) -> SmolStr {
+    format!("{}@{}", tid.counter, tid.peer).into()
+}
+
 impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     async fn id(
         &mut self,
@@ -47,17 +50,15 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         let state = inner.state.lock().expect("node state lock");
         Ok(state.name.clone())
     }
+
     async fn set_name(
         &mut self,
         self_: Resource<HostNode>,
         value: Option<String>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        {
-            let mut state = inner.state.lock().expect("node state lock");
-            state.name = value;
-        }
-        self.push_event(SceneEvent::NodeDirty(inner));
+        inner.state.lock().expect("node state lock").name = value;
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -82,11 +83,13 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         value: Vec3,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        {
-            let mut state = inner.state.lock().expect("node state lock");
-            state.transform.translation = bevy::math::Vec3::new(value.x, value.y, value.z);
-        }
-        self.push_event(SceneEvent::NodeDirty(inner));
+        inner
+            .state
+            .lock()
+            .expect("node state lock")
+            .transform
+            .translation = bevy::math::Vec3::new(value.x, value.y, value.z);
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -112,12 +115,13 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         value: Quat,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        {
-            let mut state = inner.state.lock().expect("node state lock");
-            state.transform.rotation =
-                bevy::math::Quat::from_xyzw(value.x, value.y, value.z, value.w);
-        }
-        self.push_event(SceneEvent::NodeDirty(inner));
+        inner
+            .state
+            .lock()
+            .expect("node state lock")
+            .transform
+            .rotation = bevy::math::Quat::from_xyzw(value.x, value.y, value.z, value.w);
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -133,11 +137,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
 
     async fn set_scale(&mut self, self_: Resource<HostNode>, value: Vec3) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        {
-            let mut state = inner.state.lock().expect("node state lock");
-            state.transform.scale = bevy::math::Vec3::new(value.x, value.y, value.z);
-        }
-        self.push_event(SceneEvent::NodeDirty(inner));
+        inner.state.lock().expect("node state lock").transform.scale =
+            bevy::math::Vec3::new(value.x, value.y, value.z);
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -174,24 +176,21 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         value: Transform,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        {
-            let mut state = inner.state.lock().expect("node state lock");
-            state.transform = BevyTransform {
-                translation: bevy::math::Vec3::new(
-                    value.translation.x,
-                    value.translation.y,
-                    value.translation.z,
-                ),
-                rotation: bevy::math::Quat::from_xyzw(
-                    value.rotation.x,
-                    value.rotation.y,
-                    value.rotation.z,
-                    value.rotation.w,
-                ),
-                scale: bevy::math::Vec3::new(value.scale.x, value.scale.y, value.scale.z),
-            };
-        }
-        self.push_event(SceneEvent::NodeDirty(inner));
+        inner.state.lock().expect("node state lock").transform = BevyTransform {
+            translation: bevy::math::Vec3::new(
+                value.translation.x,
+                value.translation.y,
+                value.translation.z,
+            ),
+            rotation: bevy::math::Quat::from_xyzw(
+                value.rotation.x,
+                value.rotation.y,
+                value.rotation.z,
+                value.rotation.w,
+            ),
+            scale: bevy::math::Vec3::new(value.scale.x, value.scale.y, value.scale.z),
+        };
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -264,7 +263,6 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         let parent_inner = Arc::clone(&self.table.get(&self_)?.inner);
         let child_inner = Arc::clone(&self.table.get(&child)?.inner);
 
-        // Update parent's children list.
         {
             let mut parent_state = parent_inner.state.lock().expect("parent state lock");
             if !parent_state
@@ -275,16 +273,16 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 parent_state.children.push(Arc::clone(&child_inner));
             }
         }
-
-        // Update child's parent reference.
         {
             let mut child_state = child_inner.state.lock().expect("child state lock");
             child_state.parent = Some(Arc::downgrade(&parent_inner));
         }
 
-        self.push_event(SceneEvent::NodeParentChanged {
-            node: child_inner,
-            parent: Some(parent_inner),
+        let child_tid = tree_id_smolstr(child_inner.tree_id);
+        let parent_tid = tree_id_smolstr(parent_inner.tree_id);
+        self.push_event(DocChangeKind::NodeParentChanged {
+            tree_id: child_tid,
+            parent_id: Some(parent_tid),
         });
         Ok(())
     }
@@ -296,7 +294,6 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let child_inner = Arc::clone(&self.table.get(&child)?.inner);
 
-        // Find and update parent.
         let parent_inner = {
             let child_state = child_inner.state.lock().expect("child state lock");
             child_state
@@ -305,21 +302,18 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 .and_then(std::sync::Weak::upgrade)
         };
         if let Some(pi) = &parent_inner {
-            let mut parent_state = pi.state.lock().expect("parent state lock");
-            parent_state
+            pi.state
+                .lock()
+                .expect("parent state lock")
                 .children
                 .retain(|c| c.tree_id != child_inner.tree_id);
         }
+        child_inner.state.lock().expect("child state lock").parent = None;
 
-        // Clear child's parent.
-        {
-            let mut child_state = child_inner.state.lock().expect("child state lock");
-            child_state.parent = None;
-        }
-
-        self.push_event(SceneEvent::NodeParentChanged {
-            node: child_inner,
-            parent: None,
+        let child_tid = tree_id_smolstr(child_inner.tree_id);
+        self.push_event(DocChangeKind::NodeParentChanged {
+            tree_id: child_tid,
+            parent_id: None,
         });
         Ok(())
     }
@@ -354,11 +348,8 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             Some(res) => Some(self.table.get(res)?.inner.id.clone()),
             None => None,
         };
-        {
-            let mut state = node_inner.state.lock().expect("node state lock");
-            state.mesh = mesh_id;
-        }
-        self.push_event(SceneEvent::NodeDirty(node_inner));
+        node_inner.state.lock().expect("node state lock").mesh = mesh_id;
+        node_inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -392,11 +383,8 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             Some(res) => Some(self.table.get(res)?.inner.id.clone()),
             None => None,
         };
-        {
-            let mut state = node_inner.state.lock().expect("node state lock");
-            state.material = mat_id;
-        }
-        self.push_event(SceneEvent::NodeDirty(node_inner));
+        node_inner.state.lock().expect("node state lock").material = mat_id;
+        node_inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -448,7 +436,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 }
             });
         }
-        self.push_event(SceneEvent::NodeDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -489,7 +477,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 }
             });
         }
-        self.push_event(SceneEvent::NodeDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 

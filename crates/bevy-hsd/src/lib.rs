@@ -9,70 +9,36 @@ mod compile;
 pub mod data;
 pub mod hydrate;
 
-pub use cache::{
-    MaterialInner, MaterialState, MeshInner, MeshState, NodeInner, NodeState, SceneEvent,
-    SceneEventQueue, SceneRegistry, SceneRegistryInner,
-};
-
-#[derive(Debug)]
-pub enum HsdChange {
-    MaterialAdded {
-        id: SmolStr,
-    },
-    MaterialChanged {
-        id: SmolStr,
-    },
-    MaterialRemoved {
-        id: SmolStr,
-    },
-    MeshAdded {
-        id: SmolStr,
-    },
-    MeshChanged {
-        id: SmolStr,
-    },
-    MeshRemoved {
-        id: SmolStr,
-    },
-    NodeAdded {
-        tree_id: smol_str::SmolStr,
-        parent_id: Option<smol_str::SmolStr>,
-    },
-    NodeMetaChanged {
-        tree_id: smol_str::SmolStr,
-    },
-    NodeRemoved {
-        tree_id: smol_str::SmolStr,
-    },
-}
-
 pub struct HsdPlugin;
 
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            FixedUpdate,
-            (
-                hydrate::systems::init_hsd_doc,
-                hydrate::systems::apply_scene_events,
+        app.add_message::<hydrate::events::DocChange>()
+            .add_systems(
+                FixedUpdate,
                 (
-                    compile::material::parse_material_data,
-                    compile::mesh::parse_mesh_data,
-                    compile::collider::parse_collider_data,
-                    compile::rigid_body::parse_rigid_body_data,
-                ),
-                (
-                    compile::material::compile_materials,
-                    compile::mesh::compile_meshes,
-                ),
-                compile::compile_nodes,
+                    hydrate::init::init_hsd_doc,
+                    hydrate::apply::flush_scene_dirty,
+                    hydrate::apply::drain_all_changes,
+                    hydrate::apply::apply_doc_changes,
+                    (
+                        compile::material::parse_material_data,
+                        compile::mesh::parse_mesh_data,
+                        compile::collider::parse_collider_data,
+                        compile::rigid_body::parse_rigid_body_data,
+                    ),
+                    (
+                        compile::material::compile_materials,
+                        compile::mesh::compile_meshes,
+                    ),
+                    compile::node::compile_nodes,
+                )
+                    .chain(),
             )
-                .chain(),
-        )
-        .add_systems(
-            PostUpdate,
-            hydrate::systems::sync_ecs_to_cache.after(TransformSystems::Propagate),
-        );
+            .add_systems(
+                PostUpdate,
+                hydrate::sync::sync_ecs_to_cache.after(TransformSystems::Propagate),
+            );
     }
 }
 

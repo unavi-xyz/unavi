@@ -4,7 +4,10 @@ use std::{
 };
 
 use bevy::prelude::*;
-use bevy_hsd::{HsdDoc, HsdNodeTreeId, SceneRegistryInner};
+use bevy_hsd::{
+    HsdDoc, HsdNodeTreeId,
+    cache::{SceneRegistry, SceneRegistryInner},
+};
 use bevy_vrm::BoneName;
 use loro::TreeID;
 
@@ -29,7 +32,7 @@ pub struct LocalAgentDocs {
 
 pub(crate) fn parent_bone_proxies(
     mut commands: Commands,
-    agent_doc_entities: Query<(Entity, &HsdDoc, &bevy_hsd::SceneRegistry), With<AgentHsdDoc>>,
+    agent_doc_entities: Query<(Entity, &HsdDoc, &SceneRegistry), With<AgentHsdDoc>>,
     agent_docs: Option<Res<LocalAgentDocs>>,
     new_nodes: Query<(Entity, &HsdNodeTreeId), Added<HsdNodeTreeId>>,
 ) {

@@ -51,7 +51,7 @@ impl Plugin for ScriptPlugin {
                     runtime::tick::tick_scripts,
                 )
                     .chain()
-                    .after(bevy_hsd::hydrate::systems::init_hsd_doc),
+                    .after(bevy_hsd::hydrate::init::init_hsd_doc),
             );
     }
 }

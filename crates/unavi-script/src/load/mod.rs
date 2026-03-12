@@ -4,8 +4,10 @@ use anyhow::Context;
 use bevy::prelude::*;
 use bevy_async_task::TaskPool;
 use bevy_hsd::{
-    HsdDoc, HsdRecordId, SceneEvent, SceneEventQueue, SceneRegistry, SceneRegistryInner,
-    cache::{NodeInner, NodeState},
+    HsdDoc, HsdRecordId,
+    cache::{NodeInner, NodeState, SceneRegistry, SceneRegistryInner},
+    data::HsdNodeData,
+    hydrate::events::{DocChange, DocChangeKind, DocEventQueue},
 };
 use log::{ScriptStderr, ScriptStdout};
 use loro::{LoroTree, TreeParentId};
@@ -74,7 +76,7 @@ pub(crate) fn load_scripts(
     hsd_docs: Query<&HsdDoc>,
     hsd_record_ids: Query<&HsdRecordId>,
     registries: Query<&SceneRegistry>,
-    event_queues: Query<&SceneEventQueue>,
+    doc_event_queues: Query<&DocEventQueue>,
     permissions: Query<Option<&ScriptPermissions>>,
     agent_docs: Option<Res<LocalAgentDocs>>,
 ) {
@@ -111,7 +113,7 @@ pub(crate) fn load_scripts(
             .stderr(stderr_stream)
             .build();
 
-        let (doc, self_node_id, registry, events, agent_entry, doc_id) =
+        let (doc, self_node_id, registry, events, agent_entry, doc_id, doc_entity) =
             if perms.api.contains(&ApiName::LocalAgent) {
                 let Some(ref ad) = agent_docs else {
                     warn!(name, "local agent perms set but LocalAgentDocs not ready");
@@ -139,29 +141,23 @@ pub(crate) fn load_scripts(
 
                 // Pre-create SceneRegistry with NodeInners for each bone.
                 let agent_registry = SceneRegistryInner::new();
-                let agent_events: Arc<Mutex<Vec<SceneEvent>>> = Arc::new(Mutex::new(Vec::new()));
                 for &tree_id in bone_nodes.values() {
                     let inner = Arc::new(NodeInner {
+                        dirty: false.into(),
                         tree_id,
                         state: Mutex::new(NodeState::default()),
                         entity: Mutex::new(None),
                     });
-                    {
-                        agent_registry
-                            .nodes
-                            .lock()
-                            .expect("nodes lock")
-                            .push(Arc::clone(&inner));
-                        agent_registry
-                            .node_map
-                            .lock()
-                            .expect("node_map lock")
-                            .insert(tree_id, Arc::clone(&inner));
-                    }
-                    agent_events
+                    agent_registry
+                        .nodes
                         .lock()
-                        .expect("events lock")
-                        .push(SceneEvent::NodeCreated(inner));
+                        .expect("nodes lock")
+                        .push(Arc::clone(&inner));
+                    agent_registry
+                        .node_map
+                        .lock()
+                        .expect("node_map lock")
+                        .insert(tree_id, Arc::clone(&inner));
                 }
 
                 let entry = Arc::new(AgentDocEntry {
@@ -186,38 +182,67 @@ pub(crate) fn load_scripts(
 
                 // Create NodeInner for self_node.
                 let self_inner = Arc::new(NodeInner {
+                    dirty: false.into(),
                     tree_id: self_node_id,
                     state: Mutex::new(NodeState::default()),
                     entity: Mutex::new(None),
                 });
-                {
-                    agent_registry
-                        .nodes
-                        .lock()
-                        .expect("nodes lock")
-                        .push(Arc::clone(&self_inner));
-                    agent_registry
-                        .node_map
-                        .lock()
-                        .expect("node_map lock")
-                        .insert(self_node_id, Arc::clone(&self_inner));
-                }
+                agent_registry
+                    .nodes
+                    .lock()
+                    .expect("nodes lock")
+                    .push(Arc::clone(&self_inner));
+                agent_registry
+                    .node_map
+                    .lock()
+                    .expect("node_map lock")
+                    .insert(self_node_id, Arc::clone(&self_inner));
+
+                let doc_id = blake3::hash(&new_doc.peer_id().to_le_bytes());
+
+                // Spawn HsdDoc entity first to get the entity ID, then build NodeAdded
+                // events with the known doc entity.
+                let doc_ent = commands
+                    .spawn((
+                        AgentHsdDoc,
+                        HsdDoc(Arc::clone(&new_doc)),
+                        HsdRecordId(doc_id),
+                        SceneRegistry(Arc::clone(&agent_registry)),
+                    ))
+                    .id();
+
+                // Build initial NodeAdded events for all bone proxy nodes + self.
+                let mut init_events: Vec<DocChange> = agent_registry
+                    .nodes
+                    .lock()
+                    .expect("nodes lock")
+                    .iter()
+                    .map(|inner| {
+                        let tree_id: smol_str::SmolStr =
+                            format!("{}@{}", inner.tree_id.counter, inner.tree_id.peer).into();
+                        DocChange {
+                            doc: doc_ent,
+                            kind: DocChangeKind::NodeAdded {
+                                tree_id,
+                                parent_id: None,
+                                data: HsdNodeData::default(),
+                            },
+                        }
+                    })
+                    .collect();
+
+                let agent_events = Arc::new(Mutex::new(Vec::new()));
+                let doc_event_queue = Arc::clone(&agent_events);
+
+                // Drain init events into the queue.
                 agent_events
                     .lock()
                     .expect("events lock")
-                    .push(SceneEvent::NodeCreated(self_inner));
+                    .append(&mut init_events);
 
-                // Synthetic doc_id from the agent doc's peer id.
-                let doc_id = blake3::hash(&new_doc.peer_id().to_le_bytes());
-
-                // Spawn HsdDoc entity with pre-built registry/events.
-                commands.spawn((
-                    AgentHsdDoc,
-                    HsdDoc(Arc::clone(&new_doc)),
-                    HsdRecordId(doc_id),
-                    SceneRegistry(Arc::clone(&agent_registry)),
-                    SceneEventQueue(Arc::clone(&agent_events)),
-                ));
+                commands
+                    .entity(doc_ent)
+                    .insert(DocEventQueue(Arc::clone(&doc_event_queue)));
 
                 (
                     new_doc,
@@ -226,21 +251,21 @@ pub(crate) fn load_scripts(
                     agent_events,
                     Some(entry),
                     doc_id,
+                    doc_ent,
                 )
             } else {
                 let Ok(registry) = registries.get(source.doc_entity) else {
                     warn!("SceneRegistry not found for script");
                     continue;
                 };
-                let Ok(event_queue) = event_queues.get(source.doc_entity) else {
-                    warn!("SceneEventQueue not found for script");
+                let Ok(event_queue) = doc_event_queues.get(source.doc_entity) else {
+                    warn!("DocEventQueue not found for script");
                     continue;
                 };
                 let Ok(self_node_id) = loro::TreeID::try_from(source.tree_id.as_str()) else {
                     warn!("invalid tree id: {}", source.tree_id);
                     continue;
                 };
-                // Get the underlying LoroDoc for commit() support.
                 let doc = hsd_docs
                     .get(source.doc_entity)
                     .map_or_else(|_| Arc::new(loro::LoroDoc::new()), |hsd| Arc::clone(&hsd.0));
@@ -256,6 +281,7 @@ pub(crate) fn load_scripts(
                     Arc::clone(&event_queue.0),
                     None,
                     doc_id,
+                    source.doc_entity,
                 )
             };
 
@@ -276,6 +302,7 @@ pub(crate) fn load_scripts(
             perms.clone(),
             agent_entry,
             doc_id,
+            doc_entity,
         );
         let state = StoreState::new(wasi_ctx, rt);
 

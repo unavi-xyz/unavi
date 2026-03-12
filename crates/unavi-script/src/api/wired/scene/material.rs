@@ -1,6 +1,6 @@
-use std::sync::Arc;
+use std::sync::{Arc, atomic::Ordering};
 
-use bevy_hsd::{MaterialInner, SceneEvent};
+use bevy_hsd::cache::MaterialInner;
 use wasmtime::component::Resource;
 
 use super::bindings::wired::scene::types::Material;
@@ -74,7 +74,7 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("material state lock").name = value;
-        self.push_event(SceneEvent::MaterialDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -98,7 +98,7 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
             let a = value.get(3).copied().unwrap_or(1.0);
             state.base_color = [r, g, b, a];
         }
-        self.push_event(SceneEvent::MaterialDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -114,7 +114,7 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("material state lock").metallic = value;
-        self.push_event(SceneEvent::MaterialDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -130,7 +130,7 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("material state lock").roughness = value;
-        self.push_event(SceneEvent::MaterialDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
@@ -154,7 +154,7 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
             .lock()
             .expect("material state lock")
             .double_sided = value;
-        self.push_event(SceneEvent::MaterialDirty(inner));
+        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 

@@ -10,38 +10,38 @@ use smol_str::SmolStr;
 
 use crate::{CompiledMesh, data::HsdMesh};
 
-/// For each newly-added `HsdMesh`, spawn `BlobDep` entities and
-/// insert `MeshParams`.
-pub fn parse_mesh_data(mut commands: Commands, meshes: Query<(Entity, &HsdMesh), Added<HsdMesh>>) {
+pub fn parse_mesh_data(
+    mut commands: Commands,
+    meshes: Query<(Entity, &HsdMesh), Changed<HsdMesh>>,
+) {
     for (ent, mesh) in &meshes {
-        let mut attr_entities = Vec::new();
+        let mut attr_deps = Vec::new();
 
         for (name, hash) in &mesh.attributes {
             let dep = commands
                 .spawn((
-                    BlobDep { target: ent },
+                    BlobDep { owner: ent },
                     BlobRequest(hash.0),
                     MeshAttrName(name.clone()),
                 ))
                 .id();
-            attr_entities.push(dep);
+            attr_deps.push(dep);
         }
 
-        let indices_ent = mesh.indices.map(|hash| {
+        let indices = mesh.indices.map(|hash| {
             commands
-                .spawn((BlobDep { target: ent }, BlobRequest(hash.0)))
+                .spawn((BlobDep { owner: ent }, BlobRequest(hash.0)))
                 .id()
         });
 
         commands.entity(ent).insert(MeshParams {
             topology: mesh.topology.0,
-            attr_deps: attr_entities,
-            indices: indices_ent,
+            attr_deps,
+            indices,
         });
     }
 }
 
-/// Name tag for mesh attribute blob deps.
 #[derive(Component)]
 pub struct MeshAttrName(SmolStr);
 
@@ -76,13 +76,14 @@ enum MeshAttrKind {
 }
 
 pub fn compile_meshes(
+    mut mesh_assets: ResMut<Assets<Mesh>>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
-    loaded: Query<(Entity, &MeshParams), Added<BlobDepsLoaded>>,
+    loaded: Query<(Entity, &MeshParams, Option<&CompiledMesh>), Added<BlobDepsLoaded>>,
     mut blobs: Query<&mut BlobResponse>,
     attr_names: Query<&MeshAttrName>,
 ) {
-    for (ent, params) in &loaded {
+    for (ent, params, existing) in &loaded {
         let mut mesh = Mesh::new(params.topology, RenderAssetUsages::all());
 
         // Insert indices.
@@ -103,9 +104,11 @@ pub fn compile_meshes(
         // Insert attributes.
         for &dep_ent in &params.attr_deps {
             let Ok(name) = attr_names.get(dep_ent) else {
+                warn!("attr name not found");
                 continue;
             };
             let Ok(Some(bytes)) = blobs.get_mut(dep_ent).map(|mut b| b.0.take()) else {
+                warn!("blob dep not found");
                 continue;
             };
 
@@ -135,8 +138,24 @@ pub fn compile_meshes(
             }
         }
 
+        // Update existing asset in-place to preserve handles in referencing nodes.
+        if let Some(CompiledMesh(handle)) = existing
+            && let Some(asset) = mesh_assets.get_mut(handle)
+        {
+            *asset = mesh;
+            commands
+                .entity(ent)
+                .remove::<BlobDeps>()
+                .remove::<BlobDepsLoaded>();
+            continue;
+        }
+
         let handle = asset_server.add(mesh);
-        commands.entity(ent).insert(CompiledMesh(handle));
+        commands
+            .entity(ent)
+            .insert(CompiledMesh(handle))
+            .remove::<BlobDeps>()
+            .remove::<BlobDepsLoaded>();
     }
 }
 

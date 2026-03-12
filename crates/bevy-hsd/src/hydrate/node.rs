@@ -1,6 +1,4 @@
 use bevy::prelude::*;
-use loro::LoroMap;
-use loro_surgeon::Hydrate;
 use smol_str::SmolStr;
 
 use crate::{
@@ -53,27 +51,10 @@ pub(super) fn spawn_node_entity(
 pub(super) fn update_node_components(
     ent: Entity,
     tree_id: &str,
-    hsd_map: &LoroMap,
+    data: &HsdNodeData,
     commands: &mut Commands,
 ) {
-    let Some(tree) = hsd_map
-        .get_or_create_container("nodes", loro::LoroTree::new())
-        .ok()
-    else {
-        return;
-    };
-    let Ok(tid) = loro::TreeID::try_from(tree_id) else {
-        return;
-    };
-    let Ok(meta) = tree.get_meta(tid) else {
-        return;
-    };
-    let meta_value = meta.get_deep_value();
-    let Ok(data) = HsdNodeData::hydrate(&meta_value) else {
-        return;
-    };
-
-    let transform = node_transform(&data);
+    let transform = node_transform(data);
     let name: SmolStr = data.name.clone().unwrap_or_else(|| tree_id.into());
 
     let mut ecmd = commands.entity(ent);
@@ -85,10 +66,10 @@ pub(super) fn update_node_components(
         MaterialRef,
     )>();
 
-    if let Some(id) = data.mesh {
+    if let Some(id) = data.mesh.clone() {
         ecmd.insert(MeshRef(id));
     }
-    if let Some(id) = data.material {
+    if let Some(id) = data.material.clone() {
         ecmd.insert(MaterialRef(id));
     }
 

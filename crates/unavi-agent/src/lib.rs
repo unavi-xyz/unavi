@@ -92,6 +92,20 @@ impl Plugin for AgentPlugin {
     }
 }
 
+#[derive(Component)]
+pub struct Agent;
+
+#[derive(Component)]
+pub struct AgentDid(pub Did);
+
+#[derive(Component, Default)]
+#[require(Transform, Visibility)]
+pub struct AgentRig;
+
+#[derive(Component, Default)]
+#[require(Transform, Visibility)]
+pub struct AgentCamera;
+
 #[derive(TnuaScheme)]
 #[scheme(basis = TnuaBuiltinWalk)]
 pub enum ControlScheme {
@@ -109,14 +123,3 @@ pub struct LocalAgentEntities {
 #[derive(Component, Default)]
 #[require(AgentConfig, TrackingSource, Transform, Visibility)]
 pub struct LocalAgent;
-
-#[derive(Component)]
-pub struct AgentDid(pub Did);
-
-#[derive(Component, Default)]
-#[require(Transform, Visibility)]
-pub struct AgentRig;
-
-#[derive(Component, Default)]
-#[require(Transform, Visibility)]
-pub struct AgentCamera;

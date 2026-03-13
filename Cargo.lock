@@ -13417,7 +13417,6 @@ dependencies = [
  "tracing-subscriber",
  "unavi-agent",
  "unavi-avatar",
- "unavi-input",
  "unavi-wasm-compat",
  "wasmtime",
  "wasmtime-wasi",

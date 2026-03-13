@@ -13,7 +13,7 @@ use log::{ScriptStderr, ScriptStdout};
 use loro::{LoroDoc, TreeID};
 use smol_str::ToSmolStr;
 use state::{RuntimeData, StoreState};
-use unavi_agent::LocalAgent;
+use unavi_agent::{LocalAgent, LocalAgentEntities};
 use unavi_avatar::bones::AvatarBones;
 use wasmtime::{AsContextMut, Store, component::Linker};
 use wasmtime_wasi::WasiCtxBuilder;
@@ -82,7 +82,8 @@ pub(crate) fn load_scripts(
     registries: Query<&SceneRegistry>,
     hsd_change_queues: Query<&DocChangeQueue>,
     permissions: Query<Option<&ScriptPermissions>>,
-    local_agent: Query<(&AgentProxies, &AvatarBones), With<LocalAgent>>,
+    local_agent: Query<(&AgentProxies, &LocalAgentEntities), With<LocalAgent>>,
+    avatar_bones: Query<&AvatarBones>,
 ) {
     #[cfg(target_family = "wasm")]
     return;
@@ -119,8 +120,13 @@ pub(crate) fn load_scripts(
 
         let (doc, self_node_id, registry, events, agent_entry, doc_id, doc_entity) =
             if perms.api.contains(&ApiName::LocalAgent) {
-                let Ok((ap, avatar_bones)) = local_agent.single() else {
-                    warn!(name, "local agent perms set but agent doc not ready");
+                let Ok((ap, agent_entities)) = local_agent.single() else {
+                    warn!(name, "agent proxy not ready");
+                    continue;
+                };
+
+                let Ok(avatar_bones) = avatar_bones.get(agent_entities.avatar) else {
+                    warn!(name, "avatar bones not ready");
                     continue;
                 };
 

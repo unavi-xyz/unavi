@@ -2,7 +2,7 @@ use std::time::SystemTime;
 
 use crate::{
     exports::wired::script::guest_api::{Guest, GuestScript},
-    unavi::shapes::api::Sphere,
+    unavi::shapes::api::Cuboid,
     wired::{
         agent::{
             context::local_agent,
@@ -32,7 +32,7 @@ impl GuestScript for Script {
     fn new() -> Self {
         let agent: Agent = local_agent();
 
-        let mesh = Sphere::new(0.07).mesh();
+        let mesh = Cuboid::new(0.06, 0.06, 0.06).mesh();
 
         let mat = agent.document().create_material();
         mat.set_base_color(&[0.8, 0.1, 0.1, 1.0]);
@@ -62,7 +62,7 @@ impl GuestScript for Script {
 
         self.node.set_translation(Vec3 {
             x: 0.0,
-            y: now.sin() * 0.05,
+            y: now.sin() * 0.1,
             z: 0.0,
         });
     }

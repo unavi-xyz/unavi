@@ -37,4 +37,3 @@ avian3d.workspace              = true
 bevy_panorbit_camera.workspace = true
 directories.workspace          = true
 tracing-subscriber.workspace   = true
-unavi-input.path               = "../unavi-input"

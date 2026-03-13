@@ -3,13 +3,13 @@ use bevy_vrm::BoneName;
 use unavi_avatar::bones::AvatarBones;
 
 use crate::{
-    AgentEntities,
+    LocalAgentEntities,
     tracking::{TrackedHead, TrackedPose},
 };
 
 /// Applies tracked head pose to the avatar's head bone.
 pub fn apply_head_tracking(
-    agents: Query<&AgentEntities>,
+    agents: Query<&LocalAgentEntities>,
     tracked_heads: Query<&TrackedPose, With<TrackedHead>>,
     avatars: Query<&AvatarBones>,
     mut bones: Query<&mut Transform, With<BoneName>>,

@@ -8,7 +8,7 @@ use bevy_xr_utils::{
 };
 
 use crate::{
-    AgentEntities, AgentRig,
+    AgentRig, LocalAgentEntities,
     movement::MovementYaw,
     tracking::{TrackedHead, TrackedPose},
 };
@@ -75,7 +75,7 @@ pub fn update_hmd_world_pose(
 /// Snaps XR tracking root position to match the Tnua body,
 /// keeping the stage aligned with physics.
 pub fn sync_stage_to_body(
-    agents: Query<&AgentEntities>,
+    agents: Query<&LocalAgentEntities>,
     rigs: Query<&Transform, With<AgentRig>>,
     mut pos_writer: MessageWriter<SnapToPosition>,
 ) {
@@ -140,7 +140,7 @@ pub fn update_movement_yaw(pose: Res<HmdWorldPose>, mut yaw: ResMut<MovementYaw>
 /// Syncs tracked head rotation to HMD world rotation so the
 /// avatar's head bone follows the headset.
 pub fn update_xr_head_tracking(
-    agents: Query<&AgentEntities>,
+    agents: Query<&LocalAgentEntities>,
     mut tracked_heads: Query<&mut TrackedPose, With<TrackedHead>>,
     pose: Res<HmdWorldPose>,
 ) {

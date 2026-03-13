@@ -31,6 +31,7 @@ impl Plugin for ScriptPlugin {
         app.init_resource::<load::local::PendingHandles>()
             .register_asset_loader(asset::WasmLoader)
             .init_asset::<asset::Wasm>()
+            .add_observer(agent::on_avatar_bones_added)
             .add_observer(load::local::on_spawn_local_script)
             .add_systems(PreUpdate, runtime::increment_epochs)
             .add_systems(

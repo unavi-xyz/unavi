@@ -1,8 +1,7 @@
 use bevy::prelude::*;
-use bevy_hsd::HsdPlugin;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin, util::create_test_wds};
-use unavi_script::{ScriptPermissions, ScriptPlugin, SpawnLocalScript, load::local::ScriptSource};
+use bevy_wds::{LocalActor, LocalBlobs, util::create_test_wds};
+use unavi_script::{ScriptPermissions, SpawnLocalScript, load::local::ScriptSource};
 
 fn main() {
     let (actor, blobs) = create_test_wds();
@@ -14,19 +13,14 @@ fn main() {
             ..Default::default()
         }),
         PanOrbitCameraPlugin,
-        WdsPlugin,
-        HsdPlugin,
-        ScriptPlugin,
+        bevy_hsd::HsdPlugin,
+        bevy_wds::WdsPlugin,
+        unavi_script::ScriptPlugin,
     ))
     .add_systems(Startup, init_scene);
 
     app.world_mut()
         .spawn((LocalActor(actor), LocalBlobs(blobs)));
-
-    app.world_mut().trigger(SpawnLocalScript {
-        permissions: ScriptPermissions::default(),
-        source: ScriptSource::Path("wasm/example/unavi_shapes.wasm".to_string()),
-    });
 
     app.run();
 }
@@ -41,4 +35,9 @@ fn init_scene(mut commands: Commands) {
         PanOrbitCamera::default(),
         Transform::from_xyz(3.0, 8.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
+
+    commands.trigger(SpawnLocalScript {
+        permissions: ScriptPermissions::default(),
+        source: ScriptSource::Path("wasm/example/unavi_shapes.wasm".to_string()),
+    });
 }

@@ -5,9 +5,9 @@ use bevy_xr_utils::{
     transform_utils::TransformUtilitiesPlugin,
 };
 
-pub struct UnaviXrPlugin;
+pub struct XrPlugin;
 
-impl Plugin for UnaviXrPlugin {
+impl Plugin for XrPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             XRUtilsActionsPlugin,

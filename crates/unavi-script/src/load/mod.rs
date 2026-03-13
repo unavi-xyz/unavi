@@ -13,6 +13,8 @@ use log::{ScriptStderr, ScriptStdout};
 use loro::{LoroDoc, TreeID};
 use smol_str::ToSmolStr;
 use state::{RuntimeData, StoreState};
+use unavi_agent::LocalAgent;
+use unavi_avatar::bones::AvatarBones;
 use wasmtime::{AsContextMut, Store, component::Linker};
 use wasmtime_wasi::WasiCtxBuilder;
 
@@ -20,7 +22,7 @@ use bevy_wds::{LocalActor, LocalBlobs};
 
 use crate::{
     ScriptEngine, WasmBinary, WasmEngine,
-    agent::{AgentDocEntry, LocalAgentDocs},
+    agent::{AgentDocEntry, AgentDocs},
     api::wired::scene::document::gen_id,
     asset::Wasm,
     permissions::{ApiName, HsdPermissions, ScriptPermissions},
@@ -80,7 +82,7 @@ pub(crate) fn load_scripts(
     registries: Query<&SceneRegistry>,
     hsd_change_queues: Query<&DocChangeQueue>,
     permissions: Query<Option<&ScriptPermissions>>,
-    agent_docs: Option<Res<LocalAgentDocs>>,
+    local_agent: Query<(&AgentDocs, &AvatarBones), With<LocalAgent>>,
 ) {
     #[cfg(target_family = "wasm")]
     return;
@@ -117,8 +119,8 @@ pub(crate) fn load_scripts(
 
         let (doc, self_node_id, registry, events, agent_entry, doc_id, doc_entity) =
             if perms.api.contains(&ApiName::LocalAgent) {
-                let Some(ref ad) = agent_docs else {
-                    warn!(name, "local agent perms set but LocalAgentDocs not ready");
+                let Ok((ad, avatar_bones)) = local_agent.single() else {
+                    warn!(name, "local agent perms set but agent doc not ready");
                     continue;
                 };
 
@@ -126,7 +128,7 @@ pub(crate) fn load_scripts(
                 let mut bone_nodes = HashMap::new();
                 let mut bone_node_ids = HashMap::new();
                 let agent_registry = SceneRegistryInner::new();
-                for &bone in ad.bone_entities.keys() {
+                for &bone in avatar_bones.keys() {
                     let id = gen_id();
                     bone_nodes.insert(bone, id.clone());
                     bone_node_ids.insert(id.clone(), bone);

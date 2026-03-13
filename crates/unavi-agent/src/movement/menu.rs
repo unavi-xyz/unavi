@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use unavi_avatar::animation::{AnimationName, weights::TargetAnimationWeights};
 use unavi_input::{actions::MenuAction, schminput::BoolActionValue};
 
-use crate::{AgentEntities, LocalAgent, movement::MenuAnimationState};
+use crate::{LocalAgent, LocalAgentEntities, movement::MenuAnimationState};
 
 pub const MENU_YAW_BOUND: f32 = FRAC_PI_2;
 pub const MIN_MENU_MOVEMENT: f32 = 0.1;
@@ -12,11 +12,11 @@ pub const MIN_MENU_MOVEMENT: f32 = 0.1;
 pub fn apply_menu_animation(
     menu_action: Query<&BoolActionValue, With<MenuAction>>,
     mut animations: Query<(&mut TargetAnimationWeights, &ChildOf)>,
-    local_agent: Query<&AgentEntities, With<LocalAgent>>,
+    local_agent: Query<&LocalAgentEntities, With<LocalAgent>>,
     mut menu_state: ResMut<MenuAnimationState>,
     mut prev_state: Local<bool>,
 ) {
-    let Ok(AgentEntities { avatar, .. }) = local_agent.single() else {
+    let Ok(LocalAgentEntities { avatar, .. }) = local_agent.single() else {
         return;
     };
 

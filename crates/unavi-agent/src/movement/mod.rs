@@ -8,7 +8,7 @@ use unavi_input::{
 };
 
 use crate::{
-    AgentEntities, AgentRig, ControlScheme,
+    AgentRig, ControlScheme, LocalAgentEntities,
     config::{AgentConfig, XrMode},
     tracking::{TrackedHead, TrackedPose},
 };
@@ -20,9 +20,6 @@ pub mod teleport;
 #[cfg(not(target_family = "wasm"))]
 pub mod xr;
 
-/// Forward yaw for movement direction.
-/// Desktop: unused (reads rig rotation directly).
-/// XR: set from HMD yaw each frame.
 #[derive(Resource, Default)]
 pub struct MovementYaw(pub f32);
 
@@ -35,10 +32,9 @@ pub struct TargetHeadInput(Vec2);
 #[derive(Resource, Default)]
 pub struct MenuAnimationState(bool);
 
-/// Applies mouse/keyboard input to the tracked head pose (desktop mode).
 pub fn apply_head_input(
     look_action: Query<&Vec2ActionValue, With<LookAction>>,
-    agents: Query<&AgentEntities>,
+    agents: Query<&LocalAgentEntities>,
     mut rigs: Query<&mut Transform, With<AgentRig>>,
     mut tracked_heads: Query<&mut TrackedPose, With<TrackedHead>>,
     mut target: ResMut<TargetHeadInput>,
@@ -90,9 +86,8 @@ pub fn apply_head_input(
 const MOVE_THRESHOLD: f32 = 0.6; // TODO configurable for stick drift (same for look)
 const S: f32 = 0.2;
 
-/// Applies movement input to the physics controller (all modes).
 pub fn apply_body_input(
-    agents: Query<(&AgentEntities, &AgentConfig)>,
+    agents: Query<(&LocalAgentEntities, &AgentConfig)>,
     jump_action: Query<&BoolActionValue, With<JumpAction>>,
     move_action: Query<&Vec2ActionValue, With<MoveAction>>,
     sprint_action: Query<&BoolActionValue, With<SprintAction>>,

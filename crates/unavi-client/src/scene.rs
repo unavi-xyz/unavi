@@ -11,12 +11,11 @@ pub fn spawn_agent(
     mut commands: Commands,
     mut spawned: Local<bool>,
 ) {
+    // Wait for scene to be initialized.
     if *spawned || new_nodes.is_empty() {
         return;
     }
-
     commands.spawn(LocalAgent);
-
     *spawned = true;
 }
 

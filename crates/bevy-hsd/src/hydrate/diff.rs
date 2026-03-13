@@ -1,14 +1,17 @@
-use loro::{ContainerID, Index, TreeExternalDiff, TreeID};
+use loro::{
+    ContainerID, Index, TreeExternalDiff, TreeID,
+    event::{Diff, DiffEvent},
+};
 use smol_str::SmolStr;
 
 use super::events::RawHsdChange;
 
-pub(super) fn extract_changes_from_diff(e: &loro::event::DiffEvent, queue: &mut Vec<RawHsdChange>) {
+pub(super) fn extract_changes_from_diff(e: &DiffEvent, queue: &mut Vec<RawHsdChange>) {
     for cd in &e.events {
         let path = cd.path;
 
         match &cd.diff {
-            loro::event::Diff::Tree(tree_diff) => {
+            Diff::Tree(tree_diff) => {
                 for item in &tree_diff.diff {
                     let change = match &item.action {
                         TreeExternalDiff::Create { parent, .. } => RawHsdChange::NodeAdded {
@@ -26,7 +29,7 @@ pub(super) fn extract_changes_from_diff(e: &loro::event::DiffEvent, queue: &mut 
                 }
             }
 
-            loro::event::Diff::Map(map_delta) => {
+            Diff::Map(map_delta) => {
                 if let Some(tree_id) = node_tree_id_in_path(path) {
                     queue.push(RawHsdChange::NodeChanged { tree_id });
                 } else if let Some(id) = map_id_for_key(path, "meshes") {

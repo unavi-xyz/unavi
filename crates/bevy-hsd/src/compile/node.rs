@@ -49,6 +49,8 @@ pub fn compile_nodes(
                 .and_then(|inner| *inner.entity.lock().expect("entity lock"))
         };
         let Some(mesh_ent) = mesh_ent else {
+            // Mesh referenced but not yet registered — wait.
+            commands.entity(node_ent).insert(Uncompiled);
             continue;
         };
 
@@ -58,29 +60,31 @@ pub fn compile_nodes(
             continue;
         };
 
-        let mut ent = commands.entity(node_ent);
-        ent.insert(Mesh3d(compiled_mesh.0.clone()));
-
-        // Apply compiled material or default.
-        let mat_ent = mat_ref.and_then(|MaterialRef(mat_id)| {
-            let mats = registry.0.materials.lock().expect("materials lock");
-            mats.get(mat_id)
-                .and_then(|inner| *inner.entity.lock().expect("entity lock"))
-        });
-
-        if let Some(mat_ent) = mat_ent {
-            if let Ok(compiled_mat) = compiled_mats.get(mat_ent) {
-                ent.insert(MeshMaterial3d(compiled_mat.0.clone()));
+        // Resolve material before touching Mesh3d so both are inserted together.
+        let mat = if let Some(MaterialRef(mat_id)) = mat_ref {
+            let mat_ent = {
+                let mats = registry.0.materials.lock().expect("materials lock");
+                mats.get(mat_id)
+                    .and_then(|inner| *inner.entity.lock().expect("entity lock"))
+            };
+            if let Some(cm) = mat_ent.and_then(|e| compiled_mats.get(e).ok()) {
+                MeshMaterial3d(cm.0.clone())
             } else {
-                // Wait for material to compile.
-                ent.insert(Uncompiled);
+                // Material referenced but not yet registered or compiled — wait.
+                commands.entity(node_ent).insert(Uncompiled);
+                continue;
             }
-            continue;
-        }
+        } else {
+            // No material assigned — use default.
+            MeshMaterial3d(
+                default_material
+                    .get_or_insert_with(|| asset_server.add(StandardMaterial::default()))
+                    .clone(),
+            )
+        };
 
-        let mat = default_material
-            .get_or_insert_with(|| asset_server.add(StandardMaterial::default()))
-            .clone();
-        ent.insert(MeshMaterial3d(mat));
+        commands
+            .entity(node_ent)
+            .insert((Mesh3d(compiled_mesh.0.clone()), mat));
     }
 }

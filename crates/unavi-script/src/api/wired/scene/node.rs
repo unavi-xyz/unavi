@@ -4,6 +4,7 @@ use bevy::prelude::Transform as BevyTransform;
 use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner};
 use bevy_hsd::hydrate::events::DocChangeKind;
 use loro::{LoroList, LoroMap, LoroValue, TreeParentId};
+use smol_str::ToSmolStr;
 use wasmtime::component::Resource;
 
 use super::bindings::wired::scene::types::{
@@ -483,6 +484,11 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                     .create(TreeParentId::Root)
                     .map_err(|e| anyhow::anyhow!("create node: {e}"))?;
                 *lock = Some(tid);
+                self.registry
+                    .node_map
+                    .lock()
+                    .expect("node_map lock")
+                    .insert(tid.to_smolstr(), Arc::clone(&inner));
                 tid
             }
         };

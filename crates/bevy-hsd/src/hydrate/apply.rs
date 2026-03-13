@@ -6,7 +6,7 @@ use bevy::asset::RenderAssetUsages;
 use bevy::ecs::message::{MessageReader, MessageWriter};
 use bevy::mesh::{Indices, VertexAttributeValues};
 use bevy::prelude::*;
-use loro::{LoroMap, TreeID};
+use loro::{LoroMap, LoroTree, LoroValue, TreeID};
 use loro_surgeon::Hydrate;
 use smol_str::{SmolStr, ToSmolStr};
 use wired_schemas::HydratedHash;
@@ -89,6 +89,17 @@ pub(crate) fn drain_all_changes(
     mut writer: MessageWriter<DocChange>,
 ) {
     for (doc_ent, hsd_doc, hsd_queue, event_queue) in &docs {
+        // Drain script-event queue first so gen_id entities exist before Loro events.
+        if let Some(eq) = event_queue {
+            let events: Vec<DocChange> = {
+                let mut locked = eq.0.lock().expect("doc event queue lock");
+                locked.drain(..).collect()
+            };
+            for event in events {
+                writer.write(event);
+            }
+        }
+
         // Drain Loro-subscription queue.
         if let Some(cq) = hsd_queue {
             let raw: Vec<RawHsdChange> = {
@@ -100,17 +111,6 @@ pub(crate) fn drain_all_changes(
                 if let Some(doc_change) = raw_to_doc_change(doc_ent, change, &hsd_map) {
                     writer.write(doc_change);
                 }
-            }
-        }
-
-        // Drain script-event queue.
-        if let Some(eq) = event_queue {
-            let events: Vec<DocChange> = {
-                let mut locked = eq.0.lock().expect("doc event queue lock");
-                locked.drain(..).collect()
-            };
-            for event in events {
-                writer.write(event);
             }
         }
     }
@@ -237,13 +237,23 @@ fn handle_doc_change(
                 inner
             });
 
-            let node = HsdNode {
-                id: id.clone(),
-                parent_id: parent_id.clone(),
-                data: data.clone(),
+            let ent = {
+                let existing = *inner.entity.lock().expect("entity lock");
+                if let Some(ent) = existing {
+                    // entity already spawned (e.g. script DocEventQueue path); just update
+                    update_node_components(ent, &inner.id, data, commands);
+                    ent
+                } else {
+                    let node = HsdNode {
+                        id: inner.id.clone(),
+                        parent_id: parent_id.clone(),
+                        data: data.clone(),
+                    };
+                    let ent = spawn_node_entity(doc_ent, &node, commands);
+                    *inner.entity.lock().expect("entity lock") = Some(ent);
+                    ent
+                }
             };
-            let ent = spawn_node_entity(doc_ent, &node, commands);
-            *inner.entity.lock().expect("entity lock") = Some(ent);
 
             if let Some(pid) = parent_id {
                 let parent_ent = registry
@@ -285,7 +295,7 @@ fn handle_doc_change(
                 }
                 let ent = *inner.entity.lock().expect("entity lock");
                 if let Some(ent) = ent {
-                    update_node_components(ent, id, data, commands);
+                    update_node_components(ent, &inner.id, data, commands);
                 }
             }
         }
@@ -316,6 +326,15 @@ fn handle_doc_change(
         DocChangeKind::NodeRemoved { id } => {
             let removed = registry.node_map.lock().expect("node_map lock").remove(id);
             if let Some(inner) = removed {
+                // Remove the canonical gen_id key too if it differs (committed script nodes
+                // have both a gen_id and a tree_id alias in node_map).
+                if inner.id != *id {
+                    registry
+                        .node_map
+                        .lock()
+                        .expect("node_map lock")
+                        .remove(&inner.id);
+                }
                 registry
                     .nodes
                     .lock()
@@ -660,7 +679,7 @@ fn node_data_from_inner(inner: &NodeInner) -> (SmolStr, HsdNodeData) {
 
 fn node_data_from_hsd(hsd_map: &LoroMap, tid: TreeID) -> HsdNodeData {
     let tree = hsd_map
-        .get_or_create_container("nodes", loro::LoroTree::new())
+        .get_or_create_container("nodes", LoroTree::new())
         .ok();
     tree.as_ref()
         .and_then(|t| t.get_meta(tid).ok())
@@ -670,10 +689,10 @@ fn node_data_from_hsd(hsd_map: &LoroMap, tid: TreeID) -> HsdNodeData {
 
 fn get_mesh_at(hsd_map: &LoroMap, key: &str) -> Option<HsdMesh> {
     let value = hsd_map.get_deep_value();
-    let loro::LoroValue::Map(root) = &value else {
+    let LoroValue::Map(root) = &value else {
         return None;
     };
-    let loro::LoroValue::Map(map) = root.get("meshes")? else {
+    let LoroValue::Map(map) = root.get("meshes")? else {
         return None;
     };
     HsdMesh::hydrate(map.get(key)?).ok()
@@ -681,10 +700,10 @@ fn get_mesh_at(hsd_map: &LoroMap, key: &str) -> Option<HsdMesh> {
 
 fn get_material_at(hsd_map: &LoroMap, key: &str) -> Option<HsdMaterial> {
     let value = hsd_map.get_deep_value();
-    let loro::LoroValue::Map(root) = &value else {
+    let LoroValue::Map(root) = &value else {
         return None;
     };
-    let loro::LoroValue::Map(map) = root.get("materials")? else {
+    let LoroValue::Map(map) = root.get("materials")? else {
         return None;
     };
     HsdMaterial::hydrate(map.get(key)?).ok()

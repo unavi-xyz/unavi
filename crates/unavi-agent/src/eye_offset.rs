@@ -5,7 +5,7 @@ use bevy_vrm::{BoneName, VrmInstanceId, first_person::SetupFirstPerson};
 use unavi_avatar::Avatar;
 
 use crate::{
-    AgentEntities, AgentRig,
+    AgentRig, LocalAgentEntities,
     config::{AgentConfig, WorldScale},
     tracking::TrackedPose,
 };
@@ -18,7 +18,7 @@ pub fn setup_vrm_eye_offset(
     scene_spawner: Res<SceneSpawner>,
     avatars: Query<(Entity, &VrmInstanceId, &ChildOf), (With<Avatar>, Without<EyeOffsetProcessed>)>,
     rigs: Query<&ChildOf, With<AgentRig>>,
-    mut local_agents: Query<(&mut AgentConfig, &AgentEntities)>,
+    mut local_agents: Query<(&mut AgentConfig, &LocalAgentEntities)>,
     mut transforms: Query<&mut Transform>,
     mut tracked_poses: Query<&mut TrackedPose>,
     mut colliders: Query<&mut Collider, With<AgentRig>>,

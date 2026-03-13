@@ -2,7 +2,7 @@ use avian3d::prelude::Collider;
 use bevy::prelude::*;
 use bevy_tnua::TnuaConfig;
 
-use crate::{AgentEntities, ControlScheme, ControlSchemeConfig};
+use crate::{ControlScheme, ControlSchemeConfig, LocalAgentEntities};
 
 #[derive(Component, Clone, Debug)]
 pub struct AgentConfig {
@@ -75,7 +75,7 @@ impl WorldScale {
 }
 
 pub fn apply_config_to_controller(
-    local_agent: Query<(&AgentConfig, &AgentEntities), Changed<AgentConfig>>,
+    local_agent: Query<(&AgentConfig, &LocalAgentEntities), Changed<AgentConfig>>,
     mut bodies: Query<(&TnuaConfig<ControlScheme>, &mut Collider)>,
     mut controller_configs: ResMut<Assets<ControlSchemeConfig>>,
 ) {
@@ -89,8 +89,6 @@ pub fn apply_config_to_controller(
     let Some(tnua_config) = controller_configs.get_mut(tnua_handle.0.id()) else {
         return;
     };
-
-    info!("Applying agent config");
 
     let shape = collider.shape_mut();
     shape.clone_from(

@@ -14,7 +14,8 @@ use unavi_input::raycast::PrimaryRaycastInput;
 use unavi_portal::{PortalTraveler, create::PORTAL_RENDER_LAYER};
 
 use crate::{
-    AgentCamera, AgentEntities, AgentRig, ControlScheme, ControlSchemeConfig, Grounded, LocalAgent,
+    AgentCamera, AgentRig, ControlScheme, ControlSchemeConfig, Grounded, LocalAgent,
+    LocalAgentEntities,
     config::{AgentConfig, XrMode},
     tracking::{TrackedHead, TrackedPose},
 };
@@ -103,7 +104,7 @@ pub fn on_local_agent_added(
 
     commands.entity(body).add_children(&[avatar, tracked_head]);
     commands.entity(event.entity).add_child(body);
-    commands.entity(event.entity).insert(AgentEntities {
+    commands.entity(event.entity).insert(LocalAgentEntities {
         avatar,
         camera,
         body,

@@ -24,6 +24,8 @@ rand.workspace         = true
 smol_str.workspace     = true
 tokio.workspace        = true
 tracing.workspace      = true
+unavi-agent.path       = "../unavi-agent"
+unavi-avatar.path      = "../unavi-avatar"
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wasmtime               = "40.0.0"
 wasmtime-wasi          = { default-features = false, version = "40.0.0" }
@@ -31,7 +33,8 @@ wds.path               = "../wds"
 wired-schemas.path     = "../wired-schemas"
 
 [dev-dependencies]
+avian3d.workspace              = true
 bevy_panorbit_camera.workspace = true
 directories.workspace          = true
 tracing-subscriber.workspace   = true
-unavi-avatar.path              = "../unavi-avatar"
+unavi-input.path               = "../unavi-input"

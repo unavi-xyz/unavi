@@ -13279,6 +13279,7 @@ dependencies = [
  "unavi-input",
  "unavi-portal",
  "web-sys",
+ "xdid",
 ]
 
 [[package]]
@@ -13322,7 +13323,6 @@ dependencies = [
  "iroh-gossip",
  "log",
  "loro",
- "loro-surgeon",
  "n0-future",
  "parking_lot",
  "postcard",
@@ -13398,6 +13398,7 @@ name = "unavi-script"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "avian3d",
  "bevy",
  "bevy-hsd",
  "bevy-wds",
@@ -13414,7 +13415,9 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "unavi-agent",
  "unavi-avatar",
+ "unavi-input",
  "unavi-wasm-compat",
  "wasmtime",
  "wasmtime-wasi",

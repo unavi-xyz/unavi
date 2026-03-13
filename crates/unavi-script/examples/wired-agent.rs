@@ -1,72 +1,51 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::{path::PathBuf, sync::LazyLock};
 
-use directories::ProjectDirs;
-
+use avian3d::prelude::Gravity;
 use bevy::{
     log::{DEFAULT_FILTER, LogPlugin},
     prelude::*,
 };
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_vrm::BoneName;
-use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin, util::create_test_wds};
-use unavi_avatar::{Avatar, AvatarPlugin, bones::AvatarBones};
-use unavi_script::{
-    ScriptPermissions, ScriptPlugin, SpawnLocalScript, agent::LocalAgentDocs,
-    load::local::ScriptSource,
-};
+use bevy_wds::{LocalActor, LocalBlobs, util::create_test_wds};
+use directories::ProjectDirs;
+use unavi_agent::LocalAgent;
+use unavi_script::{ScriptPermissions, SpawnLocalScript, load::local::ScriptSource};
 
-/// Copies the VRM from the client's project data dir into the dev assets
-/// dir if it exists there. The client downloads the VRM on first run;
-/// this lets the example use it without duplicating download logic.
-fn copy_vrm_from_project_dir() {
-    const VRM_PATH: &str = "model/default.vrm";
+pub static DIRS: LazyLock<directories::ProjectDirs> = LazyLock::new(|| {
+    let dirs = ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs");
+    std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
+    dirs
+});
 
-    let Some(proj) = ProjectDirs::from("", "UNAVI", "unavi-client") else {
-        return;
-    };
-    let src = proj.data_local_dir().join("assets").join(VRM_PATH);
-    if !src.exists() {
-        return;
-    }
-
-    let dst = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../unavi-client/assets")
-        .join(VRM_PATH);
-    if let Some(parent) = dst.parent() {
-        let _ = std::fs::create_dir_all(parent);
-    }
-    if let Err(e) = std::fs::copy(&src, &dst) {
-        eprintln!("failed to copy vrm: {e}");
-    }
+pub fn assets_dir() -> PathBuf {
+    DIRS.data_local_dir().join("assets")
 }
 
 fn main() {
-    copy_vrm_from_project_dir();
-
     let (actor, blobs) = create_test_wds();
 
     let mut app = App::new();
     app.add_plugins((
         DefaultPlugins
             .set(AssetPlugin {
-                file_path: "../unavi-client/assets".to_string(),
+                file_path: assets_dir().to_string_lossy().to_string(),
                 ..Default::default()
             })
             .set(LogPlugin {
                 filter: format!("{DEFAULT_FILTER},loro_internal=off"),
                 ..Default::default()
             }),
-        AvatarPlugin,
         PanOrbitCameraPlugin,
-        WdsPlugin,
+        avian3d::PhysicsPlugins::default(),
         bevy_hsd::HsdPlugin,
-        ScriptPlugin,
+        bevy_wds::WdsPlugin,
+        unavi_input::InputPlugin,
+        unavi_avatar::AvatarPlugin,
+        unavi_agent::AgentPlugin,
+        unavi_script::ScriptPlugin,
     ))
-    .add_systems(Startup, init_scene)
-    .add_systems(FixedUpdate, spawn_script);
+    .add_observer(on_agent_load)
+    .add_systems(Startup, init_scene);
 
     app.world_mut()
         .spawn((LocalActor(actor), LocalBlobs(blobs)));
@@ -74,37 +53,35 @@ fn main() {
     app.run();
 }
 
-fn init_scene(mut commands: Commands) {
-    commands.spawn(Avatar);
+fn init_scene(mut commands: Commands, mut gravity: ResMut<Gravity>) {
+    gravity.0 = Vec3::ZERO;
 
     commands.spawn((
         DirectionalLight::default(),
         Transform::from_xyz(5.0, 8.0, 1.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
+    commands.spawn(LocalAgent);
+}
+
+fn on_agent_load(
+    _: On<Add, Camera3d>,
+    mut cameras: Query<&mut Camera>,
+    mut commands: Commands,
+    mut added: Local<bool>,
+) {
+    if *added {
+        return;
+    }
+    *added = true;
+
+    let mut cam = cameras.single_mut().expect("single camera");
+    cam.is_active = false;
+
     commands.spawn((
         PanOrbitCamera::default(),
         Transform::from_xyz(-3.0, 5.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
-}
-
-fn spawn_script(
-    mut commands: Commands,
-    avatars: Query<&AvatarBones, Added<AvatarBones>>,
-    existing: Option<Res<LocalAgentDocs>>,
-) {
-    if existing.is_some() {
-        return;
-    }
-    let Ok(bones) = avatars.single() else {
-        return;
-    };
-
-    let bone_entities: HashMap<BoneName, Entity> = bones.iter().map(|(&b, &e)| (b, e)).collect();
-    commands.insert_resource(LocalAgentDocs {
-        bone_entities: Arc::new(bone_entities),
-        docs: Arc::new(Mutex::new(vec![])),
-    });
 
     commands.trigger(SpawnLocalScript {
         permissions: ScriptPermissions::system(),

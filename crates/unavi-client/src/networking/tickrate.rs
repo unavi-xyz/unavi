@@ -1,7 +1,7 @@
 //! Distance-based tickrate adjustment for outbound agent and object data.
 
 use bevy::prelude::*;
-use unavi_agent::{AgentEntities, AgentRig, LocalAgent};
+use unavi_agent::{AgentRig, LocalAgent, LocalAgentEntities};
 
 use crate::networking::{
     agent_receive::RemoteAgent,
@@ -44,7 +44,7 @@ fn tickrate_for_distance(distance: f32, min: u8, max: u8) -> u8 {
 /// Runs on a timer to avoid excessive updates.
 pub fn update_peer_tickrates(
     nt: Res<NetworkingThread>,
-    local_agent: Query<&AgentEntities, With<LocalAgent>>,
+    local_agent: Query<&LocalAgentEntities, With<LocalAgent>>,
     body_transforms: Query<&GlobalTransform, With<AgentRig>>,
     remote_agents: Query<(&RemoteAgent, &Transform, &AgentTickrateConfig)>,
 ) {
@@ -70,7 +70,7 @@ pub fn update_peer_tickrates(
 /// Updates remote object tickrates based on distance from local agent.
 pub fn update_object_tickrates(
     nt: Res<NetworkingThread>,
-    local_agent: Query<&AgentEntities, With<LocalAgent>>,
+    local_agent: Query<&LocalAgentEntities, With<LocalAgent>>,
     body_transforms: Query<&GlobalTransform, With<AgentRig>>,
     remote_objects: Query<(&DynObjectId, &Transform), Without<LocallyOwned>>,
 ) {

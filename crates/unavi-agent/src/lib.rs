@@ -3,8 +3,9 @@
 use bevy::{post_process::auto_exposure::AutoExposurePlugin, prelude::*};
 use bevy_tnua::prelude::*;
 use bevy_tnua_avian3d::TnuaAvian3dPlugin;
-use unavi_avatar::{AvatarPlugin, Grounded};
+use unavi_avatar::Grounded;
 use unavi_input::cursor_lock::CursorGrabState;
+use xdid::core::did::Did;
 
 use crate::{config::AgentConfig, tracking::TrackingSource};
 
@@ -24,7 +25,6 @@ impl Plugin for AgentPlugin {
             AutoExposurePlugin,
             TnuaControllerPlugin::<ControlScheme>::new(FixedUpdate),
             TnuaAvian3dPlugin::new(FixedUpdate),
-            AvatarPlugin,
         ))
         .init_resource::<config::XrMode>()
         .init_resource::<movement::MenuAnimationState>()
@@ -99,7 +99,7 @@ pub enum ControlScheme {
 }
 
 #[derive(Component)]
-pub struct AgentEntities {
+pub struct LocalAgentEntities {
     pub avatar: Entity,
     pub camera: Entity,
     pub body: Entity,
@@ -109,6 +109,9 @@ pub struct AgentEntities {
 #[derive(Component, Default)]
 #[require(AgentConfig, TrackingSource, Transform, Visibility)]
 pub struct LocalAgent;
+
+#[derive(Component)]
+pub struct AgentDid(pub Did);
 
 #[derive(Component, Default)]
 #[require(Transform, Visibility)]

@@ -5,7 +5,7 @@ use std::{
 
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
-use unavi_agent::{AgentEntities, AgentRig, LocalAgent, config::AgentConfig};
+use unavi_agent::{AgentRig, LocalAgent, LocalAgentEntities, config::AgentConfig};
 use unavi_avatar::bones::AvatarBones;
 
 use crate::networking::{
@@ -30,7 +30,7 @@ pub(super) struct IFrameBaseline {
 
 pub(super) fn publish_agent_transforms(
     nt: Res<NetworkingThread>,
-    local_agent: Query<(&AgentConfig, &AgentEntities), With<LocalAgent>>,
+    local_agent: Query<(&AgentConfig, &LocalAgentEntities), With<LocalAgent>>,
     avatar_bones: Query<&AvatarBones>,
     body_transforms: Query<&GlobalTransform, (With<AgentRig>, Without<BoneName>)>,
     bone_transforms: Query<&Transform, With<BoneName>>,

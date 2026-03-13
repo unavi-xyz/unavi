@@ -6,7 +6,6 @@ use bevy::{
 use bitflags::bitflags;
 use tracing::Level;
 
-mod agent;
 #[cfg(not(target_family = "wasm"))]
 mod assets;
 mod async_commands;
@@ -79,7 +78,7 @@ impl Plugin for UnaviPlugin {
             if self.xr {
                 app.add_plugins((
                     bevy_mod_openxr::add_xr_plugins(default_plugins),
-                    xr::UnaviXrPlugin,
+                    xr::XrPlugin,
                 ));
             } else {
                 app.add_plugins(default_plugins);
@@ -100,12 +99,12 @@ impl Plugin for UnaviPlugin {
         }
 
         app.add_plugins((
-            agent::AgentPlugin,
             avian3d::PhysicsPlugins::default(),
             fade::FadePlugin,
             bevy_wds::WdsPlugin,
             bevy_hsd::HsdPlugin,
             unavi_input::InputPlugin,
+            unavi_avatar::AvatarPlugin,
             unavi_agent::AgentPlugin,
             unavi_script::ScriptPlugin,
             unavi_portal::PortalPlugin,

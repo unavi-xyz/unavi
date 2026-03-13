@@ -1,8 +1,8 @@
-use std::cell::Cell;
+use std::time::SystemTime;
 
 use crate::{
     exports::wired::script::guest_api::{Guest, GuestScript},
-    unavi::shapes::api::Cuboid,
+    unavi::shapes::api::Sphere,
     wired::{
         agent::{
             context::local_agent,
@@ -24,46 +24,45 @@ impl Guest for World {
 }
 
 struct Script {
-    cube: Node,
-    t: Cell<f32>,
+    node: Node,
+    time: SystemTime,
 }
 
 impl GuestScript for Script {
     fn new() -> Self {
         let agent: Agent = local_agent();
 
-        let mesh = Cuboid::new(0.08, 0.08, 0.08).mesh();
+        let mesh = Sphere::new(0.07).mesh();
 
         let mat = agent.document().create_material();
         mat.set_base_color(&[0.8, 0.1, 0.1, 1.0]);
 
-        let cube = agent.document().create_node();
-        cube.set_mesh(Some(mesh));
-        cube.set_material(Some(mat));
+        let node = agent.document().create_node();
+        node.set_mesh(Some(mesh));
+        node.set_material(Some(mat));
 
         // Attach cube to right hand bone.
         let hand = agent.bone(BoneName::RightHand).expect("right hand bone");
-        hand.add_child(cube);
+        hand.add_child(node);
 
         // Retrieve a handle to the cube from its parent.
         let cube = hand.children().into_iter().next().expect("cube child");
 
         Self {
-            cube,
-            t: Cell::new(0.0),
+            node: cube,
+            time: SystemTime::now(),
         }
     }
 
     fn tick(&self) {
-        let t = self.t.get() + 0.04;
-        self.t.set(t);
+        let now = self.time.elapsed().expect("elapsed").as_secs_f32();
 
-        let tr = self.cube.global_transform().translation;
+        let tr = self.node.global_transform().translation;
         println!("{}x {}y {}z", tr.x, tr.y, tr.z);
 
-        self.cube.set_translation(Vec3 {
+        self.node.set_translation(Vec3 {
             x: 0.0,
-            y: t.sin() * 0.05,
+            y: now.sin() * 0.05,
             z: 0.0,
         });
     }

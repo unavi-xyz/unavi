@@ -1,4 +1,4 @@
-package unavi:agent-example;
+package example:wired-agent;
 
 world guest {
   import unavi:shapes/api;

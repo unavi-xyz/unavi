@@ -12,7 +12,7 @@ let time = timeit {
     ls $wasm_src | where type == "dir" | par-each {|crate_dir|
         let crate = $crate_dir.name | path basename
         let crate_path = $crate_dir.name
-        let wasm_file = ($crate | str replace '-' '_') + ".wasm"
+        let wasm_file = ($crate | str replace --all '-' '_') + ".wasm"
         let target_dir = $"target/($crate)"
 
         mut logs = $"→ Building ($crate)\n"

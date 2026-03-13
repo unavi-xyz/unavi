@@ -66,7 +66,7 @@ fn main() {
         ScriptPlugin,
     ))
     .add_systems(Startup, init_scene)
-    .add_systems(Update, init_agent_docs);
+    .add_systems(FixedUpdate, spawn_script);
 
     app.world_mut()
         .spawn((LocalActor(actor), LocalBlobs(blobs)));
@@ -88,9 +88,7 @@ fn init_scene(mut commands: Commands) {
     ));
 }
 
-/// Waits for avatar bones to populate, then creates `LocalAgentDocs` and
-/// triggers script load.
-fn init_agent_docs(
+fn spawn_script(
     mut commands: Commands,
     avatars: Query<&AvatarBones, Added<AvatarBones>>,
     existing: Option<Res<LocalAgentDocs>>,
@@ -108,10 +106,8 @@ fn init_agent_docs(
         docs: Arc::new(Mutex::new(vec![])),
     });
 
-    let permissions = ScriptPermissions::system();
-
     commands.trigger(SpawnLocalScript {
-        permissions,
-        source: ScriptSource::Path("wasm/example/agent.wasm".to_string()),
+        permissions: ScriptPermissions::system(),
+        source: ScriptSource::Path("wasm/example/wired_agent.wasm".to_string()),
     });
 }

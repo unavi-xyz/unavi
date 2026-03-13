@@ -16,7 +16,7 @@ pub struct HostDocument {
     pub id: blake3::Hash,
 }
 
-fn gen_id() -> SmolStr {
+pub fn gen_id() -> SmolStr {
     /// Max byte length for an inline [`SmolStr`].
     const MAX_INLINE: usize = 23;
 

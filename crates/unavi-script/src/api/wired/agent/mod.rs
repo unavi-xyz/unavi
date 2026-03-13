@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use bevy_vrm::BoneName;
-use smol_str::ToSmolStr;
 use wasmtime::component::{Resource, ResourceTable};
 
 use crate::{
@@ -124,11 +123,11 @@ impl bindings::wired::agent::types::HostAgent for RuntimeData {
         let vrm_bone = wit_bone_to_vrm(name);
         let inner = {
             let agent = self.wired_agent.table.get(&self_)?;
-            let Some(tree_id) = agent.0.bone_nodes.get(&vrm_bone).copied() else {
+            let Some(node_id) = agent.0.bone_nodes.get(&vrm_bone).cloned() else {
                 return Ok(None);
             };
             let node_map = agent.0.registry.node_map.lock().expect("node_map lock");
-            node_map.get(&tree_id.to_smolstr()).cloned()
+            node_map.get(&node_id).cloned()
         };
         let Some(inner) = inner else {
             return Ok(None);

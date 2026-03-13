@@ -1,7 +1,7 @@
 [package]
 edition.workspace    = true
 license.workspace    = true
-name                 = "example-shapes"
+name                 = "example-unavi-shapes"
 publish              = false
 repository.workspace = true
 version.workspace    = true

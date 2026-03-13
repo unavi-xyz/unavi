@@ -7,24 +7,26 @@ use bevy_vrm::{BoneName, VrmInstanceId};
 pub struct AvatarBones(pub HashMap<BoneName, Entity>);
 
 pub(crate) fn populate_avatar_bones(
-    event: On<Add, VrmInstanceId>,
-    mut commands: Commands,
+    avatars: Query<Entity, (With<VrmInstanceId>, Without<AvatarBones>)>,
     bones: Query<(Entity, &BoneName)>,
+    mut commands: Commands,
     parents: Query<&ChildOf>,
 ) {
-    let mut avatar_bones = HashMap::new();
+    for entity in avatars {
+        let mut avatar_bones = HashMap::new();
 
-    for (bone_ent, bone_name) in bones.iter() {
-        if !is_child(bone_ent, event.entity, &parents) {
+        for (bone_ent, bone_name) in bones.iter() {
+            if !is_child(bone_ent, entity, &parents) {
+                continue;
+            }
+            avatar_bones.insert(*bone_name, bone_ent);
+        }
+
+        if avatar_bones.is_empty() {
             continue;
         }
-        avatar_bones.insert(*bone_name, bone_ent);
-    }
 
-    if avatar_bones.contains_key(&BoneName::Head) {
-        commands
-            .entity(event.entity)
-            .insert(AvatarBones(avatar_bones));
+        commands.entity(entity).insert(AvatarBones(avatar_bones));
     }
 }
 

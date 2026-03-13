@@ -4934,14 +4934,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "example-agent"
+name = "example-unavi-shapes"
 version = "0.0.16"
 dependencies = [
  "wit-bindgen 0.50.0",
 ]
 
 [[package]]
-name = "example-shapes"
+name = "example-wired-agent"
 version = "0.0.16"
 dependencies = [
  "wit-bindgen 0.50.0",

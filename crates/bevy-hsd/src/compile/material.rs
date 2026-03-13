@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_wds::{BlobDep, BlobDeps, BlobDepsLoaded, BlobRequest, BlobResponse};
 
-use crate::{CompiledMaterial, data::HsdMaterial};
+use crate::{CompiledMaterial, compile::Uncompiled, data::HsdMaterial};
 
 pub fn parse_material_data(
     mut commands: Commands,
@@ -76,10 +76,22 @@ pub fn compile_materials(
     mut mat_assets: ResMut<Assets<StandardMaterial>>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
-    loaded: Query<(Entity, &MaterialParams, Option<&CompiledMaterial>), Added<BlobDepsLoaded>>,
+    loaded: Query<
+        (Entity, &MaterialParams, Option<&CompiledMaterial>),
+        (
+            Or<(
+                Added<BlobDepsLoaded>,
+                Changed<MaterialParams>,
+                With<Uncompiled>,
+            )>,
+            With<BlobDepsLoaded>,
+        ),
+    >,
     mut blobs: Query<&mut BlobResponse>,
 ) {
     for (ent, params, existing) in &loaded {
+        commands.entity(ent).remove::<Uncompiled>();
+
         let mut material = StandardMaterial::default();
 
         if let Some(value) = params.base_color {
@@ -106,22 +118,24 @@ pub fn compile_materials(
         }
 
         // Update existing asset in-place to preserve handles in referencing nodes.
-        if let Some(CompiledMaterial(handle)) = existing
-            && let Some(asset) = mat_assets.get_mut(handle)
-        {
-            *asset = material;
+        if let Some(CompiledMaterial(handle)) = existing {
+            if let Some(asset) = mat_assets.get_mut(handle) {
+                *asset = material;
+                commands
+                    .entity(ent)
+                    .remove::<BlobDeps>()
+                    .remove::<BlobDepsLoaded>();
+            } else {
+                // Asset not ready?
+                commands.entity(ent).insert(Uncompiled);
+            }
+        } else {
+            let handle = asset_server.add(material);
             commands
                 .entity(ent)
+                .insert(CompiledMaterial(handle))
                 .remove::<BlobDeps>()
                 .remove::<BlobDepsLoaded>();
-            continue;
         }
-
-        let handle = asset_server.add(material);
-        commands
-            .entity(ent)
-            .insert(CompiledMaterial(handle))
-            .remove::<BlobDeps>()
-            .remove::<BlobDepsLoaded>();
     }
 }

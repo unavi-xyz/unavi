@@ -13,32 +13,30 @@ pub struct HsdPlugin;
 
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
-        app.add_message::<hydrate::events::DocChange>()
-            .add_systems(
-                FixedUpdate,
+        app.add_systems(
+            FixedUpdate,
+            (
+                hydrate::init::init_hsd_doc,
+                hydrate::apply::flush_scene_dirty,
+                hydrate::apply::apply_doc_changes,
                 (
-                    hydrate::init::init_hsd_doc,
-                    hydrate::apply::drain_all_changes,
-                    hydrate::apply::flush_scene_dirty,
-                    hydrate::apply::apply_doc_changes,
-                    (
-                        compile::material::parse_material_data,
-                        compile::mesh::parse_mesh_data,
-                        compile::collider::parse_collider_data,
-                        compile::rigid_body::parse_rigid_body_data,
-                    ),
-                    (
-                        compile::material::compile_materials,
-                        compile::mesh::compile_meshes,
-                    ),
-                    compile::node::compile_nodes,
-                )
-                    .chain(),
+                    compile::material::parse_material_data,
+                    compile::mesh::parse_mesh_data,
+                    compile::collider::parse_collider_data,
+                    compile::rigid_body::parse_rigid_body_data,
+                ),
+                (
+                    compile::material::compile_materials,
+                    compile::mesh::compile_meshes,
+                ),
+                compile::node::compile_nodes,
             )
-            .add_systems(
-                PostUpdate,
-                hydrate::sync::sync_ecs_to_cache.after(TransformSystems::Propagate),
-            );
+                .chain(),
+        )
+        .add_systems(
+            PostUpdate,
+            hydrate::sync::sync_ecs_to_cache.after(TransformSystems::Propagate),
+        );
     }
 }
 

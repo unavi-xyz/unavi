@@ -8,7 +8,7 @@ use bytemuck::{Pod, PodCastError, try_cast_slice};
 use bytes::Bytes;
 use smol_str::SmolStr;
 
-use crate::{CompiledMesh, data::HsdMesh};
+use crate::{CompiledMesh, compile::Uncompiled, data::HsdMesh};
 
 pub fn parse_mesh_data(
     mut commands: Commands,
@@ -79,11 +79,19 @@ pub fn compile_meshes(
     mut mesh_assets: ResMut<Assets<Mesh>>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
-    loaded: Query<(Entity, &MeshParams, Option<&CompiledMesh>), Added<BlobDepsLoaded>>,
+    loaded: Query<
+        (Entity, &MeshParams, Option<&CompiledMesh>),
+        (
+            Or<(Added<BlobDepsLoaded>, Changed<MeshParams>, With<Uncompiled>)>,
+            With<BlobDepsLoaded>,
+        ),
+    >,
     mut blobs: Query<&mut BlobResponse>,
     attr_names: Query<&MeshAttrName>,
 ) {
     for (ent, params, existing) in &loaded {
+        commands.entity(ent).remove::<Uncompiled>();
+
         let mut mesh = Mesh::new(params.topology, RenderAssetUsages::all());
 
         // Insert indices.
@@ -139,23 +147,25 @@ pub fn compile_meshes(
         }
 
         // Update existing asset in-place to preserve handles in referencing nodes.
-        if let Some(CompiledMesh(handle)) = existing
-            && let Some(asset) = mesh_assets.get_mut(handle)
-        {
-            *asset = mesh;
+        if let Some(CompiledMesh(handle)) = existing {
+            if let Some(asset) = mesh_assets.get_mut(handle) {
+                *asset = mesh;
+                commands
+                    .entity(ent)
+                    .remove::<BlobDeps>()
+                    .remove::<BlobDepsLoaded>();
+            } else {
+                // Asset not ready?
+                commands.entity(ent).insert(Uncompiled);
+            }
+        } else {
+            let handle = asset_server.add(mesh);
             commands
                 .entity(ent)
+                .insert(CompiledMesh(handle))
                 .remove::<BlobDeps>()
                 .remove::<BlobDepsLoaded>();
-            continue;
         }
-
-        let handle = asset_server.add(mesh);
-        commands
-            .entity(ent)
-            .insert(CompiledMesh(handle))
-            .remove::<BlobDeps>()
-            .remove::<BlobDepsLoaded>();
     }
 }
 

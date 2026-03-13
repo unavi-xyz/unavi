@@ -2,7 +2,6 @@ use std::collections::hash_map::Entry;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, atomic::Ordering};
 
-use bevy::ecs::message::{MessageReader, MessageWriter};
 use bevy::prelude::*;
 use bevy_wds::{BlobDep, BlobDeps, BlobDepsLoaded, BlobResponse};
 use bytemuck::cast_slice;
@@ -13,14 +12,11 @@ use smol_str::{SmolStr, ToSmolStr};
 use wired_schemas::HydratedHash;
 
 use super::{
-    events::{
-        DocChange, DocChangeKind, DocEventQueue, HsdChangeQueue, MaterialData, MeshData,
-        RawHsdChange,
-    },
+    events::{DocChange, DocChangeKind, DocChangeQueue, MaterialData, MeshData, RawHsdChange},
     node::{node_transform, spawn_node_entity, update_node_components},
 };
 use crate::{
-    HsdChild, HsdDoc,
+    HsdChild,
     cache::{
         MaterialInner, MaterialState, MeshInner, MeshState, NodeInner, NodeState, SceneRegistry,
         SceneRegistryInner,
@@ -32,19 +28,17 @@ use crate::{
     data::{HsdMaterial, HsdMesh, HsdNode, HsdNodeData},
 };
 
-pub(crate) fn flush_scene_dirty(
-    docs: Query<(Entity, &SceneRegistry)>,
-    mut writer: MessageWriter<DocChange>,
-) {
-    for (doc_ent, registry) in &docs {
+pub(crate) fn flush_scene_dirty(docs: Query<(Entity, &SceneRegistry, &DocChangeQueue)>) {
+    for (doc_ent, registry, queue) in &docs {
+        let mut changes = queue.0.lock().expect("change queue lock");
         {
             let nodes = registry.0.nodes.lock().expect("nodes lock");
             for inner in nodes.iter() {
                 if inner.dirty.swap(false, Ordering::Relaxed) {
-                    let (tree_id, data) = node_data_from_inner(inner);
-                    writer.write(DocChange {
+                    let (id, data) = node_data_from_inner(inner);
+                    changes.push(DocChange {
                         doc: doc_ent,
-                        kind: DocChangeKind::NodeChanged { id: tree_id, data },
+                        kind: DocChangeKind::NodeChanged { id, data },
                     });
                 }
             }
@@ -55,7 +49,7 @@ pub(crate) fn flush_scene_dirty(
                 debug_assert_eq!(*id, inner.id);
                 if inner.dirty.swap(false, Ordering::Relaxed) {
                     let state = inner.state.lock().expect("mesh state lock").clone();
-                    writer.write(DocChange {
+                    changes.push(DocChange {
                         doc: doc_ent,
                         kind: DocChangeKind::MeshChanged {
                             id: id.clone(),
@@ -71,7 +65,7 @@ pub(crate) fn flush_scene_dirty(
                 debug_assert_eq!(*id, inner.id);
                 if inner.dirty.swap(false, Ordering::Relaxed) {
                     let state = inner.state.lock().expect("material state lock").clone();
-                    writer.write(DocChange {
+                    changes.push(DocChange {
                         doc: doc_ent,
                         kind: DocChangeKind::MaterialChanged {
                             id: id.clone(),
@@ -84,44 +78,7 @@ pub(crate) fn flush_scene_dirty(
     }
 }
 
-pub(crate) fn drain_all_changes(
-    docs: Query<(
-        Entity,
-        &HsdDoc,
-        Option<&HsdChangeQueue>,
-        Option<&DocEventQueue>,
-    )>,
-    mut writer: MessageWriter<DocChange>,
-) {
-    for (doc_ent, hsd_doc, hsd_queue, event_queue) in &docs {
-        // Drain script-event queue first so gen_id entities exist before Loro events.
-        if let Some(eq) = event_queue {
-            let events: Vec<DocChange> = {
-                let mut locked = eq.0.lock().expect("doc event queue lock");
-                locked.drain(..).collect()
-            };
-            for event in events {
-                writer.write(event);
-            }
-        }
-
-        // Drain Loro-subscription queue.
-        if let Some(cq) = hsd_queue {
-            let raw: Vec<RawHsdChange> = {
-                let mut locked = cq.0.lock().expect("hsd change queue lock");
-                locked.drain(..).collect()
-            };
-            let hsd_map = hsd_doc.0.get_map("hsd");
-            for change in raw {
-                if let Some(doc_change) = raw_to_doc_change(doc_ent, change, &hsd_map) {
-                    writer.write(doc_change);
-                }
-            }
-        }
-    }
-}
-
-fn raw_to_doc_change(
+pub(super) fn raw_to_doc_change(
     doc_ent: Entity,
     change: RawHsdChange,
     hsd_map: &LoroMap,
@@ -167,16 +124,20 @@ fn raw_to_doc_change(
     Some(DocChange { doc: doc_ent, kind })
 }
 
-pub fn apply_doc_changes(
-    mut reader: MessageReader<DocChange>,
-    docs: Query<&SceneRegistry>,
+pub(crate) fn apply_doc_changes(
+    docs: Query<(&SceneRegistry, &DocChangeQueue)>,
     mut commands: Commands,
 ) {
-    for change in reader.read() {
-        let Ok(registry) = docs.get(change.doc) else {
-            continue;
-        };
-        handle_doc_change(change.doc, &change.kind, &registry.0, &mut commands);
+    for (registry, queue) in &docs {
+        let changes: Vec<DocChange> = queue
+            .0
+            .lock()
+            .expect("change queue lock")
+            .drain(..)
+            .collect();
+        for change in changes {
+            handle_doc_change(change.doc, &change.kind, &registry.0, &mut commands);
+        }
     }
 }
 
@@ -224,7 +185,6 @@ fn handle_doc_change(
             let ent = {
                 let existing = *inner.entity.lock().expect("entity lock");
                 if let Some(ent) = existing {
-                    // entity already spawned (e.g. script DocEventQueue path); just update
                     update_node_components(ent, &inner.id, data, commands);
                     ent
                 } else {
@@ -365,6 +325,8 @@ fn handle_doc_change(
                 let ent = *inner.entity.lock().expect("entity lock");
                 if let Some(ent) = ent {
                     apply_mesh_data(ent, data, commands);
+                } else {
+                    warn!("MeshChanged: no entity");
                 }
             }
         }
@@ -414,6 +376,8 @@ fn handle_doc_change(
                 let ent = *inner.entity.lock().expect("entity lock");
                 if let Some(ent) = ent {
                     apply_material_data(ent, data, commands);
+                } else {
+                    warn!("MaterialChanged: no entity");
                 }
             }
         }
@@ -445,15 +409,16 @@ fn spawn_mesh(doc_ent: Entity, data: &MeshData, commands: &mut Commands) -> Enti
 }
 
 fn apply_mesh_data(ent: Entity, data: &MeshData, commands: &mut Commands) {
+    commands
+        .entity(ent)
+        .remove::<BlobDepsLoaded>()
+        .remove::<BlobDeps>();
+
     match data {
         MeshData::Hsd(hsd_mesh) => {
             commands.entity(ent).insert(hsd_mesh.clone());
         }
         MeshData::Inline(state) => {
-            commands
-                .entity(ent)
-                .remove::<BlobDepsLoaded>()
-                .remove::<BlobDeps>();
             attach_inline_mesh(ent, state, commands);
         }
     }
@@ -492,14 +457,11 @@ fn attach_inline_mesh(ent: Entity, state: &MeshState, commands: &mut Commands) {
             .id()
     });
 
-    commands.entity(ent).insert((
-        MeshParams {
-            topology: state.topology,
-            attr_deps,
-            indices,
-        },
-        BlobDepsLoaded,
-    ));
+    commands.entity(ent).insert(MeshParams {
+        topology: state.topology,
+        attr_deps,
+        indices,
+    });
 }
 
 fn spawn_material(doc_ent: Entity, data: &MaterialData, commands: &mut Commands) -> Entity {
@@ -516,15 +478,16 @@ fn spawn_material(doc_ent: Entity, data: &MaterialData, commands: &mut Commands)
 }
 
 fn apply_material_data(ent: Entity, data: &MaterialData, commands: &mut Commands) {
+    commands
+        .entity(ent)
+        .remove::<BlobDepsLoaded>()
+        .remove::<BlobDeps>();
+
     match data {
         MaterialData::Hsd(hsd_mat) => {
             commands.entity(ent).insert(hsd_mat.deref().clone());
         }
         MaterialData::Inline(state) => {
-            commands
-                .entity(ent)
-                .remove::<BlobDepsLoaded>()
-                .remove::<BlobDeps>();
             attach_inline_material(ent, state, commands);
         }
     }
@@ -532,19 +495,16 @@ fn apply_material_data(ent: Entity, data: &MaterialData, commands: &mut Commands
 
 fn attach_inline_material(ent: Entity, state: &MaterialState, commands: &mut Commands) {
     let [r, g, b, a] = state.base_color;
-    commands.entity(ent).insert((
-        MaterialParams {
-            base_color: Some(Color::srgba(r, g, b, a)),
-            double_sided: Some(state.double_sided),
-            metallic: Some(state.metallic),
-            roughness: Some(state.roughness),
-            base_color_texture: None,
-            _metallic_roughness_texture: None,
-            _normal_texture: None,
-            _occlusion_texture: None,
-        },
-        BlobDepsLoaded,
-    ));
+    commands.entity(ent).insert(MaterialParams {
+        base_color: Some(Color::srgba(r, g, b, a)),
+        double_sided: Some(state.double_sided),
+        metallic: Some(state.metallic),
+        roughness: Some(state.roughness),
+        base_color_texture: None,
+        _metallic_roughness_texture: None,
+        _normal_texture: None,
+        _occlusion_texture: None,
+    });
 }
 
 fn node_state_from_data(data: &HsdNodeData) -> NodeState {

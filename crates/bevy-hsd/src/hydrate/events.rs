@@ -42,9 +42,8 @@ pub(crate) enum RawHsdChange {
     },
 }
 
-/// Holds raw Loro subscription changes until they are drained into `DocChange` messages.
 #[derive(Component, Clone)]
-pub(crate) struct HsdChangeQueue(pub(crate) Arc<Mutex<Vec<RawHsdChange>>>);
+pub struct DocChangeQueue(pub Arc<Mutex<Vec<DocChange>>>);
 
 pub enum MeshData {
     Hsd(HsdMesh),
@@ -97,13 +96,7 @@ pub enum DocChangeKind {
     },
 }
 
-#[derive(Message)]
 pub struct DocChange {
     pub doc: Entity,
     pub kind: DocChangeKind,
 }
-
-/// Queue for script-side events. Written by script runtimes; drained into
-/// `DocChange` messages by `drain_all_changes`.
-#[derive(Component, Clone)]
-pub struct DocEventQueue(pub Arc<Mutex<Vec<DocChange>>>);

@@ -14,7 +14,6 @@ impl Plugin for AvatarPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(VrmPlugins)
             .add_observer(on_avatar_added)
-            .add_observer(bones::populate_avatar_bones)
             .add_systems(
                 Update,
                 (
@@ -23,7 +22,13 @@ impl Plugin for AvatarPlugin {
                     animation::velocity::calc_average_velocity,
                 ),
             )
-            .add_systems(FixedUpdate, animation::weights::play_avatar_animations);
+            .add_systems(
+                FixedUpdate,
+                (
+                    animation::weights::play_avatar_animations,
+                    bones::populate_avatar_bones,
+                ),
+            );
     }
 }
 

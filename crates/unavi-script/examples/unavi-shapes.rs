@@ -25,7 +25,7 @@ fn main() {
 
     app.world_mut().trigger(SpawnLocalScript {
         permissions: ScriptPermissions::default(),
-        source: ScriptSource::Path("wasm/example/shapes.wasm".to_string()),
+        source: ScriptSource::Path("wasm/example/unavi_shapes.wasm".to_string()),
     });
 
     app.run();

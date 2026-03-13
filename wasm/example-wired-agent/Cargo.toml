@@ -1,7 +1,7 @@
 [package]
 edition.workspace    = true
 license.workspace    = true
-name                 = "example-agent"
+name                 = "example-wired-agent"
 publish              = false
 repository.workspace = true
 version.workspace    = true

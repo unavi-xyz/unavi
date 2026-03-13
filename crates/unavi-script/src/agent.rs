@@ -4,21 +4,15 @@ use std::{
 };
 
 use bevy::prelude::*;
-use bevy_hsd::{
-    HsdDoc, NodeId,
-    cache::{SceneRegistry, SceneRegistryInner},
-};
+use bevy_hsd::{NodeId, cache::SceneRegistryInner};
 use bevy_vrm::BoneName;
-use loro::{LoroDoc, LoroTree, LoroValue, TreeID, TreeParentId, ValueOrContainer};
+use smol_str::SmolStr;
 
 pub struct AgentDocEntry {
-    pub doc: Arc<LoroDoc>,
-    pub bone_nodes: Arc<HashMap<BoneName, TreeID>>,
+    pub bone_nodes: Arc<HashMap<BoneName, SmolStr>>,
+    pub bone_node_ids: Arc<HashMap<SmolStr, BoneName>>,
     pub registry: Arc<SceneRegistryInner>,
 }
-
-#[derive(Component)]
-pub struct AgentHsdDoc;
 
 /// Marker on HSD proxy-node entities that are parented to VRM bones.
 #[derive(Component)]
@@ -32,7 +26,6 @@ pub struct LocalAgentDocs {
 
 pub(crate) fn parent_bone_proxies(
     mut commands: Commands,
-    agent_doc_entities: Query<(Entity, &HsdDoc, &SceneRegistry), With<AgentHsdDoc>>,
     agent_docs: Option<Res<LocalAgentDocs>>,
     new_nodes: Query<(Entity, &NodeId), Added<NodeId>>,
 ) {
@@ -41,48 +34,17 @@ pub(crate) fn parent_bone_proxies(
     for (node_ent, node_id) in &new_nodes {
         let id = &node_id.0;
 
-        // Find the agent doc that owns this node.
-        let found = agent_doc_entities
-            .iter()
-            .find_map(|(_, hsd_doc, registry)| {
-                let node_map = registry.0.node_map.lock().expect("node_map lock");
-                if let Some(node) = node_map.get(id)
-                    && let Some(tree_id) = *node.tree_id.lock().expect("lock tree id")
-                {
-                    Some((tree_id, Arc::clone(&hsd_doc.0)))
-                } else {
-                    None
-                }
-            });
-        let Some((tree_id, doc)) = found else {
-            continue;
+        // Find which agent doc owns this node and what bone entity it maps to.
+        let bone_ent = {
+            let docs = ad.docs.lock().expect("agent docs lock");
+            docs.iter().find_map(|entry| {
+                entry
+                    .bone_node_ids
+                    .get(id)
+                    .and_then(|bone| ad.bone_entities.get(bone).copied())
+            })
         };
-
-        let hsd = doc.get_map("hsd");
-        let Ok(tree) = hsd.get_or_create_container("nodes", LoroTree::new()) else {
-            continue;
-        };
-
-        // Only parent root-level proxy nodes.
-        let Some(TreeParentId::Root) = tree.parent(tree_id) else {
-            continue;
-        };
-
-        let Ok(meta) = tree.get_meta(tree_id) else {
-            continue;
-        };
-        let Some(ValueOrContainer::Value(LoroValue::String(bone_name_str))) = meta.get("bone_name")
-        else {
-            continue;
-        };
-
-        let Some((_, &bone_ent)) = ad
-            .bone_entities
-            .iter()
-            .find(|(b, _)| b.to_string().trim_matches('"') == bone_name_str.as_str())
-        else {
-            continue;
-        };
+        let Some(bone_ent) = bone_ent else { continue };
 
         commands
             .entity(node_ent)

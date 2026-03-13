@@ -6,6 +6,7 @@ use bevy_hsd::{
     hydrate::events::{DocChange, DocChangeKind},
 };
 use loro::{LoroDoc, LoroMap, LoroTree, TreeID};
+use smol_str::SmolStr;
 use wasmtime_wasi::ResourceTable;
 
 use crate::permissions::{HsdPermissions, ScriptPermissions};
@@ -38,7 +39,7 @@ pub struct WiredSceneRt {
     pub events: Arc<Mutex<Vec<DocChange>>>,
     pub perms: ScriptPermissions,
     pub registry: Arc<SceneRegistryInner>,
-    pub self_node_id: TreeID,
+    pub self_node_id: SmolStr,
     pub table: ResourceTable,
 }
 

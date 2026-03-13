@@ -1,6 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
+use loro::TreeID;
 use smol_str::SmolStr;
 
 use crate::{
@@ -30,14 +31,14 @@ pub(crate) enum RawHsdChange {
         id: SmolStr,
     },
     NodeAdded {
-        tree_id: SmolStr,
-        parent_id: Option<SmolStr>,
+        tree_id: TreeID,
+        parent_id: Option<TreeID>,
     },
     NodeChanged {
-        tree_id: SmolStr,
+        tree_id: TreeID,
     },
     NodeRemoved {
-        tree_id: SmolStr,
+        tree_id: TreeID,
     },
 }
 
@@ -57,20 +58,20 @@ pub enum MaterialData {
 
 pub enum DocChangeKind {
     NodeAdded {
-        tree_id: SmolStr,
+        id: SmolStr,
         parent_id: Option<SmolStr>,
         data: HsdNodeData,
     },
     NodeChanged {
-        tree_id: SmolStr,
+        id: SmolStr,
         data: HsdNodeData,
     },
     NodeParentChanged {
-        tree_id: SmolStr,
+        id: SmolStr,
         parent_id: Option<SmolStr>,
     },
     NodeRemoved {
-        tree_id: SmolStr,
+        id: SmolStr,
     },
     MeshAdded {
         id: SmolStr,

@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use bevy_vrm::BoneName;
+use smol_str::ToSmolStr;
 use wasmtime::component::{Resource, ResourceTable};
 
 use crate::{
@@ -127,7 +128,7 @@ impl bindings::wired::agent::types::HostAgent for RuntimeData {
                 return Ok(None);
             };
             let node_map = agent.0.registry.node_map.lock().expect("node_map lock");
-            node_map.get(&tree_id).cloned()
+            node_map.get(&tree_id.to_smolstr()).cloned()
         };
         let Some(inner) = inner else {
             return Ok(None);

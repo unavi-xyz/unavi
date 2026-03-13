@@ -3,8 +3,7 @@ use std::sync::{Arc, atomic::Ordering};
 use bevy::prelude::Transform as BevyTransform;
 use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner};
 use bevy_hsd::hydrate::events::DocChangeKind;
-use loro::LoroList;
-use smol_str::SmolStr;
+use loro::{LoroList, LoroMap, LoroValue, TreeParentId};
 use wasmtime::component::Resource;
 
 use super::bindings::wired::scene::types::{
@@ -16,8 +15,7 @@ pub struct HostNode {
     pub inner: Arc<NodeInner>,
 }
 
-// Write f64 slice to a LoroList inside a LoroMap (used only by commit()).
-pub(super) fn write_f64s(meta: &loro::LoroMap, key: &str, vals: &[f64]) -> wasmtime::Result<()> {
+pub(super) fn write_f64s(meta: &LoroMap, key: &str, vals: &[f64]) -> wasmtime::Result<()> {
     let list = meta
         .get_or_create_container(key, LoroList::new())
         .map_err(|e| anyhow::anyhow!("{e}"))?;
@@ -26,14 +24,10 @@ pub(super) fn write_f64s(meta: &loro::LoroMap, key: &str, vals: &[f64]) -> wasmt
         list.delete(0, len).map_err(|e| anyhow::anyhow!("{e}"))?;
     }
     for &v in vals {
-        list.push(loro::LoroValue::Double(v))
+        list.push(LoroValue::Double(v))
             .map_err(|e| anyhow::anyhow!("{e}"))?;
     }
     Ok(())
-}
-
-fn tree_id_smolstr(tid: loro::TreeID) -> SmolStr {
-    format!("{}@{}", tid.counter, tid.peer).into()
 }
 
 impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
@@ -42,7 +36,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         self_: wasmtime::component::Resource<HostNode>,
     ) -> wasmtime::Result<String> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        Ok(inner.tree_id.to_string())
+        Ok(inner.id.to_string())
     }
 
     async fn name(&mut self, self_: Resource<HostNode>) -> wasmtime::Result<Option<String>> {
@@ -265,11 +259,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
 
         {
             let mut parent_state = parent_inner.state.lock().expect("parent state lock");
-            if !parent_state
-                .children
-                .iter()
-                .any(|c| c.tree_id == child_inner.tree_id)
-            {
+            if !parent_state.children.iter().any(|c| c.id == child_inner.id) {
                 parent_state.children.push(Arc::clone(&child_inner));
             }
         }
@@ -278,11 +268,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             child_state.parent = Some(Arc::downgrade(&parent_inner));
         }
 
-        let child_tid = tree_id_smolstr(child_inner.tree_id);
-        let parent_tid = tree_id_smolstr(parent_inner.tree_id);
         self.push_event(DocChangeKind::NodeParentChanged {
-            tree_id: child_tid,
-            parent_id: Some(parent_tid),
+            id: child_inner.id.clone(),
+            parent_id: Some(parent_inner.id.clone()),
         });
         Ok(())
     }
@@ -306,13 +294,12 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 .lock()
                 .expect("parent state lock")
                 .children
-                .retain(|c| c.tree_id != child_inner.tree_id);
+                .retain(|c| c.id != child_inner.id);
         }
         child_inner.state.lock().expect("child state lock").parent = None;
 
-        let child_tid = tree_id_smolstr(child_inner.tree_id);
         self.push_event(DocChangeKind::NodeParentChanged {
-            tree_id: child_tid,
+            id: child_inner.id.clone(),
             parent_id: None,
         });
         Ok(())
@@ -483,9 +470,25 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
 
     async fn commit(&mut self, self_: Resource<HostNode>) -> wasmtime::Result<()> {
         self.check_hsd_write()?;
+
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
+
+        let tree_id = {
+            let mut lock = inner.tree_id.lock().expect("lock tree id");
+            if let Some(tid) = *lock {
+                tid
+            } else {
+                let tid = self
+                    .nodes()?
+                    .create(TreeParentId::Root)
+                    .map_err(|e| anyhow::anyhow!("create node: {e}"))?;
+                *lock = Some(tid);
+                tid
+            }
+        };
+
         let state = inner.state.lock().expect("node state lock");
-        let meta = self.node_meta(inner.tree_id)?;
+        let meta = self.node_meta(tree_id)?;
 
         let t = state.transform.translation;
         let r = state.transform.rotation;

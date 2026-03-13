@@ -1,6 +1,11 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use bevy::prelude::*;
+use loro::LoroMap;
+use smol_str::ToSmolStr;
 
 use super::{
     diff::extract_changes_from_diff,
@@ -45,7 +50,7 @@ pub fn init_hsd_doc(
 }
 
 pub(super) fn full_hydrate(
-    hsd_map: &loro::LoroMap,
+    hsd_map: &LoroMap,
     doc_ent: Entity,
     commands: &mut Commands,
     registry: &Arc<SceneRegistryInner>,
@@ -92,13 +97,9 @@ pub(super) fn full_hydrate(
             .insert(id.clone(), inner);
     }
 
-    let mut tree_id_to_inner: std::collections::HashMap<String, Arc<NodeInner>> =
-        std::collections::HashMap::new();
+    let mut id_to_inner = HashMap::new();
 
-    for node in &hsd_data.nodes {
-        let Ok(tid) = loro::TreeID::try_from(node.tree_id.as_str()) else {
-            continue;
-        };
+    for (tree_id, node) in &hsd_data.nodes {
         let node_state = NodeState {
             name: node
                 .data
@@ -110,11 +111,13 @@ pub(super) fn full_hydrate(
             material: node.data.material.clone(),
             ..Default::default()
         };
+        let id = tree_id.to_smolstr();
         let inner = Arc::new(NodeInner {
             dirty: false.into(),
-            tree_id: tid,
-            state: Mutex::new(node_state),
             entity: Mutex::new(None),
+            id: id.clone(),
+            state: Mutex::new(node_state),
+            tree_id: Mutex::new(Some(*tree_id)),
         });
         let ent = spawn_node_entity(doc_ent, node, commands);
         *inner.entity.lock().expect("entity lock") = Some(ent);
@@ -127,14 +130,14 @@ pub(super) fn full_hydrate(
             .node_map
             .lock()
             .expect("node_map lock")
-            .insert(tid, Arc::clone(&inner));
-        tree_id_to_inner.insert(node.tree_id.clone(), inner);
+            .insert(id.clone(), Arc::clone(&inner));
+        id_to_inner.insert(id, inner);
     }
 
-    for node in &hsd_data.nodes {
-        if let Some(parent_id) = &node.parent_tree_id
-            && let Some(child_inner) = tree_id_to_inner.get(&node.tree_id)
-            && let Some(parent_inner) = tree_id_to_inner.get(parent_id)
+    for node in hsd_data.nodes.values() {
+        if let Some(parent_id) = &node.parent_id
+            && let Some(child_inner) = id_to_inner.get(&node.id)
+            && let Some(parent_inner) = id_to_inner.get(parent_id)
         {
             let child_ent = *child_inner.entity.lock().expect("entity lock");
             let parent_ent = *parent_inner.entity.lock().expect("entity lock");

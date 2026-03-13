@@ -45,8 +45,9 @@ impl Default for NodeState {
 pub struct NodeInner {
     pub dirty: AtomicBool,
     pub entity: Mutex<Option<Entity>>,
+    pub id: SmolStr,
     pub state: Mutex<NodeState>,
-    pub tree_id: TreeID,
+    pub tree_id: Mutex<Option<TreeID>>,
 }
 
 #[derive(Clone)]
@@ -115,7 +116,7 @@ pub struct MaterialInner {
 
 pub struct SceneRegistryInner {
     pub nodes: Mutex<Vec<Arc<NodeInner>>>,
-    pub node_map: Mutex<HashMap<TreeID, Arc<NodeInner>>>,
+    pub node_map: Mutex<HashMap<SmolStr, Arc<NodeInner>>>,
     pub meshes: Mutex<HashMap<SmolStr, Arc<MeshInner>>>,
     pub materials: Mutex<HashMap<SmolStr, Arc<MaterialInner>>>,
 }

@@ -2,7 +2,8 @@ use std::sync::{Arc, Mutex};
 
 use bevy::prelude::Entity;
 use bevy_hsd::{cache::SceneRegistryInner, hydrate::events::DocChange};
-use loro::{LoroDoc, TreeID};
+use loro::LoroDoc;
+use smol_str::SmolStr;
 use wasmtime::component::ResourceTable;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
@@ -29,7 +30,7 @@ impl RuntimeData {
         actor: Option<wds::actor::Actor>,
         blobs: Option<wds::Blobs>,
         doc: Arc<LoroDoc>,
-        self_node_id: TreeID,
+        self_node_id: SmolStr,
         registry: Arc<SceneRegistryInner>,
         events: Arc<Mutex<Vec<DocChange>>>,
         perms: ScriptPermissions,

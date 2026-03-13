@@ -2,9 +2,9 @@ use std::collections::BTreeMap;
 
 use bevy::mesh::PrimitiveTopology;
 use bevy::prelude::*;
-use loro::LoroValue;
-use loro_surgeon::{Hydrate, HydrateError, Reconcile, ReconcileError, loro::LoroMap};
-use smol_str::SmolStr;
+use loro::{LoroMap, LoroTree, LoroValue, TreeID, TreeParentId};
+use loro_surgeon::{Hydrate, HydrateError, Reconcile, ReconcileError};
+use smol_str::{SmolStr, ToSmolStr};
 use wired_schemas::HydratedHash;
 
 #[derive(Component, Debug, Clone, Default, Hydrate, Reconcile)]
@@ -94,16 +94,16 @@ pub struct HsdRigidBody {
 pub struct HsdData {
     pub materials: BTreeMap<SmolStr, HsdMaterial>,
     pub meshes: BTreeMap<SmolStr, HsdMesh>,
-    pub nodes: Vec<HsdNode>,
+    pub nodes: BTreeMap<TreeID, HsdNode>,
 }
 
 pub struct HsdNode {
-    pub tree_id: String,
-    pub parent_tree_id: Option<String>,
+    pub id: SmolStr,
+    pub parent_id: Option<SmolStr>,
     pub data: HsdNodeData,
 }
 
-pub(crate) fn hydrate_hsd(map: &loro::LoroMap) -> Result<HsdData, HydrateError> {
+pub(crate) fn hydrate_hsd(map: &LoroMap) -> Result<HsdData, HydrateError> {
     let value = map.get_deep_value();
     let LoroValue::Map(root) = &value else {
         return Err(HydrateError::TypeMismatch {
@@ -123,11 +123,11 @@ pub(crate) fn hydrate_hsd(map: &loro::LoroMap) -> Result<HsdData, HydrateError> 
     };
 
     let tree = map
-        .get_or_create_container("nodes", loro::LoroTree::new())
+        .get_or_create_container("nodes", LoroTree::new())
         .map_err(|e| HydrateError::Custom(format!("failed to get tree: {e}").into()))?;
 
     let tree_nodes = tree.get_nodes(false);
-    let mut nodes = Vec::with_capacity(tree_nodes.len());
+    let mut nodes = BTreeMap::new();
 
     for tree_node in &tree_nodes {
         let meta = tree
@@ -137,15 +137,18 @@ pub(crate) fn hydrate_hsd(map: &loro::LoroMap) -> Result<HsdData, HydrateError> 
         let data = HsdNodeData::hydrate(&meta_value)?;
 
         let parent_tree_id = match tree_node.parent {
-            loro::TreeParentId::Node(pid) => Some(format!("{}@{}", pid.counter, pid.peer)),
+            TreeParentId::Node(pid) => Some(pid.to_smolstr()),
             _ => None,
         };
 
-        nodes.push(HsdNode {
-            tree_id: format!("{}@{}", tree_node.id.counter, tree_node.id.peer),
-            parent_tree_id,
-            data,
-        });
+        nodes.insert(
+            tree_node.id,
+            HsdNode {
+                id: tree_node.id.to_smolstr(),
+                parent_id: parent_tree_id,
+                data,
+            },
+        );
     }
 
     Ok(HsdData {

@@ -104,20 +104,16 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         let state = inner.state.lock().expect("mesh state lock");
         Ok(state.indices.clone().map(Indices::Full))
     }
-
     async fn set_indices(
         &mut self,
         self_: Resource<Mesh>,
         value: Option<Indices>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        {
-            let mut state = inner.state.lock().expect("mesh state lock");
-            state.indices = value.map(|v| match v {
-                Indices::Half(h) => h.into_iter().map(u32::from).collect(),
-                Indices::Full(f) => f,
-            });
-        }
+        inner.state.lock().expect("mesh state lock").indices = value.map(|v| match v {
+            Indices::Half(h) => h.into_iter().map(u32::from).collect(),
+            Indices::Full(f) => f,
+        });
         inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }

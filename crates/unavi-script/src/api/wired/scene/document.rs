@@ -3,7 +3,6 @@ use std::sync::{Arc, Mutex};
 use bevy_hsd::cache::{MaterialInner, MaterialState, MeshInner, MeshState, NodeInner, NodeState};
 use bevy_hsd::data::HsdNodeData;
 use bevy_hsd::hydrate::events::{DocChangeKind, MaterialData, MeshData};
-use loro::{LoroMap, LoroValue, TreeParentId};
 use rand::{Rng, distr::Alphanumeric};
 use smol_str::SmolStr;
 use wasmtime::component::Resource;
@@ -18,6 +17,7 @@ pub struct HostDocument {
 }
 
 fn gen_id() -> SmolStr {
+    /// Max byte length for an inline [`SmolStr`].
     const MAX_INLINE: usize = 23;
 
     rand::rng()
@@ -33,13 +33,6 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         _self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<Material>> {
         let id = gen_id();
-        let map: LoroMap = self
-            .materials()?
-            .insert_container(&id, LoroMap::new())
-            .map_err(|e| anyhow::anyhow!("push material: {e}"))?;
-        map.insert("base_color", LoroValue::Null)
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
-
         let state = MaterialState::default();
         let inner = Arc::new(MaterialInner {
             dirty: false.into(),
@@ -56,7 +49,6 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             id,
             data: MaterialData::Inline(state),
         });
-
         Ok(self.table.push(HostMaterial { inner })?)
     }
 
@@ -65,13 +57,6 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         _self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<Mesh>> {
         let id = gen_id();
-        let map: LoroMap = self
-            .meshes()?
-            .insert_container(&id, LoroMap::new())
-            .map_err(|e| anyhow::anyhow!("push mesh: {e}"))?;
-        map.insert("topology", 3i64)
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
-
         let state = MeshState::default();
         let inner = Arc::new(MeshInner {
             dirty: false.into(),
@@ -88,7 +73,6 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             id,
             data: MeshData::Inline(state),
         });
-
         Ok(self.table.push(HostMesh { inner })?)
     }
 
@@ -96,14 +80,11 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         _self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<HostNode>> {
-        let tree_id = self
-            .nodes()?
-            .create(TreeParentId::Root)
-            .map_err(|e| anyhow::anyhow!("create node: {e}"))?;
-
+        let id = gen_id();
         let inner = Arc::new(NodeInner {
             dirty: false.into(),
-            tree_id,
+            id: id.clone(),
+            tree_id: Mutex::new(None),
             state: Mutex::new(NodeState::default()),
             entity: Mutex::new(None),
         });
@@ -116,15 +97,12 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             .node_map
             .lock()
             .expect("node_map lock")
-            .insert(tree_id, Arc::clone(&inner));
-
-        let tree_id_str: smol_str::SmolStr = format!("{}@{}", tree_id.counter, tree_id.peer).into();
+            .insert(id.clone(), Arc::clone(&inner));
         self.push_event(DocChangeKind::NodeAdded {
-            tree_id: tree_id_str,
+            id,
             parent_id: None,
             data: HsdNodeData::default(),
         });
-
         Ok(self.table.push(HostNode { inner })?)
     }
 

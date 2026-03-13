@@ -1,11 +1,13 @@
 use std::{path::PathBuf, sync::LazyLock};
 
-use avian3d::prelude::Gravity;
+use avian3d::prelude::Collider;
 use bevy::{
+    camera::visibility::RenderLayers,
     log::{DEFAULT_FILTER, LogPlugin},
     prelude::*,
 };
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
 use bevy_wds::{LocalActor, LocalBlobs, util::create_test_wds};
 use directories::ProjectDirs;
 use unavi_agent::LocalAgent;
@@ -39,7 +41,6 @@ fn main() {
         avian3d::PhysicsPlugins::default(),
         bevy_hsd::HsdPlugin,
         bevy_wds::WdsPlugin,
-        unavi_input::InputPlugin,
         unavi_avatar::AvatarPlugin,
         unavi_agent::AgentPlugin,
         unavi_script::ScriptPlugin,
@@ -53,12 +54,15 @@ fn main() {
     app.run();
 }
 
-fn init_scene(mut commands: Commands, mut gravity: ResMut<Gravity>) {
-    gravity.0 = Vec3::ZERO;
-
+fn init_scene(mut commands: Commands) {
     commands.spawn((
         DirectionalLight::default(),
         Transform::from_xyz(5.0, 8.0, 1.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
+
+    commands.spawn((
+        Transform::from_xyz(0.0, -2.0, 0.0),
+        Collider::cuboid(4.0, 0.5, 4.0),
     ));
 
     commands.spawn(LocalAgent);
@@ -81,6 +85,8 @@ fn on_agent_load(
     commands.spawn((
         PanOrbitCamera::default(),
         Transform::from_xyz(-3.0, 5.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
+        RenderLayers::from_layers(&[0])
+            .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly]),
     ));
 
     commands.trigger(SpawnLocalScript {

@@ -103,15 +103,18 @@ pub fn on_local_agent_added(
     ));
 
     commands.entity(body).add_children(&[avatar, tracked_head]);
-    commands.entity(event.entity).add_child(body).insert((
-        Agent,
-        LocalAgentEntities {
-            avatar,
-            camera,
-            body,
-            tracked_head,
-        },
-    ));
+    commands
+        .entity(event.entity)
+        .insert((
+            Agent,
+            LocalAgentEntities {
+                avatar,
+                camera,
+                body,
+                tracked_head,
+            },
+        ))
+        .add_child(body);
 }
 
 fn spawn_camera(commands: &mut Commands, is_xr: bool) -> Entity {

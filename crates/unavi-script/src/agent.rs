@@ -24,20 +24,26 @@ pub struct AgentProxies(pub Arc<Mutex<Vec<Arc<ProxyRegistry>>>>);
 pub(crate) fn on_avatar_bones_added(
     trigger: On<Add, AvatarBones>,
     mut commands: Commands,
-    child_of: Query<&ChildOf, With<AvatarBones>>,
+    child_of: Query<&ChildOf>,
     agents: Query<(), With<Agent>>,
 ) {
-    let Ok(child_of) = child_of.get(trigger.entity) else {
+    let Ok(c) = child_of.get(trigger.entity) else {
         return;
     };
-    let parent = child_of.parent();
+    let parent = c.parent();
 
-    if !agents.contains(parent) {
+    let Ok(c) = child_of.get(parent) else {
+        return;
+    };
+    let grand_parent = c.parent();
+
+    if !agents.contains(grand_parent) {
+        info!("avatar grand parent not agent, ignoring");
         return;
     }
 
     commands
-        .entity(child_of.parent())
+        .entity(grand_parent)
         .insert(AgentProxies::default());
 }
 
@@ -47,7 +53,6 @@ pub(crate) fn parent_bone_proxies(
     agent_docs: Query<(&AgentProxies, &AvatarBones)>,
 ) {
     for (node_ent, node_id) in &new_nodes {
-        info!("-> ATTEMPT PARENT");
         let id = &node_id.0;
 
         let bone_ent = agent_docs.iter().find_map(|(ap, avatar_bones)| {
@@ -61,7 +66,6 @@ pub(crate) fn parent_bone_proxies(
         });
         let Some(bone_ent) = bone_ent else { continue };
 
-        info!("<- SUCESS PARENTED");
         commands
             .entity(node_ent)
             .insert((BoneProxy, ChildOf(bone_ent), Transform::IDENTITY));

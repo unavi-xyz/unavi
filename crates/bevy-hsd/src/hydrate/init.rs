@@ -8,8 +8,9 @@ use loro::LoroMap;
 use smol_str::ToSmolStr;
 
 use super::{
+    apply::raw_to_doc_change,
     diff::extract_changes_from_diff,
-    events::{DocEventQueue, HsdChangeQueue},
+    events::{DocChange, DocChangeQueue},
     node::{node_transform, spawn_node_entity},
 };
 use crate::{
@@ -21,6 +22,9 @@ use crate::{
     data::{HsdMaterial, HsdMesh, hydrate_hsd},
 };
 
+/// # Panics
+///
+/// Panics if the doc change queue poisons.
 pub fn init_hsd_doc(
     mut commands: Commands,
     added: Query<(Entity, &HsdDoc), (Added<HsdDoc>, Without<SceneRegistry>)>,
@@ -32,18 +36,26 @@ pub fn init_hsd_doc(
         let hsd_map = doc.get_map("hsd");
         full_hydrate(&hsd_map, doc_ent, &mut commands, &registry);
 
-        let change_queue: Arc<Mutex<Vec<_>>> = Arc::new(Mutex::new(Vec::new()));
+        let change_queue: Arc<Mutex<Vec<DocChange>>> = Arc::new(Mutex::new(Vec::new()));
         let cq = Arc::clone(&change_queue);
+        let doc_arc = Arc::clone(&doc);
         let sub = doc.subscribe_root(Arc::new(move |e| {
-            if let Ok(mut locked) = cq.try_lock() {
-                extract_changes_from_diff(&e, &mut locked);
+            let mut raw = Vec::new();
+            extract_changes_from_diff(&e, &mut raw);
+            if raw.is_empty() {
+                return;
             }
+            let hsd_map = doc_arc.get_map("hsd");
+            let changes: Vec<DocChange> = raw
+                .into_iter()
+                .filter_map(|r| raw_to_doc_change(doc_ent, r, &hsd_map))
+                .collect();
+            cq.lock().expect("change queue lock").extend(changes);
         }));
 
         commands.entity(doc_ent).insert((
             SceneRegistry(Arc::clone(&registry)),
-            DocEventQueue(Arc::new(Mutex::new(Vec::new()))),
-            HsdChangeQueue(change_queue),
+            DocChangeQueue(change_queue),
             HsdSubscription(sub),
         ));
     }

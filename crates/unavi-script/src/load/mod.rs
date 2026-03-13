@@ -7,7 +7,7 @@ use bevy_hsd::{
     HsdDoc, HsdRecordId,
     cache::{NodeInner, NodeState, SceneRegistry, SceneRegistryInner},
     data::HsdNodeData,
-    hydrate::events::{DocChange, DocChangeKind, DocEventQueue},
+    hydrate::events::{DocChange, DocChangeKind, DocChangeQueue},
 };
 use log::{ScriptStderr, ScriptStdout};
 use loro::{LoroDoc, LoroTree, TreeID, TreeParentId};
@@ -77,7 +77,7 @@ pub(crate) fn load_scripts(
     hsd_docs: Query<&HsdDoc>,
     hsd_record_ids: Query<&HsdRecordId>,
     registries: Query<&SceneRegistry>,
-    doc_event_queues: Query<&DocEventQueue>,
+    hsd_change_queues: Query<&DocChangeQueue>,
     permissions: Query<Option<&ScriptPermissions>>,
     agent_docs: Option<Res<LocalAgentDocs>>,
 ) {
@@ -243,7 +243,7 @@ pub(crate) fn load_scripts(
 
                 commands
                     .entity(doc_ent)
-                    .insert(DocEventQueue(Arc::clone(&doc_event_queue)));
+                    .insert(DocChangeQueue(Arc::clone(&doc_event_queue)));
 
                 (
                     new_doc,
@@ -259,8 +259,8 @@ pub(crate) fn load_scripts(
                     warn!("SceneRegistry not found for script");
                     continue;
                 };
-                let Ok(event_queue) = doc_event_queues.get(source.doc_entity) else {
-                    warn!("DocEventQueue not found for script");
+                let Ok(event_queue) = hsd_change_queues.get(source.doc_entity) else {
+                    warn!("HsdChangeQueue not found for script");
                     continue;
                 };
                 let Ok(self_tree_id) = TreeID::try_from(source.node_id.as_str()) else {

@@ -484,6 +484,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                     .create(TreeParentId::Root)
                     .map_err(|e| anyhow::anyhow!("create node: {e}"))?;
                 *lock = Some(tid);
+                drop(lock);
                 self.registry
                     .node_map
                     .lock()

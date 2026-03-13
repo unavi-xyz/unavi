@@ -4,17 +4,17 @@ use bevy_vrm::BoneName;
 use wasmtime::component::{Resource, ResourceTable};
 
 use crate::{
-    agent::AgentDocEntry,
+    agent::ProxyRegistry,
     api::wired::scene::{document::HostDocument, node::HostNode},
 };
 
 #[derive(Default)]
 pub struct WiredAgentRt {
-    pub local_agent: Option<Arc<AgentDocEntry>>,
+    pub local_agent: Option<Arc<ProxyRegistry>>,
     pub table: ResourceTable,
 }
 
-pub struct HostAgent(pub Arc<AgentDocEntry>);
+pub struct HostAgent(pub Arc<ProxyRegistry>);
 
 pub mod bindings {
     wasmtime::component::bindgen!({

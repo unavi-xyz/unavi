@@ -22,7 +22,7 @@ use bevy_wds::{LocalActor, LocalBlobs};
 
 use crate::{
     ScriptEngine, WasmBinary, WasmEngine,
-    agent::{AgentDocEntry, AgentDocs},
+    agent::{AgentProxies, ProxyRegistry},
     api::wired::scene::document::gen_id,
     asset::Wasm,
     permissions::{ApiName, HsdPermissions, ScriptPermissions},
@@ -82,7 +82,7 @@ pub(crate) fn load_scripts(
     registries: Query<&SceneRegistry>,
     hsd_change_queues: Query<&DocChangeQueue>,
     permissions: Query<Option<&ScriptPermissions>>,
-    local_agent: Query<(&AgentDocs, &AvatarBones), With<LocalAgent>>,
+    local_agent: Query<(&AgentProxies, &AvatarBones), With<LocalAgent>>,
 ) {
     #[cfg(target_family = "wasm")]
     return;
@@ -119,7 +119,7 @@ pub(crate) fn load_scripts(
 
         let (doc, self_node_id, registry, events, agent_entry, doc_id, doc_entity) =
             if perms.api.contains(&ApiName::LocalAgent) {
-                let Ok((ad, avatar_bones)) = local_agent.single() else {
+                let Ok((ap, avatar_bones)) = local_agent.single() else {
                     warn!(name, "local agent perms set but agent doc not ready");
                     continue;
                 };
@@ -151,13 +151,12 @@ pub(crate) fn load_scripts(
                         .insert(id, Arc::clone(&inner));
                 }
 
-                let entry = Arc::new(AgentDocEntry {
+                let entry = Arc::new(ProxyRegistry {
                     bone_nodes: Arc::new(bone_nodes),
                     bone_node_ids: Arc::new(bone_node_ids),
                     registry: Arc::clone(&agent_registry),
                 });
-                ad.docs
-                    .lock()
+                ap.0.lock()
                     .expect("agent doc lock")
                     .push(Arc::clone(&entry));
 

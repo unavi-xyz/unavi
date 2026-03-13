@@ -8,7 +8,7 @@ use wasmtime::component::ResourceTable;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
 use crate::{
-    agent::AgentDocEntry,
+    agent::ProxyRegistry,
     api::wired::{agent::WiredAgentRt, scene::WiredSceneRt},
     permissions::ScriptPermissions,
 };
@@ -34,7 +34,7 @@ impl RuntimeData {
         registry: Arc<SceneRegistryInner>,
         events: Arc<Mutex<Vec<DocChange>>>,
         perms: ScriptPermissions,
-        agent_entry: Option<Arc<AgentDocEntry>>,
+        agent_entry: Option<Arc<ProxyRegistry>>,
         doc_id: blake3::Hash,
         doc_entity: Entity,
     ) -> Self {

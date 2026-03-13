@@ -34,6 +34,7 @@ impl GuestScript for Script {
         let start = -(count - 1.0) * spacing / 2.0;
 
         for (i, mesh) in meshes.into_iter().enumerate() {
+            // TODO clone mat
             let mat = doc.create_material();
             mat.set_base_color(&[0.3, 0.4, 0.8, 1.0]);
             let node = doc.create_node();

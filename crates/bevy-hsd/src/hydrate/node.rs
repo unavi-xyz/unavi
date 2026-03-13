@@ -1,8 +1,7 @@
 use bevy::prelude::*;
-use smol_str::SmolStr;
 
 use crate::{
-    HsdChild, HsdNodeTreeId, HsdScripts, MaterialRef, MeshRef, NodeId,
+    HsdChild, HsdScripts, MaterialRef, MeshRef, NodeId,
     data::{HsdCollider, HsdNode, HsdNodeData, HsdRigidBody},
 };
 
@@ -12,17 +11,11 @@ pub(super) fn spawn_node_entity(
     commands: &mut Commands,
 ) -> Entity {
     let transform = node_transform(&node.data);
-    let name: SmolStr = node
-        .data
-        .name
-        .clone()
-        .unwrap_or_else(|| node.tree_id.as_str().into());
-    let tree_id: SmolStr = node.tree_id.as_str().into();
 
     let mut ent = commands.spawn((
         HsdChild { doc: doc_ent },
-        HsdNodeTreeId(tree_id),
-        NodeId(name),
+        // HsdNodeTreeId(node.id.clone()),
+        NodeId(node.id.clone()),
         transform,
     ));
 
@@ -50,15 +43,14 @@ pub(super) fn spawn_node_entity(
 
 pub(super) fn update_node_components(
     ent: Entity,
-    tree_id: &str,
+    id: &str,
     data: &HsdNodeData,
     commands: &mut Commands,
 ) {
     let transform = node_transform(data);
-    let name: SmolStr = data.name.clone().unwrap_or_else(|| tree_id.into());
 
     let mut ecmd = commands.entity(ent);
-    ecmd.insert((NodeId(name), transform));
+    ecmd.insert((NodeId(id.into()), transform));
     ecmd.remove::<(
         Mesh3d,
         MeshMaterial3d<StandardMaterial>,

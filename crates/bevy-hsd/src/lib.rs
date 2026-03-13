@@ -18,8 +18,8 @@ impl Plugin for HsdPlugin {
                 FixedUpdate,
                 (
                     hydrate::init::init_hsd_doc,
-                    hydrate::apply::flush_scene_dirty,
                     hydrate::apply::drain_all_changes,
+                    hydrate::apply::flush_scene_dirty,
                     hydrate::apply::apply_doc_changes,
                     (
                         compile::material::parse_material_data,
@@ -60,10 +60,6 @@ pub struct HsdChild {
 
 #[derive(Component, Clone, Debug)]
 pub struct NodeId(pub SmolStr);
-
-/// Stable Loro tree ID on node entities. Format: "counter@peer".
-#[derive(Component, Clone, Debug)]
-pub struct HsdNodeTreeId(pub SmolStr);
 
 /// Script blob hashes on node entities.
 #[derive(Component, Clone, Debug)]

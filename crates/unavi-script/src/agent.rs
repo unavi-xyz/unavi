@@ -5,14 +5,14 @@ use std::{
 
 use bevy::prelude::*;
 use bevy_hsd::{
-    HsdDoc, HsdNodeTreeId,
+    HsdDoc, NodeId,
     cache::{SceneRegistry, SceneRegistryInner},
 };
 use bevy_vrm::BoneName;
-use loro::TreeID;
+use loro::{LoroDoc, LoroTree, LoroValue, TreeID, TreeParentId, ValueOrContainer};
 
 pub struct AgentDocEntry {
-    pub doc: Arc<loro::LoroDoc>,
+    pub doc: Arc<LoroDoc>,
     pub bone_nodes: Arc<HashMap<BoneName, TreeID>>,
     pub registry: Arc<SceneRegistryInner>,
 }
@@ -34,44 +34,44 @@ pub(crate) fn parent_bone_proxies(
     mut commands: Commands,
     agent_doc_entities: Query<(Entity, &HsdDoc, &SceneRegistry), With<AgentHsdDoc>>,
     agent_docs: Option<Res<LocalAgentDocs>>,
-    new_nodes: Query<(Entity, &HsdNodeTreeId), Added<HsdNodeTreeId>>,
+    new_nodes: Query<(Entity, &NodeId), Added<NodeId>>,
 ) {
     let Some(ad) = agent_docs else { return };
 
-    for (node_ent, tree_id_comp) in &new_nodes {
-        let tree_id_str = tree_id_comp.0.as_str();
-        let Ok(tid) = loro::TreeID::try_from(tree_id_str) else {
-            continue;
-        };
+    for (node_ent, node_id) in &new_nodes {
+        let id = &node_id.0;
 
         // Find the agent doc that owns this node.
         let found = agent_doc_entities
             .iter()
             .find_map(|(_, hsd_doc, registry)| {
                 let node_map = registry.0.node_map.lock().expect("node_map lock");
-                if node_map.contains_key(&tid) {
-                    Some(Arc::clone(&hsd_doc.0))
+                if let Some(node) = node_map.get(id)
+                    && let Some(tree_id) = *node.tree_id.lock().expect("lock tree id")
+                {
+                    Some((tree_id, Arc::clone(&hsd_doc.0)))
                 } else {
                     None
                 }
             });
-        let Some(doc) = found else { continue };
+        let Some((tree_id, doc)) = found else {
+            continue;
+        };
 
         let hsd = doc.get_map("hsd");
-        let Ok(tree) = hsd.get_or_create_container("nodes", loro::LoroTree::new()) else {
+        let Ok(tree) = hsd.get_or_create_container("nodes", LoroTree::new()) else {
             continue;
         };
 
         // Only parent root-level proxy nodes.
-        let Some(loro::TreeParentId::Root) = tree.parent(tid) else {
+        let Some(TreeParentId::Root) = tree.parent(tree_id) else {
             continue;
         };
 
-        let Ok(meta) = tree.get_meta(tid) else {
+        let Ok(meta) = tree.get_meta(tree_id) else {
             continue;
         };
-        let Some(loro::ValueOrContainer::Value(loro::LoroValue::String(bone_name_str))) =
-            meta.get("bone_name")
+        let Some(ValueOrContainer::Value(LoroValue::String(bone_name_str))) = meta.get("bone_name")
         else {
             continue;
         };

@@ -1,4 +1,4 @@
-use loro::{ContainerID, Index, TreeExternalDiff, TreeParentId};
+use loro::{ContainerID, Index, TreeExternalDiff, TreeID};
 use smol_str::SmolStr;
 
 use super::events::RawHsdChange;
@@ -10,14 +10,17 @@ pub(super) fn extract_changes_from_diff(e: &loro::event::DiffEvent, queue: &mut 
         match &cd.diff {
             loro::event::Diff::Tree(tree_diff) => {
                 for item in &tree_diff.diff {
-                    let tree_id = tree_id_str(item.target);
                     let change = match &item.action {
-                        TreeExternalDiff::Create { parent, .. } => {
-                            let parent_id = node_parent_str(parent);
-                            RawHsdChange::NodeAdded { tree_id, parent_id }
-                        }
-                        TreeExternalDiff::Delete { .. } => RawHsdChange::NodeRemoved { tree_id },
-                        TreeExternalDiff::Move { .. } => RawHsdChange::NodeChanged { tree_id },
+                        TreeExternalDiff::Create { parent, .. } => RawHsdChange::NodeAdded {
+                            tree_id: item.target,
+                            parent_id: parent.tree_id(),
+                        },
+                        TreeExternalDiff::Delete { .. } => RawHsdChange::NodeRemoved {
+                            tree_id: item.target,
+                        },
+                        TreeExternalDiff::Move { .. } => RawHsdChange::NodeChanged {
+                            tree_id: item.target,
+                        },
                     };
                     queue.push(change);
                 }
@@ -80,21 +83,10 @@ fn path_ends_with_key(path: &[(ContainerID, Index)], key: &str) -> bool {
         .is_some_and(|(_, idx)| matches!(idx, Index::Key(k) if k.as_str() == key))
 }
 
-fn tree_id_str(id: loro::TreeID) -> SmolStr {
-    format!("{}@{}", id.counter, id.peer).into()
-}
-
-fn node_parent_str(parent: &TreeParentId) -> Option<SmolStr> {
-    match parent {
-        TreeParentId::Node(pid) => Some(tree_id_str(*pid)),
-        _ => None,
-    }
-}
-
-fn node_tree_id_in_path(path: &[(ContainerID, Index)]) -> Option<SmolStr> {
+fn node_tree_id_in_path(path: &[(ContainerID, Index)]) -> Option<TreeID> {
     for (_, idx) in path {
         if let Index::Node(tid) = idx {
-            return Some(tree_id_str(*tid));
+            return Some(*tid);
         }
     }
     None

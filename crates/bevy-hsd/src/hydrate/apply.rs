@@ -1,3 +1,4 @@
+use std::collections::hash_map::Entry;
 use std::ops::Deref;
 use std::sync::{Arc, Mutex, atomic::Ordering};
 
@@ -5,9 +6,9 @@ use bevy::asset::RenderAssetUsages;
 use bevy::ecs::message::{MessageReader, MessageWriter};
 use bevy::mesh::{Indices, VertexAttributeValues};
 use bevy::prelude::*;
-use loro::LoroMap;
+use loro::{LoroMap, TreeID};
 use loro_surgeon::Hydrate;
-use smol_str::SmolStr;
+use smol_str::{SmolStr, ToSmolStr};
 use wired_schemas::HydratedHash;
 
 use super::{
@@ -38,7 +39,7 @@ pub(crate) fn flush_scene_dirty(
                     let (tree_id, data) = node_data_from_inner(inner);
                     writer.write(DocChange {
                         doc: doc_ent,
-                        kind: DocChangeKind::NodeChanged { tree_id, data },
+                        kind: DocChangeKind::NodeChanged { id: tree_id, data },
                     });
                 }
             }
@@ -46,6 +47,7 @@ pub(crate) fn flush_scene_dirty(
         {
             let meshes = registry.0.meshes.lock().expect("meshes lock");
             for (id, inner) in meshes.iter() {
+                debug_assert_eq!(*id, inner.id);
                 if inner.dirty.swap(false, Ordering::Relaxed) {
                     let state = inner.state.lock().expect("mesh state lock").clone();
                     writer.write(DocChange {
@@ -61,6 +63,7 @@ pub(crate) fn flush_scene_dirty(
         {
             let materials = registry.0.materials.lock().expect("materials lock");
             for (id, inner) in materials.iter() {
+                debug_assert_eq!(*id, inner.id);
                 if inner.dirty.swap(false, Ordering::Relaxed) {
                     let state = inner.state.lock().expect("material state lock").clone();
                     writer.write(DocChange {
@@ -120,20 +123,23 @@ fn raw_to_doc_change(
 ) -> Option<DocChange> {
     let kind = match change {
         RawHsdChange::NodeAdded { tree_id, parent_id } => {
-            let tid = loro::TreeID::try_from(tree_id.as_str()).ok()?;
-            let data = node_data_from_hsd(hsd_map, tid);
+            let data = node_data_from_hsd(hsd_map, tree_id);
             DocChangeKind::NodeAdded {
-                tree_id,
-                parent_id,
+                id: tree_id.to_smolstr(),
+                parent_id: parent_id.map(|p| p.to_smolstr()),
                 data,
             }
         }
         RawHsdChange::NodeChanged { tree_id } => {
-            let tid = loro::TreeID::try_from(tree_id.as_str()).ok()?;
-            let data = node_data_from_hsd(hsd_map, tid);
-            DocChangeKind::NodeChanged { tree_id, data }
+            let data = node_data_from_hsd(hsd_map, tree_id);
+            DocChangeKind::NodeChanged {
+                id: tree_id.to_smolstr(),
+                data,
+            }
         }
-        RawHsdChange::NodeRemoved { tree_id } => DocChangeKind::NodeRemoved { tree_id },
+        RawHsdChange::NodeRemoved { tree_id } => DocChangeKind::NodeRemoved {
+            id: tree_id.to_smolstr(),
+        },
         RawHsdChange::MeshAdded { id } => {
             let data = get_mesh_at(hsd_map, &id).map(MeshData::Hsd)?;
             DocChangeKind::MeshAdded { id, data }
@@ -199,26 +205,24 @@ fn handle_doc_change(
 ) {
     match kind {
         DocChangeKind::NodeAdded {
-            tree_id,
+            id,
             parent_id,
             data,
         } => {
-            let Ok(tid) = loro::TreeID::try_from(tree_id.as_str()) else {
-                return;
-            };
             let existing = registry
                 .node_map
                 .lock()
                 .expect("node_map lock")
-                .get(&tid)
+                .get(id)
                 .cloned();
             let inner = existing.unwrap_or_else(|| {
                 let state = node_state_from_data(data);
                 let inner = Arc::new(NodeInner {
                     dirty: false.into(),
-                    tree_id: tid,
-                    state: Mutex::new(state),
                     entity: Mutex::new(None),
+                    id: id.clone(),
+                    state: Mutex::new(state),
+                    tree_id: Mutex::new(None),
                 });
                 registry
                     .nodes
@@ -229,26 +233,24 @@ fn handle_doc_change(
                     .node_map
                     .lock()
                     .expect("node_map lock")
-                    .insert(tid, Arc::clone(&inner));
+                    .insert(id.clone(), Arc::clone(&inner));
                 inner
             });
 
             let node = HsdNode {
-                tree_id: tree_id.to_string(),
-                parent_tree_id: parent_id.as_ref().map(std::string::ToString::to_string),
+                id: id.clone(),
+                parent_id: parent_id.clone(),
                 data: data.clone(),
             };
             let ent = spawn_node_entity(doc_ent, &node, commands);
             *inner.entity.lock().expect("entity lock") = Some(ent);
 
-            if let Some(pid) = parent_id
-                && let Ok(parent_tid) = loro::TreeID::try_from(pid.as_str())
-            {
+            if let Some(pid) = parent_id {
                 let parent_ent = registry
                     .node_map
                     .lock()
                     .expect("node_map lock")
-                    .get(&parent_tid)
+                    .get(pid)
                     .and_then(|pi| *pi.entity.lock().expect("entity lock"));
                 if let Some(parent_ent) = parent_ent {
                     commands.entity(ent).insert(ChildOf(parent_ent));
@@ -256,15 +258,12 @@ fn handle_doc_change(
             }
         }
 
-        DocChangeKind::NodeChanged { tree_id, data } => {
-            let Ok(tid) = loro::TreeID::try_from(tree_id.as_str()) else {
-                return;
-            };
+        DocChangeKind::NodeChanged { id, data } => {
             let inner = registry
                 .node_map
                 .lock()
                 .expect("node_map lock")
-                .get(&tid)
+                .get(id)
                 .cloned();
             if let Some(inner) = inner {
                 // Update cached state.
@@ -286,30 +285,25 @@ fn handle_doc_change(
                 }
                 let ent = *inner.entity.lock().expect("entity lock");
                 if let Some(ent) = ent {
-                    update_node_components(ent, tree_id, data, commands);
+                    update_node_components(ent, id, data, commands);
                 }
             }
         }
 
-        DocChangeKind::NodeParentChanged { tree_id, parent_id } => {
-            let Ok(tid) = loro::TreeID::try_from(tree_id.as_str()) else {
-                return;
-            };
+        DocChangeKind::NodeParentChanged { id, parent_id } => {
             let ent = registry
                 .node_map
                 .lock()
                 .expect("node_map lock")
-                .get(&tid)
+                .get(id)
                 .and_then(|n| *n.entity.lock().expect("entity lock"));
             let Some(ent) = ent else { return };
-            if let Some(pid) = parent_id
-                && let Ok(parent_tid) = loro::TreeID::try_from(pid.as_str())
-            {
+            if let Some(pid) = parent_id {
                 let parent_ent = registry
                     .node_map
                     .lock()
                     .expect("node_map lock")
-                    .get(&parent_tid)
+                    .get(pid)
                     .and_then(|pi| *pi.entity.lock().expect("entity lock"));
                 if let Some(parent_ent) = parent_ent {
                     commands.entity(ent).insert(ChildOf(parent_ent));
@@ -319,21 +313,14 @@ fn handle_doc_change(
             }
         }
 
-        DocChangeKind::NodeRemoved { tree_id } => {
-            let Ok(tid) = loro::TreeID::try_from(tree_id.as_str()) else {
-                return;
-            };
-            let removed = registry
-                .node_map
-                .lock()
-                .expect("node_map lock")
-                .remove(&tid);
+        DocChangeKind::NodeRemoved { id } => {
+            let removed = registry.node_map.lock().expect("node_map lock").remove(id);
             if let Some(inner) = removed {
                 registry
                     .nodes
                     .lock()
                     .expect("nodes lock")
-                    .retain(|n| n.tree_id != inner.tree_id);
+                    .retain(|n| n.id != inner.id);
                 let ent = *inner.entity.lock().expect("entity lock");
                 if let Some(ent) = ent {
                     commands.entity(ent).despawn();
@@ -343,17 +330,30 @@ fn handle_doc_change(
 
         DocChangeKind::MeshAdded { id, data } => {
             let ent = spawn_mesh(doc_ent, data, commands, asset_server);
-            let inner = Arc::new(MeshInner {
-                dirty: false.into(),
-                id: id.clone(),
-                state: Mutex::new(MeshState::default()),
-                entity: Mutex::new(Some(ent)),
-            });
-            registry
+            match registry
                 .meshes
                 .lock()
                 .expect("meshes lock")
-                .insert(id.clone(), inner);
+                .entry(id.clone())
+            {
+                Entry::Occupied(entry) => {
+                    let inner = entry.get();
+                    *inner.entity.lock().expect("mesh entity lock") = Some(ent);
+                }
+                Entry::Vacant(entry) => {
+                    let state = match data {
+                        MeshData::Hsd(_) => MeshState::default(),
+                        MeshData::Inline(state) => state.clone(),
+                    };
+                    let inner = Arc::new(MeshInner {
+                        dirty: false.into(),
+                        id: id.clone(),
+                        state: Mutex::new(state),
+                        entity: Mutex::new(Some(ent)),
+                    });
+                    entry.insert(inner);
+                }
+            }
         }
 
         DocChangeKind::MeshChanged { id, data } => {
@@ -386,17 +386,30 @@ fn handle_doc_change(
 
         DocChangeKind::MaterialAdded { id, data } => {
             let ent = spawn_material(doc_ent, data, commands, asset_server);
-            let inner = Arc::new(MaterialInner {
-                dirty: false.into(),
-                id: id.clone(),
-                state: Mutex::new(MaterialState::default()),
-                entity: Mutex::new(Some(ent)),
-            });
-            registry
+            match registry
                 .materials
                 .lock()
                 .expect("materials lock")
-                .insert(id.clone(), inner);
+                .entry(id.clone())
+            {
+                Entry::Occupied(entry) => {
+                    let inner = entry.get();
+                    *inner.entity.lock().expect("material entity lock") = Some(ent);
+                }
+                Entry::Vacant(entry) => {
+                    let state = match data {
+                        MaterialData::Hsd(_) => MaterialState::default(),
+                        MaterialData::Inline(state) => state.clone(),
+                    };
+                    let inner = Arc::new(MaterialInner {
+                        dirty: false.into(),
+                        id: id.clone(),
+                        state: Mutex::new(state),
+                        entity: Mutex::new(Some(ent)),
+                    });
+                    entry.insert(inner);
+                }
+            }
         }
 
         DocChangeKind::MaterialChanged { id, data } => {
@@ -467,10 +480,10 @@ fn apply_mesh_data(
                 && let Some(asset) = mesh_assets.get_mut(handle)
             {
                 *asset = mesh;
-                return;
+            } else {
+                let handle = asset_server.add(mesh);
+                commands.entity(ent).insert(CompiledMesh(handle));
             }
-            let handle = asset_server.add(mesh);
-            commands.entity(ent).insert(CompiledMesh(handle));
         }
     }
 }
@@ -488,7 +501,6 @@ fn spawn_material(
         MaterialData::Inline(state) => {
             let mat = build_material_from_state(state);
             let handle = asset_server.add(mat);
-
             commands
                 .spawn((HsdChild { doc: doc_ent }, CompiledMaterial(handle)))
                 .id()
@@ -619,7 +631,6 @@ fn node_state_from_data(data: &HsdNodeData) -> NodeState {
 }
 
 fn node_data_from_inner(inner: &NodeInner) -> (SmolStr, HsdNodeData) {
-    let tree_id: SmolStr = format!("{}@{}", inner.tree_id.counter, inner.tree_id.peer).into();
     let state = inner.state.lock().expect("node state lock");
     let t = state.transform.translation;
     let r = state.transform.rotation;
@@ -644,10 +655,10 @@ fn node_data_from_inner(inner: &NodeInner) -> (SmolStr, HsdNodeData) {
             Some(state.scripts.iter().map(|h| HydratedHash(*h)).collect())
         },
     };
-    (tree_id, data)
+    (inner.id.clone(), data)
 }
 
-fn node_data_from_hsd(hsd_map: &LoroMap, tid: loro::TreeID) -> HsdNodeData {
+fn node_data_from_hsd(hsd_map: &LoroMap, tid: TreeID) -> HsdNodeData {
     let tree = hsd_map
         .get_or_create_container("nodes", loro::LoroTree::new())
         .ok();

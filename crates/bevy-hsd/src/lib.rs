@@ -5,7 +5,7 @@ use smol_str::SmolStr;
 use std::sync::Arc;
 
 pub mod cache;
-mod compile;
+pub(crate) mod compile;
 pub mod data;
 pub mod hydrate;
 

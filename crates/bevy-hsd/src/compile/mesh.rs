@@ -43,14 +43,14 @@ pub fn parse_mesh_data(
 }
 
 #[derive(Component)]
-pub struct MeshAttrName(SmolStr);
+pub struct MeshAttrName(pub SmolStr);
 
 #[derive(Component)]
 #[require(BlobDeps)]
 pub struct MeshParams {
-    topology: PrimitiveTopology,
-    attr_deps: Vec<Entity>,
-    indices: Option<Entity>,
+    pub topology: PrimitiveTopology,
+    pub attr_deps: Vec<Entity>,
+    pub indices: Option<Entity>,
 }
 
 /// Map HSD attribute names to Bevy mesh attributes.

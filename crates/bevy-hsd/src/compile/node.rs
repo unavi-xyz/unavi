@@ -5,8 +5,6 @@ use crate::{
     compile::Uncompiled,
 };
 
-/// Assign compiled Mesh3d/MeshMaterial3d to nodes that
-/// reference compiled resource entities.
 pub fn compile_nodes(
     asset_server: Res<AssetServer>,
     mut commands: Commands,

@@ -62,14 +62,14 @@ pub fn parse_material_data(
 #[derive(Component)]
 #[require(BlobDeps)]
 pub struct MaterialParams {
-    base_color: Option<Color>,
-    double_sided: Option<bool>,
-    metallic: Option<f32>,
-    roughness: Option<f32>,
-    base_color_texture: Option<Entity>,
-    _metallic_roughness_texture: Option<Entity>,
-    _normal_texture: Option<Entity>,
-    _occlusion_texture: Option<Entity>,
+    pub base_color: Option<Color>,
+    pub double_sided: Option<bool>,
+    pub metallic: Option<f32>,
+    pub roughness: Option<f32>,
+    pub base_color_texture: Option<Entity>,
+    pub _metallic_roughness_texture: Option<Entity>,
+    pub _normal_texture: Option<Entity>,
+    pub _occlusion_texture: Option<Entity>,
 }
 
 pub fn compile_materials(

@@ -5,7 +5,7 @@ use wasmtime::component::{Resource, ResourceTable};
 
 use crate::{
     agent::ProxyRegistry,
-    api::wired::scene::{document::HostDocument, node::HostNode},
+    api::wired::scene::node::HostNode,
 };
 
 #[derive(Default)]
@@ -106,29 +106,27 @@ impl bindings::wired::agent::context::Host for RuntimeData {
 impl bindings::wired::agent::types::Host for RuntimeData {}
 
 impl bindings::wired::agent::types::HostAgent for RuntimeData {
-    async fn document(
-        &mut self,
-        _self_: Resource<HostAgent>,
-    ) -> wasmtime::Result<Resource<HostDocument>> {
-        Ok(self.wired_scene.table.push(HostDocument {
-            id: self.wired_scene.doc_id,
-        })?)
-    }
-
     async fn bone(
         &mut self,
         self_: Resource<HostAgent>,
         name: bindings::wired::agent::types::BoneName,
     ) -> wasmtime::Result<Option<Resource<HostNode>>> {
         let vrm_bone = wit_bone_to_vrm(name);
-        let inner = {
+        let node_id = {
             let agent = self.wired_agent.table.get(&self_)?;
-            let Some(node_id) = agent.0.bone_nodes.get(&vrm_bone).cloned() else {
-                return Ok(None);
-            };
-            let node_map = agent.0.registry.node_map.lock().expect("node_map lock");
-            node_map.get(&node_id).cloned()
+            agent.0.bone_nodes.get(&vrm_bone).cloned()
         };
+        let Some(node_id) = node_id else {
+            return Ok(None);
+        };
+        let inner = self
+            .wired_scene
+            .registry
+            .node_map
+            .lock()
+            .expect("node_map lock")
+            .get(&node_id)
+            .cloned();
         let Some(inner) = inner else {
             return Ok(None);
         };

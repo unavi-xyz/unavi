@@ -128,6 +128,7 @@ pub(super) fn full_hydrate(
             dirty: false.into(),
             entity: Mutex::new(None),
             id: id.clone(),
+            is_virtual: false,
             state: Mutex::new(node_state),
             tree_id: Mutex::new(Some(*tree_id)),
         });

@@ -23,7 +23,29 @@ pub fn assets_dir() -> PathBuf {
     DIRS.data_local_dir().join("assets")
 }
 
+const SCRIPT_PATH: &str = "wasm/example/wired_agent.wasm";
+
+/// Copies assets from the client's project data dir into the dev assets.
+fn copy_assets_to_project_dir() {
+    let assets = assets_dir();
+
+    for path in ["model/default.vrm", SCRIPT_PATH] {
+        let src = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../unavi-client/assets")
+            .join(path);
+        let dst = assets.join(path);
+        if let Some(parent) = dst.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        if let Err(e) = std::fs::copy(&src, &dst) {
+            eprintln!("failed to copy vrm: {e}");
+        }
+    }
+}
+
 fn main() {
+    copy_assets_to_project_dir();
+
     let (actor, blobs) = create_test_wds();
 
     let mut app = App::new();
@@ -91,6 +113,6 @@ fn on_agent_load(
 
     commands.trigger(SpawnLocalScript {
         permissions: ScriptPermissions::system(),
-        source: ScriptSource::Path("wasm/example/wired_agent.wasm".to_string()),
+        source: ScriptSource::Path(SCRIPT_PATH.to_string()),
     });
 }

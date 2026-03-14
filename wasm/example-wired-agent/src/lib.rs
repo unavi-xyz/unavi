@@ -4,12 +4,9 @@ use crate::{
     exports::wired::script::guest_api::{Guest, GuestScript},
     unavi::shapes::api::Cuboid,
     wired::{
-        agent::{
-            context::local_agent,
-            types::{Agent, BoneName},
-        },
+        agent::{context::local_agent, types::BoneName},
         math::types::Vec3,
-        scene::types::Node,
+        scene::{context::self_document, types::Node},
     },
 };
 
@@ -30,23 +27,26 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let agent: Agent = local_agent();
+        let doc = self_document();
 
-        let mesh = Cuboid::new(0.06, 0.06, 0.06).mesh();
+        let size = 0.1;
+        let mesh = Cuboid::new(size, size, size).mesh();
 
-        let mat = agent.document().create_material();
+        let mat = doc.create_material();
         mat.set_base_color(&[0.8, 0.1, 0.1, 1.0]);
 
-        let node = agent.document().create_node();
+        let node = doc.create_node();
         node.set_mesh(Some(mesh));
         node.set_material(Some(mat));
 
-        // Attach cube to right hand bone.
-        let hand = agent.bone(BoneName::RightHand).expect("right hand bone");
+        // Attach to bone.
+        let agent = local_agent();
+        let hand = agent.bone(BoneName::RightHand).expect("get bone");
         hand.add_child(node);
 
         // Retrieve a handle to the cube from its parent.
-        let cube = hand.children().into_iter().next().expect("cube child");
+        // TODO use a clone method
+        let cube = hand.children().into_iter().next().expect("get child");
 
         Self {
             node: cube,

@@ -46,6 +46,7 @@ pub struct NodeInner {
     pub dirty: AtomicBool,
     pub entity: Mutex<Option<Entity>>,
     pub id: SmolStr,
+    pub is_virtual: bool,
     pub state: Mutex<NodeState>,
     pub tree_id: Mutex<Option<TreeID>>,
 }

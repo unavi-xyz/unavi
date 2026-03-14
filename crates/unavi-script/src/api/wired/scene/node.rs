@@ -52,6 +52,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         value: Option<String>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        if inner.is_virtual {
+            return Ok(());
+        }
         inner.state.lock().expect("node state lock").name = value;
         inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
@@ -78,6 +81,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         value: Vec3,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        if inner.is_virtual {
+            return Ok(());
+        }
         inner
             .state
             .lock()
@@ -110,6 +116,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         value: Quat,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        if inner.is_virtual {
+            return Ok(());
+        }
         inner
             .state
             .lock()
@@ -132,6 +141,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
 
     async fn set_scale(&mut self, self_: Resource<HostNode>, value: Vec3) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        if inner.is_virtual {
+            return Ok(());
+        }
         inner.state.lock().expect("node state lock").transform.scale =
             bevy::math::Vec3::new(value.x, value.y, value.z);
         inner.dirty.store(true, Ordering::Relaxed);
@@ -171,6 +183,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         value: Transform,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        if inner.is_virtual {
+            return Ok(());
+        }
         inner.state.lock().expect("node state lock").transform = BevyTransform {
             translation: bevy::math::Vec3::new(
                 value.translation.x,
@@ -332,6 +347,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         value: Option<Resource<Mesh>>,
     ) -> wasmtime::Result<()> {
         let node_inner = Arc::clone(&self.table.get(&self_)?.inner);
+        if node_inner.is_virtual {
+            return Ok(());
+        }
         let mesh_id = match &value {
             Some(res) => Some(self.table.get(res)?.inner.id.clone()),
             None => None,
@@ -367,6 +385,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         value: Option<Resource<Material>>,
     ) -> wasmtime::Result<()> {
         let node_inner = Arc::clone(&self.table.get(&self_)?.inner);
+        if node_inner.is_virtual {
+            return Ok(());
+        }
         let mat_id = match &value {
             Some(res) => Some(self.table.get(res)?.inner.id.clone()),
             None => None,
@@ -404,6 +425,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         value: Option<Collider>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        if inner.is_virtual {
+            return Ok(());
+        }
         {
             let mut state = inner.state.lock().expect("node state lock");
             state.collider = value.map(|c| {
@@ -451,6 +475,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         value: Option<RigidBodyKind>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        if inner.is_virtual {
+            return Ok(());
+        }
         {
             let mut state = inner.state.lock().expect("node state lock");
             state.rigid_body = value.map(|kind| {
@@ -470,9 +497,11 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     }
 
     async fn commit(&mut self, self_: Resource<HostNode>) -> wasmtime::Result<()> {
-        self.check_hsd_write()?;
-
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        if inner.is_virtual {
+            return Ok(());
+        }
+        self.check_hsd_write()?;
 
         let tree_id = {
             let mut lock = inner.tree_id.lock().expect("lock tree id");

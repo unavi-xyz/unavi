@@ -84,6 +84,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         let inner = Arc::new(NodeInner {
             dirty: false.into(),
             id: id.clone(),
+            is_virtual: false,
             tree_id: Mutex::new(None),
             state: Mutex::new(NodeState::default()),
             entity: Mutex::new(None),

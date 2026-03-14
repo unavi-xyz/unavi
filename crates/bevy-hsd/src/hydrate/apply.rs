@@ -34,12 +34,26 @@ pub(crate) fn flush_scene_dirty(docs: Query<(Entity, &SceneRegistry, &DocChangeQ
         {
             let nodes = registry.0.nodes.lock().expect("nodes lock");
             for inner in nodes.iter() {
+                if inner.is_virtual {
+                    continue;
+                }
                 if inner.dirty.swap(false, Ordering::Relaxed) {
                     let (id, data) = node_data_from_inner(inner);
-                    changes.push(DocChange {
-                        doc: doc_ent,
-                        kind: DocChangeKind::NodeChanged { id, data },
-                    });
+                    let has_entity = inner.entity.lock().expect("entity lock").is_some();
+                    let kind = if has_entity {
+                        DocChangeKind::NodeChanged { id, data }
+                    } else {
+                        let parent_id = inner
+                            .state
+                            .lock()
+                            .expect("node state lock")
+                            .parent
+                            .as_ref()
+                            .and_then(std::sync::Weak::upgrade)
+                            .map(|pi| pi.id.clone());
+                        DocChangeKind::NodeAdded { id, parent_id, data }
+                    };
+                    changes.push(DocChange { doc: doc_ent, kind });
                 }
             }
         }
@@ -166,6 +180,7 @@ fn handle_doc_change(
                     dirty: false.into(),
                     entity: Mutex::new(None),
                     id: id.clone(),
+                    is_virtual: false,
                     state: Mutex::new(state),
                     tree_id: Mutex::new(None),
                 });

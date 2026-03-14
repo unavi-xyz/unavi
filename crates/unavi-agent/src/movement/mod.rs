@@ -1,4 +1,4 @@
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_6, FRAC_PI_8};
+use std::f32::consts::FRAC_PI_2;
 
 use bevy::prelude::*;
 use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
@@ -32,6 +32,9 @@ pub struct TargetHeadInput(Vec2);
 #[derive(Resource, Default)]
 pub struct MenuAnimationState(bool);
 
+const PITCH_BOUND: f32 = FRAC_PI_2 - 1E-3;
+const MOVE_THRESHOLD: f32 = 0.6; // TODO configurable for stick drift (same for look)
+
 pub fn apply_head_input(
     look_action: Query<&Vec2ActionValue, With<LookAction>>,
     agents: Query<&LocalAgentEntities>,
@@ -40,8 +43,9 @@ pub fn apply_head_input(
     mut target: ResMut<TargetHeadInput>,
     menu_state: ResMut<MenuAnimationState>,
     time: Res<Time>,
+    mut prev_menu: Local<bool>,
+    mut menu_enter_yaw: Local<f32>,
 ) {
-    const PITCH_BOUND: f32 = FRAC_PI_2 - 1E-3;
     const S: f32 = 0.4;
 
     let Ok(action) = look_action.single() else {
@@ -52,15 +56,37 @@ pub fn apply_head_input(
     target.0 += action.any * delta * sensitivity::sensitivity();
 
     if menu_state.0 {
-        let menu_pitch_bound_h = PITCH_BOUND - FRAC_PI_6;
-        let menu_pitch_bound_l = -PITCH_BOUND - FRAC_PI_8;
-        target.y = target.y.clamp(menu_pitch_bound_l, menu_pitch_bound_h);
-        target.x = target.x.clamp(-menu::MENU_YAW_BOUND, menu::MENU_YAW_BOUND);
+        target.y = target.y.clamp(menu::PITCH_BOUND_L, menu::PITCH_BOUND_H);
+        target.x = target.x.clamp(-menu::YAW_BOUND, menu::YAW_BOUND);
     } else {
         target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
     }
 
+    let just_entered_menu = menu_state.0 && !*prev_menu;
+    let just_exited_menu = !menu_state.0 && *prev_menu;
+    *prev_menu = menu_state.0;
+
     for entities in agents.iter() {
+        // On toggle: snap rotations to prevent camera jump.
+        if just_entered_menu {
+            // Snap body to exact yaw target so relative head yaw starts at zero.
+            if let Ok(mut rig_transform) = rigs.get_mut(entities.body) {
+                rig_transform.rotation = Quat::from_rotation_y(-target.x);
+            }
+            *menu_enter_yaw = target.x;
+        }
+
+        if just_exited_menu {
+            // Snap both rotations so the combined world rotation is unchanged.
+            if let Ok(mut rig_transform) = rigs.get_mut(entities.body) {
+                rig_transform.rotation = Quat::from_rotation_y(-target.x);
+            }
+            if let Ok(mut pose) = tracked_heads.get_mut(entities.tracked_head) {
+                pose.rotation = Quat::from_rotation_x(target.y);
+            }
+            continue;
+        }
+
         // When menu locked, rotate head sideways.
         // Otherwise, rotate full body.
         if !menu_state.0
@@ -71,20 +97,19 @@ pub fn apply_head_input(
         }
 
         if let Ok(mut pose) = tracked_heads.get_mut(entities.tracked_head) {
-            let mut target_pitch = Quat::from_rotation_x(target.y);
+            let mut target_pose = Quat::from_rotation_x(target.y);
 
             if menu_state.0 {
-                let yaw = Quat::from_rotation_y(-target.x);
-                target_pitch += yaw;
+                // Use yaw relative to where the body was when menu opened,
+                // so the camera doesn't jump on toggle.
+                let relative_yaw = Quat::from_rotation_y(-(target.x - *menu_enter_yaw));
+                target_pose = relative_yaw * target_pose;
             }
 
-            pose.rotation = pose.rotation.lerp(target_pitch, S);
+            pose.rotation = pose.rotation.lerp(target_pose, S);
         }
     }
 }
-
-const MOVE_THRESHOLD: f32 = 0.6; // TODO configurable for stick drift (same for look)
-const S: f32 = 0.2;
 
 pub fn apply_body_input(
     agents: Query<(&LocalAgentEntities, &AgentConfig)>,
@@ -98,6 +123,8 @@ pub fn apply_body_input(
     movement_yaw: Res<MovementYaw>,
     mut menu_state: ResMut<MenuAnimationState>,
 ) {
+    const S: f32 = 0.2;
+
     for (entities, config) in agents.iter() {
         let Ok(rig_transform) = rigs.get(entities.body) else {
             continue;

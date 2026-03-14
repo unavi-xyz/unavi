@@ -1,4 +1,4 @@
-use std::f32::consts::FRAC_PI_2;
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, FRAC_PI_8};
 
 use bevy::prelude::*;
 use unavi_avatar::animation::{AnimationName, weights::TargetAnimationWeights};
@@ -6,8 +6,10 @@ use unavi_input::{actions::MenuAction, schminput::BoolActionValue};
 
 use crate::{LocalAgent, LocalAgentEntities, movement::MenuAnimationState};
 
-pub const MENU_YAW_BOUND: f32 = FRAC_PI_2;
 pub const MIN_MENU_MOVEMENT: f32 = 0.1;
+pub const PITCH_BOUND_H: f32 = super::PITCH_BOUND - FRAC_PI_4;
+pub const PITCH_BOUND_L: f32 = -super::PITCH_BOUND - FRAC_PI_8;
+pub const YAW_BOUND: f32 = FRAC_PI_2;
 
 pub fn apply_menu_animation(
     menu_action: Query<&BoolActionValue, With<MenuAction>>,

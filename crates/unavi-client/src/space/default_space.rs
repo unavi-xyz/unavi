@@ -24,11 +24,13 @@ pub fn default_space(hsd: &LoroMap) -> Blobs {
     let mut blobs = Blobs::default();
 
     let materials = hsd
-        .get_or_create_container("materials", LoroList::new())
-        .expect("materials list");
+        .get_or_create_container("materials", LoroMap::new())
+        .expect("materials map");
 
-    // Ground material (index 0)
-    let mat0 = materials.push_container(LoroMap::new()).expect("push mat");
+    // Ground material
+    let mat0 = materials
+        .get_or_create_container("0", LoroMap::new())
+        .expect("mat0");
     mat0.insert_container("base_color", {
         let l = LoroList::new();
         l.push(1.0).expect("push");
@@ -40,26 +42,26 @@ pub fn default_space(hsd: &LoroMap) -> Blobs {
     mat0.insert("roughness", 0.9).expect("roughness");
 
     let meshes = hsd
-        .get_or_create_container("meshes", LoroList::new())
-        .expect("meshes list");
+        .get_or_create_container("meshes", LoroMap::new())
+        .expect("meshes map");
 
-    // Ground mesh (index 0).
+    // Ground mesh
     let ground_dims = Vec3::new(50.0, 1.0, 50.0);
-    let ground_mesh_idx = push_cuboid_mesh(&mut blobs, &meshes, ground_dims);
+    insert_cuboid_mesh(&mut blobs, &meshes, "0", ground_dims);
 
-    // Dyn cube mesh (index 1).
+    // Dyn cube mesh
     let cube_dims = Vec3::splat(0.5);
-    let cube_mesh_idx = push_cuboid_mesh(&mut blobs, &meshes, cube_dims);
+    insert_cuboid_mesh(&mut blobs, &meshes, "1", cube_dims);
 
     let nodes = hsd
         .get_or_create_container("nodes", LoroTree::new())
         .expect("nodes tree");
 
-    // Ground node.
+    // Ground node
     let ground_id = nodes.create(None).expect("create ground");
     let ground = nodes.get_meta(ground_id).expect("meta");
-    ground.insert("mesh", ground_mesh_idx).expect("mesh");
-    ground.insert("material", 0i64).expect("material");
+    ground.insert("mesh", "0").expect("mesh");
+    ground.insert("material", "0").expect("material");
     ground
         .insert_container("translation", {
             let l = LoroList::new();
@@ -87,10 +89,10 @@ pub fn default_space(hsd: &LoroMap) -> Blobs {
         .expect("rigid_body");
     ground_rb.insert("kind", "static").expect("kind");
 
-    // Dynamic cube node.
+    // Dynamic cube node
     let cube_id = nodes.create(None).expect("create cube");
     let cube = nodes.get_meta(cube_id).expect("meta");
-    cube.insert("mesh", cube_mesh_idx).expect("mesh");
+    cube.insert("mesh", "1").expect("mesh");
     cube.insert_container("translation", {
         let l = LoroList::new();
         l.push(-2.0).expect("push");
@@ -120,12 +122,12 @@ pub fn default_space(hsd: &LoroMap) -> Blobs {
     blobs
 }
 
-/// Push a cuboid mesh into the meshes list, returning the
-/// index (as i64 for Loro).
-fn push_cuboid_mesh(blobs: &mut Blobs, meshes: &LoroList, dims: Vec3) -> i64 {
+fn insert_cuboid_mesh(blobs: &mut Blobs, meshes: &LoroMap, key: &str, dims: Vec3) {
     let cube = Cuboid::new(dims.x, dims.y, dims.z).mesh().build();
 
-    let mesh_map = meshes.push_container(LoroMap::new()).expect("push mesh");
+    let mesh_map = meshes
+        .get_or_create_container(key, LoroMap::new())
+        .expect("mesh map");
     mesh_map.insert("topology", 3i64).expect("topology");
 
     let attrs = mesh_map
@@ -158,9 +160,4 @@ fn push_cuboid_mesh(blobs: &mut Blobs, meshes: &LoroList, dims: Vec3) -> i64 {
     attrs
         .insert("NORMAL", hash.as_bytes().to_vec())
         .expect("normal");
-
-    // Return index (0-based).
-    #[expect(clippy::cast_possible_wrap)]
-    let idx = (meshes.len() - 1) as i64;
-    idx
 }

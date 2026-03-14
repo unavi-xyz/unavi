@@ -106,7 +106,6 @@ pub(crate) fn load_scripts(
             .unwrap_or_default();
 
         let name = name.map_or_else(|| "unknown".to_string(), std::string::ToString::to_string);
-        info!(name, "instantiating script");
 
         let (stdout, stdout_stream) = ScriptStdout::new();
         let (stderr, stderr_stream) = ScriptStderr::new();
@@ -120,7 +119,7 @@ pub(crate) fn load_scripts(
         let (doc, self_node_id, registry, events, agent_entry, doc_id, doc_entity) =
             if perms.api.contains(&ApiName::LocalAgent) {
                 let Ok(agent_ent) = local_agent_ent.single() else {
-                    warn!(name, "no local agent entity found");
+                    // Wait for local agent to be loaded.
                     continue;
                 };
                 maybe_agent_ent = Some(agent_ent);
@@ -213,6 +212,7 @@ pub(crate) fn load_scripts(
             commands.entity(ent).insert(NeedsAgentProxy(agent_ent));
         }
 
+        info!(name, "instantiating script");
         pool.spawn(async move {
             let mut ctx = ctx.lock().await;
             let res = instantiate_component(ent, component, &mut ctx, perms)

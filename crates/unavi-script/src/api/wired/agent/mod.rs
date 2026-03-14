@@ -3,10 +3,7 @@ use std::sync::Arc;
 use bevy_vrm::BoneName;
 use wasmtime::component::{Resource, ResourceTable};
 
-use crate::{
-    agent::ProxyRegistry,
-    api::wired::scene::node::HostNode,
-};
+use crate::{agent::ProxyRegistry, api::wired::scene::node::HostNode};
 
 #[derive(Default)]
 pub struct WiredAgentRt {

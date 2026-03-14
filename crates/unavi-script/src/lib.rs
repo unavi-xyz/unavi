@@ -36,9 +36,7 @@ impl Plugin for ScriptPlugin {
             .add_systems(PreUpdate, runtime::increment_epochs)
             .add_systems(
                 PostUpdate,
-                (agent::parent_bone_proxies, agent::reset_bone_proxies)
-                    .chain()
-                    .before(TransformSystems::Propagate),
+                agent::reset_bone_proxies.before(TransformSystems::Propagate),
             )
             .add_systems(
                 FixedUpdate,
@@ -47,6 +45,7 @@ impl Plugin for ScriptPlugin {
                     load::hsd::load_hsd_scripts,
                     load::hsd::cleanup_hsd_scripts,
                     load::load_scripts,
+                    agent::init_agent_proxies,
                     runtime::init::begin_init_scripts,
                     runtime::init::end_init_scripts,
                     runtime::tick::tick_scripts,

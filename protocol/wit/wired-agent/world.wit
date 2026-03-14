@@ -62,13 +62,8 @@ interface types {
   }
 
   resource agent {
-    /// The agent's scene document. Create nodes here to attach them
-    /// to the agent.
-    document: func() -> document;
-
-    /// Get the bone-proxy node for the named bone.
+    /// Get a virtual node tracking the named bone.
     /// Returns none if the bone is absent from the VRM model.
-    /// Adding children to it parents them to the bone in the ECS.
     bone: func(name: bone-name) -> option<node>;
   }
 }

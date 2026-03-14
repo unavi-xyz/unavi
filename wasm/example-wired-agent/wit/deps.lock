@@ -6,8 +6,8 @@ deps = ["wired-math", "wired-script"]
 
 [wired-agent]
 path = "../../../protocol/wit/wired-agent"
-sha256 = "cdd3d2ab925a6184c543ba21795778393dd695d7e4d9b157427700a12b91156d"
-sha512 = "b506b366e199bc71f1d233c79be27ff9153168b46343fcfc70e5358c1a35a3e01efe393a77207e42f92de4ae7ac16868cc1252a0dc368edde942d69a5f3918a1"
+sha256 = "dd6f7411521974d00172d94a7406d116d3a0a02eb99acb8e0f06e815393f7d49"
+sha512 = "216f3cfa8141cda9cb0ce53b03a9d8ab7d99d4803ac0387337237a42bf7bdde90dbb852946e7c9bfd7ddb3bd568600d2a6a83807590ff2769ee92f0374e78e58"
 deps = ["wired-math"]
 
 [wired-math]

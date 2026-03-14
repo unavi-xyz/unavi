@@ -7,7 +7,7 @@ use bevy::{
 };
 use wasmtime::AsContextMut;
 
-use crate::{load::LoadedScript, runtime::ScriptRuntime};
+use crate::{agent::NeedsAgentProxy, load::LoadedScript, runtime::ScriptRuntime};
 
 #[derive(Component)]
 pub struct InitializedScript;
@@ -25,7 +25,11 @@ pub fn begin_init_scripts(
     time: Res<Time>,
     to_init: Query<
         (Entity, &LoadedScript, &ScriptRuntime, Option<&Name>),
-        (Without<InitializedScript>, Added<LoadedScript>),
+        (
+            Without<InitializedScript>,
+            Without<InitializingScript>,
+            Without<NeedsAgentProxy>,
+        ),
     >,
 ) {
     for (entity, loaded, rt, name) in to_init {

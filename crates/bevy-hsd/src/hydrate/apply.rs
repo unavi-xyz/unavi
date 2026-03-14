@@ -51,7 +51,11 @@ pub(crate) fn flush_scene_dirty(docs: Query<(Entity, &SceneRegistry, &DocChangeQ
                             .as_ref()
                             .and_then(std::sync::Weak::upgrade)
                             .map(|pi| pi.id.clone());
-                        DocChangeKind::NodeAdded { id, parent_id, data }
+                        DocChangeKind::NodeAdded {
+                            id,
+                            parent_id,
+                            data,
+                        }
                     };
                     changes.push(DocChange { doc: doc_ent, kind });
                 }

@@ -14,8 +14,8 @@ use unavi_input::raycast::PrimaryRaycastInput;
 use unavi_portal::{PortalTraveler, create::PORTAL_RENDER_LAYER};
 
 use crate::{
-    Agent, AgentCamera, AgentRig,  ControlScheme, ControlSchemeConfig, Grounded,
-    LocalAgent, LocalAgentEntities,
+    Agent, AgentCamera, AgentRig, ControlScheme, ControlSchemeConfig, Grounded, LocalAgent,
+    LocalAgentEntities,
     config::{AgentConfig, XrMode},
     tracking::{TrackedHead, TrackedPose},
 };

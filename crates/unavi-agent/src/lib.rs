@@ -123,4 +123,3 @@ pub struct LocalAgentEntities {
 #[derive(Component, Default)]
 #[require(AgentConfig, TrackingSource, Transform, Visibility)]
 pub struct LocalAgent;
-

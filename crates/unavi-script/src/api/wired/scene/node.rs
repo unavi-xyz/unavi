@@ -687,7 +687,9 @@ fn validate_positive(v: f32, name: &str) -> wasmtime::Result<()> {
     if v.is_finite() && v > 0.0 {
         Ok(())
     } else {
-        Err(anyhow::anyhow!("{name} must be finite and positive, got {v}"))
+        Err(anyhow::anyhow!(
+            "{name} must be finite and positive, got {v}"
+        ))
     }
 }
 
@@ -695,6 +697,8 @@ fn validate_nonneg(v: f32, name: &str) -> wasmtime::Result<()> {
     if v.is_finite() && v >= 0.0 {
         Ok(())
     } else {
-        Err(anyhow::anyhow!("{name} must be finite and non-negative, got {v}"))
+        Err(anyhow::anyhow!(
+            "{name} must be finite and non-negative, got {v}"
+        ))
     }
 }

@@ -34,6 +34,7 @@ impl Plugin for ScriptPlugin {
             .add_observer(agent::on_avatar_bones_added)
             .add_observer(load::local::on_spawn_local_script)
             .add_systems(PreUpdate, runtime::increment_epochs)
+            .add_systems(Update, runtime::render::render_tick_scripts)
             .add_systems(
                 PostUpdate,
                 agent::reset_bone_proxies.before(TransformSystems::Propagate),

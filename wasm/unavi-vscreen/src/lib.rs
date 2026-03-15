@@ -31,13 +31,12 @@ struct Script {
     screen: Node,
 }
 
-const HOVER: f32 = 0.01;
-const RADIUS: f32 = 0.1;
-const THICKNESS: f32 = 0.05;
+const HOVER: f32 = 0.05;
+const RADIUS: f32 = 0.04;
+const THICKNESS: f32 = 0.005;
 
 const OPEN_DISTANCE: f32 = 0.5;
-const OPEN_SPEED: f32 = 0.1;
-/// Weight Y heavier in dostan
+const OPEN_SPEED: f32 = 1.6;
 const Y_FACTOR: f32 = 4.0;
 
 impl GuestScript for Script {
@@ -46,8 +45,15 @@ impl GuestScript for Script {
 
         let screen = {
             let mesh = Cylinder::new(RADIUS, THICKNESS).mesh();
+
+            let mat = doc.create_material();
+            mat.set_base_color(&[1.0, 1.0, 1.0, 0.5]);
+            mat.set_metallic(0.8);
+            mat.set_roughness(0.8);
+
             let node = doc.create_node();
             node.set_mesh(Some(mesh));
+            node.set_material(Some(mat));
             node.set_scale(Vec3 {
                 x: 0.0,
                 y: 0.0,
@@ -103,7 +109,6 @@ impl GuestScript for Script {
         let d = (d_x.abs() + d_y.abs().mul_add(Y_FACTOR, d_z.abs())) / 3.0;
 
         let open = d < OPEN_DISTANCE;
-        println!("d={d:.4} open={open}");
         self.open.set(open);
     }
 
@@ -132,7 +137,6 @@ impl GuestScript for Script {
         s.y = s.y.clamp(0.0, 1.0);
         s.z = s.z.clamp(0.0, 1.0);
 
-        println!("sx={} sy={} sz={}", s.x, s.y, s.z);
         self.screen.set_scale(s);
     }
 

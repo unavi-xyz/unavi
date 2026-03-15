@@ -13,6 +13,7 @@ use crate::{
 
 pub mod init;
 mod log;
+pub mod render;
 pub mod tick;
 
 pub struct RuntimeCtx {

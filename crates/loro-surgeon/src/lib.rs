@@ -119,6 +119,55 @@ mod tests {
     }
 
     #[derive(Hydrate, Reconcile, Debug, PartialEq)]
+    enum Shape {
+        Point,
+        Circle(f64),
+        Rect { width: f64, height: f64 },
+    }
+
+    #[test]
+    fn roundtrip_enum_unit() {
+        let doc = LoroDoc::new();
+        Shape::Point
+            .reconcile(&doc.get_map("shape"))
+            .expect("reconcile failed");
+        let loaded =
+            Shape::hydrate(&doc.get_map("shape").get_deep_value()).expect("hydrate failed");
+        assert_eq!(loaded, Shape::Point);
+    }
+
+    #[test]
+    fn roundtrip_enum_tuple() {
+        let doc = LoroDoc::new();
+        Shape::Circle(3.14)
+            .reconcile(&doc.get_map("shape"))
+            .expect("reconcile failed");
+        let loaded =
+            Shape::hydrate(&doc.get_map("shape").get_deep_value()).expect("hydrate failed");
+        assert_eq!(loaded, Shape::Circle(3.14));
+    }
+
+    #[test]
+    fn roundtrip_enum_named() {
+        let doc = LoroDoc::new();
+        Shape::Rect {
+            width: 10.0,
+            height: 5.0,
+        }
+        .reconcile(&doc.get_map("shape"))
+        .expect("reconcile failed");
+        let loaded =
+            Shape::hydrate(&doc.get_map("shape").get_deep_value()).expect("hydrate failed");
+        assert_eq!(
+            loaded,
+            Shape::Rect {
+                width: 10.0,
+                height: 5.0
+            }
+        );
+    }
+
+    #[derive(Hydrate, Reconcile, Debug, PartialEq)]
     struct WithRename {
         #[loro(rename = "user_name")]
         name: String,

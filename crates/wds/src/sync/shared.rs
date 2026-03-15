@@ -217,6 +217,18 @@ fn collect_blob_refs(value: &LoroValue, field: &Field, refs: &mut HashSet<String
                 }
             }
         }
+        Field::Enum(variants) => {
+            if let LoroValue::Map(map) = value
+                && let Some(LoroValue::String(tag)) = map.get("tag")
+            {
+                let tag = tag.clone();
+                if let Some(Some(inner_field)) = variants.get(tag.as_str())
+                    && let Some(data) = map.get(tag.as_str())
+                {
+                    collect_blob_refs(data, inner_field, refs);
+                }
+            }
+        }
         Field::Restricted { value: inner, .. } => collect_blob_refs(value, inner, refs),
         Field::Any
         | Field::Binary
@@ -286,6 +298,18 @@ fn collect_record_refs(value: &LoroValue, field: &Field, refs: &mut HashSet<Stri
                     {
                         collect_record_refs(meta, inner, refs);
                     }
+                }
+            }
+        }
+        Field::Enum(variants) => {
+            if let LoroValue::Map(map) = value
+                && let Some(LoroValue::String(tag)) = map.get("tag")
+            {
+                let tag = tag.clone();
+                if let Some(Some(inner_field)) = variants.get(tag.as_str())
+                    && let Some(data) = map.get(tag.as_str())
+                {
+                    collect_record_refs(data, inner_field, refs);
                 }
             }
         }

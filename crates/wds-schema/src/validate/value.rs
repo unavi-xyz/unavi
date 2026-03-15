@@ -1,6 +1,7 @@
 //! Type validation for [`LoroValue`] against [`Field`] layouts.
 
 use loro::LoroValue;
+use smol_str::SmolStr;
 
 use super::ValidationError;
 use crate::Field;
@@ -157,6 +158,35 @@ pub fn validate_value(value: &LoroValue, field: &Field, path: &str) -> Result<()
             _ => Err(ValidationError::TypeMismatch {
                 path: path.to_string(),
                 expected: "tree",
+            }),
+        },
+        Field::Enum(variants) => match value {
+            LoroValue::Map(map) => {
+                let tag_value = map
+                    .get("tag")
+                    .ok_or_else(|| ValidationError::MissingField("tag".into()))?;
+                let LoroValue::String(tag) = tag_value else {
+                    return Err(ValidationError::TypeMismatch {
+                        path: format!("{path}.tag"),
+                        expected: "string",
+                    });
+                };
+                let tag: SmolStr = tag.as_str().into();
+                let Some(variant) = variants.get(&tag) else {
+                    return Err(ValidationError::UnknownVariant(tag));
+                };
+                if let Some(inner_field) = variant {
+                    let data_key = tag.as_str();
+                    let data = map
+                        .get(data_key)
+                        .ok_or_else(|| ValidationError::MissingField(data_key.into()))?;
+                    validate_value(data, inner_field, &format!("{path}.{tag}"))?;
+                }
+                Ok(())
+            }
+            _ => Err(ValidationError::TypeMismatch {
+                path: path.to_string(),
+                expected: "enum (map with tag)",
             }),
         },
         // For type validation, Restricted validates inner.
@@ -515,6 +545,93 @@ mod tests {
     fn validate_record_id_wrong_type() {
         let value = LoroValue::String("not binary".into());
         assert!(validate_value(&value, &Field::RecordId, "test").is_err());
+    }
+
+    #[test]
+    fn validate_enum_unit_variant() {
+        let mut map = std::collections::HashMap::new();
+        map.insert("tag".to_string(), LoroValue::String("Static".into()));
+        let value = LoroValue::Map(map.into());
+
+        let mut variants = BTreeMap::new();
+        variants.insert("Static".into(), None);
+        variants.insert("Dynamic".into(), None);
+
+        assert!(validate_value(&value, &Field::Enum(variants), "test").is_ok());
+    }
+
+    #[test]
+    fn validate_enum_struct_variant() {
+        let mut inner = std::collections::HashMap::new();
+        inner.insert("radius".to_string(), LoroValue::Double(1.5));
+
+        let mut map = std::collections::HashMap::new();
+        map.insert("tag".to_string(), LoroValue::String("Sphere".into()));
+        map.insert("Sphere".to_string(), LoroValue::Map(inner.into()));
+        let value = LoroValue::Map(map.into());
+
+        let mut sphere_fields = BTreeMap::new();
+        sphere_fields.insert("radius".into(), Box::new(Field::F64));
+
+        let mut variants = BTreeMap::new();
+        variants.insert(
+            "Sphere".into(),
+            Some(Box::new(Field::Struct(sphere_fields))),
+        );
+        variants.insert("Box".into(), None);
+
+        assert!(validate_value(&value, &Field::Enum(variants), "test").is_ok());
+    }
+
+    #[test]
+    fn validate_enum_unknown_variant() {
+        let mut map = std::collections::HashMap::new();
+        map.insert("tag".to_string(), LoroValue::String("Unknown".into()));
+        let value = LoroValue::Map(map.into());
+
+        let mut variants = BTreeMap::new();
+        variants.insert("Static".into(), None);
+
+        assert!(matches!(
+            validate_value(&value, &Field::Enum(variants), "test"),
+            Err(ValidationError::UnknownVariant(_))
+        ));
+    }
+
+    #[test]
+    fn validate_enum_missing_tag() {
+        let map = std::collections::HashMap::new();
+        let value = LoroValue::Map(map.into());
+
+        let mut variants = BTreeMap::new();
+        variants.insert("Static".into(), None);
+
+        assert!(matches!(
+            validate_value(&value, &Field::Enum(variants), "test"),
+            Err(ValidationError::MissingField(_))
+        ));
+    }
+
+    #[test]
+    fn validate_enum_missing_variant_data() {
+        let mut map = std::collections::HashMap::new();
+        map.insert("tag".to_string(), LoroValue::String("Sphere".into()));
+        // "Sphere" data key missing
+        let value = LoroValue::Map(map.into());
+
+        let mut sphere_fields = BTreeMap::new();
+        sphere_fields.insert("radius".into(), Box::new(Field::F64));
+
+        let mut variants = BTreeMap::new();
+        variants.insert(
+            "Sphere".into(),
+            Some(Box::new(Field::Struct(sphere_fields))),
+        );
+
+        assert!(matches!(
+            validate_value(&value, &Field::Enum(variants), "test"),
+            Err(ValidationError::MissingField(_))
+        ));
     }
 
     #[test]

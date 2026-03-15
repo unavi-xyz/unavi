@@ -37,10 +37,11 @@ fn validate_map_diff(
 ) -> Result<(), ValidationError> {
     let inner = unwrap_restricted(field);
 
-    let (struct_fields, map_inner) = match inner {
-        Field::Struct(fields) => (Some(fields), None),
-        Field::Map(inner) => (None, Some(inner.as_ref())),
-        _ => (None, None),
+    let (struct_fields, map_inner, enum_variants) = match inner {
+        Field::Enum(variants) => (None, None, Some(variants)),
+        Field::Map(inner) => (None, Some(inner.as_ref()), None),
+        Field::Struct(fields) => (Some(fields), None, None),
+        _ => (None, None, None),
     };
 
     for (key, new_value) in &map_delta.updated {
@@ -54,6 +55,15 @@ fn validate_map_diff(
                 }
             } else if let Some(expected) = map_inner {
                 validate_value_or_container(value, expected, &field_path)?;
+            } else if let Some(variants) = enum_variants {
+                if key == "tag" {
+                    validate_value_or_container(value, &Field::String, &field_path)?;
+                } else {
+                    let key_smol: smol_str::SmolStr = key.to_string().into();
+                    if let Some(Some(inner_field)) = variants.get(&key_smol) {
+                        validate_value_or_container(value, inner_field, &field_path)?;
+                    }
+                }
             }
         }
     }

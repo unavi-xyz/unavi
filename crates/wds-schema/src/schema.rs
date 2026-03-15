@@ -50,6 +50,10 @@ pub enum Field {
     /// 32-byte blake3 blob ID.
     BlobId,
     Bool,
+    /// Discriminated union stored as a Loro map with a `"tag"` String key
+    /// (the active variant name) and per-variant data under `"<VariantName>"`.
+    /// `None` = unit variant; `Some` = associated data type.
+    Enum(BTreeMap<SmolStr, Option<Box<Self>>>),
     F64,
     I64,
     List(Box<Self>),

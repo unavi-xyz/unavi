@@ -42,6 +42,8 @@ pub enum ValidationError {
     },
     #[error("missing field: {0}")]
     MissingField(SmolStr),
+    #[error("unknown variant: {0}")]
+    UnknownVariant(SmolStr),
     #[error("type mismatch at {path}: expected {expected}")]
     TypeMismatch {
         path: String,

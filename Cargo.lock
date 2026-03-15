@@ -13406,6 +13406,7 @@ dependencies = [
  "bevy_panorbit_camera",
  "bevy_vrm",
  "blake3",
+ "bytemuck",
  "bytes 1.11.0",
  "directories",
  "futures 0.3.31",

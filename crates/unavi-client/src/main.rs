@@ -20,7 +20,7 @@ struct Args {
     #[arg(long, default_value_t = false)]
     debug_fps: bool,
 
-    /// Enable debug network monitoring (shows bandwidth, tickrate, etc.).
+    /// Enable debug network monitoring.
     #[cfg(feature = "devtools-network")]
     #[arg(long, default_value_t = false)]
     debug_network: bool,

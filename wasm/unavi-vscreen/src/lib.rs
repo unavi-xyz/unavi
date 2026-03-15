@@ -9,7 +9,10 @@ use crate::{
     wired::{
         agent::{context::local_agent, types::BoneName},
         math::types::Vec3,
-        scene::{context::self_document, types::Node},
+        scene::{
+            context::self_document,
+            types::{Collider, ColliderCylinder, Node},
+        },
     },
 };
 
@@ -65,8 +68,11 @@ impl GuestScript for Script {
                 z: 0.0,
             });
 
-            // let col = Collider::Cylinder(RADIUS, THICKNESS);
-            // node.set_collider(Some(col));
+            let col = Collider::Cylinder(ColliderCylinder {
+                half_height: THICKNESS / 2.0,
+                radius: RADIUS,
+            });
+            node.set_collider(Some(&col));
 
             node
         };

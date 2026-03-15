@@ -62,14 +62,11 @@ pub fn default_space(hsd: &LoroMap) -> Result<Blobs> {
         l
     })?;
     let ground_collider = ground.get_or_create_container("collider", LoroMap::new())?;
-    ground_collider.insert("shape", "cuboid")?;
-    ground_collider.insert_container("size", {
-        let l = LoroList::new();
-        l.push(f64::from(ground_dims.x))?;
-        l.push(f64::from(ground_dims.y))?;
-        l.push(f64::from(ground_dims.z))?;
-        l
-    })?;
+    ground_collider.insert("tag", "Cuboid")?;
+    let ground_cuboid = ground_collider.get_or_create_container("Cuboid", LoroMap::new())?;
+    ground_cuboid.insert("x", f64::from(ground_dims.x))?;
+    ground_cuboid.insert("y", f64::from(ground_dims.y))?;
+    ground_cuboid.insert("z", f64::from(ground_dims.z))?;
     let ground_rb = ground.get_or_create_container("rigid_body", LoroMap::new())?;
     ground_rb.insert("kind", "static")?;
 
@@ -85,14 +82,11 @@ pub fn default_space(hsd: &LoroMap) -> Result<Blobs> {
         l
     })?;
     let cube_collider = cube.get_or_create_container("collider", LoroMap::new())?;
-    cube_collider.insert("shape", "cuboid")?;
-    cube_collider.insert_container("size", {
-        let l = LoroList::new();
-        l.push(f64::from(cube_dims.x))?;
-        l.push(f64::from(cube_dims.y))?;
-        l.push(f64::from(cube_dims.z))?;
-        l
-    })?;
+    cube_collider.insert("tag", "Cuboid")?;
+    let cube_cuboid = cube_collider.get_or_create_container("Cuboid", LoroMap::new())?;
+    cube_cuboid.insert("x", f64::from(cube_dims.x))?;
+    cube_cuboid.insert("y", f64::from(cube_dims.y))?;
+    cube_cuboid.insert("z", f64::from(cube_dims.z))?;
     let cube_rb = cube.get_or_create_container("rigid_body", LoroMap::new())?;
     cube_rb.insert("kind", "dynamic")?;
 

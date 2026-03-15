@@ -17,6 +17,7 @@ bevy-wds.path          = "../bevy-wds"
 bevy_async_task        = "0.11.1"
 bevy_vrm.workspace     = true
 blake3.workspace       = true
+bytemuck.workspace     = true
 bytes.workspace        = true
 futures.workspace      = true
 loro.workspace         = true

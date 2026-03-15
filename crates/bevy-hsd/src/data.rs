@@ -70,10 +70,27 @@ pub struct HsdNodeData {
     pub translation: Option<Vec<f64>>,
 }
 
-#[derive(Component, Debug, Clone, Default, Hydrate, Reconcile)]
-pub struct HsdCollider {
-    pub shape: SmolStr,
-    pub size: Vec<f64>,
+#[derive(Component, Debug, Clone, Hydrate, Reconcile)]
+pub enum HsdCollider {
+    Capsule {
+        half_height: f64,
+        radius: f64,
+    },
+    ConvexHull(HydratedHash),
+    Cuboid {
+        x: f64,
+        y: f64,
+        z: f64,
+    },
+    Cylinder {
+        half_height: f64,
+        radius: f64,
+    },
+    Sphere(f64),
+    Trimesh {
+        indices: HydratedHash,
+        vertices: HydratedHash,
+    },
 }
 
 #[derive(Component, Debug, Clone, Default, Hydrate, Reconcile)]

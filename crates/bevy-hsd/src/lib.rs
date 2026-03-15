@@ -26,6 +26,7 @@ impl Plugin for HsdPlugin {
                     compile::rigid_body::parse_rigid_body_data,
                 ),
                 (
+                    compile::collider::compile_colliders,
                     compile::material::compile_materials,
                     compile::mesh::compile_meshes,
                 ),

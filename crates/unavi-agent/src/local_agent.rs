@@ -20,7 +20,14 @@ use crate::{
     tracking::{TrackedHead, TrackedPose},
 };
 
-const RAYCAST_GRAB_DISTANCE: f32 = 3.0;
+const RAYCAST_GRAB_DISTANCE: f32 = 2.5;
+
+#[derive(PhysicsLayer, Default)]
+enum BitLayer {
+    #[default]
+    Default,
+    Body,
+}
 
 pub fn on_local_agent_added(
     event: On<Add, LocalAgent>,
@@ -40,9 +47,10 @@ pub fn on_local_agent_added(
         .spawn((
             AgentRig,
             Grounded(true),
-            RigidBody::Dynamic,
             Pickable::IGNORE,
+            RigidBody::Dynamic,
             Collider::capsule(config.effective_vrm_radius(), config.effective_vrm_height()),
+            CollisionLayers::new(BitLayer::Body.to_bits(), BitLayer::default().to_bits()),
             TnuaController::<ControlScheme>::default(),
             TnuaConfig::<ControlScheme>(asset_server.add(ControlSchemeConfig {
                 basis: TnuaBuiltinWalkConfig {
@@ -83,7 +91,7 @@ pub fn on_local_agent_added(
                 .with_max_hits(1)
                 .with_solidness(false)
                 .with_max_distance(RAYCAST_GRAB_DISTANCE)
-                .with_query_filter(SpatialQueryFilter::default().with_excluded_entities([body])),
+                .with_query_filter(SpatialQueryFilter::from_mask(BitLayer::default().to_bits())),
         ));
     }
 

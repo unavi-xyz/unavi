@@ -2,13 +2,17 @@ use std::sync::{Arc, atomic::Ordering};
 
 use bevy::prelude::Transform as BevyTransform;
 use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner};
+use bevy_hsd::data::HsdCollider;
 use bevy_hsd::hydrate::events::DocChangeKind;
+use bytes::Bytes;
 use loro::{LoroList, LoroMap, LoroValue, TreeParentId};
 use smol_str::ToSmolStr;
 use wasmtime::component::Resource;
+use wired_schemas::HydratedHash;
 
 use super::bindings::wired::scene::types::{
-    Collider, ColliderCapsule, Material, Mesh, Quat, RigidBodyKind, Transform, Vec3,
+    Collider, ColliderCapsule, ColliderCylinder, ColliderTrimesh, Material, Mesh, Quat,
+    RigidBodyKind, Transform, Vec3,
 };
 use super::{WiredSceneRt, material::HostMaterial, mesh::HostMesh};
 
@@ -408,22 +412,69 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
 
     async fn collider(&mut self, self_: Resource<HostNode>) -> wasmtime::Result<Option<Collider>> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        let Some(c) = &inner.state.lock().expect("node state lock").collider else {
+        let c = inner
+            .state
+            .lock()
+            .expect("node state lock")
+            .collider
+            .clone();
+        let Some(c) = c else {
             return Ok(None);
         };
         #[expect(clippy::cast_possible_truncation)]
-        let collider = match c.shape.as_str() {
-            "cuboid" if c.size.len() >= 3 => Collider::Cuboid(Vec3 {
-                x: c.size[0] as f32,
-                y: c.size[1] as f32,
-                z: c.size[2] as f32,
+        let collider = match &c {
+            HsdCollider::Capsule {
+                radius,
+                half_height,
+            } => Collider::Capsule(ColliderCapsule {
+                radius: *radius as f32,
+                half_height: *half_height as f32,
             }),
-            "sphere" if !c.size.is_empty() => Collider::Sphere(c.size[0] as f32),
-            "capsule" if c.size.len() >= 2 => Collider::Capsule(ColliderCapsule {
-                radius: c.size[0] as f32,
-                half_height: c.size[1] as f32,
+            HsdCollider::ConvexHull(hash) => {
+                let blobs = self
+                    .blobs
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("no blob store"))?;
+                let bytes = blobs
+                    .get_bytes(hash.0)
+                    .await
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                let pts: &[f32] = bytemuck::cast_slice(&bytes);
+                Collider::ConvexHull(pts.to_vec())
+            }
+            HsdCollider::Cuboid { x, y, z } => Collider::Cuboid(Vec3 {
+                x: *x as f32,
+                y: *y as f32,
+                z: *z as f32,
             }),
-            _ => return Ok(None),
+            HsdCollider::Cylinder {
+                radius,
+                half_height,
+            } => Collider::Cylinder(ColliderCylinder {
+                radius: *radius as f32,
+                half_height: *half_height as f32,
+            }),
+            HsdCollider::Sphere(r) => Collider::Sphere(*r as f32),
+            HsdCollider::Trimesh { vertices, indices } => {
+                let blobs = self
+                    .blobs
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("no blob store"))?;
+                let vbytes = blobs
+                    .get_bytes(vertices.0)
+                    .await
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                let ibytes = blobs
+                    .get_bytes(indices.0)
+                    .await
+                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                let verts: &[f32] = bytemuck::cast_slice(&vbytes);
+                let idxs: &[u32] = bytemuck::cast_slice(&ibytes);
+                Collider::Trimesh(ColliderTrimesh {
+                    vertices: verts.to_vec(),
+                    indices: idxs.to_vec(),
+                })
+            }
         };
         Ok(Some(collider))
     }
@@ -437,26 +488,58 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         if inner.is_virtual {
             return Ok(());
         }
-        {
-            let mut state = inner.state.lock().expect("node state lock");
-            state.collider = value.map(|c| {
-                let (shape, size): (&str, Vec<f64>) = match c {
-                    Collider::Cuboid(v) => (
-                        "cuboid",
-                        vec![f64::from(v.x), f64::from(v.y), f64::from(v.z)],
-                    ),
-                    Collider::Sphere(r) => ("sphere", vec![f64::from(r)]),
-                    Collider::Capsule(cap) => (
-                        "capsule",
-                        vec![f64::from(cap.radius), f64::from(cap.half_height)],
-                    ),
-                };
-                bevy_hsd::data::HsdCollider {
-                    shape: shape.into(),
-                    size,
+        let hsd_collider = match value {
+            None => None,
+            Some(c) => Some(match c {
+                Collider::Capsule(cap) => HsdCollider::Capsule {
+                    radius: f64::from(cap.radius),
+                    half_height: f64::from(cap.half_height),
+                },
+                Collider::ConvexHull(pts) => {
+                    let actor = self
+                        .actor
+                        .as_ref()
+                        .ok_or_else(|| anyhow::anyhow!("no actor"))?;
+                    let bytes = Bytes::from(bytemuck::cast_slice::<f32, u8>(&pts).to_vec());
+                    let hash = actor
+                        .upload_blob(bytes)
+                        .await
+                        .map_err(|e| anyhow::anyhow!("{e}"))?;
+                    HsdCollider::ConvexHull(HydratedHash(hash))
                 }
-            });
-        }
+                Collider::Cuboid(v) => HsdCollider::Cuboid {
+                    x: f64::from(v.x),
+                    y: f64::from(v.y),
+                    z: f64::from(v.z),
+                },
+                Collider::Cylinder(cyl) => HsdCollider::Cylinder {
+                    radius: f64::from(cyl.radius),
+                    half_height: f64::from(cyl.half_height),
+                },
+                Collider::Sphere(r) => HsdCollider::Sphere(f64::from(r)),
+                Collider::Trimesh(t) => {
+                    let actor = self
+                        .actor
+                        .as_ref()
+                        .ok_or_else(|| anyhow::anyhow!("no actor"))?;
+                    let vbytes = Bytes::from(bytemuck::cast_slice::<f32, u8>(&t.vertices).to_vec());
+                    let ibytes = Bytes::from(bytemuck::cast_slice::<u32, u8>(&t.indices).to_vec());
+                    let vhash = actor
+                        .upload_blob(vbytes)
+                        .await
+                        .map_err(|e| anyhow::anyhow!("{e}"))?;
+                    let ihash = actor
+                        .upload_blob(ibytes)
+                        .await
+                        .map_err(|e| anyhow::anyhow!("{e}"))?;
+                    HsdCollider::Trimesh {
+                        vertices: HydratedHash(vhash),
+                        indices: HydratedHash(ihash),
+                    }
+                }
+            }),
+        };
+        inner.state.lock().expect("node state lock").collider = hsd_collider;
         inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }

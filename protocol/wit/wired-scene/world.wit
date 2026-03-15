@@ -162,14 +162,27 @@ interface types {
   }
 
   variant collider {
-    cuboid(vec3),
-    sphere(f32),
     capsule(collider-capsule),
+    convex-hull(list<f32>),
+    cuboid(vec3),
+    cylinder(collider-cylinder),
+    sphere(f32),
+    trimesh(collider-trimesh),
   }
 
   record collider-capsule {
     radius: f32,
     half-height: f32,
+  }
+
+  record collider-cylinder {
+    half-height: f32,
+    radius: f32,
+  }
+
+  record collider-trimesh {
+    indices: list<u32>,
+    vertices: list<f32>,
   }
 
   enum rigid-body-kind {

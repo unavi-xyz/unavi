@@ -134,7 +134,7 @@ async fn create_and_join_home(
         })?
         .add_schema("hsd", &*SCHEMA_HSD, |doc| {
             let hsd = doc.get_map("hsd");
-            *blobs.borrow_mut() = Some(default_space(&hsd));
+            *blobs.borrow_mut() = Some(default_space(&hsd)?);
             Ok(())
         })?
         .sync_to(remote_actor.clone())

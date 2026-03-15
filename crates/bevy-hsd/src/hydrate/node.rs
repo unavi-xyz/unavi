@@ -59,6 +59,17 @@ pub(super) fn update_node_components(
         ecmd.insert(MaterialRef(id));
     }
 
+    if let Some(collider) = &data.collider {
+        ecmd.insert(HsdCollider::clone(collider));
+    } else {
+        ecmd.remove::<HsdCollider>();
+    }
+    if let Some(rb) = &data.rigid_body {
+        ecmd.insert(HsdRigidBody::clone(rb));
+    } else {
+        ecmd.remove::<HsdRigidBody>();
+    }
+
     let hashes: Vec<blake3::Hash> = data
         .scripts
         .as_deref()

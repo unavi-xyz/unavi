@@ -5,7 +5,7 @@ use crate::data::HsdRigidBody;
 
 pub fn parse_rigid_body_data(
     mut commands: Commands,
-    bodies: Query<(Entity, &HsdRigidBody), Added<HsdRigidBody>>,
+    bodies: Query<(Entity, &HsdRigidBody), Changed<HsdRigidBody>>,
 ) {
     for (ent, data) in &bodies {
         let kind = match data.kind.as_str() {

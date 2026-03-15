@@ -121,6 +121,8 @@ pub(super) fn full_hydrate(
             transform: node_transform(&node.data),
             mesh: node.data.mesh.clone(),
             material: node.data.material.clone(),
+            collider: node.data.collider.clone(),
+            rigid_body: node.data.rigid_body.clone(),
             ..Default::default()
         };
         let id = tree_id.to_smolstr();

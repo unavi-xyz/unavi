@@ -14,20 +14,13 @@ use unavi_input::raycast::PrimaryRaycastInput;
 use unavi_portal::{PortalTraveler, create::PORTAL_RENDER_LAYER};
 
 use crate::{
-    Agent, AgentCamera, AgentRig, ControlScheme, ControlSchemeConfig, Grounded, LocalAgent,
-    LocalAgentEntities,
+    Agent, AgentCamera, AgentRig,  ControlScheme, ControlSchemeConfig, Grounded,
+    LocalAgent, LocalAgentEntities,
     config::{AgentConfig, XrMode},
     tracking::{TrackedHead, TrackedPose},
 };
 
 const RAYCAST_GRAB_DISTANCE: f32 = 2.5;
-
-#[derive(PhysicsLayer, Default)]
-enum BitLayer {
-    #[default]
-    Default,
-    Body,
-}
 
 pub fn on_local_agent_added(
     event: On<Add, LocalAgent>,
@@ -50,7 +43,6 @@ pub fn on_local_agent_added(
             Pickable::IGNORE,
             RigidBody::Dynamic,
             Collider::capsule(config.effective_vrm_radius(), config.effective_vrm_height()),
-            CollisionLayers::new(BitLayer::Body.to_bits(), BitLayer::default().to_bits()),
             TnuaController::<ControlScheme>::default(),
             TnuaConfig::<ControlScheme>(asset_server.add(ControlSchemeConfig {
                 basis: TnuaBuiltinWalkConfig {
@@ -91,7 +83,7 @@ pub fn on_local_agent_added(
                 .with_max_hits(1)
                 .with_solidness(false)
                 .with_max_distance(RAYCAST_GRAB_DISTANCE)
-                .with_query_filter(SpatialQueryFilter::from_mask(BitLayer::default().to_bits())),
+                .with_query_filter(SpatialQueryFilter::default().with_excluded_entities([body])),
         ));
     }
 

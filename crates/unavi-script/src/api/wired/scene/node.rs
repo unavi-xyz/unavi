@@ -491,10 +491,14 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         let hsd_collider = match value {
             None => None,
             Some(c) => Some(match c {
-                Collider::Capsule(cap) => HsdCollider::Capsule {
-                    radius: f64::from(cap.radius),
-                    half_height: f64::from(cap.half_height),
-                },
+                Collider::Capsule(cap) => {
+                    validate_positive(cap.radius, "capsule radius")?;
+                    validate_nonneg(cap.half_height, "capsule half_height")?;
+                    HsdCollider::Capsule {
+                        radius: f64::from(cap.radius),
+                        half_height: f64::from(cap.half_height),
+                    }
+                }
                 Collider::ConvexHull(pts) => {
                     let actor = self
                         .actor
@@ -507,16 +511,28 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                         .map_err(|e| anyhow::anyhow!("{e}"))?;
                     HsdCollider::ConvexHull(HydratedHash(hash))
                 }
-                Collider::Cuboid(v) => HsdCollider::Cuboid {
-                    x: f64::from(v.x),
-                    y: f64::from(v.y),
-                    z: f64::from(v.z),
-                },
-                Collider::Cylinder(cyl) => HsdCollider::Cylinder {
-                    radius: f64::from(cyl.radius),
-                    half_height: f64::from(cyl.half_height),
-                },
-                Collider::Sphere(r) => HsdCollider::Sphere(f64::from(r)),
+                Collider::Cuboid(v) => {
+                    validate_positive(v.x, "cuboid x")?;
+                    validate_positive(v.y, "cuboid y")?;
+                    validate_positive(v.z, "cuboid z")?;
+                    HsdCollider::Cuboid {
+                        x: f64::from(v.x),
+                        y: f64::from(v.y),
+                        z: f64::from(v.z),
+                    }
+                }
+                Collider::Cylinder(cyl) => {
+                    validate_positive(cyl.radius, "cylinder radius")?;
+                    validate_nonneg(cyl.half_height, "cylinder half_height")?;
+                    HsdCollider::Cylinder {
+                        radius: f64::from(cyl.radius),
+                        half_height: f64::from(cyl.half_height),
+                    }
+                }
+                Collider::Sphere(r) => {
+                    validate_positive(r, "sphere radius")?;
+                    HsdCollider::Sphere(f64::from(r))
+                }
                 Collider::Trimesh(t) => {
                     let actor = self
                         .actor
@@ -664,5 +680,21 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     async fn drop(&mut self, rep: Resource<HostNode>) -> wasmtime::Result<()> {
         self.table.delete(rep)?;
         Ok(())
+    }
+}
+
+fn validate_positive(v: f32, name: &str) -> wasmtime::Result<()> {
+    if v.is_finite() && v > 0.0 {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!("{name} must be finite and positive, got {v}"))
+    }
+}
+
+fn validate_nonneg(v: f32, name: &str) -> wasmtime::Result<()> {
+    if v.is_finite() && v >= 0.0 {
+        Ok(())
+    } else {
+        Err(anyhow::anyhow!("{name} must be finite and non-negative, got {v}"))
     }
 }

@@ -81,6 +81,7 @@ pub fn compile_nodes(
             )
         };
 
+        debug!("compiled node {node_ent}");
         commands
             .entity(node_ent)
             .insert((Mesh3d(compiled_mesh.0.clone()), mat));

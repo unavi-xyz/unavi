@@ -89,21 +89,26 @@ pub struct MeshInner {
 
 #[derive(Clone)]
 pub struct MaterialState {
-    pub name: Option<String>,
+    pub alpha_cutoff: Option<f32>,
+    /// None = auto-detect from `base_color` alpha
+    pub alpha_mode: Option<String>,
     pub base_color: [f32; 4],
-    pub metallic: f32,
-    pub roughness: f32,
     pub double_sided: bool,
+    pub metallic: f32,
+    pub name: Option<String>,
+    pub roughness: f32,
 }
 
 impl Default for MaterialState {
     fn default() -> Self {
         Self {
-            name: None,
+            alpha_cutoff: None,
+            alpha_mode: None,
             base_color: [1.0, 1.0, 1.0, 1.0],
-            metallic: 0.0,
-            roughness: 0.5,
             double_sided: false,
+            metallic: 0.0,
+            name: None,
+            roughness: 0.5,
         }
     }
 }

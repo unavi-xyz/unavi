@@ -515,6 +515,8 @@ fn apply_material_data(ent: Entity, data: &MaterialData, commands: &mut Commands
 fn attach_inline_material(ent: Entity, state: &MaterialState, commands: &mut Commands) {
     let [r, g, b, a] = state.base_color;
     commands.entity(ent).insert(MaterialParams {
+        alpha_cutoff: state.alpha_cutoff,
+        alpha_mode: state.alpha_mode.clone(),
         base_color: Some(Color::srgba(r, g, b, a)),
         double_sided: Some(state.double_sided),
         metallic: Some(state.metallic),

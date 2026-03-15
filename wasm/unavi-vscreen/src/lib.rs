@@ -47,7 +47,7 @@ impl GuestScript for Script {
             let mesh = Cylinder::new(RADIUS, THICKNESS).mesh();
 
             let mat = doc.create_material();
-            mat.set_base_color(&[1.0, 1.0, 1.0, 0.5]);
+            mat.set_base_color(&[1.0, 1.0, 1.0, 0.95]);
             mat.set_metallic(0.8);
             mat.set_roughness(0.8);
 
@@ -64,6 +64,10 @@ impl GuestScript for Script {
                 y: HOVER,
                 z: 0.0,
             });
+
+            // let col = Collider::Cylinder(RADIUS, THICKNESS);
+            // node.set_collider(Some(col));
+
             node
         };
 

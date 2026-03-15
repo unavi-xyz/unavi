@@ -146,7 +146,7 @@ pub fn compile_meshes(
             }
         }
 
-        // Update existing asset in-place to preserve handles in referencing nodes.
+        debug!("compiled mesh {ent}");
         if let Some(CompiledMesh(handle)) = existing {
             if let Some(asset) = mesh_assets.get_mut(handle) {
                 *asset = mesh;

@@ -38,6 +38,7 @@ pub fn parse_collider_data(
             }
         };
 
+        debug!("compiled collider {ent}");
         commands.entity(ent).insert(collider);
     }
 }

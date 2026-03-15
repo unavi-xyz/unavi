@@ -11,11 +11,16 @@ pub fn parse_material_data(
         #[expect(clippy::cast_possible_truncation)]
         let base_color = mat.base_color.as_ref().and_then(|c| {
             if c.len() >= 3 {
-                Some(Color::srgb(c[0] as f32, c[1] as f32, c[2] as f32))
+                let a = c.get(3).copied().unwrap_or(1.0) as f32;
+                Some(Color::srgba(c[0] as f32, c[1] as f32, c[2] as f32, a))
             } else {
                 None
             }
         });
+
+        #[expect(clippy::cast_possible_truncation)]
+        let alpha_cutoff = mat.alpha_cutoff.map(|v| v as f32);
+        let alpha_mode = mat.alpha_mode.as_ref().map(ToString::to_string);
 
         #[expect(clippy::cast_possible_truncation)]
         let metallic = mat.metallic.map(|v| v as f32);
@@ -47,6 +52,8 @@ pub fn parse_material_data(
         });
 
         commands.entity(ent).insert(MaterialParams {
+            alpha_cutoff,
+            alpha_mode,
             base_color,
             double_sided: mat.double_sided,
             metallic,
@@ -62,6 +69,8 @@ pub fn parse_material_data(
 #[derive(Component)]
 #[require(BlobDeps)]
 pub struct MaterialParams {
+    pub alpha_cutoff: Option<f32>,
+    pub alpha_mode: Option<String>,
     pub base_color: Option<Color>,
     pub double_sided: Option<bool>,
     pub metallic: Option<f32>,
@@ -97,6 +106,20 @@ pub fn compile_materials(
         if let Some(value) = params.base_color {
             material.base_color = value;
         }
+        let alpha_mode = match params.alpha_mode.as_deref() {
+            Some("blend") => AlphaMode::Blend,
+            Some("mask") => AlphaMode::Mask(params.alpha_cutoff.unwrap_or(0.5)),
+            Some("opaque") => AlphaMode::Opaque,
+            _ => {
+                let alpha = material.base_color.alpha();
+                if alpha < 1.0 {
+                    AlphaMode::Blend
+                } else {
+                    AlphaMode::Opaque
+                }
+            }
+        };
+        material.alpha_mode = alpha_mode;
         if let Some(value) = params.double_sided {
             material.double_sided = value;
         }
@@ -112,12 +135,12 @@ pub fn compile_materials(
                 continue;
             };
             // TODO: load image details from HSD
-            let image = Image::default();
-            let handle = asset_server.add(image);
-            material.base_color_texture = Some(handle);
+            // let image = Image::default();
+            // let handle = asset_server.add(image);
+            // material.base_color_texture = Some(handle);
         }
 
-        // Update existing asset in-place to preserve handles in referencing nodes.
+        debug!("compiled material {ent}");
         if let Some(CompiledMaterial(handle)) = existing {
             if let Some(asset) = mat_assets.get_mut(handle) {
                 *asset = material;

@@ -76,12 +76,24 @@ interface types {
     commit: func();
   }
 
+  enum alpha-mode {
+    blend,
+    mask,
+    opaque,
+  }
+
   resource material {
     id: func() -> string;
     clone: func() -> material;
 
     name: func() -> option<string>;
     set-name: func(value: option<string>);
+
+    alpha-cutoff: func() -> f32;
+    set-alpha-cutoff: func(value: f32);
+
+    alpha-mode: func() -> option<alpha-mode>;
+    set-alpha-mode: func(value: option<alpha-mode>);
 
     base-color: func() -> list<f32>;
     set-base-color: func(value: list<f32>);

@@ -38,6 +38,13 @@ pub struct UnaviPlugin {
     pub xr: bool,
 }
 
+const DISABLED_LOGS: &[&str] = &[
+    "cranelift_codegen",
+    "loro_internal",
+    "offset_allocator",
+    "wasmtime_internal_cranelift",
+];
+
 impl Plugin for UnaviPlugin {
     #[expect(clippy::too_many_lines)]
     fn build(&self, app: &mut App) {
@@ -47,12 +54,15 @@ impl Plugin for UnaviPlugin {
             assets::download::download_web_assets().expect("failed to download web assets");
         }
 
+        let mut filter = DISABLED_LOGS
+            .iter()
+            .map(|s| format!("{s}=off"))
+            .collect::<Vec<_>>();
+        filter.push(bevy::log::DEFAULT_FILTER.to_string());
+
         let default_plugins = DefaultPlugins
             .set(LogPlugin {
-                filter: format!(
-                    "{},loro_internal=off,offset_allocator=off",
-                    bevy::log::DEFAULT_FILTER
-                ),
+                filter: filter.join(","),
                 level: self.log_level,
                 ..default()
             })

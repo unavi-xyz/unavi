@@ -14,7 +14,6 @@ pub(super) fn spawn_node_entity(
 
     let mut ent = commands.spawn((
         HsdChild { doc: doc_ent },
-        // HsdNodeTreeId(node.id.clone()),
         NodeId(node.id.clone()),
         transform,
     ));
@@ -51,12 +50,7 @@ pub(super) fn update_node_components(
 
     let mut ecmd = commands.entity(ent);
     ecmd.insert((NodeId(id.into()), transform));
-    ecmd.remove::<(
-        Mesh3d,
-        MeshMaterial3d<StandardMaterial>,
-        MeshRef,
-        MaterialRef,
-    )>();
+    ecmd.remove::<(MeshRef, MaterialRef)>();
 
     if let Some(id) = data.mesh.clone() {
         ecmd.insert(MeshRef(id));

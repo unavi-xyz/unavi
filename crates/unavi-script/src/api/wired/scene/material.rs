@@ -3,7 +3,7 @@ use std::sync::{Arc, atomic::Ordering};
 use bevy_hsd::cache::MaterialInner;
 use wasmtime::component::Resource;
 
-use super::bindings::wired::scene::types::Material;
+use super::bindings::wired::scene::types::{AlphaMode, Material};
 use crate::api::wired::scene::WiredSceneRt;
 
 #[derive(Clone)]
@@ -34,6 +34,14 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
         let state = inner.state.lock().expect("material state lock");
         let map = self.material_map(&inner.id)?;
 
+        if let Some(cutoff) = state.alpha_cutoff {
+            map.insert("alpha_cutoff", f64::from(cutoff))
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+        }
+        if let Some(mode) = &state.alpha_mode {
+            map.insert("alpha_mode", mode.as_str())
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+        }
         let [r, g, b, a] = state.base_color;
         let base_color_list = map
             .get_or_create_container("base_color", loro::LoroList::new())
@@ -49,16 +57,16 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
                 .push(loro::LoroValue::Double(f64::from(v)))
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
         }
-        map.insert("metallic", f64::from(state.metallic))
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
-        map.insert("roughness", f64::from(state.roughness))
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
         map.insert("double_sided", state.double_sided)
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
+        map.insert("metallic", f64::from(state.metallic))
             .map_err(|e| anyhow::anyhow!("{e}"))?;
         if let Some(name) = &state.name {
             map.insert("name", name.as_str())
                 .map_err(|e| anyhow::anyhow!("{e}"))?;
         }
+        map.insert("roughness", f64::from(state.roughness))
+            .map_err(|e| anyhow::anyhow!("{e}"))?;
         drop(state);
         self.doc.commit();
         self.doc.compact_change_store();
@@ -83,6 +91,66 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("material state lock").name = value;
+        inner.dirty.store(true, Ordering::Relaxed);
+        Ok(())
+    }
+
+    async fn alpha_cutoff(&mut self, self_: Resource<Material>) -> wasmtime::Result<f32> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner
+            .state
+            .lock()
+            .expect("material state lock")
+            .alpha_cutoff
+            .unwrap_or(0.5))
+    }
+
+    async fn set_alpha_cutoff(
+        &mut self,
+        self_: Resource<Material>,
+        value: f32,
+    ) -> wasmtime::Result<()> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        inner
+            .state
+            .lock()
+            .expect("material state lock")
+            .alpha_cutoff = Some(value);
+        inner.dirty.store(true, Ordering::Relaxed);
+        Ok(())
+    }
+
+    async fn alpha_mode(
+        &mut self,
+        self_: Resource<Material>,
+    ) -> wasmtime::Result<Option<AlphaMode>> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        let mode = inner
+            .state
+            .lock()
+            .expect("material state lock")
+            .alpha_mode
+            .as_deref()
+            .and_then(|s| match s {
+                "blend" => Some(AlphaMode::Blend),
+                "mask" => Some(AlphaMode::Mask),
+                "opaque" => Some(AlphaMode::Opaque),
+                _ => None,
+            });
+        Ok(mode)
+    }
+
+    async fn set_alpha_mode(
+        &mut self,
+        self_: Resource<Material>,
+        value: Option<AlphaMode>,
+    ) -> wasmtime::Result<()> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        inner.state.lock().expect("material state lock").alpha_mode = value.map(|m| match m {
+            AlphaMode::Blend => "blend".to_string(),
+            AlphaMode::Mask => "mask".to_string(),
+            AlphaMode::Opaque => "opaque".to_string(),
+        });
         inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }

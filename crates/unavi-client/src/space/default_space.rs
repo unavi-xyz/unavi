@@ -68,7 +68,7 @@ pub fn default_space(hsd: &LoroMap) -> Result<Blobs> {
     ground_cuboid.insert("y", f64::from(ground_dims.y))?;
     ground_cuboid.insert("z", f64::from(ground_dims.z))?;
     let ground_rb = ground.get_or_create_container("rigid_body", LoroMap::new())?;
-    ground_rb.insert("kind", "static")?;
+    ground_rb.insert("kind", "fixed")?;
 
     // Dynamic cube node
     let cube_id = nodes.create(None)?;

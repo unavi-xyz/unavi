@@ -550,11 +550,11 @@ mod tests {
     #[test]
     fn validate_enum_unit_variant() {
         let mut map = std::collections::HashMap::new();
-        map.insert("tag".to_string(), LoroValue::String("Static".into()));
+        map.insert("tag".to_string(), LoroValue::String("Fixed".into()));
         let value = LoroValue::Map(map.into());
 
         let mut variants = BTreeMap::new();
-        variants.insert("Static".into(), None);
+        variants.insert("Fixed".into(), None);
         variants.insert("Dynamic".into(), None);
 
         assert!(validate_value(&value, &Field::Enum(variants), "test").is_ok());
@@ -590,7 +590,7 @@ mod tests {
         let value = LoroValue::Map(map.into());
 
         let mut variants = BTreeMap::new();
-        variants.insert("Static".into(), None);
+        variants.insert("Fixed".into(), None);
 
         assert!(matches!(
             validate_value(&value, &Field::Enum(variants), "test"),
@@ -604,7 +604,7 @@ mod tests {
         let value = LoroValue::Map(map.into());
 
         let mut variants = BTreeMap::new();
-        variants.insert("Static".into(), None);
+        variants.insert("Fixed".into(), None);
 
         assert!(matches!(
             validate_value(&value, &Field::Enum(variants), "test"),

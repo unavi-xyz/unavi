@@ -10,7 +10,7 @@ pub fn parse_rigid_body_data(
     for (ent, data) in &bodies {
         let kind = match data.kind.as_str() {
             "dynamic" => RigidBody::Dynamic,
-            "static" => RigidBody::Static,
+            "fixed" => RigidBody::Static,
             "kinematic" => RigidBody::Kinematic,
             other => {
                 warn!("invalid rigid body kind: {other}");

@@ -55,25 +55,31 @@ pub fn apply_head_input(
     let delta = time.delta_secs();
     target.0 += action.any * delta * sensitivity::sensitivity();
 
-    if menu_state.0 {
-        target.y = target.y.clamp(menu::PITCH_BOUND_L, menu::PITCH_BOUND_H);
-        target.x = target.x.clamp(-menu::YAW_BOUND, menu::YAW_BOUND);
-    } else {
-        target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
-    }
-
     let just_entered_menu = menu_state.0 && !*prev_menu;
     let just_exited_menu = !menu_state.0 && *prev_menu;
     *prev_menu = menu_state.0;
+
+    // Record entry yaw before clamping so it reflects the true facing direction.
+    if just_entered_menu {
+        *menu_enter_yaw = target.x;
+    }
+
+    if menu_state.0 {
+        target.y = target.y.clamp(menu::PITCH_BOUND_L, menu::PITCH_BOUND_H);
+        // Clamp relative to where the body was when the menu opened, not world origin.
+        let rel = target.x - *menu_enter_yaw;
+        target.x = *menu_enter_yaw + rel.clamp(-menu::YAW_BOUND, menu::YAW_BOUND);
+    } else {
+        target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
+    }
 
     for entities in agents.iter() {
         // On toggle: snap rotations to prevent camera jump.
         if just_entered_menu {
             // Snap body to exact yaw target so relative head yaw starts at zero.
             if let Ok(mut rig_transform) = rigs.get_mut(entities.body) {
-                rig_transform.rotation = Quat::from_rotation_y(-target.x);
+                rig_transform.rotation = Quat::from_rotation_y(-*menu_enter_yaw);
             }
-            *menu_enter_yaw = target.x;
         }
 
         if just_exited_menu {

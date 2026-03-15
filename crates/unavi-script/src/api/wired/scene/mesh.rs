@@ -7,6 +7,7 @@ use wasmtime::component::Resource;
 use super::bindings::wired::scene::types::{Indices, Mesh, PrimitiveTopology as WitTopology};
 use crate::api::wired::scene::WiredSceneRt;
 
+#[derive(Clone)]
 pub struct HostMesh {
     pub inner: Arc<MeshInner>,
 }
@@ -38,6 +39,14 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<String> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         Ok(inner.id.to_string())
+    }
+    async fn clone(
+        &mut self,
+        self_: wasmtime::component::Resource<HostMesh>,
+    ) -> wasmtime::Result<wasmtime::component::Resource<HostMesh>> {
+        let inner = self.table.get(&self_)?.clone();
+        let mesh = self.table.push(inner)?;
+        Ok(mesh)
     }
 
     async fn commit(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<()> {

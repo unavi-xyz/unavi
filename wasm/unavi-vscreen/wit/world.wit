@@ -2,5 +2,5 @@ package unavi:vscreen;
 
 world guest {
   import unavi:shapes/api;
-  include wired:prelude/script;
+  include wired:prelude/script-system;
 }

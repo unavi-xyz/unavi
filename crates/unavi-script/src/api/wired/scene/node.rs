@@ -12,6 +12,7 @@ use super::bindings::wired::scene::types::{
 };
 use super::{WiredSceneRt, material::HostMaterial, mesh::HostMesh};
 
+#[derive(Clone)]
 pub struct HostNode {
     pub inner: Arc<NodeInner>,
 }
@@ -38,6 +39,14 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     ) -> wasmtime::Result<String> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         Ok(inner.id.to_string())
+    }
+    async fn clone(
+        &mut self,
+        self_: wasmtime::component::Resource<HostNode>,
+    ) -> wasmtime::Result<wasmtime::component::Resource<HostNode>> {
+        let inner = self.table.get(&self_)?.clone();
+        let node = self.table.push(inner)?;
+        Ok(node)
     }
 
     async fn name(&mut self, self_: Resource<HostNode>) -> wasmtime::Result<Option<String>> {

@@ -6,6 +6,7 @@ use wasmtime::component::Resource;
 use super::bindings::wired::scene::types::Material;
 use crate::api::wired::scene::WiredSceneRt;
 
+#[derive(Clone)]
 pub struct HostMaterial {
     pub inner: Arc<MaterialInner>,
 }
@@ -17,6 +18,14 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
     ) -> wasmtime::Result<String> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         Ok(inner.id.to_string())
+    }
+    async fn clone(
+        &mut self,
+        self_: wasmtime::component::Resource<HostMaterial>,
+    ) -> wasmtime::Result<wasmtime::component::Resource<HostMaterial>> {
+        let inner = self.table.get(&self_)?.clone();
+        let mat = self.table.push(inner)?;
+        Ok(mat)
     }
 
     async fn commit(&mut self, self_: Resource<Material>) -> wasmtime::Result<()> {

@@ -12,6 +12,7 @@ use crate::api::wired::scene::{
     WiredSceneRt, material::HostMaterial, mesh::HostMesh, node::HostNode,
 };
 
+#[derive(Clone)]
 pub struct HostDocument {
     pub id: blake3::Hash,
 }
@@ -28,6 +29,15 @@ pub fn gen_id() -> SmolStr {
 }
 
 impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
+    async fn clone(
+        &mut self,
+        self_: wasmtime::component::Resource<HostDocument>,
+    ) -> wasmtime::Result<wasmtime::component::Resource<HostDocument>> {
+        let inner = self.table.get(&self_)?.clone();
+        let doc = self.table.push(inner)?;
+        Ok(doc)
+    }
+
     async fn create_material(
         &mut self,
         _self_: Resource<Document>,

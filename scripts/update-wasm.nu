@@ -9,6 +9,7 @@ for dir in (ls $protocol_src | where type == "dir") {
   if ("deps.toml" | path exists) {
     print $"→ Updating (basename $dir.name)"
     try { rm -r "deps" };
+    try { rm "deps.lock" };
     wit-deps -d deps -m deps.toml -l deps.lock update;
   }
 
@@ -23,6 +24,7 @@ for dir in (ls $wasm_src | where type == "dir") {
   if ("wit/deps.toml" | path exists) {
     print $"→ Updating (basename $dir.name)"
     try { rm -r "wit/deps" };
+    try { rm "wit/deps.lock" };
     wit-deps update;
   }
 

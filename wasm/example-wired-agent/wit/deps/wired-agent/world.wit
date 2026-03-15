@@ -1,5 +1,10 @@
 package wired:agent;
 
+world prelude {
+  import context;
+  import types;
+}
+
 interface types {
   use wired:scene/types.{node, document};
 
@@ -62,8 +67,8 @@ interface types {
   }
 
   resource agent {
-    /// Get a virtual node tracking the named bone.
-    /// Returns none if the bone is absent from the VRM model.
+    // Get a virtual node tracking the named bone.
+    // Returns none if the bone is absent from the VRM model.
     bone: func(name: bone-name) -> option<node>;
   }
 }
@@ -72,9 +77,4 @@ interface context {
   use types.{agent};
 
   local-agent: func() -> agent;
-}
-
-world prelude {
-  import context;
-  import types;
 }

@@ -42,14 +42,10 @@ impl GuestScript for Script {
         // Attach to bone.
         let agent = local_agent();
         let hand = agent.bone(BoneName::RightHand).expect("get bone");
-        hand.add_child(node);
-
-        // Retrieve a handle to the cube from its parent.
-        // TODO use a clone method
-        let cube = hand.children().into_iter().next().expect("get child");
+        hand.add_child(node.clone());
 
         Self {
-            node: cube,
+            node,
             time: SystemTime::now(),
         }
     }

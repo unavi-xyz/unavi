@@ -1,3 +1,4 @@
+wired-agent  = "../wired-agent"
 wired-math   = "../wired-math"
 wired-scene  = "../wired-scene"
 wired-script = "../wired-script"

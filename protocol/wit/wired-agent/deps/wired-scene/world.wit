@@ -8,9 +8,9 @@ world prelude {
 interface context {
   use types.{document, node};
 
-  /// The node this script is attached to.
+  // The node this script is attached to.
   self-node: func() -> node;
-  /// The document this script's node belongs to.
+  // The document this script's node belongs to.
   self-document: func() -> document;
 }
 
@@ -19,6 +19,8 @@ interface types {
 
   resource document {
     id: func() -> list<u8>;
+    clone: func() -> document;
+
     roots: func() -> list<node>;
 
     create-node: func() -> node;
@@ -26,13 +28,14 @@ interface types {
     create-material: func() -> material;
     // TODO removal methods
 
-    /// Persist local state to the HSD document.
-    /// Requires `hsd-write` permission; traps otherwise.
+    // Persist local state to the HSD document.
+    // Requires `hsd-write` permission; traps otherwise.
     commit: func();
   }
 
   resource node {
     id: func() -> string;
+    clone: func() -> node;
 
     name: func() -> option<string>;
     set-name: func(value: option<string>);
@@ -68,13 +71,14 @@ interface types {
     rigid-body: func() -> option<rigid-body-kind>;
     set-rigid-body: func(value: option<rigid-body-kind>);
 
-    /// Persist local state to the HSD document.
-    /// Requires `hsd-write` permission; traps otherwise.
+    // Persist local state to the HSD document.
+    // Requires `hsd-write` permission; traps otherwise.
     commit: func();
   }
 
   resource material {
     id: func() -> string;
+    clone: func() -> material;
 
     name: func() -> option<string>;
     set-name: func(value: option<string>);
@@ -91,8 +95,8 @@ interface types {
     double-sided: func() -> bool;
     set-double-sided: func(value: bool);
 
-    /// Persist local state to the HSD document.
-    /// Requires `hsd-write` permission; traps otherwise.
+    // Persist local state to the HSD document.
+    // Requires `hsd-write` permission; traps otherwise.
     commit: func();
   }
 
@@ -111,6 +115,7 @@ interface types {
 
   resource mesh {
     id: func() -> string;
+    clone: func() -> mesh;
 
     name: func() -> option<string>;
     set-name: func(value: option<string>);
@@ -139,8 +144,8 @@ interface types {
     uv1: func() -> option<list<f32>>;
     set-uv1: func(values: option<list<f32>>);
 
-    /// Persist local state to the HSD document.
-    /// Requires `hsd-write` permission; traps otherwise.
+    // Persist local state to the HSD document.
+    // Requires `hsd-write` permission; traps otherwise.
     commit: func();
   }
 

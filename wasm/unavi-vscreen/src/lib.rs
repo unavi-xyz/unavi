@@ -34,9 +34,9 @@ struct Script {
     screen: Node,
 }
 
+const HEIGHT: f32 = 0.004;
 const HOVER: f32 = 0.05;
-const RADIUS: f32 = 0.04;
-const THICKNESS: f32 = 0.005;
+const RADIUS: f32 = 0.03;
 
 const OPEN_DISTANCE: f32 = 0.5;
 const OPEN_SPEED: f32 = 1.6;
@@ -47,7 +47,7 @@ impl GuestScript for Script {
         let doc = self_document();
 
         let screen = {
-            let mesh = Cylinder::new(RADIUS, THICKNESS).mesh();
+            let mesh = Cylinder::new(RADIUS, HEIGHT).mesh();
 
             let mat = doc.create_material();
             mat.set_base_color(&[1.0, 1.0, 1.0, 0.95]);
@@ -69,7 +69,7 @@ impl GuestScript for Script {
             });
 
             let col = Collider::Cylinder(ColliderCylinder {
-                half_height: THICKNESS / 2.0,
+                half_height: HEIGHT,
                 radius: RADIUS,
             });
             node.set_collider(Some(&col));

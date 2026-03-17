@@ -2,7 +2,11 @@ use avian3d::prelude::*;
 use bevy::prelude::*;
 use schminput::BoolActionValue;
 
-use crate::{SqueezeDown, SqueezeUp, actions::CoreActions, crosshair::Crosshair};
+use crate::{
+    SqueezeDown, SqueezeUp,
+    actions::CoreActions,
+    crosshair::{Crosshair, MIN_SCALE_DISTANCE},
+};
 
 #[derive(Component)]
 pub struct PrimaryRaycastInput;
@@ -46,6 +50,7 @@ pub(crate) fn read_raycast_input(
 
     let Some(hit) = ray_hits.iter().next() else {
         *crosshair_vis = Visibility::Hidden;
+        crosshair_tr.scale = Vec3::ONE;
         return;
     };
 
@@ -55,6 +60,7 @@ pub(crate) fn read_raycast_input(
 
     let up = arbitrary_up(hit.normal);
     *crosshair_tr = crosshair_tr.looking_to(up, hit.normal);
+    crosshair_tr.scale = Vec3::splat(hit.distance.max(MIN_SCALE_DISTANCE));
 
     if !was_squeezing && *is_squeezing {
         commands

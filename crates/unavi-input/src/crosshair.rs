@@ -1,6 +1,7 @@
 use bevy::{light::NotShadowCaster, prelude::*};
 
-const CROSSHAIR_RADIUS: f32 = 0.005;
+const CROSSHAIR_RADIUS: f32 = 0.0035;
+pub(crate) const MIN_SCALE_DISTANCE: f32 = 0.05;
 
 #[derive(Component)]
 #[require(Visibility, Transform, CrosshairMode)]
@@ -33,13 +34,13 @@ pub(crate) fn spawn_crosshair(
     let torus_radius = CROSSHAIR_RADIUS * 0.75;
     let torus = Torus::new(torus_radius, 2.0 * torus_radius)
         .mesh()
-        .minor_resolution(8)
-        .major_resolution(16);
+        .minor_resolution(24)
+        .major_resolution(32);
     let active = meshes.add(torus);
 
     let sphere = Sphere::new(CROSSHAIR_RADIUS)
         .mesh()
-        .ico(3)
+        .ico(5)
         .expect("build ico sphere");
     let inactive = meshes.add(sphere);
 

@@ -9,10 +9,7 @@ use crate::{
     wired::{
         agent::{context::local_agent, types::BoneName},
         math::types::Vec3,
-        scene::{
-            context::self_document,
-            types::{Collider, ColliderCylinder, Node},
-        },
+        scene::{context::self_document, types::Node},
     },
 };
 
@@ -47,7 +44,8 @@ impl GuestScript for Script {
         let doc = self_document();
 
         let screen = {
-            let mesh = Cylinder::new(RADIUS, HEIGHT).mesh();
+            let cylinder = Cylinder::new(RADIUS, HEIGHT);
+            cylinder.set_resolution(64);
 
             let mat = doc.create_material();
             mat.set_base_color(&[1.0, 1.0, 1.0, 0.95]);
@@ -55,7 +53,7 @@ impl GuestScript for Script {
             mat.set_roughness(0.8);
 
             let node = doc.create_node();
-            node.set_mesh(Some(mesh));
+            node.set_mesh(Some(cylinder.mesh()));
             node.set_material(Some(mat));
             node.set_scale(Vec3 {
                 x: 0.0,
@@ -68,11 +66,7 @@ impl GuestScript for Script {
                 z: 0.0,
             });
 
-            let col = Collider::Cylinder(ColliderCylinder {
-                height: HEIGHT,
-                radius: RADIUS,
-            });
-            node.set_collider(Some(&col));
+            node.set_collider(Some(&cylinder.collider()));
 
             node
         };

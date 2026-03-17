@@ -1,7 +1,7 @@
 use bevy::{light::NotShadowCaster, prelude::*};
 
-const CROSSHAIR_RADIUS: f32 = 0.0035;
-pub(crate) const MIN_SCALE_DISTANCE: f32 = 0.05;
+const CROSSHAIR_RADIUS: f32 = 0.003;
+pub(crate) const MIN_SCALE_DISTANCE: f32 = 0.01;
 
 #[derive(Component)]
 #[require(Visibility, Transform, CrosshairMode)]
@@ -26,7 +26,8 @@ pub(crate) fn spawn_crosshair(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let mat = materials.add(StandardMaterial {
-        base_color: Color::BLACK,
+        alpha_mode: AlphaMode::Multiply,
+        base_color: Color::srgba(0.0, 0.0, 0.0, 0.97),
         unlit: true,
         ..default()
     });

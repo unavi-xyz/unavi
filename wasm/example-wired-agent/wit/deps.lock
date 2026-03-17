@@ -1,7 +1,7 @@
 [unavi-shapes]
 path = "../../unavi-shapes/wit"
-sha256 = "626aa2caa1ecc7c07ae276c873cf0ab526417506cc18fd59d30a990609295c25"
-sha512 = "46bbebc46e33ed7aa94dd880161ae2bace69c7785728ad26d0daa37a193bc322e715de4a0b62a6ad5d03e0ec2cf47be598f458a0e6b909ce05c88e4785934e79"
+sha256 = "05e4cfff8b0a828e67f4c2750e52c4c9548d06b6f494508f7c3262a9692ec577"
+sha512 = "8fc4cab2d01e666a561af3952050d87ebe2b1370ce7ed55abf06ce6de779c4998e4954e68ffc6c4967a76d83a096432af2afb498169d03e235ba03bb2994a747"
 deps = ["wired-agent", "wired-math", "wired-script"]
 
 [wired-agent]

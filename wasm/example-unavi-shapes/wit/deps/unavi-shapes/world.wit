@@ -7,35 +7,57 @@ world guest {
 
 interface api {
   use wired:math/types.{vec3};
-  use wired:scene/types.{mesh};
+  use wired:scene/types.{collider, mesh};
 
   resource capsule {
     constructor(radius: f32, height: f32);
+    collider: func() -> collider;
     mesh: func() -> mesh;
+    rings: func() -> u32;
+    set-rings: func(value: u32);
+    latitudes: func() -> u32;
+    set-latitudes: func(value: u32);
+    longitudes: func() -> u32;
+    set-longitudes: func(value: u32);
   }
 
   resource cone {
     constructor(radius: f32, height: f32);
     mesh: func() -> mesh;
+    resolution: func() -> u32;
+    set-resolution: func(value: u32);
   }
 
   resource cuboid {
     constructor(x-length: f32, y-length: f32, z-length: f32);
+    collider: func() -> collider;
     mesh: func() -> mesh;
   }
 
   resource cylinder {
     constructor(radius: f32, height: f32);
+    collider: func() -> collider;
     mesh: func() -> mesh;
+    resolution: func() -> u32;
+    set-resolution: func(value: u32);
+    segments: func() -> u32;
+    set-segments: func(value: u32);
   }
 
   resource sphere {
     constructor(radius: f32);
+    collider: func() -> collider;
     mesh: func() -> mesh;
+    subdivisions: func() -> u32;
+    set-subdivisions: func(value: u32);
   }
 
   resource torus {
     constructor(minor-radius: f32, major-radius: f32);
     mesh: func() -> mesh;
+    minor-resolution: func() -> u32;
+    set-minor-resolution: func(value: u32);
+    major-resolution: func() -> u32;
+    set-major-resolution: func(value: u32);
   }
 }

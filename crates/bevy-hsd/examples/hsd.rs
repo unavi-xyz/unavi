@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use avian3d::{PhysicsPlugins, prelude::PhysicsDebugPlugin};
 use bevy::{
+    log::LogPlugin,
     mesh::Indices,
     pbr::{Atmosphere, AtmosphereSettings},
     prelude::*,
@@ -16,7 +17,10 @@ use loro::LoroDoc;
 fn main() {
     App::new()
         .add_plugins((
-            DefaultPlugins,
+            DefaultPlugins.set(LogPlugin {
+                filter: "bevy_hsd=debug,bevy_wds=debug,warn".into(),
+                ..default()
+            }),
             PanOrbitCameraPlugin,
             PhysicsPlugins::default(),
             PhysicsDebugPlugin,
@@ -146,16 +150,13 @@ fn load_hsd(mut commands: Commands) {
     let collider = meta
         .get_or_create_container("collider", loro::LoroMap::new())
         .expect("collider");
-    collider.insert("shape", "cuboid").expect("shape");
-    collider
-        .insert_container("size", {
-            let list = loro::LoroList::new();
-            list.push(f64::from(x_length)).expect("push");
-            list.push(f64::from(y_length)).expect("push");
-            list.push(f64::from(z_length)).expect("push");
-            list
-        })
-        .expect("size");
+    collider.insert("tag", "Cuboid").expect("tag");
+    let cuboid = collider
+        .insert_container("Cuboid", loro::LoroMap::new())
+        .expect("Cuboid");
+    cuboid.insert("x", f64::from(x_length)).expect("x");
+    cuboid.insert("y", f64::from(y_length)).expect("y");
+    cuboid.insert("z", f64::from(z_length)).expect("z");
 
     commands.spawn(bevy_hsd::HsdDoc(Arc::new(doc)));
 

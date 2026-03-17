@@ -139,12 +139,12 @@ mod tests {
     #[test]
     fn roundtrip_enum_tuple() {
         let doc = LoroDoc::new();
-        Shape::Circle(3.14)
+        Shape::Circle(3.4)
             .reconcile(&doc.get_map("shape"))
             .expect("reconcile failed");
         let loaded =
             Shape::hydrate(&doc.get_map("shape").get_deep_value()).expect("hydrate failed");
-        assert_eq!(loaded, Shape::Circle(3.14));
+        assert_eq!(loaded, Shape::Circle(3.4));
     }
 
     #[test]

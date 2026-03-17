@@ -14,7 +14,6 @@ fn crate_ident() -> proc_macro2::TokenStream {
     }
 }
 
-/// Field-level attributes parsed from `#[loro(...)]`.
 #[derive(Default)]
 struct FieldAttrs {
     default: bool,
@@ -119,21 +118,23 @@ pub fn derive_hydrate(input: TokenStream) -> TokenStream {
 
                     let key = attrs.rename.unwrap_or_else(|| field_name.to_string());
 
-                    let hydrate_expr = if let Some(with) = attrs.with {
-                        quote! { #with::hydrate(field_value)? }
+                    // Build the base call (no `?`) once, reuse in both branches.
+                    let hydrate_call = if let Some(with) = attrs.with {
+                        quote! { #with::hydrate(field_value) }
                     } else if let Some(hydrate_with) = attrs.hydrate_with {
-                        quote! { #hydrate_with(field_value)? }
+                        quote! { #hydrate_with(field_value) }
                     } else {
-                        quote! { <#field_type as #crate_ident::Hydrate>::hydrate(field_value)? }
+                        quote! { <#field_type as #crate_ident::Hydrate>::hydrate(field_value) }
                     };
 
                     if attrs.default {
                         quote! {
-                            #field_name: {
-                                match map.get(#key) {
-                                    Some(field_value) => #hydrate_expr,
-                                    None => Default::default(),
-                                }
+                            #field_name: match map.get(#key) {
+                                Some(field_value) => match #hydrate_call {
+                                    Ok(v) => v,
+                                    Err(_) => Default::default(),
+                                },
+                                None => Default::default(),
                             },
                         }
                     } else {
@@ -142,7 +143,7 @@ pub fn derive_hydrate(input: TokenStream) -> TokenStream {
                                 let field_value = map.get(#key).ok_or_else(|| {
                                     #crate_ident::HydrateError::MissingField(#key.into())
                                 })?;
-                                #hydrate_expr
+                                #hydrate_call?
                             },
                         }
                     }

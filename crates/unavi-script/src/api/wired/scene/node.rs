@@ -5,8 +5,6 @@ use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner};
 use bevy_hsd::data::HsdCollider;
 use bevy_hsd::hydrate::events::DocChangeKind;
 use bytes::Bytes;
-use loro::{LoroList, LoroMap, LoroValue, TreeParentId};
-use smol_str::ToSmolStr;
 use wasmtime::component::Resource;
 use wired_schemas::HydratedHash;
 
@@ -19,21 +17,6 @@ use super::{WiredSceneRt, material::HostMaterial, mesh::HostMesh};
 #[derive(Clone)]
 pub struct HostNode {
     pub inner: Arc<NodeInner>,
-}
-
-pub(super) fn write_f64s(meta: &LoroMap, key: &str, vals: &[f64]) -> wasmtime::Result<()> {
-    let list = meta
-        .get_or_create_container(key, LoroList::new())
-        .map_err(|e| anyhow::anyhow!("{e}"))?;
-    let len = list.len();
-    if len > 0 {
-        list.delete(0, len).map_err(|e| anyhow::anyhow!("{e}"))?;
-    }
-    for &v in vals {
-        list.push(LoroValue::Double(v))
-            .map_err(|e| anyhow::anyhow!("{e}"))?;
-    }
-    Ok(())
 }
 
 impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
@@ -68,8 +51,10 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         if inner.is_virtual {
             return Ok(());
         }
-        inner.state.lock().expect("node state lock").name = value;
-        inner.dirty.store(true, Ordering::Relaxed);
+        inner.state.lock().expect("node state lock").name.clone_from(&value);
+        if inner.sync.load(Ordering::Relaxed) {
+            inner.changes.lock().expect("changes lock").name = Some(value);
+        }
         Ok(())
     }
 
@@ -103,7 +88,10 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             .expect("node state lock")
             .transform
             .translation = bevy::math::Vec3::new(value.x, value.y, value.z);
-        inner.dirty.store(true, Ordering::Relaxed);
+        if inner.sync.load(Ordering::Relaxed) {
+            inner.changes.lock().expect("changes lock").translation =
+                Some([f64::from(value.x), f64::from(value.y), f64::from(value.z)]);
+        }
         Ok(())
     }
 
@@ -138,7 +126,14 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             .expect("node state lock")
             .transform
             .rotation = bevy::math::Quat::from_xyzw(value.x, value.y, value.z, value.w);
-        inner.dirty.store(true, Ordering::Relaxed);
+        if inner.sync.load(Ordering::Relaxed) {
+            inner.changes.lock().expect("changes lock").rotation = Some([
+                f64::from(value.x),
+                f64::from(value.y),
+                f64::from(value.z),
+                f64::from(value.w),
+            ]);
+        }
         Ok(())
     }
 
@@ -159,7 +154,10 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         }
         inner.state.lock().expect("node state lock").transform.scale =
             bevy::math::Vec3::new(value.x, value.y, value.z);
-        inner.dirty.store(true, Ordering::Relaxed);
+        if inner.sync.load(Ordering::Relaxed) {
+            inner.changes.lock().expect("changes lock").scale =
+                Some([f64::from(value.x), f64::from(value.y), f64::from(value.z)]);
+        }
         Ok(())
     }
 
@@ -213,7 +211,25 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             ),
             scale: bevy::math::Vec3::new(value.scale.x, value.scale.y, value.scale.z),
         };
-        inner.dirty.store(true, Ordering::Relaxed);
+        if inner.sync.load(Ordering::Relaxed) {
+            let mut ch = inner.changes.lock().expect("changes lock");
+            ch.translation = Some([
+                f64::from(value.translation.x),
+                f64::from(value.translation.y),
+                f64::from(value.translation.z),
+            ]);
+            ch.rotation = Some([
+                f64::from(value.rotation.x),
+                f64::from(value.rotation.y),
+                f64::from(value.rotation.z),
+                f64::from(value.rotation.w),
+            ]);
+            ch.scale = Some([
+                f64::from(value.scale.x),
+                f64::from(value.scale.y),
+                f64::from(value.scale.z),
+            ]);
+        }
         Ok(())
     }
 
@@ -367,8 +383,10 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             Some(res) => Some(self.table.get(res)?.inner.id.clone()),
             None => None,
         };
-        node_inner.state.lock().expect("node state lock").mesh = mesh_id;
-        node_inner.dirty.store(true, Ordering::Relaxed);
+        node_inner.state.lock().expect("node state lock").mesh.clone_from(&mesh_id);
+        if node_inner.sync.load(Ordering::Relaxed) {
+            node_inner.changes.lock().expect("changes lock").mesh = Some(mesh_id);
+        }
         Ok(())
     }
 
@@ -405,8 +423,10 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             Some(res) => Some(self.table.get(res)?.inner.id.clone()),
             None => None,
         };
-        node_inner.state.lock().expect("node state lock").material = mat_id;
-        node_inner.dirty.store(true, Ordering::Relaxed);
+        node_inner.state.lock().expect("node state lock").material.clone_from(&mat_id);
+        if node_inner.sync.load(Ordering::Relaxed) {
+            node_inner.changes.lock().expect("changes lock").material = Some(mat_id);
+        }
         Ok(())
     }
 
@@ -549,8 +569,10 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 }
             }),
         };
-        inner.state.lock().expect("node state lock").collider = hsd_collider;
-        inner.dirty.store(true, Ordering::Relaxed);
+        inner.state.lock().expect("node state lock").collider.clone_from(&hsd_collider);
+        if inner.sync.load(Ordering::Relaxed) {
+            inner.changes.lock().expect("changes lock").collider = Some(hsd_collider);
+        }
         Ok(())
     }
 
@@ -580,94 +602,38 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         if inner.is_virtual {
             return Ok(());
         }
-        {
-            let mut state = inner.state.lock().expect("node state lock");
-            state.rigid_body = value.map(|kind| {
-                let kind_str = match kind {
-                    RigidBodyKind::Dynamic => "dynamic",
-                    RigidBodyKind::Fixed => "fixed",
-                    RigidBodyKind::Kinematic => "kinematic",
-                };
-                bevy_hsd::data::HsdRigidBody {
-                    kind: kind_str.into(),
-                    ..Default::default()
-                }
-            });
+        let rb = value.map(|kind| {
+            let kind_str = match kind {
+                RigidBodyKind::Dynamic => "dynamic",
+                RigidBodyKind::Fixed => "fixed",
+                RigidBodyKind::Kinematic => "kinematic",
+            };
+            bevy_hsd::data::HsdRigidBody {
+                kind: kind_str.into(),
+                ..Default::default()
+            }
+        });
+        inner.state.lock().expect("node state lock").rigid_body.clone_from(&rb);
+        if inner.sync.load(Ordering::Relaxed) {
+            inner.changes.lock().expect("changes lock").rigid_body = Some(rb);
         }
-        inner.dirty.store(true, Ordering::Relaxed);
         Ok(())
     }
 
-    async fn commit(&mut self, self_: Resource<HostNode>) -> wasmtime::Result<()> {
+    async fn sync(&mut self, self_: Resource<HostNode>) -> wasmtime::Result<bool> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner.sync.load(Ordering::Relaxed))
+    }
+
+    async fn set_sync(&mut self, self_: Resource<HostNode>, value: bool) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         if inner.is_virtual {
             return Ok(());
         }
-        self.check_hsd_write()?;
-
-        let tree_id = {
-            let mut lock = inner.tree_id.lock().expect("lock tree id");
-            if let Some(tid) = *lock {
-                tid
-            } else {
-                let tid = self
-                    .nodes()?
-                    .create(TreeParentId::Root)
-                    .map_err(|e| anyhow::anyhow!("create node: {e}"))?;
-                *lock = Some(tid);
-                drop(lock);
-                self.registry
-                    .node_map
-                    .lock()
-                    .expect("node_map lock")
-                    .insert(tid.to_smolstr(), Arc::clone(&inner));
-                tid
-            }
-        };
-
-        let state = inner.state.lock().expect("node state lock");
-        let meta = self.node_meta(tree_id)?;
-
-        let t = state.transform.translation;
-        let r = state.transform.rotation;
-        let s = state.transform.scale;
-        write_f64s(
-            &meta,
-            "translation",
-            &[f64::from(t.x), f64::from(t.y), f64::from(t.z)],
-        )?;
-        write_f64s(
-            &meta,
-            "rotation",
-            &[
-                f64::from(r.x),
-                f64::from(r.y),
-                f64::from(r.z),
-                f64::from(r.w),
-            ],
-        )?;
-        write_f64s(
-            &meta,
-            "scale",
-            &[f64::from(s.x), f64::from(s.y), f64::from(s.z)],
-        )?;
-        if let Some(name) = &state.name {
-            meta.insert("name", name.as_str())
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
+        if value {
+            self.check_hsd_write()?;
         }
-        if let Some(id) = &state.mesh {
-            meta.insert("mesh", id.to_string())
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
-        }
-        if let Some(id) = &state.material {
-            meta.insert("material", id.to_string())
-                .map_err(|e| anyhow::anyhow!("{e}"))?;
-        }
-        drop(state);
-
-        self.doc.commit();
-        self.doc.compact_change_store();
-        self.doc.free_history_cache();
+        inner.sync.store(value, Ordering::Relaxed);
         Ok(())
     }
 

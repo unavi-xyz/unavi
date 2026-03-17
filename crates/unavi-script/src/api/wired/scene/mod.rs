@@ -5,7 +5,7 @@ use bevy_hsd::{
     cache::SceneRegistryInner,
     hydrate::events::{DocChange, DocChangeKind},
 };
-use loro::{LoroDoc, LoroMap, LoroTree, TreeID};
+use loro::LoroDoc;
 use smol_str::SmolStr;
 use wasmtime_wasi::ResourceTable;
 
@@ -44,50 +44,6 @@ pub struct WiredSceneRt {
 }
 
 impl WiredSceneRt {
-    fn hsd_map(&self) -> LoroMap {
-        self.doc.get_map("hsd")
-    }
-
-    pub(super) fn nodes(&self) -> wasmtime::Result<LoroTree> {
-        self.hsd_map()
-            .get_or_create_container("nodes", LoroTree::new())
-            .map_err(|e| anyhow::anyhow!("nodes: {e}"))
-    }
-
-    fn meshes(&self) -> wasmtime::Result<LoroMap> {
-        self.hsd_map()
-            .get_or_create_container("meshes", LoroMap::new())
-            .map_err(|e| anyhow::anyhow!("meshes: {e}"))
-    }
-
-    fn materials(&self) -> wasmtime::Result<LoroMap> {
-        self.hsd_map()
-            .get_or_create_container("materials", LoroMap::new())
-            .map_err(|e| anyhow::anyhow!("materials: {e}"))
-    }
-
-    pub(super) fn mesh_map(&self, id: &str) -> wasmtime::Result<LoroMap> {
-        let list = self.meshes()?;
-        match list.get(id) {
-            Some(loro::ValueOrContainer::Container(loro::Container::Map(m))) => Ok(m),
-            _ => Err(anyhow::anyhow!("mesh {id} not found")),
-        }
-    }
-
-    pub(super) fn material_map(&self, id: &str) -> wasmtime::Result<LoroMap> {
-        let list = self.materials()?;
-        match list.get(id) {
-            Some(loro::ValueOrContainer::Container(loro::Container::Map(m))) => Ok(m),
-            _ => Err(anyhow::anyhow!("material {id} not found")),
-        }
-    }
-
-    pub(super) fn node_meta(&self, id: TreeID) -> wasmtime::Result<LoroMap> {
-        self.nodes()?
-            .get_meta(id)
-            .map_err(|e| anyhow::anyhow!("node meta: {e}"))
-    }
-
     pub(super) fn push_event(&self, kind: DocChangeKind) {
         self.events.lock().expect("events lock").push(DocChange {
             doc: self.doc_entity,
@@ -104,7 +60,7 @@ impl WiredSceneRt {
         {
             Ok(())
         } else {
-            Err(anyhow::anyhow!("hsd write permission required for commit"))
+            Err(anyhow::anyhow!("hsd write permission required"))
         }
     }
 }

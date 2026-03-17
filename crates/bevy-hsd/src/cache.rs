@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex, Weak, atomic::AtomicBool},
+    sync::{Arc, Mutex, atomic::AtomicBool},
 };
 
 use bevy::mesh::PrimitiveTopology;
@@ -9,6 +9,70 @@ use loro::TreeID;
 use smol_str::SmolStr;
 
 use crate::data::{HsdCollider, HsdRigidBody};
+
+#[derive(Default)]
+pub struct NodeChanges {
+    pub collider: Option<Option<HsdCollider>>,
+    pub material: Option<Option<SmolStr>>,
+    pub mesh: Option<Option<SmolStr>>,
+    pub name: Option<Option<String>>,
+    pub rigid_body: Option<Option<HsdRigidBody>>,
+    pub rotation: Option<[f64; 4]>,
+    pub scale: Option<[f64; 3]>,
+    pub translation: Option<[f64; 3]>,
+}
+
+impl NodeChanges {
+    #[must_use] 
+    pub const fn is_empty(&self) -> bool {
+        self.collider.is_none()
+            && self.material.is_none()
+            && self.mesh.is_none()
+            && self.name.is_none()
+            && self.rigid_body.is_none()
+            && self.rotation.is_none()
+            && self.scale.is_none()
+            && self.translation.is_none()
+    }
+}
+
+#[derive(Default)]
+pub struct MeshChanges {
+    pub geometry: bool,
+    pub name: Option<Option<String>>,
+    pub topology: Option<i64>,
+}
+
+impl MeshChanges {
+    #[must_use] 
+    pub const fn is_empty(&self) -> bool {
+        !self.geometry && self.name.is_none() && self.topology.is_none()
+    }
+}
+
+#[derive(Default)]
+pub struct MaterialChanges {
+    pub alpha_cutoff: Option<f64>,
+    pub alpha_mode: Option<Option<String>>,
+    pub base_color: Option<[f64; 4]>,
+    pub double_sided: Option<bool>,
+    pub metallic: Option<f64>,
+    pub name: Option<Option<String>>,
+    pub roughness: Option<f64>,
+}
+
+impl MaterialChanges {
+    #[must_use] 
+    pub const fn is_empty(&self) -> bool {
+        self.alpha_cutoff.is_none()
+            && self.alpha_mode.is_none()
+            && self.base_color.is_none()
+            && self.double_sided.is_none()
+            && self.metallic.is_none()
+            && self.name.is_none()
+            && self.roughness.is_none()
+    }
+}
 
 #[derive(Clone)]
 pub struct NodeState {
@@ -21,7 +85,7 @@ pub struct NodeState {
     pub rigid_body: Option<HsdRigidBody>,
     pub scripts: Vec<blake3::Hash>,
     /// Weak back-reference to avoid reference cycles.
-    pub parent: Option<Weak<NodeInner>>,
+    pub parent: Option<std::sync::Weak<NodeInner>>,
     pub children: Vec<Arc<NodeInner>>,
 }
 
@@ -43,11 +107,12 @@ impl Default for NodeState {
 }
 
 pub struct NodeInner {
-    pub dirty: AtomicBool,
+    pub changes: Mutex<NodeChanges>,
     pub entity: Mutex<Option<Entity>>,
     pub id: SmolStr,
     pub is_virtual: bool,
     pub state: Mutex<NodeState>,
+    pub sync: AtomicBool,
     pub tree_id: Mutex<Option<TreeID>>,
 }
 
@@ -81,10 +146,11 @@ impl Default for MeshState {
 }
 
 pub struct MeshInner {
-    pub dirty: AtomicBool,
+    pub changes: Mutex<MeshChanges>,
     pub entity: Mutex<Option<Entity>>,
     pub id: SmolStr,
     pub state: Mutex<MeshState>,
+    pub sync: AtomicBool,
 }
 
 #[derive(Clone)]
@@ -114,27 +180,41 @@ impl Default for MaterialState {
 }
 
 pub struct MaterialInner {
-    pub dirty: AtomicBool,
+    pub changes: Mutex<MaterialChanges>,
     pub entity: Mutex<Option<Entity>>,
     pub id: SmolStr,
     pub state: Mutex<MaterialState>,
+    pub sync: AtomicBool,
+}
+
+pub enum SyncOp {
+    MaterialCreated(SmolStr),
+    MaterialRemoved(SmolStr),
+    MeshCreated(SmolStr),
+    MeshRemoved(SmolStr),
+    NodeCreated(SmolStr),
+    NodeRemoved(SmolStr),
 }
 
 pub struct SceneRegistryInner {
-    pub nodes: Mutex<Vec<Arc<NodeInner>>>,
-    pub node_map: Mutex<HashMap<SmolStr, Arc<NodeInner>>>,
-    pub meshes: Mutex<HashMap<SmolStr, Arc<MeshInner>>>,
+    pub doc_sync: AtomicBool,
     pub materials: Mutex<HashMap<SmolStr, Arc<MaterialInner>>>,
+    pub meshes: Mutex<HashMap<SmolStr, Arc<MeshInner>>>,
+    pub node_map: Mutex<HashMap<SmolStr, Arc<NodeInner>>>,
+    pub nodes: Mutex<Vec<Arc<NodeInner>>>,
+    pub pending_doc_ops: Mutex<Vec<SyncOp>>,
 }
 
 impl SceneRegistryInner {
     #[must_use]
     pub fn new() -> Arc<Self> {
         Arc::new(Self {
-            nodes: Mutex::new(Vec::new()),
-            node_map: Mutex::new(HashMap::new()),
-            meshes: Mutex::new(HashMap::new()),
+            doc_sync: false.into(),
             materials: Mutex::new(HashMap::new()),
+            meshes: Mutex::new(HashMap::new()),
+            node_map: Mutex::new(HashMap::new()),
+            nodes: Mutex::new(Vec::new()),
+            pending_doc_ops: Mutex::new(Vec::new()),
         })
     }
 }
@@ -142,10 +222,12 @@ impl SceneRegistryInner {
 impl Default for SceneRegistryInner {
     fn default() -> Self {
         Self {
-            nodes: Mutex::new(Vec::new()),
-            node_map: Mutex::new(HashMap::new()),
-            meshes: Mutex::new(HashMap::new()),
+            doc_sync: false.into(),
             materials: Mutex::new(HashMap::new()),
+            meshes: Mutex::new(HashMap::new()),
+            node_map: Mutex::new(HashMap::new()),
+            nodes: Mutex::new(Vec::new()),
+            pending_doc_ops: Mutex::new(Vec::new()),
         }
     }
 }

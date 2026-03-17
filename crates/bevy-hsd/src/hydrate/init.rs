@@ -16,8 +16,8 @@ use super::{
 use crate::{
     HsdChild, HsdDoc, HsdSubscription,
     cache::{
-        MaterialInner, MaterialState, MeshInner, MeshState, NodeInner, NodeState, SceneRegistry,
-        SceneRegistryInner,
+        MaterialChanges, MaterialInner, MaterialState, MeshChanges, MeshInner, MeshState,
+        NodeChanges, NodeInner, NodeState, SceneRegistry, SceneRegistryInner,
     },
     data::{HsdMaterial, HsdMesh, hydrate_hsd},
 };
@@ -80,10 +80,11 @@ pub(super) fn full_hydrate(
             .spawn((HsdChild { doc: doc_ent }, HsdMaterial::clone(mat)))
             .id();
         let inner = Arc::new(MaterialInner {
-            dirty: false.into(),
+            changes: Mutex::new(MaterialChanges::default()),
+            entity: Mutex::new(Some(ent)),
             id: id.clone(),
             state: Mutex::new(MaterialState::default()),
-            entity: Mutex::new(Some(ent)),
+            sync: false.into(),
         });
         registry
             .materials
@@ -97,10 +98,11 @@ pub(super) fn full_hydrate(
             .spawn((HsdChild { doc: doc_ent }, HsdMesh::clone(mesh)))
             .id();
         let inner = Arc::new(MeshInner {
-            dirty: false.into(),
+            changes: Mutex::new(MeshChanges::default()),
+            entity: Mutex::new(Some(ent)),
             id: id.clone(),
             state: Mutex::new(MeshState::default()),
-            entity: Mutex::new(Some(ent)),
+            sync: false.into(),
         });
         registry
             .meshes
@@ -127,11 +129,12 @@ pub(super) fn full_hydrate(
         };
         let id = tree_id.to_smolstr();
         let inner = Arc::new(NodeInner {
-            dirty: false.into(),
+            changes: Mutex::new(NodeChanges::default()),
             entity: Mutex::new(None),
             id: id.clone(),
             is_virtual: false,
             state: Mutex::new(node_state),
+            sync: false.into(),
             tree_id: Mutex::new(Some(*tree_id)),
         });
         let ent = spawn_node_entity(doc_ent, node, commands);

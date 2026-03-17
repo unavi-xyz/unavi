@@ -22,15 +22,20 @@ interface types {
     clone: func() -> document;
 
     roots: func() -> list<node>;
+    nodes: func() -> list<node>;
+    meshes: func() -> list<mesh>;
+    materials: func() -> list<material>;
 
     create-node: func() -> node;
     create-mesh: func() -> mesh;
     create-material: func() -> material;
-    // TODO removal methods
 
-    // Persist local state to the HSD document.
-    // Requires `hsd-write` permission; traps otherwise.
-    commit: func();
+    remove-node: func(value: node);
+    remove-mesh: func(value: mesh);
+    remove-material: func(value: material);
+
+    sync: func() -> bool;
+    set-sync: func(value: bool);
   }
 
   resource node {
@@ -71,9 +76,8 @@ interface types {
     rigid-body: func() -> option<rigid-body-kind>;
     set-rigid-body: func(value: option<rigid-body-kind>);
 
-    // Persist local state to the HSD document.
-    // Requires `hsd-write` permission; traps otherwise.
-    commit: func();
+    sync: func() -> bool;
+    set-sync: func(value: bool);
   }
 
   enum alpha-mode {
@@ -107,9 +111,8 @@ interface types {
     double-sided: func() -> bool;
     set-double-sided: func(value: bool);
 
-    // Persist local state to the HSD document.
-    // Requires `hsd-write` permission; traps otherwise.
-    commit: func();
+    sync: func() -> bool;
+    set-sync: func(value: bool);
   }
 
   enum primitive-topology {
@@ -156,9 +159,8 @@ interface types {
     uv1: func() -> option<list<f32>>;
     set-uv1: func(values: option<list<f32>>);
 
-    // Persist local state to the HSD document.
-    // Requires `hsd-write` permission; traps otherwise.
-    commit: func();
+    sync: func() -> bool;
+    set-sync: func(value: bool);
   }
 
   variant collider {

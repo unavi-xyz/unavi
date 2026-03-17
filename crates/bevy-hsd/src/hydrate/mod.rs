@@ -3,4 +3,4 @@ mod diff;
 pub mod events;
 pub mod init;
 mod node;
-pub(crate) mod sync;
+pub mod sync;

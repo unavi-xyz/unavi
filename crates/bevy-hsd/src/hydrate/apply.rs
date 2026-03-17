@@ -1,6 +1,6 @@
 use std::collections::hash_map::Entry;
 use std::ops::Deref;
-use std::sync::{Arc, Mutex, atomic::Ordering};
+use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
 use bevy_wds::{BlobDep, BlobDeps, BlobDepsLoaded, BlobResponse};
@@ -16,16 +16,16 @@ use super::{
     node::{node_transform, spawn_node_entity, update_node_components},
 };
 use crate::{
-    HsdChild,
+    HsdChild, MaterialRef, MeshRef,
     cache::{
-        MaterialInner, MaterialState, MeshInner, MeshState, NodeInner, NodeState, SceneRegistry,
-        SceneRegistryInner,
+        MaterialChanges, MaterialInner, MaterialState, MeshChanges, MeshInner, MeshState,
+        NodeChanges, NodeInner, NodeState, SceneRegistry, SceneRegistryInner,
     },
     compile::{
         material::MaterialParams,
         mesh::{MeshAttrName, MeshParams},
     },
-    data::{HsdMaterial, HsdMesh, HsdNode, HsdNodeData},
+    data::{HsdCollider, HsdMaterial, HsdMesh, HsdNode, HsdNodeData, HsdRigidBody},
 };
 
 pub(crate) fn flush_scene_dirty(docs: Query<(Entity, &SceneRegistry, &DocChangeQueue)>) {
@@ -37,60 +37,84 @@ pub(crate) fn flush_scene_dirty(docs: Query<(Entity, &SceneRegistry, &DocChangeQ
                 if inner.is_virtual {
                     continue;
                 }
-                if inner.dirty.swap(false, Ordering::Relaxed) {
+                let node_changes = {
+                    let mut ch = inner.changes.lock().expect("changes lock");
+                    if ch.is_empty() {
+                        continue;
+                    }
+                    std::mem::take(&mut *ch)
+                };
+                let has_entity = inner.entity.lock().expect("entity lock").is_some();
+                let kind = if has_entity {
+                    DocChangeKind::NodeScriptChanged {
+                        id: inner.id.clone(),
+                        changes: Box::new(node_changes),
+                    }
+                } else {
+                    let parent_id = inner
+                        .state
+                        .lock()
+                        .expect("node state lock")
+                        .parent
+                        .as_ref()
+                        .and_then(std::sync::Weak::upgrade)
+                        .map(|pi| pi.id.clone());
                     let (id, data) = node_data_from_inner(inner);
-                    let has_entity = inner.entity.lock().expect("entity lock").is_some();
-                    let kind = if has_entity {
-                        DocChangeKind::NodeChanged { id, data }
-                    } else {
-                        let parent_id = inner
-                            .state
-                            .lock()
-                            .expect("node state lock")
-                            .parent
-                            .as_ref()
-                            .and_then(std::sync::Weak::upgrade)
-                            .map(|pi| pi.id.clone());
-                        DocChangeKind::NodeAdded {
-                            id,
-                            parent_id,
-                            data,
-                        }
-                    };
-                    changes.push(DocChange { doc: doc_ent, kind });
-                }
+                    DocChangeKind::NodeAdded {
+                        id,
+                        parent_id,
+                        data,
+                    }
+                };
+                changes.push(DocChange { doc: doc_ent, kind });
             }
         }
         {
             let meshes = registry.0.meshes.lock().expect("meshes lock");
             for (id, inner) in meshes.iter() {
                 debug_assert_eq!(*id, inner.id);
-                if inner.dirty.swap(false, Ordering::Relaxed) {
+                let (mesh_changes, state) = {
+                    let mut ch = inner.changes.lock().expect("changes lock");
+                    if ch.is_empty() {
+                        continue;
+                    }
+                    let mesh_changes = std::mem::take(&mut *ch);
+                    drop(ch);
                     let state = inner.state.lock().expect("mesh state lock").clone();
-                    changes.push(DocChange {
-                        doc: doc_ent,
-                        kind: DocChangeKind::MeshChanged {
-                            id: id.clone(),
-                            data: MeshData::Inline(state),
-                        },
-                    });
-                }
+                    (mesh_changes, state)
+                };
+                changes.push(DocChange {
+                    doc: doc_ent,
+                    kind: DocChangeKind::MeshScriptChanged {
+                        id: id.clone(),
+                        changes: Box::new(mesh_changes),
+                        state: Box::new(state),
+                    },
+                });
             }
         }
         {
             let materials = registry.0.materials.lock().expect("materials lock");
             for (id, inner) in materials.iter() {
                 debug_assert_eq!(*id, inner.id);
-                if inner.dirty.swap(false, Ordering::Relaxed) {
+                let (mat_changes, state) = {
+                    let mut ch = inner.changes.lock().expect("changes lock");
+                    if ch.is_empty() {
+                        continue;
+                    }
+                    let mat_changes = std::mem::take(&mut *ch);
+                    drop(ch);
                     let state = inner.state.lock().expect("material state lock").clone();
-                    changes.push(DocChange {
-                        doc: doc_ent,
-                        kind: DocChangeKind::MaterialChanged {
-                            id: id.clone(),
-                            data: MaterialData::Inline(state),
-                        },
-                    });
-                }
+                    (mat_changes, state)
+                };
+                changes.push(DocChange {
+                    doc: doc_ent,
+                    kind: DocChangeKind::MaterialScriptChanged {
+                        id: id.clone(),
+                        changes: Box::new(mat_changes),
+                        state: Box::new(state),
+                    },
+                });
             }
         }
     }
@@ -181,11 +205,12 @@ fn handle_doc_change(
             let inner = existing.unwrap_or_else(|| {
                 let state = node_state_from_data(data);
                 let inner = Arc::new(NodeInner {
-                    dirty: false.into(),
+                    changes: Mutex::new(NodeChanges::default()),
                     entity: Mutex::new(None),
                     id: id.clone(),
                     is_virtual: false,
                     state: Mutex::new(state),
+                    sync: false.into(),
                     tree_id: Mutex::new(None),
                 });
                 registry
@@ -310,6 +335,51 @@ fn handle_doc_change(
             }
         }
 
+        DocChangeKind::NodeScriptChanged { id, changes } => {
+            let inner = registry
+                .node_map
+                .lock()
+                .expect("node_map lock")
+                .get(id)
+                .cloned();
+            let Some(inner) = inner else { return };
+            let ent = *inner.entity.lock().expect("entity lock");
+            let Some(ent) = ent else { return };
+            let mut ecmd = commands.entity(ent);
+
+            if changes.translation.is_some()
+                || changes.rotation.is_some()
+                || changes.scale.is_some()
+            {
+                let state = inner.state.lock().expect("node state lock");
+                ecmd.insert(state.transform);
+            }
+            if let Some(new_mesh) = &changes.mesh {
+                ecmd.remove::<MeshRef>();
+                if let Some(id) = new_mesh {
+                    ecmd.insert(MeshRef(id.clone()));
+                }
+            }
+            if let Some(new_mat) = &changes.material {
+                ecmd.remove::<MaterialRef>();
+                if let Some(id) = new_mat {
+                    ecmd.insert(MaterialRef(id.clone()));
+                }
+            }
+            if let Some(new_collider) = &changes.collider {
+                ecmd.remove::<HsdCollider>();
+                if let Some(c) = new_collider {
+                    ecmd.insert(c.clone());
+                }
+            }
+            if let Some(new_rb) = &changes.rigid_body {
+                ecmd.remove::<HsdRigidBody>();
+                if let Some(rb) = new_rb {
+                    ecmd.insert(rb.clone());
+                }
+            }
+        }
+
         DocChangeKind::MeshAdded { id, data } => {
             let ent = spawn_mesh(doc_ent, data, commands);
             match registry
@@ -328,10 +398,11 @@ fn handle_doc_change(
                         MeshData::Inline(state) => state.clone(),
                     };
                     let inner = Arc::new(MeshInner {
-                        dirty: false.into(),
+                        changes: Mutex::new(MeshChanges::default()),
+                        entity: Mutex::new(Some(ent)),
                         id: id.clone(),
                         state: Mutex::new(state),
-                        entity: Mutex::new(Some(ent)),
+                        sync: false.into(),
                     });
                     entry.insert(inner);
                 }
@@ -361,6 +432,22 @@ fn handle_doc_change(
             }
         }
 
+        DocChangeKind::MeshScriptChanged { id, changes, state } => {
+            let meshes = registry.meshes.lock().expect("meshes lock");
+            if let Some(inner) = meshes.get(id) {
+                let ent = *inner.entity.lock().expect("entity lock");
+                if let Some(ent) = ent
+                    && changes.geometry {
+                        commands
+                            .entity(ent)
+                            .remove::<BlobDepsLoaded>()
+                            .remove::<BlobDeps>();
+                        attach_inline_mesh(ent, state, commands);
+                    }
+                    // topology/name-only changes don't have separate Bevy components
+            }
+        }
+
         DocChangeKind::MaterialAdded { id, data } => {
             let ent = spawn_material(doc_ent, data, commands);
             match registry
@@ -379,10 +466,11 @@ fn handle_doc_change(
                         MaterialData::Inline(state) => state.clone(),
                     };
                     let inner = Arc::new(MaterialInner {
-                        dirty: false.into(),
+                        changes: Mutex::new(MaterialChanges::default()),
+                        entity: Mutex::new(Some(ent)),
                         id: id.clone(),
                         state: Mutex::new(state),
-                        entity: Mutex::new(Some(ent)),
+                        sync: false.into(),
                     });
                     entry.insert(inner);
                 }
@@ -409,6 +497,20 @@ fn handle_doc_change(
                     commands.entity(ent).despawn();
                 }
                 *inner.entity.lock().expect("entity lock") = None;
+            }
+        }
+
+        DocChangeKind::MaterialScriptChanged { id, changes: _, state } => {
+            let mats = registry.materials.lock().expect("materials lock");
+            if let Some(inner) = mats.get(id) {
+                let ent = *inner.entity.lock().expect("entity lock");
+                if let Some(ent) = ent {
+                    commands
+                        .entity(ent)
+                        .remove::<BlobDepsLoaded>()
+                        .remove::<BlobDeps>();
+                    attach_inline_material(ent, state, commands);
+                }
             }
         }
     }

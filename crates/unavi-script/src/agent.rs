@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use bevy::prelude::*;
 use bevy_hsd::{
     NodeId,
-    cache::{NodeInner, NodeState},
+    cache::{NodeChanges, NodeInner, NodeState},
 };
 use bevy_vrm::BoneName;
 use smol_str::SmolStr;
@@ -101,12 +101,13 @@ pub(crate) fn init_agent_proxies(
             let id = gen_id();
             bone_nodes.insert(bone, id.clone());
             let inner = Arc::new(NodeInner {
-                id: id.clone(),
-                dirty: false.into(),
-                is_virtual: true,
-                tree_id: Mutex::new(None),
-                state: Mutex::new(NodeState::default()),
+                changes: Mutex::new(NodeChanges::default()),
                 entity: Mutex::new(None),
+                id: id.clone(),
+                is_virtual: true,
+                state: Mutex::new(NodeState::default()),
+                sync: false.into(),
+                tree_id: Mutex::new(None),
             });
             registry
                 .nodes
@@ -131,12 +132,13 @@ pub(crate) fn init_agent_proxies(
         }
 
         let self_inner = Arc::new(NodeInner {
-            id: self_node_id.clone(),
-            dirty: false.into(),
-            is_virtual: true,
-            tree_id: Mutex::new(None),
-            state: Mutex::new(NodeState::default()),
+            changes: Mutex::new(NodeChanges::default()),
             entity: Mutex::new(None),
+            id: self_node_id.clone(),
+            is_virtual: true,
+            state: Mutex::new(NodeState::default()),
+            sync: false.into(),
+            tree_id: Mutex::new(None),
         });
         registry
             .nodes

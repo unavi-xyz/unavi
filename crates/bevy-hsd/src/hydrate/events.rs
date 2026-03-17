@@ -5,7 +5,7 @@ use loro::TreeID;
 use smol_str::SmolStr;
 
 use crate::{
-    cache::{MaterialState, MeshState},
+    cache::{MaterialChanges, MaterialState, MeshChanges, MeshState, NodeChanges},
     data::{HsdMaterial, HsdMesh, HsdNodeData},
 };
 
@@ -72,6 +72,10 @@ pub enum DocChangeKind {
     NodeRemoved {
         id: SmolStr,
     },
+    NodeScriptChanged {
+        id: SmolStr,
+        changes: Box<NodeChanges>,
+    },
     MeshAdded {
         id: SmolStr,
         data: MeshData,
@@ -83,6 +87,11 @@ pub enum DocChangeKind {
     MeshRemoved {
         id: SmolStr,
     },
+    MeshScriptChanged {
+        id: SmolStr,
+        changes: Box<MeshChanges>,
+        state: Box<MeshState>,
+    },
     MaterialAdded {
         id: SmolStr,
         data: MaterialData,
@@ -93,6 +102,11 @@ pub enum DocChangeKind {
     },
     MaterialRemoved {
         id: SmolStr,
+    },
+    MaterialScriptChanged {
+        id: SmolStr,
+        changes: Box<MaterialChanges>,
+        state: Box<MaterialState>,
     },
 }
 

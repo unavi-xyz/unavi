@@ -17,6 +17,7 @@ impl Plugin for HsdPlugin {
             FixedUpdate,
             (
                 hydrate::init::init_hsd_doc,
+                hydrate::sync::sync_to_hsd,
                 hydrate::apply::flush_scene_dirty,
                 hydrate::apply::apply_doc_changes,
                 (

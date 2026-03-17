@@ -78,6 +78,217 @@ fn parse_field_attrs(attrs: &[Attribute]) -> FieldAttrs {
     result
 }
 
+fn hydrate_struct_field(
+    f: &syn::Field,
+    crate_ident: &proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let field_name = f.ident.as_ref().expect("named field");
+    let field_type = &f.ty;
+    let attrs = parse_field_attrs(&f.attrs);
+
+    if attrs.skip {
+        return quote! { #field_name: Default::default(), };
+    }
+
+    let key = attrs.rename.unwrap_or_else(|| field_name.to_string());
+
+    let hydrate_call = if let Some(with) = attrs.with {
+        quote! { #with::hydrate(field_value) }
+    } else if let Some(hydrate_with) = attrs.hydrate_with {
+        quote! { #hydrate_with(field_value) }
+    } else {
+        quote! { <#field_type as #crate_ident::Hydrate>::hydrate(field_value) }
+    };
+
+    if attrs.default {
+        quote! {
+            #field_name: match map.get(#key) {
+                Some(field_value) => match #hydrate_call {
+                    Ok(v) => v,
+                    Err(_) => Default::default(),
+                },
+                None => Default::default(),
+            },
+        }
+    } else {
+        quote! {
+            #field_name: {
+                let field_value = map.get(#key).ok_or_else(|| {
+                    #crate_ident::HydrateError::MissingField(#key.into())
+                })?;
+                #hydrate_call?
+            },
+        }
+    }
+}
+
+fn hydrate_enum_arm(
+    variant: &syn::Variant,
+    crate_ident: &proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let variant_ident = &variant.ident;
+    let attrs = parse_field_attrs(&variant.attrs);
+    let tag = attrs.rename.unwrap_or_else(|| variant_ident.to_string());
+
+    match &variant.fields {
+        Fields::Unit => quote! { #tag => Ok(Self::#variant_ident), },
+        Fields::Named(named) => {
+            let field_extractions: Vec<_> = named
+                .named
+                .iter()
+                .map(|f| {
+                    let field_name = f.ident.as_ref().expect("named field");
+                    let field_type = &f.ty;
+                    let f_attrs = parse_field_attrs(&f.attrs);
+                    let key = f_attrs.rename.unwrap_or_else(|| field_name.to_string());
+                    let hydrate_expr = if let Some(with) = f_attrs.with {
+                        quote! { #with::hydrate(field_value)? }
+                    } else if let Some(hw) = f_attrs.hydrate_with {
+                        quote! { #hw(field_value)? }
+                    } else {
+                        quote! { <#field_type as #crate_ident::Hydrate>::hydrate(field_value)? }
+                    };
+                    quote! {
+                        #field_name: {
+                            let field_value = inner.get(#key).ok_or_else(|| {
+                                #crate_ident::HydrateError::MissingField(#key.into())
+                            })?;
+                            #hydrate_expr
+                        },
+                    }
+                })
+                .collect();
+            quote! {
+                #tag => {
+                    let data = map.get(#tag).ok_or_else(|| {
+                        #crate_ident::HydrateError::MissingField(#tag.into())
+                    })?;
+                    let #crate_ident::loro::LoroValue::Map(inner) = data else {
+                        return Err(#crate_ident::HydrateError::TypeMismatch {
+                            expected: "Map".into(),
+                            actual: format!("{:?}", data).into(),
+                        });
+                    };
+                    Ok(Self::#variant_ident { #(#field_extractions)* })
+                }
+            }
+        }
+        Fields::Unnamed(unnamed) => {
+            let fields: Vec<_> = unnamed.unnamed.iter().collect();
+            if fields.len() != 1 {
+                return syn::Error::new_spanned(
+                    variant,
+                    "Hydrate enum only supports unit, named, or single-field tuple variants",
+                )
+                .to_compile_error();
+            }
+            let field_type = &fields[0].ty;
+            quote! {
+                #tag => {
+                    let data = map.get(#tag).ok_or_else(|| {
+                        #crate_ident::HydrateError::MissingField(#tag.into())
+                    })?;
+                    Ok(Self::#variant_ident(
+                        <#field_type as #crate_ident::Hydrate>::hydrate(&data)?
+                    ))
+                }
+            }
+        }
+    }
+}
+
+fn reconcile_struct_field(
+    f: &syn::Field,
+    crate_ident: &proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let field_name = f.ident.as_ref().expect("named field");
+    let field_type = &f.ty;
+    let attrs = parse_field_attrs(&f.attrs);
+
+    if attrs.skip {
+        return quote! {};
+    }
+
+    let key = attrs.rename.unwrap_or_else(|| field_name.to_string());
+
+    if let Some(with) = attrs.with {
+        quote! { #with::reconcile(&self.#field_name, map, #key)?; }
+    } else if let Some(reconcile_with) = attrs.reconcile_with {
+        quote! { #reconcile_with(&self.#field_name, map, #key)?; }
+    } else {
+        quote! {
+            <#field_type as #crate_ident::Reconcile>::reconcile_field(&self.#field_name, map, #key)?;
+        }
+    }
+}
+
+fn reconcile_enum_arm(
+    variant: &syn::Variant,
+    crate_ident: &proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let variant_ident = &variant.ident;
+    let attrs = parse_field_attrs(&variant.attrs);
+    let tag = attrs.rename.unwrap_or_else(|| variant_ident.to_string());
+
+    match &variant.fields {
+        Fields::Unit => quote! {
+            Self::#variant_ident => {
+                map.insert("tag", #tag)?;
+            }
+        },
+        Fields::Named(named) => {
+            let field_names: Vec<_> = named
+                .named
+                .iter()
+                .map(|f| f.ident.as_ref().expect("named field"))
+                .collect();
+            let field_insertions: Vec<_> = named
+                .named
+                .iter()
+                .map(|f| {
+                    let field_name = f.ident.as_ref().expect("named field");
+                    let field_type = &f.ty;
+                    let f_attrs = parse_field_attrs(&f.attrs);
+                    let key = f_attrs.rename.unwrap_or_else(|| field_name.to_string());
+                    if let Some(with) = f_attrs.with {
+                        quote! { #with::reconcile(#field_name, &nested, #key)?; }
+                    } else if let Some(rw) = f_attrs.reconcile_with {
+                        quote! { #rw(#field_name, &nested, #key)?; }
+                    } else {
+                        quote! {
+                            <#field_type as #crate_ident::Reconcile>::reconcile_field(#field_name, &nested, #key)?;
+                        }
+                    }
+                })
+                .collect();
+            quote! {
+                Self::#variant_ident { #(#field_names),* } => {
+                    map.insert("tag", #tag)?;
+                    let nested = map.get_or_create_container(#tag, #crate_ident::loro::LoroMap::new())?;
+                    #(#field_insertions)*
+                }
+            }
+        }
+        Fields::Unnamed(unnamed) => {
+            let fields: Vec<_> = unnamed.unnamed.iter().collect();
+            if fields.len() != 1 {
+                return syn::Error::new_spanned(
+                    variant,
+                    "Reconcile enum only supports unit, named, or single-field tuple variants",
+                )
+                .to_compile_error();
+            }
+            let field_type = &fields[0].ty;
+            quote! {
+                Self::#variant_ident(v) => {
+                    map.insert("tag", #tag)?;
+                    <#field_type as #crate_ident::Reconcile>::reconcile_field(v, map, #tag)?;
+                }
+            }
+        }
+    }
+}
+
 /// Derive macro for `Hydrate` trait.
 ///
 /// Generates an implementation that reads struct fields from a [`LoroValue::Map`],
@@ -86,7 +297,6 @@ fn parse_field_attrs(attrs: &[Attribute]) -> FieldAttrs {
 /// # Panics
 ///
 /// Panics if the input is not a struct with named fields or an enum.
-#[expect(clippy::too_many_lines)]
 #[proc_macro_derive(Hydrate, attributes(loro))]
 pub fn derive_hydrate(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -105,52 +315,10 @@ pub fn derive_hydrate(input: TokenStream) -> TokenStream {
             let field_extractions: Vec<_> = fields
                 .named
                 .iter()
-                .map(|f| {
-                    let field_name = f.ident.as_ref().expect("named field");
-                    let field_type = &f.ty;
-                    let attrs = parse_field_attrs(&f.attrs);
-
-                    if attrs.skip {
-                        return quote! {
-                            #field_name: Default::default(),
-                        };
-                    }
-
-                    let key = attrs.rename.unwrap_or_else(|| field_name.to_string());
-
-                    // Build the base call (no `?`) once, reuse in both branches.
-                    let hydrate_call = if let Some(with) = attrs.with {
-                        quote! { #with::hydrate(field_value) }
-                    } else if let Some(hydrate_with) = attrs.hydrate_with {
-                        quote! { #hydrate_with(field_value) }
-                    } else {
-                        quote! { <#field_type as #crate_ident::Hydrate>::hydrate(field_value) }
-                    };
-
-                    if attrs.default {
-                        quote! {
-                            #field_name: match map.get(#key) {
-                                Some(field_value) => match #hydrate_call {
-                                    Ok(v) => v,
-                                    Err(_) => Default::default(),
-                                },
-                                None => Default::default(),
-                            },
-                        }
-                    } else {
-                        quote! {
-                            #field_name: {
-                                let field_value = map.get(#key).ok_or_else(|| {
-                                    #crate_ident::HydrateError::MissingField(#key.into())
-                                })?;
-                                #hydrate_call?
-                            },
-                        }
-                    }
-                })
+                .map(|f| hydrate_struct_field(f, &crate_ident))
                 .collect();
 
-            let expanded = quote! {
+            TokenStream::from(quote! {
                 impl #impl_generics #crate_ident::Hydrate for #name #ty_generics #where_clause {
                     fn hydrate(value: &#crate_ident::loro::LoroValue) -> Result<Self, #crate_ident::HydrateError> {
                         let #crate_ident::loro::LoroValue::Map(map) = value else {
@@ -159,103 +327,20 @@ pub fn derive_hydrate(input: TokenStream) -> TokenStream {
                                 actual: format!("{:?}", value).into(),
                             });
                         };
-
-                        Ok(Self {
-                            #(#field_extractions)*
-                        })
+                        Ok(Self { #(#field_extractions)* })
                     }
                 }
-            };
-
-            TokenStream::from(expanded)
+            })
         }
 
         Data::Enum(data) => {
             let arms: Vec<_> = data
                 .variants
                 .iter()
-                .map(|variant| {
-                    let variant_ident = &variant.ident;
-                    let attrs = parse_field_attrs(&variant.attrs);
-                    let tag = attrs.rename.unwrap_or_else(|| variant_ident.to_string());
-
-                    match &variant.fields {
-                        Fields::Unit => {
-                            quote! {
-                                #tag => Ok(Self::#variant_ident),
-                            }
-                        }
-                        Fields::Named(named) => {
-                            let field_extractions: Vec<_> = named
-                                .named
-                                .iter()
-                                .map(|f| {
-                                    let field_name = f.ident.as_ref().expect("named field");
-                                    let field_type = &f.ty;
-                                    let f_attrs = parse_field_attrs(&f.attrs);
-                                    let key = f_attrs
-                                        .rename
-                                        .unwrap_or_else(|| field_name.to_string());
-                                    let hydrate_expr = if let Some(with) = f_attrs.with {
-                                        quote! { #with::hydrate(field_value)? }
-                                    } else if let Some(hw) = f_attrs.hydrate_with {
-                                        quote! { #hw(field_value)? }
-                                    } else {
-                                        quote! { <#field_type as #crate_ident::Hydrate>::hydrate(field_value)? }
-                                    };
-                                    quote! {
-                                        #field_name: {
-                                            let field_value = inner.get(#key).ok_or_else(|| {
-                                                #crate_ident::HydrateError::MissingField(#key.into())
-                                            })?;
-                                            #hydrate_expr
-                                        },
-                                    }
-                                })
-                                .collect();
-                            quote! {
-                                #tag => {
-                                    let data = map.get(#tag).ok_or_else(|| {
-                                        #crate_ident::HydrateError::MissingField(#tag.into())
-                                    })?;
-                                    let #crate_ident::loro::LoroValue::Map(inner) = data else {
-                                        return Err(#crate_ident::HydrateError::TypeMismatch {
-                                            expected: "Map".into(),
-                                            actual: format!("{:?}", data).into(),
-                                        });
-                                    };
-                                    Ok(Self::#variant_ident {
-                                        #(#field_extractions)*
-                                    })
-                                }
-                            }
-                        }
-                        Fields::Unnamed(unnamed) => {
-                            let fields: Vec<_> = unnamed.unnamed.iter().collect();
-                            if fields.len() != 1 {
-                                return syn::Error::new_spanned(
-                                    variant,
-                                    "Hydrate enum only supports unit, named, or single-field tuple variants",
-                                )
-                                .to_compile_error();
-                            }
-                            let field_type = &fields[0].ty;
-                            quote! {
-                                #tag => {
-                                    let data = map.get(#tag).ok_or_else(|| {
-                                        #crate_ident::HydrateError::MissingField(#tag.into())
-                                    })?;
-                                    Ok(Self::#variant_ident(
-                                        <#field_type as #crate_ident::Hydrate>::hydrate(&data)?
-                                    ))
-                                }
-                            }
-                        }
-                    }
-                })
+                .map(|v| hydrate_enum_arm(v, &crate_ident))
                 .collect();
 
-            let expanded = quote! {
+            TokenStream::from(quote! {
                 impl #impl_generics #crate_ident::Hydrate for #name #ty_generics #where_clause {
                     fn hydrate(value: &#crate_ident::loro::LoroValue) -> Result<Self, #crate_ident::HydrateError> {
                         let #crate_ident::loro::LoroValue::Map(map) = value else {
@@ -281,9 +366,7 @@ pub fn derive_hydrate(input: TokenStream) -> TokenStream {
                         }
                     }
                 }
-            };
-
-            TokenStream::from(expanded)
+            })
         }
 
         Data::Union(_) => {
@@ -302,7 +385,6 @@ pub fn derive_hydrate(input: TokenStream) -> TokenStream {
 /// # Panics
 ///
 /// Panics if the input is not a struct with named fields or an enum.
-#[expect(clippy::too_many_lines)]
 #[proc_macro_derive(Reconcile, attributes(loro))]
 pub fn derive_reconcile(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -321,34 +403,10 @@ pub fn derive_reconcile(input: TokenStream) -> TokenStream {
             let field_insertions: Vec<_> = fields
                 .named
                 .iter()
-                .map(|f| {
-                    let field_name = f.ident.as_ref().expect("named field");
-                    let field_type = &f.ty;
-                    let attrs = parse_field_attrs(&f.attrs);
-
-                    if attrs.skip {
-                        return quote! {};
-                    }
-
-                    let key = attrs.rename.unwrap_or_else(|| field_name.to_string());
-
-                    if let Some(with) = attrs.with {
-                        quote! {
-                            #with::reconcile(&self.#field_name, map, #key)?;
-                        }
-                    } else if let Some(reconcile_with) = attrs.reconcile_with {
-                        quote! {
-                            #reconcile_with(&self.#field_name, map, #key)?;
-                        }
-                    } else {
-                        quote! {
-                            <#field_type as #crate_ident::Reconcile>::reconcile_field(&self.#field_name, map, #key)?;
-                        }
-                    }
-                })
+                .map(|f| reconcile_struct_field(f, &crate_ident))
                 .collect();
 
-            let expanded = quote! {
+            TokenStream::from(quote! {
                 impl #impl_generics #crate_ident::Reconcile for #name #ty_generics #where_clause {
                     fn reconcile(&self, map: &#crate_ident::loro::LoroMap) -> Result<(), #crate_ident::ReconcileError> {
                         #(#field_insertions)*
@@ -360,85 +418,17 @@ pub fn derive_reconcile(input: TokenStream) -> TokenStream {
                         self.reconcile(&nested)
                     }
                 }
-            };
-
-            TokenStream::from(expanded)
+            })
         }
 
         Data::Enum(data) => {
             let arms: Vec<_> = data
                 .variants
                 .iter()
-                .map(|variant| {
-                    let variant_ident = &variant.ident;
-                    let attrs = parse_field_attrs(&variant.attrs);
-                    let tag = attrs.rename.unwrap_or_else(|| variant_ident.to_string());
-
-                    match &variant.fields {
-                        Fields::Unit => {
-                            quote! {
-                                Self::#variant_ident => {
-                                    map.insert("tag", #tag)?;
-                                }
-                            }
-                        }
-                        Fields::Named(named) => {
-                            let field_names: Vec<_> = named
-                                .named
-                                .iter()
-                                .map(|f| f.ident.as_ref().expect("named field"))
-                                .collect();
-                            let field_insertions: Vec<_> = named
-                                .named
-                                .iter()
-                                .map(|f| {
-                                    let field_name = f.ident.as_ref().expect("named field");
-                                    let field_type = &f.ty;
-                                    let f_attrs = parse_field_attrs(&f.attrs);
-                                    let key = f_attrs
-                                        .rename
-                                        .unwrap_or_else(|| field_name.to_string());
-                                    if let Some(with) = f_attrs.with {
-                                        quote! { #with::reconcile(#field_name, &nested, #key)?; }
-                                    } else if let Some(rw) = f_attrs.reconcile_with {
-                                        quote! { #rw(#field_name, &nested, #key)?; }
-                                    } else {
-                                        quote! {
-                                            <#field_type as #crate_ident::Reconcile>::reconcile_field(#field_name, &nested, #key)?;
-                                        }
-                                    }
-                                })
-                                .collect();
-                            quote! {
-                                Self::#variant_ident { #(#field_names),* } => {
-                                    map.insert("tag", #tag)?;
-                                    let nested = map.get_or_create_container(#tag, #crate_ident::loro::LoroMap::new())?;
-                                    #(#field_insertions)*
-                                }
-                            }
-                        }
-                        Fields::Unnamed(unnamed) => {
-                            let fields: Vec<_> = unnamed.unnamed.iter().collect();
-                            if fields.len() != 1 {
-                                return syn::Error::new_spanned(
-                                    variant,
-                                    "Reconcile enum only supports unit, named, or single-field tuple variants",
-                                )
-                                .to_compile_error();
-                            }
-                            let field_type = &fields[0].ty;
-                            quote! {
-                                Self::#variant_ident(v) => {
-                                    map.insert("tag", #tag)?;
-                                    <#field_type as #crate_ident::Reconcile>::reconcile_field(v, map, #tag)?;
-                                }
-                            }
-                        }
-                    }
-                })
+                .map(|v| reconcile_enum_arm(v, &crate_ident))
                 .collect();
 
-            let expanded = quote! {
+            TokenStream::from(quote! {
                 impl #impl_generics #crate_ident::Reconcile for #name #ty_generics #where_clause {
                     fn reconcile(&self, map: &#crate_ident::loro::LoroMap) -> Result<(), #crate_ident::ReconcileError> {
                         match self {
@@ -452,9 +442,7 @@ pub fn derive_reconcile(input: TokenStream) -> TokenStream {
                         self.reconcile(&nested)
                     }
                 }
-            };
-
-            TokenStream::from(expanded)
+            })
         }
 
         Data::Union(_) => {

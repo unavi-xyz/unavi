@@ -10,8 +10,6 @@ use smol_str::SmolStr;
 
 use crate::data::{HsdCollider, HsdRigidBody};
 
-// --- ECS dirty tracking (bool flags; values read from state at flush time) ---
-
 #[expect(clippy::struct_excessive_bools)]
 #[derive(Default)]
 pub struct NodeDirty {
@@ -34,8 +32,6 @@ impl NodeDirty {
             || self.transform
     }
 }
-
-// --- LoroDoc tracking (captures values at setter call time) ---
 
 #[derive(Default)]
 pub struct NodeHsdChanges {
@@ -143,7 +139,6 @@ pub struct NodeState {
     pub collider: Option<HsdCollider>,
     pub rigid_body: Option<HsdRigidBody>,
     pub scripts: Vec<blake3::Hash>,
-    /// Weak back-reference to avoid reference cycles.
     pub parent: Option<std::sync::Weak<NodeInner>>,
     pub children: Vec<Arc<NodeInner>>,
 }
@@ -217,7 +212,6 @@ pub struct MeshInner {
 #[derive(Clone)]
 pub struct MaterialState {
     pub alpha_cutoff: Option<f32>,
-    /// None = auto-detect from `base_color` alpha
     pub alpha_mode: Option<String>,
     pub base_color: [f32; 4],
     pub double_sided: bool,

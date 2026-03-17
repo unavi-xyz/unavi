@@ -10,7 +10,9 @@ use super::{
 };
 use crate::{HsdDoc, HsdSubscription, cache::SceneRegistry};
 
-#[expect(clippy::missing_panics_doc)]
+/// # Panics
+///
+/// Panics if any internal mutex is poisoned.
 pub fn init_hsd_doc(
     mut commands: Commands,
     added: Query<(Entity, &HsdDoc), (Added<HsdDoc>, Without<SceneRegistry>)>,

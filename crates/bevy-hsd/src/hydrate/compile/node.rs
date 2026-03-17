@@ -275,6 +275,7 @@ pub(crate) fn handle_hsd_node_parent_set(
     }
 }
 
+#[expect(clippy::cast_possible_truncation)]
 pub(crate) fn handle_hsd_node_rigid_body_set(
     trigger: On<HsdNodeRigidBodySet>,
     registries: Query<&SceneRegistry>,
@@ -312,9 +313,7 @@ pub(crate) fn handle_hsd_node_rigid_body_set(
     ecmd.insert(kind);
 
     if kind == RigidBody::Dynamic {
-        #[expect(clippy::cast_possible_truncation)]
         let linear = data.linear_damping.map_or(0.2, |v| v as f32);
-        #[expect(clippy::cast_possible_truncation)]
         let angular = data.angular_damping.map_or(0.2, |v| v as f32);
         ecmd.insert((LinearDamping(linear), AngularDamping(angular)));
     }
@@ -538,31 +537,23 @@ fn assign_material(
     }
 }
 
+#[expect(clippy::cast_possible_truncation)]
 pub(crate) fn node_transform(data: &HsdNodeData) -> Transform {
     let mut t = Transform::default();
     if let Some(tr) = &data.translation
         && tr.len() >= 3
     {
-        #[expect(clippy::cast_possible_truncation)]
-        {
-            t.translation = Vec3::new(tr[0] as f32, tr[1] as f32, tr[2] as f32);
-        }
+        t.translation = Vec3::new(tr[0] as f32, tr[1] as f32, tr[2] as f32);
     }
     if let Some(r) = &data.rotation
         && r.len() >= 4
     {
-        #[expect(clippy::cast_possible_truncation)]
-        {
-            t.rotation = Quat::from_xyzw(r[0] as f32, r[1] as f32, r[2] as f32, r[3] as f32);
-        }
+        t.rotation = Quat::from_xyzw(r[0] as f32, r[1] as f32, r[2] as f32, r[3] as f32);
     }
     if let Some(s) = &data.scale
         && s.len() >= 3
     {
-        #[expect(clippy::cast_possible_truncation)]
-        {
-            t.scale = Vec3::new(s[0] as f32, s[1] as f32, s[2] as f32);
-        }
+        t.scale = Vec3::new(s[0] as f32, s[1] as f32, s[2] as f32);
     }
     t
 }

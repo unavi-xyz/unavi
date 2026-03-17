@@ -1,5 +1,7 @@
 //! Type validation for [`LoroValue`] against [`Field`] layouts.
 
+use std::collections::BTreeMap;
+
 use loro::LoroValue;
 use smol_str::SmolStr;
 
@@ -14,185 +16,166 @@ use crate::Field;
 /// # Errors
 ///
 /// Returns [`ValidationError`] if the value doesn't match the field.
-#[expect(clippy::too_many_lines)]
 pub fn validate_value(value: &LoroValue, field: &Field, path: &str) -> Result<(), ValidationError> {
     match field {
         Field::Any => Ok(()),
         Field::Bool => match value {
             LoroValue::Bool(_) => Ok(()),
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "bool",
-            }),
+            _ => Err(type_mismatch(path, "bool")),
         },
         Field::F64 => match value {
             LoroValue::Double(_) => Ok(()),
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "f64",
-            }),
+            _ => Err(type_mismatch(path, "f64")),
         },
         Field::I64 => match value {
             LoroValue::I64(_) => Ok(()),
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "i64",
-            }),
+            _ => Err(type_mismatch(path, "i64")),
         },
         Field::String => match value {
             LoroValue::String(_) => Ok(()),
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "string",
-            }),
+            _ => Err(type_mismatch(path, "string")),
         },
         Field::Binary => match value {
             LoroValue::Binary(_) => Ok(()),
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "binary",
-            }),
+            _ => Err(type_mismatch(path, "binary")),
         },
         Field::BlobId => match value {
             LoroValue::Binary(bytes) if bytes.len() == 32 => Ok(()),
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "blob_id (32-byte binary)",
-            }),
+            _ => Err(type_mismatch(path, "blob_id (32-byte binary)")),
         },
         Field::RecordId => match value {
             LoroValue::Binary(bytes) if bytes.len() == 32 => Ok(()),
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "record_id (32-byte binary)",
-            }),
+            _ => Err(type_mismatch(path, "record_id (32-byte binary)")),
         },
         Field::Optional(inner) => match value {
             LoroValue::Null => Ok(()),
             _ => validate_value(value, inner, path),
         },
-        Field::List(inner) | Field::MovableList(inner) => match value {
-            LoroValue::List(items) => {
-                for (i, item) in items.iter().enumerate() {
-                    validate_value(item, inner, &format!("{path}[{i}]")).map_err(|e| {
-                        ValidationError::InvalidElement {
-                            path: path.to_string(),
-                            index: i,
-                            source: Box::new(e),
-                        }
-                    })?;
-                }
-                Ok(())
-            }
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "list",
-            }),
-        },
-        Field::Map(inner) => match value {
-            LoroValue::Map(map) => {
-                for (key, val) in map.iter() {
-                    validate_value(val, inner, &format!("{path}.{key}")).map_err(|e| {
-                        ValidationError::InvalidField {
-                            path: path.to_string(),
-                            key: key.into(),
-                            source: Box::new(e),
-                        }
-                    })?;
-                }
-                Ok(())
-            }
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "map",
-            }),
-        },
-        Field::Struct(fields) => match value {
-            LoroValue::Map(map) => {
-                for (key, inner_field) in fields {
-                    match map.get(key.as_str()) {
-                        Some(val) => {
-                            validate_value(val, inner_field, &format!("{path}.{key}")).map_err(
-                                |e| ValidationError::InvalidField {
-                                    path: path.to_string(),
-                                    key: key.clone(),
-                                    source: Box::new(e),
-                                },
-                            )?;
-                        }
-                        None => {
-                            if !matches!(inner_field.as_ref(), Field::Optional(_)) {
-                                return Err(ValidationError::MissingField(key.clone()));
-                            }
-                        }
-                    }
-                }
-                Ok(())
-            }
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "struct",
-            }),
-        },
-        Field::Tree(inner) => match value {
-            // Tree's deep value is a list of node objects.
-            // Each node has: id, parent, fractional_index,
-            // index, meta.
-            // We validate the "meta" field (user data).
-            LoroValue::List(nodes) => {
-                for (i, node) in nodes.iter().enumerate() {
-                    if let LoroValue::Map(node_map) = node
-                        && let Some(meta) = node_map.get("meta")
-                    {
-                        validate_value(meta, inner, &format!("{path}[{i}].meta")).map_err(|e| {
-                            ValidationError::InvalidElement {
-                                path: path.to_string(),
-                                index: i,
-                                source: Box::new(e),
-                            }
-                        })?;
-                    }
-                }
-                Ok(())
-            }
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "tree",
-            }),
-        },
-        Field::Enum(variants) => match value {
-            LoroValue::Map(map) => {
-                let tag_value = map
-                    .get("tag")
-                    .ok_or_else(|| ValidationError::MissingField("tag".into()))?;
-                let LoroValue::String(tag) = tag_value else {
-                    return Err(ValidationError::TypeMismatch {
-                        path: format!("{path}.tag"),
-                        expected: "string",
-                    });
-                };
-                let tag: SmolStr = tag.as_str().into();
-                let Some(variant) = variants.get(&tag) else {
-                    return Err(ValidationError::UnknownVariant(tag));
-                };
-                if let Some(inner_field) = variant {
-                    let data_key = tag.as_str();
-                    let data = map
-                        .get(data_key)
-                        .ok_or_else(|| ValidationError::MissingField(data_key.into()))?;
-                    validate_value(data, inner_field, &format!("{path}.{tag}"))?;
-                }
-                Ok(())
-            }
-            _ => Err(ValidationError::TypeMismatch {
-                path: path.to_string(),
-                expected: "enum (map with tag)",
-            }),
-        },
-        // For type validation, Restricted validates inner.
-        // Authorization is handled by Validator.
+        Field::List(inner) | Field::MovableList(inner) => validate_list(value, inner, path),
+        Field::Map(inner) => validate_map(value, inner, path),
+        Field::Struct(fields) => validate_struct(value, fields, path),
+        Field::Tree(inner) => validate_tree(value, inner, path),
+        Field::Enum(variants) => validate_enum(value, variants, path),
         Field::Restricted { value: inner, .. } => validate_value(value, inner, path),
     }
+}
+
+fn type_mismatch(path: &str, expected: &'static str) -> ValidationError {
+    ValidationError::TypeMismatch {
+        path: path.to_string(),
+        expected,
+    }
+}
+
+fn validate_list(value: &LoroValue, inner: &Field, path: &str) -> Result<(), ValidationError> {
+    let LoroValue::List(items) = value else {
+        return Err(type_mismatch(path, "list"));
+    };
+    for (i, item) in items.iter().enumerate() {
+        validate_value(item, inner, &format!("{path}[{i}]")).map_err(|e| {
+            ValidationError::InvalidElement {
+                path: path.to_string(),
+                index: i,
+                source: Box::new(e),
+            }
+        })?;
+    }
+    Ok(())
+}
+
+fn validate_map(value: &LoroValue, inner: &Field, path: &str) -> Result<(), ValidationError> {
+    let LoroValue::Map(map) = value else {
+        return Err(type_mismatch(path, "map"));
+    };
+    for (key, val) in map.iter() {
+        validate_value(val, inner, &format!("{path}.{key}")).map_err(|e| {
+            ValidationError::InvalidField {
+                path: path.to_string(),
+                key: key.into(),
+                source: Box::new(e),
+            }
+        })?;
+    }
+    Ok(())
+}
+
+fn validate_struct(
+    value: &LoroValue,
+    fields: &BTreeMap<SmolStr, Box<Field>>,
+    path: &str,
+) -> Result<(), ValidationError> {
+    let LoroValue::Map(map) = value else {
+        return Err(type_mismatch(path, "struct"));
+    };
+    for (key, inner_field) in fields {
+        match map.get(key.as_str()) {
+            Some(val) => {
+                validate_value(val, inner_field, &format!("{path}.{key}")).map_err(|e| {
+                    ValidationError::InvalidField {
+                        path: path.to_string(),
+                        key: key.clone(),
+                        source: Box::new(e),
+                    }
+                })?;
+            }
+            None => {
+                if !matches!(inner_field.as_ref(), Field::Optional(_)) {
+                    return Err(ValidationError::MissingField(key.clone()));
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_tree(value: &LoroValue, inner: &Field, path: &str) -> Result<(), ValidationError> {
+    let LoroValue::List(nodes) = value else {
+        return Err(type_mismatch(path, "tree"));
+    };
+    for (i, node) in nodes.iter().enumerate() {
+        if let LoroValue::Map(node_map) = node
+            && let Some(meta) = node_map.get("meta")
+        {
+            validate_value(meta, inner, &format!("{path}[{i}].meta")).map_err(|e| {
+                ValidationError::InvalidElement {
+                    path: path.to_string(),
+                    index: i,
+                    source: Box::new(e),
+                }
+            })?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_enum(
+    value: &LoroValue,
+    variants: &BTreeMap<SmolStr, Option<Box<Field>>>,
+    path: &str,
+) -> Result<(), ValidationError> {
+    let LoroValue::Map(map) = value else {
+        return Err(type_mismatch(path, "enum (map with tag)"));
+    };
+    let tag_value = map
+        .get("tag")
+        .ok_or_else(|| ValidationError::MissingField("tag".into()))?;
+    let LoroValue::String(tag) = tag_value else {
+        return Err(ValidationError::TypeMismatch {
+            path: format!("{path}.tag"),
+            expected: "string",
+        });
+    };
+    let tag: SmolStr = tag.as_str().into();
+    let Some(variant) = variants.get(&tag) else {
+        return Err(ValidationError::UnknownVariant(tag));
+    };
+    if let Some(inner_field) = variant {
+        let data = map
+            .get(tag.as_str())
+            .ok_or_else(|| ValidationError::MissingField(tag.as_str().into()))?;
+        validate_value(data, inner_field, &format!("{path}.{tag}"))?;
+    }
+    Ok(())
 }
 
 #[cfg(test)]

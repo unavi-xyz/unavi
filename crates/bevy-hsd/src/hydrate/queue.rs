@@ -29,7 +29,6 @@ use super::compile::node::{
 
 use std::sync::{Arc, Mutex};
 
-#[expect(clippy::too_many_lines)]
 pub(crate) fn process_hsd_queue(
     docs: Query<(Entity, &HsdDoc, &SceneRegistry, &RawChangeQueue)>,
     mut commands: Commands,
@@ -50,75 +49,27 @@ pub(crate) fn process_hsd_queue(
         for change in raw_changes {
             match change {
                 RawHsdChange::NodeAdded { tree_id, parent_id } => {
-                    let id = tree_id.to_smolstr();
-                    let data = node_data_from_hsd(&hsd_map, tree_id);
-                    let inner = get_or_create_node(registry, &id, tree_id);
-                    update_node_state(&inner, &data);
-
-                    if inner.entity.lock().expect("entity lock").is_none() {
-                        commands.trigger(HsdNodeSpawned {
-                            doc: doc_ent,
-                            id: id.clone(),
-                        });
-                    }
-
-                    let parent = parent_id.map(|pid| pid.to_smolstr());
-                    commands.trigger(HsdNodeParentSet {
-                        doc: doc_ent,
-                        id: id.clone(),
-                        parent,
-                    });
-
-                    emit_node_fields(doc_ent, &id, &data, &mut commands);
+                    handle_node_added(
+                        doc_ent,
+                        tree_id,
+                        parent_id,
+                        &hsd_map,
+                        registry,
+                        &mut commands,
+                    );
                 }
-
                 RawHsdChange::NodeChanged { tree_id } => {
-                    let id = tree_id.to_smolstr();
-                    let data = node_data_from_hsd(&hsd_map, tree_id);
-                    let inner = {
-                        registry
-                            .0
-                            .node_map
-                            .lock()
-                            .expect("node_map lock")
-                            .get(&id)
-                            .cloned()
-                    };
-                    let Some(inner) = inner else { continue };
-                    update_node_state(&inner, &data);
-
-                    let parent = get_node_parent(&hsd_map, tree_id);
-                    commands.trigger(HsdNodeParentSet {
-                        doc: doc_ent,
-                        id: id.clone(),
-                        parent,
-                    });
-
-                    emit_node_fields(doc_ent, &id, &data, &mut commands);
+                    handle_node_changed(doc_ent, tree_id, &hsd_map, registry, &mut commands);
                 }
-
                 RawHsdChange::NodeRemoved { tree_id } => {
                     commands.trigger(HsdNodeDespawned {
                         doc: doc_ent,
                         id: tree_id.to_smolstr(),
                     });
                 }
-
                 RawHsdChange::MeshAdded { id } => {
-                    get_or_create_mesh(registry, &id);
-                    commands.trigger(HsdMeshSpawned {
-                        doc: doc_ent,
-                        id: id.clone(),
-                    });
-                    if let Some(hsd_mesh) = get_mesh_at(&hsd_map, &id) {
-                        commands.trigger(HsdMeshGeometrySet {
-                            doc: doc_ent,
-                            id,
-                            source: MeshGeometrySource::Hsd(Box::new(hsd_mesh)),
-                        });
-                    }
+                    handle_mesh_added(doc_ent, id, &hsd_map, registry, &mut commands);
                 }
-
                 RawHsdChange::MeshChanged { id } => {
                     if let Some(hsd_mesh) = get_mesh_at(&hsd_map, &id) {
                         commands.trigger(HsdMeshGeometrySet {
@@ -128,33 +79,119 @@ pub(crate) fn process_hsd_queue(
                         });
                     }
                 }
-
                 RawHsdChange::MeshRemoved { id } => {
                     commands.trigger(HsdMeshDespawned { doc: doc_ent, id });
                 }
-
                 RawHsdChange::MaterialAdded { id } => {
-                    get_or_create_material(registry, &id);
-                    commands.trigger(HsdMaterialSpawned {
-                        doc: doc_ent,
-                        id: id.clone(),
-                    });
-                    if let Some(hsd_mat) = get_material_at(&hsd_map, &id) {
-                        emit_material_fields(doc_ent, &id, &hsd_mat, &mut commands);
-                    }
+                    handle_material_added(doc_ent, id, &hsd_map, registry, &mut commands);
                 }
-
                 RawHsdChange::MaterialChanged { id } => {
                     if let Some(hsd_mat) = get_material_at(&hsd_map, &id) {
                         emit_material_fields(doc_ent, &id, &hsd_mat, &mut commands);
                     }
                 }
-
                 RawHsdChange::MaterialRemoved { id } => {
                     commands.trigger(HsdMaterialDespawned { doc: doc_ent, id });
                 }
             }
         }
+    }
+}
+
+fn handle_node_added(
+    doc_ent: Entity,
+    tree_id: TreeID,
+    parent_id: Option<TreeID>,
+    hsd_map: &LoroMap,
+    registry: &SceneRegistry,
+    commands: &mut Commands,
+) {
+    let id = tree_id.to_smolstr();
+    let data = node_data_from_hsd(hsd_map, tree_id);
+    let inner = get_or_create_node(registry, &id, tree_id);
+    update_node_state(&inner, &data);
+
+    if inner.entity.lock().expect("entity lock").is_none() {
+        commands.trigger(HsdNodeSpawned {
+            doc: doc_ent,
+            id: id.clone(),
+        });
+    }
+
+    let parent = parent_id.map(|pid| pid.to_smolstr());
+    commands.trigger(HsdNodeParentSet {
+        doc: doc_ent,
+        id: id.clone(),
+        parent,
+    });
+
+    emit_node_fields(doc_ent, &id, &data, commands);
+}
+
+fn handle_node_changed(
+    doc_ent: Entity,
+    tree_id: TreeID,
+    hsd_map: &LoroMap,
+    registry: &SceneRegistry,
+    commands: &mut Commands,
+) {
+    let id = tree_id.to_smolstr();
+    let data = node_data_from_hsd(hsd_map, tree_id);
+    let inner = registry
+        .0
+        .node_map
+        .lock()
+        .expect("node_map lock")
+        .get(&id)
+        .cloned();
+    let Some(inner) = inner else { return };
+    update_node_state(&inner, &data);
+
+    let parent = get_node_parent(hsd_map, tree_id);
+    commands.trigger(HsdNodeParentSet {
+        doc: doc_ent,
+        id: id.clone(),
+        parent,
+    });
+
+    emit_node_fields(doc_ent, &id, &data, commands);
+}
+
+fn handle_mesh_added(
+    doc_ent: Entity,
+    id: SmolStr,
+    hsd_map: &LoroMap,
+    registry: &SceneRegistry,
+    commands: &mut Commands,
+) {
+    get_or_create_mesh(registry, &id);
+    commands.trigger(HsdMeshSpawned {
+        doc: doc_ent,
+        id: id.clone(),
+    });
+    if let Some(hsd_mesh) = get_mesh_at(hsd_map, &id) {
+        commands.trigger(HsdMeshGeometrySet {
+            doc: doc_ent,
+            id,
+            source: MeshGeometrySource::Hsd(Box::new(hsd_mesh)),
+        });
+    }
+}
+
+fn handle_material_added(
+    doc_ent: Entity,
+    id: SmolStr,
+    hsd_map: &LoroMap,
+    registry: &SceneRegistry,
+    commands: &mut Commands,
+) {
+    get_or_create_material(registry, &id);
+    commands.trigger(HsdMaterialSpawned {
+        doc: doc_ent,
+        id: id.clone(),
+    });
+    if let Some(hsd_mat) = get_material_at(hsd_map, &id) {
+        emit_material_fields(doc_ent, &id, &hsd_mat, commands);
     }
 }
 

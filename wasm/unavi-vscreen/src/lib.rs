@@ -36,7 +36,7 @@ const HOVER: f32 = 0.05;
 const RADIUS: f32 = 0.03;
 
 const OPEN_DISTANCE: f32 = 0.5;
-const OPEN_SPEED: f32 = 1.6;
+const OPEN_SPEED: f32 = 2.0;
 const Y_FACTOR: f32 = 4.0;
 
 impl GuestScript for Script {
@@ -48,7 +48,7 @@ impl GuestScript for Script {
             cylinder.set_resolution(64);
 
             let mat = doc.create_material();
-            mat.set_base_color(&[1.0, 1.0, 1.0, 0.95]);
+            mat.set_base_color(&[1.0, 1.0, 1.0, 0.97]);
             mat.set_metallic(0.8);
             mat.set_roughness(0.8);
 

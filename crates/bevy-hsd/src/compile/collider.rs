@@ -13,10 +13,7 @@ pub fn parse_collider_data(
     for (ent, data) in &colliders {
         #[expect(clippy::cast_possible_truncation)]
         match data {
-            HsdCollider::Capsule {
-                radius,
-                height,
-            } => {
+            HsdCollider::Capsule { radius, height } => {
                 let (r, h) = (*radius as f32, *height as f32);
                 if !valid_positive(r) || !valid_nonneg(h) {
                     warn!("invalid capsule dims ({r}, {h}), skipping collider {ent}");
@@ -32,10 +29,7 @@ pub fn parse_collider_data(
                 }
                 commands.entity(ent).insert(Collider::cuboid(x, y, z));
             }
-            HsdCollider::Cylinder {
-                radius,
-                height,
-            } => {
+            HsdCollider::Cylinder { radius, height } => {
                 let (r, h) = (*radius as f32, *height as f32);
                 if !valid_positive(r) || !valid_nonneg(h) {
                     warn!("invalid cylinder dims ({r}, {h}), skipping collider {ent}");

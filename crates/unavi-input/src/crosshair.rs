@@ -26,8 +26,7 @@ pub(crate) fn spawn_crosshair(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let mat = materials.add(StandardMaterial {
-        alpha_mode: AlphaMode::Multiply,
-        base_color: Color::srgba(0.0, 0.0, 0.0, 0.97),
+        base_color: Color::BLACK,
         unlit: true,
         ..default()
     });

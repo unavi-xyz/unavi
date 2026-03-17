@@ -19,12 +19,7 @@ impl GuestCone for ConeWrapped {
     }
 
     fn mesh(&self) -> Mesh {
-        crate::convert_bevy_mesh(
-            self.inner
-                .mesh()
-                .resolution(self.resolution.get())
-                .build(),
-        )
+        crate::convert_bevy_mesh(self.inner.mesh().resolution(self.resolution.get()).build())
     }
 
     fn resolution(&self) -> u32 {

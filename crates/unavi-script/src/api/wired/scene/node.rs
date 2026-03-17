@@ -423,10 +423,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         };
         #[expect(clippy::cast_possible_truncation)]
         let collider = match &c {
-            HsdCollider::Capsule {
-                radius,
-                height,
-            } => Collider::Capsule(ColliderCapsule {
+            HsdCollider::Capsule { radius, height } => Collider::Capsule(ColliderCapsule {
                 height: *height as f32,
                 radius: *radius as f32,
             }),
@@ -447,10 +444,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 y: *y as f32,
                 z: *z as f32,
             }),
-            HsdCollider::Cylinder {
-                radius,
-                height,
-            } => Collider::Cylinder(ColliderCylinder {
+            HsdCollider::Cylinder { radius, height } => Collider::Cylinder(ColliderCylinder {
                 height: *height as f32,
                 radius: *radius as f32,
             }),

@@ -1,17 +1,10 @@
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
-use loro::TreeID;
 use smol_str::SmolStr;
 
-use crate::{
-    cache::{MaterialChanges, MaterialState, MeshChanges, MeshState, NodeChanges},
-    data::{HsdMaterial, HsdMesh, HsdNodeData},
-};
-
-/// Raw entry from the Loro subscription callback (IDs only, no Loro reads).
 #[derive(Debug)]
-pub(crate) enum RawHsdChange {
+pub enum RawHsdChange {
     MaterialAdded {
         id: SmolStr,
     },
@@ -31,86 +24,44 @@ pub(crate) enum RawHsdChange {
         id: SmolStr,
     },
     NodeAdded {
-        tree_id: TreeID,
-        parent_id: Option<TreeID>,
+        tree_id: loro::TreeID,
+        parent_id: Option<loro::TreeID>,
     },
     NodeChanged {
-        tree_id: TreeID,
+        tree_id: loro::TreeID,
     },
     NodeRemoved {
-        tree_id: TreeID,
+        tree_id: loro::TreeID,
     },
 }
 
 #[derive(Component, Clone)]
-pub struct DocChangeQueue(pub Arc<Mutex<Vec<DocChange>>>);
+pub struct RawChangeQueue(pub Arc<Mutex<Vec<RawHsdChange>>>);
 
-pub enum MeshData {
-    Hsd(HsdMesh),
-    Inline(MeshState),
-}
+#[derive(Component, Clone)]
+pub struct ScriptEventQueue(pub Arc<Mutex<Vec<ScriptQueuedEvent>>>);
 
-pub enum MaterialData {
-    Hsd(Box<HsdMaterial>),
-    Inline(MaterialState),
-}
-
-pub enum DocChangeKind {
-    NodeAdded {
-        id: SmolStr,
-        parent_id: Option<SmolStr>,
-        data: HsdNodeData,
-    },
-    NodeChanged {
-        id: SmolStr,
-        data: HsdNodeData,
-    },
-    NodeParentChanged {
-        id: SmolStr,
-        parent_id: Option<SmolStr>,
-    },
-    NodeRemoved {
+pub enum ScriptQueuedEvent {
+    MaterialDespawned {
         id: SmolStr,
     },
-    NodeScriptChanged {
-        id: SmolStr,
-        changes: Box<NodeChanges>,
-    },
-    MeshAdded {
-        id: SmolStr,
-        data: MeshData,
-    },
-    MeshChanged {
-        id: SmolStr,
-        data: MeshData,
-    },
-    MeshRemoved {
+    MaterialSpawned {
         id: SmolStr,
     },
-    MeshScriptChanged {
-        id: SmolStr,
-        changes: Box<MeshChanges>,
-        state: Box<MeshState>,
-    },
-    MaterialAdded {
-        id: SmolStr,
-        data: MaterialData,
-    },
-    MaterialChanged {
-        id: SmolStr,
-        data: MaterialData,
-    },
-    MaterialRemoved {
+    MeshDespawned {
         id: SmolStr,
     },
-    MaterialScriptChanged {
+    MeshSpawned {
         id: SmolStr,
-        changes: Box<MaterialChanges>,
-        state: Box<MaterialState>,
     },
-}
-
-pub struct DocChange {
-    pub doc: Entity,
-    pub kind: DocChangeKind,
+    NodeDespawned {
+        id: SmolStr,
+    },
+    NodeParentSet {
+        id: SmolStr,
+        parent: Option<SmolStr>,
+    },
+    NodeSpawned {
+        id: SmolStr,
+    },
 }

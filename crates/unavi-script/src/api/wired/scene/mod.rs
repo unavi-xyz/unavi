@@ -1,10 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::Entity;
-use bevy_hsd::{
-    cache::SceneRegistryInner,
-    hydrate::events::{DocChange, DocChangeKind},
-};
+use bevy_hsd::{cache::SceneRegistryInner, hydrate::events::ScriptQueuedEvent};
 use loro::LoroDoc;
 use smol_str::SmolStr;
 use wasmtime_wasi::ResourceTable;
@@ -36,7 +33,7 @@ pub struct WiredSceneRt {
     pub doc: Arc<LoroDoc>,
     pub doc_entity: Entity,
     pub doc_id: blake3::Hash,
-    pub events: Arc<Mutex<Vec<DocChange>>>,
+    pub events: Arc<Mutex<Vec<ScriptQueuedEvent>>>,
     pub perms: ScriptPermissions,
     pub registry: Arc<SceneRegistryInner>,
     pub self_node_id: SmolStr,
@@ -44,11 +41,8 @@ pub struct WiredSceneRt {
 }
 
 impl WiredSceneRt {
-    pub(super) fn push_event(&self, kind: DocChangeKind) {
-        self.events.lock().expect("events lock").push(DocChange {
-            doc: self.doc_entity,
-            kind,
-        });
+    pub(super) fn push_script_event(&self, ev: ScriptQueuedEvent) {
+        self.events.lock().expect("events lock").push(ev);
     }
 
     pub(super) fn check_hsd_write(&self) -> wasmtime::Result<()> {

@@ -3,7 +3,7 @@ use std::sync::{Arc, atomic::Ordering};
 use bevy::prelude::Transform as BevyTransform;
 use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner};
 use bevy_hsd::data::HsdCollider;
-use bevy_hsd::hydrate::events::DocChangeKind;
+use bevy_hsd::hydrate::events::ScriptQueuedEvent;
 use bytes::Bytes;
 use wasmtime::component::Resource;
 use wired_schemas::HydratedHash;
@@ -51,9 +51,16 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         if inner.is_virtual {
             return Ok(());
         }
-        inner.state.lock().expect("node state lock").name.clone_from(&value);
+        inner
+            .state
+            .lock()
+            .expect("node state lock")
+            .name
+            .clone_from(&value);
         if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").name = Some(value);
+            inner.hsd_changes.lock().expect("hsd_changes lock").name = Some(value);
+        } else {
+            inner.dirty.lock().expect("dirty lock").name = true;
         }
         Ok(())
     }
@@ -89,8 +96,13 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             .transform
             .translation = bevy::math::Vec3::new(value.x, value.y, value.z);
         if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").translation =
-                Some([f64::from(value.x), f64::from(value.y), f64::from(value.z)]);
+            inner
+                .hsd_changes
+                .lock()
+                .expect("hsd_changes lock")
+                .translation = Some([f64::from(value.x), f64::from(value.y), f64::from(value.z)]);
+        } else {
+            inner.dirty.lock().expect("dirty lock").transform = true;
         }
         Ok(())
     }
@@ -127,12 +139,14 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             .transform
             .rotation = bevy::math::Quat::from_xyzw(value.x, value.y, value.z, value.w);
         if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").rotation = Some([
+            inner.hsd_changes.lock().expect("hsd_changes lock").rotation = Some([
                 f64::from(value.x),
                 f64::from(value.y),
                 f64::from(value.z),
                 f64::from(value.w),
             ]);
+        } else {
+            inner.dirty.lock().expect("dirty lock").transform = true;
         }
         Ok(())
     }
@@ -155,8 +169,10 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         inner.state.lock().expect("node state lock").transform.scale =
             bevy::math::Vec3::new(value.x, value.y, value.z);
         if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").scale =
+            inner.hsd_changes.lock().expect("hsd_changes lock").scale =
                 Some([f64::from(value.x), f64::from(value.y), f64::from(value.z)]);
+        } else {
+            inner.dirty.lock().expect("dirty lock").transform = true;
         }
         Ok(())
     }
@@ -212,7 +228,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             scale: bevy::math::Vec3::new(value.scale.x, value.scale.y, value.scale.z),
         };
         if inner.sync.load(Ordering::Relaxed) {
-            let mut ch = inner.changes.lock().expect("changes lock");
+            let mut ch = inner.hsd_changes.lock().expect("hsd_changes lock");
             ch.translation = Some([
                 f64::from(value.translation.x),
                 f64::from(value.translation.y),
@@ -229,6 +245,8 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 f64::from(value.scale.y),
                 f64::from(value.scale.z),
             ]);
+        } else {
+            inner.dirty.lock().expect("dirty lock").transform = true;
         }
         Ok(())
     }
@@ -313,9 +331,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             child_state.parent = Some(Arc::downgrade(&parent_inner));
         }
 
-        self.push_event(DocChangeKind::NodeParentChanged {
+        self.push_script_event(ScriptQueuedEvent::NodeParentSet {
             id: child_inner.id.clone(),
-            parent_id: Some(parent_inner.id.clone()),
+            parent: Some(parent_inner.id.clone()),
         });
         Ok(())
     }
@@ -343,9 +361,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         }
         child_inner.state.lock().expect("child state lock").parent = None;
 
-        self.push_event(DocChangeKind::NodeParentChanged {
+        self.push_script_event(ScriptQueuedEvent::NodeParentSet {
             id: child_inner.id.clone(),
-            parent_id: None,
+            parent: None,
         });
         Ok(())
     }
@@ -383,9 +401,20 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             Some(res) => Some(self.table.get(res)?.inner.id.clone()),
             None => None,
         };
-        node_inner.state.lock().expect("node state lock").mesh.clone_from(&mesh_id);
+        node_inner
+            .state
+            .lock()
+            .expect("node state lock")
+            .mesh
+            .clone_from(&mesh_id);
         if node_inner.sync.load(Ordering::Relaxed) {
-            node_inner.changes.lock().expect("changes lock").mesh = Some(mesh_id);
+            node_inner
+                .hsd_changes
+                .lock()
+                .expect("hsd_changes lock")
+                .mesh = Some(mesh_id);
+        } else {
+            node_inner.dirty.lock().expect("dirty lock").mesh = true;
         }
         Ok(())
     }
@@ -423,9 +452,20 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             Some(res) => Some(self.table.get(res)?.inner.id.clone()),
             None => None,
         };
-        node_inner.state.lock().expect("node state lock").material.clone_from(&mat_id);
+        node_inner
+            .state
+            .lock()
+            .expect("node state lock")
+            .material
+            .clone_from(&mat_id);
         if node_inner.sync.load(Ordering::Relaxed) {
-            node_inner.changes.lock().expect("changes lock").material = Some(mat_id);
+            node_inner
+                .hsd_changes
+                .lock()
+                .expect("hsd_changes lock")
+                .material = Some(mat_id);
+        } else {
+            node_inner.dirty.lock().expect("dirty lock").material = true;
         }
         Ok(())
     }
@@ -569,10 +609,13 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 }
             }),
         };
-        inner.state.lock().expect("node state lock").collider.clone_from(&hsd_collider);
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").collider = Some(hsd_collider);
-        }
+        inner
+            .state
+            .lock()
+            .expect("node state lock")
+            .collider
+            .clone_from(&hsd_collider);
+        inner.dirty.lock().expect("dirty lock").collider = true;
         Ok(())
     }
 
@@ -613,10 +656,13 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 ..Default::default()
             }
         });
-        inner.state.lock().expect("node state lock").rigid_body.clone_from(&rb);
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").rigid_body = Some(rb);
-        }
+        inner
+            .state
+            .lock()
+            .expect("node state lock")
+            .rigid_body
+            .clone_from(&rb);
+        inner.dirty.lock().expect("dirty lock").rigid_body = true;
         Ok(())
     }
 

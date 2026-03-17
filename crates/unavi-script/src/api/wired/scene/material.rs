@@ -33,11 +33,7 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
         Ok(inner.sync.load(Ordering::Relaxed))
     }
 
-    async fn set_sync(
-        &mut self,
-        self_: Resource<Material>,
-        value: bool,
-    ) -> wasmtime::Result<()> {
+    async fn set_sync(&mut self, self_: Resource<Material>, value: bool) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         if value {
             self.check_hsd_write()?;
@@ -62,9 +58,16 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
         value: Option<String>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        inner.state.lock().expect("material state lock").name.clone_from(&value);
+        inner
+            .state
+            .lock()
+            .expect("material state lock")
+            .name
+            .clone_from(&value);
         if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").name = Some(value);
+            inner.hsd_changes.lock().expect("hsd_changes lock").name = Some(value);
+        } else {
+            inner.dirty.lock().expect("dirty lock").name = true;
         }
         Ok(())
     }
@@ -91,7 +94,13 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
             .expect("material state lock")
             .alpha_cutoff = Some(value);
         if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").alpha_cutoff = Some(f64::from(value));
+            inner
+                .hsd_changes
+                .lock()
+                .expect("hsd_changes lock")
+                .alpha_cutoff = Some(f64::from(value));
+        } else {
+            inner.dirty.lock().expect("dirty lock").alpha_cutoff = true;
         }
         Ok(())
     }
@@ -127,9 +136,20 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
             AlphaMode::Mask => "mask".to_string(),
             AlphaMode::Opaque => "opaque".to_string(),
         });
-        inner.state.lock().expect("material state lock").alpha_mode.clone_from(&mode_str);
+        inner
+            .state
+            .lock()
+            .expect("material state lock")
+            .alpha_mode
+            .clone_from(&mode_str);
         if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").alpha_mode = Some(mode_str);
+            inner
+                .hsd_changes
+                .lock()
+                .expect("hsd_changes lock")
+                .alpha_mode = Some(mode_str);
+        } else {
+            inner.dirty.lock().expect("dirty lock").alpha_mode = true;
         }
         Ok(())
     }
@@ -152,8 +172,13 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
         let a = value.get(3).copied().unwrap_or(1.0);
         inner.state.lock().expect("material state lock").base_color = [r, g, b, a];
         if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").base_color =
-                Some([f64::from(r), f64::from(g), f64::from(b), f64::from(a)]);
+            inner
+                .hsd_changes
+                .lock()
+                .expect("hsd_changes lock")
+                .base_color = Some([f64::from(r), f64::from(g), f64::from(b), f64::from(a)]);
+        } else {
+            inner.dirty.lock().expect("dirty lock").base_color = true;
         }
         Ok(())
     }
@@ -171,7 +196,9 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("material state lock").metallic = value;
         if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").metallic = Some(f64::from(value));
+            inner.hsd_changes.lock().expect("hsd_changes lock").metallic = Some(f64::from(value));
+        } else {
+            inner.dirty.lock().expect("dirty lock").metallic = true;
         }
         Ok(())
     }
@@ -189,7 +216,13 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("material state lock").roughness = value;
         if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").roughness = Some(f64::from(value));
+            inner
+                .hsd_changes
+                .lock()
+                .expect("hsd_changes lock")
+                .roughness = Some(f64::from(value));
+        } else {
+            inner.dirty.lock().expect("dirty lock").roughness = true;
         }
         Ok(())
     }
@@ -215,7 +248,13 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
             .expect("material state lock")
             .double_sided = value;
         if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").double_sided = Some(value);
+            inner
+                .hsd_changes
+                .lock()
+                .expect("hsd_changes lock")
+                .double_sided = Some(value);
+        } else {
+            inner.dirty.lock().expect("dirty lock").double_sided = true;
         }
         Ok(())
     }

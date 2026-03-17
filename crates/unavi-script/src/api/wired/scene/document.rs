@@ -1,11 +1,10 @@
 use std::sync::{Arc, Mutex, atomic::Ordering};
 
 use bevy_hsd::cache::{
-    MaterialChanges, MaterialInner, MaterialState, MeshChanges, MeshInner, MeshState, NodeChanges,
-    NodeInner, NodeState, SyncOp,
+    MaterialDirty, MaterialHsdChanges, MaterialInner, MaterialState, MeshDirty, MeshHsdChanges,
+    MeshInner, MeshState, NodeDirty, NodeHsdChanges, NodeInner, NodeState, SyncOp,
 };
-use bevy_hsd::data::HsdNodeData;
-use bevy_hsd::hydrate::events::{DocChangeKind, MaterialData, MeshData};
+use bevy_hsd::hydrate::events::ScriptQueuedEvent;
 use rand::{Rng, distr::Alphanumeric};
 use smol_str::SmolStr;
 use wasmtime::component::Resource;
@@ -46,12 +45,12 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         _self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<Material>> {
         let id = gen_id();
-        let state = MaterialState::default();
         let inner = Arc::new(MaterialInner {
-            changes: Mutex::new(MaterialChanges::default()),
+            dirty: Mutex::new(MaterialDirty::default()),
             entity: Mutex::new(None),
+            hsd_changes: Mutex::new(MaterialHsdChanges::default()),
             id: id.clone(),
-            state: Mutex::new(state.clone()),
+            state: Mutex::new(MaterialState::default()),
             sync: false.into(),
         });
         self.registry
@@ -59,10 +58,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             .lock()
             .expect("materials lock")
             .insert(id.clone(), Arc::clone(&inner));
-        self.push_event(DocChangeKind::MaterialAdded {
-            id: id.clone(),
-            data: MaterialData::Inline(state),
-        });
+        self.push_script_event(ScriptQueuedEvent::MaterialSpawned { id: id.clone() });
         if self.registry.doc_sync.load(Ordering::Relaxed) {
             self.registry
                 .pending_doc_ops
@@ -78,12 +74,12 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         _self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<Mesh>> {
         let id = gen_id();
-        let state = MeshState::default();
         let inner = Arc::new(MeshInner {
-            changes: Mutex::new(MeshChanges::default()),
+            dirty: Mutex::new(MeshDirty::default()),
             entity: Mutex::new(None),
+            hsd_changes: Mutex::new(MeshHsdChanges::default()),
             id: id.clone(),
-            state: Mutex::new(state.clone()),
+            state: Mutex::new(MeshState::default()),
             sync: false.into(),
         });
         self.registry
@@ -91,10 +87,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             .lock()
             .expect("meshes lock")
             .insert(id.clone(), Arc::clone(&inner));
-        self.push_event(DocChangeKind::MeshAdded {
-            id: id.clone(),
-            data: MeshData::Inline(state),
-        });
+        self.push_script_event(ScriptQueuedEvent::MeshSpawned { id: id.clone() });
         if self.registry.doc_sync.load(Ordering::Relaxed) {
             self.registry
                 .pending_doc_ops
@@ -111,8 +104,9 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
     ) -> wasmtime::Result<Resource<HostNode>> {
         let id = gen_id();
         let inner = Arc::new(NodeInner {
-            changes: Mutex::new(NodeChanges::default()),
+            dirty: Mutex::new(NodeDirty::default()),
             entity: Mutex::new(None),
+            hsd_changes: Mutex::new(NodeHsdChanges::default()),
             id: id.clone(),
             is_virtual: false,
             state: Mutex::new(NodeState::default()),
@@ -129,11 +123,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             .lock()
             .expect("node_map lock")
             .insert(id.clone(), Arc::clone(&inner));
-        self.push_event(DocChangeKind::NodeAdded {
-            id: id.clone(),
-            parent_id: None,
-            data: HsdNodeData::default(),
-        });
+        self.push_script_event(ScriptQueuedEvent::NodeSpawned { id: id.clone() });
         if self.registry.doc_sync.load(Ordering::Relaxed) {
             self.registry
                 .pending_doc_ops
@@ -173,12 +163,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         _self_: Resource<Document>,
     ) -> wasmtime::Result<Vec<Resource<HostNode>>> {
-        let nodes: Vec<Arc<NodeInner>> = self
-            .registry
-            .nodes
-            .lock()
-            .expect("nodes lock")
-            .clone();
+        let nodes: Vec<Arc<NodeInner>> = self.registry.nodes.lock().expect("nodes lock").clone();
         let mut out = Vec::with_capacity(nodes.len());
         for inner in nodes {
             out.push(self.table.push(HostNode { inner })?);
@@ -231,17 +216,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&value)?.inner);
         let id = inner.id.clone();
-        self.registry
-            .nodes
-            .lock()
-            .expect("nodes lock")
-            .retain(|n| n.id != id);
-        self.registry
-            .node_map
-            .lock()
-            .expect("node_map lock")
-            .remove(&id);
-        self.push_event(DocChangeKind::NodeRemoved { id: id.clone() });
+        self.push_script_event(ScriptQueuedEvent::NodeDespawned { id: id.clone() });
         if self.registry.doc_sync.load(Ordering::Relaxed) {
             self.registry
                 .pending_doc_ops
@@ -259,12 +234,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&value)?.inner);
         let id = inner.id.clone();
-        self.registry
-            .meshes
-            .lock()
-            .expect("meshes lock")
-            .remove(&id);
-        self.push_event(DocChangeKind::MeshRemoved { id: id.clone() });
+        self.push_script_event(ScriptQueuedEvent::MeshDespawned { id: id.clone() });
         if self.registry.doc_sync.load(Ordering::Relaxed) {
             self.registry
                 .pending_doc_ops
@@ -282,12 +252,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&value)?.inner);
         let id = inner.id.clone();
-        self.registry
-            .materials
-            .lock()
-            .expect("materials lock")
-            .remove(&id);
-        self.push_event(DocChangeKind::MaterialRemoved { id: id.clone() });
+        self.push_script_event(ScriptQueuedEvent::MaterialDespawned { id: id.clone() });
         if self.registry.doc_sync.load(Ordering::Relaxed) {
             self.registry
                 .pending_doc_ops

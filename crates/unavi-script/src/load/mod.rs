@@ -6,7 +6,7 @@ use bevy_async_task::TaskPool;
 use bevy_hsd::{
     HsdDoc, HsdRecordId,
     cache::{SceneRegistry, SceneRegistryInner},
-    hydrate::events::DocChangeQueue,
+    hydrate::events::ScriptEventQueue,
 };
 use log::{ScriptStderr, ScriptStdout};
 use loro::{LoroDoc, TreeID};
@@ -78,7 +78,7 @@ pub(crate) fn load_scripts(
     hsd_docs: Query<&HsdDoc>,
     hsd_record_ids: Query<&HsdRecordId>,
     registries: Query<&SceneRegistry>,
-    hsd_change_queues: Query<&DocChangeQueue>,
+    hsd_change_queues: Query<&ScriptEventQueue>,
     permissions: Query<Option<&ScriptPermissions>>,
     local_agent_ent: Query<Entity, With<LocalAgent>>,
 ) {
@@ -132,7 +132,7 @@ pub(crate) fn load_scripts(
                 let agent_events = Arc::new(Mutex::new(Vec::new()));
                 let doc_ent = commands
                     .spawn((
-                        DocChangeQueue(Arc::clone(&agent_events)),
+                        ScriptEventQueue(Arc::clone(&agent_events)),
                         HsdRecordId(doc_id),
                         SceneRegistry(Arc::clone(&placeholder_registry)),
                     ))

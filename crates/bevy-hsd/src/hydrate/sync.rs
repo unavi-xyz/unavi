@@ -7,12 +7,10 @@ use smol_str::ToSmolStr;
 use crate::HsdDoc;
 use crate::cache::{SceneRegistry, SyncOp};
 
-/// Syncs ECS global transforms into the scene registry node state cache.
-///
-/// # Panics
-///
-/// Panics if any registry mutex is poisoned.
-pub fn sync_ecs_to_cache(registries: Query<&SceneRegistry>, transforms: Query<&GlobalTransform>) {
+pub(crate) fn sync_ecs_to_cache(
+    registries: Query<&SceneRegistry>,
+    transforms: Query<&GlobalTransform>,
+) {
     for registry in &registries {
         let nodes = registry.0.nodes.lock().expect("nodes lock");
         for node_inner in nodes.iter() {
@@ -27,12 +25,7 @@ pub fn sync_ecs_to_cache(registries: Query<&SceneRegistry>, transforms: Query<&G
     }
 }
 
-/// Flushes pending script changes from the scene registry into the HSD document.
-///
-/// # Panics
-///
-/// Panics if any registry or document mutex is poisoned.
-pub fn sync_to_hsd(docs: Query<(&HsdDoc, &SceneRegistry)>) {
+pub(crate) fn sync_to_hsd(docs: Query<(&HsdDoc, &SceneRegistry)>) {
     for (hsd_doc, registry) in &docs {
         let doc = &hsd_doc.0;
         let wrote = process_sync_ops(doc, registry)
@@ -162,14 +155,13 @@ fn sync_node_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
             if inner.is_virtual {
                 continue;
             }
-            let ch = inner.changes.lock().expect("changes lock");
+            let ch = inner.hsd_changes.lock().expect("hsd_changes lock");
             if ch.is_empty() {
                 continue;
             }
 
             let hsd_map = doc.get_map("hsd");
-            let Ok(tree) = hsd_map.get_or_create_container("nodes", LoroTree::new())
-            else {
+            let Ok(tree) = hsd_map.get_or_create_container("nodes", LoroTree::new()) else {
                 continue;
             };
 
@@ -237,19 +229,16 @@ fn sync_mesh_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
     {
         let meshes = registry.0.meshes.lock().expect("meshes lock");
         for inner in meshes.values() {
-            let ch = inner.changes.lock().expect("changes lock");
+            let ch = inner.hsd_changes.lock().expect("hsd_changes lock");
             if ch.is_empty() {
                 continue;
             }
 
             let hsd_map = doc.get_map("hsd");
-            let Ok(meshes_map) =
-                hsd_map.get_or_create_container("meshes", LoroMap::new())
-            else {
+            let Ok(meshes_map) = hsd_map.get_or_create_container("meshes", LoroMap::new()) else {
                 continue;
             };
-            let Ok(map) =
-                meshes_map.get_or_create_container(inner.id.as_str(), LoroMap::new())
+            let Ok(map) = meshes_map.get_or_create_container(inner.id.as_str(), LoroMap::new())
             else {
                 continue;
             };
@@ -274,19 +263,16 @@ fn sync_material_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
     {
         let materials = registry.0.materials.lock().expect("materials lock");
         for inner in materials.values() {
-            let ch = inner.changes.lock().expect("changes lock");
+            let ch = inner.hsd_changes.lock().expect("hsd_changes lock");
             if ch.is_empty() {
                 continue;
             }
 
             let hsd_map = doc.get_map("hsd");
-            let Ok(mats_map) =
-                hsd_map.get_or_create_container("materials", LoroMap::new())
-            else {
+            let Ok(mats_map) = hsd_map.get_or_create_container("materials", LoroMap::new()) else {
                 continue;
             };
-            let Ok(map) =
-                mats_map.get_or_create_container(inner.id.as_str(), LoroMap::new())
+            let Ok(map) = mats_map.get_or_create_container(inner.id.as_str(), LoroMap::new())
             else {
                 continue;
             };

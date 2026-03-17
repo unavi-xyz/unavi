@@ -5,7 +5,6 @@ use smol_str::SmolStr;
 use std::sync::Arc;
 
 pub mod cache;
-pub(crate) mod compile;
 pub mod data;
 pub mod hydrate;
 
@@ -13,25 +12,43 @@ pub struct HsdPlugin;
 
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
+        app.add_observer(hydrate::compile::collider::on_collider_blobs_loaded)
+            .add_observer(hydrate::compile::material::handle_hsd_material_alpha_cutoff_set)
+            .add_observer(hydrate::compile::material::handle_hsd_material_alpha_mode_set)
+            .add_observer(hydrate::compile::material::handle_hsd_material_base_color_set)
+            .add_observer(hydrate::compile::material::handle_hsd_material_despawned)
+            .add_observer(hydrate::compile::material::handle_hsd_material_double_sided_set)
+            .add_observer(hydrate::compile::material::handle_hsd_material_metallic_set)
+            .add_observer(hydrate::compile::material::handle_hsd_material_name_set)
+            .add_observer(hydrate::compile::material::handle_hsd_material_roughness_set)
+            .add_observer(hydrate::compile::material::handle_hsd_material_spawned)
+            .add_observer(hydrate::compile::material::on_material_blobs_loaded)
+            .add_observer(hydrate::compile::mesh::handle_hsd_mesh_despawned)
+            .add_observer(hydrate::compile::mesh::handle_hsd_mesh_geometry_set)
+            .add_observer(hydrate::compile::mesh::handle_hsd_mesh_spawned)
+            .add_observer(hydrate::compile::mesh::on_mesh_blobs_loaded)
+            .add_observer(hydrate::compile::node::handle_hsd_node_collider_set)
+            .add_observer(hydrate::compile::node::handle_hsd_node_despawned)
+            .add_observer(hydrate::compile::node::handle_hsd_node_material_set)
+            .add_observer(hydrate::compile::node::handle_hsd_node_mesh_set)
+            .add_observer(hydrate::compile::node::handle_hsd_node_name_set)
+            .add_observer(hydrate::compile::node::handle_hsd_node_parent_set)
+            .add_observer(hydrate::compile::node::handle_hsd_node_rigid_body_set)
+            .add_observer(hydrate::compile::node::handle_hsd_node_scripts_set)
+            .add_observer(hydrate::compile::node::handle_hsd_node_spawned)
+            .add_observer(hydrate::compile::node::handle_hsd_node_transform_set)
+            .add_observer(hydrate::compile::node::on_material_compiled)
+            .add_observer(hydrate::compile::node::on_mesh_compiled)
+            .add_observer(hydrate::compile::node::on_mesh_ref_removed)
+            .add_observer(hydrate::compile::node::on_mesh_ref_set);
+
         app.add_systems(
             FixedUpdate,
             (
                 hydrate::init::init_hsd_doc,
                 hydrate::sync::sync_to_hsd,
-                hydrate::apply::flush_scene_dirty,
-                hydrate::apply::apply_doc_changes,
-                (
-                    compile::material::parse_material_data,
-                    compile::mesh::parse_mesh_data,
-                    compile::collider::parse_collider_data,
-                    compile::rigid_body::parse_rigid_body_data,
-                ),
-                (
-                    compile::collider::compile_colliders,
-                    compile::material::compile_materials,
-                    compile::mesh::compile_meshes,
-                ),
-                compile::node::compile_nodes,
+                hydrate::queue::process_hsd_queue,
+                hydrate::flush::flush_script_dirty,
             )
                 .chain(),
         )

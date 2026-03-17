@@ -85,9 +85,14 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         value: Option<String>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        inner.state.lock().expect("mesh state lock").name.clone_from(&value);
+        inner
+            .state
+            .lock()
+            .expect("mesh state lock")
+            .name
+            .clone_from(&value);
         if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").name = Some(value);
+            inner.hsd_changes.lock().expect("hsd_changes lock").name = Some(value);
         }
         Ok(())
     }
@@ -107,7 +112,8 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         let topo = wit_topo_to_bevy(value);
         inner.state.lock().expect("mesh state lock").topology = topo;
         if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").topology = Some(bevy_topo_to_i64(topo));
+            inner.hsd_changes.lock().expect("hsd_changes lock").topology =
+                Some(bevy_topo_to_i64(topo));
         }
         Ok(())
     }
@@ -127,9 +133,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
             Indices::Half(h) => h.into_iter().map(u32::from).collect(),
             Indices::Full(f) => f,
         });
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").geometry = true;
-        }
+        inner.dirty.lock().expect("dirty lock").geometry = true;
         Ok(())
     }
 
@@ -145,9 +149,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").colors = values;
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").geometry = true;
-        }
+        inner.dirty.lock().expect("dirty lock").geometry = true;
         Ok(())
     }
 
@@ -163,9 +165,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").normals = values;
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").geometry = true;
-        }
+        inner.dirty.lock().expect("dirty lock").geometry = true;
         Ok(())
     }
 
@@ -186,9 +186,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").positions = values;
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").geometry = true;
-        }
+        inner.dirty.lock().expect("dirty lock").geometry = true;
         Ok(())
     }
 
@@ -209,9 +207,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").tangents = values;
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").geometry = true;
-        }
+        inner.dirty.lock().expect("dirty lock").geometry = true;
         Ok(())
     }
 
@@ -227,9 +223,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").uv0 = values;
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").geometry = true;
-        }
+        inner.dirty.lock().expect("dirty lock").geometry = true;
         Ok(())
     }
 
@@ -245,9 +239,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         inner.state.lock().expect("mesh state lock").uv1 = values;
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.changes.lock().expect("changes lock").geometry = true;
-        }
+        inner.dirty.lock().expect("dirty lock").geometry = true;
         Ok(())
     }
 

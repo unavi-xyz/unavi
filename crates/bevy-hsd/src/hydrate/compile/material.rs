@@ -86,6 +86,7 @@ pub(crate) fn handle_hsd_material_spawned(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, "material spawned");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -112,6 +113,7 @@ pub(crate) fn handle_hsd_material_despawned(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, "material despawned");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -132,6 +134,7 @@ pub(crate) fn handle_hsd_material_alpha_cutoff_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, value = ev.value, "material alpha cutoff set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -154,6 +157,7 @@ pub(crate) fn handle_hsd_material_alpha_mode_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, mode = ?ev.mode, "material alpha mode set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -176,6 +180,7 @@ pub(crate) fn handle_hsd_material_base_color_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, color = ?ev.color, "material base color set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -199,6 +204,7 @@ pub(crate) fn handle_hsd_material_double_sided_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, value = ev.value, "material double sided set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -221,6 +227,7 @@ pub(crate) fn handle_hsd_material_metallic_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, value = ev.value, "material metallic set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -243,6 +250,7 @@ pub(crate) fn handle_hsd_material_name_set(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, name = ?ev.name, "material name set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -267,6 +275,7 @@ pub(crate) fn handle_hsd_material_roughness_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, value = ev.value, "material roughness set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };

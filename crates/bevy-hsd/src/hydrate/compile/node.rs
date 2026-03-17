@@ -84,6 +84,7 @@ pub(crate) fn handle_hsd_node_spawned(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, "node spawned");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -114,6 +115,7 @@ pub(crate) fn handle_hsd_node_despawned(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, "node despawned");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -143,6 +145,7 @@ pub(crate) fn handle_hsd_node_collider_set(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, has_collider = ev.collider.is_some(), "node collider set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -169,6 +172,7 @@ pub(crate) fn handle_hsd_node_material_set(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, material = ?ev.material, "node material set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -193,6 +197,7 @@ pub(crate) fn handle_hsd_node_mesh_set(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, mesh = ?ev.mesh, "node mesh set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -217,6 +222,7 @@ pub(crate) fn handle_hsd_node_name_set(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, name = ?ev.name, "node name set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -241,6 +247,7 @@ pub(crate) fn handle_hsd_node_parent_set(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, parent = ?ev.parent, "node parent set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -274,6 +281,7 @@ pub(crate) fn handle_hsd_node_rigid_body_set(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, kind = ?ev.rigid_body.as_ref().map(|r| &r.kind), "node rigid body set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -318,6 +326,7 @@ pub(crate) fn handle_hsd_node_scripts_set(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, count = ev.scripts.len(), "node scripts set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -343,6 +352,7 @@ pub(crate) fn handle_hsd_node_transform_set(
     mut transforms: Query<&mut Transform>,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, "node transform set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -372,6 +382,7 @@ pub(crate) fn on_mesh_ref_set(
     mut default_material: Local<Option<Handle<StandardMaterial>>>,
 ) {
     let node_ent = trigger.entity;
+    debug!(entity = %node_ent, "mesh ref set");
     let Ok((mesh_ref, hsd_child)) = nodes.get(node_ent) else {
         return;
     };
@@ -405,6 +416,7 @@ pub(crate) fn on_mesh_ref_set(
 
 /// When a node loses its [`MeshRef`], remove [`Mesh3d`].
 pub(crate) fn on_mesh_ref_removed(trigger: On<Remove, MeshRef>, mut commands: Commands) {
+    debug!(entity = %trigger.entity, "mesh ref removed");
     commands.entity(trigger.entity).remove::<Mesh3d>();
 }
 
@@ -421,6 +433,7 @@ pub(crate) fn on_mesh_compiled(
     mut default_material: Local<Option<Handle<StandardMaterial>>>,
 ) {
     let mesh_ent = trigger.entity;
+    debug!(entity = %mesh_ent, "mesh compiled");
     let Ok((mesh_child, compiled_mesh)) = mesh_query.get(mesh_ent) else {
         return;
     };
@@ -466,6 +479,7 @@ pub(crate) fn on_material_compiled(
     mut commands: Commands,
 ) {
     let mat_ent = trigger.entity;
+    debug!(entity = %mat_ent, "material compiled");
     let Ok((mat_child, compiled_mat)) = mat_query.get(mat_ent) else {
         return;
     };

@@ -55,6 +55,7 @@ pub(crate) fn handle_hsd_mesh_spawned(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, "mesh spawned");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -79,6 +80,7 @@ pub(crate) fn handle_hsd_mesh_despawned(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, "mesh despawned");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
@@ -99,6 +101,7 @@ pub(crate) fn handle_hsd_mesh_geometry_set(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
+    debug!(id = %ev.id, "mesh geometry set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };

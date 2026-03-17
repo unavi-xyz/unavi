@@ -73,7 +73,7 @@ pub struct HsdNodeData {
 #[derive(Component, Debug, Clone, Hydrate, Reconcile)]
 pub enum HsdCollider {
     Capsule {
-        half_height: f64,
+        height: f64,
         radius: f64,
     },
     ConvexHull(HydratedHash),
@@ -83,7 +83,7 @@ pub enum HsdCollider {
         z: f64,
     },
     Cylinder {
-        half_height: f64,
+        height: f64,
         radius: f64,
     },
     Sphere(f64),

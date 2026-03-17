@@ -15,9 +15,9 @@ pub fn parse_collider_data(
         match data {
             HsdCollider::Capsule {
                 radius,
-                half_height,
+                height,
             } => {
-                let (r, h) = (*radius as f32, *half_height as f32);
+                let (r, h) = (*radius as f32, *height as f32);
                 if !valid_positive(r) || !valid_nonneg(h) {
                     warn!("invalid capsule dims ({r}, {h}), skipping collider {ent}");
                     continue;
@@ -34,9 +34,9 @@ pub fn parse_collider_data(
             }
             HsdCollider::Cylinder {
                 radius,
-                half_height,
+                height,
             } => {
-                let (r, h) = (*radius as f32, *half_height as f32);
+                let (r, h) = (*radius as f32, *height as f32);
                 if !valid_positive(r) || !valid_nonneg(h) {
                     warn!("invalid cylinder dims ({r}, {h}), skipping collider {ent}");
                     continue;

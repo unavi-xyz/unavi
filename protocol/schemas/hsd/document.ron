@@ -26,7 +26,7 @@
         "nodes": Tree(Struct({
             "collider": Optional(Enum({
                 "Capsule": Some(Struct({
-                    "half_height": F64,
+                    "height": F64,
                     "radius": F64,
                 })),
                 "ConvexHull": Some(BlobId),
@@ -36,7 +36,7 @@
                     "z": F64,
                 })),
                 "Cylinder": Some(Struct({
-                    "half_height": F64,
+                    "height": F64,
                     "radius": F64,
                 })),
                 "Sphere": Some(F64),

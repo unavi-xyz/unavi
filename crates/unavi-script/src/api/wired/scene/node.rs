@@ -425,10 +425,10 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         let collider = match &c {
             HsdCollider::Capsule {
                 radius,
-                half_height,
+                height,
             } => Collider::Capsule(ColliderCapsule {
+                height: *height as f32,
                 radius: *radius as f32,
-                half_height: *half_height as f32,
             }),
             HsdCollider::ConvexHull(hash) => {
                 let blobs = self
@@ -449,10 +449,10 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             }),
             HsdCollider::Cylinder {
                 radius,
-                half_height,
+                height,
             } => Collider::Cylinder(ColliderCylinder {
+                height: *height as f32,
                 radius: *radius as f32,
-                half_height: *half_height as f32,
             }),
             HsdCollider::Sphere(r) => Collider::Sphere(*r as f32),
             HsdCollider::Trimesh { vertices, indices } => {
@@ -493,10 +493,10 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             Some(c) => Some(match c {
                 Collider::Capsule(cap) => {
                     validate_positive(cap.radius, "capsule radius")?;
-                    validate_nonneg(cap.half_height, "capsule half_height")?;
+                    validate_nonneg(cap.height, "capsule height")?;
                     HsdCollider::Capsule {
+                        height: f64::from(cap.height),
                         radius: f64::from(cap.radius),
-                        half_height: f64::from(cap.half_height),
                     }
                 }
                 Collider::ConvexHull(pts) => {
@@ -523,10 +523,10 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 }
                 Collider::Cylinder(cyl) => {
                     validate_positive(cyl.radius, "cylinder radius")?;
-                    validate_nonneg(cyl.half_height, "cylinder half_height")?;
+                    validate_nonneg(cyl.height, "cylinder height")?;
                     HsdCollider::Cylinder {
+                        height: f64::from(cyl.height),
                         radius: f64::from(cyl.radius),
-                        half_height: f64::from(cyl.half_height),
                     }
                 }
                 Collider::Sphere(r) => {

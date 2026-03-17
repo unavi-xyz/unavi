@@ -69,7 +69,7 @@ impl GuestScript for Script {
             });
 
             let col = Collider::Cylinder(ColliderCylinder {
-                half_height: HEIGHT,
+                height: HEIGHT,
                 radius: RADIUS,
             });
             node.set_collider(Some(&col));

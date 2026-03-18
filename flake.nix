@@ -58,15 +58,6 @@
 
         flake = {
           nixosConfigurations = {
-            beta = nixpkgs.lib.nixosSystem {
-              system = "x86_64-linux";
-              specialArgs = { inherit inputs self deployInfo; };
-              modules = [
-                ./infra/nixos/beta.nix
-                sops-nix.nixosModules.sops
-              ];
-            };
-
             stable = nixpkgs.lib.nixosSystem {
               system = "x86_64-linux";
               specialArgs = { inherit inputs self deployInfo; };
@@ -75,24 +66,35 @@
                 sops-nix.nixosModules.sops
               ];
             };
+          }
+          // nixpkgs.lib.optionalAttrs (deployInfo.beta != null) {
+            beta = nixpkgs.lib.nixosSystem {
+              system = "x86_64-linux";
+              specialArgs = { inherit inputs self deployInfo; };
+              modules = [
+                ./infra/nixos/beta.nix
+                sops-nix.nixosModules.sops
+              ];
+            };
           };
 
           deploy.nodes = {
-            unavi-beta = {
-              hostname = deployInfo.beta.server_ipv4;
-              sshUser = "root";
-              profiles.system = {
-                user = "root";
-                path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.beta;
-              };
-            };
-
             unavi-stable = {
               hostname = deployInfo.stable.server_ipv4;
               sshUser = "root";
               profiles.system = {
                 user = "root";
                 path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.stable;
+              };
+            };
+          }
+          // nixpkgs.lib.optionalAttrs (deployInfo.beta != null) {
+            unavi-beta = {
+              hostname = deployInfo.beta.server_ipv4;
+              sshUser = "root";
+              profiles.system = {
+                user = "root";
+                path = deploy-rs.lib.x86_64-linux.activate.nixos self.nixosConfigurations.beta;
               };
             };
           };

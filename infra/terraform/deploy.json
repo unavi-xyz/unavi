@@ -1,17 +1,5 @@
 {
-  "beta": {
-    "server_ipv4": "143.198.20.136",
-    "services": {
-      "unavi_server": {
-        "domain": "beta.wds.unavi.xyz",
-        "port": 5000
-      },
-      "web_client": {
-        "domain": "beta.app.unavi.xyz",
-        "static": true
-      }
-    }
-  },
+  "beta": null,
   "ssh_public_keys": {
     "gh_unavi": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN5GYGW+HwhFR0oUafANn2mmvf6OzT/1LswSaUf/9AbS github-actions-deploy",
     "kayh": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/Fq6xrATrHb1Bsv8UH4eJ4orHDBerB5DsYFfi382Zb kayh"

@@ -1,4 +1,5 @@
 resource "digitalocean_droplet" "beta" {
+  count  = var.create_beta ? 1 : 0
   name   = "unavi-beta"
   region = var.droplet_region
   size   = var.droplet_size

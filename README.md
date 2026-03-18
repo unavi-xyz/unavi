@@ -7,4 +7,4 @@ serves as a reference implementation of [The Wired](./protocol/) protocol.
 ## Community
 
 Join the UNAVI community! Connect with others directly in UNAVI or via our
-[XMPP chat](xmpp:general@conference.unavi.xyz?join) at `general@conference.unavi.xyz`.
+XMPP chat: [`general@conference.unavi.xyz`](xmpp:general@conference.unavi.xyz?join).

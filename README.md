@@ -1,15 +1,8 @@
 # UNAVI
 
-## About
-
 UNAVI is an open-source, peer-to-peer 3D social platform for VR and Desktop.
-
-Anyone can run their own servers, modify their client, and extend the underlying
-[protocol](./protocol) to add new features.
-
-UNAVI is built with the [Bevy](https://bevyengine.org/) game engine, making
-heavy use of [WebAssembly](https://webassembly.org/) for user scripting, and
-[iroh](https://www.iroh.computer/) for networking.
+It is built primarily in Rust using the [Bevy](https://bevy.org/) engine, and
+serves as a reference implementation of [The Wired](./protocol/) protocol.
 
 ## Community
 

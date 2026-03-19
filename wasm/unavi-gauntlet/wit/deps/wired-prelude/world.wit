@@ -1,0 +1,27 @@
+package wired:prelude;
+
+world lib-shared {
+  include wired:math/prelude;
+  include wired:scene/prelude;
+}
+
+world lib {
+  import wired:agent/types;
+  include lib-shared;
+}
+
+// APIs only enabled by default for system level scripts.
+world lib-system {
+  include lib-shared;
+  include wired:agent/prelude;
+}
+
+world script {
+  include lib;
+  include wired:script/guest;
+}
+
+world script-system {
+  include lib-system;
+  include wired:script/guest;
+}

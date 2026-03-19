@@ -1,7 +1,7 @@
 use bevy::{light::NotShadowCaster, prelude::*};
 
-const CROSSHAIR_RADIUS: f32 = 0.003;
-pub(crate) const MIN_SCALE_DISTANCE: f32 = 0.01;
+const CROSSHAIR_RADIUS: f32 = 0.004;
+// pub(crate) const MIN_SCALE_DISTANCE: f32 = 0.01;
 
 #[derive(Component)]
 #[require(Visibility, Transform, CrosshairMode)]

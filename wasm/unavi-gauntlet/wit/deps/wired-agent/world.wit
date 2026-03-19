@@ -1,0 +1,80 @@
+package wired:agent;
+
+world prelude {
+  import context;
+  import types;
+}
+
+interface types {
+  use wired:scene/types.{node, document};
+
+  enum bone-name {
+    hips,
+    spine,
+    chest,
+    upper-chest,
+    neck,
+    head,
+    left-eye,
+    right-eye,
+    jaw,
+    left-shoulder,
+    left-upper-arm,
+    left-lower-arm,
+    left-hand,
+    right-shoulder,
+    right-upper-arm,
+    right-lower-arm,
+    right-hand,
+    left-upper-leg,
+    left-lower-leg,
+    left-foot,
+    left-toes,
+    right-upper-leg,
+    right-lower-leg,
+    right-foot,
+    right-toes,
+    left-thumb-proximal,
+    left-thumb-intermediate,
+    left-thumb-distal,
+    left-index-proximal,
+    left-index-intermediate,
+    left-index-distal,
+    left-middle-proximal,
+    left-middle-intermediate,
+    left-middle-distal,
+    left-ring-proximal,
+    left-ring-intermediate,
+    left-ring-distal,
+    left-little-proximal,
+    left-little-intermediate,
+    left-little-distal,
+    right-thumb-proximal,
+    right-thumb-intermediate,
+    right-thumb-distal,
+    right-index-proximal,
+    right-index-intermediate,
+    right-index-distal,
+    right-middle-proximal,
+    right-middle-intermediate,
+    right-middle-distal,
+    right-ring-proximal,
+    right-ring-intermediate,
+    right-ring-distal,
+    right-little-proximal,
+    right-little-intermediate,
+    right-little-distal,
+  }
+
+  resource agent {
+    // Get a virtual node tracking the named bone.
+    // Returns none if the bone is absent from the VRM model.
+    bone: func(name: bone-name) -> option<node>;
+  }
+}
+
+interface context {
+  use types.{agent};
+
+  local-agent: func() -> agent;
+}

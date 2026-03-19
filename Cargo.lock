@@ -13351,6 +13351,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-gauntlet"
+version = "0.0.16"
+dependencies = [
+ "wit-bindgen 0.50.0",
+]
+
+[[package]]
 name = "unavi-input"
 version = "0.0.16"
 dependencies = [

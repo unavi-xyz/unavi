@@ -46,26 +46,17 @@ impl Record {
         self.schemas.insert(container, schema);
     }
 
-    /// # Errors
-    ///
-    /// Returns an error if the record could not be serialized.
     pub fn id(&self) -> postcard::Result<Hash> {
         let bytes = postcard::to_stdvec(self)?;
         Ok(blake3::hash(&bytes))
     }
 
-    /// # Errors
-    ///
-    /// Returns an error if the record could not be saved.
     pub fn save(&self, doc: &LoroDoc) -> anyhow::Result<()> {
         let map = doc.get_map("record");
         self.reconcile(&map)?;
         Ok(())
     }
 
-    /// # Errors
-    ///
-    /// Returns an error if the record container is malformed.
     pub fn load(doc: &LoroDoc) -> anyhow::Result<Self> {
         let map = doc.get_map("record");
         let value = map.get_deep_value();

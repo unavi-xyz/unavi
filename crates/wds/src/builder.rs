@@ -61,10 +61,6 @@ impl DataStoreBuilder {
     }
 
     /// Build the [`DataStore`].
-    ///
-    /// # Errors
-    ///
-    /// Errors if the file system store could not be initialized.
     pub async fn build(self) -> anyhow::Result<DataStore> {
         let (blobs, db) = init_storage(&self.storage).await?;
 

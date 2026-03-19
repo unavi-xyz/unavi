@@ -9,11 +9,6 @@ use super::{ValidationError, restriction::unwrap_restricted, value::validate_val
 use crate::{Field, Schema};
 
 /// Validate a container diff against its schema.
-///
-/// # Errors
-///
-/// Returns [`ValidationError`] if values in the diff don't
-/// match the schema, or if the diff type is unexpected.
 pub fn validate_container_diff(
     diff: &Diff<'_>,
     schema: &Schema,

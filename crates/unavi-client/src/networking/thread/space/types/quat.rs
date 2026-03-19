@@ -1,6 +1,5 @@
 //! Quaternion quantization using smallest-three encoding.
 
-#![expect(clippy::cast_possible_truncation)]
 #![expect(clippy::cast_sign_loss)]
 
 use avian3d::math::FRAC_1_SQRT_2;

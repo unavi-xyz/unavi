@@ -89,9 +89,6 @@ impl DataStore {
         actor::Actor::new(identity, host, api_client, auth_client)
     }
 
-    /// # Errors
-    ///
-    /// Errors if protocol tasks could not be joined.
     pub async fn shutdown(self) -> anyhow::Result<()> {
         self.router.shutdown().await?;
         Ok(())
@@ -120,10 +117,6 @@ impl DataStore {
 
     /// Runs garbage collection on the data store.
     /// Cleans up expired pins, orphaned records, and blob tags.
-    ///
-    /// # Errors
-    ///
-    /// Errors if database queries fail.
     pub async fn run_gc(&self) -> anyhow::Result<()> {
         self.ctx.run_gc().await
     }

@@ -15,9 +15,6 @@ pub struct Envelope {
 impl Signable for Envelope {}
 
 impl Envelope {
-    /// # Errors
-    ///
-    /// Returns an error if the document could not be exported.
     pub fn updates(author: Did, doc: &LoroDoc, from: VersionVector) -> anyhow::Result<Self> {
         let to = doc.oplog_vv();
         let ops = doc.export(ExportMode::updates(&from))?;
@@ -29,9 +26,6 @@ impl Envelope {
         })
     }
 
-    /// # Errors
-    ///
-    /// Returns an error if the document could not be exported.
     pub fn all_updates(author: Did, doc: &LoroDoc) -> anyhow::Result<Self> {
         Self::updates(author, doc, VersionVector::new())
     }

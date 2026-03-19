@@ -91,6 +91,8 @@ pub(crate) fn setup_actions(mut cmds: Commands) {
             BoolActionValue::new(),
             GamepadBindings::new().bind(GamepadBinding::new(GamepadBindingSource::West)),
             KeyboardBindings::new().bind(KeyboardBinding::new(KeyCode::Tab)),
+            #[cfg(not(target_family = "wasm"))]
+            OxrBindings::new().bindings(OCULUS_TOUCH_PROFILE, ["/user/hand/right/input/b/click"]),
         ))
         .id();
     let jump = cmds

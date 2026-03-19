@@ -8,6 +8,7 @@ pub mod load;
 pub mod permissions;
 mod runtime;
 
+pub use api::wired::input::{InputAction, InputDevice, InputRegistry, QueuedEvent};
 pub use load::local::{ScriptSource, SpawnLocalScript};
 pub use permissions::ScriptPermissions;
 
@@ -28,7 +29,8 @@ impl Plugin for ScriptPlugin {
 
         app.world_mut().spawn(WasmEngine(engine));
 
-        app.init_resource::<load::local::PendingHandles>()
+        app.init_resource::<api::wired::input::InputRegistry>()
+            .init_resource::<load::local::PendingHandles>()
             .register_asset_loader(asset::WasmLoader)
             .init_asset::<asset::Wasm>()
             .add_observer(agent::on_avatar_bones_added)

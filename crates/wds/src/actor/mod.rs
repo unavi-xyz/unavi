@@ -69,11 +69,6 @@ impl Actor {
     }
 
     /// Creates a new record, returning the record ID.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the record could not be created, such as if the client disconnects
-    /// or the storage quota is hit.
     #[must_use]
     pub fn create_record(&self) -> record_builder::RecordBuilder {
         record_builder::RecordBuilder::new(self.clone())
@@ -92,10 +87,6 @@ impl Actor {
     }
 
     /// Tells the WDS to sync a record from a remote endpoint.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the request fails.
     pub async fn sync(&self, record_id: Hash, remote: EndpointAddr) -> anyhow::Result<()> {
         let s = self.authenticate().await.context("auth")?;
 
@@ -112,10 +103,6 @@ impl Actor {
     }
 
     /// Gets the current pin duration of a record, if one exists.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the request fails.
     pub async fn get_record_pin(&self, id: Hash) -> anyhow::Result<Option<i64>> {
         let s = self.authenticate().await.context("auth")?;
 
@@ -129,11 +116,6 @@ impl Actor {
     }
 
     /// Uploads a signed envelope to a record.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the envelope could not be uploaded, such as if the client
-    /// disconnects, the storage quota is hit, or the envelope is invalid.
     pub async fn upload_envelope(
         &self,
         record_id: Hash,
@@ -159,10 +141,6 @@ impl Actor {
     }
 
     /// Updates a record by creating and uploading an envelope from the doc.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the envelope could not be created or uploaded.
     pub async fn update_record(
         &self,
         record_id: Hash,
@@ -176,11 +154,6 @@ impl Actor {
 
     /// Uploads bytes to the WDS as a blob.
     /// Returns the blob hash.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the blob could not be uploaded, such as if the client disconnects
-    /// or the storage quota is hit.
     pub async fn upload_blob(&self, bytes: Bytes) -> anyhow::Result<Hash> {
         let s = self.authenticate().await.context("auth")?;
 
@@ -201,10 +174,6 @@ impl Actor {
     }
 
     /// Pins a record at this actor's host for the given duration.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the pin request fails.
     pub async fn pin_record(&self, id: Hash, ttl: Duration) -> anyhow::Result<()> {
         let s = self.authenticate().await.context("auth")?;
         let expires = (OffsetDateTime::now_utc() + ttl).unix_timestamp();
@@ -218,10 +187,6 @@ impl Actor {
     }
 
     /// Pins a blob at this actor's host for the given duration.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the pin request fails.
     pub async fn pin_blob(&self, hash: Hash, ttl: Duration) -> anyhow::Result<()> {
         let s = self.authenticate().await.context("auth")?;
         let expires = (OffsetDateTime::now_utc() + ttl).unix_timestamp();
@@ -235,10 +200,6 @@ impl Actor {
     }
 
     /// Checks if a blob exists at this actor's host.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the request fails.
     pub async fn blob_exists(&self, hash: Hash) -> anyhow::Result<bool> {
         let s = self.authenticate().await.context("auth")?;
 

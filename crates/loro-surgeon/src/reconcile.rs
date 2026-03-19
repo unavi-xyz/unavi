@@ -10,20 +10,12 @@ pub trait Reconcile {
     /// Reconcile this value into a [`LoroMap`].
     ///
     /// For struct types, this writes all fields to the map.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`ReconcileError`] if the Loro operation fails.
     fn reconcile(&self, map: &LoroMap) -> Result<(), ReconcileError>;
 
     /// Reconcile this value as a field in a [`LoroMap`].
     ///
     /// For primitive types, this inserts the value directly.
     /// For struct types, this creates a nested map and calls `reconcile`.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`ReconcileError`] if the Loro operation fails.
     fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError>;
 
     /// Convert to a [`LoroValue`] for use in lists.

@@ -319,7 +319,6 @@ fn emit_node_fields(doc: Entity, id: &SmolStr, data: &HsdNodeData, commands: &mu
     });
 }
 
-#[expect(clippy::cast_possible_truncation)]
 fn emit_material_fields(doc: Entity, id: &SmolStr, hsd: &HsdMaterial, commands: &mut Commands) {
     if let Some(color) = &hsd.base_color
         && color.len() >= 3

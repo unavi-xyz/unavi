@@ -293,10 +293,6 @@ fn reconcile_enum_arm(
 ///
 /// Generates an implementation that reads struct fields from a [`LoroValue::Map`],
 /// or enum variants from a map with a `"tag"` discriminant key.
-///
-/// # Panics
-///
-/// Panics if the input is not a struct with named fields or an enum.
 #[proc_macro_derive(Hydrate, attributes(loro))]
 pub fn derive_hydrate(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -381,10 +377,6 @@ pub fn derive_hydrate(input: TokenStream) -> TokenStream {
 ///
 /// Generates an implementation that writes struct fields to a [`LoroMap`],
 /// or enum variants as a map with a `"tag"` discriminant key.
-///
-/// # Panics
-///
-/// Panics if the input is not a struct with named fields or an enum.
 #[proc_macro_derive(Reconcile, attributes(loro))]
 pub fn derive_reconcile(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);

@@ -5,9 +5,10 @@ use std::{
 
 use crate::{
     exports::wired::script::guest_api::{Guest, GuestScript},
-    unavi::shapes::api::{Cylinder, Sphere},
+    unavi::shapes::api::Sphere,
     wired::{
         agent::{context::local_agent, types::BoneName},
+        input::{system_api::system_input_listener, types::InputListener},
         math::types::Vec3,
         scene::{context::self_document, types::Node},
     },
@@ -24,8 +25,9 @@ impl Guest for World {
 }
 
 struct Script {
-    render_time: Cell<SystemTime>,
     gauntlets: [Gauntlet; 2],
+    input: InputListener,
+    render_time: Cell<SystemTime>,
 }
 
 struct Gauntlet {
@@ -62,13 +64,20 @@ impl GuestScript for Script {
             g
         });
 
+        let input = system_input_listener();
+
         Self {
-            render_time: Cell::new(SystemTime::now()),
             gauntlets,
+            input,
+            render_time: Cell::new(SystemTime::now()),
         }
     }
 
     fn tick(&self) {
+        while let Some(event) = self.input.poll() {
+            println!("{event:#?}");
+        }
+
         for g in &self.gauntlets {
             let bone_ref = g.bone.borrow();
             if bone_ref.is_none() {

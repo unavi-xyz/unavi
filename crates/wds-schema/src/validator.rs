@@ -37,10 +37,6 @@ impl<'a> Validator<'a> {
         self
     }
 
-    /// # Errors
-    ///
-    /// Returns [`ValidationError`] if any value doesn't match its schema
-    /// or if the author lacks permission for a Restricted field change.
     pub fn validate_diff_batch(
         &self,
         doc: &LoroDoc,

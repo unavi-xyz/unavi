@@ -76,7 +76,6 @@ pub(crate) fn on_collider_blobs_loaded(
         .remove::<BlobDepsLoaded>();
 }
 
-#[expect(clippy::cast_possible_truncation)]
 pub(super) fn insert_collider(ent: Entity, collider: &HsdCollider, commands: &mut Commands) {
     match collider {
         HsdCollider::Capsule { radius, height } => {

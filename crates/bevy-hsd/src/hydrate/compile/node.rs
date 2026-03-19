@@ -275,7 +275,6 @@ pub(crate) fn handle_hsd_node_parent_set(
     }
 }
 
-#[expect(clippy::cast_possible_truncation)]
 pub(crate) fn handle_hsd_node_rigid_body_set(
     trigger: On<HsdNodeRigidBodySet>,
     registries: Query<&SceneRegistry>,
@@ -537,7 +536,6 @@ fn assign_material(
     }
 }
 
-#[expect(clippy::cast_possible_truncation)]
 pub(crate) fn node_transform(data: &HsdNodeData) -> Transform {
     let mut t = Transform::default();
     if let Some(tr) = &data.translation

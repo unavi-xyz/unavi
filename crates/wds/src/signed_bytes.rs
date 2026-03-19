@@ -48,9 +48,6 @@ where
         &self.payload_bytes
     }
 
-    /// # Errors
-    ///
-    /// Errors if the payload could not be deserialized.
     pub fn payload(&self) -> postcard::Result<T> {
         postcard::from_bytes(&self.payload_bytes)
     }
@@ -60,10 +57,6 @@ pub trait Signable
 where
     for<'a> Self: Serialize + Deserialize<'a>,
 {
-    /// # Errors
-    ///
-    /// Errors if the payload could not be serialized, or the bytes could not
-    /// be signed.
     fn sign(&self, key: &impl Signer) -> anyhow::Result<SignedBytes<Self>> {
         SignedBytes::sign(self, key)
     }

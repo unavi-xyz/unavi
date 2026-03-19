@@ -33,7 +33,7 @@ impl Default for AgentTickrateConfig {
 
 /// Calculates tickrate based on distance.
 /// Returns max tickrate at distance 0, min tickrate at [`MAX_DISTANCE`].
-#[expect(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+#[expect(clippy::cast_sign_loss)]
 fn tickrate_for_distance(distance: f32, min: u8, max: u8) -> u8 {
     let t = (distance / MAX_DISTANCE).clamp(0.0, 1.0);
     let rate = f32::from(max) - t * f32::from(max - min);

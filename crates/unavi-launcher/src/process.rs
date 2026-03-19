@@ -48,10 +48,6 @@ impl ProcessTracker {
     }
 
     /// Kill the tracked process if it exists.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if the process cannot be killed.
     pub fn kill(&self) -> anyhow::Result<()> {
         let mut guard = self.child.lock();
         if let Some(ref mut child) = *guard {

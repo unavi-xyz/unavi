@@ -3,6 +3,8 @@ package wired:prelude;
 world lib-shared {
   include wired:math/prelude;
   include wired:scene/prelude;
+  import wired:input/api;
+  import wired:input/types;
 }
 
 world lib {
@@ -10,10 +12,10 @@ world lib {
   include lib-shared;
 }
 
-// APIs only enabled by default for system level scripts.
 world lib-system {
   include lib-shared;
   include wired:agent/prelude;
+  import wired:input/system-api;
 }
 
 world script {

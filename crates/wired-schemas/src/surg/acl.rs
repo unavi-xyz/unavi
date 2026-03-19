@@ -70,18 +70,12 @@ impl Acl {
         self.manage.iter().any(|d| &d.0 == did)
     }
 
-    /// # Errors
-    ///
-    /// Returns an error if the ACL could not be saved.
     pub fn save(&self, doc: &LoroDoc) -> anyhow::Result<()> {
         let map = doc.get_map("acl");
         self.reconcile(&map)?;
         Ok(())
     }
 
-    /// # Errors
-    ///
-    /// Returns an error if the ACL container is malformed.
     pub fn load(doc: &LoroDoc) -> anyhow::Result<Self> {
         let map = doc.get_map("acl");
         let value = map.get_deep_value();

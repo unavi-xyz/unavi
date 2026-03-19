@@ -63,10 +63,6 @@ impl Config {
     }
 
     /// Save the configuration to disk.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if serialization fails or the file cannot be written.
     pub fn save(&self) -> anyhow::Result<()> {
         let path = Self::config_path();
         let contents = toml::to_string_pretty(self).context("serialize config")?;
@@ -95,10 +91,6 @@ impl ConfigStore {
     }
 
     /// Update the configuration using the provided function and save to disk.
-    ///
-    /// # Errors
-    ///
-    /// Returns an error if saving the configuration fails.
     pub fn update<F>(&self, f: F) -> anyhow::Result<()>
     where
         F: FnOnce(&mut Config),

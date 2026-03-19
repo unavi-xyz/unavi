@@ -6,10 +6,6 @@ use anyhow::Context;
 ///
 /// In dev: copies from `CARGO_MANIFEST_DIR/assets`
 /// In release: copies from `exe_dir/assets`
-///
-/// # Errors
-///
-/// Returns an error if directory creation, reading, or file copying fails.
 pub fn copy_assets_to_dirs() -> anyhow::Result<()> {
     let source_dir = get_relative_assets_dir()?;
 

@@ -15,23 +15,14 @@ pub struct Schema {
 }
 
 impl Schema {
-    /// # Errors
-    ///
-    /// Errors if postcard could not serialize the struct.
     pub fn to_bytes(&self) -> postcard::Result<Vec<u8>> {
         postcard::to_stdvec(self)
     }
 
-    /// # Errors
-    ///
-    /// Errors if postcard could not deserialize the struct.
     pub fn from_bytes(bytes: &[u8]) -> postcard::Result<Self> {
         postcard::from_bytes(bytes)
     }
 
-    /// # Errors
-    ///
-    /// Errors if postcard could not serialize the struct.
     pub fn id(&self) -> postcard::Result<Hash> {
         let bytes = self.to_bytes()?;
         Ok(blake3::hash(&bytes))

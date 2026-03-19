@@ -15,7 +15,6 @@ pub struct I8Pos {
 
 impl I8Pos {
     /// Encode delta with 1mm resolution, clamping to range.
-    #[expect(clippy::cast_possible_truncation)]
     pub fn from_delta(current: Vec3, baseline: Vec3) -> Self {
         let d = current - baseline;
         Self {

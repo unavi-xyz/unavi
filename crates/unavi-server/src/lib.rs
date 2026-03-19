@@ -33,10 +33,6 @@ pub struct ServerOptions {
 }
 
 /// Run the UNAVI server.
-///
-/// # Errors
-///
-/// Returns an error if server initialization or startup fails.
 pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     let port = opts.port;
 

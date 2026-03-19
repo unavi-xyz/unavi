@@ -16,7 +16,6 @@ use parking_lot::Mutex;
 use time::OffsetDateTime;
 
 /// Returns the current time as milliseconds since Unix epoch.
-#[expect(clippy::cast_possible_truncation)]
 fn now_millis() -> u64 {
     (OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000).cast_unsigned() as u64
 }

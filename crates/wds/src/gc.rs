@@ -13,11 +13,6 @@ pub const FAST_GC_THRESHOLD: Duration = Duration::from_mins(5);
 
 impl StoreContext {
     /// Runs garbage collection on the data store.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the initial database query fails or if listing blob tags fails.
-    /// Individual pin and tag cleanup failures are logged and do not stop GC.
     pub async fn run_gc(&self) -> anyhow::Result<()> {
         self.gc_record_pins().await?;
         self.gc_blob_pins().await?;

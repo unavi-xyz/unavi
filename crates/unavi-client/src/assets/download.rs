@@ -4,10 +4,6 @@ use anyhow::Context;
 use unavi_assets::{CDN_URL, DEFAULT_AVATAR, DEFAULT_CHARACTER_ANIMATIONS, DEFAULT_MENU_ANIMATION};
 
 /// Download web assets to local storage if they don't already exist.
-///
-/// # Errors
-///
-/// Returns an error if directory creation or download fails.
 pub fn download_web_assets() -> anyhow::Result<()> {
     std::fs::create_dir_all(super::assets_dir()).context("create assets directory")?;
 

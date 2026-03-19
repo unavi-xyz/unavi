@@ -66,9 +66,9 @@ pub fn update_network_stats_text(
         let upload_kb = peer_stats.upload_bytes_per_sec / 1024.0;
         let download_kb = peer_stats.download_bytes_per_sec / 1024.0;
 
-        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_sign_loss)]
         let stream_pct = (peer_stats.stream_ratio * 100.0) as u32;
-        #[allow(clippy::cast_sign_loss, clippy::cast_possible_truncation)]
+        #[allow(clippy::cast_sign_loss)]
         let datagram_pct = (peer_stats.datagram_ratio * 100.0) as u32;
 
         let drop_pct = if peer_stats.total_frames_received > 0 {

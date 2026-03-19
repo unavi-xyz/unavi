@@ -9,7 +9,11 @@ use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
 use crate::{
     agent::ProxyRegistry,
-    api::wired::{agent::WiredAgentRt, scene::WiredSceneRt},
+    api::wired::{
+        agent::WiredAgentRt,
+        input::{InputRegistry, WiredInputRt},
+        scene::WiredSceneRt,
+    },
     permissions::ScriptPermissions,
 };
 
@@ -21,6 +25,7 @@ pub struct StoreState {
 
 pub struct RuntimeData {
     pub wired_agent: WiredAgentRt,
+    pub wired_input: WiredInputRt,
     pub wired_scene: WiredSceneRt,
 }
 
@@ -37,10 +42,15 @@ impl RuntimeData {
         agent_entry: Option<Arc<ProxyRegistry>>,
         doc_id: blake3::Hash,
         doc_entity: Entity,
+        input_registry: InputRegistry,
     ) -> Self {
         Self {
             wired_agent: WiredAgentRt {
                 local_agent: agent_entry,
+                table: ResourceTable::default(),
+            },
+            wired_input: WiredInputRt {
+                registry: input_registry,
                 table: ResourceTable::default(),
             },
             wired_scene: WiredSceneRt {

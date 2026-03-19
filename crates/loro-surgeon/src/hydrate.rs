@@ -8,11 +8,6 @@ use crate::HydrateError;
 /// Read a Rust value from a Loro value.
 pub trait Hydrate: Sized {
     /// Hydrate a value from a [`LoroValue`].
-    ///
-    /// # Errors
-    ///
-    /// Returns [`HydrateError`] if the value type doesn't match or required
-    /// fields are missing.
     fn hydrate(value: &LoroValue) -> Result<Self, HydrateError>;
 }
 
@@ -71,7 +66,6 @@ impl Hydrate for f64 {
 }
 
 impl Hydrate for f32 {
-    #[expect(clippy::cast_possible_truncation)]
     fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {
         match value {
             LoroValue::Double(n) => Ok(*n as Self),

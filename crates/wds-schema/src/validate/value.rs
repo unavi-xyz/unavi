@@ -12,10 +12,6 @@ use crate::Field;
 ///
 /// Performs type-only validation. For Restricted field authorization,
 /// use [`crate::Validator`].
-///
-/// # Errors
-///
-/// Returns [`ValidationError`] if the value doesn't match the field.
 pub fn validate_value(value: &LoroValue, field: &Field, path: &str) -> Result<(), ValidationError> {
     match field {
         Field::Any => Ok(()),

@@ -481,7 +481,6 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         let Some(c) = c else {
             return Ok(None);
         };
-        #[expect(clippy::cast_possible_truncation)]
         let collider = match &c {
             HsdCollider::Capsule { radius, height } => Collider::Capsule(ColliderCapsule {
                 height: *height as f32,

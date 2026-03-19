@@ -24,10 +24,6 @@ pub enum ValidationError {
 }
 
 /// Fetch a schema from the blob store by its hash.
-///
-/// # Errors
-///
-/// Returns error if schema not found or fails to parse.
 pub async fn fetch_schema(blobs: &Store, hash: &Hash) -> Result<Schema, ValidationError> {
     let iroh_hash: iroh_blobs::Hash = (*hash).into();
     let bytes = blobs
@@ -42,10 +38,6 @@ pub async fn fetch_schema(blobs: &Store, hash: &Hash) -> Result<Schema, Validati
 /// `old_doc` is used for authorization checks (the state before the change).
 /// `new_doc` is used for computing the diff (should have the new envelope applied).
 /// `is_first_envelope` skips restriction checks (allows ACL bootstrap).
-///
-/// # Errors
-///
-/// Returns error if validation fails.
 pub fn validate_diff(
     old_doc: &LoroDoc,
     new_doc: &LoroDoc,

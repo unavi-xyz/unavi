@@ -56,7 +56,6 @@ pub struct LoadedScript(pub Arc<bindings::Guest>);
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct Executing(bool);
 
-#[expect(clippy::too_many_arguments)]
 #[expect(clippy::too_many_lines)]
 pub(crate) fn load_scripts(
     mut commands: Commands,
@@ -81,6 +80,7 @@ pub(crate) fn load_scripts(
     hsd_change_queues: Query<&ScriptEventQueue>,
     permissions: Query<Option<&ScriptPermissions>>,
     local_agent_ent: Query<Entity, With<LocalAgent>>,
+    input_registry: Res<crate::api::wired::input::InputRegistry>,
 ) {
     #[cfg(target_family = "wasm")]
     return;
@@ -197,6 +197,7 @@ pub(crate) fn load_scripts(
             agent_entry,
             doc_id,
             doc_entity,
+            input_registry.clone(),
         );
         let state = StoreState::new(wasi_ctx, rt);
 

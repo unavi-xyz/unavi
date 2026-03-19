@@ -5,10 +5,6 @@ use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 /// Spawns a WDS and actor on a new thread.
 /// Useful for testing or examples.
-///
-/// # Panics
-///
-/// Panics if the tokio runtime could not be initialized.
 #[must_use]
 pub fn create_test_wds() -> (Actor, Blobs) {
     let (tx, rx) = std::sync::mpsc::sync_channel(1);

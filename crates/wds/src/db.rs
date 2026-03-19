@@ -17,10 +17,6 @@ pub struct Database {
 
 impl Database {
     /// Create a new database at the given path.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the connection could not be opened or if migration fails.
     pub fn new(db_path: &Path) -> Result<Self> {
         let conn = Connection::open(db_path).context("open sqlite database")?;
         run_migrations(&conn)?;
@@ -31,10 +27,6 @@ impl Database {
     }
 
     /// Create a new in-memory database.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the connection could not be opened or if migration fails.
     pub fn new_in_memory() -> Result<Self> {
         let conn = Connection::open_in_memory().context("open in-memory sqlite")?;
         run_migrations(&conn)?;
@@ -45,10 +37,6 @@ impl Database {
     }
 
     /// Async wrapper that runs the database operation in a blocking task.
-    ///
-    /// # Errors
-    ///
-    /// Errors if the task could not be joined.
     pub async fn call<F, T>(&self, f: F) -> Result<T>
     where
         F: FnOnce(&Connection) -> Result<T> + Send + 'static,
@@ -63,10 +51,6 @@ impl Database {
     }
 
     /// Async wrapper for mutable connection access (transactions).
-    ///
-    /// # Errors
-    ///
-    /// Errors if the task could not be joined.
     pub async fn call_mut<F, T>(&self, f: F) -> Result<T>
     where
         F: FnOnce(&mut Connection) -> Result<T> + Send + 'static,

@@ -79,14 +79,14 @@ impl GuestScript for Script {
         }
 
         for g in &self.gauntlets {
-            let bone_ref = g.bone.borrow();
+            let mut bone_ref = g.bone.borrow_mut();
             if bone_ref.is_none() {
                 let agent = local_agent();
                 let node = agent.bone(g.target);
                 if let Some(n) = &node {
                     n.add_child(g.core.clone());
                 }
-                *g.bone.borrow_mut() = node;
+                *bone_ref = node;
                 return;
             }
 

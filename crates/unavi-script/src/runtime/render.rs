@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use bevy::{prelude::*, tasks::AsyncComputeTaskPool};
 use futures::FutureExt;
+use tracing::Instrument;
 use wasmtime::AsContextMut;
 
 use crate::{
@@ -33,27 +34,27 @@ pub fn render_tick_scripts(
         let name = name.map_or_else(|| "unknown".to_string(), std::string::ToString::to_string);
         let pool = AsyncComputeTaskPool::get();
 
-        let task = pool.spawn(async move {
-            let mut ctx = ctx.lock().await;
-            ctx.store.set_epoch_deadline(1);
+        let span = info_span!("render", name);
+        let task = pool.spawn(
+            async move {
+                let mut ctx = ctx.lock().await;
+                ctx.store.set_epoch_deadline(1);
 
-            let script = ctx.script.expect("initialized script resource");
+                let script = ctx.script.expect("initialized script resource");
 
-            let span = info_span!("render", name);
-            let span = span.enter();
+                guest
+                    .wired_script_guest_api()
+                    .script()
+                    .call_render(ctx.store.as_context_mut(), script)
+                    .await?;
 
-            guest
-                .wired_script_guest_api()
-                .script()
-                .call_render(ctx.store.as_context_mut(), script)
-                .await?;
+                ctx.flush_logs().await;
+                drop(ctx);
 
-            ctx.flush_logs().await;
-            drop(ctx);
-            drop(span);
-
-            Ok(())
-        });
+                Ok(())
+            }
+            .instrument(span),
+        );
 
         if let Some(prev) = ticking.0.take()
             && let Some(res) = prev.now_or_never()

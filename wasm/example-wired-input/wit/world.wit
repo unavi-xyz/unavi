@@ -1,0 +1,5 @@
+package example:wired-input;
+
+world guest {
+  include wired:prelude/script-system;
+}

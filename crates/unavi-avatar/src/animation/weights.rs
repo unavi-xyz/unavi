@@ -188,17 +188,12 @@ pub fn play_avatar_animations(
     time: Res<Time>,
     rigs: Query<(&Transform, &Grounded)>,
     avatars: Query<(&AvatarAnimationNodes, &AverageVelocity), With<Avatar>>,
-    mut animation_players: Query<(
-        &mut AnimationWeights,
-        &TargetAnimationWeights,
-        &mut AnimationPlayer,
-        &ChildOf,
-    )>,
+    mut animation_players: Query<(&mut AnimationWeights, &mut AnimationPlayer, &ChildOf)>,
 ) {
     // Exponential blend for snappy transitions.
     let alpha = 1.0 - (-time.delta_secs() / BLEND_HALFLIFE_SECS).exp();
 
-    for (mut weights, targets, mut player, parent) in &mut animation_players {
+    for (mut weights, mut player, parent) in &mut animation_players {
         let Ok((nodes, avg)) = avatars.get(parent.parent()) else {
             continue;
         };
@@ -227,22 +222,7 @@ pub fn play_avatar_animations(
             &motion,
         );
 
-        let mut other_weight = 0.0;
-
-        if let Some(mut value) = targets.get(&AnimationName::Menu).copied() {
-            other_weight += value;
-            let animation = apply_weight(
-                AnimationName::Menu,
-                &mut value,
-                alpha,
-                &mut player,
-                nodes,
-                &mut weights,
-            );
-            animation.set_speed(0.01);
-        }
-
-        let mut idle_weight = (loco_weights.idle - other_weight).max(0.0);
+        let mut idle_weight = loco_weights.idle;
 
         apply_weight(
             AnimationName::Idle,

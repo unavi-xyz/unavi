@@ -3,13 +3,19 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_wds::{LocalActor, LocalBlobs, util::create_test_wds};
 use unavi_script::{ScriptPermissions, SpawnLocalScript, load::local::ScriptSource};
 
+mod util;
+
+const SCRIPT_PATH: &str = "wasm/example/unavi_shapes.wasm";
+
 fn main() {
+    util::copy_assets_to_project_dir(&[SCRIPT_PATH]);
+
     let (actor, blobs) = create_test_wds();
 
     let mut app = App::new();
     app.add_plugins((
         DefaultPlugins.set(AssetPlugin {
-            file_path: "../unavi-client/assets".to_string(),
+            file_path: util::assets_dir().to_string_lossy().to_string(),
             ..Default::default()
         }),
         PanOrbitCameraPlugin,
@@ -38,6 +44,6 @@ fn init_scene(mut commands: Commands) {
 
     commands.trigger(SpawnLocalScript {
         permissions: ScriptPermissions::default(),
-        source: ScriptSource::Path("wasm/example/unavi_shapes.wasm".to_string()),
+        source: ScriptSource::Path(SCRIPT_PATH.to_string()),
     });
 }

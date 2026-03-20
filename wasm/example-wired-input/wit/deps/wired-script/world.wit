@@ -1,0 +1,17 @@
+package wired:script;
+
+interface guest-api {
+  resource script {
+    constructor();
+    // Called every frame, before rendering.
+    render: func();
+    // Called every tick, on a fixed interval.
+    tick: func();
+    // Called once on script removal.
+    drop: func();
+  }
+}
+
+world guest {
+  export guest-api;
+}

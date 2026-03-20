@@ -1,6 +1,6 @@
 use bevy::{light::NotShadowCaster, prelude::*};
 
-const CROSSHAIR_RADIUS: f32 = 0.004;
+const CROSSHAIR_RADIUS: f32 = 0.005;
 // pub(crate) const MIN_SCALE_DISTANCE: f32 = 0.01;
 
 #[derive(Component)]

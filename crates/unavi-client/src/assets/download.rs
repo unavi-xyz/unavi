@@ -1,17 +1,13 @@
 use std::path::Path;
 
 use anyhow::Context;
-use unavi_assets::{CDN_URL, DEFAULT_AVATAR, DEFAULT_CHARACTER_ANIMATIONS, DEFAULT_MENU_ANIMATION};
+use unavi_assets::{CDN_URL, DEFAULT_AVATAR, DEFAULT_CHARACTER_ANIMATIONS};
 
 /// Download web assets to local storage if they don't already exist.
 pub fn download_web_assets() -> anyhow::Result<()> {
     std::fs::create_dir_all(super::assets_dir()).context("create assets directory")?;
 
-    let assets = [
-        DEFAULT_AVATAR,
-        DEFAULT_CHARACTER_ANIMATIONS,
-        DEFAULT_MENU_ANIMATION,
-    ];
+    let assets = [DEFAULT_AVATAR, DEFAULT_CHARACTER_ANIMATIONS];
 
     for asset_path in assets {
         let dest_path = super::assets_dir().join(asset_path);

@@ -5,6 +5,7 @@ use bevy::{
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task, block_on, poll_once},
 };
+use tracing::Instrument;
 use wasmtime::AsContextMut;
 
 use crate::{agent::NeedsAgentProxy, load::LoadedScript, runtime::ScriptRuntime};
@@ -39,29 +40,29 @@ pub fn begin_init_scripts(
 
         let pool = AsyncComputeTaskPool::get();
 
-        let task = pool.spawn(async move {
-            let mut ctx = ctx.lock().await;
-            ctx.store.set_epoch_deadline(1);
+        let span = info_span!("init", name);
+        let task = pool.spawn(
+            async move {
+                let mut ctx = ctx.lock().await;
+                ctx.store.set_epoch_deadline(1);
 
-            let span = info_span!("init", name);
-            let span = span.enter();
+                let script = guest
+                    .wired_script_guest_api()
+                    .script()
+                    .call_constructor(ctx.store.as_context_mut())
+                    .await
+                    .with_context(|| format!("construct script {name}"));
 
-            let script = guest
-                .wired_script_guest_api()
-                .script()
-                .call_constructor(ctx.store.as_context_mut())
-                .await
-                .with_context(|| format!("construct script {name}"));
+                ctx.flush_logs().await;
+                ctx.store.data().rt.wired_scene.doc.commit();
 
-            ctx.flush_logs().await;
-            ctx.store.data().rt.wired_scene.doc.commit();
+                ctx.script = Some(script?);
+                drop(ctx);
 
-            ctx.script = Some(script?);
-            drop(ctx);
-            drop(span);
-
-            Ok(())
-        });
+                Ok(())
+            }
+            .instrument(span),
+        );
 
         commands.entity(entity).insert(InitializingScript {
             task,

@@ -11,7 +11,13 @@ pub struct LookAction;
 pub struct JumpAction;
 
 #[derive(Component, Clone, Copy)]
-pub struct MenuAction;
+pub struct MenuDesktopAction;
+
+#[derive(Component, Clone, Copy)]
+pub struct MenuLeftHandAction;
+
+#[derive(Component, Clone, Copy)]
+pub struct MenuRightHandAction;
 
 #[derive(Component, Clone, Copy)]
 pub struct SprintAction;
@@ -32,7 +38,9 @@ pub struct HandRight;
 pub struct CoreActions {
     pub jump: Entity,
     pub look: Entity,
-    pub menu: Entity,
+    pub menu_desktop: Entity,
+    pub menu_left: Entity,
+    pub menu_right: Entity,
     pub movement: Entity,
     pub sprint: Entity,
     pub squeeze_left: Entity,
@@ -84,13 +92,29 @@ pub(crate) fn setup_actions(mut cmds: Commands) {
                 .bindings(OCULUS_TOUCH_PROFILE, ["/user/hand/right/input/thumbstick"]),
         ))
         .id();
-    let menu = cmds
+    let menu_desktop = cmds
         .spawn((
-            MenuAction,
-            Action::new("menu", "Menu", core_set),
+            MenuDesktopAction,
+            Action::new("menu_desktop", "Menu (Desktop)", core_set),
             BoolActionValue::new(),
             GamepadBindings::new().bind(GamepadBinding::new(GamepadBindingSource::West)),
             KeyboardBindings::new().bind(KeyboardBinding::new(KeyCode::Tab)),
+        ))
+        .id();
+    let menu_left = cmds
+        .spawn((
+            MenuLeftHandAction,
+            Action::new("menu_left", "Menu (Left Hand)", core_set),
+            BoolActionValue::new(),
+            #[cfg(not(target_family = "wasm"))]
+            OxrBindings::new().bindings(OCULUS_TOUCH_PROFILE, ["/user/hand/left/input/y/click"]),
+        ))
+        .id();
+    let menu_right = cmds
+        .spawn((
+            MenuRightHandAction,
+            Action::new("menu_right", "Menu (Right Hand)", core_set),
+            BoolActionValue::new(),
             #[cfg(not(target_family = "wasm"))]
             OxrBindings::new().bindings(OCULUS_TOUCH_PROFILE, ["/user/hand/right/input/b/click"]),
         ))
@@ -150,7 +174,9 @@ pub(crate) fn setup_actions(mut cmds: Commands) {
     cmds.insert_resource(CoreActions {
         jump,
         look,
-        menu,
+        menu_desktop,
+        menu_left,
+        menu_right,
         movement,
         sprint,
         squeeze_left,

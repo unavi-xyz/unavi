@@ -19,7 +19,6 @@ pub enum AnimationName {
     Falling,
     #[default]
     Idle,
-    Menu,
     Sprint,
     Walk,
     WalkLeft,

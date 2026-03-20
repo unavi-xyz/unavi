@@ -1,6 +1,6 @@
 use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_gltf_kun::import::gltf::{animation::RawGltfAnimation, loader::GltfLoaderSettings};
-use unavi_assets::{default_character_animations_path, default_menu_animation_path};
+use unavi_assets::default_character_animations_path;
 
 use super::{
     AnimationName,
@@ -12,7 +12,6 @@ pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimati
     let mut map = HashMap::default();
 
     let path_char = default_character_animations_path();
-    let path_menu = default_menu_animation_path();
 
     let load_animation = |path: &str, i: usize| -> AvatarAnimation {
         let animation = asset_server.load_with_settings::<RawGltfAnimation, GltfLoaderSettings>(
@@ -31,7 +30,6 @@ pub fn default_character_animations(asset_server: &AssetServer) -> AvatarAnimati
     map.insert(AnimationName::WalkRight, load_animation(&path_char, 3));
     map.insert(AnimationName::Sprint, load_animation(&path_char, 4));
     map.insert(AnimationName::Walk, load_animation(&path_char, 5));
-    map.insert(AnimationName::Menu, load_animation(&path_menu, 0));
 
     AvatarAnimationClips(map)
 }

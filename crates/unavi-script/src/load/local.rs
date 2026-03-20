@@ -67,7 +67,7 @@ pub fn poll_local_scripts(
     mut commands: Commands,
     wasm_assets: Res<Assets<Wasm>>,
     actors: Query<&LocalActor>,
-    mut handles: ResMut<PendingHandles>,
+    mut pending_handles: ResMut<PendingHandles>,
     mut uploads: Local<Vec<PendingUpload>>,
     mut records: Local<Vec<RecordPending>>,
 ) {
@@ -125,7 +125,7 @@ pub fn poll_local_scripts(
     let Ok(actor) = actors.single() else { return };
 
     let mut still_pending = Vec::new();
-    for pending in handles.0.drain(..) {
+    for pending in pending_handles.0.drain(..) {
         if let Some(wasm) = wasm_assets.get(&pending.handle) {
             let bytes = Bytes::from(wasm.0.clone());
             let upload_actor = actor.0.clone();
@@ -144,7 +144,7 @@ pub fn poll_local_scripts(
             still_pending.push(pending);
         }
     }
-    handles.0 = still_pending;
+    pending_handles.0 = still_pending;
 }
 
 fn path_to_name(path: &str) -> String {

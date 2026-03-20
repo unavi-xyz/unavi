@@ -14,7 +14,6 @@ use crate::{
 };
 
 pub mod grounded;
-pub mod menu;
 mod sensitivity;
 pub mod teleport;
 #[cfg(not(target_family = "wasm"))]
@@ -29,9 +28,6 @@ pub struct TargetBodyInput(Vec3);
 #[derive(Resource, Default, Deref, DerefMut)]
 pub struct TargetHeadInput(Vec2);
 
-#[derive(Resource, Default)]
-pub struct MenuAnimationState(bool);
-
 const PITCH_BOUND: f32 = FRAC_PI_2 - 1E-3;
 const MOVE_THRESHOLD: f32 = 0.6; // TODO configurable for stick drift (same for look)
 
@@ -41,10 +37,7 @@ pub fn apply_head_input(
     mut rigs: Query<&mut Transform, With<AgentRig>>,
     mut tracked_heads: Query<&mut TrackedPose, With<TrackedHead>>,
     mut target: ResMut<TargetHeadInput>,
-    menu_state: ResMut<MenuAnimationState>,
     time: Res<Time>,
-    mut prev_menu: Local<bool>,
-    mut menu_enter_yaw: Local<f32>,
 ) {
     const S: f32 = 0.4;
 
@@ -54,64 +47,16 @@ pub fn apply_head_input(
 
     let delta = time.delta_secs();
     target.0 += action.any * delta * sensitivity::sensitivity();
-
-    let just_entered_menu = menu_state.0 && !*prev_menu;
-    let just_exited_menu = !menu_state.0 && *prev_menu;
-    *prev_menu = menu_state.0;
-
-    // Record entry yaw before clamping so it reflects the true facing direction.
-    if just_entered_menu {
-        *menu_enter_yaw = target.x;
-    }
-
-    if menu_state.0 {
-        target.y = target.y.clamp(menu::PITCH_BOUND_L, menu::PITCH_BOUND_H);
-        // Clamp relative to where the body was when the menu opened, not world origin.
-        let rel = target.x - *menu_enter_yaw;
-        target.x = *menu_enter_yaw + rel.clamp(-menu::YAW_BOUND, menu::YAW_BOUND);
-    } else {
-        target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
-    }
+    target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
 
     for entities in agents.iter() {
-        // On toggle: snap rotations to prevent camera jump.
-        if just_entered_menu {
-            // Snap body to exact yaw target so relative head yaw starts at zero.
-            if let Ok(mut rig_transform) = rigs.get_mut(entities.body) {
-                rig_transform.rotation = Quat::from_rotation_y(-*menu_enter_yaw);
-            }
-        }
-
-        if just_exited_menu {
-            // Snap both rotations so the combined world rotation is unchanged.
-            if let Ok(mut rig_transform) = rigs.get_mut(entities.body) {
-                rig_transform.rotation = Quat::from_rotation_y(-target.x);
-            }
-            if let Ok(mut pose) = tracked_heads.get_mut(entities.tracked_head) {
-                pose.rotation = Quat::from_rotation_x(target.y);
-            }
-            continue;
-        }
-
-        // When menu locked, rotate head sideways.
-        // Otherwise, rotate full body.
-        if !menu_state.0
-            && let Ok(mut rig_transform) = rigs.get_mut(entities.body)
-        {
+        if let Ok(mut rig_transform) = rigs.get_mut(entities.body) {
             let yaw = Quat::from_rotation_y(-target.x);
             rig_transform.rotation = rig_transform.rotation.lerp(yaw, S);
         }
 
         if let Ok(mut pose) = tracked_heads.get_mut(entities.tracked_head) {
-            let mut target_pose = Quat::from_rotation_x(target.y);
-
-            if menu_state.0 {
-                // Use yaw relative to where the body was when menu opened,
-                // so the camera doesn't jump on toggle.
-                let relative_yaw = Quat::from_rotation_y(-(target.x - *menu_enter_yaw));
-                target_pose = relative_yaw * target_pose;
-            }
-
+            let target_pose = Quat::from_rotation_x(target.y);
             pose.rotation = pose.rotation.lerp(target_pose, S);
         }
     }
@@ -127,7 +72,6 @@ pub fn apply_body_input(
     mut target: ResMut<TargetBodyInput>,
     xr: Res<XrMode>,
     movement_yaw: Res<MovementYaw>,
-    mut menu_state: ResMut<MenuAnimationState>,
 ) {
     const S: f32 = 0.2;
 
@@ -163,10 +107,6 @@ pub fn apply_body_input(
             dir += dir_l * input.x;
 
             target.0 = target.lerp(dir, S);
-
-            if menu_state.0 && raw.element_sum().abs() > menu::MIN_MENU_MOVEMENT {
-                menu_state.0 = false;
-            }
         }
 
         let is_sprinting = sprint_action

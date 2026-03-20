@@ -15,7 +15,7 @@ mod devtools;
 mod fade;
 mod grab;
 mod icon;
-mod input_bridge;
+
 mod networking;
 mod scene;
 mod space;
@@ -151,9 +151,6 @@ impl Plugin for UnaviPlugin {
             .init_resource::<networking::thread::space::object::outbound::LocalGrabbedObjects>()
             .add_observer(grab::handle_squeeze_down)
             .add_observer(grab::handle_squeeze_up)
-            .add_observer(input_bridge::bridge_squeeze_down)
-            .add_observer(input_bridge::bridge_squeeze_up)
-            .add_systems(Update, input_bridge::update_action_buffer)
             .add_systems(
                 Startup,
                 (

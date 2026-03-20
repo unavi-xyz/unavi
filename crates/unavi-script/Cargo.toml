@@ -27,6 +27,7 @@ tokio.workspace        = true
 tracing.workspace      = true
 unavi-agent.path       = "../unavi-agent"
 unavi-avatar.path      = "../unavi-avatar"
+unavi-input.path       = "../unavi-input"
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wasmtime               = "40.0.0"
 wasmtime-wasi          = { default-features = false, version = "40.0.0" }

@@ -1,106 +1,13 @@
-use std::{
-    collections::{HashMap, VecDeque},
-    sync::{Arc, Mutex, Weak},
-};
+use std::sync::Arc;
 
-use bevy::prelude::*;
 use wasmtime::component::{Resource, ResourceTable};
 
 use crate::{api::wired::scene::node::HostNode, load::state::RuntimeData};
 
-#[derive(Clone, Copy)]
-pub enum InputAction {
-    GrabDown,
-    GrabUp,
-    MenuDown,
-    MenuUp,
-}
+pub mod bridge;
+pub mod registry;
 
-#[derive(Clone, Copy)]
-pub enum InputDevice {
-    Keyboard,
-    LeftHand,
-    RightHand,
-}
-
-#[derive(Clone, Copy)]
-pub struct QueuedEvent {
-    pub action: InputAction,
-    pub device: InputDevice,
-}
-
-type HandlerQueue = Arc<Mutex<VecDeque<QueuedEvent>>>;
-type WeakQueue = Weak<Mutex<VecDeque<QueuedEvent>>>;
-
-#[derive(Default)]
-struct InnerRegistry {
-    node_handlers: HashMap<Entity, Vec<WeakQueue>>,
-    system_handlers: Vec<WeakQueue>,
-}
-
-impl InnerRegistry {
-    fn push_node(&mut self, entity: Entity, event: QueuedEvent) {
-        if let Some(queues) = self.node_handlers.get_mut(&entity) {
-            queues.retain(|w| {
-                w.upgrade().is_some_and(|q| {
-                    q.lock().expect("queue lock").push_back(event);
-                    true
-                })
-            });
-        }
-        self.push_system(event);
-    }
-
-    fn push_system(&mut self, event: QueuedEvent) {
-        self.system_handlers.retain(|w| {
-            w.upgrade().is_some_and(|q| {
-                q.lock().expect("queue lock").push_back(event);
-                true
-            })
-        });
-    }
-
-    fn register_node(&mut self, entity: Entity) -> HandlerQueue {
-        let queue = Arc::new(Mutex::new(VecDeque::new()));
-        self.node_handlers
-            .entry(entity)
-            .or_default()
-            .push(Arc::downgrade(&queue));
-        queue
-    }
-
-    fn register_system(&mut self) -> HandlerQueue {
-        let queue = Arc::new(Mutex::new(VecDeque::new()));
-        self.system_handlers.push(Arc::downgrade(&queue));
-        queue
-    }
-}
-
-#[derive(Resource, Clone, Default)]
-pub struct InputRegistry(Arc<Mutex<InnerRegistry>>);
-
-impl InputRegistry {
-    pub fn push_node(&self, entity: Entity, event: QueuedEvent) {
-        self.0
-            .lock()
-            .expect("registry lock")
-            .push_node(entity, event);
-    }
-
-    pub fn push_system(&self, event: QueuedEvent) {
-        self.0.lock().expect("registry lock").push_system(event);
-    }
-}
-
-#[derive(Default)]
-pub struct WiredInputRt {
-    pub registry: InputRegistry,
-    pub table: ResourceTable,
-}
-
-pub struct HostInputListener {
-    pub queue: HandlerQueue,
-}
+pub use registry::{InputAction, InputDevice, InputRegistry, QueuedEvent};
 
 pub mod bindings {
     wasmtime::component::bindgen!({
@@ -118,6 +25,18 @@ pub mod bindings {
 use bindings::wired::input::types::{
     InputAction as WitAction, InputDevice as WitDevice, InputEvent,
 };
+
+#[derive(Default)]
+pub struct WiredInputRt {
+    pub registry: InputRegistry,
+    pub table: ResourceTable,
+}
+
+pub struct HostInputListener {
+    pub queue: registry::ListenerQueue,
+    registry: InputRegistry,
+    entity: Option<bevy::prelude::Entity>,
+}
 
 const fn to_wit_action(a: InputAction) -> WitAction {
     match a {
@@ -146,7 +65,7 @@ impl bindings::wired::input::api::Host for RuntimeData {
             .entity
             .lock()
             .expect("entity lock")
-            .unwrap_or(Entity::PLACEHOLDER);
+            .unwrap_or(bevy::prelude::Entity::PLACEHOLDER);
         let queue = self
             .wired_input
             .registry
@@ -154,7 +73,11 @@ impl bindings::wired::input::api::Host for RuntimeData {
             .lock()
             .expect("registry lock")
             .register_node(entity);
-        Ok(self.wired_input.table.push(HostInputListener { queue })?)
+        Ok(self.wired_input.table.push(HostInputListener {
+            queue,
+            registry: self.wired_input.registry.clone(),
+            entity: Some(entity),
+        })?)
     }
 }
 
@@ -174,7 +97,13 @@ impl bindings::wired::input::types::HostInputListener for RuntimeData {
     }
 
     async fn drop(&mut self, rep: Resource<HostInputListener>) -> wasmtime::Result<()> {
-        self.wired_input.table.delete(rep)?;
+        let listener = self.wired_input.table.delete(rep)?;
+        let mut inner = listener.registry.0.lock().expect("registry lock");
+        match listener.entity {
+            Some(entity) => inner.remove_node(entity, &listener.queue),
+            None => inner.remove_system(&listener.queue),
+        }
+        drop(inner);
         Ok(())
     }
 }
@@ -188,6 +117,10 @@ impl bindings::wired::input::system_api::Host for RuntimeData {
             .lock()
             .expect("registry lock")
             .register_system();
-        Ok(self.wired_input.table.push(HostInputListener { queue })?)
+        Ok(self.wired_input.table.push(HostInputListener {
+            queue,
+            registry: self.wired_input.registry.clone(),
+            entity: None,
+        })?)
     }
 }

@@ -27,7 +27,6 @@ impl Plugin for AgentPlugin {
             TnuaAvian3dPlugin::new(FixedUpdate),
         ))
         .init_resource::<config::XrMode>()
-        .init_resource::<movement::MenuAnimationState>()
         .init_resource::<movement::MovementYaw>()
         .init_resource::<movement::TargetBodyInput>()
         .init_resource::<movement::TargetHeadInput>()
@@ -60,7 +59,6 @@ impl Plugin for AgentPlugin {
                         .run_if(xr_active),
                     movement::apply_head_input.run_if(in_state(CursorGrabState::Locked)),
                     movement::apply_body_input,
-                    movement::menu::apply_menu_animation,
                     movement::xr::update_xr_head_tracking.run_if(xr_active),
                     tracking::sync_tracked_pose_to_transform,
                     bones::apply_head_tracking,

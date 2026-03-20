@@ -1,21 +1,19 @@
-use avian3d::prelude::Collider;
 use bevy::{
-    camera::visibility::RenderLayers,
     log::{DEFAULT_FILTER, LogPlugin},
     prelude::*,
 };
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
 use bevy_wds::{LocalActor, LocalBlobs, util::create_test_wds};
-use unavi_agent::LocalAgent;
-use unavi_script::{ScriptPermissions, SpawnLocalScript, load::local::ScriptSource};
+use unavi_script::{
+    ScriptPermissions, SpawnLocalScript, load::local::ScriptSource, permissions::ApiName,
+};
 
 mod util;
 
-const SCRIPT_PATH: &str = "wasm/example/wired_agent.wasm";
+const SCRIPT_PATH: &str = "wasm/example/wired_input.wasm";
 
 fn main() {
-    util::copy_assets_to_project_dir(&["model/default.vrm", SCRIPT_PATH]);
+    util::copy_assets_to_project_dir(&[SCRIPT_PATH]);
 
     let (actor, blobs) = create_test_wds();
 
@@ -31,14 +29,11 @@ fn main() {
                 ..Default::default()
             }),
         PanOrbitCameraPlugin,
-        avian3d::PhysicsPlugins::default(),
         bevy_hsd::HsdPlugin,
         bevy_wds::WdsPlugin,
-        unavi_avatar::AvatarPlugin,
-        unavi_agent::AgentPlugin,
+        unavi_input::InputPlugin,
         unavi_script::ScriptPlugin,
     ))
-    .add_observer(on_agent_load)
     .add_systems(Startup, init_scene);
 
     app.world_mut()
@@ -54,36 +49,15 @@ fn init_scene(mut commands: Commands) {
     ));
 
     commands.spawn((
-        Transform::from_xyz(0.0, -2.0, 0.0),
-        Collider::cuboid(4.0, 0.5, 4.0),
-    ));
-
-    commands.spawn(LocalAgent);
-}
-
-fn on_agent_load(
-    _: On<Add, Camera3d>,
-    mut cameras: Query<&mut Camera>,
-    mut commands: Commands,
-    mut added: Local<bool>,
-) {
-    if *added {
-        return;
-    }
-    *added = true;
-
-    let mut cam = cameras.single_mut().expect("single camera");
-    cam.is_active = false;
-
-    commands.spawn((
         PanOrbitCamera::default(),
-        Transform::from_xyz(-3.0, 5.0, -6.0).looking_at(Vec3::ZERO, Vec3::Y),
-        RenderLayers::from_layers(&[0])
-            .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly]),
+        Transform::from_xyz(3.0, 8.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
+
+    let mut permissions = ScriptPermissions::default();
+    permissions.api.insert(ApiName::SystemInput);
 
     commands.trigger(SpawnLocalScript {
-        permissions: ScriptPermissions::system(),
+        permissions,
         source: ScriptSource::Path(SCRIPT_PATH.to_string()),
     });
 }

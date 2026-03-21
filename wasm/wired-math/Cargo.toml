@@ -8,3 +8,6 @@ version.workspace    = true
 
 [lints]
 workspace = true
+
+[dependencies]
+glam = "0.32.1"

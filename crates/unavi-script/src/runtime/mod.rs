@@ -31,7 +31,7 @@ impl RuntimeCtx {
             info!("{}", s.trim());
         }
         if let Some(s) = log::try_read_text_stream(&mut buf, &mut self.stderr.0).await {
-            error!("{}", s.trim());
+            warn!("{}", s.trim());
         }
     }
 }

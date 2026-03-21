@@ -3,7 +3,7 @@ use std::{
     time::SystemTime,
 };
 
-use wired_prelude::wired_math::types::{Quat, Transform, Vec3};
+use wired_prelude::wired_math::types::Vec3;
 
 use crate::{
     unavi::shapes::api::Sphere,
@@ -33,9 +33,9 @@ struct Gauntlet {
     target: BoneName,
 }
 
-const CORE_DISTANCE: f32 = 2.0;
 const CORE_RADIUS: f32 = 0.04;
 const OPEN_SPEED_SECONDS: f32 = 0.05;
+const Z_OFFSET: f32 = -2.0;
 
 impl GuestScript for Script {
     fn new() -> Self {
@@ -55,7 +55,6 @@ impl GuestScript for Script {
                 core: doc.create_node(),
                 target,
             };
-            g.core.set_translation(Vec3::new(0.0, 0.0, -CORE_DISTANCE));
             g.core.set_scale(Vec3::ZERO);
             g.core.set_mesh(Some(&mesh));
             g
@@ -71,6 +70,16 @@ impl GuestScript for Script {
     }
 
     fn tick(&self) {
+        for g in &self.gauntlets {
+            let mut bone_ref = g.bone.borrow_mut();
+            if bone_ref.is_none() {
+                let agent = local_agent();
+                let node = agent.bone(g.target);
+                *bone_ref = node;
+                return;
+            }
+        }
+
         while let Some(event) = self.input.poll() {
             let idx = match event.device {
                 InputDevice::Keyboard => 0,
@@ -95,40 +104,29 @@ impl GuestScript for Script {
                 let open = !was_open;
                 g.open.set(open);
 
-                // Detach node while open, to prevent movement.
-                if open {
-                    let mut tr = g.core.global_transform();
-                    if let Some(p) = g.core.parent() {
-                        p.remove_child(&g.core);
-                        // Replace rotation, which is NaN if scale is 0.
-                        tr.rotation = p.rotation();
+                if open && let Some(bone) = g.bone.borrow().as_ref() {
+                    let mut tr = bone.global_transform();
+                    tr.translation.z -= Z_OFFSET;
+
+                    if g.target == BoneName::Head {
+                        // Move to eyes so we align with the camera, if they exist.
+                        let agent = local_agent();
+                        let mut eye_heights = Vec::new();
+                        for eye_name in [BoneName::LeftEye, BoneName::RightEye] {
+                            let Some(eye_node) = agent.bone(eye_name) else {
+                                continue;
+                            };
+                            let eye_tr = eye_node.global_transform();
+                            eye_heights.push(eye_tr.translation.y);
+                        }
+                        if eye_heights.len() == 2 {
+                            let offset = f32::midpoint(eye_heights[0], eye_heights[1]);
+                            tr.translation.y = offset;
+                        }
                     }
+
                     g.core.set_transform(tr);
-                } else {
-                    // TODO move after close
-                    g.core.set_transform(Transform::new(
-                        Vec3::new(0.0, 0.0, -CORE_DISTANCE),
-                        Quat::IDENTITY,
-                        Vec3::ONE,
-                    ));
-
-                    if let Some(bone_ref) = g.bone.borrow().as_ref() {
-                        bone_ref.add_child(&g.core);
-                    }
                 }
-            }
-        }
-
-        for g in &self.gauntlets {
-            let mut bone_ref = g.bone.borrow_mut();
-            if bone_ref.is_none() {
-                let agent = local_agent();
-                let node = agent.bone(g.target);
-                if let Some(n) = &node {
-                    n.add_child(&g.core);
-                }
-                *bone_ref = node;
-                return;
             }
         }
     }

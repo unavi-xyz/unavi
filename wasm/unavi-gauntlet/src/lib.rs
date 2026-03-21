@@ -12,7 +12,7 @@ use crate::{
             system_api::system_input_listener,
             types::{InputAction, InputDevice, InputListener},
         },
-        math::types::Vec3,
+        math::types::{Quat, Transform, Vec3},
         scene::{context::self_document, types::Node},
     },
 };
@@ -43,7 +43,7 @@ struct Gauntlet {
 
 const CORE_DISTANCE: f32 = 2.0;
 const CORE_RADIUS: f32 = 0.04;
-const OPEN_SPEED_SECONDS: f32 = 0.1;
+const OPEN_SPEED_SECONDS: f32 = 0.05;
 
 impl GuestScript for Script {
     fn new() -> Self {
@@ -68,15 +68,12 @@ impl GuestScript for Script {
                 y: 0.0,
                 z: -CORE_DISTANCE,
             });
-
             g.core.set_scale(Vec3 {
                 x: 0.0,
                 y: 0.0,
                 z: 0.0,
             });
-
             g.core.set_mesh(Some(mesh.clone()));
-
             g
         });
 
@@ -111,7 +108,43 @@ impl GuestScript for Script {
             // Toggle menu on button down.
             if !was_pressed && pressed {
                 let was_open = g.open.get();
-                g.open.set(!was_open);
+                let open = !was_open;
+                g.open.set(open);
+
+                // Detach node while open, to prevent movement.
+                if open {
+                    let mut tr = g.core.global_transform();
+                    if let Some(p) = g.core.parent() {
+                        p.remove_child(g.core.clone());
+                        // Replace rotation, which is NaN if scale is 0.
+                        tr.rotation = p.rotation();
+                    }
+                    g.core.set_transform(tr);
+                } else {
+                    // TODO move after close
+                    g.core.set_transform(Transform {
+                        scale: Vec3 {
+                            x: 1.0,
+                            y: 1.0,
+                            z: 1.0,
+                        },
+                        rotation: Quat {
+                            x: 0.0,
+                            y: 0.0,
+                            z: 0.0,
+                            w: 1.0,
+                        },
+                        translation: Vec3 {
+                            x: 0.0,
+                            y: 0.0,
+                            z: -CORE_DISTANCE,
+                        },
+                    });
+
+                    if let Some(bone_ref) = g.bone.borrow().as_ref() {
+                        bone_ref.add_child(g.core.clone());
+                    }
+                }
             }
         }
 

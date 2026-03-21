@@ -1,43 +1,4 @@
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Vec2 {
-    pub x: f32,
-    pub y: f32,
-}
-
-impl Vec2 {
-    pub const ZERO: Self = Self::splat(0.0);
-    pub const ONE: Self = Self::splat(1.0);
-
-    #[must_use]
-    pub const fn new(x: f32, y: f32) -> Self {
-        Self { x, y }
-    }
-    #[must_use]
-    pub const fn splat(value: f32) -> Self {
-        Self::new(value, value)
-    }
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Vec3 {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
-}
-
-impl Vec3 {
-    pub const ZERO: Self = Self::splat(0.0);
-    pub const ONE: Self = Self::splat(1.0);
-
-    #[must_use]
-    pub const fn new(x: f32, y: f32, z: f32) -> Self {
-        Self { x, y, z }
-    }
-    #[must_use]
-    pub const fn splat(value: f32) -> Self {
-        Self::new(value, value, value)
-    }
-}
+pub use glam::{Vec2, Vec3};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Quat {
@@ -45,6 +6,12 @@ pub struct Quat {
     pub y: f32,
     pub z: f32,
     pub w: f32,
+}
+
+impl Default for Quat {
+    fn default() -> Self {
+        Self::IDENTITY
+    }
 }
 
 impl Quat {
@@ -56,7 +23,7 @@ impl Quat {
     }
 }
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Clone, Copy)]
 pub struct Transform {
     pub translation: Vec3,
     pub rotation: Quat,

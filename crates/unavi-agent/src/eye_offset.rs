@@ -13,6 +13,8 @@ use crate::{
 #[derive(Component)]
 pub struct EyeOffsetProcessed;
 
+const DEFAULT_EYE_OFFSET_PCT: f32 = 1.05;
+
 pub fn setup_vrm_eye_offset(
     mut commands: Commands,
     scene_spawner: Res<SceneSpawner>,
@@ -70,7 +72,7 @@ pub fn setup_vrm_eye_offset(
         {
             f32::midpoint(left_pos.y, right_pos.y)
         } else if let Some((_, head_pos)) = head {
-            head_pos.y + 0.08
+            head_pos.y * DEFAULT_EYE_OFFSET_PCT
         } else {
             warn!("No eye or head bones found for avatar, using fallback height");
             config.real_height / 2.0

@@ -1,5 +1,7 @@
 pub use glam::{Vec2, Vec3};
 
+use std::ops::Mul;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Quat {
     pub x: f32,
@@ -20,6 +22,15 @@ impl Quat {
     #[must_use]
     pub const fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
         Self { x, y, z, w }
+    }
+}
+
+impl Mul<Vec3> for Quat {
+    type Output = Vec3;
+
+    fn mul(self, v: Vec3) -> Vec3 {
+        let q = Vec3::new(self.x, self.y, self.z);
+        v + 2.0 * self.w * q.cross(v) + 2.0 * q.cross(q.cross(v))
     }
 }
 

@@ -16,6 +16,7 @@ use crate::{api::wired::scene::document::gen_id, load::LoadedScript, runtime::Sc
 pub struct ProxyRegistry {
     pub bone_nodes: Arc<HashMap<BoneName, SmolStr>>,
     pub bone_proxy_ents: Arc<HashMap<BoneName, Entity>>,
+    pub camera_node: SmolStr,
 }
 
 #[derive(Component)]
@@ -68,6 +69,7 @@ pub(crate) fn on_avatar_bones_added(
     }
 }
 
+#[expect(clippy::too_many_lines)]
 pub(crate) fn init_agent_proxies(
     mut commands: Commands,
     pending: Query<(Entity, &NeedsAgentProxy, &ScriptRuntime), With<LoadedScript>>,
@@ -132,6 +134,37 @@ pub(crate) fn init_agent_proxies(
             bone_proxy_ents.insert(bone, proxy_ent);
         }
 
+        let camera_node_id = gen_id();
+        let camera_inner = Arc::new(NodeInner {
+            dirty: Mutex::new(NodeDirty::default()),
+            entity: Mutex::new(None),
+            hsd_changes: Mutex::new(NodeHsdChanges::default()),
+            id: camera_node_id.clone(),
+            is_virtual: true,
+            state: Mutex::new(NodeState::default()),
+            sync: false.into(),
+            tree_id: Mutex::new(None),
+        });
+        registry
+            .nodes
+            .lock()
+            .expect("nodes lock")
+            .push(Arc::clone(&camera_inner));
+        registry
+            .node_map
+            .lock()
+            .expect("node_map lock")
+            .insert(camera_node_id.clone(), Arc::clone(&camera_inner));
+        let camera_proxy_ent = commands
+            .spawn((
+                NodeId(camera_node_id.clone()),
+                BoneProxy,
+                ChildOf(entities.camera),
+                Transform::IDENTITY,
+            ))
+            .id();
+        *camera_inner.entity.lock().expect("entity lock") = Some(camera_proxy_ent);
+
         let self_inner = Arc::new(NodeInner {
             dirty: Mutex::new(NodeDirty::default()),
             entity: Mutex::new(None),
@@ -158,6 +191,7 @@ pub(crate) fn init_agent_proxies(
         let entry = Arc::new(ProxyRegistry {
             bone_nodes: Arc::new(bone_nodes),
             bone_proxy_ents: Arc::new(bone_proxy_ents),
+            camera_node: camera_node_id,
         });
         ap.0.lock()
             .expect("agent proxies lock")

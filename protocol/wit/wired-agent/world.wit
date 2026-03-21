@@ -74,7 +74,9 @@ interface types {
 }
 
 interface context {
+  use wired:scene/types.{node};
   use types.{agent};
 
   local-agent: func() -> agent;
+  local-camera: func() -> node;
 }

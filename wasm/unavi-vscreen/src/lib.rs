@@ -52,9 +52,10 @@ impl GuestScript for Script {
             mat.set_metallic(0.8);
             mat.set_roughness(0.8);
 
+            let mesh = cylinder.mesh();
             let node = doc.create_node();
-            node.set_mesh(Some(cylinder.mesh()));
-            node.set_material(Some(mat));
+            node.set_mesh(Some(&mesh));
+            node.set_material(Some(&mat));
             node.set_scale(Vec3 {
                 x: 0.0,
                 y: 0.0,
@@ -96,7 +97,7 @@ impl GuestScript for Script {
             let agent = local_agent();
             let bone = agent.bone(BoneName::LeftHand);
             if let Some(n) = &bone {
-                n.add_child(self.screen.clone());
+                n.add_child(&self.screen);
             }
             *self.bone.borrow_mut() = bone;
             return;

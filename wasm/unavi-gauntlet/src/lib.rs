@@ -73,7 +73,7 @@ impl GuestScript for Script {
                 y: 0.0,
                 z: 0.0,
             });
-            g.core.set_mesh(Some(mesh.clone()));
+            g.core.set_mesh(Some(&mesh));
             g
         });
 
@@ -115,7 +115,7 @@ impl GuestScript for Script {
                 if open {
                     let mut tr = g.core.global_transform();
                     if let Some(p) = g.core.parent() {
-                        p.remove_child(g.core.clone());
+                        p.remove_child(&g.core);
                         // Replace rotation, which is NaN if scale is 0.
                         tr.rotation = p.rotation();
                     }
@@ -142,7 +142,7 @@ impl GuestScript for Script {
                     });
 
                     if let Some(bone_ref) = g.bone.borrow().as_ref() {
-                        bone_ref.add_child(g.core.clone());
+                        bone_ref.add_child(&g.core);
                     }
                 }
             }
@@ -154,7 +154,7 @@ impl GuestScript for Script {
                 let agent = local_agent();
                 let node = agent.bone(g.target);
                 if let Some(n) = &node {
-                    n.add_child(g.core.clone());
+                    n.add_child(&g.core);
                 }
                 *bone_ref = node;
                 return;

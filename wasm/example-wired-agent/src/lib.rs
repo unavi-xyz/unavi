@@ -36,13 +36,13 @@ impl GuestScript for Script {
         mat.set_base_color(&[0.8, 0.1, 0.1, 1.0]);
 
         let node = doc.create_node();
-        node.set_mesh(Some(mesh));
-        node.set_material(Some(mat));
+        node.set_mesh(Some(&mesh));
+        node.set_material(Some(&mat));
 
         // Attach to bone.
         let agent = local_agent();
         let hand = agent.bone(BoneName::RightHand).expect("get bone");
-        hand.add_child(node.clone());
+        hand.add_child(&node);
 
         Self {
             node,

@@ -30,9 +30,9 @@ interface types {
     create-mesh: func() -> mesh;
     create-material: func() -> material;
 
-    remove-node: func(value: node);
-    remove-mesh: func(value: mesh);
-    remove-material: func(value: material);
+    remove-node: func(value: borrow<node>);
+    remove-mesh: func(value: borrow<mesh>);
+    remove-material: func(value: borrow<material>);
 
     sync: func() -> bool;
     set-sync: func(value: bool);
@@ -61,14 +61,14 @@ interface types {
 
     parent: func() -> option<node>;
     children: func() -> list<node>;
-    add-child: func(child: node);
-    remove-child: func(child: node);
+    add-child: func(child: borrow<node>);
+    remove-child: func(child: borrow<node>);
 
     mesh: func() -> option<mesh>;
-    set-mesh: func(value: option<mesh>);
+    set-mesh: func(value: option<borrow<mesh>>);
 
     material: func() -> option<material>;
-    set-material: func(value: option<material>);
+    set-material: func(value: option<borrow<material>>);
 
     collider: func() -> option<collider>;
     set-collider: func(value: option<collider>);

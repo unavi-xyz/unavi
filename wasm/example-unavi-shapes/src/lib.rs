@@ -38,13 +38,13 @@ impl GuestScript for Script {
 
         for (i, mesh) in meshes.into_iter().enumerate() {
             let node = doc.create_node();
-            node.set_material(Some(mat.clone()));
+            node.set_material(Some(&mat));
             node.set_translation(Vec3 {
                 x: (i as f32).mul_add(spacing, start),
                 y: 0.0,
                 z: 0.0,
             });
-            node.set_mesh(Some(mesh));
+            node.set_mesh(Some(&mesh));
         }
 
         Self

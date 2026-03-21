@@ -1,17 +1,6 @@
-use crate::{
-    exports::wired::script::guest_api::{Guest, GuestScript},
-    wired::input::{system_api::system_input_listener, types::InputListener},
-};
+use crate::wired::input::{system_api::system_input_listener, types::InputListener};
 
-wit_bindgen::generate!({
-    generate_all,
-});
-
-struct World;
-
-impl Guest for World {
-    type Script = Script;
-}
+wired_prelude::generate_script!(Script);
 
 struct Script {
     input: InputListener,
@@ -33,5 +22,3 @@ impl GuestScript for Script {
 
     fn drop(&self) {}
 }
-
-export!(World);

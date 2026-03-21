@@ -1,18 +1,11 @@
+use wired_prelude::wired_math::types::Vec3;
+
 use crate::{
-    exports::wired::script::guest_api::{Guest, GuestScript},
     unavi::shapes::api::{Capsule, Cone, Cuboid, Cylinder, Sphere, Torus},
-    wired::{math::types::Vec3, scene::context::self_document},
+    wired::scene::context::self_document,
 };
 
-wit_bindgen::generate!({
-    generate_all,
-});
-
-struct World;
-
-impl Guest for World {
-    type Script = Script;
-}
+wired_prelude::generate_script!(Script);
 
 struct Script;
 
@@ -39,11 +32,7 @@ impl GuestScript for Script {
         for (i, mesh) in meshes.into_iter().enumerate() {
             let node = doc.create_node();
             node.set_material(Some(&mat));
-            node.set_translation(Vec3 {
-                x: (i as f32).mul_add(spacing, start),
-                y: 0.0,
-                z: 0.0,
-            });
+            node.set_translation(Vec3::new((i as f32).mul_add(spacing, start), 0.0, 0.0));
             node.set_mesh(Some(&mesh));
         }
 
@@ -56,5 +45,3 @@ impl GuestScript for Script {
 
     fn drop(&self) {}
 }
-
-export!(World);

@@ -13,4 +13,5 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+wired-prelude.path    = "../wired-prelude"
 wit-bindgen.workspace = true

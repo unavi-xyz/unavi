@@ -4937,6 +4937,7 @@ dependencies = [
 name = "example-unavi-shapes"
 version = "0.0.16"
 dependencies = [
+ "wired-prelude",
  "wit-bindgen 0.50.0",
 ]
 
@@ -4944,6 +4945,7 @@ dependencies = [
 name = "example-wired-agent"
 version = "0.0.16"
 dependencies = [
+ "wired-prelude",
  "wit-bindgen 0.50.0",
 ]
 
@@ -4951,6 +4953,7 @@ dependencies = [
 name = "example-wired-input"
 version = "0.0.16"
 dependencies = [
+ "wired-prelude",
  "wit-bindgen 0.50.0",
 ]
 
@@ -12604,6 +12607,7 @@ dependencies = [
 name = "test-log"
 version = "0.0.16"
 dependencies = [
+ "wired-prelude",
  "wit-bindgen 0.50.0",
 ]
 
@@ -12611,6 +12615,7 @@ dependencies = [
 name = "test-stall"
 version = "0.0.16"
 dependencies = [
+ "wired-prelude",
  "wit-bindgen 0.50.0",
 ]
 
@@ -13361,6 +13366,7 @@ dependencies = [
 name = "unavi-gauntlet"
 version = "0.0.16"
 dependencies = [
+ "wired-prelude",
  "wit-bindgen 0.50.0",
 ]
 
@@ -13467,13 +13473,7 @@ version = "0.0.16"
 dependencies = [
  "bevy_math",
  "bevy_mesh",
- "wit-bindgen 0.50.0",
-]
-
-[[package]]
-name = "unavi-vscreen"
-version = "0.0.16"
-dependencies = [
+ "wired-prelude",
  "wit-bindgen 0.50.0",
 ]
 
@@ -15505,6 +15505,17 @@ checksum = "3f3fd376f71958b862e7afb20cfe5a22830e1963462f3a17f49d82a6c1d1f42d"
 dependencies = [
  "bitflags 2.10.0",
  "windows-sys 0.59.0",
+]
+
+[[package]]
+name = "wired-math"
+version = "0.0.16"
+
+[[package]]
+name = "wired-prelude"
+version = "0.0.16"
+dependencies = [
+ "wired-math",
 ]
 
 [[package]]

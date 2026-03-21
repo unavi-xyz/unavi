@@ -15,9 +15,7 @@ mod cylinder;
 mod sphere;
 mod torus;
 
-wit_bindgen::generate!({
-    generate_all,
-});
+wired_prelude::generate!();
 
 struct World;
 

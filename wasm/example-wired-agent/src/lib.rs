@@ -1,24 +1,16 @@
 use std::time::SystemTime;
 
+use wired_prelude::wired_math::types::Vec3;
+
 use crate::{
-    exports::wired::script::guest_api::{Guest, GuestScript},
     unavi::shapes::api::Cuboid,
     wired::{
         agent::{context::local_agent, types::BoneName},
-        math::types::Vec3,
         scene::{context::self_document, types::Node},
     },
 };
 
-wit_bindgen::generate!({
-    generate_all,
-});
-
-struct World;
-
-impl Guest for World {
-    type Script = Script;
-}
+wired_prelude::generate_script!(Script);
 
 struct Script {
     node: Node,
@@ -56,16 +48,11 @@ impl GuestScript for Script {
         let tr = self.node.global_transform().translation;
         println!("{}x {}y {}z", tr.x, tr.y, tr.z);
 
-        self.node.set_translation(Vec3 {
-            x: 0.0,
-            y: now.sin() * 0.1,
-            z: 0.0,
-        });
+        self.node
+            .set_translation(Vec3::new(0.0, now.sin() * 0.1, 0.0));
     }
 
     fn render(&self) {}
 
     fn drop(&self) {}
 }
-
-export!(World);

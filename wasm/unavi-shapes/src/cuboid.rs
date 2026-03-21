@@ -1,9 +1,10 @@
 use bevy_math::primitives::Cuboid;
 use bevy_mesh::{MeshBuilder, Meshable};
+use wired_prelude::wired_math::types::Vec3;
 
 use crate::{
     exports::unavi::shapes::api::GuestCuboid,
-    wired::scene::types::{Collider, Mesh, Vec3 as WitVec3},
+    wired::scene::types::{Collider, Mesh},
 };
 
 #[derive(Default)]
@@ -15,11 +16,11 @@ impl GuestCuboid for CuboidWrapped {
     }
 
     fn collider(&self) -> Collider {
-        Collider::Cuboid(WitVec3 {
-            x: self.0.half_size.x * 2.0,
-            y: self.0.half_size.y * 2.0,
-            z: self.0.half_size.z * 2.0,
-        })
+        Collider::Cuboid(Vec3::new(
+            self.0.half_size.x * 2.0,
+            self.0.half_size.y * 2.0,
+            self.0.half_size.z * 2.0,
+        ))
     }
 
     fn mesh(&self) -> Mesh {

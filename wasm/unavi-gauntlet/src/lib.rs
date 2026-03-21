@@ -3,8 +3,9 @@ use std::{
     time::SystemTime,
 };
 
+use wired_prelude::wired_math::types::{Quat, Transform, Vec3};
+
 use crate::{
-    exports::wired::script::guest_api::{Guest, GuestScript},
     unavi::shapes::api::Sphere,
     wired::{
         agent::{context::local_agent, types::BoneName},
@@ -12,20 +13,11 @@ use crate::{
             system_api::system_input_listener,
             types::{InputAction, InputDevice, InputListener},
         },
-        math::types::{Quat, Transform, Vec3},
         scene::{context::self_document, types::Node},
     },
 };
 
-wit_bindgen::generate!({
-    generate_all,
-});
-
-struct World;
-
-impl Guest for World {
-    type Script = Script;
-}
+wired_prelude::generate_script!(Script);
 
 struct Script {
     gauntlets: [Gauntlet; 3],
@@ -63,16 +55,8 @@ impl GuestScript for Script {
                 core: doc.create_node(),
                 target,
             };
-            g.core.set_translation(Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: -CORE_DISTANCE,
-            });
-            g.core.set_scale(Vec3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            });
+            g.core.set_translation(Vec3::new(0.0, 0.0, -CORE_DISTANCE));
+            g.core.set_scale(Vec3::ZERO);
             g.core.set_mesh(Some(&mesh));
             g
         });
@@ -122,24 +106,11 @@ impl GuestScript for Script {
                     g.core.set_transform(tr);
                 } else {
                     // TODO move after close
-                    g.core.set_transform(Transform {
-                        scale: Vec3 {
-                            x: 1.0,
-                            y: 1.0,
-                            z: 1.0,
-                        },
-                        rotation: Quat {
-                            x: 0.0,
-                            y: 0.0,
-                            z: 0.0,
-                            w: 1.0,
-                        },
-                        translation: Vec3 {
-                            x: 0.0,
-                            y: 0.0,
-                            z: -CORE_DISTANCE,
-                        },
-                    });
+                    g.core.set_transform(Transform::new(
+                        Vec3::new(0.0, 0.0, -CORE_DISTANCE),
+                        Quat::IDENTITY,
+                        Vec3::ONE,
+                    ));
 
                     if let Some(bone_ref) = g.bone.borrow().as_ref() {
                         bone_ref.add_child(&g.core);
@@ -194,5 +165,3 @@ impl GuestScript for Script {
 
     fn drop(&self) {}
 }
-
-export!(World);

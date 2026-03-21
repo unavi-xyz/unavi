@@ -9,7 +9,7 @@ rm -rf $wasm_out
 mkdir $wasm_out
 
 let time = timeit {
-    ls $wasm_src | where type == "dir" | par-each {|crate_dir|
+    ls $wasm_src | where type == "dir" | where {|d| ($"($d.name)/wit" | path exists)} | par-each {|crate_dir|
         let crate = $crate_dir.name | path basename
         let crate_path = $crate_dir.name
         let wasm_file = ($crate | str replace --all '-' '_') + ".wasm"
@@ -50,7 +50,7 @@ let time = timeit {
 
     print "Plugging component deps"
 
-    let dep_graph = ls $wasm_src | where type == "dir" | each {|crate_dir|
+    let dep_graph = ls $wasm_src | where type == "dir" | where {|d| ($"($d.name)/wit" | path exists)} | each {|crate_dir|
         let crate = ($crate_dir.name | path basename)
         let deps_toml = $"($crate_dir.name)/wit/deps.toml"
         let lib_deps = if ($deps_toml | path exists) {

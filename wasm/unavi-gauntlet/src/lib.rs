@@ -8,7 +8,10 @@ use crate::{
     unavi::shapes::api::Sphere,
     wired::{
         agent::{context::local_agent, types::BoneName},
-        input::{system_api::system_input_listener, types::InputListener},
+        input::{
+            system_api::system_input_listener,
+            types::{InputAction, InputDevice, InputListener},
+        },
         math::types::Vec3,
         scene::{context::self_document, types::Node},
     },
@@ -25,7 +28,7 @@ impl Guest for World {
 }
 
 struct Script {
-    gauntlets: [Gauntlet; 2],
+    gauntlets: [Gauntlet; 3],
     input: InputListener,
     render_time: Cell<SystemTime>,
 }
@@ -34,32 +37,45 @@ struct Gauntlet {
     bone: RefCell<Option<Node>>,
     core: Node,
     open: Cell<bool>,
+    pressed: Cell<bool>,
     target: BoneName,
 }
 
-const CORE_RADIUS: f32 = 0.05;
-const OPEN_SPEED_SECONDS: f32 = 0.25;
+const CORE_DISTANCE: f32 = 2.0;
+const CORE_RADIUS: f32 = 0.04;
+const OPEN_SPEED_SECONDS: f32 = 0.1;
 
 impl GuestScript for Script {
     fn new() -> Self {
         let doc = self_document();
 
-        let gauntlets = [BoneName::LeftHand, BoneName::RightHand].map(|target| {
+        let mat = doc.create_material();
+        mat.set_base_color(&[0.9, 0.95, 1.0, 0.9]);
+
+        // TODO: scale mesh based on avatar size
+        let mesh = Sphere::new(CORE_RADIUS).mesh();
+
+        let gauntlets = [BoneName::Head, BoneName::LeftHand, BoneName::RightHand].map(|target| {
             let g = Gauntlet {
                 bone: RefCell::new(None),
                 open: Cell::new(false),
+                pressed: Cell::new(false),
                 core: doc.create_node(),
                 target,
             };
+            g.core.set_translation(Vec3 {
+                x: 0.0,
+                y: 0.0,
+                z: -CORE_DISTANCE,
+            });
+
             g.core.set_scale(Vec3 {
                 x: 0.0,
                 y: 0.0,
                 z: 0.0,
             });
 
-            // TODO: scale based on avatar size
-            let mesh = Sphere::new(CORE_RADIUS).mesh();
-            g.core.set_mesh(Some(mesh));
+            g.core.set_mesh(Some(mesh.clone()));
 
             g
         });
@@ -75,7 +91,28 @@ impl GuestScript for Script {
 
     fn tick(&self) {
         while let Some(event) = self.input.poll() {
-            println!("{event:#?}");
+            let idx = match event.device {
+                InputDevice::Keyboard => 0,
+                InputDevice::LeftHand => 1,
+                InputDevice::RightHand => 2,
+            };
+
+            let pressed = match event.action {
+                InputAction::MenuDown => true,
+                InputAction::MenuUp => false,
+                _ => continue,
+            };
+
+            let g = &self.gauntlets[idx];
+
+            let was_pressed = g.pressed.get();
+            g.pressed.set(pressed);
+
+            // Toggle menu on button down.
+            if !was_pressed && pressed {
+                let was_open = g.open.get();
+                g.open.set(!was_open);
+            }
         }
 
         for g in &self.gauntlets {
@@ -89,10 +126,6 @@ impl GuestScript for Script {
                 *bone_ref = node;
                 return;
             }
-
-            // TODO take input (b in VR, tab in desktop)
-
-            // TODO toggle open
         }
     }
 

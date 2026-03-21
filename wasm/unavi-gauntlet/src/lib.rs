@@ -8,7 +8,10 @@ use wired_prelude::wired_math::types::Vec3;
 use crate::{
     unavi::shapes::api::Sphere,
     wired::{
-        agent::{context::local_agent, types::BoneName},
+        agent::{
+            context::{local_agent, local_camera},
+            types::BoneName,
+        },
         input::{
             system_api::system_input_listener,
             types::{InputAction, InputDevice, InputListener},
@@ -25,17 +28,22 @@ struct Script {
     render_time: Cell<SystemTime>,
 }
 
+enum Target {
+    Bone(BoneName),
+    Camera,
+}
+
 struct Gauntlet {
     bone: RefCell<Option<Node>>,
     core: Node,
     open: Cell<bool>,
     pressed: Cell<bool>,
-    target: BoneName,
+    target: Target,
 }
 
 const CORE_RADIUS: f32 = 0.04;
 const OPEN_SPEED_SECONDS: f32 = 0.05;
-const Z_OFFSET: f32 = -2.0;
+const Z_OFFSET: f32 = -0.5;
 
 impl GuestScript for Script {
     fn new() -> Self {
@@ -47,7 +55,12 @@ impl GuestScript for Script {
         // TODO: scale mesh based on avatar size
         let mesh = Sphere::new(CORE_RADIUS).mesh();
 
-        let gauntlets = [BoneName::Head, BoneName::LeftHand, BoneName::RightHand].map(|target| {
+        let gauntlets = [
+            Target::Camera,
+            Target::Bone(BoneName::LeftHand),
+            Target::Bone(BoneName::RightHand),
+        ]
+        .map(|target| {
             let g = Gauntlet {
                 bone: RefCell::new(None),
                 open: Cell::new(false),
@@ -73,8 +86,10 @@ impl GuestScript for Script {
         for g in &self.gauntlets {
             let mut bone_ref = g.bone.borrow_mut();
             if bone_ref.is_none() {
-                let agent = local_agent();
-                let node = agent.bone(g.target);
+                let node = match g.target {
+                    Target::Camera => Some(local_camera()),
+                    Target::Bone(b) => local_agent().bone(b),
+                };
                 *bone_ref = node;
                 return;
             }
@@ -106,25 +121,8 @@ impl GuestScript for Script {
 
                 if open && let Some(bone) = g.bone.borrow().as_ref() {
                     let mut tr = bone.global_transform();
-                    tr.translation.z -= Z_OFFSET;
-
-                    if g.target == BoneName::Head {
-                        // Move to eyes so we align with the camera, if they exist.
-                        let agent = local_agent();
-                        let mut eye_heights = Vec::new();
-                        for eye_name in [BoneName::LeftEye, BoneName::RightEye] {
-                            let Some(eye_node) = agent.bone(eye_name) else {
-                                continue;
-                            };
-                            let eye_tr = eye_node.global_transform();
-                            eye_heights.push(eye_tr.translation.y);
-                        }
-                        if eye_heights.len() == 2 {
-                            let offset = f32::midpoint(eye_heights[0], eye_heights[1]);
-                            tr.translation.y = offset;
-                        }
-                    }
-
+                    tr.translation += tr.rotation * Vec3::new(0.0, 0.0, Z_OFFSET);
+                    tr.scale = Vec3::ZERO;
                     g.core.set_transform(tr);
                 }
             }

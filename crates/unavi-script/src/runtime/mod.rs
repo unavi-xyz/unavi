@@ -28,20 +28,10 @@ impl RuntimeCtx {
     pub async fn flush_logs(&mut self) {
         let mut buf = [0; 1024];
         if let Some(s) = log::try_read_text_stream(&mut buf, &mut self.stdout.0).await {
-            for line in s.lines() {
-                let line = line.trim();
-                if !line.is_empty() {
-                    info!("{line}");
-                }
-            }
+            info!("{}", s.trim());
         }
         if let Some(s) = log::try_read_text_stream(&mut buf, &mut self.stderr.0).await {
-            for line in s.lines() {
-                let line = line.trim();
-                if !line.is_empty() {
-                    error!("{line}");
-                }
-            }
+            error!("{}", s.trim());
         }
     }
 }

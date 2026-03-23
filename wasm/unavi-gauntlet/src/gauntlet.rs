@@ -6,7 +6,7 @@ use std::{
 use wired_prelude::wired_math::types::Vec3;
 
 use crate::{
-    module::Module,
+    module::{Module, ModuleKind},
     wired::{
         agent::{
             context::{local_agent, local_camera},
@@ -16,10 +16,21 @@ use crate::{
     },
 };
 
+pub const BG_ALPHA_BASE: f32 = 0.7;
+pub const BG_ALPHA_HOVER: f32 = 0.9;
+pub const ICON_ALPHA_BASE: f32 = 0.7;
+pub const ICON_ALPHA_HOVER: f32 = 0.9;
 pub const CURSOR_PROJ_DIST: f32 = 0.3;
 pub const DEAD_ZONE_RADIUS: f32 = 0.03;
-pub const OPEN_SPEED_SECONDS: f32 = 0.05;
-pub const RING_RADIUS: f32 = 0.2;
+pub const ICON_Z: f32 = 0.006;
+pub const OPEN_SPEED_SECONDS: f32 = 0.18;
+pub const RAISE_DIST: f32 = 0.015;
+pub const RAISE_SPEED_SECONDS: f32 = 0.07;
+pub const RING_RADIUS: f32 = 0.14;
+pub const CLOSE_ON_MOVE_THRESHOLD_SQ: f32 = 0.04;
+pub const SECTOR_GAP_WORLD: f32 = 0.012;
+pub const SECTOR_INNER_R: f32 = 0.04;
+pub const SECTOR_SUBDIVISIONS: usize = 10;
 pub const Z_OFFSET: f32 = -0.5;
 
 pub enum Target {
@@ -34,6 +45,7 @@ pub struct Gauntlet {
     pub hovered_sector: Cell<Option<usize>>,
     pub modules: Vec<Module>,
     pub open: Cell<bool>,
+    pub open_pos: Cell<Option<Vec3>>,
     pub pressed: Cell<bool>,
     /// Logical scale [0.0, 1.0] tracked on the guest side to avoid redundant host calls.
     pub scale_t: Cell<f32>,
@@ -49,6 +61,7 @@ impl Gauntlet {
             hovered_sector: Cell::new(None),
             modules,
             open: Cell::new(false),
+            open_pos: Cell::new(None),
             pressed: Cell::new(false),
             scale_t: Cell::new(0.0),
             target,
@@ -70,6 +83,9 @@ impl Gauntlet {
 
         node.is_some_and(|node| {
             for module in &self.modules {
+                if module.kind == ModuleKind::Nav {
+                    continue;
+                }
                 node.add_child(&module.active);
                 module.active.set_translation(Vec3::new(0.0, 0.1, -0.05));
             }
@@ -78,8 +94,8 @@ impl Gauntlet {
         })
     }
 
-    /// Position core and lay out icon nodes in a ring.
-    pub fn open_menu(&self) {
+    /// Position core and add root nodes to it.
+    pub fn open_menu(&self, open_pos: Vec3) {
         let bone_ref = self.bone.borrow();
         let Some(bone) = bone_ref.as_ref() else {
             return;
@@ -90,31 +106,47 @@ impl Gauntlet {
         tr.scale = Vec3::ZERO;
         self.core.set_transform(tr);
 
-        let n = self.modules.len();
-        for (i, module) in self.modules.iter().enumerate() {
-            let angle = i as f32 * 2.0 * PI / n as f32;
-            let local = Vec3::new(RING_RADIUS * angle.cos(), RING_RADIUS * angle.sin(), 0.0);
-            self.core.add_child(&module.icon);
-            module.icon.set_translation(local);
-            module.icon.set_scale(Vec3::ONE);
-        }
-    }
-
-    /// Remove icon nodes from core, resetting their scale.
-    pub fn close_menu(&self) {
+        self.open_pos.set(Some(open_pos));
         for module in &self.modules {
-            module.icon.set_scale(Vec3::ZERO);
-            self.core.remove_child(&module.icon);
+            module.raise_t.set(0.0);
+            module.root.set_scale(Vec3::ONE);
         }
     }
 
-    /// Select a module by sector index: show its active node, close the menu.
+    /// Hide root nodes without detaching them.
+    pub fn close_menu(&self) {
+        self.open_pos.set(None);
+        for module in &self.modules {
+            module.root.set_scale(Vec3::ZERO);
+        }
+    }
+
+    /// Select a module by sector index. Clicking the active module deactivates it.
     pub fn select(&self, sector: usize) {
-        println!("selected module {sector}");
         if let Some(prev) = self.active_idx.get() {
             self.modules[prev].active.set_scale(Vec3::ZERO);
+            if prev == sector {
+                println!("deactivated {}", self.modules[sector].name);
+                self.active_idx.set(None);
+                self.open.set(false);
+                self.close_menu();
+                return;
+            }
         }
-        self.modules[sector].active.set_scale(Vec3::ONE);
+        let module = &self.modules[sector];
+        println!("activated {}", module.name);
+        if module.kind == ModuleKind::Nav {
+            let bone_ref = self.bone.borrow();
+            if let Some(bone) = bone_ref.as_ref() {
+                let tr = bone.global_transform();
+                let left = tr.rotation * Vec3::new(-1.0, 0.0, 0.0);
+                let forward = tr.rotation * Vec3::new(0.0, 0.0, -1.0);
+                module
+                    .active
+                    .set_translation(tr.translation + left * 0.5 + forward * 0.5);
+            }
+        }
+        module.active.set_scale(Vec3::ONE);
         self.active_idx.set(Some(sector));
         self.open.set(false);
         self.close_menu();

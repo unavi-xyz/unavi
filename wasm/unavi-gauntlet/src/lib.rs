@@ -1,26 +1,24 @@
-use std::{
-    cell::{Cell, RefCell},
-    time::SystemTime,
-};
+mod gauntlet;
+mod module;
+
+use std::{cell::Cell, time::SystemTime};
 
 use wired_prelude::wired_math::types::Vec3;
 
 use crate::{
-    unavi::shapes::api::Sphere,
+    gauntlet::{Gauntlet, OPEN_SPEED_SECONDS, Target},
     wired::{
-        agent::{
-            context::{local_agent, local_camera},
-            types::BoneName,
-        },
+        agent::types::BoneName,
         input::{
             system_api::system_input_listener,
             types::{InputAction, InputDevice, InputListener},
         },
-        scene::{context::self_document, types::Node},
     },
 };
 
 wired_prelude::generate_script!(Script);
+
+const MODULES_PER_GAUNTLET: usize = 2;
 
 struct Script {
     gauntlets: [Gauntlet; 3],
@@ -28,103 +26,85 @@ struct Script {
     render_time: Cell<SystemTime>,
 }
 
-enum Target {
-    Bone(BoneName),
-    Camera,
-}
-
-struct Gauntlet {
-    bone: RefCell<Option<Node>>,
-    core: Node,
-    open: Cell<bool>,
-    pressed: Cell<bool>,
-    target: Target,
-}
-
-const CORE_RADIUS: f32 = 0.04;
-const OPEN_SPEED_SECONDS: f32 = 0.05;
-const Z_OFFSET: f32 = -0.5;
-
 impl GuestScript for Script {
     fn new() -> Self {
+        use crate::wired::scene::context::self_document;
+
         let doc = self_document();
 
-        let mat = doc.create_material();
-        mat.set_base_color(&[0.9, 0.95, 1.0, 0.9]);
-
-        // TODO: scale mesh based on avatar size
-        let mesh = Sphere::new(CORE_RADIUS).mesh();
-
         let gauntlets = [
-            Target::Camera,
-            Target::Bone(BoneName::LeftHand),
-            Target::Bone(BoneName::RightHand),
+            (Target::Camera, [0.8, 0.9, 1.0, 0.7]),
+            (Target::Bone(BoneName::LeftHand), [0.9, 0.8, 1.0, 0.7]),
+            (Target::Bone(BoneName::RightHand), [1.0, 0.8, 0.9, 0.7]),
         ]
-        .map(|target| {
-            let g = Gauntlet {
-                bone: RefCell::new(None),
-                open: Cell::new(false),
-                pressed: Cell::new(false),
-                core: doc.create_node(),
-                target,
-            };
-            g.core.set_scale(Vec3::ZERO);
-            g.core.set_mesh(Some(&mesh));
-            g
+        .map(|(target, base_color)| {
+            let modules = module::make_modules(base_color, MODULES_PER_GAUNTLET);
+            let core = doc.create_node();
+            core.set_scale(Vec3::ZERO);
+            Gauntlet::new(core, target, modules)
         });
-
-        let input = system_input_listener();
 
         Self {
             gauntlets,
-            input,
+            input: system_input_listener(),
             render_time: Cell::new(SystemTime::now()),
         }
     }
 
     fn tick(&self) {
+        if !self
+            .gauntlets
+            .iter()
+            .all(gauntlet::Gauntlet::lazy_init_bone)
+        {
+            return;
+        }
+
         for g in &self.gauntlets {
-            let mut bone_ref = g.bone.borrow_mut();
-            if bone_ref.is_none() {
-                let node = match g.target {
-                    Target::Camera => Some(local_camera()),
-                    Target::Bone(b) => local_agent().bone(b),
-                };
-                *bone_ref = node;
-                return;
-            }
+            g.update_hovered_sector();
         }
 
         while let Some(event) = self.input.poll() {
-            let idx = match event.device {
+            let menu_idx = match event.device {
                 InputDevice::Keyboard => 0,
                 InputDevice::LeftHand => 1,
                 InputDevice::RightHand => 2,
             };
 
-            let pressed = match event.action {
-                InputAction::MenuDown => true,
-                InputAction::MenuUp => false,
-                _ => continue,
-            };
-
-            let g = &self.gauntlets[idx];
-
-            let was_pressed = g.pressed.get();
-            g.pressed.set(pressed);
-
-            // Toggle menu on button down.
-            if !was_pressed && pressed {
-                let was_open = g.open.get();
-                let open = !was_open;
-                g.open.set(open);
-
-                if open && let Some(bone) = g.bone.borrow().as_ref() {
-                    let mut tr = bone.global_transform();
-                    tr.translation += tr.rotation * Vec3::new(0.0, 0.0, Z_OFFSET);
-                    tr.scale = Vec3::ZERO;
-                    g.core.set_transform(tr);
+            match event.action {
+                InputAction::MenuDown => {
+                    let g = &self.gauntlets[menu_idx];
+                    if !g.pressed.get() {
+                        g.pressed.set(true);
+                        if g.open.get() {
+                            g.open.set(false);
+                            g.close_menu();
+                        } else {
+                            g.open.set(true);
+                            g.open_menu();
+                        }
+                    }
                 }
+                InputAction::MenuUp => {
+                    self.gauntlets[menu_idx].pressed.set(false);
+                }
+                InputAction::GrabDown => {
+                    for g in &self.gauntlets {
+                        let matches = matches!(
+                            (&g.target, event.device),
+                            (Target::Camera, _)
+                                | (Target::Bone(BoneName::LeftHand), InputDevice::LeftHand)
+                                | (Target::Bone(BoneName::RightHand), InputDevice::RightHand)
+                        );
+                        if matches
+                            && g.open.get()
+                            && let Some(sector) = g.hovered_sector.get()
+                        {
+                            g.select(sector);
+                        }
+                    }
+                }
+                InputAction::GrabUp => {}
             }
         }
     }
@@ -139,23 +119,32 @@ impl GuestScript for Script {
         self.render_time.set(SystemTime::now());
 
         for g in &self.gauntlets {
-            let mut s = g.core.scale();
-
+            let prev_t = g.scale_t.get();
             let inc = if g.open.get() {
                 delta / OPEN_SPEED_SECONDS
             } else {
                 -delta / OPEN_SPEED_SECONDS
             };
+            let new_t = (prev_t + inc).clamp(0.0, 1.0);
+            if new_t.to_bits() != prev_t.to_bits() {
+                g.scale_t.set(new_t);
+                g.core.set_scale(Vec3::splat(new_t));
+            }
 
-            s.x += inc;
-            s.y += inc;
-            s.z += inc;
+            if !g.open.get() {
+                continue;
+            }
 
-            s.x = s.x.clamp(0.0, 1.0);
-            s.y = s.y.clamp(0.0, 1.0);
-            s.z = s.z.clamp(0.0, 1.0);
-
-            g.core.set_scale(s);
+            let hovered = g.hovered_sector.get();
+            for (i, module) in g.modules.iter().enumerate() {
+                if Some(i) == hovered {
+                    module.material.set_base_color(&[1.0, 1.0, 1.0, 1.0]);
+                    module.icon.set_scale(Vec3::splat(1.5));
+                } else {
+                    module.material.set_base_color(&module.color);
+                    module.icon.set_scale(Vec3::ONE);
+                }
+            }
         }
     }
 

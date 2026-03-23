@@ -33,7 +33,13 @@ impl Plugin for ScriptPlugin {
             .init_resource::<load::local::PendingHandles>()
             .add_observer(api::wired::input::bridge::bridge_squeeze_down)
             .add_observer(api::wired::input::bridge::bridge_squeeze_up)
-            .add_systems(Update, api::wired::input::bridge::update_menu_buffer)
+            .add_systems(
+                Update,
+                (
+                    api::wired::input::bridge::update_menu_buffer,
+                    api::wired::input::bridge::update_squeeze_buffer,
+                ),
+            )
             .register_asset_loader(asset::WasmLoader)
             .init_asset::<asset::Wasm>()
             .add_observer(agent::on_avatar_bones_added)

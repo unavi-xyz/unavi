@@ -1,7 +1,10 @@
 use bevy::prelude::*;
 use unavi_input::{
     SqueezeDown, SqueezeUp,
-    actions::{MenuDesktopAction, MenuLeftHandAction, MenuRightHandAction},
+    actions::{
+        MenuDesktopAction, MenuLeftHandAction, MenuRightHandAction, SqueezeLeftAction,
+        SqueezeRightAction,
+    },
     schminput::prelude::BoolActionValue,
 };
 
@@ -56,10 +59,57 @@ pub fn update_menu_buffer(
     );
 }
 
+pub fn update_squeeze_buffer(
+    squeeze_left: Query<&BoolActionValue, With<SqueezeLeftAction>>,
+    squeeze_right: Query<&BoolActionValue, With<SqueezeRightAction>>,
+    mut prev_left: Local<bool>,
+    mut prev_right: Local<bool>,
+    registry: Res<InputRegistry>,
+) {
+    push_bool_events(
+        squeeze_left.single().ok(),
+        &mut prev_left,
+        InputDevice::LeftHand,
+        InputAction::GrabDown,
+        InputAction::GrabUp,
+        "squeeze",
+        &registry,
+    );
+    push_bool_events(
+        squeeze_right.single().ok(),
+        &mut prev_right,
+        InputDevice::RightHand,
+        InputAction::GrabDown,
+        InputAction::GrabUp,
+        "squeeze",
+        &registry,
+    );
+}
+
 fn push_menu_events(
     value: Option<&BoolActionValue>,
     prev: &mut bool,
     device: InputDevice,
+    registry: &InputRegistry,
+) {
+    push_bool_events(
+        value,
+        prev,
+        device,
+        InputAction::MenuDown,
+        InputAction::MenuUp,
+        "menu",
+        registry,
+    );
+}
+
+fn push_bool_events(
+    value: Option<&BoolActionValue>,
+    prev: &mut bool,
+    device: InputDevice,
+    down: InputAction,
+    up: InputAction,
+    label: &str,
     registry: &InputRegistry,
 ) {
     let current = value.is_some_and(|v| v.any);
@@ -68,16 +118,13 @@ fn push_menu_events(
     *prev = current;
 
     if pressed {
-        debug!("menu pressed");
+        debug!("{label} pressed");
         registry.push_system(QueuedEvent {
-            action: InputAction::MenuDown,
+            action: down,
             device,
         });
     } else if released {
-        debug!("menu released");
-        registry.push_system(QueuedEvent {
-            action: InputAction::MenuUp,
-            device,
-        });
+        debug!("{label} released");
+        registry.push_system(QueuedEvent { action: up, device });
     }
 }

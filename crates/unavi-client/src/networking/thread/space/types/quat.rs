@@ -1,7 +1,5 @@
 //! Quaternion quantization using smallest-three encoding.
 
-#![expect(clippy::cast_sign_loss)]
-
 use avian3d::math::FRAC_1_SQRT_2;
 use bevy::math::Quat;
 use postcard::experimental::max_size::MaxSize;

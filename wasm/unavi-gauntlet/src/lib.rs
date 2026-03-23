@@ -6,7 +6,11 @@ use std::{cell::Cell, time::SystemTime};
 use wired_prelude::wired_math::types::Vec3;
 
 use crate::{
-    gauntlet::{Gauntlet, OPEN_SPEED_SECONDS, Target},
+    gauntlet::{
+        BG_ALPHA_BASE, BG_ALPHA_HOVER, CLOSE_ON_MOVE_THRESHOLD_SQ, Gauntlet, ICON_ALPHA_BASE,
+        ICON_ALPHA_HOVER, OPEN_SPEED_SECONDS, RAISE_DIST, RAISE_SPEED_SECONDS, Target,
+    },
+    module::{ModuleDef, ModuleKind},
     wired::{
         agent::types::BoneName,
         input::{
@@ -18,7 +22,23 @@ use crate::{
 
 wired_prelude::generate_script!(Script);
 
-const MODULES_PER_GAUNTLET: usize = 2;
+const MODULE_DEFS: [ModuleDef; 3] = [
+    ModuleDef {
+        kind: ModuleKind::Config,
+        name: "Config",
+        rgb: [0.60, 0.35, 0.75],
+    },
+    ModuleDef {
+        kind: ModuleKind::Inventory,
+        name: "Inventory",
+        rgb: [0.35, 0.75, 0.40],
+    },
+    ModuleDef {
+        kind: ModuleKind::Nav,
+        name: "Nav",
+        rgb: [0.30, 0.55, 0.90],
+    },
+];
 
 struct Script {
     gauntlets: [Gauntlet; 3],
@@ -33,14 +53,18 @@ impl GuestScript for Script {
         let doc = self_document();
 
         let gauntlets = [
-            (Target::Camera, [0.8, 0.9, 1.0, 0.7]),
-            (Target::Bone(BoneName::LeftHand), [0.9, 0.8, 1.0, 0.7]),
-            (Target::Bone(BoneName::RightHand), [1.0, 0.8, 0.9, 0.7]),
+            Target::Camera,
+            Target::Bone(BoneName::LeftHand),
+            Target::Bone(BoneName::RightHand),
         ]
-        .map(|(target, base_color)| {
-            let modules = module::make_modules(base_color, MODULES_PER_GAUNTLET);
+        .map(|target| {
+            let modules = module::make_modules(&MODULE_DEFS);
             let core = doc.create_node();
             core.set_scale(Vec3::ZERO);
+            for m in &modules {
+                m.root.set_scale(Vec3::ZERO);
+                core.add_child(&m.root);
+            }
             Gauntlet::new(core, target, modules)
         });
 
@@ -58,6 +82,23 @@ impl GuestScript for Script {
             .all(gauntlet::Gauntlet::lazy_init_bone)
         {
             return;
+        }
+
+        let camera_pos: Option<Vec3> = {
+            let bone_ref = self.gauntlets[0].bone.borrow();
+            bone_ref.as_ref().map(|b| b.global_transform().translation)
+        };
+
+        if let Some(pos) = camera_pos {
+            for g in &self.gauntlets {
+                if let Some(open_pos) = g.open_pos.get() {
+                    let delta = pos - open_pos;
+                    if delta.dot(delta) > CLOSE_ON_MOVE_THRESHOLD_SQ {
+                        g.open.set(false);
+                        g.close_menu();
+                    }
+                }
+            }
         }
 
         for g in &self.gauntlets {
@@ -81,7 +122,7 @@ impl GuestScript for Script {
                             g.close_menu();
                         } else {
                             g.open.set(true);
-                            g.open_menu();
+                            g.open_menu(camera_pos.unwrap_or(Vec3::ZERO));
                         }
                     }
                 }
@@ -137,12 +178,29 @@ impl GuestScript for Script {
 
             let hovered = g.hovered_sector.get();
             for (i, module) in g.modules.iter().enumerate() {
-                if Some(i) == hovered {
-                    module.material.set_base_color(&[1.0, 1.0, 1.0, 1.0]);
-                    module.icon.set_scale(Vec3::splat(1.5));
+                let target_raise = if Some(i) == hovered { 1.0_f32 } else { 0.0_f32 };
+                let prev_raise = module.raise_t.get();
+                let speed = delta / RAISE_SPEED_SECONDS;
+                let new_raise = if target_raise > prev_raise {
+                    (prev_raise + speed).min(target_raise)
                 } else {
-                    module.material.set_base_color(&module.color);
-                    module.icon.set_scale(Vec3::ONE);
+                    (prev_raise - speed).max(target_raise)
+                };
+                if new_raise.to_bits() != prev_raise.to_bits() {
+                    module.raise_t.set(new_raise);
+                    module
+                        .root
+                        .set_translation(Vec3::new(0.0, 0.0, new_raise * RAISE_DIST));
+                    let c = module.bg_color;
+                    let bg_alpha = new_raise.mul_add(BG_ALPHA_HOVER - BG_ALPHA_BASE, BG_ALPHA_BASE);
+                    module
+                        .bg_material
+                        .set_base_color(&[c[0], c[1], c[2], bg_alpha]);
+                    let icon_alpha =
+                        new_raise.mul_add(ICON_ALPHA_HOVER - ICON_ALPHA_BASE, ICON_ALPHA_BASE);
+                    module
+                        .icon_material
+                        .set_base_color(&[c[0], c[1], c[2], icon_alpha]);
                 }
             }
         }

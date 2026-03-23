@@ -104,6 +104,7 @@ pub(crate) fn handle_hsd_node_spawned(
             HsdChild { doc: ev.doc },
             NodeId(ev.id.clone()),
             Transform::IDENTITY,
+            Visibility::default(),
         ))
         .id();
     *inner.entity.lock().expect("entity lock") = Some(ent);

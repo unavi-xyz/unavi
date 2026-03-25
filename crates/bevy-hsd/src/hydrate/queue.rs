@@ -169,7 +169,9 @@ fn handle_mesh_added(
         doc: doc_ent,
         id: id.clone(),
     });
-    if let Some(hsd_mesh) = get_mesh_at(hsd_map, &id) {
+    if let Some(hsd_mesh) = get_mesh_at(hsd_map, &id)
+        && (!hsd_mesh.attributes.is_empty() || hsd_mesh.indices.is_some())
+    {
         commands.trigger(HsdMeshGeometrySet {
             doc: doc_ent,
             id,

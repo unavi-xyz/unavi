@@ -149,8 +149,8 @@ fn delete_map_entry(doc: &LoroDoc, section: &str, id: &str) {
 
 fn sync_node_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
     let mut wrote = false;
-    let nodes = registry.0.nodes.lock().expect("nodes lock");
-    for inner in nodes.iter() {
+    let nodes = registry.0.nodes.lock().expect("nodes lock").iter().cloned().collect::<Vec<_>>();
+    for inner in &nodes {
         if inner.is_virtual {
             continue;
         }
@@ -239,8 +239,8 @@ fn sync_node_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
 
 fn sync_mesh_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
     let mut wrote = false;
-    let meshes = registry.0.meshes.lock().expect("meshes lock");
-    for inner in meshes.values() {
+    let meshes = registry.0.meshes.lock().expect("meshes lock").values().cloned().collect::<Vec<_>>();
+    for inner in &meshes {
         let ch = std::mem::take(&mut *inner.hsd_changes.lock().expect("hsd_changes lock"));
         if ch.is_empty() {
             continue;
@@ -275,8 +275,8 @@ fn sync_mesh_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
 
 fn sync_material_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
     let mut wrote = false;
-    let materials = registry.0.materials.lock().expect("materials lock");
-    for inner in materials.values() {
+    let materials = registry.0.materials.lock().expect("materials lock").values().cloned().collect::<Vec<_>>();
+    for inner in &materials {
         let ch = std::mem::take(&mut *inner.hsd_changes.lock().expect("hsd_changes lock"));
         if ch.is_empty() {
             continue;

@@ -90,6 +90,7 @@ pub struct MaterialDirty {
     pub metallic: bool,
     pub name: bool,
     pub roughness: bool,
+    pub unlit: bool,
 }
 
 impl MaterialDirty {
@@ -102,6 +103,7 @@ impl MaterialDirty {
             || self.metallic
             || self.name
             || self.roughness
+            || self.unlit
     }
 }
 
@@ -114,6 +116,7 @@ pub struct MaterialHsdChanges {
     pub metallic: Option<f64>,
     pub name: Option<Option<String>>,
     pub roughness: Option<f64>,
+    pub unlit: Option<bool>,
 }
 
 impl MaterialHsdChanges {
@@ -126,6 +129,7 @@ impl MaterialHsdChanges {
             && self.metallic.is_none()
             && self.name.is_none()
             && self.roughness.is_none()
+            && self.unlit.is_none()
     }
 }
 
@@ -218,6 +222,7 @@ pub struct MaterialState {
     pub metallic: f32,
     pub name: Option<String>,
     pub roughness: f32,
+    pub unlit: bool,
 }
 
 impl Default for MaterialState {
@@ -230,6 +235,7 @@ impl Default for MaterialState {
             metallic: 0.0,
             name: None,
             roughness: 0.5,
+            unlit: false,
         }
     }
 }

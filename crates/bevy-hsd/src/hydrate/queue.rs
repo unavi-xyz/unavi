@@ -16,7 +16,7 @@ use crate::{
 use super::compile::material::{
     HsdMaterialAlphaCutoffSet, HsdMaterialAlphaModeSet, HsdMaterialBaseColorSet,
     HsdMaterialDespawned, HsdMaterialDoubleSidedSet, HsdMaterialMetallicSet, HsdMaterialNameSet,
-    HsdMaterialRoughnessSet, HsdMaterialSpawned,
+    HsdMaterialRoughnessSet, HsdMaterialSpawned, HsdMaterialUnlitSet,
 };
 use super::compile::mesh::{
     HsdMeshDespawned, HsdMeshGeometrySet, HsdMeshSpawned, MeshGeometrySource,
@@ -375,6 +375,13 @@ fn emit_material_fields(doc: Entity, id: &SmolStr, hsd: &HsdMaterial, commands: 
             doc,
             id: id.clone(),
             name: Some(name.to_string()),
+        });
+    }
+    if let Some(v) = hsd.unlit {
+        commands.trigger(HsdMaterialUnlitSet {
+            doc,
+            id: id.clone(),
+            value: v,
         });
     }
 }

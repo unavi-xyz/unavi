@@ -22,6 +22,7 @@ impl Plugin for HsdPlugin {
             .add_observer(hydrate::compile::material::handle_hsd_material_name_set)
             .add_observer(hydrate::compile::material::handle_hsd_material_roughness_set)
             .add_observer(hydrate::compile::material::handle_hsd_material_spawned)
+            .add_observer(hydrate::compile::material::handle_hsd_material_unlit_set)
             .add_observer(hydrate::compile::material::on_material_blobs_loaded)
             .add_observer(hydrate::compile::mesh::handle_hsd_mesh_despawned)
             .add_observer(hydrate::compile::mesh::handle_hsd_mesh_geometry_set)

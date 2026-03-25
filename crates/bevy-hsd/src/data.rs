@@ -35,6 +35,8 @@ pub struct HsdMaterial {
     pub occlusion_texture: Option<HydratedHash>,
     #[loro(default)]
     pub roughness: Option<f64>,
+    #[loro(default)]
+    pub unlit: Option<bool>,
 }
 
 #[derive(Debug, Clone, Default, Hydrate, Reconcile)]

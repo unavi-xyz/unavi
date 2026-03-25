@@ -50,6 +50,7 @@ impl Plugin for HsdPlugin {
                 hydrate::sync::sync_to_hsd,
                 hydrate::queue::process_hsd_queue,
                 hydrate::flush::flush_script_dirty,
+                hydrate::compile::material::recompile_changed_materials,
             )
                 .chain(),
         )

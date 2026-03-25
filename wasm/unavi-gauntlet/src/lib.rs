@@ -7,8 +7,8 @@ use wired_prelude::wired_math::types::Vec3;
 
 use crate::{
     gauntlet::{
-        BG_ALPHA_BASE, BG_ALPHA_HOVER, CLOSE_ON_MOVE_THRESHOLD_SQ, Gauntlet, ICON_ALPHA_BASE,
-        ICON_ALPHA_HOVER, OPEN_SPEED_SECONDS, RAISE_DIST, RAISE_SPEED_SECONDS, Target,
+        BG_ALPHA_BASE, BG_ALPHA_HOVER, CLOSE_ON_MOVE_THRESHOLD_SQ, Gauntlet, OPEN_SPEED_SECONDS,
+        RAISE_DIST, RAISE_SPEED_SECONDS, Target,
     },
     module::{ModuleDef, ModuleKind},
     wired::{
@@ -196,11 +196,6 @@ impl GuestScript for Script {
                     module
                         .bg_material
                         .set_base_color(&[c[0], c[1], c[2], bg_alpha]);
-                    let icon_alpha =
-                        new_raise.mul_add(ICON_ALPHA_HOVER - ICON_ALPHA_BASE, ICON_ALPHA_BASE);
-                    module
-                        .icon_material
-                        .set_base_color(&[c[0], c[1], c[2], icon_alpha]);
                 }
             }
         }

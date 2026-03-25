@@ -4,7 +4,7 @@ use wired_prelude::wired_math::types::Vec3;
 
 use crate::{
     gauntlet::{
-        BG_ALPHA_BASE, ICON_ALPHA_BASE, ICON_Z, OUTLINE_COLOR, OUTLINE_WIDTH, OUTLINE_Z,
+        BG_ALPHA_BASE, ICON_Z, OUTLINE_COLOR, OUTLINE_WIDTH, OUTLINE_Z,
         RING_RADIUS, SECTOR_GAP_WORLD, SECTOR_INNER_R, SECTOR_SUBDIVISIONS,
     },
     unavi::shapes::api::{Cuboid, Sphere},
@@ -34,7 +34,6 @@ pub struct Module {
     pub active_state: Cell<bool>,
     pub bg_color: [f32; 3],
     pub bg_material: Material,
-    pub icon_material: Material,
     pub kind: ModuleKind,
     pub name: &'static str,
     pub outline_node: Node,
@@ -58,8 +57,7 @@ fn make_module(doc: &Document, i: usize, n: usize, def: &ModuleDef) -> Module {
     let angle = i as f32 * 2.0 * PI / n as f32;
 
     let icon_mat = doc.create_material();
-    icon_mat.set_base_color(&[def.rgb[0], def.rgb[1], def.rgb[2], ICON_ALPHA_BASE]);
-    icon_mat.set_alpha_mode(Some(AlphaMode::Blend));
+    icon_mat.set_base_color(&[def.rgb[0], def.rgb[1], def.rgb[2], 1.0]);
     let icon = doc.create_node();
     icon.set_mesh(Some(&Sphere::new(ICON_RADIUS).mesh()));
     icon.set_material(Some(&icon_mat));
@@ -96,7 +94,6 @@ fn make_module(doc: &Document, i: usize, n: usize, def: &ModuleDef) -> Module {
         active_state: Cell::new(false),
         bg_color: def.rgb,
         bg_material,
-        icon_material: icon_mat,
         kind: def.kind,
         name: def.name,
         outline_node: outline,

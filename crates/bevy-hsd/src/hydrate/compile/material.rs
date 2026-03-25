@@ -292,6 +292,35 @@ pub(crate) fn handle_hsd_material_roughness_set(
     }
 }
 
+fn build_standard_material(params: &MaterialParams) -> StandardMaterial {
+    let mut material = StandardMaterial::default();
+    if let Some(value) = params.base_color {
+        material.base_color = value;
+    }
+    material.alpha_mode = match params.alpha_mode.as_deref() {
+        Some("blend") => AlphaMode::Blend,
+        Some("mask") => AlphaMode::Mask(params.alpha_cutoff.unwrap_or(0.5)),
+        Some("opaque") => AlphaMode::Opaque,
+        _ => {
+            if material.base_color.alpha() < 1.0 {
+                AlphaMode::Blend
+            } else {
+                AlphaMode::Opaque
+            }
+        }
+    };
+    if let Some(value) = params.double_sided {
+        material.double_sided = value;
+    }
+    if let Some(value) = params.metallic {
+        material.metallic = value;
+    }
+    if let Some(value) = params.roughness {
+        material.perceptual_roughness = value;
+    }
+    material
+}
+
 pub(crate) fn on_material_blobs_loaded(
     trigger: On<Add, BlobDepsLoaded>,
     mat_params: Query<(&MaterialParams, Option<&CompiledMaterial>)>,
@@ -305,35 +334,6 @@ pub(crate) fn on_material_blobs_loaded(
         return;
     };
 
-    let mut material = StandardMaterial::default();
-
-    if let Some(value) = params.base_color {
-        material.base_color = value;
-    }
-    let alpha_mode = match params.alpha_mode.as_deref() {
-        Some("blend") => AlphaMode::Blend,
-        Some("mask") => AlphaMode::Mask(params.alpha_cutoff.unwrap_or(0.5)),
-        Some("opaque") => AlphaMode::Opaque,
-        _ => {
-            let alpha = material.base_color.alpha();
-            if alpha < 1.0 {
-                AlphaMode::Blend
-            } else {
-                AlphaMode::Opaque
-            }
-        }
-    };
-    material.alpha_mode = alpha_mode;
-    if let Some(value) = params.double_sided {
-        material.double_sided = value;
-    }
-    if let Some(value) = params.metallic {
-        material.metallic = value;
-    }
-    if let Some(value) = params.roughness {
-        material.perceptual_roughness = value;
-    }
-
     if let Some(value) = params.base_color_texture {
         let Ok(Some(_bytes)) = blobs.get_mut(value).map(|mut b| b.0.take()) else {
             return;
@@ -341,6 +341,7 @@ pub(crate) fn on_material_blobs_loaded(
         // TODO: load image details from HSD
     }
 
+    let material = build_standard_material(params);
     debug!("compiled material {ent}");
     if let Some(CompiledMaterial(handle)) = existing {
         if let Some(asset) = mat_assets.get_mut(handle) {
@@ -357,5 +358,17 @@ pub(crate) fn on_material_blobs_loaded(
             .insert(CompiledMaterial(handle))
             .remove::<BlobDeps>()
             .remove::<BlobDepsLoaded>();
+    }
+}
+
+pub(crate) fn recompile_changed_materials(
+    changed: Query<(&MaterialParams, &CompiledMaterial), Changed<MaterialParams>>,
+    mut mat_assets: ResMut<Assets<StandardMaterial>>,
+) {
+    for (params, compiled) in &changed {
+        let Some(asset) = mat_assets.get_mut(&compiled.0) else {
+            continue;
+        };
+        *asset = build_standard_material(params);
     }
 }

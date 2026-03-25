@@ -17,11 +17,7 @@ use crate::{
 };
 
 pub const BG_ALPHA_BASE: f32 = 0.8;
-pub const BG_ALPHA_HOVER: f32 = 0.95;
-pub const ICON_ALPHA_BASE: f32 = 1.0;
-pub const ICON_ALPHA_HOVER: f32 = 1.0;
-pub const CURSOR_PROJ_DIST: f32 = 0.3;
-pub const DEAD_ZONE_RADIUS: f32 = 0.03;
+pub const BG_ALPHA_HOVER: f32 = 0.97;
 pub const ICON_Z: f32 = 0.006;
 pub const OPEN_SPEED_SECONDS: f32 = 0.18;
 pub const RAISE_DIST: f32 = 0.015;
@@ -119,6 +115,16 @@ impl Gauntlet {
     pub fn close_menu(&self) {
         self.hovered_sector.set(None);
         self.open_pos.set(None);
+        for module in &self.modules {
+            if module.raise_t.get() != 0.0 {
+                module.raise_t.set(0.0);
+                module.root.set_translation(Vec3::ZERO);
+                let c = module.bg_color;
+                module
+                    .bg_material
+                    .set_base_color(&[c[0], c[1], c[2], BG_ALPHA_BASE]);
+            }
+        }
     }
 
     /// Toggle a module's active state by sector index.
@@ -168,8 +174,21 @@ impl Gauntlet {
         let menu_tr = self.core.global_transform();
 
         let forward = bone_tr.rotation * Vec3::new(0.0, 0.0, -1.0);
-        let cursor = bone_tr.translation + forward * CURSOR_PROJ_DIST;
-        let cursor_rel = cursor - menu_tr.translation;
+
+        // Ray-plane intersection: find where the look direction hits the menu plane.
+        let menu_normal = menu_tr.rotation * Vec3::Z;
+        let origin_to_menu = menu_tr.translation - bone_tr.translation;
+        let denom = forward.dot(menu_normal);
+        if denom.abs() < 1e-6 {
+            self.hovered_sector.set(None);
+            return;
+        }
+        let t = origin_to_menu.dot(menu_normal) / denom;
+        if t < 0.0 {
+            self.hovered_sector.set(None);
+            return;
+        }
+        let cursor_rel = bone_tr.translation + forward * t - menu_tr.translation;
 
         let right = menu_tr.rotation * Vec3::X;
         let up = menu_tr.rotation * Vec3::Y;
@@ -177,7 +196,7 @@ impl Gauntlet {
         let y = cursor_rel.dot(up);
         let dist = x.hypot(y);
 
-        if dist < DEAD_ZONE_RADIUS {
+        if dist < SECTOR_INNER_R {
             self.hovered_sector.set(None);
             return;
         }

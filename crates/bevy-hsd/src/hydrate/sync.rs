@@ -149,7 +149,14 @@ fn delete_map_entry(doc: &LoroDoc, section: &str, id: &str) {
 
 fn sync_node_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
     let mut wrote = false;
-    let nodes = registry.0.nodes.lock().expect("nodes lock").iter().cloned().collect::<Vec<_>>();
+    let nodes = registry
+        .0
+        .nodes
+        .lock()
+        .expect("nodes lock")
+        .iter()
+        .cloned()
+        .collect::<Vec<_>>();
     for inner in &nodes {
         if inner.is_virtual {
             continue;
@@ -239,7 +246,14 @@ fn sync_node_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
 
 fn sync_mesh_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
     let mut wrote = false;
-    let meshes = registry.0.meshes.lock().expect("meshes lock").values().cloned().collect::<Vec<_>>();
+    let meshes = registry
+        .0
+        .meshes
+        .lock()
+        .expect("meshes lock")
+        .values()
+        .cloned()
+        .collect::<Vec<_>>();
     for inner in &meshes {
         let ch = std::mem::take(&mut *inner.hsd_changes.lock().expect("hsd_changes lock"));
         if ch.is_empty() {
@@ -275,7 +289,14 @@ fn sync_mesh_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
 
 fn sync_material_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
     let mut wrote = false;
-    let materials = registry.0.materials.lock().expect("materials lock").values().cloned().collect::<Vec<_>>();
+    let materials = registry
+        .0
+        .materials
+        .lock()
+        .expect("materials lock")
+        .values()
+        .cloned()
+        .collect::<Vec<_>>();
     for inner in &materials {
         let ch = std::mem::take(&mut *inner.hsd_changes.lock().expect("hsd_changes lock"));
         if ch.is_empty() {
@@ -338,6 +359,10 @@ fn sync_material_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
         }
         if let Some(r) = ch.roughness {
             let _ = map.insert("roughness", r);
+            wrote = true;
+        }
+        if let Some(unlit) = ch.unlit {
+            let _ = map.insert("unlit", unlit);
             wrote = true;
         }
     }

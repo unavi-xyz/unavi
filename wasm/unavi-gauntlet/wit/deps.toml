@@ -1,3 +1,4 @@
 unavi-shapes  = "../../unavi-shapes/wit"
 wired-agent   = "../../../protocol/wit/wired-agent"
 wired-prelude = "../../../protocol/wit/wired-prelude"
+wired-scene   = "../../../protocol/wit/wired-scene"

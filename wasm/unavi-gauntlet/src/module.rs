@@ -4,8 +4,8 @@ use wired_prelude::wired_math::types::Vec3;
 
 use crate::{
     gauntlet::{
-        BG_ALPHA_BASE, ICON_Z, OUTLINE_COLOR, OUTLINE_WIDTH, OUTLINE_Z,
-        RING_RADIUS, SECTOR_GAP_WORLD, SECTOR_INNER_R, SECTOR_SUBDIVISIONS,
+        BG_ALPHA_BASE, ICON_Z, OUTLINE_COLOR, OUTLINE_WIDTH, OUTLINE_Z, RING_RADIUS,
+        SECTOR_GAP_WORLD, SECTOR_INNER_R, SECTOR_SUBDIVISIONS,
     },
     unavi::shapes::api::{Cuboid, Sphere},
     wired::scene::{
@@ -58,6 +58,7 @@ fn make_module(doc: &Document, i: usize, n: usize, def: &ModuleDef) -> Module {
 
     let icon_mat = doc.create_material();
     icon_mat.set_base_color(&[def.rgb[0], def.rgb[1], def.rgb[2], 1.0]);
+    icon_mat.set_unlit(true);
     let icon = doc.create_node();
     icon.set_mesh(Some(&Sphere::new(ICON_RADIUS).mesh()));
     icon.set_material(Some(&icon_mat));
@@ -66,8 +67,9 @@ fn make_module(doc: &Document, i: usize, n: usize, def: &ModuleDef) -> Module {
 
     let bg_material = doc.create_material();
     bg_material.set_base_color(&[def.rgb[0], def.rgb[1], def.rgb[2], BG_ALPHA_BASE]);
-    bg_material.set_alpha_mode(Some(AlphaMode::Blend));
+    bg_material.set_alpha_mode(Some(AlphaMode::Add));
     bg_material.set_double_sided(true);
+    bg_material.set_unlit(true);
     let bg = doc.create_node();
     bg.set_mesh(Some(&make_sector_mesh(doc, i, n)));
     bg.set_material(Some(&bg_material));
@@ -75,6 +77,7 @@ fn make_module(doc: &Document, i: usize, n: usize, def: &ModuleDef) -> Module {
     let outline_mat = doc.create_material();
     outline_mat.set_base_color(&[OUTLINE_COLOR[0], OUTLINE_COLOR[1], OUTLINE_COLOR[2], 1.0]);
     outline_mat.set_double_sided(true);
+    outline_mat.set_unlit(true);
     let outline = doc.create_node();
     outline.set_mesh(Some(&make_outline_mesh(doc, i, n)));
     outline.set_material(Some(&outline_mat));

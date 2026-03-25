@@ -81,9 +81,12 @@ interface types {
   }
 
   enum alpha-mode {
+    add,
     blend,
     mask,
+    multiply,
     opaque,
+    pre-multiplied,
   }
 
   resource material {
@@ -110,6 +113,9 @@ interface types {
 
     double-sided: func() -> bool;
     set-double-sided: func(value: bool);
+
+    unlit: func() -> bool;
+    set-unlit: func(value: bool);
 
     sync: func() -> bool;
     set-sync: func(value: bool);

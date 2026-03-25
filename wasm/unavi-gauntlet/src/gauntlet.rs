@@ -16,8 +16,8 @@ use crate::{
     },
 };
 
-pub const BG_ALPHA_BASE: f32 = 0.8;
-pub const BG_ALPHA_HOVER: f32 = 0.97;
+pub const BG_ALPHA_BASE: f32 = 0.3;
+pub const BG_ALPHA_HOVER: f32 = 0.9;
 pub const ICON_Z: f32 = 0.006;
 pub const OPEN_SPEED_SECONDS: f32 = 0.18;
 pub const RAISE_DIST: f32 = 0.015;

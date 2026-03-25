@@ -117,9 +117,12 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
             .alpha_mode
             .as_deref()
             .and_then(|s| match s {
+                "add" => Some(AlphaMode::Add),
                 "blend" => Some(AlphaMode::Blend),
                 "mask" => Some(AlphaMode::Mask),
+                "multiply" => Some(AlphaMode::Multiply),
                 "opaque" => Some(AlphaMode::Opaque),
+                "premultiplied" => Some(AlphaMode::PreMultiplied),
                 _ => None,
             });
         Ok(mode)
@@ -132,9 +135,12 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         let mode_str = value.map(|m| match m {
+            AlphaMode::Add => "add".to_string(),
             AlphaMode::Blend => "blend".to_string(),
             AlphaMode::Mask => "mask".to_string(),
+            AlphaMode::Multiply => "multiply".to_string(),
             AlphaMode::Opaque => "opaque".to_string(),
+            AlphaMode::PreMultiplied => "premultiplied".to_string(),
         });
         inner
             .state
@@ -255,6 +261,22 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
                 .double_sided = Some(value);
         } else {
             inner.dirty.lock().expect("dirty lock").double_sided = true;
+        }
+        Ok(())
+    }
+
+    async fn unlit(&mut self, self_: Resource<Material>) -> wasmtime::Result<bool> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner.state.lock().expect("material state lock").unlit)
+    }
+
+    async fn set_unlit(&mut self, self_: Resource<Material>, value: bool) -> wasmtime::Result<()> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        inner.state.lock().expect("material state lock").unlit = value;
+        if inner.sync.load(Ordering::Relaxed) {
+            inner.hsd_changes.lock().expect("hsd_changes lock").unlit = Some(value);
+        } else {
+            inner.dirty.lock().expect("dirty lock").unlit = true;
         }
         Ok(())
     }

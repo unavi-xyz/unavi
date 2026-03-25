@@ -5,7 +5,7 @@ use crate::cache::{MeshDirty, SceneRegistry};
 use super::compile::material::{
     HsdMaterialAlphaCutoffSet, HsdMaterialAlphaModeSet, HsdMaterialBaseColorSet,
     HsdMaterialDespawned, HsdMaterialDoubleSidedSet, HsdMaterialMetallicSet, HsdMaterialNameSet,
-    HsdMaterialRoughnessSet, HsdMaterialSpawned,
+    HsdMaterialRoughnessSet, HsdMaterialSpawned, HsdMaterialUnlitSet,
 };
 use super::compile::mesh::{
     HsdMeshDespawned, HsdMeshGeometrySet, HsdMeshSpawned, MeshGeometrySource,
@@ -203,6 +203,13 @@ fn flush_dirty_materials(doc_ent: Entity, registry: &SceneRegistry, commands: &m
                 doc: doc_ent,
                 id: id.clone(),
                 name: state.name.clone(),
+            });
+        }
+        if dirty.unlit {
+            commands.trigger(HsdMaterialUnlitSet {
+                doc: doc_ent,
+                id: id.clone(),
+                value: state.unlit,
             });
         }
     }

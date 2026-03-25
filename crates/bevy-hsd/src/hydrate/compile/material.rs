@@ -65,6 +65,13 @@ pub struct HsdMaterialSpawned {
     pub id: SmolStr,
 }
 
+#[derive(Event)]
+pub struct HsdMaterialUnlitSet {
+    pub doc: Entity,
+    pub id: SmolStr,
+    pub value: bool,
+}
+
 #[derive(Component, Default)]
 #[require(BlobDeps)]
 pub struct MaterialParams {
@@ -74,6 +81,7 @@ pub struct MaterialParams {
     pub double_sided: Option<bool>,
     pub metallic: Option<f32>,
     pub roughness: Option<f32>,
+    pub unlit: Option<bool>,
     pub base_color_texture: Option<Entity>,
     _metallic_roughness_texture: Option<Entity>,
     _normal_texture: Option<Entity>,
@@ -269,6 +277,29 @@ pub(crate) fn handle_hsd_material_name_set(
     }
 }
 
+pub(crate) fn handle_hsd_material_unlit_set(
+    trigger: On<HsdMaterialUnlitSet>,
+    registries: Query<&SceneRegistry>,
+    mut params: Query<&mut MaterialParams>,
+) {
+    let ev = trigger.event();
+    debug!(id = %ev.id, value = ev.value, "material unlit set");
+    let Ok(registry) = registries.get(ev.doc) else {
+        return;
+    };
+    let ent = registry
+        .0
+        .materials
+        .lock()
+        .expect("materials lock")
+        .get(&ev.id)
+        .and_then(|m| *m.entity.lock().expect("entity lock"));
+    let Some(ent) = ent else { return };
+    if let Ok(mut p) = params.get_mut(ent) {
+        p.unlit = Some(ev.value);
+    }
+}
+
 pub(crate) fn handle_hsd_material_roughness_set(
     trigger: On<HsdMaterialRoughnessSet>,
     registries: Query<&SceneRegistry>,
@@ -298,9 +329,12 @@ fn build_standard_material(params: &MaterialParams) -> StandardMaterial {
         material.base_color = value;
     }
     material.alpha_mode = match params.alpha_mode.as_deref() {
+        Some("add") => AlphaMode::Add,
         Some("blend") => AlphaMode::Blend,
         Some("mask") => AlphaMode::Mask(params.alpha_cutoff.unwrap_or(0.5)),
+        Some("multiply") => AlphaMode::Multiply,
         Some("opaque") => AlphaMode::Opaque,
+        Some("premultiplied") => AlphaMode::Premultiplied,
         _ => {
             if material.base_color.alpha() < 1.0 {
                 AlphaMode::Blend
@@ -317,6 +351,9 @@ fn build_standard_material(params: &MaterialParams) -> StandardMaterial {
     }
     if let Some(value) = params.roughness {
         material.perceptual_roughness = value;
+    }
+    if let Some(value) = params.unlit {
+        material.unlit = value;
     }
     material
 }

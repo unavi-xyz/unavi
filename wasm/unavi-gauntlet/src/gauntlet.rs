@@ -16,10 +16,10 @@ use crate::{
     },
 };
 
-pub const BG_ALPHA_BASE: f32 = 0.7;
-pub const BG_ALPHA_HOVER: f32 = 0.9;
-pub const ICON_ALPHA_BASE: f32 = 0.7;
-pub const ICON_ALPHA_HOVER: f32 = 0.9;
+pub const BG_ALPHA_BASE: f32 = 0.8;
+pub const BG_ALPHA_HOVER: f32 = 0.95;
+pub const ICON_ALPHA_BASE: f32 = 1.0;
+pub const ICON_ALPHA_HOVER: f32 = 1.0;
 pub const CURSOR_PROJ_DIST: f32 = 0.3;
 pub const DEAD_ZONE_RADIUS: f32 = 0.03;
 pub const ICON_Z: f32 = 0.006;
@@ -29,8 +29,11 @@ pub const RAISE_SPEED_SECONDS: f32 = 0.07;
 pub const RING_RADIUS: f32 = 0.14;
 pub const CLOSE_ON_MOVE_THRESHOLD_SQ: f32 = 0.04;
 pub const SECTOR_GAP_WORLD: f32 = 0.012;
-pub const SECTOR_INNER_R: f32 = 0.04;
-pub const SECTOR_SUBDIVISIONS: usize = 10;
+pub const SECTOR_INNER_R: f32 = 0.03;
+pub const OUTLINE_COLOR: [f32; 3] = [1.0, 1.0, 1.0];
+pub const OUTLINE_WIDTH: f32 = 0.005;
+pub const OUTLINE_Z: f32 = 0.001;
+pub const SECTOR_SUBDIVISIONS: usize = 40;
 pub const Z_OFFSET: f32 = -0.5;
 
 pub enum Target {
@@ -39,7 +42,6 @@ pub enum Target {
 }
 
 pub struct Gauntlet {
-    pub active_idx: Cell<Option<usize>>,
     pub bone: RefCell<Option<Node>>,
     pub core: Node,
     pub hovered_sector: Cell<Option<usize>>,
@@ -55,7 +57,6 @@ pub struct Gauntlet {
 impl Gauntlet {
     pub const fn new(core: Node, target: Target, modules: Vec<Module>) -> Self {
         Self {
-            active_idx: Cell::new(None),
             bone: RefCell::new(None),
             core,
             hovered_sector: Cell::new(None),
@@ -120,33 +121,31 @@ impl Gauntlet {
         self.open_pos.set(None);
     }
 
-    /// Select a module by sector index. Clicking the active module deactivates it.
+    /// Toggle a module's active state by sector index.
     pub fn select(&self, sector: usize) {
-        if let Some(prev) = self.active_idx.get() {
-            self.modules[prev].active.set_scale(Vec3::ZERO);
-            if prev == sector {
-                println!("deactivated {}", self.modules[sector].name);
-                self.active_idx.set(None);
-                self.open.set(false);
-                self.close_menu();
-                return;
-            }
-        }
         let module = &self.modules[sector];
-        println!("activated {}", module.name);
-        if module.kind == ModuleKind::Nav {
-            let bone_ref = self.bone.borrow();
-            if let Some(bone) = bone_ref.as_ref() {
-                let tr = bone.global_transform();
-                let left = tr.rotation * Vec3::new(-1.0, 0.0, 0.0);
-                let forward = tr.rotation * Vec3::new(0.0, 0.0, -1.0);
-                module
-                    .active
-                    .set_translation(tr.translation + left * 0.5 + forward * 0.5);
+        if module.active_state.get() {
+            println!("deactivated {}", module.name);
+            module.active_state.set(false);
+            module.active.set_scale(Vec3::ZERO);
+            module.outline_node.set_scale(Vec3::ZERO);
+        } else {
+            println!("activated {}", module.name);
+            if module.kind == ModuleKind::Nav {
+                let bone_ref = self.bone.borrow();
+                if let Some(bone) = bone_ref.as_ref() {
+                    let tr = bone.global_transform();
+                    let left = tr.rotation * Vec3::new(-1.0, 0.0, 0.0);
+                    let forward = tr.rotation * Vec3::new(0.0, 0.0, -1.0);
+                    module
+                        .active
+                        .set_translation(tr.translation + left * 0.5 + forward * 0.5);
+                }
             }
+            module.active_state.set(true);
+            module.active.set_scale(Vec3::ONE);
+            module.outline_node.set_scale(Vec3::ONE);
         }
-        module.active.set_scale(Vec3::ONE);
-        self.active_idx.set(Some(sector));
         self.open.set(false);
         self.close_menu();
     }

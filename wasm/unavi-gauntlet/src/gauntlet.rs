@@ -110,15 +110,14 @@ impl Gauntlet {
         for module in &self.modules {
             module.raise_t.set(0.0);
             module.root.set_scale(Vec3::ONE);
+            module.root.set_translation(Vec3::ZERO);
         }
     }
 
     /// Hide root nodes without detaching them.
     pub fn close_menu(&self) {
+        self.hovered_sector.set(None);
         self.open_pos.set(None);
-        for module in &self.modules {
-            module.root.set_scale(Vec3::ZERO);
-        }
     }
 
     /// Select a module by sector index. Clicking the active module deactivates it.

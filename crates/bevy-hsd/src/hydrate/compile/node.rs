@@ -374,11 +374,7 @@ pub(crate) fn on_mesh_ref_set(
     nodes: Query<(&MeshRef, &HsdChild), With<NodeId>>,
     registries: Query<&SceneRegistry>,
     compiled_meshes: Query<&CompiledMesh>,
-    compiled_mats: Query<&CompiledMaterial>,
-    mat_refs: Query<&MaterialRef>,
-    asset_server: Res<AssetServer>,
     mut commands: Commands,
-    mut default_material: Local<Option<Handle<StandardMaterial>>>,
 ) {
     let node_ent = trigger.entity;
     debug!(entity = %node_ent, "mesh ref set");
@@ -402,15 +398,38 @@ pub(crate) fn on_mesh_ref_set(
     commands
         .entity(node_ent)
         .insert(Mesh3d(compiled_mesh.0.clone()));
-    assign_material(
-        node_ent,
-        registry,
-        &compiled_mats,
-        &mat_refs,
-        &asset_server,
-        &mut commands,
-        &mut default_material,
-    );
+}
+
+/// When a node gets a [`MaterialRef`], assign the compiled material if available.
+pub(crate) fn on_material_ref_set(
+    trigger: On<Add, MaterialRef>,
+    nodes: Query<(&MaterialRef, &HsdChild), With<NodeId>>,
+    registries: Query<&SceneRegistry>,
+    compiled_mats: Query<&CompiledMaterial>,
+    mut commands: Commands,
+) {
+    let node_ent = trigger.entity;
+    debug!(entity = %node_ent, "material ref set");
+    let Ok((mat_ref, hsd_child)) = nodes.get(node_ent) else {
+        return;
+    };
+    let Ok(registry) = registries.get(hsd_child.doc) else {
+        return;
+    };
+    let mat_ent = registry
+        .0
+        .materials
+        .lock()
+        .expect("materials lock")
+        .get(&mat_ref.0)
+        .and_then(|inner| *inner.entity.lock().expect("entity lock"));
+    let Some(mat_ent) = mat_ent else { return };
+    let Ok(cm) = compiled_mats.get(mat_ent) else {
+        return;
+    };
+    commands
+        .entity(node_ent)
+        .insert(MeshMaterial3d(cm.0.clone()));
 }
 
 /// When a node loses its [`MeshRef`], remove [`Mesh3d`].
@@ -468,12 +487,11 @@ pub(crate) fn on_mesh_compiled(
     }
 }
 
-/// When a material entity gets [`CompiledMaterial`], assign it to all referencing
-/// nodes that already have a [`Mesh3d`].
+/// When a material entity gets [`CompiledMaterial`], assign it to all referencing nodes.
 pub(crate) fn on_material_compiled(
     trigger: On<Add, CompiledMaterial>,
     mat_query: Query<(&HsdChild, &CompiledMaterial)>,
-    node_refs: Query<(Entity, &MaterialRef, &HsdChild), (With<NodeId>, With<Mesh3d>)>,
+    node_refs: Query<(Entity, &MaterialRef, &HsdChild), With<NodeId>>,
     registries: Query<&SceneRegistry>,
     mut commands: Commands,
 ) {

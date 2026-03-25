@@ -38,6 +38,7 @@ impl Plugin for HsdPlugin {
             .add_observer(hydrate::compile::node::handle_hsd_node_spawned)
             .add_observer(hydrate::compile::node::handle_hsd_node_transform_set)
             .add_observer(hydrate::compile::node::on_material_compiled)
+            .add_observer(hydrate::compile::node::on_material_ref_set)
             .add_observer(hydrate::compile::node::on_mesh_compiled)
             .add_observer(hydrate::compile::node::on_mesh_ref_removed)
             .add_observer(hydrate::compile::node::on_mesh_ref_set);

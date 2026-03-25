@@ -149,76 +149,89 @@ fn delete_map_entry(doc: &LoroDoc, section: &str, id: &str) {
 
 fn sync_node_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
     let mut wrote = false;
-    {
-        let nodes = registry.0.nodes.lock().expect("nodes lock");
-        for inner in nodes.iter() {
-            if inner.is_virtual {
-                continue;
-            }
-            let ch = inner.hsd_changes.lock().expect("hsd_changes lock");
-            if ch.is_empty() {
-                continue;
-            }
+    let nodes = registry.0.nodes.lock().expect("nodes lock");
+    for inner in nodes.iter() {
+        if inner.is_virtual {
+            continue;
+        }
+        let ch = std::mem::take(&mut *inner.hsd_changes.lock().expect("hsd_changes lock"));
+        if ch.is_empty() {
+            continue;
+        }
 
-            let hsd_map = doc.get_map("hsd");
-            let Ok(tree) = hsd_map.get_or_create_container("nodes", LoroTree::new()) else {
-                continue;
-            };
+        let hsd_map = doc.get_map("hsd");
+        let Ok(tree) = hsd_map.get_or_create_container("nodes", LoroTree::new()) else {
+            continue;
+        };
 
-            let tree_id = {
-                let mut lock = inner.tree_id.lock().expect("lock tree id");
-                if let Some(tid) = *lock {
-                    tid
-                } else {
-                    let Ok(tid) = tree.create(TreeParentId::Root) else {
-                        continue;
-                    };
-                    *lock = Some(tid);
-                    drop(lock);
-                    registry
-                        .0
-                        .node_map
-                        .lock()
-                        .expect("node_map lock")
-                        .insert(tid.to_smolstr(), Arc::clone(inner));
-                    tid
-                }
-            };
+        let tree_id = {
+            let mut lock = inner.tree_id.lock().expect("lock tree id");
+            if let Some(tid) = *lock {
+                tid
+            } else {
+                let Ok(tid) = tree.create(TreeParentId::Root) else {
+                    continue;
+                };
+                *lock = Some(tid);
+                drop(lock);
+                registry
+                    .0
+                    .node_map
+                    .lock()
+                    .expect("node_map lock")
+                    .insert(tid.to_smolstr(), Arc::clone(inner));
+                tid
+            }
+        };
 
-            let Ok(meta) = tree.get_meta(tree_id) else {
-                continue;
-            };
+        let Ok(meta) = tree.get_meta(tree_id) else {
+            continue;
+        };
 
-            if let Some(t) = ch.translation {
-                write_f64s(&meta, "translation", &t);
-                wrote = true;
-            }
-            if let Some(r) = ch.rotation {
-                write_f64s(&meta, "rotation", &r);
-                wrote = true;
-            }
-            if let Some(s) = ch.scale {
-                write_f64s(&meta, "scale", &s);
-                wrote = true;
-            }
-            if let Some(ref name_opt) = ch.name {
-                if let Some(n) = name_opt {
+        if let Some(t) = ch.translation {
+            write_f64s(&meta, "translation", &t);
+            wrote = true;
+        }
+        if let Some(r) = ch.rotation {
+            write_f64s(&meta, "rotation", &r);
+            wrote = true;
+        }
+        if let Some(s) = ch.scale {
+            write_f64s(&meta, "scale", &s);
+            wrote = true;
+        }
+        if let Some(name_opt) = ch.name {
+            match name_opt {
+                Some(n) => {
                     let _ = meta.insert("name", n.as_str());
                 }
-                wrote = true;
+                None => {
+                    let _ = meta.delete("name");
+                }
             }
-            if let Some(ref mesh_opt) = ch.mesh {
-                if let Some(id) = mesh_opt {
+            wrote = true;
+        }
+        if let Some(mesh_opt) = ch.mesh {
+            match mesh_opt {
+                Some(id) => {
                     let _ = meta.insert("mesh", id.to_string());
                 }
-                wrote = true;
+                None => {
+                    let _ = meta.delete("mesh");
+                }
             }
-            if let Some(ref mat_opt) = ch.material {
-                if let Some(id) = mat_opt {
+            wrote = true;
+        }
+        if let Some(mat_opt) = ch.material {
+            match mat_opt {
+                Some(id) => {
                     let _ = meta.insert("material", id.to_string());
                 }
-                wrote = true;
+                None => {
+                    let _ = meta.delete("material");
+                }
             }
+            wrote = true;
         }
     }
     wrote
@@ -226,33 +239,35 @@ fn sync_node_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
 
 fn sync_mesh_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
     let mut wrote = false;
-    {
-        let meshes = registry.0.meshes.lock().expect("meshes lock");
-        for inner in meshes.values() {
-            let ch = inner.hsd_changes.lock().expect("hsd_changes lock");
-            if ch.is_empty() {
-                continue;
-            }
+    let meshes = registry.0.meshes.lock().expect("meshes lock");
+    for inner in meshes.values() {
+        let ch = std::mem::take(&mut *inner.hsd_changes.lock().expect("hsd_changes lock"));
+        if ch.is_empty() {
+            continue;
+        }
 
-            let hsd_map = doc.get_map("hsd");
-            let Ok(meshes_map) = hsd_map.get_or_create_container("meshes", LoroMap::new()) else {
-                continue;
-            };
-            let Ok(map) = meshes_map.get_or_create_container(inner.id.as_str(), LoroMap::new())
-            else {
-                continue;
-            };
+        let hsd_map = doc.get_map("hsd");
+        let Ok(meshes_map) = hsd_map.get_or_create_container("meshes", LoroMap::new()) else {
+            continue;
+        };
+        let Ok(map) = meshes_map.get_or_create_container(inner.id.as_str(), LoroMap::new()) else {
+            continue;
+        };
 
-            if let Some(topo) = ch.topology {
-                let _ = map.insert("topology", topo);
-                wrote = true;
-            }
-            if let Some(ref name_opt) = ch.name {
-                if let Some(n) = name_opt {
+        if let Some(topo) = ch.topology {
+            let _ = map.insert("topology", topo);
+            wrote = true;
+        }
+        if let Some(name_opt) = ch.name {
+            match name_opt {
+                Some(n) => {
                     let _ = map.insert("name", n.as_str());
                 }
-                wrote = true;
+                None => {
+                    let _ = map.delete("name");
+                }
             }
+            wrote = true;
         }
     }
     wrote
@@ -260,63 +275,70 @@ fn sync_mesh_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
 
 fn sync_material_changes(doc: &LoroDoc, registry: &SceneRegistry) -> bool {
     let mut wrote = false;
-    {
-        let materials = registry.0.materials.lock().expect("materials lock");
-        for inner in materials.values() {
-            let ch = inner.hsd_changes.lock().expect("hsd_changes lock");
-            if ch.is_empty() {
-                continue;
-            }
+    let materials = registry.0.materials.lock().expect("materials lock");
+    for inner in materials.values() {
+        let ch = std::mem::take(&mut *inner.hsd_changes.lock().expect("hsd_changes lock"));
+        if ch.is_empty() {
+            continue;
+        }
 
-            let hsd_map = doc.get_map("hsd");
-            let Ok(mats_map) = hsd_map.get_or_create_container("materials", LoroMap::new()) else {
-                continue;
-            };
-            let Ok(map) = mats_map.get_or_create_container(inner.id.as_str(), LoroMap::new())
-            else {
-                continue;
-            };
+        let hsd_map = doc.get_map("hsd");
+        let Ok(mats_map) = hsd_map.get_or_create_container("materials", LoroMap::new()) else {
+            continue;
+        };
+        let Ok(map) = mats_map.get_or_create_container(inner.id.as_str(), LoroMap::new()) else {
+            continue;
+        };
 
-            if let Some(cutoff) = ch.alpha_cutoff {
-                let _ = map.insert("alpha_cutoff", cutoff);
-                wrote = true;
-            }
-            if let Some(ref mode_opt) = ch.alpha_mode {
-                if let Some(mode) = mode_opt {
+        if let Some(cutoff) = ch.alpha_cutoff {
+            let _ = map.insert("alpha_cutoff", cutoff);
+            wrote = true;
+        }
+        if let Some(mode_opt) = ch.alpha_mode {
+            match mode_opt {
+                Some(mode) => {
                     let _ = map.insert("alpha_mode", mode.as_str());
                 }
-                wrote = true;
-            }
-            if let Some(base_color) = ch.base_color {
-                if let Ok(list) = map.get_or_create_container("base_color", LoroList::new()) {
-                    let len = list.len();
-                    if len > 0 {
-                        let _ = list.delete(0, len);
-                    }
-                    for v in base_color {
-                        let _ = list.push(LoroValue::Double(v));
-                    }
+                None => {
+                    let _ = map.delete("alpha_mode");
                 }
-                wrote = true;
             }
-            if let Some(ds) = ch.double_sided {
-                let _ = map.insert("double_sided", ds);
-                wrote = true;
+            wrote = true;
+        }
+        if let Some(base_color) = ch.base_color {
+            if let Ok(list) = map.get_or_create_container("base_color", LoroList::new()) {
+                let len = list.len();
+                if len > 0 {
+                    let _ = list.delete(0, len);
+                }
+                for v in base_color {
+                    let _ = list.push(LoroValue::Double(v));
+                }
             }
-            if let Some(m) = ch.metallic {
-                let _ = map.insert("metallic", m);
-                wrote = true;
-            }
-            if let Some(ref name_opt) = ch.name {
-                if let Some(n) = name_opt {
+            wrote = true;
+        }
+        if let Some(ds) = ch.double_sided {
+            let _ = map.insert("double_sided", ds);
+            wrote = true;
+        }
+        if let Some(m) = ch.metallic {
+            let _ = map.insert("metallic", m);
+            wrote = true;
+        }
+        if let Some(name_opt) = ch.name {
+            match name_opt {
+                Some(n) => {
                     let _ = map.insert("name", n.as_str());
                 }
-                wrote = true;
+                None => {
+                    let _ = map.delete("name");
+                }
             }
-            if let Some(r) = ch.roughness {
-                let _ = map.insert("roughness", r);
-                wrote = true;
-            }
+            wrote = true;
+        }
+        if let Some(r) = ch.roughness {
+            let _ = map.insert("roughness", r);
+            wrote = true;
         }
     }
     wrote

@@ -1,6 +1,5 @@
 mod gauntlet;
 mod module;
-mod modules;
 
 use std::{cell::Cell, time::SystemTime};
 
@@ -11,9 +10,12 @@ use crate::{
         BG_ALPHA_BASE, BG_ALPHA_HOVER, CLOSE_ON_MOVE_THRESHOLD_SQ, Gauntlet, OPEN_SPEED_SECONDS,
         RAISE_DIST, RAISE_SPEED_SECONDS, Target,
     },
-    module::{ModuleDef, ModuleKind},
     wired::{
         agent::types::BoneName,
+        event::{
+            api::{register_emitter, register_receptor},
+            types::{EventEmitter, EventReceptor},
+        },
         input::{
             system_api::system_input_listener,
             types::{InputAction, InputDevice, InputListener},
@@ -25,60 +27,90 @@ wired_prelude::generate_script!(Script);
 
 pub const MAX_MODULES: usize = 8;
 
-/// Colors assigned by slot index. Any prefix of N ≤ 8 keeps well-spaced hues:
-/// 3 slots → roughly triadic; each additional slot fills the largest gap.
 pub const MODULE_PALETTE: [[f32; 3]; MAX_MODULES] = [
-    [0.52, 0.20, 0.82], // 0 – violet
-    [0.88, 0.52, 0.08], // 1 – amber
-    [0.12, 0.40, 0.88], // 2 – azure
-    [0.12, 0.62, 0.28], // 3 – forest
-    [0.72, 0.12, 0.52], // 4 – rose
-    [0.80, 0.15, 0.18], // 5 – crimson
-    [0.08, 0.58, 0.55], // 6 – teal
-    [0.50, 0.65, 0.08], // 7 – olive
+    [0.52, 0.20, 0.82],
+    [0.88, 0.52, 0.08],
+    [0.12, 0.40, 0.88],
+    [0.12, 0.62, 0.28],
+    [0.72, 0.12, 0.52],
+    [0.80, 0.15, 0.18],
+    [0.08, 0.58, 0.55],
+    [0.50, 0.65, 0.08],
 ];
 
-const MODULE_DEFS: [ModuleDef; 2] = [
-    ModuleDef { kind: ModuleKind::Inventory, name: "Inventory" },
-    ModuleDef { kind: ModuleKind::Nav,       name: "Nav"       },
-];
+const CH_REGISTER: &str = "unavi::gauntlet::register";
+const CH_REGISTER_REQUEST: &str = "unavi::gauntlet::register-request";
+
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct RegisterPayload {
+    pub name: String,
+    pub icon: String,
+    pub color: [f32; 3],
+}
+
+pub struct DynamicModuleDef {
+    pub name: String,
+    #[allow(dead_code)]
+    pub icon: String,
+    pub color: [f32; 3],
+    pub doc_id: Vec<u8>,
+}
 
 struct Script {
     gauntlets: [Gauntlet; 3],
     input: InputListener,
     render_time: Cell<SystemTime>,
+    _emitter: EventEmitter,
+    register_receptor: EventReceptor,
+    module_defs: std::cell::RefCell<Vec<DynamicModuleDef>>,
 }
 
 impl GuestScript for Script {
     fn new() -> Self {
-        use crate::wired::scene::context::self_document;
+        // Broadcast emitter for register-request
+        let emitter = register_emitter(None, f32::MAX, &[]);
+        let register_receptor = register_receptor(&[CH_REGISTER.to_string()], None, f32::MAX, &[]);
 
-        let doc = self_document();
+        // Announce ourselves so modules can discover us
+        emitter.emit(CH_REGISTER_REQUEST, &[]);
 
         let gauntlets = [
             Target::Camera,
             Target::Bone(BoneName::LeftHand),
             Target::Bone(BoneName::RightHand),
         ]
-        .map(|target| {
-            let modules = module::make_modules(&MODULE_DEFS, &MODULE_PALETTE);
-            let core = doc.create_node();
-            core.set_scale(Vec3::ZERO);
-            for m in &modules {
-                m.root.set_scale(Vec3::ZERO);
-                core.add_child(&m.root);
-            }
-            Gauntlet::new(core, target, modules)
-        });
+        .map(Gauntlet::new);
 
         Self {
             gauntlets,
             input: system_input_listener(),
             render_time: Cell::new(SystemTime::now()),
+            _emitter: emitter,
+            register_receptor,
+            module_defs: std::cell::RefCell::new(Vec::new()),
         }
     }
 
     fn tick(&self) {
+        // Drain register events — add new module defs and rebuild ring.
+        let mut defs = self.module_defs.borrow_mut();
+        let mut changed = false;
+        while let Some(event) = self.register_receptor.poll() {
+            if let Some(def) = parse_register_payload(&event.payload, event.sender_document)
+                && defs.len() < MAX_MODULES
+            {
+                defs.push(def);
+                changed = true;
+            }
+        }
+        if changed {
+            let n = defs.len();
+            for g in &self.gauntlets {
+                g.rebuild_modules(&defs, &MODULE_PALETTE[..n]);
+            }
+        }
+        drop(defs);
+
         if !self
             .gauntlets
             .iter()
@@ -133,6 +165,7 @@ impl GuestScript for Script {
                     self.gauntlets[menu_idx].pressed.set(false);
                 }
                 InputAction::GrabDown => {
+                    let defs = self.module_defs.borrow();
                     for g in &self.gauntlets {
                         let matches = matches!(
                             (&g.target, event.device),
@@ -144,7 +177,7 @@ impl GuestScript for Script {
                             && g.open.get()
                             && let Some(sector) = g.hovered_sector.get()
                         {
-                            g.select(sector);
+                            g.select(sector, &defs);
                         }
                     }
                 }
@@ -180,7 +213,8 @@ impl GuestScript for Script {
             }
 
             let hovered = g.hovered_sector.get();
-            for (i, module) in g.modules.iter().enumerate() {
+            let modules = g.modules.borrow();
+            for (i, module) in modules.iter().enumerate() {
                 let target_raise = if Some(i) == hovered { 1.0_f32 } else { 0.0_f32 };
                 let prev_raise = module.raise_t.get();
                 let speed = delta / RAISE_SPEED_SECONDS;
@@ -205,4 +239,14 @@ impl GuestScript for Script {
     }
 
     fn drop(&self) {}
+}
+
+fn parse_register_payload(payload: &[u8], sender_document: Vec<u8>) -> Option<DynamicModuleDef> {
+    let reg: RegisterPayload = postcard::from_bytes(payload).ok()?;
+    Some(DynamicModuleDef {
+        name: reg.name,
+        icon: reg.icon,
+        color: reg.color,
+        doc_id: sender_document,
+    })
 }

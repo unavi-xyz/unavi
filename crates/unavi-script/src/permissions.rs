@@ -12,9 +12,11 @@ pub struct ScriptPermissions {
 #[derive(Clone, Copy, Debug, PartialEq, Hash, Eq)]
 pub enum ApiName {
     Agent,
+    Event,
     Input,
     LocalAgent,
     Scene,
+    System,
     SystemInput,
 }
 
@@ -28,6 +30,7 @@ impl Default for ScriptPermissions {
     fn default() -> Self {
         let mut api = HashSet::default();
         api.insert(ApiName::Agent);
+        api.insert(ApiName::Event);
         api.insert(ApiName::Input);
         api.insert(ApiName::Scene);
 
@@ -43,6 +46,7 @@ impl ScriptPermissions {
     pub fn system() -> Self {
         let mut perms = Self::default();
         perms.api.insert(ApiName::LocalAgent);
+        perms.api.insert(ApiName::System);
         perms.api.insert(ApiName::SystemInput);
         perms
     }

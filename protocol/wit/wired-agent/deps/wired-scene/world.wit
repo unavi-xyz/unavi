@@ -17,6 +17,8 @@ interface context {
 interface types {
   use wired:math/types.{vec3, quat, transform};
 
+  type document-id = list<u8>;
+
   resource document {
     id: func() -> list<u8>;
     clone: func() -> document;

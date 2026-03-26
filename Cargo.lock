@@ -13372,6 +13372,28 @@ dependencies = [
 name = "unavi-gauntlet"
 version = "0.0.16"
 dependencies = [
+ "postcard",
+ "serde",
+ "wired-prelude",
+ "wit-bindgen 0.50.0",
+]
+
+[[package]]
+name = "unavi-gauntlet-inventory"
+version = "0.0.16"
+dependencies = [
+ "postcard",
+ "serde",
+ "wired-prelude",
+ "wit-bindgen 0.50.0",
+]
+
+[[package]]
+name = "unavi-gauntlet-nav"
+version = "0.0.16"
+dependencies = [
+ "postcard",
+ "serde",
  "wired-prelude",
  "wit-bindgen 0.50.0",
 ]

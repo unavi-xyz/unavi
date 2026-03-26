@@ -1,3 +1,4 @@
+use avian3d::schedule::PhysicsSystems;
 use bevy::prelude::*;
 use bevy::transform::TransformSystems;
 use loro::LoroDoc;
@@ -45,6 +46,12 @@ impl Plugin for HsdPlugin {
             .add_observer(hydrate::compile::node::on_mesh_ref_set);
 
         app.add_systems(
+            FixedPostUpdate,
+            (hydrate::compile::node::guard_physics_scale, ApplyDeferred)
+                .chain()
+                .before(PhysicsSystems::StepSimulation),
+        )
+        .add_systems(
             FixedUpdate,
             (
                 hydrate::init::init_hsd_doc,
@@ -84,6 +91,13 @@ pub struct NodeId(pub SmolStr);
 /// Script blob hashes on node entities.
 #[derive(Component, Clone, Debug)]
 pub struct HsdScripts(pub Vec<blake3::Hash>);
+
+/// Persists the HSD physics spec so it can be restored after scale-suppression.
+#[derive(Component, Clone, Debug, Default)]
+pub struct HsdNodePhysics {
+    pub collider: Option<data::HsdCollider>,
+    pub rigid_body: Option<data::HsdRigidBody>,
+}
 
 /// WDS record ID for an HSD document.
 #[derive(Component, Clone, Copy)]

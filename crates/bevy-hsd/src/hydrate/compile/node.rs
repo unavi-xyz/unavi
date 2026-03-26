@@ -1,11 +1,16 @@
-use avian3d::prelude::{AngularDamping, Collider, LinearDamping, RigidBody};
+use avian3d::prelude::{
+    AngularDamping, AngularInertia, Collider, ComputedAngularInertia, LinearDamping, RigidBody,
+    Sensor,
+};
 use bevy::prelude::*;
 use smol_str::SmolStr;
 
 use crate::{
-    CompiledMaterial, CompiledMesh, HsdChild, HsdScripts, MaterialRef, MeshRef, NodeId,
+    CompiledMaterial, CompiledMesh, HsdChild, HsdNodePhysics, HsdScripts, MaterialRef, MeshRef,
+    NodeId,
     cache::SceneRegistry,
     data::{HsdCollider, HsdNodeData, HsdRigidBody},
+    hydrate::compile::collider::ColliderParams,
 };
 
 use super::collider::insert_collider;
@@ -158,13 +163,16 @@ pub(crate) fn handle_hsd_node_collider_set(
         .get(&ev.id)
         .and_then(|n| *n.entity.lock().expect("entity lock"));
     let Some(ent) = ent else { return };
+    let collider = ev.collider.clone();
+    commands
+        .entity(ent)
+        .entry::<HsdNodePhysics>()
+        .or_default()
+        .and_modify(move |mut p| p.collider = collider);
     commands
         .entity(ent)
         .remove::<Collider>()
         .remove::<super::collider::ColliderParams>();
-    if let Some(ref c) = ev.collider {
-        insert_collider(ent, c, &mut commands);
-    }
 }
 
 pub(crate) fn handle_hsd_node_material_set(
@@ -276,29 +284,7 @@ pub(crate) fn handle_hsd_node_parent_set(
     }
 }
 
-pub(crate) fn handle_hsd_node_rigid_body_set(
-    trigger: On<HsdNodeRigidBodySet>,
-    registries: Query<&SceneRegistry>,
-    mut commands: Commands,
-) {
-    let ev = trigger.event();
-    debug!(id = %ev.id, kind = ?ev.rigid_body.as_ref().map(|r| &r.kind), "node rigid body set");
-    let Ok(registry) = registries.get(ev.doc) else {
-        return;
-    };
-    let ent = registry
-        .0
-        .node_map
-        .lock()
-        .expect("node_map lock")
-        .get(&ev.id)
-        .and_then(|n| *n.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
-    commands.entity(ent).remove::<RigidBody>();
-    let Some(ref data) = ev.rigid_body else {
-        return;
-    };
-
+pub(crate) fn insert_rigid_body(ent: Entity, data: &HsdRigidBody, commands: &mut Commands) {
     let kind = match data.kind.as_str() {
         "dynamic" => RigidBody::Dynamic,
         "fixed" => RigidBody::Static,
@@ -317,6 +303,33 @@ pub(crate) fn handle_hsd_node_rigid_body_set(
         let angular = data.angular_damping.map_or(0.2, |v| v as f32);
         ecmd.insert((LinearDamping(linear), AngularDamping(angular)));
     }
+}
+
+pub(crate) fn handle_hsd_node_rigid_body_set(
+    trigger: On<HsdNodeRigidBodySet>,
+    registries: Query<&SceneRegistry>,
+    mut commands: Commands,
+) {
+    let ev = trigger.event();
+    debug!(id = %ev.id, kind = ?ev.rigid_body.as_ref().map(|r| &r.kind), "node rigid body set");
+    let Ok(registry) = registries.get(ev.doc) else {
+        return;
+    };
+    let ent = registry
+        .0
+        .node_map
+        .lock()
+        .expect("node_map lock")
+        .get(&ev.id)
+        .and_then(|n| *n.entity.lock().expect("entity lock"));
+    let Some(ent) = ent else { return };
+    let rigid_body = ev.rigid_body.clone();
+    commands
+        .entity(ent)
+        .entry::<HsdNodePhysics>()
+        .or_default()
+        .and_modify(move |mut p| p.rigid_body = rigid_body);
+    commands.entity(ent).remove::<RigidBody>();
 }
 
 pub(crate) fn handle_hsd_node_scripts_set(
@@ -552,6 +565,74 @@ fn assign_material(
             .get_or_insert_with(|| asset_server.add(StandardMaterial::default()))
             .clone();
         commands.entity(node_ent).insert(MeshMaterial3d(mat));
+    }
+}
+
+fn is_transform_hierarchy_degenerate(
+    start: Entity,
+    q: &Query<(Option<&ChildOf>, Option<&Transform>)>,
+    epsilon: f32,
+) -> bool {
+    let mut curr = start;
+    loop {
+        let Ok((child_of, maybe_t)) = q.get(curr) else {
+            break;
+        };
+        if let Some(t) = maybe_t {
+            let s = t.scale;
+            if s.x.is_nan()
+                || s.y.is_nan()
+                || s.z.is_nan()
+                || s.x.abs() < epsilon
+                || s.y.abs() < epsilon
+                || s.z.abs() < epsilon
+            {
+                return true;
+            }
+        }
+        match child_of {
+            Some(c) => curr = c.0,
+            None => break,
+        }
+    }
+    false
+}
+
+pub fn guard_physics_scale(
+    query: Query<(Entity, &HsdNodePhysics, Has<Collider>, Has<RigidBody>, Has<Sensor>)>,
+    ancestors: Query<(Option<&ChildOf>, Option<&Transform>)>,
+    mut commands: Commands,
+) {
+    for (ent, physics, has_collider, has_rigid_body, has_sensor) in &query {
+        const EPSILON: f32 = 1e-5;
+
+        let degenerate = is_transform_hierarchy_degenerate(ent, &ancestors, EPSILON);
+        if degenerate {
+            if has_collider || has_rigid_body {
+                commands
+                    .entity(ent)
+                    .remove::<Collider>()
+                    .remove::<ColliderParams>()
+                    .remove::<RigidBody>()
+                    .remove::<AngularInertia>()
+                    .remove::<ComputedAngularInertia>()
+                    .remove::<Sensor>();
+            }
+        } else {
+            if !has_collider && let Some(ref c) = physics.collider {
+                insert_collider(ent, c, &mut commands);
+                // Bare colliders (no RigidBody) must be sensors so Avian's island
+                // solver is never involved — preventing panics from static-static
+                // or "not in island" contact pairs that scripts can inadvertently
+                // create.
+                if physics.rigid_body.is_none() && !has_sensor {
+                    commands.entity(ent).insert(Sensor);
+                }
+            }
+            if !has_rigid_body && let Some(ref rb) = physics.rigid_body {
+                insert_rigid_body(ent, rb, &mut commands);
+            }
+        }
     }
 }
 

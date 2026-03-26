@@ -18,7 +18,10 @@ dist-webgl/
 dist-webgpu/
 dist/
 
-# Other
-*.db
+# Env
 .direnv
 .envrc
+
+# Other
+*.db
+docs/

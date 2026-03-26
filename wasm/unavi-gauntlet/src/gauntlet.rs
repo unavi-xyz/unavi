@@ -83,8 +83,11 @@ impl Gauntlet {
                 if module.kind == ModuleKind::Nav {
                     continue;
                 }
-                node.add_child(&module.active);
-                module.active.set_translation(Vec3::new(0.0, 0.1, -0.05));
+                node.add_child(module.active.root());
+                module
+                    .active
+                    .root()
+                    .set_translation(Vec3::new(0.0, 0.1, -0.05));
             }
             *bone_ref = Some(node);
             true
@@ -133,7 +136,7 @@ impl Gauntlet {
         if module.active_state.get() {
             println!("deactivated {}", module.name);
             module.active_state.set(false);
-            module.active.set_scale(Vec3::ZERO);
+            module.active.deactivate();
             module.outline_node.set_scale(Vec3::ZERO);
         } else {
             println!("activated {}", module.name);
@@ -141,15 +144,15 @@ impl Gauntlet {
                 let bone_ref = self.bone.borrow();
                 if let Some(bone) = bone_ref.as_ref() {
                     let tr = bone.global_transform();
-                    let left = tr.rotation * Vec3::new(-1.0, 0.0, 0.0);
                     let forward = tr.rotation * Vec3::new(0.0, 0.0, -1.0);
                     module
                         .active
-                        .set_translation(tr.translation + left * 0.5 + forward * 0.5);
+                        .root()
+                        .set_translation(tr.translation + forward * 0.9);
                 }
             }
             module.active_state.set(true);
-            module.active.set_scale(Vec3::ONE);
+            module.active.activate();
             module.outline_node.set_scale(Vec3::ONE);
         }
         self.open.set(false);

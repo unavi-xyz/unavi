@@ -57,7 +57,11 @@ fn flush_queued_events(doc_ent: Entity, queue: &ScriptEventQueue, commands: &mut
                 commands.trigger(HsdMeshDespawned { doc: doc_ent, id });
             }
             ScriptQueuedEvent::MaterialSpawned { id } => {
-                commands.trigger(HsdMaterialSpawned { doc: doc_ent, id });
+                commands.trigger(HsdMaterialSpawned {
+                    doc: doc_ent,
+                    id,
+                    initial: None,
+                });
             }
             ScriptQueuedEvent::MaterialDespawned { id } => {
                 commands.trigger(HsdMaterialDespawned { doc: doc_ent, id });

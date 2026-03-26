@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_wds::{BlobDeps, BlobDepsLoaded, BlobResponse};
 use smol_str::SmolStr;
 
-use crate::{CompiledMaterial, HsdChild, cache::SceneRegistry};
+use crate::{CompiledMaterial, HsdChild, cache::SceneRegistry, data::HsdMaterial};
 
 #[derive(Event)]
 pub struct HsdMaterialAlphaCutoffSet {
@@ -63,6 +63,7 @@ pub struct HsdMaterialRoughnessSet {
 pub struct HsdMaterialSpawned {
     pub doc: Entity,
     pub id: SmolStr,
+    pub initial: Option<HsdMaterial>,
 }
 
 #[derive(Event)]
@@ -88,6 +89,24 @@ pub struct MaterialParams {
     _occlusion_texture: Option<Entity>,
 }
 
+fn material_params_from_hsd(hsd: &HsdMaterial) -> MaterialParams {
+    let mut params = MaterialParams::default();
+    if let Some(color) = &hsd.base_color
+        && color.len() >= 3
+    {
+        let [r, g, b] = [color[0] as f32, color[1] as f32, color[2] as f32];
+        let a = color.get(3).copied().unwrap_or(1.0) as f32;
+        params.base_color = Some(Color::srgba(r, g, b, a));
+    }
+    params.alpha_cutoff = hsd.alpha_cutoff.map(|v| v as f32);
+    params.alpha_mode = hsd.alpha_mode.as_ref().map(ToString::to_string);
+    params.double_sided = hsd.double_sided;
+    params.metallic = hsd.metallic.map(|v| v as f32);
+    params.roughness = hsd.roughness.map(|v| v as f32);
+    params.unlit = hsd.unlit;
+    params
+}
+
 pub(crate) fn handle_hsd_material_spawned(
     trigger: On<HsdMaterialSpawned>,
     registries: Query<&SceneRegistry>,
@@ -109,9 +128,12 @@ pub(crate) fn handle_hsd_material_spawned(
     if inner.entity.lock().expect("entity lock").is_some() {
         return;
     }
-    let ent = commands
-        .spawn((HsdChild { doc: ev.doc }, MaterialParams::default()))
-        .id();
+    let params = ev
+        .initial
+        .as_ref()
+        .map(material_params_from_hsd)
+        .unwrap_or_default();
+    let ent = commands.spawn((HsdChild { doc: ev.doc }, params)).id();
     *inner.entity.lock().expect("entity lock") = Some(ent);
 }
 

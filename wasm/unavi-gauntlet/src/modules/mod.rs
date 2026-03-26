@@ -19,10 +19,16 @@ pub enum ModuleActive {
 impl ModuleActive {
     pub fn activate(&self) {
         self.root().set_scale(Vec3::ONE);
+        if let Self::Nav(nav) = self {
+            nav.ring.set_scale(Vec3::ONE);
+        }
     }
 
     pub fn deactivate(&self) {
         self.root().set_scale(Vec3::ZERO);
+        if let Self::Nav(nav) = self {
+            nav.ring.set_scale(Vec3::ZERO);
+        }
     }
 
     pub const fn root(&self) -> &Node {

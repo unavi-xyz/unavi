@@ -287,8 +287,9 @@ pub(crate) fn handle_hsd_node_parent_set(
 pub(crate) fn insert_rigid_body(ent: Entity, data: &HsdRigidBody, commands: &mut Commands) {
     let kind = match data.kind.as_str() {
         "dynamic" => RigidBody::Dynamic,
-        "fixed" => RigidBody::Static,
-        "kinematic" => RigidBody::Kinematic,
+        // Cannot use static rigid bodies, as static x static
+        // collisions panic avian.
+        "fixed" | "kinematic" => RigidBody::Kinematic,
         other => {
             warn!("invalid rigid body kind: {other}");
             RigidBody::default()
@@ -599,7 +600,13 @@ fn is_transform_hierarchy_degenerate(
 }
 
 pub fn guard_physics_scale(
-    query: Query<(Entity, &HsdNodePhysics, Has<Collider>, Has<RigidBody>, Has<Sensor>)>,
+    query: Query<(
+        Entity,
+        &HsdNodePhysics,
+        Has<Collider>,
+        Has<RigidBody>,
+        Has<Sensor>,
+    )>,
     ancestors: Query<(Option<&ChildOf>, Option<&Transform>)>,
     mut commands: Commands,
 ) {

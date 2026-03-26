@@ -2,31 +2,33 @@ use wired_prelude::wired_math::types::Vec3;
 
 use crate::{
     unavi::shapes::api::{Cuboid, Cylinder, Torus},
-    wired::scene::types::{Collider, ColliderCylinder, Document, Node},
+    wired::scene::types::{Collider, ColliderCylinder, Document, Node, RigidBodyKind},
 };
 
-const TABLE_W: f32 = 0.50;
-const TABLE_D: f32 = 0.32;
-const BASE_H: f32 = 0.008;
-const LIP_H: f32 = 0.018;
-const LIP_T: f32 = 0.006;
+const TABLE_W: f32 = 1.00;
+const TABLE_D: f32 = 0.64;
+const BASE_H: f32 = 0.016;
+const LIP_H: f32 = 0.036;
+const LIP_T: f32 = 0.012;
 const LIP_Y: f32 = BASE_H * 0.5 + LIP_H * 0.5;
 const X_LIP_X: f32 = TABLE_W * 0.5 - LIP_T * 0.5;
 const Z_LIP_Z: f32 = TABLE_D * 0.5 - LIP_T * 0.5;
 
-const BASIN_X: f32 = 0.29;
-const BASIN_RADIUS: f32 = 0.26;
-const BASIN_HEIGHT: f32 = 0.09;
-const BASIN_Y: f32 = -0.05;
+pub const BASIN_X: f32 = 0.58;
+const BASIN_RADIUS: f32 = 0.52;
+const BASIN_HEIGHT: f32 = 0.18;
+const BASIN_Y: f32 = -0.10;
 
-const RING_RADIUS: f32 = 0.28;
-const RING_THICKNESS: f32 = 0.020;
-const RING_Y: f32 = -0.22;
-const RING_COLLIDER_RADIUS: f32 = RING_RADIUS + 0.03;
+const RING_RADIUS: f32 = 0.56;
+const RING_THICKNESS: f32 = 0.040;
+const RING_COLLIDER_RADIUS: f32 = RING_RADIUS + 0.06;
 const RING_COLLIDER_HEIGHT: f32 = RING_THICKNESS * 2.0;
+
 
 pub struct NavActive {
     pub root: Node,
+    /// Root-level document node with a dynamic rigid body — NOT parented to `root`.
+    pub ring: Node,
     _nodes: Vec<Node>,
 }
 
@@ -43,7 +45,7 @@ impl NavActive {
         nodes.push(filter_table);
 
         let basin = make_basin(doc, &mut nodes);
-        basin.set_translation(Vec3::new(-0.30, BASIN_Y, 0.0));
+        basin.set_translation(Vec3::new(-BASIN_X, BASIN_Y, 0.0));
         root.add_child(&basin);
         nodes.push(basin);
 
@@ -51,19 +53,20 @@ impl NavActive {
         ring_mat.set_base_color(&[1.0, 1.0, 1.0, 1.0]);
         ring_mat.set_double_sided(true);
 
-        let page_ring = doc.create_node();
-        page_ring.set_mesh(Some(&Torus::new(RING_THICKNESS, RING_RADIUS).mesh()));
-        page_ring.set_material(Some(&ring_mat));
-        page_ring.set_translation(Vec3::new(-0.30, RING_Y, 0.0));
-        page_ring.set_collider(Some(&Collider::Cylinder(ColliderCylinder {
+        // Ring lives at document root — dynamic rigid body, not a child of self.root.
+        let ring = doc.create_node();
+        ring.set_mesh(Some(&Torus::new(RING_THICKNESS, RING_RADIUS).mesh()));
+        ring.set_material(Some(&ring_mat));
+        ring.set_collider(Some(&Collider::Cylinder(ColliderCylinder {
             height: RING_COLLIDER_HEIGHT,
             radius: RING_COLLIDER_RADIUS,
         })));
-        root.add_child(&page_ring);
-        nodes.push(page_ring);
+        ring.set_rigid_body(Some(RigidBodyKind::Dynamic));
+        ring.set_scale(Vec3::ZERO);
 
         Self {
             root,
+            ring,
             _nodes: nodes,
         }
     }
@@ -79,6 +82,7 @@ fn make_filter_table(doc: &Document, color: [f32; 3], nodes: &mut Vec<Node>) -> 
     let base = doc.create_node();
     let base_shape = Cuboid::new(TABLE_W, BASE_H, TABLE_D);
     base.set_collider(Some(&base_shape.collider()));
+    base.set_rigid_body(Some(RigidBodyKind::Fixed));
     base.set_mesh(Some(&base_shape.mesh()));
     base.set_material(Some(&mat));
     group.add_child(&base);
@@ -89,6 +93,7 @@ fn make_filter_table(doc: &Document, color: [f32; 3], nodes: &mut Vec<Node>) -> 
     for x_sign in [-1.0_f32, 1.0_f32] {
         let lip = doc.create_node();
         lip.set_collider(Some(&x_lip_shape.collider()));
+        lip.set_rigid_body(Some(RigidBodyKind::Fixed));
         lip.set_mesh(Some(&x_lip_shape.mesh()));
         lip.set_material(Some(&mat));
         lip.set_translation(Vec3::new(x_sign * X_LIP_X, LIP_Y, 0.0));
@@ -101,6 +106,7 @@ fn make_filter_table(doc: &Document, color: [f32; 3], nodes: &mut Vec<Node>) -> 
     for z_sign in [-1.0_f32, 1.0_f32] {
         let lip = doc.create_node();
         lip.set_collider(Some(&z_lip_shape.collider()));
+        lip.set_rigid_body(Some(RigidBodyKind::Fixed));
         lip.set_mesh(Some(&z_lip_shape.mesh()));
         lip.set_material(Some(&mat));
         lip.set_translation(Vec3::new(0.0, LIP_Y, z_sign * Z_LIP_Z));
@@ -112,6 +118,7 @@ fn make_filter_table(doc: &Document, color: [f32; 3], nodes: &mut Vec<Node>) -> 
     let divider = doc.create_node();
     let divider_shape = Cuboid::new(LIP_T, LIP_H, TABLE_D);
     divider.set_collider(Some(&divider_shape.collider()));
+    divider.set_rigid_body(Some(RigidBodyKind::Fixed));
     divider.set_mesh(Some(&divider_shape.mesh()));
     divider.set_material(Some(&mat));
     divider.set_translation(Vec3::new(0.0, LIP_Y, 0.0));
@@ -133,6 +140,7 @@ fn make_basin(doc: &Document, nodes: &mut Vec<Node>) -> Node {
     dish.set_mesh(Some(&cylinder.mesh()));
     dish.set_material(Some(&mat));
     dish.set_collider(Some(&cylinder.collider()));
+    dish.set_rigid_body(Some(RigidBodyKind::Fixed));
     group.add_child(&dish);
     nodes.push(dish);
 

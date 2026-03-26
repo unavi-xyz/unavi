@@ -1,5 +1,6 @@
 mod gauntlet;
 mod module;
+mod modules;
 
 use std::{cell::Cell, time::SystemTime};
 
@@ -22,22 +23,24 @@ use crate::{
 
 wired_prelude::generate_script!(Script);
 
-const MODULE_DEFS: [ModuleDef; 3] = [
-    ModuleDef {
-        kind: ModuleKind::Config,
-        name: "Config",
-        rgb: [0.60, 0.35, 0.75],
-    },
-    ModuleDef {
-        kind: ModuleKind::Inventory,
-        name: "Inventory",
-        rgb: [0.35, 0.75, 0.40],
-    },
-    ModuleDef {
-        kind: ModuleKind::Nav,
-        name: "Nav",
-        rgb: [0.30, 0.55, 0.90],
-    },
+pub const MAX_MODULES: usize = 8;
+
+/// Colors assigned by slot index. Any prefix of N ≤ 8 keeps well-spaced hues:
+/// 3 slots → roughly triadic; each additional slot fills the largest gap.
+pub const MODULE_PALETTE: [[f32; 3]; MAX_MODULES] = [
+    [0.52, 0.20, 0.82], // 0 – violet
+    [0.88, 0.52, 0.08], // 1 – amber
+    [0.12, 0.40, 0.88], // 2 – azure
+    [0.12, 0.62, 0.28], // 3 – forest
+    [0.72, 0.12, 0.52], // 4 – rose
+    [0.80, 0.15, 0.18], // 5 – crimson
+    [0.08, 0.58, 0.55], // 6 – teal
+    [0.50, 0.65, 0.08], // 7 – olive
+];
+
+const MODULE_DEFS: [ModuleDef; 2] = [
+    ModuleDef { kind: ModuleKind::Inventory, name: "Inventory" },
+    ModuleDef { kind: ModuleKind::Nav,       name: "Nav"       },
 ];
 
 struct Script {
@@ -58,7 +61,7 @@ impl GuestScript for Script {
             Target::Bone(BoneName::RightHand),
         ]
         .map(|target| {
-            let modules = module::make_modules(&MODULE_DEFS);
+            let modules = module::make_modules(&MODULE_DEFS, &MODULE_PALETTE);
             let core = doc.create_node();
             core.set_scale(Vec3::ZERO);
             for m in &modules {

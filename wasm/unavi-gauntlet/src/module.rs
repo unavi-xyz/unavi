@@ -1,13 +1,15 @@
-use std::{cell::Cell, f32::consts::PI};
+use std::f32::consts::{FRAC_1_SQRT_2, PI};
+use std::cell::Cell;
 
-use wired_prelude::wired_math::types::Vec3;
+use wired_prelude::wired_math::types::{Quat, Vec3};
 
 use crate::{
     gauntlet::{
         BG_ALPHA_BASE, ICON_Z, OUTLINE_COLOR, OUTLINE_WIDTH, OUTLINE_Z, RING_RADIUS,
         SECTOR_GAP_WORLD, SECTOR_INNER_R, SECTOR_SUBDIVISIONS,
     },
-    unavi::shapes::api::{Cuboid, Sphere},
+    modules::{make_active, ModuleActive},
+    unavi::shapes::api::{Cuboid, Torus},
     wired::scene::{
         context::self_document,
         types::{AlphaMode, Document, Indices, Material, Mesh, Node, PrimitiveTopology},
@@ -15,10 +17,10 @@ use crate::{
 };
 
 pub const ICON_RADIUS: f32 = 0.025;
+const ICON_SIDE: f32 = ICON_RADIUS * 1.3;
 
 #[derive(Clone, Copy, Eq, PartialEq)]
 pub enum ModuleKind {
-    Config,
     Inventory,
     Nav,
 }
@@ -26,11 +28,10 @@ pub enum ModuleKind {
 pub struct ModuleDef {
     pub kind: ModuleKind,
     pub name: &'static str,
-    pub rgb: [f32; 3],
 }
 
 pub struct Module {
-    pub active: Node,
+    pub active: ModuleActive,
     pub active_state: Cell<bool>,
     pub bg_color: [f32; 3],
     pub bg_material: Material,
@@ -44,29 +45,34 @@ pub struct Module {
     _icon: Node,
 }
 
-pub fn make_modules(defs: &[ModuleDef]) -> Vec<Module> {
+pub fn make_modules(defs: &[ModuleDef], colors: &[[f32; 3]]) -> Vec<Module> {
     let n = defs.len();
     let doc = self_document();
     defs.iter()
         .enumerate()
-        .map(|(i, def)| make_module(&doc, i, n, def))
+        .map(|(i, def)| make_module(&doc, i, n, def, colors[i]))
         .collect()
 }
 
-fn make_module(doc: &Document, i: usize, n: usize, def: &ModuleDef) -> Module {
+fn make_module(doc: &Document, i: usize, n: usize, def: &ModuleDef, color: [f32; 3]) -> Module {
     let angle = i as f32 * 2.0 * PI / n as f32;
 
     let icon_mat = doc.create_material();
-    icon_mat.set_base_color(&[def.rgb[0], def.rgb[1], def.rgb[2], 1.0]);
+    icon_mat.set_base_color(&[color[0], color[1], color[2], 1.0]);
     icon_mat.set_unlit(true);
+
     let icon = doc.create_node();
-    icon.set_mesh(Some(&Sphere::new(ICON_RADIUS).mesh()));
+    icon.set_mesh(Some(&make_icon_mesh(def.kind)));
     icon.set_material(Some(&icon_mat));
+    // Nav uses a torus; rotate it to face the menu plane (90° around X).
+    if def.kind == ModuleKind::Nav {
+        icon.set_rotation(Quat { x: FRAC_1_SQRT_2, y: 0.0, z: 0.0, w: FRAC_1_SQRT_2 });
+    }
     let mid_r = f32::midpoint(SECTOR_INNER_R, RING_RADIUS);
     icon.set_translation(Vec3::new(mid_r * angle.cos(), mid_r * angle.sin(), ICON_Z));
 
     let bg_material = doc.create_material();
-    bg_material.set_base_color(&[def.rgb[0], def.rgb[1], def.rgb[2], BG_ALPHA_BASE]);
+    bg_material.set_base_color(&[color[0], color[1], color[2], BG_ALPHA_BASE]);
     bg_material.set_alpha_mode(Some(AlphaMode::Add));
     bg_material.set_double_sided(true);
     bg_material.set_unlit(true);
@@ -88,14 +94,13 @@ fn make_module(doc: &Document, i: usize, n: usize, def: &ModuleDef) -> Module {
     root.add_child(&icon);
     root.add_child(&outline);
 
-    let active = doc.create_node();
-    active.set_mesh(Some(&Cuboid::new(0.15, 0.15, 0.15).mesh()));
-    active.set_scale(Vec3::ZERO);
+    let active = make_active(def.kind, doc, color);
+    active.deactivate();
 
     Module {
         active,
         active_state: Cell::new(false),
-        bg_color: def.rgb,
+        bg_color: color,
         bg_material,
         kind: def.kind,
         name: def.name,
@@ -104,6 +109,13 @@ fn make_module(doc: &Document, i: usize, n: usize, def: &ModuleDef) -> Module {
         root,
         _bg: bg,
         _icon: icon,
+    }
+}
+
+fn make_icon_mesh(kind: ModuleKind) -> Mesh {
+    match kind {
+        ModuleKind::Inventory => Cuboid::new(ICON_SIDE, ICON_SIDE, ICON_SIDE).mesh(),
+        ModuleKind::Nav => Torus::new(0.004, ICON_RADIUS * 0.85).mesh(),
     }
 }
 
@@ -148,28 +160,29 @@ fn make_sector_mesh(doc: &Document, i: usize, n: usize) -> Mesh {
     let half_span = PI / n as f32;
     let center_angle = i as f32 * 2.0 * PI / n as f32;
     let subs = SECTOR_SUBDIVISIONS;
+    let subs16 = subs as u16;
 
-    let mut positions: Vec<f32> = Vec::with_capacity(6 * (subs + 1));
-    let mut normals: Vec<f32> = Vec::with_capacity(6 * (subs + 1));
+    let mut positions: Vec<f32> = Vec::with_capacity(3 * 2 * (subs + 1));
+    let mut normals: Vec<f32> = Vec::with_capacity(3 * 2 * (subs + 1));
+    let mut indices: Vec<u16> = Vec::with_capacity(6 * subs);
 
-    for &r in &[SECTOR_INNER_R, RING_RADIUS] {
+    for r in [SECTOR_INNER_R, RING_RADIUS] {
         let half_gap = SECTOR_GAP_WORLD / (2.0 * r);
         let start = center_angle - half_span + half_gap;
         let end = center_angle + half_span - half_gap;
         for j in 0..=subs {
-            let t = j as f32 / subs as f32;
-            let a = t.mul_add(end - start, start);
-            positions.extend_from_slice(&[r * a.cos(), r * a.sin(), 0.0]);
+            let frac = j as f32 / subs as f32;
+            let angle = frac.mul_add(end - start, start);
+            positions.extend_from_slice(&[r * angle.cos(), r * angle.sin(), 0.0]);
             normals.extend_from_slice(&[0.0, 0.0, 1.0]);
         }
     }
 
-    let mut indices: Vec<u16> = Vec::with_capacity(6 * subs);
-    for j in 0..subs {
-        let i0 = j as u16;
-        let i1 = (j + 1) as u16;
-        let i2 = (subs + 1 + j) as u16;
-        let i3 = (subs + 1 + j + 1) as u16;
+    for j in 0..subs16 {
+        let i0 = j;
+        let i1 = j + 1;
+        let i2 = subs16 + 1 + j;
+        let i3 = subs16 + 1 + j + 1;
         indices.extend_from_slice(&[i0, i2, i1, i1, i2, i3]);
     }
 

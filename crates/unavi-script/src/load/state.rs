@@ -11,6 +11,7 @@ use crate::{
     agent::ProxyRegistry,
     api::wired::{
         agent::WiredAgentRt,
+        event::{EventRegistry, WiredEventRt},
         input::{InputRegistry, WiredInputRt},
         scene::WiredSceneRt,
     },
@@ -25,6 +26,7 @@ pub struct StoreState {
 
 pub struct RuntimeData {
     pub wired_agent: WiredAgentRt,
+    pub wired_event: WiredEventRt,
     pub wired_input: WiredInputRt,
     pub wired_scene: WiredSceneRt,
 }
@@ -43,10 +45,15 @@ impl RuntimeData {
         doc_id: blake3::Hash,
         doc_entity: Entity,
         input_registry: InputRegistry,
+        event_registry: EventRegistry,
     ) -> Self {
         Self {
             wired_agent: WiredAgentRt {
                 local_agent: agent_entry,
+                table: ResourceTable::default(),
+            },
+            wired_event: WiredEventRt {
+                registry: event_registry,
                 table: ResourceTable::default(),
             },
             wired_input: WiredInputRt {

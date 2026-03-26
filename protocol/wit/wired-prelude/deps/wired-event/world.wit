@@ -1,0 +1,45 @@
+package wired:event;
+
+interface types {
+  use wired:scene/types.{node, document-id};
+
+  type event-channel = string;
+
+  record event {
+    channel:         event-channel,
+    payload:         list<u8>,
+    sender-node:     option<node>,
+    sender-document: document-id,
+  }
+
+  resource event-emitter {
+    emit: func(channel: event-channel, payload: list<u8>);
+  }
+
+  resource event-receptor {
+    poll: func() -> option<event>;
+  }
+}
+
+interface api {
+  use wired:scene/types.{node, document-id};
+  use types.{event-channel, event-emitter, event-receptor};
+
+  register-emitter: func(
+    node:             option<borrow<node>>,
+    radius:           f32,
+    target-documents: list<document-id>,
+  ) -> event-emitter;
+
+  register-receptor: func(
+    channels:         list<event-channel>,
+    node:             option<borrow<node>>,
+    radius:           f32,
+    source-documents: list<document-id>,
+  ) -> event-receptor;
+}
+
+world prelude {
+  import api;
+  import types;
+}

@@ -8,6 +8,7 @@ pub mod load;
 pub mod permissions;
 mod runtime;
 
+pub use api::wired::event::{DocumentFirewall, EventRegistry};
 pub use api::wired::input::{InputAction, InputDevice, InputRegistry, QueuedEvent};
 pub use load::local::{ScriptSource, SpawnLocalScript};
 pub use permissions::ScriptPermissions;
@@ -29,7 +30,8 @@ impl Plugin for ScriptPlugin {
 
         app.world_mut().spawn(WasmEngine(engine));
 
-        app.init_resource::<api::wired::input::InputRegistry>()
+        app.init_resource::<api::wired::event::EventRegistry>()
+            .init_resource::<api::wired::input::InputRegistry>()
             .init_resource::<load::local::PendingHandles>()
             .add_observer(api::wired::input::bridge::bridge_squeeze_down)
             .add_observer(api::wired::input::bridge::bridge_squeeze_up)
@@ -61,6 +63,7 @@ impl Plugin for ScriptPlugin {
                     runtime::init::begin_init_scripts,
                     runtime::init::end_init_scripts,
                     runtime::tick::tick_scripts,
+                    api::wired::event::bridge::process_event_emissions,
                 )
                     .chain()
                     .after(bevy_hsd::hydrate::init::init_hsd_doc),

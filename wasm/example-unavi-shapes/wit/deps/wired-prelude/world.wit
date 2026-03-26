@@ -3,6 +3,8 @@ package wired:prelude;
 world lib-shared {
   include wired:math/prelude;
   include wired:scene/prelude;
+  import wired:event/api;
+  import wired:event/types;
   import wired:input/api;
   import wired:input/types;
 }

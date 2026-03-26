@@ -6,13 +6,15 @@ use std::{
 use wired_prelude::wired_math::types::{Quat, Vec3};
 
 use crate::{
-    module::Module,
+    DynamicModuleDef,
+    module::{Module, make_modules},
     wired::{
         agent::{
             context::{local_agent, local_camera},
             types::BoneName,
         },
-        scene::types::Node,
+        event::api::register_emitter,
+        scene::{context::self_document, types::Node},
     },
 };
 
@@ -36,11 +38,29 @@ pub const OUTLINE_Z: f32 = 0.001;
 pub const SECTOR_SUBDIVISIONS: usize = 40;
 pub const Z_OFFSET: f32 = -0.5;
 
-fn place_module(root: &Node, bone: &Node) {
+const CH_ACTIVATE: &str = "unavi::gauntlet::activate";
+const CH_DEACTIVATE: &str = "unavi::gauntlet::deactivate";
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct ActivatePayload {
+    translation: [f32; 3],
+    rotation: [f32; 4],
+    scale: [f32; 3],
+}
+
+fn encode_activate(pos: Vec3, rot: Quat, scale: Vec3) -> Vec<u8> {
+    let payload = ActivatePayload {
+        translation: [pos.x, pos.y, pos.z],
+        rotation: [rot.x, rot.y, rot.z, rot.w],
+        scale: [scale.x, scale.y, scale.z],
+    };
+    postcard::to_allocvec(&payload).expect("encode activate")
+}
+
+fn place_module_transform(bone: &Node) -> (Vec3, Quat, Vec3) {
     let tr = bone.global_transform();
     let forward = tr.rotation * Vec3::new(0.0, 0.0, -1.0);
 
-    // Horizontal forward (XZ only), normalised.
     let fwd_len = forward.x.hypot(forward.z);
     let forward_h = if fwd_len > 1e-3 {
         Vec3::new(forward.x / fwd_len, 0.0, forward.z / fwd_len)
@@ -50,12 +70,10 @@ fn place_module(root: &Node, bone: &Node) {
 
     let agent = local_agent();
 
-    // Waist height from Hips bone.
     let waist_y = agent
         .bone(BoneName::Hips)
         .map_or(1.0, |h| h.global_transform().translation.y);
 
-    // Scale from agent height (Head Y − LeftFoot Y).
     let head_y = agent
         .bone(BoneName::Head)
         .map_or(DEFAULT_AGENT_HEIGHT, |h| h.global_transform().translation.y);
@@ -63,17 +81,14 @@ fn place_module(root: &Node, bone: &Node) {
         .bone(BoneName::LeftFoot)
         .map_or(0.0, |f| f.global_transform().translation.y);
     let agent_height = (head_y - foot_y).max(0.5);
-    let scale = agent_height / DEFAULT_AGENT_HEIGHT;
+    let scale_f = agent_height / DEFAULT_AGENT_HEIGHT;
 
-    // World position: in front of agent at waist height.
     let pos = Vec3 {
         x: forward_h.x.mul_add(MODULE_FORWARD_DIST, tr.translation.x),
         y: waist_y + MODULE_HEIGHT_OFFSET,
         z: forward_h.z.mul_add(MODULE_FORWARD_DIST, tr.translation.z),
     };
 
-    // Yaw rotation so local -Z faces the agent.
-    // Rotating local Z → forward_h makes local -Z → agent.
     let angle = forward_h.x.atan2(forward_h.z);
     let half = angle / 2.0;
     let rotation = Quat {
@@ -83,13 +98,12 @@ fn place_module(root: &Node, bone: &Node) {
         w: half.cos(),
     };
 
-    root.set_translation(pos);
-    root.set_rotation(rotation);
-    root.set_scale(Vec3 {
-        x: scale,
-        y: scale,
-        z: scale,
-    });
+    let scale = Vec3 {
+        x: scale_f,
+        y: scale_f,
+        z: scale_f,
+    };
+    (pos, rotation, scale)
 }
 
 pub enum Target {
@@ -101,22 +115,24 @@ pub struct Gauntlet {
     pub bone: RefCell<Option<Node>>,
     pub core: Node,
     pub hovered_sector: Cell<Option<usize>>,
-    pub modules: Vec<Module>,
+    pub modules: RefCell<Vec<Module>>,
     pub open: Cell<bool>,
     pub open_pos: Cell<Option<Vec3>>,
     pub pressed: Cell<bool>,
-    /// Logical scale [0.0, 1.0] tracked on the guest side to avoid redundant host calls.
     pub scale_t: Cell<f32>,
     pub target: Target,
 }
 
 impl Gauntlet {
-    pub const fn new(core: Node, target: Target, modules: Vec<Module>) -> Self {
+    pub fn new(target: Target) -> Self {
+        let doc = self_document();
+        let core = doc.create_node();
+        core.set_scale(Vec3::ZERO);
         Self {
             bone: RefCell::new(None),
             core,
             hovered_sector: Cell::new(None),
-            modules,
+            modules: RefCell::new(Vec::new()),
             open: Cell::new(false),
             open_pos: Cell::new(None),
             pressed: Cell::new(false),
@@ -125,8 +141,17 @@ impl Gauntlet {
         }
     }
 
-    /// Lazily resolves the bone node and attaches active module nodes.
-    /// Returns `true` once the bone is available.
+    /// Rebuild sector UI for new module definitions.
+    pub fn rebuild_modules(&self, defs: &[DynamicModuleDef], colors: &[[f32; 3]]) {
+        let doc = self_document();
+        let new_modules = make_modules(&doc, defs, colors);
+        for m in &new_modules {
+            m.root.set_scale(Vec3::ZERO);
+            self.core.add_child(&m.root);
+        }
+        *self.modules.borrow_mut() = new_modules;
+    }
+
     pub fn lazy_init_bone(&self) -> bool {
         let mut bone_ref = self.bone.borrow_mut();
         if bone_ref.is_some() {
@@ -144,7 +169,6 @@ impl Gauntlet {
         })
     }
 
-    /// Position core and add root nodes to it.
     pub fn open_menu(&self, open_pos: Vec3) {
         let bone_ref = self.bone.borrow();
         let Some(bone) = bone_ref.as_ref() else {
@@ -157,18 +181,19 @@ impl Gauntlet {
         self.core.set_transform(tr);
 
         self.open_pos.set(Some(open_pos));
-        for module in &self.modules {
+        let modules = self.modules.borrow();
+        for module in modules.iter() {
             module.raise_t.set(0.0);
             module.root.set_scale(Vec3::ONE);
             module.root.set_translation(Vec3::ZERO);
         }
     }
 
-    /// Hide root nodes without detaching them.
     pub fn close_menu(&self) {
         self.hovered_sector.set(None);
         self.open_pos.set(None);
-        for module in &self.modules {
+        let modules = self.modules.borrow();
+        for module in modules.iter() {
             if module.raise_t.get() != 0.0 {
                 module.raise_t.set(0.0);
                 module.root.set_translation(Vec3::ZERO);
@@ -180,42 +205,40 @@ impl Gauntlet {
         }
     }
 
-    /// Toggle a module's active state by sector index.
-    pub fn select(&self, sector: usize) {
-        let module = &self.modules[sector];
+    pub fn select(&self, sector: usize, defs: &[DynamicModuleDef]) {
+        let modules = self.modules.borrow();
+        let Some(module) = modules.get(sector) else {
+            return;
+        };
+        let Some(def) = defs.get(sector) else {
+            return;
+        };
         if module.active_state.get() {
             println!("deactivated {}", module.name);
             module.active_state.set(false);
-            module.active.deactivate();
             module.outline_node.set_scale(Vec3::ZERO);
+            let emitter = register_emitter(None, f32::MAX, std::slice::from_ref(&def.doc_id));
+            emitter.emit(CH_DEACTIVATE, &[]);
         } else {
             println!("activated {}", module.name);
             module.active_state.set(true);
-            module.active.activate();
             module.outline_node.set_scale(Vec3::ONE);
-            // Override position / rotation / scale with computed placement.
             let bone_ref = self.bone.borrow();
             if let Some(bone) = bone_ref.as_ref() {
-                place_module(module.active.root(), bone);
-                // Place the nav ring above the basin (left side of the nav root).
-                if let crate::modules::ModuleActive::Nav(nav) = &module.active {
-                    let root_tr = module.active.root().global_transform();
-                    nav.ring.set_translation(Vec3 {
-                        x: root_tr.translation.x
-                            - crate::modules::nav::BASIN_X,
-                        y: root_tr.translation.y + 0.5,
-                        z: root_tr.translation.z,
-                    });
-                }
+                let (pos, rot, scale) = place_module_transform(bone);
+                let payload = encode_activate(pos, rot, scale);
+                let emitter = register_emitter(None, f32::MAX, std::slice::from_ref(&def.doc_id));
+                emitter.emit(CH_ACTIVATE, &payload);
             }
         }
         self.open.set(false);
+        drop(modules);
         self.close_menu();
     }
 
-    /// Compute which sector the gauntlet is currently pointing at.
     pub fn update_hovered_sector(&self) {
-        if !self.open.get() || self.modules.is_empty() {
+        let modules = self.modules.borrow();
+        if !self.open.get() || modules.is_empty() {
             if self.hovered_sector.get().is_some() {
                 self.hovered_sector.set(None);
             }
@@ -232,7 +255,6 @@ impl Gauntlet {
 
         let forward = bone_tr.rotation * Vec3::new(0.0, 0.0, -1.0);
 
-        // Ray-plane intersection: find where the look direction hits the menu plane.
         let menu_normal = menu_tr.rotation * Vec3::Z;
         let origin_to_menu = menu_tr.translation - bone_tr.translation;
         let denom = forward.dot(menu_normal);
@@ -264,7 +286,7 @@ impl Gauntlet {
         } else {
             angle
         };
-        let n = self.modules.len();
+        let n = modules.len();
         let sector = (angle * n as f32 / (2.0 * PI)).round() as usize % n;
         self.hovered_sector.set(Some(sector));
     }

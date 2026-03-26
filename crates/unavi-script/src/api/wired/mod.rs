@@ -6,6 +6,7 @@ use crate::{
 };
 
 pub mod agent;
+pub mod event;
 pub mod input;
 pub mod scene;
 
@@ -28,6 +29,12 @@ pub fn add_to_linker(
     }
     if perms.api.contains(&ApiName::LocalAgent) {
         agent::bindings::wired::agent::context::add_to_linker::<_, HasSelf<_>>(linker, |s| {
+            &mut s.rt
+        })?;
+    }
+    if perms.api.contains(&ApiName::Event) {
+        event::bindings::wired::event::api::add_to_linker::<_, HasSelf<_>>(linker, |s| &mut s.rt)?;
+        event::bindings::wired::event::types::add_to_linker::<_, HasSelf<_>>(linker, |s| {
             &mut s.rt
         })?;
     }

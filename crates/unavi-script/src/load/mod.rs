@@ -81,6 +81,7 @@ pub(crate) fn load_scripts(
     permissions: Query<Option<&ScriptPermissions>>,
     local_agent_ent: Query<Entity, With<LocalAgent>>,
     input_registry: Res<crate::api::wired::input::InputRegistry>,
+    event_registry: Res<crate::api::wired::event::EventRegistry>,
 ) {
     #[cfg(target_family = "wasm")]
     return;
@@ -135,7 +136,7 @@ pub(crate) fn load_scripts(
                         ScriptEventQueue(Arc::clone(&agent_events)),
                         HsdRecordId(doc_id),
                         SceneRegistry(Arc::clone(&placeholder_registry)),
-    ))
+                    ))
                     .id();
 
                 (
@@ -198,6 +199,7 @@ pub(crate) fn load_scripts(
             doc_id,
             doc_entity,
             input_registry.clone(),
+            event_registry.clone(),
         );
         let state = StoreState::new(wasi_ctx, rt);
 

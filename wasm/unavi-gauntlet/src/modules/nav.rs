@@ -21,7 +21,6 @@ const BASIN_Y: f32 = -0.05;
 
 const RING_RADIUS: f32 = 0.28;
 const RING_THICKNESS: f32 = 0.020;
-const RING_X: f32 = BASIN_X;
 const RING_Y: f32 = -0.22;
 const RING_COLLIDER_RADIUS: f32 = RING_RADIUS + 0.03;
 const RING_COLLIDER_HEIGHT: f32 = RING_THICKNESS * 2.0;
@@ -39,12 +38,12 @@ impl NavActive {
         root.set_scale(Vec3::ZERO);
 
         let filter_table = make_filter_table(doc, color, &mut nodes);
-        filter_table.set_translation(Vec3::new(-0.30, 0.0, 0.0));
+        filter_table.set_translation(Vec3::new(BASIN_X, 0.0, 0.0));
         root.add_child(&filter_table);
         nodes.push(filter_table);
 
         let basin = make_basin(doc, &mut nodes);
-        basin.set_translation(Vec3::new(BASIN_X, BASIN_Y, 0.0));
+        basin.set_translation(Vec3::new(-0.30, BASIN_Y, 0.0));
         root.add_child(&basin);
         nodes.push(basin);
 
@@ -55,7 +54,7 @@ impl NavActive {
         let page_ring = doc.create_node();
         page_ring.set_mesh(Some(&Torus::new(RING_THICKNESS, RING_RADIUS).mesh()));
         page_ring.set_material(Some(&ring_mat));
-        page_ring.set_translation(Vec3::new(RING_X, RING_Y, 0.0));
+        page_ring.set_translation(Vec3::new(-0.30, RING_Y, 0.0));
         page_ring.set_collider(Some(&Collider::Cylinder(ColliderCylinder {
             height: RING_COLLIDER_HEIGHT,
             radius: RING_COLLIDER_RADIUS,

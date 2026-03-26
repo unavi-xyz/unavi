@@ -3,10 +3,10 @@ use std::{
     f32::consts::PI,
 };
 
-use wired_prelude::wired_math::types::Vec3;
+use wired_prelude::wired_math::types::{Quat, Vec3};
 
 use crate::{
-    module::{Module, ModuleKind},
+    module::Module,
     wired::{
         agent::{
             context::{local_agent, local_camera},
@@ -15,6 +15,11 @@ use crate::{
         scene::types::Node,
     },
 };
+
+pub const DEFAULT_AGENT_HEIGHT: f32 = 1.7;
+pub const MODULE_FORWARD_DIST: f32 = 0.9;
+pub const MODULE_HEIGHT_OFFSET: f32 = 0.08;
+pub const MODULE_SCALE: f32 = 1.4;
 
 pub const BG_ALPHA_BASE: f32 = 0.3;
 pub const BG_ALPHA_HOVER: f32 = 0.9;
@@ -31,6 +36,53 @@ pub const OUTLINE_WIDTH: f32 = 0.005;
 pub const OUTLINE_Z: f32 = 0.001;
 pub const SECTOR_SUBDIVISIONS: usize = 40;
 pub const Z_OFFSET: f32 = -0.5;
+
+fn place_module(root: &Node, bone: &Node) {
+    let tr = bone.global_transform();
+    let forward = tr.rotation * Vec3::new(0.0, 0.0, -1.0);
+
+    // Horizontal forward (XZ only), normalised.
+    let fwd_len = forward.x.hypot(forward.z);
+    let forward_h = if fwd_len > 1e-3 {
+        Vec3::new(forward.x / fwd_len, 0.0, forward.z / fwd_len)
+    } else {
+        Vec3::new(0.0, 0.0, -1.0)
+    };
+
+    let agent = local_agent();
+
+    // Waist height from Hips bone.
+    let waist_y = agent
+        .bone(BoneName::Hips)
+        .map_or(1.0, |h| h.global_transform().translation.y);
+
+    // Scale from agent height (Head Y − LeftFoot Y).
+    let head_y = agent
+        .bone(BoneName::Head)
+        .map_or(DEFAULT_AGENT_HEIGHT, |h| h.global_transform().translation.y);
+    let foot_y = agent
+        .bone(BoneName::LeftFoot)
+        .map_or(0.0, |f| f.global_transform().translation.y);
+    let agent_height = (head_y - foot_y).max(0.5);
+    let scale = agent_height / DEFAULT_AGENT_HEIGHT * MODULE_SCALE;
+
+    // World position: in front of agent at waist height.
+    let pos = Vec3 {
+        x: forward_h.x.mul_add(MODULE_FORWARD_DIST, tr.translation.x),
+        y: waist_y + MODULE_HEIGHT_OFFSET,
+        z: forward_h.z.mul_add(MODULE_FORWARD_DIST, tr.translation.z),
+    };
+
+    // Yaw rotation so local -Z faces the agent.
+    // Rotating local Z → forward_h makes local -Z → agent.
+    let angle = forward_h.x.atan2(forward_h.z);
+    let half = angle / 2.0;
+    let rotation = Quat { x: 0.0, y: half.sin(), z: 0.0, w: half.cos() };
+
+    root.set_translation(pos);
+    root.set_rotation(rotation);
+    root.set_scale(Vec3 { x: scale, y: scale, z: scale });
+}
 
 pub enum Target {
     Bone(BoneName),
@@ -79,16 +131,6 @@ impl Gauntlet {
         };
 
         node.is_some_and(|node| {
-            for module in &self.modules {
-                if module.kind == ModuleKind::Nav {
-                    continue;
-                }
-                node.add_child(module.active.root());
-                module
-                    .active
-                    .root()
-                    .set_translation(Vec3::new(0.0, 0.1, -0.05));
-            }
             *bone_ref = Some(node);
             true
         })
@@ -140,20 +182,14 @@ impl Gauntlet {
             module.outline_node.set_scale(Vec3::ZERO);
         } else {
             println!("activated {}", module.name);
-            if module.kind == ModuleKind::Nav {
-                let bone_ref = self.bone.borrow();
-                if let Some(bone) = bone_ref.as_ref() {
-                    let tr = bone.global_transform();
-                    let forward = tr.rotation * Vec3::new(0.0, 0.0, -1.0);
-                    module
-                        .active
-                        .root()
-                        .set_translation(tr.translation + forward * 0.9);
-                }
-            }
             module.active_state.set(true);
             module.active.activate();
             module.outline_node.set_scale(Vec3::ONE);
+            // Override position / rotation / scale with computed placement.
+            let bone_ref = self.bone.borrow();
+            if let Some(bone) = bone_ref.as_ref() {
+                place_module(module.active.root(), bone);
+            }
         }
         self.open.set(false);
         self.close_menu();

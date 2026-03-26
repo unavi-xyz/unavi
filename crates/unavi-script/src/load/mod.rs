@@ -135,7 +135,7 @@ pub(crate) fn load_scripts(
                         ScriptEventQueue(Arc::clone(&agent_events)),
                         HsdRecordId(doc_id),
                         SceneRegistry(Arc::clone(&placeholder_registry)),
-                    ))
+    ))
                     .id();
 
                 (

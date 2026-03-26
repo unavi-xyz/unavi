@@ -52,12 +52,10 @@ pub fn detect_dynamic_objects(
         }
 
         let Ok(space) = spaces.get(hsd_child.doc) else {
-            warn!(%entity, "dynamic object has no space");
             continue;
         };
 
         let object_id = ObjectId::new(space.0, node_id.0.clone());
-
         commands.entity(entity).insert(DynObjectId(object_id));
     }
 }

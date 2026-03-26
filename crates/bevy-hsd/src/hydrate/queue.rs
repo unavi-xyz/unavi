@@ -188,13 +188,12 @@ fn handle_material_added(
     commands: &mut Commands,
 ) {
     get_or_create_material(registry, &id);
+    let initial = get_material_at(hsd_map, &id);
     commands.trigger(HsdMaterialSpawned {
         doc: doc_ent,
-        id: id.clone(),
+        id,
+        initial,
     });
-    if let Some(hsd_mat) = get_material_at(hsd_map, &id) {
-        emit_material_fields(doc_ent, &id, &hsd_mat, commands);
-    }
 }
 
 fn get_or_create_node(registry: &SceneRegistry, id: &SmolStr, tree_id: TreeID) -> Arc<NodeInner> {

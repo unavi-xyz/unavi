@@ -19,7 +19,6 @@ use crate::{
 pub const DEFAULT_AGENT_HEIGHT: f32 = 1.7;
 pub const MODULE_FORWARD_DIST: f32 = 0.9;
 pub const MODULE_HEIGHT_OFFSET: f32 = 0.08;
-pub const MODULE_SCALE: f32 = 1.4;
 
 pub const BG_ALPHA_BASE: f32 = 0.3;
 pub const BG_ALPHA_HOVER: f32 = 0.9;
@@ -64,7 +63,7 @@ fn place_module(root: &Node, bone: &Node) {
         .bone(BoneName::LeftFoot)
         .map_or(0.0, |f| f.global_transform().translation.y);
     let agent_height = (head_y - foot_y).max(0.5);
-    let scale = agent_height / DEFAULT_AGENT_HEIGHT * MODULE_SCALE;
+    let scale = agent_height / DEFAULT_AGENT_HEIGHT;
 
     // World position: in front of agent at waist height.
     let pos = Vec3 {
@@ -77,11 +76,20 @@ fn place_module(root: &Node, bone: &Node) {
     // Rotating local Z → forward_h makes local -Z → agent.
     let angle = forward_h.x.atan2(forward_h.z);
     let half = angle / 2.0;
-    let rotation = Quat { x: 0.0, y: half.sin(), z: 0.0, w: half.cos() };
+    let rotation = Quat {
+        x: 0.0,
+        y: half.sin(),
+        z: 0.0,
+        w: half.cos(),
+    };
 
     root.set_translation(pos);
     root.set_rotation(rotation);
-    root.set_scale(Vec3 { x: scale, y: scale, z: scale });
+    root.set_scale(Vec3 {
+        x: scale,
+        y: scale,
+        z: scale,
+    });
 }
 
 pub enum Target {
@@ -189,6 +197,16 @@ impl Gauntlet {
             let bone_ref = self.bone.borrow();
             if let Some(bone) = bone_ref.as_ref() {
                 place_module(module.active.root(), bone);
+                // Place the nav ring above the basin (left side of the nav root).
+                if let crate::modules::ModuleActive::Nav(nav) = &module.active {
+                    let root_tr = module.active.root().global_transform();
+                    nav.ring.set_translation(Vec3 {
+                        x: root_tr.translation.x
+                            - crate::modules::nav::BASIN_X,
+                        y: root_tr.translation.y + 0.5,
+                        z: root_tr.translation.z,
+                    });
+                }
             }
         }
         self.open.set(false);

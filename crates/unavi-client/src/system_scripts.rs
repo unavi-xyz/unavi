@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_hsd::HsdRecordId;
 use unavi_script::{
-    DocumentFirewall, ScriptPermissions, SpawnLocalScript, load::local::ScriptSource,
+    DocumentFirewall, HsdFirewall, ScriptPermissions, SpawnLocalScript, load::local::ScriptSource,
     permissions::ApiName,
 };
 
@@ -30,6 +30,36 @@ pub fn init_gauntlet_firewall(
     for (ent, name) in new_docs.iter() {
         if name.as_str() == "unavi:gauntlet" {
             commands.entity(ent).insert(DocumentFirewall::default());
+        }
+    }
+}
+
+/// Give gauntlet RW access to each module's HSD doc firewall.
+pub fn maintain_module_hsd_firewalls(docs: Query<(&Name, &HsdRecordId, Option<&HsdFirewall>)>) {
+    let Some(gauntlet_id) = docs
+        .iter()
+        .find(|(n, _, _)| n.as_str() == "unavi:gauntlet")
+        .map(|(_, id, _)| id.0)
+    else {
+        return;
+    };
+
+    for (name, _, fw_opt) in &docs {
+        if !matches!(
+            name.as_str(),
+            "unavi:gauntlet_inventory" | "unavi:gauntlet_nav"
+        ) {
+            continue;
+        }
+        // All module doc entities get HsdFirewall from local.rs, but update anyway.
+        if let Some(fw) = fw_opt {
+            let mut inner = fw.0.write().expect("hsd_fw write");
+            if !inner.read.contains(&gauntlet_id) {
+                inner.read.push(gauntlet_id);
+            }
+            if !inner.write.contains(&gauntlet_id) {
+                inner.write.push(gauntlet_id);
+            }
         }
     }
 }

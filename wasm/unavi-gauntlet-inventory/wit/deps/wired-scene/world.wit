@@ -6,12 +6,15 @@ world prelude {
 }
 
 interface context {
-  use types.{document, node};
+  use types.{document, node, document-id};
 
   // The node this script is attached to.
   self-node: func() -> node;
   // The document this script's node belongs to.
   self-document: func() -> document;
+  // Get another document by ID. Returns none if the document does not exist
+  // or this script lacks read permission.
+  get-document: func(id: document-id) -> option<document>;
 }
 
 interface types {

@@ -61,6 +61,10 @@ pub enum ScriptQueuedEvent {
         id: SmolStr,
         parent: Option<SmolStr>,
     },
+    NodeParentSetByEntity {
+        child: bevy::prelude::Entity,
+        parent: Option<bevy::prelude::Entity>,
+    },
     NodeSpawned {
         id: SmolStr,
     },

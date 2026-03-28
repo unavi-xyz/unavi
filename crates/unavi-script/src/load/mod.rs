@@ -19,11 +19,11 @@ use wasmtime_wasi::WasiCtxBuilder;
 use bevy_wds::{LocalActor, LocalBlobs};
 
 use crate::{
-    ScriptEngine, WasmBinary, WasmEngine,
+    HsdFirewall, ScriptEngine, WasmBinary, WasmEngine,
     agent::NeedsAgentProxy,
-    api::wired::scene::document::gen_id,
+    api::wired::scene::{GlobalRegistryMapRes, document::gen_id},
     asset::Wasm,
-    permissions::{ApiName, HsdPermissions, ScriptPermissions},
+    permissions::{ApiName, ScriptPermissions},
     runtime::{RuntimeCtx, ScriptRuntime},
 };
 
@@ -82,6 +82,7 @@ pub(crate) fn load_scripts(
     local_agent_ent: Query<Entity, With<LocalAgent>>,
     input_registry: Res<crate::api::wired::input::InputRegistry>,
     event_registry: Res<crate::api::wired::event::EventRegistry>,
+    registry_map_res: Res<GlobalRegistryMapRes>,
 ) {
     #[cfg(target_family = "wasm")]
     return;
@@ -99,7 +100,7 @@ pub(crate) fn load_scripts(
             continue;
         };
 
-        let mut perms = permissions
+        let perms = permissions
             .get(source.doc_entity)
             .ok()
             .flatten()
@@ -133,9 +134,10 @@ pub(crate) fn load_scripts(
                 let agent_events = Arc::new(Mutex::new(Vec::new()));
                 let doc_ent = commands
                     .spawn((
-                        ScriptEventQueue(Arc::clone(&agent_events)),
+                        HsdFirewall::default(),
                         HsdRecordId(doc_id),
                         SceneRegistry(Arc::clone(&placeholder_registry)),
+                        ScriptEventQueue(Arc::clone(&agent_events)),
                     ))
                     .id();
 
@@ -180,13 +182,6 @@ pub(crate) fn load_scripts(
                 )
             };
 
-        perms.hsd.insert(
-            doc_id,
-            [HsdPermissions::Read, HsdPermissions::Write]
-                .into_iter()
-                .collect(),
-        );
-
         let rt = RuntimeData::new(
             actor.clone(),
             blobs.clone(),
@@ -194,12 +189,12 @@ pub(crate) fn load_scripts(
             self_node_id,
             registry,
             events,
-            perms.clone(),
             agent_entry,
             doc_id,
             doc_entity,
             input_registry.clone(),
             event_registry.clone(),
+            registry_map_res.0.clone(),
         );
         let state = StoreState::new(wasi_ctx, rt);
 
@@ -239,6 +234,35 @@ pub(crate) fn load_scripts(
             }
             _ => {}
         }
+    }
+}
+
+/// Registers newly created doc entities into the `GlobalRegistryMap` so scripts
+/// can access foreign documents via `get-document`.
+pub(crate) fn register_new_docs(
+    new_docs: Query<
+        (
+            &HsdRecordId,
+            &SceneRegistry,
+            &ScriptEventQueue,
+            &HsdFirewall,
+        ),
+        Added<HsdFirewall>,
+    >,
+    registry_map: Res<GlobalRegistryMapRes>,
+) {
+    use std::sync::Arc;
+    for (record_id, registry, event_queue, firewall) in &new_docs {
+        let handle = crate::api::wired::scene::DocHandle {
+            registry: Arc::clone(&registry.0),
+            events: Arc::clone(&event_queue.0),
+            hsd_fw: Arc::clone(&firewall.0),
+        };
+        registry_map
+            .0
+            .write()
+            .expect("registry_map write")
+            .insert(record_id.0, handle);
     }
 }
 

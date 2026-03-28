@@ -7,9 +7,20 @@ use wasmtime::component::Resource;
 use super::bindings::wired::scene::types::{Indices, Mesh, PrimitiveTopology as WitTopology};
 use crate::api::wired::scene::WiredSceneRt;
 
-#[derive(Clone)]
 pub struct HostMesh {
     pub inner: Arc<MeshInner>,
+    pub can_read: bool,
+    pub can_write: bool,
+}
+
+impl Clone for HostMesh {
+    fn clone(&self) -> Self {
+        Self {
+            inner: Arc::clone(&self.inner),
+            can_read: self.can_read,
+            can_write: self.can_write,
+        }
+    }
 }
 
 const fn wit_topo_to_bevy(t: WitTopology) -> PrimitiveTopology {
@@ -65,9 +76,12 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
     }
 
     async fn set_sync(&mut self, self_: Resource<Mesh>, value: bool) -> wasmtime::Result<()> {
-        let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        if value {
-            self.check_hsd_write()?;
+        let (inner, can_write) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.can_write)
+        };
+        if value && !can_write {
+            return Err(anyhow::anyhow!("hsd write permission required"));
         }
         inner.sync.store(value, Ordering::Relaxed);
         Ok(())

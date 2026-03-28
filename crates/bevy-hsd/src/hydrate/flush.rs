@@ -50,6 +50,14 @@ fn flush_queued_events(doc_ent: Entity, queue: &ScriptEventQueue, commands: &mut
                     parent,
                 });
             }
+            ScriptQueuedEvent::NodeParentSetByEntity { child, parent } => match parent {
+                Some(p) => {
+                    commands.entity(child).insert(ChildOf(p));
+                }
+                None => {
+                    commands.entity(child).remove::<ChildOf>();
+                }
+            },
             ScriptQueuedEvent::MeshSpawned { id } => {
                 commands.trigger(HsdMeshSpawned { doc: doc_ent, id });
             }

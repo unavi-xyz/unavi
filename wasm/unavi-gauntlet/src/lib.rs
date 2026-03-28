@@ -44,16 +44,15 @@ const CH_REGISTER_REQUEST: &str = "unavi::gauntlet::register-request";
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct RegisterPayload {
     pub name: String,
-    pub icon: String,
+    pub icon_node_id: String,
     pub color: [f32; 3],
 }
 
 pub struct DynamicModuleDef {
-    pub name: String,
-    #[allow(dead_code)]
-    pub icon: String,
     pub color: [f32; 3],
     pub doc_id: Vec<u8>,
+    pub icon_node_id: String,
+    pub name: String,
 }
 
 struct Script {
@@ -244,9 +243,9 @@ impl GuestScript for Script {
 fn parse_register_payload(payload: &[u8], sender_document: Vec<u8>) -> Option<DynamicModuleDef> {
     let reg: RegisterPayload = postcard::from_bytes(payload).ok()?;
     Some(DynamicModuleDef {
-        name: reg.name,
-        icon: reg.icon,
         color: reg.color,
         doc_id: sender_document,
+        icon_node_id: reg.icon_node_id,
+        name: reg.name,
     })
 }

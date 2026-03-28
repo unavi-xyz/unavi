@@ -1,4 +1,5 @@
-use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex, RwLock};
 
 use bevy::prelude::Entity;
 use bevy_hsd::{cache::SceneRegistryInner, hydrate::events::ScriptQueuedEvent};
@@ -6,12 +7,28 @@ use loro::LoroDoc;
 use smol_str::SmolStr;
 use wasmtime_wasi::ResourceTable;
 
-use crate::permissions::{HsdPermissions, ScriptPermissions};
-
 pub mod document;
+mod hsd_firewall;
 mod material;
 mod mesh;
 pub mod node;
+
+pub use hsd_firewall::{HsdFirewall, HsdFirewallInner};
+
+/// All data needed to operate on a specific HSD document from a script host call.
+#[derive(Clone)]
+pub struct DocHandle {
+    pub registry: Arc<SceneRegistryInner>,
+    pub events: Arc<Mutex<Vec<ScriptQueuedEvent>>>,
+    pub hsd_fw: Arc<RwLock<HsdFirewallInner>>,
+}
+
+/// Shared map from `doc_id` → `DocHandle`, accessible from script host calls.
+pub type GlobalRegistryMap = Arc<RwLock<HashMap<blake3::Hash, DocHandle>>>;
+
+/// Bevy resource wrapping the shared registry map.
+#[derive(bevy::prelude::Resource, Clone, Default)]
+pub struct GlobalRegistryMapRes(pub GlobalRegistryMap);
 
 pub mod bindings {
     wasmtime::component::bindgen!({
@@ -34,8 +51,8 @@ pub struct WiredSceneRt {
     pub doc_entity: Entity,
     pub doc_id: blake3::Hash,
     pub events: Arc<Mutex<Vec<ScriptQueuedEvent>>>,
-    pub perms: ScriptPermissions,
     pub registry: Arc<SceneRegistryInner>,
+    pub registry_map: GlobalRegistryMap,
     pub self_node_id: SmolStr,
     pub table: ResourceTable,
 }
@@ -45,17 +62,18 @@ impl WiredSceneRt {
         self.events.lock().expect("events lock").push(ev);
     }
 
-    pub(super) fn check_hsd_write(&self) -> wasmtime::Result<()> {
-        if self
-            .perms
-            .hsd
-            .get(&self.doc_id)
-            .is_some_and(|p| p.contains(&HsdPermissions::Write))
-        {
-            Ok(())
-        } else {
-            Err(anyhow::anyhow!("hsd write permission required"))
-        }
+    /// Returns (`can_read`, `can_write`) for a foreign document by checking its
+    /// `HsdFirewall` for this script's `doc_id`.
+    pub(super) fn foreign_perms(&self, foreign_id: blake3::Hash) -> (bool, bool) {
+        let map = self.registry_map.read().expect("registry_map read");
+        let Some(h) = map.get(&foreign_id) else {
+            return (false, false);
+        };
+        let fw = h.hsd_fw.read().expect("hsd_fw read");
+        (
+            fw.read.contains(&self.doc_id),
+            fw.write.contains(&self.doc_id),
+        )
     }
 }
 
@@ -73,7 +91,11 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
                 .cloned()
         };
         if let Some(inner) = inner {
-            let res = self.table.push(node::HostNode { inner })?;
+            let res = self.table.push(node::HostNode {
+                inner,
+                can_read: true,
+                can_write: true,
+            })?;
             return Ok(res);
         }
         Err(anyhow::anyhow!("self_node not found in registry"))
@@ -83,10 +105,52 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
         &mut self,
     ) -> wasmtime::Result<wasmtime::component::Resource<bindings::wired::scene::context::Document>>
     {
-        let res = self
-            .table
-            .push(document::HostDocument { id: self.doc_id })?;
+        let res = self.table.push(document::HostDocument {
+            id: self.doc_id,
+            registry: Arc::clone(&self.registry),
+            events: Arc::clone(&self.events),
+            can_read: true,
+            can_write: true,
+        })?;
         Ok(res)
+    }
+
+    async fn get_document(
+        &mut self,
+        id: Vec<u8>,
+    ) -> wasmtime::Result<
+        Option<wasmtime::component::Resource<bindings::wired::scene::context::Document>>,
+    > {
+        let Ok(arr): Result<[u8; 32], _> = id.try_into() else {
+            return Ok(None);
+        };
+        let foreign_id = blake3::Hash::from(arr);
+        // Own doc is always accessible.
+        let (can_read, can_write) = if foreign_id == self.doc_id {
+            (true, true)
+        } else {
+            self.foreign_perms(foreign_id)
+        };
+        if !can_read {
+            return Ok(None);
+        }
+        let handle = {
+            self.registry_map
+                .read()
+                .expect("registry_map read")
+                .get(&foreign_id)
+                .cloned()
+        };
+        let Some(h) = handle else {
+            return Ok(None);
+        };
+        Ok(Some(self.table.push(document::HostDocument {
+            id: foreign_id,
+            registry: h.registry,
+            events: h.events,
+            can_read,
+            can_write,
+        })?))
     }
 }
 

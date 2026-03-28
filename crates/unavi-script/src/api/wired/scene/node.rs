@@ -14,9 +14,20 @@ use super::bindings::wired::scene::types::{
 };
 use super::{WiredSceneRt, material::HostMaterial, mesh::HostMesh};
 
-#[derive(Clone)]
 pub struct HostNode {
     pub inner: Arc<NodeInner>,
+    pub can_read: bool,
+    pub can_write: bool,
+}
+
+impl Clone for HostNode {
+    fn clone(&self) -> Self {
+        Self {
+            inner: Arc::clone(&self.inner),
+            can_read: self.can_read,
+            can_write: self.can_write,
+        }
+    }
 }
 
 impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
@@ -285,13 +296,20 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         &mut self,
         self_: Resource<HostNode>,
     ) -> wasmtime::Result<Option<Resource<HostNode>>> {
-        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        let (inner, can_read, can_write) = {
+            let n = self.table.get(&self_)?;
+            (Arc::clone(&n.inner), n.can_read, n.can_write)
+        };
         let parent_inner = {
             let state = inner.state.lock().expect("node state lock");
             state.parent.as_ref().and_then(std::sync::Weak::upgrade)
         };
         match parent_inner {
-            Some(pi) => Ok(Some(self.table.push(HostNode { inner: pi })?)),
+            Some(pi) => Ok(Some(self.table.push(HostNode {
+                inner: pi,
+                can_read,
+                can_write,
+            })?)),
             None => Ok(None),
         }
     }
@@ -300,14 +318,21 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         &mut self,
         self_: Resource<HostNode>,
     ) -> wasmtime::Result<Vec<Resource<HostNode>>> {
-        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        let (inner, can_read, can_write) = {
+            let n = self.table.get(&self_)?;
+            (Arc::clone(&n.inner), n.can_read, n.can_write)
+        };
         let children: Vec<Arc<NodeInner>> = {
             let state = inner.state.lock().expect("node state lock");
             state.children.clone()
         };
         let mut out = Vec::with_capacity(children.len());
         for child in children {
-            out.push(self.table.push(HostNode { inner: child })?);
+            out.push(self.table.push(HostNode {
+                inner: child,
+                can_read,
+                can_write,
+            })?);
         }
         Ok(out)
     }
@@ -317,8 +342,17 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         self_: Resource<HostNode>,
         child: Resource<HostNode>,
     ) -> wasmtime::Result<()> {
-        let parent_inner = Arc::clone(&self.table.get(&self_)?.inner);
-        let child_inner = Arc::clone(&self.table.get(&child)?.inner);
+        let (parent_inner, parent_can_write) = {
+            let n = self.table.get(&self_)?;
+            (Arc::clone(&n.inner), n.can_write)
+        };
+        let (child_inner, child_can_write) = {
+            let n = self.table.get(&child)?;
+            (Arc::clone(&n.inner), n.can_write)
+        };
+        if !parent_can_write || !child_can_write {
+            return Err(anyhow::anyhow!("hsd write permission required"));
+        }
 
         {
             let mut parent_state = parent_inner.state.lock().expect("parent state lock");
@@ -329,6 +363,20 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         {
             let mut child_state = child_inner.state.lock().expect("child state lock");
             child_state.parent = Some(Arc::downgrade(&parent_inner));
+        }
+
+        // Cross-doc: resolve Bevy entities directly to avoid same-registry lookup.
+        let parent_ent = *parent_inner.entity.lock().expect("entity lock");
+        let child_ent = *child_inner.entity.lock().expect("entity lock");
+        if let (Some(c), Some(p)) = (child_ent, parent_ent)
+            && child_inner.id != parent_inner.id
+        {
+            // Different registries — use entity-based event.
+            self.push_script_event(ScriptQueuedEvent::NodeParentSetByEntity {
+                child: c,
+                parent: Some(p),
+            });
+            return Ok(());
         }
 
         self.push_script_event(ScriptQueuedEvent::NodeParentSet {
@@ -343,7 +391,13 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         _self_: Resource<HostNode>,
         child: Resource<HostNode>,
     ) -> wasmtime::Result<()> {
-        let child_inner = Arc::clone(&self.table.get(&child)?.inner);
+        let (child_inner, can_write) = {
+            let n = self.table.get(&child)?;
+            (Arc::clone(&n.inner), n.can_write)
+        };
+        if !can_write {
+            return Err(anyhow::anyhow!("hsd write permission required"));
+        }
 
         let parent_inner = {
             let child_state = child_inner.state.lock().expect("child state lock");
@@ -360,6 +414,16 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 .retain(|c| c.id != child_inner.id);
         }
         child_inner.state.lock().expect("child state lock").parent = None;
+
+        // Use entity-based event if child entity is already resolved.
+        let child_ent = *child_inner.entity.lock().expect("entity lock");
+        if let Some(c) = child_ent {
+            self.push_script_event(ScriptQueuedEvent::NodeParentSetByEntity {
+                child: c,
+                parent: None,
+            });
+            return Ok(());
+        }
 
         self.push_script_event(ScriptQueuedEvent::NodeParentSet {
             id: child_inner.id.clone(),
@@ -385,7 +449,11 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         let Some(mesh_inner) = mesh_inner else {
             return Ok(None);
         };
-        Ok(Some(self.table.push(HostMesh { inner: mesh_inner })?))
+        Ok(Some(self.table.push(HostMesh {
+            inner: mesh_inner,
+            can_read: true,
+            can_write: true,
+        })?))
     }
 
     async fn set_mesh(
@@ -436,7 +504,11 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         let Some(mat_inner) = mat_inner else {
             return Ok(None);
         };
-        Ok(Some(self.table.push(HostMaterial { inner: mat_inner })?))
+        Ok(Some(self.table.push(HostMaterial {
+            inner: mat_inner,
+            can_read: true,
+            can_write: true,
+        })?))
     }
 
     async fn set_material(
@@ -671,12 +743,15 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     }
 
     async fn set_sync(&mut self, self_: Resource<HostNode>, value: bool) -> wasmtime::Result<()> {
-        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        let (inner, can_write) = {
+            let n = self.table.get(&self_)?;
+            (Arc::clone(&n.inner), n.can_write)
+        };
         if inner.is_virtual {
             return Ok(());
         }
-        if value {
-            self.check_hsd_write()?;
+        if value && !can_write {
+            return Err(anyhow::anyhow!("hsd write permission required"));
         }
         inner.sync.store(value, Ordering::Relaxed);
         Ok(())

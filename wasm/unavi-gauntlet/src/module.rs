@@ -7,13 +7,13 @@ use crate::{
         BG_ALPHA_BASE, ICON_Z, OUTLINE_COLOR, OUTLINE_WIDTH, OUTLINE_Z, RING_RADIUS,
         SECTOR_GAP_WORLD, SECTOR_INNER_R, SECTOR_SUBDIVISIONS,
     },
-    unavi::shapes::api::{Cuboid, Torus},
-    wired::scene::types::{
-        AlphaMode, Document, Indices, Material, Mesh, Node, PrimitiveTopology,
+    wired::scene::{
+        context::get_document,
+        types::{AlphaMode, Document, Indices, Material, Mesh, Node, PrimitiveTopology},
     },
 };
 
-use wired_prelude::wired_math::types::Quat;
+use wired_prelude::wired_math::types::Vec3;
 
 pub struct Module {
     pub active_state: Cell<bool>,
@@ -24,14 +24,14 @@ pub struct Module {
     pub raise_t: Cell<f32>,
     pub root: Node,
     _bg: Node,
-    _icon: Node,
+    _icon: Option<Node>,
 }
 
 pub fn make_modules(doc: &Document, defs: &[DynamicModuleDef], colors: &[[f32; 3]]) -> Vec<Module> {
     let n = defs.len();
     defs.iter()
         .enumerate()
-        .map(|(i, def)| make_module(doc, i, n, &def.name, def.icon.as_str(), colors[i]))
+        .map(|(i, def)| make_module(doc, i, n, def, colors[i]))
         .collect()
 }
 
@@ -39,35 +39,22 @@ fn make_module(
     doc: &Document,
     i: usize,
     n: usize,
-    name: &str,
-    icon: &str,
+    def: &DynamicModuleDef,
     color: [f32; 3],
 ) -> Module {
     let angle = i as f32 * 2.0 * PI / n as f32;
-
-    let icon_mat = doc.create_material();
-    icon_mat.set_base_color(&[color[0], color[1], color[2], 1.0]);
-    icon_mat.set_unlit(true);
-
-    let icon_node = doc.create_node();
-    icon_node.set_mesh(Some(&make_icon_mesh(doc, icon)));
-    icon_node.set_material(Some(&icon_mat));
-    if icon == "torus" {
-        // Rotate 90° around X so the torus ring faces the viewer.
-        let half = PI / 4.0;
-        icon_node.set_rotation(Quat {
-            x: half.sin(),
-            y: 0.0,
-            z: 0.0,
-            w: half.cos(),
-        });
-    }
     let mid_r = f32::midpoint(SECTOR_INNER_R, RING_RADIUS);
-    icon_node.set_translation(wired_prelude::wired_math::types::Vec3::new(
-        mid_r * angle.cos(),
-        mid_r * angle.sin(),
-        ICON_Z,
-    ));
+
+    // Resolve icon node from the module's own document.
+    let icon_node = get_document(&def.doc_id).and_then(|foreign_doc| {
+        foreign_doc
+            .nodes()
+            .into_iter()
+            .find(|n| n.id() == def.icon_node_id)
+    });
+    if let Some(ref icon) = icon_node {
+        icon.set_translation(Vec3::new(mid_r * angle.cos(), mid_r * angle.sin(), ICON_Z));
+    }
 
     let bg_material = doc.create_material();
     bg_material.set_base_color(&[color[0], color[1], color[2], BG_ALPHA_BASE]);
@@ -85,31 +72,25 @@ fn make_module(
     let outline = doc.create_node();
     outline.set_mesh(Some(&make_outline_mesh(doc, i, n)));
     outline.set_material(Some(&outline_mat));
-    outline.set_scale(wired_prelude::wired_math::types::Vec3::ZERO);
+    outline.set_scale(Vec3::ZERO);
 
     let root = doc.create_node();
     root.add_child(&bg);
-    root.add_child(&icon_node);
+    if let Some(ref icon) = icon_node {
+        root.add_child(icon);
+    }
     root.add_child(&outline);
 
     Module {
         active_state: Cell::new(false),
         bg_color: color,
         bg_material,
-        name: name.to_string(),
+        name: def.name.clone(),
         outline_node: outline,
         raise_t: Cell::new(0.0),
         root,
         _bg: bg,
         _icon: icon_node,
-    }
-}
-
-fn make_icon_mesh(_doc: &Document, icon: &str) -> Mesh {
-    let side = 0.025_f32 * 1.3;
-    match icon {
-        "torus" => Torus::new(side * 0.3, side).mesh(),
-        _ => Cuboid::new(side, side, side).mesh(),
     }
 }
 

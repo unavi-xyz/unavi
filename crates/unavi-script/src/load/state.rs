@@ -13,9 +13,8 @@ use crate::{
         agent::WiredAgentRt,
         event::{EventRegistry, WiredEventRt},
         input::{InputRegistry, WiredInputRt},
-        scene::WiredSceneRt,
+        scene::{GlobalRegistryMap, WiredSceneRt},
     },
-    permissions::ScriptPermissions,
 };
 
 pub struct StoreState {
@@ -40,12 +39,12 @@ impl RuntimeData {
         self_node_id: SmolStr,
         registry: Arc<SceneRegistryInner>,
         events: Arc<Mutex<Vec<ScriptQueuedEvent>>>,
-        perms: ScriptPermissions,
         agent_entry: Option<Arc<ProxyRegistry>>,
         doc_id: blake3::Hash,
         doc_entity: Entity,
         input_registry: InputRegistry,
         event_registry: EventRegistry,
+        registry_map: GlobalRegistryMap,
     ) -> Self {
         Self {
             wired_agent: WiredAgentRt {
@@ -70,7 +69,7 @@ impl RuntimeData {
                 table: ResourceTable::default(),
                 registry,
                 events,
-                perms,
+                registry_map,
             },
         }
     }

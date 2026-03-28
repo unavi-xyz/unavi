@@ -169,6 +169,7 @@ impl Plugin for UnaviPlugin {
                     scene::spawn_agent,
                     system_scripts::init_gauntlet_firewall,
                     system_scripts::maintain_gauntlet_firewall,
+                    system_scripts::maintain_module_hsd_firewalls,
                 ),
             )
             .add_systems(Update, grab::move_grabbed_objects);

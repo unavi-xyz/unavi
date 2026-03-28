@@ -22,7 +22,6 @@ const CH_REGISTER: &str = "unavi::gauntlet::register";
 const CH_REGISTER_REQUEST: &str = "unavi::gauntlet::register-request";
 
 const COLOR: [f32; 3] = [0.88, 0.52, 0.08];
-const ICON: &str = "torus";
 const NAME: &str = "Nav";
 
 const BASE_H: f32 = 0.016;
@@ -45,7 +44,7 @@ const Z_LIP_Z: f32 = TABLE_D * 0.5 - LIP_T * 0.5;
 #[derive(serde::Serialize, serde::Deserialize)]
 struct RegisterPayload<'a> {
     name: &'a str,
-    icon: &'a str,
+    icon_node_id: &'a str,
     color: [f32; 3],
 }
 
@@ -59,6 +58,7 @@ struct ActivatePayload {
 struct Script {
     root: Node,
     ring: Node,
+    icon: Node,
     _nodes: Vec<Node>,
     _emitter: EventEmitter,
     request_receptor: EventReceptor,
@@ -68,6 +68,7 @@ struct Script {
 impl GuestScript for Script {
     fn new() -> Self {
         let doc = self_document();
+        let icon = make_icon(&doc);
         let mut nodes = Vec::new();
 
         let color_mat = doc.create_material();
@@ -116,6 +117,7 @@ impl GuestScript for Script {
         Self {
             root,
             ring,
+            icon,
             _nodes: nodes,
             _emitter: register_emitter(None, f32::MAX, &[]),
             request_receptor,
@@ -126,9 +128,10 @@ impl GuestScript for Script {
     fn tick(&self) {
         // Reply to register-request with our registration
         while let Some(event) = self.request_receptor.poll() {
+            let icon_node_id = self.icon.id();
             let payload = postcard::to_allocvec(&RegisterPayload {
                 name: NAME,
-                icon: ICON,
+                icon_node_id: &icon_node_id,
                 color: COLOR,
             })
             .expect("encode register");
@@ -235,6 +238,25 @@ fn make_basin(doc: &crate::wired::scene::types::Document, nodes: &mut Vec<Node>)
     nodes.push(dish);
 
     group
+}
+
+fn make_icon(doc: &crate::wired::scene::types::Document) -> Node {
+    use std::f32::consts::PI;
+    let mat = doc.create_material();
+    mat.set_base_color(&[COLOR[0], COLOR[1], COLOR[2], 1.0]);
+    mat.set_unlit(true);
+    let node = doc.create_node();
+    node.set_mesh(Some(&Torus::new(0.007, 0.022).mesh()));
+    node.set_material(Some(&mat));
+    // Rotate 90° around X so the torus ring faces the viewer.
+    let half = PI / 4.0;
+    node.set_rotation(Quat {
+        x: half.sin(),
+        y: 0.0,
+        z: 0.0,
+        w: half.cos(),
+    });
+    node
 }
 
 fn decode_transform(payload: &[u8]) -> Option<(Vec3, Quat, Vec3)> {

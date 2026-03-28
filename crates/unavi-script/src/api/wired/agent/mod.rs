@@ -115,7 +115,11 @@ impl bindings::wired::agent::context::Host for RuntimeData {
         let Some(inner) = inner else {
             return Err(anyhow::anyhow!("camera node not found"));
         };
-        Ok(self.wired_scene.table.push(HostNode { inner })?)
+        Ok(self.wired_scene.table.push(HostNode {
+            inner,
+            can_read: true,
+            can_write: true,
+        })?)
     }
 }
 
@@ -146,7 +150,11 @@ impl bindings::wired::agent::types::HostAgent for RuntimeData {
         let Some(inner) = inner else {
             return Ok(None);
         };
-        Ok(Some(self.wired_scene.table.push(HostNode { inner })?))
+        Ok(Some(self.wired_scene.table.push(HostNode {
+            inner,
+            can_read: true,
+            can_write: true,
+        })?))
     }
 
     async fn drop(&mut self, rep: Resource<HostAgent>) -> wasmtime::Result<()> {

@@ -6,7 +6,7 @@ use bevy_wds::LocalActor;
 use bytes::Bytes;
 use loro::{LoroDoc, LoroList, LoroTree, TreeParentId};
 
-use crate::{asset::Wasm, permissions::ScriptPermissions};
+use crate::{HsdFirewall, asset::Wasm, permissions::ScriptPermissions};
 
 #[derive(Clone)]
 pub enum ScriptSource {
@@ -193,7 +193,7 @@ fn spawn_local_hsd_doc(
     perms: ScriptPermissions,
     name: Option<String>,
 ) {
-    let mut entity = commands.spawn((HsdDoc(doc), HsdRecordId(id), perms));
+    let mut entity = commands.spawn((HsdDoc(doc), HsdRecordId(id), HsdFirewall::default(), perms));
     if let Some(name) = name {
         entity.insert(Name::new(name));
     }

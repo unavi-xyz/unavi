@@ -18,8 +18,10 @@ use wasmtime_wasi::WasiCtxBuilder;
 
 use bevy_wds::{LocalActor, LocalBlobs};
 
+use std::sync::RwLock;
+
 use crate::{
-    HsdFirewall, ScriptEngine, WasmBinary, WasmEngine,
+    HsdFirewall, HsdFirewallInner, ScriptEngine, WasmBinary, WasmEngine,
     agent::NeedsAgentProxy,
     api::wired::scene::{GlobalRegistryMapRes, document::gen_id},
     asset::Wasm,
@@ -194,7 +196,7 @@ pub(crate) fn load_scripts(
             doc_entity,
             input_registry.clone(),
             event_registry.clone(),
-            registry_map_res.0.clone(),
+            Arc::clone(&registry_map_res.0),
         );
         let state = StoreState::new(wasi_ctx, rt);
 
@@ -245,24 +247,43 @@ pub(crate) fn register_new_docs(
             &HsdRecordId,
             &SceneRegistry,
             &ScriptEventQueue,
-            &HsdFirewall,
+            Option<&HsdFirewall>,
         ),
-        Added<HsdFirewall>,
+        Added<SceneRegistry>,
     >,
     registry_map: Res<GlobalRegistryMapRes>,
 ) {
-    use std::sync::Arc;
     for (record_id, registry, event_queue, firewall) in &new_docs {
+        let hsd_fw = firewall.map_or_else(
+            || Arc::new(RwLock::new(HsdFirewallInner::default())),
+            |fw| Arc::clone(&fw.0),
+        );
         let handle = crate::api::wired::scene::DocHandle {
             registry: Arc::clone(&registry.0),
             events: Arc::clone(&event_queue.0),
-            hsd_fw: Arc::clone(&firewall.0),
+            hsd_fw,
         };
         registry_map
             .0
             .write()
             .expect("registry_map write")
             .insert(record_id.0, handle);
+    }
+}
+
+/// Removes a doc entity's entry from `GlobalRegistryMap` when its `HsdRecordId`
+/// is removed (i.e. the entity is despawned).
+pub(crate) fn on_hsd_record_removed(
+    trigger: On<Remove, HsdRecordId>,
+    query: Query<&HsdRecordId>,
+    registry_map: Res<GlobalRegistryMapRes>,
+) {
+    if let Ok(record_id) = query.get(trigger.entity) {
+        registry_map
+            .0
+            .write()
+            .expect("registry_map write")
+            .remove(&record_id.0);
     }
 }
 

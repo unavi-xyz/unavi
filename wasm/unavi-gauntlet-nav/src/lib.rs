@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use wired_prelude::wired_math::types::{Quat, Vec3};
 
 use crate::{
@@ -240,13 +242,15 @@ fn make_basin(doc: &crate::wired::scene::types::Document, nodes: &mut Vec<Node>)
     group
 }
 
+const TORUS_INNER: f32 = 0.005;
+const TORUS_OUTER: f32 = 0.01;
+
 fn make_icon(doc: &crate::wired::scene::types::Document) -> Node {
-    use std::f32::consts::PI;
     let mat = doc.create_material();
     mat.set_base_color(&[COLOR[0], COLOR[1], COLOR[2], 1.0]);
     mat.set_unlit(true);
     let node = doc.create_node();
-    node.set_mesh(Some(&Torus::new(0.007, 0.022).mesh()));
+    node.set_mesh(Some(&Torus::new(TORUS_INNER, TORUS_OUTER).mesh()));
     node.set_material(Some(&mat));
     // Rotate 90° around X so the torus ring faces the viewer.
     let half = PI / 4.0;

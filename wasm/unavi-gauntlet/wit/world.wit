@@ -1,6 +1,5 @@
 package unavi:gauntlet;
 
 world guest {
-  import unavi:shapes/api;
   include wired:prelude/script-system;
 }

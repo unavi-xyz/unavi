@@ -65,15 +65,17 @@ impl WiredSceneRt {
     /// Returns (`can_read`, `can_write`) for a foreign document by checking its
     /// `HsdFirewall` for this script's `doc_id`.
     pub(super) fn foreign_perms(&self, foreign_id: blake3::Hash) -> (bool, bool) {
-        let map = self.registry_map.read().expect("registry_map read");
-        let Some(h) = map.get(&foreign_id) else {
+        let Some(hsd_fw) = self
+            .registry_map
+            .read()
+            .expect("registry_map read")
+            .get(&foreign_id)
+            .map(|h| Arc::clone(&h.hsd_fw))
+        else {
             return (false, false);
         };
-        let fw = h.hsd_fw.read().expect("hsd_fw read");
-        (
-            fw.read.contains(&self.doc_id),
-            fw.write.contains(&self.doc_id),
-        )
+        let fw = hsd_fw.read().expect("hsd_fw read");
+        (fw.read.contains(&self.doc_id), fw.write.contains(&self.doc_id))
     }
 }
 

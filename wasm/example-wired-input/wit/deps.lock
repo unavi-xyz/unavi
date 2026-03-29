@@ -22,8 +22,8 @@ deps = ["wired-agent", "wired-event", "wired-input", "wired-math", "wired-script
 
 [wired-scene]
 path = "../../../protocol/wit/wired-scene"
-sha256 = "4115d91c65f7804e956cd1ad309264eb9a8e560d7f6a2f91aa56c522571ab222"
-sha512 = "5d037c86e2d9aa8c6da3e091968fcbaf11533eedeccfbd1b679cc90ff9b74c30ece880fa82bd0b4529c0b62423a881e3cb1258983f1e6b98e600a8888eab2dcd"
+sha256 = "bc4c7c3e9a49ca9d43178de5938ea6f197e0097ba6173502e82fc8e20341628b"
+sha512 = "2d9f8c41b9814240107ba5483c6d79e91d1bd969ec7b24080afc9c0ddc70e9f4bfd55fe9c156682e2c2ab5e09638db1debe4f89ab3e52ad9b733b2830c25787c"
 deps = ["wired-math"]
 
 [wired-script]

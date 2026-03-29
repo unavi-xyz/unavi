@@ -48,6 +48,7 @@ impl Plugin for ScriptPlugin {
             .init_asset::<asset::Wasm>()
             .add_observer(agent::on_avatar_bones_added)
             .add_observer(load::local::on_spawn_local_script)
+            .add_observer(load::on_hsd_record_removed)
             .add_systems(PreUpdate, runtime::increment_epochs)
             .add_systems(Update, runtime::render::render_tick_scripts)
             .add_systems(

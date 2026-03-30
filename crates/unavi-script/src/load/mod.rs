@@ -1,4 +1,7 @@
-use std::{sync::Arc, sync::Mutex, task::Poll};
+use std::{
+    sync::{Arc, Mutex, RwLock},
+    task::Poll,
+};
 
 use anyhow::Context;
 use bevy::prelude::*;
@@ -8,6 +11,7 @@ use bevy_hsd::{
     cache::{SceneRegistry, SceneRegistryInner},
     hydrate::events::ScriptEventQueue,
 };
+use bevy_wds::{LocalActor, LocalBlobs};
 use log::{ScriptStderr, ScriptStdout};
 use loro::{LoroDoc, TreeID};
 use smol_str::ToSmolStr;
@@ -15,10 +19,6 @@ use state::{RuntimeData, StoreState};
 use unavi_agent::LocalAgent;
 use wasmtime::{AsContextMut, Store, component::Linker};
 use wasmtime_wasi::WasiCtxBuilder;
-
-use bevy_wds::{LocalActor, LocalBlobs};
-
-use std::sync::RwLock;
 
 use crate::{
     HsdFirewall, HsdFirewallInner, ScriptEngine, WasmBinary, WasmEngine,

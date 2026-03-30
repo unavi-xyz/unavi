@@ -11,7 +11,7 @@ pub(super) type ReceptorQueue = Arc<Mutex<VecDeque<QueuedEvent>>>;
 pub struct QueuedEvent {
     pub channel: String,
     pub payload: Vec<u8>,
-    #[allow(dead_code)]
+    #[expect(dead_code, reason = "reserved for event tracing")]
     pub sender_node: Option<Entity>,
     pub sender_document: Vec<u8>,
 }

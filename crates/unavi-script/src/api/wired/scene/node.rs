@@ -3,7 +3,7 @@ use std::sync::{Arc, atomic::Ordering};
 use bevy::prelude::Transform as BevyTransform;
 use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner};
 use bevy_hsd::data::HsdCollider;
-use bevy_hsd::hydrate::events::ScriptQueuedEvent;
+use bevy_hsd::hydrate::events::{NodeRef, ScriptQueuedEvent};
 use bytes::Bytes;
 use wasmtime::component::Resource;
 use wired_schemas::HydratedHash;
@@ -269,9 +269,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             .lock()
             .expect("node state lock")
             .global_transform;
-        let t = gt.translation();
-        let r = gt.to_scale_rotation_translation().1;
-        let s = gt.to_scale_rotation_translation().0;
+        let (s, r, t) = gt.to_scale_rotation_translation();
         Ok(Transform {
             translation: Vec3 {
                 x: t.x,
@@ -365,23 +363,15 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             child_state.parent = Some(Arc::downgrade(&parent_inner));
         }
 
-        // Cross-doc: resolve Bevy entities directly to avoid same-registry lookup.
         let parent_ent = *parent_inner.entity.lock().expect("entity lock");
         let child_ent = *child_inner.entity.lock().expect("entity lock");
-        if let (Some(c), Some(p)) = (child_ent, parent_ent)
-            && child_inner.id != parent_inner.id
-        {
-            // Different registries — use entity-based event.
-            self.push_script_event(ScriptQueuedEvent::NodeParentSetByEntity {
-                child: c,
-                parent: Some(p),
-            });
-            return Ok(());
-        }
-
+        let child_ref =
+            child_ent.map_or_else(|| NodeRef::Id(child_inner.id.clone()), NodeRef::Entity);
+        let parent_ref =
+            parent_ent.map_or_else(|| NodeRef::Id(parent_inner.id.clone()), NodeRef::Entity);
         self.push_script_event(ScriptQueuedEvent::NodeParentSet {
-            id: child_inner.id.clone(),
-            parent: Some(parent_inner.id.clone()),
+            child: child_ref,
+            parent: Some(parent_ref),
         });
         Ok(())
     }
@@ -415,18 +405,11 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         }
         child_inner.state.lock().expect("child state lock").parent = None;
 
-        // Use entity-based event if child entity is already resolved.
         let child_ent = *child_inner.entity.lock().expect("entity lock");
-        if let Some(c) = child_ent {
-            self.push_script_event(ScriptQueuedEvent::NodeParentSetByEntity {
-                child: c,
-                parent: None,
-            });
-            return Ok(());
-        }
-
+        let child_ref =
+            child_ent.map_or_else(|| NodeRef::Id(child_inner.id.clone()), NodeRef::Entity);
         self.push_script_event(ScriptQueuedEvent::NodeParentSet {
-            id: child_inner.id.clone(),
+            child: child_ref,
             parent: None,
         });
         Ok(())

@@ -1,17 +1,9 @@
+use std::sync::{Arc, Mutex};
+
 use bevy::prelude::*;
 use loro::{LoroMap, LoroTree, LoroValue, TreeID, TreeParentId};
 use loro_surgeon::Hydrate;
 use smol_str::{SmolStr, ToSmolStr};
-
-use crate::{
-    HsdDoc,
-    cache::{
-        MaterialDirty, MaterialHsdChanges, MaterialInner, MaterialState, MeshDirty, MeshHsdChanges,
-        MeshInner, MeshState, NodeDirty, NodeHsdChanges, NodeInner, NodeState, SceneRegistry,
-    },
-    data::{HsdMaterial, HsdMesh, HsdNodeData},
-    hydrate::events::{RawChangeQueue, RawHsdChange},
-};
 
 use super::compile::material::{
     HsdMaterialAlphaCutoffSet, HsdMaterialAlphaModeSet, HsdMaterialBaseColorSet,
@@ -26,8 +18,15 @@ use super::compile::node::{
     HsdNodeParentSet, HsdNodeRigidBodySet, HsdNodeScriptsSet, HsdNodeSpawned, HsdNodeTransformSet,
     node_transform,
 };
-
-use std::sync::{Arc, Mutex};
+use crate::{
+    HsdDoc,
+    cache::{
+        MaterialDirty, MaterialHsdChanges, MaterialInner, MaterialState, MeshDirty, MeshHsdChanges,
+        MeshInner, MeshState, NodeDirty, NodeHsdChanges, NodeInner, NodeState, SceneRegistry,
+    },
+    data::{HsdMaterial, HsdMesh, HsdNodeData},
+    hydrate::events::{NodeRef, RawChangeQueue, RawHsdChange},
+};
 
 pub(crate) fn process_hsd_queue(
     docs: Query<(Entity, &HsdDoc, &SceneRegistry, &RawChangeQueue)>,
@@ -118,10 +117,10 @@ fn handle_node_added(
         });
     }
 
-    let parent = parent_id.map(|pid| pid.to_smolstr());
+    let parent = parent_id.map(|pid| NodeRef::Id(pid.to_smolstr()));
     commands.trigger(HsdNodeParentSet {
         doc: doc_ent,
-        id: id.clone(),
+        child: NodeRef::Id(id.clone()),
         parent,
     });
 
@@ -147,10 +146,10 @@ fn handle_node_changed(
     let Some(inner) = inner else { return };
     update_node_state(&inner, &data);
 
-    let parent = get_node_parent(hsd_map, tree_id);
+    let parent = get_node_parent(hsd_map, tree_id).map(NodeRef::Id);
     commands.trigger(HsdNodeParentSet {
         doc: doc_ent,
-        id: id.clone(),
+        child: NodeRef::Id(id.clone()),
         parent,
     });
 

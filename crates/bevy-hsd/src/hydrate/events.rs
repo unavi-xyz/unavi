@@ -3,6 +3,12 @@ use std::sync::{Arc, Mutex};
 use bevy::prelude::*;
 use smol_str::SmolStr;
 
+#[derive(Clone, Debug)]
+pub enum NodeRef {
+    Entity(bevy::prelude::Entity),
+    Id(SmolStr),
+}
+
 #[derive(Debug)]
 pub enum RawHsdChange {
     MaterialAdded {
@@ -58,12 +64,8 @@ pub enum ScriptQueuedEvent {
         id: SmolStr,
     },
     NodeParentSet {
-        id: SmolStr,
-        parent: Option<SmolStr>,
-    },
-    NodeParentSetByEntity {
-        child: bevy::prelude::Entity,
-        parent: Option<bevy::prelude::Entity>,
+        child: NodeRef,
+        parent: Option<NodeRef>,
     },
     NodeSpawned {
         id: SmolStr,

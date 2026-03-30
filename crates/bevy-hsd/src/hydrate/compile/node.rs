@@ -11,6 +11,7 @@ use crate::{
     cache::SceneRegistry,
     data::{HsdCollider, HsdNodeData, HsdRigidBody},
     hydrate::compile::collider::ColliderParams,
+    hydrate::events::NodeRef,
 };
 
 use super::collider::insert_collider;
@@ -52,8 +53,8 @@ pub struct HsdNodeNameSet {
 #[derive(Event)]
 pub struct HsdNodeParentSet {
     pub doc: Entity,
-    pub id: SmolStr,
-    pub parent: Option<SmolStr>,
+    pub child: NodeRef,
+    pub parent: Option<NodeRef>,
 }
 
 #[derive(Event)]
@@ -129,9 +130,6 @@ pub(crate) fn handle_hsd_node_despawned(
     let Some(inner) = node_map.remove(&ev.id) else {
         return;
     };
-    if inner.id != ev.id {
-        node_map.remove(&inner.id);
-    }
     drop(node_map);
     registry
         .0
@@ -193,10 +191,10 @@ pub(crate) fn handle_hsd_node_material_set(
         .get(&ev.id)
         .and_then(|n| *n.entity.lock().expect("entity lock"));
     let Some(ent) = ent else { return };
-    let mut ecmd = commands.entity(ent);
-    ecmd.remove::<MaterialRef>();
+    let mut entity_cmd = commands.entity(ent);
+    entity_cmd.remove::<MaterialRef>();
     if let Some(ref id) = ev.material {
-        ecmd.insert(MaterialRef(id.clone()));
+        entity_cmd.insert(MaterialRef(id.clone()));
     }
 }
 
@@ -218,10 +216,10 @@ pub(crate) fn handle_hsd_node_mesh_set(
         .get(&ev.id)
         .and_then(|n| *n.entity.lock().expect("entity lock"));
     let Some(ent) = ent else { return };
-    let mut ecmd = commands.entity(ent);
-    ecmd.remove::<MeshRef>();
+    let mut entity_cmd = commands.entity(ent);
+    entity_cmd.remove::<MeshRef>();
     if let Some(ref id) = ev.mesh {
-        ecmd.insert(MeshRef(id.clone()));
+        entity_cmd.insert(MeshRef(id.clone()));
     }
 }
 
@@ -256,31 +254,35 @@ pub(crate) fn handle_hsd_node_parent_set(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, parent = ?ev.parent, "node parent set");
+    debug!(child = ?ev.child, parent = ?ev.parent, "node parent set");
     let Ok(registry) = registries.get(ev.doc) else {
         return;
     };
-    let ent = registry
-        .0
-        .node_map
-        .lock()
-        .expect("node_map lock")
-        .get(&ev.id)
-        .and_then(|n| *n.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
-    if let Some(ref pid) = ev.parent {
-        let parent_ent = registry
-            .0
-            .node_map
-            .lock()
-            .expect("node_map lock")
-            .get(pid)
-            .and_then(|n| *n.entity.lock().expect("entity lock"));
-        if let Some(parent_ent) = parent_ent {
-            commands.entity(ent).insert(ChildOf(parent_ent));
+    let node_map = registry.0.node_map.lock().expect("node_map lock");
+    let child_ent = match &ev.child {
+        NodeRef::Entity(e) => Some(*e),
+        NodeRef::Id(id) => node_map
+            .get(id)
+            .and_then(|n| *n.entity.lock().expect("entity lock")),
+    };
+    let Some(child_ent) = child_ent else { return };
+    match &ev.parent {
+        None => {
+            drop(node_map);
+            commands.entity(child_ent).remove::<ChildOf>();
         }
-    } else {
-        commands.entity(ent).remove::<ChildOf>();
+        Some(NodeRef::Entity(p)) => {
+            drop(node_map);
+            commands.entity(child_ent).insert(ChildOf(*p));
+        }
+        Some(NodeRef::Id(pid)) => {
+            let parent_ent = node_map
+                .get(pid)
+                .and_then(|n| *n.entity.lock().expect("entity lock"));
+            drop(node_map);
+            let Some(parent_ent) = parent_ent else { return };
+            commands.entity(child_ent).insert(ChildOf(parent_ent));
+        }
     }
 }
 
@@ -296,13 +298,13 @@ pub(crate) fn insert_rigid_body(ent: Entity, data: &HsdRigidBody, commands: &mut
         }
     };
 
-    let mut ecmd = commands.entity(ent);
-    ecmd.insert(kind);
+    let mut entity_cmd = commands.entity(ent);
+    entity_cmd.insert(kind);
 
     if kind == RigidBody::Dynamic {
         let linear = data.linear_damping.map_or(0.2, |v| v as f32);
         let angular = data.angular_damping.map_or(0.2, |v| v as f32);
-        ecmd.insert((LinearDamping(linear), AngularDamping(angular)));
+        entity_cmd.insert((LinearDamping(linear), AngularDamping(angular)));
     }
 }
 
@@ -351,11 +353,11 @@ pub(crate) fn handle_hsd_node_scripts_set(
         .get(&ev.id)
         .and_then(|n| *n.entity.lock().expect("entity lock"));
     let Some(ent) = ent else { return };
-    let mut ecmd = commands.entity(ent);
+    let mut entity_cmd = commands.entity(ent);
     if ev.scripts.is_empty() {
-        ecmd.remove::<HsdScripts>();
+        entity_cmd.remove::<HsdScripts>();
     } else {
-        ecmd.insert(HsdScripts(ev.scripts.clone()));
+        entity_cmd.insert(HsdScripts(ev.scripts.clone()));
     }
 }
 
@@ -438,12 +440,12 @@ pub(crate) fn on_material_ref_set(
         .get(&mat_ref.0)
         .and_then(|inner| *inner.entity.lock().expect("entity lock"));
     let Some(mat_ent) = mat_ent else { return };
-    let Ok(cm) = compiled_mats.get(mat_ent) else {
+    let Ok(compiled_mat) = compiled_mats.get(mat_ent) else {
         return;
     };
     commands
         .entity(node_ent)
-        .insert(MeshMaterial3d(cm.0.clone()));
+        .insert(MeshMaterial3d(compiled_mat.0.clone()));
 }
 
 /// When a node loses its [`MeshRef`], remove [`Mesh3d`].
@@ -555,11 +557,11 @@ fn assign_material(
             .get(&mat_ref.0)
             .and_then(|inner| *inner.entity.lock().expect("entity lock"));
         if let Some(mat_ent) = mat_ent
-            && let Ok(cm) = compiled_mats.get(mat_ent)
+            && let Ok(compiled_mat) = compiled_mats.get(mat_ent)
         {
             commands
                 .entity(node_ent)
-                .insert(MeshMaterial3d(cm.0.clone()));
+                .insert(MeshMaterial3d(compiled_mat.0.clone()));
         }
     } else {
         let mat = default_material

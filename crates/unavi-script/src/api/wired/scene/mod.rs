@@ -75,7 +75,10 @@ impl WiredSceneRt {
             return (false, false);
         };
         let fw = hsd_fw.read().expect("hsd_fw read");
-        (fw.read.contains(&self.doc_id), fw.write.contains(&self.doc_id))
+        (
+            fw.read.contains(&self.doc_id),
+            fw.write.contains(&self.doc_id),
+        )
     }
 }
 

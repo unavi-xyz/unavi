@@ -148,11 +148,9 @@ pub fn poll_local_scripts(
 }
 
 fn path_to_name(path: &str) -> String {
-    path.strip_prefix("wasm/")
-        .unwrap_or(path)
-        .strip_suffix(".wasm")
-        .unwrap_or(path)
-        .replace('/', ":")
+    let name = path.strip_prefix("wasm/").unwrap_or(path);
+    let name = name.strip_suffix(".wasm").unwrap_or(name);
+    name.replace('/', ":")
 }
 
 async fn create_hsd_record(

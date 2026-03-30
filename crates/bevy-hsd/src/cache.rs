@@ -270,14 +270,7 @@ pub struct SceneRegistryInner {
 impl SceneRegistryInner {
     #[must_use]
     pub fn new() -> Arc<Self> {
-        Arc::new(Self {
-            doc_sync: false.into(),
-            materials: Mutex::new(HashMap::new()),
-            meshes: Mutex::new(HashMap::new()),
-            node_map: Mutex::new(HashMap::new()),
-            nodes: Mutex::new(Vec::new()),
-            pending_doc_ops: Mutex::new(Vec::new()),
-        })
+        Arc::new(Self::default())
     }
 }
 

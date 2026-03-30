@@ -43,21 +43,13 @@ fn flush_queued_events(doc_ent: Entity, queue: &ScriptEventQueue, commands: &mut
             ScriptQueuedEvent::NodeDespawned { id } => {
                 commands.trigger(HsdNodeDespawned { doc: doc_ent, id });
             }
-            ScriptQueuedEvent::NodeParentSet { id, parent } => {
+            ScriptQueuedEvent::NodeParentSet { child, parent } => {
                 commands.trigger(HsdNodeParentSet {
                     doc: doc_ent,
-                    id,
+                    child,
                     parent,
                 });
             }
-            ScriptQueuedEvent::NodeParentSetByEntity { child, parent } => match parent {
-                Some(p) => {
-                    commands.entity(child).insert(ChildOf(p));
-                }
-                None => {
-                    commands.entity(child).remove::<ChildOf>();
-                }
-            },
             ScriptQueuedEvent::MeshSpawned { id } => {
                 commands.trigger(HsdMeshSpawned { doc: doc_ent, id });
             }
@@ -85,11 +77,11 @@ fn flush_dirty_nodes(doc_ent: Entity, registry: &SceneRegistry, commands: &mut C
             continue;
         }
         let dirty = {
-            let mut d = inner.dirty.lock().expect("dirty lock");
-            if !d.any() {
+            let mut guard = inner.dirty.lock().expect("dirty lock");
+            if !guard.any() {
                 continue;
             }
-            std::mem::take(&mut *d)
+            std::mem::take(&mut *guard)
         };
         let id = inner.id.clone();
         let state = inner.state.lock().expect("node state lock");
@@ -142,11 +134,11 @@ fn flush_dirty_meshes(doc_ent: Entity, registry: &SceneRegistry, commands: &mut 
     let meshes = registry.0.meshes.lock().expect("meshes lock");
     for inner in meshes.values() {
         {
-            let mut d = inner.dirty.lock().expect("dirty lock");
-            if !d.any() {
+            let mut guard = inner.dirty.lock().expect("dirty lock");
+            if !guard.any() {
                 continue;
             }
-            *d = MeshDirty::default();
+            *guard = MeshDirty::default();
         }
         commands.trigger(HsdMeshGeometrySet {
             doc: doc_ent,
@@ -160,11 +152,11 @@ fn flush_dirty_materials(doc_ent: Entity, registry: &SceneRegistry, commands: &m
     let materials = registry.0.materials.lock().expect("materials lock");
     for inner in materials.values() {
         let dirty = {
-            let mut d = inner.dirty.lock().expect("dirty lock");
-            if !d.any() {
+            let mut guard = inner.dirty.lock().expect("dirty lock");
+            if !guard.any() {
                 continue;
             }
-            std::mem::take(&mut *d)
+            std::mem::take(&mut *guard)
         };
         let id = inner.id.clone();
         let state = inner.state.lock().expect("material state lock");

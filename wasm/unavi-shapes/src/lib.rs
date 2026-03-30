@@ -54,37 +54,37 @@ fn convert_bevy_mesh(mut in_mesh: BevyMesh) -> Mesh {
         match *attr {
             BevyMesh::ATTRIBUTE_POSITION => {
                 let VertexAttributeValues::Float32x3(values) = values else {
-                    panic!("invalid values")
+                    unreachable!("unexpected attribute format for known Bevy mesh attribute")
                 };
                 out_mesh.set_positions(Some(values.as_flattened()));
             }
             BevyMesh::ATTRIBUTE_NORMAL => {
                 let VertexAttributeValues::Float32x3(values) = values else {
-                    panic!("invalid values")
+                    unreachable!("unexpected attribute format for known Bevy mesh attribute")
                 };
                 out_mesh.set_normals(Some(values.as_flattened()));
             }
             BevyMesh::ATTRIBUTE_TANGENT => {
                 let VertexAttributeValues::Float32x4(values) = values else {
-                    panic!("invalid values")
+                    unreachable!("unexpected attribute format for known Bevy mesh attribute")
                 };
                 out_mesh.set_tangents(Some(values.as_flattened()));
             }
             BevyMesh::ATTRIBUTE_COLOR => {
                 let VertexAttributeValues::Float32x4(values) = values else {
-                    panic!("invalid values")
+                    unreachable!("unexpected attribute format for known Bevy mesh attribute")
                 };
                 out_mesh.set_colors(Some(values.as_flattened()));
             }
             BevyMesh::ATTRIBUTE_UV_0 => {
                 let VertexAttributeValues::Float32x2(values) = values else {
-                    panic!("invalid values")
+                    unreachable!("unexpected attribute format for known Bevy mesh attribute")
                 };
                 out_mesh.set_uv0(Some(values.as_flattened()));
             }
             BevyMesh::ATTRIBUTE_UV_1 => {
                 let VertexAttributeValues::Float32x2(values) = values else {
-                    panic!("invalid values")
+                    unreachable!("unexpected attribute format for known Bevy mesh attribute")
                 };
                 out_mesh.set_uv1(Some(values.as_flattened()));
             }

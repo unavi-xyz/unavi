@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use bevy::{log::LogPlugin, prelude::*};
 use bevy_hsd::HsdPlugin;
@@ -35,6 +35,8 @@ pub fn setup_test_app(package: &'static str, wasm_override: Option<Vec<u8>>) -> 
         HsdPlugin,
         ScriptPlugin,
     ))
+    .init_asset::<StandardMaterial>()
+    .init_asset::<Mesh>()
     .insert_resource(Time::<Virtual>::from_max_delta(TICK))
     .insert_resource(Time::<Fixed>::from_duration(TICK));
 
@@ -49,32 +51,24 @@ pub fn setup_test_app(package: &'static str, wasm_override: Option<Vec<u8>>) -> 
     app
 }
 
-pub fn construct_script(app: &mut App) {
-    // Ticks 1-2: load wasm asset, upload to WDS, spawn HSD doc.
-    tick_app(app);
-    tick_app(app);
-
-    // Tick 3: init_script_overlay + init_hsd_doc run (chained).
-    tick_app(app);
-    tick_app(app);
-
-    // Ticks 5-7: load_hsd_scripts fires, spawns blob fetch task, polls.
-    tick_app(app);
-    tick_app(app);
-    tick_app(app);
-
-    // Ticks 8-10: load_scripts instantiates wasm component.
-    tick_app(app);
-    tick_app(app);
-    tick_app(app);
-
-    // Ticks 11-12: begin_init_scripts / end_init_scripts.
-    tick_app(app);
-    tick_app(app);
+/// Poll `app` until `condition()` returns true or `timeout` elapses.
+///
+/// Returns `true` if the condition was met, `false` on timeout.
+pub fn wait_until(app: &mut App, condition: impl Fn() -> bool, timeout: Duration) -> bool {
+    let deadline = Instant::now() + timeout;
+    loop {
+        tick_app(app);
+        if condition() {
+            return true;
+        }
+        if Instant::now() >= deadline {
+            return false;
+        }
+    }
 }
 
 pub fn tick_app(app: &mut App) {
     app.update();
-    // Sleep to allow async work to run.
+    // Sleep to allow async work to run and for virtual time to advance by TICK.
     std::thread::sleep(Duration::from_millis(300));
 }

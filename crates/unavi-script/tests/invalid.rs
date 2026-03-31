@@ -1,4 +1,6 @@
-use setup::{construct_script, logs::count_logs_with};
+use std::time::Duration;
+
+use setup::logs::count_logs_with;
 
 mod setup;
 
@@ -6,8 +8,13 @@ mod setup;
 fn script_invalid() {
     let mut app = setup::setup_test_app("invalid", Some(vec![0; 128]));
 
-    // This should error, but not panic.
-    construct_script(&mut app);
+    // Wait until the error log appears or timeout.
+    let ready = setup::wait_until(
+        &mut app,
+        || count_logs_with("error instantiating script component") >= 1,
+        Duration::from_secs(20),
+    );
 
+    assert!(ready, "expected error log within timeout");
     assert_eq!(count_logs_with("error instantiating script component"), 1);
 }

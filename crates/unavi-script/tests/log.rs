@@ -1,6 +1,7 @@
+use std::time::Duration;
+
 use setup::{
-    construct_script,
-    logs::{LOGS, has_error_log},
+    logs::{LOGS, has_error_log, has_log},
     tick_app,
 };
 
@@ -9,7 +10,13 @@ mod setup;
 #[test]
 fn script_log() {
     let mut app = setup::setup_test_app("log", None);
-    construct_script(&mut app);
+
+    let ready = setup::wait_until(
+        &mut app,
+        || has_log("hello from init"),
+        Duration::from_secs(20),
+    );
+    assert!(ready, "script did not log init message within timeout");
 
     for _ in 0..5 {
         tick_app(&mut app);
@@ -22,7 +29,6 @@ fn script_log() {
         .iter()
         .filter(|line| line.contains("hello from init"))
         .count();
-
     assert_eq!(n_inits, 1, "has 1 startup log");
 
     let n_ticks = LOGS

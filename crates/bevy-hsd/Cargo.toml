@@ -24,5 +24,6 @@ wired-schemas.path = "../wired-schemas"
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
 iroh-blobs                     = { default-features = true, workspace = true }
+loro-surgeon.path              = "../loro-surgeon"
 tokio.workspace                = true
 unavi-wasm-compat.path         = "../unavi-wasm-compat"

@@ -1,9 +1,13 @@
 use std::sync::{Arc, atomic::Ordering};
 
-use bevy::prelude::Transform as BevyTransform;
+use bevy::prelude::{Transform as BevyTransform, World};
 use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner};
 use bevy_hsd::data::HsdCollider;
-use bevy_hsd::hydrate::events::{NodeRef, ScriptQueuedEvent};
+use bevy_hsd::hydrate::compile::node::{
+    HsdNodeColliderSet, HsdNodeMaterialSet, HsdNodeMeshSet, HsdNodeNameSet, HsdNodeParentSet,
+    HsdNodeRigidBodySet, HsdNodeTransformSet,
+};
+use bevy_hsd::hydrate::events::NodeRef;
 use bytes::Bytes;
 use wasmtime::component::Resource;
 use wired_schemas::HydratedHash;
@@ -71,7 +75,15 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         if inner.sync.load(Ordering::Relaxed) {
             inner.hsd_changes.lock().expect("hsd_changes lock").name = Some(value);
         } else {
-            inner.dirty.lock().expect("dirty lock").name = true;
+            let doc = self.doc_entity;
+            let id = inner.id.clone();
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdNodeNameSet {
+                    doc,
+                    id,
+                    name: value,
+                });
+            });
         }
         Ok(())
     }
@@ -113,7 +125,12 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 .expect("hsd_changes lock")
                 .translation = Some([f64::from(value.x), f64::from(value.y), f64::from(value.z)]);
         } else {
-            inner.dirty.lock().expect("dirty lock").transform = true;
+            let doc = self.doc_entity;
+            let id = inner.id.clone();
+            let transform = inner.state.lock().expect("node state lock").transform;
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdNodeTransformSet { doc, id, transform });
+            });
         }
         Ok(())
     }
@@ -157,7 +174,12 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 f64::from(value.w),
             ]);
         } else {
-            inner.dirty.lock().expect("dirty lock").transform = true;
+            let doc = self.doc_entity;
+            let id = inner.id.clone();
+            let transform = inner.state.lock().expect("node state lock").transform;
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdNodeTransformSet { doc, id, transform });
+            });
         }
         Ok(())
     }
@@ -183,7 +205,12 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             inner.hsd_changes.lock().expect("hsd_changes lock").scale =
                 Some([f64::from(value.x), f64::from(value.y), f64::from(value.z)]);
         } else {
-            inner.dirty.lock().expect("dirty lock").transform = true;
+            let doc = self.doc_entity;
+            let id = inner.id.clone();
+            let transform = inner.state.lock().expect("node state lock").transform;
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdNodeTransformSet { doc, id, transform });
+            });
         }
         Ok(())
     }
@@ -224,7 +251,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         if inner.is_virtual {
             return Ok(());
         }
-        inner.state.lock().expect("node state lock").transform = BevyTransform {
+        let new_transform = BevyTransform {
             translation: bevy::math::Vec3::new(
                 value.translation.x,
                 value.translation.y,
@@ -238,6 +265,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             ),
             scale: bevy::math::Vec3::new(value.scale.x, value.scale.y, value.scale.z),
         };
+        inner.state.lock().expect("node state lock").transform = new_transform;
         if inner.sync.load(Ordering::Relaxed) {
             let mut ch = inner.hsd_changes.lock().expect("hsd_changes lock");
             ch.translation = Some([
@@ -257,7 +285,15 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 f64::from(value.scale.z),
             ]);
         } else {
-            inner.dirty.lock().expect("dirty lock").transform = true;
+            let doc = self.doc_entity;
+            let id = inner.id.clone();
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdNodeTransformSet {
+                    doc,
+                    id,
+                    transform: new_transform,
+                });
+            });
         }
         Ok(())
     }
@@ -369,9 +405,13 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             child_ent.map_or_else(|| NodeRef::Id(child_inner.id.clone()), NodeRef::Entity);
         let parent_ref =
             parent_ent.map_or_else(|| NodeRef::Id(parent_inner.id.clone()), NodeRef::Entity);
-        self.push_script_event(ScriptQueuedEvent::NodeParentSet {
-            child: child_ref,
-            parent: Some(parent_ref),
+        let doc = self.doc_entity;
+        self.push_command(move |world: &mut World| {
+            world.trigger(HsdNodeParentSet {
+                doc,
+                child: child_ref,
+                parent: Some(parent_ref),
+            });
         });
         Ok(())
     }
@@ -408,9 +448,13 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         let child_ent = *child_inner.entity.lock().expect("entity lock");
         let child_ref =
             child_ent.map_or_else(|| NodeRef::Id(child_inner.id.clone()), NodeRef::Entity);
-        self.push_script_event(ScriptQueuedEvent::NodeParentSet {
-            child: child_ref,
-            parent: None,
+        let doc = self.doc_entity;
+        self.push_command(move |world: &mut World| {
+            world.trigger(HsdNodeParentSet {
+                doc,
+                child: child_ref,
+                parent: None,
+            });
         });
         Ok(())
     }
@@ -465,7 +509,15 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 .expect("hsd_changes lock")
                 .mesh = Some(mesh_id);
         } else {
-            node_inner.dirty.lock().expect("dirty lock").mesh = true;
+            let doc = self.doc_entity;
+            let id = node_inner.id.clone();
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdNodeMeshSet {
+                    doc,
+                    id,
+                    mesh: mesh_id,
+                });
+            });
         }
         Ok(())
     }
@@ -520,7 +572,15 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 .expect("hsd_changes lock")
                 .material = Some(mat_id);
         } else {
-            node_inner.dirty.lock().expect("dirty lock").material = true;
+            let doc = self.doc_entity;
+            let id = node_inner.id.clone();
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdNodeMaterialSet {
+                    doc,
+                    id,
+                    material: mat_id,
+                });
+            });
         }
         Ok(())
     }
@@ -669,7 +729,15 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             .expect("node state lock")
             .collider
             .clone_from(&hsd_collider);
-        inner.dirty.lock().expect("dirty lock").collider = true;
+        let doc = self.doc_entity;
+        let id = inner.id.clone();
+        self.push_command(move |world: &mut World| {
+            world.trigger(HsdNodeColliderSet {
+                doc,
+                id,
+                collider: hsd_collider,
+            });
+        });
         Ok(())
     }
 
@@ -716,7 +784,15 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             .expect("node state lock")
             .rigid_body
             .clone_from(&rb);
-        inner.dirty.lock().expect("dirty lock").rigid_body = true;
+        let doc = self.doc_entity;
+        let id = inner.id.clone();
+        self.push_command(move |world: &mut World| {
+            world.trigger(HsdNodeRigidBodySet {
+                doc,
+                id,
+                rigid_body: rb,
+            });
+        });
         Ok(())
     }
 

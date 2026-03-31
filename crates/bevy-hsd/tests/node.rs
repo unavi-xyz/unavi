@@ -170,10 +170,7 @@ fn hsd_children_tracked() {
     );
 
     assert!(
-        h.app
-            .world()
-            .get::<HsdChildren>(h.doc_entity)
-            .is_some(),
+        h.app.world().get::<HsdChildren>(h.doc_entity).is_some(),
         "HsdChildren on doc entity"
     );
 }
@@ -187,11 +184,7 @@ fn hsd_doc_despawn_removes_children() {
     let mut q = h.app.world_mut().query_filtered::<Entity, With<HsdChild>>();
     assert_eq!(q.iter(h.app.world()).count(), 1);
 
-    h.app
-        .world_mut()
-        .commands()
-        .entity(h.doc_entity)
-        .despawn();
+    h.app.world_mut().commands().entity(h.doc_entity).despawn();
     h.app.update();
 
     let mut q2 = h.app.world_mut().query_filtered::<Entity, With<HsdChild>>();

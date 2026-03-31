@@ -21,8 +21,8 @@ use super::compile::node::{
 use crate::{
     HsdDoc,
     cache::{
-        MaterialDirty, MaterialHsdChanges, MaterialInner, MaterialState, MeshDirty, MeshHsdChanges,
-        MeshInner, MeshState, NodeDirty, NodeHsdChanges, NodeInner, NodeState, SceneRegistry,
+        MaterialHsdChanges, MaterialInner, MaterialState, MeshHsdChanges, MeshInner, MeshState,
+        NodeHsdChanges, NodeInner, NodeState, SceneRegistry,
     },
     data::{HsdMaterial, HsdMesh, HsdNodeData},
     hydrate::events::{NodeRef, RawChangeQueue, RawHsdChange},
@@ -201,7 +201,6 @@ fn get_or_create_node(registry: &SceneRegistry, id: &SmolStr, tree_id: TreeID) -
         return Arc::clone(existing);
     }
     let inner = Arc::new(NodeInner {
-        dirty: Mutex::new(NodeDirty::default()),
         entity: Mutex::new(None),
         hsd_changes: Mutex::new(NodeHsdChanges::default()),
         id: id.clone(),
@@ -227,7 +226,6 @@ fn get_or_create_mesh(registry: &SceneRegistry, id: &SmolStr) -> Arc<MeshInner> 
         return Arc::clone(existing);
     }
     let inner = Arc::new(MeshInner {
-        dirty: Mutex::new(MeshDirty::default()),
         entity: Mutex::new(None),
         hsd_changes: Mutex::new(MeshHsdChanges::default()),
         id: id.clone(),
@@ -244,7 +242,6 @@ fn get_or_create_material(registry: &SceneRegistry, id: &SmolStr) -> Arc<Materia
         return Arc::clone(existing);
     }
     let inner = Arc::new(MaterialInner {
-        dirty: Mutex::new(MaterialDirty::default()),
         entity: Mutex::new(None),
         hsd_changes: Mutex::new(MaterialHsdChanges::default()),
         id: id.clone(),

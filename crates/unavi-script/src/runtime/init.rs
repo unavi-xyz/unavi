@@ -8,6 +8,8 @@ use bevy::{
 use tracing::Instrument;
 use wasmtime::AsContextMut;
 
+use bevy_hsd::hydrate::events::ScriptCommandQueueComp;
+
 use crate::{agent::NeedsAgentProxy, load::LoadedScript, runtime::ScriptRuntime};
 
 #[derive(Component)]
@@ -74,9 +76,9 @@ pub fn begin_init_scripts(
 pub fn end_init_scripts(
     mut commands: Commands,
     time: Res<Time>,
-    mut initializing: Query<(Entity, &mut InitializingScript)>,
+    mut initializing: Query<(Entity, &mut InitializingScript, &ScriptCommandQueueComp)>,
 ) {
-    for (entity, mut init) in &mut initializing {
+    for (entity, mut init, cmd_queue) in &mut initializing {
         if time
             .elapsed()
             .checked_sub(init.started)
@@ -90,6 +92,10 @@ pub fn end_init_scripts(
 
         match block_on(poll_once(&mut init.task)) {
             Some(Ok(())) => {
+                let mut q = cmd_queue.0.lock().expect("cmd queue lock");
+                commands.append(&mut q.inner);
+                q.len = 0;
+                drop(q);
                 commands
                     .entity(entity)
                     .remove::<InitializingScript>()

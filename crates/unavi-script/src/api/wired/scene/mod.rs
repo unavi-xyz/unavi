@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 
-use bevy::prelude::Entity;
-use bevy_hsd::{cache::SceneRegistryInner, hydrate::events::ScriptQueuedEvent};
+use bevy::prelude::{Command, Entity};
+use bevy_hsd::{cache::SceneRegistryInner, hydrate::events::ScriptCommandQueue};
 use loro::LoroDoc;
 use smol_str::SmolStr;
 use wasmtime_wasi::ResourceTable;
@@ -19,7 +19,7 @@ pub use hsd_firewall::{HsdFirewall, HsdFirewallInner};
 #[derive(Clone)]
 pub struct DocHandle {
     pub registry: Arc<SceneRegistryInner>,
-    pub events: Arc<Mutex<Vec<ScriptQueuedEvent>>>,
+    pub doc_entity: Entity,
     pub hsd_fw: Arc<RwLock<HsdFirewallInner>>,
 }
 
@@ -50,7 +50,7 @@ pub struct WiredSceneRt {
     pub doc: Arc<LoroDoc>,
     pub doc_entity: Entity,
     pub doc_id: blake3::Hash,
-    pub events: Arc<Mutex<Vec<ScriptQueuedEvent>>>,
+    pub command_queue: Arc<Mutex<ScriptCommandQueue>>,
     pub registry: Arc<SceneRegistryInner>,
     pub registry_map: GlobalRegistryMap,
     pub self_node_id: SmolStr,
@@ -58,8 +58,8 @@ pub struct WiredSceneRt {
 }
 
 impl WiredSceneRt {
-    pub(super) fn push_script_event(&self, ev: ScriptQueuedEvent) {
-        self.events.lock().expect("events lock").push(ev);
+    pub(super) fn push_command<C: Command>(&self, cmd: C) {
+        self.command_queue.lock().expect("cmd queue lock").push(cmd);
     }
 
     /// Returns (`can_read`, `can_write`) for a foreign document by checking its
@@ -113,7 +113,7 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
         let res = self.table.push(document::HostDocument {
             id: self.doc_id,
             registry: Arc::clone(&self.registry),
-            events: Arc::clone(&self.events),
+            doc_entity: self.doc_entity,
             can_read: true,
             can_write: true,
         })?;
@@ -152,7 +152,7 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
         Ok(Some(self.table.push(document::HostDocument {
             id: foreign_id,
             registry: h.registry,
-            events: h.events,
+            doc_entity: h.doc_entity,
             can_read,
             can_write,
         })?))

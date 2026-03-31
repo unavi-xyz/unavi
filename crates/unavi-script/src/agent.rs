@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use bevy::prelude::*;
 use bevy_hsd::{
     NodeId,
-    cache::{NodeDirty, NodeHsdChanges, NodeInner, NodeState},
+    cache::{NodeHsdChanges, NodeInner, NodeState},
 };
 use bevy_vrm::BoneName;
 use smol_str::SmolStr;
@@ -103,7 +103,6 @@ pub(crate) fn init_agent_proxies(
             let id = gen_id();
             bone_nodes.insert(bone, id.clone());
             let inner = Arc::new(NodeInner {
-                dirty: Mutex::new(NodeDirty::default()),
                 entity: Mutex::new(None),
                 hsd_changes: Mutex::new(NodeHsdChanges::default()),
                 id: id.clone(),
@@ -136,7 +135,6 @@ pub(crate) fn init_agent_proxies(
 
         let camera_node_id = gen_id();
         let camera_inner = Arc::new(NodeInner {
-            dirty: Mutex::new(NodeDirty::default()),
             entity: Mutex::new(None),
             hsd_changes: Mutex::new(NodeHsdChanges::default()),
             id: camera_node_id.clone(),
@@ -166,7 +164,6 @@ pub(crate) fn init_agent_proxies(
         *camera_inner.entity.lock().expect("entity lock") = Some(camera_proxy_ent);
 
         let self_inner = Arc::new(NodeInner {
-            dirty: Mutex::new(NodeDirty::default()),
             entity: Mutex::new(None),
             hsd_changes: Mutex::new(NodeHsdChanges::default()),
             id: self_node_id.clone(),

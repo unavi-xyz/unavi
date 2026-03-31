@@ -9,7 +9,7 @@ use bevy_async_task::TaskPool;
 use bevy_hsd::{
     HsdDoc, HsdRecordId,
     cache::{SceneRegistry, SceneRegistryInner},
-    hydrate::events::ScriptEventQueue,
+    hydrate::events::{ScriptCommandQueue, ScriptCommandQueueComp},
 };
 use bevy_wds::{LocalActor, LocalBlobs};
 use log::{ScriptStderr, ScriptStdout};
@@ -79,7 +79,6 @@ pub(crate) fn load_scripts(
     hsd_docs: Query<&HsdDoc>,
     hsd_record_ids: Query<&HsdRecordId>,
     registries: Query<&SceneRegistry>,
-    hsd_change_queues: Query<&ScriptEventQueue>,
     permissions: Query<Option<&ScriptPermissions>>,
     local_agent_ent: Query<Entity, With<LocalAgent>>,
     input_registry: Res<crate::api::wired::input::InputRegistry>,
@@ -120,7 +119,9 @@ pub(crate) fn load_scripts(
 
         let mut maybe_agent_ent: Option<Entity> = None;
 
-        let (doc, self_node_id, registry, events, agent_entry, doc_id, doc_entity) =
+        let cmd_queue = Arc::new(Mutex::new(ScriptCommandQueue::default()));
+
+        let (doc, self_node_id, registry, agent_entry, doc_id, doc_entity) =
             if perms.api.contains(&ApiName::LocalAgent) {
                 let Ok(agent_ent) = local_agent_ent.single() else {
                     // Wait for local agent to be loaded.
@@ -133,13 +134,11 @@ pub(crate) fn load_scripts(
                 let self_node_id = gen_id();
                 let dummy_doc = Arc::new(LoroDoc::new());
                 let doc_id = blake3::hash(&dummy_doc.peer_id().to_le_bytes());
-                let agent_events = Arc::new(Mutex::new(Vec::new()));
                 let doc_ent = commands
                     .spawn((
                         HsdFirewall::default(),
                         HsdRecordId(doc_id),
                         SceneRegistry(Arc::clone(&placeholder_registry)),
-                        ScriptEventQueue(Arc::clone(&agent_events)),
                     ))
                     .id();
 
@@ -147,7 +146,6 @@ pub(crate) fn load_scripts(
                     dummy_doc,
                     self_node_id,
                     placeholder_registry,
-                    agent_events,
                     None,
                     doc_id,
                     doc_ent,
@@ -155,10 +153,6 @@ pub(crate) fn load_scripts(
             } else {
                 let Ok(registry) = registries.get(source.doc_entity) else {
                     warn!("SceneRegistry not found for script");
-                    continue;
-                };
-                let Ok(event_queue) = hsd_change_queues.get(source.doc_entity) else {
-                    warn!("HsdChangeQueue not found for script");
                     continue;
                 };
                 let Ok(self_tree_id) = TreeID::try_from(source.node_id.as_str()) else {
@@ -177,7 +171,6 @@ pub(crate) fn load_scripts(
                     doc,
                     self_tree_id.to_smolstr(),
                     Arc::clone(&registry.0),
-                    Arc::clone(&event_queue.0),
                     None,
                     doc_id,
                     source.doc_entity,
@@ -190,7 +183,7 @@ pub(crate) fn load_scripts(
             doc,
             self_node_id,
             registry,
-            events,
+            Arc::clone(&cmd_queue),
             agent_entry,
             doc_id,
             doc_entity,
@@ -207,7 +200,9 @@ pub(crate) fn load_scripts(
 
         let rt = ScriptRuntime::new(store, stdout, stderr);
         let ctx = Arc::clone(&rt.ctx);
-        commands.entity(ent).insert((LoadingScript, rt));
+        commands
+            .entity(ent)
+            .insert((LoadingScript, rt, ScriptCommandQueueComp(cmd_queue)));
         if let Some(agent_ent) = maybe_agent_ent {
             commands.entity(ent).insert(NeedsAgentProxy(agent_ent));
         }
@@ -243,24 +238,19 @@ pub(crate) fn load_scripts(
 /// can access foreign documents via `get-document`.
 pub(crate) fn register_new_docs(
     new_docs: Query<
-        (
-            &HsdRecordId,
-            &SceneRegistry,
-            &ScriptEventQueue,
-            Option<&HsdFirewall>,
-        ),
+        (Entity, &HsdRecordId, &SceneRegistry, Option<&HsdFirewall>),
         Added<SceneRegistry>,
     >,
     registry_map: Res<GlobalRegistryMapRes>,
 ) {
-    for (record_id, registry, event_queue, firewall) in &new_docs {
+    for (doc_entity, record_id, registry, firewall) in &new_docs {
         let hsd_fw = firewall.map_or_else(
             || Arc::new(RwLock::new(HsdFirewallInner::default())),
             |fw| Arc::clone(&fw.0),
         );
         let handle = crate::api::wired::scene::DocHandle {
             registry: Arc::clone(&registry.0),
-            events: Arc::clone(&event_queue.0),
+            doc_entity,
             hsd_fw,
         };
         registry_map

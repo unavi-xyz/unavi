@@ -4,10 +4,7 @@ use bevy::prelude::*;
 
 use loro::{LoroTree, LoroValue, TreeParentId};
 
-use super::{
-    diff::extract_changes_from_diff,
-    events::{RawChangeQueue, ScriptEventQueue},
-};
+use super::{diff::extract_changes_from_diff, events::RawChangeQueue};
 use crate::{HsdDoc, HsdSubscription, cache::SceneRegistry};
 
 pub fn init_hsd_doc(
@@ -19,8 +16,6 @@ pub fn init_hsd_doc(
         let registry = crate::cache::SceneRegistryInner::new();
 
         let raw_queue: Arc<Mutex<Vec<super::events::RawHsdChange>>> =
-            Arc::new(Mutex::new(Vec::new()));
-        let script_queue: Arc<Mutex<Vec<super::events::ScriptQueuedEvent>>> =
             Arc::new(Mutex::new(Vec::new()));
 
         let hsd_map = doc.get_map("hsd");
@@ -38,7 +33,6 @@ pub fn init_hsd_doc(
         commands.entity(doc_ent).insert((
             SceneRegistry(Arc::clone(&registry)),
             RawChangeQueue(raw_queue),
-            ScriptEventQueue(script_queue),
             HsdSubscription(sub),
         ));
     }

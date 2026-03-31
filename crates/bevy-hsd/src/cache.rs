@@ -10,29 +10,6 @@ use smol_str::SmolStr;
 
 use crate::data::{HsdCollider, HsdRigidBody};
 
-#[expect(clippy::struct_excessive_bools)]
-#[derive(Default)]
-pub struct NodeDirty {
-    pub collider: bool,
-    pub material: bool,
-    pub mesh: bool,
-    pub name: bool,
-    pub rigid_body: bool,
-    pub transform: bool,
-}
-
-impl NodeDirty {
-    #[must_use]
-    pub const fn any(&self) -> bool {
-        self.collider
-            || self.material
-            || self.mesh
-            || self.name
-            || self.rigid_body
-            || self.transform
-    }
-}
-
 #[derive(Default)]
 pub struct NodeHsdChanges {
     pub material: Option<Option<SmolStr>>,
@@ -56,18 +33,6 @@ impl NodeHsdChanges {
 }
 
 #[derive(Default)]
-pub struct MeshDirty {
-    pub geometry: bool,
-}
-
-impl MeshDirty {
-    #[must_use]
-    pub const fn any(&self) -> bool {
-        self.geometry
-    }
-}
-
-#[derive(Default)]
 pub struct MeshHsdChanges {
     pub name: Option<Option<String>>,
     pub topology: Option<i64>,
@@ -77,33 +42,6 @@ impl MeshHsdChanges {
     #[must_use]
     pub const fn is_empty(&self) -> bool {
         self.name.is_none() && self.topology.is_none()
-    }
-}
-
-#[expect(clippy::struct_excessive_bools)]
-#[derive(Default)]
-pub struct MaterialDirty {
-    pub alpha_cutoff: bool,
-    pub alpha_mode: bool,
-    pub base_color: bool,
-    pub double_sided: bool,
-    pub metallic: bool,
-    pub name: bool,
-    pub roughness: bool,
-    pub unlit: bool,
-}
-
-impl MaterialDirty {
-    #[must_use]
-    pub const fn any(&self) -> bool {
-        self.alpha_cutoff
-            || self.alpha_mode
-            || self.base_color
-            || self.double_sided
-            || self.metallic
-            || self.name
-            || self.roughness
-            || self.unlit
     }
 }
 
@@ -165,7 +103,6 @@ impl Default for NodeState {
 }
 
 pub struct NodeInner {
-    pub dirty: Mutex<NodeDirty>,
     pub entity: Mutex<Option<Entity>>,
     pub hsd_changes: Mutex<NodeHsdChanges>,
     pub id: SmolStr,
@@ -205,7 +142,6 @@ impl Default for MeshState {
 }
 
 pub struct MeshInner {
-    pub dirty: Mutex<MeshDirty>,
     pub entity: Mutex<Option<Entity>>,
     pub hsd_changes: Mutex<MeshHsdChanges>,
     pub id: SmolStr,
@@ -241,7 +177,6 @@ impl Default for MaterialState {
 }
 
 pub struct MaterialInner {
-    pub dirty: Mutex<MaterialDirty>,
     pub entity: Mutex<Option<Entity>>,
     pub hsd_changes: Mutex<MaterialHsdChanges>,
     pub id: SmolStr,

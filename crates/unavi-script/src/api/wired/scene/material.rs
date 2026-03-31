@@ -1,6 +1,12 @@
 use std::sync::{Arc, atomic::Ordering};
 
+use bevy::prelude::World;
 use bevy_hsd::cache::MaterialInner;
+use bevy_hsd::hydrate::compile::material::{
+    HsdMaterialAlphaCutoffSet, HsdMaterialAlphaModeSet, HsdMaterialBaseColorSet,
+    HsdMaterialDoubleSidedSet, HsdMaterialMetallicSet, HsdMaterialNameSet, HsdMaterialRoughnessSet,
+    HsdMaterialUnlitSet,
+};
 use wasmtime::component::Resource;
 
 use super::bindings::wired::scene::types::{AlphaMode, Material};
@@ -81,7 +87,15 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
         if inner.sync.load(Ordering::Relaxed) {
             inner.hsd_changes.lock().expect("hsd_changes lock").name = Some(value);
         } else {
-            inner.dirty.lock().expect("dirty lock").name = true;
+            let doc = self.doc_entity;
+            let id = inner.id.clone();
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdMaterialNameSet {
+                    doc,
+                    id,
+                    name: value,
+                });
+            });
         }
         Ok(())
     }
@@ -114,7 +128,11 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
                 .expect("hsd_changes lock")
                 .alpha_cutoff = Some(f64::from(value));
         } else {
-            inner.dirty.lock().expect("dirty lock").alpha_cutoff = true;
+            let doc = self.doc_entity;
+            let id = inner.id.clone();
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdMaterialAlphaCutoffSet { doc, id, value });
+            });
         }
         Ok(())
     }
@@ -169,7 +187,15 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
                 .expect("hsd_changes lock")
                 .alpha_mode = Some(mode_str);
         } else {
-            inner.dirty.lock().expect("dirty lock").alpha_mode = true;
+            let doc = self.doc_entity;
+            let id = inner.id.clone();
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdMaterialAlphaModeSet {
+                    doc,
+                    id,
+                    mode: mode_str,
+                });
+            });
         }
         Ok(())
     }
@@ -198,7 +224,15 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
                 .expect("hsd_changes lock")
                 .base_color = Some([f64::from(r), f64::from(g), f64::from(b), f64::from(a)]);
         } else {
-            inner.dirty.lock().expect("dirty lock").base_color = true;
+            let doc = self.doc_entity;
+            let id = inner.id.clone();
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdMaterialBaseColorSet {
+                    doc,
+                    id,
+                    color: [r, g, b, a],
+                });
+            });
         }
         Ok(())
     }
@@ -218,7 +252,11 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
         if inner.sync.load(Ordering::Relaxed) {
             inner.hsd_changes.lock().expect("hsd_changes lock").metallic = Some(f64::from(value));
         } else {
-            inner.dirty.lock().expect("dirty lock").metallic = true;
+            let doc = self.doc_entity;
+            let id = inner.id.clone();
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdMaterialMetallicSet { doc, id, value });
+            });
         }
         Ok(())
     }
@@ -242,7 +280,11 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
                 .expect("hsd_changes lock")
                 .roughness = Some(f64::from(value));
         } else {
-            inner.dirty.lock().expect("dirty lock").roughness = true;
+            let doc = self.doc_entity;
+            let id = inner.id.clone();
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdMaterialRoughnessSet { doc, id, value });
+            });
         }
         Ok(())
     }
@@ -274,7 +316,11 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
                 .expect("hsd_changes lock")
                 .double_sided = Some(value);
         } else {
-            inner.dirty.lock().expect("dirty lock").double_sided = true;
+            let doc = self.doc_entity;
+            let id = inner.id.clone();
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdMaterialDoubleSidedSet { doc, id, value });
+            });
         }
         Ok(())
     }
@@ -290,7 +336,11 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
         if inner.sync.load(Ordering::Relaxed) {
             inner.hsd_changes.lock().expect("hsd_changes lock").unlit = Some(value);
         } else {
-            inner.dirty.lock().expect("dirty lock").unlit = true;
+            let doc = self.doc_entity;
+            let id = inner.id.clone();
+            self.push_command(move |world: &mut World| {
+                world.trigger(HsdMaterialUnlitSet { doc, id, value });
+            });
         }
         Ok(())
     }

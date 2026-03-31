@@ -1,13 +1,20 @@
-use std::sync::{Arc, Mutex, atomic::Ordering};
+use std::sync::atomic::Ordering;
 
-use bevy_hsd::cache::{
-    MaterialDirty, MaterialHsdChanges, MaterialInner, MaterialState, MeshDirty, MeshHsdChanges,
-    MeshInner, MeshState, NodeDirty, NodeHsdChanges, NodeInner, NodeState, SyncOp,
+use bevy::prelude::{Entity, World};
+use bevy_hsd::{
+    cache::{
+        MaterialHsdChanges, MaterialInner, MaterialState, MeshHsdChanges, MeshInner, MeshState,
+        NodeHsdChanges, NodeInner, NodeState, SyncOp,
+    },
+    hydrate::compile::{
+        material::{HsdMaterialDespawned, HsdMaterialSpawned},
+        mesh::{HsdMeshDespawned, HsdMeshSpawned},
+        node::{HsdNodeDespawned, HsdNodeSpawned},
+    },
 };
-use bevy_hsd::hydrate::events::ScriptQueuedEvent;
-use bevy_hsd::{cache::SceneRegistryInner, hydrate::events::ScriptQueuedEvent as Ev};
 use rand::{Rng, distr::Alphanumeric};
 use smol_str::SmolStr;
+use std::sync::{Arc, Mutex};
 use wasmtime::component::Resource;
 
 use super::bindings::wired::scene::types::{Document, Material, Mesh};
@@ -17,8 +24,8 @@ use crate::api::wired::scene::{
 
 pub struct HostDocument {
     pub id: blake3::Hash,
-    pub registry: Arc<SceneRegistryInner>,
-    pub events: Arc<Mutex<Vec<ScriptQueuedEvent>>>,
+    pub registry: Arc<bevy_hsd::cache::SceneRegistryInner>,
+    pub doc_entity: Entity,
     pub can_read: bool,
     pub can_write: bool,
 }
@@ -28,7 +35,7 @@ impl Clone for HostDocument {
         Self {
             id: self.id,
             registry: Arc::clone(&self.registry),
-            events: Arc::clone(&self.events),
+            doc_entity: self.doc_entity,
             can_read: self.can_read,
             can_write: self.can_write,
         }
@@ -46,11 +53,6 @@ pub fn gen_id() -> SmolStr {
         .collect::<SmolStr>()
 }
 
-/// Push a queued event into a doc's event queue.
-fn push_ev(events: &Arc<Mutex<Vec<Ev>>>, ev: Ev) {
-    events.lock().expect("events lock").push(ev);
-}
-
 impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
     async fn clone(
         &mut self,
@@ -64,20 +66,19 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<Material>> {
-        let (registry, events, can_write) = {
+        let (doc_entity, registry, can_write) = {
             let d = self.table.get(&self_)?;
-            (Arc::clone(&d.registry), Arc::clone(&d.events), d.can_write)
+            (d.doc_entity, Arc::clone(&d.registry), d.can_write)
         };
         if !can_write {
             return Err(anyhow::anyhow!("hsd write permission required"));
         }
         let id = gen_id();
         let inner = Arc::new(MaterialInner {
-            dirty: std::sync::Mutex::new(MaterialDirty::default()),
-            entity: std::sync::Mutex::new(None),
-            hsd_changes: std::sync::Mutex::new(MaterialHsdChanges::default()),
+            entity: Mutex::new(None),
+            hsd_changes: Mutex::new(MaterialHsdChanges::default()),
             id: id.clone(),
-            state: std::sync::Mutex::new(MaterialState::default()),
+            state: Mutex::new(MaterialState::default()),
             sync: false.into(),
         });
         registry
@@ -85,7 +86,14 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             .lock()
             .expect("materials lock")
             .insert(id.clone(), Arc::clone(&inner));
-        push_ev(&events, Ev::MaterialSpawned { id: id.clone() });
+        let id_ = id.clone();
+        self.push_command(move |world: &mut World| {
+            world.trigger(HsdMaterialSpawned {
+                doc: doc_entity,
+                id: id_,
+                initial: None,
+            });
+        });
         if registry.doc_sync.load(Ordering::Relaxed) {
             registry
                 .pending_doc_ops
@@ -101,20 +109,19 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
     }
 
     async fn create_mesh(&mut self, self_: Resource<Document>) -> wasmtime::Result<Resource<Mesh>> {
-        let (registry, events, can_write) = {
+        let (doc_entity, registry, can_write) = {
             let d = self.table.get(&self_)?;
-            (Arc::clone(&d.registry), Arc::clone(&d.events), d.can_write)
+            (d.doc_entity, Arc::clone(&d.registry), d.can_write)
         };
         if !can_write {
             return Err(anyhow::anyhow!("hsd write permission required"));
         }
         let id = gen_id();
         let inner = Arc::new(MeshInner {
-            dirty: std::sync::Mutex::new(MeshDirty::default()),
-            entity: std::sync::Mutex::new(None),
-            hsd_changes: std::sync::Mutex::new(MeshHsdChanges::default()),
+            entity: Mutex::new(None),
+            hsd_changes: Mutex::new(MeshHsdChanges::default()),
             id: id.clone(),
-            state: std::sync::Mutex::new(MeshState::default()),
+            state: Mutex::new(MeshState::default()),
             sync: false.into(),
         });
         registry
@@ -122,7 +129,13 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             .lock()
             .expect("meshes lock")
             .insert(id.clone(), Arc::clone(&inner));
-        push_ev(&events, Ev::MeshSpawned { id: id.clone() });
+        let id_ = id.clone();
+        self.push_command(move |world: &mut World| {
+            world.trigger(HsdMeshSpawned {
+                doc: doc_entity,
+                id: id_,
+            });
+        });
         if registry.doc_sync.load(Ordering::Relaxed) {
             registry
                 .pending_doc_ops
@@ -141,23 +154,22 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<HostNode>> {
-        let (registry, events, can_write) = {
+        let (doc_entity, registry, can_write) = {
             let d = self.table.get(&self_)?;
-            (Arc::clone(&d.registry), Arc::clone(&d.events), d.can_write)
+            (d.doc_entity, Arc::clone(&d.registry), d.can_write)
         };
         if !can_write {
             return Err(anyhow::anyhow!("hsd write permission required"));
         }
         let id = gen_id();
         let inner = Arc::new(NodeInner {
-            dirty: std::sync::Mutex::new(NodeDirty::default()),
-            entity: std::sync::Mutex::new(None),
-            hsd_changes: std::sync::Mutex::new(NodeHsdChanges::default()),
+            entity: Mutex::new(None),
+            hsd_changes: Mutex::new(NodeHsdChanges::default()),
             id: id.clone(),
             is_virtual: false,
-            state: std::sync::Mutex::new(NodeState::default()),
+            state: Mutex::new(NodeState::default()),
             sync: false.into(),
-            tree_id: std::sync::Mutex::new(None),
+            tree_id: Mutex::new(None),
         });
         registry
             .nodes
@@ -169,7 +181,13 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             .lock()
             .expect("node_map lock")
             .insert(id.clone(), Arc::clone(&inner));
-        push_ev(&events, Ev::NodeSpawned { id: id.clone() });
+        let id_ = id.clone();
+        self.push_command(move |world: &mut World| {
+            world.trigger(HsdNodeSpawned {
+                doc: doc_entity,
+                id: id_,
+            });
+        });
         if registry.doc_sync.load(Ordering::Relaxed) {
             registry
                 .pending_doc_ops
@@ -306,16 +324,21 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         self_: Resource<Document>,
         value: Resource<HostNode>,
     ) -> wasmtime::Result<()> {
-        let (events, can_write) = {
+        let (doc_entity, can_write) = {
             let d = self.table.get(&self_)?;
-            (Arc::clone(&d.events), d.can_write)
+            (d.doc_entity, d.can_write)
         };
         if !can_write {
             return Err(anyhow::anyhow!("hsd write permission required"));
         }
         let inner = Arc::clone(&self.table.get(&value)?.inner);
         let id = inner.id.clone();
-        push_ev(&events, Ev::NodeDespawned { id: id.clone() });
+        self.push_command(move |world: &mut World| {
+            world.trigger(HsdNodeDespawned {
+                doc: doc_entity,
+                id,
+            });
+        });
         if self
             .table
             .get(&self_)?
@@ -323,6 +346,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             .doc_sync
             .load(Ordering::Relaxed)
         {
+            let id = inner.id.clone();
             self.table
                 .get(&self_)?
                 .registry
@@ -339,16 +363,21 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         self_: Resource<Document>,
         value: Resource<HostMesh>,
     ) -> wasmtime::Result<()> {
-        let (events, can_write) = {
+        let (doc_entity, can_write) = {
             let d = self.table.get(&self_)?;
-            (Arc::clone(&d.events), d.can_write)
+            (d.doc_entity, d.can_write)
         };
         if !can_write {
             return Err(anyhow::anyhow!("hsd write permission required"));
         }
         let inner = Arc::clone(&self.table.get(&value)?.inner);
         let id = inner.id.clone();
-        push_ev(&events, Ev::MeshDespawned { id: id.clone() });
+        self.push_command(move |world: &mut World| {
+            world.trigger(HsdMeshDespawned {
+                doc: doc_entity,
+                id,
+            });
+        });
         if self
             .table
             .get(&self_)?
@@ -356,6 +385,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             .doc_sync
             .load(Ordering::Relaxed)
         {
+            let id = inner.id.clone();
             self.table
                 .get(&self_)?
                 .registry
@@ -372,16 +402,21 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         self_: Resource<Document>,
         value: Resource<HostMaterial>,
     ) -> wasmtime::Result<()> {
-        let (events, can_write) = {
+        let (doc_entity, can_write) = {
             let d = self.table.get(&self_)?;
-            (Arc::clone(&d.events), d.can_write)
+            (d.doc_entity, d.can_write)
         };
         if !can_write {
             return Err(anyhow::anyhow!("hsd write permission required"));
         }
         let inner = Arc::clone(&self.table.get(&value)?.inner);
         let id = inner.id.clone();
-        push_ev(&events, Ev::MaterialDespawned { id: id.clone() });
+        self.push_command(move |world: &mut World| {
+            world.trigger(HsdMaterialDespawned {
+                doc: doc_entity,
+                id,
+            });
+        });
         if self
             .table
             .get(&self_)?
@@ -389,6 +424,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             .doc_sync
             .load(Ordering::Relaxed)
         {
+            let id = inner.id.clone();
             self.table
                 .get(&self_)?
                 .registry

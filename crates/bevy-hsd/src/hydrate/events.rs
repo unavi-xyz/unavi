@@ -1,11 +1,13 @@
 use std::sync::{Arc, Mutex};
 
+use bevy::ecs::world::CommandQueue;
 use bevy::prelude::*;
+use loro::TreeID;
 use smol_str::SmolStr;
 
 #[derive(Clone, Debug)]
 pub enum NodeRef {
-    Entity(bevy::prelude::Entity),
+    Entity(Entity),
     Id(SmolStr),
 }
 
@@ -30,44 +32,44 @@ pub enum RawHsdChange {
         id: SmolStr,
     },
     NodeAdded {
-        tree_id: loro::TreeID,
-        parent_id: Option<loro::TreeID>,
+        tree_id: TreeID,
+        parent_id: Option<TreeID>,
     },
     NodeChanged {
-        tree_id: loro::TreeID,
+        tree_id: TreeID,
     },
     NodeRemoved {
-        tree_id: loro::TreeID,
+        tree_id: TreeID,
     },
 }
 
 #[derive(Component, Clone)]
 pub struct RawChangeQueue(pub Arc<Mutex<Vec<RawHsdChange>>>);
 
-#[derive(Component, Clone)]
-pub struct ScriptEventQueue(pub Arc<Mutex<Vec<ScriptQueuedEvent>>>);
+pub const SCRIPT_COMMAND_LIMIT: usize = 1 << 16;
 
-pub enum ScriptQueuedEvent {
-    MaterialDespawned {
-        id: SmolStr,
-    },
-    MaterialSpawned {
-        id: SmolStr,
-    },
-    MeshDespawned {
-        id: SmolStr,
-    },
-    MeshSpawned {
-        id: SmolStr,
-    },
-    NodeDespawned {
-        id: SmolStr,
-    },
-    NodeParentSet {
-        child: NodeRef,
-        parent: Option<NodeRef>,
-    },
-    NodeSpawned {
-        id: SmolStr,
-    },
+/// Per-script command queue bridging WASM setters (async) to Bevy ECS (main thread).
+///
+/// Setters push `FnOnce(&mut World)` closures here. The queue is drained via
+/// `commands.append` after each WASM call in the polling systems.
+#[derive(Default)]
+pub struct ScriptCommandQueue {
+    pub inner: CommandQueue,
+    pub len: usize,
 }
+
+impl ScriptCommandQueue {
+    pub fn push<C: bevy::prelude::Command>(&mut self, cmd: C) {
+        if self.len < SCRIPT_COMMAND_LIMIT {
+            self.inner.push(cmd);
+            self.len += 1;
+        } else {
+            warn_once!(
+                "script command queue limit ({SCRIPT_COMMAND_LIMIT}) reached, dropping commands"
+            );
+        }
+    }
+}
+
+#[derive(Component, Clone)]
+pub struct ScriptCommandQueueComp(pub Arc<Mutex<ScriptCommandQueue>>);

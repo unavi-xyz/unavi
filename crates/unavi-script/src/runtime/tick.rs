@@ -8,6 +8,8 @@ use futures::FutureExt;
 use tracing::Instrument;
 use wasmtime::AsContextMut;
 
+use bevy_hsd::hydrate::events::ScriptCommandQueueComp;
+
 use crate::{
     load::LoadedScript,
     runtime::{ScriptRuntime, init::InitializedScript},
@@ -19,18 +21,20 @@ const SCRIPT_TICKRATE: Duration = Duration::from_millis(50);
 pub struct TickingTask(pub Option<Task<anyhow::Result<()>>>);
 
 pub fn tick_scripts(
+    mut commands: Commands,
     time: Res<Time>,
     scripts: Query<
         (
             &ScriptRuntime,
             &LoadedScript,
             &mut TickingTask,
+            &ScriptCommandQueueComp,
             Option<&Name>,
         ),
         With<InitializedScript>,
     >,
 ) {
-    for (rt, loaded, mut ticking, name) in scripts {
+    for (rt, loaded, mut ticking, cmd_queue, name) in scripts {
         if let Some(task) = &ticking.0
             && !task.is_finished()
         {
@@ -86,9 +90,14 @@ pub fn tick_scripts(
 
         if let Some(prev) = ticking.0.take()
             && let Some(res) = prev.now_or_never()
-            && let Err(err) = res
         {
-            error!(?err, "error ticking script");
+            let mut q = cmd_queue.0.lock().expect("cmd queue lock");
+            commands.append(&mut q.inner);
+            q.len = 0;
+            drop(q);
+            if let Err(err) = res {
+                error!(?err, "error ticking script");
+            }
         }
 
         ticking.0 = Some(task);

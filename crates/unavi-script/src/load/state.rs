@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::Entity;
-use bevy_hsd::{cache::SceneRegistryInner, hydrate::events::ScriptQueuedEvent};
+use bevy_hsd::{cache::SceneRegistryInner, hydrate::events::ScriptCommandQueue};
 use loro::LoroDoc;
 use smol_str::SmolStr;
 use wasmtime::component::ResourceTable;
@@ -38,7 +38,7 @@ impl RuntimeData {
         doc: Arc<LoroDoc>,
         self_node_id: SmolStr,
         registry: Arc<SceneRegistryInner>,
-        events: Arc<Mutex<Vec<ScriptQueuedEvent>>>,
+        command_queue: Arc<Mutex<ScriptCommandQueue>>,
         agent_entry: Option<Arc<ProxyRegistry>>,
         doc_id: blake3::Hash,
         doc_entity: Entity,
@@ -68,7 +68,7 @@ impl RuntimeData {
                 self_node_id,
                 table: ResourceTable::default(),
                 registry,
-                events,
+                command_queue,
                 registry_map,
             },
         }

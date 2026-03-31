@@ -109,10 +109,7 @@ pub fn apply_body_input(
             target.0 = target.lerp(dir, S);
         }
 
-        let is_sprinting = sprint_action
-            .single()
-            .map(|action| action.any)
-            .unwrap_or(false);
+        let is_sprinting = sprint_action.single().is_ok_and(|action| action.any);
 
         let multi = if is_sprinting {
             config.sprint_multi

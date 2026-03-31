@@ -13,7 +13,6 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-bevy_math             = "0.17.3"
-bevy_mesh             = "0.17.3"
+glam                  = "0.32.1"
 wired-prelude.path    = "../wired-prelude"
 wit-bindgen.workspace = true

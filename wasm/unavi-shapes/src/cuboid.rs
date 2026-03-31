@@ -1,29 +1,121 @@
-use bevy_math::primitives::Cuboid;
-use bevy_mesh::{MeshBuilder, Meshable};
-use wired_prelude::wired_math::types::Vec3;
+use glam::Vec3;
+use wired_prelude::wired_math::types::Vec3 as WVec3;
 
 use crate::{
+    RawMesh,
     exports::unavi::shapes::api::GuestCuboid,
     wired::scene::types::{Collider, Mesh},
 };
 
 #[derive(Default)]
-pub struct CuboidWrapped(Cuboid);
+pub struct CuboidWrapped {
+    half: Vec3,
+}
 
 impl GuestCuboid for CuboidWrapped {
     fn new(x_length: f32, y_length: f32, z_length: f32) -> Self {
-        Self(Cuboid::new(x_length, y_length, z_length))
+        Self {
+            half: Vec3::new(x_length * 0.5, y_length * 0.5, z_length * 0.5),
+        }
     }
 
     fn collider(&self) -> Collider {
-        Collider::Cuboid(Vec3::new(
-            self.0.half_size.x * 2.0,
-            self.0.half_size.y * 2.0,
-            self.0.half_size.z * 2.0,
+        Collider::Cuboid(WVec3::new(
+            self.half.x * 2.0,
+            self.half.y * 2.0,
+            self.half.z * 2.0,
         ))
     }
 
     fn mesh(&self) -> Mesh {
-        crate::convert_bevy_mesh(self.0.mesh().build())
+        crate::convert_raw_mesh(build(self.half))
+    }
+}
+
+fn build(h: Vec3) -> RawMesh {
+    // 6 faces × 4 verts = 24 verts, 6 faces × 6 indices = 36 indices
+    let faces: [([f32; 3], [[f32; 3]; 4], [[f32; 2]; 4]); 6] = [
+        (
+            [1.0, 0.0, 0.0],
+            [
+                [h.x, -h.y, -h.z],
+                [h.x, h.y, -h.z],
+                [h.x, h.y, h.z],
+                [h.x, -h.y, h.z],
+            ],
+            [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
+        ),
+        (
+            [-1.0, 0.0, 0.0],
+            [
+                [-h.x, -h.y, h.z],
+                [-h.x, h.y, h.z],
+                [-h.x, h.y, -h.z],
+                [-h.x, -h.y, -h.z],
+            ],
+            [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
+        ),
+        (
+            [0.0, 1.0, 0.0],
+            [
+                [-h.x, h.y, -h.z],
+                [-h.x, h.y, h.z],
+                [h.x, h.y, h.z],
+                [h.x, h.y, -h.z],
+            ],
+            [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
+        ),
+        (
+            [0.0, -1.0, 0.0],
+            [
+                [-h.x, -h.y, h.z],
+                [-h.x, -h.y, -h.z],
+                [h.x, -h.y, -h.z],
+                [h.x, -h.y, h.z],
+            ],
+            [[0.0, 1.0], [0.0, 0.0], [1.0, 0.0], [1.0, 1.0]],
+        ),
+        (
+            [0.0, 0.0, 1.0],
+            [
+                [-h.x, -h.y, h.z],
+                [h.x, -h.y, h.z],
+                [h.x, h.y, h.z],
+                [-h.x, h.y, h.z],
+            ],
+            [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]],
+        ),
+        (
+            [0.0, 0.0, -1.0],
+            [
+                [h.x, -h.y, -h.z],
+                [-h.x, -h.y, -h.z],
+                [-h.x, h.y, -h.z],
+                [h.x, h.y, -h.z],
+            ],
+            [[0.0, 1.0], [1.0, 1.0], [1.0, 0.0], [0.0, 0.0]],
+        ),
+    ];
+
+    let mut positions = Vec::with_capacity(24);
+    let mut normals = Vec::with_capacity(24);
+    let mut uvs = Vec::with_capacity(24);
+    let mut indices = Vec::with_capacity(36);
+
+    for (i, (normal, verts, face_uvs)) in faces.iter().enumerate() {
+        let base = (i * 4) as u32;
+        for j in 0..4 {
+            positions.push(verts[j]);
+            normals.push(*normal);
+            uvs.push(face_uvs[j]);
+        }
+        indices.extend_from_slice(&[base, base + 1, base + 2, base, base + 2, base + 3]);
+    }
+
+    RawMesh {
+        positions,
+        normals,
+        uvs,
+        indices,
     }
 }

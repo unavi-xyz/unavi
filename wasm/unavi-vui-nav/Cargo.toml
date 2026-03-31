@@ -1,0 +1,19 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-vui-nav"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+unavi-shapes.path     = "../unavi-shapes"
+unavi-vui-module.path = "../unavi-vui-module"
+wired-prelude.path    = "../wired-prelude"
+wit-bindgen.workspace = true

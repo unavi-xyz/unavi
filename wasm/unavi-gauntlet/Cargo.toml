@@ -13,7 +13,6 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-postcard.workspace    = true
-serde                 = { features = ["derive"], workspace = true }
+unavi-vui-module.path = "../unavi-vui-module"
 wired-prelude.path    = "../wired-prelude"
 wit-bindgen.workspace = true

@@ -21,7 +21,7 @@ pub struct InitializingScript {
     task: Task<anyhow::Result<()>>,
 }
 
-const MAX_INIT_DURATION: Duration = Duration::from_secs(60);
+const MAX_INIT_DURATION: Duration = Duration::from_mins(1);
 
 pub fn begin_init_scripts(
     mut commands: Commands,

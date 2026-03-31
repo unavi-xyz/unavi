@@ -9,7 +9,7 @@ use bevy_hsd::hydrate::compile::material::{
 };
 use wasmtime::component::Resource;
 
-use super::bindings::wired::scene::types::{AlphaMode, Material};
+use super::bindings::wired::scene::types::{AlphaMode, Color, Material};
 use crate::api::wired::scene::WiredSceneRt;
 
 pub struct HostMaterial {
@@ -200,22 +200,19 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
         Ok(())
     }
 
-    async fn base_color(&mut self, self_: Resource<Material>) -> wasmtime::Result<Vec<f32>> {
+    async fn base_color(&mut self, self_: Resource<Material>) -> wasmtime::Result<Color> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        let state = inner.state.lock().expect("material state lock");
-        Ok(state.base_color.to_vec())
+        let [r, g, b, a] = inner.state.lock().expect("material state lock").base_color;
+        Ok(Color { r, g, b, a })
     }
 
     async fn set_base_color(
         &mut self,
         self_: Resource<Material>,
-        value: Vec<f32>,
+        value: Color,
     ) -> wasmtime::Result<()> {
+        let Color { r, g, b, a } = value;
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        let r = value.first().copied().unwrap_or(1.0);
-        let g = value.get(1).copied().unwrap_or(1.0);
-        let b = value.get(2).copied().unwrap_or(1.0);
-        let a = value.get(3).copied().unwrap_or(1.0);
         inner.state.lock().expect("material state lock").base_color = [r, g, b, a];
         if inner.sync.load(Ordering::Relaxed) {
             inner

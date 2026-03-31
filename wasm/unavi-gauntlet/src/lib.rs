@@ -3,19 +3,16 @@ mod module;
 
 use std::{cell::Cell, time::SystemTime};
 
-use wired_prelude::wired_math::types::Vec3;
+use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
 
 use crate::{
     gauntlet::{
         BG_ALPHA_BASE, BG_ALPHA_HOVER, CLOSE_ON_MOVE_THRESHOLD_SQ, Gauntlet, OPEN_SPEED_SECONDS,
         RAISE_DIST, RAISE_SPEED_SECONDS, Target,
     },
+    unavi::vui_module::discovery::ModuleDiscovery,
     wired::{
         agent::types::BoneName,
-        event::{
-            api::{register_emitter, register_receptor},
-            types::{EventEmitter, EventReceptor},
-        },
         input::{
             system_api::system_input_listener,
             types::{InputAction, InputDevice, InputListener},
@@ -27,31 +24,20 @@ wired_prelude::generate_script!(Script);
 
 pub const MAX_MODULES: usize = 8;
 
-pub const MODULE_PALETTE: [[f32; 3]; MAX_MODULES] = [
-    [0.52, 0.20, 0.82],
-    [0.88, 0.52, 0.08],
-    [0.12, 0.40, 0.88],
-    [0.12, 0.62, 0.28],
-    [0.72, 0.12, 0.52],
-    [0.80, 0.15, 0.18],
-    [0.08, 0.58, 0.55],
-    [0.50, 0.65, 0.08],
+pub const MODULE_PALETTE: [Color; MAX_MODULES] = [
+    Color::rgb(0.52, 0.20, 0.82),
+    Color::rgb(0.88, 0.52, 0.08),
+    Color::rgb(0.12, 0.40, 0.88),
+    Color::rgb(0.12, 0.62, 0.28),
+    Color::rgb(0.72, 0.12, 0.52),
+    Color::rgb(0.80, 0.15, 0.18),
+    Color::rgb(0.08, 0.58, 0.55),
+    Color::rgb(0.50, 0.65, 0.08),
 ];
 
-const CH_REGISTER: &str = "unavi::gauntlet::register";
-const CH_REGISTER_REQUEST: &str = "unavi::gauntlet::register-request";
-
-#[derive(serde::Serialize, serde::Deserialize)]
-pub struct RegisterPayload {
-    pub name: String,
-    pub icon_node_id: String,
-    pub color: [f32; 3],
-}
-
 pub struct DynamicModuleDef {
-    pub color: [f32; 3],
+    pub color: Color,
     pub doc_id: Vec<u8>,
-    pub icon_node_id: String,
     pub name: String,
 }
 
@@ -59,19 +45,13 @@ struct Script {
     gauntlets: [Gauntlet; 3],
     input: InputListener,
     render_time: Cell<SystemTime>,
-    _emitter: EventEmitter,
-    register_receptor: EventReceptor,
+    discovery: ModuleDiscovery,
     module_defs: std::cell::RefCell<Vec<DynamicModuleDef>>,
 }
 
 impl GuestScript for Script {
     fn new() -> Self {
-        // Broadcast emitter for register-request
-        let emitter = register_emitter(None, f32::MAX, &[]);
-        let register_receptor = register_receptor(&[CH_REGISTER.to_string()], None, f32::MAX, &[]);
-
-        // Announce ourselves so modules can discover us
-        emitter.emit(CH_REGISTER_REQUEST, &[]);
+        let discovery = ModuleDiscovery::new();
 
         let gauntlets = [
             Target::Camera,
@@ -84,21 +64,21 @@ impl GuestScript for Script {
             gauntlets,
             input: system_input_listener(),
             render_time: Cell::new(SystemTime::now()),
-            _emitter: emitter,
-            register_receptor,
+            discovery,
             module_defs: std::cell::RefCell::new(Vec::new()),
         }
     }
 
     fn tick(&self) {
-        // Drain register events — add new module defs and rebuild ring.
         let mut defs = self.module_defs.borrow_mut();
         let mut changed = false;
-        while let Some(event) = self.register_receptor.poll() {
-            if let Some(def) = parse_register_payload(&event.payload, event.sender_document)
-                && defs.len() < MAX_MODULES
-            {
-                defs.push(def);
+        for m in self.discovery.poll() {
+            if defs.len() < MAX_MODULES {
+                defs.push(DynamicModuleDef {
+                    color: m.color,
+                    doc_id: m.doc_id,
+                    name: m.name,
+                });
                 changed = true;
             }
         }
@@ -176,7 +156,7 @@ impl GuestScript for Script {
                             && g.open.get()
                             && let Some(sector) = g.hovered_sector.get()
                         {
-                            g.select(sector, &defs);
+                            g.select(sector, &defs, &self.discovery);
                         }
                     }
                 }
@@ -231,21 +211,11 @@ impl GuestScript for Script {
                     let bg_alpha = new_raise.mul_add(BG_ALPHA_HOVER - BG_ALPHA_BASE, BG_ALPHA_BASE);
                     module
                         .bg_material
-                        .set_base_color(&[c[0], c[1], c[2], bg_alpha]);
+                        .set_base_color(Color::rgba(c.r, c.g, c.b, bg_alpha));
                 }
             }
         }
     }
 
     fn drop(&self) {}
-}
-
-fn parse_register_payload(payload: &[u8], sender_document: Vec<u8>) -> Option<DynamicModuleDef> {
-    let reg: RegisterPayload = postcard::from_bytes(payload).ok()?;
-    Some(DynamicModuleDef {
-        color: reg.color,
-        doc_id: sender_document,
-        icon_node_id: reg.icon_node_id,
-        name: reg.name,
-    })
 }

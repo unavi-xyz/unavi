@@ -1,6 +1,6 @@
 use std::time::SystemTime;
 
-use wired_prelude::wired_math::types::Vec3;
+use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
 
 use crate::{
     unavi::shapes::api::Cuboid,
@@ -25,7 +25,7 @@ impl GuestScript for Script {
         let mesh = Cuboid::new(size, size, size).mesh();
 
         let mat = doc.create_material();
-        mat.set_base_color(&[0.8, 0.1, 0.1, 1.0]);
+        mat.set_base_color(Color::rgba(0.8, 0.1, 0.1, 1.0));
 
         let node = doc.create_node();
         node.set_mesh(Some(&mesh));

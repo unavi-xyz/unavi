@@ -1,4 +1,5 @@
 pub use wired_math;
+pub use wired_scene;
 
 /// Helper around [`wit_bindgen::generate!`], using better, manually-defined types rather than relying purely on codegen.
 #[macro_export]
@@ -8,6 +9,7 @@ macro_rules! generate {
             generate_all,
             with: {
                 "wired:math/types": ::wired_prelude::wired_math::types,
+                "wired:scene/types/color": ::wired_prelude::wired_scene::types::Color,
             },
         });
     };

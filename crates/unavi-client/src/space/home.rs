@@ -109,7 +109,7 @@ async fn try_fetch_beacons(
         }
     }
 
-    beacons.sort_by(|a, b| a.expires.cmp(&b.expires));
+    beacons.sort_by_key(|a| a.expires);
 
     Ok(beacons)
 }

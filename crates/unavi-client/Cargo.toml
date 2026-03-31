@@ -63,7 +63,7 @@ zeroize.workspace      = true
 iroh.workspace       = true
 reqwest.workspace    = true
 tokio                = { features = ["rt"], workspace = true }
-wasm-bindgen-futures = "0.4"
+wasm-bindgen-futures = "0.4.67"
 web-sys              = { features = ["Location", "UrlSearchParams"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]

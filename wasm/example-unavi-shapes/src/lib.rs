@@ -1,4 +1,4 @@
-use wired_prelude::wired_math::types::Vec3;
+use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
 
 use crate::{
     unavi::shapes::api::{Capsule, Cone, Cuboid, Cylinder, Sphere, Torus},
@@ -27,7 +27,7 @@ impl GuestScript for Script {
         let start = -(count - 1.0) * spacing / 2.0;
 
         let mat = doc.create_material();
-        mat.set_base_color(&[0.3, 0.4, 0.8, 1.0]);
+        mat.set_base_color(Color::rgb(0.3, 0.4, 0.8));
 
         for (i, mesh) in meshes.into_iter().enumerate() {
             let node = doc.create_node();

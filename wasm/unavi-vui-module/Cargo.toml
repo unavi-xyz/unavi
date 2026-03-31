@@ -1,0 +1,19 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-vui-module"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+postcard.workspace    = true
+serde                 = { features = ["derive"], workspace = true }
+wired-prelude.path    = "../wired-prelude"
+wit-bindgen.workspace = true

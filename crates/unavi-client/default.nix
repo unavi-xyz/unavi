@@ -7,22 +7,6 @@
 
       remoteWds = channel: "did:web:${deployInfo.${channel}.services.unavi_server.domain}";
 
-      wac-cli = pkgs.rustPlatform.buildRustPackage rec {
-        pname = "wac-cli";
-        version = "0.6.1";
-
-        src = pkgs.fetchFromGitHub {
-          owner = "bytecodealliance";
-          repo = "wac";
-          rev = "v${version}";
-          sha256 = "sha256-noBVAhoHXl3FI6ZlnmCwpnqu7pub6FCtuY+026vdlYo=";
-        };
-        cargoHash = "sha256-5oLt1wnadtEKCOAtpbzPQRuU76qLWRtcCv6Jcozon4E=";
-
-        buildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [ openssl ]);
-        nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs; [ pkg-config ]);
-      };
-
       src = lib.fileset.toSource rec {
         root = ../..;
         fileset = lib.fileset.unions [
@@ -64,13 +48,11 @@
               lld
               mold
               pkg-config
+              wac-cli
               wasm-tools
             ]
           )
-          ++ [
-            wac-cli
-            inputs.wit-deps.packages.${pkgs.system}.wit-deps
-          ];
+          ++ [ inputs.wit-deps.packages.${pkgs.system}.wit-deps ];
 
         linkedInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
           with pkgs;
@@ -81,10 +63,10 @@
             udev
             vulkan-loader
             wayland
-            xorg.libX11
-            xorg.libXcursor
-            xorg.libXi
-            xorg.libXrandr
+            libX11
+            libXcursor
+            libXi
+            libXrandr
           ]
         );
 

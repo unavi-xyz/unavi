@@ -101,22 +101,23 @@ pub(crate) fn load_animation_nodes(
                         .fold(Quat::IDENTITY, |rot, n| rot * n.transform.rotation);
 
                     // Retarget rotations from Mixamo-space to Bevy-space.
-                    let samples = timestamps
-                        .clone()
-                        .into_iter()
-                        .zip(values.clone().into_iter())
-                        .map(|(t, item)| {
-                            let mut item = mixamo_rest
-                                .mul_quat(item)
-                                .mul_quat((mixamo_rest * mixamo_node.transform.rotation).inverse());
+                    let samples =
+                        timestamps
+                            .clone()
+                            .into_iter()
+                            .zip(values.clone())
+                            .map(|(t, item)| {
+                                let mut item = mixamo_rest.mul_quat(item).mul_quat(
+                                    (mixamo_rest * mixamo_node.transform.rotation).inverse(),
+                                );
 
-                            // TODO: Only if VRM 0
-                            item.y = -item.y;
-                            item.w = -item.w;
-                            let item = item.normalize();
+                                // TODO: Only if VRM 0
+                                item.y = -item.y;
+                                item.w = -item.w;
+                                let item = item.normalize();
 
-                            (t, item)
-                        });
+                                (t, item)
+                            });
 
                     let curve = match UnevenSampleAutoCurve::new(samples) {
                         Ok(c) => c,

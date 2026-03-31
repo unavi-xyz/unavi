@@ -85,6 +85,13 @@ interface types {
     set-sync: func(value: bool);
   }
 
+  record color {
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32,
+  }
+
   enum alpha-mode {
     add,
     blend,
@@ -107,8 +114,8 @@ interface types {
     alpha-mode: func() -> option<alpha-mode>;
     set-alpha-mode: func(value: option<alpha-mode>);
 
-    base-color: func() -> list<f32>;
-    set-base-color: func(value: list<f32>);
+    base-color: func() -> color;
+    set-base-color: func(value: color);
 
     metallic: func() -> f32;
     set-metallic: func(value: f32);

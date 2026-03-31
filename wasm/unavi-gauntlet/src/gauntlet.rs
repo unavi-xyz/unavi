@@ -6,14 +6,14 @@ use std::{
 use wired_prelude::wired_math::types::{Quat, Vec3};
 
 use crate::{
-    DynamicModuleDef,
+    Color, DynamicModuleDef,
     module::{Module, make_modules},
+    unavi::vui_module::discovery::ModuleDiscovery,
     wired::{
         agent::{
             context::{local_agent, local_camera},
             types::BoneName,
         },
-        event::api::register_emitter,
         scene::{context::self_document, types::Node},
     },
 };
@@ -24,7 +24,6 @@ pub const MODULE_HEIGHT_OFFSET: f32 = 0.08;
 
 pub const BG_ALPHA_BASE: f32 = 0.3;
 pub const BG_ALPHA_HOVER: f32 = 0.9;
-pub const ICON_Z: f32 = 0.006;
 pub const OPEN_SPEED_SECONDS: f32 = 0.18;
 pub const RAISE_DIST: f32 = 0.015;
 pub const RAISE_SPEED_SECONDS: f32 = 0.07;
@@ -32,30 +31,11 @@ pub const RING_RADIUS: f32 = 0.14;
 pub const CLOSE_ON_MOVE_THRESHOLD_SQ: f32 = 0.04;
 pub const SECTOR_GAP_WORLD: f32 = 0.012;
 pub const SECTOR_INNER_R: f32 = 0.03;
-pub const OUTLINE_COLOR: [f32; 3] = [1.0, 1.0, 1.0];
+pub const OUTLINE_COLOR: Color = Color::WHITE;
 pub const OUTLINE_WIDTH: f32 = 0.005;
 pub const OUTLINE_Z: f32 = 0.001;
 pub const SECTOR_SUBDIVISIONS: usize = 40;
 pub const Z_OFFSET: f32 = -0.5;
-
-const CH_ACTIVATE: &str = "unavi::gauntlet::activate";
-const CH_DEACTIVATE: &str = "unavi::gauntlet::deactivate";
-
-#[derive(serde::Serialize, serde::Deserialize)]
-struct ActivatePayload {
-    translation: [f32; 3],
-    rotation: [f32; 4],
-    scale: [f32; 3],
-}
-
-fn encode_activate(pos: Vec3, rot: Quat, scale: Vec3) -> Vec<u8> {
-    let payload = ActivatePayload {
-        translation: [pos.x, pos.y, pos.z],
-        rotation: [rot.x, rot.y, rot.z, rot.w],
-        scale: [scale.x, scale.y, scale.z],
-    };
-    postcard::to_allocvec(&payload).expect("encode activate")
-}
 
 fn place_module_transform(bone: &Node) -> (Vec3, Quat, Vec3) {
     let tr = bone.global_transform();
@@ -141,8 +121,7 @@ impl Gauntlet {
         }
     }
 
-    /// Rebuild sector UI for new module definitions.
-    pub fn rebuild_modules(&self, defs: &[DynamicModuleDef], colors: &[[f32; 3]]) {
+    pub fn rebuild_modules(&self, defs: &[DynamicModuleDef], colors: &[Color]) {
         let doc = self_document();
         let new_modules = make_modules(&doc, defs, colors);
         for m in &new_modules {
@@ -200,12 +179,12 @@ impl Gauntlet {
                 let c = module.bg_color;
                 module
                     .bg_material
-                    .set_base_color(&[c[0], c[1], c[2], BG_ALPHA_BASE]);
+                    .set_base_color(Color::rgba(c.r, c.g, c.b, BG_ALPHA_BASE));
             }
         }
     }
 
-    pub fn select(&self, sector: usize, defs: &[DynamicModuleDef]) {
+    pub fn select(&self, sector: usize, defs: &[DynamicModuleDef], discovery: &ModuleDiscovery) {
         let modules = self.modules.borrow();
         let Some(module) = modules.get(sector) else {
             return;
@@ -217,8 +196,7 @@ impl Gauntlet {
             println!("deactivated {}", module.name);
             module.active_state.set(false);
             module.outline_node.set_scale(Vec3::ZERO);
-            let emitter = register_emitter(None, f32::MAX, std::slice::from_ref(&def.doc_id));
-            emitter.emit(CH_DEACTIVATE, &[]);
+            discovery.deactivate(&def.doc_id);
         } else {
             println!("activated {}", module.name);
             module.active_state.set(true);
@@ -226,9 +204,7 @@ impl Gauntlet {
             let bone_ref = self.bone.borrow();
             if let Some(bone) = bone_ref.as_ref() {
                 let (pos, rot, scale) = place_module_transform(bone);
-                let payload = encode_activate(pos, rot, scale);
-                let emitter = register_emitter(None, f32::MAX, std::slice::from_ref(&def.doc_id));
-                emitter.emit(CH_ACTIVATE, &payload);
+                discovery.activate(&def.doc_id, pos, rot, scale);
             }
         }
         self.open.set(false);

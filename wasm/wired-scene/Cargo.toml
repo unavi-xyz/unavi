@@ -1,0 +1,10 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "wired-scene"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true

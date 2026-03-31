@@ -6,8 +6,8 @@ use unavi_script::{
 };
 
 const SYSTEM_SCRIPTS: &[&str] = &[
-    "wasm/unavi/gauntlet_inventory.wasm",
-    "wasm/unavi/gauntlet_nav.wasm",
+    "wasm/unavi/vui_inventory.wasm",
+    "wasm/unavi/vui_nav.wasm",
     "wasm/unavi/gauntlet.wasm",
 ];
 
@@ -45,10 +45,7 @@ pub fn maintain_module_hsd_firewalls(docs: Query<(&Name, &HsdRecordId, Option<&H
     };
 
     for (name, _, fw_opt) in &docs {
-        if !matches!(
-            name.as_str(),
-            "unavi:gauntlet_inventory" | "unavi:gauntlet_nav"
-        ) {
+        if !matches!(name.as_str(), "unavi:vui-inventory" | "unavi:vui-nav") {
             continue;
         }
         // All module doc entities get HsdFirewall from local.rs, but update anyway.

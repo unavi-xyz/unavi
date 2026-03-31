@@ -39,8 +39,12 @@ let time = timeit {
         wasm-opt -O4 --enable-bulk-memory-opt -ffm $src_path -o $dst_path
 
         $logs += $"  | converting to component\n"
-        # https://github.com/bytecodealliance/wasmtime/tree/main/crates/wasi-preview1-component-adapter
-        wasm-tools component new $dst_path -o $dst_path --adapt scripts/wasi_snapshot_preview1.reactor.wasm
+        try {
+          # https://github.com/bytecodealliance/wasmtime/tree/main/crates/wasi-preview1-component-adapter
+          wasm-tools component new $dst_path -o $dst_path --adapt scripts/wasi_snapshot_preview1.reactor.wasm
+        } catch {|err|
+          error make { msg: $"error converting component ($crate)" help: $err.msg }
+        }
 
         let a_info = ls $dst_path | first
         $logs += $"  | size ($b_info.size) -> ($a_info.size)"

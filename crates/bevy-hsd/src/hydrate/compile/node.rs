@@ -577,10 +577,7 @@ fn is_transform_hierarchy_degenerate(
     epsilon: f32,
 ) -> bool {
     let mut curr = start;
-    loop {
-        let Ok((child_of, maybe_t)) = q.get(curr) else {
-            break;
-        };
+    while let Ok((child_of, maybe_t)) = q.get(curr) {
         if let Some(t) = maybe_t {
             let s = t.scale;
             if s.x.is_nan()

@@ -12755,7 +12755,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "test-event"
+version = "0.0.16"
+dependencies = [
+ "wired-prelude",
+ "wit-bindgen 0.50.0",
+]
+
+[[package]]
+name = "test-input"
+version = "0.0.16"
+dependencies = [
+ "wired-prelude",
+ "wit-bindgen 0.50.0",
+]
+
+[[package]]
 name = "test-log"
+version = "0.0.16"
+dependencies = [
+ "wired-prelude",
+ "wit-bindgen 0.50.0",
+]
+
+[[package]]
+name = "test-scene"
 version = "0.0.16"
 dependencies = [
  "wired-prelude",

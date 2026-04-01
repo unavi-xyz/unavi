@@ -1,0 +1,17 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "test-event"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wired-prelude.path    = "../wired-prelude"
+wit-bindgen.workspace = true

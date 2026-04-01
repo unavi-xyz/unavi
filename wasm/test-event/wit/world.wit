@@ -1,0 +1,5 @@
+package test:event;
+
+world guest {
+  include wired:prelude/script;
+}

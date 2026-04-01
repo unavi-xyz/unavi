@@ -7,11 +7,11 @@ pub fn test_document() {
 
     check("doc id length", doc.id().len(), 32);
 
-    let n1   = doc.create_node();
-    let n2   = doc.create_node();
+    let n1 = doc.create_node();
+    let n2 = doc.create_node();
     check("nodes count after create", doc.nodes().len(), 2);
 
-    let m1   = doc.create_mesh();
+    let m1 = doc.create_mesh();
     check("meshes count after create", doc.meshes().len(), 1);
 
     let mat1 = doc.create_material();

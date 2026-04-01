@@ -4,7 +4,10 @@ use loro::{LoroMap, LoroTree, TreeParentId};
 use loro_surgeon::Reconcile;
 
 mod common;
+
 use common::TestHarness;
+
+const EPSILON: f32 = 1e-5;
 
 fn add_root_node(harness: &TestHarness) -> loro::TreeID {
     harness
@@ -56,7 +59,7 @@ fn node_name_set() {
 }
 
 #[test]
-fn node_transform_set() {
+fn node_translation_set() {
     let mut h = TestHarness::new();
     let tid = add_root_node(&h);
     set_node_data(
@@ -73,9 +76,59 @@ fn node_transform_set() {
     let (_, t) = q.iter(h.app.world()).next().expect("node with Transform");
     let expected = Vec3::new(1.0, 2.0, 3.0);
     assert!(
-        (t.translation - expected).length() < 1e-5,
-        "translation mismatch: {:?}",
+        (t.translation - expected).length() < EPSILON,
+        "translation: {:?}",
         t.translation
+    );
+}
+
+#[test]
+fn node_rotation_set() {
+    let mut h = TestHarness::new();
+    let tid = add_root_node(&h);
+    // 90° rotation around Z
+    let s = std::f64::consts::FRAC_1_SQRT_2;
+    set_node_data(
+        &h,
+        tid,
+        HsdNodeData {
+            rotation: Some(vec![0.0, 0.0, s, s]),
+            ..Default::default()
+        },
+    );
+    h.commit_and_update();
+
+    let mut q = h.app.world_mut().query::<(&NodeId, &Transform)>();
+    let (_, t) = q.iter(h.app.world()).next().expect("node with Transform");
+    let expected = Quat::from_xyzw(0.0, 0.0, s as f32, s as f32);
+    assert!(
+        t.rotation.abs_diff_eq(expected, EPSILON),
+        "rotation: {:?}",
+        t.rotation
+    );
+}
+
+#[test]
+fn node_scale_set() {
+    let mut h = TestHarness::new();
+    let tid = add_root_node(&h);
+    set_node_data(
+        &h,
+        tid,
+        HsdNodeData {
+            scale: Some(vec![2.0, 3.0, 4.0]),
+            ..Default::default()
+        },
+    );
+    h.commit_and_update();
+
+    let mut q = h.app.world_mut().query::<(&NodeId, &Transform)>();
+    let (_, t) = q.iter(h.app.world()).next().expect("node with Transform");
+    let expected = Vec3::new(2.0, 3.0, 4.0);
+    assert!(
+        (t.scale - expected).length() < EPSILON,
+        "scale: {:?}",
+        t.scale
     );
 }
 
@@ -83,7 +136,6 @@ fn node_transform_set() {
 fn node_mesh_ref_set() {
     let mut h = TestHarness::new();
 
-    // Create a mesh entry so the mesh entity also spawns.
     h.doc
         .get_map("hsd")
         .get_or_create_container("meshes", LoroMap::new())

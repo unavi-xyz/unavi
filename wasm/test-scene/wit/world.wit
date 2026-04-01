@@ -1,0 +1,5 @@
+package test:scene;
+
+world guest {
+  include wired:prelude/script;
+}

@@ -1,0 +1,47 @@
+package wired:input;
+
+world prelude {
+  import api;
+  import system-api;
+  import types;
+}
+
+interface types {
+  enum input-action {
+    grab-down,
+    grab-up,
+    menu-down,
+    menu-up,
+  }
+
+  enum input-device {
+    keyboard,
+    left-hand,
+    right-hand,
+  }
+
+  record input-event {
+    action: input-action,
+    device: input-device,
+  } 
+
+  resource input-listener {
+    poll: func() -> option<input-event>;
+  }
+}
+
+interface api {
+  use types.{input-listener};
+  use wired:scene/types.{node};
+
+  // Captures input events for a given node.
+  // Requires a collider to function.
+  register-input-listener: func(target: borrow<node>) -> input-listener;
+}
+
+interface system-api {
+  use types.{input-listener};
+
+  // Captures all input events from the local agent.
+  system-input-listener: func() -> input-listener;
+}

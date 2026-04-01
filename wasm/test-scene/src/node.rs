@@ -7,10 +7,10 @@ use wired_prelude::wired_math::types::{Quat, Transform, Vec3};
 use crate::check;
 
 pub fn test_node() {
-    let doc   = self_document();
-    let node  = doc.create_node();
-    let mesh  = doc.create_mesh();
-    let mat   = doc.create_material();
+    let doc = self_document();
+    let node = doc.create_node();
+    let mesh = doc.create_mesh();
+    let mat = doc.create_material();
     let child = doc.create_node();
 
     check("node id non-empty", !node.id().is_empty(), true);

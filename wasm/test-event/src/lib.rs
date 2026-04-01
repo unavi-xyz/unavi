@@ -8,17 +8,21 @@ use crate::wired::event::{
 wired_prelude::generate_script!(Script);
 
 struct Script {
-    emitter:  EventEmitter,
+    emitter: EventEmitter,
     receptor: EventReceptor,
-    tick_n:   Cell<u32>,
+    tick_n: Cell<u32>,
 }
 
 impl GuestScript for Script {
     fn new() -> Self {
         let channels = ["test:channel".to_string()];
-        let emitter  = register_emitter(None, 0.0, &[]);
+        let emitter = register_emitter(None, 0.0, &[]);
         let receptor = register_receptor(&channels, None, 0.0, &[]);
-        Self { emitter, receptor, tick_n: Cell::new(0) }
+        Self {
+            emitter,
+            receptor,
+            tick_n: Cell::new(0),
+        }
     }
 
     fn tick(&self) {

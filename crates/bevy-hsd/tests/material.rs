@@ -1,13 +1,16 @@
 use bevy::prelude::*;
 use bevy_hsd::{
-    HsdChild, MaterialRef, NodeId,
+    CompiledMaterial, HsdChild, MaterialRef, NodeId,
     data::{HsdMaterial, HsdNodeData},
 };
 use loro::{LoroMap, LoroTree, TreeParentId};
 use loro_surgeon::Reconcile;
 
 mod common;
+
 use common::TestHarness;
+
+const EPSILON: f32 = 1e-5;
 
 fn add_material(harness: &TestHarness, id: &str) {
     harness
@@ -28,6 +31,29 @@ fn set_material(harness: &TestHarness, id: &str, data: HsdMaterial) {
         .get_or_create_container(id, LoroMap::new())
         .expect("material map entry");
     data.reconcile(&mat_map).expect("reconcile material data");
+}
+
+fn mat_entity(h: &mut TestHarness) -> Entity {
+    h.app
+        .world_mut()
+        .query_filtered::<Entity, (With<HsdChild>, Without<NodeId>)>()
+        .iter(h.app.world())
+        .next()
+        .expect("material entity")
+}
+
+fn get_standard_material<'w>(h: &'w TestHarness, ent: Entity) -> &'w StandardMaterial {
+    let compiled = h
+        .app
+        .world()
+        .get::<CompiledMaterial>(ent)
+        .expect("CompiledMaterial");
+    h.app
+        .world()
+        .get_resource::<Assets<StandardMaterial>>()
+        .unwrap()
+        .get(&compiled.0)
+        .expect("StandardMaterial asset")
 }
 
 #[test]
@@ -113,11 +139,11 @@ fn node_material_ref_set() {
 }
 
 #[test]
-fn material_with_base_color() {
+fn material_base_color_value() {
     let mut h = TestHarness::new();
     set_material(
         &h,
-        "mat-red",
+        "mat-0",
         HsdMaterial {
             base_color: Some(vec![1.0, 0.0, 0.0, 1.0]),
             ..Default::default()
@@ -125,9 +151,155 @@ fn material_with_base_color() {
     );
     h.commit_and_update();
 
-    let mut q = h
+    let ent = mat_entity(&mut h);
+    let mat = get_standard_material(&h, ent);
+    let Color::Srgba(c) = mat.base_color else {
+        panic!("expected Srgba color");
+    };
+    assert!((c.red - 1.0).abs() < EPSILON, "red: {}", c.red);
+    assert!((c.green - 0.0).abs() < EPSILON, "green: {}", c.green);
+    assert!((c.blue - 0.0).abs() < EPSILON, "blue: {}", c.blue);
+    assert!((c.alpha - 1.0).abs() < EPSILON, "alpha: {}", c.alpha);
+}
+
+#[test]
+fn material_metallic_value() {
+    let mut h = TestHarness::new();
+    set_material(
+        &h,
+        "mat-0",
+        HsdMaterial {
+            metallic: Some(0.7),
+            ..Default::default()
+        },
+    );
+    h.commit_and_update();
+
+    let ent = mat_entity(&mut h);
+    let mat = get_standard_material(&h, ent);
+    assert!(
+        (mat.metallic - 0.7).abs() < EPSILON,
+        "metallic: {}",
+        mat.metallic
+    );
+}
+
+#[test]
+fn material_roughness_value() {
+    let mut h = TestHarness::new();
+    set_material(
+        &h,
+        "mat-0",
+        HsdMaterial {
+            roughness: Some(0.2),
+            ..Default::default()
+        },
+    );
+    h.commit_and_update();
+
+    let ent = mat_entity(&mut h);
+    let mat = get_standard_material(&h, ent);
+    assert!(
+        (mat.perceptual_roughness - 0.2).abs() < EPSILON,
+        "roughness: {}",
+        mat.perceptual_roughness
+    );
+}
+
+#[test]
+fn material_double_sided() {
+    let mut h = TestHarness::new();
+    set_material(
+        &h,
+        "mat-0",
+        HsdMaterial {
+            double_sided: Some(true),
+            ..Default::default()
+        },
+    );
+    h.commit_and_update();
+
+    let ent = mat_entity(&mut h);
+    let mat = get_standard_material(&h, ent);
+    assert!(mat.double_sided, "double_sided should be true");
+}
+
+#[test]
+fn material_unlit() {
+    let mut h = TestHarness::new();
+    set_material(
+        &h,
+        "mat-0",
+        HsdMaterial {
+            unlit: Some(true),
+            ..Default::default()
+        },
+    );
+    h.commit_and_update();
+
+    let ent = mat_entity(&mut h);
+    let mat = get_standard_material(&h, ent);
+    assert!(mat.unlit, "unlit should be true");
+}
+
+#[test]
+fn material_alpha_mode_blend() {
+    let mut h = TestHarness::new();
+    set_material(
+        &h,
+        "mat-0",
+        HsdMaterial {
+            alpha_mode: Some("blend".into()),
+            ..Default::default()
+        },
+    );
+    h.commit_and_update();
+
+    let ent = mat_entity(&mut h);
+    let mat = get_standard_material(&h, ent);
+    assert_eq!(mat.alpha_mode, AlphaMode::Blend);
+}
+
+#[test]
+fn material_alpha_mode_mask_with_cutoff() {
+    let mut h = TestHarness::new();
+    set_material(
+        &h,
+        "mat-0",
+        HsdMaterial {
+            alpha_mode: Some("mask".into()),
+            alpha_cutoff: Some(0.3),
+            ..Default::default()
+        },
+    );
+    h.commit_and_update();
+
+    let ent = mat_entity(&mut h);
+    let mat = get_standard_material(&h, ent);
+    let AlphaMode::Mask(cutoff) = mat.alpha_mode else {
+        panic!("expected AlphaMode::Mask, got {:?}", mat.alpha_mode);
+    };
+    assert!((cutoff - 0.3).abs() < EPSILON, "alpha_cutoff: {cutoff}");
+}
+
+#[test]
+fn material_name() {
+    let mut h = TestHarness::new();
+    set_material(
+        &h,
+        "mat-0",
+        HsdMaterial {
+            name: Some("my-mat".into()),
+            ..Default::default()
+        },
+    );
+    h.commit_and_update();
+
+    let ent = mat_entity(&mut h);
+    let name = h
         .app
-        .world_mut()
-        .query_filtered::<Entity, (With<HsdChild>, Without<NodeId>)>();
-    assert_eq!(q.iter(h.app.world()).count(), 1, "material entity expected");
+        .world()
+        .get::<Name>(ent)
+        .expect("Name component on material entity");
+    assert_eq!(name.as_str(), "my-mat");
 }

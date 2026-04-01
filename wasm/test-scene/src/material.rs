@@ -18,7 +18,12 @@ pub fn test_material() {
     mat.set_alpha_mode(Some(AlphaMode::Blend));
     check("mat alpha_mode", mat.alpha_mode(), Some(AlphaMode::Blend));
 
-    let color = Color { r: 0.1, g: 0.2, b: 0.3, a: 1.0 };
+    let color = Color {
+        r: 0.1,
+        g: 0.2,
+        b: 0.3,
+        a: 1.0,
+    };
     mat.set_base_color(color);
     let got = mat.base_color();
     check("mat base_color r", got.r, 0.1_f32);

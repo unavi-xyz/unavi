@@ -10,7 +10,7 @@ use tokio::sync::{
 use wds::{Blobs, actor::Actor};
 
 mod await_blob;
-mod blob_deps;
+pub mod blob_deps;
 mod blob_request;
 pub mod util;
 

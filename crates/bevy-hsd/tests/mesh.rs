@@ -1,5 +1,6 @@
+use bevy::mesh::{Indices, PrimitiveTopology, VertexAttributeValues};
 use bevy::prelude::*;
-use bevy_hsd::{HsdChild, NodeId};
+use bevy_hsd::{CompiledMesh, HsdChild, NodeId, cache::MeshState};
 use loro::LoroMap;
 
 mod common;
@@ -13,6 +14,15 @@ fn add_mesh(harness: &TestHarness, id: &str) {
         .expect("meshes map")
         .get_or_create_container(id, LoroMap::new())
         .expect("mesh map entry");
+}
+
+fn mesh_entity(h: &mut TestHarness) -> Entity {
+    h.app
+        .world_mut()
+        .query_filtered::<Entity, With<HsdChild>>()
+        .iter(h.app.world())
+        .next()
+        .expect("mesh entity")
 }
 
 #[test]
@@ -76,4 +86,101 @@ fn mesh_removed() {
             .get::<bevy_hsd::HsdChildren>(h.doc_entity)
             .is_none()
     );
+}
+
+#[test]
+fn mesh_topology_line_list() {
+    let mut h = TestHarness::new();
+    h.attach_inline_mesh(
+        "mesh-0",
+        MeshState {
+            topology: PrimitiveTopology::LineList,
+            positions: Some(vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
+            ..Default::default()
+        },
+    );
+
+    let ent = mesh_entity(&mut h);
+    let compiled = h
+        .app
+        .world()
+        .get::<CompiledMesh>(ent)
+        .expect("CompiledMesh");
+    let assets = h
+        .app
+        .world()
+        .get_resource::<Assets<Mesh>>()
+        .expect("Mesh assets");
+    let mesh = assets.get(&compiled.0).expect("Mesh asset");
+    assert_eq!(mesh.primitive_topology(), PrimitiveTopology::LineList);
+}
+
+#[test]
+#[expect(clippy::float_cmp)]
+fn mesh_attribute_positions() {
+    let mut h = TestHarness::new();
+    h.attach_inline_mesh(
+        "mesh-0",
+        MeshState {
+            positions: Some(vec![
+                0.0, 0.0, 0.0, // v0
+                1.0, 0.0, 0.0, // v1
+                0.0, 1.0, 0.0, // v2
+            ]),
+            ..Default::default()
+        },
+    );
+
+    let ent = mesh_entity(&mut h);
+    let compiled = h
+        .app
+        .world()
+        .get::<CompiledMesh>(ent)
+        .expect("CompiledMesh");
+    let assets = h
+        .app
+        .world()
+        .get_resource::<Assets<Mesh>>()
+        .expect("Mesh assets");
+    let mesh = assets.get(&compiled.0).expect("Mesh asset");
+
+    let Some(VertexAttributeValues::Float32x3(pos)) = mesh.attribute(Mesh::ATTRIBUTE_POSITION)
+    else {
+        panic!("POSITION attribute missing or wrong type");
+    };
+    assert_eq!(pos.len(), 3, "three vertices expected");
+    assert_eq!(pos[0], [0.0, 0.0, 0.0]);
+    assert_eq!(pos[1], [1.0, 0.0, 0.0]);
+    assert_eq!(pos[2], [0.0, 1.0, 0.0]);
+}
+
+#[test]
+fn mesh_indices() {
+    let mut h = TestHarness::new();
+    h.attach_inline_mesh(
+        "mesh-0",
+        MeshState {
+            positions: Some(vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0]),
+            indices: Some(vec![0, 1, 2]),
+            ..Default::default()
+        },
+    );
+
+    let ent = mesh_entity(&mut h);
+    let compiled = h
+        .app
+        .world()
+        .get::<CompiledMesh>(ent)
+        .expect("CompiledMesh");
+    let assets = h
+        .app
+        .world()
+        .get_resource::<Assets<Mesh>>()
+        .expect("Mesh assets");
+    let mesh = assets.get(&compiled.0).expect("Mesh asset");
+
+    let Some(Indices::U32(idx)) = mesh.indices() else {
+        panic!("U32 indices expected");
+    };
+    assert_eq!(idx, &[0, 1, 2]);
 }

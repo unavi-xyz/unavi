@@ -892,6 +892,7 @@ dependencies = [
  "smol_str 0.3.6",
  "tokio",
  "unavi-wasm-compat",
+ "wired-records",
  "wired-schemas",
 ]
 
@@ -13542,6 +13543,7 @@ dependencies = [
  "wds",
  "web-sys",
  "winit",
+ "wired-records",
  "wired-schemas",
  "xdid",
  "zeroize",
@@ -13617,6 +13619,7 @@ dependencies = [
  "directories",
  "futures 0.3.32",
  "loro",
+ "postcard",
  "rand 0.9.2",
  "smol_str 0.3.6",
  "tokio",
@@ -13629,6 +13632,7 @@ dependencies = [
  "wasmtime",
  "wasmtime-wasi",
  "wds",
+ "wired-records",
  "wired-schemas",
 ]
 
@@ -13689,6 +13693,7 @@ dependencies = [
  "unavi-shapes",
  "unavi-vui-module",
  "wired-prelude",
+ "wired-records",
  "wit-bindgen 0.50.0",
 ]
 
@@ -14688,6 +14693,7 @@ dependencies = [
  "tracing",
  "tracing-test",
  "wds-schema",
+ "wired-records",
  "wired-schemas",
  "xdid",
 ]
@@ -15817,6 +15823,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "wired-records"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "blake3",
+ "loro",
+ "loro-surgeon",
+ "postcard",
+ "serde",
+ "xdid",
+]
+
+[[package]]
 name = "wired-scene"
 version = "0.0.16"
 
@@ -15837,6 +15856,7 @@ dependencies = [
  "smol_str 0.3.6",
  "time",
  "wds-schema",
+ "wired-records",
  "xdid",
 ]
 

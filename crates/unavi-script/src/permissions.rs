@@ -16,6 +16,7 @@ pub enum ApiName {
     Scene,
     System,
     SystemInput,
+    Wds,
 }
 
 impl Default for ScriptPermissions {
@@ -37,6 +38,7 @@ impl ScriptPermissions {
         perms.api.insert(ApiName::LocalAgent);
         perms.api.insert(ApiName::System);
         perms.api.insert(ApiName::SystemInput);
+        perms.api.insert(ApiName::Wds);
         perms
     }
 }

@@ -16,6 +16,8 @@ use time::OffsetDateTime;
 use wds::signed_bytes::{IrohSigner, Signable, SignedBytes};
 use wired_schemas::schemas::SCHEMA_BEACON;
 
+use wired_records::BeaconRecord;
+
 use crate::{
     async_commands::ASYNC_COMMAND_QUEUE,
     networking::thread::{
@@ -26,7 +28,7 @@ use crate::{
             ownership::ObjectOwnership,
         },
     },
-    space::{Space, SpaceDoc, beacon::Beacon},
+    space::{Space, SpaceDoc},
 };
 
 pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::Result<()> {
@@ -67,7 +69,7 @@ pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::R
                 .await
             {
                 Ok(doc) => {
-                    let Ok(beacon) = Beacon::load(&doc) else {
+                    let Ok(beacon) = BeaconRecord::load(&doc) else {
                         debug!("invalid beacon document");
                         continue;
                     };
@@ -76,11 +78,16 @@ pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::R
                         continue;
                     }
 
-                    if beacon.endpoint == state.endpoint.id() {
+                    let Ok(endpoint) = iroh::EndpointId::from_bytes(&beacon.endpoint.0) else {
+                        debug!("invalid endpoint bytes in beacon");
+                        continue;
+                    };
+
+                    if endpoint == state.endpoint.id() {
                         continue;
                     }
 
-                    bootstrap.insert(beacon.endpoint);
+                    bootstrap.insert(endpoint);
                 }
                 Err(err) => {
                     warn!(?err, "failed to sync beacon");

@@ -7,6 +7,7 @@ use loro::{LoroDoc, LoroMap, LoroTree, LoroValue, VersionVector};
 use rusqlite::{Connection, params};
 use smol_str::SmolStr;
 use wds_schema::{Field, Schema, unwrap_restricted};
+use wired_records::HydratedDid;
 use wired_schemas::{
     schemas::{SCHEMA_ACL, SCHEMA_RECORD},
     surg::{acl::Acl, record::Record},
@@ -33,7 +34,7 @@ fn acl_modified(old: &Acl, new: &Acl) -> bool {
         || !slices_eq(old.readers(), new.readers())
 }
 
-fn slices_eq(a: &[wired_schemas::HydratedDid], b: &[wired_schemas::HydratedDid]) -> bool {
+fn slices_eq(a: &[HydratedDid], b: &[HydratedDid]) -> bool {
     a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.0 == y.0)
 }
 
@@ -95,7 +96,8 @@ async fn validate_schemas(
 
     // Add record's schemas.
     for (container, schema_id) in &record.schemas {
-        let schema = fetch_schema(blobs, schema_id)
+        let schema_hash = blake3::Hash::from_bytes(schema_id.0);
+        let schema = fetch_schema(blobs, &schema_hash)
             .await
             .map_err(|e| WdsError::SchemaValidation(format!("failed to fetch schema: {e}")))?;
         schemas.insert(container.clone(), schema);
@@ -509,7 +511,7 @@ pub async fn store_envelope(
     let record = Record::load(&new_doc).map_err(WdsError::Other)?;
 
     // First envelope author must match record creator.
-    if is_first_envelope && record.creator.0 != *author {
+    if is_first_envelope && record.creator.0 != author.to_string() {
         return Err(WdsError::AccessDenied);
     }
 

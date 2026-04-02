@@ -16,4 +16,5 @@ crate-type = ["cdylib"]
 unavi-shapes.path     = "../unavi-shapes"
 unavi-vui-module.path = "../unavi-vui-module"
 wired-prelude.path    = "../wired-prelude"
+wired-records.path    = "../../crates/wired-records"
 wit-bindgen.workspace = true

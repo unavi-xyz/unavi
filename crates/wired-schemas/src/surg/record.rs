@@ -9,7 +9,9 @@ use smol_str::SmolStr;
 use time::OffsetDateTime;
 use xdid::core::did::Did;
 
-use crate::{HydratedDid, HydratedHash, schemas};
+use wired_records::{HydratedDid, HydratedHash};
+
+use crate::schemas;
 
 /// Fixed-size nonce for record identification.
 pub type RecordNonce = [u8; 16];
@@ -31,11 +33,17 @@ impl Record {
         rand::rng().fill(&mut nonce);
 
         let mut schemas = BTreeMap::new();
-        schemas.insert("acl".into(), HydratedHash(schemas::SCHEMA_ACL.hash));
-        schemas.insert("record".into(), HydratedHash(schemas::SCHEMA_RECORD.hash));
+        schemas.insert(
+            "acl".into(),
+            HydratedHash(*schemas::SCHEMA_ACL.hash.as_bytes()),
+        );
+        schemas.insert(
+            "record".into(),
+            HydratedHash(*schemas::SCHEMA_RECORD.hash.as_bytes()),
+        );
 
         Self {
-            creator: HydratedDid(creator),
+            creator: HydratedDid(creator.to_string()),
             nonce,
             schemas,
             timestamp: OffsetDateTime::now_utc().unix_timestamp(),

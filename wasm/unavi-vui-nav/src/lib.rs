@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
 
 use crate::{
@@ -7,6 +9,7 @@ use crate::{
         context::self_document,
         types::{Collider, ColliderCylinder, Node, RigidBodyKind},
     },
+    wired::wds::{context::get_wds, types::QueryFuture},
 };
 
 wired_prelude::generate_script!(Script);
@@ -36,6 +39,7 @@ struct Script {
     ring: Node,
     _nodes: Vec<Node>,
     module: VuiModule,
+    beacon_query: RefCell<Option<QueryFuture>>,
 }
 
 impl GuestScript for Script {
@@ -81,6 +85,7 @@ impl GuestScript for Script {
             ring,
             _nodes: nodes,
             module,
+            beacon_query: RefCell::new(None),
         }
     }
 
@@ -97,11 +102,28 @@ impl GuestScript for Script {
                         z: t.translation.z,
                     });
                     self.ring.set_scale(Vec3::ONE);
+
+                    let fut = get_wds().query(None);
+                    *self.beacon_query.borrow_mut() = Some(fut);
                 }
                 ModuleEvent::Deactivate => {
                     self.root.set_scale(Vec3::ZERO);
                     self.ring.set_scale(Vec3::ZERO);
+                    *self.beacon_query.borrow_mut() = None;
                 }
+            }
+        }
+
+        if let Some(fut) = self.beacon_query.borrow().as_ref()
+            && let Some(result) = fut.poll()
+        {
+            match result {
+                Ok(ids) => {
+                    for id in ids {
+                        println!("beacon record: {id:?}");
+                    }
+                }
+                Err(()) => println!("wds query error"),
             }
         }
     }

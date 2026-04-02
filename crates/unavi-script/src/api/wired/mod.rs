@@ -9,6 +9,7 @@ pub mod agent;
 pub mod event;
 pub mod input;
 pub mod scene;
+pub mod wds;
 
 pub fn add_to_linker(
     linker: &mut Linker<StoreState>,
@@ -48,6 +49,10 @@ pub fn add_to_linker(
         input::bindings::wired::input::system_api::add_to_linker::<_, HasSelf<_>>(linker, |s| {
             &mut s.rt
         })?;
+    }
+    if perms.api.contains(&ApiName::Wds) {
+        wds::bindings::wired::wds::context::add_to_linker::<_, HasSelf<_>>(linker, |s| &mut s.rt)?;
+        wds::bindings::wired::wds::types::add_to_linker::<_, HasSelf<_>>(linker, |s| &mut s.rt)?;
     }
     Ok(())
 }

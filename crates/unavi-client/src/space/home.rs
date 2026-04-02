@@ -6,9 +6,11 @@ use time::OffsetDateTime;
 use wds::actor::Actor;
 use wired_schemas::schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
 
+use wired_records::BeaconRecord;
+
 use crate::{
     networking::thread::{NetworkCommand, NetworkingThread},
-    space::{beacon::Beacon, default_space::default_space},
+    space::default_space::default_space,
 };
 
 pub fn join_home_space(
@@ -53,7 +55,11 @@ async fn discover_or_home(
             Ok(beacons) => {
                 if let Some(beacon) = beacons.first() {
                     info!("Found populated space: {}", beacon.space);
-                    command_tx.send(NetworkCommand::Join(beacon.space)).await?;
+                    command_tx
+                        .send(NetworkCommand::Join(blake3::Hash::from_bytes(
+                            beacon.space.0,
+                        )))
+                        .await?;
                     return Ok(());
                 }
             }
@@ -71,7 +77,7 @@ async fn discover_or_home(
 async fn try_fetch_beacons(
     local_actor: &Actor,
     remote_actor: &Actor,
-) -> anyhow::Result<Vec<Beacon>> {
+) -> anyhow::Result<Vec<BeaconRecord>> {
     let mut beacons = Vec::new();
 
     let found = remote_actor
@@ -92,8 +98,8 @@ async fn try_fetch_beacons(
             .await
         {
             Ok(doc) => {
-                let Ok(beacon) = Beacon::load(&doc) else {
-                    debug!("invalid beacon documnt");
+                let Ok(beacon) = BeaconRecord::load(&doc) else {
+                    debug!("invalid beacon document");
                     continue;
                 };
 

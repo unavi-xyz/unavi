@@ -21,6 +21,7 @@ bytemuck.workspace     = true
 bytes.workspace        = true
 futures.workspace      = true
 loro.workspace         = true
+postcard.workspace     = true
 rand.workspace         = true
 smol_str.workspace     = true
 tokio.workspace        = true
@@ -32,6 +33,7 @@ unavi-wasm-compat.path = "../unavi-wasm-compat"
 wasmtime               = "40.0.0"
 wasmtime-wasi          = { default-features = false, version = "40.0.0" }
 wds.path               = "../wds"
+wired-records          = { features = ["loro"], path = "../wired-records" }
 wired-schemas.path     = "../wired-schemas"
 
 [dev-dependencies]

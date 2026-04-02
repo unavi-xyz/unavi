@@ -45,3 +45,8 @@ deps = ["wired-math"]
 [wired-script]
 sha256 = "fbb75c23e309c9ecba344ff2e2f0aa454e97bcce3e24b8abb36fc576bf031a1d"
 sha512 = "dc73434dcf5aec0109e3aea868833b0a2c73100410be80b20f652298857cec2e6e39dbd71264e4d5a7d476b1a7c8cf74dc456496c81c711b84ee2d3a9962efc3"
+
+[wired-wds]
+path = "../../../protocol/wit/wired-wds"
+sha256 = "5abd62b4a08a339cb62657c50c9467754f997adad757b66ef3650b72417c89c4"
+sha512 = "7b35d515daae912d32727a53c7e18bd0acfdadd8e99b6acd610edfef582ec9a0f8768da0e1574b9c8e72a578f2ff2ca16adaf990679ab9d2e3a8c236b0f2c6ce"

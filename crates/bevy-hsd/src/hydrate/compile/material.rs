@@ -384,7 +384,6 @@ pub(crate) fn on_material_blobs_loaded(
     trigger: On<Add, BlobDepsLoaded>,
     mat_params: Query<(&MaterialParams, Option<&CompiledMaterial>)>,
     mut mat_assets: ResMut<Assets<StandardMaterial>>,
-    asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut blobs: Query<&mut BlobResponse>,
 ) {
@@ -411,7 +410,7 @@ pub(crate) fn on_material_blobs_loaded(
                 .remove::<BlobDepsLoaded>();
         }
     } else {
-        let handle = asset_server.add(material);
+        let handle = mat_assets.add(material);
         commands
             .entity(ent)
             .insert(CompiledMaterial(handle))

@@ -14,6 +14,7 @@ use crate::{
         event::{EventRegistry, WiredEventRt},
         input::{InputRegistry, WiredInputRt},
         scene::{GlobalRegistryMap, WiredSceneRt},
+        wds::WiredWdsRt,
     },
 };
 
@@ -28,6 +29,7 @@ pub struct RuntimeData {
     pub wired_event: WiredEventRt,
     pub wired_input: WiredInputRt,
     pub wired_scene: WiredSceneRt,
+    pub wired_wds: WiredWdsRt,
 }
 
 impl RuntimeData {
@@ -60,7 +62,7 @@ impl RuntimeData {
                 table: ResourceTable::default(),
             },
             wired_scene: WiredSceneRt {
-                actor,
+                actor: actor.clone(),
                 blobs,
                 doc,
                 doc_entity,
@@ -70,6 +72,10 @@ impl RuntimeData {
                 registry,
                 command_queue,
                 registry_map,
+            },
+            wired_wds: WiredWdsRt {
+                actor,
+                table: ResourceTable::default(),
             },
         }
     }

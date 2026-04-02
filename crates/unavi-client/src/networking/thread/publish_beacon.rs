@@ -5,7 +5,9 @@ use blake3::Hash;
 use time::OffsetDateTime;
 use wired_schemas::schemas::SCHEMA_BEACON;
 
-use crate::{networking::thread::NetworkThreadState, space::beacon::Beacon};
+use wired_records::{BeaconRecord, HydratedDid, HydratedEndpoint, HydratedHash};
+
+use crate::networking::thread::NetworkThreadState;
 
 pub async fn publish_beacon(
     state: NetworkThreadState,
@@ -18,11 +20,11 @@ pub async fn publish_beacon(
         .public()
         .ttl(ttl)
         .add_schema("beacon", &*SCHEMA_BEACON, |doc| {
-            let beacon = Beacon {
-                did: state.local_actor.identity().did().clone(),
+            let beacon = BeaconRecord {
+                did: HydratedDid(state.local_actor.identity().did().to_string()),
+                endpoint: HydratedEndpoint(*state.endpoint.id().as_bytes()),
                 expires: (OffsetDateTime::now_utc() + ttl).unix_timestamp(),
-                endpoint: state.endpoint.id(),
-                space: id,
+                space: HydratedHash(*id.as_bytes()),
             };
             beacon.save(doc)?;
             Ok(())

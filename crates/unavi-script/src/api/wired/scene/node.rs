@@ -10,7 +10,7 @@ use bevy_hsd::hydrate::compile::node::{
 use bevy_hsd::hydrate::events::NodeRef;
 use bytes::Bytes;
 use wasmtime::component::Resource;
-use wired_schemas::HydratedHash;
+use wired_records::HydratedHash;
 
 use super::bindings::wired::scene::types::{
     Collider, ColliderCapsule, ColliderCylinder, ColliderTrimesh, Material, Mesh, Quat,
@@ -677,7 +677,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                         .upload_blob(bytes)
                         .await
                         .map_err(|e| anyhow::anyhow!("{e}"))?;
-                    HsdCollider::ConvexHull(HydratedHash(hash))
+                    HsdCollider::ConvexHull(HydratedHash(*hash.as_bytes()))
                 }
                 Collider::Cuboid(v) => {
                     validate_positive(v.x, "cuboid x")?;
@@ -717,8 +717,8 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                         .await
                         .map_err(|e| anyhow::anyhow!("{e}"))?;
                     HsdCollider::Trimesh {
-                        vertices: HydratedHash(vhash),
-                        indices: HydratedHash(ihash),
+                        vertices: HydratedHash(*vhash.as_bytes()),
+                        indices: HydratedHash(*ihash.as_bytes()),
                     }
                 }
             }),

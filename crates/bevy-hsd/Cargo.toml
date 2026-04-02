@@ -19,6 +19,7 @@ bytes.workspace    = true
 loro.workspace     = true
 loro-surgeon.path  = "../loro-surgeon"
 smol_str.workspace = true
+wired-records      = { features = ["loro"], path = "../wired-records" }
 wired-schemas.path = "../wired-schemas"
 
 [dev-dependencies]

@@ -22,6 +22,7 @@ serde              = { features = ["derive"], workspace = true }
 smol_str.workspace = true
 time.workspace     = true
 wds-schema.path    = "../wds-schema"
+wired-records      = { features = ["loro"], path = "../wired-records" }
 xdid.workspace     = true
 
 [dev-dependencies]

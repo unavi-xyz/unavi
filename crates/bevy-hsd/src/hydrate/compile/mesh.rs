@@ -143,7 +143,7 @@ fn setup_hsd_mesh_blobs(ent: Entity, mesh: &HsdMesh, commands: &mut Commands) {
         let dep = commands
             .spawn((
                 BlobDep { owner: ent },
-                BlobRequest(hash.0),
+                BlobRequest(blake3::Hash::from_bytes(hash.0)),
                 MeshAttrName(name.clone()),
             ))
             .id();
@@ -152,7 +152,10 @@ fn setup_hsd_mesh_blobs(ent: Entity, mesh: &HsdMesh, commands: &mut Commands) {
 
     let indices = mesh.indices.map(|hash| {
         commands
-            .spawn((BlobDep { owner: ent }, BlobRequest(hash.0)))
+            .spawn((
+                BlobDep { owner: ent },
+                BlobRequest(blake3::Hash::from_bytes(hash.0)),
+            ))
             .id()
     });
 

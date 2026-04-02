@@ -7,8 +7,8 @@ use iroh::EndpointId;
 use loro::LoroDoc;
 use tracing::warn;
 
+use wired_records::HydratedHash;
 use wired_schemas::{
-    HydratedHash,
     schemas::{SCHEMA_ACL, SCHEMA_RECORD, StaticSchema},
     surg::{acl::Acl, record::Record},
 };
@@ -119,7 +119,10 @@ impl RecordBuilder {
         // Build record with schema hashes.
         let mut record = Record::new(did.clone());
         for schema in &all_schemas {
-            record.add_schema(schema.container.clone(), HydratedHash(schema.hash));
+            record.add_schema(
+                schema.container.clone(),
+                HydratedHash(*schema.hash.as_bytes()),
+            );
         }
         record.save(&self.doc)?;
 

@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use loro::{LoroMap, LoroValue};
 use loro_surgeon::{Hydrate, HydrateError, Reconcile, ReconcileError};
 use smol_str::SmolStr;
-use wired_schemas::HydratedHash;
+use wired_records::HydratedHash;
 
 #[derive(Debug, Clone, Default, Hydrate, Reconcile)]
 pub struct HsdMaterial {

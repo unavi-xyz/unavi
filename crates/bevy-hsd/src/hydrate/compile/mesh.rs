@@ -207,7 +207,6 @@ pub(crate) fn on_mesh_blobs_loaded(
     trigger: On<Add, BlobDepsLoaded>,
     mesh_params: Query<(&MeshParams, Option<&CompiledMesh>)>,
     mut mesh_assets: ResMut<Assets<Mesh>>,
-    asset_server: Res<AssetServer>,
     mut commands: Commands,
     mut blobs: Query<&mut BlobResponse>,
     attr_names: Query<&MeshAttrName>,
@@ -273,7 +272,7 @@ pub(crate) fn on_mesh_blobs_loaded(
                 .remove::<BlobDepsLoaded>();
         }
     } else {
-        let handle = asset_server.add(mesh);
+        let handle = mesh_assets.add(mesh);
         commands
             .entity(ent)
             .insert(CompiledMesh(handle))

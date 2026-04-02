@@ -57,6 +57,7 @@ impl Plugin for HsdPlugin {
                 hydrate::init::init_hsd_doc,
                 hydrate::sync::sync_to_hsd,
                 hydrate::queue::process_hsd_queue,
+                bevy_wds::blob_deps::load_blob_deps,
                 hydrate::compile::material::recompile_changed_materials,
             )
                 .chain(),

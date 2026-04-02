@@ -11,17 +11,17 @@ workspace = true
 
 [features]
 default = []
-loro    = ["dep:anyhow", "dep:blake3", "dep:loro", "dep:loro-surgeon", "dep:xdid"]
+loro    = ["dep:anyhow", "dep:loro", "dep:loro-surgeon"]
 
 [dependencies]
-postcard = { workspace = true }
-serde    = { features = ["derive"], workspace = true }
+blake3.workspace   = true
+postcard.workspace = true
+serde              = { features = ["derive"], workspace = true }
+xdid.workspace     = true
 
 anyhow       = { optional = true, workspace = true }
-blake3       = { optional = true, workspace = true }
 loro         = { optional = true, workspace = true }
 loro-surgeon = { optional = true, path = "../loro-surgeon" }
-xdid         = { optional = true, workspace = true }
 
 [dev-dependencies]
 loro = { workspace = true }

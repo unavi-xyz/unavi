@@ -14,16 +14,9 @@ impl fmt::Display for HydratedDid {
     }
 }
 
-#[cfg(feature = "loro")]
-mod xdid_impls {
-    use xdid::core::did::Did;
-
-    use super::HydratedDid;
-
-    impl From<Did> for HydratedDid {
-        fn from(d: Did) -> Self {
-            Self(d)
-        }
+impl From<Did> for HydratedDid {
+    fn from(d: Did) -> Self {
+        Self(d)
     }
 }
 

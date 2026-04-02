@@ -24,7 +24,7 @@ pub async fn publish_beacon(
                 did: HydratedDid(state.local_actor.identity().did().clone()),
                 endpoint: HydratedEndpoint(*state.endpoint.id().as_bytes()),
                 expires: (OffsetDateTime::now_utc() + ttl).unix_timestamp(),
-                space: HydratedHash(*id.as_bytes()),
+                space: HydratedHash(id),
             };
             beacon.save(doc)?;
             Ok(())

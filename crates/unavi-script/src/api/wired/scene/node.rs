@@ -677,7 +677,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                         .upload_blob(bytes)
                         .await
                         .map_err(|e| anyhow::anyhow!("{e}"))?;
-                    HsdCollider::ConvexHull(HydratedHash(*hash.as_bytes()))
+                    HsdCollider::ConvexHull(HydratedHash(hash))
                 }
                 Collider::Cuboid(v) => {
                     validate_positive(v.x, "cuboid x")?;
@@ -717,8 +717,8 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                         .await
                         .map_err(|e| anyhow::anyhow!("{e}"))?;
                     HsdCollider::Trimesh {
-                        vertices: HydratedHash(*vhash.as_bytes()),
-                        indices: HydratedHash(*ihash.as_bytes()),
+                        vertices: HydratedHash(vhash),
+                        indices: HydratedHash(ihash),
                     }
                 }
             }),

@@ -56,9 +56,7 @@ async fn discover_or_home(
                 if let Some(beacon) = beacons.first() {
                     info!("Found populated space: {}", beacon.space);
                     command_tx
-                        .send(NetworkCommand::Join(blake3::Hash::from_bytes(
-                            beacon.space.0,
-                        )))
+                        .send(NetworkCommand::Join(beacon.space.0))
                         .await?;
                     return Ok(());
                 }

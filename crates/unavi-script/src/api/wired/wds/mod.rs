@@ -137,7 +137,7 @@ async fn read_record(
         if container == "acl" || container == "record" {
             continue;
         }
-        schemas.push(blake3::Hash::from_bytes(schema_hash.0));
+        schemas.push(schema_hash.0);
 
         let bytes = if container == "beacon" {
             postcard::to_stdvec(&BeaconRecord::load(&doc)?)?

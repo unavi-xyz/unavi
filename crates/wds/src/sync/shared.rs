@@ -511,7 +511,7 @@ pub async fn store_envelope(
     let record = Record::load(&new_doc).map_err(WdsError::Other)?;
 
     // First envelope author must match record creator.
-    if is_first_envelope && record.creator.0 != author.to_string() {
+    if is_first_envelope && record.creator.0 != *author {
         return Err(WdsError::AccessDenied);
     }
 

@@ -24,11 +24,10 @@ impl Acl {
         &self.manage
     }
     pub fn add_manager(&mut self, did: Did) {
-        self.manage.push(HydratedDid(did.to_string()));
+        self.manage.push(HydratedDid(did));
     }
     pub fn remove_manager(&mut self, did: &Did) {
-        let s = did.to_string();
-        self.manage.retain(|d| d.0 != s);
+        self.manage.retain(|d| d.0 != *did);
     }
 
     #[must_use]
@@ -36,11 +35,10 @@ impl Acl {
         &self.read
     }
     pub fn add_reader(&mut self, did: Did) {
-        self.read.push(HydratedDid(did.to_string()));
+        self.read.push(HydratedDid(did));
     }
     pub fn remove_reader(&mut self, did: &Did) {
-        let s = did.to_string();
-        self.read.retain(|d| d.0 != s);
+        self.read.retain(|d| d.0 != *did);
     }
 
     #[must_use]
@@ -48,32 +46,28 @@ impl Acl {
         &self.write
     }
     pub fn add_writer(&mut self, did: Did) {
-        self.write.push(HydratedDid(did.to_string()));
+        self.write.push(HydratedDid(did));
     }
     pub fn remove_writer(&mut self, did: &Did) {
-        let s = did.to_string();
-        self.write.retain(|d| d.0 != s);
+        self.write.retain(|d| d.0 != *did);
     }
 
     #[must_use]
     pub fn can_read(&self, did: &Did) -> bool {
-        let s = did.to_string();
         self.public
-            || self.manage.iter().any(|d| d.0 == s)
-            || self.write.iter().any(|d| d.0 == s)
-            || self.read.iter().any(|d| d.0 == s)
+            || self.manage.iter().any(|d| d.0 == *did)
+            || self.write.iter().any(|d| d.0 == *did)
+            || self.read.iter().any(|d| d.0 == *did)
     }
 
     #[must_use]
     pub fn can_write(&self, did: &Did) -> bool {
-        let s = did.to_string();
-        self.manage.iter().any(|d| d.0 == s) || self.write.iter().any(|d| d.0 == s)
+        self.manage.iter().any(|d| d.0 == *did) || self.write.iter().any(|d| d.0 == *did)
     }
 
     #[must_use]
     pub fn can_manage(&self, did: &Did) -> bool {
-        let s = did.to_string();
-        self.manage.iter().any(|d| d.0 == s)
+        self.manage.iter().any(|d| d.0 == *did)
     }
 
     pub fn save(&self, doc: &LoroDoc) -> anyhow::Result<()> {
@@ -122,9 +116,9 @@ mod tests {
         let did = test_did();
         let acl = Acl {
             public: true,
-            manage: vec![HydratedDid(did.to_string())],
-            write: vec![HydratedDid(did.to_string())],
-            read: vec![HydratedDid(did.to_string())],
+            manage: vec![HydratedDid(did.clone())],
+            write: vec![HydratedDid(did.clone())],
+            read: vec![HydratedDid(did.clone())],
         };
 
         acl.save(&doc).expect("save failed");

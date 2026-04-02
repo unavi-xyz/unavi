@@ -1,5 +1,5 @@
 use std::{
-    sync::{Arc, Mutex, RwLock},
+    sync::{Arc, Mutex},
     task::Poll,
 };
 
@@ -21,7 +21,7 @@ use wasmtime::{AsContextMut, Store, component::Linker};
 use wasmtime_wasi::WasiCtxBuilder;
 
 use crate::{
-    HsdFirewall, HsdFirewallInner, ScriptEngine, WasmBinary, WasmEngine,
+    EventRegistry, HsdFirewall, InputRegistry, ScriptEngine, WasmBinary, WasmEngine,
     agent::NeedsAgentProxy,
     api::wired::scene::{GlobalRegistryMapRes, document::gen_id},
     asset::Wasm,
@@ -81,8 +81,8 @@ pub(crate) fn load_scripts(
     registries: Query<&SceneRegistry>,
     permissions: Query<Option<&ScriptPermissions>>,
     local_agent_ent: Query<Entity, With<LocalAgent>>,
-    input_registry: Res<crate::api::wired::input::InputRegistry>,
-    event_registry: Res<crate::api::wired::event::EventRegistry>,
+    input_registry: Res<InputRegistry>,
+    event_registry: Res<EventRegistry>,
     registry_map_res: Res<GlobalRegistryMapRes>,
 ) {
     #[cfg(target_family = "wasm")]
@@ -242,10 +242,16 @@ pub(crate) fn register_new_docs(
         Added<SceneRegistry>,
     >,
     registry_map: Res<GlobalRegistryMapRes>,
+    mut commands: Commands,
 ) {
     for (doc_entity, record_id, registry, firewall) in &new_docs {
         let hsd_fw = firewall.map_or_else(
-            || Arc::new(RwLock::new(HsdFirewallInner::default())),
+            || {
+                let fw = HsdFirewall::default();
+                let inner = Arc::clone(&fw.0);
+                commands.entity(doc_entity).insert(fw);
+                inner
+            },
             |fw| Arc::clone(&fw.0),
         );
         let handle = crate::api::wired::scene::DocHandle {

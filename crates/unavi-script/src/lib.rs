@@ -11,7 +11,7 @@ mod runtime;
 pub use api::wired::event::{DocumentFirewall, EventRegistry};
 pub use api::wired::input::{InputAction, InputDevice, InputRegistry, QueuedEvent};
 pub use api::wired::scene::{GlobalRegistryMapRes, HsdFirewall, HsdFirewallInner};
-pub use load::local::{ScriptSource, SpawnLocalScript};
+pub use load::local::{LoadLocalScript, ScriptSource};
 pub use permissions::ScriptPermissions;
 
 pub struct ScriptPlugin;
@@ -34,7 +34,6 @@ impl Plugin for ScriptPlugin {
         app.init_resource::<api::wired::event::EventRegistry>()
             .init_resource::<api::wired::input::InputRegistry>()
             .init_resource::<api::wired::scene::GlobalRegistryMapRes>()
-            .init_resource::<load::local::PendingHandles>()
             .add_observer(api::wired::input::bridge::bridge_squeeze_down)
             .add_observer(api::wired::input::bridge::bridge_squeeze_up)
             .add_systems(
@@ -47,7 +46,7 @@ impl Plugin for ScriptPlugin {
             .register_asset_loader(asset::WasmLoader)
             .init_asset::<asset::Wasm>()
             .add_observer(agent::on_avatar_bones_added)
-            .add_observer(load::local::on_spawn_local_script)
+            .add_observer(load::local::on_load_local_script)
             .add_observer(load::on_hsd_record_removed)
             .add_systems(PreUpdate, runtime::increment_epochs)
             .add_systems(Update, runtime::render::render_tick_scripts)

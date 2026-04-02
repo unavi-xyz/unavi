@@ -11,29 +11,28 @@ pub enum RecordValue {
     F64(f64),
     String(String),
     Binary(Vec<u8>),
-    List(Vec<RecordValue>),
-    Map(Vec<(String, RecordValue)>),
+    List(Vec<Self>),
+    Map(Vec<(String, Self)>),
 }
 
 #[cfg(feature = "loro")]
 impl From<loro::LoroValue> for RecordValue {
     fn from(v: loro::LoroValue) -> Self {
         match v {
-            loro::LoroValue::Null => RecordValue::Null,
-            loro::LoroValue::Bool(b) => RecordValue::Bool(b),
-            loro::LoroValue::I64(n) => RecordValue::I64(n),
-            loro::LoroValue::Double(n) => RecordValue::F64(n),
-            loro::LoroValue::String(s) => RecordValue::String(s.to_string()),
-            loro::LoroValue::Binary(b) => RecordValue::Binary(b.to_vec()),
+            loro::LoroValue::Bool(b) => Self::Bool(b),
+            loro::LoroValue::I64(n) => Self::I64(n),
+            loro::LoroValue::Double(n) => Self::F64(n),
+            loro::LoroValue::String(s) => Self::String(s.to_string()),
+            loro::LoroValue::Binary(b) => Self::Binary(b.to_vec()),
             loro::LoroValue::List(list) => {
-                RecordValue::List(list.iter().cloned().map(RecordValue::from).collect())
+                Self::List(list.iter().cloned().map(Self::from).collect())
             }
-            loro::LoroValue::Map(map) => RecordValue::Map(
+            loro::LoroValue::Map(map) => Self::Map(
                 map.iter()
-                    .map(|(k, v)| (k.clone(), RecordValue::from(v.clone())))
+                    .map(|(k, v)| (k.clone(), Self::from(v.clone())))
                     .collect(),
             ),
-            loro::LoroValue::Container(_) => RecordValue::Null,
+            loro::LoroValue::Null | loro::LoroValue::Container(_) => Self::Null,
         }
     }
 }

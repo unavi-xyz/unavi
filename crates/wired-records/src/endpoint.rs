@@ -22,7 +22,7 @@ mod loro_impls {
     use loro::LoroValue;
     use loro_surgeon::{Hydrate, HydrateError, Reconcile, ReconcileError, loro::LoroMap};
 
-    use super::*;
+    use super::HydratedEndpoint;
 
     impl Hydrate for HydratedEndpoint {
         fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {

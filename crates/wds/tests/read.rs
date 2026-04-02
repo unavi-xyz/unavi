@@ -119,7 +119,7 @@ async fn test_read_with_read_permission(#[future] ctx: DataStoreCtx) {
 
     // Verify doc was read correctly.
     let read_acl = Acl::load(&read_doc).expect("load acl");
-    assert!(read_acl.can_read(&ctx.bob.identity().did()));
+    assert!(read_acl.can_read(ctx.bob.identity().did()));
 }
 
 #[rstest]

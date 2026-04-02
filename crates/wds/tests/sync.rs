@@ -53,7 +53,7 @@ async fn test_sync_record_between_stores(#[future] multi_ctx: MultiStoreCtx) {
     multi_ctx
         .carthage
         .alice
-        .pin_record(record_id, Duration::from_secs(3600))
+        .pin_record(record_id, Duration::from_hours(1))
         .await
         .expect("pin record on Carthage");
 
@@ -117,7 +117,7 @@ async fn test_read_with_sync_from(#[future] multi_ctx: MultiStoreCtx) {
     multi_ctx
         .carthage
         .alice
-        .pin_record(record_id, Duration::from_secs(3600))
+        .pin_record(record_id, Duration::from_hours(1))
         .await
         .expect("pin record on Carthage");
 
@@ -133,7 +133,7 @@ async fn test_read_with_sync_from(#[future] multi_ctx: MultiStoreCtx) {
 
     // Verify ACL is correct.
     let acl = Acl::load(&read_doc).expect("load acl");
-    assert!(acl.can_read(&multi_ctx.carthage.bob.identity().did()));
+    assert!(acl.can_read(multi_ctx.carthage.bob.identity().did()));
 }
 
 #[rstest]
@@ -168,7 +168,7 @@ async fn test_sync_updates_after_initial_sync(#[future] multi_ctx: MultiStoreCtx
     multi_ctx
         .carthage
         .alice
-        .pin_record(record_id, Duration::from_secs(3600))
+        .pin_record(record_id, Duration::from_hours(1))
         .await
         .expect("pin record on Carthage");
     multi_ctx
@@ -298,7 +298,7 @@ async fn test_sync_with_user_identity(#[future] multi_ctx_local: LocalStoreCtx) 
     multi_ctx_local
         .bob_ctx
         .bob
-        .pin_record(record_id, Duration::from_secs(3600))
+        .pin_record(record_id, Duration::from_hours(1))
         .await
         .expect("pin record on bob's store");
 
@@ -392,7 +392,7 @@ async fn test_sync_transfers_blob_dependencies(#[future] multi_ctx: MultiStoreCt
     multi_ctx
         .carthage
         .alice
-        .pin_record(record_id, Duration::from_secs(3600))
+        .pin_record(record_id, Duration::from_hours(1))
         .await
         .expect("pin record on Carthage");
 

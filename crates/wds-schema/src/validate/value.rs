@@ -198,7 +198,7 @@ mod tests {
 
     #[test]
     fn validate_f64() {
-        let value = LoroValue::Double(3.14);
+        let value = LoroValue::Double(1.23);
         assert!(validate_value(&value, &Field::F64, "test").is_ok());
         assert!(validate_value(&value, &Field::I64, "test").is_err());
     }

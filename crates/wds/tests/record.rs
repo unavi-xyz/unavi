@@ -232,7 +232,7 @@ async fn test_create_record_mismatched_author(#[future] ctx: DataStoreCtx) {
 
     // Pin record as Bob (pinning doesn't check creator).
     ctx.bob
-        .pin_record(record_id, Duration::from_secs(60))
+        .pin_record(record_id, Duration::from_mins(1))
         .await
         .expect("pin record");
 

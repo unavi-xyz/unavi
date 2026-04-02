@@ -86,7 +86,7 @@ fn build(r: f32, big_r: f32, minor_res: usize, major_res: usize) -> RawMesh {
             let b = (i * minor_res + j_next) as u32;
             let c = (i_next * minor_res + j) as u32;
             let d = (i_next * minor_res + j_next) as u32;
-            indices.extend_from_slice(&[a, c, b, b, c, d]);
+            indices.extend_from_slice(&[a, b, c, b, d, c]);
         }
     }
 

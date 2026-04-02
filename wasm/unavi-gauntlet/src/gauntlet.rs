@@ -123,6 +123,10 @@ impl Gauntlet {
 
     pub fn rebuild_modules(&self, defs: &[DynamicModuleDef], colors: &[Color]) {
         let doc = self_document();
+        for m in self.modules.borrow().iter() {
+            self.core.remove_child(&m.root);
+            doc.remove_node(&m.root);
+        }
         let new_modules = make_modules(&doc, defs, colors);
         for m in &new_modules {
             m.root.set_scale(Vec3::ZERO);
@@ -251,7 +255,7 @@ impl Gauntlet {
         let y = cursor_rel.dot(up);
         let dist = x.hypot(y);
 
-        if dist < SECTOR_INNER_R {
+        if dist < SECTOR_INNER_R || dist > RING_RADIUS {
             self.hovered_sector.set(None);
             return;
         }

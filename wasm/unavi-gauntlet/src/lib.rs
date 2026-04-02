@@ -73,7 +73,7 @@ impl GuestScript for Script {
         let mut defs = self.module_defs.borrow_mut();
         let mut changed = false;
         for m in self.discovery.poll() {
-            if defs.len() < MAX_MODULES {
+            if defs.len() < MAX_MODULES && !defs.iter().any(|d| d.doc_id == m.doc_id) {
                 defs.push(DynamicModuleDef {
                     color: m.color,
                     doc_id: m.doc_id,
@@ -83,6 +83,7 @@ impl GuestScript for Script {
             }
         }
         if changed {
+            defs.sort_by(|a, b| a.name.cmp(&b.name));
             let n = defs.len();
             for g in &self.gauntlets {
                 g.rebuild_modules(&defs, &MODULE_PALETTE[..n]);

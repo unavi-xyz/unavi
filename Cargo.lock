@@ -13691,6 +13691,7 @@ dependencies = [
 name = "unavi-vui-nav"
 version = "0.0.16"
 dependencies = [
+ "blake3",
  "unavi-shapes",
  "unavi-vui-module",
  "wired-prelude",

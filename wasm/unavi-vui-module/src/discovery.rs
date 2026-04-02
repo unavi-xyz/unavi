@@ -1,8 +1,8 @@
+use std::cell::Cell;
+
 use crate::{
     exports::unavi::vui_module::discovery::{GuestModuleDiscovery, RegisteredModule},
-    protocol::{
-        ActivatePayload, CH_ACTIVATE, CH_DEACTIVATE, CH_DISCOVER, CH_REGISTER, RegisterPayload,
-    },
+    protocol::{ActivatePayload, CH_ACTIVATE, CH_DEACTIVATE, CH_DISCOVER, CH_REGISTER, RegisterPayload},
     wired::event::{
         api::{register_emitter, register_receptor},
         types::{EventEmitter, EventReceptor},
@@ -10,23 +10,38 @@ use crate::{
 };
 use wired_prelude::wired_scene::types::Color;
 
+/// Ticks to wait before emitting CH_DISCOVER, giving modules time to load.
+const DISCOVER_DELAY_TICKS: u32 = 60;
+
 pub struct ModuleDiscoveryImpl {
-    _emitter: EventEmitter,
+    emitter: EventEmitter,
     register_receptor: EventReceptor,
+    ticks: Cell<u32>,
+    fired: Cell<bool>,
 }
 
 impl GuestModuleDiscovery for ModuleDiscoveryImpl {
     fn new() -> Self {
         let emitter = register_emitter(None, f32::MAX, &[]);
-        emitter.emit(CH_DISCOVER, &[]);
         let register_receptor = register_receptor(&[CH_REGISTER.to_string()], None, f32::MAX, &[]);
         Self {
-            _emitter: emitter,
+            emitter,
             register_receptor,
+            ticks: Cell::new(0),
+            fired: Cell::new(false),
         }
     }
 
     fn poll(&self) -> Vec<RegisteredModule> {
+        if !self.fired.get() {
+            let t = self.ticks.get() + 1;
+            self.ticks.set(t);
+            if t >= DISCOVER_DELAY_TICKS {
+                self.emitter.emit(CH_DISCOVER, &[]);
+                self.fired.set(true);
+            }
+        }
+
         let mut results = Vec::new();
         while let Some(event) = self.register_receptor.poll() {
             if let Ok(p) = postcard::from_bytes::<RegisterPayload>(&event.payload) {

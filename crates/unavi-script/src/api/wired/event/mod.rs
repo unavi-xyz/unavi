@@ -1,10 +1,10 @@
+use bevy::prelude::*;
+use blake3::Hash;
 use wasmtime::component::{Resource, ResourceTable};
 
 pub mod bridge;
-pub mod firewall;
 pub mod registry;
 
-pub use firewall::DocumentFirewall;
 pub use registry::EventRegistry;
 
 pub mod bindings {
@@ -21,6 +21,7 @@ pub mod bindings {
     });
 }
 
+use crate::load::state::RuntimeData;
 use bindings::wired::event::types::Event as WitEvent;
 
 #[derive(Default)]
@@ -32,15 +33,21 @@ pub struct WiredEventRt {
 pub struct HostEventEmitter {
     entity: Option<bevy::prelude::Entity>,
     radius: f32,
-    sender_doc_id: Vec<u8>,
-    target_documents: Vec<Vec<u8>>,
+    sender_doc_id: Hash,
+    target_documents: Vec<Hash>,
 }
 
 pub struct HostEventReceptor {
     queue: registry::ReceptorQueue,
 }
 
-use crate::load::state::RuntimeData;
+/// Inbound event whitelist for a document. Absent = no restriction.
+/// Only doc IDs in `allowed` may send events to this document.
+#[derive(Component, Default)]
+pub struct DocumentFirewall {
+    pub allowed_hashes: Vec<blake3::Hash>,
+    pub allowed_entities: Vec<Entity>,
+}
 
 impl bindings::wired::event::api::Host for RuntimeData {
     async fn register_emitter(
@@ -60,11 +67,14 @@ impl bindings::wired::event::api::Host for RuntimeData {
         } else {
             None
         };
-        let sender_doc_id = self.wired_scene.doc_id.as_bytes().to_vec();
+        let target_documents = target_documents
+            .into_iter()
+            .map(|bytes| Hash::from_slice(&bytes))
+            .collect::<Result<_, _>>()?;
         Ok(self.wired_event.table.push(HostEventEmitter {
             entity,
             radius,
-            sender_doc_id,
+            sender_doc_id: self.wired_scene.doc_id,
             target_documents,
         })?)
     }
@@ -76,7 +86,11 @@ impl bindings::wired::event::api::Host for RuntimeData {
         radius: f32,
         source_documents: Vec<Vec<u8>>,
     ) -> wasmtime::Result<Resource<HostEventReceptor>> {
-        let doc_id = self.wired_scene.doc_id.as_bytes().to_vec();
+        let source_documents = source_documents
+            .into_iter()
+            .map(|bytes| Hash::from_slice(&bytes))
+            .collect::<Result<_, _>>()?;
+
         let queue = if let Some(n) = node {
             let inner = std::sync::Arc::clone(&self.wired_scene.table.get(&n)?.inner);
             let entity = inner
@@ -89,14 +103,20 @@ impl bindings::wired::event::api::Host for RuntimeData {
                 .0
                 .lock()
                 .expect("registry lock")
-                .register_node(entity, channels, radius, source_documents, doc_id)
+                .register_node(
+                    entity,
+                    channels,
+                    radius,
+                    source_documents,
+                    self.wired_scene.doc_id,
+                )
         } else {
             self.wired_event
                 .registry
                 .0
                 .lock()
                 .expect("registry lock")
-                .register_global(channels, source_documents, doc_id)
+                .register_global(channels, source_documents, self.wired_scene.doc_id)
         };
         Ok(self.wired_event.table.push(HostEventReceptor { queue })?)
     }
@@ -117,7 +137,7 @@ impl bindings::wired::event::types::HostEventEmitter for RuntimeData {
             channel,
             payload,
             radius: emitter.radius,
-            sender_doc_id: emitter.sender_doc_id.clone(),
+            sender_doc_id: emitter.sender_doc_id,
             target_documents: emitter.target_documents.clone(),
         };
         self.wired_event
@@ -146,7 +166,7 @@ impl bindings::wired::event::types::HostEventReceptor for RuntimeData {
             channel: e.channel,
             payload: e.payload,
             sender_node: None,
-            sender_document: e.sender_document,
+            sender_document: e.sender_document.as_bytes().to_vec(),
         }))
     }
 

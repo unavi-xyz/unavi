@@ -35,6 +35,7 @@ wasmtime-wasi          = { default-features = false, version = "40.0.0" }
 wds.path               = "../wds"
 wired-records          = { features = ["loro"], path = "../wired-records" }
 wired-schemas.path     = "../wired-schemas"
+xdid.workspace         = true
 
 [dev-dependencies]
 avian3d.workspace              = true

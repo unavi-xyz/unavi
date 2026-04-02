@@ -4,6 +4,7 @@ use std::{
 };
 
 use bevy::prelude::*;
+use blake3::Hash;
 
 pub(super) type ReceptorQueue = Arc<Mutex<VecDeque<QueuedEvent>>>;
 
@@ -13,22 +14,22 @@ pub struct QueuedEvent {
     pub payload: Vec<u8>,
     #[expect(dead_code, reason = "reserved for event tracing")]
     pub sender_node: Option<Entity>,
-    pub sender_document: Vec<u8>,
+    pub sender_document: Hash,
 }
 
 pub enum ReceptorFilter {
     Global {
-        source_documents: Vec<Vec<u8>>,
+        source_documents: Vec<Hash>,
     },
     Spatial {
         entity: Entity,
         radius: f32,
-        source_documents: Vec<Vec<u8>>,
+        source_documents: Vec<Hash>,
     },
 }
 
 pub(super) struct ReceptorEntry {
-    pub(super) doc_id: Vec<u8>,
+    pub(super) doc_id: Hash,
     pub(super) queue: ReceptorQueue,
     pub(super) filter: ReceptorFilter,
 }
@@ -40,9 +41,9 @@ pub struct PendingEmission {
     pub payload: Vec<u8>,
     /// Emit radius in world units.
     pub radius: f32,
-    pub sender_doc_id: Vec<u8>,
+    pub sender_doc_id: Hash,
     /// Empty = broadcast to all matching receptors.
-    pub target_documents: Vec<Vec<u8>>,
+    pub target_documents: Vec<Hash>,
 }
 
 #[derive(Default)]
@@ -58,8 +59,8 @@ impl InnerEventRegistry {
         entity: Entity,
         channels: Vec<String>,
         radius: f32,
-        source_documents: Vec<Vec<u8>>,
-        doc_id: Vec<u8>,
+        source_documents: Vec<Hash>,
+        doc_id: Hash,
     ) -> ReceptorQueue {
         let queue = Arc::new(Mutex::new(VecDeque::new()));
         for channel in channels {
@@ -67,7 +68,7 @@ impl InnerEventRegistry {
                 .entry(channel)
                 .or_default()
                 .push(ReceptorEntry {
-                    doc_id: doc_id.clone(),
+                    doc_id,
                     queue: Arc::clone(&queue),
                     filter: ReceptorFilter::Spatial {
                         entity,
@@ -82,8 +83,8 @@ impl InnerEventRegistry {
     pub(super) fn register_global(
         &mut self,
         channels: Vec<String>,
-        source_documents: Vec<Vec<u8>>,
-        doc_id: Vec<u8>,
+        source_documents: Vec<Hash>,
+        doc_id: Hash,
     ) -> ReceptorQueue {
         let queue = Arc::new(Mutex::new(VecDeque::new()));
         for channel in channels {
@@ -91,7 +92,7 @@ impl InnerEventRegistry {
                 .entry(channel)
                 .or_default()
                 .push(ReceptorEntry {
-                    doc_id: doc_id.clone(),
+                    doc_id,
                     queue: Arc::clone(&queue),
                     filter: ReceptorFilter::Global {
                         source_documents: source_documents.clone(),

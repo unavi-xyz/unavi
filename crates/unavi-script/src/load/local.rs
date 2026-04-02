@@ -1,4 +1,7 @@
-use std::sync::{Arc, mpsc};
+use std::{
+    sync::{Arc, Mutex, mpsc},
+    time::Duration,
+};
 
 use bevy::prelude::*;
 use bevy_hsd::{HsdDoc, HsdRecordId};
@@ -6,7 +9,13 @@ use bevy_wds::LocalActor;
 use bytes::Bytes;
 use loro::{LoroDoc, LoroList, LoroTree, TreeParentId};
 
-use crate::{HsdFirewall, asset::Wasm, permissions::ScriptPermissions};
+use crate::{HsdFirewall, asset::Wasm};
+
+#[derive(EntityEvent, Clone)]
+pub struct LoadLocalScript {
+    pub entity: Entity,
+    pub source: ScriptSource,
+}
 
 #[derive(Clone)]
 pub enum ScriptSource {
@@ -14,137 +23,138 @@ pub enum ScriptSource {
     Path(String),
 }
 
-#[derive(Event, Clone)]
-pub struct SpawnLocalScript {
-    pub permissions: ScriptPermissions,
-    pub source: ScriptSource,
-}
+#[derive(Component)]
+pub struct PendingScript(Handle<Wasm>);
 
-struct PendingHandle {
-    handle: Handle<Wasm>,
-    name: Option<String>,
-    permissions: ScriptPermissions,
-}
-
+#[derive(Component)]
 pub struct PendingUpload {
     actor: wds::actor::Actor,
-    name: Option<String>,
-    permissions: ScriptPermissions,
-    rx: mpsc::Receiver<anyhow::Result<blake3::Hash>>,
+    rx: Arc<Mutex<mpsc::Receiver<anyhow::Result<blake3::Hash>>>>,
 }
 
-pub struct RecordPending {
-    name: Option<String>,
-    permissions: ScriptPermissions,
-    rx: mpsc::Receiver<anyhow::Result<(blake3::Hash, LoroDoc)>>,
+#[derive(Component)]
+pub struct PendingRecord {
+    rx: Arc<Mutex<mpsc::Receiver<anyhow::Result<(blake3::Hash, LoroDoc)>>>>,
 }
 
-#[derive(Resource, Default)]
-pub struct PendingHandles(Vec<PendingHandle>);
-
-pub fn on_spawn_local_script(
-    trigger: On<SpawnLocalScript>,
+pub fn on_load_local_script(
+    trigger: On<LoadLocalScript>,
     server: Res<AssetServer>,
     mut assets: ResMut<Assets<Wasm>>,
-    mut pending: ResMut<PendingHandles>,
+    mut commands: Commands,
 ) {
     let ev = trigger.event();
-    let (handle, name) = match &ev.source {
+    let mut entity = commands.entity(trigger.entity);
+
+    match &ev.source {
         ScriptSource::Path(path) => {
             let name = path_to_name(path);
-            (server.load::<Wasm>(path), Some(name))
+            let handle = server.load::<Wasm>(path);
+            entity.insert((PendingScript(handle), Name::new(name)));
         }
-        ScriptSource::Bytes(bytes) => (assets.add(Wasm(bytes.clone())), None),
-    };
-    pending.0.push(PendingHandle {
-        handle,
-        name,
-        permissions: ev.permissions.clone(),
-    });
+        ScriptSource::Bytes(bytes) => {
+            let handle = assets.add(Wasm(bytes.clone()));
+            entity.insert(PendingScript(handle));
+        }
+    }
 }
 
+// TODO split into multiple systems
 pub fn poll_local_scripts(
     mut commands: Commands,
     wasm_assets: Res<Assets<Wasm>>,
     actors: Query<&LocalActor>,
-    mut pending_handles: ResMut<PendingHandles>,
-    mut uploads: Local<Vec<PendingUpload>>,
-    mut records: Local<Vec<RecordPending>>,
+    pending_scripts: Query<(Entity, &PendingScript)>,
+    pending_records: Query<(Entity, &PendingRecord)>,
+    pending_uploads: Query<(Entity, &PendingUpload)>,
 ) {
     #[cfg(target_family = "wasm")]
     return;
 
     // Poll completed record creations → spawn entities
-    let mut still_creating = Vec::new();
-    for pending in records.drain(..) {
-        match pending.rx.try_recv() {
+    for (ent, pending) in &pending_records {
+        let Ok(lock) = pending.rx.try_lock() else {
+            continue;
+        };
+
+        match lock.try_recv() {
             Ok(Ok((id, doc))) => {
-                spawn_local_hsd_doc(
-                    &mut commands,
-                    id,
-                    Arc::new(doc),
-                    pending.permissions,
-                    pending.name,
-                );
+                commands.entity(ent).insert((
+                    HsdDoc(Arc::new(doc)),
+                    HsdRecordId(id),
+                    HsdFirewall::default(),
+                ));
             }
-            Ok(Err(e)) => {
-                error!("local script record create: {e}");
+            Ok(Err(err)) => {
+                error!("local script record create: {err:?}");
+                commands.entity(ent).remove::<PendingRecord>();
             }
-            Err(mpsc::TryRecvError::Empty) => still_creating.push(pending),
-            Err(mpsc::TryRecvError::Disconnected) => {}
+            Err(mpsc::TryRecvError::Disconnected) => {
+                error!("local script record create disconnected");
+                commands.entity(ent).remove::<PendingRecord>();
+            }
+            Err(mpsc::TryRecvError::Empty) => {}
         }
     }
-    *records = still_creating;
 
     // Poll completed uploads → start record creation
-    let mut still_uploading = Vec::new();
-    for pending in uploads.drain(..) {
-        match pending.rx.try_recv() {
+    for (ent, pending) in &pending_uploads {
+        let Ok(lock) = pending.rx.try_lock() else {
+            continue;
+        };
+
+        match lock.try_recv() {
             Ok(Ok(hash)) => {
-                let actor = pending.actor;
+                let actor = pending.actor.clone();
                 let (tx, rx) = mpsc::channel();
                 unavi_wasm_compat::spawn_thread(async move {
                     let _ = tx.send(create_hsd_record(actor, hash).await);
+                    tokio::time::sleep(Duration::from_mins(3)).await; // Wait before disconnecting tx
                 });
-                records.push(RecordPending {
-                    name: pending.name,
-                    permissions: pending.permissions,
-                    rx,
-                });
+                commands
+                    .entity(ent)
+                    .remove::<PendingUpload>()
+                    .insert(PendingRecord {
+                        rx: Arc::new(Mutex::new(rx)),
+                    });
             }
-            Ok(Err(e)) => {
-                error!("local script upload: {e}");
+            Ok(Err(err)) => {
+                error!("local script upload: {err:?}");
+                commands.entity(ent).remove::<PendingUpload>();
             }
-            Err(mpsc::TryRecvError::Empty) => still_uploading.push(pending),
-            Err(mpsc::TryRecvError::Disconnected) => {}
+            Err(mpsc::TryRecvError::Disconnected) => {
+                error!("local script upload disconnected");
+                commands.entity(ent).remove::<PendingUpload>();
+            }
+            Err(mpsc::TryRecvError::Empty) => {}
         }
     }
-    *uploads = still_uploading;
 
     // Check if assets are ready and start uploads
     let Ok(actor) = actors.single() else { return };
 
-    let mut still_pending = Vec::new();
-    for pending in pending_handles.0.drain(..) {
-        if let Some(wasm) = wasm_assets.get(&pending.handle) {
-            let bytes = Bytes::from(wasm.0.clone());
-            let upload_actor = actor.0.clone();
-            let record_actor = actor.0.clone();
-            let (tx, rx) = mpsc::channel();
-            unavi_wasm_compat::spawn_thread(async move {
-                let _ = tx.send(upload_actor.upload_blob(bytes).await);
-            });
-            uploads.push(PendingUpload {
+    for (ent, pending) in &pending_scripts {
+        let Some(wasm) = wasm_assets.get(&pending.0) else {
+            continue;
+        };
+
+        let bytes = Bytes::from(wasm.0.clone());
+        let upload_actor = actor.0.clone();
+        let record_actor = actor.0.clone();
+        let (tx, rx) = mpsc::channel();
+        unavi_wasm_compat::spawn_thread(async move {
+            let _ = tx.send(upload_actor.upload_blob(bytes).await);
+            tokio::time::sleep(Duration::from_mins(3)).await; // Wait before disconnecting tx
+        });
+
+        commands
+            .entity(ent)
+            .remove::<PendingScript>()
+            .insert(PendingUpload {
                 actor: record_actor,
-                name: pending.name,
-                permissions: pending.permissions,
-                rx,
+                rx: Arc::new(Mutex::new(rx)),
             });
-        } else {
-            still_pending.push(pending);
-        }
     }
-    pending_handles.0 = still_pending;
 }
 
 fn path_to_name(path: &str) -> String {
@@ -182,17 +192,4 @@ async fn create_hsd_record(
         .send()
         .await?;
     Ok((result.id, result.doc))
-}
-
-fn spawn_local_hsd_doc(
-    commands: &mut Commands,
-    id: blake3::Hash,
-    doc: Arc<LoroDoc>,
-    perms: ScriptPermissions,
-    name: Option<String>,
-) {
-    let mut entity = commands.spawn((HsdDoc(doc), HsdRecordId(id), HsdFirewall::default(), perms));
-    if let Some(name) = name {
-        entity.insert(Name::new(name));
-    }
 }

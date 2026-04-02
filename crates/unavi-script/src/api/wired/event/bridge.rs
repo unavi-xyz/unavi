@@ -1,10 +1,10 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use bevy::prelude::*;
 use bevy_hsd::HsdRecordId;
 
 use super::{
-    firewall::DocumentFirewall,
+    DocumentFirewall,
     registry::{EventRegistry, QueuedEvent, ReceptorFilter},
 };
 
@@ -13,11 +13,6 @@ pub fn process_event_emissions(
     transforms: Query<&GlobalTransform>,
     firewalls: Query<(&HsdRecordId, &DocumentFirewall)>,
 ) {
-    let firewall_map: HashMap<Vec<u8>, &DocumentFirewall> = firewalls
-        .iter()
-        .map(|(id, fw)| (id.0.as_bytes().to_vec(), fw))
-        .collect();
-
     let pending = {
         let mut inner = registry.0.lock().expect("registry lock");
         inner.drain_pending()
@@ -49,9 +44,13 @@ pub fn process_event_emissions(
                     }
 
                     // 2. Firewall check
-                    if let Some(fw) = firewall_map.get(&entry.doc_id) {
+                    if let Some((_, fw)) = firewalls.iter().find(|(id, _)| id.0 == entry.doc_id) {
                         let sender_bytes = emission.sender_doc_id.as_slice();
-                        if !fw.allowed.iter().any(|h| h.as_bytes() == sender_bytes) {
+                        if !fw
+                            .allowed_hashes
+                            .iter()
+                            .any(|h| h.as_bytes() == sender_bytes)
+                        {
                             return None;
                         }
                     }
@@ -96,7 +95,7 @@ pub fn process_event_emissions(
                 channel: emission.channel.clone(),
                 payload: emission.payload.clone(),
                 sender_node: emission.node,
-                sender_document: emission.sender_doc_id.clone(),
+                sender_document: emission.sender_doc_id,
             });
         }
     }

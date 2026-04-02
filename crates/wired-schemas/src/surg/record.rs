@@ -43,7 +43,7 @@ impl Record {
         );
 
         Self {
-            creator: HydratedDid(creator.to_string()),
+            creator: HydratedDid(creator),
             nonce,
             schemas,
             timestamp: OffsetDateTime::now_utc().unix_timestamp(),

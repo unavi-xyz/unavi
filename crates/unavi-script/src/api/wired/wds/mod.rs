@@ -2,6 +2,7 @@ use std::sync::mpsc;
 
 use wasmtime::component::{Resource, ResourceTable};
 use wired_records::{BeaconRecord, RecordValue};
+use xdid::core::did::Did;
 
 use crate::load::state::RuntimeData;
 
@@ -39,7 +40,7 @@ pub struct HostReadFuture {
 
 struct WdsRecordOut {
     id: blake3::Hash,
-    creator: String,
+    creator: Did,
     schemas: Vec<blake3::Hash>,
     containers: Vec<(String, Vec<u8>)>,
 }
@@ -187,7 +188,7 @@ impl bindings::wired::wds::types::HostReadFuture for RuntimeData {
             Ok(Ok(out)) => {
                 let record = WdsRecord {
                     id: out.id.as_bytes().to_vec(),
-                    creator: out.creator,
+                    creator: out.creator.to_string(),
                     schemas: out.schemas.iter().map(|h| h.as_bytes().to_vec()).collect(),
                     containers: out.containers,
                 };

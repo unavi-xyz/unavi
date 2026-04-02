@@ -17,7 +17,7 @@ impl fmt::Display for HydratedHash {
 
 #[cfg(feature = "loro")]
 mod blake3_impls {
-    use super::*;
+    use super::HydratedHash;
 
     impl From<blake3::Hash> for HydratedHash {
         fn from(h: blake3::Hash) -> Self {
@@ -27,7 +27,7 @@ mod blake3_impls {
 
     impl From<HydratedHash> for blake3::Hash {
         fn from(h: HydratedHash) -> Self {
-            blake3::Hash::from_bytes(h.0)
+            Self::from_bytes(h.0)
         }
     }
 }
@@ -37,7 +37,7 @@ mod loro_impls {
     use loro::LoroValue;
     use loro_surgeon::{Hydrate, HydrateError, Reconcile, ReconcileError, loro::LoroMap};
 
-    use super::*;
+    use super::HydratedHash;
 
     impl Hydrate for HydratedHash {
         fn hydrate(value: &LoroValue) -> Result<Self, HydrateError> {

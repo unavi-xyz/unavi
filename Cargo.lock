@@ -13634,6 +13634,7 @@ dependencies = [
  "wds",
  "wired-records",
  "wired-schemas",
+ "xdid",
 ]
 
 [[package]]

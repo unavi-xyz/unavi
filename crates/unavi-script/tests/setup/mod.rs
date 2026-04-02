@@ -4,7 +4,7 @@ use bevy::{log::LogPlugin, prelude::*};
 use bevy_hsd::HsdPlugin;
 use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin, util::create_test_wds};
 use tracing_subscriber::Layer;
-use unavi_script::{ScriptPermissions, ScriptPlugin, SpawnLocalScript, load::local::ScriptSource};
+use unavi_script::{LoadLocalScript, ScriptPermissions, ScriptPlugin, load::local::ScriptSource};
 
 use crate::setup::logs::LOGS;
 
@@ -43,10 +43,9 @@ pub fn setup_test_app(package: &'static str, wasm_override: Option<Vec<u8>>) -> 
     app.world_mut()
         .spawn((LocalActor(actor), LocalBlobs(blobs)));
 
-    app.world_mut().trigger(SpawnLocalScript {
-        permissions: ScriptPermissions::default(),
-        source,
-    });
+    app.world_mut()
+        .spawn(ScriptPermissions::default())
+        .trigger(|entity| LoadLocalScript { entity, source });
 
     app
 }

@@ -255,7 +255,7 @@ impl Gauntlet {
         let y = cursor_rel.dot(up);
         let dist = x.hypot(y);
 
-        if dist < SECTOR_INNER_R || dist > RING_RADIUS {
+        if dist < SECTOR_INNER_R {
             self.hovered_sector.set(None);
             return;
         }

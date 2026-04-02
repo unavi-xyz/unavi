@@ -101,7 +101,7 @@ impl GuestScript for Script {
                         y: t.translation.y + 0.5,
                         z: t.translation.z,
                     });
-                    self.ring.set_scale(Vec3::ONE);
+                    // self.ring.set_scale(Vec3::ONE);
 
                     let fut = get_wds().query(None);
                     *self.beacon_query.borrow_mut() = Some(fut);
@@ -114,17 +114,26 @@ impl GuestScript for Script {
             }
         }
 
+        let mut remove_query = false;
+
         if let Some(fut) = self.beacon_query.borrow().as_ref()
             && let Some(result) = fut.poll()
         {
             match result {
                 Ok(ids) => {
                     for id in ids {
-                        println!("beacon record: {id:?}");
+                        let id = blake3::Hash::from_slice(&id).expect("valid hash");
+                        println!("beacon record: {id}");
                     }
+
+                    remove_query = true;
                 }
                 Err(()) => println!("wds query error"),
             }
+        }
+
+        if remove_query {
+            *self.beacon_query.borrow_mut() = None;
         }
     }
 

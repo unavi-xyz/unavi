@@ -342,7 +342,7 @@ async fn test_cross_owner_dep_extension(#[future] ctx: DataStoreCtx) {
     assert_eq!(bob_expires, bob_exp, "bob's pin should be untouched");
 }
 
-/// GC cleans up record_record_deps rows (both directions) when a
+/// GC cleans up `record_record_deps` rows (both directions) when a
 /// record is fully deleted.
 #[rstest]
 #[timeout(Duration::from_secs(5))]

@@ -124,7 +124,7 @@ async fn test_quota_exceeded_rejects_upload(#[future] ctx: DataStoreCtx) {
     let nonce = [0u8; 32];
     let fake_id = blake3::hash(&nonce);
     ctx.alice
-        .pin_record(fake_id, Duration::from_secs(3600))
+        .pin_record(fake_id, Duration::from_hours(1))
         .await
         .expect("pin record");
 
@@ -299,7 +299,7 @@ async fn test_quota_shared_by_multiple_pinners(#[future] ctx: DataStoreCtx) {
 
     // Bob pins the same record.
     ctx.bob
-        .pin_record(record_id, Duration::from_secs(3600))
+        .pin_record(record_id, Duration::from_hours(1))
         .await
         .expect("bob pin");
 

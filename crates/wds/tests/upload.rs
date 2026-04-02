@@ -122,7 +122,7 @@ async fn test_record_id_mismatch_rejected(#[future] ctx: DataStoreCtx) {
     // Pin with a different (fake) record ID.
     let fake_id = blake3::hash(b"fake record id");
     ctx.alice
-        .pin_record(fake_id, Duration::from_secs(3600))
+        .pin_record(fake_id, Duration::from_hours(1))
         .await
         .expect("pin record");
 

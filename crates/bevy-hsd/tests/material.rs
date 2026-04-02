@@ -42,7 +42,7 @@ fn mat_entity(h: &mut TestHarness) -> Entity {
         .expect("material entity")
 }
 
-fn get_standard_material<'w>(h: &'w TestHarness, ent: Entity) -> &'w StandardMaterial {
+fn get_standard_material(h: &TestHarness, ent: Entity) -> &StandardMaterial {
     let compiled = h
         .app
         .world()
@@ -51,7 +51,7 @@ fn get_standard_material<'w>(h: &'w TestHarness, ent: Entity) -> &'w StandardMat
     h.app
         .world()
         .get_resource::<Assets<StandardMaterial>>()
-        .unwrap()
+        .expect("assets resource")
         .get(&compiled.0)
         .expect("StandardMaterial asset")
 }

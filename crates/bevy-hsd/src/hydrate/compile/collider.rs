@@ -112,10 +112,7 @@ pub(super) fn insert_collider(ent: Entity, collider: &HsdCollider, commands: &mu
         }
         HsdCollider::ConvexHull(hash) => {
             let blob_ent = commands
-                .spawn((
-                    BlobDep { owner: ent },
-                    BlobRequest(blake3::Hash::from_bytes(hash.0)),
-                ))
+                .spawn((BlobDep { owner: ent }, BlobRequest(hash.0)))
                 .id();
             commands
                 .entity(ent)
@@ -123,16 +120,10 @@ pub(super) fn insert_collider(ent: Entity, collider: &HsdCollider, commands: &mu
         }
         HsdCollider::Trimesh { vertices, indices } => {
             let verts_ent = commands
-                .spawn((
-                    BlobDep { owner: ent },
-                    BlobRequest(blake3::Hash::from_bytes(vertices.0)),
-                ))
+                .spawn((BlobDep { owner: ent }, BlobRequest(vertices.0)))
                 .id();
             let idx_ent = commands
-                .spawn((
-                    BlobDep { owner: ent },
-                    BlobRequest(blake3::Hash::from_bytes(indices.0)),
-                ))
+                .spawn((BlobDep { owner: ent }, BlobRequest(indices.0)))
                 .id();
             commands
                 .entity(ent)

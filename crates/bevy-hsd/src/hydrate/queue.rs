@@ -265,7 +265,7 @@ fn update_node_state(inner: &NodeInner, data: &HsdNodeData) {
         .as_deref()
         .unwrap_or_default()
         .iter()
-        .map(|h| blake3::Hash::from_bytes(h.0))
+        .map(|h| h.0)
         .collect();
 }
 
@@ -307,7 +307,7 @@ fn emit_node_fields(doc: Entity, id: &SmolStr, data: &HsdNodeData, commands: &mu
         .as_deref()
         .unwrap_or_default()
         .iter()
-        .map(|h| blake3::Hash::from_bytes(h.0))
+        .map(|h| h.0)
         .collect();
     commands.trigger(HsdNodeScriptsSet {
         doc,

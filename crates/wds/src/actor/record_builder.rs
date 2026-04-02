@@ -119,10 +119,7 @@ impl RecordBuilder {
         // Build record with schema hashes.
         let mut record = Record::new(did.clone());
         for schema in &all_schemas {
-            record.add_schema(
-                schema.container.clone(),
-                HydratedHash(*schema.hash.as_bytes()),
-            );
+            record.add_schema(schema.container.clone(), HydratedHash(schema.hash));
         }
         record.save(&self.doc)?;
 

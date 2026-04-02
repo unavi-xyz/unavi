@@ -33,14 +33,8 @@ impl Record {
         rand::rng().fill(&mut nonce);
 
         let mut schemas = BTreeMap::new();
-        schemas.insert(
-            "acl".into(),
-            HydratedHash(*schemas::SCHEMA_ACL.hash.as_bytes()),
-        );
-        schemas.insert(
-            "record".into(),
-            HydratedHash(*schemas::SCHEMA_RECORD.hash.as_bytes()),
-        );
+        schemas.insert("acl".into(), HydratedHash(schemas::SCHEMA_ACL.hash));
+        schemas.insert("record".into(), HydratedHash(schemas::SCHEMA_RECORD.hash));
 
         Self {
             creator: HydratedDid(creator),

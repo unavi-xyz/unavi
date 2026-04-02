@@ -96,8 +96,7 @@ async fn validate_schemas(
 
     // Add record's schemas.
     for (container, schema_id) in &record.schemas {
-        let schema_hash = blake3::Hash::from_bytes(schema_id.0);
-        let schema = fetch_schema(blobs, &schema_hash)
+        let schema = fetch_schema(blobs, &schema_id.0)
             .await
             .map_err(|e| WdsError::SchemaValidation(format!("failed to fetch schema: {e}")))?;
         schemas.insert(container.clone(), schema);

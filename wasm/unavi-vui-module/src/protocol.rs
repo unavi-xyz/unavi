@@ -7,6 +7,7 @@ pub const CH_DEACTIVATE: &str = "unavi::vui-module::deactivate";
 pub struct RegisterPayload {
     pub name: String,
     pub color: [f32; 4],
+    pub icon_node_id: String,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]

@@ -13553,6 +13553,7 @@ dependencies = [
 name = "unavi-gauntlet"
 version = "0.0.16"
 dependencies = [
+ "blake3",
  "unavi-vui-module",
  "wired-prelude",
  "wit-bindgen 0.50.0",

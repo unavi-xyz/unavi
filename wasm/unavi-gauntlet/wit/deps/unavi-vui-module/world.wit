@@ -8,7 +8,7 @@ world guest {
 
 interface api {
   use wired:math/types.{vec3, quat};
-  use wired:scene/types.{color};
+  use wired:scene/types.{color, node};
 
   record activate-transform {
     translation: vec3,
@@ -22,7 +22,7 @@ interface api {
   }
 
   resource vui-module {
-    constructor(name: string, color: color);
+    constructor(name: string, color: color, icon: borrow<node>);
     poll: func() -> option<module-event>;
   }
 }
@@ -32,9 +32,10 @@ interface discovery {
   use wired:scene/types.{color};
 
   record registered-module {
-    doc-id: list<u8>,
-    name: string,
-    color: color,
+    doc-id:       list<u8>,
+    name:         string,
+    color:        color,
+    icon-node-id: string,
   }
 
   resource module-discovery {

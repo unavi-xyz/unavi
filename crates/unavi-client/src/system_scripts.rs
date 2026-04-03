@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use unavi_script::{
-    DocumentFirewall, LoadLocalScript, ScriptPermissions, load::local::ScriptSource,
+    LoadLocalScript, ScriptPermissions, firewall::HsdFirewallEntities, load::local::ScriptSource,
 };
 
 const GAUNTLET: &str = "wasm/unavi/gauntlet.wasm";
@@ -20,16 +20,24 @@ pub fn spawn_system_scripts(mut commands: Commands) {
         module_ents.push(ent);
     }
 
-    commands
+    let gauntlet_ent = commands
         .spawn((
             ScriptPermissions::system(),
-            DocumentFirewall {
-                allowed_entities: module_ents,
-                ..Default::default()
+            HsdFirewallEntities {
+                read: module_ents.clone(),
+                write: module_ents.clone(),
             },
         ))
         .trigger(|entity| LoadLocalScript {
             entity,
             source: ScriptSource::Path(GAUNTLET.to_string()),
+        })
+        .id();
+
+    for module_ent in module_ents {
+        commands.entity(module_ent).insert(HsdFirewallEntities {
+            read: vec![gauntlet_ent],
+            write: vec![gauntlet_ent],
         });
+    }
 }

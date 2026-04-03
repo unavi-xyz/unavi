@@ -9,7 +9,7 @@ use bevy_wds::LocalActor;
 use bytes::Bytes;
 use loro::{LoroDoc, LoroList, LoroTree, TreeParentId};
 
-use crate::{HsdFirewall, asset::Wasm};
+use crate::asset::Wasm;
 
 #[derive(EntityEvent, Clone)]
 pub struct LoadLocalScript {
@@ -79,11 +79,10 @@ pub fn poll_local_scripts(
 
         match lock.try_recv() {
             Ok(Ok((id, doc))) => {
-                commands.entity(ent).insert((
-                    HsdDoc(Arc::new(doc)),
-                    HsdRecordId(id),
-                    HsdFirewall::default(),
-                ));
+                commands
+                    .entity(ent)
+                    .remove::<PendingRecord>()
+                    .insert((HsdDoc(Arc::new(doc)), HsdRecordId(id)));
             }
             Ok(Err(err)) => {
                 error!("local script record create: {err:?}");

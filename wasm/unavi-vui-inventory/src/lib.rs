@@ -15,6 +15,7 @@ const COLOR: Color = Color::rgb(0.52, 0.20, 0.82);
 const NAME: &str = "Inventory";
 
 const BASE_H: f32 = 0.016;
+const ICON_SIZE: f32 = 0.040;
 const LIP_H: f32 = 0.036;
 const LIP_T: f32 = 0.012;
 const LIP_Y: f32 = BASE_H * 0.5 + LIP_H * 0.5;
@@ -75,7 +76,13 @@ impl GuestScript for Script {
             nodes.push(lip);
         }
 
-        let module = VuiModule::new(NAME, COLOR);
+        let icon = doc.create_node();
+        let icon_shape = Cuboid::new(ICON_SIZE, ICON_SIZE, ICON_SIZE);
+        icon.set_mesh(Some(&icon_shape.mesh()));
+        icon.set_material(Some(&mat));
+        icon.set_scale(Vec3::ZERO);
+        let module = VuiModule::new(NAME, COLOR, &icon);
+        nodes.push(icon);
 
         Self {
             root,

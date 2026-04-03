@@ -13,7 +13,7 @@
     ];
   };
 
-  networking.firewall.enable = false;
+  networking.firewall.enable = true;
 
   nix = {
     gc = {

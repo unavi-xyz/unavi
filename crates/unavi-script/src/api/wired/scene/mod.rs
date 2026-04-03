@@ -5,22 +5,22 @@ use bevy::prelude::{Command, Entity};
 use bevy_hsd::{cache::SceneRegistryInner, hydrate::events::ScriptCommandQueue};
 use loro::LoroDoc;
 use smol_str::SmolStr;
+use tracing::warn;
 use wasmtime_wasi::ResourceTable;
 
+use crate::firewall::HsdFirewallInner;
+
 pub mod document;
-mod hsd_firewall;
 mod material;
 mod mesh;
 pub mod node;
-
-pub use hsd_firewall::{HsdFirewall, HsdFirewallInner};
 
 /// All data needed to operate on a specific HSD document from a script host call.
 #[derive(Clone)]
 pub struct DocHandle {
     pub registry: Arc<SceneRegistryInner>,
     pub doc_entity: Entity,
-    pub hsd_fw: Arc<RwLock<HsdFirewallInner>>,
+    pub firewall: Arc<RwLock<HsdFirewallInner>>,
 }
 
 /// Shared map from `doc_id` → `DocHandle`, accessible from script host calls.
@@ -70,7 +70,7 @@ impl WiredSceneRt {
             .read()
             .expect("registry_map read")
             .get(&foreign_id)
-            .map(|h| Arc::clone(&h.hsd_fw))
+            .map(|h| Arc::clone(&h.firewall))
         else {
             return (false, false);
         };
@@ -137,6 +137,7 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
             self.foreign_perms(foreign_id)
         };
         if !can_read {
+            warn!("script cannot read document {foreign_id}");
             return Ok(None);
         }
         let handle = {
@@ -147,6 +148,7 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
                 .cloned()
         };
         let Some(h) = handle else {
+            warn!("document {foreign_id} not found");
             return Ok(None);
         };
         Ok(Some(self.table.push(document::HostDocument {

@@ -5909,6 +5909,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f70749695b063ecbf6b62949ccccde2e733ec3ecbbd71d467dca4e5c6c97cca0"
 dependencies = [
  "libm",
+ "serde_core",
 ]
 
 [[package]]
@@ -15815,6 +15816,7 @@ name = "wired-math"
 version = "0.0.16"
 dependencies = [
  "glam 0.32.1",
+ "serde",
 ]
 
 [[package]]
@@ -15841,6 +15843,9 @@ dependencies = [
 [[package]]
 name = "wired-scene"
 version = "0.0.16"
+dependencies = [
+ "serde",
+]
 
 [[package]]
 name = "wired-schemas"

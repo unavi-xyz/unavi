@@ -3,45 +3,34 @@ package unavi:vui-module;
 world guest {
   include wired:prelude/lib;
   export api;
-  export discovery;
 }
 
 interface api {
-  use wired:math/types.{vec3, quat};
+  use wired:math/types.{transform};
   use wired:scene/types.{color, node};
 
-  record activate-transform {
-    translation: vec3,
-    rotation: quat,
-    scale: vec3,
-  }
-
   variant module-event {
-    activate(activate-transform),
+    activate(transform),
     deactivate,
+    set-color(color),
   }
 
   resource vui-module {
-    constructor(name: string, color: color, icon: borrow<node>);
+    constructor(name: string, icon: borrow<node>);
     poll: func() -> option<module-event>;
   }
-}
-
-interface discovery {
-  use wired:math/types.{vec3, quat};
-  use wired:scene/types.{color};
 
   record registered-module {
     doc-id:       list<u8>,
     name:         string,
-    color:        color,
     icon-node-id: string,
   }
 
-  resource module-discovery {
+  resource vui-module-registry {
     constructor();
     poll: func() -> list<registered-module>;
-    activate: func(doc-id: list<u8>, translation: vec3, rotation: quat, scale: vec3);
+    activate: func(doc-id: list<u8>, transform: transform);
     deactivate: func(doc-id: list<u8>);
+    set-color: func(doc-id: list<u8>, color: color);
   }
 }

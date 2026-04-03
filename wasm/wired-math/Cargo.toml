@@ -10,4 +10,5 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-glam = "0.32.1"
+glam            = { features = ["serde"], workspace = true }
+serde.workspace = true

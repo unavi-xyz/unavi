@@ -13,6 +13,6 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-glam                  = "0.32.1"
+glam.workspace        = true
 wired-prelude.path    = "../wired-prelude"
 wit-bindgen.workspace = true

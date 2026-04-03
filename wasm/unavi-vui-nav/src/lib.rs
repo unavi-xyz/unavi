@@ -3,18 +3,21 @@ use std::cell::RefCell;
 use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
 
 use crate::{
-    unavi::shapes::api::{Cuboid, Cylinder, Torus},
-    unavi::vui_module::api::{ModuleEvent, VuiModule},
-    wired::scene::{
-        context::self_document,
-        types::{Collider, ColliderCylinder, Node, RigidBodyKind},
+    unavi::{
+        shapes::api::{Cuboid, Cylinder, Torus},
+        vui_module::api::{ModuleEvent, VuiModule},
     },
-    wired::wds::{context::get_wds, types::QueryFuture},
+    wired::{
+        scene::{
+            context::self_document,
+            types::{Collider, ColliderCylinder, Material, Node, RigidBodyKind},
+        },
+        wds::{context::get_wds, types::QueryFuture},
+    },
 };
 
 wired_prelude::generate_script!(Script);
 
-const COLOR: Color = Color::rgb(0.88, 0.52, 0.08);
 const NAME: &str = "Nav";
 
 const BASE_H: f32 = 0.016;
@@ -42,6 +45,7 @@ struct Script {
     _nodes: Vec<Node>,
     module: VuiModule,
     beacon_query: RefCell<Option<QueryFuture>>,
+    color_mat: Material,
 }
 
 impl GuestScript for Script {
@@ -50,7 +54,6 @@ impl GuestScript for Script {
         let mut nodes = Vec::new();
 
         let color_mat = doc.create_material();
-        color_mat.set_base_color(COLOR);
         color_mat.set_double_sided(true);
 
         let root = doc.create_node();
@@ -84,7 +87,7 @@ impl GuestScript for Script {
         icon.set_mesh(Some(&Torus::new(ICON_MINOR_R, ICON_MAJOR_R).mesh()));
         icon.set_material(Some(&color_mat));
         icon.set_scale(Vec3::ZERO);
-        let module = VuiModule::new(NAME, COLOR, &icon);
+        let module = VuiModule::new(NAME, &icon);
         nodes.push(icon);
 
         Self {
@@ -93,6 +96,7 @@ impl GuestScript for Script {
             _nodes: nodes,
             module,
             beacon_query: RefCell::new(None),
+            color_mat,
         }
     }
 
@@ -118,6 +122,9 @@ impl GuestScript for Script {
                     self.root.set_scale(Vec3::ZERO);
                     self.ring.set_scale(Vec3::ZERO);
                     *self.beacon_query.borrow_mut() = None;
+                }
+                ModuleEvent::SetColor(color) => {
+                    self.color_mat.set_base_color(color);
                 }
             }
         }

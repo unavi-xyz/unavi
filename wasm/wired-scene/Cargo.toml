@@ -8,3 +8,6 @@ version.workspace    = true
 
 [lints]
 workspace = true
+
+[dependencies]
+serde = { features = ["derive"], workspace = true }

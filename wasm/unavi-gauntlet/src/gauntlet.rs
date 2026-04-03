@@ -3,12 +3,12 @@ use std::{
     f32::consts::PI,
 };
 
-use wired_prelude::wired_math::types::{Quat, Vec3};
+use wired_prelude::wired_math::types::{Quat, Transform, Vec3};
 
 use crate::{
-    Color, DynamicModuleDef,
-    module::{Module, make_modules},
-    unavi::vui_module::discovery::ModuleDiscovery,
+    Color, ModuleRef,
+    sector::{Sector, make_sectors},
+    unavi::vui_module::api::VuiModuleRegistry,
     wired::{
         agent::{
             context::{local_agent, local_camera},
@@ -37,7 +37,7 @@ pub const OUTLINE_Z: f32 = 0.001;
 pub const SECTOR_SUBDIVISIONS: usize = 40;
 pub const Z_OFFSET: f32 = -0.5;
 
-fn place_module_transform(bone: &Node) -> (Vec3, Quat, Vec3) {
+fn place_sector_transform(bone: &Node) -> Transform {
     let tr = bone.global_transform();
     let forward = tr.rotation * Vec3::new(0.0, 0.0, -1.0);
 
@@ -63,7 +63,7 @@ fn place_module_transform(bone: &Node) -> (Vec3, Quat, Vec3) {
     let agent_height = (head_y - foot_y).max(0.5);
     let scale_f = agent_height / DEFAULT_AGENT_HEIGHT;
 
-    let pos = Vec3 {
+    let translation = Vec3 {
         x: forward_h.x.mul_add(MODULE_FORWARD_DIST, tr.translation.x),
         y: waist_y + MODULE_HEIGHT_OFFSET,
         z: forward_h.z.mul_add(MODULE_FORWARD_DIST, tr.translation.z),
@@ -83,7 +83,12 @@ fn place_module_transform(bone: &Node) -> (Vec3, Quat, Vec3) {
         y: scale_f,
         z: scale_f,
     };
-    (pos, rotation, scale)
+
+    Transform {
+        translation,
+        rotation,
+        scale,
+    }
 }
 
 pub enum Target {
@@ -95,7 +100,7 @@ pub struct Gauntlet {
     pub bone: RefCell<Option<Node>>,
     pub core: Node,
     pub hovered_sector: Cell<Option<usize>>,
-    pub modules: RefCell<Vec<Module>>,
+    pub sectors: RefCell<Vec<Sector>>,
     pub open: Cell<bool>,
     pub open_pos: Cell<Option<Vec3>>,
     pub pressed: Cell<bool>,
@@ -112,7 +117,7 @@ impl Gauntlet {
             bone: RefCell::new(None),
             core,
             hovered_sector: Cell::new(None),
-            modules: RefCell::new(Vec::new()),
+            sectors: RefCell::new(Vec::new()),
             open: Cell::new(false),
             open_pos: Cell::new(None),
             pressed: Cell::new(false),
@@ -121,18 +126,21 @@ impl Gauntlet {
         }
     }
 
-    pub fn rebuild_modules(&self, defs: &[DynamicModuleDef], colors: &[Color]) {
+    pub fn rebuild_sectors(&self, modules: &[ModuleRef], colors: &[Color]) {
         let doc = self_document();
-        for m in self.modules.borrow().iter() {
-            self.core.remove_child(&m.root);
-            doc.remove_node(&m.root);
+
+        for s in self.sectors.borrow().iter() {
+            self.core.remove_child(&s.root);
+            doc.remove_node(&s.root);
         }
-        let new_modules = make_modules(&doc, defs, colors);
-        for m in &new_modules {
-            m.root.set_scale(Vec3::ZERO);
-            self.core.add_child(&m.root);
+
+        let new_sectors = make_sectors(&doc, modules, colors);
+        for s in &new_sectors {
+            s.root.set_scale(Vec3::ZERO);
+            self.core.add_child(&s.root);
         }
-        *self.modules.borrow_mut() = new_modules;
+
+        *self.sectors.borrow_mut() = new_sectors;
     }
 
     pub fn lazy_init_bone(&self) -> bool {
@@ -164,61 +172,61 @@ impl Gauntlet {
         self.core.set_transform(tr);
 
         self.open_pos.set(Some(open_pos));
-        let modules = self.modules.borrow();
-        for module in modules.iter() {
-            module.raise_t.set(0.0);
-            module.root.set_scale(Vec3::ONE);
-            module.root.set_translation(Vec3::ZERO);
+        let sectors = self.sectors.borrow();
+        for sector in sectors.iter() {
+            sector.raise_t.set(0.0);
+            sector.root.set_scale(Vec3::ONE);
+            sector.root.set_translation(Vec3::ZERO);
         }
     }
 
     pub fn close_menu(&self) {
         self.hovered_sector.set(None);
         self.open_pos.set(None);
-        let modules = self.modules.borrow();
-        for module in modules.iter() {
-            if module.raise_t.get() != 0.0 {
-                module.raise_t.set(0.0);
-                module.root.set_translation(Vec3::ZERO);
-                let c = module.bg_color;
-                module
+        let sectors = self.sectors.borrow();
+        for sector in sectors.iter() {
+            if sector.raise_t.get() != 0.0 {
+                sector.raise_t.set(0.0);
+                sector.root.set_translation(Vec3::ZERO);
+                let c = sector.bg_color;
+                sector
                     .bg_material
                     .set_base_color(Color::rgba(c.r, c.g, c.b, BG_ALPHA_BASE));
             }
         }
     }
 
-    pub fn select(&self, sector: usize, defs: &[DynamicModuleDef], discovery: &ModuleDiscovery) {
-        let modules = self.modules.borrow();
-        let Some(module) = modules.get(sector) else {
+    pub fn select(&self, idx: usize, modules: &[ModuleRef], registry: &VuiModuleRegistry) {
+        let sectors = self.sectors.borrow();
+        let Some(sector) = sectors.get(idx) else {
             return;
         };
-        let Some(def) = defs.get(sector) else {
+        let Some(module) = modules.get(idx) else {
             return;
         };
-        if module.active_state.get() {
-            println!("deactivated {}", module.name);
-            module.active_state.set(false);
-            module.outline_node.set_scale(Vec3::ZERO);
-            discovery.deactivate(&def.doc_id);
+        if sector.active_state.get() {
+            println!("deactivated {}", sector.name);
+            sector.active_state.set(false);
+            sector.outline_node.set_scale(Vec3::ZERO);
+            registry.deactivate(&module.doc_id);
         } else {
-            println!("activated {}", module.name);
-            module.active_state.set(true);
-            module.outline_node.set_scale(Vec3::ONE);
+            println!("activated {}", sector.name);
+            sector.active_state.set(true);
+            sector.outline_node.set_scale(Vec3::ONE);
             let bone_ref = self.bone.borrow();
             if let Some(bone) = bone_ref.as_ref() {
-                let (pos, rot, scale) = place_module_transform(bone);
-                discovery.activate(&def.doc_id, pos, rot, scale);
+                let transform = place_sector_transform(bone);
+                registry.activate(&module.doc_id, transform);
             }
         }
         self.open.set(false);
-        drop(modules);
+        drop(sectors);
         self.close_menu();
     }
 
     pub fn update_hovered_sector(&self) {
-        let modules = self.modules.borrow();
-        if !self.open.get() || modules.is_empty() {
+        let sectors = self.sectors.borrow();
+        if !self.open.get() || sectors.is_empty() {
             if self.hovered_sector.get().is_some() {
                 self.hovered_sector.set(None);
             }
@@ -266,7 +274,7 @@ impl Gauntlet {
         } else {
             angle
         };
-        let n = modules.len();
+        let n = sectors.len();
         let sector = (angle * n as f32 / (2.0 * PI)).round() as usize % n;
         self.hovered_sector.set(Some(sector));
     }

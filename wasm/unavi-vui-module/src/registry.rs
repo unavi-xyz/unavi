@@ -1,30 +1,30 @@
 use std::cell::Cell;
 
 use crate::{
-    exports::unavi::vui_module::discovery::{GuestModuleDiscovery, RegisteredModule},
+    exports::unavi::vui_module::api::{GuestVuiModuleRegistry, RegisteredModule},
     protocol::{
-        ActivatePayload, CH_ACTIVATE, CH_DEACTIVATE, CH_DISCOVER, CH_REGISTER, RegisterPayload,
+        ActivatePayload, CH_ACTIVATE, CH_DEACTIVATE, CH_DISCOVER, CH_REGISTER, CH_SET_COLOR,
+        RegisterPayload, SetColorPayload,
     },
     wired::event::{
         api::{register_emitter, register_receptor},
         types::{EventEmitter, EventReceptor},
     },
 };
-use wired_prelude::{
-    wired_math::types::{Quat, Vec3},
-    wired_scene::types::Color,
-};
+use wired_prelude::{wired_math::types::Transform, wired_scene::types::Color};
 
+// TODO: re-discover on an interval, or some other non-time-based method
+/// Discovery delay, to let other scripts load.
 const DISCOVER_DELAY_TICKS: u32 = 60;
 
-pub struct ModuleDiscoveryImpl {
+pub struct VuiModuleRegistry {
     emitter: EventEmitter,
     register_receptor: EventReceptor,
     ticks: Cell<u32>,
     fired: Cell<bool>,
 }
 
-impl GuestModuleDiscovery for ModuleDiscoveryImpl {
+impl GuestVuiModuleRegistry for VuiModuleRegistry {
     fn new() -> Self {
         let emitter = register_emitter(None, f32::MAX, &[]);
         let register_receptor = register_receptor(&[CH_REGISTER.to_string()], None, f32::MAX, &[]);
@@ -54,12 +54,6 @@ impl GuestModuleDiscovery for ModuleDiscoveryImpl {
                 results.push(RegisteredModule {
                     doc_id: event.sender_document,
                     name: p.name,
-                    color: Color {
-                        r: p.color[0],
-                        g: p.color[1],
-                        b: p.color[2],
-                        a: p.color[3],
-                    },
                     icon_node_id: p.icon_node_id,
                 });
             } else {
@@ -69,13 +63,9 @@ impl GuestModuleDiscovery for ModuleDiscoveryImpl {
         results
     }
 
-    fn activate(&self, doc_id: Vec<u8>, translation: Vec3, rotation: Quat, scale: Vec3) {
-        let payload = postcard::to_allocvec(&ActivatePayload {
-            translation: [translation.x, translation.y, translation.z],
-            rotation: [rotation.x, rotation.y, rotation.z, rotation.w],
-            scale: [scale.x, scale.y, scale.z],
-        })
-        .expect("encode activate");
+    fn activate(&self, doc_id: Vec<u8>, transform: Transform) {
+        let payload =
+            postcard::to_allocvec(&ActivatePayload { transform }).expect("encode activate");
         let emitter = register_emitter(None, f32::MAX, &[doc_id]);
         emitter.emit(CH_ACTIVATE, &payload);
     }
@@ -83,5 +73,11 @@ impl GuestModuleDiscovery for ModuleDiscoveryImpl {
     fn deactivate(&self, doc_id: Vec<u8>) {
         let emitter = register_emitter(None, f32::MAX, &[doc_id]);
         emitter.emit(CH_DEACTIVATE, &[]);
+    }
+
+    fn set_color(&self, doc_id: Vec<u8>, color: Color) {
+        let payload = postcard::to_allocvec(&SetColorPayload { color }).expect("encode set color");
+        let emitter = register_emitter(None, f32::MAX, &[doc_id]);
+        emitter.emit(CH_SET_COLOR, &payload);
     }
 }

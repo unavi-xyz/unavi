@@ -1,8 +1,9 @@
 pub use glam::{Vec2, Vec3};
+use serde::{Deserialize, Serialize};
 
 use std::ops::Mul;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub struct Quat {
     pub x: f32,
     pub y: f32,
@@ -34,7 +35,7 @@ impl Mul<Vec3> for Quat {
     }
 }
 
-#[derive(Debug, Default, PartialEq, Clone, Copy)]
+#[derive(Debug, Default, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub struct Transform {
     pub translation: Vec3,
     pub rotation: Quat,

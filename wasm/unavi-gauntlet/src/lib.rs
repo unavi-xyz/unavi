@@ -1,5 +1,5 @@
 mod gauntlet;
-mod module;
+mod sector;
 
 use std::{cell::Cell, f32::consts::PI, time::SystemTime};
 
@@ -11,7 +11,7 @@ use crate::{
         BG_ALPHA_BASE, BG_ALPHA_HOVER, CLOSE_ON_MOVE_THRESHOLD_SQ, Gauntlet, OPEN_SPEED_SECONDS,
         RAISE_DIST, RAISE_SPEED_SECONDS, RING_RADIUS, SECTOR_INNER_R, Target,
     },
-    unavi::vui_module::discovery::ModuleDiscovery,
+    unavi::vui_module::api::VuiModuleRegistry,
     wired::{
         agent::types::BoneName,
         input::{
@@ -30,6 +30,7 @@ const ICON_R: f32 = f32::midpoint(SECTOR_INNER_R, RING_RADIUS);
 const ICON_SCALE: f32 = 1.0;
 const ICON_Z_OFFSET: f32 = 0.004;
 
+// TODO dynamic palette, shifting hue from a starting value
 pub const MODULE_PALETTE: [Color; MAX_MODULES] = [
     Color::rgb(0.52, 0.20, 0.82),
     Color::rgb(0.88, 0.52, 0.08),
@@ -41,8 +42,7 @@ pub const MODULE_PALETTE: [Color; MAX_MODULES] = [
     Color::rgb(0.50, 0.65, 0.08),
 ];
 
-pub struct DynamicModuleDef {
-    pub color: Color,
+pub struct ModuleRef {
     pub doc_id: Vec<u8>,
     pub icon_node: Option<Node>,
     pub icon_node_id: String,
@@ -53,13 +53,13 @@ struct Script {
     gauntlets: [Gauntlet; 3],
     input: InputListener,
     render_time: Cell<SystemTime>,
-    discovery: ModuleDiscovery,
-    module_defs: std::cell::RefCell<Vec<DynamicModuleDef>>,
+    registry: VuiModuleRegistry,
+    module_refs: std::cell::RefCell<Vec<ModuleRef>>,
 }
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let discovery = ModuleDiscovery::new();
+        let registry = VuiModuleRegistry::new();
 
         let gauntlets = [
             Target::Camera,
@@ -72,18 +72,18 @@ impl GuestScript for Script {
             gauntlets,
             input: system_input_listener(),
             render_time: Cell::new(SystemTime::now()),
-            discovery,
-            module_defs: std::cell::RefCell::new(Vec::new()),
+            registry,
+            module_refs: std::cell::RefCell::new(Vec::new()),
         }
     }
 
+    #[expect(clippy::too_many_lines)]
     fn tick(&self) {
-        let mut defs = self.module_defs.borrow_mut();
+        let mut modules = self.module_refs.borrow_mut();
         let mut changed = false;
-        for m in self.discovery.poll() {
-            if defs.len() < MAX_MODULES && !defs.iter().any(|d| d.doc_id == m.doc_id) {
-                defs.push(DynamicModuleDef {
-                    color: m.color,
+        for m in self.registry.poll() {
+            if modules.len() < MAX_MODULES && !modules.iter().any(|d| d.doc_id == m.doc_id) {
+                modules.push(ModuleRef {
                     doc_id: m.doc_id,
                     icon_node: None,
                     icon_node_id: m.icon_node_id,
@@ -93,23 +93,29 @@ impl GuestScript for Script {
             }
         }
         if changed {
-            defs.sort_by(|a, b| a.name.cmp(&b.name));
-            let n = defs.len();
+            modules.sort_by(|a, b| a.name.cmp(&b.name));
+            let n = modules.len();
             for g in &self.gauntlets {
-                g.rebuild_modules(&defs, &MODULE_PALETTE[..n]);
+                g.rebuild_sectors(&modules, &MODULE_PALETTE[..n]);
+                for s in g.sectors.borrow().as_slice() {
+                    self.registry.set_color(&s.module_doc_id, s.bg_color);
+                }
             }
         }
-        // Look up icon nodes for any def that hasn't resolved one yet.
-        for def in defs.iter_mut() {
-            if def.icon_node.is_none() && !def.icon_node_id.is_empty() {
-                if let Some(doc) = get_document(&def.doc_id) {
-                    def.icon_node = doc.nodes().into_iter().find(|n| n.id() == def.icon_node_id);
-                } else if let Ok(doc_id) = Hash::from_slice(&def.doc_id) {
+        // Look up icon nodes for any module that hasn't resolved one yet.
+        for module in modules.iter_mut() {
+            if module.icon_node.is_none() && !module.icon_node_id.is_empty() {
+                if let Some(doc) = get_document(&module.doc_id) {
+                    module.icon_node = doc
+                        .nodes()
+                        .into_iter()
+                        .find(|n| n.id() == module.icon_node_id);
+                } else if let Ok(doc_id) = Hash::from_slice(&module.doc_id) {
                     eprintln!("document {doc_id} not found");
                 }
             }
         }
-        drop(defs);
+        drop(modules);
 
         if !self
             .gauntlets
@@ -165,7 +171,7 @@ impl GuestScript for Script {
                     self.gauntlets[menu_idx].pressed.set(false);
                 }
                 InputAction::GrabDown => {
-                    let defs = self.module_defs.borrow();
+                    let modules = self.module_refs.borrow();
                     for g in &self.gauntlets {
                         let matches = matches!(
                             (&g.target, event.device),
@@ -177,7 +183,7 @@ impl GuestScript for Script {
                             && g.open.get()
                             && let Some(sector) = g.hovered_sector.get()
                         {
-                            g.select(sector, &defs, &self.discovery);
+                            g.select(sector, &modules, &self.registry);
                         }
                     }
                 }
@@ -195,8 +201,8 @@ impl GuestScript for Script {
             .as_secs_f32();
         self.render_time.set(SystemTime::now());
 
-        let defs = self.module_defs.borrow();
-        let n = defs.len();
+        let modules = self.module_refs.borrow();
+        let n = modules.len();
 
         for g in &self.gauntlets {
             let prev_t = g.scale_t.get();
@@ -214,8 +220,8 @@ impl GuestScript for Script {
             // Position module icon nodes in world space.
             if n > 0 {
                 let menu_tr = g.core.global_transform();
-                for (i, def) in defs.iter().enumerate() {
-                    let Some(icon) = def.icon_node.as_ref() else {
+                for (i, module) in modules.iter().enumerate() {
+                    let Some(icon) = module.icon_node.as_ref() else {
                         continue;
                     };
                     if new_t == 0.0 {
@@ -237,7 +243,7 @@ impl GuestScript for Script {
             }
 
             let hovered = g.hovered_sector.get();
-            let modules = g.modules.borrow();
+            let modules = g.sectors.borrow();
             for (i, module) in modules.iter().enumerate() {
                 let target_raise = if Some(i) == hovered { 1.0_f32 } else { 0.0_f32 };
                 let prev_raise = module.raise_t.get();

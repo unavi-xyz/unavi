@@ -2,7 +2,7 @@ use std::cell::Cell;
 use std::f32::consts::PI;
 
 use crate::{
-    Color, DynamicModuleDef,
+    Color, ModuleRef,
     gauntlet::{
         BG_ALPHA_BASE, OUTLINE_COLOR, OUTLINE_WIDTH, OUTLINE_Z, RING_RADIUS, SECTOR_GAP_WORLD,
         SECTOR_INNER_R, SECTOR_SUBDIVISIONS,
@@ -12,7 +12,8 @@ use crate::{
 
 use wired_prelude::wired_math::types::Vec3;
 
-pub struct Module {
+pub struct Sector {
+    pub module_doc_id: Vec<u8>,
     pub active_state: Cell<bool>,
     pub bg_color: Color,
     pub bg_material: Material,
@@ -23,15 +24,16 @@ pub struct Module {
     _bg: Node,
 }
 
-pub fn make_modules(doc: &Document, defs: &[DynamicModuleDef], colors: &[Color]) -> Vec<Module> {
-    let n = defs.len();
-    defs.iter()
+pub fn make_sectors(doc: &Document, modules: &[ModuleRef], colors: &[Color]) -> Vec<Sector> {
+    let n = modules.len();
+    modules
+        .iter()
         .enumerate()
-        .map(|(i, def)| make_module(doc, i, n, def, colors[i]))
+        .map(|(i, module)| make_sector(doc, i, n, module, colors[i]))
         .collect()
 }
 
-fn make_module(doc: &Document, i: usize, n: usize, def: &DynamicModuleDef, color: Color) -> Module {
+fn make_sector(doc: &Document, i: usize, n: usize, module: &ModuleRef, color: Color) -> Sector {
     let bg_material = doc.create_material();
     bg_material.set_base_color(Color::rgba(color.r, color.g, color.b, BG_ALPHA_BASE));
     bg_material.set_alpha_mode(Some(AlphaMode::Add));
@@ -54,11 +56,12 @@ fn make_module(doc: &Document, i: usize, n: usize, def: &DynamicModuleDef, color
     root.add_child(&bg);
     root.add_child(&outline);
 
-    Module {
+    Sector {
+        module_doc_id: module.doc_id.clone(),
         active_state: Cell::new(false),
         bg_color: color,
         bg_material,
-        name: def.name.clone(),
+        name: module.name.clone(),
         outline_node: outline,
         raise_t: Cell::new(0.0),
         root,

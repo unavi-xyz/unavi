@@ -1,6 +1,6 @@
 package unavi:gauntlet;
 
 world guest {
-  import unavi:vui-module/discovery;
+  import unavi:vui-module/api;
   include wired:prelude/script-system;
 }

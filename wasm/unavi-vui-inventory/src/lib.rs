@@ -1,17 +1,18 @@
-use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
+use wired_prelude::wired_math::types::Vec3;
 
 use crate::{
-    unavi::shapes::api::Cuboid,
-    unavi::vui_module::api::{ModuleEvent, VuiModule},
+    unavi::{
+        shapes::api::Cuboid,
+        vui_module::api::{ModuleEvent, VuiModule},
+    },
     wired::scene::{
         context::self_document,
-        types::{Node, RigidBodyKind},
+        types::{Material, Node, RigidBodyKind},
     },
 };
 
 wired_prelude::generate_script!(Script);
 
-const COLOR: Color = Color::rgb(0.52, 0.20, 0.82);
 const NAME: &str = "Inventory";
 
 const BASE_H: f32 = 0.016;
@@ -28,15 +29,15 @@ struct Script {
     root: Node,
     _nodes: Vec<Node>,
     module: VuiModule,
+    color_mat: Material,
 }
 
 impl GuestScript for Script {
     fn new() -> Self {
         let doc = self_document();
 
-        let mat = doc.create_material();
-        mat.set_base_color(COLOR);
-        mat.set_double_sided(true);
+        let color_mat = doc.create_material();
+        color_mat.set_double_sided(true);
 
         let root = doc.create_node();
         root.set_scale(Vec3::ZERO);
@@ -48,7 +49,7 @@ impl GuestScript for Script {
         base.set_collider(Some(&base_shape.collider()));
         base.set_rigid_body(Some(RigidBodyKind::Fixed));
         base.set_mesh(Some(&base_shape.mesh()));
-        base.set_material(Some(&mat));
+        base.set_material(Some(&color_mat));
         root.add_child(&base);
         nodes.push(base);
 
@@ -58,7 +59,7 @@ impl GuestScript for Script {
             lip.set_collider(Some(&x_lip_shape.collider()));
             lip.set_rigid_body(Some(RigidBodyKind::Fixed));
             lip.set_mesh(Some(&x_lip_shape.mesh()));
-            lip.set_material(Some(&mat));
+            lip.set_material(Some(&color_mat));
             lip.set_translation(Vec3::new(x_sign * X_LIP_X, LIP_Y, 0.0));
             root.add_child(&lip);
             nodes.push(lip);
@@ -70,7 +71,7 @@ impl GuestScript for Script {
             lip.set_collider(Some(&z_lip_shape.collider()));
             lip.set_rigid_body(Some(RigidBodyKind::Fixed));
             lip.set_mesh(Some(&z_lip_shape.mesh()));
-            lip.set_material(Some(&mat));
+            lip.set_material(Some(&color_mat));
             lip.set_translation(Vec3::new(0.0, LIP_Y, z_sign * Z_LIP_Z));
             root.add_child(&lip);
             nodes.push(lip);
@@ -79,15 +80,16 @@ impl GuestScript for Script {
         let icon = doc.create_node();
         let icon_shape = Cuboid::new(ICON_SIZE, ICON_SIZE, ICON_SIZE);
         icon.set_mesh(Some(&icon_shape.mesh()));
-        icon.set_material(Some(&mat));
+        icon.set_material(Some(&color_mat));
         icon.set_scale(Vec3::ZERO);
-        let module = VuiModule::new(NAME, COLOR, &icon);
+        let module = VuiModule::new(NAME, &icon);
         nodes.push(icon);
 
         Self {
             root,
             _nodes: nodes,
             module,
+            color_mat,
         }
     }
 
@@ -101,6 +103,9 @@ impl GuestScript for Script {
                 }
                 ModuleEvent::Deactivate => {
                     self.root.set_scale(Vec3::ZERO);
+                }
+                ModuleEvent::SetColor(color) => {
+                    self.color_mat.set_base_color(color);
                 }
             }
         }

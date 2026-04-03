@@ -1,17 +1,14 @@
-mod api;
-mod discovery;
 mod protocol;
+mod registry;
+mod vui_module;
 
 wired_prelude::generate!();
 
 struct World;
 
 impl exports::unavi::vui_module::api::Guest for World {
-    type VuiModule = api::VuiModuleImpl;
-}
-
-impl exports::unavi::vui_module::discovery::Guest for World {
-    type ModuleDiscovery = discovery::ModuleDiscoveryImpl;
+    type VuiModule = vui_module::VuiModule;
+    type VuiModuleRegistry = registry::VuiModuleRegistry;
 }
 
 export!(World);

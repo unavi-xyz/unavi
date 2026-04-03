@@ -1,18 +1,24 @@
+use serde::{Deserialize, Serialize};
+use wired_prelude::{wired_math::types::Transform, wired_scene::types::Color};
+
 pub const CH_DISCOVER: &str = "unavi::vui-module::discover";
 pub const CH_REGISTER: &str = "unavi::vui-module::register";
 pub const CH_ACTIVATE: &str = "unavi::vui-module::activate";
 pub const CH_DEACTIVATE: &str = "unavi::vui-module::deactivate";
+pub const CH_SET_COLOR: &str = "unavi::vui-module::set-color";
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct RegisterPayload {
     pub name: String,
-    pub color: [f32; 4],
     pub icon_node_id: String,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ActivatePayload {
-    pub translation: [f32; 3],
-    pub rotation: [f32; 4],
-    pub scale: [f32; 3],
+    pub transform: Transform,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SetColorPayload {
+    pub color: Color,
 }

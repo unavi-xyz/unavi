@@ -8,7 +8,7 @@ use bevy::prelude::*;
 use bevy_async_task::TaskPool;
 use bevy_hsd::{
     HsdDoc, HsdRecordId,
-    cache::{SceneRegistry, SceneRegistryInner},
+    cache::SceneRegistry,
     hydrate::events::{ScriptCommandQueue, ScriptCommandQueueComp},
 };
 use bevy_wds::{LocalActor, LocalBlobs};
@@ -21,10 +21,11 @@ use wasmtime::{AsContextMut, Store, component::Linker};
 use wasmtime_wasi::WasiCtxBuilder;
 
 use crate::{
-    EventRegistry, HsdFirewall, InputRegistry, ScriptEngine, WasmBinary, WasmEngine,
+    EventRegistry, InputRegistry, ScriptEngine, WasmBinary, WasmEngine,
     agent::NeedsAgentProxy,
-    api::wired::scene::{GlobalRegistryMapRes, document::gen_id},
+    api::wired::scene::{DocHandle, GlobalRegistryMapRes},
     asset::Wasm,
+    firewall::HsdFirewall,
     permissions::{ApiName, ScriptPermissions},
     runtime::{RuntimeCtx, ScriptRuntime},
 };
@@ -58,7 +59,6 @@ pub struct LoadedScript(pub Arc<bindings::Guest>);
 #[derive(Component, Default, Deref, DerefMut)]
 pub struct Executing(bool);
 
-#[expect(clippy::too_many_lines)]
 pub(crate) fn load_scripts(
     mut commands: Commands,
     wasm_assets: Res<Assets<Wasm>>,
@@ -117,76 +117,43 @@ pub(crate) fn load_scripts(
             .stderr(stderr_stream)
             .build();
 
-        let mut maybe_agent_ent: Option<Entity> = None;
+        let mut maybe_agent_ent = None;
 
         let cmd_queue = Arc::new(Mutex::new(ScriptCommandQueue::default()));
 
-        let (doc, self_node_id, registry, agent_entry, doc_id, doc_entity) =
-            if perms.api.contains(&ApiName::LocalAgent) {
-                let Ok(agent_ent) = local_agent_ent.single() else {
-                    // Wait for local agent to be loaded.
-                    continue;
-                };
-                maybe_agent_ent = Some(agent_ent);
-
-                // Placeholder registry + doc — init_agent_proxies will replace registry.
-                let placeholder_registry = SceneRegistryInner::new();
-                let self_node_id = gen_id();
-                let dummy_doc = Arc::new(LoroDoc::new());
-                let doc_id = blake3::hash(&dummy_doc.peer_id().to_le_bytes());
-                let doc_ent = commands
-                    .spawn((
-                        HsdFirewall::default(),
-                        HsdRecordId(doc_id),
-                        SceneRegistry(Arc::clone(&placeholder_registry)),
-                    ))
-                    .id();
-
-                (
-                    dummy_doc,
-                    self_node_id,
-                    placeholder_registry,
-                    None,
-                    doc_id,
-                    doc_ent,
-                )
-            } else {
-                let Ok(registry) = registries.get(source.doc_entity) else {
-                    warn!("SceneRegistry not found for script");
-                    continue;
-                };
-                let Ok(self_tree_id) = TreeID::try_from(source.node_id.as_str()) else {
-                    warn!("invalid tree id: {}", source.node_id);
-                    continue;
-                };
-                let doc = hsd_docs
-                    .get(source.doc_entity)
-                    .map_or_else(|_| Arc::new(LoroDoc::new()), |hsd| Arc::clone(&hsd.0));
-
-                let doc_id = hsd_record_ids
-                    .get(source.doc_entity)
-                    .map_or_else(|_| blake3::hash(b"unknown"), |r| r.0);
-
-                (
-                    doc,
-                    self_tree_id.to_smolstr(),
-                    Arc::clone(&registry.0),
-                    None,
-                    doc_id,
-                    source.doc_entity,
-                )
+        if perms.api.contains(&ApiName::LocalAgent) {
+            let Ok(agent_ent) = local_agent_ent.single() else {
+                // Wait for local agent to be loaded.
+                continue;
             };
+            maybe_agent_ent = Some(agent_ent);
+        }
+        let Ok(registry) = registries.get(source.doc_entity) else {
+            warn!("SceneRegistry not found for script");
+            continue;
+        };
+        let Ok(self_tree_id) = TreeID::try_from(source.node_id.as_str()) else {
+            warn!("invalid tree id: {}", source.node_id);
+            continue;
+        };
+        let doc = hsd_docs
+            .get(source.doc_entity)
+            .map_or_else(|_| Arc::new(LoroDoc::new()), |hsd| Arc::clone(&hsd.0));
+
+        let doc_id = hsd_record_ids
+            .get(source.doc_entity)
+            .map_or_else(|_| blake3::hash(b"unknown"), |r| r.0);
 
         let rt = RuntimeData::new(
             actor.clone(),
             blobs.clone(),
             doc,
-            self_node_id,
-            registry,
+            self_tree_id.to_smolstr(),
+            Arc::clone(&registry.0),
             Arc::clone(&cmd_queue),
-            agent_entry,
+            None,
             doc_id,
-            doc_entity,
+            source.doc_entity,
             input_registry.clone(),
             event_registry.clone(),
             Arc::clone(&registry_map_res.0),
@@ -203,6 +170,7 @@ pub(crate) fn load_scripts(
         commands
             .entity(ent)
             .insert((LoadingScript, rt, ScriptCommandQueueComp(cmd_queue)));
+
         if let Some(agent_ent) = maybe_agent_ent {
             commands.entity(ent).insert(NeedsAgentProxy(agent_ent));
         }
@@ -254,10 +222,10 @@ pub(crate) fn register_new_docs(
             },
             |fw| Arc::clone(&fw.0),
         );
-        let handle = crate::api::wired::scene::DocHandle {
+        let handle = DocHandle {
             registry: Arc::clone(&registry.0),
             doc_entity,
-            hsd_fw,
+            firewall: hsd_fw,
         };
         registry_map
             .0

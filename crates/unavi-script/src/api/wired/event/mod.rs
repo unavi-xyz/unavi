@@ -41,14 +41,6 @@ pub struct HostEventReceptor {
     queue: registry::ReceptorQueue,
 }
 
-/// Inbound event whitelist for a document. Absent = no restriction.
-/// Only doc IDs in `allowed` may send events to this document.
-#[derive(Component, Default)]
-pub struct DocumentFirewall {
-    pub allowed_hashes: Vec<blake3::Hash>,
-    pub allowed_entities: Vec<Entity>,
-}
-
 impl bindings::wired::event::api::Host for RuntimeData {
     async fn register_emitter(
         &mut self,

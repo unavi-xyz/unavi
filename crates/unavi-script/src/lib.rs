@@ -4,13 +4,14 @@ use wasmtime::Config;
 pub mod agent;
 mod api;
 mod asset;
+pub mod firewall;
 pub mod load;
 pub mod permissions;
 mod runtime;
 
-pub use api::wired::event::{DocumentFirewall, EventRegistry};
+pub use api::wired::event::EventRegistry;
 pub use api::wired::input::{InputAction, InputDevice, InputRegistry, QueuedEvent};
-pub use api::wired::scene::{GlobalRegistryMapRes, HsdFirewall, HsdFirewallInner};
+pub use api::wired::scene::GlobalRegistryMapRes;
 pub use load::local::{LoadLocalScript, ScriptSource};
 pub use permissions::ScriptPermissions;
 
@@ -57,19 +58,22 @@ impl Plugin for ScriptPlugin {
             .add_systems(
                 FixedUpdate,
                 (
-                    load::local::poll_local_scripts,
-                    load::hsd::load_hsd_scripts,
-                    load::hsd::cleanup_hsd_scripts,
-                    load::register_new_docs,
-                    load::load_scripts,
-                    agent::init_agent_proxies,
-                    runtime::init::begin_init_scripts,
-                    runtime::init::end_init_scripts,
-                    runtime::tick::tick_scripts,
-                    api::wired::event::bridge::process_event_emissions,
-                )
-                    .chain()
-                    .after(bevy_hsd::hydrate::init::init_hsd_doc),
+                    firewall::sync_hsd_firewall_entities,
+                    (
+                        load::local::poll_local_scripts,
+                        load::hsd::load_hsd_scripts,
+                        load::hsd::cleanup_hsd_scripts,
+                        load::register_new_docs,
+                        load::load_scripts,
+                        agent::init_agent_proxies,
+                        runtime::init::begin_init_scripts,
+                        runtime::init::end_init_scripts,
+                        runtime::tick::tick_scripts,
+                        api::wired::event::bridge::process_event_emissions,
+                    )
+                        .chain()
+                        .after(bevy_hsd::hydrate::init::init_hsd_doc),
+                ),
             );
     }
 }

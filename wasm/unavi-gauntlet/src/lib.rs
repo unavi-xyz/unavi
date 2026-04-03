@@ -1,14 +1,15 @@
 mod gauntlet;
 mod module;
 
-use std::{cell::Cell, time::SystemTime};
+use std::{cell::Cell, f32::consts::PI, time::SystemTime};
 
+use blake3::Hash;
 use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
 
 use crate::{
     gauntlet::{
         BG_ALPHA_BASE, BG_ALPHA_HOVER, CLOSE_ON_MOVE_THRESHOLD_SQ, Gauntlet, OPEN_SPEED_SECONDS,
-        RAISE_DIST, RAISE_SPEED_SECONDS, Target,
+        RAISE_DIST, RAISE_SPEED_SECONDS, RING_RADIUS, SECTOR_INNER_R, Target,
     },
     unavi::vui_module::discovery::ModuleDiscovery,
     wired::{
@@ -17,12 +18,17 @@ use crate::{
             system_api::system_input_listener,
             types::{InputAction, InputDevice, InputListener},
         },
+        scene::{context::get_document, types::Node},
     },
 };
 
 wired_prelude::generate_script!(Script);
 
 pub const MAX_MODULES: usize = 8;
+
+const ICON_R: f32 = f32::midpoint(SECTOR_INNER_R, RING_RADIUS);
+const ICON_SCALE: f32 = 1.0;
+const ICON_Z_OFFSET: f32 = 0.004;
 
 pub const MODULE_PALETTE: [Color; MAX_MODULES] = [
     Color::rgb(0.52, 0.20, 0.82),
@@ -38,6 +44,8 @@ pub const MODULE_PALETTE: [Color; MAX_MODULES] = [
 pub struct DynamicModuleDef {
     pub color: Color,
     pub doc_id: Vec<u8>,
+    pub icon_node: Option<Node>,
+    pub icon_node_id: String,
     pub name: String,
 }
 
@@ -77,6 +85,8 @@ impl GuestScript for Script {
                 defs.push(DynamicModuleDef {
                     color: m.color,
                     doc_id: m.doc_id,
+                    icon_node: None,
+                    icon_node_id: m.icon_node_id,
                     name: m.name,
                 });
                 changed = true;
@@ -87,6 +97,16 @@ impl GuestScript for Script {
             let n = defs.len();
             for g in &self.gauntlets {
                 g.rebuild_modules(&defs, &MODULE_PALETTE[..n]);
+            }
+        }
+        // Look up icon nodes for any def that hasn't resolved one yet.
+        for def in defs.iter_mut() {
+            if def.icon_node.is_none() && !def.icon_node_id.is_empty() {
+                if let Some(doc) = get_document(&def.doc_id) {
+                    def.icon_node = doc.nodes().into_iter().find(|n| n.id() == def.icon_node_id);
+                } else if let Ok(doc_id) = Hash::from_slice(&def.doc_id) {
+                    eprintln!("document {doc_id} not found");
+                }
             }
         }
         drop(defs);
@@ -175,6 +195,9 @@ impl GuestScript for Script {
             .as_secs_f32();
         self.render_time.set(SystemTime::now());
 
+        let defs = self.module_defs.borrow();
+        let n = defs.len();
+
         for g in &self.gauntlets {
             let prev_t = g.scale_t.get();
             let inc = if g.open.get() {
@@ -186,6 +209,27 @@ impl GuestScript for Script {
             if new_t.to_bits() != prev_t.to_bits() {
                 g.scale_t.set(new_t);
                 g.core.set_scale(Vec3::splat(new_t));
+            }
+
+            // Position module icon nodes in world space.
+            if n > 0 {
+                let menu_tr = g.core.global_transform();
+                for (i, def) in defs.iter().enumerate() {
+                    let Some(icon) = def.icon_node.as_ref() else {
+                        continue;
+                    };
+                    if new_t == 0.0 {
+                        icon.set_scale(Vec3::ZERO);
+                    } else {
+                        let ca = i as f32 * 2.0 * PI / n as f32;
+                        let local = Vec3::new(ICON_R * ca.cos(), ICON_R * ca.sin(), ICON_Z_OFFSET);
+                        let rot = menu_tr.rotation;
+                        let offset = rot * local;
+                        icon.set_translation(menu_tr.translation + offset);
+                        icon.set_rotation(rot);
+                        icon.set_scale(Vec3::splat(new_t * ICON_SCALE));
+                    }
+                }
             }
 
             if !g.open.get() {

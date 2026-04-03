@@ -3,15 +3,14 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use bevy_hsd::HsdRecordId;
 
-use super::{
-    DocumentFirewall,
-    registry::{EventRegistry, QueuedEvent, ReceptorFilter},
-};
+use crate::firewall::HsdFirewall;
+
+use super::registry::{EventRegistry, QueuedEvent, ReceptorFilter};
 
 pub fn process_event_emissions(
     registry: Res<EventRegistry>,
     transforms: Query<&GlobalTransform>,
-    firewalls: Query<(&HsdRecordId, &DocumentFirewall)>,
+    firewalls: Query<(&HsdRecordId, &HsdFirewall)>,
 ) {
     let pending = {
         let mut inner = registry.0.lock().expect("registry lock");
@@ -45,12 +44,12 @@ pub fn process_event_emissions(
 
                     // 2. Firewall check
                     if let Some((_, fw)) = firewalls.iter().find(|(id, _)| id.0 == entry.doc_id) {
-                        let sender_bytes = emission.sender_doc_id.as_slice();
-                        if !fw
-                            .allowed_hashes
-                            .iter()
-                            .any(|h| h.as_bytes() == sender_bytes)
-                        {
+                        let Ok(fw) = fw.0.read() else {
+                            error!("firewall poisoned");
+                            return None;
+                        };
+
+                        if !fw.read.iter().any(|h| *h == emission.sender_doc_id) {
                             return None;
                         }
                     }

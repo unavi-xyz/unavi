@@ -2,15 +2,19 @@ use std::cell::Cell;
 
 use crate::{
     exports::unavi::vui_module::discovery::{GuestModuleDiscovery, RegisteredModule},
-    protocol::{ActivatePayload, CH_ACTIVATE, CH_DEACTIVATE, CH_DISCOVER, CH_REGISTER, RegisterPayload},
+    protocol::{
+        ActivatePayload, CH_ACTIVATE, CH_DEACTIVATE, CH_DISCOVER, CH_REGISTER, RegisterPayload,
+    },
     wired::event::{
         api::{register_emitter, register_receptor},
         types::{EventEmitter, EventReceptor},
     },
 };
-use wired_prelude::wired_scene::types::Color;
+use wired_prelude::{
+    wired_math::types::{Quat, Vec3},
+    wired_scene::types::Color,
+};
 
-/// Ticks to wait before emitting CH_DISCOVER, giving modules time to load.
 const DISCOVER_DELAY_TICKS: u32 = 60;
 
 pub struct ModuleDiscoveryImpl {
@@ -36,6 +40,7 @@ impl GuestModuleDiscovery for ModuleDiscoveryImpl {
         if !self.fired.get() {
             let t = self.ticks.get() + 1;
             self.ticks.set(t);
+
             if t >= DISCOVER_DELAY_TICKS {
                 self.emitter.emit(CH_DISCOVER, &[]);
                 self.fired.set(true);
@@ -45,6 +50,7 @@ impl GuestModuleDiscovery for ModuleDiscoveryImpl {
         let mut results = Vec::new();
         while let Some(event) = self.register_receptor.poll() {
             if let Ok(p) = postcard::from_bytes::<RegisterPayload>(&event.payload) {
+                println!("found module: {}", p.name);
                 results.push(RegisteredModule {
                     doc_id: event.sender_document,
                     name: p.name,
@@ -54,19 +60,16 @@ impl GuestModuleDiscovery for ModuleDiscoveryImpl {
                         b: p.color[2],
                         a: p.color[3],
                     },
+                    icon_node_id: p.icon_node_id,
                 });
+            } else {
+                eprintln!("received invalid event payload");
             }
         }
         results
     }
 
-    fn activate(
-        &self,
-        doc_id: Vec<u8>,
-        translation: wired_prelude::wired_math::types::Vec3,
-        rotation: wired_prelude::wired_math::types::Quat,
-        scale: wired_prelude::wired_math::types::Vec3,
-    ) {
+    fn activate(&self, doc_id: Vec<u8>, translation: Vec3, rotation: Quat, scale: Vec3) {
         let payload = postcard::to_allocvec(&ActivatePayload {
             translation: [translation.x, translation.y, translation.z],
             rotation: [rotation.x, rotation.y, rotation.z, rotation.w],

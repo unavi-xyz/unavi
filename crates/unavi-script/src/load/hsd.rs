@@ -61,7 +61,7 @@ pub fn load_hsd_scripts(
                     .get_bytes(hash)
                     .await
                     .map(|bytes| (node_ent, doc_ent, node_id, name, bytes))
-                    .map_err(|e| anyhow::anyhow!("blob fetch: {e}"));
+                    .map_err(|err| anyhow::anyhow!("blob fetch: {err}"));
                 let _ = tx.send(result);
             });
         }
@@ -83,8 +83,8 @@ pub fn load_hsd_scripts(
                     },
                 ));
             }
-            Ok(Err(e)) => {
-                error!("failed to fetch HSD script blob: {e:?}");
+            Ok(Err(err)) => {
+                error!("failed to fetch HSD script blob: {err:?}");
             }
             Err(std::sync::mpsc::TryRecvError::Empty) => {
                 still_pending.push(rx);

@@ -22,6 +22,8 @@ const BASIN_HEIGHT: f32 = 0.18;
 const BASIN_RADIUS: f32 = 0.52;
 const BASIN_X: f32 = 0.58;
 const BASIN_Y: f32 = -0.10;
+const ICON_MINOR_R: f32 = 0.012;
+const ICON_MAJOR_R: f32 = 0.028;
 const LIP_H: f32 = 0.036;
 const LIP_T: f32 = 0.012;
 const LIP_Y: f32 = BASE_H * 0.5 + LIP_H * 0.5;
@@ -78,7 +80,12 @@ impl GuestScript for Script {
         ring.set_rigid_body(Some(RigidBodyKind::Dynamic));
         ring.set_scale(Vec3::ZERO);
 
-        let module = VuiModule::new(NAME, COLOR);
+        let icon = doc.create_node();
+        icon.set_mesh(Some(&Torus::new(ICON_MINOR_R, ICON_MAJOR_R).mesh()));
+        icon.set_material(Some(&color_mat));
+        icon.set_scale(Vec3::ZERO);
+        let module = VuiModule::new(NAME, COLOR, &icon);
+        nodes.push(icon);
 
         Self {
             root,
@@ -101,6 +108,7 @@ impl GuestScript for Script {
                         y: t.translation.y + 0.5,
                         z: t.translation.z,
                     });
+                    // TODO fix ring position, grab, add phys joint
                     // self.ring.set_scale(Vec3::ONE);
 
                     let fut = get_wds().query(None);
@@ -128,7 +136,7 @@ impl GuestScript for Script {
 
                     remove_query = true;
                 }
-                Err(()) => println!("wds query error"),
+                Err(()) => eprintln!("wds query error"),
             }
         }
 

@@ -22,7 +22,7 @@ pub const DEFAULT_AGENT_HEIGHT: f32 = 1.7;
 pub const MODULE_FORWARD_DIST: f32 = 0.9;
 pub const MODULE_HEIGHT_OFFSET: f32 = 0.08;
 
-pub const BG_ALPHA_BASE: f32 = 0.3;
+pub const BG_ALPHA_BASE: f32 = 0.5;
 pub const BG_ALPHA_HOVER: f32 = 0.9;
 pub const OPEN_SPEED_SECONDS: f32 = 0.18;
 pub const RAISE_DIST: f32 = 0.015;

@@ -1,5 +1,5 @@
 use crate::protocol::{CH_SET_COLOR, SetColorPayload};
-use crate::wired::scene::types::Node;
+use crate::wired::scene::types::Mesh;
 use crate::{
     exports::unavi::vui_module::api::{GuestVuiModule, ModuleEvent},
     protocol::{
@@ -13,14 +13,14 @@ use crate::{
 
 pub struct VuiModule {
     name: String,
-    icon_node_id: String,
+    icon_mesh_id: String,
     request_receptor: EventReceptor,
     activate_receptor: EventReceptor,
 }
 
 impl GuestVuiModule for VuiModule {
-    fn new(name: String, icon: &Node) -> Self {
-        let icon_node_id = icon.id();
+    fn new(name: String, icon: &Mesh) -> Self {
+        let icon_mesh_id = icon.id();
         let request_receptor = register_receptor(&[CH_DISCOVER.to_string()], None, f32::MAX, &[]);
         let activate_receptor = register_receptor(
             &[
@@ -34,7 +34,7 @@ impl GuestVuiModule for VuiModule {
         );
         Self {
             name,
-            icon_node_id,
+            icon_mesh_id,
             request_receptor,
             activate_receptor,
         }
@@ -44,7 +44,7 @@ impl GuestVuiModule for VuiModule {
         while let Some(event) = self.request_receptor.poll() {
             let payload = postcard::to_allocvec(&RegisterPayload {
                 name: self.name.clone(),
-                icon_node_id: self.icon_node_id.clone(),
+                icon_mesh_id: self.icon_mesh_id.clone(),
             })
             .expect("encode register");
             let emitter = register_emitter(None, f32::MAX, &[event.sender_document]);

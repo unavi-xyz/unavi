@@ -22,18 +22,20 @@ pub const DEFAULT_AGENT_HEIGHT: f32 = 1.7;
 pub const MODULE_FORWARD_DIST: f32 = 0.9;
 pub const MODULE_HEIGHT_OFFSET: f32 = 0.08;
 
-pub const BG_ALPHA_BASE: f32 = 0.7;
-pub const BG_ALPHA_HOVER: f32 = 0.95;
-pub const OPEN_SPEED_SECONDS: f32 = 0.18;
-pub const RAISE_DIST: f32 = 0.015;
-pub const RAISE_SPEED_SECONDS: f32 = 0.07;
-pub const RING_RADIUS: f32 = 0.14;
+pub const BG_ALPHA_BASE: f32 = 0.4;
+pub const BG_ALPHA_HOVER: f32 = 0.8;
 pub const CLOSE_ON_MOVE_THRESHOLD_SQ: f32 = 0.04;
-pub const SECTOR_GAP_WORLD: f32 = 0.012;
-pub const SECTOR_INNER_R: f32 = 0.03;
+pub const ICON_R: f32 = f32::midpoint(SECTOR_INNER_R, RING_RADIUS);
+pub const ICON_Z_OFFSET: f32 = 0.004;
+pub const OPEN_SPEED_SECONDS: f32 = 0.18;
 pub const OUTLINE_COLOR: Color = Color::WHITE;
 pub const OUTLINE_WIDTH: f32 = 0.005;
 pub const OUTLINE_Z: f32 = 0.001;
+pub const RAISE_DIST: f32 = 0.015;
+pub const RAISE_SPEED_SECONDS: f32 = 0.07;
+pub const RING_RADIUS: f32 = 0.14;
+pub const SECTOR_GAP_WORLD: f32 = 0.012;
+pub const SECTOR_INNER_R: f32 = 0.03;
 pub const SECTOR_SUBDIVISIONS: usize = 40;
 pub const Z_OFFSET: f32 = -0.5;
 
@@ -158,6 +160,17 @@ impl Gauntlet {
             *bone_ref = Some(node);
             true
         })
+    }
+
+    pub fn track_bone(&self) {
+        let bone_ref = self.bone.borrow();
+        let Some(bone) = bone_ref.as_ref() else {
+            return;
+        };
+        let tr = bone.global_transform();
+        let pos = tr.translation + tr.rotation * Vec3::new(0.0, 0.0, Z_OFFSET);
+        self.core.set_translation(pos);
+        self.core.set_rotation(tr.rotation);
     }
 
     pub fn open_menu(&self, open_pos: Vec3) {

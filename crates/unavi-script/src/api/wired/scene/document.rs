@@ -199,6 +199,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             inner,
             can_read: true,
             can_write: true,
+            doc_entity,
         })?)
     }
 
@@ -206,9 +207,14 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         self_: Resource<Document>,
     ) -> wasmtime::Result<Vec<Resource<HostNode>>> {
-        let (registry, can_read, can_write) = {
+        let (registry, can_read, can_write, doc_entity) = {
             let d = self.table.get(&self_)?;
-            (Arc::clone(&d.registry), d.can_read, d.can_write)
+            (
+                Arc::clone(&d.registry),
+                d.can_read,
+                d.can_write,
+                d.doc_entity,
+            )
         };
         if !can_read {
             return Err(anyhow::anyhow!("hsd read permission required"));
@@ -233,6 +239,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
                 inner,
                 can_read,
                 can_write,
+                doc_entity,
             })?);
         }
         Ok(out)
@@ -242,9 +249,14 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         self_: Resource<Document>,
     ) -> wasmtime::Result<Vec<Resource<HostNode>>> {
-        let (registry, can_read, can_write) = {
+        let (registry, can_read, can_write, doc_entity) = {
             let d = self.table.get(&self_)?;
-            (Arc::clone(&d.registry), d.can_read, d.can_write)
+            (
+                Arc::clone(&d.registry),
+                d.can_read,
+                d.can_write,
+                d.doc_entity,
+            )
         };
         if !can_read {
             return Err(anyhow::anyhow!("hsd read permission required"));
@@ -256,6 +268,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
                 inner,
                 can_read,
                 can_write,
+                doc_entity,
             })?);
         }
         Ok(out)

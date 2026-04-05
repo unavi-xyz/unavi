@@ -100,6 +100,7 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
                 inner,
                 can_read: true,
                 can_write: true,
+                doc_entity: self.doc_entity,
             })?;
             return Ok(res);
         }

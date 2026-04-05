@@ -10,7 +10,9 @@ use crate::{
     wired::{
         scene::{
             context::self_document,
-            types::{Collider, ColliderCylinder, Material, Node, RigidBodyKind},
+            types::{
+                Collider, ColliderCylinder, Material, Mesh, Node, PrimitiveTopology, RigidBodyKind,
+            },
         },
         wds::{context::get_wds, types::QueryFuture},
     },
@@ -25,8 +27,8 @@ const BASIN_HEIGHT: f32 = 0.18;
 const BASIN_RADIUS: f32 = 0.52;
 const BASIN_X: f32 = 0.58;
 const BASIN_Y: f32 = -0.10;
-const ICON_MINOR_R: f32 = 0.012;
-const ICON_MAJOR_R: f32 = 0.028;
+const ICON_MINOR_R: f32 = 0.008;
+const ICON_MAJOR_R: f32 = 0.02;
 const LIP_H: f32 = 0.036;
 const LIP_T: f32 = 0.012;
 const LIP_Y: f32 = BASE_H * 0.5 + LIP_H * 0.5;
@@ -43,6 +45,7 @@ struct Script {
     root: Node,
     ring: Node,
     _nodes: Vec<Node>,
+    _icon_mesh: Mesh,
     module: VuiModule,
     beacon_query: RefCell<Option<QueryFuture>>,
     color_mat: Material,
@@ -83,17 +86,32 @@ impl GuestScript for Script {
         ring.set_rigid_body(Some(RigidBodyKind::Dynamic));
         ring.set_scale(Vec3::ZERO);
 
-        let icon = doc.create_node();
-        icon.set_mesh(Some(&Torus::new(ICON_MINOR_R, ICON_MAJOR_R).mesh()));
-        icon.set_material(Some(&color_mat));
-        icon.set_scale(Vec3::ZERO);
-        let module = VuiModule::new(NAME, &icon);
-        nodes.push(icon);
+        // Torus from unavi-shapes lies in XZ plane; rotate 90° around X: (x,y,z) → (x,-z,y)
+        let src = Torus::new(ICON_MINOR_R, ICON_MAJOR_R).mesh();
+        let rot_pos: Vec<f32> = src
+            .positions()
+            .unwrap_or_default()
+            .chunks(3)
+            .flat_map(|c| [c[0], -c[2], c[1]])
+            .collect();
+        let rot_nor: Vec<f32> = src
+            .normals()
+            .unwrap_or_default()
+            .chunks(3)
+            .flat_map(|c| [c[0], -c[2], c[1]])
+            .collect();
+        let icon_mesh = doc.create_mesh();
+        icon_mesh.set_topology(PrimitiveTopology::TriangleList);
+        icon_mesh.set_positions(Some(&rot_pos));
+        icon_mesh.set_normals(Some(&rot_nor));
+        icon_mesh.set_indices(src.indices().as_ref());
+        let module = VuiModule::new(NAME, &icon_mesh);
 
         Self {
             root,
             ring,
             _nodes: nodes,
+            _icon_mesh: icon_mesh,
             module,
             beacon_query: RefCell::new(None),
             color_mat,

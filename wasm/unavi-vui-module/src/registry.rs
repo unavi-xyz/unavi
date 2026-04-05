@@ -53,7 +53,7 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
                 results.push(RegisteredModule {
                     doc_id: event.sender_document,
                     name: p.name,
-                    icon_node_id: p.icon_node_id,
+                    icon_mesh_id: p.icon_mesh_id,
                 });
             } else {
                 eprintln!("received invalid event payload");

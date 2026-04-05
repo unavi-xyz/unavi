@@ -39,9 +39,11 @@ fn build(radius: f32, height: f32, res: u32) -> RawMesh {
     let mut uvs = Vec::new();
     let mut indices = Vec::new();
 
-    // Base cap (y = 0, normal = -Y)
+    let half_h = height / 2.0;
+
+    // Base cap (y = -half_h, normal = -Y)
     let base_center = positions.len() as u32;
-    positions.push([0.0, 0.0, 0.0]);
+    positions.push([0.0, -half_h, 0.0]);
     normals.push([0.0, -1.0, 0.0]);
     uvs.push([0.5, 0.5]);
 
@@ -49,7 +51,7 @@ fn build(radius: f32, height: f32, res: u32) -> RawMesh {
     for i in 0..res {
         let a = TAU * i as f32 / res as f32;
         let (s, c) = a.sin_cos();
-        positions.push([radius * c, 0.0, radius * s]);
+        positions.push([radius * c, -half_h, radius * s]);
         normals.push([0.0, -1.0, 0.0]);
         uvs.push([0.5f32.mul_add(c, 0.5), 0.5f32.mul_add(-s, 0.5)]);
     }
@@ -59,9 +61,6 @@ fn build(radius: f32, height: f32, res: u32) -> RawMesh {
     }
 
     // Side: slanted normals
-    // slope vector along the side surface: normal is perpendicular to the slope
-    // For a cone with apex at (0,height,0) and base radius r at y=0:
-    // side normal at angle a: (sin_a * height, radius, cos_a * height) normalized (rotated outward)
     let slope_len = radius.hypot(height);
     let ny = radius / slope_len;
     let nxz = height / slope_len;
@@ -71,7 +70,7 @@ fn build(radius: f32, height: f32, res: u32) -> RawMesh {
     for i in 0..=res {
         let a = TAU * i as f32 / res as f32;
         let (s, c) = a.sin_cos();
-        positions.push([radius * c, 0.0, radius * s]);
+        positions.push([radius * c, -half_h, radius * s]);
         normals.push([nxz * c, ny, nxz * s]);
         uvs.push([i as f32 / res as f32, 1.0]);
     }
@@ -80,7 +79,7 @@ fn build(radius: f32, height: f32, res: u32) -> RawMesh {
     for i in 0..=res {
         let a = TAU * (i as f32 + 0.5) / res as f32;
         let (s, c) = a.sin_cos();
-        positions.push([0.0, height, 0.0]);
+        positions.push([0.0, half_h, 0.0]);
         normals.push([nxz * c, ny, nxz * s]);
         uvs.push([(i as f32 + 0.5) / res as f32, 0.0]);
     }

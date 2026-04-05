@@ -36,7 +36,7 @@ pub fn make_sectors(doc: &Document, modules: &[ModuleRef], colors: &[Color]) -> 
 fn make_sector(doc: &Document, i: usize, n: usize, module: &ModuleRef, color: Color) -> Sector {
     let bg_material = doc.create_material();
     bg_material.set_base_color(Color::rgba(color.r, color.g, color.b, BG_ALPHA_BASE));
-    bg_material.set_alpha_mode(Some(AlphaMode::Add));
+    bg_material.set_alpha_mode(Some(AlphaMode::Blend));
     bg_material.set_double_sided(true);
     bg_material.set_unlit(true);
     let bg = doc.create_node();

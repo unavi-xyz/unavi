@@ -22,8 +22,8 @@ pub const DEFAULT_AGENT_HEIGHT: f32 = 1.7;
 pub const MODULE_FORWARD_DIST: f32 = 0.9;
 pub const MODULE_HEIGHT_OFFSET: f32 = 0.08;
 
-pub const BG_ALPHA_BASE: f32 = 0.5;
-pub const BG_ALPHA_HOVER: f32 = 0.9;
+pub const BG_ALPHA_BASE: f32 = 0.7;
+pub const BG_ALPHA_HOVER: f32 = 0.95;
 pub const OPEN_SPEED_SECONDS: f32 = 0.18;
 pub const RAISE_DIST: f32 = 0.015;
 pub const RAISE_SPEED_SECONDS: f32 = 0.07;
@@ -177,6 +177,10 @@ impl Gauntlet {
             sector.raise_t.set(0.0);
             sector.root.set_scale(Vec3::ONE);
             sector.root.set_translation(Vec3::ZERO);
+            let c = sector.bg_color;
+            sector
+                .bg_material
+                .set_base_color(Color::rgba(c.r, c.g, c.b, BG_ALPHA_BASE));
         }
     }
 

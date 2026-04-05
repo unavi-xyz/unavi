@@ -30,17 +30,14 @@ const ICON_R: f32 = f32::midpoint(SECTOR_INNER_R, RING_RADIUS);
 const ICON_SCALE: f32 = 1.0;
 const ICON_Z_OFFSET: f32 = 0.004;
 
-// TODO dynamic palette, shifting hue from a starting value
-pub const MODULE_PALETTE: [Color; MAX_MODULES] = [
-    Color::rgb(0.52, 0.20, 0.82),
-    Color::rgb(0.88, 0.52, 0.08),
-    Color::rgb(0.12, 0.40, 0.88),
-    Color::rgb(0.12, 0.62, 0.28),
-    Color::rgb(0.72, 0.12, 0.52),
-    Color::rgb(0.80, 0.15, 0.18),
-    Color::rgb(0.08, 0.58, 0.55),
-    Color::rgb(0.50, 0.65, 0.08),
-];
+fn palette(n: usize) -> Vec<Color> {
+    (0..n)
+        .map(|i| {
+            let h = (0.6 + i as f32 / n as f32) % 1.0;
+            Color::hsv(h, 0.75, 0.85)
+        })
+        .collect()
+}
 
 pub struct ModuleRef {
     pub doc_id: Vec<u8>,
@@ -96,7 +93,7 @@ impl GuestScript for Script {
             modules.sort_by(|a, b| a.name.cmp(&b.name));
             let n = modules.len();
             for g in &self.gauntlets {
-                g.rebuild_sectors(&modules, &MODULE_PALETTE[..n]);
+                g.rebuild_sectors(&modules, &palette(n));
                 for s in g.sectors.borrow().as_slice() {
                     self.registry.set_color(&s.module_doc_id, s.bg_color);
                 }

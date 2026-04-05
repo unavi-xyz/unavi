@@ -50,7 +50,6 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
         let mut results = Vec::new();
         while let Some(event) = self.register_receptor.poll() {
             if let Ok(p) = postcard::from_bytes::<RegisterPayload>(&event.payload) {
-                println!("found module: {}", p.name);
                 results.push(RegisteredModule {
                     doc_id: event.sender_document,
                     name: p.name,

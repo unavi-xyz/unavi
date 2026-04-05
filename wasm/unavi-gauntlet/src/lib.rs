@@ -1,7 +1,7 @@
 mod gauntlet;
 mod sector;
 
-use std::{cell::Cell, f32::consts::PI, time::SystemTime};
+use std::{cell::Cell, time::SystemTime};
 
 use blake3::Hash;
 use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
@@ -9,7 +9,7 @@ use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
 use crate::{
     gauntlet::{
         BG_ALPHA_BASE, BG_ALPHA_HOVER, CLOSE_ON_MOVE_THRESHOLD_SQ, Gauntlet, OPEN_SPEED_SECONDS,
-        RAISE_DIST, RAISE_SPEED_SECONDS, RING_RADIUS, SECTOR_INNER_R, Target,
+        RAISE_DIST, RAISE_SPEED_SECONDS, Target,
     },
     unavi::vui_module::api::VuiModuleRegistry,
     wired::{
@@ -18,17 +18,13 @@ use crate::{
             system_api::system_input_listener,
             types::{InputAction, InputDevice, InputListener},
         },
-        scene::{context::get_document, types::Node},
+        scene::{context::get_document, types::Mesh},
     },
 };
 
 wired_prelude::generate_script!(Script);
 
 pub const MAX_MODULES: usize = 8;
-
-const ICON_R: f32 = f32::midpoint(SECTOR_INNER_R, RING_RADIUS);
-const ICON_SCALE: f32 = 1.0;
-const ICON_Z_OFFSET: f32 = 0.004;
 
 fn palette(n: usize) -> Vec<Color> {
     (0..n)
@@ -41,8 +37,8 @@ fn palette(n: usize) -> Vec<Color> {
 
 pub struct ModuleRef {
     pub doc_id: Vec<u8>,
-    pub icon_node: Option<Node>,
-    pub icon_node_id: String,
+    pub icon_mesh: Option<Mesh>,
+    pub icon_mesh_id: String,
     pub name: String,
 }
 
@@ -78,17 +74,36 @@ impl GuestScript for Script {
     fn tick(&self) {
         let mut modules = self.module_refs.borrow_mut();
         let mut changed = false;
+
         for m in self.registry.poll() {
             if modules.len() < MAX_MODULES && !modules.iter().any(|d| d.doc_id == m.doc_id) {
                 modules.push(ModuleRef {
                     doc_id: m.doc_id,
-                    icon_node: None,
-                    icon_node_id: m.icon_node_id,
+                    icon_mesh: None,
+                    icon_mesh_id: m.icon_mesh_id,
                     name: m.name,
                 });
-                changed = true;
             }
         }
+
+        // Resolve icon meshes for modules that don't have one yet.
+        for module in modules.iter_mut() {
+            if module.icon_mesh.is_none() && !module.icon_mesh_id.is_empty() {
+                if let Some(doc) = get_document(&module.doc_id) {
+                    if let Some(mesh) = doc
+                        .meshes()
+                        .into_iter()
+                        .find(|m| m.id() == module.icon_mesh_id)
+                    {
+                        module.icon_mesh = Some(mesh);
+                        changed = true;
+                    }
+                } else if let Ok(doc_id) = Hash::from_slice(&module.doc_id) {
+                    eprintln!("document {doc_id} not found");
+                }
+            }
+        }
+
         if changed {
             modules.sort_by(|a, b| a.name.cmp(&b.name));
             let n = modules.len();
@@ -96,19 +111,6 @@ impl GuestScript for Script {
                 g.rebuild_sectors(&modules, &palette(n));
                 for s in g.sectors.borrow().as_slice() {
                     self.registry.set_color(&s.module_doc_id, s.bg_color);
-                }
-            }
-        }
-        // Look up icon nodes for any module that hasn't resolved one yet.
-        for module in modules.iter_mut() {
-            if module.icon_node.is_none() && !module.icon_node_id.is_empty() {
-                if let Some(doc) = get_document(&module.doc_id) {
-                    module.icon_node = doc
-                        .nodes()
-                        .into_iter()
-                        .find(|n| n.id() == module.icon_node_id);
-                } else if let Ok(doc_id) = Hash::from_slice(&module.doc_id) {
-                    eprintln!("document {doc_id} not found");
                 }
             }
         }
@@ -198,9 +200,6 @@ impl GuestScript for Script {
             .as_secs_f32();
         self.render_time.set(SystemTime::now());
 
-        let modules = self.module_refs.borrow();
-        let n = modules.len();
-
         for g in &self.gauntlets {
             let prev_t = g.scale_t.get();
             let inc = if g.open.get() {
@@ -214,25 +213,8 @@ impl GuestScript for Script {
                 g.core.set_scale(Vec3::splat(new_t));
             }
 
-            // Position module icon nodes in world space.
-            if n > 0 {
-                let menu_tr = g.core.global_transform();
-                for (i, module) in modules.iter().enumerate() {
-                    let Some(icon) = module.icon_node.as_ref() else {
-                        continue;
-                    };
-                    if new_t == 0.0 {
-                        icon.set_scale(Vec3::ZERO);
-                    } else {
-                        let ca = i as f32 * 2.0 * PI / n as f32;
-                        let local = Vec3::new(ICON_R * ca.cos(), ICON_R * ca.sin(), ICON_Z_OFFSET);
-                        let rot = menu_tr.rotation;
-                        let offset = rot * local;
-                        icon.set_translation(menu_tr.translation + offset);
-                        icon.set_rotation(rot);
-                        icon.set_scale(Vec3::splat(new_t * ICON_SCALE));
-                    }
-                }
+            if !g.open.get() && new_t > 0.0 {
+                g.track_bone();
             }
 
             if !g.open.get() {
@@ -240,10 +222,10 @@ impl GuestScript for Script {
             }
 
             let hovered = g.hovered_sector.get();
-            let modules = g.sectors.borrow();
-            for (i, module) in modules.iter().enumerate() {
+            let sectors = g.sectors.borrow();
+            for (i, sector) in sectors.iter().enumerate() {
                 let target_raise = if Some(i) == hovered { 1.0_f32 } else { 0.0_f32 };
-                let prev_raise = module.raise_t.get();
+                let prev_raise = sector.raise_t.get();
                 let speed = delta / RAISE_SPEED_SECONDS;
                 let new_raise = if target_raise > prev_raise {
                     (prev_raise + speed).min(target_raise)
@@ -251,13 +233,13 @@ impl GuestScript for Script {
                     (prev_raise - speed).max(target_raise)
                 };
                 if new_raise.to_bits() != prev_raise.to_bits() {
-                    module.raise_t.set(new_raise);
-                    module
+                    sector.raise_t.set(new_raise);
+                    sector
                         .root
                         .set_translation(Vec3::new(0.0, 0.0, new_raise * RAISE_DIST));
-                    let c = module.bg_color;
+                    let c = sector.bg_color;
                     let bg_alpha = new_raise.mul_add(BG_ALPHA_HOVER - BG_ALPHA_BASE, BG_ALPHA_BASE);
-                    module
+                    sector
                         .bg_material
                         .set_base_color(Color::rgba(c.r, c.g, c.b, bg_alpha));
                 }

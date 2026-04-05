@@ -7,7 +7,7 @@ use crate::{
     },
     wired::scene::{
         context::self_document,
-        types::{Material, Node, RigidBodyKind},
+        types::{Material, Mesh, Node, RigidBodyKind},
     },
 };
 
@@ -28,6 +28,7 @@ const Z_LIP_Z: f32 = TABLE_D * 0.5 - LIP_T * 0.5;
 struct Script {
     root: Node,
     _nodes: Vec<Node>,
+    _icon_mesh: Mesh,
     module: VuiModule,
     color_mat: Material,
 }
@@ -77,17 +78,13 @@ impl GuestScript for Script {
             nodes.push(lip);
         }
 
-        let icon = doc.create_node();
-        let icon_shape = Cuboid::new(ICON_SIZE, ICON_SIZE, ICON_SIZE);
-        icon.set_mesh(Some(&icon_shape.mesh()));
-        icon.set_material(Some(&color_mat));
-        icon.set_scale(Vec3::ZERO);
-        let module = VuiModule::new(NAME, &icon);
-        nodes.push(icon);
+        let icon_mesh = Cuboid::new(ICON_SIZE, ICON_SIZE, ICON_SIZE).mesh();
+        let module = VuiModule::new(NAME, &icon_mesh);
 
         Self {
             root,
             _nodes: nodes,
+            _icon_mesh: icon_mesh,
             module,
             color_mat,
         }

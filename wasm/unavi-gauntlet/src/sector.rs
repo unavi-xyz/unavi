@@ -4,8 +4,8 @@ use std::f32::consts::PI;
 use crate::{
     Color, ModuleRef,
     gauntlet::{
-        BG_ALPHA_BASE, OUTLINE_COLOR, OUTLINE_WIDTH, OUTLINE_Z, RING_RADIUS, SECTOR_GAP_WORLD,
-        SECTOR_INNER_R, SECTOR_SUBDIVISIONS,
+        BG_ALPHA_BASE, ICON_R, ICON_Z_OFFSET, OUTLINE_COLOR, OUTLINE_WIDTH, OUTLINE_Z, RING_RADIUS,
+        SECTOR_GAP_WORLD, SECTOR_INNER_R, SECTOR_SUBDIVISIONS,
     },
     wired::scene::types::{AlphaMode, Document, Indices, Material, Mesh, Node, PrimitiveTopology},
 };
@@ -22,6 +22,8 @@ pub struct Sector {
     pub raise_t: Cell<f32>,
     pub root: Node,
     _bg: Node,
+    _icon_mesh: Mesh,
+    _icon_node: Node,
 }
 
 pub fn make_sectors(doc: &Document, modules: &[ModuleRef], colors: &[Color]) -> Vec<Sector> {
@@ -52,9 +54,29 @@ fn make_sector(doc: &Document, i: usize, n: usize, module: &ModuleRef, color: Co
     outline.set_material(Some(&outline_mat));
     outline.set_scale(Vec3::ZERO);
 
+    let ca = i as f32 * 2.0 * PI / n as f32;
+    let icon_mesh = doc.create_mesh();
+    let icon_node = doc.create_node();
+    if let Some(src) = &module.icon_mesh {
+        let positions = src.positions().unwrap_or_default();
+        let normals = src.normals().unwrap_or_default();
+        icon_mesh.set_topology(PrimitiveTopology::TriangleList);
+        icon_mesh.set_positions(Some(&positions));
+        icon_mesh.set_normals(Some(&normals));
+        icon_mesh.set_indices(src.indices().as_ref());
+        icon_node.set_mesh(Some(&icon_mesh));
+        icon_node.set_material(Some(&bg_material));
+    }
+    icon_node.set_translation(Vec3::new(
+        ICON_R * ca.cos(),
+        ICON_R * ca.sin(),
+        ICON_Z_OFFSET,
+    ));
+
     let root = doc.create_node();
     root.add_child(&bg);
     root.add_child(&outline);
+    root.add_child(&icon_node);
 
     Sector {
         module_doc_id: module.doc_id.clone(),
@@ -66,6 +88,8 @@ fn make_sector(doc: &Document, i: usize, n: usize, module: &ModuleRef, color: Co
         raise_t: Cell::new(0.0),
         root,
         _bg: bg,
+        _icon_mesh: icon_mesh,
+        _icon_node: icon_node,
     }
 }
 

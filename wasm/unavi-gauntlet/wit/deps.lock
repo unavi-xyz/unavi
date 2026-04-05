@@ -1,7 +1,7 @@
 [unavi-vui-module]
 path = "../../unavi-vui-module/wit"
-sha256 = "885f5620fdfc81888bf4630b1f9bf9ab7bb874511e87fabba2b1509c340d94d2"
-sha512 = "9f3c6a01a9d7b6e77570495c3e458c03d068443c98355b8f6c205baaba23683e95932466e22037a59624c52a54aded61ff7f0b7735e4e33b8ec75e7d1f8849fd"
+sha256 = "783f8e1c2295e4a3f6940b008ae682214a968e1eefdd8138f7b4746183de3ea6"
+sha512 = "516f2df339be887f700fd3a4a8846fada68dda27c971cfc750e8b794be3a1103f3cf1705e6d2ddd363b1c699b563dd08fadd21fddfd2fac98b84443fc0c41300"
 deps = ["wired-input", "wired-math", "wired-script"]
 
 [wired-agent]

@@ -119,6 +119,7 @@ impl bindings::wired::agent::context::Host for RuntimeData {
             inner,
             can_read: true,
             can_write: true,
+            doc_entity: self.wired_scene.doc_entity,
         })?)
     }
 }
@@ -154,6 +155,7 @@ impl bindings::wired::agent::types::HostAgent for RuntimeData {
             inner,
             can_read: true,
             can_write: true,
+            doc_entity: self.wired_scene.doc_entity,
         })?))
     }
 

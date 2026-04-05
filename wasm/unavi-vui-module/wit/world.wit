@@ -7,7 +7,7 @@ world guest {
 
 interface api {
   use wired:math/types.{transform};
-  use wired:scene/types.{color, node};
+  use wired:scene/types.{color, mesh};
 
   variant module-event {
     activate(transform),
@@ -16,14 +16,14 @@ interface api {
   }
 
   resource vui-module {
-    constructor(name: string, icon: borrow<node>);
+    constructor(name: string, icon: borrow<mesh>);
     poll: func() -> option<module-event>;
   }
 
   record registered-module {
-    doc-id:       list<u8>,
-    name:         string,
-    icon-node-id: string,
+    doc-id:        list<u8>,
+    name:          string,
+    icon-mesh-id:  string,
   }
 
   resource vui-module-registry {

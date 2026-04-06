@@ -7,8 +7,8 @@ use crate::{
         RegisterPayload, SetColorPayload,
     },
     wired::event::{
-        api::{register_emitter, register_receptor},
-        types::{EventEmitter, EventReceptor},
+        api::{emit, listen},
+        types::{EventFilter, EventReceptor, EventScope},
     },
 };
 use wired_prelude::{wired_math::types::Transform, wired_scene::types::Color};
@@ -18,7 +18,6 @@ use wired_prelude::{wired_math::types::Transform, wired_scene::types::Color};
 const DISCOVER_DELAY_TICKS: u32 = 60;
 
 pub struct VuiModuleRegistry {
-    emitter: EventEmitter,
     register_receptor: EventReceptor,
     ticks: Cell<u32>,
     fired: Cell<bool>,
@@ -26,10 +25,15 @@ pub struct VuiModuleRegistry {
 
 impl GuestVuiModuleRegistry for VuiModuleRegistry {
     fn new() -> Self {
-        let emitter = register_emitter(None, f32::MAX, &[]);
-        let register_receptor = register_receptor(&[CH_REGISTER.to_string()], None, f32::MAX, &[]);
+        let register_receptor = listen(
+            &[CH_REGISTER.to_string()],
+            EventFilter {
+                node: None,
+                scope: EventScope::Global,
+                documents: None,
+            },
+        );
         Self {
-            emitter,
             register_receptor,
             ticks: Cell::new(0),
             fired: Cell::new(false),
@@ -42,7 +46,15 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
             self.ticks.set(t);
 
             if t >= DISCOVER_DELAY_TICKS {
-                self.emitter.emit(CH_DISCOVER, &[]);
+                emit(
+                    CH_DISCOVER,
+                    &[],
+                    EventFilter {
+                        node: None,
+                        scope: EventScope::Global,
+                        documents: None,
+                    },
+                );
                 self.fired.set(true);
             }
         }
@@ -65,18 +77,39 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
     fn activate(&self, doc_id: Vec<u8>, transform: Transform) {
         let payload =
             postcard::to_allocvec(&ActivatePayload { transform }).expect("encode activate");
-        let emitter = register_emitter(None, f32::MAX, &[doc_id]);
-        emitter.emit(CH_ACTIVATE, &payload);
+        emit(
+            CH_ACTIVATE,
+            &payload,
+            EventFilter {
+                node: None,
+                scope: EventScope::Global,
+                documents: Some(vec![doc_id]),
+            },
+        );
     }
 
     fn deactivate(&self, doc_id: Vec<u8>) {
-        let emitter = register_emitter(None, f32::MAX, &[doc_id]);
-        emitter.emit(CH_DEACTIVATE, &[]);
+        emit(
+            CH_DEACTIVATE,
+            &[],
+            EventFilter {
+                node: None,
+                scope: EventScope::Global,
+                documents: Some(vec![doc_id]),
+            },
+        );
     }
 
     fn set_color(&self, doc_id: Vec<u8>, color: Color) {
         let payload = postcard::to_allocvec(&SetColorPayload { color }).expect("encode set color");
-        let emitter = register_emitter(None, f32::MAX, &[doc_id]);
-        emitter.emit(CH_SET_COLOR, &payload);
+        emit(
+            CH_SET_COLOR,
+            &payload,
+            EventFilter {
+                node: None,
+                scope: EventScope::Global,
+                documents: Some(vec![doc_id]),
+            },
+        );
     }
 }

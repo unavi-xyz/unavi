@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use bevy::prelude::*;
 use bevy_hsd::HsdRecordId;
@@ -21,11 +24,14 @@ pub fn process_event_emissions(
         return;
     }
 
+    let time = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| d.as_nanos() as u64);
+
     for emission in &pending {
-        let origin: Vec3 = emission
+        let origin: Option<Vec3> = emission
             .node
-            .and_then(|e| transforms.get(e).ok().map(GlobalTransform::translation))
-            .unwrap_or(Vec3::ZERO);
+            .and_then(|e| transforms.get(e).ok().map(GlobalTransform::translation));
 
         let matched: Vec<_> = {
             let inner = registry.0.lock().expect("registry lock");
@@ -35,20 +41,17 @@ pub fn process_event_emissions(
             let result: Vec<_> = entries
                 .iter()
                 .filter_map(|entry| {
-                    // 1. target-documents filter (emitter side)
-                    if !emission.target_documents.is_empty()
-                        && !emission.target_documents.contains(&entry.doc_id)
+                    if let Some(docs) = &emission.target_documents
+                        && !docs.contains(&entry.doc_id)
                     {
                         return None;
                     }
 
-                    // 2. Firewall check
                     if let Some((_, fw)) = firewalls.iter().find(|(id, _)| id.0 == entry.doc_id) {
                         let Ok(fw) = fw.0.read() else {
                             error!("firewall poisoned");
                             return None;
                         };
-
                         if !fw.read.iter().any(|h| *h == emission.sender_doc_id) {
                             return None;
                         }
@@ -56,9 +59,8 @@ pub fn process_event_emissions(
 
                     match &entry.filter {
                         ReceptorFilter::Global { source_documents } => {
-                            // 3. source-documents filter (receptor side)
-                            if !source_documents.is_empty()
-                                && !source_documents.contains(&emission.sender_doc_id)
+                            if let Some(docs) = source_documents
+                                && !docs.contains(&emission.sender_doc_id)
                             {
                                 return None;
                             }
@@ -69,14 +71,12 @@ pub fn process_event_emissions(
                             radius,
                             source_documents,
                         } => {
-                            // 3. source-documents filter (receptor side)
-                            if !source_documents.is_empty()
-                                && !source_documents.contains(&emission.sender_doc_id)
+                            if let Some(docs) = source_documents
+                                && !docs.contains(&emission.sender_doc_id)
                             {
                                 return None;
                             }
-                            // 4. Spatial filter
-                            emission.node?;
+                            let origin = origin?;
                             let t = transforms.get(*entity).ok()?;
                             let dist = origin.distance(t.translation());
                             (dist <= emission.radius && dist <= *radius)
@@ -95,6 +95,7 @@ pub fn process_event_emissions(
                 payload: emission.payload.clone(),
                 sender_node: emission.node,
                 sender_document: emission.sender_doc_id,
+                time,
             });
         }
     }

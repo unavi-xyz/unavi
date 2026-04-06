@@ -12,19 +12,19 @@ pub(super) type ReceptorQueue = Arc<Mutex<VecDeque<QueuedEvent>>>;
 pub struct QueuedEvent {
     pub channel: String,
     pub payload: Vec<u8>,
-    #[expect(dead_code, reason = "reserved for event tracing")]
     pub sender_node: Option<Entity>,
     pub sender_document: Hash,
+    pub time: u64,
 }
 
 pub enum ReceptorFilter {
     Global {
-        source_documents: Vec<Hash>,
+        source_documents: Option<Vec<Hash>>,
     },
     Spatial {
         entity: Entity,
         radius: f32,
-        source_documents: Vec<Hash>,
+        source_documents: Option<Vec<Hash>>,
     },
 }
 
@@ -35,20 +35,16 @@ pub(super) struct ReceptorEntry {
 }
 
 pub struct PendingEmission {
-    /// `None` for global emitter (no spatial origin).
     pub node: Option<Entity>,
     pub channel: String,
     pub payload: Vec<u8>,
-    /// Emit radius in world units.
     pub radius: f32,
     pub sender_doc_id: Hash,
-    /// Empty = broadcast to all matching receptors.
-    pub target_documents: Vec<Hash>,
+    pub target_documents: Option<Vec<Hash>>,
 }
 
 #[derive(Default)]
 pub(super) struct InnerEventRegistry {
-    /// channel → list of receptors
     pub(super) receptors: HashMap<String, Vec<ReceptorEntry>>,
     pub(super) pending: Vec<PendingEmission>,
 }
@@ -59,7 +55,7 @@ impl InnerEventRegistry {
         entity: Entity,
         channels: Vec<String>,
         radius: f32,
-        source_documents: Vec<Hash>,
+        source_documents: Option<Vec<Hash>>,
         doc_id: Hash,
     ) -> ReceptorQueue {
         let queue = Arc::new(Mutex::new(VecDeque::new()));
@@ -83,7 +79,7 @@ impl InnerEventRegistry {
     pub(super) fn register_global(
         &mut self,
         channels: Vec<String>,
-        source_documents: Vec<Hash>,
+        source_documents: Option<Vec<Hash>>,
         doc_id: Hash,
     ) -> ReceptorQueue {
         let queue = Arc::new(Mutex::new(VecDeque::new()));

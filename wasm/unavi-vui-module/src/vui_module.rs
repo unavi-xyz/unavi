@@ -6,8 +6,8 @@ use crate::{
         ActivatePayload, CH_ACTIVATE, CH_DEACTIVATE, CH_DISCOVER, CH_REGISTER, RegisterPayload,
     },
     wired::event::{
-        api::{register_emitter, register_receptor},
-        types::EventReceptor,
+        api::{emit, listen},
+        types::{EventFilter, EventReceptor, EventScope},
     },
 };
 
@@ -21,16 +21,25 @@ pub struct VuiModule {
 impl GuestVuiModule for VuiModule {
     fn new(name: String, icon: &Mesh) -> Self {
         let icon_mesh_id = icon.id();
-        let request_receptor = register_receptor(&[CH_DISCOVER.to_string()], None, f32::MAX, &[]);
-        let activate_receptor = register_receptor(
+        let request_receptor = listen(
+            &[CH_DISCOVER.to_string()],
+            EventFilter {
+                node: None,
+                scope: EventScope::Global,
+                documents: None,
+            },
+        );
+        let activate_receptor = listen(
             &[
                 CH_ACTIVATE.to_string(),
                 CH_DEACTIVATE.to_string(),
                 CH_SET_COLOR.to_string(),
             ],
-            None,
-            f32::MAX,
-            &[],
+            EventFilter {
+                node: None,
+                scope: EventScope::Global,
+                documents: None,
+            },
         );
         Self {
             name,
@@ -47,8 +56,15 @@ impl GuestVuiModule for VuiModule {
                 icon_mesh_id: self.icon_mesh_id.clone(),
             })
             .expect("encode register");
-            let emitter = register_emitter(None, f32::MAX, &[event.sender_document]);
-            emitter.emit(CH_REGISTER, &payload);
+            emit(
+                CH_REGISTER,
+                &payload,
+                EventFilter {
+                    node: None,
+                    scope: EventScope::Global,
+                    documents: Some(vec![event.sender_document]),
+                },
+            );
         }
 
         while let Some(event) = self.activate_receptor.poll() {

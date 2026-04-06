@@ -1,25 +1,28 @@
 use std::cell::Cell;
 
 use crate::wired::event::{
-    api::{register_emitter, register_receptor},
-    types::{EventEmitter, EventReceptor},
+    api::{emit, listen},
+    types::{EventFilter, EventReceptor, EventScope},
 };
 
 wired_prelude::generate_script!(Script);
 
 struct Script {
-    emitter: EventEmitter,
     receptor: EventReceptor,
     tick_n: Cell<u32>,
 }
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let channels = ["test:channel".to_string()];
-        let emitter = register_emitter(None, 0.0, &[]);
-        let receptor = register_receptor(&channels, None, 0.0, &[]);
+        let receptor = listen(
+            &["test:channel".to_string()],
+            EventFilter {
+                node: None,
+                scope: EventScope::Global,
+                documents: None,
+            },
+        );
         Self {
-            emitter,
             receptor,
             tick_n: Cell::new(0),
         }
@@ -28,7 +31,15 @@ impl GuestScript for Script {
     fn tick(&self) {
         match self.tick_n.get() {
             0 => {
-                self.emitter.emit("test:channel", &[1_u8, 2, 3]);
+                emit(
+                    "test:channel",
+                    &[1_u8, 2, 3],
+                    EventFilter {
+                        node: None,
+                        scope: EventScope::Global,
+                        documents: None,
+                    },
+                );
             }
             1 => {
                 match self.receptor.poll() {

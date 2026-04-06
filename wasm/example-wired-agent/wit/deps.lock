@@ -2,7 +2,7 @@
 path = "../../unavi-shapes/wit"
 sha256 = "05e4cfff8b0a828e67f4c2750e52c4c9548d06b6f494508f7c3262a9692ec577"
 sha512 = "8fc4cab2d01e666a561af3952050d87ebe2b1370ce7ed55abf06ce6de779c4998e4954e68ffc6c4967a76d83a096432af2afb498169d03e235ba03bb2994a747"
-deps = ["wired-event", "wired-input", "wired-math", "wired-script"]
+deps = ["wired-input", "wired-math", "wired-script"]
 
 [wired-agent]
 path = "../../../protocol/wit/wired-agent"
@@ -11,8 +11,10 @@ sha512 = "3225bb7538c00125ad7d99dd571f71925c600379b27df84f2b6b5af39391c4d4acd7f7
 deps = ["wired-math"]
 
 [wired-event]
-sha256 = "e51c60717606a6091367c946bb50cf6a551c3ab2e3eb0753bdfb774dfe1b5abb"
-sha512 = "e179d3af478165ed7cb3e71dd3b9125cabbfe585f4faf353fac50e087cdf46fa8b3eb6e0b4a186212d64ea722372a15e74726cab303b4f94b1dddbcef66951c2"
+path = "../../../protocol/wit/wired-event"
+sha256 = "38115d81f540e8fa4774cf8e115b716a25a11683c578a65018f0598f1924c889"
+sha512 = "d6821fb33dd91a5b133105015012c5606dd6e9703eb1af9d3cda9d19deecc287a24b0442cf4f742f080a0de840cba7f4af1e9fb227dbffd5e1971869ef31a5a2"
+deps = ["wired-math"]
 
 [wired-input]
 sha256 = "b4bc303328962bd56b461f74efa137286b035a1878ea78181f421a04f2d0a560"
@@ -26,7 +28,7 @@ sha512 = "64265fb82f9c5df40e4ded3a5929c8c97d7f434bd52d260fafee932b9474691b422242
 path = "../../../protocol/wit/wired-prelude"
 sha256 = "ac9987e69c0d8a2b71c3ddbfd4056d5630fcf41c9401aee3eefb8ad99a5643de"
 sha512 = "73993206d7c910876727e07faa59553e12142befda1c1f66e35d775bb536cd3d7dfedda24bc5ed280952eee02838d9b6a08519af293bb34d281bf7db0082c939"
-deps = ["wired-event", "wired-input", "wired-math", "wired-script"]
+deps = ["wired-input", "wired-math", "wired-script"]
 
 [wired-scene]
 path = "../../../protocol/wit/wired-scene"

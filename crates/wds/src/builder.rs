@@ -122,7 +122,7 @@ impl DataStoreBuilder {
 pub type BoxedBlobs = Box<dyn AsRef<BlobStore> + Send + Sync>;
 
 #[cfg(target_family = "wasm")]
-async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database)> {
+async fn init_storage(_storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database)> {
     let blobs = MemStore::new();
     let blobs: BoxedBlobs = Box::new(blobs);
 

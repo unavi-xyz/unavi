@@ -9,35 +9,28 @@ use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 pub fn create_test_wds() -> (Actor, Blobs) {
     let (tx, rx) = std::sync::mpsc::sync_channel(1);
 
-    std::thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
+    unavi_wasm_compat::spawn_thread(async move {
+        let endpoint = iroh::Endpoint::builder()
+            .bind()
+            .await
+            .expect("iroh endpoint");
+
+        let store = DataStore::builder(endpoint)
             .build()
-            .expect("tokio runtime");
+            .await
+            .expect("data store");
 
-        rt.block_on(async {
-            let endpoint = iroh::Endpoint::builder()
-                .bind()
-                .await
-                .expect("iroh endpoint");
+        let blobs = store.blobs().blobs().clone();
 
-            let store = DataStore::builder(endpoint)
-                .build()
-                .await
-                .expect("data store");
+        let signing_key = P256KeyPair::generate();
+        let did = signing_key.public().to_did();
+        let identity = Arc::new(Identity::new(did, signing_key));
+        let actor = store.local_actor(identity);
 
-            let blobs = store.blobs().blobs().clone();
+        tx.send((actor, blobs)).expect("send");
 
-            let signing_key = P256KeyPair::generate();
-            let did = signing_key.public().to_did();
-            let identity = Arc::new(Identity::new(did, signing_key));
-            let actor = store.local_actor(identity);
-
-            tx.send((actor, blobs)).expect("send");
-
-            // Keep runtime (and data store) alive for the process lifetime.
-            std::future::pending::<()>().await;
-        });
+        // Keep runtime (and data store) alive for the process lifetime.
+        std::future::pending::<()>().await;
     });
 
     rx.recv().expect("wds setup")

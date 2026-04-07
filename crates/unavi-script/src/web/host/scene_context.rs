@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use js_sys::Object;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast, JsValue};
 
 use super::state::{DocEntry, NodeEntry};
 use super::with_script;
@@ -64,7 +64,7 @@ pub fn register(obj: &Object) {
             let bytes = id_bytes.dyn_ref::<js_sys::Uint8Array>().map(|a| a.to_vec());
             let hash = bytes
                 .as_deref()
-                .and_then(|b| b.try_into().ok())
+                .and_then(|b| <&[u8] as TryInto<[u8; 32]>>::try_into(b).ok())
                 .map(blake3::Hash::from);
             let hash = match hash {
                 Some(h) => h,

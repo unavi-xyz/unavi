@@ -1,12 +1,11 @@
 use std::{sync::Arc, time::Duration};
 
-use anyhow::Context;
 use bevy::{
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task, block_on, poll_once},
 };
 use tracing::Instrument;
-use wasmtime::AsContextMut;
+use wasmtime::{AsContextMut, error::Context};
 
 use bevy_hsd::hydrate::events::ScriptCommandQueueComp;
 

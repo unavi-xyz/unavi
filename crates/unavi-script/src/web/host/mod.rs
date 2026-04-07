@@ -14,6 +14,20 @@ use crate::input_registry::InputRegistry;
 
 use self::state::WebScriptState;
 
+macro_rules! reg {
+    ($obj:expr, $name:literal, $t:ty, $body:expr) => {{
+        let c: wasm_bindgen::closure::Closure<$t> =
+            wasm_bindgen::closure::Closure::wrap(Box::new($body));
+        js_sys::Reflect::set(
+            $obj,
+            &wasm_bindgen::JsValue::from_str($name),
+            c.as_ref().unchecked_ref(),
+        )
+        .unwrap();
+        c.forget();
+    }};
+}
+
 mod document;
 mod event;
 mod input;
@@ -65,7 +79,7 @@ pub(super) fn new_script_state(
     self_node_id: SmolStr,
     event_registry: EventRegistry,
     input_registry: InputRegistry,
-    wds_actor: Option<wds::actor::Actor>,
+    wds_actor: Option<::wds::actor::Actor>,
 ) -> WebScriptState {
     WebScriptState {
         registry,
@@ -87,20 +101,6 @@ pub(super) fn new_script_state(
         wds_query_futures: HashMap::new(),
         wds_read_futures: HashMap::new(),
     }
-}
-
-macro_rules! reg {
-    ($obj:expr, $name:literal, $t:ty, $body:expr) => {{
-        let c: wasm_bindgen::closure::Closure<$t> =
-            wasm_bindgen::closure::Closure::wrap(Box::new($body));
-        js_sys::Reflect::set(
-            $obj,
-            &wasm_bindgen::JsValue::from_str($name),
-            c.as_ref().unchecked_ref(),
-        )
-        .unwrap();
-        c.forget();
-    }};
 }
 
 pub(super) fn init() {

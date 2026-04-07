@@ -4,7 +4,7 @@ use avian3d::{PhysicsPlugins, prelude::PhysicsDebugPlugin};
 use bevy::{
     log::LogPlugin,
     mesh::Indices,
-    pbr::{Atmosphere, AtmosphereSettings},
+    pbr::{Atmosphere, AtmosphereSettings, ScatteringMedium},
     prelude::*,
 };
 use bevy_hsd::HsdPlugin;
@@ -31,12 +31,12 @@ fn main() {
         .run();
 }
 
-fn setup_scene(mut commands: Commands) {
+fn setup_scene(mut commands: Commands, mut scattering_mediums: ResMut<Assets<ScatteringMedium>>) {
     commands.spawn((
         Camera3d::default(),
         Transform::from_xyz(4.0, 5.0, 2.0).looking_at(Vec3::ZERO, Vec3::Y),
         PanOrbitCamera::default(),
-        Atmosphere::EARTH,
+        Atmosphere::earthlike(scattering_mediums.add(ScatteringMedium::default())),
         AtmosphereSettings::default(),
     ));
 

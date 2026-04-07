@@ -6,6 +6,7 @@ use bevy_hsd::{cache::SceneRegistryInner, hydrate::events::ScriptCommandQueue};
 use loro::LoroDoc;
 use smol_str::SmolStr;
 use tracing::warn;
+use wasmtime::bail;
 use wasmtime_wasi::ResourceTable;
 
 use crate::firewall::HsdFirewallInner;
@@ -104,7 +105,7 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
             })?;
             return Ok(res);
         }
-        Err(anyhow::anyhow!("self_node not found in registry"))
+        bail!("self_node not found in registry")
     }
 
     async fn self_document(

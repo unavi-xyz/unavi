@@ -3,7 +3,7 @@ use std::sync::atomic::Ordering;
 
 use bevy_hsd::cache::NodeInner;
 use js_sys::Object;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast, JsValue};
 
 use super::js_convert::js_u32_array;
 use super::state::{DocEntry, MatEntry, MeshEntry, NodeEntry};

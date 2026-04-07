@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use js_sys::Object;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast, JsValue};
 
 use super::js_convert::{f32_from_js, js_f32_array, js_u32_array};
 use super::state::MeshEntry;
@@ -43,13 +43,14 @@ pub fn register(obj: &Object) {
         dyn Fn(u32, u32) -> u32,
         |id: u32, rep: u32| {
             with_script(id, |state| {
-                let entry = state.meshes.get(&rep)?;
+                let inner = Arc::clone(&state.meshes.get(&rep)?.inner);
+                let doc_entity = state.meshes.get(&rep)?.doc_entity;
                 let new_rep = state.alloc();
                 state.meshes.insert(
                     new_rep,
                     MeshEntry {
-                        inner: Arc::clone(&entry.inner),
-                        doc_entity: entry.doc_entity,
+                        inner,
+                        doc_entity,
                     },
                 );
                 Some(new_rep)

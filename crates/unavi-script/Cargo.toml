@@ -14,7 +14,7 @@ anyhow.workspace       = true
 bevy                   = { default-features = true, workspace = true }
 bevy-hsd.path          = "../bevy-hsd"
 bevy-wds.path          = "../bevy-wds"
-bevy_async_task        = "0.11.1"
+bevy_async_task        = "0.12.0"
 bevy_vrm.workspace     = true
 blake3.workspace       = true
 bytemuck.workspace     = true
@@ -36,8 +36,8 @@ wired-schemas.path     = "../wired-schemas"
 xdid.workspace         = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-wasmtime      = "40.0.0"
-wasmtime-wasi = "40.0.0"
+wasmtime      = "43.0.0"
+wasmtime-wasi = "43.0.0"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 js-sys       = "0.3"

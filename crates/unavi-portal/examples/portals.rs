@@ -53,7 +53,7 @@ fn main() {
             PanOrbitCameraPlugin,
             PortalPlugin,
         ))
-        .insert_resource(AmbientLight {
+        .insert_resource(GlobalAmbientLight {
             brightness: lux::HALLWAY,
             ..default()
         })

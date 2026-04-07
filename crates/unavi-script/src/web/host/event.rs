@@ -1,6 +1,6 @@
 use bevy::prelude::Entity;
 use js_sys::{Object, Reflect};
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast, JsValue};
 
 use super::js_convert::{js_string_array, parse_js_doc_list};
 use super::state::WebScriptState;

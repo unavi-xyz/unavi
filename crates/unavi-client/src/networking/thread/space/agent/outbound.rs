@@ -56,7 +56,6 @@ pub async fn stream_agent(
     }
 }
 
-#[expect(clippy::await_holding_lock, reason = "lint incorrect, we drop it")]
 async fn send_tick(
     pose: &PoseState,
     last_iframe: &mut u16,
@@ -67,15 +66,11 @@ async fn send_tick(
     peer: EndpointId,
     datagram_buf: &mut [u8],
 ) -> anyhow::Result<()> {
-    let iframe_lock = pose.iframe.lock();
-
-    let Some(iframe_msg) = iframe_lock.as_ref() else {
+    let Some(iframe_msg) = pose.iframe.lock().clone() else {
         return Ok(());
     };
 
     if iframe_msg.id == *last_iframe {
-        drop(iframe_lock);
-
         let pframe_lock = pose.pframe.lock();
         if let Some(pframe_msg) = pframe_lock.as_ref() {
             *pframe_seq = pframe_seq.wrapping_add(1);
@@ -89,7 +84,6 @@ async fn send_tick(
         }
     } else {
         let iframe_msg = iframe_msg.clone();
-        drop(iframe_lock);
 
         *last_iframe = iframe_msg.id;
         *pframe_seq = 0;

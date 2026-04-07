@@ -137,9 +137,10 @@ pub(crate) fn handle_hsd_node_despawned(
         .lock()
         .expect("nodes lock")
         .retain(|n| n.id != inner.id);
-    let ent = *inner.entity.lock().expect("entity lock");
-    if let Some(ent) = ent {
-        commands.entity(ent).despawn();
+    if let Some(ent) = *inner.entity.lock().expect("entity lock")
+        && let Ok(mut ent) = commands.get_entity(ent)
+    {
+        ent.despawn();
     }
 }
 
@@ -161,14 +162,18 @@ pub(crate) fn handle_hsd_node_collider_set(
         .get(&ev.id)
         .and_then(|n| *n.entity.lock().expect("entity lock"));
     let Some(ent) = ent else { return };
+    let Ok(mut entity_cmd) = commands.get_entity(ent) else {
+        return;
+    };
     let collider = ev.collider.clone();
-    commands
-        .entity(ent)
+    entity_cmd
         .entry::<HsdNodePhysics>()
         .or_default()
         .and_modify(move |mut p| p.collider = collider);
-    commands
-        .entity(ent)
+    let Ok(mut entity_cmd) = commands.get_entity(ent) else {
+        return;
+    };
+    entity_cmd
         .remove::<Collider>()
         .remove::<super::collider::ColliderParams>();
 }
@@ -191,7 +196,9 @@ pub(crate) fn handle_hsd_node_material_set(
         .get(&ev.id)
         .and_then(|n| *n.entity.lock().expect("entity lock"));
     let Some(ent) = ent else { return };
-    let mut entity_cmd = commands.entity(ent);
+    let Ok(mut entity_cmd) = commands.get_entity(ent) else {
+        return;
+    };
     entity_cmd.remove::<MaterialRef>();
     if let Some(ref id) = ev.material {
         entity_cmd.insert(MaterialRef(id.clone()));
@@ -216,7 +223,9 @@ pub(crate) fn handle_hsd_node_mesh_set(
         .get(&ev.id)
         .and_then(|n| *n.entity.lock().expect("entity lock"));
     let Some(ent) = ent else { return };
-    let mut entity_cmd = commands.entity(ent);
+    let Ok(mut entity_cmd) = commands.get_entity(ent) else {
+        return;
+    };
     entity_cmd.remove::<MeshRef>();
     if let Some(ref id) = ev.mesh {
         entity_cmd.insert(MeshRef(id.clone()));
@@ -241,10 +250,13 @@ pub(crate) fn handle_hsd_node_name_set(
         .get(&ev.id)
         .and_then(|n| *n.entity.lock().expect("entity lock"));
     let Some(ent) = ent else { return };
+    let Ok(mut entity_cmd) = commands.get_entity(ent) else {
+        return;
+    };
     if let Some(ref name) = ev.name {
-        commands.entity(ent).insert(Name::new(name.clone()));
+        entity_cmd.insert(Name::new(name.clone()));
     } else {
-        commands.entity(ent).remove::<Name>();
+        entity_cmd.remove::<Name>();
     }
 }
 
@@ -269,11 +281,15 @@ pub(crate) fn handle_hsd_node_parent_set(
     match &ev.parent {
         None => {
             drop(node_map);
-            commands.entity(child_ent).remove::<ChildOf>();
+            if let Ok(mut ent) = commands.get_entity(child_ent) {
+                ent.remove::<ChildOf>();
+            }
         }
         Some(NodeRef::Entity(p)) => {
             drop(node_map);
-            commands.entity(child_ent).insert(ChildOf(*p));
+            if let Ok(mut ent) = commands.get_entity(child_ent) {
+                ent.insert(ChildOf(*p));
+            }
         }
         Some(NodeRef::Id(pid)) => {
             let parent_ent = node_map
@@ -281,7 +297,9 @@ pub(crate) fn handle_hsd_node_parent_set(
                 .and_then(|n| *n.entity.lock().expect("entity lock"));
             drop(node_map);
             let Some(parent_ent) = parent_ent else { return };
-            commands.entity(child_ent).insert(ChildOf(parent_ent));
+            if let Ok(mut ent) = commands.get_entity(child_ent) {
+                ent.insert(ChildOf(parent_ent));
+            }
         }
     }
 }
@@ -326,13 +344,18 @@ pub(crate) fn handle_hsd_node_rigid_body_set(
         .get(&ev.id)
         .and_then(|n| *n.entity.lock().expect("entity lock"));
     let Some(ent) = ent else { return };
+    let Ok(mut entity_cmd) = commands.get_entity(ent) else {
+        return;
+    };
     let rigid_body = ev.rigid_body.clone();
-    commands
-        .entity(ent)
+    entity_cmd
         .entry::<HsdNodePhysics>()
         .or_default()
         .and_modify(move |mut p| p.rigid_body = rigid_body);
-    commands.entity(ent).remove::<RigidBody>();
+    let Ok(mut entity_cmd) = commands.get_entity(ent) else {
+        return;
+    };
+    entity_cmd.remove::<RigidBody>();
 }
 
 pub(crate) fn handle_hsd_node_scripts_set(
@@ -353,7 +376,9 @@ pub(crate) fn handle_hsd_node_scripts_set(
         .get(&ev.id)
         .and_then(|n| *n.entity.lock().expect("entity lock"));
     let Some(ent) = ent else { return };
-    let mut entity_cmd = commands.entity(ent);
+    let Ok(mut entity_cmd) = commands.get_entity(ent) else {
+        return;
+    };
     if ev.scripts.is_empty() {
         entity_cmd.remove::<HsdScripts>();
     } else {
@@ -411,9 +436,9 @@ pub(crate) fn on_mesh_ref_set(
     let Ok(compiled_mesh) = compiled_meshes.get(mesh_ent) else {
         return;
     };
-    commands
-        .entity(node_ent)
-        .insert(Mesh3d(compiled_mesh.0.clone()));
+    if let Ok(mut entity_cmd) = commands.get_entity(node_ent) {
+        entity_cmd.insert(Mesh3d(compiled_mesh.0.clone()));
+    }
 }
 
 /// When a node gets a [`MaterialRef`], assign the compiled material if available.
@@ -443,15 +468,17 @@ pub(crate) fn on_material_ref_set(
     let Ok(compiled_mat) = compiled_mats.get(mat_ent) else {
         return;
     };
-    commands
-        .entity(node_ent)
-        .insert(MeshMaterial3d(compiled_mat.0.clone()));
+    if let Ok(mut entity_cmd) = commands.get_entity(node_ent) {
+        entity_cmd.insert(MeshMaterial3d(compiled_mat.0.clone()));
+    }
 }
 
 /// When a node loses its [`MeshRef`], remove [`Mesh3d`].
 pub(crate) fn on_mesh_ref_removed(trigger: On<Remove, MeshRef>, mut commands: Commands) {
     debug!(entity = %trigger.entity, "mesh ref removed");
-    commands.entity(trigger.entity).remove::<Mesh3d>();
+    if let Ok(mut entity_cmd) = commands.get_entity(trigger.entity) {
+        entity_cmd.remove::<Mesh3d>();
+    }
 }
 
 /// When a mesh entity gets [`CompiledMesh`], assign [`Mesh3d`] to all referencing nodes.
@@ -488,9 +515,9 @@ pub(crate) fn on_mesh_compiled(
         if node_child.doc != mesh_child.doc || mesh_ref.0 != mesh_id {
             continue;
         }
-        commands
-            .entity(node_ent)
-            .insert(Mesh3d(compiled_mesh.0.clone()));
+        if let Ok(mut entity_cmd) = commands.get_entity(node_ent) {
+            entity_cmd.insert(Mesh3d(compiled_mesh.0.clone()));
+        }
         assign_material(
             node_ent,
             registry,
@@ -533,9 +560,9 @@ pub(crate) fn on_material_compiled(
         if node_child.doc != mat_child.doc || mat_ref.0 != mat_id {
             continue;
         }
-        commands
-            .entity(node_ent)
-            .insert(MeshMaterial3d(compiled_mat.0.clone()));
+        if let Ok(mut entity_cmd) = commands.get_entity(node_ent) {
+            entity_cmd.insert(MeshMaterial3d(compiled_mat.0.clone()));
+        }
     }
 }
 
@@ -548,6 +575,9 @@ fn assign_material(
     commands: &mut Commands,
     default_material: &mut Option<Handle<StandardMaterial>>,
 ) {
+    let Ok(mut entity_cmd) = commands.get_entity(node_ent) else {
+        return;
+    };
     if let Ok(mat_ref) = mat_refs.get(node_ent) {
         let mat_ent = registry
             .0
@@ -559,15 +589,13 @@ fn assign_material(
         if let Some(mat_ent) = mat_ent
             && let Ok(compiled_mat) = compiled_mats.get(mat_ent)
         {
-            commands
-                .entity(node_ent)
-                .insert(MeshMaterial3d(compiled_mat.0.clone()));
+            entity_cmd.insert(MeshMaterial3d(compiled_mat.0.clone()));
         }
     } else {
         let mat = default_material
             .get_or_insert_with(|| asset_server.add(StandardMaterial::default()))
             .clone();
-        commands.entity(node_ent).insert(MeshMaterial3d(mat));
+        entity_cmd.insert(MeshMaterial3d(mat));
     }
 }
 

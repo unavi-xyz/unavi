@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner, SceneRegistryInner};
+use wasmtime::bail;
 use wasmtime::component::Resource;
 
 use super::bindings::wired::scene::types::{Document, Material, Mesh};
@@ -48,7 +49,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             (d.doc_entity, Arc::clone(&d.registry), d.can_write)
         };
         if !can_write {
-            return Err(anyhow::anyhow!("hsd write permission required"));
+            bail!("hsd write permission required")
         }
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         let inner = core_ops::document::create_material(&registry, doc_entity, &mut queue);
@@ -66,7 +67,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             (d.doc_entity, Arc::clone(&d.registry), d.can_write)
         };
         if !can_write {
-            return Err(anyhow::anyhow!("hsd write permission required"));
+            bail!("hsd write permission required")
         }
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         let inner = core_ops::document::create_mesh(&registry, doc_entity, &mut queue);
@@ -87,7 +88,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             (d.doc_entity, Arc::clone(&d.registry), d.can_write)
         };
         if !can_write {
-            return Err(anyhow::anyhow!("hsd write permission required"));
+            bail!("hsd write permission required")
         }
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         let inner = core_ops::document::create_node(&registry, doc_entity, &mut queue);
@@ -114,7 +115,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             )
         };
         if !can_read {
-            return Err(anyhow::anyhow!("hsd read permission required"));
+            bail!("hsd read permission required")
         }
         let nodes: Vec<Arc<NodeInner>> = {
             let all = registry.nodes.lock().expect("nodes lock");
@@ -156,7 +157,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             )
         };
         if !can_read {
-            return Err(anyhow::anyhow!("hsd read permission required"));
+            bail!("hsd read permission required")
         }
         let nodes: Vec<Arc<NodeInner>> = registry.nodes.lock().expect("nodes lock").clone();
         let mut out = Vec::with_capacity(nodes.len());
@@ -180,7 +181,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             (Arc::clone(&d.registry), d.can_read, d.can_write)
         };
         if !can_read {
-            return Err(anyhow::anyhow!("hsd read permission required"));
+            bail!("hsd read permission required")
         }
         let inners: Vec<Arc<MeshInner>> = registry
             .meshes
@@ -209,7 +210,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             (Arc::clone(&d.registry), d.can_read, d.can_write)
         };
         if !can_read {
-            return Err(anyhow::anyhow!("hsd read permission required"));
+            bail!("hsd read permission required")
         }
         let inners: Vec<Arc<MaterialInner>> = registry
             .materials
@@ -239,7 +240,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             (d.doc_entity, Arc::clone(&d.registry), d.can_write)
         };
         if !can_write {
-            return Err(anyhow::anyhow!("hsd write permission required"));
+            bail!("hsd write permission required")
         }
         let inner = Arc::clone(&self.table.get(&value)?.inner);
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
@@ -257,7 +258,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             (d.doc_entity, Arc::clone(&d.registry), d.can_write)
         };
         if !can_write {
-            return Err(anyhow::anyhow!("hsd write permission required"));
+            bail!("hsd write permission required")
         }
         let inner = Arc::clone(&self.table.get(&value)?.inner);
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
@@ -275,7 +276,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             (d.doc_entity, Arc::clone(&d.registry), d.can_write)
         };
         if !can_write {
-            return Err(anyhow::anyhow!("hsd write permission required"));
+            bail!("hsd write permission required")
         }
         let inner = Arc::clone(&self.table.get(&value)?.inner);
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
@@ -294,7 +295,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
             (Arc::clone(&d.registry), d.can_write)
         };
         if value && !can_write {
-            return Err(anyhow::anyhow!("hsd write permission required"));
+            bail!("hsd write permission required")
         }
         core_ops::document::set_sync(&registry, value);
         Ok(())

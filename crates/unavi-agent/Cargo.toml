@@ -15,8 +15,8 @@ webgpu = ["bevy/webgpu"]
 [dependencies]
 avian3d.workspace  = true
 bevy               = { default-features = true, workspace = true }
-bevy-tnua          = "0.28.0"
-bevy-tnua-avian3d  = "0.9.0"
+bevy-tnua          = "0.31.0"
+bevy-tnua-avian3d  = "0.11.1"
 bevy_vrm.workspace = true
 unavi-avatar.path  = "../unavi-avatar"
 unavi-input.path   = "../unavi-input"

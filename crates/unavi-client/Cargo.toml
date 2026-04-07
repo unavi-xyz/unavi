@@ -11,7 +11,7 @@ version.workspace    = true
 devtools         = ["devtools-bevy", "devtools-network"]
 devtools-bevy    = ["bevy/bevy_dev_tools"]
 devtools-network = []
-mdns             = ["iroh/discovery-local-network"]
+mdns             = ["iroh/address-lookup-mdns"]
 webgpu           = ["bevy/webgpu", "unavi-agent/webgpu", "unavi-avatar/webgpu"]
 
 [lints]
@@ -27,14 +27,14 @@ bevy                   = { default-features = true, features = ["https", "jpeg"]
 bevy-hsd.path          = "../bevy-hsd"
 bevy-wds.path          = "../bevy-wds"
 bevy_vrm.workspace     = true
-bitflags               = "2.10.0"
+bitflags               = "2.11.0"
 blake3.workspace       = true
 bytemuck.workspace     = true
 bytes.workspace        = true
 clap.workspace         = true
 half.workspace         = true
 image                  = { features = ["png"], workspace = true }
-iroh-gossip            = "0.95.0"
+iroh-gossip            = "0.97.0"
 log                    = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
 loro.workspace         = true
 n0-future.workspace    = true
@@ -54,7 +54,7 @@ unavi-portal.path      = "../unavi-portal"
 unavi-script.path      = "../unavi-script"
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wds.path               = "../wds"
-winit                  = { default-features = false, version = "0.30.12" }
+winit                  = { default-features = false, version = "0.30.13" }
 wired-records          = { features = ["loro"], path = "../wired-records" }
 wired-schemas.path     = "../wired-schemas"
 xdid.workspace         = true
@@ -68,7 +68,7 @@ wasm-bindgen-futures = "0.4.67"
 web-sys              = { features = ["Location", "UrlSearchParams"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-bevy_mod_openxr         = "0.4.0"
+bevy_mod_openxr         = "0.5.0"
 bevy_mod_xr.workspace   = true
 bevy_xr_utils.workspace = true
 directories.workspace   = true

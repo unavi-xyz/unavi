@@ -5,7 +5,7 @@ use bevy::math::Vec3 as BVec3;
 use bevy::prelude::Transform;
 use bevy_hsd::cache::NodeInner;
 use js_sys::Object;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast, JsValue};
 
 use super::js_convert::{js_quat, js_transform, js_u32_array, js_vec3};
 use super::state::{MatEntry, MeshEntry, NodeEntry};
@@ -46,13 +46,14 @@ pub fn register(obj: &Object) {
         dyn Fn(u32, u32) -> u32,
         |id: u32, rep: u32| {
             with_script(id, |state| {
-                let entry = state.nodes.get(&rep)?;
+                let inner = Arc::clone(&state.nodes.get(&rep)?.inner);
+                let doc_entity = state.nodes.get(&rep)?.doc_entity;
                 let new_rep = state.alloc();
                 state.nodes.insert(
                     new_rep,
                     NodeEntry {
-                        inner: Arc::clone(&entry.inner),
-                        doc_entity: entry.doc_entity,
+                        inner,
+                        doc_entity,
                     },
                 );
                 Some(new_rep)
@@ -248,29 +249,22 @@ pub fn register(obj: &Object) {
     reg!(
         obj,
         "hostSceneNodeSetTransform",
-        dyn Fn(u32, u32, f64, f64, f64, f64, f64, f64, f64, f64, f64, f64),
-        |id: u32,
-         rep: u32,
-         tx: f64,
-         ty: f64,
-         tz: f64,
-         rx: f64,
-         ry: f64,
-         rz: f64,
-         rw: f64,
-         sx: f64,
-         sy: f64,
-         sz: f64| {
+        dyn Fn(u32, u32, JsValue),
+        |id: u32, rep: u32, vals: JsValue| {
+            let floats = super::js_convert::parse_f32_array(&vals);
+            if floats.len() < 10 {
+                return;
+            }
             with_script(id, |state| {
                 let entry = state.nodes.get(&rep)?;
                 let inner = Arc::clone(&entry.inner);
                 let doc = entry.doc_entity;
                 let new_transform = Transform {
-                    translation: BVec3::new(tx as f32, ty as f32, tz as f32),
+                    translation: BVec3::new(floats[0], floats[1], floats[2]),
                     rotation: bevy::math::Quat::from_xyzw(
-                        rx as f32, ry as f32, rz as f32, rw as f32,
+                        floats[3], floats[4], floats[5], floats[6],
                     ),
-                    scale: BVec3::new(sx as f32, sy as f32, sz as f32),
+                    scale: BVec3::new(floats[7], floats[8], floats[9]),
                 };
                 core_ops::node::set_transform(&inner, doc, new_transform, &mut state.command_queue);
                 Some(())

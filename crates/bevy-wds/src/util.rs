@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use iroh::endpoint::presets::N0;
 use wds::{Blobs, DataStore, Identity, actor::Actor};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
@@ -10,7 +11,7 @@ pub fn create_test_wds() -> (Actor, Blobs) {
     let (tx, rx) = std::sync::mpsc::sync_channel(1);
 
     unavi_wasm_compat::spawn_thread(async move {
-        let endpoint = iroh::Endpoint::builder()
+        let endpoint = iroh::Endpoint::builder(N0)
             .bind()
             .await
             .expect("iroh endpoint");

@@ -5,6 +5,7 @@ use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner};
 use bevy_hsd::data::HsdCollider;
 use bevy_hsd::hydrate::compile::node::{HsdNodeColliderSet, HsdNodeRigidBodySet};
 use bytes::Bytes;
+use wasmtime::bail;
 use wasmtime::component::Resource;
 use wired_records::HydratedHash;
 
@@ -293,7 +294,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             (Arc::clone(&n.inner), n.can_write)
         };
         if !parent_can_write || !child_can_write {
-            return Err(anyhow::anyhow!("hsd write permission required"));
+            bail!("hsd write permission required")
         }
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         core_ops::node::add_child(&parent_inner, &child_inner, doc, &mut queue);
@@ -310,7 +311,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             (Arc::clone(&n.inner), n.can_write, n.doc_entity)
         };
         if !can_write {
-            return Err(anyhow::anyhow!("hsd write permission required"));
+            bail!("hsd write permission required")
         }
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         core_ops::node::remove_child(&child_inner, doc, &mut queue);
@@ -421,11 +422,11 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 let blobs = self
                     .blobs
                     .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("no blob store"))?;
+                    .ok_or_else(|| wasmtime::Error::msg("no blob store"))?;
                 let bytes = blobs
                     .get_bytes(hash.0)
                     .await
-                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                    .map_err(|e| wasmtime::Error::msg(e.to_string()))?;
                 let pts: &[f32] = bytemuck::cast_slice(&bytes);
                 Collider::ConvexHull(pts.to_vec())
             }
@@ -443,15 +444,15 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 let blobs = self
                     .blobs
                     .as_ref()
-                    .ok_or_else(|| anyhow::anyhow!("no blob store"))?;
+                    .ok_or_else(|| wasmtime::Error::msg("no blob store"))?;
                 let vbytes = blobs
                     .get_bytes(vertices.0)
                     .await
-                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                    .map_err(|e| wasmtime::Error::msg(e.to_string()))?;
                 let ibytes = blobs
                     .get_bytes(indices.0)
                     .await
-                    .map_err(|e| anyhow::anyhow!("{e}"))?;
+                    .map_err(|e| wasmtime::Error::msg(e.to_string()))?;
                 let verts: &[f32] = bytemuck::cast_slice(&vbytes);
                 let idxs: &[u32] = bytemuck::cast_slice(&ibytes);
                 Collider::Trimesh(ColliderTrimesh {
@@ -487,12 +488,12 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                     let actor = self
                         .actor
                         .as_ref()
-                        .ok_or_else(|| anyhow::anyhow!("no actor"))?;
+                        .ok_or_else(|| wasmtime::Error::msg("no actor"))?;
                     let bytes = Bytes::from(bytemuck::cast_slice::<f32, u8>(&pts).to_vec());
                     let hash = actor
                         .upload_blob(bytes)
                         .await
-                        .map_err(|e| anyhow::anyhow!("{e}"))?;
+                        .map_err(|e| wasmtime::Error::msg(e.to_string()))?;
                     HsdCollider::ConvexHull(HydratedHash(hash))
                 }
                 Collider::Cuboid(v) => {
@@ -521,17 +522,17 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                     let actor = self
                         .actor
                         .as_ref()
-                        .ok_or_else(|| anyhow::anyhow!("no actor"))?;
+                        .ok_or_else(|| wasmtime::Error::msg("no actor"))?;
                     let vbytes = Bytes::from(bytemuck::cast_slice::<f32, u8>(&t.vertices).to_vec());
                     let ibytes = Bytes::from(bytemuck::cast_slice::<u32, u8>(&t.indices).to_vec());
                     let vhash = actor
                         .upload_blob(vbytes)
                         .await
-                        .map_err(|e| anyhow::anyhow!("{e}"))?;
+                        .map_err(|e| wasmtime::Error::msg(e.to_string()))?;
                     let ihash = actor
                         .upload_blob(ibytes)
                         .await
-                        .map_err(|e| anyhow::anyhow!("{e}"))?;
+                        .map_err(|e| wasmtime::Error::msg(e.to_string()))?;
                     HsdCollider::Trimesh {
                         vertices: HydratedHash(vhash),
                         indices: HydratedHash(ihash),
@@ -632,7 +633,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             return Ok(());
         }
         if value && !can_write {
-            return Err(anyhow::anyhow!("hsd write permission required"));
+            bail!("hsd write permission required")
         }
         inner.sync.store(value, Ordering::Relaxed);
         Ok(())
@@ -648,9 +649,7 @@ fn validate_positive(v: f32, name: &str) -> wasmtime::Result<()> {
     if v.is_finite() && v > 0.0 {
         Ok(())
     } else {
-        Err(anyhow::anyhow!(
-            "{name} must be finite and positive, got {v}"
-        ))
+        bail!("{name} must be finite and positive, got {v}")
     }
 }
 
@@ -658,8 +657,6 @@ fn validate_nonneg(v: f32, name: &str) -> wasmtime::Result<()> {
     if v.is_finite() && v >= 0.0 {
         Ok(())
     } else {
-        Err(anyhow::anyhow!(
-            "{name} must be finite and non-negative, got {v}"
-        ))
+        bail!("{name} must be finite and non-negative, got {v}")
     }
 }

@@ -1,6 +1,6 @@
 use bevy::prelude::Entity;
 use js_sys::Object;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast, JsValue};
 
 use super::with_script;
 use crate::input_registry::{InputAction, InputDevice};

@@ -5,7 +5,7 @@ mod did_web;
 
 use std::{fmt::Display, sync::Arc};
 
-use iroh::{Endpoint, RelayMode};
+use iroh::{Endpoint, endpoint::presets::N0DisableRelay};
 use rstest::fixture;
 use rusqlite::params;
 use wds::{DataStore, actor::Actor};
@@ -22,7 +22,7 @@ pub struct DataStoreCtx {
 
 #[fixture]
 pub async fn ctx() -> DataStoreCtx {
-    let endpoint = Endpoint::empty_builder(RelayMode::Disabled)
+    let endpoint = Endpoint::builder(N0DisableRelay)
         .bind()
         .await
         .expect("bind endpoint");

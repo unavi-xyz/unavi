@@ -1,6 +1,7 @@
 use std::sync::{Arc, atomic::Ordering};
 
 use bevy_hsd::cache::MaterialInner;
+use wasmtime::bail;
 use wasmtime::component::Resource;
 
 use super::bindings::wired::scene::types::{AlphaMode, Color, Material};
@@ -51,7 +52,7 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
             (Arc::clone(&m.inner), m.can_write)
         };
         if value && !can_write {
-            return Err(anyhow::anyhow!("hsd write permission required"));
+            bail!("hsd write permission required")
         }
         inner.sync.store(value, Ordering::Relaxed);
         Ok(())

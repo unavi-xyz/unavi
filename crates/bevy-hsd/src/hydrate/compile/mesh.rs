@@ -89,9 +89,10 @@ pub(crate) fn handle_hsd_mesh_despawned(
         meshes.remove(&ev.id)
     };
     let Some(inner) = inner else { return };
-    let ent = *inner.entity.lock().expect("entity lock");
-    if let Some(ent) = ent {
-        commands.entity(ent).despawn();
+    if let Some(ent) = *inner.entity.lock().expect("entity lock")
+        && let Ok(mut ent) = commands.get_entity(ent)
+    {
+        ent.despawn();
     }
 }
 

@@ -14,7 +14,7 @@ pub mod wds;
 pub fn add_to_linker(
     linker: &mut Linker<StoreState>,
     perms: &ScriptPermissions,
-) -> anyhow::Result<()> {
+) -> wasmtime::Result<()> {
     if perms.api.contains(&ApiName::Scene) {
         scene::bindings::wired::scene::context::add_to_linker::<_, HasSelf<_>>(linker, |s| {
             &mut s.rt.wired_scene

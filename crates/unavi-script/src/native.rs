@@ -7,7 +7,7 @@ pub struct NativeScriptPlugin;
 impl Plugin for NativeScriptPlugin {
     fn build(&self, app: &mut App) {
         let mut config = Config::new();
-        config.async_support(true).epoch_interruption(true);
+        config.epoch_interruption(true);
 
         let engine = match wasmtime::Engine::new(&config) {
             Ok(e) => e,

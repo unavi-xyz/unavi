@@ -1,7 +1,7 @@
 use std::sync::mpsc;
 
 use js_sys::Object;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast, JsValue};
 use wired_records::{BeaconRecord, RecordValue};
 
 use super::state::{WdsQueryFuture, WdsReadFuture, WdsRecordOut};

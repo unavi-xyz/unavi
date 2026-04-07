@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use bevy_vrm::BoneName;
+use wasmtime::bail;
 use wasmtime::component::{Resource, ResourceTable};
 
 use crate::{agent::ProxyRegistry, api::wired::scene::node::HostNode};
@@ -94,14 +95,14 @@ use crate::load::state::RuntimeData;
 impl bindings::wired::agent::context::Host for RuntimeData {
     async fn local_agent(&mut self) -> wasmtime::Result<Resource<HostAgent>> {
         let Some(entry) = self.wired_agent.local_agent.clone() else {
-            return Err(anyhow::anyhow!("no local agent available"));
+            bail!("no local agent available")
         };
         Ok(self.wired_agent.table.push(HostAgent(entry))?)
     }
 
     async fn local_camera(&mut self) -> wasmtime::Result<Resource<HostNode>> {
         let Some(entry) = self.wired_agent.local_agent.clone() else {
-            return Err(anyhow::anyhow!("no local agent available"));
+            bail!("no local agent available")
         };
         let node_id = entry.camera_node.clone();
         let inner = self
@@ -113,7 +114,7 @@ impl bindings::wired::agent::context::Host for RuntimeData {
             .get(&node_id)
             .cloned();
         let Some(inner) = inner else {
-            return Err(anyhow::anyhow!("camera node not found"));
+            bail!("camera node not found")
         };
         Ok(self.wired_scene.table.push(HostNode {
             inner,

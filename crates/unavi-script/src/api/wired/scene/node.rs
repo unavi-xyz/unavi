@@ -3,11 +3,7 @@ use std::sync::{Arc, atomic::Ordering};
 use bevy::prelude::{Entity, Transform as BevyTransform, World};
 use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner};
 use bevy_hsd::data::HsdCollider;
-use bevy_hsd::hydrate::compile::node::{
-    HsdNodeColliderSet, HsdNodeMaterialSet, HsdNodeMeshSet, HsdNodeNameSet, HsdNodeParentSet,
-    HsdNodeRigidBodySet, HsdNodeTransformSet,
-};
-use bevy_hsd::hydrate::events::NodeRef;
+use bevy_hsd::hydrate::compile::node::{HsdNodeColliderSet, HsdNodeRigidBodySet};
 use bytes::Bytes;
 use wasmtime::component::Resource;
 use wired_records::HydratedHash;
@@ -17,6 +13,7 @@ use super::bindings::wired::scene::types::{
     RigidBodyKind, Transform, Vec3,
 };
 use super::{WiredSceneRt, material::HostMaterial, mesh::HostMesh};
+use crate::core_ops;
 
 pub struct HostNode {
     pub inner: Arc<NodeInner>,
@@ -68,27 +65,8 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             let n = self.table.get(&self_)?;
             (Arc::clone(&n.inner), n.doc_entity)
         };
-        if inner.is_virtual {
-            return Ok(());
-        }
-        inner
-            .state
-            .lock()
-            .expect("node state lock")
-            .name
-            .clone_from(&value);
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.hsd_changes.lock().expect("hsd_changes lock").name = Some(value);
-        } else {
-            let id = inner.id.clone();
-            self.push_command(move |world: &mut World| {
-                world.trigger(HsdNodeNameSet {
-                    doc,
-                    id,
-                    name: value,
-                });
-            });
-        }
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::node::set_name(&inner, doc, value, &mut queue);
         Ok(())
     }
 
@@ -116,28 +94,8 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             let n = self.table.get(&self_)?;
             (Arc::clone(&n.inner), n.doc_entity)
         };
-        if inner.is_virtual {
-            return Ok(());
-        }
-        inner
-            .state
-            .lock()
-            .expect("node state lock")
-            .transform
-            .translation = bevy::math::Vec3::new(value.x, value.y, value.z);
-        if inner.sync.load(Ordering::Relaxed) {
-            inner
-                .hsd_changes
-                .lock()
-                .expect("hsd_changes lock")
-                .translation = Some([f64::from(value.x), f64::from(value.y), f64::from(value.z)]);
-        } else {
-            let id = inner.id.clone();
-            let transform = inner.state.lock().expect("node state lock").transform;
-            self.push_command(move |world: &mut World| {
-                world.trigger(HsdNodeTransformSet { doc, id, transform });
-            });
-        }
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::node::set_translation(&inner, doc, value.x, value.y, value.z, &mut queue);
         Ok(())
     }
 
@@ -166,29 +124,8 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             let n = self.table.get(&self_)?;
             (Arc::clone(&n.inner), n.doc_entity)
         };
-        if inner.is_virtual {
-            return Ok(());
-        }
-        inner
-            .state
-            .lock()
-            .expect("node state lock")
-            .transform
-            .rotation = bevy::math::Quat::from_xyzw(value.x, value.y, value.z, value.w);
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.hsd_changes.lock().expect("hsd_changes lock").rotation = Some([
-                f64::from(value.x),
-                f64::from(value.y),
-                f64::from(value.z),
-                f64::from(value.w),
-            ]);
-        } else {
-            let id = inner.id.clone();
-            let transform = inner.state.lock().expect("node state lock").transform;
-            self.push_command(move |world: &mut World| {
-                world.trigger(HsdNodeTransformSet { doc, id, transform });
-            });
-        }
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::node::set_rotation(&inner, doc, value.x, value.y, value.z, value.w, &mut queue);
         Ok(())
     }
 
@@ -207,21 +144,8 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             let n = self.table.get(&self_)?;
             (Arc::clone(&n.inner), n.doc_entity)
         };
-        if inner.is_virtual {
-            return Ok(());
-        }
-        inner.state.lock().expect("node state lock").transform.scale =
-            bevy::math::Vec3::new(value.x, value.y, value.z);
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.hsd_changes.lock().expect("hsd_changes lock").scale =
-                Some([f64::from(value.x), f64::from(value.y), f64::from(value.z)]);
-        } else {
-            let id = inner.id.clone();
-            let transform = inner.state.lock().expect("node state lock").transform;
-            self.push_command(move |world: &mut World| {
-                world.trigger(HsdNodeTransformSet { doc, id, transform });
-            });
-        }
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::node::set_scale(&inner, doc, value.x, value.y, value.z, &mut queue);
         Ok(())
     }
 
@@ -261,9 +185,6 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             let n = self.table.get(&self_)?;
             (Arc::clone(&n.inner), n.doc_entity)
         };
-        if inner.is_virtual {
-            return Ok(());
-        }
         let new_transform = BevyTransform {
             translation: bevy::math::Vec3::new(
                 value.translation.x,
@@ -278,35 +199,8 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             ),
             scale: bevy::math::Vec3::new(value.scale.x, value.scale.y, value.scale.z),
         };
-        inner.state.lock().expect("node state lock").transform = new_transform;
-        if inner.sync.load(Ordering::Relaxed) {
-            let mut ch = inner.hsd_changes.lock().expect("hsd_changes lock");
-            ch.translation = Some([
-                f64::from(value.translation.x),
-                f64::from(value.translation.y),
-                f64::from(value.translation.z),
-            ]);
-            ch.rotation = Some([
-                f64::from(value.rotation.x),
-                f64::from(value.rotation.y),
-                f64::from(value.rotation.z),
-                f64::from(value.rotation.w),
-            ]);
-            ch.scale = Some([
-                f64::from(value.scale.x),
-                f64::from(value.scale.y),
-                f64::from(value.scale.z),
-            ]);
-        } else {
-            let id = inner.id.clone();
-            self.push_command(move |world: &mut World| {
-                world.trigger(HsdNodeTransformSet {
-                    doc,
-                    id,
-                    transform: new_transform,
-                });
-            });
-        }
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::node::set_transform(&inner, doc, new_transform, &mut queue);
         Ok(())
     }
 
@@ -390,9 +284,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         self_: Resource<HostNode>,
         child: Resource<HostNode>,
     ) -> wasmtime::Result<()> {
-        let (parent_inner, parent_can_write) = {
+        let (parent_inner, parent_can_write, doc) = {
             let n = self.table.get(&self_)?;
-            (Arc::clone(&n.inner), n.can_write)
+            (Arc::clone(&n.inner), n.can_write, n.doc_entity)
         };
         let (child_inner, child_can_write) = {
             let n = self.table.get(&child)?;
@@ -401,32 +295,8 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         if !parent_can_write || !child_can_write {
             return Err(anyhow::anyhow!("hsd write permission required"));
         }
-
-        {
-            let mut parent_state = parent_inner.state.lock().expect("parent state lock");
-            if !parent_state.children.iter().any(|c| c.id == child_inner.id) {
-                parent_state.children.push(Arc::clone(&child_inner));
-            }
-        }
-        {
-            let mut child_state = child_inner.state.lock().expect("child state lock");
-            child_state.parent = Some(Arc::downgrade(&parent_inner));
-        }
-
-        let parent_ent = *parent_inner.entity.lock().expect("entity lock");
-        let child_ent = *child_inner.entity.lock().expect("entity lock");
-        let child_ref =
-            child_ent.map_or_else(|| NodeRef::Id(child_inner.id.clone()), NodeRef::Entity);
-        let parent_ref =
-            parent_ent.map_or_else(|| NodeRef::Id(parent_inner.id.clone()), NodeRef::Entity);
-        let doc = self.table.get(&self_)?.doc_entity;
-        self.push_command(move |world: &mut World| {
-            world.trigger(HsdNodeParentSet {
-                doc,
-                child: child_ref,
-                parent: Some(parent_ref),
-            });
-        });
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::node::add_child(&parent_inner, &child_inner, doc, &mut queue);
         Ok(())
     }
 
@@ -442,33 +312,8 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         if !can_write {
             return Err(anyhow::anyhow!("hsd write permission required"));
         }
-
-        let parent_inner = {
-            let child_state = child_inner.state.lock().expect("child state lock");
-            child_state
-                .parent
-                .as_ref()
-                .and_then(std::sync::Weak::upgrade)
-        };
-        if let Some(pi) = &parent_inner {
-            pi.state
-                .lock()
-                .expect("parent state lock")
-                .children
-                .retain(|c| c.id != child_inner.id);
-        }
-        child_inner.state.lock().expect("child state lock").parent = None;
-
-        let child_ent = *child_inner.entity.lock().expect("entity lock");
-        let child_ref =
-            child_ent.map_or_else(|| NodeRef::Id(child_inner.id.clone()), NodeRef::Entity);
-        self.push_command(move |world: &mut World| {
-            world.trigger(HsdNodeParentSet {
-                doc,
-                child: child_ref,
-                parent: None,
-            });
-        });
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::node::remove_child(&child_inner, doc, &mut queue);
         Ok(())
     }
 
@@ -505,35 +350,12 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             let n = self.table.get(&self_)?;
             (Arc::clone(&n.inner), n.doc_entity)
         };
-        if node_inner.is_virtual {
-            return Ok(());
-        }
         let mesh_id = match &value {
             Some(res) => Some(self.table.get(res)?.inner.id.clone()),
             None => None,
         };
-        node_inner
-            .state
-            .lock()
-            .expect("node state lock")
-            .mesh
-            .clone_from(&mesh_id);
-        if node_inner.sync.load(Ordering::Relaxed) {
-            node_inner
-                .hsd_changes
-                .lock()
-                .expect("hsd_changes lock")
-                .mesh = Some(mesh_id);
-        } else {
-            let id = node_inner.id.clone();
-            self.push_command(move |world: &mut World| {
-                world.trigger(HsdNodeMeshSet {
-                    doc,
-                    id,
-                    mesh: mesh_id,
-                });
-            });
-        }
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::node::set_mesh(&node_inner, doc, mesh_id, &mut queue);
         Ok(())
     }
 
@@ -570,35 +392,12 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             let n = self.table.get(&self_)?;
             (Arc::clone(&n.inner), n.doc_entity)
         };
-        if node_inner.is_virtual {
-            return Ok(());
-        }
         let mat_id = match &value {
             Some(res) => Some(self.table.get(res)?.inner.id.clone()),
             None => None,
         };
-        node_inner
-            .state
-            .lock()
-            .expect("node state lock")
-            .material
-            .clone_from(&mat_id);
-        if node_inner.sync.load(Ordering::Relaxed) {
-            node_inner
-                .hsd_changes
-                .lock()
-                .expect("hsd_changes lock")
-                .material = Some(mat_id);
-        } else {
-            let id = node_inner.id.clone();
-            self.push_command(move |world: &mut World| {
-                world.trigger(HsdNodeMaterialSet {
-                    doc,
-                    id,
-                    material: mat_id,
-                });
-            });
-        }
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::node::set_material(&node_inner, doc, mat_id, &mut queue);
         Ok(())
     }
 

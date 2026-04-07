@@ -1,24 +1,49 @@
 <!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="UNAVI" />
+    <meta property="og:site_name" content="unavi.xyz" />
+    <meta property="og:title" content="UNAVI" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://app.unavi.xyz/" />
+    <meta property="twitter:domain" content="unavi.xyz" />
+    <meta property="twitter:url" content="https://app.unavi.xyz/" />
+    <script type="importmap">
+      {
+        "imports": {
+          "wasi:cli/environment": "/assets/scripts/host/wasi_cli_environment.js",
+          "wasi:cli/exit": "/assets/scripts/host/wasi_cli_exit.js",
+          "wasi:cli/stderr": "/assets/scripts/host/wasi_cli_stderr.js",
+          "wasi:cli/stdin": "/assets/scripts/host/wasi_cli_stdin.js",
+          "wasi:cli/stdout": "/assets/scripts/host/wasi_cli_stdout.js",
+          "wasi:clocks/wall-clock": "/assets/scripts/host/wasi_clocks_wall_clock.js",
+          "wasi:io/error": "/assets/scripts/host/wasi_io_error.js",
+          "wasi:io/poll": "/assets/scripts/host/wasi_io_poll.js",
+          "wasi:io/streams": "/assets/scripts/host/wasi_io_streams.js",
+          "wasi:random/insecure-seed": "/assets/scripts/host/wasi_random_insecure_seed.js",
+          "wired:agent/context": "/assets/scripts/host/wired_agent_context.js",
+          "wired:agent/types": "/assets/scripts/host/wired_agent_types.js",
+          "wired:event/api": "/assets/scripts/host/wired_event_api.js",
+          "wired:event/types": "/assets/scripts/host/wired_event_types.js",
+          "wired:input/api": "/assets/scripts/host/wired_input_api.js",
+          "wired:input/system-api": "/assets/scripts/host/wired_input_system_api.js",
+          "wired:input/types": "/assets/scripts/host/wired_input_types.js",
+          "wired:scene/context": "/assets/scripts/host/wired_scene_context.js",
+          "wired:scene/types": "/assets/scripts/host/wired_scene_types.js",
+          "wired:wds/context": "/assets/scripts/host/wired_wds_context.js",
+          "wired:wds/types": "/assets/scripts/host/wired_wds_types.js"
+        }
+      }
+    </script>
+    <link data-trunk rel="copy-dir" href="assets" data-target-path="assets" />
+    <link data-trunk rel="css" href="/public/style.css" />
+    <link data-trunk rel="icon" type="image/ico" href="/public/favicon.ico" />
+    <link data-trunk rel="rust" href="Cargo.toml" data-wasm-opt="z" />
+    <title>UNAVI</title>
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="UNAVI" />
-  <meta property="og:site_name" content="unavi.xyz" />
-  <meta property="og:title" content="UNAVI" />
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://app.unavi.xyz/" />
-  <meta property="twitter:domain" content="unavi.xyz" />
-  <meta property="twitter:url" content="https://app.unavi.xyz/" />
-  <link data-trunk rel="copy-dir" href="assets" data-target-path="assets" />
-  <link data-trunk rel="css" href="/public/style.css" />
-  <link data-trunk rel="icon" type="image/ico" href="/public/favicon.ico" />
-  <link data-trunk rel="rust" href="Cargo.toml" data-wasm-opt="z" />
-  <title>UNAVI</title>
-</head>
-
-<body></body>
-
+  <body></body>
 </html>

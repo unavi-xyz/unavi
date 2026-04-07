@@ -11,11 +11,13 @@ use crate::{
     agent::ProxyRegistry,
     api::wired::{
         agent::WiredAgentRt,
-        event::{EventRegistry, WiredEventRt},
-        input::{InputRegistry, WiredInputRt},
+        event::WiredEventRt,
+        input::WiredInputRt,
         scene::{GlobalRegistryMap, WiredSceneRt},
         wds::WiredWdsRt,
     },
+    event_registry::EventRegistry,
+    input_registry::InputRegistry,
 };
 
 pub struct StoreState {

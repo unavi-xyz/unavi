@@ -1,13 +1,12 @@
 use std::sync::{Arc, atomic::Ordering};
 
 use bevy::mesh::PrimitiveTopology;
-use bevy::prelude::World;
 use bevy_hsd::cache::MeshInner;
-use bevy_hsd::hydrate::compile::mesh::{HsdMeshGeometrySet, MeshGeometrySource};
 use wasmtime::component::Resource;
 
 use super::bindings::wired::scene::types::{Indices, Mesh, PrimitiveTopology as WitTopology};
 use crate::api::wired::scene::WiredSceneRt;
+use crate::core_ops;
 
 pub struct HostMesh {
     pub inner: Arc<MeshInner>,
@@ -42,16 +41,6 @@ const fn bevy_topo_to_wit(t: PrimitiveTopology) -> WitTopology {
         PrimitiveTopology::LineStrip => WitTopology::LineStrip,
         PrimitiveTopology::TriangleList => WitTopology::TriangleList,
         PrimitiveTopology::TriangleStrip => WitTopology::TriangleStrip,
-    }
-}
-
-const fn bevy_topo_to_i64(t: PrimitiveTopology) -> i64 {
-    match t {
-        PrimitiveTopology::PointList => 0,
-        PrimitiveTopology::LineList => 1,
-        PrimitiveTopology::LineStrip => 2,
-        PrimitiveTopology::TriangleList => 3,
-        PrimitiveTopology::TriangleStrip => 4,
     }
 }
 
@@ -101,15 +90,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         value: Option<String>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        inner
-            .state
-            .lock()
-            .expect("mesh state lock")
-            .name
-            .clone_from(&value);
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.hsd_changes.lock().expect("hsd_changes lock").name = Some(value);
-        }
+        core_ops::mesh::set_name(&inner, value);
         Ok(())
     }
 
@@ -125,12 +106,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         value: WitTopology,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        let topo = wit_topo_to_bevy(value);
-        inner.state.lock().expect("mesh state lock").topology = topo;
-        if inner.sync.load(Ordering::Relaxed) {
-            inner.hsd_changes.lock().expect("hsd_changes lock").topology =
-                Some(bevy_topo_to_i64(topo));
-        }
+        core_ops::mesh::set_topology(&inner, wit_topo_to_bevy(value));
         Ok(())
     }
 
@@ -145,19 +121,12 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         value: Option<Indices>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        inner.state.lock().expect("mesh state lock").indices = value.map(|v| match v {
+        let indices = value.map(|v| match v {
             Indices::Half(h) => h.into_iter().map(u32::from).collect(),
             Indices::Full(f) => f,
         });
-        let doc = self.doc_entity;
-        let id = inner.id.clone();
-        self.push_command(move |world: &mut World| {
-            world.trigger(HsdMeshGeometrySet {
-                doc,
-                id,
-                source: MeshGeometrySource::Inline,
-            });
-        });
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::mesh::set_indices(&inner, self.doc_entity, indices, &mut queue);
         Ok(())
     }
 
@@ -172,16 +141,8 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         values: Option<Vec<f32>>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        inner.state.lock().expect("mesh state lock").colors = values;
-        let doc = self.doc_entity;
-        let id = inner.id.clone();
-        self.push_command(move |world: &mut World| {
-            world.trigger(HsdMeshGeometrySet {
-                doc,
-                id,
-                source: MeshGeometrySource::Inline,
-            });
-        });
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::mesh::set_colors(&inner, self.doc_entity, values, &mut queue);
         Ok(())
     }
 
@@ -196,16 +157,8 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         values: Option<Vec<f32>>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        inner.state.lock().expect("mesh state lock").normals = values;
-        let doc = self.doc_entity;
-        let id = inner.id.clone();
-        self.push_command(move |world: &mut World| {
-            world.trigger(HsdMeshGeometrySet {
-                doc,
-                id,
-                source: MeshGeometrySource::Inline,
-            });
-        });
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::mesh::set_normals(&inner, self.doc_entity, values, &mut queue);
         Ok(())
     }
 
@@ -225,16 +178,8 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         values: Option<Vec<f32>>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        inner.state.lock().expect("mesh state lock").positions = values;
-        let doc = self.doc_entity;
-        let id = inner.id.clone();
-        self.push_command(move |world: &mut World| {
-            world.trigger(HsdMeshGeometrySet {
-                doc,
-                id,
-                source: MeshGeometrySource::Inline,
-            });
-        });
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::mesh::set_positions(&inner, self.doc_entity, values, &mut queue);
         Ok(())
     }
 
@@ -254,16 +199,8 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         values: Option<Vec<f32>>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        inner.state.lock().expect("mesh state lock").tangents = values;
-        let doc = self.doc_entity;
-        let id = inner.id.clone();
-        self.push_command(move |world: &mut World| {
-            world.trigger(HsdMeshGeometrySet {
-                doc,
-                id,
-                source: MeshGeometrySource::Inline,
-            });
-        });
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::mesh::set_tangents(&inner, self.doc_entity, values, &mut queue);
         Ok(())
     }
 
@@ -278,16 +215,8 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         values: Option<Vec<f32>>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        inner.state.lock().expect("mesh state lock").uv0 = values;
-        let doc = self.doc_entity;
-        let id = inner.id.clone();
-        self.push_command(move |world: &mut World| {
-            world.trigger(HsdMeshGeometrySet {
-                doc,
-                id,
-                source: MeshGeometrySource::Inline,
-            });
-        });
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::mesh::set_uv0(&inner, self.doc_entity, values, &mut queue);
         Ok(())
     }
 
@@ -302,16 +231,8 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         values: Option<Vec<f32>>,
     ) -> wasmtime::Result<()> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
-        inner.state.lock().expect("mesh state lock").uv1 = values;
-        let doc = self.doc_entity;
-        let id = inner.id.clone();
-        self.push_command(move |world: &mut World| {
-            world.trigger(HsdMeshGeometrySet {
-                doc,
-                id,
-                source: MeshGeometrySource::Inline,
-            });
-        });
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::mesh::set_uv1(&inner, self.doc_entity, values, &mut queue);
         Ok(())
     }
 

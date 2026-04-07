@@ -11,7 +11,7 @@ use smol_str::SmolStr;
 use unavi_agent::{Agent, LocalAgent, LocalAgentEntities};
 use unavi_avatar::bones::AvatarBones;
 
-use crate::{api::wired::scene::document::gen_id, load::LoadedScript, runtime::ScriptRuntime};
+use crate::{load::LoadedScript, runtime::ScriptRuntime, util::gen_id};
 
 pub struct ProxyRegistry {
     pub bone_nodes: Arc<HashMap<BoneName, SmolStr>>,

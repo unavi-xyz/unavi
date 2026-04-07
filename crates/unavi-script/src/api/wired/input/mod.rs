@@ -2,12 +2,10 @@ use std::sync::Arc;
 
 use wasmtime::component::{Resource, ResourceTable};
 
+use crate::input_registry::{InputAction, InputDevice, InputRegistry, ListenerQueue};
 use crate::{api::wired::scene::node::HostNode, load::state::RuntimeData};
 
 pub mod bridge;
-pub mod registry;
-
-pub use registry::{InputAction, InputDevice, InputRegistry, QueuedEvent};
 
 pub mod bindings {
     wasmtime::component::bindgen!({
@@ -33,7 +31,7 @@ pub struct WiredInputRt {
 }
 
 pub struct HostInputListener {
-    pub queue: registry::ListenerQueue,
+    pub queue: ListenerQueue,
     registry: InputRegistry,
     entity: Option<bevy::prelude::Entity>,
 }

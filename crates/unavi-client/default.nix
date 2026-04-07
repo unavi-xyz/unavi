@@ -98,7 +98,7 @@
         cargoArtifacts = cargoArtifactsWeb;
 
         nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [ pkgs.trunk ];
-        wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_106;
+        wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_114;
 
         preBuild = ''
           ls -l

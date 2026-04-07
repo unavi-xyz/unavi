@@ -18,6 +18,14 @@ dist-webgl/
 dist-webgpu/
 dist/
 
+# Npm
+node_modules/
+package-lock.json
+
+# Generated web script assets
+crates/unavi-script/assets/scripts/jco-runtime.js
+crates/unavi-client/assets/scripts/
+
 # Env
 .direnv
 .envrc

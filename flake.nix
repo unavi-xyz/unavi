@@ -168,6 +168,24 @@
               statix.enable = true;
               taplo.enable = true;
               terraform.enable = true;
+              prettier = {
+                enable = true;
+                includes = [
+                  "*.cjs"
+                  "*.css"
+                  "*.html"
+                  "*.js"
+                  "*.json"
+                  "*.json5"
+                  "*.jsx"
+                  "*.mjs"
+                  "*.scss"
+                  "*.ts"
+                  "*.tsx"
+                  "*.vue"
+
+                ];
+              };
               yamlfmt.enable = true;
             };
 
@@ -205,6 +223,7 @@
                       cargo-workspaces
                       deploy-rs.packages.${system}.default
                       doctl
+                      nodejs
                       nushell
                       rustup
                       sops

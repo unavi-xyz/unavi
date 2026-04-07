@@ -8,7 +8,7 @@ use unavi_input::{
     schminput::prelude::BoolActionValue,
 };
 
-use super::{InputAction, InputDevice, InputRegistry, QueuedEvent};
+use crate::input_registry::{InputAction, InputDevice, InputRegistry, QueuedEvent};
 
 pub fn bridge_squeeze_down(trigger: On<SqueezeDown>, registry: Res<InputRegistry>) {
     registry.push_node(

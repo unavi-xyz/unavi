@@ -2,10 +2,9 @@ use bevy::prelude::*;
 use blake3::Hash;
 use wasmtime::component::{Resource, ResourceTable};
 
-pub mod bridge;
-pub mod registry;
+use crate::event_registry::{EventRegistry, PendingEmission, ReceptorQueue};
 
-pub use registry::EventRegistry;
+pub mod bridge;
 
 pub mod bindings {
     wasmtime::component::bindgen!({
@@ -30,7 +29,7 @@ pub struct WiredEventRt {
 }
 
 pub struct HostEventReceptor {
-    queue: registry::ReceptorQueue,
+    queue: ReceptorQueue,
 }
 
 impl bindings::wired::event::api::Host for RuntimeData {
@@ -43,7 +42,7 @@ impl bindings::wired::event::api::Host for RuntimeData {
         let (entity, radius) =
             scope_to_entity(&mut self.wired_scene.table, filter.node, filter.scope)?;
         let target_documents = parse_documents(filter.documents)?;
-        let emission = registry::PendingEmission {
+        let emission = PendingEmission {
             node: entity,
             channel,
             payload,

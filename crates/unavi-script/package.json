@@ -1,0 +1,11 @@
+{
+  "name": "unavi-script",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@bytecodealliance/jco": "^1.15"
+  },
+  "devDependencies": {
+    "esbuild": "latest"
+  }
+}

@@ -67,12 +67,15 @@ impl EntityCommand for CreatePortal {
             let camera = world
                 .get::<Camera>(tracked_camera_ent)
                 .expect("camera component not found");
+            let render_target = world
+                .get::<RenderTarget>(tracked_camera_ent)
+                .expect("render target component not found");
 
             let viewport_size = camera
                 .viewport
                 .as_ref()
                 .map_or_else(
-                    || match &camera.target {
+                    || match render_target {
                         RenderTarget::Image(image) => world
                             .resource::<Assets<Image>>()
                             .get(image.handle.id())
@@ -156,9 +159,9 @@ impl EntityCommand for CreatePortal {
                     TrackedCamera(tracked_camera_ent),
                     Camera {
                         order: -1,
-                        target: RenderTarget::Image(image_handle.into()),
                         ..default()
                     },
+                    RenderTarget::Image(image_handle.into()),
                     camera_3d,
                 ))
                 .id();

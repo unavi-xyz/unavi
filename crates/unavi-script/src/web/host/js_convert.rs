@@ -1,6 +1,6 @@
 use bevy::prelude::Transform;
 use js_sys::{Object, Reflect, Uint32Array};
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast, JsValue};
 
 pub fn js_vec3(x: f32, y: f32, z: f32) -> JsValue {
     let obj = Object::new();
@@ -57,6 +57,12 @@ pub fn js_string_array(v: &JsValue) -> Option<Vec<String>> {
         out.push(arr.get(i).as_string()?);
     }
     Some(out)
+}
+
+pub fn parse_f32_array(v: &JsValue) -> Vec<f32> {
+    v.dyn_ref::<js_sys::Float32Array>()
+        .map(|fa| fa.to_vec())
+        .unwrap_or_default()
 }
 
 pub fn parse_js_doc_list(v: &JsValue) -> Option<Vec<blake3::Hash>> {

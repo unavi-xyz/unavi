@@ -72,16 +72,18 @@ export class Node {
     host().hostSceneNodeSetTransform(
       scriptId(),
       this[cabiRep],
-      value.translation.x,
-      value.translation.y,
-      value.translation.z,
-      value.rotation.x,
-      value.rotation.y,
-      value.rotation.z,
-      value.rotation.w,
-      value.scale.x,
-      value.scale.y,
-      value.scale.z,
+      new Float32Array([
+        value.translation.x,
+        value.translation.y,
+        value.translation.z,
+        value.rotation.x,
+        value.rotation.y,
+        value.rotation.z,
+        value.rotation.w,
+        value.scale.x,
+        value.scale.y,
+        value.scale.z,
+      ]),
     );
   }
   globalTransform() {

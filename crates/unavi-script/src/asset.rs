@@ -7,7 +7,7 @@ use bevy::{
 #[derive(Asset, Debug, Deref, DerefMut, TypePath)]
 pub struct Wasm(pub Vec<u8>);
 
-#[derive(Default)]
+#[derive(Default, TypePath)]
 pub struct WasmLoader;
 
 impl AssetLoader for WasmLoader {

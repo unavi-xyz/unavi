@@ -19,7 +19,7 @@ pub mod bindings {
 }
 
 #[cfg(not(target_family = "wasm"))]
-type LoadResult = anyhow::Result<(bevy::prelude::Entity, bindings::Guest)>;
+type LoadResult = wasmtime::Result<(bevy::prelude::Entity, bindings::Guest)>;
 
 #[cfg(not(target_family = "wasm"))]
 #[derive(bevy::prelude::Component)]
@@ -44,7 +44,6 @@ mod native {
         task::Poll,
     };
 
-    use anyhow::Context;
     use bevy::prelude::*;
     use bevy_async_task::TaskPool;
     use bevy_hsd::{
@@ -55,7 +54,7 @@ mod native {
     use bevy_wds::{LocalActor, LocalBlobs};
     use loro::{LoroDoc, TreeID};
     use smol_str::ToSmolStr;
-    use wasmtime::{AsContextMut, Store, component::Linker};
+    use wasmtime::{AsContextMut, Store, component::Linker, error::Context};
     use wasmtime_wasi::WasiCtxBuilder;
 
     use super::state::{RuntimeData, StoreState};
@@ -255,7 +254,7 @@ mod native {
 
     pub async fn instantiate_component(
         ent: Entity,
-        component: Result<wasmtime::component::Component, anyhow::Error>,
+        component: wasmtime::Result<wasmtime::component::Component>,
         rt: &mut RuntimeCtx,
         perms: ScriptPermissions,
     ) -> LoadResult {

@@ -152,9 +152,10 @@ pub(crate) fn handle_hsd_material_despawned(
         mats.remove(&ev.id)
     };
     let Some(inner) = inner else { return };
-    let ent = *inner.entity.lock().expect("entity lock");
-    if let Some(ent) = ent {
-        commands.entity(ent).despawn();
+    if let Some(ent) = *inner.entity.lock().expect("entity lock")
+        && let Ok(mut ent) = commands.get_entity(ent)
+    {
+        ent.despawn();
     }
 }
 
@@ -292,10 +293,13 @@ pub(crate) fn handle_hsd_material_name_set(
         .get(&ev.id)
         .and_then(|m| *m.entity.lock().expect("entity lock"));
     let Some(ent) = ent else { return };
+    let Ok(mut entity_cmd) = commands.get_entity(ent) else {
+        return;
+    };
     if let Some(ref name) = ev.name {
-        commands.entity(ent).insert(Name::new(name.clone()));
+        entity_cmd.insert(Name::new(name.clone()));
     } else {
-        commands.entity(ent).remove::<Name>();
+        entity_cmd.remove::<Name>();
     }
 }
 

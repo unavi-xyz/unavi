@@ -9,7 +9,7 @@ use std::{
 
 use bevy::{log::tracing::Instrument, prelude::*};
 use blake3::Hash;
-use iroh::{Endpoint, EndpointId};
+use iroh::{Endpoint, EndpointId, endpoint::presets::N0};
 use iroh_gossip::Gossip;
 use n0_future::task::AbortOnDropHandle;
 use parking_lot::Mutex;
@@ -195,10 +195,11 @@ async fn thread_loop(
     command_rx: &mut tokio::sync::mpsc::Receiver<NetworkCommand>,
     event_tx: &tokio::sync::mpsc::Sender<NetworkEvent>,
 ) -> anyhow::Result<()> {
-    let endpoint = Endpoint::builder();
+    let endpoint = Endpoint::builder(N0);
 
     #[cfg(feature = "mdns")]
-    let endpoint = endpoint.discovery(iroh::discovery::mdns::MdnsDiscovery::builder());
+    let endpoint =
+        endpoint.address_lookup(iroh::address_lookup::mdns::MdnsAddressLookup::builder());
 
     let endpoint = endpoint.bind().await?;
     info!("Local endpoint: {}", endpoint.id());

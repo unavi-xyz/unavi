@@ -6,7 +6,7 @@ const MAX_INLINE: usize = 23;
 
 pub fn gen_id() -> SmolStr {
     rand::rng()
-        .sample_iter(&Alphanumeric)
+        .sample_iter(Alphanumeric)
         .take(MAX_INLINE)
         .map(char::from)
         .collect::<SmolStr>()

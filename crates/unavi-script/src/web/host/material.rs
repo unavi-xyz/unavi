@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::sync::atomic::Ordering;
 
 use js_sys::Object;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast, JsValue};
 
 use super::state::MatEntry;
 use super::with_script;
@@ -42,13 +42,14 @@ pub fn register(obj: &Object) {
         dyn Fn(u32, u32) -> u32,
         |id: u32, rep: u32| {
             with_script(id, |state| {
-                let entry = state.mats.get(&rep)?;
+                let inner = Arc::clone(&state.mats.get(&rep)?.inner);
+                let doc_entity = state.mats.get(&rep)?.doc_entity;
                 let new_rep = state.alloc();
                 state.mats.insert(
                     new_rep,
                     MatEntry {
-                        inner: Arc::clone(&entry.inner),
-                        doc_entity: entry.doc_entity,
+                        inner,
+                        doc_entity,
                     },
                 );
                 Some(new_rep)

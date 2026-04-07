@@ -6,7 +6,7 @@ use std::{
 
 use axum::{Json, Router};
 use directories::ProjectDirs;
-use iroh::{Endpoint, EndpointId};
+use iroh::{Endpoint, EndpointId, endpoint::presets::N0};
 use tower_http::cors::CorsLayer;
 use tracing::info;
 use wds::DataStore;
@@ -40,7 +40,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     let vc = key_pair::get_or_create_key(opts.in_memory)?;
     info!("Running server as {did}");
 
-    let endpoint = Endpoint::builder().bind().await?;
+    let endpoint = Endpoint::builder(N0).bind().await?;
 
     let store = {
         let path = DIRS.data_local_dir().join("wds");

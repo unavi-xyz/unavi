@@ -2,6 +2,7 @@ use std::sync::{Arc, atomic::Ordering};
 
 use bevy::mesh::PrimitiveTopology;
 use bevy_hsd::cache::MeshInner;
+use wasmtime::bail;
 use wasmtime::component::Resource;
 
 use super::bindings::wired::scene::types::{Indices, Mesh, PrimitiveTopology as WitTopology};
@@ -72,7 +73,7 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
             (Arc::clone(&m.inner), m.can_write)
         };
         if value && !can_write {
-            return Err(anyhow::anyhow!("hsd write permission required"));
+            bail!("hsd write permission required")
         }
         inner.sync.store(value, Ordering::Relaxed);
         Ok(())

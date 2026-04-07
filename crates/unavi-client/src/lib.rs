@@ -123,11 +123,7 @@ impl Plugin for UnaviPlugin {
                 wds_in_memory: self.in_memory,
             },
             space::SpacePlugin,
-        ))
-        .insert_resource(AmbientLight {
-            brightness: lux::OVERCAST_DAY,
-            ..default()
-        });
+        ));
 
         #[cfg(feature = "devtools-bevy")]
         {
@@ -146,29 +142,33 @@ impl Plugin for UnaviPlugin {
             }
         }
 
-        app.insert_resource(ClearColor(Color::BLACK))
-            .init_resource::<grab::GrabbedObjects>()
-            .init_resource::<networking::thread::space::object::outbound::LocalGrabbedObjects>()
-            .add_observer(grab::handle_squeeze_down)
-            .add_observer(grab::handle_squeeze_up)
-            .add_systems(
-                Startup,
-                (
-                    grab::setup_grabbed_hooks,
-                    icon::set_window_icon,
-                    scene::spawn_scene,
-                    system_scripts::spawn_system_scripts,
-                ),
-            )
-            .add_systems(
-                FixedUpdate,
-                (
-                    async_commands::apply_async_commands,
-                    camera::apply_camera_effects,
-                    grab::update_crosshair_mode,
-                    scene::spawn_agent,
-                ),
-            )
-            .add_systems(Update, grab::move_grabbed_objects);
+        app.insert_resource(GlobalAmbientLight {
+            brightness: lux::OVERCAST_DAY,
+            ..default()
+        })
+        .insert_resource(ClearColor(Color::BLACK))
+        .init_resource::<grab::GrabbedObjects>()
+        .init_resource::<networking::thread::space::object::outbound::LocalGrabbedObjects>()
+        .add_observer(grab::handle_squeeze_down)
+        .add_observer(grab::handle_squeeze_up)
+        .add_systems(
+            Startup,
+            (
+                grab::setup_grabbed_hooks,
+                icon::set_window_icon,
+                scene::spawn_scene,
+                system_scripts::spawn_system_scripts,
+            ),
+        )
+        .add_systems(
+            FixedUpdate,
+            (
+                async_commands::apply_async_commands,
+                camera::apply_camera_effects,
+                grab::update_crosshair_mode,
+                scene::spawn_agent,
+            ),
+        )
+        .add_systems(Update, grab::move_grabbed_objects);
     }
 }

@@ -25,10 +25,10 @@ pub fn spawn_devtools_overlay(mut commands: Commands) {
                 padding: UiRect::all(Val::Px(15.0)),
                 flex_direction: FlexDirection::Column,
                 row_gap: Val::Px(8.0),
+                border_radius: BorderRadius::all(Val::Px(8.0)),
                 ..default()
             },
             BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.8)),
-            BorderRadius::all(Val::Px(8.0)),
         ))
         .with_children(|parent| {
             parent.spawn((

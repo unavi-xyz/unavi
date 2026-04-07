@@ -19,9 +19,7 @@ pub fn spawn_agent(
     *spawned = true;
 }
 
-pub fn spawn_scene(mut commands: Commands, mut ambient: ResMut<AmbientLight>) {
-    ambient.brightness = lux::OVERCAST_DAY;
-
+pub fn spawn_scene(mut commands: Commands) {
     commands.spawn((
         CascadeShadowConfigBuilder {
             #[cfg(not(target_family = "wasm"))]

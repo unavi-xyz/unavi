@@ -20,7 +20,7 @@ use crate::{
 pub fn update_portal_image_sizes(
     mut portal_cameras: Query<(&PortalCamera, &TrackedCamera, &mut Projection)>,
     portals: Query<&MeshMaterial3d<PortalMaterial>, With<Portal>>,
-    cameras: Query<&Camera, Without<PortalCamera>>,
+    cameras: Query<(&Camera, &RenderTarget), Without<PortalCamera>>,
     mut images: ResMut<Assets<Image>>,
     mut portal_materials: ResMut<Assets<PortalMaterial>>,
     manual_texture_views: Res<ManualTextureViews>,
@@ -28,7 +28,7 @@ pub fn update_portal_image_sizes(
     primary_window: Query<&Window, With<PrimaryWindow>>,
 ) {
     for (portal_camera, tracked_camera, mut projection) in &mut portal_cameras {
-        let Ok(camera) = cameras.get(tracked_camera.0) else {
+        let Ok((camera, render_target)) = cameras.get(tracked_camera.0) else {
             continue;
         };
 
@@ -36,7 +36,7 @@ pub fn update_portal_image_sizes(
             .viewport
             .as_ref()
             .map_or_else(
-                || match &camera.target {
+                || match render_target {
                     RenderTarget::Image(image) => images.get(image.handle.id()).map(Image::size),
                     RenderTarget::None { size } => Some(*size),
                     RenderTarget::TextureView(view) => {

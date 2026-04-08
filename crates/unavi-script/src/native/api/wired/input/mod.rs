@@ -3,7 +3,7 @@ use std::sync::Arc;
 use wasmtime::component::{Resource, ResourceTable};
 
 use crate::input_registry::{InputAction, InputDevice, InputRegistry, ListenerQueue};
-use crate::{api::wired::scene::node::HostNode, load::state::RuntimeData};
+use crate::{load::native::state::RuntimeData, native::api::wired::scene::node::HostNode};
 
 pub mod bridge;
 
@@ -12,7 +12,7 @@ pub mod bindings {
         path: "../../protocol/wit/wired-input",
         with: {
             "wired:scene/types.node":
-                crate::api::wired::scene::node::HostNode,
+                crate::native::api::wired::scene::node::HostNode,
             "wired:input/types.input-listener": super::HostInputListener,
         },
         imports: { default: async | trappable },

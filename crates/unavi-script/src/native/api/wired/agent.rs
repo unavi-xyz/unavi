@@ -4,7 +4,10 @@ use bevy_vrm::BoneName;
 use wasmtime::bail;
 use wasmtime::component::{Resource, ResourceTable};
 
-use crate::{agent::ProxyRegistry, api::wired::scene::node::HostNode};
+use crate::{
+    load::native::state::RuntimeData,
+    native::{agent::ProxyRegistry, api::wired::scene::node::HostNode},
+};
 
 #[derive(Default)]
 pub struct WiredAgentRt {
@@ -19,9 +22,9 @@ pub mod bindings {
         path: "../../protocol/wit/wired-agent",
         with: {
             "wired:scene/types.node":
-                crate::api::wired::scene::node::HostNode,
+                crate::native::api::wired::scene::node::HostNode,
             "wired:scene/types.document":
-                crate::api::wired::scene::document::HostDocument,
+                crate::native::api::wired::scene::document::HostDocument,
             "wired:agent/types.agent": super::HostAgent,
         },
         imports: { default: async | trappable },
@@ -89,8 +92,6 @@ const fn wit_bone_to_vrm(b: bindings::wired::agent::types::BoneName) -> BoneName
         WB::RightLittleDistal => BoneName::RightLittleDistal,
     }
 }
-
-use crate::load::state::RuntimeData;
 
 impl bindings::wired::agent::context::Host for RuntimeData {
     async fn local_agent(&mut self) -> wasmtime::Result<Resource<HostAgent>> {

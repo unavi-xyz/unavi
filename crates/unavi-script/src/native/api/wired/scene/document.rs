@@ -1,14 +1,10 @@
-use std::sync::Arc;
-use std::sync::atomic::Ordering;
+use std::sync::{Arc, atomic::Ordering};
 
 use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner, SceneRegistryInner};
-use wasmtime::bail;
-use wasmtime::component::Resource;
+use wasmtime::{bail, component::Resource};
 
 use super::bindings::wired::scene::types::{Document, Material, Mesh};
-use crate::api::wired::scene::{
-    WiredSceneRt, material::HostMaterial, mesh::HostMesh, node::HostNode,
-};
+use super::{WiredSceneRt, material::HostMaterial, mesh::HostMesh, node::HostNode};
 use crate::core_ops;
 
 pub struct HostDocument {
@@ -44,13 +40,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<Material>> {
-        let (doc_entity, registry, can_write) = {
-            let d = self.table.get(&self_)?;
-            (d.doc_entity, Arc::clone(&d.registry), d.can_write)
-        };
-        if !can_write {
-            bail!("hsd write permission required")
-        }
+        let (doc_entity, registry) = self.get_doc_write(&self_)?;
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         let inner = core_ops::document::create_material(&registry, doc_entity, &mut queue);
         drop(queue);
@@ -62,13 +52,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
     }
 
     async fn create_mesh(&mut self, self_: Resource<Document>) -> wasmtime::Result<Resource<Mesh>> {
-        let (doc_entity, registry, can_write) = {
-            let d = self.table.get(&self_)?;
-            (d.doc_entity, Arc::clone(&d.registry), d.can_write)
-        };
-        if !can_write {
-            bail!("hsd write permission required")
-        }
+        let (doc_entity, registry) = self.get_doc_write(&self_)?;
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         let inner = core_ops::document::create_mesh(&registry, doc_entity, &mut queue);
         drop(queue);
@@ -83,13 +67,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         self_: Resource<Document>,
     ) -> wasmtime::Result<Resource<HostNode>> {
-        let (doc_entity, registry, can_write) = {
-            let d = self.table.get(&self_)?;
-            (d.doc_entity, Arc::clone(&d.registry), d.can_write)
-        };
-        if !can_write {
-            bail!("hsd write permission required")
-        }
+        let (doc_entity, registry) = self.get_doc_write(&self_)?;
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         let inner = core_ops::document::create_node(&registry, doc_entity, &mut queue);
         drop(queue);
@@ -105,18 +83,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         self_: Resource<Document>,
     ) -> wasmtime::Result<Vec<Resource<HostNode>>> {
-        let (registry, can_read, can_write, doc_entity) = {
-            let d = self.table.get(&self_)?;
-            (
-                Arc::clone(&d.registry),
-                d.can_read,
-                d.can_write,
-                d.doc_entity,
-            )
-        };
-        if !can_read {
-            bail!("hsd read permission required")
-        }
+        let (registry, can_read, can_write, doc_entity) = self.get_doc_read(&self_)?;
         let nodes: Vec<Arc<NodeInner>> = {
             let all = registry.nodes.lock().expect("nodes lock");
             all.iter()
@@ -147,18 +114,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         self_: Resource<Document>,
     ) -> wasmtime::Result<Vec<Resource<HostNode>>> {
-        let (registry, can_read, can_write, doc_entity) = {
-            let d = self.table.get(&self_)?;
-            (
-                Arc::clone(&d.registry),
-                d.can_read,
-                d.can_write,
-                d.doc_entity,
-            )
-        };
-        if !can_read {
-            bail!("hsd read permission required")
-        }
+        let (registry, can_read, can_write, doc_entity) = self.get_doc_read(&self_)?;
         let nodes: Vec<Arc<NodeInner>> = registry.nodes.lock().expect("nodes lock").clone();
         let mut out = Vec::with_capacity(nodes.len());
         for inner in nodes {
@@ -176,13 +132,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         self_: Resource<Document>,
     ) -> wasmtime::Result<Vec<Resource<HostMesh>>> {
-        let (registry, can_read, can_write) = {
-            let d = self.table.get(&self_)?;
-            (Arc::clone(&d.registry), d.can_read, d.can_write)
-        };
-        if !can_read {
-            bail!("hsd read permission required")
-        }
+        let (registry, can_read, can_write, _) = self.get_doc_read(&self_)?;
         let inners: Vec<Arc<MeshInner>> = registry
             .meshes
             .lock()
@@ -205,13 +155,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         &mut self,
         self_: Resource<Document>,
     ) -> wasmtime::Result<Vec<Resource<HostMaterial>>> {
-        let (registry, can_read, can_write) = {
-            let d = self.table.get(&self_)?;
-            (Arc::clone(&d.registry), d.can_read, d.can_write)
-        };
-        if !can_read {
-            bail!("hsd read permission required")
-        }
+        let (registry, can_read, can_write, _) = self.get_doc_read(&self_)?;
         let inners: Vec<Arc<MaterialInner>> = registry
             .materials
             .lock()
@@ -235,13 +179,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         self_: Resource<Document>,
         value: Resource<HostNode>,
     ) -> wasmtime::Result<()> {
-        let (doc_entity, registry, can_write) = {
-            let d = self.table.get(&self_)?;
-            (d.doc_entity, Arc::clone(&d.registry), d.can_write)
-        };
-        if !can_write {
-            bail!("hsd write permission required")
-        }
+        let (doc_entity, registry) = self.get_doc_write(&self_)?;
         let inner = Arc::clone(&self.table.get(&value)?.inner);
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         core_ops::document::remove_node(&inner, &registry, doc_entity, &mut queue);
@@ -253,13 +191,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         self_: Resource<Document>,
         value: Resource<HostMesh>,
     ) -> wasmtime::Result<()> {
-        let (doc_entity, registry, can_write) = {
-            let d = self.table.get(&self_)?;
-            (d.doc_entity, Arc::clone(&d.registry), d.can_write)
-        };
-        if !can_write {
-            bail!("hsd write permission required")
-        }
+        let (doc_entity, registry) = self.get_doc_write(&self_)?;
         let inner = Arc::clone(&self.table.get(&value)?.inner);
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         core_ops::document::remove_mesh(&inner, &registry, doc_entity, &mut queue);
@@ -271,13 +203,7 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         self_: Resource<Document>,
         value: Resource<HostMaterial>,
     ) -> wasmtime::Result<()> {
-        let (doc_entity, registry, can_write) = {
-            let d = self.table.get(&self_)?;
-            (d.doc_entity, Arc::clone(&d.registry), d.can_write)
-        };
-        if !can_write {
-            bail!("hsd write permission required")
-        }
+        let (doc_entity, registry) = self.get_doc_write(&self_)?;
         let inner = Arc::clone(&self.table.get(&value)?.inner);
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         core_ops::document::remove_material(&inner, &registry, doc_entity, &mut queue);

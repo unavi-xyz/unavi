@@ -1,6 +1,9 @@
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 
-use bevy::{prelude::*, tasks::AsyncComputeTaskPool};
+use bevy::{
+    prelude::*,
+    tasks::{AsyncComputeTaskPool, Task},
+};
 use futures::FutureExt;
 use tracing::Instrument;
 use wasmtime::AsContextMut;
@@ -8,12 +11,18 @@ use wasmtime::AsContextMut;
 use bevy_hsd::hydrate::events::ScriptCommandQueueComp;
 
 use crate::{
-    load::LoadedScript,
-    runtime::{ScriptRuntime, init::InitializedScript, tick::TickingTask},
+    load::native::LoadedScript,
+    native::runtime::{ScriptRuntime, init::InitializedScript},
 };
 
-pub fn render_tick_scripts(
+const SCRIPT_TICKRATE: Duration = Duration::from_millis(50);
+
+#[derive(Component, Default)]
+pub struct TickingTask(pub Option<Task<anyhow::Result<()>>>);
+
+pub fn tick_scripts(
     mut commands: Commands,
+    time: Res<Time>,
     scripts: Query<
         (
             &ScriptRuntime,
@@ -34,11 +43,30 @@ pub fn render_tick_scripts(
 
         let guest = Arc::clone(&loaded.0);
 
+        {
+            let mut ctx = rt.ctx.blocking_lock();
+
+            if ctx.last_tick.is_zero() {
+                ctx.last_tick = time.elapsed();
+                continue;
+            }
+
+            let delta = time
+                .elapsed()
+                .checked_sub(ctx.last_tick)
+                .expect("valid delta");
+            if delta < SCRIPT_TICKRATE {
+                continue;
+            }
+
+            drop(ctx);
+        }
+
         let ctx = Arc::clone(&rt.ctx);
         let name = name.map_or_else(|| "unknown".to_string(), std::string::ToString::to_string);
         let pool = AsyncComputeTaskPool::get();
 
-        let span = info_span!("render", name);
+        let span = info_span!("tick", name);
         let task = pool.spawn(
             async move {
                 let mut ctx = ctx.lock().await;
@@ -49,7 +77,7 @@ pub fn render_tick_scripts(
                 guest
                     .wired_script_guest_api()
                     .script()
-                    .call_render(ctx.store.as_context_mut(), script)
+                    .call_tick(ctx.store.as_context_mut(), script)
                     .await?;
 
                 ctx.flush_logs().await;
@@ -68,7 +96,7 @@ pub fn render_tick_scripts(
             q.len = 0;
             drop(q);
             if let Err(err) = res {
-                error!(?err, "error render ticking script");
+                error!(?err, "error ticking script");
             }
         }
 

@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use unavi_script::{
-    LoadLocalScript, ScriptPermissions, firewall::HsdFirewallEntities, load::local::ScriptSource,
+    firewall::HsdFirewallEntities,
+    load::local::{LoadLocalScript, ScriptSource},
+    permissions::ScriptPermissions,
 };
 
 const GAUNTLET: &str = "wasm/unavi/gauntlet.wasm";

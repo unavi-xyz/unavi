@@ -9,7 +9,10 @@ use wasmtime::{AsContextMut, error::Context};
 
 use bevy_hsd::hydrate::events::ScriptCommandQueueComp;
 
-use crate::{agent::NeedsAgentProxy, load::LoadedScript, runtime::ScriptRuntime};
+use crate::{
+    load::native::LoadedScript,
+    native::{agent::NeedsAgentProxy, runtime::ScriptRuntime},
+};
 
 #[derive(Component)]
 pub struct InitializedScript;

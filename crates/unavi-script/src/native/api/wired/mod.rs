@@ -1,7 +1,7 @@
 use wasmtime::component::{HasSelf, Linker};
 
 use crate::{
-    load::state::StoreState,
+    load::native::state::StoreState,
     permissions::{ApiName, ScriptPermissions},
 };
 

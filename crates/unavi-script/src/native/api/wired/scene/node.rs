@@ -1,12 +1,13 @@
 use std::sync::{Arc, atomic::Ordering};
 
 use bevy::prelude::{Entity, Transform as BevyTransform, World};
-use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner};
-use bevy_hsd::data::HsdCollider;
-use bevy_hsd::hydrate::compile::node::{HsdNodeColliderSet, HsdNodeRigidBodySet};
+use bevy_hsd::{
+    cache::{MaterialInner, MeshInner, NodeInner},
+    data::HsdCollider,
+    hydrate::compile::node::{HsdNodeColliderSet, HsdNodeRigidBodySet},
+};
 use bytes::Bytes;
-use wasmtime::bail;
-use wasmtime::component::Resource;
+use wasmtime::{bail, component::Resource};
 use wired_records::HydratedHash;
 
 use super::bindings::wired::scene::types::{

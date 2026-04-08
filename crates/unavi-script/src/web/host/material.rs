@@ -45,13 +45,7 @@ pub fn register(obj: &Object) {
                 let inner = Arc::clone(&state.mats.get(&rep)?.inner);
                 let doc_entity = state.mats.get(&rep)?.doc_entity;
                 let new_rep = state.alloc();
-                state.mats.insert(
-                    new_rep,
-                    MatEntry {
-                        inner,
-                        doc_entity,
-                    },
-                );
+                state.mats.insert(new_rep, MatEntry { inner, doc_entity });
                 Some(new_rep)
             })
             .flatten()

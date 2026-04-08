@@ -4,7 +4,7 @@ use wasmtime::component::{Resource, ResourceTable};
 use wired_records::{BeaconRecord, RecordValue};
 use xdid::core::did::Did;
 
-use crate::load::state::RuntimeData;
+use crate::load::native::state::RuntimeData;
 
 pub mod bindings {
     wasmtime::component::bindgen!({

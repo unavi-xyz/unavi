@@ -45,6 +45,7 @@
             [
               binaryen
               clang
+              esbuild
               lld
               mold
               pkg-config

@@ -49,7 +49,7 @@ def main [
   print "Build complete: dist/"
 }
 
-# Install npm dependencies for unavi-script (jco + esbuild).
+# Install npm dependencies
 def npm-setup [] {
   print "Installing npm dependencies..."
   run-external "npm" "install" "--prefix" "crates/unavi-script" "--silent"
@@ -63,7 +63,7 @@ def bundle-jco-runtime [] {
   print $"Bundling jco runtime → ($out)"
   # Use jco's browser.js (the ./component export) and exclude the node:fs/promises
   # dynamic import used only for the optional Binaryen optimisation pass.
-  (run-external "crates/unavi-script/node_modules/.bin/esbuild"
+  (run-external "esbuild"
     "crates/unavi-script/node_modules/@bytecodealliance/jco/src/browser.js"
     "--bundle"
     "--format=esm"

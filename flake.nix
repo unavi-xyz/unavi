@@ -213,7 +213,6 @@
                     packages
                     ++ (with pkgs; [
                       age
-                      bacon
                       cargo-deny
                       cargo-edit
                       cargo-machete
@@ -223,6 +222,7 @@
                       cargo-workspaces
                       deploy-rs.packages.${system}.default
                       doctl
+                      esbuild
                       nodejs
                       nushell
                       rustup

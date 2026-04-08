@@ -8,6 +8,12 @@ use wired_schemas::schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPAC
 
 use wired_records::BeaconRecord;
 
+#[derive(Default)]
+pub struct JoinState {
+    ready: bool,
+    joined: bool,
+}
+
 use crate::{
     networking::thread::{NetworkCommand, NetworkingThread},
     space::default_space::default_space,
@@ -16,16 +22,22 @@ use crate::{
 pub fn join_home_space(
     local_actor: Query<(&LocalActor, &SyncTargets)>,
     nt: Res<NetworkingThread>,
-    mut did_join: Local<bool>,
+    mut state: Local<JoinState>,
 ) {
-    // TODO: Use proper state to track space status, join home if not in any spaces
-    if *did_join {
+    if state.joined {
         return;
     }
 
     let Ok((local_actor, sync_targets)) = local_actor.single() else {
         return;
     };
+
+    // Wait one frame after LocalActor spawns so recv_network_event
+    // can drain any pending remote actors into SyncTargets.
+    if !state.ready {
+        state.ready = true;
+        return;
+    }
 
     let local_actor = local_actor.0.clone();
     let remote_actor = sync_targets.0.first().cloned();
@@ -38,7 +50,7 @@ pub fn join_home_space(
         }
     });
 
-    *did_join = true;
+    state.joined = true;
 }
 
 /// Attempt to discover a populated space to join.

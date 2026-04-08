@@ -8,6 +8,7 @@ use unavi_avatar::{
     Avatar, Grounded,
     animation::{defaults::default_character_animations, velocity::AverageVelocity},
 };
+use wds::actor::Actor;
 
 use crate::networking::{
     AgentTickrateConfig,
@@ -42,7 +43,14 @@ pub fn recv_network_event(
     locally_owned: Query<(), With<LocallyOwned>>,
     object_targets: Query<(), With<ObjectTransformTarget>>,
     mut object_targets_mut: Query<&mut ObjectTransformTarget>,
+    mut pending_remote_actors: Local<Vec<Actor>>,
 ) {
+    if !pending_remote_actors.is_empty()
+        && let Ok(mut targets) = sync_targets.single_mut()
+    {
+        targets.0.append(&mut pending_remote_actors);
+    }
+
     while let Ok(event) = nt.event_rx.try_recv() {
         match event {
             NetworkEvent::SetLocalEndpoint(id) => {
@@ -88,9 +96,10 @@ pub fn recv_network_event(
                 commands.spawn((LocalActor(actor), LocalBlobs(blobs)));
             }
             NetworkEvent::AddRemoteActor(actor) => {
-                // TODO: Handle disconnects / multiple adds.
                 if let Ok(mut targets) = sync_targets.single_mut() {
                     targets.0.push(actor);
+                } else {
+                    pending_remote_actors.push(actor);
                 }
             }
             NetworkEvent::ObjectOwnershipChanged { object_id, owner } => {

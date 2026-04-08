@@ -3,8 +3,8 @@
 use std::{sync::Arc, time::Duration};
 
 use avian3d::{
-    PhysicsPlugins, collision::CollisionDiagnostics, dynamics::solver::SolverDiagnostics,
-    prelude::SpatialQueryDiagnostics,
+    PhysicsPlugins, collider_tree::ColliderTreeDiagnostics, collision::CollisionDiagnostics,
+    dynamics::solver::SolverDiagnostics, prelude::SpatialQueryDiagnostics,
 };
 use bevy::{prelude::*, scene::ScenePlugin, transform::TransformPlugin};
 use bevy_hsd::{
@@ -35,6 +35,7 @@ impl TestHarness {
         ))
         .init_asset::<StandardMaterial>()
         .init_asset::<Mesh>()
+        .init_resource::<ColliderTreeDiagnostics>()
         .init_resource::<CollisionDiagnostics>()
         .init_resource::<SolverDiagnostics>()
         .init_resource::<SpatialQueryDiagnostics>()

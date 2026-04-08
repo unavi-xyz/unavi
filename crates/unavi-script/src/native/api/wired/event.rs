@@ -2,16 +2,18 @@ use bevy::prelude::*;
 use blake3::Hash;
 use wasmtime::component::{Resource, ResourceTable};
 
-use crate::event_registry::{EventRegistry, PendingEmission, ReceptorQueue};
-
-pub mod bridge;
+use crate::{
+    event_registry::{EventRegistry, PendingEmission, ReceptorQueue},
+    load::native::state::RuntimeData,
+    native::api::wired::scene::node::HostNode,
+};
 
 pub mod bindings {
     wasmtime::component::bindgen!({
         path: "../../protocol/wit/wired-event",
         with: {
             "wired:scene/types.node":
-                crate::api::wired::scene::node::HostNode,
+                crate::native::api::wired::scene::node::HostNode,
             "wired:event/types.event-receptor": super::HostEventReceptor,
         },
         imports: { default: async | trappable },
@@ -19,7 +21,6 @@ pub mod bindings {
     });
 }
 
-use crate::load::state::RuntimeData;
 use bindings::wired::event::types::{Event as WitEvent, EventScope as WitEventScope, EventSender};
 
 #[derive(Default)]
@@ -120,7 +121,7 @@ impl bindings::wired::event::types::HostEventReceptor for RuntimeData {
 
 fn scope_to_entity(
     scene_table: &mut ResourceTable,
-    node: Option<Resource<crate::api::wired::scene::node::HostNode>>,
+    node: Option<Resource<HostNode>>,
     scope: WitEventScope,
 ) -> wasmtime::Result<(Option<Entity>, f32)> {
     match (node, scope) {

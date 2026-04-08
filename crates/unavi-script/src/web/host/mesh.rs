@@ -46,13 +46,9 @@ pub fn register(obj: &Object) {
                 let inner = Arc::clone(&state.meshes.get(&rep)?.inner);
                 let doc_entity = state.meshes.get(&rep)?.doc_entity;
                 let new_rep = state.alloc();
-                state.meshes.insert(
-                    new_rep,
-                    MeshEntry {
-                        inner,
-                        doc_entity,
-                    },
-                );
+                state
+                    .meshes
+                    .insert(new_rep, MeshEntry { inner, doc_entity });
                 Some(new_rep)
             })
             .flatten()

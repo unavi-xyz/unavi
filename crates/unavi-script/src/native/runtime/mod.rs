@@ -4,11 +4,11 @@ use bevy::prelude::*;
 use wasmtime::{Store, component::ResourceAny};
 
 use crate::{
-    WasmEngine,
-    load::{
+    load::native::{
         log::{ScriptStderr, ScriptStdout},
         state::StoreState,
     },
+    native::WasmEngine,
 };
 
 pub mod init;
@@ -43,6 +43,7 @@ pub struct ScriptRuntime {
 }
 
 impl ScriptRuntime {
+    #[must_use]
     pub fn new(store: Store<StoreState>, stdout: ScriptStdout, stderr: ScriptStderr) -> Self {
         Self {
             ctx: Arc::new(tokio::sync::Mutex::new(RuntimeCtx {

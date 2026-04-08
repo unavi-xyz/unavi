@@ -4,7 +4,11 @@ use bevy::{log::LogPlugin, prelude::*};
 use bevy_hsd::HsdPlugin;
 use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin, util::create_test_wds};
 use tracing_subscriber::Layer;
-use unavi_script::{LoadLocalScript, ScriptPermissions, ScriptPlugin, load::local::ScriptSource};
+use unavi_script::{
+    ScriptPlugin,
+    load::local::{LoadLocalScript, ScriptSource},
+    permissions::ScriptPermissions,
+};
 
 use crate::setup::logs::LOGS;
 

@@ -8,16 +8,18 @@ use wasmtime::component::ResourceTable;
 use wasmtime_wasi::{WasiCtx, WasiCtxView, WasiView};
 
 use crate::{
-    agent::ProxyRegistry,
-    api::wired::{
-        agent::WiredAgentRt,
-        event::WiredEventRt,
-        input::WiredInputRt,
-        scene::{GlobalRegistryMap, WiredSceneRt},
-        wds::WiredWdsRt,
-    },
     event_registry::EventRegistry,
     input_registry::InputRegistry,
+    native::{
+        agent::ProxyRegistry,
+        api::wired::{
+            agent::WiredAgentRt,
+            event::WiredEventRt,
+            input::WiredInputRt,
+            scene::{GlobalRegistryMap, WiredSceneRt},
+            wds::WiredWdsRt,
+        },
+    },
 };
 
 pub struct StoreState {

@@ -11,6 +11,43 @@ use wasmtime_wasi::ResourceTable;
 
 use crate::firewall::HsdFirewallInner;
 
+macro_rules! mesh_attr {
+    ($get:ident, $set:ident, $field:ident, $ty:ty) => {
+        async fn $get(
+            &mut self,
+            self_: wasmtime::component::Resource<HostMesh>,
+        ) -> wasmtime::Result<$ty> {
+            let inner = std::sync::Arc::clone(&self.table.get(&self_)?.inner);
+            Ok(inner.state.lock().expect("mesh state lock").$field.clone())
+        }
+        async fn $set(
+            &mut self,
+            self_: wasmtime::component::Resource<HostMesh>,
+            values: $ty,
+        ) -> wasmtime::Result<()> {
+            let inner = std::sync::Arc::clone(&self.table.get(&self_)?.inner);
+            let mut queue = self.command_queue.lock().expect("cmd queue lock");
+            crate::core_ops::mesh::$set(&inner, self.doc_entity, values, &mut queue);
+            Ok(())
+        }
+    };
+}
+
+macro_rules! material_setter {
+    ($set:ident, $ty:ty) => {
+        async fn $set(
+            &mut self,
+            self_: wasmtime::component::Resource<HostMaterial>,
+            value: $ty,
+        ) -> wasmtime::Result<()> {
+            let inner = std::sync::Arc::clone(&self.table.get(&self_)?.inner);
+            let mut queue = self.command_queue.lock().expect("cmd queue lock");
+            crate::core_ops::material::$set(&inner, self.doc_entity, value, &mut queue);
+            Ok(())
+        }
+    };
+}
+
 pub mod document;
 mod material;
 mod mesh;
@@ -63,8 +100,33 @@ impl WiredSceneRt {
         self.command_queue.lock().expect("cmd queue lock").push(cmd);
     }
 
-    /// Returns (`can_read`, `can_write`) for a foreign document by checking its
-    /// `HsdFirewall` for this script's `doc_id`.
+    pub(super) fn get_doc_write(
+        &self,
+        res: &wasmtime::component::Resource<document::HostDocument>,
+    ) -> wasmtime::Result<(Entity, Arc<SceneRegistryInner>)> {
+        let d = self.table.get(res)?;
+        if !d.can_write {
+            bail!("hsd write permission required")
+        }
+        Ok((d.doc_entity, Arc::clone(&d.registry)))
+    }
+
+    pub(super) fn get_doc_read(
+        &self,
+        res: &wasmtime::component::Resource<document::HostDocument>,
+    ) -> wasmtime::Result<(Arc<SceneRegistryInner>, bool, bool, Entity)> {
+        let d = self.table.get(res)?;
+        if !d.can_read {
+            bail!("hsd read permission required")
+        }
+        Ok((
+            Arc::clone(&d.registry),
+            d.can_read,
+            d.can_write,
+            d.doc_entity,
+        ))
+    }
+
     pub(super) fn foreign_perms(&self, foreign_id: blake3::Hash) -> (bool, bool) {
         let Some(hsd_fw) = self
             .registry_map

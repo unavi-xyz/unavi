@@ -54,6 +54,7 @@ unavi-portal.path      = "../unavi-portal"
 unavi-script.path      = "../unavi-script"
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wds.path               = "../wds"
+web-time               = "1.1.0"
 winit                  = { default-features = false, version = "0.30.13" }
 wired-records          = { features = ["loro"], path = "../wired-records" }
 wired-schemas.path     = "../wired-schemas"

@@ -23,8 +23,9 @@ node_modules/
 package-lock.json
 
 # Generated web script assets
-crates/unavi-script/assets/scripts/jco-runtime.js
 crates/unavi-client/assets/scripts/
+crates/unavi-script/assets/scripts/*.wasm
+crates/unavi-script/assets/scripts/jco-runtime.js
 
 # Env
 .direnv

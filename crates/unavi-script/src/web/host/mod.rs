@@ -28,6 +28,7 @@ macro_rules! reg {
     }};
 }
 
+mod agent;
 mod document;
 mod event;
 mod input;
@@ -77,6 +78,7 @@ pub(super) fn new_script_state(
     doc_entity: bevy::prelude::Entity,
     doc_id: blake3::Hash,
     self_node_id: SmolStr,
+    camera_node_id: SmolStr,
     event_registry: EventRegistry,
     input_registry: InputRegistry,
     wds_actor: Option<::wds::actor::Actor>,
@@ -87,6 +89,7 @@ pub(super) fn new_script_state(
         doc_entity,
         doc_id,
         self_node_id,
+        camera_node_id,
         event_registry,
         input_registry,
         wds_actor,
@@ -113,13 +116,14 @@ pub(super) fn init() {
     let global = js_sys::global();
     let obj = Object::new();
 
-    scene_context::register(&obj);
-    node::register(&obj);
+    agent::register(&obj);
     document::register(&obj);
-    mesh::register(&obj);
-    material::register(&obj);
     event::register(&obj);
     input::register(&obj);
+    material::register(&obj);
+    mesh::register(&obj);
+    node::register(&obj);
+    scene_context::register(&obj);
     wds::register(&obj);
 
     Reflect::set(&global, &JsValue::from_str("__unavi_host"), &obj).unwrap();

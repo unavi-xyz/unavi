@@ -1,15 +1,10 @@
-use bevy::{
-    camera::Exposure,
-    pbr::{Atmosphere, AtmosphereSettings, ScatteringMedium},
-    post_process::bloom::Bloom,
-    prelude::*,
-    render::view::Hdr,
-};
+use bevy::{camera::Exposure, post_process::bloom::Bloom, prelude::*, render::view::Hdr};
 
 pub fn apply_camera_effects(
     mut commands: Commands,
     new_cameras: Query<Entity, Added<Camera3d>>,
-    mut scattering_mediums: ResMut<Assets<ScatteringMedium>>,
+    #[cfg(not(all(target_family = "wasm", not(feature = "webgpu"))))]
+    mut scattering_mediums: ResMut<Assets<bevy::pbr::ScatteringMedium>>,
     #[cfg(all(target_family = "wasm", not(feature = "webgpu")))] asset_server: Res<AssetServer>,
 ) {
     let fog_color = Color::Srgba(Srgba::from_u8_array([0, 192, 240, 255]));
@@ -21,8 +16,6 @@ pub fn apply_camera_effects(
             Exposure::SUNLIGHT,
             Bloom::OLD_SCHOOL,
             Msaa::Sample4,
-            Atmosphere::earthlike(scattering_mediums.add(ScatteringMedium::default())),
-            AtmosphereSettings::default(),
             DistanceFog {
                 color: fog_color,
                 falloff: FogFalloff::Linear {
@@ -33,13 +26,17 @@ pub fn apply_camera_effects(
             },
         ));
 
-        #[cfg(not(target_family = "wasm"))]
-        commands
-            .entity(entity)
-            .insert((bevy::post_process::auto_exposure::AutoExposure {
+        #[cfg(not(all(target_family = "wasm", not(feature = "webgpu"))))]
+        commands.entity(entity).insert((
+            bevy::post_process::auto_exposure::AutoExposure {
                 range: -4.0..=4.0,
                 ..default()
-            },));
+            },
+            bevy::pbr::Atmosphere::earthlike(
+                scattering_mediums.add(bevy::pbr::ScatteringMedium::default()),
+            ),
+            bevy::pbr::AtmosphereSettings::default(),
+        ));
 
         // No atmospheric shader in WebGL.
         #[cfg(all(target_family = "wasm", not(feature = "webgpu")))]

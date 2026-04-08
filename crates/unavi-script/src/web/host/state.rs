@@ -52,6 +52,7 @@ pub struct WebScriptState {
     pub doc_entity: Entity,
     pub doc_id: blake3::Hash,
     pub self_node_id: SmolStr,
+    pub camera_node_id: SmolStr,
     pub event_registry: EventRegistry,
     pub input_registry: InputRegistry,
     pub wds_actor: Option<wds::actor::Actor>,

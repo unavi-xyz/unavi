@@ -21,13 +21,10 @@ pub fn spawn_agent(
 
 pub fn spawn_scene(mut commands: Commands) {
     commands.spawn((
+        #[cfg(not(target_family = "wasm"))]
         CascadeShadowConfigBuilder {
-            #[cfg(not(target_family = "wasm"))]
             first_cascade_far_bound: 8.0,
-            #[cfg(not(target_family = "wasm"))]
             maximum_distance: 50.0,
-            #[cfg(target_family = "wasm")]
-            maximum_distance: 20.0,
             minimum_distance: 0.1,
             num_cascades: 3,
             ..Default::default()

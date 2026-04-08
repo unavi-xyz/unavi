@@ -92,6 +92,8 @@ fn poll_web_scripts(
         let registry = SceneRegistryInner::new();
         let self_node_id = gen_id();
         spawn_self_node(&registry, &self_node_id);
+        let camera_node_id = gen_id();
+        spawn_self_node(&registry, &camera_node_id);
 
         let doc_entity = commands
             .spawn((
@@ -109,6 +111,7 @@ fn poll_web_scripts(
                 doc_entity,
                 doc_id,
                 self_node_id,
+                camera_node_id,
                 event_reg.clone(),
                 input_reg.clone(),
                 wds_actor.clone(),

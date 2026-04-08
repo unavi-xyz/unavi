@@ -1,6 +1,9 @@
 const cabiDispose = Symbol.for("cabiDispose");
 const cabiRep = Symbol.for("cabiRep");
-const host = globalThis.__unavi_host;
+
+function host() {
+  return globalThis.__unavi_host;
+}
 
 function scriptId() {
   return globalThis.__unavi_current_script_id;
@@ -8,11 +11,11 @@ function scriptId() {
 
 export class Wds {
   static [cabiDispose](rep) {
-    host?.hostWdsDrop?.(scriptId(), rep);
+    host()?.hostWdsDrop?.(scriptId(), rep);
   }
 
   query(filter) {
-    const rep = host.hostWdsQuery(scriptId(), this[cabiRep], filter);
+    const rep = host().hostWdsQuery(scriptId(), this[cabiRep], filter);
     if (!rep) return null;
     const future = Object.create(QueryFuture.prototype);
     future[cabiRep] = rep;
@@ -20,7 +23,7 @@ export class Wds {
   }
 
   read(recordId) {
-    const rep = host.hostWdsRead(scriptId(), this[cabiRep], recordId);
+    const rep = host().hostWdsRead(scriptId(), this[cabiRep], recordId);
     if (!rep) return null;
     const future = Object.create(ReadFuture.prototype);
     future[cabiRep] = rep;
@@ -34,11 +37,11 @@ export class Wds {
 
 export class QueryFuture {
   static [cabiDispose](rep) {
-    host?.hostWdsQueryFutureDrop?.(scriptId(), rep);
+    host()?.hostWdsQueryFutureDrop?.(scriptId(), rep);
   }
 
   poll() {
-    return host.hostWdsQueryFuturePoll(scriptId(), this[cabiRep]);
+    return host().hostWdsQueryFuturePoll(scriptId(), this[cabiRep]);
   }
 
   drop() {
@@ -48,11 +51,11 @@ export class QueryFuture {
 
 export class ReadFuture {
   static [cabiDispose](rep) {
-    host?.hostWdsReadFutureDrop?.(scriptId(), rep);
+    host()?.hostWdsReadFutureDrop?.(scriptId(), rep);
   }
 
   poll() {
-    return host.hostWdsReadFuturePoll(scriptId(), this[cabiRep]);
+    return host().hostWdsReadFuturePoll(scriptId(), this[cabiRep]);
   }
 
   drop() {

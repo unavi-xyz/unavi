@@ -1,4 +1,13 @@
+import { Pollable } from "wasi:io/poll";
+
 const cabiDispose = Symbol.for("cabiDispose");
+const cabiRep = Symbol.for("cabiRep");
+
+function newPollable() {
+  const p = Object.create(Pollable.prototype);
+  p[cabiRep] = 0;
+  return p;
+}
 
 export class InputStream {
   static [cabiDispose](_rep) {}
@@ -15,7 +24,7 @@ export class InputStream {
     return 0;
   }
   subscribe() {
-    return null;
+    return newPollable();
   }
   drop() {}
 }
@@ -23,7 +32,7 @@ export class InputStream {
 export class OutputStream {
   static [cabiDispose](_rep) {}
   checkWrite() {
-    return 0;
+    return BigInt(4096);
   }
   write(_bytes) {}
   blockingWriteAndFlush(_bytes) {}
@@ -32,13 +41,13 @@ export class OutputStream {
   writeZeroes(_len) {}
   blockingWriteZeroesAndFlush(_len) {}
   splice(_src, _len) {
-    return 0;
+    return BigInt(0);
   }
   blockingSplice(_src, _len) {
-    return 0;
+    return BigInt(0);
   }
   subscribe() {
-    return null;
+    return newPollable();
   }
   drop() {}
 }

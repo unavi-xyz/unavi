@@ -9,7 +9,7 @@ version.workspace    = true
 
 [features]
 devtools         = ["devtools-bevy", "devtools-network"]
-devtools-bevy    = ["bevy/bevy_dev_tools"]
+devtools-bevy    = ["bevy/bevy_dev_tools", "bevy/debug"]
 devtools-network = []
 mdns             = ["iroh/address-lookup-mdns"]
 webgpu           = ["bevy/webgpu", "unavi-agent/webgpu", "unavi-avatar/webgpu"]

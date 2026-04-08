@@ -78,6 +78,10 @@ pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::R
                         continue;
                     }
 
+                    if beacon.space.0 != space_id {
+                        continue;
+                    }
+
                     let Ok(endpoint) = iroh::EndpointId::from_bytes(&beacon.endpoint.0) else {
                         debug!("invalid endpoint bytes in beacon");
                         continue;

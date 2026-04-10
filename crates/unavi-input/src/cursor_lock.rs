@@ -15,9 +15,18 @@ pub(crate) fn cursor_grab(
     mouse: Res<ButtonInput<MouseButton>>,
     mut next_state: ResMut<NextState<CursorGrabState>>,
     mut windows: Query<&mut CursorOptions, With<PrimaryWindow>>,
+    #[cfg(feature = "egui-filter")] wants_input: Option<Res<bevy_egui::input::EguiWantsInput>>,
 ) {
     for mut cursor in &mut windows {
         if mouse.just_pressed(MouseButton::Left) {
+            // Filter out input if egui wants the cursor.
+            #[cfg(feature = "egui-filter")]
+            if let Some(w) = &wants_input
+                && w.wants_pointer_input()
+            {
+                continue;
+            }
+
             cursor.visible = false;
             cursor.grab_mode = CursorGrabMode::Locked;
             next_state.set(CursorGrabState::Locked);

@@ -18,6 +18,7 @@ use super::compile::node::{
     HsdNodeParentSet, HsdNodeRigidBodySet, HsdNodeScriptsSet, HsdNodeSpawned, HsdNodeTransformSet,
     node_transform,
 };
+use crate::hydrate::compile::material::HsdMaterialBaseColorTextureSet;
 use crate::{
     HsdDoc,
     cache::{
@@ -331,6 +332,13 @@ fn emit_material_fields(doc: Entity, id: &SmolStr, hsd: &HsdMaterial, commands: 
             doc,
             id: id.clone(),
             color: [r, g, b, a],
+        });
+    }
+    if let Some(hash) = &hsd.base_color_texture {
+        commands.trigger(HsdMaterialBaseColorTextureSet {
+            doc,
+            id: id.clone(),
+            value: hash.0,
         });
     }
     if let Some(v) = hsd.metallic {

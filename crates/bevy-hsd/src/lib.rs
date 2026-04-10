@@ -17,6 +17,7 @@ impl Plugin for HsdPlugin {
             .add_observer(hydrate::compile::material::handle_hsd_material_alpha_cutoff_set)
             .add_observer(hydrate::compile::material::handle_hsd_material_alpha_mode_set)
             .add_observer(hydrate::compile::material::handle_hsd_material_base_color_set)
+            .add_observer(hydrate::compile::material::handle_hsd_material_base_color_texture_set)
             .add_observer(hydrate::compile::material::handle_hsd_material_despawned)
             .add_observer(hydrate::compile::material::handle_hsd_material_double_sided_set)
             .add_observer(hydrate::compile::material::handle_hsd_material_metallic_set)

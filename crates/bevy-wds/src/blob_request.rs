@@ -23,13 +23,11 @@ pub fn load_blob_requests(
         let cancel = Arc::new(Notify::new());
 
         let (tx, rx) = tokio::sync::mpsc::channel(1);
-
         commands.trigger(AwaitBlob {
             hash: req.0,
             cancel: Arc::clone(&cancel),
             tx,
         });
-
         commands.entity(ent).insert(BlobRequestLoading {
             rx: Arc::new(Mutex::new(rx)),
             cancel,
@@ -38,7 +36,7 @@ pub fn load_blob_requests(
 }
 
 pub fn recv_blob_responses(mut commands: Commands, loading: Query<(Entity, &BlobRequestLoading)>) {
-    for (ent, load) in loading {
+    for (entity, load) in loading {
         let Ok(mut rx) = load.rx.try_lock() else {
             continue;
         };
@@ -48,7 +46,7 @@ pub fn recv_blob_responses(mut commands: Commands, loading: Query<(Entity, &Blob
         };
 
         commands
-            .entity(ent)
+            .entity(entity)
             .remove::<BlobRequestLoading>()
             .insert(BlobResponse(Some(bytes)));
     }

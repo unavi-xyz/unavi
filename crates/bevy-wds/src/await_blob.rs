@@ -14,20 +14,19 @@ pub fn handle_await_blob(req: On<AwaitBlob>, blobs: Query<&LocalBlobs>) {
     let event = req.event().clone();
 
     unavi_wasm_compat::spawn_thread(async move {
-        if let Err(err) = inner(event, blobs).await {
+        if let Err(err) = wrap_await(event, blobs).await {
             error!(?err, "failed to handle blob request");
         }
     });
 }
 
-async fn inner(event: AwaitBlob, blobs: Blobs) -> anyhow::Result<()> {
+async fn wrap_await(event: AwaitBlob, blobs: Blobs) -> anyhow::Result<()> {
     tokio::select! {
         () = event.cancel.notified() => {},
         res = get_or_await_bytes(&event, blobs) => {
             event.tx.send(res?).await?;
         }
     }
-
     Ok(())
 }
 

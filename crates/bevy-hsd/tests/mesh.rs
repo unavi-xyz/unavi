@@ -4,6 +4,7 @@ use bevy_hsd::{CompiledMesh, HsdChild, NodeId, cache::MeshState};
 use loro::LoroMap;
 
 mod common;
+
 use common::TestHarness;
 
 fn add_mesh(harness: &TestHarness, id: &str) {
@@ -153,6 +154,44 @@ fn mesh_attribute_positions() {
     assert_eq!(pos[1], [1.0, 0.0, 0.0]);
     assert_eq!(pos[2], [0.0, 1.0, 0.0]);
 }
+
+#[test]
+#[expect(clippy::float_cmp)]
+fn mesh_attribute_uv0() {
+    let mut h = TestHarness::new();
+    h.attach_inline_mesh(
+        "mesh-0",
+        MeshState {
+            uv0: Some(vec![
+                0.0, 0.0, // 0
+                1.0, 0.0, // 1
+            ]),
+            ..Default::default()
+        },
+    );
+
+    let ent = mesh_entity(&mut h);
+    let compiled = h
+        .app
+        .world()
+        .get::<CompiledMesh>(ent)
+        .expect("CompiledMesh");
+    let assets = h
+        .app
+        .world()
+        .get_resource::<Assets<Mesh>>()
+        .expect("Mesh assets");
+    let mesh = assets.get(&compiled.0).expect("Mesh asset");
+
+    let Some(VertexAttributeValues::Float32x2(pos)) = mesh.attribute(Mesh::ATTRIBUTE_UV_0) else {
+        panic!("UV_0 attribute missing or wrong type");
+    };
+    assert_eq!(pos.len(), 2, "two items expected");
+    assert_eq!(pos[0], [0.0, 0.0]);
+    assert_eq!(pos[1], [1.0, 0.0]);
+}
+
+// TODO test all mesh attributes
 
 #[test]
 fn mesh_indices() {

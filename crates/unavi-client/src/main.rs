@@ -20,6 +20,11 @@ struct Args {
     #[arg(long, default_value_t = false)]
     debug_fps: bool,
 
+    /// Enable ECS inspector.
+    #[cfg(feature = "devtools-inspector")]
+    #[arg(long, default_value_t = false)]
+    debug_inspector: bool,
+
     /// Enable debug network monitoring.
     #[cfg(feature = "devtools-network")]
     #[arg(long, default_value_t = false)]
@@ -98,6 +103,12 @@ fn main() {
         }
         if args.debug_physics {
             debug |= DebugFlags::PHYSICS;
+        }
+    }
+    #[cfg(feature = "devtools-inspector")]
+    {
+        if args.debug_inspector {
+            debug |= DebugFlags::INSPECTOR;
         }
     }
     #[cfg(feature = "devtools-network")]

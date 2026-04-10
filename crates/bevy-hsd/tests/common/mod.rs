@@ -35,6 +35,7 @@ impl TestHarness {
         ))
         .init_asset::<StandardMaterial>()
         .init_asset::<Mesh>()
+        .init_asset::<Image>()
         .init_resource::<ColliderTreeDiagnostics>()
         .init_resource::<CollisionDiagnostics>()
         .init_resource::<SolverDiagnostics>()

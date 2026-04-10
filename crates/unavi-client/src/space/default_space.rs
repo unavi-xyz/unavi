@@ -8,9 +8,9 @@ use bytes::Bytes;
 use loro::{LoroList, LoroMap, LoroTree};
 
 #[derive(Default)]
-pub struct Blobs(pub HashSet<Bytes>);
+pub struct BlobSet(pub HashSet<Bytes>);
 
-impl Blobs {
+impl BlobSet {
     fn add_blob(&mut self, bytes: impl Into<Bytes>) -> Hash {
         let bytes = bytes.into();
         let hash = blake3::hash(&bytes);
@@ -19,41 +19,57 @@ impl Blobs {
     }
 }
 
+const GROUND_SIZE: f32 = 100.0;
+
+// TODO load texture from bevy asset, dont include bytes
+const DEV_WHITE_RAW: &[u8] = include_bytes!("../../assets/image/dev-white.png");
+
 /// Write default HSD scene into the provided map.
 /// Returns blob data that must be uploaded.
-pub fn default_space(hsd: &LoroMap) -> Result<Blobs> {
-    let mut blobs = Blobs::default();
+pub fn default_space(hsd: &LoroMap) -> Result<BlobSet> {
+    let mut blobs = BlobSet::default();
 
     let materials = hsd.get_or_create_container("materials", LoroMap::new())?;
 
     // Ground material
-    let mat0 = materials.get_or_create_container("0", LoroMap::new())?;
+    let ground_texture_hash = blobs.add_blob(DEV_WHITE_RAW.to_vec());
+
+    let key_ground = "ground";
+    let key_dyncube = "dyncube";
+
+    let mat0 = materials.get_or_create_container(key_ground, LoroMap::new())?;
+    mat0.insert("name", "Ground Material")?;
     mat0.insert_container("base_color", {
         let l = LoroList::new();
-        l.push(1.0)?;
-        l.push(1.0)?;
-        l.push(1.0)?;
+        l.push(0.9)?;
+        l.push(0.8)?;
+        l.push(0.95)?;
         l
     })?;
     mat0.insert("roughness", 0.9)?;
+    mat0.insert(
+        "base_color_texture",
+        ground_texture_hash.as_bytes().to_vec(),
+    )?;
 
     let meshes = hsd.get_or_create_container("meshes", LoroMap::new())?;
 
     // Ground mesh
-    let ground_dims = Vec3::new(50.0, 1.0, 50.0);
-    insert_cuboid_mesh(&mut blobs, &meshes, "0", ground_dims)?;
+    let ground_dims = Vec3::new(GROUND_SIZE, 1.0, GROUND_SIZE);
+    insert_cuboid_mesh(&mut blobs, &meshes, key_ground, ground_dims)?;
 
     // Dyn cube mesh
     let cube_dims = Vec3::splat(0.5);
-    insert_cuboid_mesh(&mut blobs, &meshes, "1", cube_dims)?;
+    insert_cuboid_mesh(&mut blobs, &meshes, key_dyncube, cube_dims)?;
 
     let nodes = hsd.get_or_create_container("nodes", LoroTree::new())?;
 
     // Ground node
     let ground_id = nodes.create(None)?;
     let ground = nodes.get_meta(ground_id)?;
-    ground.insert("mesh", "0")?;
-    ground.insert("material", "0")?;
+    ground.insert("name", "Ground Node")?;
+    ground.insert("mesh", key_ground)?;
+    ground.insert("material", key_ground)?;
     ground.insert_container("translation", {
         let l = LoroList::new();
         l.push(0.0)?;
@@ -73,7 +89,8 @@ pub fn default_space(hsd: &LoroMap) -> Result<Blobs> {
     // Dynamic cube node
     let cube_id = nodes.create(None)?;
     let cube = nodes.get_meta(cube_id)?;
-    cube.insert("mesh", "1")?;
+    cube.insert("name", "Dyn Cube Node")?;
+    cube.insert("mesh", key_dyncube)?;
     cube.insert_container("translation", {
         let l = LoroList::new();
         l.push(-2.0)?;
@@ -93,7 +110,7 @@ pub fn default_space(hsd: &LoroMap) -> Result<Blobs> {
     Ok(blobs)
 }
 
-fn insert_cuboid_mesh(blobs: &mut Blobs, meshes: &LoroMap, key: &str, dims: Vec3) -> Result<()> {
+fn insert_cuboid_mesh(blobs: &mut BlobSet, meshes: &LoroMap, key: &str, dims: Vec3) -> Result<()> {
     let cube = Cuboid::new(dims.x, dims.y, dims.z).mesh().build();
 
     let mesh_map = meshes.get_or_create_container(key, LoroMap::new())?;
@@ -101,26 +118,29 @@ fn insert_cuboid_mesh(blobs: &mut Blobs, meshes: &LoroMap, key: &str, dims: Vec3
 
     let attrs = mesh_map.get_or_create_container("attributes", LoroMap::new())?;
 
-    // Indices.
     let Some(Indices::U32(indices)) = cube.indices() else {
         unreachable!()
     };
     let hash = blobs.add_blob(cast_slice(indices).to_vec());
     mesh_map.insert("indices", hash.as_bytes().to_vec())?;
 
-    // Position.
     let Some(points) = cube.attribute(Mesh::ATTRIBUTE_POSITION) else {
         unreachable!()
     };
     let hash = blobs.add_blob(points.get_bytes().to_vec());
     attrs.insert("POSITION", hash.as_bytes().to_vec())?;
 
-    // Normals.
     let Some(normals) = cube.attribute(Mesh::ATTRIBUTE_NORMAL) else {
         unreachable!()
     };
     let hash = blobs.add_blob(normals.get_bytes().to_vec());
     attrs.insert("NORMAL", hash.as_bytes().to_vec())?;
+
+    let Some(uv0) = cube.attribute(Mesh::ATTRIBUTE_UV_0) else {
+        unreachable!()
+    };
+    let hash = blobs.add_blob(uv0.get_bytes().to_vec());
+    attrs.insert("UV_0", hash.as_bytes().to_vec())?;
 
     Ok(())
 }

@@ -16,6 +16,7 @@ bevy-wds.path      = "../bevy-wds"
 blake3.workspace   = true
 bytemuck.workspace = true
 bytes.workspace    = true
+image              = { default-features = false, features = ["jpeg", "png", "webp"], workspace = true }
 loro.workspace     = true
 loro-surgeon.path  = "../loro-surgeon"
 smol_str.workspace = true

@@ -1,5 +1,11 @@
-use bevy::prelude::*;
-use bevy_wds::{BlobDeps, BlobDepsLoaded, BlobResponse};
+use bevy::{
+    asset::RenderAssetUsages,
+    prelude::*,
+    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
+};
+use bevy_wds::{BlobDep, BlobDeps, BlobDepsLoaded, BlobRequest, BlobResponse};
+use blake3::Hash;
+use image::GenericImageView;
 use smol_str::SmolStr;
 
 use crate::{CompiledMaterial, HsdChild, cache::SceneRegistry, data::HsdMaterial};
@@ -23,6 +29,13 @@ pub struct HsdMaterialBaseColorSet {
     pub doc: Entity,
     pub id: SmolStr,
     pub color: [f32; 4],
+}
+
+#[derive(Event)]
+pub struct HsdMaterialBaseColorTextureSet {
+    pub doc: Entity,
+    pub id: SmolStr,
+    pub value: Hash,
 }
 
 #[derive(Event)]
@@ -73,7 +86,7 @@ pub struct HsdMaterialUnlitSet {
     pub value: bool,
 }
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Debug)]
 #[require(BlobDeps)]
 pub struct MaterialParams {
     pub alpha_cutoff: Option<f32>,
@@ -84,9 +97,9 @@ pub struct MaterialParams {
     pub roughness: Option<f32>,
     pub unlit: Option<bool>,
     pub base_color_texture: Option<Entity>,
-    _metallic_roughness_texture: Option<Entity>,
-    _normal_texture: Option<Entity>,
-    _occlusion_texture: Option<Entity>,
+    pub metallic_roughness_texture: Option<Entity>,
+    pub normal_texture: Option<Entity>,
+    pub occlusion_texture: Option<Entity>,
 }
 
 fn material_params_from_hsd(hsd: &HsdMaterial) -> MaterialParams {
@@ -128,13 +141,44 @@ pub(crate) fn handle_hsd_material_spawned(
     if inner.entity.lock().expect("entity lock").is_some() {
         return;
     }
-    let params = ev
+
+    let mut params = ev
         .initial
         .as_ref()
         .map(material_params_from_hsd)
         .unwrap_or_default();
-    let ent = commands.spawn((HsdChild { doc: ev.doc }, params)).id();
-    *inner.entity.lock().expect("entity lock") = Some(ent);
+
+    let entity = commands.spawn(HsdChild { doc: ev.doc }).id();
+
+    if let Some(val) = &ev.initial {
+        if let Some(h) = val.base_color_texture.map(|h| h.0) {
+            let blob_ent = commands
+                .spawn((BlobRequest(h), BlobDep { owner: entity }))
+                .id();
+            params.base_color_texture = Some(blob_ent);
+        }
+        if let Some(h) = val.normal_texture.map(|h| h.0) {
+            let blob_ent = commands
+                .spawn((BlobRequest(h), BlobDep { owner: entity }))
+                .id();
+            params.normal_texture = Some(blob_ent);
+        }
+        if let Some(h) = val.metallic_roughness_texture.map(|h| h.0) {
+            let blob_ent = commands
+                .spawn((BlobRequest(h), BlobDep { owner: entity }))
+                .id();
+            params.metallic_roughness_texture = Some(blob_ent);
+        }
+        if let Some(h) = val.occlusion_texture.map(|h| h.0) {
+            let blob_ent = commands
+                .spawn((BlobRequest(h), BlobDep { owner: entity }))
+                .id();
+            params.occlusion_texture = Some(blob_ent);
+        }
+    }
+
+    commands.entity(entity).insert(params);
+    *inner.entity.lock().expect("entity lock") = Some(entity);
 }
 
 pub(crate) fn handle_hsd_material_despawned(
@@ -226,6 +270,33 @@ pub(crate) fn handle_hsd_material_base_color_set(
     if let Ok(mut p) = params.get_mut(ent) {
         let [r, g, b, a] = ev.color;
         p.base_color = Some(Color::srgba(r, g, b, a));
+    }
+}
+
+pub(crate) fn handle_hsd_material_base_color_texture_set(
+    trigger: On<HsdMaterialBaseColorTextureSet>,
+    registries: Query<&SceneRegistry>,
+    mut params: Query<&mut MaterialParams>,
+    mut commands: Commands,
+) {
+    let ev = trigger.event();
+    debug!(id = %ev.id, hash = %ev.value, "material base color texture set");
+    let Ok(registry) = registries.get(ev.doc) else {
+        return;
+    };
+    let ent = registry
+        .0
+        .materials
+        .lock()
+        .expect("materials lock")
+        .get(&ev.id)
+        .and_then(|m| *m.entity.lock().expect("entity lock"));
+    let Some(ent) = ent else { return };
+    if let Ok(mut p) = params.get_mut(ent) {
+        let blob_ent = commands
+            .spawn((BlobRequest(ev.value), BlobDep { owner: ent }))
+            .id();
+        p.base_color_texture = Some(blob_ent);
     }
 }
 
@@ -349,11 +420,16 @@ pub(crate) fn handle_hsd_material_roughness_set(
     }
 }
 
-fn build_standard_material(params: &MaterialParams) -> StandardMaterial {
-    let mut material = StandardMaterial::default();
-    if let Some(value) = params.base_color {
-        material.base_color = value;
-    }
+const MAX_TEXTURE_DIMS: u32 = 8192;
+
+fn build_standard_material(
+    material: &mut StandardMaterial,
+    params: &MaterialParams,
+    blobs: &mut Query<&mut BlobResponse>,
+    images: &mut ResMut<Assets<Image>>,
+) {
+    material.base_color = params.base_color.unwrap_or_default();
+
     material.alpha_mode = match params.alpha_mode.as_deref() {
         Some("add") => AlphaMode::Add,
         Some("blend") => AlphaMode::Blend,
@@ -369,19 +445,45 @@ fn build_standard_material(params: &MaterialParams) -> StandardMaterial {
             }
         }
     };
-    if let Some(value) = params.double_sided {
-        material.double_sided = value;
+
+    material.double_sided = params.double_sided.unwrap_or_default();
+    material.metallic = params.metallic.unwrap_or(0.5);
+    material.perceptual_roughness = params.roughness.unwrap_or(0.5);
+    material.unlit = params.unlit.unwrap_or_default();
+
+    if let Some(value) = params.base_color_texture
+        && let Ok(Some(bytes)) = blobs.get_mut(value).map(|mut b| b.0.take())
+        && let Ok(dyn_img) = image::load_from_memory(&bytes)
+    {
+        let (width, height) = dyn_img.dimensions();
+        let rgba = dyn_img.into_rgba8();
+
+        if width > MAX_TEXTURE_DIMS || height > MAX_TEXTURE_DIMS {
+            warn!("texture too large: {width}x{height}");
+            return;
+        }
+
+        let img = Image::new(
+            Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            TextureDimension::D2,
+            rgba.into_raw(),
+            TextureFormat::Rgba8UnormSrgb,
+            RenderAssetUsages::default(),
+        );
+
+        // TODO load sampler from hsd
+
+        let handle = images.add(img);
+        material.base_color_texture = Some(handle);
+    } else {
+        material.base_color_texture = None;
     }
-    if let Some(value) = params.metallic {
-        material.metallic = value;
-    }
-    if let Some(value) = params.roughness {
-        material.perceptual_roughness = value;
-    }
-    if let Some(value) = params.unlit {
-        material.unlit = value;
-    }
-    material
+
+    // TODO load other textures
 }
 
 pub(crate) fn on_material_blobs_loaded(
@@ -390,33 +492,29 @@ pub(crate) fn on_material_blobs_loaded(
     mut mat_assets: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
     mut blobs: Query<&mut BlobResponse>,
+    mut images: ResMut<Assets<Image>>,
 ) {
-    let ent = trigger.entity;
-    let Ok((params, existing)) = mat_params.get(ent) else {
+    let entity = trigger.entity;
+    let Ok((params, existing)) = mat_params.get(entity) else {
         return;
     };
 
-    if let Some(value) = params.base_color_texture {
-        let Ok(Some(_bytes)) = blobs.get_mut(value).map(|mut b| b.0.take()) else {
-            return;
-        };
-        // TODO: load image details from HSD
-    }
+    let mut material = StandardMaterial::default();
+    build_standard_material(&mut material, params, &mut blobs, &mut images);
 
-    let material = build_standard_material(params);
-    debug!("compiled material {ent}");
+    debug!("compiled material {entity}");
     if let Some(CompiledMaterial(handle)) = existing {
         if let Some(asset) = mat_assets.get_mut(handle) {
             *asset = material;
             commands
-                .entity(ent)
+                .entity(entity)
                 .remove::<BlobDeps>()
                 .remove::<BlobDepsLoaded>();
         }
     } else {
         let handle = mat_assets.add(material);
         commands
-            .entity(ent)
+            .entity(entity)
             .insert(CompiledMaterial(handle))
             .remove::<BlobDeps>()
             .remove::<BlobDepsLoaded>();
@@ -425,12 +523,15 @@ pub(crate) fn on_material_blobs_loaded(
 
 pub(crate) fn recompile_changed_materials(
     changed: Query<(&MaterialParams, &CompiledMaterial), Changed<MaterialParams>>,
+    mut blobs: Query<&mut BlobResponse>,
+    mut images: ResMut<Assets<Image>>,
     mut mat_assets: ResMut<Assets<StandardMaterial>>,
 ) {
     for (params, compiled) in &changed {
-        let Some(asset) = mat_assets.get_mut(&compiled.0) else {
+        let Some(material) = mat_assets.get_mut(&compiled.0) else {
             continue;
         };
-        *asset = build_standard_material(params);
+
+        build_standard_material(material, params, &mut blobs, &mut images);
     }
 }

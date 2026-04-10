@@ -217,7 +217,7 @@ pub(crate) fn on_mesh_blobs_loaded(
         return;
     };
 
-    let mut mesh = Mesh::new(params.topology, RenderAssetUsages::all());
+    let mut mesh = Mesh::new(params.topology, RenderAssetUsages::default());
 
     if let Some(idx_ent) = params.indices {
         let Ok(Some(bytes)) = blobs.get_mut(idx_ent).map(|mut b| b.0.take()) else {

@@ -10,7 +10,6 @@ use tracing::Level;
 mod assets;
 mod async_commands;
 mod camera;
-#[cfg(feature = "devtools-network")]
 mod devtools;
 mod fade;
 mod grab;
@@ -26,9 +25,10 @@ mod xr;
 bitflags! {
     #[derive(Clone, Copy, Debug, Default)]
     pub struct DebugFlags: u8 {
-        const FPS     = 0b0001;
-        const NETWORK = 0b0010;
-        const PHYSICS = 0b0100;
+        const FPS       = 0b1000;
+        const INSPECTOR = 0b0100;
+        const NETWORK   = 0b0010;
+        const PHYSICS   = 0b0001;
     }
 }
 
@@ -135,12 +135,10 @@ impl Plugin for UnaviPlugin {
             }
         }
 
-        #[cfg(feature = "devtools-network")]
-        {
-            if self.debug.contains(DebugFlags::NETWORK) {
-                app.add_plugins(devtools::DevToolsPlugin { enabled: true });
-            }
-        }
+        app.add_plugins(devtools::DevToolsPlugin {
+            inspector: self.debug.contains(DebugFlags::INSPECTOR),
+            network: self.debug.contains(DebugFlags::NETWORK),
+        });
 
         app.insert_resource(GlobalAmbientLight {
             brightness: lux::OVERCAST_DAY,

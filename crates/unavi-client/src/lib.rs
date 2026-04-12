@@ -6,19 +6,21 @@ use bevy::{
 use bitflags::bitflags;
 use tracing::Level;
 
-#[cfg(not(target_family = "wasm"))]
-mod assets;
+use crate::networking::thread::space::object::outbound::LocalGrabbedObjects;
+
 mod async_commands;
 mod camera;
 mod devtools;
 mod fade;
 mod grab;
 mod icon;
-
 mod networking;
 mod scene;
 mod space;
 mod system_scripts;
+
+#[cfg(not(target_family = "wasm"))]
+mod assets;
 #[cfg(not(target_family = "wasm"))]
 mod xr;
 
@@ -123,6 +125,7 @@ impl Plugin for UnaviPlugin {
                 wds_in_memory: self.in_memory,
             },
             space::SpacePlugin,
+            MaterialPlugin::<camera::sky::SkyMaterial>::default(),
         ));
 
         #[cfg(feature = "devtools-bevy")]
@@ -138,21 +141,20 @@ impl Plugin for UnaviPlugin {
         app.add_plugins(devtools::DevToolsPlugin {
             inspector: self.debug.contains(DebugFlags::INSPECTOR),
             network: self.debug.contains(DebugFlags::NETWORK),
-        });
-
-        app.insert_resource(GlobalAmbientLight {
-            brightness: lux::OVERCAST_DAY,
+        })
+        .insert_resource(GlobalAmbientLight {
+            brightness: lux::HALLWAY,
             ..default()
         })
         .insert_resource(ClearColor(Color::BLACK))
         .init_resource::<grab::GrabbedObjects>()
-        .init_resource::<networking::thread::space::object::outbound::LocalGrabbedObjects>()
+        .init_resource::<LocalGrabbedObjects>()
         .add_observer(grab::handle_squeeze_down)
         .add_observer(grab::handle_squeeze_up)
-        .add_observer(camera::on_apply_camera_effects)
         .add_systems(
             Startup,
             (
+                camera::sky::spawn_sky,
                 grab::setup_grabbed_hooks,
                 icon::set_window_icon,
                 scene::spawn_scene,

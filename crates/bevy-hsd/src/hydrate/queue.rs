@@ -1,3 +1,8 @@
+//! Drains `RawChangeQueue` each tick and fans out into typed Bevy observers.
+//!
+//! This is the single place where HSD string IDs are resolved to ECS entities
+//! via `SceneRegistry`, and where the CRDT is re-hydrated into typed structs.
+
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;

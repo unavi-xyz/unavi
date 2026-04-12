@@ -1,9 +1,17 @@
+//! Compiles HSD material data into Bevy `StandardMaterial` assets.
+//!
+//! Texture slots store image entity refs rather than blob hashes; the image
+//! entity supplies the `Handle<Image>` once it has compiled. If an image
+//! compiles after the material, `on_image_compiled` (in `compile::image`)
+//! patches the already-live `StandardMaterial` directly.
+
 use bevy::prelude::*;
 use bevy_wds::{BlobDeps, BlobDepsLoaded};
 use smol_str::SmolStr;
 
 use crate::{HsdChild, cache::SceneRegistry, data::HsdMaterial};
 
+/// Marks a material entity as having a ready `Handle<StandardMaterial>`.
 #[derive(Component)]
 pub struct CompiledMaterial(pub Handle<StandardMaterial>);
 
@@ -111,6 +119,8 @@ pub struct HsdMaterialUnlitSet {
     pub value: bool,
 }
 
+/// All material properties. Texture fields hold image entity refs; the handle
+/// is resolved at compile time via `CompiledImage` on the image entity.
 #[derive(Component, Default, Debug)]
 #[require(BlobDeps)]
 pub struct MaterialParams {

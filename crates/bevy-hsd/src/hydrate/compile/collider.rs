@@ -1,3 +1,8 @@
+//! Compiles HSD collider specs into Avian3d `Collider` components.
+//!
+//! Simple shapes (capsule, cuboid, etc.) are constructed immediately; convex
+//! hull and trimesh shapes wait for blob data via the blob-dep system.
+
 use avian3d::prelude::Collider;
 use bevy::prelude::*;
 use bevy_wds::{BlobDep, BlobDeps, BlobDepsLoaded, BlobRequest, BlobResponse};
@@ -6,6 +11,7 @@ use bytes::Bytes;
 
 use crate::data::HsdCollider;
 
+/// Deferred collider build for shapes that require blob data before construction.
 #[derive(Component)]
 #[require(BlobDeps)]
 pub enum ColliderParams {

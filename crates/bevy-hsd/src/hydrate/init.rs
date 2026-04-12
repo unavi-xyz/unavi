@@ -1,3 +1,5 @@
+//! One-shot setup for new HSD documents: initial full hydration + subscription.
+
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
@@ -38,11 +40,22 @@ pub fn init_hsd_doc(
     }
 }
 
+/// Emits synthetic `*Added` events for all objects already in the document so
+/// the queue processor handles initial load identically to incremental diffs.
+/// Images are emitted before materials because materials reference image IDs.
 fn full_hydrate(hsd_map: &loro::LoroMap, raw_queue: &Arc<Mutex<Vec<super::events::RawHsdChange>>>) {
     let value = hsd_map.get_deep_value();
     let LoroValue::Map(root) = &value else { return };
 
     let mut raw = raw_queue.lock().expect("raw queue lock");
+
+    if let Some(LoroValue::Map(images)) = root.get("images") {
+        for id in images.keys() {
+            raw.push(super::events::RawHsdChange::ImageAdded {
+                id: id.as_str().into(),
+            });
+        }
+    }
 
     if let Some(LoroValue::Map(mats)) = root.get("materials") {
         for id in mats.keys() {

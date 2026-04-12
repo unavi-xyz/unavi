@@ -1,3 +1,9 @@
+//! Bevy plugin for rendering HSD (Hyperspace Document) scenes.
+//!
+//! HSD is a Loro CRDT-backed scene format. Documents arrive as content-addressed
+//! blobs, are subscribed to for incremental diffs, and are compiled into standard
+//! Bevy assets (meshes, materials, images) via an event-driven observer pipeline.
+
 use avian3d::schedule::PhysicsSystems;
 use bevy::prelude::*;
 use bevy::transform::TransformSystems;
@@ -80,15 +86,18 @@ impl Plugin for HsdPlugin {
     }
 }
 
+/// Root Loro CRDT document for one HSD scene.
 #[derive(Component)]
 #[require(HsdChildren)]
 pub struct HsdDoc(pub Arc<LoroDoc>);
 
-/// Relationship for all HSD-spawned entities.
+/// All ECS entities spawned from an HSD document are children of the doc
+/// entity, so the whole scene can be cleanly despawned in one operation.
 #[derive(Component, Default)]
 #[relationship_target(relationship = HsdChild, linked_spawn)]
 pub struct HsdChildren(Vec<Entity>);
 
+/// Marks an entity as owned by the given HSD doc entity.
 #[derive(Component)]
 #[relationship(relationship_target = HsdChildren)]
 pub struct HsdChild {
@@ -101,24 +110,27 @@ pub use hydrate::compile::material::{CompiledMaterial, MaterialParams};
 pub use hydrate::compile::mesh::CompiledMesh;
 pub use hydrate::compile::node::{MaterialRef, MeshRef};
 
+/// Stable HSD tree ID kept on the entity for cross-system lookup.
 #[derive(Component, Clone, Debug)]
 pub struct NodeId(pub SmolStr);
 
-/// Script blob hashes on node entities.
+/// Blob hashes of WASM scripts declared on this node.
 #[derive(Component, Clone, Debug)]
 pub struct HsdScripts(pub Vec<blake3::Hash>);
 
-/// Persists the HSD physics spec so it can be restored after scale-suppression.
+/// Cached physics spec so colliders can be restored after scale-suppression.
+///
+/// See `guard_physics_scale` in `compile::node`.
 #[derive(Component, Clone, Debug, Default)]
 pub struct HsdNodePhysics {
     pub collider: Option<data::HsdCollider>,
     pub rigid_body: Option<data::HsdRigidBody>,
 }
 
-/// WDS record ID for an HSD document.
+/// WDS content-address of the document blob.
 #[derive(Component, Clone, Copy)]
 pub struct HsdRecordId(pub blake3::Hash);
 
-/// Keeps the doc subscription alive.
+/// Keeps the Loro subscription alive — dropping this stops diff delivery.
 #[derive(Component)]
 pub struct HsdSubscription(pub loro::Subscription);

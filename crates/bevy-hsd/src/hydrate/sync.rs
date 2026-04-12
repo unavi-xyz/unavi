@@ -1,3 +1,9 @@
+//! Write-back path: propagates ECS mutations back into the Loro CRDT.
+//!
+//! Scripts (and potentially other systems) mutate ECS state; this module diffs
+//! those mutations against the cached snapshot and commits them to the document
+//! so changes are shared over the network.
+
 use std::sync::Arc;
 
 use bevy::prelude::*;

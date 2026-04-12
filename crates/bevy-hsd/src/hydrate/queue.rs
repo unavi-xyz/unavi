@@ -5,9 +5,12 @@ use loro::{LoroMap, LoroTree, LoroValue, TreeID, TreeParentId};
 use loro_surgeon::Hydrate;
 use smol_str::{SmolStr, ToSmolStr};
 
+use super::compile::image::{HsdImageDespawned, HsdImageSpawned};
 use super::compile::material::{
     HsdMaterialAlphaCutoffSet, HsdMaterialAlphaModeSet, HsdMaterialBaseColorSet,
-    HsdMaterialDespawned, HsdMaterialDoubleSidedSet, HsdMaterialMetallicSet, HsdMaterialNameSet,
+    HsdMaterialBaseColorTextureSet, HsdMaterialDespawned, HsdMaterialDoubleSidedSet,
+    HsdMaterialEmissiveTextureSet, HsdMaterialMetallicRoughnessTextureSet, HsdMaterialMetallicSet,
+    HsdMaterialNameSet, HsdMaterialNormalTextureSet, HsdMaterialOcclusionTextureSet,
     HsdMaterialRoughnessSet, HsdMaterialSpawned, HsdMaterialUnlitSet,
 };
 use super::compile::mesh::{
@@ -18,14 +21,13 @@ use super::compile::node::{
     HsdNodeParentSet, HsdNodeRigidBodySet, HsdNodeScriptsSet, HsdNodeSpawned, HsdNodeTransformSet,
     node_transform,
 };
-use crate::hydrate::compile::material::HsdMaterialBaseColorTextureSet;
 use crate::{
     HsdDoc,
     cache::{
-        MaterialHsdChanges, MaterialInner, MaterialState, MeshHsdChanges, MeshInner, MeshState,
-        NodeHsdChanges, NodeInner, NodeState, SceneRegistry,
+        ImageInner, MaterialHsdChanges, MaterialInner, MaterialState, MeshHsdChanges, MeshInner,
+        MeshState, NodeHsdChanges, NodeInner, NodeState, SceneRegistry,
     },
-    data::{HsdMaterial, HsdMesh, HsdNodeData},
+    data::{HsdImage, HsdMaterial, HsdMesh, HsdNodeData},
     hydrate::events::{NodeRef, RawChangeQueue, RawHsdChange},
 };
 
@@ -48,6 +50,21 @@ pub(crate) fn process_hsd_queue(
 
         for change in raw_changes {
             match change {
+                RawHsdChange::ImageAdded { id } => {
+                    handle_image_added(doc_ent, id, &hsd_map, registry, &mut commands);
+                }
+                RawHsdChange::ImageChanged { id } => {
+                    if let Some(hsd_img) = get_image_at(&hsd_map, &id) {
+                        commands.trigger(HsdImageSpawned {
+                            doc: doc_ent,
+                            id,
+                            initial: Some(hsd_img),
+                        });
+                    }
+                }
+                RawHsdChange::ImageRemoved { id } => {
+                    commands.trigger(HsdImageDespawned { doc: doc_ent, id });
+                }
                 RawHsdChange::NodeAdded { tree_id, parent_id } => {
                     handle_node_added(
                         doc_ent,
@@ -224,6 +241,35 @@ fn get_or_create_node(registry: &SceneRegistry, id: &SmolStr, tree_id: TreeID) -
     inner
 }
 
+fn handle_image_added(
+    doc_ent: Entity,
+    id: SmolStr,
+    hsd_map: &LoroMap,
+    registry: &SceneRegistry,
+    commands: &mut Commands,
+) {
+    get_or_create_image(registry, &id);
+    let initial = get_image_at(hsd_map, &id);
+    commands.trigger(HsdImageSpawned {
+        doc: doc_ent,
+        id,
+        initial,
+    });
+}
+
+fn get_or_create_image(registry: &SceneRegistry, id: &SmolStr) -> Arc<ImageInner> {
+    let mut images = registry.0.images.lock().expect("images lock");
+    if let Some(existing) = images.get(id) {
+        return Arc::clone(existing);
+    }
+    let inner = Arc::new(ImageInner {
+        entity: Mutex::new(None),
+        id: id.clone(),
+    });
+    images.insert(id.clone(), Arc::clone(&inner));
+    inner
+}
+
 fn get_or_create_mesh(registry: &SceneRegistry, id: &SmolStr) -> Arc<MeshInner> {
     let mut meshes = registry.0.meshes.lock().expect("meshes lock");
     if let Some(existing) = meshes.get(id) {
@@ -334,11 +380,39 @@ fn emit_material_fields(doc: Entity, id: &SmolStr, hsd: &HsdMaterial, commands: 
             color: [r, g, b, a],
         });
     }
-    if let Some(hash) = &hsd.base_color_texture {
+    if let Some(ref img_id) = hsd.base_color_texture {
         commands.trigger(HsdMaterialBaseColorTextureSet {
             doc,
             id: id.clone(),
-            value: hash.0,
+            value: img_id.clone(),
+        });
+    }
+    if let Some(ref img_id) = hsd.normal_texture {
+        commands.trigger(HsdMaterialNormalTextureSet {
+            doc,
+            id: id.clone(),
+            value: img_id.clone(),
+        });
+    }
+    if let Some(ref img_id) = hsd.metallic_roughness_texture {
+        commands.trigger(HsdMaterialMetallicRoughnessTextureSet {
+            doc,
+            id: id.clone(),
+            value: img_id.clone(),
+        });
+    }
+    if let Some(ref img_id) = hsd.occlusion_texture {
+        commands.trigger(HsdMaterialOcclusionTextureSet {
+            doc,
+            id: id.clone(),
+            value: img_id.clone(),
+        });
+    }
+    if let Some(ref img_id) = hsd.emissive_texture {
+        commands.trigger(HsdMaterialEmissiveTextureSet {
+            doc,
+            id: id.clone(),
+            value: img_id.clone(),
         });
     }
     if let Some(v) = hsd.metallic {
@@ -410,6 +484,17 @@ pub(super) fn node_data_from_hsd(hsd_map: &LoroMap, tid: TreeID) -> HsdNodeData 
         .and_then(|t| t.get_meta(tid).ok())
         .and_then(|m| HsdNodeData::hydrate(&m.get_deep_value()).ok())
         .unwrap_or_default()
+}
+
+pub(super) fn get_image_at(hsd_map: &LoroMap, key: &str) -> Option<HsdImage> {
+    let value = hsd_map.get_deep_value();
+    let LoroValue::Map(root) = &value else {
+        return None;
+    };
+    let LoroValue::Map(map) = root.get("images")? else {
+        return None;
+    };
+    HsdImage::hydrate(map.get(key)?).ok()
 }
 
 pub(super) fn get_mesh_at(hsd_map: &LoroMap, key: &str) -> Option<HsdMesh> {

@@ -32,10 +32,22 @@ pub(super) fn extract_changes_from_diff(e: &DiffEvent, queue: &mut Vec<RawHsdCha
             Diff::Map(map_delta) => {
                 if let Some(tree_id) = node_tree_id_in_path(path) {
                     queue.push(RawHsdChange::NodeChanged { tree_id });
+                } else if let Some(id) = map_id_for_key(path, "images") {
+                    queue.push(RawHsdChange::ImageChanged { id });
                 } else if let Some(id) = map_id_for_key(path, "meshes") {
                     queue.push(RawHsdChange::MeshChanged { id });
                 } else if let Some(id) = map_id_for_key(path, "materials") {
                     queue.push(RawHsdChange::MaterialChanged { id });
+                } else if path_ends_with_key(path, "images") {
+                    for (key, val) in &map_delta.updated {
+                        let id = SmolStr::from(key.as_ref());
+                        let change = if val.is_some() {
+                            RawHsdChange::ImageAdded { id }
+                        } else {
+                            RawHsdChange::ImageRemoved { id }
+                        };
+                        queue.push(change);
+                    }
                 } else if path_ends_with_key(path, "meshes") {
                     for (key, val) in &map_delta.updated {
                         let id = SmolStr::from(key.as_ref());

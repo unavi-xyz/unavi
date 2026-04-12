@@ -10,7 +10,9 @@ mod network_stats;
 mod network_ui;
 
 pub struct DevToolsPlugin {
+    #[allow(dead_code)]
     pub inspector: bool,
+    #[allow(dead_code)]
     pub network: bool,
 }
 

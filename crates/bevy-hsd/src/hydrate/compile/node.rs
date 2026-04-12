@@ -190,8 +190,8 @@ pub(crate) fn handle_hsd_node_collider_set(
         return;
     };
     entity_cmd
-        .remove::<Collider>()
-        .remove::<super::collider::ColliderParams>();
+        .try_remove::<Collider>()
+        .try_remove::<super::collider::ColliderParams>();
 }
 
 pub(crate) fn handle_hsd_node_material_set(
@@ -215,7 +215,7 @@ pub(crate) fn handle_hsd_node_material_set(
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
         return;
     };
-    entity_cmd.remove::<MaterialRef>();
+    entity_cmd.try_remove::<MaterialRef>();
     if let Some(ref id) = ev.material {
         entity_cmd.insert(MaterialRef(id.clone()));
     }
@@ -242,7 +242,7 @@ pub(crate) fn handle_hsd_node_mesh_set(
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
         return;
     };
-    entity_cmd.remove::<MeshRef>();
+    entity_cmd.try_remove::<MeshRef>();
     if let Some(ref id) = ev.mesh {
         entity_cmd.insert(MeshRef(id.clone()));
     }
@@ -272,7 +272,7 @@ pub(crate) fn handle_hsd_node_name_set(
     if let Some(ref name) = ev.name {
         entity_cmd.insert(Name::new(name.clone()));
     } else {
-        entity_cmd.remove::<Name>();
+        entity_cmd.try_remove::<Name>();
     }
 }
 
@@ -298,7 +298,7 @@ pub(crate) fn handle_hsd_node_parent_set(
         None => {
             drop(node_map);
             if let Ok(mut ent) = commands.get_entity(child_ent) {
-                ent.remove::<ChildOf>();
+                ent.try_remove::<ChildOf>();
             }
         }
         Some(NodeRef::Entity(p)) => {
@@ -371,7 +371,7 @@ pub(crate) fn handle_hsd_node_rigid_body_set(
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
         return;
     };
-    entity_cmd.remove::<RigidBody>();
+    entity_cmd.try_remove::<RigidBody>();
 }
 
 pub(crate) fn handle_hsd_node_scripts_set(
@@ -396,7 +396,7 @@ pub(crate) fn handle_hsd_node_scripts_set(
         return;
     };
     if ev.scripts.is_empty() {
-        entity_cmd.remove::<HsdScripts>();
+        entity_cmd.try_remove::<HsdScripts>();
     } else {
         entity_cmd.insert(HsdScripts(ev.scripts.clone()));
     }
@@ -493,7 +493,7 @@ pub(crate) fn on_material_ref_set(
 pub(crate) fn on_mesh_ref_removed(trigger: On<Remove, MeshRef>, mut commands: Commands) {
     debug!(entity = %trigger.entity, "mesh ref removed");
     if let Ok(mut entity_cmd) = commands.get_entity(trigger.entity) {
-        entity_cmd.remove::<Mesh3d>();
+        entity_cmd.try_remove::<Mesh3d>();
     }
 }
 

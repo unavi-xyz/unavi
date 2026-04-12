@@ -1,10 +1,28 @@
 use bevy::prelude::*;
 
+const CLEAR_COLOR: Color = Color::BLACK;
+
 pub struct FadePlugin;
 
 impl Plugin for FadePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_fade_overlay)
+        app.world_mut().spawn((
+            FadeOverlay,
+            FadeTimer {
+                elapsed: 0.0,
+                duration: 2.0,
+                delay: 2.0,
+            },
+            Node {
+                position_type: PositionType::Absolute,
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                ..default()
+            },
+            BackgroundColor(CLEAR_COLOR),
+        ));
+
+        app.insert_resource(ClearColor(CLEAR_COLOR))
             .add_systems(Update, update_fade);
     }
 }
@@ -19,25 +37,6 @@ struct FadeTimer {
     delay: f32,
 }
 
-fn spawn_fade_overlay(mut commands: Commands) {
-    // Spawn full-screen black overlay.
-    commands.spawn((
-        FadeOverlay,
-        FadeTimer {
-            elapsed: 0.0,
-            duration: 2.0,
-            delay: 1.0,
-        },
-        Node {
-            position_type: PositionType::Absolute,
-            width: Val::Percent(100.0),
-            height: Val::Percent(100.0),
-            ..default()
-        },
-        BackgroundColor(Color::BLACK),
-    ));
-}
-
 fn update_fade(
     mut commands: Commands,
     mut query: Query<(Entity, &mut FadeTimer, &mut BackgroundColor), With<FadeOverlay>>,
@@ -46,13 +45,11 @@ fn update_fade(
     for (entity, mut timer, mut bg) in &mut query {
         timer.elapsed += time.delta_secs();
 
-        // Don't start fading until delay has passed.
-        if timer.elapsed < timer.delay {
+        let fade_elapsed = timer.elapsed - timer.delay;
+        if fade_elapsed < 0.0 {
             continue;
         }
 
-        // Calculate progress relative to the delay.
-        let fade_elapsed = timer.elapsed - timer.delay;
         let progress = (fade_elapsed / timer.duration).min(1.0);
         let alpha = 1.0 - progress;
 

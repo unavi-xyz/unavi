@@ -1,3 +1,9 @@
+// Scripts are sandboxed by default: only the scene, event, input, and agent
+// APIs are available. System scripts (loaded by the client itself, not from
+// HSD) receive elevated permissions including WDS access and local-agent
+// control. Permissions are checked at linker-build time, so disallowed APIs
+// are never wired into the guest's import table.
+
 use std::collections::HashSet;
 
 use bevy::prelude::*;

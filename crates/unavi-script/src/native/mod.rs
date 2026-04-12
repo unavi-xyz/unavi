@@ -45,6 +45,9 @@ impl Plugin for NativeScriptPlugin {
                 PostUpdate,
                 agent::reset_bone_proxies.before(TransformSystems::Propagate),
             )
+            // FixedUpdate chain — order matters:
+            //   firewall sync → local/HSD loading → proxy init → init → tick → events
+            // Must run after init_hsd_doc so scene state is hydrated before scripts tick.
             .add_systems(
                 FixedUpdate,
                 (

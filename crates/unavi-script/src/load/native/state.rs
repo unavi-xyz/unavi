@@ -28,6 +28,9 @@ pub struct StoreState {
     pub rt: RuntimeData,
 }
 
+// One RuntimeData per running script instance. Each API domain has its own
+// sub-struct with an independent resource table so handles from one domain
+// (e.g. a node handle) cannot be accidentally used in another (e.g. WDS).
 pub struct RuntimeData {
     pub wired_agent: WiredAgentRt,
     pub wired_event: WiredEventRt,

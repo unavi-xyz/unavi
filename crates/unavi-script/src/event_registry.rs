@@ -120,6 +120,12 @@ impl InnerEventRegistry {
 #[derive(Resource, Clone, Default)]
 pub struct EventRegistry(pub Arc<Mutex<InnerEventRegistry>>);
 
+// Events are buffered during script tick, then dispatched in a single pass:
+// 1. target_documents filter (emitter-side allowlist)
+// 2. firewall check (receiver document must allow sender)
+// 3. source_documents filter (receptor-side allowlist)
+// 4. spatial distance check (both emitter and receptor radii must contain each other)
+// Running after tick ensures same-frame emissions arrive next frame.
 pub fn process_event_emissions(
     registry: Res<EventRegistry>,
     transforms: Query<&GlobalTransform>,

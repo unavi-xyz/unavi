@@ -126,7 +126,7 @@ async fn read_record(
 ) -> anyhow::Result<WdsRecordOut> {
     let doc = actor.read(hash).send().await?;
 
-    let record = wired_schemas::surg::record::Record::load(&doc)?;
+    let record = wds::surg::record::Record::load(&doc)?;
     let creator = record.creator.0.clone();
     let id = record.id()?;
 

@@ -6,12 +6,12 @@ use iroh_blobs::api::Store;
 use loro::{LoroDoc, LoroMap, LoroTree, LoroValue, VersionVector};
 use rusqlite::{Connection, params};
 use smol_str::SmolStr;
-use wds_schema::{Field, Schema, unwrap_restricted};
-use wired_records::HydratedDid;
-use wired_schemas::{
-    schemas::{SCHEMA_ACL, SCHEMA_RECORD},
-    surg::{acl::Acl, record::Record},
+use wds_schema::{
+    schema::{Field, Schema},
+    validate::restriction::unwrap_restricted,
 };
+use wired_records::HydratedDid;
+use wired_schemas::{SCHEMA_ACL, SCHEMA_RECORD};
 use xdid::{core::did::Did, resolver::DidResolver};
 
 use crate::{
@@ -24,6 +24,7 @@ use crate::{
         validate::{fetch_schema, validate_diff},
     },
     signed_bytes::SignedBytes,
+    surg::{acl::Acl, record::Record},
 };
 
 /// Checks if the ACL was modified between old and new states.

@@ -1,6 +1,8 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex, RwLock};
-use std::time::Duration;
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex, RwLock},
+    time::Duration,
+};
 
 use bevy::prelude::{Command, Entity, World};
 use bevy_hsd::{
@@ -11,7 +13,7 @@ use smol_str::SmolStr;
 use tracing::warn;
 use wasmtime::bail;
 use wasmtime_wasi::ResourceTable;
-use wired_schemas::schemas::SCHEMA_HSD;
+use wired_schemas::SCHEMA_HSD;
 
 use crate::firewall::{HsdFirewall, HsdFirewallInner};
 

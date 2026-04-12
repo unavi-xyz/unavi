@@ -13,9 +13,6 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-blake3.workspace      = true
-unavi-shapes.path     = "../unavi-shapes"
-unavi-vui-module.path = "../unavi-vui-module"
 wired-prelude.path    = "../wired-prelude"
-wired-records.path    = "../../crates/wired-records"
+wired-schemas.path    = "../../crates/wired-schemas"
 wit-bindgen.workspace = true

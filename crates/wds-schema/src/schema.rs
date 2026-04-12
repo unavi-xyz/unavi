@@ -1,12 +1,9 @@
-//! Schema types for Loro document validation.
-
 use std::collections::BTreeMap;
 
 use blake3::Hash;
 use serde::{Deserialize, Serialize};
 use smol_str::SmolStr;
 
-/// Schema defining how to validate a Loro container.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Schema {
     id: SmolStr,
@@ -91,7 +88,7 @@ mod tests {
 
     use ron::ser::PrettyConfig;
 
-    use super::Schema;
+    use crate::schema::Schema;
 
     fn parse_schemas_in_path(path: &Path) {
         if path.is_dir() {

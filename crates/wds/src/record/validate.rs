@@ -9,7 +9,7 @@ use iroh_blobs::api::Store;
 use loro::{Frontiers, LoroDoc};
 use smol_str::SmolStr;
 use thiserror::Error;
-use wds_schema::{Schema, Validator};
+use wds_schema::{schema::Schema, validate::validator::Validator};
 use xdid::core::did::Did;
 
 /// Validation errors for WDS documents.
@@ -20,7 +20,7 @@ pub enum ValidationError {
     #[error("failed to parse schema")]
     ParseError,
     #[error(transparent)]
-    Schema(#[from] wds_schema::ValidationError),
+    Schema(#[from] wds_schema::validate::ValidationError),
 }
 
 /// Fetch a schema from the blob store by its hash.

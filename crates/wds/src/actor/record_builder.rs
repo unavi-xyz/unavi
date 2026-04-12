@@ -6,17 +6,14 @@ use bytes::Bytes;
 use iroh::EndpointId;
 use loro::LoroDoc;
 use tracing::warn;
-
 use wired_records::HydratedHash;
-use wired_schemas::{
-    schemas::{SCHEMA_ACL, SCHEMA_RECORD, StaticSchema},
-    surg::{acl::Acl, record::Record},
-};
+use wired_schemas::{SCHEMA_ACL, SCHEMA_RECORD, StaticSchema};
 
 use crate::{
     actor::{Actor, into_actor::IntoActor},
     record::envelope::Envelope,
     signed_bytes::Signable,
+    surg::{acl::Acl, record::Record},
 };
 
 pub(super) const DEFAULT_PIN_TTL: Duration = Duration::from_hours(1);

@@ -20,6 +20,7 @@ irpc                  = "0.13.0"
 irpc-iroh             = "0.13.0"
 jose-jwk              = "0.1.2"
 loro.workspace        = true
+loro-surgeon.path     = "../loro-surgeon"
 n0-error              = { features = ["anyhow"], version = "0.1.3" }
 n0-future.workspace   = true
 p256                  = { default-features = false, features = ["ecdsa"], version = "0.13.2" }

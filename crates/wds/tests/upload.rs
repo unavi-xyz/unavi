@@ -5,8 +5,8 @@ use tracing_test::traced_test;
 use wds::{
     record::envelope::Envelope,
     signed_bytes::{Signable, SignedBytes},
+    surg::{acl::Acl, record::Record},
 };
-use wired_schemas::surg::{acl::Acl, record::Record};
 
 use crate::common::{DataStoreCtx, assert_contains, ctx};
 

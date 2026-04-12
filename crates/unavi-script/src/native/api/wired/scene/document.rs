@@ -4,7 +4,7 @@ use bevy::prelude::Entity;
 use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner, SceneRegistryInner};
 use loro::LoroDoc;
 use wasmtime::{bail, component::Resource};
-use wired_schemas::surg::acl::Acl;
+use wds::surg::acl::Acl;
 
 use super::bindings::wired::scene::types::{Document, Material, Mesh};
 use super::{WiredSceneRt, material::HostMaterial, mesh::HostMesh, node::HostNode};
@@ -29,10 +29,11 @@ impl HostDocument {
     /// Slot-based for created docs so that commands queued in the same tick
     /// resolve the real entity after the spawn command flushes before them.
     fn doc_ref(&self) -> DocEntityRef {
-        self.entity_slot.as_ref().map_or(
-            DocEntityRef::Immediate(self.doc_entity),
-            |slot| DocEntityRef::Slot(Arc::clone(slot)),
-        )
+        self.entity_slot
+            .as_ref()
+            .map_or(DocEntityRef::Immediate(self.doc_entity), |slot| {
+                DocEntityRef::Slot(Arc::clone(slot))
+            })
     }
 }
 

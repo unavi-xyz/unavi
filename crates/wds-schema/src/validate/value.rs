@@ -5,8 +5,9 @@ use std::collections::BTreeMap;
 use loro::LoroValue;
 use smol_str::SmolStr;
 
+use crate::schema::Field;
+
 use super::ValidationError;
-use crate::Field;
 
 /// Validate a [`LoroValue`] against a [`Field`] layout.
 ///
@@ -181,7 +182,6 @@ mod tests {
     use loro::{LoroTree, LoroValue};
 
     use super::*;
-    use crate::Field;
 
     #[test]
     fn validate_bool() {

@@ -29,10 +29,11 @@ pub struct DocEntry {
 
 impl DocEntry {
     pub fn doc_ref(&self) -> DocEntityRef {
-        self.entity_slot.as_ref().map_or(
-            DocEntityRef::Immediate(self.doc_entity),
-            |slot| DocEntityRef::Slot(Arc::clone(slot)),
-        )
+        self.entity_slot
+            .as_ref()
+            .map_or(DocEntityRef::Immediate(self.doc_entity), |slot| {
+                DocEntityRef::Slot(Arc::clone(slot))
+            })
     }
 }
 

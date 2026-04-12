@@ -1,5 +1,3 @@
-//! Document-level schema validation with Restricted field authorization.
-
 use std::collections::BTreeMap;
 
 use loro::{
@@ -9,8 +7,12 @@ use loro::{
 use smol_str::SmolStr;
 
 use crate::{
-    Can, ChangeType, Field, Schema, ValidationError, Who, change_type_name,
-    find_restrictions_for_path, unwrap_restricted, validate_container_diff,
+    schema::{Can, Field, Schema, Who},
+    validate::{
+        ChangeType, ValidationError,
+        diff::validate_container_diff,
+        restriction::{change_type_name, find_restrictions_for_path, unwrap_restricted},
+    },
 };
 
 /// Document-level schema validator.

@@ -70,7 +70,12 @@ fn spawn_self_node(registry: &SceneRegistryInner, self_node_id: &smol_str::SmolS
 fn poll_web_scripts(
     mut commands: Commands,
     wasm_assets: Res<Assets<Wasm>>,
-    pending: Query<(Entity, &WebPendingScript, Option<&Name>, Option<&ScriptPermissions>)>,
+    pending: Query<(
+        Entity,
+        &WebPendingScript,
+        Option<&Name>,
+        Option<&ScriptPermissions>,
+    )>,
     mut counter: ResMut<ScriptIdCounter>,
     event_reg: Res<EventRegistry>,
     input_reg: Res<InputRegistry>,

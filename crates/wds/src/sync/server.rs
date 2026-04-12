@@ -7,9 +7,7 @@ use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use tracing::info;
 use xdid::core::did::Did;
 
-use wired_schemas::surg::acl::Acl;
-
-use crate::{SessionToken, StoreContext, error::ApiError, sync::SyncMsg};
+use crate::{SessionToken, StoreContext, error::ApiError, surg::acl::Acl, sync::SyncMsg};
 
 /// Reads the next message from the stream and decodes it.
 async fn recv_msg<S>(framed: &mut Framed<S, LengthDelimitedCodec>) -> Result<SyncMsg, ApiError>

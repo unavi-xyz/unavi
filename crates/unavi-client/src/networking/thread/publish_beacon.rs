@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::log::info;
 use blake3::Hash;
 use time::OffsetDateTime;
-use wired_schemas::schemas::SCHEMA_BEACON;
+use wired_schemas::SCHEMA_BEACON;
 
 use wired_records::{BeaconRecord, HydratedDid, HydratedEndpoint, HydratedHash};
 

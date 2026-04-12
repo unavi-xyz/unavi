@@ -70,6 +70,7 @@ mod native {
     use bevy_wds::LocalActor;
     use bytes::Bytes;
     use loro::{LoroDoc, LoroList, LoroTree, TreeParentId};
+    use wired_schemas::SCHEMA_HSD;
 
     use super::{PendingScript, Wasm};
 
@@ -180,7 +181,7 @@ mod native {
     ) -> anyhow::Result<(blake3::Hash, LoroDoc)> {
         let result = actor
             .create_record()
-            .add_schema("hsd", &*wired_schemas::schemas::SCHEMA_HSD, |doc| {
+            .add_schema("hsd", &*SCHEMA_HSD, |doc| {
                 let hsd = doc.get_map("hsd");
                 let nodes = hsd
                     .get_or_create_container("nodes", LoroTree::new())

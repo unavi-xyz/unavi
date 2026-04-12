@@ -24,6 +24,7 @@ pub mod identity;
 mod quota;
 pub mod record;
 pub mod signed_bytes;
+pub mod surg;
 mod sync;
 mod tag;
 

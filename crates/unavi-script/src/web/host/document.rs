@@ -72,18 +72,16 @@ pub fn register(obj: &Object) {
             with_script(id, |state| {
                 let (registry, doc_ref, doc_entity) = {
                     let entry = state.docs.get(&rep)?;
-                    (Arc::clone(&entry.registry), entry.doc_ref(), entry.doc_entity)
+                    (
+                        Arc::clone(&entry.registry),
+                        entry.doc_ref(),
+                        entry.doc_entity,
+                    )
                 };
                 let inner =
                     core_ops::document::create_node(&registry, doc_ref, &mut state.command_queue);
                 let new_rep = state.alloc();
-                state.nodes.insert(
-                    new_rep,
-                    NodeEntry {
-                        inner,
-                        doc_entity,
-                    },
-                );
+                state.nodes.insert(new_rep, NodeEntry { inner, doc_entity });
                 Some(new_rep)
             })
             .flatten()
@@ -99,18 +97,18 @@ pub fn register(obj: &Object) {
             with_script(id, |state| {
                 let (registry, doc_ref, doc_entity) = {
                     let entry = state.docs.get(&rep)?;
-                    (Arc::clone(&entry.registry), entry.doc_ref(), entry.doc_entity)
+                    (
+                        Arc::clone(&entry.registry),
+                        entry.doc_ref(),
+                        entry.doc_entity,
+                    )
                 };
                 let inner =
                     core_ops::document::create_mesh(&registry, doc_ref, &mut state.command_queue);
                 let new_rep = state.alloc();
-                state.meshes.insert(
-                    new_rep,
-                    MeshEntry {
-                        inner,
-                        doc_entity,
-                    },
-                );
+                state
+                    .meshes
+                    .insert(new_rep, MeshEntry { inner, doc_entity });
                 Some(new_rep)
             })
             .flatten()
@@ -126,7 +124,11 @@ pub fn register(obj: &Object) {
             with_script(id, |state| {
                 let (registry, doc_ref, doc_entity) = {
                     let entry = state.docs.get(&rep)?;
-                    (Arc::clone(&entry.registry), entry.doc_ref(), entry.doc_entity)
+                    (
+                        Arc::clone(&entry.registry),
+                        entry.doc_ref(),
+                        entry.doc_entity,
+                    )
                 };
                 let inner = core_ops::document::create_material(
                     &registry,
@@ -134,13 +136,7 @@ pub fn register(obj: &Object) {
                     &mut state.command_queue,
                 );
                 let new_rep = state.alloc();
-                state.mats.insert(
-                    new_rep,
-                    MatEntry {
-                        inner,
-                        doc_entity,
-                    },
-                );
+                state.mats.insert(new_rep, MatEntry { inner, doc_entity });
                 Some(new_rep)
             })
             .flatten()

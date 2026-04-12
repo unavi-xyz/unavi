@@ -1,7 +1,6 @@
-//! Restriction and authorization helpers.
+use crate::schema::{Action, Field};
 
 use super::ChangeType;
-use crate::Field;
 
 /// Unwrap Restricted and Optional wrappers to get the inner
 /// field type.
@@ -28,7 +27,7 @@ pub const fn change_type_name(ct: ChangeType) -> &'static str {
 pub fn find_restrictions_for_path<'a>(
     field: &'a Field,
     path: &str,
-) -> Vec<(&'a Vec<crate::Action>, &'a Field)> {
+) -> Vec<(&'a Vec<Action>, &'a Field)> {
     let mut restrictions = Vec::new();
     // Strip container name prefix (e.g., "acl.manage" -> ".manage").
     let relative_path = path.find('.').map_or("", |dot_pos| &path[dot_pos..]);
@@ -39,7 +38,7 @@ pub fn find_restrictions_for_path<'a>(
 fn find_restrictions_recursive<'a>(
     field: &'a Field,
     remaining_path: &str,
-    out: &mut Vec<(&'a Vec<crate::Action>, &'a Field)>,
+    out: &mut Vec<(&'a Vec<Action>, &'a Field)>,
 ) {
     match field {
         Field::Restricted { actions, value } => {
@@ -68,8 +67,9 @@ fn find_restrictions_recursive<'a>(
 mod tests {
     use std::collections::BTreeMap;
 
+    use crate::schema::{Can, Who};
+
     use super::*;
-    use crate::{Action, Can, Field, Who};
 
     #[test]
     fn unwrap_plain_field() {

@@ -2,20 +2,7 @@
 //!
 //! This crate provides schema types and validation for WDS records,
 //! including both type validation and Restricted field authorization.
-//!
-//! # Overview
-//!
-//! - [`Schema`] - Defines the structure and validation rules for a container.
-//! - [`Field`] - Type definitions (Bool, String, List, Map, Struct, etc.).
-//! - [`Validator`] - Document-level validation with Restricted field checking.
 
-mod schema;
-mod validate;
-mod validator;
-
-pub use schema::{Action, Can, Field, Schema, Who};
-pub use validate::{
-    ChangeType, ValidationError, change_type_name, find_restrictions_for_path, unwrap_restricted,
-    validate_container_diff, validate_value,
-};
-pub use validator::Validator;
+pub mod schema;
+#[cfg(feature = "validation")]
+pub mod validate;

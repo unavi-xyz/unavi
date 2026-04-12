@@ -4,8 +4,11 @@ use loro::LoroDoc;
 use rstest::rstest;
 use rusqlite::{OptionalExtension, params};
 use tracing_test::traced_test;
-use wds::{record::envelope::Envelope, signed_bytes::Signable};
-use wired_schemas::surg::{acl::Acl, record::Record};
+use wds::{
+    record::envelope::Envelope,
+    signed_bytes::Signable,
+    surg::{acl::Acl, record::Record},
+};
 
 use crate::common::{DataStoreCtx, assert_contains, ctx};
 

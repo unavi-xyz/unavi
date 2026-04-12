@@ -10,20 +10,7 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace   = true
-blake3.workspace   = true
-bytes.workspace    = true
-loro.workspace     = true
-loro-surgeon.path  = "../loro-surgeon"
-postcard.workspace = true
-rand.workspace     = true
-ron.workspace      = true
-serde              = { features = ["derive"], workspace = true }
-smol_str.workspace = true
-time.workspace     = true
-wds-schema.path    = "../wds-schema"
-wired-records      = { features = ["loro"], path = "../wired-records" }
-xdid.workspace     = true
-
-[dev-dependencies]
-rstest = "0.26.1"
+blake3.workspace = true
+bytes.workspace  = true
+ron.workspace    = true
+wds-schema       = { default-features = false, path = "../wds-schema" }

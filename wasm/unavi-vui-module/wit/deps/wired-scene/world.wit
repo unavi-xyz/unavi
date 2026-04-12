@@ -15,6 +15,11 @@ interface context {
   // Get another document by ID. Returns none if the document does not exist
   // or this script lacks read permission.
   get-document: func(id: document-id) -> option<document>;
+  // Create a new HSD document owned by this script's document.
+  // Requires the create-document permission. Returns an error on failure.
+  create-document: func() -> result<document, string>;
+  // Destroy a previously created document. No-op if not found or no write access.
+  remove-document: func(id: document-id);
 }
 
 interface types {
@@ -41,6 +46,11 @@ interface types {
 
     sync: func() -> bool;
     set-sync: func(value: bool);
+
+    // Whether this document is publicly readable on the network.
+    public: func() -> bool;
+    // Mark this document public or private. Syncs to the WDS ACL.
+    set-public: func(value: bool);
   }
 
   resource node {

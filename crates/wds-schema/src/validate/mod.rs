@@ -4,13 +4,10 @@
 //! For document-level validation with Restricted field authorization,
 //! use [`crate::Validator`].
 
-mod diff;
-mod restriction;
-mod value;
-
-pub use diff::validate_container_diff;
-pub use restriction::{change_type_name, find_restrictions_for_path, unwrap_restricted};
-pub use value::validate_value;
+pub mod diff;
+pub mod restriction;
+pub mod validator;
+pub mod value;
 
 use smol_str::SmolStr;
 use thiserror::Error;

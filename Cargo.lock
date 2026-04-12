@@ -14100,8 +14100,6 @@ dependencies = [
 name = "unavi-vui-inventory"
 version = "0.0.16"
 dependencies = [
- "unavi-shapes",
- "unavi-vui-module",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -14120,11 +14118,8 @@ dependencies = [
 name = "unavi-vui-nav"
 version = "0.0.16"
 dependencies = [
- "blake3",
- "unavi-shapes",
- "unavi-vui-module",
  "wired-prelude",
- "wired-records",
+ "wired-schemas",
  "wit-bindgen 0.55.0",
 ]
 
@@ -15149,6 +15144,7 @@ dependencies = [
  "irpc-iroh",
  "jose-jwk",
  "loro",
+ "loro-surgeon",
  "n0-error",
  "n0-future",
  "p256",
@@ -16355,21 +16351,10 @@ dependencies = [
 name = "wired-schemas"
 version = "0.0.16"
 dependencies = [
- "anyhow",
  "blake3",
  "bytes 1.11.1",
- "loro",
- "loro-surgeon",
- "postcard",
- "rand 0.9.2",
  "ron",
- "rstest",
- "serde",
- "smol_str 0.3.6",
- "time",
  "wds-schema",
- "wired-records",
- "xdid",
 ]
 
 [[package]]

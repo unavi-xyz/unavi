@@ -1,12 +1,11 @@
-//! Diff-level validation for Loro container changes.
-
 use loro::{
     Container, ValueOrContainer,
     event::{Diff, ListDiffItem, MapDelta, TreeDiff},
 };
 
+use crate::schema::{Field, Schema};
+
 use super::{ValidationError, restriction::unwrap_restricted, value::validate_value};
-use crate::{Field, Schema};
 
 /// Validate a container diff against its schema.
 pub fn validate_container_diff(
@@ -132,7 +131,6 @@ mod tests {
     use loro::{Frontiers, LoroDoc, LoroTree, LoroValue};
 
     use super::*;
-    use crate::{Field, Schema};
 
     fn make_schema(layout: Field) -> Schema {
         let ron_str = format!(

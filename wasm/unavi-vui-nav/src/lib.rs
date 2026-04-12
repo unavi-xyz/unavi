@@ -1,6 +1,7 @@
-use std::cell::RefCell;
+use std::{cell::RefCell, fmt::Write};
 
 use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
+use wired_schemas::SCHEMA_BEACON;
 
 use crate::{
     unavi::{
@@ -9,12 +10,16 @@ use crate::{
     },
     wired::{
         scene::{
-            context::self_document,
+            context::{create_document, remove_document, self_document},
             types::{
-                Collider, ColliderCylinder, Material, Mesh, Node, PrimitiveTopology, RigidBodyKind,
+                Collider, ColliderCylinder, Document, Material, Mesh, Node, PrimitiveTopology,
+                RigidBodyKind,
             },
         },
-        wds::{context::get_wds, types::QueryFuture},
+        wds::{
+            context::get_wds,
+            types::{QueryFilter, QueryFuture},
+        },
     },
 };
 
@@ -42,13 +47,14 @@ const X_LIP_X: f32 = TABLE_W * 0.5 - LIP_T * 0.5;
 const Z_LIP_Z: f32 = TABLE_D * 0.5 - LIP_T * 0.5;
 
 struct Script {
-    root: Node,
-    ring: Node,
-    _nodes: Vec<Node>,
     _icon_mesh: Mesh,
-    module: VuiModule,
+    _nodes: Vec<Node>,
     beacon_query: RefCell<Option<QueryFuture>>,
+    beacons: RefCell<Vec<Document>>,
     color_mat: Material,
+    module: VuiModule,
+    ring: Node,
+    root: Node,
 }
 
 impl GuestScript for Script {
@@ -108,13 +114,14 @@ impl GuestScript for Script {
         let module = VuiModule::new(NAME, &icon_mesh);
 
         Self {
-            root,
-            ring,
-            _nodes: nodes,
             _icon_mesh: icon_mesh,
-            module,
+            _nodes: nodes,
             beacon_query: RefCell::new(None),
+            beacons: RefCell::default(),
             color_mat,
+            module,
+            ring,
+            root,
         }
     }
 
@@ -133,13 +140,20 @@ impl GuestScript for Script {
                     // TODO fix ring position, grab, add phys joint
                     // self.ring.set_scale(Vec3::ONE);
 
-                    let fut = get_wds().query(None);
+                    let fut = get_wds().query(Some(&QueryFilter {
+                        creator: None,
+                        schemas: Some(vec![SCHEMA_BEACON.hash.as_bytes().to_vec()]),
+                    }));
                     *self.beacon_query.borrow_mut() = Some(fut);
                 }
                 ModuleEvent::Deactivate => {
                     self.root.set_scale(Vec3::ZERO);
                     self.ring.set_scale(Vec3::ZERO);
                     *self.beacon_query.borrow_mut() = None;
+
+                    for doc in self.beacons.borrow().as_slice() {
+                        remove_document(&doc.id());
+                    }
                 }
                 ModuleEvent::SetColor(color) => {
                     self.color_mat.set_base_color(color);
@@ -155,8 +169,37 @@ impl GuestScript for Script {
             match result {
                 Ok(ids) => {
                     for id in ids {
-                        let id = blake3::Hash::from_slice(&id).expect("valid hash");
-                        println!("beacon record: {id}");
+                        let id_hex =
+                            id.iter()
+                                .fold(String::with_capacity(id.len() * 2), |mut acc, b| {
+                                    write!(&mut acc, "{b:02x}").expect("write byte");
+                                    acc
+                                });
+                        println!("found beacon: {id_hex}");
+
+                        let Ok(doc) =
+                            create_document().map_err(|err| eprintln!("create doc error: {err}"))
+                        else {
+                            continue;
+                        };
+
+                        let beacon_size = 0.1; // TODO scale from player count?
+
+                        let cuboid = Cuboid::new(beacon_size, beacon_size, beacon_size);
+
+                        let node = doc.create_node();
+                        node.set_mesh(Some(&cuboid.mesh()));
+                        node.set_collider(Some(&cuboid.collider()));
+                        node.set_rigid_body(Some(RigidBodyKind::Dynamic));
+
+                        let mut pos = self.root.translation();
+                        pos.x -= BASIN_X;
+                        pos.y += BASIN_Y + (beacon_size * 2.0);
+                        node.set_translation(pos);
+
+                        node.set_name(Some(&format!("Beacon {id_hex}")));
+
+                        self.beacons.borrow_mut().push(doc);
                     }
 
                     remove_query = true;
@@ -174,11 +217,7 @@ impl GuestScript for Script {
     fn drop(&self) {}
 }
 
-fn make_filter_table(
-    doc: &crate::wired::scene::types::Document,
-    mat: &crate::wired::scene::types::Material,
-    nodes: &mut Vec<Node>,
-) -> Node {
+fn make_filter_table(doc: &Document, mat: &Material, nodes: &mut Vec<Node>) -> Node {
     let group = doc.create_node();
 
     let base = doc.create_node();
@@ -227,7 +266,7 @@ fn make_filter_table(
     group
 }
 
-fn make_basin(doc: &crate::wired::scene::types::Document, nodes: &mut Vec<Node>) -> Node {
+fn make_basin(doc: &Document, nodes: &mut Vec<Node>) -> Node {
     let group = doc.create_node();
 
     let mat = doc.create_material();

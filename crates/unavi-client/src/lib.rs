@@ -143,10 +143,9 @@ impl Plugin for UnaviPlugin {
             network: self.debug.contains(DebugFlags::NETWORK),
         })
         .insert_resource(GlobalAmbientLight {
-            brightness: lux::HALLWAY,
+            brightness: lux::OVERCAST_DAY,
             ..default()
         })
-        .insert_resource(ClearColor(Color::BLACK))
         .init_resource::<grab::GrabbedObjects>()
         .init_resource::<LocalGrabbedObjects>()
         .add_observer(grab::handle_squeeze_down)

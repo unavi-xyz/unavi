@@ -1,3 +1,8 @@
+//! Compiles HSD mesh data into Bevy `Mesh` assets.
+//!
+//! Each vertex attribute is a separate blob; all blobs must arrive before the
+//! mesh can be assembled. Inline geometry (injected by scripts) bypasses blobs.
+
 use bevy::{
     asset::RenderAssetUsages,
     mesh::{Indices, MeshVertexAttribute, PrimitiveTopology, VertexAttributeValues},
@@ -14,9 +19,11 @@ use crate::{
     data::HsdMesh,
 };
 
+/// Marks a mesh entity as having a ready `Handle<Mesh>`.
 #[derive(Component)]
 pub struct CompiledMesh(pub Handle<Mesh>);
 
+/// Whether geometry comes from HSD blob data or was injected inline by a script.
 pub enum MeshGeometrySource {
     Inline,
     Hsd(Box<HsdMesh>),
@@ -44,6 +51,8 @@ pub struct HsdMeshSpawned {
 #[derive(Component)]
 pub struct MeshAttrName(pub SmolStr);
 
+/// Topology and blob entity references for each attribute; compilation waits
+/// until all deps have `BlobResponse`.
 #[derive(Component)]
 #[require(BlobDeps)]
 pub struct MeshParams {

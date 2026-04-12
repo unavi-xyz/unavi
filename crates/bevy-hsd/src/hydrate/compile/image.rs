@@ -1,3 +1,9 @@
+//! Compiles HSD image data into Bevy `Image` assets.
+//!
+//! Raw bytes are fetched asynchronously via the blob-dep system. Once compiled,
+//! `on_image_compiled` pushes the handle into any already-compiled materials
+//! that reference this image.
+
 use bevy::{
     asset::RenderAssetUsages,
     image::{ImageAddressMode, ImageFilterMode, ImageSampler, ImageSamplerDescriptor},
@@ -15,9 +21,11 @@ use crate::{
     hydrate::compile::material::{CompiledMaterial, MaterialParams},
 };
 
+/// Marks an image entity as having a ready `Handle<Image>`.
 #[derive(Component)]
 pub struct CompiledImage(pub Handle<Image>);
 
+/// Stable HSD image key kept on the entity for lookup by materials.
 #[derive(Component, Clone, Debug)]
 pub struct ImageId(pub SmolStr);
 
@@ -34,6 +42,8 @@ pub struct HsdImageDespawned {
     pub id: SmolStr,
 }
 
+/// Sampler config and a reference to the blob entity carrying the raw bytes.
+/// `srgb: None` defaults to sRGB; set `Some(false)` for linear textures.
 #[derive(Component, Default, Debug)]
 #[require(BlobDeps)]
 pub struct ImageParams {

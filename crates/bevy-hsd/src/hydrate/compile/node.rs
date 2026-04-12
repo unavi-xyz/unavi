@@ -1,3 +1,10 @@
+//! Manages HSD tree nodes as Bevy entities.
+//!
+//! Handles the parent-child hierarchy, transforms, mesh/material assignment,
+//! physics bodies, and script attachment. Mesh and material refs are resolved
+//! lazily: either when the ref is set (asset already compiled) or when the
+//! asset finishes compiling (ref already set).
+
 use avian3d::prelude::{
     AngularDamping, AngularInertia, Collider, ComputedAngularInertia, LinearDamping, RigidBody,
     Sensor,
@@ -17,9 +24,11 @@ use crate::{
 
 use super::collider::insert_collider;
 
+/// HSD mesh ID on a node entity; resolved to `Mesh3d` once the mesh compiles.
 #[derive(Component)]
 pub struct MeshRef(pub SmolStr);
 
+/// HSD material ID on a node entity; resolved to `MeshMaterial3d` once the material compiles.
 #[derive(Component)]
 pub struct MaterialRef(pub SmolStr);
 
@@ -633,6 +642,8 @@ fn is_transform_hierarchy_degenerate(
     false
 }
 
+/// Removes Avian colliders/bodies when any ancestor has a near-zero scale
+/// (which causes physics solver panics), and restores them when valid again.
 pub fn guard_physics_scale(
     query: Query<(
         Entity,

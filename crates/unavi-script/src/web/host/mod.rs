@@ -82,6 +82,7 @@ pub(super) fn new_script_state(
     event_registry: EventRegistry,
     input_registry: InputRegistry,
     wds_actor: Option<::wds::actor::Actor>,
+    can_create_document: bool,
 ) -> WebScriptState {
     WebScriptState {
         registry,
@@ -93,6 +94,7 @@ pub(super) fn new_script_state(
         event_registry,
         input_registry,
         wds_actor,
+        can_create_document,
         next_rep: 0,
         nodes: HashMap::new(),
         docs: HashMap::new(),

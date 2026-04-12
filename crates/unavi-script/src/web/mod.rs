@@ -10,6 +10,7 @@ use bevy_wds::LocalActor;
 use crate::asset::Wasm;
 use crate::event_registry::{self, EventRegistry};
 use crate::input_registry::InputRegistry;
+use crate::permissions::{ApiName, ScriptPermissions};
 use crate::util::gen_id;
 
 mod host;
@@ -69,7 +70,7 @@ fn spawn_self_node(registry: &SceneRegistryInner, self_node_id: &smol_str::SmolS
 fn poll_web_scripts(
     mut commands: Commands,
     wasm_assets: Res<Assets<Wasm>>,
-    pending: Query<(Entity, &WebPendingScript, Option<&Name>)>,
+    pending: Query<(Entity, &WebPendingScript, Option<&Name>, Option<&ScriptPermissions>)>,
     mut counter: ResMut<ScriptIdCounter>,
     event_reg: Res<EventRegistry>,
     input_reg: Res<InputRegistry>,
@@ -77,7 +78,7 @@ fn poll_web_scripts(
 ) {
     let wds_actor = actors.single().map(|a| a.0.clone()).ok();
 
-    for (entity, pending, name) in &pending {
+    for (entity, pending, name, perms) in &pending {
         let Some(wasm) = wasm_assets.get(&pending.0) else {
             continue;
         };
@@ -104,6 +105,10 @@ fn poll_web_scripts(
 
         let doc_id = blake3::hash(&script_id.to_le_bytes());
 
+        let can_create_document = perms
+            .map(|p| p.api.contains(&ApiName::CreateDocument))
+            .unwrap_or(false);
+
         host::register_script(
             script_id,
             host::new_script_state(
@@ -115,6 +120,7 @@ fn poll_web_scripts(
                 event_reg.clone(),
                 input_reg.clone(),
                 wds_actor.clone(),
+                can_create_document,
             ),
         );
 

@@ -19,7 +19,7 @@ impl BlobSet {
     }
 }
 
-const GROUND_SIZE: f32 = 100.0;
+const GROUND_SIZE: f32 = 40.0;
 
 // TODO load texture from bevy asset, dont include bytes
 const DEV_WHITE_RAW: &[u8] = include_bytes!("../../assets/image/dev-white.png");

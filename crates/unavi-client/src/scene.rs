@@ -21,9 +21,12 @@ pub fn spawn_agent(
 
 pub fn spawn_scene(mut commands: Commands) {
     commands.spawn((
-        #[cfg(not(target_family = "wasm"))]
         CascadeShadowConfigBuilder {
+            #[cfg(not(all(target_family = "wasm", not(feature = "webgpu"))))]
             first_cascade_far_bound: 8.0,
+            // WebGL onl gets 1 cascade, so push it further back.
+            #[cfg(all(target_family = "wasm", not(feature = "webgpu")))]
+            first_cascade_far_bound: 20.0,
             maximum_distance: 50.0,
             minimum_distance: 0.1,
             num_cascades: 3,
@@ -31,7 +34,7 @@ pub fn spawn_scene(mut commands: Commands) {
         }
         .build(),
         DirectionalLight {
-            illuminance: lux::DIRECT_SUNLIGHT / 2.0,
+            illuminance: lux::DIRECT_SUNLIGHT,
             shadows_enabled: true,
             ..Default::default()
         },

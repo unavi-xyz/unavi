@@ -62,6 +62,7 @@ pub struct DocHandle {
 }
 
 /// Index of all live documents, keyed by their blake3 content ID.
+///
 /// Scripts use this to cross-reference foreign documents via `get_document()`.
 /// Firewall checks (`foreign_perms`) are enforced before a handle is returned,
 /// so entries here do not imply unconditional access.

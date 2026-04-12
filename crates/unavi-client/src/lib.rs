@@ -149,12 +149,14 @@ impl Plugin for UnaviPlugin {
         .init_resource::<networking::thread::space::object::outbound::LocalGrabbedObjects>()
         .add_observer(grab::handle_squeeze_down)
         .add_observer(grab::handle_squeeze_up)
+        .add_observer(camera::on_apply_camera_effects)
         .add_systems(
             Startup,
             (
                 grab::setup_grabbed_hooks,
                 icon::set_window_icon,
                 scene::spawn_scene,
+                #[cfg(not(target_family = "wasm"))] // TODO fix web scripting
                 system_scripts::spawn_system_scripts,
             ),
         )

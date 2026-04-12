@@ -128,9 +128,9 @@ pub(crate) fn handle_hsd_mesh_geometry_set(
     let Some(ent) = ent else { return };
     commands
         .entity(ent)
-        .remove::<BlobDepsLoaded>()
-        .remove::<BlobDeps>()
-        .remove::<MeshParams>();
+        .try_remove::<BlobDepsLoaded>()
+        .try_remove::<BlobDeps>()
+        .try_remove::<MeshParams>();
     match &ev.source {
         MeshGeometrySource::Hsd(hsd_mesh) => {
             setup_hsd_mesh_blobs(ent, hsd_mesh, &mut commands);

@@ -462,7 +462,7 @@ pub(crate) fn handle_hsd_material_name_set(
     if let Some(ref name) = ev.name {
         entity_cmd.insert(Name::new(name.clone()));
     } else {
-        entity_cmd.remove::<Name>();
+        entity_cmd.try_remove::<Name>();
     }
 }
 

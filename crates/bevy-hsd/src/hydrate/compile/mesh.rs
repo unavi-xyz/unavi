@@ -9,10 +9,13 @@ use bytes::Bytes;
 use smol_str::SmolStr;
 
 use crate::{
-    CompiledMesh, HsdChild,
+    HsdChild,
     cache::{MeshState, SceneRegistry},
     data::HsdMesh,
 };
+
+#[derive(Component)]
+pub struct CompiledMesh(pub Handle<Mesh>);
 
 pub enum MeshGeometrySource {
     Inline,

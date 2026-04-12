@@ -6,15 +6,22 @@ use bevy::prelude::*;
 use smol_str::SmolStr;
 
 use crate::{
-    CompiledMaterial, CompiledMesh, HsdChild, HsdNodePhysics, HsdScripts, MaterialRef, MeshRef,
-    NodeId,
+    HsdChild, HsdNodePhysics, HsdScripts, NodeId,
     cache::SceneRegistry,
     data::{HsdCollider, HsdNodeData, HsdRigidBody},
-    hydrate::compile::collider::ColliderParams,
-    hydrate::events::NodeRef,
+    hydrate::{
+        compile::{collider::ColliderParams, material::CompiledMaterial, mesh::CompiledMesh},
+        events::NodeRef,
+    },
 };
 
 use super::collider::insert_collider;
+
+#[derive(Component)]
+pub struct MeshRef(pub SmolStr);
+
+#[derive(Component)]
+pub struct MaterialRef(pub SmolStr);
 
 #[derive(Event)]
 pub struct HsdNodeColliderSet {

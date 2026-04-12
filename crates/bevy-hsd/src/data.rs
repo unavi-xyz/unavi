@@ -8,6 +8,28 @@ use smol_str::SmolStr;
 use wired_records::HydratedHash;
 
 #[derive(Debug, Clone, Default, Hydrate, Reconcile)]
+pub struct HsdImage {
+    #[loro(default)]
+    pub address_mode_u: Option<i64>,
+    #[loro(default)]
+    pub address_mode_v: Option<i64>,
+    #[loro(default)]
+    pub address_mode_w: Option<i64>,
+    #[loro(default)]
+    pub data: Option<HydratedHash>,
+    #[loro(default)]
+    pub mag_filter: Option<i64>,
+    #[loro(default)]
+    pub min_filter: Option<i64>,
+    #[loro(default)]
+    pub mipmap_filter: Option<i64>,
+    #[loro(default)]
+    pub name: Option<SmolStr>,
+    #[loro(default)]
+    pub srgb: Option<bool>,
+}
+
+#[derive(Debug, Clone, Default, Hydrate, Reconcile)]
 pub struct HsdMaterial {
     #[loro(default)]
     pub alpha_cutoff: Option<f64>,
@@ -16,23 +38,23 @@ pub struct HsdMaterial {
     #[loro(default)]
     pub base_color: Option<Vec<f64>>,
     #[loro(default)]
-    pub base_color_texture: Option<HydratedHash>,
+    pub base_color_texture: Option<SmolStr>,
     #[loro(default)]
     pub double_sided: Option<bool>,
     #[loro(default)]
     pub emissive: Option<Vec<f64>>,
     #[loro(default)]
-    pub emissive_texture: Option<HydratedHash>,
+    pub emissive_texture: Option<SmolStr>,
     #[loro(default)]
     pub metallic: Option<f64>,
     #[loro(default)]
-    pub metallic_roughness_texture: Option<HydratedHash>,
+    pub metallic_roughness_texture: Option<SmolStr>,
     #[loro(default)]
     pub name: Option<SmolStr>,
     #[loro(default)]
-    pub normal_texture: Option<HydratedHash>,
+    pub normal_texture: Option<SmolStr>,
     #[loro(default)]
-    pub occlusion_texture: Option<HydratedHash>,
+    pub occlusion_texture: Option<SmolStr>,
     #[loro(default)]
     pub roughness: Option<f64>,
     #[loro(default)]

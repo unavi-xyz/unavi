@@ -29,14 +29,26 @@ const DEV_WHITE_RAW: &[u8] = include_bytes!("../../assets/image/dev-white.png");
 pub fn default_space(hsd: &LoroMap) -> Result<BlobSet> {
     let mut blobs = BlobSet::default();
 
+    let key_ground = "ground";
+    let key_dyncube = "dyncube";
+    let key_ground_tex = "ground_tex";
+
+    let images = hsd.get_or_create_container("images", LoroMap::new())?;
+
+    // Ground texture image
+    let ground_texture_hash = blobs.add_blob(DEV_WHITE_RAW.to_vec());
+    let img0 = images.get_or_create_container(key_ground_tex, LoroMap::new())?;
+    img0.insert("address_mode_u", 0i64)?;
+    img0.insert("address_mode_v", 0i64)?;
+    img0.insert("address_mode_w", 0i64)?;
+    img0.insert("data", ground_texture_hash.as_bytes().to_vec())?;
+    img0.insert("mag_filter", 1i64)?;
+    img0.insert("min_filter", 1i64)?;
+    img0.insert("srgb", true)?;
+
     let materials = hsd.get_or_create_container("materials", LoroMap::new())?;
 
     // Ground material
-    let ground_texture_hash = blobs.add_blob(DEV_WHITE_RAW.to_vec());
-
-    let key_ground = "ground";
-    let key_dyncube = "dyncube";
-
     let mat0 = materials.get_or_create_container(key_ground, LoroMap::new())?;
     mat0.insert("name", "Ground Material")?;
     mat0.insert_container("base_color", {
@@ -47,10 +59,7 @@ pub fn default_space(hsd: &LoroMap) -> Result<BlobSet> {
         l
     })?;
     mat0.insert("roughness", 0.9)?;
-    mat0.insert(
-        "base_color_texture",
-        ground_texture_hash.as_bytes().to_vec(),
-    )?;
+    mat0.insert("base_color_texture", key_ground_tex)?;
 
     let meshes = hsd.get_or_create_container("meshes", LoroMap::new())?;
 

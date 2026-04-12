@@ -13,6 +13,15 @@ pub enum NodeRef {
 
 #[derive(Debug)]
 pub enum RawHsdChange {
+    ImageAdded {
+        id: SmolStr,
+    },
+    ImageChanged {
+        id: SmolStr,
+    },
+    ImageRemoved {
+        id: SmolStr,
+    },
     MaterialAdded {
         id: SmolStr,
     },

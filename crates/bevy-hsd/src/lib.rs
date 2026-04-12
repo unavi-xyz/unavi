@@ -14,14 +14,24 @@ pub struct HsdPlugin;
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(hydrate::compile::collider::on_collider_blobs_loaded)
+            .add_observer(hydrate::compile::image::handle_hsd_image_despawned)
+            .add_observer(hydrate::compile::image::handle_hsd_image_spawned)
+            .add_observer(hydrate::compile::image::on_image_blobs_loaded)
+            .add_observer(hydrate::compile::image::on_image_compiled)
             .add_observer(hydrate::compile::material::handle_hsd_material_alpha_cutoff_set)
             .add_observer(hydrate::compile::material::handle_hsd_material_alpha_mode_set)
             .add_observer(hydrate::compile::material::handle_hsd_material_base_color_set)
             .add_observer(hydrate::compile::material::handle_hsd_material_base_color_texture_set)
             .add_observer(hydrate::compile::material::handle_hsd_material_despawned)
             .add_observer(hydrate::compile::material::handle_hsd_material_double_sided_set)
+            .add_observer(hydrate::compile::material::handle_hsd_material_emissive_texture_set)
+            .add_observer(
+                hydrate::compile::material::handle_hsd_material_metallic_roughness_texture_set,
+            )
             .add_observer(hydrate::compile::material::handle_hsd_material_metallic_set)
             .add_observer(hydrate::compile::material::handle_hsd_material_name_set)
+            .add_observer(hydrate::compile::material::handle_hsd_material_normal_texture_set)
+            .add_observer(hydrate::compile::material::handle_hsd_material_occlusion_texture_set)
             .add_observer(hydrate::compile::material::handle_hsd_material_roughness_set)
             .add_observer(hydrate::compile::material::handle_hsd_material_spawned)
             .add_observer(hydrate::compile::material::handle_hsd_material_unlit_set)
@@ -86,6 +96,11 @@ pub struct HsdChild {
     pub doc: Entity,
 }
 
+pub use hydrate::compile::image::{CompiledImage, ImageId};
+pub use hydrate::compile::material::{CompiledMaterial, MaterialParams};
+pub use hydrate::compile::mesh::CompiledMesh;
+pub use hydrate::compile::node::{MaterialRef, MeshRef};
+
 #[derive(Component, Clone, Debug)]
 pub struct NodeId(pub SmolStr);
 
@@ -103,18 +118,6 @@ pub struct HsdNodePhysics {
 /// WDS record ID for an HSD document.
 #[derive(Component, Clone, Copy)]
 pub struct HsdRecordId(pub blake3::Hash);
-
-#[derive(Component)]
-pub struct MeshRef(pub SmolStr);
-
-#[derive(Component)]
-pub struct MaterialRef(pub SmolStr);
-
-#[derive(Component)]
-pub struct CompiledMesh(pub Handle<Mesh>);
-
-#[derive(Component)]
-pub struct CompiledMaterial(pub Handle<StandardMaterial>);
 
 /// Keeps the doc subscription alive.
 #[derive(Component)]

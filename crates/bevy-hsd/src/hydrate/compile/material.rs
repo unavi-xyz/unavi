@@ -1,14 +1,11 @@
-use bevy::{
-    asset::RenderAssetUsages,
-    prelude::*,
-    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
-};
-use bevy_wds::{BlobDep, BlobDeps, BlobDepsLoaded, BlobRequest, BlobResponse};
-use blake3::Hash;
-use image::GenericImageView;
+use bevy::prelude::*;
+use bevy_wds::{BlobDeps, BlobDepsLoaded};
 use smol_str::SmolStr;
 
-use crate::{CompiledMaterial, HsdChild, cache::SceneRegistry, data::HsdMaterial};
+use crate::{HsdChild, cache::SceneRegistry, data::HsdMaterial};
+
+#[derive(Component)]
+pub struct CompiledMaterial(pub Handle<StandardMaterial>);
 
 #[derive(Event)]
 pub struct HsdMaterialAlphaCutoffSet {
@@ -35,7 +32,35 @@ pub struct HsdMaterialBaseColorSet {
 pub struct HsdMaterialBaseColorTextureSet {
     pub doc: Entity,
     pub id: SmolStr,
-    pub value: Hash,
+    pub value: SmolStr,
+}
+
+#[derive(Event)]
+pub struct HsdMaterialEmissiveTextureSet {
+    pub doc: Entity,
+    pub id: SmolStr,
+    pub value: SmolStr,
+}
+
+#[derive(Event)]
+pub struct HsdMaterialMetallicRoughnessTextureSet {
+    pub doc: Entity,
+    pub id: SmolStr,
+    pub value: SmolStr,
+}
+
+#[derive(Event)]
+pub struct HsdMaterialNormalTextureSet {
+    pub doc: Entity,
+    pub id: SmolStr,
+    pub value: SmolStr,
+}
+
+#[derive(Event)]
+pub struct HsdMaterialOcclusionTextureSet {
+    pub doc: Entity,
+    pub id: SmolStr,
+    pub value: SmolStr,
 }
 
 #[derive(Event)]
@@ -92,14 +117,15 @@ pub struct MaterialParams {
     pub alpha_cutoff: Option<f32>,
     pub alpha_mode: Option<String>,
     pub base_color: Option<Color>,
-    pub double_sided: Option<bool>,
-    pub metallic: Option<f32>,
-    pub roughness: Option<f32>,
-    pub unlit: Option<bool>,
     pub base_color_texture: Option<Entity>,
+    pub double_sided: Option<bool>,
+    pub emissive_texture: Option<Entity>,
+    pub metallic: Option<f32>,
     pub metallic_roughness_texture: Option<Entity>,
     pub normal_texture: Option<Entity>,
     pub occlusion_texture: Option<Entity>,
+    pub roughness: Option<f32>,
+    pub unlit: Option<bool>,
 }
 
 fn material_params_from_hsd(hsd: &HsdMaterial) -> MaterialParams {
@@ -142,40 +168,13 @@ pub(crate) fn handle_hsd_material_spawned(
         return;
     }
 
-    let mut params = ev
+    let params = ev
         .initial
         .as_ref()
         .map(material_params_from_hsd)
         .unwrap_or_default();
 
     let entity = commands.spawn(HsdChild { doc: ev.doc }).id();
-
-    if let Some(val) = &ev.initial {
-        if let Some(h) = val.base_color_texture.map(|h| h.0) {
-            let blob_ent = commands
-                .spawn((BlobRequest(h), BlobDep { owner: entity }))
-                .id();
-            params.base_color_texture = Some(blob_ent);
-        }
-        if let Some(h) = val.normal_texture.map(|h| h.0) {
-            let blob_ent = commands
-                .spawn((BlobRequest(h), BlobDep { owner: entity }))
-                .id();
-            params.normal_texture = Some(blob_ent);
-        }
-        if let Some(h) = val.metallic_roughness_texture.map(|h| h.0) {
-            let blob_ent = commands
-                .spawn((BlobRequest(h), BlobDep { owner: entity }))
-                .id();
-            params.metallic_roughness_texture = Some(blob_ent);
-        }
-        if let Some(h) = val.occlusion_texture.map(|h| h.0) {
-            let blob_ent = commands
-                .spawn((BlobRequest(h), BlobDep { owner: entity }))
-                .id();
-            params.occlusion_texture = Some(blob_ent);
-        }
-    }
 
     commands.entity(entity).insert(params);
     *inner.entity.lock().expect("entity lock") = Some(entity);
@@ -273,30 +272,113 @@ pub(crate) fn handle_hsd_material_base_color_set(
     }
 }
 
-pub(crate) fn handle_hsd_material_base_color_texture_set(
-    trigger: On<HsdMaterialBaseColorTextureSet>,
-    registries: Query<&SceneRegistry>,
-    mut params: Query<&mut MaterialParams>,
-    mut commands: Commands,
-) {
-    let ev = trigger.event();
-    debug!(id = %ev.id, hash = %ev.value, "material base color texture set");
-    let Ok(registry) = registries.get(ev.doc) else {
-        return;
-    };
-    let ent = registry
+fn get_image_entity(registry: &SceneRegistry, image_id: &SmolStr) -> Option<Entity> {
+    registry
+        .0
+        .images
+        .lock()
+        .expect("images lock")
+        .get(image_id)
+        .and_then(|i| *i.entity.lock().expect("entity lock"))
+}
+
+fn get_mat_entity(registry: &SceneRegistry, mat_id: &SmolStr) -> Option<Entity> {
+    registry
         .0
         .materials
         .lock()
         .expect("materials lock")
-        .get(&ev.id)
-        .and_then(|m| *m.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
-    if let Ok(mut p) = params.get_mut(ent) {
-        let blob_ent = commands
-            .spawn((BlobRequest(ev.value), BlobDep { owner: ent }))
-            .id();
-        p.base_color_texture = Some(blob_ent);
+        .get(mat_id)
+        .and_then(|m| *m.entity.lock().expect("entity lock"))
+}
+
+pub(crate) fn handle_hsd_material_base_color_texture_set(
+    trigger: On<HsdMaterialBaseColorTextureSet>,
+    registries: Query<&SceneRegistry>,
+    mut params: Query<&mut MaterialParams>,
+) {
+    let ev = trigger.event();
+    debug!(id = %ev.id, image = %ev.value, "material base color texture set");
+    let Ok(registry) = registries.get(ev.doc) else {
+        return;
+    };
+    let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
+        return;
+    };
+    if let Ok(mut p) = params.get_mut(mat_ent) {
+        p.base_color_texture = get_image_entity(registry, &ev.value);
+    }
+}
+
+pub(crate) fn handle_hsd_material_emissive_texture_set(
+    trigger: On<HsdMaterialEmissiveTextureSet>,
+    registries: Query<&SceneRegistry>,
+    mut params: Query<&mut MaterialParams>,
+) {
+    let ev = trigger.event();
+    debug!(id = %ev.id, image = %ev.value, "material emissive texture set");
+    let Ok(registry) = registries.get(ev.doc) else {
+        return;
+    };
+    let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
+        return;
+    };
+    if let Ok(mut p) = params.get_mut(mat_ent) {
+        p.emissive_texture = get_image_entity(registry, &ev.value);
+    }
+}
+
+pub(crate) fn handle_hsd_material_metallic_roughness_texture_set(
+    trigger: On<HsdMaterialMetallicRoughnessTextureSet>,
+    registries: Query<&SceneRegistry>,
+    mut params: Query<&mut MaterialParams>,
+) {
+    let ev = trigger.event();
+    debug!(id = %ev.id, image = %ev.value, "material metallic roughness texture set");
+    let Ok(registry) = registries.get(ev.doc) else {
+        return;
+    };
+    let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
+        return;
+    };
+    if let Ok(mut p) = params.get_mut(mat_ent) {
+        p.metallic_roughness_texture = get_image_entity(registry, &ev.value);
+    }
+}
+
+pub(crate) fn handle_hsd_material_normal_texture_set(
+    trigger: On<HsdMaterialNormalTextureSet>,
+    registries: Query<&SceneRegistry>,
+    mut params: Query<&mut MaterialParams>,
+) {
+    let ev = trigger.event();
+    debug!(id = %ev.id, image = %ev.value, "material normal texture set");
+    let Ok(registry) = registries.get(ev.doc) else {
+        return;
+    };
+    let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
+        return;
+    };
+    if let Ok(mut p) = params.get_mut(mat_ent) {
+        p.normal_texture = get_image_entity(registry, &ev.value);
+    }
+}
+
+pub(crate) fn handle_hsd_material_occlusion_texture_set(
+    trigger: On<HsdMaterialOcclusionTextureSet>,
+    registries: Query<&SceneRegistry>,
+    mut params: Query<&mut MaterialParams>,
+) {
+    let ev = trigger.event();
+    debug!(id = %ev.id, image = %ev.value, "material occlusion texture set");
+    let Ok(registry) = registries.get(ev.doc) else {
+        return;
+    };
+    let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
+        return;
+    };
+    if let Ok(mut p) = params.get_mut(mat_ent) {
+        p.occlusion_texture = get_image_entity(registry, &ev.value);
     }
 }
 
@@ -420,13 +502,10 @@ pub(crate) fn handle_hsd_material_roughness_set(
     }
 }
 
-const MAX_TEXTURE_DIMS: u32 = 8192;
-
 fn build_standard_material(
     material: &mut StandardMaterial,
     params: &MaterialParams,
-    blobs: &mut Query<&mut BlobResponse>,
-    images: &mut ResMut<Assets<Image>>,
+    compiled_images: &Query<&super::image::CompiledImage>,
 ) {
     material.base_color = params.base_color.unwrap_or_default();
 
@@ -451,48 +530,34 @@ fn build_standard_material(
     material.perceptual_roughness = params.roughness.unwrap_or(0.5);
     material.unlit = params.unlit.unwrap_or_default();
 
-    if let Some(value) = params.base_color_texture
-        && let Ok(Some(bytes)) = blobs.get_mut(value).map(|mut b| b.0.take())
-        && let Ok(dyn_img) = image::load_from_memory(&bytes)
-    {
-        let (width, height) = dyn_img.dimensions();
-        let rgba = dyn_img.into_rgba8();
-
-        if width > MAX_TEXTURE_DIMS || height > MAX_TEXTURE_DIMS {
-            warn!("texture too large: {width}x{height}");
-            return;
-        }
-
-        let img = Image::new(
-            Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-            TextureDimension::D2,
-            rgba.into_raw(),
-            TextureFormat::Rgba8UnormSrgb,
-            RenderAssetUsages::default(),
-        );
-
-        // TODO load sampler from hsd
-
-        let handle = images.add(img);
-        material.base_color_texture = Some(handle);
-    } else {
-        material.base_color_texture = None;
-    }
-
-    // TODO load other textures
+    material.base_color_texture = params
+        .base_color_texture
+        .and_then(|e| compiled_images.get(e).ok())
+        .map(|ci| ci.0.clone());
+    material.emissive_texture = params
+        .emissive_texture
+        .and_then(|e| compiled_images.get(e).ok())
+        .map(|ci| ci.0.clone());
+    material.metallic_roughness_texture = params
+        .metallic_roughness_texture
+        .and_then(|e| compiled_images.get(e).ok())
+        .map(|ci| ci.0.clone());
+    material.normal_map_texture = params
+        .normal_texture
+        .and_then(|e| compiled_images.get(e).ok())
+        .map(|ci| ci.0.clone());
+    material.occlusion_texture = params
+        .occlusion_texture
+        .and_then(|e| compiled_images.get(e).ok())
+        .map(|ci| ci.0.clone());
 }
 
 pub(crate) fn on_material_blobs_loaded(
     trigger: On<Add, BlobDepsLoaded>,
     mat_params: Query<(&MaterialParams, Option<&CompiledMaterial>)>,
+    compiled_images: Query<&super::image::CompiledImage>,
     mut mat_assets: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
-    mut blobs: Query<&mut BlobResponse>,
-    mut images: ResMut<Assets<Image>>,
 ) {
     let entity = trigger.entity;
     let Ok((params, existing)) = mat_params.get(entity) else {
@@ -500,7 +565,7 @@ pub(crate) fn on_material_blobs_loaded(
     };
 
     let mut material = StandardMaterial::default();
-    build_standard_material(&mut material, params, &mut blobs, &mut images);
+    build_standard_material(&mut material, params, &compiled_images);
 
     debug!("compiled material {entity}");
     if let Some(CompiledMaterial(handle)) = existing {
@@ -523,8 +588,7 @@ pub(crate) fn on_material_blobs_loaded(
 
 pub(crate) fn recompile_changed_materials(
     changed: Query<(&MaterialParams, &CompiledMaterial), Changed<MaterialParams>>,
-    mut blobs: Query<&mut BlobResponse>,
-    mut images: ResMut<Assets<Image>>,
+    compiled_images: Query<&super::image::CompiledImage>,
     mut mat_assets: ResMut<Assets<StandardMaterial>>,
 ) {
     for (params, compiled) in &changed {
@@ -532,6 +596,6 @@ pub(crate) fn recompile_changed_materials(
             continue;
         };
 
-        build_standard_material(material, params, &mut blobs, &mut images);
+        build_standard_material(material, params, &compiled_images);
     }
 }

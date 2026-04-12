@@ -149,6 +149,11 @@ pub struct MeshInner {
     pub sync: AtomicBool,
 }
 
+pub struct ImageInner {
+    pub entity: Mutex<Option<Entity>>,
+    pub id: SmolStr,
+}
+
 #[derive(Clone)]
 pub struct MaterialState {
     pub alpha_cutoff: Option<f32>,
@@ -195,6 +200,7 @@ pub enum SyncOp {
 
 pub struct SceneRegistryInner {
     pub doc_sync: AtomicBool,
+    pub images: Mutex<HashMap<SmolStr, Arc<ImageInner>>>,
     pub materials: Mutex<HashMap<SmolStr, Arc<MaterialInner>>>,
     pub meshes: Mutex<HashMap<SmolStr, Arc<MeshInner>>>,
     pub node_map: Mutex<HashMap<SmolStr, Arc<NodeInner>>>,
@@ -213,6 +219,7 @@ impl Default for SceneRegistryInner {
     fn default() -> Self {
         Self {
             doc_sync: false.into(),
+            images: Mutex::new(HashMap::new()),
             materials: Mutex::new(HashMap::new()),
             meshes: Mutex::new(HashMap::new()),
             node_map: Mutex::new(HashMap::new()),

@@ -127,6 +127,7 @@ pub fn load_scripts(
             input_registry.clone(),
             event_registry.clone(),
             Arc::clone(&registry_map_res.0),
+            perms.api.contains(&ApiName::CreateDocument),
         );
         let state = StoreState::new(wasi_ctx, rt);
 

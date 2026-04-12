@@ -1,15 +1,19 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
+use std::time::Duration;
 
-use bevy::prelude::{Command, Entity};
-use bevy_hsd::{cache::SceneRegistryInner, hydrate::events::ScriptCommandQueue};
+use bevy::prelude::{Command, Entity, World};
+use bevy_hsd::{
+    HsdDoc, HsdRecordId, cache::SceneRegistryInner, hydrate::events::ScriptCommandQueue,
+};
 use loro::LoroDoc;
 use smol_str::SmolStr;
 use tracing::warn;
 use wasmtime::bail;
 use wasmtime_wasi::ResourceTable;
+use wired_schemas::schemas::SCHEMA_HSD;
 
-use crate::firewall::HsdFirewallInner;
+use crate::firewall::{HsdFirewall, HsdFirewallInner};
 
 macro_rules! mesh_attr {
     ($get:ident, $set:ident, $field:ident, $ty:ty) => {
@@ -89,6 +93,7 @@ pub mod bindings {
 pub struct WiredSceneRt {
     pub actor: Option<wds::actor::Actor>,
     pub blobs: Option<wds::Blobs>,
+    pub can_create_document: bool,
     pub doc: Arc<LoroDoc>,
     pub doc_entity: Entity,
     pub doc_id: blake3::Hash,
@@ -102,17 +107,6 @@ pub struct WiredSceneRt {
 impl WiredSceneRt {
     pub(super) fn push_command<C: Command>(&self, cmd: C) {
         self.command_queue.lock().expect("cmd queue lock").push(cmd);
-    }
-
-    pub(super) fn get_doc_write(
-        &self,
-        res: &wasmtime::component::Resource<document::HostDocument>,
-    ) -> wasmtime::Result<(Entity, Arc<SceneRegistryInner>)> {
-        let d = self.table.get(res)?;
-        if !d.can_write {
-            bail!("hsd write permission required")
-        }
-        Ok((d.doc_entity, Arc::clone(&d.registry)))
     }
 
     pub(super) fn get_doc_read(
@@ -182,6 +176,9 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
             id: self.doc_id,
             registry: Arc::clone(&self.registry),
             doc_entity: self.doc_entity,
+            lor_doc: Some(Arc::clone(&self.doc)),
+            entity_slot: None,
+            is_public: false,
             can_read: true,
             can_write: true,
         })?;
@@ -223,9 +220,142 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
             id: foreign_id,
             registry: h.registry,
             doc_entity: h.doc_entity,
+            lor_doc: None,
+            entity_slot: None,
+            is_public: false,
             can_read,
             can_write,
         })?))
+    }
+
+    async fn create_document(
+        &mut self,
+    ) -> wasmtime::Result<Result<wasmtime::component::Resource<document::HostDocument>, String>>
+    {
+        if !self.can_create_document {
+            return Ok(Err("create-document permission required".into()));
+        }
+        let Some(actor) = self.actor.clone() else {
+            return Ok(Err("create-document requires a WDS actor".into()));
+        };
+
+        // Build the new registry and firewall before the async work.
+        let new_registry = SceneRegistryInner::new();
+
+        // Inherit creator's firewall, then grant creator read+write on new doc.
+        let new_firewall_inner = {
+            let (mut read_set, mut write_set) = {
+                let map = self.registry_map.read().expect("registry_map read");
+                map.get(&self.doc_id).map_or_else(Default::default, |h| {
+                    let fw = h.firewall.read().expect("firewall read");
+                    (fw.read.clone(), fw.write.clone())
+                })
+            };
+            read_set.insert(self.doc_id);
+            write_set.insert(self.doc_id);
+            Arc::new(RwLock::new(HsdFirewallInner {
+                read: read_set,
+                write: write_set,
+            }))
+        };
+
+        // Create the WDS record with an empty HSD document.
+        let result = actor
+            .create_record()
+            .add_schema("hsd", &*SCHEMA_HSD, |_doc| Ok(()))
+            .map_err(|e| wasmtime::Error::msg(e.to_string()))?
+            .ttl(Duration::from_hours(24))
+            .send()
+            .await
+            .map_err(|e| wasmtime::Error::msg(format!("create record failed: {e}")))?;
+
+        let record_id = result.id;
+        let lor_doc = Arc::new(result.doc);
+
+        // Entity slot: filled when the spawn command flushes, so that node/mesh
+        // commands queued in the same tick can resolve the real entity.
+        let entity_slot: Arc<Mutex<Option<Entity>>> = Arc::new(Mutex::new(None));
+        let slot_clone = Arc::clone(&entity_slot);
+        let lor_doc_spawn = Arc::clone(&lor_doc);
+        let registry_spawn = Arc::clone(&new_registry);
+        let firewall_spawn = Arc::clone(&new_firewall_inner);
+
+        self.command_queue
+            .lock()
+            .expect("cmd queue lock")
+            .push(move |world: &mut World| {
+                let entity = world
+                    .spawn((
+                        HsdDoc(lor_doc_spawn),
+                        HsdRecordId(record_id),
+                        bevy_hsd::cache::SceneRegistry(registry_spawn),
+                        HsdFirewall(firewall_spawn),
+                    ))
+                    .id();
+                *slot_clone.lock().expect("entity slot lock") = Some(entity);
+            });
+
+        // Register in the global map so other scripts can find this doc.
+        self.registry_map
+            .write()
+            .expect("registry_map write")
+            .insert(
+                record_id,
+                DocHandle {
+                    registry: Arc::clone(&new_registry),
+                    doc_entity: Entity::PLACEHOLDER,
+                    firewall: Arc::clone(&new_firewall_inner),
+                },
+            );
+
+        let res = self.table.push(document::HostDocument {
+            id: record_id,
+            registry: new_registry,
+            doc_entity: Entity::PLACEHOLDER,
+            lor_doc: Some(lor_doc),
+            entity_slot: Some(entity_slot),
+            is_public: false,
+            can_read: true,
+            can_write: true,
+        })?;
+
+        Ok(Ok(res))
+    }
+
+    async fn remove_document(&mut self, id: Vec<u8>) -> wasmtime::Result<()> {
+        let Ok(arr): Result<[u8; 32], _> = id.try_into() else {
+            return Ok(());
+        };
+        let foreign_id = blake3::Hash::from(arr);
+
+        // Only allow removal if the caller has write access or it's their own doc.
+        let can_write = foreign_id == self.doc_id || self.foreign_perms(foreign_id).1;
+        if !can_write {
+            warn!("script cannot remove document {foreign_id}");
+            return Ok(());
+        }
+
+        self.registry_map
+            .write()
+            .expect("registry_map write")
+            .remove(&foreign_id);
+
+        self.command_queue
+            .lock()
+            .expect("cmd queue lock")
+            .push(move |world: &mut World| {
+                // Query by HsdRecordId and despawn the matching entity.
+                let entity = world
+                    .query::<(Entity, &HsdRecordId)>()
+                    .iter(world)
+                    .find(|(_, r)| r.0 == foreign_id)
+                    .map(|(e, _)| e);
+                if let Some(e) = entity {
+                    world.entity_mut(e).despawn();
+                }
+            });
+
+        Ok(())
     }
 }
 

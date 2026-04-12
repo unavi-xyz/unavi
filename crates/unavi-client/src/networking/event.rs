@@ -22,6 +22,11 @@ use crate::networking::{
 #[derive(Resource)]
 pub struct LocalEndpointId(pub EndpointId);
 
+/// Record hashes received in physics gossip for documents not yet spawned locally.
+/// Drained by `fetch_dynamic_docs` in the space plugin.
+#[derive(Default, Resource)]
+pub struct PendingDynamicDocs(pub std::collections::HashSet<blake3::Hash>);
+
 #[derive(Component, Deref)]
 pub struct AgentInboundState(Arc<InboundState>);
 
@@ -44,6 +49,7 @@ pub fn recv_network_event(
     object_targets: Query<(), With<ObjectTransformTarget>>,
     mut object_targets_mut: Query<&mut ObjectTransformTarget>,
     mut pending_remote_actors: Local<Vec<Actor>>,
+    mut pending_docs: ResMut<PendingDynamicDocs>,
 ) {
     if !pending_remote_actors.is_empty()
         && let Ok(mut targets) = sync_targets.single_mut()
@@ -139,10 +145,12 @@ pub fn recv_network_event(
             }
             NetworkEvent::ObjectPoseUpdate { objects, .. } => {
                 for (object_id, state) in objects {
+                    let mut matched = false;
                     for (entity, dyn_id, ..) in dyn_objects.iter() {
                         if dyn_id.0 != object_id {
                             continue;
                         }
+                        matched = true;
 
                         // Only apply remote physics to non-owned objects.
                         if locally_owned.contains(entity) {
@@ -164,6 +172,10 @@ pub fn recv_network_event(
                         } else {
                             commands.entity(entity).insert(new_target);
                         }
+                    }
+                    // Unknown record — queue for lazy WDS fetch.
+                    if !matched {
+                        pending_docs.0.insert(object_id.record);
                     }
                 }
             }

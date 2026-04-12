@@ -28,9 +28,6 @@ pub struct StoreState {
     pub rt: RuntimeData,
 }
 
-// One RuntimeData per running script instance. Each API domain has its own
-// sub-struct with an independent resource table so handles from one domain
-// (e.g. a node handle) cannot be accidentally used in another (e.g. WDS).
 pub struct RuntimeData {
     pub wired_agent: WiredAgentRt,
     pub wired_event: WiredEventRt,
@@ -41,6 +38,7 @@ pub struct RuntimeData {
 
 impl RuntimeData {
     #[must_use]
+    #[expect(clippy::too_many_arguments)]
     pub fn new(
         actor: Option<wds::actor::Actor>,
         blobs: Option<wds::Blobs>,
@@ -54,6 +52,7 @@ impl RuntimeData {
         input_registry: InputRegistry,
         event_registry: EventRegistry,
         registry_map: GlobalRegistryMap,
+        can_create_document: bool,
     ) -> Self {
         Self {
             wired_agent: WiredAgentRt {
@@ -71,6 +70,7 @@ impl RuntimeData {
             wired_scene: WiredSceneRt {
                 actor: actor.clone(),
                 blobs,
+                can_create_document,
                 doc,
                 doc_entity,
                 doc_id,

@@ -16,6 +16,7 @@ pub struct ScriptPermissions {
 #[derive(Clone, Copy, Debug, PartialEq, Hash, Eq)]
 pub enum ApiName {
     Agent,
+    CreateDocument,
     Event,
     Input,
     LocalAgent,
@@ -41,6 +42,7 @@ impl ScriptPermissions {
     #[must_use]
     pub fn system() -> Self {
         let mut perms = Self::default();
+        perms.api.insert(ApiName::CreateDocument);
         perms.api.insert(ApiName::LocalAgent);
         perms.api.insert(ApiName::System);
         perms.api.insert(ApiName::SystemInput);

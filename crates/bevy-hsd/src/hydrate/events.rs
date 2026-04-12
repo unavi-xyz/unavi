@@ -56,7 +56,7 @@ pub enum RawHsdChange {
     },
 }
 
-/// Per-doc queue written by the Loro subscription thread, drained each FixedUpdate.
+/// Per-doc queue written by the Loro subscription thread, drained each `FixedUpdate`.
 #[derive(Component, Clone)]
 pub struct RawChangeQueue(pub Arc<Mutex<Vec<RawHsdChange>>>);
 

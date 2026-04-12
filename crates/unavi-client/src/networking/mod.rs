@@ -4,7 +4,7 @@ use bevy::{prelude::*, time::common_conditions::on_timer};
 
 mod agent_publish;
 mod agent_receive;
-mod event;
+pub mod event;
 mod lifecycle;
 pub mod object_publish;
 mod object_receive;
@@ -28,6 +28,7 @@ impl Plugin for NetworkingPlugin {
         app.insert_resource(nt)
             .insert_resource(TrackedBones::desktop())
             .init_resource::<object_publish::ObjectBaselines>()
+            .init_resource::<event::PendingDynamicDocs>()
             .add_systems(
                 FixedUpdate,
                 (

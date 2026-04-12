@@ -1,5 +1,3 @@
-//! Developer tools plugin.
-
 use bevy::prelude::*;
 
 #[cfg(feature = "devtools-network")]

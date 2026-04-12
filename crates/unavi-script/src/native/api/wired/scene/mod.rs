@@ -61,7 +61,10 @@ pub struct DocHandle {
     pub firewall: Arc<RwLock<HsdFirewallInner>>,
 }
 
-/// Shared map from `doc_id` → `DocHandle`, accessible from script host calls.
+/// Index of all live documents, keyed by their blake3 content ID.
+/// Scripts use this to cross-reference foreign documents via `get_document()`.
+/// Firewall checks (`foreign_perms`) are enforced before a handle is returned,
+/// so entries here do not imply unconditional access.
 pub type GlobalRegistryMap = Arc<RwLock<HashMap<blake3::Hash, DocHandle>>>;
 
 /// Bevy resource wrapping the shared registry map.

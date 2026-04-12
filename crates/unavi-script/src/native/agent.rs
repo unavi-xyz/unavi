@@ -13,6 +13,10 @@ use unavi_avatar::bones::AvatarBones;
 
 use crate::{load::native::LoadedScript, native::runtime::ScriptRuntime, util::gen_id};
 
+// Virtual (non-HSD) scene nodes that mirror avatar bone transforms each frame.
+// Scripts access these through the normal scene API to read bone world positions
+// without any direct Bevy ECS access. The proxy entities are parented to real
+// bone entities so their GlobalTransforms stay in sync automatically.
 pub struct ProxyRegistry {
     pub bone_nodes: Arc<HashMap<BoneName, SmolStr>>,
     pub bone_proxy_ents: Arc<HashMap<BoneName, Entity>>,

@@ -11,6 +11,7 @@ pub struct HostMaterial {
     pub inner: Arc<MaterialInner>,
     pub can_read: bool,
     pub can_write: bool,
+    pub doc_id: blake3::Hash,
 }
 
 impl Clone for HostMaterial {
@@ -19,6 +20,7 @@ impl Clone for HostMaterial {
             inner: Arc::clone(&self.inner),
             can_read: self.can_read,
             can_write: self.can_write,
+            doc_id: self.doc_id,
         }
     }
 }
@@ -64,6 +66,20 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
             .clone())
     }
 
+    async fn set_name(
+        &mut self,
+        self_: Resource<Material>,
+        value: Option<String>,
+    ) -> wasmtime::Result<()> {
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::material::set_name(&inner, doc, value, &mut queue);
+        Ok(())
+    }
+
     async fn alpha_cutoff(&mut self, self_: Resource<Material>) -> wasmtime::Result<f32> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         Ok(inner
@@ -72,6 +88,20 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
             .expect("material state lock")
             .alpha_cutoff
             .unwrap_or(0.5))
+    }
+
+    async fn set_alpha_cutoff(
+        &mut self,
+        self_: Resource<Material>,
+        value: f32,
+    ) -> wasmtime::Result<()> {
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::material::set_alpha_cutoff(&inner, doc, value, &mut queue);
+        Ok(())
     }
 
     async fn alpha_mode(
@@ -102,7 +132,10 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
         self_: Resource<Material>,
         value: Option<AlphaMode>,
     ) -> wasmtime::Result<()> {
-        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
         let mode_str = value.map(|m| match m {
             AlphaMode::Add => "add".to_string(),
             AlphaMode::Blend => "blend".to_string(),
@@ -112,7 +145,7 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
             AlphaMode::PreMultiplied => "premultiplied".to_string(),
         });
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
-        core_ops::material::set_alpha_mode(&inner, self.doc_entity, mode_str, &mut queue);
+        core_ops::material::set_alpha_mode(&inner, doc, mode_str, &mut queue);
         Ok(())
     }
 
@@ -127,11 +160,14 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
         self_: Resource<Material>,
         value: Color,
     ) -> wasmtime::Result<()> {
-        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         core_ops::material::set_base_color(
             &inner,
-            self.doc_entity,
+            doc,
             [value.r, value.g, value.b, value.a],
             &mut queue,
         );
@@ -143,9 +179,37 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
         Ok(inner.state.lock().expect("material state lock").metallic)
     }
 
+    async fn set_metallic(
+        &mut self,
+        self_: Resource<Material>,
+        value: f32,
+    ) -> wasmtime::Result<()> {
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::material::set_metallic(&inner, doc, value, &mut queue);
+        Ok(())
+    }
+
     async fn roughness(&mut self, self_: Resource<Material>) -> wasmtime::Result<f32> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         Ok(inner.state.lock().expect("material state lock").roughness)
+    }
+
+    async fn set_roughness(
+        &mut self,
+        self_: Resource<Material>,
+        value: f32,
+    ) -> wasmtime::Result<()> {
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::material::set_roughness(&inner, doc, value, &mut queue);
+        Ok(())
     }
 
     async fn double_sided(&mut self, self_: Resource<Material>) -> wasmtime::Result<bool> {
@@ -157,17 +221,34 @@ impl super::bindings::wired::scene::types::HostMaterial for WiredSceneRt {
             .double_sided)
     }
 
+    async fn set_double_sided(
+        &mut self,
+        self_: Resource<Material>,
+        value: bool,
+    ) -> wasmtime::Result<()> {
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::material::set_double_sided(&inner, doc, value, &mut queue);
+        Ok(())
+    }
+
     async fn unlit(&mut self, self_: Resource<Material>) -> wasmtime::Result<bool> {
         let inner = Arc::clone(&self.table.get(&self_)?.inner);
         Ok(inner.state.lock().expect("material state lock").unlit)
     }
 
-    material_setter!(set_name, Option<String>);
-    material_setter!(set_alpha_cutoff, f32);
-    material_setter!(set_metallic, f32);
-    material_setter!(set_roughness, f32);
-    material_setter!(set_double_sided, bool);
-    material_setter!(set_unlit, bool);
+    async fn set_unlit(&mut self, self_: Resource<Material>, value: bool) -> wasmtime::Result<()> {
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::material::set_unlit(&inner, doc, value, &mut queue);
+        Ok(())
+    }
 
     async fn drop(&mut self, rep: Resource<Material>) -> wasmtime::Result<()> {
         self.table.delete(rep)?;

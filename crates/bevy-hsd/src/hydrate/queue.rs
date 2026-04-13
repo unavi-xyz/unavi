@@ -10,24 +10,26 @@ use loro::{LoroMap, LoroTree, LoroValue, TreeID, TreeParentId};
 use loro_surgeon::Hydrate;
 use smol_str::{SmolStr, ToSmolStr};
 
-use super::compile::image::{HsdImageDespawned, HsdImageSpawned};
-use super::compile::material::{
-    HsdMaterialAlphaCutoffSet, HsdMaterialAlphaModeSet, HsdMaterialBaseColorSet,
-    HsdMaterialBaseColorTextureSet, HsdMaterialDespawned, HsdMaterialDoubleSidedSet,
-    HsdMaterialEmissiveTextureSet, HsdMaterialMetallicRoughnessTextureSet, HsdMaterialMetallicSet,
-    HsdMaterialNameSet, HsdMaterialNormalTextureSet, HsdMaterialOcclusionTextureSet,
-    HsdMaterialRoughnessSet, HsdMaterialSpawned, HsdMaterialUnlitSet,
+use super::compile::{
+    image::{HsdImageDespawned, HsdImageSpawned},
+    material::{
+        HsdMaterialAlphaCutoffSet, HsdMaterialAlphaModeSet, HsdMaterialBaseColorSet,
+        HsdMaterialBaseColorTextureSet, HsdMaterialDespawned, HsdMaterialDoubleSidedSet,
+        HsdMaterialEmissiveTextureSet, HsdMaterialMetallicRoughnessTextureSet,
+        HsdMaterialMetallicSet, HsdMaterialNameSet, HsdMaterialNormalTextureSet,
+        HsdMaterialOcclusionTextureSet, HsdMaterialRoughnessSet, HsdMaterialSpawned,
+        HsdMaterialUnlitSet,
+    },
+    mesh::{HsdMeshDespawned, HsdMeshGeometrySet, HsdMeshSpawned, MeshGeometrySource},
+    node::{
+        HsdNodeColliderSet, HsdNodeDespawned, HsdNodeMaterialSet, HsdNodeMeshSet, HsdNodeNameSet,
+        HsdNodeParentSet, HsdNodeRigidBodySet, HsdNodeScriptsSet, HsdNodeSpawned,
+        HsdNodeTransformSet, node_transform,
+    },
 };
-use super::compile::mesh::{
-    HsdMeshDespawned, HsdMeshGeometrySet, HsdMeshSpawned, MeshGeometrySource,
-};
-use super::compile::node::{
-    HsdNodeColliderSet, HsdNodeDespawned, HsdNodeMaterialSet, HsdNodeMeshSet, HsdNodeNameSet,
-    HsdNodeParentSet, HsdNodeRigidBodySet, HsdNodeScriptsSet, HsdNodeSpawned, HsdNodeTransformSet,
-    node_transform,
-};
+
 use crate::{
-    HsdDoc,
+    HsdDoc, HsdRecordId,
     cache::{
         ImageInner, MaterialHsdChanges, MaterialInner, MaterialState, MeshHsdChanges, MeshInner,
         MeshState, NodeHsdChanges, NodeInner, NodeState, SceneRegistry,
@@ -37,10 +39,11 @@ use crate::{
 };
 
 pub(crate) fn process_hsd_queue(
-    docs: Query<(Entity, &HsdDoc, &SceneRegistry, &RawChangeQueue)>,
+    docs: Query<(&HsdRecordId, &HsdDoc, &SceneRegistry, &RawChangeQueue)>,
     mut commands: Commands,
 ) {
-    for (doc_ent, hsd_doc, registry, raw_queue) in &docs {
+    for (record_id, hsd_doc, registry, raw_queue) in &docs {
+        let doc_id = record_id.0;
         let raw_changes: Vec<_> = raw_queue
             .0
             .lock()
@@ -56,23 +59,23 @@ pub(crate) fn process_hsd_queue(
         for change in raw_changes {
             match change {
                 RawHsdChange::ImageAdded { id } => {
-                    handle_image_added(doc_ent, id, &hsd_map, registry, &mut commands);
+                    handle_image_added(doc_id, id, &hsd_map, registry, &mut commands);
                 }
                 RawHsdChange::ImageChanged { id } => {
                     if let Some(hsd_img) = get_image_at(&hsd_map, &id) {
                         commands.trigger(HsdImageSpawned {
-                            doc: doc_ent,
+                            doc_id,
                             id,
                             initial: Some(hsd_img),
                         });
                     }
                 }
                 RawHsdChange::ImageRemoved { id } => {
-                    commands.trigger(HsdImageDespawned { doc: doc_ent, id });
+                    commands.trigger(HsdImageDespawned { doc_id, id });
                 }
                 RawHsdChange::NodeAdded { tree_id, parent_id } => {
                     handle_node_added(
-                        doc_ent,
+                        doc_id,
                         tree_id,
                         parent_id,
                         &hsd_map,
@@ -81,39 +84,39 @@ pub(crate) fn process_hsd_queue(
                     );
                 }
                 RawHsdChange::NodeChanged { tree_id } => {
-                    handle_node_changed(doc_ent, tree_id, &hsd_map, registry, &mut commands);
+                    handle_node_changed(doc_id, tree_id, &hsd_map, registry, &mut commands);
                 }
                 RawHsdChange::NodeRemoved { tree_id } => {
                     commands.trigger(HsdNodeDespawned {
-                        doc: doc_ent,
+                        doc_id,
                         id: tree_id.to_smolstr(),
                     });
                 }
                 RawHsdChange::MeshAdded { id } => {
-                    handle_mesh_added(doc_ent, id, &hsd_map, registry, &mut commands);
+                    handle_mesh_added(doc_id, id, &hsd_map, registry, &mut commands);
                 }
                 RawHsdChange::MeshChanged { id } => {
                     if let Some(hsd_mesh) = get_mesh_at(&hsd_map, &id) {
                         commands.trigger(HsdMeshGeometrySet {
-                            doc: doc_ent,
+                            doc_id,
                             id,
                             source: MeshGeometrySource::Hsd(Box::new(hsd_mesh)),
                         });
                     }
                 }
                 RawHsdChange::MeshRemoved { id } => {
-                    commands.trigger(HsdMeshDespawned { doc: doc_ent, id });
+                    commands.trigger(HsdMeshDespawned { doc_id, id });
                 }
                 RawHsdChange::MaterialAdded { id } => {
-                    handle_material_added(doc_ent, id, &hsd_map, registry, &mut commands);
+                    handle_material_added(doc_id, id, &hsd_map, registry, &mut commands);
                 }
                 RawHsdChange::MaterialChanged { id } => {
                     if let Some(hsd_mat) = get_material_at(&hsd_map, &id) {
-                        emit_material_fields(doc_ent, &id, &hsd_mat, &mut commands);
+                        emit_material_fields(doc_id, &id, &hsd_mat, &mut commands);
                     }
                 }
                 RawHsdChange::MaterialRemoved { id } => {
-                    commands.trigger(HsdMaterialDespawned { doc: doc_ent, id });
+                    commands.trigger(HsdMaterialDespawned { doc_id, id });
                 }
             }
         }
@@ -121,7 +124,7 @@ pub(crate) fn process_hsd_queue(
 }
 
 fn handle_node_added(
-    doc_ent: Entity,
+    doc_id: blake3::Hash,
     tree_id: TreeID,
     parent_id: Option<TreeID>,
     hsd_map: &LoroMap,
@@ -135,23 +138,23 @@ fn handle_node_added(
 
     if inner.entity.lock().expect("entity lock").is_none() {
         commands.trigger(HsdNodeSpawned {
-            doc: doc_ent,
+            doc_id,
             id: id.clone(),
         });
     }
 
     let parent = parent_id.map(|pid| NodeRef::Id(pid.to_smolstr()));
     commands.trigger(HsdNodeParentSet {
-        doc: doc_ent,
+        doc_id,
         child: NodeRef::Id(id.clone()),
         parent,
     });
 
-    emit_node_fields(doc_ent, &id, &data, commands);
+    emit_node_fields(doc_id, &id, &data, commands);
 }
 
 fn handle_node_changed(
-    doc_ent: Entity,
+    doc_id: blake3::Hash,
     tree_id: TreeID,
     hsd_map: &LoroMap,
     registry: &SceneRegistry,
@@ -171,16 +174,16 @@ fn handle_node_changed(
 
     let parent = get_node_parent(hsd_map, tree_id).map(NodeRef::Id);
     commands.trigger(HsdNodeParentSet {
-        doc: doc_ent,
+        doc_id,
         child: NodeRef::Id(id.clone()),
         parent,
     });
 
-    emit_node_fields(doc_ent, &id, &data, commands);
+    emit_node_fields(doc_id, &id, &data, commands);
 }
 
 fn handle_mesh_added(
-    doc_ent: Entity,
+    doc_id: blake3::Hash,
     id: SmolStr,
     hsd_map: &LoroMap,
     registry: &SceneRegistry,
@@ -188,14 +191,14 @@ fn handle_mesh_added(
 ) {
     get_or_create_mesh(registry, &id);
     commands.trigger(HsdMeshSpawned {
-        doc: doc_ent,
+        doc_id,
         id: id.clone(),
     });
     if let Some(hsd_mesh) = get_mesh_at(hsd_map, &id)
         && (!hsd_mesh.attributes.is_empty() || hsd_mesh.indices.is_some())
     {
         commands.trigger(HsdMeshGeometrySet {
-            doc: doc_ent,
+            doc_id,
             id,
             source: MeshGeometrySource::Hsd(Box::new(hsd_mesh)),
         });
@@ -203,7 +206,7 @@ fn handle_mesh_added(
 }
 
 fn handle_material_added(
-    doc_ent: Entity,
+    doc_id: blake3::Hash,
     id: SmolStr,
     hsd_map: &LoroMap,
     registry: &SceneRegistry,
@@ -212,12 +215,12 @@ fn handle_material_added(
     get_or_create_material(registry, &id);
     let initial = get_material_at(hsd_map, &id);
     commands.trigger(HsdMaterialSpawned {
-        doc: doc_ent,
+        doc_id,
         id: id.clone(),
         initial: initial.clone(),
     });
     if let Some(hsd_mat) = &initial {
-        emit_material_fields(doc_ent, &id, hsd_mat, commands);
+        emit_material_fields(doc_id, &id, hsd_mat, commands);
     }
 }
 
@@ -247,7 +250,7 @@ fn get_or_create_node(registry: &SceneRegistry, id: &SmolStr, tree_id: TreeID) -
 }
 
 fn handle_image_added(
-    doc_ent: Entity,
+    doc_id: blake3::Hash,
     id: SmolStr,
     hsd_map: &LoroMap,
     registry: &SceneRegistry,
@@ -256,7 +259,7 @@ fn handle_image_added(
     get_or_create_image(registry, &id);
     let initial = get_image_at(hsd_map, &id);
     commands.trigger(HsdImageSpawned {
-        doc: doc_ent,
+        doc_id,
         id,
         initial,
     });
@@ -324,36 +327,41 @@ fn update_node_state(inner: &NodeInner, data: &HsdNodeData) {
         .collect();
 }
 
-fn emit_node_fields(doc: Entity, id: &SmolStr, data: &HsdNodeData, commands: &mut Commands) {
+fn emit_node_fields(
+    doc_id: blake3::Hash,
+    id: &SmolStr,
+    data: &HsdNodeData,
+    commands: &mut Commands,
+) {
     commands.trigger(HsdNodeTransformSet {
-        doc,
+        doc_id,
         id: id.clone(),
         transform: node_transform(data),
     });
     commands.trigger(HsdNodeMeshSet {
-        doc,
+        doc_id,
         id: id.clone(),
         mesh: data.mesh.clone(),
     });
     commands.trigger(HsdNodeMaterialSet {
-        doc,
+        doc_id,
         id: id.clone(),
         material: data.material.clone(),
     });
     if let Some(name) = &data.name {
         commands.trigger(HsdNodeNameSet {
-            doc,
+            doc_id,
             id: id.clone(),
             name: Some(name.to_string()),
         });
     }
     commands.trigger(HsdNodeColliderSet {
-        doc,
+        doc_id,
         id: id.clone(),
         collider: data.collider.clone(),
     });
     commands.trigger(HsdNodeRigidBodySet {
-        doc,
+        doc_id,
         id: id.clone(),
         rigid_body: data.rigid_body.clone(),
     });
@@ -365,13 +373,18 @@ fn emit_node_fields(doc: Entity, id: &SmolStr, data: &HsdNodeData, commands: &mu
         .map(|h| h.0)
         .collect();
     commands.trigger(HsdNodeScriptsSet {
-        doc,
+        doc_id,
         id: id.clone(),
         scripts,
     });
 }
 
-fn emit_material_fields(doc: Entity, id: &SmolStr, hsd: &HsdMaterial, commands: &mut Commands) {
+fn emit_material_fields(
+    doc_id: blake3::Hash,
+    id: &SmolStr,
+    hsd: &HsdMaterial,
+    commands: &mut Commands,
+) {
     if let Some(color) = &hsd.base_color
         && color.len() >= 3
     {
@@ -380,91 +393,91 @@ fn emit_material_fields(doc: Entity, id: &SmolStr, hsd: &HsdMaterial, commands: 
         let b = color[2] as f32;
         let a = color.get(3).copied().unwrap_or(1.0) as f32;
         commands.trigger(HsdMaterialBaseColorSet {
-            doc,
+            doc_id,
             id: id.clone(),
             color: [r, g, b, a],
         });
     }
     if let Some(ref img_id) = hsd.base_color_texture {
         commands.trigger(HsdMaterialBaseColorTextureSet {
-            doc,
+            doc_id,
             id: id.clone(),
             value: img_id.clone(),
         });
     }
     if let Some(ref img_id) = hsd.normal_texture {
         commands.trigger(HsdMaterialNormalTextureSet {
-            doc,
+            doc_id,
             id: id.clone(),
             value: img_id.clone(),
         });
     }
     if let Some(ref img_id) = hsd.metallic_roughness_texture {
         commands.trigger(HsdMaterialMetallicRoughnessTextureSet {
-            doc,
+            doc_id,
             id: id.clone(),
             value: img_id.clone(),
         });
     }
     if let Some(ref img_id) = hsd.occlusion_texture {
         commands.trigger(HsdMaterialOcclusionTextureSet {
-            doc,
+            doc_id,
             id: id.clone(),
             value: img_id.clone(),
         });
     }
     if let Some(ref img_id) = hsd.emissive_texture {
         commands.trigger(HsdMaterialEmissiveTextureSet {
-            doc,
+            doc_id,
             id: id.clone(),
             value: img_id.clone(),
         });
     }
     if let Some(v) = hsd.metallic {
         commands.trigger(HsdMaterialMetallicSet {
-            doc,
+            doc_id,
             id: id.clone(),
             value: v as f32,
         });
     }
     if let Some(v) = hsd.roughness {
         commands.trigger(HsdMaterialRoughnessSet {
-            doc,
+            doc_id,
             id: id.clone(),
             value: v as f32,
         });
     }
     if let Some(v) = hsd.alpha_cutoff {
         commands.trigger(HsdMaterialAlphaCutoffSet {
-            doc,
+            doc_id,
             id: id.clone(),
             value: v as f32,
         });
     }
     if let Some(ref mode) = hsd.alpha_mode {
         commands.trigger(HsdMaterialAlphaModeSet {
-            doc,
+            doc_id,
             id: id.clone(),
             mode: Some(mode.to_string()),
         });
     }
     if let Some(v) = hsd.double_sided {
         commands.trigger(HsdMaterialDoubleSidedSet {
-            doc,
+            doc_id,
             id: id.clone(),
             value: v,
         });
     }
     if let Some(ref name) = hsd.name {
         commands.trigger(HsdMaterialNameSet {
-            doc,
+            doc_id,
             id: id.clone(),
             name: Some(name.to_string()),
         });
     }
     if let Some(v) = hsd.unlit {
         commands.trigger(HsdMaterialUnlitSet {
-            doc,
+            doc_id,
             id: id.clone(),
             value: v,
         });

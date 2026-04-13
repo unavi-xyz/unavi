@@ -182,6 +182,14 @@ impl GuestScript for Script {
                         else {
                             continue;
                         };
+                        let doc_id_hex = doc.id().iter().fold(
+                            String::with_capacity(id.len() * 2),
+                            |mut acc, b| {
+                                write!(&mut acc, "{b:02x}").expect("write byte");
+                                acc
+                            },
+                        );
+                        println!("+ spawned doc: {doc_id_hex}");
 
                         let beacon_size = 0.1; // TODO scale from player count?
 

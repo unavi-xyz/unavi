@@ -9,7 +9,6 @@ use super::js_convert::js_u32_array;
 use super::state::{DocEntry, MatEntry, MeshEntry, NodeEntry};
 use super::with_script;
 use crate::core_ops;
-use crate::core_ops::document::DocEntityRef;
 
 pub fn register(obj: &Object) {
     reg!(
@@ -49,8 +48,6 @@ pub fn register(obj: &Object) {
                 let clone = DocEntry {
                     id: entry.id,
                     registry: Arc::clone(&entry.registry),
-                    doc_entity: entry.doc_entity,
-                    entity_slot: None,
                     is_public: entry.is_public,
                     can_read: entry.can_read,
                     can_write: entry.can_write,
@@ -70,18 +67,14 @@ pub fn register(obj: &Object) {
         dyn Fn(u32, u32) -> u32,
         |id: u32, rep: u32| {
             with_script(id, |state| {
-                let (registry, doc_ref, doc_entity) = {
+                let (registry, doc_id) = {
                     let entry = state.docs.get(&rep)?;
-                    (
-                        Arc::clone(&entry.registry),
-                        entry.doc_ref(),
-                        entry.doc_entity,
-                    )
+                    (Arc::clone(&entry.registry), entry.id)
                 };
                 let inner =
-                    core_ops::document::create_node(&registry, doc_ref, &mut state.command_queue);
+                    core_ops::document::create_node(&registry, doc_id, &mut state.command_queue);
                 let new_rep = state.alloc();
-                state.nodes.insert(new_rep, NodeEntry { inner, doc_entity });
+                state.nodes.insert(new_rep, NodeEntry { inner, doc_id });
                 Some(new_rep)
             })
             .flatten()
@@ -95,20 +88,14 @@ pub fn register(obj: &Object) {
         dyn Fn(u32, u32) -> u32,
         |id: u32, rep: u32| {
             with_script(id, |state| {
-                let (registry, doc_ref, doc_entity) = {
+                let (registry, doc_id) = {
                     let entry = state.docs.get(&rep)?;
-                    (
-                        Arc::clone(&entry.registry),
-                        entry.doc_ref(),
-                        entry.doc_entity,
-                    )
+                    (Arc::clone(&entry.registry), entry.id)
                 };
                 let inner =
-                    core_ops::document::create_mesh(&registry, doc_ref, &mut state.command_queue);
+                    core_ops::document::create_mesh(&registry, doc_id, &mut state.command_queue);
                 let new_rep = state.alloc();
-                state
-                    .meshes
-                    .insert(new_rep, MeshEntry { inner, doc_entity });
+                state.meshes.insert(new_rep, MeshEntry { inner, doc_id });
                 Some(new_rep)
             })
             .flatten()
@@ -122,21 +109,17 @@ pub fn register(obj: &Object) {
         dyn Fn(u32, u32) -> u32,
         |id: u32, rep: u32| {
             with_script(id, |state| {
-                let (registry, doc_ref, doc_entity) = {
+                let (registry, doc_id) = {
                     let entry = state.docs.get(&rep)?;
-                    (
-                        Arc::clone(&entry.registry),
-                        entry.doc_ref(),
-                        entry.doc_entity,
-                    )
+                    (Arc::clone(&entry.registry), entry.id)
                 };
                 let inner = core_ops::document::create_material(
                     &registry,
-                    doc_ref,
+                    doc_id,
                     &mut state.command_queue,
                 );
                 let new_rep = state.alloc();
-                state.mats.insert(new_rep, MatEntry { inner, doc_entity });
+                state.mats.insert(new_rep, MatEntry { inner, doc_id });
                 Some(new_rep)
             })
             .flatten()
@@ -152,7 +135,7 @@ pub fn register(obj: &Object) {
             with_script(id, |state| {
                 let (registry, doc) = {
                     let entry = state.docs.get(&rep)?;
-                    (Arc::clone(&entry.registry), entry.doc_entity)
+                    (Arc::clone(&entry.registry), entry.id)
                 };
                 let nodes: Vec<Arc<NodeInner>> = registry
                     .nodes
@@ -176,13 +159,9 @@ pub fn register(obj: &Object) {
                 let mut reps = Vec::with_capacity(nodes.len());
                 for inner in nodes {
                     let new_rep = state.alloc();
-                    state.nodes.insert(
-                        new_rep,
-                        NodeEntry {
-                            inner,
-                            doc_entity: doc,
-                        },
-                    );
+                    state
+                        .nodes
+                        .insert(new_rep, NodeEntry { inner, doc_id: doc });
                     reps.push(new_rep);
                 }
                 Some(js_u32_array(&reps))
@@ -200,19 +179,15 @@ pub fn register(obj: &Object) {
             with_script(id, |state| {
                 let (registry, doc) = {
                     let entry = state.docs.get(&rep)?;
-                    (Arc::clone(&entry.registry), entry.doc_entity)
+                    (Arc::clone(&entry.registry), entry.id)
                 };
                 let nodes: Vec<Arc<NodeInner>> = registry.nodes.lock().ok()?.clone();
                 let mut reps = Vec::with_capacity(nodes.len());
                 for inner in nodes {
                     let new_rep = state.alloc();
-                    state.nodes.insert(
-                        new_rep,
-                        NodeEntry {
-                            inner,
-                            doc_entity: doc,
-                        },
-                    );
+                    state
+                        .nodes
+                        .insert(new_rep, NodeEntry { inner, doc_id: doc });
                     reps.push(new_rep);
                 }
                 Some(js_u32_array(&reps))
@@ -230,19 +205,15 @@ pub fn register(obj: &Object) {
             with_script(id, |state| {
                 let (registry, doc) = {
                     let entry = state.docs.get(&rep)?;
-                    (Arc::clone(&entry.registry), entry.doc_entity)
+                    (Arc::clone(&entry.registry), entry.id)
                 };
                 let meshes: Vec<_> = registry.meshes.lock().ok()?.values().cloned().collect();
                 let mut reps = Vec::with_capacity(meshes.len());
                 for inner in meshes {
                     let new_rep = state.alloc();
-                    state.meshes.insert(
-                        new_rep,
-                        MeshEntry {
-                            inner,
-                            doc_entity: doc,
-                        },
-                    );
+                    state
+                        .meshes
+                        .insert(new_rep, MeshEntry { inner, doc_id: doc });
                     reps.push(new_rep);
                 }
                 Some(js_u32_array(&reps))
@@ -260,19 +231,13 @@ pub fn register(obj: &Object) {
             with_script(id, |state| {
                 let (registry, doc) = {
                     let entry = state.docs.get(&rep)?;
-                    (Arc::clone(&entry.registry), entry.doc_entity)
+                    (Arc::clone(&entry.registry), entry.id)
                 };
                 let mats: Vec<_> = registry.materials.lock().ok()?.values().cloned().collect();
                 let mut reps = Vec::with_capacity(mats.len());
                 for inner in mats {
                     let new_rep = state.alloc();
-                    state.mats.insert(
-                        new_rep,
-                        MatEntry {
-                            inner,
-                            doc_entity: doc,
-                        },
-                    );
+                    state.mats.insert(new_rep, MatEntry { inner, doc_id: doc });
                     reps.push(new_rep);
                 }
                 Some(js_u32_array(&reps))
@@ -293,7 +258,7 @@ pub fn register(obj: &Object) {
                     let doc_entry = state.docs.get(&rep)?;
                     (
                         Arc::clone(&node_entry.inner),
-                        DocEntityRef::Immediate(node_entry.doc_entity),
+                        node_entry.doc.clone(),
                         Arc::clone(&doc_entry.registry),
                     )
                 };
@@ -314,7 +279,7 @@ pub fn register(obj: &Object) {
                     let doc_entry = state.docs.get(&rep)?;
                     (
                         Arc::clone(&mesh_entry.inner),
-                        DocEntityRef::Immediate(mesh_entry.doc_entity),
+                        mesh_entry.doc.clone(),
                         Arc::clone(&doc_entry.registry),
                     )
                 };
@@ -335,7 +300,7 @@ pub fn register(obj: &Object) {
                     let doc_entry = state.docs.get(&rep)?;
                     (
                         Arc::clone(&mat_entry.inner),
-                        DocEntityRef::Immediate(mat_entry.doc_entity),
+                        mat_entry.doc.clone(),
                         Arc::clone(&doc_entry.registry),
                     )
                 };

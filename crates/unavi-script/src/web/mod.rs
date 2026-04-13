@@ -1,7 +1,10 @@
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
-use bevy_hsd::cache::{NodeHsdChanges, NodeInner, NodeState, SceneRegistry, SceneRegistryInner};
+use bevy_hsd::{
+    DocRegistryMap, HsdRecordId,
+    cache::{NodeHsdChanges, NodeInner, NodeState, SceneRegistry, SceneRegistryInner},
+};
 use js_sys::{Array, Function, JsString, Reflect, Uint8Array};
 use wasm_bindgen::JsValue;
 
@@ -101,14 +104,22 @@ fn poll_web_scripts(
         let camera_node_id = gen_id();
         spawn_self_node(&registry, &camera_node_id);
 
+        let doc_id = blake3::hash(&script_id.to_le_bytes());
+
+        let registry_inner = Arc::clone(&registry);
         let doc_entity = commands
             .spawn((
+                HsdRecordId(doc_id),
                 SceneRegistry(Arc::clone(&registry)),
                 Name::new(format!("WebScriptDoc_{script_id}")),
             ))
             .id();
-
-        let doc_id = blake3::hash(&script_id.to_le_bytes());
+        commands.queue(move |world: &mut World| {
+            world
+                .resource_mut::<DocRegistryMap>()
+                .0
+                .insert(doc_id, (doc_entity, registry_inner));
+        });
 
         let can_create_document = perms
             .map(|p| p.api.contains(&ApiName::CreateDocument))

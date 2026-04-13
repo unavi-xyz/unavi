@@ -1,6 +1,6 @@
 use std::sync::{Arc, atomic::Ordering};
 
-use bevy::prelude::{Entity, Transform as BevyTransform, World};
+use bevy::prelude::{Transform as BevyTransform, World};
 use bevy_hsd::{
     cache::{MaterialInner, MeshInner, NodeInner},
     data::HsdCollider,
@@ -21,7 +21,7 @@ pub struct HostNode {
     pub inner: Arc<NodeInner>,
     pub can_read: bool,
     pub can_write: bool,
-    pub doc_entity: Entity,
+    pub doc_id: blake3::Hash,
 }
 
 impl Clone for HostNode {
@@ -30,7 +30,7 @@ impl Clone for HostNode {
             inner: Arc::clone(&self.inner),
             can_read: self.can_read,
             can_write: self.can_write,
-            doc_entity: self.doc_entity,
+            doc_id: self.doc_id,
         }
     }
 }
@@ -65,7 +65,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let (inner, doc) = {
             let n = self.table.get(&self_)?;
-            (Arc::clone(&n.inner), n.doc_entity)
+            (Arc::clone(&n.inner), n.doc_id)
         };
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         core_ops::node::set_name(&inner, doc, value, &mut queue);
@@ -94,7 +94,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let (inner, doc) = {
             let n = self.table.get(&self_)?;
-            (Arc::clone(&n.inner), n.doc_entity)
+            (Arc::clone(&n.inner), n.doc_id)
         };
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         core_ops::node::set_translation(&inner, doc, value.x, value.y, value.z, &mut queue);
@@ -124,7 +124,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let (inner, doc) = {
             let n = self.table.get(&self_)?;
-            (Arc::clone(&n.inner), n.doc_entity)
+            (Arc::clone(&n.inner), n.doc_id)
         };
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         core_ops::node::set_rotation(&inner, doc, value.x, value.y, value.z, value.w, &mut queue);
@@ -144,7 +144,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     async fn set_scale(&mut self, self_: Resource<HostNode>, value: Vec3) -> wasmtime::Result<()> {
         let (inner, doc) = {
             let n = self.table.get(&self_)?;
-            (Arc::clone(&n.inner), n.doc_entity)
+            (Arc::clone(&n.inner), n.doc_id)
         };
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
         core_ops::node::set_scale(&inner, doc, value.x, value.y, value.z, &mut queue);
@@ -185,7 +185,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let (inner, doc) = {
             let n = self.table.get(&self_)?;
-            (Arc::clone(&n.inner), n.doc_entity)
+            (Arc::clone(&n.inner), n.doc_id)
         };
         let new_transform = BevyTransform {
             translation: bevy::math::Vec3::new(
@@ -238,9 +238,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         &mut self,
         self_: Resource<HostNode>,
     ) -> wasmtime::Result<Option<Resource<HostNode>>> {
-        let (inner, can_read, can_write, doc_entity) = {
+        let (inner, can_read, can_write, doc) = {
             let n = self.table.get(&self_)?;
-            (Arc::clone(&n.inner), n.can_read, n.can_write, n.doc_entity)
+            (Arc::clone(&n.inner), n.can_read, n.can_write, n.doc_id)
         };
         let parent_inner = {
             let state = inner.state.lock().expect("node state lock");
@@ -251,7 +251,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 inner: pi,
                 can_read,
                 can_write,
-                doc_entity,
+                doc_id: doc,
             })?)),
             None => Ok(None),
         }
@@ -261,9 +261,9 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         &mut self,
         self_: Resource<HostNode>,
     ) -> wasmtime::Result<Vec<Resource<HostNode>>> {
-        let (inner, can_read, can_write, doc_entity) = {
+        let (inner, can_read, can_write, doc) = {
             let n = self.table.get(&self_)?;
-            (Arc::clone(&n.inner), n.can_read, n.can_write, n.doc_entity)
+            (Arc::clone(&n.inner), n.can_read, n.can_write, n.doc_id)
         };
         let children: Vec<Arc<NodeInner>> = {
             let state = inner.state.lock().expect("node state lock");
@@ -275,7 +275,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
                 inner: child,
                 can_read,
                 can_write,
-                doc_entity,
+                doc_id: doc,
             })?);
         }
         Ok(out)
@@ -288,7 +288,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let (parent_inner, parent_can_write, doc) = {
             let n = self.table.get(&self_)?;
-            (Arc::clone(&n.inner), n.can_write, n.doc_entity)
+            (Arc::clone(&n.inner), n.can_write, n.doc_id)
         };
         let (child_inner, child_can_write) = {
             let n = self.table.get(&child)?;
@@ -309,7 +309,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let (child_inner, can_write, doc) = {
             let n = self.table.get(&child)?;
-            (Arc::clone(&n.inner), n.can_write, n.doc_entity)
+            (Arc::clone(&n.inner), n.can_write, n.doc_id)
         };
         if !can_write {
             bail!("hsd write permission required")
@@ -323,7 +323,10 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         &mut self,
         self_: Resource<HostNode>,
     ) -> wasmtime::Result<Option<Resource<Mesh>>> {
-        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        let (inner, doc) = {
+            let n = self.table.get(&self_)?;
+            (Arc::clone(&n.inner), n.doc_id)
+        };
         let state = inner.state.lock().expect("node state lock");
         let Some(mesh_id) = &state.mesh else {
             return Ok(None);
@@ -340,6 +343,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             inner: mesh_inner,
             can_read: true,
             can_write: true,
+            doc_id: doc,
         })?))
     }
 
@@ -350,7 +354,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let (node_inner, doc) = {
             let n = self.table.get(&self_)?;
-            (Arc::clone(&n.inner), n.doc_entity)
+            (Arc::clone(&n.inner), n.doc_id)
         };
         let mesh_id = match &value {
             Some(res) => Some(self.table.get(res)?.inner.id.clone()),
@@ -365,7 +369,10 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
         &mut self,
         self_: Resource<HostNode>,
     ) -> wasmtime::Result<Option<Resource<Material>>> {
-        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        let (inner, doc) = {
+            let n = self.table.get(&self_)?;
+            (Arc::clone(&n.inner), n.doc_id)
+        };
         let state = inner.state.lock().expect("node state lock");
         let Some(mat_id) = &state.material else {
             return Ok(None);
@@ -382,6 +389,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             inner: mat_inner,
             can_read: true,
             can_write: true,
+            doc_id: doc,
         })?))
     }
 
@@ -392,7 +400,7 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
     ) -> wasmtime::Result<()> {
         let (node_inner, doc) = {
             let n = self.table.get(&self_)?;
-            (Arc::clone(&n.inner), n.doc_entity)
+            (Arc::clone(&n.inner), n.doc_id)
         };
         let mat_id = match &value {
             Some(res) => Some(self.table.get(res)?.inner.id.clone()),
@@ -549,12 +557,12 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             .clone_from(&hsd_collider);
         let doc = {
             let n = self.table.get(&self_)?;
-            n.doc_entity
+            n.doc_id
         };
         let id = inner.id.clone();
         self.push_command(move |world: &mut World| {
             world.trigger(HsdNodeColliderSet {
-                doc,
+                doc_id: doc,
                 id,
                 collider: hsd_collider,
             });
@@ -607,12 +615,12 @@ impl super::bindings::wired::scene::types::HostNode for WiredSceneRt {
             .clone_from(&rb);
         let doc = {
             let n = self.table.get(&self_)?;
-            n.doc_entity
+            n.doc_id
         };
         let id = inner.id.clone();
         self.push_command(move |world: &mut World| {
             world.trigger(HsdNodeRigidBodySet {
-                doc,
+                doc_id: doc,
                 id,
                 rigid_body: rb,
             });

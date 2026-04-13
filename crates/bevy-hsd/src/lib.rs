@@ -4,12 +4,16 @@
 //! blobs, are subscribed to for incremental diffs, and are compiled into standard
 //! Bevy assets (meshes, materials, images) via an event-driven observer pipeline.
 
+use std::collections::HashMap;
+use std::sync::Arc;
+
 use avian3d::schedule::PhysicsSystems;
 use bevy::prelude::*;
 use bevy::transform::TransformSystems;
 use loro::LoroDoc;
 use smol_str::SmolStr;
-use std::sync::Arc;
+
+use cache::SceneRegistryInner;
 
 pub mod cache;
 pub mod data;
@@ -17,8 +21,18 @@ pub mod hydrate;
 
 pub struct HsdPlugin;
 
+/// Global map from document record ID to its Bevy entity and scene registry.
+///
+/// Populated by `register_doc_registries` after `init_hsd_doc` runs. Used by
+/// event handlers to look up the registry from a hash instead of querying by
+/// entity.
+#[derive(Resource, Default)]
+pub struct DocRegistryMap(pub HashMap<blake3::Hash, (Entity, Arc<SceneRegistryInner>)>);
+
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
+        app.init_resource::<DocRegistryMap>();
+
         app.add_observer(hydrate::compile::collider::on_collider_blobs_loaded)
             .add_observer(hydrate::compile::image::handle_hsd_image_despawned)
             .add_observer(hydrate::compile::image::handle_hsd_image_spawned)
@@ -72,6 +86,7 @@ impl Plugin for HsdPlugin {
             FixedUpdate,
             (
                 hydrate::init::init_hsd_doc,
+                hydrate::init::register_doc_registries,
                 hydrate::sync::sync_to_hsd,
                 hydrate::queue::process_hsd_queue,
                 bevy_wds::blob_deps::load_blob_deps,

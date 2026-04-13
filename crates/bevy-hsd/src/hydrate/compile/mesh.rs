@@ -13,11 +13,7 @@ use bytemuck::{Pod, PodCastError, try_cast_slice};
 use bytes::Bytes;
 use smol_str::SmolStr;
 
-use crate::{
-    HsdChild,
-    cache::{MeshState, SceneRegistry},
-    data::HsdMesh,
-};
+use crate::{DocRegistryMap, HsdChild, cache::MeshState, data::HsdMesh};
 
 /// Marks a mesh entity as having a ready `Handle<Mesh>`.
 #[derive(Component)]
@@ -31,20 +27,20 @@ pub enum MeshGeometrySource {
 
 #[derive(Event)]
 pub struct HsdMeshDespawned {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
 }
 
 #[derive(Event)]
 pub struct HsdMeshGeometrySet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub source: MeshGeometrySource,
 }
 
 #[derive(Event)]
 pub struct HsdMeshSpawned {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
 }
 
@@ -63,16 +59,15 @@ pub struct MeshParams {
 
 pub(crate) fn handle_hsd_mesh_spawned(
     trigger: On<HsdMeshSpawned>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "mesh spawned");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((doc_entity, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let inner = registry
-        .0
         .meshes
         .lock()
         .expect("meshes lock")
@@ -82,22 +77,22 @@ pub(crate) fn handle_hsd_mesh_spawned(
     if inner.entity.lock().expect("entity lock").is_some() {
         return;
     }
-    let ent = commands.spawn(HsdChild { doc: ev.doc }).id();
+    let ent = commands.spawn(HsdChild { doc: *doc_entity }).id();
     *inner.entity.lock().expect("entity lock") = Some(ent);
 }
 
 pub(crate) fn handle_hsd_mesh_despawned(
     trigger: On<HsdMeshDespawned>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "mesh despawned");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let inner = {
-        let mut meshes = registry.0.meshes.lock().expect("meshes lock");
+        let mut meshes = registry.meshes.lock().expect("meshes lock");
         meshes.remove(&ev.id)
     };
     let Some(inner) = inner else { return };
@@ -110,16 +105,15 @@ pub(crate) fn handle_hsd_mesh_despawned(
 
 pub(crate) fn handle_hsd_mesh_geometry_set(
     trigger: On<HsdMeshGeometrySet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "mesh geometry set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .meshes
         .lock()
         .expect("meshes lock")
@@ -137,7 +131,6 @@ pub(crate) fn handle_hsd_mesh_geometry_set(
         }
         MeshGeometrySource::Inline => {
             let state = registry
-                .0
                 .meshes
                 .lock()
                 .expect("meshes lock")

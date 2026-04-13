@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::sync::Mutex;
 use std::sync::mpsc;
 
 use bevy::prelude::Entity;
@@ -8,43 +7,30 @@ use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner, SceneRegistryInner};
 use bevy_hsd::hydrate::events::ScriptCommandQueue;
 use smol_str::SmolStr;
 
-use crate::core_ops::document::DocEntityRef;
 use crate::event_registry::{EventRegistry, ReceptorQueue};
 use crate::input_registry::{InputRegistry, ListenerQueue};
 
 pub struct NodeEntry {
     pub inner: Arc<NodeInner>,
-    pub doc_entity: Entity,
+    pub doc_id: blake3::Hash,
 }
 
 pub struct DocEntry {
     pub id: blake3::Hash,
     pub registry: Arc<SceneRegistryInner>,
-    pub doc_entity: Entity,
-    pub entity_slot: Option<Arc<Mutex<Option<Entity>>>>,
     pub is_public: bool,
     pub can_read: bool,
     pub can_write: bool,
 }
 
-impl DocEntry {
-    pub fn doc_ref(&self) -> DocEntityRef {
-        self.entity_slot
-            .as_ref()
-            .map_or(DocEntityRef::Immediate(self.doc_entity), |slot| {
-                DocEntityRef::Slot(Arc::clone(slot))
-            })
-    }
-}
-
 pub struct MeshEntry {
     pub inner: Arc<MeshInner>,
-    pub doc_entity: Entity,
+    pub doc_id: blake3::Hash,
 }
 
 pub struct MatEntry {
     pub inner: Arc<MaterialInner>,
-    pub doc_entity: Entity,
+    pub doc_id: blake3::Hash,
 }
 
 pub struct WdsQueryFuture {

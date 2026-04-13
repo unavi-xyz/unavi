@@ -8,7 +8,7 @@ use avian3d::{
 };
 use bevy::{prelude::*, scene::ScenePlugin, transform::TransformPlugin};
 use bevy_hsd::{
-    HsdDoc, HsdPlugin,
+    HsdDoc, HsdPlugin, HsdRecordId,
     cache::{MeshState, SceneRegistry},
     hydrate::compile::mesh::{HsdMeshGeometrySet, MeshGeometrySource},
 };
@@ -19,6 +19,7 @@ const TICK: Duration = Duration::from_millis(100);
 pub struct TestHarness {
     pub app: App,
     pub doc_entity: Entity,
+    pub doc_id: blake3::Hash,
     pub doc: Arc<LoroDoc>,
 }
 
@@ -45,12 +46,17 @@ impl TestHarness {
         .add_systems(FixedUpdate, bevy_wds::blob_deps::load_blob_deps);
 
         let doc = Arc::new(LoroDoc::new());
-        let doc_entity = app.world_mut().spawn(HsdDoc(Arc::clone(&doc))).id();
+        let doc_id = blake3::hash(b"test-doc");
+        let doc_entity = app
+            .world_mut()
+            .spawn((HsdDoc(Arc::clone(&doc)), HsdRecordId(doc_id)))
+            .id();
         Self::tick(&mut app);
 
         Self {
             app,
             doc_entity,
+            doc_id,
             doc,
         }
     }
@@ -90,7 +96,7 @@ impl TestHarness {
         *mesh_inner.state.lock().expect("mesh state lock") = state;
 
         self.app.world_mut().trigger(HsdMeshGeometrySet {
-            doc: self.doc_entity,
+            doc_id: self.doc_id,
             id: id.into(),
             source: MeshGeometrySource::Inline,
         });

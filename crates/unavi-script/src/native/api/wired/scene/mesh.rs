@@ -12,6 +12,7 @@ pub struct HostMesh {
     pub inner: Arc<MeshInner>,
     pub can_read: bool,
     pub can_write: bool,
+    pub doc_id: blake3::Hash,
 }
 
 impl Clone for HostMesh {
@@ -20,6 +21,7 @@ impl Clone for HostMesh {
             inner: Arc::clone(&self.inner),
             can_read: self.can_read,
             can_write: self.can_write,
+            doc_id: self.doc_id,
         }
     }
 }
@@ -114,22 +116,142 @@ impl super::bindings::wired::scene::types::HostMesh for WiredSceneRt {
         self_: Resource<Mesh>,
         value: Option<Indices>,
     ) -> wasmtime::Result<()> {
-        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
         let indices = value.map(|v| match v {
             Indices::Half(h) => h.into_iter().map(u32::from).collect(),
             Indices::Full(f) => f,
         });
         let mut queue = self.command_queue.lock().expect("cmd queue lock");
-        core_ops::mesh::set_indices(&inner, self.doc_entity, indices, &mut queue);
+        core_ops::mesh::set_indices(&inner, doc, indices, &mut queue);
         Ok(())
     }
 
-    mesh_attr!(colors, set_colors, colors, Option<Vec<f32>>);
-    mesh_attr!(normals, set_normals, normals, Option<Vec<f32>>);
-    mesh_attr!(positions, set_positions, positions, Option<Vec<f32>>);
-    mesh_attr!(tangents, set_tangents, tangents, Option<Vec<f32>>);
-    mesh_attr!(uv0, set_uv0, uv0, Option<Vec<f32>>);
-    mesh_attr!(uv1, set_uv1, uv1, Option<Vec<f32>>);
+    async fn colors(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<Vec<f32>>> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner.state.lock().expect("mesh state lock").colors.clone())
+    }
+
+    async fn set_colors(
+        &mut self,
+        self_: Resource<Mesh>,
+        values: Option<Vec<f32>>,
+    ) -> wasmtime::Result<()> {
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::mesh::set_colors(&inner, doc, values, &mut queue);
+        Ok(())
+    }
+
+    async fn normals(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<Vec<f32>>> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner.state.lock().expect("mesh state lock").normals.clone())
+    }
+
+    async fn set_normals(
+        &mut self,
+        self_: Resource<Mesh>,
+        values: Option<Vec<f32>>,
+    ) -> wasmtime::Result<()> {
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::mesh::set_normals(&inner, doc, values, &mut queue);
+        Ok(())
+    }
+
+    async fn positions(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<Vec<f32>>> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner
+            .state
+            .lock()
+            .expect("mesh state lock")
+            .positions
+            .clone())
+    }
+
+    async fn set_positions(
+        &mut self,
+        self_: Resource<Mesh>,
+        values: Option<Vec<f32>>,
+    ) -> wasmtime::Result<()> {
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::mesh::set_positions(&inner, doc, values, &mut queue);
+        Ok(())
+    }
+
+    async fn tangents(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<Vec<f32>>> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner
+            .state
+            .lock()
+            .expect("mesh state lock")
+            .tangents
+            .clone())
+    }
+
+    async fn set_tangents(
+        &mut self,
+        self_: Resource<Mesh>,
+        values: Option<Vec<f32>>,
+    ) -> wasmtime::Result<()> {
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::mesh::set_tangents(&inner, doc, values, &mut queue);
+        Ok(())
+    }
+
+    async fn uv0(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<Vec<f32>>> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner.state.lock().expect("mesh state lock").uv0.clone())
+    }
+
+    async fn set_uv0(
+        &mut self,
+        self_: Resource<Mesh>,
+        values: Option<Vec<f32>>,
+    ) -> wasmtime::Result<()> {
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::mesh::set_uv0(&inner, doc, values, &mut queue);
+        Ok(())
+    }
+
+    async fn uv1(&mut self, self_: Resource<Mesh>) -> wasmtime::Result<Option<Vec<f32>>> {
+        let inner = Arc::clone(&self.table.get(&self_)?.inner);
+        Ok(inner.state.lock().expect("mesh state lock").uv1.clone())
+    }
+
+    async fn set_uv1(
+        &mut self,
+        self_: Resource<Mesh>,
+        values: Option<Vec<f32>>,
+    ) -> wasmtime::Result<()> {
+        let (inner, doc) = {
+            let m = self.table.get(&self_)?;
+            (Arc::clone(&m.inner), m.doc_id)
+        };
+        let mut queue = self.command_queue.lock().expect("cmd queue lock");
+        core_ops::mesh::set_uv1(&inner, doc, values, &mut queue);
+        Ok(())
+    }
 
     async fn drop(&mut self, rep: Resource<Mesh>) -> wasmtime::Result<()> {
         self.table.delete(rep)?;

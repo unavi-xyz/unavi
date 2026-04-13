@@ -13,7 +13,7 @@ use bevy::prelude::*;
 use smol_str::SmolStr;
 
 use crate::{
-    HsdChild, HsdNodePhysics, HsdScripts, NodeId,
+    DocRegistryMap, HsdChild, HsdNodePhysics, HsdScripts, NodeId,
     cache::SceneRegistry,
     data::{HsdCollider, HsdNodeData, HsdRigidBody},
     hydrate::{
@@ -34,84 +34,83 @@ pub struct MaterialRef(pub SmolStr);
 
 #[derive(Event)]
 pub struct HsdNodeColliderSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub collider: Option<HsdCollider>,
 }
 
 #[derive(Event)]
 pub struct HsdNodeDespawned {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
 }
 
 #[derive(Event)]
 pub struct HsdNodeMaterialSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub material: Option<SmolStr>,
 }
 
 #[derive(Event)]
 pub struct HsdNodeMeshSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub mesh: Option<SmolStr>,
 }
 
 #[derive(Event)]
 pub struct HsdNodeNameSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub name: Option<String>,
 }
 
 #[derive(Event)]
 pub struct HsdNodeParentSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub child: NodeRef,
     pub parent: Option<NodeRef>,
 }
 
 #[derive(Event)]
 pub struct HsdNodeRigidBodySet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub rigid_body: Option<HsdRigidBody>,
 }
 
 #[derive(Event)]
 pub struct HsdNodeScriptsSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub scripts: Vec<blake3::Hash>,
 }
 
 #[derive(Event)]
 pub struct HsdNodeSpawned {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
 }
 
 #[derive(Event)]
 pub struct HsdNodeTransformSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub transform: Transform,
 }
 
 pub(crate) fn handle_hsd_node_spawned(
     trigger: On<HsdNodeSpawned>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "node spawned");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((doc_entity, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let inner = registry
-        .0
         .node_map
         .lock()
         .expect("node_map lock")
@@ -123,7 +122,7 @@ pub(crate) fn handle_hsd_node_spawned(
     }
     let ent = commands
         .spawn((
-            HsdChild { doc: ev.doc },
+            HsdChild { doc: *doc_entity },
             NodeId(ev.id.clone()),
             Transform::IDENTITY,
             Visibility::default(),
@@ -134,21 +133,20 @@ pub(crate) fn handle_hsd_node_spawned(
 
 pub(crate) fn handle_hsd_node_despawned(
     trigger: On<HsdNodeDespawned>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "node despawned");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
-    let mut node_map = registry.0.node_map.lock().expect("node_map lock");
+    let mut node_map = registry.node_map.lock().expect("node_map lock");
     let Some(inner) = node_map.remove(&ev.id) else {
         return;
     };
     drop(node_map);
     registry
-        .0
         .nodes
         .lock()
         .expect("nodes lock")
@@ -162,16 +160,15 @@ pub(crate) fn handle_hsd_node_despawned(
 
 pub(crate) fn handle_hsd_node_collider_set(
     trigger: On<HsdNodeColliderSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, has_collider = ev.collider.is_some(), "node collider set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .node_map
         .lock()
         .expect("node_map lock")
@@ -196,16 +193,15 @@ pub(crate) fn handle_hsd_node_collider_set(
 
 pub(crate) fn handle_hsd_node_material_set(
     trigger: On<HsdNodeMaterialSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, material = ?ev.material, "node material set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .node_map
         .lock()
         .expect("node_map lock")
@@ -223,16 +219,15 @@ pub(crate) fn handle_hsd_node_material_set(
 
 pub(crate) fn handle_hsd_node_mesh_set(
     trigger: On<HsdNodeMeshSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, mesh = ?ev.mesh, "node mesh set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .node_map
         .lock()
         .expect("node_map lock")
@@ -250,16 +245,15 @@ pub(crate) fn handle_hsd_node_mesh_set(
 
 pub(crate) fn handle_hsd_node_name_set(
     trigger: On<HsdNodeNameSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, name = ?ev.name, "node name set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .node_map
         .lock()
         .expect("node_map lock")
@@ -278,15 +272,15 @@ pub(crate) fn handle_hsd_node_name_set(
 
 pub(crate) fn handle_hsd_node_parent_set(
     trigger: On<HsdNodeParentSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(child = ?ev.child, parent = ?ev.parent, "node parent set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
-    let node_map = registry.0.node_map.lock().expect("node_map lock");
+    let node_map = registry.node_map.lock().expect("node_map lock");
     let child_ent = match &ev.child {
         NodeRef::Entity(e) => Some(*e),
         NodeRef::Id(id) => node_map
@@ -344,16 +338,15 @@ pub(crate) fn insert_rigid_body(ent: Entity, data: &HsdRigidBody, commands: &mut
 
 pub(crate) fn handle_hsd_node_rigid_body_set(
     trigger: On<HsdNodeRigidBodySet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, kind = ?ev.rigid_body.as_ref().map(|r| &r.kind), "node rigid body set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .node_map
         .lock()
         .expect("node_map lock")
@@ -376,16 +369,15 @@ pub(crate) fn handle_hsd_node_rigid_body_set(
 
 pub(crate) fn handle_hsd_node_scripts_set(
     trigger: On<HsdNodeScriptsSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, count = ev.scripts.len(), "node scripts set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .node_map
         .lock()
         .expect("node_map lock")
@@ -404,16 +396,15 @@ pub(crate) fn handle_hsd_node_scripts_set(
 
 pub(crate) fn handle_hsd_node_transform_set(
     trigger: On<HsdNodeTransformSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut transforms: Query<&mut Transform>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "node transform set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .node_map
         .lock()
         .expect("node_map lock")

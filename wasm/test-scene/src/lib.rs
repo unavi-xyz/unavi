@@ -17,6 +17,7 @@ fn check<T: PartialEq + std::fmt::Debug>(label: &str, got: T, expected: T) {
 
 impl GuestScript for Script {
     fn new() -> Self {
+        document::test_create_document();
         document::test_document();
         node::test_node();
         material::test_material();

@@ -15,8 +15,7 @@ use image::{DynamicImage, GenericImageView};
 use smol_str::SmolStr;
 
 use crate::{
-    HsdChild,
-    cache::SceneRegistry,
+    DocRegistryMap, HsdChild,
     data::HsdImage,
     hydrate::compile::material::{CompiledMaterial, MaterialParams},
 };
@@ -31,14 +30,14 @@ pub struct ImageId(pub SmolStr);
 
 #[derive(Event)]
 pub struct HsdImageSpawned {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub initial: Option<HsdImage>,
 }
 
 #[derive(Event)]
 pub struct HsdImageDespawned {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
 }
 
@@ -144,16 +143,15 @@ pub(crate) fn build_img(dyn_img: DynamicImage, params: &ImageParams) -> Image {
 
 pub(crate) fn handle_hsd_image_spawned(
     trigger: On<HsdImageSpawned>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "image spawned");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((doc_entity, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let inner = registry
-        .0
         .images
         .lock()
         .expect("images lock")
@@ -166,7 +164,7 @@ pub(crate) fn handle_hsd_image_spawned(
     let existing = *inner.entity.lock().expect("entity lock");
     let entity = existing.unwrap_or_else(|| {
         let ent = commands
-            .spawn((HsdChild { doc: ev.doc }, ImageId(ev.id.clone())))
+            .spawn((HsdChild { doc: *doc_entity }, ImageId(ev.id.clone())))
             .id();
         *inner.entity.lock().expect("entity lock") = Some(ent);
         ent
@@ -186,20 +184,15 @@ pub(crate) fn handle_hsd_image_spawned(
 
 pub(crate) fn handle_hsd_image_despawned(
     trigger: On<HsdImageDespawned>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "image despawned");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
-    let inner = registry
-        .0
-        .images
-        .lock()
-        .expect("images lock")
-        .remove(&ev.id);
+    let inner = registry.images.lock().expect("images lock").remove(&ev.id);
     let Some(inner) = inner else { return };
     if let Some(ent) = *inner.entity.lock().expect("entity lock")
         && let Ok(mut ent) = commands.get_entity(ent)

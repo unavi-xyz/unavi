@@ -3,7 +3,7 @@ use std::sync::Arc;
 use js_sys::Object;
 use wasm_bindgen::{JsCast, JsValue};
 
-use super::state::{DocEntry, NodeEntry};
+use super::state::NodeEntry;
 use super::with_script;
 
 pub fn register(obj: &Object) {
@@ -25,7 +25,7 @@ pub fn register(obj: &Object) {
                     rep,
                     NodeEntry {
                         inner,
-                        doc_entity: state.doc_entity,
+                        doc_id: state.doc_id,
                     },
                 );
                 Some(JsValue::from_f64(f64::from(rep)))
@@ -53,7 +53,7 @@ pub fn register(obj: &Object) {
                     rep,
                     NodeEntry {
                         inner,
-                        doc_entity: state.doc_entity,
+                        doc_id: state.doc_id,
                     },
                 );
                 Some(JsValue::from_f64(f64::from(rep)))

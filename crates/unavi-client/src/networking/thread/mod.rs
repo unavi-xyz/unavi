@@ -356,7 +356,7 @@ async fn thread_loop(
                         });
                     }
                 } else {
-                    warn!(?record_hash, "claim for unknown space");
+                    warn!(%record_hash, "claim for unknown space");
                 }
             }
             NetworkCommand::PublishObjectIFrame(objects) => {

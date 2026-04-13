@@ -203,7 +203,6 @@ pub fn setup_grabbed_hooks(world: &mut World) {
 pub fn update_crosshair_mode(
     mut crosshair: Query<&mut CrosshairMode>,
     ray: Query<&RayHits, With<PrimaryRaycastInput>>,
-
     grabbable: Query<(), With<DynObjectId>>,
 ) {
     let Ok(hits) = ray.single() else { return };

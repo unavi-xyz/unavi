@@ -6,23 +6,20 @@ use std::{collections::HashMap, time::Duration};
 use avian3d::dynamics::rigid_body::{AngularVelocity, LinearVelocity};
 use avian3d::prelude::RigidBody;
 use bevy::prelude::*;
-use bevy_hsd::{HsdChild, NodeId};
+use bevy_hsd::{HsdChild, HsdRecordId, NodeId};
 
-use crate::{
-    networking::{
-        object_receive::ObjectTransformTarget,
-        publish_utils::{IFRAME_FREQ, PUBLISH_INTERVAL, transform_changed, velocity_changed},
-        thread::{
-            NetworkCommand, NetworkingThread,
-            space::types::{
-                f16_pos::F16Pos,
-                object_id::ObjectId,
-                physics_state::{PhysicsBaseline, PhysicsIFrame, PhysicsPFrame},
-                velocity::F16Vel,
-            },
+use crate::networking::{
+    object_receive::ObjectTransformTarget,
+    publish_utils::{IFRAME_FREQ, PUBLISH_INTERVAL, transform_changed, velocity_changed},
+    thread::{
+        NetworkCommand, NetworkingThread,
+        space::types::{
+            f16_pos::F16Pos,
+            object_id::ObjectId,
+            physics_state::{PhysicsBaseline, PhysicsIFrame, PhysicsPFrame},
+            velocity::F16Vel,
         },
     },
-    space::Space,
 };
 
 /// Marks an HSD node as a tracked dynamic object.
@@ -44,18 +41,18 @@ pub fn detect_dynamic_objects(
         (Entity, &HsdChild, &NodeId, &RigidBody),
         (Added<RigidBody>, Without<DynObjectId>),
     >,
-    spaces: Query<&Space>,
+    record_ids: Query<&HsdRecordId>,
 ) {
     for (entity, hsd_child, node_id, rigid_body) in &new_bodies {
         if *rigid_body != RigidBody::Dynamic {
             continue;
         }
 
-        let Ok(space) = spaces.get(hsd_child.doc) else {
+        let Ok(record) = record_ids.get(hsd_child.doc) else {
             continue;
         };
 
-        let object_id = ObjectId::new(space.0, node_id.0.clone());
+        let object_id = ObjectId::new(record.0, node_id.0.clone());
         commands.entity(entity).insert(DynObjectId(object_id));
     }
 }

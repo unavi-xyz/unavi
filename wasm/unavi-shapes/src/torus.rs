@@ -1,11 +1,19 @@
-use std::cell::Cell;
-use std::f32::consts::TAU;
+use std::{
+    cell::{Cell, RefCell},
+    f32::consts::TAU,
+};
 
 use glam::Vec3;
 
-use crate::{RawMesh, exports::unavi::shapes::api::GuestTorus, wired::scene::types::Mesh};
+use crate::{
+    RawMesh,
+    exports::unavi::shapes::api::GuestTorus,
+    wired::scene::types::{Document, Mesh},
+};
 
+#[derive(Default)]
 pub struct TorusWrapped {
+    doc: RefCell<Option<Document>>,
     minor_radius: f32,
     major_radius: f32,
     minor_resolution: Cell<u32>,
@@ -19,16 +27,24 @@ impl GuestTorus for TorusWrapped {
             major_radius,
             minor_resolution: Cell::new(24),
             major_resolution: Cell::new(32),
+            ..Default::default()
         }
     }
 
     fn mesh(&self) -> Mesh {
-        crate::convert_raw_mesh(build(
-            self.minor_radius,
-            self.major_radius,
-            self.minor_resolution.get() as usize,
-            self.major_resolution.get() as usize,
-        ))
+        crate::convert_raw_mesh(
+            self.doc.borrow().as_ref(),
+            build(
+                self.minor_radius,
+                self.major_radius,
+                self.minor_resolution.get() as usize,
+                self.major_resolution.get() as usize,
+            ),
+        )
+    }
+
+    fn set_doc(&self, doc: Document) {
+        *self.doc.borrow_mut() = Some(doc);
     }
 
     fn minor_resolution(&self) -> u32 {

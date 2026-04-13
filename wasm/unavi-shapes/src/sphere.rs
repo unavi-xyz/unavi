@@ -1,15 +1,19 @@
-use std::cell::Cell;
-use std::collections::HashMap;
+use std::{
+    cell::{Cell, RefCell},
+    collections::HashMap,
+};
 
 use glam::Vec3;
 
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestSphere,
-    wired::scene::types::{Collider, Mesh},
+    wired::scene::types::{Collider, Document, Mesh},
 };
 
+#[derive(Default)]
 pub struct SphereWrapped {
+    doc: RefCell<Option<Document>>,
     radius: f32,
     subdivisions: Cell<u32>,
 }
@@ -19,6 +23,7 @@ impl GuestSphere for SphereWrapped {
         Self {
             radius,
             subdivisions: Cell::new(5),
+            ..Default::default()
         }
     }
 
@@ -27,7 +32,14 @@ impl GuestSphere for SphereWrapped {
     }
 
     fn mesh(&self) -> Mesh {
-        crate::convert_raw_mesh(build(self.radius, self.subdivisions.get()))
+        crate::convert_raw_mesh(
+            self.doc.borrow().as_ref(),
+            build(self.radius, self.subdivisions.get()),
+        )
+    }
+
+    fn set_doc(&self, doc: Document) {
+        *self.doc.borrow_mut() = Some(doc);
     }
 
     fn subdivisions(&self) -> u32 {

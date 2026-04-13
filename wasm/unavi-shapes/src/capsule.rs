@@ -1,13 +1,17 @@
-use std::cell::Cell;
-use std::f32::consts::{FRAC_PI_2, TAU};
+use std::{
+    cell::{Cell, RefCell},
+    f32::consts::{FRAC_PI_2, TAU},
+};
 
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCapsule,
-    wired::scene::types::{Collider, ColliderCapsule, Mesh},
+    wired::scene::types::{Collider, ColliderCapsule, Document, Mesh},
 };
 
+#[derive(Default)]
 pub struct CapsuleWrapped {
+    doc: RefCell<Option<Document>>,
     radius: f32,
     half_length: f32,
     latitudes: Cell<u32>,
@@ -23,6 +27,7 @@ impl GuestCapsule for CapsuleWrapped {
             latitudes: Cell::new(16),
             longitudes: Cell::new(32),
             rings: Cell::new(0),
+            ..Default::default()
         }
     }
 
@@ -34,13 +39,20 @@ impl GuestCapsule for CapsuleWrapped {
     }
 
     fn mesh(&self) -> Mesh {
-        crate::convert_raw_mesh(build(
-            self.radius,
-            self.half_length,
-            self.latitudes.get(),
-            self.longitudes.get(),
-            self.rings.get(),
-        ))
+        crate::convert_raw_mesh(
+            self.doc.borrow().as_ref(),
+            build(
+                self.radius,
+                self.half_length,
+                self.latitudes.get(),
+                self.longitudes.get(),
+                self.rings.get(),
+            ),
+        )
+    }
+
+    fn set_doc(&self, doc: Document) {
+        *self.doc.borrow_mut() = Some(doc);
     }
 
     fn latitudes(&self) -> u32 {

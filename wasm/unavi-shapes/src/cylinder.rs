@@ -1,13 +1,17 @@
-use std::cell::Cell;
-use std::f32::consts::TAU;
+use std::{
+    cell::{Cell, RefCell},
+    f32::consts::TAU,
+};
 
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCylinder,
-    wired::scene::types::{Collider, ColliderCylinder, Mesh},
+    wired::scene::types::{Collider, ColliderCylinder, Document, Mesh},
 };
 
+#[derive(Default)]
 pub struct CylinderWrapped {
+    doc: RefCell<Option<Document>>,
     radius: f32,
     half_height: f32,
     resolution: Cell<u32>,
@@ -21,6 +25,7 @@ impl GuestCylinder for CylinderWrapped {
             half_height: height * 0.5,
             resolution: Cell::new(32),
             segments: Cell::new(1),
+            ..Default::default()
         }
     }
 
@@ -32,12 +37,19 @@ impl GuestCylinder for CylinderWrapped {
     }
 
     fn mesh(&self) -> Mesh {
-        crate::convert_raw_mesh(build(
-            self.radius,
-            self.half_height,
-            self.resolution.get(),
-            self.segments.get(),
-        ))
+        crate::convert_raw_mesh(
+            self.doc.borrow().as_ref(),
+            build(
+                self.radius,
+                self.half_height,
+                self.resolution.get(),
+                self.segments.get(),
+            ),
+        )
+    }
+
+    fn set_doc(&self, doc: Document) {
+        *self.doc.borrow_mut() = Some(doc);
     }
 
     fn resolution(&self) -> u32 {

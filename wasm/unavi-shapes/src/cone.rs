@@ -1,9 +1,17 @@
-use std::cell::Cell;
-use std::f32::consts::TAU;
+use std::{
+    cell::{Cell, RefCell},
+    f32::consts::TAU,
+};
 
-use crate::{RawMesh, exports::unavi::shapes::api::GuestCone, wired::scene::types::Mesh};
+use crate::{
+    RawMesh,
+    exports::unavi::shapes::api::GuestCone,
+    wired::scene::types::{Document, Mesh},
+};
 
+#[derive(Default)]
 pub struct ConeWrapped {
+    doc: RefCell<Option<Document>>,
     radius: f32,
     height: f32,
     resolution: Cell<u32>,
@@ -15,11 +23,19 @@ impl GuestCone for ConeWrapped {
             radius,
             height,
             resolution: Cell::new(32),
+            ..Default::default()
         }
     }
 
     fn mesh(&self) -> Mesh {
-        crate::convert_raw_mesh(build(self.radius, self.height, self.resolution.get()))
+        crate::convert_raw_mesh(
+            self.doc.borrow().as_ref(),
+            build(self.radius, self.height, self.resolution.get()),
+        )
+    }
+
+    fn set_doc(&self, doc: Document) {
+        *self.doc.borrow_mut() = Some(doc);
     }
 
     fn resolution(&self) -> u32 {

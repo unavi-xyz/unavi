@@ -1,14 +1,17 @@
+use std::cell::RefCell;
+
 use glam::Vec3;
 use wired_prelude::wired_math::types::Vec3 as WVec3;
 
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCuboid,
-    wired::scene::types::{Collider, Mesh},
+    wired::scene::types::{Collider, Document, Mesh},
 };
 
 #[derive(Default)]
 pub struct CuboidWrapped {
+    doc: RefCell<Option<Document>>,
     half: Vec3,
 }
 
@@ -16,6 +19,7 @@ impl GuestCuboid for CuboidWrapped {
     fn new(x_length: f32, y_length: f32, z_length: f32) -> Self {
         Self {
             half: Vec3::new(x_length * 0.5, y_length * 0.5, z_length * 0.5),
+            ..Default::default()
         }
     }
 
@@ -28,7 +32,11 @@ impl GuestCuboid for CuboidWrapped {
     }
 
     fn mesh(&self) -> Mesh {
-        crate::convert_raw_mesh(build(self.half))
+        crate::convert_raw_mesh(self.doc.borrow().as_ref(), build(self.half))
+    }
+
+    fn set_doc(&self, doc: Document) {
+        *self.doc.borrow_mut() = Some(doc);
     }
 }
 

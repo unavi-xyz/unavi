@@ -1,6 +1,6 @@
 use crate::{
     exports::unavi::shapes::api::Guest,
-    wired::scene::types::{Indices, Mesh},
+    wired::scene::types::{Document, Indices, Mesh},
 };
 
 mod capsule;
@@ -30,13 +30,17 @@ struct RawMesh {
     indices: Vec<u32>,
 }
 
-fn convert_raw_mesh(raw: RawMesh) -> Mesh {
-    let doc = wired::scene::context::self_document();
-    let out = doc.create_mesh();
+fn convert_raw_mesh(doc: Option<&Document>, raw: RawMesh) -> Mesh {
+    let out = doc.map_or_else(
+        || wired::scene::context::self_document().create_mesh(),
+        Document::create_mesh,
+    );
+
     out.set_positions(Some(raw.positions.as_flattened()));
     out.set_normals(Some(raw.normals.as_flattened()));
     out.set_uv0(Some(raw.uvs.as_flattened()));
     out.set_indices(Some(&Indices::Full(raw.indices)));
+
     out
 }
 

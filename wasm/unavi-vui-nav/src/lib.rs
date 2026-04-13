@@ -191,9 +191,10 @@ impl GuestScript for Script {
                         );
                         println!("+ spawned doc: {doc_id_hex}");
 
-                        let beacon_size = 0.1; // TODO scale from player count?
+                        let beacon_size = 0.1;
 
                         let cuboid = Cuboid::new(beacon_size, beacon_size, beacon_size);
+                        cuboid.set_doc(doc.clone());
 
                         let node = doc.create_node();
                         node.set_mesh(Some(&cuboid.mesh()));
@@ -201,7 +202,7 @@ impl GuestScript for Script {
                         node.set_rigid_body(Some(RigidBodyKind::Dynamic));
 
                         let mut pos = self.root.translation();
-                        pos.x -= BASIN_X;
+                        pos.x += BASIN_X;
                         pos.y += BASIN_Y + (beacon_size * 2.0);
                         node.set_translation(pos);
 

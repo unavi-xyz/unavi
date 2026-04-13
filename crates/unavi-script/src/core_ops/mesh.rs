@@ -1,7 +1,7 @@
 use std::sync::atomic::Ordering;
 
 use bevy::mesh::PrimitiveTopology;
-use bevy::prelude::{Entity, World};
+use bevy::prelude::World;
 use bevy_hsd::cache::MeshInner;
 use bevy_hsd::hydrate::compile::mesh::{HsdMeshGeometrySet, MeshGeometrySource};
 use bevy_hsd::hydrate::events::ScriptCommandQueue;
@@ -27,79 +27,79 @@ pub fn set_topology(inner: &MeshInner, topo: PrimitiveTopology) {
 
 pub fn set_indices(
     inner: &MeshInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     indices: Option<Vec<u32>>,
     cmds: &mut ScriptCommandQueue,
 ) {
     inner.state.lock().expect("mesh state lock").indices = indices;
-    push_geometry_set(inner, doc, cmds);
+    push_geometry_set(inner, doc_id, cmds);
 }
 
 pub fn set_positions(
     inner: &MeshInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     values: Option<Vec<f32>>,
     cmds: &mut ScriptCommandQueue,
 ) {
     inner.state.lock().expect("mesh state lock").positions = values;
-    push_geometry_set(inner, doc, cmds);
+    push_geometry_set(inner, doc_id, cmds);
 }
 
 pub fn set_normals(
     inner: &MeshInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     values: Option<Vec<f32>>,
     cmds: &mut ScriptCommandQueue,
 ) {
     inner.state.lock().expect("mesh state lock").normals = values;
-    push_geometry_set(inner, doc, cmds);
+    push_geometry_set(inner, doc_id, cmds);
 }
 
 pub fn set_tangents(
     inner: &MeshInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     values: Option<Vec<f32>>,
     cmds: &mut ScriptCommandQueue,
 ) {
     inner.state.lock().expect("mesh state lock").tangents = values;
-    push_geometry_set(inner, doc, cmds);
+    push_geometry_set(inner, doc_id, cmds);
 }
 
 pub fn set_colors(
     inner: &MeshInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     values: Option<Vec<f32>>,
     cmds: &mut ScriptCommandQueue,
 ) {
     inner.state.lock().expect("mesh state lock").colors = values;
-    push_geometry_set(inner, doc, cmds);
+    push_geometry_set(inner, doc_id, cmds);
 }
 
 pub fn set_uv0(
     inner: &MeshInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     values: Option<Vec<f32>>,
     cmds: &mut ScriptCommandQueue,
 ) {
     inner.state.lock().expect("mesh state lock").uv0 = values;
-    push_geometry_set(inner, doc, cmds);
+    push_geometry_set(inner, doc_id, cmds);
 }
 
 pub fn set_uv1(
     inner: &MeshInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     values: Option<Vec<f32>>,
     cmds: &mut ScriptCommandQueue,
 ) {
     inner.state.lock().expect("mesh state lock").uv1 = values;
-    push_geometry_set(inner, doc, cmds);
+    push_geometry_set(inner, doc_id, cmds);
 }
 
-fn push_geometry_set(inner: &MeshInner, doc: Entity, cmds: &mut ScriptCommandQueue) {
+fn push_geometry_set(inner: &MeshInner, doc_id: blake3::Hash, cmds: &mut ScriptCommandQueue) {
     let id = inner.id.clone();
     cmds.push(move |world: &mut World| {
         world.trigger(HsdMeshGeometrySet {
-            doc,
+            doc_id,
             id,
             source: MeshGeometrySource::Inline,
         });

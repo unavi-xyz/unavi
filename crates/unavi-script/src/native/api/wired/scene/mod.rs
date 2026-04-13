@@ -4,9 +4,14 @@ use std::{
     time::Duration,
 };
 
-use bevy::prelude::{Command, Entity, World};
+use bevy::{
+    ecs::name::Name,
+    prelude::{Command, Entity, World},
+};
 use bevy_hsd::{
-    HsdDoc, HsdRecordId, cache::SceneRegistryInner, hydrate::events::ScriptCommandQueue,
+    DocRegistryMap, HsdDoc, HsdRecordId,
+    cache::{SceneRegistry, SceneRegistryInner},
+    hydrate::events::ScriptCommandQueue,
 };
 use loro::LoroDoc;
 use smol_str::SmolStr;
@@ -17,43 +22,6 @@ use wired_schemas::SCHEMA_HSD;
 
 use crate::firewall::{HsdFirewall, HsdFirewallInner};
 
-macro_rules! mesh_attr {
-    ($get:ident, $set:ident, $field:ident, $ty:ty) => {
-        async fn $get(
-            &mut self,
-            self_: wasmtime::component::Resource<HostMesh>,
-        ) -> wasmtime::Result<$ty> {
-            let inner = std::sync::Arc::clone(&self.table.get(&self_)?.inner);
-            Ok(inner.state.lock().expect("mesh state lock").$field.clone())
-        }
-        async fn $set(
-            &mut self,
-            self_: wasmtime::component::Resource<HostMesh>,
-            values: $ty,
-        ) -> wasmtime::Result<()> {
-            let inner = std::sync::Arc::clone(&self.table.get(&self_)?.inner);
-            let mut queue = self.command_queue.lock().expect("cmd queue lock");
-            crate::core_ops::mesh::$set(&inner, self.doc_entity, values, &mut queue);
-            Ok(())
-        }
-    };
-}
-
-macro_rules! material_setter {
-    ($set:ident, $ty:ty) => {
-        async fn $set(
-            &mut self,
-            self_: wasmtime::component::Resource<HostMaterial>,
-            value: $ty,
-        ) -> wasmtime::Result<()> {
-            let inner = std::sync::Arc::clone(&self.table.get(&self_)?.inner);
-            let mut queue = self.command_queue.lock().expect("cmd queue lock");
-            crate::core_ops::material::$set(&inner, self.doc_entity, value, &mut queue);
-            Ok(())
-        }
-    };
-}
-
 pub mod document;
 mod material;
 mod mesh;
@@ -63,7 +31,6 @@ pub mod node;
 #[derive(Clone)]
 pub struct DocHandle {
     pub registry: Arc<SceneRegistryInner>,
-    pub doc_entity: Entity,
     pub firewall: Arc<RwLock<HsdFirewallInner>>,
 }
 
@@ -114,17 +81,12 @@ impl WiredSceneRt {
     pub(super) fn get_doc_read(
         &self,
         res: &wasmtime::component::Resource<document::HostDocument>,
-    ) -> wasmtime::Result<(Arc<SceneRegistryInner>, bool, bool, Entity)> {
+    ) -> wasmtime::Result<(Arc<SceneRegistryInner>, bool, bool, blake3::Hash)> {
         let d = self.table.get(res)?;
         if !d.can_read {
             bail!("hsd read permission required")
         }
-        Ok((
-            Arc::clone(&d.registry),
-            d.can_read,
-            d.can_write,
-            d.doc_entity,
-        ))
+        Ok((Arc::clone(&d.registry), d.can_read, d.can_write, d.id))
     }
 
     pub(super) fn foreign_perms(&self, foreign_id: blake3::Hash) -> (bool, bool) {
@@ -163,7 +125,7 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
                 inner,
                 can_read: true,
                 can_write: true,
-                doc_entity: self.doc_entity,
+                doc_id: self.doc_id,
             })?;
             return Ok(res);
         }
@@ -177,9 +139,7 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
         let res = self.table.push(document::HostDocument {
             id: self.doc_id,
             registry: Arc::clone(&self.registry),
-            doc_entity: self.doc_entity,
             lor_doc: Some(Arc::clone(&self.doc)),
-            entity_slot: None,
             is_public: false,
             can_read: true,
             can_write: true,
@@ -221,9 +181,7 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
         Ok(Some(self.table.push(document::HostDocument {
             id: foreign_id,
             registry: h.registry,
-            doc_entity: h.doc_entity,
             lor_doc: None,
-            entity_slot: None,
             is_public: false,
             can_read,
             can_write,
@@ -274,10 +232,6 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
         let record_id = result.id;
         let lor_doc = Arc::new(result.doc);
 
-        // Entity slot: filled when the spawn command flushes, so that node/mesh
-        // commands queued in the same tick can resolve the real entity.
-        let entity_slot: Arc<Mutex<Option<Entity>>> = Arc::new(Mutex::new(None));
-        let slot_clone = Arc::clone(&entity_slot);
         let lor_doc_spawn = Arc::clone(&lor_doc);
         let registry_spawn = Arc::clone(&new_registry);
         let firewall_spawn = Arc::clone(&new_firewall_inner);
@@ -289,12 +243,16 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
                 let entity = world
                     .spawn((
                         HsdDoc(lor_doc_spawn),
-                        HsdRecordId(record_id),
-                        bevy_hsd::cache::SceneRegistry(registry_spawn),
                         HsdFirewall(firewall_spawn),
+                        HsdRecordId(record_id),
+                        Name::new(format!("Document {record_id}")),
+                        SceneRegistry(Arc::clone(&registry_spawn)),
                     ))
                     .id();
-                *slot_clone.lock().expect("entity slot lock") = Some(entity);
+                world
+                    .resource_mut::<DocRegistryMap>()
+                    .0
+                    .insert(record_id, (entity, registry_spawn));
             });
 
         // Register in the global map so other scripts can find this doc.
@@ -305,7 +263,6 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
                 record_id,
                 DocHandle {
                     registry: Arc::clone(&new_registry),
-                    doc_entity: Entity::PLACEHOLDER,
                     firewall: Arc::clone(&new_firewall_inner),
                 },
             );
@@ -313,9 +270,7 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
         let res = self.table.push(document::HostDocument {
             id: record_id,
             registry: new_registry,
-            doc_entity: Entity::PLACEHOLDER,
             lor_doc: Some(lor_doc),
-            entity_slot: Some(entity_slot),
             is_public: false,
             can_read: true,
             can_write: true,

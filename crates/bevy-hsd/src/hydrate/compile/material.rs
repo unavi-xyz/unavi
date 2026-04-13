@@ -9,7 +9,7 @@ use bevy::prelude::*;
 use bevy_wds::{BlobDeps, BlobDepsLoaded};
 use smol_str::SmolStr;
 
-use crate::{HsdChild, cache::SceneRegistry, data::HsdMaterial};
+use crate::{DocRegistryMap, HsdChild, cache::SceneRegistryInner, data::HsdMaterial};
 
 /// Marks a material entity as having a ready `Handle<StandardMaterial>`.
 #[derive(Component)]
@@ -17,104 +17,104 @@ pub struct CompiledMaterial(pub Handle<StandardMaterial>);
 
 #[derive(Event)]
 pub struct HsdMaterialAlphaCutoffSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub value: f32,
 }
 
 #[derive(Event)]
 pub struct HsdMaterialAlphaModeSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub mode: Option<String>,
 }
 
 #[derive(Event)]
 pub struct HsdMaterialBaseColorSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub color: [f32; 4],
 }
 
 #[derive(Event)]
 pub struct HsdMaterialBaseColorTextureSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub value: SmolStr,
 }
 
 #[derive(Event)]
 pub struct HsdMaterialEmissiveTextureSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub value: SmolStr,
 }
 
 #[derive(Event)]
 pub struct HsdMaterialMetallicRoughnessTextureSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub value: SmolStr,
 }
 
 #[derive(Event)]
 pub struct HsdMaterialNormalTextureSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub value: SmolStr,
 }
 
 #[derive(Event)]
 pub struct HsdMaterialOcclusionTextureSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub value: SmolStr,
 }
 
 #[derive(Event)]
 pub struct HsdMaterialDespawned {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
 }
 
 #[derive(Event)]
 pub struct HsdMaterialDoubleSidedSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub value: bool,
 }
 
 #[derive(Event)]
 pub struct HsdMaterialMetallicSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub value: f32,
 }
 
 #[derive(Event)]
 pub struct HsdMaterialNameSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub name: Option<String>,
 }
 
 #[derive(Event)]
 pub struct HsdMaterialRoughnessSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub value: f32,
 }
 
 #[derive(Event)]
 pub struct HsdMaterialSpawned {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub initial: Option<HsdMaterial>,
 }
 
 #[derive(Event)]
 pub struct HsdMaterialUnlitSet {
-    pub doc: Entity,
+    pub doc_id: blake3::Hash,
     pub id: SmolStr,
     pub value: bool,
 }
@@ -158,16 +158,15 @@ fn material_params_from_hsd(hsd: &HsdMaterial) -> MaterialParams {
 
 pub(crate) fn handle_hsd_material_spawned(
     trigger: On<HsdMaterialSpawned>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "material spawned");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((doc_entity, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let inner = registry
-        .0
         .materials
         .lock()
         .expect("materials lock")
@@ -184,7 +183,7 @@ pub(crate) fn handle_hsd_material_spawned(
         .map(material_params_from_hsd)
         .unwrap_or_default();
 
-    let entity = commands.spawn(HsdChild { doc: ev.doc }).id();
+    let entity = commands.spawn(HsdChild { doc: *doc_entity }).id();
 
     commands.entity(entity).insert(params);
     *inner.entity.lock().expect("entity lock") = Some(entity);
@@ -192,16 +191,16 @@ pub(crate) fn handle_hsd_material_spawned(
 
 pub(crate) fn handle_hsd_material_despawned(
     trigger: On<HsdMaterialDespawned>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "material despawned");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let inner = {
-        let mut mats = registry.0.materials.lock().expect("materials lock");
+        let mut mats = registry.materials.lock().expect("materials lock");
         mats.remove(&ev.id)
     };
     let Some(inner) = inner else { return };
@@ -214,16 +213,15 @@ pub(crate) fn handle_hsd_material_despawned(
 
 pub(crate) fn handle_hsd_material_alpha_cutoff_set(
     trigger: On<HsdMaterialAlphaCutoffSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, value = ev.value, "material alpha cutoff set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .materials
         .lock()
         .expect("materials lock")
@@ -237,16 +235,15 @@ pub(crate) fn handle_hsd_material_alpha_cutoff_set(
 
 pub(crate) fn handle_hsd_material_alpha_mode_set(
     trigger: On<HsdMaterialAlphaModeSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, mode = ?ev.mode, "material alpha mode set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .materials
         .lock()
         .expect("materials lock")
@@ -260,16 +257,15 @@ pub(crate) fn handle_hsd_material_alpha_mode_set(
 
 pub(crate) fn handle_hsd_material_base_color_set(
     trigger: On<HsdMaterialBaseColorSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, color = ?ev.color, "material base color set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .materials
         .lock()
         .expect("materials lock")
@@ -282,9 +278,8 @@ pub(crate) fn handle_hsd_material_base_color_set(
     }
 }
 
-fn get_image_entity(registry: &SceneRegistry, image_id: &SmolStr) -> Option<Entity> {
+fn get_image_entity(registry: &SceneRegistryInner, image_id: &SmolStr) -> Option<Entity> {
     registry
-        .0
         .images
         .lock()
         .expect("images lock")
@@ -292,9 +287,8 @@ fn get_image_entity(registry: &SceneRegistry, image_id: &SmolStr) -> Option<Enti
         .and_then(|i| *i.entity.lock().expect("entity lock"))
 }
 
-fn get_mat_entity(registry: &SceneRegistry, mat_id: &SmolStr) -> Option<Entity> {
+fn get_mat_entity(registry: &SceneRegistryInner, mat_id: &SmolStr) -> Option<Entity> {
     registry
-        .0
         .materials
         .lock()
         .expect("materials lock")
@@ -304,12 +298,12 @@ fn get_mat_entity(registry: &SceneRegistry, mat_id: &SmolStr) -> Option<Entity> 
 
 pub(crate) fn handle_hsd_material_base_color_texture_set(
     trigger: On<HsdMaterialBaseColorTextureSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, image = %ev.value, "material base color texture set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
@@ -322,12 +316,12 @@ pub(crate) fn handle_hsd_material_base_color_texture_set(
 
 pub(crate) fn handle_hsd_material_emissive_texture_set(
     trigger: On<HsdMaterialEmissiveTextureSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, image = %ev.value, "material emissive texture set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
@@ -340,12 +334,12 @@ pub(crate) fn handle_hsd_material_emissive_texture_set(
 
 pub(crate) fn handle_hsd_material_metallic_roughness_texture_set(
     trigger: On<HsdMaterialMetallicRoughnessTextureSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, image = %ev.value, "material metallic roughness texture set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
@@ -358,12 +352,12 @@ pub(crate) fn handle_hsd_material_metallic_roughness_texture_set(
 
 pub(crate) fn handle_hsd_material_normal_texture_set(
     trigger: On<HsdMaterialNormalTextureSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, image = %ev.value, "material normal texture set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
@@ -376,12 +370,12 @@ pub(crate) fn handle_hsd_material_normal_texture_set(
 
 pub(crate) fn handle_hsd_material_occlusion_texture_set(
     trigger: On<HsdMaterialOcclusionTextureSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, image = %ev.value, "material occlusion texture set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
@@ -394,16 +388,15 @@ pub(crate) fn handle_hsd_material_occlusion_texture_set(
 
 pub(crate) fn handle_hsd_material_double_sided_set(
     trigger: On<HsdMaterialDoubleSidedSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, value = ev.value, "material double sided set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .materials
         .lock()
         .expect("materials lock")
@@ -417,16 +410,15 @@ pub(crate) fn handle_hsd_material_double_sided_set(
 
 pub(crate) fn handle_hsd_material_metallic_set(
     trigger: On<HsdMaterialMetallicSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, value = ev.value, "material metallic set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .materials
         .lock()
         .expect("materials lock")
@@ -440,16 +432,15 @@ pub(crate) fn handle_hsd_material_metallic_set(
 
 pub(crate) fn handle_hsd_material_name_set(
     trigger: On<HsdMaterialNameSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, name = ?ev.name, "material name set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .materials
         .lock()
         .expect("materials lock")
@@ -468,16 +459,15 @@ pub(crate) fn handle_hsd_material_name_set(
 
 pub(crate) fn handle_hsd_material_unlit_set(
     trigger: On<HsdMaterialUnlitSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, value = ev.value, "material unlit set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .materials
         .lock()
         .expect("materials lock")
@@ -491,16 +481,15 @@ pub(crate) fn handle_hsd_material_unlit_set(
 
 pub(crate) fn handle_hsd_material_roughness_set(
     trigger: On<HsdMaterialRoughnessSet>,
-    registries: Query<&SceneRegistry>,
+    registry_map: Res<DocRegistryMap>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, value = ev.value, "material roughness set");
-    let Ok(registry) = registries.get(ev.doc) else {
+    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
         return;
     };
     let ent = registry
-        .0
         .materials
         .lock()
         .expect("materials lock")

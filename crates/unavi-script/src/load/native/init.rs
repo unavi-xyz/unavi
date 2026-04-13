@@ -193,7 +193,6 @@ pub fn register_new_docs(
         );
         let handle = DocHandle {
             registry: Arc::clone(&registry.0),
-            doc_entity,
             firewall: hsd_fw,
         };
         registry_map

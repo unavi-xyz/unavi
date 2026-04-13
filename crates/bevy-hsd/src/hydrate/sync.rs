@@ -10,8 +10,10 @@ use bevy::prelude::*;
 use loro::{LoroDoc, LoroList, LoroMap, LoroTree, LoroValue, TreeParentId};
 use smol_str::ToSmolStr;
 
-use crate::HsdDoc;
-use crate::cache::{SceneRegistry, SyncOp};
+use crate::{
+    HsdDoc,
+    cache::{SceneRegistry, SyncOp},
+};
 
 pub(crate) fn sync_ecs_to_cache(
     registries: Query<&SceneRegistry>,

@@ -9,11 +9,9 @@ use bevy_hsd::hydrate::compile::node::{
 use bevy_hsd::hydrate::events::{NodeRef, ScriptCommandQueue};
 use smol_str::SmolStr;
 
-use bevy::prelude::Entity;
-
 pub fn set_name(
     inner: &NodeInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     value: Option<String>,
     cmds: &mut ScriptCommandQueue,
 ) {
@@ -32,7 +30,7 @@ pub fn set_name(
         let id = inner.id.clone();
         cmds.push(move |world: &mut World| {
             world.trigger(HsdNodeNameSet {
-                doc,
+                doc_id,
                 id,
                 name: value,
             });
@@ -42,7 +40,7 @@ pub fn set_name(
 
 pub fn set_translation(
     inner: &NodeInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     x: f32,
     y: f32,
     z: f32,
@@ -67,14 +65,18 @@ pub fn set_translation(
         let id = inner.id.clone();
         let transform = inner.state.lock().expect("node state lock").transform;
         cmds.push(move |world: &mut World| {
-            world.trigger(HsdNodeTransformSet { doc, id, transform });
+            world.trigger(HsdNodeTransformSet {
+                doc_id,
+                id,
+                transform,
+            });
         });
     }
 }
 
 pub fn set_rotation(
     inner: &NodeInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     x: f32,
     y: f32,
     z: f32,
@@ -97,14 +99,18 @@ pub fn set_rotation(
         let id = inner.id.clone();
         let transform = inner.state.lock().expect("node state lock").transform;
         cmds.push(move |world: &mut World| {
-            world.trigger(HsdNodeTransformSet { doc, id, transform });
+            world.trigger(HsdNodeTransformSet {
+                doc_id,
+                id,
+                transform,
+            });
         });
     }
 }
 
 pub fn set_scale(
     inner: &NodeInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     x: f32,
     y: f32,
     z: f32,
@@ -121,14 +127,18 @@ pub fn set_scale(
         let id = inner.id.clone();
         let transform = inner.state.lock().expect("node state lock").transform;
         cmds.push(move |world: &mut World| {
-            world.trigger(HsdNodeTransformSet { doc, id, transform });
+            world.trigger(HsdNodeTransformSet {
+                doc_id,
+                id,
+                transform,
+            });
         });
     }
 }
 
 pub fn set_transform(
     inner: &NodeInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     new_transform: Transform,
     cmds: &mut ScriptCommandQueue,
 ) {
@@ -153,7 +163,7 @@ pub fn set_transform(
         let id = inner.id.clone();
         cmds.push(move |world: &mut World| {
             world.trigger(HsdNodeTransformSet {
-                doc,
+                doc_id,
                 id,
                 transform: new_transform,
             });
@@ -163,7 +173,7 @@ pub fn set_transform(
 
 pub fn set_mesh(
     inner: &NodeInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     mesh_id: Option<SmolStr>,
     cmds: &mut ScriptCommandQueue,
 ) {
@@ -182,7 +192,7 @@ pub fn set_mesh(
         let id = inner.id.clone();
         cmds.push(move |world: &mut World| {
             world.trigger(HsdNodeMeshSet {
-                doc,
+                doc_id,
                 id,
                 mesh: mesh_id,
             });
@@ -192,7 +202,7 @@ pub fn set_mesh(
 
 pub fn set_material(
     inner: &NodeInner,
-    doc: Entity,
+    doc_id: blake3::Hash,
     mat_id: Option<SmolStr>,
     cmds: &mut ScriptCommandQueue,
 ) {
@@ -211,7 +221,7 @@ pub fn set_material(
         let id = inner.id.clone();
         cmds.push(move |world: &mut World| {
             world.trigger(HsdNodeMaterialSet {
-                doc,
+                doc_id,
                 id,
                 material: mat_id,
             });
@@ -222,7 +232,7 @@ pub fn set_material(
 pub fn add_child(
     parent_inner: &Arc<NodeInner>,
     child_inner: &Arc<NodeInner>,
-    doc: Entity,
+    doc_id: blake3::Hash,
     cmds: &mut ScriptCommandQueue,
 ) {
     {
@@ -243,14 +253,18 @@ pub fn add_child(
         parent_ent.map_or_else(|| NodeRef::Id(parent_inner.id.clone()), NodeRef::Entity);
     cmds.push(move |world: &mut World| {
         world.trigger(HsdNodeParentSet {
-            doc,
+            doc_id,
             child: child_ref,
             parent: Some(parent_ref),
         });
     });
 }
 
-pub fn remove_child(child_inner: &Arc<NodeInner>, doc: Entity, cmds: &mut ScriptCommandQueue) {
+pub fn remove_child(
+    child_inner: &Arc<NodeInner>,
+    doc_id: blake3::Hash,
+    cmds: &mut ScriptCommandQueue,
+) {
     let parent_inner = {
         let child_state = child_inner.state.lock().expect("child state lock");
         child_state
@@ -271,7 +285,7 @@ pub fn remove_child(child_inner: &Arc<NodeInner>, doc: Entity, cmds: &mut Script
     let child_ref = child_ent.map_or_else(|| NodeRef::Id(child_inner.id.clone()), NodeRef::Entity);
     cmds.push(move |world: &mut World| {
         world.trigger(HsdNodeParentSet {
-            doc,
+            doc_id,
             child: child_ref,
             parent: None,
         });

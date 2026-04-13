@@ -1,7 +1,7 @@
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Mutex};
 
-use bevy::prelude::{Entity, World};
+use bevy::prelude::World;
 use bevy_hsd::cache::{
     MaterialHsdChanges, MaterialInner, MaterialState, MeshHsdChanges, MeshInner, MeshState,
     NodeHsdChanges, NodeInner, NodeState, SceneRegistryInner, SyncOp,
@@ -13,34 +13,9 @@ use bevy_hsd::hydrate::events::ScriptCommandQueue;
 
 use crate::util::gen_id;
 
-/// Reference to the Bevy entity for a script-created document.
-///
-/// For normal documents (self-doc, foreign), the entity is known immediately.
-/// For documents created by a script within the same tick, the entity is
-/// assigned when the spawn command flushes — the slot is populated then.
-/// Command closures that need the entity capture this and resolve it at flush
-/// time, ensuring ordering: spawn-doc command runs before node-spawn commands.
-pub enum DocEntityRef {
-    Immediate(Entity),
-    Slot(Arc<Mutex<Option<Entity>>>),
-}
-
-impl DocEntityRef {
-    #[must_use]
-    pub fn resolve(&self) -> Entity {
-        match self {
-            Self::Immediate(e) => *e,
-            Self::Slot(slot) => slot
-                .lock()
-                .expect("entity slot lock")
-                .unwrap_or(Entity::PLACEHOLDER),
-        }
-    }
-}
-
 pub fn create_node(
     registry: &SceneRegistryInner,
-    doc: DocEntityRef,
+    doc_id: blake3::Hash,
     cmds: &mut ScriptCommandQueue,
 ) -> Arc<NodeInner> {
     let id = gen_id();
@@ -65,10 +40,7 @@ pub fn create_node(
         .insert(id.clone(), Arc::clone(&inner));
     let id_ = id.clone();
     cmds.push(move |world: &mut World| {
-        world.trigger(HsdNodeSpawned {
-            doc: doc.resolve(),
-            id: id_,
-        });
+        world.trigger(HsdNodeSpawned { doc_id, id: id_ });
     });
     if registry.doc_sync.load(Ordering::Relaxed) {
         registry
@@ -82,7 +54,7 @@ pub fn create_node(
 
 pub fn create_mesh(
     registry: &SceneRegistryInner,
-    doc: DocEntityRef,
+    doc_id: blake3::Hash,
     cmds: &mut ScriptCommandQueue,
 ) -> Arc<MeshInner> {
     let id = gen_id();
@@ -100,10 +72,7 @@ pub fn create_mesh(
         .insert(id.clone(), Arc::clone(&inner));
     let id_ = id.clone();
     cmds.push(move |world: &mut World| {
-        world.trigger(HsdMeshSpawned {
-            doc: doc.resolve(),
-            id: id_,
-        });
+        world.trigger(HsdMeshSpawned { doc_id, id: id_ });
     });
     if registry.doc_sync.load(Ordering::Relaxed) {
         registry
@@ -117,7 +86,7 @@ pub fn create_mesh(
 
 pub fn create_material(
     registry: &SceneRegistryInner,
-    doc: DocEntityRef,
+    doc_id: blake3::Hash,
     cmds: &mut ScriptCommandQueue,
 ) -> Arc<MaterialInner> {
     let id = gen_id();
@@ -136,7 +105,7 @@ pub fn create_material(
     let id_ = id.clone();
     cmds.push(move |world: &mut World| {
         world.trigger(HsdMaterialSpawned {
-            doc: doc.resolve(),
+            doc_id,
             id: id_,
             initial: None,
         });
@@ -154,15 +123,12 @@ pub fn create_material(
 pub fn remove_node(
     inner: &NodeInner,
     registry: &SceneRegistryInner,
-    doc: DocEntityRef,
+    doc_id: blake3::Hash,
     cmds: &mut ScriptCommandQueue,
 ) {
     let id = inner.id.clone();
     cmds.push(move |world: &mut World| {
-        world.trigger(HsdNodeDespawned {
-            doc: doc.resolve(),
-            id,
-        });
+        world.trigger(HsdNodeDespawned { doc_id, id });
     });
     if registry.doc_sync.load(Ordering::Relaxed) {
         let id = inner.id.clone();
@@ -177,15 +143,12 @@ pub fn remove_node(
 pub fn remove_mesh(
     inner: &MeshInner,
     registry: &SceneRegistryInner,
-    doc: DocEntityRef,
+    doc_id: blake3::Hash,
     cmds: &mut ScriptCommandQueue,
 ) {
     let id = inner.id.clone();
     cmds.push(move |world: &mut World| {
-        world.trigger(HsdMeshDespawned {
-            doc: doc.resolve(),
-            id,
-        });
+        world.trigger(HsdMeshDespawned { doc_id, id });
     });
     if registry.doc_sync.load(Ordering::Relaxed) {
         let id = inner.id.clone();
@@ -200,15 +163,12 @@ pub fn remove_mesh(
 pub fn remove_material(
     inner: &MaterialInner,
     registry: &SceneRegistryInner,
-    doc: DocEntityRef,
+    doc_id: blake3::Hash,
     cmds: &mut ScriptCommandQueue,
 ) {
     let id = inner.id.clone();
     cmds.push(move |world: &mut World| {
-        world.trigger(HsdMaterialDespawned {
-            doc: doc.resolve(),
-            id,
-        });
+        world.trigger(HsdMaterialDespawned { doc_id, id });
     });
     if registry.doc_sync.load(Ordering::Relaxed) {
         let id = inner.id.clone();

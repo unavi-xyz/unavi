@@ -43,9 +43,9 @@ pub fn register(obj: &Object) {
         |id: u32, rep: u32| {
             with_script(id, |state| {
                 let inner = Arc::clone(&state.mats.get(&rep)?.inner);
-                let doc_entity = state.mats.get(&rep)?.doc_entity;
+                let doc = state.mats.get(&rep)?.doc.clone();
                 let new_rep = state.alloc();
-                state.mats.insert(new_rep, MatEntry { inner, doc_entity });
+                state.mats.insert(new_rep, MatEntry { inner, doc });
                 Some(new_rep)
             })
             .flatten()
@@ -82,7 +82,7 @@ pub fn register(obj: &Object) {
             with_script(id, |state| {
                 let entry = state.mats.get(&rep)?;
                 let inner = Arc::clone(&entry.inner);
-                let doc = entry.doc_entity;
+                let doc = entry.doc_id;
                 core_ops::material::set_name(
                     &inner,
                     doc,
@@ -121,7 +121,7 @@ pub fn register(obj: &Object) {
             with_script(id, |state| {
                 let entry = state.mats.get(&rep)?;
                 let inner = Arc::clone(&entry.inner);
-                let doc = entry.doc_entity;
+                let doc = entry.doc_id;
                 core_ops::material::set_base_color(
                     &inner,
                     doc,
@@ -162,7 +162,7 @@ pub fn register(obj: &Object) {
                     with_script(id, |state| {
                         let entry = state.mats.get(&rep)?;
                         let inner = Arc::clone(&entry.inner);
-                        let doc = entry.doc_entity;
+                        let doc = entry.doc_id;
                         $setter_fn(&inner, doc, value as f32, &mut state.command_queue);
                         Some(())
                     });
@@ -212,7 +212,7 @@ pub fn register(obj: &Object) {
                     with_script(id, |state| {
                         let entry = state.mats.get(&rep)?;
                         let inner = Arc::clone(&entry.inner);
-                        let doc = entry.doc_entity;
+                        let doc = entry.doc_id;
                         $setter_fn(&inner, doc, value, &mut state.command_queue);
                         Some(())
                     });
@@ -266,7 +266,7 @@ pub fn register(obj: &Object) {
             with_script(id, |state| {
                 let entry = state.mats.get(&rep)?;
                 let inner = Arc::clone(&entry.inner);
-                let doc = entry.doc_entity;
+                let doc = entry.doc_id;
                 core_ops::material::set_alpha_cutoff(
                     &inner,
                     doc,
@@ -318,7 +318,7 @@ pub fn register(obj: &Object) {
             with_script(id, |state| {
                 let entry = state.mats.get(&rep)?;
                 let inner = Arc::clone(&entry.inner);
-                let doc = entry.doc_entity;
+                let doc = entry.doc_id;
                 let mode: Option<String> = value
                     .as_f64()
                     .map(|num| match num as i32 {

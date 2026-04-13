@@ -3,11 +3,15 @@
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
-
-use loro::{LoroTree, LoroValue, TreeParentId};
+use loro::{LoroMap, LoroTree, LoroValue, TreeParentId};
 
 use super::{diff::extract_changes_from_diff, events::RawChangeQueue};
-use crate::{HsdDoc, HsdSubscription, cache::SceneRegistry};
+
+use crate::{
+    DocRegistryMap, HsdDoc, HsdRecordId, HsdSubscription,
+    cache::{SceneRegistry, SceneRegistryInner},
+    hydrate::events::RawHsdChange,
+};
 
 pub fn init_hsd_doc(
     mut commands: Commands,
@@ -15,10 +19,9 @@ pub fn init_hsd_doc(
 ) {
     for (doc_ent, hsd_doc) in &added {
         let doc = Arc::clone(&hsd_doc.0);
-        let registry = crate::cache::SceneRegistryInner::new();
+        let registry = SceneRegistryInner::new();
 
-        let raw_queue: Arc<Mutex<Vec<super::events::RawHsdChange>>> =
-            Arc::new(Mutex::new(Vec::new()));
+        let raw_queue: Arc<Mutex<Vec<RawHsdChange>>> = Arc::new(Mutex::new(Vec::new()));
 
         let hsd_map = doc.get_map("hsd");
         full_hydrate(&hsd_map, &raw_queue);
@@ -40,10 +43,24 @@ pub fn init_hsd_doc(
     }
 }
 
+/// Registers newly initialized doc entities in the global [`DocRegistryMap`].
+///
+/// Runs after `init_hsd_doc` so `SceneRegistry` is always present when this fires.
+/// Covers both WDS docs (registry added by `init_hsd_doc`) and script-created
+/// docs (registry present from spawn time).
+pub fn register_doc_registries(
+    added: Query<(Entity, &HsdRecordId, &SceneRegistry), Added<SceneRegistry>>,
+    mut map: ResMut<DocRegistryMap>,
+) {
+    for (entity, record_id, registry) in &added {
+        map.0.insert(record_id.0, (entity, Arc::clone(&registry.0)));
+    }
+}
+
 /// Emits synthetic `*Added` events for all objects already in the document so
 /// the queue processor handles initial load identically to incremental diffs.
 /// Images are emitted before materials because materials reference image IDs.
-fn full_hydrate(hsd_map: &loro::LoroMap, raw_queue: &Arc<Mutex<Vec<super::events::RawHsdChange>>>) {
+fn full_hydrate(hsd_map: &LoroMap, raw_queue: &Arc<Mutex<Vec<RawHsdChange>>>) {
     let value = hsd_map.get_deep_value();
     let LoroValue::Map(root) = &value else { return };
 
@@ -51,7 +68,7 @@ fn full_hydrate(hsd_map: &loro::LoroMap, raw_queue: &Arc<Mutex<Vec<super::events
 
     if let Some(LoroValue::Map(images)) = root.get("images") {
         for id in images.keys() {
-            raw.push(super::events::RawHsdChange::ImageAdded {
+            raw.push(RawHsdChange::ImageAdded {
                 id: id.as_str().into(),
             });
         }
@@ -59,7 +76,7 @@ fn full_hydrate(hsd_map: &loro::LoroMap, raw_queue: &Arc<Mutex<Vec<super::events
 
     if let Some(LoroValue::Map(mats)) = root.get("materials") {
         for id in mats.keys() {
-            raw.push(super::events::RawHsdChange::MaterialAdded {
+            raw.push(RawHsdChange::MaterialAdded {
                 id: id.as_str().into(),
             });
         }
@@ -67,7 +84,7 @@ fn full_hydrate(hsd_map: &loro::LoroMap, raw_queue: &Arc<Mutex<Vec<super::events
 
     if let Some(LoroValue::Map(meshes)) = root.get("meshes") {
         for id in meshes.keys() {
-            raw.push(super::events::RawHsdChange::MeshAdded {
+            raw.push(RawHsdChange::MeshAdded {
                 id: id.as_str().into(),
             });
         }
@@ -79,7 +96,7 @@ fn full_hydrate(hsd_map: &loro::LoroMap, raw_queue: &Arc<Mutex<Vec<super::events
                 TreeParentId::Node(pid) => Some(pid),
                 _ => None,
             };
-            raw.push(super::events::RawHsdChange::NodeAdded {
+            raw.push(RawHsdChange::NodeAdded {
                 tree_id: node.id,
                 parent_id,
             });

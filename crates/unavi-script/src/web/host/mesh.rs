@@ -44,11 +44,9 @@ pub fn register(obj: &Object) {
         |id: u32, rep: u32| {
             with_script(id, |state| {
                 let inner = Arc::clone(&state.meshes.get(&rep)?.inner);
-                let doc_entity = state.meshes.get(&rep)?.doc_entity;
+                let doc_id = state.meshes.get(&rep)?.doc_id;
                 let new_rep = state.alloc();
-                state
-                    .meshes
-                    .insert(new_rep, MeshEntry { inner, doc_entity });
+                state.meshes.insert(new_rep, MeshEntry { inner, doc_id });
                 Some(new_rep)
             })
             .flatten()
@@ -163,7 +161,7 @@ pub fn register(obj: &Object) {
             with_script(id, |state| {
                 let entry = state.meshes.get(&rep)?;
                 let inner = Arc::clone(&entry.inner);
-                let doc = entry.doc_entity;
+                let doc_id = entry.doc_id;
                 let indices = if value.is_null() || value.is_undefined() {
                     None
                 } else {
@@ -177,7 +175,7 @@ pub fn register(obj: &Object) {
                         val.dyn_ref::<js_sys::Uint32Array>()?.to_vec()
                     })
                 };
-                core_ops::mesh::set_indices(&inner, doc, indices, &mut state.command_queue);
+                core_ops::mesh::set_indices(&inner, doc_id, indices, &mut state.command_queue);
                 Some(())
             });
         }
@@ -207,8 +205,13 @@ pub fn register(obj: &Object) {
                     with_script(id, |state| {
                         let entry = state.meshes.get(&rep)?;
                         let inner = Arc::clone(&entry.inner);
-                        let doc = entry.doc_entity;
-                        $setter_fn(&inner, doc, f32_from_js(&value), &mut state.command_queue);
+                        let doc_id = entry.doc_id;
+                        $setter_fn(
+                            &inner,
+                            doc_id,
+                            f32_from_js(&value),
+                            &mut state.command_queue,
+                        );
                         Some(())
                     });
                 }

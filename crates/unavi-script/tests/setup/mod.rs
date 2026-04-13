@@ -16,7 +16,11 @@ pub mod logs;
 
 const TICK: Duration = Duration::from_millis(100);
 
-pub fn setup_test_app(package: &'static str, wasm_override: Option<Vec<u8>>) -> App {
+pub fn setup_test_app(
+    package: &'static str,
+    wasm_override: Option<Vec<u8>>,
+    perms: ScriptPermissions,
+) -> App {
     let (actor, blobs) = create_test_wds();
 
     let source = wasm_override.map_or_else(
@@ -48,7 +52,7 @@ pub fn setup_test_app(package: &'static str, wasm_override: Option<Vec<u8>>) -> 
         .spawn((LocalActor(actor), LocalBlobs(blobs)));
 
     app.world_mut()
-        .spawn(ScriptPermissions::default())
+        .spawn(perms)
         .trigger(|entity| LoadLocalScript { entity, source });
 
     app

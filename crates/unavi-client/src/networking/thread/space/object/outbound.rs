@@ -222,6 +222,10 @@ pub async fn stream_objects(
 
         // Handle incoming control messages and send tickrate updates.
         for (object_id, ctx) in &mut streams {
+            // TODO only publish shared objects?
+            //  - ∩ space
+            //  - ∩ item permission
+
             handle_incoming_control(ctx, object_id.clone()).await;
 
             // Check if tickrate needs updating.

@@ -248,7 +248,7 @@ async fn handle_object_claim(
     let record_hash = claim.object_id.record;
 
     let Some(entry) = state.spaces.get_async(&record_hash).await else {
-        warn!(?record_hash, "claim for unknown space");
+        warn!(%record_hash, "claim for unknown space");
         return;
     };
 

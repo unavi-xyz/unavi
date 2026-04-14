@@ -2,7 +2,6 @@ use bevy::prelude::*;
 use blake3::Hash;
 use loro::LoroDoc;
 
-mod default_space;
 mod dynamic_docs;
 mod home;
 mod publish_beacons;

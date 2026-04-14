@@ -1,11 +1,15 @@
 use std::sync::{Arc, atomic::Ordering};
 
-use bevy_hsd::cache::{MaterialInner, MeshInner, NodeInner, SceneRegistryInner};
+use bevy::prelude::Transform as BevyTransform;
+use bevy_hsd::{
+    cache::{MaterialInner, MeshInner, NodeInner, SceneRegistryInner},
+    hydrate::compile::node::HsdDocTransformSet,
+};
 use loro::LoroDoc;
 use wasmtime::{bail, component::Resource};
 use wds::surg::acl::Acl;
 
-use super::bindings::wired::scene::types::{Document, Material, Mesh};
+use super::bindings::wired::scene::types::{Document, Material, Mesh, Quat, Transform, Vec3};
 use super::{WiredSceneRt, material::HostMaterial, mesh::HostMesh, node::HostNode};
 use crate::core_ops;
 
@@ -387,6 +391,184 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
 
     async fn id(&mut self, self_: Resource<Document>) -> wasmtime::Result<Vec<u8>> {
         Ok(self.table.get(&self_)?.id.as_bytes().to_vec())
+    }
+
+    async fn translation(&mut self, self_: Resource<Document>) -> wasmtime::Result<Vec3> {
+        let registry = Arc::clone(&self.table.get(&self_)?.registry);
+        let t = registry
+            .doc_transform
+            .lock()
+            .expect("doc_transform lock")
+            .translation;
+        Ok(Vec3 {
+            x: t.x,
+            y: t.y,
+            z: t.z,
+        })
+    }
+
+    async fn set_translation(
+        &mut self,
+        self_: Resource<Document>,
+        value: Vec3,
+    ) -> wasmtime::Result<()> {
+        let (doc_id, registry, can_write) = {
+            let d = self.table.get(&self_)?;
+            (d.id, Arc::clone(&d.registry), d.can_write)
+        };
+        if !can_write {
+            bail!("hsd write permission required")
+        }
+        let transform = {
+            let mut t = registry.doc_transform.lock().expect("doc_transform lock");
+            t.translation = bevy::math::Vec3::new(value.x, value.y, value.z);
+            *t
+        };
+        self.command_queue.lock().expect("cmd queue lock").push(
+            move |world: &mut bevy::prelude::World| {
+                world.trigger(HsdDocTransformSet { doc_id, transform });
+            },
+        );
+        Ok(())
+    }
+
+    async fn rotation(&mut self, self_: Resource<Document>) -> wasmtime::Result<Quat> {
+        let registry = Arc::clone(&self.table.get(&self_)?.registry);
+        let r = registry
+            .doc_transform
+            .lock()
+            .expect("doc_transform lock")
+            .rotation;
+        Ok(Quat {
+            x: r.x,
+            y: r.y,
+            z: r.z,
+            w: r.w,
+        })
+    }
+
+    async fn set_rotation(
+        &mut self,
+        self_: Resource<Document>,
+        value: Quat,
+    ) -> wasmtime::Result<()> {
+        let (doc_id, registry, can_write) = {
+            let d = self.table.get(&self_)?;
+            (d.id, Arc::clone(&d.registry), d.can_write)
+        };
+        if !can_write {
+            bail!("hsd write permission required")
+        }
+        let transform = {
+            let mut t = registry.doc_transform.lock().expect("doc_transform lock");
+            t.rotation =
+                bevy::math::Quat::from_xyzw(value.x, value.y, value.z, value.w).normalize();
+            *t
+        };
+        self.command_queue.lock().expect("cmd queue lock").push(
+            move |world: &mut bevy::prelude::World| {
+                world.trigger(HsdDocTransformSet { doc_id, transform });
+            },
+        );
+        Ok(())
+    }
+
+    async fn scale(&mut self, self_: Resource<Document>) -> wasmtime::Result<Vec3> {
+        let registry = Arc::clone(&self.table.get(&self_)?.registry);
+        let s = registry
+            .doc_transform
+            .lock()
+            .expect("doc_transform lock")
+            .scale;
+        Ok(Vec3 {
+            x: s.x,
+            y: s.y,
+            z: s.z,
+        })
+    }
+
+    async fn set_scale(&mut self, self_: Resource<Document>, value: Vec3) -> wasmtime::Result<()> {
+        let (doc_id, registry, can_write) = {
+            let d = self.table.get(&self_)?;
+            (d.id, Arc::clone(&d.registry), d.can_write)
+        };
+        if !can_write {
+            bail!("hsd write permission required")
+        }
+        let transform = {
+            let mut t = registry.doc_transform.lock().expect("doc_transform lock");
+            t.scale = bevy::math::Vec3::new(value.x, value.y, value.z);
+            *t
+        };
+        self.command_queue.lock().expect("cmd queue lock").push(
+            move |world: &mut bevy::prelude::World| {
+                world.trigger(HsdDocTransformSet { doc_id, transform });
+            },
+        );
+        Ok(())
+    }
+
+    async fn transform(&mut self, self_: Resource<Document>) -> wasmtime::Result<Transform> {
+        let registry = Arc::clone(&self.table.get(&self_)?.registry);
+        let bt = *registry.doc_transform.lock().expect("doc_transform lock");
+        Ok(Transform {
+            translation: Vec3 {
+                x: bt.translation.x,
+                y: bt.translation.y,
+                z: bt.translation.z,
+            },
+            rotation: Quat {
+                x: bt.rotation.x,
+                y: bt.rotation.y,
+                z: bt.rotation.z,
+                w: bt.rotation.w,
+            },
+            scale: Vec3 {
+                x: bt.scale.x,
+                y: bt.scale.y,
+                z: bt.scale.z,
+            },
+        })
+    }
+
+    async fn set_transform(
+        &mut self,
+        self_: Resource<Document>,
+        value: Transform,
+    ) -> wasmtime::Result<()> {
+        let (doc_id, registry, can_write) = {
+            let d = self.table.get(&self_)?;
+            (d.id, Arc::clone(&d.registry), d.can_write)
+        };
+        if !can_write {
+            bail!("hsd write permission required")
+        }
+        let transform = BevyTransform {
+            translation: bevy::math::Vec3::new(
+                value.translation.x,
+                value.translation.y,
+                value.translation.z,
+            ),
+            rotation: bevy::math::Quat::from_xyzw(
+                value.rotation.x,
+                value.rotation.y,
+                value.rotation.z,
+                value.rotation.w,
+            ),
+            scale: bevy::math::Vec3::new(value.scale.x, value.scale.y, value.scale.z),
+        };
+        *registry.doc_transform.lock().expect("doc_transform lock") = transform;
+        self.command_queue.lock().expect("cmd queue lock").push(
+            move |world: &mut bevy::prelude::World| {
+                world.trigger(HsdDocTransformSet { doc_id, transform });
+            },
+        );
+        Ok(())
+    }
+
+    async fn global_transform(&mut self, self_: Resource<Document>) -> wasmtime::Result<Transform> {
+        // HsdDoc is always a root entity; world transform equals local transform.
+        self.transform(self_).await
     }
 
     async fn drop(&mut self, rep: Resource<Document>) -> wasmtime::Result<()> {

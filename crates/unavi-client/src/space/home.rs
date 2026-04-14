@@ -1,20 +1,22 @@
-use std::cell::RefCell;
+use std::path::PathBuf;
 
 use bevy::prelude::*;
 use bevy_wds::{LocalActor, SyncTargets};
 use wds::actor::Actor;
 use wired_schemas::{SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
 
+use crate::networking::thread::{NetworkCommand, NetworkingThread};
+
+const DEFAULT_HOME_HSD: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/assets/hsd/unavi_default_home.hsd"
+);
+
 #[derive(Default)]
 pub struct JoinState {
     ready: bool,
     joined: bool,
 }
-
-use crate::{
-    networking::thread::{NetworkCommand, NetworkingThread},
-    space::default_space::default_space,
-};
 
 pub fn join_home_space(
     local_actor: Query<(&LocalActor, &SyncTargets)>,
@@ -38,7 +40,6 @@ pub fn join_home_space(
 
     let local_actor = local_actor.0.clone();
     let remote_actor = sync_targets.0.first().cloned();
-
     let command_tx = nt.command_tx.clone();
 
     unavi_wasm_compat::spawn_thread(async move {
@@ -57,7 +58,18 @@ async fn create_and_join_home(
 ) -> anyhow::Result<()> {
     let did = local_actor.identity().did();
 
-    let blobs = RefCell::new(None);
+    let mut actors = vec![local_actor.clone()];
+    if let Some(ref remote) = remote_actor {
+        actors.push(remote.clone());
+    }
+
+    let hsd_doc =
+        bevy_hsd::load_hsd::build_hsd_doc_from_file(PathBuf::from(DEFAULT_HOME_HSD), &actors)
+            .await?;
+
+    let hsd_snapshot = hsd_doc
+        .export(loro::ExportMode::Snapshot)
+        .map_err(|e| anyhow::anyhow!("export hsd snapshot: {e:?}"))?;
 
     let res = local_actor
         .create_record()
@@ -69,25 +81,13 @@ async fn create_and_join_home(
             Ok(())
         })?
         .add_schema("hsd", &*SCHEMA_HSD, |doc| {
-            let hsd = doc.get_map("hsd");
-            *blobs.borrow_mut() = Some(default_space(&hsd)?);
+            doc.import(&hsd_snapshot)
+                .map_err(|e| anyhow::anyhow!("import hsd snapshot: {e:?}"))?;
             Ok(())
         })?
         .sync_to(remote_actor.clone())
         .send()
         .await?;
-
-    let blobs = blobs.into_inner().unwrap_or_default();
-
-    for bytes in blobs.0 {
-        if let Some(remote_actor) = &remote_actor
-            && let Err(err) = remote_actor.upload_blob(bytes.clone()).await
-        {
-            warn!(?err, "failed to upload blob dep to remote");
-        }
-
-        local_actor.upload_blob(bytes).await?;
-    }
 
     info!(id = %res.id, "Created home space");
     command_tx.send(NetworkCommand::Join(res.id)).await?;

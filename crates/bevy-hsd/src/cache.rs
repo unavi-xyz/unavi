@@ -218,6 +218,7 @@ pub enum SyncOp {
 /// All per-doc scene state; stored on the doc entity and accessed by observers.
 pub struct SceneRegistryInner {
     pub doc_sync: AtomicBool,
+    pub doc_transform: Mutex<Transform>,
     pub images: Mutex<HashMap<SmolStr, Arc<ImageInner>>>,
     pub materials: Mutex<HashMap<SmolStr, Arc<MaterialInner>>>,
     pub meshes: Mutex<HashMap<SmolStr, Arc<MeshInner>>>,
@@ -237,6 +238,7 @@ impl Default for SceneRegistryInner {
     fn default() -> Self {
         Self {
             doc_sync: false.into(),
+            doc_transform: Mutex::new(Transform::IDENTITY),
             images: Mutex::new(HashMap::new()),
             materials: Mutex::new(HashMap::new()),
             meshes: Mutex::new(HashMap::new()),

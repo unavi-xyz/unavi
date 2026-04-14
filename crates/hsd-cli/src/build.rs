@@ -49,6 +49,20 @@ pub fn build_hsdx_to_hsd(
         }
     }
 
+    // Copy image files to out_dir and rebase paths.
+    for img in hsd.images.values_mut() {
+        let abs = std::fs::canonicalize(input_dir.join(&img.path))
+            .with_context(|| format!("resolving image path {}", img.path))?;
+        let file_name = abs
+            .file_name()
+            .with_context(|| format!("image path has no filename: {}", abs.display()))?
+            .to_string_lossy()
+            .to_string();
+        std::fs::copy(&abs, out_dir.join(&file_name))
+            .with_context(|| format!("copying image {}", abs.display()))?;
+        img.path = format!("./{file_name}");
+    }
+
     if output_name.is_empty() {
         output_name = input_abs
             .file_stem()

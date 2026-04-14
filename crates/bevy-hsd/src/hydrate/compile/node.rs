@@ -24,6 +24,26 @@ use crate::{
 
 use super::collider::insert_collider;
 
+#[derive(Event)]
+pub struct HsdDocTransformSet {
+    pub doc_id: blake3::Hash,
+    pub transform: Transform,
+}
+
+pub(crate) fn handle_hsd_doc_transform_set(
+    trigger: On<HsdDocTransformSet>,
+    registry_map: Res<DocRegistryMap>,
+    mut transforms: Query<&mut Transform, With<crate::HsdDoc>>,
+) {
+    let ev = trigger.event();
+    let Some((doc_entity, _)) = registry_map.0.get(&ev.doc_id) else {
+        return;
+    };
+    if let Ok(mut t) = transforms.get_mut(*doc_entity) {
+        *t = ev.transform;
+    }
+}
+
 /// HSD mesh ID on a node entity; resolved to `Mesh3d` once the mesh compiles.
 #[derive(Component)]
 pub struct MeshRef(pub SmolStr);
@@ -122,6 +142,7 @@ pub(crate) fn handle_hsd_node_spawned(
     }
     let ent = commands
         .spawn((
+            ChildOf(*doc_entity),
             HsdChild { doc: *doc_entity },
             NodeId(ev.id.clone()),
             Transform::IDENTITY,
@@ -291,8 +312,11 @@ pub(crate) fn handle_hsd_node_parent_set(
     match &ev.parent {
         None => {
             drop(node_map);
+            let Some((doc_entity, _)) = registry_map.0.get(&ev.doc_id) else {
+                return;
+            };
             if let Ok(mut ent) = commands.get_entity(child_ent) {
-                ent.try_remove::<ChildOf>();
+                ent.insert(ChildOf(*doc_entity));
             }
         }
         Some(NodeRef::Entity(p)) => {

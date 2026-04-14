@@ -44,7 +44,8 @@ impl Plugin for HsdPlugin {
         app.init_resource::<load_hsd::PendingHsdLoads>();
         app.add_observer(load_hsd::on_load_hsd_file);
 
-        app.add_observer(hydrate::compile::collider::on_collider_blobs_loaded)
+        app.add_observer(hydrate::compile::node::handle_hsd_doc_transform_set)
+            .add_observer(hydrate::compile::collider::on_collider_blobs_loaded)
             .add_observer(hydrate::compile::image::handle_hsd_image_despawned)
             .add_observer(hydrate::compile::image::handle_hsd_image_spawned)
             .add_observer(hydrate::compile::image::on_image_blobs_loaded)
@@ -116,7 +117,7 @@ impl Plugin for HsdPlugin {
 
 /// Root Loro CRDT document for one HSD scene.
 #[derive(Component)]
-#[require(HsdChildren)]
+#[require(HsdChildren, Transform, Visibility)]
 pub struct HsdDoc(pub Arc<LoroDoc>);
 
 /// All ECS entities spawned from an HSD document are children of the doc

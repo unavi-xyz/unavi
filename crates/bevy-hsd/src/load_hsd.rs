@@ -6,7 +6,7 @@ use std::{
 use bevy::prelude::*;
 use bevy_wds::LocalActor;
 use bytes::Bytes;
-use loro::{LoroDoc, LoroList, LoroMap, LoroTree, TreeParentId};
+use loro::{LoroDoc, LoroList, LoroMap, LoroTree, LoroValue, TreeParentId};
 
 use crate::{HsdDoc, HsdRecordId};
 
@@ -70,7 +70,7 @@ pub fn start_hsd_loads(
             .expect("pending lock")
             .push(PendingLoad { entity, rx });
         unavi_wasm_compat::spawn_thread(async move {
-            let _ = tx.send(build_hsd_doc_from_file(path, actor).await);
+            let _ = tx.send(build_hsd_doc_from_file(path, &[actor]).await);
         });
         commands.entity(entity).remove::<HsdFilePath>();
     }
@@ -101,10 +101,12 @@ pub fn poll_hsd_file_loads(pending: Res<PendingHsdLoads>, mut commands: Commands
     *loads = still_pending;
 }
 
-fn build_hsd_doc_from_file(
+#[must_use]
+pub fn build_hsd_doc_from_file(
     path: PathBuf,
-    actor: wds::actor::Actor,
+    actors: &[wds::actor::Actor],
 ) -> std::pin::Pin<Box<dyn std::future::Future<Output = anyhow::Result<Arc<LoroDoc>>> + Send>> {
+    let actors = actors.to_vec();
     Box::pin(async move {
         use anyhow::Context;
         let src = std::fs::read_to_string(&path)
@@ -115,20 +117,23 @@ fn build_hsd_doc_from_file(
             .parent()
             .unwrap_or_else(|| std::path::Path::new(""))
             .to_path_buf();
-        build_hsd_doc(hsd_file, base_dir, actor).await
+        build_hsd_doc(hsd_file, base_dir, &actors).await
     })
 }
 
+#[expect(clippy::too_many_lines)]
 fn build_hsd_doc(
     hsd_file: hsd::HsdFile,
     base_dir: PathBuf,
-    actor: wds::actor::Actor,
+    actors: &[wds::actor::Actor],
 ) -> std::pin::Pin<Box<dyn std::future::Future<Output = anyhow::Result<Arc<LoroDoc>>> + Send>> {
+    let actors = actors.to_vec();
     Box::pin(async move {
         use anyhow::Context;
         let doc = Arc::new(LoroDoc::new());
         let hsd_map = doc.get_map("hsd");
 
+        // Assets
         let assets_container = hsd_map
             .get_or_create_container("assets", LoroMap::new())
             .context("creating assets container")?;
@@ -137,23 +142,155 @@ fn build_hsd_doc(
         for (name, asset_path) in &hsd_file.assets {
             if asset_path.ends_with(".hsd") {
                 let full_path = base_dir.join(asset_path);
-                let sub_doc = build_hsd_doc_from_file(full_path, actor.clone()).await?;
+                let sub_doc = build_hsd_doc_from_file(full_path, &actors).await?;
                 let snapshot = sub_doc
                     .export(loro::ExportMode::Snapshot)
                     .map_err(|e| anyhow::anyhow!("export sub-doc snapshot: {e:?}"))?;
-                let hash = actor
-                    .upload_blob(Bytes::from(snapshot))
-                    .await
-                    .map_err(|e| anyhow::anyhow!("upload sub-hsd: {e}"))?;
+                let hash = upload_blob(Bytes::from(snapshot), &actors).await?;
                 assets_container
                     .insert(
                         name.as_str(),
-                        loro::LoroValue::Binary(hash.as_bytes().to_vec().into()),
+                        LoroValue::Binary(hash.as_bytes().to_vec().into()),
                     )
                     .context("inserting asset hash")?;
             }
         }
 
+        // Images
+        if !hsd_file.images.is_empty() {
+            let images_container = hsd_map
+                .get_or_create_container("images", LoroMap::new())
+                .context("creating images container")?;
+
+            for (key, img) in &hsd_file.images {
+                let full_path = base_dir.join(&img.path);
+                let bytes = std::fs::read(&full_path)
+                    .with_context(|| format!("reading image {}", full_path.display()))?;
+                let hash = upload_blob(Bytes::from(bytes), &actors).await?;
+
+                let img_map = images_container
+                    .get_or_create_container(key.as_str(), LoroMap::new())
+                    .context("creating image map")?;
+
+                img_map
+                    .insert("data", LoroValue::Binary(hash.as_bytes().to_vec().into()))
+                    .context("inserting image data hash")?;
+
+                if let Some(v) = img.address_mode_u {
+                    img_map
+                        .insert("address_mode_u", v)
+                        .context("address_mode_u")?;
+                }
+                if let Some(v) = img.address_mode_v {
+                    img_map
+                        .insert("address_mode_v", v)
+                        .context("address_mode_v")?;
+                }
+                if let Some(v) = img.address_mode_w {
+                    img_map
+                        .insert("address_mode_w", v)
+                        .context("address_mode_w")?;
+                }
+                if let Some(v) = img.mag_filter {
+                    img_map.insert("mag_filter", v).context("mag_filter")?;
+                }
+                if let Some(v) = img.min_filter {
+                    img_map.insert("min_filter", v).context("min_filter")?;
+                }
+                if let Some(v) = img.mipmap_filter {
+                    img_map
+                        .insert("mipmap_filter", v)
+                        .context("mipmap_filter")?;
+                }
+                if let Some(ref v) = img.name {
+                    img_map.insert("name", v.as_str()).context("image name")?;
+                }
+                if let Some(v) = img.srgb {
+                    img_map.insert("srgb", v).context("srgb")?;
+                }
+            }
+        }
+
+        // Materials
+        if !hsd_file.materials.is_empty() {
+            let materials_container = hsd_map
+                .get_or_create_container("materials", LoroMap::new())
+                .context("creating materials container")?;
+
+            for (key, mat) in &hsd_file.materials {
+                let mat_map = materials_container
+                    .get_or_create_container(key.as_str(), LoroMap::new())
+                    .context("creating material map")?;
+
+                if let Some(ref v) = mat.name {
+                    mat_map
+                        .insert("name", v.as_str())
+                        .context("material name")?;
+                }
+                if let Some(ref c) = mat.base_color {
+                    let l = LoroList::new();
+                    for &v in c {
+                        l.push(v).context("base_color push")?;
+                    }
+                    mat_map
+                        .insert_container("base_color", l)
+                        .context("base_color")?;
+                }
+                if let Some(ref v) = mat.base_color_texture {
+                    mat_map
+                        .insert("base_color_texture", v.as_str())
+                        .context("base_color_texture")?;
+                }
+                if let Some(v) = mat.roughness {
+                    mat_map.insert("roughness", v).context("roughness")?;
+                }
+                if let Some(v) = mat.metallic {
+                    mat_map.insert("metallic", v).context("metallic")?;
+                }
+                if let Some(v) = mat.alpha_cutoff {
+                    mat_map.insert("alpha_cutoff", v).context("alpha_cutoff")?;
+                }
+                if let Some(ref v) = mat.alpha_mode {
+                    mat_map
+                        .insert("alpha_mode", v.as_str())
+                        .context("alpha_mode")?;
+                }
+                if let Some(v) = mat.double_sided {
+                    mat_map.insert("double_sided", v).context("double_sided")?;
+                }
+                if let Some(ref c) = mat.emissive {
+                    let l = LoroList::new();
+                    for &v in c {
+                        l.push(v).context("emissive push")?;
+                    }
+                    mat_map
+                        .insert_container("emissive", l)
+                        .context("emissive")?;
+                }
+                if let Some(ref v) = mat.emissive_texture {
+                    mat_map
+                        .insert("emissive_texture", v.as_str())
+                        .context("emissive_texture")?;
+                }
+                if let Some(ref v) = mat.metallic_roughness_texture {
+                    mat_map
+                        .insert("metallic_roughness_texture", v.as_str())
+                        .context("metallic_roughness_texture")?;
+                }
+                if let Some(ref v) = mat.normal_texture {
+                    mat_map
+                        .insert("normal_texture", v.as_str())
+                        .context("normal_texture")?;
+                }
+                if let Some(ref v) = mat.occlusion_texture {
+                    mat_map
+                        .insert("occlusion_texture", v.as_str())
+                        .context("occlusion_texture")?;
+                }
+            }
+        }
+
+        // Nodes
         let nodes_tree = hsd_map
             .get_or_create_container("nodes", LoroTree::new())
             .context("creating nodes tree")?;
@@ -176,10 +313,7 @@ fn build_hsd_doc(
                     let full_path = base_dir.join(script_path);
                     let bytes = std::fs::read(&full_path)
                         .with_context(|| format!("reading script {}", full_path.display()))?;
-                    let hash = actor
-                        .upload_blob(Bytes::from(bytes))
-                        .await
-                        .map_err(|e| anyhow::anyhow!("upload script: {e}"))?;
+                    let hash = upload_blob(Bytes::from(bytes), &actors).await?;
                     scripts_list
                         .push(hash.as_bytes().to_vec())
                         .context("pushing script hash")?;
@@ -191,13 +325,23 @@ fn build_hsd_doc(
     })
 }
 
+async fn upload_blob(bytes: Bytes, actors: &[wds::actor::Actor]) -> anyhow::Result<blake3::Hash> {
+    let mut hash = None;
+    for actor in actors {
+        let h = actor
+            .upload_blob(bytes.clone())
+            .await
+            .map_err(|e| anyhow::anyhow!("upload blob: {e}"))?;
+        hash = Some(h);
+    }
+    hash.ok_or_else(|| anyhow::anyhow!("no actors to upload blob to"))
+}
+
 /// Read the `assets` map from a hydrated HSD document.
 #[must_use]
 pub fn read_hsd_assets(
     hsd_map: &loro::LoroMap,
 ) -> std::collections::BTreeMap<smol_str::SmolStr, blake3::Hash> {
-    use loro::LoroValue;
-
     let value = hsd_map.get_deep_value();
     let LoroValue::Map(root) = &value else {
         return std::collections::BTreeMap::default();

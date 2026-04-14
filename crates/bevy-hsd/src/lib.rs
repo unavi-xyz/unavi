@@ -4,7 +4,7 @@
 //! blobs, are subscribed to for incremental diffs, and are compiled into standard
 //! Bevy assets (meshes, materials, images) via an event-driven observer pipeline.
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
 use avian3d::schedule::PhysicsSystems;
@@ -18,6 +18,9 @@ use cache::SceneRegistryInner;
 pub mod cache;
 pub mod data;
 pub mod hydrate;
+pub mod load_hsd;
+
+pub use load_hsd::LoadHsdFile;
 
 pub struct HsdPlugin;
 
@@ -29,9 +32,17 @@ pub struct HsdPlugin;
 #[derive(Resource, Default)]
 pub struct DocRegistryMap(pub HashMap<blake3::Hash, (Entity, Arc<SceneRegistryInner>)>);
 
+/// Named blob-id assets from the HSD document's `assets` map.
+///
+/// Maps asset name to the blake3 hash of the referenced blob.
+#[derive(Component, Clone, Debug, Default)]
+pub struct HsdAssets(pub BTreeMap<SmolStr, blake3::Hash>);
+
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<DocRegistryMap>();
+        app.init_resource::<load_hsd::PendingHsdLoads>();
+        app.add_observer(load_hsd::on_load_hsd_file);
 
         app.add_observer(hydrate::compile::collider::on_collider_blobs_loaded)
             .add_observer(hydrate::compile::image::handle_hsd_image_despawned)
@@ -85,6 +96,8 @@ impl Plugin for HsdPlugin {
         .add_systems(
             FixedUpdate,
             (
+                load_hsd::start_hsd_loads,
+                load_hsd::poll_hsd_file_loads,
                 hydrate::init::init_hsd_doc,
                 hydrate::init::register_doc_registries,
                 hydrate::sync::sync_to_hsd,
@@ -120,6 +133,7 @@ pub struct HsdChild {
     pub doc: Entity,
 }
 
+pub use load_hsd::HsdFilePath;
 pub use hydrate::compile::image::{CompiledImage, ImageId};
 pub use hydrate::compile::material::{CompiledMaterial, MaterialParams};
 pub use hydrate::compile::mesh::CompiledMesh;

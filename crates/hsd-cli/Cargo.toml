@@ -1,0 +1,18 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "hsd-cli"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+clap.workspace   = true
+hsd              = { path = "../hsd" }
+ron.workspace    = true
+serde.workspace  = true
+toml             = "1.1.2"

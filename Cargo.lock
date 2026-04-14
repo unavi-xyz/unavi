@@ -958,6 +958,7 @@ dependencies = [
 name = "bevy-hsd"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "avian3d",
  "bevy",
  "bevy-wds",
@@ -965,6 +966,7 @@ dependencies = [
  "blake3",
  "bytemuck",
  "bytes 1.11.1",
+ "hsd",
  "image",
  "iroh-blobs",
  "loro",
@@ -972,6 +974,7 @@ dependencies = [
  "smol_str 0.3.6",
  "tokio",
  "unavi-wasm-compat",
+ "wds",
  "wired-records",
  "wired-schemas",
 ]
@@ -6818,6 +6821,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc627f471c528ff0c4a49e1d5e60450c8f6461dd6d10ba9dcd3a61d3dff7728d"
 dependencies = [
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "hsd"
+version = "0.0.16"
+dependencies = [
+ "ron",
+ "serde",
+]
+
+[[package]]
+name = "hsd-cli"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "clap",
+ "hsd",
+ "ron",
+ "serde",
+ "toml 1.1.2+spec-1.1.0",
 ]
 
 [[package]]
@@ -13919,6 +13942,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-beacon"
+version = "0.0.16"
+dependencies = [
+ "blake3",
+ "wired-prelude",
+ "wit-bindgen 0.55.0",
+]
+
+[[package]]
 name = "unavi-client"
 version = "0.0.16"
 dependencies = [
@@ -14118,6 +14150,7 @@ dependencies = [
 name = "unavi-vui-nav"
 version = "0.0.16"
 dependencies = [
+ "blake3",
  "wired-prelude",
  "wired-schemas",
  "wit-bindgen 0.55.0",

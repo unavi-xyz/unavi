@@ -314,6 +314,92 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
 
         Ok(())
     }
+
+    async fn load_hsd(
+        &mut self,
+        blob_id: Vec<u8>,
+    ) -> wasmtime::Result<Result<wasmtime::component::Resource<document::HostDocument>, String>>
+    {
+        let Ok(arr): Result<[u8; 32], _> = blob_id.try_into() else {
+            return Ok(Err("blob-id must be 32 bytes".into()));
+        };
+        let record_id = blake3::Hash::from(arr);
+
+        let Some(ref blobs) = self.blobs else {
+            return Ok(Err("load-hsd requires WDS blobs".into()));
+        };
+        let bytes = match blobs.get_bytes(record_id).await {
+            Ok(b) => b,
+            Err(e) => return Ok(Err(format!("blob fetch failed: {e}"))),
+        };
+
+        let lor_doc = Arc::new(LoroDoc::new());
+        if let Err(e) = lor_doc.import(&bytes) {
+            return Ok(Err(format!("import failed: {e:?}")));
+        }
+        let new_registry = SceneRegistryInner::new();
+
+        let new_firewall_inner = {
+            let (mut read_set, mut write_set) = {
+                let map = self.registry_map.read().expect("registry_map read");
+                map.get(&self.doc_id).map_or_else(Default::default, |h| {
+                    let fw = h.firewall.read().expect("firewall read");
+                    (fw.read.clone(), fw.write.clone())
+                })
+            };
+            read_set.insert(self.doc_id);
+            write_set.insert(self.doc_id);
+            Arc::new(RwLock::new(HsdFirewallInner {
+                read: read_set,
+                write: write_set,
+            }))
+        };
+
+        let lor_doc_spawn = Arc::clone(&lor_doc);
+        let registry_spawn = Arc::clone(&new_registry);
+        let firewall_spawn = Arc::clone(&new_firewall_inner);
+
+        self.command_queue
+            .lock()
+            .expect("cmd queue lock")
+            .push(move |world: &mut World| {
+                let entity = world
+                    .spawn((
+                        HsdDoc(lor_doc_spawn),
+                        HsdFirewall(firewall_spawn),
+                        HsdRecordId(record_id),
+                        Name::new(format!("HSD {record_id}")),
+                        SceneRegistry(Arc::clone(&registry_spawn)),
+                    ))
+                    .id();
+                world
+                    .resource_mut::<DocRegistryMap>()
+                    .0
+                    .insert(record_id, (entity, registry_spawn));
+            });
+
+        self.registry_map
+            .write()
+            .expect("registry_map write")
+            .insert(
+                record_id,
+                DocHandle {
+                    registry: Arc::clone(&new_registry),
+                    firewall: Arc::clone(&new_firewall_inner),
+                },
+            );
+
+        let res = self.table.push(document::HostDocument {
+            id: record_id,
+            registry: new_registry,
+            lor_doc: Some(lor_doc),
+            is_public: false,
+            can_read: true,
+            can_write: true,
+        })?;
+
+        Ok(Ok(res))
+    }
 }
 
 impl bindings::wired::scene::types::Host for WiredSceneRt {}

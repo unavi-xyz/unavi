@@ -1,0 +1,14 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "hsd"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+ron.workspace = true
+serde         = { features = ["derive"], workspace = true }

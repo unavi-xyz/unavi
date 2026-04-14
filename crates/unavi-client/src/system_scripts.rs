@@ -1,27 +1,25 @@
 use bevy::prelude::*;
-use unavi_script::{
-    firewall::HsdFirewallEntities,
-    load::local::{LoadLocalScript, ScriptSource},
-    permissions::ScriptPermissions,
-};
+use bevy_hsd::LoadHsdFile;
+use unavi_script::{firewall::HsdFirewallEntities, permissions::ScriptPermissions};
 
-const GAUNTLET: &str = "wasm/unavi/gauntlet.wasm";
-const MODULES: &[&str] = &["wasm/unavi/vui_inventory.wasm", "wasm/unavi/vui_nav.wasm"];
+use crate::assets::assets_dir;
+
+const GAUNTLET_HSD: &str = "hsd/gauntlet.hsd";
+const MODULE_HSDS: &[&str] = &["hsd/vui_inventory.hsd", "hsd/vui_nav.hsd"];
 
 pub fn spawn_system_scripts(mut commands: Commands) {
     let mut module_ents = Vec::new();
 
-    for &path in MODULES {
+    for &rel_path in MODULE_HSDS {
+        let path = assets_dir().join(rel_path);
         let ent = commands
             .spawn(ScriptPermissions::system())
-            .trigger(|entity| LoadLocalScript {
-                entity,
-                source: ScriptSource::Path(path.to_string()),
-            })
+            .trigger(move |entity| LoadHsdFile { entity, path })
             .id();
         module_ents.push(ent);
     }
 
+    let gauntlet_path = assets_dir().join(GAUNTLET_HSD);
     let gauntlet_ent = commands
         .spawn((
             ScriptPermissions::system(),
@@ -30,9 +28,9 @@ pub fn spawn_system_scripts(mut commands: Commands) {
                 write: module_ents.clone(),
             },
         ))
-        .trigger(|entity| LoadLocalScript {
+        .trigger(move |entity| LoadHsdFile {
             entity,
-            source: ScriptSource::Path(GAUNTLET.to_string()),
+            path: gauntlet_path,
         })
         .id();
 

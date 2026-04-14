@@ -13,6 +13,7 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+blake3.workspace      = true
 wired-prelude.path    = "../wired-prelude"
 wired-schemas.path    = "../../crates/wired-schemas"
 wit-bindgen.workspace = true

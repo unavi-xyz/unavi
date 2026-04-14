@@ -188,7 +188,7 @@ pub(crate) fn handle_hsd_node_collider_set(
     };
     entity_cmd
         .try_remove::<Collider>()
-        .try_remove::<super::collider::ColliderParams>();
+        .try_remove::<ColliderParams>();
 }
 
 pub(crate) fn handle_hsd_node_material_set(

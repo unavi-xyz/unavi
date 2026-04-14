@@ -1,0 +1,12 @@
+(
+    assets: {
+        "gate": "../unavi-gate/asset.hsdx",
+    },
+    nodes: {
+        "root": (
+            scripts: [
+                "./Cargo.toml",
+            ],
+        ),
+    },
+)

@@ -2,11 +2,8 @@ use std::cell::RefCell;
 
 use bevy::prelude::*;
 use bevy_wds::{LocalActor, SyncTargets};
-use time::OffsetDateTime;
 use wds::actor::Actor;
-use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
-
-use wired_records::BeaconRecord;
+use wired_schemas::{SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
 
 #[derive(Default)]
 pub struct JoinState {
@@ -45,89 +42,12 @@ pub fn join_home_space(
     let command_tx = nt.command_tx.clone();
 
     unavi_wasm_compat::spawn_thread(async move {
-        if let Err(err) = discover_or_home(local_actor, remote_actor, command_tx).await {
+        if let Err(err) = create_and_join_home(local_actor, remote_actor, command_tx).await {
             error!(?err, "Failed to join home space");
         }
     });
 
     state.joined = true;
-}
-
-/// Attempt to discover a populated space to join.
-/// Else, join our home.
-///
-/// Temporary measure until proper space traversal exists.
-async fn discover_or_home(
-    local_actor: Actor,
-    remote_actor: Option<Actor>,
-    command_tx: tokio::sync::mpsc::Sender<NetworkCommand>,
-) -> anyhow::Result<()> {
-    if let Some(remote_actor) = &remote_actor {
-        match try_fetch_beacons(&local_actor, remote_actor).await {
-            Ok(beacons) => {
-                if let Some(beacon) = beacons.first() {
-                    info!("Found populated space: {}", beacon.space);
-                    command_tx
-                        .send(NetworkCommand::Join(beacon.space.0))
-                        .await?;
-                    return Ok(());
-                }
-            }
-            Err(err) => {
-                warn!(?err, "failed to fetch beacons");
-            }
-        }
-    }
-
-    create_and_join_home(local_actor, remote_actor, command_tx).await?;
-
-    Ok(())
-}
-
-async fn try_fetch_beacons(
-    local_actor: &Actor,
-    remote_actor: &Actor,
-) -> anyhow::Result<Vec<BeaconRecord>> {
-    let mut beacons = Vec::new();
-
-    let found = remote_actor
-        .query()
-        .schema(SCHEMA_BEACON.hash)
-        .send()
-        .await?;
-    info!("Queried {} beacons", found.len());
-
-    let remote_host = remote_actor.host();
-    let now = OffsetDateTime::now_utc().unix_timestamp();
-
-    for id in found {
-        match local_actor
-            .read(id)
-            .sync_from(remote_host.clone())
-            .send()
-            .await
-        {
-            Ok(doc) => {
-                let Ok(beacon) = BeaconRecord::load(&doc) else {
-                    debug!("invalid beacon document");
-                    continue;
-                };
-
-                if now >= beacon.expires {
-                    continue;
-                }
-
-                beacons.push(beacon);
-            }
-            Err(err) => {
-                warn!(?err, "failed to sync beacon");
-            }
-        }
-    }
-
-    beacons.sort_by_key(|a| a.expires);
-
-    Ok(beacons)
 }
 
 async fn create_and_join_home(

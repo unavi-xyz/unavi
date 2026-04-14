@@ -9,7 +9,9 @@ use bevy::prelude::*;
 use bevy_wds::{BlobDeps, BlobDepsLoaded};
 use smol_str::SmolStr;
 
-use crate::{DocRegistryMap, HsdChild, cache::SceneRegistryInner, data::HsdMaterial};
+use crate::{
+    CompiledImage, DocRegistryMap, HsdChild, cache::SceneRegistryInner, data::HsdMaterial,
+};
 
 /// Marks a material entity as having a ready `Handle<StandardMaterial>`.
 #[derive(Component)]
@@ -504,7 +506,7 @@ pub(crate) fn handle_hsd_material_roughness_set(
 fn build_standard_material(
     material: &mut StandardMaterial,
     params: &MaterialParams,
-    compiled_images: &Query<&super::image::CompiledImage>,
+    compiled_images: &Query<&CompiledImage>,
 ) {
     material.base_color = params.base_color.unwrap_or_default();
 
@@ -554,7 +556,7 @@ fn build_standard_material(
 pub(crate) fn on_material_blobs_loaded(
     trigger: On<Add, BlobDepsLoaded>,
     mat_params: Query<(&MaterialParams, Option<&CompiledMaterial>)>,
-    compiled_images: Query<&super::image::CompiledImage>,
+    compiled_images: Query<&CompiledImage>,
     mut mat_assets: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
 ) {
@@ -587,7 +589,7 @@ pub(crate) fn on_material_blobs_loaded(
 
 pub(crate) fn recompile_changed_materials(
     changed: Query<(&MaterialParams, &CompiledMaterial), Changed<MaterialParams>>,
-    compiled_images: Query<&super::image::CompiledImage>,
+    compiled_images: Query<&CompiledImage>,
     mut mat_assets: ResMut<Assets<StandardMaterial>>,
 ) {
     for (params, compiled) in &changed {

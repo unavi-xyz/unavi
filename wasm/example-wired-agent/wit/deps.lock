@@ -32,8 +32,8 @@ deps = ["wired-input", "wired-math", "wired-script"]
 
 [wired-scene]
 path = "../../../protocol/wit/wired-scene"
-sha256 = "b14ec158fdfdc024234f86e5a90b4989dc9d9593846de9f0f46c8fce868d9b76"
-sha512 = "5f2bc70ec4898862089ece7a7e89d1d50b671af8f04a88431adc256b654c63ef8052fa5a571e8d3506b2c963b455d28f2449d93778a04ec47c60c563c54e7db6"
+sha256 = "3d4ece84a549511c229a78c49470f7a444c1260e8d7c29b5fc5d8a6dd235032e"
+sha512 = "bb9b9aae9804db76526a23198441b684ec14851cecf662af833b96853b69a2976e00f0901c3f45935cc507d3d0b83d2637d969eb0bbbdb6b96c4e9e3b3d26c08"
 deps = ["wired-math"]
 
 [wired-script]

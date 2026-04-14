@@ -307,6 +307,84 @@ impl super::bindings::wired::scene::types::HostDocument for WiredSceneRt {
         Ok(())
     }
 
+    async fn assets(
+        &mut self,
+        self_: Resource<Document>,
+    ) -> wasmtime::Result<Vec<(String, Vec<u8>)>> {
+        use loro::LoroValue;
+        let d = self.table.get(&self_)?;
+        if !d.can_read {
+            bail!("hsd read permission required")
+        }
+        let Some(ref lor_doc) = d.lor_doc else {
+            return Ok(Vec::new());
+        };
+        let hsd_map = lor_doc.get_map("hsd");
+        let value = hsd_map.get_deep_value();
+        let LoroValue::Map(root) = &value else {
+            return Ok(Vec::new());
+        };
+        let Some(LoroValue::Map(assets)) = root.get("assets") else {
+            return Ok(Vec::new());
+        };
+        let result = assets
+            .iter()
+            .filter_map(|(k, v)| {
+                if let LoroValue::Binary(bytes) = v {
+                    Some((k.clone(), bytes.to_vec()))
+                } else {
+                    None
+                }
+            })
+            .collect();
+        Ok(result)
+    }
+
+    async fn add_asset(
+        &mut self,
+        self_: Resource<Document>,
+        name: String,
+        blob_id: Vec<u8>,
+    ) -> wasmtime::Result<()> {
+        let d = self.table.get(&self_)?;
+        if !d.can_write {
+            bail!("hsd write permission required")
+        }
+        let Some(ref lor_doc) = d.lor_doc else {
+            bail!("add-asset requires document ownership")
+        };
+        let hsd_map = lor_doc.get_map("hsd");
+        let assets = hsd_map
+            .get_or_create_container("assets", loro::LoroMap::new())
+            .map_err(|e| wasmtime::Error::msg(e.to_string()))?;
+        assets
+            .insert(name.as_str(), loro::LoroValue::Binary(blob_id.into()))
+            .map_err(|e| wasmtime::Error::msg(e.to_string()))?;
+        Ok(())
+    }
+
+    async fn remove_asset(
+        &mut self,
+        self_: Resource<Document>,
+        name: String,
+    ) -> wasmtime::Result<()> {
+        let d = self.table.get(&self_)?;
+        if !d.can_write {
+            bail!("hsd write permission required")
+        }
+        let Some(ref lor_doc) = d.lor_doc else {
+            bail!("remove-asset requires document ownership")
+        };
+        let hsd_map = lor_doc.get_map("hsd");
+        let assets = hsd_map
+            .get_or_create_container("assets", loro::LoroMap::new())
+            .map_err(|e| wasmtime::Error::msg(e.to_string()))?;
+        assets
+            .delete(name.as_str())
+            .map_err(|e| wasmtime::Error::msg(e.to_string()))?;
+        Ok(())
+    }
+
     async fn id(&mut self, self_: Resource<Document>) -> wasmtime::Result<Vec<u8>> {
         Ok(self.table.get(&self_)?.id.as_bytes().to_vec())
     }

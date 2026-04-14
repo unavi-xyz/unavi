@@ -2,6 +2,7 @@
     id: "hsd/document",
     version: 0,
     layout: Struct({
+        "assets": Map(BlobId),
         "images": Map(Struct({
           "address_mode_u": Optional(I64),
           "address_mode_v": Optional(I64),

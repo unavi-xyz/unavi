@@ -3,6 +3,7 @@ artifacts/
 
 # Bevy assets
 crates/unavi-client/assets/audio
+crates/unavi-client/assets/hsd
 crates/unavi-client/assets/model
 crates/unavi-client/assets/video
 crates/unavi-client/assets/wasm

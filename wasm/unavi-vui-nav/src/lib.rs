@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fmt::Write};
+use std::cell::RefCell;
 
 use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
 use wired_schemas::SCHEMA_BEACON;
@@ -10,7 +10,7 @@ use crate::{
     },
     wired::{
         scene::{
-            context::{create_document, remove_document, self_document},
+            context::{load_hsd, remove_document, self_document},
             types::{
                 Collider, ColliderCylinder, Document, Material, Mesh, Node, PrimitiveTopology,
                 RigidBodyKind,
@@ -169,54 +169,30 @@ impl GuestScript for Script {
             match result {
                 Ok(ids) => {
                     for id in ids {
-                        let id_hex =
-                            id.iter()
-                                .fold(String::with_capacity(id.len() * 2), |mut acc, b| {
-                                    write!(&mut acc, "{b:02x}").expect("write byte");
-                                    acc
-                                });
-                        println!("found beacon: {id_hex}");
+                        let id = blake3::Hash::from_slice(&id).expect("valid hash");
+                        println!("found beacon: {id}");
 
-                        let Ok(doc) =
-                            create_document().map_err(|err| eprintln!("create doc error: {err}"))
-                        else {
+                        let doc = self_document();
+
+                        let (_, beacon_asset) = doc
+                            .assets()
+                            .into_iter()
+                            .find(|(k, _)| k == "beacon")
+                            .expect("beacon asset");
+                        let Ok(beacon_doc) = load_hsd(&beacon_asset) else {
+                            eprintln!("failed to load beacon doc id={id}");
                             continue;
                         };
-                        let doc_id_hex = doc.id().iter().fold(
-                            String::with_capacity(id.len() * 2),
-                            |mut acc, b| {
-                                write!(&mut acc, "{b:02x}").expect("write byte");
-                                acc
-                            },
-                        );
-                        println!("+ spawned doc: {doc_id_hex}");
 
-                        let beacon_size = 0.15;
-
-                        let cuboid = Cuboid::new(beacon_size, beacon_size, beacon_size);
-                        cuboid.set_doc(doc.clone());
-
-                        let node = doc.create_node();
-                        node.set_mesh(Some(&cuboid.mesh()));
-
-                        let mat = doc.create_material();
-                        mat.set_roughness(0.4);
-                        mat.set_metallic(0.7);
-                        let color = generate_beacon_color(id);
-                        mat.set_base_color(color);
-                        node.set_material(Some(&mat));
-
-                        node.set_collider(Some(&cuboid.collider()));
-                        node.set_rigid_body(Some(RigidBodyKind::Dynamic));
+                        let node = beacon_doc.create_node();
+                        node.set_name(Some(&id.to_string()));
 
                         let mut pos = self.root.translation();
                         pos.x += BASIN_X;
-                        pos.y += BASIN_Y + (beacon_size * 2.0);
+                        pos.y += BASIN_Y + 1.0;
                         node.set_translation(pos);
 
-                        node.set_name(Some(&format!("Beacon {id_hex}")));
-
-                        self.beacons.borrow_mut().push(doc);
+                        self.beacons.borrow_mut().push(beacon_doc);
                     }
 
                     remove_query = true;
@@ -232,24 +208,6 @@ impl GuestScript for Script {
 
     fn render(&self) {}
     fn drop(&self) {}
-}
-
-fn generate_beacon_color(hash: Vec<u8>) -> Color {
-    let bytes = hash.as_slice();
-
-    // Use first 8 bytes for hue (full spectrum)
-    let hue_u64 = u64::from_le_bytes(bytes[0..8].try_into().expect("u64"));
-    let h = (hue_u64 as f64 / u64::MAX as f64) as f32; // 0..1
-
-    // Next bytes for saturation/value but clamp to nice ranges
-    let s_u16 = u16::from_le_bytes(bytes[8..10].try_into().expect("u16"));
-    let v_u16 = u16::from_le_bytes(bytes[10..12].try_into().expect("u16"));
-
-    // Keep colors vivid but not neon / washed out
-    let s = (f32::from(s_u16) / f32::from(u16::MAX)).mul_add(0.35, 0.55); // 0.55–0.9
-    let v = (f32::from(v_u16) / f32::from(u16::MAX)).mul_add(0.30, 0.65); // 0.65–0.95
-
-    Color::hsv(h, s, v)
 }
 
 fn make_filter_table(doc: &Document, mat: &Material, nodes: &mut Vec<Node>) -> Node {

@@ -1,6 +1,3 @@
-mod gauntlet;
-mod sector;
-
 use std::{cell::Cell, time::SystemTime};
 
 use blake3::Hash;
@@ -21,6 +18,9 @@ use crate::{
         scene::{context::get_document, types::Mesh},
     },
 };
+
+mod gauntlet;
+mod sector;
 
 wired_prelude::generate_script!(Script);
 

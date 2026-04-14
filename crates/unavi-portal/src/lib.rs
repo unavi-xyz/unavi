@@ -21,6 +21,7 @@ impl Plugin for PortalPlugin {
         );
 
         app.add_plugins(MaterialPlugin::<PortalMaterial>::default())
+            .add_systems(Update, material::update_portal_time)
             .add_systems(
                 PostUpdate,
                 (

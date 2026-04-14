@@ -1,7 +1,7 @@
 use bevy::{
     asset::uuid_handle,
     prelude::*,
-    render::render_resource::{AsBindGroup, Face, SpecializedMeshPipelineError},
+    render::render_resource::{AsBindGroup, Face, ShaderType, SpecializedMeshPipelineError},
 };
 
 pub const PORTAL_SHADER_HANDLE: Handle<Shader> =
@@ -14,6 +14,13 @@ pub struct PortalMaterial {
     #[sampler(1)]
     pub texture: Option<Handle<Image>>,
     pub cull_mode: Option<Face>,
+    #[uniform(2)]
+    pub params: PortalParams,
+}
+
+#[derive(Clone, Copy, ShaderType, Debug, Default)]
+pub struct PortalParams {
+    pub time: f32,
 }
 
 impl Material for PortalMaterial {
@@ -42,5 +49,13 @@ impl From<&PortalMaterial> for PortalMaterialKey {
         Self {
             cull_mode: material.cull_mode,
         }
+    }
+}
+
+pub fn update_portal_time(time: Res<Time>, mut materials: ResMut<Assets<PortalMaterial>>) {
+    let t = time.elapsed_secs();
+
+    for (_, mat) in materials.iter_mut() {
+        mat.params.time = t;
     }
 }

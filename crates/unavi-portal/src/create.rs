@@ -15,7 +15,8 @@ use bevy::{
 use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
 
 use crate::{
-    Portal, PortalBounds, PortalCamera, PortalDestination, TrackedCamera, material::PortalMaterial,
+    Portal, PortalBounds, PortalCamera, PortalDestination, TrackedCamera,
+    material::{PortalMaterial, PortalParams},
 };
 
 pub const PORTAL_RENDER_LAYER: usize = 5;
@@ -123,6 +124,7 @@ impl EntityCommand for CreatePortal {
             let material = PortalMaterial {
                 texture: Some(image_handle.clone()),
                 cull_mode: None,
+                params: PortalParams::default(),
             };
             let material_handle = world.resource_mut::<Assets<PortalMaterial>>().add(material);
 

@@ -6,18 +6,30 @@ print "Building HSD assets"
 rm -rf $hsd_out
 mkdir $hsd_out
 
-ls $wasm_src | where type == "dir" | where {|d|
+let crates = ls $wasm_src | where type == "dir" | where {|d|
     ($"($d.name)/asset.hsdx" | path exists)
-} | each {|crate_dir|
+}
+
+for crate_dir in $crates {
     let crate = $crate_dir.name | path basename
     print $"→ ($crate)"
-    let status = (cargo run --quiet -p hsd-cli --release -- build
-        --input $"($crate_dir.name)/asset.hsdx"
+
+    let hsdx = $"($crate_dir.name)/asset.hsdx"
+
+    let build = (cargo run --quiet -p hsd-cli --release -- build
+        --input $hsdx
         --out-dir $hsd_out
         | complete)
-    if $status.exit_code != 0 {
+    if $build.exit_code != 0 {
         error make {
-            msg: $"HSD build failed for ($crate): ($status.stderr | str trim)"
+            msg: $"HSD build failed for ($crate): ($build.stderr | str trim)"
+        }
+    }
+
+    let fmt = (cargo run --quiet -p hsd-cli --release -- format --input $hsdx | complete)
+    if $fmt.exit_code != 0 {
+        error make {
+            msg: $"HSD format failed for ($crate): ($fmt.stderr | str trim)"
         }
     }
 }

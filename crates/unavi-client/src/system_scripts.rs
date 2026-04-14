@@ -4,8 +4,8 @@ use unavi_script::{firewall::HsdFirewallEntities, permissions::ScriptPermissions
 
 use crate::assets::assets_dir;
 
-const GAUNTLET_HSD: &str = "hsd/gauntlet.hsd";
-const MODULE_HSDS: &[&str] = &["hsd/vui_inventory.hsd", "hsd/vui_nav.hsd"];
+const GAUNTLET_HSD: &str = "hsd/unavi_gauntlet.hsd";
+const MODULE_HSDS: &[&str] = &["hsd/unavi_vui_inventory.hsd", "hsd/unavi_vui_nav.hsd"];
 
 pub fn spawn_system_scripts(mut commands: Commands) {
     let mut module_ents = Vec::new();

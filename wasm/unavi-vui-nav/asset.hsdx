@@ -1,4 +1,12 @@
 (
-    assets: {"beacon": "../unavi-beacon/asset.hsdx"},
-    nodes: {"root": (scripts: ["./Cargo.toml"])},
+    assets: {
+        "beacon": "../unavi-beacon/asset.hsdx",
+    },
+    nodes: {
+        "root": (
+            scripts: [
+                "./Cargo.toml",
+            ],
+        ),
+    },
 )

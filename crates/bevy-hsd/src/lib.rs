@@ -133,11 +133,11 @@ pub struct HsdChild {
     pub doc: Entity,
 }
 
-pub use load_hsd::HsdFilePath;
 pub use hydrate::compile::image::{CompiledImage, ImageId};
 pub use hydrate::compile::material::{CompiledMaterial, MaterialParams};
 pub use hydrate::compile::mesh::CompiledMesh;
 pub use hydrate::compile::node::{MaterialRef, MeshRef};
+pub use load_hsd::HsdFilePath;
 
 /// Stable HSD tree ID kept on the entity for cross-system lookup.
 #[derive(Component, Clone, Debug)]

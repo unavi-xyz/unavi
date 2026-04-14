@@ -64,7 +64,11 @@ pub fn start_hsd_loads(
         let path = path.clone();
         let actor = actor.clone();
         let (tx, rx) = std::sync::mpsc::channel();
-        pending.0.lock().expect("pending lock").push(PendingLoad { entity, rx });
+        pending
+            .0
+            .lock()
+            .expect("pending lock")
+            .push(PendingLoad { entity, rx });
         unavi_wasm_compat::spawn_thread(async move {
             let _ = tx.send(build_hsd_doc_from_file(path, actor).await);
         });

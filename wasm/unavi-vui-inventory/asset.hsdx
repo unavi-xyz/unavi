@@ -1,1 +1,10 @@
-(nodes: {"root": (scripts: ["./Cargo.toml"])})
+(
+    assets: {},
+    nodes: {
+        "root": (
+            scripts: [
+                "./Cargo.toml",
+            ],
+        ),
+    },
+)

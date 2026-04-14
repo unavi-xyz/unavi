@@ -24,8 +24,7 @@ pub fn init_hsd_doc(
     for (doc_ent, hsd_doc, maybe_registry) in &added {
         let doc = Arc::clone(&hsd_doc.0);
 
-        let registry =
-            maybe_registry.map_or_else(SceneRegistryInner::new, |r| Arc::clone(&r.0));
+        let registry = maybe_registry.map_or_else(SceneRegistryInner::new, |r| Arc::clone(&r.0));
 
         let raw_queue: Arc<Mutex<Vec<RawHsdChange>>> = Arc::new(Mutex::new(Vec::new()));
 

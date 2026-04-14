@@ -58,6 +58,20 @@ interface types {
     assets: func() -> list<tuple<string, list<u8>>>;
     add-asset: func(name: string, blob-id: list<u8>);
     remove-asset: func(name: string);
+
+    translation: func() -> vec3;
+    set-translation: func(value: vec3);
+
+    rotation: func() -> quat;
+    set-rotation: func(value: quat);
+
+    scale: func() -> vec3;
+    set-scale: func(value: vec3);
+
+    transform: func() -> transform;
+    set-transform: func(value: transform);
+
+    global-transform: func() -> transform;
   }
 
   resource node {

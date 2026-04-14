@@ -2,6 +2,41 @@
     assets: {
         "gate": "../unavi-gate/asset.hsdx",
     },
+    images: {
+        "ground_tex": (
+            path: "../../crates/unavi-client/assets/image/dev-white.png",
+            address_mode_u: Some(0),
+            address_mode_v: Some(0),
+            address_mode_w: Some(0),
+            mag_filter: Some(1),
+            min_filter: Some(1),
+            mipmap_filter: None,
+            name: None,
+            srgb: Some(true),
+        ),
+    },
+    materials: {
+        "ground": (
+            name: Some("Ground Material"),
+            base_color: Some([
+                0.9,
+                0.8,
+                0.95,
+                1.0,
+            ]),
+            base_color_texture: Some("ground_tex"),
+            roughness: Some(0.9),
+            metallic: None,
+            alpha_cutoff: None,
+            alpha_mode: None,
+            double_sided: None,
+            emissive: None,
+            emissive_texture: None,
+            metallic_roughness_texture: None,
+            normal_texture: None,
+            occlusion_texture: None,
+        ),
+    },
     nodes: {
         "root": (
             scripts: [

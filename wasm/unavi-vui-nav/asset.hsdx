@@ -2,6 +2,8 @@
     assets: {
         "beacon": "../unavi-beacon/asset.hsdx",
     },
+    images: {},
+    materials: {},
     nodes: {
         "root": (
             scripts: [

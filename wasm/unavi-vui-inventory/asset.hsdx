@@ -1,5 +1,7 @@
 (
     assets: {},
+    images: {},
+    materials: {},
     nodes: {
         "root": (
             scripts: [

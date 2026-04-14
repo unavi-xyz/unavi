@@ -1,0 +1,10 @@
+(
+    assets: {},
+    nodes: {
+        "root": (
+            scripts: [
+                "./Cargo.toml",
+            ],
+        ),
+    },
+)

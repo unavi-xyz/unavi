@@ -1,11 +1,14 @@
 use std::path::PathBuf;
 
-use bevy::prelude::*;
+use bevy::{ecs::world::CommandQueue, prelude::*};
 use bevy_wds::{LocalActor, SyncTargets};
 use wds::actor::Actor;
 use wired_schemas::{SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
 
-use crate::networking::thread::{NetworkCommand, NetworkingThread};
+use crate::{
+    async_commands::ASYNC_COMMAND_QUEUE,
+    space::{Space, SpaceDoc, lifecycle::JoinedSpace},
+};
 
 const DEFAULT_HOME_HSD: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -20,7 +23,6 @@ pub struct JoinState {
 
 pub fn join_home_space(
     local_actor: Query<(&LocalActor, &SyncTargets)>,
-    nt: Res<NetworkingThread>,
     mut state: Local<JoinState>,
 ) {
     if state.joined {
@@ -40,10 +42,9 @@ pub fn join_home_space(
 
     let local_actor = local_actor.0.clone();
     let remote_actor = sync_targets.0.first().cloned();
-    let command_tx = nt.command_tx.clone();
 
     unavi_wasm_compat::spawn_thread(async move {
-        if let Err(err) = create_and_join_home(local_actor, remote_actor, command_tx).await {
+        if let Err(err) = create_and_join_home(local_actor, remote_actor).await {
             error!(?err, "Failed to join home space");
         }
     });
@@ -54,7 +55,6 @@ pub fn join_home_space(
 async fn create_and_join_home(
     local_actor: Actor,
     remote_actor: Option<Actor>,
-    command_tx: tokio::sync::mpsc::Sender<NetworkCommand>,
 ) -> anyhow::Result<()> {
     let did = local_actor.identity().did();
 
@@ -90,7 +90,16 @@ async fn create_and_join_home(
         .await?;
 
     info!(id = %res.id, "Created home space");
-    command_tx.send(NetworkCommand::Join(res.id)).await?;
+
+    // Spawn space entity declaratively — the JoinedSpace marker drives
+    // the networking thread to join via on_space_joined.
+    let mut commands = CommandQueue::default();
+    commands.push(bevy::ecs::system::command::spawn_batch([(
+        Space(res.id),
+        SpaceDoc(res.doc),
+        JoinedSpace,
+    )]));
+    ASYNC_COMMAND_QUEUE.0.send(commands).await?;
 
     Ok(())
 }

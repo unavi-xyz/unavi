@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use unavi_input::{SqueezeDown, SqueezeUp, crosshair::CrosshairMode, raycast::PrimaryRaycastInput};
 
 use crate::networking::{
-    object_publish::{DynObjectId, Grabbed, LocallyOwned},
+    object::publish::{DynObjectId, Grabbed, LocallyOwned},
     thread::{
         NetworkCommand, NetworkingThread,
         space::{object::outbound::LocalGrabbedObjects, types::object_id::ObjectId},

@@ -4,8 +4,11 @@ use loro::LoroDoc;
 
 mod dynamic_docs;
 mod home;
+pub mod lifecycle;
 mod publish_beacons;
 mod spawn;
+
+pub use lifecycle::JoinedSpace;
 
 pub struct SpacePlugin;
 
@@ -19,6 +22,10 @@ impl Plugin for SpacePlugin {
                 spawn::spawn_space_hsd,
                 dynamic_docs::fetch_dynamic_docs,
             ),
+        )
+        .add_systems(
+            PostUpdate,
+            (lifecycle::on_space_joined, lifecycle::on_space_left),
         );
     }
 }

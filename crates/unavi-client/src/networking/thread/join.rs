@@ -30,7 +30,13 @@ use crate::{
     space::{Space, SpaceDoc},
 };
 
+#[expect(clippy::too_many_lines)]
 pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::Result<()> {
+    // Idempotency: skip if already joined.
+    if state.spaces.contains_async(&space_id).await {
+        return Ok(());
+    }
+
     // Download space.
     let space_doc = {
         let mut builder = state
@@ -115,11 +121,13 @@ pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::R
         .await?;
     let (tx, mut rx) = topic.split();
 
-    // Register space handle.
+    // Register space handle with cancel signal.
+    let (cancel_tx, cancel_rx) = tokio::sync::oneshot::channel::<()>();
     let ownership = Arc::new(ObjectOwnership::new());
     let handle = SpaceHandle {
         gossip_tx: tx.clone(),
         ownership,
+        cancel_tx,
     };
     let _ = state.spaces.insert_async(space_id, handle).await;
 
@@ -128,12 +136,24 @@ pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::R
     commands.push(bevy::ecs::system::command::spawn_batch([(
         Space(space_id),
         SpaceDoc(space_doc),
+        crate::space::lifecycle::JoinedSpace,
     )]));
     ASYNC_COMMAND_QUEUE.0.send(commands).await?;
 
-    while let Err(err) = handle_gossip_inbound(&state, &tx, &mut rx).await {
-        error!(?err, "error handling inbound gossip");
-        n0_future::time::sleep(Duration::from_millis(100)).await;
+    let mut cancel_rx = Some(cancel_rx);
+    loop {
+        match handle_gossip_inbound(&state, &tx, &mut rx, cancel_rx.take(), space_id).await {
+            Ok(cancelled) => {
+                if cancelled {
+                    info!(%space_id, "space left (cancelled)");
+                }
+                break;
+            }
+            Err(err) => {
+                error!(?err, "error handling inbound gossip");
+                n0_future::time::sleep(Duration::from_millis(100)).await;
+            }
+        }
     }
 
     // Clean up space handle on exit.
@@ -142,12 +162,29 @@ pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::R
     Ok(())
 }
 
+/// Returns `true` if the loop exited due to cancellation, `false` if stream ended.
 async fn handle_gossip_inbound(
     state: &NetworkThreadState,
     tx: &iroh_gossip::api::GossipSender,
     rx: &mut GossipReceiver,
-) -> anyhow::Result<()> {
-    while let Some(event) = rx.next().await {
+    cancel_rx: Option<tokio::sync::oneshot::Receiver<()>>,
+    space_id: Hash,
+) -> anyhow::Result<bool> {
+    let mut cancel = std::pin::pin!(async move {
+        match cancel_rx {
+            Some(rx) => {
+                let _ = rx.await;
+            }
+            None => std::future::pending::<()>().await,
+        }
+    });
+
+    loop {
+        let event = tokio::select! {
+            () = &mut cancel => return Ok(true),
+            ev = rx.next() => ev,
+        };
+        let Some(event) = event else { return Ok(false) };
         match event? {
             Event::NeighborUp(n) => {
                 info!("+neighbor: {n}");
@@ -160,7 +197,6 @@ async fn handle_gossip_inbound(
                 tx.broadcast(bytes.into()).await?;
 
                 // Broadcast current claims for catch-up.
-                // TODO: Move to per-connection init not gossip broadcasts
                 broadcast_claim_sync(state, tx).await;
             }
             Event::NeighborDown(n) => {
@@ -168,6 +204,9 @@ async fn handle_gossip_inbound(
 
                 // Release all objects owned by this neighbor across all spaces.
                 release_objects_owned_by(state, n).await;
+
+                // Notify ECS that this peer left.
+                let _ = state.event_tx.try_send(NetworkEvent::PeerLeft(n));
             }
             Event::Lagged => bail!("lagged"),
             Event::Received(msg) => {
@@ -203,7 +242,7 @@ async fn handle_gossip_inbound(
 
                 match payload {
                     SpaceGossipMsg::Join(join) => {
-                        handle_join_broadcast(state, join).await;
+                        handle_join_broadcast(state, join, space_id).await;
                     }
                     SpaceGossipMsg::ObjectClaim(claim) => {
                         handle_object_claim(state, &claim).await;
@@ -214,24 +253,33 @@ async fn handle_gossip_inbound(
                     SpaceGossipMsg::ClaimSync(sync) => {
                         handle_claim_sync(state, &sync).await;
                     }
+                    SpaceGossipMsg::StateDelta(delta) => {
+                        let _ = state.event_tx.try_send(NetworkEvent::PeerStateDelta {
+                            peer: delta.sender,
+                            delta,
+                        });
+                    }
                 }
             }
         }
-    }
-
-    Ok(())
+    } // loop
 }
 
-async fn handle_join_broadcast(state: &NetworkThreadState, join: JoinBroadcast) {
-    info!(endpoint = %join.endpoint.id, "got join broadcast");
+async fn handle_join_broadcast(state: &NetworkThreadState, join: JoinBroadcast, space_id: Hash) {
+    let peer_id = join.endpoint.id;
+    info!(%peer_id, "got join broadcast");
 
-    if state.outbound.get_async(&join.endpoint.id).await.is_some() {
+    let _ = state.event_tx.try_send(NetworkEvent::PeerJoinedSpace {
+        peer: peer_id,
+        space: space_id,
+    });
+
+    if state.outbound.get_async(&peer_id).await.is_some() {
         return;
     }
 
-    info!(endpoint = %join.endpoint.id, "peer joined");
+    info!(%peer_id, "peer joined, opening outbound connection");
 
-    // Spawn outbound connection handler (handles both agent and object streams).
     let state_clone = state.clone();
     let remote = join.endpoint;
     n0_future::task::spawn(async move {

@@ -12,8 +12,9 @@ use std::sync::Arc;
 use bevy::log::{debug, error, info, warn};
 use iroh::{EndpointId, protocol::ProtocolHandler};
 use iroh_gossip::api::GossipSender;
+use parking_lot::Mutex;
 
-use self::{msg::StreamInit, ownership::ObjectOwnership};
+use self::{msg::StreamInit, ownership::ObjectOwnership, types::state::PlayerStateMsg};
 use crate::networking::thread::{InboundState, NetworkEvent};
 
 pub mod agent;
@@ -39,14 +40,23 @@ pub const MIN_OBJECT_TICKRATE: u8 = 2;
 pub struct SpaceHandle {
     pub gossip_tx: GossipSender,
     pub ownership: Arc<ObjectOwnership>,
+    /// Signals the gossip loop to exit when space is left.
+    pub cancel_tx: tokio::sync::oneshot::Sender<()>,
 }
 
 /// Protocol handler for accepting inbound space connections.
 /// Routes streams based on `StreamInit` message.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct SpaceProtocol {
     pub event_tx: tokio::sync::mpsc::Sender<NetworkEvent>,
     pub inbound: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
+    pub local_state: Arc<Mutex<PlayerStateMsg>>,
+}
+
+impl std::fmt::Debug for SpaceProtocol {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SpaceProtocol").finish_non_exhaustive()
+    }
 }
 
 impl ProtocolHandler for SpaceProtocol {
@@ -82,6 +92,7 @@ impl ProtocolHandler for SpaceProtocol {
             Arc::clone(&self.inbound),
             connection,
             state,
+            Arc::clone(&self.local_state),
         )
         .await
         {
@@ -90,6 +101,7 @@ impl ProtocolHandler for SpaceProtocol {
 
         // Cleanup on disconnect.
         let _ = self.inbound.remove_async(&remote).await;
+        let _ = self.event_tx.try_send(NetworkEvent::PeerLeft(remote));
         info!("space protocol inbound closed from {remote}");
 
         Ok(())
@@ -97,12 +109,13 @@ impl ProtocolHandler for SpaceProtocol {
 }
 
 /// Handle an inbound space connection, routing streams by `StreamInit`.
-#[allow(clippy::too_many_lines)]
+#[expect(clippy::too_many_lines)]
 async fn handle_inbound_connection(
     event_tx: tokio::sync::mpsc::Sender<NetworkEvent>,
     inbound_map: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
     connection: iroh::endpoint::Connection,
     agent_state: Arc<InboundState>,
+    local_state: Arc<Mutex<PlayerStateMsg>>,
 ) -> anyhow::Result<()> {
     let remote = connection.remote_id();
 
@@ -172,6 +185,17 @@ async fn handle_inbound_connection(
                             StreamInit::ObjectIFrame { .. } => {
                                 warn!("received ObjectIFrame on bistream, expected unistream");
                             }
+                            StreamInit::StateSync => {
+                                let local_state = Arc::clone(&local_state);
+                                n0_future::task::spawn(async move {
+                                    if let Err(err) =
+                                        handle_state_sync_stream(send, recv, local_state, remote)
+                                            .await
+                                    {
+                                        debug!(?err, "state sync stream closed");
+                                    }
+                                });
+                            }
                         }
                     }
                     Err(err) => {
@@ -222,6 +246,9 @@ async fn handle_inbound_connection(
                                     }
                                 });
                             }
+                            StreamInit::StateSync => {
+                                warn!("received StateSync on unistream, expected bistream");
+                            }
                         }
                     }
                     Err(err) => {
@@ -253,4 +280,33 @@ async fn read_stream_init(recv: &mut iroh::endpoint::RecvStream) -> anyhow::Resu
     recv.read_exact(&mut buf).await?;
 
     Ok(postcard::from_bytes(&buf)?)
+}
+
+/// Respond to a `StateSync` bistream: read the request, send local state.
+async fn handle_state_sync_stream(
+    mut send: iroh::endpoint::SendStream,
+    mut recv: iroh::endpoint::RecvStream,
+    local_state: Arc<Mutex<PlayerStateMsg>>,
+    remote: EndpointId,
+) -> anyhow::Result<()> {
+    // Read request (empty marker — just a length-prefixed empty payload).
+    let mut len_buf = [0u8; 4];
+    recv.read_exact(&mut len_buf).await?;
+    let len = u32::from_le_bytes(len_buf) as usize;
+    anyhow::ensure!(len <= 64, "state request too large: {len}");
+    if len > 0 {
+        let mut buf = vec![0u8; len];
+        recv.read_exact(&mut buf).await?;
+    }
+
+    // Respond with current local state.
+    let bytes = postcard::to_stdvec(&*local_state.lock())?;
+    let byte_len = u32::try_from(bytes.len())?;
+    send.write_all(&byte_len.to_le_bytes()).await?;
+    send.write_all(&bytes).await?;
+    send.finish()?;
+
+    debug!(%remote, "responded to state sync request");
+
+    Ok(())
 }

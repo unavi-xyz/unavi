@@ -1,0 +1,37 @@
+package wired:portal;
+
+world prelude {
+  import api;
+  import types;
+}
+
+interface types {
+  use wired:math/types.{transform};
+
+  record portal-destination {
+    space: list<u8>,
+    transform: transform,
+  }
+
+  resource portal {
+    node: func() -> node;
+    destination: func() -> list<u8>;
+    close: func();
+  }
+}
+
+interface api {
+  use types.{portal-destination};
+  use wired:math/types.{vec2};
+  use wired:scene/types.{document, node};
+
+  list-portals: func() -> list<portal>;
+
+  record portal-params {
+    dest: portal-destination,
+    node: node,
+    size: vec2,
+  }
+
+  open-portal: func(params: portal-params) -> result<portal, string>;
+}

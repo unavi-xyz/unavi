@@ -1,10 +1,14 @@
-use std::str::FromStr;
+use std::{
+    cell::RefCell,
+    str::FromStr,
+    time::{Duration, Instant},
+};
 
 use blake3::Hash;
 use wired_prelude::prelude::*;
 
 use crate::{
-    unavi::shapes::api::Cuboid,
+    unavi::{beacon_protocol::api::BeaconEmitter, shapes::api::Cuboid},
     wired::scene::{context::self_document, types::RigidBodyKind},
 };
 
@@ -13,19 +17,29 @@ mod color;
 wired_prelude::generate_script!(Script);
 
 const SIZE: f32 = 0.15;
+const EMIT_INTERVAL: Duration = Duration::from_secs(4);
 
-struct Script;
+struct Script {
+    emitter: BeaconEmitter,
+    time: RefCell<Instant>,
+}
 
 impl GuestScript for Script {
     fn new() -> Self {
         let doc = self_document();
         let Some(node) = doc.nodes().into_iter().next() else {
             eprintln!("beacon error: no node");
-            return Self;
+            return Self {
+                emitter: BeaconEmitter::new(&[]),
+                time: RefCell::new(Instant::now()),
+            };
         };
         let Ok(id) = Hash::from_str(&node.name().unwrap_or_default()) else {
             eprintln!("beacon error: invalid node name");
-            return Self;
+            return Self {
+                emitter: BeaconEmitter::new(&[]),
+                time: RefCell::new(Instant::now()),
+            };
         };
 
         let cuboid = Cuboid::new(Vec3::splat(SIZE));
@@ -44,10 +58,19 @@ impl GuestScript for Script {
 
         println!("beacon initialized: {id}");
 
-        Self
+        Self {
+            emitter: BeaconEmitter::new(id.as_bytes()),
+            time: RefCell::new(Instant::now()),
+        }
     }
 
-    fn tick(&self) {}
+    fn tick(&self) {
+        if self.time.borrow().elapsed() < EMIT_INTERVAL {
+            return;
+        }
+        *self.time.borrow_mut() = Instant::now();
+        self.emitter.emit();
+    }
 
     fn render(&self) {}
 

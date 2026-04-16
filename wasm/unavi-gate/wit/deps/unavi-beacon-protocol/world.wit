@@ -1,0 +1,20 @@
+package unavi:beacon-protocol;
+
+world guest {
+  include wired:prelude/lib;
+  export api;
+}
+
+interface api {
+  /// Emits this beacon's ID on the beacon channel.
+  resource beacon-emitter {
+    constructor(id: list<u8>);
+    emit: func();
+  }
+
+  /// Listens for incoming beacon ID emissions.
+  resource beacon-receptor {
+    constructor();
+    poll: func() -> option<list<u8>>;
+  }
+}

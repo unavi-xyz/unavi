@@ -1,7 +1,7 @@
 use std::{cell::Cell, time::SystemTime};
 
 use blake3::Hash;
-use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
+use wired_prelude::prelude::*;
 
 use crate::{
     gauntlet::{
@@ -12,7 +12,7 @@ use crate::{
     wired::{
         agent::types::BoneName,
         input::{
-            system_api::system_input_listener,
+            context::listener,
             types::{InputAction, InputDevice, InputListener},
         },
         scene::{context::get_document, types::Mesh},
@@ -63,7 +63,7 @@ impl GuestScript for Script {
 
         Self {
             gauntlets,
-            input: system_input_listener(),
+            input: listener(),
             render_time: Cell::new(SystemTime::now()),
             registry,
             module_refs: std::cell::RefCell::new(Vec::new()),

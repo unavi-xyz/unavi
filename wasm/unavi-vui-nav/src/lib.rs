@@ -1,6 +1,6 @@
 use std::cell::RefCell;
 
-use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
+use wired_prelude::prelude::*;
 use wired_schemas::SCHEMA_BEACON;
 
 use crate::{
@@ -214,7 +214,7 @@ fn make_filter_table(doc: &Document, mat: &Material, nodes: &mut Vec<Node>) -> N
     let group = doc.create_node();
 
     let base = doc.create_node();
-    let base_shape = Cuboid::new(TABLE_W, BASE_H, TABLE_D);
+    let base_shape = Cuboid::new(Vec3::new(TABLE_W, BASE_H, TABLE_D));
     base.set_collider(Some(&base_shape.collider()));
     base.set_rigid_body(Some(RigidBodyKind::Fixed));
     base.set_mesh(Some(&base_shape.mesh()));
@@ -222,7 +222,7 @@ fn make_filter_table(doc: &Document, mat: &Material, nodes: &mut Vec<Node>) -> N
     group.add_child(&base);
     nodes.push(base);
 
-    let x_lip_shape = Cuboid::new(LIP_T, LIP_H, TABLE_D);
+    let x_lip_shape = Cuboid::new(Vec3::new(LIP_T, LIP_H, TABLE_D));
     for x_sign in [-1.0_f32, 1.0_f32] {
         let lip = doc.create_node();
         lip.set_collider(Some(&x_lip_shape.collider()));
@@ -234,7 +234,7 @@ fn make_filter_table(doc: &Document, mat: &Material, nodes: &mut Vec<Node>) -> N
         nodes.push(lip);
     }
 
-    let z_lip_shape = Cuboid::new(TABLE_W, LIP_H, LIP_T);
+    let z_lip_shape = Cuboid::new(Vec3::new(TABLE_W, LIP_H, LIP_T));
     for z_sign in [-1.0_f32, 1.0_f32] {
         let lip = doc.create_node();
         lip.set_collider(Some(&z_lip_shape.collider()));
@@ -247,7 +247,7 @@ fn make_filter_table(doc: &Document, mat: &Material, nodes: &mut Vec<Node>) -> N
     }
 
     let divider = doc.create_node();
-    let divider_shape = Cuboid::new(LIP_T, LIP_H, TABLE_D);
+    let divider_shape = Cuboid::new(Vec3::new(LIP_T, LIP_H, TABLE_D));
     divider.set_collider(Some(&divider_shape.collider()));
     divider.set_rigid_body(Some(RigidBodyKind::Fixed));
     divider.set_mesh(Some(&divider_shape.mesh()));

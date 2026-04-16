@@ -55,7 +55,7 @@ fn init_scene(mut commands: Commands) {
     ));
 
     let mut permissions = ScriptPermissions::default();
-    permissions.api.insert(ApiName::SystemInput);
+    permissions.api.insert(ApiName::InputContext);
 
     commands
         .spawn(permissions)

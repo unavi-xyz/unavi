@@ -1,6 +1,11 @@
 pub use wired_math;
 pub use wired_scene;
 
+pub mod prelude {
+    pub use wired_math::types::*;
+    pub use wired_scene::types::*;
+}
+
 /// Helper around [`wit_bindgen::generate!`], using better, manually-defined types rather than relying purely on codegen.
 #[macro_export]
 macro_rules! generate {

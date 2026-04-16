@@ -5,5 +5,5 @@ world guest {
   import unavi:vui-module/api;
   import wired:wds/context;
   import wired:wds/types;
-  include wired:prelude/script-system;
+  include wired:prelude/script-context;
 }

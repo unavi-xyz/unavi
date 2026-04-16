@@ -10,7 +10,7 @@ use crate::{
     wired::scene::types::{AlphaMode, Document, Indices, Material, Mesh, Node, PrimitiveTopology},
 };
 
-use wired_prelude::wired_math::types::Vec3;
+use wired_prelude::prelude::*;
 
 pub struct Sector {
     pub module_doc_id: Vec<u8>,

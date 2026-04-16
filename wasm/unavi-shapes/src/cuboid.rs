@@ -16,9 +16,9 @@ pub struct CuboidWrapped {
 }
 
 impl GuestCuboid for CuboidWrapped {
-    fn new(x_length: f32, y_length: f32, z_length: f32) -> Self {
+    fn new(size: WVec3) -> Self {
         Self {
-            half: Vec3::new(x_length * 0.5, y_length * 0.5, z_length * 0.5),
+            half: Vec3::new(size.x * 0.5, size.y * 0.5, size.z * 0.5),
             ..Default::default()
         }
     }

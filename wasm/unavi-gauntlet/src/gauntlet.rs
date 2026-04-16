@@ -3,7 +3,7 @@ use std::{
     f32::consts::PI,
 };
 
-use wired_prelude::wired_math::types::{Quat, Transform, Vec3};
+use wired_prelude::prelude::*;
 
 use crate::{
     Color, ModuleRef,

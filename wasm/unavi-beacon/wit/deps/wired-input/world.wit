@@ -2,7 +2,7 @@ package wired:input;
 
 world prelude {
   import api;
-  import system-api;
+  import context;
   import types;
 }
 
@@ -39,9 +39,9 @@ interface api {
   register-input-listener: func(target: borrow<node>) -> input-listener;
 }
 
-interface system-api {
+interface context {
   use types.{input-listener};
 
   // Captures all input events from the local agent.
-  system-input-listener: func() -> input-listener;
+  listener: func() -> input-listener;
 }

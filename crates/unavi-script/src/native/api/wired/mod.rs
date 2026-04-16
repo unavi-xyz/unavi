@@ -45,8 +45,8 @@ pub fn add_to_linker(
             &mut s.rt
         })?;
     }
-    if perms.api.contains(&ApiName::SystemInput) {
-        input::bindings::wired::input::system_api::add_to_linker::<_, HasSelf<_>>(linker, |s| {
+    if perms.api.contains(&ApiName::InputContext) {
+        input::bindings::wired::input::context::add_to_linker::<_, HasSelf<_>>(linker, |s| {
             &mut s.rt
         })?;
     }

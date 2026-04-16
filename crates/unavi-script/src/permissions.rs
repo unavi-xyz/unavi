@@ -22,7 +22,7 @@ pub enum ApiName {
     LocalAgent,
     Scene,
     System,
-    SystemInput,
+    InputContext,
     Wds,
 }
 
@@ -45,7 +45,7 @@ impl ScriptPermissions {
         perms.api.insert(ApiName::CreateDocument);
         perms.api.insert(ApiName::LocalAgent);
         perms.api.insert(ApiName::System);
-        perms.api.insert(ApiName::SystemInput);
+        perms.api.insert(ApiName::InputContext);
         perms.api.insert(ApiName::Wds);
         perms
     }

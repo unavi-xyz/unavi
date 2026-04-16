@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use blake3::Hash;
-use wired_prelude::wired_scene::types::Color;
+use wired_prelude::prelude::*;
 
 use crate::{
     unavi::shapes::api::Cuboid,
@@ -26,7 +26,7 @@ impl GuestScript for Script {
             return Self;
         };
 
-        let cuboid = Cuboid::new(SIZE, SIZE, SIZE);
+        let cuboid = Cuboid::new(Vec3::splat(SIZE));
 
         node.set_mesh(Some(&cuboid.mesh()));
         node.set_collider(Some(&cuboid.collider()));

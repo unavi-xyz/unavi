@@ -39,7 +39,7 @@ interface api {
   }
 
   resource cuboid {
-    constructor(x-length: f32, y-length: f32, z-length: f32);
+    constructor(size: vec3);
 
     collider: func() -> collider;
     mesh: func() -> mesh;

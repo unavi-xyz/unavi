@@ -106,8 +106,8 @@ impl bindings::wired::input::types::HostInputListener for RuntimeData {
     }
 }
 
-impl bindings::wired::input::system_api::Host for RuntimeData {
-    async fn system_input_listener(&mut self) -> wasmtime::Result<Resource<HostInputListener>> {
+impl bindings::wired::input::context::Host for RuntimeData {
+    async fn listener(&mut self) -> wasmtime::Result<Resource<HostInputListener>> {
         let queue = self
             .wired_input
             .registry

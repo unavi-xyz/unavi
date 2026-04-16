@@ -1,4 +1,4 @@
-use wired_prelude::wired_math::types::Vec3;
+use wired_prelude::prelude::*;
 
 use crate::{
     unavi::shapes::api::Cuboid,
@@ -19,7 +19,7 @@ impl GuestScript for Script {
     fn new() -> Self {
         let doc = self_document();
 
-        let shape = Cuboid::new(GROUND_SIZE, GROUND_THICK, GROUND_SIZE);
+        let shape = Cuboid::new(Vec3::new(GROUND_SIZE, GROUND_THICK, GROUND_SIZE));
 
         let node = doc.create_node();
         node.set_mesh(Some(&shape.mesh()));

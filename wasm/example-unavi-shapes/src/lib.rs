@@ -1,4 +1,4 @@
-use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
+use wired_prelude::prelude::*;
 
 use crate::{
     unavi::shapes::api::{Capsule, Cone, Cuboid, Cylinder, Sphere, Torus},
@@ -17,7 +17,7 @@ impl GuestScript for Script {
         let meshes = [
             Capsule::new(0.3, 0.8).mesh(),
             Cone::new(0.4, 0.8).mesh(),
-            Cuboid::new(0.7, 0.7, 0.7).mesh(),
+            Cuboid::new(Vec3::splat(0.7)).mesh(),
             Cylinder::new(0.3, 0.8).mesh(),
             Sphere::new(0.4).mesh(),
             Torus::new(0.15, 0.4).mesh(),

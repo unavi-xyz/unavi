@@ -13,8 +13,17 @@ use super::types::{
 pub enum StreamInit {
     AgentControl,
     AgentIFrame,
-    ObjectControl { object_id: ObjectId },
-    ObjectIFrame { object_id: ObjectId },
+    ObjectControl {
+        object_id: ObjectId,
+    },
+    ObjectIFrame {
+        object_id: ObjectId,
+    },
+    /// Bistream: requester sends [`StateRequestMsg`], responder sends [`PlayerStateMsg`].
+    ///
+    /// [`StateRequestMsg`]: super::types::state::StateRequestMsg
+    /// [`PlayerStateMsg`]: super::types::state::PlayerStateMsg
+    StateSync,
 }
 
 /// I-frame message sent over reliable stream.

@@ -4,7 +4,7 @@ use iroh::{EndpointAddr, EndpointId};
 use serde::{Deserialize, Serialize};
 use wds::signed_bytes::Signable;
 
-use super::types::object_id::ObjectId;
+use super::types::{object_id::ObjectId, state::StateDeltaMsg};
 
 /// Timestamp for ownership ordering (milliseconds since Unix epoch).
 pub type OwnershipTimestamp = u64;
@@ -85,6 +85,7 @@ pub enum SpaceGossipMsg {
     ObjectClaim(ObjectClaimBroadcast),
     ObjectRelease(ObjectReleaseBroadcast),
     ClaimSync(ClaimSyncBroadcast),
+    StateDelta(StateDeltaMsg),
 }
 
 impl Signable for SpaceGossipMsg {}
@@ -97,6 +98,7 @@ impl SpaceGossipMsg {
             Self::ObjectClaim(m) => m.claimer,
             Self::ObjectRelease(m) => m.releaser,
             Self::ClaimSync(m) => m.sender,
+            Self::StateDelta(m) => m.sender,
         }
     }
 }

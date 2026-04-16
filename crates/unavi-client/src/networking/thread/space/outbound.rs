@@ -2,8 +2,8 @@
 
 use std::sync::{Arc, atomic::AtomicU8};
 
-use bevy::log::{error, info, warn};
-use iroh::{EndpointAddr, endpoint::SendStream};
+use bevy::log::{debug, error, info, warn};
+use iroh::{EndpointAddr, EndpointId, endpoint::SendStream};
 use n0_future::task::AbortOnDropHandle;
 use tokio::sync::watch;
 
@@ -12,8 +12,9 @@ use super::{
     agent::outbound::{handle_control_stream, stream_agent},
     msg::StreamInit,
     object::outbound::stream_objects,
+    types::state::StateRequestMsg,
 };
-use crate::networking::thread::{NetworkThreadState, OutboundConn};
+use crate::networking::thread::{NetworkEvent, NetworkThreadState, OutboundConn};
 
 /// Establish an outbound connection to a peer and spawn streaming tasks.
 pub async fn connect_to_peer(state: NetworkThreadState, peer: EndpointAddr) -> anyhow::Result<()> {
@@ -61,6 +62,7 @@ pub async fn connect_to_peer(state: NetworkThreadState, peer: EndpointAddr) -> a
     };
 
     let conn = OutboundConn {
+        connection: connection.clone(),
         task: AbortOnDropHandle::new(task),
         tickrate,
         tickrate_tx,
@@ -70,6 +72,41 @@ pub async fn connect_to_peer(state: NetworkThreadState, peer: EndpointAddr) -> a
         warn!(id = %peer.id, "duplicate outbound connection");
         existing.task.abort();
     }
+
+    Ok(())
+}
+
+/// Open a `StateSync` bistream to a peer, send a request, receive their state.
+pub async fn request_state_sync(
+    state: &NetworkThreadState,
+    connection: iroh::endpoint::Connection,
+    peer_id: EndpointId,
+) -> anyhow::Result<()> {
+    let (mut send, mut recv) = connection.open_bi().await?;
+    write_stream_init(&mut send, &StreamInit::StateSync).await?;
+
+    // Send empty request marker.
+    let req_bytes = postcard::to_stdvec(&StateRequestMsg)?;
+    let req_len = u32::try_from(req_bytes.len())?;
+    send.write_all(&req_len.to_le_bytes()).await?;
+    send.write_all(&req_bytes).await?;
+    send.finish()?;
+
+    // Read response.
+    let mut len_buf = [0u8; 4];
+    recv.read_exact(&mut len_buf).await?;
+    let len = u32::from_le_bytes(len_buf) as usize;
+    anyhow::ensure!(len <= 65536, "state response too large: {len}");
+    let mut buf = vec![0u8; len];
+    recv.read_exact(&mut buf).await?;
+
+    let peer_state = postcard::from_bytes(&buf)?;
+    debug!(%peer_id, "received state sync response");
+
+    let _ = state.event_tx.try_send(NetworkEvent::PeerStateReceived {
+        peer: peer_id,
+        state: peer_state,
+    });
 
     Ok(())
 }

@@ -138,6 +138,9 @@ impl Plugin for UnaviPlugin {
             }
         }
 
+        // Spawn singleton LocalPlayerState entity.
+        app.world_mut().spawn(networking::player::LocalPlayerState);
+
         app.add_plugins(devtools::DevToolsPlugin {
             inspector: self.debug.contains(DebugFlags::INSPECTOR),
             network: self.debug.contains(DebugFlags::NETWORK),

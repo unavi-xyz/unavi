@@ -7,4 +7,5 @@ pub mod object_id;
 pub mod physics_state;
 pub mod pose;
 pub mod quat;
+pub mod state;
 pub mod velocity;

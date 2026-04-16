@@ -4,8 +4,8 @@ use bevy::prelude::*;
 use unavi_agent::{AgentRig, LocalAgent, LocalAgentEntities};
 
 use crate::networking::{
-    agent_receive::RemoteAgent,
-    object_publish::{DynObjectId, LocallyOwned},
+    agent::receive::RemoteAgent,
+    object::publish::{DynObjectId, LocallyOwned},
     thread::{
         NetworkCommand, NetworkingThread,
         space::{MAX_AGENT_TICKRATE, MAX_OBJECT_TICKRATE, MIN_AGENT_TICKRATE, MIN_OBJECT_TICKRATE},

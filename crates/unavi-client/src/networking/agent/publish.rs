@@ -22,13 +22,13 @@ use crate::networking::{
 /// Stores the last I-frame positions for P-frame delta encoding,
 /// and last-sent transforms for epsilon filtering.
 #[derive(Default)]
-pub(super) struct IFrameBaseline {
+pub struct IFrameBaseline {
     root: Vec3,
     root_rot: Quat,
     bones: HashMap<BoneName, (Vec3, Quat)>,
 }
 
-pub(super) fn publish_agent_transforms(
+pub fn publish_agent_transforms(
     nt: Res<NetworkingThread>,
     local_agent: Query<(&AgentConfig, &LocalAgentEntities), With<LocalAgent>>,
     avatar_bones: Query<&AvatarBones>,

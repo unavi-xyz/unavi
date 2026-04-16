@@ -9,7 +9,7 @@ use bevy::prelude::*;
 use bevy_hsd::{HsdChild, HsdRecordId, NodeId};
 
 use crate::networking::{
-    object_receive::ObjectTransformTarget,
+    object::receive::ObjectTransformTarget,
     publish_utils::{IFRAME_FREQ, PUBLISH_INTERVAL, transform_changed, velocity_changed},
     thread::{
         NetworkCommand, NetworkingThread,

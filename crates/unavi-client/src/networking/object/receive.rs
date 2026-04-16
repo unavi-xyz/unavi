@@ -3,7 +3,7 @@
 use avian3d::dynamics::rigid_body::{AngularVelocity, LinearVelocity};
 use bevy::prelude::*;
 
-use crate::networking::{object_publish::LocallyOwned, thread::space::MAX_OBJECT_TICKRATE};
+use crate::networking::{object::publish::LocallyOwned, thread::space::MAX_OBJECT_TICKRATE};
 
 /// Target transform for object interpolation.
 #[derive(Component)]

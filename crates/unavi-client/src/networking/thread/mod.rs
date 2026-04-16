@@ -15,10 +15,6 @@ use n0_future::task::AbortOnDropHandle;
 use parking_lot::Mutex;
 use time::OffsetDateTime;
 
-/// Returns the current time as milliseconds since Unix epoch.
-fn now_millis() -> u64 {
-    (OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000).cast_unsigned() as u64
-}
 use wds::{
     Blobs, DataStore,
     actor::Actor,
@@ -35,6 +31,7 @@ use crate::networking::thread::space::{
         object_id::ObjectId,
         physics_state::{PhysicsIFrame, PhysicsPFrame},
         pose::{AgentIFrame, AgentPFrame},
+        state::{PlayerStateMsg, StateDeltaMsg},
     },
 };
 
@@ -43,26 +40,39 @@ mod publish_beacon;
 mod remote_wds;
 pub mod space;
 
-#[expect(unused, reason = "leave")]
 pub enum NetworkCommand {
     Join(Hash),
     Leave(Hash),
-    PublishBeacon { id: Hash, ttl: Duration },
+    DisconnectPeer(EndpointId),
+    PublishBeacon {
+        id: Hash,
+        ttl: Duration,
+    },
 
     PublishAgentIFrame(AgentIFrame),
     PublishAgentPFrame(AgentPFrame),
-    SetPeerTickrate { peer: EndpointId, tickrate: u8 },
+    SetPeerTickrate {
+        peer: EndpointId,
+        tickrate: u8,
+    },
 
     ClaimObject(ObjectId),
     PublishObjectIFrame(Vec<(ObjectId, PhysicsIFrame)>),
     PublishObjectPFrame(Vec<(ObjectId, PhysicsPFrame)>),
-    SetObjectTickrate { object_id: ObjectId, tickrate: u8 },
+    SetObjectTickrate {
+        object_id: ObjectId,
+        tickrate: u8,
+    },
     UpdateGrabbedObjects(HashSet<ObjectId>),
+
+    /// Update local player state cache (sent to peers on `StateSync` requests).
+    UpdateLocalState(PlayerStateMsg),
+    /// Request full player state from a connected peer via `StateSync` stream.
+    RequestPeerState(EndpointId),
 
     Shutdown,
 }
 
-#[expect(unused)]
 pub enum NetworkEvent {
     AddRemoteActor(Actor),
     SetLocalWds {
@@ -71,12 +81,30 @@ pub enum NetworkEvent {
     },
     SetLocalEndpoint(EndpointId),
 
-    // Agent events.
+    // Peer events.
     AgentJoin {
         id: EndpointId,
         state: Arc<InboundState>,
     },
-    AgentLeave(EndpointId),
+    /// Peer fully disconnected (inbound connection closed).
+    PeerLeft(EndpointId),
+    /// Peer was seen in a gossip topic for this space.
+    PeerJoinedSpace {
+        peer: EndpointId,
+        space: Hash,
+    },
+    /// Full state received from peer via `StateSync` stream.
+    PeerStateReceived {
+        peer: EndpointId,
+        state: PlayerStateMsg,
+    },
+    /// Incremental state delta received from peer via gossip.
+    PeerStateDelta {
+        #[expect(dead_code)]
+        peer: EndpointId,
+        #[expect(dead_code)]
+        delta: StateDeltaMsg,
+    },
 
     // Object events.
     ObjectOwnershipChanged {
@@ -84,6 +112,7 @@ pub enum NetworkEvent {
         owner: Option<EndpointId>,
     },
     ObjectPoseUpdate {
+        #[expect(dead_code)]
         source: EndpointId,
         objects: Vec<(ObjectId, PhysicsIFrame)>,
     },
@@ -126,9 +155,9 @@ impl NetworkingThread {
 
 /// Connection state for outbound streaming (agent and object).
 pub struct OutboundConn {
+    pub connection: iroh::endpoint::Connection,
     pub task: AbortOnDropHandle<()>,
     pub tickrate: Arc<AtomicU8>,
-    /// Watch channel to notify the control stream of tickrate changes.
     pub tickrate_tx: tokio::sync::watch::Sender<u8>,
 }
 
@@ -172,7 +201,6 @@ pub struct NetworkThreadState {
     pub remote_actor: Option<Actor>,
     pub event_tx: tokio::sync::mpsc::Sender<NetworkEvent>,
 
-    /// Outbound connections
     pub outbound: Arc<scc::HashMap<EndpointId, OutboundConn>>,
     pub _inbound: Arc<scc::HashMap<EndpointId, Arc<InboundState>>>,
 
@@ -185,8 +213,10 @@ pub struct NetworkThreadState {
     pub object_iframe_id: Arc<AtomicU16>,
     pub object_pose: Arc<ObjectPoseState>,
 
-    /// Watch channel for broadcasting grabbed objects to outbound streams.
     pub grabbed_objects_rx: tokio::sync::watch::Receiver<HashSet<ObjectId>>,
+
+    /// Cached local player state — sent to peers on `StateSync` requests.
+    pub local_state: Arc<Mutex<PlayerStateMsg>>,
 }
 
 #[expect(clippy::too_many_lines)]
@@ -211,6 +241,8 @@ async fn thread_loop(
     let gossip = Gossip::builder().spawn(endpoint.clone());
     let inbound = Arc::new(scc::HashMap::default());
 
+    let local_state: Arc<Mutex<PlayerStateMsg>> = Arc::default();
+
     let store = {
         let mut builder = DataStore::builder(endpoint.clone());
 
@@ -223,6 +255,7 @@ async fn thread_loop(
         let space_protocol = space::SpaceProtocol {
             event_tx: event_tx.clone(),
             inbound: Arc::clone(&inbound),
+            local_state: Arc::clone(&local_state),
         };
 
         builder
@@ -277,6 +310,7 @@ async fn thread_loop(
         object_iframe_id: Arc::new(AtomicU16::new(rand::random())),
         object_pose: Arc::default(),
         grabbed_objects_rx,
+        local_state,
     };
 
     while let Some(cmd) = command_rx.recv().await {
@@ -294,8 +328,18 @@ async fn thread_loop(
                     .instrument(span),
                 );
             }
-            NetworkCommand::Leave(_id) => {
-                todo!()
+            NetworkCommand::Leave(id) => {
+                if let Some((_, handle)) = state.spaces.remove_async(&id).await {
+                    let _ = handle.cancel_tx.send(());
+                } else {
+                    warn!(%id, "leave for unknown space");
+                }
+            }
+            NetworkCommand::DisconnectPeer(id) => {
+                if let Some((_, conn)) = state.outbound.remove_async(&id).await {
+                    conn.task.abort();
+                    info!(%id, "disconnected peer");
+                }
             }
             NetworkCommand::PublishBeacon { id, ttl } => {
                 let state = state.clone();
@@ -394,6 +438,28 @@ async fn thread_loop(
             NetworkCommand::UpdateGrabbedObjects(objects) => {
                 let _ = grabbed_objects_tx.send(objects);
             }
+            NetworkCommand::UpdateLocalState(msg) => {
+                *state.local_state.lock() = msg;
+            }
+            NetworkCommand::RequestPeerState(peer_id) => {
+                let state = state.clone();
+                n0_future::task::spawn(async move {
+                    let conn = state
+                        .outbound
+                        .get_async(&peer_id)
+                        .await
+                        .map(|e| e.get().connection.clone());
+                    if let Some(conn) = conn {
+                        if let Err(err) =
+                            space::outbound::request_state_sync(&state, conn, peer_id).await
+                        {
+                            error!(?err, "failed to request peer state");
+                        }
+                    } else {
+                        warn!(%peer_id, "RequestPeerState: no outbound connection");
+                    }
+                });
+            }
 
             NetworkCommand::Shutdown => {
                 if let Err(err) = store.shutdown().await {
@@ -420,4 +486,9 @@ async fn broadcast_gossip(
     let bytes = postcard::to_stdvec(&signed)?;
     gossip_tx.broadcast(bytes.into()).await?;
     Ok(())
+}
+
+/// Returns the current time as milliseconds since Unix epoch.
+fn now_millis() -> u64 {
+    (OffsetDateTime::now_utc().unix_timestamp_nanos() / 1_000_000).cast_unsigned() as u64
 }

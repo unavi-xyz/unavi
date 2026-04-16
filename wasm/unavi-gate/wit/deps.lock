@@ -1,3 +1,9 @@
+[unavi-beacon-protocol]
+path = "../../unavi-beacon-protocol/wit"
+sha256 = "21a65f7948aa28bff73e012b20287521c1badfc0091d4d5b5f8174b29e7cbe12"
+sha512 = "6c5c77249fdfa07ba8a1bf82b585627724ce635265232d2b3249708d1d1c970943aa1ffbf0b5f2c70a02be5a8dfd82de4b51bfd24b71f430d82a4c7183e45975"
+deps = ["wired-input", "wired-math", "wired-script"]
+
 [unavi-shapes]
 path = "../../unavi-shapes/wit"
 sha256 = "545b467444538af545b07dbc04f599312613df521aa96de4936a1bc6bc0728a2"

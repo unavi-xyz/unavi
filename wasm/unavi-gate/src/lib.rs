@@ -1,21 +1,29 @@
-use std::f32::consts::GOLDEN_RATIO;
+use std::{
+    cell::RefCell,
+    time::{Duration, Instant},
+};
 
 use wired_prelude::prelude::*;
 
 use crate::{
-    unavi::shapes::api::Cuboid,
+    unavi::{beacon_protocol::api::BeaconReceptor, shapes::api::Cuboid},
     wired::scene::{context::self_document, types::RigidBodyKind},
 };
 
 wired_prelude::generate_script!(Script);
 
 const BEAM_THICKNESS: f32 = 0.2;
-const PODIUM_HEIGHT: f32 = 0.75;
+const PEDESTAL_HEIGHT: f32 = 0.75;
 
 const PORTAL_WIDTH: f32 = 1.7;
-const PORTAL_HEIGHT: f32 = PORTAL_WIDTH * GOLDEN_RATIO;
+const PORTAL_HEIGHT: f32 = PORTAL_WIDTH * std::f32::consts::GOLDEN_RATIO;
 
-struct Script;
+const TARGET_DECAY: Duration = Duration::from_secs(10);
+
+struct Script {
+    receptor: BeaconReceptor,
+    target: RefCell<Option<(Vec<u8>, Instant)>>,
+}
 
 impl GuestScript for Script {
     fn new() -> Self {
@@ -55,18 +63,41 @@ impl GuestScript for Script {
         node_t.set_rigid_body(Some(RigidBodyKind::Fixed));
         node_t.set_translation(Vec3::new(0.0, PORTAL_HEIGHT + BEAM_THICKNESS / 2.0, 0.0));
 
-        let podium = Cuboid::new(Vec3::new(BEAM_THICKNESS * 2.0, PODIUM_HEIGHT, BEAM_THICKNESS * 2.0));
+        let pedestal_shape = Cuboid::new(Vec3::new(
+            BEAM_THICKNESS * 2.0,
+            PEDESTAL_HEIGHT,
+            BEAM_THICKNESS * 2.0,
+        ));
 
-        let receptor = doc.create_node();
-        receptor.set_mesh(Some(&podium.mesh()));
-        receptor.set_collider(Some(&podium.collider()));
-        receptor.set_rigid_body(Some(RigidBodyKind::Fixed));
-        receptor.set_translation(Vec3::new(-PORTAL_WIDTH, PODIUM_HEIGHT / 2.0, 0.0));
+        let pedestal = doc.create_node();
+        pedestal.set_mesh(Some(&pedestal_shape.mesh()));
+        pedestal.set_collider(Some(&pedestal_shape.collider()));
+        pedestal.set_rigid_body(Some(RigidBodyKind::Fixed));
+        pedestal.set_translation(Vec3::new(-PORTAL_WIDTH, PEDESTAL_HEIGHT / 2.0, 0.0));
 
-        Self
+        Self {
+            receptor: BeaconReceptor::new(),
+            target: RefCell::new(None),
+        }
     }
 
-    fn tick(&self) {}
+    fn tick(&self) {
+        {
+            let mut target = self.target.borrow_mut();
+            if let Some((_, t)) = &*target
+                && t.elapsed() >= TARGET_DECAY
+            {
+                *target = None;
+            }
+        }
+
+        while let Some(id) = self.receptor.poll() {
+            let mut target = self.target.borrow_mut();
+            if target.is_none() {
+                *target = Some((id, Instant::now()));
+            }
+        }
+    }
 
     fn render(&self) {}
 

@@ -1,6 +1,7 @@
 package unavi:gate;
 
 world guest {
+  import unavi:beacon-protocol/api;
   import unavi:shapes/api;
   include wired:prelude/script;
 }

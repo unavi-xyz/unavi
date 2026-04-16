@@ -1,0 +1,31 @@
+package wired:prelude;
+
+world lib-shared {
+  include wired:math/prelude;
+  include wired:scene/prelude;
+  import wired:event/api;
+  import wired:event/types;
+  import wired:input/api;
+  import wired:input/types;
+}
+
+world lib {
+  import wired:agent/types;
+  include lib-shared;
+}
+
+world lib-context {
+  include lib-shared;
+  include wired:agent/prelude;
+  import wired:input/context;
+}
+
+world script {
+  include lib;
+  include wired:script/guest;
+}
+
+world script-context {
+  include lib-context;
+  include wired:script/guest;
+}

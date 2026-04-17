@@ -1,50 +1,54 @@
-use std::collections::HashMap;
+use std::collections::HashSet;
 
 use bevy::prelude::*;
-use blake3::Hash;
 
 use crate::{
-    networking::thread::{NetworkCommand, NetworkingThread},
+    networking::{
+        peer::{Peer, PeerKnownSpaces},
+        thread::{NetworkCommand, NetworkingThread},
+    },
     space::Space,
 };
 
-/// Marker placed on a space entity to request joining that space.
-/// Adding it → networking thread joins gossip.
-/// Removing it (or despawning the entity) → networking thread leaves.
-#[derive(Component, Debug)]
-pub struct JoinedSpace;
+pub fn on_space_add(trigger: On<Add, Space>, nt: Res<NetworkingThread>, spaces: Query<&Space>) {
+    let space = spaces.get(trigger.entity).expect("has component");
 
-/// Watch for newly joined spaces and send the Join command.
-pub fn on_space_joined(
-    added: Query<(Entity, &Space), Added<JoinedSpace>>,
-    nt: Res<NetworkingThread>,
-    mut cache: Local<HashMap<Entity, Hash>>,
-) {
-    for (entity, space) in &added {
-        cache.insert(entity, space.0);
-        if nt
-            .command_tx
-            .try_send(NetworkCommand::Join(space.0))
-            .is_err()
-        {
-            warn!("failed to send Join for space {}", space.0);
-        }
+    if nt
+        .command_tx
+        .try_send(NetworkCommand::Join(space.0))
+        .is_err()
+    {
+        warn!(id = %space.0, "failed to send Join for space");
     }
 }
 
-/// Watch for removed `JoinedSpace` (explicit removal or entity despawn) and
-/// send the Leave command. Uses a local cache because the component value is
-/// gone by the time `RemovedComponents` fires.
-pub fn on_space_left(
-    mut removed: RemovedComponents<JoinedSpace>,
+pub fn on_space_remove(
+    trigger: On<Remove, Space>,
     nt: Res<NetworkingThread>,
-    mut cache: Local<HashMap<Entity, Hash>>,
+    spaces: Query<&Space>,
+    peers: Query<(Entity, &Peer, &PeerKnownSpaces)>,
+    mut commands: Commands,
 ) {
-    for entity in removed.read() {
-        if let Some(hash) = cache.remove(&entity)
-            && nt.command_tx.try_send(NetworkCommand::Leave(hash)).is_err()
-        {
-            warn!("failed to send Leave for space {hash}");
+    let space = spaces.get(trigger.entity).expect("has component");
+
+    if nt
+        .command_tx
+        .try_send(NetworkCommand::Leave(space.0))
+        .is_err()
+    {
+        warn!(id = %space.0, "failed to send Leave for space");
+    }
+
+    let our_spaces = spaces.iter().map(|s| s.0).collect::<HashSet<_>>();
+
+    for (ent, peer, peer_spaces) in peers {
+        if !peer_spaces.0.is_disjoint(&our_spaces) {
+            continue;
         }
+        info!(id = %peer.0, "disconnecting orphan peer (no shared spaces)");
+        let _ = nt
+            .command_tx
+            .try_send(NetworkCommand::DisconnectPeer(peer.0));
+        commands.entity(ent).despawn();
     }
 }

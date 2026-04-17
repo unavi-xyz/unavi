@@ -8,13 +8,13 @@ use crate::{
         peer::{Peer, PeerKnownSpaces, PeerStateStatus},
         thread::{NetworkCommand, NetworkingThread},
     },
-    space::{JoinedSpace, Space},
+    space::Space,
 };
 
 /// Send `RequestPeerState` for peers we share a space with but haven't synced yet.
 pub fn request_peer_state(
     nt: Res<NetworkingThread>,
-    joined: Query<&Space, With<JoinedSpace>>,
+    joined: Query<&Space>,
     mut peers: Query<(&Peer, &PeerKnownSpaces, &mut PeerStateStatus)>,
 ) {
     let our_spaces: HashSet<Hash> = joined.iter().map(|s| s.0).collect();

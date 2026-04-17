@@ -1,8 +1,10 @@
 use std::{
     cell::RefCell,
+    f32::consts::GOLDEN_RATIO,
     time::{Duration, Instant},
 };
 
+use blake3::Hash;
 use wired_prelude::prelude::*;
 
 use crate::{
@@ -12,11 +14,14 @@ use crate::{
 
 wired_prelude::generate_script!(Script);
 
-const BEAM_THICKNESS: f32 = 0.2;
-const PEDESTAL_HEIGHT: f32 = 0.75;
-
 const PORTAL_WIDTH: f32 = 1.7;
-const PORTAL_HEIGHT: f32 = PORTAL_WIDTH * std::f32::consts::GOLDEN_RATIO;
+const PORTAL_HEIGHT: f32 = PORTAL_WIDTH * GOLDEN_RATIO;
+
+const BEAM_THICKNESS: f32 = 0.2;
+
+const PEDESTAL_HEIGHT: f32 = 0.75;
+const PEDESTAL_THICKNESS: f32 = BEAM_THICKNESS * 1.5;
+const EVENT_RADIUS: f32 = PEDESTAL_THICKNESS;
 
 const TARGET_DECAY: Duration = Duration::from_secs(10);
 
@@ -64,9 +69,9 @@ impl GuestScript for Script {
         node_t.set_translation(Vec3::new(0.0, PORTAL_HEIGHT + BEAM_THICKNESS / 2.0, 0.0));
 
         let pedestal_shape = Cuboid::new(Vec3::new(
-            BEAM_THICKNESS * 2.0,
+            PEDESTAL_THICKNESS,
             PEDESTAL_HEIGHT,
-            BEAM_THICKNESS * 2.0,
+            PEDESTAL_THICKNESS,
         ));
 
         let pedestal = doc.create_node();
@@ -75,25 +80,30 @@ impl GuestScript for Script {
         pedestal.set_rigid_body(Some(RigidBodyKind::Fixed));
         pedestal.set_translation(Vec3::new(-PORTAL_WIDTH, PEDESTAL_HEIGHT / 2.0, 0.0));
 
+        let receptor_node = doc.create_node();
+        receptor_node.set_translation(Vec3::new(0.0, PEDESTAL_HEIGHT, 0.0));
+        pedestal.add_child(&receptor_node);
+
         Self {
-            receptor: BeaconReceptor::new(),
+            receptor: BeaconReceptor::new(receptor_node, EVENT_RADIUS),
             target: RefCell::new(None),
         }
     }
 
     fn tick(&self) {
+        let mut target = self.target.borrow_mut();
+        if let Some((_, t)) = &*target
+            && t.elapsed() >= TARGET_DECAY
         {
-            let mut target = self.target.borrow_mut();
-            if let Some((_, t)) = &*target
-                && t.elapsed() >= TARGET_DECAY
-            {
-                *target = None;
-            }
+            *target = None;
         }
 
         while let Some(id) = self.receptor.poll() {
-            let mut target = self.target.borrow_mut();
-            if target.is_none() {
+            if target.is_none() || target.as_ref().is_some_and(|(x, _)| *x == id) {
+                let Ok(id_hash) = Hash::from_slice(&id) else {
+                    continue;
+                };
+                println!("loading beacon: {id_hash}");
                 *target = Some((id, Instant::now()));
             }
         }

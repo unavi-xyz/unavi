@@ -6,15 +6,17 @@ world guest {
 }
 
 interface api {
+  use wired:scene/types.{node};
+
   /// Emits this beacon's ID on the beacon channel.
   resource beacon-emitter {
-    constructor(id: list<u8>);
+    constructor(id: list<u8>, emitter: node, radius: f32);
     emit: func();
   }
 
   /// Listens for incoming beacon ID emissions.
   resource beacon-receptor {
-    constructor();
+    constructor(receptor: node, radius: f32);
     poll: func() -> option<list<u8>>;
   }
 }

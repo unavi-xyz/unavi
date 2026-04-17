@@ -17,7 +17,9 @@ mod color;
 wired_prelude::generate_script!(Script);
 
 const SIZE: f32 = 0.15;
+
 const EMIT_INTERVAL: Duration = Duration::from_secs(4);
+const EVENT_RADIUS: f32 = SIZE * 2.0;
 
 struct Script {
     emitter: BeaconEmitter,
@@ -28,18 +30,10 @@ impl GuestScript for Script {
     fn new() -> Self {
         let doc = self_document();
         let Some(node) = doc.nodes().into_iter().next() else {
-            eprintln!("beacon error: no node");
-            return Self {
-                emitter: BeaconEmitter::new(&[]),
-                time: RefCell::new(Instant::now()),
-            };
+            panic!("beacon error: no node")
         };
         let Ok(id) = Hash::from_str(&node.name().unwrap_or_default()) else {
-            eprintln!("beacon error: invalid node name");
-            return Self {
-                emitter: BeaconEmitter::new(&[]),
-                time: RefCell::new(Instant::now()),
-            };
+            panic!("beacon error: invalid node name")
         };
 
         let cuboid = Cuboid::new(Vec3::splat(SIZE));
@@ -59,7 +53,7 @@ impl GuestScript for Script {
         println!("beacon initialized: {id}");
 
         Self {
-            emitter: BeaconEmitter::new(id.as_bytes()),
+            emitter: BeaconEmitter::new(id.as_bytes(), node, EVENT_RADIUS),
             time: RefCell::new(Instant::now()),
         }
     }
@@ -70,6 +64,7 @@ impl GuestScript for Script {
         }
         *self.time.borrow_mut() = Instant::now();
         self.emitter.emit();
+        println!("emitting beacon event");
     }
 
     fn render(&self) {}

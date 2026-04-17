@@ -18,8 +18,8 @@ wired_prelude::generate_script!(Script);
 
 const SIZE: f32 = 0.15;
 
-const EMIT_INTERVAL: Duration = Duration::from_secs(4);
-const EVENT_RADIUS: f32 = SIZE * 2.0;
+const EMIT_INTERVAL: Duration = Duration::from_secs(3);
+const EVENT_RADIUS: f32 = SIZE * 3.0;
 
 struct Script {
     emitter: BeaconEmitter,

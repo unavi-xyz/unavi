@@ -1,4 +1,5 @@
-use bevy::prelude::*;
+use std::sync::Arc;
+
 use blake3::Hash;
 use wasmtime::component::{Resource, ResourceTable};
 
@@ -40,11 +41,11 @@ impl bindings::wired::event::api::Host for RuntimeData {
         payload: Vec<u8>,
         filter: bindings::wired::event::types::EventFilter,
     ) -> wasmtime::Result<()> {
-        let (entity, radius) =
-            scope_to_entity(&mut self.wired_scene.table, filter.node, filter.scope)?;
+        let (node, radius) =
+            scope_to_node(&mut self.wired_scene.table, filter.node, filter.scope)?;
         let target_documents = parse_documents(filter.documents)?;
         let emission = PendingEmission {
-            node: entity,
+            node,
             channel,
             payload,
             radius,
@@ -65,14 +66,14 @@ impl bindings::wired::event::api::Host for RuntimeData {
         channels: Vec<String>,
         filter: bindings::wired::event::types::EventFilter,
     ) -> wasmtime::Result<Resource<HostEventReceptor>> {
-        let (entity, radius) =
-            scope_to_entity(&mut self.wired_scene.table, filter.node, filter.scope)?;
+        let (node, radius) =
+            scope_to_node(&mut self.wired_scene.table, filter.node, filter.scope)?;
         let source_documents = parse_documents(filter.documents)?;
         let doc_id = self.wired_scene.doc_id;
         let queue = {
             let mut inner = self.wired_event.registry.0.lock().expect("registry lock");
-            if let Some(e) = entity {
-                inner.register_node(e, channels, radius, source_documents, doc_id)
+            if let Some(n) = node {
+                inner.register_node(n, channels, radius, source_documents, doc_id)
             } else {
                 inner.register_global(channels, source_documents, doc_id)
             }
@@ -119,21 +120,15 @@ impl bindings::wired::event::types::HostEventReceptor for RuntimeData {
     }
 }
 
-fn scope_to_entity(
+fn scope_to_node(
     scene_table: &mut ResourceTable,
     node: Option<Resource<HostNode>>,
     scope: WitEventScope,
-) -> wasmtime::Result<(Option<Entity>, f32)> {
+) -> wasmtime::Result<(Option<Arc<bevy_hsd::cache::NodeInner>>, f32)> {
     match (node, scope) {
         (Some(n), WitEventScope::Spatial(radius)) => {
             let host_node = scene_table.delete(n)?;
-            let entity = host_node
-                .inner
-                .entity
-                .lock()
-                .expect("entity lock")
-                .unwrap_or(Entity::PLACEHOLDER);
-            Ok((Some(entity), radius))
+            Ok((Some(Arc::clone(&host_node.inner)), radius))
         }
         _ => Ok((None, 0.0)),
     }

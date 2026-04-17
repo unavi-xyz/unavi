@@ -5,10 +5,7 @@ use bevy_wds::{LocalActor, SyncTargets};
 use wds::actor::Actor;
 use wired_schemas::{SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
 
-use crate::{
-    async_commands::ASYNC_COMMAND_QUEUE,
-    space::{Space, SpaceDoc, lifecycle::JoinedSpace},
-};
+use crate::{async_commands::ASYNC_COMMAND_QUEUE, space::Space};
 
 const DEFAULT_HOME_HSD: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -91,14 +88,8 @@ async fn create_and_join_home(
 
     info!(id = %res.id, "Created home space");
 
-    // Spawn space entity declaratively — the JoinedSpace marker drives
-    // the networking thread to join via on_space_joined.
     let mut commands = CommandQueue::default();
-    commands.push(bevy::ecs::system::command::spawn_batch([(
-        Space(res.id),
-        SpaceDoc(res.doc),
-        JoinedSpace,
-    )]));
+    commands.push(bevy::ecs::system::command::spawn_batch([Space(res.id)]));
     ASYNC_COMMAND_QUEUE.0.send(commands).await?;
 
     Ok(())

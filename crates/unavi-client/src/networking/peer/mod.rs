@@ -4,7 +4,6 @@ use bevy::prelude::*;
 use blake3::Hash;
 use iroh::EndpointId;
 
-pub mod lifecycle;
 pub mod state;
 
 #[derive(Component, Debug)]

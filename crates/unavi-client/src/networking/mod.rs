@@ -2,7 +2,10 @@ use std::time::Duration;
 
 use bevy::{prelude::*, time::common_conditions::on_timer};
 
-use crate::networking::agent::publish::TrackedBones;
+use crate::networking::{
+    agent::publish::TrackedBones,
+    thread::{NetworkingThread, NetworkingThreadOpts},
+};
 
 pub mod agent;
 pub mod event;
@@ -25,7 +28,7 @@ pub struct NetworkingPlugin {
 
 impl Plugin for NetworkingPlugin {
     fn build(&self, app: &mut App) {
-        let nt = thread::NetworkingThread::spawn(thread::NetworkingThreadOpts {
+        let nt = NetworkingThread::spawn(NetworkingThreadOpts {
             wds_in_memory: self.wds_in_memory,
         });
 
@@ -68,7 +71,6 @@ impl Plugin for NetworkingPlugin {
                     object::ownership::on_locally_released,
                     object::pin::refresh_pins_on_grab,
                     object::pin::tick_pins,
-                    peer::lifecycle::check_orphan_peers,
                     player::sync::detect_local_changes,
                     player::sync::broadcast_state_delta,
                 )

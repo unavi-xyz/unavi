@@ -136,7 +136,6 @@ pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::R
     commands.push(bevy::ecs::system::command::spawn_batch([(
         Space(space_id),
         SpaceDoc(space_doc),
-        crate::space::lifecycle::JoinedSpace,
     )]));
     ASYNC_COMMAND_QUEUE.0.send(commands).await?;
 

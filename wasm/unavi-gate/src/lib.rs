@@ -14,14 +14,14 @@ use crate::{
 
 wired_prelude::generate_script!(Script);
 
-const PORTAL_WIDTH: f32 = 1.7;
+const PORTAL_WIDTH: f32 = GOLDEN_RATIO;
 const PORTAL_HEIGHT: f32 = PORTAL_WIDTH * GOLDEN_RATIO;
 
-const BEAM_THICKNESS: f32 = 0.2;
+const BEAM_THICKNESS: f32 = 1.0 / (4.0 * GOLDEN_RATIO);
 
-const PEDESTAL_HEIGHT: f32 = 0.75;
-const PEDESTAL_THICKNESS: f32 = BEAM_THICKNESS * 1.5;
-const EVENT_RADIUS: f32 = PEDESTAL_THICKNESS;
+const PEDESTAL_HEIGHT: f32 = PORTAL_WIDTH / 2.0;
+const PEDESTAL_THICKNESS: f32 = BEAM_THICKNESS * GOLDEN_RATIO;
+const EVENT_RADIUS: f32 = PEDESTAL_THICKNESS * 2.0;
 
 const TARGET_DECAY: Duration = Duration::from_secs(10);
 

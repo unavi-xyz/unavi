@@ -5,6 +5,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use bevy::prelude::*;
 use bevy_hsd::HsdRecordId;
+use bevy_hsd::cache::NodeInner;
 use blake3::Hash;
 
 use crate::firewall::HsdFirewall;
@@ -25,7 +26,7 @@ pub enum ReceptorFilter {
         source_documents: Option<Vec<Hash>>,
     },
     Spatial {
-        entity: Entity,
+        node: Arc<NodeInner>,
         radius: f32,
         source_documents: Option<Vec<Hash>>,
     },
@@ -38,7 +39,7 @@ pub struct ReceptorEntry {
 }
 
 pub struct PendingEmission {
-    pub node: Option<Entity>,
+    pub node: Option<Arc<NodeInner>>,
     pub channel: String,
     pub payload: Vec<u8>,
     pub radius: f32,
@@ -55,7 +56,7 @@ pub struct InnerEventRegistry {
 impl InnerEventRegistry {
     pub fn register_node(
         &mut self,
-        entity: Entity,
+        node: Arc<NodeInner>,
         channels: Vec<String>,
         radius: f32,
         source_documents: Option<Vec<Hash>>,
@@ -70,7 +71,7 @@ impl InnerEventRegistry {
                     doc_id,
                     queue: Arc::clone(&queue),
                     filter: ReceptorFilter::Spatial {
-                        entity,
+                        node: Arc::clone(&node),
                         radius,
                         source_documents: source_documents.clone(),
                     },
@@ -145,9 +146,10 @@ pub fn process_event_emissions(
         .map_or(0, |d| d.as_nanos() as u64);
 
     for emission in &pending {
-        let origin: Option<Vec3> = emission
-            .node
-            .and_then(|e| transforms.get(e).ok().map(GlobalTransform::translation));
+        let origin: Option<Vec3> = emission.node.as_ref().and_then(|n| {
+            let e = n.entity.lock().expect("entity lock");
+            e.and_then(|e| transforms.get(e).ok().map(GlobalTransform::translation))
+        });
 
         let matched: Vec<_> = {
             let inner = registry.0.lock().expect("registry lock");
@@ -183,7 +185,7 @@ pub fn process_event_emissions(
                             Some(Arc::clone(&entry.queue))
                         }
                         ReceptorFilter::Spatial {
-                            entity,
+                            node,
                             radius,
                             source_documents,
                         } => {
@@ -193,7 +195,8 @@ pub fn process_event_emissions(
                                 return None;
                             }
                             let origin = origin?;
-                            let t = transforms.get(*entity).ok()?;
+                            let receptor_entity = (*node.entity.lock().expect("entity lock"))?;
+                            let t = transforms.get(receptor_entity).ok()?;
                             let dist = origin.distance(t.translation());
                             (dist <= emission.radius && dist <= *radius)
                                 .then(|| Arc::clone(&entry.queue))
@@ -205,11 +208,14 @@ pub fn process_event_emissions(
             result
         };
 
+        let sender_entity = emission.node.as_ref().and_then(|n| {
+            *n.entity.lock().expect("entity lock")
+        });
         for queue in matched {
             queue.lock().expect("queue lock").push_back(QueuedEvent {
                 channel: emission.channel.clone(),
                 payload: emission.payload.clone(),
-                sender_node: emission.node,
+                sender_node: sender_entity,
                 sender_document: emission.sender_doc_id,
                 time,
             });

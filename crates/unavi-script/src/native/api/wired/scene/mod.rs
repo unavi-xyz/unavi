@@ -101,8 +101,8 @@ impl WiredSceneRt {
         };
         let fw = hsd_fw.read().expect("hsd_fw read");
         (
-            fw.read.contains(&self.doc_id),
-            fw.write.contains(&self.doc_id),
+            fw.scene_read.permits(&self.doc_id),
+            fw.scene_write.permits(&self.doc_id),
         )
     }
 }
@@ -202,22 +202,8 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
         // Build the new registry and firewall before the async work.
         let new_registry = SceneRegistryInner::new();
 
-        // Inherit creator's firewall, then grant creator read+write on new doc.
-        let new_firewall_inner = {
-            let (mut read_set, mut write_set) = {
-                let map = self.registry_map.read().expect("registry_map read");
-                map.get(&self.doc_id).map_or_else(Default::default, |h| {
-                    let fw = h.firewall.read().expect("firewall read");
-                    (fw.read.clone(), fw.write.clone())
-                })
-            };
-            read_set.insert(self.doc_id);
-            write_set.insert(self.doc_id);
-            Arc::new(RwLock::new(HsdFirewallInner {
-                read: read_set,
-                write: write_set,
-            }))
-        };
+        let new_firewall_inner =
+            Arc::new(RwLock::new(HsdFirewallInner::for_child_doc(self.doc_id)));
 
         // Create the WDS record with an empty HSD document.
         let result = actor
@@ -339,21 +325,8 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
         }
         let new_registry = SceneRegistryInner::new();
 
-        let new_firewall_inner = {
-            let (mut read_set, mut write_set) = {
-                let map = self.registry_map.read().expect("registry_map read");
-                map.get(&self.doc_id).map_or_else(Default::default, |h| {
-                    let fw = h.firewall.read().expect("firewall read");
-                    (fw.read.clone(), fw.write.clone())
-                })
-            };
-            read_set.insert(self.doc_id);
-            write_set.insert(self.doc_id);
-            Arc::new(RwLock::new(HsdFirewallInner {
-                read: read_set,
-                write: write_set,
-            }))
-        };
+        let new_firewall_inner =
+            Arc::new(RwLock::new(HsdFirewallInner::for_child_doc(self.doc_id)));
 
         let lor_doc_spawn = Arc::clone(&lor_doc);
         let registry_spawn = Arc::clone(&new_registry);

@@ -168,7 +168,7 @@ pub fn process_event_emissions(
                             error!("firewall poisoned");
                             return None;
                         };
-                        if !fw.read.iter().any(|h| *h == emission.sender_doc_id) {
+                        if !fw.event_receive.permits(&emission.sender_doc_id) {
                             return None;
                         }
                     }

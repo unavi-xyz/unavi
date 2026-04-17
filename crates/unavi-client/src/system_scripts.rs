@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 use bevy_hsd::LoadHsdFile;
-use unavi_script::{firewall::HsdFirewallEntities, permissions::ScriptPermissions};
+use unavi_script::{
+    firewall::{AccessEntities, HsdFirewallEntities},
+    permissions::ScriptPermissions,
+};
 
 use crate::assets::assets_dir;
 
@@ -24,8 +27,9 @@ pub fn spawn_system_scripts(mut commands: Commands) {
         .spawn((
             ScriptPermissions::system(),
             HsdFirewallEntities {
-                read: module_ents.clone(),
-                write: module_ents.clone(),
+                event_receive: AccessEntities::Restricted(module_ents.clone()),
+                scene_read:    AccessEntities::Restricted(module_ents.clone()),
+                scene_write:   AccessEntities::Restricted(module_ents.clone()),
             },
         ))
         .trigger(move |entity| LoadHsdFile {
@@ -36,8 +40,9 @@ pub fn spawn_system_scripts(mut commands: Commands) {
 
     for module_ent in module_ents {
         commands.entity(module_ent).insert(HsdFirewallEntities {
-            read: vec![gauntlet_ent],
-            write: vec![gauntlet_ent],
+            event_receive: AccessEntities::Restricted(vec![gauntlet_ent]),
+            scene_read:    AccessEntities::Restricted(vec![gauntlet_ent]),
+            scene_write:   AccessEntities::Restricted(vec![gauntlet_ent]),
         });
     }
 }

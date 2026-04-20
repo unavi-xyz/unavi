@@ -13982,7 +13982,6 @@ dependencies = [
  "half",
  "image",
  "iroh",
- "iroh-gossip",
  "log",
  "loro",
  "n0-future",
@@ -14000,6 +13999,7 @@ dependencies = [
  "unavi-assets",
  "unavi-avatar",
  "unavi-input",
+ "unavi-networking",
  "unavi-portal",
  "unavi-script",
  "unavi-wasm-compat",
@@ -14075,6 +14075,20 @@ dependencies = [
  "toml 1.1.2+spec-1.1.0",
  "tracing",
  "xz2",
+]
+
+[[package]]
+name = "unavi-networking"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "iroh",
+ "iroh-gossip",
+ "n0-future",
+ "tokio",
+ "tracing",
+ "unavi-wasm-compat",
 ]
 
 [[package]]

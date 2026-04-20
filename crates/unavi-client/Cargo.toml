@@ -12,7 +12,7 @@ devtools           = ["devtools-bevy", "devtools-inspector", "devtools-network"]
 devtools-bevy      = ["bevy/bevy_dev_tools", "bevy/debug"]
 devtools-inspector = ["dep:bevy-inspector-egui", "unavi-input/egui-filter"]
 devtools-network   = []
-mdns               = ["iroh/address-lookup-mdns"]
+mdns               = ["unavi-networking/mdns"]
 webgpu             = ["bevy/webgpu", "unavi-agent/webgpu", "unavi-avatar/webgpu"]
 
 [lints]
@@ -36,7 +36,6 @@ bytes.workspace        = true
 clap.workspace         = true
 half.workspace         = true
 image                  = { default-features = false, features = ["png"], workspace = true }
-iroh-gossip            = "0.97.0"
 log                    = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
 loro.workspace         = true
 n0-future.workspace    = true
@@ -52,6 +51,7 @@ unavi-agent.path       = "../unavi-agent"
 unavi-assets.path      = "../unavi-assets"
 unavi-avatar.path      = "../unavi-avatar"
 unavi-input.path       = "../unavi-input"
+unavi-networking.path  = "../unavi-networking"
 unavi-portal.path      = "../unavi-portal"
 unavi-script.path      = "../unavi-script"
 unavi-wasm-compat.path = "../unavi-wasm-compat"

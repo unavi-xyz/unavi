@@ -30,7 +30,7 @@ mod upload_envelope;
 
 const MAX_PIN_DURATION: Duration = Duration::from_hours(24 * 90);
 
-pub const ALPN: &[u8] = b"wds/api";
+pub const ALPN: &[u8] = b"wds/api/0";
 
 pub(crate) fn protocol(ctx: Arc<StoreContext>) -> (Client<ApiService>, IrohProtocol<ApiService>) {
     let (tx, mut rx) = irpc::channel::mpsc::channel(32);

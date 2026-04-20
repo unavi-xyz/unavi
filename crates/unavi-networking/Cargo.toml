@@ -1,0 +1,30 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-networking"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[features]
+default = []
+mdns    = ["iroh/address-lookup-mdns"]
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace       = true
+bevy.workspace         = true
+iroh-gossip            = "0.97.0"
+n0-future.workspace    = true
+tracing.workspace      = true
+unavi-wasm-compat.path = "../unavi-wasm-compat"
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+iroh.workspace = true
+tokio          = { features = ["rt"], workspace = true }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+iroh  = { default-features = true, workspace = true }
+tokio = { features = ["rt", "rt-multi-thread"], workspace = true }

@@ -25,7 +25,7 @@ use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::networking::thread::space::{
     MAX_AGENT_TICKRATE, SpaceHandle,
-    gossip::{ObjectClaimBroadcast, SpaceGossipMsg},
+    gossip::SpaceGossip,
     msg::{AgentIFrameMsg, AgentPFrameDatagram, ObjectIFrameMsg, ObjectPFrameDatagram},
     types::{
         object_id::ObjectId,
@@ -35,60 +35,43 @@ use crate::networking::thread::space::{
     },
 };
 
+mod gossip;
 mod join;
 mod publish_beacon;
 mod remote_wds;
 pub mod space;
 
 pub enum NetworkCommand {
-    Join(Hash),
-    Leave(Hash),
-    DisconnectPeer(EndpointId),
-    PublishBeacon {
-        id: Hash,
-        ttl: Duration,
-    },
+    JoinSpace(Hash),
+    LeaveSpace(Hash),
 
+    DisconnectPeer(EndpointId),
+
+    SetPeerTickrate { peer: EndpointId, tickrate: u8 },
     PublishAgentIFrame(AgentIFrame),
     PublishAgentPFrame(AgentPFrame),
-    SetPeerTickrate {
-        peer: EndpointId,
-        tickrate: u8,
-    },
 
     ClaimObject(ObjectId),
+    SetObjectTickrate { object_id: ObjectId, tickrate: u8 },
     PublishObjectIFrame(Vec<(ObjectId, PhysicsIFrame)>),
     PublishObjectPFrame(Vec<(ObjectId, PhysicsPFrame)>),
-    SetObjectTickrate {
-        object_id: ObjectId,
-        tickrate: u8,
-    },
-    UpdateGrabbedObjects(HashSet<ObjectId>),
-
-    /// Update local player state cache (sent to peers on `StateSync` requests).
-    UpdateLocalState(PlayerStateMsg),
-    /// Request full player state from a connected peer via `StateSync` stream.
-    RequestPeerState(EndpointId),
 
     Shutdown,
 }
 
 pub enum NetworkEvent {
-    AddRemoteActor(Actor),
+    SetRemoteActor(Actor),
     SetLocalWds {
         actor: Actor,
         blobs: Blobs,
     },
     SetLocalEndpoint(EndpointId),
 
-    // Peer events.
-    AgentJoin {
+    PeerJoin {
         id: EndpointId,
         state: Arc<InboundState>,
     },
-    /// Peer fully disconnected (inbound connection closed).
     PeerLeft(EndpointId),
-    /// Peer was seen in a gossip topic for this space.
     PeerJoinedSpace {
         peer: EndpointId,
         space: Hash,
@@ -290,7 +273,7 @@ async fn thread_loop(
 
     if let Some(ref remote_actor) = remote_actor {
         event_tx
-            .send(NetworkEvent::AddRemoteActor(remote_actor.clone()))
+            .send(NetworkEvent::SetRemoteActor(remote_actor.clone()))
             .await?;
     }
 
@@ -315,10 +298,9 @@ async fn thread_loop(
 
     while let Some(cmd) = command_rx.recv().await {
         match cmd {
-            NetworkCommand::Join(id) => {
+            NetworkCommand::JoinSpace(id) => {
                 let state = state.clone();
                 let span = info_span!("", space = %id);
-
                 n0_future::task::spawn(
                     async move {
                         if let Err(err) = join::handle_join(state, id).await {
@@ -328,7 +310,7 @@ async fn thread_loop(
                     .instrument(span),
                 );
             }
-            NetworkCommand::Leave(id) => {
+            NetworkCommand::LeaveSpace(id) => {
                 if let Some((_, handle)) = state.spaces.remove_async(&id).await {
                     let _ = handle.cancel_tx.send(());
                 } else {
@@ -384,9 +366,9 @@ async fn thread_loop(
                         .ownership
                         .try_claim(object_id.clone(), endpoint_id, now, 0)
                     {
-                        let claim = SpaceGossipMsg::ObjectClaim(ObjectClaimBroadcast {
+                        let claim = SpaceGossip::ObjectClaim(ObjectClaimBroadcast {
                             object_id: object_id.clone(),
-                            claimer: endpoint_id,
+                            sender: endpoint_id,
                             timestamp: now,
                             seq: 0,
                         });
@@ -479,7 +461,7 @@ async fn thread_loop(
 /// Sign and broadcast a gossip message.
 async fn broadcast_gossip(
     state: &NetworkThreadState,
-    msg: &SpaceGossipMsg,
+    msg: &SpaceGossip,
     gossip_tx: &iroh_gossip::api::GossipSender,
 ) -> anyhow::Result<()> {
     let signed = msg.sign(&IrohSigner(state.endpoint.secret_key()))?;

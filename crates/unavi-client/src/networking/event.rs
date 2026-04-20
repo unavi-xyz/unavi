@@ -73,7 +73,7 @@ pub fn recv_network_event(
             NetworkEvent::SetLocalEndpoint(id) => {
                 commands.insert_resource(LocalEndpointId(id));
             }
-            NetworkEvent::AgentJoin { id, state } => {
+            NetworkEvent::PeerJoin { id, state } => {
                 // Deduplicate: skip if already tracked.
                 if peers.iter().any(|(_, p)| p.0 == id) {
                     continue;
@@ -159,7 +159,7 @@ pub fn recv_network_event(
                 }
                 commands.spawn((LocalActor(actor), LocalBlobs(blobs)));
             }
-            NetworkEvent::AddRemoteActor(actor) => {
+            NetworkEvent::SetRemoteActor(actor) => {
                 if let Ok(mut targets) = sync_targets.single_mut() {
                     targets.0.push(actor);
                 } else {

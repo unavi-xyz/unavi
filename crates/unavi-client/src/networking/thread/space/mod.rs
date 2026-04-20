@@ -1,12 +1,3 @@
-//! Real-time networking for agents and objects within a space.
-//!
-//! Uses a single ALPN protocol with multiplexed streams identified by init message:
-//! - `StreamInit::AgentControl` - bistream for tickrate negotiation
-//! - `StreamInit::AgentIFrame` - unistream for agent I-frames
-//! - `StreamInit::Object { object_id }` - bistream for object I-frames
-//!
-//! Datagrams are shared and tagged by type (`AgentPFrame` or `ObjectPFrame`).
-
 use std::sync::Arc;
 
 use bevy::log::{debug, error, info, warn};
@@ -80,7 +71,7 @@ impl ProtocolHandler for SpaceProtocol {
 
         let _ = self
             .event_tx
-            .send(NetworkEvent::AgentJoin {
+            .send(NetworkEvent::PeerJoin {
                 id: remote,
                 state: Arc::clone(&state),
             })

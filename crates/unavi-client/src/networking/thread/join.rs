@@ -2,113 +2,40 @@ use std::{collections::BTreeSet, sync::Arc, time::Duration};
 
 use anyhow::bail;
 use bevy::{
-    ecs::world::CommandQueue,
-    log::{debug, error, info, warn},
+    log::{error, info, warn},
     tasks::futures_lite::StreamExt,
 };
 use blake3::Hash;
-use iroh::Signature;
+use iroh::{EndpointAddr, EndpointId, PublicKey, Signature};
 use iroh_gossip::{
     TopicId,
-    api::{Event, GossipReceiver, JoinOptions},
+    api::{Event, GossipReceiver, GossipSender, JoinOptions},
 };
 use time::OffsetDateTime;
 use wds::signed_bytes::{IrohSigner, Signable, SignedBytes};
 use wired_records::BeaconRecord;
 use wired_schemas::SCHEMA_BEACON;
 
-use crate::{
-    async_commands::ASYNC_COMMAND_QUEUE,
-    networking::thread::{
-        NetworkEvent, NetworkThreadState,
-        space::{
-            SpaceHandle,
-            gossip::{ClaimEntry, ClaimSyncBroadcast, JoinBroadcast, SpaceGossipMsg},
-            ownership::ObjectOwnership,
-        },
+use crate::networking::thread::{
+    NetworkEvent, NetworkThreadState,
+    space::{
+        SpaceHandle,
+        gossip::{SpaceGossip, SpaceGossipMsg},
+        ownership::ObjectOwnership,
     },
-    space::{Space, SpaceDoc},
 };
 
-#[expect(clippy::too_many_lines)]
-pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::Result<()> {
-    // Idempotency: skip if already joined.
-    if state.spaces.contains_async(&space_id).await {
+pub async fn handle_join(state: NetworkThreadState, space: Hash) -> anyhow::Result<()> {
+    if state.spaces.contains_async(&space).await {
         return Ok(());
     }
 
-    // Download space.
-    let space_doc = {
-        let mut builder = state
-            .local_actor
-            .read(space_id)
-            .ttl(Duration::from_hours(24 * 3));
-
-        if let Some(remote_actor) = &state.remote_actor {
-            builder = builder.sync_from(remote_actor.host().clone());
-        }
-
-        builder.send().await?
-    };
-
-    // Query beacons to find players.
-    let mut bootstrap = BTreeSet::new();
-
-    if let Some(remote_actor) = &state.remote_actor {
-        let found = remote_actor
-            .query()
-            .schema(SCHEMA_BEACON.hash)
-            .send()
-            .await?;
-
-        let now = OffsetDateTime::now_utc().unix_timestamp();
-
-        for id in found {
-            info!(%id, "Reading beacon");
-
-            match state
-                .local_actor
-                .read(id)
-                .sync_from(remote_actor.host().clone())
-                .send()
-                .await
-            {
-                Ok(doc) => {
-                    let Ok(beacon) = BeaconRecord::load(&doc) else {
-                        debug!("invalid beacon document");
-                        continue;
-                    };
-
-                    if now >= beacon.expires {
-                        continue;
-                    }
-
-                    if beacon.space.0 != space_id {
-                        continue;
-                    }
-
-                    let Ok(endpoint) = iroh::EndpointId::from_bytes(&beacon.endpoint.0) else {
-                        debug!("invalid endpoint bytes in beacon");
-                        continue;
-                    };
-
-                    if endpoint == state.endpoint.id() {
-                        continue;
-                    }
-
-                    bootstrap.insert(endpoint);
-                }
-                Err(err) => {
-                    warn!(?err, "failed to sync beacon");
-                }
-            }
-        }
-    }
-
-    info!(?bootstrap, "joining gossip topic");
+    // Bootstrap from beacons.
+    let bootstrap = find_bootstrap_peers(&state, space).await?;
+    info!(bootstrap = bootstrap.len(), "joining gossip topic");
 
     // Join gossip topic.
-    let topic_id = TopicId::from_bytes(*space_id.as_bytes());
+    let topic_id = TopicId::from_bytes(*space.as_bytes());
     let topic = state
         .gossip
         .subscribe_with_opts(
@@ -129,88 +56,128 @@ pub async fn handle_join(state: NetworkThreadState, space_id: Hash) -> anyhow::R
         ownership,
         cancel_tx,
     };
-    let _ = state.spaces.insert_async(space_id, handle).await;
+    if state.spaces.insert_async(space, handle).await.is_err() {
+        bail!("space already joined?")
+    }
 
-    // Create space in ECS.
-    let mut commands = CommandQueue::default();
-    commands.push(bevy::ecs::system::command::spawn_batch([(
-        Space(space_id),
-        SpaceDoc(space_doc),
-    )]));
-    ASYNC_COMMAND_QUEUE.0.send(commands).await?;
+    // Handle gossip events.
+    let state = Arc::new(state);
 
-    let mut cancel_rx = Some(cancel_rx);
-    loop {
-        match handle_gossip_inbound(&state, &tx, &mut rx, cancel_rx.take(), space_id).await {
-            Ok(cancelled) => {
-                if cancelled {
-                    info!(%space_id, "space left (cancelled)");
+    let gossip_task = tokio::spawn({
+        let state = Arc::clone(&state);
+        async move {
+            loop {
+                match handle_gossip_inbound(&state, &tx, &mut rx, space).await {
+                    Ok(()) => {
+                        break;
+                    }
+                    Err(err) => {
+                        error!(?err, "error handling inbound gossip");
+                        n0_future::time::sleep(Duration::from_millis(100)).await;
+                    }
                 }
-                break;
             }
-            Err(err) => {
-                error!(?err, "error handling inbound gossip");
-                n0_future::time::sleep(Duration::from_millis(100)).await;
+        }
+    });
+
+    tokio::select! {
+        res = cancel_rx => {
+            if let Err(err) = res {
+                error!(?err);
+            }
+        }
+        res = gossip_task => {
+            if let Err(err) = res {
+                error!(?err);
             }
         }
     }
 
     // Clean up space handle on exit.
-    let _ = state.spaces.remove_async(&space_id).await;
+    let _ = state.spaces.remove_async(&space).await;
 
     Ok(())
 }
 
-/// Returns `true` if the loop exited due to cancellation, `false` if stream ended.
+async fn find_bootstrap_peers(
+    state: &NetworkThreadState,
+    space: Hash,
+) -> anyhow::Result<BTreeSet<PublicKey>> {
+    let mut bootstrap = BTreeSet::new();
+
+    // Search for beacons, ideally from a remote actor but fallback to local.
+    let target_actor = state.remote_actor.as_ref().unwrap_or(&state.local_actor);
+    let found = target_actor
+        .query()
+        .schema(SCHEMA_BEACON.hash)
+        .send()
+        .await?;
+
+    let now = OffsetDateTime::now_utc().unix_timestamp();
+
+    for id in found {
+        let mut builder = state.local_actor.read(id);
+
+        if let Some(remote) = &state.remote_actor {
+            builder = builder.sync_from(remote.host().clone());
+        }
+
+        match builder.send().await {
+            Ok(doc) => {
+                let Ok(beacon) = BeaconRecord::load(&doc) else {
+                    continue;
+                };
+                if now >= beacon.expires {
+                    continue;
+                }
+                if beacon.space.0 != space {
+                    continue;
+                }
+                let Ok(endpoint) = EndpointId::from_bytes(&beacon.endpoint.0) else {
+                    continue;
+                };
+                if endpoint == state.endpoint.id() {
+                    continue;
+                }
+                bootstrap.insert(endpoint);
+            }
+            Err(err) => {
+                warn!(?err, "failed to sync beacon");
+            }
+        }
+    }
+
+    Ok(bootstrap)
+}
+
 async fn handle_gossip_inbound(
     state: &NetworkThreadState,
-    tx: &iroh_gossip::api::GossipSender,
+    tx: &GossipSender,
     rx: &mut GossipReceiver,
-    cancel_rx: Option<tokio::sync::oneshot::Receiver<()>>,
     space_id: Hash,
-) -> anyhow::Result<bool> {
-    let mut cancel = std::pin::pin!(async move {
-        match cancel_rx {
-            Some(rx) => {
-                let _ = rx.await;
-            }
-            None => std::future::pending::<()>().await,
-        }
-    });
-
-    loop {
-        let event = tokio::select! {
-            () = &mut cancel => return Ok(true),
-            ev = rx.next() => ev,
-        };
-        let Some(event) = event else { return Ok(false) };
+) -> anyhow::Result<()> {
+    while let Some(event) = rx.next().await {
         match event? {
             Event::NeighborUp(n) => {
                 info!("+neighbor: {n}");
+
                 // Broadcast join whenever we gain a new neighbor.
-                let join = SpaceGossipMsg::Join(JoinBroadcast {
-                    endpoint: state.endpoint.addr(),
-                });
-                let signed = join.sign(&IrohSigner(state.endpoint.secret_key()))?;
+                let msg = SpaceGossip {
+                    sender: state.endpoint.id(),
+                    msg: SpaceGossipMsg::Join(state.endpoint.addr()),
+                };
+                let signed = msg.sign(&IrohSigner(state.endpoint.secret_key()))?;
                 let bytes = postcard::to_stdvec(&signed)?;
                 tx.broadcast(bytes.into()).await?;
-
-                // Broadcast current claims for catch-up.
-                broadcast_claim_sync(state, tx).await;
             }
             Event::NeighborDown(n) => {
                 info!("-neighbor: {n}");
-
-                // Release all objects owned by this neighbor across all spaces.
-                release_objects_owned_by(state, n).await;
-
-                // Notify ECS that this peer left.
-                let _ = state.event_tx.try_send(NetworkEvent::PeerLeft(n));
+                state.event_tx.try_send(NetworkEvent::PeerLeft(n))?;
             }
             Event::Lagged => bail!("lagged"),
             Event::Received(msg) => {
                 let signed_msg =
-                    match postcard::from_bytes::<SignedBytes<SpaceGossipMsg>>(&msg.content) {
+                    match postcard::from_bytes::<SignedBytes<SpaceGossip>>(&msg.content) {
                         Ok(v) => v,
                         Err(err) => {
                             warn!(?err, "got invalid gossip message");
@@ -227,30 +194,25 @@ async fn handle_gossip_inbound(
                 };
 
                 // Verify signature.
-                let signer_id = payload.signer_id();
                 let Ok(sig_bytes) = signed_msg.signature().try_into() else {
                     warn!("invalid signature length: {}", signed_msg.signature().len());
                     continue;
                 };
                 let sig = Signature::from_bytes(sig_bytes);
 
-                if let Err(err) = signer_id.verify(signed_msg.payload_bytes(), &sig) {
+                if let Err(err) = payload.sender.verify(signed_msg.payload_bytes(), &sig) {
                     warn!(?err, "invalid gossip signature");
                     continue;
                 }
 
-                match payload {
-                    SpaceGossipMsg::Join(join) => {
-                        handle_join_broadcast(state, join, space_id).await;
-                    }
-                    SpaceGossipMsg::ObjectClaim(claim) => {
-                        handle_object_claim(state, &claim).await;
-                    }
-                    SpaceGossipMsg::ObjectRelease(release) => {
-                        handle_object_release(state, &release).await;
-                    }
-                    SpaceGossipMsg::ClaimSync(sync) => {
-                        handle_claim_sync(state, &sync).await;
+                match payload.msg {
+                    SpaceGossipMsg::Join(addr) => {
+                        if addr.id != payload.sender {
+                            warn!("join address does not match sender");
+                            continue;
+                        }
+
+                        handle_join_broadcast(state, payload.sender, addr, space_id).await;
                     }
                     SpaceGossipMsg::StateDelta(delta) => {
                         let _ = state.event_tx.try_send(NetworkEvent::PeerStateDelta {
@@ -261,175 +223,32 @@ async fn handle_gossip_inbound(
                 }
             }
         }
-    } // loop
+    }
+
+    Ok(())
 }
 
-async fn handle_join_broadcast(state: &NetworkThreadState, join: JoinBroadcast, space_id: Hash) {
-    let peer_id = join.endpoint.id;
-    info!(%peer_id, "got join broadcast");
-
-    let _ = state.event_tx.try_send(NetworkEvent::PeerJoinedSpace {
-        peer: peer_id,
-        space: space_id,
-    });
-
-    if state.outbound.get_async(&peer_id).await.is_some() {
+async fn handle_join_broadcast(
+    state: &NetworkThreadState,
+    peer: EndpointId,
+    addr: EndpointAddr,
+    space: Hash,
+) {
+    // If already connected to peer, ignore.
+    // TODO track peer's joined spaces?
+    let _ = state
+        .event_tx
+        .try_send(NetworkEvent::PeerJoinedSpace { peer, space });
+    if state.outbound.get_async(&peer).await.is_some() {
         return;
     }
 
-    info!(%peer_id, "peer joined, opening outbound connection");
+    info!(%peer, "peer joined, opening outbound connection");
 
-    let state_clone = state.clone();
-    let remote = join.endpoint;
+    let state = state.clone();
     n0_future::task::spawn(async move {
-        if let Err(err) = super::space::outbound::connect_to_peer(state_clone, remote).await {
+        if let Err(err) = super::space::outbound::connect_to_peer(state, addr).await {
             error!(?err, "error handling outbound connection");
         }
     });
-}
-
-async fn handle_object_claim(
-    state: &NetworkThreadState,
-    claim: &super::space::gossip::ObjectClaimBroadcast,
-) {
-    let record_hash = claim.object_id.record;
-
-    let Some(entry) = state.spaces.get_async(&record_hash).await else {
-        warn!(%record_hash, "claim for unknown space");
-        return;
-    };
-
-    let handle = entry.get();
-    if handle.ownership.try_claim(
-        claim.object_id.clone(),
-        claim.claimer,
-        claim.timestamp,
-        claim.seq,
-    ) {
-        let _ = state
-            .event_tx
-            .try_send(NetworkEvent::ObjectOwnershipChanged {
-                object_id: claim.object_id.clone(),
-                owner: Some(claim.claimer),
-            });
-    }
-}
-
-async fn handle_object_release(
-    state: &NetworkThreadState,
-    release: &super::space::gossip::ObjectReleaseBroadcast,
-) {
-    let record_hash = release.object_id.record;
-
-    let Some(entry) = state.spaces.get_async(&record_hash).await else {
-        return;
-    };
-
-    let handle = entry.get();
-    if handle
-        .ownership
-        .release(release.object_id.clone(), release.releaser)
-    {
-        let _ = state
-            .event_tx
-            .try_send(NetworkEvent::ObjectOwnershipChanged {
-                object_id: release.object_id.clone(),
-                owner: None,
-            });
-    }
-}
-
-/// Broadcast current claims for catch-up sync to new neighbors.
-async fn broadcast_claim_sync(state: &NetworkThreadState, tx: &iroh_gossip::api::GossipSender) {
-    // Collect claims from all spaces using sync iteration.
-    let mut claims = Vec::new();
-
-    state
-        .spaces
-        .iter_async(|_, handle| {
-            for (object_id, record) in handle.ownership.all_claims() {
-                claims.push(ClaimEntry {
-                    object_id,
-                    owner: record.owner,
-                    timestamp: record.timestamp,
-                    seq: record.seq,
-                });
-            }
-            true
-        })
-        .await;
-
-    if claims.is_empty() {
-        return;
-    }
-
-    let sync = SpaceGossipMsg::ClaimSync(ClaimSyncBroadcast {
-        sender: state.endpoint.id(),
-        claims,
-    });
-
-    if let Ok(signed) = sync.sign(&IrohSigner(state.endpoint.secret_key()))
-        && let Ok(bytes) = postcard::to_stdvec(&signed)
-    {
-        if let Err(err) = tx.broadcast(bytes.into()).await {
-            warn!(?err, "failed to broadcast claim sync");
-        } else {
-            debug!("broadcast claim sync");
-        }
-    }
-}
-
-/// Handle incoming claim sync broadcast.
-async fn handle_claim_sync(state: &NetworkThreadState, sync: &ClaimSyncBroadcast) {
-    debug!(sender = %sync.sender, count = sync.claims.len(), "received claim sync");
-
-    for claim in &sync.claims {
-        let record_hash = claim.object_id.record;
-
-        let Some(entry) = state.spaces.get_async(&record_hash).await else {
-            continue;
-        };
-
-        let handle = entry.get();
-        if handle.ownership.try_claim(
-            claim.object_id.clone(),
-            claim.owner,
-            claim.timestamp,
-            claim.seq,
-        ) {
-            let _ = state
-                .event_tx
-                .try_send(NetworkEvent::ObjectOwnershipChanged {
-                    object_id: claim.object_id.clone(),
-                    owner: Some(claim.owner),
-                });
-        }
-    }
-}
-
-/// Release all objects owned by an endpoint across all spaces.
-async fn release_objects_owned_by(state: &NetworkThreadState, endpoint: iroh::EndpointId) {
-    // Collect released objects first to avoid holding locks during event sends.
-    let mut released = Vec::new();
-
-    state
-        .spaces
-        .iter_async(|_, handle| {
-            let objects = handle.ownership.objects_owned_by(endpoint);
-            for object_id in objects {
-                handle.ownership.remove_all_by(endpoint);
-                released.push(object_id);
-            }
-            true
-        })
-        .await;
-
-    for object_id in released {
-        let _ = state
-            .event_tx
-            .try_send(NetworkEvent::ObjectOwnershipChanged {
-                object_id,
-                owner: None,
-            });
-    }
 }

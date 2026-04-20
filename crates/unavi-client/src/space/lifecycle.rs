@@ -15,7 +15,7 @@ pub fn on_space_add(trigger: On<Add, Space>, nt: Res<NetworkingThread>, spaces: 
 
     if nt
         .command_tx
-        .try_send(NetworkCommand::Join(space.0))
+        .try_send(NetworkCommand::JoinSpace(space.0))
         .is_err()
     {
         warn!(id = %space.0, "failed to send Join for space");
@@ -33,7 +33,7 @@ pub fn on_space_remove(
 
     if nt
         .command_tx
-        .try_send(NetworkCommand::Leave(space.0))
+        .try_send(NetworkCommand::LeaveSpace(space.0))
         .is_err()
     {
         warn!(id = %space.0, "failed to send Leave for space");

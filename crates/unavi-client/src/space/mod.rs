@@ -28,6 +28,3 @@ impl Plugin for SpacePlugin {
 
 #[derive(Component)]
 pub struct Space(pub Hash);
-
-#[derive(Component)]
-pub struct SpaceDoc(pub LoroDoc);

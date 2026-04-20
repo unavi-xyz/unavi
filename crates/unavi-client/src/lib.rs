@@ -6,18 +6,16 @@ use bevy::{
 use bitflags::bitflags;
 use tracing::Level;
 
-use crate::networking::thread::space::object::outbound::LocalGrabbedObjects;
-
 mod async_commands;
 mod camera;
 mod devtools;
 mod fade;
 mod grab;
 mod icon;
-mod networking;
 mod scene;
 mod space;
 mod system_scripts;
+mod wds;
 
 #[cfg(not(target_family = "wasm"))]
 mod assets;
@@ -121,9 +119,7 @@ impl Plugin for UnaviPlugin {
             unavi_agent::AgentPlugin,
             unavi_script::ScriptPlugin,
             unavi_portal::PortalPlugin,
-            networking::NetworkingPlugin {
-                wds_in_memory: self.in_memory,
-            },
+            unavi_networking::NetworkingPlugin,
             space::SpacePlugin,
             MaterialPlugin::<camera::sky::SkyMaterial>::default(),
         ));
@@ -138,9 +134,6 @@ impl Plugin for UnaviPlugin {
             }
         }
 
-        // Spawn singleton LocalPlayerState entity.
-        app.world_mut().spawn(networking::player::LocalPlayerState);
-
         app.add_plugins(devtools::DevToolsPlugin {
             inspector: self.debug.contains(DebugFlags::INSPECTOR),
             network: self.debug.contains(DebugFlags::NETWORK),
@@ -150,7 +143,6 @@ impl Plugin for UnaviPlugin {
             ..default()
         })
         .init_resource::<grab::GrabbedObjects>()
-        .init_resource::<LocalGrabbedObjects>()
         .add_observer(grab::handle_squeeze_down)
         .add_observer(grab::handle_squeeze_up)
         .add_systems(

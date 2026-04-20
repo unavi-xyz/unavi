@@ -1,7 +1,6 @@
-//! Outbound connection - establishes connection and spawns streaming tasks.
-
 use std::sync::{Arc, atomic::AtomicU8};
 
+use anyhow::ensure;
 use bevy::log::{debug, error, info, warn};
 use iroh::{EndpointAddr, EndpointId, endpoint::SendStream};
 use n0_future::task::AbortOnDropHandle;
@@ -16,11 +15,10 @@ use super::{
 };
 use crate::networking::thread::{NetworkEvent, NetworkThreadState, OutboundConn};
 
-/// Establish an outbound connection to a peer and spawn streaming tasks.
-pub async fn connect_to_peer(state: NetworkThreadState, peer: EndpointAddr) -> anyhow::Result<()> {
-    info!(id = %peer.id, "connecting to peer");
+pub async fn connect_to_peer(state: NetworkThreadState, addr: EndpointAddr) -> anyhow::Result<()> {
+    info!(id = %addr.id, "connecting to peer");
 
-    let connection = state.endpoint.connect(peer.clone(), ALPN).await?;
+    let connection = state.endpoint.connect(addr.clone(), ALPN).await?;
 
     // Open control bistream and send init.
     let (mut ctrl_tx, ctrl_rx) = connection.open_bi().await?;
@@ -47,17 +45,17 @@ pub async fn connect_to_peer(state: NetworkThreadState, peer: EndpointAddr) -> a
                     agent_pose,
                     agent_iframe_stream,
                     &conn,
-                    peer.id,
+                    addr.id,
                 ) => r,
                 r = handle_control_stream(ctrl_tx, ctrl_rx, &tickrate, tickrate_rx) => r,
-                r = stream_objects(object_pose, grabbed_rx, &conn, peer.id) => r,
+                r = stream_objects(object_pose, grabbed_rx, &conn, addr.id) => r,
             };
 
             if let Err(err) = result {
                 error!(?err, "outbound connection error");
             }
 
-            info!(id = %peer.id, "outbound connection closed");
+            info!(id = %addr.id, "outbound connection closed");
         })
     };
 
@@ -68,15 +66,15 @@ pub async fn connect_to_peer(state: NetworkThreadState, peer: EndpointAddr) -> a
         tickrate_tx,
     };
 
-    if let Err((_, existing)) = state.outbound.insert_async(peer.id, conn).await {
-        warn!(id = %peer.id, "duplicate outbound connection");
+    if let Err((_, existing)) = state.outbound.insert_async(addr.id, conn).await {
+        warn!(id = %addr.id, "duplicate outbound connection");
         existing.task.abort();
     }
 
     Ok(())
 }
 
-/// Open a `StateSync` bistream to a peer, send a request, receive their state.
+// TODO review state
 pub async fn request_state_sync(
     state: &NetworkThreadState,
     connection: iroh::endpoint::Connection,
@@ -95,8 +93,10 @@ pub async fn request_state_sync(
     // Read response.
     let mut len_buf = [0u8; 4];
     recv.read_exact(&mut len_buf).await?;
+
     let len = u32::from_le_bytes(len_buf) as usize;
-    anyhow::ensure!(len <= 65536, "state response too large: {len}");
+    ensure!(len <= 65536, "state response too large: {len}");
+
     let mut buf = vec![0u8; len];
     recv.read_exact(&mut buf).await?;
 
@@ -111,7 +111,6 @@ pub async fn request_state_sync(
     Ok(())
 }
 
-/// Write a `StreamInit` message on a stream.
 pub async fn write_stream_init(stream: &mut SendStream, init: &StreamInit) -> anyhow::Result<()> {
     let mut buf = [0u8; 64];
     let bytes = postcard::to_slice(init, &mut buf)?;

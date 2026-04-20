@@ -4,12 +4,11 @@ use bevy::{prelude::*, time::common_conditions::on_timer};
 
 use crate::networking::{
     agent::publish::TrackedBones,
-    thread::{NetworkingThread, NetworkingThreadOpts},
+    thread::{NetworkCommand, NetworkingThread, NetworkingThreadOpts},
 };
 
 pub mod agent;
 pub mod event;
-mod lifecycle;
 pub mod object;
 pub mod peer;
 pub mod player;
@@ -76,6 +75,17 @@ impl Plugin for NetworkingPlugin {
                 )
                     .chain(),
             )
-            .add_systems(Last, lifecycle::shutdown_networking_thread);
+            .add_systems(Last, shutdown_networking_thread);
+    }
+}
+
+pub fn shutdown_networking_thread(
+    mut exit_events: MessageReader<AppExit>,
+    nt: Res<NetworkingThread>,
+) {
+    for _ in exit_events.read() {
+        if let Err(err) = nt.command_tx.try_send(NetworkCommand::Shutdown) {
+            warn!(?err, "failed to shutdown networking thread");
+        }
     }
 }

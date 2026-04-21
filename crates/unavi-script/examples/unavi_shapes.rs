@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_wds::{LocalActor, LocalBlobs, util::create_test_wds};
+use bevy_wds::{LocalBlobs, LocalActor, util::create_test_wds};
 use unavi_script::{
     load::local::{LoadLocalScript, ScriptSource},
     permissions::ScriptPermissions,

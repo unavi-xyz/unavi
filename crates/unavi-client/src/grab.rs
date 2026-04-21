@@ -4,14 +4,6 @@ use avian3d::prelude::{AngularVelocity, GravityScale, LinearVelocity, RayHits};
 use bevy::prelude::*;
 use unavi_input::{SqueezeDown, SqueezeUp, crosshair::CrosshairMode, raycast::PrimaryRaycastInput};
 
-use crate::networking::{
-    object::publish::{DynObjectId, Grabbed, LocallyOwned},
-    thread::{
-        NetworkCommand, NetworkingThread,
-        space::{object::outbound::LocalGrabbedObjects, types::object_id::ObjectId},
-    },
-};
-
 const GRAB_COOLDOWN: Duration = Duration::from_millis(100);
 const GRAB_DEAD_ZONE: f32 = 0.001;
 const GRAB_ROTATION_DEAD_ZONE: f32 = 0.01;

@@ -10,10 +10,10 @@ mod async_commands;
 mod camera;
 mod devtools;
 mod fade;
-mod grab;
+// mod grab;
 mod icon;
 mod scene;
-mod space;
+// mod space;
 mod system_scripts;
 mod wds;
 
@@ -113,14 +113,14 @@ impl Plugin for UnaviPlugin {
             avian3d::PhysicsPlugins::default(),
             fade::FadePlugin,
             bevy_wds::WdsPlugin,
+            bevy_iroh::IrohPlugin,
             bevy_hsd::HsdPlugin,
             unavi_input::InputPlugin,
             unavi_avatar::AvatarPlugin,
             unavi_agent::AgentPlugin,
             unavi_script::ScriptPlugin,
             unavi_portal::PortalPlugin,
-            unavi_networking::NetworkingPlugin,
-            space::SpacePlugin,
+            unavi_space::SpacePlugin,
             MaterialPlugin::<camera::sky::SkyMaterial>::default(),
         ));
 
@@ -142,14 +142,14 @@ impl Plugin for UnaviPlugin {
             brightness: lux::OVERCAST_DAY,
             ..default()
         })
-        .init_resource::<grab::GrabbedObjects>()
-        .add_observer(grab::handle_squeeze_down)
-        .add_observer(grab::handle_squeeze_up)
+        // .init_resource::<grab::GrabbedObjects>()
+        // .add_observer(grab::handle_squeeze_down)
+        // .add_observer(grab::handle_squeeze_up)
         .add_systems(
             Startup,
             (
                 camera::sky::spawn_sky,
-                grab::setup_grabbed_hooks,
+                // grab::setup_grabbed_hooks,
                 icon::set_window_icon,
                 scene::spawn_scene,
                 #[cfg(not(target_family = "wasm"))] // TODO fix web scripting
@@ -161,10 +161,11 @@ impl Plugin for UnaviPlugin {
             (
                 async_commands::apply_async_commands,
                 camera::apply_camera_effects,
-                grab::update_crosshair_mode,
+                // grab::update_crosshair_mode,
                 scene::spawn_agent,
             ),
         )
-        .add_systems(Update, grab::move_grabbed_objects);
+        // .add_systems(Update, grab::move_grabbed_objects)
+        ;
     }
 }

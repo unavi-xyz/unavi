@@ -17,10 +17,11 @@ pub enum Access {
 }
 
 impl Access {
+    #[must_use]
     pub fn permits(&self, id: &Hash) -> bool {
         match self {
-            Access::Open => true,
-            Access::Restricted(set) => set.contains(id),
+            Self::Open => true,
+            Self::Restricted(set) => set.contains(id),
         }
     }
 }
@@ -40,6 +41,7 @@ pub struct HsdFirewallInner {
 
 impl HsdFirewallInner {
     /// Default for a space or unregistered doc: open events and reads, blocked writes.
+    #[must_use]
     pub fn default_space() -> Self {
         Self {
             event_receive: Access::Open,
@@ -49,6 +51,7 @@ impl HsdFirewallInner {
     }
 
     /// For a script-created child doc: open events and reads, creator-only writes.
+    #[must_use]
     pub fn for_child_doc(creator_id: Hash) -> Self {
         Self {
             event_receive: Access::Open,
@@ -104,11 +107,7 @@ pub fn sync_hsd_firewall_entities(
     }
 }
 
-fn sync_capability(
-    documents: &Query<&HsdRecordId>,
-    src: &AccessEntities,
-    dst: &mut Access,
-) {
+fn sync_capability(documents: &Query<&HsdRecordId>, src: &AccessEntities, dst: &mut Access) {
     let AccessEntities::Restricted(entities) = src else {
         return;
     };

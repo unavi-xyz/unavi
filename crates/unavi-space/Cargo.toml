@@ -1,0 +1,33 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-space"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace       = true
+bevy.workspace         = true
+bevy-iroh.path         = "../bevy-iroh"
+bevy-wds.path          = "../bevy-wds"
+blake3.workspace       = true
+iroh-gossip            = "0.97.0"
+n0-future.workspace    = true
+time.workspace         = true
+tracing.workspace      = true
+unavi-wasm-compat.path = "../unavi-wasm-compat"
+wds.path               = "../wds"
+wired-records.path     = "../wired-records"
+wired-schemas.path     = "../wired-schemas"
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+iroh.workspace = true
+tokio          = { features = ["rt"], workspace = true }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+iroh  = { default-features = true, workspace = true }
+tokio = { features = ["rt", "rt-multi-thread"], workspace = true }

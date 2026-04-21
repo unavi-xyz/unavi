@@ -67,7 +67,7 @@ pub enum NetworkEvent {
     },
     SetLocalEndpoint(EndpointId),
 
-    PeerJoin {
+    AgentJoin {
         id: EndpointId,
         state: Arc<InboundState>,
     },

@@ -10,7 +10,7 @@ use bevy_hsd::{
     cache::SceneRegistry,
     hydrate::events::{ScriptCommandQueue, ScriptCommandQueueComp},
 };
-use bevy_wds::{LocalActor, LocalBlobs};
+use bevy_wds::{LocalBlobs, LocalActor};
 use loro::{LoroDoc, TreeID};
 use smol_str::ToSmolStr;
 use wasmtime::{AsContextMut, Store, component::Linker, error::Context};

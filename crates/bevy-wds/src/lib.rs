@@ -59,12 +59,10 @@ pub struct BlobResponse(pub Option<Bytes>);
 #[derive(Component)]
 pub struct LocalBlobs(pub Blobs);
 
-/// Singleton entity with the local WDS actor.
 #[derive(Component)]
 #[require(SyncTargets)]
 pub struct LocalActor(pub Actor);
 
-/// Remote actors to sync with.
 #[derive(Component, Default)]
 pub struct SyncTargets(pub Vec<Actor>);
 

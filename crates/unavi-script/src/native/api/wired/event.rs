@@ -41,8 +41,7 @@ impl bindings::wired::event::api::Host for RuntimeData {
         payload: Vec<u8>,
         filter: bindings::wired::event::types::EventFilter,
     ) -> wasmtime::Result<()> {
-        let (node, radius) =
-            scope_to_node(&mut self.wired_scene.table, filter.node, filter.scope)?;
+        let (node, radius) = scope_to_node(&mut self.wired_scene.table, filter.node, filter.scope)?;
         let target_documents = parse_documents(filter.documents)?;
         let emission = PendingEmission {
             node,
@@ -66,8 +65,7 @@ impl bindings::wired::event::api::Host for RuntimeData {
         channels: Vec<String>,
         filter: bindings::wired::event::types::EventFilter,
     ) -> wasmtime::Result<Resource<HostEventReceptor>> {
-        let (node, radius) =
-            scope_to_node(&mut self.wired_scene.table, filter.node, filter.scope)?;
+        let (node, radius) = scope_to_node(&mut self.wired_scene.table, filter.node, filter.scope)?;
         let source_documents = parse_documents(filter.documents)?;
         let doc_id = self.wired_scene.doc_id;
         let queue = {

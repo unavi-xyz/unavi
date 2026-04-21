@@ -1030,6 +1030,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy-iroh"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "iroh",
+ "n0-future",
+ "tracing",
+ "unavi-wasm-compat",
+]
+
+[[package]]
 name = "bevy-tnua"
 version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13967,6 +13979,7 @@ dependencies = [
  "bevy",
  "bevy-hsd",
  "bevy-inspector-egui",
+ "bevy-iroh",
  "bevy-wds",
  "bevy_mod_openxr",
  "bevy_mod_xr",
@@ -13999,9 +14012,9 @@ dependencies = [
  "unavi-assets",
  "unavi-avatar",
  "unavi-input",
- "unavi-networking",
  "unavi-portal",
  "unavi-script",
+ "unavi-space",
  "unavi-wasm-compat",
  "wasm-bindgen-futures",
  "wds",
@@ -14075,20 +14088,6 @@ dependencies = [
  "toml 1.1.2+spec-1.1.0",
  "tracing",
  "xz2",
-]
-
-[[package]]
-name = "unavi-networking"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "bevy",
- "iroh",
- "iroh-gossip",
- "n0-future",
- "tokio",
- "tracing",
- "unavi-wasm-compat",
 ]
 
 [[package]]
@@ -14166,6 +14165,27 @@ dependencies = [
  "glam 0.32.1",
  "wired-prelude",
  "wit-bindgen 0.55.0",
+]
+
+[[package]]
+name = "unavi-space"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy-iroh",
+ "bevy-wds",
+ "blake3",
+ "iroh",
+ "iroh-gossip",
+ "n0-future",
+ "time",
+ "tokio",
+ "tracing",
+ "unavi-wasm-compat",
+ "wds",
+ "wired-records",
+ "wired-schemas",
 ]
 
 [[package]]

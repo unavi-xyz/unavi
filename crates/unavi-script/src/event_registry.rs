@@ -208,9 +208,10 @@ pub fn process_event_emissions(
             result
         };
 
-        let sender_entity = emission.node.as_ref().and_then(|n| {
-            *n.entity.lock().expect("entity lock")
-        });
+        let sender_entity = emission
+            .node
+            .as_ref()
+            .and_then(|n| *n.entity.lock().expect("entity lock"));
         for queue in matched {
             queue.lock().expect("queue lock").push_back(QueuedEvent {
                 channel: emission.channel.clone(),

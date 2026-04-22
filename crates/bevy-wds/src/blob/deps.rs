@@ -1,8 +1,19 @@
 use bevy::prelude::*;
 
-use crate::{BlobDep, BlobDeps, BlobDepsLoaded, BlobResponse};
+use crate::blob::request::BlobResponse;
 
-pub fn load_blob_deps(
+#[derive(Component)]
+pub struct BlobDepsLoaded;
+
+#[derive(Component, Default)]
+#[relationship_target(relationship = BlobDep, linked_spawn)]
+pub struct BlobDeps(Vec<Entity>);
+
+#[derive(Component)]
+#[relationship(relationship_target = BlobDeps)]
+pub struct BlobDep(pub Entity);
+
+pub fn mark_blob_deps_loaded(
     mut commands: Commands,
     loading: Query<(Entity, &BlobDeps), Without<BlobDepsLoaded>>,
     responses: Query<(), (With<BlobDep>, With<BlobResponse>)>,

@@ -1,11 +1,22 @@
+use std::sync::Arc;
+
 use anyhow::bail;
 use bevy::{prelude::*, tasks::futures_lite::StreamExt};
+use blake3::Hash;
 use bytes::Bytes;
+use tokio::sync::{Notify, mpsc::Sender};
 use wds::Blobs;
 
-use crate::{AwaitBlob, LocalBlobs};
+use crate::LocalBlobs;
 
-pub fn handle_await_blob(req: On<AwaitBlob>, blobs: Query<&LocalBlobs>) {
+#[derive(Event, Clone)]
+pub struct GetBlob {
+    pub hash: Hash,
+    pub cancel: Arc<Notify>,
+    pub tx: Sender<Bytes>,
+}
+
+pub(crate) fn on_get_blob(req: On<GetBlob>, blobs: Query<&LocalBlobs>) {
     let Ok(blobs) = blobs.single().map(|x| x.0.clone()) else {
         warn!("Unable to handle blob request: no LocalBlobs");
         return;
@@ -14,16 +25,16 @@ pub fn handle_await_blob(req: On<AwaitBlob>, blobs: Query<&LocalBlobs>) {
     let event = req.event().clone();
 
     unavi_wasm_compat::spawn_thread(async move {
-        if let Err(err) = wrap_await(event, blobs).await {
+        if let Err(err) = inner(event, blobs).await {
             error!(?err, "failed to handle blob request");
         }
     });
 }
 
-async fn wrap_await(event: AwaitBlob, blobs: Blobs) -> anyhow::Result<()> {
+async fn inner(event: GetBlob, blobs: Blobs) -> anyhow::Result<()> {
     tokio::select! {
         () = event.cancel.notified() => {},
-        res = get_or_await_bytes(&event, blobs) => {
+        res = get_blob(&event, blobs) => {
             event.tx.send(res?).await?;
         }
     }
@@ -33,7 +44,7 @@ async fn wrap_await(event: AwaitBlob, blobs: Blobs) -> anyhow::Result<()> {
 const MB: u64 = 1024 * 1024;
 const MAX_SIZE: u64 = 512 * MB;
 
-async fn get_or_await_bytes(event: &AwaitBlob, blobs: Blobs) -> anyhow::Result<Bytes> {
+async fn get_blob(event: &GetBlob, blobs: Blobs) -> anyhow::Result<Bytes> {
     if blobs.has(event.hash).await? {
         let res = blobs.get_bytes(event.hash).await?;
         return Ok(res);

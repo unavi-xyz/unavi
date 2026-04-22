@@ -42,8 +42,7 @@ impl TestHarness {
         .init_resource::<SolverDiagnostics>()
         .init_resource::<SpatialQueryDiagnostics>()
         .insert_resource(Time::<Virtual>::from_max_delta(TICK))
-        .insert_resource(Time::<Fixed>::from_duration(TICK))
-        .add_systems(FixedUpdate, bevy_wds::blob_deps::load_blob_deps);
+        .insert_resource(Time::<Fixed>::from_duration(TICK));
 
         let doc = Arc::new(LoroDoc::new());
         let doc_id = blake3::hash(b"test-doc");

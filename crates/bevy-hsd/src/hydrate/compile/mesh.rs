@@ -8,7 +8,10 @@ use bevy::{
     mesh::{Indices, MeshVertexAttribute, PrimitiveTopology, VertexAttributeValues},
     prelude::*,
 };
-use bevy_wds::{BlobDep, BlobDeps, BlobDepsLoaded, BlobRequest, BlobResponse};
+use bevy_wds::blob::{
+    deps::{BlobDep, BlobDeps, BlobDepsLoaded},
+    request::{BlobRequest, BlobResponse},
+};
 use bytemuck::{Pod, PodCastError, try_cast_slice};
 use bytes::Bytes;
 use smol_str::SmolStr;
@@ -148,7 +151,7 @@ fn setup_hsd_mesh_blobs(ent: Entity, mesh: &HsdMesh, commands: &mut Commands) {
     for (name, hash) in &mesh.attributes {
         let dep = commands
             .spawn((
-                BlobDep { owner: ent },
+                BlobDep(ent),
                 BlobRequest(hash.0),
                 MeshAttrName(name.clone()),
             ))
@@ -156,11 +159,9 @@ fn setup_hsd_mesh_blobs(ent: Entity, mesh: &HsdMesh, commands: &mut Commands) {
         attr_deps.push(dep);
     }
 
-    let indices = mesh.indices.map(|hash| {
-        commands
-            .spawn((BlobDep { owner: ent }, BlobRequest(hash.0)))
-            .id()
-    });
+    let indices = mesh
+        .indices
+        .map(|hash| commands.spawn((BlobDep(ent), BlobRequest(hash.0))).id());
 
     commands.entity(ent).insert(MeshParams {
         topology: mesh.topology.0,
@@ -178,7 +179,7 @@ pub(crate) fn attach_inline_mesh(ent: Entity, state: &MeshState, commands: &mut 
                 let bytes = Bytes::copy_from_slice(bytemuck::cast_slice::<f32, u8>(data));
                 let dep = commands
                     .spawn((
-                        BlobDep { owner: ent },
+                        BlobDep(ent),
                         MeshAttrName($name.into()),
                         BlobResponse(Some(bytes)),
                     ))
@@ -198,7 +199,7 @@ pub(crate) fn attach_inline_mesh(ent: Entity, state: &MeshState, commands: &mut 
     let indices = state.indices.as_ref().map(|idx| {
         let bytes = Bytes::copy_from_slice(bytemuck::cast_slice::<u32, u8>(idx));
         commands
-            .spawn((BlobDep { owner: ent }, BlobResponse(Some(bytes))))
+            .spawn((BlobDep(ent), BlobResponse(Some(bytes))))
             .id()
     });
 

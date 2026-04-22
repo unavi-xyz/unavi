@@ -41,9 +41,10 @@ pub fn manage_peers(
     // Refresh active timers.
     while let Ok(update) = guard.try_recv() {
         let Some((_, _, mut spaces)) = peers.iter_mut().find(|(_, p, _)| p.0 == update.peer) else {
-            let mut set = HashMap::default();
-            set.insert(update.space, now);
-            commands.spawn((Peer(update.peer), ActiveSpaces(set)));
+            let mut spaces = HashMap::default();
+            spaces.insert(update.space, now);
+            info!("new peer: {}", update.peer);
+            commands.spawn((Peer(update.peer), ActiveSpaces(spaces)));
             continue;
         };
 

@@ -57,17 +57,19 @@ pub async fn handle_gossip_inbound(
                     continue;
                 }
 
-                // TODO create a "disconnect" message variant
+                // TODO create a "disconnect" message variant to clear presence
 
                 // Handle message.
                 match broadcast.msg {
-                    SpaceMessage::Presence => {
+                    SpaceMessage::Presence(peer) => {
+                        if peer.id != broadcast.sender {
+                            warn!("Presence address does not match sender");
+                            continue;
+                        }
+
                         PRESENCE_QUEUE
                             .0
-                            .send(PresenceUpdate {
-                                peer: broadcast.sender,
-                                space,
-                            })
+                            .send(PresenceUpdate { peer, space })
                             .await?;
                     }
                     SpaceMessage::Unknown(i) => {

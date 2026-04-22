@@ -5,13 +5,13 @@ use std::{
 
 use bevy::{platform::collections::HashMap, prelude::*};
 use blake3::Hash;
-use iroh::EndpointId;
+use iroh::EndpointAddr;
 use tokio::sync::mpsc::{Receiver, Sender};
 
 use crate::{ActiveSpaces, Peer};
 
 pub struct PresenceUpdate {
-    pub peer: EndpointId,
+    pub peer: EndpointAddr,
     pub space: Hash,
 }
 
@@ -40,15 +40,20 @@ pub fn manage_peers(
 
     // Refresh active timers.
     while let Ok(update) = guard.try_recv() {
-        let Some((_, _, mut spaces)) = peers.iter_mut().find(|(_, p, _)| p.0 == update.peer) else {
+        let Some((entity, _, mut spaces)) =
+            peers.iter_mut().find(|(_, p, _)| p.0.id == update.peer.id)
+        else {
             let mut spaces = HashMap::default();
             spaces.insert(update.space, now);
-            info!("new peer: {}", update.peer);
+            info!("+peer: {}", update.peer.id);
             commands.spawn((Peer(update.peer), ActiveSpaces(spaces)));
             continue;
         };
 
         spaces.0.insert(update.space, now);
+
+        // Update component with most recent addresses.
+        commands.entity(entity).insert(Peer(update.peer));
     }
 
     // Cull inactive peers.
@@ -58,7 +63,7 @@ pub fn manage_peers(
 
     let limit = now - INACTIVE_SECS;
 
-    for (entity, _, mut spaces) in peers {
+    for (entity, peer, mut spaces) in peers {
         for (space, t) in &spaces.0 {
             if *t > limit {
                 continue;
@@ -72,6 +77,7 @@ pub fn manage_peers(
         }
 
         if spaces.0.is_empty() {
+            info!("-peer: {}", peer.0.id);
             commands.entity(entity).despawn();
         }
     }

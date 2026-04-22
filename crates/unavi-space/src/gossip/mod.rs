@@ -6,7 +6,7 @@ use bevy_iroh::{
     router::{RouterBuilderFn, RouterBuilderFnTarget},
 };
 use bevy_wds::{LocalActor, SyncTargets};
-use iroh::EndpointId;
+use iroh::{EndpointAddr, EndpointId};
 use iroh_gossip::Gossip;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Notify;
@@ -34,7 +34,7 @@ impl Signable for SpaceBroadcast {}
 #[derive(Serialize, Deserialize)]
 #[non_exhaustive]
 enum SpaceMessage {
-    Presence,
+    Presence(EndpointAddr),
     Unknown(u64),
 }
 
@@ -78,9 +78,6 @@ pub fn spawn_gossip(
     ));
 }
 
-#[derive(Component)]
-pub struct SpaceGossipCancel(Arc<Notify>);
-
 pub fn join_space_topic(
     trigger: On<Add, Space>,
     spaces: Query<&Space>,
@@ -123,17 +120,17 @@ pub fn join_space_topic(
         .blocking_send(GossipCommand::JoinSpace { ctx, cancel, space });
 }
 
-pub fn leave_space_topic(
-    trigger: On<Remove, Space>,
-    cancels: Query<&SpaceGossipCancel>,
-    mut commands: Commands,
-) {
-    let Ok(cancel) = cancels.get(trigger.entity) else {
-        return;
-    };
+#[derive(Component)]
+pub struct SpaceGossipCancel(Arc<Notify>);
 
-    cancel.0.notify_one();
+impl Drop for SpaceGossipCancel {
+    fn drop(&mut self) {
+        self.0.notify_waiters();
+        self.0.notify_one();
+    }
+}
 
+pub fn leave_space_topic(trigger: On<Remove, Space>, mut commands: Commands) {
     commands
         .entity(trigger.entity)
         .remove::<SpaceGossipCancel>();

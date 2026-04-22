@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use axum::{Json, Router};
+use axum::Json;
 use directories::ProjectDirs;
 use iroh::{Endpoint, EndpointId, endpoint::presets::N0};
 use tower_http::cors::CorsLayer;
@@ -42,13 +42,19 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let endpoint = Endpoint::builder(N0).bind().await?;
 
-    let store = {
+    let (store, router) = {
         let path = DIRS.data_local_dir().join("wds");
-        DataStore::builder(endpoint)
+        let (store, f) = DataStore::builder(endpoint.clone())
             .storage_path(path)
             .gc_timer(Duration::from_mins(15))
             .build()
-            .await?
+            .await?;
+
+        let rb = iroh::protocol::Router::builder(endpoint);
+        let rb = f(rb);
+        let router = rb.spawn();
+
+        (store, router)
     };
 
     let app = create_did_document_route(did, &vc, store.endpoint_id());
@@ -60,7 +66,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
         .serve(app.into_make_service())
         .await?;
 
-    store.shutdown().await?;
+    router.shutdown().await?;
 
     Ok(())
 }
@@ -77,10 +83,14 @@ fn create_did(port: u16) -> (Did, String) {
 
 const KEY_FRAGMENT: &str = "key";
 
-fn create_did_document_route(did: Did, vc: &impl DidKeyPair, endpoint_id: EndpointId) -> Router {
+fn create_did_document_route(
+    did: Did,
+    vc: &impl DidKeyPair,
+    endpoint_id: EndpointId,
+) -> axum::Router {
     let vc_public = vc.public().to_jwk();
 
-    Router::new()
+    axum::Router::new()
         .route(
             "/.well-known/did.json",
             axum::routing::get(move || async move {

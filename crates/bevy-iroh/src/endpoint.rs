@@ -25,7 +25,7 @@ pub fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands) {
                 Err(err) => {
                     error!(?err, "failed to init endpoint");
                     n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
-                    delay_secs *= 2;
+                    delay_secs = delay_secs.wrapping_mul(2);
                 }
             }
         }

@@ -5,7 +5,7 @@ mod did_web;
 
 use std::{fmt::Display, sync::Arc};
 
-use iroh::{Endpoint, endpoint::presets::N0DisableRelay};
+use iroh::{Endpoint, endpoint::presets::N0DisableRelay, protocol::Router};
 use rstest::fixture;
 use rusqlite::params;
 use wds::{DataStore, actor::Actor};
@@ -18,6 +18,7 @@ pub struct DataStoreCtx {
     pub store: DataStore,
     pub alice: Actor,
     pub bob: Actor,
+    router: Router,
 }
 
 #[fixture]
@@ -27,10 +28,14 @@ pub async fn ctx() -> DataStoreCtx {
         .await
         .expect("bind endpoint");
 
-    let store = DataStore::builder(endpoint)
+    let (store, f) = DataStore::builder(endpoint.clone())
         .build()
         .await
         .expect("construct data store");
+
+    let rb = Router::builder(endpoint);
+    let rb = f(rb);
+    let router = rb.spawn();
 
     // Upload schemas to the blob store.
     for schema in [&SCHEMA_ACL, &SCHEMA_RECORD] {
@@ -45,7 +50,12 @@ pub async fn ctx() -> DataStoreCtx {
     let alice = generate_actor(&store).await;
     let bob = generate_actor(&store).await;
 
-    DataStoreCtx { store, alice, bob }
+    DataStoreCtx {
+        store,
+        alice,
+        bob,
+        router,
+    }
 }
 
 pub struct MultiStoreCtx {

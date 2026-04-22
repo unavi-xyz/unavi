@@ -48,7 +48,7 @@ pub async fn find_bootstrap_peers(
                     let Ok(endpoint) = EndpointId::from_bytes(&beacon.endpoint.0) else {
                         continue;
                     };
-                    if endpoint == ctx.endpoint_id {
+                    if endpoint == ctx.endpoint.id() {
                         continue;
                     }
                     bootstrap.insert(endpoint);

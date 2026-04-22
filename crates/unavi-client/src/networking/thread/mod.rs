@@ -248,7 +248,6 @@ async fn thread_loop(
             .build()
             .await?
     };
-
     let blobs = store.blobs().blobs();
 
     // TODO: save / load keypair from disk

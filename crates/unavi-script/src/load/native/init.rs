@@ -103,7 +103,7 @@ pub fn load_scripts(
             continue;
         };
         let Ok(self_tree_id) = TreeID::try_from(source.node_id.as_str()) else {
-            warn!("invalid tree id: {}", source.node_id);
+            warn!("Invalid tree id: {}", source.node_id);
             continue;
         };
         let doc = hsd_docs
@@ -146,7 +146,7 @@ pub fn load_scripts(
             commands.entity(ent).insert(NeedsAgentProxy(agent_ent));
         }
 
-        info!(name, "instantiating script");
+        info!(name, "Instantiating script");
         pool.spawn(async move {
             let mut ctx = ctx.lock().await;
             let res = instantiate_component(ent, component, &mut ctx, perms)

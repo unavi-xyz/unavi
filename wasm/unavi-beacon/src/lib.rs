@@ -50,8 +50,7 @@ impl GuestScript for Script {
         mat.set_roughness(0.7);
         mat.set_metallic(0.3);
 
-        println!("beacon initialized: {id}");
-
+        println!("Beacon initialized: {id}");
         Self {
             emitter: BeaconEmitter::new(id.as_bytes(), node, EVENT_RADIUS),
             time: RefCell::new(Instant::now()),
@@ -64,7 +63,7 @@ impl GuestScript for Script {
         }
         *self.time.borrow_mut() = Instant::now();
         self.emitter.emit();
-        println!("emitting beacon event");
+        println!("Emitting beacon event");
     }
 
     fn render(&self) {}

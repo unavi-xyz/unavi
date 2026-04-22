@@ -1100,6 +1100,7 @@ dependencies = [
  "iroh",
  "loro",
  "n0-future",
+ "smol_str 0.3.6",
  "tokio",
  "unavi-wasm-compat",
  "wds",

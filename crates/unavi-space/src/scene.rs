@@ -22,7 +22,6 @@ pub fn spawn_space_scene(trigger: On<Add, Space>, spaces: Query<&Space>, mut com
     let (mut event, rx, cancel) = ReadRecord::new(space);
     event.ttl = Some(SPACE_TTL);
     event.retries = 5;
-
     commands.trigger(event);
 
     commands

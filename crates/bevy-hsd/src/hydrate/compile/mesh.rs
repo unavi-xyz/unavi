@@ -1,8 +1,3 @@
-//! Compiles HSD mesh data into Bevy `Mesh` assets.
-//!
-//! Each vertex attribute is a separate blob; all blobs must arrive before the
-//! mesh can be assembled. Inline geometry (injected by scripts) bypasses blobs.
-
 use bevy::{
     asset::RenderAssetUsages,
     mesh::{Indices, MeshVertexAttribute, PrimitiveTopology, VertexAttributeValues},
@@ -18,11 +13,9 @@ use smol_str::SmolStr;
 
 use crate::{DocRegistryMap, HsdChild, cache::MeshState, data::HsdMesh};
 
-/// Marks a mesh entity as having a ready `Handle<Mesh>`.
 #[derive(Component)]
 pub struct CompiledMesh(pub Handle<Mesh>);
 
-/// Whether geometry comes from HSD blob data or was injected inline by a script.
 pub enum MeshGeometrySource {
     Inline,
     Hsd(Box<HsdMesh>),
@@ -50,8 +43,6 @@ pub struct HsdMeshSpawned {
 #[derive(Component)]
 pub struct MeshAttrName(pub SmolStr);
 
-/// Topology and blob entity references for each attribute; compilation waits
-/// until all deps have `BlobResponse`.
 #[derive(Component)]
 #[require(BlobDeps)]
 pub struct MeshParams {
@@ -67,7 +58,7 @@ pub(crate) fn handle_hsd_mesh_spawned(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "mesh spawned");
-    let Some((doc_entity, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((doc_entity, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
     let inner = registry
@@ -80,7 +71,7 @@ pub(crate) fn handle_hsd_mesh_spawned(
     if inner.entity.lock().expect("entity lock").is_some() {
         return;
     }
-    let ent = commands.spawn(HsdChild { doc: *doc_entity }).id();
+    let ent = commands.spawn(HsdChild { doc: doc_entity }).id();
     *inner.entity.lock().expect("entity lock") = Some(ent);
 }
 
@@ -91,7 +82,7 @@ pub(crate) fn handle_hsd_mesh_despawned(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "mesh despawned");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
     let inner = {
@@ -113,16 +104,12 @@ pub(crate) fn handle_hsd_mesh_geometry_set(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "mesh geometry set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
-    let ent = registry
-        .meshes
-        .lock()
-        .expect("meshes lock")
-        .get(&ev.id)
-        .and_then(|m| *m.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
+    let Some(ent) = registry.mesh_entity(&ev.id) else {
+        return;
+    };
     commands
         .entity(ent)
         .try_remove::<BlobDepsLoaded>()

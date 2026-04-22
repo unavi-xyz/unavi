@@ -1,5 +1,3 @@
-//! One-shot setup for new HSD documents: initial full hydration + subscription.
-
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
@@ -49,11 +47,6 @@ pub fn init_hsd_doc(
     }
 }
 
-/// Registers newly initialized doc entities in the global [`DocRegistryMap`].
-///
-/// Runs after `init_hsd_doc` so `SceneRegistry` is always present when this fires.
-/// Covers both WDS docs (registry added by `init_hsd_doc`) and script-created
-/// docs (registry present from spawn time).
 pub fn register_doc_registries(
     added: Query<(Entity, &HsdRecordId, &SceneRegistry), Added<SceneRegistry>>,
     mut map: ResMut<DocRegistryMap>,
@@ -63,9 +56,6 @@ pub fn register_doc_registries(
     }
 }
 
-/// Emits synthetic `*Added` events for all objects already in the document so
-/// the queue processor handles initial load identically to incremental diffs.
-/// Images are emitted before materials because materials reference image IDs.
 fn full_hydrate(hsd_map: &LoroMap, raw_queue: &Arc<Mutex<Vec<RawHsdChange>>>) {
     let value = hsd_map.get_deep_value();
     let LoroValue::Map(root) = &value else { return };

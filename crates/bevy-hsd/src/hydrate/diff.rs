@@ -1,8 +1,3 @@
-//! Converts raw Loro `DiffEvent`s into typed `RawHsdChange` variants.
-//!
-//! Called from the Loro subscription callback (not the main thread), so this
-//! module only queues changes — all ECS work happens in `queue`.
-
 use loro::{
     ContainerID, Index, TreeExternalDiff, TreeID,
     event::{Diff, DiffEvent},

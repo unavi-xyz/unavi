@@ -8,10 +8,7 @@ use iroh::{Endpoint, EndpointId};
 use iroh_gossip::{Gossip, TopicId, api::JoinOptions};
 use serde::{Deserialize, Serialize};
 use tracing::Instrument;
-use wds::{
-    actor::Actor,
-    signed_bytes::{Signable, SignedBytes},
-};
+use wds::{actor::Actor, signed_bytes::Signable};
 
 use crate::Space;
 
@@ -22,15 +19,17 @@ mod outbound;
 #[derive(Serialize, Deserialize)]
 struct SpaceBroadcast {
     sender: EndpointId,
-    msg: SignedBytes<SpaceMessage>,
+    msg: SpaceMessage,
 }
+
+impl Signable for SpaceBroadcast {}
 
 #[derive(Serialize, Deserialize)]
+#[non_exhaustive]
 enum SpaceMessage {
     Presence,
+    Unknown(u64),
 }
-
-impl Signable for SpaceMessage {}
 
 #[derive(Component)]
 pub struct IrohGossip(Gossip);

@@ -3,7 +3,7 @@ use std::sync::{LazyLock, Mutex};
 use bevy::{ecs::world::CommandQueue, prelude::*};
 use tokio::sync::mpsc::{Receiver, Sender};
 
-const SIZE: usize = 32;
+const SIZE: usize = 16;
 
 pub static ASYNC_COMMAND_QUEUE: LazyLock<(Sender<CommandQueue>, Mutex<Receiver<CommandQueue>>)> =
     LazyLock::new(|| {

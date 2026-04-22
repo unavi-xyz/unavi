@@ -12,11 +12,13 @@ workspace = true
 [dependencies]
 anyhow.workspace       = true
 bevy.workspace         = true
+bevy-hsd.path          = "../bevy-hsd"
 bevy-iroh.path         = "../bevy-iroh"
 bevy-wds.path          = "../bevy-wds"
 blake3.workspace       = true
 iroh.workspace         = true
 iroh-gossip            = "0.97.0"
+loro.workspace         = true
 n0-future.workspace    = true
 postcard.workspace     = true
 serde.workspace        = true

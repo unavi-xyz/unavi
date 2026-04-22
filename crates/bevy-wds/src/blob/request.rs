@@ -25,7 +25,6 @@ pub(crate) fn on_blob_request_remove(
     mut commands: Commands,
 ) {
     if let Ok(found) = loading.get(trigger.entity) {
-        found.cancel.notify_waiters();
         found.cancel.notify_one();
     }
 

@@ -1,8 +1,3 @@
-//! CRDT-serializable data types for the HSD document format.
-//!
-//! `Hydrate` reads values from Loro maps; `Reconcile` writes them back.
-//! These types mirror the document schema in `protocol/schemas/hsd/document.ron`.
-
 use std::collections::BTreeMap;
 
 use bevy::mesh::PrimitiveTopology;
@@ -12,7 +7,6 @@ use loro_surgeon::{Hydrate, HydrateError, Reconcile, ReconcileError};
 use smol_str::SmolStr;
 use wired_records::HydratedHash;
 
-/// Sampler parameters and a blob hash pointing to the raw image bytes.
 #[derive(Debug, Clone, Default, Hydrate, Reconcile)]
 pub struct HsdImage {
     #[loro(default)]
@@ -35,7 +29,6 @@ pub struct HsdImage {
     pub srgb: Option<bool>,
 }
 
-/// PBR material; texture fields are image IDs (keys in the document's `images` map).
 #[derive(Debug, Clone, Default, Hydrate, Reconcile)]
 pub struct HsdMaterial {
     #[loro(default)]
@@ -68,7 +61,6 @@ pub struct HsdMaterial {
     pub unlit: Option<bool>,
 }
 
-/// Mesh geometry; each vertex attribute is a blob hash keyed by attribute name.
 #[derive(Debug, Clone, Default, Hydrate, Reconcile)]
 pub struct HsdMesh {
     #[loro(default)]
@@ -80,7 +72,6 @@ pub struct HsdMesh {
     pub topology: HydratedTopology,
 }
 
-/// Per-node transform, mesh/material references, physics spec, and script list.
 #[derive(Debug, Clone, Default, Hydrate, Reconcile)]
 pub struct HsdNodeData {
     #[loro(default)]
@@ -141,7 +132,6 @@ pub struct HsdRigidBody {
     pub restitution: Option<f64>,
 }
 
-/// Custom Hydrate/Reconcile for `PrimitiveTopology` (Bevy's type has no derives).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct HydratedTopology(pub PrimitiveTopology);
 

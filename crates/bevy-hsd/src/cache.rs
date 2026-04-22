@@ -1,9 +1,3 @@
-//! Per-document state that bridges the CRDT world and the ECS world.
-//!
-//! Each scene object (node, mesh, material, image) has an `*Inner` entry
-//! mapping its HSD string ID to a Bevy entity, plus cached state used for
-//! write-back from ECS back to the CRDT.
-
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex, atomic::AtomicBool},
@@ -16,8 +10,6 @@ use smol_str::SmolStr;
 
 use crate::data::{HsdCollider, HsdRigidBody};
 
-/// Pending write-back fields for a node; non-empty means ECS has mutations
-/// not yet committed to the CRDT.
 #[derive(Default)]
 pub struct NodeHsdChanges {
     pub material: Option<Option<SmolStr>>,
@@ -40,7 +32,6 @@ impl NodeHsdChanges {
     }
 }
 
-/// Pending write-back fields for a mesh.
 #[derive(Default)]
 pub struct MeshHsdChanges {
     pub name: Option<Option<String>>,
@@ -54,7 +45,6 @@ impl MeshHsdChanges {
     }
 }
 
-/// Pending write-back fields for a material.
 #[derive(Default)]
 pub struct MaterialHsdChanges {
     pub alpha_cutoff: Option<f64>,
@@ -81,8 +71,7 @@ impl MaterialHsdChanges {
     }
 }
 
-/// Snapshot of a node's ECS state; diffed on each sync tick to detect changes.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct NodeState {
     pub name: Option<String>,
     pub transform: Transform,
@@ -96,24 +85,6 @@ pub struct NodeState {
     pub children: Vec<Arc<NodeInner>>,
 }
 
-impl Default for NodeState {
-    fn default() -> Self {
-        Self {
-            name: None,
-            transform: Transform::IDENTITY,
-            global_transform: GlobalTransform::IDENTITY,
-            mesh: None,
-            material: None,
-            collider: None,
-            rigid_body: None,
-            scripts: Vec::new(),
-            parent: None,
-            children: Vec::new(),
-        }
-    }
-}
-
-/// Per-node registry entry shared between observers and sync systems.
 pub struct NodeInner {
     pub entity: Mutex<Option<Entity>>,
     pub hsd_changes: Mutex<NodeHsdChanges>,
@@ -124,7 +95,6 @@ pub struct NodeInner {
     pub tree_id: Mutex<Option<TreeID>>,
 }
 
-/// Snapshot of a mesh's decoded attribute data; used for write-back.
 #[derive(Clone)]
 pub struct MeshState {
     pub name: Option<String>,
@@ -154,7 +124,6 @@ impl Default for MeshState {
     }
 }
 
-/// Per-mesh registry entry.
 pub struct MeshInner {
     pub entity: Mutex<Option<Entity>>,
     pub hsd_changes: Mutex<MeshHsdChanges>,
@@ -163,13 +132,11 @@ pub struct MeshInner {
     pub sync: AtomicBool,
 }
 
-/// Per-image registry entry.
 pub struct ImageInner {
     pub entity: Mutex<Option<Entity>>,
     pub id: SmolStr,
 }
 
-/// Snapshot of a material's ECS state; used for write-back.
 #[derive(Clone)]
 pub struct MaterialState {
     pub alpha_cutoff: Option<f32>,
@@ -197,7 +164,6 @@ impl Default for MaterialState {
     }
 }
 
-/// Per-material registry entry.
 pub struct MaterialInner {
     pub entity: Mutex<Option<Entity>>,
     pub hsd_changes: Mutex<MaterialHsdChanges>,
@@ -215,7 +181,6 @@ pub enum SyncOp {
     NodeRemoved(SmolStr),
 }
 
-/// All per-doc scene state; stored on the doc entity and accessed by observers.
 pub struct SceneRegistryInner {
     pub doc_sync: AtomicBool,
     pub doc_transform: Mutex<Transform>,
@@ -225,6 +190,40 @@ pub struct SceneRegistryInner {
     pub node_map: Mutex<HashMap<SmolStr, Arc<NodeInner>>>,
     pub nodes: Mutex<Vec<Arc<NodeInner>>>,
     pub pending_doc_ops: Mutex<Vec<SyncOp>>,
+}
+
+impl SceneRegistryInner {
+    pub fn image_entity(&self, id: &SmolStr) -> Option<Entity> {
+        self.images
+            .lock()
+            .expect("images lock")
+            .get(id)
+            .and_then(|i| *i.entity.lock().expect("entity lock"))
+    }
+
+    pub fn material_entity(&self, id: &SmolStr) -> Option<Entity> {
+        self.materials
+            .lock()
+            .expect("materials lock")
+            .get(id)
+            .and_then(|m| *m.entity.lock().expect("entity lock"))
+    }
+
+    pub fn mesh_entity(&self, id: &SmolStr) -> Option<Entity> {
+        self.meshes
+            .lock()
+            .expect("meshes lock")
+            .get(id)
+            .and_then(|m| *m.entity.lock().expect("entity lock"))
+    }
+
+    pub fn node_entity(&self, id: &SmolStr) -> Option<Entity> {
+        self.node_map
+            .lock()
+            .expect("node_map lock")
+            .get(id)
+            .and_then(|n| *n.entity.lock().expect("entity lock"))
+    }
 }
 
 impl SceneRegistryInner {
@@ -249,6 +248,5 @@ impl Default for SceneRegistryInner {
     }
 }
 
-/// Cheap-to-clone handle to the doc's `SceneRegistryInner`; stored as a component.
 #[derive(Component, Clone)]
 pub struct SceneRegistry(pub Arc<SceneRegistryInner>);

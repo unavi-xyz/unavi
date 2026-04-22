@@ -1,10 +1,3 @@
-//! Manages HSD tree nodes as Bevy entities.
-//!
-//! Handles the parent-child hierarchy, transforms, mesh/material assignment,
-//! physics bodies, and script attachment. Mesh and material refs are resolved
-//! lazily: either when the ref is set (asset already compiled) or when the
-//! asset finishes compiling (ref already set).
-
 use avian3d::prelude::{
     AngularDamping, AngularInertia, Collider, ComputedAngularInertia, LinearDamping, RigidBody,
     Sensor,
@@ -36,19 +29,17 @@ pub(crate) fn handle_hsd_doc_transform_set(
     mut transforms: Query<&mut Transform, With<crate::HsdDoc>>,
 ) {
     let ev = trigger.event();
-    let Some((doc_entity, _)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((doc_entity, _)) = registry_map.get(&ev.doc_id) else {
         return;
     };
-    if let Ok(mut t) = transforms.get_mut(*doc_entity) {
+    if let Ok(mut t) = transforms.get_mut(doc_entity) {
         *t = ev.transform;
     }
 }
 
-/// HSD mesh ID on a node entity; resolved to `Mesh3d` once the mesh compiles.
 #[derive(Component)]
 pub struct MeshRef(pub SmolStr);
 
-/// HSD material ID on a node entity; resolved to `MeshMaterial3d` once the material compiles.
 #[derive(Component)]
 pub struct MaterialRef(pub SmolStr);
 
@@ -127,7 +118,7 @@ pub(crate) fn handle_hsd_node_spawned(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "node spawned");
-    let Some((doc_entity, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((doc_entity, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
     let inner = registry
@@ -142,8 +133,8 @@ pub(crate) fn handle_hsd_node_spawned(
     }
     let ent = commands
         .spawn((
-            ChildOf(*doc_entity),
-            HsdChild { doc: *doc_entity },
+            ChildOf(doc_entity),
+            HsdChild { doc: doc_entity },
             NodeId(ev.id.clone()),
             Transform::IDENTITY,
             Visibility::default(),
@@ -159,7 +150,7 @@ pub(crate) fn handle_hsd_node_despawned(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "node despawned");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
     let mut node_map = registry.node_map.lock().expect("node_map lock");
@@ -186,16 +177,12 @@ pub(crate) fn handle_hsd_node_collider_set(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, has_collider = ev.collider.is_some(), "node collider set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
-    let ent = registry
-        .node_map
-        .lock()
-        .expect("node_map lock")
-        .get(&ev.id)
-        .and_then(|n| *n.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
+    let Some(ent) = registry.node_entity(&ev.id) else {
+        return;
+    };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
         return;
     };
@@ -219,16 +206,12 @@ pub(crate) fn handle_hsd_node_material_set(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, material = ?ev.material, "node material set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
-    let ent = registry
-        .node_map
-        .lock()
-        .expect("node_map lock")
-        .get(&ev.id)
-        .and_then(|n| *n.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
+    let Some(ent) = registry.node_entity(&ev.id) else {
+        return;
+    };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
         return;
     };
@@ -245,16 +228,12 @@ pub(crate) fn handle_hsd_node_mesh_set(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, mesh = ?ev.mesh, "node mesh set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
-    let ent = registry
-        .node_map
-        .lock()
-        .expect("node_map lock")
-        .get(&ev.id)
-        .and_then(|n| *n.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
+    let Some(ent) = registry.node_entity(&ev.id) else {
+        return;
+    };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
         return;
     };
@@ -271,16 +250,12 @@ pub(crate) fn handle_hsd_node_name_set(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, name = ?ev.name, "node name set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
-    let ent = registry
-        .node_map
-        .lock()
-        .expect("node_map lock")
-        .get(&ev.id)
-        .and_then(|n| *n.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
+    let Some(ent) = registry.node_entity(&ev.id) else {
+        return;
+    };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
         return;
     };
@@ -298,51 +273,37 @@ pub(crate) fn handle_hsd_node_parent_set(
 ) {
     let ev = trigger.event();
     debug!(child = ?ev.child, parent = ?ev.parent, "node parent set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((doc_entity, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
-    let node_map = registry.node_map.lock().expect("node_map lock");
     let child_ent = match &ev.child {
         NodeRef::Entity(e) => Some(*e),
-        NodeRef::Id(id) => node_map
-            .get(id)
-            .and_then(|n| *n.entity.lock().expect("entity lock")),
+        NodeRef::Id(id) => registry.node_entity(id),
     };
     let Some(child_ent) = child_ent else { return };
-    match &ev.parent {
-        None => {
-            drop(node_map);
-            let Some((doc_entity, _)) = registry_map.0.get(&ev.doc_id) else {
+
+    let parent_ent = match &ev.parent {
+        None => doc_entity,
+        Some(NodeRef::Entity(p)) => *p,
+        Some(NodeRef::Id(pid)) => {
+            let Some(ent) = registry.node_entity(pid) else {
                 return;
             };
-            if let Ok(mut ent) = commands.get_entity(child_ent) {
-                ent.insert(ChildOf(*doc_entity));
-            }
+            ent
         }
-        Some(NodeRef::Entity(p)) => {
-            drop(node_map);
-            if let Ok(mut ent) = commands.get_entity(child_ent) {
-                ent.insert(ChildOf(*p));
-            }
-        }
-        Some(NodeRef::Id(pid)) => {
-            let parent_ent = node_map
-                .get(pid)
-                .and_then(|n| *n.entity.lock().expect("entity lock"));
-            drop(node_map);
-            let Some(parent_ent) = parent_ent else { return };
-            if let Ok(mut ent) = commands.get_entity(child_ent) {
-                ent.insert(ChildOf(parent_ent));
-            }
-        }
+    };
+
+    if let Ok(mut ent) = commands.get_entity(child_ent) {
+        ent.insert(ChildOf(parent_ent));
     }
 }
+
+const DAMPING_DEFAULT: f32 = 0.2;
 
 pub(crate) fn insert_rigid_body(ent: Entity, data: &HsdRigidBody, commands: &mut Commands) {
     let kind = match data.kind.as_str() {
         "dynamic" => RigidBody::Dynamic,
-        // Cannot use static rigid bodies, as static x static
-        // collisions panic avian.
+        // Static x static collisions panic avian.
         "fixed" | "kinematic" => RigidBody::Kinematic,
         other => {
             warn!("invalid rigid body kind: {other}");
@@ -354,8 +315,8 @@ pub(crate) fn insert_rigid_body(ent: Entity, data: &HsdRigidBody, commands: &mut
     entity_cmd.insert(kind);
 
     if kind == RigidBody::Dynamic {
-        let linear = data.linear_damping.map_or(0.2, |v| v as f32);
-        let angular = data.angular_damping.map_or(0.2, |v| v as f32);
+        let linear = data.linear_damping.map_or(DAMPING_DEFAULT, |v| v as f32);
+        let angular = data.angular_damping.map_or(DAMPING_DEFAULT, |v| v as f32);
         entity_cmd.insert((LinearDamping(linear), AngularDamping(angular)));
     }
 }
@@ -367,16 +328,12 @@ pub(crate) fn handle_hsd_node_rigid_body_set(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, kind = ?ev.rigid_body.as_ref().map(|r| &r.kind), "node rigid body set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
-    let ent = registry
-        .node_map
-        .lock()
-        .expect("node_map lock")
-        .get(&ev.id)
-        .and_then(|n| *n.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
+    let Some(ent) = registry.node_entity(&ev.id) else {
+        return;
+    };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
         return;
     };
@@ -398,16 +355,12 @@ pub(crate) fn handle_hsd_node_scripts_set(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, count = ev.scripts.len(), "node scripts set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
-    let ent = registry
-        .node_map
-        .lock()
-        .expect("node_map lock")
-        .get(&ev.id)
-        .and_then(|n| *n.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
+    let Some(ent) = registry.node_entity(&ev.id) else {
+        return;
+    };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
         return;
     };
@@ -425,22 +378,17 @@ pub(crate) fn handle_hsd_node_transform_set(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "node transform set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
-    let ent = registry
-        .node_map
-        .lock()
-        .expect("node_map lock")
-        .get(&ev.id)
-        .and_then(|n| *n.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
+    let Some(ent) = registry.node_entity(&ev.id) else {
+        return;
+    };
     if let Ok(mut t) = transforms.get_mut(ent) {
         *t = ev.transform;
     }
 }
 
-/// When a node gets a [`MeshRef`], try to link it to the compiled mesh.
 pub(crate) fn on_mesh_ref_set(
     trigger: On<Add, MeshRef>,
     nodes: Query<(&MeshRef, &HsdChild), With<NodeId>>,
@@ -449,21 +397,15 @@ pub(crate) fn on_mesh_ref_set(
     mut commands: Commands,
 ) {
     let node_ent = trigger.entity;
-    debug!(entity = %node_ent, "mesh ref set");
     let Ok((mesh_ref, hsd_child)) = nodes.get(node_ent) else {
         return;
     };
     let Ok(registry) = registries.get(hsd_child.doc) else {
         return;
     };
-    let mesh_ent = registry
-        .0
-        .meshes
-        .lock()
-        .expect("meshes lock")
-        .get(&mesh_ref.0)
-        .and_then(|inner| *inner.entity.lock().expect("entity lock"));
-    let Some(mesh_ent) = mesh_ent else { return };
+    let Some(mesh_ent) = registry.0.mesh_entity(&mesh_ref.0) else {
+        return;
+    };
     let Ok(compiled_mesh) = compiled_meshes.get(mesh_ent) else {
         return;
     };
@@ -472,7 +414,6 @@ pub(crate) fn on_mesh_ref_set(
     }
 }
 
-/// When a node gets a [`MaterialRef`], assign the compiled material if available.
 pub(crate) fn on_material_ref_set(
     trigger: On<Add, MaterialRef>,
     nodes: Query<(&MaterialRef, &HsdChild), With<NodeId>>,
@@ -481,21 +422,15 @@ pub(crate) fn on_material_ref_set(
     mut commands: Commands,
 ) {
     let node_ent = trigger.entity;
-    debug!(entity = %node_ent, "material ref set");
     let Ok((mat_ref, hsd_child)) = nodes.get(node_ent) else {
         return;
     };
     let Ok(registry) = registries.get(hsd_child.doc) else {
         return;
     };
-    let mat_ent = registry
-        .0
-        .materials
-        .lock()
-        .expect("materials lock")
-        .get(&mat_ref.0)
-        .and_then(|inner| *inner.entity.lock().expect("entity lock"));
-    let Some(mat_ent) = mat_ent else { return };
+    let Some(mat_ent) = registry.0.material_entity(&mat_ref.0) else {
+        return;
+    };
     let Ok(compiled_mat) = compiled_mats.get(mat_ent) else {
         return;
     };
@@ -504,15 +439,12 @@ pub(crate) fn on_material_ref_set(
     }
 }
 
-/// When a node loses its [`MeshRef`], remove [`Mesh3d`].
 pub(crate) fn on_mesh_ref_removed(trigger: On<Remove, MeshRef>, mut commands: Commands) {
-    debug!(entity = %trigger.entity, "mesh ref removed");
     if let Ok(mut entity_cmd) = commands.get_entity(trigger.entity) {
         entity_cmd.try_remove::<Mesh3d>();
     }
 }
 
-/// When a mesh entity gets [`CompiledMesh`], assign [`Mesh3d`] to all referencing nodes.
 pub(crate) fn on_mesh_compiled(
     trigger: On<Add, CompiledMesh>,
     mesh_query: Query<(&HsdChild, &CompiledMesh)>,
@@ -525,7 +457,6 @@ pub(crate) fn on_mesh_compiled(
     mut default_material: Local<Option<Handle<StandardMaterial>>>,
 ) {
     let mesh_ent = trigger.entity;
-    debug!(entity = %mesh_ent, "mesh compiled");
     let Ok((mesh_child, compiled_mesh)) = mesh_query.get(mesh_ent) else {
         return;
     };
@@ -537,7 +468,9 @@ pub(crate) fn on_mesh_compiled(
         let meshes = registry.0.meshes.lock().expect("meshes lock");
         meshes
             .iter()
-            .find(|(_, inner)| *inner.entity.lock().expect("entity lock") == Some(mesh_ent))
+            .find(|(_, inner)| {
+                *inner.entity.lock().expect("entity lock") == Some(mesh_ent)
+            })
             .map(|(id, _)| id.clone())
     };
     let Some(mesh_id) = mesh_id else { return };
@@ -561,7 +494,6 @@ pub(crate) fn on_mesh_compiled(
     }
 }
 
-/// When a material entity gets [`CompiledMaterial`], assign it to all referencing nodes.
 pub(crate) fn on_material_compiled(
     trigger: On<Add, CompiledMaterial>,
     mat_query: Query<(&HsdChild, &CompiledMaterial)>,
@@ -570,7 +502,6 @@ pub(crate) fn on_material_compiled(
     mut commands: Commands,
 ) {
     let mat_ent = trigger.entity;
-    debug!(entity = %mat_ent, "material compiled");
     let Ok((mat_child, compiled_mat)) = mat_query.get(mat_ent) else {
         return;
     };
@@ -582,7 +513,9 @@ pub(crate) fn on_material_compiled(
         let materials = registry.0.materials.lock().expect("materials lock");
         materials
             .iter()
-            .find(|(_, inner)| *inner.entity.lock().expect("entity lock") == Some(mat_ent))
+            .find(|(_, inner)| {
+                *inner.entity.lock().expect("entity lock") == Some(mat_ent)
+            })
             .map(|(id, _)| id.clone())
     };
     let Some(mat_id) = mat_id else { return };
@@ -610,13 +543,7 @@ fn assign_material(
         return;
     };
     if let Ok(mat_ref) = mat_refs.get(node_ent) {
-        let mat_ent = registry
-            .0
-            .materials
-            .lock()
-            .expect("materials lock")
-            .get(&mat_ref.0)
-            .and_then(|inner| *inner.entity.lock().expect("entity lock"));
+        let mat_ent = registry.0.material_entity(&mat_ref.0);
         if let Some(mat_ent) = mat_ent
             && let Ok(compiled_mat) = compiled_mats.get(mat_ent)
         {
@@ -657,8 +584,6 @@ fn is_transform_hierarchy_degenerate(
     false
 }
 
-/// Removes Avian colliders/bodies when any ancestor has a near-zero scale
-/// (which causes physics solver panics), and restores them when valid again.
 pub fn guard_physics_scale(
     query: Query<(
         Entity,

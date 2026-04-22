@@ -1,19 +1,9 @@
-//! Compiles HSD material data into Bevy `StandardMaterial` assets.
-//!
-//! Texture slots store image entity refs rather than blob hashes; the image
-//! entity supplies the `Handle<Image>` once it has compiled. If an image
-//! compiles after the material, `on_image_compiled` (in `compile::image`)
-//! patches the already-live `StandardMaterial` directly.
-
 use bevy::prelude::*;
 use bevy_wds::blob::deps::{BlobDeps, BlobDepsLoaded};
 use smol_str::SmolStr;
 
-use crate::{
-    CompiledImage, DocRegistryMap, HsdChild, cache::SceneRegistryInner, data::HsdMaterial,
-};
+use crate::{CompiledImage, DocRegistryMap, HsdChild, data::HsdMaterial};
 
-/// Marks a material entity as having a ready `Handle<StandardMaterial>`.
 #[derive(Component)]
 pub struct CompiledMaterial(pub Handle<StandardMaterial>);
 
@@ -121,8 +111,6 @@ pub struct HsdMaterialUnlitSet {
     pub value: bool,
 }
 
-/// All material properties. Texture fields hold image entity refs; the handle
-/// is resolved at compile time via `CompiledImage` on the image entity.
 #[derive(Component, Default, Debug)]
 #[require(BlobDeps)]
 pub struct MaterialParams {
@@ -165,7 +153,7 @@ pub(crate) fn handle_hsd_material_spawned(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "material spawned");
-    let Some((doc_entity, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((doc_entity, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
     let inner = registry
@@ -185,7 +173,7 @@ pub(crate) fn handle_hsd_material_spawned(
         .map(material_params_from_hsd)
         .unwrap_or_default();
 
-    let entity = commands.spawn(HsdChild { doc: *doc_entity }).id();
+    let entity = commands.spawn(HsdChild { doc: doc_entity }).id();
 
     commands.entity(entity).insert(params);
     *inner.entity.lock().expect("entity lock") = Some(entity);
@@ -198,7 +186,7 @@ pub(crate) fn handle_hsd_material_despawned(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "material despawned");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
     let inner = {
@@ -213,26 +201,53 @@ pub(crate) fn handle_hsd_material_despawned(
     }
 }
 
+fn update_material_param(
+    registry_map: &DocRegistryMap,
+    doc_id: &blake3::Hash,
+    id: &SmolStr,
+    params: &mut Query<&mut MaterialParams>,
+    f: impl FnOnce(&mut MaterialParams),
+) {
+    let Some((_, registry)) = registry_map.get(doc_id) else {
+        return;
+    };
+    let Some(ent) = registry.material_entity(id) else {
+        return;
+    };
+    if let Ok(mut p) = params.get_mut(ent) {
+        f(&mut p);
+    }
+}
+
+fn update_material_texture(
+    registry_map: &DocRegistryMap,
+    doc_id: &blake3::Hash,
+    mat_id: &SmolStr,
+    image_id: &SmolStr,
+    params: &mut Query<&mut MaterialParams>,
+    f: impl FnOnce(&mut MaterialParams, Option<Entity>),
+) {
+    let Some((_, registry)) = registry_map.get(doc_id) else {
+        return;
+    };
+    let Some(ent) = registry.material_entity(mat_id) else {
+        return;
+    };
+    let img_ent = registry.image_entity(image_id);
+    if let Ok(mut p) = params.get_mut(ent) {
+        f(&mut p, img_ent);
+    }
+}
+
 pub(crate) fn handle_hsd_material_alpha_cutoff_set(
     trigger: On<HsdMaterialAlphaCutoffSet>,
     registry_map: Res<DocRegistryMap>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, value = ev.value, "material alpha cutoff set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
-        return;
-    };
-    let ent = registry
-        .materials
-        .lock()
-        .expect("materials lock")
-        .get(&ev.id)
-        .and_then(|m| *m.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
-    if let Ok(mut p) = params.get_mut(ent) {
+    update_material_param(&registry_map, &ev.doc_id, &ev.id, &mut params, |p| {
         p.alpha_cutoff = Some(ev.value);
-    }
+    });
 }
 
 pub(crate) fn handle_hsd_material_alpha_mode_set(
@@ -241,20 +256,9 @@ pub(crate) fn handle_hsd_material_alpha_mode_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, mode = ?ev.mode, "material alpha mode set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
-        return;
-    };
-    let ent = registry
-        .materials
-        .lock()
-        .expect("materials lock")
-        .get(&ev.id)
-        .and_then(|m| *m.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
-    if let Ok(mut p) = params.get_mut(ent) {
+    update_material_param(&registry_map, &ev.doc_id, &ev.id, &mut params, |p| {
         p.alpha_mode.clone_from(&ev.mode);
-    }
+    });
 }
 
 pub(crate) fn handle_hsd_material_base_color_set(
@@ -263,39 +267,10 @@ pub(crate) fn handle_hsd_material_base_color_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, color = ?ev.color, "material base color set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
-        return;
-    };
-    let ent = registry
-        .materials
-        .lock()
-        .expect("materials lock")
-        .get(&ev.id)
-        .and_then(|m| *m.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
-    if let Ok(mut p) = params.get_mut(ent) {
+    update_material_param(&registry_map, &ev.doc_id, &ev.id, &mut params, |p| {
         let [r, g, b, a] = ev.color;
         p.base_color = Some(Color::srgba(r, g, b, a));
-    }
-}
-
-fn get_image_entity(registry: &SceneRegistryInner, image_id: &SmolStr) -> Option<Entity> {
-    registry
-        .images
-        .lock()
-        .expect("images lock")
-        .get(image_id)
-        .and_then(|i| *i.entity.lock().expect("entity lock"))
-}
-
-fn get_mat_entity(registry: &SceneRegistryInner, mat_id: &SmolStr) -> Option<Entity> {
-    registry
-        .materials
-        .lock()
-        .expect("materials lock")
-        .get(mat_id)
-        .and_then(|m| *m.entity.lock().expect("entity lock"))
+    });
 }
 
 pub(crate) fn handle_hsd_material_base_color_texture_set(
@@ -304,16 +279,10 @@ pub(crate) fn handle_hsd_material_base_color_texture_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, image = %ev.value, "material base color texture set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
-        return;
-    };
-    let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
-        return;
-    };
-    if let Ok(mut p) = params.get_mut(mat_ent) {
-        p.base_color_texture = get_image_entity(registry, &ev.value);
-    }
+    update_material_texture(
+        &registry_map, &ev.doc_id, &ev.id, &ev.value, &mut params,
+        |p, img| p.base_color_texture = img,
+    );
 }
 
 pub(crate) fn handle_hsd_material_emissive_texture_set(
@@ -322,16 +291,10 @@ pub(crate) fn handle_hsd_material_emissive_texture_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, image = %ev.value, "material emissive texture set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
-        return;
-    };
-    let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
-        return;
-    };
-    if let Ok(mut p) = params.get_mut(mat_ent) {
-        p.emissive_texture = get_image_entity(registry, &ev.value);
-    }
+    update_material_texture(
+        &registry_map, &ev.doc_id, &ev.id, &ev.value, &mut params,
+        |p, img| p.emissive_texture = img,
+    );
 }
 
 pub(crate) fn handle_hsd_material_metallic_roughness_texture_set(
@@ -340,16 +303,10 @@ pub(crate) fn handle_hsd_material_metallic_roughness_texture_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, image = %ev.value, "material metallic roughness texture set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
-        return;
-    };
-    let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
-        return;
-    };
-    if let Ok(mut p) = params.get_mut(mat_ent) {
-        p.metallic_roughness_texture = get_image_entity(registry, &ev.value);
-    }
+    update_material_texture(
+        &registry_map, &ev.doc_id, &ev.id, &ev.value, &mut params,
+        |p, img| p.metallic_roughness_texture = img,
+    );
 }
 
 pub(crate) fn handle_hsd_material_normal_texture_set(
@@ -358,16 +315,10 @@ pub(crate) fn handle_hsd_material_normal_texture_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, image = %ev.value, "material normal texture set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
-        return;
-    };
-    let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
-        return;
-    };
-    if let Ok(mut p) = params.get_mut(mat_ent) {
-        p.normal_texture = get_image_entity(registry, &ev.value);
-    }
+    update_material_texture(
+        &registry_map, &ev.doc_id, &ev.id, &ev.value, &mut params,
+        |p, img| p.normal_texture = img,
+    );
 }
 
 pub(crate) fn handle_hsd_material_occlusion_texture_set(
@@ -376,16 +327,10 @@ pub(crate) fn handle_hsd_material_occlusion_texture_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, image = %ev.value, "material occlusion texture set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
-        return;
-    };
-    let Some(mat_ent) = get_mat_entity(registry, &ev.id) else {
-        return;
-    };
-    if let Ok(mut p) = params.get_mut(mat_ent) {
-        p.occlusion_texture = get_image_entity(registry, &ev.value);
-    }
+    update_material_texture(
+        &registry_map, &ev.doc_id, &ev.id, &ev.value, &mut params,
+        |p, img| p.occlusion_texture = img,
+    );
 }
 
 pub(crate) fn handle_hsd_material_double_sided_set(
@@ -394,20 +339,9 @@ pub(crate) fn handle_hsd_material_double_sided_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, value = ev.value, "material double sided set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
-        return;
-    };
-    let ent = registry
-        .materials
-        .lock()
-        .expect("materials lock")
-        .get(&ev.id)
-        .and_then(|m| *m.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
-    if let Ok(mut p) = params.get_mut(ent) {
+    update_material_param(&registry_map, &ev.doc_id, &ev.id, &mut params, |p| {
         p.double_sided = Some(ev.value);
-    }
+    });
 }
 
 pub(crate) fn handle_hsd_material_metallic_set(
@@ -416,20 +350,9 @@ pub(crate) fn handle_hsd_material_metallic_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, value = ev.value, "material metallic set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
-        return;
-    };
-    let ent = registry
-        .materials
-        .lock()
-        .expect("materials lock")
-        .get(&ev.id)
-        .and_then(|m| *m.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
-    if let Ok(mut p) = params.get_mut(ent) {
+    update_material_param(&registry_map, &ev.doc_id, &ev.id, &mut params, |p| {
         p.metallic = Some(ev.value);
-    }
+    });
 }
 
 pub(crate) fn handle_hsd_material_name_set(
@@ -438,17 +361,12 @@ pub(crate) fn handle_hsd_material_name_set(
     mut commands: Commands,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, name = ?ev.name, "material name set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
-    let ent = registry
-        .materials
-        .lock()
-        .expect("materials lock")
-        .get(&ev.id)
-        .and_then(|m| *m.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
+    let Some(ent) = registry.material_entity(&ev.id) else {
+        return;
+    };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
         return;
     };
@@ -465,20 +383,9 @@ pub(crate) fn handle_hsd_material_unlit_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, value = ev.value, "material unlit set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
-        return;
-    };
-    let ent = registry
-        .materials
-        .lock()
-        .expect("materials lock")
-        .get(&ev.id)
-        .and_then(|m| *m.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
-    if let Ok(mut p) = params.get_mut(ent) {
+    update_material_param(&registry_map, &ev.doc_id, &ev.id, &mut params, |p| {
         p.unlit = Some(ev.value);
-    }
+    });
 }
 
 pub(crate) fn handle_hsd_material_roughness_set(
@@ -487,21 +394,13 @@ pub(crate) fn handle_hsd_material_roughness_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    debug!(id = %ev.id, value = ev.value, "material roughness set");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
-        return;
-    };
-    let ent = registry
-        .materials
-        .lock()
-        .expect("materials lock")
-        .get(&ev.id)
-        .and_then(|m| *m.entity.lock().expect("entity lock"));
-    let Some(ent) = ent else { return };
-    if let Ok(mut p) = params.get_mut(ent) {
+    update_material_param(&registry_map, &ev.doc_id, &ev.id, &mut params, |p| {
         p.roughness = Some(ev.value);
-    }
+    });
 }
+
+const METALLIC_DEFAULT: f32 = 0.5;
+const ROUGHNESS_DEFAULT: f32 = 0.5;
 
 fn build_standard_material(
     material: &mut StandardMaterial,
@@ -527,8 +426,8 @@ fn build_standard_material(
     };
 
     material.double_sided = params.double_sided.unwrap_or_default();
-    material.metallic = params.metallic.unwrap_or(0.5);
-    material.perceptual_roughness = params.roughness.unwrap_or(0.5);
+    material.metallic = params.metallic.unwrap_or(METALLIC_DEFAULT);
+    material.perceptual_roughness = params.roughness.unwrap_or(ROUGHNESS_DEFAULT);
     material.unlit = params.unlit.unwrap_or_default();
 
     material.base_color_texture = params

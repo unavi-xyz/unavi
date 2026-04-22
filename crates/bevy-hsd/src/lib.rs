@@ -1,9 +1,3 @@
-//! Bevy plugin for rendering HSD (Hyperspace Document) scenes.
-//!
-//! HSD is a Loro CRDT-backed scene format. Documents arrive as content-addressed
-//! blobs, are subscribed to for incremental diffs, and are compiled into standard
-//! Bevy assets (meshes, materials, images) via an event-driven observer pipeline.
-
 use std::collections::{BTreeMap, HashMap};
 use std::sync::Arc;
 
@@ -24,17 +18,19 @@ pub use load_hsd::LoadHsdFile;
 
 pub struct HsdPlugin;
 
-/// Global map from document record ID to its Bevy entity and scene registry.
-///
-/// Populated by `register_doc_registries` after `init_hsd_doc` runs. Used by
-/// event handlers to look up the registry from a hash instead of querying by
-/// entity.
 #[derive(Resource, Default)]
 pub struct DocRegistryMap(pub HashMap<blake3::Hash, (Entity, Arc<SceneRegistryInner>)>);
 
-/// Named blob-id assets from the HSD document's `assets` map.
-///
-/// Maps asset name to the blake3 hash of the referenced blob.
+impl DocRegistryMap {
+    #[must_use]
+    pub fn get(
+        &self,
+        doc_id: &blake3::Hash,
+    ) -> Option<(Entity, &Arc<SceneRegistryInner>)> {
+        self.0.get(doc_id).map(|(e, r)| (*e, r))
+    }
+}
+
 #[derive(Component, Clone, Debug, Default)]
 pub struct HsdAssets(pub BTreeMap<SmolStr, blake3::Hash>);
 
@@ -114,18 +110,14 @@ impl Plugin for HsdPlugin {
     }
 }
 
-/// Root Loro CRDT document for one HSD scene.
 #[derive(Component)]
 #[require(HsdChildren, Transform, Visibility)]
 pub struct HsdDoc(pub Arc<LoroDoc>);
 
-/// All ECS entities spawned from an HSD document are children of the doc
-/// entity, so the whole scene can be cleanly despawned in one operation.
 #[derive(Component, Default)]
 #[relationship_target(relationship = HsdChild, linked_spawn)]
 pub struct HsdChildren(Vec<Entity>);
 
-/// Marks an entity as owned by the given HSD doc entity.
 #[derive(Component)]
 #[relationship(relationship_target = HsdChildren)]
 pub struct HsdChild {
@@ -139,27 +131,20 @@ pub use hydrate::compile::mesh::CompiledMesh;
 pub use hydrate::compile::node::{MaterialRef, MeshRef};
 pub use load_hsd::HsdFilePath;
 
-/// Stable HSD tree ID kept on the entity for cross-system lookup.
 #[derive(Component, Clone, Debug)]
 pub struct NodeId(pub SmolStr);
 
-/// Blob hashes of WASM scripts declared on this node.
 #[derive(Component, Clone, Debug)]
 pub struct HsdScripts(pub Vec<blake3::Hash>);
 
-/// Cached physics spec so colliders can be restored after scale-suppression.
-///
-/// See `guard_physics_scale` in `compile::node`.
 #[derive(Component, Clone, Debug, Default)]
 pub struct HsdNodePhysics {
     pub collider: Option<data::HsdCollider>,
     pub rigid_body: Option<data::HsdRigidBody>,
 }
 
-/// WDS content-address of the document blob.
 #[derive(Component, Clone, Copy)]
 pub struct HsdRecordId(pub blake3::Hash);
 
-/// Keeps the Loro subscription alive — dropping this stops diff delivery.
 #[derive(Component)]
 pub struct HsdSubscription(pub loro::Subscription);

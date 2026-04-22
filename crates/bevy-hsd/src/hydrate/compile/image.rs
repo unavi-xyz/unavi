@@ -1,9 +1,3 @@
-//! Compiles HSD image data into Bevy `Image` assets.
-//!
-//! Raw bytes are fetched asynchronously via the blob-dep system. Once compiled,
-//! `on_image_compiled` pushes the handle into any already-compiled materials
-//! that reference this image.
-
 use bevy::{
     asset::RenderAssetUsages,
     image::{ImageAddressMode, ImageFilterMode, ImageSampler, ImageSamplerDescriptor},
@@ -23,11 +17,9 @@ use crate::{
     hydrate::compile::material::{CompiledMaterial, MaterialParams},
 };
 
-/// Marks an image entity as having a ready `Handle<Image>`.
 #[derive(Component)]
 pub struct CompiledImage(pub Handle<Image>);
 
-/// Stable HSD image key kept on the entity for lookup by materials.
 #[derive(Component, Clone, Debug)]
 pub struct ImageId(pub SmolStr);
 
@@ -44,8 +36,6 @@ pub struct HsdImageDespawned {
     pub id: SmolStr,
 }
 
-/// Sampler config and a reference to the blob entity carrying the raw bytes.
-/// `srgb: None` defaults to sRGB; set `Some(false)` for linear textures.
 #[derive(Component, Default, Debug)]
 #[require(BlobDeps)]
 pub struct ImageParams {
@@ -151,7 +141,7 @@ pub(crate) fn handle_hsd_image_spawned(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "image spawned");
-    let Some((doc_entity, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((doc_entity, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
     let inner = registry
@@ -167,7 +157,7 @@ pub(crate) fn handle_hsd_image_spawned(
     let existing = *inner.entity.lock().expect("entity lock");
     let entity = existing.unwrap_or_else(|| {
         let ent = commands
-            .spawn((HsdChild { doc: *doc_entity }, ImageId(ev.id.clone())))
+            .spawn((HsdChild { doc: doc_entity }, ImageId(ev.id.clone())))
             .id();
         *inner.entity.lock().expect("entity lock") = Some(ent);
         ent
@@ -190,7 +180,7 @@ pub(crate) fn handle_hsd_image_despawned(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "image despawned");
-    let Some((_, registry)) = registry_map.0.get(&ev.doc_id) else {
+    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
         return;
     };
     let inner = registry.images.lock().expect("images lock").remove(&ev.id);
@@ -242,7 +232,6 @@ pub(crate) fn on_image_blobs_loaded(
     }
 }
 
-/// When an image entity compiles, update any materials referencing it.
 pub(crate) fn on_image_compiled(
     trigger: On<Add, CompiledImage>,
     compiled_images: Query<&CompiledImage>,

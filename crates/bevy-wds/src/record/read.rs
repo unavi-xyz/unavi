@@ -44,7 +44,7 @@ impl ReadRecord {
 
 pub(crate) fn on_get_record(req: On<ReadRecord>, actor: Query<(&LocalActor, &SyncTargets)>) {
     let Ok((actor, sync_targets)) = actor.single() else {
-        warn!("unable to get record: no local actor");
+        warn!("Unable to get record: no local actor");
         return;
     };
 
@@ -66,7 +66,7 @@ async fn inner(
     actor: Actor,
     sync_targets: Vec<EndpointAddr>,
 ) -> anyhow::Result<()> {
-    info!("reading record");
+    info!("Reading record");
 
     let mut n = 0;
     let mut delay_secs = event.backoff_secs;
@@ -77,12 +77,12 @@ async fn inner(
             res = read_record(&event, &actor, &sync_targets) => {
                 match res {
                     Ok(res) => {
-                        info!("got record");
+                        info!("Got record");
                         let _ = event.tx.send(res).await;
                         return Ok(());
                     },
                     Err(err)=> {
-                        warn!(?err, "could not read record ({n}/{})", event.retries);
+                        warn!(?err, "Could not read record ({n}/{})", event.retries);
                         n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
                         delay_secs = delay_secs.wrapping_mul(2);
                     },

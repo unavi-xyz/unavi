@@ -74,7 +74,7 @@ impl ReadBuilder {
             Err(ApiError::RecordNotFound) => {
                 // Try sync below.
             }
-            Err(e) => return Err(anyhow::anyhow!("read failed: {e}")),
+            Err(err) => return Err(anyhow::anyhow!("read failed: {err}")),
         }
 
         // Check each sync source.
@@ -82,8 +82,8 @@ impl ReadBuilder {
             let remote_id = remote.id;
             debug!(remote = %remote_id, "attempting sync");
 
-            if let Err(e) = self.actor.sync(self.record_id, remote).await {
-                warn!(remote = %remote_id, err = ?e, "sync failed");
+            if let Err(err) = self.actor.sync(self.record_id, remote).await {
+                warn!(remote = %remote_id, ?err, "sync failed");
                 continue;
             }
 

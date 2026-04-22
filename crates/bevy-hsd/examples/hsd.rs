@@ -56,7 +56,7 @@ fn load_hsd(mut commands: Commands) {
     unavi_wasm_compat::spawn_thread(async move {
         let store = MemStore::default();
         tx.send(store.clone()).expect("send");
-        tokio::signal::ctrl_c().await.expect("signal");
+        std::future::pending::<()>().await;
     });
 
     let store = rx.recv().expect("recv");

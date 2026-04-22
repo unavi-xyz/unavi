@@ -3,16 +3,17 @@ use bevy::{
     window::WindowTheme,
 };
 
+use bevy_iroh::endpoint::LoadEndpoint;
 use bitflags::bitflags;
 use tracing::Level;
 
 mod camera;
 mod devtools;
 mod fade;
+mod home;
 // mod grab;
 mod icon;
 mod scene;
-// mod space;
 mod system_scripts;
 
 #[cfg(not(target_family = "wasm"))]
@@ -162,9 +163,14 @@ impl Plugin for UnaviPlugin {
                 camera::apply_camera_effects,
                 // grab::update_crosshair_mode,
                 scene::spawn_agent,
+                home::join_home_space,
             ),
         )
         // .add_systems(Update, grab::move_grabbed_objects)
         ;
+
+        app.world_mut().trigger(LoadEndpoint {
+            discovery_mdns: true,
+        });
     }
 }

@@ -23,7 +23,7 @@ impl Plugin for SpacePlugin {
 }
 
 #[derive(Component)]
-struct Space(pub Hash);
+pub struct Space(pub Hash);
 
 #[derive(Component)]
 #[require(ActiveSpaces)]

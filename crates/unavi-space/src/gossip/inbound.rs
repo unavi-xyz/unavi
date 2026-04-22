@@ -29,7 +29,7 @@ pub async fn handle_gossip_inbound(
                     match postcard::from_bytes::<SignedBytes<SpaceBroadcast>>(&msg.content) {
                         Ok(v) => v,
                         Err(err) => {
-                            warn!(?err, "got invalid gossip message");
+                            warn!(?err, "Got invalid gossip message");
                             continue;
                         }
                     };
@@ -37,7 +37,7 @@ pub async fn handle_gossip_inbound(
                 let broadcast = match signed_bytes.payload() {
                     Ok(v) => v,
                     Err(err) => {
-                        warn!(?err, "failed to decode gossip payload");
+                        warn!(?err, "Failed to decode gossip payload");
                         continue;
                     }
                 };
@@ -45,7 +45,7 @@ pub async fn handle_gossip_inbound(
                 // Verify signature.
                 let Ok(sig_bytes) = signed_bytes.signature().try_into() else {
                     warn!(
-                        "invalid signature length: {}",
+                        "Invalid signature length: {}",
                         signed_bytes.signature().len()
                     );
                     continue;
@@ -53,7 +53,7 @@ pub async fn handle_gossip_inbound(
                 let sig = Signature::from_bytes(sig_bytes);
 
                 if let Err(err) = broadcast.sender.verify(signed_bytes.payload_bytes(), &sig) {
-                    warn!(?err, "invalid gossip signature");
+                    warn!(?err, "Invalid gossip signature");
                     continue;
                 }
 

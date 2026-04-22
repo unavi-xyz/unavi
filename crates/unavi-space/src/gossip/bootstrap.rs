@@ -54,7 +54,7 @@ pub async fn find_bootstrap_peers(
                     bootstrap.insert(endpoint);
                 }
                 Err(err) => {
-                    warn!(?err, "failed to sync beacon");
+                    warn!(?err, "Failed to sync beacon");
                 }
             }
         }

@@ -21,6 +21,7 @@ iroh-gossip            = "0.97.0"
 loro.workspace         = true
 n0-future.workspace    = true
 postcard.workspace     = true
+rand.workspace         = true
 serde.workspace        = true
 time.workspace         = true
 tokio.workspace        = true

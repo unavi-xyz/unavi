@@ -14,6 +14,7 @@ impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(connection::connect_to_peer)
             .add_observer(connection::disconnect_peer)
+            .add_observer(connection::register_protocol)
             .add_observer(gossip::spawn_gossip)
             .add_observer(gossip::join_space_topic)
             .add_observer(gossip::leave_space_topic)

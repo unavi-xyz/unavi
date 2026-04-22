@@ -1,6 +1,6 @@
 use bevy::{platform::collections::HashMap, prelude::*};
 use blake3::Hash;
-use iroh::EndpointId;
+use iroh::EndpointAddr;
 
 mod beacon;
 mod connection;
@@ -12,7 +12,8 @@ pub struct SpacePlugin;
 
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(connection::connect_to_peers)
+        app.add_observer(connection::connect_to_peer)
+            .add_observer(connection::disconnect_peer)
             .add_observer(gossip::spawn_gossip)
             .add_observer(gossip::join_space_topic)
             .add_observer(gossip::leave_space_topic)
@@ -34,7 +35,7 @@ pub struct Space(pub Hash);
 
 #[derive(Component)]
 #[require(ActiveSpaces)]
-pub struct Peer(pub EndpointId);
+pub struct Peer(pub EndpointAddr);
 
 #[derive(Component, Default)]
 pub struct ActiveSpaces(pub HashMap<Hash, f32>);

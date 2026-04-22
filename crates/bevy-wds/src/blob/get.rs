@@ -18,7 +18,7 @@ pub struct GetBlob {
 
 pub(crate) fn on_get_blob(req: On<GetBlob>, blobs: Query<&LocalBlobs>) {
     let Ok(blobs) = blobs.single().map(|x| x.0.clone()) else {
-        warn!("Unable to handle blob request: no LocalBlobs");
+        warn!("unable to get blob: no LocalBlobs");
         return;
     };
 
@@ -26,7 +26,7 @@ pub(crate) fn on_get_blob(req: On<GetBlob>, blobs: Query<&LocalBlobs>) {
 
     unavi_wasm_compat::spawn_thread(async move {
         if let Err(err) = inner(event, blobs).await {
-            error!(?err, "failed to handle blob request");
+            error!(?err, "failed to get blob");
         }
     });
 }

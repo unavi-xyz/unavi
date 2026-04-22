@@ -14,7 +14,11 @@ impl Plugin for SpacePlugin {
             .add_observer(gossip::join_space_topic)
             .add_observer(gossip::leave_space_topic)
             .add_observer(scene::spawn_space_scene)
-            .add_systems(FixedUpdate, presence::manage_peers);
+            .add_observer(scene::despawn_space_scene)
+            .add_systems(
+                FixedUpdate,
+                (presence::manage_peers, scene::instantiate_pending_scenes),
+            );
     }
 }
 

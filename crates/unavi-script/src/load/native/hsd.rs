@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy_hsd::{HsdChild, HsdScripts, NodeId};
 use bevy_wds::LocalBlobs;
 use smol_str::SmolStr;
+use unavi_util::async_task::spawn_async_task;
 
 use crate::{ScriptEngine, WasmBinary, asset::Wasm, load::HsdScriptSource, native::WasmEngine};
 
@@ -48,7 +49,7 @@ pub fn load_hsd_scripts(
             let (tx, rx) = std::sync::mpsc::channel::<FetchOut>();
             pending.push(rx);
 
-            unavi_wasm_compat::spawn_thread(async move {
+            spawn_async_task(async move {
                 let result = blobs
                     .get_bytes(hash)
                     .await

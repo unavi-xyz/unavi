@@ -13,6 +13,7 @@ use bevy_wds::{LocalBlobs, WdsPlugin};
 use bytemuck::cast_slice;
 use iroh_blobs::store::mem::MemStore;
 use loro::LoroDoc;
+use unavi_util::async_task::spawn_async_task;
 
 fn main() {
     App::new()
@@ -53,7 +54,7 @@ struct BlobStore(MemStore);
 fn load_hsd(mut commands: Commands) {
     let (tx, rx) = std::sync::mpsc::channel();
 
-    unavi_wasm_compat::spawn_thread(async move {
+    spawn_async_task(async move {
         let store = MemStore::default();
         tx.send(store.clone()).expect("send");
         std::future::pending::<()>().await;
@@ -168,7 +169,7 @@ fn add_blob(store: &MemStore, bytes: &[u8]) -> blake3::Hash {
     let hash = blake3::hash(bytes);
     let store = store.clone();
     let bytes = bytes.to_vec();
-    unavi_wasm_compat::spawn_thread(async move {
+    spawn_async_task(async move {
         store.add_bytes(bytes).await.expect("add bytes");
     });
     hash

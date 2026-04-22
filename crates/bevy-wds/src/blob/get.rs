@@ -5,6 +5,7 @@ use bevy::{prelude::*, tasks::futures_lite::StreamExt};
 use blake3::Hash;
 use bytes::Bytes;
 use tokio::sync::{Notify, mpsc::Sender};
+use unavi_util::async_task::spawn_async_task;
 use wds::Blobs;
 
 use crate::LocalBlobs;
@@ -24,7 +25,7 @@ pub(crate) fn on_get_blob(req: On<GetBlob>, blobs: Query<&LocalBlobs>) {
 
     let event = req.event().clone();
 
-    unavi_wasm_compat::spawn_thread(async move {
+    spawn_async_task(async move {
         if let Err(err) = inner(event, blobs).await {
             error!(?err, "Failed to get blob");
         }

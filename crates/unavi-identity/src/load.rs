@@ -7,7 +7,7 @@ use bevy_iroh::{
 };
 use bevy_wds::{LocalActor, LocalBlobs};
 use iroh::Endpoint;
-use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
+use unavi_util::{async_commands::ASYNC_COMMAND_QUEUE, async_task::spawn_async_task};
 use wds::{DataStore, Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
@@ -19,7 +19,7 @@ pub fn spawn_actors(trigger: On<Add, IrohEndpoint>, endpoints: Query<&IrohEndpoi
         .map(|e| e.0.clone())
         .expect("endpoint");
 
-    unavi_wasm_compat::spawn_thread(async move {
+    spawn_async_task(async move {
         let mut delay_secs = 4;
 
         loop {

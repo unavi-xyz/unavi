@@ -19,6 +19,7 @@ loro.workspace         = true
 n0-future.workspace    = true
 smol_str.workspace     = true
 tokio.workspace        = true
+unavi-util.path        = "../unavi-util"
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wds.path               = "../wds"
 xdid.workspace         = true

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use bevy::{ecs::world::CommandQueue, prelude::*};
 use bevy_wds::{LocalActor, SyncTargets};
 use unavi_space::Space;
-use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
+use unavi_util::{async_commands::ASYNC_COMMAND_QUEUE, async_task::spawn_async_task};
 use wds::actor::Actor;
 use wired_schemas::{SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
 
@@ -40,7 +40,7 @@ pub fn join_home_space(
     let local_actor = local_actor.0.clone();
     let remote_actor = sync_targets.0.first().cloned();
 
-    unavi_wasm_compat::spawn_thread(async move {
+    spawn_async_task(async move {
         if let Err(err) = create_and_join_home(local_actor, remote_actor).await {
             error!(?err, "Failed to join home space");
         }

@@ -8,6 +8,7 @@ use tokio::sync::{
     Notify,
     mpsc::{Receiver, Sender},
 };
+use unavi_util::async_task::spawn_async_task;
 use wds::actor::{Actor, SchemaData};
 
 use crate::{LocalActor, SyncTargets};
@@ -61,7 +62,7 @@ pub(crate) fn on_write_record(req: On<WriteRecord>, actor: Query<(&LocalActor, &
     let actor = actor.0.clone();
     let sync_targets = sync_targets.0.clone();
 
-    unavi_wasm_compat::spawn_thread(async move {
+    spawn_async_task(async move {
         let span = info_span!("write");
 
         if let Err(err) = inner(event, actor, sync_targets).instrument(span).await {

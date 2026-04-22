@@ -15,4 +15,5 @@ bevy.workspace         = true
 iroh                   = { features = ["address-lookup-mdns"], workspace = true }
 n0-future.workspace    = true
 tracing.workspace      = true
+unavi-util.path        = "../unavi-util"
 unavi-wasm-compat.path = "../unavi-wasm-compat"

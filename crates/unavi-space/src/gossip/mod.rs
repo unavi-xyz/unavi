@@ -10,6 +10,7 @@ use iroh::EndpointId;
 use iroh_gossip::Gossip;
 use serde::{Deserialize, Serialize};
 use tokio::sync::Notify;
+use unavi_util::async_task::spawn_async_task;
 use wds::signed_bytes::Signable;
 
 use crate::{
@@ -56,7 +57,7 @@ pub fn spawn_gossip(
     let (gossip_tx, gossip_rx) = tokio::sync::oneshot::channel();
     let (tx, rx) = tokio::sync::mpsc::channel(16);
 
-    unavi_wasm_compat::spawn_thread(async move {
+    spawn_async_task(async move {
         let gossip = Gossip::builder().spawn(endpoint);
         gossip_tx.send(gossip).expect("send gossip");
 

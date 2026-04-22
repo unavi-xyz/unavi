@@ -17,6 +17,7 @@ bytes.workspace        = true
 iroh.workspace         = true
 loro.workspace         = true
 n0-future.workspace    = true
+smol_str.workspace     = true
 tokio.workspace        = true
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wds.path               = "../wds"

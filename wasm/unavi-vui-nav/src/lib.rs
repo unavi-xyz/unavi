@@ -170,7 +170,7 @@ impl GuestScript for Script {
                 Ok(ids) => {
                     for id in ids {
                         let id = blake3::Hash::from_slice(&id).expect("valid hash");
-                        println!("found beacon: {id}");
+                        println!("Found beacon: {id}");
 
                         let doc = self_document();
 
@@ -180,7 +180,7 @@ impl GuestScript for Script {
                             .find(|(k, _)| k == "beacon")
                             .expect("beacon asset");
                         let Ok(beacon_doc) = load_hsd(&beacon_asset) else {
-                            eprintln!("failed to load beacon doc id={id}");
+                            eprintln!("Failed to load beacon doc: {id}");
                             continue;
                         };
 
@@ -197,7 +197,7 @@ impl GuestScript for Script {
 
                     remove_query = true;
                 }
-                Err(()) => eprintln!("wds query error"),
+                Err(()) => eprintln!("WDS query error"),
             }
         }
 

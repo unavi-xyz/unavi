@@ -80,7 +80,7 @@ impl RecordBuilder {
         mut self,
         container: impl Into<smol_str::SmolStr>,
         schema: impl Into<SchemaData>,
-        f: impl Fn(&mut LoroDoc) -> anyhow::Result<()>,
+        f: impl FnOnce(&mut LoroDoc) -> anyhow::Result<()>,
     ) -> anyhow::Result<Self> {
         let mut schema_data = schema.into();
         schema_data.container = container.into();

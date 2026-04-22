@@ -1,19 +1,26 @@
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
-use bevy::prelude::*;
-
-use crate::{
-    networking::thread::{NetworkCommand, NetworkingThread},
-    space::Space,
+use bevy::{prelude::*, tasks::TaskPool};
+use bevy_iroh::endpoint::IrohEndpoint;
+use bevy_wds::{
+    LocalActor,
+    record::write::{SchemaDef, WriteRecord},
 };
+use time::OffsetDateTime;
+use wired_records::{BeaconRecord, HydratedDid, HydratedEndpoint, HydratedHash};
+use wired_schemas::SCHEMA_BEACON;
 
-const BEACON_TTL: Duration = Duration::from_mins(1);
+use crate::Space;
+
+const BEACON_TTL: Duration = Duration::from_mins(2);
 
 pub fn publish_beacons(
-    nt: Res<NetworkingThread>,
     time: Res<Time>,
     spaces: Query<&Space>,
+    actor: Query<&LocalActor>,
+    endpoint: Query<&IrohEndpoint>,
     mut last: Local<Duration>,
+    mut commands: Commands,
 ) {
     if spaces.is_empty() {
         return;
@@ -25,12 +32,46 @@ pub fn publish_beacons(
     }
     *last = now;
 
+    let Ok(actor) = actor.single() else {
+        return;
+    };
+    let Ok(endpoint) = endpoint.single() else {
+        return;
+    };
+
+    let did = actor.0.identity().did().clone();
+    let endpoint_id = endpoint.0.id();
+    let pool = TaskPool::get_thread_executor();
+
     for space in spaces {
-        if let Err(err) = nt.command_tx.try_send(NetworkCommand::PublishBeacon {
-            id: space.0,
-            ttl: BEACON_TTL,
-        }) {
-            error!(?err, "failed to send network command");
-        }
+        let did = did.clone();
+        let space = space.0;
+
+        let (mut event, mut rx, _cancel) = WriteRecord::new(None);
+        event.ttl = Some(BEACON_TTL);
+        event.public = true;
+        event.schemas = vec![SchemaDef {
+            container: "beacon".into(),
+            schema: (&*SCHEMA_BEACON).into(),
+            f: Arc::new(move |doc| {
+                let beacon = BeaconRecord {
+                    did: HydratedDid(did.clone()),
+                    endpoint: HydratedEndpoint(*endpoint_id),
+                    expires: (OffsetDateTime::now_utc() + BEACON_TTL).unix_timestamp(),
+                    space: HydratedHash(space),
+                };
+                beacon.save(doc)?;
+                Ok(())
+            }),
+        }];
+
+        pool.spawn(async move {
+            if let Some(id) = rx.recv().await {
+                info!(%id, "Published beacon");
+            }
+        })
+        .detach();
+
+        commands.trigger(event);
     }
 }

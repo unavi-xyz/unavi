@@ -2,6 +2,7 @@ use bevy::{platform::collections::HashMap, prelude::*};
 use blake3::Hash;
 use iroh::EndpointId;
 
+mod beacon;
 mod gossip;
 mod presence;
 mod scene;
@@ -17,7 +18,11 @@ impl Plugin for SpacePlugin {
             .add_observer(scene::despawn_space_scene)
             .add_systems(
                 FixedUpdate,
-                (presence::manage_peers, scene::instantiate_pending_scenes),
+                (
+                    beacon::publish_beacons,
+                    presence::manage_peers,
+                    scene::instantiate_pending_scenes,
+                ),
             );
     }
 }

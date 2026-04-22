@@ -86,7 +86,7 @@ async fn create_and_join_home(
         .send()
         .await?;
 
-    info!(id = %res.id, "created home space");
+    info!(id = %res.id, "Created home space");
 
     let mut commands = CommandQueue::default();
     commands.push(bevy::ecs::system::command::spawn_batch([Space(res.id)]));

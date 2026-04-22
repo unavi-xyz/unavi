@@ -42,9 +42,9 @@ impl ReadRecord {
     }
 }
 
-pub(crate) fn on_get_record(req: On<ReadRecord>, actor: Query<(&LocalActor, &SyncTargets)>) {
+pub(crate) fn on_read_record(req: On<ReadRecord>, actor: Query<(&LocalActor, &SyncTargets)>) {
     let Ok((actor, sync_targets)) = actor.single() else {
-        warn!("Unable to get record: no local actor");
+        warn!("Unable to read record: no local actor");
         return;
     };
 
@@ -56,7 +56,7 @@ pub(crate) fn on_get_record(req: On<ReadRecord>, actor: Query<(&LocalActor, &Syn
         let span = info_span!("read", id = %event.id);
 
         if let Err(err) = inner(event, actor, sync_targets).instrument(span).await {
-            error!(?err, "failed to get record");
+            error!(?err, "Failed to read record");
         }
     });
 }

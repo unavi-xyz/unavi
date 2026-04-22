@@ -26,7 +26,7 @@ mod query_builder;
 mod read_builder;
 mod record_builder;
 
-pub use record_builder::RecordResult;
+pub use record_builder::{RecordResult, SchemaData};
 
 /// Authenticated actor for WDS operations.
 ///

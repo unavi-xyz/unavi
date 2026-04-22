@@ -222,12 +222,12 @@ impl Gauntlet {
             return;
         };
         if sector.active_state.get() {
-            println!("deactivated {}", sector.name);
+            println!("Deactivated {}", sector.name);
             sector.active_state.set(false);
             sector.outline_node.set_scale(Vec3::ZERO);
             registry.deactivate(&module.doc_id);
         } else {
-            println!("activated {}", sector.name);
+            println!("Activated {}", sector.name);
             sector.active_state.set(true);
             sector.outline_node.set_scale(Vec3::ONE);
             let bone_ref = self.bone.borrow();

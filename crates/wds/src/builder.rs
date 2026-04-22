@@ -2,7 +2,7 @@ use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use iroh::{
     Endpoint,
-    protocol::{DynProtocolHandler, Router, RouterBuilder},
+    protocol::{DynProtocolHandler, RouterBuilder},
 };
 use iroh_blobs::{BlobsProtocol, api::Store as BlobStore, store::mem::MemStore};
 use n0_future::task::AbortOnDropHandle;

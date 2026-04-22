@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use iroh::endpoint::presets::N0;
+use iroh::{endpoint::presets::N0, protocol::Router};
 use wds::{Blobs, DataStore, Identity, actor::Actor};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
@@ -16,10 +16,14 @@ pub fn create_test_wds() -> (Actor, Blobs) {
             .await
             .expect("iroh endpoint");
 
-        let store = DataStore::builder(endpoint)
+        let (store, f) = DataStore::builder(endpoint.clone())
             .build()
             .await
             .expect("data store");
+
+        let rb = Router::builder(endpoint);
+        let rb = f(rb);
+        let _router = rb.spawn();
 
         let blobs = store.blobs().blobs().clone();
 

@@ -14011,10 +14011,12 @@ dependencies = [
  "unavi-agent",
  "unavi-assets",
  "unavi-avatar",
+ "unavi-identity",
  "unavi-input",
  "unavi-portal",
  "unavi-script",
  "unavi-space",
+ "unavi-util",
  "unavi-wasm-compat",
  "wasm-bindgen-futures",
  "wds",
@@ -14053,6 +14055,22 @@ dependencies = [
  "unavi-vui-module",
  "wired-prelude",
  "wit-bindgen 0.55.0",
+]
+
+[[package]]
+name = "unavi-identity"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy-iroh",
+ "bevy-wds",
+ "iroh",
+ "n0-future",
+ "unavi-util",
+ "unavi-wasm-compat",
+ "wds",
+ "xdid",
 ]
 
 [[package]]
@@ -14179,13 +14197,24 @@ dependencies = [
  "iroh",
  "iroh-gossip",
  "n0-future",
+ "postcard",
+ "serde",
  "time",
  "tokio",
  "tracing",
+ "unavi-identity",
  "unavi-wasm-compat",
  "wds",
  "wired-records",
  "wired-schemas",
+]
+
+[[package]]
+name = "unavi-util"
+version = "0.0.16"
+dependencies = [
+ "bevy",
+ "tokio",
 ]
 
 [[package]]

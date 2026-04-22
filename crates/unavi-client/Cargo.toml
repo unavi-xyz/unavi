@@ -36,6 +36,7 @@ bytes.workspace        = true
 clap.workspace         = true
 half.workspace         = true
 image                  = { default-features = false, features = ["png"], workspace = true }
+iroh.workspace         = true
 log                    = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
 loro.workspace         = true
 n0-future.workspace    = true
@@ -50,10 +51,12 @@ tracing                = { features = ["max_level_debug", "release_max_level_war
 unavi-agent.path       = "../unavi-agent"
 unavi-assets.path      = "../unavi-assets"
 unavi-avatar.path      = "../unavi-avatar"
+unavi-identity.path    = "../unavi-identity"
 unavi-input.path       = "../unavi-input"
 unavi-portal.path      = "../unavi-portal"
 unavi-script.path      = "../unavi-script"
 unavi-space.path       = "../unavi-space"
+unavi-util.path        = "../unavi-util"
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wds.path               = "../wds"
 web-time               = "1.1.0"
@@ -64,7 +67,6 @@ xdid.workspace         = true
 zeroize.workspace      = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-iroh.workspace       = true
 reqwest.workspace    = true
 tokio                = { features = ["rt"], workspace = true }
 wasm-bindgen-futures = "0.4.67"
@@ -75,6 +77,5 @@ bevy_mod_openxr         = "0.5.0"
 bevy_mod_xr.workspace   = true
 bevy_xr_utils.workspace = true
 directories.workspace   = true
-iroh                    = { default-features = true, workspace = true }
 reqwest                 = { features = ["blocking"], workspace = true }
 tokio                   = { features = ["rt", "rt-multi-thread"], workspace = true }

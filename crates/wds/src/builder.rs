@@ -1,13 +1,15 @@
 use std::{path::PathBuf, sync::Arc, time::Duration};
 
-use iroh::{Endpoint, protocol::DynProtocolHandler, protocol::Router};
+use iroh::{
+    Endpoint,
+    protocol::{DynProtocolHandler, Router, RouterBuilder},
+};
 use iroh_blobs::{BlobsProtocol, api::Store as BlobStore, store::mem::MemStore};
 use n0_future::task::AbortOnDropHandle;
 use parking_lot::RwLock;
 
 use crate::{DataStore, StoreContext, db::Database};
 
-/// Builder for [`DataStore`] that allows adding custom protocols to the router.
 pub struct DataStoreBuilder {
     endpoint: Endpoint,
     gc_timer: Option<Duration>,
@@ -19,6 +21,8 @@ pub enum Storage {
     InMemory,
     Path(PathBuf),
 }
+
+pub type BoxedRouterBuilder = Box<dyn FnOnce(RouterBuilder) -> RouterBuilder + Send + Sync>;
 
 impl DataStoreBuilder {
     /// Create a new builder.
@@ -61,7 +65,7 @@ impl DataStoreBuilder {
     }
 
     /// Build the [`DataStore`].
-    pub async fn build(self) -> anyhow::Result<DataStore> {
+    pub async fn build(self) -> anyhow::Result<(DataStore, BoxedRouterBuilder)> {
         let (blobs, db) = init_storage(&self.storage).await?;
 
         let blob_protocol = BlobsProtocol::new(blobs.as_ref().as_ref(), None);
@@ -77,21 +81,16 @@ impl DataStoreBuilder {
         let (api_client, api_protocol) = crate::api::protocol(Arc::clone(&ctx));
         let (auth_client, auth_protocol) = crate::auth::protocol(Arc::clone(&ctx));
 
-        let mut router_builder = Router::builder(self.endpoint)
-            .accept(iroh_blobs::ALPN, blob_protocol)
-            .accept(crate::api::ALPN, api_protocol)
-            .accept(crate::auth::ALPN, auth_protocol)
-            .accept(
-                crate::sync::ALPN,
-                crate::sync::SyncProtocol::new(Arc::clone(&ctx)),
-            );
-
-        // Add custom protocols.
-        for (alpn, handler) in self.protocols {
-            router_builder = router_builder.accept(alpn, handler);
-        }
-
-        let router = router_builder.spawn();
+        let router_builder_fn = Box::new({
+            let ctx = Arc::clone(&ctx);
+            |builder: RouterBuilder| {
+                builder
+                    .accept(iroh_blobs::ALPN, blob_protocol)
+                    .accept(crate::api::ALPN, api_protocol)
+                    .accept(crate::auth::ALPN, auth_protocol)
+                    .accept(crate::sync::ALPN, crate::sync::SyncProtocol::new(ctx))
+            }
+        });
 
         // Spawn gc task if enabled.
         let gc_handle = self.gc_timer.map(|duration| {
@@ -109,13 +108,16 @@ impl DataStoreBuilder {
             AbortOnDropHandle::new(handle)
         });
 
-        Ok(DataStore {
-            api_client,
-            auth_client,
-            router,
-            ctx,
-            _gc_handle: gc_handle,
-        })
+        Ok((
+            DataStore {
+                api_client,
+                auth_client,
+                endpoint: self.endpoint,
+                ctx,
+                _gc_handle: gc_handle,
+            },
+            router_builder_fn,
+        ))
     }
 }
 

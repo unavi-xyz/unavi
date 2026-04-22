@@ -15,19 +15,16 @@ bevy.workspace         = true
 bevy-iroh.path         = "../bevy-iroh"
 bevy-wds.path          = "../bevy-wds"
 blake3.workspace       = true
+iroh.workspace         = true
 iroh-gossip            = "0.97.0"
 n0-future.workspace    = true
+postcard.workspace     = true
+serde.workspace        = true
 time.workspace         = true
+tokio.workspace        = true
 tracing.workspace      = true
+unavi-identity.path    = "../unavi-identity"
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wds.path               = "../wds"
 wired-records.path     = "../wired-records"
 wired-schemas.path     = "../wired-schemas"
-
-[target.'cfg(target_family = "wasm")'.dependencies]
-iroh.workspace = true
-tokio          = { features = ["rt"], workspace = true }
-
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
-iroh  = { default-features = true, workspace = true }
-tokio = { features = ["rt", "rt-multi-thread"], workspace = true }

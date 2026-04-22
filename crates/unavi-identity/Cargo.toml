@@ -1,7 +1,7 @@
 [package]
 edition.workspace    = true
 license.workspace    = true
-name                 = "bevy-iroh"
+name                 = "unavi-identity"
 publish              = false
 repository.workspace = true
 version.workspace    = true
@@ -12,7 +12,11 @@ workspace = true
 [dependencies]
 anyhow.workspace       = true
 bevy.workspace         = true
-iroh                   = { features = ["address-lookup-mdns"], workspace = true }
+bevy-iroh.path         = "../bevy-iroh"
+bevy-wds.path          = "../bevy-wds"
+iroh.workspace         = true
 n0-future.workspace    = true
-tracing.workspace      = true
+unavi-util.path        = "../unavi-util"
 unavi-wasm-compat.path = "../unavi-wasm-compat"
+wds.path               = "../wds"
+xdid.workspace         = true

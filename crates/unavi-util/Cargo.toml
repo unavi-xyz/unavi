@@ -1,0 +1,14 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-util"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy.workspace  = true
+tokio.workspace = true

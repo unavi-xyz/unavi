@@ -6,7 +6,6 @@ use bevy::{
 use bitflags::bitflags;
 use tracing::Level;
 
-mod async_commands;
 mod camera;
 mod devtools;
 mod fade;
@@ -15,7 +14,6 @@ mod icon;
 mod scene;
 // mod space;
 mod system_scripts;
-mod wds;
 
 #[cfg(not(target_family = "wasm"))]
 mod assets;
@@ -115,11 +113,13 @@ impl Plugin for UnaviPlugin {
             bevy_wds::WdsPlugin,
             bevy_iroh::IrohPlugin,
             bevy_hsd::HsdPlugin,
+            unavi_util::UtilPlugin,
             unavi_input::InputPlugin,
             unavi_avatar::AvatarPlugin,
             unavi_agent::AgentPlugin,
             unavi_script::ScriptPlugin,
             unavi_portal::PortalPlugin,
+            unavi_identity::IdentityPlugin,
             unavi_space::SpacePlugin,
             MaterialPlugin::<camera::sky::SkyMaterial>::default(),
         ));
@@ -159,7 +159,6 @@ impl Plugin for UnaviPlugin {
         .add_systems(
             FixedUpdate,
             (
-                async_commands::apply_async_commands,
                 camera::apply_camera_effects,
                 // grab::update_crosshair_mode,
                 scene::spawn_agent,

@@ -43,6 +43,6 @@ pub struct RouterBuilderFns(Vec<Entity>);
 pub struct RouterBuilderFnTarget(pub Entity);
 
 #[derive(Component)]
-pub struct RouterBuilderFn(pub Option<BoxedBuilderFn>);
+pub struct RouterBuilderFn(pub Option<BoxedRouterBuilder>);
 
-pub type BoxedBuilderFn = Box<dyn FnOnce(RouterBuilder) -> RouterBuilder + Send + Sync>;
+pub type BoxedRouterBuilder = Box<dyn FnOnce(RouterBuilder) -> RouterBuilder + Send + Sync>;

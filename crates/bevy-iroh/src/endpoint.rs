@@ -6,6 +6,7 @@ use std::{
 use bevy::prelude::*;
 use iroh::{Endpoint, endpoint::presets::N0};
 use tracing::{error, info};
+use unavi_util::async_task::spawn_async_task;
 
 use crate::router::RouterBuilderFns;
 
@@ -22,7 +23,7 @@ pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands
     let (tx, rx) = std::sync::mpsc::channel();
     let opts = trigger.event().clone();
 
-    unavi_wasm_compat::spawn_thread(async move {
+    spawn_async_task(async move {
         let mut delay_secs = 4;
 
         loop {
@@ -38,10 +39,6 @@ pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands
                 }
             }
         }
-
-        // Keep endpoint running.
-        // TODO merge with shared thread?
-        std::future::pending::<()>().await;
     });
 
     commands.spawn(LoadingEndpoint(Arc::new(Mutex::new(rx))));

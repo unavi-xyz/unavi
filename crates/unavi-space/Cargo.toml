@@ -26,6 +26,7 @@ time.workspace         = true
 tokio.workspace        = true
 tracing.workspace      = true
 unavi-identity.path    = "../unavi-identity"
+unavi-util.path        = "../unavi-util"
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wds.path               = "../wds"
 wired-records.path     = "../wired-records"

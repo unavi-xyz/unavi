@@ -22,6 +22,7 @@ image                  = { default-features = false, features = ["jpeg", "png", 
 loro.workspace         = true
 loro-surgeon.path      = "../loro-surgeon"
 smol_str.workspace     = true
+unavi-util.path        = "../unavi-util"
 unavi-wasm-compat.path = "../unavi-wasm-compat"
 wds.path               = "../wds"
 wired-records          = { features = ["loro"], path = "../wired-records" }

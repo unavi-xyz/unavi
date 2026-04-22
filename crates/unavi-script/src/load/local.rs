@@ -70,6 +70,7 @@ mod native {
     use bevy_wds::LocalActor;
     use bytes::Bytes;
     use loro::{LoroDoc, LoroList, LoroTree, TreeParentId};
+    use unavi_util::async_task::spawn_async_task;
     use wired_schemas::SCHEMA_HSD;
 
     use super::{PendingScript, Wasm};
@@ -126,7 +127,7 @@ mod native {
                 Ok(Ok(hash)) => {
                     let actor = pending.actor.clone();
                     let (tx, rx) = mpsc::channel();
-                    unavi_wasm_compat::spawn_thread(async move {
+                    spawn_async_task(async move {
                         let _ = tx.send(create_hsd_record(actor, hash).await);
                         tokio::time::sleep(Duration::from_mins(3)).await;
                     });
@@ -160,7 +161,7 @@ mod native {
             let upload_actor = actor.0.clone();
             let record_actor = actor.0.clone();
             let (tx, rx) = mpsc::channel();
-            unavi_wasm_compat::spawn_thread(async move {
+            spawn_async_task(async move {
                 let _ = tx.send(upload_actor.upload_blob(bytes).await);
                 tokio::time::sleep(Duration::from_mins(3)).await;
             });

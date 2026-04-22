@@ -1,5 +1,6 @@
 use std::sync::mpsc;
 
+use unavi_util::async_task::spawn_async_task;
 use wasmtime::component::{Resource, ResourceTable};
 use wired_records::{BeaconRecord, RecordValue};
 use xdid::core::did::Did;
@@ -67,7 +68,7 @@ impl bindings::wired::wds::types::HostWds for RuntimeData {
         let actor = self.wired_wds.table.get(&this)?.actor.clone();
         let (tx, rx) = mpsc::channel();
 
-        unavi_wasm_compat::spawn_thread(async move {
+        spawn_async_task(async move {
             let mut builder = actor.query();
 
             if let Some(f) = filter {
@@ -106,7 +107,7 @@ impl bindings::wired::wds::types::HostWds for RuntimeData {
             .map_err(|_| wasmtime::Error::msg("record id must be 32 bytes"))?;
         let hash = blake3::Hash::from_bytes(id_arr);
 
-        unavi_wasm_compat::spawn_thread(async move {
+        spawn_async_task(async move {
             let result = read_record(&actor, hash).await;
             let _ = tx.send(result);
         });

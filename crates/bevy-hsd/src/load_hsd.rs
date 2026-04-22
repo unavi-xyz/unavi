@@ -7,6 +7,7 @@ use bevy::prelude::*;
 use bevy_wds::LocalActor;
 use bytes::Bytes;
 use loro::{LoroDoc, LoroList, LoroMap, LoroTree, LoroValue, TreeParentId};
+use unavi_util::async_task::spawn_async_task;
 
 use crate::{HsdDoc, HsdRecordId};
 
@@ -68,9 +69,11 @@ pub fn start_hsd_loads(
             .lock()
             .expect("pending lock")
             .push(PendingLoad { entity, rx });
-        unavi_wasm_compat::spawn_thread(async move {
+
+        spawn_async_task(async move {
             let _ = tx.send(build_hsd_doc_from_file(path, &[actor]).await);
         });
+
         commands.entity(entity).remove::<HsdFilePath>();
     }
 }

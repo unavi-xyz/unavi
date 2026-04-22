@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 pub mod async_commands;
+pub mod async_task;
 
 pub struct UtilPlugin;
 

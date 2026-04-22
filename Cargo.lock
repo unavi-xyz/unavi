@@ -973,6 +973,7 @@ dependencies = [
  "loro-surgeon",
  "smol_str 0.3.6",
  "tokio",
+ "unavi-util",
  "unavi-wasm-compat",
  "wds",
  "wired-records",
@@ -1038,6 +1039,7 @@ dependencies = [
  "iroh",
  "n0-future",
  "tracing",
+ "unavi-util",
  "unavi-wasm-compat",
 ]
 
@@ -1102,6 +1104,7 @@ dependencies = [
  "n0-future",
  "smol_str 0.3.6",
  "tokio",
+ "unavi-util",
  "unavi-wasm-compat",
  "wds",
  "xdid",
@@ -14148,6 +14151,7 @@ dependencies = [
  "unavi-agent",
  "unavi-avatar",
  "unavi-input",
+ "unavi-util",
  "unavi-wasm-compat",
  "wasm-bindgen",
  "wasmtime",
@@ -14208,6 +14212,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unavi-identity",
+ "unavi-util",
  "unavi-wasm-compat",
  "wds",
  "wired-records",
@@ -14219,7 +14224,9 @@ name = "unavi-util"
 version = "0.0.16"
 dependencies = [
  "bevy",
+ "n0-future",
  "tokio",
+ "unavi-wasm-compat",
 ]
 
 [[package]]

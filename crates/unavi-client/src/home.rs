@@ -2,10 +2,10 @@ use std::path::PathBuf;
 
 use bevy::{ecs::world::CommandQueue, prelude::*};
 use bevy_wds::{LocalActor, SyncTargets};
+use unavi_space::Space;
+use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
 use wds::actor::Actor;
 use wired_schemas::{SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
-
-use crate::{async_commands::ASYNC_COMMAND_QUEUE, space::Space};
 
 const DEFAULT_HOME_HSD: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -86,7 +86,7 @@ async fn create_and_join_home(
         .send()
         .await?;
 
-    info!(id = %res.id, "Created home space");
+    info!(id = %res.id, "created home space");
 
     let mut commands = CommandQueue::default();
     commands.push(bevy::ecs::system::command::spawn_batch([Space(res.id)]));

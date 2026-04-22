@@ -7,9 +7,18 @@ use bevy::prelude::*;
 use iroh::{Endpoint, endpoint::presets::N0};
 use tracing::{error, info};
 
-use crate::{IrohEndpoint, LoadEndpoint};
+use crate::router::RouterBuilderFns;
 
-pub fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands) {
+#[derive(Component)]
+#[require(RouterBuilderFns)]
+pub struct IrohEndpoint(pub Endpoint);
+
+#[derive(Event, Clone)]
+pub struct LoadEndpoint {
+    pub discovery_mdns: bool,
+}
+
+pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands) {
     let (tx, rx) = std::sync::mpsc::channel();
     let opts = trigger.event().clone();
 
@@ -29,15 +38,19 @@ pub fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands) {
                 }
             }
         }
+
+        // Keep endpoint running.
+        // TODO merge with shared thread?
+        std::future::pending::<()>().await;
     });
 
     commands.spawn(LoadingEndpoint(Arc::new(Mutex::new(rx))));
 }
 
 #[derive(Component)]
-pub struct LoadingEndpoint(Arc<Mutex<std::sync::mpsc::Receiver<Endpoint>>>);
+pub(crate) struct LoadingEndpoint(Arc<Mutex<std::sync::mpsc::Receiver<Endpoint>>>);
 
-pub fn recieve_endpoint(mut commands: Commands, loading: Query<(Entity, &LoadingEndpoint)>) {
+pub(crate) fn recieve_endpoint(mut commands: Commands, loading: Query<(Entity, &LoadingEndpoint)>) {
     let Some((ent, rx)) = loading.iter().next() else {
         return;
     };

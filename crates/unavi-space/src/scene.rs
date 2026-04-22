@@ -1,8 +1,8 @@
 use std::{sync::Arc, time::Duration};
 
 use bevy::prelude::*;
-use bevy_hsd::HsdDoc;
-use bevy_wds::{LocalActor, SyncTargets, record::get::ReadRecord};
+use bevy_hsd::{HsdDoc, HsdRecordId};
+use bevy_wds::record::read::ReadRecord;
 use loro::LoroDoc;
 use tokio::sync::{Notify, mpsc::Receiver};
 
@@ -16,17 +16,7 @@ pub struct PendingScene {
     cancel: Arc<Notify>,
 }
 
-pub fn spawn_space_scene(
-    trigger: On<Add, Space>,
-    spaces: Query<&Space>,
-    actor: Query<(&LocalActor, &SyncTargets)>,
-    mut commands: Commands,
-) {
-    let Ok((_actor, _sync_targets)) = actor.single() else {
-        warn!("space scene failed: no actor");
-        return;
-    };
-
+pub fn spawn_space_scene(trigger: On<Add, Space>, spaces: Query<&Space>, mut commands: Commands) {
     let space = spaces.get(trigger.entity).map(|v| v.0).expect("space");
 
     let (mut event, rx, cancel) = ReadRecord::new(space);
@@ -41,17 +31,18 @@ pub fn spawn_space_scene(
 }
 
 pub fn instantiate_pending_scenes(
-    mut pending: Query<(Entity, &mut PendingScene)>,
+    mut pending: Query<(Entity, &Space, &mut PendingScene)>,
     mut commands: Commands,
 ) {
-    for (entity, mut pending) in &mut pending {
+    for (entity, space, mut pending) in &mut pending {
         let Ok(doc) = pending.rx.try_recv() else {
             continue;
         };
 
+        info!(space = %space.0, "Instantiating scene");
         commands
             .entity(entity)
-            .insert(HsdDoc(Arc::new(doc)))
+            .insert((HsdDoc(Arc::new(doc)), HsdRecordId(space.0)))
             .remove::<PendingScene>();
     }
 }

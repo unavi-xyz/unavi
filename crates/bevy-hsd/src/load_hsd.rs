@@ -55,10 +55,9 @@ pub fn start_hsd_loads(
     pending: Res<PendingHsdLoads>,
     mut commands: Commands,
 ) {
-    let Ok(local_actor) = actor_query.single() else {
+    let Ok(actor) = actor_query.single().map(|a| a.0.clone()) else {
         return;
     };
-    let actor = local_actor.0.clone();
 
     for (entity, HsdFilePath(path)) in &queued {
         let path = path.clone();
@@ -90,7 +89,7 @@ pub fn poll_hsd_file_loads(pending: Res<PendingHsdLoads>, mut commands: Commands
                     .insert((HsdDoc(doc), HsdRecordId(doc_id)));
             }
             Ok(Err(err)) => {
-                error!("LoadHsdFile failed: {err:?}");
+                error!(?err, "LoadHsdFile failed");
             }
             Err(std::sync::mpsc::TryRecvError::Empty) => {
                 still_pending.push(p);

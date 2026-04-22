@@ -1,7 +1,10 @@
 use std::{sync::Arc, time::Duration};
 
 use bevy::{ecs::world::CommandQueue, prelude::*};
-use bevy_iroh::{IrohEndpoint, RouterBuilderFn, RouterBuilderFnTarget};
+use bevy_iroh::{
+    endpoint::IrohEndpoint,
+    router::{RouterBuilderFn, RouterBuilderFnTarget},
+};
 use bevy_wds::{LocalActor, LocalBlobs};
 use iroh::Endpoint;
 use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
@@ -21,14 +24,17 @@ pub fn spawn_actors(trigger: On<Add, IrohEndpoint>, endpoints: Query<&IrohEndpoi
 
         loop {
             if let Err(err) = load_store(endpoint.clone(), entity).await {
-                error!(?err, "failed to load data store");
+                error!(?err, "Failed to load data store");
                 n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
                 delay_secs = delay_secs.wrapping_mul(2);
                 continue;
             }
-
             break;
         }
+
+        // Keep data store alive.
+        // TODO merge with shared thread?
+        std::future::pending::<()>().await;
     });
 }
 
@@ -42,7 +48,11 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
         .gc_timer(Duration::from_mins(15))
         .build()
         .await?;
+
+    store.set_user_identity(Arc::clone(&identity));
     let actor = store.local_actor(identity);
+
+    // TODO load sync targets from env
 
     let mut commands = CommandQueue::default();
     commands.push(bevy::ecs::system::command::spawn_batch([(

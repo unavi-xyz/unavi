@@ -1,9 +1,30 @@
 use bevy::prelude::*;
-use iroh::protocol::RouterBuilder;
+use iroh::protocol::{Router, RouterBuilder};
 
-use crate::{BuildRouter, IrohEndpoint, IrohRouter, RouterBuilderFn, RouterBuilderFns};
+use crate::endpoint::IrohEndpoint;
 
-pub fn on_build_router(
+#[derive(Component)]
+pub struct IrohRouter(pub Router);
+
+#[derive(EntityEvent)]
+pub struct BuildRouter(pub Entity);
+
+/// Stores [`RouterBuilderFn`]s, which will be consumed during the router build
+/// and removed from this component after calling [`BuildRouter`].
+#[derive(Component, Default)]
+#[relationship_target(relationship = RouterBuilderFnTarget, linked_spawn)]
+pub struct RouterBuilderFns(Vec<Entity>);
+
+#[derive(Component)]
+#[relationship(relationship_target = RouterBuilderFns)]
+pub struct RouterBuilderFnTarget(pub Entity);
+
+#[derive(Component)]
+pub struct RouterBuilderFn(pub Option<BoxedRouterBuilder>);
+
+pub type BoxedRouterBuilder = Box<dyn FnOnce(RouterBuilder) -> RouterBuilder + Send + Sync>;
+
+pub(crate) fn on_build_router(
     trigger: On<BuildRouter>,
     mut commands: Commands,
     endpoints: Query<&IrohEndpoint>,

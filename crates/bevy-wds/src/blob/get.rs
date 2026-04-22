@@ -18,7 +18,7 @@ pub struct GetBlob {
 
 pub(crate) fn on_get_blob(req: On<GetBlob>, blobs: Query<&LocalBlobs>) {
     let Ok(blobs) = blobs.single().map(|x| x.0.clone()) else {
-        warn!("unable to get blob: no LocalBlobs");
+        warn!("Unable to get blob: no LocalBlobs");
         return;
     };
 
@@ -26,7 +26,7 @@ pub(crate) fn on_get_blob(req: On<GetBlob>, blobs: Query<&LocalBlobs>) {
 
     unavi_wasm_compat::spawn_thread(async move {
         if let Err(err) = inner(event, blobs).await {
-            error!(?err, "failed to get blob");
+            error!(?err, "Failed to get blob");
         }
     });
 }
@@ -65,7 +65,7 @@ async fn get_blob(event: &GetBlob, blobs: Blobs) -> anyhow::Result<Bytes> {
 
         let val = field.state().validated_size.unwrap_or_default();
         let progress = val as f64 / size as f64;
-        info!(hash = %event.hash, "downloading: {:.2}%", progress * 100.0);
+        info!(hash = %event.hash, "Downloading: {:.2}%", progress * 100.0);
     }
 
     let res = blobs.get_bytes(event.hash).await?;

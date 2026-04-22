@@ -30,6 +30,7 @@ pub fn manage_peers(
     time: Res<Time>,
     mut peers: Query<(Entity, &Peer, &mut ActiveSpaces)>,
     mut commands: Commands,
+    mut to_remove: Local<Vec<Hash>>,
 ) {
     let Ok(mut guard) = PRESENCE_QUEUE.1.try_lock() else {
         return;
@@ -50,8 +51,11 @@ pub fn manage_peers(
     }
 
     // Cull inactive peers.
+    if peers.is_empty() {
+        return;
+    }
+
     let limit = now - INACTIVE_SECS;
-    let mut to_remove = Vec::new();
 
     for (entity, _, mut spaces) in peers {
         for (space, t) in &spaces.0 {
@@ -62,7 +66,6 @@ pub fn manage_peers(
             to_remove.push(*space);
         }
 
-        #[expect(clippy::iter_with_drain)]
         for space in to_remove.drain(..) {
             spaces.0.remove(&space);
         }
@@ -71,4 +74,6 @@ pub fn manage_peers(
             commands.entity(entity).despawn();
         }
     }
+
+    to_remove.shrink_to(4);
 }

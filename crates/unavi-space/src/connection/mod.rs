@@ -1,21 +1,38 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::{Arc, LazyLock};
 
-use bevy::prelude::*;
-use bevy_iroh::endpoint::IrohEndpoint;
-use iroh::{Endpoint, EndpointAddr};
-use tokio::sync::Notify;
-use tracing::Instrument;
+use bevy::{platform::collections::HashMap, prelude::*};
+use bevy_iroh::{
+    endpoint::IrohEndpoint,
+    router::{RouterBuilderFn, RouterBuilderFnTarget},
+};
+use iroh::EndpointId;
+use tokio::sync::{Mutex, Notify};
 use unavi_util::async_task::spawn_async_task;
 
 use crate::Peer;
 
-mod protocol;
+mod inbound;
+mod outbound;
+mod shared;
+
+static CONNECTIONS: LazyLock<Mutex<HashMap<EndpointId, Arc<Notify>>>> =
+    LazyLock::new(Mutex::default);
+
+pub const ALPN: &[u8] = b"wired/space/0";
+
+pub fn register_protocol(trigger: On<Add, IrohEndpoint>, mut commands: Commands) {
+    commands.spawn((
+        RouterBuilderFn(Some(Box::new(|builder| {
+            builder.accept(ALPN, inbound::SpaceProtocol)
+        }))),
+        RouterBuilderFnTarget(trigger.entity),
+    ));
+}
 
 pub fn connect_to_peer(
     trigger: On<Add, Peer>,
     peers: Query<&Peer>,
     endpoint: Query<&IrohEndpoint>,
-    mut commands: Commands,
 ) {
     let Ok(endpoint) = endpoint.single().map(|e| e.0.clone()) else {
         warn!("Unable to connect to peer: no endpoint");
@@ -27,52 +44,17 @@ pub fn connect_to_peer(
         .map(|p| p.0.clone())
         .expect("peer");
 
-    let cancel = Arc::new(Notify::default());
-    commands
-        .entity(trigger.entity)
-        .insert(PeerCancel(Arc::clone(&cancel)));
-
-    let span = info_span!("connect", peer = %peer.id);
-    spawn_async_task(
-        async move {
-            let mut delay_secs = 2;
-
-            while let Err(err) = inner(endpoint.clone(), peer.clone(), &cancel).await {
-                error!(?err);
-                n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
-                delay_secs = delay_secs.wrapping_mul(2);
-            }
-        }
-        .instrument(span),
-    );
+    spawn_async_task(async move {
+        outbound::try_open_connection(endpoint, peer).await;
+    });
 }
 
-#[derive(Component)]
-pub struct PeerCancel(Arc<Notify>);
-
-impl Drop for PeerCancel {
-    fn drop(&mut self) {
-        self.0.notify_waiters();
-        self.0.notify_one();
+pub fn disconnect_peer(trigger: On<Remove, Peer>, peers: Query<&Peer>) {
+    let peer = peers.get(trigger.entity).expect("peer");
+    let mut conns = CONNECTIONS.blocking_lock();
+    if let Some(cancel) = conns.remove(&peer.0.id) {
+        cancel.notify_waiters();
+        cancel.notify_one();
     }
-}
-
-pub fn disconnect_peer(trigger: On<Remove, Peer>, mut commands: Commands) {
-    commands.entity(trigger.entity).remove::<PeerCancel>();
-}
-
-async fn inner(endpoint: Endpoint, peer: EndpointAddr, cancel: &Arc<Notify>) -> anyhow::Result<()> {
-    tokio::select! {
-        () = cancel.notified() => Ok(()),
-        res = open_connection(endpoint, peer) => res,
-    }
-}
-
-async fn open_connection(endpoint: Endpoint, peer: EndpointAddr) -> anyhow::Result<()> {
-    let conn = endpoint.connect(peer, protocol::ALPN).await?;
-    info!("Connected");
-
-    let (tx, rx) = conn.open_bi().await?;
-
-    Ok(())
+    drop(conns);
 }

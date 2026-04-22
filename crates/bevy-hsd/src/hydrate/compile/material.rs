@@ -6,7 +6,7 @@
 //! patches the already-live `StandardMaterial` directly.
 
 use bevy::prelude::*;
-use bevy_wds::{BlobDeps, BlobDepsLoaded};
+use bevy_wds::blob::deps::{BlobDeps, BlobDepsLoaded};
 use smol_str::SmolStr;
 
 use crate::{

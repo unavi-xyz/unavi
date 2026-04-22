@@ -64,7 +64,7 @@ pub struct GossipCtx {
 #[derive(Component)]
 pub struct SpaceGossipCancel(Option<tokio::sync::oneshot::Sender<()>>);
 
-pub fn on_space_add(
+pub fn join_space_topic(
     trigger: On<Add, Space>,
     spaces: Query<&Space>,
     endpoints: Query<(&IrohEndpoint, &IrohGossip)>,
@@ -147,16 +147,9 @@ async fn handle_space_topic(
     });
 
     let outbound_task = n0_future::task::spawn(async move {
-        loop {
-            match outbound::handle_gossip_outbound(&ctx, &tx).await {
-                Ok(()) => {
-                    break;
-                }
-                Err(err) => {
-                    error!(?err, "error handling outbound gossip");
-                    n0_future::time::sleep(Duration::from_secs(1)).await;
-                }
-            }
+        while let Err(err) = outbound::handle_gossip_outbound(&ctx, &tx).await {
+            error!(?err, "error handling outbound gossip");
+            n0_future::time::sleep(Duration::from_secs(1)).await;
         }
     });
 
@@ -181,7 +174,7 @@ async fn handle_space_topic(
     Ok(())
 }
 
-pub fn on_space_remove(
+pub fn leave_space_topic(
     trigger: On<Remove, Space>,
     mut cancels: Query<&mut SpaceGossipCancel>,
     mut commands: Commands,

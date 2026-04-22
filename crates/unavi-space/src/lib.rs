@@ -4,14 +4,16 @@ use iroh::EndpointId;
 
 mod gossip;
 mod presence;
+mod scene;
 
 pub struct SpacePlugin;
 
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(gossip::spawn_gossip)
-            .add_observer(gossip::on_space_add)
-            .add_observer(gossip::on_space_remove)
+            .add_observer(gossip::join_space_topic)
+            .add_observer(gossip::leave_space_topic)
+            .add_observer(scene::spawn_space_scene)
             .add_systems(FixedUpdate, presence::manage_peers);
     }
 }

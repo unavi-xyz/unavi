@@ -10,7 +10,10 @@ use bevy::{
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
-use bevy_wds::{BlobDep, BlobDeps, BlobDepsLoaded, BlobRequest, BlobResponse};
+use bevy_wds::blob::{
+    deps::{BlobDep, BlobDeps, BlobDepsLoaded},
+    request::{BlobRequest, BlobResponse},
+};
 use image::{DynamicImage, GenericImageView};
 use smol_str::SmolStr;
 
@@ -173,9 +176,7 @@ pub(crate) fn handle_hsd_image_spawned(
     if let Some(ref hsd) = ev.initial
         && let Some(ref hash) = hsd.data
     {
-        let blob_ent = commands
-            .spawn((BlobRequest(hash.0), BlobDep { owner: entity }))
-            .id();
+        let blob_ent = commands.spawn((BlobRequest(hash.0), BlobDep(entity))).id();
         params.data = Some(blob_ent);
     }
 

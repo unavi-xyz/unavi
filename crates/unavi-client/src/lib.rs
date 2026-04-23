@@ -10,8 +10,8 @@ use tracing::Level;
 mod camera;
 mod devtools;
 mod fade;
+mod grab;
 mod home;
-// mod grab;
 mod icon;
 mod scene;
 mod system_scripts;
@@ -122,6 +122,7 @@ impl Plugin for UnaviPlugin {
             unavi_portal::PortalPlugin,
             unavi_identity::IdentityPlugin,
             unavi_space::SpacePlugin,
+            grab::GrabPlugin,
             MaterialPlugin::<camera::sky::SkyMaterial>::default(),
         ));
 
@@ -143,14 +144,10 @@ impl Plugin for UnaviPlugin {
             brightness: lux::OVERCAST_DAY,
             ..default()
         })
-        // .init_resource::<grab::GrabbedObjects>()
-        // .add_observer(grab::handle_squeeze_down)
-        // .add_observer(grab::handle_squeeze_up)
         .add_systems(
             Startup,
             (
                 camera::sky::spawn_sky,
-                // grab::setup_grabbed_hooks,
                 icon::set_window_icon,
                 scene::spawn_scene,
                 #[cfg(not(target_family = "wasm"))] // TODO fix web scripting
@@ -161,13 +158,10 @@ impl Plugin for UnaviPlugin {
             FixedUpdate,
             (
                 camera::apply_camera_effects,
-                // grab::update_crosshair_mode,
                 scene::spawn_agent,
                 home::join_home_space,
             ),
-        )
-        // .add_systems(Update, grab::move_grabbed_objects)
-        ;
+        );
 
         app.world_mut().trigger(LoadEndpoint {
             discovery_mdns: true,

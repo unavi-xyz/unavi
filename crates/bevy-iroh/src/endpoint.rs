@@ -33,7 +33,7 @@ pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands
                     break;
                 }
                 Err(err) => {
-                    error!(?err, "failed to init endpoint");
+                    error!(?err, "Failed to init endpoint");
                     n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
                     delay_secs = delay_secs.wrapping_mul(2);
                 }
@@ -75,7 +75,7 @@ async fn init_endpoint(opts: &LoadEndpoint) -> anyhow::Result<Endpoint> {
     }
 
     let endpoint = endpoint.bind().await?;
-    info!("spawned endpoint: {}", endpoint.id());
+    info!("Spawned endpoint: {}", endpoint.id());
 
     Ok(endpoint)
 }

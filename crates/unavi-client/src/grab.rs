@@ -1,147 +1,90 @@
-use std::{collections::HashMap, time::Duration};
-
-use avian3d::prelude::{AngularVelocity, GravityScale, LinearVelocity, RayHits};
+use avian3d::prelude::*;
 use bevy::prelude::*;
 use unavi_input::{SqueezeDown, SqueezeUp, crosshair::CrosshairMode, raycast::PrimaryRaycastInput};
 
-const GRAB_COOLDOWN: Duration = Duration::from_millis(100);
+pub struct GrabPlugin;
+
+impl Plugin for GrabPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_observer(on_squeeze_down)
+            .add_observer(on_squeeze_up)
+            .add_systems(Update, move_grabbed_objects)
+            .add_systems(FixedUpdate, set_crosshair_mode);
+    }
+}
+
+#[derive(Component)]
+struct Grabbed {
+    pointer: Entity,
+    offset_tra: Vec3,
+    offset_rot: Quat,
+}
+
+fn on_squeeze_down(
+    trigger: On<SqueezeDown>,
+    transforms: Query<&GlobalTransform>,
+    rigid_bodies: Query<&RigidBody>,
+    mut commands: Commands,
+) {
+    if !matches!(rigid_bodies.get(trigger.entity), Ok(RigidBody::Dynamic)) {
+        return;
+    }
+
+    let Ok(obj_tr) = transforms.get(trigger.entity) else {
+        warn!(obj = %trigger.entity, "object transform not found");
+        return;
+    };
+    let obj_tr = obj_tr.compute_transform();
+
+    let Ok(pointer_tr) = transforms.get(trigger.pointer) else {
+        warn!(pointer = %trigger.pointer, "pointer transform not found");
+        return;
+    };
+    let pointer_tr = pointer_tr.compute_transform();
+
+    let offset_tra = pointer_tr.rotation.inverse() * (obj_tr.translation - pointer_tr.translation);
+    let offset_rot = pointer_tr.rotation.inverse() * obj_tr.rotation;
+
+    // TODO claim / broadcast over network within unavi-space
+
+    commands.entity(trigger.entity).insert((
+        Grabbed {
+            pointer: trigger.pointer,
+            offset_tra,
+            offset_rot,
+        },
+        GravityScale(0.0),
+    ));
+}
+
+fn on_squeeze_up(trigger: On<SqueezeUp>, mut commands: Commands) {
+    commands
+        .entity(trigger.entity)
+        .remove::<(Grabbed, GravityScale)>();
+}
+
 const GRAB_DEAD_ZONE: f32 = 0.001;
 const GRAB_ROTATION_DEAD_ZONE: f32 = 0.01;
 const GRAB_SMOOTHING: f32 = 10.0;
 
-#[derive(Resource, Default)]
-pub struct GrabbedObjects(HashMap<Entity, GrabState>);
-
-struct GrabState {
-    entity: Entity,
-    object_id: ObjectId,
-    position_offset: Vec3,
-    rotation_offset: Quat,
-}
-
-pub fn handle_squeeze_up(
-    event: On<SqueezeUp>,
-    mut commands: Commands,
-    mut grabbed: ResMut<GrabbedObjects>,
-    mut local_grabbed: ResMut<LocalGrabbedObjects>,
-    nt: Res<NetworkingThread>,
-) {
-    // Drop the currently grabbed object (if any).
-    if let Some(prev) = grabbed.0.remove(&event.pointer) {
-        commands.entity(prev.entity).remove::<Grabbed>();
-        local_grabbed.0.remove(&prev.object_id);
-
-        // Send updated grabbed objects to network thread.
-        let _ = nt.command_tx.try_send(NetworkCommand::UpdateGrabbedObjects(
-            local_grabbed.0.clone(),
-        ));
-    }
-}
-
-pub fn handle_squeeze_down(
-    event: On<SqueezeDown>,
-    mut commands: Commands,
-    mut grabbed: ResMut<GrabbedObjects>,
-    mut local_grabbed: ResMut<LocalGrabbedObjects>,
-    time: Res<Time>,
-    nt: Res<NetworkingThread>,
-    dyn_objs: Query<&DynObjectId, Without<Grabbed>>,
-    locally_owned: Query<(), With<LocallyOwned>>,
+fn move_grabbed_objects(
     transforms: Query<&GlobalTransform>,
-    mut last_grab: Local<Duration>,
+    objects: Query<(
+        &Grabbed,
+        &mut Transform,
+        &mut LinearVelocity,
+        &mut AngularVelocity,
+    )>,
 ) {
-    let now = time.elapsed();
-    if now.saturating_sub(*last_grab) < GRAB_COOLDOWN {
-        return;
-    }
-
-    let target_ent = event.event().entity;
-    let Ok(obj) = dyn_objs.get(target_ent) else {
-        // Not a dynamic object or already grabbed
-        return;
-    };
-
-    let Ok(pointer_transform) = transforms.get(event.pointer) else {
-        warn!(pointer = %event.pointer, "pointer transform not found");
-        return;
-    };
-
-    let Ok(obj_transform) = transforms.get(target_ent) else {
-        warn!(entity = %target_ent, "object transform not found");
-        return;
-    };
-
-    info!(pointer = %event.pointer, object = %obj.0.node, "grabbing object");
-
-    let pointer_tr = pointer_transform.compute_transform();
-    let obj_tr = obj_transform.compute_transform();
-
-    // Store offsets in pointer's local space so they stay correct when rotating.
-    let position_offset =
-        pointer_tr.rotation.inverse() * (obj_tr.translation - pointer_tr.translation);
-    let rotation_offset = pointer_tr.rotation.inverse() * obj_tr.rotation;
-
-    grabbed.0.insert(
-        event.pointer,
-        GrabState {
-            entity: target_ent,
-            object_id: obj.0.clone(),
-            position_offset,
-            rotation_offset,
-        },
-    );
-    *last_grab = now;
-
-    commands.entity(target_ent).insert(Grabbed);
-    local_grabbed.0.insert(obj.0.clone());
-
-    // Send updated grabbed objects to network thread.
-    let _ = nt.command_tx.try_send(NetworkCommand::UpdateGrabbedObjects(
-        local_grabbed.0.clone(),
-    ));
-
-    // Only send claim if not already locally owned.
-    if !locally_owned.contains(target_ent)
-        && let Err(err) = nt
-            .command_tx
-            .try_send(NetworkCommand::ClaimObject(obj.0.clone()))
-    {
-        error!(?err, "failed to send claim");
-    }
-}
-
-pub fn move_grabbed_objects(
-    grabbed: Res<GrabbedObjects>,
-    time: Res<Time>,
-    mut dyn_objs: Query<(&mut LinearVelocity, &mut AngularVelocity), With<DynObjectId>>,
-    transforms: Query<&GlobalTransform>,
-) {
-    let dt = time.delta_secs();
-    if dt == 0.0 {
-        return;
-    }
-
-    for (pointer, grab_state) in &grabbed.0 {
-        let Ok((mut obj_vel, mut obj_ang_vel)) = dyn_objs.get_mut(grab_state.entity) else {
-            warn!(entity = %grab_state.entity, "object velocity not found");
+    for (grabbed, obj_tr, mut obj_vel, mut obj_ang_vel) in objects {
+        let Ok(pointer_tr) = transforms.get(grabbed.pointer) else {
+            warn!(pointer = %grabbed.pointer, "pointer transform not found");
             continue;
         };
-
-        let Ok(pointer_transform) = transforms.get(*pointer) else {
-            warn!(%pointer, "pointer transform not found");
-            continue;
-        };
-
-        let Ok(obj_transform) = transforms.get(grab_state.entity) else {
-            warn!(entity = %grab_state.entity, "object transform not found");
-            continue;
-        };
-
-        let pointer_tr = pointer_transform.compute_transform();
-        let obj_tr = obj_transform.compute_transform();
+        let pointer_tr = pointer_tr.compute_transform();
 
         // Position tracking
-        let target_pos = pointer_tr.translation + pointer_tr.rotation * grab_state.position_offset;
+        let target_pos = pointer_tr.translation + pointer_tr.rotation * grabbed.offset_tra;
         let delta = target_pos - obj_tr.translation;
         let dist = delta.length();
 
@@ -152,7 +95,7 @@ pub fn move_grabbed_objects(
         };
 
         // Rotation tracking
-        let target_rotation = pointer_tr.rotation * grab_state.rotation_offset;
+        let target_rotation = pointer_tr.rotation * grabbed.offset_rot;
         let mut rotation_diff = target_rotation * obj_tr.rotation.inverse();
 
         // Ensure shortest path (quaternion double-cover: q and -q are the same rotation)
@@ -172,30 +115,10 @@ pub fn move_grabbed_objects(
     }
 }
 
-pub fn setup_grabbed_hooks(world: &mut World) {
-    world
-        .register_component_hooks::<Grabbed>()
-        .on_add(|mut world, context| {
-            if let Some(mut gravity) = world.get_mut::<GravityScale>(context.entity) {
-                gravity.0 = 0.0;
-            } else {
-                world
-                    .commands()
-                    .entity(context.entity)
-                    .insert(GravityScale(0.0));
-            }
-        })
-        .on_remove(|mut world, context| {
-            if let Some(mut gravity) = world.get_mut::<GravityScale>(context.entity) {
-                gravity.0 = 1.0;
-            }
-        });
-}
-
-pub fn update_crosshair_mode(
+pub fn set_crosshair_mode(
     mut crosshair: Query<&mut CrosshairMode>,
     ray: Query<&RayHits, With<PrimaryRaycastInput>>,
-    grabbable: Query<(), With<DynObjectId>>,
+    rigid_bodies: Query<&RigidBody>,
 ) {
     let Ok(hits) = ray.single() else { return };
 
@@ -204,7 +127,7 @@ pub fn update_crosshair_mode(
     };
 
     if let Some(hit) = hits.iter().next()
-        && grabbable.contains(hit.entity)
+        && matches!(rigid_bodies.get(hit.entity), Ok(RigidBody::Dynamic))
     {
         *mode = CrosshairMode::Active;
     } else {

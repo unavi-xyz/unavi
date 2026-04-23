@@ -13,7 +13,10 @@ use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
 use crate::connection::{
     ecs::{PeerStream, agent::AgentSender},
     shared::StreamIdent,
-    types::{IFrame, PFrame, pose::Pose},
+    types::{
+        IFrame, PFrame, f16_vec3::F16Vec3, i8_vec3::I8Vec3, pose::Pose,
+        rigid_transform::RigidTransform,
+    },
 };
 
 #[derive(Serialize, Deserialize, MaxSize)]
@@ -79,7 +82,16 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
 }
 
 fn delta_pose(pose: Pose<IFrame>, last: &Pose<IFrame>) -> Pose<PFrame> {
-    todo!()
+    let root = RigidTransform::<F16Vec3>::delta(&pose.root, &last.root);
+    let bones = pose
+        .bones
+        .into_iter()
+        .map(|(name, bone)| {
+            let baseline = last.bones.get(&name).cloned().unwrap_or_default();
+            (name, RigidTransform::<I8Vec3>::delta(&bone, &baseline))
+        })
+        .collect();
+    Pose { root, bones }
 }
 
 pub async fn recv_agent_stream(_tx: SendStream, mut rx: RecvStream) -> anyhow::Result<()> {

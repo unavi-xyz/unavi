@@ -5,7 +5,7 @@ use rand::Rng;
 use tokio::sync::Notify;
 use tracing::error;
 
-use crate::connection::CONNECTIONS;
+use crate::connection::{ALPN, CONNECTIONS};
 
 pub async fn try_open_connection(endpoint: Endpoint, peer: EndpointAddr) {
     let mut delay_secs = 2;
@@ -47,10 +47,10 @@ async fn open_connection(endpoint: Endpoint, peer: EndpointAddr) -> anyhow::Resu
 
     let connection = tokio::select! {
         () = cancel.notified() => return Ok(()),
-        res = endpoint.connect(peer, super::ALPN) => res?,
+        res = endpoint.connect(peer, ALPN) => res?,
     };
 
-    super::shared::handle_connection(&connection, &cancel).await?;
+    super::shared::handle_connection(connection, &cancel).await?;
 
     Ok(())
 }

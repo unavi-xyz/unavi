@@ -36,7 +36,7 @@ smol_str              = "0.3.6"
 thiserror             = "2.0.18"
 time.workspace        = true
 tokio.workspace       = true
-tokio-util            = { features = ["codec"], version = "0.7.18" }
+tokio-util            = { features = ["codec"], workspace = true }
 tracing.workspace     = true
 wds-schema.path       = "../wds-schema"
 wired-records         = { features = ["loro"], path = "../wired-records" }

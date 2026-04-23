@@ -23,7 +23,7 @@ impl I8Vec3 {
     }
 
     /// Decode delta and apply to baseline position.
-    pub fn apply_to(pos: I8Vec3, baseline: Vec3) -> Vec3 {
+    pub fn apply_to(pos: Self, baseline: Vec3) -> Vec3 {
         Vec3::new(
             baseline.x + f32::from(pos.x) / 1000.0,
             baseline.y + f32::from(pos.y) / 1000.0,

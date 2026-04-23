@@ -1,6 +1,8 @@
-use bevy::math::Vec3;
+use half::f16;
 use postcard::experimental::max_size::MaxSize;
 use serde::{Deserialize, Serialize};
+
+use super::f16_vec3::F16Vec3;
 
 /// Delta position with 1mm resolution (3 bytes).
 /// Range: ±12.7cm from baseline.
@@ -12,23 +14,23 @@ pub struct I8Vec3 {
 }
 
 impl I8Vec3 {
-    /// Encode delta with 1mm resolution, clamping to range.
-    pub fn from_delta(current: Vec3, baseline: Vec3) -> Self {
-        let d = current - baseline;
+    pub fn from_delta(current: F16Vec3, baseline: F16Vec3) -> Self {
+        let dx = current.x.to_f32() - baseline.x.to_f32();
+        let dy = current.y.to_f32() - baseline.y.to_f32();
+        let dz = current.z.to_f32() - baseline.z.to_f32();
         Self {
-            x: (d.x * 1000.0).clamp(-127.0, 127.0) as i8,
-            y: (d.y * 1000.0).clamp(-127.0, 127.0) as i8,
-            z: (d.z * 1000.0).clamp(-127.0, 127.0) as i8,
+            x: (dx * 1000.0).clamp(-127.0, 127.0) as i8,
+            y: (dy * 1000.0).clamp(-127.0, 127.0) as i8,
+            z: (dz * 1000.0).clamp(-127.0, 127.0) as i8,
         }
     }
 
-    /// Decode delta and apply to baseline position.
-    pub fn apply_to(pos: Self, baseline: Vec3) -> Vec3 {
-        Vec3::new(
-            baseline.x + f32::from(pos.x) / 1000.0,
-            baseline.y + f32::from(pos.y) / 1000.0,
-            baseline.z + f32::from(pos.z) / 1000.0,
-        )
+    pub fn apply_to(self, baseline: F16Vec3) -> F16Vec3 {
+        F16Vec3 {
+            x: f16::from_f32(baseline.x.to_f32() + f32::from(self.x) / 1000.0),
+            y: f16::from_f32(baseline.y.to_f32() + f32::from(self.y) / 1000.0),
+            z: f16::from_f32(baseline.z.to_f32() + f32::from(self.z) / 1000.0),
+        }
     }
 }
 
@@ -36,53 +38,63 @@ impl I8Vec3 {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_i8_pos_small_delta() {
-        let baseline = Vec3::new(1.0, 2.0, 3.0);
-        let current = Vec3::new(1.001, 2.002, 3.003);
+    fn f16v(x: f32, y: f32, z: f32) -> F16Vec3 {
+        F16Vec3 {
+            x: f16::from_f32(x),
+            y: f16::from_f32(y),
+            z: f16::from_f32(z),
+        }
+    }
 
-        let pos = I8Vec3::from_delta(current, baseline);
-        let restored = I8Vec3::apply_to(pos, baseline);
-
-        let error = (current - restored).length();
-        assert!(error < 0.002, "small delta error: {error}");
+    fn error(a: F16Vec3, b: F16Vec3) -> f32 {
+        let dx = a.x.to_f32() - b.x.to_f32();
+        let dy = a.y.to_f32() - b.y.to_f32();
+        let dz = a.z.to_f32() - b.z.to_f32();
+        (dx * dx + dy * dy + dz * dz).sqrt()
     }
 
     #[test]
-    fn test_i8_pos_medium_delta() {
-        let baseline = Vec3::ZERO;
-        let current = Vec3::new(0.05, -0.03, 0.10);
+    fn small_delta() {
+        let baseline = f16v(1.0, 2.0, 3.0);
+        let current = f16v(1.001, 2.002, 3.003);
 
         let pos = I8Vec3::from_delta(current, baseline);
-        let restored = I8Vec3::apply_to(pos, baseline);
+        let restored = pos.apply_to(baseline);
 
-        let error = (current - restored).length();
-        assert!(error < 0.002, "medium delta error: {error}");
+        assert!(error(current, restored) < 0.002);
     }
 
     #[test]
-    fn test_i8_pos_clipping() {
-        let baseline = Vec3::ZERO;
-        // 0.2m = 200mm, exceeds ±127mm range
-        let current = Vec3::new(0.2, -0.2, 0.2);
+    fn medium_delta() {
+        let baseline = F16Vec3::default();
+        let current = f16v(0.05, -0.03, 0.10);
 
         let pos = I8Vec3::from_delta(current, baseline);
-        let restored = I8Vec3::apply_to(pos, baseline);
+        let restored = pos.apply_to(baseline);
 
-        // Should clamp to ±0.127m
-        assert!((restored.x - 0.127).abs() < 0.001);
-        assert!((restored.y - (-0.127)).abs() < 0.001);
-        assert!((restored.z - 0.127).abs() < 0.001);
+        assert!(error(current, restored) < 0.002);
     }
 
     #[test]
-    fn test_i8_pos_zero_delta() {
-        let baseline = Vec3::new(5.0, 10.0, 15.0);
-        let current = baseline;
+    fn clipping() {
+        let baseline = F16Vec3::default();
+        let current = f16v(0.2, -0.2, 0.2);
 
         let pos = I8Vec3::from_delta(current, baseline);
-        let restored = I8Vec3::apply_to(pos, baseline);
+        let restored = pos.apply_to(baseline);
 
-        assert!((baseline - restored).length() < 0.001);
+        assert!((restored.x.to_f32() - 0.127).abs() < 0.002);
+        assert!((restored.y.to_f32() - (-0.127)).abs() < 0.002);
+        assert!((restored.z.to_f32() - 0.127).abs() < 0.002);
+    }
+
+    #[test]
+    fn zero_delta() {
+        let baseline = f16v(5.0, 10.0, 15.0);
+
+        let pos = I8Vec3::from_delta(baseline, baseline);
+        let restored = pos.apply_to(baseline);
+
+        assert!(error(baseline, restored) < 0.001);
     }
 }

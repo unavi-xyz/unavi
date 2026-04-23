@@ -1,7 +1,8 @@
-use bevy::math::Vec3;
 use half::f16;
 use postcard::experimental::max_size::MaxSize;
 use serde::{Deserialize, Serialize};
+
+use super::f32_vec3::F32Vec3;
 
 /// Delta position with f16 precision (6 bytes).
 /// Range: ±65504, Precision: ~0.1% relative.
@@ -17,23 +18,20 @@ impl MaxSize for F16Vec3 {
 }
 
 impl F16Vec3 {
-    /// Encode delta from baseline position.
-    pub fn from_delta(current: Vec3, baseline: Vec3) -> Self {
-        let d = current - baseline;
+    pub fn from_delta(current: F32Vec3, baseline: F32Vec3) -> Self {
         Self {
-            x: f16::from_f32(d.x),
-            y: f16::from_f32(d.y),
-            z: f16::from_f32(d.z),
+            x: f16::from_f32(current.x - baseline.x),
+            y: f16::from_f32(current.y - baseline.y),
+            z: f16::from_f32(current.z - baseline.z),
         }
     }
 
-    /// Decode delta and apply to baseline position.
-    pub fn apply_to(self, baseline: Vec3) -> Vec3 {
-        Vec3::new(
-            baseline.x + self.x.to_f32(),
-            baseline.y + self.y.to_f32(),
-            baseline.z + self.z.to_f32(),
-        )
+    pub fn apply_to(self, baseline: F32Vec3) -> F32Vec3 {
+        F32Vec3 {
+            x: baseline.x + self.x.to_f32(),
+            y: baseline.y + self.y.to_f32(),
+            z: baseline.z + self.z.to_f32(),
+        }
     }
 }
 
@@ -41,40 +39,43 @@ impl F16Vec3 {
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_f16_pos_small_delta() {
-        let baseline = Vec3::new(10.0, 5.0, 3.0);
-        let current = Vec3::new(10.1, 5.2, 3.05);
-
-        let pos = F16Vec3::from_delta(current, baseline);
-        let restored = pos.apply_to(baseline);
-
-        let error = (current - restored).length();
-        assert!(error < 0.001, "small delta error: {error}");
+    fn error(a: F32Vec3, b: F32Vec3) -> f32 {
+        let dx = a.x - b.x;
+        let dy = a.y - b.y;
+        let dz = a.z - b.z;
+        (dx * dx + dy * dy + dz * dz).sqrt()
     }
 
     #[test]
-    fn test_f16_pos_medium_delta() {
-        let baseline = Vec3::ZERO;
-        let current = Vec3::new(1.0, -0.5, 0.25);
+    fn small_delta() {
+        let baseline = F32Vec3 { x: 10.0, y: 5.0, z: 3.0 };
+        let current = F32Vec3 { x: 10.1, y: 5.2, z: 3.05 };
 
         let pos = F16Vec3::from_delta(current, baseline);
         let restored = pos.apply_to(baseline);
 
-        let error = (current - restored).length();
-        assert!(error < 0.01, "medium delta error: {error}");
+        assert!(error(current, restored) < 0.001);
     }
 
     #[test]
-    fn test_f16_pos_large_delta() {
-        let baseline = Vec3::ZERO;
-        let current = Vec3::new(100.0, -50.0, 75.0);
+    fn medium_delta() {
+        let baseline = F32Vec3::default();
+        let current = F32Vec3 { x: 1.0, y: -0.5, z: 0.25 };
 
         let pos = F16Vec3::from_delta(current, baseline);
         let restored = pos.apply_to(baseline);
 
-        let error = (current - restored).length();
-        // ~0.1% relative error at 100m means ~0.1m error
-        assert!(error < 0.2, "large delta error: {error}");
+        assert!(error(current, restored) < 0.01);
+    }
+
+    #[test]
+    fn large_delta() {
+        let baseline = F32Vec3::default();
+        let current = F32Vec3 { x: 100.0, y: -50.0, z: 75.0 };
+
+        let pos = F16Vec3::from_delta(current, baseline);
+        let restored = pos.apply_to(baseline);
+
+        assert!(error(current, restored) < 0.2);
     }
 }

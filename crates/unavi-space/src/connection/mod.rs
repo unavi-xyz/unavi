@@ -11,9 +11,11 @@ use unavi_util::async_task::spawn_async_task;
 
 use crate::Peer;
 
+pub mod ecs;
 mod inbound;
 mod outbound;
 mod shared;
+mod types;
 
 static CONNECTIONS: LazyLock<Mutex<HashMap<EndpointId, Arc<Notify>>>> =
     LazyLock::new(Mutex::default);

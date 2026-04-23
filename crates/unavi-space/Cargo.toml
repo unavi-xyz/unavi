@@ -17,6 +17,7 @@ bevy-iroh.path         = "../bevy-iroh"
 bevy-wds.path          = "../bevy-wds"
 blake3.workspace       = true
 half.workspace         = true
+heapless = "0.9.2"
 iroh.workspace         = true
 iroh-gossip            = "0.97.0"
 loro.workspace         = true
@@ -27,7 +28,9 @@ serde.workspace        = true
 serde_vrm              = "0.3.0"
 time.workspace         = true
 tokio.workspace        = true
+tokio-util             = { features = ["codec"], workspace = true }
 tracing.workspace      = true
+unavi-agent.path       = "../unavi-agent"
 unavi-identity.path    = "../unavi-identity"
 unavi-util.path        = "../unavi-util"
 unavi-wasm-compat.path = "../unavi-wasm-compat"

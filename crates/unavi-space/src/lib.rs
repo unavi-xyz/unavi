@@ -1,4 +1,6 @@
-use bevy::{platform::collections::HashMap, prelude::*};
+use std::time::Duration;
+
+use bevy::{platform::collections::HashMap, prelude::*, time::common_conditions::on_timer};
 use blake3::Hash;
 use iroh::EndpointAddr;
 
@@ -26,6 +28,9 @@ impl Plugin for SpacePlugin {
                     beacon::publish_beacons,
                     presence::manage_peers,
                     scene::instantiate_pending_scenes,
+                    connection::ecs::agent::send_agent_pose,
+                    connection::ecs::agent::set_agent_tickrates
+                        .run_if(on_timer(Duration::from_secs(5))),
                 ),
             );
     }
@@ -35,7 +40,7 @@ impl Plugin for SpacePlugin {
 pub struct Space(pub Hash);
 
 #[derive(Component)]
-#[require(ActiveSpaces)]
+#[require(ActiveSpaces, Transform)]
 pub struct Peer(pub EndpointAddr);
 
 #[derive(Component, Default)]

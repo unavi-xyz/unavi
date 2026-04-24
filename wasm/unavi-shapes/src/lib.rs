@@ -32,7 +32,7 @@ struct RawMesh {
 
 fn convert_raw_mesh(doc: Option<&Document>, raw: RawMesh) -> Mesh {
     let out = doc.map_or_else(
-        || wired::scene::context::self_document().create_mesh(),
+        || wired::scene::api::self_document().create_mesh(),
         Document::create_mesh,
     );
 

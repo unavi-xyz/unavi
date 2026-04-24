@@ -1,4 +1,4 @@
-use crate::wired::scene::{context::self_document, types::AlphaMode};
+use crate::wired::scene::{api::self_document, types::AlphaMode};
 use wired_prelude::wired_scene::types::Color;
 
 use crate::check;

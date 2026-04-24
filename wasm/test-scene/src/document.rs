@@ -1,4 +1,4 @@
-use crate::wired::scene::context::{create_document, remove_document, self_document};
+use crate::wired::scene::api::{create_document, remove_document, self_document};
 use wired_prelude::wired_math::types::Vec3;
 
 use crate::check;

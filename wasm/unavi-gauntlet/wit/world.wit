@@ -2,5 +2,6 @@ package unavi:gauntlet;
 
 world guest {
   import unavi:vui-module/api;
-  include wired:prelude/script-context;
+  import wired:input/context;
+  include wired:prelude/script-secure;
 }

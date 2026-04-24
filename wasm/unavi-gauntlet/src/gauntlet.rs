@@ -11,10 +11,10 @@ use crate::{
     unavi::vui_module::api::VuiModuleRegistry,
     wired::{
         agent::{
-            context::{local_agent, local_camera},
+            api::{local_agent, local_camera},
             types::BoneName,
         },
-        scene::{context::self_document, types::Node},
+        scene::{api::self_document, types::Node},
     },
 };
 

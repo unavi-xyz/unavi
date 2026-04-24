@@ -9,7 +9,7 @@ use wired_prelude::prelude::*;
 
 use crate::{
     unavi::{beacon_protocol::api::BeaconEmitter, shapes::api::Cuboid},
-    wired::scene::{context::self_document, types::RigidBodyKind},
+    wired::scene::{api::self_document, types::RigidBodyKind},
 };
 
 mod color;

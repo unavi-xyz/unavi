@@ -1,11 +1,6 @@
 package wired:wds;
 
-world prelude {
-  import context;
-  import types;
-}
-
-interface context {
+interface api {
   use types.{wds};
   get-wds: func() -> wds;
 }

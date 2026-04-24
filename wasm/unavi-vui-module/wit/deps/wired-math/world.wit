@@ -1,9 +1,5 @@
 package wired:math;
 
-world prelude {
-  import types;
-}
-
 interface types {
   record vec2 {
     x: f32,

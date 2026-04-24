@@ -1,23 +1,36 @@
 package wired:prelude;
 
-world lib-shared {
-  include wired:math/prelude;
-  include wired:scene/prelude;
-  import wired:event/api;
+world types {
+  import wired:agent/types;
   import wired:event/types;
-  import wired:input/api;
   import wired:input/types;
+  import wired:math/types;
+  import wired:portal/types;
+  import wired:scene/types;
+  import wired:wds/types;
+}
+
+world api {
+  import wired:event/api;
+  import wired:input/api;
+  import wired:scene/api;
+}
+
+world api-secure {
+  import wired:agent/api;
+  import wired:input/api;
+  import wired:portal/api;
+  import wired:wds/api;
 }
 
 world lib {
-  import wired:agent/types;
-  include lib-shared;
+  include api;
+  include types;
 }
 
-world lib-context {
-  include lib-shared;
-  include wired:agent/prelude;
-  import wired:input/context;
+world lib-secure {
+  include api-secure;
+  include lib;
 }
 
 world script {
@@ -25,7 +38,7 @@ world script {
   include wired:script/guest;
 }
 
-world script-context {
-  include lib-context;
+world script-secure {
+  include lib-secure;
   include wired:script/guest;
 }

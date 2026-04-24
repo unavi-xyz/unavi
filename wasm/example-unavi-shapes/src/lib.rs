@@ -2,7 +2,7 @@ use wired_prelude::prelude::*;
 
 use crate::{
     unavi::shapes::api::{Capsule, Cone, Cuboid, Cylinder, Sphere, Torus},
-    wired::scene::context::self_document,
+    wired::scene::api::self_document,
 };
 
 wired_prelude::generate_script!(Script);

@@ -1,8 +1,11 @@
 package wired:agent;
 
-world prelude {
-  import context;
-  import types;
+interface api {
+  use wired:scene/types.{node};
+  use types.{agent};
+
+  local-agent: func() -> agent;
+  local-camera: func() -> node;
 }
 
 interface types {
@@ -71,12 +74,4 @@ interface types {
     // Returns none if the bone is absent from the VRM model.
     bone: func(name: bone-name) -> option<node>;
   }
-}
-
-interface context {
-  use wired:scene/types.{node};
-  use types.{agent};
-
-  local-agent: func() -> agent;
-  local-camera: func() -> node;
 }

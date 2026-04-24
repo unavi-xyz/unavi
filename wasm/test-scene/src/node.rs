@@ -1,5 +1,5 @@
 use crate::wired::scene::{
-    context::self_document,
+    api::self_document,
     types::{Collider, RigidBodyKind},
 };
 use wired_prelude::wired_math::types::{Quat, Transform, Vec3};

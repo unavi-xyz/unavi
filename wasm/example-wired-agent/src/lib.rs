@@ -5,8 +5,8 @@ use wired_prelude::prelude::*;
 use crate::{
     unavi::shapes::api::Cuboid,
     wired::{
-        agent::{context::local_agent, types::BoneName},
-        scene::{context::self_document, types::Node},
+        agent::{api::local_agent, types::BoneName},
+        scene::{api::self_document, types::Node},
     },
 };
 

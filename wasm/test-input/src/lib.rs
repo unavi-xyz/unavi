@@ -2,7 +2,7 @@ use std::cell::Cell;
 
 use crate::wired::{
     input::{api::register_input_listener, types::InputListener},
-    scene::{context::self_document, types::Collider},
+    scene::{api::self_document, types::Collider},
 };
 
 wired_prelude::generate_script!(Script);

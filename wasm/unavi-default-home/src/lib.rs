@@ -3,7 +3,7 @@ use wired_prelude::prelude::*;
 use crate::{
     unavi::shapes::api::Cuboid,
     wired::scene::{
-        context::{load_hsd, self_document},
+        api::{load_hsd, self_document},
         types::RigidBodyKind,
     },
 };

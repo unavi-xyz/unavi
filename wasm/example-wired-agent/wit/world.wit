@@ -2,7 +2,5 @@ package example:wired-agent;
 
 world guest {
   import unavi:shapes/api;
-  import wired:agent/context;
-  import wired:agent/types;
-  include wired:prelude/script;
+  include wired:prelude/script-secure;
 }

@@ -9,6 +9,7 @@ mod connection;
 mod gossip;
 mod presence;
 mod scene;
+mod state;
 
 pub struct SpacePlugin;
 

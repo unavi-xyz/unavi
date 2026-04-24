@@ -1,5 +1,12 @@
 package wired:event;
 
+interface api {
+  use types.{event-channel, event-filter, event-receptor};
+
+  emit: func(channel: event-channel, payload: list<u8>, filter: event-filter);
+  listen: func(channels: list<event-channel>, filter: event-filter) -> event-receptor;
+}
+
 interface types {
   use wired:scene/types.{node, document-id};
 
@@ -33,16 +40,4 @@ interface types {
   resource event-receptor {
     poll: func() -> option<event>;
   }
-}
-
-interface api {
-  use types.{event-channel, event-filter, event-receptor};
-
-  emit: func(channel: event-channel, payload: list<u8>, filter: event-filter);
-  listen: func(channels: list<event-channel>, filter: event-filter) -> event-receptor;
-}
-
-world prelude {
-  import api;
-  import types;
 }

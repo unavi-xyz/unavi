@@ -10,14 +10,14 @@ use crate::{
     },
     wired::{
         scene::{
-            context::{load_hsd, remove_document, self_document},
+            api::{load_hsd, remove_document, self_document},
             types::{
                 Collider, ColliderCylinder, Document, Material, Mesh, Node, PrimitiveTopology,
                 RigidBodyKind,
             },
         },
         wds::{
-            context::get_wds,
+            api::get_wds,
             types::{QueryFilter, QueryFuture},
         },
     },

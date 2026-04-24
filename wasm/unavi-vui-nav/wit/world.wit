@@ -3,7 +3,5 @@ package unavi:vui-nav;
 world guest {
   import unavi:shapes/api;
   import unavi:vui-module/api;
-  import wired:wds/context;
-  import wired:wds/types;
-  include wired:prelude/script-context;
+  include wired:prelude/script-secure;
 }

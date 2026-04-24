@@ -15,7 +15,7 @@ use crate::{
             context::listener,
             types::{InputAction, InputDevice, InputListener},
         },
-        scene::{context::get_document, types::Mesh},
+        scene::{api::get_document, types::Mesh},
     },
 };
 

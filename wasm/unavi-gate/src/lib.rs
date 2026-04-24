@@ -9,7 +9,7 @@ use wired_prelude::prelude::*;
 
 use crate::{
     unavi::{beacon_protocol::api::BeaconReceptor, shapes::api::Cuboid},
-    wired::scene::{context::self_document, types::RigidBodyKind},
+    wired::scene::{api::self_document, types::RigidBodyKind},
 };
 
 wired_prelude::generate_script!(Script);

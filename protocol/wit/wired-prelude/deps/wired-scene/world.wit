@@ -1,11 +1,6 @@
 package wired:scene;
 
-world prelude {
-  import context;
-  import types;
-}
-
-interface context {
+interface api {
   use types.{document, node, document-id};
 
   // The node this script is attached to.

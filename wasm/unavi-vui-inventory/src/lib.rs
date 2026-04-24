@@ -6,7 +6,7 @@ use crate::{
         vui_module::api::{ModuleEvent, VuiModule},
     },
     wired::scene::{
-        context::self_document,
+        api::self_document,
         types::{Material, Mesh, Node, RigidBodyKind},
     },
 };

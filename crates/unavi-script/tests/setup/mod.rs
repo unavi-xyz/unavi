@@ -4,11 +4,7 @@ use bevy::{log::LogPlugin, prelude::*};
 use bevy_hsd::HsdPlugin;
 use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin, util::create_test_wds};
 use tracing_subscriber::Layer;
-use unavi_script::{
-    ScriptPlugin,
-    load::local::{LoadLocalScript, ScriptSource},
-    permissions::ApiPermissions,
-};
+use unavi_script::{ScriptPlugin, load::local::LoadLocalScript, permissions::ApiPermissions};
 
 use crate::setup::logs::LOGS;
 
@@ -16,17 +12,8 @@ pub mod logs;
 
 const TICK: Duration = Duration::from_millis(100);
 
-pub fn setup_test_app(
-    package: &'static str,
-    wasm_override: Option<Vec<u8>>,
-    perms: ApiPermissions,
-) -> App {
+pub fn setup_test_app(package: &'static str, perms: ApiPermissions) -> App {
     let (actor, blobs) = create_test_wds();
-
-    let source = wasm_override.map_or_else(
-        || ScriptSource::Path(format!("wasm/test/{package}.wasm")),
-        ScriptSource::Bytes,
-    );
 
     let mut app = App::new();
     app.add_plugins((
@@ -55,7 +42,7 @@ pub fn setup_test_app(
         .spawn(perms)
         .trigger(|entity| LoadLocalScript {
             entity,
-            path: source,
+            path: format!("wasm/test/{package}.wasm"),
         });
 
     app

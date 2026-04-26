@@ -10,7 +10,7 @@ mod setup;
 
 #[test]
 fn script_log() {
-    let mut app = setup::setup_test_app("log", None, ApiPermissions::default());
+    let mut app = setup::setup_test_app("log", ApiPermissions::default());
 
     let ready = setup::wait_until(
         &mut app,

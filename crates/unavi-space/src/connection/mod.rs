@@ -9,7 +9,7 @@ use iroh::EndpointId;
 use tokio::sync::{Mutex, Notify};
 use unavi_util::async_task::spawn_async_task;
 
-use crate::{Peer, connection::ecs::PeerStream};
+use crate::{connection::ecs::PeerStream, peer::Peer};
 
 pub mod ecs;
 mod inbound;

@@ -7,7 +7,7 @@ use wds::signed_bytes::{IrohSigner, Signable};
 
 use crate::{
     gossip::{GossipCtx, SpaceBroadcast, SpaceMessage},
-    presence::PRESENCE_INTERVAL,
+    peer::presence::PRESENCE_INTERVAL,
 };
 
 pub async fn handle_gossip_outbound(ctx: &GossipCtx, tx: &GossipSender) -> anyhow::Result<()> {

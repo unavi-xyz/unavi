@@ -20,7 +20,7 @@ use crate::connection::{
 };
 
 #[derive(Serialize, Deserialize, MaxSize)]
-enum AgentFrame {
+enum AgentMsg {
     IFrame { id: usize, pose: Pose<IFrame> },
     PFrame { iframe: usize, pose: Pose<PFrame> },
 }
@@ -49,32 +49,31 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
     let mut last_iframe = Pose::default();
     let mut last_iframe_time = Instant::now() - IFRAME_FREQ;
 
-    let mut buf = [0; AgentFrame::POSTCARD_MAX_SIZE];
+    let mut buf = [0; AgentMsg::POSTCARD_MAX_SIZE];
 
     while let Some(pose) = pose_rx.recv().await {
         let now = Instant::now();
 
-        // Convert to frame.
-        let frame = if now.duration_since(last_iframe_time) >= IFRAME_FREQ {
+        // Convert to i-frame or p-frame.
+        let msg = if now.duration_since(last_iframe_time) >= IFRAME_FREQ {
             iframe_id += 1;
             last_iframe = pose.clone();
             last_iframe_time = now;
-            AgentFrame::IFrame {
+            AgentMsg::IFrame {
                 id: iframe_id,
                 pose,
             }
         } else {
-            AgentFrame::PFrame {
+            AgentMsg::PFrame {
                 iframe: iframe_id,
                 pose: delta_pose(pose, &last_iframe),
             }
         };
 
         // Serialize and send.
-        let out = postcard::to_slice(&frame, &mut buf)?;
+        let out = postcard::to_slice(&msg, &mut buf)?;
         let len = out.len();
-        tx.write_u8(u8::try_from(len).expect("max size < 256"))
-            .await?;
+        tx.write_u8(u8::try_from(len).expect("max size")).await?;
         tx.write_all(&buf).await?;
     }
 
@@ -95,14 +94,14 @@ fn delta_pose(pose: Pose<IFrame>, last: &Pose<IFrame>) -> Pose<PFrame> {
 }
 
 pub async fn recv_agent_stream(_tx: SendStream, mut rx: RecvStream) -> anyhow::Result<()> {
-    let mut buf = [0; AgentFrame::POSTCARD_MAX_SIZE];
+    let mut buf = [0; AgentMsg::POSTCARD_MAX_SIZE];
 
     loop {
         let len = rx.read_u8().await? as usize;
         let buf = &mut buf[..len];
         rx.read_exact(buf).await?;
-        let _frame = postcard::from_bytes::<AgentFrame>(buf)?;
+        let _msg = postcard::from_bytes::<AgentMsg>(buf)?;
 
-        // TODO send to ecs
+        // TODO send to ecs + apply
     }
 }

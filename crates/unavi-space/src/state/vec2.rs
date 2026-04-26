@@ -26,7 +26,7 @@ impl Hydrate for HydratedVec2 {
             .collect::<Result<Vec<_>, _>>()?;
         if values.len() != 2 {
             return Err(HydrateError::Custom("expected 2 values".into()));
-        };
+        }
         Ok(Self(Vec2::new(values[0], values[1])))
     }
 }
@@ -43,7 +43,7 @@ impl Reconcile for HydratedVec2 {
             self.0
                 .to_array()
                 .iter()
-                .map(|v| LoroValue::Double(*v as f64))
+                .map(|v| LoroValue::Double(f64::from(*v)))
                 .collect(),
         );
         map.insert(key, value)?;
@@ -55,7 +55,7 @@ impl Reconcile for HydratedVec2 {
             self.0
                 .to_array()
                 .iter()
-                .map(|v| LoroValue::Double(*v as f64))
+                .map(|v| LoroValue::Double(f64::from(*v)))
                 .collect(),
         ))
     }

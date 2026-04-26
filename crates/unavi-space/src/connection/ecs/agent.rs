@@ -4,11 +4,11 @@ use bevy::prelude::*;
 use unavi_agent::LocalAgent;
 
 use crate::{
-    Peer,
     connection::{
         ecs::{LastTick, PeerStream, Tickrate},
         types::{IFrame, pose::Pose},
     },
+    peer::Peer,
 };
 
 #[derive(Component)]

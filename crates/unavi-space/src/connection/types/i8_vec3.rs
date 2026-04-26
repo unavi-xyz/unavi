@@ -50,7 +50,7 @@ mod tests {
         let dx = a.x.to_f32() - b.x.to_f32();
         let dy = a.y.to_f32() - b.y.to_f32();
         let dz = a.z.to_f32() - b.z.to_f32();
-        (dx * dx + dy * dy + dz * dz).sqrt()
+        dz.mul_add(dz, dy.mul_add(dy, dx * dx)).sqrt()
     }
 
     #[test]

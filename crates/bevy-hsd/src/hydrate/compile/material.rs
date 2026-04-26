@@ -280,7 +280,11 @@ pub(crate) fn handle_hsd_material_base_color_texture_set(
 ) {
     let ev = trigger.event();
     update_material_texture(
-        &registry_map, &ev.doc_id, &ev.id, &ev.value, &mut params,
+        &registry_map,
+        &ev.doc_id,
+        &ev.id,
+        &ev.value,
+        &mut params,
         |p, img| p.base_color_texture = img,
     );
 }
@@ -292,7 +296,11 @@ pub(crate) fn handle_hsd_material_emissive_texture_set(
 ) {
     let ev = trigger.event();
     update_material_texture(
-        &registry_map, &ev.doc_id, &ev.id, &ev.value, &mut params,
+        &registry_map,
+        &ev.doc_id,
+        &ev.id,
+        &ev.value,
+        &mut params,
         |p, img| p.emissive_texture = img,
     );
 }
@@ -304,7 +312,11 @@ pub(crate) fn handle_hsd_material_metallic_roughness_texture_set(
 ) {
     let ev = trigger.event();
     update_material_texture(
-        &registry_map, &ev.doc_id, &ev.id, &ev.value, &mut params,
+        &registry_map,
+        &ev.doc_id,
+        &ev.id,
+        &ev.value,
+        &mut params,
         |p, img| p.metallic_roughness_texture = img,
     );
 }
@@ -316,7 +328,11 @@ pub(crate) fn handle_hsd_material_normal_texture_set(
 ) {
     let ev = trigger.event();
     update_material_texture(
-        &registry_map, &ev.doc_id, &ev.id, &ev.value, &mut params,
+        &registry_map,
+        &ev.doc_id,
+        &ev.id,
+        &ev.value,
+        &mut params,
         |p, img| p.normal_texture = img,
     );
 }
@@ -328,7 +344,11 @@ pub(crate) fn handle_hsd_material_occlusion_texture_set(
 ) {
     let ev = trigger.event();
     update_material_texture(
-        &registry_map, &ev.doc_id, &ev.id, &ev.value, &mut params,
+        &registry_map,
+        &ev.doc_id,
+        &ev.id,
+        &ev.value,
+        &mut params,
         |p, img| p.occlusion_texture = img,
     );
 }

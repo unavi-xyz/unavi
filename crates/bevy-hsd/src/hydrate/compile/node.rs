@@ -468,9 +468,7 @@ pub(crate) fn on_mesh_compiled(
         let meshes = registry.0.meshes.lock().expect("meshes lock");
         meshes
             .iter()
-            .find(|(_, inner)| {
-                *inner.entity.lock().expect("entity lock") == Some(mesh_ent)
-            })
+            .find(|(_, inner)| *inner.entity.lock().expect("entity lock") == Some(mesh_ent))
             .map(|(id, _)| id.clone())
     };
     let Some(mesh_id) = mesh_id else { return };
@@ -513,9 +511,7 @@ pub(crate) fn on_material_compiled(
         let materials = registry.0.materials.lock().expect("materials lock");
         materials
             .iter()
-            .find(|(_, inner)| {
-                *inner.entity.lock().expect("entity lock") == Some(mat_ent)
-            })
+            .find(|(_, inner)| *inner.entity.lock().expect("entity lock") == Some(mat_ent))
             .map(|(id, _)| id.clone())
     };
     let Some(mat_id) = mat_id else { return };

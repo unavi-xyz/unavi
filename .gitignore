@@ -21,7 +21,6 @@ dist/
 
 # Npm
 node_modules/
-package-lock.json
 
 # Generated web script assets
 crates/unavi-client/assets/scripts/

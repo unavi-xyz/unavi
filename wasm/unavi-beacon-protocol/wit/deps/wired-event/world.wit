@@ -1,5 +1,10 @@
 package wired:event;
 
+world all {
+  import api;
+  import types;
+}
+
 interface api {
   use types.{event-channel, event-filter, event-receptor};
 

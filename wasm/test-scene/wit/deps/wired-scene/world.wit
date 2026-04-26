@@ -1,5 +1,10 @@
 package wired:scene;
 
+world all {
+  import api;
+  import types;
+}
+
 interface api {
   use types.{document, node, document-id};
 

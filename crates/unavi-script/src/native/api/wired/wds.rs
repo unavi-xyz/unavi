@@ -48,7 +48,7 @@ struct WdsRecordOut {
 
 impl bindings::wired::wds::types::Host for RuntimeData {}
 
-impl bindings::wired::wds::context::Host for RuntimeData {
+impl bindings::wired::wds::api::Host for RuntimeData {
     async fn get_wds(&mut self) -> wasmtime::Result<Resource<HostWds>> {
         let actor = self
             .wired_wds

@@ -1,5 +1,10 @@
 package wired:wds;
 
+world all {
+  import api;
+  import types;
+}
+
 interface api {
   use types.{wds};
   get-wds: func() -> wds;

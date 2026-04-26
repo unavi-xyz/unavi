@@ -107,11 +107,10 @@ impl WiredSceneRt {
     }
 }
 
-impl bindings::wired::scene::context::Host for WiredSceneRt {
+impl bindings::wired::scene::api::Host for WiredSceneRt {
     async fn self_node(
         &mut self,
-    ) -> wasmtime::Result<wasmtime::component::Resource<bindings::wired::scene::context::Node>>
-    {
+    ) -> wasmtime::Result<wasmtime::component::Resource<bindings::wired::scene::api::Node>> {
         let inner = {
             self.registry
                 .node_map
@@ -134,7 +133,7 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
 
     async fn self_document(
         &mut self,
-    ) -> wasmtime::Result<wasmtime::component::Resource<bindings::wired::scene::context::Document>>
+    ) -> wasmtime::Result<wasmtime::component::Resource<bindings::wired::scene::api::Document>>
     {
         let res = self.table.push(document::HostDocument {
             id: self.doc_id,
@@ -151,7 +150,7 @@ impl bindings::wired::scene::context::Host for WiredSceneRt {
         &mut self,
         id: Vec<u8>,
     ) -> wasmtime::Result<
-        Option<wasmtime::component::Resource<bindings::wired::scene::context::Document>>,
+        Option<wasmtime::component::Resource<bindings::wired::scene::api::Document>>,
     > {
         let Ok(arr): Result<[u8; 32], _> = id.try_into() else {
             return Ok(None);

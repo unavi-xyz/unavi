@@ -11,7 +11,6 @@ use tracing::{Instrument, error, info, info_span};
 
 mod agent;
 mod object;
-mod state;
 
 pub async fn handle_connection(connection: Connection, cancel: &Arc<Notify>) -> anyhow::Result<()> {
     let peer = connection.remote_id();

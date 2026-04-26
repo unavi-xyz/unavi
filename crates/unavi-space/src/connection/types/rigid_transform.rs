@@ -13,10 +13,7 @@ pub struct RigidTransform<T> {
 }
 
 impl RigidTransform<F16Vec3> {
-    pub fn delta(
-        current: &RigidTransform<F32Vec3>,
-        baseline: &RigidTransform<F32Vec3>,
-    ) -> Self {
+    pub fn delta(current: &RigidTransform<F32Vec3>, baseline: &RigidTransform<F32Vec3>) -> Self {
         Self {
             tra: F16Vec3::from_delta(current.tra, baseline.tra),
             rot: current.rot,
@@ -25,10 +22,7 @@ impl RigidTransform<F16Vec3> {
 }
 
 impl RigidTransform<I8Vec3> {
-    pub fn delta(
-        current: &RigidTransform<F16Vec3>,
-        baseline: &RigidTransform<F16Vec3>,
-    ) -> Self {
+    pub fn delta(current: &RigidTransform<F16Vec3>, baseline: &RigidTransform<F16Vec3>) -> Self {
         Self {
             tra: I8Vec3::from_delta(current.tra, baseline.tra),
             rot: current.rot,
@@ -47,7 +41,7 @@ impl From<&Transform> for RigidTransform<F32Vec3> {
 
 impl From<RigidTransform<F32Vec3>> for Transform {
     fn from(val: RigidTransform<F32Vec3>) -> Self {
-        Transform {
+        Self {
             translation: val.tra.into(),
             rotation: val.rot.into(),
             ..Default::default()

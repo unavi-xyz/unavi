@@ -35,7 +35,7 @@ impl Signable for SpaceBroadcast {}
 #[non_exhaustive]
 enum SpaceMessage {
     Presence(EndpointAddr),
-    Unknown(u64),
+    Unknown(usize),
 }
 
 #[derive(Component)]

@@ -110,10 +110,7 @@ pub fn build_hsd_doc_from_file(
             .with_context(|| format!("reading {}", path.display()))?;
         let hsd_file =
             hsd::HsdFile::parse(&src).with_context(|| format!("parsing {}", path.display()))?;
-        let base_dir = path
-            .parent()
-            .unwrap_or_else(|| Path::new(""))
-            .to_path_buf();
+        let base_dir = path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
         build_hsd_doc(hsd_file, base_dir, &actors).await
     })
 }
@@ -196,13 +193,19 @@ async fn write_hsd_images(
             .context("inserting image data hash")?;
 
         if let Some(v) = img.address_mode_u {
-            img_map.insert("address_mode_u", v).context("address_mode_u")?;
+            img_map
+                .insert("address_mode_u", v)
+                .context("address_mode_u")?;
         }
         if let Some(v) = img.address_mode_v {
-            img_map.insert("address_mode_v", v).context("address_mode_v")?;
+            img_map
+                .insert("address_mode_v", v)
+                .context("address_mode_v")?;
         }
         if let Some(v) = img.address_mode_w {
-            img_map.insert("address_mode_w", v).context("address_mode_w")?;
+            img_map
+                .insert("address_mode_w", v)
+                .context("address_mode_w")?;
         }
         if let Some(v) = img.mag_filter {
             img_map.insert("mag_filter", v).context("mag_filter")?;
@@ -211,7 +214,9 @@ async fn write_hsd_images(
             img_map.insert("min_filter", v).context("min_filter")?;
         }
         if let Some(v) = img.mipmap_filter {
-            img_map.insert("mipmap_filter", v).context("mipmap_filter")?;
+            img_map
+                .insert("mipmap_filter", v)
+                .context("mipmap_filter")?;
         }
         if let Some(ref v) = img.name {
             img_map.insert("name", v.as_str()).context("image name")?;
@@ -241,17 +246,23 @@ fn write_hsd_materials(
             .context("creating material map")?;
 
         if let Some(ref v) = mat.name {
-            mat_map.insert("name", v.as_str()).context("material name")?;
+            mat_map
+                .insert("name", v.as_str())
+                .context("material name")?;
         }
         if let Some(ref c) = mat.base_color {
             let l = LoroList::new();
             for &v in c {
                 l.push(v).context("base_color push")?;
             }
-            mat_map.insert_container("base_color", l).context("base_color")?;
+            mat_map
+                .insert_container("base_color", l)
+                .context("base_color")?;
         }
         if let Some(ref v) = mat.base_color_texture {
-            mat_map.insert("base_color_texture", v.as_str()).context("base_color_texture")?;
+            mat_map
+                .insert("base_color_texture", v.as_str())
+                .context("base_color_texture")?;
         }
         if let Some(v) = mat.roughness {
             mat_map.insert("roughness", v).context("roughness")?;
@@ -263,7 +274,9 @@ fn write_hsd_materials(
             mat_map.insert("alpha_cutoff", v).context("alpha_cutoff")?;
         }
         if let Some(ref v) = mat.alpha_mode {
-            mat_map.insert("alpha_mode", v.as_str()).context("alpha_mode")?;
+            mat_map
+                .insert("alpha_mode", v.as_str())
+                .context("alpha_mode")?;
         }
         if let Some(v) = mat.double_sided {
             mat_map.insert("double_sided", v).context("double_sided")?;
@@ -273,10 +286,14 @@ fn write_hsd_materials(
             for &v in c {
                 l.push(v).context("emissive push")?;
             }
-            mat_map.insert_container("emissive", l).context("emissive")?;
+            mat_map
+                .insert_container("emissive", l)
+                .context("emissive")?;
         }
         if let Some(ref v) = mat.emissive_texture {
-            mat_map.insert("emissive_texture", v.as_str()).context("emissive_texture")?;
+            mat_map
+                .insert("emissive_texture", v.as_str())
+                .context("emissive_texture")?;
         }
         if let Some(ref v) = mat.metallic_roughness_texture {
             mat_map
@@ -284,10 +301,14 @@ fn write_hsd_materials(
                 .context("metallic_roughness_texture")?;
         }
         if let Some(ref v) = mat.normal_texture {
-            mat_map.insert("normal_texture", v.as_str()).context("normal_texture")?;
+            mat_map
+                .insert("normal_texture", v.as_str())
+                .context("normal_texture")?;
         }
         if let Some(ref v) = mat.occlusion_texture {
-            mat_map.insert("occlusion_texture", v.as_str()).context("occlusion_texture")?;
+            mat_map
+                .insert("occlusion_texture", v.as_str())
+                .context("occlusion_texture")?;
         }
     }
     Ok(())
@@ -304,7 +325,9 @@ async fn write_hsd_nodes(
         .context("creating nodes tree")?;
 
     for (node_name, node_def) in nodes {
-        let node_id = tree.create(TreeParentId::Root).context("creating tree node")?;
+        let node_id = tree
+            .create(TreeParentId::Root)
+            .context("creating tree node")?;
         let meta = tree.get_meta(node_id).context("getting node meta")?;
 
         meta.insert("name", node_name.as_str())

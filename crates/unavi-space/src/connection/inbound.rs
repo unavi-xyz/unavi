@@ -31,7 +31,7 @@ impl ProtocolHandler for SpaceProtocol {
 
         if let Err(err) = super::shared::handle_connection(connection, &cancel).await {
             error!(?err);
-            // On disconnect, it is up to the "client" side to re-connect.
+            // On error disconnect, it is up to the "client" side to re-connect.
         }
 
         let mut conns = CONNECTIONS.lock().await;

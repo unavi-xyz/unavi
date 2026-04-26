@@ -2,15 +2,17 @@ use std::{sync::Arc, time::Duration};
 
 use anyhow::bail;
 use iroh::endpoint::{Connection, ConnectionError, RecvStream, SendStream, VarInt};
+use n0_future::task::AbortOnDropHandle;
 use serde::{Deserialize, Serialize};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     sync::Notify,
 };
-use tracing::{Instrument, error, info, info_span};
+use tracing::{Instrument, error, info, info_span, warn};
 
 mod agent;
 mod object;
+mod state;
 
 pub async fn handle_connection(connection: Connection, cancel: &Arc<Notify>) -> anyhow::Result<()> {
     let peer = connection.remote_id();
@@ -25,13 +27,17 @@ async fn inner(connection: Connection, cancel: &Arc<Notify>) -> anyhow::Result<(
     let task_recv = {
         let span = info_span!("recv");
         let connection = Arc::clone(&connection);
-        n0_future::task::spawn(async move { recv_streams(connection).await }.instrument(span))
+        let handle =
+            n0_future::task::spawn(async move { recv_streams(connection).await }.instrument(span));
+        AbortOnDropHandle::new(handle)
     };
 
     let task_send = {
         let span = info_span!("send");
         let connection = Arc::clone(&connection);
-        n0_future::task::spawn(async move { send_streams(connection).await }.instrument(span))
+        let handle =
+            n0_future::task::spawn(async move { send_streams(connection).await }.instrument(span));
+        AbortOnDropHandle::new(handle)
     };
 
     tokio::select! {
@@ -65,6 +71,7 @@ async fn inner(connection: Connection, cancel: &Arc<Notify>) -> anyhow::Result<(
 
 async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
     let mut i = 0;
+    let mut streams = Vec::new();
 
     loop {
         let span = info_span!("stream", i);
@@ -72,7 +79,7 @@ async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
 
         let (tx, rx) = connection.accept_bi().await?;
 
-        n0_future::task::spawn(
+        let handle = n0_future::task::spawn(
             async move {
                 if let Err(err) = recv_stream(tx, rx).await {
                     error!(?err);
@@ -80,6 +87,7 @@ async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
             }
             .instrument(span),
         );
+        streams.push(AbortOnDropHandle::new(handle));
     }
 }
 
@@ -89,36 +97,66 @@ async fn recv_stream(tx: SendStream, mut rx: RecvStream) -> anyhow::Result<()> {
     match ident {
         StreamIdent::Agent => agent::recv_agent_stream(tx, rx).await?,
         StreamIdent::Object => object::recv_object_stream(tx, rx).await?,
+        StreamIdent::State => state::recv_state_stream(tx, rx).await?,
+        StreamIdent::Unknown(i) => {
+            warn!("Got unknown stream ident: {i}");
+        }
     }
 
     Ok(())
 }
 
+const STREAM_LOOP_DELAY: Duration = Duration::from_secs(1);
+
 async fn send_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
-    // Spawn agent sender
-    {
+    let task_agent = {
         let connection = Arc::clone(&connection);
-        n0_future::task::spawn(async move {
+        let handle = n0_future::task::spawn(async move {
             loop {
                 if let Err(err) = agent::send_agent_stream(&connection).await {
-                    error!(?err, "agent sender");
+                    error!(?err, "Agent stream error");
                 }
+                n0_future::time::sleep(STREAM_LOOP_DELAY).await;
             }
         });
-    }
+        AbortOnDropHandle::new(handle)
+    };
 
-    // Manage object senders
-    loop {
-        // TODO recv commands from ecs
+    let task_state = {
+        let connection = Arc::clone(&connection);
+        let handle = n0_future::task::spawn(async move {
+            loop {
+                if let Err(err) = state::send_state_stream(&connection).await {
+                    error!(?err, "State stream error");
+                }
+                n0_future::time::sleep(STREAM_LOOP_DELAY).await;
+            }
+        });
+        AbortOnDropHandle::new(handle)
+    };
 
-        n0_future::time::sleep(Duration::from_mins(1)).await;
-    }
+    let task_objects = {
+        let handle = n0_future::task::spawn(async move {
+            loop {
+                // TODO recv commands from ecs
+                n0_future::time::sleep(Duration::from_mins(1)).await;
+            }
+        });
+        AbortOnDropHandle::new(handle)
+    };
+
+    n0_future::join_all([task_agent, task_state, task_objects]).await;
+
+    Ok(())
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[non_exhaustive]
 enum StreamIdent {
     Agent,
     Object,
+    State,
+    Unknown(usize),
 }
 
 impl StreamIdent {

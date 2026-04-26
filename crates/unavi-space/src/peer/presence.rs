@@ -1,14 +1,14 @@
-use std::{
-    sync::{LazyLock, Mutex},
-    time::Duration,
-};
+use std::{sync::LazyLock, time::Duration};
 
 use bevy::{platform::collections::HashMap, prelude::*};
 use blake3::Hash;
 use iroh::EndpointAddr;
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::{
+    Mutex,
+    mpsc::{Receiver, Sender},
+};
 
-use crate::{ActiveSpaces, Peer};
+use crate::peer::{ActiveSpaces, Peer};
 
 pub struct PresenceUpdate {
     pub peer: EndpointAddr,

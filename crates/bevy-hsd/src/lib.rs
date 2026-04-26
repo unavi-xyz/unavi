@@ -23,10 +23,7 @@ pub struct DocRegistryMap(pub HashMap<blake3::Hash, (Entity, Arc<SceneRegistryIn
 
 impl DocRegistryMap {
     #[must_use]
-    pub fn get(
-        &self,
-        doc_id: &blake3::Hash,
-    ) -> Option<(Entity, &Arc<SceneRegistryInner>)> {
+    pub fn get(&self, doc_id: &blake3::Hash) -> Option<(Entity, &Arc<SceneRegistryInner>)> {
         self.0.get(doc_id).map(|(e, r)| (*e, r))
     }
 }

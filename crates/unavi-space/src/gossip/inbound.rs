@@ -7,7 +7,7 @@ use wds::signed_bytes::SignedBytes;
 
 use crate::{
     gossip::{GossipCtx, SpaceBroadcast, SpaceMessage},
-    presence::{PRESENCE_QUEUE, PresenceUpdate},
+    peer::presence::{PRESENCE_QUEUE, PresenceUpdate},
 };
 
 pub async fn handle_gossip_inbound(
@@ -73,7 +73,7 @@ pub async fn handle_gossip_inbound(
                             .await?;
                     }
                     SpaceMessage::Unknown(i) => {
-                        warn!("got unknown gossip variant: {i}");
+                        warn!("Got unknown gossip variant: {i}");
                     }
                 }
             }

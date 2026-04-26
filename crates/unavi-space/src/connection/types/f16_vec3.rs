@@ -43,13 +43,21 @@ mod tests {
         let dx = a.x - b.x;
         let dy = a.y - b.y;
         let dz = a.z - b.z;
-        (dx * dx + dy * dy + dz * dz).sqrt()
+        dz.mul_add(dz, dy.mul_add(dy, dx * dx)).sqrt()
     }
 
     #[test]
     fn small_delta() {
-        let baseline = F32Vec3 { x: 10.0, y: 5.0, z: 3.0 };
-        let current = F32Vec3 { x: 10.1, y: 5.2, z: 3.05 };
+        let baseline = F32Vec3 {
+            x: 10.0,
+            y: 5.0,
+            z: 3.0,
+        };
+        let current = F32Vec3 {
+            x: 10.1,
+            y: 5.2,
+            z: 3.05,
+        };
 
         let pos = F16Vec3::from_delta(current, baseline);
         let restored = pos.apply_to(baseline);
@@ -60,7 +68,11 @@ mod tests {
     #[test]
     fn medium_delta() {
         let baseline = F32Vec3::default();
-        let current = F32Vec3 { x: 1.0, y: -0.5, z: 0.25 };
+        let current = F32Vec3 {
+            x: 1.0,
+            y: -0.5,
+            z: 0.25,
+        };
 
         let pos = F16Vec3::from_delta(current, baseline);
         let restored = pos.apply_to(baseline);
@@ -71,7 +83,11 @@ mod tests {
     #[test]
     fn large_delta() {
         let baseline = F32Vec3::default();
-        let current = F32Vec3 { x: 100.0, y: -50.0, z: 75.0 };
+        let current = F32Vec3 {
+            x: 100.0,
+            y: -50.0,
+            z: 75.0,
+        };
 
         let pos = F16Vec3::from_delta(current, baseline);
         let restored = pos.apply_to(baseline);

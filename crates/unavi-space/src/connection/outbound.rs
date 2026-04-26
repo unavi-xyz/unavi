@@ -20,10 +20,13 @@ pub async fn try_open_connection(endpoint: Endpoint, peer: EndpointAddr) {
 
         // If two peers try to connect to each other at the same time, they will
         // only think their own outbound connection attempt is valid and deny the
-        // inbound request.
+        // inbound request. (see [`CONNECTIONS`] key tracking)
         //
         // Add random offset, so conflicting peers drift out of sync.
-        let delay_extended = delay_secs + rand::rng().random_range(0..delay_secs);
+        //
+        // TODO This could use a better solution, perhaps a deterministic choosing of
+        // one of the two pending connections based on endpoint id.
+        let delay_extended = rand::rng().random_range((delay_secs / 2)..(delay_secs * 2));
         n0_future::time::sleep(Duration::from_secs(delay_extended)).await;
 
         delay_secs = delay_secs.wrapping_mul(2);

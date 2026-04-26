@@ -1,16 +1,19 @@
 use bevy::ecs::world::CommandQueue;
+use blake3::Hash;
 use iroh::endpoint::{Connection, RecvStream, SendStream};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
 
 use crate::{
-    connection::shared::StreamIdent, peer::AddSpaceStateSender, state::space::SpaceStateUpdate,
+    connection::shared::StreamIdent,
+    peer::AddSpaceStateSender,
+    state::space::{SPACES, SpaceStateUpdate},
 };
 
 #[derive(Serialize, Deserialize)]
 enum StateMsg {
-    Update(SpaceStateUpdate),
+    Update { space: Hash, data: Vec<u8> },
 }
 
 pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
@@ -26,8 +29,10 @@ pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
     }));
     let _ = ASYNC_COMMAND_QUEUE.0.send(queue).await;
 
-    while let Some(update) = ss_rx.recv().await {
-        let msg = StateMsg::Update(update);
+    // TODO Request / send full state snapshot
+
+    while let Some(SpaceStateUpdate { space, data }) = ss_rx.recv().await {
+        let msg = StateMsg::Update { space, data };
 
         let mut buf = Vec::new();
         let out = postcard::to_slice(&msg, &mut buf)?;
@@ -41,13 +46,21 @@ pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
 
 pub async fn recv_state_stream(_tx: SendStream, mut rx: RecvStream) -> anyhow::Result<()> {
     loop {
-        let mut buf = Vec::new();
-
         let len = rx.read_u16().await? as usize;
-        let buf = &mut buf[..len]; // Does this work?
+        let mut buf = Vec::with_capacity(len);
+        let buf = &mut buf[..len];
         rx.read_exact(buf).await?;
-        let _msg = postcard::from_bytes::<StateMsg>(buf)?;
+        let msg = postcard::from_bytes::<StateMsg>(buf)?;
 
-        // TODO send to ecs + apply
+        match msg {
+            StateMsg::Update { space, data } => {
+                let lock = SPACES.lock().await;
+                let Some(state) = lock.get(&space) else {
+                    continue;
+                };
+                state.doc.import(&data)?;
+                drop(lock);
+            }
+        }
     }
 }

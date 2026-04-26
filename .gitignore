@@ -28,6 +28,9 @@ crates/unavi-client/assets/scripts/
 crates/unavi-script/assets/scripts/*.wasm
 crates/unavi-script/assets/scripts/jco-runtime.js
 
+# WIT
+deps/
+
 # Env
 .direnv
 .envrc

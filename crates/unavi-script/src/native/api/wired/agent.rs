@@ -93,7 +93,7 @@ const fn wit_bone_to_vrm(b: bindings::wired::agent::types::BoneName) -> BoneName
     }
 }
 
-impl bindings::wired::agent::context::Host for RuntimeData {
+impl bindings::wired::agent::api::Host for RuntimeData {
     async fn local_agent(&mut self) -> wasmtime::Result<Resource<HostAgent>> {
         let Some(entry) = self.wired_agent.local_agent.clone() else {
             bail!("no local agent available")

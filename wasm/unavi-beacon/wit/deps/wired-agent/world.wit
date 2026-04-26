@@ -1,5 +1,10 @@
 package wired:agent;
 
+world all {
+  import api;
+  import types;
+}
+
 interface api {
   use wired:scene/types.{node};
   use types.{agent};

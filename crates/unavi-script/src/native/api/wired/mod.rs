@@ -16,7 +16,7 @@ pub fn add_to_linker(
     perms: &ScriptPermissions,
 ) -> wasmtime::Result<()> {
     if perms.api.contains(&ApiName::Scene) {
-        scene::bindings::wired::scene::context::add_to_linker::<_, HasSelf<_>>(linker, |s| {
+        scene::bindings::wired::scene::api::add_to_linker::<_, HasSelf<_>>(linker, |s| {
             &mut s.rt.wired_scene
         })?;
         scene::bindings::wired::scene::types::add_to_linker::<_, HasSelf<_>>(linker, |s| {
@@ -29,9 +29,7 @@ pub fn add_to_linker(
         })?;
     }
     if perms.api.contains(&ApiName::LocalAgent) {
-        agent::bindings::wired::agent::context::add_to_linker::<_, HasSelf<_>>(linker, |s| {
-            &mut s.rt
-        })?;
+        agent::bindings::wired::agent::api::add_to_linker::<_, HasSelf<_>>(linker, |s| &mut s.rt)?;
     }
     if perms.api.contains(&ApiName::Event) {
         event::bindings::wired::event::api::add_to_linker::<_, HasSelf<_>>(linker, |s| &mut s.rt)?;
@@ -46,12 +44,10 @@ pub fn add_to_linker(
         })?;
     }
     if perms.api.contains(&ApiName::InputContext) {
-        input::bindings::wired::input::context::add_to_linker::<_, HasSelf<_>>(linker, |s| {
-            &mut s.rt
-        })?;
+        input::bindings::wired::input::api::add_to_linker::<_, HasSelf<_>>(linker, |s| &mut s.rt)?;
     }
     if perms.api.contains(&ApiName::Wds) {
-        wds::bindings::wired::wds::context::add_to_linker::<_, HasSelf<_>>(linker, |s| &mut s.rt)?;
+        wds::bindings::wired::wds::api::add_to_linker::<_, HasSelf<_>>(linker, |s| &mut s.rt)?;
         wds::bindings::wired::wds::types::add_to_linker::<_, HasSelf<_>>(linker, |s| &mut s.rt)?;
     }
     Ok(())

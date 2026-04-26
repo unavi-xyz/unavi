@@ -7,7 +7,7 @@ mod setup;
 
 #[test]
 fn scene_api() {
-    let mut app = setup::setup_test_app("scene", None, ApiPermissions::default());
+    let mut app = setup::setup_test_app("scene", ApiPermissions::default());
     let ready = setup::wait_until(
         &mut app,
         || has_log("tests complete"),
@@ -19,7 +19,7 @@ fn scene_api() {
 
 #[test]
 fn scene_create_document() {
-    let mut app = setup::setup_test_app("scene", None, ApiPermissions::system());
+    let mut app = setup::setup_test_app("scene", ApiPermissions::system());
     let ready = setup::wait_until(
         &mut app,
         || has_log("tests complete"),

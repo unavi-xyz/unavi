@@ -1,12 +1,8 @@
 use bevy::prelude::*;
 
 pub mod asset;
+mod hsd;
 pub mod local;
-
-#[cfg(not(target_family = "wasm"))]
-mod native;
-#[cfg(target_family = "wasm")]
-mod web;
 
 pub struct LoadPlugin;
 

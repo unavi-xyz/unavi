@@ -6,7 +6,7 @@ use std::{
 use bevy::{platform::collections::HashMap, prelude::*};
 use blake3::Hash;
 
-/// Firewall determining how documents may communicate with each other.
+/// Firewall controls how documents may communicate with each other.
 #[derive(Component, Clone, Default)]
 pub struct Firewall(pub Arc<RwLock<HashMap<XChannel, Access>>>);
 

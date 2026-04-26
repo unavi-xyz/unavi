@@ -2,7 +2,6 @@ use bevy::prelude::*;
 
 use crate::load::asset::Wasm;
 
-mod api;
 mod engine;
 pub mod firewall;
 pub mod load;

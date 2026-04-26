@@ -7,7 +7,7 @@ mod setup;
 
 #[test]
 fn input_api() {
-    let mut app = setup::setup_test_app("input", None, ApiPermissions::default());
+    let mut app = setup::setup_test_app("input", ApiPermissions::default());
     let ready = setup::wait_until(
         &mut app,
         || has_log("tests complete"),

@@ -16,6 +16,7 @@ pub(crate) fn load_local_script(
     let mut entity = commands.entity(trigger.entity);
     let name = path_to_name(&trigger.path);
     let handle = server.load(&trigger.path);
+    // TODO generate hsd
     entity.insert((Script(handle), Name::new(name)));
 }
 

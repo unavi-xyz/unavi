@@ -7,7 +7,7 @@ mod setup;
 
 #[test]
 fn event_api() {
-    let mut app = setup::setup_test_app("event", None, ApiPermissions::default());
+    let mut app = setup::setup_test_app("event", ApiPermissions::default());
     let ready = setup::wait_until(
         &mut app,
         || has_log("tests complete"),

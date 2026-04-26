@@ -9,7 +9,7 @@ use iroh::EndpointId;
 use tokio::sync::{Mutex, Notify};
 use unavi_util::async_task::spawn_async_task;
 
-use crate::Peer;
+use crate::{Peer, connection::ecs::PeerStream};
 
 pub mod ecs;
 mod inbound;
@@ -51,12 +51,27 @@ pub fn connect_to_peer(
     });
 }
 
-pub fn disconnect_peer(trigger: On<Remove, Peer>, peers: Query<&Peer>) {
+pub fn disconnect_peer(
+    trigger: On<Remove, Peer>,
+    peers: Query<&Peer>,
+    streams: Query<(Entity, &PeerStream)>,
+    mut commands: Commands,
+) {
     let peer = peers.get(trigger.entity).expect("peer");
+
+    // Cancel connection
     let mut conns = CONNECTIONS.blocking_lock();
     if let Some(cancel) = conns.remove(&peer.0.id) {
         cancel.notify_waiters();
         cancel.notify_one();
     }
     drop(conns);
+
+    // Clean up stream channels
+    for (entity, p) in streams {
+        if p.0 != peer.0.id {
+            continue;
+        }
+        commands.entity(entity).despawn();
+    }
 }

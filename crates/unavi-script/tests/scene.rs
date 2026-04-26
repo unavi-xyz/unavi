@@ -1,13 +1,13 @@
 use std::time::Duration;
 
 use setup::logs::{has_error_log, has_log};
-use unavi_script::permissions::ScriptPermissions;
+use unavi_script::permissions::ApiPermissions;
 
 mod setup;
 
 #[test]
 fn scene_api() {
-    let mut app = setup::setup_test_app("scene", None, ScriptPermissions::default());
+    let mut app = setup::setup_test_app("scene", None, ApiPermissions::default());
     let ready = setup::wait_until(
         &mut app,
         || has_log("tests complete"),
@@ -19,7 +19,7 @@ fn scene_api() {
 
 #[test]
 fn scene_create_document() {
-    let mut app = setup::setup_test_app("scene", None, ScriptPermissions::system());
+    let mut app = setup::setup_test_app("scene", None, ApiPermissions::system());
     let ready = setup::wait_until(
         &mut app,
         || has_log("tests complete"),

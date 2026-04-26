@@ -1,14 +1,13 @@
 use std::time::Duration;
 
 use setup::logs::count_logs_with;
-use unavi_script::permissions::ScriptPermissions;
+use unavi_script::permissions::ApiPermissions;
 
 mod setup;
 
 #[test]
 fn script_invalid() {
-    let mut app =
-        setup::setup_test_app("invalid", Some(vec![0; 128]), ScriptPermissions::default());
+    let mut app = setup::setup_test_app("invalid", Some(vec![0; 128]), ApiPermissions::default());
 
     // Wait until the error log appears or timeout.
     let ready = setup::wait_until(

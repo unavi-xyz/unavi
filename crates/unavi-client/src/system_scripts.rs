@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_hsd::LoadHsdFile;
 use unavi_script::{
     firewall::{AccessEntities, HsdFirewallEntities},
-    permissions::ScriptPermissions,
+    permissions::ApiPermissions,
 };
 
 use crate::assets::assets_dir;
@@ -16,7 +16,7 @@ pub fn spawn_system_scripts(mut commands: Commands) {
     for &rel_path in MODULE_HSDS {
         let path = assets_dir().join(rel_path);
         let ent = commands
-            .spawn(ScriptPermissions::system())
+            .spawn(ApiPermissions::system())
             .trigger(move |entity| LoadHsdFile { entity, path })
             .id();
         module_ents.push(ent);
@@ -25,7 +25,7 @@ pub fn spawn_system_scripts(mut commands: Commands) {
     let gauntlet_path = assets_dir().join(GAUNTLET_HSD);
     let gauntlet_ent = commands
         .spawn((
-            ScriptPermissions::system(),
+            ApiPermissions::system(),
             HsdFirewallEntities {
                 event_receive: AccessEntities::Restricted(module_ents.clone()),
                 scene_read: AccessEntities::Restricted(module_ents.clone()),

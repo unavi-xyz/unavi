@@ -6,7 +6,7 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_wds::{LocalActor, LocalBlobs, util::create_test_wds};
 use unavi_script::{
     load::local::{LoadLocalScript, ScriptSource},
-    permissions::{ApiName, ScriptPermissions},
+    permissions::{ApiName, ApiPermissions},
 };
 
 mod util;
@@ -54,13 +54,13 @@ fn init_scene(mut commands: Commands) {
         Transform::from_xyz(3.0, 8.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
-    let mut permissions = ScriptPermissions::default();
+    let mut permissions = ApiPermissions::default();
     permissions.api.insert(ApiName::InputContext);
 
     commands
         .spawn(permissions)
         .trigger(|entity| LoadLocalScript {
             entity,
-            source: ScriptSource::Path(SCRIPT_PATH.to_string()),
+            path: ScriptSource::Path(SCRIPT_PATH.to_string()),
         });
 }

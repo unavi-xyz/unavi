@@ -24,3 +24,20 @@ impl ScriptStdout {
         (Self(reader), AsyncStdoutStream::new(STDOUT_LEN, writer))
     }
 }
+
+// pub fn log_streams(streams: Query<(&mut ScriptStdout, &mut ScriptStderr)>, mut dst: Local<String>) {
+//     for (mut stdout, mut stderr) in streams {
+//         stdout.0.read_to_string(&mut dst);
+//         if !dst.is_empty() {
+//             info!("{}", *dst);
+//         }
+//
+//         stderr.0.read_to_string(&mut dst);
+//         if !dst.is_empty() {
+//             warn!("{}", *dst);
+//         }
+//
+//         dst.clear();
+//         dst.shrink_to(64);
+//     }
+// }

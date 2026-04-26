@@ -26,8 +26,6 @@ impl Plugin for EnginePlugin {
     }
 }
 
-/// Executes owned scripts sequentially.
-/// Multiple engines allow for parallel execution of scripts.
 #[derive(Component)]
 #[require(Scripts)]
 pub struct Engine;

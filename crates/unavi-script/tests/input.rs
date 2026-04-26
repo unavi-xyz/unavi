@@ -1,13 +1,13 @@
 use std::time::Duration;
 
 use setup::logs::{has_error_log, has_log};
-use unavi_script::permissions::ScriptPermissions;
+use unavi_script::permissions::ApiPermissions;
 
 mod setup;
 
 #[test]
 fn input_api() {
-    let mut app = setup::setup_test_app("input", None, ScriptPermissions::default());
+    let mut app = setup::setup_test_app("input", None, ApiPermissions::default());
     let ready = setup::wait_until(
         &mut app,
         || has_log("tests complete"),

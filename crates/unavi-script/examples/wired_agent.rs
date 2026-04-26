@@ -10,7 +10,7 @@ use bevy_wds::{LocalActor, LocalBlobs, util::create_test_wds};
 use unavi_agent::LocalAgent;
 use unavi_script::{
     load::local::{LoadLocalScript, ScriptSource},
-    permissions::ScriptPermissions,
+    permissions::ApiPermissions,
 };
 
 mod util;
@@ -86,9 +86,9 @@ fn on_agent_load(
     ));
 
     commands
-        .spawn(ScriptPermissions::system())
+        .spawn(ApiPermissions::system())
         .trigger(|entity| LoadLocalScript {
             entity,
-            source: ScriptSource::Path(SCRIPT_PATH.to_string()),
+            path: ScriptSource::Path(SCRIPT_PATH.to_string()),
         });
 }

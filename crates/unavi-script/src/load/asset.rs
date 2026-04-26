@@ -2,6 +2,7 @@ use bevy::{
     asset::{AssetLoader, LoadContext, io::Reader},
     prelude::*,
     reflect::TypePath,
+    tasks::ConditionalSendFuture,
 };
 
 #[derive(Asset, Debug, Deref, DerefMut, TypePath)]
@@ -20,8 +21,7 @@ impl AssetLoader for WasmLoader {
         reader: &mut dyn Reader,
         _settings: &Self::Settings,
         _load_context: &mut LoadContext,
-    ) -> impl bevy::tasks::ConditionalSendFuture<Output = std::result::Result<Self::Asset, Self::Error>>
-    {
+    ) -> impl ConditionalSendFuture<Output = Result<Self::Asset, Self::Error>> {
         Box::pin(async move {
             let mut bytes = Vec::new();
             reader.read_to_end(&mut bytes).await?;

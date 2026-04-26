@@ -4,13 +4,13 @@ use setup::{
     logs::{LOGS, has_error_log, has_log},
     tick_app,
 };
-use unavi_script::permissions::ScriptPermissions;
+use unavi_script::permissions::ApiPermissions;
 
 mod setup;
 
 #[test]
 fn script_log() {
-    let mut app = setup::setup_test_app("log", None, ScriptPermissions::default());
+    let mut app = setup::setup_test_app("log", None, ApiPermissions::default());
 
     let ready = setup::wait_until(
         &mut app,

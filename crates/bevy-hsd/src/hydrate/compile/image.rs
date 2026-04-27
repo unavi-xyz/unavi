@@ -12,7 +12,7 @@ use image::{DynamicImage, GenericImageView};
 use smol_str::SmolStr;
 
 use crate::{
-    DocRegistryMap, HsdChild,
+    DocRegistryMap, HsdChild, HsdEntityMaps,
     data::HsdImage,
     hydrate::compile::material::{CompiledMaterial, MaterialParams},
 };
@@ -137,58 +137,59 @@ pub(crate) fn build_img(dyn_img: DynamicImage, params: &ImageParams) -> Image {
 pub(crate) fn handle_hsd_image_spawned(
     trigger: On<HsdImageSpawned>,
     registry_map: Res<DocRegistryMap>,
+    mut entity_maps: Query<&mut HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "image spawned");
-    let Some((doc_entity, registry)) = registry_map.get(&ev.doc_id) else {
+    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
         return;
     };
-    let inner = registry
-        .images
-        .lock()
-        .expect("images lock")
-        .get(&ev.id)
-        .cloned();
-    let Some(inner) = inner else { return };
+    let Ok(mut maps) = entity_maps.get_mut(doc_ent) else {
+        return;
+    };
 
     let mut params = ev.initial.as_ref().map(params_from_hsd).unwrap_or_default();
 
-    let existing = *inner.entity.lock().expect("entity lock");
-    let entity = existing.unwrap_or_else(|| {
-        let ent = commands
-            .spawn((HsdChild { doc: doc_entity }, ImageId(ev.id.clone())))
+    let ent = if let Some(&existing) = maps.images.get(&ev.id) {
+        existing
+    } else {
+        let e = commands
+            .spawn((HsdChild { doc: doc_ent }, ImageId(ev.id.clone())))
             .id();
-        *inner.entity.lock().expect("entity lock") = Some(ent);
-        ent
-    });
+        maps.images.insert(ev.id.clone(), e);
+        e
+    };
 
     if let Some(ref hsd) = ev.initial
         && let Some(ref hash) = hsd.data
     {
-        let blob_ent = commands.spawn((BlobRequest(hash.0), BlobDep(entity))).id();
+        let blob_ent = commands.spawn((BlobRequest(hash.0), BlobDep(ent))).id();
         params.data = Some(blob_ent);
     }
 
-    commands.entity(entity).insert(params);
+    commands.entity(ent).insert(params);
 }
 
 pub(crate) fn handle_hsd_image_despawned(
     trigger: On<HsdImageDespawned>,
     registry_map: Res<DocRegistryMap>,
+    mut entity_maps: Query<&mut HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "image despawned");
-    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
+    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
         return;
     };
-    let inner = registry.images.lock().expect("images lock").remove(&ev.id);
-    let Some(inner) = inner else { return };
-    if let Some(ent) = *inner.entity.lock().expect("entity lock")
-        && let Ok(mut ent) = commands.get_entity(ent)
-    {
-        ent.despawn();
+    let Ok(mut maps) = entity_maps.get_mut(doc_ent) else {
+        return;
+    };
+    let Some(ent) = maps.images.remove(&ev.id) else {
+        return;
+    };
+    if let Ok(mut entity_cmd) = commands.get_entity(ent) {
+        entity_cmd.despawn();
     }
 }
 

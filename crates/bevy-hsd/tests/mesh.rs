@@ -1,6 +1,6 @@
 use bevy::mesh::{Indices, PrimitiveTopology, VertexAttributeValues};
 use bevy::prelude::*;
-use bevy_hsd::{CompiledMesh, HsdChild, NodeId, cache::MeshState};
+use bevy_hsd::{CompiledMesh, HsdChild, MeshState, NodeId};
 use loro::LoroMap;
 
 mod common;

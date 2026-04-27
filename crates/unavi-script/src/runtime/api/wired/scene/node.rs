@@ -1,8 +1,4 @@
-use bevy_hsd::cache::NodeInner;
-
-pub struct NodeRes {
-    inner: NodeInner,
-}
+pub struct NodeRes;
 
 // impl HostNode for WiredSceneRt {
 //     async fn id(

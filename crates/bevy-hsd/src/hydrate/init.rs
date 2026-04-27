@@ -6,8 +6,7 @@ use loro::{LoroMap, LoroTree, LoroValue, TreeParentId};
 use super::{diff::extract_changes_from_diff, events::RawChangeQueue};
 
 use crate::{
-    DocRegistryMap, HsdAssets, HsdDoc, HsdRecordId, HsdSubscription,
-    cache::{SceneRegistry, SceneRegistryInner},
+    DocRegistryMap, HsdAssets, HsdDoc, HsdEntityMaps, HsdRecordId, HsdSubscription,
     hydrate::events::RawHsdChange,
     load_hsd::read_hsd_assets,
 };
@@ -15,14 +14,13 @@ use crate::{
 pub fn init_hsd_doc(
     mut commands: Commands,
     added: Query<
-        (Entity, &HsdDoc, Option<&SceneRegistry>),
+        (Entity, &HsdDoc, &HsdRecordId),
         (Added<HsdDoc>, Without<RawChangeQueue>),
     >,
+    mut registry_map: ResMut<DocRegistryMap>,
 ) {
-    for (doc_ent, hsd_doc, maybe_registry) in &added {
+    for (doc_ent, hsd_doc, record_id) in &added {
         let doc = Arc::clone(&hsd_doc.0);
-
-        let registry = maybe_registry.map_or_else(SceneRegistryInner::new, |r| Arc::clone(&r.0));
 
         let raw_queue: Arc<Mutex<Vec<RawHsdChange>>> = Arc::new(Mutex::new(Vec::new()));
 
@@ -39,20 +37,11 @@ pub fn init_hsd_doc(
             }
         }));
 
-        let mut cmds = commands.entity(doc_ent);
-        if maybe_registry.is_none() {
-            cmds.insert(SceneRegistry(Arc::clone(&registry)));
-        }
-        cmds.insert((assets, RawChangeQueue(raw_queue), HsdSubscription(sub)));
-    }
-}
+        commands
+            .entity(doc_ent)
+            .insert((assets, HsdEntityMaps::default(), RawChangeQueue(raw_queue), HsdSubscription(sub)));
 
-pub fn register_doc_registries(
-    added: Query<(Entity, &HsdRecordId, &SceneRegistry), Added<SceneRegistry>>,
-    mut map: ResMut<DocRegistryMap>,
-) {
-    for (entity, record_id, registry) in &added {
-        map.0.insert(record_id.0, (entity, Arc::clone(&registry.0)));
+        registry_map.0.insert(record_id.0, doc_ent);
     }
 }
 

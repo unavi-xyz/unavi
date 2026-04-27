@@ -3,13 +3,9 @@ use std::sync::Arc;
 
 use avian3d::schedule::PhysicsSystems;
 use bevy::prelude::*;
-use bevy::transform::TransformSystems;
 use loro::LoroDoc;
 use smol_str::SmolStr;
 
-use cache::SceneRegistryInner;
-
-pub mod cache;
 pub mod data;
 pub mod hydrate;
 pub mod load_hsd;
@@ -19,13 +15,20 @@ pub use load_hsd::LoadHsdFile;
 pub struct HsdPlugin;
 
 #[derive(Resource, Default)]
-pub struct DocRegistryMap(pub HashMap<blake3::Hash, (Entity, Arc<SceneRegistryInner>)>);
+pub struct DocRegistryMap(pub HashMap<blake3::Hash, Entity>);
 
 impl DocRegistryMap {
-    #[must_use]
-    pub fn get(&self, doc_id: &blake3::Hash) -> Option<(Entity, &Arc<SceneRegistryInner>)> {
-        self.0.get(doc_id).map(|(e, r)| (*e, r))
+    pub fn get_entity(&self, doc_id: &blake3::Hash) -> Option<Entity> {
+        self.0.get(doc_id).copied()
     }
+}
+
+#[derive(Component, Default)]
+pub struct HsdEntityMaps {
+    pub nodes: HashMap<SmolStr, Entity>,
+    pub meshes: HashMap<SmolStr, Entity>,
+    pub materials: HashMap<SmolStr, Entity>,
+    pub images: HashMap<SmolStr, Entity>,
 }
 
 #[derive(Component, Clone, Debug, Default)]
@@ -93,16 +96,10 @@ impl Plugin for HsdPlugin {
                 load_hsd::start_hsd_loads,
                 load_hsd::poll_hsd_file_loads,
                 hydrate::init::init_hsd_doc,
-                hydrate::init::register_doc_registries,
-                hydrate::sync::sync_to_hsd,
                 hydrate::queue::process_hsd_queue,
                 hydrate::compile::material::recompile_changed_materials,
             )
                 .chain(),
-        )
-        .add_systems(
-            PostUpdate,
-            hydrate::sync::sync_ecs_to_cache.after(TransformSystems::Propagate),
         );
     }
 }
@@ -124,12 +121,18 @@ pub struct HsdChild {
 
 pub use hydrate::compile::image::{CompiledImage, ImageId};
 pub use hydrate::compile::material::{CompiledMaterial, MaterialParams};
-pub use hydrate::compile::mesh::CompiledMesh;
+pub use hydrate::compile::mesh::{CompiledMesh, MeshState};
 pub use hydrate::compile::node::{MaterialRef, MeshRef};
 pub use load_hsd::HsdFilePath;
 
 #[derive(Component, Clone, Debug)]
 pub struct NodeId(pub SmolStr);
+
+#[derive(Component, Clone, Debug)]
+pub struct MeshId(pub SmolStr);
+
+#[derive(Component, Clone, Debug)]
+pub struct MaterialId(pub SmolStr);
 
 #[derive(Component, Clone, Debug)]
 pub struct HsdScripts(pub Vec<blake3::Hash>);

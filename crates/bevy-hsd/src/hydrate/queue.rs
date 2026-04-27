@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use bevy::prelude::*;
 use loro::{LoroMap, LoroTree, LoroValue, TreeID, TreeParentId};
 use loro_surgeon::Hydrate;
@@ -25,19 +23,15 @@ use super::compile::{
 
 use crate::{
     HsdDoc, HsdRecordId,
-    cache::{
-        ImageInner, MaterialHsdChanges, MaterialInner, MaterialState, MeshHsdChanges, MeshInner,
-        MeshState, NodeHsdChanges, NodeInner, NodeState, SceneRegistry,
-    },
     data::{HsdImage, HsdMaterial, HsdMesh, HsdNodeData},
     hydrate::events::{NodeRef, RawChangeQueue, RawHsdChange},
 };
 
 pub fn process_hsd_queue(
-    docs: Query<(&HsdRecordId, &HsdDoc, &SceneRegistry, &RawChangeQueue)>,
+    docs: Query<(&HsdRecordId, &HsdDoc, &RawChangeQueue)>,
     mut commands: Commands,
 ) {
-    for (record_id, hsd_doc, registry, raw_queue) in &docs {
+    for (record_id, hsd_doc, raw_queue) in &docs {
         let doc_id = record_id.0;
         let raw_changes: Vec<_> = raw_queue
             .0
@@ -54,7 +48,8 @@ pub fn process_hsd_queue(
         for change in raw_changes {
             match change {
                 RawHsdChange::ImageAdded { id } => {
-                    handle_image_added(doc_id, id, &hsd_map, registry, &mut commands);
+                    let initial = get_image_at(&hsd_map, &id);
+                    commands.trigger(HsdImageSpawned { doc_id, id, initial });
                 }
                 RawHsdChange::ImageChanged { id } => {
                     if let Some(hsd_img) = get_image_at(&hsd_map, &id) {
@@ -69,17 +64,35 @@ pub fn process_hsd_queue(
                     commands.trigger(HsdImageDespawned { doc_id, id });
                 }
                 RawHsdChange::NodeAdded { tree_id, parent_id } => {
-                    handle_node_added(
+                    let id = tree_id.to_smolstr();
+                    let data = node_data_from_hsd(&hsd_map, tree_id);
+
+                    commands.trigger(HsdNodeSpawned {
                         doc_id,
-                        tree_id,
-                        parent_id,
-                        &hsd_map,
-                        registry,
-                        &mut commands,
-                    );
+                        id: id.clone(),
+                    });
+
+                    let parent = parent_id.map(|pid| NodeRef::Id(pid.to_smolstr()));
+                    commands.trigger(HsdNodeParentSet {
+                        doc_id,
+                        child: NodeRef::Id(id.clone()),
+                        parent,
+                    });
+
+                    emit_node_fields(doc_id, &id, &data, &mut commands);
                 }
                 RawHsdChange::NodeChanged { tree_id } => {
-                    handle_node_changed(doc_id, tree_id, &hsd_map, registry, &mut commands);
+                    let id = tree_id.to_smolstr();
+                    let data = node_data_from_hsd(&hsd_map, tree_id);
+
+                    let parent = get_node_parent(&hsd_map, tree_id).map(NodeRef::Id);
+                    commands.trigger(HsdNodeParentSet {
+                        doc_id,
+                        child: NodeRef::Id(id.clone()),
+                        parent,
+                    });
+
+                    emit_node_fields(doc_id, &id, &data, &mut commands);
                 }
                 RawHsdChange::NodeRemoved { tree_id } => {
                     commands.trigger(HsdNodeDespawned {
@@ -88,7 +101,19 @@ pub fn process_hsd_queue(
                     });
                 }
                 RawHsdChange::MeshAdded { id } => {
-                    handle_mesh_added(doc_id, id, &hsd_map, registry, &mut commands);
+                    commands.trigger(HsdMeshSpawned {
+                        doc_id,
+                        id: id.clone(),
+                    });
+                    if let Some(hsd_mesh) = get_mesh_at(&hsd_map, &id)
+                        && (!hsd_mesh.attributes.is_empty() || hsd_mesh.indices.is_some())
+                    {
+                        commands.trigger(HsdMeshGeometrySet {
+                            doc_id,
+                            id,
+                            source: MeshGeometrySource::Hsd(Box::new(hsd_mesh)),
+                        });
+                    }
                 }
                 RawHsdChange::MeshChanged { id } => {
                     if let Some(hsd_mesh) = get_mesh_at(&hsd_map, &id) {
@@ -103,7 +128,15 @@ pub fn process_hsd_queue(
                     commands.trigger(HsdMeshDespawned { doc_id, id });
                 }
                 RawHsdChange::MaterialAdded { id } => {
-                    handle_material_added(doc_id, id, &hsd_map, registry, &mut commands);
+                    let initial = get_material_at(&hsd_map, &id);
+                    commands.trigger(HsdMaterialSpawned {
+                        doc_id,
+                        id: id.clone(),
+                        initial: initial.clone(),
+                    });
+                    if let Some(hsd_mat) = &initial {
+                        emit_material_fields(doc_id, &id, hsd_mat, &mut commands);
+                    }
                 }
                 RawHsdChange::MaterialChanged { id } => {
                     if let Some(hsd_mat) = get_material_at(&hsd_map, &id) {
@@ -116,210 +149,6 @@ pub fn process_hsd_queue(
             }
         }
     }
-}
-
-fn handle_node_added(
-    doc_id: blake3::Hash,
-    tree_id: TreeID,
-    parent_id: Option<TreeID>,
-    hsd_map: &LoroMap,
-    registry: &SceneRegistry,
-    commands: &mut Commands,
-) {
-    let id = tree_id.to_smolstr();
-    let data = node_data_from_hsd(hsd_map, tree_id);
-    let inner = get_or_create_node(registry, &id, tree_id);
-    update_node_state(&inner, &data);
-
-    if inner.entity.lock().expect("entity lock").is_none() {
-        commands.trigger(HsdNodeSpawned {
-            doc_id,
-            id: id.clone(),
-        });
-    }
-
-    let parent = parent_id.map(|pid| NodeRef::Id(pid.to_smolstr()));
-    commands.trigger(HsdNodeParentSet {
-        doc_id,
-        child: NodeRef::Id(id.clone()),
-        parent,
-    });
-
-    emit_node_fields(doc_id, &id, &data, commands);
-}
-
-fn handle_node_changed(
-    doc_id: blake3::Hash,
-    tree_id: TreeID,
-    hsd_map: &LoroMap,
-    registry: &SceneRegistry,
-    commands: &mut Commands,
-) {
-    let id = tree_id.to_smolstr();
-    let data = node_data_from_hsd(hsd_map, tree_id);
-    let inner = registry
-        .0
-        .node_map
-        .lock()
-        .expect("node_map lock")
-        .get(&id)
-        .cloned();
-    let Some(inner) = inner else { return };
-    update_node_state(&inner, &data);
-
-    let parent = get_node_parent(hsd_map, tree_id).map(NodeRef::Id);
-    commands.trigger(HsdNodeParentSet {
-        doc_id,
-        child: NodeRef::Id(id.clone()),
-        parent,
-    });
-
-    emit_node_fields(doc_id, &id, &data, commands);
-}
-
-fn handle_mesh_added(
-    doc_id: blake3::Hash,
-    id: SmolStr,
-    hsd_map: &LoroMap,
-    registry: &SceneRegistry,
-    commands: &mut Commands,
-) {
-    get_or_create_mesh(registry, &id);
-    commands.trigger(HsdMeshSpawned {
-        doc_id,
-        id: id.clone(),
-    });
-    if let Some(hsd_mesh) = get_mesh_at(hsd_map, &id)
-        && (!hsd_mesh.attributes.is_empty() || hsd_mesh.indices.is_some())
-    {
-        commands.trigger(HsdMeshGeometrySet {
-            doc_id,
-            id,
-            source: MeshGeometrySource::Hsd(Box::new(hsd_mesh)),
-        });
-    }
-}
-
-fn handle_material_added(
-    doc_id: blake3::Hash,
-    id: SmolStr,
-    hsd_map: &LoroMap,
-    registry: &SceneRegistry,
-    commands: &mut Commands,
-) {
-    get_or_create_material(registry, &id);
-    let initial = get_material_at(hsd_map, &id);
-    commands.trigger(HsdMaterialSpawned {
-        doc_id,
-        id: id.clone(),
-        initial: initial.clone(),
-    });
-    if let Some(hsd_mat) = &initial {
-        emit_material_fields(doc_id, &id, hsd_mat, commands);
-    }
-}
-
-fn get_or_create_node(registry: &SceneRegistry, id: &SmolStr, tree_id: TreeID) -> Arc<NodeInner> {
-    let mut node_map = registry.0.node_map.lock().expect("node_map lock");
-    if let Some(existing) = node_map.get(id) {
-        return Arc::clone(existing);
-    }
-    let inner = Arc::new(NodeInner {
-        entity: Mutex::new(None),
-        hsd_changes: Mutex::new(NodeHsdChanges::default()),
-        id: id.clone(),
-        is_virtual: false,
-        state: Mutex::new(NodeState::default()),
-        sync: false.into(),
-        tree_id: Mutex::new(Some(tree_id)),
-    });
-    node_map.insert(id.clone(), Arc::clone(&inner));
-    drop(node_map);
-    registry
-        .0
-        .nodes
-        .lock()
-        .expect("nodes lock")
-        .push(Arc::clone(&inner));
-    inner
-}
-
-fn handle_image_added(
-    doc_id: blake3::Hash,
-    id: SmolStr,
-    hsd_map: &LoroMap,
-    registry: &SceneRegistry,
-    commands: &mut Commands,
-) {
-    get_or_create_image(registry, &id);
-    let initial = get_image_at(hsd_map, &id);
-    commands.trigger(HsdImageSpawned {
-        doc_id,
-        id,
-        initial,
-    });
-}
-
-fn get_or_create_image(registry: &SceneRegistry, id: &SmolStr) -> Arc<ImageInner> {
-    let mut images = registry.0.images.lock().expect("images lock");
-    if let Some(existing) = images.get(id) {
-        return Arc::clone(existing);
-    }
-    let inner = Arc::new(ImageInner {
-        entity: Mutex::new(None),
-        id: id.clone(),
-    });
-    images.insert(id.clone(), Arc::clone(&inner));
-    inner
-}
-
-fn get_or_create_mesh(registry: &SceneRegistry, id: &SmolStr) -> Arc<MeshInner> {
-    let mut meshes = registry.0.meshes.lock().expect("meshes lock");
-    if let Some(existing) = meshes.get(id) {
-        return Arc::clone(existing);
-    }
-    let inner = Arc::new(MeshInner {
-        entity: Mutex::new(None),
-        hsd_changes: Mutex::new(MeshHsdChanges::default()),
-        id: id.clone(),
-        state: Mutex::new(MeshState::default()),
-        sync: false.into(),
-    });
-    meshes.insert(id.clone(), Arc::clone(&inner));
-    inner
-}
-
-fn get_or_create_material(registry: &SceneRegistry, id: &SmolStr) -> Arc<MaterialInner> {
-    let mut mats = registry.0.materials.lock().expect("materials lock");
-    if let Some(existing) = mats.get(id) {
-        return Arc::clone(existing);
-    }
-    let inner = Arc::new(MaterialInner {
-        entity: Mutex::new(None),
-        hsd_changes: Mutex::new(MaterialHsdChanges::default()),
-        id: id.clone(),
-        state: Mutex::new(MaterialState::default()),
-        sync: false.into(),
-    });
-    mats.insert(id.clone(), Arc::clone(&inner));
-    inner
-}
-
-fn update_node_state(inner: &NodeInner, data: &HsdNodeData) {
-    let mut state = inner.state.lock().expect("node state lock");
-    state.name = data.name.as_ref().map(ToString::to_string);
-    state.transform = node_transform(data);
-    state.mesh.clone_from(&data.mesh);
-    state.material.clone_from(&data.material);
-    state.collider.clone_from(&data.collider);
-    state.rigid_body.clone_from(&data.rigid_body);
-    state.scripts = data
-        .scripts
-        .as_deref()
-        .unwrap_or_default()
-        .iter()
-        .map(|h| h.0)
-        .collect();
 }
 
 fn emit_node_fields(

@@ -6,8 +6,8 @@ use bevy::prelude::*;
 use smol_str::SmolStr;
 
 use crate::{
-    DocRegistryMap, HsdChild, HsdNodePhysics, HsdScripts, NodeId,
-    cache::SceneRegistry,
+    DocRegistryMap, HsdChild, HsdEntityMaps, HsdNodePhysics, HsdScripts, MaterialId, MeshId,
+    NodeId,
     data::{HsdCollider, HsdNodeData, HsdRigidBody},
     hydrate::{
         compile::{collider::ColliderParams, material::CompiledMaterial, mesh::CompiledMesh},
@@ -29,10 +29,10 @@ pub(crate) fn handle_hsd_doc_transform_set(
     mut transforms: Query<&mut Transform, With<crate::HsdDoc>>,
 ) {
     let ev = trigger.event();
-    let Some((doc_entity, _)) = registry_map.get(&ev.doc_id) else {
+    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
         return;
     };
-    if let Ok(mut t) = transforms.get_mut(doc_entity) {
+    if let Ok(mut t) = transforms.get_mut(doc_ent) {
         *t = ev.transform;
     }
 }
@@ -114,73 +114,63 @@ pub struct HsdNodeTransformSet {
 pub(crate) fn handle_hsd_node_spawned(
     trigger: On<HsdNodeSpawned>,
     registry_map: Res<DocRegistryMap>,
+    mut entity_maps: Query<&mut HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "node spawned");
-    let Some((doc_entity, registry)) = registry_map.get(&ev.doc_id) else {
+    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
         return;
     };
-    let inner = registry
-        .node_map
-        .lock()
-        .expect("node_map lock")
-        .get(&ev.id)
-        .cloned();
-    let Some(inner) = inner else { return };
-    if inner.entity.lock().expect("entity lock").is_some() {
+    let Ok(mut maps) = entity_maps.get_mut(doc_ent) else {
+        return;
+    };
+    if maps.nodes.contains_key(&ev.id) {
         return;
     }
     let ent = commands
         .spawn((
-            ChildOf(doc_entity),
-            HsdChild { doc: doc_entity },
+            ChildOf(doc_ent),
+            HsdChild { doc: doc_ent },
             NodeId(ev.id.clone()),
             Transform::IDENTITY,
             Visibility::default(),
         ))
         .id();
-    *inner.entity.lock().expect("entity lock") = Some(ent);
+    maps.nodes.insert(ev.id.clone(), ent);
 }
 
 pub(crate) fn handle_hsd_node_despawned(
     trigger: On<HsdNodeDespawned>,
     registry_map: Res<DocRegistryMap>,
+    mut entity_maps: Query<&mut HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "node despawned");
-    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
+    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
         return;
     };
-    let mut node_map = registry.node_map.lock().expect("node_map lock");
-    let Some(inner) = node_map.remove(&ev.id) else {
+    let Ok(mut maps) = entity_maps.get_mut(doc_ent) else {
         return;
     };
-    drop(node_map);
-    registry
-        .nodes
-        .lock()
-        .expect("nodes lock")
-        .retain(|n| n.id != inner.id);
-    if let Some(ent) = *inner.entity.lock().expect("entity lock")
-        && let Ok(mut ent) = commands.get_entity(ent)
-    {
-        ent.despawn();
+    let Some(ent) = maps.nodes.remove(&ev.id) else {
+        return;
+    };
+    if let Ok(mut entity_cmd) = commands.get_entity(ent) {
+        entity_cmd.despawn();
     }
 }
 
 pub(crate) fn handle_hsd_node_collider_set(
     trigger: On<HsdNodeColliderSet>,
     registry_map: Res<DocRegistryMap>,
+    entity_maps: Query<&HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, has_collider = ev.collider.is_some(), "node collider set");
-    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
-        return;
-    };
-    let Some(ent) = registry.node_entity(&ev.id) else {
+    let Some(ent) = node_entity(&registry_map, &entity_maps, &ev.doc_id, &ev.id) else {
         return;
     };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
@@ -202,14 +192,12 @@ pub(crate) fn handle_hsd_node_collider_set(
 pub(crate) fn handle_hsd_node_material_set(
     trigger: On<HsdNodeMaterialSet>,
     registry_map: Res<DocRegistryMap>,
+    entity_maps: Query<&HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, material = ?ev.material, "node material set");
-    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
-        return;
-    };
-    let Some(ent) = registry.node_entity(&ev.id) else {
+    let Some(ent) = node_entity(&registry_map, &entity_maps, &ev.doc_id, &ev.id) else {
         return;
     };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
@@ -224,14 +212,12 @@ pub(crate) fn handle_hsd_node_material_set(
 pub(crate) fn handle_hsd_node_mesh_set(
     trigger: On<HsdNodeMeshSet>,
     registry_map: Res<DocRegistryMap>,
+    entity_maps: Query<&HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, mesh = ?ev.mesh, "node mesh set");
-    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
-        return;
-    };
-    let Some(ent) = registry.node_entity(&ev.id) else {
+    let Some(ent) = node_entity(&registry_map, &entity_maps, &ev.doc_id, &ev.id) else {
         return;
     };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
@@ -246,14 +232,12 @@ pub(crate) fn handle_hsd_node_mesh_set(
 pub(crate) fn handle_hsd_node_name_set(
     trigger: On<HsdNodeNameSet>,
     registry_map: Res<DocRegistryMap>,
+    entity_maps: Query<&HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, name = ?ev.name, "node name set");
-    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
-        return;
-    };
-    let Some(ent) = registry.node_entity(&ev.id) else {
+    let Some(ent) = node_entity(&registry_map, &entity_maps, &ev.doc_id, &ev.id) else {
         return;
     };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
@@ -269,24 +253,29 @@ pub(crate) fn handle_hsd_node_name_set(
 pub(crate) fn handle_hsd_node_parent_set(
     trigger: On<HsdNodeParentSet>,
     registry_map: Res<DocRegistryMap>,
+    entity_maps: Query<&HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(child = ?ev.child, parent = ?ev.parent, "node parent set");
-    let Some((doc_entity, registry)) = registry_map.get(&ev.doc_id) else {
+    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
         return;
     };
+    let Ok(maps) = entity_maps.get(doc_ent) else {
+        return;
+    };
+
     let child_ent = match &ev.child {
         NodeRef::Entity(e) => Some(*e),
-        NodeRef::Id(id) => registry.node_entity(id),
+        NodeRef::Id(id) => maps.nodes.get(id).copied(),
     };
     let Some(child_ent) = child_ent else { return };
 
     let parent_ent = match &ev.parent {
-        None => doc_entity,
+        None => doc_ent,
         Some(NodeRef::Entity(p)) => *p,
         Some(NodeRef::Id(pid)) => {
-            let Some(ent) = registry.node_entity(pid) else {
+            let Some(&ent) = maps.nodes.get(pid) else {
                 return;
             };
             ent
@@ -324,14 +313,12 @@ pub(crate) fn insert_rigid_body(ent: Entity, data: &HsdRigidBody, commands: &mut
 pub(crate) fn handle_hsd_node_rigid_body_set(
     trigger: On<HsdNodeRigidBodySet>,
     registry_map: Res<DocRegistryMap>,
+    entity_maps: Query<&HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, kind = ?ev.rigid_body.as_ref().map(|r| &r.kind), "node rigid body set");
-    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
-        return;
-    };
-    let Some(ent) = registry.node_entity(&ev.id) else {
+    let Some(ent) = node_entity(&registry_map, &entity_maps, &ev.doc_id, &ev.id) else {
         return;
     };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
@@ -351,14 +338,12 @@ pub(crate) fn handle_hsd_node_rigid_body_set(
 pub(crate) fn handle_hsd_node_scripts_set(
     trigger: On<HsdNodeScriptsSet>,
     registry_map: Res<DocRegistryMap>,
+    entity_maps: Query<&HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, count = ev.scripts.len(), "node scripts set");
-    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
-        return;
-    };
-    let Some(ent) = registry.node_entity(&ev.id) else {
+    let Some(ent) = node_entity(&registry_map, &entity_maps, &ev.doc_id, &ev.id) else {
         return;
     };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
@@ -374,14 +359,12 @@ pub(crate) fn handle_hsd_node_scripts_set(
 pub(crate) fn handle_hsd_node_transform_set(
     trigger: On<HsdNodeTransformSet>,
     registry_map: Res<DocRegistryMap>,
+    entity_maps: Query<&HsdEntityMaps>,
     mut transforms: Query<&mut Transform>,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "node transform set");
-    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
-        return;
-    };
-    let Some(ent) = registry.node_entity(&ev.id) else {
+    let Some(ent) = node_entity(&registry_map, &entity_maps, &ev.doc_id, &ev.id) else {
         return;
     };
     if let Ok(mut t) = transforms.get_mut(ent) {
@@ -392,7 +375,7 @@ pub(crate) fn handle_hsd_node_transform_set(
 pub(crate) fn on_mesh_ref_set(
     trigger: On<Add, MeshRef>,
     nodes: Query<(&MeshRef, &HsdChild), With<NodeId>>,
-    registries: Query<&SceneRegistry>,
+    entity_maps: Query<&HsdEntityMaps>,
     compiled_meshes: Query<&CompiledMesh>,
     mut commands: Commands,
 ) {
@@ -400,10 +383,10 @@ pub(crate) fn on_mesh_ref_set(
     let Ok((mesh_ref, hsd_child)) = nodes.get(node_ent) else {
         return;
     };
-    let Ok(registry) = registries.get(hsd_child.doc) else {
+    let Ok(maps) = entity_maps.get(hsd_child.doc) else {
         return;
     };
-    let Some(mesh_ent) = registry.0.mesh_entity(&mesh_ref.0) else {
+    let Some(&mesh_ent) = maps.meshes.get(&mesh_ref.0) else {
         return;
     };
     let Ok(compiled_mesh) = compiled_meshes.get(mesh_ent) else {
@@ -417,7 +400,7 @@ pub(crate) fn on_mesh_ref_set(
 pub(crate) fn on_material_ref_set(
     trigger: On<Add, MaterialRef>,
     nodes: Query<(&MaterialRef, &HsdChild), With<NodeId>>,
-    registries: Query<&SceneRegistry>,
+    entity_maps: Query<&HsdEntityMaps>,
     compiled_mats: Query<&CompiledMaterial>,
     mut commands: Commands,
 ) {
@@ -425,10 +408,10 @@ pub(crate) fn on_material_ref_set(
     let Ok((mat_ref, hsd_child)) = nodes.get(node_ent) else {
         return;
     };
-    let Ok(registry) = registries.get(hsd_child.doc) else {
+    let Ok(maps) = entity_maps.get(hsd_child.doc) else {
         return;
     };
-    let Some(mat_ent) = registry.0.material_entity(&mat_ref.0) else {
+    let Some(&mat_ent) = maps.materials.get(&mat_ref.0) else {
         return;
     };
     let Ok(compiled_mat) = compiled_mats.get(mat_ent) else {
@@ -447,9 +430,9 @@ pub(crate) fn on_mesh_ref_removed(trigger: On<Remove, MeshRef>, mut commands: Co
 
 pub(crate) fn on_mesh_compiled(
     trigger: On<Add, CompiledMesh>,
-    mesh_query: Query<(&HsdChild, &CompiledMesh)>,
+    mesh_query: Query<(&HsdChild, &CompiledMesh, &MeshId)>,
     node_refs: Query<(Entity, &MeshRef, &HsdChild), With<NodeId>>,
-    registries: Query<&SceneRegistry>,
+    entity_maps: Query<&HsdEntityMaps>,
     compiled_mats: Query<&CompiledMaterial>,
     mat_refs: Query<&MaterialRef>,
     asset_server: Res<AssetServer>,
@@ -457,24 +440,15 @@ pub(crate) fn on_mesh_compiled(
     mut default_material: Local<Option<Handle<StandardMaterial>>>,
 ) {
     let mesh_ent = trigger.entity;
-    let Ok((mesh_child, compiled_mesh)) = mesh_query.get(mesh_ent) else {
+    let Ok((mesh_child, compiled_mesh, mesh_id)) = mesh_query.get(mesh_ent) else {
         return;
     };
-    let Ok(registry) = registries.get(mesh_child.doc) else {
+    let Ok(maps) = entity_maps.get(mesh_child.doc) else {
         return;
     };
-
-    let mesh_id = {
-        let meshes = registry.0.meshes.lock().expect("meshes lock");
-        meshes
-            .iter()
-            .find(|(_, inner)| *inner.entity.lock().expect("entity lock") == Some(mesh_ent))
-            .map(|(id, _)| id.clone())
-    };
-    let Some(mesh_id) = mesh_id else { return };
 
     for (node_ent, mesh_ref, node_child) in &node_refs {
-        if node_child.doc != mesh_child.doc || mesh_ref.0 != mesh_id {
+        if node_child.doc != mesh_child.doc || mesh_ref.0 != mesh_id.0 {
             continue;
         }
         if let Ok(mut entity_cmd) = commands.get_entity(node_ent) {
@@ -482,7 +456,7 @@ pub(crate) fn on_mesh_compiled(
         }
         assign_material(
             node_ent,
-            registry,
+            maps,
             &compiled_mats,
             &mat_refs,
             &asset_server,
@@ -494,30 +468,17 @@ pub(crate) fn on_mesh_compiled(
 
 pub(crate) fn on_material_compiled(
     trigger: On<Add, CompiledMaterial>,
-    mat_query: Query<(&HsdChild, &CompiledMaterial)>,
+    mat_query: Query<(&HsdChild, &CompiledMaterial, &MaterialId)>,
     node_refs: Query<(Entity, &MaterialRef, &HsdChild), With<NodeId>>,
-    registries: Query<&SceneRegistry>,
     mut commands: Commands,
 ) {
     let mat_ent = trigger.entity;
-    let Ok((mat_child, compiled_mat)) = mat_query.get(mat_ent) else {
+    let Ok((mat_child, compiled_mat, mat_id)) = mat_query.get(mat_ent) else {
         return;
     };
-    let Ok(registry) = registries.get(mat_child.doc) else {
-        return;
-    };
-
-    let mat_id = {
-        let materials = registry.0.materials.lock().expect("materials lock");
-        materials
-            .iter()
-            .find(|(_, inner)| *inner.entity.lock().expect("entity lock") == Some(mat_ent))
-            .map(|(id, _)| id.clone())
-    };
-    let Some(mat_id) = mat_id else { return };
 
     for (node_ent, mat_ref, node_child) in &node_refs {
-        if node_child.doc != mat_child.doc || mat_ref.0 != mat_id {
+        if node_child.doc != mat_child.doc || mat_ref.0 != mat_id.0 {
             continue;
         }
         if let Ok(mut entity_cmd) = commands.get_entity(node_ent) {
@@ -528,7 +489,7 @@ pub(crate) fn on_material_compiled(
 
 fn assign_material(
     node_ent: Entity,
-    registry: &SceneRegistry,
+    maps: &HsdEntityMaps,
     compiled_mats: &Query<&CompiledMaterial>,
     mat_refs: &Query<&MaterialRef>,
     asset_server: &AssetServer,
@@ -539,7 +500,7 @@ fn assign_material(
         return;
     };
     if let Ok(mat_ref) = mat_refs.get(node_ent) {
-        let mat_ent = registry.0.material_entity(&mat_ref.0);
+        let mat_ent = maps.materials.get(&mat_ref.0).copied();
         if let Some(mat_ent) = mat_ent
             && let Ok(compiled_mat) = compiled_mats.get(mat_ent)
         {
@@ -551,6 +512,17 @@ fn assign_material(
             .clone();
         entity_cmd.insert(MeshMaterial3d(mat));
     }
+}
+
+fn node_entity(
+    registry_map: &DocRegistryMap,
+    entity_maps: &Query<&HsdEntityMaps>,
+    doc_id: &blake3::Hash,
+    id: &SmolStr,
+) -> Option<Entity> {
+    let doc_ent = registry_map.get_entity(doc_id)?;
+    let maps = entity_maps.get(doc_ent).ok()?;
+    maps.nodes.get(id).copied()
 }
 
 fn is_transform_hierarchy_degenerate(
@@ -609,8 +581,6 @@ pub fn guard_physics_scale(
         } else {
             if !has_collider && let Some(ref c) = physics.collider {
                 insert_collider(ent, c, &mut commands);
-                // TODO this was vibe coded, is it correct? (fml)
-                //
                 // Bare colliders (no RigidBody) must be sensors so Avian's island
                 // solver is never involved — preventing panics from static-static
                 // or "not in island" contact pairs that scripts can inadvertently

@@ -11,14 +11,28 @@ use bytemuck::{Pod, PodCastError, try_cast_slice};
 use bytes::Bytes;
 use smol_str::SmolStr;
 
-use crate::{DocRegistryMap, HsdChild, cache::MeshState, data::HsdMesh};
+use crate::{DocRegistryMap, HsdChild, MeshId, data::HsdMesh};
 
 #[derive(Component)]
 pub struct CompiledMesh(pub Handle<Mesh>);
 
+/// Inline mesh geometry for testing or programmatic mesh creation.
+#[derive(Clone, Default)]
+pub struct MeshState {
+    pub name: Option<String>,
+    pub topology: PrimitiveTopology,
+    pub indices: Option<Vec<u32>>,
+    pub positions: Option<Vec<f32>>,
+    pub normals: Option<Vec<f32>>,
+    pub tangents: Option<Vec<f32>>,
+    pub colors: Option<Vec<f32>>,
+    pub uv0: Option<Vec<f32>>,
+    pub uv1: Option<Vec<f32>>,
+}
+
 pub enum MeshGeometrySource {
-    Inline,
     Hsd(Box<HsdMesh>),
+    Inline(Box<MeshState>),
 }
 
 #[derive(Event)]
@@ -54,60 +68,63 @@ pub struct MeshParams {
 pub(crate) fn handle_hsd_mesh_spawned(
     trigger: On<HsdMeshSpawned>,
     registry_map: Res<DocRegistryMap>,
+    mut entity_maps: Query<&mut crate::HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "mesh spawned");
-    let Some((doc_entity, registry)) = registry_map.get(&ev.doc_id) else {
+    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
         return;
     };
-    let inner = registry
-        .meshes
-        .lock()
-        .expect("meshes lock")
-        .get(&ev.id)
-        .cloned();
-    let Some(inner) = inner else { return };
-    if inner.entity.lock().expect("entity lock").is_some() {
+    let Ok(mut maps) = entity_maps.get_mut(doc_ent) else {
+        return;
+    };
+    if maps.meshes.contains_key(&ev.id) {
         return;
     }
-    let ent = commands.spawn(HsdChild { doc: doc_entity }).id();
-    *inner.entity.lock().expect("entity lock") = Some(ent);
+    let ent = commands
+        .spawn((HsdChild { doc: doc_ent }, MeshId(ev.id.clone())))
+        .id();
+    maps.meshes.insert(ev.id.clone(), ent);
 }
 
 pub(crate) fn handle_hsd_mesh_despawned(
     trigger: On<HsdMeshDespawned>,
     registry_map: Res<DocRegistryMap>,
+    mut entity_maps: Query<&mut crate::HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "mesh despawned");
-    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
+    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
         return;
     };
-    let inner = {
-        let mut meshes = registry.meshes.lock().expect("meshes lock");
-        meshes.remove(&ev.id)
+    let Ok(mut maps) = entity_maps.get_mut(doc_ent) else {
+        return;
     };
-    let Some(inner) = inner else { return };
-    if let Some(ent) = *inner.entity.lock().expect("entity lock")
-        && let Ok(mut ent) = commands.get_entity(ent)
-    {
-        ent.despawn();
+    let Some(ent) = maps.meshes.remove(&ev.id) else {
+        return;
+    };
+    if let Ok(mut entity_cmd) = commands.get_entity(ent) {
+        entity_cmd.despawn();
     }
 }
 
 pub(crate) fn handle_hsd_mesh_geometry_set(
     trigger: On<HsdMeshGeometrySet>,
     registry_map: Res<DocRegistryMap>,
+    entity_maps: Query<&crate::HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "mesh geometry set");
-    let Some((_, registry)) = registry_map.get(&ev.doc_id) else {
+    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
         return;
     };
-    let Some(ent) = registry.mesh_entity(&ev.id) else {
+    let Ok(maps) = entity_maps.get(doc_ent) else {
+        return;
+    };
+    let Some(&ent) = maps.meshes.get(&ev.id) else {
         return;
     };
     commands
@@ -119,15 +136,8 @@ pub(crate) fn handle_hsd_mesh_geometry_set(
         MeshGeometrySource::Hsd(hsd_mesh) => {
             setup_hsd_mesh_blobs(ent, hsd_mesh, &mut commands);
         }
-        MeshGeometrySource::Inline => {
-            let state = registry
-                .meshes
-                .lock()
-                .expect("meshes lock")
-                .get(&ev.id)
-                .map(|m| m.state.lock().expect("mesh state lock").clone());
-            let Some(state) = state else { return };
-            attach_inline_mesh(ent, &state, &mut commands);
+        MeshGeometrySource::Inline(state) => {
+            attach_inline_mesh(ent, state, &mut commands);
         }
     }
 }

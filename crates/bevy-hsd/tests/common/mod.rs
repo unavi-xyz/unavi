@@ -8,8 +8,7 @@ use avian3d::{
 };
 use bevy::{prelude::*, scene::ScenePlugin, transform::TransformPlugin};
 use bevy_hsd::{
-    HsdDoc, HsdPlugin, HsdRecordId,
-    cache::{MeshState, SceneRegistry},
+    HsdDoc, HsdPlugin, HsdRecordId, MeshState,
     hydrate::compile::mesh::{HsdMeshGeometrySet, MeshGeometrySource},
 };
 use loro::{LoroDoc, LoroMap};
@@ -78,26 +77,10 @@ impl TestHarness {
             .expect("mesh map entry");
         self.commit_and_update();
 
-        let registry = self
-            .app
-            .world()
-            .get::<SceneRegistry>(self.doc_entity)
-            .expect("SceneRegistry")
-            .clone();
-        let mesh_inner = registry
-            .0
-            .meshes
-            .lock()
-            .expect("meshes lock")
-            .get(id)
-            .cloned()
-            .expect("mesh inner");
-        *mesh_inner.state.lock().expect("mesh state lock") = state;
-
         self.app.world_mut().trigger(HsdMeshGeometrySet {
             doc_id: self.doc_id,
             id: id.into(),
-            source: MeshGeometrySource::Inline,
+            source: MeshGeometrySource::Inline(Box::new(state)),
         });
         self.app.world_mut().flush();
         Self::tick(&mut self.app);

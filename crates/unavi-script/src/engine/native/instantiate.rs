@@ -18,7 +18,8 @@ use crate::{
         },
     },
     load::asset::Wasm,
-    runtime::{StoreState, native::NativeStoreState},
+    permissions::ApiPermissions,
+    runtime::{StoreState, api::add_apis_to_linker, native::NativeStoreState},
 };
 
 #[derive(Component, Deref, DerefMut)]
@@ -38,12 +39,18 @@ pub fn instantiate_scripts(
     wasms: Res<Assets<Wasm>>,
     engines: Query<&WasmtimeEngine>,
     to_instantiate: Query<
-        (Entity, &Script, &ScriptEngine, Option<&Name>),
+        (
+            Entity,
+            &Script,
+            &ScriptEngine,
+            &ApiPermissions,
+            Option<&Name>,
+        ),
         Or<(Without<InstantiatingScript>, Without<ScriptGuest>)>,
     >,
     mut commands: Commands,
 ) {
-    for (entity, script, engine_ent, name) in to_instantiate {
+    for (entity, script, engine_ent, perms, name) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };
@@ -70,6 +77,7 @@ pub fn instantiate_scripts(
         let store = Arc::new(Mutex::new(Store::new(&engine.0, state)));
 
         let engine = engine.0.clone();
+        let perms = perms.clone();
         let wasm = wasm.0.clone();
 
         let (tx, rx) = tokio::sync::oneshot::channel();
@@ -81,7 +89,7 @@ pub fn instantiate_scripts(
             let store = Arc::clone(&store);
             async move {
                 let mut store = store.lock().await;
-                match instantiate_component(&engine, &wasm, &mut store).await {
+                match instantiate_component(&engine, &wasm, &mut store, &perms).await {
                     Ok(g) => {
                         let _ = tx.send(g);
                     }
@@ -115,11 +123,13 @@ async fn instantiate_component(
     engine: &wasmtime::Engine,
     binary: &[u8],
     store: &mut Store<StoreState>,
+    perms: &ApiPermissions,
 ) -> anyhow::Result<bindings::Guest> {
     let component = wasmtime::component::Component::from_binary(engine, binary)?;
 
     let mut linker = Linker::new(engine);
     wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
+    add_apis_to_linker(&mut linker, perms)?;
 
     let guest = bindings::Guest::instantiate_async(store, &component, &linker).await?;
 

@@ -1,5 +1,5 @@
-mod api;
-
+#[cfg(not(target_family = "wasm"))]
+pub mod api;
 #[cfg(not(target_family = "wasm"))]
 pub mod native;
 

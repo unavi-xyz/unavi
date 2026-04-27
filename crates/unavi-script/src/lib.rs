@@ -18,4 +18,5 @@ impl Plugin for ScriptPlugin {
 }
 
 #[derive(Component)]
+#[require(permissions::ApiPermissions)]
 pub struct Script(pub Handle<Wasm>);

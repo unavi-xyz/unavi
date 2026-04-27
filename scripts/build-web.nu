@@ -73,15 +73,15 @@ def bundle-jco-runtime [] {
   )
 
   let jco_obj = "crates/unavi-script/node_modules/@bytecodealliance/jco/obj"
-  let scripts = "crates/unavi-script/assets/scripts"
+  let scripts = "crates/unavi-script/assets"
   cp $"($jco_obj)/js-component-bindgen-component.core.wasm" $scripts
   cp $"($jco_obj)/js-component-bindgen-component.core2.wasm" $scripts
 }
 
 # Copy script assets from unavi-script to unavi-client for Trunk.
 def copy-scripts-to-client [] {
-  let source = "crates/unavi-script/assets/scripts"
-  let target = "crates/unavi-client/assets/scripts"
+  let source = "crates/unavi-script/assets"
+  let target = "crates/unavi-client/assets/unavi-script"
   rm -rf $target
   cp -r $source $target
 }

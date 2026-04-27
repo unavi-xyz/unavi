@@ -14,10 +14,9 @@ default = []
 loro    = ["dep:anyhow", "dep:loro", "dep:loro-surgeon"]
 
 [dependencies]
-blake3.workspace   = true
-postcard.workspace = true
-serde              = { features = ["derive"], workspace = true }
-xdid.workspace     = true
+blake3.workspace = true
+serde            = { features = ["derive"], workspace = true }
+xdid.workspace   = true
 
 anyhow       = { optional = true, workspace = true }
 loro         = { optional = true, workspace = true }

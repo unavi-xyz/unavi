@@ -30,23 +30,11 @@ bevy-iroh.path         = "../bevy-iroh"
 bevy-wds.path          = "../bevy-wds"
 bevy_vrm.workspace     = true
 bitflags               = "2.11.0"
-blake3.workspace       = true
-bytemuck.workspace     = true
-bytes.workspace        = true
 clap.workspace         = true
-half.workspace         = true
 image                  = { default-features = false, features = ["png"], workspace = true }
 iroh.workspace         = true
 log                    = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
 loro.workspace         = true
-n0-future.workspace    = true
-parking_lot.workspace  = true
-postcard.workspace     = true
-rand.workspace         = true
-scc.workspace          = true
-serde.workspace        = true
-smol_str.workspace     = true
-time.workspace         = true
 tracing                = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
 unavi-agent.path       = "../unavi-agent"
 unavi-assets.path      = "../unavi-assets"
@@ -61,16 +49,14 @@ unavi-wasm-compat.path = "../unavi-wasm-compat"
 wds.path               = "../wds"
 web-time               = "1.1.0"
 winit                  = { default-features = false, version = "0.30.13" }
-wired-records          = { features = ["loro"], path = "../wired-records" }
 wired-schemas.path     = "../wired-schemas"
 xdid.workspace         = true
 zeroize.workspace      = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-reqwest.workspace    = true
-tokio                = { features = ["rt"], workspace = true }
-wasm-bindgen-futures = "0.4.67"
-web-sys              = { features = ["Location", "UrlSearchParams"], workspace = true }
+reqwest.workspace = true
+tokio             = { features = ["rt"], workspace = true }
+web-sys           = { features = ["Location", "UrlSearchParams"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 bevy_mod_openxr         = "0.5.0"

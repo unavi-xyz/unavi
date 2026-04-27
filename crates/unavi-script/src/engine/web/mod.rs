@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+mod bindings;
+
 pub struct WebEnginePlugin;
 
 impl Plugin for WebEnginePlugin {

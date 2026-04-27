@@ -14,7 +14,7 @@ pub async fn try_open_connection(endpoint: Endpoint, peer: EndpointAddr) {
         error!(?err);
 
         {
-            let mut conns = CONNECTIONS.lock().await;
+            let mut conns = CONNECTIONS.lock().expect("connections lock");
             conns.remove(&peer.id);
         }
 
@@ -32,13 +32,13 @@ pub async fn try_open_connection(endpoint: Endpoint, peer: EndpointAddr) {
         delay_secs = delay_secs.wrapping_mul(2);
     }
 
-    let mut conns = CONNECTIONS.lock().await;
+    let mut conns = CONNECTIONS.lock().expect("connections lock");
     conns.remove(&peer.id);
 }
 
 async fn open_connection(endpoint: Endpoint, peer: EndpointAddr) -> anyhow::Result<()> {
     let cancel_rx = {
-        let mut conns = CONNECTIONS.lock().await;
+        let mut conns = CONNECTIONS.lock().expect("connections lock");
         if conns.contains_key(&peer.id) {
             return Ok(());
         }

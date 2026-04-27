@@ -6,7 +6,9 @@ use bevy_iroh::{
     router::{RouterBuilderFn, RouterBuilderFnTarget},
 };
 use iroh::EndpointId;
-use tokio::sync::{Mutex, oneshot};
+use std::sync::Mutex;
+
+use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
 
 use crate::{connection::ecs::PeerStream, peer::Peer};
@@ -60,7 +62,7 @@ pub fn disconnect_peer(
     let peer = peers.get(trigger.entity).expect("peer");
 
     // Dropping the sender signals the connection task to exit.
-    let mut conns = CONNECTIONS.blocking_lock();
+    let mut conns = CONNECTIONS.lock().expect("connections lock");
     conns.remove(&peer.0.id);
     drop(conns);
 

@@ -1,12 +1,13 @@
 use std::{sync::Arc, time::Duration};
 
-use bevy::{prelude::*, tasks::TaskPool};
+use bevy::prelude::*;
 use bevy_iroh::endpoint::IrohEndpoint;
 use bevy_wds::{
     LocalActor,
     record::write::{SchemaDef, WriteRecord},
 };
 use time::OffsetDateTime;
+use unavi_util::async_task::spawn_async_task;
 use wired_records::{BeaconRecord, HydratedDid, HydratedEndpoint, HydratedHash};
 use wired_schemas::SCHEMA_BEACON;
 
@@ -41,7 +42,6 @@ pub fn publish_beacons(
 
     let did = actor.0.identity().did().clone();
     let endpoint_id = endpoint.0.id();
-    let pool = TaskPool::get_thread_executor();
 
     for space in spaces {
         let did = did.clone();
@@ -65,12 +65,11 @@ pub fn publish_beacons(
             }),
         }];
 
-        pool.spawn(async move {
+        spawn_async_task(async move {
             if let Some(id) = rx.recv().await {
                 info!(%id, "Published beacon");
             }
-        })
-        .detach();
+        });
 
         commands.trigger(event);
     }

@@ -1,10 +1,17 @@
-use std::time::{Duration, Instant};
+use std::{
+    sync::Arc,
+    time::{Duration, Instant},
+};
 
 use bevy::{log::LogPlugin, prelude::*};
 use bevy_hsd::HsdPlugin;
-use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin, util::create_test_wds};
+use bevy_wds::{LocalActor, LocalBlobs, WdsPlugin};
+use iroh::{endpoint::presets::N0, protocol::Router};
 use tracing_subscriber::Layer;
 use unavi_script::{ScriptPlugin, load::local::LoadLocalScript, permissions::ApiPermissions};
+use unavi_util::async_task::spawn_async_task;
+use wds::{Blobs, DataStore, Identity, actor::Actor};
+use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 use crate::setup::logs::LOGS;
 
@@ -68,4 +75,36 @@ pub fn tick_app(app: &mut App) {
     app.update();
     // Sleep to allow async work to run and for virtual time to advance by TICK.
     std::thread::sleep(Duration::from_millis(300));
+}
+
+#[must_use]
+pub fn create_test_wds() -> (Actor, Blobs) {
+    let (tx, rx) = std::sync::mpsc::sync_channel(1);
+
+    spawn_async_task(async move {
+        let endpoint = iroh::Endpoint::builder(N0)
+            .bind()
+            .await
+            .expect("iroh endpoint");
+
+        let (store, f) = DataStore::builder(endpoint.clone())
+            .build()
+            .await
+            .expect("data store");
+
+        let rb = Router::builder(endpoint);
+        let rb = f(rb);
+        let _router = rb.spawn();
+
+        let blobs = store.blobs().blobs().clone();
+
+        let signing_key = P256KeyPair::generate();
+        let did = signing_key.public().to_did();
+        let identity = Arc::new(Identity::new(did, signing_key));
+        let actor = store.local_actor(identity);
+
+        tx.send((actor, blobs)).expect("send");
+    });
+
+    rx.recv().expect("wds setup")
 }

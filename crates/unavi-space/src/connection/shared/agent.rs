@@ -4,10 +4,7 @@ use bevy::ecs::world::CommandQueue;
 use iroh::endpoint::{Connection, RecvStream, SendStream};
 use postcard::experimental::max_size::MaxSize;
 use serde::{Deserialize, Serialize};
-use tokio::{
-    io::{AsyncReadExt, AsyncWriteExt},
-    time::Instant,
-};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
 
 use crate::connection::{
@@ -47,12 +44,12 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
 
     let mut iframe_id = 0;
     let mut last_iframe = Pose::default();
-    let mut last_iframe_time = Instant::now() - IFRAME_FREQ;
+    let mut last_iframe_time = n0_future::time::Instant::now() - IFRAME_FREQ;
 
     let mut buf = [0; AgentMsg::POSTCARD_MAX_SIZE];
 
     while let Some(pose) = pose_rx.recv().await {
-        let now = Instant::now();
+        let now = n0_future::time::Instant::now();
 
         // Convert to i-frame or p-frame.
         let msg = if now.duration_since(last_iframe_time) >= IFRAME_FREQ {

@@ -10,21 +10,22 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace   = true
-avian3d.workspace  = true
-bevy.workspace     = true
-bevy-wds.path      = "../bevy-wds"
-blake3.workspace   = true
-bytemuck.workspace = true
-bytes.workspace    = true
-hsd.path           = "../hsd"
-image              = { default-features = false, features = ["jpeg", "png", "webp"], workspace = true }
-loro.workspace     = true
-loro-surgeon.path  = "../loro-surgeon"
-smol_str.workspace = true
-unavi-util.path    = "../unavi-util"
-wds.path           = "../wds"
-wired-records      = { features = ["loro"], path = "../wired-records" }
+anyhow.workspace        = true
+async-channel.workspace = true
+avian3d.workspace       = true
+bevy.workspace          = true
+bevy-wds.path           = "../bevy-wds"
+blake3.workspace        = true
+bytemuck.workspace      = true
+bytes.workspace         = true
+hsd.path                = "../hsd"
+image                   = { default-features = false, features = ["jpeg", "png", "webp"], workspace = true }
+loro.workspace          = true
+loro-surgeon.path       = "../loro-surgeon"
+smol_str.workspace      = true
+unavi-util.path         = "../unavi-util"
+wds.path                = "../wds"
+wired-records           = { features = ["loro"], path = "../wired-records" }
 
 [dev-dependencies]
 bevy                           = { features = ["debug"], workspace = true }

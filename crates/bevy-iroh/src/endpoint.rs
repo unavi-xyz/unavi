@@ -1,7 +1,4 @@
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::time::Duration;
 
 use bevy::prelude::*;
 use iroh::{Endpoint, endpoint::presets::N0, endpoint_info::AddrFilter};
@@ -22,7 +19,7 @@ pub struct LoadEndpoint {
 }
 
 pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands) {
-    let (tx, rx) = std::sync::mpsc::channel();
+    let (tx, rx) = async_channel::bounded(1);
     let opts = trigger.event().clone();
 
     spawn_async_task(async move {
@@ -31,7 +28,7 @@ pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands
         loop {
             match init_endpoint(&opts).await {
                 Ok(val) => {
-                    tx.send(val).expect("send endpoint");
+                    tx.send(val).await.expect("send endpoint");
                     break;
                 }
                 Err(err) => {
@@ -43,22 +40,18 @@ pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands
         }
     });
 
-    commands.spawn(LoadingEndpoint(Arc::new(Mutex::new(rx))));
+    commands.spawn(LoadingEndpoint(rx));
 }
 
 #[derive(Component)]
-pub(crate) struct LoadingEndpoint(Arc<Mutex<std::sync::mpsc::Receiver<Endpoint>>>);
+pub(crate) struct LoadingEndpoint(async_channel::Receiver<Endpoint>);
 
 pub(crate) fn recieve_endpoint(mut commands: Commands, loading: Query<(Entity, &LoadingEndpoint)>) {
     let Some((ent, rx)) = loading.iter().next() else {
         return;
     };
 
-    let Ok(lock) = rx.0.try_lock() else {
-        return;
-    };
-
-    let Ok(endpoint) = lock.try_recv() else {
+    let Ok(endpoint) = rx.0.try_recv() else {
         return;
     };
 

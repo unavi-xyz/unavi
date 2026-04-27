@@ -24,8 +24,8 @@ pub enum GossipCommand {
     },
 }
 
-pub async fn handle_gossip_thread(mut rx: tokio::sync::mpsc::Receiver<GossipCommand>) {
-    while let Some(cmd) = rx.recv().await {
+pub async fn handle_gossip_thread(rx: async_channel::Receiver<GossipCommand>) {
+    while let Ok(cmd) = rx.recv().await {
         match cmd {
             GossipCommand::JoinSpace { ctx, cancel, space } => {
                 n0_future::task::spawn(async move {

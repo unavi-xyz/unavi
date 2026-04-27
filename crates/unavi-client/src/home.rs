@@ -60,6 +60,8 @@ async fn create_and_join_home(
         actors.push(remote.clone());
     }
 
+    // TODO load asset from bevy, not file path, so it works no web
+
     let hsd_doc =
         bevy_hsd::load_hsd::build_hsd_doc_from_file(PathBuf::from(DEFAULT_HOME_HSD), &actors)
             .await?;

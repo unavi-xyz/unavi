@@ -1,9 +1,7 @@
-use std::sync::Arc;
-
 use bevy::prelude::*;
 use blake3::Hash;
 use bytes::Bytes;
-use tokio::sync::{Mutex, mpsc::Receiver, oneshot};
+use tokio::sync::oneshot;
 
 use crate::blob::get::GetBlob;
 
@@ -12,7 +10,7 @@ pub struct BlobRequest(pub Hash);
 
 #[derive(Component)]
 pub struct BlobPending {
-    rx: Arc<Mutex<Receiver<Bytes>>>,
+    rx: async_channel::Receiver<Bytes>,
     _cancel: oneshot::Sender<()>,
 }
 
@@ -32,7 +30,7 @@ pub(crate) fn on_blob_request_add(
     let req = requests.get(trigger.entity).expect("blob request");
 
     let (cancel_tx, cancel_rx) = oneshot::channel();
-    let (tx, rx) = tokio::sync::mpsc::channel(1);
+    let (tx, rx) = async_channel::bounded(1);
 
     commands.trigger(GetBlob {
         hash: req.0,
@@ -41,18 +39,14 @@ pub(crate) fn on_blob_request_add(
     });
 
     commands.entity(trigger.entity).insert(BlobPending {
-        rx: Arc::new(Mutex::new(rx)),
+        rx,
         _cancel: cancel_tx,
     });
 }
 
 pub(crate) fn recv_blob_responses(mut commands: Commands, loading: Query<(Entity, &BlobPending)>) {
     for (entity, load) in loading {
-        let Ok(mut rx) = load.rx.try_lock() else {
-            continue;
-        };
-
-        let Ok(bytes) = rx.try_recv() else {
+        let Ok(bytes) = load.rx.try_recv() else {
             continue;
         };
 

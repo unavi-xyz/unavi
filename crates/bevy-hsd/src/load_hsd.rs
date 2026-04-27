@@ -2,6 +2,8 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
+use async_channel::Receiver;
+
 use anyhow::Context;
 use bevy::prelude::*;
 use bevy_wds::LocalActor;
@@ -23,7 +25,7 @@ pub struct HsdFilePath(pub PathBuf);
 
 struct PendingLoad {
     entity: Entity,
-    rx: std::sync::mpsc::Receiver<anyhow::Result<Arc<LoroDoc>>>,
+    rx: Receiver<anyhow::Result<Arc<LoroDoc>>>,
 }
 
 #[derive(Resource)]
@@ -59,7 +61,7 @@ pub fn start_hsd_loads(
     for (entity, HsdFilePath(path)) in &queued {
         let path = path.clone();
         let actor = actor.clone();
-        let (tx, rx) = std::sync::mpsc::channel();
+        let (tx, rx) = async_channel::bounded(1);
         pending
             .0
             .lock()
@@ -67,7 +69,9 @@ pub fn start_hsd_loads(
             .push(PendingLoad { entity, rx });
 
         spawn_async_task(async move {
-            let _ = tx.send(build_hsd_doc_from_file(path, &[actor]).await);
+            tx.send(build_hsd_doc_from_file(path, &[actor]).await)
+                .await
+                .ok();
         });
 
         commands.entity(entity).remove::<HsdFilePath>();
@@ -90,10 +94,10 @@ pub fn poll_hsd_file_loads(pending: Res<PendingHsdLoads>, mut commands: Commands
             Ok(Err(err)) => {
                 error!(?err, "LoadHsdFile failed");
             }
-            Err(std::sync::mpsc::TryRecvError::Empty) => {
+            Err(async_channel::TryRecvError::Empty) => {
                 still_pending.push(p);
             }
-            Err(std::sync::mpsc::TryRecvError::Disconnected) => {}
+            Err(async_channel::TryRecvError::Closed) => {}
         }
     }
     *loads = still_pending;

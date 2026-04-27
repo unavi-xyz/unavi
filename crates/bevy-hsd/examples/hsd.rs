@@ -52,15 +52,15 @@ fn setup_scene(mut commands: Commands, mut scattering_mediums: ResMut<Assets<Sca
 struct BlobStore(MemStore);
 
 fn load_hsd(mut commands: Commands) {
-    let (tx, rx) = std::sync::mpsc::channel();
+    let (tx, rx) = async_channel::bounded(1);
 
     spawn_async_task(async move {
         let store = MemStore::default();
-        tx.send(store.clone()).expect("send");
+        tx.send(store.clone()).await.expect("send");
         std::future::pending::<()>().await;
     });
 
-    let store = rx.recv().expect("recv");
+    let store = rx.recv_blocking().expect("recv");
     commands.spawn(LocalBlobs(store.blobs().clone()));
 
     let doc = LoroDoc::new();

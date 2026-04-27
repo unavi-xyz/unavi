@@ -1,8 +1,9 @@
 use anyhow::bail;
+use async_channel::Sender;
 use bevy::{prelude::*, tasks::futures_lite::StreamExt};
 use blake3::Hash;
 use bytes::Bytes;
-use tokio::sync::{mpsc::Sender, oneshot};
+use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
 use wds::Blobs;
 

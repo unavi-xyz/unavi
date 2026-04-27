@@ -1,12 +1,9 @@
 use std::{sync::LazyLock, time::Duration};
 
+use async_channel::{Receiver, Sender};
 use bevy::{platform::collections::HashMap, prelude::*};
 use blake3::Hash;
 use iroh::EndpointAddr;
-use tokio::sync::{
-    Mutex,
-    mpsc::{Receiver, Sender},
-};
 
 use crate::peer::{ActiveSpaces, Peer};
 
@@ -20,11 +17,8 @@ const INACTIVE_SECS: f32 = PRESENCE_INTERVAL.as_secs_f32() * 4.0;
 
 const SIZE: usize = 32;
 
-pub static PRESENCE_QUEUE: LazyLock<(Sender<PresenceUpdate>, Mutex<Receiver<PresenceUpdate>>)> =
-    LazyLock::new(|| {
-        let (tx, rx) = tokio::sync::mpsc::channel(SIZE);
-        (tx, Mutex::new(rx))
-    });
+pub static PRESENCE_QUEUE: LazyLock<(Sender<PresenceUpdate>, Receiver<PresenceUpdate>)> =
+    LazyLock::new(|| async_channel::bounded(SIZE));
 
 pub fn manage_peers(
     time: Res<Time>,
@@ -32,14 +26,10 @@ pub fn manage_peers(
     mut commands: Commands,
     mut to_remove: Local<Vec<Hash>>,
 ) {
-    let Ok(mut guard) = PRESENCE_QUEUE.1.try_lock() else {
-        return;
-    };
-
     let now = time.elapsed_secs();
 
     // Refresh active timers.
-    while let Ok(update) = guard.try_recv() {
+    while let Ok(update) = PRESENCE_QUEUE.1.try_recv() {
         let Some((entity, _, mut spaces)) =
             peers.iter_mut().find(|(_, p, _)| p.0.id == update.peer.id)
         else {

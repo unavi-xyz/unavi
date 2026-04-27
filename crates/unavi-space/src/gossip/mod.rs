@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use bevy::prelude::*;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
@@ -42,10 +40,10 @@ enum SpaceMessage {
 pub struct IrohGossip(Gossip);
 
 #[derive(Component)]
-pub struct GossipSender(tokio::sync::mpsc::Sender<thread::GossipCommand>);
+pub struct GossipSender(async_channel::Sender<thread::GossipCommand>);
 
 #[derive(Component)]
-pub struct PendingGossip(Arc<Mutex<std::sync::mpsc::Receiver<Gossip>>>);
+pub struct PendingGossip(async_channel::Receiver<Gossip>);
 
 pub fn spawn_gossip(
     trigger: On<Add, IrohEndpoint>,
@@ -57,27 +55,23 @@ pub fn spawn_gossip(
         .map(|e| e.0.clone())
         .expect("endpoint");
 
-    let (gossip_tx, gossip_rx) = std::sync::mpsc::channel();
-    let (tx, rx) = tokio::sync::mpsc::channel(16);
+    let (gossip_tx, gossip_rx) = async_channel::bounded(1);
+    let (tx, rx) = async_channel::bounded(16);
 
     spawn_async_task(async move {
         let gossip = Gossip::builder().spawn(endpoint);
-        let _ = gossip_tx.send(gossip);
+        gossip_tx.send(gossip).await.ok();
         thread::handle_gossip_thread(rx).await;
     });
 
-    commands.entity(trigger.entity).insert((
-        GossipSender(tx),
-        PendingGossip(Arc::new(Mutex::new(gossip_rx))),
-    ));
+    commands
+        .entity(trigger.entity)
+        .insert((GossipSender(tx), PendingGossip(gossip_rx)));
 }
 
 pub fn poll_gossip(pending: Query<(Entity, &PendingGossip)>, mut commands: Commands) {
     for (entity, p) in &pending {
-        let Ok(lock) = p.0.try_lock() else {
-            continue;
-        };
-        let Ok(gossip) = lock.try_recv() else {
+        let Ok(gossip) = p.0.try_recv() else {
             continue;
         };
 
@@ -132,11 +126,14 @@ pub fn join_space_topic(
         .entity(trigger.entity)
         .insert(SpaceGossipCancel { _cancel: cancel_tx });
 
-    let _ = sender.0.try_send(GossipCommand::JoinSpace {
-        ctx,
-        cancel: cancel_rx,
-        space,
-    });
+    sender
+        .0
+        .send_blocking(GossipCommand::JoinSpace {
+            ctx,
+            cancel: cancel_rx,
+            space,
+        })
+        .expect("send gossip command");
 }
 
 #[derive(Component)]

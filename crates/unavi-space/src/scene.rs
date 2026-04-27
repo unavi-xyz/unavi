@@ -1,11 +1,12 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use async_channel::Receiver;
 use bevy::prelude::*;
 use bevy_hsd::{HsdDoc, HsdRecordId};
 use bevy_wds::record::read::ReadRecord;
 use loro::LoroDoc;
-use tokio::sync::{mpsc::Receiver, oneshot};
+use tokio::sync::oneshot;
 
 use crate::Space;
 
@@ -32,10 +33,10 @@ pub fn spawn_space_scene(trigger: On<Add, Space>, spaces: Query<&Space>, mut com
 }
 
 pub fn instantiate_pending_scenes(
-    mut pending: Query<(Entity, &Space, &mut PendingScene)>,
+    pending: Query<(Entity, &Space, &PendingScene)>,
     mut commands: Commands,
 ) {
-    for (entity, space, mut pending) in &mut pending {
+    for (entity, space, pending) in &pending {
         let Ok(doc) = pending.rx.try_recv() else {
             continue;
         };

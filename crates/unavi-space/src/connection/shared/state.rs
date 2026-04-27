@@ -54,7 +54,7 @@ pub async fn recv_state_stream(_tx: SendStream, mut rx: RecvStream) -> anyhow::R
 
         match msg {
             StateMsg::Update { space, data } => {
-                let lock = SPACES.lock().await;
+                let lock = SPACES.lock().expect("spaces lock");
                 let Some(state) = lock.get(&space) else {
                     continue;
                 };

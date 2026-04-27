@@ -44,7 +44,7 @@ pub fn send_agent_pose(
 
             last_tick.0 = now;
 
-            if let Err(err) = sender.0.blocking_send(pose.clone()) {
+            if let Err(err) = sender.0.try_send(pose.clone()) {
                 error!(?err, "Send error");
             }
         });

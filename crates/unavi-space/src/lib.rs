@@ -33,6 +33,7 @@ impl Plugin for SpacePlugin {
                 (
                     beacon::publish_beacons,
                     connection::ecs::agent::send_agent_pose,
+                    gossip::poll_gossip,
                     connection::ecs::agent::set_agent_tickrates
                         .run_if(on_timer(TICKRATE_UPDATE_INTERVAL)),
                     peer::presence::manage_peers,

@@ -1,6 +1,6 @@
 use std::{
     collections::BTreeMap,
-    sync::{Arc, LazyLock},
+    sync::{Arc, LazyLock, Mutex},
 };
 
 use bevy::{ecs::world::CommandQueue, platform::collections::HashMap, prelude::*};
@@ -8,7 +8,6 @@ use blake3::Hash;
 use loro::{LoroDoc, Subscription};
 use loro_surgeon::{Hydrate, Reconcile};
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
 use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
 use wired_records::HydratedHash;
 
@@ -45,7 +44,8 @@ pub fn add_space_state(trigger: On<Add, Space>, spaces: Query<&Space>, mut comma
 
     let doc = Arc::clone(
         &SPACES
-            .blocking_lock()
+            .lock()
+            .expect("spaces lock")
             .entry(space)
             .or_insert_with(|| {
                 let doc = LoroDoc::new();
@@ -62,7 +62,7 @@ pub fn add_space_state(trigger: On<Add, Space>, spaces: Query<&Space>, mut comma
                         space,
                         data: update.clone(),
                     }));
-                    let _ = ASYNC_COMMAND_QUEUE.0.blocking_send(queue);
+                    let _ = ASYNC_COMMAND_QUEUE.0.try_send(queue);
                     true
                 }));
 
@@ -84,7 +84,7 @@ pub fn remove_space_state(
 ) {
     let space = spaces.get(trigger.entity).expect("space");
 
-    SPACES.blocking_lock().remove(&space.0);
+    SPACES.lock().expect("spaces lock").remove(&space.0);
 
     commands.entity(trigger.entity).remove::<SpaceStateDoc>();
 }

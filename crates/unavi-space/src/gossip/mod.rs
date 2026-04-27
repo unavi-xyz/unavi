@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use bevy::prelude::*;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
@@ -42,6 +44,9 @@ pub struct IrohGossip(Gossip);
 #[derive(Component)]
 pub struct GossipSender(tokio::sync::mpsc::Sender<thread::GossipCommand>);
 
+#[derive(Component)]
+pub struct PendingGossip(Arc<Mutex<std::sync::mpsc::Receiver<Gossip>>>);
+
 pub fn spawn_gossip(
     trigger: On<Add, IrohEndpoint>,
     endpoints: Query<&IrohEndpoint>,
@@ -52,28 +57,42 @@ pub fn spawn_gossip(
         .map(|e| e.0.clone())
         .expect("endpoint");
 
-    let (gossip_tx, gossip_rx) = tokio::sync::oneshot::channel();
+    let (gossip_tx, gossip_rx) = std::sync::mpsc::channel();
     let (tx, rx) = tokio::sync::mpsc::channel(16);
 
     spawn_async_task(async move {
         let gossip = Gossip::builder().spawn(endpoint);
-        gossip_tx.send(gossip).expect("send gossip");
-
+        let _ = gossip_tx.send(gossip);
         thread::handle_gossip_thread(rx).await;
     });
 
-    let gossip = gossip_rx.blocking_recv().expect("recv gossip");
-
-    commands
-        .entity(trigger.entity)
-        .insert((IrohGossip(gossip.clone()), GossipSender(tx)));
-
-    commands.spawn((
-        RouterBuilderFnTarget(trigger.entity),
-        RouterBuilderFn(Some(Box::new(|router| {
-            router.accept(iroh_gossip::ALPN, gossip)
-        }))),
+    commands.entity(trigger.entity).insert((
+        GossipSender(tx),
+        PendingGossip(Arc::new(Mutex::new(gossip_rx))),
     ));
+}
+
+pub fn poll_gossip(pending: Query<(Entity, &PendingGossip)>, mut commands: Commands) {
+    for (entity, p) in &pending {
+        let Ok(lock) = p.0.try_lock() else {
+            continue;
+        };
+        let Ok(gossip) = lock.try_recv() else {
+            continue;
+        };
+
+        commands
+            .entity(entity)
+            .insert(IrohGossip(gossip.clone()))
+            .remove::<PendingGossip>();
+
+        commands.spawn((
+            RouterBuilderFnTarget(entity),
+            RouterBuilderFn(Some(Box::new(|router| {
+                router.accept(iroh_gossip::ALPN, gossip)
+            }))),
+        ));
+    }
 }
 
 pub fn join_space_topic(
@@ -113,7 +132,7 @@ pub fn join_space_topic(
         .entity(trigger.entity)
         .insert(SpaceGossipCancel { _cancel: cancel_tx });
 
-    let _ = sender.0.blocking_send(GossipCommand::JoinSpace {
+    let _ = sender.0.try_send(GossipCommand::JoinSpace {
         ctx,
         cancel: cancel_rx,
         space,

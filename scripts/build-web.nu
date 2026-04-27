@@ -4,7 +4,6 @@ def main [
 ] {
   npm-setup
   build-js
-  copy-assets-to-client
 
   let trunk_args = if $release { ["--release"] } else { [] }
 
@@ -66,11 +65,4 @@ def build-js [] {
     "--external:node:fs/promises"
     $"--outfile=($out)"
   )
-}
-
-def copy-assets-to-client [] {
-  let source = "dist"
-  let target = "crates/unavi-client/assets/unavi-script"
-  rm -rf $target
-  cp -r $source $target
 }

@@ -1,6 +1,6 @@
 //! VRM agent controller for desktop and VR.
 
-use bevy::{post_process::auto_exposure::AutoExposurePlugin, prelude::*};
+use bevy::prelude::*;
 use bevy_tnua::prelude::*;
 use bevy_tnua_avian3d::TnuaAvian3dPlugin;
 use unavi_avatar::Grounded;
@@ -22,7 +22,7 @@ impl Plugin for AgentPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             #[cfg(not(target_family = "wasm"))]
-            AutoExposurePlugin,
+            bevy::post_process::auto_exposure::AutoExposurePlugin,
             TnuaControllerPlugin::<ControlScheme>::new(FixedUpdate),
             TnuaAvian3dPlugin::new(FixedUpdate),
         ))

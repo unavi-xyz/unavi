@@ -3,11 +3,13 @@ use bevy::{
     prelude::*,
 };
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_wds::{LocalActor, LocalBlobs, util::create_test_wds};
+use bevy_wds::{LocalActor, LocalBlobs};
 use unavi_script::{
     load::local::LoadLocalScript,
     permissions::{ApiName, ApiPermissions},
 };
+
+use crate::util::create_test_wds;
 
 mod util;
 

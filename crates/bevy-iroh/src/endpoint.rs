@@ -4,7 +4,7 @@ use std::{
 };
 
 use bevy::prelude::*;
-use iroh::{Endpoint, endpoint::presets::N0};
+use iroh::{Endpoint, endpoint::presets::N0, endpoint_info::AddrFilter};
 use tracing::{error, info};
 use unavi_util::async_task::spawn_async_task;
 
@@ -14,9 +14,11 @@ use crate::router::RouterBuilderFns;
 #[require(RouterBuilderFns)]
 pub struct IrohEndpoint(pub Endpoint);
 
-#[derive(Event, Clone)]
+#[derive(Event, Clone, Default)]
 pub struct LoadEndpoint {
-    pub discovery_mdns: bool,
+    pub filter: AddrFilter,
+    #[cfg(all(feature = "mdns", not(target_family = "wasm")))]
+    pub mdns: bool,
 }
 
 pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands) {
@@ -67,12 +69,14 @@ pub(crate) fn recieve_endpoint(mut commands: Commands, loading: Query<(Entity, &
 }
 
 async fn init_endpoint(opts: &LoadEndpoint) -> anyhow::Result<Endpoint> {
-    let mut endpoint = Endpoint::builder(N0);
+    let endpoint = Endpoint::builder(N0).addr_filter(opts.filter.clone());
 
-    if opts.discovery_mdns {
-        endpoint =
-            endpoint.address_lookup(iroh::address_lookup::mdns::MdnsAddressLookup::builder());
-    }
+    #[cfg(all(feature = "mdns", not(target_family = "wasm")))]
+    let endpoint = if opts.mdns {
+        endpoint.address_lookup(iroh::address_lookup::mdns::MdnsAddressLookup::builder())
+    } else {
+        endpoint
+    };
 
     let endpoint = endpoint.bind().await?;
     info!("Spawned endpoint: {}", endpoint.id());

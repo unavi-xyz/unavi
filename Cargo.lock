@@ -1082,7 +1082,7 @@ dependencies = [
  "bevy",
  "blake3",
  "bytes 1.11.1",
- "iroh",
+ "iroh-base",
  "loro",
  "n0-future",
  "smol_str 0.3.6",
@@ -14057,6 +14057,7 @@ dependencies = [
  "bevy_vrm",
  "blake3",
  "directories",
+ "iroh",
  "rand 0.9.2",
  "smol_str 0.3.6",
  "tokio",
@@ -14066,8 +14067,11 @@ dependencies = [
  "unavi-avatar",
  "unavi-input",
  "unavi-util",
+ "wasm-bindgen",
  "wasmtime",
  "wasmtime-wasi",
+ "wds",
+ "xdid",
 ]
 
 [[package]]

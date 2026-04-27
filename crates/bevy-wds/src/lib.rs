@@ -3,7 +3,6 @@ use wds::{Blobs, actor::Actor};
 
 pub mod blob;
 pub mod record;
-pub mod util;
 
 pub struct WdsPlugin;
 

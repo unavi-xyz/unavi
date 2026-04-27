@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use bevy::{log::tracing::Instrument, prelude::*};
 use blake3::Hash;
-use iroh::EndpointAddr;
+use iroh_base::EndpointAddr;
 use loro::LoroDoc;
 use tokio::sync::{
     Notify,

@@ -164,7 +164,9 @@ impl Plugin for UnaviPlugin {
         );
 
         app.world_mut().trigger(LoadEndpoint {
-            discovery_mdns: true,
+            #[cfg(not(target_family = "wasm"))]
+            mdns: true,
+            ..Default::default()
         });
     }
 }

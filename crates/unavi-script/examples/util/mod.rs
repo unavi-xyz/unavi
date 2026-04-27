@@ -1,6 +1,13 @@
-use std::{path::PathBuf, sync::LazyLock};
+use std::{
+    path::PathBuf,
+    sync::{Arc, LazyLock},
+};
 
 use directories::ProjectDirs;
+use iroh::{endpoint::presets::N0, protocol::Router};
+use unavi_util::async_task::spawn_async_task;
+use wds::{Blobs, DataStore, Identity, actor::Actor};
+use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
 static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs");
@@ -26,4 +33,36 @@ pub fn copy_assets_to_project_dir(paths: &[&str]) {
             eprintln!("failed to copy {path}: {e}");
         }
     }
+}
+
+#[must_use]
+pub fn create_test_wds() -> (Actor, Blobs) {
+    let (tx, rx) = std::sync::mpsc::sync_channel(1);
+
+    spawn_async_task(async move {
+        let endpoint = iroh::Endpoint::builder(N0)
+            .bind()
+            .await
+            .expect("iroh endpoint");
+
+        let (store, f) = DataStore::builder(endpoint.clone())
+            .build()
+            .await
+            .expect("data store");
+
+        let rb = Router::builder(endpoint);
+        let rb = f(rb);
+        let _router = rb.spawn();
+
+        let blobs = store.blobs().blobs().clone();
+
+        let signing_key = P256KeyPair::generate();
+        let did = signing_key.public().to_did();
+        let identity = Arc::new(Identity::new(did, signing_key));
+        let actor = store.local_actor(identity);
+
+        tx.send((actor, blobs)).expect("send");
+    });
+
+    rx.recv().expect("wds setup")
 }

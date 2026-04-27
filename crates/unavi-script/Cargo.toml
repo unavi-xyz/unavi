@@ -29,8 +29,14 @@ unavi-util.path    = "../unavi-util"
 wasmtime      = "43.0.0"
 wasmtime-wasi = "43.0.0"
 
+[target.'cfg(target_family = "wasm")'.dependencies]
+wasm-bindgen.workspace = true
+
 [dev-dependencies]
 avian3d.workspace              = true
 bevy_panorbit_camera.workspace = true
 directories.workspace          = true
+iroh.workspace                 = true
 tracing-subscriber.workspace   = true
+wds.path                       = "../wds"
+xdid.workspace                 = true

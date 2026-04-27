@@ -55,7 +55,7 @@ pub enum RawHsdChange {
 #[derive(Component, Clone)]
 pub struct RawChangeQueue(pub Arc<Mutex<Vec<RawHsdChange>>>);
 
-pub const SCRIPT_COMMAND_LIMIT: usize = 1 << 16;
+pub const SCRIPT_COMMAND_LIMIT: usize = u16::MAX as usize;
 
 /// Capped at [`SCRIPT_COMMAND_LIMIT`] to prevent runaway scripts.
 #[derive(Default)]

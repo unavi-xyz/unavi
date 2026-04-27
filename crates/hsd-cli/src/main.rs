@@ -12,17 +12,11 @@ enum HsdCli {
 }
 
 /// Compile an HSDX source into a flat output directory.
-///
-/// Reads `asset.hsdx`, resolves `./Cargo.toml` script refs by building the
-/// WASM component (cargo → wasm-opt → wasm-tools → wac), and resolves
-/// `../dep/asset.hsdx` asset refs recursively. Outputs `{name}.hsd` and
-/// `{name}.wasm` flat in `--out-dir`.
 #[derive(Args, Debug)]
 struct Build {
     /// Input HSDX file path (e.g. wasm/unavi-gauntlet/asset.hsdx)
     #[arg(short, long)]
     input: PathBuf,
-
     /// Output directory for the compiled HSD and WASM files
     #[arg(short, long)]
     out_dir: PathBuf,

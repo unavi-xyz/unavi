@@ -21,7 +21,7 @@ pub struct SkyParams {
 
 impl Material for SkyMaterial {
     fn fragment_shader() -> ShaderRef {
-        "shaders/sky.wgsl".into()
+        "shader/sky.wgsl".into()
     }
 
     fn alpha_mode(&self) -> AlphaMode {

@@ -14,7 +14,6 @@ pub enum ApiName {
     InputContext,
     LocalAgent,
     Scene,
-    System,
     Wds,
 }
 
@@ -34,9 +33,8 @@ impl ApiPermissions {
     pub fn system() -> Self {
         let mut set = Self::default();
         set.insert(ApiName::CreateDocument);
-        set.insert(ApiName::LocalAgent);
-        set.insert(ApiName::System);
         set.insert(ApiName::InputContext);
+        set.insert(ApiName::LocalAgent);
         set.insert(ApiName::Wds);
         set
     }

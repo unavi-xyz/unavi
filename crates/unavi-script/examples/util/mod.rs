@@ -37,7 +37,7 @@ pub fn copy_assets_to_project_dir(paths: &[&str]) {
 
 #[must_use]
 pub fn create_test_wds() -> (Actor, Blobs) {
-    let (tx, rx) = std::sync::mpsc::sync_channel(1);
+    let (tx, rx) = async_channel::bounded(1);
 
     spawn_async_task(async move {
         let endpoint = iroh::Endpoint::builder(N0)
@@ -61,8 +61,8 @@ pub fn create_test_wds() -> (Actor, Blobs) {
         let identity = Arc::new(Identity::new(did, signing_key));
         let actor = store.local_actor(identity);
 
-        tx.send((actor, blobs)).expect("send");
+        tx.send((actor, blobs)).await.expect("send");
     });
 
-    rx.recv().expect("wds setup")
+    rx.recv_blocking().expect("wds setup")
 }

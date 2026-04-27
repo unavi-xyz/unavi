@@ -39,6 +39,7 @@ tag-name       = "v{{version}}"
 
 [workspace.dependencies]
 anyhow               = "1.0.102"
+async-channel        = "2.5.0"
 avian3d              = "0.6.1"
 axum                 = "0.8.8"
 bevy                 = "0.18.1"

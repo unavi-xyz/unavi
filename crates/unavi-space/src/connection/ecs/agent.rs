@@ -13,7 +13,7 @@ use crate::{
 
 #[derive(Component)]
 #[require(Tickrate)]
-pub struct AgentSender(pub tokio::sync::mpsc::Sender<Pose<IFrame>>);
+pub struct AgentSender(pub async_channel::Sender<Pose<IFrame>>);
 
 pub fn send_agent_pose(
     time: Res<Time>,
@@ -34,7 +34,7 @@ pub fn send_agent_pose(
     streams
         .par_iter_mut()
         .for_each(|(sender, tickrate, mut last_tick)| {
-            if sender.0.capacity() == 0 {
+            if sender.0.is_full() {
                 return;
             }
 

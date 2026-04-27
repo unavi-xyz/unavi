@@ -16,11 +16,11 @@ pub struct ActiveSpaces(pub HashMap<Hash, f32>);
 #[derive(Event)]
 pub struct AddSpaceStateSender {
     pub peer: EndpointId,
-    pub sender: tokio::sync::mpsc::Sender<SpaceStateUpdate>,
+    pub sender: async_channel::Sender<SpaceStateUpdate>,
 }
 
 #[derive(Component)]
-pub struct SpaceStateSender(pub tokio::sync::mpsc::Sender<SpaceStateUpdate>);
+pub struct SpaceStateSender(pub async_channel::Sender<SpaceStateUpdate>);
 
 pub fn add_space_state_sender(
     trigger: On<AddSpaceStateSender>,

@@ -1,15 +1,16 @@
 use std::{pin::Pin, sync::LazyLock};
-use tokio::sync::mpsc::Sender;
+
+use async_channel::Sender;
 
 type Fut = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 const SIZE: usize = 8;
 
 pub static ASYNC_TASK: LazyLock<Sender<Fut>> = LazyLock::new(|| {
-    let (tx, mut rx) = tokio::sync::mpsc::channel(SIZE);
+    let (tx, rx) = async_channel::bounded(SIZE);
 
     unavi_wasm_compat::spawn_thread(async move {
-        while let Some(fut) = rx.recv().await {
+        while let Ok(fut) = rx.recv().await {
             n0_future::task::spawn(fut);
         }
     });
@@ -22,7 +23,7 @@ pub static ASYNC_TASK: LazyLock<Sender<Fut>> = LazyLock::new(|| {
 #[cfg(not(target_family = "wasm"))]
 pub fn spawn_async_task(future: impl Future<Output = ()> + Send + 'static) {
     ASYNC_TASK
-        .blocking_send(Box::pin(future))
+        .send_blocking(Box::pin(future))
         .expect("send async task");
 }
 

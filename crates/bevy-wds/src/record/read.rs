@@ -1,13 +1,11 @@
 use std::time::Duration;
 
+use async_channel::{Receiver, Sender};
 use bevy::{log::tracing::Instrument, prelude::*};
 use blake3::Hash;
 use iroh_base::EndpointAddr;
 use loro::LoroDoc;
-use tokio::sync::{
-    mpsc::{Receiver, Sender},
-    oneshot,
-};
+use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
 use wds::actor::Actor;
 
@@ -27,7 +25,7 @@ impl ReadRecord {
     #[must_use]
     pub fn new(id: Hash) -> (Self, Receiver<LoroDoc>, oneshot::Sender<()>) {
         let (cancel_tx, cancel_rx) = oneshot::channel();
-        let (tx, rx) = tokio::sync::mpsc::channel(1);
+        let (tx, rx) = async_channel::bounded(1);
         (
             Self {
                 id,

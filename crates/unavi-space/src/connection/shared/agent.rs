@@ -30,7 +30,7 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
 
     // TODO Read `rx` for tickrate backpressure
 
-    let (pose_tx, mut pose_rx) = tokio::sync::mpsc::channel::<Pose<IFrame>>(1);
+    let (pose_tx, pose_rx) = async_channel::bounded::<Pose<IFrame>>(1);
 
     // Send channel to ECS.
     {
@@ -48,7 +48,7 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
 
     let mut buf = [0; AgentMsg::POSTCARD_MAX_SIZE];
 
-    while let Some(pose) = pose_rx.recv().await {
+    while let Ok(pose) = pose_rx.recv().await {
         let now = n0_future::time::Instant::now();
 
         // Convert to i-frame or p-frame.

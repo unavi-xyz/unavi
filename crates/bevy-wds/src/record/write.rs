@@ -1,13 +1,11 @@
 use std::time::Duration;
 
+use async_channel::{Receiver, Sender};
 use bevy::{log::tracing::Instrument, prelude::*};
 use blake3::Hash;
 use loro::LoroDoc;
 use smol_str::SmolStr;
-use tokio::sync::{
-    mpsc::{Receiver, Sender},
-    oneshot,
-};
+use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
 use wds::actor::{Actor, SchemaData};
 
@@ -36,7 +34,7 @@ impl WriteRecord {
     #[must_use]
     pub fn new(id: Option<Hash>) -> (Self, Receiver<Hash>, oneshot::Sender<()>) {
         let (cancel_tx, cancel_rx) = oneshot::channel();
-        let (tx, rx) = tokio::sync::mpsc::channel(1);
+        let (tx, rx) = async_channel::bounded(1);
         (
             Self {
                 id,

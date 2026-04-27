@@ -14,9 +14,10 @@ default = []
 mdns    = ["iroh/address-lookup-mdns"]
 
 [dependencies]
-anyhow.workspace    = true
-bevy.workspace      = true
-iroh.workspace      = true
-n0-future.workspace = true
-tracing.workspace   = true
-unavi-util.path     = "../unavi-util"
+anyhow.workspace        = true
+async-channel.workspace = true
+bevy.workspace          = true
+iroh.workspace          = true
+n0-future.workspace     = true
+tracing.workspace       = true
+unavi-util.path         = "../unavi-util"

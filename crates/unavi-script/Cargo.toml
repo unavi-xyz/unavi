@@ -10,20 +10,21 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace   = true
-bevy               = { default-features = true, workspace = true }
-bevy-hsd.path      = "../bevy-hsd"
-bevy-wds.path      = "../bevy-wds"
-bevy_vrm.workspace = true
-blake3.workspace   = true
-rand.workspace     = true
-smol_str.workspace = true
-tokio.workspace    = true
-tracing.workspace  = true
-unavi-agent.path   = "../unavi-agent"
-unavi-avatar.path  = "../unavi-avatar"
-unavi-input.path   = "../unavi-input"
-unavi-util.path    = "../unavi-util"
+anyhow.workspace        = true
+async-channel.workspace = true
+bevy                    = { default-features = true, workspace = true }
+bevy-hsd.path           = "../bevy-hsd"
+bevy-wds.path           = "../bevy-wds"
+bevy_vrm.workspace      = true
+blake3.workspace        = true
+rand.workspace          = true
+smol_str.workspace      = true
+tokio.workspace         = true
+tracing.workspace       = true
+unavi-agent.path        = "../unavi-agent"
+unavi-avatar.path       = "../unavi-avatar"
+unavi-input.path        = "../unavi-input"
+unavi-util.path         = "../unavi-util"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 wasmtime      = "43.0.0"

@@ -946,6 +946,7 @@ name = "bevy-hsd"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "async-channel",
  "avian3d",
  "bevy",
  "bevy-wds",
@@ -1019,6 +1020,7 @@ name = "bevy-iroh"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "async-channel",
  "bevy",
  "iroh",
  "n0-future",
@@ -1079,6 +1081,7 @@ name = "bevy-wds"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "async-channel",
  "bevy",
  "blake3",
  "bytes 1.11.1",
@@ -13919,6 +13922,7 @@ name = "unavi-client"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "async-channel",
  "avian3d",
  "bevy",
  "bevy-hsd",
@@ -14016,6 +14020,7 @@ name = "unavi-launcher"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "async-channel",
  "dioxus",
  "directories",
  "embed-resource",
@@ -14049,6 +14054,7 @@ name = "unavi-script"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "async-channel",
  "avian3d",
  "bevy",
  "bevy-hsd",
@@ -14109,6 +14115,7 @@ name = "unavi-space"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "async-channel",
  "bevy",
  "bevy-hsd",
  "bevy-iroh",
@@ -14138,6 +14145,7 @@ dependencies = [
 name = "unavi-util"
 version = "0.0.16"
 dependencies = [
+ "async-channel",
  "bevy",
  "n0-future",
  "tokio",

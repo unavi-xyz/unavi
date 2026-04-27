@@ -47,7 +47,7 @@ pub fn publish_beacons(
         let did = did.clone();
         let space = space.0;
 
-        let (mut event, mut rx, _cancel) = WriteRecord::new(None);
+        let (mut event, rx, _cancel) = WriteRecord::new(None);
         event.ttl = Some(BEACON_TTL);
         event.public = true;
         event.schemas = vec![SchemaDef {
@@ -66,7 +66,7 @@ pub fn publish_beacons(
         }];
 
         spawn_async_task(async move {
-            if let Some(id) = rx.recv().await {
+            if let Ok(id) = rx.recv().await {
                 info!(%id, "Published beacon");
             }
         });

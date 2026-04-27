@@ -20,7 +20,7 @@ pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
     let (mut tx, _rx) = connection.open_bi().await?;
     StreamIdent::State.write(&mut tx).await?;
 
-    let (ss_tx, mut ss_rx) = tokio::sync::mpsc::channel(4);
+    let (ss_tx, ss_rx) = async_channel::bounded(4);
 
     let mut queue = CommandQueue::default();
     queue.push(bevy::ecs::system::command::trigger(AddSpaceStateSender {
@@ -31,7 +31,7 @@ pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
 
     // TODO Request / send full state snapshot
 
-    while let Some(SpaceStateUpdate { space, data }) = ss_rx.recv().await {
+    while let Ok(SpaceStateUpdate { space, data }) = ss_rx.recv().await {
         let msg = StateMsg::Update { space, data };
 
         let mut buf = Vec::new();

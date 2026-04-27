@@ -59,8 +59,8 @@ pub fn instantiate_scripts(
             continue;
         };
 
-        let (stdout, stdout_stream) = ScriptStdout::new();
-        let (stderr, stderr_stream) = ScriptStderr::new();
+        let (_stdout, stdout_stream) = ScriptStdout::new();
+        let (_stderr, stderr_stream) = ScriptStderr::new();
         let wasi_ctx = WasiCtxBuilder::new()
             .stdout(stdout_stream)
             .stderr(stderr_stream)

@@ -1,8 +1,3 @@
-use std::time::Duration;
-
-use setup::logs::count_logs_with;
-use unavi_script::permissions::ApiPermissions;
-
 mod setup;
 
 // #[test]

@@ -10,6 +10,8 @@ const MODULE_HSDS: &[&str] = &["hsd/unavi_vui_inventory.hsd", "hsd/unavi_vui_nav
 pub fn spawn_system_scripts(mut commands: Commands) {
     let mut module_ents = Vec::new();
 
+    // TODO load with bevy assets resolution, not custom path, so it works on web
+
     for &rel_path in MODULE_HSDS {
         let path = assets_dir().join(rel_path);
         let ent = commands
@@ -20,7 +22,7 @@ pub fn spawn_system_scripts(mut commands: Commands) {
     }
 
     let gauntlet_path = assets_dir().join(GAUNTLET_HSD);
-    let gauntlet_ent = commands
+    let _gauntlet_ent = commands
         .spawn((
             ApiPermissions::system(),
             // HsdFirewallEntities {

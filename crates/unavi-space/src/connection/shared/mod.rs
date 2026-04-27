@@ -6,7 +6,7 @@ use n0_future::task::AbortOnDropHandle;
 use serde::{Deserialize, Serialize};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    sync::Notify,
+    sync::oneshot,
 };
 use tracing::{Instrument, error, info, info_span, warn};
 
@@ -14,13 +14,16 @@ mod agent;
 mod object;
 mod state;
 
-pub async fn handle_connection(connection: Connection, cancel: &Arc<Notify>) -> anyhow::Result<()> {
+pub async fn handle_connection(
+    connection: Connection,
+    cancel: oneshot::Receiver<()>,
+) -> anyhow::Result<()> {
     let peer = connection.remote_id();
     let span = info_span!("connect", %peer);
     inner(connection, cancel).instrument(span).await
 }
 
-async fn inner(connection: Connection, cancel: &Arc<Notify>) -> anyhow::Result<()> {
+async fn inner(connection: Connection, cancel: oneshot::Receiver<()>) -> anyhow::Result<()> {
     info!("Connected");
     let connection = Arc::new(connection);
 
@@ -41,7 +44,7 @@ async fn inner(connection: Connection, cancel: &Arc<Notify>) -> anyhow::Result<(
     };
 
     tokio::select! {
-        () = cancel.notified() => {
+        _ = cancel => {
             connection.close(VarInt::from_u32(0), b"done");
             n0_future::time::sleep(Duration::from_secs(5)).await;
         },

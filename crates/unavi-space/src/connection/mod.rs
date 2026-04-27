@@ -1,4 +1,4 @@
-use std::sync::{Arc, LazyLock};
+use std::sync::LazyLock;
 
 use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_iroh::{
@@ -6,7 +6,7 @@ use bevy_iroh::{
     router::{RouterBuilderFn, RouterBuilderFnTarget},
 };
 use iroh::EndpointId;
-use tokio::sync::{Mutex, Notify};
+use tokio::sync::{Mutex, oneshot};
 use unavi_util::async_task::spawn_async_task;
 
 use crate::{connection::ecs::PeerStream, peer::Peer};
@@ -17,7 +17,7 @@ mod outbound;
 mod shared;
 mod types;
 
-static CONNECTIONS: LazyLock<Mutex<HashMap<EndpointId, Arc<Notify>>>> =
+static CONNECTIONS: LazyLock<Mutex<HashMap<EndpointId, oneshot::Sender<()>>>> =
     LazyLock::new(Mutex::default);
 
 pub const ALPN: &[u8] = b"wired/space/0";
@@ -59,15 +59,11 @@ pub fn disconnect_peer(
 ) {
     let peer = peers.get(trigger.entity).expect("peer");
 
-    // Cancel connection
+    // Dropping the sender signals the connection task to exit.
     let mut conns = CONNECTIONS.blocking_lock();
-    if let Some(cancel) = conns.remove(&peer.0.id) {
-        cancel.notify_waiters();
-        cancel.notify_one();
-    }
+    conns.remove(&peer.0.id);
     drop(conns);
 
-    // Clean up stream channels
     for (entity, p) in streams {
         if p.0 != peer.0.id {
             continue;

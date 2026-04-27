@@ -1,27 +1,27 @@
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 
 use bevy::{log::tracing::Instrument, prelude::*};
 use blake3::Hash;
 use loro::LoroDoc;
 use smol_str::SmolStr;
 use tokio::sync::{
-    Notify,
     mpsc::{Receiver, Sender},
+    oneshot,
 };
 use unavi_util::async_task::spawn_async_task;
 use wds::actor::{Actor, SchemaData};
 
 use crate::{LocalActor, SyncTargets};
 
-#[derive(Event, Clone)]
+#[derive(Event)]
 pub struct WriteRecord {
-    /// ID of the record te write.
+    /// ID of the record to write.
     /// Leave empty to create a new record.
     pub id: Option<Hash>,
     pub ttl: Option<Duration>,
     pub public: bool,
     pub schemas: Vec<SchemaDef>,
-    pub cancel: Arc<Notify>,
+    pub cancel: Option<oneshot::Receiver<()>>,
     pub tx: Sender<Hash>,
 }
 
@@ -29,13 +29,13 @@ pub struct WriteRecord {
 pub struct SchemaDef {
     pub container: SmolStr,
     pub schema: SchemaData,
-    pub f: Arc<dyn Fn(&mut LoroDoc) -> anyhow::Result<()> + Send + Sync>,
+    pub f: std::sync::Arc<dyn Fn(&mut LoroDoc) -> anyhow::Result<()> + Send + Sync>,
 }
 
 impl WriteRecord {
     #[must_use]
-    pub fn new(id: Option<Hash>) -> (Self, Receiver<Hash>, Arc<Notify>) {
-        let cancel = Arc::new(Notify::default());
+    pub fn new(id: Option<Hash>) -> (Self, Receiver<Hash>, oneshot::Sender<()>) {
+        let (cancel_tx, cancel_rx) = oneshot::channel();
         let (tx, rx) = tokio::sync::mpsc::channel(1);
         (
             Self {
@@ -43,47 +43,74 @@ impl WriteRecord {
                 ttl: None,
                 public: false,
                 schemas: Vec::new(),
-                cancel: Arc::clone(&cancel),
+                cancel: Some(cancel_rx),
                 tx,
             },
             rx,
-            cancel,
+            cancel_tx,
         )
     }
 }
 
-pub(crate) fn on_write_record(req: On<WriteRecord>, actor: Query<(&LocalActor, &SyncTargets)>) {
+pub(crate) fn on_write_record(mut req: On<WriteRecord>, actor: Query<(&LocalActor, &SyncTargets)>) {
     let Ok((actor, sync_targets)) = actor.single() else {
         warn!("Unable to write record: no local actor");
         return;
     };
 
-    let event = req.event().clone();
+    let event = req.event_mut();
+    let id = event.id;
+    let ttl = event.ttl;
+    let public = event.public;
+    let schemas = event.schemas.clone();
+    let cancel = event.cancel.take();
+    let tx = event.tx.clone();
+
     let actor = actor.0.clone();
     let sync_targets = sync_targets.0.clone();
 
     spawn_async_task(async move {
         let span = info_span!("write");
 
-        if let Err(err) = inner(event, actor, sync_targets).instrument(span).await {
+        if let Err(err) = inner(id, ttl, public, schemas, cancel, tx, actor, sync_targets)
+            .instrument(span)
+            .await
+        {
             error!(?err, "failed to write record");
         }
     });
 }
 
-async fn inner(event: WriteRecord, actor: Actor, sync_targets: Vec<Actor>) -> anyhow::Result<()> {
+async fn inner(
+    id: Option<Hash>,
+    ttl: Option<Duration>,
+    public: bool,
+    schemas: Vec<SchemaDef>,
+    cancel: Option<oneshot::Receiver<()>>,
+    tx: Sender<Hash>,
+    actor: Actor,
+    sync_targets: Vec<Actor>,
+) -> anyhow::Result<()> {
     info!("Writing record");
 
+    let cancel_fut = async move {
+        match cancel {
+            Some(rx) => {
+                rx.await.ok();
+            }
+            None => std::future::pending::<()>().await,
+        }
+    };
     tokio::select! {
-        () = event.cancel.notified() => return Ok(()),
-        res = write_record(&event, &actor, &sync_targets) => {
+        () = cancel_fut => return Ok(()),
+        res = write_record(id, ttl, public, &schemas, &actor, &sync_targets) => {
             match res {
                 Ok(res) => {
                     info!("Wrote record");
-                    let _ = event.tx.send(res).await;
+                    let _ = tx.send(res).await;
                     return Ok(());
                 },
-                Err(err)=> {
+                Err(err) => {
                     warn!(?err, "Could not write record");
                 },
             }
@@ -94,18 +121,21 @@ async fn inner(event: WriteRecord, actor: Actor, sync_targets: Vec<Actor>) -> an
 }
 
 async fn write_record(
-    event: &WriteRecord,
+    id: Option<Hash>,
+    ttl: Option<Duration>,
+    public: bool,
+    schemas: &[SchemaDef],
     actor: &Actor,
     sync_targets: &[Actor],
 ) -> anyhow::Result<Hash> {
-    if event.id.is_none() {
+    if id.is_none() {
         let mut builder = actor.create_record();
 
-        if let Some(ttl) = event.ttl {
+        if let Some(ttl) = ttl {
             builder = builder.ttl(ttl);
         }
 
-        if event.public {
+        if public {
             builder = builder.public();
         }
 
@@ -113,7 +143,7 @@ async fn write_record(
             builder = builder.sync_to(a.clone());
         }
 
-        for s in &event.schemas {
+        for s in schemas {
             builder =
                 builder.add_schema(s.container.clone(), s.schema.clone(), |doc| (s.f)(doc))?;
         }

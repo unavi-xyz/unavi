@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use bevy::prelude::*;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
@@ -9,7 +7,7 @@ use bevy_wds::{LocalActor, SyncTargets};
 use iroh::{EndpointAddr, EndpointId};
 use iroh_gossip::Gossip;
 use serde::{Deserialize, Serialize};
-use tokio::sync::Notify;
+use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
 use wds::signed_bytes::Signable;
 
@@ -108,29 +106,27 @@ pub fn join_space_topic(
         sync_targets: sync_targets.0.clone(),
     };
 
-    let cancel = Arc::new(Notify::default());
+    let (cancel_tx, cancel_rx) = oneshot::channel();
     let space = spaces.get(trigger.entity).map(|s| s.0).expect("space");
 
     commands
         .entity(trigger.entity)
-        .insert(SpaceGossipCancel(Arc::clone(&cancel)));
+        .insert(SpaceGossipCancel { _cancel: cancel_tx });
 
-    let _ = sender
-        .0
-        .blocking_send(GossipCommand::JoinSpace { ctx, cancel, space });
+    let _ = sender.0.blocking_send(GossipCommand::JoinSpace {
+        ctx,
+        cancel: cancel_rx,
+        space,
+    });
 }
 
 #[derive(Component)]
-pub struct SpaceGossipCancel(Arc<Notify>);
-
-impl Drop for SpaceGossipCancel {
-    fn drop(&mut self) {
-        self.0.notify_waiters();
-        self.0.notify_one();
-    }
+pub struct SpaceGossipCancel {
+    _cancel: oneshot::Sender<()>,
 }
 
 pub fn leave_space_topic(trigger: On<Remove, Space>, mut commands: Commands) {
+    // Removing SpaceGossipCancel drops the oneshot::Sender, signalling the task to cancel.
     commands
         .entity(trigger.entity)
         .remove::<SpaceGossipCancel>();

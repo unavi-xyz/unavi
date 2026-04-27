@@ -1,10 +1,8 @@
-use std::sync::Arc;
-
 use iroh::{
     endpoint::{Connection, VarInt},
     protocol::{AcceptError, ProtocolHandler},
 };
-use tokio::sync::Notify;
+use tokio::sync::oneshot;
 use tracing::error;
 
 use crate::connection::CONNECTIONS;
@@ -16,20 +14,20 @@ impl ProtocolHandler for SpaceProtocol {
     async fn accept(&self, connection: Connection) -> Result<(), AcceptError> {
         let peer = connection.remote_id();
 
-        let cancel = {
+        let cancel_rx = {
             let mut conns = CONNECTIONS.lock().await;
             if conns.contains_key(&peer) {
                 connection.close(VarInt::from_u32(1), b"already connected");
                 return Ok(());
             }
 
-            let cancel = Arc::new(Notify::default());
-            conns.insert(peer, Arc::clone(&cancel));
+            let (cancel_tx, cancel_rx) = oneshot::channel();
+            conns.insert(peer, cancel_tx);
 
-            cancel
+            cancel_rx
         };
 
-        if let Err(err) = super::shared::handle_connection(connection, &cancel).await {
+        if let Err(err) = super::shared::handle_connection(connection, cancel_rx).await {
             error!(?err);
             // On error disconnect, it is up to the "client" side to re-connect.
         }

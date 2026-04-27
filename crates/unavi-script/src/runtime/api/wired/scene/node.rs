@@ -1,7 +1,5 @@
 use bevy_hsd::cache::NodeInner;
 
-use crate::runtime::api::wired::scene::{WiredSceneRt, bindings::wired::scene::types::HostNode};
-
 pub struct NodeRes {
     inner: NodeInner,
 }

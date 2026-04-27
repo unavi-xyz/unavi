@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 use bevy_hsd::LoadHsdFile;
-use unavi_script::{
-    firewall::{AccessEntities, HsdFirewallEntities},
-    permissions::ApiPermissions,
-};
+use unavi_script::permissions::ApiPermissions;
 
 use crate::assets::assets_dir;
 
@@ -26,11 +23,11 @@ pub fn spawn_system_scripts(mut commands: Commands) {
     let gauntlet_ent = commands
         .spawn((
             ApiPermissions::system(),
-            HsdFirewallEntities {
-                event_receive: AccessEntities::Restricted(module_ents.clone()),
-                scene_read: AccessEntities::Restricted(module_ents.clone()),
-                scene_write: AccessEntities::Restricted(module_ents.clone()),
-            },
+            // HsdFirewallEntities {
+            //     event_receive: AccessEntities::Restricted(module_ents.clone()),
+            //     scene_read: AccessEntities::Restricted(module_ents.clone()),
+            //     scene_write: AccessEntities::Restricted(module_ents.clone()),
+            // },
         ))
         .trigger(move |entity| LoadHsdFile {
             entity,
@@ -39,10 +36,12 @@ pub fn spawn_system_scripts(mut commands: Commands) {
         .id();
 
     for module_ent in module_ents {
-        commands.entity(module_ent).insert(HsdFirewallEntities {
-            event_receive: AccessEntities::Restricted(vec![gauntlet_ent]),
-            scene_read: AccessEntities::Restricted(vec![gauntlet_ent]),
-            scene_write: AccessEntities::Restricted(vec![gauntlet_ent]),
-        });
+        commands.entity(module_ent)
+        //     .insert(HsdFirewallEntities {
+        //     event_receive: AccessEntities::Restricted(vec![gauntlet_ent]),
+        //     scene_read: AccessEntities::Restricted(vec![gauntlet_ent]),
+        //     scene_write: AccessEntities::Restricted(vec![gauntlet_ent]),
+        // })
+        ;
     }
 }

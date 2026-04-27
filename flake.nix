@@ -183,7 +183,6 @@
                   "*.ts"
                   "*.tsx"
                   "*.vue"
-
                 ];
               };
               yamlfmt.enable = true;

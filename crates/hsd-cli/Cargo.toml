@@ -13,6 +13,4 @@ workspace = true
 anyhow.workspace = true
 clap.workspace   = true
 hsd              = { path = "../hsd" }
-ron.workspace    = true
-serde.workspace  = true
 toml             = "1.1.2"

@@ -8,10 +8,7 @@ use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
 use bevy_wds::{LocalActor, LocalBlobs, util::create_test_wds};
 use unavi_agent::LocalAgent;
-use unavi_script::{
-    load::local::{LoadLocalScript, ScriptSource},
-    permissions::ApiPermissions,
-};
+use unavi_script::{load::local::LoadLocalScript, permissions::ApiPermissions};
 
 mod util;
 
@@ -89,6 +86,6 @@ fn on_agent_load(
         .spawn(ApiPermissions::system())
         .trigger(|entity| LoadLocalScript {
             entity,
-            path: ScriptSource::Path(SCRIPT_PATH.to_string()),
+            path: SCRIPT_PATH.to_string(),
         });
 }

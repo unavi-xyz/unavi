@@ -10,13 +10,12 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace       = true
-bevy.workspace         = true
-bevy-iroh.path         = "../bevy-iroh"
-bevy-wds.path          = "../bevy-wds"
-iroh.workspace         = true
-n0-future.workspace    = true
-unavi-util.path        = "../unavi-util"
-unavi-wasm-compat.path = "../unavi-wasm-compat"
-wds.path               = "../wds"
-xdid.workspace         = true
+anyhow.workspace    = true
+bevy.workspace      = true
+bevy-iroh.path      = "../bevy-iroh"
+bevy-wds.path       = "../bevy-wds"
+iroh.workspace      = true
+n0-future.workspace = true
+unavi-util.path     = "../unavi-util"
+wds.path            = "../wds"
+xdid.workspace      = true

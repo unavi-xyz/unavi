@@ -1,8 +1,8 @@
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 
 use iroh::{Endpoint, EndpointAddr};
 use rand::Rng;
-use tokio::sync::Notify;
+use tokio::sync::oneshot;
 use tracing::error;
 
 use crate::connection::{ALPN, CONNECTIONS};
@@ -37,23 +37,20 @@ pub async fn try_open_connection(endpoint: Endpoint, peer: EndpointAddr) {
 }
 
 async fn open_connection(endpoint: Endpoint, peer: EndpointAddr) -> anyhow::Result<()> {
-    let cancel = {
+    let cancel_rx = {
         let mut conns = CONNECTIONS.lock().await;
         if conns.contains_key(&peer.id) {
             return Ok(());
         }
 
-        let cancel = Arc::new(Notify::default());
-        conns.insert(peer.id, Arc::clone(&cancel));
-        cancel
+        let (cancel_tx, cancel_rx) = oneshot::channel();
+        conns.insert(peer.id, cancel_tx);
+        cancel_rx
     };
 
-    let connection = tokio::select! {
-        () = cancel.notified() => return Ok(()),
-        res = endpoint.connect(peer, ALPN) => res?,
-    };
+    let connection = endpoint.connect(peer.clone(), ALPN).await?;
 
-    super::shared::handle_connection(connection, &cancel).await?;
+    super::shared::handle_connection(connection, cancel_rx).await?;
 
     Ok(())
 }

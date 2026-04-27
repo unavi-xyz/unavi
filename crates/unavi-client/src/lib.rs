@@ -14,10 +14,11 @@ mod grab;
 mod home;
 mod icon;
 mod scene;
-mod system_scripts;
 
 #[cfg(not(target_family = "wasm"))]
 mod assets;
+#[cfg(not(target_family = "wasm"))]
+mod system_scripts;
 #[cfg(not(target_family = "wasm"))]
 mod xr;
 
@@ -150,7 +151,7 @@ impl Plugin for UnaviPlugin {
                 camera::sky::spawn_sky,
                 icon::set_window_icon,
                 scene::spawn_scene,
-                #[cfg(not(target_family = "wasm"))] // TODO fix web scripting
+                #[cfg(not(target_family = "wasm"))]
                 system_scripts::spawn_system_scripts,
             ),
         )

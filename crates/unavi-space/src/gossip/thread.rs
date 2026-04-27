@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use blake3::Hash;
 use iroh::Endpoint;
 use iroh_gossip::{Gossip, TopicId, api::JoinOptions};
-use tokio::sync::Notify;
+use tokio::sync::oneshot;
 use tracing::Instrument;
 use wds::actor::Actor;
 
@@ -19,7 +19,7 @@ pub struct GossipCtx {
 pub enum GossipCommand {
     JoinSpace {
         ctx: GossipCtx,
-        cancel: Arc<Notify>,
+        cancel: oneshot::Receiver<()>,
         space: Hash,
     },
 }
@@ -45,7 +45,7 @@ pub async fn handle_gossip_thread(mut rx: tokio::sync::mpsc::Receiver<GossipComm
 
 async fn handle_space_topic(
     ctx: GossipCtx,
-    cancel: Arc<Notify>,
+    cancel: oneshot::Receiver<()>,
     space: Hash,
 ) -> anyhow::Result<()> {
     let peers = super::bootstrap::find_bootstrap_peers(&ctx, space).await?;
@@ -90,7 +90,7 @@ async fn handle_space_topic(
     });
 
     tokio::select! {
-        () = cancel.notified() => {}
+        _ = cancel => {}
         res = inbound_task => {
             if let Err(err) = res {
                 error!(?err, "Inbound task");

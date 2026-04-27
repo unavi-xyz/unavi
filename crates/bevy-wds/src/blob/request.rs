@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use blake3::Hash;
 use bytes::Bytes;
-use tokio::sync::{Mutex, Notify, mpsc::Receiver};
+use tokio::sync::{Mutex, mpsc::Receiver, oneshot};
 
 use crate::blob::get::GetBlob;
 
@@ -13,21 +13,14 @@ pub struct BlobRequest(pub Hash);
 #[derive(Component)]
 pub struct BlobPending {
     rx: Arc<Mutex<Receiver<Bytes>>>,
-    cancel: Arc<Notify>,
+    _cancel: oneshot::Sender<()>,
 }
 
 #[derive(Component)]
 pub struct BlobResponse(pub Option<Bytes>);
 
-pub(crate) fn on_blob_request_remove(
-    trigger: On<Remove, BlobRequest>,
-    loading: Query<&BlobPending>,
-    mut commands: Commands,
-) {
-    if let Ok(found) = loading.get(trigger.entity) {
-        found.cancel.notify_one();
-    }
-
+pub(crate) fn on_blob_request_remove(trigger: On<Remove, BlobRequest>, mut commands: Commands) {
+    // Removing BlobPending drops the oneshot::Sender, signalling the task to cancel.
     commands.entity(trigger.entity).remove::<BlobPending>();
 }
 
@@ -38,18 +31,18 @@ pub(crate) fn on_blob_request_add(
 ) {
     let req = requests.get(trigger.entity).expect("blob request");
 
-    let cancel = Arc::new(Notify::new());
+    let (cancel_tx, cancel_rx) = oneshot::channel();
     let (tx, rx) = tokio::sync::mpsc::channel(1);
 
     commands.trigger(GetBlob {
         hash: req.0,
-        cancel: Arc::clone(&cancel),
+        cancel: Some(cancel_rx),
         tx,
     });
 
     commands.entity(trigger.entity).insert(BlobPending {
         rx: Arc::new(Mutex::new(rx)),
-        cancel,
+        _cancel: cancel_tx,
     });
 }
 

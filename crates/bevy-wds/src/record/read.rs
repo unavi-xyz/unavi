@@ -1,32 +1,32 @@
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 
 use bevy::{log::tracing::Instrument, prelude::*};
 use blake3::Hash;
 use iroh_base::EndpointAddr;
 use loro::LoroDoc;
 use tokio::sync::{
-    Notify,
     mpsc::{Receiver, Sender},
+    oneshot,
 };
 use unavi_util::async_task::spawn_async_task;
 use wds::actor::Actor;
 
 use crate::{LocalActor, SyncTargets};
 
-#[derive(Event, Clone)]
+#[derive(Event)]
 pub struct ReadRecord {
     pub id: Hash,
     pub ttl: Option<Duration>,
     pub backoff_secs: u64,
     pub retries: usize,
-    pub cancel: Arc<Notify>,
+    pub cancel: Option<oneshot::Receiver<()>>,
     pub tx: Sender<LoroDoc>,
 }
 
 impl ReadRecord {
     #[must_use]
-    pub fn new(id: Hash) -> (Self, Receiver<LoroDoc>, Arc<Notify>) {
-        let cancel = Arc::new(Notify::default());
+    pub fn new(id: Hash) -> (Self, Receiver<LoroDoc>, oneshot::Sender<()>) {
+        let (cancel_tx, cancel_rx) = oneshot::channel();
         let (tx, rx) = tokio::sync::mpsc::channel(1);
         (
             Self {
@@ -34,56 +34,90 @@ impl ReadRecord {
                 ttl: None,
                 backoff_secs: 4,
                 retries: 3,
-                cancel: Arc::clone(&cancel),
+                cancel: Some(cancel_rx),
                 tx,
             },
             rx,
-            cancel,
+            cancel_tx,
         )
     }
 }
 
-pub(crate) fn on_read_record(req: On<ReadRecord>, actor: Query<(&LocalActor, &SyncTargets)>) {
+pub(crate) fn on_read_record(mut req: On<ReadRecord>, actor: Query<(&LocalActor, &SyncTargets)>) {
     let Ok((actor, sync_targets)) = actor.single() else {
         warn!("Unable to read record: no local actor");
         return;
     };
 
-    let event = req.event().clone();
+    let event = req.event_mut();
+    let id = event.id;
+    let ttl = event.ttl;
+    let backoff_secs = event.backoff_secs;
+    let retries = event.retries;
+    let cancel = event.cancel.take();
+    let tx = event.tx.clone();
+
     let actor = actor.0.clone();
     let sync_targets = sync_targets.0.iter().map(|a| a.host().clone()).collect();
 
     spawn_async_task(async move {
-        let span = info_span!("read", id = %event.id);
+        let span = info_span!("read", id = %id);
 
-        if let Err(err) = inner(event, actor, sync_targets).instrument(span).await {
+        if let Err(err) = inner(
+            id,
+            ttl,
+            backoff_secs,
+            retries,
+            cancel,
+            tx,
+            actor,
+            sync_targets,
+        )
+        .instrument(span)
+        .await
+        {
             error!(?err, "Failed to read record");
         }
     });
 }
 
 async fn inner(
-    event: ReadRecord,
+    id: Hash,
+    ttl: Option<Duration>,
+    backoff_secs: u64,
+    retries: usize,
+    cancel: Option<oneshot::Receiver<()>>,
+    tx: Sender<LoroDoc>,
     actor: Actor,
     sync_targets: Vec<EndpointAddr>,
 ) -> anyhow::Result<()> {
     info!("Reading record");
 
-    let mut n = 0;
-    let mut delay_secs = event.backoff_secs;
+    let cancel_fut = async move {
+        match cancel {
+            Some(rx) => {
+                rx.await.ok();
+            }
+            None => std::future::pending::<()>().await,
+        }
+    };
+    tokio::pin!(cancel_fut);
 
-    while n <= event.retries {
+    let mut n = 0;
+    let mut delay_secs = backoff_secs;
+
+    while n <= retries {
         tokio::select! {
-            () = event.cancel.notified() => return Ok(()),
-            res = read_record(&event, &actor, &sync_targets) => {
+            () = &mut cancel_fut => return Ok(()),
+            res = read_record(id, ttl, &actor, &sync_targets) => {
                 match res {
                     Ok(res) => {
                         info!("Got record");
-                        let _ = event.tx.send(res).await;
+                        let _ = tx.send(res).await;
                         return Ok(());
                     },
-                    Err(err)=> {
-                        warn!(?err, "Could not read record ({n}/{})", event.retries);
+                    Err(err) => {
+                        warn!(?err, "Could not read record ({n}/{retries})");
                         n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
                         delay_secs = delay_secs.wrapping_mul(2);
                     },
@@ -98,13 +132,14 @@ async fn inner(
 }
 
 async fn read_record(
-    event: &ReadRecord,
+    id: Hash,
+    ttl: Option<Duration>,
     actor: &Actor,
     sync_targets: &[EndpointAddr],
 ) -> anyhow::Result<LoroDoc> {
-    let mut builder = actor.read(event.id);
+    let mut builder = actor.read(id);
 
-    if let Some(ttl) = event.ttl {
+    if let Some(ttl) = ttl {
         builder = builder.ttl(ttl);
     }
 

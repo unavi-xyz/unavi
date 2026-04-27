@@ -12,6 +12,7 @@ devtools           = ["devtools-bevy", "devtools-inspector", "devtools-network"]
 devtools-bevy      = ["bevy/bevy_dev_tools", "bevy/debug"]
 devtools-inspector = ["dep:bevy-inspector-egui", "unavi-input/egui-filter"]
 devtools-network   = []
+mdns               = ["bevy-iroh/mdns"]
 webgpu             = ["bevy/webgpu", "unavi-agent/webgpu", "unavi-avatar/webgpu"]
 
 [lints]
@@ -26,7 +27,7 @@ avian3d.workspace      = true
 bevy                   = { default-features = true, features = ["https", "jpeg"], workspace = true }
 bevy-hsd.path          = "../bevy-hsd"
 bevy-inspector-egui    = { optional = true, version = "0.36.0" }
-bevy-iroh              = { features = ["mdns"], path = "../bevy-iroh" }
+bevy-iroh.path         = "../bevy-iroh"
 bevy-wds.path          = "../bevy-wds"
 bevy_vrm.workspace     = true
 bitflags               = "2.11.0"

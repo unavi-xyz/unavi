@@ -12,3 +12,4 @@ workspace = true
 [dependencies]
 ron.workspace = true
 serde         = { features = ["derive"], workspace = true }
+serde_with    = "3.18.0"

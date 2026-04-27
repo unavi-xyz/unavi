@@ -1,7 +1,7 @@
 use std::{collections::BTreeSet, path::Path};
 
 use anyhow::{Context, Result};
-use hsd::HsdFile;
+use hsd::Hsd;
 
 use crate::cargo::{derive_name, read_cargo_name};
 use crate::wasm::build_wasm_for_crate;
@@ -17,8 +17,7 @@ pub fn build_hsdx_to_hsd(
 
     let src = std::fs::read_to_string(&input_abs)
         .with_context(|| format!("reading {}", input_abs.display()))?;
-    let mut hsd =
-        HsdFile::parse(&src).with_context(|| format!("parsing {}", input_abs.display()))?;
+    let mut hsd = Hsd::parse(&src).with_context(|| format!("parsing {}", input_abs.display()))?;
 
     let mut output_name = String::new();
 

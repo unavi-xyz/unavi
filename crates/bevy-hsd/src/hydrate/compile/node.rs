@@ -609,6 +609,8 @@ pub fn guard_physics_scale(
         } else {
             if !has_collider && let Some(ref c) = physics.collider {
                 insert_collider(ent, c, &mut commands);
+                // TODO this was vibe coded, is it correct? (fml)
+                //
                 // Bare colliders (no RigidBody) must be sensors so Avian's island
                 // solver is never involved — preventing panics from static-static
                 // or "not in island" contact pairs that scripts can inadvertently

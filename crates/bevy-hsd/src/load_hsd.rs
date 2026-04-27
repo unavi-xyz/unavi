@@ -113,14 +113,14 @@ pub fn build_hsd_doc_from_file(
         let src = std::fs::read_to_string(&path)
             .with_context(|| format!("reading {}", path.display()))?;
         let hsd_file =
-            hsd::HsdFile::parse(&src).with_context(|| format!("parsing {}", path.display()))?;
+            hsd::Hsd::parse(&src).with_context(|| format!("parsing {}", path.display()))?;
         let base_dir = path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
         build_hsd_doc(hsd_file, base_dir, &actors).await
     })
 }
 
 fn build_hsd_doc(
-    hsd_file: hsd::HsdFile,
+    hsd_file: hsd::Hsd,
     base_dir: PathBuf,
     actors: &[wds::actor::Actor],
 ) -> std::pin::Pin<Box<dyn std::future::Future<Output = anyhow::Result<Arc<LoroDoc>>> + Send>> {
@@ -170,7 +170,7 @@ async fn write_hsd_assets(
 
 async fn write_hsd_images(
     hsd_map: &LoroMap,
-    images: &BTreeMap<String, hsd::HsdImageDef>,
+    images: &BTreeMap<String, hsd::HsdImage>,
     base_dir: &Path,
     actors: &[wds::actor::Actor],
 ) -> anyhow::Result<()> {
@@ -234,7 +234,7 @@ async fn write_hsd_images(
 
 fn write_hsd_materials(
     hsd_map: &LoroMap,
-    materials: &BTreeMap<String, hsd::HsdMaterialDef>,
+    materials: &BTreeMap<String, hsd::HsdMaterial>,
 ) -> anyhow::Result<()> {
     if materials.is_empty() {
         return Ok(());
@@ -320,7 +320,7 @@ fn write_hsd_materials(
 
 async fn write_hsd_nodes(
     hsd_map: &LoroMap,
-    nodes: &BTreeMap<String, hsd::HsdNodeDef>,
+    nodes: &BTreeMap<String, hsd::HsdNode>,
     base_dir: &Path,
     actors: &[wds::actor::Actor],
 ) -> anyhow::Result<()> {

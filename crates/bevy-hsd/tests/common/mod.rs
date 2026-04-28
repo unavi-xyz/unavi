@@ -4,12 +4,12 @@ use std::{sync::Arc, time::Duration};
 
 use avian3d::{
     PhysicsPlugins, collider_tree::ColliderTreeDiagnostics, collision::CollisionDiagnostics,
-    dynamics::solver::SolverDiagnostics, prelude::SpatialQueryDiagnostics,
+    dynamics::solver::SolverDiagnostics, prelude::*,
 };
 use bevy::{prelude::*, scene::ScenePlugin, transform::TransformPlugin};
 use bevy_hsd::{
-    HsdDoc, HsdPlugin, HsdRecordId, MeshState,
-    hydrate::compile::mesh::{HsdMeshGeometrySet, MeshGeometrySource},
+    HsdDoc, HsdPlugin, HsdRecordId,
+    hydrate::compile::mesh::{HsdMeshGeometrySet, MeshGeometrySource, MeshState},
 };
 use loro::{LoroDoc, LoroMap};
 

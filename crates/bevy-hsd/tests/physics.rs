@@ -1,9 +1,7 @@
 use avian3d::prelude::{AngularDamping, Collider, LinearDamping, RigidBody};
 use bevy::prelude::Entity;
-use bevy_hsd::{
-    NodeId,
-    data::{HsdCollider, HsdNodeData, HsdRigidBody},
-};
+use bevy_hsd::NodeId;
+use hsd::{HsdCollider, HsdNode, HsdRigidBody};
 use loro::{LoroTree, TreeParentId};
 use loro_surgeon::Reconcile;
 
@@ -13,7 +11,7 @@ use common::TestHarness;
 
 const EPSILON: f32 = 1e-5;
 
-fn add_node_with_data(harness: &TestHarness, data: HsdNodeData) {
+fn add_node_with_data(harness: &TestHarness, data: HsdNode) {
     let nodes = harness
         .doc
         .get_map("hsd")
@@ -39,7 +37,7 @@ fn collider_cuboid_inserted() {
     let mut h = TestHarness::new();
     add_node_with_data(
         &h,
-        HsdNodeData {
+        HsdNode {
             collider: Some(HsdCollider::Cuboid {
                 x: 1.0,
                 y: 1.0,
@@ -62,7 +60,7 @@ fn collider_capsule_inserted() {
     let mut h = TestHarness::new();
     add_node_with_data(
         &h,
-        HsdNodeData {
+        HsdNode {
             collider: Some(HsdCollider::Capsule {
                 height: 2.0,
                 radius: 0.5,
@@ -84,7 +82,7 @@ fn collider_cylinder_inserted() {
     let mut h = TestHarness::new();
     add_node_with_data(
         &h,
-        HsdNodeData {
+        HsdNode {
             collider: Some(HsdCollider::Cylinder {
                 height: 1.0,
                 radius: 0.5,
@@ -106,7 +104,7 @@ fn collider_sphere_inserted() {
     let mut h = TestHarness::new();
     add_node_with_data(
         &h,
-        HsdNodeData {
+        HsdNode {
             collider: Some(HsdCollider::Sphere(0.75)),
             ..Default::default()
         },
@@ -125,7 +123,7 @@ fn rigid_body_dynamic_inserted() {
     let mut h = TestHarness::new();
     add_node_with_data(
         &h,
-        HsdNodeData {
+        HsdNode {
             rigid_body: Some(HsdRigidBody {
                 kind: "dynamic".into(),
                 ..Default::default()
@@ -149,7 +147,7 @@ fn rigid_body_fixed_maps_to_kinematic() {
     let mut h = TestHarness::new();
     add_node_with_data(
         &h,
-        HsdNodeData {
+        HsdNode {
             rigid_body: Some(HsdRigidBody {
                 kind: "fixed".into(),
                 ..Default::default()
@@ -173,7 +171,7 @@ fn rigid_body_dynamic_linear_damping() {
     let mut h = TestHarness::new();
     add_node_with_data(
         &h,
-        HsdNodeData {
+        HsdNode {
             rigid_body: Some(HsdRigidBody {
                 kind: "dynamic".into(),
                 linear_damping: Some(0.4),
@@ -202,7 +200,7 @@ fn rigid_body_dynamic_angular_damping() {
     let mut h = TestHarness::new();
     add_node_with_data(
         &h,
-        HsdNodeData {
+        HsdNode {
             rigid_body: Some(HsdRigidBody {
                 kind: "dynamic".into(),
                 angular_damping: Some(0.6),
@@ -229,7 +227,7 @@ fn rigid_body_dynamic_angular_damping() {
 #[test]
 fn node_without_physics_has_no_avian_components() {
     let mut h = TestHarness::new();
-    add_node_with_data(&h, HsdNodeData::default());
+    add_node_with_data(&h, HsdNode::default());
     h.commit_and_update();
 
     let ent = node_entity(&mut h);

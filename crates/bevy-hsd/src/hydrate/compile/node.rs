@@ -5,10 +5,11 @@ use avian3d::prelude::{
 use bevy::prelude::*;
 use smol_str::SmolStr;
 
+use hsd::{HsdCollider, HsdNode, HsdRigidBody};
+
 use crate::{
     DocRegistryMap, HsdChild, HsdEntityMaps, HsdNodePhysics, HsdScripts, MaterialId, MeshId,
     NodeId,
-    data::{HsdCollider, HsdNodeData, HsdRigidBody},
     hydrate::{
         compile::{collider::ColliderParams, material::CompiledMaterial, mesh::CompiledMesh},
         events::NodeRef,
@@ -596,7 +597,7 @@ pub fn guard_physics_scale(
     }
 }
 
-pub(crate) fn node_transform(data: &HsdNodeData) -> Transform {
+pub(crate) fn node_transform(data: &HsdNode) -> Transform {
     let mut t = Transform::default();
     if let Some(tr) = &data.translation
         && tr.len() >= 3

@@ -2,7 +2,11 @@ use bevy::prelude::*;
 use bevy_wds::blob::deps::{BlobDeps, BlobDepsLoaded};
 use smol_str::SmolStr;
 
-use crate::{CompiledImage, DocRegistryMap, HsdChild, HsdEntityMaps, MaterialId, data::HsdMaterial};
+use hsd::HsdMaterial;
+
+use crate::{
+    DocRegistryMap, HsdChild, HsdEntityMaps, MaterialId, hydrate::compile::image::CompiledImage,
+};
 
 #[derive(Component)]
 pub struct CompiledMaterial(pub Handle<StandardMaterial>);
@@ -262,9 +266,16 @@ pub(crate) fn handle_hsd_material_alpha_cutoff_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(&registry_map, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
-        p.alpha_cutoff = Some(ev.value);
-    });
+    update_material_param(
+        &registry_map,
+        &entity_maps,
+        &ev.doc_id,
+        &ev.id,
+        &mut params,
+        |p| {
+            p.alpha_cutoff = Some(ev.value);
+        },
+    );
 }
 
 pub(crate) fn handle_hsd_material_alpha_mode_set(
@@ -274,9 +285,16 @@ pub(crate) fn handle_hsd_material_alpha_mode_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(&registry_map, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
-        p.alpha_mode.clone_from(&ev.mode);
-    });
+    update_material_param(
+        &registry_map,
+        &entity_maps,
+        &ev.doc_id,
+        &ev.id,
+        &mut params,
+        |p| {
+            p.alpha_mode.clone_from(&ev.mode);
+        },
+    );
 }
 
 pub(crate) fn handle_hsd_material_base_color_set(
@@ -286,10 +304,17 @@ pub(crate) fn handle_hsd_material_base_color_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(&registry_map, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
-        let [r, g, b, a] = ev.color;
-        p.base_color = Some(Color::srgba(r, g, b, a));
-    });
+    update_material_param(
+        &registry_map,
+        &entity_maps,
+        &ev.doc_id,
+        &ev.id,
+        &mut params,
+        |p| {
+            let [r, g, b, a] = ev.color;
+            p.base_color = Some(Color::srgba(r, g, b, a));
+        },
+    );
 }
 
 pub(crate) fn handle_hsd_material_base_color_texture_set(
@@ -389,9 +414,16 @@ pub(crate) fn handle_hsd_material_double_sided_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(&registry_map, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
-        p.double_sided = Some(ev.value);
-    });
+    update_material_param(
+        &registry_map,
+        &entity_maps,
+        &ev.doc_id,
+        &ev.id,
+        &mut params,
+        |p| {
+            p.double_sided = Some(ev.value);
+        },
+    );
 }
 
 pub(crate) fn handle_hsd_material_metallic_set(
@@ -401,9 +433,16 @@ pub(crate) fn handle_hsd_material_metallic_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(&registry_map, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
-        p.metallic = Some(ev.value);
-    });
+    update_material_param(
+        &registry_map,
+        &entity_maps,
+        &ev.doc_id,
+        &ev.id,
+        &mut params,
+        |p| {
+            p.metallic = Some(ev.value);
+        },
+    );
 }
 
 pub(crate) fn handle_hsd_material_name_set(
@@ -433,9 +472,16 @@ pub(crate) fn handle_hsd_material_unlit_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(&registry_map, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
-        p.unlit = Some(ev.value);
-    });
+    update_material_param(
+        &registry_map,
+        &entity_maps,
+        &ev.doc_id,
+        &ev.id,
+        &mut params,
+        |p| {
+            p.unlit = Some(ev.value);
+        },
+    );
 }
 
 pub(crate) fn handle_hsd_material_roughness_set(
@@ -445,9 +491,16 @@ pub(crate) fn handle_hsd_material_roughness_set(
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(&registry_map, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
-        p.roughness = Some(ev.value);
-    });
+    update_material_param(
+        &registry_map,
+        &entity_maps,
+        &ev.doc_id,
+        &ev.id,
+        &mut params,
+        |p| {
+            p.roughness = Some(ev.value);
+        },
+    );
 }
 
 const METALLIC_DEFAULT: f32 = 0.5;

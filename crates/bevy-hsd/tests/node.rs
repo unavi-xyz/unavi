@@ -1,5 +1,6 @@
 use bevy::prelude::*;
-use bevy_hsd::{HsdChild, HsdChildren, MeshRef, NodeId, data::HsdNodeData};
+use bevy_hsd::{HsdChild, HsdChildren, NodeId, hydrate::compile::node::MeshRef};
+use hsd::HsdNode;
 use loro::{LoroMap, LoroTree, TreeParentId};
 use loro_surgeon::Reconcile;
 
@@ -19,7 +20,7 @@ fn add_root_node(harness: &TestHarness) -> loro::TreeID {
         .expect("create root node")
 }
 
-fn set_node_data(harness: &TestHarness, tid: loro::TreeID, data: HsdNodeData) {
+fn set_node_data(harness: &TestHarness, tid: loro::TreeID, data: HsdNode) {
     let nodes = harness
         .doc
         .get_map("hsd")
@@ -46,7 +47,7 @@ fn node_name_set() {
     set_node_data(
         &h,
         tid,
-        HsdNodeData {
+        HsdNode {
             name: Some("my-node".into()),
             ..Default::default()
         },
@@ -65,7 +66,7 @@ fn node_translation_set() {
     set_node_data(
         &h,
         tid,
-        HsdNodeData {
+        HsdNode {
             translation: Some(vec![1.0, 2.0, 3.0]),
             ..Default::default()
         },
@@ -91,7 +92,7 @@ fn node_rotation_set() {
     set_node_data(
         &h,
         tid,
-        HsdNodeData {
+        HsdNode {
             rotation: Some(vec![0.0, 0.0, s, s]),
             ..Default::default()
         },
@@ -115,7 +116,7 @@ fn node_scale_set() {
     set_node_data(
         &h,
         tid,
-        HsdNodeData {
+        HsdNode {
             scale: Some(vec![2.0, 3.0, 4.0]),
             ..Default::default()
         },
@@ -147,7 +148,7 @@ fn node_mesh_ref_set() {
     set_node_data(
         &h,
         tid,
-        HsdNodeData {
+        HsdNode {
             mesh: Some("mesh-0".into()),
             ..Default::default()
         },

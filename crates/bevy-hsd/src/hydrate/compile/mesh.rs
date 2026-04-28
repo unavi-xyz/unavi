@@ -11,7 +11,9 @@ use bytemuck::{Pod, PodCastError, try_cast_slice};
 use bytes::Bytes;
 use smol_str::SmolStr;
 
-use crate::{DocRegistryMap, HsdChild, MeshId, data::HsdMesh};
+use hsd::HsdMesh;
+
+use crate::{DocRegistryMap, HsdChild, MeshId};
 
 #[derive(Component)]
 pub struct CompiledMesh(pub Handle<Mesh>);

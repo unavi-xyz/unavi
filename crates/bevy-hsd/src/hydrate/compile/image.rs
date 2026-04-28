@@ -11,9 +11,10 @@ use bevy_wds::blob::{
 use image::{DynamicImage, GenericImageView};
 use smol_str::SmolStr;
 
+use hsd::HsdImage;
+
 use crate::{
     DocRegistryMap, HsdChild, HsdEntityMaps,
-    data::HsdImage,
     hydrate::compile::material::{CompiledMaterial, MaterialParams},
 };
 

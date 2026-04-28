@@ -6796,9 +6796,15 @@ dependencies = [
 name = "hsd"
 version = "0.0.16"
 dependencies = [
+ "bevy",
+ "blake3",
+ "loro",
+ "loro-surgeon",
  "ron",
  "serde",
  "serde_with",
+ "smol_str 0.3.6",
+ "wired-records",
 ]
 
 [[package]]
@@ -6806,6 +6812,7 @@ name = "hsd-cli"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "blake3",
  "clap",
  "hsd",
  "toml 1.1.2+spec-1.1.0",
@@ -13938,10 +13945,12 @@ dependencies = [
  "clap",
  "directories",
  "embed-resource",
+ "hsd",
  "image",
  "iroh",
  "log",
  "loro",
+ "loro-surgeon",
  "reqwest 0.13.2",
  "tokio",
  "tracing",
@@ -16394,6 +16403,7 @@ dependencies = [
  "loro",
  "loro-surgeon",
  "serde",
+ "serde_with",
  "xdid",
 ]
 

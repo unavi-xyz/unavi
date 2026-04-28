@@ -33,10 +33,12 @@ bevy-wds.path           = "../bevy-wds"
 bevy_vrm.workspace      = true
 bitflags                = "2.11.0"
 clap.workspace          = true
+hsd.path                = "../hsd"
 image                   = { default-features = false, features = ["png"], workspace = true }
 iroh.workspace          = true
 log                     = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
 loro.workspace          = true
+loro-surgeon.path       = "../loro-surgeon"
 tracing                 = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
 unavi-agent.path        = "../unavi-agent"
 unavi-assets.path       = "../unavi-assets"

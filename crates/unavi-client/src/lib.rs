@@ -14,11 +14,10 @@ mod grab;
 mod home;
 mod icon;
 mod scene;
+mod system_scripts;
 
 #[cfg(not(target_family = "wasm"))]
 mod assets;
-#[cfg(not(target_family = "wasm"))]
-mod system_scripts;
 #[cfg(not(target_family = "wasm"))]
 mod xr;
 
@@ -165,7 +164,7 @@ impl Plugin for UnaviPlugin {
         );
 
         app.world_mut().trigger(LoadEndpoint {
-            #[cfg(not(target_family = "wasm"))]
+            #[cfg(all(feature = "mdns", not(target_family = "wasm")))]
             mdns: true,
             ..Default::default()
         });

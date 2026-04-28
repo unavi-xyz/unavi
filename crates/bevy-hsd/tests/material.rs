@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use bevy_hsd::{
-    CompiledMaterial, HsdChild, MaterialRef, NodeId,
-    data::{HsdMaterial, HsdNodeData},
+    HsdChild, NodeId,
+    hydrate::compile::{material::CompiledMaterial, node::MaterialRef},
 };
+use hsd::{HsdMaterial, HsdNode};
 use loro::{LoroMap, LoroTree, TreeParentId};
 use loro_surgeon::Reconcile;
 
@@ -123,7 +124,7 @@ fn node_material_ref_set() {
         .expect("nodes tree");
     let tid = nodes.create(TreeParentId::Root).expect("create node");
     let meta = nodes.get_meta(tid).expect("node meta");
-    HsdNodeData {
+    HsdNode {
         material: Some("mat-0".into()),
         ..Default::default()
     }

@@ -1,12 +1,17 @@
 (
-    assets: {},
-    images: {},
-    materials: {},
     nodes: {
         "root": (
+            collider: None,
+            material: None,
+            mesh: None,
+            name: None,
+            rigid_body: None,
+            rotation: None,
+            scale: None,
             scripts: [
                 "./Cargo.toml",
             ],
+            translation: None,
         ),
     },
 )

@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
+blake3.workspace = true
 clap.workspace   = true
 hsd              = { path = "../hsd" }
 toml             = "1.1.2"

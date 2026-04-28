@@ -6,17 +6,13 @@ use loro::{LoroMap, LoroTree, LoroValue, TreeParentId};
 use super::{diff::extract_changes_from_diff, events::RawChangeQueue};
 
 use crate::{
-    DocRegistryMap, HsdAssets, HsdDoc, HsdEntityMaps, HsdRecordId, HsdSubscription,
+    DocRegistryMap, HsdDoc, HsdEntityMaps, HsdRecordId, HsdSubscription,
     hydrate::events::RawHsdChange,
-    load_hsd::read_hsd_assets,
 };
 
 pub fn init_hsd_doc(
     mut commands: Commands,
-    added: Query<
-        (Entity, &HsdDoc, &HsdRecordId),
-        (Added<HsdDoc>, Without<RawChangeQueue>),
-    >,
+    added: Query<(Entity, &HsdDoc, &HsdRecordId), (Added<HsdDoc>, Without<RawChangeQueue>)>,
     mut registry_map: ResMut<DocRegistryMap>,
 ) {
     for (doc_ent, hsd_doc, record_id) in &added {
@@ -26,7 +22,6 @@ pub fn init_hsd_doc(
 
         let hsd_map = doc.get_map("hsd");
         full_hydrate(&hsd_map, &raw_queue);
-        let assets = HsdAssets(read_hsd_assets(&hsd_map));
 
         let rq = Arc::clone(&raw_queue);
         let sub = doc.subscribe_root(Arc::new(move |e| {
@@ -37,9 +32,11 @@ pub fn init_hsd_doc(
             }
         }));
 
-        commands
-            .entity(doc_ent)
-            .insert((assets, HsdEntityMaps::default(), RawChangeQueue(raw_queue), HsdSubscription(sub)));
+        commands.entity(doc_ent).insert((
+            HsdEntityMaps::default(),
+            RawChangeQueue(raw_queue),
+            HsdSubscription(sub),
+        ));
 
         registry_map.0.insert(record_id.0, doc_ent);
     }

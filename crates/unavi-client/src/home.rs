@@ -1,24 +1,25 @@
-use std::path::PathBuf;
-
 use bevy::{ecs::world::CommandQueue, prelude::*};
+use bevy_hsd::asset::HsdAsset;
 use bevy_wds::{LocalActor, SyncTargets};
+use hsd::Hsd;
+use loro::LoroDoc;
+use loro_surgeon::Reconcile;
 use unavi_space::Space;
 use unavi_util::{async_commands::ASYNC_COMMAND_QUEUE, async_task::spawn_async_task};
 use wds::actor::Actor;
 use wired_schemas::{SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
 
-const DEFAULT_HOME_HSD: &str = concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/assets/hsd/unavi_default_home.hsd"
-);
+const DEFAULT_HOME_HSD: &str = "hsd/unavi_default_home.hsd";
 
 #[derive(Default)]
 pub struct JoinState {
-    ready: bool,
     joined: bool,
+    hsd: Option<Handle<HsdAsset>>,
 }
 
 pub fn join_home_space(
+    asset_server: Res<AssetServer>,
+    hsds: Res<Assets<HsdAsset>>,
     local_actor: Query<(&LocalActor, &SyncTargets)>,
     mut state: Local<JoinState>,
 ) {
@@ -30,28 +31,33 @@ pub fn join_home_space(
         return;
     };
 
-    // Wait one frame after LocalActor spawns so recv_network_event
-    // can drain any pending remote actors into SyncTargets.
-    if !state.ready {
-        state.ready = true;
-        return;
-    }
-
     let local_actor = local_actor.0.clone();
     let remote_actor = sync_targets.0.first().cloned();
 
-    spawn_async_task(async move {
-        if let Err(err) = create_and_join_home(local_actor, remote_actor).await {
-            error!(?err, "Failed to join home space");
-        }
-    });
+    if let Some(handle) = &state.hsd {
+        let Some(hsd) = hsds.get(handle) else {
+            return;
+        };
 
-    state.joined = true;
+        let hsd = hsd.doc.clone();
+
+        spawn_async_task(async move {
+            if let Err(err) = create_and_join_home(local_actor, remote_actor, hsd).await {
+                error!(?err, "Failed to join home space");
+            }
+        });
+
+        state.joined = true;
+    } else {
+        let handle = asset_server.load(DEFAULT_HOME_HSD);
+        state.hsd = Some(handle);
+    }
 }
 
 async fn create_and_join_home(
     local_actor: Actor,
     remote_actor: Option<Actor>,
+    hsd: Hsd,
 ) -> anyhow::Result<()> {
     let did = local_actor.identity().did();
 
@@ -60,11 +66,9 @@ async fn create_and_join_home(
         actors.push(remote.clone());
     }
 
-    // TODO load asset from bevy, not file path, so it works no web
-
-    let hsd_doc =
-        bevy_hsd::load_hsd::build_hsd_doc_from_file(PathBuf::from(DEFAULT_HOME_HSD), &actors)
-            .await?;
+    let hsd_doc = LoroDoc::new();
+    let map = hsd_doc.get_map("hsd");
+    hsd.reconcile(&map)?;
 
     let hsd_snapshot = hsd_doc
         .export(loro::ExportMode::Snapshot)

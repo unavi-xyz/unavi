@@ -7,7 +7,7 @@ use bevy_wds::blob::{
 use bytemuck::try_cast_slice;
 use bytes::Bytes;
 
-use crate::data::HsdCollider;
+use hsd::HsdCollider;
 
 #[derive(Component)]
 #[require(BlobDeps)]

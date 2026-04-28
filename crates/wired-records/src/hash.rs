@@ -1,9 +1,19 @@
 use std::fmt;
 
+use blake3::Hash;
 use serde::{Deserialize, Serialize};
+use serde_with::serde_as;
 
+#[serde_as]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct HydratedHash(pub blake3::Hash);
+#[serde(transparent)]
+pub struct HydratedHash(#[serde_as(as = "serde_with::DisplayFromStr")] pub blake3::Hash);
+
+impl Default for HydratedHash {
+    fn default() -> Self {
+        Self(Hash::from_bytes([0; 32]))
+    }
+}
 
 impl fmt::Display for HydratedHash {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

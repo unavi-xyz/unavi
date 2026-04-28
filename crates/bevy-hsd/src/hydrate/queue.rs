@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use hsd::{HsdImage, HsdMaterial, HsdMesh, HsdNode};
 use loro::{LoroMap, LoroTree, LoroValue, TreeID, TreeParentId};
 use loro_surgeon::Hydrate;
 use smol_str::{SmolStr, ToSmolStr};
@@ -23,7 +24,6 @@ use super::compile::{
 
 use crate::{
     HsdDoc, HsdRecordId,
-    data::{HsdImage, HsdMaterial, HsdMesh, HsdNodeData},
     hydrate::events::{NodeRef, RawChangeQueue, RawHsdChange},
 };
 
@@ -49,7 +49,11 @@ pub fn process_hsd_queue(
             match change {
                 RawHsdChange::ImageAdded { id } => {
                     let initial = get_image_at(&hsd_map, &id);
-                    commands.trigger(HsdImageSpawned { doc_id, id, initial });
+                    commands.trigger(HsdImageSpawned {
+                        doc_id,
+                        id,
+                        initial,
+                    });
                 }
                 RawHsdChange::ImageChanged { id } => {
                     if let Some(hsd_img) = get_image_at(&hsd_map, &id) {
@@ -151,12 +155,7 @@ pub fn process_hsd_queue(
     }
 }
 
-fn emit_node_fields(
-    doc_id: blake3::Hash,
-    id: &SmolStr,
-    data: &HsdNodeData,
-    commands: &mut Commands,
-) {
+fn emit_node_fields(doc_id: blake3::Hash, id: &SmolStr, data: &HsdNode, commands: &mut Commands) {
     commands.trigger(HsdNodeTransformSet {
         doc_id,
         id: id.clone(),
@@ -318,13 +317,13 @@ fn get_node_parent(hsd_map: &LoroMap, tree_id: TreeID) -> Option<SmolStr> {
     }
 }
 
-pub(super) fn node_data_from_hsd(hsd_map: &LoroMap, tid: TreeID) -> HsdNodeData {
+pub(super) fn node_data_from_hsd(hsd_map: &LoroMap, tid: TreeID) -> HsdNode {
     let tree = hsd_map
         .get_or_create_container("nodes", LoroTree::new())
         .ok();
     tree.as_ref()
         .and_then(|t| t.get_meta(tid).ok())
-        .and_then(|m| HsdNodeData::hydrate(&m.get_deep_value()).ok())
+        .and_then(|m| HsdNode::hydrate(&m.get_deep_value()).ok())
         .unwrap_or_default()
 }
 

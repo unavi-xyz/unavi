@@ -3,6 +3,7 @@ use std::{collections::BTreeMap, path::Path};
 use anyhow::{Context, Result};
 use blake3::Hash;
 use hsd::{Hsd, HsdImage, HsdNode, Hsdx};
+use loro_surgeon::tree::TreeNode;
 
 use crate::{blobs::write_blob, wasm::build_wasm_for_crate};
 
@@ -35,25 +36,27 @@ pub fn build_hsdx_to_hsd(
     }
 
     // Nodes
-    for (key, node) in hsdx.nodes {
+    for node in hsdx.nodes.into_iter().filter_map(|t| t.data) {
         let mut out_scripts = Vec::new();
 
-        if let Some(scripts) = &node.scripts {
-            for script in scripts {
-                if !script.ends_with("Cargo.toml") {
-                    continue;
-                }
-                let cargo_path = input_dir.join(script);
-                let crate_dir = cargo_path
-                    .parent()
-                    .context("Cargo.toml has no parent dir")?;
-                let hash = build_wasm_for_crate(crate_dir, out_dir, built)?;
-                out_scripts.push(hash.into());
+        for script in &node.scripts {
+            if !script.ends_with("Cargo.toml") {
+                continue;
             }
+            let cargo_path = input_dir.join(script);
+            let crate_dir = cargo_path
+                .parent()
+                .context("Cargo.toml has no parent dir")?;
+            let hash = build_wasm_for_crate(crate_dir, out_dir, built)?;
+            out_scripts.push(hash.into());
         }
 
-        let out_node = HsdNode::from_hsdx(node, Some(out_scripts));
-        hsd.nodes.insert(key, out_node);
+        let out_node = HsdNode::from_hsdx(node, out_scripts);
+        hsd.nodes.push(TreeNode {
+            id: None,
+            data: Some(out_node),
+            children: vec![],
+        });
     }
 
     // Images

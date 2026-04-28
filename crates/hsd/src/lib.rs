@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 
 use loro_surgeon::{Hydrate, Reconcile};
+
+use loro_surgeon::tree::TreeNode;
 use ron::extensions::Extensions;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -19,16 +21,21 @@ fn ron_options() -> ron::Options {
 #[skip_serializing_none]
 #[derive(Debug, Clone, Default, Hydrate, Reconcile, Serialize, Deserialize)]
 pub struct Hsd {
+    #[loro(default)]
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub assets: BTreeMap<SmolStr, HydratedHash>,
+    #[loro(default)]
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub images: BTreeMap<SmolStr, HsdImage>,
+    #[loro(default)]
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub materials: BTreeMap<SmolStr, HsdMaterial>,
+    #[loro(default)]
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub meshes: BTreeMap<SmolStr, HsdMesh>,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub nodes: BTreeMap<SmolStr, HsdNode>,
+    #[loro(default)]
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub nodes: Vec<TreeNode<HsdNode>>,
 }
 
 impl Hsd {
@@ -52,8 +59,8 @@ pub struct Hsdx {
     pub materials: BTreeMap<SmolStr, HsdMaterial>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub meshes: BTreeMap<SmolStr, HsdMesh>,
-    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub nodes: BTreeMap<SmolStr, HsdxNode>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub nodes: Vec<TreeNode<HsdxNode>>,
 }
 
 impl Hsdx {
@@ -169,14 +176,15 @@ where
     #[loro(default)]
     pub scale: Option<Vec<f64>>,
     #[loro(default)]
-    pub scripts: Option<Vec<T>>,
+    #[serde(default)]
+    pub scripts: Vec<T>,
     #[loro(default)]
     pub translation: Option<Vec<f64>>,
 }
 
 impl HsdNode {
     #[must_use]
-    pub fn from_hsdx(value: HsdxNode, scripts: Option<Vec<HydratedHash>>) -> Self {
+    pub fn from_hsdx(value: HsdxNode, scripts: Vec<HydratedHash>) -> Self {
         Self {
             collider: value.collider,
             material: value.material,

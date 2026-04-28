@@ -188,13 +188,7 @@ fn emit_node_fields(doc_id: blake3::Hash, id: &SmolStr, data: &HsdNode, commands
         id: id.clone(),
         rigid_body: data.rigid_body.clone(),
     });
-    let scripts: Vec<blake3::Hash> = data
-        .scripts
-        .as_deref()
-        .unwrap_or_default()
-        .iter()
-        .map(|h| h.0)
-        .collect();
+    let scripts = data.scripts.iter().map(|h| h.0).collect();
     commands.trigger(HsdNodeScriptsSet {
         doc_id,
         id: id.clone(),

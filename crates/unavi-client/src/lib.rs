@@ -159,7 +159,7 @@ impl Plugin for UnaviPlugin {
             (
                 camera::apply_camera_effects,
                 scene::spawn_agent,
-                home::join_home_space,
+                // home::join_home_space,
             ),
         );
 

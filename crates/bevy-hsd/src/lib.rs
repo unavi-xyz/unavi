@@ -61,23 +61,25 @@ impl Plugin for HsdPlugin {
             .add_observer(hydrate::compile::node::on_material_ref_set)
             .add_observer(hydrate::compile::node::on_mesh_compiled)
             .add_observer(hydrate::compile::node::on_mesh_ref_removed)
-            .add_observer(hydrate::compile::node::on_mesh_ref_set);
-
-        app.add_systems(
-            FixedPostUpdate,
-            (hydrate::compile::node::guard_physics_scale, ApplyDeferred)
-                .chain()
-                .before(PhysicsSystems::StepSimulation),
-        )
-        .add_systems(
-            FixedUpdate,
-            (
-                hydrate::init::init_hsd_doc,
-                hydrate::queue::process_hsd_queue,
-                hydrate::compile::material::recompile_changed_materials,
+            .add_observer(hydrate::compile::node::on_mesh_ref_set)
+            .add_systems(
+                FixedPostUpdate,
+                (hydrate::compile::node::guard_physics_scale, ApplyDeferred)
+                    .chain()
+                    .before(PhysicsSystems::StepSimulation),
             )
-                .chain(),
-        );
+            .add_systems(
+                FixedUpdate,
+                (
+                    (
+                        hydrate::init::init_hsd_doc,
+                        hydrate::queue::process_hsd_queue,
+                        hydrate::compile::material::recompile_changed_materials,
+                    )
+                        .chain(),
+                    instance::instance_hsd,
+                ),
+            );
     }
 }
 

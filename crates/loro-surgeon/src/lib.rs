@@ -26,11 +26,13 @@
 mod error;
 mod hydrate;
 mod reconcile;
+pub mod tree;
 
 pub use error::{HydrateError, ReconcileError};
 pub use hydrate::Hydrate;
-pub use loro_surgeon_derive::{Hydrate, Reconcile};
 pub use reconcile::Reconcile;
+
+pub use loro_surgeon_derive::{Hydrate, Reconcile};
 
 // Re-export loro for use by derive macros.
 pub use loro;

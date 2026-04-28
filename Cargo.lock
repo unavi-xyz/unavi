@@ -6816,6 +6816,7 @@ dependencies = [
  "blake3",
  "clap",
  "hsd",
+ "loro-surgeon",
  "toml 1.1.2+spec-1.1.0",
 ]
 
@@ -8335,6 +8336,7 @@ dependencies = [
  "loro",
  "loro-surgeon-derive",
  "rstest",
+ "serde",
  "smol_str 0.3.6",
  "thiserror 2.0.18",
 ]

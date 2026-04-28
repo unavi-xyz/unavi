@@ -38,8 +38,8 @@
             unlit: None,
         ),
     },
-    nodes: {
-        "root": (
+    nodes: [
+         (
             collider: None,
             material: None,
             mesh: None,
@@ -52,5 +52,5 @@
             ],
             translation: None,
         ),
-    },
+    ],
 )

@@ -1,7 +1,9 @@
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
-use loro::{LoroMap, LoroTree, LoroValue, TreeParentId};
+use hsd::{Hsd, HsdNode};
+use loro::{LoroMap, TreeID};
+use loro_surgeon::{Hydrate, tree::TreeNode};
 
 use super::{diff::extract_changes_from_diff, events::RawChangeQueue};
 
@@ -43,45 +45,30 @@ pub fn init_hsd_doc(
 }
 
 fn full_hydrate(hsd_map: &LoroMap, raw_queue: &Arc<Mutex<Vec<RawHsdChange>>>) {
-    let value = hsd_map.get_deep_value();
-    let LoroValue::Map(root) = &value else { return };
-
+    let hsd = Hsd::hydrate(&hsd_map.get_deep_value()).unwrap_or_default();
     let mut raw = raw_queue.lock().expect("raw queue lock");
 
-    if let Some(LoroValue::Map(images)) = root.get("images") {
-        for id in images.keys() {
-            raw.push(RawHsdChange::ImageAdded {
-                id: id.as_str().into(),
-            });
-        }
+    for id in hsd.images.keys() {
+        raw.push(RawHsdChange::ImageAdded { id: id.clone() });
+    }
+    for id in hsd.materials.keys() {
+        raw.push(RawHsdChange::MaterialAdded { id: id.clone() });
+    }
+    for id in hsd.meshes.keys() {
+        raw.push(RawHsdChange::MeshAdded { id: id.clone() });
     }
 
-    if let Some(LoroValue::Map(mats)) = root.get("materials") {
-        for id in mats.keys() {
-            raw.push(RawHsdChange::MaterialAdded {
-                id: id.as_str().into(),
-            });
-        }
-    }
+    visit_nodes(&hsd.nodes, None, &mut raw);
+}
 
-    if let Some(LoroValue::Map(meshes)) = root.get("meshes") {
-        for id in meshes.keys() {
-            raw.push(RawHsdChange::MeshAdded {
-                id: id.as_str().into(),
-            });
-        }
-    }
-
-    if let Ok(tree) = hsd_map.get_or_create_container("nodes", LoroTree::new()) {
-        for node in &tree.get_nodes(false) {
-            let parent_id = match node.parent {
-                TreeParentId::Node(pid) => Some(pid),
-                _ => None,
-            };
-            raw.push(RawHsdChange::NodeAdded {
-                tree_id: node.id,
-                parent_id,
-            });
-        }
+fn visit_nodes(
+    nodes: &[TreeNode<HsdNode>],
+    parent_id: Option<TreeID>,
+    raw: &mut Vec<RawHsdChange>,
+) {
+    for node in nodes {
+        let Some(tree_id) = node.id else { continue };
+        raw.push(RawHsdChange::NodeAdded { tree_id, parent_id });
+        visit_nodes(&node.children, Some(tree_id), raw);
     }
 }

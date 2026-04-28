@@ -2,8 +2,8 @@
     assets: {
         "beacon": "../unavi-beacon/asset.hsdx",
     },
-    nodes: {
-        "root": (
+    nodes: [
+         (
             collider: None,
             material: None,
             mesh: None,
@@ -16,5 +16,5 @@
             ],
             translation: None,
         ),
-    },
+    ],
 )

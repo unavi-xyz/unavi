@@ -41,9 +41,9 @@ impl AssetLoader for HsdLoader {
                 .chain(doc.images.values().filter_map(|i| i.data.as_ref()))
                 .chain(
                     doc.nodes
-                        .values()
-                        .filter_map(|n| n.scripts.as_ref())
-                        .flat_map(|v| v.iter()),
+                        .iter()
+                        .filter_map(|t| t.data.as_ref())
+                        .flat_map(|n| n.scripts.iter()),
                 )
             {
                 let dep_path = load_context

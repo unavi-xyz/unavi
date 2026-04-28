@@ -10,8 +10,9 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace = true
-blake3.workspace = true
-clap.workspace   = true
-hsd              = { path = "../hsd" }
-toml             = "1.1.2"
+anyhow.workspace  = true
+blake3.workspace  = true
+clap.workspace    = true
+hsd.path          = "../hsd"
+loro-surgeon.path = "../loro-surgeon"
+toml              = "1.1.2"

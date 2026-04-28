@@ -963,6 +963,7 @@ dependencies = [
  "unavi-util",
  "wds",
  "wired-records",
+ "wired-schemas",
 ]
 
 [[package]]

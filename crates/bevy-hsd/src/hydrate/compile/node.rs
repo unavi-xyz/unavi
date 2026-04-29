@@ -340,6 +340,7 @@ pub(crate) fn handle_hsd_node_scripts_set(
     trigger: On<HsdNodeScriptsSet>,
     registry_map: Res<DocRegistryMap>,
     entity_maps: Query<&HsdEntityMaps>,
+    names: Query<NameOrEntity>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
@@ -354,8 +355,15 @@ pub(crate) fn handle_hsd_node_scripts_set(
         };
         entity_cmd.try_remove::<NodeScripts>();
     } else {
-        for hash in &ev.scripts {
-            commands.spawn((ScriptNode(entity), HsdScript(*hash)));
+        let name_base = names.get(entity).expect("name");
+
+        for (i, hash) in ev.scripts.iter().enumerate() {
+            let name = if ev.scripts.len() == 1 {
+                Name::new(name_base.to_string())
+            } else {
+                Name::new(format!("{name_base}.{i}"))
+            };
+            commands.spawn((ScriptNode(entity), HsdScript(*hash), name));
         }
     }
 }

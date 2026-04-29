@@ -12,7 +12,7 @@ pub fn add_apis_to_linker(
     perms: &ApiPermissions,
 ) -> wasmtime::Result<()> {
     if perms.contains(&ApiName::Input) {
-        todo!()
+        // TODO
     }
 
     Ok(())

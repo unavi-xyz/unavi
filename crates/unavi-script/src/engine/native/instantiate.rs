@@ -44,9 +44,9 @@ pub fn instantiate_scripts(
             &Script,
             &ScriptEngine,
             &ApiPermissions,
-            Option<&Name>,
+            NameOrEntity,
         ),
-        Or<(Without<InstantiatingScript>, Without<ScriptGuest>)>,
+        (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
     mut commands: Commands,
 ) {
@@ -54,8 +54,8 @@ pub fn instantiate_scripts(
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };
-
         let Ok(engine) = engines.get(engine_ent.0) else {
+            warn_once!("Can't instantiate: no engine");
             continue;
         };
 
@@ -82,8 +82,7 @@ pub fn instantiate_scripts(
 
         let (tx, rx) = tokio::sync::oneshot::channel();
 
-        let name = name.map_or_else(|| entity.to_string(), ToString::to_string);
-        let span = info_span!("", name);
+        let span = info_span!("", name = name.to_string());
 
         spawn_async_task({
             let store = Arc::clone(&store);
@@ -131,6 +130,7 @@ async fn instantiate_component(
     wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
     add_apis_to_linker(&mut linker, perms)?;
 
+    info!("Instantiating script");
     let guest = bindings::Guest::instantiate_async(store, &component, &linker).await?;
 
     Ok(guest)

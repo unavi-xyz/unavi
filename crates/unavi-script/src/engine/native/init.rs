@@ -16,7 +16,7 @@ pub struct InitializingScript(tokio::sync::oneshot::Receiver<ResourceAny>);
 pub fn init_scripts(
     to_init: Query<
         (Entity, &ScriptGuest, &ScriptStore, &ScriptSpan),
-        Or<(Without<InitializingScript>, Without<ScriptResource>)>,
+        (Without<InitializingScript>, Without<ScriptResource>),
     >,
     mut commands: Commands,
 ) {

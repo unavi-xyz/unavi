@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::load::asset::Wasm;
+use crate::{load::asset::Wasm, permissions::ApiPermissions};
 
 mod engine;
 pub mod firewall;
@@ -18,5 +18,5 @@ impl Plugin for ScriptPlugin {
 }
 
 #[derive(Component)]
-#[require(permissions::ApiPermissions)]
+#[require(ApiPermissions)]
 pub struct Script(pub Handle<Wasm>);

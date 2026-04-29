@@ -19,7 +19,7 @@ pub struct BlobResponse(pub Option<Bytes>);
 
 pub(crate) fn on_blob_request_remove(trigger: On<Remove, BlobRequest>, mut commands: Commands) {
     // Removing BlobPending drops the oneshot::Sender, signalling the task to cancel.
-    commands.entity(trigger.entity).remove::<BlobPending>();
+    commands.entity(trigger.entity).try_remove::<BlobPending>();
 }
 
 pub(crate) fn on_blob_request_add(

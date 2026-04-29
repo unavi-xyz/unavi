@@ -4,3 +4,8 @@ target = "crates/unavi-client/index.html"
 [watch]
 ignore = ["crates/unavi-server"]
 watch  = ["crates"]
+
+[[hooks]]
+command           = "nu"
+command_arguments = ["scripts/fix-jco-snippets.nu"]
+stage             = "post_build"

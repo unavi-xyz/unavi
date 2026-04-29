@@ -83,7 +83,7 @@ pub fn build_wasm_for_crate(
             "new",
             dst.to_str().context("component wasm")?,
             "--adapt",
-            "scripts/wasi_snapshot_preview1.reactor.wasm",
+            "crates/unavi-script/node_modules/@bytecodealliance/jco/lib/wasi_snapshot_preview1.reactor.wasm",
             "-o",
             dst.to_str().context("component out")?,
         ],

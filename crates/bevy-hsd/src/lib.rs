@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use avian3d::schedule::PhysicsSystems;
 use bevy::prelude::*;
+use blake3::Hash;
 use loro::LoroDoc;
 use smol_str::SmolStr;
 
@@ -107,8 +108,16 @@ pub struct MeshId(pub SmolStr);
 #[derive(Component, Clone, Debug)]
 pub struct MaterialId(pub SmolStr);
 
+#[derive(Component, Clone, Debug, Default)]
+#[relationship_target(relationship = ScriptNode, linked_spawn)]
+pub struct NodeScripts(Vec<Entity>);
+
 #[derive(Component, Clone, Debug)]
-pub struct HsdScripts(pub Vec<blake3::Hash>);
+#[relationship(relationship_target = NodeScripts)]
+pub struct ScriptNode(pub Entity);
+
+#[derive(Component, Clone, Debug)]
+pub struct HsdScript(pub Hash);
 
 #[derive(Component, Clone, Debug, Default)]
 pub struct HsdNodePhysics {

@@ -150,7 +150,6 @@ impl Plugin for UnaviPlugin {
                 camera::sky::spawn_sky,
                 icon::set_window_icon,
                 scene::spawn_scene,
-                #[cfg(not(target_family = "wasm"))]
                 system_scripts::spawn_system_scripts,
             ),
         )

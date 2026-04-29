@@ -25,6 +25,7 @@ unavi-agent.path        = "../unavi-agent"
 unavi-avatar.path       = "../unavi-avatar"
 unavi-input.path        = "../unavi-input"
 unavi-util.path         = "../unavi-util"
+unavi-wasm-compat.path  = "../unavi-wasm-compat"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 wasmtime      = "43.0.0"
@@ -32,6 +33,7 @@ wasmtime-wasi = "43.0.0"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasm-bindgen.workspace = true
+wasm-bindgen-futures   = "0.4.70"
 
 [dev-dependencies]
 avian3d.workspace              = true

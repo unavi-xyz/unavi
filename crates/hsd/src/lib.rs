@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 
-use loro_surgeon::{Hydrate, Reconcile};
+use loro::{LoroMap, LoroTree, TreeParentId};
+use loro_surgeon::{Hydrate, Reconcile, ReconcileError};
 
 use loro_surgeon::tree::TreeNode;
 use ron::extensions::Extensions;
@@ -19,23 +20,40 @@ fn ron_options() -> ron::Options {
 }
 
 #[skip_serializing_none]
-#[derive(Debug, Clone, Default, Hydrate, Reconcile, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Hydrate, Serialize, Deserialize)]
 pub struct Hsd {
-    #[loro(default)]
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub assets: BTreeMap<SmolStr, HydratedHash>,
-    #[loro(default)]
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub images: BTreeMap<SmolStr, HsdImage>,
-    #[loro(default)]
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub materials: BTreeMap<SmolStr, HsdMaterial>,
-    #[loro(default)]
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub meshes: BTreeMap<SmolStr, HsdMesh>,
-    #[loro(default)]
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub nodes: Vec<TreeNode<HsdNode>>,
+}
+
+impl Reconcile for Hsd {
+    fn reconcile(&self, map: &LoroMap) -> Result<(), ReconcileError> {
+        self.assets.reconcile_field(map, "assets")?;
+        self.images.reconcile_field(map, "images")?;
+        self.materials.reconcile_field(map, "materials")?;
+        self.meshes.reconcile_field(map, "meshes")?;
+        let tree = map.get_or_create_container("nodes", LoroTree::new())?;
+        for id in tree.roots() {
+            tree.delete(id)?;
+        }
+        for node in &self.nodes {
+            node.insert_into(&tree, TreeParentId::Root)?;
+        }
+        Ok(())
+    }
+
+    fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
+        let nested = map.get_or_create_container(key, LoroMap::new())?;
+        self.reconcile(&nested)
+    }
 }
 
 impl Hsd {

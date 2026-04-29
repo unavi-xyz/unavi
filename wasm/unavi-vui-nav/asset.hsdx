@@ -8,7 +8,7 @@
                 collider: None,
                 material: None,
                 mesh: None,
-                name: None,
+                name: "nav",
                 rigid_body: None,
                 rotation: None,
                 scale: None,

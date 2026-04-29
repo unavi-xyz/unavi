@@ -126,14 +126,13 @@ pub fn join_space_topic(
         .entity(trigger.entity)
         .insert(SpaceGossipCancel { _cancel: cancel_tx });
 
-    sender
-        .0
-        .send_blocking(GossipCommand::JoinSpace {
-            ctx,
-            cancel: cancel_rx,
-            space,
-        })
-        .expect("send gossip command");
+    if let Err(err) = sender.0.try_send(GossipCommand::JoinSpace {
+        ctx,
+        cancel: cancel_rx,
+        space,
+    }) {
+        error!(?err, "Failed to send gossip command");
+    }
 }
 
 #[derive(Component)]

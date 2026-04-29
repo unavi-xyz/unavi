@@ -11,10 +11,6 @@ pub struct EnginePlugin;
 
 impl Plugin for EnginePlugin {
     fn build(&self, app: &mut App) {
-        let default_engine = app.world_mut().spawn(Engine).id();
-        app.insert_resource(DefaultEngine(default_engine))
-            .add_observer(add_to_default_engine);
-
         cfg_select! {
             target_family = "wasm" => {
                 app.add_plugins(web::WebEnginePlugin);
@@ -23,6 +19,11 @@ impl Plugin for EnginePlugin {
                 app.add_plugins(native::NativeEnginePlugin);
             }
         }
+
+        let default_engine = app.world_mut().spawn(Engine).id();
+
+        app.insert_resource(DefaultEngine(default_engine))
+            .add_observer(add_to_default_engine);
     }
 }
 

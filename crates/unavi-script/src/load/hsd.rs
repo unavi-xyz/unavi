@@ -1,22 +1,41 @@
 use bevy::prelude::*;
 use bevy_hsd::HsdScript;
-use bevy_wds::LocalBlobs;
+use bevy_wds::blob::{
+    deps::BlobDep,
+    request::{BlobRequest, BlobResponse},
+};
 
-pub fn spawn_hsd_scripts(
+use crate::{Script, load::asset::Wasm};
+
+#[derive(Component)]
+pub struct PendingScript;
+
+pub fn load_hsd_scripts(
     trigger: On<Add, HsdScript>,
     scripts: Query<&HsdScript>,
-    blobs: Query<&LocalBlobs>,
+    mut commands: Commands,
 ) {
-    let Ok(blobs) = blobs.single() else {
-        warn!("Can't load script, no LocalBlobs");
-        return;
-    };
-
     let script = scripts.get(trigger.entity).expect("get scripts");
-
-    // Load bin from WDS.
-
-    info!("spawning script {}", script.0);
+    commands.spawn((
+        BlobDep(trigger.entity),
+        BlobRequest(script.0),
+        PendingScript,
+    ));
 }
 
-pub fn despawn_hsd_scripts(trigger: On<Remove, HsdScript>, scripts: Query<&HsdScript>) {}
+pub fn process_pending_scripts(
+    pending: Query<(Entity, &BlobDep, &mut BlobResponse), With<PendingScript>>,
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+) {
+    for (entity, parent, mut res) in pending {
+        commands.entity(entity).despawn();
+
+        let Some(bytes) = res.0.take() else {
+            continue;
+        };
+        let handle = asset_server.add(Wasm(bytes.to_vec()));
+
+        commands.entity(parent.0).insert(Script(handle));
+    }
+}

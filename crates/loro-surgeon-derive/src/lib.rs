@@ -20,6 +20,7 @@ struct FieldAttrs {
     hydrate_with: Option<syn::Path>,
     reconcile_with: Option<syn::Path>,
     rename: Option<String>,
+    required: bool,
     skip: bool,
     with: Option<syn::Path>,
 }
@@ -59,6 +60,11 @@ fn parse_field_attrs(attrs: &[Attribute]) -> FieldAttrs {
                 return Ok(());
             }
 
+            if meta.path.is_ident("required") {
+                result.required = true;
+                return Ok(());
+            }
+
             if meta.path.is_ident("skip") {
                 result.skip = true;
                 return Ok(());
@@ -78,9 +84,29 @@ fn parse_field_attrs(attrs: &[Attribute]) -> FieldAttrs {
     result
 }
 
+fn parse_struct_default(attrs: &[Attribute]) -> bool {
+    for attr in attrs {
+        if !attr.path().is_ident("loro") {
+            continue;
+        }
+        let mut found = false;
+        let _ = attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("default") {
+                found = true;
+            }
+            Ok(())
+        });
+        if found {
+            return true;
+        }
+    }
+    false
+}
+
 fn hydrate_struct_field(
     f: &syn::Field,
     crate_ident: &proc_macro2::TokenStream,
+    struct_default: bool,
 ) -> proc_macro2::TokenStream {
     let field_name = f.ident.as_ref().expect("named field");
     let field_type = &f.ty;
@@ -91,6 +117,7 @@ fn hydrate_struct_field(
     }
 
     let key = attrs.rename.unwrap_or_else(|| field_name.to_string());
+    let is_default = (struct_default && !attrs.required) || attrs.default;
 
     let hydrate_call = if let Some(with) = attrs.with {
         quote! { #with::hydrate(field_value) }
@@ -100,7 +127,7 @@ fn hydrate_struct_field(
         quote! { <#field_type as #crate_ident::Hydrate>::hydrate(field_value) }
     };
 
-    if attrs.default {
+    if is_default {
         quote! {
             #field_name: match map.get(#key) {
                 Some(field_value) => match #hydrate_call {
@@ -200,6 +227,7 @@ fn hydrate_enum_arm(
 fn reconcile_struct_field(
     f: &syn::Field,
     crate_ident: &proc_macro2::TokenStream,
+    _struct_default: bool,
 ) -> proc_macro2::TokenStream {
     let field_name = f.ident.as_ref().expect("named field");
     let field_type = &f.ty;
@@ -308,10 +336,11 @@ pub fn derive_hydrate(input: TokenStream) -> TokenStream {
                     .into();
             };
 
+            let struct_default = parse_struct_default(&input.attrs);
             let field_extractions: Vec<_> = fields
                 .named
                 .iter()
-                .map(|f| hydrate_struct_field(f, &crate_ident))
+                .map(|f| hydrate_struct_field(f, &crate_ident, struct_default))
                 .collect();
 
             TokenStream::from(quote! {
@@ -392,10 +421,11 @@ pub fn derive_reconcile(input: TokenStream) -> TokenStream {
                     .into();
             };
 
+            let struct_default = parse_struct_default(&input.attrs);
             let field_insertions: Vec<_> = fields
                 .named
                 .iter()
-                .map(|f| reconcile_struct_field(f, &crate_ident))
+                .map(|f| reconcile_struct_field(f, &crate_ident, struct_default))
                 .collect();
 
             TokenStream::from(quote! {

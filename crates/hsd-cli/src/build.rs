@@ -3,7 +3,7 @@ use std::{collections::BTreeMap, path::Path};
 use anyhow::{Context, Result};
 use blake3::Hash;
 use hsd::{Hsd, HsdImage, HsdNode, Hsdx};
-use loro_surgeon::tree::TreeNode;
+use loro_surgeon::TreeNode;
 
 use crate::{blobs::write_blob, wasm::build_wasm_for_crate};
 

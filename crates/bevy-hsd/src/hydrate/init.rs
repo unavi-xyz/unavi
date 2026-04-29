@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use bevy::prelude::*;
 use hsd::{Hsd, HsdNode};
 use loro::{LoroMap, TreeID};
-use loro_surgeon::{Hydrate, tree::TreeNode};
+use loro_surgeon::{Hydrate, TreeNode};
 
 use super::{diff::extract_changes_from_diff, events::RawChangeQueue};
 

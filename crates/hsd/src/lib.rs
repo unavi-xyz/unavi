@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use loro::{LoroMap, LoroTree, TreeParentId};
 use loro_surgeon::{Hydrate, Reconcile, ReconcileError};
 
-use loro_surgeon::tree::TreeNode;
+use loro_surgeon::TreeNode;
 use ron::extensions::Extensions;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
@@ -98,28 +98,20 @@ pub type HsdNode = HsdNodeBase<HydratedHash>;
 pub type HsdxNode = HsdNodeBase<String>;
 
 #[derive(Debug, Clone, Default, Hydrate, Reconcile, Serialize, Deserialize)]
+#[loro(default)]
 #[skip_serializing_none]
 pub struct HsdImageBase<T>
 where
     T: Hydrate + Reconcile,
 {
-    #[loro(default)]
     pub address_mode_u: Option<i64>,
-    #[loro(default)]
     pub address_mode_v: Option<i64>,
-    #[loro(default)]
     pub address_mode_w: Option<i64>,
-    #[loro(default)]
     pub data: Option<T>,
-    #[loro(default)]
     pub mag_filter: Option<i64>,
-    #[loro(default)]
     pub min_filter: Option<i64>,
-    #[loro(default)]
     pub mipmap_filter: Option<i64>,
-    #[loro(default)]
     pub name: Option<SmolStr>,
-    #[loro(default)]
     pub srgb: Option<bool>,
 }
 
@@ -141,62 +133,41 @@ impl HsdImage {
 }
 
 #[derive(Debug, Clone, Default, Hydrate, Reconcile, Serialize, Deserialize)]
+#[loro(default)]
 #[skip_serializing_none]
 pub struct HsdMaterial {
-    #[loro(default)]
     pub alpha_cutoff: Option<f64>,
-    #[loro(default)]
     pub alpha_mode: Option<SmolStr>,
-    #[loro(default)]
     pub base_color: Option<Vec<f64>>,
-    #[loro(default)]
     pub base_color_texture: Option<SmolStr>,
-    #[loro(default)]
     pub double_sided: Option<bool>,
-    #[loro(default)]
     pub emissive: Option<Vec<f64>>,
-    #[loro(default)]
     pub emissive_texture: Option<SmolStr>,
-    #[loro(default)]
     pub metallic: Option<f64>,
-    #[loro(default)]
     pub metallic_roughness_texture: Option<SmolStr>,
-    #[loro(default)]
     pub name: Option<SmolStr>,
-    #[loro(default)]
     pub normal_texture: Option<SmolStr>,
-    #[loro(default)]
     pub occlusion_texture: Option<SmolStr>,
-    #[loro(default)]
     pub roughness: Option<f64>,
-    #[loro(default)]
     pub unlit: Option<bool>,
 }
 
 #[derive(Debug, Clone, Default, Hydrate, Reconcile, Serialize, Deserialize)]
+#[loro(default)]
 #[skip_serializing_none]
 pub struct HsdNodeBase<T>
 where
     T: Hydrate + Reconcile,
 {
-    #[loro(default)]
     pub collider: Option<HsdCollider>,
-    #[loro(default)]
     pub material: Option<SmolStr>,
-    #[loro(default)]
     pub mesh: Option<SmolStr>,
-    #[loro(default)]
     pub name: Option<SmolStr>,
-    #[loro(default)]
     pub rigid_body: Option<HsdRigidBody>,
-    #[loro(default)]
     pub rotation: Option<Vec<f64>>,
-    #[loro(default)]
     pub scale: Option<Vec<f64>>,
-    #[loro(default)]
     #[serde(default)]
     pub scripts: Vec<T>,
-    #[loro(default)]
     pub translation: Option<Vec<f64>>,
 }
 
@@ -218,13 +189,12 @@ impl HsdNode {
 }
 
 #[derive(Debug, Clone, Hydrate, Reconcile, Serialize, Deserialize)]
+#[loro(default)]
 pub struct HsdMesh {
-    #[loro(default)]
     pub attributes: BTreeMap<SmolStr, HydratedHash>,
-    #[loro(default)]
     pub indices: Option<HydratedHash>,
-    #[loro(default)]
     pub name: Option<SmolStr>,
+    #[loro(required)]
     pub topology: HydratedTopology,
 }
 
@@ -252,16 +222,13 @@ pub enum HsdCollider {
 }
 
 #[derive(Debug, Clone, Hydrate, Reconcile, Serialize, Deserialize, Default)]
+#[loro(default)]
 pub struct HsdRigidBody {
-    #[loro(default)]
     pub angular_damping: Option<f64>,
-    #[loro(default)]
     pub friction: Option<f64>,
+    #[loro(required)]
     pub kind: SmolStr,
-    #[loro(default)]
     pub linear_damping: Option<f64>,
-    #[loro(default)]
     pub mass: Option<f64>,
-    #[loro(default)]
     pub restitution: Option<f64>,
 }

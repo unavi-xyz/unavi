@@ -8,8 +8,8 @@ use smol_str::SmolStr;
 use hsd::{HsdCollider, HsdNode, HsdRigidBody};
 
 use crate::{
-    DocRegistryMap, HsdChild, HsdEntityMaps, HsdNodePhysics, HsdScripts, MaterialId, MeshId,
-    NodeId,
+    DocRegistryMap, HsdChild, HsdEntityMaps, HsdNodePhysics, HsdScript, MaterialId, MeshId, NodeId,
+    NodeScripts, ScriptNode,
     hydrate::{
         compile::{collider::ColliderParams, material::CompiledMaterial, mesh::CompiledMesh},
         events::NodeRef,
@@ -344,16 +344,19 @@ pub(crate) fn handle_hsd_node_scripts_set(
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, count = ev.scripts.len(), "node scripts set");
-    let Some(ent) = node_entity(&registry_map, &entity_maps, &ev.doc_id, &ev.id) else {
+    let Some(entity) = node_entity(&registry_map, &entity_maps, &ev.doc_id, &ev.id) else {
         return;
     };
-    let Ok(mut entity_cmd) = commands.get_entity(ent) else {
-        return;
-    };
+    // TODO handle removed scripts
     if ev.scripts.is_empty() {
-        entity_cmd.try_remove::<HsdScripts>();
+        let Ok(mut entity_cmd) = commands.get_entity(entity) else {
+            return;
+        };
+        entity_cmd.try_remove::<NodeScripts>();
     } else {
-        entity_cmd.insert(HsdScripts(ev.scripts.clone()));
+        for hash in &ev.scripts {
+            commands.spawn((ScriptNode(entity), HsdScript(*hash)));
+        }
     }
 }
 

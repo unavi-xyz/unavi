@@ -89,7 +89,7 @@ async fn inner(
     actor: Actor,
     sync_targets: Vec<Actor>,
 ) -> anyhow::Result<()> {
-    info!("Writing record");
+    info!(?id, "Writing record");
 
     let cancel_fut = async move {
         match cancel {
@@ -103,9 +103,9 @@ async fn inner(
         () = cancel_fut => return Ok(()),
         res = write_record(id, ttl, public, &schemas, &actor, &sync_targets) => {
             match res {
-                Ok(res) => {
-                    info!("Wrote record");
-                    let _ = tx.send(res).await;
+                Ok(id) => {
+                    info!(%id, "Wrote record");
+                    let _ = tx.send(id).await;
                     return Ok(());
                 },
                 Err(err) => {

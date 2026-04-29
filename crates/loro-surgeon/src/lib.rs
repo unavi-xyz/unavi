@@ -31,6 +31,7 @@ pub mod tree;
 pub use error::{HydrateError, ReconcileError};
 pub use hydrate::Hydrate;
 pub use reconcile::Reconcile;
+pub use tree::TreeNode;
 
 pub use loro_surgeon_derive::{Hydrate, Reconcile};
 

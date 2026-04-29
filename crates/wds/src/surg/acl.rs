@@ -7,14 +7,11 @@ use wired_records::HydratedDid;
 
 /// Access control list for a record.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Hydrate, Reconcile)]
+#[loro(default)]
 pub struct Acl {
-    #[loro(default)]
     pub public: bool,
-    #[loro(default)]
     manage: Vec<HydratedDid>,
-    #[loro(default)]
     read: Vec<HydratedDid>,
-    #[loro(default)]
     write: Vec<HydratedDid>,
 }
 

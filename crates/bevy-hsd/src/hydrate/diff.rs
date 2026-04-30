@@ -15,15 +15,15 @@ pub(super) fn extract_changes_from_diff(e: &DiffEvent, queue: &mut Vec<RawHsdCha
                 for item in &tree_diff.diff {
                     let change = match &item.action {
                         TreeExternalDiff::Create { parent, .. } => RawHsdChange::NodeAdded {
-                            tree_id: item.target,
+                            id: item.target,
                             parent_id: parent.tree_id(),
                         },
-                        TreeExternalDiff::Delete { .. } => RawHsdChange::NodeRemoved {
-                            tree_id: item.target,
-                        },
-                        TreeExternalDiff::Move { .. } => RawHsdChange::NodeChanged {
-                            tree_id: item.target,
-                        },
+                        TreeExternalDiff::Delete { .. } => {
+                            RawHsdChange::NodeRemoved { id: item.target }
+                        }
+                        TreeExternalDiff::Move { .. } => {
+                            RawHsdChange::NodeChanged { id: item.target }
+                        }
                     };
                     queue.push(change);
                 }
@@ -31,7 +31,7 @@ pub(super) fn extract_changes_from_diff(e: &DiffEvent, queue: &mut Vec<RawHsdCha
 
             Diff::Map(map_delta) => {
                 if let Some(tree_id) = node_tree_id_in_path(path) {
-                    queue.push(RawHsdChange::NodeChanged { tree_id });
+                    queue.push(RawHsdChange::NodeChanged { id: tree_id });
                 } else if let Some(id) = map_id_for_key(path, "images") {
                     queue.push(RawHsdChange::ImageChanged { id });
                 } else if let Some(id) = map_id_for_key(path, "meshes") {

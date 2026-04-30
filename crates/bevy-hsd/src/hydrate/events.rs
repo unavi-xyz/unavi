@@ -8,7 +8,7 @@ use smol_str::SmolStr;
 #[derive(Clone, Debug)]
 pub enum NodeRef {
     Entity(Entity),
-    Id(SmolStr),
+    Id(TreeID),
 }
 
 #[derive(Debug)]
@@ -41,14 +41,14 @@ pub enum RawHsdChange {
         id: SmolStr,
     },
     NodeAdded {
-        tree_id: TreeID,
+        id: TreeID,
         parent_id: Option<TreeID>,
     },
     NodeChanged {
-        tree_id: TreeID,
+        id: TreeID,
     },
     NodeRemoved {
-        tree_id: TreeID,
+        id: TreeID,
     },
 }
 

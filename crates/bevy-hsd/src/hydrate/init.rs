@@ -68,7 +68,10 @@ fn visit_nodes(
 ) {
     for node in nodes {
         let Some(tree_id) = node.id else { continue };
-        raw.push(RawHsdChange::NodeAdded { tree_id, parent_id });
+        raw.push(RawHsdChange::NodeAdded {
+            id: tree_id,
+            parent_id,
+        });
         visit_nodes(&node.children, Some(tree_id), raw);
     }
 }

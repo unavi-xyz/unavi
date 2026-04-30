@@ -1,10 +1,22 @@
+use std::sync::{Arc, Mutex};
+
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
+use wired::scene::SceneContext;
+
+mod slot_map;
 pub mod wired;
 
-#[cfg_attr(target_family = "wasm", wasm_bindgen(getter_with_clone))]
-#[derive(Default, Clone)]
+#[derive(Clone)]
 pub struct RuntimeBackend {
-    wired_scene: wired::scene::WiredSceneBackend,
+    pub wired_scene: Arc<Mutex<wired::scene::WiredSceneBackend>>,
+}
+
+impl RuntimeBackend {
+    pub fn new(ctx: SceneContext) -> Self {
+        Self {
+            wired_scene: Arc::new(Mutex::new(wired::scene::WiredSceneBackend::new(ctx))),
+        }
+    }
 }

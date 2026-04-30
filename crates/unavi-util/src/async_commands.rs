@@ -3,7 +3,7 @@ use std::sync::LazyLock;
 use async_channel::{Receiver, Sender};
 use bevy::{ecs::world::CommandQueue, prelude::*};
 
-const SIZE: usize = 16;
+const SIZE: usize = 256;
 
 pub static ASYNC_COMMAND_QUEUE: LazyLock<(Sender<CommandQueue>, Receiver<CommandQueue>)> =
     LazyLock::new(|| async_channel::bounded(SIZE));

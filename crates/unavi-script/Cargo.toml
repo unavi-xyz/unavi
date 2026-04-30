@@ -17,6 +17,7 @@ bevy-hsd.path           = "../bevy-hsd"
 bevy-wds.path           = "../bevy-wds"
 bevy_vrm.workspace      = true
 blake3.workspace        = true
+loro.workspace          = true
 rand.workspace          = true
 smol_str.workspace      = true
 tokio.workspace         = true
@@ -32,6 +33,7 @@ wasmtime      = "43.0.0"
 wasmtime-wasi = "43.0.0"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
+js-sys                 = "0.3.97"
 wasm-bindgen.workspace = true
 wasm-bindgen-futures   = "0.4.70"
 

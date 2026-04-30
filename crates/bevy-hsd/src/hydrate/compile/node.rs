@@ -3,6 +3,7 @@ use avian3d::prelude::{
     Sensor,
 };
 use bevy::prelude::*;
+use loro::TreeID;
 use smol_str::SmolStr;
 
 use hsd::{HsdCollider, HsdNode, HsdRigidBody};
@@ -47,34 +48,34 @@ pub struct MaterialRef(pub SmolStr);
 #[derive(Event)]
 pub struct HsdNodeColliderSet {
     pub doc_id: blake3::Hash,
-    pub id: SmolStr,
+    pub id: TreeID,
     pub collider: Option<HsdCollider>,
 }
 
 #[derive(Event)]
 pub struct HsdNodeDespawned {
     pub doc_id: blake3::Hash,
-    pub id: SmolStr,
+    pub id: TreeID,
 }
 
 #[derive(Event)]
 pub struct HsdNodeMaterialSet {
     pub doc_id: blake3::Hash,
-    pub id: SmolStr,
+    pub id: TreeID,
     pub material: Option<SmolStr>,
 }
 
 #[derive(Event)]
 pub struct HsdNodeMeshSet {
     pub doc_id: blake3::Hash,
-    pub id: SmolStr,
+    pub id: TreeID,
     pub mesh: Option<SmolStr>,
 }
 
 #[derive(Event)]
 pub struct HsdNodeNameSet {
     pub doc_id: blake3::Hash,
-    pub id: SmolStr,
+    pub id: TreeID,
     pub name: Option<String>,
 }
 
@@ -88,27 +89,27 @@ pub struct HsdNodeParentSet {
 #[derive(Event)]
 pub struct HsdNodeRigidBodySet {
     pub doc_id: blake3::Hash,
-    pub id: SmolStr,
+    pub id: TreeID,
     pub rigid_body: Option<HsdRigidBody>,
 }
 
 #[derive(Event)]
 pub struct HsdNodeScriptsSet {
     pub doc_id: blake3::Hash,
-    pub id: SmolStr,
+    pub id: TreeID,
     pub scripts: Vec<blake3::Hash>,
 }
 
 #[derive(Event)]
 pub struct HsdNodeSpawned {
     pub doc_id: blake3::Hash,
-    pub id: SmolStr,
+    pub id: TreeID,
 }
 
 #[derive(Event)]
 pub struct HsdNodeTransformSet {
     pub doc_id: blake3::Hash,
-    pub id: SmolStr,
+    pub id: TreeID,
     pub transform: Transform,
 }
 
@@ -133,12 +134,12 @@ pub(crate) fn handle_hsd_node_spawned(
         .spawn((
             ChildOf(doc_ent),
             HsdChild { doc: doc_ent },
-            NodeId(ev.id.clone()),
-            Transform::IDENTITY,
+            NodeId(ev.id),
+            Transform::default(),
             Visibility::default(),
         ))
         .id();
-    maps.nodes.insert(ev.id.clone(), ent);
+    maps.nodes.insert(ev.id, ent);
 }
 
 pub(crate) fn handle_hsd_node_despawned(
@@ -530,7 +531,7 @@ fn node_entity(
     registry_map: &DocRegistryMap,
     entity_maps: &Query<&HsdEntityMaps>,
     doc_id: &blake3::Hash,
-    id: &SmolStr,
+    id: &TreeID,
 ) -> Option<Entity> {
     let doc_ent = registry_map.get_entity(doc_id)?;
     let maps = entity_maps.get(doc_ent).ok()?;

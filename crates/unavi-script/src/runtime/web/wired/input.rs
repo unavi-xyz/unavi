@@ -1,4 +1,4 @@
-use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 #[wasm_bindgen]
 #[derive(Default, Clone, Copy)]
@@ -6,7 +6,7 @@ pub struct WiredInput {}
 
 #[wasm_bindgen]
 impl WiredInput {
-    pub fn register_input_listener(&self) {}
+    pub fn register_input_listener(&self, target: JsValue) -> JsValue { todo!() }
 }
 
 #[wasm_bindgen]
@@ -15,7 +15,7 @@ pub struct WiredInputContext {}
 
 #[wasm_bindgen]
 impl WiredInputContext {
-    pub fn listener(&self) {}
+    pub fn listener(&self) -> JsValue { todo!() }
 }
 
 #[wasm_bindgen]
@@ -26,6 +26,6 @@ pub struct WiredInputTypes {}
 impl WiredInputTypes {
     pub fn input_listener_drop(&self) {}
     pub fn input_listener_new(&self) {}
-    pub fn input_listener_poll(&self) {}
+    pub fn input_listener_poll(&self, handle: JsValue) -> JsValue { todo!() }
     pub fn input_listener_rep(&self) {}
 }

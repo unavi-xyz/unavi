@@ -1,7 +1,12 @@
 use bevy::prelude::*;
 use unavi_util::async_task::spawn_async_task;
 
-use crate::{Script, load::asset::Wasm, permissions::ApiPermissions, runtime::web::WebRuntime};
+use crate::{
+    Script,
+    load::asset::Wasm,
+    permissions::ApiPermissions,
+    runtime::{Runtime, shared::RuntimeBackend, web::WebRuntime},
+};
 
 #[derive(Component)]
 pub struct InstantiatingScript;
@@ -25,7 +30,10 @@ pub fn instantiate_scripts(
         let bytes = wasm.0.clone();
         let name = name.to_string();
 
-        let runtime = WebRuntime::default();
+        let runtime = Runtime {
+            backend: RuntimeBackend::default(),
+            web: WebRuntime::default(),
+        };
 
         spawn_async_task(async move {
             unsafe {

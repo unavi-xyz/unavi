@@ -1,14 +1,16 @@
 use wasm_bindgen::prelude::*;
 
+use crate::runtime::Runtime;
+
 mod wired;
 
 #[wasm_bindgen(module = "/dist/runtime.js")]
 unsafe extern "C" {
-    pub async fn build_script(bytes: &[u8], name: &str, runtime: WebRuntime);
+    pub async fn build_script(bytes: &[u8], name: &str, runtime: Runtime);
 }
 
-#[wasm_bindgen]
-#[derive(Default)]
+#[wasm_bindgen(getter_with_clone)]
+#[derive(Default, Clone)]
 pub struct WebRuntime {
     pub wired_agent: wired::agent::WiredAgent,
     pub wired_agent_types: wired::agent::WiredAgentTypes,

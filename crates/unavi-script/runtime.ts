@@ -57,7 +57,7 @@ export async function build_script(
         enableNetwork: false,
       },
     });
-    const imports = build_imports(wasi, rt);
+    const imports = build_imports(wasi, rt.web);
 
     const instance = await mod.instantiate(getCoreModule, imports);
     console.log("Instantiated script", name, instance);

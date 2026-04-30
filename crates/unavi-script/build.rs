@@ -4,7 +4,7 @@ fn main() {
         return;
     }
 
-    let dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let dir = std::env::var("CARGO_MANIFEST_DIR").expect("no cargo manifest dir");
 
     println!("cargo:rerun-if-changed={dir}/runtime.ts");
     println!("cargo:rerun-if-changed={dir}/package.json");

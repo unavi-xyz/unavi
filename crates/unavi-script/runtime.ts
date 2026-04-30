@@ -1,7 +1,14 @@
-import { generate, GenerateOptions, Transpiled} from "@bytecodealliance/jco/component";
+import {
+  generate,
+  GenerateOptions,
+  Transpiled,
+} from "@bytecodealliance/jco/component";
 import { WASIShim } from "@bytecodealliance/preview2-shim/instantiation";
 
-export async function build_script(bytes: Uint8Array, name: string): Promise<void> {
+export async function build_script(
+  bytes: Uint8Array,
+  name: string,
+): Promise<void> {
   console.log("Building script", name);
 
   const options: GenerateOptions = {
@@ -14,7 +21,10 @@ export async function build_script(bytes: Uint8Array, name: string): Promise<voi
   };
 
   try {
-    const result = await (generate(bytes, options) as unknown as Promise<Transpiled>);
+    const result = await (generate(
+      bytes,
+      options,
+    ) as unknown as Promise<Transpiled>);
     console.log("Generated script", name, result);
 
     const jsFile = result.files.find(([name]) => name.endsWith(".js"));
@@ -38,37 +48,33 @@ export async function build_script(bytes: Uint8Array, name: string): Promise<voi
       return await WebAssembly.compile(bytes as BufferSource);
     }
 
-    const shim = new WASIShim({
+    const wasi = new WASIShim({
       sandbox: {
         preopens: {},
         env: {},
         args: [],
         enableNetwork: false,
-      }
+      },
     });
-    const wasi = shim.getImportObject();
 
     const imports = {
-      ...wasi,
+      ...wasi.getImportObject(),
       "wired:scene/api": {
         "self-node": () => {
           console.log("Hello from self-node");
         },
-      }
+      },
     };
 
-    const instance = await mod.instantiate(
-      getCoreModule,
-      imports,
-    );
+    // TODO create Rust api exports -> map to imports object
+
+    const instance = await mod.instantiate(getCoreModule, imports);
     console.log("Instantiated script", name, instance);
 
     const script = new instance["wired:script/guest-api"].script();
-    script.tick();
-    script.render();
-    script.drop();
+
+    // TODO create Script class -> send to Rust -> Bevy calls tick
   } catch (err) {
     console.error("Failed to build script", err);
   }
 }
-

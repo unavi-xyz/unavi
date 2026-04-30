@@ -27,7 +27,7 @@ pub fn instantiate_scripts(
 
         spawn_async_task(async move {
             unsafe {
-                super::js_runtime::build_script(&bytes, &name).await;
+                crate::runtime::web::build_script(&bytes, &name).await;
             };
         });
 

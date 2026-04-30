@@ -21,7 +21,7 @@ use crate::{
     permissions::ApiPermissions,
     runtime::{
         Runtime,
-        native::{NativeStoreState, api::add_apis_to_linker},
+        native::{NativeRuntime, add_apis_to_linker},
     },
 };
 
@@ -72,7 +72,7 @@ pub fn instantiate_scripts(
             .build();
 
         let state = Runtime {
-            native: NativeStoreState {
+            native: NativeRuntime {
                 table: ResourceTable::default(),
                 wasi_ctx,
             },

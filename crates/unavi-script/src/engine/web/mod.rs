@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
 mod instantiate;
-mod js_runtime;
 
 pub struct WebEnginePlugin;
 

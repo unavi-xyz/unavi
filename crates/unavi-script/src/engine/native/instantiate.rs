@@ -19,14 +19,17 @@ use crate::{
     },
     load::asset::Wasm,
     permissions::ApiPermissions,
-    runtime::{StoreState, api::add_apis_to_linker, native::NativeStoreState},
+    runtime::{
+        Runtime,
+        native::{NativeStoreState, api::add_apis_to_linker},
+    },
 };
 
 #[derive(Component, Deref, DerefMut)]
 pub struct InstantiatingScript(tokio::sync::oneshot::Receiver<bindings::Guest>);
 
 #[derive(Component, Deref, DerefMut)]
-pub struct ScriptStore(pub Arc<Mutex<Store<StoreState>>>);
+pub struct ScriptStore(pub Arc<Mutex<Store<Runtime>>>);
 
 #[derive(Component)]
 #[require(LastTick)]
@@ -68,7 +71,7 @@ pub fn instantiate_scripts(
             .allow_udp(false)
             .build();
 
-        let state = StoreState {
+        let state = Runtime {
             native: NativeStoreState {
                 table: ResourceTable::default(),
                 wasi_ctx,
@@ -121,7 +124,7 @@ mod bindings {
 async fn instantiate_component(
     engine: &wasmtime::Engine,
     binary: &[u8],
-    store: &mut Store<StoreState>,
+    store: &mut Store<Runtime>,
     perms: &ApiPermissions,
 ) -> anyhow::Result<bindings::Guest> {
     let component = wasmtime::component::Component::from_binary(engine, binary)?;

@@ -5,5 +5,5 @@ pub mod web;
 
 pub struct Runtime {
     #[cfg(not(target_family = "wasm"))]
-    pub native: native::NativeStoreState,
+    pub native: native::NativeRuntime,
 }

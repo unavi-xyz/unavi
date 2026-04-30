@@ -1,10 +1,14 @@
+use wasmtime::component::Linker;
 use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxView, WasiView};
 
-use crate::runtime::Runtime;
+use crate::{
+    permissions::{ApiName, ApiPermissions},
+    runtime::Runtime,
+};
 
-pub mod api;
+pub mod wired;
 
-pub struct NativeStoreState {
+pub struct NativeRuntime {
     pub table: ResourceTable,
     pub wasi_ctx: WasiCtx,
 }
@@ -16,4 +20,15 @@ impl WasiView for Runtime {
             table: &mut self.native.table,
         }
     }
+}
+
+pub fn add_apis_to_linker(
+    _linker: &mut Linker<Runtime>,
+    perms: &ApiPermissions,
+) -> wasmtime::Result<()> {
+    if perms.contains(&ApiName::Input) {
+        // TODO
+    }
+
+    Ok(())
 }

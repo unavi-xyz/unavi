@@ -9,7 +9,6 @@ use unavi_client::DebugFlags;
 
 #[derive(Parser, Debug)]
 #[command(version)]
-#[expect(clippy::struct_excessive_bools)]
 struct Args {
     /// Enable debug logging.
     #[arg(long, default_value_t = false)]
@@ -67,7 +66,7 @@ fn main() {
             let Some(value) = params.get(&key) else {
                 continue;
             };
-            argv.push(format!("--{}", key));
+            argv.push(format!("--{key}"));
 
             if !value.is_empty() {
                 argv.push(value);

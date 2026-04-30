@@ -1,27 +1,29 @@
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Default, Clone)]
-pub struct WiredEvent {}
+use crate::runtime::Runtime;
 
 #[wasm_bindgen]
-impl WiredEvent {
-    pub fn emit(&self, channel: String, payload: Vec<u8>, filter: JsValue) {}
-    pub fn listen(&self, channels: JsValue, filter: JsValue) -> JsValue {
+pub struct EventReceptorHandle;
+
+#[wasm_bindgen]
+impl EventReceptorHandle {
+    pub fn poll(&self) -> JsValue {
         todo!()
     }
 }
 
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Default, Clone)]
-pub struct WiredEventTypes {}
-
 #[wasm_bindgen]
-impl WiredEventTypes {
-    pub fn event_receptor_drop(&self) {}
-    pub fn event_receptor_new(&self) {}
-    pub fn event_receptor_poll(&self, handle: JsValue) -> JsValue {
+impl Runtime {
+    pub fn wired_event_receptor_class(&self) -> JsValue {
+        let js = JsValue::from(EventReceptorHandle);
+        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
+    }
+
+    pub fn wired_event_emit(&self, _channel: String, _payload: Vec<u8>, _filter: JsValue) {
         todo!()
     }
-    pub fn event_receptor_rep(&self) {}
+
+    pub fn wired_event_listen(&self, _channels: JsValue, _filter: JsValue) -> EventReceptorHandle {
+        todo!()
+    }
 }

@@ -1,33 +1,37 @@
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Default, Clone)]
-pub struct WiredPortal {}
+use crate::runtime::Runtime;
 
 #[wasm_bindgen]
-impl WiredPortal {
-    pub fn list_portals(&self) -> JsValue {
+pub struct PortalHandle;
+
+#[wasm_bindgen]
+impl PortalHandle {
+    pub fn close(&self) {
         todo!()
     }
-    pub fn open_portal(&self, params: JsValue) -> JsValue {
+
+    pub fn destination(&self) -> JsValue {
+        todo!()
+    }
+
+    pub fn id(&self) -> String {
         todo!()
     }
 }
 
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Default, Clone)]
-pub struct WiredPortalTypes {}
-
 #[wasm_bindgen]
-impl WiredPortalTypes {
-    pub fn portal_close(&self, handle: JsValue) {}
-    pub fn portal_destination(&self, handle: JsValue) -> JsValue {
+impl Runtime {
+    pub fn wired_portal_class(&self) -> JsValue {
+        let js = JsValue::from(PortalHandle);
+        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
+    }
+
+    pub fn wired_portal_list_portals(&self) -> JsValue {
         todo!()
     }
-    pub fn portal_drop(&self) {}
-    pub fn portal_id(&self, handle: JsValue) -> String {
+
+    pub fn wired_portal_open_portal(&self, _params: JsValue) -> JsValue {
         todo!()
     }
-    pub fn portal_new(&self) {}
-    pub fn portal_rep(&self) {}
 }

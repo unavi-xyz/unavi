@@ -1,29 +1,31 @@
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Default, Clone)]
-pub struct WiredAgent {}
+use crate::runtime::Runtime;
+
+use super::scene::node::NodeHandle;
 
 #[wasm_bindgen]
-impl WiredAgent {
-    pub fn local_agent(&self) -> JsValue {
-        todo!()
-    }
-    pub fn local_camera(&self) -> JsValue {
+pub struct AgentHandle;
+
+#[wasm_bindgen]
+impl AgentHandle {
+    pub fn bone(&self, _name: String) -> Option<NodeHandle> {
         todo!()
     }
 }
 
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Default, Clone)]
-pub struct WiredAgentTypes {}
-
 #[wasm_bindgen]
-impl WiredAgentTypes {
-    pub fn agent_bone(&self, handle: JsValue, name: String) -> JsValue {
+impl Runtime {
+    pub fn wired_agent_class(&self) -> JsValue {
+        let js = JsValue::from(AgentHandle);
+        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
+    }
+
+    pub fn wired_agent_local_agent(&self) -> AgentHandle {
         todo!()
     }
-    pub fn agent_drop(&self) {}
-    pub fn agent_new(&self) {}
-    pub fn agent_rep(&self) {}
+
+    pub fn wired_agent_local_camera(&self) -> NodeHandle {
+        todo!()
+    }
 }

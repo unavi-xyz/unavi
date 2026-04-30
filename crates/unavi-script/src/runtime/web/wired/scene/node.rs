@@ -4,6 +4,8 @@ use wasm_bindgen::prelude::*;
 
 use crate::runtime::shared::wired::scene::WiredSceneBackend;
 
+use super::{material::MaterialHandle, mesh::MeshHandle};
+
 #[wasm_bindgen]
 pub struct NodeHandle {
     rep: u32,
@@ -11,30 +13,32 @@ pub struct NodeHandle {
 }
 
 impl NodeHandle {
-    pub fn new(rep: u32, backend: Arc<Mutex<WiredSceneBackend>>) -> Self {
+    pub const fn new(rep: u32, backend: Arc<Mutex<WiredSceneBackend>>) -> Self {
         Self { rep, backend }
     }
 }
 
 #[wasm_bindgen]
 impl NodeHandle {
-    pub fn add_child(&self, _child: JsValue) {}
+    pub fn add_child(&self, _child: Self) {
+        todo!()
+    }
 
     pub fn children(&self) -> JsValue {
-        JsValue::from_str("[]")
+        todo!()
     }
 
     #[wasm_bindgen(js_name = "clone")]
-    pub fn clone_node(&self) -> JsValue {
+    pub fn clone_node(&self) -> Self {
         todo!()
     }
 
     pub fn collider(&self) -> JsValue {
-        JsValue::UNDEFINED
+        todo!()
     }
 
     pub fn global_transform(&self) -> JsValue {
-        JsValue::UNDEFINED
+        todo!()
     }
 
     pub fn id(&self) -> String {
@@ -47,56 +51,87 @@ impl NodeHandle {
             .unwrap_or_default()
     }
 
-    pub fn material(&self) -> JsValue {
-        JsValue::UNDEFINED
+    pub fn material(&self) -> Option<MaterialHandle> {
+        todo!()
     }
 
-    pub fn mesh(&self) -> JsValue {
-        JsValue::UNDEFINED
+    pub fn mesh(&self) -> Option<MeshHandle> {
+        todo!()
     }
 
     pub fn name(&self) -> Option<String> {
-        None
+        todo!()
     }
 
-    pub fn parent(&self) -> JsValue {
-        JsValue::UNDEFINED
+    pub fn parent(&self) -> Option<Self> {
+        todo!()
     }
 
-    pub fn remove_child(&self, _child: JsValue) {}
+    pub fn remove_child(&self, _child: Self) {
+        todo!()
+    }
 
     pub fn rigid_body(&self) -> JsValue {
-        JsValue::UNDEFINED
+        todo!()
     }
 
     pub fn rotation(&self) -> JsValue {
-        JsValue::UNDEFINED
+        todo!()
     }
 
     pub fn scale(&self) -> JsValue {
-        JsValue::UNDEFINED
+        todo!()
     }
 
-    pub fn set_collider(&self, _value: JsValue) {}
-    pub fn set_material(&self, _value: JsValue) {}
-    pub fn set_mesh(&self, _value: JsValue) {}
-    pub fn set_name(&self, _value: Option<String>) {}
-    pub fn set_rigid_body(&self, _value: JsValue) {}
-    pub fn set_rotation(&self, _value: JsValue) {}
-    pub fn set_scale(&self, _value: JsValue) {}
-    pub fn set_sync(&self, _value: bool) {}
-    pub fn set_transform(&self, _value: JsValue) {}
-    pub fn set_translation(&self, _value: JsValue) {}
+    pub fn set_collider(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_material(&self, _value: Option<MaterialHandle>) {
+        todo!()
+    }
+
+    pub fn set_mesh(&self, _value: Option<MeshHandle>) {
+        todo!()
+    }
+
+    pub fn set_name(&self, _value: Option<String>) {
+        todo!()
+    }
+
+    pub fn set_rigid_body(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_rotation(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_scale(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_sync(&self, _value: bool) {
+        todo!()
+    }
+
+    pub fn set_transform(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_translation(&self, _value: JsValue) {
+        todo!()
+    }
 
     pub fn sync(&self) -> bool {
-        false
+        todo!()
     }
 
     pub fn transform(&self) -> JsValue {
-        JsValue::UNDEFINED
+        todo!()
     }
 
     pub fn translation(&self) -> JsValue {
-        JsValue::UNDEFINED
+        todo!()
     }
 }

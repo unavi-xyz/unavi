@@ -1,41 +1,59 @@
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Default, Clone)]
-pub struct WiredWds {}
+use crate::runtime::Runtime;
 
 #[wasm_bindgen]
-impl WiredWds {
-    pub fn get_wds(&self) -> JsValue {
+pub struct WdsHandle;
+
+#[wasm_bindgen]
+pub struct QueryFutureHandle;
+
+#[wasm_bindgen]
+pub struct ReadFutureHandle;
+
+#[wasm_bindgen]
+impl WdsHandle {
+    pub fn query(&self, _filter: JsValue) -> QueryFutureHandle {
+        todo!()
+    }
+
+    pub fn read(&self, _record_id: Vec<u8>) -> ReadFutureHandle {
         todo!()
     }
 }
 
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Default, Clone)]
-pub struct WiredWdsTypes {}
+#[wasm_bindgen]
+impl QueryFutureHandle {
+    pub fn poll(&self) -> JsValue {
+        todo!()
+    }
+}
 
 #[wasm_bindgen]
-impl WiredWdsTypes {
-    pub fn query_future_drop(&self) {}
-    pub fn query_future_new(&self) {}
-    pub fn query_future_poll(&self, handle: JsValue) -> JsValue {
+impl ReadFutureHandle {
+    pub fn poll(&self) -> JsValue {
         todo!()
     }
-    pub fn query_future_rep(&self) {}
-    pub fn read_future_drop(&self) {}
-    pub fn read_future_new(&self) {}
-    pub fn read_future_poll(&self, handle: JsValue) -> JsValue {
+}
+
+#[wasm_bindgen]
+impl Runtime {
+    pub fn wired_wds_class(&self) -> JsValue {
+        let js = JsValue::from(WdsHandle);
+        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
+    }
+
+    pub fn wired_query_future_class(&self) -> JsValue {
+        let js = JsValue::from(QueryFutureHandle);
+        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
+    }
+
+    pub fn wired_read_future_class(&self) -> JsValue {
+        let js = JsValue::from(ReadFutureHandle);
+        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
+    }
+
+    pub fn wired_wds_get_wds(&self) -> WdsHandle {
         todo!()
     }
-    pub fn read_future_rep(&self) {}
-    pub fn wds_drop(&self) {}
-    pub fn wds_new(&self) {}
-    pub fn wds_query(&self, handle: JsValue, filter: JsValue) -> JsValue {
-        todo!()
-    }
-    pub fn wds_read(&self, handle: JsValue, record_id: Vec<u8>) -> JsValue {
-        todo!()
-    }
-    pub fn wds_rep(&self) {}
 }

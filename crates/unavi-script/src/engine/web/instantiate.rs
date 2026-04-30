@@ -28,7 +28,7 @@ pub fn instantiate_scripts(
     docs: Query<&HsdRecordId>,
     mut commands: Commands,
 ) {
-    for (entity, script, perms, name, node_ent) in to_instantiate {
+    for (entity, script, _perms, name, node_ent) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };

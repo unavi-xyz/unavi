@@ -1,10 +1,9 @@
 use std::sync::Arc;
 
-use bevy::{ecs::world::CommandQueue, prelude::*};
-use bevy_hsd::{HsdDoc, HsdRecordId};
+use bevy::prelude::*;
+use bevy_hsd::HsdDoc;
 use blake3::Hash;
 use loro::{LoroDoc, TreeID};
-use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
 
 use crate::runtime::shared::{
     slot_map::SlotMap,

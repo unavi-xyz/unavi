@@ -23,11 +23,11 @@ impl WasiView for Runtime {
 }
 
 pub fn add_apis_to_linker(
-    _linker: &mut Linker<Runtime>,
+    linker: &mut Linker<Runtime>,
     perms: &ApiPermissions,
 ) -> wasmtime::Result<()> {
-    if perms.contains(&ApiName::Input) {
-        // TODO
+    if perms.contains(&ApiName::Scene) {
+        wired::scene::add_to_linker(linker)?;
     }
 
     Ok(())

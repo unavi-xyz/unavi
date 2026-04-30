@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use hsd::{HsdImage, HsdMaterial, HsdMesh, HsdNode};
 use loro::{LoroMap, LoroTree, LoroValue, TreeID, TreeParentId};
 use loro_surgeon::Hydrate;
-use smol_str::{SmolStr, ToSmolStr};
+use smol_str::SmolStr;
 
 use super::compile::{
     image::{HsdImageDespawned, HsdImageSpawned},
@@ -67,42 +67,34 @@ pub fn process_hsd_queue(
                 RawHsdChange::ImageRemoved { id } => {
                     commands.trigger(HsdImageDespawned { doc_id, id });
                 }
-                RawHsdChange::NodeAdded { tree_id, parent_id } => {
-                    let id = tree_id.to_smolstr();
-                    let data = node_data_from_hsd(&hsd_map, tree_id);
+                RawHsdChange::NodeAdded { id, parent_id } => {
+                    let data = node_data_from_hsd(&hsd_map, id);
 
-                    commands.trigger(HsdNodeSpawned {
-                        doc_id,
-                        id: id.clone(),
-                    });
+                    commands.trigger(HsdNodeSpawned { doc_id, id });
 
-                    let parent = parent_id.map(|pid| NodeRef::Id(pid.to_smolstr()));
+                    let parent = parent_id.map(NodeRef::Id);
                     commands.trigger(HsdNodeParentSet {
                         doc_id,
-                        child: NodeRef::Id(id.clone()),
+                        child: NodeRef::Id(id),
                         parent,
                     });
 
-                    emit_node_fields(doc_id, &id, &data, &mut commands);
+                    emit_node_fields(doc_id, id, &data, &mut commands);
                 }
-                RawHsdChange::NodeChanged { tree_id } => {
-                    let id = tree_id.to_smolstr();
-                    let data = node_data_from_hsd(&hsd_map, tree_id);
+                RawHsdChange::NodeChanged { id } => {
+                    let data = node_data_from_hsd(&hsd_map, id);
 
-                    let parent = get_node_parent(&hsd_map, tree_id).map(NodeRef::Id);
+                    let parent = get_node_parent(&hsd_map, id).map(NodeRef::Id);
                     commands.trigger(HsdNodeParentSet {
                         doc_id,
-                        child: NodeRef::Id(id.clone()),
+                        child: NodeRef::Id(id),
                         parent,
                     });
 
-                    emit_node_fields(doc_id, &id, &data, &mut commands);
+                    emit_node_fields(doc_id, id, &data, &mut commands);
                 }
-                RawHsdChange::NodeRemoved { tree_id } => {
-                    commands.trigger(HsdNodeDespawned {
-                        doc_id,
-                        id: tree_id.to_smolstr(),
-                    });
+                RawHsdChange::NodeRemoved { id } => {
+                    commands.trigger(HsdNodeDespawned { doc_id, id });
                 }
                 RawHsdChange::MeshAdded { id } => {
                     commands.trigger(HsdMeshSpawned {
@@ -155,43 +147,43 @@ pub fn process_hsd_queue(
     }
 }
 
-fn emit_node_fields(doc_id: blake3::Hash, id: &SmolStr, data: &HsdNode, commands: &mut Commands) {
+fn emit_node_fields(doc_id: blake3::Hash, id: TreeID, data: &HsdNode, commands: &mut Commands) {
     commands.trigger(HsdNodeTransformSet {
         doc_id,
-        id: id.clone(),
+        id,
         transform: node_transform(data),
     });
     commands.trigger(HsdNodeMeshSet {
         doc_id,
-        id: id.clone(),
+        id,
         mesh: data.mesh.clone(),
     });
     commands.trigger(HsdNodeMaterialSet {
         doc_id,
-        id: id.clone(),
+        id,
         material: data.material.clone(),
     });
     if let Some(name) = &data.name {
         commands.trigger(HsdNodeNameSet {
             doc_id,
-            id: id.clone(),
+            id,
             name: Some(name.to_string()),
         });
     }
     commands.trigger(HsdNodeColliderSet {
         doc_id,
-        id: id.clone(),
+        id,
         collider: data.collider.clone(),
     });
     commands.trigger(HsdNodeRigidBodySet {
         doc_id,
-        id: id.clone(),
+        id,
         rigid_body: data.rigid_body.clone(),
     });
     let scripts = data.scripts.iter().map(|h| h.0).collect();
     commands.trigger(HsdNodeScriptsSet {
         doc_id,
-        id: id.clone(),
+        id,
         scripts,
     });
 }
@@ -301,12 +293,12 @@ fn emit_material_fields(
     }
 }
 
-fn get_node_parent(hsd_map: &LoroMap, tree_id: TreeID) -> Option<SmolStr> {
+fn get_node_parent(hsd_map: &LoroMap, tree_id: TreeID) -> Option<TreeID> {
     let tree = hsd_map
         .get_or_create_container("nodes", LoroTree::new())
         .ok()?;
     match tree.parent(tree_id)? {
-        TreeParentId::Node(pid) => Some(pid.to_smolstr()),
+        TreeParentId::Node(pid) => Some(pid),
         _ => None,
     }
 }

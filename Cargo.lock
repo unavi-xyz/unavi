@@ -14077,6 +14077,8 @@ dependencies = [
  "blake3",
  "directories",
  "iroh",
+ "js-sys",
+ "loro",
  "rand 0.9.2",
  "smol_str 0.3.6",
  "tokio",

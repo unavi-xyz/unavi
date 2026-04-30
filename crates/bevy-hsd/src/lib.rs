@@ -4,7 +4,7 @@ use std::sync::Arc;
 use avian3d::schedule::PhysicsSystems;
 use bevy::prelude::*;
 use blake3::Hash;
-use loro::LoroDoc;
+use loro::{LoroDoc, TreeID};
 use smol_str::SmolStr;
 
 pub mod asset;
@@ -100,7 +100,7 @@ pub struct HsdChild {
 }
 
 #[derive(Component, Clone, Debug)]
-pub struct NodeId(pub SmolStr);
+pub struct NodeId(pub TreeID);
 
 #[derive(Component, Clone, Debug)]
 pub struct MeshId(pub SmolStr);
@@ -146,7 +146,7 @@ impl DocRegistryMap {
 
 #[derive(Component, Default)]
 pub struct HsdEntityMaps {
-    pub nodes: HashMap<SmolStr, Entity>,
+    pub nodes: HashMap<TreeID, Entity>,
     pub meshes: HashMap<SmolStr, Entity>,
     pub materials: HashMap<SmolStr, Entity>,
     pub images: HashMap<SmolStr, Entity>,

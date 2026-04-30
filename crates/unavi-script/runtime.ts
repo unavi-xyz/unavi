@@ -83,9 +83,7 @@ function build_imports(wasi: WASIShim, rt: any) {
     },
     "wired:agent/types": {
       Agent: class {
-        bone() {
-          return rt.wired_agent_types.agent_bone();
-        }
+        bone(...a: any[]) { return rt.wired_agent_types.agent_bone(this, ...a); }
       },
     },
     "wired:event/api": {
@@ -94,9 +92,7 @@ function build_imports(wasi: WASIShim, rt: any) {
     },
     "wired:event/types": {
       EventReceptor: class {
-        poll() {
-          return rt.wired_event_types.event_receptor_poll();
-        }
+        poll(...a: any[]) { return rt.wired_event_types.event_receptor_poll(this, ...a); }
       },
     },
     "wired:input/api": {
@@ -107,9 +103,7 @@ function build_imports(wasi: WASIShim, rt: any) {
     },
     "wired:input/types": {
       InputListener: class {
-        poll() {
-          return rt.wired_input_types.input_listener_poll();
-        }
+        poll(...a: any[]) { return rt.wired_input_types.input_listener_poll(this, ...a); }
       },
     },
     "wired:portal/api": {
@@ -118,15 +112,9 @@ function build_imports(wasi: WASIShim, rt: any) {
     },
     "wired:portal/types": {
       Portal: class {
-        close() {
-          return rt.wired_portal_types.portal_close();
-        }
-        destination() {
-          return rt.wired_portal_types.portal_destination();
-        }
-        id() {
-          return rt.wired_portal_types.portal_id();
-        }
+        close(...a: any[]) { return rt.wired_portal_types.portal_close(this, ...a); }
+        destination(...a: any[]) { return rt.wired_portal_types.portal_destination(this, ...a); }
+        id(...a: any[]) { return rt.wired_portal_types.portal_id(this, ...a); }
       },
     },
     "wired:scene/api": {
@@ -139,303 +127,109 @@ function build_imports(wasi: WASIShim, rt: any) {
     },
     "wired:scene/types": {
       Document: class {
-        addAsset() {
-          return rt.wired_scene_types.document_add_asset();
-        }
-        assets() {
-          return rt.wired_scene_types.document_assets();
-        }
-        clone() {
-          return rt.wired_scene_types.document_clone();
-        }
-        createMaterial() {
-          return rt.wired_scene_types.document_create_material();
-        }
-        createMesh() {
-          return rt.wired_scene_types.document_create_mesh();
-        }
-        createNode() {
-          return rt.wired_scene_types.document_create_node();
-        }
-        globalTransform() {
-          return rt.wired_scene_types.document_global_transform();
-        }
-        id() {
-          return rt.wired_scene_types.document_id();
-        }
-        materials() {
-          return rt.wired_scene_types.document_materials();
-        }
-        meshes() {
-          return rt.wired_scene_types.document_meshes();
-        }
-        nodes() {
-          return rt.wired_scene_types.document_nodes();
-        }
-        public() {
-          return rt.wired_scene_types.document_public();
-        }
-        removeAsset() {
-          return rt.wired_scene_types.document_remove_asset();
-        }
-        removeMaterial() {
-          return rt.wired_scene_types.document_remove_material();
-        }
-        removeMesh() {
-          return rt.wired_scene_types.document_remove_mesh();
-        }
-        removeNode() {
-          return rt.wired_scene_types.document_remove_node();
-        }
-        roots() {
-          return rt.wired_scene_types.document_roots();
-        }
-        rotation() {
-          return rt.wired_scene_types.document_rotation();
-        }
-        scale() {
-          return rt.wired_scene_types.document_scale();
-        }
-        setPublic() {
-          return rt.wired_scene_types.document_set_public();
-        }
-        setRotation() {
-          return rt.wired_scene_types.document_set_rotation();
-        }
-        setScale() {
-          return rt.wired_scene_types.document_set_scale();
-        }
-        setSync() {
-          return rt.wired_scene_types.document_set_sync();
-        }
-        setTransform() {
-          return rt.wired_scene_types.document_set_transform();
-        }
-        setTranslation() {
-          return rt.wired_scene_types.document_set_translation();
-        }
-        sync() {
-          return rt.wired_scene_types.document_sync();
-        }
-        transform() {
-          return rt.wired_scene_types.document_transform();
-        }
-        translation() {
-          return rt.wired_scene_types.document_translation();
-        }
+        addAsset(...a: any[]) { return rt.wired_scene_types.document_add_asset(this, ...a); }
+        assets(...a: any[]) { return rt.wired_scene_types.document_assets(this, ...a); }
+        clone(...a: any[]) { return rt.wired_scene_types.document_clone(this, ...a); }
+        createMaterial(...a: any[]) { return rt.wired_scene_types.document_create_material(this, ...a); }
+        createMesh(...a: any[]) { return rt.wired_scene_types.document_create_mesh(this, ...a); }
+        createNode(...a: any[]) { return rt.wired_scene_types.document_create_node(this, ...a); }
+        globalTransform(...a: any[]) { return rt.wired_scene_types.document_global_transform(this, ...a); }
+        id(...a: any[]) { return rt.wired_scene_types.document_id(this, ...a); }
+        materials(...a: any[]) { return rt.wired_scene_types.document_materials(this, ...a); }
+        meshes(...a: any[]) { return rt.wired_scene_types.document_meshes(this, ...a); }
+        nodes(...a: any[]) { return rt.wired_scene_types.document_nodes(this, ...a); }
+        public(...a: any[]) { return rt.wired_scene_types.document_public(this, ...a); }
+        removeAsset(...a: any[]) { return rt.wired_scene_types.document_remove_asset(this, ...a); }
+        removeMaterial(...a: any[]) { return rt.wired_scene_types.document_remove_material(this, ...a); }
+        removeMesh(...a: any[]) { return rt.wired_scene_types.document_remove_mesh(this, ...a); }
+        removeNode(...a: any[]) { return rt.wired_scene_types.document_remove_node(this, ...a); }
+        roots(...a: any[]) { return rt.wired_scene_types.document_roots(this, ...a); }
+        rotation(...a: any[]) { return rt.wired_scene_types.document_rotation(this, ...a); }
+        scale(...a: any[]) { return rt.wired_scene_types.document_scale(this, ...a); }
+        setPublic(...a: any[]) { return rt.wired_scene_types.document_set_public(this, ...a); }
+        setRotation(...a: any[]) { return rt.wired_scene_types.document_set_rotation(this, ...a); }
+        setScale(...a: any[]) { return rt.wired_scene_types.document_set_scale(this, ...a); }
+        setSync(...a: any[]) { return rt.wired_scene_types.document_set_sync(this, ...a); }
+        setTransform(...a: any[]) { return rt.wired_scene_types.document_set_transform(this, ...a); }
+        setTranslation(...a: any[]) { return rt.wired_scene_types.document_set_translation(this, ...a); }
+        sync(...a: any[]) { return rt.wired_scene_types.document_sync(this, ...a); }
+        transform(...a: any[]) { return rt.wired_scene_types.document_transform(this, ...a); }
+        translation(...a: any[]) { return rt.wired_scene_types.document_translation(this, ...a); }
       },
       Material: class {
-        alphaCutoff() {
-          return rt.wired_scene_types.material_alpha_cutoff();
-        }
-        alphaMode() {
-          return rt.wired_scene_types.material_alpha_mode();
-        }
-        baseColor() {
-          return rt.wired_scene_types.material_base_color();
-        }
-        clone() {
-          return rt.wired_scene_types.material_clone();
-        }
-        doubleSided() {
-          return rt.wired_scene_types.material_double_sided();
-        }
-        id() {
-          return rt.wired_scene_types.material_id();
-        }
-        metallic() {
-          return rt.wired_scene_types.material_metallic();
-        }
-        name() {
-          return rt.wired_scene_types.material_name();
-        }
-        roughness() {
-          return rt.wired_scene_types.material_roughness();
-        }
-        setAlphaCutoff() {
-          return rt.wired_scene_types.material_set_alpha_cutoff();
-        }
-        setAlphaMode() {
-          return rt.wired_scene_types.material_set_alpha_mode();
-        }
-        setBaseColor() {
-          return rt.wired_scene_types.material_set_base_color();
-        }
-        setDoubleSided() {
-          return rt.wired_scene_types.material_set_double_sided();
-        }
-        setMetallic() {
-          return rt.wired_scene_types.material_set_metallic();
-        }
-        setName() {
-          return rt.wired_scene_types.material_set_name();
-        }
-        setRoughness() {
-          return rt.wired_scene_types.material_set_roughness();
-        }
-        setSync() {
-          return rt.wired_scene_types.material_set_sync();
-        }
-        setUnlit() {
-          return rt.wired_scene_types.material_set_unlit();
-        }
-        sync() {
-          return rt.wired_scene_types.material_sync();
-        }
-        unlit() {
-          return rt.wired_scene_types.material_unlit();
-        }
+        alphaCutoff(...a: any[]) { return rt.wired_scene_types.material_alpha_cutoff(this, ...a); }
+        alphaMode(...a: any[]) { return rt.wired_scene_types.material_alpha_mode(this, ...a); }
+        baseColor(...a: any[]) { return rt.wired_scene_types.material_base_color(this, ...a); }
+        clone(...a: any[]) { return rt.wired_scene_types.material_clone(this, ...a); }
+        doubleSided(...a: any[]) { return rt.wired_scene_types.material_double_sided(this, ...a); }
+        id(...a: any[]) { return rt.wired_scene_types.material_id(this, ...a); }
+        metallic(...a: any[]) { return rt.wired_scene_types.material_metallic(this, ...a); }
+        name(...a: any[]) { return rt.wired_scene_types.material_name(this, ...a); }
+        roughness(...a: any[]) { return rt.wired_scene_types.material_roughness(this, ...a); }
+        setAlphaCutoff(...a: any[]) { return rt.wired_scene_types.material_set_alpha_cutoff(this, ...a); }
+        setAlphaMode(...a: any[]) { return rt.wired_scene_types.material_set_alpha_mode(this, ...a); }
+        setBaseColor(...a: any[]) { return rt.wired_scene_types.material_set_base_color(this, ...a); }
+        setDoubleSided(...a: any[]) { return rt.wired_scene_types.material_set_double_sided(this, ...a); }
+        setMetallic(...a: any[]) { return rt.wired_scene_types.material_set_metallic(this, ...a); }
+        setName(...a: any[]) { return rt.wired_scene_types.material_set_name(this, ...a); }
+        setRoughness(...a: any[]) { return rt.wired_scene_types.material_set_roughness(this, ...a); }
+        setSync(...a: any[]) { return rt.wired_scene_types.material_set_sync(this, ...a); }
+        setUnlit(...a: any[]) { return rt.wired_scene_types.material_set_unlit(this, ...a); }
+        sync(...a: any[]) { return rt.wired_scene_types.material_sync(this, ...a); }
+        unlit(...a: any[]) { return rt.wired_scene_types.material_unlit(this, ...a); }
       },
       Mesh: class {
-        clone() {
-          return rt.wired_scene_types.mesh_clone();
-        }
-        colors() {
-          return rt.wired_scene_types.mesh_colors();
-        }
-        id() {
-          return rt.wired_scene_types.mesh_id();
-        }
-        indices() {
-          return rt.wired_scene_types.mesh_indices();
-        }
-        name() {
-          return rt.wired_scene_types.mesh_name();
-        }
-        normals() {
-          return rt.wired_scene_types.mesh_normals();
-        }
-        positions() {
-          return rt.wired_scene_types.mesh_positions();
-        }
-        setColors() {
-          return rt.wired_scene_types.mesh_set_colors();
-        }
-        setIndices() {
-          return rt.wired_scene_types.mesh_set_indices();
-        }
-        setName() {
-          return rt.wired_scene_types.mesh_set_name();
-        }
-        setNormals() {
-          return rt.wired_scene_types.mesh_set_normals();
-        }
-        setPositions() {
-          return rt.wired_scene_types.mesh_set_positions();
-        }
-        setSync() {
-          return rt.wired_scene_types.mesh_set_sync();
-        }
-        setTangents() {
-          return rt.wired_scene_types.mesh_set_tangents();
-        }
-        setTopology() {
-          return rt.wired_scene_types.mesh_set_topology();
-        }
-        setUv0() {
-          return rt.wired_scene_types.mesh_set_uv0();
-        }
-        setUv1() {
-          return rt.wired_scene_types.mesh_set_uv1();
-        }
-        sync() {
-          return rt.wired_scene_types.mesh_sync();
-        }
-        tangents() {
-          return rt.wired_scene_types.mesh_tangents();
-        }
-        topology() {
-          return rt.wired_scene_types.mesh_topology();
-        }
-        uv0() {
-          return rt.wired_scene_types.mesh_uv0();
-        }
-        uv1() {
-          return rt.wired_scene_types.mesh_uv1();
-        }
+        clone(...a: any[]) { return rt.wired_scene_types.mesh_clone(this, ...a); }
+        colors(...a: any[]) { return rt.wired_scene_types.mesh_colors(this, ...a); }
+        id(...a: any[]) { return rt.wired_scene_types.mesh_id(this, ...a); }
+        indices(...a: any[]) { return rt.wired_scene_types.mesh_indices(this, ...a); }
+        name(...a: any[]) { return rt.wired_scene_types.mesh_name(this, ...a); }
+        normals(...a: any[]) { return rt.wired_scene_types.mesh_normals(this, ...a); }
+        positions(...a: any[]) { return rt.wired_scene_types.mesh_positions(this, ...a); }
+        setColors(...a: any[]) { return rt.wired_scene_types.mesh_set_colors(this, ...a); }
+        setIndices(...a: any[]) { return rt.wired_scene_types.mesh_set_indices(this, ...a); }
+        setName(...a: any[]) { return rt.wired_scene_types.mesh_set_name(this, ...a); }
+        setNormals(...a: any[]) { return rt.wired_scene_types.mesh_set_normals(this, ...a); }
+        setPositions(...a: any[]) { return rt.wired_scene_types.mesh_set_positions(this, ...a); }
+        setSync(...a: any[]) { return rt.wired_scene_types.mesh_set_sync(this, ...a); }
+        setTangents(...a: any[]) { return rt.wired_scene_types.mesh_set_tangents(this, ...a); }
+        setTopology(...a: any[]) { return rt.wired_scene_types.mesh_set_topology(this, ...a); }
+        setUv0(...a: any[]) { return rt.wired_scene_types.mesh_set_uv0(this, ...a); }
+        setUv1(...a: any[]) { return rt.wired_scene_types.mesh_set_uv1(this, ...a); }
+        sync(...a: any[]) { return rt.wired_scene_types.mesh_sync(this, ...a); }
+        tangents(...a: any[]) { return rt.wired_scene_types.mesh_tangents(this, ...a); }
+        topology(...a: any[]) { return rt.wired_scene_types.mesh_topology(this, ...a); }
+        uv0(...a: any[]) { return rt.wired_scene_types.mesh_uv0(this, ...a); }
+        uv1(...a: any[]) { return rt.wired_scene_types.mesh_uv1(this, ...a); }
       },
       Node: class {
-        addChild() {
-          return rt.wired_scene_types.node_add_child();
-        }
-        children() {
-          return rt.wired_scene_types.node_children();
-        }
-        clone() {
-          return rt.wired_scene_types.node_clone();
-        }
-        collider() {
-          return rt.wired_scene_types.node_collider();
-        }
-        globalTransform() {
-          return rt.wired_scene_types.node_global_transform();
-        }
-        id() {
-          return rt.wired_scene_types.node_id();
-        }
-        material() {
-          return rt.wired_scene_types.node_material();
-        }
-        mesh() {
-          return rt.wired_scene_types.node_mesh();
-        }
-        name() {
-          return rt.wired_scene_types.node_name();
-        }
-        parent() {
-          return rt.wired_scene_types.node_parent();
-        }
-        removeChild() {
-          return rt.wired_scene_types.node_remove_child();
-        }
-        rigidBody() {
-          return rt.wired_scene_types.node_rigid_body();
-        }
-        rotation() {
-          return rt.wired_scene_types.node_rotation();
-        }
-        scale() {
-          return rt.wired_scene_types.node_scale();
-        }
-        setCollider() {
-          return rt.wired_scene_types.node_set_collider();
-        }
-        setMaterial() {
-          return rt.wired_scene_types.node_set_material();
-        }
-        setMesh() {
-          return rt.wired_scene_types.node_set_mesh();
-        }
-        setName() {
-          return rt.wired_scene_types.node_set_name();
-        }
-        setRigidBody() {
-          return rt.wired_scene_types.node_set_rigid_body();
-        }
-        setRotation() {
-          return rt.wired_scene_types.node_set_rotation();
-        }
-        setScale() {
-          return rt.wired_scene_types.node_set_scale();
-        }
-        setSync() {
-          return rt.wired_scene_types.node_set_sync();
-        }
-        setTransform() {
-          return rt.wired_scene_types.node_set_transform();
-        }
-        setTranslation() {
-          return rt.wired_scene_types.node_set_translation();
-        }
-        sync() {
-          return rt.wired_scene_types.node_sync();
-        }
-        transform() {
-          return rt.wired_scene_types.node_transform();
-        }
-        translation() {
-          return rt.wired_scene_types.node_translation();
-        }
+        addChild(...a: any[]) { return rt.wired_scene_types.node_add_child(this, ...a); }
+        children(...a: any[]) { return rt.wired_scene_types.node_children(this, ...a); }
+        clone(...a: any[]) { return rt.wired_scene_types.node_clone(this, ...a); }
+        collider(...a: any[]) { return rt.wired_scene_types.node_collider(this, ...a); }
+        globalTransform(...a: any[]) { return rt.wired_scene_types.node_global_transform(this, ...a); }
+        id(...a: any[]) { return rt.wired_scene_types.node_id(this, ...a); }
+        material(...a: any[]) { return rt.wired_scene_types.node_material(this, ...a); }
+        mesh(...a: any[]) { return rt.wired_scene_types.node_mesh(this, ...a); }
+        name(...a: any[]) { return rt.wired_scene_types.node_name(this, ...a); }
+        parent(...a: any[]) { return rt.wired_scene_types.node_parent(this, ...a); }
+        removeChild(...a: any[]) { return rt.wired_scene_types.node_remove_child(this, ...a); }
+        rigidBody(...a: any[]) { return rt.wired_scene_types.node_rigid_body(this, ...a); }
+        rotation(...a: any[]) { return rt.wired_scene_types.node_rotation(this, ...a); }
+        scale(...a: any[]) { return rt.wired_scene_types.node_scale(this, ...a); }
+        setCollider(...a: any[]) { return rt.wired_scene_types.node_set_collider(this, ...a); }
+        setMaterial(...a: any[]) { return rt.wired_scene_types.node_set_material(this, ...a); }
+        setMesh(...a: any[]) { return rt.wired_scene_types.node_set_mesh(this, ...a); }
+        setName(...a: any[]) { return rt.wired_scene_types.node_set_name(this, ...a); }
+        setRigidBody(...a: any[]) { return rt.wired_scene_types.node_set_rigid_body(this, ...a); }
+        setRotation(...a: any[]) { return rt.wired_scene_types.node_set_rotation(this, ...a); }
+        setScale(...a: any[]) { return rt.wired_scene_types.node_set_scale(this, ...a); }
+        setSync(...a: any[]) { return rt.wired_scene_types.node_set_sync(this, ...a); }
+        setTransform(...a: any[]) { return rt.wired_scene_types.node_set_transform(this, ...a); }
+        setTranslation(...a: any[]) { return rt.wired_scene_types.node_set_translation(this, ...a); }
+        sync(...a: any[]) { return rt.wired_scene_types.node_sync(this, ...a); }
+        transform(...a: any[]) { return rt.wired_scene_types.node_transform(this, ...a); }
+        translation(...a: any[]) { return rt.wired_scene_types.node_translation(this, ...a); }
       },
     },
     "wired:wds/api": {
@@ -443,22 +237,14 @@ function build_imports(wasi: WASIShim, rt: any) {
     },
     "wired:wds/types": {
       QueryFuture: class {
-        poll() {
-          return rt.wired_wds_types.query_future_poll();
-        }
+        poll(...a: any[]) { return rt.wired_wds_types.query_future_poll(this, ...a); }
       },
       ReadFuture: class {
-        poll() {
-          return rt.wired_wds_types.read_future_poll();
-        }
+        poll(...a: any[]) { return rt.wired_wds_types.read_future_poll(this, ...a); }
       },
       Wds: class {
-        query() {
-          return rt.wired_wds_types.wds_query();
-        }
-        read() {
-          return rt.wired_wds_types.wds_read();
-        }
+        query(...a: any[]) { return rt.wired_wds_types.wds_query(this, ...a); }
+        read(...a: any[]) { return rt.wired_wds_types.wds_read(this, ...a); }
       },
     },
   };

@@ -22,6 +22,7 @@ use crate::{
     runtime::{
         Runtime,
         native::{NativeRuntime, add_apis_to_linker},
+        shared::RuntimeBackend,
     },
 };
 
@@ -72,6 +73,7 @@ pub fn instantiate_scripts(
             .build();
 
         let state = Runtime {
+            backend: RuntimeBackend::default(),
             native: NativeRuntime {
                 table: ResourceTable::default(),
                 wasi_ctx,

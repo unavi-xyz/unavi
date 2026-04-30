@@ -4,6 +4,8 @@ use wasm_bindgen::prelude::*;
 
 use crate::runtime::shared::wired::scene::WiredSceneBackend;
 
+use super::{material::MaterialHandle, mesh::MeshHandle, node::NodeHandle};
+
 #[wasm_bindgen]
 pub struct DocHandle {
     rep: u32,
@@ -11,38 +13,40 @@ pub struct DocHandle {
 }
 
 impl DocHandle {
-    pub fn new(rep: u32, backend: Arc<Mutex<WiredSceneBackend>>) -> Self {
+    pub const fn new(rep: u32, backend: Arc<Mutex<WiredSceneBackend>>) -> Self {
         Self { rep, backend }
     }
 }
 
 #[wasm_bindgen]
 impl DocHandle {
-    pub fn add_asset(&self, _name: String, _blob_id: Vec<u8>) {}
-
-    pub fn assets(&self) -> JsValue {
-        JsValue::from_str("[]")
-    }
-
-    #[wasm_bindgen(js_name = "clone")]
-    pub fn clone_doc(&self) -> JsValue {
+    pub fn add_asset(&self, _name: String, _blob_id: Vec<u8>) {
         todo!()
     }
 
-    pub fn create_material(&self) -> JsValue {
-        JsValue::UNDEFINED
+    pub fn assets(&self) -> JsValue {
+        todo!()
     }
 
-    pub fn create_mesh(&self) -> JsValue {
-        JsValue::UNDEFINED
+    #[wasm_bindgen(js_name = "clone")]
+    pub fn clone_doc(&self) -> Self {
+        todo!()
     }
 
-    pub fn create_node(&self) -> JsValue {
-        JsValue::UNDEFINED
+    pub fn create_material(&self) -> MaterialHandle {
+        todo!()
+    }
+
+    pub fn create_mesh(&self) -> MeshHandle {
+        todo!()
+    }
+
+    pub fn create_node(&self) -> NodeHandle {
+        todo!()
     }
 
     pub fn global_transform(&self) -> JsValue {
-        JsValue::UNDEFINED
+        todo!()
     }
 
     pub fn id(&self) -> Vec<u8> {
@@ -56,54 +60,82 @@ impl DocHandle {
     }
 
     pub fn materials(&self) -> JsValue {
-        JsValue::from_str("[]")
+        todo!()
     }
 
     pub fn meshes(&self) -> JsValue {
-        JsValue::from_str("[]")
+        todo!()
     }
 
     pub fn nodes(&self) -> JsValue {
-        JsValue::from_str("[]")
+        todo!()
     }
 
     pub fn public(&self) -> bool {
-        false
+        todo!()
     }
 
-    pub fn remove_asset(&self, _name: String) {}
-    pub fn remove_material(&self, _value: JsValue) {}
-    pub fn remove_mesh(&self, _value: JsValue) {}
-    pub fn remove_node(&self, _value: JsValue) {}
+    pub fn remove_asset(&self, _name: String) {
+        todo!()
+    }
+
+    pub fn remove_material(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn remove_mesh(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn remove_node(&self, _value: JsValue) {
+        todo!()
+    }
 
     pub fn roots(&self) -> JsValue {
-        JsValue::from_str("[]")
+        todo!()
     }
 
     pub fn rotation(&self) -> JsValue {
-        JsValue::UNDEFINED
+        todo!()
     }
 
     pub fn scale(&self) -> JsValue {
-        JsValue::UNDEFINED
+        todo!()
     }
 
-    pub fn set_public(&self, _value: bool) {}
-    pub fn set_rotation(&self, _value: JsValue) {}
-    pub fn set_scale(&self, _value: JsValue) {}
-    pub fn set_sync(&self, _value: bool) {}
-    pub fn set_transform(&self, _value: JsValue) {}
-    pub fn set_translation(&self, _value: JsValue) {}
+    pub fn set_public(&self, _value: bool) {
+        todo!()
+    }
+
+    pub fn set_rotation(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_scale(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_sync(&self, _value: bool) {
+        todo!()
+    }
+
+    pub fn set_transform(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_translation(&self, _value: JsValue) {
+        todo!()
+    }
 
     pub fn sync(&self) -> bool {
-        false
+        todo!()
     }
 
     pub fn transform(&self) -> JsValue {
-        JsValue::UNDEFINED
+        todo!()
     }
 
     pub fn translation(&self) -> JsValue {
-        JsValue::UNDEFINED
+        todo!()
     }
 }

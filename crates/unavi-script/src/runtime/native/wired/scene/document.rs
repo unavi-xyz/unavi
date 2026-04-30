@@ -15,11 +15,11 @@ use super::{
 };
 
 impl HostDocument for Runtime {
-    async fn id(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec<u8>> {
+    async fn id(&mut self, _self_: Resource<DocRes>) -> wasmtime::Result<Vec<u8>> {
         todo!()
     }
 
-    async fn clone(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Resource<DocRes>> {
+    async fn clone(&mut self, _self_: Resource<DocRes>) -> wasmtime::Result<Resource<DocRes>> {
         todo!()
     }
 
@@ -53,7 +53,7 @@ impl HostDocument for Runtime {
 
     async fn create_node(
         &mut self,
-        self_: Resource<DocRes>,
+        _self_: Resource<DocRes>,
     ) -> wasmtime::Result<Resource<NodeRes>> {
         todo!()
     }

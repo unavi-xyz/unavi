@@ -1,50 +1,101 @@
+use std::sync::{Arc, Mutex};
+
 use wasm_bindgen::prelude::*;
 
-use crate::runtime::Runtime;
+use crate::runtime::shared::wired::scene::WiredSceneBackend;
 
 #[wasm_bindgen]
-impl Runtime {
-    pub fn wired_scene_material_alpha_cutoff(&self, _handle: u32) -> f32 {
-        0.5
+pub struct MaterialHandle {
+    rep: u32,
+    backend: Arc<Mutex<WiredSceneBackend>>,
+}
+
+impl MaterialHandle {
+    pub const fn new(rep: u32, backend: Arc<Mutex<WiredSceneBackend>>) -> Self {
+        Self { rep, backend }
     }
-    pub fn wired_scene_material_alpha_mode(&self, _handle: u32) -> JsValue {
-        JsValue::UNDEFINED
+}
+
+#[wasm_bindgen]
+impl MaterialHandle {
+    pub fn alpha_cutoff(&self) -> f32 {
+        todo!()
     }
-    pub fn wired_scene_material_base_color(&self, _handle: u32) -> JsValue {
-        JsValue::UNDEFINED
+
+    pub fn alpha_mode(&self) -> JsValue {
+        todo!()
     }
-    pub fn wired_scene_material_clone(&self, _handle: u32) -> JsValue {
-        JsValue::UNDEFINED
+
+    pub fn base_color(&self) -> JsValue {
+        todo!()
     }
-    pub fn wired_scene_material_double_sided(&self, _handle: u32) -> bool {
-        false
+
+    #[wasm_bindgen(js_name = "clone")]
+    pub fn clone_mat(&self) -> Self {
+        todo!()
     }
-    pub fn wired_scene_material_drop(&self, _handle: u32) {}
-    pub fn wired_scene_material_id(&self, _handle: u32) -> String {
-        String::new()
+
+    pub fn double_sided(&self) -> bool {
+        todo!()
     }
-    pub fn wired_scene_material_metallic(&self, _handle: u32) -> f32 {
-        0.0
+
+    pub fn id(&self) -> String {
+        todo!()
     }
-    pub fn wired_scene_material_name(&self, _handle: u32) -> Option<String> {
-        None
+
+    pub fn metallic(&self) -> f32 {
+        todo!()
     }
-    pub fn wired_scene_material_roughness(&self, _handle: u32) -> f32 {
-        0.5
+
+    pub fn name(&self) -> Option<String> {
+        todo!()
     }
-    pub fn wired_scene_material_set_alpha_cutoff(&self, _handle: u32, _value: f32) {}
-    pub fn wired_scene_material_set_alpha_mode(&self, _handle: u32, _value: JsValue) {}
-    pub fn wired_scene_material_set_base_color(&self, _handle: u32, _value: JsValue) {}
-    pub fn wired_scene_material_set_double_sided(&self, _handle: u32, _value: bool) {}
-    pub fn wired_scene_material_set_metallic(&self, _handle: u32, _value: f32) {}
-    pub fn wired_scene_material_set_name(&self, _handle: u32, _value: Option<String>) {}
-    pub fn wired_scene_material_set_roughness(&self, _handle: u32, _value: f32) {}
-    pub fn wired_scene_material_set_sync(&self, _handle: u32, _value: bool) {}
-    pub fn wired_scene_material_set_unlit(&self, _handle: u32, _value: bool) {}
-    pub fn wired_scene_material_sync(&self, _handle: u32) -> bool {
-        false
+
+    pub fn roughness(&self) -> f32 {
+        todo!()
     }
-    pub fn wired_scene_material_unlit(&self, _handle: u32) -> bool {
-        false
+
+    pub fn set_alpha_cutoff(&self, _value: f32) {
+        todo!()
+    }
+
+    pub fn set_alpha_mode(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_base_color(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_double_sided(&self, _value: bool) {
+        todo!()
+    }
+
+    pub fn set_metallic(&self, _value: f32) {
+        todo!()
+    }
+
+    pub fn set_name(&self, _value: Option<String>) {
+        todo!()
+    }
+
+    pub fn set_roughness(&self, _value: f32) {
+        todo!()
+    }
+
+    pub fn set_sync(&self, _value: bool) {
+        todo!()
+    }
+
+    pub fn set_unlit(&self, _value: bool) {
+        todo!()
+    }
+
+    pub fn sync(&self) -> bool {
+        todo!()
+    }
+
+    pub fn unlit(&self) -> bool {
+        todo!()
     }
 }

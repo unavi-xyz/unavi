@@ -1,54 +1,109 @@
+use std::sync::{Arc, Mutex};
+
 use wasm_bindgen::prelude::*;
 
-use crate::runtime::Runtime;
+use crate::runtime::shared::wired::scene::WiredSceneBackend;
 
 #[wasm_bindgen]
-impl Runtime {
-    pub fn wired_scene_mesh_clone(&self, _handle: u32) -> JsValue {
-        JsValue::UNDEFINED
+pub struct MeshHandle {
+    rep: u32,
+    backend: Arc<Mutex<WiredSceneBackend>>,
+}
+
+impl MeshHandle {
+    pub const fn new(rep: u32, backend: Arc<Mutex<WiredSceneBackend>>) -> Self {
+        Self { rep, backend }
     }
-    pub fn wired_scene_mesh_colors(&self, _handle: u32) -> JsValue {
-        JsValue::UNDEFINED
+}
+
+#[wasm_bindgen]
+impl MeshHandle {
+    #[wasm_bindgen(js_name = "clone")]
+    pub fn clone_mesh(&self) -> Self {
+        todo!()
     }
-    pub fn wired_scene_mesh_drop(&self, _handle: u32) {}
-    pub fn wired_scene_mesh_id(&self, _handle: u32) -> String {
-        String::new()
+
+    pub fn colors(&self) -> JsValue {
+        todo!()
     }
-    pub fn wired_scene_mesh_indices(&self, _handle: u32) -> JsValue {
-        JsValue::UNDEFINED
+
+    pub fn id(&self) -> String {
+        todo!()
     }
-    pub fn wired_scene_mesh_name(&self, _handle: u32) -> Option<String> {
-        None
+
+    pub fn indices(&self) -> JsValue {
+        todo!()
     }
-    pub fn wired_scene_mesh_normals(&self, _handle: u32) -> JsValue {
-        JsValue::UNDEFINED
+
+    pub fn name(&self) -> Option<String> {
+        todo!()
     }
-    pub fn wired_scene_mesh_positions(&self, _handle: u32) -> JsValue {
-        JsValue::UNDEFINED
+
+    pub fn normals(&self) -> JsValue {
+        todo!()
     }
-    pub fn wired_scene_mesh_set_colors(&self, _handle: u32, _value: JsValue) {}
-    pub fn wired_scene_mesh_set_indices(&self, _handle: u32, _value: JsValue) {}
-    pub fn wired_scene_mesh_set_name(&self, _handle: u32, _value: Option<String>) {}
-    pub fn wired_scene_mesh_set_normals(&self, _handle: u32, _value: JsValue) {}
-    pub fn wired_scene_mesh_set_positions(&self, _handle: u32, _value: JsValue) {}
-    pub fn wired_scene_mesh_set_sync(&self, _handle: u32, _value: bool) {}
-    pub fn wired_scene_mesh_set_tangents(&self, _handle: u32, _value: JsValue) {}
-    pub fn wired_scene_mesh_set_topology(&self, _handle: u32, _value: String) {}
-    pub fn wired_scene_mesh_set_uv0(&self, _handle: u32, _value: JsValue) {}
-    pub fn wired_scene_mesh_set_uv1(&self, _handle: u32, _value: JsValue) {}
-    pub fn wired_scene_mesh_sync(&self, _handle: u32) -> bool {
-        false
+
+    pub fn positions(&self) -> JsValue {
+        todo!()
     }
-    pub fn wired_scene_mesh_tangents(&self, _handle: u32) -> JsValue {
-        JsValue::UNDEFINED
+
+    pub fn set_colors(&self, _value: JsValue) {
+        todo!()
     }
-    pub fn wired_scene_mesh_topology(&self, _handle: u32) -> JsValue {
-        JsValue::UNDEFINED
+
+    pub fn set_indices(&self, _value: JsValue) {
+        todo!()
     }
-    pub fn wired_scene_mesh_uv0(&self, _handle: u32) -> JsValue {
-        JsValue::UNDEFINED
+
+    pub fn set_name(&self, _value: Option<String>) {
+        todo!()
     }
-    pub fn wired_scene_mesh_uv1(&self, _handle: u32) -> JsValue {
-        JsValue::UNDEFINED
+
+    pub fn set_normals(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_positions(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_sync(&self, _value: bool) {
+        todo!()
+    }
+
+    pub fn set_tangents(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_topology(&self, _value: String) {
+        todo!()
+    }
+
+    pub fn set_uv0(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn set_uv1(&self, _value: JsValue) {
+        todo!()
+    }
+
+    pub fn sync(&self) -> bool {
+        todo!()
+    }
+
+    pub fn tangents(&self) -> JsValue {
+        todo!()
+    }
+
+    pub fn topology(&self) -> JsValue {
+        todo!()
+    }
+
+    pub fn uv0(&self) -> JsValue {
+        todo!()
+    }
+
+    pub fn uv1(&self) -> JsValue {
+        todo!()
     }
 }

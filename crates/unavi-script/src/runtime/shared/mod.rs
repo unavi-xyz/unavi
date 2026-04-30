@@ -1,8 +1,5 @@
 use std::sync::{Arc, Mutex};
 
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
-
 use wired::scene::SceneContext;
 
 mod slot_map;

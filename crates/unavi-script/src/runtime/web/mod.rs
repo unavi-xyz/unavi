@@ -1,8 +1,6 @@
-use std::sync::{Arc, Mutex};
-
 use wasm_bindgen::prelude::*;
 
-use crate::runtime::{Runtime, shared::wired::scene::WiredSceneBackend};
+use crate::runtime::Runtime;
 
 mod wired;
 

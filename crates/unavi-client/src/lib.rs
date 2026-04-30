@@ -5,6 +5,7 @@ use bevy::{
 
 use bevy_iroh::endpoint::LoadEndpoint;
 use bitflags::bitflags;
+use iroh::endpoint_info::AddrFilter;
 use tracing::Level;
 
 mod camera;
@@ -163,9 +164,9 @@ impl Plugin for UnaviPlugin {
         );
 
         app.world_mut().trigger(LoadEndpoint {
+            filter: AddrFilter::default(),
             #[cfg(all(feature = "mdns", not(target_family = "wasm")))]
             mdns: true,
-            ..Default::default()
         });
     }
 }

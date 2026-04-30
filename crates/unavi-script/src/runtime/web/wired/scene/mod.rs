@@ -10,12 +10,26 @@ pub mod mesh;
 pub mod node;
 
 use document::DocHandle;
+use material::MaterialHandle;
+use mesh::MeshHandle;
 use node::NodeHandle;
 
 #[wasm_bindgen]
 impl Runtime {
     pub fn wired_scene_doc_class(&self) -> JsValue {
         let handle = DocHandle::new(u32::MAX, Arc::clone(&self.backend.wired_scene));
+        let js = JsValue::from(handle);
+        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
+    }
+
+    pub fn wired_scene_material_class(&self) -> JsValue {
+        let handle = MaterialHandle::new(u32::MAX, Arc::clone(&self.backend.wired_scene));
+        let js = JsValue::from(handle);
+        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
+    }
+
+    pub fn wired_scene_mesh_class(&self) -> JsValue {
+        let handle = MeshHandle::new(u32::MAX, Arc::clone(&self.backend.wired_scene));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
@@ -41,19 +55,19 @@ impl Runtime {
         NodeHandle::new(rep, Arc::clone(&self.backend.wired_scene))
     }
 
-    pub fn wired_scene_create_document(&self) -> JsValue {
+    pub fn wired_scene_create_document(&self) -> DocHandle {
         todo!()
     }
 
-    pub fn wired_scene_get_document(&self, _id: Vec<u8>) -> JsValue {
-        JsValue::UNDEFINED
-    }
-
-    pub fn wired_scene_remove_document(&self, _handle: u32) {
+    pub fn wired_scene_get_document(&self, _id: Vec<u8>) -> Option<DocHandle> {
         todo!()
     }
 
-    pub fn wired_scene_load_hsd(&self, _blob_id: Vec<u8>) -> JsValue {
-        JsValue::from_str("not implemented")
+    pub fn wired_scene_remove_document(&self, _id: Vec<u8>) {
+        todo!()
+    }
+
+    pub fn wired_scene_load_hsd(&self, _blob_id: Vec<u8>) -> DocHandle {
+        todo!()
     }
 }

@@ -36,4 +36,4 @@ pub fn sleep_thread(duration: Duration) {
     std::thread::sleep(duration);
 }
 #[cfg(target_family = "wasm")]
-pub fn sleep_thread(_duration: Duration) {}
+pub const fn sleep_thread(_duration: Duration) {}

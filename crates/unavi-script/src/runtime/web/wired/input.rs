@@ -1,37 +1,31 @@
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Default, Clone)]
-pub struct WiredInput {}
+use crate::runtime::Runtime;
+
+use super::scene::node::NodeHandle;
 
 #[wasm_bindgen]
-impl WiredInput {
-    pub fn register_input_listener(&self, target: JsValue) -> JsValue {
+pub struct InputListenerHandle;
+
+#[wasm_bindgen]
+impl InputListenerHandle {
+    pub fn poll(&self) -> JsValue {
         todo!()
     }
 }
 
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Default, Clone)]
-pub struct WiredInputContext {}
-
 #[wasm_bindgen]
-impl WiredInputContext {
-    pub fn listener(&self) -> JsValue {
+impl Runtime {
+    pub fn wired_input_listener_class(&self) -> JsValue {
+        let js = JsValue::from(InputListenerHandle);
+        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
+    }
+
+    pub fn wired_input_register_input_listener(&self, _target: NodeHandle) -> InputListenerHandle {
         todo!()
     }
-}
 
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Default, Clone)]
-pub struct WiredInputTypes {}
-
-#[wasm_bindgen]
-impl WiredInputTypes {
-    pub fn input_listener_drop(&self) {}
-    pub fn input_listener_new(&self) {}
-    pub fn input_listener_poll(&self, handle: JsValue) -> JsValue {
+    pub fn wired_input_context_listener(&self) -> InputListenerHandle {
         todo!()
     }
-    pub fn input_listener_rep(&self) {}
 }

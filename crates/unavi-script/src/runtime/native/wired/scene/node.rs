@@ -12,11 +12,11 @@ use super::{
 };
 
 impl HostNode for Runtime {
-    async fn id(&mut self, self_: Resource<NodeRes>) -> wasmtime::Result<String> {
+    async fn id(&mut self, _self_: Resource<NodeRes>) -> wasmtime::Result<String> {
         todo!()
     }
 
-    async fn clone(&mut self, self_: Resource<NodeRes>) -> wasmtime::Result<Resource<NodeRes>> {
+    async fn clone(&mut self, _self_: Resource<NodeRes>) -> wasmtime::Result<Resource<NodeRes>> {
         todo!()
     }
 

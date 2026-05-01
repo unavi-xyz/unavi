@@ -10,19 +10,24 @@ use bevy_wds::{
     },
 };
 use blake3::Hash;
-use loro::TreeID;
+use loro::{LoroDoc, TreeID};
 use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
 use wired_schemas::SCHEMA_HSD;
 
-use crate::runtime::shared::{
-    slot_map::SlotMap,
-    wired::scene::{doc::DocRes, node::NodeRes},
+use crate::{
+    firewall::Firewall,
+    permissions::ApiPermissions,
+    runtime::shared::{
+        slot_map::SlotMap,
+        wired::scene::{doc::DocRes, node::NodeRes},
+    },
 };
 
 pub mod doc;
 pub mod node;
 
 pub struct SceneContext {
+    pub perms: ApiPermissions,
     pub self_doc: Hash,
     pub self_node: TreeID,
 }
@@ -62,6 +67,17 @@ impl WiredSceneBackend {
             .find(|(_, v)| v.id.as_slice() == id)
             .map(|(k, _)| *k)
             .and_then(|key| self.docs.new_owned(key))
+    }
+
+    fn enqueue_spawn_child_doc(&self, q: &mut CommandQueue, doc: Arc<LoroDoc>, id: Hash) {
+        let firewall = Firewall::for_child_doc(self.ctx.self_doc);
+        let perms = self.ctx.perms.clone();
+        q.push(bevy::ecs::system::command::spawn_batch([(
+            HsdDoc(doc),
+            HsdRecordId(id),
+            firewall,
+            perms,
+        )]));
     }
 
     pub async fn load_hsd(&mut self, blob_id: Vec<u8>) -> anyhow::Result<u32> {
@@ -104,19 +120,14 @@ impl WiredSceneBackend {
             let mut q = CommandQueue::default();
             q.push(bevy::ecs::system::command::trigger(read));
             ASYNC_COMMAND_QUEUE.0.try_send(q)?;
-            let doc = rx.recv().await?;
-            Arc::new(doc)
+            Arc::new(rx.recv().await?)
         };
 
         let mut q = CommandQueue::default();
-        q.push(bevy::ecs::system::command::spawn_batch([(
-            HsdDoc(doc),
-            HsdRecordId(id),
-        )]));
+        self.enqueue_spawn_child_doc(&mut q, doc, id);
         ASYNC_COMMAND_QUEUE.0.try_send(q)?;
 
-        let res = DocRes { id };
-        let rep = self.docs.insert(res);
+        let rep = self.docs.insert(DocRes { id });
         Ok(rep)
     }
 
@@ -129,35 +140,26 @@ impl WiredSceneBackend {
                 container: "hsd".into(),
                 f: Arc::new(|_| Ok(())),
             }];
-
             let mut q = CommandQueue::default();
             q.push(bevy::ecs::system::command::trigger(write));
             ASYNC_COMMAND_QUEUE.0.try_send(q)?;
-
             rx.recv().await?
         };
 
         // Read created record.
         let doc = {
             let (read, rx, _cancel) = ReadRecord::new(id);
-
             let mut q = CommandQueue::default();
             q.push(bevy::ecs::system::command::trigger(read));
             ASYNC_COMMAND_QUEUE.0.try_send(q)?;
-
-            let doc = rx.recv().await?;
-            Arc::new(doc)
+            Arc::new(rx.recv().await?)
         };
 
         let mut q = CommandQueue::default();
-        q.push(bevy::ecs::system::command::spawn_batch([(
-            HsdDoc(doc),
-            HsdRecordId(id),
-        )]));
+        self.enqueue_spawn_child_doc(&mut q, doc, id);
         ASYNC_COMMAND_QUEUE.0.try_send(q)?;
 
-        let res = DocRes { id };
-        let rep = self.docs.insert(res);
+        let rep = self.docs.insert(DocRes { id });
         Ok(rep)
     }
 

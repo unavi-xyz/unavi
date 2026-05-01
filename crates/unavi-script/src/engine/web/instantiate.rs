@@ -28,7 +28,7 @@ pub fn instantiate_scripts(
     docs: Query<&HsdRecordId>,
     mut commands: Commands,
 ) {
-    for (entity, script, _perms, name, node_ent) in to_instantiate {
+    for (entity, script, perms, name, node_ent) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };
@@ -43,6 +43,7 @@ pub fn instantiate_scripts(
         let name = name.to_string();
 
         let backend = RuntimeBackend::new(SceneContext {
+            perms: perms.clone(),
             self_doc: doc_id.0,
             self_node: node_id.0,
         });

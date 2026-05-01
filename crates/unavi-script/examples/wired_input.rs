@@ -56,8 +56,7 @@ fn init_scene(mut commands: Commands) {
         Transform::from_xyz(3.0, 8.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
-    let mut perms = ApiPermissions::default();
-    perms.insert(ApiName::InputContext);
+    let perms = ApiPermissions::default().with(ApiName::InputContext);
 
     commands.spawn(perms).trigger(|entity| LoadLocalScript {
         entity,

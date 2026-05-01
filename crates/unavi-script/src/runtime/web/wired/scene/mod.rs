@@ -62,15 +62,24 @@ impl Runtime {
         Ok(DocHandle::new(rep, Arc::clone(&self.backend.wired_scene)))
     }
 
-    pub fn wired_scene_get_document(&self, _id: Vec<u8>) -> Option<DocHandle> {
-        todo!()
+    pub async fn wired_scene_get_document(&self, id: Vec<u8>) -> Option<DocHandle> {
+        let rep = self.backend.wired_scene.lock().await.get_document(id)?;
+        Some(DocHandle::new(rep, Arc::clone(&self.backend.wired_scene)))
     }
 
     pub async fn wired_scene_remove_document(&self, id: Vec<u8>) {
         self.backend.wired_scene.lock().await.remove_document(id);
     }
 
-    pub fn wired_scene_load_hsd(&self, _blob_id: Vec<u8>) -> DocHandle {
-        todo!()
+    pub async fn wired_scene_load_hsd(&self, blob_id: Vec<u8>) -> Result<DocHandle, String> {
+        let rep = self
+            .backend
+            .wired_scene
+            .lock()
+            .await
+            .load_hsd(blob_id)
+            .await
+            .map_err(|e| e.to_string())?;
+        Ok(DocHandle::new(rep, Arc::clone(&self.backend.wired_scene)))
     }
 }

@@ -7,7 +7,7 @@ use bevy_wds::record::{
     write::{SchemaDef, WriteRecord},
 };
 use blake3::Hash;
-use loro::{LoroDoc, TreeID};
+use loro::TreeID;
 use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
 use wired_schemas::SCHEMA_HSD;
 
@@ -92,7 +92,7 @@ impl WiredSceneBackend {
 
         let mut q = CommandQueue::default();
         q.push(bevy::ecs::system::command::spawn_batch([(
-            HsdDoc(Arc::clone(&doc)),
+            HsdDoc(doc),
             HsdRecordId(id),
         )]));
         ASYNC_COMMAND_QUEUE.0.try_send(q)?;
@@ -102,27 +102,26 @@ impl WiredSceneBackend {
         Ok(rep)
     }
 
-    // pub fn remove_document_by_rep(&mut self, handle: u32) {
-    //     let Some(doc) = self.docs.remove(handle) else {
-    //         return;
-    //     };
-    //     let mut q = CommandQueue::default();
-    //     q.push(DespawnByDoc(doc));
-    //     let _ = ASYNC_COMMAND_QUEUE.0.try_send(q);
-    // }
-}
-
-struct DespawnByDoc(Arc<LoroDoc>);
-
-impl Command for DespawnByDoc {
-    fn apply(self, world: &mut World) {
-        let mut q = world.query::<(Entity, &HsdDoc)>();
-        let to_despawn = q
-            .iter(world)
-            .find(|(_, hsd)| Arc::ptr_eq(&hsd.0, &self.0))
-            .map(|(e, _)| e);
-        if let Some(entity) = to_despawn {
-            world.despawn(entity);
-        }
+    pub fn remove_document(&mut self, id: Vec<u8>) {
+        let Some(key) = self
+            .docs
+            .items
+            .iter()
+            .find(|(_, v)| v.id.as_slice() == id)
+            .map(|(k, _)| *k)
+        else {
+            return;
+        };
+        let Some(doc) = self.docs.remove(key) else {
+            return;
+        };
+        let mut q = CommandQueue::default();
+        q.push(move |world: &mut World| {
+            let mut query = world.query::<(Entity, &HsdRecordId)>();
+            if let Some((entity, _)) = query.iter(world).find(|(_, v)| v.0 == doc.id) {
+                world.despawn(entity);
+            }
+        });
+        let _ = ASYNC_COMMAND_QUEUE.0.try_send(q);
     }
 }

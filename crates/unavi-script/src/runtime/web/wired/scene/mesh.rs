@@ -1,5 +1,6 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
+use tokio::sync::Mutex;
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::shared::wired::scene::WiredSceneBackend;

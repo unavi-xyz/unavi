@@ -34,26 +34,30 @@ pub fn add_to_linker(linker: &mut Linker<Runtime>) -> wasmtime::Result<()> {
 
 impl bindings::wired::scene::api::Host for Runtime {
     async fn self_node(&mut self) -> wasmtime::Result<Resource<NodeRes>> {
-        let rep = self.backend.wired_scene.lock().expect("lock").self_node();
+        let rep = self.backend.wired_scene.lock().await.self_node();
         Ok(Resource::new_own(rep))
     }
 
     async fn self_document(&mut self) -> wasmtime::Result<Resource<DocRes>> {
+        let rep = self.backend.wired_scene.lock().await.self_document();
+        Ok(Resource::new_own(rep))
+    }
+
+    async fn get_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Option<Resource<DocRes>>> {
+        let rep = self.backend.wired_scene.lock().await.get_document(id);
+        Ok(rep.map(Resource::new_own))
+    }
+
+    async fn create_document(&mut self) -> wasmtime::Result<Resource<DocRes>> {
         let rep = self
             .backend
             .wired_scene
             .lock()
-            .expect("lock")
-            .self_document();
+            .await
+            .create_document()
+            .await
+            .map_err(wasmtime::Error::from_anyhow)?;
         Ok(Resource::new_own(rep))
-    }
-
-    async fn get_document(&mut self, _id: Vec<u8>) -> wasmtime::Result<Option<Resource<DocRes>>> {
-        todo!()
-    }
-
-    async fn create_document(&mut self) -> wasmtime::Result<Result<Resource<DocRes>, String>> {
-        todo!()
     }
 
     async fn remove_document(&mut self, _id: Vec<u8>) -> wasmtime::Result<()> {

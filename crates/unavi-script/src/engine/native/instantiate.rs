@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 use bevy_hsd::{HsdChild, HsdRecordId, NodeId, ScriptNode};
+use tokio::sync::Mutex;
 use tracing::{Instrument, Span};
 use unavi_util::async_task::spawn_async_task;
 use wasmtime::{Store, component::Linker};
@@ -33,7 +34,7 @@ use crate::{
 pub struct InstantiatingScript(tokio::sync::oneshot::Receiver<bindings::Guest>);
 
 #[derive(Component, Deref, DerefMut)]
-pub struct ScriptStore(pub Arc<tokio::sync::Mutex<Store<Runtime>>>);
+pub struct ScriptStore(pub Arc<Mutex<Store<Runtime>>>);
 
 #[derive(Component)]
 #[require(LastTick)]
@@ -86,19 +87,17 @@ pub fn instantiate_scripts(
 
         let state = Runtime {
             backend: RuntimeBackend {
-                wired_scene: Arc::new(std::sync::Mutex::new(WiredSceneBackend::new(
-                    SceneContext {
-                        self_doc: doc_id.0,
-                        self_node: node_id.0,
-                    },
-                ))),
+                wired_scene: Arc::new(Mutex::new(WiredSceneBackend::new(SceneContext {
+                    self_doc: doc_id.0,
+                    self_node: node_id.0,
+                }))),
             },
             native: NativeRuntime {
                 table: ResourceTable::default(),
                 wasi_ctx,
             },
         };
-        let store = Arc::new(tokio::sync::Mutex::new(Store::new(&engine.0, state)));
+        let store = Arc::new(Mutex::new(Store::new(&engine.0, state)));
 
         let engine = engine.0.clone();
         let perms = perms.clone();

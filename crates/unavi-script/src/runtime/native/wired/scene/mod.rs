@@ -67,9 +67,17 @@ impl bindings::wired::scene::api::Host for Runtime {
 
     async fn load_hsd(
         &mut self,
-        _blob_id: Vec<u8>,
+        blob_id: Vec<u8>,
     ) -> wasmtime::Result<Result<Resource<DocRes>, String>> {
-        todo!()
+        let rep = self
+            .backend
+            .wired_scene
+            .lock()
+            .await
+            .load_hsd(blob_id)
+            .await
+            .map_err(|e| e.to_string());
+        Ok(rep.map(Resource::new_own))
     }
 }
 

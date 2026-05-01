@@ -5,6 +5,21 @@ import {
 } from "@bytecodealliance/jco/component";
 import { WASIShim } from "@bytecodealliance/preview2-shim/instantiation";
 
+const SCENE_ASYNC_IMPORTS = [
+  "wired:scene/api#create-document",
+  "wired:scene/api#get-document",
+  "wired:scene/api#load-hsd",
+  "wired:scene/api#remove-document",
+];
+
+// Async imports error when used in the transpiled Script constructor, which in
+// JavaScript must be sync... not good. Maybe can be fixed once P3 lands,
+// with proper wit async support, or with JSPI upstream fixes?
+const SCRIPT_ASYNC_EXPORTS = [
+  "wired:script/guest-api#[method]script.render",
+  "wired:script/guest-api#[method]script.tick",
+];
+
 export async function build_script(
   bytes: Uint8Array,
   name: string,
@@ -13,7 +28,13 @@ export async function build_script(
   console.log("Building script", name);
 
   const options: GenerateOptions = {
-    asyncMode: { tag: "jspi", val: { imports: [], exports: [] } },
+    asyncMode: {
+      tag: "jspi",
+      val: {
+        imports: SCENE_ASYNC_IMPORTS,
+        exports: SCRIPT_ASYNC_EXPORTS,
+      },
+    },
     instantiation: { tag: "async" },
     name,
     noNodejsCompat: true,
@@ -67,7 +88,7 @@ export async function build_script(
 
     // TODO send script to Rust -> Bevy calls tick
 
-    script.tick();
+    await script.tick();
     console.log("Ticked script", name);
   } catch (err) {
     console.error("Failed to build script", err);

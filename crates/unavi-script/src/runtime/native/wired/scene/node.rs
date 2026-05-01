@@ -176,7 +176,7 @@ impl HostNode for Runtime {
     }
 
     async fn drop(&mut self, rep: Resource<NodeRes>) -> wasmtime::Result<()> {
-        self.native.table.delete(rep)?;
+        self.backend.wired_scene.lock().await.nodes.remove(rep.rep());
         Ok(())
     }
 }

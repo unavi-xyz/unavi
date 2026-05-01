@@ -40,13 +40,13 @@ impl Runtime {
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
 
-    pub async fn wired_scene_self_node(&self) -> NodeHandle {
-        let rep = self.backend.wired_scene.lock().await.self_node();
+    pub fn wired_scene_self_node(&self) -> NodeHandle {
+        let rep = self.backend.wired_scene.try_lock().expect("no contention").self_node();
         NodeHandle::new(rep, Arc::clone(&self.backend.wired_scene))
     }
 
-    pub async fn wired_scene_self_document(&self) -> DocHandle {
-        let rep = self.backend.wired_scene.lock().await.self_document();
+    pub fn wired_scene_self_document(&self) -> DocHandle {
+        let rep = self.backend.wired_scene.try_lock().expect("no contention").self_document();
         DocHandle::new(rep, Arc::clone(&self.backend.wired_scene))
     }
 

@@ -76,8 +76,13 @@ pub fn instantiate_scripts(
             continue;
         };
 
-        let (_stdout, stdout_stream) = ScriptStdout::new();
-        let (_stderr, stderr_stream) = ScriptStderr::new();
+        let span = info_span!("", name = name.to_string());
+
+        let (stdout, stdout_stream) = ScriptStdout::new();
+        let (stderr, stderr_stream) = ScriptStderr::new();
+        stdout.drain(span.clone());
+        stderr.drain(span.clone());
+
         let wasi_ctx = WasiCtxBuilder::new()
             .stdout(stdout_stream)
             .stderr(stderr_stream)
@@ -105,8 +110,6 @@ pub fn instantiate_scripts(
         let wasm = wasm.0.clone();
 
         let (tx, rx) = tokio::sync::oneshot::channel();
-
-        let span = info_span!("", name = name.to_string());
 
         spawn_async_task({
             let store = Arc::clone(&store);

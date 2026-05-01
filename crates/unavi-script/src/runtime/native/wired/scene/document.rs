@@ -187,7 +187,7 @@ impl HostDocument for Runtime {
     }
 
     async fn drop(&mut self, rep: Resource<DocRes>) -> wasmtime::Result<()> {
-        self.native.table.delete(rep)?;
+        self.backend.wired_scene.lock().await.docs.remove(rep.rep());
         Ok(())
     }
 }

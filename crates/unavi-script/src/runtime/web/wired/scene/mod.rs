@@ -40,23 +40,26 @@ impl Runtime {
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
 
-    pub fn wired_scene_self_document(&self) -> DocHandle {
+    pub async fn wired_scene_self_node(&self) -> NodeHandle {
+        let rep = self.backend.wired_scene.lock().await.self_node();
+        NodeHandle::new(rep, Arc::clone(&self.backend.wired_scene))
+    }
+
+    pub async fn wired_scene_self_document(&self) -> DocHandle {
+        let rep = self.backend.wired_scene.lock().await.self_document();
+        DocHandle::new(rep, Arc::clone(&self.backend.wired_scene))
+    }
+
+    pub async fn wired_scene_create_document(&self) -> Result<DocHandle, String> {
         let rep = self
             .backend
             .wired_scene
             .lock()
-            .expect("lock")
-            .self_document();
-        DocHandle::new(rep, Arc::clone(&self.backend.wired_scene))
-    }
-
-    pub fn wired_scene_self_node(&self) -> NodeHandle {
-        let rep = self.backend.wired_scene.lock().expect("lock").self_node();
-        NodeHandle::new(rep, Arc::clone(&self.backend.wired_scene))
-    }
-
-    pub fn wired_scene_create_document(&self) -> DocHandle {
-        todo!()
+            .await
+            .create_document()
+            .await
+            .map_err(|e| e.to_string())?;
+        Ok(DocHandle::new(rep, Arc::clone(&self.backend.wired_scene)))
     }
 
     pub fn wired_scene_get_document(&self, _id: Vec<u8>) -> Option<DocHandle> {

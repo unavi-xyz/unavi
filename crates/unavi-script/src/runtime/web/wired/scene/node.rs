@@ -1,5 +1,6 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
+use tokio::sync::Mutex;
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::shared::wired::scene::WiredSceneBackend;
@@ -41,10 +42,10 @@ impl NodeHandle {
         todo!()
     }
 
-    pub fn id(&self) -> String {
+    pub async fn id(&self) -> String {
         self.backend
             .lock()
-            .expect("lock")
+            .await
             .nodes
             .get(self.rep)
             .map(|n| n.id.to_string())

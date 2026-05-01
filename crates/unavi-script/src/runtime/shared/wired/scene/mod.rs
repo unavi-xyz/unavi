@@ -1,9 +1,15 @@
 use std::sync::Arc;
 
-use bevy::prelude::*;
-use bevy_hsd::HsdDoc;
+use bevy::{ecs::world::CommandQueue, prelude::*};
+use bevy_hsd::{HsdDoc, HsdRecordId};
+use bevy_wds::record::{
+    read::ReadRecord,
+    write::{SchemaDef, WriteRecord},
+};
 use blake3::Hash;
 use loro::{LoroDoc, TreeID};
+use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
+use wired_schemas::SCHEMA_HSD;
 
 use crate::runtime::shared::{
     slot_map::SlotMap,
@@ -46,22 +52,54 @@ impl WiredSceneBackend {
         })
     }
 
-    pub fn create_document(&mut self) -> Result<Arc<LoroDoc>, String> {
-        todo!()
-        // let doc = Arc::new(LoroDoc::new());
-        // let doc_for_spawn = Arc::clone(&doc);
-        // let record_id = blake3::Hash::from_bytes(rand::random());
-        //
-        // let mut q = CommandQueue::default();
-        // q.push(move |world: &mut World| {
-        //     world.spawn((HsdDoc(doc_for_spawn), HsdRecordId(record_id)));
-        // });
-        // ASYNC_COMMAND_QUEUE
-        //     .0
-        //     .try_send(q)
-        //     .map_err(|e| e.to_string())?;
-        //
-        // Ok(doc)
+    pub fn get_document(&mut self, id: Vec<u8>) -> Option<u32> {
+        self.docs
+            .items
+            .iter()
+            .find(|(_, v)| v.id.as_slice() == id)
+            .map(|(k, _)| *k)
+            .and_then(|key| self.docs.new_owned(key))
+    }
+
+    pub async fn create_document(&mut self) -> anyhow::Result<u32> {
+        // Create WDS record.
+        let id = {
+            let (mut write, rx, _cancel) = WriteRecord::new(None);
+            write.schemas = vec![SchemaDef {
+                schema: (&*SCHEMA_HSD).into(),
+                container: "hsd".into(),
+                f: Arc::new(|_| Ok(())),
+            }];
+
+            let mut q = CommandQueue::default();
+            q.push(bevy::ecs::system::command::trigger(write));
+            ASYNC_COMMAND_QUEUE.0.try_send(q)?;
+
+            rx.recv().await?
+        };
+
+        // Read created record.
+        let doc = {
+            let (read, rx, _cancel) = ReadRecord::new(id);
+
+            let mut q = CommandQueue::default();
+            q.push(bevy::ecs::system::command::trigger(read));
+            ASYNC_COMMAND_QUEUE.0.try_send(q)?;
+
+            let doc = rx.recv().await?;
+            Arc::new(doc)
+        };
+
+        let mut q = CommandQueue::default();
+        q.push(bevy::ecs::system::command::spawn_batch([(
+            HsdDoc(Arc::clone(&doc)),
+            HsdRecordId(id),
+        )]));
+        ASYNC_COMMAND_QUEUE.0.try_send(q)?;
+
+        let res = DocRes { id };
+        let rep = self.docs.insert(res);
+        Ok(rep)
     }
 
     // pub fn remove_document_by_rep(&mut self, handle: u32) {

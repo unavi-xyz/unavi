@@ -1,5 +1,6 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
+use tokio::sync::Mutex;
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::shared::wired::scene::WiredSceneBackend;
@@ -49,10 +50,10 @@ impl DocHandle {
         todo!()
     }
 
-    pub fn id(&self) -> Vec<u8> {
+    pub async fn id(&self) -> Vec<u8> {
         self.backend
             .lock()
-            .expect("lock")
+            .await
             .docs
             .get(self.rep)
             .map(|d| d.id.as_bytes().to_vec())

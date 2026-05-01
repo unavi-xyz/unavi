@@ -482,7 +482,7 @@ pub async fn store_envelope(
 
     validate_signature(author, signed.signature(), signed.payload_bytes()).await?;
 
-    // Get current document state (BEFORE applying envelope).
+    // Get current document state.
     let old_doc = reconstruct_current_doc(db, record_id)
         .await
         .map_err(WdsError::Other)?;
@@ -494,7 +494,7 @@ pub async fn store_envelope(
         .import(envelope.ops())
         .map_err(|e| WdsError::Other(e.into()))?;
 
-    // Check record-level write ACL against OLD state (prevent privilege escalation).
+    // Check record-level write ACL against old state (prevent privilege escalation).
     if !is_first_envelope {
         let old_acl = Acl::load(&old_doc).map_err(WdsError::Other)?;
         if !old_acl.can_write(author) {

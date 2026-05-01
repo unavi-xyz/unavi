@@ -14094,6 +14094,7 @@ dependencies = [
  "wasmtime",
  "wasmtime-wasi",
  "wds",
+ "wired-schemas",
  "xdid",
 ]
 

@@ -17,7 +17,7 @@ interface api {
   get-document: func(id: document-id) -> option<document>;
   // Create a new HSD document owned by this script's document.
   // Requires the create-document permission. Returns an error on failure.
-  create-document: func() -> result<document, string>;
+  create-document: func() -> document;
   // Destroy a previously created document. No-op if not found or no write access.
   remove-document: func(id: document-id);
   // Load an HSD document from a WDS blob hash (32 bytes).

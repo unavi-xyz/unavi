@@ -27,6 +27,7 @@ unavi-avatar.path       = "../unavi-avatar"
 unavi-input.path        = "../unavi-input"
 unavi-util.path         = "../unavi-util"
 unavi-wasm-compat.path  = "../unavi-wasm-compat"
+wired-schemas.path      = "../wired-schemas"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 wasmtime      = "43.0.0"

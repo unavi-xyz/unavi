@@ -4,13 +4,7 @@ use wired_prelude::wired_math::types::Vec3;
 use crate::check;
 
 pub fn test_create_document() {
-    let doc = match create_document() {
-        Ok(d) => d,
-        Err(e) => {
-            eprintln!("FAIL create_document: {e}");
-            return;
-        }
-    };
+    let doc = create_document();
 
     check("created doc id length", doc.id().len(), 32);
 

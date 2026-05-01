@@ -1,7 +1,7 @@
 use bevy::platform::collections::HashMap;
 
 pub struct SlotMap<T> {
-    items: HashMap<u32, T>,
+    pub items: HashMap<u32, T>,
     next: u32,
 }
 

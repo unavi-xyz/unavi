@@ -66,8 +66,8 @@ impl Runtime {
         todo!()
     }
 
-    pub fn wired_scene_remove_document(&self, _id: Vec<u8>) {
-        todo!()
+    pub async fn wired_scene_remove_document(&self, id: Vec<u8>) {
+        self.backend.wired_scene.lock().await.remove_document(id);
     }
 
     pub fn wired_scene_load_hsd(&self, _blob_id: Vec<u8>) -> DocHandle {

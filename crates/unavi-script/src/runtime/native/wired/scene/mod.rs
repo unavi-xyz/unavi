@@ -60,8 +60,9 @@ impl bindings::wired::scene::api::Host for Runtime {
         Ok(Resource::new_own(rep))
     }
 
-    async fn remove_document(&mut self, _id: Vec<u8>) -> wasmtime::Result<()> {
-        todo!()
+    async fn remove_document(&mut self, id: Vec<u8>) -> wasmtime::Result<()> {
+        self.backend.wired_scene.lock().await.remove_document(id);
+        Ok(())
     }
 
     async fn load_hsd(

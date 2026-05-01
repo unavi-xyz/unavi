@@ -1,9 +1,9 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 use bevy::prelude::*;
 
-#[derive(Component, Clone, Debug, Deref, DerefMut)]
-pub struct ApiPermissions(HashSet<ApiName>);
+#[derive(Component, Clone, Debug, Deref)]
+pub struct ApiPermissions(Arc<HashSet<ApiName>>);
 
 #[derive(Clone, Copy, Debug, PartialEq, Hash, Eq)]
 pub enum ApiName {
@@ -24,18 +24,29 @@ impl Default for ApiPermissions {
         set.insert(ApiName::Event);
         set.insert(ApiName::Input);
         set.insert(ApiName::Scene);
-        Self(set)
+        Self(Arc::new(set))
     }
 }
 
 impl ApiPermissions {
     #[must_use]
+    pub fn with(self, name: ApiName) -> Self {
+        let mut set = (*self.0).clone();
+        set.insert(name);
+        Self(Arc::new(set))
+    }
+
+    #[must_use]
     pub fn system() -> Self {
-        let mut set = Self::default();
+        let mut set = HashSet::default();
+        set.insert(ApiName::Agent);
         set.insert(ApiName::CreateDocument);
+        set.insert(ApiName::Event);
+        set.insert(ApiName::Input);
         set.insert(ApiName::InputContext);
         set.insert(ApiName::LocalAgent);
+        set.insert(ApiName::Scene);
         set.insert(ApiName::Wds);
-        set
+        Self(Arc::new(set))
     }
 }

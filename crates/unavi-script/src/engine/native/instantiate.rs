@@ -88,6 +88,7 @@ pub fn instantiate_scripts(
         let state = Runtime {
             backend: RuntimeBackend {
                 wired_scene: Arc::new(Mutex::new(WiredSceneBackend::new(SceneContext {
+                    perms: perms.clone(),
                     self_doc: doc_id.0,
                     self_node: node_id.0,
                 }))),

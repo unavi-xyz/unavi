@@ -9,6 +9,7 @@ use unavi_client::DebugFlags;
 
 #[derive(Parser, Debug)]
 #[command(version)]
+#[allow(clippy::struct_excessive_bools)]
 struct Args {
     /// Enable debug logging.
     #[arg(long, default_value_t = false)]

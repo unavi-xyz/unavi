@@ -1,14 +1,12 @@
 use wasmtime::component::Resource;
 
-use crate::runtime::{Runtime, shared::wired::scene::node::NodeRes};
-
-use super::{
-    bindings::wired::{
+use crate::runtime::{
+    Runtime,
+    native::wired::scene::bindings::wired::{
         math::types::{Quat, Transform, Vec3},
         scene::types::{Collider, HostNode, RigidBodyKind},
     },
-    material::MaterialRes,
-    mesh::MeshRes,
+    shared::wired::scene::{material::MaterialRes, mesh::MeshRes, node::NodeRes},
 };
 
 impl HostNode for Runtime {
@@ -176,7 +174,12 @@ impl HostNode for Runtime {
     }
 
     async fn drop(&mut self, rep: Resource<NodeRes>) -> wasmtime::Result<()> {
-        self.backend.wired_scene.lock().await.nodes.remove(rep.rep());
+        self.backend
+            .wired_scene
+            .lock()
+            .await
+            .nodes
+            .remove(rep.rep());
         Ok(())
     }
 }

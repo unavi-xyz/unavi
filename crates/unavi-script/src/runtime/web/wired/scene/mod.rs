@@ -41,12 +41,22 @@ impl Runtime {
     }
 
     pub fn wired_scene_self_node(&self) -> NodeHandle {
-        let rep = self.backend.wired_scene.try_lock().expect("no contention").self_node();
+        let rep = self
+            .backend
+            .wired_scene
+            .try_lock()
+            .expect("no contention")
+            .self_node();
         NodeHandle::new(rep, Arc::clone(&self.backend.wired_scene))
     }
 
     pub fn wired_scene_self_document(&self) -> DocHandle {
-        let rep = self.backend.wired_scene.try_lock().expect("no contention").self_document();
+        let rep = self
+            .backend
+            .wired_scene
+            .try_lock()
+            .expect("no contention")
+            .self_document();
         DocHandle::new(rep, Arc::clone(&self.backend.wired_scene))
     }
 

@@ -17,6 +17,10 @@ impl NodeHandle {
     pub const fn new(rep: u32, backend: Arc<Mutex<WiredSceneBackend>>) -> Self {
         Self { rep, backend }
     }
+
+    pub fn rep(&self) -> u32 {
+        self.rep
+    }
 }
 
 #[wasm_bindgen]

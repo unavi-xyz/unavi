@@ -3,12 +3,12 @@ use std::{
     sync::{Arc, LazyLock, Mutex},
 };
 
-use bevy::{ecs::world::CommandQueue, platform::collections::HashMap, prelude::*};
+use bevy::{platform::collections::HashMap, prelude::*};
 use blake3::Hash;
 use loro::{LoroDoc, Subscription};
 use loro_surgeon::{Hydrate, Reconcile};
 use serde::{Deserialize, Serialize};
-use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
+use unavi_util::async_commands::try_send_command;
 use wired_records::HydratedHash;
 
 use crate::{
@@ -57,12 +57,10 @@ pub fn add_space_state(trigger: On<Add, Space>, spaces: Query<&Space>, mut comma
 
                 // Spawn observer to publish local state changes.
                 let sub = doc.subscribe_local_update(Box::new(move |update| {
-                    let mut queue = CommandQueue::default();
-                    queue.push(bevy::ecs::system::command::trigger(SpaceStateUpdate {
+                    let _ = try_send_command(bevy::ecs::system::command::trigger(SpaceStateUpdate {
                         space,
                         data: update.clone(),
                     }));
-                    let _ = ASYNC_COMMAND_QUEUE.0.try_send(queue);
                     true
                 }));
 

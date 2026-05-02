@@ -6,6 +6,7 @@ use crate::{
     Script,
     load::asset::Wasm,
     permissions::ApiPermissions,
+    registry::DocTransformRegistry,
     runtime::{
         Runtime,
         shared::{RuntimeBackend, wired::scene::SceneContext},
@@ -26,6 +27,7 @@ pub fn instantiate_scripts(
     >,
     nodes: Query<(&NodeId, &HsdChild)>,
     docs: Query<&HsdRecordId>,
+    transform_reg: Res<DocTransformRegistry>,
     mut commands: Commands,
 ) {
     for (entity, script, perms, name, node_ent) in to_instantiate {
@@ -42,11 +44,14 @@ pub fn instantiate_scripts(
         let bytes = wasm.0.clone();
         let name = name.to_string();
 
-        let backend = RuntimeBackend::new(SceneContext {
-            perms: perms.clone(),
-            self_doc: doc_id.0,
-            self_node: node_id.0,
-        });
+        let backend = RuntimeBackend::new(
+            SceneContext {
+                perms: perms.clone(),
+                self_doc: doc_id.0,
+                self_node: node_id.0,
+            },
+            transform_reg.0.clone(),
+        );
         let runtime = Runtime { backend };
 
         spawn_async_task(async move {

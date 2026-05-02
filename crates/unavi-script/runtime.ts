@@ -10,6 +10,13 @@ const SCENE_ASYNC_IMPORTS = [
   "wired:scene/api#get-document",
   "wired:scene/api#load-hsd",
   "wired:scene/api#remove-document",
+  "wired:scene/types#[method]document.clone",
+  "wired:scene/types#[method]document.create-node",
+  "wired:scene/types#[method]document.id",
+  "wired:scene/types#[method]document.materials",
+  "wired:scene/types#[method]document.meshes",
+  "wired:scene/types#[method]document.nodes",
+  "wired:scene/types#[method]document.roots",
 ];
 
 // Async imports error when used in the transpiled Script constructor, which in

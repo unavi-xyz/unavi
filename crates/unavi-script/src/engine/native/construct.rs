@@ -11,12 +11,12 @@ use crate::engine::native::instantiate::{ScriptGuest, ScriptSpan, ScriptStore};
 pub struct ScriptResource(pub ResourceAny);
 
 #[derive(Component)]
-pub struct InitializingScript(tokio::sync::oneshot::Receiver<ResourceAny>);
+pub struct ConstructingScript(tokio::sync::oneshot::Receiver<ResourceAny>);
 
 pub fn init_scripts(
     to_init: Query<
         (Entity, &ScriptGuest, &ScriptStore, &ScriptSpan),
-        (Without<InitializingScript>, Without<ScriptResource>),
+        (Without<ConstructingScript>, Without<ScriptResource>),
     >,
     mut commands: Commands,
 ) {
@@ -48,12 +48,12 @@ pub fn init_scripts(
             .instrument(span.0.clone()),
         );
 
-        commands.entity(entity).insert(InitializingScript(rx));
+        commands.entity(entity).insert(ConstructingScript(rx));
     }
 }
 
-pub fn poll_initializing_scripts(
-    scripts: Query<(Entity, &mut InitializingScript)>,
+pub fn poll_constructing_scripts(
+    scripts: Query<(Entity, &mut ConstructingScript)>,
     mut commands: Commands,
 ) {
     for (entity, mut initializing) in scripts {
@@ -63,7 +63,7 @@ pub fn poll_initializing_scripts(
 
         commands
             .entity(entity)
-            .remove::<InitializingScript>()
+            .remove::<ConstructingScript>()
             .insert(ScriptResource(res));
     }
 }

@@ -1,7 +1,9 @@
 use wasmtime::component::Resource;
 
 use crate::runtime::{
-    Runtime, native::wired::input::bindings::InputListenerRes, shared::wired::scene::node::NodeRes,
+    Runtime,
+    native::wired::input::bindings::InputListenerRes,
+    shared::{self, wired::scene::node::NodeRes},
 };
 
 mod listener;
@@ -29,8 +31,10 @@ impl bindings::wired::input::api::Host for Runtime {
         &mut self,
         target: Resource<NodeRes>,
     ) -> wasmtime::Result<Resource<InputListenerRes>> {
-        // self.backend.wired_input.lock().await.
-        todo!()
+        let res = shared::wired::input::register_input_listener(&mut self.backend, target.rep())
+            .await
+            .map_err(wasmtime::Error::from_anyhow)?;
+        Ok(Resource::new_own(res))
     }
 }
 

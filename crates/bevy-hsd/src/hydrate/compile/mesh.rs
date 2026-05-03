@@ -85,7 +85,7 @@ pub(crate) fn handle_hsd_mesh_spawned(
         return;
     }
     let ent = commands
-        .spawn((HsdChild { doc: doc_ent }, MeshId(ev.id.clone())))
+        .spawn((HsdChild(doc_ent), MeshId(ev.id.clone())))
         .id();
     maps.meshes.insert(ev.id.clone(), ent);
 }

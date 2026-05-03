@@ -1,7 +1,10 @@
 use std::sync::LazyLock;
 
 use async_channel::{Receiver, Sender, TrySendError};
-use bevy::{ecs::world::CommandQueue, prelude::*};
+use bevy::{
+    ecs::{bundle::NoBundleEffect, world::CommandQueue},
+    prelude::*,
+};
 
 const SIZE: usize = 256;
 
@@ -18,5 +21,56 @@ pub fn try_send_command(command: impl Command) -> Result<(), TrySendError<Comman
 pub(crate) fn apply_async_commands(mut commands: Commands) {
     while let Ok(mut queue) = ASYNC_COMMAND_QUEUE.1.try_recv() {
         commands.append(&mut queue);
+    }
+}
+
+#[derive(Default)]
+pub struct AsyncCommands {
+    queue: CommandQueue,
+}
+
+impl AsyncCommands {
+    pub fn push(&mut self, command: impl Command) -> &mut Self {
+        self.queue.push(command);
+        self
+    }
+
+    #[must_use]
+    pub fn trigger<'a, E>(mut self, event: E) -> Self
+    where
+        E: Event<Trigger<'a>: Default>,
+    {
+        self.queue.push(bevy::ecs::system::command::trigger(event));
+        self
+    }
+
+    #[must_use]
+    pub fn spawn<B>(mut self, bundle: B) -> Self
+    where
+        B: Bundle<Effect: NoBundleEffect>,
+    {
+        self.queue
+            .push(bevy::ecs::system::command::spawn_batch([bundle]));
+        self
+    }
+
+    // TODO remove `send_spawn`, use `RemoteAllocator` once Bevy 0.19 releases to asynchronously
+    // generate an entity id
+    #[must_use]
+    pub async fn send_spawn<B>(mut self, bundle: B) -> Entity
+    where
+        B: Bundle<Effect: NoBundleEffect>,
+    {
+        let (tx, rx) = async_channel::bounded(1);
+        self.queue.push(move |world: &mut World| {
+            let ent = world.spawn(bundle).id();
+            tx.try_send(ent).expect("send");
+        });
+        rx.recv().await.expect("recv")
+    }
+
+    pub fn try_send(self) -> Result<(), TrySendError<CommandQueue>> {
+        ASYNC_COMMAND_QUEUE.0.try_send(self.queue)?;
+        Ok(())
     }
 }

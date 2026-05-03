@@ -100,10 +100,7 @@ pub struct HsdChildren(Vec<Entity>);
 
 #[derive(Component)]
 #[relationship(relationship_target = HsdChildren)]
-pub struct HsdChild {
-    #[relationship]
-    pub doc: Entity,
-}
+pub struct HsdChild(pub Entity);
 
 #[derive(Component, Clone, Debug)]
 pub struct NodeId(pub TreeID);

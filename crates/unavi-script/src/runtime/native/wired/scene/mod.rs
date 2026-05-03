@@ -2,7 +2,7 @@ use wasmtime::component::{HasSelf, Linker, Resource};
 
 use crate::runtime::{
     Runtime,
-    shared::wired::scene::{doc::DocRes, node::NodeRes},
+    shared::wired::scene::{document::DocRes, node::NodeRes},
 };
 
 pub mod document;
@@ -12,7 +12,7 @@ pub mod node;
 
 pub mod bindings {
     pub use crate::runtime::shared::wired::scene::{
-        doc::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes,
+        document::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes,
     };
 
     wasmtime::component::bindgen!({
@@ -26,12 +26,6 @@ pub mod bindings {
         imports: { default: async | trappable },
         exports: { default: async | trappable },
     });
-}
-
-pub fn add_to_linker(linker: &mut Linker<Runtime>) -> wasmtime::Result<()> {
-    bindings::wired::scene::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
-    bindings::wired::scene::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
-    Ok(())
 }
 
 impl bindings::wired::scene::api::Host for Runtime {
@@ -90,7 +84,11 @@ use bindings::wired::math::types::{Quat as WitQuat, Transform as WitTransform, V
 
 impl From<bevy::math::Vec3> for WitVec3 {
     fn from(v: bevy::math::Vec3) -> Self {
-        Self { x: v.x, y: v.y, z: v.z }
+        Self {
+            x: v.x,
+            y: v.y,
+            z: v.z,
+        }
     }
 }
 
@@ -102,7 +100,12 @@ impl From<WitVec3> for bevy::math::Vec3 {
 
 impl From<bevy::math::Quat> for WitQuat {
     fn from(q: bevy::math::Quat) -> Self {
-        Self { x: q.x, y: q.y, z: q.z, w: q.w }
+        Self {
+            x: q.x,
+            y: q.y,
+            z: q.z,
+            w: q.w,
+        }
     }
 }
 

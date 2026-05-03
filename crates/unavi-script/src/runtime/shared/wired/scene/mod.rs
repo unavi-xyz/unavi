@@ -23,13 +23,11 @@ use crate::{
     registry::{OutboundTransform, TransformHandles},
     runtime::shared::{
         slot_map::SlotMap,
-        wired::scene::{
-            doc::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes,
-        },
+        wired::scene::{document::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes},
     },
 };
 
-pub mod doc;
+pub mod document;
 pub mod material;
 pub mod mesh;
 pub mod node;
@@ -104,7 +102,10 @@ impl WiredSceneBackend {
         if let Some(key) = existing_key {
             self.docs.new_owned(key)
         } else {
-            Some(self.docs.insert(DocRes { id: hash, transforms }))
+            Some(self.docs.insert(DocRes {
+                id: hash,
+                transforms,
+            }))
         }
     }
 

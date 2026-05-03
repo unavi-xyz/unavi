@@ -65,7 +65,12 @@ impl HostMaterial for Runtime {
     }
 
     async fn base_color(&mut self, _self_: Resource<MaterialRes>) -> wasmtime::Result<Color> {
-        Ok(Color { r: 1.0, g: 1.0, b: 1.0, a: 1.0 })
+        Ok(Color {
+            r: 1.0,
+            g: 1.0,
+            b: 1.0,
+            a: 1.0,
+        })
     }
 
     async fn set_base_color(
@@ -137,7 +142,12 @@ impl HostMaterial for Runtime {
     }
 
     async fn drop(&mut self, rep: Resource<MaterialRes>) -> wasmtime::Result<()> {
-        self.backend.wired_scene.lock().await.materials.remove(rep.rep());
+        self.backend
+            .wired_scene
+            .lock()
+            .await
+            .materials
+            .remove(rep.rep());
         Ok(())
     }
 }

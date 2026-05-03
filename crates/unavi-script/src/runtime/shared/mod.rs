@@ -7,14 +7,18 @@ use blake3::Hash;
 use tokio::sync::Mutex as TokioMutex;
 use wired::scene::SceneContext;
 
-use crate::registry::TransformHandles;
+use crate::{
+    registry::TransformHandles,
+    runtime::shared::wired::{input::WiredInputBackend, scene::WiredSceneBackend},
+};
 
 mod slot_map;
 pub mod wired;
 
 #[derive(Clone)]
 pub struct RuntimeBackend {
-    pub wired_scene: Arc<TokioMutex<wired::scene::WiredSceneBackend>>,
+    pub wired_input: Arc<TokioMutex<WiredInputBackend>>,
+    pub wired_scene: Arc<TokioMutex<WiredSceneBackend>>,
 }
 
 impl RuntimeBackend {
@@ -23,7 +27,8 @@ impl RuntimeBackend {
         transform_registry: Arc<Mutex<HashMap<Hash, TransformHandles>>>,
     ) -> Self {
         Self {
-            wired_scene: Arc::new(TokioMutex::new(wired::scene::WiredSceneBackend::new(
+            wired_input: Arc::default(),
+            wired_scene: Arc::new(TokioMutex::new(WiredSceneBackend::new(
                 ctx,
                 transform_registry,
             ))),

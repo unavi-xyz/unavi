@@ -2,7 +2,7 @@ use wasmtime::component::Resource;
 
 use crate::runtime::{
     Runtime,
-    shared::wired::scene::{doc::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes},
+    shared::wired::scene::{document::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes},
 };
 
 use super::bindings::wired::{

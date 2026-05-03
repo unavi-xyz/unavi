@@ -55,6 +55,10 @@ pub fn on_hsd_record_added(
 pub fn sync_outbound_transforms(query: Query<(&OutboundTransform, &Transform, &GlobalTransform)>) {
     for (outbound, transform, global) in &query {
         *outbound.0.local.write().expect("local transform poisoned") = *transform;
-        *outbound.0.global.write().expect("global transform poisoned") = *global;
+        *outbound
+            .0
+            .global
+            .write()
+            .expect("global transform poisoned") = *global;
     }
 }

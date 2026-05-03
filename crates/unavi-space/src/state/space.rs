@@ -57,10 +57,11 @@ pub fn add_space_state(trigger: On<Add, Space>, spaces: Query<&Space>, mut comma
 
                 // Spawn observer to publish local state changes.
                 let sub = doc.subscribe_local_update(Box::new(move |update| {
-                    let _ = try_send_command(bevy::ecs::system::command::trigger(SpaceStateUpdate {
-                        space,
-                        data: update.clone(),
-                    }));
+                    let _ =
+                        try_send_command(bevy::ecs::system::command::trigger(SpaceStateUpdate {
+                            space,
+                            data: update.clone(),
+                        }));
                     true
                 }));
 

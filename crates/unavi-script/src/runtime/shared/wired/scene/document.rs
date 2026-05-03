@@ -16,9 +16,7 @@ use unavi_util::async_commands::try_send_command;
 
 use crate::{
     registry::TransformHandles,
-    runtime::shared::wired::scene::{
-        material::MaterialRes, mesh::MeshRes, node::NodeRes,
-    },
+    runtime::shared::wired::scene::{material::MaterialRes, mesh::MeshRes, node::NodeRes},
     util::gen_id,
 };
 
@@ -169,6 +167,7 @@ impl WiredSceneBackend {
             .get(rep)
             .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
             .id;
+        info!(%doc_id, "root (1)");
 
         let (tx, rx) = async_channel::bounded::<Vec<TreeID>>(1);
         try_send_command(move |world: &mut World| {
@@ -190,11 +189,14 @@ impl WiredSceneBackend {
             tx.try_send(ids).ok();
         })?;
 
+        info!(%doc_id, "root (2)");
         let tree_ids = rx.recv().await?;
+        info!(%doc_id, "root (3)");
         let reps = tree_ids
             .into_iter()
             .map(|id| self.nodes.insert(NodeRes { id, doc_id }))
             .collect();
+        info!(%doc_id, "root (4)");
         Ok(reps)
     }
 
@@ -273,7 +275,10 @@ impl WiredSceneBackend {
         }))?;
 
         let tree_id = rx.recv().await?;
-        Ok(self.nodes.insert(NodeRes { id: tree_id, doc_id }))
+        Ok(self.nodes.insert(NodeRes {
+            id: tree_id,
+            doc_id,
+        }))
     }
 
     pub fn doc_create_mesh(&mut self, rep: u32) -> anyhow::Result<u32> {
@@ -305,7 +310,9 @@ impl WiredSceneBackend {
     }
 
     pub fn doc_remove_node(&mut self, node_rep: u32) {
-        let Some(node) = self.nodes.remove(node_rep) else { return };
+        let Some(node) = self.nodes.remove(node_rep) else {
+            return;
+        };
         let _ = try_send_command(bevy::ecs::system::command::trigger(HsdRemoveNode {
             doc_id: node.doc_id,
             id: node.id,
@@ -313,7 +320,9 @@ impl WiredSceneBackend {
     }
 
     pub fn doc_remove_mesh(&mut self, mesh_rep: u32) {
-        let Some(mesh) = self.meshes.remove(mesh_rep) else { return };
+        let Some(mesh) = self.meshes.remove(mesh_rep) else {
+            return;
+        };
         let _ = try_send_command(bevy::ecs::system::command::trigger(HsdRemoveMesh {
             doc_id: mesh.doc_id,
             id: mesh.id,
@@ -321,7 +330,9 @@ impl WiredSceneBackend {
     }
 
     pub fn doc_remove_material(&mut self, mat_rep: u32) {
-        let Some(mat) = self.materials.remove(mat_rep) else { return };
+        let Some(mat) = self.materials.remove(mat_rep) else {
+            return;
+        };
         let _ = try_send_command(bevy::ecs::system::command::trigger(HsdRemoveMaterial {
             doc_id: mat.doc_id,
             id: mat.id,

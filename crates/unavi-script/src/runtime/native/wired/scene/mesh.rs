@@ -134,16 +134,17 @@ impl HostMesh for Runtime {
         Ok(false)
     }
 
-    async fn set_sync(
-        &mut self,
-        _self_: Resource<MeshRes>,
-        _value: bool,
-    ) -> wasmtime::Result<()> {
+    async fn set_sync(&mut self, _self_: Resource<MeshRes>, _value: bool) -> wasmtime::Result<()> {
         Ok(())
     }
 
     async fn drop(&mut self, rep: Resource<MeshRes>) -> wasmtime::Result<()> {
-        self.backend.wired_scene.lock().await.meshes.remove(rep.rep());
+        self.backend
+            .wired_scene
+            .lock()
+            .await
+            .meshes
+            .remove(rep.rep());
         Ok(())
     }
 }

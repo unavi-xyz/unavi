@@ -1,13 +1,15 @@
-use anyhow::bail;
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::runtime::shared::{
     RuntimeBackend,
     slot_map::SlotMap,
-    wired::input::{bridge::InputListener, listener::InputListenerRes},
+    wired::input::{
+        bridge::{GlobalInputListener, InputListener},
+        listener::InputListenerRes,
+    },
 };
 
-pub(crate) mod bridge;
+pub mod bridge;
 pub mod listener;
 
 #[derive(Default)]
@@ -15,32 +17,46 @@ pub struct WiredInputBackend {
     listeners: SlotMap<InputListenerRes>,
 }
 
-pub async fn register_input_listener(
-    backend: &mut RuntimeBackend,
-    node: u32,
-) -> anyhow::Result<u32> {
-    let lock = backend.wired_scene.lock().await;
-
-    let Some(node_res) = lock.nodes.get(node) else {
-        bail!("node not found")
-    };
+pub fn register_input_listener(backend: &RuntimeBackend, node: u32) -> anyhow::Result<u32> {
+    let (target_doc, target_node) = backend
+        .wired_scene
+        .try_lock()?
+        .nodes
+        .get(node)
+        .map(|n| (n.doc_id, n.id))
+        .ok_or_else(|| anyhow::anyhow!("node not found"))?;
 
     let (tx, rx) = async_channel::bounded(8);
 
-    let entity = AsyncCommands::default()
-        .send_spawn(InputListener {
+    AsyncCommands::default()
+        .spawn(InputListener {
+            target_doc,
+            target_node,
             tx,
-            target_doc: node_res.doc_id,
-            target_node: node_res.id,
         })
-        .await;
+        .try_send()?;
 
     let rep = backend
         .wired_input
-        .try_lock()
-        .expect("lock")
+        .try_lock()?
         .listeners
-        .insert(InputListenerRes { node, entity, rx });
+        .insert(InputListenerRes { rx });
+
+    Ok(rep)
+}
+
+pub fn register_global_input_listener(backend: &RuntimeBackend) -> anyhow::Result<u32> {
+    let (tx, rx) = async_channel::bounded(8);
+
+    AsyncCommands::default()
+        .spawn(GlobalInputListener { tx })
+        .try_send()?;
+
+    let rep = backend
+        .wired_input
+        .try_lock()?
+        .listeners
+        .insert(InputListenerRes { rx });
 
     Ok(rep)
 }

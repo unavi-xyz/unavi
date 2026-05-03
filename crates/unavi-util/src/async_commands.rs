@@ -30,7 +30,7 @@ pub struct AsyncCommands {
 }
 
 impl AsyncCommands {
-    pub fn push(&mut self, command: impl Command) -> &mut Self {
+    pub fn push(mut self, command: impl Command) -> Self {
         self.queue.push(command);
         self
     }

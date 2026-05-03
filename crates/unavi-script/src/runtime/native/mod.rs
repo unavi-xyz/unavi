@@ -29,6 +29,13 @@ pub fn add_apis_to_linker(
     if perms.contains(&ApiName::Input) {
         wired::input::bindings::wired::input::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
         wired::input::bindings::wired::input::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+
+        if perms.contains(&ApiName::InputContext) {
+            wired::input::bindings::wired::input::context::add_to_linker::<_, HasSelf<_>>(
+                linker,
+                |r| r,
+            )?;
+        }
     }
 
     if perms.contains(&ApiName::Scene) {

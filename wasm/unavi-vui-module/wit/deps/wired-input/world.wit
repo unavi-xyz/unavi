@@ -43,5 +43,5 @@ interface context {
   use types.{input-listener};
 
   // Captures all input events from the local agent.
-  listener: func() -> input-listener;
+  register-global-input-listener: func() -> input-listener;
 }

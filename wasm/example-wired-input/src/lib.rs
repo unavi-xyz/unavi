@@ -1,4 +1,4 @@
-use crate::wired::input::{context::listener, types::InputListener};
+use crate::wired::input::{context::register_global_input_listener, types::InputListener};
 
 wired_prelude::generate_script!(Script);
 
@@ -8,7 +8,7 @@ struct Script {
 
 impl GuestScript for Script {
     fn new() -> Self {
-        let input = listener();
+        let input = register_global_input_listener();
         Self { input }
     }
 

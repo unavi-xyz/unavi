@@ -1,12 +1,24 @@
 use async_channel::Receiver;
-use bevy::ecs::entity::Entity;
 
-use crate::runtime::native::wired::input::bindings::wired::input::types::InputEvent;
+use crate::runtime::{
+    native::wired::input::bindings::wired::input::types::InputEvent, shared::RuntimeBackend,
+};
 
 pub struct InputListenerRes {
-    pub node: u32,
-    pub entity: Entity,
     pub rx: Receiver<InputEvent>,
 }
 
-pub fn poll(listener: u32) {}
+pub fn poll(backend: &RuntimeBackend, listener: u32) -> anyhow::Result<Option<InputEvent>> {
+    backend
+        .wired_input
+        .try_lock()?
+        .listeners
+        .get(listener)
+        .map(|r| r.rx.try_recv().ok())
+        .ok_or_else(|| anyhow::anyhow!("listener not found"))
+}
+
+pub fn drop(backend: &RuntimeBackend, listener: u32) -> anyhow::Result<()> {
+    backend.wired_input.try_lock()?.listeners.remove(listener);
+    Ok(())
+}

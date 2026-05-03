@@ -1,9 +1,8 @@
-use bevy::ecs::world::CommandQueue;
 use blake3::Hash;
 use iroh::endpoint::{Connection, RecvStream, SendStream};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
+use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     connection::shared::StreamIdent,
@@ -22,12 +21,13 @@ pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
 
     let (ss_tx, ss_rx) = async_channel::bounded(4);
 
-    let mut queue = CommandQueue::default();
-    queue.push(bevy::ecs::system::command::trigger(AddSpaceStateSender {
-        peer: connection.remote_id(),
-        sender: ss_tx,
-    }));
-    let _ = ASYNC_COMMAND_QUEUE.0.send(queue).await;
+    let _ = AsyncCommands::default()
+        .trigger(AddSpaceStateSender {
+            peer: connection.remote_id(),
+            sender: ss_tx,
+        })
+        .send()
+        .await;
 
     // TODO Request / send full state snapshot
 

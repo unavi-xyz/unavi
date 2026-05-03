@@ -14071,6 +14071,7 @@ dependencies = [
  "avian3d",
  "bevy",
  "bevy-hsd",
+ "bevy-iroh",
  "bevy-wds",
  "bevy_panorbit_camera",
  "bevy_vrm",

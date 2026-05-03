@@ -1,8 +1,8 @@
 use std::{sync::Arc, time::Duration};
 
-use bevy::{ecs::world::CommandQueue, prelude::*};
+use bevy::prelude::*;
 use tracing::Instrument;
-use unavi_util::{async_commands::ASYNC_COMMAND_QUEUE, async_task::spawn_async_task};
+use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
 use wasmtime::AsContextMut;
 
 use crate::engine::native::{
@@ -59,9 +59,10 @@ pub fn tick_scripts(
                 }
                 drop(store);
 
-                let mut queue = CommandQueue::default();
-                queue.push(bevy::ecs::system::command::trigger(Executed(entity)));
-                let _ = ASYNC_COMMAND_QUEUE.0.send(queue).await;
+                let _ = AsyncCommands::default()
+                    .trigger(Executed(entity))
+                    .send()
+                    .await;
             }
             .instrument(span.0.clone()),
         );

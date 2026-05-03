@@ -1,0 +1,20 @@
+(
+    nodes: [
+        (
+            data: (
+                collider: None,
+                material: None,
+                mesh: None,
+                name: "example",
+                rigid_body: None,
+                rotation: None,
+                scale: None,
+                scripts: [
+                    "./Cargo.toml",
+                ],
+                translation: None,
+            ),
+            children: [],
+        ),
+    ],
+)

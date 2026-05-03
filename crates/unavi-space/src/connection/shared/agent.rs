@@ -1,11 +1,10 @@
 use std::time::Duration;
 
-use bevy::ecs::world::CommandQueue;
 use iroh::endpoint::{Connection, RecvStream, SendStream};
 use postcard::experimental::max_size::MaxSize;
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use unavi_util::async_commands::ASYNC_COMMAND_QUEUE;
+use unavi_util::async_commands::AsyncCommands;
 
 use crate::connection::{
     ecs::{PeerStream, agent::AgentSender},
@@ -33,14 +32,10 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
     let (pose_tx, pose_rx) = async_channel::bounded::<Pose<IFrame>>(1);
 
     // Send channel to ECS.
-    {
-        let mut commands = CommandQueue::default();
-        commands.push(bevy::ecs::system::command::spawn_batch([(
-            PeerStream(connection.remote_id()),
-            AgentSender(pose_tx),
-        )]));
-        ASYNC_COMMAND_QUEUE.0.send(commands).await?;
-    }
+    AsyncCommands::default()
+        .spawn((PeerStream(connection.remote_id()), AgentSender(pose_tx)))
+        .send()
+        .await?;
 
     let mut iframe_id = 0;
     let mut last_iframe = Pose::default();

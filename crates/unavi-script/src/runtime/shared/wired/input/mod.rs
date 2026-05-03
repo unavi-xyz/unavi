@@ -12,6 +12,8 @@ use crate::runtime::shared::{
 pub mod bridge;
 pub mod listener;
 
+const INPUT_CHANNEL_LENGTH: usize = 8;
+
 #[derive(Default)]
 pub struct WiredInputBackend {
     listeners: SlotMap<InputListenerRes>,
@@ -26,7 +28,7 @@ pub fn register_input_listener(backend: &RuntimeBackend, node: u32) -> anyhow::R
         .map(|n| (n.doc_id, n.id))
         .ok_or_else(|| anyhow::anyhow!("node not found"))?;
 
-    let (tx, rx) = async_channel::bounded(8);
+    let (tx, rx) = async_channel::bounded(INPUT_CHANNEL_LENGTH);
 
     AsyncCommands::default()
         .spawn(InputListener {
@@ -46,7 +48,7 @@ pub fn register_input_listener(backend: &RuntimeBackend, node: u32) -> anyhow::R
 }
 
 pub fn register_global_input_listener(backend: &RuntimeBackend) -> anyhow::Result<u32> {
-    let (tx, rx) = async_channel::bounded(8);
+    let (tx, rx) = async_channel::bounded(INPUT_CHANNEL_LENGTH);
 
     AsyncCommands::default()
         .spawn(GlobalInputListener { tx })

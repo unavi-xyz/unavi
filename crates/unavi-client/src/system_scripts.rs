@@ -14,11 +14,9 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
 
     for &path in MODULE_HSDS {
         let handle = asset_server.load(path);
-
         let ent = commands
             .spawn((InstanceHsd(handle), ApiPermissions::system()))
             .id();
-
         module_ents.push(ent);
     }
 

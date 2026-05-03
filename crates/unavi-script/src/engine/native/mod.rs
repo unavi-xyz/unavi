@@ -3,7 +3,7 @@ use wasmtime::Config;
 
 use crate::engine::Engine;
 
-mod init;
+mod construct;
 mod instantiate;
 mod log;
 mod render;
@@ -14,14 +14,13 @@ pub struct NativeEnginePlugin;
 impl Plugin for NativeEnginePlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(init_wasmtime_engine)
-            .add_observer(mark_executed)
             .add_systems(PreUpdate, increment_epochs)
             .add_systems(Update, render::render_tick_scripts)
             .add_systems(
                 FixedUpdate,
                 (
-                    init::init_scripts,
-                    init::poll_initializing_scripts,
+                    construct::init_scripts,
+                    construct::poll_constructing_scripts,
                     instantiate::instantiate_scripts,
                     instantiate::poll_instantiating,
                     tick::tick_scripts,
@@ -41,7 +40,6 @@ fn init_wasmtime_engine(trigger: On<Add, Engine>, mut commands: Commands) {
             return;
         }
     };
-
     commands
         .entity(trigger.entity)
         .insert(WasmtimeEngine(engine));
@@ -51,14 +49,4 @@ fn increment_epochs(engines: Query<&WasmtimeEngine>) {
     for engine in engines {
         engine.0.increment_epoch();
     }
-}
-
-#[derive(Component)]
-pub struct Executing;
-
-#[derive(EntityEvent)]
-pub struct Executed(Entity);
-
-pub fn mark_executed(trigger: On<Executed>, mut commands: Commands) {
-    commands.entity(trigger.0).remove::<Executing>();
 }

@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, atomic::AtomicBool},
 };
 
 use bevy::prelude::*;
@@ -32,5 +32,11 @@ impl Plugin for ScriptPlugin {
 }
 
 #[derive(Component)]
-#[require(ApiPermissions)]
+#[require(ApiPermissions, Ticking, RenderTicking)]
 pub struct Script(pub Handle<Wasm>);
+
+#[derive(Component, Default)]
+pub struct Ticking(pub Arc<AtomicBool>);
+
+#[derive(Component, Default)]
+pub struct RenderTicking(pub Arc<AtomicBool>);

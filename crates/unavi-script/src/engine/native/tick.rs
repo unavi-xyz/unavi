@@ -1,45 +1,55 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::{Arc, atomic::Ordering},
+    time::Duration,
+};
 
 use bevy::prelude::*;
 use tracing::Instrument;
-use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
+use unavi_util::async_task::spawn_async_task;
 use wasmtime::AsContextMut;
 
-use crate::engine::native::{
-    Executed, Executing,
-    init::ScriptResource,
-    instantiate::{ScriptGuest, ScriptSpan, ScriptStore},
+use crate::{
+    Ticking,
+    engine::native::{
+        construct::ScriptResource,
+        instantiate::{ScriptGuest, ScriptSpan, ScriptStore},
+    },
 };
 
 const TICKRATE: Duration = Duration::from_millis(50);
 
 #[derive(Component, Default)]
-pub struct LastTick(f32);
+pub struct LastTick(Duration);
 
 pub fn tick_scripts(
     time: Res<Time>,
-    to_tick: Query<
-        (
-            Entity,
-            &ScriptGuest,
-            &ScriptStore,
-            &ScriptResource,
-            &ScriptSpan,
-            &mut LastTick,
-        ),
-        Without<Executing>,
-    >,
-    mut commands: Commands,
+    to_tick: Query<(
+        &Ticking,
+        &ScriptGuest,
+        &ScriptStore,
+        &ScriptResource,
+        &ScriptSpan,
+        &mut LastTick,
+    )>,
 ) {
-    let now = time.elapsed_secs();
+    let now = time.elapsed();
 
-    for (entity, guest, store, res, span, mut last) in to_tick {
-        if now - last.0 < TICKRATE.as_secs_f32() {
+    for (ticking, guest, store, res, span, mut last) in to_tick {
+        let delta = now.checked_sub(last.0).unwrap_or_default();
+        if delta < TICKRATE {
+            continue;
+        }
+        if ticking.0.swap(true, Ordering::Relaxed) {
             continue;
         }
 
-        last.0 = now;
+        let margin = delta
+            .checked_sub(TICKRATE)
+            .expect("always greater")
+            .min(TICKRATE);
+        last.0 = now.checked_sub(margin).unwrap_or_default();
 
+        let ticking = Arc::clone(&ticking.0);
         let guest = Arc::clone(&guest.0);
         let res = res.0;
         let store = Arc::clone(&store.0);
@@ -59,14 +69,9 @@ pub fn tick_scripts(
                 }
                 drop(store);
 
-                let _ = AsyncCommands::default()
-                    .trigger(Executed(entity))
-                    .send()
-                    .await;
+                ticking.store(false, Ordering::Relaxed);
             }
             .instrument(span.0.clone()),
         );
-
-        commands.entity(entity).insert(Executing);
     }
 }

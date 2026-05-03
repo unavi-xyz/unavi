@@ -1,13 +1,13 @@
 use std::{sync::Arc, time::Duration};
 
-use bevy::{ecs::world::CommandQueue, prelude::*};
+use bevy::prelude::*;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
     router::{RouterBuilderFn, RouterBuilderFnTarget},
 };
 use bevy_wds::{LocalActor, LocalBlobs};
 use iroh::Endpoint;
-use unavi_util::{async_commands::ASYNC_COMMAND_QUEUE, async_task::spawn_async_task};
+use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
 use wds::{DataStore, Identity};
 use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
 
@@ -54,16 +54,11 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
 
     // TODO load sync targets from env
 
-    let mut commands = CommandQueue::default();
-    commands.push(bevy::ecs::system::command::spawn_batch([(
-        RouterBuilderFnTarget(entity),
-        RouterBuilderFn(Some(f)),
-    )]));
-    commands.push(bevy::ecs::system::command::spawn_batch([(
-        LocalActor(actor),
-        LocalBlobs(store.blobs().blobs().clone()),
-    )]));
-    ASYNC_COMMAND_QUEUE.0.send(commands).await?;
+    AsyncCommands::default()
+        .spawn((RouterBuilderFnTarget(entity), RouterBuilderFn(Some(f))))
+        .spawn((LocalActor(actor), LocalBlobs(store.blobs().blobs().clone())))
+        .send()
+        .await?;
 
     Ok(())
 }

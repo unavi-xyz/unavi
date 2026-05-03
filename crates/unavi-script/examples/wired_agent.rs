@@ -1,31 +1,30 @@
-use avian3d::prelude::Collider;
+use avian3d::prelude::*;
 use bevy::{
     camera::visibility::RenderLayers,
     log::{DEFAULT_FILTER, LogPlugin},
     prelude::*,
 };
+use bevy_hsd::instance::InstanceHsd;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
 use bevy_wds::{LocalActor, LocalBlobs};
 use unavi_agent::LocalAgent;
-use unavi_script::{load::local::LoadLocalScript, permissions::ApiPermissions};
+use unavi_script::permissions::{ApiName, ApiPermissions};
 
 use crate::util::create_test_wds;
 
 mod util;
 
-const SCRIPT_PATH: &str = "wasm/example/wired_agent.wasm";
+const SCRIPT_PATH: &str = "hsd/example_wired_agent.hsd";
 
 fn main() {
-    util::copy_assets_to_project_dir(&["model/default.vrm", SCRIPT_PATH]);
-
     let (actor, blobs) = create_test_wds();
 
     let mut app = App::new();
     app.add_plugins((
         DefaultPlugins
             .set(AssetPlugin {
-                file_path: util::assets_dir().to_string_lossy().to_string(),
+                file_path: "../unavi-client/assets/".to_string(),
                 ..Default::default()
             })
             .set(LogPlugin {
@@ -33,11 +32,11 @@ fn main() {
                 ..Default::default()
             }),
         PanOrbitCameraPlugin,
-        avian3d::PhysicsPlugins::default(),
         bevy_hsd::HsdPlugin,
+        bevy_iroh::IrohPlugin,
         bevy_wds::WdsPlugin,
+        unavi_util::UtilPlugin,
         unavi_avatar::AvatarPlugin,
-        unavi_agent::AgentPlugin,
         unavi_script::ScriptPlugin,
     ))
     .add_observer(on_agent_load)
@@ -56,6 +55,11 @@ fn init_scene(mut commands: Commands) {
     ));
 
     commands.spawn((
+        PanOrbitCamera::default(),
+        Transform::from_xyz(3.0, 8.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
+
+    commands.spawn((
         Transform::from_xyz(0.0, -2.0, 0.0),
         Collider::cuboid(4.0, 0.5, 4.0),
     ));
@@ -68,6 +72,7 @@ fn on_agent_load(
     mut cameras: Query<&mut Camera>,
     mut commands: Commands,
     mut added: Local<bool>,
+    asset_server: Res<AssetServer>,
 ) {
     if *added {
         return;
@@ -84,10 +89,9 @@ fn on_agent_load(
             .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly]),
     ));
 
-    commands
-        .spawn(ApiPermissions::system())
-        .trigger(|entity| LoadLocalScript {
-            entity,
-            path: SCRIPT_PATH.to_string(),
-        });
+    let handle = asset_server.load(SCRIPT_PATH);
+    commands.spawn((
+        InstanceHsd(handle),
+        ApiPermissions::default().with(ApiName::LocalAgent),
+    ));
 }

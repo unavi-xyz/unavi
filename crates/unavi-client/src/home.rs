@@ -1,11 +1,11 @@
-use bevy::{ecs::world::CommandQueue, prelude::*};
+use bevy::prelude::*;
 use bevy_hsd::asset::HsdAsset;
 use bevy_wds::{LocalActor, SyncTargets};
 use hsd::Hsd;
 use loro::LoroDoc;
 use loro_surgeon::Reconcile;
 use unavi_space::Space;
-use unavi_util::{async_commands::ASYNC_COMMAND_QUEUE, async_task::spawn_async_task};
+use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
 use wds::actor::Actor;
 use wired_schemas::{SCHEMA_HOME, SCHEMA_HSD, SCHEMA_SPACE};
 
@@ -94,9 +94,7 @@ async fn create_and_join_home(
 
     info!(id = %res.id, "Created home space");
 
-    let mut commands = CommandQueue::default();
-    commands.push(bevy::ecs::system::command::spawn_batch([Space(res.id)]));
-    ASYNC_COMMAND_QUEUE.0.send(commands).await?;
+    AsyncCommands::default().spawn(Space(res.id)).send().await?;
 
     Ok(())
 }

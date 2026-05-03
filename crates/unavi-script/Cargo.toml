@@ -14,6 +14,7 @@ anyhow.workspace        = true
 async-channel.workspace = true
 bevy                    = { default-features = true, workspace = true }
 bevy-hsd.path           = "../bevy-hsd"
+bevy-iroh.path          = "../bevy-iroh"
 bevy-wds.path           = "../bevy-wds"
 bevy_vrm.workspace      = true
 blake3.workspace        = true

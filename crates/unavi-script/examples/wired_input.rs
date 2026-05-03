@@ -2,29 +2,25 @@ use bevy::{
     log::{DEFAULT_FILTER, LogPlugin},
     prelude::*,
 };
+use bevy_hsd::instance::InstanceHsd;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_wds::{LocalActor, LocalBlobs};
-use unavi_script::{
-    load::local::LoadLocalScript,
-    permissions::{ApiName, ApiPermissions},
-};
+use unavi_script::permissions::{ApiName, ApiPermissions};
 
 use crate::util::create_test_wds;
 
 mod util;
 
-const SCRIPT_PATH: &str = "wasm/example/wired_input.wasm";
+const SCRIPT_PATH: &str = "hsd/example_wired_input.hsd";
 
 fn main() {
-    util::copy_assets_to_project_dir(&[SCRIPT_PATH]);
-
     let (actor, blobs) = create_test_wds();
 
     let mut app = App::new();
     app.add_plugins((
         DefaultPlugins
             .set(AssetPlugin {
-                file_path: util::assets_dir().to_string_lossy().to_string(),
+                file_path: "../unavi-client/assets/".to_string(),
                 ..Default::default()
             })
             .set(LogPlugin {
@@ -33,7 +29,9 @@ fn main() {
             }),
         PanOrbitCameraPlugin,
         bevy_hsd::HsdPlugin,
+        bevy_iroh::IrohPlugin,
         bevy_wds::WdsPlugin,
+        unavi_util::UtilPlugin,
         unavi_input::InputPlugin,
         unavi_script::ScriptPlugin,
     ))
@@ -45,7 +43,7 @@ fn main() {
     app.run();
 }
 
-fn init_scene(mut commands: Commands) {
+fn init_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         DirectionalLight::default(),
         Transform::from_xyz(5.0, 8.0, 1.0).looking_at(Vec3::ZERO, Vec3::Y),
@@ -56,10 +54,9 @@ fn init_scene(mut commands: Commands) {
         Transform::from_xyz(3.0, 8.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
-    let perms = ApiPermissions::default().with(ApiName::InputContext);
-
-    commands.spawn(perms).trigger(|entity| LoadLocalScript {
-        entity,
-        path: SCRIPT_PATH.to_string(),
-    });
+    let handle = asset_server.load(SCRIPT_PATH);
+    commands.spawn((
+        InstanceHsd(handle),
+        ApiPermissions::default().with(ApiName::InputContext),
+    ));
 }

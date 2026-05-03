@@ -1,21 +1,14 @@
 use std::{sync::Arc, time::Duration};
 
 use async_channel::Receiver;
-use bevy::{
-    ecs::{
-        bundle::InsertMode,
-        error::{HandleError, warn},
-        world::CommandQueue,
-    },
-    prelude::*,
-};
+use bevy::prelude::*;
 use bevy_wds::{
     LocalActor, LocalBlobs,
     record::write::{SchemaDef, WriteRecord},
 };
 use blake3::Hash;
 use loro_surgeon::Reconcile;
-use unavi_util::{async_commands::ASYNC_COMMAND_QUEUE, async_task::spawn_async_task};
+use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
 use wds::{Blobs, actor::Actor};
 use wired_schemas::SCHEMA_HSD;
 
@@ -105,15 +98,14 @@ async fn spawn_hsd_record(
     let record_id = rx.recv().await?;
     let doc = actor.read(record_id).send().await?;
 
-    let mut queue = CommandQueue::default();
-    queue.push(
-        bevy::ecs::system::command::insert_batch(
-            [(entity, (HsdDoc(Arc::new(doc)), HsdRecordId(record_id)))],
-            InsertMode::Replace,
-        )
-        .handle_error_with(warn),
-    );
-    ASYNC_COMMAND_QUEUE.0.send(queue).await?;
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            world
+                .entity_mut(entity)
+                .insert((HsdDoc(Arc::new(doc)), HsdRecordId(record_id)));
+        })
+        .send()
+        .await?;
 
     Ok(())
 }

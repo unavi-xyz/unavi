@@ -3,7 +3,12 @@ use bevy::prelude::*;
 use bevy_hsd::{HsdChild, HsdRecordId, NodeId};
 use blake3::Hash;
 use loro::TreeID;
-use unavi_input::{SqueezeDown, SqueezeUp, raycast::PrimaryRaycastInput};
+use unavi_input::{
+    SqueezeDown, SqueezeUp,
+    actions::{MenuDesktopAction, MenuLeftHandAction, MenuRightHandAction},
+    raycast::PrimaryRaycastInput,
+    schminput::BoolActionValue,
+};
 
 use crate::runtime::native::wired::input::bindings::wired::input::types::{
     InputAction, InputDevice, InputEvent,
@@ -24,11 +29,12 @@ pub struct InputListener {
 pub fn bridge_squeeze_down(
     trigger: On<SqueezeDown>,
     raycasters: Query<(), With<PrimaryRaycastInput>>,
-) -> SendInput {
+) -> Option<SendInput> {
     let device = match raycasters.get(trigger.pointer) {
         Ok(()) => InputDevice::Keyboard,
         Err(_) => {
-            todo!("get VR handedness")
+            // TODO get VR handedness
+            return None;
         }
     };
 
@@ -37,20 +43,21 @@ pub fn bridge_squeeze_down(
         device,
     };
 
-    SendInput {
+    Some(SendInput {
         event,
-        target_node: trigger.entity,
-    }
+        target_node: Some(trigger.entity),
+    })
 }
 
 pub fn bridge_squeeze_up(
     trigger: On<SqueezeUp>,
     raycasters: Query<(), With<PrimaryRaycastInput>>,
-) -> SendInput {
+) -> Option<SendInput> {
     let device = match raycasters.get(trigger.pointer) {
         Ok(()) => InputDevice::Keyboard,
         Err(_) => {
-            todo!("get VR handedness")
+            // TODO get VR handedness
+            return None;
         }
     };
 
@@ -59,31 +66,112 @@ pub fn bridge_squeeze_up(
         device,
     };
 
+    Some(SendInput {
+        event,
+        target_node: Some(trigger.entity),
+    })
+}
+
+pub struct MenuInput {
+    device: InputDevice,
+    value: bool,
+    prev: bool,
+}
+
+pub fn bridge_menu_desktop(
+    action: Query<&BoolActionValue, With<MenuDesktopAction>>,
+    mut prev: Local<bool>,
+) -> Option<SendInput> {
+    let value = action.single().is_ok_and(|a| a.any);
+    if value == *prev {
+        return None;
+    }
+    let input = MenuInput {
+        device: InputDevice::Keyboard,
+        value,
+        prev: *prev,
+    };
+    *prev = value;
+    Some(bridge_menu(input))
+}
+
+pub fn bridge_menu_left(
+    action: Query<&BoolActionValue, With<MenuLeftHandAction>>,
+    mut prev: Local<bool>,
+) -> Option<SendInput> {
+    let value = action.single().is_ok_and(|a| a.any);
+    if value == *prev {
+        return None;
+    }
+    let input = MenuInput {
+        device: InputDevice::LeftHand,
+        value,
+        prev: *prev,
+    };
+    *prev = value;
+    Some(bridge_menu(input))
+}
+
+pub fn bridge_menu_right(
+    action: Query<&BoolActionValue, With<MenuRightHandAction>>,
+    mut prev: Local<bool>,
+) -> Option<SendInput> {
+    let value = action.single().is_ok_and(|a| a.any);
+    if value == *prev {
+        return None;
+    }
+    let input = MenuInput {
+        device: InputDevice::RightHand,
+        value,
+        prev: *prev,
+    };
+    *prev = value;
+    Some(bridge_menu(input))
+}
+
+const fn bridge_menu(input: MenuInput) -> SendInput {
+    let action = if input.value && !input.prev {
+        InputAction::MenuDown
+    } else {
+        InputAction::MenuUp
+    };
+
+    let event = InputEvent {
+        action,
+        device: input.device,
+    };
+
     SendInput {
         event,
-        target_node: trigger.entity,
+        target_node: None,
     }
 }
 
-// TODO menu input
-
 pub struct SendInput {
     pub event: InputEvent,
-    pub target_node: Entity,
+    pub target_node: Option<Entity>,
 }
 
 pub fn send_to_listeners(
-    trigger: In<SendInput>,
+    trigger: In<Option<SendInput>>,
     global: Query<&GlobalInputListener>,
     listeners: Query<&InputListener>,
     nodes: Query<(&NodeId, &HsdChild)>,
     docs: Query<&HsdRecordId>,
 ) {
+    let Some(trigger) = &*trigger else {
+        return;
+    };
+
     for g in global {
         let _ = g.tx.try_send(trigger.event);
     }
 
-    let Ok((id, node_doc)) = nodes.get(trigger.target_node) else {
+    let Some(target_node) = trigger.target_node else {
+        return;
+    };
+
+    let Ok((id, node_doc)) = nodes.get(target_node) else {
         return;
     };
 

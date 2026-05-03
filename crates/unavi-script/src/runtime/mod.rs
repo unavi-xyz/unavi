@@ -21,6 +21,17 @@ impl Plugin for RuntimePlugin {
         .add_observer(
             shared::wired::input::bridge::bridge_squeeze_up
                 .pipe(shared::wired::input::bridge::send_to_listeners),
+        )
+        .add_systems(
+            Update,
+            (
+                shared::wired::input::bridge::bridge_menu_desktop
+                    .pipe(shared::wired::input::bridge::send_to_listeners),
+                shared::wired::input::bridge::bridge_menu_left
+                    .pipe(shared::wired::input::bridge::send_to_listeners),
+                shared::wired::input::bridge::bridge_menu_right
+                    .pipe(shared::wired::input::bridge::send_to_listeners),
+            ),
         );
     }
 }

@@ -75,38 +75,31 @@ impl Plugin for UnaviPlugin {
                     ..default()
                 }),
                 ..default()
-            });
+            })
+            .disable::<WebAssetPlugin>();
 
-        #[cfg(not(target_family = "wasm"))]
-        {
-            let default_plugins = default_plugins
-                .set(AssetPlugin {
-                    file_path: assets::assets_dir().to_string_lossy().to_string(),
-                    ..default()
-                })
-                .disable::<WebAssetPlugin>();
-
-            if self.xr {
-                app.add_plugins((
-                    bevy_mod_openxr::add_xr_plugins(default_plugins),
-                    xr::XrPlugin,
-                ));
-            } else {
-                app.add_plugins(default_plugins);
-            }
-        }
-
-        #[cfg(target_family = "wasm")]
-        {
-            let default_plugins = default_plugins
-                .set(AssetPlugin {
+        cfg_select! {
+            target_family = "wasm" => {
+                let default_plugins = default_plugins.set(AssetPlugin {
                     meta_check: bevy::asset::AssetMetaCheck::Never,
                     ..default()
-                })
-                .set(WebAssetPlugin {
-                    silence_startup_warning: true,
                 });
-            app.add_plugins(default_plugins);
+                app.add_plugins(default_plugins);
+            }
+            _ => {
+                let default_plugins = default_plugins.set(AssetPlugin {
+                    file_path: assets::assets_dir().to_string_lossy().to_string(),
+                    ..default()
+                });
+                if self.xr {
+                    app.add_plugins((
+                        bevy_mod_openxr::add_xr_plugins(default_plugins),
+                        xr::XrPlugin,
+                    ));
+                } else {
+                    app.add_plugins(default_plugins);
+                }
+            }
         }
 
         app.add_plugins((

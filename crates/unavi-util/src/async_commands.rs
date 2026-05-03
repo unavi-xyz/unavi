@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use async_channel::{Receiver, Sender, TrySendError};
+use async_channel::{Receiver, SendError, Sender, TrySendError};
 use bevy::{
     ecs::{bundle::NoBundleEffect, world::CommandQueue},
     prelude::*,
@@ -30,6 +30,7 @@ pub struct AsyncCommands {
 }
 
 impl AsyncCommands {
+    #[must_use]
     pub fn push(mut self, command: impl Command) -> Self {
         self.queue.push(command);
         self
@@ -67,6 +68,10 @@ impl AsyncCommands {
             tx.try_send(ent).expect("send");
         });
         rx.recv().await.expect("recv")
+    }
+
+    pub async fn send(self) -> Result<(), SendError<CommandQueue>> {
+        ASYNC_COMMAND_QUEUE.0.send(self.queue).await
     }
 
     pub fn try_send(self) -> Result<(), TrySendError<CommandQueue>> {

@@ -12,7 +12,7 @@ use bevy_hsd::{
 use blake3::Hash;
 use loro::{LoroTree, TreeID};
 use smol_str::SmolStr;
-use unavi_util::async_commands::try_send_command;
+use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     registry::TransformHandles,
@@ -124,10 +124,12 @@ impl WiredSceneBackend {
             .get(rep)
             .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
             .id;
-        try_send_command(bevy::ecs::system::command::trigger(HsdDocTransformSet {
-            doc_id,
-            transform: t,
-        }))?;
+        AsyncCommands::default()
+            .trigger(HsdDocTransformSet {
+                doc_id,
+                transform: t,
+            })
+            .try_send()?;
         Ok(())
     }
 
@@ -139,19 +141,21 @@ impl WiredSceneBackend {
             .id;
 
         let (tx, rx) = async_channel::bounded::<Vec<TreeID>>(1);
-        try_send_command(move |world: &mut World| {
-            let registry = world.resource::<bevy_hsd::DocRegistryMap>();
-            let Some(doc_ent) = registry.get_entity(&doc_id) else {
-                tx.try_send(vec![]).ok();
-                return;
-            };
-            let ids: Vec<TreeID> = world
-                .entity(doc_ent)
-                .get::<HsdEntityMaps>()
-                .map(|m| m.nodes.keys().copied().collect())
-                .unwrap_or_default();
-            tx.try_send(ids).ok();
-        })?;
+        AsyncCommands::default()
+            .push(move |world: &mut World| {
+                let registry = world.resource::<bevy_hsd::DocRegistryMap>();
+                let Some(doc_ent) = registry.get_entity(&doc_id) else {
+                    tx.try_send(vec![]).ok();
+                    return;
+                };
+                let ids: Vec<TreeID> = world
+                    .entity(doc_ent)
+                    .get::<HsdEntityMaps>()
+                    .map(|m| m.nodes.keys().copied().collect())
+                    .unwrap_or_default();
+                tx.try_send(ids).ok();
+            })
+            .try_send()?;
 
         let tree_ids = rx.recv().await?;
         let reps = tree_ids
@@ -170,24 +174,26 @@ impl WiredSceneBackend {
         info!(%doc_id, "root (1)");
 
         let (tx, rx) = async_channel::bounded::<Vec<TreeID>>(1);
-        try_send_command(move |world: &mut World| {
-            let registry = world.resource::<bevy_hsd::DocRegistryMap>();
-            let Some(doc_ent) = registry.get_entity(&doc_id) else {
-                tx.try_send(vec![]).ok();
-                return;
-            };
-            let ids: Vec<TreeID> = world
-                .entity(doc_ent)
-                .get::<HsdDoc>()
-                .map(|d| {
-                    d.0.get_map("hsd")
-                        .get_or_create_container("nodes", LoroTree::new())
-                        .map(|tree| tree.roots())
-                        .unwrap_or_default()
-                })
-                .unwrap_or_default();
-            tx.try_send(ids).ok();
-        })?;
+        AsyncCommands::default()
+            .push(move |world: &mut World| {
+                let registry = world.resource::<bevy_hsd::DocRegistryMap>();
+                let Some(doc_ent) = registry.get_entity(&doc_id) else {
+                    tx.try_send(vec![]).ok();
+                    return;
+                };
+                let ids: Vec<TreeID> = world
+                    .entity(doc_ent)
+                    .get::<HsdDoc>()
+                    .map(|d| {
+                        d.0.get_map("hsd")
+                            .get_or_create_container("nodes", LoroTree::new())
+                            .map(|tree| tree.roots())
+                            .unwrap_or_default()
+                    })
+                    .unwrap_or_default();
+                tx.try_send(ids).ok();
+            })
+            .try_send()?;
 
         info!(%doc_id, "root (2)");
         let tree_ids = rx.recv().await?;
@@ -208,19 +214,21 @@ impl WiredSceneBackend {
             .id;
 
         let (tx, rx) = async_channel::bounded::<Vec<SmolStr>>(1);
-        try_send_command(move |world: &mut World| {
-            let registry = world.resource::<bevy_hsd::DocRegistryMap>();
-            let Some(doc_ent) = registry.get_entity(&doc_id) else {
-                tx.try_send(vec![]).ok();
-                return;
-            };
-            let ids: Vec<SmolStr> = world
-                .entity(doc_ent)
-                .get::<HsdEntityMaps>()
-                .map(|m| m.meshes.keys().cloned().collect())
-                .unwrap_or_default();
-            tx.try_send(ids).ok();
-        })?;
+        AsyncCommands::default()
+            .push(move |world: &mut World| {
+                let registry = world.resource::<bevy_hsd::DocRegistryMap>();
+                let Some(doc_ent) = registry.get_entity(&doc_id) else {
+                    tx.try_send(vec![]).ok();
+                    return;
+                };
+                let ids: Vec<SmolStr> = world
+                    .entity(doc_ent)
+                    .get::<HsdEntityMaps>()
+                    .map(|m| m.meshes.keys().cloned().collect())
+                    .unwrap_or_default();
+                tx.try_send(ids).ok();
+            })
+            .try_send()?;
 
         let ids = rx.recv().await?;
         let reps = ids
@@ -238,19 +246,21 @@ impl WiredSceneBackend {
             .id;
 
         let (tx, rx) = async_channel::bounded::<Vec<SmolStr>>(1);
-        try_send_command(move |world: &mut World| {
-            let registry = world.resource::<bevy_hsd::DocRegistryMap>();
-            let Some(doc_ent) = registry.get_entity(&doc_id) else {
-                tx.try_send(vec![]).ok();
-                return;
-            };
-            let ids: Vec<SmolStr> = world
-                .entity(doc_ent)
-                .get::<HsdEntityMaps>()
-                .map(|m| m.materials.keys().cloned().collect())
-                .unwrap_or_default();
-            tx.try_send(ids).ok();
-        })?;
+        AsyncCommands::default()
+            .push(move |world: &mut World| {
+                let registry = world.resource::<bevy_hsd::DocRegistryMap>();
+                let Some(doc_ent) = registry.get_entity(&doc_id) else {
+                    tx.try_send(vec![]).ok();
+                    return;
+                };
+                let ids: Vec<SmolStr> = world
+                    .entity(doc_ent)
+                    .get::<HsdEntityMaps>()
+                    .map(|m| m.materials.keys().cloned().collect())
+                    .unwrap_or_default();
+                tx.try_send(ids).ok();
+            })
+            .try_send()?;
 
         let ids = rx.recv().await?;
         let reps = ids
@@ -268,11 +278,13 @@ impl WiredSceneBackend {
             .id;
 
         let (tx, rx) = async_channel::bounded::<TreeID>(1);
-        try_send_command(bevy::ecs::system::command::trigger(HsdCreateNode {
-            doc_id,
-            parent_id: None,
-            tx,
-        }))?;
+        AsyncCommands::default()
+            .trigger(HsdCreateNode {
+                doc_id,
+                parent_id: None,
+                tx,
+            })
+            .try_send()?;
 
         let tree_id = rx.recv().await?;
         Ok(self.nodes.insert(NodeRes {
@@ -288,10 +300,12 @@ impl WiredSceneBackend {
             .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
             .id;
         let id = gen_id();
-        try_send_command(bevy::ecs::system::command::trigger(HsdCreateMesh {
-            doc_id,
-            id: id.clone(),
-        }))?;
+        AsyncCommands::default()
+            .trigger(HsdCreateMesh {
+                doc_id,
+                id: id.clone(),
+            })
+            .try_into()?;
         Ok(self.meshes.insert(MeshRes { id, doc_id }))
     }
 
@@ -302,10 +316,12 @@ impl WiredSceneBackend {
             .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
             .id;
         let id = gen_id();
-        try_send_command(bevy::ecs::system::command::trigger(HsdCreateMaterial {
-            doc_id,
-            id: id.clone(),
-        }))?;
+        AsyncCommands::default()
+            .trigger(HsdCreateMaterial {
+                doc_id,
+                id: id.clone(),
+            })
+            .try_send()?;
         Ok(self.materials.insert(MaterialRes { id, doc_id }))
     }
 
@@ -313,29 +329,35 @@ impl WiredSceneBackend {
         let Some(node) = self.nodes.remove(node_rep) else {
             return;
         };
-        let _ = try_send_command(bevy::ecs::system::command::trigger(HsdRemoveNode {
-            doc_id: node.doc_id,
-            id: node.id,
-        }));
+        let _ = AsyncCommands::default()
+            .trigger(HsdRemoveNode {
+                doc_id: node.doc_id,
+                id: node.id,
+            })
+            .try_send();
     }
 
     pub fn doc_remove_mesh(&mut self, mesh_rep: u32) {
         let Some(mesh) = self.meshes.remove(mesh_rep) else {
             return;
         };
-        let _ = try_send_command(bevy::ecs::system::command::trigger(HsdRemoveMesh {
-            doc_id: mesh.doc_id,
-            id: mesh.id,
-        }));
+        let _ = AsyncCommands::default()
+            .trigger(HsdRemoveMesh {
+                doc_id: mesh.doc_id,
+                id: mesh.id,
+            })
+            .try_send();
     }
 
     pub fn doc_remove_material(&mut self, mat_rep: u32) {
         let Some(mat) = self.materials.remove(mat_rep) else {
             return;
         };
-        let _ = try_send_command(bevy::ecs::system::command::trigger(HsdRemoveMaterial {
-            doc_id: mat.doc_id,
-            id: mat.id,
-        }));
+        let _ = AsyncCommands::default()
+            .trigger(HsdRemoveMaterial {
+                doc_id: mat.doc_id,
+                id: mat.id,
+            })
+            .try_send();
     }
 }

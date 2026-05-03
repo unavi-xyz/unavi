@@ -23,7 +23,11 @@ impl Plugin for ScriptPlugin {
         app.insert_resource(transform_reg)
             .add_observer(registry::on_hsd_record_added)
             .add_systems(PostUpdate, registry::sync_outbound_transforms)
-            .add_plugins((engine::EnginePlugin, load::LoadPlugin));
+            .add_plugins((
+                engine::EnginePlugin,
+                load::LoadPlugin,
+                runtime::RuntimePlugin,
+            ));
     }
 }
 

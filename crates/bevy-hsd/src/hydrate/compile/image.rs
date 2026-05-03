@@ -156,7 +156,7 @@ pub(crate) fn handle_hsd_image_spawned(
         existing
     } else {
         let e = commands
-            .spawn((HsdChild { doc: doc_ent }, ImageId(ev.id.clone())))
+            .spawn((HsdChild(doc_ent), ImageId(ev.id.clone())))
             .id();
         maps.images.insert(ev.id.clone(), e);
         e

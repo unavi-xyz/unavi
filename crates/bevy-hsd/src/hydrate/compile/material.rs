@@ -175,7 +175,7 @@ pub(crate) fn handle_hsd_material_spawned(
         .unwrap_or_default();
 
     let ent = commands
-        .spawn((HsdChild { doc: doc_ent }, MaterialId(ev.id.clone())))
+        .spawn((HsdChild(doc_ent), MaterialId(ev.id.clone())))
         .id();
     commands.entity(ent).insert(params);
     maps.materials.insert(ev.id.clone(), ent);

@@ -133,7 +133,7 @@ pub(crate) fn handle_hsd_node_spawned(
     let ent = commands
         .spawn((
             ChildOf(doc_ent),
-            HsdChild { doc: doc_ent },
+            HsdChild(doc_ent),
             NodeId(ev.id),
             Transform::default(),
             Visibility::default(),
@@ -393,10 +393,10 @@ pub(crate) fn on_mesh_ref_set(
     mut commands: Commands,
 ) {
     let node_ent = trigger.entity;
-    let Ok((mesh_ref, hsd_child)) = nodes.get(node_ent) else {
+    let Ok((mesh_ref, mesh_doc)) = nodes.get(node_ent) else {
         return;
     };
-    let Ok(maps) = entity_maps.get(hsd_child.doc) else {
+    let Ok(maps) = entity_maps.get(mesh_doc.0) else {
         return;
     };
     let Some(&mesh_ent) = maps.meshes.get(&mesh_ref.0) else {
@@ -421,7 +421,7 @@ pub(crate) fn on_material_ref_set(
     let Ok((mat_ref, hsd_child)) = nodes.get(node_ent) else {
         return;
     };
-    let Ok(maps) = entity_maps.get(hsd_child.doc) else {
+    let Ok(maps) = entity_maps.get(hsd_child.0) else {
         return;
     };
     let Some(&mat_ent) = maps.materials.get(&mat_ref.0) else {
@@ -453,15 +453,15 @@ pub(crate) fn on_mesh_compiled(
     mut default_material: Local<Option<Handle<StandardMaterial>>>,
 ) {
     let mesh_ent = trigger.entity;
-    let Ok((mesh_child, compiled_mesh, mesh_id)) = mesh_query.get(mesh_ent) else {
+    let Ok((mesh_doc, compiled_mesh, mesh_id)) = mesh_query.get(mesh_ent) else {
         return;
     };
-    let Ok(maps) = entity_maps.get(mesh_child.doc) else {
+    let Ok(maps) = entity_maps.get(mesh_doc.0) else {
         return;
     };
 
-    for (node_ent, mesh_ref, node_child) in &node_refs {
-        if node_child.doc != mesh_child.doc || mesh_ref.0 != mesh_id.0 {
+    for (node_ent, mesh_ref, node_doc) in &node_refs {
+        if node_doc.0 != mesh_doc.0 || mesh_ref.0 != mesh_id.0 {
             continue;
         }
         if let Ok(mut entity_cmd) = commands.get_entity(node_ent) {
@@ -486,12 +486,12 @@ pub(crate) fn on_material_compiled(
     mut commands: Commands,
 ) {
     let mat_ent = trigger.entity;
-    let Ok((mat_child, compiled_mat, mat_id)) = mat_query.get(mat_ent) else {
+    let Ok((mat_doc, compiled_mat, mat_id)) = mat_query.get(mat_ent) else {
         return;
     };
 
-    for (node_ent, mat_ref, node_child) in &node_refs {
-        if node_child.doc != mat_child.doc || mat_ref.0 != mat_id.0 {
+    for (node_ent, mat_ref, node_doc) in &node_refs {
+        if node_doc.0 != mat_doc.0 || mat_ref.0 != mat_id.0 {
             continue;
         }
         if let Ok(mut entity_cmd) = commands.get_entity(node_ent) {

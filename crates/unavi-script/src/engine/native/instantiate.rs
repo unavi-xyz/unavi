@@ -67,10 +67,10 @@ pub fn instantiate_scripts(
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };
-        let Ok((node_id, hsd)) = nodes.get(node_ent.0) else {
+        let Ok((node_id, node_doc)) = nodes.get(node_ent.0) else {
             continue;
         };
-        let Ok(doc_id) = docs.get(hsd.doc) else {
+        let Ok(doc_id) = docs.get(node_doc.0) else {
             continue;
         };
         let Ok(engine) = engines.get(engine_ent.0) else {
@@ -94,13 +94,14 @@ pub fn instantiate_scripts(
 
         let state = Runtime {
             backend: RuntimeBackend {
+                wired_input: Arc::default(),
                 wired_scene: Arc::new(Mutex::new(WiredSceneBackend::new(
                     SceneContext {
                         perms: perms.clone(),
                         self_doc: doc_id.0,
                         self_node: node_id.0,
                     },
-                    transform_reg.0.clone(),
+                    Arc::clone(&transform_reg.0),
                 ))),
             },
             native: NativeRuntime {

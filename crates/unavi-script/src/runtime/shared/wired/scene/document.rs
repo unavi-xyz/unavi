@@ -305,7 +305,7 @@ impl WiredSceneBackend {
                 doc_id,
                 id: id.clone(),
             })
-            .try_into()?;
+            .try_send()?;
         Ok(self.meshes.insert(MeshRes { id, doc_id }))
     }
 

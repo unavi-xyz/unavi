@@ -14,11 +14,12 @@ impl HostInputListener for Runtime {
         &mut self,
         self_: Resource<InputListener>,
     ) -> wasmtime::Result<Option<InputEvent>> {
-        shared::wired::input::listener::poll(self_.rep());
-        todo!()
+        shared::wired::input::listener::poll(&self.backend, self_.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn drop(&mut self, rep: Resource<InputListener>) -> wasmtime::Result<()> {
-        todo!()
+        shared::wired::input::listener::drop(&self.backend, rep.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 }

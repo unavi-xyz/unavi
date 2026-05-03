@@ -1,4 +1,4 @@
-use wasmtime::component::{HasSelf, Linker, Resource};
+use wasmtime::component::Resource;
 
 use crate::runtime::{
     Runtime,

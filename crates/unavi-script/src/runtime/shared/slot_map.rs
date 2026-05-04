@@ -36,7 +36,7 @@ where
     T: Clone,
 {
     /// Clone the given key into a new entry.
-    pub fn new_owned(&mut self, key: u32) -> Option<u32> {
+    pub fn insert_clone(&mut self, key: u32) -> Option<u32> {
         let value = self.get(key)?;
         let rep = self.insert(value.clone());
         Some(rep)

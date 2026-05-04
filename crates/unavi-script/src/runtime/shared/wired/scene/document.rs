@@ -16,11 +16,12 @@ use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     registry::TransformHandles,
-    runtime::shared::wired::scene::{material::MaterialRes, mesh::MeshRes, node::NodeRes},
+    runtime::shared::{
+        RuntimeBackend,
+        wired::scene::{material::MaterialRes, mesh::MeshRes, node::NodeRes},
+    },
     util::gen_id,
 };
-
-use super::WiredSceneBackend;
 
 pub struct DocRes {
     pub id: Hash,
@@ -36,328 +37,366 @@ impl Clone for DocRes {
     }
 }
 
-impl WiredSceneBackend {
-    pub fn doc_id(&self, rep: u32) -> Option<Vec<u8>> {
-        Some(self.docs.get(rep)?.id.as_bytes().to_vec())
-    }
+fn read_local_transform(
+    backend: &RuntimeBackend,
+    rep: u32,
+) -> Option<bevy::transform::components::Transform> {
+    let scene = backend.wired_scene.try_lock().ok()?;
+    let id = scene.docs.get(rep)?.id;
+    let registry = scene.transform_registry.lock().ok()?;
+    Some(*registry.get(&id)?.local.read().ok()?)
+}
 
-    pub fn doc_clone(&mut self, rep: u32) -> Option<u32> {
-        self.docs.new_owned(rep)
-    }
+fn read_global_transform(
+    backend: &RuntimeBackend,
+    rep: u32,
+) -> Option<bevy::transform::components::GlobalTransform> {
+    let scene = backend.wired_scene.try_lock().ok()?;
+    let id = scene.docs.get(rep)?.id;
+    let registry = scene.transform_registry.lock().ok()?;
+    Some(*registry.get(&id)?.global.read().ok()?)
+}
 
-    pub fn mesh_clone(&mut self, rep: u32) -> Option<u32> {
-        self.meshes.new_owned(rep)
-    }
+pub fn doc_id(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<Vec<u8>> {
+    backend
+        .wired_scene
+        .try_lock()?
+        .docs
+        .get(rep)
+        .map(|d| d.id.as_bytes().to_vec())
+        .ok_or_else(|| anyhow::anyhow!("invalid doc"))
+}
 
-    pub fn material_clone(&mut self, rep: u32) -> Option<u32> {
-        self.materials.new_owned(rep)
-    }
+pub fn doc_clone(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<u32> {
+    backend
+        .wired_scene
+        .try_lock()?
+        .docs
+        .insert_clone(rep)
+        .ok_or_else(|| anyhow::anyhow!("invalid doc"))
+}
 
-    pub fn doc_translation(&self, rep: u32) -> Option<bevy::math::Vec3> {
-        let id = self.docs.get(rep)?.id;
-        let registry = self.transform_registry.lock().expect("registry poisoned");
-        let val = registry
-            .get(&id)?
-            .local
-            .read()
-            .expect("local transform poisoned")
-            .translation;
-        Some(val)
-    }
+pub fn doc_drop(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<()> {
+    backend.wired_scene.try_lock()?.docs.remove(rep);
+    Ok(())
+}
 
-    pub fn doc_rotation(&self, rep: u32) -> Option<bevy::math::Quat> {
-        let id = self.docs.get(rep)?.id;
-        let registry = self.transform_registry.lock().expect("registry poisoned");
-        let val = registry
-            .get(&id)?
-            .local
-            .read()
-            .expect("local transform poisoned")
-            .rotation;
-        Some(val)
-    }
+pub fn doc_translation(backend: &RuntimeBackend, rep: u32) -> bevy::math::Vec3 {
+    read_local_transform(backend, rep)
+        .map(|t| t.translation)
+        .unwrap_or_default()
+}
 
-    pub fn doc_scale(&self, rep: u32) -> Option<bevy::math::Vec3> {
-        let id = self.docs.get(rep)?.id;
-        let registry = self.transform_registry.lock().expect("registry poisoned");
-        let val = registry
-            .get(&id)?
-            .local
-            .read()
-            .expect("local transform poisoned")
-            .scale;
-        Some(val)
-    }
+pub fn doc_rotation(backend: &RuntimeBackend, rep: u32) -> bevy::math::Quat {
+    read_local_transform(backend, rep).map_or(bevy::math::Quat::IDENTITY, |t| t.rotation)
+}
 
-    pub fn doc_transform(&self, rep: u32) -> Option<bevy::transform::components::Transform> {
-        let id = self.docs.get(rep)?.id;
-        let registry = self.transform_registry.lock().expect("registry poisoned");
-        let val = registry
-            .get(&id)?
-            .local
-            .read()
-            .expect("local transform poisoned");
-        Some(*val)
-    }
+pub fn doc_scale(backend: &RuntimeBackend, rep: u32) -> bevy::math::Vec3 {
+    read_local_transform(backend, rep).map_or(bevy::math::Vec3::ONE, |t| t.scale)
+}
 
-    pub fn doc_global_transform(
-        &self,
-        rep: u32,
-    ) -> Option<bevy::transform::components::GlobalTransform> {
-        let id = self.docs.get(rep)?.id;
-        let registry = self.transform_registry.lock().expect("registry poisoned");
-        let val = registry
-            .get(&id)?
-            .global
-            .read()
-            .expect("global transform poisoned");
-        Some(*val)
-    }
+pub fn doc_transform(backend: &RuntimeBackend, rep: u32) -> bevy::transform::components::Transform {
+    read_local_transform(backend, rep).unwrap_or_default()
+}
 
-    pub fn doc_set_transform(
-        &self,
-        rep: u32,
-        t: bevy::transform::components::Transform,
-    ) -> anyhow::Result<()> {
-        let doc_id = self
-            .docs
-            .get(rep)
-            .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-            .id;
-        AsyncCommands::default()
-            .trigger(HsdDocTransformSet {
-                doc_id,
-                transform: t,
-            })
-            .try_send()?;
-        Ok(())
-    }
+pub fn doc_global_transform(
+    backend: &RuntimeBackend,
+    rep: u32,
+) -> bevy::transform::components::GlobalTransform {
+    read_global_transform(backend, rep).unwrap_or_default()
+}
 
-    pub async fn doc_nodes(&mut self, rep: u32) -> anyhow::Result<Vec<u32>> {
-        let doc_id = self
-            .docs
-            .get(rep)
-            .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-            .id;
-
-        let (tx, rx) = async_channel::bounded::<Vec<TreeID>>(1);
-        AsyncCommands::default()
-            .push(move |world: &mut World| {
-                let registry = world.resource::<bevy_hsd::DocRegistryMap>();
-                let Some(doc_ent) = registry.get_entity(&doc_id) else {
-                    tx.try_send(vec![]).ok();
-                    return;
-                };
-                let ids: Vec<TreeID> = world
-                    .entity(doc_ent)
-                    .get::<HsdEntityMaps>()
-                    .map(|m| m.nodes.keys().copied().collect())
-                    .unwrap_or_default();
-                tx.try_send(ids).ok();
-            })
-            .try_send()?;
-
-        let tree_ids = rx.recv().await?;
-        let reps = tree_ids
-            .into_iter()
-            .map(|id| self.nodes.insert(NodeRes { id, doc_id }))
-            .collect();
-        Ok(reps)
-    }
-
-    pub async fn doc_roots(&mut self, rep: u32) -> anyhow::Result<Vec<u32>> {
-        let doc_id = self
-            .docs
-            .get(rep)
-            .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-            .id;
-        info!(%doc_id, "root (1)");
-
-        let (tx, rx) = async_channel::bounded::<Vec<TreeID>>(1);
-        AsyncCommands::default()
-            .push(move |world: &mut World| {
-                let registry = world.resource::<bevy_hsd::DocRegistryMap>();
-                let Some(doc_ent) = registry.get_entity(&doc_id) else {
-                    tx.try_send(vec![]).ok();
-                    return;
-                };
-                let ids: Vec<TreeID> = world
-                    .entity(doc_ent)
-                    .get::<HsdDoc>()
-                    .map(|d| {
-                        d.0.get_map("hsd")
-                            .get_or_create_container("nodes", LoroTree::new())
-                            .map(|tree| tree.roots())
-                            .unwrap_or_default()
-                    })
-                    .unwrap_or_default();
-                tx.try_send(ids).ok();
-            })
-            .try_send()?;
-
-        info!(%doc_id, "root (2)");
-        let tree_ids = rx.recv().await?;
-        info!(%doc_id, "root (3)");
-        let reps = tree_ids
-            .into_iter()
-            .map(|id| self.nodes.insert(NodeRes { id, doc_id }))
-            .collect();
-        info!(%doc_id, "root (4)");
-        Ok(reps)
-    }
-
-    pub async fn doc_meshes(&mut self, rep: u32) -> anyhow::Result<Vec<u32>> {
-        let doc_id = self
-            .docs
-            .get(rep)
-            .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-            .id;
-
-        let (tx, rx) = async_channel::bounded::<Vec<SmolStr>>(1);
-        AsyncCommands::default()
-            .push(move |world: &mut World| {
-                let registry = world.resource::<bevy_hsd::DocRegistryMap>();
-                let Some(doc_ent) = registry.get_entity(&doc_id) else {
-                    tx.try_send(vec![]).ok();
-                    return;
-                };
-                let ids: Vec<SmolStr> = world
-                    .entity(doc_ent)
-                    .get::<HsdEntityMaps>()
-                    .map(|m| m.meshes.keys().cloned().collect())
-                    .unwrap_or_default();
-                tx.try_send(ids).ok();
-            })
-            .try_send()?;
-
-        let ids = rx.recv().await?;
-        let reps = ids
-            .into_iter()
-            .map(|id| self.meshes.insert(MeshRes { id, doc_id }))
-            .collect();
-        Ok(reps)
-    }
-
-    pub async fn doc_materials(&mut self, rep: u32) -> anyhow::Result<Vec<u32>> {
-        let doc_id = self
-            .docs
-            .get(rep)
-            .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-            .id;
-
-        let (tx, rx) = async_channel::bounded::<Vec<SmolStr>>(1);
-        AsyncCommands::default()
-            .push(move |world: &mut World| {
-                let registry = world.resource::<bevy_hsd::DocRegistryMap>();
-                let Some(doc_ent) = registry.get_entity(&doc_id) else {
-                    tx.try_send(vec![]).ok();
-                    return;
-                };
-                let ids: Vec<SmolStr> = world
-                    .entity(doc_ent)
-                    .get::<HsdEntityMaps>()
-                    .map(|m| m.materials.keys().cloned().collect())
-                    .unwrap_or_default();
-                tx.try_send(ids).ok();
-            })
-            .try_send()?;
-
-        let ids = rx.recv().await?;
-        let reps = ids
-            .into_iter()
-            .map(|id| self.materials.insert(MaterialRes { id, doc_id }))
-            .collect();
-        Ok(reps)
-    }
-
-    pub async fn doc_create_node(&mut self, rep: u32) -> anyhow::Result<u32> {
-        let doc_id = self
-            .docs
-            .get(rep)
-            .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-            .id;
-
-        let (tx, rx) = async_channel::bounded::<TreeID>(1);
-        AsyncCommands::default()
-            .trigger(HsdCreateNode {
-                doc_id,
-                parent_id: None,
-                tx,
-            })
-            .try_send()?;
-
-        let tree_id = rx.recv().await?;
-        Ok(self.nodes.insert(NodeRes {
-            id: tree_id,
+pub fn doc_set_transform(
+    backend: &RuntimeBackend,
+    rep: u32,
+    t: bevy::transform::components::Transform,
+) -> anyhow::Result<()> {
+    let doc_id = backend
+        .wired_scene
+        .try_lock()?
+        .docs
+        .get(rep)
+        .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
+        .id;
+    AsyncCommands::default()
+        .trigger(HsdDocTransformSet {
             doc_id,
-        }))
-    }
+            transform: t,
+        })
+        .try_send()?;
+    Ok(())
+}
 
-    pub fn doc_create_mesh(&mut self, rep: u32) -> anyhow::Result<u32> {
-        let doc_id = self
-            .docs
-            .get(rep)
-            .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-            .id;
-        let id = gen_id();
-        AsyncCommands::default()
-            .trigger(HsdCreateMesh {
-                doc_id,
-                id: id.clone(),
-            })
-            .try_send()?;
-        Ok(self.meshes.insert(MeshRes { id, doc_id }))
-    }
+pub fn doc_set_translation(
+    backend: &RuntimeBackend,
+    rep: u32,
+    value: bevy::math::Vec3,
+) -> anyhow::Result<()> {
+    let mut t = doc_transform(backend, rep);
+    t.translation = value;
+    doc_set_transform(backend, rep, t)
+}
 
-    pub fn doc_create_material(&mut self, rep: u32) -> anyhow::Result<u32> {
-        let doc_id = self
-            .docs
-            .get(rep)
-            .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-            .id;
-        let id = gen_id();
-        AsyncCommands::default()
-            .trigger(HsdCreateMaterial {
-                doc_id,
-                id: id.clone(),
-            })
-            .try_send()?;
-        Ok(self.materials.insert(MaterialRes { id, doc_id }))
-    }
+pub fn doc_set_rotation(
+    backend: &RuntimeBackend,
+    rep: u32,
+    value: bevy::math::Quat,
+) -> anyhow::Result<()> {
+    let mut t = doc_transform(backend, rep);
+    t.rotation = value;
+    doc_set_transform(backend, rep, t)
+}
 
-    pub fn doc_remove_node(&mut self, node_rep: u32) {
-        let Some(node) = self.nodes.remove(node_rep) else {
-            return;
-        };
-        let _ = AsyncCommands::default()
-            .trigger(HsdRemoveNode {
-                doc_id: node.doc_id,
-                id: node.id,
-            })
-            .try_send();
-    }
+pub fn doc_set_scale(
+    backend: &RuntimeBackend,
+    rep: u32,
+    value: bevy::math::Vec3,
+) -> anyhow::Result<()> {
+    let mut t = doc_transform(backend, rep);
+    t.scale = value;
+    doc_set_transform(backend, rep, t)
+}
 
-    pub fn doc_remove_mesh(&mut self, mesh_rep: u32) {
-        let Some(mesh) = self.meshes.remove(mesh_rep) else {
-            return;
-        };
-        let _ = AsyncCommands::default()
-            .trigger(HsdRemoveMesh {
-                doc_id: mesh.doc_id,
-                id: mesh.id,
-            })
-            .try_send();
-    }
+pub async fn doc_nodes(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<Vec<u32>> {
+    let doc_id = backend
+        .wired_scene
+        .lock()
+        .await
+        .docs
+        .get(rep)
+        .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
+        .id;
 
-    pub fn doc_remove_material(&mut self, mat_rep: u32) {
-        let Some(mat) = self.materials.remove(mat_rep) else {
-            return;
-        };
-        let _ = AsyncCommands::default()
-            .trigger(HsdRemoveMaterial {
-                doc_id: mat.doc_id,
-                id: mat.id,
-            })
-            .try_send();
-    }
+    let (tx, rx) = async_channel::bounded::<Vec<TreeID>>(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let registry = world.resource::<bevy_hsd::DocRegistryMap>();
+            let Some(doc_ent) = registry.get_entity(&doc_id) else {
+                tx.try_send(vec![]).ok();
+                return;
+            };
+            let ids: Vec<TreeID> = world
+                .entity(doc_ent)
+                .get::<HsdEntityMaps>()
+                .map(|m| m.nodes.keys().copied().collect())
+                .unwrap_or_default();
+            tx.try_send(ids).ok();
+        })
+        .try_send()?;
+
+    let tree_ids = rx.recv().await?;
+    let mut scene = backend.wired_scene.lock().await;
+    Ok(tree_ids
+        .into_iter()
+        .map(|id| scene.nodes.insert(NodeRes { id, doc_id }))
+        .collect())
+}
+
+pub async fn doc_roots(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<Vec<u32>> {
+    let doc_id = backend
+        .wired_scene
+        .lock()
+        .await
+        .docs
+        .get(rep)
+        .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
+        .id;
+
+    let (tx, rx) = async_channel::bounded::<Vec<TreeID>>(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let registry = world.resource::<bevy_hsd::DocRegistryMap>();
+            let Some(doc_ent) = registry.get_entity(&doc_id) else {
+                tx.try_send(vec![]).ok();
+                return;
+            };
+            let ids: Vec<TreeID> = world
+                .entity(doc_ent)
+                .get::<HsdDoc>()
+                .map(|d| {
+                    d.0.get_map("hsd")
+                        .get_or_create_container("nodes", LoroTree::new())
+                        .map(|tree| tree.roots())
+                        .unwrap_or_default()
+                })
+                .unwrap_or_default();
+            tx.try_send(ids).ok();
+        })
+        .try_send()?;
+
+    let tree_ids = rx.recv().await?;
+    let mut scene = backend.wired_scene.lock().await;
+    Ok(tree_ids
+        .into_iter()
+        .map(|id| scene.nodes.insert(NodeRes { id, doc_id }))
+        .collect())
+}
+
+pub async fn doc_meshes(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<Vec<u32>> {
+    let doc_id = backend
+        .wired_scene
+        .lock()
+        .await
+        .docs
+        .get(rep)
+        .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
+        .id;
+
+    let (tx, rx) = async_channel::bounded::<Vec<SmolStr>>(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let registry = world.resource::<bevy_hsd::DocRegistryMap>();
+            let Some(doc_ent) = registry.get_entity(&doc_id) else {
+                tx.try_send(vec![]).ok();
+                return;
+            };
+            let ids: Vec<SmolStr> = world
+                .entity(doc_ent)
+                .get::<HsdEntityMaps>()
+                .map(|m| m.meshes.keys().cloned().collect())
+                .unwrap_or_default();
+            tx.try_send(ids).ok();
+        })
+        .try_send()?;
+
+    let ids = rx.recv().await?;
+    let mut scene = backend.wired_scene.lock().await;
+    Ok(ids
+        .into_iter()
+        .map(|id| scene.meshes.insert(MeshRes { id, doc_id }))
+        .collect())
+}
+
+pub async fn doc_materials(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<Vec<u32>> {
+    let doc_id = backend
+        .wired_scene
+        .lock()
+        .await
+        .docs
+        .get(rep)
+        .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
+        .id;
+
+    let (tx, rx) = async_channel::bounded::<Vec<SmolStr>>(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let registry = world.resource::<bevy_hsd::DocRegistryMap>();
+            let Some(doc_ent) = registry.get_entity(&doc_id) else {
+                tx.try_send(vec![]).ok();
+                return;
+            };
+            let ids: Vec<SmolStr> = world
+                .entity(doc_ent)
+                .get::<HsdEntityMaps>()
+                .map(|m| m.materials.keys().cloned().collect())
+                .unwrap_or_default();
+            tx.try_send(ids).ok();
+        })
+        .try_send()?;
+
+    let ids = rx.recv().await?;
+    let mut scene = backend.wired_scene.lock().await;
+    Ok(ids
+        .into_iter()
+        .map(|id| scene.materials.insert(MaterialRes { id, doc_id }))
+        .collect())
+}
+
+pub async fn doc_create_node(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<u32> {
+    let doc_id = backend
+        .wired_scene
+        .lock()
+        .await
+        .docs
+        .get(rep)
+        .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
+        .id;
+
+    let (tx, rx) = async_channel::bounded::<TreeID>(1);
+    AsyncCommands::default()
+        .trigger(HsdCreateNode {
+            doc_id,
+            parent_id: None,
+            tx,
+        })
+        .try_send()?;
+
+    let tree_id = rx.recv().await?;
+    Ok(backend.wired_scene.lock().await.nodes.insert(NodeRes {
+        id: tree_id,
+        doc_id,
+    }))
+}
+
+pub fn doc_create_mesh(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<u32> {
+    let mut scene = backend.wired_scene.try_lock()?;
+    let doc_id = scene
+        .docs
+        .get(rep)
+        .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
+        .id;
+    let id = gen_id();
+    AsyncCommands::default()
+        .trigger(HsdCreateMesh {
+            doc_id,
+            id: id.clone(),
+        })
+        .try_send()?;
+    Ok(scene.meshes.insert(MeshRes { id, doc_id }))
+}
+
+pub fn doc_create_material(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<u32> {
+    let mut scene = backend.wired_scene.try_lock()?;
+    let doc_id = scene
+        .docs
+        .get(rep)
+        .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
+        .id;
+    let id = gen_id();
+    AsyncCommands::default()
+        .trigger(HsdCreateMaterial {
+            doc_id,
+            id: id.clone(),
+        })
+        .try_send()?;
+    Ok(scene.materials.insert(MaterialRes { id, doc_id }))
+}
+
+pub fn doc_remove_node(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<()> {
+    let Some(node) = backend.wired_scene.try_lock()?.nodes.remove(rep) else {
+        return Ok(());
+    };
+    let _ = AsyncCommands::default()
+        .trigger(HsdRemoveNode {
+            doc_id: node.doc_id,
+            id: node.id,
+        })
+        .try_send();
+    Ok(())
+}
+
+pub fn doc_remove_mesh(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<()> {
+    let Some(mesh) = backend.wired_scene.try_lock()?.meshes.remove(rep) else {
+        return Ok(());
+    };
+    let _ = AsyncCommands::default()
+        .trigger(HsdRemoveMesh {
+            doc_id: mesh.doc_id,
+            id: mesh.id,
+        })
+        .try_send();
+    Ok(())
+}
+
+pub fn doc_remove_material(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<()> {
+    let Some(mat) = backend.wired_scene.try_lock()?.materials.remove(rep) else {
+        return Ok(());
+    };
+    let _ = AsyncCommands::default()
+        .trigger(HsdRemoveMaterial {
+            doc_id: mat.doc_id,
+            id: mat.id,
+        })
+        .try_send();
+    Ok(())
 }

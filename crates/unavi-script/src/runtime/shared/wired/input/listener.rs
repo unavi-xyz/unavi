@@ -1,8 +1,6 @@
 use async_channel::Receiver;
 
-use crate::runtime::{
-    native::wired::input::bindings::wired::input::types::InputEvent, shared::RuntimeBackend,
-};
+use crate::runtime::shared::{RuntimeBackend, wired::input::types::InputEvent};
 
 pub struct InputListenerRes {
     pub rx: Receiver<InputEvent>,

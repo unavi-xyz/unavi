@@ -3,7 +3,7 @@ use wasmtime::component::Resource;
 use crate::runtime::{
     Runtime,
     native::wired::scene::bindings::wired::scene::types::{HostMesh, Indices, PrimitiveTopology},
-    shared::wired::scene::mesh::MeshRes,
+    shared::{self, wired::scene::mesh::MeshRes},
 };
 
 impl HostMesh for Runtime {
@@ -12,14 +12,9 @@ impl HostMesh for Runtime {
     }
 
     async fn clone(&mut self, self_: Resource<MeshRes>) -> wasmtime::Result<Resource<MeshRes>> {
-        let rep = self
-            .backend
-            .wired_scene
-            .lock()
-            .await
-            .mesh_clone(self_.rep())
-            .ok_or_else(|| wasmtime::Error::msg("invalid mesh"))?;
-        Ok(Resource::new_own(rep))
+        shared::wired::scene::mesh::mesh_clone(&self.backend, self_.rep())
+            .map(Resource::new_own)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn name(&mut self, _self_: Resource<MeshRes>) -> wasmtime::Result<Option<String>> {
@@ -139,12 +134,7 @@ impl HostMesh for Runtime {
     }
 
     async fn drop(&mut self, rep: Resource<MeshRes>) -> wasmtime::Result<()> {
-        self.backend
-            .wired_scene
-            .lock()
-            .await
-            .meshes
-            .remove(rep.rep());
-        Ok(())
+        shared::wired::scene::mesh::mesh_drop(&self.backend, rep.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 }

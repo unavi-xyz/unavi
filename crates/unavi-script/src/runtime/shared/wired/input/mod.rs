@@ -11,6 +11,7 @@ use crate::runtime::shared::{
 
 pub mod bridge;
 pub mod listener;
+pub mod types;
 
 const INPUT_CHANNEL_LENGTH: usize = 8;
 

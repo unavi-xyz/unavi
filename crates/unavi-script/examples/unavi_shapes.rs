@@ -5,7 +5,7 @@ use bevy::{
 use bevy_hsd::instance::InstanceHsd;
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_wds::{LocalActor, LocalBlobs};
-use unavi_script::permissions::{ApiName, ApiPermissions};
+use unavi_script::permissions::ApiPermissions;
 
 use crate::util::create_test_wds;
 

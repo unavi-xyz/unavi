@@ -3,7 +3,7 @@ use wasmtime::component::Resource;
 use crate::runtime::{
     Runtime,
     native::wired::scene::bindings::wired::scene::types::{AlphaMode, Color, HostMaterial},
-    shared::wired::scene::material::MaterialRes,
+    shared::{self, wired::scene::material::MaterialRes},
 };
 
 impl HostMaterial for Runtime {
@@ -15,14 +15,9 @@ impl HostMaterial for Runtime {
         &mut self,
         self_: Resource<MaterialRes>,
     ) -> wasmtime::Result<Resource<MaterialRes>> {
-        let rep = self
-            .backend
-            .wired_scene
-            .lock()
-            .await
-            .material_clone(self_.rep())
-            .ok_or_else(|| wasmtime::Error::msg("invalid material"))?;
-        Ok(Resource::new_own(rep))
+        shared::wired::scene::material::material_clone(&self.backend, self_.rep())
+            .map(Resource::new_own)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn name(&mut self, _self_: Resource<MaterialRes>) -> wasmtime::Result<Option<String>> {
@@ -142,12 +137,7 @@ impl HostMaterial for Runtime {
     }
 
     async fn drop(&mut self, rep: Resource<MaterialRes>) -> wasmtime::Result<()> {
-        self.backend
-            .wired_scene
-            .lock()
-            .await
-            .materials
-            .remove(rep.rep());
-        Ok(())
+        shared::wired::scene::material::material_drop(&self.backend, rep.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 }

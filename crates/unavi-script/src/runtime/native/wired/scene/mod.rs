@@ -2,7 +2,10 @@ use wasmtime::component::Resource;
 
 use crate::runtime::{
     Runtime,
-    shared::wired::scene::{document::DocRes, node::NodeRes},
+    shared::{
+        self,
+        wired::scene::{document::DocRes, node::NodeRes},
+    },
 };
 
 pub mod document;
@@ -30,50 +33,43 @@ pub mod bindings {
 
 impl bindings::wired::scene::api::Host for Runtime {
     async fn self_node(&mut self) -> wasmtime::Result<Resource<NodeRes>> {
-        let rep = self.backend.wired_scene.lock().await.self_node();
-        Ok(Resource::new_own(rep))
+        shared::wired::scene::self_node(&self.backend)
+            .map(Resource::new_own)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn self_document(&mut self) -> wasmtime::Result<Resource<DocRes>> {
-        let rep = self.backend.wired_scene.lock().await.self_document();
-        Ok(Resource::new_own(rep))
+        shared::wired::scene::self_document(&self.backend)
+            .map(Resource::new_own)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn get_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Option<Resource<DocRes>>> {
-        let rep = self.backend.wired_scene.lock().await.get_document(id);
-        Ok(rep.map(Resource::new_own))
+        shared::wired::scene::get_document(&self.backend, id)
+            .map(|r| r.map(Resource::new_own))
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn create_document(&mut self) -> wasmtime::Result<Resource<DocRes>> {
-        let rep = self
-            .backend
-            .wired_scene
-            .lock()
+        shared::wired::scene::create_document(&self.backend)
             .await
-            .create_document()
-            .await
-            .map_err(wasmtime::Error::from_anyhow)?;
-        Ok(Resource::new_own(rep))
+            .map(Resource::new_own)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn remove_document(&mut self, id: Vec<u8>) -> wasmtime::Result<()> {
-        self.backend.wired_scene.lock().await.remove_document(id);
-        Ok(())
+        shared::wired::scene::remove_document(&self.backend, id)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn load_hsd(
         &mut self,
         blob_id: Vec<u8>,
     ) -> wasmtime::Result<Result<Resource<DocRes>, String>> {
-        let rep = self
-            .backend
-            .wired_scene
-            .lock()
+        Ok(shared::wired::scene::load_hsd(&self.backend, blob_id)
             .await
-            .load_hsd(blob_id)
-            .await
-            .map_err(|e| e.to_string());
-        Ok(rep.map(Resource::new_own))
+            .map(Resource::new_own)
+            .map_err(|e| e.to_string()))
     }
 }
 

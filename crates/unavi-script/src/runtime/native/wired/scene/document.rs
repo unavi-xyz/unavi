@@ -2,130 +2,88 @@ use wasmtime::component::Resource;
 
 use crate::runtime::{
     Runtime,
-    shared::wired::scene::{document::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes},
-};
-
-use super::bindings::wired::{
-    math::types::{Quat, Transform, Vec3},
-    scene::types::HostDocument,
+    native::wired::scene::bindings::wired::{
+        math::types::{Quat, Transform, Vec3},
+        scene::types::HostDocument,
+    },
+    shared::{
+        self,
+        wired::scene::{document::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes},
+    },
 };
 
 impl HostDocument for Runtime {
     async fn id(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec<u8>> {
-        self.backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_id(self_.rep())
-            .ok_or_else(|| wasmtime::Error::msg("invalid doc"))
+        shared::wired::scene::document::doc_id(&self.backend, self_.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn clone(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Resource<DocRes>> {
-        let rep = self
-            .backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_clone(self_.rep())
-            .ok_or_else(|| wasmtime::Error::msg("invalid doc"))?;
-        Ok(Resource::new_own(rep))
+        shared::wired::scene::document::doc_clone(&self.backend, self_.rep())
+            .map(Resource::new_own)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn roots(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec<Resource<NodeRes>>> {
-        let reps = self
-            .backend
-            .wired_scene
-            .lock()
+        shared::wired::scene::document::doc_roots(&self.backend, self_.rep())
             .await
-            .doc_roots(self_.rep())
-            .await
-            .map_err(wasmtime::Error::from_anyhow)?;
-        Ok(reps.into_iter().map(Resource::new_own).collect())
+            .map(|v| v.into_iter().map(Resource::new_own).collect())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn nodes(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec<Resource<NodeRes>>> {
-        let reps = self
-            .backend
-            .wired_scene
-            .lock()
+        shared::wired::scene::document::doc_nodes(&self.backend, self_.rep())
             .await
-            .doc_nodes(self_.rep())
-            .await
-            .map_err(wasmtime::Error::from_anyhow)?;
-        Ok(reps.into_iter().map(Resource::new_own).collect())
+            .map(|v| v.into_iter().map(Resource::new_own).collect())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn meshes(
         &mut self,
         self_: Resource<DocRes>,
     ) -> wasmtime::Result<Vec<Resource<MeshRes>>> {
-        let reps = self
-            .backend
-            .wired_scene
-            .lock()
+        shared::wired::scene::document::doc_meshes(&self.backend, self_.rep())
             .await
-            .doc_meshes(self_.rep())
-            .await
-            .map_err(wasmtime::Error::from_anyhow)?;
-        Ok(reps.into_iter().map(Resource::new_own).collect())
+            .map(|v| v.into_iter().map(Resource::new_own).collect())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn materials(
         &mut self,
         self_: Resource<DocRes>,
     ) -> wasmtime::Result<Vec<Resource<MaterialRes>>> {
-        let reps = self
-            .backend
-            .wired_scene
-            .lock()
+        shared::wired::scene::document::doc_materials(&self.backend, self_.rep())
             .await
-            .doc_materials(self_.rep())
-            .await
-            .map_err(wasmtime::Error::from_anyhow)?;
-        Ok(reps.into_iter().map(Resource::new_own).collect())
+            .map(|v| v.into_iter().map(Resource::new_own).collect())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn create_node(
         &mut self,
         self_: Resource<DocRes>,
     ) -> wasmtime::Result<Resource<NodeRes>> {
-        let rep = self
-            .backend
-            .wired_scene
-            .lock()
+        shared::wired::scene::document::doc_create_node(&self.backend, self_.rep())
             .await
-            .doc_create_node(self_.rep())
-            .await
-            .map_err(wasmtime::Error::from_anyhow)?;
-        Ok(Resource::new_own(rep))
+            .map(Resource::new_own)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn create_mesh(
         &mut self,
         self_: Resource<DocRes>,
     ) -> wasmtime::Result<Resource<MeshRes>> {
-        let rep = self
-            .backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_create_mesh(self_.rep())
-            .map_err(wasmtime::Error::from_anyhow)?;
-        Ok(Resource::new_own(rep))
+        shared::wired::scene::document::doc_create_mesh(&self.backend, self_.rep())
+            .map(Resource::new_own)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn create_material(
         &mut self,
         self_: Resource<DocRes>,
     ) -> wasmtime::Result<Resource<MaterialRes>> {
-        let rep = self
-            .backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_create_material(self_.rep())
-            .map_err(wasmtime::Error::from_anyhow)?;
-        Ok(Resource::new_own(rep))
+        shared::wired::scene::document::doc_create_material(&self.backend, self_.rep())
+            .map(Resource::new_own)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn remove_node(
@@ -133,12 +91,8 @@ impl HostDocument for Runtime {
         _self_: Resource<DocRes>,
         value: Resource<NodeRes>,
     ) -> wasmtime::Result<()> {
-        self.backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_remove_node(value.rep());
-        Ok(())
+        shared::wired::scene::document::doc_remove_node(&self.backend, value.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn remove_mesh(
@@ -146,12 +100,8 @@ impl HostDocument for Runtime {
         _self_: Resource<DocRes>,
         value: Resource<MeshRes>,
     ) -> wasmtime::Result<()> {
-        self.backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_remove_mesh(value.rep());
-        Ok(())
+        shared::wired::scene::document::doc_remove_mesh(&self.backend, value.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn remove_material(
@@ -159,12 +109,8 @@ impl HostDocument for Runtime {
         _self_: Resource<DocRes>,
         value: Resource<MaterialRes>,
     ) -> wasmtime::Result<()> {
-        self.backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_remove_material(value.rep());
-        Ok(())
+        shared::wired::scene::document::doc_remove_material(&self.backend, value.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn sync(&mut self, _self_: Resource<DocRes>) -> wasmtime::Result<bool> {
@@ -208,14 +154,7 @@ impl HostDocument for Runtime {
     }
 
     async fn translation(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec3> {
-        let v = self
-            .backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_translation(self_.rep())
-            .unwrap_or_default();
-        Ok(v.into())
+        Ok(shared::wired::scene::document::doc_translation(&self.backend, self_.rep()).into())
     }
 
     async fn set_translation(
@@ -223,87 +162,34 @@ impl HostDocument for Runtime {
         self_: Resource<DocRes>,
         value: Vec3,
     ) -> wasmtime::Result<()> {
-        let mut t = self
-            .backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_transform(self_.rep())
-            .unwrap_or_default();
-        t.translation = value.into();
-        self.backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_set_transform(self_.rep(), t)
-            .map_err(wasmtime::Error::from_anyhow)
+        shared::wired::scene::document::doc_set_translation(
+            &self.backend,
+            self_.rep(),
+            value.into(),
+        )
+        .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn rotation(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Quat> {
-        let q = self
-            .backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_rotation(self_.rep())
-            .unwrap_or(bevy::math::Quat::IDENTITY);
-        Ok(q.into())
+        Ok(shared::wired::scene::document::doc_rotation(&self.backend, self_.rep()).into())
     }
 
     async fn set_rotation(&mut self, self_: Resource<DocRes>, value: Quat) -> wasmtime::Result<()> {
-        let mut t = self
-            .backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_transform(self_.rep())
-            .unwrap_or_default();
-        t.rotation = value.into();
-        self.backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_set_transform(self_.rep(), t)
+        shared::wired::scene::document::doc_set_rotation(&self.backend, self_.rep(), value.into())
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn scale(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec3> {
-        let v = self
-            .backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_scale(self_.rep())
-            .unwrap_or(bevy::math::Vec3::ONE);
-        Ok(v.into())
+        Ok(shared::wired::scene::document::doc_scale(&self.backend, self_.rep()).into())
     }
 
     async fn set_scale(&mut self, self_: Resource<DocRes>, value: Vec3) -> wasmtime::Result<()> {
-        let mut t = self
-            .backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_transform(self_.rep())
-            .unwrap_or_default();
-        t.scale = value.into();
-        self.backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_set_transform(self_.rep(), t)
+        shared::wired::scene::document::doc_set_scale(&self.backend, self_.rep(), value.into())
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn transform(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Transform> {
-        let t = self
-            .backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_transform(self_.rep())
-            .unwrap_or_default();
-        Ok(t.into())
+        Ok(shared::wired::scene::document::doc_transform(&self.backend, self_.rep()).into())
     }
 
     async fn set_transform(
@@ -311,27 +197,16 @@ impl HostDocument for Runtime {
         self_: Resource<DocRes>,
         value: Transform,
     ) -> wasmtime::Result<()> {
-        self.backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_set_transform(self_.rep(), value.into())
+        shared::wired::scene::document::doc_set_transform(&self.backend, self_.rep(), value.into())
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn global_transform(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Transform> {
-        let gt = self
-            .backend
-            .wired_scene
-            .lock()
-            .await
-            .doc_global_transform(self_.rep())
-            .unwrap_or_default();
-        Ok(gt.into())
+        Ok(shared::wired::scene::document::doc_global_transform(&self.backend, self_.rep()).into())
     }
 
     async fn drop(&mut self, rep: Resource<DocRes>) -> wasmtime::Result<()> {
-        self.backend.wired_scene.lock().await.docs.remove(rep.rep());
-        Ok(())
+        shared::wired::scene::document::doc_drop(&self.backend, rep.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 }

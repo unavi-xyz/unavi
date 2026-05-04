@@ -10,9 +10,7 @@ use unavi_input::{
     schminput::BoolActionValue,
 };
 
-use crate::runtime::native::wired::input::bindings::wired::input::types::{
-    InputAction, InputDevice, InputEvent,
-};
+use crate::runtime::shared::wired::input::types::{InputAction, InputDevice, InputEvent};
 
 #[derive(Component)]
 pub struct GlobalInputListener {

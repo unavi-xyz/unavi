@@ -6,7 +6,10 @@ use crate::runtime::{
         math::types::{Quat, Transform, Vec3},
         scene::types::{Collider, HostNode, RigidBodyKind},
     },
-    shared::wired::scene::{material::MaterialRes, mesh::MeshRes, node::NodeRes},
+    shared::{
+        self,
+        wired::scene::{material::MaterialRes, mesh::MeshRes, node::NodeRes},
+    },
 };
 
 impl HostNode for Runtime {
@@ -14,8 +17,10 @@ impl HostNode for Runtime {
         todo!()
     }
 
-    async fn clone(&mut self, _self_: Resource<NodeRes>) -> wasmtime::Result<Resource<NodeRes>> {
-        todo!()
+    async fn clone(&mut self, self_: Resource<NodeRes>) -> wasmtime::Result<Resource<NodeRes>> {
+        shared::wired::scene::node::node_clone(&self.backend, self_.rep())
+            .map(Resource::new_own)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn name(&mut self, _self_: Resource<NodeRes>) -> wasmtime::Result<Option<String>> {
@@ -174,12 +179,7 @@ impl HostNode for Runtime {
     }
 
     async fn drop(&mut self, rep: Resource<NodeRes>) -> wasmtime::Result<()> {
-        self.backend
-            .wired_scene
-            .lock()
-            .await
-            .nodes
-            .remove(rep.rep());
-        Ok(())
+        shared::wired::scene::node::node_drop(&self.backend, rep.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 }

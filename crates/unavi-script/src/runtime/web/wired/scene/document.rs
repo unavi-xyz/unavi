@@ -38,8 +38,8 @@ impl DocHandle {
 
     pub fn remove_asset(&self, _name: String) {}
 
-    pub async fn roots(&self) -> js_sys::Array {
-        let Ok(reps) = shared::wired::scene::document::roots(&self.api, self.rep).await else {
+    pub fn roots(&self) -> js_sys::Array {
+        let Ok(reps) = shared::wired::scene::document::roots(&self.api, self.rep) else {
             return js_sys::Array::new();
         };
         reps.into_iter()
@@ -47,8 +47,8 @@ impl DocHandle {
             .collect()
     }
 
-    pub async fn nodes(&self) -> js_sys::Array {
-        let Ok(reps) = shared::wired::scene::document::nodes(&self.api, self.rep).await else {
+    pub fn nodes(&self) -> js_sys::Array {
+        let Ok(reps) = shared::wired::scene::document::nodes(&self.api, self.rep) else {
             return js_sys::Array::new();
         };
         reps.into_iter()
@@ -56,9 +56,8 @@ impl DocHandle {
             .collect()
     }
 
-    pub async fn create_node(&self) -> NodeHandle {
-        let Ok(rep) = shared::wired::scene::document::create_node(&self.api, self.rep).await
-        else {
+    pub fn create_node(&self) -> NodeHandle {
+        let Ok(rep) = shared::wired::scene::document::create_node(&self.api, self.rep) else {
             return NodeHandle::new(u32::MAX);
         };
         NodeHandle::new(rep)
@@ -68,8 +67,8 @@ impl DocHandle {
         let _ = shared::wired::scene::document::remove_node(&self.api, value.rep());
     }
 
-    pub async fn meshes(&self) -> js_sys::Array {
-        let Ok(reps) = shared::wired::scene::document::meshes(&self.api, self.rep).await else {
+    pub fn meshes(&self) -> js_sys::Array {
+        let Ok(reps) = shared::wired::scene::document::meshes(&self.api, self.rep) else {
             return js_sys::Array::new();
         };
         reps.into_iter()
@@ -78,8 +77,8 @@ impl DocHandle {
     }
 
     pub fn create_mesh(&self) -> MeshHandle {
-        let rep = shared::wired::scene::document::create_mesh(&self.api, self.rep)
-            .unwrap_or(u32::MAX);
+        let rep =
+            shared::wired::scene::document::create_mesh(&self.api, self.rep).unwrap_or(u32::MAX);
         MeshHandle::new(rep)
     }
 
@@ -87,9 +86,8 @@ impl DocHandle {
         let _ = shared::wired::scene::document::remove_mesh(&self.api, value.rep());
     }
 
-    pub async fn materials(&self) -> js_sys::Array {
-        let Ok(reps) = shared::wired::scene::document::materials(&self.api, self.rep).await
-        else {
+    pub fn materials(&self) -> js_sys::Array {
+        let Ok(reps) = shared::wired::scene::document::materials(&self.api, self.rep) else {
             return js_sys::Array::new();
         };
         reps.into_iter()

@@ -1,15 +1,9 @@
-use bevy::prelude::*;
-use bevy_hsd::{
-    HsdDoc, HsdEntityMaps, HsdRecordId,
-    hydrate::compile::create::{
-        HsdCreateMaterial, HsdCreateMesh, HsdCreateNode, HsdRemoveMaterial, HsdRemoveMesh,
-        HsdRemoveNode,
-    },
-};
+use std::sync::Arc;
+
 use blake3::Hash;
-use loro::{LoroTree, TreeID};
-use smol_str::SmolStr;
-use unavi_util::async_commands::AsyncCommands;
+use hsd::topology::HydratedTopology;
+use loro::{LoroDoc, LoroMap, LoroTree, LoroValue, TreeParentId, ValueOrContainer};
+use loro_surgeon::Reconcile;
 
 use crate::{
     firewall::Channel,
@@ -23,6 +17,7 @@ use crate::{
 
 #[derive(Clone)]
 pub struct DocRes {
+    pub doc: Arc<LoroDoc>,
     pub id: Hash,
 }
 
@@ -43,131 +38,86 @@ pub fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
         .ok_or_else(|| anyhow::anyhow!("invalid doc"))
 }
 
-pub fn drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+pub fn on_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
     api.wired_scene.try_lock()?.docs.remove(rep);
     Ok(())
 }
 
-pub async fn roots(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
-    let doc_id = api
+pub fn roots(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
+    let res = api
         .wired_scene
-        .lock()
-        .await
+        .try_lock()?
         .docs
         .get(rep)
         .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-        .id;
+        .clone();
 
-    let (tx, rx) = async_channel::bounded::<Vec<TreeID>>(1);
-    AsyncCommands::default()
-        .push(move |world: &mut World| {
-            let doc_ent = {
-                let mut qs = world.query::<(Entity, &HsdRecordId)>();
-                qs.iter(world)
-                    .find(|(_, id)| id.0 == doc_id)
-                    .map(|(e, _)| e)
-            };
-            let Some(doc_ent) = doc_ent else {
-                tx.try_send(vec![]).ok();
-                return;
-            };
-            let ids: Vec<TreeID> = world
-                .entity(doc_ent)
-                .get::<HsdDoc>()
-                .map(|d| {
-                    d.0.get_map("hsd")
-                        .get_or_create_container("nodes", LoroTree::new())
-                        .map(|tree| tree.roots())
-                        .unwrap_or_default()
-                })
-                .unwrap_or_default();
-            tx.try_send(ids).ok();
-        })
-        .try_send()?;
+    let tree_ids = res
+        .doc
+        .get_map("hsd")
+        .get_or_create_container("nodes", LoroTree::new())?
+        .roots();
 
-    let tree_ids = rx.recv().await?;
-    let mut scene = api.wired_scene.lock().await;
+    let mut scene = api.wired_scene.try_lock()?;
     Ok(tree_ids
         .into_iter()
         .map(|id| {
             scene.nodes.insert(NodeRes {
+                doc: Arc::clone(&res.doc),
+                document: res.id,
                 id,
-                document: doc_id,
             })
         })
         .collect())
 }
 
-pub async fn nodes(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
-    let doc_id = api
+pub fn nodes(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
+    let res = api
         .wired_scene
-        .lock()
-        .await
+        .try_lock()?
         .docs
         .get(rep)
         .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-        .id;
+        .clone();
 
-    let (tx, rx) = async_channel::bounded::<Vec<TreeID>>(1);
-    AsyncCommands::default()
-        .push(move |world: &mut World| {
-            let doc_ent = {
-                let mut qs = world.query::<(Entity, &HsdRecordId)>();
-                qs.iter(world)
-                    .find(|(_, id)| id.0 == doc_id)
-                    .map(|(e, _)| e)
-            };
-            let Some(doc_ent) = doc_ent else {
-                tx.try_send(vec![]).ok();
-                return;
-            };
-            let ids: Vec<TreeID> = world
-                .entity(doc_ent)
-                .get::<HsdEntityMaps>()
-                .map(|m| m.nodes.keys().copied().collect())
-                .unwrap_or_default();
-            tx.try_send(ids).ok();
-        })
-        .send()
-        .await?;
+    let tree_ids = res
+        .doc
+        .get_map("hsd")
+        .get_or_create_container("nodes", LoroTree::new())?
+        .nodes();
 
-    let tree_ids = rx.recv().await?;
-    let mut scene = api.wired_scene.lock().await;
+    let mut scene = api.wired_scene.try_lock()?;
     Ok(tree_ids
         .into_iter()
         .map(|id| {
             scene.nodes.insert(NodeRes {
+                doc: Arc::clone(&res.doc),
+                document: res.id,
                 id,
-                document: doc_id,
             })
         })
         .collect())
 }
 
-pub async fn create_node(api: &Api, rep: u32) -> anyhow::Result<u32> {
-    let doc_id = api
-        .wired_scene
-        .lock()
-        .await
+pub fn create_node(api: &Api, rep: u32) -> anyhow::Result<u32> {
+    let mut scene = api.wired_scene.try_lock()?;
+    let res = scene
         .docs
         .get(rep)
         .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-        .id;
-    validate_firewall(&api.document, &doc_id, Channel::SceneWrite)?;
+        .clone();
+    validate_firewall(&api.doc_id, &res.id, Channel::SceneWrite)?;
 
-    let (tx, rx) = async_channel::bounded::<TreeID>(1);
-    AsyncCommands::default()
-        .trigger(HsdCreateNode {
-            doc_id,
-            parent_id: None,
-            tx,
-        })
-        .try_send()?;
+    let tree = res
+        .doc
+        .get_map("hsd")
+        .get_or_create_container("nodes", LoroTree::new())?;
+    let tree_id = tree.create(TreeParentId::Root)?;
 
-    let tree_id = rx.recv().await?;
-    Ok(api.wired_scene.lock().await.nodes.insert(NodeRes {
+    Ok(scene.nodes.insert(NodeRes {
+        doc: res.doc,
+        document: res.id,
         id: tree_id,
-        document: doc_id,
     }))
 }
 
@@ -175,161 +125,143 @@ pub fn remove_node(api: &Api, rep: u32) -> anyhow::Result<()> {
     let Some(node) = api.wired_scene.try_lock()?.nodes.remove(rep) else {
         return Ok(());
     };
-    validate_firewall(&api.document, &node.document, Channel::SceneWrite)?;
-    AsyncCommands::default()
-        .trigger(HsdRemoveNode {
-            doc_id: node.document,
-            id: node.id,
-        })
-        .try_send()?;
+    validate_firewall(&api.doc_id, &node.document, Channel::SceneWrite)?;
+
+    let tree = node
+        .doc
+        .get_map("hsd")
+        .get_or_create_container("nodes", LoroTree::new())?;
+    tree.delete(node.id)?;
     Ok(())
 }
 
-pub async fn meshes(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
-    let doc_id = api
-        .wired_scene
-        .lock()
-        .await
+pub fn meshes(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
+    let mut scene = api.wired_scene.try_lock()?;
+    let res = scene
         .docs
         .get(rep)
         .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-        .id;
-    validate_firewall(&api.document, &doc_id, Channel::SceneWrite)?;
+        .clone();
+    validate_firewall(&api.doc_id, &res.id, Channel::SceneWrite)?;
 
-    let (tx, rx) = async_channel::bounded::<Vec<SmolStr>>(1);
-    AsyncCommands::default()
-        .push(move |world: &mut World| {
-            let doc_ent = {
-                let mut qs = world.query::<(Entity, &HsdRecordId)>();
-                qs.iter(world)
-                    .find(|(_, id)| id.0 == doc_id)
-                    .map(|(e, _)| e)
-            };
-            let Some(doc_ent) = doc_ent else {
-                tx.try_send(vec![]).ok();
-                return;
-            };
-            let ids: Vec<SmolStr> = world
-                .entity(doc_ent)
-                .get::<HsdEntityMaps>()
-                .map(|m| m.meshes.keys().cloned().collect())
-                .unwrap_or_default();
-            tx.try_send(ids).ok();
-        })
-        .try_send()?;
+    let mut ids = Vec::new();
+    res.doc
+        .get_map("hsd")
+        .get_or_create_container("meshes", LoroMap::new())?
+        .for_each(|id, v| match v {
+            ValueOrContainer::Container(_) => {
+                ids.push(scene.meshes.insert(MeshRes {
+                    doc: Arc::clone(&res.doc),
+                    doc_id: res.id,
+                    id: id.into(),
+                }));
+            }
+            ValueOrContainer::Value(_) => {}
+        });
+    drop(scene);
 
-    let ids = rx.recv().await?;
-    let mut scene = api.wired_scene.lock().await;
-    Ok(ids
-        .into_iter()
-        .map(|id| scene.meshes.insert(MeshRes { id, doc_id }))
-        .collect())
+    Ok(ids)
 }
 
 pub fn create_mesh(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let mut scene = api.wired_scene.try_lock()?;
-    let doc_id = scene
+    let res = scene
         .docs
         .get(rep)
         .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-        .id;
-    validate_firewall(&api.document, &doc_id, Channel::SceneWrite)?;
+        .clone();
+    validate_firewall(&api.doc_id, &res.id, Channel::SceneWrite)?;
 
     let id = gen_id();
-    AsyncCommands::default()
-        .trigger(HsdCreateMesh {
-            doc_id,
-            id: id.clone(),
-        })
-        .try_send()?;
-    Ok(scene.meshes.insert(MeshRes { id, doc_id }))
+    let meshes_map = res
+        .doc
+        .get_map("hsd")
+        .get_or_create_container("meshes", LoroMap::new())?;
+    let mesh_map = meshes_map.get_or_create_container(id.as_str(), LoroMap::new())?;
+    HydratedTopology::default().reconcile_field(&mesh_map, "topology")?;
+
+    Ok(scene.meshes.insert(MeshRes {
+        doc: res.doc,
+        doc_id: res.id,
+        id,
+    }))
 }
 
 pub fn remove_mesh(api: &Api, rep: u32) -> anyhow::Result<()> {
     let Some(mesh) = api.wired_scene.try_lock()?.meshes.remove(rep) else {
         return Ok(());
     };
-    validate_firewall(&api.document, &mesh.doc_id, Channel::SceneWrite)?;
-    AsyncCommands::default()
-        .trigger(HsdRemoveMesh {
-            doc_id: mesh.doc_id,
-            id: mesh.id,
-        })
-        .try_send()?;
+    validate_firewall(&api.doc_id, &mesh.doc_id, Channel::SceneWrite)?;
+
+    let meshes_map = mesh
+        .doc
+        .get_map("hsd")
+        .get_or_create_container("meshes", LoroMap::new())?;
+    meshes_map.insert(mesh.id.as_str(), LoroValue::Null)?;
     Ok(())
 }
 
-pub async fn materials(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
-    let doc_id = api
-        .wired_scene
-        .lock()
-        .await
+pub fn materials(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
+    let mut scene = api.wired_scene.try_lock()?;
+    let res = scene
         .docs
         .get(rep)
         .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-        .id;
-    validate_firewall(&api.document, &doc_id, Channel::SceneWrite)?;
+        .clone();
+    validate_firewall(&api.doc_id, &res.id, Channel::SceneWrite)?;
 
-    let (tx, rx) = async_channel::bounded::<Vec<SmolStr>>(1);
-    AsyncCommands::default()
-        .push(move |world: &mut World| {
-            let doc_ent = {
-                let mut qs = world.query::<(Entity, &HsdRecordId)>();
-                qs.iter(world)
-                    .find(|(_, id)| id.0 == doc_id)
-                    .map(|(e, _)| e)
-            };
-            let Some(doc_ent) = doc_ent else {
-                tx.try_send(vec![]).ok();
-                return;
-            };
-            let ids: Vec<SmolStr> = world
-                .entity(doc_ent)
-                .get::<HsdEntityMaps>()
-                .map(|m| m.materials.keys().cloned().collect())
-                .unwrap_or_default();
-            tx.try_send(ids).ok();
-        })
-        .try_send()?;
+    let mut ids = Vec::new();
+    res.doc
+        .get_map("hsd")
+        .get_or_create_container("materials", LoroMap::new())?
+        .for_each(|id, v| match v {
+            ValueOrContainer::Container(_) => {
+                ids.push(scene.materials.insert(MaterialRes {
+                    doc: Arc::clone(&res.doc),
+                    doc_id: res.id,
+                    id: id.into(),
+                }));
+            }
+            ValueOrContainer::Value(_) => {}
+        });
+    drop(scene);
 
-    let ids = rx.recv().await?;
-    let mut scene = api.wired_scene.lock().await;
-    Ok(ids
-        .into_iter()
-        .map(|id| scene.materials.insert(MaterialRes { id, doc_id }))
-        .collect())
+    Ok(ids)
 }
 
 pub fn create_material(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let mut scene = api.wired_scene.try_lock()?;
-    let doc_id = scene
+    let res = scene
         .docs
         .get(rep)
         .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-        .id;
-    validate_firewall(&api.document, &doc_id, Channel::SceneWrite)?;
+        .clone();
+    validate_firewall(&api.doc_id, &res.id, Channel::SceneWrite)?;
 
     let id = gen_id();
-    AsyncCommands::default()
-        .trigger(HsdCreateMaterial {
-            doc_id,
-            id: id.clone(),
-        })
-        .try_send()?;
-    Ok(scene.materials.insert(MaterialRes { id, doc_id }))
+    let materials_map = res
+        .doc
+        .get_map("hsd")
+        .get_or_create_container("materials", LoroMap::new())?;
+    materials_map.get_or_create_container(id.as_str(), LoroMap::new())?;
+
+    Ok(scene.materials.insert(MaterialRes {
+        doc: res.doc,
+        doc_id: res.id,
+        id,
+    }))
 }
 
 pub fn remove_material(api: &Api, rep: u32) -> anyhow::Result<()> {
     let Some(mat) = api.wired_scene.try_lock()?.materials.remove(rep) else {
         return Ok(());
     };
-    validate_firewall(&api.document, &mat.doc_id, Channel::SceneWrite)?;
+    validate_firewall(&api.doc_id, &mat.doc_id, Channel::SceneWrite)?;
 
-    AsyncCommands::default()
-        .trigger(HsdRemoveMaterial {
-            doc_id: mat.doc_id,
-            id: mat.id,
-        })
-        .try_send()?;
+    let materials_map = mat
+        .doc
+        .get_map("hsd")
+        .get_or_create_container("materials", LoroMap::new())?;
+    materials_map.insert(mat.id.as_str(), LoroValue::Null)?;
     Ok(())
 }

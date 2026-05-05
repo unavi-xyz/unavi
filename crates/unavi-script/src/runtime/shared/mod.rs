@@ -1,6 +1,8 @@
+use std::sync::Arc;
+
 use bevy::prelude::*;
 use blake3::Hash;
-use loro::TreeID;
+use loro::{LoroDoc, TreeID};
 use tokio::sync::Mutex;
 
 use crate::{
@@ -13,7 +15,8 @@ mod slot_map;
 pub mod wired;
 
 pub struct Api {
-    pub document: Hash,
+    pub doc: Arc<LoroDoc>,
+    pub doc_id: Hash,
     pub node: TreeID,
     pub permissions: ApiPermissions,
     pub wired_input: Mutex<WiredInputApi>,

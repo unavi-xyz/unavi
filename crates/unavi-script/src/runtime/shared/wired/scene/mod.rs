@@ -38,7 +38,7 @@ pub struct WiredSceneApi {
 }
 
 fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()> {
-    let firewall = Firewall::for_child_doc(api.document);
+    let firewall = Firewall::for_child_doc(api.doc_id);
     AsyncCommands::default()
         .spawn((
             HsdDoc(doc),
@@ -53,21 +53,26 @@ fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()>
 pub fn self_node(api: &Api) -> anyhow::Result<u32> {
     let mut scene = api.wired_scene.try_lock()?;
     Ok(scene.nodes.insert(NodeRes {
+        doc: Arc::clone(&api.doc),
+        document: api.doc_id,
         id: api.node,
-        document: api.document,
     }))
 }
 
 pub fn self_document(api: &Api) -> anyhow::Result<u32> {
     let mut scene = api.wired_scene.try_lock()?;
-    Ok(scene.docs.insert(DocRes { id: api.document }))
+    Ok(scene.docs.insert(DocRes {
+        doc: Arc::clone(&api.doc),
+        id: api.doc_id,
+    }))
 }
 
-pub fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
+pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
     let id = Hash::from_slice(&id)?;
-    validate_firewall(&api.document, &id, Channel::SceneRead)?;
+    validate_firewall(&api.doc_id, &id, Channel::SceneRead)?;
 
-    let mut scene = api.wired_scene.try_lock()?;
+    let mut scene = api.wired_scene.lock().await;
+
     if let Some(key) = scene
         .docs
         .items
@@ -75,15 +80,37 @@ pub fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
         .find(|(_, v)| v.id == id)
         .map(|(k, _)| *k)
     {
-        Ok(scene.docs.insert_clone(key))
-    } else {
-        Ok(Some(scene.docs.insert(DocRes { id })))
+        return Ok(scene.docs.insert_clone(key));
     }
+
+    if id == api.doc_id {
+        return Ok(Some(scene.docs.insert(DocRes {
+            doc: Arc::clone(&api.doc),
+            id,
+        })));
+    }
+
+    let (tx, rx) = async_channel::bounded::<Option<Arc<LoroDoc>>>(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let doc = world
+                .query::<(&HsdRecordId, &HsdDoc)>()
+                .iter(world)
+                .find(|(rid, _)| rid.0 == id)
+                .map(|(_, d)| Arc::clone(&d.0));
+            tx.try_send(doc).ok();
+        })
+        .try_send()?;
+
+    let Some(doc) = rx.recv().await? else {
+        return Ok(None);
+    };
+    Ok(Some(scene.docs.insert(DocRes { doc, id })))
 }
 
 pub fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = Hash::from_slice(&id)?;
-    validate_firewall(&api.document, &id, Channel::SceneWrite)?;
+    validate_firewall(&api.doc_id, &id, Channel::SceneWrite)?;
 
     let mut scene = api.wired_scene.try_lock()?;
     let key = scene
@@ -146,10 +173,10 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> anyhow::Result<u32> {
         Arc::new(rx.recv().await?)
     };
 
-    spawn_child_doc(api, doc, id)?;
+    spawn_child_doc(api, Arc::clone(&doc), id)?;
 
     let mut scene = api.wired_scene.lock().await;
-    Ok(scene.docs.insert(DocRes { id }))
+    Ok(scene.docs.insert(DocRes { doc, id }))
 }
 
 pub async fn create_document(api: &Api) -> anyhow::Result<u32> {
@@ -170,8 +197,8 @@ pub async fn create_document(api: &Api) -> anyhow::Result<u32> {
         Arc::new(rx.recv().await?)
     };
 
-    spawn_child_doc(api, doc, id)?;
+    spawn_child_doc(api, Arc::clone(&doc), id)?;
 
     let mut scene = api.wired_scene.lock().await;
-    Ok(scene.docs.insert(DocRes { id }))
+    Ok(scene.docs.insert(DocRes { doc, id }))
 }

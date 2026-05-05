@@ -1,12 +1,15 @@
+use std::sync::Arc;
+
 use blake3::Hash;
-use loro::TreeID;
+use loro::{LoroDoc, TreeID};
 
 use crate::runtime::shared::Api;
 
 #[derive(Clone)]
 pub struct NodeRes {
-    pub id: TreeID,
+    pub doc: Arc<LoroDoc>,
     pub document: Hash,
+    pub id: TreeID,
 }
 
 pub fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
@@ -17,7 +20,7 @@ pub fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
         .ok_or_else(|| anyhow::anyhow!("invalid node"))
 }
 
-pub fn drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+pub fn on_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
     api.wired_scene.try_lock()?.nodes.remove(rep);
     Ok(())
 }

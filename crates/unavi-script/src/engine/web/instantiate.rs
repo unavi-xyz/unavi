@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use bevy_hsd::{HsdChild, HsdRecordId, NodeId, ScriptNode};
+use bevy_hsd::{HsdChild, HsdDoc, HsdRecordId, NodeId, ScriptNode};
 use unavi_util::async_task::spawn_async_task;
 
 use crate::{
@@ -24,7 +24,7 @@ pub fn instantiate_scripts(
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
     nodes: Query<(&NodeId, &HsdChild)>,
-    docs: Query<&HsdRecordId>,
+    docs: Query<(&HsdRecordId, &HsdDoc)>,
     mut commands: Commands,
 ) {
     for (entity, script, perms, name, node_ent) in to_instantiate {
@@ -34,7 +34,7 @@ pub fn instantiate_scripts(
         let Ok((node_id, hsd)) = nodes.get(node_ent.0) else {
             continue;
         };
-        let Ok(doc_id) = docs.get(hsd.0) else {
+        let Ok((doc_id, doc)) = docs.get(hsd.0) else {
             continue;
         };
 
@@ -43,7 +43,8 @@ pub fn instantiate_scripts(
 
         let runtime = Runtime {
             api: Arc::new(Api {
-                document: doc_id.0,
+                doc: Arc::clone(&doc.0),
+                doc_id: doc_id.0,
                 node: node_id.0,
                 permissions: perms.clone(),
                 wired_input: Default::default(),

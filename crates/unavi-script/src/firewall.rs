@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use blake3::Hash;
 
 /// Firewall controls how a document may communicate with other documents.
-#[derive(Component, Clone, Default)]
+#[derive(Component, Clone, Default, Deref)]
 pub struct Firewall(pub Arc<scc::HashMap<Channel, Access>>);
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]

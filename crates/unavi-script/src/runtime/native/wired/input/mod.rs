@@ -31,7 +31,7 @@ impl bindings::wired::input::api::Host for Runtime {
         &mut self,
         target: Resource<NodeRes>,
     ) -> wasmtime::Result<Resource<InputListenerRes>> {
-        let res = shared::wired::input::register_input_listener(&self.backend, target.rep())
+        let res = shared::wired::input::register_input_listener(&self.api, target.rep())
             .map_err(wasmtime::Error::from_anyhow)?;
         Ok(Resource::new_own(res))
     }
@@ -41,7 +41,7 @@ impl bindings::wired::input::context::Host for Runtime {
     async fn register_global_input_listener(
         &mut self,
     ) -> wasmtime::Result<Resource<InputListenerRes>> {
-        let res = shared::wired::input::register_global_input_listener(&self.backend)
+        let res = shared::wired::input::register_global_input_listener(&self.api)
             .map_err(wasmtime::Error::from_anyhow)?;
         Ok(Resource::new_own(res))
     }

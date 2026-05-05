@@ -23,10 +23,7 @@ use crate::{
     runtime::{
         Runtime,
         native::{NativeRuntime, add_apis_to_linker},
-        shared::{
-            RuntimeBackend,
-            wired::scene::{SceneContext, WiredSceneBackend},
-        },
+        shared::Api,
     },
 };
 
@@ -86,14 +83,13 @@ pub fn instantiate_scripts(
         let perms = perms.cloned().unwrap_or_default();
 
         let state = Runtime {
-            backend: RuntimeBackend {
-                wired_input: Arc::default(),
-                wired_scene: Arc::new(Mutex::new(WiredSceneBackend::new(SceneContext {
-                    perms: perms.clone(),
-                    self_doc: doc_id.0,
-                    self_node: node_id.0,
-                }))),
-            },
+            api: Arc::new(Api {
+                document: doc_id.0,
+                node: node_id.0,
+                permissions: perms.clone(),
+                wired_input: Mutex::default(),
+                wired_scene: Mutex::default(),
+            }),
             native: NativeRuntime {
                 table: ResourceTable::default(),
                 wasi_ctx,

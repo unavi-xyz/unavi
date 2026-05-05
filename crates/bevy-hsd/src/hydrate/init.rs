@@ -53,6 +53,7 @@ fn full_hydrate(hsd_map: &LoroMap, raw_queue: &Arc<Mutex<Vec<RawHsdChange>>>) {
     }
 
     visit_nodes(&hsd.nodes, None, &mut raw);
+    drop(raw);
 }
 
 fn visit_nodes(

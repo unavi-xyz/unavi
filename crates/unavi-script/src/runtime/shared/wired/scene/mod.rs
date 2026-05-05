@@ -16,9 +16,8 @@ use wired_schemas::SCHEMA_HSD;
 
 use crate::{
     firewall::Firewall,
-    permissions::ApiPermissions,
     runtime::shared::{
-        RuntimeBackend,
+        Api,
         slot_map::SlotMap,
         wired::scene::{document::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes},
     },
@@ -29,59 +28,43 @@ pub mod material;
 pub mod mesh;
 pub mod node;
 
-pub struct SceneContext {
-    pub perms: ApiPermissions,
-    pub self_doc: Hash,
-    pub self_node: loro::TreeID,
-}
-
-pub struct WiredSceneBackend {
-    pub ctx: SceneContext,
+#[derive(Default)]
+pub struct WiredSceneApi {
     pub docs: SlotMap<DocRes>,
     pub materials: SlotMap<MaterialRes>,
     pub meshes: SlotMap<MeshRes>,
     pub nodes: SlotMap<NodeRes>,
 }
 
-impl WiredSceneBackend {
-    pub fn new(ctx: SceneContext) -> Self {
-        Self {
-            ctx,
-            docs: SlotMap::default(),
-            materials: SlotMap::default(),
-            meshes: SlotMap::default(),
-            nodes: SlotMap::default(),
-        }
-    }
-
-    fn spawn_child_doc(&self, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()> {
-        let firewall = Firewall::for_child_doc(self.ctx.self_doc);
-        let perms = self.ctx.perms.clone();
-
-        AsyncCommands::default()
-            .spawn((HsdDoc(doc), HsdRecordId(id), firewall, perms))
-            .try_send()?;
-
-        Ok(())
-    }
+fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()> {
+    let firewall = Firewall::for_child_doc(api.document);
+    AsyncCommands::default()
+        .spawn((
+            HsdDoc(doc),
+            HsdRecordId(id),
+            firewall,
+            api.permissions.clone(),
+        ))
+        .try_send()?;
+    Ok(())
 }
 
-pub fn self_node(backend: &RuntimeBackend) -> anyhow::Result<u32> {
-    let mut scene = backend.wired_scene.try_lock()?;
-    let id = scene.ctx.self_node;
-    let doc_id = scene.ctx.self_doc;
-    Ok(scene.nodes.insert(NodeRes { id, doc_id }))
+pub fn self_node(api: &Api) -> anyhow::Result<u32> {
+    let mut scene = api.wired_scene.try_lock()?;
+    Ok(scene.nodes.insert(NodeRes {
+        id: api.node,
+        document: api.document,
+    }))
 }
 
-pub fn self_document(backend: &RuntimeBackend) -> anyhow::Result<u32> {
-    let mut scene = backend.wired_scene.try_lock()?;
-    let id = scene.ctx.self_doc;
-    Ok(scene.docs.insert(DocRes { id }))
+pub fn self_document(api: &Api) -> anyhow::Result<u32> {
+    let mut scene = api.wired_scene.try_lock()?;
+    Ok(scene.docs.insert(DocRes { id: api.document }))
 }
 
-pub fn get_document(backend: &RuntimeBackend, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
+pub fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
     let id = Hash::from_slice(&id)?;
-    let mut scene = backend.wired_scene.try_lock()?;
+    let mut scene = api.wired_scene.try_lock()?;
 
     if let Some(key) = scene
         .docs
@@ -96,8 +79,8 @@ pub fn get_document(backend: &RuntimeBackend, id: Vec<u8>) -> anyhow::Result<Opt
     }
 }
 
-pub fn remove_document(backend: &RuntimeBackend, id: Vec<u8>) -> anyhow::Result<()> {
-    let mut scene = backend.wired_scene.try_lock()?;
+pub fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
+    let mut scene = api.wired_scene.try_lock()?;
     let key = scene
         .docs
         .items
@@ -122,7 +105,7 @@ pub fn remove_document(backend: &RuntimeBackend, id: Vec<u8>) -> anyhow::Result<
     Ok(())
 }
 
-pub async fn load_hsd(backend: &RuntimeBackend, blob_id: Vec<u8>) -> anyhow::Result<u32> {
+pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> anyhow::Result<u32> {
     let blob_hash = blake3::Hash::from_slice(&blob_id)?;
 
     let bytes = {
@@ -158,13 +141,13 @@ pub async fn load_hsd(backend: &RuntimeBackend, blob_id: Vec<u8>) -> anyhow::Res
         Arc::new(rx.recv().await?)
     };
 
-    let mut scene = backend.wired_scene.lock().await;
-    scene.spawn_child_doc(doc, id)?;
+    spawn_child_doc(api, doc, id)?;
 
+    let mut scene = api.wired_scene.lock().await;
     Ok(scene.docs.insert(DocRes { id }))
 }
 
-pub async fn create_document(backend: &RuntimeBackend) -> anyhow::Result<u32> {
+pub async fn create_document(api: &Api) -> anyhow::Result<u32> {
     let id = {
         let (mut write, rx, _cancel) = WriteRecord::new(None);
         write.schemas = vec![SchemaDef {
@@ -182,8 +165,8 @@ pub async fn create_document(backend: &RuntimeBackend) -> anyhow::Result<u32> {
         Arc::new(rx.recv().await?)
     };
 
-    let mut scene = backend.wired_scene.lock().await;
-    scene.spawn_child_doc(doc, id)?;
+    spawn_child_doc(api, doc, id)?;
 
+    let mut scene = api.wired_scene.lock().await;
     Ok(scene.docs.insert(DocRes { id }))
 }

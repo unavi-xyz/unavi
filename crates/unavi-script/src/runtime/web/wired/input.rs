@@ -1,9 +1,11 @@
 use wasm_bindgen::prelude::*;
 
+use std::sync::Arc;
+
 use crate::runtime::{
     Runtime,
     shared::{
-        self, RuntimeBackend,
+        self, Api,
         wired::input::types::{InputAction, InputDevice},
     },
 };
@@ -13,25 +15,25 @@ use super::scene::node::NodeHandle;
 #[wasm_bindgen]
 pub struct InputListenerHandle {
     rep: u32,
-    backend: RuntimeBackend,
+    api: Arc<Api>,
 }
 
 impl InputListenerHandle {
-    pub fn new(rep: u32, backend: RuntimeBackend) -> Self {
-        Self { rep, backend }
+    pub fn new(rep: u32, api: Arc<Api>) -> Self {
+        Self { rep, api }
     }
 }
 
 impl Drop for InputListenerHandle {
     fn drop(&mut self) {
-        let _ = shared::wired::input::listener::drop(&self.backend, self.rep);
+        let _ = shared::wired::input::listener::drop(&self.api, self.rep);
     }
 }
 
 #[wasm_bindgen]
 impl InputListenerHandle {
     pub fn poll(&self) -> JsValue {
-        let Ok(Some(event)) = shared::wired::input::listener::poll(&self.backend, self.rep) else {
+        let Ok(Some(event)) = shared::wired::input::listener::poll(&self.api, self.rep) else {
             return JsValue::NULL;
         };
 
@@ -57,20 +59,20 @@ impl InputListenerHandle {
 #[wasm_bindgen]
 impl Runtime {
     pub fn wired_input_listener_class(&self) -> JsValue {
-        let handle = InputListenerHandle::new(u32::MAX, self.backend.clone());
+        let handle = InputListenerHandle::new(u32::MAX, self.api.clone());
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &"constructor".into()).expect("reflect")
     }
 
     pub fn wired_input_register_input_listener(&self, target: NodeHandle) -> InputListenerHandle {
-        let rep = shared::wired::input::register_input_listener(&self.backend, target.rep())
+        let rep = shared::wired::input::register_input_listener(&self.api, target.rep())
             .unwrap_or(u32::MAX);
-        InputListenerHandle::new(rep, self.backend.clone())
+        InputListenerHandle::new(rep, self.api.clone())
     }
 
     pub fn wired_input_context_listener(&self) -> InputListenerHandle {
         let rep =
-            shared::wired::input::register_global_input_listener(&self.backend).unwrap_or(u32::MAX);
-        InputListenerHandle::new(rep, self.backend.clone())
+            shared::wired::input::register_global_input_listener(&self.api).unwrap_or(u32::MAX);
+        InputListenerHandle::new(rep, self.api.clone())
     }
 }

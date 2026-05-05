@@ -9,7 +9,7 @@ pub struct NodeRes {
     pub document: Hash,
 }
 
-pub fn node_clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
+pub fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
     api.wired_scene
         .try_lock()?
         .nodes
@@ -17,7 +17,7 @@ pub fn node_clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
         .ok_or_else(|| anyhow::anyhow!("invalid node"))
 }
 
-pub fn node_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+pub fn drop(api: &Api, rep: u32) -> anyhow::Result<()> {
     api.wired_scene.try_lock()?.nodes.remove(rep);
     Ok(())
 }

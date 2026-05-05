@@ -15,7 +15,7 @@ impl HostMaterial for Runtime {
         &mut self,
         self_: Resource<MaterialRes>,
     ) -> wasmtime::Result<Resource<MaterialRes>> {
-        shared::wired::scene::material::material_clone(&self.api, self_.rep())
+        shared::wired::scene::material::clone(&self.api, self_.rep())
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -137,7 +137,7 @@ impl HostMaterial for Runtime {
     }
 
     async fn drop(&mut self, rep: Resource<MaterialRes>) -> wasmtime::Result<()> {
-        shared::wired::scene::material::material_drop(&self.api, rep.rep())
+        shared::wired::scene::material::drop(&self.api, rep.rep())
             .map_err(wasmtime::Error::from_anyhow)
     }
 }

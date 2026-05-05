@@ -26,7 +26,7 @@ pub struct DocRes {
     pub id: Hash,
 }
 
-pub fn doc_id(api: &Api, rep: u32) -> anyhow::Result<Vec<u8>> {
+pub fn id(api: &Api, rep: u32) -> anyhow::Result<Vec<u8>> {
     api.wired_scene
         .try_lock()?
         .docs
@@ -35,7 +35,7 @@ pub fn doc_id(api: &Api, rep: u32) -> anyhow::Result<Vec<u8>> {
         .ok_or_else(|| anyhow::anyhow!("invalid doc"))
 }
 
-pub fn doc_clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
+pub fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
     api.wired_scene
         .try_lock()?
         .docs
@@ -43,12 +43,12 @@ pub fn doc_clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
         .ok_or_else(|| anyhow::anyhow!("invalid doc"))
 }
 
-pub fn doc_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+pub fn drop(api: &Api, rep: u32) -> anyhow::Result<()> {
     api.wired_scene.try_lock()?.docs.remove(rep);
     Ok(())
 }
 
-pub async fn doc_roots(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
+pub async fn roots(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
     let doc_id = api
         .wired_scene
         .lock()
@@ -98,7 +98,7 @@ pub async fn doc_roots(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
         .collect())
 }
 
-pub async fn doc_nodes(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
+pub async fn nodes(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
     let doc_id = api
         .wired_scene
         .lock()
@@ -144,7 +144,7 @@ pub async fn doc_nodes(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
         .collect())
 }
 
-pub async fn doc_create_node(api: &Api, rep: u32) -> anyhow::Result<u32> {
+pub async fn create_node(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let doc_id = api
         .wired_scene
         .lock()
@@ -171,7 +171,7 @@ pub async fn doc_create_node(api: &Api, rep: u32) -> anyhow::Result<u32> {
     }))
 }
 
-pub fn doc_remove_node(api: &Api, rep: u32) -> anyhow::Result<()> {
+pub fn remove_node(api: &Api, rep: u32) -> anyhow::Result<()> {
     let Some(node) = api.wired_scene.try_lock()?.nodes.remove(rep) else {
         return Ok(());
     };
@@ -185,7 +185,7 @@ pub fn doc_remove_node(api: &Api, rep: u32) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn doc_meshes(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
+pub async fn meshes(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
     let doc_id = api
         .wired_scene
         .lock()
@@ -226,7 +226,7 @@ pub async fn doc_meshes(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
         .collect())
 }
 
-pub fn doc_create_mesh(api: &Api, rep: u32) -> anyhow::Result<u32> {
+pub fn create_mesh(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let mut scene = api.wired_scene.try_lock()?;
     let doc_id = scene
         .docs
@@ -245,7 +245,7 @@ pub fn doc_create_mesh(api: &Api, rep: u32) -> anyhow::Result<u32> {
     Ok(scene.meshes.insert(MeshRes { id, doc_id }))
 }
 
-pub fn doc_remove_mesh(api: &Api, rep: u32) -> anyhow::Result<()> {
+pub fn remove_mesh(api: &Api, rep: u32) -> anyhow::Result<()> {
     let Some(mesh) = api.wired_scene.try_lock()?.meshes.remove(rep) else {
         return Ok(());
     };
@@ -259,7 +259,7 @@ pub fn doc_remove_mesh(api: &Api, rep: u32) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn doc_materials(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
+pub async fn materials(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
     let doc_id = api
         .wired_scene
         .lock()
@@ -300,7 +300,7 @@ pub async fn doc_materials(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
         .collect())
 }
 
-pub fn doc_create_material(api: &Api, rep: u32) -> anyhow::Result<u32> {
+pub fn create_material(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let mut scene = api.wired_scene.try_lock()?;
     let doc_id = scene
         .docs
@@ -319,7 +319,7 @@ pub fn doc_create_material(api: &Api, rep: u32) -> anyhow::Result<u32> {
     Ok(scene.materials.insert(MaterialRes { id, doc_id }))
 }
 
-pub fn doc_remove_material(api: &Api, rep: u32) -> anyhow::Result<()> {
+pub fn remove_material(api: &Api, rep: u32) -> anyhow::Result<()> {
     let Some(mat) = api.wired_scene.try_lock()?.materials.remove(rep) else {
         return Ok(());
     };

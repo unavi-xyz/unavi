@@ -9,7 +9,7 @@ pub struct MaterialRes {
     pub doc_id: Hash,
 }
 
-pub fn material_clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
+pub fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
     api.wired_scene
         .try_lock()?
         .materials
@@ -17,7 +17,7 @@ pub fn material_clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
         .ok_or_else(|| anyhow::anyhow!("invalid material"))
 }
 
-pub fn material_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+pub fn drop(api: &Api, rep: u32) -> anyhow::Result<()> {
     api.wired_scene.try_lock()?.materials.remove(rep);
     Ok(())
 }

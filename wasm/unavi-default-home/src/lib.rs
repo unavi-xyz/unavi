@@ -41,7 +41,9 @@ impl GuestScript for Script {
             return Self;
         };
 
-        gate_doc.set_translation(Vec3::new(0.0, 0.0, -GROUND_SIZE / 3.0));
+        for root in gate_doc.roots() {
+            root.set_translation(Vec3::new(0.0, 0.0, -GROUND_SIZE / 3.0));
+        }
 
         Self
     }

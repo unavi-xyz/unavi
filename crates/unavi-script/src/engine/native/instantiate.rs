@@ -20,7 +20,6 @@ use crate::{
     },
     load::asset::Wasm,
     permissions::ApiPermissions,
-    registry::DocTransformRegistry,
     runtime::{
         Runtime,
         native::{NativeRuntime, add_apis_to_linker},
@@ -53,7 +52,6 @@ pub fn instantiate_scripts(
     >,
     nodes: Query<(&NodeId, &HsdChild)>,
     docs: Query<(&HsdRecordId, Option<&ApiPermissions>)>,
-    transform_reg: Res<DocTransformRegistry>,
     mut commands: Commands,
 ) {
     for (entity, script, engine_ent, name, node_ent) in to_instantiate {
@@ -90,14 +88,11 @@ pub fn instantiate_scripts(
         let state = Runtime {
             backend: RuntimeBackend {
                 wired_input: Arc::default(),
-                wired_scene: Arc::new(Mutex::new(WiredSceneBackend::new(
-                    SceneContext {
-                        perms: perms.clone(),
-                        self_doc: doc_id.0,
-                        self_node: node_id.0,
-                    },
-                    Arc::clone(&transform_reg.0),
-                ))),
+                wired_scene: Arc::new(Mutex::new(WiredSceneBackend::new(SceneContext {
+                    perms: perms.clone(),
+                    self_doc: doc_id.0,
+                    self_node: node_id.0,
+                }))),
             },
             native: NativeRuntime {
                 table: ResourceTable::default(),

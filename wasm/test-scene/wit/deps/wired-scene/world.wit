@@ -33,45 +33,28 @@ interface types {
     id: func() -> list<u8>;
     clone: func() -> document;
 
+    assets: func() -> list<tuple<string, list<u8>>>;
+    add-asset: func(name: string, blob-id: list<u8>);
+    remove-asset: func(name: string);
+
     roots: func() -> list<node>;
     nodes: func() -> list<node>;
-    meshes: func() -> list<mesh>;
-    materials: func() -> list<material>;
-
     create-node: func() -> node;
-    create-mesh: func() -> mesh;
-    create-material: func() -> material;
-
     remove-node: func(value: borrow<node>);
+
+    meshes: func() -> list<mesh>;
+    create-mesh: func() -> mesh;
     remove-mesh: func(value: borrow<mesh>);
+
+    materials: func() -> list<material>;
+    create-material: func() -> material;
     remove-material: func(value: borrow<material>);
 
     sync: func() -> bool;
     set-sync: func(value: bool);
 
-    // Whether this document is publicly readable on the network.
     public: func() -> bool;
-    // Mark this document public or private. Syncs to the WDS ACL.
     set-public: func(value: bool);
-
-    // Named blob assets stored in this document's assets map.
-    assets: func() -> list<tuple<string, list<u8>>>;
-    add-asset: func(name: string, blob-id: list<u8>);
-    remove-asset: func(name: string);
-
-    translation: func() -> vec3;
-    set-translation: func(value: vec3);
-
-    rotation: func() -> quat;
-    set-rotation: func(value: quat);
-
-    scale: func() -> vec3;
-    set-scale: func(value: vec3);
-
-    transform: func() -> transform;
-    set-transform: func(value: transform);
-
-    global-transform: func() -> transform;
   }
 
   resource node {

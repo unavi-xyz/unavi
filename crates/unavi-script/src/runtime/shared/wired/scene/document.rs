@@ -1,12 +1,9 @@
 use bevy::prelude::*;
 use bevy_hsd::{
     HsdDoc, HsdEntityMaps,
-    hydrate::compile::{
-        create::{
-            HsdCreateMaterial, HsdCreateMesh, HsdCreateNode, HsdRemoveMaterial, HsdRemoveMesh,
-            HsdRemoveNode,
-        },
-        node::HsdDocTransformSet,
+    hydrate::compile::create::{
+        HsdCreateMaterial, HsdCreateMesh, HsdCreateNode, HsdRemoveMaterial, HsdRemoveMesh,
+        HsdRemoveNode,
     },
 };
 use blake3::Hash;
@@ -15,7 +12,6 @@ use smol_str::SmolStr;
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
-    registry::TransformHandles,
     runtime::shared::{
         RuntimeBackend,
         wired::scene::{material::MaterialRes, mesh::MeshRes, node::NodeRes},
@@ -23,38 +19,9 @@ use crate::{
     util::gen_id,
 };
 
+#[derive(Clone)]
 pub struct DocRes {
     pub id: Hash,
-    pub transforms: TransformHandles,
-}
-
-impl Clone for DocRes {
-    fn clone(&self) -> Self {
-        Self {
-            id: self.id,
-            transforms: self.transforms.clone(),
-        }
-    }
-}
-
-fn read_local_transform(
-    backend: &RuntimeBackend,
-    rep: u32,
-) -> Option<bevy::transform::components::Transform> {
-    let scene = backend.wired_scene.try_lock().ok()?;
-    let id = scene.docs.get(rep)?.id;
-    let registry = scene.transform_registry.lock().ok()?;
-    Some(*registry.get(&id)?.local.read().ok()?)
-}
-
-fn read_global_transform(
-    backend: &RuntimeBackend,
-    rep: u32,
-) -> Option<bevy::transform::components::GlobalTransform> {
-    let scene = backend.wired_scene.try_lock().ok()?;
-    let id = scene.docs.get(rep)?.id;
-    let registry = scene.transform_registry.lock().ok()?;
-    Some(*registry.get(&id)?.global.read().ok()?)
 }
 
 pub fn doc_id(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<Vec<u8>> {
@@ -79,82 +46,6 @@ pub fn doc_clone(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<u32> {
 pub fn doc_drop(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<()> {
     backend.wired_scene.try_lock()?.docs.remove(rep);
     Ok(())
-}
-
-pub fn doc_translation(backend: &RuntimeBackend, rep: u32) -> bevy::math::Vec3 {
-    read_local_transform(backend, rep)
-        .map(|t| t.translation)
-        .unwrap_or_default()
-}
-
-pub fn doc_rotation(backend: &RuntimeBackend, rep: u32) -> bevy::math::Quat {
-    read_local_transform(backend, rep).map_or(bevy::math::Quat::IDENTITY, |t| t.rotation)
-}
-
-pub fn doc_scale(backend: &RuntimeBackend, rep: u32) -> bevy::math::Vec3 {
-    read_local_transform(backend, rep).map_or(bevy::math::Vec3::ONE, |t| t.scale)
-}
-
-pub fn doc_transform(backend: &RuntimeBackend, rep: u32) -> bevy::transform::components::Transform {
-    read_local_transform(backend, rep).unwrap_or_default()
-}
-
-pub fn doc_global_transform(
-    backend: &RuntimeBackend,
-    rep: u32,
-) -> bevy::transform::components::GlobalTransform {
-    read_global_transform(backend, rep).unwrap_or_default()
-}
-
-pub fn doc_set_transform(
-    backend: &RuntimeBackend,
-    rep: u32,
-    t: bevy::transform::components::Transform,
-) -> anyhow::Result<()> {
-    let doc_id = backend
-        .wired_scene
-        .try_lock()?
-        .docs
-        .get(rep)
-        .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
-        .id;
-    AsyncCommands::default()
-        .trigger(HsdDocTransformSet {
-            doc_id,
-            transform: t,
-        })
-        .try_send()?;
-    Ok(())
-}
-
-pub fn doc_set_translation(
-    backend: &RuntimeBackend,
-    rep: u32,
-    value: bevy::math::Vec3,
-) -> anyhow::Result<()> {
-    let mut t = doc_transform(backend, rep);
-    t.translation = value;
-    doc_set_transform(backend, rep, t)
-}
-
-pub fn doc_set_rotation(
-    backend: &RuntimeBackend,
-    rep: u32,
-    value: bevy::math::Quat,
-) -> anyhow::Result<()> {
-    let mut t = doc_transform(backend, rep);
-    t.rotation = value;
-    doc_set_transform(backend, rep, t)
-}
-
-pub fn doc_set_scale(
-    backend: &RuntimeBackend,
-    rep: u32,
-    value: bevy::math::Vec3,
-) -> anyhow::Result<()> {
-    let mut t = doc_transform(backend, rep);
-    t.scale = value;
-    doc_set_transform(backend, rep, t)
 }
 
 pub async fn doc_nodes(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<Vec<u32>> {
@@ -182,7 +73,8 @@ pub async fn doc_nodes(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<Vec
                 .unwrap_or_default();
             tx.try_send(ids).ok();
         })
-        .try_send()?;
+        .send()
+        .await?;
 
     let tree_ids = rx.recv().await?;
     let mut scene = backend.wired_scene.lock().await;
@@ -366,12 +258,12 @@ pub fn doc_remove_node(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<()>
     let Some(node) = backend.wired_scene.try_lock()?.nodes.remove(rep) else {
         return Ok(());
     };
-    let _ = AsyncCommands::default()
+    AsyncCommands::default()
         .trigger(HsdRemoveNode {
             doc_id: node.doc_id,
             id: node.id,
         })
-        .try_send();
+        .try_send()?;
     Ok(())
 }
 
@@ -379,12 +271,12 @@ pub fn doc_remove_mesh(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<()>
     let Some(mesh) = backend.wired_scene.try_lock()?.meshes.remove(rep) else {
         return Ok(());
     };
-    let _ = AsyncCommands::default()
+    AsyncCommands::default()
         .trigger(HsdRemoveMesh {
             doc_id: mesh.doc_id,
             id: mesh.id,
         })
-        .try_send();
+        .try_send()?;
     Ok(())
 }
 
@@ -392,11 +284,11 @@ pub fn doc_remove_material(backend: &RuntimeBackend, rep: u32) -> anyhow::Result
     let Some(mat) = backend.wired_scene.try_lock()?.materials.remove(rep) else {
         return Ok(());
     };
-    let _ = AsyncCommands::default()
+    AsyncCommands::default()
         .trigger(HsdRemoveMaterial {
             doc_id: mat.doc_id,
             id: mat.id,
         })
-        .try_send();
+        .try_send()?;
     Ok(())
 }

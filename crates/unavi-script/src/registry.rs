@@ -7,31 +7,14 @@ use bevy::prelude::*;
 use bevy_hsd::HsdRecordId;
 use blake3::Hash;
 
-/// Mirrors an entity's `Transform` / `GlobalTransform` into Arc-backed handles
-/// each frame so async script code can read without queuing an ECS roundtrip.
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct TransformHandles {
     pub local: Arc<RwLock<Transform>>,
     pub global: Arc<RwLock<GlobalTransform>>,
 }
 
-impl Default for TransformHandles {
-    fn default() -> Self {
-        Self {
-            local: Arc::new(RwLock::new(Transform::default())),
-            global: Arc::new(RwLock::new(GlobalTransform::default())),
-        }
-    }
-}
-
-/// Attached to every `HsdRecordId` entity so the sync system can write into it.
 #[derive(Component)]
 pub struct OutboundTransform(pub TransformHandles);
-
-/// Maps document hash → [`TransformHandles`].
-/// Shared between Bevy (as a Resource) and `WiredSceneBackend` (as a cloned Arc).
-#[derive(Resource, Clone)]
-pub struct DocTransformRegistry(pub Arc<Mutex<HashMap<Hash, TransformHandles>>>);
 
 pub fn on_hsd_record_added(
     trigger: On<Add, HsdRecordId>,

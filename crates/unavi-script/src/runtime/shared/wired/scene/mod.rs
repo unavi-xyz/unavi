@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::sync::Arc;
 
 use bevy::prelude::*;
 use bevy_hsd::{HsdDoc, HsdRecordId};
@@ -20,7 +17,6 @@ use wired_schemas::SCHEMA_HSD;
 use crate::{
     firewall::Firewall,
     permissions::ApiPermissions,
-    registry::{OutboundTransform, TransformHandles},
     runtime::shared::{
         RuntimeBackend,
         slot_map::SlotMap,
@@ -45,50 +41,25 @@ pub struct WiredSceneBackend {
     pub materials: SlotMap<MaterialRes>,
     pub meshes: SlotMap<MeshRes>,
     pub nodes: SlotMap<NodeRes>,
-    pub transform_registry: Arc<Mutex<HashMap<Hash, TransformHandles>>>,
 }
 
 impl WiredSceneBackend {
-    pub fn new(
-        ctx: SceneContext,
-        transform_registry: Arc<Mutex<HashMap<Hash, TransformHandles>>>,
-    ) -> Self {
+    pub fn new(ctx: SceneContext) -> Self {
         Self {
             ctx,
             docs: SlotMap::default(),
             materials: SlotMap::default(),
             meshes: SlotMap::default(),
             nodes: SlotMap::default(),
-            transform_registry,
         }
     }
 
-    fn handles_for(&self, id: &Hash) -> TransformHandles {
-        self.transform_registry
-            .lock()
-            .expect("registry poisoned")
-            .get(id)
-            .cloned()
-            .unwrap_or_default()
-    }
-
-    fn spawn_child_doc(
-        &self,
-        doc: Arc<LoroDoc>,
-        id: Hash,
-        transforms: TransformHandles,
-    ) -> anyhow::Result<()> {
+    fn spawn_child_doc(&self, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()> {
         let firewall = Firewall::for_child_doc(self.ctx.self_doc);
         let perms = self.ctx.perms.clone();
 
         AsyncCommands::default()
-            .spawn((
-                HsdDoc(doc),
-                HsdRecordId(id),
-                firewall,
-                perms,
-                OutboundTransform(transforms),
-            ))
+            .spawn((HsdDoc(doc), HsdRecordId(id), firewall, perms))
             .try_send()?;
 
         Ok(())
@@ -105,37 +76,23 @@ pub fn self_node(backend: &RuntimeBackend) -> anyhow::Result<u32> {
 pub fn self_document(backend: &RuntimeBackend) -> anyhow::Result<u32> {
     let mut scene = backend.wired_scene.try_lock()?;
     let id = scene.ctx.self_doc;
-    let transforms = scene.handles_for(&id);
-    Ok(scene.docs.insert(DocRes { id, transforms }))
+    Ok(scene.docs.insert(DocRes { id }))
 }
 
 pub fn get_document(backend: &RuntimeBackend, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
-    let hash = Hash::from_slice(&id)?;
+    let id = Hash::from_slice(&id)?;
     let mut scene = backend.wired_scene.try_lock()?;
-
-    let Some(transforms) = scene
-        .transform_registry
-        .lock()
-        .expect("lock")
-        .get(&hash)
-        .cloned()
-    else {
-        return Ok(None);
-    };
 
     if let Some(key) = scene
         .docs
         .items
         .iter()
-        .find(|(_, v)| v.id == hash)
+        .find(|(_, v)| v.id == id)
         .map(|(k, _)| *k)
     {
         Ok(scene.docs.insert_clone(key))
     } else {
-        Ok(Some(scene.docs.insert(DocRes {
-            id: hash,
-            transforms,
-        })))
+        Ok(Some(scene.docs.insert(DocRes { id })))
     }
 }
 
@@ -201,16 +158,10 @@ pub async fn load_hsd(backend: &RuntimeBackend, blob_id: Vec<u8>) -> anyhow::Res
         Arc::new(rx.recv().await?)
     };
 
-    let transforms = TransformHandles::default();
     let mut scene = backend.wired_scene.lock().await;
-    scene
-        .transform_registry
-        .lock()
-        .expect("registry poisoned")
-        .insert(id, transforms.clone());
-    scene.spawn_child_doc(doc, id, transforms.clone())?;
+    scene.spawn_child_doc(doc, id)?;
 
-    Ok(scene.docs.insert(DocRes { id, transforms }))
+    Ok(scene.docs.insert(DocRes { id }))
 }
 
 pub async fn create_document(backend: &RuntimeBackend) -> anyhow::Result<u32> {
@@ -231,14 +182,8 @@ pub async fn create_document(backend: &RuntimeBackend) -> anyhow::Result<u32> {
         Arc::new(rx.recv().await?)
     };
 
-    let transforms = TransformHandles::default();
     let mut scene = backend.wired_scene.lock().await;
-    scene
-        .transform_registry
-        .lock()
-        .expect("registry poisoned")
-        .insert(id, transforms.clone());
-    scene.spawn_child_doc(doc, id, transforms.clone())?;
+    scene.spawn_child_doc(doc, id)?;
 
-    Ok(scene.docs.insert(DocRes { id, transforms }))
+    Ok(scene.docs.insert(DocRes { id }))
 }

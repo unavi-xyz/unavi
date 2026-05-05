@@ -2,10 +2,7 @@ use wasmtime::component::Resource;
 
 use crate::runtime::{
     Runtime,
-    native::wired::scene::bindings::wired::{
-        math::types::{Quat, Transform, Vec3},
-        scene::types::HostDocument,
-    },
+    native::wired::scene::bindings::wired::scene::types::HostDocument,
     shared::{
         self,
         wired::scene::{document::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes},
@@ -151,58 +148,6 @@ impl HostDocument for Runtime {
         _name: String,
     ) -> wasmtime::Result<()> {
         Ok(())
-    }
-
-    async fn translation(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec3> {
-        Ok(shared::wired::scene::document::doc_translation(&self.backend, self_.rep()).into())
-    }
-
-    async fn set_translation(
-        &mut self,
-        self_: Resource<DocRes>,
-        value: Vec3,
-    ) -> wasmtime::Result<()> {
-        shared::wired::scene::document::doc_set_translation(
-            &self.backend,
-            self_.rep(),
-            value.into(),
-        )
-        .map_err(wasmtime::Error::from_anyhow)
-    }
-
-    async fn rotation(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Quat> {
-        Ok(shared::wired::scene::document::doc_rotation(&self.backend, self_.rep()).into())
-    }
-
-    async fn set_rotation(&mut self, self_: Resource<DocRes>, value: Quat) -> wasmtime::Result<()> {
-        shared::wired::scene::document::doc_set_rotation(&self.backend, self_.rep(), value.into())
-            .map_err(wasmtime::Error::from_anyhow)
-    }
-
-    async fn scale(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec3> {
-        Ok(shared::wired::scene::document::doc_scale(&self.backend, self_.rep()).into())
-    }
-
-    async fn set_scale(&mut self, self_: Resource<DocRes>, value: Vec3) -> wasmtime::Result<()> {
-        shared::wired::scene::document::doc_set_scale(&self.backend, self_.rep(), value.into())
-            .map_err(wasmtime::Error::from_anyhow)
-    }
-
-    async fn transform(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Transform> {
-        Ok(shared::wired::scene::document::doc_transform(&self.backend, self_.rep()).into())
-    }
-
-    async fn set_transform(
-        &mut self,
-        self_: Resource<DocRes>,
-        value: Transform,
-    ) -> wasmtime::Result<()> {
-        shared::wired::scene::document::doc_set_transform(&self.backend, self_.rep(), value.into())
-            .map_err(wasmtime::Error::from_anyhow)
-    }
-
-    async fn global_transform(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Transform> {
-        Ok(shared::wired::scene::document::doc_global_transform(&self.backend, self_.rep()).into())
     }
 
     async fn drop(&mut self, rep: Resource<DocRes>) -> wasmtime::Result<()> {

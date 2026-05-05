@@ -47,14 +47,12 @@ impl HostDocument for Runtime {
 
     async fn roots(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec<Resource<NodeRes>>> {
         shared::wired::scene::document::roots(&self.api, self_.rep())
-            .await
             .map(|v| v.into_iter().map(Resource::new_own).collect())
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn nodes(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec<Resource<NodeRes>>> {
         shared::wired::scene::document::nodes(&self.api, self_.rep())
-            .await
             .map(|v| v.into_iter().map(Resource::new_own).collect())
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -64,7 +62,6 @@ impl HostDocument for Runtime {
         self_: Resource<DocRes>,
     ) -> wasmtime::Result<Resource<NodeRes>> {
         shared::wired::scene::document::create_node(&self.api, self_.rep())
-            .await
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -83,7 +80,6 @@ impl HostDocument for Runtime {
         self_: Resource<DocRes>,
     ) -> wasmtime::Result<Vec<Resource<MeshRes>>> {
         shared::wired::scene::document::meshes(&self.api, self_.rep())
-            .await
             .map(|v| v.into_iter().map(Resource::new_own).collect())
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -111,7 +107,6 @@ impl HostDocument for Runtime {
         self_: Resource<DocRes>,
     ) -> wasmtime::Result<Vec<Resource<MaterialRes>>> {
         shared::wired::scene::document::materials(&self.api, self_.rep())
-            .await
             .map(|v| v.into_iter().map(Resource::new_own).collect())
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -151,7 +146,7 @@ impl HostDocument for Runtime {
     }
 
     async fn drop(&mut self, rep: Resource<DocRes>) -> wasmtime::Result<()> {
-        shared::wired::scene::document::drop(&self.api, rep.rep())
+        shared::wired::scene::document::on_drop(&self.api, rep.rep())
             .map_err(wasmtime::Error::from_anyhow)
     }
 }

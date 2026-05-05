@@ -48,8 +48,8 @@ impl Runtime {
         DocHandle::new(rep, self.api.clone())
     }
 
-    pub fn wired_scene_get_document(&self, id: Vec<u8>) -> Option<DocHandle> {
-        let rep = shared::wired::scene::get_document(&self.api, id).ok()??;
+    pub async fn wired_scene_get_document(&self, id: Vec<u8>) -> Option<DocHandle> {
+        let rep = shared::wired::scene::get_document(&self.api, id).await.ok()??;
         Some(DocHandle::new(rep, self.api.clone()))
     }
 

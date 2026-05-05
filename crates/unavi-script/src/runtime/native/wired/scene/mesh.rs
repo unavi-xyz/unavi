@@ -134,6 +134,7 @@ impl HostMesh for Runtime {
     }
 
     async fn drop(&mut self, rep: Resource<MeshRes>) -> wasmtime::Result<()> {
-        shared::wired::scene::mesh::drop(&self.api, rep.rep()).map_err(wasmtime::Error::from_anyhow)
+        shared::wired::scene::mesh::on_drop(&self.api, rep.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 }

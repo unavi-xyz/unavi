@@ -47,7 +47,7 @@ pub fn deregister_firewalls(
     FIREWALL_REGISTRY.remove_sync(&id.0);
 }
 
-pub(crate) fn validate_firewall(me: &Hash, target: &Hash, channel: Channel) -> anyhow::Result<()> {
+pub fn validate_firewall(me: &Hash, target: &Hash, channel: Channel) -> anyhow::Result<()> {
     if let Some(whitelist) = FIREWALL_REGISTRY
         .get_sync(target)
         .as_deref()

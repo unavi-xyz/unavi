@@ -179,6 +179,7 @@ impl HostNode for Runtime {
     }
 
     async fn drop(&mut self, rep: Resource<NodeRes>) -> wasmtime::Result<()> {
-        shared::wired::scene::node::drop(&self.api, rep.rep()).map_err(wasmtime::Error::from_anyhow)
+        shared::wired::scene::node::on_drop(&self.api, rep.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 }

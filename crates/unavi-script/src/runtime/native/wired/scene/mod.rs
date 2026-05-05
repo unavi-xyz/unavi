@@ -47,6 +47,7 @@ impl bindings::wired::scene::api::Host for Runtime {
 
     async fn get_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Option<Resource<DocRes>>> {
         shared::wired::scene::get_document(&self.api, id)
+            .await
             .map(|r| r.map(Resource::new_own))
             .map_err(wasmtime::Error::from_anyhow)
     }

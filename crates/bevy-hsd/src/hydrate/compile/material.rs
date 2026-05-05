@@ -5,7 +5,7 @@ use smol_str::SmolStr;
 use hsd::HsdMaterial;
 
 use crate::{
-    DocRegistryMap, HsdChild, HsdEntityMaps, MaterialId, hydrate::compile::image::CompiledImage,
+    HsdChild, HsdEntityMaps, HsdRecordId, MaterialId, hydrate::compile::image::CompiledImage,
 };
 
 #[derive(Component)]
@@ -152,13 +152,13 @@ fn material_params_from_hsd(hsd: &HsdMaterial) -> MaterialParams {
 
 pub(crate) fn handle_hsd_material_spawned(
     trigger: On<HsdMaterialSpawned>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     mut entity_maps: Query<&mut HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "material spawned");
-    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
+    let Some((doc_ent, _)) = docs.iter().find(|(_, id)| id.0 == ev.doc_id) else {
         return;
     };
     let Ok(mut maps) = entity_maps.get_mut(doc_ent) else {
@@ -183,13 +183,13 @@ pub(crate) fn handle_hsd_material_spawned(
 
 pub(crate) fn handle_hsd_material_despawned(
     trigger: On<HsdMaterialDespawned>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     mut entity_maps: Query<&mut HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "material despawned");
-    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
+    let Some((doc_ent, _)) = docs.iter().find(|(_, id)| id.0 == ev.doc_id) else {
         return;
     };
     let Ok(mut maps) = entity_maps.get_mut(doc_ent) else {
@@ -204,36 +204,36 @@ pub(crate) fn handle_hsd_material_despawned(
 }
 
 fn get_material_entity(
-    registry_map: &DocRegistryMap,
+    docs: &Query<(Entity, &HsdRecordId)>,
     entity_maps: &Query<&HsdEntityMaps>,
     doc_id: &blake3::Hash,
     id: &SmolStr,
 ) -> Option<Entity> {
-    let doc_ent = registry_map.get_entity(doc_id)?;
+    let (doc_ent, _) = docs.iter().find(|(_, r)| r.0 == *doc_id)?;
     let maps = entity_maps.get(doc_ent).ok()?;
     maps.materials.get(id).copied()
 }
 
 fn get_image_entity(
-    registry_map: &DocRegistryMap,
+    docs: &Query<(Entity, &HsdRecordId)>,
     entity_maps: &Query<&HsdEntityMaps>,
     doc_id: &blake3::Hash,
     id: &SmolStr,
 ) -> Option<Entity> {
-    let doc_ent = registry_map.get_entity(doc_id)?;
+    let (doc_ent, _) = docs.iter().find(|(_, r)| r.0 == *doc_id)?;
     let maps = entity_maps.get(doc_ent).ok()?;
     maps.images.get(id).copied()
 }
 
 fn update_material_param(
-    registry_map: &DocRegistryMap,
+    docs: &Query<(Entity, &HsdRecordId)>,
     entity_maps: &Query<&HsdEntityMaps>,
     doc_id: &blake3::Hash,
     id: &SmolStr,
     params: &mut Query<&mut MaterialParams>,
     f: impl FnOnce(&mut MaterialParams),
 ) {
-    let Some(ent) = get_material_entity(registry_map, entity_maps, doc_id, id) else {
+    let Some(ent) = get_material_entity(docs, entity_maps, doc_id, id) else {
         return;
     };
     if let Ok(mut p) = params.get_mut(ent) {
@@ -242,7 +242,7 @@ fn update_material_param(
 }
 
 fn update_material_texture(
-    registry_map: &DocRegistryMap,
+    docs: &Query<(Entity, &HsdRecordId)>,
     entity_maps: &Query<&HsdEntityMaps>,
     doc_id: &blake3::Hash,
     mat_id: &SmolStr,
@@ -250,10 +250,10 @@ fn update_material_texture(
     params: &mut Query<&mut MaterialParams>,
     f: impl FnOnce(&mut MaterialParams, Option<Entity>),
 ) {
-    let Some(ent) = get_material_entity(registry_map, entity_maps, doc_id, mat_id) else {
+    let Some(ent) = get_material_entity(docs, entity_maps, doc_id, mat_id) else {
         return;
     };
-    let img_ent = get_image_entity(registry_map, entity_maps, doc_id, image_id);
+    let img_ent = get_image_entity(docs, entity_maps, doc_id, image_id);
     if let Ok(mut p) = params.get_mut(ent) {
         f(&mut p, img_ent);
     }
@@ -261,71 +261,50 @@ fn update_material_texture(
 
 pub(crate) fn handle_hsd_material_alpha_cutoff_set(
     trigger: On<HsdMaterialAlphaCutoffSet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(
-        &registry_map,
-        &entity_maps,
-        &ev.doc_id,
-        &ev.id,
-        &mut params,
-        |p| {
-            p.alpha_cutoff = Some(ev.value);
-        },
-    );
+    update_material_param(&docs, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
+        p.alpha_cutoff = Some(ev.value);
+    });
 }
 
 pub(crate) fn handle_hsd_material_alpha_mode_set(
     trigger: On<HsdMaterialAlphaModeSet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(
-        &registry_map,
-        &entity_maps,
-        &ev.doc_id,
-        &ev.id,
-        &mut params,
-        |p| {
-            p.alpha_mode.clone_from(&ev.mode);
-        },
-    );
+    update_material_param(&docs, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
+        p.alpha_mode.clone_from(&ev.mode);
+    });
 }
 
 pub(crate) fn handle_hsd_material_base_color_set(
     trigger: On<HsdMaterialBaseColorSet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(
-        &registry_map,
-        &entity_maps,
-        &ev.doc_id,
-        &ev.id,
-        &mut params,
-        |p| {
-            let [r, g, b, a] = ev.color;
-            p.base_color = Some(Color::srgba(r, g, b, a));
-        },
-    );
+    update_material_param(&docs, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
+        let [r, g, b, a] = ev.color;
+        p.base_color = Some(Color::srgba(r, g, b, a));
+    });
 }
 
 pub(crate) fn handle_hsd_material_base_color_texture_set(
     trigger: On<HsdMaterialBaseColorTextureSet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     update_material_texture(
-        &registry_map,
+        &docs,
         &entity_maps,
         &ev.doc_id,
         &ev.id,
@@ -337,13 +316,13 @@ pub(crate) fn handle_hsd_material_base_color_texture_set(
 
 pub(crate) fn handle_hsd_material_emissive_texture_set(
     trigger: On<HsdMaterialEmissiveTextureSet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     update_material_texture(
-        &registry_map,
+        &docs,
         &entity_maps,
         &ev.doc_id,
         &ev.id,
@@ -355,13 +334,13 @@ pub(crate) fn handle_hsd_material_emissive_texture_set(
 
 pub(crate) fn handle_hsd_material_metallic_roughness_texture_set(
     trigger: On<HsdMaterialMetallicRoughnessTextureSet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     update_material_texture(
-        &registry_map,
+        &docs,
         &entity_maps,
         &ev.doc_id,
         &ev.id,
@@ -373,13 +352,13 @@ pub(crate) fn handle_hsd_material_metallic_roughness_texture_set(
 
 pub(crate) fn handle_hsd_material_normal_texture_set(
     trigger: On<HsdMaterialNormalTextureSet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     update_material_texture(
-        &registry_map,
+        &docs,
         &entity_maps,
         &ev.doc_id,
         &ev.id,
@@ -391,13 +370,13 @@ pub(crate) fn handle_hsd_material_normal_texture_set(
 
 pub(crate) fn handle_hsd_material_occlusion_texture_set(
     trigger: On<HsdMaterialOcclusionTextureSet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
     update_material_texture(
-        &registry_map,
+        &docs,
         &entity_maps,
         &ev.doc_id,
         &ev.id,
@@ -409,50 +388,36 @@ pub(crate) fn handle_hsd_material_occlusion_texture_set(
 
 pub(crate) fn handle_hsd_material_double_sided_set(
     trigger: On<HsdMaterialDoubleSidedSet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(
-        &registry_map,
-        &entity_maps,
-        &ev.doc_id,
-        &ev.id,
-        &mut params,
-        |p| {
-            p.double_sided = Some(ev.value);
-        },
-    );
+    update_material_param(&docs, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
+        p.double_sided = Some(ev.value);
+    });
 }
 
 pub(crate) fn handle_hsd_material_metallic_set(
     trigger: On<HsdMaterialMetallicSet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(
-        &registry_map,
-        &entity_maps,
-        &ev.doc_id,
-        &ev.id,
-        &mut params,
-        |p| {
-            p.metallic = Some(ev.value);
-        },
-    );
+    update_material_param(&docs, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
+        p.metallic = Some(ev.value);
+    });
 }
 
 pub(crate) fn handle_hsd_material_name_set(
     trigger: On<HsdMaterialNameSet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
-    let Some(ent) = get_material_entity(&registry_map, &entity_maps, &ev.doc_id, &ev.id) else {
+    let Some(ent) = get_material_entity(&docs, &entity_maps, &ev.doc_id, &ev.id) else {
         return;
     };
     let Ok(mut entity_cmd) = commands.get_entity(ent) else {
@@ -467,40 +432,26 @@ pub(crate) fn handle_hsd_material_name_set(
 
 pub(crate) fn handle_hsd_material_unlit_set(
     trigger: On<HsdMaterialUnlitSet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(
-        &registry_map,
-        &entity_maps,
-        &ev.doc_id,
-        &ev.id,
-        &mut params,
-        |p| {
-            p.unlit = Some(ev.value);
-        },
-    );
+    update_material_param(&docs, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
+        p.unlit = Some(ev.value);
+    });
 }
 
 pub(crate) fn handle_hsd_material_roughness_set(
     trigger: On<HsdMaterialRoughnessSet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     mut params: Query<&mut MaterialParams>,
 ) {
     let ev = trigger.event();
-    update_material_param(
-        &registry_map,
-        &entity_maps,
-        &ev.doc_id,
-        &ev.id,
-        &mut params,
-        |p| {
-            p.roughness = Some(ev.value);
-        },
-    );
+    update_material_param(&docs, &entity_maps, &ev.doc_id, &ev.id, &mut params, |p| {
+        p.roughness = Some(ev.value);
+    });
 }
 
 const METALLIC_DEFAULT: f32 = 0.5;

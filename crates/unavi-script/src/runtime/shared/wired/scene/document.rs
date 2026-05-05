@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_hsd::{
-    HsdDoc, HsdEntityMaps,
+    HsdDoc, HsdEntityMaps, HsdRecordId,
     hydrate::compile::create::{
         HsdCreateMaterial, HsdCreateMesh, HsdCreateNode, HsdRemoveMaterial, HsdRemoveMesh,
         HsdRemoveNode,
@@ -61,8 +61,13 @@ pub async fn doc_nodes(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<Vec
     let (tx, rx) = async_channel::bounded::<Vec<TreeID>>(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
-            let registry = world.resource::<bevy_hsd::DocRegistryMap>();
-            let Some(doc_ent) = registry.get_entity(&doc_id) else {
+            let doc_ent = {
+                let mut qs = world.query::<(Entity, &HsdRecordId)>();
+                qs.iter(world)
+                    .find(|(_, id)| id.0 == doc_id)
+                    .map(|(e, _)| e)
+            };
+            let Some(doc_ent) = doc_ent else {
                 tx.try_send(vec![]).ok();
                 return;
             };
@@ -97,8 +102,13 @@ pub async fn doc_roots(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<Vec
     let (tx, rx) = async_channel::bounded::<Vec<TreeID>>(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
-            let registry = world.resource::<bevy_hsd::DocRegistryMap>();
-            let Some(doc_ent) = registry.get_entity(&doc_id) else {
+            let doc_ent = {
+                let mut qs = world.query::<(Entity, &HsdRecordId)>();
+                qs.iter(world)
+                    .find(|(_, id)| id.0 == doc_id)
+                    .map(|(e, _)| e)
+            };
+            let Some(doc_ent) = doc_ent else {
                 tx.try_send(vec![]).ok();
                 return;
             };
@@ -137,8 +147,13 @@ pub async fn doc_meshes(backend: &RuntimeBackend, rep: u32) -> anyhow::Result<Ve
     let (tx, rx) = async_channel::bounded::<Vec<SmolStr>>(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
-            let registry = world.resource::<bevy_hsd::DocRegistryMap>();
-            let Some(doc_ent) = registry.get_entity(&doc_id) else {
+            let doc_ent = {
+                let mut qs = world.query::<(Entity, &HsdRecordId)>();
+                qs.iter(world)
+                    .find(|(_, id)| id.0 == doc_id)
+                    .map(|(e, _)| e)
+            };
+            let Some(doc_ent) = doc_ent else {
                 tx.try_send(vec![]).ok();
                 return;
             };
@@ -172,8 +187,13 @@ pub async fn doc_materials(backend: &RuntimeBackend, rep: u32) -> anyhow::Result
     let (tx, rx) = async_channel::bounded::<Vec<SmolStr>>(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
-            let registry = world.resource::<bevy_hsd::DocRegistryMap>();
-            let Some(doc_ent) = registry.get_entity(&doc_id) else {
+            let doc_ent = {
+                let mut qs = world.query::<(Entity, &HsdRecordId)>();
+                qs.iter(world)
+                    .find(|(_, id)| id.0 == doc_id)
+                    .map(|(e, _)| e)
+            };
+            let Some(doc_ent) = doc_ent else {
                 tx.try_send(vec![]).ok();
                 return;
             };

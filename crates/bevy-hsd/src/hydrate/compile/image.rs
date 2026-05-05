@@ -14,7 +14,7 @@ use smol_str::SmolStr;
 use hsd::HsdImage;
 
 use crate::{
-    DocRegistryMap, HsdChild, HsdEntityMaps,
+    HsdChild, HsdEntityMaps, HsdRecordId,
     hydrate::compile::material::{CompiledMaterial, MaterialParams},
 };
 
@@ -137,13 +137,13 @@ pub(crate) fn build_img(dyn_img: DynamicImage, params: &ImageParams) -> Image {
 
 pub(crate) fn handle_hsd_image_spawned(
     trigger: On<HsdImageSpawned>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     mut entity_maps: Query<&mut HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "image spawned");
-    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
+    let Some((doc_ent, _)) = docs.iter().find(|(_, id)| id.0 == ev.doc_id) else {
         return;
     };
     let Ok(mut maps) = entity_maps.get_mut(doc_ent) else {
@@ -174,13 +174,13 @@ pub(crate) fn handle_hsd_image_spawned(
 
 pub(crate) fn handle_hsd_image_despawned(
     trigger: On<HsdImageDespawned>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     mut entity_maps: Query<&mut HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "image despawned");
-    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
+    let Some((doc_ent, _)) = docs.iter().find(|(_, id)| id.0 == ev.doc_id) else {
         return;
     };
     let Ok(mut maps) = entity_maps.get_mut(doc_ent) else {

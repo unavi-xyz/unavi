@@ -25,7 +25,7 @@ pub struct SpaceStateRoot {
 }
 
 #[derive(Component)]
-pub struct SpaceStateDoc(pub Arc<LoroDoc>);
+pub struct SpaceStateDoc;
 
 #[derive(Hydrate, Reconcile, Default, Debug)]
 pub struct SpaceState {
@@ -42,39 +42,34 @@ pub struct PortalState {
 pub fn add_space_state(trigger: On<Add, Space>, spaces: Query<&Space>, mut commands: Commands) {
     let space = spaces.get(trigger.entity).expect("space").0;
 
-    let doc = Arc::clone(
-        &SPACES
-            .lock()
-            .expect("spaces lock")
-            .entry(space)
-            .or_insert_with(|| {
-                let doc = LoroDoc::new();
+    SPACES
+        .lock()
+        .expect("spaces lock")
+        .entry(space)
+        .or_insert_with(|| {
+            let doc = LoroDoc::new();
 
-                // Init loro doc.
-                let map = doc.get_map("state");
-                let state = SpaceState::default();
-                state.reconcile(&map).expect("reconcile state");
+            let map = doc.get_map("state");
+            let state = SpaceState::default();
+            state.reconcile(&map).expect("reconcile state");
 
-                // Spawn observer to publish local state changes.
-                let sub = doc.subscribe_local_update(Box::new(move |update| {
-                    let _ = AsyncCommands::default()
-                        .trigger(SpaceStateUpdate {
-                            space,
-                            data: update.clone(),
-                        })
-                        .try_send();
-                    true
-                }));
+            let sub = doc.subscribe_local_update(Box::new(move |update| {
+                let _ = AsyncCommands::default()
+                    .trigger(SpaceStateUpdate {
+                        space,
+                        data: update.clone(),
+                    })
+                    .try_send();
+                true
+            }));
 
-                SpaceStateRoot {
-                    doc: Arc::new(doc),
-                    _sub: sub,
-                }
-            })
-            .doc,
-    );
+            SpaceStateRoot {
+                doc: Arc::new(doc),
+                _sub: sub,
+            }
+        });
 
-    commands.entity(trigger.entity).insert(SpaceStateDoc(doc));
+    commands.entity(trigger.entity).insert(SpaceStateDoc);
 }
 
 pub fn remove_space_state(

@@ -15,9 +15,10 @@ use unavi_util::async_commands::AsyncCommands;
 use wired_schemas::SCHEMA_HSD;
 
 use crate::{
-    firewall::Firewall,
+    firewall::{Channel, Firewall},
     runtime::shared::{
         Api,
+        registry::firewall::validate_firewall,
         slot_map::SlotMap,
         wired::scene::{document::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes},
     },
@@ -64,8 +65,9 @@ pub fn self_document(api: &Api) -> anyhow::Result<u32> {
 
 pub fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
     let id = Hash::from_slice(&id)?;
-    let mut scene = api.wired_scene.try_lock()?;
+    validate_firewall(&api.document, &id, Channel::SceneRead)?;
 
+    let mut scene = api.wired_scene.try_lock()?;
     if let Some(key) = scene
         .docs
         .items
@@ -80,12 +82,15 @@ pub fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
 }
 
 pub fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
+    let id = Hash::from_slice(&id)?;
+    validate_firewall(&api.document, &id, Channel::SceneWrite)?;
+
     let mut scene = api.wired_scene.try_lock()?;
     let key = scene
         .docs
         .items
         .iter()
-        .find(|(_, v)| v.id.as_slice() == id)
+        .find(|(_, v)| v.id == id)
         .map(|(k, _)| *k)
         .ok_or_else(|| anyhow::anyhow!("resource not found"))?;
     let Some(doc) = scene.docs.remove(key) else {
@@ -106,7 +111,7 @@ pub fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
 }
 
 pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> anyhow::Result<u32> {
-    let blob_hash = blake3::Hash::from_slice(&blob_id)?;
+    let blob_hash = Hash::from_slice(&blob_id)?;
 
     let bytes = {
         let (tx, rx) = async_channel::bounded(1);

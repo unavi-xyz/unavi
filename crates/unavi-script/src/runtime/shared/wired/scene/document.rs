@@ -12,8 +12,10 @@ use smol_str::SmolStr;
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
+    firewall::Channel,
     runtime::shared::{
         Api,
+        registry::firewall::validate_firewall,
         wired::scene::{material::MaterialRes, mesh::MeshRes, node::NodeRes},
     },
     util::gen_id,
@@ -151,6 +153,7 @@ pub async fn doc_create_node(api: &Api, rep: u32) -> anyhow::Result<u32> {
         .get(rep)
         .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
         .id;
+    validate_firewall(&api.document, &doc_id, Channel::SceneWrite)?;
 
     let (tx, rx) = async_channel::bounded::<TreeID>(1);
     AsyncCommands::default()
@@ -172,6 +175,7 @@ pub fn doc_remove_node(api: &Api, rep: u32) -> anyhow::Result<()> {
     let Some(node) = api.wired_scene.try_lock()?.nodes.remove(rep) else {
         return Ok(());
     };
+    validate_firewall(&api.document, &node.document, Channel::SceneWrite)?;
     AsyncCommands::default()
         .trigger(HsdRemoveNode {
             doc_id: node.document,
@@ -190,6 +194,7 @@ pub async fn doc_meshes(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
         .get(rep)
         .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
         .id;
+    validate_firewall(&api.document, &doc_id, Channel::SceneWrite)?;
 
     let (tx, rx) = async_channel::bounded::<Vec<SmolStr>>(1);
     AsyncCommands::default()
@@ -228,6 +233,8 @@ pub fn doc_create_mesh(api: &Api, rep: u32) -> anyhow::Result<u32> {
         .get(rep)
         .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
         .id;
+    validate_firewall(&api.document, &doc_id, Channel::SceneWrite)?;
+
     let id = gen_id();
     AsyncCommands::default()
         .trigger(HsdCreateMesh {
@@ -242,6 +249,7 @@ pub fn doc_remove_mesh(api: &Api, rep: u32) -> anyhow::Result<()> {
     let Some(mesh) = api.wired_scene.try_lock()?.meshes.remove(rep) else {
         return Ok(());
     };
+    validate_firewall(&api.document, &mesh.doc_id, Channel::SceneWrite)?;
     AsyncCommands::default()
         .trigger(HsdRemoveMesh {
             doc_id: mesh.doc_id,
@@ -260,6 +268,7 @@ pub async fn doc_materials(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
         .get(rep)
         .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
         .id;
+    validate_firewall(&api.document, &doc_id, Channel::SceneWrite)?;
 
     let (tx, rx) = async_channel::bounded::<Vec<SmolStr>>(1);
     AsyncCommands::default()
@@ -298,6 +307,8 @@ pub fn doc_create_material(api: &Api, rep: u32) -> anyhow::Result<u32> {
         .get(rep)
         .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
         .id;
+    validate_firewall(&api.document, &doc_id, Channel::SceneWrite)?;
+
     let id = gen_id();
     AsyncCommands::default()
         .trigger(HsdCreateMaterial {
@@ -312,6 +323,8 @@ pub fn doc_remove_material(api: &Api, rep: u32) -> anyhow::Result<()> {
     let Some(mat) = api.wired_scene.try_lock()?.materials.remove(rep) else {
         return Ok(());
     };
+    validate_firewall(&api.document, &mat.doc_id, Channel::SceneWrite)?;
+
     AsyncCommands::default()
         .trigger(HsdRemoveMaterial {
             doc_id: mat.doc_id,

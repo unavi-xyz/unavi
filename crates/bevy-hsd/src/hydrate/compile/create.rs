@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use loro::{LoroMap, LoroTree, TreeID, TreeParentId};
 use smol_str::SmolStr;
 
-use crate::{DocRegistryMap, HsdDoc};
+use crate::{HsdDoc, HsdRecordId};
 
 #[derive(Event)]
 pub struct HsdCreateNode {
@@ -44,14 +44,10 @@ pub struct HsdRemoveMaterial {
 
 pub(crate) fn handle_hsd_create_node(
     trigger: On<HsdCreateNode>,
-    registry_map: Res<DocRegistryMap>,
-    docs: Query<&HsdDoc>,
+    docs: Query<(&HsdDoc, &HsdRecordId)>,
 ) {
     let ev = trigger.event();
-    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
-        return;
-    };
-    let Ok(hsd_doc) = docs.get(doc_ent) else {
+    let Some((hsd_doc, _)) = docs.iter().find(|(_, id)| id.0 == trigger.doc_id) else {
         return;
     };
     let doc = &hsd_doc.0;
@@ -69,14 +65,10 @@ pub(crate) fn handle_hsd_create_node(
 
 pub(crate) fn handle_hsd_create_mesh(
     trigger: On<HsdCreateMesh>,
-    registry_map: Res<DocRegistryMap>,
-    docs: Query<&HsdDoc>,
+    docs: Query<(&HsdDoc, &HsdRecordId)>,
 ) {
     let ev = trigger.event();
-    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
-        return;
-    };
-    let Ok(hsd_doc) = docs.get(doc_ent) else {
+    let Some((hsd_doc, _)) = docs.iter().find(|(_, id)| id.0 == trigger.doc_id) else {
         return;
     };
     let doc = &hsd_doc.0;
@@ -95,14 +87,10 @@ pub(crate) fn handle_hsd_create_mesh(
 
 pub(crate) fn handle_hsd_create_material(
     trigger: On<HsdCreateMaterial>,
-    registry_map: Res<DocRegistryMap>,
-    docs: Query<&HsdDoc>,
+    docs: Query<(&HsdDoc, &HsdRecordId)>,
 ) {
     let ev = trigger.event();
-    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
-        return;
-    };
-    let Ok(hsd_doc) = docs.get(doc_ent) else {
+    let Some((hsd_doc, _)) = docs.iter().find(|(_, id)| id.0 == trigger.doc_id) else {
         return;
     };
     let doc = &hsd_doc.0;
@@ -120,14 +108,10 @@ pub(crate) fn handle_hsd_create_material(
 
 pub(crate) fn handle_hsd_remove_node(
     trigger: On<HsdRemoveNode>,
-    registry_map: Res<DocRegistryMap>,
-    docs: Query<&HsdDoc>,
+    docs: Query<(&HsdDoc, &HsdRecordId)>,
 ) {
     let ev = trigger.event();
-    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
-        return;
-    };
-    let Ok(hsd_doc) = docs.get(doc_ent) else {
+    let Some((hsd_doc, _)) = docs.iter().find(|(_, id)| id.0 == trigger.doc_id) else {
         return;
     };
     let doc = &hsd_doc.0;
@@ -142,14 +126,10 @@ pub(crate) fn handle_hsd_remove_node(
 
 pub(crate) fn handle_hsd_remove_mesh(
     trigger: On<HsdRemoveMesh>,
-    registry_map: Res<DocRegistryMap>,
-    docs: Query<&HsdDoc>,
+    docs: Query<(&HsdDoc, &HsdRecordId)>,
 ) {
     let ev = trigger.event();
-    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
-        return;
-    };
-    let Ok(hsd_doc) = docs.get(doc_ent) else {
+    let Some((hsd_doc, _)) = docs.iter().find(|(_, id)| id.0 == trigger.doc_id) else {
         return;
     };
     let doc = &hsd_doc.0;
@@ -167,14 +147,10 @@ pub(crate) fn handle_hsd_remove_mesh(
 
 pub(crate) fn handle_hsd_remove_material(
     trigger: On<HsdRemoveMaterial>,
-    registry_map: Res<DocRegistryMap>,
-    docs: Query<&HsdDoc>,
+    docs: Query<(&HsdDoc, &HsdRecordId)>,
 ) {
     let ev = trigger.event();
-    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
-        return;
-    };
-    let Ok(hsd_doc) = docs.get(doc_ent) else {
+    let Some((hsd_doc, _)) = docs.iter().find(|(_, id)| id.0 == trigger.doc_id) else {
         return;
     };
     let doc = &hsd_doc.0;

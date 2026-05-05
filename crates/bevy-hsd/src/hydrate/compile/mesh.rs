@@ -13,7 +13,7 @@ use smol_str::SmolStr;
 
 use hsd::HsdMesh;
 
-use crate::{DocRegistryMap, HsdChild, MeshId};
+use crate::{HsdChild, HsdRecordId, MeshId};
 
 #[derive(Component)]
 pub struct CompiledMesh(pub Handle<Mesh>);
@@ -69,13 +69,13 @@ pub struct MeshParams {
 
 pub(crate) fn handle_hsd_mesh_spawned(
     trigger: On<HsdMeshSpawned>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     mut entity_maps: Query<&mut crate::HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "mesh spawned");
-    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
+    let Some((doc_ent, _)) = docs.iter().find(|(_, id)| id.0 == ev.doc_id) else {
         return;
     };
     let Ok(mut maps) = entity_maps.get_mut(doc_ent) else {
@@ -92,13 +92,13 @@ pub(crate) fn handle_hsd_mesh_spawned(
 
 pub(crate) fn handle_hsd_mesh_despawned(
     trigger: On<HsdMeshDespawned>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     mut entity_maps: Query<&mut crate::HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "mesh despawned");
-    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
+    let Some((doc_ent, _)) = docs.iter().find(|(_, id)| id.0 == ev.doc_id) else {
         return;
     };
     let Ok(mut maps) = entity_maps.get_mut(doc_ent) else {
@@ -114,13 +114,13 @@ pub(crate) fn handle_hsd_mesh_despawned(
 
 pub(crate) fn handle_hsd_mesh_geometry_set(
     trigger: On<HsdMeshGeometrySet>,
-    registry_map: Res<DocRegistryMap>,
+    docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&crate::HsdEntityMaps>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
     debug!(id = %ev.id, "mesh geometry set");
-    let Some(doc_ent) = registry_map.get_entity(&ev.doc_id) else {
+    let Some((doc_ent, _)) = docs.iter().find(|(_, id)| id.0 == ev.doc_id) else {
         return;
     };
     let Ok(maps) = entity_maps.get(doc_ent) else {

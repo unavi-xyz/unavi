@@ -12,7 +12,6 @@ mod camera;
 mod devtools;
 mod fade;
 mod grab;
-mod home;
 mod icon;
 mod scene;
 mod system_scripts;

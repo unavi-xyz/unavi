@@ -19,7 +19,6 @@ impl Plugin for HsdPlugin {
             .register_asset_loader(asset::HsdLoader)
             .init_asset::<asset::BlobAsset>()
             .init_asset::<asset::HsdAsset>()
-            .init_resource::<DocRegistryMap>()
             .add_observer(hydrate::compile::create::handle_hsd_create_material)
             .add_observer(hydrate::compile::create::handle_hsd_create_mesh)
             .add_observer(hydrate::compile::create::handle_hsd_create_node)
@@ -136,16 +135,6 @@ pub struct HsdSubscription(pub loro::Subscription);
 
 #[derive(Component, Clone, Debug, Default)]
 pub struct HsdAssets(pub BTreeMap<SmolStr, blake3::Hash>);
-
-#[derive(Resource, Default)]
-pub struct DocRegistryMap(pub HashMap<blake3::Hash, Entity>);
-
-impl DocRegistryMap {
-    #[must_use]
-    pub fn get_entity(&self, doc_id: &blake3::Hash) -> Option<Entity> {
-        self.0.get(doc_id).copied()
-    }
-}
 
 #[derive(Component, Default)]
 pub struct HsdEntityMaps {

@@ -7,17 +7,13 @@ use loro_surgeon::{Hydrate, TreeNode};
 
 use super::{diff::extract_changes_from_diff, events::RawChangeQueue};
 
-use crate::{
-    DocRegistryMap, HsdDoc, HsdEntityMaps, HsdRecordId, HsdSubscription,
-    hydrate::events::RawHsdChange,
-};
+use crate::{HsdDoc, HsdEntityMaps, HsdRecordId, HsdSubscription, hydrate::events::RawHsdChange};
 
 pub fn init_hsd_doc(
     mut commands: Commands,
     added: Query<(Entity, &HsdDoc, &HsdRecordId), (Added<HsdDoc>, Without<RawChangeQueue>)>,
-    mut registry_map: ResMut<DocRegistryMap>,
 ) {
-    for (doc_ent, hsd_doc, record_id) in &added {
+    for (doc_ent, hsd_doc, _record_id) in &added {
         let doc = Arc::clone(&hsd_doc.0);
 
         let raw_queue: Arc<Mutex<Vec<RawHsdChange>>> = Arc::new(Mutex::new(Vec::new()));
@@ -39,8 +35,6 @@ pub fn init_hsd_doc(
             RawChangeQueue(raw_queue),
             HsdSubscription(sub),
         ));
-
-        registry_map.0.insert(record_id.0, doc_ent);
     }
 }
 

@@ -18,7 +18,7 @@ impl HostNode for Runtime {
     }
 
     async fn clone(&mut self, self_: Resource<NodeRes>) -> wasmtime::Result<Resource<NodeRes>> {
-        shared::wired::scene::node::node_clone(&self.api, self_.rep())
+        shared::wired::scene::node::clone(&self.api, self_.rep())
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -179,7 +179,6 @@ impl HostNode for Runtime {
     }
 
     async fn drop(&mut self, rep: Resource<NodeRes>) -> wasmtime::Result<()> {
-        shared::wired::scene::node::node_drop(&self.api, rep.rep())
-            .map_err(wasmtime::Error::from_anyhow)
+        shared::wired::scene::node::drop(&self.api, rep.rep()).map_err(wasmtime::Error::from_anyhow)
     }
 }

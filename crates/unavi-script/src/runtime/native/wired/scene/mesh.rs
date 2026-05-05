@@ -12,7 +12,7 @@ impl HostMesh for Runtime {
     }
 
     async fn clone(&mut self, self_: Resource<MeshRes>) -> wasmtime::Result<Resource<MeshRes>> {
-        shared::wired::scene::mesh::mesh_clone(&self.api, self_.rep())
+        shared::wired::scene::mesh::clone(&self.api, self_.rep())
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -134,7 +134,6 @@ impl HostMesh for Runtime {
     }
 
     async fn drop(&mut self, rep: Resource<MeshRes>) -> wasmtime::Result<()> {
-        shared::wired::scene::mesh::mesh_drop(&self.api, rep.rep())
-            .map_err(wasmtime::Error::from_anyhow)
+        shared::wired::scene::mesh::drop(&self.api, rep.rep()).map_err(wasmtime::Error::from_anyhow)
     }
 }

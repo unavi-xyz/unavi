@@ -1,10 +1,9 @@
 # UNAVI
 
-UNAVI is an open-source, peer-to-peer 3D social platform for VR and Desktop.
-It is built primarily in Rust using the [Bevy](https://bevy.org/) engine, and
-serves as a reference implementation of [The Wired](./protocol/) protocol.
+UNAVI is a peer-to-peer 3D social platform for VR and desktop.
+It is built primarily in Rust using the [Bevy](https://bevy.org/) engine, and serves as a reference implementation of [The Wired](./protocol/) protocol.
 
 ## Community
 
-Join the UNAVI community! Connect with others directly in UNAVI or via our
-XMPP chat: [`general@conference.unavi.xyz`](xmpp:general@conference.unavi.xyz?join).
+Join the UNAVI community!
+Connect with others directly in UNAVI or via our XMPP chat: [`general@conference.unavi.xyz`](xmpp:general@conference.unavi.xyz?join).

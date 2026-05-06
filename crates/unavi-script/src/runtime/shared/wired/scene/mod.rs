@@ -54,7 +54,7 @@ pub fn self_node(api: &Api) -> anyhow::Result<u32> {
     let mut scene = api.wired_scene.try_lock()?;
     Ok(scene.nodes.insert(NodeRes {
         doc: Arc::clone(&api.doc),
-        document: api.doc_id,
+        doc_id: api.doc_id,
         id: api.node,
     }))
 }

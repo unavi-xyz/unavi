@@ -89,12 +89,4 @@ impl MaterialHandle {
     pub fn set_unlit(&self, _value: bool) {
         todo!()
     }
-
-    pub fn sync(&self) -> bool {
-        todo!()
-    }
-
-    pub fn set_sync(&self, _value: bool) {
-        todo!()
-    }
 }

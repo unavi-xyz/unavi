@@ -61,9 +61,4 @@ pub fn test_node() {
 
     node.set_rigid_body(Some(RigidBodyKind::Dynamic));
     check("node rigid_body is some", node.rigid_body().is_some(), true);
-
-    check("node sync default", node.sync(), false);
-    node.set_sync(true);
-    check("node sync set", node.sync(), true);
-    node.set_sync(false);
 }

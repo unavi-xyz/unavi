@@ -10,8 +10,8 @@ pub static NODE_TRANSFORM_REGISTRY: LazyLock<scc::HashMap<NodeAbsoluteId, Transf
 
 #[derive(Clone, Hash, PartialEq, Eq)]
 pub struct NodeAbsoluteId {
-    doc: Hash,
-    node: TreeID,
+    pub doc: Hash,
+    pub node: TreeID,
 }
 
 #[derive(Clone, Default)]

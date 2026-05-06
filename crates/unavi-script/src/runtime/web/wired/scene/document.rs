@@ -43,7 +43,7 @@ impl DocHandle {
             return js_sys::Array::new();
         };
         reps.into_iter()
-            .map(|rep| JsValue::from(NodeHandle::new(rep)))
+            .map(|rep| JsValue::from(NodeHandle::new(rep, Arc::clone(&self.api))))
             .collect()
     }
 
@@ -52,15 +52,15 @@ impl DocHandle {
             return js_sys::Array::new();
         };
         reps.into_iter()
-            .map(|rep| JsValue::from(NodeHandle::new(rep)))
+            .map(|rep| JsValue::from(NodeHandle::new(rep, Arc::clone(&self.api))))
             .collect()
     }
 
     pub fn create_node(&self) -> NodeHandle {
         let Ok(rep) = shared::wired::scene::document::create_node(&self.api, self.rep) else {
-            return NodeHandle::new(u32::MAX);
+            return NodeHandle::new(u32::MAX, Arc::clone(&self.api));
         };
-        NodeHandle::new(rep)
+        NodeHandle::new(rep, Arc::clone(&self.api))
     }
 
     pub fn remove_node(&self, value: NodeHandle) {
@@ -104,16 +104,4 @@ impl DocHandle {
     pub fn remove_material(&self, value: MaterialHandle) {
         let _ = shared::wired::scene::document::remove_material(&self.api, value.rep());
     }
-
-    pub fn sync(&self) -> bool {
-        false
-    }
-
-    pub fn set_sync(&self, _value: bool) {}
-
-    pub fn public(&self) -> bool {
-        false
-    }
-
-    pub fn set_public(&self, _value: bool) {}
 }

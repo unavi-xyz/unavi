@@ -129,22 +129,6 @@ impl HostDocument for Runtime {
             .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn sync(&mut self, _self_: Resource<DocRes>) -> wasmtime::Result<bool> {
-        Ok(false)
-    }
-
-    async fn set_sync(&mut self, _self_: Resource<DocRes>, _value: bool) -> wasmtime::Result<()> {
-        Ok(())
-    }
-
-    async fn public(&mut self, _self_: Resource<DocRes>) -> wasmtime::Result<bool> {
-        Ok(false)
-    }
-
-    async fn set_public(&mut self, _self_: Resource<DocRes>, _value: bool) -> wasmtime::Result<()> {
-        Ok(())
-    }
-
     async fn drop(&mut self, rep: Resource<DocRes>) -> wasmtime::Result<()> {
         shared::wired::scene::document::on_drop(&self.api, rep.rep())
             .map_err(wasmtime::Error::from_anyhow)

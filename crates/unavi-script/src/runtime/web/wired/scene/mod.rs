@@ -33,14 +33,14 @@ impl Runtime {
     }
 
     pub fn wired_scene_node_class(&self) -> JsValue {
-        let handle = NodeHandle::new(u32::MAX);
+        let handle = NodeHandle::new(u32::MAX, self.api.clone());
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
 
     pub fn wired_scene_self_node(&self) -> NodeHandle {
         let rep = shared::wired::scene::self_node(&self.api).unwrap_or(u32::MAX);
-        NodeHandle::new(rep)
+        NodeHandle::new(rep, self.api.clone())
     }
 
     pub fn wired_scene_self_document(&self) -> DocHandle {
@@ -49,7 +49,9 @@ impl Runtime {
     }
 
     pub async fn wired_scene_get_document(&self, id: Vec<u8>) -> Option<DocHandle> {
-        let rep = shared::wired::scene::get_document(&self.api, id).await.ok()??;
+        let rep = shared::wired::scene::get_document(&self.api, id)
+            .await
+            .ok()??;
         Some(DocHandle::new(rep, self.api.clone()))
     }
 

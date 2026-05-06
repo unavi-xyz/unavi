@@ -12,13 +12,11 @@ interface api {
   self-node: func() -> node;
   // The document this script's node belongs to.
   self-document: func() -> document;
-  // Get another document by ID. Returns none if the document does not exist
-  // or this script lacks read permission.
+  // Get another document by ID.
   get-document: func(id: document-id) -> option<document>;
   // Create a new HSD document owned by this script's document.
-  // Requires the create-document permission. Returns an error on failure.
   create-document: func() -> document;
-  // Destroy a previously created document. No-op if not found or no write access.
+  // Destroy a previously created document.
   remove-document: func(id: document-id);
   // Load an HSD document from a WDS blob hash (32 bytes).
   load-hsd: func(blob-id: list<u8>) -> result<document, string>;
@@ -49,12 +47,6 @@ interface types {
     materials: func() -> list<material>;
     create-material: func() -> material;
     remove-material: func(value: borrow<material>);
-
-    sync: func() -> bool;
-    set-sync: func(value: bool);
-
-    public: func() -> bool;
-    set-public: func(value: bool);
   }
 
   resource node {
@@ -76,6 +68,9 @@ interface types {
     transform: func() -> transform;
     set-transform: func(value: transform);
 
+    // Computed global transform of the node, based on the previous tick.
+    // Updating transforms via `set-transform` or other methods will not trigger
+    // a re-compute of this value.
     global-transform: func() -> transform;
 
     parent: func() -> option<node>;
@@ -94,9 +89,6 @@ interface types {
 
     rigid-body: func() -> option<rigid-body-kind>;
     set-rigid-body: func(value: option<rigid-body-kind>);
-
-    sync: func() -> bool;
-    set-sync: func(value: bool);
   }
 
   record color {
@@ -142,9 +134,6 @@ interface types {
 
     unlit: func() -> bool;
     set-unlit: func(value: bool);
-
-    sync: func() -> bool;
-    set-sync: func(value: bool);
   }
 
   enum primitive-topology {
@@ -190,9 +179,6 @@ interface types {
 
     uv1: func() -> option<list<f32>>;
     set-uv1: func(values: option<list<f32>>);
-
-    sync: func() -> bool;
-    set-sync: func(value: bool);
   }
 
   variant collider {

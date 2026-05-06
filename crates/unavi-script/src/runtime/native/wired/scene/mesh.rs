@@ -125,14 +125,6 @@ impl HostMesh for Runtime {
         Ok(())
     }
 
-    async fn sync(&mut self, _self_: Resource<MeshRes>) -> wasmtime::Result<bool> {
-        Ok(false)
-    }
-
-    async fn set_sync(&mut self, _self_: Resource<MeshRes>, _value: bool) -> wasmtime::Result<()> {
-        Ok(())
-    }
-
     async fn drop(&mut self, rep: Resource<MeshRes>) -> wasmtime::Result<()> {
         shared::wired::scene::mesh::on_drop(&self.api, rep.rep())
             .map_err(wasmtime::Error::from_anyhow)

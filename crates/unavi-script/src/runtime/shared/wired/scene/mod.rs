@@ -3,6 +3,7 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use bevy_hsd::{HsdDoc, HsdRecordId};
 use bevy_wds::{
+    LocalActor,
     blob::get::GetBlob,
     record::{
         read::ReadRecord,
@@ -10,8 +11,9 @@ use bevy_wds::{
     },
 };
 use blake3::Hash;
+use bytes::Bytes;
 use loro::LoroDoc;
-use unavi_util::async_commands::AsyncCommands;
+use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
 use wired_schemas::SCHEMA_HSD;
 
 use crate::{
@@ -35,6 +37,45 @@ pub struct WiredSceneApi {
     pub materials: SlotMap<MaterialRes>,
     pub meshes: SlotMap<MeshRes>,
     pub nodes: SlotMap<NodeRes>,
+}
+
+pub(super) async fn fetch_blob(hash: Hash) -> anyhow::Result<Bytes> {
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .trigger(GetBlob {
+            hash,
+            cancel: None,
+            tx,
+        })
+        .send()
+        .await?;
+    Ok(rx.recv().await?)
+}
+
+pub(super) async fn upload_blob(data: Vec<u8>) -> anyhow::Result<Hash> {
+    let (tx, rx) = async_channel::bounded::<anyhow::Result<Hash>>(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let actor = world
+                .query::<&LocalActor>()
+                .single(world)
+                .map(|a| a.0.clone());
+            match actor {
+                Err(_) => {
+                    tx.try_send(Err(anyhow::anyhow!("no local actor"))).ok();
+                }
+                Ok(actor) => {
+                    let bytes = Bytes::from(data);
+                    spawn_async_task(async move {
+                        let result = actor.upload_blob(bytes).await;
+                        tx.try_send(result).ok();
+                    });
+                }
+            }
+        })
+        .send()
+        .await?;
+    rx.recv().await?
 }
 
 fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()> {

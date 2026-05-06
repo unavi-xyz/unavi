@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use bevy::math::{Quat, Vec3};
 use blake3::Hash;
-use hsd::HsdNode;
+use hsd::{HsdCollider, HsdNode, HsdRigidBody};
 use loro::{LoroDoc, LoroMap, LoroTree, TreeID, TreeParentId};
 use loro_surgeon::{Hydrate, Reconcile};
 use smol_str::SmolStr;
@@ -417,6 +417,159 @@ pub fn material(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
         doc_id: node.doc_id,
         id: mat_id,
     })))
+}
+
+pub enum NodeCollider {
+    Capsule {
+        height: f32,
+        radius: f32,
+    },
+    ConvexHull(Vec<f32>),
+    Cuboid([f32; 3]),
+    Cylinder {
+        height: f32,
+        radius: f32,
+    },
+    Sphere(f32),
+    Trimesh {
+        indices: Vec<u32>,
+        vertices: Vec<f32>,
+    },
+}
+
+pub enum NodeRigidBody {
+    Dynamic,
+    Fixed,
+    Kinematic,
+}
+
+pub async fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<NodeCollider>> {
+    let node = get_node(api, rep)?;
+    let tree = node_tree(&node.doc)?;
+    let meta = node_meta(&tree, node.id)?;
+    let Some(c) = hydrate_node(&meta).collider else {
+        return Ok(None);
+    };
+    Ok(match c {
+        HsdCollider::Capsule { height, radius } => Some(NodeCollider::Capsule {
+            height: height as f32,
+            radius: radius as f32,
+        }),
+        HsdCollider::ConvexHull(hash) => {
+            let bytes = super::fetch_blob(hash.into()).await?;
+            Some(NodeCollider::ConvexHull(bytes_to_f32s(&bytes)))
+        }
+        HsdCollider::Cuboid { x, y, z } => {
+            Some(NodeCollider::Cuboid([x as f32, y as f32, z as f32]))
+        }
+        HsdCollider::Cylinder { height, radius } => Some(NodeCollider::Cylinder {
+            height: height as f32,
+            radius: radius as f32,
+        }),
+        HsdCollider::Sphere(r) => Some(NodeCollider::Sphere(r as f32)),
+        HsdCollider::Trimesh { indices, vertices } => {
+            let idx_bytes = super::fetch_blob(indices.into()).await?;
+            let vert_bytes = super::fetch_blob(vertices.into()).await?;
+            Some(NodeCollider::Trimesh {
+                indices: bytes_to_u32s(&idx_bytes),
+                vertices: bytes_to_f32s(&vert_bytes),
+            })
+        }
+    })
+}
+
+pub async fn set_collider(api: &Api, rep: u32, value: Option<NodeCollider>) -> anyhow::Result<()> {
+    let node = get_node(api, rep)?;
+    validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
+    let tree = node_tree(&node.doc)?;
+    let meta = node_meta(&tree, node.id)?;
+    let mut data = hydrate_node(&meta);
+    data.collider = match value {
+        None => None,
+        Some(NodeCollider::Capsule { height, radius }) => Some(HsdCollider::Capsule {
+            height: f64::from(height),
+            radius: f64::from(radius),
+        }),
+        Some(NodeCollider::ConvexHull(points)) => {
+            let hash = super::upload_blob(f32s_to_bytes(&points)).await?;
+            Some(HsdCollider::ConvexHull(hash.into()))
+        }
+        Some(NodeCollider::Cuboid([x, y, z])) => Some(HsdCollider::Cuboid {
+            x: f64::from(x),
+            y: f64::from(y),
+            z: f64::from(z),
+        }),
+        Some(NodeCollider::Cylinder { height, radius }) => Some(HsdCollider::Cylinder {
+            height: f64::from(height),
+            radius: f64::from(radius),
+        }),
+        Some(NodeCollider::Sphere(r)) => Some(HsdCollider::Sphere(f64::from(r))),
+        Some(NodeCollider::Trimesh { indices, vertices }) => {
+            let idx_hash = super::upload_blob(u32s_to_bytes(&indices)).await?;
+            let vert_hash = super::upload_blob(f32s_to_bytes(&vertices)).await?;
+            Some(HsdCollider::Trimesh {
+                indices: idx_hash.into(),
+                vertices: vert_hash.into(),
+            })
+        }
+    };
+    data.reconcile(&meta)?;
+    Ok(())
+}
+
+fn bytes_to_f32s(bytes: &[u8]) -> Vec<f32> {
+    bytes
+        .chunks_exact(4)
+        .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+        .collect()
+}
+
+fn bytes_to_u32s(bytes: &[u8]) -> Vec<u32> {
+    bytes
+        .chunks_exact(4)
+        .map(|c| u32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+        .collect()
+}
+
+fn f32s_to_bytes(values: &[f32]) -> Vec<u8> {
+    values.iter().flat_map(|v| v.to_le_bytes()).collect()
+}
+
+fn u32s_to_bytes(values: &[u32]) -> Vec<u8> {
+    values.iter().flat_map(|v| v.to_le_bytes()).collect()
+}
+
+pub fn rigid_body(api: &Api, rep: u32) -> anyhow::Result<Option<NodeRigidBody>> {
+    let node = get_node(api, rep)?;
+    let tree = node_tree(&node.doc)?;
+    let meta = node_meta(&tree, node.id)?;
+    let Some(rb) = hydrate_node(&meta).rigid_body else {
+        return Ok(None);
+    };
+    Ok(match rb.kind.as_str() {
+        "dynamic" => Some(NodeRigidBody::Dynamic),
+        "fixed" => Some(NodeRigidBody::Fixed),
+        "kinematic" => Some(NodeRigidBody::Kinematic),
+        _ => None,
+    })
+}
+
+pub fn set_rigid_body(api: &Api, rep: u32, value: Option<NodeRigidBody>) -> anyhow::Result<()> {
+    let node = get_node(api, rep)?;
+    validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
+    let tree = node_tree(&node.doc)?;
+    let meta = node_meta(&tree, node.id)?;
+    let mut data = hydrate_node(&meta);
+    data.rigid_body = value.map(|rb| HsdRigidBody {
+        kind: SmolStr::from(match rb {
+            NodeRigidBody::Dynamic => "dynamic",
+            NodeRigidBody::Fixed => "fixed",
+            NodeRigidBody::Kinematic => "kinematic",
+        }),
+        ..Default::default()
+    });
+    data.reconcile(&meta)?;
+    Ok(())
 }
 
 pub fn set_material(api: &Api, node_rep: u32, mat_rep: Option<u32>) -> anyhow::Result<()> {

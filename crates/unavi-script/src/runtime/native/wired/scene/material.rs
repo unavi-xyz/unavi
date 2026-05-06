@@ -124,18 +124,6 @@ impl HostMaterial for Runtime {
         Ok(())
     }
 
-    async fn sync(&mut self, _self_: Resource<MaterialRes>) -> wasmtime::Result<bool> {
-        Ok(false)
-    }
-
-    async fn set_sync(
-        &mut self,
-        _self_: Resource<MaterialRes>,
-        _value: bool,
-    ) -> wasmtime::Result<()> {
-        Ok(())
-    }
-
     async fn drop(&mut self, rep: Resource<MaterialRes>) -> wasmtime::Result<()> {
         shared::wired::scene::material::on_drop(&self.api, rep.rep())
             .map_err(wasmtime::Error::from_anyhow)

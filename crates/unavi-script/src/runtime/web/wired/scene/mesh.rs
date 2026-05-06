@@ -97,12 +97,4 @@ impl MeshHandle {
     pub fn set_uv1(&self, _value: JsValue) {
         todo!()
     }
-
-    pub fn sync(&self) -> bool {
-        todo!()
-    }
-
-    pub fn set_sync(&self, _value: bool) {
-        todo!()
-    }
 }

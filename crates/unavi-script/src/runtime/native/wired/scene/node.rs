@@ -13,8 +13,8 @@ use crate::runtime::{
 };
 
 impl HostNode for Runtime {
-    async fn id(&mut self, _self_: Resource<NodeRes>) -> wasmtime::Result<String> {
-        todo!()
+    async fn id(&mut self, self_: Resource<NodeRes>) -> wasmtime::Result<String> {
+        shared::wired::scene::node::id(&self.api, self_.rep()).map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn clone(&mut self, self_: Resource<NodeRes>) -> wasmtime::Result<Resource<NodeRes>> {
@@ -23,124 +23,211 @@ impl HostNode for Runtime {
             .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn name(&mut self, _self_: Resource<NodeRes>) -> wasmtime::Result<Option<String>> {
-        Ok(None)
+    async fn name(&mut self, self_: Resource<NodeRes>) -> wasmtime::Result<Option<String>> {
+        shared::wired::scene::node::name(&self.api, self_.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn set_name(
         &mut self,
-        _self_: Resource<NodeRes>,
-        _value: Option<String>,
+        self_: Resource<NodeRes>,
+        value: Option<String>,
     ) -> wasmtime::Result<()> {
-        Ok(())
+        shared::wired::scene::node::set_name(&self.api, self_.rep(), value)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn translation(&mut self, _self_: Resource<NodeRes>) -> wasmtime::Result<Vec3> {
-        todo!()
+    async fn translation(&mut self, self_: Resource<NodeRes>) -> wasmtime::Result<Vec3> {
+        let [x, y, z] = shared::wired::scene::node::translation(&self.api, self_.rep())
+            .map_err(wasmtime::Error::from_anyhow)?;
+        Ok(Vec3 { x, y, z })
     }
 
     async fn set_translation(
         &mut self,
-        _self_: Resource<NodeRes>,
-        _value: Vec3,
+        self_: Resource<NodeRes>,
+        value: Vec3,
     ) -> wasmtime::Result<()> {
-        Ok(())
+        shared::wired::scene::node::set_translation(
+            &self.api,
+            self_.rep(),
+            [value.x, value.y, value.z],
+        )
+        .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn rotation(&mut self, _self_: Resource<NodeRes>) -> wasmtime::Result<Quat> {
-        todo!()
+    async fn rotation(&mut self, self_: Resource<NodeRes>) -> wasmtime::Result<Quat> {
+        let [x, y, z, w] = shared::wired::scene::node::rotation(&self.api, self_.rep())
+            .map_err(wasmtime::Error::from_anyhow)?;
+        Ok(Quat { x, y, z, w })
     }
 
     async fn set_rotation(
         &mut self,
-        _self_: Resource<NodeRes>,
-        _value: Quat,
+        self_: Resource<NodeRes>,
+        value: Quat,
     ) -> wasmtime::Result<()> {
-        Ok(())
+        shared::wired::scene::node::set_rotation(
+            &self.api,
+            self_.rep(),
+            [value.x, value.y, value.z, value.w],
+        )
+        .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn scale(&mut self, _self_: Resource<NodeRes>) -> wasmtime::Result<Vec3> {
-        todo!()
+    async fn scale(&mut self, self_: Resource<NodeRes>) -> wasmtime::Result<Vec3> {
+        let [x, y, z] = shared::wired::scene::node::scale(&self.api, self_.rep())
+            .map_err(wasmtime::Error::from_anyhow)?;
+        Ok(Vec3 { x, y, z })
     }
 
-    async fn set_scale(&mut self, _self_: Resource<NodeRes>, _value: Vec3) -> wasmtime::Result<()> {
-        Ok(())
+    async fn set_scale(&mut self, self_: Resource<NodeRes>, value: Vec3) -> wasmtime::Result<()> {
+        shared::wired::scene::node::set_scale(&self.api, self_.rep(), [value.x, value.y, value.z])
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn transform(&mut self, _self_: Resource<NodeRes>) -> wasmtime::Result<Transform> {
-        todo!()
+    async fn transform(&mut self, self_: Resource<NodeRes>) -> wasmtime::Result<Transform> {
+        let t = shared::wired::scene::node::transform(&self.api, self_.rep())
+            .map_err(wasmtime::Error::from_anyhow)?;
+        Ok(Transform {
+            translation: Vec3 {
+                x: t.translation[0],
+                y: t.translation[1],
+                z: t.translation[2],
+            },
+            rotation: Quat {
+                x: t.rotation[0],
+                y: t.rotation[1],
+                z: t.rotation[2],
+                w: t.rotation[3],
+            },
+            scale: Vec3 {
+                x: t.scale[0],
+                y: t.scale[1],
+                z: t.scale[2],
+            },
+        })
     }
 
     async fn set_transform(
         &mut self,
-        _self_: Resource<NodeRes>,
-        _value: Transform,
+        self_: Resource<NodeRes>,
+        value: Transform,
     ) -> wasmtime::Result<()> {
-        Ok(())
+        shared::wired::scene::node::set_transform(
+            &self.api,
+            self_.rep(),
+            shared::wired::scene::node::NodeTransform {
+                translation: [
+                    value.translation.x,
+                    value.translation.y,
+                    value.translation.z,
+                ],
+                rotation: [
+                    value.rotation.x,
+                    value.rotation.y,
+                    value.rotation.z,
+                    value.rotation.w,
+                ],
+                scale: [value.scale.x, value.scale.y, value.scale.z],
+            },
+        )
+        .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn global_transform(&mut self, _self_: Resource<NodeRes>) -> wasmtime::Result<Transform> {
-        todo!()
+    async fn global_transform(&mut self, self_: Resource<NodeRes>) -> wasmtime::Result<Transform> {
+        let t = shared::wired::scene::node::global_transform(&self.api, self_.rep())
+            .map_err(wasmtime::Error::from_anyhow)?;
+        Ok(Transform {
+            translation: Vec3 {
+                x: t.translation[0],
+                y: t.translation[1],
+                z: t.translation[2],
+            },
+            rotation: Quat {
+                x: t.rotation[0],
+                y: t.rotation[1],
+                z: t.rotation[2],
+                w: t.rotation[3],
+            },
+            scale: Vec3 {
+                x: t.scale[0],
+                y: t.scale[1],
+                z: t.scale[2],
+            },
+        })
     }
 
     async fn parent(
         &mut self,
-        _self_: Resource<NodeRes>,
+        self_: Resource<NodeRes>,
     ) -> wasmtime::Result<Option<Resource<NodeRes>>> {
-        Ok(None)
+        shared::wired::scene::node::parent(&self.api, self_.rep())
+            .map(|opt| opt.map(Resource::new_own))
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn children(
         &mut self,
-        _self_: Resource<NodeRes>,
+        self_: Resource<NodeRes>,
     ) -> wasmtime::Result<Vec<Resource<NodeRes>>> {
-        Ok(vec![])
+        shared::wired::scene::node::children(&self.api, self_.rep())
+            .map(|v| v.into_iter().map(Resource::new_own).collect())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn add_child(
         &mut self,
-        _self_: Resource<NodeRes>,
-        _child: Resource<NodeRes>,
+        self_: Resource<NodeRes>,
+        child: Resource<NodeRes>,
     ) -> wasmtime::Result<()> {
-        Ok(())
+        shared::wired::scene::node::add_child(&self.api, self_.rep(), child.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn remove_child(
         &mut self,
-        _self_: Resource<NodeRes>,
-        _child: Resource<NodeRes>,
+        self_: Resource<NodeRes>,
+        child: Resource<NodeRes>,
     ) -> wasmtime::Result<()> {
-        Ok(())
+        shared::wired::scene::node::remove_child(&self.api, self_.rep(), child.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn mesh(
         &mut self,
-        _self_: Resource<NodeRes>,
+        self_: Resource<NodeRes>,
     ) -> wasmtime::Result<Option<Resource<MeshRes>>> {
-        Ok(None)
+        shared::wired::scene::node::mesh(&self.api, self_.rep())
+            .map(|opt| opt.map(Resource::new_own))
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn set_mesh(
         &mut self,
-        _self_: Resource<NodeRes>,
-        _value: Option<Resource<MeshRes>>,
+        self_: Resource<NodeRes>,
+        value: Option<Resource<MeshRes>>,
     ) -> wasmtime::Result<()> {
-        Ok(())
+        shared::wired::scene::node::set_mesh(&self.api, self_.rep(), value.map(|r| r.rep()))
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn material(
         &mut self,
-        _self_: Resource<NodeRes>,
+        self_: Resource<NodeRes>,
     ) -> wasmtime::Result<Option<Resource<MaterialRes>>> {
-        Ok(None)
+        shared::wired::scene::node::material(&self.api, self_.rep())
+            .map(|opt| opt.map(Resource::new_own))
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn set_material(
         &mut self,
-        _self_: Resource<NodeRes>,
-        _value: Option<Resource<MaterialRes>>,
+        self_: Resource<NodeRes>,
+        value: Option<Resource<MaterialRes>>,
     ) -> wasmtime::Result<()> {
-        Ok(())
+        shared::wired::scene::node::set_material(&self.api, self_.rep(), value.map(|r| r.rep()))
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn collider(&mut self, _self_: Resource<NodeRes>) -> wasmtime::Result<Option<Collider>> {
@@ -167,14 +254,6 @@ impl HostNode for Runtime {
         _self_: Resource<NodeRes>,
         _value: Option<RigidBodyKind>,
     ) -> wasmtime::Result<()> {
-        Ok(())
-    }
-
-    async fn sync(&mut self, _self_: Resource<NodeRes>) -> wasmtime::Result<bool> {
-        Ok(false)
-    }
-
-    async fn set_sync(&mut self, _self_: Resource<NodeRes>, _value: bool) -> wasmtime::Result<()> {
         Ok(())
     }
 

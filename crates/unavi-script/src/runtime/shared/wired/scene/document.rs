@@ -64,7 +64,7 @@ pub fn roots(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
         .map(|id| {
             scene.nodes.insert(NodeRes {
                 doc: Arc::clone(&res.doc),
-                document: res.id,
+                doc_id: res.id,
                 id,
             })
         })
@@ -92,7 +92,7 @@ pub fn nodes(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
         .map(|id| {
             scene.nodes.insert(NodeRes {
                 doc: Arc::clone(&res.doc),
-                document: res.id,
+                doc_id: res.id,
                 id,
             })
         })
@@ -116,7 +116,7 @@ pub fn create_node(api: &Api, rep: u32) -> anyhow::Result<u32> {
 
     Ok(scene.nodes.insert(NodeRes {
         doc: res.doc,
-        document: res.id,
+        doc_id: res.id,
         id: tree_id,
     }))
 }
@@ -125,7 +125,7 @@ pub fn remove_node(api: &Api, rep: u32) -> anyhow::Result<()> {
     let Some(node) = api.wired_scene.try_lock()?.nodes.remove(rep) else {
         return Ok(());
     };
-    validate_firewall(&api.doc_id, &node.document, Channel::SceneWrite)?;
+    validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
 
     let tree = node
         .doc

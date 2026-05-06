@@ -26,7 +26,7 @@ pub fn register_input_listener(backend: &Api, node: u32) -> anyhow::Result<u32> 
         .try_lock()?
         .nodes
         .get(node)
-        .map(|n| (n.document, n.id))
+        .map(|n| (n.doc_id, n.id))
         .ok_or_else(|| anyhow::anyhow!("node not found"))?;
 
     let (tx, rx) = async_channel::bounded(INPUT_CHANNEL_LENGTH);

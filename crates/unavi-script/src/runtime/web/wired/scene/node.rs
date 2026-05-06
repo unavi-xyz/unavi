@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use wasm_bindgen::prelude::*;
 
-use crate::runtime::shared::{self, Api};
+use crate::runtime::shared::{
+    self, Api,
+    wired::scene::node::{NodeCollider, NodeRigidBody},
+};
 
 use super::{material::MaterialHandle, mesh::MeshHandle};
 
@@ -199,15 +202,102 @@ impl NodeHandle {
             shared::wired::scene::node::set_material(&self.api, self.rep, value.map(|m| m.rep()));
     }
 
-    pub fn collider(&self) -> JsValue {
-        JsValue::NULL
+    pub async fn collider(&self) -> JsValue {
+        let Ok(Some(c)) = shared::wired::scene::node::collider(&self.api, self.rep).await else {
+            return JsValue::NULL;
+        };
+        let obj = js_sys::Object::new();
+        let set = |k: &str, v: JsValue| js_sys::Reflect::set(&obj, &k.into(), &v).ok();
+        match c {
+            NodeCollider::Capsule { height, radius } => {
+                set("type", "capsule".into());
+                set("height", height.into());
+                set("radius", radius.into());
+            }
+            NodeCollider::ConvexHull(points) => {
+                set("type", "convex-hull".into());
+                let arr: js_sys::Float32Array = points.as_slice().into();
+                set("points", arr.into());
+            }
+            NodeCollider::Cuboid([x, y, z]) => {
+                set("type", "cuboid".into());
+                set("x", x.into());
+                set("y", y.into());
+                set("z", z.into());
+            }
+            NodeCollider::Cylinder { height, radius } => {
+                set("type", "cylinder".into());
+                set("height", height.into());
+                set("radius", radius.into());
+            }
+            NodeCollider::Sphere(radius) => {
+                set("type", "sphere".into());
+                set("radius", radius.into());
+            }
+            NodeCollider::Trimesh { indices, vertices } => {
+                set("type", "trimesh".into());
+                let idx: js_sys::Uint32Array = indices.as_slice().into();
+                let verts: js_sys::Float32Array = vertices.as_slice().into();
+                set("indices", idx.into());
+                set("vertices", verts.into());
+            }
+        }
+        obj.into()
     }
 
-    pub fn set_collider(&self, _value: JsValue) {}
+    pub async fn set_collider(&self, value: JsValue) {
+        if value.is_null() || value.is_undefined() {
+            let _ = shared::wired::scene::node::set_collider(&self.api, self.rep, None).await;
+            return;
+        }
+        let get_f32 = |k: &str| {
+            js_sys::Reflect::get(&value, &k.into())
+                .ok()
+                .and_then(|v| v.as_f64())
+                .unwrap_or(0.0) as f32
+        };
+        let kind = js_sys::Reflect::get(&value, &"type".into())
+            .ok()
+            .and_then(|v| v.as_string())
+            .unwrap_or_default();
+        let c = match kind.as_str() {
+            "capsule" => Some(NodeCollider::Capsule {
+                height: get_f32("height"),
+                radius: get_f32("radius"),
+            }),
+            "cuboid" => Some(NodeCollider::Cuboid([
+                get_f32("x"),
+                get_f32("y"),
+                get_f32("z"),
+            ])),
+            "cylinder" => Some(NodeCollider::Cylinder {
+                height: get_f32("height"),
+                radius: get_f32("radius"),
+            }),
+            "sphere" => Some(NodeCollider::Sphere(get_f32("radius"))),
+            _ => None,
+        };
+        let _ = shared::wired::scene::node::set_collider(&self.api, self.rep, c).await;
+    }
 
     pub fn rigid_body(&self) -> JsValue {
-        JsValue::NULL
+        let Ok(Some(rb)) = shared::wired::scene::node::rigid_body(&self.api, self.rep) else {
+            return JsValue::NULL;
+        };
+        match rb {
+            NodeRigidBody::Dynamic => "dynamic".into(),
+            NodeRigidBody::Fixed => "fixed".into(),
+            NodeRigidBody::Kinematic => "kinematic".into(),
+        }
     }
 
-    pub fn set_rigid_body(&self, _value: JsValue) {}
+    pub fn set_rigid_body(&self, value: JsValue) {
+        let rb = value.as_string().and_then(|s| match s.as_str() {
+            "dynamic" => Some(NodeRigidBody::Dynamic),
+            "fixed" => Some(NodeRigidBody::Fixed),
+            "kinematic" => Some(NodeRigidBody::Kinematic),
+            _ => None,
+        });
+        let _ = shared::wired::scene::node::set_rigid_body(&self.api, self.rep, rb);
+    }
 }

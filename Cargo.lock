@@ -14076,6 +14076,7 @@ dependencies = [
  "bevy_panorbit_camera",
  "bevy_vrm",
  "blake3",
+ "bytes 1.11.1",
  "directories",
  "hsd",
  "iroh",

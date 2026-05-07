@@ -50,8 +50,9 @@ impl NodeHandle {
     }
 
     #[wasm_bindgen(js_name = "setName")]
-    pub fn set_name(&self, value: Option<String>) {
-        let _ = shared::wired::scene::node::set_name(&self.api, self.rep, value);
+    pub fn set_name(&self, value: Option<String>) -> Result<(), String> {
+        shared::wired::scene::node::set_name(&self.api, self.rep, value)
+            .map_err(|e| e.to_string())
     }
 
     pub fn translation(&self) -> JsValue {
@@ -61,12 +62,13 @@ impl NodeHandle {
     }
 
     #[wasm_bindgen(js_name = "setTranslation")]
-    pub fn set_translation(&self, value: JsValue) {
+    pub fn set_translation(&self, value: JsValue) -> Result<(), String> {
         let arr = js_sys::Array::from(&value);
         let x = arr.get(0).as_f64().unwrap_or(0.0) as f32;
         let y = arr.get(1).as_f64().unwrap_or(0.0) as f32;
         let z = arr.get(2).as_f64().unwrap_or(0.0) as f32;
-        let _ = shared::wired::scene::node::set_translation(&self.api, self.rep, [x, y, z]);
+        shared::wired::scene::node::set_translation(&self.api, self.rep, [x, y, z])
+            .map_err(|e| e.to_string())
     }
 
     pub fn rotation(&self) -> JsValue {
@@ -76,13 +78,14 @@ impl NodeHandle {
     }
 
     #[wasm_bindgen(js_name = "setRotation")]
-    pub fn set_rotation(&self, value: JsValue) {
+    pub fn set_rotation(&self, value: JsValue) -> Result<(), String> {
         let arr = js_sys::Array::from(&value);
         let x = arr.get(0).as_f64().unwrap_or(0.0) as f32;
         let y = arr.get(1).as_f64().unwrap_or(0.0) as f32;
         let z = arr.get(2).as_f64().unwrap_or(0.0) as f32;
         let w = arr.get(3).as_f64().unwrap_or(1.0) as f32;
-        let _ = shared::wired::scene::node::set_rotation(&self.api, self.rep, [x, y, z, w]);
+        shared::wired::scene::node::set_rotation(&self.api, self.rep, [x, y, z, w])
+            .map_err(|e| e.to_string())
     }
 
     pub fn scale(&self) -> JsValue {
@@ -91,12 +94,13 @@ impl NodeHandle {
     }
 
     #[wasm_bindgen(js_name = "setScale")]
-    pub fn set_scale(&self, value: JsValue) {
+    pub fn set_scale(&self, value: JsValue) -> Result<(), String> {
         let arr = js_sys::Array::from(&value);
         let x = arr.get(0).as_f64().unwrap_or(1.0) as f32;
         let y = arr.get(1).as_f64().unwrap_or(1.0) as f32;
         let z = arr.get(2).as_f64().unwrap_or(1.0) as f32;
-        let _ = shared::wired::scene::node::set_scale(&self.api, self.rep, [x, y, z]);
+        shared::wired::scene::node::set_scale(&self.api, self.rep, [x, y, z])
+            .map_err(|e| e.to_string())
     }
 
     pub fn transform(&self) -> JsValue {
@@ -121,7 +125,7 @@ impl NodeHandle {
     }
 
     #[wasm_bindgen(js_name = "setTransform")]
-    pub fn set_transform(&self, value: JsValue) {
+    pub fn set_transform(&self, value: JsValue) -> Result<(), String> {
         let tr_js = js_sys::Reflect::get(&value, &"translation".into()).unwrap_or_default();
         let ro_js = js_sys::Reflect::get(&value, &"rotation".into()).unwrap_or_default();
         let sc_js = js_sys::Reflect::get(&value, &"scale".into()).unwrap_or_default();
@@ -148,7 +152,8 @@ impl NodeHandle {
                 sc.get(2).as_f64().unwrap_or(1.0) as f32,
             ],
         };
-        let _ = shared::wired::scene::node::set_transform(&self.api, self.rep, t);
+        shared::wired::scene::node::set_transform(&self.api, self.rep, t)
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "globalTransform")]
@@ -190,13 +195,15 @@ impl NodeHandle {
     }
 
     #[wasm_bindgen(js_name = "addChild")]
-    pub fn add_child(&self, child: &NodeHandle) {
-        let _ = shared::wired::scene::node::add_child(&self.api, self.rep, child.rep);
+    pub fn add_child(&self, child: &NodeHandle) -> Result<(), String> {
+        shared::wired::scene::node::add_child(&self.api, self.rep, child.rep)
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "removeChild")]
-    pub fn remove_child(&self, child: &NodeHandle) {
-        let _ = shared::wired::scene::node::remove_child(&self.api, self.rep, child.rep);
+    pub fn remove_child(&self, child: &NodeHandle) -> Result<(), String> {
+        shared::wired::scene::node::remove_child(&self.api, self.rep, child.rep)
+            .map_err(|e| e.to_string())
     }
 
     pub fn mesh(&self) -> Option<MeshHandle> {
@@ -205,8 +212,9 @@ impl NodeHandle {
     }
 
     #[wasm_bindgen(js_name = "setMesh")]
-    pub fn set_mesh(&self, value: JsValue) {
-        let _ = shared::wired::scene::node::set_mesh(&self.api, self.rep, opt_rep(&value));
+    pub fn set_mesh(&self, value: JsValue) -> Result<(), String> {
+        shared::wired::scene::node::set_mesh(&self.api, self.rep, opt_rep(&value))
+            .map_err(|e| e.to_string())
     }
 
     pub fn material(&self) -> Option<MaterialHandle> {
@@ -215,8 +223,9 @@ impl NodeHandle {
     }
 
     #[wasm_bindgen(js_name = "setMaterial")]
-    pub fn set_material(&self, value: JsValue) {
-        let _ = shared::wired::scene::node::set_material(&self.api, self.rep, opt_rep(&value));
+    pub fn set_material(&self, value: JsValue) -> Result<(), String> {
+        shared::wired::scene::node::set_material(&self.api, self.rep, opt_rep(&value))
+            .map_err(|e| e.to_string())
     }
 
     pub async fn collider(&self) -> JsValue {
@@ -263,10 +272,11 @@ impl NodeHandle {
     }
 
     #[wasm_bindgen(js_name = "setCollider")]
-    pub async fn set_collider(&self, value: JsValue) {
+    pub async fn set_collider(&self, value: JsValue) -> Result<(), String> {
         if value.is_null() || value.is_undefined() {
-            let _ = shared::wired::scene::node::set_collider(&self.api, self.rep, None).await;
-            return;
+            return shared::wired::scene::node::set_collider(&self.api, self.rep, None)
+                .await
+                .map_err(|e| e.to_string());
         }
         let get_f32 = |k: &str| {
             js_sys::Reflect::get(&value, &k.into())
@@ -295,7 +305,9 @@ impl NodeHandle {
             "sphere" => Some(NodeCollider::Sphere(get_f32("radius"))),
             _ => None,
         };
-        let _ = shared::wired::scene::node::set_collider(&self.api, self.rep, c).await;
+        shared::wired::scene::node::set_collider(&self.api, self.rep, c)
+            .await
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "rigidBody")]
@@ -311,13 +323,14 @@ impl NodeHandle {
     }
 
     #[wasm_bindgen(js_name = "setRigidBody")]
-    pub fn set_rigid_body(&self, value: JsValue) {
+    pub fn set_rigid_body(&self, value: JsValue) -> Result<(), String> {
         let rb = value.as_string().and_then(|s| match s.as_str() {
             "dynamic" => Some(NodeRigidBody::Dynamic),
             "fixed" => Some(NodeRigidBody::Fixed),
             "kinematic" => Some(NodeRigidBody::Kinematic),
             _ => None,
         });
-        let _ = shared::wired::scene::node::set_rigid_body(&self.api, self.rep, rb);
+        shared::wired::scene::node::set_rigid_body(&self.api, self.rep, rb)
+            .map_err(|e| e.to_string())
     }
 }

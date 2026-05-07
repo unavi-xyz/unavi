@@ -58,18 +58,21 @@ impl InputListenerHandle {
 
 #[wasm_bindgen]
 impl Runtime {
+    #[wasm_bindgen(js_name = "wiredInputListenerClass")]
     pub fn wired_input_listener_class(&self) -> JsValue {
         let handle = InputListenerHandle::new(u32::MAX, self.api.clone());
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &"constructor".into()).expect("reflect")
     }
 
+    #[wasm_bindgen(js_name = "wiredInputRegisterInputListener")]
     pub fn wired_input_register_input_listener(&self, target: NodeHandle) -> InputListenerHandle {
         let rep = shared::wired::input::register_input_listener(&self.api, target.rep())
             .unwrap_or(u32::MAX);
         InputListenerHandle::new(rep, self.api.clone())
     }
 
+    #[wasm_bindgen(js_name = "wiredInputContextListener")]
     pub fn wired_input_context_listener(&self) -> InputListenerHandle {
         let rep =
             shared::wired::input::register_global_input_listener(&self.api).unwrap_or(u32::MAX);

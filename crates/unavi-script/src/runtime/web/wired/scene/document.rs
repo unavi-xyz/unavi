@@ -42,8 +42,10 @@ impl DocHandle {
         js_sys::Array::new()
     }
 
+    #[wasm_bindgen(js_name = "addAsset")]
     pub fn add_asset(&self, _name: String, _blob_id: Vec<u8>) {}
 
+    #[wasm_bindgen(js_name = "removeAsset")]
     pub fn remove_asset(&self, _name: String) {}
 
     pub fn roots(&self) -> js_sys::Array {
@@ -64,6 +66,7 @@ impl DocHandle {
             .collect()
     }
 
+    #[wasm_bindgen(js_name = "createNode")]
     pub fn create_node(&self) -> NodeHandle {
         let Ok(rep) = shared::wired::scene::document::create_node(&self.api, self.rep) else {
             return NodeHandle::new(u32::MAX, Arc::clone(&self.api));
@@ -71,6 +74,7 @@ impl DocHandle {
         NodeHandle::new(rep, Arc::clone(&self.api))
     }
 
+    #[wasm_bindgen(js_name = "removeNode")]
     pub fn remove_node(&self, value: NodeHandle) {
         let _ = shared::wired::scene::document::remove_node(&self.api, value.rep());
     }
@@ -84,12 +88,14 @@ impl DocHandle {
             .collect()
     }
 
+    #[wasm_bindgen(js_name = "createMesh")]
     pub fn create_mesh(&self) -> MeshHandle {
         let rep =
             shared::wired::scene::document::create_mesh(&self.api, self.rep).unwrap_or(u32::MAX);
         MeshHandle::new(rep, Arc::clone(&self.api))
     }
 
+    #[wasm_bindgen(js_name = "removeMesh")]
     pub fn remove_mesh(&self, value: MeshHandle) {
         let _ = shared::wired::scene::document::remove_mesh(&self.api, value.rep());
     }
@@ -103,12 +109,14 @@ impl DocHandle {
             .collect()
     }
 
+    #[wasm_bindgen(js_name = "createMaterial")]
     pub fn create_material(&self) -> MaterialHandle {
         let rep = shared::wired::scene::document::create_material(&self.api, self.rep)
             .unwrap_or(u32::MAX);
         MaterialHandle::new(rep, Arc::clone(&self.api))
     }
 
+    #[wasm_bindgen(js_name = "removeMaterial")]
     pub fn remove_material(&self, value: MaterialHandle) {
         let _ = shared::wired::scene::document::remove_material(&self.api, value.rep());
     }

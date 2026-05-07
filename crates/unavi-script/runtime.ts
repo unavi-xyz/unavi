@@ -104,56 +104,56 @@ function build_imports(wasi: WASIShim, rt: any) {
   return {
     ...wasi.getImportObject(),
     "wired:agent/api": {
-      localAgent: rt.wired_agent_local_agent.bind(rt),
-      localCamera: rt.wired_agent_local_camera.bind(rt),
+      localAgent: rt.wiredAgentLocalAgent.bind(rt),
+      localCamera: rt.wiredAgentLocalCamera.bind(rt),
     },
     "wired:agent/types": {
-      Agent: rt.wired_agent_class(),
+      Agent: rt.wiredAgentClass(),
     },
     "wired:event/api": {
-      emit: rt.wired_event_emit.bind(rt),
-      listen: rt.wired_event_listen.bind(rt),
+      emit: rt.wiredEventEmit.bind(rt),
+      listen: rt.wiredEventListen.bind(rt),
     },
     "wired:event/types": {
-      EventReceptor: rt.wired_event_receptor_class(),
+      EventReceptor: rt.wiredEventReceptorClass(),
     },
     "wired:input/api": {
-      registerInputListener: rt.wired_input_register_input_listener.bind(rt),
+      registerInputListener: rt.wiredInputRegisterInputListener.bind(rt),
     },
     "wired:input/context": {
-      listener: rt.wired_input_context_listener.bind(rt),
+      listener: rt.wiredInputContextListener.bind(rt),
     },
     "wired:input/types": {
-      InputListener: rt.wired_input_listener_class(),
+      InputListener: rt.wiredInputListenerClass(),
     },
     "wired:portal/api": {
-      listPortals: rt.wired_portal_list_portals.bind(rt),
-      openPortal: rt.wired_portal_open_portal.bind(rt),
+      listPortals: rt.wiredPortalListPortals.bind(rt),
+      openPortal: rt.wiredPortalOpenPortal.bind(rt),
     },
     "wired:portal/types": {
-      Portal: rt.wired_portal_class(),
+      Portal: rt.wiredPortalClass(),
     },
     "wired:scene/api": {
-      createDocument: rt.wired_scene_create_document.bind(rt),
-      getDocument: rt.wired_scene_get_document.bind(rt),
-      loadHsd: rt.wired_scene_load_hsd.bind(rt),
-      removeDocument: rt.wired_scene_remove_document.bind(rt),
-      selfDocument: rt.wired_scene_self_document.bind(rt),
-      selfNode: rt.wired_scene_self_node.bind(rt),
+      createDocument: rt.wiredSceneCreateDocument.bind(rt),
+      getDocument: rt.wiredSceneGetDocument.bind(rt),
+      loadHsd: rt.wiredSceneLoadHsd.bind(rt),
+      removeDocument: rt.wiredSceneRemoveDocument.bind(rt),
+      selfDocument: rt.wiredSceneSelfDocument.bind(rt),
+      selfNode: rt.wiredSceneSelfNode.bind(rt),
     },
     "wired:scene/types": {
-      Document: rt.wired_scene_doc_class(),
-      Material: rt.wired_scene_material_class(),
-      Mesh: rt.wired_scene_mesh_class(),
-      Node: rt.wired_scene_node_class(),
+      Document: rt.wiredSceneDocClass(),
+      Material: rt.wiredSceneMaterialClass(),
+      Mesh: rt.wiredSceneMeshClass(),
+      Node: rt.wiredSceneNodeClass(),
     },
     "wired:wds/api": {
-      getWds: rt.wired_wds_get_wds.bind(rt),
+      getWds: rt.wiredWdsGetWds.bind(rt),
     },
     "wired:wds/types": {
-      QueryFuture: rt.wired_query_future_class(),
-      ReadFuture: rt.wired_read_future_class(),
-      Wds: rt.wired_wds_class(),
+      QueryFuture: rt.wiredQueryFutureClass(),
+      ReadFuture: rt.wiredReadFutureClass(),
+      Wds: rt.wiredWdsClass(),
     },
   };
 }

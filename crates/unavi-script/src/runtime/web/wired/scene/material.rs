@@ -37,6 +37,11 @@ impl MaterialHandle {
         shared::wired::scene::material::id(&self.api, self.rep).unwrap_or_default()
     }
 
+    #[wasm_bindgen(js_name = "__rep", getter)]
+    pub fn wasm_rep(&self) -> u32 {
+        self.rep
+    }
+
     #[wasm_bindgen(js_name = "clone")]
     pub fn clone_mat(&self) -> Self {
         let rep = shared::wired::scene::material::clone(&self.api, self.rep).unwrap_or(u32::MAX);

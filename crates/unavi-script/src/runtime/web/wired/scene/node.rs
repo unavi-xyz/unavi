@@ -7,7 +7,7 @@ use crate::runtime::shared::{
     wired::scene::node::{NodeCollider, NodeRigidBody},
 };
 
-use super::{material::MaterialHandle, mesh::MeshHandle};
+use super::{material::MaterialHandle, mesh::MeshHandle, util::opt_rep};
 
 #[wasm_bindgen]
 pub struct NodeHandle {
@@ -190,12 +190,12 @@ impl NodeHandle {
     }
 
     #[wasm_bindgen(js_name = "addChild")]
-    pub fn add_child(&self, child: NodeHandle) {
+    pub fn add_child(&self, child: &NodeHandle) {
         let _ = shared::wired::scene::node::add_child(&self.api, self.rep, child.rep);
     }
 
     #[wasm_bindgen(js_name = "removeChild")]
-    pub fn remove_child(&self, child: NodeHandle) {
+    pub fn remove_child(&self, child: &NodeHandle) {
         let _ = shared::wired::scene::node::remove_child(&self.api, self.rep, child.rep);
     }
 
@@ -205,8 +205,8 @@ impl NodeHandle {
     }
 
     #[wasm_bindgen(js_name = "setMesh")]
-    pub fn set_mesh(&self, value: Option<MeshHandle>) {
-        let _ = shared::wired::scene::node::set_mesh(&self.api, self.rep, value.map(|m| m.rep()));
+    pub fn set_mesh(&self, value: JsValue) {
+        let _ = shared::wired::scene::node::set_mesh(&self.api, self.rep, opt_rep(&value));
     }
 
     pub fn material(&self) -> Option<MaterialHandle> {
@@ -215,9 +215,8 @@ impl NodeHandle {
     }
 
     #[wasm_bindgen(js_name = "setMaterial")]
-    pub fn set_material(&self, value: Option<MaterialHandle>) {
-        let _ =
-            shared::wired::scene::node::set_material(&self.api, self.rep, value.map(|m| m.rep()));
+    pub fn set_material(&self, value: JsValue) {
+        let _ = shared::wired::scene::node::set_material(&self.api, self.rep, opt_rep(&value));
     }
 
     pub async fn collider(&self) -> JsValue {

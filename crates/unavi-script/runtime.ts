@@ -17,6 +17,22 @@ const SCENE_ASYNC_IMPORTS = [
   "wired:scene/types#[method]document.meshes",
   "wired:scene/types#[method]document.nodes",
   "wired:scene/types#[method]document.roots",
+  "wired:scene/types#[method]mesh.colors",
+  "wired:scene/types#[method]mesh.indices",
+  "wired:scene/types#[method]mesh.normals",
+  "wired:scene/types#[method]mesh.positions",
+  "wired:scene/types#[method]mesh.set-colors",
+  "wired:scene/types#[method]mesh.set-indices",
+  "wired:scene/types#[method]mesh.set-normals",
+  "wired:scene/types#[method]mesh.set-positions",
+  "wired:scene/types#[method]mesh.set-tangents",
+  "wired:scene/types#[method]mesh.set-uv0",
+  "wired:scene/types#[method]mesh.set-uv1",
+  "wired:scene/types#[method]mesh.tangents",
+  "wired:scene/types#[method]mesh.uv0",
+  "wired:scene/types#[method]mesh.uv1",
+  "wired:scene/types#[method]node.collider",
+  "wired:scene/types#[method]node.set-collider",
 ];
 
 const SCRIPT_ASYNC_EXPORTS = [

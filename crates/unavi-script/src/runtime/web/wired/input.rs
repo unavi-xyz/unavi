@@ -66,7 +66,7 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredInputRegisterInputListener")]
-    pub fn wired_input_register_input_listener(&self, target: NodeHandle) -> InputListenerHandle {
+    pub fn wired_input_register_input_listener(&self, target: &NodeHandle) -> InputListenerHandle {
         let rep = shared::wired::input::register_input_listener(&self.api, target.rep())
             .unwrap_or(u32::MAX);
         InputListenerHandle::new(rep, self.api.clone())

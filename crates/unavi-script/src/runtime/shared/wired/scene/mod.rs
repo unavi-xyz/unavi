@@ -27,10 +27,10 @@ use crate::{
 };
 
 pub mod document;
-pub mod util;
 pub mod material;
 pub mod mesh;
 pub mod node;
+pub mod util;
 
 #[derive(Default)]
 pub struct WiredSceneApi {

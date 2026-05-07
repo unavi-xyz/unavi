@@ -1,5 +1,0 @@
-package test:stall;
-
-world guest {
-  include wired:script/guest;
-}

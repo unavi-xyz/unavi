@@ -100,7 +100,7 @@ pub fn set_alpha_cutoff(api: &Api, rep: u32, value: f32) -> anyhow::Result<()> {
     validate_firewall(&api.doc_id, &mat.doc_id, Channel::SceneWrite)?;
     let map = material_map(&mat.doc, &mat.id)?;
     let mut data = hydrate_material(&map);
-    data.alpha_cutoff = Some(value as f64);
+    data.alpha_cutoff = Some(f64::from(value));
     data.reconcile(&map)?;
     Ok(())
 }
@@ -108,8 +108,9 @@ pub fn set_alpha_cutoff(api: &Api, rep: u32, value: f32) -> anyhow::Result<()> {
 pub fn alpha_mode(api: &Api, rep: u32) -> anyhow::Result<Option<MaterialAlphaMode>> {
     let mat = get_material(api, rep)?;
     let map = material_map(&mat.doc, &mat.id)?;
-    Ok(hydrate_material(&map).alpha_mode.and_then(|s| {
-        match s.as_str() {
+    Ok(hydrate_material(&map)
+        .alpha_mode
+        .and_then(|s| match s.as_str() {
             "add" => Some(MaterialAlphaMode::Add),
             "blend" => Some(MaterialAlphaMode::Blend),
             "mask" => Some(MaterialAlphaMode::Mask),
@@ -117,8 +118,7 @@ pub fn alpha_mode(api: &Api, rep: u32) -> anyhow::Result<Option<MaterialAlphaMod
             "opaque" => Some(MaterialAlphaMode::Opaque),
             "premultiplied" => Some(MaterialAlphaMode::PreMultiplied),
             _ => None,
-        }
-    }))
+        }))
 }
 
 pub fn set_alpha_mode(api: &Api, rep: u32, value: Option<MaterialAlphaMode>) -> anyhow::Result<()> {
@@ -160,10 +160,10 @@ pub fn set_base_color(api: &Api, rep: u32, value: MaterialColor) -> anyhow::Resu
     let map = material_map(&mat.doc, &mat.id)?;
     let mut data = hydrate_material(&map);
     data.base_color = Some(vec![
-        value.r as f64,
-        value.g as f64,
-        value.b as f64,
-        value.a as f64,
+        f64::from(value.r),
+        f64::from(value.g),
+        f64::from(value.b),
+        f64::from(value.a),
     ]);
     data.reconcile(&map)?;
     Ok(())
@@ -180,7 +180,7 @@ pub fn set_metallic(api: &Api, rep: u32, value: f32) -> anyhow::Result<()> {
     validate_firewall(&api.doc_id, &mat.doc_id, Channel::SceneWrite)?;
     let map = material_map(&mat.doc, &mat.id)?;
     let mut data = hydrate_material(&map);
-    data.metallic = Some(value as f64);
+    data.metallic = Some(f64::from(value));
     data.reconcile(&map)?;
     Ok(())
 }
@@ -196,7 +196,7 @@ pub fn set_roughness(api: &Api, rep: u32, value: f32) -> anyhow::Result<()> {
     validate_firewall(&api.doc_id, &mat.doc_id, Channel::SceneWrite)?;
     let map = material_map(&mat.doc, &mat.id)?;
     let mut data = hydrate_material(&map);
-    data.roughness = Some(value as f64);
+    data.roughness = Some(f64::from(value));
     data.reconcile(&map)?;
     Ok(())
 }

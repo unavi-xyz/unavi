@@ -4,9 +4,10 @@ use unavi_script::permissions::ApiPermissions;
 
 const GAUNTLET_HSD: &str = "hsd/unavi_gauntlet.hsd";
 const MODULE_HSDS: &[&str] = &[
-    GAUNTLET_HSD,
+    // GAUNTLET_HSD,
     // "hsd/unavi_vui_inventory.hsd",
     // "hsd/unavi_vui_nav.hsd",
+    "hsd/example_unavi_shapes.hsd",
 ];
 
 pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServer>) {

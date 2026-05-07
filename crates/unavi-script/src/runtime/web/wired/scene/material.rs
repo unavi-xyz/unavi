@@ -82,8 +82,14 @@ impl MaterialHandle {
     }
 
     pub fn base_color(&self) -> JsValue {
-        let c = shared::wired::scene::material::base_color(&self.api, self.rep)
-            .unwrap_or(MaterialColor { r: 1.0, g: 1.0, b: 1.0, a: 1.0 });
+        let c = shared::wired::scene::material::base_color(&self.api, self.rep).unwrap_or(
+            MaterialColor {
+                r: 1.0,
+                g: 1.0,
+                b: 1.0,
+                a: 1.0,
+            },
+        );
         let obj = js_sys::Object::new();
         js_sys::Reflect::set(&obj, &"r".into(), &c.r.into()).ok();
         js_sys::Reflect::set(&obj, &"g".into(), &c.g.into()).ok();

@@ -27,6 +27,7 @@ use crate::{
 };
 
 pub mod document;
+pub mod util;
 pub mod material;
 pub mod mesh;
 pub mod node;

@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 use crate::runtime::{Runtime, shared};
 
 pub mod document;
+pub mod js;
 pub mod material;
 pub mod mesh;
 pub mod node;
@@ -27,7 +28,7 @@ impl Runtime {
     }
 
     pub fn wired_scene_mesh_class(&self) -> JsValue {
-        let handle = MeshHandle::new(u32::MAX);
+        let handle = MeshHandle::new(u32::MAX, self.api.clone());
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }

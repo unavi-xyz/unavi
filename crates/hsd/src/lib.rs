@@ -188,7 +188,7 @@ impl HsdNode {
     }
 }
 
-#[derive(Debug, Clone, Hydrate, Reconcile, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Hydrate, Reconcile, Serialize, Deserialize)]
 #[loro(default)]
 pub struct HsdMesh {
     pub attributes: BTreeMap<SmolStr, HydratedHash>,

@@ -185,7 +185,7 @@ impl NodeHandle {
 
     pub fn mesh(&self) -> Option<MeshHandle> {
         let rep = shared::wired::scene::node::mesh(&self.api, self.rep).ok()??;
-        Some(MeshHandle::new(rep))
+        Some(MeshHandle::new(rep, self.api.clone()))
     }
 
     pub fn set_mesh(&self, value: Option<MeshHandle>) {

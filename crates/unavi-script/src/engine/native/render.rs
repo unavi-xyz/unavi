@@ -45,6 +45,8 @@ pub fn render_tick_scripts(
                 {
                     warn!(?err, "Failed to render tick script");
                 }
+
+                store.data().api.doc.commit();
                 drop(store);
 
                 ticking.store(false, Ordering::Relaxed);

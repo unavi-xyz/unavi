@@ -25,7 +25,6 @@ loro-surgeon.path       = "../loro-surgeon"
 smol_str.workspace      = true
 unavi-util.path         = "../unavi-util"
 wds.path                = "../wds"
-wired-records           = { features = ["loro"], path = "../wired-records" }
 wired-schemas.path      = "../wired-schemas"
 
 [dev-dependencies]

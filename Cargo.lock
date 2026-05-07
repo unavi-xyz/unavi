@@ -962,7 +962,6 @@ dependencies = [
  "smol_str 0.3.6",
  "unavi-util",
  "wds",
- "wired-records",
  "wired-schemas",
 ]
 
@@ -1093,7 +1092,6 @@ dependencies = [
  "tokio",
  "unavi-util",
  "wds",
- "xdid",
 ]
 
 [[package]]
@@ -6798,7 +6796,6 @@ name = "hsd"
 version = "0.0.16"
 dependencies = [
  "bevy",
- "blake3",
  "loro",
  "loro-surgeon",
  "ron",
@@ -13948,14 +13945,10 @@ dependencies = [
  "clap",
  "directories",
  "embed-resource",
- "hsd",
  "image",
  "iroh",
  "log",
- "loro",
- "loro-surgeon",
  "reqwest 0.13.2",
- "tokio",
  "tracing",
  "unavi-agent",
  "unavi-assets",
@@ -13967,11 +13960,9 @@ dependencies = [
  "unavi-space",
  "unavi-util",
  "unavi-wasm-compat",
- "wds",
  "web-sys",
  "web-time",
  "winit",
- "wired-schemas",
  "xdid",
  "zeroize",
 ]
@@ -14077,7 +14068,6 @@ dependencies = [
  "bevy_vrm",
  "blake3",
  "bytes 1.11.1",
- "directories",
  "hsd",
  "iroh",
  "js-sys",
@@ -14093,7 +14083,6 @@ dependencies = [
  "unavi-avatar",
  "unavi-input",
  "unavi-util",
- "unavi-wasm-compat",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasmtime",
@@ -14171,7 +14160,6 @@ dependencies = [
  "async-channel",
  "bevy",
  "n0-future",
- "tokio",
  "unavi-wasm-compat",
 ]
 

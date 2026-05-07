@@ -22,4 +22,3 @@ smol_str.workspace      = true
 tokio.workspace         = true
 unavi-util.path         = "../unavi-util"
 wds.path                = "../wds"
-xdid.workspace          = true

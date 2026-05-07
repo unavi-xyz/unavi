@@ -13,5 +13,4 @@ workspace = true
 async-channel.workspace = true
 bevy.workspace          = true
 n0-future.workspace     = true
-tokio.workspace         = true
 unavi-wasm-compat.path  = "../unavi-wasm-compat"

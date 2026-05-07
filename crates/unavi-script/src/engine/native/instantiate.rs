@@ -153,6 +153,7 @@ async fn instantiate_component(
 
     info!("Instantiating script");
     let guest = bindings::Guest::instantiate_async(store, &component, &linker).await?;
+    info!("Instantiated");
 
     Ok(guest)
 }

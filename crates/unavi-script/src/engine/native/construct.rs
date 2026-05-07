@@ -31,6 +31,7 @@ pub fn init_scripts(
                 let mut store = store.lock().await;
                 store.set_epoch_deadline(1);
 
+                info!("Constructing script");
                 match guest
                     .wired_script_guest_api()
                     .script()
@@ -38,6 +39,11 @@ pub fn init_scripts(
                     .await
                 {
                     Ok(res) => {
+                        info!("Constructed");
+
+                        store.data().api.doc.commit();
+                        drop(store);
+
                         let _ = tx.send(res);
                     }
                     Err(err) => {

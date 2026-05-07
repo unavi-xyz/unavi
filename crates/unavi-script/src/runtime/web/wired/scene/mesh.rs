@@ -56,8 +56,7 @@ impl MeshHandle {
 
     #[wasm_bindgen(js_name = "setName")]
     pub fn set_name(&self, value: Option<String>) -> Result<(), String> {
-        shared::wired::scene::mesh::set_name(&self.api, self.rep, value)
-            .map_err(|e| e.to_string())
+        shared::wired::scene::mesh::set_name(&self.api, self.rep, value).map_err(|e| e.to_string())
     }
 
     pub fn topology(&self) -> String {
@@ -81,8 +80,7 @@ impl MeshHandle {
             "triangle-strip" => MeshTopology::TriangleStrip,
             _ => return Ok(()),
         };
-        shared::wired::scene::mesh::set_topology(&self.api, self.rep, t)
-            .map_err(|e| e.to_string())
+        shared::wired::scene::mesh::set_topology(&self.api, self.rep, t).map_err(|e| e.to_string())
     }
 
     pub async fn indices(&self) -> JsValue {

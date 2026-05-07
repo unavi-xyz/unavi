@@ -1,5 +1,10 @@
 package wired:portal;
 
+world all {
+  import api;
+  import types;
+}
+
 interface api {
   use types.{portal, portal-destination};
   use wired:math/types.{transform, vec2};

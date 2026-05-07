@@ -30,8 +30,8 @@ sha512 = "d8c4f5b6d4a13f68a245acec0cb40714d3805a71cb6f3ef99477a7e97ebb36c5196771
 
 [wired-portal]
 path = "../../../protocol/wit/wired-portal"
-sha256 = "4279004c64b98356b8781ced941adfade001fd6d53ce3b2b40a4778fc87f19a4"
-sha512 = "5e250cc8518c47be7057a40b65ad933cbc21c0fdc9961fcfc957681b5f10e23a6d491976978f2a0cbfbf4c0bc236ba86313cd2e8a89813d2745d2d678f0b308e"
+sha256 = "b3ef689215f96ad66fd2bfdd84ba8e3e3f1cb9911ba78d157f6d3fef21d3ae6e"
+sha512 = "79f4993c2e1b1f36377e728c2e36c70a5b10e2ff93e1d86bf9c34d3b4895b0322d65a91bfecb17ec8e6cc99e1f2eaac4b43d7b44837d326013280e91017b4e30"
 
 [wired-prelude]
 path = "../../../protocol/wit/wired-prelude"

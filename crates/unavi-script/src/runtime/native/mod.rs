@@ -26,6 +26,16 @@ pub fn add_apis_to_linker(
     linker: &mut Linker<Runtime>,
     perms: &ApiPermissions,
 ) -> wasmtime::Result<()> {
+    if perms.contains(&ApiName::Agent) {
+        wired::agent::bindings::wired::agent::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+        wired::agent::bindings::wired::agent::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    }
+
+    if perms.contains(&ApiName::Event) {
+        wired::event::bindings::wired::event::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+        wired::event::bindings::wired::event::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    }
+
     if perms.contains(&ApiName::Input) {
         wired::input::bindings::wired::input::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
         wired::input::bindings::wired::input::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
@@ -41,6 +51,11 @@ pub fn add_apis_to_linker(
     if perms.contains(&ApiName::Scene) {
         wired::scene::bindings::wired::scene::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
         wired::scene::bindings::wired::scene::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    }
+
+    if perms.contains(&ApiName::Wds) {
+        wired::wds::bindings::wired::wds::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+        wired::wds::bindings::wired::wds::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
     }
 
     Ok(())

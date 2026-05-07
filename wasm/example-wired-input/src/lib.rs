@@ -14,7 +14,7 @@ impl GuestScript for Script {
 
     fn tick(&self) {
         while let Some(event) = self.input.poll() {
-            println!("{event:#?}");
+            println!("got input: {event:#?}");
         }
     }
 

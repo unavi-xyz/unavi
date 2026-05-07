@@ -79,7 +79,7 @@ impl DocHandle {
     pub fn create_mesh(&self) -> MeshHandle {
         let rep =
             shared::wired::scene::document::create_mesh(&self.api, self.rep).unwrap_or(u32::MAX);
-        MeshHandle::new(rep)
+        MeshHandle::new(rep, self.api.clone())
     }
 
     pub fn remove_mesh(&self, value: MeshHandle) {

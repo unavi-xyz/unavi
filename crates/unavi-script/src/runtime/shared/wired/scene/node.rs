@@ -15,7 +15,11 @@ use crate::{
             firewall::validate_firewall,
             transform::{NODE_TRANSFORM_REGISTRY, NodeAbsoluteId},
         },
-        wired::scene::{material::MaterialRes, mesh::MeshRes},
+        wired::scene::{
+            material::MaterialRes,
+            mesh::MeshRes,
+            util::{bytes_to_f32s, bytes_to_u32s, f32s_to_bytes, u32s_to_bytes},
+        },
     },
 };
 
@@ -517,27 +521,6 @@ pub async fn set_collider(api: &Api, rep: u32, value: Option<NodeCollider>) -> a
     Ok(())
 }
 
-fn bytes_to_f32s(bytes: &[u8]) -> Vec<f32> {
-    bytes
-        .chunks_exact(4)
-        .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
-        .collect()
-}
-
-fn bytes_to_u32s(bytes: &[u8]) -> Vec<u32> {
-    bytes
-        .chunks_exact(4)
-        .map(|c| u32::from_le_bytes([c[0], c[1], c[2], c[3]]))
-        .collect()
-}
-
-fn f32s_to_bytes(values: &[f32]) -> Vec<u8> {
-    values.iter().flat_map(|v| v.to_le_bytes()).collect()
-}
-
-fn u32s_to_bytes(values: &[u32]) -> Vec<u8> {
-    values.iter().flat_map(|v| v.to_le_bytes()).collect()
-}
 
 pub fn rigid_body(api: &Api, rep: u32) -> anyhow::Result<Option<NodeRigidBody>> {
     let node = get_node(api, rep)?;

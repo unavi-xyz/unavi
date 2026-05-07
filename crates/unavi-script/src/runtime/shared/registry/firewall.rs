@@ -48,6 +48,10 @@ pub fn deregister_firewalls(
 }
 
 pub fn validate_firewall(me: &Hash, target: &Hash, channel: Channel) -> anyhow::Result<()> {
+    if me == target {
+        return Ok(());
+    }
+
     if let Some(whitelist) = FIREWALL_REGISTRY
         .get_sync(target)
         .as_deref()

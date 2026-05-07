@@ -1,5 +1,4 @@
 use std::{
-    cell::RefCell,
     f32::consts::GOLDEN_RATIO,
     time::{Duration, Instant},
 };
@@ -27,11 +26,11 @@ const TARGET_DECAY: Duration = Duration::from_secs(10);
 
 struct Script {
     receptor: BeaconReceptor,
-    target: RefCell<Option<(Vec<u8>, Instant)>>,
+    target: Option<(Vec<u8>, Instant)>,
 }
 
-impl GuestScript for Script {
-    fn new() -> Self {
+impl ScriptBehavior for Script {
+    fn init() -> Self {
         let doc = self_document();
 
         let pole = Cuboid::new(Vec3::new(BEAM_THICKNESS, PORTAL_HEIGHT, BEAM_THICKNESS));
@@ -86,30 +85,25 @@ impl GuestScript for Script {
 
         Self {
             receptor: BeaconReceptor::new(receptor_node, EVENT_RADIUS),
-            target: RefCell::new(None),
+            target: None,
         }
     }
 
-    fn tick(&self) {
-        let mut target = self.target.borrow_mut();
-        if let Some((_, t)) = &*target
+    fn tick(&mut self) {
+        if let Some((_, t)) = &self.target
             && t.elapsed() >= TARGET_DECAY
         {
-            *target = None;
+            self.target = None;
         }
 
         while let Some(id) = self.receptor.poll() {
-            if target.is_none() || target.as_ref().is_some_and(|(x, _)| *x == id) {
+            if self.target.is_none() || self.target.as_ref().is_some_and(|(x, _)| *x == id) {
                 let Ok(id_hash) = Hash::from_slice(&id) else {
                     continue;
                 };
                 println!("loading beacon: {id_hash}");
-                *target = Some((id, Instant::now()));
+                self.target = Some((id, Instant::now()));
             }
         }
     }
-
-    fn render(&self) {}
-
-    fn drop(&self) {}
 }

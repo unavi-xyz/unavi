@@ -1,5 +1,4 @@
 use std::{
-    cell::RefCell,
     str::FromStr,
     time::{Duration, Instant},
 };
@@ -23,11 +22,11 @@ const EVENT_RADIUS: f32 = SIZE * 3.0;
 
 struct Script {
     emitter: BeaconEmitter,
-    time: RefCell<Instant>,
+    time: Instant,
 }
 
-impl GuestScript for Script {
-    fn new() -> Self {
+impl ScriptBehavior for Script {
+    fn init() -> Self {
         let doc = self_document();
         let Some(node) = doc.nodes().into_iter().next() else {
             panic!("beacon error: no node")
@@ -53,20 +52,16 @@ impl GuestScript for Script {
         println!("Beacon initialized: {id}");
         Self {
             emitter: BeaconEmitter::new(id.as_bytes(), node, EVENT_RADIUS),
-            time: RefCell::new(Instant::now()),
+            time: Instant::now(),
         }
     }
 
-    fn tick(&self) {
-        if self.time.borrow().elapsed() < EMIT_INTERVAL {
+    fn tick(&mut self) {
+        if self.time.elapsed() < EMIT_INTERVAL {
             return;
         }
-        *self.time.borrow_mut() = Instant::now();
+        self.time = Instant::now();
         self.emitter.emit();
         println!("Emitting beacon event");
     }
-
-    fn render(&self) {}
-
-    fn drop(&self) {}
 }

@@ -6,19 +6,15 @@ struct Script {
     input: InputListener,
 }
 
-impl GuestScript for Script {
-    fn new() -> Self {
+impl ScriptBehavior for Script {
+    fn init() -> Self {
         let input = register_global_input_listener();
         Self { input }
     }
 
-    fn tick(&self) {
+    fn tick(&mut self) {
         while let Some(event) = self.input.poll() {
             println!("got input: {event:#?}");
         }
     }
-
-    fn render(&self) {}
-
-    fn drop(&self) {}
 }

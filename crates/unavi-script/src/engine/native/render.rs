@@ -8,28 +8,24 @@ use wasmtime::AsContextMut;
 use crate::{
     RenderTicking,
     engine::native::{
-        construct::ScriptResource,
+        init::InitializedScript,
         instantiate::{ScriptGuest, ScriptSpan, ScriptStore},
     },
 };
 
 pub fn render_tick_scripts(
-    to_tick: Query<(
-        &RenderTicking,
-        &ScriptGuest,
-        &ScriptStore,
-        &ScriptResource,
-        &ScriptSpan,
-    )>,
+    to_tick: Query<
+        (&RenderTicking, &ScriptGuest, &ScriptStore, &ScriptSpan),
+        With<InitializedScript>,
+    >,
 ) {
-    for (ticking, guest, store, res, span) in to_tick {
+    for (ticking, guest, store, span) in to_tick {
         if ticking.0.swap(true, Ordering::Relaxed) {
             continue;
         }
 
         let ticking = Arc::clone(&ticking.0);
         let guest = Arc::clone(&guest.0);
-        let res = res.0;
         let store = Arc::clone(&store.0);
 
         spawn_async_task(
@@ -39,8 +35,7 @@ pub fn render_tick_scripts(
 
                 if let Err(err) = guest
                     .wired_script_guest_api()
-                    .script()
-                    .call_render(store.as_context_mut(), res)
+                    .call_render(store.as_context_mut())
                     .await
                 {
                     warn!(?err, "Failed to render tick script");

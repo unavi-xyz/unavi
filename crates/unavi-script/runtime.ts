@@ -19,12 +19,10 @@ const SCENE_ASYNC_IMPORTS = [
   "wired:scene/types#[method]document.roots",
 ];
 
-// Async imports error when used in the transpiled Script constructor, which in
-// JavaScript must be sync... not good. Maybe can be fixed once P3 lands,
-// with proper wit async support, or with JSPI upstream fixes?
 const SCRIPT_ASYNC_EXPORTS = [
-  "wired:script/guest-api#[method]script.render",
-  "wired:script/guest-api#[method]script.tick",
+  "wired:script/guest-api#init",
+  "wired:script/guest-api#render",
+  "wired:script/guest-api#tick",
 ];
 
 export async function build_script(
@@ -90,12 +88,12 @@ export async function build_script(
     const instance = await mod.instantiate(getCoreModule, imports);
     console.log("Instantiated script", name, instance);
 
-    const script = new instance.guestApi.Script();
-    console.log("Constructed script", name, script);
+    await instance.guestApi.init();
+    console.log("Initialized script", name);
 
     // TODO send script to Rust -> Bevy calls tick
 
-    await script.tick();
+    await instance.guestApi.tick();
     console.log("Ticked script", name);
   } catch (err) {
     console.error("Failed to build script", err);

@@ -1,4 +1,4 @@
-use std::{cell::Cell, time::SystemTime};
+use std::time::SystemTime;
 
 use blake3::Hash;
 use wired_prelude::prelude::*;
@@ -45,13 +45,13 @@ pub struct ModuleRef {
 struct Script {
     gauntlets: [Gauntlet; 3],
     input: InputListener,
-    render_time: Cell<SystemTime>,
+    module_refs: Vec<ModuleRef>,
     registry: VuiModuleRegistry,
-    module_refs: std::cell::RefCell<Vec<ModuleRef>>,
+    render_time: SystemTime,
 }
 
-impl GuestScript for Script {
-    fn new() -> Self {
+impl ScriptBehavior for Script {
+    fn init() -> Self {
         let registry = VuiModuleRegistry::new();
 
         let gauntlets = [
@@ -64,20 +64,21 @@ impl GuestScript for Script {
         Self {
             gauntlets,
             input: listener(),
-            render_time: Cell::new(SystemTime::now()),
+            module_refs: Vec::new(),
             registry,
-            module_refs: std::cell::RefCell::new(Vec::new()),
+            render_time: SystemTime::now(),
         }
     }
 
     #[expect(clippy::too_many_lines)]
-    fn tick(&self) {
-        let mut modules = self.module_refs.borrow_mut();
+    fn tick(&mut self) {
         let mut changed = false;
 
         for m in self.registry.poll() {
-            if modules.len() < MAX_MODULES && !modules.iter().any(|d| d.doc_id == m.doc_id) {
-                modules.push(ModuleRef {
+            if self.module_refs.len() < MAX_MODULES
+                && !self.module_refs.iter().any(|d| d.doc_id == m.doc_id)
+            {
+                self.module_refs.push(ModuleRef {
                     doc_id: m.doc_id,
                     icon_mesh: None,
                     icon_mesh_id: m.icon_mesh_id,
@@ -87,7 +88,7 @@ impl GuestScript for Script {
         }
 
         // Resolve icon meshes for modules that don't have one yet.
-        for module in modules.iter_mut() {
+        for module in &mut self.module_refs {
             if module.icon_mesh.is_none() && !module.icon_mesh_id.is_empty() {
                 if let Some(doc) = get_document(&module.doc_id) {
                     if let Some(mesh) = doc
@@ -105,16 +106,15 @@ impl GuestScript for Script {
         }
 
         if changed {
-            modules.sort_by(|a, b| a.name.cmp(&b.name));
-            let n = modules.len();
+            self.module_refs.sort_by(|a, b| a.name.cmp(&b.name));
+            let n = self.module_refs.len();
             for g in &self.gauntlets {
-                g.rebuild_sectors(&modules, &palette(n));
+                g.rebuild_sectors(&self.module_refs, &palette(n));
                 for s in g.sectors.borrow().as_slice() {
                     self.registry.set_color(&s.module_doc_id, s.bg_color);
                 }
             }
         }
-        drop(modules);
 
         if !self
             .gauntlets
@@ -170,7 +170,6 @@ impl GuestScript for Script {
                     self.gauntlets[menu_idx].pressed.set(false);
                 }
                 InputAction::GrabDown => {
-                    let modules = self.module_refs.borrow();
                     for g in &self.gauntlets {
                         let matches = matches!(
                             (&g.target, event.device),
@@ -182,7 +181,7 @@ impl GuestScript for Script {
                             && g.open.get()
                             && let Some(sector) = g.hovered_sector.get()
                         {
-                            g.select(sector, &modules, &self.registry);
+                            g.select(sector, &self.module_refs, &self.registry);
                         }
                     }
                 }
@@ -191,14 +190,9 @@ impl GuestScript for Script {
         }
     }
 
-    fn render(&self) {
-        let delta = self
-            .render_time
-            .get()
-            .elapsed()
-            .expect("elapsed")
-            .as_secs_f32();
-        self.render_time.set(SystemTime::now());
+    fn render(&mut self) {
+        let delta = self.render_time.elapsed().expect("elapsed").as_secs_f32();
+        self.render_time = SystemTime::now();
 
         for g in &self.gauntlets {
             let prev_t = g.scale_t.get();
@@ -246,6 +240,4 @@ impl GuestScript for Script {
             }
         }
     }
-
-    fn drop(&self) {}
 }

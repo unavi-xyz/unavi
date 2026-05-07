@@ -17,8 +17,8 @@ struct Script {
     time: SystemTime,
 }
 
-impl GuestScript for Script {
-    fn new() -> Self {
+impl ScriptBehavior for Script {
+    fn init() -> Self {
         let doc = self_document();
 
         let size = 0.1;
@@ -42,7 +42,7 @@ impl GuestScript for Script {
         }
     }
 
-    fn tick(&self) {
+    fn tick(&mut self) {
         let now = self.time.elapsed().expect("elapsed").as_secs_f32();
 
         let tr = self.node.global_transform().translation;
@@ -51,8 +51,4 @@ impl GuestScript for Script {
         self.node
             .set_translation(Vec3::new(0.0, now.sin() * 0.1, 0.0));
     }
-
-    fn render(&self) {}
-
-    fn drop(&self) {}
 }

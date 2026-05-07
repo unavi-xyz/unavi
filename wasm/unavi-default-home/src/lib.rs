@@ -15,8 +15,8 @@ const GROUND_THICK: f32 = 0.5;
 
 struct Script;
 
-impl GuestScript for Script {
-    fn new() -> Self {
+impl ScriptBehavior for Script {
+    fn init() -> Self {
         let doc = self_document();
 
         let shape = Cuboid::new(Vec3::new(GROUND_SIZE, GROUND_THICK, GROUND_SIZE));
@@ -47,10 +47,4 @@ impl GuestScript for Script {
 
         Self
     }
-
-    fn tick(&self) {}
-
-    fn render(&self) {}
-
-    fn drop(&self) {}
 }

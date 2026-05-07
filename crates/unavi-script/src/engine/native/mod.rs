@@ -3,7 +3,7 @@ use wasmtime::Config;
 
 use crate::engine::Engine;
 
-mod construct;
+mod init;
 mod instantiate;
 mod log;
 mod render;
@@ -19,8 +19,8 @@ impl Plugin for NativeEnginePlugin {
             .add_systems(
                 FixedUpdate,
                 (
-                    construct::init_scripts,
-                    construct::poll_constructing_scripts,
+                    init::init_scripts,
+                    init::poll_initing_scripts,
                     instantiate::instantiate_scripts,
                     instantiate::poll_instantiating,
                     tick::tick_scripts,

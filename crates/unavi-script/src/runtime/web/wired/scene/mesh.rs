@@ -49,6 +49,7 @@ impl MeshHandle {
         shared::wired::scene::mesh::name(&self.api, self.rep).unwrap_or_default()
     }
 
+    #[wasm_bindgen(js_name = "setName")]
     pub fn set_name(&self, value: Option<String>) {
         let _ = shared::wired::scene::mesh::set_name(&self.api, self.rep, value);
     }
@@ -64,6 +65,7 @@ impl MeshHandle {
         .into()
     }
 
+    #[wasm_bindgen(js_name = "setTopology")]
     pub fn set_topology(&self, value: String) {
         let t = match value.as_str() {
             "point-list" => MeshTopology::PointList,
@@ -97,6 +99,7 @@ impl MeshHandle {
         obj.into()
     }
 
+    #[wasm_bindgen(js_name = "setIndices")]
     pub async fn set_indices(&self, value: JsValue) {
         if value.is_null() || value.is_undefined() {
             let _ = shared::wired::scene::mesh::set_indices(&self.api, self.rep, None).await;
@@ -123,6 +126,7 @@ impl MeshHandle {
         f32s_to_js(shared::wired::scene::mesh::positions(&self.api, self.rep).await)
     }
 
+    #[wasm_bindgen(js_name = "setPositions")]
     pub async fn set_positions(&self, value: JsValue) {
         let _ =
             shared::wired::scene::mesh::set_positions(&self.api, self.rep, js_to_f32s(value)).await;
@@ -132,6 +136,7 @@ impl MeshHandle {
         f32s_to_js(shared::wired::scene::mesh::normals(&self.api, self.rep).await)
     }
 
+    #[wasm_bindgen(js_name = "setNormals")]
     pub async fn set_normals(&self, value: JsValue) {
         let _ =
             shared::wired::scene::mesh::set_normals(&self.api, self.rep, js_to_f32s(value)).await;
@@ -141,6 +146,7 @@ impl MeshHandle {
         f32s_to_js(shared::wired::scene::mesh::tangents(&self.api, self.rep).await)
     }
 
+    #[wasm_bindgen(js_name = "setTangents")]
     pub async fn set_tangents(&self, value: JsValue) {
         let _ =
             shared::wired::scene::mesh::set_tangents(&self.api, self.rep, js_to_f32s(value)).await;
@@ -150,6 +156,7 @@ impl MeshHandle {
         f32s_to_js(shared::wired::scene::mesh::colors(&self.api, self.rep).await)
     }
 
+    #[wasm_bindgen(js_name = "setColors")]
     pub async fn set_colors(&self, value: JsValue) {
         let _ =
             shared::wired::scene::mesh::set_colors(&self.api, self.rep, js_to_f32s(value)).await;
@@ -159,6 +166,7 @@ impl MeshHandle {
         f32s_to_js(shared::wired::scene::mesh::uv0(&self.api, self.rep).await)
     }
 
+    #[wasm_bindgen(js_name = "setUv0")]
     pub async fn set_uv0(&self, value: JsValue) {
         let _ = shared::wired::scene::mesh::set_uv0(&self.api, self.rep, js_to_f32s(value)).await;
     }
@@ -167,6 +175,7 @@ impl MeshHandle {
         f32s_to_js(shared::wired::scene::mesh::uv1(&self.api, self.rep).await)
     }
 
+    #[wasm_bindgen(js_name = "setUv1")]
     pub async fn set_uv1(&self, value: JsValue) {
         let _ = shared::wired::scene::mesh::set_uv1(&self.api, self.rep, js_to_f32s(value)).await;
     }

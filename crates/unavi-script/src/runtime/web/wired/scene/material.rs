@@ -47,18 +47,22 @@ impl MaterialHandle {
         shared::wired::scene::material::name(&self.api, self.rep).unwrap_or_default()
     }
 
+    #[wasm_bindgen(js_name = "setName")]
     pub fn set_name(&self, value: Option<String>) {
         let _ = shared::wired::scene::material::set_name(&self.api, self.rep, value);
     }
 
+    #[wasm_bindgen(js_name = "alphaCutoff")]
     pub fn alpha_cutoff(&self) -> f32 {
         shared::wired::scene::material::alpha_cutoff(&self.api, self.rep).unwrap_or(0.5)
     }
 
+    #[wasm_bindgen(js_name = "setAlphaCutoff")]
     pub fn set_alpha_cutoff(&self, value: f32) {
         let _ = shared::wired::scene::material::set_alpha_cutoff(&self.api, self.rep, value);
     }
 
+    #[wasm_bindgen(js_name = "alphaMode")]
     pub fn alpha_mode(&self) -> Option<String> {
         shared::wired::scene::material::alpha_mode(&self.api, self.rep)
             .ok()
@@ -76,6 +80,7 @@ impl MaterialHandle {
             })
     }
 
+    #[wasm_bindgen(js_name = "setAlphaMode")]
     pub fn set_alpha_mode(&self, value: Option<String>) {
         let mode = value.and_then(|s| match s.as_str() {
             "add" => Some(MaterialAlphaMode::Add),
@@ -89,6 +94,7 @@ impl MaterialHandle {
         let _ = shared::wired::scene::material::set_alpha_mode(&self.api, self.rep, mode);
     }
 
+    #[wasm_bindgen(js_name = "baseColor")]
     pub fn base_color(&self) -> JsValue {
         let c = shared::wired::scene::material::base_color(&self.api, self.rep).unwrap_or(
             MaterialColor {
@@ -106,6 +112,7 @@ impl MaterialHandle {
         obj.into()
     }
 
+    #[wasm_bindgen(js_name = "setBaseColor")]
     pub fn set_base_color(&self, value: JsValue) {
         let get_f32 = |k: &str, default: f32| {
             js_sys::Reflect::get(&value, &k.into())
@@ -127,6 +134,7 @@ impl MaterialHandle {
         shared::wired::scene::material::metallic(&self.api, self.rep).unwrap_or(0.0)
     }
 
+    #[wasm_bindgen(js_name = "setMetallic")]
     pub fn set_metallic(&self, value: f32) {
         let _ = shared::wired::scene::material::set_metallic(&self.api, self.rep, value);
     }
@@ -135,14 +143,17 @@ impl MaterialHandle {
         shared::wired::scene::material::roughness(&self.api, self.rep).unwrap_or(0.5)
     }
 
+    #[wasm_bindgen(js_name = "setRoughness")]
     pub fn set_roughness(&self, value: f32) {
         let _ = shared::wired::scene::material::set_roughness(&self.api, self.rep, value);
     }
 
+    #[wasm_bindgen(js_name = "doubleSided")]
     pub fn double_sided(&self) -> bool {
         shared::wired::scene::material::double_sided(&self.api, self.rep).unwrap_or(false)
     }
 
+    #[wasm_bindgen(js_name = "setDoubleSided")]
     pub fn set_double_sided(&self, value: bool) {
         let _ = shared::wired::scene::material::set_double_sided(&self.api, self.rep, value);
     }
@@ -151,6 +162,7 @@ impl MaterialHandle {
         shared::wired::scene::material::unlit(&self.api, self.rep).unwrap_or(false)
     }
 
+    #[wasm_bindgen(js_name = "setUnlit")]
     pub fn set_unlit(&self, value: bool) {
         let _ = shared::wired::scene::material::set_unlit(&self.api, self.rep, value);
     }

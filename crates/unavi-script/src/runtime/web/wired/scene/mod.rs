@@ -22,7 +22,7 @@ impl Runtime {
     }
 
     pub fn wired_scene_material_class(&self) -> JsValue {
-        let handle = MaterialHandle::new(u32::MAX);
+        let handle = MaterialHandle::new(u32::MAX, self.api.clone());
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }

@@ -1,13 +1,21 @@
+use std::sync::Arc;
+
 use wasm_bindgen::prelude::*;
+
+use crate::runtime::shared::{
+    self, Api,
+    wired::scene::material::{MaterialAlphaMode, MaterialColor},
+};
 
 #[wasm_bindgen]
 pub struct MaterialHandle {
     rep: u32,
+    api: Arc<Api>,
 }
 
 impl MaterialHandle {
-    pub const fn new(rep: u32) -> Self {
-        Self { rep }
+    pub fn new(rep: u32, api: Arc<Api>) -> Self {
+        Self { rep, api }
     }
 
     pub fn rep(&self) -> u32 {
@@ -18,75 +26,118 @@ impl MaterialHandle {
 #[wasm_bindgen]
 impl MaterialHandle {
     pub fn id(&self) -> String {
-        todo!()
+        shared::wired::scene::material::id(&self.api, self.rep).unwrap_or_default()
     }
 
     #[wasm_bindgen(js_name = "clone")]
     pub fn clone_mat(&self) -> Self {
-        todo!()
+        let rep = shared::wired::scene::material::clone(&self.api, self.rep).unwrap_or(u32::MAX);
+        Self::new(rep, Arc::clone(&self.api))
     }
 
     pub fn name(&self) -> Option<String> {
-        todo!()
+        shared::wired::scene::material::name(&self.api, self.rep).unwrap_or_default()
     }
 
-    pub fn set_name(&self, _value: Option<String>) {
-        todo!()
+    pub fn set_name(&self, value: Option<String>) {
+        let _ = shared::wired::scene::material::set_name(&self.api, self.rep, value);
     }
 
     pub fn alpha_cutoff(&self) -> f32 {
-        todo!()
+        shared::wired::scene::material::alpha_cutoff(&self.api, self.rep).unwrap_or(0.5)
     }
 
-    pub fn set_alpha_cutoff(&self, _value: f32) {
-        todo!()
+    pub fn set_alpha_cutoff(&self, value: f32) {
+        let _ = shared::wired::scene::material::set_alpha_cutoff(&self.api, self.rep, value);
     }
 
-    pub fn alpha_mode(&self) -> JsValue {
-        todo!()
+    pub fn alpha_mode(&self) -> Option<String> {
+        shared::wired::scene::material::alpha_mode(&self.api, self.rep)
+            .ok()
+            .flatten()
+            .map(|m| {
+                match m {
+                    MaterialAlphaMode::Add => "add",
+                    MaterialAlphaMode::Blend => "blend",
+                    MaterialAlphaMode::Mask => "mask",
+                    MaterialAlphaMode::Multiply => "multiply",
+                    MaterialAlphaMode::Opaque => "opaque",
+                    MaterialAlphaMode::PreMultiplied => "pre-multiplied",
+                }
+                .into()
+            })
     }
 
-    pub fn set_alpha_mode(&self, _value: JsValue) {
-        todo!()
+    pub fn set_alpha_mode(&self, value: Option<String>) {
+        let mode = value.and_then(|s| match s.as_str() {
+            "add" => Some(MaterialAlphaMode::Add),
+            "blend" => Some(MaterialAlphaMode::Blend),
+            "mask" => Some(MaterialAlphaMode::Mask),
+            "multiply" => Some(MaterialAlphaMode::Multiply),
+            "opaque" => Some(MaterialAlphaMode::Opaque),
+            "pre-multiplied" => Some(MaterialAlphaMode::PreMultiplied),
+            _ => None,
+        });
+        let _ = shared::wired::scene::material::set_alpha_mode(&self.api, self.rep, mode);
     }
 
     pub fn base_color(&self) -> JsValue {
-        todo!()
+        let c = shared::wired::scene::material::base_color(&self.api, self.rep)
+            .unwrap_or(MaterialColor { r: 1.0, g: 1.0, b: 1.0, a: 1.0 });
+        let obj = js_sys::Object::new();
+        js_sys::Reflect::set(&obj, &"r".into(), &c.r.into()).ok();
+        js_sys::Reflect::set(&obj, &"g".into(), &c.g.into()).ok();
+        js_sys::Reflect::set(&obj, &"b".into(), &c.b.into()).ok();
+        js_sys::Reflect::set(&obj, &"a".into(), &c.a.into()).ok();
+        obj.into()
     }
 
-    pub fn set_base_color(&self, _value: JsValue) {
-        todo!()
+    pub fn set_base_color(&self, value: JsValue) {
+        let get_f32 = |k: &str, default: f32| {
+            js_sys::Reflect::get(&value, &k.into())
+                .ok()
+                .and_then(|v| v.as_f64())
+                .map(|v| v as f32)
+                .unwrap_or(default)
+        };
+        let color = MaterialColor {
+            r: get_f32("r", 1.0),
+            g: get_f32("g", 1.0),
+            b: get_f32("b", 1.0),
+            a: get_f32("a", 1.0),
+        };
+        let _ = shared::wired::scene::material::set_base_color(&self.api, self.rep, color);
     }
 
     pub fn metallic(&self) -> f32 {
-        todo!()
+        shared::wired::scene::material::metallic(&self.api, self.rep).unwrap_or(0.0)
     }
 
-    pub fn set_metallic(&self, _value: f32) {
-        todo!()
+    pub fn set_metallic(&self, value: f32) {
+        let _ = shared::wired::scene::material::set_metallic(&self.api, self.rep, value);
     }
 
     pub fn roughness(&self) -> f32 {
-        todo!()
+        shared::wired::scene::material::roughness(&self.api, self.rep).unwrap_or(0.5)
     }
 
-    pub fn set_roughness(&self, _value: f32) {
-        todo!()
+    pub fn set_roughness(&self, value: f32) {
+        let _ = shared::wired::scene::material::set_roughness(&self.api, self.rep, value);
     }
 
     pub fn double_sided(&self) -> bool {
-        todo!()
+        shared::wired::scene::material::double_sided(&self.api, self.rep).unwrap_or(false)
     }
 
-    pub fn set_double_sided(&self, _value: bool) {
-        todo!()
+    pub fn set_double_sided(&self, value: bool) {
+        let _ = shared::wired::scene::material::set_double_sided(&self.api, self.rep, value);
     }
 
     pub fn unlit(&self) -> bool {
-        todo!()
+        shared::wired::scene::material::unlit(&self.api, self.rep).unwrap_or(false)
     }
 
-    pub fn set_unlit(&self, _value: bool) {
-        todo!()
+    pub fn set_unlit(&self, value: bool) {
+        let _ = shared::wired::scene::material::set_unlit(&self.api, self.rep, value);
     }
 }

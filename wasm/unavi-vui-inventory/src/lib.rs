@@ -33,8 +33,8 @@ struct Script {
     color_mat: Material,
 }
 
-impl GuestScript for Script {
-    fn new() -> Self {
+impl ScriptBehavior for Script {
+    fn init() -> Self {
         let doc = self_document();
 
         let color_mat = doc.create_material();
@@ -90,7 +90,7 @@ impl GuestScript for Script {
         }
     }
 
-    fn tick(&self) {
+    fn tick(&mut self) {
         while let Some(event) = self.module.poll() {
             match event {
                 ModuleEvent::Activate(t) => {
@@ -107,7 +107,4 @@ impl GuestScript for Script {
             }
         }
     }
-
-    fn render(&self) {}
-    fn drop(&self) {}
 }

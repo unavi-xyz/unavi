@@ -18,6 +18,14 @@ impl DocHandle {
     }
 }
 
+impl Drop for DocHandle {
+    fn drop(&mut self) {
+        if self.rep != u32::MAX {
+            let _ = shared::wired::scene::document::on_drop(&self.api, self.rep);
+        }
+    }
+}
+
 #[wasm_bindgen]
 impl DocHandle {
     pub fn id(&self) -> Vec<u8> {
@@ -72,14 +80,14 @@ impl DocHandle {
             return js_sys::Array::new();
         };
         reps.into_iter()
-            .map(|rep| JsValue::from(MeshHandle::new(rep)))
+            .map(|rep| JsValue::from(MeshHandle::new(rep, Arc::clone(&self.api))))
             .collect()
     }
 
     pub fn create_mesh(&self) -> MeshHandle {
         let rep =
             shared::wired::scene::document::create_mesh(&self.api, self.rep).unwrap_or(u32::MAX);
-        MeshHandle::new(rep, self.api.clone())
+        MeshHandle::new(rep, Arc::clone(&self.api))
     }
 
     pub fn remove_mesh(&self, value: MeshHandle) {
@@ -91,14 +99,14 @@ impl DocHandle {
             return js_sys::Array::new();
         };
         reps.into_iter()
-            .map(|rep| JsValue::from(MaterialHandle::new(rep)))
+            .map(|rep| JsValue::from(MaterialHandle::new(rep, Arc::clone(&self.api))))
             .collect()
     }
 
     pub fn create_material(&self) -> MaterialHandle {
         let rep = shared::wired::scene::document::create_material(&self.api, self.rep)
             .unwrap_or(u32::MAX);
-        MaterialHandle::new(rep)
+        MaterialHandle::new(rep, Arc::clone(&self.api))
     }
 
     pub fn remove_material(&self, value: MaterialHandle) {

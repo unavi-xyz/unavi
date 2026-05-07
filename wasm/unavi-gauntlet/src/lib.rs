@@ -6,14 +6,14 @@ struct Script {
     doc: Document,
 }
 
-impl GuestScript for Script {
-    fn new() -> Self {
+impl ScriptBehavior for Script {
+    fn init() -> Self {
         println!("> construct!");
         let doc = self_document();
         Self { doc }
     }
 
-    fn tick(&self) {
+    fn tick(&mut self) {
         println!("> tick!");
 
         for _n in self.doc.roots() {
@@ -21,8 +21,4 @@ impl GuestScript for Script {
             // println!("  - node {id}");
         }
     }
-
-    fn render(&self) {}
-
-    fn drop(&self) {}
 }

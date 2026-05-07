@@ -3,20 +3,20 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use tracing::Instrument;
 use unavi_util::async_task::spawn_async_task;
-use wasmtime::{AsContextMut, component::ResourceAny};
+use wasmtime::AsContextMut;
 
 use crate::engine::native::instantiate::{ScriptGuest, ScriptSpan, ScriptStore};
 
 #[derive(Component)]
-pub struct ScriptResource(pub ResourceAny);
+pub struct InitializedScript;
 
 #[derive(Component)]
-pub struct ConstructingScript(tokio::sync::oneshot::Receiver<ResourceAny>);
+pub struct InitingScript(tokio::sync::oneshot::Receiver<()>);
 
 pub fn init_scripts(
     to_init: Query<
         (Entity, &ScriptGuest, &ScriptStore, &ScriptSpan),
-        (Without<ConstructingScript>, Without<ScriptResource>),
+        (Without<InitingScript>, Without<InitializedScript>),
     >,
     mut commands: Commands,
 ) {
@@ -31,45 +31,37 @@ pub fn init_scripts(
                 let mut store = store.lock().await;
                 store.set_epoch_deadline(1);
 
-                info!("Constructing script");
                 match guest
                     .wired_script_guest_api()
-                    .script()
-                    .call_constructor(store.as_context_mut())
+                    .call_init(store.as_context_mut())
                     .await
                 {
-                    Ok(res) => {
-                        info!("Constructed");
-
+                    Ok(()) => {
                         store.data().api.doc.commit();
                         drop(store);
-
-                        let _ = tx.send(res);
+                        let _ = tx.send(());
                     }
                     Err(err) => {
-                        error!(?err, "Failed to construct script resource");
+                        error!(?err, "Failed to init script");
                     }
                 }
             }
             .instrument(span.0.clone()),
         );
 
-        commands.entity(entity).insert(ConstructingScript(rx));
+        commands.entity(entity).insert(InitingScript(rx));
     }
 }
 
-pub fn poll_constructing_scripts(
-    scripts: Query<(Entity, &mut ConstructingScript)>,
-    mut commands: Commands,
-) {
+pub fn poll_initing_scripts(scripts: Query<(Entity, &mut InitingScript)>, mut commands: Commands) {
     for (entity, mut initializing) in scripts {
-        let Ok(res) = initializing.0.try_recv() else {
+        let Ok(()) = initializing.0.try_recv() else {
             continue;
         };
 
         commands
             .entity(entity)
-            .remove::<ConstructingScript>()
-            .insert(ScriptResource(res));
+            .remove::<InitingScript>()
+            .insert(InitializedScript);
     }
 }

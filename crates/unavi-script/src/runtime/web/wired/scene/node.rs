@@ -25,6 +25,14 @@ impl NodeHandle {
     }
 }
 
+impl Drop for NodeHandle {
+    fn drop(&mut self) {
+        if self.rep != u32::MAX {
+            let _ = shared::wired::scene::node::on_drop(&self.api, self.rep);
+        }
+    }
+}
+
 #[wasm_bindgen]
 impl NodeHandle {
     pub fn id(&self) -> String {
@@ -185,7 +193,7 @@ impl NodeHandle {
 
     pub fn mesh(&self) -> Option<MeshHandle> {
         let rep = shared::wired::scene::node::mesh(&self.api, self.rep).ok()??;
-        Some(MeshHandle::new(rep, self.api.clone()))
+        Some(MeshHandle::new(rep, Arc::clone(&self.api)))
     }
 
     pub fn set_mesh(&self, value: Option<MeshHandle>) {
@@ -194,7 +202,7 @@ impl NodeHandle {
 
     pub fn material(&self) -> Option<MaterialHandle> {
         let rep = shared::wired::scene::node::material(&self.api, self.rep).ok()??;
-        Some(MaterialHandle::new(rep))
+        Some(MaterialHandle::new(rep, Arc::clone(&self.api)))
     }
 
     pub fn set_material(&self, value: Option<MaterialHandle>) {

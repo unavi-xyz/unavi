@@ -9,8 +9,8 @@ wired_prelude::generate_script!(Script);
 
 struct Script;
 
-impl GuestScript for Script {
-    fn new() -> Self {
+impl ScriptBehavior for Script {
+    fn init() -> Self {
         let doc = self_document();
         let spacing = 1.5_f32;
 
@@ -38,10 +38,4 @@ impl GuestScript for Script {
 
         Self
     }
-
-    fn tick(&self) {}
-
-    fn render(&self) {}
-
-    fn drop(&self) {}
 }

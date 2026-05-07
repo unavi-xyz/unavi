@@ -25,6 +25,14 @@ impl MeshHandle {
     }
 }
 
+impl Drop for MeshHandle {
+    fn drop(&mut self) {
+        if self.rep != u32::MAX {
+            let _ = shared::wired::scene::mesh::on_drop(&self.api, self.rep);
+        }
+    }
+}
+
 #[wasm_bindgen]
 impl MeshHandle {
     pub fn id(&self) -> String {

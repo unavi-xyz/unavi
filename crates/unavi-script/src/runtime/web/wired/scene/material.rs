@@ -23,6 +23,14 @@ impl MaterialHandle {
     }
 }
 
+impl Drop for MaterialHandle {
+    fn drop(&mut self) {
+        if self.rep != u32::MAX {
+            let _ = shared::wired::scene::material::on_drop(&self.api, self.rep);
+        }
+    }
+}
+
 #[wasm_bindgen]
 impl MaterialHandle {
     pub fn id(&self) -> String {

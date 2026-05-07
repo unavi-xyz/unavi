@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-
 use wired_prelude::prelude::*;
 use wired_schemas::SCHEMA_BEACON;
 
@@ -49,16 +47,16 @@ const Z_LIP_Z: f32 = TABLE_D * 0.5 - LIP_T * 0.5;
 struct Script {
     _icon_mesh: Mesh,
     _nodes: Vec<Node>,
-    beacon_query: RefCell<Option<QueryFuture>>,
-    beacons: RefCell<Vec<Document>>,
+    beacon_query: Option<QueryFuture>,
+    beacons: Vec<Document>,
     color_mat: Material,
     module: VuiModule,
     ring: Node,
     root: Node,
 }
 
-impl GuestScript for Script {
-    fn new() -> Self {
+impl ScriptBehavior for Script {
+    fn init() -> Self {
         let doc = self_document();
         let mut nodes = Vec::new();
 
@@ -116,8 +114,8 @@ impl GuestScript for Script {
         Self {
             _icon_mesh: icon_mesh,
             _nodes: nodes,
-            beacon_query: RefCell::new(None),
-            beacons: RefCell::default(),
+            beacon_query: None,
+            beacons: Vec::new(),
             color_mat,
             module,
             ring,
@@ -125,7 +123,7 @@ impl GuestScript for Script {
         }
     }
 
-    fn tick(&self) {
+    fn tick(&mut self) {
         while let Some(event) = self.module.poll() {
             match event {
                 ModuleEvent::Activate(t) => {
@@ -140,18 +138,17 @@ impl GuestScript for Script {
                     // TODO fix ring position, grab, add phys joint
                     // self.ring.set_scale(Vec3::ONE);
 
-                    let fut = get_wds().query(Some(&QueryFilter {
+                    self.beacon_query = Some(get_wds().query(Some(&QueryFilter {
                         creator: None,
                         schemas: Some(vec![SCHEMA_BEACON.hash.as_bytes().to_vec()]),
-                    }));
-                    *self.beacon_query.borrow_mut() = Some(fut);
+                    })));
                 }
                 ModuleEvent::Deactivate => {
                     self.root.set_scale(Vec3::ZERO);
                     self.ring.set_scale(Vec3::ZERO);
-                    *self.beacon_query.borrow_mut() = None;
+                    self.beacon_query = None;
 
-                    for doc in self.beacons.borrow().as_slice() {
+                    for doc in &self.beacons {
                         remove_document(&doc.id());
                     }
                 }
@@ -161,11 +158,10 @@ impl GuestScript for Script {
             }
         }
 
-        let mut remove_query = false;
-
-        if let Some(fut) = self.beacon_query.borrow().as_ref()
+        if let Some(fut) = &self.beacon_query
             && let Some(result) = fut.poll()
         {
+            self.beacon_query = None;
             match result {
                 Ok(ids) => {
                     for id in ids {
@@ -192,22 +188,13 @@ impl GuestScript for Script {
                         pos.y += BASIN_Y + 1.0;
                         node.set_translation(pos);
 
-                        self.beacons.borrow_mut().push(beacon_doc);
+                        self.beacons.push(beacon_doc);
                     }
-
-                    remove_query = true;
                 }
                 Err(()) => eprintln!("WDS query error"),
             }
         }
-
-        if remove_query {
-            *self.beacon_query.borrow_mut() = None;
-        }
     }
-
-    fn render(&self) {}
-    fn drop(&self) {}
 }
 
 fn make_filter_table(doc: &Document, mat: &Material, nodes: &mut Vec<Node>) -> Node {

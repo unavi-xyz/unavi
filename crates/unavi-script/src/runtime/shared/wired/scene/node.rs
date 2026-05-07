@@ -521,7 +521,6 @@ pub async fn set_collider(api: &Api, rep: u32, value: Option<NodeCollider>) -> a
     Ok(())
 }
 
-
 pub fn rigid_body(api: &Api, rep: u32) -> anyhow::Result<Option<NodeRigidBody>> {
     let node = get_node(api, rep)?;
     let tree = node_tree(&node.doc)?;

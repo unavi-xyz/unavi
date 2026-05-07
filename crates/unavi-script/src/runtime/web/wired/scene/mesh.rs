@@ -163,4 +163,3 @@ impl MeshHandle {
         let _ = shared::wired::scene::mesh::set_uv1(&self.api, self.rep, js_to_f32s(value)).await;
     }
 }
-

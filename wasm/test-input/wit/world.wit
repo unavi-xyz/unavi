@@ -1,5 +1,0 @@
-package test:input;
-
-world guest {
-  include wired:prelude/script;
-}

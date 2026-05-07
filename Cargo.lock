@@ -13133,44 +13133,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-event"
-version = "0.0.16"
-dependencies = [
- "wired-prelude",
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
-name = "test-input"
-version = "0.0.16"
-dependencies = [
- "wired-prelude",
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
-name = "test-log"
-version = "0.0.16"
-dependencies = [
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
-name = "test-scene"
-version = "0.0.16"
-dependencies = [
- "wired-prelude",
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
-name = "test-stall"
-version = "0.0.16"
-dependencies = [
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
 name = "thiserror"
 version = "1.0.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"

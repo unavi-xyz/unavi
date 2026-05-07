@@ -9,7 +9,7 @@ use crate::runtime::{
     },
 };
 
-fn wit_to_alpha_mode(m: AlphaMode) -> MaterialAlphaMode {
+const fn wit_to_alpha_mode(m: AlphaMode) -> MaterialAlphaMode {
     match m {
         AlphaMode::Add => MaterialAlphaMode::Add,
         AlphaMode::Blend => MaterialAlphaMode::Blend,
@@ -20,7 +20,7 @@ fn wit_to_alpha_mode(m: AlphaMode) -> MaterialAlphaMode {
     }
 }
 
-fn alpha_mode_to_wit(m: MaterialAlphaMode) -> AlphaMode {
+const fn alpha_mode_to_wit(m: MaterialAlphaMode) -> AlphaMode {
     match m {
         MaterialAlphaMode::Add => AlphaMode::Add,
         MaterialAlphaMode::Blend => AlphaMode::Blend,
@@ -31,12 +31,22 @@ fn alpha_mode_to_wit(m: MaterialAlphaMode) -> AlphaMode {
     }
 }
 
-fn wit_to_color(c: Color) -> MaterialColor {
-    MaterialColor { r: c.r, g: c.g, b: c.b, a: c.a }
+const fn wit_to_color(c: Color) -> MaterialColor {
+    MaterialColor {
+        r: c.r,
+        g: c.g,
+        b: c.b,
+        a: c.a,
+    }
 }
 
-fn color_to_wit(c: MaterialColor) -> Color {
-    Color { r: c.r, g: c.g, b: c.b, a: c.a }
+const fn color_to_wit(c: MaterialColor) -> Color {
+    Color {
+        r: c.r,
+        g: c.g,
+        b: c.b,
+        a: c.a,
+    }
 }
 
 impl HostMaterial for Runtime {

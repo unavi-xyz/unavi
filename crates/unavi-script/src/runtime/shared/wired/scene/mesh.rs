@@ -240,4 +240,3 @@ pub async fn uv1(api: &Api, rep: u32) -> anyhow::Result<Option<Vec<f32>>> {
 pub async fn set_uv1(api: &Api, rep: u32, values: Option<Vec<f32>>) -> anyhow::Result<()> {
     set_attribute(api, rep, "UV_1", values).await
 }
-

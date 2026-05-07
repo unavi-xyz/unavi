@@ -51,8 +51,7 @@ impl NodeHandle {
 
     #[wasm_bindgen(js_name = "setName")]
     pub fn set_name(&self, value: Option<String>) -> Result<(), String> {
-        shared::wired::scene::node::set_name(&self.api, self.rep, value)
-            .map_err(|e| e.to_string())
+        shared::wired::scene::node::set_name(&self.api, self.rep, value).map_err(|e| e.to_string())
     }
 
     pub fn translation(&self) -> JsValue {
@@ -152,8 +151,7 @@ impl NodeHandle {
                 sc.get(2).as_f64().unwrap_or(1.0) as f32,
             ],
         };
-        shared::wired::scene::node::set_transform(&self.api, self.rep, t)
-            .map_err(|e| e.to_string())
+        shared::wired::scene::node::set_transform(&self.api, self.rep, t).map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "globalTransform")]

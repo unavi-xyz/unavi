@@ -373,26 +373,24 @@ pub fn mesh(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
 
 pub fn set_mesh(api: &Api, node_rep: u32, mesh_rep: Option<u32>) -> anyhow::Result<()> {
     let scene = api.wired_scene.try_lock()?;
-    let node = scene
-        .nodes
-        .get(node_rep)
-        .cloned()
-        .ok_or_else(|| anyhow::anyhow!("invalid node rep: {node_rep}"))?;
     let mesh_id = if let Some(mrep) = mesh_rep {
         let m = scene
             .meshes
             .get(mrep)
-            .cloned()
             .ok_or_else(|| anyhow::anyhow!("invalid mesh rep: {mrep}"))?;
-        Some(m.id)
+        Some(m.id.clone())
     } else {
         None
     };
-    drop(scene);
+    let node = scene
+        .nodes
+        .get(node_rep)
+        .ok_or_else(|| anyhow::anyhow!("invalid node rep: {node_rep}"))?;
 
     validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
     let tree = node_tree(&node.doc)?;
     let meta = node_meta(&tree, node.id)?;
+    drop(scene);
     let mut data = hydrate_node(&meta);
     data.mesh = mesh_id;
     data.reconcile(&meta)?;

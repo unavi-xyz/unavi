@@ -7,7 +7,7 @@ use crate::runtime::shared::{
     wired::scene::mesh::{MeshIndices, MeshTopology},
 };
 
-use super::js::{f32s_to_js, js_to_f32s};
+use super::util::{f32s_to_js, js_to_f32s};
 
 #[wasm_bindgen]
 pub struct MeshHandle {
@@ -37,6 +37,11 @@ impl Drop for MeshHandle {
 impl MeshHandle {
     pub fn id(&self) -> String {
         shared::wired::scene::mesh::id(&self.api, self.rep).unwrap_or_default()
+    }
+
+    #[wasm_bindgen(js_name = "__rep", getter)]
+    pub fn wasm_rep(&self) -> u32 {
+        self.rep
     }
 
     #[wasm_bindgen(js_name = "clone")]

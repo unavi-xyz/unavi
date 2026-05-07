@@ -3,10 +3,10 @@ use wasm_bindgen::prelude::*;
 use crate::runtime::{Runtime, shared};
 
 pub mod document;
-pub mod js;
 pub mod material;
 pub mod mesh;
 pub mod node;
+pub mod util;
 
 use document::DocHandle;
 use material::MaterialHandle;

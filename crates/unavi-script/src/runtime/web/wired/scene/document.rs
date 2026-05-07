@@ -75,7 +75,7 @@ impl DocHandle {
     }
 
     #[wasm_bindgen(js_name = "removeNode")]
-    pub fn remove_node(&self, value: NodeHandle) {
+    pub fn remove_node(&self, value: &NodeHandle) {
         let _ = shared::wired::scene::document::remove_node(&self.api, value.rep());
     }
 
@@ -96,7 +96,7 @@ impl DocHandle {
     }
 
     #[wasm_bindgen(js_name = "removeMesh")]
-    pub fn remove_mesh(&self, value: MeshHandle) {
+    pub fn remove_mesh(&self, value: &MeshHandle) {
         let _ = shared::wired::scene::document::remove_mesh(&self.api, value.rep());
     }
 
@@ -117,7 +117,7 @@ impl DocHandle {
     }
 
     #[wasm_bindgen(js_name = "removeMaterial")]
-    pub fn remove_material(&self, value: MaterialHandle) {
+    pub fn remove_material(&self, value: &MaterialHandle) {
         let _ = shared::wired::scene::document::remove_material(&self.api, value.rep());
     }
 }

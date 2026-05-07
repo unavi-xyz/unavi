@@ -96,7 +96,9 @@ pub fn instantiate_scripts(
                 wasi_ctx,
             },
         };
-        let store = Arc::new(Mutex::new(Store::new(&engine.0, state)));
+        let mut store = Store::new(&engine.0, state);
+        store.epoch_deadline_async_yield_and_update(1);
+        let store = Arc::new(Mutex::new(store));
 
         let engine = engine.0.clone();
         let wasm = wasm.0.clone();

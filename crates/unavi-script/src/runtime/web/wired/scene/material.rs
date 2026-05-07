@@ -53,8 +53,9 @@ impl MaterialHandle {
     }
 
     #[wasm_bindgen(js_name = "setName")]
-    pub fn set_name(&self, value: Option<String>) {
-        let _ = shared::wired::scene::material::set_name(&self.api, self.rep, value);
+    pub fn set_name(&self, value: Option<String>) -> Result<(), String> {
+        shared::wired::scene::material::set_name(&self.api, self.rep, value)
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "alphaCutoff")]
@@ -63,8 +64,9 @@ impl MaterialHandle {
     }
 
     #[wasm_bindgen(js_name = "setAlphaCutoff")]
-    pub fn set_alpha_cutoff(&self, value: f32) {
-        let _ = shared::wired::scene::material::set_alpha_cutoff(&self.api, self.rep, value);
+    pub fn set_alpha_cutoff(&self, value: f32) -> Result<(), String> {
+        shared::wired::scene::material::set_alpha_cutoff(&self.api, self.rep, value)
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "alphaMode")]
@@ -86,7 +88,7 @@ impl MaterialHandle {
     }
 
     #[wasm_bindgen(js_name = "setAlphaMode")]
-    pub fn set_alpha_mode(&self, value: Option<String>) {
+    pub fn set_alpha_mode(&self, value: Option<String>) -> Result<(), String> {
         let mode = value.and_then(|s| match s.as_str() {
             "add" => Some(MaterialAlphaMode::Add),
             "blend" => Some(MaterialAlphaMode::Blend),
@@ -96,7 +98,8 @@ impl MaterialHandle {
             "pre-multiplied" => Some(MaterialAlphaMode::PreMultiplied),
             _ => None,
         });
-        let _ = shared::wired::scene::material::set_alpha_mode(&self.api, self.rep, mode);
+        shared::wired::scene::material::set_alpha_mode(&self.api, self.rep, mode)
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "baseColor")]
@@ -118,7 +121,7 @@ impl MaterialHandle {
     }
 
     #[wasm_bindgen(js_name = "setBaseColor")]
-    pub fn set_base_color(&self, value: JsValue) {
+    pub fn set_base_color(&self, value: JsValue) -> Result<(), String> {
         let get_f32 = |k: &str, default: f32| {
             js_sys::Reflect::get(&value, &k.into())
                 .ok()
@@ -132,7 +135,8 @@ impl MaterialHandle {
             b: get_f32("b", 1.0),
             a: get_f32("a", 1.0),
         };
-        let _ = shared::wired::scene::material::set_base_color(&self.api, self.rep, color);
+        shared::wired::scene::material::set_base_color(&self.api, self.rep, color)
+            .map_err(|e| e.to_string())
     }
 
     pub fn metallic(&self) -> f32 {
@@ -140,8 +144,9 @@ impl MaterialHandle {
     }
 
     #[wasm_bindgen(js_name = "setMetallic")]
-    pub fn set_metallic(&self, value: f32) {
-        let _ = shared::wired::scene::material::set_metallic(&self.api, self.rep, value);
+    pub fn set_metallic(&self, value: f32) -> Result<(), String> {
+        shared::wired::scene::material::set_metallic(&self.api, self.rep, value)
+            .map_err(|e| e.to_string())
     }
 
     pub fn roughness(&self) -> f32 {
@@ -149,8 +154,9 @@ impl MaterialHandle {
     }
 
     #[wasm_bindgen(js_name = "setRoughness")]
-    pub fn set_roughness(&self, value: f32) {
-        let _ = shared::wired::scene::material::set_roughness(&self.api, self.rep, value);
+    pub fn set_roughness(&self, value: f32) -> Result<(), String> {
+        shared::wired::scene::material::set_roughness(&self.api, self.rep, value)
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "doubleSided")]
@@ -159,8 +165,9 @@ impl MaterialHandle {
     }
 
     #[wasm_bindgen(js_name = "setDoubleSided")]
-    pub fn set_double_sided(&self, value: bool) {
-        let _ = shared::wired::scene::material::set_double_sided(&self.api, self.rep, value);
+    pub fn set_double_sided(&self, value: bool) -> Result<(), String> {
+        shared::wired::scene::material::set_double_sided(&self.api, self.rep, value)
+            .map_err(|e| e.to_string())
     }
 
     pub fn unlit(&self) -> bool {
@@ -168,7 +175,8 @@ impl MaterialHandle {
     }
 
     #[wasm_bindgen(js_name = "setUnlit")]
-    pub fn set_unlit(&self, value: bool) {
-        let _ = shared::wired::scene::material::set_unlit(&self.api, self.rep, value);
+    pub fn set_unlit(&self, value: bool) -> Result<(), String> {
+        shared::wired::scene::material::set_unlit(&self.api, self.rep, value)
+            .map_err(|e| e.to_string())
     }
 }

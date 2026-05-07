@@ -72,8 +72,8 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredSceneRemoveDocument")]
-    pub fn wired_scene_remove_document(&self, id: Vec<u8>) {
-        let _ = shared::wired::scene::remove_document(&self.api, id);
+    pub fn wired_scene_remove_document(&self, id: Vec<u8>) -> Result<(), String> {
+        shared::wired::scene::remove_document(&self.api, id).map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "wiredSceneLoadHsd")]

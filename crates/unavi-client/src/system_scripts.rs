@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy_hsd::instance::InstanceHsd;
 use unavi_script::permissions::ApiPermissions;
 
-const GAUNTLET_HSD: &str = "hsd/unavi_gauntlet.hsd";
+// const GAUNTLET_HSD: &str = "hsd/unavi_gauntlet.hsd";
 const MODULE_HSDS: &[&str] = &[
     // GAUNTLET_HSD,
     // "hsd/unavi_vui_inventory.hsd",

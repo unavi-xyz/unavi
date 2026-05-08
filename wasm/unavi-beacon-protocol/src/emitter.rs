@@ -4,7 +4,7 @@ use crate::{
     wired::{
         event::{
             api::emit,
-            types::{EventFilter, EventScope},
+            types::{EventFilter, EventScope, SpatialScope},
         },
         scene::types::Node,
     },
@@ -30,9 +30,11 @@ impl GuestBeaconEmitter for BeaconEmitter {
             CH_BEACON_ID,
             &self.id,
             EventFilter {
-                node: Some(self.emitter.clone()),
-                scope: EventScope::Spatial(self.radius),
                 documents: None,
+                scope: EventScope::Spatial(SpatialScope {
+                    node: self.emitter.clone(),
+                    radius: self.radius,
+                }),
             },
         );
     }

@@ -14,7 +14,6 @@ impl ScriptBehavior for Script {
             &[CHANNEL.to_string()],
             EventFilter {
                 documents: None,
-                node: None,
                 scope: EventScope::Global,
             },
         );
@@ -23,9 +22,8 @@ impl ScriptBehavior for Script {
             CHANNEL,
             b"hello, world!",
             EventFilter {
-                node: None,
-                scope: EventScope::Global,
                 documents: None,
+                scope: EventScope::Global,
             },
         );
 
@@ -34,7 +32,7 @@ impl ScriptBehavior for Script {
 
     fn tick(&mut self) {
         while let Some(event) = self.receptor.poll() {
-            println!("-> Got event: {event:#?}");
+            println!("-> Got event: {event:?}");
         }
     }
 }

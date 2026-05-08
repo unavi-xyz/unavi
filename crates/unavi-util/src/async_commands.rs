@@ -6,7 +6,7 @@ use bevy::{
     prelude::*,
 };
 
-const SIZE: usize = 256;
+const SIZE: usize = 1024;
 
 pub static ASYNC_COMMAND_QUEUE: LazyLock<(Sender<CommandQueue>, Receiver<CommandQueue>)> =
     LazyLock::new(|| async_channel::bounded(SIZE));

@@ -4,7 +4,11 @@ use crate::runtime::{
     Runtime,
     shared::{
         self,
-        wired::event::{EventFilter, EventReceptorRes, EventScope},
+        registry::{event::SenderScope, transform::AbsoluteNodeId},
+        wired::{
+            event::{EventFilter, EventReceptorRes, EventScope},
+            scene::node::NodeRes,
+        },
     },
 };
 
@@ -26,32 +30,20 @@ use bindings::wired::event::{
     api::EventReceptor,
     types::{
         Event, EventFilter as WitFilter, EventScope as WitScope, EventSender, HostEventReceptor,
+        SenderScope as WitSenderScope, SpatialSender,
     },
 };
 
-impl From<WitScope> for EventScope {
-    fn from(s: WitScope) -> Self {
-        match s {
-            WitScope::Global => Self::Global,
-            WitScope::Spatial(r) => Self::Spatial(r),
-        }
-    }
-}
-
-fn wit_filter_to_shared(f: WitFilter, node_rep: Option<u32>) -> EventFilter {
+fn wit_filter_to_shared(f: WitFilter) -> EventFilter {
     EventFilter {
-        node: node_rep,
-        scope: f.scope.into(),
         documents: f.documents,
-    }
-}
-
-impl From<shared::wired::event::EventSender> for EventSender {
-    fn from(s: shared::wired::event::EventSender) -> Self {
-        match s {
-            shared::wired::event::EventSender::Global => Self::Global,
-            shared::wired::event::EventSender::Spatial => Self::Spatial,
-        }
+        scope: match f.scope {
+            WitScope::Global => EventScope::Global,
+            WitScope::Spatial(v) => EventScope::Spatial {
+                node: v.node.rep(),
+                radius: v.radius,
+            },
+        },
     }
 }
 
@@ -59,17 +51,46 @@ impl bindings::wired::event::types::Host for Runtime {}
 
 impl HostEventReceptor for Runtime {
     async fn poll(&mut self, self_: Resource<EventReceptorRes>) -> wasmtime::Result<Option<Event>> {
-        shared::wired::event::receptor_poll(&self.api, self_.rep())
-            .map(|opt| {
-                opt.map(|e| Event {
-                    channel: e.channel,
-                    payload: e.payload,
-                    sender: e.sender.into(),
-                    sender_document: e.sender_document,
-                    time: e.time,
+        let Some(event) = shared::wired::event::receptor_poll(&self.api, self_.rep())
+            .map_err(wasmtime::Error::from_anyhow)?
+        else {
+            return Ok(None);
+        };
+
+        let scope = match event.sender_scope {
+            SenderScope::Global => WitSenderScope::Global,
+            SenderScope::Spatial {
+                distance,
+                node: AbsoluteNodeId { doc: doc_id, node },
+            } => {
+                let node_id = self
+                    .api
+                    .wired_scene
+                    .try_lock()
+                    .map_err(|e| wasmtime::Error::msg(e.to_string()))?
+                    .nodes
+                    .insert(NodeRes {
+                        doc: self.api.doc.clone(),
+                        doc_id,
+                        id: node,
+                        is_proxy: true,
+                    });
+                WitSenderScope::Spatial(SpatialSender {
+                    distance,
+                    node: Resource::new_own(node_id),
                 })
-            })
-            .map_err(wasmtime::Error::from_anyhow)
+            }
+        };
+
+        Ok(Some(Event {
+            channel: event.channel,
+            payload: event.payload.as_ref().clone(),
+            sender: EventSender {
+                document: event.sender_document,
+                scope,
+            },
+            time: event.time,
+        }))
     }
 
     async fn drop(&mut self, rep: Resource<EventReceptorRes>) -> wasmtime::Result<()> {
@@ -85,14 +106,8 @@ impl bindings::wired::event::api::Host for Runtime {
         payload: Vec<u8>,
         filter: WitFilter,
     ) -> wasmtime::Result<()> {
-        let node_rep = filter.node.as_ref().map(Resource::rep);
-        shared::wired::event::emit(
-            &self.api,
-            channel,
-            payload,
-            wit_filter_to_shared(filter, node_rep),
-        )
-        .map_err(wasmtime::Error::from_anyhow)
+        shared::wired::event::emit(&self.api, channel, payload, wit_filter_to_shared(filter))
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn listen(
@@ -100,8 +115,7 @@ impl bindings::wired::event::api::Host for Runtime {
         channels: Vec<String>,
         filter: WitFilter,
     ) -> wasmtime::Result<Resource<EventReceptor>> {
-        let node_rep = filter.node.as_ref().map(Resource::rep);
-        shared::wired::event::listen(&self.api, channels, wit_filter_to_shared(filter, node_rep))
+        shared::wired::event::listen(&self.api, channels, wit_filter_to_shared(filter))
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }

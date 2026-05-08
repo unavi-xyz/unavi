@@ -28,7 +28,6 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
         let register_receptor = listen(
             &[CH_REGISTER.to_string()],
             EventFilter {
-                node: None,
                 scope: EventScope::Global,
                 documents: None,
             },
@@ -50,7 +49,6 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
                     CH_DISCOVER,
                     &[],
                     EventFilter {
-                        node: None,
                         scope: EventScope::Global,
                         documents: None,
                     },
@@ -63,7 +61,7 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
         while let Some(event) = self.register_receptor.poll() {
             if let Ok(p) = postcard::from_bytes::<RegisterPayload>(&event.payload) {
                 results.push(RegisteredModule {
-                    doc_id: event.sender_document,
+                    doc_id: event.sender.document,
                     name: p.name,
                     icon_mesh_id: p.icon_mesh_id,
                 });
@@ -81,7 +79,6 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
             CH_ACTIVATE,
             &payload,
             EventFilter {
-                node: None,
                 scope: EventScope::Global,
                 documents: Some(vec![doc_id]),
             },
@@ -93,7 +90,6 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
             CH_DEACTIVATE,
             &[],
             EventFilter {
-                node: None,
                 scope: EventScope::Global,
                 documents: Some(vec![doc_id]),
             },
@@ -106,7 +102,6 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
             CH_SET_COLOR,
             &payload,
             EventFilter {
-                node: None,
                 scope: EventScope::Global,
                 documents: Some(vec![doc_id]),
             },

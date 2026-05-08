@@ -9,8 +9,6 @@ use crate::runtime::shared::{
     wired::scene::node::NodeRes,
 };
 
-pub mod bridge;
-
 pub struct AgentRes {
     key: AgentKey,
 }

@@ -5340,6 +5340,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-wired-event"
+version = "0.0.16"
+dependencies = [
+ "wired-prelude",
+ "wit-bindgen 0.55.0",
+]
+
+[[package]]
 name = "example-wired-input"
 version = "0.0.16"
 dependencies = [

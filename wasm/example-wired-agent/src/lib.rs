@@ -32,7 +32,6 @@ impl ScriptBehavior for Script {
         node.set_mesh(Some(&mesh));
         node.set_material(Some(&mat));
 
-        // Attach to bone.
         let agent = local_agent();
         let hand = agent.bone(BoneName::RightHand).expect("get bone");
 
@@ -46,10 +45,10 @@ impl ScriptBehavior for Script {
     fn tick(&mut self) {
         let now = self.time.elapsed().expect("elapsed").as_secs_f32();
 
-        let offset = Vec3::new(0.0, now.sin() * 0.5, 0.0);
+        let offset = Vec3::new(0.0, now.sin() * 0.1, 0.0);
 
         let mut tr = self.hand.global_transform();
-        println!("{} + {offset}", tr.translation);
+        println!("{}", tr.translation);
         tr.translation += offset;
         self.node.set_transform(tr);
     }

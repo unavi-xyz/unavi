@@ -66,6 +66,7 @@ pub fn roots(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
                 doc: Arc::clone(&res.doc),
                 doc_id: res.id,
                 id,
+                is_proxy: false,
             })
         })
         .collect())
@@ -94,6 +95,7 @@ pub fn nodes(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
                 doc: Arc::clone(&res.doc),
                 doc_id: res.id,
                 id,
+                is_proxy: false,
             })
         })
         .collect())
@@ -118,6 +120,7 @@ pub fn create_node(api: &Api, rep: u32) -> anyhow::Result<u32> {
         doc: res.doc,
         doc_id: res.id,
         id: tree_id,
+        is_proxy: false,
     }))
 }
 
@@ -125,6 +128,9 @@ pub fn remove_node(api: &Api, rep: u32) -> anyhow::Result<()> {
     let Some(node) = api.wired_scene.try_lock()?.nodes.remove(rep) else {
         return Ok(());
     };
+    if node.is_proxy {
+        return Ok(());
+    }
     validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
 
     let tree = node

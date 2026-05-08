@@ -1,13 +1,11 @@
+use bevy_vrm::BoneName;
 use wasmtime::component::Resource;
 
 use crate::runtime::{
     Runtime,
     shared::{
         self,
-        wired::{
-            agent::{AgentRes, BoneName},
-            scene::node::NodeRes,
-        },
+        wired::{agent::AgentRes, scene::node::NodeRes},
     },
 };
 

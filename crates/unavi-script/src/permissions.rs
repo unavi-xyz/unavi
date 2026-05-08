@@ -40,11 +40,11 @@ impl ApiPermissions {
     pub fn system() -> Self {
         let mut set = HashSet::default();
         set.insert(ApiName::Agent);
+        set.insert(ApiName::LocalAgent);
         set.insert(ApiName::CreateDocument);
         set.insert(ApiName::Event);
         set.insert(ApiName::Input);
         set.insert(ApiName::InputContext);
-        set.insert(ApiName::LocalAgent);
         set.insert(ApiName::Scene);
         set.insert(ApiName::Wds);
         Self(Arc::new(set))

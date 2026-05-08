@@ -13,6 +13,7 @@ use crate::{
 wired_prelude::generate_script!(Script);
 
 struct Script {
+    hand: Node,
     node: Node,
     time: SystemTime,
 }
@@ -34,9 +35,9 @@ impl ScriptBehavior for Script {
         // Attach to bone.
         let agent = local_agent();
         let hand = agent.bone(BoneName::RightHand).expect("get bone");
-        hand.add_child(&node);
 
         Self {
+            hand,
             node,
             time: SystemTime::now(),
         }
@@ -45,10 +46,11 @@ impl ScriptBehavior for Script {
     fn tick(&mut self) {
         let now = self.time.elapsed().expect("elapsed").as_secs_f32();
 
-        let tr = self.node.global_transform().translation;
-        println!("{}x {}y {}z", tr.x, tr.y, tr.z);
+        let offset = Vec3::new(0.0, now.sin() * 0.5, 0.0);
 
-        self.node
-            .set_translation(Vec3::new(0.0, now.sin() * 0.1, 0.0));
+        let mut tr = self.hand.global_transform();
+        println!("{} + {offset}", tr.translation);
+        tr.translation += offset;
+        self.node.set_transform(tr);
     }
 }

@@ -31,7 +31,7 @@ impl Plugin for AgentPlugin {
         .init_resource::<movement::TargetBodyInput>()
         .init_resource::<movement::TargetHeadInput>()
         .add_observer(movement::teleport::handle_agent_teleport)
-        .add_observer(local_agent::on_local_agent_added);
+        .add_observer(local_agent::spawn_local_agent);
 
         #[cfg(not(target_family = "wasm"))]
         {
@@ -94,6 +94,12 @@ impl Plugin for AgentPlugin {
 pub struct Agent;
 
 #[derive(Component)]
+pub struct AgentAvatar(pub Entity);
+
+#[derive(Component)]
+pub struct AgentCamera(pub Entity);
+
+#[derive(Component)]
 pub struct AgentDid(pub Did);
 
 #[derive(Component, Default)]
@@ -105,12 +111,6 @@ pub struct AgentRig;
 pub enum ControlScheme {
     Jump(TnuaBuiltinJump),
 }
-
-#[derive(Component)]
-pub struct AgentAvatar(pub Entity);
-
-#[derive(Component)]
-pub struct AgentCamera(pub Entity);
 
 #[derive(Component)]
 pub struct LocalAgentEntities {

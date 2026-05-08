@@ -1,0 +1,121 @@
+use std::sync::LazyLock;
+
+use bevy::{platform::collections::HashMap, prelude::*};
+use bevy_vrm::BoneName;
+use blake3::Hash;
+use loro::TreeID;
+use unavi_agent::{Agent, AgentAvatar, AgentCamera, AgentDid, LocalAgent};
+use unavi_avatar::bones::AvatarBones;
+use xdid::core::did::Did;
+
+use crate::runtime::shared::registry::transform::{AbsoluteNodeId, RegisterTransforms};
+
+pub static AGENT_REGISTRY: LazyLock<scc::HashMap<AgentKey, AgentProxies>> =
+    LazyLock::new(scc::HashMap::default);
+
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub enum AgentKey {
+    Local,
+    Peer(Did),
+}
+
+#[derive(Default)]
+pub struct AgentProxies {
+    pub bones: HashMap<BoneName, AbsoluteNodeId>,
+    pub camera: Option<AbsoluteNodeId>,
+}
+
+#[derive(Component)]
+pub struct RegisterAgent(AgentKey);
+
+pub fn register_peers(
+    trigger: On<Add, AgentDid>,
+    agents: Query<&AgentDid, With<Agent>>,
+    mut commands: Commands,
+) {
+    let Ok(did) = agents.get(trigger.entity) else {
+        return;
+    };
+    commands
+        .entity(trigger.entity)
+        .insert(RegisterAgent(AgentKey::Peer(did.0.clone())));
+}
+
+pub fn register_local_agent(trigger: On<Add, LocalAgent>, mut commands: Commands) {
+    commands
+        .entity(trigger.entity)
+        .insert(RegisterAgent(AgentKey::Local));
+}
+
+pub fn spawn_proxy_nodes(
+    trigger: On<Add, RegisterAgent>,
+    key: Query<&RegisterAgent>,
+    agents: Query<(&AgentAvatar, Option<&AgentCamera>)>,
+    avatars: Query<&AvatarBones>,
+    mut commands: Commands,
+) {
+    let key = key.get(trigger.entity).expect("key");
+
+    if AGENT_REGISTRY.contains_sync(&key.0) {
+        warn!("Agent registry key already exists");
+        return;
+    }
+
+    let Ok((avatar_ent, camera_ent)) = agents.get(trigger.entity) else {
+        warn!("agent avatar entity not found");
+        return;
+    };
+    let Ok(bones) = avatars.get(avatar_ent.0) else {
+        warn!("avatar bones not found");
+        return;
+    };
+
+    let mut proxies = AgentProxies::default();
+
+    if let Some(camera_ent) = camera_ent {
+        let id = gen_proxy_id();
+        proxies.camera = Some(id.clone());
+        let child = commands
+            .spawn((
+                Name::new("camera"),
+                RegisterTransforms(id),
+                Visibility::default(),
+            ))
+            .id();
+        commands.entity(camera_ent.0).add_child(child);
+    }
+
+    for (name, entity) in &bones.0 {
+        let id = gen_proxy_id();
+        proxies.bones.insert(*name, id.clone());
+        let child = commands
+            .spawn((
+                Name::new(name.to_string()),
+                RegisterTransforms(id),
+                Visibility::default(),
+            ))
+            .id();
+        commands.entity(*entity).add_child(child);
+    }
+
+    if AGENT_REGISTRY.insert_sync(key.0.clone(), proxies).is_err() {
+        error!("Failed to insert agent proxies into registry");
+    }
+}
+
+fn gen_proxy_id() -> AbsoluteNodeId {
+    // The actual ID for proxy nodes isn't important.
+    // Generate a random node ID, with a blank document hash.
+    let peer = rand::random();
+    let counter = rand::random();
+    AbsoluteNodeId {
+        doc: Hash::from_bytes([0; 32]),
+        node: TreeID::new(peer, counter),
+    }
+}
+
+pub fn deregister_agents(trigger: On<Remove, RegisterAgent>, ids: Query<&RegisterAgent>) {
+    let id = ids.get(trigger.entity).expect("id");
+    let _ = AGENT_REGISTRY.remove_sync(&id.0);
+    // Proxies will be cleaned up automatically on agent despawn.
+}

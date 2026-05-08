@@ -100,10 +100,6 @@ pub struct AgentDid(pub Did);
 #[require(Transform, Visibility)]
 pub struct AgentRig;
 
-#[derive(Component, Default)]
-#[require(Transform, Visibility)]
-pub struct AgentCamera;
-
 #[derive(TnuaScheme)]
 #[scheme(basis = TnuaBuiltinWalk)]
 pub enum ControlScheme {
@@ -111,9 +107,13 @@ pub enum ControlScheme {
 }
 
 #[derive(Component)]
+pub struct AgentAvatar(pub Entity);
+
+#[derive(Component)]
+pub struct AgentCamera(pub Entity);
+
+#[derive(Component)]
 pub struct LocalAgentEntities {
-    pub avatar: Entity,
-    pub camera: Entity,
     pub body: Entity,
     pub tracked_head: Entity,
 }

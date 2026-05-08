@@ -5,11 +5,11 @@ use bevy_hsd::{HsdChild, HsdRecordId, NodeId};
 use blake3::Hash;
 use loro::TreeID;
 
-pub static NODE_TRANSFORM_REGISTRY: LazyLock<scc::HashMap<NodeAbsoluteId, TransformSnapshot>> =
+pub static NODE_TRANSFORM_REGISTRY: LazyLock<scc::HashMap<AbsoluteNodeId, TransformSnapshot>> =
     LazyLock::new(scc::HashMap::default);
 
 #[derive(Clone, Hash, PartialEq, Eq)]
-pub struct NodeAbsoluteId {
+pub struct AbsoluteNodeId {
     pub doc: Hash,
     pub node: TreeID,
 }
@@ -21,7 +21,8 @@ pub struct TransformSnapshot {
 }
 
 #[derive(Component)]
-pub struct RegisterTransforms(NodeAbsoluteId);
+#[require(Transform)]
+pub struct RegisterTransforms(pub AbsoluteNodeId);
 
 pub fn register_nodes(
     trigger: On<Add, NodeId>,
@@ -39,7 +40,7 @@ pub fn register_nodes(
     };
     commands
         .entity(trigger.entity)
-        .insert(RegisterTransforms(NodeAbsoluteId {
+        .insert(RegisterTransforms(AbsoluteNodeId {
             doc: doc.0,
             node: node.0,
         }));

@@ -24,9 +24,8 @@ impl GuestVuiModule for VuiModule {
         let request_receptor = listen(
             &[CH_DISCOVER.to_string()],
             EventFilter {
-                node: None,
-                scope: EventScope::Global,
                 documents: None,
+                scope: EventScope::Global,
             },
         );
         let activate_receptor = listen(
@@ -36,9 +35,8 @@ impl GuestVuiModule for VuiModule {
                 CH_SET_COLOR.to_string(),
             ],
             EventFilter {
-                node: None,
-                scope: EventScope::Global,
                 documents: None,
+                scope: EventScope::Global,
             },
         );
         Self {
@@ -60,9 +58,8 @@ impl GuestVuiModule for VuiModule {
                 CH_REGISTER,
                 &payload,
                 EventFilter {
-                    node: None,
+                    documents: Some(vec![event.sender.document]),
                     scope: EventScope::Global,
-                    documents: Some(vec![event.sender_document]),
                 },
             );
         }

@@ -7,7 +7,9 @@ use tokio::sync::Mutex;
 
 use crate::{
     permissions::ApiPermissions,
-    runtime::shared::wired::{agent::WiredAgentApi, input::WiredInputApi, scene::WiredSceneApi},
+    runtime::shared::wired::{
+        agent::WiredAgentApi, event::WiredEventApi, input::WiredInputApi, scene::WiredSceneApi,
+    },
 };
 
 pub mod registry;
@@ -20,6 +22,7 @@ pub struct Api {
     pub node: TreeID,
     pub permissions: ApiPermissions,
     pub wired_agent: Mutex<WiredAgentApi>,
+    pub wired_event: Mutex<WiredEventApi>,
     pub wired_input: Mutex<WiredInputApi>,
     pub wired_scene: Mutex<WiredSceneApi>,
 }

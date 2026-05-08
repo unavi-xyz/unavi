@@ -4,7 +4,7 @@ use crate::{
     wired::{
         event::{
             api::listen,
-            types::{EventFilter, EventReceptor, EventScope},
+            types::{EventFilter, EventReceptor, EventScope, SpatialScope},
         },
         scene::types::Node,
     },
@@ -15,13 +15,12 @@ pub struct BeaconReceptor {
 }
 
 impl GuestBeaconReceptor for BeaconReceptor {
-    fn new(receptor: Node, radius: f32) -> Self {
+    fn new(node: Node, radius: f32) -> Self {
         let receptor = listen(
             &[CH_BEACON_ID.to_string()],
             EventFilter {
-                node: Some(receptor),
-                scope: EventScope::Spatial(radius),
                 documents: None,
+                scope: EventScope::Spatial(SpatialScope { node, radius }),
             },
         );
         Self { receptor }

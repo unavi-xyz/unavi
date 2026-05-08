@@ -1,54 +1,205 @@
-use crate::runtime::shared::Api;
+use std::{sync::Arc, time::UNIX_EPOCH};
 
-pub struct EventReceptorRes;
+use async_channel::Receiver;
+
+use crate::{
+    firewall::Channel,
+    runtime::shared::{
+        Api,
+        registry::{
+            event::{
+                EVENT_RECEPTOR_REGISTRY, InboundEvent, ReceptorEntry, ReceptorScope, SenderScope,
+            },
+            firewall::validate_firewall,
+            transform::{AbsoluteNodeId, NODE_TRANSFORM_REGISTRY},
+        },
+        slot_map::SlotMap,
+    },
+};
 
 #[derive(Default)]
-pub struct WiredEventApi;
+pub struct EventFilter {
+    pub documents: Option<Vec<Vec<u8>>>,
+    pub scope: EventScope,
+}
 
 #[derive(Default)]
 pub enum EventScope {
     #[default]
     Global,
-    Spatial(f32),
+    Spatial {
+        node: u32,
+        radius: f32,
+    },
+}
+
+pub struct EventReceptorRes {
+    rx: Receiver<InboundEvent>,
 }
 
 #[derive(Default)]
-pub struct EventFilter {
-    pub node: Option<u32>,
-    pub scope: EventScope,
-    pub documents: Option<Vec<Vec<u8>>>,
+pub struct WiredEventApi {
+    pub receptors: SlotMap<EventReceptorRes>,
 }
 
-pub enum EventSender {
-    Global,
-    Spatial,
-}
-
-pub struct Event {
-    pub channel: String,
-    pub payload: Vec<u8>,
-    pub sender: EventSender,
-    pub sender_document: Vec<u8>,
-    pub time: u64,
-}
+const RECEPTOR_CAPACITY: usize = 16;
 
 pub fn emit(
-    _api: &Api,
-    _channel: String,
-    _payload: Vec<u8>,
-    _filter: EventFilter,
+    api: &Api,
+    channel: String,
+    payload: Vec<u8>,
+    filter: EventFilter,
 ) -> anyhow::Result<()> {
-    todo!()
+    let time = std::time::SystemTime::now()
+        .duration_since(UNIX_EPOCH)?
+        .as_secs();
+
+    let emitter_spatial: Option<(AbsoluteNodeId, Option<bevy::math::Vec3>, f32)> =
+        match &filter.scope {
+            EventScope::Spatial { node, radius } => {
+                let scene = api.wired_scene.try_lock()?;
+                let abs = scene
+                    .nodes
+                    .get(*node)
+                    .map(|res| AbsoluteNodeId {
+                        doc: res.doc_id,
+                        node: res.id,
+                    })
+                    .ok_or_else(|| anyhow::anyhow!("emit: node not found"))?;
+                drop(scene);
+                let pos = NODE_TRANSFORM_REGISTRY.read_sync(&abs, |_, s| s.global.translation());
+                Some((abs, pos, *radius))
+            }
+            EventScope::Global => None,
+        };
+
+    let payload = Arc::new(payload);
+    let sender_doc = api.doc_id.as_bytes().to_vec();
+
+    EVENT_RECEPTOR_REGISTRY.iter_sync(|_rep, entry| {
+        if !entry.channels.iter().any(|c| c == &channel) {
+            return true;
+        }
+
+        if let Some(docs) = &filter.documents
+            && !docs.iter().any(|d| d.as_slice() == entry.doc_id.as_bytes())
+        {
+            return true;
+        }
+
+        if let Some(docs) = &entry.source_documents
+            && !docs.iter().any(|d| d.as_slice() == api.doc_id.as_bytes())
+        {
+            return true;
+        }
+
+        if validate_firewall(&api.doc_id, &entry.doc_id, Channel::EventWrite).is_err() {
+            return true;
+        }
+
+        let sender_scope = match (&emitter_spatial, &entry.scope) {
+            (None, ReceptorScope::Global) => SenderScope::Global,
+            (None, ReceptorScope::Spatial { .. }) => return true,
+            (Some((abs, _, _)), ReceptorScope::Global) => SenderScope::Spatial {
+                distance: 0.0,
+                node: abs.clone(),
+            },
+            (
+                Some((emitter_abs, emitter_pos, emitter_radius)),
+                ReceptorScope::Spatial {
+                    node: receptor_node,
+                    radius: receptor_radius,
+                },
+            ) => {
+                let Some(e_pos) = emitter_pos else {
+                    return true;
+                };
+                let Some(r_pos) =
+                    NODE_TRANSFORM_REGISTRY.read_sync(receptor_node, |_, s| s.global.translation())
+                else {
+                    return true;
+                };
+                let dist = (*e_pos - r_pos).length();
+                if dist > *emitter_radius || dist > *receptor_radius {
+                    return true;
+                }
+                SenderScope::Spatial {
+                    distance: dist,
+                    node: emitter_abs.clone(),
+                }
+            }
+        };
+
+        let _ = entry.tx.try_send(InboundEvent {
+            channel: channel.clone(),
+            payload: Arc::clone(&payload),
+            sender_document: sender_doc.clone(),
+            sender_scope,
+            time,
+        });
+        true
+    });
+
+    Ok(())
 }
 
-pub fn listen(_api: &Api, _channels: Vec<String>, _filter: EventFilter) -> anyhow::Result<u32> {
-    todo!()
+pub fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::Result<u32> {
+    let (tx, rx) = async_channel::bounded(RECEPTOR_CAPACITY);
+
+    let scope = match filter.scope {
+        EventScope::Global => ReceptorScope::Global,
+        EventScope::Spatial { node, radius } => {
+            let scene = api.wired_scene.try_lock()?;
+            let abs = scene
+                .nodes
+                .get(node)
+                .map(|res| AbsoluteNodeId {
+                    doc: res.doc_id,
+                    node: res.id,
+                })
+                .ok_or_else(|| anyhow::anyhow!("listen: node not found"))?;
+            drop(scene);
+            ReceptorScope::Spatial { node: abs, radius }
+        }
+    };
+
+    let id = api
+        .wired_event
+        .try_lock()?
+        .receptors
+        .insert(EventReceptorRes { rx });
+
+    EVENT_RECEPTOR_REGISTRY
+        .insert_sync(
+            id,
+            ReceptorEntry {
+                channels,
+                doc_id: api.doc_id,
+                scope,
+                source_documents: filter.documents,
+                tx,
+            },
+        )
+        .ok();
+
+    Ok(id)
 }
 
-pub fn receptor_poll(_api: &Api, _rep: u32) -> anyhow::Result<Option<Event>> {
-    todo!()
+pub fn receptor_poll(api: &Api, rep: u32) -> anyhow::Result<Option<InboundEvent>> {
+    api.wired_event
+        .try_lock()?
+        .receptors
+        .get(rep)
+        .map(|res| {
+            res.rx
+                .try_recv()
+                .map_or_else(|_| Ok(None), |ev| Ok(Some(ev)))
+        })
+        .ok_or_else(|| anyhow::anyhow!("receptor not found: {rep}"))?
 }
 
-pub fn receptor_drop(_api: &Api, _rep: u32) -> anyhow::Result<()> {
-    todo!()
+pub fn receptor_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+    EVENT_RECEPTOR_REGISTRY.remove_sync(&rep);
+    api.wired_event.try_lock()?.receptors.remove(rep);
+    Ok(())
 }

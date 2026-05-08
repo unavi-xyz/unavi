@@ -154,7 +154,7 @@ impl<T: Reconcile> Reconcile for Vec<T> {
     }
 
     fn reconcile_field(&self, map: &LoroMap, key: &str) -> Result<(), ReconcileError> {
-        let list = map.get_or_create_container(key, loro::LoroList::new())?;
+        let list = loro::LoroList::new();
 
         for item in self {
             if let Some(value) = item.to_loro_value() {
@@ -165,6 +165,7 @@ impl<T: Reconcile> Reconcile for Vec<T> {
             }
         }
 
+        map.insert_container(key, list)?;
         Ok(())
     }
 }

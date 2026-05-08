@@ -13,7 +13,7 @@ use crate::runtime::shared::registry::transform::{AbsoluteNodeId, RegisterTransf
 pub static AGENT_REGISTRY: LazyLock<scc::HashMap<AgentKey, AgentProxies>> =
     LazyLock::new(scc::HashMap::default);
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum AgentKey {
     Local,
     Peer(Did),
@@ -48,58 +48,51 @@ pub fn register_local_agent(trigger: On<Add, LocalAgent>, mut commands: Commands
 }
 
 pub fn spawn_proxy_nodes(
-    trigger: On<Add, RegisterAgent>,
-    key: Query<&RegisterAgent>,
-    agents: Query<(&AgentAvatar, Option<&AgentCamera>)>,
+    agents: Query<(&RegisterAgent, &AgentAvatar, Option<&AgentCamera>)>,
     avatars: Query<&AvatarBones>,
     mut commands: Commands,
 ) {
-    let key = key.get(trigger.entity).expect("key");
+    for (key, avatar_ent, camera_ent) in agents {
+        if AGENT_REGISTRY.contains_sync(&key.0) {
+            continue;
+        }
 
-    if AGENT_REGISTRY.contains_sync(&key.0) {
-        warn!("Agent registry key already exists");
-        return;
-    }
+        let Ok(bones) = avatars.get(avatar_ent.0) else {
+            continue;
+        };
 
-    let Ok((avatar_ent, camera_ent)) = agents.get(trigger.entity) else {
-        warn!("agent avatar entity not found");
-        return;
-    };
-    let Ok(bones) = avatars.get(avatar_ent.0) else {
-        warn!("avatar bones not found");
-        return;
-    };
+        let mut proxies = AgentProxies::default();
 
-    let mut proxies = AgentProxies::default();
+        if let Some(camera_ent) = camera_ent {
+            let id = gen_proxy_id();
+            proxies.camera = Some(id.clone());
+            let child = commands
+                .spawn((
+                    Name::new("camera"),
+                    RegisterTransforms(id),
+                    Visibility::default(),
+                ))
+                .id();
+            commands.entity(camera_ent.0).add_child(child);
+        }
 
-    if let Some(camera_ent) = camera_ent {
-        let id = gen_proxy_id();
-        proxies.camera = Some(id.clone());
-        let child = commands
-            .spawn((
-                Name::new("camera"),
-                RegisterTransforms(id),
-                Visibility::default(),
-            ))
-            .id();
-        commands.entity(camera_ent.0).add_child(child);
-    }
+        for (name, entity) in &bones.0 {
+            let id = gen_proxy_id();
+            proxies.bones.insert(*name, id.clone());
+            let child = commands
+                .spawn((
+                    Name::new(name.to_string()),
+                    RegisterTransforms(id),
+                    Visibility::default(),
+                ))
+                .id();
+            commands.entity(*entity).add_child(child);
+        }
 
-    for (name, entity) in &bones.0 {
-        let id = gen_proxy_id();
-        proxies.bones.insert(*name, id.clone());
-        let child = commands
-            .spawn((
-                Name::new(name.to_string()),
-                RegisterTransforms(id),
-                Visibility::default(),
-            ))
-            .id();
-        commands.entity(*entity).add_child(child);
-    }
-
-    if AGENT_REGISTRY.insert_sync(key.0.clone(), proxies).is_err() {
-        error!("Failed to insert agent proxies into registry");
+        info!("Registering agent: {:?}", key.0);
+        if AGENT_REGISTRY.insert_sync(key.0.clone(), proxies).is_err() {
+            error!("Failed to insert agent proxies into registry");
+        }
     }
 }
 

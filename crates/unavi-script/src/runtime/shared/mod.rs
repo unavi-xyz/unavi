@@ -36,7 +36,6 @@ impl Plugin for SharedRuntimePlugin {
         )
         .add_observer(registry::agent::register_peers)
         .add_observer(registry::agent::register_local_agent)
-        .add_observer(registry::agent::spawn_proxy_nodes)
         .add_observer(registry::agent::deregister_agents)
         .add_observer(registry::firewall::register_docs)
         .add_observer(registry::firewall::deregister_firewalls)
@@ -45,6 +44,7 @@ impl Plugin for SharedRuntimePlugin {
         .add_systems(
             Update,
             (
+                registry::agent::spawn_proxy_nodes,
                 registry::transform::snapshot_transforms,
                 wired::input::bridge::bridge_menu_desktop
                     .pipe(wired::input::bridge::send_to_listeners),

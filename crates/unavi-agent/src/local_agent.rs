@@ -22,7 +22,7 @@ use crate::{
 
 const RAYCAST_GRAB_DISTANCE: f32 = 2.5;
 
-pub fn on_local_agent_added(
+pub fn spawn_local_agent(
     trigger: On<Add, LocalAgent>,
     asset_server: Res<AssetServer>,
     xr_mode: Res<XrMode>,
@@ -30,6 +30,7 @@ pub fn on_local_agent_added(
     mut commands: Commands,
 ) {
     let Ok((config, vrm_path)) = agent.get(trigger.entity) else {
+        warn_once!("No agent config");
         return;
     };
 

@@ -28,6 +28,8 @@ fn main() {
                 ..Default::default()
             }),
         PanOrbitCameraPlugin,
+        bevy_inspector_egui::bevy_egui::EguiPlugin::default(),
+        bevy_inspector_egui::quick::WorldInspectorPlugin::default(),
         bevy_hsd::HsdPlugin,
         bevy_iroh::IrohPlugin,
         bevy_wds::WdsPlugin,

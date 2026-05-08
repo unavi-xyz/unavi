@@ -98,6 +98,7 @@ pub fn self_node(api: &Api) -> anyhow::Result<u32> {
         doc: Arc::clone(&api.doc),
         doc_id: api.doc_id,
         id: api.node,
+        is_proxy: false,
     }))
 }
 

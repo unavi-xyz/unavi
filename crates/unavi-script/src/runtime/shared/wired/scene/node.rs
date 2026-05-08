@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::bail;
 use bevy::math::{Quat, Vec3};
 use blake3::Hash;
 use hsd::{HsdCollider, HsdNode, HsdRigidBody};
@@ -28,6 +29,9 @@ pub struct NodeRes {
     pub doc: Arc<LoroDoc>,
     pub doc_id: Hash,
     pub id: TreeID,
+    /// Whether the node is a "proxy" node, meaning it does not belong to any HSD.
+    /// Disallows certain methods like writes.
+    pub is_proxy: bool,
 }
 
 pub struct NodeTransform {
@@ -89,6 +93,9 @@ pub fn id(api: &Api, rep: u32) -> anyhow::Result<String> {
 
 pub fn name(api: &Api, rep: u32) -> anyhow::Result<Option<String>> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        return Ok(None);
+    }
     let tree = node_tree(&node.doc)?;
     let meta = node_meta(&tree, node.id)?;
     Ok(hydrate_node(&meta).name.map(|s| s.to_string()))
@@ -96,6 +103,9 @@ pub fn name(api: &Api, rep: u32) -> anyhow::Result<Option<String>> {
 
 pub fn set_name(api: &Api, rep: u32, value: Option<String>) -> anyhow::Result<()> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        bail!("cannot write proxy node")
+    }
     validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
     let tree = node_tree(&node.doc)?;
     let meta = node_meta(&tree, node.id)?;
@@ -119,6 +129,9 @@ pub fn translation(api: &Api, rep: u32) -> anyhow::Result<[f32; 3]> {
 
 pub fn set_translation(api: &Api, rep: u32, value: [f32; 3]) -> anyhow::Result<()> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        bail!("cannot write proxy node")
+    }
     validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
 
     let tree = node_tree(&node.doc)?;
@@ -155,6 +168,9 @@ pub fn rotation(api: &Api, rep: u32) -> anyhow::Result<[f32; 4]> {
 
 pub fn set_rotation(api: &Api, rep: u32, value: [f32; 4]) -> anyhow::Result<()> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        bail!("cannot write proxy node")
+    }
     validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
 
     let tree = node_tree(&node.doc)?;
@@ -190,6 +206,9 @@ pub fn scale(api: &Api, rep: u32) -> anyhow::Result<[f32; 3]> {
 
 pub fn set_scale(api: &Api, rep: u32, value: [f32; 3]) -> anyhow::Result<()> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        bail!("cannot write proxy node")
+    }
     validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
 
     let tree = node_tree(&node.doc)?;
@@ -230,6 +249,9 @@ pub fn transform(api: &Api, rep: u32) -> anyhow::Result<NodeTransform> {
 
 pub fn set_transform(api: &Api, rep: u32, value: NodeTransform) -> anyhow::Result<()> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        bail!("cannot write proxy node")
+    }
     validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
 
     let tree = node_tree(&node.doc)?;
@@ -274,6 +296,9 @@ pub fn global_transform(api: &Api, rep: u32) -> anyhow::Result<NodeTransform> {
 
 pub fn parent(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        return Ok(None);
+    }
     let tree = node_tree(&node.doc)?;
     let Some(TreeParentId::Node(parent_id)) = tree.parent(node.id) else {
         return Ok(None);
@@ -283,11 +308,15 @@ pub fn parent(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
         doc: node.doc,
         doc_id: node.doc_id,
         id: parent_id,
+        is_proxy: node.is_proxy,
     })))
 }
 
 pub fn children(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        return Ok(Vec::new());
+    }
     let tree = node_tree(&node.doc)?;
     let child_ids = tree.children(node.id).unwrap_or_default();
     let mut scene = api.wired_scene.try_lock()?;
@@ -298,6 +327,7 @@ pub fn children(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
                 doc: Arc::clone(&node.doc),
                 doc_id: node.doc_id,
                 id,
+                is_proxy: node.is_proxy,
             })
         })
         .collect())
@@ -317,6 +347,12 @@ pub fn add_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<()>
         .ok_or_else(|| anyhow::anyhow!("invalid child rep: {child_rep}"))?;
     drop(scene);
 
+    if parent.is_proxy {
+        bail!("cannot write proxy node")
+    }
+    if child.is_proxy {
+        bail!("cannot add proxy node as child")
+    }
     validate_firewall(&api.doc_id, &parent.doc_id, Channel::SceneWrite)?;
     anyhow::ensure!(
         Arc::ptr_eq(&parent.doc, &child.doc),
@@ -341,6 +377,12 @@ pub fn remove_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<
         .ok_or_else(|| anyhow::anyhow!("invalid child rep: {child_rep}"))?;
     drop(scene);
 
+    if parent.is_proxy {
+        bail!("cannot write proxy node")
+    }
+    if child.is_proxy {
+        bail!("cannot remove proxy node as child")
+    }
     validate_firewall(&api.doc_id, &parent.doc_id, Channel::SceneWrite)?;
     let tree = node_tree(&child.doc)?;
     tree.mov_to(child.id, TreeParentId::Root, usize::MAX)?;
@@ -349,6 +391,9 @@ pub fn remove_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<
 
 pub fn mesh(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        return Ok(None);
+    }
     let tree = node_tree(&node.doc)?;
     let meta = node_meta(&tree, node.id)?;
     let Some(mesh_id) = hydrate_node(&meta).mesh else {
@@ -387,6 +432,9 @@ pub fn set_mesh(api: &Api, node_rep: u32, mesh_rep: Option<u32>) -> anyhow::Resu
         .get(node_rep)
         .ok_or_else(|| anyhow::anyhow!("invalid node rep: {node_rep}"))?;
 
+    if node.is_proxy {
+        bail!("cannot write proxy node")
+    }
     validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
     let tree = node_tree(&node.doc)?;
     let meta = node_meta(&tree, node.id)?;
@@ -399,6 +447,9 @@ pub fn set_mesh(api: &Api, node_rep: u32, mesh_rep: Option<u32>) -> anyhow::Resu
 
 pub fn material(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        return Ok(None);
+    }
     let tree = node_tree(&node.doc)?;
     let meta = node_meta(&tree, node.id)?;
     let Some(mat_id) = hydrate_node(&meta).material else {
@@ -447,6 +498,9 @@ pub enum NodeRigidBody {
 
 pub async fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<NodeCollider>> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        return Ok(None);
+    }
     let tree = node_tree(&node.doc)?;
     let meta = node_meta(&tree, node.id)?;
     let Some(c) = hydrate_node(&meta).collider else {
@@ -482,6 +536,9 @@ pub async fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<NodeCollider
 
 pub async fn set_collider(api: &Api, rep: u32, value: Option<NodeCollider>) -> anyhow::Result<()> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        bail!("cannot write proxy node")
+    }
     validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
     let tree = node_tree(&node.doc)?;
     let meta = node_meta(&tree, node.id)?;
@@ -521,6 +578,9 @@ pub async fn set_collider(api: &Api, rep: u32, value: Option<NodeCollider>) -> a
 
 pub fn rigid_body(api: &Api, rep: u32) -> anyhow::Result<Option<NodeRigidBody>> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        return Ok(None);
+    }
     let tree = node_tree(&node.doc)?;
     let meta = node_meta(&tree, node.id)?;
     let Some(rb) = hydrate_node(&meta).rigid_body else {
@@ -536,6 +596,9 @@ pub fn rigid_body(api: &Api, rep: u32) -> anyhow::Result<Option<NodeRigidBody>> 
 
 pub fn set_rigid_body(api: &Api, rep: u32, value: Option<NodeRigidBody>) -> anyhow::Result<()> {
     let node = get_node(api, rep)?;
+    if node.is_proxy {
+        bail!("cannot write proxy node")
+    }
     validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
     let tree = node_tree(&node.doc)?;
     let meta = node_meta(&tree, node.id)?;
@@ -571,6 +634,9 @@ pub fn set_material(api: &Api, node_rep: u32, mat_rep: Option<u32>) -> anyhow::R
     };
     drop(scene);
 
+    if node.is_proxy {
+        bail!("cannot write proxy node")
+    }
     validate_firewall(&api.doc_id, &node.doc_id, Channel::SceneWrite)?;
     let tree = node_tree(&node.doc)?;
     let meta = node_meta(&tree, node.id)?;

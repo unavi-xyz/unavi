@@ -27,8 +27,14 @@ pub fn add_apis_to_linker(
     perms: &ApiPermissions,
 ) -> wasmtime::Result<()> {
     if perms.contains(&ApiName::Agent) {
-        wired::agent::bindings::wired::agent::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
         wired::agent::bindings::wired::agent::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+
+        if perms.contains(&ApiName::LocalAgent) {
+            wired::agent::bindings::wired::agent::api::add_to_linker::<_, HasSelf<_>>(
+                linker,
+                |r| r,
+            )?;
+        }
     }
 
     if perms.contains(&ApiName::Event) {

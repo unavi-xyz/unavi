@@ -7,7 +7,7 @@ use tokio::sync::Mutex;
 
 use crate::{
     permissions::ApiPermissions,
-    runtime::shared::wired::{input::WiredInputApi, scene::WiredSceneApi},
+    runtime::shared::wired::{agent::WiredAgentApi, input::WiredInputApi, scene::WiredSceneApi},
 };
 
 pub mod registry;
@@ -19,6 +19,7 @@ pub struct Api {
     pub doc_id: Hash,
     pub node: TreeID,
     pub permissions: ApiPermissions,
+    pub wired_agent: Mutex<WiredAgentApi>,
     pub wired_input: Mutex<WiredInputApi>,
     pub wired_scene: Mutex<WiredSceneApi>,
 }
@@ -33,6 +34,10 @@ impl Plugin for SharedRuntimePlugin {
         .add_observer(
             wired::input::bridge::bridge_squeeze_up.pipe(wired::input::bridge::send_to_listeners),
         )
+        .add_observer(registry::agent::register_peers)
+        .add_observer(registry::agent::register_local_agent)
+        .add_observer(registry::agent::spawn_proxy_nodes)
+        .add_observer(registry::agent::deregister_agents)
         .add_observer(registry::firewall::register_docs)
         .add_observer(registry::firewall::deregister_firewalls)
         .add_observer(registry::transform::register_nodes)

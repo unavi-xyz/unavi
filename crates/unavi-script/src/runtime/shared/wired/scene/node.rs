@@ -13,7 +13,7 @@ use crate::{
         Api,
         registry::{
             firewall::validate_firewall,
-            transform::{NODE_TRANSFORM_REGISTRY, NodeAbsoluteId},
+            transform::{AbsoluteNodeId, NODE_TRANSFORM_REGISTRY},
         },
         wired::scene::{
             material::MaterialRes,
@@ -108,7 +108,7 @@ pub fn set_name(api: &Api, rep: u32, value: Option<String>) -> anyhow::Result<()
 pub fn translation(api: &Api, rep: u32) -> anyhow::Result<[f32; 3]> {
     let node = get_node(api, rep)?;
     let tr = NODE_TRANSFORM_REGISTRY
-        .get_sync(&NodeAbsoluteId {
+        .get_sync(&AbsoluteNodeId {
             doc: node.doc_id,
             node: node.id,
         })
@@ -128,7 +128,7 @@ pub fn set_translation(api: &Api, rep: u32, value: [f32; 3]) -> anyhow::Result<(
     data.reconcile(&meta)?;
 
     NODE_TRANSFORM_REGISTRY.update_sync(
-        &NodeAbsoluteId {
+        &AbsoluteNodeId {
             doc: node.doc_id,
             node: node.id,
         },
@@ -143,7 +143,7 @@ pub fn set_translation(api: &Api, rep: u32, value: [f32; 3]) -> anyhow::Result<(
 pub fn rotation(api: &Api, rep: u32) -> anyhow::Result<[f32; 4]> {
     let node = get_node(api, rep)?;
     let ro = NODE_TRANSFORM_REGISTRY
-        .get_sync(&NodeAbsoluteId {
+        .get_sync(&AbsoluteNodeId {
             doc: node.doc_id,
             node: node.id,
         })
@@ -164,7 +164,7 @@ pub fn set_rotation(api: &Api, rep: u32, value: [f32; 4]) -> anyhow::Result<()> 
     data.reconcile(&meta)?;
 
     NODE_TRANSFORM_REGISTRY.update_sync(
-        &NodeAbsoluteId {
+        &AbsoluteNodeId {
             doc: node.doc_id,
             node: node.id,
         },
@@ -179,7 +179,7 @@ pub fn set_rotation(api: &Api, rep: u32, value: [f32; 4]) -> anyhow::Result<()> 
 pub fn scale(api: &Api, rep: u32) -> anyhow::Result<[f32; 3]> {
     let node = get_node(api, rep)?;
     let sc = NODE_TRANSFORM_REGISTRY
-        .get_sync(&NodeAbsoluteId {
+        .get_sync(&AbsoluteNodeId {
             doc: node.doc_id,
             node: node.id,
         })
@@ -199,7 +199,7 @@ pub fn set_scale(api: &Api, rep: u32, value: [f32; 3]) -> anyhow::Result<()> {
     data.reconcile(&meta)?;
 
     NODE_TRANSFORM_REGISTRY.update_sync(
-        &NodeAbsoluteId {
+        &AbsoluteNodeId {
             doc: node.doc_id,
             node: node.id,
         },
@@ -214,7 +214,7 @@ pub fn set_scale(api: &Api, rep: u32, value: [f32; 3]) -> anyhow::Result<()> {
 pub fn transform(api: &Api, rep: u32) -> anyhow::Result<NodeTransform> {
     let node = get_node(api, rep)?;
     let local = NODE_TRANSFORM_REGISTRY
-        .get_sync(&NodeAbsoluteId {
+        .get_sync(&AbsoluteNodeId {
             doc: node.doc_id,
             node: node.id,
         })
@@ -241,7 +241,7 @@ pub fn set_transform(api: &Api, rep: u32, value: NodeTransform) -> anyhow::Resul
     data.reconcile(&meta)?;
 
     NODE_TRANSFORM_REGISTRY.update_sync(
-        &NodeAbsoluteId {
+        &AbsoluteNodeId {
             doc: node.doc_id,
             node: node.id,
         },
@@ -257,7 +257,7 @@ pub fn set_transform(api: &Api, rep: u32, value: NodeTransform) -> anyhow::Resul
 
 pub fn global_transform(api: &Api, rep: u32) -> anyhow::Result<NodeTransform> {
     let node = get_node(api, rep)?;
-    let key = NodeAbsoluteId {
+    let key = AbsoluteNodeId {
         doc: node.doc_id,
         node: node.id,
     };

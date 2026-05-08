@@ -32,6 +32,7 @@ unavi-avatar.path       = "../unavi-avatar"
 unavi-input.path        = "../unavi-input"
 unavi-util.path         = "../unavi-util"
 wired-schemas.path      = "../wired-schemas"
+xdid.workspace          = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 wasmtime      = "43.0.0"
@@ -48,4 +49,3 @@ bevy_panorbit_camera.workspace = true
 iroh.workspace                 = true
 tracing-subscriber.workspace   = true
 wds.path                       = "../wds"
-xdid.workspace                 = true

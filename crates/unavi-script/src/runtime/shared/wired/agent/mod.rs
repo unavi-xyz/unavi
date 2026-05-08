@@ -1,9 +1,13 @@
-use crate::runtime::shared::Api;
+use crate::runtime::shared::{Api, slot_map::SlotMap};
 
-pub struct AgentRes;
+pub mod bridge;
+
+pub struct AgentRes {}
 
 #[derive(Default)]
-pub struct WiredAgentApi;
+pub struct WiredAgentApi {
+    pub agents: SlotMap<AgentRes>,
+}
 
 #[derive(Clone, Copy, Debug)]
 pub enum BoneName {
@@ -64,18 +68,25 @@ pub enum BoneName {
     RightLittleDistal,
 }
 
-pub fn local_agent(_api: &Api) -> anyhow::Result<u32> {
+pub fn local_agent(api: &Api) -> anyhow::Result<u32> {
+    Ok(api.wired_agent.try_lock()?.agents.insert(AgentRes {}))
+}
+
+pub fn local_camera(api: &Api) -> anyhow::Result<u32> {
     todo!()
 }
 
-pub fn local_camera(_api: &Api) -> anyhow::Result<u32> {
+pub fn bone(api: &Api, rep: u32, name: BoneName) -> anyhow::Result<Option<u32>> {
+    let res = api
+        .wired_agent
+        .try_lock()?
+        .agents
+        .get(rep)
+        .ok_or_else(|| anyhow::anyhow!("resource not found"))?;
     todo!()
 }
 
-pub fn bone(_api: &Api, _rep: u32, _name: BoneName) -> anyhow::Result<Option<u32>> {
-    todo!()
-}
-
-pub fn on_drop(_api: &Api, _rep: u32) -> anyhow::Result<()> {
-    todo!()
+pub fn on_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+    api.wired_agent.try_lock()?.agents.remove(rep);
+    Ok(())
 }

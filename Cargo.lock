@@ -16759,8 +16759,7 @@ checksum = "bec9e4a500ca8864c5b47b8b482a73d62e4237670e5b5f1d6b9e3cae50f28f2b"
 [[package]]
 name = "xdid"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cde820af7a985484ccd8cd31c29e044818546122b34eaec958773837339e70d"
+source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
 dependencies = [
  "smallvec",
  "thiserror 2.0.18",
@@ -16772,8 +16771,7 @@ dependencies = [
 [[package]]
 name = "xdid-core"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e45a81f3142487061bfb83c1bfbc5796874ac67e26b356be8e0c46ddbae196ec"
+source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -16786,8 +16784,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-key"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2da4a6f59dafcf3511257253125249ff07d7cfdc8a1a258bfb94fd9d3da9c2aa"
+source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -16805,8 +16802,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-web"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5adc7dfd4cd05cd90749e497e5bfb86341e9687c69067cc8dc4b9c68b2fb2b1f"
+source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
 dependencies = [
  "reqwest 0.13.2",
  "send_wrapper",

@@ -88,6 +88,7 @@ pub fn instantiate_scripts(
                 doc_id: doc_id.0,
                 node: node_id.0,
                 permissions: perms.clone(),
+                wired_agent: Mutex::default(),
                 wired_input: Mutex::default(),
                 wired_scene: Mutex::default(),
             }),

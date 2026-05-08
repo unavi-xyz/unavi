@@ -14,8 +14,8 @@ use unavi_input::raycast::PrimaryRaycastInput;
 use unavi_portal::{PortalTraveler, create::PORTAL_RENDER_LAYER};
 
 use crate::{
-    Agent, AgentCamera, AgentRig, ControlScheme, ControlSchemeConfig, Grounded, LocalAgent,
-    LocalAgentEntities,
+    Agent, AgentAvatar, AgentCamera, AgentRig, ControlScheme, ControlSchemeConfig, Grounded,
+    LocalAgent, LocalAgentEntities,
     config::{AgentConfig, XrMode},
     tracking::{TrackedHead, TrackedPose},
 };
@@ -23,13 +23,13 @@ use crate::{
 const RAYCAST_GRAB_DISTANCE: f32 = 2.5;
 
 pub fn on_local_agent_added(
-    event: On<Add, LocalAgent>,
+    trigger: On<Add, LocalAgent>,
     asset_server: Res<AssetServer>,
     xr_mode: Res<XrMode>,
     agent: Query<(&AgentConfig, Option<&VrmPath>)>,
     mut commands: Commands,
 ) {
-    let Ok((config, vrm_path)) = agent.get(event.entity) else {
+    let Ok((config, vrm_path)) = agent.get(trigger.entity) else {
         return;
     };
 
@@ -104,15 +104,12 @@ pub fn on_local_agent_added(
 
     commands.entity(body).add_children(&[avatar, tracked_head]);
     commands
-        .entity(event.entity)
+        .entity(trigger.entity)
         .insert((
             Agent,
-            LocalAgentEntities {
-                avatar,
-                camera,
-                body,
-                tracked_head,
-            },
+            AgentAvatar(avatar),
+            AgentCamera(camera),
+            LocalAgentEntities { body, tracked_head },
         ))
         .add_child(body);
 }
@@ -125,7 +122,6 @@ fn spawn_camera(commands: &mut Commands, is_xr: bool) -> Entity {
     };
 
     commands.entity(camera).insert((
-        AgentCamera,
         Projection::Perspective(PerspectiveProjection {
             near: 0.001,
             ..default()

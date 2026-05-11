@@ -89,19 +89,19 @@ impl MeshHandle {
         else {
             return JsValue::NULL;
         };
-        let obj = js_sys::Object::new();
-        match indices {
+        let (tag, val): (&str, JsValue) = match indices {
             MeshIndices::Half(v) => {
                 let arr: js_sys::Uint16Array = v.as_slice().into();
-                js_sys::Reflect::set(&obj, &"type".into(), &"half".into()).expect("reflect");
-                js_sys::Reflect::set(&obj, &"data".into(), &arr.into()).expect("reflect");
+                ("half", arr.into())
             }
             MeshIndices::Full(v) => {
                 let arr: js_sys::Uint32Array = v.as_slice().into();
-                js_sys::Reflect::set(&obj, &"type".into(), &"full".into()).expect("reflect");
-                js_sys::Reflect::set(&obj, &"data".into(), &arr.into()).expect("reflect");
+                ("full", arr.into())
             }
-        }
+        };
+        let obj = js_sys::Object::new();
+        js_sys::Reflect::set(&obj, &"tag".into(), &tag.into()).expect("reflect");
+        js_sys::Reflect::set(&obj, &"val".into(), &val).expect("reflect");
         obj.into()
     }
 
@@ -112,18 +112,14 @@ impl MeshHandle {
                 .await
                 .map_err(|e| e.to_string());
         }
-        let get = |k: &str| js_sys::Reflect::get(&value, &k.into()).ok();
-        let kind = get("type").and_then(|v| v.as_string()).unwrap_or_default();
-        let data = get("data").unwrap_or(JsValue::UNDEFINED);
-        let indices = match kind.as_str() {
-            "half" => {
-                let arr = js_sys::Uint16Array::new(&data);
-                Some(MeshIndices::Half(arr.to_vec()))
-            }
-            "full" => {
-                let arr = js_sys::Uint32Array::new(&data);
-                Some(MeshIndices::Full(arr.to_vec()))
-            }
+        let tag = js_sys::Reflect::get(&value, &"tag".into())
+            .ok()
+            .and_then(|v| v.as_string())
+            .unwrap_or_default();
+        let val = js_sys::Reflect::get(&value, &"val".into()).unwrap_or_default();
+        let indices = match tag.as_str() {
+            "half" => Some(MeshIndices::Half(js_sys::Uint16Array::new(&val).to_vec())),
+            "full" => Some(MeshIndices::Full(js_sys::Uint32Array::new(&val).to_vec())),
             _ => None,
         };
         shared::wired::scene::mesh::set_indices(&self.api, self.rep, indices)

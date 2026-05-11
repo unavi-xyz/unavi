@@ -1,21 +1,24 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
+use tokio::sync::Mutex;
 use bevy_hsd::{HsdChild, HsdDoc, HsdRecordId, NodeId, ScriptNode};
 use unavi_util::async_task::spawn_async_task;
 
 use crate::{
     Script,
+    engine::web::tick::LastTick,
     load::asset::Wasm,
     permissions::ApiPermissions,
-    runtime::{Runtime, shared::Api},
+    runtime::{Runtime, shared::Api, web::ScriptCell, web::ScriptInstance},
 };
 
 #[derive(Component)]
-pub struct InstantiatingScript;
+pub struct InstantiatingScript(pub ScriptCell);
 
 #[derive(Component)]
-pub struct ScriptGuest;
+#[require(LastTick)]
+pub struct ScriptGuest(pub Arc<ScriptInstance>);
 
 pub fn instantiate_scripts(
     wasms: Res<Assets<Wasm>>,
@@ -47,18 +50,39 @@ pub fn instantiate_scripts(
                 doc_id: doc_id.0,
                 node: node_id.0,
                 permissions: perms.clone(),
-                wired_agent: Default::default(),
-                wired_event: Default::default(),
-                wired_input: Default::default(),
-                wired_scene: Default::default(),
-                wired_wds: Default::default(),
+                wired_agent: Mutex::default(),
+                wired_event: Mutex::default(),
+                wired_input: Mutex::default(),
+                wired_scene: Mutex::default(),
+                wired_wds: Mutex::default(),
             }),
         };
 
-        spawn_async_task(async move {
-            crate::runtime::web::build_script(&bytes, &name, runtime).await;
+        let cell: ScriptCell = Arc::new(std::sync::Mutex::new(None));
+
+        spawn_async_task({
+            let cell = Arc::clone(&cell);
+            async move {
+                let instance = ScriptInstance::instantiate(&bytes, &name, runtime).await;
+                *cell.lock().expect("mutex poisoned") = Some(instance);
+            }
         });
 
-        commands.entity(entity).insert(InstantiatingScript);
+        commands.entity(entity).insert(InstantiatingScript(cell));
+    }
+}
+
+pub fn poll_instantiating(
+    instantiating: Query<(Entity, &InstantiatingScript)>,
+    mut commands: Commands,
+) {
+    for (entity, cell) in instantiating {
+        let mut guard = cell.0.lock().expect("mutex poisoned");
+        if let Some(instance) = guard.take() {
+            commands
+                .entity(entity)
+                .remove::<InstantiatingScript>()
+                .insert(ScriptGuest(Arc::new(instance)));
+        }
     }
 }

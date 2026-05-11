@@ -13,7 +13,7 @@ pub struct DocHandle {
 }
 
 impl DocHandle {
-    pub fn new(rep: u32, api: Arc<Api>) -> Self {
+    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
     }
 }
@@ -33,19 +33,22 @@ impl DocHandle {
     }
 
     #[wasm_bindgen(js_name = "clone")]
-    pub fn clone_doc(&self) -> Option<DocHandle> {
+    pub fn clone_doc(&self) -> Option<Self> {
         let rep = shared::wired::scene::document::clone(&self.api, self.rep).ok()?;
-        Some(DocHandle::new(rep, self.api.clone()))
+        Some(Self::new(rep, Arc::clone(&self.api)))
     }
 
+    #[expect(clippy::unused_self)]
     pub fn assets(&self) -> js_sys::Array {
         js_sys::Array::new()
     }
 
     #[wasm_bindgen(js_name = "addAsset")]
+    #[expect(clippy::unused_self)]
     pub fn add_asset(&self, _name: String, _blob_id: Vec<u8>) {}
 
     #[wasm_bindgen(js_name = "removeAsset")]
+    #[expect(clippy::unused_self)]
     pub fn remove_asset(&self, _name: String) {}
 
     pub fn roots(&self) -> js_sys::Array {

@@ -1,2 +1,1 @@
-pub enum EnvironmentState {
-}
+pub enum EnvironmentState {}

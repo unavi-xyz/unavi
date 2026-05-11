@@ -1,7 +1,4 @@
-use bevy::{
-    asset::io::web::WebAssetPlugin, light::light_consts::lux, log::LogPlugin, prelude::*,
-    window::WindowTheme,
-};
+use bevy::{light::light_consts::lux, log::LogPlugin, prelude::*, window::WindowTheme};
 
 use bevy_iroh::endpoint::LoadEndpoint;
 use bitflags::bitflags;
@@ -45,7 +42,6 @@ const DISABLED_LOGS: &[&str] = &[
 ];
 
 impl Plugin for UnaviPlugin {
-    #[expect(clippy::too_many_lines)]
     fn build(&self, app: &mut App) {
         #[cfg(not(target_family = "wasm"))]
         {
@@ -88,7 +84,7 @@ impl Plugin for UnaviPlugin {
                     file_path: assets::assets_dir().to_string_lossy().to_string(),
                     ..default()
                 })
-                .disable::<WebAssetPlugin>();
+                .disable::<bevy::asset::io::web::WebAssetPlugin>();
                 if self.xr {
                     app.add_plugins((
                         bevy_mod_openxr::add_xr_plugins(default_plugins),

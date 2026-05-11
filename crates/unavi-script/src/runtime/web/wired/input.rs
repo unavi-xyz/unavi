@@ -1,6 +1,6 @@
-use wasm_bindgen::prelude::*;
-
 use std::sync::Arc;
+
+use wasm_bindgen::prelude::*;
 
 use crate::runtime::{
     Runtime,
@@ -19,7 +19,7 @@ pub struct InputListenerHandle {
 }
 
 impl InputListenerHandle {
-    pub fn new(rep: u32, api: Arc<Api>) -> Self {
+    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
     }
 }
@@ -60,7 +60,7 @@ impl InputListenerHandle {
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredInputListenerClass")]
     pub fn wired_input_listener_class(&self) -> JsValue {
-        let handle = InputListenerHandle::new(u32::MAX, self.api.clone());
+        let handle = InputListenerHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &"constructor".into()).expect("reflect")
     }
@@ -69,13 +69,13 @@ impl Runtime {
     pub fn wired_input_register_input_listener(&self, target: &NodeHandle) -> InputListenerHandle {
         let rep = shared::wired::input::register_input_listener(&self.api, target.rep())
             .unwrap_or(u32::MAX);
-        InputListenerHandle::new(rep, self.api.clone())
+        InputListenerHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "wiredInputContextListener")]
     pub fn wired_input_context_listener(&self) -> InputListenerHandle {
         let rep =
             shared::wired::input::register_global_input_listener(&self.api).unwrap_or(u32::MAX);
-        InputListenerHandle::new(rep, self.api.clone())
+        InputListenerHandle::new(rep, Arc::clone(&self.api))
     }
 }

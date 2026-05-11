@@ -65,7 +65,11 @@ pub fn read(api: &Api, _wds_rep: u32, record_id: Vec<u8>) -> anyhow::Result<u32>
     Ok(wds.read_futures.insert((id, rx)))
 }
 
-pub fn query_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<Vec<Vec<u8>>, ()>>> {
+#[expect(clippy::significant_drop_tightening)]
+pub fn query_future_poll(
+    api: &Api,
+    rep: u32,
+) -> anyhow::Result<Option<Result<Vec<Vec<u8>>, ()>>> {
     let wds = api.wired_wds.try_lock()?;
     let Some(rx) = wds.query_futures.get(rep) else {
         return Ok(Some(Err(())));
@@ -80,7 +84,11 @@ pub fn query_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<Ve
     }
 }
 
-pub fn read_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<WdsRecord, ()>>> {
+#[expect(clippy::significant_drop_tightening)]
+pub fn read_future_poll(
+    api: &Api,
+    rep: u32,
+) -> anyhow::Result<Option<Result<WdsRecord, ()>>> {
     let wds = api.wired_wds.try_lock()?;
     let Some((id, rx)) = wds.read_futures.get(rep) else {
         return Ok(Some(Err(())));
@@ -98,19 +106,16 @@ pub fn read_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<Wds
 }
 
 pub fn query_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
-    let mut wds = api.wired_wds.try_lock()?;
-    wds.query_futures.remove(rep);
+    api.wired_wds.try_lock()?.query_futures.remove(rep);
     Ok(())
 }
 
 pub fn read_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
-    let mut wds = api.wired_wds.try_lock()?;
-    wds.read_futures.remove(rep);
+    api.wired_wds.try_lock()?.read_futures.remove(rep);
     Ok(())
 }
 
 pub fn wds_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
-    let mut wds = api.wired_wds.try_lock()?;
-    wds.wds_slots.remove(rep);
+    api.wired_wds.try_lock()?.wds_slots.remove(rep);
     Ok(())
 }

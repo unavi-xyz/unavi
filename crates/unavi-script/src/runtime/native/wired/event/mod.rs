@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use wasmtime::component::Resource;
 
 use crate::runtime::{
@@ -70,7 +72,7 @@ impl HostEventReceptor for Runtime {
                     .map_err(|e| wasmtime::Error::msg(e.to_string()))?
                     .nodes
                     .insert(NodeRes {
-                        doc: self.api.doc.clone(),
+                        doc: Arc::clone(&self.api.doc),
                         doc_id,
                         id: node,
                         is_proxy: true,

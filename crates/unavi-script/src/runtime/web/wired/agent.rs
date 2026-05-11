@@ -17,7 +17,7 @@ pub struct AgentHandle {
 }
 
 impl AgentHandle {
-    pub fn new(rep: u32, api: Arc<Api>) -> Self {
+    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
     }
 }
@@ -106,7 +106,7 @@ impl AgentHandle {
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredAgentClass")]
     pub fn wired_agent_class(&self) -> JsValue {
-        let handle = AgentHandle::new(u32::MAX, self.api.clone());
+        let handle = AgentHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
@@ -114,12 +114,12 @@ impl Runtime {
     #[wasm_bindgen(js_name = "wiredAgentLocalAgent")]
     pub fn wired_agent_local_agent(&self) -> AgentHandle {
         let rep = shared::wired::agent::local_agent(&self.api).unwrap_or(u32::MAX);
-        AgentHandle::new(rep, self.api.clone())
+        AgentHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "wiredAgentLocalCamera")]
     pub fn wired_agent_local_camera(&self) -> NodeHandle {
         let rep = shared::wired::agent::local_camera(&self.api).unwrap_or(u32::MAX);
-        NodeHandle::new(rep, self.api.clone())
+        NodeHandle::new(rep, Arc::clone(&self.api))
     }
 }

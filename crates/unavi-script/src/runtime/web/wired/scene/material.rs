@@ -14,11 +14,11 @@ pub struct MaterialHandle {
 }
 
 impl MaterialHandle {
-    pub fn new(rep: u32, api: Arc<Api>) -> Self {
+    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
     }
 
-    pub fn rep(&self) -> u32 {
+    pub const fn rep(&self) -> u32 {
         self.rep
     }
 }
@@ -38,6 +38,7 @@ impl MaterialHandle {
     }
 
     #[wasm_bindgen(js_name = "__rep", getter)]
+    #[expect(clippy::missing_const_for_fn)]
     pub fn wasm_rep(&self) -> u32 {
         self.rep
     }
@@ -126,8 +127,7 @@ impl MaterialHandle {
             js_sys::Reflect::get(&value, &k.into())
                 .ok()
                 .and_then(|v| v.as_f64())
-                .map(|v| v as f32)
-                .unwrap_or(default)
+                .map_or(default, |v| v as f32)
         };
         let color = MaterialColor {
             r: get_f32("r", 1.0),

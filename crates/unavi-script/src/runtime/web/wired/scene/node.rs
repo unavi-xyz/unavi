@@ -16,11 +16,11 @@ pub struct NodeHandle {
 }
 
 impl NodeHandle {
-    pub fn new(rep: u32, api: Arc<Api>) -> Self {
+    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
     }
 
-    pub fn rep(&self) -> u32 {
+    pub const fn rep(&self) -> u32 {
         self.rep
     }
 }
@@ -42,7 +42,7 @@ impl NodeHandle {
     #[wasm_bindgen(js_name = "clone")]
     pub fn clone_node(&self) -> Self {
         let rep = shared::wired::scene::node::clone(&self.api, self.rep).unwrap_or(u32::MAX);
-        NodeHandle::new(rep, Arc::clone(&self.api))
+        Self::new(rep, Arc::clone(&self.api))
     }
 
     pub fn name(&self) -> Option<String> {
@@ -179,7 +179,7 @@ impl NodeHandle {
 
     pub fn parent(&self) -> Option<Self> {
         let rep = shared::wired::scene::node::parent(&self.api, self.rep).ok()??;
-        Some(NodeHandle::new(rep, Arc::clone(&self.api)))
+        Some(Self::new(rep, Arc::clone(&self.api)))
     }
 
     pub fn children(&self) -> JsValue {
@@ -187,19 +187,19 @@ impl NodeHandle {
             return js_sys::Array::new().into();
         };
         reps.into_iter()
-            .map(|rep| JsValue::from(NodeHandle::new(rep, Arc::clone(&self.api))))
+            .map(|rep| JsValue::from(Self::new(rep, Arc::clone(&self.api))))
             .collect::<js_sys::Array>()
             .into()
     }
 
     #[wasm_bindgen(js_name = "addChild")]
-    pub fn add_child(&self, child: &NodeHandle) -> Result<(), String> {
+    pub fn add_child(&self, child: &Self) -> Result<(), String> {
         shared::wired::scene::node::add_child(&self.api, self.rep, child.rep)
             .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "removeChild")]
-    pub fn remove_child(&self, child: &NodeHandle) -> Result<(), String> {
+    pub fn remove_child(&self, child: &Self) -> Result<(), String> {
         shared::wired::scene::node::remove_child(&self.api, self.rep, child.rep)
             .map_err(|e| e.to_string())
     }

@@ -2,10 +2,7 @@ use wired_prelude::prelude::*;
 
 use crate::{
     unavi::shapes::api::Cuboid,
-    wired::scene::{
-        api::{load_hsd, self_document},
-        types::RigidBodyKind,
-    },
+    wired::scene::{api::self_document, types::RigidBodyKind},
 };
 
 wired_prelude::generate_script!(Script);

@@ -4,40 +4,48 @@ use bevy::{
     light::{CascadeShadowConfigBuilder, light_consts::lux},
     prelude::*,
 };
-use bevy_hsd::HsdDoc;
 use bevy_vrm::mtoon::MtoonSun;
 use unavi_agent::LocalAgent;
-use unavi_space::Space;
+
+mod home;
+mod limbo;
+mod system_scripts;
 
 const SPAWN_DELAY: Duration = Duration::from_secs(1);
 
-pub fn spawn_agent(
-    spaces: Query<(), (With<Space>, With<HsdDoc>)>,
-    mut commands: Commands,
-    mut spawned: Local<bool>,
-    time: Res<Time>,
-    mut started: Local<Option<Duration>>,
-) {
-    if *spawned || spaces.is_empty() {
-        return;
+pub struct ScenePlugin;
+
+impl Plugin for ScenePlugin {
+    fn build(&self, app: &mut App) {
+        app.init_state::<SceneState>()
+            .add_systems(Startup, spawn_sun)
+            .add_systems(
+                OnEnter(SceneState::Limbo),
+                (limbo::spawn_limbo, spawn_local_agent),
+            )
+            .add_systems(OnExit(SceneState::Limbo), limbo::despawn_limbo);
     }
-
-    let now = time.elapsed();
-
-    if let Some(s) = &*started {
-        if *s + SPAWN_DELAY > now {
-            return;
-        }
-    } else {
-        *started = Some(now);
-        return;
-    }
-
-    commands.spawn(LocalAgent);
-    *spawned = true;
 }
 
-pub fn spawn_scene(mut commands: Commands) {
+#[derive(Default, Debug, States, Clone, Copy, PartialEq, Eq, Hash)]
+enum SceneState {
+    /// Empty "limbo" scene, if not in any spaces.
+    /// Acts as a loading screen or fallback on error.
+    #[default]
+    Limbo,
+    /// Main scene state.
+    /// Actively within a space.
+    Space,
+}
+
+fn spawn_local_agent(local_agent: Query<(), With<LocalAgent>>, mut commands: Commands) {
+    if !local_agent.is_empty() {
+        return;
+    }
+    commands.spawn(LocalAgent);
+}
+
+fn spawn_sun(mut commands: Commands) {
     commands.spawn((
         CascadeShadowConfigBuilder {
             #[cfg(not(all(target_family = "wasm", not(feature = "webgpu"))))]

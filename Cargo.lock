@@ -13913,6 +13913,7 @@ dependencies = [
  "bevy_vrm",
  "bevy_xr_utils",
  "bitflags 2.11.0",
+ "blake3",
  "clap",
  "directories",
  "embed-resource",

@@ -14,7 +14,6 @@ mod fade;
 mod grab;
 mod icon;
 mod scene;
-mod system_scripts;
 
 #[cfg(not(target_family = "wasm"))]
 mod assets;
@@ -101,24 +100,6 @@ impl Plugin for UnaviPlugin {
             }
         }
 
-        app.add_plugins((
-            avian3d::PhysicsPlugins::default(),
-            fade::FadePlugin,
-            bevy_wds::WdsPlugin,
-            bevy_iroh::IrohPlugin,
-            bevy_hsd::HsdPlugin,
-            unavi_util::UtilPlugin,
-            unavi_input::InputPlugin,
-            unavi_avatar::AvatarPlugin,
-            unavi_agent::AgentPlugin,
-            unavi_script::ScriptPlugin,
-            unavi_portal::PortalPlugin,
-            unavi_identity::IdentityPlugin,
-            unavi_space::SpacePlugin,
-            grab::GrabPlugin,
-            MaterialPlugin::<camera::sky::SkyMaterial>::default(),
-        ));
-
         #[cfg(feature = "devtools-bevy")]
         {
             if self.debug.contains(DebugFlags::FPS) {
@@ -129,31 +110,35 @@ impl Plugin for UnaviPlugin {
             }
         }
 
-        app.add_plugins(devtools::DevToolsPlugin {
-            inspector: self.debug.contains(DebugFlags::INSPECTOR),
-            network: self.debug.contains(DebugFlags::NETWORK),
-        })
+        app.add_plugins((
+            avian3d::PhysicsPlugins::default(),
+            bevy_hsd::HsdPlugin,
+            bevy_iroh::IrohPlugin,
+            bevy_wds::WdsPlugin,
+            unavi_agent::AgentPlugin,
+            unavi_avatar::AvatarPlugin,
+            unavi_identity::IdentityPlugin,
+            unavi_input::InputPlugin,
+            unavi_portal::PortalPlugin,
+            unavi_script::ScriptPlugin,
+            unavi_space::SpacePlugin,
+            unavi_util::UtilPlugin,
+        ))
+        .add_plugins((
+            camera::CameraPlugin,
+            devtools::DevToolsPlugin {
+                inspector: self.debug.contains(DebugFlags::INSPECTOR),
+                network: self.debug.contains(DebugFlags::NETWORK),
+            },
+            fade::FadePlugin,
+            grab::GrabPlugin,
+            scene::ScenePlugin,
+        ))
         .insert_resource(GlobalAmbientLight {
             brightness: lux::OVERCAST_DAY,
             ..default()
         })
-        .add_systems(
-            Startup,
-            (
-                camera::sky::spawn_sky,
-                icon::set_window_icon,
-                scene::spawn_scene,
-                system_scripts::spawn_system_scripts,
-            ),
-        )
-        .add_systems(
-            FixedUpdate,
-            (
-                camera::apply_camera_effects,
-                scene::spawn_agent,
-                // home::join_home_space,
-            ),
-        );
+        .add_systems(Startup, icon::set_window_icon);
 
         app.world_mut().trigger(LoadEndpoint {
             filter: AddrFilter::default(),

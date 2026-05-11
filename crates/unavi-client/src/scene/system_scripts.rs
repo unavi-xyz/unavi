@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_hsd::instance::InstanceHsd;
+use bevy_hsd::load::{LoadHsd, on_load_spawn_doc};
 use unavi_script::permissions::ApiPermissions;
 
 const GAUNTLET_HSD: &str = "hsd/unavi_gauntlet.hsd";
@@ -15,7 +15,14 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
     for &path in MODULE_HSDS {
         let handle = asset_server.load(path);
         let ent = commands
-            .spawn((InstanceHsd(handle), ApiPermissions::system()))
+            .spawn((
+                LoadHsd {
+                    handle,
+                    extra_schemas: None,
+                    on_load: Some(Box::new(on_load_spawn_doc)),
+                },
+                ApiPermissions::system(),
+            ))
             .id();
         module_ents.push(ent);
     }

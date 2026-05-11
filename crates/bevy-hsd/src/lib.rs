@@ -9,7 +9,7 @@ use smol_str::SmolStr;
 
 pub mod asset;
 pub mod hydrate;
-pub mod instance;
+pub mod load;
 
 pub struct HsdPlugin;
 
@@ -77,7 +77,7 @@ impl Plugin for HsdPlugin {
                         hydrate::compile::material::recompile_changed_materials,
                     )
                         .chain(),
-                    instance::instance_hsd,
+                    load::instance_hsd,
                 ),
             );
     }

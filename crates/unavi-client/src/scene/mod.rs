@@ -11,14 +11,12 @@ mod home;
 mod limbo;
 mod system_scripts;
 
-const SPAWN_DELAY: Duration = Duration::from_secs(1);
-
 pub struct ScenePlugin;
 
 impl Plugin for ScenePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<SceneState>()
-            .add_systems(Startup, spawn_sun)
+            .add_systems(Startup, (spawn_sun, home::join_home))
             .add_systems(
                 OnEnter(SceneState::Limbo),
                 (limbo::spawn_limbo, spawn_local_agent),

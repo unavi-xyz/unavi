@@ -92,6 +92,7 @@ pub fn instantiate_scripts(
                 wired_event: Mutex::default(),
                 wired_input: Mutex::default(),
                 wired_scene: Mutex::default(),
+                wired_wds: Mutex::default(),
             }),
             native: NativeRuntime {
                 table: ResourceTable::default(),

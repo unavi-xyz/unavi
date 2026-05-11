@@ -9,6 +9,7 @@ use crate::{
     permissions::ApiPermissions,
     runtime::shared::wired::{
         agent::WiredAgentApi, event::WiredEventApi, input::WiredInputApi, scene::WiredSceneApi,
+        wds::WiredWdsApi,
     },
 };
 
@@ -25,6 +26,7 @@ pub struct Api {
     pub wired_event: Mutex<WiredEventApi>,
     pub wired_input: Mutex<WiredInputApi>,
     pub wired_scene: Mutex<WiredSceneApi>,
+    pub wired_wds: Mutex<WiredWdsApi>,
 }
 
 pub struct SharedRuntimePlugin;

@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use bevy::{
     light::{CascadeShadowConfigBuilder, light_consts::lux},
     prelude::*,
@@ -16,6 +14,7 @@ pub struct ScenePlugin;
 impl Plugin for ScenePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<SceneState>()
+            .add_observer(limbo::exit_limbo_on_space_join)
             .add_systems(Startup, (spawn_sun, home::join_home))
             .add_systems(
                 OnEnter(SceneState::Limbo),

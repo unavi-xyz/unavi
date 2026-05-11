@@ -1,5 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
+use anyhow::Context;
 use async_channel::Receiver;
 use bevy::{prelude::*, tasks::BoxedFuture};
 use bevy_wds::{
@@ -120,7 +121,9 @@ async fn recv_doc(
             doc,
             entity,
             record_id,
-        });
+        })
+        .await
+        .context("on_load")?;
     }
 
     Ok(())

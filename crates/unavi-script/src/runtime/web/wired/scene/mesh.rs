@@ -16,11 +16,11 @@ pub struct MeshHandle {
 }
 
 impl MeshHandle {
-    pub fn new(rep: u32, api: Arc<Api>) -> Self {
+    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
     }
 
-    pub fn rep(&self) -> u32 {
+    pub const fn rep(&self) -> u32 {
         self.rep
     }
 }
@@ -40,6 +40,7 @@ impl MeshHandle {
     }
 
     #[wasm_bindgen(js_name = "__rep", getter)]
+    #[expect(clippy::missing_const_for_fn)]
     pub fn wasm_rep(&self) -> u32 {
         self.rep
     }
@@ -47,7 +48,7 @@ impl MeshHandle {
     #[wasm_bindgen(js_name = "clone")]
     pub fn clone_mesh(&self) -> Self {
         let rep = shared::wired::scene::mesh::clone(&self.api, self.rep).unwrap_or(u32::MAX);
-        Self::new(rep, self.api.clone())
+        Self::new(rep, Arc::clone(&self.api))
     }
 
     pub fn name(&self) -> Option<String> {
@@ -92,13 +93,13 @@ impl MeshHandle {
         match indices {
             MeshIndices::Half(v) => {
                 let arr: js_sys::Uint16Array = v.as_slice().into();
-                js_sys::Reflect::set(&obj, &"type".into(), &"half".into()).unwrap();
-                js_sys::Reflect::set(&obj, &"data".into(), &arr.into()).unwrap();
+                js_sys::Reflect::set(&obj, &"type".into(), &"half".into()).expect("reflect");
+                js_sys::Reflect::set(&obj, &"data".into(), &arr.into()).expect("reflect");
             }
             MeshIndices::Full(v) => {
                 let arr: js_sys::Uint32Array = v.as_slice().into();
-                js_sys::Reflect::set(&obj, &"type".into(), &"full".into()).unwrap();
-                js_sys::Reflect::set(&obj, &"data".into(), &arr.into()).unwrap();
+                js_sys::Reflect::set(&obj, &"type".into(), &"full".into()).expect("reflect");
+                js_sys::Reflect::set(&obj, &"data".into(), &arr.into()).expect("reflect");
             }
         }
         obj.into()

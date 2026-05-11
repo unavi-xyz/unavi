@@ -23,7 +23,7 @@ pub struct EventReceptorHandle {
 }
 
 impl EventReceptorHandle {
-    pub fn new(rep: u32, api: Arc<Api>) -> Self {
+    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
     }
 }
@@ -70,7 +70,7 @@ fn js_to_event_filter(value: &JsValue) -> EventFilter {
         if docs.is_empty() { None } else { Some(docs) }
     });
 
-    EventFilter { scope, documents }
+    EventFilter { documents, scope }
 }
 
 #[wasm_bindgen]
@@ -96,7 +96,7 @@ impl EventReceptorHandle {
             SenderScope::Spatial { distance, node } => {
                 let node_id = self.api.wired_scene.try_lock().ok().map(|mut scene| {
                     scene.nodes.insert(NodeRes {
-                        doc: self.api.doc.clone(),
+                        doc: Arc::clone(&self.api.doc),
                         doc_id: node.doc,
                         id: node.node,
                         is_proxy: true,
@@ -105,7 +105,7 @@ impl EventReceptorHandle {
                 js_sys::Reflect::set(&obj, &"sender".into(), &"spatial".into()).ok();
                 js_sys::Reflect::set(&obj, &"senderDistance".into(), &distance.into()).ok();
                 if let Some(id) = node_id {
-                    let handle = NodeHandle::new(id, self.api.clone());
+                    let handle = NodeHandle::new(id, Arc::clone(&self.api));
                     js_sys::Reflect::set(&obj, &"senderNode".into(), &JsValue::from(handle)).ok();
                 }
             }
@@ -119,7 +119,7 @@ impl EventReceptorHandle {
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredEventReceptorClass")]
     pub fn wired_event_receptor_class(&self) -> JsValue {
-        let handle = EventReceptorHandle::new(u32::MAX, self.api.clone());
+        let handle = EventReceptorHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
@@ -143,6 +143,6 @@ impl Runtime {
             .collect();
         let rep = shared::wired::event::listen(&self.api, channels, js_to_event_filter(&filter))
             .unwrap_or(u32::MAX);
-        EventReceptorHandle::new(rep, self.api.clone())
+        EventReceptorHandle::new(rep, Arc::clone(&self.api))
     }
 }

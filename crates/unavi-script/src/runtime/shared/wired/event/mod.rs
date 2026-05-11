@@ -144,6 +144,7 @@ pub fn emit(
             time,
         });
     }
+    drop(registry);
 
     Ok(())
 }

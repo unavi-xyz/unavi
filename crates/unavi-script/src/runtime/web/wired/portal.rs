@@ -17,7 +17,7 @@ pub struct PortalHandle {
 }
 
 impl PortalHandle {
-    pub fn new(rep: u32, api: Arc<Api>) -> Self {
+    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
     }
 }
@@ -99,10 +99,8 @@ impl PortalHandle {
         let obj = js_sys::Object::new();
         let space: js_sys::Uint8Array = dest.space.as_slice().into();
         js_sys::Reflect::set(&obj, &"space".into(), &space.into()).ok();
-        match dest.portal {
-            Some(p) => js_sys::Reflect::set(&obj, &"portal".into(), &p.into()).ok(),
-            None => js_sys::Reflect::set(&obj, &"portal".into(), &JsValue::NULL).ok(),
-        };
+        let portal_val: JsValue = dest.portal.map_or(JsValue::NULL, Into::into);
+        js_sys::Reflect::set(&obj, &"portal".into(), &portal_val).ok();
         obj.into()
     }
 
@@ -115,7 +113,7 @@ impl PortalHandle {
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredPortalClass")]
     pub fn wired_portal_class(&self) -> JsValue {
-        let handle = PortalHandle::new(u32::MAX, self.api.clone());
+        let handle = PortalHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
@@ -133,6 +131,6 @@ impl Runtime {
     pub fn wired_portal_open_portal(&self, params: JsValue) -> Result<PortalHandle, String> {
         let rep = shared::wired::portal::open_portal(&self.api, js_to_portal_params(&params))
             .map_err(|e| e.to_string())?;
-        Ok(PortalHandle::new(rep, self.api.clone()))
+        Ok(PortalHandle::new(rep, Arc::clone(&self.api)))
     }
 }

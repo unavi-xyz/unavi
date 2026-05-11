@@ -14,7 +14,7 @@ pub struct WdsHandle {
 }
 
 impl WdsHandle {
-    pub fn new(rep: u32, api: Arc<Api>) -> Self {
+    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
     }
 }
@@ -34,7 +34,7 @@ pub struct QueryFutureHandle {
 }
 
 impl QueryFutureHandle {
-    pub fn new(rep: u32, api: Arc<Api>) -> Self {
+    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
     }
 }
@@ -54,7 +54,7 @@ pub struct ReadFutureHandle {
 }
 
 impl ReadFutureHandle {
-    pub fn new(rep: u32, api: Arc<Api>) -> Self {
+    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
     }
 }
@@ -168,21 +168,21 @@ impl ReadFutureHandle {
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredWdsClass")]
     pub fn wired_wds_class(&self) -> JsValue {
-        let handle = WdsHandle::new(u32::MAX, self.api.clone());
+        let handle = WdsHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
 
     #[wasm_bindgen(js_name = "wiredQueryFutureClass")]
     pub fn wired_query_future_class(&self) -> JsValue {
-        let handle = QueryFutureHandle::new(u32::MAX, self.api.clone());
+        let handle = QueryFutureHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
 
     #[wasm_bindgen(js_name = "wiredReadFutureClass")]
     pub fn wired_read_future_class(&self) -> JsValue {
-        let handle = ReadFutureHandle::new(u32::MAX, self.api.clone());
+        let handle = ReadFutureHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
@@ -190,6 +190,6 @@ impl Runtime {
     #[wasm_bindgen(js_name = "wiredWdsGetWds")]
     pub fn wired_wds_get_wds(&self) -> WdsHandle {
         let rep = shared::wired::wds::get_wds(&self.api).unwrap_or(u32::MAX);
-        WdsHandle::new(rep, self.api.clone())
+        WdsHandle::new(rep, Arc::clone(&self.api))
     }
 }

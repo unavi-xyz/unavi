@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::{Runtime, shared};
@@ -17,28 +19,28 @@ use node::NodeHandle;
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredSceneDocClass")]
     pub fn wired_scene_doc_class(&self) -> JsValue {
-        let handle = DocHandle::new(u32::MAX, self.api.clone());
+        let handle = DocHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
 
     #[wasm_bindgen(js_name = "wiredSceneMaterialClass")]
     pub fn wired_scene_material_class(&self) -> JsValue {
-        let handle = MaterialHandle::new(u32::MAX, self.api.clone());
+        let handle = MaterialHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
 
     #[wasm_bindgen(js_name = "wiredSceneMeshClass")]
     pub fn wired_scene_mesh_class(&self) -> JsValue {
-        let handle = MeshHandle::new(u32::MAX, self.api.clone());
+        let handle = MeshHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
 
     #[wasm_bindgen(js_name = "wiredSceneNodeClass")]
     pub fn wired_scene_node_class(&self) -> JsValue {
-        let handle = NodeHandle::new(u32::MAX, self.api.clone());
+        let handle = NodeHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
@@ -46,13 +48,13 @@ impl Runtime {
     #[wasm_bindgen(js_name = "wiredSceneSelfNode")]
     pub fn wired_scene_self_node(&self) -> NodeHandle {
         let rep = shared::wired::scene::self_node(&self.api).unwrap_or(u32::MAX);
-        NodeHandle::new(rep, self.api.clone())
+        NodeHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "wiredSceneSelfDocument")]
     pub fn wired_scene_self_document(&self) -> DocHandle {
         let rep = shared::wired::scene::self_document(&self.api).unwrap_or(u32::MAX);
-        DocHandle::new(rep, self.api.clone())
+        DocHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "wiredSceneGetDocument")]
@@ -60,7 +62,7 @@ impl Runtime {
         let rep = shared::wired::scene::get_document(&self.api, id)
             .await
             .ok()??;
-        Some(DocHandle::new(rep, self.api.clone()))
+        Some(DocHandle::new(rep, Arc::clone(&self.api)))
     }
 
     #[wasm_bindgen(js_name = "wiredSceneCreateDocument")]
@@ -68,7 +70,7 @@ impl Runtime {
         let rep = shared::wired::scene::create_document(&self.api)
             .await
             .map_err(|e| e.to_string())?;
-        Ok(DocHandle::new(rep, self.api.clone()))
+        Ok(DocHandle::new(rep, Arc::clone(&self.api)))
     }
 
     #[wasm_bindgen(js_name = "wiredSceneRemoveDocument")]
@@ -81,6 +83,6 @@ impl Runtime {
         let rep = shared::wired::scene::load_hsd(&self.api, blob_id)
             .await
             .map_err(|e| e.to_string())?;
-        Ok(DocHandle::new(rep, self.api.clone()))
+        Ok(DocHandle::new(rep, Arc::clone(&self.api)))
     }
 }

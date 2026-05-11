@@ -41,11 +41,11 @@ const SCRIPT_ASYNC_EXPORTS = [
   "wired:script/guest-api#tick",
 ];
 
-export async function build_script(
+export async function instantiateScript(
   bytes: Uint8Array,
   name: string,
   rt: any,
-): Promise<void> {
+): Promise<any> {
   console.log("Building script", name);
 
   const options: GenerateOptions = {
@@ -63,57 +63,57 @@ export async function build_script(
     strict: false,
   };
 
-  try {
-    const result = await (generate(
-      bytes,
-      options,
-    ) as unknown as Promise<Transpiled>);
-    console.log("Generated script", name, result);
+  const result = await (generate(
+    bytes,
+    options,
+  ) as unknown as Promise<Transpiled>);
+  console.log("Generated script", name, result);
 
-    const jsFile = result.files.find(([name]) => name.endsWith(".js"));
-    if (jsFile == undefined) {
-      console.warn("Transpiled JS not found");
-      return;
-    }
-    const jsCode = new TextDecoder().decode(jsFile[1]);
-    const blob = new Blob([jsCode], { type: "text/javascript" });
-    const url = URL.createObjectURL(blob);
-
-    const mod = await import(url);
-
-    const fileMap = new Map(result.files);
-
-    async function getCoreModule(path: string): Promise<WebAssembly.Module> {
-      const bytes = fileMap.get(path);
-      if (!bytes) {
-        throw new Error(`Missing wasm module: ${path}`);
-      }
-      return await WebAssembly.compile(bytes as BufferSource);
-    }
-
-    const wasi = new WASIShim({
-      sandbox: {
-        preopens: {},
-        env: {},
-        args: [],
-        enableNetwork: false,
-      },
-    });
-    const imports = build_imports(wasi, rt);
-
-    const instance = await mod.instantiate(getCoreModule, imports);
-    console.log("Instantiated script", name, instance);
-
-    await instance.guestApi.init();
-    console.log("Initialized script", name);
-
-    // TODO send script to Rust -> Bevy calls tick
-
-    await instance.guestApi.tick();
-    console.log("Ticked script", name);
-  } catch (err) {
-    console.error("Failed to build script", err);
+  const jsFile = result.files.find(([name]) => name.endsWith(".js"));
+  if (jsFile == undefined) {
+    throw new Error("Transpiled JS not found");
   }
+  const jsCode = new TextDecoder().decode(jsFile[1]);
+  const blob = new Blob([jsCode], { type: "text/javascript" });
+  const url = URL.createObjectURL(blob);
+
+  const mod = await import(url);
+
+  const fileMap = new Map(result.files);
+
+  async function getCoreModule(path: string): Promise<WebAssembly.Module> {
+    const bytes = fileMap.get(path);
+    if (!bytes) {
+      throw new Error(`Missing wasm module: ${path}`);
+    }
+    return await WebAssembly.compile(bytes as BufferSource);
+  }
+
+  const wasi = new WASIShim({
+    sandbox: {
+      preopens: {},
+      env: {},
+      args: [],
+      enableNetwork: false,
+    },
+  });
+  const imports = build_imports(wasi, rt);
+
+  const instance = await mod.instantiate(getCoreModule, imports);
+  console.log("Instantiated script", name, instance);
+  return instance;
+}
+
+export async function scriptInit(instance: any): Promise<void> {
+  await instance.guestApi.init();
+}
+
+export async function scriptRender(instance: any): Promise<void> {
+  await instance.guestApi.render();
+}
+
+export async function scriptTick(instance: any): Promise<void> {
+  await instance.guestApi.tick();
 }
 
 function build_imports(wasi: WASIShim, rt: any) {

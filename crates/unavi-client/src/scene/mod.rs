@@ -22,7 +22,14 @@ impl Plugin for ScenePlugin {
                 (limbo::spawn_limbo, spawn_local_agent),
             )
             .add_systems(OnExit(SceneState::Limbo), limbo::despawn_limbo)
-            .add_systems(Startup, (spawn_sun, home::join_home, system_scripts::spawn_system_scripts))
+            .add_systems(
+                Startup,
+                (
+                    spawn_sun,
+                    home::join_home,
+                    system_scripts::spawn_system_scripts,
+                ),
+            )
             .add_systems(FixedUpdate, respawn::teleport_from_void);
     }
 }

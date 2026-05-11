@@ -33,7 +33,7 @@ pub fn local_camera(api: &Api) -> anyhow::Result<u32> {
         .camera
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("camera proxy not found"))?;
-    let (doc_id, node_id) = (id.doc, id.node.clone());
+    let (doc_id, node_id) = (id.doc, id.node);
     drop(guard);
     let rep = api.wired_scene.try_lock()?.nodes.insert(NodeRes {
         doc: Arc::default(),
@@ -59,7 +59,7 @@ pub fn bone(api: &Api, rep: u32, name: BoneName) -> anyhow::Result<Option<u32>> 
         .get(&key)
         .ok_or_else(|| anyhow::anyhow!("agent entry not found"))?;
     if let Some(id) = entry.bones.get(&name) {
-        let (doc_id, node_id) = (id.doc, id.node.clone());
+        let (doc_id, node_id) = (id.doc, id.node);
         drop(guard);
         let rep = api.wired_scene.try_lock()?.nodes.insert(NodeRes {
             doc: Arc::default(),

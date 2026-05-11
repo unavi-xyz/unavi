@@ -14,7 +14,7 @@ use irpc::{
 };
 use irpc_iroh::IrohProtocol;
 use serde::{Deserialize, Serialize};
-use tracing::error;
+use tracing::{error, warn};
 
 use crate::{SessionToken, StoreContext, error::ApiError};
 
@@ -36,8 +36,8 @@ pub(crate) fn protocol(ctx: Arc<StoreContext>) -> (Client<ApiService>, IrohProto
     let (tx, mut rx) = irpc::channel::mpsc::channel(32);
 
     n0_future::task::spawn(async move {
-        while let Err(e) = handle_requests(&ctx, &mut rx).await {
-            error!("Error handling request: {e:?}");
+        while let Err(err) = handle_requests(&ctx, &mut rx).await {
+            error!("Error handling request: {err:?}");
         }
     });
 
@@ -108,8 +108,8 @@ async fn handle_requests(
         let ctx = Arc::clone(ctx);
 
         n0_future::task::spawn(async move {
-            if let Err(e) = handle_message(ctx, msg).await {
-                error!("Error handling message: {e:?}");
+            if let Err(err) = handle_message(ctx, msg).await {
+                warn!("Error handling message: {err:?}");
             }
         });
     }

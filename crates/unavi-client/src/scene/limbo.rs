@@ -8,7 +8,7 @@ use bevy::{
 use bevy_hsd::HsdDoc;
 use unavi_space::Space;
 
-use crate::scene::SceneState;
+use crate::scene::{SceneState, respawn::Respawn};
 
 const PLANE_SIZE: f32 = 2048.0;
 const TEXTURE_SIZE: f32 = 16.0;
@@ -67,6 +67,7 @@ pub fn exit_limbo_on_space_join(
     spaces: Query<(), With<Space>>,
     state: Res<State<SceneState>>,
     mut next: ResMut<NextState<SceneState>>,
+    mut commands: Commands,
 ) {
     if !matches!(state.get(), SceneState::Limbo) {
         return;
@@ -80,4 +81,6 @@ pub fn exit_limbo_on_space_join(
 
     info!("Space loaded, exiting limbo");
     next.set(SceneState::Space);
+
+    commands.trigger(Respawn);
 }

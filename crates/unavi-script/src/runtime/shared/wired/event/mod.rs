@@ -67,7 +67,10 @@ pub fn emit(
                     })
                     .ok_or_else(|| anyhow::anyhow!("emit: node not found"))?;
                 drop(scene);
-                let pos = NODE_TRANSFORM_REGISTRY.read_sync(&abs, |_, s| s.global.translation());
+                let pos = NODE_TRANSFORM_REGISTRY
+                    .read()
+                    .get(&abs)
+                    .map(|s| s.global.translation());
                 Some((abs, pos, *radius))
             }
             EventScope::Global => None,
@@ -76,30 +79,31 @@ pub fn emit(
     let payload = Arc::new(payload);
     let sender_doc = api.doc_id.as_bytes().to_vec();
 
-    EVENT_RECEPTOR_REGISTRY.iter_sync(|_rep, entry| {
+    let registry = EVENT_RECEPTOR_REGISTRY.read();
+    for (_, entry) in registry.iter() {
         if !entry.channels.iter().any(|c| c == &channel) {
-            return true;
+            continue;
         }
 
         if let Some(docs) = &filter.documents
             && !docs.iter().any(|d| d.as_slice() == entry.doc_id.as_bytes())
         {
-            return true;
+            continue;
         }
 
         if let Some(docs) = &entry.source_documents
             && !docs.iter().any(|d| d.as_slice() == api.doc_id.as_bytes())
         {
-            return true;
+            continue;
         }
 
         if validate_firewall(&api.doc_id, &entry.doc_id, Channel::EventWrite).is_err() {
-            return true;
+            continue;
         }
 
         let sender_scope = match (&emitter_spatial, &entry.scope) {
             (None, ReceptorScope::Global) => SenderScope::Global,
-            (None, ReceptorScope::Spatial { .. }) => return true,
+            (None, ReceptorScope::Spatial { .. }) => continue,
             (Some((abs, _, _)), ReceptorScope::Global) => SenderScope::Spatial {
                 distance: 0.0,
                 node: abs.clone(),
@@ -112,16 +116,18 @@ pub fn emit(
                 },
             ) => {
                 let Some(e_pos) = emitter_pos else {
-                    return true;
+                    continue;
                 };
-                let Some(r_pos) =
-                    NODE_TRANSFORM_REGISTRY.read_sync(receptor_node, |_, s| s.global.translation())
+                let Some(r_pos) = NODE_TRANSFORM_REGISTRY
+                    .read()
+                    .get(receptor_node)
+                    .map(|s| s.global.translation())
                 else {
-                    return true;
+                    continue;
                 };
                 let dist = (*e_pos - r_pos).length();
                 if dist > *emitter_radius || dist > *receptor_radius {
-                    return true;
+                    continue;
                 }
                 SenderScope::Spatial {
                     distance: dist,
@@ -137,8 +143,7 @@ pub fn emit(
             sender_scope,
             time,
         });
-        true
-    });
+    }
 
     Ok(())
 }
@@ -169,18 +174,16 @@ pub fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::
         .receptors
         .insert(EventReceptorRes { rx });
 
-    EVENT_RECEPTOR_REGISTRY
-        .insert_sync(
-            id,
-            ReceptorEntry {
-                channels,
-                doc_id: api.doc_id,
-                scope,
-                source_documents: filter.documents,
-                tx,
-            },
-        )
-        .ok();
+    EVENT_RECEPTOR_REGISTRY.write().insert(
+        id,
+        ReceptorEntry {
+            channels,
+            doc_id: api.doc_id,
+            scope,
+            source_documents: filter.documents,
+            tx,
+        },
+    );
 
     Ok(id)
 }
@@ -199,7 +202,7 @@ pub fn receptor_poll(api: &Api, rep: u32) -> anyhow::Result<Option<InboundEvent>
 }
 
 pub fn receptor_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
-    EVENT_RECEPTOR_REGISTRY.remove_sync(&rep);
+    EVENT_RECEPTOR_REGISTRY.write().remove(&rep);
     api.wired_event.try_lock()?.receptors.remove(rep);
     Ok(())
 }

@@ -10,8 +10,8 @@ use xdid::core::did::Did;
 
 use crate::runtime::shared::registry::transform::{AbsoluteNodeId, RegisterTransforms};
 
-pub static AGENT_REGISTRY: LazyLock<scc::HashMap<AgentKey, AgentProxies>> =
-    LazyLock::new(scc::HashMap::default);
+pub static AGENT_REGISTRY: LazyLock<parking_lot::RwLock<HashMap<AgentKey, AgentProxies>>> =
+    LazyLock::new(|| parking_lot::RwLock::new(HashMap::new()));
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum AgentKey {
@@ -53,7 +53,7 @@ pub fn spawn_proxy_nodes(
     mut commands: Commands,
 ) {
     for (key, avatar_ent, camera_ent) in agents {
-        if AGENT_REGISTRY.contains_sync(&key.0) {
+        if AGENT_REGISTRY.read().contains_key(&key.0) {
             continue;
         }
 
@@ -90,9 +90,7 @@ pub fn spawn_proxy_nodes(
         }
 
         info!("Registering agent: {:?}", key.0);
-        if AGENT_REGISTRY.insert_sync(key.0.clone(), proxies).is_err() {
-            error!("Failed to insert agent proxies into registry");
-        }
+        AGENT_REGISTRY.write().insert(key.0.clone(), proxies);
     }
 }
 
@@ -109,6 +107,6 @@ fn gen_proxy_id() -> AbsoluteNodeId {
 
 pub fn deregister_agents(trigger: On<Remove, RegisterAgent>, ids: Query<&RegisterAgent>) {
     let id = ids.get(trigger.entity).expect("id");
-    let _ = AGENT_REGISTRY.remove_sync(&id.0);
+    AGENT_REGISTRY.write().remove(&id.0);
     // Proxies will be cleaned up automatically on agent despawn.
 }

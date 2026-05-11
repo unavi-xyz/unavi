@@ -118,11 +118,12 @@ pub fn set_name(api: &Api, rep: u32, value: Option<String>) -> anyhow::Result<()
 pub fn translation(api: &Api, rep: u32) -> anyhow::Result<[f32; 3]> {
     let node = get_node(api, rep)?;
     let tr = NODE_TRANSFORM_REGISTRY
-        .get_sync(&AbsoluteNodeId {
+        .read()
+        .get(&AbsoluteNodeId {
             doc: node.doc_id,
             node: node.id,
         })
-        .map(|v| v.get().local)
+        .map(|v| v.local)
         .unwrap_or_default();
     Ok(tr.translation.to_array())
 }
@@ -140,15 +141,12 @@ pub fn set_translation(api: &Api, rep: u32, value: [f32; 3]) -> anyhow::Result<(
     data.translation = Some(value.iter().map(|&v| f64::from(v)).collect());
     data.reconcile(&meta)?;
 
-    NODE_TRANSFORM_REGISTRY.update_sync(
-        &AbsoluteNodeId {
-            doc: node.doc_id,
-            node: node.id,
-        },
-        |_, v| {
-            v.local.translation = Vec3::from_array(value);
-        },
-    );
+    if let Some(v) = NODE_TRANSFORM_REGISTRY.write().get_mut(&AbsoluteNodeId {
+        doc: node.doc_id,
+        node: node.id,
+    }) {
+        v.local.translation = Vec3::from_array(value);
+    }
 
     Ok(())
 }
@@ -156,11 +154,12 @@ pub fn set_translation(api: &Api, rep: u32, value: [f32; 3]) -> anyhow::Result<(
 pub fn rotation(api: &Api, rep: u32) -> anyhow::Result<[f32; 4]> {
     let node = get_node(api, rep)?;
     let ro = NODE_TRANSFORM_REGISTRY
-        .get_sync(&AbsoluteNodeId {
+        .read()
+        .get(&AbsoluteNodeId {
             doc: node.doc_id,
             node: node.id,
         })
-        .map(|v| v.get().local)
+        .map(|v| v.local)
         .unwrap_or_default();
     let q = ro.rotation;
     Ok([q.x, q.y, q.z, q.w])
@@ -179,15 +178,12 @@ pub fn set_rotation(api: &Api, rep: u32, value: [f32; 4]) -> anyhow::Result<()> 
     data.rotation = Some(value.iter().map(|&v| f64::from(v)).collect());
     data.reconcile(&meta)?;
 
-    NODE_TRANSFORM_REGISTRY.update_sync(
-        &AbsoluteNodeId {
-            doc: node.doc_id,
-            node: node.id,
-        },
-        |_, v| {
-            v.local.rotation = Quat::from_array(value);
-        },
-    );
+    if let Some(v) = NODE_TRANSFORM_REGISTRY.write().get_mut(&AbsoluteNodeId {
+        doc: node.doc_id,
+        node: node.id,
+    }) {
+        v.local.rotation = Quat::from_array(value);
+    }
 
     Ok(())
 }
@@ -195,11 +191,12 @@ pub fn set_rotation(api: &Api, rep: u32, value: [f32; 4]) -> anyhow::Result<()> 
 pub fn scale(api: &Api, rep: u32) -> anyhow::Result<[f32; 3]> {
     let node = get_node(api, rep)?;
     let sc = NODE_TRANSFORM_REGISTRY
-        .get_sync(&AbsoluteNodeId {
+        .read()
+        .get(&AbsoluteNodeId {
             doc: node.doc_id,
             node: node.id,
         })
-        .map(|v| v.get().local)
+        .map(|v| v.local)
         .unwrap_or_default();
     Ok(sc.scale.to_array())
 }
@@ -217,15 +214,12 @@ pub fn set_scale(api: &Api, rep: u32, value: [f32; 3]) -> anyhow::Result<()> {
     data.scale = Some(value.iter().map(|&v| f64::from(v)).collect());
     data.reconcile(&meta)?;
 
-    NODE_TRANSFORM_REGISTRY.update_sync(
-        &AbsoluteNodeId {
-            doc: node.doc_id,
-            node: node.id,
-        },
-        |_, v| {
-            v.local.scale = Vec3::from_array(value);
-        },
-    );
+    if let Some(v) = NODE_TRANSFORM_REGISTRY.write().get_mut(&AbsoluteNodeId {
+        doc: node.doc_id,
+        node: node.id,
+    }) {
+        v.local.scale = Vec3::from_array(value);
+    }
 
     Ok(())
 }
@@ -233,11 +227,12 @@ pub fn set_scale(api: &Api, rep: u32, value: [f32; 3]) -> anyhow::Result<()> {
 pub fn transform(api: &Api, rep: u32) -> anyhow::Result<NodeTransform> {
     let node = get_node(api, rep)?;
     let local = NODE_TRANSFORM_REGISTRY
-        .get_sync(&AbsoluteNodeId {
+        .read()
+        .get(&AbsoluteNodeId {
             doc: node.doc_id,
             node: node.id,
         })
-        .map(|v| v.get().local)
+        .map(|v| v.local)
         .unwrap_or_default();
     let q = local.rotation;
     Ok(NodeTransform {
@@ -262,17 +257,14 @@ pub fn set_transform(api: &Api, rep: u32, value: NodeTransform) -> anyhow::Resul
     data.scale = Some(value.scale.iter().map(|&v| f64::from(v)).collect());
     data.reconcile(&meta)?;
 
-    NODE_TRANSFORM_REGISTRY.update_sync(
-        &AbsoluteNodeId {
-            doc: node.doc_id,
-            node: node.id,
-        },
-        |_, v| {
-            v.local.translation = Vec3::from_array(value.translation);
-            v.local.rotation = Quat::from_array(value.rotation);
-            v.local.scale = Vec3::from_array(value.scale);
-        },
-    );
+    if let Some(v) = NODE_TRANSFORM_REGISTRY.write().get_mut(&AbsoluteNodeId {
+        doc: node.doc_id,
+        node: node.id,
+    }) {
+        v.local.translation = Vec3::from_array(value.translation);
+        v.local.rotation = Quat::from_array(value.rotation);
+        v.local.scale = Vec3::from_array(value.scale);
+    }
 
     Ok(())
 }
@@ -284,7 +276,9 @@ pub fn global_transform(api: &Api, rep: u32) -> anyhow::Result<NodeTransform> {
         node: node.id,
     };
     let snapshot = NODE_TRANSFORM_REGISTRY
-        .read_sync(&key, |_, v| v.clone())
+        .read()
+        .get(&key)
+        .cloned()
         .unwrap_or_default();
     let (sc, ro, tr) = snapshot.global.to_scale_rotation_translation();
     Ok(NodeTransform {

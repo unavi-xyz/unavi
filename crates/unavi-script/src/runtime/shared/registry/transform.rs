@@ -1,12 +1,13 @@
-use std::sync::LazyLock;
+use std::{collections::HashMap, sync::LazyLock};
 
 use bevy::prelude::*;
 use bevy_hsd::{HsdChild, HsdRecordId, NodeId};
 use blake3::Hash;
 use loro::TreeID;
+use parking_lot::RwLock;
 
-pub static NODE_TRANSFORM_REGISTRY: LazyLock<scc::HashMap<AbsoluteNodeId, TransformSnapshot>> =
-    LazyLock::new(scc::HashMap::default);
+pub static NODE_TRANSFORM_REGISTRY: LazyLock<RwLock<HashMap<AbsoluteNodeId, TransformSnapshot>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 #[derive(Clone, Hash, PartialEq, Eq)]
 pub struct AbsoluteNodeId {
@@ -48,7 +49,7 @@ pub fn register_nodes(
 
 pub fn snapshot_transforms(transforms: Query<(&RegisterTransforms, &GlobalTransform, &Transform)>) {
     for (id, global, local) in transforms {
-        NODE_TRANSFORM_REGISTRY.upsert_sync(
+        NODE_TRANSFORM_REGISTRY.write().insert(
             id.0.clone(),
             TransformSnapshot {
                 global: *global,
@@ -63,5 +64,5 @@ pub fn deregister_transforms(
     ids: Query<&RegisterTransforms>,
 ) {
     let id = ids.get(trigger.entity).expect("id");
-    NODE_TRANSFORM_REGISTRY.remove_sync(&id.0);
+    NODE_TRANSFORM_REGISTRY.write().remove(&id.0);
 }

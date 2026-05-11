@@ -2,7 +2,7 @@ use bevy::{
     log::{DEFAULT_FILTER, LogPlugin},
     prelude::*,
 };
-use bevy_hsd::instance::InstanceHsd;
+use bevy_hsd::load::{LoadHsd, on_load_spawn_doc};
 use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use bevy_wds::{LocalActor, LocalBlobs};
 use unavi_script::permissions::{ApiName, ApiPermissions};
@@ -58,7 +58,11 @@ fn init_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let handle = asset_server.load(SCRIPT_PATH);
     commands.spawn((
-        InstanceHsd(handle),
+        LoadHsd {
+            handle,
+            extra_schemas: None,
+            on_load: Some(Box::new(on_load_spawn_doc)),
+        },
         ApiPermissions::default().with(ApiName::InputContext),
     ));
 }

@@ -13935,6 +13935,7 @@ dependencies = [
  "web-sys",
  "web-time",
  "winit",
+ "wired-schemas",
  "xdid",
  "zeroize",
 ]

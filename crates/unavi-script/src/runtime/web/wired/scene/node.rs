@@ -7,7 +7,11 @@ use crate::runtime::shared::{
     wired::scene::node::{NodeCollider, NodeRigidBody},
 };
 
-use super::{material::MaterialHandle, mesh::MeshHandle, util::opt_rep};
+use super::{
+    material::MaterialHandle,
+    mesh::MeshHandle,
+    util::{js_to_quat, js_to_vec3, opt_rep, quat_to_js, vec3_to_js},
+};
 
 #[wasm_bindgen]
 pub struct NodeHandle {
@@ -57,124 +61,95 @@ impl NodeHandle {
     pub fn translation(&self) -> JsValue {
         let [x, y, z] =
             shared::wired::scene::node::translation(&self.api, self.rep).unwrap_or_default();
-        js_sys::Array::of3(&x.into(), &y.into(), &z.into()).into()
+        vec3_to_js(x, y, z)
     }
 
     #[wasm_bindgen(js_name = "setTranslation")]
     pub fn set_translation(&self, value: JsValue) -> Result<(), String> {
-        let arr = js_sys::Array::from(&value);
-        let x = arr.get(0).as_f64().unwrap_or(0.0) as f32;
-        let y = arr.get(1).as_f64().unwrap_or(0.0) as f32;
-        let z = arr.get(2).as_f64().unwrap_or(0.0) as f32;
-        shared::wired::scene::node::set_translation(&self.api, self.rep, [x, y, z])
-            .map_err(|e| e.to_string())
+        shared::wired::scene::node::set_translation(
+            &self.api,
+            self.rep,
+            js_to_vec3(&value, [0.0; 3]),
+        )
+        .map_err(|e| e.to_string())
     }
 
     pub fn rotation(&self) -> JsValue {
         let [x, y, z, w] =
             shared::wired::scene::node::rotation(&self.api, self.rep).unwrap_or_default();
-        js_sys::Array::of4(&x.into(), &y.into(), &z.into(), &w.into()).into()
+        quat_to_js(x, y, z, w)
     }
 
     #[wasm_bindgen(js_name = "setRotation")]
     pub fn set_rotation(&self, value: JsValue) -> Result<(), String> {
-        let arr = js_sys::Array::from(&value);
-        let x = arr.get(0).as_f64().unwrap_or(0.0) as f32;
-        let y = arr.get(1).as_f64().unwrap_or(0.0) as f32;
-        let z = arr.get(2).as_f64().unwrap_or(0.0) as f32;
-        let w = arr.get(3).as_f64().unwrap_or(1.0) as f32;
-        shared::wired::scene::node::set_rotation(&self.api, self.rep, [x, y, z, w])
-            .map_err(|e| e.to_string())
+        shared::wired::scene::node::set_rotation(
+            &self.api,
+            self.rep,
+            js_to_quat(&value, [0.0, 0.0, 0.0, 1.0]),
+        )
+        .map_err(|e| e.to_string())
     }
 
     pub fn scale(&self) -> JsValue {
         let [x, y, z] = shared::wired::scene::node::scale(&self.api, self.rep).unwrap_or_default();
-        js_sys::Array::of3(&x.into(), &y.into(), &z.into()).into()
+        vec3_to_js(x, y, z)
     }
 
     #[wasm_bindgen(js_name = "setScale")]
     pub fn set_scale(&self, value: JsValue) -> Result<(), String> {
-        let arr = js_sys::Array::from(&value);
-        let x = arr.get(0).as_f64().unwrap_or(1.0) as f32;
-        let y = arr.get(1).as_f64().unwrap_or(1.0) as f32;
-        let z = arr.get(2).as_f64().unwrap_or(1.0) as f32;
-        shared::wired::scene::node::set_scale(&self.api, self.rep, [x, y, z])
-            .map_err(|e| e.to_string())
+        shared::wired::scene::node::set_scale(
+            &self.api,
+            self.rep,
+            js_to_vec3(&value, [1.0; 3]),
+        )
+        .map_err(|e| e.to_string())
+    }
+
+    fn make_transform_js(t: &shared::wired::scene::node::NodeTransform) -> JsValue {
+        let obj = js_sys::Object::new();
+        js_sys::Reflect::set(
+            &obj,
+            &"translation".into(),
+            &vec3_to_js(t.translation[0], t.translation[1], t.translation[2]),
+        )
+        .ok();
+        js_sys::Reflect::set(
+            &obj,
+            &"rotation".into(),
+            &quat_to_js(t.rotation[0], t.rotation[1], t.rotation[2], t.rotation[3]),
+        )
+        .ok();
+        js_sys::Reflect::set(
+            &obj,
+            &"scale".into(),
+            &vec3_to_js(t.scale[0], t.scale[1], t.scale[2]),
+        )
+        .ok();
+        obj.into()
     }
 
     pub fn transform(&self) -> JsValue {
         let t = shared::wired::scene::node::transform(&self.api, self.rep).unwrap_or_default();
-        let obj = js_sys::Object::new();
-        let tr = js_sys::Array::of3(
-            &t.translation[0].into(),
-            &t.translation[1].into(),
-            &t.translation[2].into(),
-        );
-        let ro = js_sys::Array::of4(
-            &t.rotation[0].into(),
-            &t.rotation[1].into(),
-            &t.rotation[2].into(),
-            &t.rotation[3].into(),
-        );
-        let sc = js_sys::Array::of3(&t.scale[0].into(), &t.scale[1].into(), &t.scale[2].into());
-        js_sys::Reflect::set(&obj, &"translation".into(), &tr).ok();
-        js_sys::Reflect::set(&obj, &"rotation".into(), &ro).ok();
-        js_sys::Reflect::set(&obj, &"scale".into(), &sc).ok();
-        obj.into()
+        Self::make_transform_js(&t)
     }
 
     #[wasm_bindgen(js_name = "setTransform")]
     pub fn set_transform(&self, value: JsValue) -> Result<(), String> {
-        let tr_js = js_sys::Reflect::get(&value, &"translation".into()).unwrap_or_default();
-        let ro_js = js_sys::Reflect::get(&value, &"rotation".into()).unwrap_or_default();
-        let sc_js = js_sys::Reflect::get(&value, &"scale".into()).unwrap_or_default();
-
-        let tr = js_sys::Array::from(&tr_js);
-        let ro = js_sys::Array::from(&ro_js);
-        let sc = js_sys::Array::from(&sc_js);
-
+        let get = |k: &str| js_sys::Reflect::get(&value, &k.into()).unwrap_or_default();
         let t = shared::wired::scene::node::NodeTransform {
-            translation: [
-                tr.get(0).as_f64().unwrap_or(0.0) as f32,
-                tr.get(1).as_f64().unwrap_or(0.0) as f32,
-                tr.get(2).as_f64().unwrap_or(0.0) as f32,
-            ],
-            rotation: [
-                ro.get(0).as_f64().unwrap_or(0.0) as f32,
-                ro.get(1).as_f64().unwrap_or(0.0) as f32,
-                ro.get(2).as_f64().unwrap_or(0.0) as f32,
-                ro.get(3).as_f64().unwrap_or(1.0) as f32,
-            ],
-            scale: [
-                sc.get(0).as_f64().unwrap_or(1.0) as f32,
-                sc.get(1).as_f64().unwrap_or(1.0) as f32,
-                sc.get(2).as_f64().unwrap_or(1.0) as f32,
-            ],
+            translation: js_to_vec3(&get("translation"), [0.0; 3]),
+            rotation: js_to_quat(&get("rotation"), [0.0, 0.0, 0.0, 1.0]),
+            scale: js_to_vec3(&get("scale"), [1.0; 3]),
         };
-        shared::wired::scene::node::set_transform(&self.api, self.rep, t).map_err(|e| e.to_string())
+        shared::wired::scene::node::set_transform(&self.api, self.rep, t)
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "globalTransform")]
     pub fn global_transform(&self) -> JsValue {
         let t =
             shared::wired::scene::node::global_transform(&self.api, self.rep).unwrap_or_default();
-        let obj = js_sys::Object::new();
-        let tr = js_sys::Array::of3(
-            &t.translation[0].into(),
-            &t.translation[1].into(),
-            &t.translation[2].into(),
-        );
-        let ro = js_sys::Array::of4(
-            &t.rotation[0].into(),
-            &t.rotation[1].into(),
-            &t.rotation[2].into(),
-            &t.rotation[3].into(),
-        );
-        let sc = js_sys::Array::of3(&t.scale[0].into(), &t.scale[1].into(), &t.scale[2].into());
-        js_sys::Reflect::set(&obj, &"translation".into(), &tr).ok();
-        js_sys::Reflect::set(&obj, &"rotation".into(), &ro).ok();
-        js_sys::Reflect::set(&obj, &"scale".into(), &sc).ok();
-        obj.into()
+        Self::make_transform_js(&t)
     }
 
     pub fn parent(&self) -> Option<Self> {
@@ -230,43 +205,46 @@ impl NodeHandle {
         let Ok(Some(c)) = shared::wired::scene::node::collider(&self.api, self.rep).await else {
             return JsValue::NULL;
         };
-        let obj = js_sys::Object::new();
-        let set = |k: &str, v: JsValue| js_sys::Reflect::set(&obj, &k.into(), &v).ok();
+        let variant = |tag: &str, val: JsValue| {
+            let obj = js_sys::Object::new();
+            js_sys::Reflect::set(&obj, &"tag".into(), &tag.into()).ok();
+            js_sys::Reflect::set(&obj, &"val".into(), &val).ok();
+            JsValue::from(obj)
+        };
+        let record2 = |k1: &str, v1: f32, k2: &str, v2: f32| {
+            let obj = js_sys::Object::new();
+            js_sys::Reflect::set(&obj, &k1.into(), &v1.into()).ok();
+            js_sys::Reflect::set(&obj, &k2.into(), &v2.into()).ok();
+            JsValue::from(obj)
+        };
         match c {
             NodeCollider::Capsule { height, radius } => {
-                set("type", "capsule".into());
-                set("height", height.into());
-                set("radius", radius.into());
+                variant("capsule", record2("height", height, "radius", radius))
             }
             NodeCollider::ConvexHull(points) => {
-                set("type", "convex-hull".into());
                 let arr: js_sys::Float32Array = points.as_slice().into();
-                set("points", arr.into());
+                variant("convex-hull", arr.into())
             }
             NodeCollider::Cuboid([x, y, z]) => {
-                set("type", "cuboid".into());
-                set("x", x.into());
-                set("y", y.into());
-                set("z", z.into());
+                let val = js_sys::Object::new();
+                js_sys::Reflect::set(&val, &"x".into(), &x.into()).ok();
+                js_sys::Reflect::set(&val, &"y".into(), &y.into()).ok();
+                js_sys::Reflect::set(&val, &"z".into(), &z.into()).ok();
+                variant("cuboid", val.into())
             }
             NodeCollider::Cylinder { height, radius } => {
-                set("type", "cylinder".into());
-                set("height", height.into());
-                set("radius", radius.into());
+                variant("cylinder", record2("height", height, "radius", radius))
             }
-            NodeCollider::Sphere(radius) => {
-                set("type", "sphere".into());
-                set("radius", radius.into());
-            }
+            NodeCollider::Sphere(radius) => variant("sphere", radius.into()),
             NodeCollider::Trimesh { indices, vertices } => {
-                set("type", "trimesh".into());
                 let idx: js_sys::Uint32Array = indices.as_slice().into();
                 let verts: js_sys::Float32Array = vertices.as_slice().into();
-                set("indices", idx.into());
-                set("vertices", verts.into());
+                let val = js_sys::Object::new();
+                js_sys::Reflect::set(&val, &"indices".into(), &idx.into()).ok();
+                js_sys::Reflect::set(&val, &"vertices".into(), &verts.into()).ok();
+                variant("trimesh", val.into())
             }
         }
-        obj.into()
     }
 
     #[wasm_bindgen(js_name = "setCollider")]
@@ -276,31 +254,46 @@ impl NodeHandle {
                 .await
                 .map_err(|e| e.to_string());
         }
-        let get_f32 = |k: &str| {
-            js_sys::Reflect::get(&value, &k.into())
+        let tag = js_sys::Reflect::get(&value, &"tag".into())
+            .ok()
+            .and_then(|v| v.as_string())
+            .unwrap_or_default();
+        let val = js_sys::Reflect::get(&value, &"val".into()).unwrap_or_default();
+        let get_f32 = |obj: &JsValue, k: &str| {
+            js_sys::Reflect::get(obj, &k.into())
                 .ok()
                 .and_then(|v| v.as_f64())
                 .unwrap_or(0.0) as f32
         };
-        let kind = js_sys::Reflect::get(&value, &"type".into())
-            .ok()
-            .and_then(|v| v.as_string())
-            .unwrap_or_default();
-        let c = match kind.as_str() {
+        let c = match tag.as_str() {
             "capsule" => Some(NodeCollider::Capsule {
-                height: get_f32("height"),
-                radius: get_f32("radius"),
+                height: get_f32(&val, "height"),
+                radius: get_f32(&val, "radius"),
             }),
+            "convex-hull" => {
+                Some(NodeCollider::ConvexHull(js_sys::Float32Array::new(&val).to_vec()))
+            }
             "cuboid" => Some(NodeCollider::Cuboid([
-                get_f32("x"),
-                get_f32("y"),
-                get_f32("z"),
+                get_f32(&val, "x"),
+                get_f32(&val, "y"),
+                get_f32(&val, "z"),
             ])),
             "cylinder" => Some(NodeCollider::Cylinder {
-                height: get_f32("height"),
-                radius: get_f32("radius"),
+                height: get_f32(&val, "height"),
+                radius: get_f32(&val, "radius"),
             }),
-            "sphere" => Some(NodeCollider::Sphere(get_f32("radius"))),
+            "sphere" => Some(NodeCollider::Sphere(val.as_f64().unwrap_or(0.0) as f32)),
+            "trimesh" => {
+                let indices = js_sys::Uint32Array::new(
+                    &js_sys::Reflect::get(&val, &"indices".into()).unwrap_or_default(),
+                )
+                .to_vec();
+                let vertices = js_sys::Float32Array::new(
+                    &js_sys::Reflect::get(&val, &"vertices".into()).unwrap_or_default(),
+                )
+                .to_vec();
+                Some(NodeCollider::Trimesh { indices, vertices })
+            }
             _ => None,
         };
         shared::wired::scene::node::set_collider(&self.api, self.rep, c)

@@ -73,8 +73,7 @@ impl Plugin for UnaviPlugin {
                     ..default()
                 }),
                 ..default()
-            })
-            .disable::<WebAssetPlugin>();
+            });
 
         cfg_select! {
             target_family = "wasm" => {
@@ -88,7 +87,8 @@ impl Plugin for UnaviPlugin {
                 let default_plugins = default_plugins.set(AssetPlugin {
                     file_path: assets::assets_dir().to_string_lossy().to_string(),
                     ..default()
-                });
+                })
+                .disable::<WebAssetPlugin>();
                 if self.xr {
                     app.add_plugins((
                         bevy_mod_openxr::add_xr_plugins(default_plugins),

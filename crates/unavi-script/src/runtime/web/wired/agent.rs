@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
+use bevy_vrm::BoneName;
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::{
     Runtime,
-    shared::{self, Api, wired::agent::BoneName},
+    shared::{self, Api},
 };
 
 use super::scene::node::NodeHandle;

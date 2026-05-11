@@ -24,7 +24,7 @@ pub fn respawn(
     *ang_vel = AngularVelocity::default();
 
     // For now, just use origin as respawn point.
-    tr.translation = Vec3::default();
+    tr.translation = Vec3::new(0.0, 0.2, 0.0);
 }
 
 const VOID_LEVEL: f32 = -512.0;

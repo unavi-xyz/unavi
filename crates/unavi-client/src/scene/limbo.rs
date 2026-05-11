@@ -5,6 +5,10 @@ use bevy::{
     math::Affine2,
     prelude::*,
 };
+use bevy_hsd::HsdDoc;
+use unavi_space::Space;
+
+use crate::scene::SceneState;
 
 const PLANE_SIZE: f32 = 2048.0;
 const TEXTURE_SIZE: f32 = 16.0;
@@ -56,4 +60,24 @@ pub fn despawn_limbo(limbo: Query<Entity, With<Limbo>>, mut commands: Commands) 
     for entity in limbo {
         commands.entity(entity).despawn();
     }
+}
+
+pub fn exit_limbo_on_space_join(
+    trigger: On<Add, HsdDoc>,
+    spaces: Query<(), With<Space>>,
+    state: Res<State<SceneState>>,
+    mut next: ResMut<NextState<SceneState>>,
+) {
+    if !matches!(state.get(), SceneState::Limbo) {
+        return;
+    }
+
+    if !spaces.contains(trigger.entity) {
+        return;
+    }
+
+    // TODO track asset loads within space to ensure all blobs are downloaded
+
+    info!("Space loaded, exiting limbo");
+    next.set(SceneState::Space);
 }

@@ -8,7 +8,7 @@ use unavi_util::async_commands::AsyncCommands;
 use wired_schemas::{SCHEMA_HOME, SCHEMA_SPACE};
 
 pub fn join_home(asset_server: Res<AssetServer>, mut commands: Commands) {
-    let handle = asset_server.load("hsd/default_home_space.hsd");
+    let handle = asset_server.load("hsd/unavi_default_home.hsd");
     commands.spawn(LoadHsd {
         handle,
         extra_schemas: Some(vec![
@@ -33,6 +33,7 @@ pub fn join_home(asset_server: Res<AssetServer>, mut commands: Commands) {
 
 #[must_use]
 pub fn on_load_spawn_space(ctx: OnLoadCtx) -> BoxedFuture<'static, anyhow::Result<()>> {
+    info!(id = %ctx.record_id, "Joining home");
     Box::pin(async move {
         AsyncCommands::default()
             .push(move |world: &mut World| {

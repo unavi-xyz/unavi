@@ -10,7 +10,7 @@ use tokio::sync::oneshot;
 
 use crate::Space;
 
-const SPACE_TTL: Duration = Duration::from_hours(24 * 7);
+const SPACE_TTL: Duration = Duration::from_hours(7 * 24);
 
 #[derive(Component)]
 pub struct PendingScene {
@@ -19,9 +19,10 @@ pub struct PendingScene {
 }
 
 pub fn spawn_space_scene(trigger: On<Add, Space>, spaces: Query<&Space>, mut commands: Commands) {
-    let space = spaces.get(trigger.entity).map(|v| v.0).expect("space");
+    let id = spaces.get(trigger.entity).map(|v| v.0).expect("space");
+    info!(%id, "Reading space");
 
-    let (mut event, rx, cancel) = ReadRecord::new(space);
+    let (mut event, rx, cancel) = ReadRecord::new(id);
     event.ttl = Some(SPACE_TTL);
     event.retries = 5;
     commands.trigger(event);

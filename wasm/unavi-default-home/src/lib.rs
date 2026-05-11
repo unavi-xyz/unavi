@@ -45,6 +45,8 @@ impl ScriptBehavior for Script {
         //     root.set_translation(Vec3::new(0.0, 0.0, -GROUND_SIZE / 3.0));
         // }
 
+        println!("Welcome home! =)");
+
         Self
     }
 }

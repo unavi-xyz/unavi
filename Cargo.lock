@@ -1092,6 +1092,7 @@ dependencies = [
  "tokio",
  "unavi-util",
  "wds",
+ "xdid",
 ]
 
 [[package]]

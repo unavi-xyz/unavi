@@ -51,6 +51,7 @@ pub fn instantiate_scripts(
                 wired_event: Default::default(),
                 wired_input: Default::default(),
                 wired_scene: Default::default(),
+                wired_wds: Default::default(),
             }),
         };
 

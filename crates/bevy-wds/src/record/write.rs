@@ -76,6 +76,7 @@ pub(crate) fn on_write_record(mut req: On<WriteRecord>, actor: Query<(&LocalActo
             let cancel_fut = async move {
                 match cancel {
                     Some(rx) => {
+                        info!(?id, "Cancelling");
                         rx.await.ok();
                     }
                     None => std::future::pending::<()>().await,

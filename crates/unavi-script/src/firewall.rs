@@ -1,11 +1,15 @@
-use std::{collections::HashSet, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use bevy::prelude::*;
 use blake3::Hash;
+use parking_lot::RwLock;
 
 /// Firewall controls how a document may communicate with other documents.
 #[derive(Component, Clone, Default, Deref)]
-pub struct Firewall(pub Arc<scc::HashMap<Channel, Access>>);
+pub struct Firewall(pub Arc<RwLock<HashMap<Channel, Access>>>);
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
 pub enum Channel {
@@ -40,30 +44,23 @@ impl Access {
 impl Firewall {
     #[must_use]
     pub fn default_space() -> Self {
-        let map = scc::HashMap::new();
-        map.insert_sync(Channel::EventRead, Access::Open)
-            .expect("insert");
-        map.insert_sync(Channel::EventWrite, Access::Open)
-            .expect("insert");
-        map.insert_sync(Channel::SceneRead, Access::Open)
-            .expect("insert");
-        Self(Arc::new(map))
+        let mut map = HashMap::new();
+        map.insert(Channel::EventRead, Access::Open);
+        map.insert(Channel::EventWrite, Access::Open);
+        map.insert(Channel::SceneRead, Access::Open);
+        Self(Arc::new(RwLock::new(map)))
     }
 
     #[must_use]
     pub fn for_child_doc(creator_id: Hash) -> Self {
-        let map = scc::HashMap::new();
-        map.insert_sync(Channel::EventRead, Access::Open)
-            .expect("insert");
-        map.insert_sync(Channel::EventWrite, Access::Open)
-            .expect("insert");
-        map.insert_sync(Channel::SceneRead, Access::Open)
-            .expect("insert");
-        map.insert_sync(
+        let mut map = HashMap::new();
+        map.insert(Channel::EventRead, Access::Open);
+        map.insert(Channel::EventWrite, Access::Open);
+        map.insert(Channel::SceneRead, Access::Open);
+        map.insert(
             Channel::SceneWrite,
             Access::Restricted(HashSet::from([creator_id])),
-        )
-        .expect("insert");
-        Self(Arc::new(map))
+        );
+        Self(Arc::new(RwLock::new(map)))
     }
 }

@@ -29,7 +29,7 @@ parking_lot.workspace = true
 postcard.workspace    = true
 rand.workspace        = true
 rusqlite              = { features = ["bundled"], version = "0.39" }
-scc.workspace         = true
+scc                   = "3.6.12"
 serde.workspace       = true
 signature             = "2.2.0"
 smol_str              = "0.3.6"

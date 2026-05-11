@@ -25,38 +25,46 @@ pub fn local_agent(api: &Api) -> anyhow::Result<u32> {
 }
 
 pub fn local_camera(api: &Api) -> anyhow::Result<u32> {
-    let entry = AGENT_REGISTRY
-        .get_sync(&AgentKey::Local)
+    let guard = AGENT_REGISTRY.read();
+    let entry = guard
+        .get(&AgentKey::Local)
         .ok_or_else(|| anyhow::anyhow!("agent entry not found"))?;
     let id = entry
         .camera
         .as_ref()
         .ok_or_else(|| anyhow::anyhow!("camera proxy not found"))?;
+    let (doc_id, node_id) = (id.doc, id.node.clone());
+    drop(guard);
     let rep = api.wired_scene.try_lock()?.nodes.insert(NodeRes {
         doc: Arc::default(),
-        doc_id: id.doc,
-        id: id.node,
+        doc_id,
+        id: node_id,
         is_proxy: true,
     });
     Ok(rep)
 }
 
 pub fn bone(api: &Api, rep: u32, name: BoneName) -> anyhow::Result<Option<u32>> {
-    let wired_agent = api.wired_agent.try_lock()?;
-    let res = wired_agent
-        .agents
-        .get(rep)
-        .ok_or_else(|| anyhow::anyhow!("resource not found"))?;
-    let entry = AGENT_REGISTRY
-        .get_sync(&res.key)
+    let key = {
+        let wired_agent = api.wired_agent.try_lock()?;
+        wired_agent
+            .agents
+            .get(rep)
+            .ok_or_else(|| anyhow::anyhow!("resource not found"))?
+            .key
+            .clone()
+    };
+    let guard = AGENT_REGISTRY.read();
+    let entry = guard
+        .get(&key)
         .ok_or_else(|| anyhow::anyhow!("agent entry not found"))?;
-    drop(wired_agent);
-
     if let Some(id) = entry.bones.get(&name) {
+        let (doc_id, node_id) = (id.doc, id.node.clone());
+        drop(guard);
         let rep = api.wired_scene.try_lock()?.nodes.insert(NodeRes {
             doc: Arc::default(),
-            doc_id: id.doc,
-            id: id.node,
+            doc_id,
+            id: node_id,
             is_proxy: true,
         });
         Ok(Some(rep))

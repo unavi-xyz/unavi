@@ -67,7 +67,6 @@ postcard             = { features = ["experimental-derive", "use-std"], version 
 rand                 = "0.9.2"
 reqwest              = "0.13.2"
 ron                  = "0.12.1"
-scc                  = "3.6.12"
 serde                = "1.0.228"
 serde_with           = "3.18.0"
 smol_str             = { features = ["serde"], version = "0.3.6" }

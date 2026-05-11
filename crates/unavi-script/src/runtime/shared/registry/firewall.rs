@@ -1,13 +1,14 @@
-use std::sync::LazyLock;
+use std::{collections::HashMap, sync::LazyLock};
 
 use bevy::prelude::*;
 use bevy_hsd::HsdRecordId;
 use blake3::Hash;
+use parking_lot::RwLock;
 
 use crate::firewall::{Channel, Firewall};
 
-pub static FIREWALL_REGISTRY: LazyLock<scc::HashMap<Hash, Firewall>> =
-    LazyLock::new(scc::HashMap::default);
+pub static FIREWALL_REGISTRY: LazyLock<RwLock<HashMap<Hash, Firewall>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 static DEFAULT_FIREWALL: LazyLock<Firewall> = LazyLock::new(Firewall::default);
 
@@ -24,15 +25,14 @@ pub fn register_docs(
         return;
     };
 
-    if FIREWALL_REGISTRY.contains_sync(&doc.0) {
+    if FIREWALL_REGISTRY.read().contains_key(&doc.0) {
         error!("unable to register firewall: document already registered");
-        // This should not be allowed to happen.
-        // Despawn the entity as safeguard to prevent firewall privledge leaks.
+        // Despawn the entity as safeguard to prevent firewall privilege leaks.
         commands.entity(trigger.entity).despawn();
         return;
     }
 
-    FIREWALL_REGISTRY.upsert_sync(doc.0, firewall.clone());
+    FIREWALL_REGISTRY.write().insert(doc.0, firewall.clone());
 
     commands
         .entity(trigger.entity)
@@ -44,7 +44,7 @@ pub fn deregister_firewalls(
     ids: Query<&RegisteredFirewall>,
 ) {
     let id = ids.get(trigger.entity).expect("id");
-    FIREWALL_REGISTRY.remove_sync(&id.0);
+    FIREWALL_REGISTRY.write().remove(&id.0);
 }
 
 pub fn validate_firewall(me: &Hash, target: &Hash, channel: Channel) -> anyhow::Result<()> {
@@ -52,11 +52,13 @@ pub fn validate_firewall(me: &Hash, target: &Hash, channel: Channel) -> anyhow::
         return Ok(());
     }
 
-    if let Some(whitelist) = FIREWALL_REGISTRY
-        .get_sync(target)
-        .as_deref()
-        .unwrap_or(&*DEFAULT_FIREWALL)
-        .get_sync(&channel)
+    let firewall = FIREWALL_REGISTRY
+        .read()
+        .get(target)
+        .cloned()
+        .unwrap_or_else(|| DEFAULT_FIREWALL.clone());
+
+    if let Some(whitelist) = firewall.0.read().get(&channel).cloned()
         && whitelist.permits(me)
     {
         Ok(())

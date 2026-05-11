@@ -1,12 +1,16 @@
-use std::sync::{Arc, LazyLock};
+use std::{
+    collections::HashMap,
+    sync::{Arc, LazyLock},
+};
 
 use async_channel::Sender;
 use blake3::Hash;
+use parking_lot::RwLock;
 
 use crate::runtime::shared::registry::transform::AbsoluteNodeId;
 
-pub static EVENT_RECEPTOR_REGISTRY: LazyLock<scc::HashMap<u32, ReceptorEntry>> =
-    LazyLock::new(scc::HashMap::default);
+pub static EVENT_RECEPTOR_REGISTRY: LazyLock<RwLock<HashMap<u32, ReceptorEntry>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 pub struct ReceptorEntry {
     pub channels: Vec<String>,

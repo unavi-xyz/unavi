@@ -110,7 +110,7 @@ async fn inner(
             res = read_record(id, ttl, &actor, &sync_targets) => {
                 match res {
                     Ok(res) => {
-                        info!("Got record");
+                        info!(%id, "Got record");
                         let _ = tx.send(res).await;
                         return Ok(());
                     },

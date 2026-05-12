@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::LazyLock};
+use std::{
+    collections::HashMap,
+    sync::{Arc, LazyLock},
+};
 
 use bevy::prelude::*;
 use bevy_hsd::HsdRecordId;
@@ -25,14 +28,20 @@ pub fn register_docs(
         return;
     };
 
-    if FIREWALL_REGISTRY.read().contains_key(&doc.0) {
-        error!("unable to register firewall: document already registered");
-        // Despawn the entity as safeguard to prevent firewall privilege leaks.
-        commands.entity(trigger.entity).despawn();
-        return;
+    let mut reg = FIREWALL_REGISTRY.write();
+    if let Some(existing) = reg.get(&doc.0) {
+        // Child docs are pre-registered synchronously by spawn_child_doc so
+        // the firewall is queryable before this observer fires. Allow that
+        // case (same Arc) but reject anything else as a privilege leak.
+        if !Arc::ptr_eq(&existing.0, &firewall.0) {
+            error!("unable to register firewall: document already registered");
+            commands.entity(trigger.entity).despawn();
+            return;
+        }
+    } else {
+        reg.insert(doc.0, firewall.clone());
     }
-
-    FIREWALL_REGISTRY.write().insert(doc.0, firewall.clone());
+    drop(reg);
 
     commands
         .entity(trigger.entity)

@@ -32,10 +32,12 @@ struct Script {
 impl ScriptBehavior for Script {
     fn init() -> Self {
         let doc = self_document();
+        let root = doc.roots().into_iter().next().expect("root");
 
         let pole = Cuboid::new(Vec3::new(BEAM_THICKNESS, PORTAL_HEIGHT, BEAM_THICKNESS));
 
         let node_l = doc.create_node();
+        root.add_child(&node_l);
         node_l.set_mesh(Some(&pole.mesh()));
         node_l.set_collider(Some(&pole.collider()));
         node_l.set_rigid_body(Some(RigidBodyKind::Fixed));
@@ -46,6 +48,7 @@ impl ScriptBehavior for Script {
         ));
 
         let node_r = doc.create_node();
+        root.add_child(&node_r);
         node_r.set_mesh(Some(&pole.mesh()));
         node_r.set_collider(Some(&pole.collider()));
         node_r.set_rigid_body(Some(RigidBodyKind::Fixed));
@@ -62,6 +65,7 @@ impl ScriptBehavior for Script {
         ));
 
         let node_t = doc.create_node();
+        root.add_child(&node_t);
         node_t.set_mesh(Some(&beam.mesh()));
         node_t.set_collider(Some(&beam.collider()));
         node_t.set_rigid_body(Some(RigidBodyKind::Fixed));
@@ -74,14 +78,17 @@ impl ScriptBehavior for Script {
         ));
 
         let pedestal = doc.create_node();
+        root.add_child(&pedestal);
         pedestal.set_mesh(Some(&pedestal_shape.mesh()));
         pedestal.set_collider(Some(&pedestal_shape.collider()));
         pedestal.set_rigid_body(Some(RigidBodyKind::Fixed));
         pedestal.set_translation(Vec3::new(-PORTAL_WIDTH, PEDESTAL_HEIGHT / 2.0, 0.0));
 
         let receptor_node = doc.create_node();
-        receptor_node.set_translation(Vec3::new(0.0, PEDESTAL_HEIGHT, 0.0));
         pedestal.add_child(&receptor_node);
+        receptor_node.set_translation(Vec3::new(0.0, PEDESTAL_HEIGHT, 0.0));
+
+        println!("Gate ready");
 
         Self {
             receptor: BeaconReceptor::new(receptor_node, EVENT_RADIUS),
@@ -101,7 +108,7 @@ impl ScriptBehavior for Script {
                 let Ok(id_hash) = Hash::from_slice(&id) else {
                     continue;
                 };
-                println!("loading beacon: {id_hash}");
+                println!("Loading beacon: {id_hash}");
                 self.target = Some((id, Instant::now()));
             }
         }

@@ -5,7 +5,7 @@
                 collider: None,
                 material: None,
                 mesh: None,
-                name: None,
+                name: "unavi-gate",
                 rigid_body: None,
                 rotation: None,
                 scale: None,

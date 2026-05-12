@@ -12,7 +12,9 @@ use bevy_wds::{
 };
 use blake3::Hash;
 use bytes::Bytes;
+use hsd::Hsd;
 use loro::LoroDoc;
+use loro_surgeon::Reconcile;
 use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
 use wired_schemas::SCHEMA_HSD;
 
@@ -20,7 +22,7 @@ use crate::{
     firewall::{Channel, Firewall},
     runtime::shared::{
         Api,
-        registry::firewall::validate_firewall,
+        registry::firewall::{FIREWALL_REGISTRY, validate_firewall},
         slot_map::SlotMap,
         wired::scene::{document::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes},
     },
@@ -81,6 +83,10 @@ pub(super) async fn upload_blob(data: Vec<u8>) -> anyhow::Result<Hash> {
 
 fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()> {
     let firewall = Firewall::for_child_doc(api.doc_id);
+    // Register synchronously so the child doc's firewall is queryable before
+    // the entity-spawn command is processed. Otherwise scripts that touch the
+    // returned doc handle in the same turn hit DEFAULT_FIREWALL and get blocked.
+    FIREWALL_REGISTRY.write().insert(id, firewall.clone());
     AsyncCommands::default()
         .spawn((
             HsdDoc(doc),
@@ -196,13 +202,17 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> anyhow::Result<u32> {
         rx.recv().await?
     };
 
+    let hsd_str = std::str::from_utf8(&bytes)?.to_owned();
+    let asset_doc = Hsd::parse(&hsd_str)?;
+
     let id = {
         let (mut write, rx, _cancel) = WriteRecord::new(None);
         write.schemas = vec![SchemaDef {
             schema: (&*SCHEMA_HSD).into(),
             container: "hsd".into(),
             f: Arc::new(move |doc| {
-                doc.import(&bytes)?;
+                let map = doc.get_map("hsd");
+                asset_doc.reconcile(&map)?;
                 Ok(())
             }),
         }];

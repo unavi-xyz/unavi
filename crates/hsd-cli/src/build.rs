@@ -7,11 +7,18 @@ use loro_surgeon::TreeNode;
 
 use crate::{blobs::write_blob, wasm::build_wasm_for_crate};
 
+pub struct BuildOutput {
+    pub hash: Hash,
+    /// All transitive blob hashes, including self. Flattened into the parent's
+    /// `hsd.assets` so one `HsdLoader` pass reaches every nested blob.
+    pub blobs: Vec<Hash>,
+}
+
 pub fn build_hsdx_to_hsd(
     input: &Path,
     out_dir: &Path,
     built: &mut BTreeMap<String, Hash>,
-) -> Result<Hash> {
+) -> Result<BuildOutput> {
     let input_abs =
         std::fs::canonicalize(input).with_context(|| format!("resolving {}", input.display()))?;
     let input_dir = input_abs.parent().context("input has no parent dir")?;
@@ -26,12 +33,15 @@ pub fn build_hsdx_to_hsd(
         ..Default::default()
     };
 
+    let mut blobs: Vec<Hash> = Vec::new();
+
     // Assets
     for (key, asset_ref) in hsdx.assets {
         if asset_ref.ends_with(".hsdx") {
             let dep_path = input_dir.join(&*asset_ref);
-            let dep_hash = build_hsdx_to_hsd(&dep_path, out_dir, built)?;
-            hsd.assets.insert(key, dep_hash.into());
+            let dep = build_hsdx_to_hsd(&dep_path, out_dir, built)?;
+            hsd.assets.insert(key, dep.hash.into());
+            blobs.extend(dep.blobs);
         }
     }
 
@@ -49,6 +59,7 @@ pub fn build_hsdx_to_hsd(
                 .context("Cargo.toml has no parent dir")?;
             let hash = build_wasm_for_crate(crate_dir, out_dir, built)?;
             out_scripts.push(hash.into());
+            blobs.push(hash);
         }
 
         let out_node = HsdNode::from_hsdx(node, out_scripts);
@@ -72,14 +83,19 @@ pub fn build_hsdx_to_hsd(
 
         let out_img = HsdImage::from_hsdx(img, Some(hash.into()));
         hsd.images.insert(key, out_img);
+        blobs.push(hash);
     }
 
-    // The compiled HSD is itself a blob (referenced by hash from parent HSDs).
-    // This is a little weird, but whatever..
+    for h in &blobs {
+        hsd.assets
+            .entry(h.to_string().into())
+            .or_insert((*h).into());
+    }
+
     let bytes = hsd.to_ron()?.into_bytes();
     let hash = write_blob(out_dir, &bytes)?;
+    blobs.push(hash);
 
-    // Also write a named copy at the top level for entry-point loads.
     let crate_dir_name = input_dir
         .file_name()
         .with_context(|| format!("input dir has no name: {}", input_dir.display()))?
@@ -89,5 +105,5 @@ pub fn build_hsdx_to_hsd(
     std::fs::write(&out_hsd, &bytes).with_context(|| format!("writing {}", out_hsd.display()))?;
     println!("wrote {}", out_hsd.display());
 
-    Ok(hash)
+    Ok(BuildOutput { hash, blobs })
 }

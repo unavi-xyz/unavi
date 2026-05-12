@@ -44,7 +44,7 @@
                 collider: None,
                 material: None,
                 mesh: None,
-                name: None,
+                name: "unavi-default-home",
                 rigid_body: None,
                 rotation: None,
                 scale: None,

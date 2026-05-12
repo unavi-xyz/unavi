@@ -43,6 +43,67 @@ pub fn on_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
     Ok(())
 }
 
+pub fn assets(api: &Api, rep: u32) -> anyhow::Result<Vec<(String, Vec<u8>)>> {
+    let scene = api.wired_scene.try_lock()?;
+    let res = scene
+        .docs
+        .get(rep)
+        .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
+        .clone();
+    validate_firewall(&api.doc_id, &res.id, Channel::SceneWrite)?;
+
+    let mut items = Vec::new();
+    res.doc
+        .get_map("hsd")
+        .get_or_create_container("assets", LoroMap::new())?
+        .for_each(|name, v| {
+            if let ValueOrContainer::Value(LoroValue::Binary(bytes)) = v {
+                if bytes.len() == 32 {
+                    items.push((name.to_string(), bytes.to_vec()));
+                }
+            }
+        });
+    drop(scene);
+
+    Ok(items)
+}
+
+pub fn add_asset(api: &Api, rep: u32, name: String, blob_id: Vec<u8>) -> anyhow::Result<()> {
+    let res = api
+        .wired_scene
+        .try_lock()?
+        .docs
+        .get(rep)
+        .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
+        .clone();
+    validate_firewall(&api.doc_id, &res.id, Channel::SceneWrite)?;
+
+    let assets_map = res
+        .doc
+        .get_map("hsd")
+        .get_or_create_container("assets", LoroMap::new())?;
+    assets_map.insert(name.as_str(), LoroValue::Binary(blob_id.into()))?;
+    Ok(())
+}
+
+pub fn remove_asset(api: &Api, rep: u32, name: String) -> anyhow::Result<()> {
+    let res = api
+        .wired_scene
+        .try_lock()?
+        .docs
+        .get(rep)
+        .ok_or_else(|| anyhow::anyhow!("invalid doc rep: {rep}"))?
+        .clone();
+    validate_firewall(&api.doc_id, &res.id, Channel::SceneWrite)?;
+
+    let assets_map = res
+        .doc
+        .get_map("hsd")
+        .get_or_create_container("assets", LoroMap::new())?;
+    assets_map.insert(name.as_str(), LoroValue::Null)?;
+    Ok(())
+}
+
 pub fn roots(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
     let res = api
         .wired_scene

@@ -353,7 +353,7 @@ pub fn add_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<()>
         "nodes must belong to the same document"
     );
     let tree = node_tree(&parent.doc)?;
-    tree.mov_to(child.id, TreeParentId::Node(parent.id), usize::MAX)?;
+    tree.mov(child.id, TreeParentId::Node(parent.id))?;
     Ok(())
 }
 
@@ -379,7 +379,7 @@ pub fn remove_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<
     }
     validate_firewall(&api.doc_id, &parent.doc_id, Channel::SceneWrite)?;
     let tree = node_tree(&child.doc)?;
-    tree.mov_to(child.id, TreeParentId::Root, usize::MAX)?;
+    tree.mov(child.id, TreeParentId::Root)?;
     Ok(())
 }
 

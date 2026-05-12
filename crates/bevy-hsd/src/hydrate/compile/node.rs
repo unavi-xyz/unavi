@@ -342,6 +342,8 @@ pub(crate) fn handle_hsd_node_scripts_set(
     docs: Query<(Entity, &HsdRecordId)>,
     entity_maps: Query<&HsdEntityMaps>,
     names: Query<NameOrEntity>,
+    node_scripts: Query<&NodeScripts>,
+    script_hashes: Query<&HsdScript>,
     mut commands: Commands,
 ) {
     let ev = trigger.event();
@@ -349,23 +351,40 @@ pub(crate) fn handle_hsd_node_scripts_set(
     let Some(entity) = node_entity(&docs, &entity_maps, &ev.doc_id, &ev.id) else {
         return;
     };
-    // TODO handle removed scripts
-    if ev.scripts.is_empty() {
-        let Ok(mut entity_cmd) = commands.get_entity(entity) else {
-            return;
-        };
-        entity_cmd.try_remove::<NodeScripts>();
-    } else {
-        let name_base = names.get(entity).expect("name");
 
-        for (i, hash) in ev.scripts.iter().enumerate() {
-            let name = if ev.scripts.len() == 1 {
-                Name::new(name_base.to_string())
-            } else {
-                Name::new(format!("{name_base}.{i}"))
-            };
-            commands.spawn((ScriptNode(entity), HsdScript(*hash), name));
+    let existing: Vec<(Entity, blake3::Hash)> = node_scripts
+        .get(entity)
+        .map(|ns| {
+            ns.0.iter()
+                .filter_map(|e| script_hashes.get(*e).ok().map(|h| (*e, h.0)))
+                .collect()
+        })
+        .unwrap_or_default();
+
+    if ev.scripts.is_empty() {
+        for (e, _) in &existing {
+            commands.entity(*e).despawn();
         }
+        return;
+    }
+
+    let existing_hashes: Vec<blake3::Hash> = existing.iter().map(|(_, h)| *h).collect();
+    if existing_hashes == ev.scripts {
+        return;
+    }
+
+    for (e, _) in &existing {
+        commands.entity(*e).despawn();
+    }
+
+    let name_base = names.get(entity).expect("name");
+    for (i, hash) in ev.scripts.iter().enumerate() {
+        let name = if ev.scripts.len() == 1 {
+            Name::new(name_base.to_string())
+        } else {
+            Name::new(format!("{name_base}.{i}"))
+        };
+        commands.spawn((ScriptNode(entity), HsdScript(*hash), name));
     }
 }
 

@@ -79,9 +79,11 @@ async fn get_blob(hash: Hash, blobs: Blobs) -> anyhow::Result<Bytes> {
             break;
         }
 
-        let val = field.state().validated_size.unwrap_or_default();
-        let progress = val as f64 / size as f64;
-        info!(hash = %hash, "Downloading: {:.2}%", progress * 100.0);
+        if size > 0 {
+            let val = field.state().validated_size.unwrap_or_default();
+            let progress = val as f64 / size as f64;
+            info!(hash = %hash, "Downloading: {:.2}%", progress * 100.0);
+        }
     }
 
     let res = blobs.get_bytes(hash).await?;

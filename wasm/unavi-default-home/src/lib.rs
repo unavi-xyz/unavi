@@ -2,7 +2,10 @@ use wired_prelude::prelude::*;
 
 use crate::{
     unavi::shapes::api::Cuboid,
-    wired::scene::{api::self_document, types::RigidBodyKind},
+    wired::scene::{
+        api::{load_hsd, self_document},
+        types::RigidBodyKind,
+    },
 };
 
 wired_prelude::generate_script!(Script);
@@ -27,20 +30,20 @@ impl ScriptBehavior for Script {
         let ground_mat = doc.materials().into_iter().find(|m| m.id() == "ground");
         node.set_material(ground_mat.as_ref());
 
-        // let (_, gate_id) = doc
-        //     .assets()
-        //     .into_iter()
-        //     .find(|(k, _)| k == "gate")
-        //     .expect("gate asset");
-        //
-        // let Ok(gate_doc) = load_hsd(&gate_id) else {
-        //     eprintln!("error loading gate HSD");
-        //     return Self;
-        // };
-        //
-        // for root in gate_doc.roots() {
-        //     root.set_translation(Vec3::new(0.0, 0.0, -GROUND_SIZE / 3.0));
-        // }
+        let (_, gate_id) = doc
+            .assets()
+            .into_iter()
+            .find(|(k, _)| k == "gate")
+            .expect("gate asset");
+
+        let Ok(gate_doc) = load_hsd(&gate_id) else {
+            eprintln!("error loading gate HSD");
+            return Self;
+        };
+
+        for root in gate_doc.roots() {
+            root.set_translation(Vec3::new(0.0, 0.0, -GROUND_SIZE / 3.0));
+        }
 
         println!("Welcome home! =)");
 

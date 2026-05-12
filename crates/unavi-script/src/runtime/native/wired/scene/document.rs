@@ -23,26 +23,29 @@ impl HostDocument for Runtime {
 
     async fn assets(
         &mut self,
-        _self_: Resource<DocRes>,
+        self_: Resource<DocRes>,
     ) -> wasmtime::Result<Vec<(String, Vec<u8>)>> {
-        Ok(vec![])
+        shared::wired::scene::document::assets(&self.api, self_.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn add_asset(
         &mut self,
-        _self_: Resource<DocRes>,
-        _name: String,
-        _blob_id: Vec<u8>,
+        self_: Resource<DocRes>,
+        name: String,
+        blob_id: Vec<u8>,
     ) -> wasmtime::Result<()> {
-        Ok(())
+        shared::wired::scene::document::add_asset(&self.api, self_.rep(), name, blob_id)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn remove_asset(
         &mut self,
-        _self_: Resource<DocRes>,
-        _name: String,
+        self_: Resource<DocRes>,
+        name: String,
     ) -> wasmtime::Result<()> {
-        Ok(())
+        shared::wired::scene::document::remove_asset(&self.api, self_.rep(), name)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn roots(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec<Resource<NodeRes>>> {

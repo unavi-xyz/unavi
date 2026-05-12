@@ -38,18 +38,30 @@ impl DocHandle {
         Some(Self::new(rep, Arc::clone(&self.api)))
     }
 
-    #[expect(clippy::unused_self)]
     pub fn assets(&self) -> js_sys::Array {
-        js_sys::Array::new()
+        let Ok(items) = shared::wired::scene::document::assets(&self.api, self.rep) else {
+            return js_sys::Array::new();
+        };
+        items
+            .into_iter()
+            .map(|(name, id)| {
+                let tuple = js_sys::Array::new();
+                tuple.push(&JsValue::from_str(&name));
+                tuple.push(&JsValue::from(js_sys::Uint8Array::from(id.as_slice())));
+                JsValue::from(tuple)
+            })
+            .collect()
     }
 
     #[wasm_bindgen(js_name = "addAsset")]
-    #[expect(clippy::unused_self)]
-    pub fn add_asset(&self, _name: String, _blob_id: Vec<u8>) {}
+    pub fn add_asset(&self, name: String, blob_id: Vec<u8>) {
+        let _ = shared::wired::scene::document::add_asset(&self.api, self.rep, name, blob_id);
+    }
 
     #[wasm_bindgen(js_name = "removeAsset")]
-    #[expect(clippy::unused_self)]
-    pub fn remove_asset(&self, _name: String) {}
+    pub fn remove_asset(&self, name: String) {
+        let _ = shared::wired::scene::document::remove_asset(&self.api, self.rep, name);
+    }
 
     pub fn roots(&self) -> js_sys::Array {
         let Ok(reps) = shared::wired::scene::document::roots(&self.api, self.rep) else {

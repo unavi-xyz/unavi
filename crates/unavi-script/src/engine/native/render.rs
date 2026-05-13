@@ -20,7 +20,7 @@ pub fn render_tick_scripts(
     >,
 ) {
     for (ticking, guest, store, span) in to_tick {
-        if ticking.0.swap(true, Ordering::Relaxed) {
+        if ticking.0.swap(true, Ordering::SeqCst) {
             continue;
         }
 
@@ -44,7 +44,7 @@ pub fn render_tick_scripts(
                 store.data().api.doc.commit();
                 drop(store);
 
-                ticking.store(false, Ordering::Relaxed);
+                ticking.store(false, Ordering::SeqCst);
             }
             .instrument(span.0.clone()),
         );

@@ -26,7 +26,7 @@ pub fn tick_scripts(
         if delta < TICKRATE {
             continue;
         }
-        if ticking.0.swap(true, Ordering::Relaxed) {
+        if ticking.0.swap(true, Ordering::SeqCst) {
             continue;
         }
 
@@ -41,7 +41,7 @@ pub fn tick_scripts(
 
         spawn_async_task(async move {
             guest.tick().await;
-            ticking.store(false, Ordering::Relaxed);
+            ticking.store(false, Ordering::SeqCst);
         });
     }
 }

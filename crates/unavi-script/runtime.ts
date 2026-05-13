@@ -5,18 +5,10 @@ import {
 } from "@bytecodealliance/jco/component";
 import { WASIShim } from "@bytecodealliance/preview2-shim/instantiation";
 
-const SCENE_ASYNC_IMPORTS = [
+const SCRIPT_ASYNC_IMPORTS = [
   "wired:scene/api#create-document",
   "wired:scene/api#get-document",
   "wired:scene/api#load-hsd",
-  "wired:scene/api#remove-document",
-  "wired:scene/types#[method]document.clone",
-  "wired:scene/types#[method]document.create-node",
-  "wired:scene/types#[method]document.id",
-  "wired:scene/types#[method]document.materials",
-  "wired:scene/types#[method]document.meshes",
-  "wired:scene/types#[method]document.nodes",
-  "wired:scene/types#[method]document.roots",
   "wired:scene/types#[method]mesh.colors",
   "wired:scene/types#[method]mesh.indices",
   "wired:scene/types#[method]mesh.normals",
@@ -52,15 +44,17 @@ export async function instantiateScript(
     asyncMode: {
       tag: "jspi",
       val: {
-        imports: SCENE_ASYNC_IMPORTS,
+        imports: SCRIPT_ASYNC_IMPORTS,
         exports: SCRIPT_ASYNC_EXPORTS,
       },
     },
     instantiation: { tag: "async" },
     name,
+    noNamespacedExports: true,
     noNodejsCompat: true,
     noTypescript: true,
-    strict: false,
+    strict: true,
+    // tracing: true,
   };
 
   const result = await (generate(
@@ -100,20 +94,41 @@ export async function instantiateScript(
   const imports = build_imports(wasi, rt);
 
   const instance = await mod.instantiate(getCoreModule, imports);
+  instance.name = name;
+  instance.tracing = options.tracing;
   console.log("Instantiated script", name, instance);
+
   return instance;
 }
 
 export async function scriptInit(instance: any): Promise<void> {
+  if (instance.tracing) {
+    console.log("> init", instance.name);
+  }
   await instance.guestApi.init();
+  if (instance.tracing) {
+    console.log("< init", instance.name);
+  }
 }
 
 export async function scriptRender(instance: any): Promise<void> {
+  if (instance.tracing) {
+    console.log("> render", instance.name);
+  }
   await instance.guestApi.render();
+  if (instance.tracing) {
+    console.log("< render", instance.name);
+  }
 }
 
 export async function scriptTick(instance: any): Promise<void> {
+  if (instance.tracing) {
+    console.log("> tick", instance.name);
+  }
   await instance.guestApi.tick();
+  if (instance.tracing) {
+    console.log("< tick", instance.name);
+  }
 }
 
 function build_imports(wasi: WASIShim, rt: any) {
@@ -137,7 +152,7 @@ function build_imports(wasi: WASIShim, rt: any) {
       registerInputListener: rt.wiredInputRegisterInputListener.bind(rt),
     },
     "wired:input/context": {
-      listener: rt.wiredInputContextListener.bind(rt),
+      registerGlobalInputListener: rt.wiredInputRegisterGlobalInputListener.bind(rt),
     },
     "wired:input/types": {
       InputListener: rt.wiredInputListenerClass(),

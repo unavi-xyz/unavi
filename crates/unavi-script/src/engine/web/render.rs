@@ -3,15 +3,15 @@ use std::sync::{Arc, atomic::Ordering};
 use bevy::prelude::*;
 use unavi_util::async_task::spawn_async_task;
 
-use crate::RenderTicking;
+use crate::Ticking;
 
 use super::{init::InitializedScript, instantiate::ScriptGuest};
 
-pub fn render_tick_scripts(
-    to_tick: Query<(&RenderTicking, &ScriptGuest), With<InitializedScript>>,
-) {
+pub fn render_tick_scripts(to_tick: Query<(&Ticking, &ScriptGuest), With<InitializedScript>>) {
+    // Use [`Ticking`] not [`RenderTicking`], to enforce we only every call one at a time.
+    // We use RenderTicking on native because a lock ensures sequential execution regardless.
     for (ticking, guest) in to_tick {
-        if ticking.0.swap(true, Ordering::Relaxed) {
+        if ticking.0.swap(true, Ordering::SeqCst) {
             continue;
         }
 
@@ -20,7 +20,7 @@ pub fn render_tick_scripts(
 
         spawn_async_task(async move {
             guest.render().await;
-            ticking.store(false, Ordering::Relaxed);
+            ticking.store(false, Ordering::SeqCst);
         });
     }
 }

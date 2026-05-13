@@ -72,8 +72,8 @@ impl Runtime {
         InputListenerHandle::new(rep, Arc::clone(&self.api))
     }
 
-    #[wasm_bindgen(js_name = "wiredInputContextListener")]
-    pub fn wired_input_context_listener(&self) -> InputListenerHandle {
+    #[wasm_bindgen(js_name = "wiredInputRegisterGlobalInputListener")]
+    pub fn wired_input_register_global_input_listener(&self) -> InputListenerHandle {
         let rep =
             shared::wired::input::register_global_input_listener(&self.api).unwrap_or(u32::MAX);
         InputListenerHandle::new(rep, Arc::clone(&self.api))

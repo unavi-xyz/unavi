@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{JsValue, prelude::*};
 
 use crate::runtime::{
     Runtime,
@@ -9,6 +9,15 @@ use crate::runtime::{
         wired::portal::{PortalDestination, PortalParams, PortalTransform},
     },
 };
+
+fn portal_dest_to_js(dest: PortalDestination) -> JsValue {
+    let obj = js_sys::Object::new();
+    let space: js_sys::Uint8Array = dest.space.as_slice().into();
+    js_sys::Reflect::set(&obj, &"space".into(), &space.into()).ok();
+    let portal: JsValue = dest.portal.map_or(JsValue::NULL, Into::into);
+    js_sys::Reflect::set(&obj, &"portal".into(), &portal).ok();
+    obj.into()
+}
 
 #[wasm_bindgen]
 pub struct PortalHandle {
@@ -31,52 +40,40 @@ impl Drop for PortalHandle {
 }
 
 fn js_to_portal_params(value: &JsValue) -> PortalParams {
-    let get = |k: &str| {
-        js_sys::Reflect::get(value, &k.into())
+    let get = |obj: &JsValue, k: &str| {
+        js_sys::Reflect::get(obj, &k.into())
             .ok()
             .unwrap_or_default()
     };
+    let f32_at = |obj: &JsValue, k: &str, d: f32| {
+        js_sys::Reflect::get(obj, &k.into())
+            .ok()
+            .and_then(|v| v.as_f64())
+            .unwrap_or(d as f64) as f32
+    };
 
-    let dest_js = get("destination");
-    let space = js_sys::Uint8Array::new(
-        &js_sys::Reflect::get(&dest_js, &"space".into()).unwrap_or_default(),
-    )
-    .to_vec();
+    let dest_js = get(value, "destination");
+    let space = js_sys::Uint8Array::new(&get(&dest_js, "space")).to_vec();
     let portal = js_sys::Reflect::get(&dest_js, &"portal".into())
         .ok()
         .and_then(|v| v.as_string());
 
-    let size_js = js_sys::Array::from(&get("size"));
-    let size = [
-        size_js.get(0).as_f64().unwrap_or(0.0) as f32,
-        size_js.get(1).as_f64().unwrap_or(0.0) as f32,
-    ];
+    let size_js = get(value, "size");
+    let size = [f32_at(&size_js, "x", 0.0), f32_at(&size_js, "y", 0.0)];
 
-    let tf_js = get("transform");
-    let tr = js_sys::Array::from(
-        &js_sys::Reflect::get(&tf_js, &"translation".into()).unwrap_or_default(),
-    );
-    let ro =
-        js_sys::Array::from(&js_sys::Reflect::get(&tf_js, &"rotation".into()).unwrap_or_default());
-    let sc =
-        js_sys::Array::from(&js_sys::Reflect::get(&tf_js, &"scale".into()).unwrap_or_default());
+    let tf_js = get(value, "transform");
+    let tr = get(&tf_js, "translation");
+    let ro = get(&tf_js, "rotation");
+    let sc = get(&tf_js, "scale");
     let transform = PortalTransform {
-        translation: [
-            tr.get(0).as_f64().unwrap_or(0.0) as f32,
-            tr.get(1).as_f64().unwrap_or(0.0) as f32,
-            tr.get(2).as_f64().unwrap_or(0.0) as f32,
-        ],
+        translation: [f32_at(&tr, "x", 0.0), f32_at(&tr, "y", 0.0), f32_at(&tr, "z", 0.0)],
         rotation: [
-            ro.get(0).as_f64().unwrap_or(0.0) as f32,
-            ro.get(1).as_f64().unwrap_or(0.0) as f32,
-            ro.get(2).as_f64().unwrap_or(0.0) as f32,
-            ro.get(3).as_f64().unwrap_or(1.0) as f32,
+            f32_at(&ro, "x", 0.0),
+            f32_at(&ro, "y", 0.0),
+            f32_at(&ro, "z", 0.0),
+            f32_at(&ro, "w", 1.0),
         ],
-        scale: [
-            sc.get(0).as_f64().unwrap_or(1.0) as f32,
-            sc.get(1).as_f64().unwrap_or(1.0) as f32,
-            sc.get(2).as_f64().unwrap_or(1.0) as f32,
-        ],
+        scale: [f32_at(&sc, "x", 1.0), f32_at(&sc, "y", 1.0), f32_at(&sc, "z", 1.0)],
     };
 
     PortalParams {
@@ -93,15 +90,8 @@ impl PortalHandle {
     }
 
     pub fn destination(&self) -> JsValue {
-        let Ok(dest) = shared::wired::portal::destination(&self.api, self.rep) else {
-            return JsValue::NULL;
-        };
-        let obj = js_sys::Object::new();
-        let space: js_sys::Uint8Array = dest.space.as_slice().into();
-        js_sys::Reflect::set(&obj, &"space".into(), &space.into()).ok();
-        let portal_val: JsValue = dest.portal.map_or(JsValue::NULL, Into::into);
-        js_sys::Reflect::set(&obj, &"portal".into(), &portal_val).ok();
-        obj.into()
+        shared::wired::portal::destination(&self.api, self.rep)
+            .map_or(JsValue::NULL, portal_dest_to_js)
     }
 
     pub fn id(&self) -> String {

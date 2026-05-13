@@ -1,11 +1,35 @@
 use std::sync::Arc;
 
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{JsValue, prelude::*};
 
 use crate::runtime::shared::{
     self, Api,
     wired::scene::material::{MaterialAlphaMode, MaterialColor},
 };
+
+fn color_to_js(c: MaterialColor) -> JsValue {
+    let obj = js_sys::Object::new();
+    js_sys::Reflect::set(&obj, &"r".into(), &c.r.into()).ok();
+    js_sys::Reflect::set(&obj, &"g".into(), &c.g.into()).ok();
+    js_sys::Reflect::set(&obj, &"b".into(), &c.b.into()).ok();
+    js_sys::Reflect::set(&obj, &"a".into(), &c.a.into()).ok();
+    obj.into()
+}
+
+fn js_to_color(v: &JsValue) -> MaterialColor {
+    let get = |k: &str, d: f32| {
+        js_sys::Reflect::get(v, &k.into())
+            .ok()
+            .and_then(|v| v.as_f64())
+            .map_or(d, |v| v as f32)
+    };
+    MaterialColor {
+        r: get("r", 1.0),
+        g: get("g", 1.0),
+        b: get("b", 1.0),
+        a: get("a", 1.0),
+    }
+}
 
 #[wasm_bindgen]
 pub struct MaterialHandle {
@@ -105,37 +129,14 @@ impl MaterialHandle {
 
     #[wasm_bindgen(js_name = "baseColor")]
     pub fn base_color(&self) -> JsValue {
-        let c = shared::wired::scene::material::base_color(&self.api, self.rep).unwrap_or(
-            MaterialColor {
-                r: 1.0,
-                g: 1.0,
-                b: 1.0,
-                a: 1.0,
-            },
-        );
-        let obj = js_sys::Object::new();
-        js_sys::Reflect::set(&obj, &"r".into(), &c.r.into()).ok();
-        js_sys::Reflect::set(&obj, &"g".into(), &c.g.into()).ok();
-        js_sys::Reflect::set(&obj, &"b".into(), &c.b.into()).ok();
-        js_sys::Reflect::set(&obj, &"a".into(), &c.a.into()).ok();
-        obj.into()
+        let c = shared::wired::scene::material::base_color(&self.api, self.rep)
+            .unwrap_or(MaterialColor { r: 1.0, g: 1.0, b: 1.0, a: 1.0 });
+        color_to_js(c)
     }
 
     #[wasm_bindgen(js_name = "setBaseColor")]
     pub fn set_base_color(&self, value: JsValue) -> Result<(), String> {
-        let get_f32 = |k: &str, default: f32| {
-            js_sys::Reflect::get(&value, &k.into())
-                .ok()
-                .and_then(|v| v.as_f64())
-                .map_or(default, |v| v as f32)
-        };
-        let color = MaterialColor {
-            r: get_f32("r", 1.0),
-            g: get_f32("g", 1.0),
-            b: get_f32("b", 1.0),
-            a: get_f32("a", 1.0),
-        };
-        shared::wired::scene::material::set_base_color(&self.api, self.rep, color)
+        shared::wired::scene::material::set_base_color(&self.api, self.rep, js_to_color(&value))
             .map_err(|e| e.to_string())
     }
 

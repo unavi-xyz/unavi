@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{JsValue, prelude::*};
 
 use crate::runtime::shared::{
     self, Api,
-    wired::scene::node::{NodeCollider, NodeRigidBody},
+    wired::scene::node::{NodeCollider, NodeRigidBody, NodeTransform},
 };
 
 use super::{
@@ -12,6 +12,122 @@ use super::{
     mesh::MeshHandle,
     util::{js_to_quat, js_to_vec3, opt_rep, quat_to_js, vec3_to_js},
 };
+
+fn transform_to_js(t: &NodeTransform) -> JsValue {
+    let obj = js_sys::Object::new();
+    js_sys::Reflect::set(
+        &obj,
+        &"translation".into(),
+        &vec3_to_js(t.translation[0], t.translation[1], t.translation[2]),
+    )
+    .ok();
+    js_sys::Reflect::set(
+        &obj,
+        &"rotation".into(),
+        &quat_to_js(t.rotation[0], t.rotation[1], t.rotation[2], t.rotation[3]),
+    )
+    .ok();
+    js_sys::Reflect::set(
+        &obj,
+        &"scale".into(),
+        &vec3_to_js(t.scale[0], t.scale[1], t.scale[2]),
+    )
+    .ok();
+    obj.into()
+}
+
+fn js_to_transform(v: &JsValue) -> NodeTransform {
+    let get = |k: &str| js_sys::Reflect::get(v, &k.into()).unwrap_or_default();
+    NodeTransform {
+        translation: js_to_vec3(&get("translation"), [0.0; 3]),
+        rotation: js_to_quat(&get("rotation"), [0.0, 0.0, 0.0, 1.0]),
+        scale: js_to_vec3(&get("scale"), [1.0; 3]),
+    }
+}
+
+fn collider_to_js(c: NodeCollider) -> JsValue {
+    let variant = |tag: &str, val: JsValue| -> JsValue {
+        let obj = js_sys::Object::new();
+        js_sys::Reflect::set(&obj, &"tag".into(), &tag.into()).ok();
+        js_sys::Reflect::set(&obj, &"val".into(), &val).ok();
+        obj.into()
+    };
+    let record2 = |k1: &str, v1: f32, k2: &str, v2: f32| -> JsValue {
+        let obj = js_sys::Object::new();
+        js_sys::Reflect::set(&obj, &k1.into(), &v1.into()).ok();
+        js_sys::Reflect::set(&obj, &k2.into(), &v2.into()).ok();
+        obj.into()
+    };
+    match c {
+        NodeCollider::Capsule { height, radius } => {
+            variant("capsule", record2("height", height, "radius", radius))
+        }
+        NodeCollider::ConvexHull(points) => {
+            variant("convex-hull", js_sys::Float32Array::from(points.as_slice()).into())
+        }
+        NodeCollider::Cuboid([x, y, z]) => variant("cuboid", vec3_to_js(x, y, z)),
+        NodeCollider::Cylinder { height, radius } => {
+            variant("cylinder", record2("height", height, "radius", radius))
+        }
+        NodeCollider::Sphere(radius) => variant("sphere", radius.into()),
+        NodeCollider::Trimesh { indices, vertices } => {
+            let val = js_sys::Object::new();
+            js_sys::Reflect::set(
+                &val,
+                &"indices".into(),
+                &js_sys::Uint32Array::from(indices.as_slice()).into(),
+            )
+            .ok();
+            js_sys::Reflect::set(
+                &val,
+                &"vertices".into(),
+                &js_sys::Float32Array::from(vertices.as_slice()).into(),
+            )
+            .ok();
+            variant("trimesh", val.into())
+        }
+    }
+}
+
+fn js_to_collider(value: &JsValue) -> Option<NodeCollider> {
+    if value.is_null() || value.is_undefined() {
+        return None;
+    }
+    let tag = js_sys::Reflect::get(value, &"tag".into())
+        .ok()
+        .and_then(|v| v.as_string())?;
+    let val = js_sys::Reflect::get(value, &"val".into()).unwrap_or_default();
+    let get_f32 = |obj: &JsValue, k: &str| {
+        js_sys::Reflect::get(obj, &k.into())
+            .ok()
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0) as f32
+    };
+    Some(match tag.as_str() {
+        "capsule" => NodeCollider::Capsule {
+            height: get_f32(&val, "height"),
+            radius: get_f32(&val, "radius"),
+        },
+        "convex-hull" => NodeCollider::ConvexHull(js_sys::Float32Array::new(&val).to_vec()),
+        "cuboid" => NodeCollider::Cuboid(js_to_vec3(&val, [0.0; 3])),
+        "cylinder" => NodeCollider::Cylinder {
+            height: get_f32(&val, "height"),
+            radius: get_f32(&val, "radius"),
+        },
+        "sphere" => NodeCollider::Sphere(val.as_f64().unwrap_or(0.0) as f32),
+        "trimesh" => NodeCollider::Trimesh {
+            indices: js_sys::Uint32Array::new(
+                &js_sys::Reflect::get(&val, &"indices".into()).unwrap_or_default(),
+            )
+            .to_vec(),
+            vertices: js_sys::Float32Array::new(
+                &js_sys::Reflect::get(&val, &"vertices".into()).unwrap_or_default(),
+            )
+            .to_vec(),
+        },
+        _ => return None,
+    })
+}
 
 #[wasm_bindgen]
 pub struct NodeHandle {
@@ -39,6 +155,12 @@ impl Drop for NodeHandle {
 
 #[wasm_bindgen]
 impl NodeHandle {
+    #[wasm_bindgen(js_name = "__rep", getter)]
+    #[expect(clippy::missing_const_for_fn)]
+    pub fn wasm_rep(&self) -> u32 {
+        self.rep
+    }
+
     pub fn id(&self) -> String {
         shared::wired::scene::node::id(&self.api, self.rep).unwrap_or_default()
     }
@@ -105,43 +227,14 @@ impl NodeHandle {
         .map_err(|e| e.to_string())
     }
 
-    fn make_transform_js(t: &shared::wired::scene::node::NodeTransform) -> JsValue {
-        let obj = js_sys::Object::new();
-        js_sys::Reflect::set(
-            &obj,
-            &"translation".into(),
-            &vec3_to_js(t.translation[0], t.translation[1], t.translation[2]),
-        )
-        .ok();
-        js_sys::Reflect::set(
-            &obj,
-            &"rotation".into(),
-            &quat_to_js(t.rotation[0], t.rotation[1], t.rotation[2], t.rotation[3]),
-        )
-        .ok();
-        js_sys::Reflect::set(
-            &obj,
-            &"scale".into(),
-            &vec3_to_js(t.scale[0], t.scale[1], t.scale[2]),
-        )
-        .ok();
-        obj.into()
-    }
-
     pub fn transform(&self) -> JsValue {
         let t = shared::wired::scene::node::transform(&self.api, self.rep).unwrap_or_default();
-        Self::make_transform_js(&t)
+        transform_to_js(&t)
     }
 
     #[wasm_bindgen(js_name = "setTransform")]
     pub fn set_transform(&self, value: JsValue) -> Result<(), String> {
-        let get = |k: &str| js_sys::Reflect::get(&value, &k.into()).unwrap_or_default();
-        let t = shared::wired::scene::node::NodeTransform {
-            translation: js_to_vec3(&get("translation"), [0.0; 3]),
-            rotation: js_to_quat(&get("rotation"), [0.0, 0.0, 0.0, 1.0]),
-            scale: js_to_vec3(&get("scale"), [1.0; 3]),
-        };
-        shared::wired::scene::node::set_transform(&self.api, self.rep, t)
+        shared::wired::scene::node::set_transform(&self.api, self.rep, js_to_transform(&value))
             .map_err(|e| e.to_string())
     }
 
@@ -149,7 +242,7 @@ impl NodeHandle {
     pub fn global_transform(&self) -> JsValue {
         let t =
             shared::wired::scene::node::global_transform(&self.api, self.rep).unwrap_or_default();
-        Self::make_transform_js(&t)
+        transform_to_js(&t)
     }
 
     pub fn parent(&self) -> Option<Self> {
@@ -202,101 +295,15 @@ impl NodeHandle {
     }
 
     pub async fn collider(&self) -> JsValue {
-        let Ok(Some(c)) = shared::wired::scene::node::collider(&self.api, self.rep).await else {
-            return JsValue::NULL;
-        };
-        let variant = |tag: &str, val: JsValue| {
-            let obj = js_sys::Object::new();
-            js_sys::Reflect::set(&obj, &"tag".into(), &tag.into()).ok();
-            js_sys::Reflect::set(&obj, &"val".into(), &val).ok();
-            JsValue::from(obj)
-        };
-        let record2 = |k1: &str, v1: f32, k2: &str, v2: f32| {
-            let obj = js_sys::Object::new();
-            js_sys::Reflect::set(&obj, &k1.into(), &v1.into()).ok();
-            js_sys::Reflect::set(&obj, &k2.into(), &v2.into()).ok();
-            JsValue::from(obj)
-        };
-        match c {
-            NodeCollider::Capsule { height, radius } => {
-                variant("capsule", record2("height", height, "radius", radius))
-            }
-            NodeCollider::ConvexHull(points) => {
-                let arr: js_sys::Float32Array = points.as_slice().into();
-                variant("convex-hull", arr.into())
-            }
-            NodeCollider::Cuboid([x, y, z]) => {
-                let val = js_sys::Object::new();
-                js_sys::Reflect::set(&val, &"x".into(), &x.into()).ok();
-                js_sys::Reflect::set(&val, &"y".into(), &y.into()).ok();
-                js_sys::Reflect::set(&val, &"z".into(), &z.into()).ok();
-                variant("cuboid", val.into())
-            }
-            NodeCollider::Cylinder { height, radius } => {
-                variant("cylinder", record2("height", height, "radius", radius))
-            }
-            NodeCollider::Sphere(radius) => variant("sphere", radius.into()),
-            NodeCollider::Trimesh { indices, vertices } => {
-                let idx: js_sys::Uint32Array = indices.as_slice().into();
-                let verts: js_sys::Float32Array = vertices.as_slice().into();
-                let val = js_sys::Object::new();
-                js_sys::Reflect::set(&val, &"indices".into(), &idx.into()).ok();
-                js_sys::Reflect::set(&val, &"vertices".into(), &verts.into()).ok();
-                variant("trimesh", val.into())
-            }
-        }
+        shared::wired::scene::node::collider(&self.api, self.rep).await
+            .ok()
+            .flatten()
+            .map_or(JsValue::NULL, collider_to_js)
     }
 
     #[wasm_bindgen(js_name = "setCollider")]
     pub async fn set_collider(&self, value: JsValue) -> Result<(), String> {
-        if value.is_null() || value.is_undefined() {
-            return shared::wired::scene::node::set_collider(&self.api, self.rep, None)
-                .await
-                .map_err(|e| e.to_string());
-        }
-        let tag = js_sys::Reflect::get(&value, &"tag".into())
-            .ok()
-            .and_then(|v| v.as_string())
-            .unwrap_or_default();
-        let val = js_sys::Reflect::get(&value, &"val".into()).unwrap_or_default();
-        let get_f32 = |obj: &JsValue, k: &str| {
-            js_sys::Reflect::get(obj, &k.into())
-                .ok()
-                .and_then(|v| v.as_f64())
-                .unwrap_or(0.0) as f32
-        };
-        let c = match tag.as_str() {
-            "capsule" => Some(NodeCollider::Capsule {
-                height: get_f32(&val, "height"),
-                radius: get_f32(&val, "radius"),
-            }),
-            "convex-hull" => {
-                Some(NodeCollider::ConvexHull(js_sys::Float32Array::new(&val).to_vec()))
-            }
-            "cuboid" => Some(NodeCollider::Cuboid([
-                get_f32(&val, "x"),
-                get_f32(&val, "y"),
-                get_f32(&val, "z"),
-            ])),
-            "cylinder" => Some(NodeCollider::Cylinder {
-                height: get_f32(&val, "height"),
-                radius: get_f32(&val, "radius"),
-            }),
-            "sphere" => Some(NodeCollider::Sphere(val.as_f64().unwrap_or(0.0) as f32)),
-            "trimesh" => {
-                let indices = js_sys::Uint32Array::new(
-                    &js_sys::Reflect::get(&val, &"indices".into()).unwrap_or_default(),
-                )
-                .to_vec();
-                let vertices = js_sys::Float32Array::new(
-                    &js_sys::Reflect::get(&val, &"vertices".into()).unwrap_or_default(),
-                )
-                .to_vec();
-                Some(NodeCollider::Trimesh { indices, vertices })
-            }
-            _ => None,
-        };
-        shared::wired::scene::node::set_collider(&self.api, self.rep, c)
+        shared::wired::scene::node::set_collider(&self.api, self.rep, js_to_collider(&value))
             .await
             .map_err(|e| e.to_string())
     }

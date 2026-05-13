@@ -1,6 +1,6 @@
 use std::{
     f32::consts::GOLDEN_RATIO,
-    time::{Duration, Instant},
+    time::{Duration, SystemTime},
 };
 
 use blake3::Hash;
@@ -26,7 +26,7 @@ const TARGET_DECAY: Duration = Duration::from_secs(10);
 
 struct Script {
     receptor: BeaconReceptor,
-    target: Option<(Vec<u8>, Instant)>,
+    target: Option<(Vec<u8>, SystemTime)>,
 }
 
 impl ScriptBehavior for Script {
@@ -98,19 +98,22 @@ impl ScriptBehavior for Script {
 
     fn tick(&mut self) {
         if let Some((_, t)) = &self.target
-            && t.elapsed() >= TARGET_DECAY
+            && t.elapsed().expect("elapsed") >= TARGET_DECAY
         {
             self.target = None;
         }
 
+        println!("-> receptor.poll");
         while let Some(id) = self.receptor.poll() {
-            if self.target.is_none() || self.target.as_ref().is_some_and(|(x, _)| *x == id) {
-                let Ok(id_hash) = Hash::from_slice(&id) else {
-                    continue;
-                };
-                println!("Loading beacon: {id_hash}");
-                self.target = Some((id, Instant::now()));
+            if self.target.as_ref().is_some_and(|(x, _)| *x != id) {
+                continue;
             }
+            let Ok(id_hash) = Hash::from_slice(&id) else {
+                continue;
+            };
+            println!("Loading beacon: {id_hash}");
+            self.target = Some((id, SystemTime::now()));
         }
+        println!("<- receptor.poll");
     }
 }

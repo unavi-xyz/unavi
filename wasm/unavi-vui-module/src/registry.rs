@@ -28,8 +28,8 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
         let register_receptor = listen(
             &[CH_REGISTER.to_string()],
             EventFilter {
-                scope: EventScope::Global,
                 documents: None,
+                scope: EventScope::Global,
             },
         );
         Self {
@@ -49,8 +49,8 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
                     CH_DISCOVER,
                     &[],
                     EventFilter {
-                        scope: EventScope::Global,
                         documents: None,
+                        scope: EventScope::Global,
                     },
                 );
                 self.fired.set(true);
@@ -59,6 +59,7 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
 
         let mut results = Vec::new();
         while let Some(event) = self.register_receptor.poll() {
+            println!("<- {}", event.channel);
             if let Ok(p) = postcard::from_bytes::<RegisterPayload>(&event.payload) {
                 results.push(RegisteredModule {
                     doc_id: event.sender.document,
@@ -66,7 +67,7 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
                     icon_mesh_id: p.icon_mesh_id,
                 });
             } else {
-                eprintln!("received invalid event payload");
+                eprintln!("Received invalid event payload");
             }
         }
         results
@@ -79,8 +80,8 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
             CH_ACTIVATE,
             &payload,
             EventFilter {
-                scope: EventScope::Global,
                 documents: Some(vec![doc_id]),
+                scope: EventScope::Global,
             },
         );
     }
@@ -90,8 +91,8 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
             CH_DEACTIVATE,
             &[],
             EventFilter {
-                scope: EventScope::Global,
                 documents: Some(vec![doc_id]),
+                scope: EventScope::Global,
             },
         );
     }
@@ -102,8 +103,8 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
             CH_SET_COLOR,
             &payload,
             EventFilter {
-                scope: EventScope::Global,
                 documents: Some(vec![doc_id]),
+                scope: EventScope::Global,
             },
         );
     }

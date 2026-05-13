@@ -11,7 +11,10 @@ use crate::{
     unavi::vui_module::api::VuiModuleRegistry,
     wired::{
         agent::types::BoneName,
-        input::types::{InputAction, InputDevice, InputListener},
+        input::{
+            context::register_global_input_listener,
+            types::{InputAction, InputDevice, InputListener},
+        },
         scene::{api::get_document, types::Mesh},
     },
 };
@@ -60,7 +63,7 @@ impl ScriptBehavior for Script {
 
         Self {
             gauntlets,
-            input: wired::input::context::register_global_input_listener(),
+            input: register_global_input_listener(),
             module_refs: Vec::new(),
             registry,
             render_time: SystemTime::now(),
@@ -72,6 +75,7 @@ impl ScriptBehavior for Script {
         let mut changed = false;
 
         for m in self.registry.poll() {
+            println!("Found module: {}", m.name);
             if self.module_refs.len() < MAX_MODULES
                 && !self.module_refs.iter().any(|d| d.doc_id == m.doc_id)
             {
@@ -151,6 +155,7 @@ impl ScriptBehavior for Script {
 
             match event.action {
                 InputAction::MenuDown => {
+                    println!("> menu down");
                     let g = &self.gauntlets[menu_idx];
                     if !g.pressed.get() {
                         g.pressed.set(true);
@@ -164,9 +169,11 @@ impl ScriptBehavior for Script {
                     }
                 }
                 InputAction::MenuUp => {
+                    println!("> menu up");
                     self.gauntlets[menu_idx].pressed.set(false);
                 }
                 InputAction::GrabDown => {
+                    println!("> grab down");
                     for g in &self.gauntlets {
                         let matches = matches!(
                             (&g.target, event.device),
@@ -182,7 +189,9 @@ impl ScriptBehavior for Script {
                         }
                     }
                 }
-                InputAction::GrabUp => {}
+                InputAction::GrabUp => {
+                    println!("> grab up");
+                }
             }
         }
     }

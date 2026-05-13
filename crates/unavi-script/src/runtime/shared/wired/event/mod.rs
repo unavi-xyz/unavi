@@ -1,4 +1,10 @@
-use std::{sync::Arc, time::UNIX_EPOCH};
+use std::{
+    sync::{
+        Arc,
+        atomic::{AtomicU32, Ordering},
+    },
+    time::UNIX_EPOCH,
+};
 
 use async_channel::Receiver;
 
@@ -16,6 +22,8 @@ use crate::{
         slot_map::SlotMap,
     },
 };
+
+static NEXT_RECEPTOR_ID: AtomicU32 = AtomicU32::new(0);
 
 #[derive(Default)]
 pub struct EventFilter {
@@ -80,7 +88,7 @@ pub fn emit(
     let sender_doc = api.doc_id.as_bytes().to_vec();
 
     let registry = EVENT_RECEPTOR_REGISTRY.read();
-    for (_, entry) in registry.iter() {
+    for entry in registry.values() {
         if !entry.channels.iter().any(|c| c == &channel) {
             continue;
         }
@@ -169,11 +177,12 @@ pub fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::
         }
     };
 
-    let id = api
-        .wired_event
+    let id = NEXT_RECEPTOR_ID.fetch_add(1, Ordering::Relaxed);
+    api.wired_event
         .try_lock()?
         .receptors
-        .insert(EventReceptorRes { rx });
+        .items
+        .insert(id, EventReceptorRes { rx });
 
     EVENT_RECEPTOR_REGISTRY.write().insert(
         id,

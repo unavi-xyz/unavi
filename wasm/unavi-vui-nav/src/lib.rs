@@ -203,7 +203,7 @@ fn make_filter_table(doc: &Document, mat: &Material, nodes: &mut Vec<Node>) -> N
     let base = doc.create_node();
     let base_shape = Cuboid::new(Vec3::new(TABLE_W, BASE_H, TABLE_D));
     base.set_collider(Some(&base_shape.collider()));
-    base.set_rigid_body(Some(RigidBodyKind::Fixed));
+    base.set_rigid_body(Some(RigidBodyKind::Static));
     base.set_mesh(Some(&base_shape.mesh()));
     base.set_material(Some(mat));
     group.add_child(&base);
@@ -213,7 +213,7 @@ fn make_filter_table(doc: &Document, mat: &Material, nodes: &mut Vec<Node>) -> N
     for x_sign in [-1.0_f32, 1.0_f32] {
         let lip = doc.create_node();
         lip.set_collider(Some(&x_lip_shape.collider()));
-        lip.set_rigid_body(Some(RigidBodyKind::Fixed));
+        lip.set_rigid_body(Some(RigidBodyKind::Static));
         lip.set_mesh(Some(&x_lip_shape.mesh()));
         lip.set_material(Some(mat));
         lip.set_translation(Vec3::new(x_sign * X_LIP_X, LIP_Y, 0.0));
@@ -225,7 +225,7 @@ fn make_filter_table(doc: &Document, mat: &Material, nodes: &mut Vec<Node>) -> N
     for z_sign in [-1.0_f32, 1.0_f32] {
         let lip = doc.create_node();
         lip.set_collider(Some(&z_lip_shape.collider()));
-        lip.set_rigid_body(Some(RigidBodyKind::Fixed));
+        lip.set_rigid_body(Some(RigidBodyKind::Static));
         lip.set_mesh(Some(&z_lip_shape.mesh()));
         lip.set_material(Some(mat));
         lip.set_translation(Vec3::new(0.0, LIP_Y, z_sign * Z_LIP_Z));
@@ -236,7 +236,7 @@ fn make_filter_table(doc: &Document, mat: &Material, nodes: &mut Vec<Node>) -> N
     let divider = doc.create_node();
     let divider_shape = Cuboid::new(Vec3::new(LIP_T, LIP_H, TABLE_D));
     divider.set_collider(Some(&divider_shape.collider()));
-    divider.set_rigid_body(Some(RigidBodyKind::Fixed));
+    divider.set_rigid_body(Some(RigidBodyKind::Static));
     divider.set_mesh(Some(&divider_shape.mesh()));
     divider.set_material(Some(mat));
     divider.set_translation(Vec3::new(0.0, LIP_Y, 0.0));
@@ -258,7 +258,7 @@ fn make_basin(doc: &Document, nodes: &mut Vec<Node>) -> Node {
     dish.set_mesh(Some(&cylinder.mesh()));
     dish.set_material(Some(&mat));
     dish.set_collider(Some(&cylinder.collider()));
-    dish.set_rigid_body(Some(RigidBodyKind::Fixed));
+    dish.set_rigid_body(Some(RigidBodyKind::Static));
     group.add_child(&dish);
     nodes.push(dish);
 

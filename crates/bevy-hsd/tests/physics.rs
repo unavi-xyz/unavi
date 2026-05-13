@@ -143,13 +143,13 @@ fn rigid_body_dynamic_inserted() {
 }
 
 #[test]
-fn rigid_body_fixed_maps_to_kinematic() {
+fn rigid_body_static_maps_to_kinematic() {
     let mut h = TestHarness::new();
     add_node_with_data(
         &h,
         HsdNode {
             rigid_body: Some(HsdRigidBody {
-                kind: "fixed".into(),
+                kind: "static".into(),
                 ..Default::default()
             }),
             ..Default::default()

@@ -295,7 +295,7 @@ pub(crate) fn insert_rigid_body(ent: Entity, data: &HsdRigidBody, commands: &mut
     let kind = match data.kind.as_str() {
         "dynamic" => RigidBody::Dynamic,
         // Static x static collisions panic avian.
-        "fixed" | "kinematic" => RigidBody::Kinematic,
+        "static" | "kinematic" => RigidBody::Kinematic,
         other => {
             warn!("invalid rigid body kind: {other}");
             RigidBody::default()

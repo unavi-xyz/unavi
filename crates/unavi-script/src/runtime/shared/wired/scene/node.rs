@@ -486,8 +486,8 @@ pub enum NodeCollider {
 
 pub enum NodeRigidBody {
     Dynamic,
-    Fixed,
     Kinematic,
+    Static,
 }
 
 pub async fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<NodeCollider>> {
@@ -582,8 +582,8 @@ pub fn rigid_body(api: &Api, rep: u32) -> anyhow::Result<Option<NodeRigidBody>> 
     };
     Ok(match rb.kind.as_str() {
         "dynamic" => Some(NodeRigidBody::Dynamic),
-        "fixed" => Some(NodeRigidBody::Fixed),
         "kinematic" => Some(NodeRigidBody::Kinematic),
+        "static" => Some(NodeRigidBody::Static),
         _ => None,
     })
 }
@@ -600,8 +600,8 @@ pub fn set_rigid_body(api: &Api, rep: u32, value: Option<NodeRigidBody>) -> anyh
     data.rigid_body = value.map(|rb| HsdRigidBody {
         kind: SmolStr::from(match rb {
             NodeRigidBody::Dynamic => "dynamic",
-            NodeRigidBody::Fixed => "fixed",
             NodeRigidBody::Kinematic => "kinematic",
+            NodeRigidBody::Static => "static",
         }),
         ..Default::default()
     });

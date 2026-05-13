@@ -58,11 +58,16 @@ pub(crate) fn on_query_record(mut req: On<QueryRecord>, actor: Query<&LocalActor
             }
         };
 
+        info!(?creator, ?schemas, "Querying");
+
         tokio::select! {
             () = cancel_fut => {},
             res = query(creator, schemas, &actor) => {
                 match res {
-                    Ok(ids) => { let _ = tx.send(ids).await; }
+                    Ok(ids) => {
+                        info!("Query result: {ids:?}");
+                        let _ = tx.send(ids).await;
+                    }
                     Err(err) => warn!(?err, "Could not query records"),
                 }
             }

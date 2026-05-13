@@ -234,20 +234,24 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> anyhow::Result<u32> {
 
 pub async fn create_document(api: &Api) -> anyhow::Result<u32> {
     let id = {
-        let (mut write, rx, _cancel) = WriteRecord::new(None);
+        let (mut write, rx, cancel) = WriteRecord::new(None);
         write.schemas = vec![SchemaDef {
             schema: (&*SCHEMA_HSD).into(),
             container: "hsd".into(),
             f: Arc::new(|_| Ok(())),
         }];
         AsyncCommands::default().trigger(write).send().await?;
-        rx.recv().await?
+        let id = rx.recv().await?;
+        drop(cancel);
+        id
     };
 
     let doc = {
-        let (read, rx, _cancel) = ReadRecord::new(id);
+        let (read, rx, cancel) = ReadRecord::new(id);
         AsyncCommands::default().trigger(read).send().await?;
-        Arc::new(rx.recv().await?)
+        let doc = rx.recv().await?;
+        drop(cancel);
+        Arc::new(doc)
     };
 
     spawn_child_doc(api, Arc::clone(&doc), id)?;

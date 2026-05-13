@@ -65,7 +65,6 @@ impl GuestVuiModule for VuiModule {
         }
 
         while let Some(event) = self.activate_receptor.poll() {
-            println!("<- {}", event.channel);
             match event.channel.as_str() {
                 CH_ACTIVATE => {
                     if let Ok(p) = postcard::from_bytes::<ActivatePayload>(&event.payload) {

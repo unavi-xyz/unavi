@@ -168,11 +168,9 @@ pub fn send_to_listeners(
     let Some(target_node) = trigger.target_node else {
         return;
     };
-
     let Ok((id, node_doc)) = nodes.get(target_node) else {
         return;
     };
-
     let Ok(doc_id) = docs.get(node_doc.0) else {
         return;
     };
@@ -181,7 +179,6 @@ pub fn send_to_listeners(
         if l.target_node != id.0 && l.target_doc != doc_id.0 {
             continue;
         }
-
         let _ = l.tx.try_send(trigger.event);
     }
 }

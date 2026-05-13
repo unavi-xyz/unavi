@@ -68,11 +68,15 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
 }
 
 pub fn populate_firewall_entities(
-    firewalls: Query<(Entity, &FirewallEntities, &mut Firewall)>,
+    firewalls: Query<(Entity, &FirewallEntities, Option<&mut Firewall>), With<HsdRecordId>>,
     ids: Query<&HsdRecordId>,
     mut commands: Commands,
 ) {
     for (ent, fw_ents, fw) in firewalls {
+        let Some(fw) = fw else {
+            commands.entity(ent).insert(Firewall::default());
+            continue;
+        };
         let Some(mut fw) = fw.0.try_write() else {
             continue;
         };

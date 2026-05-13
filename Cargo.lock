@@ -14142,6 +14142,7 @@ dependencies = [
 name = "unavi-vui-module"
 version = "0.0.16"
 dependencies = [
+ "blake3",
  "postcard",
  "serde",
  "wired-prelude",

@@ -30,7 +30,13 @@ impl Plugin for ScenePlugin {
                     system_scripts::spawn_system_scripts,
                 ),
             )
-            .add_systems(FixedUpdate, respawn::teleport_from_void);
+            .add_systems(
+                FixedUpdate,
+                (
+                    respawn::teleport_from_void,
+                    system_scripts::populate_firewall_entities,
+                ),
+            );
     }
 }
 

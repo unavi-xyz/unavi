@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{JsValue, prelude::*};
 
 use crate::runtime::{
     Runtime,
@@ -15,6 +15,36 @@ use crate::runtime::{
 };
 
 use super::scene::{node::NodeHandle, util::opt_rep};
+
+fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
+    let obj = js_sys::Object::new();
+    match scope {
+        SenderScope::Global => {
+            js_sys::Reflect::set(&obj, &"tag".into(), &"global".into()).ok();
+        }
+        SenderScope::Spatial { distance, node } => {
+            let node_rep = api.wired_scene.try_lock().ok().map_or(u32::MAX, |mut scene| {
+                scene.nodes.insert(NodeRes {
+                    doc: Arc::clone(&api.doc),
+                    doc_id: node.doc,
+                    id: node.node,
+                    is_proxy: true,
+                })
+            });
+            let val = js_sys::Object::new();
+            js_sys::Reflect::set(&val, &"distance".into(), &distance.into()).ok();
+            js_sys::Reflect::set(
+                &val,
+                &"node".into(),
+                &JsValue::from(NodeHandle::new(node_rep, Arc::clone(api))),
+            )
+            .ok();
+            js_sys::Reflect::set(&obj, &"tag".into(), &"spatial".into()).ok();
+            js_sys::Reflect::set(&obj, &"val".into(), &val.into()).ok();
+        }
+    }
+    obj.into()
+}
 
 #[wasm_bindgen]
 pub struct EventReceptorHandle {
@@ -37,20 +67,25 @@ impl Drop for EventReceptorHandle {
 }
 
 fn js_to_event_filter(value: &JsValue) -> EventFilter {
-    let get = |k: &str| js_sys::Reflect::get(value, &k.into()).ok();
+    let get = |k: &str| {
+        js_sys::Reflect::get(value, &k.into())
+            .ok()
+            .filter(|v| !v.is_undefined() && !v.is_null())
+    };
 
     let scope = get("scope")
         .and_then(|v| {
-            let kind = js_sys::Reflect::get(&v, &"type".into())
+            let tag = js_sys::Reflect::get(&v, &"tag".into())
                 .ok()
                 .and_then(|t| t.as_string())?;
-            match kind.as_str() {
+            match tag.as_str() {
                 "spatial" => {
-                    let radius = js_sys::Reflect::get(&v, &"radius".into())
+                    let val = js_sys::Reflect::get(&v, &"val".into()).ok()?;
+                    let radius = js_sys::Reflect::get(&val, &"radius".into())
                         .ok()
                         .and_then(|r| r.as_f64())
                         .unwrap_or(0.0) as f32;
-                    let node = js_sys::Reflect::get(&v, &"node".into())
+                    let node = js_sys::Reflect::get(&val, &"node".into())
                         .ok()
                         .and_then(|n| opt_rep(&n))
                         .unwrap_or(u32::MAX);
@@ -80,36 +115,23 @@ impl EventReceptorHandle {
             return JsValue::NULL;
         };
 
-        let obj = js_sys::Object::new();
-        let payload: js_sys::Uint8Array = event.payload.as_slice().into();
         let sender_doc: js_sys::Uint8Array = event.sender_document.as_slice().into();
+        let payload: js_sys::Uint8Array = event.payload.as_slice().into();
 
+        let sender = js_sys::Object::new();
+        js_sys::Reflect::set(&sender, &"document".into(), &sender_doc.into()).ok();
+        js_sys::Reflect::set(
+            &sender,
+            &"scope".into(),
+            &scope_to_js(event.sender_scope, &self.api),
+        )
+        .ok();
+
+        let obj = js_sys::Object::new();
         js_sys::Reflect::set(&obj, &"channel".into(), &event.channel.into()).ok();
         js_sys::Reflect::set(&obj, &"payload".into(), &payload.into()).ok();
-        js_sys::Reflect::set(&obj, &"senderDocument".into(), &sender_doc.into()).ok();
-        js_sys::Reflect::set(&obj, &"time".into(), &(event.time as f64).into()).ok();
-
-        match event.sender_scope {
-            SenderScope::Global => {
-                js_sys::Reflect::set(&obj, &"sender".into(), &"global".into()).ok();
-            }
-            SenderScope::Spatial { distance, node } => {
-                let node_id = self.api.wired_scene.try_lock().ok().map(|mut scene| {
-                    scene.nodes.insert(NodeRes {
-                        doc: Arc::clone(&self.api.doc),
-                        doc_id: node.doc,
-                        id: node.node,
-                        is_proxy: true,
-                    })
-                });
-                js_sys::Reflect::set(&obj, &"sender".into(), &"spatial".into()).ok();
-                js_sys::Reflect::set(&obj, &"senderDistance".into(), &distance.into()).ok();
-                if let Some(id) = node_id {
-                    let handle = NodeHandle::new(id, Arc::clone(&self.api));
-                    js_sys::Reflect::set(&obj, &"senderNode".into(), &JsValue::from(handle)).ok();
-                }
-            }
-        }
+        js_sys::Reflect::set(&obj, &"sender".into(), &sender.into()).ok();
+        js_sys::Reflect::set(&obj, &"time".into(), &js_sys::BigInt::from(event.time).into()).ok();
 
         obj.into()
     }

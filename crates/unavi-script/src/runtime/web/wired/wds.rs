@@ -71,7 +71,11 @@ fn js_to_query_filter(value: &JsValue) -> Option<QueryFilter> {
     if value.is_null() || value.is_undefined() {
         return None;
     }
-    let get = |k: &str| js_sys::Reflect::get(value, &k.into()).ok();
+    let get = |k: &str| {
+        js_sys::Reflect::get(value, &k.into())
+            .ok()
+            .filter(|v| !v.is_undefined() && !v.is_null())
+    };
 
     let creator = get("creator").and_then(|v| v.as_string());
     let schemas = get("schemas").map(|v| {
@@ -82,6 +86,13 @@ fn js_to_query_filter(value: &JsValue) -> Option<QueryFilter> {
     });
 
     Some(QueryFilter { creator, schemas })
+}
+
+fn variant_obj(tag: &str, val: JsValue) -> JsValue {
+    let obj = js_sys::Object::new();
+    js_sys::Reflect::set(&obj, &"tag".into(), &tag.into()).ok();
+    js_sys::Reflect::set(&obj, &"val".into(), &val).ok();
+    obj.into()
 }
 
 #[wasm_bindgen]
@@ -104,7 +115,6 @@ impl QueryFutureHandle {
         let Ok(Some(result)) = shared::wired::wds::query_future_poll(&self.api, self.rep) else {
             return JsValue::NULL;
         };
-        let obj = js_sys::Object::new();
         match result {
             Ok(hashes) => {
                 let arr: js_sys::Array = hashes
@@ -114,13 +124,10 @@ impl QueryFutureHandle {
                         JsValue::from(bytes)
                     })
                     .collect();
-                js_sys::Reflect::set(&obj, &"ok".into(), &arr.into()).ok();
+                variant_obj("ok", arr.into())
             }
-            Err(()) => {
-                js_sys::Reflect::set(&obj, &"err".into(), &JsValue::UNDEFINED).ok();
-            }
+            Err(()) => variant_obj("err", JsValue::UNDEFINED),
         }
-        obj.into()
     }
 }
 
@@ -130,7 +137,6 @@ impl ReadFutureHandle {
         let Ok(Some(result)) = shared::wired::wds::read_future_poll(&self.api, self.rep) else {
             return JsValue::NULL;
         };
-        let obj = js_sys::Object::new();
         match result {
             Ok(record) => {
                 let record_obj = js_sys::Object::new();
@@ -154,13 +160,10 @@ impl ReadFutureHandle {
                 js_sys::Reflect::set(&record_obj, &"creator".into(), &record.creator.into()).ok();
                 js_sys::Reflect::set(&record_obj, &"schemas".into(), &schemas.into()).ok();
                 js_sys::Reflect::set(&record_obj, &"containers".into(), &containers.into()).ok();
-                js_sys::Reflect::set(&obj, &"ok".into(), &record_obj.into()).ok();
+                variant_obj("ok", record_obj.into())
             }
-            Err(()) => {
-                js_sys::Reflect::set(&obj, &"err".into(), &JsValue::UNDEFINED).ok();
-            }
+            Err(()) => variant_obj("err", JsValue::UNDEFINED),
         }
-        obj.into()
     }
 }
 

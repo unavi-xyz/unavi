@@ -41,7 +41,7 @@ pub fn tick_scripts(
         if delta < TICKRATE {
             continue;
         }
-        if ticking.0.swap(true, Ordering::Relaxed) {
+        if ticking.0.swap(true, Ordering::SeqCst) {
             continue;
         }
 
@@ -71,7 +71,7 @@ pub fn tick_scripts(
                 store.data().api.doc.commit();
                 drop(store);
 
-                ticking.store(false, Ordering::Relaxed);
+                ticking.store(false, Ordering::SeqCst);
             }
             .instrument(span.0.clone()),
         );

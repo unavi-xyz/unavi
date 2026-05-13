@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{JsValue, prelude::*};
 
 use crate::runtime::shared::{
     self, Api,
@@ -8,6 +8,32 @@ use crate::runtime::shared::{
 };
 
 use super::util::{f32s_to_js, js_to_f32s};
+
+fn indices_to_js(indices: MeshIndices) -> JsValue {
+    let obj = js_sys::Object::new();
+    let (tag, val): (&str, JsValue) = match indices {
+        MeshIndices::Half(v) => ("half", js_sys::Uint16Array::from(v.as_slice()).into()),
+        MeshIndices::Full(v) => ("full", js_sys::Uint32Array::from(v.as_slice()).into()),
+    };
+    js_sys::Reflect::set(&obj, &"tag".into(), &tag.into()).ok();
+    js_sys::Reflect::set(&obj, &"val".into(), &val).ok();
+    obj.into()
+}
+
+fn js_to_indices(value: &JsValue) -> Option<MeshIndices> {
+    if value.is_null() || value.is_undefined() {
+        return None;
+    }
+    let tag = js_sys::Reflect::get(value, &"tag".into())
+        .ok()
+        .and_then(|v| v.as_string())?;
+    let val = js_sys::Reflect::get(value, &"val".into()).unwrap_or_default();
+    match tag.as_str() {
+        "half" => Some(MeshIndices::Half(js_sys::Uint16Array::new(&val).to_vec())),
+        "full" => Some(MeshIndices::Full(js_sys::Uint32Array::new(&val).to_vec())),
+        _ => None,
+    }
+}
 
 #[wasm_bindgen]
 pub struct MeshHandle {
@@ -85,44 +111,15 @@ impl MeshHandle {
     }
 
     pub async fn indices(&self) -> JsValue {
-        let Ok(Some(indices)) = shared::wired::scene::mesh::indices(&self.api, self.rep).await
-        else {
-            return JsValue::NULL;
-        };
-        let (tag, val): (&str, JsValue) = match indices {
-            MeshIndices::Half(v) => {
-                let arr: js_sys::Uint16Array = v.as_slice().into();
-                ("half", arr.into())
-            }
-            MeshIndices::Full(v) => {
-                let arr: js_sys::Uint32Array = v.as_slice().into();
-                ("full", arr.into())
-            }
-        };
-        let obj = js_sys::Object::new();
-        js_sys::Reflect::set(&obj, &"tag".into(), &tag.into()).expect("reflect");
-        js_sys::Reflect::set(&obj, &"val".into(), &val).expect("reflect");
-        obj.into()
+        shared::wired::scene::mesh::indices(&self.api, self.rep).await
+            .ok()
+            .flatten()
+            .map_or(JsValue::NULL, indices_to_js)
     }
 
     #[wasm_bindgen(js_name = "setIndices")]
     pub async fn set_indices(&self, value: JsValue) -> Result<(), String> {
-        if value.is_null() || value.is_undefined() {
-            return shared::wired::scene::mesh::set_indices(&self.api, self.rep, None)
-                .await
-                .map_err(|e| e.to_string());
-        }
-        let tag = js_sys::Reflect::get(&value, &"tag".into())
-            .ok()
-            .and_then(|v| v.as_string())
-            .unwrap_or_default();
-        let val = js_sys::Reflect::get(&value, &"val".into()).unwrap_or_default();
-        let indices = match tag.as_str() {
-            "half" => Some(MeshIndices::Half(js_sys::Uint16Array::new(&val).to_vec())),
-            "full" => Some(MeshIndices::Full(js_sys::Uint32Array::new(&val).to_vec())),
-            _ => None,
-        };
-        shared::wired::scene::mesh::set_indices(&self.api, self.rep, indices)
+        shared::wired::scene::mesh::set_indices(&self.api, self.rep, js_to_indices(&value))
             .await
             .map_err(|e| e.to_string())
     }

@@ -27,13 +27,11 @@ pub(crate) fn read_raycast_input(
     let was_squeezing = *is_squeezing;
     *is_squeezing = action.any;
 
-    if was_squeezing
-        && !*is_squeezing
-        && let Some(target) = *squeeze_target
-    {
-        commands
-            .entity(target)
-            .trigger(|entity| SqueezeUp { entity, pointer });
+    if was_squeezing && !*is_squeezing {
+        commands.trigger(SqueezeUp {
+            entity: *squeeze_target,
+            pointer,
+        });
         *squeeze_target = None;
     }
 
@@ -44,25 +42,25 @@ pub(crate) fn read_raycast_input(
     // Max hits should be set to 1.
     debug_assert!(ray_hits.iter().count() <= 1);
 
-    let Some(hit) = ray_hits.iter().next() else {
+    let hit = ray_hits.iter().next();
+
+    if let Some(hit) = hit {
+        *crosshair_vis = Visibility::Visible;
+        crosshair_tr.translation = ray.global_origin() + (ray.global_direction() * hit.distance);
+        let up = arbitrary_up(hit.normal);
+        *crosshair_tr = crosshair_tr.looking_to(up, hit.normal);
+    } else {
         *crosshair_vis = Visibility::Hidden;
         crosshair_tr.scale = Vec3::ONE;
-        return;
-    };
-
-    *crosshair_vis = Visibility::Visible;
-
-    crosshair_tr.translation = ray.global_origin() + (ray.global_direction() * hit.distance);
-
-    let up = arbitrary_up(hit.normal);
-    *crosshair_tr = crosshair_tr.looking_to(up, hit.normal);
-    // crosshair_tr.scale = Vec3::splat(hit.distance.max(MIN_SCALE_DISTANCE));
+    }
 
     if !was_squeezing && *is_squeezing {
-        commands
-            .entity(hit.entity)
-            .trigger(|entity| SqueezeDown { entity, pointer });
-        *squeeze_target = Some(hit.entity);
+        let hit_entity = hit.map(|h| h.entity);
+        commands.trigger(SqueezeDown {
+            entity: hit_entity,
+            pointer,
+        });
+        *squeeze_target = hit_entity;
     }
 }
 

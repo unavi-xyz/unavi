@@ -24,7 +24,11 @@ pub fn js_to_vec3(v: &JsValue, default: [f32; 3]) -> [f32; 3] {
             .and_then(|v| v.as_f64())
             .unwrap_or(d as f64) as f32
     };
-    [get("x", default[0]), get("y", default[1]), get("z", default[2])]
+    [
+        get("x", default[0]),
+        get("y", default[1]),
+        get("z", default[2]),
+    ]
 }
 
 pub fn js_to_quat(v: &JsValue, default: [f32; 4]) -> [f32; 4] {
@@ -45,7 +49,7 @@ pub fn js_to_quat(v: &JsValue, default: [f32; 4]) -> [f32; 4] {
 pub fn f32s_to_js(result: anyhow::Result<Option<Vec<f32>>>) -> JsValue {
     match result {
         Ok(Some(v)) => js_sys::Float32Array::from(v.as_slice()).into(),
-        _ => JsValue::NULL,
+        _ => JsValue::UNDEFINED,
     }
 }
 

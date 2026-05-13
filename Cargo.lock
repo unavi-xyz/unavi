@@ -13889,14 +13889,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-beacon-protocol"
-version = "0.0.16"
-dependencies = [
- "wired-prelude",
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
 name = "unavi-client"
 version = "0.0.16"
 dependencies = [

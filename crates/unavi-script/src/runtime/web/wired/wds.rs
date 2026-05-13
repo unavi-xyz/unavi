@@ -113,7 +113,7 @@ impl WdsHandle {
 impl QueryFutureHandle {
     pub fn poll(&self) -> JsValue {
         let Ok(Some(result)) = shared::wired::wds::query_future_poll(&self.api, self.rep) else {
-            return JsValue::NULL;
+            return JsValue::UNDEFINED;
         };
         match result {
             Ok(hashes) => {
@@ -135,7 +135,7 @@ impl QueryFutureHandle {
 impl ReadFutureHandle {
     pub fn poll(&self) -> JsValue {
         let Ok(Some(result)) = shared::wired::wds::read_future_poll(&self.api, self.rep) else {
-            return JsValue::NULL;
+            return JsValue::UNDEFINED;
         };
         match result {
             Ok(record) => {

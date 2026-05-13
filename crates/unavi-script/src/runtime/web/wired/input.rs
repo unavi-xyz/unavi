@@ -34,7 +34,7 @@ impl Drop for InputListenerHandle {
 impl InputListenerHandle {
     pub fn poll(&self) -> JsValue {
         let Ok(Some(event)) = shared::wired::input::listener::poll(&self.api, self.rep) else {
-            return JsValue::NULL;
+            return JsValue::UNDEFINED;
         };
 
         let action = match event.action {

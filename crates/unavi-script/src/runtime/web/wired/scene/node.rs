@@ -298,7 +298,7 @@ impl NodeHandle {
         shared::wired::scene::node::collider(&self.api, self.rep).await
             .ok()
             .flatten()
-            .map_or(JsValue::NULL, collider_to_js)
+            .map_or(JsValue::UNDEFINED, collider_to_js)
     }
 
     #[wasm_bindgen(js_name = "setCollider")]
@@ -311,7 +311,7 @@ impl NodeHandle {
     #[wasm_bindgen(js_name = "rigidBody")]
     pub fn rigid_body(&self) -> JsValue {
         let Ok(Some(rb)) = shared::wired::scene::node::rigid_body(&self.api, self.rep) else {
-            return JsValue::NULL;
+            return JsValue::UNDEFINED;
         };
         match rb {
             NodeRigidBody::Dynamic => "dynamic".into(),

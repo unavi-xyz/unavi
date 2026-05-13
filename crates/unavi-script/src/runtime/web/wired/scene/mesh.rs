@@ -111,10 +111,11 @@ impl MeshHandle {
     }
 
     pub async fn indices(&self) -> JsValue {
-        shared::wired::scene::mesh::indices(&self.api, self.rep).await
+        shared::wired::scene::mesh::indices(&self.api, self.rep)
+            .await
             .ok()
             .flatten()
-            .map_or(JsValue::NULL, indices_to_js)
+            .map_or(JsValue::UNDEFINED, indices_to_js)
     }
 
     #[wasm_bindgen(js_name = "setIndices")]

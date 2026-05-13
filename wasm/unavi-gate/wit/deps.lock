@@ -1,8 +1,3 @@
-[unavi-beacon-protocol]
-path = "../../unavi-beacon-protocol/wit"
-sha256 = "fae1332b06d8326169d40367de27b412591038e11d75e2c4a430cd25d19a49c8"
-sha512 = "69b2a50eb4e1ed0126aeb3621494c28542d50c2c685f51b55cb50a398c5af3a198f8601a5853a4aaebfc4d073f669f3e1267d60f4250ac07b948f46f316646cc"
-
 [unavi-shapes]
 path = "../../unavi-shapes/wit"
 sha256 = "545b467444538af545b07dbc04f599312613df521aa96de4936a1bc6bc0728a2"

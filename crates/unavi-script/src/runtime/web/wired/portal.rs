@@ -14,7 +14,7 @@ fn portal_dest_to_js(dest: PortalDestination) -> JsValue {
     let obj = js_sys::Object::new();
     let space: js_sys::Uint8Array = dest.space.as_slice().into();
     js_sys::Reflect::set(&obj, &"space".into(), &space.into()).ok();
-    let portal: JsValue = dest.portal.map_or(JsValue::NULL, Into::into);
+    let portal: JsValue = dest.portal.map_or(JsValue::UNDEFINED, Into::into);
     js_sys::Reflect::set(&obj, &"portal".into(), &portal).ok();
     obj.into()
 }
@@ -66,14 +66,22 @@ fn js_to_portal_params(value: &JsValue) -> PortalParams {
     let ro = get(&tf_js, "rotation");
     let sc = get(&tf_js, "scale");
     let transform = PortalTransform {
-        translation: [f32_at(&tr, "x", 0.0), f32_at(&tr, "y", 0.0), f32_at(&tr, "z", 0.0)],
+        translation: [
+            f32_at(&tr, "x", 0.0),
+            f32_at(&tr, "y", 0.0),
+            f32_at(&tr, "z", 0.0),
+        ],
         rotation: [
             f32_at(&ro, "x", 0.0),
             f32_at(&ro, "y", 0.0),
             f32_at(&ro, "z", 0.0),
             f32_at(&ro, "w", 1.0),
         ],
-        scale: [f32_at(&sc, "x", 1.0), f32_at(&sc, "y", 1.0), f32_at(&sc, "z", 1.0)],
+        scale: [
+            f32_at(&sc, "x", 1.0),
+            f32_at(&sc, "y", 1.0),
+            f32_at(&sc, "z", 1.0),
+        ],
     };
 
     PortalParams {
@@ -91,7 +99,7 @@ impl PortalHandle {
 
     pub fn destination(&self) -> JsValue {
         shared::wired::portal::destination(&self.api, self.rep)
-            .map_or(JsValue::NULL, portal_dest_to_js)
+            .map_or(JsValue::UNDEFINED, portal_dest_to_js)
     }
 
     pub fn id(&self) -> String {

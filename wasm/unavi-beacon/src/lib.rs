@@ -1,28 +1,35 @@
 use std::{
     str::FromStr,
-    time::{Duration, Instant},
+    time::{Duration, SystemTime},
 };
 
 use blake3::Hash;
 use wired_prelude::prelude::*;
 
 use crate::{
-    unavi::{beacon_protocol::api::BeaconEmitter, shapes::api::Cuboid},
-    wired::scene::{api::self_document, types::RigidBodyKind},
+    unavi::shapes::api::Cuboid,
+    wired::{
+        event::types::{EventFilter, EventScope, SpatialScope},
+        scene::{
+            api::self_document,
+            types::{Node, RigidBodyKind},
+        },
+    },
 };
 
 mod color;
 
 wired_prelude::generate_script!(Script);
 
-const SIZE: f32 = 0.15;
-
+const CHANNEL: &str = "unavi::beacon::id";
 const EMIT_INTERVAL: Duration = Duration::from_secs(3);
 const EVENT_RADIUS: f32 = SIZE * 3.0;
+const SIZE: f32 = 0.15;
 
 struct Script {
-    emitter: BeaconEmitter,
-    time: Instant,
+    id: Hash,
+    node: Node,
+    time: SystemTime,
 }
 
 impl ScriptBehavior for Script {
@@ -51,17 +58,29 @@ impl ScriptBehavior for Script {
 
         println!("Beacon initialized: {id}");
         Self {
-            emitter: BeaconEmitter::new(id.as_bytes(), node, EVENT_RADIUS),
-            time: Instant::now(),
+            id,
+            node,
+            time: SystemTime::now(),
         }
     }
 
     fn tick(&mut self) {
-        if self.time.elapsed() < EMIT_INTERVAL {
+        if self.time.elapsed().expect("elapsed") < EMIT_INTERVAL {
             return;
         }
-        self.time = Instant::now();
-        self.emitter.emit();
+        self.time = SystemTime::now();
+
         println!("Emitting beacon event");
+        wired::event::api::emit(
+            CHANNEL,
+            self.id.as_bytes(),
+            EventFilter {
+                documents: None,
+                scope: EventScope::Spatial(SpatialScope {
+                    node: self.node.clone(),
+                    radius: EVENT_RADIUS,
+                }),
+            },
+        );
     }
 }

@@ -112,7 +112,7 @@ fn js_to_event_filter(value: &JsValue) -> EventFilter {
 impl EventReceptorHandle {
     pub fn poll(&self) -> JsValue {
         let Ok(Some(event)) = shared::wired::event::receptor_poll(&self.api, self.rep) else {
-            return JsValue::NULL;
+            return JsValue::UNDEFINED;
         };
 
         let sender_doc: js_sys::Uint8Array = event.sender_document.as_slice().into();

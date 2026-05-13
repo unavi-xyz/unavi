@@ -7,11 +7,16 @@ use blake3::Hash;
 use wired_prelude::prelude::*;
 
 use crate::{
-    unavi::{beacon_protocol::api::BeaconReceptor, shapes::api::Cuboid},
-    wired::scene::{api::self_document, types::RigidBodyKind},
+    unavi::shapes::api::Cuboid,
+    wired::{
+        event::types::{EventFilter, EventReceptor, EventScope, SpatialScope},
+        scene::{api::self_document, types::RigidBodyKind},
+    },
 };
 
 wired_prelude::generate_script!(Script);
+
+const CHANNEL: &str = "unavi::beacon::id";
 
 const PORTAL_WIDTH: f32 = GOLDEN_RATIO;
 const PORTAL_HEIGHT: f32 = PORTAL_WIDTH * GOLDEN_RATIO;
@@ -25,8 +30,8 @@ const EVENT_RADIUS: f32 = PEDESTAL_THICKNESS * 2.0;
 const TARGET_DECAY: Duration = Duration::from_secs(10);
 
 struct Script {
-    receptor: BeaconReceptor,
-    target: Option<(Vec<u8>, SystemTime)>,
+    receptor: EventReceptor,
+    target: Option<(Hash, SystemTime)>,
 }
 
 impl ScriptBehavior for Script {
@@ -88,10 +93,21 @@ impl ScriptBehavior for Script {
         pedestal.add_child(&receptor_node);
         receptor_node.set_translation(Vec3::new(0.0, PEDESTAL_HEIGHT, 0.0));
 
+        let receptor = wired::event::api::listen(
+            &[CHANNEL.to_string()],
+            EventFilter {
+                documents: None,
+                scope: EventScope::Spatial(SpatialScope {
+                    node: receptor_node,
+                    radius: EVENT_RADIUS,
+                }),
+            },
+        );
+
         println!("Gate ready");
 
         Self {
-            receptor: BeaconReceptor::new(receptor_node, EVENT_RADIUS),
+            receptor,
             target: None,
         }
     }
@@ -103,17 +119,15 @@ impl ScriptBehavior for Script {
             self.target = None;
         }
 
-        println!("-> receptor.poll");
-        while let Some(id) = self.receptor.poll() {
+        while let Some(event) = self.receptor.poll() {
+            let Ok(id) = Hash::from_slice(&event.payload) else {
+                continue;
+            };
             if self.target.as_ref().is_some_and(|(x, _)| *x != id) {
                 continue;
             }
-            let Ok(id_hash) = Hash::from_slice(&id) else {
-                continue;
-            };
-            println!("Loading beacon: {id_hash}");
+            println!("Loading beacon: {id}");
             self.target = Some((id, SystemTime::now()));
         }
-        println!("<- receptor.poll");
     }
 }

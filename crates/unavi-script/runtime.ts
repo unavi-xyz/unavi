@@ -94,41 +94,38 @@ export async function instantiateScript(
   const imports = build_imports(wasi, rt);
 
   const instance = await mod.instantiate(getCoreModule, imports);
+  if (options.tracing) {
+    // Only run for a limited number of ticks if we are tracing calls for debugging.
+    // Too many starts to lag the browser.
+    instance.ticks = 0;
+    instance.maxTicks = 2;
+  }
   instance.name = name;
-  instance.tracing = options.tracing;
   console.log("Instantiated script", name, instance);
 
   return instance;
 }
 
+
 export async function scriptInit(instance: any): Promise<void> {
-  if (instance.tracing) {
-    console.log("> init", instance.name);
-  }
   await instance.guestApi.init();
-  if (instance.tracing) {
-    console.log("< init", instance.name);
-  }
 }
 
 export async function scriptRender(instance: any): Promise<void> {
-  if (instance.tracing) {
-    console.log("> render", instance.name);
+  if (instance.ticks !== undefined && instance.ticks >= instance.maxTicks) {
+    return;
   }
   await instance.guestApi.render();
-  if (instance.tracing) {
-    console.log("< render", instance.name);
-  }
 }
 
 export async function scriptTick(instance: any): Promise<void> {
-  if (instance.tracing) {
-    console.log("> tick", instance.name);
+  if (instance.ticks !== undefined) {
+    if (instance.ticks >= instance.maxTicks) {
+      return;
+    }
+    instance.ticks += 1;
   }
   await instance.guestApi.tick();
-  if (instance.tracing) {
-    console.log("< tick", instance.name);
-  }
 }
 
 function build_imports(wasi: WASIShim, rt: any) {

@@ -43,7 +43,7 @@ pub fn bridge_squeeze_down(
 
     Some(SendInput {
         event,
-        target_node: Some(trigger.entity),
+        target_node: trigger.entity,
     })
 }
 
@@ -66,7 +66,7 @@ pub fn bridge_squeeze_up(
 
     Some(SendInput {
         event,
-        target_node: Some(trigger.entity),
+        target_node: trigger.entity,
     })
 }
 

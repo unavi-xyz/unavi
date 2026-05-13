@@ -155,7 +155,6 @@ impl ScriptBehavior for Script {
 
             match event.action {
                 InputAction::MenuDown => {
-                    println!("> menu down");
                     let g = &self.gauntlets[menu_idx];
                     if !g.pressed.get() {
                         g.pressed.set(true);
@@ -169,11 +168,9 @@ impl ScriptBehavior for Script {
                     }
                 }
                 InputAction::MenuUp => {
-                    println!("> menu up");
                     self.gauntlets[menu_idx].pressed.set(false);
                 }
                 InputAction::GrabDown => {
-                    println!("> grab down");
                     for g in &self.gauntlets {
                         let matches = matches!(
                             (&g.target, event.device),
@@ -189,9 +186,7 @@ impl ScriptBehavior for Script {
                         }
                     }
                 }
-                InputAction::GrabUp => {
-                    println!("> grab up");
-                }
+                InputAction::GrabUp => {}
             }
         }
     }

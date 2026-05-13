@@ -26,12 +26,16 @@ fn on_squeeze_down(
     rigid_bodies: Query<&RigidBody>,
     mut commands: Commands,
 ) {
-    if !matches!(rigid_bodies.get(trigger.entity), Ok(RigidBody::Dynamic)) {
+    let Some(entity) = trigger.entity else {
+        return;
+    };
+
+    if !matches!(rigid_bodies.get(entity), Ok(RigidBody::Dynamic)) {
         return;
     }
 
-    let Ok(obj_tr) = transforms.get(trigger.entity) else {
-        warn!(obj = %trigger.entity, "object transform not found");
+    let Ok(obj_tr) = transforms.get(entity) else {
+        warn!(obj = %entity, "object transform not found");
         return;
     };
     let obj_tr = obj_tr.compute_transform();
@@ -47,7 +51,7 @@ fn on_squeeze_down(
 
     // TODO claim / broadcast over network within unavi-space
 
-    commands.entity(trigger.entity).insert((
+    commands.entity(entity).insert((
         Grabbed {
             pointer: trigger.pointer,
             offset_tra,
@@ -58,9 +62,10 @@ fn on_squeeze_down(
 }
 
 fn on_squeeze_up(trigger: On<SqueezeUp>, mut commands: Commands) {
-    commands
-        .entity(trigger.entity)
-        .remove::<(Grabbed, GravityScale)>();
+    let Some(entity) = trigger.entity else {
+        return;
+    };
+    commands.entity(entity).remove::<(Grabbed, GravityScale)>();
 }
 
 const GRAB_DEAD_ZONE: f32 = 0.001;

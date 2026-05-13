@@ -62,9 +62,10 @@ fn collider_to_js(c: NodeCollider) -> JsValue {
         NodeCollider::Capsule { height, radius } => {
             variant("capsule", record2("height", height, "radius", radius))
         }
-        NodeCollider::ConvexHull(points) => {
-            variant("convex-hull", js_sys::Float32Array::from(points.as_slice()).into())
-        }
+        NodeCollider::ConvexHull(points) => variant(
+            "convex-hull",
+            js_sys::Float32Array::from(points.as_slice()).into(),
+        ),
         NodeCollider::Cuboid([x, y, z]) => variant("cuboid", vec3_to_js(x, y, z)),
         NodeCollider::Cylinder { height, radius } => {
             variant("cylinder", record2("height", height, "radius", radius))
@@ -219,12 +220,8 @@ impl NodeHandle {
 
     #[wasm_bindgen(js_name = "setScale")]
     pub fn set_scale(&self, value: JsValue) -> Result<(), String> {
-        shared::wired::scene::node::set_scale(
-            &self.api,
-            self.rep,
-            js_to_vec3(&value, [1.0; 3]),
-        )
-        .map_err(|e| e.to_string())
+        shared::wired::scene::node::set_scale(&self.api, self.rep, js_to_vec3(&value, [1.0; 3]))
+            .map_err(|e| e.to_string())
     }
 
     pub fn transform(&self) -> JsValue {
@@ -295,7 +292,8 @@ impl NodeHandle {
     }
 
     pub async fn collider(&self) -> JsValue {
-        shared::wired::scene::node::collider(&self.api, self.rep).await
+        shared::wired::scene::node::collider(&self.api, self.rep)
+            .await
             .ok()
             .flatten()
             .map_or(JsValue::UNDEFINED, collider_to_js)
@@ -315,8 +313,8 @@ impl NodeHandle {
         };
         match rb {
             NodeRigidBody::Dynamic => "dynamic".into(),
-            NodeRigidBody::Fixed => "fixed".into(),
             NodeRigidBody::Kinematic => "kinematic".into(),
+            NodeRigidBody::Static => "static".into(),
         }
     }
 
@@ -324,8 +322,8 @@ impl NodeHandle {
     pub fn set_rigid_body(&self, value: JsValue) -> Result<(), String> {
         let rb = value.as_string().and_then(|s| match s.as_str() {
             "dynamic" => Some(NodeRigidBody::Dynamic),
-            "fixed" => Some(NodeRigidBody::Fixed),
             "kinematic" => Some(NodeRigidBody::Kinematic),
+            "static" => Some(NodeRigidBody::Static),
             _ => None,
         });
         shared::wired::scene::node::set_rigid_body(&self.api, self.rep, rb)

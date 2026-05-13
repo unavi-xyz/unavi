@@ -207,7 +207,7 @@ interface types {
 
   enum rigid-body-kind {
     dynamic,
-    fixed,
     kinematic,
+    %static,
   }
 }

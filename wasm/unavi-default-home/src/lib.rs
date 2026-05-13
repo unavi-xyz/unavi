@@ -24,7 +24,7 @@ impl ScriptBehavior for Script {
         let node = doc.create_node();
         node.set_mesh(Some(&shape.mesh()));
         node.set_collider(Some(&shape.collider()));
-        node.set_rigid_body(Some(RigidBodyKind::Fixed));
+        node.set_rigid_body(Some(RigidBodyKind::Static));
         node.set_translation(Vec3::new(0.0, -GROUND_THICK / 2.0, 0.0));
 
         let ground_mat = doc.materials().into_iter().find(|m| m.id() == "ground");

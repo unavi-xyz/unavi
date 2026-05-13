@@ -291,8 +291,8 @@ impl HostNode for Runtime {
             .map_err(wasmtime::Error::from_anyhow)?;
         Ok(rb.map(|rb| match rb {
             NodeRigidBody::Dynamic => RigidBodyKind::Dynamic,
-            NodeRigidBody::Fixed => RigidBodyKind::Fixed,
             NodeRigidBody::Kinematic => RigidBodyKind::Kinematic,
+            NodeRigidBody::Static => RigidBodyKind::Static,
         }))
     }
 
@@ -303,8 +303,8 @@ impl HostNode for Runtime {
     ) -> wasmtime::Result<()> {
         let rb = value.map(|rb| match rb {
             RigidBodyKind::Dynamic => NodeRigidBody::Dynamic,
-            RigidBodyKind::Fixed => NodeRigidBody::Fixed,
             RigidBodyKind::Kinematic => NodeRigidBody::Kinematic,
+            RigidBodyKind::Static => NodeRigidBody::Static,
         });
         shared::wired::scene::node::set_rigid_body(&self.api, self_.rep(), rb)
             .map_err(wasmtime::Error::from_anyhow)

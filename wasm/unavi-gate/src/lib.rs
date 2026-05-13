@@ -45,7 +45,7 @@ impl ScriptBehavior for Script {
         root.add_child(&node_l);
         node_l.set_mesh(Some(&pole.mesh()));
         node_l.set_collider(Some(&pole.collider()));
-        node_l.set_rigid_body(Some(RigidBodyKind::Fixed));
+        node_l.set_rigid_body(Some(RigidBodyKind::Static));
         node_l.set_translation(Vec3::new(
             -PORTAL_WIDTH / 2.0 - BEAM_THICKNESS / 2.0,
             PORTAL_HEIGHT / 2.0,
@@ -56,7 +56,7 @@ impl ScriptBehavior for Script {
         root.add_child(&node_r);
         node_r.set_mesh(Some(&pole.mesh()));
         node_r.set_collider(Some(&pole.collider()));
-        node_r.set_rigid_body(Some(RigidBodyKind::Fixed));
+        node_r.set_rigid_body(Some(RigidBodyKind::Static));
         node_r.set_translation(Vec3::new(
             PORTAL_WIDTH / 2.0 + BEAM_THICKNESS / 2.0,
             PORTAL_HEIGHT / 2.0,
@@ -73,7 +73,7 @@ impl ScriptBehavior for Script {
         root.add_child(&node_t);
         node_t.set_mesh(Some(&beam.mesh()));
         node_t.set_collider(Some(&beam.collider()));
-        node_t.set_rigid_body(Some(RigidBodyKind::Fixed));
+        node_t.set_rigid_body(Some(RigidBodyKind::Static));
         node_t.set_translation(Vec3::new(0.0, PORTAL_HEIGHT + BEAM_THICKNESS / 2.0, 0.0));
 
         let pedestal_shape = Cuboid::new(Vec3::new(
@@ -86,7 +86,7 @@ impl ScriptBehavior for Script {
         root.add_child(&pedestal);
         pedestal.set_mesh(Some(&pedestal_shape.mesh()));
         pedestal.set_collider(Some(&pedestal_shape.collider()));
-        pedestal.set_rigid_body(Some(RigidBodyKind::Fixed));
+        pedestal.set_rigid_body(Some(RigidBodyKind::Static));
         pedestal.set_translation(Vec3::new(-PORTAL_WIDTH, PEDESTAL_HEIGHT / 2.0, 0.0));
 
         let receptor_node = doc.create_node();

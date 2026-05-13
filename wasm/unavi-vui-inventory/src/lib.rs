@@ -48,7 +48,7 @@ impl ScriptBehavior for Script {
         let base = doc.create_node();
         let base_shape = Cuboid::new(Vec3::new(TABLE_W, BASE_H, TABLE_D));
         base.set_collider(Some(&base_shape.collider()));
-        base.set_rigid_body(Some(RigidBodyKind::Fixed));
+        base.set_rigid_body(Some(RigidBodyKind::Static));
         base.set_mesh(Some(&base_shape.mesh()));
         base.set_material(Some(&color_mat));
         root.add_child(&base);
@@ -58,7 +58,7 @@ impl ScriptBehavior for Script {
         for x_sign in [-1.0_f32, 1.0_f32] {
             let lip = doc.create_node();
             lip.set_collider(Some(&x_lip_shape.collider()));
-            lip.set_rigid_body(Some(RigidBodyKind::Fixed));
+            lip.set_rigid_body(Some(RigidBodyKind::Static));
             lip.set_mesh(Some(&x_lip_shape.mesh()));
             lip.set_material(Some(&color_mat));
             lip.set_translation(Vec3::new(x_sign * X_LIP_X, LIP_Y, 0.0));
@@ -70,7 +70,7 @@ impl ScriptBehavior for Script {
         for z_sign in [-1.0_f32, 1.0_f32] {
             let lip = doc.create_node();
             lip.set_collider(Some(&z_lip_shape.collider()));
-            lip.set_rigid_body(Some(RigidBodyKind::Fixed));
+            lip.set_rigid_body(Some(RigidBodyKind::Static));
             lip.set_mesh(Some(&z_lip_shape.mesh()));
             lip.set_material(Some(&color_mat));
             lip.set_translation(Vec3::new(0.0, LIP_Y, z_sign * Z_LIP_Z));

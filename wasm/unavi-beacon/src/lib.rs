@@ -35,11 +35,13 @@ struct Script {
 impl ScriptBehavior for Script {
     fn init() -> Self {
         let doc = self_document();
-        let Some(node) = doc.nodes().into_iter().next() else {
-            panic!("beacon error: no node")
-        };
-        let Ok(id) = Hash::from_str(&node.name().unwrap_or_default()) else {
-            panic!("beacon error: invalid node name")
+
+        let Some((id, node)) = doc.nodes().into_iter().find_map(|node| {
+            Hash::from_str(&node.name().unwrap_or_default())
+                .ok()
+                .map(|id| (id, node))
+        }) else {
+            panic!("invalid beacon: id node not found")
         };
 
         let cuboid = Cuboid::new(Vec3::splat(SIZE));

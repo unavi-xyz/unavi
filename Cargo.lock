@@ -950,6 +950,27 @@ dependencies = [
  "avian3d",
  "bevy",
  "bevy-wds",
+ "blake3",
+ "hsd",
+ "loro",
+ "lorosurgeon",
+ "rstest",
+ "smol_str 0.3.6",
+ "test-macros",
+ "tracing",
+ "tracing-test",
+ "unavi-util",
+]
+
+[[package]]
+name = "bevy-hsd-old"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "avian3d",
+ "bevy",
+ "bevy-wds",
  "bevy_panorbit_camera",
  "blake3",
  "bytemuck",
@@ -6806,7 +6827,7 @@ version = "0.0.16"
 dependencies = [
  "bevy",
  "loro",
- "loro-surgeon",
+ "lorosurgeon",
  "ron",
  "serde",
  "serde_with",
@@ -6824,6 +6845,20 @@ dependencies = [
  "hsd",
  "loro-surgeon",
  "toml 1.1.2+spec-1.1.0",
+]
+
+[[package]]
+name = "hsd-old"
+version = "0.0.16"
+dependencies = [
+ "bevy",
+ "loro",
+ "loro-surgeon",
+ "ron",
+ "serde",
+ "serde_with",
+ "smol_str 0.3.6",
+ "wired-records",
 ]
 
 [[package]]
@@ -8372,6 +8407,29 @@ dependencies = [
  "once_cell",
  "rand 0.8.5",
  "serde",
+]
+
+[[package]]
+name = "lorosurgeon"
+version = "0.2.1"
+source = "git+https://github.com/k-43/lorosurgeon#725ef9eddd3cd99e761e275b82dbe90613982316"
+dependencies = [
+ "loro",
+ "lorosurgeon-derive",
+ "serde",
+ "serde_json",
+ "similar",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "lorosurgeon-derive"
+version = "0.2.1"
+source = "git+https://github.com/k-43/lorosurgeon#725ef9eddd3cd99e761e275b82dbe90613982316"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]
@@ -12468,6 +12526,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
 
 [[package]]
+name = "similar"
+version = "2.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbbb5d9659141646ae647b42fe094daf6c6192d1620870b449d9557f748b2daa"
+
+[[package]]
 name = "simple-dns"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13139,6 +13203,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "test-macros"
+version = "0.0.16"
+dependencies = [
+ "proc-macro-crate 3.5.0",
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]

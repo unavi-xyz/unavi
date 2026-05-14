@@ -16,19 +16,14 @@ avian3d.workspace       = true
 bevy.workspace          = true
 bevy-wds.path           = "../bevy-wds"
 blake3.workspace        = true
-bytemuck.workspace      = true
-bytes.workspace         = true
 hsd.path                = "../hsd"
-image                   = { default-features = false, features = ["jpeg", "png", "webp"], workspace = true }
 loro.workspace          = true
-loro-surgeon.path       = "../loro-surgeon"
+lorosurgeon.workspace   = true
 smol_str.workspace      = true
 unavi-util.path         = "../unavi-util"
-wds.path                = "../wds"
-wired-schemas.path      = "../wired-schemas"
 
 [dev-dependencies]
-bevy                           = { features = ["debug"], workspace = true }
-bevy_panorbit_camera.workspace = true
-iroh-blobs                     = { default-features = true, workspace = true }
-loro-surgeon.path              = "../loro-surgeon"
+rstest            = "0.26.1"
+test-macros.path  = "../test-macros"
+tracing.workspace = true
+tracing-test      = { features = ["no-env-filter"], workspace = true }

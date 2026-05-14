@@ -53,4 +53,4 @@ iroh-blobs = { default-features = true, workspace = true }
 axum.workspace = true
 rstest         = "0.26.1"
 tokio          = { features = ["macros", "rt-multi-thread"], workspace = true }
-tracing-test   = { features = ["no-env-filter"], version = "0.2.6" }
+tracing-test   = { features = ["no-env-filter"], workspace = true }

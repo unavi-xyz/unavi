@@ -212,6 +212,7 @@
                     packages
                     ++ (with pkgs; [
                       age
+                      bacon
                       cargo-deny
                       cargo-edit
                       cargo-machete

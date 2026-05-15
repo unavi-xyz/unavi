@@ -1,15 +1,19 @@
-use std::sync::Arc;
-
-use anyhow::bail;
-use bevy::prelude::{Name as BevyName, *};
+use bevy::prelude::{Name, *};
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{Attribute, name::Name},
+    attributes::{Attribute, name::NameAttr},
 };
-use loro::{ContainerID, Index, LoroDoc, TreeID, ValueOrContainer, event::Diff};
+use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 
-use crate::attributes::{ApplyEvent, AttrDataEvent, AttributeParser};
+use crate::{
+    attributes::{
+        ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
+        util::shallow_map_updated_keys,
+    },
+    diff::HsdDiffEvent,
+};
 
+#[derive(Debug)]
 pub enum NameEvent {
     Name(String),
 }
@@ -18,7 +22,7 @@ pub struct NameParser;
 
 impl AttributeParser for NameParser {
     fn key(&self) -> &'static str {
-        Name::KEY
+        NameAttr::KEY
     }
 
     fn lifecycle(
@@ -26,44 +30,43 @@ impl AttributeParser for NameParser {
         commands: &mut Commands,
         prim: Entity,
         value: Option<ValueOrContainer>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), ParseError> {
         if value.is_some() {
-            commands.entity(prim).insert(BevyName::default());
+            commands.entity(prim).insert(Name::default());
         } else {
-            commands.entity(prim).remove::<BevyName>();
+            commands.entity(prim).remove::<Name>();
         }
         Ok(())
     }
 
     fn parse(
         &self,
-        doc: &Arc<LoroDoc>,
+        ctx: &DocContext,
         prim: TreeID,
         path: &[(ContainerID, Index)],
-        _diff: Diff,
-    ) -> anyhow::Result<Option<AttrDataEvent>> {
-        if path.is_empty() {
-            return Ok(None);
-        }
-
-        let key = path[0]
-            .1
-            .as_key()
-            .ok_or_else(|| anyhow::anyhow!("invalid index type"))?;
-
-        let tree = doc.get_tree(&*HSD_CONTAINER_ID);
+        diff: Diff,
+    ) -> Result<(), ParseError> {
+        let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
         let meta = tree.get_meta(prim)?;
 
-        let name = Name::attr_hydrate(&meta)?;
+        let attr = NameAttr::attr_hydrate(&meta)?;
 
-        match key.as_str() {
-            "name" => Ok(Some(AttrDataEvent::Name(NameEvent::Name(name.name)))),
-            _ => bail!("unknown key"),
+        let keys = shallow_map_updated_keys(path, diff)?;
+        for key in keys {
+            if key == "name" {
+                ctx.tx.send(HsdDiffEvent::AttrData {
+                    prim,
+                    data: AttrDataEvent::Name(NameEvent::Name(attr.name)),
+                })?;
+                break;
+            }
         }
+
+        Ok(())
     }
 }
 
-pub fn apply_name(trigger: On<ApplyEvent<NameEvent>>, mut names: Query<&mut BevyName>) {
+pub fn apply_name(trigger: On<ApplyEvent<NameEvent>>, mut names: Query<&mut Name>) {
     let Ok(mut name) = names.get_mut(trigger.entity) else {
         warn!("Name not found");
         return;

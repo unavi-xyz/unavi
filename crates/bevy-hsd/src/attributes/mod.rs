@@ -1,9 +1,14 @@
-use std::sync::{Arc, LazyLock};
+use std::sync::{Arc, LazyLock, mpsc::SendError};
 
 use bevy::{platform::collections::HashMap, prelude::*};
-use loro::{ContainerID, Index, LoroDoc, TreeID, ValueOrContainer, event::Diff};
+use loro::{ContainerID, Index, LoroDoc, LoroError, TreeID, ValueOrContainer, event::Diff};
+use lorosurgeon::HydrateError;
+use thiserror::Error;
+
+use crate::diff::{DiffSender, HsdDiffEvent};
 
 pub mod name;
+mod util;
 pub mod xform;
 
 pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
@@ -17,9 +22,28 @@ pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
         map
     });
 
+#[derive(Debug)]
 pub enum AttrDataEvent {
     Name(name::NameEvent),
     Xform(xform::XformEvent),
+}
+
+#[derive(Clone)]
+pub struct DocContext {
+    pub doc: Arc<LoroDoc>,
+    pub tx: DiffSender,
+}
+
+#[derive(Error, Debug)]
+pub enum ParseError {
+    #[error("loro {0}")]
+    Loro(#[from] LoroError),
+    #[error("hydrate {0}")]
+    Hydrate(#[from] HydrateError),
+    #[error("failed to send diff event")]
+    Send(#[from] SendError<HsdDiffEvent>),
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
 }
 
 pub trait AttributeParser: Send + Sync {
@@ -30,15 +54,15 @@ pub trait AttributeParser: Send + Sync {
         commands: &mut Commands,
         prim: Entity,
         value: Option<ValueOrContainer>,
-    ) -> anyhow::Result<()>;
+    ) -> Result<(), ParseError>;
 
     fn parse(
         &self,
-        doc: &Arc<LoroDoc>,
+        ctx: &DocContext,
         prim: TreeID,
         path: &[(ContainerID, Index)],
         diff: Diff,
-    ) -> anyhow::Result<Option<AttrDataEvent>>;
+    ) -> Result<(), ParseError>;
 }
 
 #[derive(EntityEvent)]

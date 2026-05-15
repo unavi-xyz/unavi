@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{Attribute, xform::XformAttr},
+    attributes::{Attribute, name::NameAttr},
 };
 use rstest::rstest;
 use tracing_test::traced_test;
@@ -12,16 +12,14 @@ mod common;
 
 #[traced_test]
 #[rstest]
-fn test_xform_lifecycle(mut ctx: TestContext) {
+fn test_name_lifecycle(mut ctx: TestContext) {
     let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
     let root = tree.create(None).expect("create");
     let meta = tree.get_meta(root).expect("get meta");
 
     // Add attribute.
-    let attr = XformAttr {
-        rotation: vec![0.4, 0.5, 0.6, 0.9],
-        scale: vec![0.9, 0.8, 0.7],
-        translation: vec![1.0, 2.0, 3.0],
+    let attr = NameAttr {
+        name: "My Node".to_string(),
     };
     attr.attr_reconcile(meta.clone()).expect("reconcile");
 
@@ -29,18 +27,16 @@ fn test_xform_lifecycle(mut ctx: TestContext) {
     ctx.app.update();
 
     let world = ctx.app.world_mut();
-    let mut query = world.query::<&Transform>();
+    let mut query = world.query::<&bevy::prelude::Name>();
 
     let res = query.query(world).into_iter().collect::<Vec<_>>();
     assert_eq!(res.len(), 1);
 
     let out = res[0];
-    assert_eq!(out.rotation.to_array().to_vec(), attr.rotation);
-    assert_eq!(out.scale.to_array().to_vec(), attr.scale);
-    assert_eq!(out.translation.to_array().to_vec(), attr.translation);
+    assert_eq!(out.as_str(), attr.name);
 
     // Remove attribute.
-    meta.delete(XformAttr::KEY).expect("delete");
+    meta.delete(NameAttr::KEY).expect("delete");
 
     ctx.doc.commit();
     ctx.app.update();

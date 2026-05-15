@@ -72,20 +72,10 @@ pub fn drain_diff_queues(
                     action: TreeExternalDiff::Create { parent, .. },
                     ..
                 }) => {
-                    let parent_id = match parent {
-                        TreeParentId::Root => None,
-                        TreeParentId::Node(id) => Some(id),
-                        TreeParentId::Deleted | TreeParentId::Unexist => {
-                            // TODO how should we handle these cases?
-                            warn!(?parent, "Prim parent does not exist");
-                            continue;
-                        }
-                    };
-
                     let prim_ent = commands.spawn((Prim(prim), HsdChild(doc_ent))).id();
                     created.insert((doc_ent, prim), prim_ent);
 
-                    if let Some(parent_id) = parent_id {
+                    if let TreeParentId::Node(parent_id) = parent {
                         let parent_ent = find_prim!(created, prims, parent_id, doc_ent);
                         commands.entity(parent_ent).add_child(prim_ent);
                     }
@@ -109,18 +99,24 @@ pub fn drain_diff_queues(
                     ..
                 }) => {
                     let prim_ent = find_prim!(created, prims, prim, doc_ent);
+
                     commands.entity(prim_ent).despawn();
                 }
                 HsdDiffEvent::Attr { attr, value, .. } => {
                     let prim_ent = find_prim!(created, prims, prim, doc_ent);
-                    if let Some(p) = PARSERS.get(attr.as_str())
-                        && let Err(err) = p.lifecycle(&mut commands, prim_ent, value)
-                    {
+
+                    let Some(p) = PARSERS.get(attr.as_str()) else {
+                        warn!("Unknown attribute: {attr}");
+                        continue;
+                    };
+
+                    if let Err(err) = p.lifecycle(&mut commands, prim_ent, value) {
                         error!(%attr, ?err, "Failed to handle attribute lifecycle");
                     }
                 }
                 HsdDiffEvent::AttrData { data, .. } => {
                     let prim_ent = find_prim!(created, prims, prim, doc_ent);
+
                     match data {
                         AttrDataEvent::Name(value) => commands
                             .entity(prim_ent)

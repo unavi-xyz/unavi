@@ -2,7 +2,7 @@ use lorosurgeon::{Hydrate, Reconcile};
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug)]
+#[derive(Hydrate, Reconcile, Debug, Clone)]
 pub struct XformAttr {
     #[loro(default = "default_rotation")]
     pub rotation: Vec<f32>,

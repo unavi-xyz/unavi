@@ -4,7 +4,7 @@ use lorosurgeon::{ByteArray, Hydrate, Reconcile};
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug)]
+#[derive(Hydrate, Reconcile, Debug, Clone)]
 pub struct MeshAttr {
     #[loro(default)]
     pub attributes: BTreeMap<String, ByteArray<32>>,

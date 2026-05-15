@@ -3,11 +3,11 @@ use std::io::Cursor;
 use bevy::{image::ImageSampler, prelude::*, render::render_resource::TextureFormat};
 use bevy_hsd::attributes::image::HsdImage;
 use hsd::{
-    HSD_CONTAINER_ID,
-    attributes::{Attribute, image::ImageAttr},
+    HSD_CONTAINER_ID, PrimMeta,
+    attributes::{Attribute, Attributes, attributes_map, image::ImageAttr},
 };
 use image::{ImageFormat, RgbaImage};
-use lorosurgeon::ByteArray;
+use lorosurgeon::{ByteArray, MaybeMissing, Reconcile, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -33,7 +33,7 @@ fn test_image_lifecycle(mut ctx: TestContext) {
         name: None,
         srgb: None,
     };
-    attr.attr_reconcile(meta.clone()).expect("reconcile");
+    reconcile_prim_image(&meta, attr);
 
     ctx.doc.commit();
     ctx.app.update();
@@ -44,7 +44,8 @@ fn test_image_lifecycle(mut ctx: TestContext) {
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].0, Handle::<Image>::default());
 
-    meta.delete(ImageAttr::KEY).expect("delete");
+    let attrs = attributes_map(&meta).expect("attributes map");
+    attrs.delete(ImageAttr::KEY).expect("delete");
     ctx.doc.commit();
     ctx.app.update();
 
@@ -56,7 +57,6 @@ fn test_image_lifecycle(mut ctx: TestContext) {
 #[traced_test]
 #[rstest]
 fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
-    // 2x2 RGBA image with distinct colors per pixel.
     let mut rgba = RgbaImage::new(2, 2);
     rgba.put_pixel(0, 0, image::Rgba([255, 0, 0, 255]));
     rgba.put_pixel(1, 0, image::Rgba([0, 255, 0, 255]));
@@ -74,17 +74,17 @@ fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
     let root = tree.create(None).expect("create");
     let meta = tree.get_meta(root).expect("get meta");
     let attr = ImageAttr {
-        address_mode_u: Some(1), // MirrorRepeat
+        address_mode_u: Some(1),
         address_mode_v: None,
         address_mode_w: None,
         data: ByteArray::<32>::new(*data_hash.as_bytes()),
-        mag_filter: Some(1), // Nearest
+        mag_filter: Some(1),
         min_filter: None,
         mipmap_filter: None,
         name: None,
         srgb: Some(true),
     };
-    attr.attr_reconcile(meta).expect("reconcile");
+    reconcile_prim_image(&meta, attr);
 
     let mut handle: Option<Handle<Image>> = None;
     ctx.tick_until(|world| {
@@ -116,4 +116,16 @@ fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
         bevy::image::ImageAddressMode::MirrorRepeat
     );
     assert_eq!(sampler.mag_filter, bevy::image::ImageFilterMode::Nearest);
+}
+
+fn reconcile_prim_image(meta: &loro::LoroMap, attr: ImageAttr) {
+    let prim = PrimMeta {
+        attributes: MaybeMissing::Present(Attributes {
+            image: MaybeMissing::Present(attr),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+    prim.reconcile(RootReconciler::new(meta.clone()))
+        .expect("reconcile");
 }

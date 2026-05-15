@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use hsd::{
-    HSD_CONTAINER_ID,
-    attributes::{Attribute, name::NameAttr},
+    HSD_CONTAINER_ID, PrimMeta,
+    attributes::{Attribute, Attributes, attributes_map, name::NameAttr},
 };
+use lorosurgeon::{MaybeMissing, Reconcile, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -17,11 +18,18 @@ fn test_name_lifecycle(mut ctx: TestContext) {
     let root = tree.create(None).expect("create");
     let meta = tree.get_meta(root).expect("get meta");
 
-    // Add attribute.
     let attr = NameAttr {
         name: "My Node".to_string(),
     };
-    attr.attr_reconcile(meta.clone()).expect("reconcile");
+    let prim = PrimMeta {
+        attributes: MaybeMissing::Present(Attributes {
+            name: MaybeMissing::Present(attr.clone()),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+    prim.reconcile(RootReconciler::new(meta.clone()))
+        .expect("reconcile");
 
     ctx.doc.commit();
     ctx.app.update();
@@ -31,12 +39,10 @@ fn test_name_lifecycle(mut ctx: TestContext) {
 
     let res = query.query(world).into_iter().collect::<Vec<_>>();
     assert_eq!(res.len(), 1);
+    assert_eq!(res[0].as_str(), attr.name);
 
-    let out = res[0];
-    assert_eq!(out.as_str(), attr.name);
-
-    // Remove attribute.
-    meta.delete(NameAttr::KEY).expect("delete");
+    let attrs = attributes_map(&meta).expect("attributes map");
+    attrs.delete(NameAttr::KEY).expect("delete");
 
     ctx.doc.commit();
     ctx.app.update();

@@ -2,7 +2,7 @@ use lorosurgeon::{ByteArray, Hydrate, Reconcile};
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug)]
+#[derive(Hydrate, Reconcile, Debug, Clone)]
 pub struct ImageAttr {
     pub address_mode_u: Option<i64>,
     pub address_mode_v: Option<i64>,

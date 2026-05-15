@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use hsd::{
-    HSD_CONTAINER_ID,
-    attributes::{Attribute, xform::XformAttr},
+    HSD_CONTAINER_ID, PrimMeta,
+    attributes::{Attribute, Attributes, attributes_map, xform::XformAttr},
 };
+use lorosurgeon::{MaybeMissing, Reconcile, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -17,13 +18,20 @@ fn test_xform_lifecycle(mut ctx: TestContext) {
     let root = tree.create(None).expect("create");
     let meta = tree.get_meta(root).expect("get meta");
 
-    // Add attribute.
     let attr = XformAttr {
         rotation: vec![0.4, 0.5, 0.6, 0.9],
         scale: vec![0.9, 0.8, 0.7],
         translation: vec![1.0, 2.0, 3.0],
     };
-    attr.attr_reconcile(meta.clone()).expect("reconcile");
+    let prim = PrimMeta {
+        attributes: MaybeMissing::Present(Attributes {
+            xform: MaybeMissing::Present(attr.clone()),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+    prim.reconcile(RootReconciler::new(meta.clone()))
+        .expect("reconcile");
 
     ctx.doc.commit();
     ctx.app.update();
@@ -39,8 +47,8 @@ fn test_xform_lifecycle(mut ctx: TestContext) {
     assert_eq!(out.scale.to_array().to_vec(), attr.scale);
     assert_eq!(out.translation.to_array().to_vec(), attr.translation);
 
-    // Remove attribute.
-    meta.delete(XformAttr::KEY).expect("delete");
+    let attrs = attributes_map(&meta).expect("attributes map");
+    attrs.delete(XformAttr::KEY).expect("delete");
 
     ctx.doc.commit();
     ctx.app.update();

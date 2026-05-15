@@ -7,14 +7,18 @@ use thiserror::Error;
 
 use crate::diff::{DiffSender, HsdDiffEvent};
 
+pub mod mesh;
 pub mod name;
 mod util;
 pub mod xform;
 
 pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
     LazyLock::new(|| {
-        let parsers: [Box<dyn AttributeParser>; _] =
-            [Box::new(name::NameParser), Box::new(xform::XformParser)];
+        let parsers: [Box<dyn AttributeParser>; _] = [
+            Box::new(mesh::MeshParser),
+            Box::new(name::NameParser),
+            Box::new(xform::XformParser),
+        ];
         let mut map = HashMap::default();
         for attr in parsers {
             map.insert(attr.key(), attr);
@@ -24,6 +28,7 @@ pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
 
 #[derive(Debug)]
 pub enum AttrDataEvent {
+    Mesh(mesh::MeshEvent),
     Name(name::NameEvent),
     Xform(xform::XformEvent),
 }

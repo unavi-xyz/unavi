@@ -23,14 +23,18 @@ fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
             js_sys::Reflect::set(&obj, &"tag".into(), &"global".into()).ok();
         }
         SenderScope::Spatial { distance, node } => {
-            let node_rep = api.wired_scene.try_lock().ok().map_or(u32::MAX, |mut scene| {
-                scene.nodes.insert(NodeRes {
-                    doc: Arc::clone(&api.doc),
-                    doc_id: node.doc,
-                    id: node.node,
-                    is_proxy: true,
-                })
-            });
+            let node_rep = api
+                .wired_scene
+                .try_lock()
+                .ok()
+                .map_or(u32::MAX, |mut scene| {
+                    scene.nodes.insert(NodeRes {
+                        doc: Arc::clone(&api.doc),
+                        doc_id: node.doc,
+                        id: node.node,
+                        is_proxy: true,
+                    })
+                });
             let val = js_sys::Object::new();
             js_sys::Reflect::set(&val, &"distance".into(), &distance.into()).ok();
             js_sys::Reflect::set(
@@ -131,7 +135,12 @@ impl EventReceptorHandle {
         js_sys::Reflect::set(&obj, &"channel".into(), &event.channel.into()).ok();
         js_sys::Reflect::set(&obj, &"payload".into(), &payload.into()).ok();
         js_sys::Reflect::set(&obj, &"sender".into(), &sender.into()).ok();
-        js_sys::Reflect::set(&obj, &"time".into(), &js_sys::BigInt::from(event.time).into()).ok();
+        js_sys::Reflect::set(
+            &obj,
+            &"time".into(),
+            &js_sys::BigInt::from(event.time).into(),
+        )
+        .ok();
 
         obj.into()
     }

@@ -129,8 +129,14 @@ impl MaterialHandle {
 
     #[wasm_bindgen(js_name = "baseColor")]
     pub fn base_color(&self) -> JsValue {
-        let c = shared::wired::scene::material::base_color(&self.api, self.rep)
-            .unwrap_or(MaterialColor { r: 1.0, g: 1.0, b: 1.0, a: 1.0 });
+        let c = shared::wired::scene::material::base_color(&self.api, self.rep).unwrap_or(
+            MaterialColor {
+                r: 1.0,
+                g: 1.0,
+                b: 1.0,
+                a: 1.0,
+            },
+        );
         color_to_js(c)
     }
 

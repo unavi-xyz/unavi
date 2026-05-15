@@ -951,7 +951,10 @@ dependencies = [
  "bevy",
  "bevy-wds",
  "blake3",
+ "bytemuck",
+ "bytes 1.11.1",
  "hsd",
+ "iroh-blobs",
  "loro",
  "lorosurgeon",
  "rstest",
@@ -961,6 +964,7 @@ dependencies = [
  "tracing",
  "tracing-test",
  "unavi-util",
+ "wds",
 ]
 
 [[package]]

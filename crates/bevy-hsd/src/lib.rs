@@ -12,6 +12,8 @@ pub struct HsdPlugin;
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(subscribe::subscribe_to_docs)
+            .add_observer(attributes::mesh::apply_mesh)
+            .add_observer(attributes::mesh::on_mesh_blobs_loaded)
             .add_observer(attributes::name::apply_name)
             .add_observer(attributes::xform::apply_xform)
             .add_systems(Update, diff::drain_diff_queues);

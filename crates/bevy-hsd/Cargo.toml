@@ -16,6 +16,8 @@ avian3d.workspace       = true
 bevy.workspace          = true
 bevy-wds.path           = "../bevy-wds"
 blake3.workspace        = true
+bytemuck.workspace      = true
+bytes.workspace         = true
 hsd.path                = "../hsd"
 loro.workspace          = true
 lorosurgeon.workspace   = true
@@ -24,7 +26,9 @@ thiserror.workspace     = true
 unavi-util.path         = "../unavi-util"
 
 [dev-dependencies]
-rstest            = "0.26.1"
-test-macros.path  = "../test-macros"
-tracing.workspace = true
-tracing-test      = { features = ["no-env-filter"], workspace = true }
+iroh-blobs.workspace = true
+rstest               = "0.26.1"
+test-macros.path     = "../test-macros"
+tracing.workspace    = true
+tracing-test         = { features = ["no-env-filter"], workspace = true }
+wds.path             = "../wds"

@@ -18,9 +18,9 @@ fn test_xform_spawn(mut ctx: TestContext) {
     let meta = tree.get_meta(root).expect("get meta");
 
     let xform = Xform {
-        translation: vec![1.0, 2.0, 3.0],
         rotation: vec![0.4, 0.5, 0.6, 0.9],
         scale: vec![0.9, 0.8, 0.7],
+        translation: vec![1.0, 2.0, 3.0],
     };
     xform.attr_reconcile(meta).expect("reconcile");
 
@@ -37,7 +37,7 @@ fn test_xform_spawn(mut ctx: TestContext) {
     assert_eq!(xforms.len(), 1);
 
     let out = xforms[0];
-    assert_eq!(out.translation.to_array().to_vec(), xform.translation);
     assert_eq!(out.rotation.to_array().to_vec(), xform.rotation);
     assert_eq!(out.scale.to_array().to_vec(), xform.scale);
+    assert_eq!(out.translation.to_array().to_vec(), xform.translation);
 }

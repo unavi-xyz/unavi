@@ -1,15 +1,19 @@
-use std::sync::Arc;
-
-use anyhow::bail;
 use bevy::prelude::*;
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{Attribute, xform::Xform},
+    attributes::{Attribute, xform::XformAttr},
 };
-use loro::{ContainerID, Index, LoroDoc, TreeID, ValueOrContainer, event::Diff};
+use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 
-use crate::attributes::{ApplyEvent, AttrDataEvent, AttributeParser};
+use crate::{
+    attributes::{
+        ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
+        util::shallow_map_updated_keys,
+    },
+    diff::HsdDiffEvent,
+};
 
+#[derive(Debug)]
 pub enum XformEvent {
     Rotation(Quat),
     Scale(Vec3),
@@ -20,7 +24,7 @@ pub struct XformParser;
 
 impl AttributeParser for XformParser {
     fn key(&self) -> &'static str {
-        Xform::KEY
+        XformAttr::KEY
     }
 
     fn lifecycle(
@@ -28,7 +32,7 @@ impl AttributeParser for XformParser {
         commands: &mut Commands,
         prim: Entity,
         value: Option<ValueOrContainer>,
-    ) -> anyhow::Result<()> {
+    ) -> Result<(), ParseError> {
         if value.is_some() {
             commands.entity(prim).insert(Transform::default());
         } else {
@@ -39,49 +43,42 @@ impl AttributeParser for XformParser {
 
     fn parse(
         &self,
-        doc: &Arc<LoroDoc>,
+        ctx: &DocContext,
         prim: TreeID,
         path: &[(ContainerID, Index)],
-        _diff: Diff,
-    ) -> anyhow::Result<Option<AttrDataEvent>> {
-        if path.is_empty() {
-            return Ok(None);
-        }
-
-        let key = path[0]
-            .1
-            .as_key()
-            .ok_or_else(|| anyhow::anyhow!("invalid index type"))?;
-
-        let tree = doc.get_tree(&*HSD_CONTAINER_ID);
+        diff: Diff,
+    ) -> Result<(), ParseError> {
+        let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
         let meta = tree.get_meta(prim)?;
 
-        let xform = Xform::attr_hydrate(&meta)?;
+        let attr = XformAttr::attr_hydrate(&meta)?;
 
-        match key.as_str() {
-            "rotation" => Ok(Some(AttrDataEvent::Xform(XformEvent::Rotation(
-                Quat::from_slice(&xform.rotation),
-            )))),
-            "scale" => Ok(Some(AttrDataEvent::Xform(XformEvent::Scale(
-                Vec3::from_slice(&xform.scale),
-            )))),
-            "translation" => Ok(Some(AttrDataEvent::Xform(XformEvent::Translation(
-                Vec3::from_slice(&xform.translation),
-            )))),
-            _ => bail!("unknown key"),
+        let keys = shallow_map_updated_keys(path, diff)?;
+        for key in keys {
+            let event = match key.as_str() {
+                "rotation" => XformEvent::Rotation(Quat::from_slice(&attr.rotation)),
+                "scale" => XformEvent::Scale(Vec3::from_slice(&attr.scale)),
+                "translation" => XformEvent::Translation(Vec3::from_slice(&attr.translation)),
+                _ => continue,
+            };
+            ctx.tx.send(HsdDiffEvent::AttrData {
+                prim,
+                data: AttrDataEvent::Xform(event),
+            })?;
         }
+        Ok(())
     }
 }
 
 pub fn apply_xform(trigger: On<ApplyEvent<XformEvent>>, mut xforms: Query<&mut Transform>) {
-    let Ok(mut xform) = xforms.get_mut(trigger.entity) else {
+    let Ok(mut transform) = xforms.get_mut(trigger.entity) else {
         warn!("Transform not found");
         return;
     };
 
     match trigger.value {
-        XformEvent::Rotation(v) => xform.rotation = v,
-        XformEvent::Scale(v) => xform.scale = v,
-        XformEvent::Translation(v) => xform.translation = v,
+        XformEvent::Rotation(v) => transform.rotation = v,
+        XformEvent::Scale(v) => transform.scale = v,
+        XformEvent::Translation(v) => transform.translation = v,
     }
 }

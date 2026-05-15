@@ -20,6 +20,7 @@ hsd.path                = "../hsd"
 loro.workspace          = true
 lorosurgeon.workspace   = true
 smol_str.workspace      = true
+thiserror.workspace     = true
 unavi-util.path         = "../unavi-util"
 
 [dev-dependencies]

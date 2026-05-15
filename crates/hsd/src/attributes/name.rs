@@ -2,11 +2,12 @@ use lorosurgeon::{Hydrate, Reconcile};
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile)]
-pub struct Name {
+#[derive(Hydrate, Reconcile, Debug)]
+#[loro(default)]
+pub struct NameAttr {
     pub name: String,
 }
 
-impl Attribute for Name {
+impl Attribute for NameAttr {
     const KEY: &str = "name";
 }

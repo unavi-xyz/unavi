@@ -6,23 +6,17 @@ use std::{
 use anyhow::Context;
 use bevy::prelude::*;
 use hsd::HSD_CONTAINER_ID;
-use loro::{ExportMode, LoroDoc, Subscription, event::ContainerDiff};
+use loro::{ExportMode, Subscription, event::ContainerDiff};
 
 use crate::{
     Hsd,
-    attributes::{AttributeParser, PARSERS, xform::XformParser},
-    diff::{DiffQueue, DiffSender, HsdDiffEvent},
+    attributes::{AttributeParser, DocContext, PARSERS, xform::XformParser},
+    diff::{DiffQueue, HsdDiffEvent},
 };
 
 #[derive(Component)]
 pub struct HsdSubscription {
     _handle: Subscription,
-}
-
-#[derive(Clone)]
-struct DocContext {
-    doc: Arc<LoroDoc>,
-    tx: DiffSender,
 }
 
 pub fn subscribe_to_docs(trigger: On<Add, Hsd>, docs: Query<&Hsd>, mut commands: Commands) {
@@ -148,15 +142,12 @@ fn process_diff_event(ctx: &DocContext, event: ContainerDiff) -> anyhow::Result<
                 &[]
             };
 
-            if let Some(p) = PARSERS.get(attr.as_str())
-                && let Some(data) = p
-                    .parse(&ctx.doc, prim, path, event.diff)
-                    .with_context(|| format!("{} parser", attr.as_str()))?
-            {
-                ctx.tx
-                    .send(HsdDiffEvent::AttrData { prim, data })
-                    .map_err(|_| anyhow::anyhow!("failed to send diff event"))?;
-            }
+            let Some(p) = PARSERS.get(attr.as_str()) else {
+                return Ok(());
+            };
+
+            p.parse(&ctx, prim, path, event.diff)
+                .with_context(|| format!("{} parser", attr.as_str()))?;
         }
     }
 

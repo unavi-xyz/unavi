@@ -1,6 +1,6 @@
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 
-use bevy::prelude::*;
+use bevy::{platform::collections::HashMap, prelude::*};
 use loro::{LoroDoc, TreeID};
 
 pub mod attributes;
@@ -37,3 +37,15 @@ pub struct HsdChild(pub Entity);
 #[derive(Component)]
 #[require(Visibility)]
 pub struct Prim(pub TreeID);
+
+/// `TreeID` → `Entity` lookup for one HSD document. Lives on the doc entity
+/// (the entity carrying `Hsd`) and is maintained by `drain_diff_queues` as
+/// prims are spawned and despawned.
+#[derive(Component, Default, Debug)]
+pub struct HsdPrimIndex(pub HashMap<TreeID, Entity>);
+
+/// Relationship targets declared on a prim, keyed by relationship name
+/// (e.g. `"material"`, `"mesh"`). Each value is a `TreeID` of another prim
+/// in the same document. Absent component = no relationships.
+#[derive(Component, Default, Debug)]
+pub struct HsdRelationships(pub BTreeMap<String, TreeID>);

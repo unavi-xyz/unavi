@@ -2,7 +2,7 @@ use lorosurgeon::{Hydrate, Reconcile};
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug)]
+#[derive(Hydrate, Reconcile, Debug, Clone)]
 #[loro(default)]
 pub struct NameAttr {
     pub name: String,

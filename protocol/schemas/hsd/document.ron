@@ -73,5 +73,6 @@
                 "translation": Optional(List(F64)),
             })),
         })),
+      "relationships": Map(String),
     }),
 )

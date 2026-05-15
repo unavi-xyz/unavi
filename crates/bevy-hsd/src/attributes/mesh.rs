@@ -11,7 +11,7 @@ use bytemuck::{Pod, PodCastError, try_cast_slice};
 use bytes::Bytes;
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{Attribute, mesh::MeshAttr},
+    attributes::{Attribute, hydrate_attr, mesh::MeshAttr},
 };
 use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 use smol_str::SmolStr;
@@ -76,7 +76,7 @@ impl AttributeParser for MeshParser {
         let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
         let meta = tree.get_meta(prim)?;
 
-        let attr = MeshAttr::attr_hydrate(&meta)?;
+        let attr: MeshAttr = hydrate_attr(&meta)?;
 
         // Rebuild on any change to mesh contents — granular diffing isn't
         // worth it for an initial implementation.

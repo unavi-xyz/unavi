@@ -1,7 +1,7 @@
 use bevy::prelude::{Name, *};
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{Attribute, name::NameAttr},
+    attributes::{Attribute, hydrate_attr, name::NameAttr},
 };
 use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 
@@ -49,7 +49,7 @@ impl AttributeParser for NameParser {
         let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
         let meta = tree.get_meta(prim)?;
 
-        let attr = NameAttr::attr_hydrate(&meta)?;
+        let attr: NameAttr = hydrate_attr(&meta)?;
 
         let keys = shallow_map_updated_keys(path, diff)?;
         for key in keys {

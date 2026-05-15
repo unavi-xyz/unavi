@@ -5,10 +5,10 @@ use bevy::{
     prelude::*,
 };
 use hsd::{
-    HSD_CONTAINER_ID,
-    attributes::{Attribute, mesh::MeshAttr},
+    HSD_CONTAINER_ID, PrimMeta,
+    attributes::{Attribute, Attributes, attributes_map, mesh::MeshAttr},
 };
-use lorosurgeon::ByteArray;
+use lorosurgeon::{ByteArray, MaybeMissing, Reconcile, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -23,13 +23,12 @@ fn test_mesh_lifecycle(mut ctx: TestContext) {
     let root = tree.create(None).expect("create");
     let meta = tree.get_meta(root).expect("get meta");
 
-    // Add attribute.
     let attr = MeshAttr {
         attributes: BTreeMap::from([("POSITION".to_string(), ByteArray::<32>::new([1; 32]))]),
         indices: None,
         topology: 3,
     };
-    attr.attr_reconcile(meta.clone()).expect("reconcile");
+    reconcile_prim_mesh(&meta, attr);
 
     ctx.doc.commit();
     ctx.app.update();
@@ -40,8 +39,8 @@ fn test_mesh_lifecycle(mut ctx: TestContext) {
     let res = query.query(world).into_iter().collect::<Vec<_>>();
     assert_eq!(res.len(), 1);
 
-    // Remove attribute.
-    meta.delete(MeshAttr::KEY).expect("delete");
+    let attrs = attributes_map(&meta).expect("attributes map");
+    attrs.delete(MeshAttr::KEY).expect("delete");
 
     ctx.doc.commit();
     ctx.app.update();
@@ -85,7 +84,7 @@ fn test_mesh_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
         indices: Some(ByteArray::<32>::new(*idx_hash.as_bytes())),
         topology: 3,
     };
-    attr.attr_reconcile(meta).expect("reconcile");
+    reconcile_prim_mesh(&meta, attr);
 
     let mut handle: Option<Handle<Mesh>> = None;
     ctx.tick_until(|world| {
@@ -132,4 +131,16 @@ fn test_mesh_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
         panic!("indices missing or wrong type");
     };
     assert_eq!(idx.as_slice(), &INDICES);
+}
+
+fn reconcile_prim_mesh(meta: &loro::LoroMap, attr: MeshAttr) {
+    let prim = PrimMeta {
+        attributes: MaybeMissing::Present(Attributes {
+            mesh: MaybeMissing::Present(attr),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+    prim.reconcile(RootReconciler::new(meta.clone()))
+        .expect("reconcile");
 }

@@ -10,7 +10,7 @@ use bevy_wds::blob::{
 };
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{Attribute, image::ImageAttr},
+    attributes::{Attribute, hydrate_attr, image::ImageAttr},
 };
 use image::GenericImageView;
 use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
@@ -77,7 +77,7 @@ impl AttributeParser for ImageParser {
         let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
         let meta = tree.get_meta(prim)?;
 
-        let attr = ImageAttr::attr_hydrate(&meta)?;
+        let attr: ImageAttr = hydrate_attr(&meta)?;
 
         let keys = shallow_map_updated_keys(path, diff)?;
         if keys.is_empty() {

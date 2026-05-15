@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{Attribute, xform::XformAttr},
+    attributes::{Attribute, hydrate_attr, xform::XformAttr},
 };
 use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 
@@ -51,7 +51,7 @@ impl AttributeParser for XformParser {
         let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
         let meta = tree.get_meta(prim)?;
 
-        let attr = XformAttr::attr_hydrate(&meta)?;
+        let attr: XformAttr = hydrate_attr(&meta)?;
 
         let keys = shallow_map_updated_keys(path, diff)?;
         for key in keys {

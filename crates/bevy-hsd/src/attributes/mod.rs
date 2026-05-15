@@ -32,7 +32,6 @@ pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
 pub enum AttrDataEvent {
     Image(image::ImageEvent),
     Mesh(mesh::MeshEvent),
-    Name(name::NameEvent),
     Xform(xform::XformEvent),
 }
 
@@ -64,13 +63,18 @@ pub trait AttributeParser: Send + Sync {
         value: Option<ValueOrContainer>,
     ) -> Result<(), ParseError>;
 
+    /// Called when an attribute's inner data changes. Scalar attributes
+    /// (whose entire value is delivered via [`Self::lifecycle`]) can leave
+    /// this as the default no-op.
     fn parse(
         &self,
-        ctx: &DocContext,
-        prim: TreeID,
-        path: &[(ContainerID, Index)],
-        diff: Diff,
-    ) -> Result<(), ParseError>;
+        _ctx: &DocContext,
+        _prim: TreeID,
+        _path: &[(ContainerID, Index)],
+        _diff: Diff,
+    ) -> Result<(), ParseError> {
+        Ok(())
+    }
 }
 
 #[derive(EntityEvent)]

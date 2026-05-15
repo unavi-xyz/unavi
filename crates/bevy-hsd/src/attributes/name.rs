@@ -1,22 +1,8 @@
 use bevy::prelude::{Name, *};
-use hsd::{
-    HSD_CONTAINER_ID,
-    attributes::{Attribute, hydrate_attr, name::NameAttr},
-};
-use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
+use hsd::attributes::{Attribute, name::NameAttr};
+use loro::{LoroValue, ValueOrContainer};
 
-use crate::{
-    attributes::{
-        ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
-        util::shallow_map_updated_keys,
-    },
-    diff::HsdDiffEvent,
-};
-
-#[derive(Debug)]
-pub enum NameEvent {
-    Name(String),
-}
+use crate::attributes::{AttributeParser, ParseError};
 
 pub struct NameParser;
 
@@ -31,48 +17,17 @@ impl AttributeParser for NameParser {
         prim: Entity,
         value: Option<ValueOrContainer>,
     ) -> Result<(), ParseError> {
-        if value.is_some() {
-            commands.entity(prim).insert(Name::default());
-        } else {
-            commands.entity(prim).remove::<Name>();
-        }
-        Ok(())
-    }
-
-    fn parse(
-        &self,
-        ctx: &DocContext,
-        prim: TreeID,
-        path: &[(ContainerID, Index)],
-        diff: Diff,
-    ) -> Result<(), ParseError> {
-        let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-        let meta = tree.get_meta(prim)?;
-
-        let attr: NameAttr = hydrate_attr(&meta)?;
-
-        let keys = shallow_map_updated_keys(path, diff)?;
-        for key in keys {
-            if key == "name" {
-                ctx.tx.send(HsdDiffEvent::AttrData {
-                    prim,
-                    data: AttrDataEvent::Name(NameEvent::Name(attr.name)),
-                })?;
-                break;
+        match value {
+            Some(ValueOrContainer::Value(LoroValue::String(s))) => {
+                commands.entity(prim).insert(Name::new(s.to_string()));
+            }
+            Some(other) => {
+                warn!(?other, "name attribute must be a string");
+            }
+            None => {
+                commands.entity(prim).remove::<Name>();
             }
         }
-
         Ok(())
-    }
-}
-
-pub fn apply_name(trigger: On<ApplyEvent<NameEvent>>, mut names: Query<&mut Name>) {
-    let Ok(mut name) = names.get_mut(trigger.entity) else {
-        warn!("Name not found");
-        return;
-    };
-
-    match &trigger.value {
-        NameEvent::Name(v) => name.set(v.clone()),
     }
 }

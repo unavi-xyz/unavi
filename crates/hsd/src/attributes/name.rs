@@ -1,11 +1,24 @@
-use lorosurgeon::{Hydrate, Reconcile};
+use lorosurgeon::{Hydrate, HydrateError, NoKey, Reconcile, ReconcileError, Reconciler};
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug, Clone)]
-#[loro(default)]
-pub struct NameAttr {
-    pub name: String,
+/// The `name` attribute stores a plain string inline in the attributes map
+/// (not a nested struct/map container).
+#[derive(Debug, Clone, Default)]
+pub struct NameAttr(pub String);
+
+impl Hydrate for NameAttr {
+    fn hydrate_string(s: &str) -> Result<Self, HydrateError> {
+        Ok(Self(s.to_string()))
+    }
+}
+
+impl Reconcile for NameAttr {
+    type Key = NoKey;
+
+    fn reconcile<R: Reconciler>(&self, reconciler: R) -> Result<(), ReconcileError> {
+        reconciler.str(&self.0)
+    }
 }
 
 impl Attribute for NameAttr {

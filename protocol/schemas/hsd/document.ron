@@ -24,7 +24,7 @@
                     "vertices": BlobId,
                 })),
             })),
-            "image": Map(Struct({
+            "image": Optional(Struct({
               "address_mode_u": Optional(I64),
               "address_mode_v": Optional(I64),
               "address_mode_w": Optional(I64),

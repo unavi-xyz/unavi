@@ -19,6 +19,7 @@ blake3.workspace        = true
 bytemuck.workspace      = true
 bytes.workspace         = true
 hsd.path                = "../hsd"
+image                   = { features = ["jpeg", "png"], workspace = true }
 loro.workspace          = true
 lorosurgeon.workspace   = true
 smol_str.workspace      = true

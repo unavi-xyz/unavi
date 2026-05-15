@@ -44,6 +44,7 @@ impl TestContext {
             WdsPlugin,
             bevy_hsd::HsdPlugin,
         ))
+        .init_asset::<Image>()
         .init_asset::<Mesh>()
         .insert_resource(Time::<Fixed>::from_duration(Duration::from_millis(10)));
 

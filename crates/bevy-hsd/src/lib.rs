@@ -3,7 +3,7 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use loro::{LoroDoc, TreeID};
 
-mod attributes;
+pub mod attributes;
 mod diff;
 mod subscribe;
 
@@ -12,6 +12,8 @@ pub struct HsdPlugin;
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(subscribe::subscribe_to_docs)
+            .add_observer(attributes::image::apply_image)
+            .add_observer(attributes::image::on_image_blob_loaded)
             .add_observer(attributes::mesh::apply_mesh)
             .add_observer(attributes::mesh::on_mesh_blobs_loaded)
             .add_observer(attributes::name::apply_name)

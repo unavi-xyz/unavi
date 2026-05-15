@@ -1,6 +1,7 @@
 use loro::LoroMap;
 use lorosurgeon::{Hydrate, HydrateError, Reconcile, ReconcileError, reconcile::PropReconciler};
 
+pub mod image;
 pub mod mesh;
 pub mod name;
 pub mod xform;

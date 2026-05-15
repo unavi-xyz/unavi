@@ -6,7 +6,7 @@ use hsd::{
     HSD_CONTAINER_ID,
     attributes::{Attribute, xform::Xform},
 };
-use loro::{ContainerID, Index, LoroDoc, TreeID, event::Diff};
+use loro::{ContainerID, Index, LoroDoc, TreeID, ValueOrContainer, event::Diff};
 
 use crate::attributes::{ApplyEvent, AttrDataEvent, AttributeParser};
 
@@ -21,6 +21,20 @@ pub struct XformParser;
 impl AttributeParser for XformParser {
     fn key(&self) -> &'static str {
         Xform::KEY
+    }
+
+    fn lifecycle(
+        &self,
+        commands: &mut Commands,
+        prim: Entity,
+        value: Option<ValueOrContainer>,
+    ) -> anyhow::Result<()> {
+        if value.is_some() {
+            commands.entity(prim).insert(Transform::default());
+        } else {
+            commands.entity(prim).remove::<Transform>();
+        }
+        Ok(())
     }
 
     fn parse(

@@ -1,7 +1,7 @@
 use std::sync::{Arc, LazyLock};
 
 use bevy::{platform::collections::HashMap, prelude::*};
-use loro::{ContainerID, Index, LoroDoc, TreeID, event::Diff};
+use loro::{ContainerID, Index, LoroDoc, TreeID, ValueOrContainer, event::Diff};
 
 pub mod name;
 pub mod xform;
@@ -24,6 +24,13 @@ pub enum AttrDataEvent {
 
 pub trait AttributeParser: Send + Sync {
     fn key(&self) -> &'static str;
+
+    fn lifecycle(
+        &self,
+        commands: &mut Commands,
+        prim: Entity,
+        value: Option<ValueOrContainer>,
+    ) -> anyhow::Result<()>;
 
     fn parse(
         &self,

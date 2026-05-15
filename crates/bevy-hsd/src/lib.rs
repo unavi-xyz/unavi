@@ -31,4 +31,5 @@ pub struct HsdChildren(Vec<Entity>);
 pub struct HsdChild(pub Entity);
 
 #[derive(Component)]
+#[require(Visibility)]
 pub struct Prim(pub TreeID);

@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use anyhow::bail;
-use bevy::prelude::*;
+use bevy::prelude::{Name as BevyName, *};
 use hsd::{
     HSD_CONTAINER_ID,
     attributes::{Attribute, name::Name},
 };
-use loro::{ContainerID, Index, LoroDoc, TreeID, event::Diff};
+use loro::{ContainerID, Index, LoroDoc, TreeID, ValueOrContainer, event::Diff};
 
 use crate::attributes::{ApplyEvent, AttrDataEvent, AttributeParser};
 
@@ -19,6 +19,20 @@ pub struct NameParser;
 impl AttributeParser for NameParser {
     fn key(&self) -> &'static str {
         Name::KEY
+    }
+
+    fn lifecycle(
+        &self,
+        commands: &mut Commands,
+        prim: Entity,
+        value: Option<ValueOrContainer>,
+    ) -> anyhow::Result<()> {
+        if value.is_some() {
+            commands.entity(prim).insert(BevyName::default());
+        } else {
+            commands.entity(prim).remove::<BevyName>();
+        }
+        Ok(())
     }
 
     fn parse(
@@ -49,7 +63,7 @@ impl AttributeParser for NameParser {
     }
 }
 
-pub fn apply_name(trigger: On<ApplyEvent<NameEvent>>, mut names: Query<&mut bevy::prelude::Name>) {
+pub fn apply_name(trigger: On<ApplyEvent<NameEvent>>, mut names: Query<&mut BevyName>) {
     let Ok(mut name) = names.get_mut(trigger.entity) else {
         warn!("Name not found");
         return;

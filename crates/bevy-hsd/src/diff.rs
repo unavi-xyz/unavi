@@ -3,8 +3,8 @@ use std::sync::{
     mpsc::{Receiver, Sender},
 };
 
-use bevy::prelude::*;
-use loro::{TreeDiffItem, TreeExternalDiff, TreeID, ValueOrContainer};
+use bevy::{platform::collections::HashMap, prelude::*};
+use loro::{TreeDiffItem, TreeExternalDiff, TreeID, TreeParentId, ValueOrContainer};
 
 use crate::{
     HsdChild, Prim,
@@ -38,10 +38,26 @@ impl HsdDiffEvent {
 #[derive(Component)]
 pub struct DiffQueue(pub Arc<Mutex<Receiver<HsdDiffEvent>>>);
 
+macro_rules! find_prim {
+    ($created:ident, $prims:ident, $prim:ident, $doc:ident) => {{
+        if let Some(found) = $created.get(&($doc, $prim)) {
+            *found
+        } else if let Some((found, _, _)) =
+            $prims.iter().find(|(_, d, p)| d.0 == $doc && p.0 == $prim)
+        {
+            found
+        } else {
+            warn!("Prim not found: {}", $prim);
+            continue;
+        }
+    }};
+}
+
 pub fn drain_diff_queues(
     prims: Query<(Entity, &HsdChild, &Prim)>,
     queues: Query<(Entity, &DiffQueue)>,
     mut commands: Commands,
+    mut created: Local<HashMap<(Entity, TreeID), Entity>>,
 ) {
     for (doc_ent, queue) in queues {
         let Ok(queue) = queue.0.try_lock() else {
@@ -51,43 +67,52 @@ pub fn drain_diff_queues(
         while let Ok(event) = queue.try_recv() {
             let prim = event.target_prim();
 
-            let Some((prim_ent, _, _)) =
-                prims.iter().find(|(_, d, p)| d.0 == doc_ent && p.0 == prim)
-            else {
-                warn!("Prim not found: {prim}");
-                continue;
-            };
-
             match event {
                 HsdDiffEvent::Prim(TreeDiffItem {
-                    action:
-                        TreeExternalDiff::Create {
-                            parent,
-                            index,
-                            position,
-                        },
+                    action: TreeExternalDiff::Create { parent, .. },
                     ..
-                }) => {}
+                }) => {
+                    let parent_id = match parent {
+                        TreeParentId::Root => None,
+                        TreeParentId::Node(id) => Some(id),
+                        TreeParentId::Deleted | TreeParentId::Unexist => {
+                            // TODO how should we handle these cases?
+                            warn!(?parent, "Prim parent does not exist");
+                            continue;
+                        }
+                    };
+
+                    let prim_ent = commands.spawn((Prim(prim), HsdChild(doc_ent))).id();
+                    created.insert((doc_ent, prim), prim_ent);
+
+                    if let Some(parent_id) = parent_id {
+                        let parent_ent = find_prim!(created, prims, parent_id, doc_ent);
+                        commands.entity(parent_ent).add_child(prim_ent);
+                    }
+                }
                 HsdDiffEvent::Prim(TreeDiffItem {
-                    action:
-                        TreeExternalDiff::Move {
-                            parent,
-                            index,
-                            position,
-                            old_parent,
-                            old_index,
-                        },
+                    action: TreeExternalDiff::Move { parent, .. },
                     ..
-                }) => {}
+                }) => {
+                    let prim_ent = find_prim!(created, prims, prim, doc_ent);
+
+                    // Always orphan, in case the new parent is not found.
+                    commands.entity(prim_ent).remove::<ChildOf>();
+
+                    if let TreeParentId::Node(parent_id) = parent {
+                        let parent_ent = find_prim!(created, prims, parent_id, doc_ent);
+                        commands.entity(parent_ent).add_child(prim_ent);
+                    }
+                }
                 HsdDiffEvent::Prim(TreeDiffItem {
-                    action:
-                        TreeExternalDiff::Delete {
-                            old_parent,
-                            old_index,
-                        },
+                    action: TreeExternalDiff::Delete { .. },
                     ..
-                }) => {}
+                }) => {
+                    let prim_ent = find_prim!(created, prims, prim, doc_ent);
+                    commands.entity(prim_ent).despawn();
+                }
                 HsdDiffEvent::Attr { attr, value, .. } => {
+                    let prim_ent = find_prim!(created, prims, prim, doc_ent);
                     if let Some(p) = PARSERS.get(attr.as_str())
                         && let Err(err) = p.lifecycle(&mut commands, prim_ent, value)
                     {
@@ -95,6 +120,7 @@ pub fn drain_diff_queues(
                     }
                 }
                 HsdDiffEvent::AttrData { data, .. } => {
+                    let prim_ent = find_prim!(created, prims, prim, doc_ent);
                     match data {
                         AttrDataEvent::Name(value) => commands
                             .entity(prim_ent)
@@ -106,5 +132,10 @@ pub fn drain_diff_queues(
                 }
             }
         }
+    }
+
+    created.clear();
+    if created.capacity() > 2048 {
+        created.shrink_to(256);
     }
 }

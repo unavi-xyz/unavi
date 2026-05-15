@@ -63,10 +63,10 @@ impl AttributeParser for XformParser {
                 Quat::from_slice(&xform.rotation),
             )))),
             "scale" => Ok(Some(AttrDataEvent::Xform(XformEvent::Scale(
-                Vec3::from_slice(&xform.rotation),
+                Vec3::from_slice(&xform.scale),
             )))),
             "translation" => Ok(Some(AttrDataEvent::Xform(XformEvent::Translation(
-                Vec3::from_slice(&xform.rotation),
+                Vec3::from_slice(&xform.translation),
             )))),
             _ => bail!("unknown key"),
         }

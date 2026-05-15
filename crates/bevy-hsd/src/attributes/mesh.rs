@@ -19,7 +19,7 @@ use smol_str::SmolStr;
 use crate::{
     attributes::{
         ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
-        util::shallow_map_updated_keys,
+        util::{MaybeMissingExt, shallow_map_updated_keys},
     },
     diff::HsdDiffEvent,
 };
@@ -125,7 +125,7 @@ pub fn apply_mesh(
         })
         .collect();
 
-    let indices = attr.indices.as_ref().map(|hash| {
+    let indices = attr.indices.as_option().map(|hash| {
         commands
             .spawn((BlobDep(ent), BlobRequest(blake3::Hash::from_bytes(hash.0))))
             .id()
@@ -212,7 +212,7 @@ pub fn on_mesh_blobs_loaded(
         .remove::<BlobDepsLoaded>();
 }
 
-fn topology_from_i64(num: i64) -> PrimitiveTopology {
+const fn topology_from_i64(num: i64) -> PrimitiveTopology {
     match num {
         0 => PrimitiveTopology::PointList,
         1 => PrimitiveTopology::LineList,

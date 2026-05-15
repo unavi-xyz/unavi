@@ -4,6 +4,7 @@ use lorosurgeon::{
 };
 
 pub mod image;
+pub mod material;
 pub mod mesh;
 pub mod name;
 pub mod xform;
@@ -30,6 +31,7 @@ pub trait Attribute: Reconcile + Hydrate {
 #[loro(default)]
 pub struct Attributes {
     pub image: MaybeMissing<image::ImageAttr>,
+    pub material: MaybeMissing<material::MaterialAttr>,
     pub mesh: MaybeMissing<mesh::MeshAttr>,
     pub name: MaybeMissing<name::NameAttr>,
     pub xform: MaybeMissing<xform::XformAttr>,

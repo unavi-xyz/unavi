@@ -102,7 +102,7 @@ fn dispatch_prim(ctx: &DocContext, event: ContainerDiff) -> anyhow::Result<()> {
 }
 
 fn dispatch_section(ctx: &DocContext, event: ContainerDiff) -> anyhow::Result<()> {
-    let prim = prim_from_path(&event.path)?;
+    let prim = prim_from_path(event.path)?;
     let section = event.path[2]
         .1
         .as_key()
@@ -121,7 +121,7 @@ fn dispatch_section(ctx: &DocContext, event: ContainerDiff) -> anyhow::Result<()
                     .send(HsdDiffEvent::Attr {
                         prim,
                         attr: key.to_string(),
-                        value: value.clone(),
+                        value: normalize_value(value.clone()),
                     })
                     .map_err(|_| anyhow::anyhow!("failed to send attr event"))?;
             }
@@ -144,7 +144,7 @@ fn dispatch_section(ctx: &DocContext, event: ContainerDiff) -> anyhow::Result<()
 }
 
 fn dispatch_attribute_data(ctx: &DocContext, event: ContainerDiff) -> anyhow::Result<()> {
-    let prim = prim_from_path(&event.path)?;
+    let prim = prim_from_path(event.path)?;
     let section = event.path[2]
         .1
         .as_key()
@@ -183,6 +183,16 @@ fn prim_from_path(path: &[(loro::ContainerID, loro::Index)]) -> anyhow::Result<T
         .as_node()
         .copied()
         .ok_or_else(|| anyhow::anyhow!("invalid prim index type"))
+}
+
+/// Collapse `Some(Value(Null))` to `None`. Lorosurgeon's `MaybeMissing<T>`
+/// reconciles `Missing` by writing `Null`, but for our lifecycle dispatch
+/// "null in the doc" should mean "attribute absent".
+fn normalize_value(value: Option<ValueOrContainer>) -> Option<ValueOrContainer> {
+    match value {
+        Some(ValueOrContainer::Value(LoroValue::Null)) => None,
+        other => other,
+    }
 }
 
 fn relationship_target(value: Option<&ValueOrContainer>) -> anyhow::Result<Option<TreeID>> {

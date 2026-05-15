@@ -18,7 +18,7 @@ use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 use crate::{
     attributes::{
         ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
-        util::shallow_map_updated_keys,
+        util::{MaybeMissingExt, shallow_map_updated_keys},
     },
     diff::HsdDiffEvent,
 };
@@ -116,29 +116,29 @@ pub fn apply_image(
         .id();
 
     let mut sampler = ImageSamplerDescriptor::default();
-    if let Some(v) = attr.address_mode_u {
+    if let Some(&v) = attr.address_mode_u.as_option() {
         sampler.address_mode_u = address_mode(v);
     }
-    if let Some(v) = attr.address_mode_v {
+    if let Some(&v) = attr.address_mode_v.as_option() {
         sampler.address_mode_v = address_mode(v);
     }
-    if let Some(v) = attr.address_mode_w {
+    if let Some(&v) = attr.address_mode_w.as_option() {
         sampler.address_mode_w = address_mode(v);
     }
-    if let Some(v) = attr.mag_filter {
+    if let Some(&v) = attr.mag_filter.as_option() {
         sampler.mag_filter = filter_mode(v);
     }
-    if let Some(v) = attr.min_filter {
+    if let Some(&v) = attr.min_filter.as_option() {
         sampler.min_filter = filter_mode(v);
     }
-    if let Some(v) = attr.mipmap_filter {
+    if let Some(&v) = attr.mipmap_filter.as_option() {
         sampler.mipmap_filter = filter_mode(v);
     }
 
     commands.entity(ent).insert(ImageBlobs {
         data,
         sampler,
-        srgb: attr.srgb,
+        srgb: attr.srgb.as_option().copied(),
     });
 }
 

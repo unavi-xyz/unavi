@@ -19,7 +19,10 @@ pub struct TestContext {
 impl Default for TestContext {
     fn default() -> Self {
         let mut app = App::new();
-        app.add_plugins((MinimalPlugins, bevy_hsd::HsdPlugin));
+        app.add_plugins((MinimalPlugins, AssetPlugin::default(), bevy_hsd::HsdPlugin))
+            .init_asset::<Image>()
+            .init_asset::<Mesh>()
+            .init_asset::<StandardMaterial>();
 
         let mut ctx = Self {
             app,
@@ -46,6 +49,7 @@ impl TestContext {
         ))
         .init_asset::<Image>()
         .init_asset::<Mesh>()
+        .init_asset::<StandardMaterial>()
         .insert_resource(Time::<Fixed>::from_duration(Duration::from_millis(10)));
 
         app.world_mut().spawn(LocalBlobs(blobs.clone()));

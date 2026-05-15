@@ -1,6 +1,21 @@
 use loro::{ContainerID, Index, event::Diff};
+use lorosurgeon::MaybeMissing;
 
 use crate::attributes::ParseError;
+
+/// Borrowing accessor for the `Present` variant of a [`MaybeMissing`].
+pub trait MaybeMissingExt<T> {
+    fn as_option(&self) -> Option<&T>;
+}
+
+impl<T> MaybeMissingExt<T> for MaybeMissing<T> {
+    fn as_option(&self) -> Option<&T> {
+        match self {
+            MaybeMissing::Present(v) => Some(v),
+            MaybeMissing::Missing => None,
+        }
+    }
+}
 
 /// Parses the top-level updated keys out of a diff map.
 pub fn shallow_map_updated_keys(

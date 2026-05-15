@@ -25,7 +25,7 @@ fn test_mesh_lifecycle(mut ctx: TestContext) {
 
     let attr = MeshAttr {
         attributes: BTreeMap::from([("POSITION".to_string(), ByteArray::<32>::new([1; 32]))]),
-        indices: None,
+        indices: MaybeMissing::Missing,
         topology: 3,
     };
     reconcile_prim_mesh(&meta, attr);
@@ -81,7 +81,7 @@ fn test_mesh_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
                 ByteArray::<32>::new(*uv_hash.as_bytes()),
             ),
         ]),
-        indices: Some(ByteArray::<32>::new(*idx_hash.as_bytes())),
+        indices: MaybeMissing::Present(ByteArray::<32>::new(*idx_hash.as_bytes())),
         topology: 3,
     };
     reconcile_prim_mesh(&meta, attr);

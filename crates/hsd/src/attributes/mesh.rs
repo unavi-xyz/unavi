@@ -1,15 +1,14 @@
 use std::collections::BTreeMap;
 
-use lorosurgeon::{ByteArray, Hydrate, Reconcile};
+use lorosurgeon::{ByteArray, Hydrate, MaybeMissing, Reconcile};
 
 use crate::attributes::Attribute;
 
 #[derive(Hydrate, Reconcile, Debug, Clone)]
+#[loro(default)]
 pub struct MeshAttr {
-    #[loro(default)]
     pub attributes: BTreeMap<String, ByteArray<32>>,
-    pub indices: Option<ByteArray<32>>,
-    #[loro(default)]
+    pub indices: MaybeMissing<ByteArray<32>>,
     pub topology: i64,
 }
 

@@ -8,6 +8,7 @@ use thiserror::Error;
 use crate::diff::{DiffSender, HsdDiffEvent};
 
 pub mod image;
+pub mod material;
 pub mod mesh;
 pub mod name;
 mod util;
@@ -17,6 +18,7 @@ pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
     LazyLock::new(|| {
         let parsers: [Box<dyn AttributeParser>; _] = [
             Box::new(image::ImageParser),
+            Box::new(material::MaterialParser),
             Box::new(mesh::MeshParser),
             Box::new(name::NameParser),
             Box::new(xform::XformParser),
@@ -31,6 +33,7 @@ pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
 #[derive(Debug)]
 pub enum AttrDataEvent {
     Image(image::ImageEvent),
+    Material(material::MaterialEvent),
     Mesh(mesh::MeshEvent),
     Xform(xform::XformEvent),
 }

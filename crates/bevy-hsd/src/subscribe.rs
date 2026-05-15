@@ -10,7 +10,7 @@ use loro::{ExportMode, LoroDoc, Subscription, event::ContainerDiff};
 
 use crate::{
     Hsd,
-    attributes::{AttributeParser, xform::XformParser},
+    attributes::{AttributeParser, PARSERS, xform::XformParser},
     diff::{DiffQueue, DiffSender, HsdDiffEvent},
 };
 
@@ -148,9 +148,14 @@ fn process_diff_event(ctx: &DocContext, event: ContainerDiff) -> anyhow::Result<
                 &[]
             };
 
-            if let Some(p) = ctx.parsers.get(attr.as_str()) {
-                p.parse(prim, path, event.diff, &ctx.tx)
-                    .with_context(|| format!("{} parser", attr.as_str()))?;
+            if let Some(p) = PARSERS.get(attr.as_str())
+                && let Some(data) = p
+                    .parse(&ctx.doc, prim, path, event.diff)
+                    .with_context(|| format!("{} parser", attr.as_str()))?
+            {
+                ctx.tx
+                    .send(HsdDiffEvent::AttrData { prim, data })
+                    .map_err(|_| anyhow::anyhow!("failed to send diff event"))?;
             }
         }
     }

@@ -19,8 +19,8 @@ fn test_xform_spawn(mut ctx: TestContext) {
 
     let xform = Xform {
         translation: vec![1.0, 2.0, 3.0],
-        rotation: vec![0.0, 0.0, 0.0, 1.0],
-        scale: vec![0.0; 3],
+        rotation: vec![0.4, 0.5, 0.6, 0.9],
+        scale: vec![0.9, 0.8, 0.7],
     };
     xform.attr_reconcile(meta).expect("reconcile");
 

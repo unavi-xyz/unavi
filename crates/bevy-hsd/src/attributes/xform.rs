@@ -2,15 +2,18 @@ use std::sync::Arc;
 
 use anyhow::bail;
 use bevy::prelude::*;
-use hsd::attributes::{Attribute, xform::Xform};
+use hsd::{
+    HSD_CONTAINER_ID,
+    attributes::{Attribute, xform::Xform},
+};
 use loro::{ContainerID, Index, LoroDoc, TreeID, event::Diff};
 
-use crate::attributes::{AttrDataEvent, AttributeParser};
+use crate::attributes::{ApplyEvent, AttrDataEvent, AttributeParser};
 
 pub enum XformEvent {
-    SetRotation(Quat),
-    SetScale(Vec3),
-    SetTranslation(Vec3),
+    Rotation(Quat),
+    Scale(Vec3),
+    Translation(Vec3),
 }
 
 pub struct XformParser;
@@ -25,7 +28,7 @@ impl AttributeParser for XformParser {
         doc: &Arc<LoroDoc>,
         prim: TreeID,
         path: &[(ContainerID, Index)],
-        diff: Diff,
+        _diff: Diff,
     ) -> anyhow::Result<Option<AttrDataEvent>> {
         if path.is_empty() {
             return Ok(None);
@@ -36,17 +39,35 @@ impl AttributeParser for XformParser {
             .as_key()
             .ok_or_else(|| anyhow::anyhow!("invalid index type"))?;
 
-        let val = diff
-            .as_list()
-            .ok_or_else(|| anyhow::anyhow!("invalid diff type"))?;
+        let tree = doc.get_tree(&*HSD_CONTAINER_ID);
+        let meta = tree.get_meta(prim)?;
+
+        let xform = Xform::attr_hydrate(&meta)?;
 
         match key.as_str() {
-            "rotation" => Ok(Some(AttrDataEvent::Xform(XformEvent::SetRotation(
-                todo!(), // Quat::from_slice(slice),
+            "rotation" => Ok(Some(AttrDataEvent::Xform(XformEvent::Rotation(
+                Quat::from_slice(&xform.rotation),
             )))),
-            "scale" => Ok(None),
-            "translation" => Ok(None),
+            "scale" => Ok(Some(AttrDataEvent::Xform(XformEvent::Scale(
+                Vec3::from_slice(&xform.rotation),
+            )))),
+            "translation" => Ok(Some(AttrDataEvent::Xform(XformEvent::Translation(
+                Vec3::from_slice(&xform.rotation),
+            )))),
             _ => bail!("unknown key"),
         }
+    }
+}
+
+pub fn apply_xform(trigger: On<ApplyEvent<XformEvent>>, mut xforms: Query<&mut Transform>) {
+    let Ok(mut xform) = xforms.get_mut(trigger.entity) else {
+        warn!("Transform not found");
+        return;
+    };
+
+    match trigger.value {
+        XformEvent::Rotation(v) => xform.rotation = v,
+        XformEvent::Scale(v) => xform.scale = v,
+        XformEvent::Translation(v) => xform.translation = v,
     }
 }

@@ -62,9 +62,6 @@ fn test_relationship_storage(mut ctx: TestContext) {
     ctx.app.update();
 
     let world = ctx.app.world_mut();
-    let has_rels = world
-        .entity(source_ent)
-        .get::<HsdRelationships>()
-        .is_some();
+    let has_rels = world.entity(source_ent).get::<HsdRelationships>().is_some();
     assert!(!has_rels, "relationships component should be removed");
 }

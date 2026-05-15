@@ -55,9 +55,7 @@
                 "attributes": Map(BlobId),
                 "indices": Optional(BlobId),
             })),
-            "name": Optional(Struct({
-                "name": Optional(String),
-            })),
+            "name": Optional(String),
             "rigid_body": Optional(Struct({
                 "angular_damping": Optional(F64),
                 "friction": Optional(F64),

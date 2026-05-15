@@ -126,9 +126,6 @@ pub fn drain_diff_queues(
                         AttrDataEvent::Mesh(value) => commands
                             .entity(prim_ent)
                             .trigger(|entity| ApplyEvent { entity, value }),
-                        AttrDataEvent::Name(value) => commands
-                            .entity(prim_ent)
-                            .trigger(|entity| ApplyEvent { entity, value }),
                         AttrDataEvent::Xform(value) => commands
                             .entity(prim_ent)
                             .trigger(|entity| ApplyEvent { entity, value }),

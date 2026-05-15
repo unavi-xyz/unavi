@@ -51,7 +51,7 @@ pub fn relationships_map(prim_meta: &LoroMap) -> Option<LoroMap> {
     }
 }
 
-/// Hydrate an attribute from a prim's meta map. 
+/// Hydrate an attribute from a prim's meta map.
 pub fn hydrate_attr<A: Attribute>(prim_meta: &LoroMap) -> Result<A, HydrateError> {
     let attrs = attributes_map(prim_meta).ok_or_else(|| HydrateError::missing(ATTRIBUTES_KEY))?;
     A::attr_hydrate(&attrs)

@@ -18,9 +18,7 @@ fn test_name_lifecycle(mut ctx: TestContext) {
     let root = tree.create(None).expect("create");
     let meta = tree.get_meta(root).expect("get meta");
 
-    let attr = NameAttr {
-        name: "My Node".to_string(),
-    };
+    let attr = NameAttr("My Node".to_string());
     let prim = PrimMeta {
         attributes: MaybeMissing::Present(Attributes {
             name: MaybeMissing::Present(attr.clone()),
@@ -39,7 +37,7 @@ fn test_name_lifecycle(mut ctx: TestContext) {
 
     let res = query.query(world).into_iter().collect::<Vec<_>>();
     assert_eq!(res.len(), 1);
-    assert_eq!(res[0].as_str(), attr.name);
+    assert_eq!(res[0].as_str(), attr.0);
 
     let attrs = attributes_map(&meta).expect("attributes map");
     attrs.delete(NameAttr::KEY).expect("delete");

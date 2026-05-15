@@ -954,6 +954,7 @@ dependencies = [
  "bytemuck",
  "bytes 1.11.1",
  "hsd",
+ "image",
  "iroh-blobs",
  "loro",
  "lorosurgeon",

@@ -14,10 +14,20 @@ impl Plugin for HsdPlugin {
         app.add_observer(subscribe::subscribe_to_docs)
             .add_observer(attributes::image::apply_image)
             .add_observer(attributes::image::on_image_blob_loaded)
+            .add_observer(attributes::material::apply_material)
             .add_observer(attributes::mesh::apply_mesh)
             .add_observer(attributes::mesh::on_mesh_blobs_loaded)
             .add_observer(attributes::xform::apply_xform)
-            .add_systems(Update, diff::drain_diff_queues);
+            .add_systems(
+                Update,
+                (
+                    diff::drain_diff_queues,
+                    attributes::material::propagate_material_relationship,
+                    attributes::material::propagate_image_to_material,
+                    attributes::material::propagate_material_to_dependents,
+                )
+                    .chain(),
+            );
     }
 }
 

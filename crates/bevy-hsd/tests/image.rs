@@ -23,15 +23,15 @@ fn test_image_lifecycle(mut ctx: TestContext) {
     let meta = tree.get_meta(root).expect("get meta");
 
     let attr = ImageAttr {
-        address_mode_u: None,
-        address_mode_v: None,
-        address_mode_w: None,
+        address_mode_u: MaybeMissing::Missing,
+        address_mode_v: MaybeMissing::Missing,
+        address_mode_w: MaybeMissing::Missing,
         data: ByteArray::<32>::new([1; 32]),
-        mag_filter: None,
-        min_filter: None,
-        mipmap_filter: None,
-        name: None,
-        srgb: None,
+        mag_filter: MaybeMissing::Missing,
+        min_filter: MaybeMissing::Missing,
+        mipmap_filter: MaybeMissing::Missing,
+        name: MaybeMissing::Missing,
+        srgb: MaybeMissing::Missing,
     };
     reconcile_prim_image(&meta, attr);
 
@@ -74,15 +74,15 @@ fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
     let root = tree.create(None).expect("create");
     let meta = tree.get_meta(root).expect("get meta");
     let attr = ImageAttr {
-        address_mode_u: Some(1),
-        address_mode_v: None,
-        address_mode_w: None,
+        address_mode_u: MaybeMissing::Present(1),
+        address_mode_v: MaybeMissing::Missing,
+        address_mode_w: MaybeMissing::Missing,
         data: ByteArray::<32>::new(*data_hash.as_bytes()),
-        mag_filter: Some(1),
-        min_filter: None,
-        mipmap_filter: None,
-        name: None,
-        srgb: Some(true),
+        mag_filter: MaybeMissing::Present(1),
+        min_filter: MaybeMissing::Missing,
+        mipmap_filter: MaybeMissing::Missing,
+        name: MaybeMissing::Missing,
+        srgb: MaybeMissing::Present(true),
     };
     reconcile_prim_image(&meta, attr);
 

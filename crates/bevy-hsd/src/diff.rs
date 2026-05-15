@@ -8,7 +8,7 @@ use loro::{TreeDiffItem, TreeExternalDiff, TreeID, ValueOrContainer};
 
 use crate::{
     HsdChild, Prim,
-    attributes::{ApplyEvent, AttrDataEvent},
+    attributes::{ApplyEvent, AttrDataEvent, PARSERS},
 };
 
 pub type DiffSender = Arc<Sender<HsdDiffEvent>>;
@@ -26,6 +26,15 @@ pub enum HsdDiffEvent {
     },
 }
 
+impl HsdDiffEvent {
+    const fn target_prim(&self) -> TreeID {
+        match self {
+            Self::Prim(p) => p.target,
+            Self::Attr { prim, .. } | Self::AttrData { prim, .. } => *prim,
+        }
+    }
+}
+
 #[derive(Component)]
 pub struct DiffQueue(pub Arc<Mutex<Receiver<HsdDiffEvent>>>);
 
@@ -40,18 +49,26 @@ pub fn drain_diff_queues(
         };
 
         while let Ok(event) = queue.try_recv() {
+            let prim = event.target_prim();
+
+            let Some((prim_ent, _, _)) =
+                prims.iter().find(|(_, d, p)| d.0 == doc_ent && p.0 == prim)
+            else {
+                warn!("Prim not found: {prim}");
+                continue;
+            };
+
             match event {
                 HsdDiffEvent::Prim(TreeDiffItem {
-                    target,
                     action:
                         TreeExternalDiff::Create {
                             parent,
                             index,
                             position,
                         },
+                    ..
                 }) => {}
                 HsdDiffEvent::Prim(TreeDiffItem {
-                    target,
                     action:
                         TreeExternalDiff::Move {
                             parent,
@@ -60,23 +77,24 @@ pub fn drain_diff_queues(
                             old_parent,
                             old_index,
                         },
+                    ..
                 }) => {}
                 HsdDiffEvent::Prim(TreeDiffItem {
-                    target,
                     action:
                         TreeExternalDiff::Delete {
                             old_parent,
                             old_index,
                         },
+                    ..
                 }) => {}
-                HsdDiffEvent::Attr { prim, attr, value } => {}
-                HsdDiffEvent::AttrData { prim, data } => {
-                    let Some((prim_ent, _, _)) =
-                        prims.iter().find(|(_, d, p)| d.0 == doc_ent && p.0 == prim)
-                    else {
-                        continue;
-                    };
-
+                HsdDiffEvent::Attr { attr, value, .. } => {
+                    if let Some(p) = PARSERS.get(attr.as_str())
+                        && let Err(err) = p.lifecycle(&mut commands, prim_ent, value)
+                    {
+                        error!(%attr, ?err, "Failed to handle attribute lifecycle");
+                    }
+                }
+                HsdDiffEvent::AttrData { data, .. } => {
                     match data {
                         AttrDataEvent::Name(value) => commands
                             .entity(prim_ent)

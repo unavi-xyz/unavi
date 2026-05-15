@@ -106,7 +106,6 @@ export async function instantiateScript(
   return instance;
 }
 
-
 export async function scriptInit(instance: any): Promise<void> {
   await instance.guestApi.init();
 }
@@ -149,7 +148,8 @@ function build_imports(wasi: WASIShim, rt: any) {
       registerInputListener: rt.wiredInputRegisterInputListener.bind(rt),
     },
     "wired:input/context": {
-      registerGlobalInputListener: rt.wiredInputRegisterGlobalInputListener.bind(rt),
+      registerGlobalInputListener:
+        rt.wiredInputRegisterGlobalInputListener.bind(rt),
     },
     "wired:input/types": {
       InputListener: rt.wiredInputListenerClass(),

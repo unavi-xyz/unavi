@@ -118,6 +118,9 @@ pub fn drain_diff_queues(
                     let prim_ent = find_prim!(created, prims, prim, doc_ent);
 
                     match data {
+                        AttrDataEvent::Mesh(value) => commands
+                            .entity(prim_ent)
+                            .trigger(|entity| ApplyEvent { entity, value }),
                         AttrDataEvent::Name(value) => commands
                             .entity(prim_ent)
                             .trigger(|entity| ApplyEvent { entity, value }),

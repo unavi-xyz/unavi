@@ -4,9 +4,12 @@ use std::sync::{
 };
 
 use bevy::prelude::*;
-use loro::{TreeDiffItem, TreeID, ValueOrContainer};
+use loro::{TreeDiffItem, TreeExternalDiff, TreeID, ValueOrContainer};
 
-use crate::attributes::AttrDataEvent;
+use crate::{
+    HsdChild, Prim,
+    attributes::{ApplyEvent, AttrDataEvent},
+};
 
 pub type DiffSender = Arc<Sender<HsdDiffEvent>>;
 
@@ -19,7 +22,6 @@ pub enum HsdDiffEvent {
     },
     AttrData {
         prim: TreeID,
-        attr: &'static str,
         data: AttrDataEvent,
     },
 }
@@ -27,17 +29,63 @@ pub enum HsdDiffEvent {
 #[derive(Component)]
 pub struct DiffQueue(pub Arc<Mutex<Receiver<HsdDiffEvent>>>);
 
-pub fn drain_diff_queues(queues: Query<&DiffQueue>, mut commands: Commands) {
-    for q in queues {
-        let Ok(q) = q.0.try_lock() else {
+pub fn drain_diff_queues(
+    prims: Query<(Entity, &HsdChild, &Prim)>,
+    queues: Query<(Entity, &DiffQueue)>,
+    mut commands: Commands,
+) {
+    for (doc_ent, queue) in queues {
+        let Ok(queue) = queue.0.try_lock() else {
             continue;
         };
 
-        while let Ok(event) = q.try_recv() {
+        while let Ok(event) = queue.try_recv() {
             match event {
-                HsdDiffEvent::Prim(d) => {}
-                HsdDiffEvent::Attr { .. } => {}
-                HsdDiffEvent::AttrData { .. } => {}
+                HsdDiffEvent::Prim(TreeDiffItem {
+                    target,
+                    action:
+                        TreeExternalDiff::Create {
+                            parent,
+                            index,
+                            position,
+                        },
+                }) => {}
+                HsdDiffEvent::Prim(TreeDiffItem {
+                    target,
+                    action:
+                        TreeExternalDiff::Move {
+                            parent,
+                            index,
+                            position,
+                            old_parent,
+                            old_index,
+                        },
+                }) => {}
+                HsdDiffEvent::Prim(TreeDiffItem {
+                    target,
+                    action:
+                        TreeExternalDiff::Delete {
+                            old_parent,
+                            old_index,
+                        },
+                }) => {}
+                HsdDiffEvent::Attr { prim, attr, value } => {}
+                HsdDiffEvent::AttrData { prim, data } => {
+                    let Some((prim_ent, _, _)) =
+                        prims.iter().find(|(_, d, p)| d.0 == doc_ent && p.0 == prim)
+                    else {
+                        continue;
+                    };
+
+                    match data {
+                        AttrDataEvent::Name(value) => commands
+                            .entity(prim_ent)
+                            .trigger(|entity| ApplyEvent { entity, value }),
+                        AttrDataEvent::Xform(value) => commands
+                            .entity(prim_ent)
+                            .trigger(|entity| ApplyEvent { entity, value }),
+                    };
+                }
             }
         }
     }

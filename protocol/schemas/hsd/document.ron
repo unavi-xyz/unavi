@@ -51,7 +51,7 @@
                 "roughness": Optional(F64),
             })),
             "mesh": Optional(Struct({
-                "topology": I64,
+                "topology": String,
                 "attributes": Map(BlobId),
                 "indices": Optional(BlobId),
             })),
@@ -59,7 +59,7 @@
             "rigid_body": Optional(Struct({
                 "angular_damping": Optional(F64),
                 "friction": Optional(F64),
-                "kind": I64,
+                "kind": String,
                 "linear_damping": Optional(F64),
                 "mass": Optional(F64),
                 "restitution": Optional(F64),

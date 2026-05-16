@@ -2,7 +2,7 @@ use avian3d::prelude::{AngularDamping, Friction, LinearDamping, Mass, Restitutio
 use bevy::prelude::*;
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{Attribute, hydrate_attr, rigid_body::RigidBodyAttr},
+    attributes::{Attribute, hydrate_attr, rigid_body::{RigidBodyAttr, RigidBodyKind}},
 };
 use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 
@@ -82,14 +82,9 @@ pub fn apply_rigid_body(
     let RigidBodyEvent::Rebuild(attr) = &trigger.value;
 
     let rb = match attr.kind {
-        0 => RigidBody::Dynamic,
-        1 => RigidBody::Static,
-        2 => RigidBody::Kinematic,
-        k => {
-            warn!("rigid_body: unknown kind {k}, skipping");
-            commands.entity(ent).remove::<RigidBody>();
-            return;
-        }
+        RigidBodyKind::Dynamic => RigidBody::Dynamic,
+        RigidBodyKind::Kinematic => RigidBody::Kinematic,
+        RigidBodyKind::Static => RigidBody::Static,
     };
     commands.entity(ent).insert(rb);
 

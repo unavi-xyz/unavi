@@ -14,7 +14,7 @@ use hsd::{
     attributes::{
         Attributes,
         material::{ColorVec, MaterialAttr},
-        mesh::MeshAttr,
+        mesh::{MeshAttr, Topology},
         xform::XformAttr,
     },
 };
@@ -155,7 +155,7 @@ fn build_cube_mesh_attr(blobs: &Blobs) -> MeshAttr {
     MeshAttr {
         attributes: attrs,
         indices,
-        topology: 3,
+        topology: Topology::TriangleList,
     }
 }
 

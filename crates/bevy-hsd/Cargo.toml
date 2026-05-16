@@ -27,9 +27,10 @@ thiserror.workspace     = true
 unavi-util.path         = "../unavi-util"
 
 [dev-dependencies]
-iroh-blobs.workspace = true
-rstest               = "0.26.1"
-test-macros.path     = "../test-macros"
-tracing.workspace    = true
-tracing-test         = { features = ["no-env-filter"], workspace = true }
-wds.path             = "../wds"
+bevy_panorbit_camera.workspace = true
+iroh-blobs.workspace           = true
+rstest                         = "0.26.1"
+test-macros.path               = "../test-macros"
+tracing.workspace              = true
+tracing-test                   = { features = ["no-env-filter"], workspace = true }
+wds.path                       = "../wds"

@@ -185,16 +185,9 @@ fn test_material_relationship(mut ctx: TestContext) {
 
     let prim_b = tree.create(None).expect("create b");
     let meta_b = tree.get_meta(prim_b).expect("meta b");
-    reconcile_prim(
+    reconcile_relationship_only(
         &meta_b,
-        Attributes {
-            material: MaybeMissing::Present(MaterialAttr::default()),
-            ..Default::default()
-        },
-        Some(BTreeMap::from([(
-            "material".to_string(),
-            prim_a.to_string(),
-        )])),
+        BTreeMap::from([("material".to_string(), prim_a.to_string())]),
     );
 
     ctx.doc.commit();
@@ -206,6 +199,15 @@ fn test_material_relationship(mut ctx: TestContext) {
     let handles: Vec<Handle<StandardMaterial>> = q.iter(world).map(|m| m.0.clone()).collect();
     assert_eq!(handles.len(), 2);
     assert_eq!(handles[0], handles[1], "B should share A's material handle");
+}
+
+fn reconcile_relationship_only(meta: &loro::LoroMap, relationships: BTreeMap<String, String>) {
+    let prim = PrimMeta {
+        attributes: MaybeMissing::Missing,
+        relationships: MaybeMissing::Present(relationships),
+    };
+    prim.reconcile(RootReconciler::new(meta.clone()))
+        .expect("reconcile");
 }
 
 fn reconcile_prim_material(meta: &loro::LoroMap, attr: MaterialAttr) {

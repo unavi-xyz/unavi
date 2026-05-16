@@ -102,10 +102,12 @@ impl AttributeParser for MaterialParser {
             return Ok(());
         }
 
-        ctx.tx.send(HsdDiffEvent::AttrData {
-            prim,
-            data: AttrDataEvent::Material(MaterialEvent::Rebuild(attr)),
-        })?;
+        ctx.tx
+            .send(HsdDiffEvent::AttrData {
+                prim,
+                data: AttrDataEvent::Material(MaterialEvent::Rebuild(attr)),
+            })
+            .map_err(|_| ParseError::SendDiff)?;
         Ok(())
     }
 }
@@ -129,17 +131,17 @@ pub fn apply_material(
     let MaterialEvent::Rebuild(attr) = &trigger.value;
 
     commands.entity(ent).insert(MaterialData(attr.clone()));
-    rebuild_material(ent, attr, &ctx, &mut assets, &mut commands);
+    rebuild_material(ent, Some(attr), &ctx, &mut assets, &mut commands);
 }
 
 pub fn propagate_material_relationship(
-    changed: Query<(Entity, &MaterialData), Changed<HsdRelationships>>,
+    changed: Query<(Entity, Option<&MaterialData>), Changed<HsdRelationships>>,
     ctx: MaterialCtx,
     mut assets: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
 ) {
     for (ent, data) in &changed {
-        rebuild_material(ent, &data.0, &ctx, &mut assets, &mut commands);
+        rebuild_material(ent, data.map(|d| &d.0), &ctx, &mut assets, &mut commands);
     }
 }
 
@@ -153,7 +155,7 @@ pub fn propagate_image_to_material(
     for img_ent in &changed {
         for (mat_ent, refs, data) in &dependents {
             if refs.references(img_ent) {
-                rebuild_material(mat_ent, &data.0, &ctx, &mut assets, &mut commands);
+                rebuild_material(mat_ent, Some(&data.0), &ctx, &mut assets, &mut commands);
             }
         }
     }
@@ -161,7 +163,7 @@ pub fn propagate_image_to_material(
 
 pub fn propagate_material_to_dependents(
     changed: Query<Entity, Changed<HsdMaterial>>,
-    dependents: Query<(Entity, &HsdRelationships, &MaterialData, &HsdChild)>,
+    dependents: Query<(Entity, &HsdRelationships, Option<&MaterialData>, &HsdChild)>,
     indices: Query<&HsdPrimIndex>,
     ctx: MaterialCtx,
     mut assets: ResMut<Assets<StandardMaterial>>,
@@ -176,7 +178,13 @@ pub fn propagate_material_to_dependents(
                 continue;
             };
             if index.0.get(target_tree_id) == Some(&src_ent) && dep_ent != src_ent {
-                rebuild_material(dep_ent, &data.0, &ctx, &mut assets, &mut commands);
+                rebuild_material(
+                    dep_ent,
+                    data.map(|d| &d.0),
+                    &ctx,
+                    &mut assets,
+                    &mut commands,
+                );
             }
         }
     }
@@ -184,7 +192,7 @@ pub fn propagate_material_to_dependents(
 
 fn rebuild_material(
     ent: Entity,
-    attr: &MaterialAttr,
+    attr: Option<&MaterialAttr>,
     ctx: &MaterialCtx,
     assets: &mut Assets<StandardMaterial>,
     commands: &mut Commands,
@@ -212,6 +220,10 @@ fn rebuild_material(
         ));
         return;
     }
+
+    let Some(attr) = attr else {
+        return;
+    };
 
     let texture_refs = MaterialTextureRefs {
         base_color: lookup_image(attr.base_color_texture.as_option(), index),
@@ -265,8 +277,8 @@ fn apply_attr_to_material(
     };
 
     material.double_sided = attr.double_sided.as_option().copied().unwrap_or_default();
-    material.emissive = color_from_color_vec(attr.emissive.as_option())
-        .map_or(LinearRgba::BLACK, LinearRgba::from);
+    material.emissive =
+        color_from_color_vec(attr.emissive.as_option()).map_or(LinearRgba::BLACK, LinearRgba::from);
     material.metallic = attr
         .metallic
         .as_option()
@@ -288,8 +300,8 @@ fn handle_for(images: &Query<&HsdImage>, ent: Entity) -> Option<Handle<Image>> {
     images.get(ent).ok().map(|i| i.0.clone())
 }
 
-fn color_from_color_vec(v: Option<&ColorVec>) -> Option<Color> {
-    match v?.0.as_slice() {
+fn color_from_color_vec(vec: Option<&ColorVec>) -> Option<Color> {
+    match vec?.0.as_slice() {
         [r, g, b, a] => Some(Color::linear_rgba(
             *r as f32, *g as f32, *b as f32, *a as f32,
         )),

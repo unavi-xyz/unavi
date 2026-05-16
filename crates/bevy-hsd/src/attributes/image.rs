@@ -84,10 +84,12 @@ impl AttributeParser for ImageParser {
             return Ok(());
         }
 
-        ctx.tx.send(HsdDiffEvent::AttrData {
-            prim,
-            data: AttrDataEvent::Image(ImageEvent::Rebuild(attr)),
-        })?;
+        ctx.tx
+            .send(HsdDiffEvent::AttrData {
+                prim,
+                data: AttrDataEvent::Image(ImageEvent::Rebuild(attr)),
+            })
+            .map_err(|_| ParseError::SendDiff)?;
         Ok(())
     }
 }

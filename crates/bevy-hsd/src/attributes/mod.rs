@@ -1,11 +1,11 @@
-use std::sync::{Arc, LazyLock, mpsc::SendError};
+use std::sync::{Arc, LazyLock};
 
 use bevy::{platform::collections::HashMap, prelude::*};
 use loro::{ContainerID, Index, LoroDoc, LoroError, TreeID, ValueOrContainer, event::Diff};
 use lorosurgeon::HydrateError;
 use thiserror::Error;
 
-use crate::diff::{DiffSender, HsdDiffEvent};
+use crate::diff::DiffSender;
 
 pub mod image;
 pub mod material;
@@ -51,7 +51,7 @@ pub enum ParseError {
     #[error("hydrate {0}")]
     Hydrate(#[from] HydrateError),
     #[error("failed to send diff event")]
-    Send(#[from] SendError<HsdDiffEvent>),
+    SendDiff,
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }

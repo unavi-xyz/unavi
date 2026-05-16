@@ -950,6 +950,7 @@ dependencies = [
  "avian3d",
  "bevy",
  "bevy-wds",
+ "bevy_panorbit_camera",
  "blake3",
  "bytemuck",
  "bytes 1.11.1",

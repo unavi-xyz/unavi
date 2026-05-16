@@ -78,17 +78,17 @@ impl AttributeParser for MeshParser {
 
         let attr: MeshAttr = hydrate_attr(&meta)?;
 
-        // Rebuild on any change to mesh contents — granular diffing isn't
-        // worth it for an initial implementation.
         let keys = shallow_map_updated_keys(path, diff)?;
         if keys.is_empty() {
             return Ok(());
         }
 
-        ctx.tx.send(HsdDiffEvent::AttrData {
-            prim,
-            data: AttrDataEvent::Mesh(MeshEvent::Rebuild(attr)),
-        })?;
+        ctx.tx
+            .send(HsdDiffEvent::AttrData {
+                prim,
+                data: AttrDataEvent::Mesh(MeshEvent::Rebuild(attr)),
+            })
+            .map_err(|_| ParseError::SendDiff)?;
         Ok(())
     }
 }

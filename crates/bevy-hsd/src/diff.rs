@@ -3,12 +3,13 @@ use std::sync::{
     mpsc::{Receiver, Sender},
 };
 
-use bevy::prelude::*;
+use bevy::{pbr::MeshMaterial3d, prelude::*};
+use hsd::attributes::{Attribute, material::MaterialAttr};
 use loro::{TreeDiffItem, TreeExternalDiff, TreeID, TreeParentId, ValueOrContainer};
 
 use crate::{
     HsdChild, HsdPrimIndex, HsdRelationships, Prim,
-    attributes::{ApplyEvent, AttrDataEvent, PARSERS},
+    attributes::{ApplyEvent, AttrDataEvent, PARSERS, material::{HsdMaterial, MaterialData}},
 };
 
 pub type DiffSender = Arc<Sender<HsdDiffEvent>>;
@@ -49,6 +50,7 @@ pub fn drain_diff_queues(
     queues: Query<(Entity, &DiffQueue)>,
     mut indices: Query<&mut HsdPrimIndex>,
     mut relationships: Query<&mut HsdRelationships>,
+    has_material_data: Query<(), With<MaterialData>>,
     mut commands: Commands,
 ) {
     for (doc_ent, queue) in queues {
@@ -139,7 +141,14 @@ pub fn drain_diff_queues(
                         warn!("prim not found: {prim}");
                         continue;
                     };
-                    apply_relationship(&mut commands, &mut relationships, prim_ent, key, target);
+                    apply_relationship(
+                        &mut commands,
+                        &mut relationships,
+                        &has_material_data,
+                        prim_ent,
+                        key,
+                        target,
+                    );
                 }
             }
         }
@@ -149,10 +158,29 @@ pub fn drain_diff_queues(
 fn apply_relationship(
     commands: &mut Commands,
     relationships: &mut Query<&mut HsdRelationships>,
+    has_material_data: &Query<(), With<MaterialData>>,
     prim_ent: Entity,
     key: String,
     target: Option<TreeID>,
 ) {
+    if key == MaterialAttr::KEY {
+        match target {
+            Some(_) => {
+                commands.entity(prim_ent).insert((
+                    HsdMaterial::default(),
+                    MeshMaterial3d::<StandardMaterial>::default(),
+                ));
+            }
+            None if !has_material_data.contains(prim_ent) => {
+                commands
+                    .entity(prim_ent)
+                    .remove::<HsdMaterial>()
+                    .remove::<MeshMaterial3d<StandardMaterial>>();
+            }
+            None => {}
+        }
+    }
+
     if let Ok(mut rels) = relationships.get_mut(prim_ent) {
         match target {
             Some(target) => {

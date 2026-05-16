@@ -64,7 +64,8 @@ impl AttributeParser for XformParser {
             ctx.tx.send(HsdDiffEvent::AttrData {
                 prim,
                 data: AttrDataEvent::Xform(event),
-            })?;
+            })
+            .map_err(|_| ParseError::SendDiff)?;
         }
         Ok(())
     }

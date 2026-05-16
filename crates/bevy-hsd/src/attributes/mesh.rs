@@ -11,7 +11,7 @@ use bytemuck::{Pod, PodCastError, try_cast_slice};
 use bytes::Bytes;
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{Attribute, hydrate_attr, mesh::MeshAttr},
+    attributes::{Attribute, hydrate_attr, mesh::{MeshAttr, Topology}},
 };
 use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 use smol_str::SmolStr;
@@ -109,7 +109,7 @@ pub fn apply_mesh(
             .remove::<BlobDepsLoaded>();
     }
 
-    let topology = topology_from_i64(attr.topology);
+    let topology = topology_to_primitive(&attr.topology);
 
     let attrs = attr
         .attributes
@@ -212,13 +212,13 @@ pub fn on_mesh_blobs_loaded(
         .remove::<BlobDepsLoaded>();
 }
 
-const fn topology_from_i64(num: i64) -> PrimitiveTopology {
-    match num {
-        0 => PrimitiveTopology::PointList,
-        1 => PrimitiveTopology::LineList,
-        2 => PrimitiveTopology::LineStrip,
-        4 => PrimitiveTopology::TriangleStrip,
-        _ => PrimitiveTopology::TriangleList,
+fn topology_to_primitive(t: &Topology) -> PrimitiveTopology {
+    match t {
+        Topology::PointList => PrimitiveTopology::PointList,
+        Topology::LineList => PrimitiveTopology::LineList,
+        Topology::LineStrip => PrimitiveTopology::LineStrip,
+        Topology::TriangleList => PrimitiveTopology::TriangleList,
+        Topology::TriangleStrip => PrimitiveTopology::TriangleStrip,
     }
 }
 

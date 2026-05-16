@@ -1,7 +1,7 @@
 use avian3d::prelude::{AngularDamping, Friction, LinearDamping, Mass, Restitution, RigidBody};
 use hsd::{
     HSD_CONTAINER_ID, PrimMeta,
-    attributes::{Attribute, Attributes, attributes_map, rigid_body::RigidBodyAttr},
+    attributes::{Attribute, Attributes, attributes_map, rigid_body::{RigidBodyAttr, RigidBodyKind}},
 };
 use lorosurgeon::{MaybeMissing, Reconcile, reconcile::RootReconciler};
 use rstest::rstest;
@@ -18,7 +18,7 @@ fn test_rigid_body_lifecycle(mut ctx: TestContext) {
     let root = tree.create(None).expect("create");
     let meta = tree.get_meta(root).expect("get meta");
 
-    reconcile_rigid_body(&meta, RigidBodyAttr { kind: 0, ..Default::default() });
+    reconcile_rigid_body(&meta, RigidBodyAttr { kind: RigidBodyKind::Dynamic, ..Default::default() });
 
     ctx.doc.commit();
     ctx.app.update();
@@ -47,13 +47,13 @@ fn test_rigid_body_kinds(mut ctx: TestContext) {
     let static_prim = tree.create(None).expect("create");
     reconcile_rigid_body(
         &tree.get_meta(static_prim).expect("meta"),
-        RigidBodyAttr { kind: 1, ..Default::default() },
+        RigidBodyAttr { kind: RigidBodyKind::Static, ..Default::default() },
     );
 
     let kinematic_prim = tree.create(None).expect("create");
     reconcile_rigid_body(
         &tree.get_meta(kinematic_prim).expect("meta"),
-        RigidBodyAttr { kind: 2, ..Default::default() },
+        RigidBodyAttr { kind: RigidBodyKind::Kinematic, ..Default::default() },
     );
 
     ctx.doc.commit();
@@ -77,7 +77,7 @@ fn test_rigid_body_props(mut ctx: TestContext) {
     reconcile_rigid_body(
         &meta,
         RigidBodyAttr {
-            kind: 0,
+            kind: RigidBodyKind::Dynamic,
             friction: MaybeMissing::Present(0.5),
             restitution: MaybeMissing::Present(0.3),
             mass: MaybeMissing::Present(2.0),
@@ -114,24 +114,6 @@ fn test_rigid_body_props(mut ctx: TestContext) {
 
 #[traced_test]
 #[rstest]
-fn test_rigid_body_invalid_kind(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
-
-    reconcile_rigid_body(&meta, RigidBodyAttr { kind: 99, ..Default::default() });
-
-    ctx.doc.commit();
-    ctx.app.update();
-
-    let world = ctx.app.world_mut();
-    let mut q = world.query::<&RigidBody>();
-    assert!(q.iter(world).next().is_none(), "RigidBody should not be inserted for unknown kind");
-    assert!(logs_contain("unknown kind 99"));
-}
-
-#[traced_test]
-#[rstest]
 fn test_rigid_body_invalid_mass(mut ctx: TestContext) {
     let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
 
@@ -142,7 +124,7 @@ fn test_rigid_body_invalid_mass(mut ctx: TestContext) {
         reconcile_rigid_body(
             &meta,
             RigidBodyAttr {
-                kind: 0,
+                kind: RigidBodyKind::Dynamic,
                 mass: MaybeMissing::Present(bad_mass),
                 ..Default::default()
             },

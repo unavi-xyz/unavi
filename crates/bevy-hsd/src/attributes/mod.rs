@@ -13,6 +13,7 @@ pub mod material;
 pub mod mesh;
 pub mod name;
 pub mod rigid_body;
+pub mod script;
 mod util;
 pub mod xform;
 
@@ -25,6 +26,7 @@ pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
             Box::new(mesh::MeshParser),
             Box::new(name::NameParser),
             Box::new(rigid_body::RigidBodyParser),
+            Box::new(script::ScriptParser),
             Box::new(xform::XformParser),
         ];
         let mut map = HashMap::default();

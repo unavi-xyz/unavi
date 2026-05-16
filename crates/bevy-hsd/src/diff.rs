@@ -60,97 +60,116 @@ pub fn drain_diff_queues(
         let Ok(mut index) = indices.get_mut(doc_ent) else {
             continue;
         };
-
         while let Ok(event) = queue.try_recv() {
-            let prim = event.target_prim();
+            process_event(
+                event,
+                doc_ent,
+                &mut index,
+                &mut relationships,
+                &has_material_data,
+                &mut commands,
+            );
+        }
+    }
+}
 
-            match event {
-                HsdDiffEvent::Prim(TreeDiffItem {
-                    action: TreeExternalDiff::Create { parent, .. },
-                    ..
-                }) => {
-                    let prim_ent = commands.spawn((Prim(prim), HsdChild(doc_ent))).id();
-                    index.0.insert(prim, prim_ent);
+fn process_event(
+    event: HsdDiffEvent,
+    doc_ent: Entity,
+    index: &mut HsdPrimIndex,
+    relationships: &mut Query<&mut HsdRelationships>,
+    has_material_data: &Query<(), With<MaterialData>>,
+    commands: &mut Commands,
+) {
+    let prim = event.target_prim();
 
-                    if let TreeParentId::Node(parent_id) = parent
-                        && let Some(&parent_ent) = index.0.get(&parent_id)
-                    {
-                        commands.entity(parent_ent).add_child(prim_ent);
-                    }
-                }
-                HsdDiffEvent::Prim(TreeDiffItem {
-                    action: TreeExternalDiff::Move { parent, .. },
-                    ..
-                }) => {
-                    let Some(&prim_ent) = index.0.get(&prim) else {
-                        warn!("prim not found: {prim}");
-                        continue;
-                    };
-                    commands.entity(prim_ent).remove::<ChildOf>();
-                    if let TreeParentId::Node(parent_id) = parent
-                        && let Some(&parent_ent) = index.0.get(&parent_id)
-                    {
-                        commands.entity(parent_ent).add_child(prim_ent);
-                    }
-                }
-                HsdDiffEvent::Prim(TreeDiffItem {
-                    action: TreeExternalDiff::Delete { .. },
-                    ..
-                }) => {
-                    let Some(prim_ent) = index.0.remove(&prim) else {
-                        warn!("prim not found: {prim}");
-                        continue;
-                    };
-                    commands.entity(prim_ent).despawn();
-                }
-                HsdDiffEvent::Attr { attr, value, .. } => {
-                    let Some(&prim_ent) = index.0.get(&prim) else {
-                        warn!("prim not found: {prim}");
-                        continue;
-                    };
-                    let Some(parser) = PARSERS.get(attr.as_str()) else {
-                        warn!("unknown attribute: {attr}");
-                        continue;
-                    };
-                    if let Err(err) = parser.lifecycle(&mut commands, prim_ent, value) {
-                        error!(%attr, ?err, "failed to handle attribute lifecycle");
-                    }
-                }
-                HsdDiffEvent::AttrData { data, .. } => {
-                    let Some(&prim_ent) = index.0.get(&prim) else {
-                        warn!("prim not found: {prim}");
-                        continue;
-                    };
-                    match data {
-                        AttrDataEvent::Image(value) => commands
-                            .entity(prim_ent)
-                            .trigger(|entity| ApplyEvent { entity, value }),
-                        AttrDataEvent::Material(value) => commands
-                            .entity(prim_ent)
-                            .trigger(|entity| ApplyEvent { entity, value }),
-                        AttrDataEvent::Mesh(value) => commands
-                            .entity(prim_ent)
-                            .trigger(|entity| ApplyEvent { entity, value }),
-                        AttrDataEvent::Xform(value) => commands
-                            .entity(prim_ent)
-                            .trigger(|entity| ApplyEvent { entity, value }),
-                    };
-                }
-                HsdDiffEvent::Relationship { key, target, .. } => {
-                    let Some(&prim_ent) = index.0.get(&prim) else {
-                        warn!("prim not found: {prim}");
-                        continue;
-                    };
-                    apply_relationship(
-                        &mut commands,
-                        &mut relationships,
-                        &has_material_data,
-                        prim_ent,
-                        key,
-                        target,
-                    );
-                }
+    match event {
+        HsdDiffEvent::Prim(TreeDiffItem {
+            action: TreeExternalDiff::Create { parent, .. },
+            ..
+        }) => {
+            let prim_ent = commands.spawn((Prim(prim), HsdChild(doc_ent))).id();
+            index.0.insert(prim, prim_ent);
+            if let TreeParentId::Node(parent_id) = parent
+                && let Some(&parent_ent) = index.0.get(&parent_id)
+            {
+                commands.entity(parent_ent).add_child(prim_ent);
             }
+        }
+        HsdDiffEvent::Prim(TreeDiffItem {
+            action: TreeExternalDiff::Move { parent, .. },
+            ..
+        }) => {
+            let Some(&prim_ent) = index.0.get(&prim) else {
+                warn!("prim not found: {prim}");
+                return;
+            };
+            commands.entity(prim_ent).remove::<ChildOf>();
+            if let TreeParentId::Node(parent_id) = parent
+                && let Some(&parent_ent) = index.0.get(&parent_id)
+            {
+                commands.entity(parent_ent).add_child(prim_ent);
+            }
+        }
+        HsdDiffEvent::Prim(TreeDiffItem {
+            action: TreeExternalDiff::Delete { .. },
+            ..
+        }) => {
+            let Some(prim_ent) = index.0.remove(&prim) else {
+                warn!("prim not found: {prim}");
+                return;
+            };
+            commands.entity(prim_ent).despawn();
+        }
+        HsdDiffEvent::Attr { attr, value, .. } => {
+            let Some(&prim_ent) = index.0.get(&prim) else {
+                warn!("prim not found: {prim}");
+                return;
+            };
+            let Some(parser) = PARSERS.get(attr.as_str()) else {
+                warn!("unknown attribute: {attr}");
+                return;
+            };
+            if let Err(err) = parser.lifecycle(commands, prim_ent, value) {
+                error!(%attr, ?err, "failed to handle attribute lifecycle");
+            }
+        }
+        HsdDiffEvent::AttrData { data, .. } => {
+            let Some(&prim_ent) = index.0.get(&prim) else {
+                warn!("prim not found: {prim}");
+                return;
+            };
+            dispatch_attr_data(commands, prim_ent, data);
+        }
+        HsdDiffEvent::Relationship { key, target, .. } => {
+            let Some(&prim_ent) = index.0.get(&prim) else {
+                warn!("prim not found: {prim}");
+                return;
+            };
+            apply_relationship(commands, relationships, has_material_data, prim_ent, key, target);
+        }
+    }
+}
+
+fn dispatch_attr_data(commands: &mut Commands, prim_ent: Entity, data: AttrDataEvent) {
+    match data {
+        AttrDataEvent::Collider(value) => {
+            commands.entity(prim_ent).trigger(|entity| ApplyEvent { entity, value });
+        }
+        AttrDataEvent::Image(value) => {
+            commands.entity(prim_ent).trigger(|entity| ApplyEvent { entity, value });
+        }
+        AttrDataEvent::Material(value) => {
+            commands.entity(prim_ent).trigger(|entity| ApplyEvent { entity, value });
+        }
+        AttrDataEvent::Mesh(value) => {
+            commands.entity(prim_ent).trigger(|entity| ApplyEvent { entity, value });
+        }
+        AttrDataEvent::RigidBody(value) => {
+            commands.entity(prim_ent).trigger(|entity| ApplyEvent { entity, value });
+        }
+        AttrDataEvent::Xform(value) => {
+            commands.entity(prim_ent).trigger(|entity| ApplyEvent { entity, value });
         }
     }
 }

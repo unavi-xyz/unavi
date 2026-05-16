@@ -12,11 +12,14 @@ pub struct HsdPlugin;
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(subscribe::subscribe_to_docs)
+            .add_observer(attributes::collider::apply_collider)
+            .add_observer(attributes::collider::on_collider_blobs_loaded)
             .add_observer(attributes::image::apply_image)
             .add_observer(attributes::image::on_image_blob_loaded)
             .add_observer(attributes::material::apply_material)
             .add_observer(attributes::mesh::apply_mesh)
             .add_observer(attributes::mesh::on_mesh_blobs_loaded)
+            .add_observer(attributes::rigid_body::apply_rigid_body)
             .add_observer(attributes::xform::apply_xform)
             .add_systems(
                 Update,

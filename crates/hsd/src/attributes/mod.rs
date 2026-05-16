@@ -3,10 +3,12 @@ use lorosurgeon::{
     Hydrate, HydrateError, MaybeMissing, Reconcile, ReconcileError, reconcile::PropReconciler,
 };
 
+pub mod collider;
 pub mod image;
 pub mod material;
 pub mod mesh;
 pub mod name;
+pub mod rigid_body;
 pub mod xform;
 
 pub const ATTRIBUTES_KEY: &str = "attributes";
@@ -30,14 +32,17 @@ pub trait Attribute: Reconcile + Hydrate {
 #[derive(Reconcile, Hydrate, Default)]
 #[loro(default)]
 pub struct Attributes {
+    pub collider: MaybeMissing<collider::ColliderAttr>,
     pub image: MaybeMissing<image::ImageAttr>,
     pub material: MaybeMissing<material::MaterialAttr>,
     pub mesh: MaybeMissing<mesh::MeshAttr>,
     pub name: MaybeMissing<name::NameAttr>,
+    pub rigid_body: MaybeMissing<rigid_body::RigidBodyAttr>,
     pub xform: MaybeMissing<xform::XformAttr>,
 }
 
 /// Returns the inner `attributes` map from a prim's meta map, if present.
+#[must_use]
 pub fn attributes_map(prim_meta: &LoroMap) -> Option<LoroMap> {
     match prim_meta.get(ATTRIBUTES_KEY)? {
         ValueOrContainer::Container(Container::Map(m)) => Some(m),
@@ -46,6 +51,7 @@ pub fn attributes_map(prim_meta: &LoroMap) -> Option<LoroMap> {
 }
 
 /// Returns the inner `relationships` map from a prim's meta map, if present.
+#[must_use]
 pub fn relationships_map(prim_meta: &LoroMap) -> Option<LoroMap> {
     match prim_meta.get(RELATIONSHIPS_KEY)? {
         ValueOrContainer::Container(Container::Map(m)) => Some(m),

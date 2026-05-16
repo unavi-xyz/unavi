@@ -9,6 +9,7 @@ pub mod material;
 pub mod mesh;
 pub mod name;
 pub mod rigid_body;
+pub mod script;
 pub mod xform;
 
 pub const ATTRIBUTES_KEY: &str = "attributes";
@@ -38,6 +39,7 @@ pub struct Attributes {
     pub mesh: MaybeMissing<mesh::MeshAttr>,
     pub name: MaybeMissing<name::NameAttr>,
     pub rigid_body: MaybeMissing<rigid_body::RigidBodyAttr>,
+    pub script: MaybeMissing<script::ScriptAttr>,
     pub xform: MaybeMissing<xform::XformAttr>,
 }
 

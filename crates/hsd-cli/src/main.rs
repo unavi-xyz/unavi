@@ -14,7 +14,7 @@ enum HsdCli {
 /// Compile an HSDX source into a flat output directory.
 #[derive(Args, Debug)]
 struct Build {
-    /// Input HSDX file path (e.g. wasm/unavi-gauntlet/asset.hsdx)
+    /// Input HSDX file path
     #[arg(short, long)]
     input: PathBuf,
     /// Output directory for the compiled HSD and WASM files

@@ -64,7 +64,7 @@
                 "mass": Optional(F64),
                 "restitution": Optional(F64),
             })),
-            "scripts": Optional(List(BlobId)),
+            "script": Optional(BlobId),
             "xform": Optional(Struct({
                 "rotation": Optional(List(F64)),
                 "scale": Optional(List(F64)),

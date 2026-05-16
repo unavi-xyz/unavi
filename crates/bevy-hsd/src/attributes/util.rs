@@ -11,8 +11,8 @@ pub trait MaybeMissingExt<T> {
 impl<T> MaybeMissingExt<T> for MaybeMissing<T> {
     fn as_option(&self) -> Option<&T> {
         match self {
-            MaybeMissing::Present(v) => Some(v),
-            MaybeMissing::Missing => None,
+            Self::Present(v) => Some(v),
+            Self::Missing => None,
         }
     }
 }

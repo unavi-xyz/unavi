@@ -1,23 +1,33 @@
-(
-    assets: {
-        "beacon": "../unavi-beacon/asset.hsdx",
-    },
-    nodes: [
-        (
-            data: (
-                collider: None,
-                material: None,
-                mesh: None,
-                name: "nav",
-                rigid_body: None,
-                rotation: None,
-                scale: None,
-                scripts: [
-                    "./Cargo.toml",
-                ],
-                translation: None,
-            ),
-            children: [],
+[
+    (
+        id: None,
+        attributes: (
+            asset: None,
+            collider: None,
+            image: None,
+            material: None,
+            name: "nav",
+            rigid_body: None,
+            script: "./Cargo.toml",
+            xform: None,
         ),
-    ],
-)
+        relationships: {},
+        children: [
+            (
+                id: None,
+                attributes: (
+                    asset: "../unavi-beacon/asset.hsdx",
+                    collider: None,
+                    image: None,
+                    material: None,
+                    name: None,
+                    rigid_body: None,
+                    script: None,
+                    xform: None,
+                ),
+                relationships: {},
+                children: [],
+            ),
+        ],
+    ),
+]

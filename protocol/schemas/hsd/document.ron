@@ -3,6 +3,7 @@
     version: 0,
     layout: Tree({
         "attributes": Optional(Struct({
+            "asset": Optional(BlobId),
             "collider": Optional(Enum({
                 "Capsule": Some(Struct({
                     "height": F64,

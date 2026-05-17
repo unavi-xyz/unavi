@@ -1,5 +1,5 @@
 use std::{
-    collections::BTreeMap,
+    collections::HashMap,
     path::{Path, PathBuf},
 };
 
@@ -11,10 +11,10 @@ use crate::{
     cargo::{derive_name, find_lib_deps, read_cargo_name},
 };
 
-pub fn build_wasm_for_crate(
+pub fn build_wasm_for_crate<S: std::hash::BuildHasher>(
     crate_dir: &Path,
     out_dir: &Path,
-    built: &mut BTreeMap<String, Hash>,
+    built: &mut HashMap<String, Hash, S>,
 ) -> Result<Hash> {
     let crate_dir = std::fs::canonicalize(crate_dir)
         .with_context(|| format!("resolving crate dir {}", crate_dir.display()))?;

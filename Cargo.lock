@@ -6832,6 +6832,7 @@ dependencies = [
 name = "hsd"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "bevy",
  "loro",
  "lorosurgeon",
@@ -6850,7 +6851,8 @@ dependencies = [
  "blake3",
  "clap",
  "hsd",
- "loro-surgeon",
+ "ron",
+ "serde",
  "toml 1.1.2+spec-1.1.0",
 ]
 
@@ -11681,6 +11683,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4147b952f3f819eca0e99527022f7d6a8d05f111aeb0a62960c74eb283bec8fc"
 dependencies = [
  "bitflags 2.11.0",
+ "indexmap 2.13.1",
  "once_cell",
  "serde",
  "serde_derive",

@@ -4,6 +4,7 @@ use loro::{ContainerID, ContainerType};
 use lorosurgeon::{Hydrate, MaybeMissing, Reconcile};
 
 pub mod attributes;
+pub mod file;
 
 pub static HSD_CONTAINER_ID: LazyLock<ContainerID> = LazyLock::new(|| ContainerID::Root {
     name: "hsd".into(),

@@ -1,20 +1,17 @@
-(
-    nodes: [
-        (
-            data: (
-                collider: None,
-                material: None,
-                mesh: None,
-                name: "inventory",
-                rigid_body: None,
-                rotation: None,
-                scale: None,
-                scripts: [
-                    "./Cargo.toml",
-                ],
-                translation: None,
-            ),
-            children: [],
+[
+    (
+        id: None,
+        attributes: (
+            asset: None,
+            collider: None,
+            image: None,
+            material: None,
+            name: "inventory",
+            rigid_body: None,
+            script: "./Cargo.toml",
+            xform: None,
         ),
-    ],
-)
+        relationships: {},
+        children: [],
+    ),
+]

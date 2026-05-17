@@ -7,6 +7,7 @@ use thiserror::Error;
 
 use crate::diff::DiffSender;
 
+pub mod asset;
 pub mod collider;
 pub mod image;
 pub mod material;
@@ -20,6 +21,7 @@ pub mod xform;
 pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
     LazyLock::new(|| {
         let parsers: [Box<dyn AttributeParser>; _] = [
+            Box::new(asset::AssetParser),
             Box::new(collider::ColliderParser),
             Box::new(image::ImageParser),
             Box::new(material::MaterialParser),

@@ -971,30 +971,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy-hsd-old"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "async-channel",
- "avian3d",
- "bevy",
- "bevy-wds",
- "bevy_panorbit_camera",
- "blake3",
- "bytemuck",
- "bytes 1.11.1",
- "hsd-old",
- "image",
- "iroh-blobs",
- "loro",
- "loro-surgeon",
- "smol_str 0.3.6",
- "unavi-util",
- "wds",
- "wired-schemas",
-]
-
-[[package]]
 name = "bevy-inspector-egui"
 version = "0.36.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6858,20 +6834,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hsd-old"
-version = "0.0.16"
-dependencies = [
- "bevy",
- "loro",
- "loro-surgeon",
- "ron",
- "serde",
- "serde_with",
- "smol_str 0.3.6",
- "wired-records",
-]
-
-[[package]]
 name = "html5ever"
 version = "0.29.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8378,28 +8340,6 @@ dependencies = [
  "append-only-bytes",
  "num",
  "smallvec",
-]
-
-[[package]]
-name = "loro-surgeon"
-version = "0.0.16"
-dependencies = [
- "loro",
- "loro-surgeon-derive",
- "rstest",
- "serde",
- "smol_str 0.3.6",
- "thiserror 2.0.18",
-]
-
-[[package]]
-name = "loro-surgeon-derive"
-version = "0.0.16"
-dependencies = [
- "proc-macro-crate 3.5.0",
- "proc-macro2",
- "quote",
- "syn 2.0.117",
 ]
 
 [[package]]
@@ -14188,7 +14128,7 @@ dependencies = [
  "iroh",
  "iroh-gossip",
  "loro",
- "loro-surgeon",
+ "lorosurgeon",
  "n0-future",
  "postcard",
  "rand 0.9.2",
@@ -15264,7 +15204,7 @@ dependencies = [
  "irpc-iroh",
  "jose-jwk",
  "loro",
- "loro-surgeon",
+ "lorosurgeon",
  "n0-error",
  "n0-future",
  "p256",
@@ -16454,7 +16394,7 @@ dependencies = [
  "anyhow",
  "blake3",
  "loro",
- "loro-surgeon",
+ "lorosurgeon",
  "serde",
  "serde_with",
  "xdid",

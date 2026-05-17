@@ -4,7 +4,6 @@ use loro::{
     LoroDoc, LoroValue, TreeExternalDiff,
     event::{Diff, DiffBatch, ListDiffItem, TreeDiff},
 };
-use smol_str::SmolStr;
 
 use crate::{
     schema::{Can, Field, Schema, Who},
@@ -17,14 +16,14 @@ use crate::{
 
 /// Document-level schema validator.
 pub struct Validator<'a> {
-    schemas: &'a BTreeMap<SmolStr, Schema>,
+    schemas: &'a BTreeMap<String, Schema>,
     author: &'a str,
     skip_restrictions: bool,
 }
 
 impl<'a> Validator<'a> {
     #[must_use]
-    pub const fn new(schemas: &'a BTreeMap<SmolStr, Schema>, author: &'a str) -> Self {
+    pub const fn new(schemas: &'a BTreeMap<String, Schema>, author: &'a str) -> Self {
         Self {
             schemas,
             author,

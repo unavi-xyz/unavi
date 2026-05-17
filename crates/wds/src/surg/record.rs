@@ -2,24 +2,23 @@ use std::collections::BTreeMap;
 
 use blake3::Hash;
 use loro::LoroDoc;
-use loro_surgeon::{Hydrate, Reconcile};
+use lorosurgeon::{Hydrate, HydrateError, Reconcile, ReconcileError, reconcile::RootReconciler};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
-use smol_str::SmolStr;
 use time::OffsetDateTime;
-use wired_records::{HydratedDid, HydratedHash};
+use wired_records::{byte_array::ByteArray, did::HydratedDid};
 use wired_schemas::{SCHEMA_ACL, SCHEMA_RECORD};
 use xdid::core::did::Did;
 
 /// Fixed-size nonce for record identification.
-pub type RecordNonce = [u8; 16];
+pub type RecordNonce = ByteArray<16>;
 
 /// A WDS record containing metadata about the document.
 #[derive(Debug, Clone, Serialize, Deserialize, Hydrate, Reconcile)]
 pub struct Record {
     pub creator: HydratedDid,
     pub nonce: RecordNonce,
-    pub schemas: BTreeMap<SmolStr, HydratedHash>,
+    pub schemas: BTreeMap<String, ByteArray<32>>,
     pub timestamp: i64,
 }
 
@@ -28,11 +27,11 @@ impl Record {
     #[must_use]
     pub fn new(creator: Did) -> Self {
         let mut nonce = RecordNonce::default();
-        rand::rng().fill(&mut nonce);
+        rand::rng().fill(&mut nonce.0.0);
 
         let mut schemas = BTreeMap::new();
-        schemas.insert("acl".into(), HydratedHash(SCHEMA_ACL.hash));
-        schemas.insert("record".into(), HydratedHash(SCHEMA_RECORD.hash));
+        schemas.insert("acl".to_string(), ByteArray::from(SCHEMA_ACL.hash));
+        schemas.insert("record".to_string(), ByteArray::from(SCHEMA_RECORD.hash));
 
         Self {
             creator: HydratedDid(creator),
@@ -42,8 +41,8 @@ impl Record {
         }
     }
 
-    pub fn add_schema(&mut self, container: SmolStr, schema: HydratedHash) {
-        self.schemas.insert(container, schema);
+    pub fn add_schema(&mut self, container: String, schema: blake3::Hash) {
+        self.schemas.insert(container, schema.into());
     }
 
     pub fn id(&self) -> postcard::Result<Hash> {
@@ -51,16 +50,15 @@ impl Record {
         Ok(blake3::hash(&bytes))
     }
 
-    pub fn save(&self, doc: &LoroDoc) -> anyhow::Result<()> {
+    pub fn save(&self, doc: &LoroDoc) -> Result<(), ReconcileError> {
         let map = doc.get_map("record");
-        self.reconcile(&map)?;
-        Ok(())
+        let rec = RootReconciler::new(map);
+        self.reconcile(rec)
     }
 
-    pub fn load(doc: &LoroDoc) -> anyhow::Result<Self> {
+    pub fn load(doc: &LoroDoc) -> Result<Self, HydrateError> {
         let map = doc.get_map("record");
-        let value = map.get_deep_value();
-        Self::hydrate(&value).map_err(|e| anyhow::anyhow!("{e}"))
+        Self::hydrate_map(&map)
     }
 }
 
@@ -85,8 +83,8 @@ mod tests {
         record.save(&doc).expect("save failed");
         let loaded = Record::load(&doc).expect("load failed");
 
-        assert_eq!(record.creator.to_string(), loaded.creator.to_string());
-        assert_eq!(record.nonce, loaded.nonce);
+        assert_eq!(record.creator.0, loaded.creator.0);
+        assert_eq!(record.nonce.as_bytes(), loaded.nonce.as_bytes());
         assert_eq!(record.timestamp, loaded.timestamp);
         assert_eq!(record.schemas.len(), loaded.schemas.len());
     }

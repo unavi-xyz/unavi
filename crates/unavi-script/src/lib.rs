@@ -9,7 +9,6 @@ pub mod firewall;
 pub mod load;
 pub mod permissions;
 mod runtime;
-mod util;
 
 pub struct ScriptPlugin;
 

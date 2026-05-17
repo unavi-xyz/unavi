@@ -13,7 +13,6 @@ use thiserror::Error;
 /// Convert to [`ApiError`] before sending to clients.
 #[derive(Debug, Error)]
 pub enum WdsError {
-    // Auth/identity errors.
     #[error("invalid signature")]
     InvalidSignature,
     #[error("unauthenticated")]
@@ -21,7 +20,6 @@ pub enum WdsError {
     #[error("DID resolution failed: {0}")]
     DidResolution(String),
 
-    // Access control.
     #[error("access denied")]
     AccessDenied,
     #[error("record not pinned")]
@@ -29,25 +27,25 @@ pub enum WdsError {
     #[error("quota exceeded")]
     QuotaExceeded,
 
-    // Resource errors.
     #[error("record not found")]
     RecordNotFound,
     #[error("blob not found")]
     BlobNotFound,
 
-    // Validation.
     #[error("schema validation failed: {0}")]
     SchemaValidation(String),
-
-    // Infrastructure.
-    #[error("database error: {0}")]
-    Database(#[from] rusqlite::Error),
     #[error("serialization error: {0}")]
     Serialization(#[from] postcard::Error),
+
+    #[error("database error: {0}")]
+    Database(#[from] rusqlite::Error),
+    #[error("hydration error: {0}")]
+    Hydration(#[from] lorosurgeon::HydrateError),
+    #[error("reconciliation error: {0}")]
+    Reconciliation(#[from] lorosurgeon::ReconcileError),
     #[error("sync protocol error")]
     SyncFailed,
 
-    // Fallback.
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
@@ -101,6 +99,8 @@ impl WdsError {
             Self::DidResolution(_)
             | Self::Database(_)
             | Self::Serialization(_)
+            | Self::Hydration(_)
+            | Self::Reconciliation(_)
             | Self::SchemaValidation(_) => ApiError::Internal,
         }
     }

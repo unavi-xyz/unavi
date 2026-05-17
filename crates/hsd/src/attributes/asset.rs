@@ -1,0 +1,24 @@
+use lorosurgeon::{ByteArray, Hydrate, HydrateError, NoKey, Reconcile, ReconcileError, Reconciler};
+
+use crate::attributes::Attribute;
+
+#[derive(Debug, Clone)]
+pub struct AssetAttr(pub ByteArray<32>);
+
+impl Hydrate for AssetAttr {
+    fn hydrate_binary(b: &[u8]) -> Result<Self, HydrateError> {
+        Ok(Self(ByteArray::<32>::hydrate_binary(b)?))
+    }
+}
+
+impl Reconcile for AssetAttr {
+    type Key = NoKey;
+
+    fn reconcile<R: Reconciler>(&self, reconciler: R) -> Result<(), ReconcileError> {
+        self.0.reconcile(reconciler)
+    }
+}
+
+impl Attribute for AssetAttr {
+    const KEY: &str = "asset";
+}

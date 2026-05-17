@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, path::PathBuf};
+use std::{collections::HashMap, path::PathBuf};
 
 use anyhow::{Context, Result};
 use clap::{Args, Parser};
@@ -35,7 +35,7 @@ fn main() -> Result<()> {
         HsdCli::Build(Build { input, out_dir }) => {
             std::fs::create_dir_all(&out_dir)
                 .with_context(|| format!("creating {}", out_dir.display()))?;
-            let mut built = BTreeMap::new();
+            let mut built = HashMap::new();
             build::build_hsdx_to_hsd(&input, &out_dir, &mut built)?;
         }
         HsdCli::Format(Format { input }) => {

@@ -212,7 +212,7 @@ pub fn on_mesh_blobs_loaded(
         .remove::<BlobDepsLoaded>();
 }
 
-fn topology_to_primitive(t: &Topology) -> PrimitiveTopology {
+const fn topology_to_primitive(t: &Topology) -> PrimitiveTopology {
     match t {
         Topology::PointList => PrimitiveTopology::PointList,
         Topology::LineList => PrimitiveTopology::LineList,

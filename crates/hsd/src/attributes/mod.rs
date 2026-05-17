@@ -3,6 +3,7 @@ use lorosurgeon::{
     Hydrate, HydrateError, MaybeMissing, Reconcile, ReconcileError, reconcile::PropReconciler,
 };
 
+pub mod asset;
 pub mod collider;
 pub mod image;
 pub mod material;
@@ -33,6 +34,7 @@ pub trait Attribute: Reconcile + Hydrate {
 #[derive(Reconcile, Hydrate, Default)]
 #[loro(default)]
 pub struct Attributes {
+    pub asset: MaybeMissing<asset::AssetAttr>,
     pub collider: MaybeMissing<collider::ColliderAttr>,
     pub image: MaybeMissing<image::ImageAttr>,
     pub material: MaybeMissing<material::MaterialAttr>,

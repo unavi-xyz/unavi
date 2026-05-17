@@ -1,7 +1,7 @@
 (
     id: "hsd/document",
     version: 0,
-    layout: Tree({
+    layout: Tree(Struct({
         "attributes": Optional(Struct({
             "asset": Optional(BlobId),
             "collider": Optional(Enum({
@@ -73,5 +73,5 @@
             })),
         })),
       "relationships": Map(String),
-    }),
+    })),
 )

@@ -4,28 +4,22 @@ use crate::runtime::{
     Runtime,
     shared::{
         self,
-        wired::scene::{document::DocRes, node::NodeRes},
+        wired::scene::{document::DocRes, prim::PrimRes},
     },
 };
 
 pub mod document;
-pub mod material;
-pub mod mesh;
-pub mod node;
+pub mod prim;
 mod types;
 
 pub mod bindings {
-    pub use crate::runtime::shared::wired::scene::{
-        document::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes,
-    };
+    pub use crate::runtime::shared::wired::scene::{document::DocRes, prim::PrimRes};
 
     wasmtime::component::bindgen!({
         path: "../../protocol/wit/wired-scene",
         with: {
             "wired:scene/types.document": DocRes,
-            "wired:scene/types.material": MaterialRes,
-            "wired:scene/types.mesh":     MeshRes,
-            "wired:scene/types.node":     NodeRes,
+            "wired:scene/types.prim":     PrimRes,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
@@ -33,8 +27,8 @@ pub mod bindings {
 }
 
 impl bindings::wired::scene::api::Host for Runtime {
-    async fn self_node(&mut self) -> wasmtime::Result<Resource<NodeRes>> {
-        shared::wired::scene::self_node(&self.api)
+    async fn self_prim(&mut self) -> wasmtime::Result<Resource<PrimRes>> {
+        shared::wired::scene::self_prim(&self.api)
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -65,9 +59,9 @@ impl bindings::wired::scene::api::Host for Runtime {
 
     async fn load_hsd(
         &mut self,
-        blob_id: Vec<u8>,
+        blob: Vec<u8>,
     ) -> wasmtime::Result<Result<Resource<DocRes>, String>> {
-        Ok(shared::wired::scene::load_hsd(&self.api, blob_id)
+        Ok(shared::wired::scene::load_hsd(&self.api, blob)
             .await
             .map(Resource::new_own)
             .map_err(|e| e.to_string()))

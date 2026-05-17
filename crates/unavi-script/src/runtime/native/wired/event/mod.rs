@@ -9,19 +9,19 @@ use crate::runtime::{
         registry::{event::SenderScope, transform::AbsoluteNodeId},
         wired::{
             event::{EventFilter, EventReceptorRes, EventScope},
-            scene::node::NodeRes,
+            scene::prim::PrimRes,
         },
     },
 };
 
 pub mod bindings {
-    pub use crate::runtime::shared::wired::{event::EventReceptorRes, scene::node::NodeRes};
+    pub use crate::runtime::shared::wired::{event::EventReceptorRes, scene::prim::PrimRes};
 
     wasmtime::component::bindgen!({
         path: "../../protocol/wit/wired-event",
         with: {
             "wired:event/types.event-receptor": EventReceptorRes,
-            "wired:scene/types.node": NodeRes,
+            "wired:scene/types.prim": PrimRes,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
@@ -42,7 +42,7 @@ fn wit_filter_to_shared(f: WitFilter) -> EventFilter {
         scope: match f.scope {
             WitScope::Global => EventScope::Global,
             WitScope::Spatial(v) => EventScope::Spatial {
-                node: v.node.rep(),
+                node: v.prim.rep(),
                 radius: v.radius,
             },
         },
@@ -65,13 +65,13 @@ impl HostEventReceptor for Runtime {
                 distance,
                 node: AbsoluteNodeId { doc: doc_id, node },
             } => {
-                let node_id = self
+                let prim_rep = self
                     .api
                     .wired_scene
                     .try_lock()
                     .map_err(|e| wasmtime::Error::msg(e.to_string()))?
-                    .nodes
-                    .insert(NodeRes {
+                    .prims
+                    .insert(PrimRes {
                         doc: Arc::clone(&self.api.doc),
                         doc_id,
                         id: node,
@@ -79,7 +79,7 @@ impl HostEventReceptor for Runtime {
                     });
                 WitSenderScope::Spatial(SpatialSender {
                     distance,
-                    node: Resource::new_own(node_id),
+                    prim: Resource::new_own(prim_rep),
                 })
             }
         };

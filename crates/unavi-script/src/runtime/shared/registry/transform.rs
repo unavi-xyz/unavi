@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::LazyLock};
 
 use bevy::prelude::*;
-use bevy_hsd::{HsdChild, HsdRecordId, NodeId};
+use bevy_hsd::{HsdChild, HsdRecordId, Prim};
 use blake3::Hash;
 use loro::TreeID;
 use parking_lot::RwLock;
@@ -26,24 +26,24 @@ pub struct TransformSnapshot {
 pub struct RegisterTransforms(pub AbsoluteNodeId);
 
 pub fn register_nodes(
-    trigger: On<Add, NodeId>,
-    nodes: Query<(&NodeId, &HsdChild)>,
+    trigger: On<Add, Prim>,
+    prims: Query<(&Prim, &HsdChild)>,
     docs: Query<&HsdRecordId>,
     mut commands: Commands,
 ) {
-    let Ok((node, doc)) = nodes.get(trigger.entity) else {
-        error!("unable to register node: node not found");
+    let Ok((prim, doc)) = prims.get(trigger.entity) else {
+        error!("unable to register prim: prim not found");
         return;
     };
     let Ok(doc) = docs.get(doc.0) else {
-        error!("unable to register node: document not found");
+        error!("unable to register prim: document not found");
         return;
     };
     commands
         .entity(trigger.entity)
         .insert(RegisterTransforms(AbsoluteNodeId {
             doc: doc.0,
-            node: node.0,
+            node: prim.0,
         }));
 }
 

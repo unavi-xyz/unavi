@@ -1,6 +1,5 @@
 use std::time::SystemTime;
 
-use blake3::Hash;
 use wired_prelude::prelude::*;
 
 use crate::{
@@ -15,7 +14,7 @@ use crate::{
             context::register_global_input_listener,
             types::{InputAction, InputDevice, InputListener},
         },
-        scene::{api::get_document, types::Mesh},
+        scene::types::Xform,
     },
 };
 
@@ -37,8 +36,7 @@ fn palette(n: usize) -> Vec<Color> {
 
 pub struct ModuleRef {
     pub doc_id: Vec<u8>,
-    pub icon_mesh: Option<Mesh>,
-    pub icon_mesh_id: String,
+    pub icon_prim_id: Option<String>,
     pub name: String,
 }
 
@@ -81,28 +79,14 @@ impl ScriptBehavior for Script {
             {
                 self.module_refs.push(ModuleRef {
                     doc_id: m.doc_id,
-                    icon_mesh: None,
-                    icon_mesh_id: m.icon_mesh_id,
+                    icon_prim_id: if m.icon_prim_id.is_empty() {
+                        None
+                    } else {
+                        Some(m.icon_prim_id)
+                    },
                     name: m.name,
                 });
-            }
-        }
-
-        // Resolve icon meshes for modules that don't have one yet.
-        for module in &mut self.module_refs {
-            if module.icon_mesh.is_none() && !module.icon_mesh_id.is_empty() {
-                if let Some(doc) = get_document(&module.doc_id) {
-                    if let Some(mesh) = doc
-                        .meshes()
-                        .into_iter()
-                        .find(|m| m.id() == module.icon_mesh_id)
-                    {
-                        module.icon_mesh = Some(mesh);
-                        changed = true;
-                    }
-                } else if let Ok(doc_id) = Hash::from_slice(&module.doc_id) {
-                    eprintln!("Document {doc_id} not found");
-                }
+                changed = true;
             }
         }
 
@@ -127,7 +111,7 @@ impl ScriptBehavior for Script {
 
         let camera_pos: Option<Vec3> = {
             let bone_ref = self.gauntlets[0].bone.borrow();
-            bone_ref.as_ref().map(|b| b.global_transform().translation)
+            bone_ref.as_ref().map(|b| b.global_xform().translation)
         };
 
         if let Some(pos) = camera_pos {
@@ -205,7 +189,11 @@ impl ScriptBehavior for Script {
             let new_t = (prev_t + inc).clamp(0.0, 1.0);
             if new_t.to_bits() != prev_t.to_bits() {
                 g.scale_t.set(new_t);
-                g.core.set_scale(Vec3::splat(new_t));
+                g.core.set_xform(Some(Xform {
+                    translation: Vec3::ZERO,
+                    rotation: Quat::IDENTITY,
+                    scale: Vec3::splat(new_t),
+                }));
             }
 
             if !g.open.get() && new_t > 0.0 {
@@ -229,14 +217,14 @@ impl ScriptBehavior for Script {
                 };
                 if new_raise.to_bits() != prev_raise.to_bits() {
                     sector.raise_t.set(new_raise);
-                    sector
-                        .root
-                        .set_translation(Vec3::new(0.0, 0.0, new_raise * RAISE_DIST));
+                    sector.root.set_xform(Some(Xform {
+                        translation: Vec3::new(0.0, 0.0, new_raise * RAISE_DIST),
+                        rotation: Quat::IDENTITY,
+                        scale: Vec3::ONE,
+                    }));
                     let c = sector.bg_color;
                     let bg_alpha = new_raise.mul_add(BG_ALPHA_HOVER - BG_ALPHA_BASE, BG_ALPHA_BASE);
-                    sector
-                        .bg_material
-                        .set_base_color(Color::rgba(c.r, c.g, c.b, bg_alpha));
+                    sector.set_bg_color(Color::rgba(c.r, c.g, c.b, bg_alpha));
                 }
             }
         }

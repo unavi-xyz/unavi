@@ -34,8 +34,13 @@ interface types {
     poll: func() -> option<result<wds-record>>;
   }
 
+  resource blob-future {
+    poll: func() -> option<result<list<u8>>>;
+  }
+
   resource wds {
-    query: func(filter: option<query-filter>) -> query-future;
-    read:  func(record-id: hash) -> read-future;
+    query:    func(filter: option<query-filter>) -> query-future;
+    read:     func(record-id: hash) -> read-future;
+    get-blob: func(blob-id: hash) -> blob-future;
   }
 }

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_hsd::HsdScript;
+use bevy_hsd::attributes::script::HsdScript;
 use bevy_wds::blob::{
     deps::BlobDep,
     request::{BlobRequest, BlobResponse},

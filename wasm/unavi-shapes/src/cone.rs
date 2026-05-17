@@ -6,7 +6,7 @@ use std::{
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCone,
-    wired::scene::types::{Document, Mesh},
+    wired::scene::types::{Document, Prim},
 };
 
 #[derive(Default)]
@@ -27,7 +27,7 @@ impl GuestCone for ConeWrapped {
         }
     }
 
-    fn mesh(&self) -> Mesh {
+    fn mesh(&self) -> Prim {
         crate::convert_raw_mesh(
             self.doc.borrow().as_ref(),
             build(self.radius, self.height, self.resolution.get()),

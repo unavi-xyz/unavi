@@ -24,7 +24,7 @@ pub fn register_input_listener(backend: &Api, node: u32) -> anyhow::Result<u32> 
     let (target_doc, target_node) = backend
         .wired_scene
         .try_lock()?
-        .nodes
+        .prims
         .get(node)
         .map(|n| (n.doc_id, n.id))
         .ok_or_else(|| anyhow::anyhow!("node not found"))?;

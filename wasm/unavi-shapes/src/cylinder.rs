@@ -6,7 +6,7 @@ use std::{
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCylinder,
-    wired::scene::types::{Collider, ColliderCylinder, Document, Mesh},
+    wired::scene::types::{Collider, ColliderCylinder, Document, Prim},
 };
 
 #[derive(Default)]
@@ -36,7 +36,7 @@ impl GuestCylinder for CylinderWrapped {
         })
     }
 
-    fn mesh(&self) -> Mesh {
+    fn mesh(&self) -> Prim {
         crate::convert_raw_mesh(
             self.doc.borrow().as_ref(),
             build(

@@ -5,18 +5,18 @@ use crate::runtime::{
     Runtime,
     shared::{
         self,
-        wired::{agent::AgentRes, scene::node::NodeRes},
+        wired::{agent::AgentRes, scene::prim::PrimRes},
     },
 };
 
 pub mod bindings {
-    pub use crate::runtime::shared::wired::{agent::AgentRes, scene::node::NodeRes};
+    pub use crate::runtime::shared::wired::{agent::AgentRes, scene::prim::PrimRes};
 
     wasmtime::component::bindgen!({
         path: "../../protocol/wit/wired-agent",
         with: {
             "wired:agent/types.agent": AgentRes,
-            "wired:scene/types.node": NodeRes,
+            "wired:scene/types.prim": PrimRes,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
@@ -94,7 +94,7 @@ impl HostAgent for Runtime {
         &mut self,
         self_: Resource<AgentRes>,
         name: WitBoneName,
-    ) -> wasmtime::Result<Option<Resource<NodeRes>>> {
+    ) -> wasmtime::Result<Option<Resource<PrimRes>>> {
         shared::wired::agent::bone(&self.api, self_.rep(), name.into())
             .map(|opt| opt.map(Resource::new_own))
             .map_err(wasmtime::Error::from_anyhow)
@@ -112,7 +112,7 @@ impl bindings::wired::agent::api::Host for Runtime {
             .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn local_camera(&mut self) -> wasmtime::Result<Resource<NodeRes>> {
+    async fn local_camera(&mut self) -> wasmtime::Result<Resource<PrimRes>> {
         shared::wired::agent::local_camera(&self.api)
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)

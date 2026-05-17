@@ -6,50 +6,61 @@ use crate::{
     unavi::shapes::api::Cuboid,
     wired::{
         agent::{api::local_agent, types::BoneName},
-        scene::{api::self_document, types::Node},
+        scene::types::{Material, Prim, Xform},
     },
 };
 
 wired_prelude::generate_script!(Script);
 
 struct Script {
-    hand: Node,
-    node: Node,
+    hand: Prim,
+    prim: Prim,
     time: SystemTime,
 }
 
 impl ScriptBehavior for Script {
     fn init() -> Self {
-        let doc = self_document();
-
         let size = 0.1;
-        let mesh = Cuboid::new(Vec3::splat(size)).mesh();
+        let prim = Cuboid::new(Vec3::splat(size)).mesh();
 
-        let mat = doc.create_material();
-        mat.set_base_color(Color::rgba(0.8, 0.1, 0.1, 1.0));
-
-        let node = doc.create_node();
-        node.set_mesh(Some(&mesh));
-        node.set_material(Some(&mat));
+        prim.set_material(Some(&Material {
+            alpha_cutoff: None,
+            alpha_mode: None,
+            base_color: Some(Color::rgba(0.8, 0.1, 0.1, 1.0)),
+            base_color_texture: None,
+            double_sided: None,
+            emissive: None,
+            emissive_texture: None,
+            metallic: None,
+            metallic_roughness_texture: None,
+            normal_texture: None,
+            occlusion_texture: None,
+            roughness: None,
+        }));
 
         let agent = local_agent();
         let hand = agent.bone(BoneName::RightHand).expect("get bone");
 
         Self {
             hand,
-            node,
+            prim,
             time: SystemTime::now(),
         }
     }
 
     fn tick(&mut self) {
         let now = self.time.elapsed().expect("elapsed").as_secs_f32();
-
         let offset = Vec3::new(0.0, now.sin() * 0.1, 0.0);
 
-        let mut tr = self.hand.global_transform();
-        println!("{}", tr.translation);
-        tr.translation += offset;
-        self.node.set_transform(tr);
+        let global = self.hand.global_xform();
+        let mut tr = global.translation;
+        tr.x += offset.x;
+        tr.y += offset.y;
+        tr.z += offset.z;
+        self.prim.set_xform(Some(Xform {
+            translation: tr,
+            rotation: global.rotation,
+            scale: global.scale,
+        }));
     }
 }

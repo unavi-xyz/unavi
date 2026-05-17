@@ -1,6 +1,7 @@
 use async_channel::Sender;
 use bevy::prelude::*;
-use bevy_hsd::{HsdChild, HsdRecordId, NodeId};
+use bevy_hsd::{HsdChild, HsdRecordId, Prim};
+
 use blake3::Hash;
 use loro::TreeID;
 use unavi_input::{
@@ -154,7 +155,7 @@ pub fn send_to_listeners(
     trigger: In<Option<SendInput>>,
     global: Query<&GlobalInputListener>,
     listeners: Query<&InputListener>,
-    nodes: Query<(&NodeId, &HsdChild)>,
+    nodes: Query<(&Prim, &HsdChild)>,
     docs: Query<&HsdRecordId>,
 ) {
     let Some(trigger) = &*trigger else {

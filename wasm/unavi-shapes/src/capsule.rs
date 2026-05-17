@@ -6,7 +6,7 @@ use std::{
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCapsule,
-    wired::scene::types::{Collider, ColliderCapsule, Document, Mesh},
+    wired::scene::types::{Collider, ColliderCapsule, Document, Prim},
 };
 
 #[derive(Default)]
@@ -38,7 +38,7 @@ impl GuestCapsule for CapsuleWrapped {
         })
     }
 
-    fn mesh(&self) -> Mesh {
+    fn mesh(&self) -> Prim {
         crate::convert_raw_mesh(
             self.doc.borrow().as_ref(),
             build(

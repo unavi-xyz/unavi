@@ -5,15 +5,11 @@ use wasm_bindgen::prelude::*;
 use crate::runtime::{Runtime, shared};
 
 pub mod document;
-pub mod material;
-pub mod mesh;
-pub mod node;
+pub mod prim;
 pub mod util;
 
 use document::DocHandle;
-use material::MaterialHandle;
-use mesh::MeshHandle;
-use node::NodeHandle;
+use prim::PrimHandle;
 
 #[wasm_bindgen]
 impl Runtime {
@@ -24,31 +20,17 @@ impl Runtime {
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
 
-    #[wasm_bindgen(js_name = "wiredSceneMaterialClass")]
-    pub fn wired_scene_material_class(&self) -> JsValue {
-        let handle = MaterialHandle::new(u32::MAX, Arc::clone(&self.api));
+    #[wasm_bindgen(js_name = "wiredScenePrimClass")]
+    pub fn wired_scene_prim_class(&self) -> JsValue {
+        let handle = PrimHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
 
-    #[wasm_bindgen(js_name = "wiredSceneMeshClass")]
-    pub fn wired_scene_mesh_class(&self) -> JsValue {
-        let handle = MeshHandle::new(u32::MAX, Arc::clone(&self.api));
-        let js = JsValue::from(handle);
-        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
-    }
-
-    #[wasm_bindgen(js_name = "wiredSceneNodeClass")]
-    pub fn wired_scene_node_class(&self) -> JsValue {
-        let handle = NodeHandle::new(u32::MAX, Arc::clone(&self.api));
-        let js = JsValue::from(handle);
-        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
-    }
-
-    #[wasm_bindgen(js_name = "wiredSceneSelfNode")]
-    pub fn wired_scene_self_node(&self) -> NodeHandle {
-        let rep = shared::wired::scene::self_node(&self.api).unwrap_or(u32::MAX);
-        NodeHandle::new(rep, Arc::clone(&self.api))
+    #[wasm_bindgen(js_name = "wiredSceneSelfPrim")]
+    pub fn wired_scene_self_prim(&self) -> PrimHandle {
+        let rep = shared::wired::scene::self_prim(&self.api).unwrap_or(u32::MAX);
+        PrimHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "wiredSceneSelfDocument")]

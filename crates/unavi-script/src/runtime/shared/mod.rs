@@ -20,7 +20,7 @@ pub mod wired;
 pub struct Api {
     pub doc: Arc<LoroDoc>,
     pub doc_id: Hash,
-    pub node: TreeID,
+    pub prim: TreeID,
     pub permissions: ApiPermissions,
     pub wired_agent: Mutex<WiredAgentApi>,
     pub wired_event: Mutex<WiredEventApi>,

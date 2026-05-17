@@ -4,12 +4,16 @@ use crate::runtime::{
     Runtime,
     shared::{
         self,
-        wired::wds::{QueryFilter, QueryFutureRes, ReadFutureRes, WdsRecord, WdsRes},
+        wired::wds::{
+            BlobFutureRes, QueryFilter, QueryFutureRes, ReadFutureRes, WdsRecord, WdsRes,
+        },
     },
 };
 
 pub mod bindings {
-    pub use crate::runtime::shared::wired::wds::{QueryFutureRes, ReadFutureRes, WdsRes};
+    pub use crate::runtime::shared::wired::wds::{
+        BlobFutureRes, QueryFutureRes, ReadFutureRes, WdsRes,
+    };
 
     wasmtime::component::bindgen!({
         path: "../../protocol/wit/wired-wds",
@@ -17,6 +21,7 @@ pub mod bindings {
             "wired:wds/types.wds":          WdsRes,
             "wired:wds/types.query-future": QueryFutureRes,
             "wired:wds/types.read-future":  ReadFutureRes,
+            "wired:wds/types.blob-future":  BlobFutureRes,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
@@ -24,7 +29,8 @@ pub mod bindings {
 }
 
 use bindings::wired::wds::types::{
-    HostQueryFuture, HostReadFuture, HostWds, QueryFilter as WitFilter, Wds, WdsRecord as WitRecord,
+    HostBlobFuture, HostQueryFuture, HostReadFuture, HostWds, QueryFilter as WitFilter, Wds,
+    WdsRecord as WitRecord,
 };
 
 impl From<WitFilter> for QueryFilter {
@@ -70,8 +76,33 @@ impl HostWds for Runtime {
             .map_err(wasmtime::Error::from_anyhow)
     }
 
+    async fn get_blob(
+        &mut self,
+        self_: Resource<WdsRes>,
+        blob_id: Vec<u8>,
+    ) -> wasmtime::Result<Resource<BlobFutureRes>> {
+        shared::wired::wds::get_blob(&self.api, self_.rep(), blob_id)
+            .map(Resource::new_own)
+            .map_err(wasmtime::Error::from_anyhow)
+    }
+
     async fn drop(&mut self, rep: Resource<WdsRes>) -> wasmtime::Result<()> {
         shared::wired::wds::wds_drop(&self.api, rep.rep()).map_err(wasmtime::Error::from_anyhow)
+    }
+}
+
+impl HostBlobFuture for Runtime {
+    async fn poll(
+        &mut self,
+        self_: Resource<BlobFutureRes>,
+    ) -> wasmtime::Result<Option<Result<Vec<u8>, ()>>> {
+        shared::wired::wds::blob_future_poll(&self.api, self_.rep())
+            .map_err(wasmtime::Error::from_anyhow)
+    }
+
+    async fn drop(&mut self, rep: Resource<BlobFutureRes>) -> wasmtime::Result<()> {
+        shared::wired::wds::blob_future_drop(&self.api, rep.rep())
+            .map_err(wasmtime::Error::from_anyhow)
     }
 }
 

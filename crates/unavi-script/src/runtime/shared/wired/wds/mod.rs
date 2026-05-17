@@ -1,11 +1,15 @@
 use anyhow::bail;
 use async_channel::{Receiver, TryRecvError};
-use bevy_wds::record::{query::QueryRecord, read::ReadRecord};
+use bevy_wds::{
+    blob::get::GetBlob,
+    record::{query::QueryRecord, read::ReadRecord},
+};
 use blake3::Hash;
+use bytes::Bytes;
 use loro::{ExportMode, LoroDoc};
-use tokio::sync::oneshot::Sender;
+use tokio::sync::oneshot::{self, Sender};
 use tracing::warn;
-use unavi_util::async_commands::AsyncCommands;
+use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
 
 use crate::runtime::shared::{Api, slot_map::SlotMap};
 
@@ -22,11 +26,17 @@ pub struct ReadFutureRes {
     rx: Receiver<LoroDoc>,
 }
 
+pub struct BlobFutureRes {
+    _cancel: Sender<()>,
+    rx: Receiver<anyhow::Result<Bytes>>,
+}
+
 #[derive(Default)]
 pub struct WiredWdsApi {
     wds_slots: SlotMap<WdsRes>,
     query_futures: SlotMap<QueryFutureRes>,
     read_futures: SlotMap<ReadFutureRes>,
+    blob_futures: SlotMap<BlobFutureRes>,
 }
 
 pub struct QueryFilter {
@@ -131,6 +141,62 @@ pub fn query_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
 
 pub fn read_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
     api.wired_wds.try_lock()?.read_futures.remove(rep);
+    Ok(())
+}
+
+pub fn get_blob(api: &Api, _wds_rep: u32, blob_id: Vec<u8>) -> anyhow::Result<u32> {
+    let hash = Hash::from_slice(&blob_id)?;
+    let (tx, rx) = async_channel::bounded(1);
+    let (cancel_tx, mut cancel_rx) = oneshot::channel();
+    spawn_async_task(async move {
+        tokio::select! {
+            _ = &mut cancel_rx => {}
+            result = fetch_blob(hash) => {
+                let _ = tx.try_send(result);
+            }
+        }
+    });
+    Ok(api
+        .wired_wds
+        .try_lock()?
+        .blob_futures
+        .insert(BlobFutureRes {
+            _cancel: cancel_tx,
+            rx,
+        }))
+}
+
+async fn fetch_blob(hash: Hash) -> anyhow::Result<Bytes> {
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .trigger(GetBlob {
+            hash,
+            cancel: None,
+            tx,
+        })
+        .send()
+        .await?;
+    Ok(rx.recv().await?)
+}
+
+pub fn blob_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<Vec<u8>, ()>>> {
+    let wds = api.wired_wds.try_lock()?;
+    let Some(res) = wds.blob_futures.get(rep) else {
+        bail!("blob future resource not found")
+    };
+    match res.rx.try_recv() {
+        Ok(Ok(bytes)) => Ok(Some(Ok(bytes.to_vec()))),
+        Ok(Err(err)) => {
+            warn!(?err, "blob_future_poll: fetch failed");
+            Ok(Some(Err(())))
+        }
+        Err(TryRecvError::Empty) => Ok(None),
+        Err(TryRecvError::Closed) => Ok(Some(Err(()))),
+    }
+}
+
+pub fn blob_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+    api.wired_wds.try_lock()?.blob_futures.remove(rep);
     Ok(())
 }
 

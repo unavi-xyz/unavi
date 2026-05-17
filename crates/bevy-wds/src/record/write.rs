@@ -76,7 +76,6 @@ pub(crate) fn on_write_record(mut req: On<WriteRecord>, actor: Query<(&LocalActo
             let cancel_fut = async move {
                 match cancel {
                     Some(rx) => {
-                        info!(?id, "Cancelling");
                         rx.await.ok();
                     }
                     None => std::future::pending::<()>().await,
@@ -84,7 +83,9 @@ pub(crate) fn on_write_record(mut req: On<WriteRecord>, actor: Query<(&LocalActo
             };
 
             tokio::select! {
-                () = cancel_fut => {},
+                () = cancel_fut => {
+                    info!(?id, "Cancelled");
+                },
                 res = write_record(id, ttl, public, &schemas, &actor, &sync_targets) => {
                     match res {
                         Ok(id) => {

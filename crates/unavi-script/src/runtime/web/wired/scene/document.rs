@@ -4,7 +4,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::runtime::shared::{self, Api};
 
-use super::{material::MaterialHandle, mesh::MeshHandle, node::NodeHandle};
+use super::prim::PrimHandle;
 
 #[wasm_bindgen]
 pub struct DocHandle {
@@ -38,104 +38,40 @@ impl DocHandle {
         Some(Self::new(rep, Arc::clone(&self.api)))
     }
 
-    pub fn assets(&self) -> js_sys::Array {
-        let Ok(items) = shared::wired::scene::document::assets(&self.api, self.rep) else {
-            return js_sys::Array::new();
-        };
-        items
-            .into_iter()
-            .map(|(name, id)| {
-                let tuple = js_sys::Array::new();
-                tuple.push(&JsValue::from_str(&name));
-                tuple.push(&JsValue::from(js_sys::Uint8Array::from(id.as_slice())));
-                JsValue::from(tuple)
-            })
-            .collect()
-    }
-
-    #[wasm_bindgen(js_name = "addAsset")]
-    pub fn add_asset(&self, name: String, blob_id: Vec<u8>) {
-        let _ = shared::wired::scene::document::add_asset(&self.api, self.rep, name, blob_id);
-    }
-
-    #[wasm_bindgen(js_name = "removeAsset")]
-    pub fn remove_asset(&self, name: String) {
-        let _ = shared::wired::scene::document::remove_asset(&self.api, self.rep, name);
-    }
-
     pub fn roots(&self) -> js_sys::Array {
         let Ok(reps) = shared::wired::scene::document::roots(&self.api, self.rep) else {
             return js_sys::Array::new();
         };
         reps.into_iter()
-            .map(|rep| JsValue::from(NodeHandle::new(rep, Arc::clone(&self.api))))
+            .map(|rep| JsValue::from(PrimHandle::new(rep, Arc::clone(&self.api))))
             .collect()
     }
 
-    pub fn nodes(&self) -> js_sys::Array {
-        let Ok(reps) = shared::wired::scene::document::nodes(&self.api, self.rep) else {
+    pub fn prims(&self) -> js_sys::Array {
+        let Ok(reps) = shared::wired::scene::document::prims(&self.api, self.rep) else {
             return js_sys::Array::new();
         };
         reps.into_iter()
-            .map(|rep| JsValue::from(NodeHandle::new(rep, Arc::clone(&self.api))))
+            .map(|rep| JsValue::from(PrimHandle::new(rep, Arc::clone(&self.api))))
             .collect()
     }
 
-    #[wasm_bindgen(js_name = "createNode")]
-    pub fn create_node(&self) -> NodeHandle {
-        let Ok(rep) = shared::wired::scene::document::create_node(&self.api, self.rep) else {
-            return NodeHandle::new(u32::MAX, Arc::clone(&self.api));
-        };
-        NodeHandle::new(rep, Arc::clone(&self.api))
+    #[wasm_bindgen(js_name = "getPrim")]
+    pub fn get_prim(&self, id: String) -> Option<PrimHandle> {
+        let rep = shared::wired::scene::document::get_prim(&self.api, self.rep, id).ok()??;
+        Some(PrimHandle::new(rep, Arc::clone(&self.api)))
     }
 
-    #[wasm_bindgen(js_name = "removeNode")]
-    pub fn remove_node(&self, value: &NodeHandle) -> Result<(), String> {
-        shared::wired::scene::document::remove_node(&self.api, value.rep())
-            .map_err(|e| e.to_string())
-    }
-
-    pub fn meshes(&self) -> js_sys::Array {
-        let Ok(reps) = shared::wired::scene::document::meshes(&self.api, self.rep) else {
-            return js_sys::Array::new();
-        };
-        reps.into_iter()
-            .map(|rep| JsValue::from(MeshHandle::new(rep, Arc::clone(&self.api))))
-            .collect()
-    }
-
-    #[wasm_bindgen(js_name = "createMesh")]
-    pub fn create_mesh(&self) -> MeshHandle {
-        let rep =
-            shared::wired::scene::document::create_mesh(&self.api, self.rep).unwrap_or(u32::MAX);
-        MeshHandle::new(rep, Arc::clone(&self.api))
-    }
-
-    #[wasm_bindgen(js_name = "removeMesh")]
-    pub fn remove_mesh(&self, value: &MeshHandle) -> Result<(), String> {
-        shared::wired::scene::document::remove_mesh(&self.api, value.rep())
-            .map_err(|e| e.to_string())
-    }
-
-    pub fn materials(&self) -> js_sys::Array {
-        let Ok(reps) = shared::wired::scene::document::materials(&self.api, self.rep) else {
-            return js_sys::Array::new();
-        };
-        reps.into_iter()
-            .map(|rep| JsValue::from(MaterialHandle::new(rep, Arc::clone(&self.api))))
-            .collect()
-    }
-
-    #[wasm_bindgen(js_name = "createMaterial")]
-    pub fn create_material(&self) -> MaterialHandle {
-        let rep = shared::wired::scene::document::create_material(&self.api, self.rep)
+    #[wasm_bindgen(js_name = "createPrim")]
+    pub fn create_prim(&self) -> PrimHandle {
+        let rep = shared::wired::scene::document::create_prim(&self.api, self.rep)
             .unwrap_or(u32::MAX);
-        MaterialHandle::new(rep, Arc::clone(&self.api))
+        PrimHandle::new(rep, Arc::clone(&self.api))
     }
 
-    #[wasm_bindgen(js_name = "removeMaterial")]
-    pub fn remove_material(&self, value: &MaterialHandle) -> Result<(), String> {
-        shared::wired::scene::document::remove_material(&self.api, value.rep())
+    #[wasm_bindgen(js_name = "removePrim")]
+    pub fn remove_prim(&self, value: &PrimHandle) -> Result<(), String> {
+        shared::wired::scene::document::remove_prim(&self.api, value.rep())
             .map_err(|e| e.to_string())
     }
 }

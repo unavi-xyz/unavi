@@ -967,6 +967,7 @@ dependencies = [
  "tracing-test",
  "unavi-util",
  "wds",
+ "wired-schemas",
 ]
 
 [[package]]
@@ -982,7 +983,7 @@ dependencies = [
  "blake3",
  "bytemuck",
  "bytes 1.11.1",
- "hsd",
+ "hsd-old",
  "image",
  "iroh-blobs",
  "loro",
@@ -14122,7 +14123,7 @@ dependencies = [
  "iroh",
  "js-sys",
  "loro",
- "loro-surgeon",
+ "lorosurgeon",
  "parking_lot",
  "rand 0.9.2",
  "smol_str 0.3.6",

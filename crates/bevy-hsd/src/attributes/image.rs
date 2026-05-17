@@ -38,6 +38,14 @@ pub struct ImageBlobs {
     pub srgb: Option<bool>,
 }
 
+#[derive(Component)]
+#[relationship(relationship_target = ImageBlobsChild)]
+pub struct ImageBlobsOwner(pub Entity);
+
+#[derive(Component)]
+#[relationship_target(relationship = ImageBlobsOwner, linked_spawn)]
+pub struct ImageBlobsChild(Entity);
+
 #[derive(Component, Default)]
 pub struct HsdImage(pub Handle<Image>);
 
@@ -59,10 +67,7 @@ impl AttributeParser for ImageParser {
         } else {
             commands
                 .entity(prim)
-                .remove::<HsdImage>()
-                .remove::<ImageBlobs>()
-                .remove::<BlobDeps>()
-                .remove::<BlobDepsLoaded>();
+                .remove::<(HsdImage, ImageBlobsChild)>();
         }
         Ok(())
     }
@@ -94,25 +99,17 @@ impl AttributeParser for ImageParser {
     }
 }
 
-pub fn apply_image(
-    trigger: On<ApplyEvent<ImageEvent>>,
-    existing: Query<(), With<ImageBlobs>>,
-    mut commands: Commands,
-) {
-    let ent = trigger.entity;
+pub fn apply_image(trigger: On<ApplyEvent<ImageEvent>>, mut commands: Commands) {
+    let prim = trigger.entity;
     let ImageEvent::Rebuild(attr) = &trigger.value;
 
-    if existing.contains(ent) {
-        commands
-            .entity(ent)
-            .remove::<ImageBlobs>()
-            .remove::<BlobDeps>()
-            .remove::<BlobDepsLoaded>();
-    }
+    commands.entity(prim).remove::<ImageBlobsChild>();
+
+    let child = commands.spawn(ImageBlobsOwner(prim)).id();
 
     let data = commands
         .spawn((
-            BlobDep(ent),
+            BlobDep(child),
             BlobRequest(blake3::Hash::from_bytes(attr.data.0)),
         ))
         .id();
@@ -137,7 +134,7 @@ pub fn apply_image(
         sampler.mipmap_filter = filter_mode(v);
     }
 
-    commands.entity(ent).insert(ImageBlobs {
+    commands.entity(child).insert(ImageBlobs {
         data,
         sampler,
         srgb: attr.srgb.as_option().copied(),
@@ -146,19 +143,21 @@ pub fn apply_image(
 
 pub fn on_image_blob_loaded(
     trigger: On<Add, BlobDepsLoaded>,
-    image_blobs: Query<&ImageBlobs>,
+    image_blobs: Query<(&ImageBlobs, &ImageBlobsOwner)>,
     mut blob_responses: Query<&mut BlobResponse>,
     mut hsd_images: Query<&mut HsdImage>,
     mut image_assets: ResMut<Assets<Image>>,
     mut commands: Commands,
 ) {
-    let ent = trigger.entity;
-    let Ok(params) = image_blobs.get(ent) else {
+    let child = trigger.entity;
+    let Ok((params, owner)) = image_blobs.get(child) else {
         return;
     };
+    let prim = owner.0;
 
     let Ok(Some(bytes)) = blob_responses.get_mut(params.data).map(|mut b| b.0.take()) else {
         warn!("image blob not found");
+        commands.entity(child).try_despawn();
         return;
     };
 
@@ -166,6 +165,7 @@ pub fn on_image_blob_loaded(
         Ok(img) => img,
         Err(err) => {
             warn!(?err, "failed to decode image");
+            commands.entity(child).try_despawn();
             return;
         }
     };
@@ -173,16 +173,13 @@ pub fn on_image_blob_loaded(
     let img = build_img(dyn_img, params.sampler.clone(), params.srgb);
     let handle = image_assets.add(img);
 
-    if let Ok(mut hsd_image) = hsd_images.get_mut(ent) {
+    if let Ok(mut hsd_image) = hsd_images.get_mut(prim) {
         hsd_image.0 = handle;
     } else {
-        commands.entity(ent).insert(HsdImage(handle));
+        commands.entity(prim).insert(HsdImage(handle));
     }
 
-    commands
-        .entity(ent)
-        .remove::<BlobDeps>()
-        .remove::<BlobDepsLoaded>();
+    commands.entity(child).try_despawn();
 }
 
 fn build_img(

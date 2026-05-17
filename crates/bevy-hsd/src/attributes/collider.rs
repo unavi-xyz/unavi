@@ -37,6 +37,14 @@ pub enum ColliderBlobKind {
 #[require(BlobDeps)]
 pub struct ColliderBlobs(pub ColliderBlobKind);
 
+#[derive(Component)]
+#[relationship(relationship_target = ColliderBlobsChild)]
+pub struct ColliderBlobsOwner(pub Entity);
+
+#[derive(Component)]
+#[relationship_target(relationship = ColliderBlobsOwner, linked_spawn)]
+pub struct ColliderBlobsChild(Entity);
+
 pub struct ColliderParser;
 
 impl AttributeParser for ColliderParser {
@@ -55,11 +63,7 @@ impl AttributeParser for ColliderParser {
         } else {
             commands
                 .entity(prim)
-                .remove::<HsdCollider>()
-                .remove::<Collider>()
-                .remove::<ColliderBlobs>()
-                .remove::<BlobDeps>()
-                .remove::<BlobDepsLoaded>();
+                .remove::<(HsdCollider, Collider, ColliderBlobsChild)>();
         }
         Ok(())
     }
@@ -91,68 +95,58 @@ impl AttributeParser for ColliderParser {
     }
 }
 
-pub fn apply_collider(
-    trigger: On<ApplyEvent<ColliderEvent>>,
-    existing: Query<(), With<ColliderBlobs>>,
-    mut commands: Commands,
-) {
-    let ent = trigger.entity;
+pub fn apply_collider(trigger: On<ApplyEvent<ColliderEvent>>, mut commands: Commands) {
+    let prim = trigger.entity;
     let ColliderEvent::Rebuild(attr) = &trigger.value;
 
-    if existing.contains(ent) {
-        commands
-            .entity(ent)
-            .remove::<ColliderBlobs>()
-            .remove::<BlobDeps>()
-            .remove::<BlobDepsLoaded>();
-    }
+    commands.entity(prim).remove::<ColliderBlobsChild>();
 
     match attr {
         ColliderAttr::Sphere(r) => {
             if let Some(c) = build_sphere(*r) {
-                commands.entity(ent).insert(c);
+                commands.entity(prim).insert(c);
             }
         }
         ColliderAttr::Capsule { height, radius } => {
             if let Some(c) = build_capsule(*height, *radius) {
-                commands.entity(ent).insert(c);
+                commands.entity(prim).insert(c);
             }
         }
         ColliderAttr::Cuboid { x, y, z } => {
             if let Some(c) = build_cuboid(*x, *y, *z) {
-                commands.entity(ent).insert(c);
+                commands.entity(prim).insert(c);
             }
         }
         ColliderAttr::Cylinder { height, radius } => {
             if let Some(c) = build_cylinder(*height, *radius) {
-                commands.entity(ent).insert(c);
+                commands.entity(prim).insert(c);
             }
         }
         ColliderAttr::ConvexHull(hash) => {
-            let points_ent = commands
-                .spawn((BlobDep(ent), BlobRequest(blake3::Hash::from_bytes(hash.0))))
+            let child = commands.spawn(ColliderBlobsOwner(prim)).id();
+            let points = commands
+                .spawn((BlobDep(child), BlobRequest(blake3::Hash::from_bytes(hash.0))))
                 .id();
             commands
-                .entity(ent)
-                .insert(ColliderBlobs(ColliderBlobKind::ConvexHull {
-                    points: points_ent,
-                }));
+                .entity(child)
+                .insert(ColliderBlobs(ColliderBlobKind::ConvexHull { points }));
         }
         ColliderAttr::Trimesh { vertices, indices } => {
+            let child = commands.spawn(ColliderBlobsOwner(prim)).id();
             let vertex_ent = commands
                 .spawn((
-                    BlobDep(ent),
+                    BlobDep(child),
                     BlobRequest(blake3::Hash::from_bytes(vertices.0)),
                 ))
                 .id();
             let index_ent = commands
                 .spawn((
-                    BlobDep(ent),
+                    BlobDep(child),
                     BlobRequest(blake3::Hash::from_bytes(indices.0)),
                 ))
                 .id();
             commands
-                .entity(ent)
+                .entity(child)
                 .insert(ColliderBlobs(ColliderBlobKind::Trimesh {
                     vertices: vertex_ent,
                     indices: index_ent,
@@ -163,19 +157,21 @@ pub fn apply_collider(
 
 pub fn on_collider_blobs_loaded(
     trigger: On<Add, BlobDepsLoaded>,
-    collider_blobs: Query<&ColliderBlobs>,
+    collider_blobs: Query<(&ColliderBlobs, &ColliderBlobsOwner)>,
     mut blob_responses: Query<&mut BlobResponse>,
     mut commands: Commands,
 ) {
-    let ent = trigger.entity;
-    let Ok(blobs) = collider_blobs.get(ent) else {
+    let child = trigger.entity;
+    let Ok((blobs, owner)) = collider_blobs.get(child) else {
         return;
     };
+    let prim = owner.0;
 
     let collider = match &blobs.0 {
         ColliderBlobKind::ConvexHull { points } => {
             let Ok(Some(bytes)) = blob_responses.get_mut(*points).map(|mut b| b.0.take()) else {
                 warn!("convex hull blob not ready");
+                commands.entity(child).try_despawn();
                 return;
             };
             build_convex_hull(&bytes)
@@ -183,10 +179,12 @@ pub fn on_collider_blobs_loaded(
         ColliderBlobKind::Trimesh { vertices, indices } => {
             let Ok(Some(vb)) = blob_responses.get_mut(*vertices).map(|mut b| b.0.take()) else {
                 warn!("trimesh vertex blob not ready");
+                commands.entity(child).try_despawn();
                 return;
             };
             let Ok(Some(ib)) = blob_responses.get_mut(*indices).map(|mut b| b.0.take()) else {
                 warn!("trimesh index blob not ready");
+                commands.entity(child).try_despawn();
                 return;
             };
             build_trimesh(&vb, &ib)
@@ -194,14 +192,10 @@ pub fn on_collider_blobs_loaded(
     };
 
     if let Some(c) = collider {
-        commands.entity(ent).insert(c);
+        commands.entity(prim).insert(c);
     }
 
-    commands
-        .entity(ent)
-        .remove::<ColliderBlobs>()
-        .remove::<BlobDeps>()
-        .remove::<BlobDepsLoaded>();
+    commands.entity(child).try_despawn();
 }
 
 fn valid_positive(v: f64) -> bool {

@@ -7,7 +7,7 @@ world guest {
 
 interface api {
   use wired:math/types.{transform};
-  use wired:scene/types.{color, mesh};
+  use wired:scene/types.{color, prim, prim-id};
 
   variant module-event {
     activate(transform),
@@ -16,14 +16,16 @@ interface api {
   }
 
   resource vui-module {
-    constructor(name: string, icon: borrow<mesh>);
+    // `icon` should be a prim carrying a `mesh` attribute that will be
+    // rendered as the module's gauntlet icon.
+    constructor(name: string, icon: borrow<prim>);
     poll: func() -> option<module-event>;
   }
 
   record registered-module {
-    doc-id:        list<u8>,
-    name:          string,
-    icon-mesh-id:  string,
+    doc-id:       list<u8>,
+    name:         string,
+    icon-prim-id: prim-id,
   }
 
   resource vui-module-registry {

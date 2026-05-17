@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use bevy_hsd::{HsdDoc, HsdRecordId};
+use bevy_hsd::Hsd;
 use bevy_wds::{
     LocalActor,
     blob::get::GetBlob,
@@ -12,34 +12,31 @@ use bevy_wds::{
 };
 use blake3::Hash;
 use bytes::Bytes;
-use hsd::Hsd;
+use hsd::HSD_CONTAINER_ID;
+use hsd::file::HsdFile;
 use loro::LoroDoc;
-use loro_surgeon::Reconcile;
 use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
 use wired_schemas::SCHEMA_HSD;
 
 use crate::{
     firewall::{Channel, Firewall},
+    registry::HsdRecordId,
     runtime::shared::{
         Api,
         registry::firewall::{FIREWALL_REGISTRY, validate_firewall},
         slot_map::SlotMap,
-        wired::scene::{document::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes},
+        wired::scene::{document::DocRes, prim::PrimRes},
     },
 };
 
 pub mod document;
-pub mod material;
-pub mod mesh;
-pub mod node;
+pub mod prim;
 pub mod util;
 
 #[derive(Default)]
 pub struct WiredSceneApi {
     pub docs: SlotMap<DocRes>,
-    pub materials: SlotMap<MaterialRes>,
-    pub meshes: SlotMap<MeshRes>,
-    pub nodes: SlotMap<NodeRes>,
+    pub prims: SlotMap<PrimRes>,
 }
 
 pub(super) async fn fetch_blob(hash: Hash) -> anyhow::Result<Bytes> {
@@ -83,27 +80,19 @@ pub(super) async fn upload_blob(data: Vec<u8>) -> anyhow::Result<Hash> {
 
 fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()> {
     let firewall = Firewall::for_child_doc(api.doc_id);
-    // Register synchronously so the child doc's firewall is queryable before
-    // the entity-spawn command is processed. Otherwise scripts that touch the
-    // returned doc handle in the same turn hit DEFAULT_FIREWALL and get blocked.
     FIREWALL_REGISTRY.write().insert(id, firewall.clone());
     AsyncCommands::default()
-        .spawn((
-            HsdDoc(doc),
-            HsdRecordId(id),
-            firewall,
-            api.permissions.clone(),
-        ))
+        .spawn((Hsd(doc), HsdRecordId(id), firewall, api.permissions.clone()))
         .try_send()?;
     Ok(())
 }
 
-pub fn self_node(api: &Api) -> anyhow::Result<u32> {
+pub fn self_prim(api: &Api) -> anyhow::Result<u32> {
     let mut scene = api.wired_scene.try_lock()?;
-    Ok(scene.nodes.insert(NodeRes {
+    Ok(scene.prims.insert(PrimRes {
         doc: Arc::clone(&api.doc),
         doc_id: api.doc_id,
-        id: api.node,
+        id: api.prim,
         is_proxy: false,
     }))
 }
@@ -143,7 +132,7 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
     AsyncCommands::default()
         .push(move |world: &mut World| {
             let doc = world
-                .query::<(&HsdRecordId, &HsdDoc)>()
+                .query::<(&HsdRecordId, &Hsd)>()
                 .iter(world)
                 .find(|(rid, _)| rid.0 == id)
                 .map(|(_, d)| Arc::clone(&d.0));
@@ -203,7 +192,7 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> anyhow::Result<u32> {
     };
 
     let hsd_str = std::str::from_utf8(&bytes)?.to_owned();
-    let asset_doc = Hsd::parse(&hsd_str)?;
+    let file = HsdFile::from_ron(&hsd_str)?;
 
     let id = {
         let (mut write, rx, _cancel) = WriteRecord::new(None);
@@ -211,8 +200,7 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> anyhow::Result<u32> {
             schema: (&*SCHEMA_HSD).into(),
             container: "hsd".into(),
             f: Arc::new(move |doc| {
-                let map = doc.get_map("hsd");
-                asset_doc.reconcile(&map)?;
+                file.load_into_doc(doc)?;
                 Ok(())
             }),
         }];
@@ -238,7 +226,11 @@ pub async fn create_document(api: &Api) -> anyhow::Result<u32> {
         write.schemas = vec![SchemaDef {
             schema: (&*SCHEMA_HSD).into(),
             container: "hsd".into(),
-            f: Arc::new(|_| Ok(())),
+            f: Arc::new(|doc| {
+                // Ensure the HSD tree container exists.
+                let _ = doc.get_tree(&*HSD_CONTAINER_ID);
+                Ok(())
+            }),
         }];
         AsyncCommands::default().trigger(write).send().await?;
         let id = rx.recv().await?;

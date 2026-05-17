@@ -13,16 +13,16 @@ interface api {
 }
 
 interface types {
-  use wired:scene/types.{node, document-id};
+  use wired:scene/types.{prim, document-id};
 
   record spatial-scope {
-    node: node,
+    prim: prim,
     radius: f32,
   }
 
   variant event-scope {
     global,
-    spatial(spatial-scope), 
+    spatial(spatial-scope),
   }
 
   record event-filter {
@@ -32,7 +32,7 @@ interface types {
 
   record spatial-sender {
     distance: f32,
-    node: node,
+    prim: prim,
   }
 
   variant sender-scope {

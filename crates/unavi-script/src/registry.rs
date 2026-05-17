@@ -4,8 +4,12 @@ use std::{
 };
 
 use bevy::prelude::*;
-use bevy_hsd::HsdRecordId;
 use blake3::Hash;
+
+/// Maps a doc entity to its persistent WDS record id (blake3 hash).
+/// Inserted alongside `bevy_hsd::Hsd` on doc entities.
+#[derive(Component, Debug, Clone, Copy)]
+pub struct HsdRecordId(pub Hash);
 
 #[derive(Clone, Default)]
 pub struct TransformHandles {

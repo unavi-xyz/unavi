@@ -4,7 +4,7 @@ use blake3::Hash;
 use iroh::{EndpointId, PublicKey};
 use time::OffsetDateTime;
 use tracing::warn;
-use wired_records::BeaconRecord;
+use wired_records::beacon::BeaconRecord;
 use wired_schemas::SCHEMA_BEACON;
 
 use crate::gossip::GossipCtx;
@@ -42,10 +42,10 @@ pub async fn find_bootstrap_peers(
                     if now >= beacon.expires {
                         continue;
                     }
-                    if beacon.space.0 != space {
+                    if beacon.space.as_bytes() != space.as_bytes() {
                         continue;
                     }
-                    let Ok(endpoint) = EndpointId::from_bytes(&beacon.endpoint.0) else {
+                    let Ok(endpoint) = EndpointId::from_bytes(beacon.endpoint.0.as_bytes()) else {
                         continue;
                     };
                     if endpoint == ctx.endpoint.id() {

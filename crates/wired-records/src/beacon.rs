@@ -1,30 +1,26 @@
+use loro::LoroDoc;
+use lorosurgeon::{Hydrate, HydrateError, Reconcile, ReconcileError, reconcile::RootReconciler};
 use serde::{Deserialize, Serialize};
 
-use crate::{HydratedDid, HydratedEndpoint, HydratedHash};
+use crate::{byte_array::ByteArray, did::HydratedDid};
 
-#[cfg_attr(
-    feature = "loro",
-    derive(loro_surgeon::Hydrate, loro_surgeon::Reconcile)
-)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Hydrate, Reconcile, Debug, Clone, Serialize, Deserialize)]
 pub struct BeaconRecord {
     pub did: HydratedDid,
-    pub endpoint: HydratedEndpoint,
+    pub endpoint: ByteArray<32>,
     pub expires: i64,
-    pub space: HydratedHash,
+    pub space: ByteArray<32>,
 }
 
-#[cfg(feature = "loro")]
 impl BeaconRecord {
-    pub fn load(doc: &loro::LoroDoc) -> anyhow::Result<Self> {
-        use loro_surgeon::Hydrate;
-        let value = doc.get_map("beacon").get_deep_value();
-        Self::hydrate(&value).map_err(|e| anyhow::anyhow!("{e}"))
+    pub fn save(&self, doc: &LoroDoc) -> Result<(), ReconcileError> {
+        let map = doc.get_map("beacon");
+        let rec = RootReconciler::new(map);
+        self.reconcile(rec)
     }
 
-    pub fn save(&self, doc: &loro::LoroDoc) -> anyhow::Result<()> {
-        use loro_surgeon::Reconcile;
-        self.reconcile(&doc.get_map("beacon"))?;
-        Ok(())
+    pub fn load(doc: &LoroDoc) -> Result<Self, HydrateError> {
+        let map = doc.get_map("beacon");
+        Self::hydrate_map(&map)
     }
 }

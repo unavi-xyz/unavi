@@ -7,7 +7,6 @@ use std::collections::BTreeMap;
 use blake3::Hash;
 use iroh_blobs::api::Store;
 use loro::{Frontiers, LoroDoc};
-use smol_str::SmolStr;
 use thiserror::Error;
 use wds_schema::{schema::Schema, validate::validator::Validator};
 use xdid::core::did::Did;
@@ -43,7 +42,7 @@ pub fn validate_diff(
     new_doc: &LoroDoc,
     old_frontiers: &Frontiers,
     new_frontiers: &Frontiers,
-    schemas: &BTreeMap<SmolStr, Schema>,
+    schemas: &BTreeMap<String, Schema>,
     author: &Did,
     is_first_envelope: bool,
 ) -> Result<(), ValidationError> {

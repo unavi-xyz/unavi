@@ -1,8 +1,7 @@
+use loro::LoroValue;
 use serde::{Deserialize, Serialize};
 
 /// Portable representation of a Loro container value for WASM transport.
-///
-/// Serialized with postcard for cross-boundary delivery.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum RecordValue {
     Null,
@@ -15,24 +14,21 @@ pub enum RecordValue {
     Map(Vec<(String, Self)>),
 }
 
-#[cfg(feature = "loro")]
-impl From<loro::LoroValue> for RecordValue {
-    fn from(v: loro::LoroValue) -> Self {
+impl From<LoroValue> for RecordValue {
+    fn from(v: LoroValue) -> Self {
         match v {
-            loro::LoroValue::Bool(b) => Self::Bool(b),
-            loro::LoroValue::I64(n) => Self::I64(n),
-            loro::LoroValue::Double(n) => Self::F64(n),
-            loro::LoroValue::String(s) => Self::String(s.to_string()),
-            loro::LoroValue::Binary(b) => Self::Binary(b.to_vec()),
-            loro::LoroValue::List(list) => {
-                Self::List(list.iter().cloned().map(Self::from).collect())
-            }
-            loro::LoroValue::Map(map) => Self::Map(
+            LoroValue::Bool(b) => Self::Bool(b),
+            LoroValue::I64(n) => Self::I64(n),
+            LoroValue::Double(n) => Self::F64(n),
+            LoroValue::String(s) => Self::String(s.to_string()),
+            LoroValue::Binary(b) => Self::Binary(b.to_vec()),
+            LoroValue::List(list) => Self::List(list.iter().cloned().map(Self::from).collect()),
+            LoroValue::Map(map) => Self::Map(
                 map.iter()
                     .map(|(k, v)| (k.clone(), Self::from(v.clone())))
                     .collect(),
             ),
-            loro::LoroValue::Null | loro::LoroValue::Container(_) => Self::Null,
+            LoroValue::Null | LoroValue::Container(_) => Self::Null,
         }
     }
 }

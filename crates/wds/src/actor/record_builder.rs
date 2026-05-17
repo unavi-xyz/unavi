@@ -6,7 +6,6 @@ use bytes::Bytes;
 use iroh::EndpointId;
 use loro::LoroDoc;
 use tracing::warn;
-use wired_records::HydratedHash;
 use wired_schemas::{SCHEMA_ACL, SCHEMA_RECORD, StaticSchema};
 
 use crate::{
@@ -29,7 +28,7 @@ pub struct RecordResult {
 /// Schema data for dependency tracking.
 #[derive(Clone)]
 pub struct SchemaData {
-    pub container: smol_str::SmolStr,
+    pub container: String,
     pub hash: Hash,
     pub bytes: Bytes,
 }
@@ -78,7 +77,7 @@ impl RecordBuilder {
     /// Accepts `&StaticSchema` for builtins or [`SchemaData`] for custom schemas.
     pub fn add_schema(
         mut self,
-        container: impl Into<smol_str::SmolStr>,
+        container: impl Into<String>,
         schema: impl Into<SchemaData>,
         f: impl FnOnce(&mut LoroDoc) -> anyhow::Result<()>,
     ) -> anyhow::Result<Self> {
@@ -116,7 +115,7 @@ impl RecordBuilder {
         // Build record with schema hashes.
         let mut record = Record::new(did.clone());
         for schema in &all_schemas {
-            record.add_schema(schema.container.clone(), HydratedHash(schema.hash));
+            record.add_schema(schema.container.clone(), schema.hash);
         }
         record.save(&self.doc)?;
 

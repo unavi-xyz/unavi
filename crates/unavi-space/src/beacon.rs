@@ -8,7 +8,7 @@ use bevy_wds::{
 };
 use time::OffsetDateTime;
 use unavi_util::async_task::spawn_async_task;
-use wired_records::{BeaconRecord, HydratedDid, HydratedEndpoint, HydratedHash};
+use wired_records::{beacon::BeaconRecord, byte_array::ByteArray, did::HydratedDid};
 use wired_schemas::SCHEMA_BEACON;
 
 use crate::Space;
@@ -56,9 +56,9 @@ pub fn publish_beacons(
             f: Arc::new(move |doc| {
                 let beacon = BeaconRecord {
                     did: HydratedDid(did.clone()),
-                    endpoint: HydratedEndpoint(*endpoint_id),
+                    endpoint: ByteArray(lorosurgeon::ByteArray(*endpoint_id.as_bytes())),
                     expires: (OffsetDateTime::now_utc() + BEACON_TTL).unix_timestamp(),
-                    space: HydratedHash(space),
+                    space: space.into(),
                 };
                 beacon.save(doc)?;
                 Ok(())

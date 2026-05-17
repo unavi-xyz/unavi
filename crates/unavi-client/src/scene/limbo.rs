@@ -5,7 +5,7 @@ use bevy::{
     math::Affine2,
     prelude::*,
 };
-use bevy_hsd::HsdDoc;
+use bevy_hsd::Hsd;
 use unavi_space::Space;
 
 use crate::scene::{SceneState, respawn::Respawn};
@@ -63,7 +63,7 @@ pub fn despawn_limbo(limbo: Query<Entity, With<Limbo>>, mut commands: Commands) 
 }
 
 pub fn exit_limbo_on_space_join(
-    trigger: On<Add, HsdDoc>,
+    trigger: On<Add, Hsd>,
     spaces: Query<(), With<Space>>,
     state: Res<State<SceneState>>,
     mut next: ResMut<NextState<SceneState>>,

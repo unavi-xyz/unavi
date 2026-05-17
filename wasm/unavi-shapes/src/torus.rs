@@ -8,7 +8,7 @@ use glam::Vec3;
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestTorus,
-    wired::scene::types::{Document, Mesh},
+    wired::scene::types::{Document, Prim},
 };
 
 #[derive(Default)]
@@ -31,7 +31,7 @@ impl GuestTorus for TorusWrapped {
         }
     }
 
-    fn mesh(&self) -> Mesh {
+    fn mesh(&self) -> Prim {
         crate::convert_raw_mesh(
             self.doc.borrow().as_ref(),
             build(

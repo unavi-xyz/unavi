@@ -6,7 +6,7 @@ use wired_prelude::wired_math::types::Vec3 as WVec3;
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCuboid,
-    wired::scene::types::{Collider, Document, Mesh},
+    wired::scene::types::{Collider, Document, Prim},
 };
 
 #[derive(Default)]
@@ -31,7 +31,7 @@ impl GuestCuboid for CuboidWrapped {
         ))
     }
 
-    fn mesh(&self) -> Mesh {
+    fn mesh(&self) -> Prim {
         crate::convert_raw_mesh(self.doc.borrow().as_ref(), build(self.half))
     }
 

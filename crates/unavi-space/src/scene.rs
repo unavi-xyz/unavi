@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use async_channel::Receiver;
 use bevy::prelude::*;
-use bevy_hsd::{HsdDoc, HsdRecordId};
+use bevy_hsd::{Hsd, HsdRecordId};
 use bevy_wds::record::read::ReadRecord;
 use loro::LoroDoc;
 use tokio::sync::oneshot;
@@ -45,7 +45,7 @@ pub fn instantiate_pending_scenes(
         info!(space = %space.0, "Instantiating scene");
         commands
             .entity(entity)
-            .insert((HsdDoc(Arc::new(doc)), HsdRecordId(space.0)))
+            .insert((Hsd(Arc::new(doc)), HsdRecordId(space.0)))
             .remove::<PendingScene>();
     }
 }
@@ -54,5 +54,5 @@ pub fn despawn_space_scene(trigger: On<Remove, Space>, mut commands: Commands) {
     // Removing PendingScene drops the oneshot::Sender, signalling the task to cancel.
     commands
         .entity(trigger.entity)
-        .remove::<(PendingScene, HsdDoc)>();
+        .remove::<(PendingScene, Hsd)>();
 }

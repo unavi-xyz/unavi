@@ -5,7 +5,7 @@ use crate::runtime::{
     native::wired::scene::bindings::wired::scene::types::HostDocument,
     shared::{
         self,
-        wired::scene::{document::DocRes, material::MaterialRes, mesh::MeshRes, node::NodeRes},
+        wired::scene::{document::DocRes, prim::PrimRes},
     },
 };
 
@@ -21,114 +21,43 @@ impl HostDocument for Runtime {
             .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn assets(
-        &mut self,
-        self_: Resource<DocRes>,
-    ) -> wasmtime::Result<Vec<(String, Vec<u8>)>> {
-        shared::wired::scene::document::assets(&self.api, self_.rep())
-            .map_err(wasmtime::Error::from_anyhow)
-    }
-
-    async fn add_asset(
-        &mut self,
-        self_: Resource<DocRes>,
-        name: String,
-        blob_id: Vec<u8>,
-    ) -> wasmtime::Result<()> {
-        shared::wired::scene::document::add_asset(&self.api, self_.rep(), name, blob_id)
-            .map_err(wasmtime::Error::from_anyhow)
-    }
-
-    async fn remove_asset(
-        &mut self,
-        self_: Resource<DocRes>,
-        name: String,
-    ) -> wasmtime::Result<()> {
-        shared::wired::scene::document::remove_asset(&self.api, self_.rep(), name)
-            .map_err(wasmtime::Error::from_anyhow)
-    }
-
-    async fn roots(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec<Resource<NodeRes>>> {
+    async fn roots(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec<Resource<PrimRes>>> {
         shared::wired::scene::document::roots(&self.api, self_.rep())
             .map(|v| v.into_iter().map(Resource::new_own).collect())
             .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn nodes(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec<Resource<NodeRes>>> {
-        shared::wired::scene::document::nodes(&self.api, self_.rep())
+    async fn prims(&mut self, self_: Resource<DocRes>) -> wasmtime::Result<Vec<Resource<PrimRes>>> {
+        shared::wired::scene::document::prims(&self.api, self_.rep())
             .map(|v| v.into_iter().map(Resource::new_own).collect())
             .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn create_node(
+    async fn get_prim(
         &mut self,
         self_: Resource<DocRes>,
-    ) -> wasmtime::Result<Resource<NodeRes>> {
-        shared::wired::scene::document::create_node(&self.api, self_.rep())
+        id: String,
+    ) -> wasmtime::Result<Option<Resource<PrimRes>>> {
+        shared::wired::scene::document::get_prim(&self.api, self_.rep(), id)
+            .map(|r| r.map(Resource::new_own))
+            .map_err(wasmtime::Error::from_anyhow)
+    }
+
+    async fn create_prim(
+        &mut self,
+        self_: Resource<DocRes>,
+    ) -> wasmtime::Result<Resource<PrimRes>> {
+        shared::wired::scene::document::create_prim(&self.api, self_.rep())
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn remove_node(
+    async fn remove_prim(
         &mut self,
         _self_: Resource<DocRes>,
-        value: Resource<NodeRes>,
+        value: Resource<PrimRes>,
     ) -> wasmtime::Result<()> {
-        shared::wired::scene::document::remove_node(&self.api, value.rep())
-            .map_err(wasmtime::Error::from_anyhow)
-    }
-
-    async fn meshes(
-        &mut self,
-        self_: Resource<DocRes>,
-    ) -> wasmtime::Result<Vec<Resource<MeshRes>>> {
-        shared::wired::scene::document::meshes(&self.api, self_.rep())
-            .map(|v| v.into_iter().map(Resource::new_own).collect())
-            .map_err(wasmtime::Error::from_anyhow)
-    }
-
-    async fn create_mesh(
-        &mut self,
-        self_: Resource<DocRes>,
-    ) -> wasmtime::Result<Resource<MeshRes>> {
-        shared::wired::scene::document::create_mesh(&self.api, self_.rep())
-            .map(Resource::new_own)
-            .map_err(wasmtime::Error::from_anyhow)
-    }
-
-    async fn remove_mesh(
-        &mut self,
-        _self_: Resource<DocRes>,
-        value: Resource<MeshRes>,
-    ) -> wasmtime::Result<()> {
-        shared::wired::scene::document::remove_mesh(&self.api, value.rep())
-            .map_err(wasmtime::Error::from_anyhow)
-    }
-
-    async fn materials(
-        &mut self,
-        self_: Resource<DocRes>,
-    ) -> wasmtime::Result<Vec<Resource<MaterialRes>>> {
-        shared::wired::scene::document::materials(&self.api, self_.rep())
-            .map(|v| v.into_iter().map(Resource::new_own).collect())
-            .map_err(wasmtime::Error::from_anyhow)
-    }
-
-    async fn create_material(
-        &mut self,
-        self_: Resource<DocRes>,
-    ) -> wasmtime::Result<Resource<MaterialRes>> {
-        shared::wired::scene::document::create_material(&self.api, self_.rep())
-            .map(Resource::new_own)
-            .map_err(wasmtime::Error::from_anyhow)
-    }
-
-    async fn remove_material(
-        &mut self,
-        _self_: Resource<DocRes>,
-        value: Resource<MaterialRes>,
-    ) -> wasmtime::Result<()> {
-        shared::wired::scene::document::remove_material(&self.api, value.rep())
+        shared::wired::scene::document::remove_prim(&self.api, value.rep())
             .map_err(wasmtime::Error::from_anyhow)
     }
 

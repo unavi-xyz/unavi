@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use bevy_hsd::{HsdChild, HsdDoc, HsdRecordId, NodeId, ScriptNode};
+use bevy_hsd::{Hsd, HsdChild, HsdRecordId, Prim};
 use tokio::sync::Mutex;
 use unavi_util::async_task::spawn_async_task;
 
@@ -23,21 +23,17 @@ pub struct ScriptGuest(pub Arc<ScriptInstance>);
 pub fn instantiate_scripts(
     wasms: Res<Assets<Wasm>>,
     to_instantiate: Query<
-        (Entity, &Script, &ApiPermissions, NameOrEntity, &ScriptNode),
+        (Entity, &Script, &ApiPermissions, NameOrEntity, &Prim, &HsdChild),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
-    nodes: Query<(&NodeId, &HsdChild)>,
-    docs: Query<(&HsdRecordId, &HsdDoc)>,
+    docs: Query<(&HsdRecordId, &Hsd)>,
     mut commands: Commands,
 ) {
-    for (entity, script, perms, name, node_ent) in to_instantiate {
+    for (entity, script, perms, name, prim, doc_ent) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };
-        let Ok((node_id, hsd)) = nodes.get(node_ent.0) else {
-            continue;
-        };
-        let Ok((doc_id, doc)) = docs.get(hsd.0) else {
+        let Ok((doc_id, doc)) = docs.get(doc_ent.0) else {
             continue;
         };
 
@@ -48,7 +44,7 @@ pub fn instantiate_scripts(
             api: Arc::new(Api {
                 doc: Arc::clone(&doc.0),
                 doc_id: doc_id.0,
-                node: node_id.0,
+                prim: prim.0,
                 permissions: perms.clone(),
                 wired_agent: Mutex::default(),
                 wired_event: Mutex::default(),

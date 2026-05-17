@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use bevy_hsd::Hsd;
+use bevy_hsd::{Hsd, HsdRecordId};
 use bevy_wds::{
     LocalActor,
     blob::get::GetBlob,
@@ -20,7 +20,6 @@ use wired_schemas::SCHEMA_HSD;
 
 use crate::{
     firewall::{Channel, Firewall},
-    registry::HsdRecordId,
     runtime::shared::{
         Api,
         registry::firewall::{FIREWALL_REGISTRY, validate_firewall},
@@ -37,19 +36,6 @@ pub mod util;
 pub struct WiredSceneApi {
     pub docs: SlotMap<DocRes>,
     pub prims: SlotMap<PrimRes>,
-}
-
-pub(super) async fn fetch_blob(hash: Hash) -> anyhow::Result<Bytes> {
-    let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
-        .trigger(GetBlob {
-            hash,
-            cancel: None,
-            tx,
-        })
-        .send()
-        .await?;
-    Ok(rx.recv().await?)
 }
 
 pub(super) async fn upload_blob(data: Vec<u8>) -> anyhow::Result<Hash> {

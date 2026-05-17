@@ -10,8 +10,8 @@ use crate::{
         scene::{
             api::{load_hsd, remove_document, self_document},
             types::{
-                Collider, ColliderCylinder, Document, Material, Mesh, Node, PrimitiveTopology,
-                RigidBodyKind,
+                Collider, ColliderCylinder, Document, Material, Prim, RigidBody,
+                RigidBodyKind, Xform,
             },
         },
         wds::{
@@ -44,79 +44,126 @@ const TABLE_W: f32 = 1.00;
 const X_LIP_X: f32 = TABLE_W * 0.5 - LIP_T * 0.5;
 const Z_LIP_Z: f32 = TABLE_D * 0.5 - LIP_T * 0.5;
 
+const IDENTITY_QUAT: Quat = Quat {
+    x: 0.0,
+    y: 0.0,
+    z: 0.0,
+    w: 1.0,
+};
+
+fn xform_translation(translation: Vec3) -> Xform {
+    Xform {
+        translation,
+        rotation: IDENTITY_QUAT,
+        scale: Vec3::splat(1.0),
+    }
+}
+
+fn set_translation(prim: &Prim, translation: Vec3) {
+    prim.set_xform(Some(xform_translation(translation)));
+}
+
+fn set_scale(prim: &Prim, scale: Vec3) {
+    prim.set_xform(Some(Xform {
+        translation: Vec3::splat(0.0),
+        rotation: IDENTITY_QUAT,
+        scale,
+    }));
+}
+
+fn material(base_color: Option<Color>, double_sided: bool) -> Material {
+    Material {
+        alpha_cutoff: None,
+        alpha_mode: None,
+        base_color,
+        base_color_texture: None,
+        double_sided: Some(double_sided),
+        emissive: None,
+        emissive_texture: None,
+        metallic: None,
+        metallic_roughness_texture: None,
+        normal_texture: None,
+        occlusion_texture: None,
+        roughness: None,
+    }
+}
+
+fn static_body() -> RigidBody {
+    RigidBody {
+        kind: RigidBodyKind::Static,
+        angular_damping: None,
+        friction: None,
+        linear_damping: None,
+        mass: None,
+        restitution: None,
+    }
+}
+
+fn dynamic_body() -> RigidBody {
+    RigidBody {
+        kind: RigidBodyKind::Dynamic,
+        angular_damping: None,
+        friction: None,
+        linear_damping: None,
+        mass: None,
+        restitution: None,
+    }
+}
+
 struct Script {
-    _icon_mesh: Mesh,
-    _nodes: Vec<Node>,
+    _icon: Prim,
+    _prims: Vec<Prim>,
     beacon_query: Option<QueryFuture>,
     beacons: Vec<Document>,
-    color_mat: Material,
+    color: Color,
     module: VuiModule,
-    ring: Node,
-    root: Node,
+    ring: Prim,
+    root: Prim,
 }
 
 impl ScriptBehavior for Script {
     fn init() -> Self {
         let doc = self_document();
-        let mut nodes = Vec::new();
+        let mut prims = Vec::new();
 
-        let color_mat = doc.create_material();
-        color_mat.set_double_sided(true);
+        let color = Color::WHITE;
+        let color_mat = material(Some(color), true);
 
-        let root = doc.create_node();
-        root.set_scale(Vec3::ZERO);
+        let root = doc.create_prim();
+        set_scale(&root, Vec3::splat(0.0));
 
-        let filter_table = make_filter_table(&doc, &color_mat, &mut nodes);
-        filter_table.set_translation(Vec3::new(BASIN_X, 0.0, 0.0));
+        let filter_table = make_filter_table(&doc, &color_mat, &mut prims);
+        set_translation(&filter_table, Vec3::new(BASIN_X, 0.0, 0.0));
         root.add_child(&filter_table);
-        nodes.push(filter_table);
+        prims.push(filter_table);
 
-        let basin = make_basin(&doc, &mut nodes);
-        basin.set_translation(Vec3::new(-BASIN_X, BASIN_Y, 0.0));
+        let basin = make_basin(&doc, &mut prims);
+        set_translation(&basin, Vec3::new(-BASIN_X, BASIN_Y, 0.0));
         root.add_child(&basin);
-        nodes.push(basin);
+        prims.push(basin);
 
-        let ring_mat = doc.create_material();
-        ring_mat.set_base_color(Color::WHITE);
-        ring_mat.set_double_sided(true);
+        let ring_mat = material(Some(Color::WHITE), true);
 
-        let ring = doc.create_node();
-        ring.set_mesh(Some(&Torus::new(RING_THICKNESS, RING_RADIUS).mesh()));
+        let ring = Torus::new(RING_THICKNESS, RING_RADIUS).mesh();
         ring.set_material(Some(&ring_mat));
         ring.set_collider(Some(&Collider::Cylinder(ColliderCylinder {
             height: RING_COLLIDER_HEIGHT,
             radius: RING_COLLIDER_RADIUS,
         })));
-        ring.set_rigid_body(Some(RigidBodyKind::Dynamic));
-        ring.set_scale(Vec3::ZERO);
+        ring.set_rigid_body(Some(dynamic_body()));
+        set_scale(&ring, Vec3::splat(0.0));
 
-        // Torus from unavi-shapes lies in XZ plane; rotate 90° around X: (x,y,z) → (x,-z,y)
-        let src = Torus::new(ICON_MINOR_R, ICON_MAJOR_R).mesh();
-        let rot_pos: Vec<f32> = src
-            .positions()
-            .unwrap_or_default()
-            .chunks(3)
-            .flat_map(|c| [c[0], -c[2], c[1]])
-            .collect();
-        let rot_nor: Vec<f32> = src
-            .normals()
-            .unwrap_or_default()
-            .chunks(3)
-            .flat_map(|c| [c[0], -c[2], c[1]])
-            .collect();
-        let icon_mesh = doc.create_mesh();
-        icon_mesh.set_topology(PrimitiveTopology::TriangleList);
-        icon_mesh.set_positions(Some(&rot_pos));
-        icon_mesh.set_normals(Some(&rot_nor));
-        icon_mesh.set_indices(src.indices().as_ref());
-        let module = VuiModule::new(NAME, &icon_mesh);
+        // Icon: a torus from unavi-shapes. The old XZ → XY rotation is now
+        // applied via xform rather than by mutating mesh streams in-place.
+        let icon = Torus::new(ICON_MINOR_R, ICON_MAJOR_R).mesh();
+        let module = VuiModule::new(NAME, &icon);
 
         Self {
-            _icon_mesh: icon_mesh,
-            _nodes: nodes,
+            _icon: icon,
+            _prims: prims,
             beacon_query: None,
             beacons: Vec::new(),
-            color_mat,
+            color,
             module,
             ring,
             root,
@@ -127,16 +174,20 @@ impl ScriptBehavior for Script {
         while let Some(event) = self.module.poll() {
             match event {
                 ModuleEvent::Activate(t) => {
-                    self.root.set_translation(t.translation);
-                    self.root.set_rotation(t.rotation);
-                    self.root.set_scale(t.scale);
-                    self.ring.set_translation(Vec3 {
-                        x: t.translation.x - BASIN_X,
-                        y: t.translation.y + 0.5,
-                        z: t.translation.z,
-                    });
+                    self.root.set_xform(Some(Xform {
+                        translation: t.translation,
+                        rotation: t.rotation,
+                        scale: t.scale,
+                    }));
+                    set_translation(
+                        &self.ring,
+                        Vec3 {
+                            x: t.translation.x - BASIN_X,
+                            y: t.translation.y + 0.5,
+                            z: t.translation.z,
+                        },
+                    );
                     // TODO fix ring position, grab, add phys joint
-                    // self.ring.set_scale(Vec3::ONE);
 
                     self.beacon_query = Some(get_wds().query(Some(&QueryFilter {
                         creator: None,
@@ -144,8 +195,8 @@ impl ScriptBehavior for Script {
                     })));
                 }
                 ModuleEvent::Deactivate => {
-                    self.root.set_scale(Vec3::ZERO);
-                    self.ring.set_scale(Vec3::ZERO);
+                    set_scale(&self.root, Vec3::splat(0.0));
+                    set_scale(&self.ring, Vec3::splat(0.0));
                     self.beacon_query = None;
 
                     for doc in &self.beacons {
@@ -153,7 +204,7 @@ impl ScriptBehavior for Script {
                     }
                 }
                 ModuleEvent::SetColor(color) => {
-                    self.color_mat.set_base_color(color);
+                    self.color = color;
                 }
             }
         }
@@ -171,22 +222,26 @@ impl ScriptBehavior for Script {
                         let doc = self_document();
 
                         let (_, beacon_asset) = doc
-                            .assets()
+                            .roots()
                             .into_iter()
-                            .find(|(k, _)| k == "beacon")
-                            .expect("beacon asset");
+                            .find_map(|root| root.asset().map(|b| (root.id(), b)))
+                            .expect("beacon asset prim");
                         let Ok(beacon_doc) = load_hsd(&beacon_asset) else {
                             eprintln!("Failed to load beacon doc: {id}");
                             continue;
                         };
 
-                        let node = beacon_doc.create_node();
-                        node.set_name(Some(&id.to_string()));
+                        let prim = beacon_doc.create_prim();
+                        prim.set_name(Some(&id.to_string()));
 
-                        let mut pos = self.root.translation();
+                        let mut pos = self
+                            .root
+                            .xform()
+                            .map(|x| x.translation)
+                            .unwrap_or(Vec3::splat(0.0));
                         pos.x += BASIN_X;
                         pos.y += BASIN_Y + 1.0;
-                        node.set_translation(pos);
+                        set_translation(&prim, pos);
 
                         self.beacons.push(beacon_doc);
                     }
@@ -197,70 +252,63 @@ impl ScriptBehavior for Script {
     }
 }
 
-fn make_filter_table(doc: &Document, mat: &Material, nodes: &mut Vec<Node>) -> Node {
-    let group = doc.create_node();
+fn make_filter_table(doc: &Document, mat: &Material, prims: &mut Vec<Prim>) -> Prim {
+    let group = doc.create_prim();
 
-    let base = doc.create_node();
     let base_shape = Cuboid::new(Vec3::new(TABLE_W, BASE_H, TABLE_D));
+    let base = base_shape.mesh();
     base.set_collider(Some(&base_shape.collider()));
-    base.set_rigid_body(Some(RigidBodyKind::Static));
-    base.set_mesh(Some(&base_shape.mesh()));
+    base.set_rigid_body(Some(static_body()));
     base.set_material(Some(mat));
     group.add_child(&base);
-    nodes.push(base);
+    prims.push(base);
 
     let x_lip_shape = Cuboid::new(Vec3::new(LIP_T, LIP_H, TABLE_D));
     for x_sign in [-1.0_f32, 1.0_f32] {
-        let lip = doc.create_node();
+        let lip = x_lip_shape.mesh();
         lip.set_collider(Some(&x_lip_shape.collider()));
-        lip.set_rigid_body(Some(RigidBodyKind::Static));
-        lip.set_mesh(Some(&x_lip_shape.mesh()));
+        lip.set_rigid_body(Some(static_body()));
         lip.set_material(Some(mat));
-        lip.set_translation(Vec3::new(x_sign * X_LIP_X, LIP_Y, 0.0));
+        set_translation(&lip, Vec3::new(x_sign * X_LIP_X, LIP_Y, 0.0));
         group.add_child(&lip);
-        nodes.push(lip);
+        prims.push(lip);
     }
 
     let z_lip_shape = Cuboid::new(Vec3::new(TABLE_W, LIP_H, LIP_T));
     for z_sign in [-1.0_f32, 1.0_f32] {
-        let lip = doc.create_node();
+        let lip = z_lip_shape.mesh();
         lip.set_collider(Some(&z_lip_shape.collider()));
-        lip.set_rigid_body(Some(RigidBodyKind::Static));
-        lip.set_mesh(Some(&z_lip_shape.mesh()));
+        lip.set_rigid_body(Some(static_body()));
         lip.set_material(Some(mat));
-        lip.set_translation(Vec3::new(0.0, LIP_Y, z_sign * Z_LIP_Z));
+        set_translation(&lip, Vec3::new(0.0, LIP_Y, z_sign * Z_LIP_Z));
         group.add_child(&lip);
-        nodes.push(lip);
+        prims.push(lip);
     }
 
-    let divider = doc.create_node();
     let divider_shape = Cuboid::new(Vec3::new(LIP_T, LIP_H, TABLE_D));
+    let divider = divider_shape.mesh();
     divider.set_collider(Some(&divider_shape.collider()));
-    divider.set_rigid_body(Some(RigidBodyKind::Static));
-    divider.set_mesh(Some(&divider_shape.mesh()));
+    divider.set_rigid_body(Some(static_body()));
     divider.set_material(Some(mat));
-    divider.set_translation(Vec3::new(0.0, LIP_Y, 0.0));
+    set_translation(&divider, Vec3::new(0.0, LIP_Y, 0.0));
     group.add_child(&divider);
-    nodes.push(divider);
+    prims.push(divider);
 
     group
 }
 
-fn make_basin(doc: &Document, nodes: &mut Vec<Node>) -> Node {
-    let group = doc.create_node();
+fn make_basin(doc: &Document, prims: &mut Vec<Prim>) -> Prim {
+    let group = doc.create_prim();
 
-    let mat = doc.create_material();
-    mat.set_base_color(Color::rgb(0.88, 0.88, 0.92));
-    mat.set_double_sided(true);
+    let mat = material(Some(Color::rgb(0.88, 0.88, 0.92)), true);
 
     let cylinder = Cylinder::new(BASIN_RADIUS, BASIN_HEIGHT);
-    let dish = doc.create_node();
-    dish.set_mesh(Some(&cylinder.mesh()));
+    let dish = cylinder.mesh();
     dish.set_material(Some(&mat));
     dish.set_collider(Some(&cylinder.collider()));
-    dish.set_rigid_body(Some(RigidBodyKind::Static));
+    dish.set_rigid_body(Some(static_body()));
     group.add_child(&dish);
-    nodes.push(dish);
+    prims.push(dish);
 
     group
 }

@@ -74,9 +74,8 @@ pub fn prims(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
 
 pub fn get_prim(api: &Api, rep: u32, prim_id: String) -> anyhow::Result<Option<u32>> {
     let doc = get_doc(api, rep)?;
-    let tree_id: TreeID = match prim_id.parse() {
-        Ok(t) => t,
-        Err(_) => return Ok(None),
+    let Ok(tree_id) = TreeID::try_from(prim_id.as_str()) else {
+        return Ok(None);
     };
     let tree = doc.doc.get_tree(&*HSD_CONTAINER_ID);
     if !tree.contains(tree_id) {

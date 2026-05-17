@@ -5,13 +5,18 @@ use loro::{LoroDoc, TreeID};
 
 pub mod attributes;
 mod diff;
+pub mod load;
 mod subscribe;
 
 pub struct HsdPlugin;
 
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(subscribe::subscribe_to_docs)
+        app.init_asset::<load::HsdAsset>()
+            .init_asset::<load::BlobAsset>()
+            .register_asset_loader(load::HsdLoader)
+            .register_asset_loader(load::BlobLoader)
+            .add_observer(subscribe::subscribe_to_docs)
             .add_observer(attributes::collider::apply_collider)
             .add_observer(attributes::collider::on_collider_blobs_loaded)
             .add_observer(attributes::image::apply_image)
@@ -28,6 +33,7 @@ impl Plugin for HsdPlugin {
                     attributes::material::propagate_material_relationship,
                     attributes::material::propagate_image_to_material,
                     attributes::material::propagate_material_to_dependents,
+                    load::instance_hsd,
                 )
                     .chain(),
             );
@@ -37,6 +43,10 @@ impl Plugin for HsdPlugin {
 #[derive(Component)]
 #[require(HsdChildren)]
 pub struct Hsd(pub Arc<LoroDoc>);
+
+/// Persistent WDS record id for an `Hsd` doc entity.
+#[derive(Component, Debug, Clone, Copy)]
+pub struct HsdRecordId(pub blake3::Hash);
 
 #[derive(Component, Default)]
 #[relationship_target(relationship=HsdChild)]

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use bevy_hsd::{HsdChild, HsdDoc, HsdRecordId, NodeId, ScriptNode};
+use bevy_hsd::{Hsd, HsdChild, HsdRecordId, Prim};
 use tokio::sync::Mutex;
 use tracing::{Instrument, Span};
 use unavi_util::async_task::spawn_async_task;
@@ -44,21 +44,17 @@ pub fn instantiate_scripts(
     wasms: Res<Assets<Wasm>>,
     engines: Query<&WasmtimeEngine>,
     to_instantiate: Query<
-        (Entity, &Script, &ScriptEngine, NameOrEntity, &ScriptNode),
+        (Entity, &Script, &ScriptEngine, NameOrEntity, &Prim, &HsdChild),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
-    nodes: Query<(&NodeId, &HsdChild)>,
-    docs: Query<(&HsdRecordId, &HsdDoc, Option<&ApiPermissions>)>,
+    docs: Query<(&HsdRecordId, &Hsd, Option<&ApiPermissions>)>,
     mut commands: Commands,
 ) {
-    for (entity, script, engine_ent, name, node_ent) in to_instantiate {
+    for (entity, script, engine_ent, name, prim, doc_ent) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };
-        let Ok((node_id, node_doc)) = nodes.get(node_ent.0) else {
-            continue;
-        };
-        let Ok((doc_id, doc, perms)) = docs.get(node_doc.0) else {
+        let Ok((doc_id, doc, perms)) = docs.get(doc_ent.0) else {
             continue;
         };
         let Ok(engine) = engines.get(engine_ent.0) else {
@@ -86,7 +82,7 @@ pub fn instantiate_scripts(
             api: Arc::new(Api {
                 doc: Arc::clone(&doc.0),
                 doc_id: doc_id.0,
-                node: node_id.0,
+                prim: prim.0,
                 permissions: perms.clone(),
                 wired_agent: Mutex::default(),
                 wired_event: Mutex::default(),

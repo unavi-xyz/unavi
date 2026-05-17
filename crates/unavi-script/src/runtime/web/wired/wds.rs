@@ -67,6 +67,26 @@ impl Drop for ReadFutureHandle {
     }
 }
 
+#[wasm_bindgen]
+pub struct BlobFutureHandle {
+    rep: u32,
+    api: Arc<Api>,
+}
+
+impl BlobFutureHandle {
+    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
+        Self { rep, api }
+    }
+}
+
+impl Drop for BlobFutureHandle {
+    fn drop(&mut self) {
+        if self.rep != u32::MAX {
+            let _ = shared::wired::wds::blob_future_drop(&self.api, self.rep);
+        }
+    }
+}
+
 fn js_to_query_filter(value: &JsValue) -> Option<QueryFilter> {
     if value.is_null() || value.is_undefined() {
         return None;
@@ -106,6 +126,25 @@ impl WdsHandle {
     pub fn read(&self, record_id: Vec<u8>) -> ReadFutureHandle {
         let rep = shared::wired::wds::read(&self.api, self.rep, record_id).unwrap_or(u32::MAX);
         ReadFutureHandle::new(rep, Arc::clone(&self.api))
+    }
+
+    #[wasm_bindgen(js_name = "getBlob")]
+    pub fn get_blob(&self, blob_id: Vec<u8>) -> BlobFutureHandle {
+        let rep = shared::wired::wds::get_blob(&self.api, self.rep, blob_id).unwrap_or(u32::MAX);
+        BlobFutureHandle::new(rep, Arc::clone(&self.api))
+    }
+}
+
+#[wasm_bindgen]
+impl BlobFutureHandle {
+    pub fn poll(&self) -> JsValue {
+        let Ok(Some(result)) = shared::wired::wds::blob_future_poll(&self.api, self.rep) else {
+            return JsValue::UNDEFINED;
+        };
+        match result {
+            Ok(bytes) => variant_obj("ok", js_sys::Uint8Array::from(bytes.as_slice()).into()),
+            Err(()) => variant_obj("err", JsValue::UNDEFINED),
+        }
     }
 }
 
@@ -186,6 +225,13 @@ impl Runtime {
     #[wasm_bindgen(js_name = "wiredReadFutureClass")]
     pub fn wired_read_future_class(&self) -> JsValue {
         let handle = ReadFutureHandle::new(u32::MAX, Arc::clone(&self.api));
+        let js = JsValue::from(handle);
+        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
+    }
+
+    #[wasm_bindgen(js_name = "wiredBlobFutureClass")]
+    pub fn wired_blob_future_class(&self) -> JsValue {
+        let handle = BlobFutureHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }

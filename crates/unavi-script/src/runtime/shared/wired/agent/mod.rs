@@ -6,7 +6,7 @@ use crate::runtime::shared::{
     Api,
     registry::agent::{AGENT_REGISTRY, AgentKey},
     slot_map::SlotMap,
-    wired::scene::node::NodeRes,
+    wired::scene::prim::PrimRes,
 };
 
 pub struct AgentRes {
@@ -35,7 +35,7 @@ pub fn local_camera(api: &Api) -> anyhow::Result<u32> {
         .ok_or_else(|| anyhow::anyhow!("camera proxy not found"))?;
     let (doc_id, node_id) = (id.doc, id.node);
     drop(guard);
-    let rep = api.wired_scene.try_lock()?.nodes.insert(NodeRes {
+    let rep = api.wired_scene.try_lock()?.prims.insert(PrimRes {
         doc: Arc::default(),
         doc_id,
         id: node_id,
@@ -61,7 +61,7 @@ pub fn bone(api: &Api, rep: u32, name: BoneName) -> anyhow::Result<Option<u32>> 
     if let Some(id) = entry.bones.get(&name) {
         let (doc_id, node_id) = (id.doc, id.node);
         drop(guard);
-        let rep = api.wired_scene.try_lock()?.nodes.insert(NodeRes {
+        let rep = api.wired_scene.try_lock()?.prims.insert(PrimRes {
             doc: Arc::default(),
             doc_id,
             id: node_id,

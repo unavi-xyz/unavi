@@ -8,7 +8,7 @@ use glam::Vec3;
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestSphere,
-    wired::scene::types::{Collider, Document, Mesh},
+    wired::scene::types::{Collider, Document, Prim},
 };
 
 #[derive(Default)]
@@ -31,7 +31,7 @@ impl GuestSphere for SphereWrapped {
         Collider::Sphere(self.radius)
     }
 
-    fn mesh(&self) -> Mesh {
+    fn mesh(&self) -> Prim {
         crate::convert_raw_mesh(
             self.doc.borrow().as_ref(),
             build(self.radius, self.subdivisions.get()),

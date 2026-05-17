@@ -25,6 +25,8 @@ lorosurgeon.workspace   = true
 smol_str.workspace      = true
 thiserror.workspace     = true
 unavi-util.path         = "../unavi-util"
+wds.path                = "../wds"
+wired-schemas.path      = "../wired-schemas"
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true

@@ -46,18 +46,32 @@ pub fn js_to_quat(v: &JsValue, default: [f32; 4]) -> [f32; 4] {
     ]
 }
 
-pub fn f32s_to_js(result: anyhow::Result<Option<Vec<f32>>>) -> JsValue {
-    match result {
-        Ok(Some(v)) => js_sys::Float32Array::from(v.as_slice()).into(),
-        _ => JsValue::UNDEFINED,
-    }
-}
-
 pub fn js_to_f32s(value: JsValue) -> Option<Vec<f32>> {
     if value.is_null() || value.is_undefined() {
         return None;
     }
     Some(js_sys::Float32Array::new(&value).to_vec())
+}
+
+pub fn js_to_u32s(value: JsValue) -> Option<Vec<u32>> {
+    if value.is_null() || value.is_undefined() {
+        return None;
+    }
+    Some(js_sys::Uint32Array::new(&value).to_vec())
+}
+
+/// Convert a 32-byte hash to a JS Uint8Array.
+pub fn bytes32_to_js(b: &[u8; 32]) -> JsValue {
+    js_sys::Uint8Array::from(b.as_slice()).into()
+}
+
+/// Decode a JS Uint8Array (or array-like) into a 32-byte blob id.
+pub fn js_to_bytes32(value: &JsValue) -> Option<[u8; 32]> {
+    if value.is_null() || value.is_undefined() {
+        return None;
+    }
+    let arr = js_sys::Uint8Array::new(value).to_vec();
+    arr.as_slice().try_into().ok()
 }
 
 /// Extract our SlotMap index from a resource handle.
@@ -70,4 +84,38 @@ pub fn opt_rep(value: &JsValue) -> Option<u32> {
         .ok()
         .and_then(|v| v.as_f64())
         .map(|v| v as u32)
+}
+
+pub fn obj_get(obj: &JsValue, key: &str) -> JsValue {
+    js_sys::Reflect::get(obj, &key.into()).unwrap_or(JsValue::UNDEFINED)
+}
+
+pub fn obj_set(obj: &js_sys::Object, key: &str, value: &JsValue) {
+    js_sys::Reflect::set(obj, &key.into(), value).ok();
+}
+
+pub fn obj_get_f32(obj: &JsValue, key: &str) -> Option<f32> {
+    js_sys::Reflect::get(obj, &key.into())
+        .ok()
+        .and_then(|v| v.as_f64())
+        .map(|v| v as f32)
+}
+
+pub fn obj_get_i32(obj: &JsValue, key: &str) -> Option<i32> {
+    js_sys::Reflect::get(obj, &key.into())
+        .ok()
+        .and_then(|v| v.as_f64())
+        .map(|v| v as i32)
+}
+
+pub fn obj_get_bool(obj: &JsValue, key: &str) -> Option<bool> {
+    js_sys::Reflect::get(obj, &key.into())
+        .ok()
+        .and_then(|v| v.as_bool())
+}
+
+pub fn obj_get_string(obj: &JsValue, key: &str) -> Option<String> {
+    js_sys::Reflect::get(obj, &key.into())
+        .ok()
+        .and_then(|v| v.as_string())
 }

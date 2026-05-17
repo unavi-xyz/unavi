@@ -12,7 +12,7 @@ use crate::{
         event::types::{EventFilter, EventScope, SpatialScope},
         scene::{
             api::self_document,
-            types::{Node, RigidBodyKind},
+            types::{Material, Prim, RigidBody, RigidBodyKind, Xform},
         },
     },
 };
@@ -28,7 +28,7 @@ const SIZE: f32 = 0.15;
 
 struct Script {
     id: Hash,
-    node: Node,
+    prim: Prim,
     time: SystemTime,
 }
 
@@ -36,32 +36,52 @@ impl ScriptBehavior for Script {
     fn init() -> Self {
         let doc = self_document();
 
-        let Some((id, node)) = doc.nodes().into_iter().find_map(|node| {
-            Hash::from_str(&node.name().unwrap_or_default())
+        let Some((id, prim)) = doc.prims().into_iter().find_map(|p| {
+            Hash::from_str(&p.name().unwrap_or_default())
                 .ok()
-                .map(|id| (id, node))
+                .map(|id| (id, p))
         }) else {
-            panic!("invalid beacon: id node not found")
+            panic!("invalid beacon: id prim not found")
         };
 
         let cuboid = Cuboid::new(Vec3::splat(SIZE));
-
-        node.set_mesh(Some(&cuboid.mesh()));
-        node.set_collider(Some(&cuboid.collider()));
-        node.set_rigid_body(Some(RigidBodyKind::Dynamic));
-
-        let mat = doc.create_material();
-        node.set_material(Some(&mat));
+        let cube = cuboid.mesh();
+        cube.set_collider(Some(&cuboid.collider()));
+        cube.set_rigid_body(Some(RigidBody {
+            kind: RigidBodyKind::Dynamic,
+            angular_damping: None,
+            friction: None,
+            linear_damping: None,
+            mass: None,
+            restitution: None,
+        }));
+        prim.add_child(&cube);
 
         let color = color::generate_beacon_color(id);
-        mat.set_base_color(color);
-        mat.set_roughness(0.7);
-        mat.set_metallic(0.3);
+        cube.set_material(Some(&Material {
+            alpha_cutoff: None,
+            alpha_mode: None,
+            base_color: Some(color),
+            base_color_texture: None,
+            double_sided: None,
+            emissive: None,
+            emissive_texture: None,
+            metallic: Some(0.3),
+            metallic_roughness_texture: None,
+            normal_texture: None,
+            occlusion_texture: None,
+            roughness: Some(0.7),
+        }));
+        prim.set_xform(Some(Xform {
+            translation: Vec3::ZERO,
+            rotation: Quat::IDENTITY,
+            scale: Vec3::ONE,
+        }));
 
         println!("Beacon initialized: {id}");
         Self {
             id,
-            node,
+            prim,
             time: SystemTime::now(),
         }
     }
@@ -79,7 +99,7 @@ impl ScriptBehavior for Script {
             EventFilter {
                 documents: None,
                 scope: EventScope::Spatial(SpatialScope {
-                    node: self.node.clone(),
+                    prim: self.prim.clone(),
                     radius: EVENT_RADIUS,
                 }),
             },

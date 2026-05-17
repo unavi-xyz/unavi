@@ -67,7 +67,7 @@ pub fn emit(
             EventScope::Spatial { node, radius } => {
                 let scene = api.wired_scene.try_lock()?;
                 let abs = scene
-                    .nodes
+                    .prims
                     .get(*node)
                     .map(|res| AbsoluteNodeId {
                         doc: res.doc_id,
@@ -165,7 +165,7 @@ pub fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::
         EventScope::Spatial { node, radius } => {
             let scene = api.wired_scene.try_lock()?;
             let abs = scene
-                .nodes
+                .prims
                 .get(node)
                 .map(|res| AbsoluteNodeId {
                     doc: res.doc_id,

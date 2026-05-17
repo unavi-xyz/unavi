@@ -10,7 +10,7 @@ pub const CH_SET_COLOR: &str = "unavi::vui-module::set-color";
 #[derive(Serialize, Deserialize)]
 pub struct RegisterPayload {
     pub name: String,
-    pub icon_mesh_id: String,
+    pub icon_prim_id: String,
 }
 
 #[derive(Serialize, Deserialize)]

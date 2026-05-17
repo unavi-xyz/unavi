@@ -11,7 +11,10 @@ use bytemuck::{Pod, PodCastError, try_cast_slice};
 use bytes::Bytes;
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{Attribute, hydrate_attr, mesh::{MeshAttr, Topology}},
+    attributes::{
+        Attribute, hydrate_attr,
+        mesh::{MeshAttr, Topology},
+    },
 };
 use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 use smol_str::SmolStr;
@@ -40,6 +43,14 @@ pub struct MeshBlobs {
     pub indices: Option<Entity>,
 }
 
+#[derive(Component)]
+#[relationship(relationship_target = MeshBlobsChild)]
+pub struct MeshBlobsOwner(pub Entity);
+
+#[derive(Component)]
+#[relationship_target(relationship = MeshBlobsOwner, linked_spawn)]
+pub struct MeshBlobsChild(Entity);
+
 pub struct MeshParser;
 
 impl AttributeParser for MeshParser {
@@ -56,12 +67,7 @@ impl AttributeParser for MeshParser {
         if value.is_some() {
             commands.entity(prim).insert(Mesh3d::default());
         } else {
-            commands
-                .entity(prim)
-                .remove::<Mesh3d>()
-                .remove::<MeshBlobs>()
-                .remove::<BlobDeps>()
-                .remove::<BlobDepsLoaded>();
+            commands.entity(prim).remove::<(MeshBlobsChild, Mesh3d)>();
         }
         Ok(())
     }
@@ -93,23 +99,15 @@ impl AttributeParser for MeshParser {
     }
 }
 
-pub fn apply_mesh(
-    trigger: On<ApplyEvent<MeshEvent>>,
-    existing: Query<(), With<MeshBlobs>>,
-    mut commands: Commands,
-) {
-    let ent = trigger.entity;
+pub fn apply_mesh(trigger: On<ApplyEvent<MeshEvent>>, mut commands: Commands) {
+    let prim = trigger.entity;
     let MeshEvent::Rebuild(attr) = &trigger.value;
 
-    if existing.contains(ent) {
-        commands
-            .entity(ent)
-            .remove::<MeshBlobs>()
-            .remove::<BlobDeps>()
-            .remove::<BlobDepsLoaded>();
-    }
+    commands.entity(prim).remove::<MeshBlobsChild>();
 
     let topology = topology_to_primitive(&attr.topology);
+
+    let child = commands.spawn(MeshBlobsOwner(prim)).id();
 
     let attrs = attr
         .attributes
@@ -117,7 +115,7 @@ pub fn apply_mesh(
         .map(|(name, hash)| {
             commands
                 .spawn((
-                    BlobDep(ent),
+                    BlobDep(child),
                     BlobRequest(blake3::Hash::from_bytes(hash.0)),
                     MeshAttrName(SmolStr::new(name)),
                 ))
@@ -127,11 +125,14 @@ pub fn apply_mesh(
 
     let indices = attr.indices.as_option().map(|hash| {
         commands
-            .spawn((BlobDep(ent), BlobRequest(blake3::Hash::from_bytes(hash.0))))
+            .spawn((
+                BlobDep(child),
+                BlobRequest(blake3::Hash::from_bytes(hash.0)),
+            ))
             .id()
     });
 
-    commands.entity(ent).insert(MeshBlobs {
+    commands.entity(child).insert(MeshBlobs {
         topology,
         attrs,
         indices,
@@ -140,29 +141,32 @@ pub fn apply_mesh(
 
 pub fn on_mesh_blobs_loaded(
     trigger: On<Add, BlobDepsLoaded>,
-    mesh_blobs: Query<&MeshBlobs>,
+    mesh_blobs: Query<(&MeshBlobs, &MeshBlobsOwner)>,
     mut blob_responses: Query<&mut BlobResponse>,
     attr_names: Query<&MeshAttrName>,
     mut mesh3d: Query<&mut Mesh3d>,
     mut mesh_assets: ResMut<Assets<Mesh>>,
     mut commands: Commands,
 ) {
-    let ent = trigger.entity;
-    let Ok(params) = mesh_blobs.get(ent) else {
+    let child = trigger.entity;
+    let Ok((params, owner)) = mesh_blobs.get(child) else {
         return;
     };
+    let prim = owner.0;
 
     let mut mesh = Mesh::new(params.topology, RenderAssetUsages::default());
 
     if let Some(idx_ent) = params.indices {
         let Ok(Some(bytes)) = blob_responses.get_mut(idx_ent).map(|mut b| b.0.take()) else {
             warn!("indices blob not found");
+            commands.entity(child).try_despawn();
             return;
         };
         match bytes_to_vec::<u32>(&bytes) {
             Ok(v) => mesh.insert_indices(Indices::U32(v)),
             Err(err) => {
                 warn!(?err, "invalid indices buffer");
+                commands.entity(child).try_despawn();
                 return;
             }
         }
@@ -199,17 +203,13 @@ pub fn on_mesh_blobs_loaded(
     }
 
     let handle = mesh_assets.add(mesh);
-    if let Ok(mut mesh3d) = mesh3d.get_mut(ent) {
+    if let Ok(mut mesh3d) = mesh3d.get_mut(prim) {
         mesh3d.0 = handle;
     } else {
-        commands.entity(ent).insert(Mesh3d(handle));
+        commands.entity(prim).insert(Mesh3d(handle));
     }
 
-    // Despawn child blob entities and clear marker so we don't re-fire.
-    commands
-        .entity(ent)
-        .remove::<BlobDeps>()
-        .remove::<BlobDepsLoaded>();
+    commands.entity(child).try_despawn();
 }
 
 const fn topology_to_primitive(t: &Topology) -> PrimitiveTopology {

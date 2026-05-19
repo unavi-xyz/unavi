@@ -43,7 +43,7 @@ impl Drop for PrimHandle {
 #[wasm_bindgen]
 impl PrimHandle {
     #[wasm_bindgen(getter, js_name = "__rep")]
-    pub const fn js_rep(&self) -> u32 {
+    pub fn js_rep(&self) -> u32 {
         self.rep
     }
 

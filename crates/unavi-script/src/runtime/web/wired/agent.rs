@@ -8,7 +8,7 @@ use crate::runtime::{
     shared::{self, Api},
 };
 
-use super::scene::node::NodeHandle;
+use super::scene::prim::PrimHandle;
 
 #[wasm_bindgen]
 pub struct AgentHandle {
@@ -93,12 +93,12 @@ fn js_to_bone_name(s: &str) -> Option<BoneName> {
 
 #[wasm_bindgen]
 impl AgentHandle {
-    pub fn bone(&self, name: String) -> Option<NodeHandle> {
+    pub fn bone(&self, name: String) -> Option<PrimHandle> {
         let bone = js_to_bone_name(&name)?;
         let rep = shared::wired::agent::bone(&self.api, self.rep, bone)
             .ok()
             .flatten()?;
-        Some(NodeHandle::new(rep, Arc::clone(&self.api)))
+        Some(PrimHandle::new(rep, Arc::clone(&self.api)))
     }
 }
 
@@ -118,8 +118,8 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredAgentLocalCamera")]
-    pub fn wired_agent_local_camera(&self) -> NodeHandle {
+    pub fn wired_agent_local_camera(&self) -> PrimHandle {
         let rep = shared::wired::agent::local_camera(&self.api).unwrap_or(u32::MAX);
-        NodeHandle::new(rep, Arc::clone(&self.api))
+        PrimHandle::new(rep, Arc::clone(&self.api))
     }
 }

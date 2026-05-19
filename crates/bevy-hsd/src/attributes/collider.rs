@@ -254,6 +254,10 @@ fn build_convex_hull(bytes: &Bytes) -> Option<Collider> {
             return None;
         }
     };
+    if points.is_empty() {
+        warn!("convex hull: empty point buffer");
+        return None;
+    }
     let c = Collider::convex_hull(points);
     if c.is_none() {
         warn!("convex hull: construction failed (degenerate points?)");
@@ -276,6 +280,10 @@ fn build_trimesh(vertex_bytes: &Bytes, index_bytes: &Bytes) -> Option<Collider> 
             return None;
         }
     };
+    if vertices.is_empty() || raw_indices.is_empty() {
+        warn!("trimesh: empty vertex or index buffer");
+        return None;
+    }
     match Collider::try_trimesh(vertices, raw_indices) {
         Ok(c) => Some(c),
         Err(err) => {

@@ -41,7 +41,6 @@ impl Hsdx {
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxPrim {
-    pub id: Option<String>,
     pub attributes: HsdxAttributes,
     pub relationships: BTreeMap<String, String>,
     pub children: Vec<Self>,
@@ -83,7 +82,6 @@ pub struct HsdxImage {
     pub mag_filter: Option<i64>,
     pub min_filter: Option<i64>,
     pub mipmap_filter: Option<i64>,
-    pub name: Option<String>,
     pub srgb: Option<bool>,
 }
 
@@ -99,7 +97,6 @@ pub struct HsdxMaterial {
     pub emissive_texture: Option<String>,
     pub metallic: Option<f64>,
     pub metallic_roughness_texture: Option<String>,
-    pub name: Option<String>,
     pub normal_texture: Option<String>,
     pub occlusion_texture: Option<String>,
     pub roughness: Option<f64>,
@@ -172,7 +169,6 @@ fn compile_prim<S: std::hash::BuildHasher>(
     }
 
     Ok(HsdFilePrim {
-        id: prim.id.clone(),
         attributes: attrs,
         relationships: prim.relationships.clone(),
         children,
@@ -253,7 +249,6 @@ fn compile_image(img: &HsdxImage, input_dir: &Path, out_dir: &Path) -> Result<Hs
         mag_filter: img.mag_filter,
         min_filter: img.min_filter,
         mipmap_filter: img.mipmap_filter,
-        name: img.name.clone(),
         srgb: img.srgb,
     })
 }
@@ -291,7 +286,6 @@ fn compile_material(m: &HsdxMaterial) -> HsdFileMaterial {
         emissive_texture: m.emissive_texture.clone(),
         metallic: m.metallic,
         metallic_roughness_texture: m.metallic_roughness_texture.clone(),
-        name: m.name.clone(),
         normal_texture: m.normal_texture.clone(),
         occlusion_texture: m.occlusion_texture.clone(),
         roughness: m.roughness,

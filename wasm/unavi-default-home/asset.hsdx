@@ -1,6 +1,19 @@
 [
     (
-        id: "ground_tex",
+        attributes: (
+            asset: "../unavi-gate/asset.hsdx",
+            collider: None,
+            image: None,
+            material: None,
+            name: "gate",
+            rigid_body: None,
+            script: None,
+            xform: None,
+        ),
+        relationships: {},
+        children: [],
+    ),
+    (
         attributes: (
             asset: None,
             collider: None,
@@ -12,11 +25,10 @@
                 mag_filter: 1,
                 min_filter: 1,
                 mipmap_filter: None,
-                name: None,
                 srgb: true,
             ),
             material: None,
-            name: None,
+            name: "ground_tex",
             rigid_body: None,
             script: None,
             xform: None,
@@ -25,7 +37,6 @@
         children: [],
     ),
     (
-        id: "ground",
         attributes: (
             asset: None,
             collider: None,
@@ -45,12 +56,11 @@
                 emissive_texture: None,
                 metallic: None,
                 metallic_roughness_texture: None,
-                name: "Ground Material",
                 normal_texture: None,
                 occlusion_texture: None,
                 roughness: 0.9,
             ),
-            name: None,
+            name: "ground",
             rigid_body: None,
             script: None,
             xform: None,
@@ -61,7 +71,6 @@
         children: [],
     ),
     (
-        id: None,
         attributes: (
             asset: None,
             collider: None,
@@ -75,22 +84,6 @@
         relationships: {
             "material": "ground",
         },
-        children: [
-            (
-                id: None,
-                attributes: (
-                    asset: "../unavi-gate/asset.hsdx",
-                    collider: None,
-                    image: None,
-                    material: None,
-                    name: None,
-                    rigid_body: None,
-                    script: None,
-                    xform: None,
-                ),
-                relationships: {},
-                children: [],
-            ),
-        ],
+        children: [],
     ),
 ]

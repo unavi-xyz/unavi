@@ -1,6 +1,5 @@
 [
     (
-        id: None,
         attributes: (
             asset: None,
             collider: None,
@@ -14,7 +13,6 @@
         relationships: {},
         children: [
             (
-                id: None,
                 attributes: (
                     asset: "../unavi-beacon/asset.hsdx",
                     collider: None,

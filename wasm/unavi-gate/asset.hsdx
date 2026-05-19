@@ -1,6 +1,5 @@
 [
     (
-        id: None,
         attributes: (
             asset: None,
             collider: None,

@@ -9,12 +9,12 @@ use crate::runtime::{
         registry::event::SenderScope,
         wired::{
             event::{EventFilter, EventScope},
-            scene::node::NodeRes,
+            scene::prim::PrimRes,
         },
     },
 };
 
-use super::scene::{node::NodeHandle, util::opt_rep};
+use super::scene::{prim::PrimHandle, util::opt_rep};
 
 fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
     let obj = js_sys::Object::new();
@@ -28,7 +28,7 @@ fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
                 .try_lock()
                 .ok()
                 .map_or(u32::MAX, |mut scene| {
-                    scene.nodes.insert(NodeRes {
+                    scene.prims.insert(PrimRes {
                         doc: Arc::clone(&api.doc),
                         doc_id: node.doc,
                         id: node.node,
@@ -40,7 +40,7 @@ fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
             js_sys::Reflect::set(
                 &val,
                 &"node".into(),
-                &JsValue::from(NodeHandle::new(node_rep, Arc::clone(api))),
+                &JsValue::from(PrimHandle::new(node_rep, Arc::clone(api))),
             )
             .ok();
             js_sys::Reflect::set(&obj, &"tag".into(), &"spatial".into()).ok();

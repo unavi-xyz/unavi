@@ -89,8 +89,8 @@ fn create_prims<'a>(
 ) {
     for prim in prims {
         let tree_id = tree.create(parent).expect("create prim");
-        if let Some(id) = &prim.id {
-            id_map.insert(id.clone(), tree_id);
+        if let Some(name) = &prim.attributes.name {
+            id_map.insert(name.clone(), tree_id);
         }
         out.push((prim, tree_id));
         create_prims(tree, TreeParentId::Node(tree_id), &prim.children, id_map, out);
@@ -99,8 +99,6 @@ fn create_prims<'a>(
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct HsdFilePrim {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
     #[serde(default)]
     pub attributes: HsdFileAttributes,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
@@ -158,8 +156,6 @@ pub struct HsdFileImage {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub mipmap_filter: Option<i64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub srgb: Option<bool>,
 }
 
@@ -183,8 +179,6 @@ pub struct HsdFileMaterial {
     pub metallic: Option<f64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub metallic_roughness_texture: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub normal_texture: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -276,7 +270,6 @@ fn image_from_file(img: &HsdFileImage) -> ImageAttr {
         mag_filter: opt_to_maybe(img.mag_filter),
         min_filter: opt_to_maybe(img.min_filter),
         mipmap_filter: opt_to_maybe(img.mipmap_filter),
-        name: opt_to_maybe(img.name.clone()),
         srgb: opt_to_maybe(img.srgb),
     }
 }
@@ -292,7 +285,6 @@ fn material_from_file(m: &HsdFileMaterial) -> MaterialAttr {
         emissive_texture: opt_to_maybe(m.emissive_texture.clone()),
         metallic: opt_to_maybe(m.metallic),
         metallic_roughness_texture: opt_to_maybe(m.metallic_roughness_texture.clone()),
-        name: opt_to_maybe(m.name.clone()),
         normal_texture: opt_to_maybe(m.normal_texture.clone()),
         occlusion_texture: opt_to_maybe(m.occlusion_texture.clone()),
         roughness: opt_to_maybe(m.roughness),

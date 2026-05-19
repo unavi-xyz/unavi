@@ -17,7 +17,6 @@ pub struct MaterialAttr {
     pub emissive_texture: MaybeMissing<String>,
     pub metallic: MaybeMissing<f64>,
     pub metallic_roughness_texture: MaybeMissing<String>,
-    pub name: MaybeMissing<String>,
     pub normal_texture: MaybeMissing<String>,
     pub occlusion_texture: MaybeMissing<String>,
     pub roughness: MaybeMissing<f64>,

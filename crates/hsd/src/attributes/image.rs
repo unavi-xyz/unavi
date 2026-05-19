@@ -12,7 +12,6 @@ pub struct ImageAttr {
     pub mag_filter: MaybeMissing<i64>,
     pub min_filter: MaybeMissing<i64>,
     pub mipmap_filter: MaybeMissing<i64>,
-    pub name: MaybeMissing<String>,
     pub srgb: MaybeMissing<bool>,
 }
 

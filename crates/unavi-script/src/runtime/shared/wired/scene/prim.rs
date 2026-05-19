@@ -6,8 +6,9 @@ use blake3::Hash;
 use hsd::{
     HSD_CONTAINER_ID,
     attributes::{
-        Attribute, attributes_map,
+        Attribute,
         asset::AssetAttr,
+        attributes_map,
         collider::ColliderAttr,
         image::ImageAttr,
         material::{ColorVec, MaterialAttr},
@@ -77,7 +78,7 @@ pub enum PrimAlphaMode {
     PreMultiplied,
 }
 
-#[derive(Clone, Copy, Default, PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub enum PrimTopology {
     PointList,
     LineList,
@@ -121,12 +122,21 @@ pub struct PrimImage {
 }
 
 pub enum PrimCollider {
-    Capsule { height: f32, radius: f32 },
+    Capsule {
+        height: f32,
+        radius: f32,
+    },
     ConvexHull([u8; 32]),
     Cuboid([f32; 3]),
-    Cylinder { height: f32, radius: f32 },
+    Cylinder {
+        height: f32,
+        radius: f32,
+    },
     Sphere(f32),
-    Trimesh { indices: [u8; 32], vertices: [u8; 32] },
+    Trimesh {
+        indices: [u8; 32],
+        vertices: [u8; 32],
+    },
 }
 
 #[derive(Default)]
@@ -139,14 +149,13 @@ pub struct PrimRigidBody {
     pub restitution: Option<f32>,
 }
 
-#[derive(Clone, Copy, Default, PartialEq)]
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
 pub enum PrimRigidBodyKind {
     #[default]
     Dynamic,
     Kinematic,
     Static,
 }
-
 
 fn get_prim(api: &Api, rep: u32) -> anyhow::Result<PrimRes> {
     api.wired_scene
@@ -207,7 +216,6 @@ fn from_maybe<T>(value: MaybeMissing<T>) -> Option<T> {
     }
 }
 
-
 pub fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
     api.wired_scene
         .try_lock()?
@@ -224,7 +232,6 @@ pub fn on_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
 pub fn id(api: &Api, rep: u32) -> anyhow::Result<String> {
     Ok(get_prim(api, rep)?.id.to_string())
 }
-
 
 pub fn parent(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
     let prim = get_prim(api, rep)?;
@@ -317,7 +324,6 @@ pub fn remove_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<
     Ok(())
 }
 
-
 pub fn name(api: &Api, rep: u32) -> anyhow::Result<Option<String>> {
     let prim = get_prim(api, rep)?;
     if prim.is_proxy {
@@ -337,7 +343,6 @@ pub fn set_name(api: &Api, rep: u32, value: Option<String>) -> anyhow::Result<()
     }
     Ok(())
 }
-
 
 pub fn asset(api: &Api, rep: u32) -> anyhow::Result<Option<Vec<u8>>> {
     let prim = get_prim(api, rep)?;
@@ -364,7 +369,6 @@ pub fn set_asset(api: &Api, rep: u32, value: Option<Vec<u8>>) -> anyhow::Result<
     }
     Ok(())
 }
-
 
 pub fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<PrimXform>> {
     let prim = get_prim(api, rep)?;
@@ -451,7 +455,6 @@ fn xform_attr_to_prim(attr: &XformAttr) -> PrimXform {
     t
 }
 
-
 pub fn mesh(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMesh>> {
     let prim = get_prim(api, rep)?;
     if prim.is_proxy {
@@ -489,7 +492,8 @@ pub async fn set_mesh_stream(
     match values {
         Some(v) => {
             let hash = super::upload_blob(f32s_to_bytes(&v)).await?;
-            attr.attributes.insert(key, ByteArray::new(*hash.as_bytes()));
+            attr.attributes
+                .insert(key, ByteArray::new(*hash.as_bytes()));
         }
         None => {
             attr.attributes.remove(&key);
@@ -526,11 +530,7 @@ pub async fn set_mesh_indices_u32(
 fn mesh_attr_to_prim(attr: MeshAttr) -> PrimMesh {
     PrimMesh {
         topology: topology_to_prim(&attr.topology),
-        attributes: attr
-            .attributes
-            .into_iter()
-            .map(|(k, v)| (k, v.0))
-            .collect(),
+        attributes: attr.attributes.into_iter().map(|(k, v)| (k, v.0)).collect(),
         indices: from_maybe(attr.indices).map(|b| b.0),
     }
 }
@@ -566,7 +566,6 @@ fn topology_from_prim(t: PrimTopology) -> Topology {
         PrimTopology::TriangleStrip => Topology::TriangleStrip,
     }
 }
-
 
 pub fn material(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMaterial>> {
     let prim = get_prim(api, rep)?;
@@ -634,7 +633,6 @@ fn prim_to_material_attr(m: PrimMaterial) -> MaterialAttr {
         emissive_texture: maybe(m.emissive_texture),
         metallic: maybe(m.metallic.map(f64::from)),
         metallic_roughness_texture: maybe(m.metallic_roughness_texture),
-        name: MaybeMissing::Missing,
         normal_texture: maybe(m.normal_texture),
         occlusion_texture: maybe(m.occlusion_texture),
         roughness: maybe(m.roughness.map(f64::from)),
@@ -659,7 +657,6 @@ fn prim_color_to_vec(c: PrimColor) -> ColorVec {
         f64::from(c.a),
     ])
 }
-
 
 pub fn image(api: &Api, rep: u32) -> anyhow::Result<Option<PrimImage>> {
     let prim = get_prim(api, rep)?;
@@ -703,11 +700,9 @@ fn prim_to_image_attr(img: PrimImage) -> ImageAttr {
         mag_filter: maybe(img.mag_filter.map(i64::from)),
         min_filter: maybe(img.min_filter.map(i64::from)),
         mipmap_filter: maybe(img.mipmap_filter.map(i64::from)),
-        name: MaybeMissing::Missing,
         srgb: maybe(img.srgb),
     }
 }
-
 
 pub fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<PrimCollider>> {
     let prim = get_prim(api, rep)?;
@@ -768,7 +763,6 @@ pub fn set_collider(api: &Api, rep: u32, value: Option<PrimCollider>) -> anyhow:
     Ok(())
 }
 
-
 pub fn rigid_body(api: &Api, rep: u32) -> anyhow::Result<Option<PrimRigidBody>> {
     let prim = get_prim(api, rep)?;
     if prim.is_proxy {
@@ -819,7 +813,6 @@ fn prim_to_rigid_body_attr(rb: PrimRigidBody) -> RigidBodyAttr {
     }
 }
 
-
 pub fn relationships(api: &Api, rep: u32) -> anyhow::Result<Vec<(String, String)>> {
     let prim = get_prim(api, rep)?;
     if prim.is_proxy {
@@ -848,9 +841,7 @@ pub fn get_relationship(api: &Api, rep: u32, key: String) -> anyhow::Result<Opti
         return Ok(None);
     };
     match rels.get(&key) {
-        Some(loro::ValueOrContainer::Value(loro::LoroValue::String(s))) => {
-            Ok(Some(s.to_string()))
-        }
+        Some(loro::ValueOrContainer::Value(loro::LoroValue::String(s))) => Ok(Some(s.to_string())),
         _ => Ok(None),
     }
 }

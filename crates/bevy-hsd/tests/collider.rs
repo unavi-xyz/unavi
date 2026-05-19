@@ -1,6 +1,8 @@
+use std::time::Duration;
+
 use avian3d::prelude::Collider;
 use bevy::prelude::*;
-use bevy_hsd::attributes::collider::HsdCollider;
+use bevy_hsd::attributes::collider::{DisabledCollider, HsdCollider};
 use bytemuck::cast_slice;
 use hsd::{
     HSD_CONTAINER_ID, PrimMeta,
@@ -28,7 +30,10 @@ fn test_collider_lifecycle(mut ctx: TestContext) {
 
     let world = ctx.app.world_mut();
     let mut q = world.query::<(&HsdCollider, &Collider)>();
-    assert!(q.iter(world).next().is_some(), "HsdCollider + Collider expected");
+    assert!(
+        q.iter(world).next().is_some(),
+        "HsdCollider + Collider expected"
+    );
 
     let attrs = attributes_map(&meta).expect("attributes map");
     attrs.delete(ColliderAttr::KEY).expect("delete");
@@ -38,9 +43,15 @@ fn test_collider_lifecycle(mut ctx: TestContext) {
 
     let world = ctx.app.world_mut();
     let mut q_marker = world.query::<&HsdCollider>();
-    assert!(q_marker.iter(world).next().is_none(), "HsdCollider should be removed");
+    assert!(
+        q_marker.iter(world).next().is_none(),
+        "HsdCollider should be removed"
+    );
     let mut q_col = world.query::<&Collider>();
-    assert!(q_col.iter(world).next().is_none(), "Collider should be removed");
+    assert!(
+        q_col.iter(world).next().is_none(),
+        "Collider should be removed"
+    );
 }
 
 #[traced_test]
@@ -58,9 +69,15 @@ fn test_collider_invalid_sphere(mut ctx: TestContext) {
 
         let world = ctx.app.world_mut();
         let mut q_marker = world.query::<&HsdCollider>();
-        assert!(q_marker.iter(world).next().is_some(), "HsdCollider marker expected even for invalid");
+        assert!(
+            q_marker.iter(world).next().is_some(),
+            "HsdCollider marker expected even for invalid"
+        );
         let mut q_col = world.query::<&Collider>();
-        assert!(q_col.iter(world).next().is_none(), "Collider should NOT be inserted for invalid sphere r={bad_r}");
+        assert!(
+            q_col.iter(world).next().is_none(),
+            "Collider should NOT be inserted for invalid sphere r={bad_r}"
+        );
 
         assert!(logs_contain("radius must be positive"));
     }
@@ -81,7 +98,10 @@ fn test_collider_invalid_cuboid(mut ctx: TestContext) {
 
         let world = ctx.app.world_mut();
         let mut q_col = world.query::<&Collider>();
-        assert!(q_col.iter(world).next().is_none(), "no Collider for invalid cuboid ({x},{y},{z})");
+        assert!(
+            q_col.iter(world).next().is_none(),
+            "no Collider for invalid cuboid ({x},{y},{z})"
+        );
 
         assert!(logs_contain("all dimensions must be positive"));
     }
@@ -114,6 +134,72 @@ fn test_collider_trimesh_blob(#[from(ctx_wds)] mut ctx: TestContext) {
     );
 
     ctx.tick_until(|world| world.query::<&Collider>().iter(world).next().is_some());
+}
+
+#[traced_test]
+#[rstest]
+fn test_collider_scale_zero_does_not_panic(mut ctx: TestContext) {
+    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
+    let root = tree.create(None).expect("create");
+    let meta = tree.get_meta(root).expect("get meta");
+
+    reconcile_collider(
+        &meta,
+        ColliderAttr::Cuboid {
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+        },
+    );
+
+    ctx.doc.commit();
+    ctx.app.update();
+
+    // Collider should be present with valid default scale.
+    let world = ctx.app.world_mut();
+    let prim_ent = world
+        .query::<(Entity, &Collider)>()
+        .iter(world)
+        .map(|(e, _)| e)
+        .next()
+        .expect("collider entity");
+
+    // Give the prim entity a Transform with zero scale.
+    world
+        .entity_mut(prim_ent)
+        .insert(Transform::from_scale(Vec3::ZERO));
+
+    ctx.app.update();
+
+    // watch_collider_scale should have removed Collider and stashed it.
+    let world = ctx.app.world_mut();
+    assert!(
+        world.entity(prim_ent).get::<Collider>().is_none(),
+        "Collider should be removed when scale is zero"
+    );
+    assert!(
+        world.entity(prim_ent).get::<DisabledCollider>().is_some(),
+        "DisabledCollider should hold the stashed collider"
+    );
+
+    // Restore a valid scale.
+    world
+        .entity_mut(prim_ent)
+        .insert(Transform::from_scale(Vec3::ONE));
+
+    ctx.app.update();
+    std::thread::sleep(Duration::from_millis(100));
+    ctx.app.update();
+
+    let world = ctx.app.world_mut();
+    assert!(
+        world.entity(prim_ent).get::<Collider>().is_some(),
+        "Collider should be restored when scale becomes valid"
+    );
+    assert!(
+        world.entity(prim_ent).get::<DisabledCollider>().is_none(),
+        "DisabledCollider should be removed after restore"
+    );
 }
 
 fn reconcile_collider(meta: &loro::LoroMap, attr: ColliderAttr) {

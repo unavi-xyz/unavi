@@ -2,7 +2,10 @@ use avian3d::prelude::{AngularDamping, Friction, LinearDamping, Mass, Restitutio
 use bevy::prelude::*;
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{Attribute, hydrate_attr, rigid_body::{RigidBodyAttr, RigidBodyKind}},
+    attributes::{
+        Attribute, hydrate_attr,
+        rigid_body::{RigidBodyAttr, RigidBodyKind},
+    },
 };
 use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 
@@ -74,10 +77,7 @@ impl AttributeParser for RigidBodyParser {
     }
 }
 
-pub fn apply_rigid_body(
-    trigger: On<ApplyEvent<RigidBodyEvent>>,
-    mut commands: Commands,
-) {
+pub fn apply_rigid_body(trigger: On<ApplyEvent<RigidBodyEvent>>, mut commands: Commands) {
     let ent = trigger.entity;
     let RigidBodyEvent::Rebuild(attr) = &trigger.value;
 

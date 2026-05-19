@@ -36,7 +36,9 @@ impl Plugin for HsdPlugin {
                     load::instance_hsd,
                 )
                     .chain(),
-            );
+            )
+            // Must run before FixedUpdate (where avian runs) so it never sees an invalid transform.
+            .add_systems(PreUpdate, attributes::collider::watch_collider_scale);
     }
 }
 

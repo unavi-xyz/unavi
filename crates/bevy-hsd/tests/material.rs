@@ -96,7 +96,6 @@ fn test_material_texture_ref(#[from(ctx_wds)] mut ctx: TestContext) {
         mag_filter: MaybeMissing::Missing,
         min_filter: MaybeMissing::Missing,
         mipmap_filter: MaybeMissing::Missing,
-        name: MaybeMissing::Missing,
         srgb: MaybeMissing::Present(true),
     };
     reconcile_prim(

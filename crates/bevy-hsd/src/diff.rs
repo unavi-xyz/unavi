@@ -9,7 +9,10 @@ use loro::{TreeDiffItem, TreeExternalDiff, TreeID, TreeParentId, ValueOrContaine
 
 use crate::{
     HsdChild, HsdPrimIndex, HsdRelationships, Prim,
-    attributes::{ApplyEvent, AttrDataEvent, PARSERS, material::{HsdMaterial, MaterialData}},
+    attributes::{
+        ApplyEvent, AttrDataEvent, PARSERS,
+        material::{HsdMaterial, MaterialData},
+    },
 };
 
 pub type DiffSender = Arc<Sender<HsdDiffEvent>>;
@@ -60,7 +63,23 @@ pub fn drain_diff_queues(
         let Ok(mut index) = indices.get_mut(doc_ent) else {
             continue;
         };
-        while let Ok(event) = queue.try_recv() {
+
+        let mut events: Vec<HsdDiffEvent> = std::iter::from_fn(|| queue.try_recv().ok()).collect();
+
+        // Process Creates first so attribute/relationship events never arrive
+        // before the prim entity exists in the index.
+        // Not sure why this isn't already the case...
+        events.sort_by_key(|e| {
+            !matches!(
+                e,
+                HsdDiffEvent::Prim(TreeDiffItem {
+                    action: TreeExternalDiff::Create { .. },
+                    ..
+                })
+            )
+        });
+
+        for event in events {
             process_event(
                 event,
                 doc_ent,
@@ -146,7 +165,14 @@ fn process_event(
                 warn!("prim not found: {prim}");
                 return;
             };
-            apply_relationship(commands, relationships, has_material_data, prim_ent, key, target);
+            apply_relationship(
+                commands,
+                relationships,
+                has_material_data,
+                prim_ent,
+                key,
+                target,
+            );
         }
     }
 }
@@ -154,22 +180,34 @@ fn process_event(
 fn dispatch_attr_data(commands: &mut Commands, prim_ent: Entity, data: AttrDataEvent) {
     match data {
         AttrDataEvent::Collider(value) => {
-            commands.entity(prim_ent).trigger(|entity| ApplyEvent { entity, value });
+            commands
+                .entity(prim_ent)
+                .trigger(|entity| ApplyEvent { entity, value });
         }
         AttrDataEvent::Image(value) => {
-            commands.entity(prim_ent).trigger(|entity| ApplyEvent { entity, value });
+            commands
+                .entity(prim_ent)
+                .trigger(|entity| ApplyEvent { entity, value });
         }
         AttrDataEvent::Material(value) => {
-            commands.entity(prim_ent).trigger(|entity| ApplyEvent { entity, value });
+            commands
+                .entity(prim_ent)
+                .trigger(|entity| ApplyEvent { entity, value });
         }
         AttrDataEvent::Mesh(value) => {
-            commands.entity(prim_ent).trigger(|entity| ApplyEvent { entity, value });
+            commands
+                .entity(prim_ent)
+                .trigger(|entity| ApplyEvent { entity, value });
         }
         AttrDataEvent::RigidBody(value) => {
-            commands.entity(prim_ent).trigger(|entity| ApplyEvent { entity, value });
+            commands
+                .entity(prim_ent)
+                .trigger(|entity| ApplyEvent { entity, value });
         }
         AttrDataEvent::Xform(value) => {
-            commands.entity(prim_ent).trigger(|entity| ApplyEvent { entity, value });
+            commands
+                .entity(prim_ent)
+                .trigger(|entity| ApplyEvent { entity, value });
         }
     }
 }

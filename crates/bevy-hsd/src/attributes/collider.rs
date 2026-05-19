@@ -1,4 +1,4 @@
-use avian3d::prelude::Collider;
+use avian3d::prelude::{Collider, Position, RigidBody, Rotation};
 use bevy::prelude::*;
 use bevy_wds::blob::{
     deps::{BlobDep, BlobDeps, BlobDepsLoaded},
@@ -125,7 +125,10 @@ pub fn apply_collider(trigger: On<ApplyEvent<ColliderEvent>>, mut commands: Comm
         ColliderAttr::ConvexHull(hash) => {
             let child = commands.spawn(ColliderBlobsOwner(prim)).id();
             let points = commands
-                .spawn((BlobDep(child), BlobRequest(blake3::Hash::from_bytes(hash.0))))
+                .spawn((
+                    BlobDep(child),
+                    BlobRequest(blake3::Hash::from_bytes(hash.0)),
+                ))
                 .id();
             commands
                 .entity(child)
@@ -296,4 +299,77 @@ fn build_trimesh(vertex_bytes: &Bytes, index_bytes: &Bytes) -> Option<Collider> 
 fn cast_to_vec3(bytes: &Bytes) -> Result<Vec<Vec3>, PodCastError> {
     let raw: &[[f32; 3]] = try_cast_slice(bytes)?;
     Ok(raw.iter().map(|&[x, y, z]| Vec3::new(x, y, z)).collect())
+}
+
+#[derive(Component)]
+pub struct DisabledCollider(pub Collider);
+
+#[derive(Component)]
+pub struct DisabledRigidBody(pub RigidBody);
+
+fn transform_is_valid(t: &Transform) -> bool {
+    let s = t.scale;
+    let r = t.rotation;
+    let tr = t.translation;
+    s.x.is_finite()
+        && s.x != 0.0
+        && s.y.is_finite()
+        && s.y != 0.0
+        && s.z.is_finite()
+        && s.z != 0.0
+        && r.x.is_finite()
+        && r.y.is_finite()
+        && r.z.is_finite()
+        && r.w.is_finite()
+        && tr.x.is_finite()
+        && tr.y.is_finite()
+        && tr.z.is_finite()
+}
+
+pub fn watch_collider_scale(
+    mut commands: Commands,
+    active_col: Query<(Entity, &Collider, &Transform), Without<DisabledCollider>>,
+    parked_col: Query<(Entity, &DisabledCollider, &Transform)>,
+    active_rb: Query<(Entity, &RigidBody, &Transform), Without<DisabledRigidBody>>,
+    parked_rb: Query<(Entity, &DisabledRigidBody, &Transform)>,
+) {
+    for (entity, collider, transform) in &active_col {
+        if !transform_is_valid(transform) {
+            let saved = collider.clone();
+            commands
+                .entity(entity)
+                .remove::<Collider>()
+                .insert(DisabledCollider(saved));
+        }
+    }
+    for (entity, disabled, transform) in &parked_col {
+        if transform_is_valid(transform) {
+            let restored = disabled.0.clone();
+            commands
+                .entity(entity)
+                .remove::<DisabledCollider>()
+                .insert(restored);
+        }
+    }
+    for (entity, rb, transform) in &active_rb {
+        if !transform_is_valid(transform) {
+            let saved = *rb;
+            // Remove Position and Rotation too — avian's NaN check scans those
+            // even after RigidBody is gone, and they may already hold NaN values
+            // synced from the bad transform in a previous PostUpdate.
+            commands
+                .entity(entity)
+                .remove::<(RigidBody, Position, Rotation)>()
+                .insert(DisabledRigidBody(saved));
+        }
+    }
+    for (entity, disabled, transform) in &parked_rb {
+        if transform_is_valid(transform) {
+            let restored = disabled.0;
+            commands
+                .entity(entity)
+                .remove::<DisabledRigidBody>()
+                .insert(restored);
+        }
+    }
 }

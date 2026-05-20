@@ -372,8 +372,6 @@ pub fn set_asset(api: &Api, rep: u32, value: Option<Vec<u8>>) -> anyhow::Result<
 
 pub fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<PrimXform>> {
     let prim = get_prim(api, rep)?;
-    // Proxy prims expose their globally-snapshotted transform via global_xform;
-    // for `xform()` we mirror the registry's local snapshot.
     let local = NODE_TRANSFORM_REGISTRY
         .read()
         .get(&AbsoluteNodeId {

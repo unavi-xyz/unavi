@@ -95,33 +95,26 @@ impl AttributeParser for ColliderParser {
     }
 }
 
-pub fn apply_collider(trigger: On<ApplyEvent<ColliderEvent>>, mut commands: Commands) {
+pub fn apply_collider(
+    trigger: On<ApplyEvent<ColliderEvent>>,
+    transforms: Query<&GlobalTransform>,
+    mut commands: Commands,
+) {
     let prim = trigger.entity;
     let ColliderEvent::Rebuild(attr) = &trigger.value;
 
     commands.entity(prim).remove::<ColliderBlobsChild>();
 
-    match attr {
-        ColliderAttr::Sphere(r) => {
-            if let Some(c) = build_sphere(*r) {
-                commands.entity(prim).insert(c);
-            }
-        }
-        ColliderAttr::Capsule { height, radius } => {
-            if let Some(c) = build_capsule(*height, *radius) {
-                commands.entity(prim).insert(c);
-            }
-        }
-        ColliderAttr::Cuboid { x, y, z } => {
-            if let Some(c) = build_cuboid(*x, *y, *z) {
-                commands.entity(prim).insert(c);
-            }
-        }
-        ColliderAttr::Cylinder { height, radius } => {
-            if let Some(c) = build_cylinder(*height, *radius) {
-                commands.entity(prim).insert(c);
-            }
-        }
+    let transform_valid = transforms
+        .get(prim)
+        .map(global_transform_is_valid)
+        .unwrap_or(true);
+
+    let collider = match attr {
+        ColliderAttr::Sphere(r) => build_sphere(*r),
+        ColliderAttr::Capsule { height, radius } => build_capsule(*height, *radius),
+        ColliderAttr::Cuboid { x, y, z } => build_cuboid(*x, *y, *z),
+        ColliderAttr::Cylinder { height, radius } => build_cylinder(*height, *radius),
         ColliderAttr::ConvexHull(hash) => {
             let child = commands.spawn(ColliderBlobsOwner(prim)).id();
             let points = commands
@@ -133,6 +126,7 @@ pub fn apply_collider(trigger: On<ApplyEvent<ColliderEvent>>, mut commands: Comm
             commands
                 .entity(child)
                 .insert(ColliderBlobs(ColliderBlobKind::ConvexHull { points }));
+            return;
         }
         ColliderAttr::Trimesh { vertices, indices } => {
             let child = commands.spawn(ColliderBlobsOwner(prim)).id();
@@ -154,6 +148,15 @@ pub fn apply_collider(trigger: On<ApplyEvent<ColliderEvent>>, mut commands: Comm
                     vertices: vertex_ent,
                     indices: index_ent,
                 }));
+            return;
+        }
+    };
+
+    if let Some(c) = collider {
+        if transform_valid {
+            commands.entity(prim).insert(c);
+        } else {
+            commands.entity(prim).insert(DisabledCollider(c));
         }
     }
 }
@@ -162,6 +165,7 @@ pub fn on_collider_blobs_loaded(
     trigger: On<Add, BlobDepsLoaded>,
     collider_blobs: Query<(&ColliderBlobs, &ColliderBlobsOwner)>,
     mut blob_responses: Query<&mut BlobResponse>,
+    transforms: Query<&GlobalTransform>,
     mut commands: Commands,
 ) {
     let child = trigger.entity;
@@ -195,7 +199,12 @@ pub fn on_collider_blobs_loaded(
     };
 
     if let Some(c) = collider {
-        commands.entity(prim).insert(c);
+        let transform_valid = transforms.get(prim).map(global_transform_is_valid).unwrap_or(true);
+        if transform_valid {
+            commands.entity(prim).insert(c);
+        } else {
+            commands.entity(prim).insert(DisabledCollider(c));
+        }
     }
 
     commands.entity(child).try_despawn();
@@ -307,10 +316,8 @@ pub struct DisabledCollider(pub Collider);
 #[derive(Component)]
 pub struct DisabledRigidBody(pub RigidBody);
 
-fn transform_is_valid(t: &Transform) -> bool {
-    let s = t.scale;
-    let r = t.rotation;
-    let tr = t.translation;
+fn global_transform_is_valid(t: &GlobalTransform) -> bool {
+    let (s, r, tr) = t.to_scale_rotation_translation();
     s.x.is_finite()
         && s.x != 0.0
         && s.y.is_finite()
@@ -328,13 +335,13 @@ fn transform_is_valid(t: &Transform) -> bool {
 
 pub fn watch_collider_scale(
     mut commands: Commands,
-    active_col: Query<(Entity, &Collider, &Transform), Without<DisabledCollider>>,
-    parked_col: Query<(Entity, &DisabledCollider, &Transform)>,
-    active_rb: Query<(Entity, &RigidBody, &Transform), Without<DisabledRigidBody>>,
-    parked_rb: Query<(Entity, &DisabledRigidBody, &Transform)>,
+    active_col: Query<(Entity, &Collider, &GlobalTransform), Without<DisabledCollider>>,
+    parked_col: Query<(Entity, &DisabledCollider, &GlobalTransform)>,
+    active_rb: Query<(Entity, &RigidBody, &GlobalTransform), Without<DisabledRigidBody>>,
+    parked_rb: Query<(Entity, &DisabledRigidBody, &GlobalTransform)>,
 ) {
     for (entity, collider, transform) in &active_col {
-        if !transform_is_valid(transform) {
+        if !global_transform_is_valid(transform) {
             let saved = collider.clone();
             commands
                 .entity(entity)
@@ -343,7 +350,7 @@ pub fn watch_collider_scale(
         }
     }
     for (entity, disabled, transform) in &parked_col {
-        if transform_is_valid(transform) {
+        if global_transform_is_valid(transform) {
             let restored = disabled.0.clone();
             commands
                 .entity(entity)
@@ -352,11 +359,8 @@ pub fn watch_collider_scale(
         }
     }
     for (entity, rb, transform) in &active_rb {
-        if !transform_is_valid(transform) {
+        if !global_transform_is_valid(transform) {
             let saved = *rb;
-            // Remove Position and Rotation too — avian's NaN check scans those
-            // even after RigidBody is gone, and they may already hold NaN values
-            // synced from the bad transform in a previous PostUpdate.
             commands
                 .entity(entity)
                 .remove::<(RigidBody, Position, Rotation)>()
@@ -364,7 +368,7 @@ pub fn watch_collider_scale(
         }
     }
     for (entity, disabled, transform) in &parked_rb {
-        if transform_is_valid(transform) {
+        if global_transform_is_valid(transform) {
             let restored = disabled.0;
             commands
                 .entity(entity)

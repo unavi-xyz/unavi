@@ -202,6 +202,11 @@ pub fn on_mesh_blobs_loaded(
         }
     }
 
+    if !mesh.contains_attribute(Mesh::ATTRIBUTE_POSITION) {
+        commands.entity(child).try_despawn();
+        return;
+    }
+
     let handle = mesh_assets.add(mesh);
     if let Ok(mut mesh3d) = mesh3d.get_mut(prim) {
         mesh3d.0 = handle;

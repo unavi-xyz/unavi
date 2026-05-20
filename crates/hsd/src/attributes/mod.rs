@@ -11,6 +11,7 @@ pub mod mesh;
 pub mod name;
 pub mod rigid_body;
 pub mod script;
+pub mod value_array;
 pub mod xform;
 
 pub const ATTRIBUTES_KEY: &str = "attributes";

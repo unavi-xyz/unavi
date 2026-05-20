@@ -68,7 +68,6 @@ impl ScriptBehavior for Script {
         }
     }
 
-    #[expect(clippy::too_many_lines)]
     fn tick(&mut self) {
         let mut changed = false;
 
@@ -194,6 +193,10 @@ impl ScriptBehavior for Script {
                     rotation: Quat::IDENTITY,
                     scale: Vec3::splat(new_t),
                 }));
+            }
+
+            for sector in g.sectors.borrow().iter() {
+                sector.sync_remote_icon();
             }
 
             if !g.open.get() && new_t > 0.0 {

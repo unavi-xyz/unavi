@@ -7,7 +7,10 @@ use crate::{
         BG_ALPHA_BASE, ICON_R, ICON_Z_OFFSET, OUTLINE_COLOR, OUTLINE_WIDTH, OUTLINE_Z, RING_RADIUS,
         SECTOR_GAP_WORLD, SECTOR_INNER_R, SECTOR_SUBDIVISIONS,
     },
-    wired::scene::types::{AlphaMode, Document, Material, Mesh, Prim, Topology, Xform},
+    wired::scene::{
+        api::get_document,
+        types::{AlphaMode, Document, Material, Prim, Xform},
+    },
 };
 
 use wired_prelude::prelude::*;
@@ -24,7 +27,8 @@ pub struct Sector {
     pub outline_prim: Prim,
     pub raise_t: Cell<f32>,
     pub root: Prim,
-    _icon_prim: Prim,
+    icon_prim: Prim,
+    remote_icon: Option<Prim>,
 }
 
 impl Sector {
@@ -32,6 +36,20 @@ impl Sector {
         let mut mat = self.bg_material.borrow_mut();
         mat.base_color = Some(color);
         self.bg_prim.set_material(Some(&mat));
+    }
+
+    /// Mirror the local icon prim's global transform onto the remote prim so
+    /// the module's own icon appears at the correct world-space position.
+    pub fn sync_remote_icon(&self) {
+        let Some(remote) = &self.remote_icon else {
+            return;
+        };
+        let g = self.icon_prim.global_xform();
+        remote.set_xform(Some(Xform {
+            translation: g.translation,
+            rotation: g.rotation,
+            scale: g.scale,
+        }));
     }
 }
 
@@ -97,9 +115,6 @@ fn make_sector(doc: &Document, i: usize, n: usize, module: &ModuleRef, color: Co
     outline.set_material(Some(&outline_mat));
     outline.set_xform(Some(scale(Vec3::ZERO)));
 
-    // Icon: placeholder prim. Cross-document mesh streams can't be copied
-    // from the guest now that meshes are blob-id records — the icon position
-    // is preserved but the visible mesh comes from a downstream feature.
     let ca = i as f32 * 2.0 * PI / n as f32;
     let icon = doc.create_prim();
     icon.set_xform(Some(translation(Vec3::new(
@@ -107,9 +122,11 @@ fn make_sector(doc: &Document, i: usize, n: usize, module: &ModuleRef, color: Co
         ICON_R * ca.sin(),
         ICON_Z_OFFSET,
     ))));
-    if let Some(icon_prim_id) = &module.icon_prim_id {
-        icon.set_relationship("source", Some(icon_prim_id.as_str()));
-    }
+
+    let remote_icon = module.icon_prim_id.as_deref().and_then(|prim_id| {
+        let remote_doc = get_document(&module.doc_id)?;
+        remote_doc.get_prim(prim_id)
+    });
 
     let root = doc.create_prim();
     root.add_child(&bg);
@@ -126,7 +143,8 @@ fn make_sector(doc: &Document, i: usize, n: usize, module: &ModuleRef, color: Co
         outline_prim: outline,
         raise_t: Cell::new(0.0),
         root,
-        _icon_prim: icon,
+        icon_prim: icon,
+        remote_icon,
     }
 }
 
@@ -159,11 +177,6 @@ fn make_outline_prim(doc: &Document, i: usize, n: usize) -> Prim {
     }
 
     let prim = doc.create_prim();
-    prim.set_mesh(Some(&Mesh {
-        topology: Topology::TriangleList,
-        attributes: vec![],
-        indices: None,
-    }));
     prim.set_mesh_stream("POSITION", Some(&positions));
     prim.set_mesh_stream("NORMAL", Some(&normals));
     prim.set_mesh_indices_u32(Some(&indices));
@@ -200,11 +213,6 @@ fn make_sector_prim(doc: &Document, i: usize, n: usize) -> Prim {
     }
 
     let prim = doc.create_prim();
-    prim.set_mesh(Some(&Mesh {
-        topology: Topology::TriangleList,
-        attributes: vec![],
-        indices: None,
-    }));
     prim.set_mesh_stream("POSITION", Some(&positions));
     prim.set_mesh_stream("NORMAL", Some(&normals));
     prim.set_mesh_indices_u32(Some(&indices));

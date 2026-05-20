@@ -29,6 +29,7 @@ impl Plugin for HsdPlugin {
             .add_systems(
                 Update,
                 (
+                    commit_all_docs,
                     diff::drain_diff_queues,
                     attributes::material::propagate_material_relationship,
                     attributes::material::propagate_image_to_material,
@@ -37,7 +38,6 @@ impl Plugin for HsdPlugin {
                 )
                     .chain(),
             )
-            // Must run before FixedUpdate (where avian runs) so it never sees an invalid transform.
             .add_systems(PreUpdate, attributes::collider::watch_collider_scale);
     }
 }
@@ -46,7 +46,6 @@ impl Plugin for HsdPlugin {
 #[require(HsdChildren)]
 pub struct Hsd(pub Arc<LoroDoc>);
 
-/// Persistent WDS record id for an `Hsd` doc entity.
 #[derive(Component, Debug, Clone, Copy)]
 pub struct HsdRecordId(pub blake3::Hash);
 
@@ -62,14 +61,14 @@ pub struct HsdChild(pub Entity);
 #[require(Visibility)]
 pub struct Prim(pub TreeID);
 
-/// `TreeID` → `Entity` lookup for one HSD document. Lives on the doc entity
-/// (the entity carrying `Hsd`) and is maintained by `drain_diff_queues` as
-/// prims are spawned and despawned.
 #[derive(Component, Default, Debug)]
 pub struct HsdPrimIndex(pub HashMap<TreeID, Entity>);
 
-/// Relationship targets declared on a prim, keyed by relationship name
-/// (e.g. `"material"`, `"mesh"`). Each value is a `TreeID` of another prim
-/// in the same document. Absent component = no relationships.
+fn commit_all_docs(docs: Query<&Hsd>) {
+    for doc in &docs {
+        doc.0.commit();
+    }
+}
+
 #[derive(Component, Default, Debug)]
 pub struct HsdRelationships(pub BTreeMap<String, TreeID>);

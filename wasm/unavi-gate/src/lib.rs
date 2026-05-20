@@ -32,7 +32,7 @@ const EVENT_RADIUS: f32 = PEDESTAL_THICKNESS * 2.0;
 
 const TARGET_DECAY: Duration = Duration::from_secs(10);
 
-fn static_body() -> RigidBody {
+const fn static_body() -> RigidBody {
     RigidBody {
         kind: RigidBodyKind::Static,
         angular_damping: None,

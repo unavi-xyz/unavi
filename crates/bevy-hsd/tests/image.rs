@@ -7,7 +7,7 @@ use hsd::{
     attributes::{Attribute, Attributes, attributes_map, image::ImageAttr},
 };
 use image::{ImageFormat, RgbaImage};
-use lorosurgeon::{ByteArray, MaybeMissing, Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{Reconcile, bytes::ByteArray, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -23,14 +23,14 @@ fn test_image_lifecycle(mut ctx: TestContext) {
     let meta = tree.get_meta(root).expect("get meta");
 
     let attr = ImageAttr {
-        address_mode_u: MaybeMissing::Missing,
-        address_mode_v: MaybeMissing::Missing,
-        address_mode_w: MaybeMissing::Missing,
+        address_mode_u: None,
+        address_mode_v: None,
+        address_mode_w: None,
         data: ByteArray::<32>::new([1; 32]),
-        mag_filter: MaybeMissing::Missing,
-        min_filter: MaybeMissing::Missing,
-        mipmap_filter: MaybeMissing::Missing,
-        srgb: MaybeMissing::Missing,
+        mag_filter: None,
+        min_filter: None,
+        mipmap_filter: None,
+        srgb: None,
     };
     reconcile_prim_image(&meta, attr);
 
@@ -73,14 +73,14 @@ fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
     let root = tree.create(None).expect("create");
     let meta = tree.get_meta(root).expect("get meta");
     let attr = ImageAttr {
-        address_mode_u: MaybeMissing::Present(1),
-        address_mode_v: MaybeMissing::Missing,
-        address_mode_w: MaybeMissing::Missing,
+        address_mode_u: Some(1),
+        address_mode_v: None,
+        address_mode_w: None,
         data: ByteArray::<32>::new(*data_hash.as_bytes()),
-        mag_filter: MaybeMissing::Present(1),
-        min_filter: MaybeMissing::Missing,
-        mipmap_filter: MaybeMissing::Missing,
-        srgb: MaybeMissing::Present(true),
+        mag_filter: Some(1),
+        min_filter: None,
+        mipmap_filter: None,
+        srgb: Some(true),
     };
     reconcile_prim_image(&meta, attr);
 
@@ -118,8 +118,8 @@ fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
 
 fn reconcile_prim_image(meta: &loro::LoroMap, attr: ImageAttr) {
     let prim = PrimMeta {
-        attributes: MaybeMissing::Present(Attributes {
-            image: MaybeMissing::Present(attr),
+        attributes: Some(Attributes {
+            image: Some(attr),
             ..Default::default()
         }),
         ..Default::default()

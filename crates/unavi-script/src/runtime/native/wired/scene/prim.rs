@@ -1,20 +1,20 @@
 use wasmtime::component::Resource;
 
+use crate::runtime::native::wired::scene::bindings::wired::math::types::Transform;
 use crate::runtime::{
     Runtime,
     native::wired::scene::bindings::wired::scene::types::{
-        AlphaMode, Collider, ColliderCapsule, ColliderCylinder, ColliderTrimesh, Color,
-        HostPrim, Image, Material, Mesh, RigidBody, RigidBodyKind, Topology, Xform,
+        AlphaMode, Collider, ColliderCapsule, ColliderCylinder, ColliderTrimesh, Color, HostPrim,
+        Image, Material, Mesh, RigidBody, RigidBodyKind, Topology, Xform,
     },
     shared::{
         self,
         wired::scene::prim::{
-            PrimAlphaMode, PrimCollider, PrimColor, PrimImage, PrimMaterial, PrimMesh,
-            PrimRes, PrimRigidBody, PrimRigidBodyKind, PrimTopology, PrimXform,
+            PrimAlphaMode, PrimCollider, PrimColor, PrimImage, PrimMaterial, PrimMesh, PrimRes,
+            PrimRigidBody, PrimRigidBodyKind, PrimTopology, PrimXform,
         },
     },
 };
-use crate::runtime::native::wired::scene::bindings::wired::math::types::Transform;
 
 fn to_blob_array(bytes: Vec<u8>) -> wasmtime::Result<[u8; 32]> {
     bytes
@@ -99,7 +99,7 @@ const fn color_shared(c: Color) -> PrimColor {
     }
 }
 
-fn xform_wit(x: PrimXform) -> Xform {
+const fn xform_wit(x: PrimXform) -> Xform {
     use crate::runtime::native::wired::scene::bindings::wired::math::types::{Quat, Vec3};
     Xform {
         translation: Vec3 {
@@ -121,7 +121,7 @@ fn xform_wit(x: PrimXform) -> Xform {
     }
 }
 
-fn xform_shared(x: Xform) -> PrimXform {
+const fn xform_shared(x: Xform) -> PrimXform {
     PrimXform {
         translation: [x.translation.x, x.translation.y, x.translation.z],
         rotation: [x.rotation.x, x.rotation.y, x.rotation.z, x.rotation.w],
@@ -254,7 +254,7 @@ fn collider_shared(c: Collider) -> wasmtime::Result<PrimCollider> {
     })
 }
 
-fn rigid_body_wit(rb: PrimRigidBody) -> RigidBody {
+const fn rigid_body_wit(rb: PrimRigidBody) -> RigidBody {
     RigidBody {
         kind: rigid_kind_wit(rb.kind),
         angular_damping: rb.angular_damping,
@@ -265,7 +265,7 @@ fn rigid_body_wit(rb: PrimRigidBody) -> RigidBody {
     }
 }
 
-fn rigid_body_shared(rb: RigidBody) -> PrimRigidBody {
+const fn rigid_body_shared(rb: RigidBody) -> PrimRigidBody {
     PrimRigidBody {
         kind: rigid_kind_shared(rb.kind),
         angular_damping: rb.angular_damping,
@@ -278,8 +278,7 @@ fn rigid_body_shared(rb: RigidBody) -> PrimRigidBody {
 
 impl HostPrim for Runtime {
     async fn id(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<String> {
-        shared::wired::scene::prim::id(&self.api, self_.rep())
-            .map_err(wasmtime::Error::from_anyhow)
+        shared::wired::scene::prim::id(&self.api, self_.rep()).map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn clone(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Resource<PrimRes>> {
@@ -470,9 +469,11 @@ impl HostPrim for Runtime {
         &mut self,
         self_: Resource<PrimRes>,
     ) -> wasmtime::Result<Option<RigidBody>> {
-        Ok(shared::wired::scene::prim::rigid_body(&self.api, self_.rep())
-            .map_err(wasmtime::Error::from_anyhow)?
-            .map(rigid_body_wit))
+        Ok(
+            shared::wired::scene::prim::rigid_body(&self.api, self_.rep())
+                .map_err(wasmtime::Error::from_anyhow)?
+                .map(rigid_body_wit),
+        )
     }
 
     async fn set_rigid_body(

@@ -3,7 +3,7 @@ use hsd::{
     HSD_CONTAINER_ID, PrimMeta,
     attributes::{Attribute, Attributes, attributes_map, xform::XformAttr},
 };
-use lorosurgeon::{MaybeMissing, Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{Reconcile, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -24,8 +24,8 @@ fn test_xform_lifecycle(mut ctx: TestContext) {
         translation: vec![1.0, 2.0, 3.0],
     };
     let prim = PrimMeta {
-        attributes: MaybeMissing::Present(Attributes {
-            xform: MaybeMissing::Present(attr.clone()),
+        attributes: Some(Attributes {
+            xform: Some(attr.clone()),
             ..Default::default()
         }),
         ..Default::default()

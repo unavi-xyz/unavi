@@ -105,10 +105,7 @@ pub fn apply_collider(
 
     commands.entity(prim).remove::<ColliderBlobsChild>();
 
-    let transform_valid = transforms
-        .get(prim)
-        .map(global_transform_is_valid)
-        .unwrap_or(true);
+    let transform_valid = transforms.get(prim).map_or(true, global_transform_is_valid);
 
     let collider = match attr {
         ColliderAttr::Sphere(r) => build_sphere(*r),
@@ -199,7 +196,7 @@ pub fn on_collider_blobs_loaded(
     };
 
     if let Some(c) = collider {
-        let transform_valid = transforms.get(prim).map(global_transform_is_valid).unwrap_or(true);
+        let transform_valid = transforms.get(prim).map_or(true, global_transform_is_valid);
         if transform_valid {
             commands.entity(prim).insert(c);
         } else {

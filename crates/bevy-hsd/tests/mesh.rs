@@ -6,9 +6,12 @@ use bevy::{
 };
 use hsd::{
     HSD_CONTAINER_ID, PrimMeta,
-    attributes::{Attribute, Attributes, attributes_map, mesh::{MeshAttr, Topology}},
+    attributes::{
+        Attribute, Attributes, attributes_map,
+        mesh::{MeshAttr, Topology},
+    },
 };
-use lorosurgeon::{ByteArray, MaybeMissing, Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{Reconcile, bytes::ByteArray, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -25,7 +28,7 @@ fn test_mesh_lifecycle(mut ctx: TestContext) {
 
     let attr = MeshAttr {
         attributes: BTreeMap::from([("POSITION".to_string(), ByteArray::<32>::new([1; 32]))]),
-        indices: MaybeMissing::Missing,
+        indices: None,
         topology: Topology::TriangleList,
     };
     reconcile_prim_mesh(&meta, attr);
@@ -81,7 +84,7 @@ fn test_mesh_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
                 ByteArray::<32>::new(*uv_hash.as_bytes()),
             ),
         ]),
-        indices: MaybeMissing::Present(ByteArray::<32>::new(*idx_hash.as_bytes())),
+        indices: Some(ByteArray::<32>::new(*idx_hash.as_bytes())),
         topology: Topology::TriangleList,
     };
     reconcile_prim_mesh(&meta, attr);
@@ -135,8 +138,8 @@ fn test_mesh_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
 
 fn reconcile_prim_mesh(meta: &loro::LoroMap, attr: MeshAttr) {
     let prim = PrimMeta {
-        attributes: MaybeMissing::Present(Attributes {
-            mesh: MaybeMissing::Present(attr),
+        attributes: Some(Attributes {
+            mesh: Some(attr),
             ..Default::default()
         }),
         ..Default::default()

@@ -1,5 +1,5 @@
 use loro::ValueOrContainer;
-use lorosurgeon::{Hydrate, Reconcile, Reconciler};
+use loro_surgeon::{reconcile::Reconciler, {Hydrate, Reconcile}};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use xdid::core::did::Did;
@@ -8,18 +8,18 @@ use xdid::core::did::Did;
 pub struct HydratedDid(pub Did);
 
 impl Hydrate for HydratedDid {
-    fn hydrate(source: &ValueOrContainer) -> Result<Self, lorosurgeon::HydrateError> {
+    fn hydrate(source: &ValueOrContainer) -> Result<Self, loro_surgeon::error::HydrateError> {
         let string_val = <String as Hydrate>::hydrate(source)?;
         Did::from_str(&string_val)
             .map(HydratedDid)
-            .map_err(|_| lorosurgeon::HydrateError::unexpected("valid Did", "invalid Did"))
+            .map_err(|_| loro_surgeon::error::HydrateError::unexpected("valid Did", "invalid Did"))
     }
 }
 
 impl Reconcile for HydratedDid {
-    type Key = lorosurgeon::NoKey;
+    type Key = loro_surgeon::reconcile::NoKey;
 
-    fn reconcile<R: Reconciler>(&self, r: R) -> Result<(), lorosurgeon::ReconcileError> {
+    fn reconcile<R: Reconciler>(&self, r: R) -> Result<(), loro_surgeon::error::ReconcileError> {
         let string_val = self.0.to_string();
         string_val.reconcile(r)
     }

@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use anyhow::Result;
 use loro::{LoroDoc, TreeID, TreeParentId};
-use lorosurgeon::{MaybeMissing, Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{Reconcile, reconcile::RootReconciler};
 use ron::extensions::Extensions;
 use serde::{Deserialize, Serialize};
 
@@ -37,7 +37,7 @@ impl HsdFile {
             let meta = tree.get_meta(*tree_id)?;
 
             let mut attributes = prim.attributes.clone();
-            if let MaybeMissing::Present(material) = &mut attributes.material {
+            if let Some(material) = &mut attributes.material {
                 material.resolve_refs(|name| resolve_ref(&id_map, name));
             }
 
@@ -47,12 +47,8 @@ impl HsdFile {
             }
 
             let prim_meta = PrimMeta {
-                attributes: MaybeMissing::Present(attributes),
-                relationships: if rels.is_empty() {
-                    MaybeMissing::Missing
-                } else {
-                    MaybeMissing::Present(rels)
-                },
+                attributes: Some(attributes),
+                relationships: if rels.is_empty() { None } else { Some(rels) },
             };
 
             prim_meta
@@ -80,7 +76,7 @@ fn create_prims<'a>(
 ) {
     for prim in prims {
         let tree_id = tree.create(parent).expect("create prim");
-        if let MaybeMissing::Present(name) = &prim.attributes.name {
+        if let Some(name) = &prim.attributes.name {
             id_map.insert(name.0.clone(), tree_id);
         }
         out.push((prim, tree_id));

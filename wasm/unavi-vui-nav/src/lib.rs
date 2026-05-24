@@ -10,8 +10,8 @@ use crate::{
         scene::{
             api::{load_hsd, remove_document, self_document},
             types::{
-                Collider, ColliderCylinder, Document, Material, Prim, RigidBody,
-                RigidBodyKind, Xform,
+                Collider, ColliderCylinder, Document, Material, Prim, RigidBody, RigidBodyKind,
+                Xform,
             },
         },
         wds::{
@@ -51,7 +51,7 @@ const IDENTITY_QUAT: Quat = Quat {
     w: 1.0,
 };
 
-fn xform_translation(translation: Vec3) -> Xform {
+const fn xform_translation(translation: Vec3) -> Xform {
     Xform {
         translation,
         rotation: IDENTITY_QUAT,
@@ -71,7 +71,7 @@ fn set_scale(prim: &Prim, scale: Vec3) {
     }));
 }
 
-fn material(base_color: Option<Color>, double_sided: bool) -> Material {
+const fn material(base_color: Option<Color>, double_sided: bool) -> Material {
     Material {
         alpha_cutoff: None,
         alpha_mode: None,
@@ -88,7 +88,7 @@ fn material(base_color: Option<Color>, double_sided: bool) -> Material {
     }
 }
 
-fn static_body() -> RigidBody {
+const fn static_body() -> RigidBody {
     RigidBody {
         kind: RigidBodyKind::Static,
         angular_damping: None,
@@ -99,7 +99,7 @@ fn static_body() -> RigidBody {
     }
 }
 
-fn dynamic_body() -> RigidBody {
+const fn dynamic_body() -> RigidBody {
     RigidBody {
         kind: RigidBodyKind::Dynamic,
         angular_damping: None,
@@ -237,8 +237,7 @@ impl ScriptBehavior for Script {
                         let mut pos = self
                             .root
                             .xform()
-                            .map(|x| x.translation)
-                            .unwrap_or(Vec3::splat(0.0));
+                            .map_or(Vec3::splat(0.0), |x| x.translation);
                         pos.x += BASIN_X;
                         pos.y += BASIN_Y + 1.0;
                         set_translation(&prim, pos);

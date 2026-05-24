@@ -2,7 +2,7 @@ use std::sync::{Arc, LazyLock};
 
 use bevy::{platform::collections::HashMap, prelude::*};
 use loro::{ContainerID, Index, LoroDoc, LoroError, TreeID, ValueOrContainer, event::Diff};
-use lorosurgeon::HydrateError;
+use loro_surgeon::error::HydrateError;
 use thiserror::Error;
 
 use crate::diff::DiffSender;

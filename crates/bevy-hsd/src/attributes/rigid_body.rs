@@ -12,7 +12,7 @@ use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 use crate::{
     attributes::{
         ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
-        util::{MaybeMissingExt, shallow_map_updated_keys},
+        util::shallow_map_updated_keys,
     },
     diff::HsdDiffEvent,
 };
@@ -88,7 +88,7 @@ pub fn apply_rigid_body(trigger: On<ApplyEvent<RigidBodyEvent>>, mut commands: C
     };
     commands.entity(ent).insert(rb);
 
-    if let Some(&v) = attr.friction.as_option() {
+    if let Some(&v) = attr.friction.as_ref() {
         if valid_nonneg(v) {
             commands.entity(ent).insert(Friction::new(v as f32));
         } else {
@@ -96,7 +96,7 @@ pub fn apply_rigid_body(trigger: On<ApplyEvent<RigidBodyEvent>>, mut commands: C
         }
     }
 
-    if let Some(&v) = attr.restitution.as_option() {
+    if let Some(&v) = attr.restitution.as_ref() {
         if valid_nonneg(v) {
             commands.entity(ent).insert(Restitution::new(v as f32));
         } else {
@@ -104,7 +104,7 @@ pub fn apply_rigid_body(trigger: On<ApplyEvent<RigidBodyEvent>>, mut commands: C
         }
     }
 
-    if let Some(&v) = attr.mass.as_option() {
+    if let Some(&v) = attr.mass.as_ref() {
         if valid_positive(v) {
             commands.entity(ent).insert(Mass(v as f32));
         } else {
@@ -112,7 +112,7 @@ pub fn apply_rigid_body(trigger: On<ApplyEvent<RigidBodyEvent>>, mut commands: C
         }
     }
 
-    if let Some(&v) = attr.linear_damping.as_option() {
+    if let Some(&v) = attr.linear_damping.as_ref() {
         if valid_nonneg(v) {
             commands.entity(ent).insert(LinearDamping(v as f32));
         } else {
@@ -120,7 +120,7 @@ pub fn apply_rigid_body(trigger: On<ApplyEvent<RigidBodyEvent>>, mut commands: C
         }
     }
 
-    if let Some(&v) = attr.angular_damping.as_option() {
+    if let Some(&v) = attr.angular_damping.as_ref() {
         if valid_nonneg(v) {
             commands.entity(ent).insert(AngularDamping(v as f32));
         } else {

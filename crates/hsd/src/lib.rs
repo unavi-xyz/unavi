@@ -1,8 +1,7 @@
 use std::{collections::BTreeMap, sync::LazyLock};
 
 use loro::{ContainerID, ContainerType};
-use lorosurgeon::{Hydrate, MaybeMissing, Reconcile};
-
+use loro_surgeon::{Hydrate, Reconcile};
 pub mod attributes;
 pub mod file;
 
@@ -14,6 +13,6 @@ pub static HSD_CONTAINER_ID: LazyLock<ContainerID> = LazyLock::new(|| ContainerI
 #[derive(Reconcile, Hydrate, Default)]
 #[loro(default)]
 pub struct PrimMeta {
-    pub attributes: MaybeMissing<attributes::Attributes>,
-    pub relationships: MaybeMissing<BTreeMap<String, String>>,
+    pub attributes: Option<attributes::Attributes>,
+    pub relationships: Option<BTreeMap<String, String>>,
 }

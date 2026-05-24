@@ -8,7 +8,7 @@ use hsd::{
     HSD_CONTAINER_ID, PrimMeta,
     attributes::{Attribute, Attributes, attributes_map, collider::ColliderAttr},
 };
-use lorosurgeon::{ByteArray, MaybeMissing, Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{Reconcile, bytes::ByteArray, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -204,8 +204,8 @@ fn test_collider_scale_zero_does_not_panic(mut ctx: TestContext) {
 
 fn reconcile_collider(meta: &loro::LoroMap, attr: ColliderAttr) {
     let prim = PrimMeta {
-        attributes: MaybeMissing::Present(Attributes {
-            collider: MaybeMissing::Present(attr),
+        attributes: Some(Attributes {
+            collider: Some(attr),
             ..Default::default()
         }),
         ..Default::default()

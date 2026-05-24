@@ -18,7 +18,6 @@ use hsd::{
     attributes::collider::ColliderAttr,
     file::{HsdFile, HsdFilePrim},
 };
-use lorosurgeon::MaybeMissing;
 use loro::LoroDoc;
 use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
 use wds::{Blobs, actor::Actor};
@@ -111,24 +110,24 @@ fn collect_blob_deps(file: &HsdFile, push: &mut impl FnMut([u8; 32])) {
 
 fn walk_prim(prim: &HsdFilePrim, push: &mut impl FnMut([u8; 32])) {
     let a = &prim.attributes;
-    if let MaybeMissing::Present(asset) = &a.asset {
+    if let Some(asset) = &a.asset {
         push(asset.0.0);
     }
-    if let MaybeMissing::Present(script) = &a.script {
+    if let Some(script) = &a.script {
         push(script.0.0);
     }
-    if let MaybeMissing::Present(img) = &a.image {
+    if let Some(img) = &a.image {
         push(img.data.0);
     }
-    if let MaybeMissing::Present(mesh) = &a.mesh {
+    if let Some(mesh) = &a.mesh {
         for b in mesh.attributes.values() {
             push(b.0);
         }
-        if let MaybeMissing::Present(idx) = &mesh.indices {
+        if let Some(idx) = &mesh.indices {
             push(idx.0);
         }
     }
-    if let MaybeMissing::Present(c) = &a.collider {
+    if let Some(c) = &a.collider {
         match c {
             ColliderAttr::ConvexHull(b) => push(b.0),
             ColliderAttr::Trimesh { indices, vertices } => {

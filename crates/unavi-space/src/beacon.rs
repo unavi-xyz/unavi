@@ -56,7 +56,7 @@ pub fn publish_beacons(
             f: Arc::new(move |doc| {
                 let beacon = BeaconRecord {
                     did: HydratedDid(did.clone()),
-                    endpoint: ByteArray(lorosurgeon::ByteArray(*endpoint_id.as_bytes())),
+                    endpoint: ByteArray(loro_surgeon::bytes::ByteArray(*endpoint_id.as_bytes())),
                     expires: (OffsetDateTime::now_utc() + BEACON_TTL).unix_timestamp(),
                     space: space.into(),
                 };

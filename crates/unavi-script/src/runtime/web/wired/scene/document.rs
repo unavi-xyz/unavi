@@ -64,8 +64,8 @@ impl DocHandle {
 
     #[wasm_bindgen(js_name = "createPrim")]
     pub fn create_prim(&self) -> PrimHandle {
-        let rep = shared::wired::scene::document::create_prim(&self.api, self.rep)
-            .unwrap_or(u32::MAX);
+        let rep =
+            shared::wired::scene::document::create_prim(&self.api, self.rep).unwrap_or(u32::MAX);
         PrimHandle::new(rep, Arc::clone(&self.api))
     }
 

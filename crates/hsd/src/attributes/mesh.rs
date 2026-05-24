@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
-use lorosurgeon::{ByteArray, Hydrate, MaybeMissing, Reconcile};
+use loro_surgeon::{bytes::ByteArray, {Hydrate, Reconcile}};
 use serde::{Deserialize, Serialize};
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Hydrate, Reconcile, Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Topology {
     PointList,
     LineList,
@@ -15,14 +15,14 @@ pub enum Topology {
     TriangleStrip,
 }
 
+#[serde_with::skip_serializing_none]
 #[derive(Hydrate, Reconcile, Debug, Clone, Default, Serialize, Deserialize)]
 #[loro(default)]
 #[serde(default)]
 pub struct MeshAttr {
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub attributes: BTreeMap<String, ByteArray<32>>,
-    #[serde(skip_serializing_if = "MaybeMissing::is_missing")]
-    pub indices: MaybeMissing<ByteArray<32>>,
+    pub indices: Option<ByteArray<32>>,
     pub topology: Topology,
 }
 

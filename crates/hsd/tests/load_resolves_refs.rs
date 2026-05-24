@@ -9,8 +9,7 @@ use hsd::{
     file::{HsdFile, HsdFilePrim},
 };
 use loro::{LoroDoc, TreeID};
-use lorosurgeon::{ByteArray, MaybeMissing};
-
+use loro_surgeon::bytes::ByteArray;
 fn doc_with_file(file: &HsdFile) -> LoroDoc {
     let doc = LoroDoc::new();
     file.load_into_doc(&doc).expect("load");
@@ -22,10 +21,10 @@ fn material_texture_name_is_resolved_to_tree_id() {
     let file = HsdFile(vec![
         HsdFilePrim {
             attributes: Attributes {
-                name: MaybeMissing::Present(NameAttr("tex".into())),
-                image: MaybeMissing::Present(ImageAttr {
+                name: Some(NameAttr("tex".into())),
+                image: Some(ImageAttr {
                     data: ByteArray::new([7u8; 32]),
-                    srgb: MaybeMissing::Present(true),
+                    srgb: Some(true),
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -34,11 +33,11 @@ fn material_texture_name_is_resolved_to_tree_id() {
         },
         HsdFilePrim {
             attributes: Attributes {
-                name: MaybeMissing::Present(NameAttr("mat".into())),
-                material: MaybeMissing::Present(MaterialAttr {
-                    base_color_texture: MaybeMissing::Present("tex".into()),
-                    emissive_texture: MaybeMissing::Present("tex".into()),
-                    normal_texture: MaybeMissing::Present("missing".into()),
+                name: Some(NameAttr("mat".into())),
+                material: Some(MaterialAttr {
+                    base_color_texture: Some("tex".into()),
+                    emissive_texture: Some("tex".into()),
+                    normal_texture: Some("missing".into()),
                     ..Default::default()
                 }),
                 ..Default::default()
@@ -60,15 +59,15 @@ fn material_texture_name_is_resolved_to_tree_id() {
         .expect("hydrate material");
 
     let base = match mat_attr.base_color_texture {
-        MaybeMissing::Present(s) => s,
-        MaybeMissing::Missing => panic!("base_color_texture missing"),
+        Some(s) => s,
+        None => panic!("base_color_texture missing"),
     };
     let parsed = TreeID::try_from(base.as_str()).expect("base_color_texture is a TreeID");
     assert_eq!(parsed, tex_id);
 
     let emissive = match mat_attr.emissive_texture {
-        MaybeMissing::Present(s) => s,
-        MaybeMissing::Missing => panic!("emissive_texture missing"),
+        Some(s) => s,
+        None => panic!("emissive_texture missing"),
     };
     assert_eq!(
         TreeID::try_from(emissive.as_str()).expect("emissive is a TreeID"),
@@ -76,8 +75,8 @@ fn material_texture_name_is_resolved_to_tree_id() {
     );
 
     let normal = match mat_attr.normal_texture {
-        MaybeMissing::Present(s) => s,
-        MaybeMissing::Missing => panic!("normal_texture missing"),
+        Some(s) => s,
+        None => panic!("normal_texture missing"),
     };
     assert_eq!(normal, "missing", "unknown refs pass through unchanged");
     assert!(TreeID::try_from(normal.as_str()).is_err());
@@ -88,14 +87,14 @@ fn relationship_name_is_resolved_to_tree_id() {
     let file = HsdFile(vec![
         HsdFilePrim {
             attributes: Attributes {
-                name: MaybeMissing::Present(NameAttr("target".into())),
+                name: Some(NameAttr("target".into())),
                 ..Default::default()
             },
             ..Default::default()
         },
         HsdFilePrim {
             attributes: Attributes {
-                name: MaybeMissing::Present(NameAttr("source".into())),
+                name: Some(NameAttr("source".into())),
                 ..Default::default()
             },
             relationships: BTreeMap::from([("material".to_string(), "target".to_string())]),
@@ -124,14 +123,14 @@ fn relationship_name_is_resolved_to_tree_id() {
 fn round_trip_through_ron() {
     let file = HsdFile(vec![HsdFilePrim {
         attributes: Attributes {
-            name: MaybeMissing::Present(NameAttr("tex".into())),
-            image: MaybeMissing::Present(ImageAttr {
+            name: Some(NameAttr("tex".into())),
+            image: Some(ImageAttr {
                 data: ByteArray::new([3u8; 32]),
-                srgb: MaybeMissing::Present(true),
+                srgb: Some(true),
                 ..Default::default()
             }),
-            material: MaybeMissing::Present(MaterialAttr {
-                base_color_texture: MaybeMissing::Present("tex".into()),
+            material: Some(MaterialAttr {
+                base_color_texture: Some("tex".into()),
                 ..Default::default()
             }),
             ..Default::default()

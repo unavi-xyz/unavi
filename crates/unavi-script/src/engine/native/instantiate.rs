@@ -44,7 +44,14 @@ pub fn instantiate_scripts(
     wasms: Res<Assets<Wasm>>,
     engines: Query<&WasmtimeEngine>,
     to_instantiate: Query<
-        (Entity, &Script, &ScriptEngine, NameOrEntity, &Prim, &HsdChild),
+        (
+            Entity,
+            &Script,
+            &ScriptEngine,
+            NameOrEntity,
+            &Prim,
+            &HsdChild,
+        ),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
     docs: Query<(&HsdRecordId, &Hsd, Option<&ApiPermissions>)>,

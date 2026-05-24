@@ -1,4 +1,4 @@
-use lorosurgeon::{Hydrate, Reconcile};
+use loro_surgeon::{Hydrate, Reconcile};
 use serde::{Deserialize, Serialize};
 
 use crate::attributes::Attribute;

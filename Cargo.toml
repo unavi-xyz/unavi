@@ -61,7 +61,7 @@ image                = { default-features = false, version = "0.25.10" }
 iroh                 = { default-features = false, version = "0.97.0" }
 iroh-blobs           = { default-features = false, version = "0.99.0" }
 loro                 = "1.10.8"
-lorosurgeon          = { git = "https://github.com/k-43/lorosurgeon" }
+loro-surgeon         = { path = "crates/loro-surgeon" }
 n0-future            = "0.3.2"
 parking_lot          = "0.12.5"
 postcard             = { features = ["experimental-derive", "use-std"], version = "1.1.3" }
@@ -87,9 +87,6 @@ zeroize              = "1.8.2"
 
 [patch.crates-io]
 iroh-blobs = { git = "https://github.com/k-43/iroh-blobs" }
-
-[patch."https://github.com/k-43/lorosurgeon"]
-lorosurgeon = { path = "../../k-43/lorosurgeon/lorosurgeon" }
 
 [profile.release]
 codegen-units = 1

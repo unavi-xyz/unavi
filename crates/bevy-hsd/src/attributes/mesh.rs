@@ -22,7 +22,7 @@ use smol_str::SmolStr;
 use crate::{
     attributes::{
         ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
-        util::{MaybeMissingExt, shallow_map_updated_keys},
+        util::shallow_map_updated_keys,
     },
     diff::HsdDiffEvent,
 };
@@ -123,7 +123,7 @@ pub fn apply_mesh(trigger: On<ApplyEvent<MeshEvent>>, mut commands: Commands) {
         })
         .collect();
 
-    let indices = attr.indices.as_option().map(|hash| {
+    let indices = attr.indices.as_ref().map(|hash| {
         commands
             .spawn((
                 BlobDep(child),

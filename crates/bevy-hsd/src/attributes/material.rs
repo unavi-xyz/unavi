@@ -11,9 +11,8 @@ use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 use crate::{
     HsdChild, HsdPrimIndex, HsdRelationships,
     attributes::{
-        ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
-        image::HsdImage,
-        util::{MaybeMissingExt, shallow_map_updated_keys},
+        ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError, image::HsdImage,
+        util::shallow_map_updated_keys,
     },
     diff::HsdDiffEvent,
 };
@@ -226,11 +225,11 @@ fn rebuild_material(
     };
 
     let texture_refs = MaterialTextureRefs {
-        base_color: lookup_image(attr.base_color_texture.as_option(), index),
-        emissive: lookup_image(attr.emissive_texture.as_option(), index),
-        metallic_roughness: lookup_image(attr.metallic_roughness_texture.as_option(), index),
-        normal: lookup_image(attr.normal_texture.as_option(), index),
-        occlusion: lookup_image(attr.occlusion_texture.as_option(), index),
+        base_color: lookup_image(attr.base_color_texture.as_ref(), index),
+        emissive: lookup_image(attr.emissive_texture.as_ref(), index),
+        metallic_roughness: lookup_image(attr.metallic_roughness_texture.as_ref(), index),
+        normal: lookup_image(attr.normal_texture.as_ref(), index),
+        occlusion: lookup_image(attr.occlusion_texture.as_ref(), index),
     };
 
     let mut material = StandardMaterial::default();
@@ -256,14 +255,12 @@ fn apply_attr_to_material(
     refs: &MaterialTextureRefs,
     images: &Query<&HsdImage>,
 ) {
-    material.base_color = color_from_color_vec(attr.base_color.as_option()).unwrap_or(Color::WHITE);
+    material.base_color = color_from_color_vec(attr.base_color.as_ref()).unwrap_or(Color::WHITE);
 
-    material.alpha_mode = match attr.alpha_mode.as_option().map(String::as_str) {
+    material.alpha_mode = match attr.alpha_mode.as_deref() {
         Some("Add") => AlphaMode::Add,
         Some("Blend") => AlphaMode::Blend,
-        Some("Mask") => {
-            AlphaMode::Mask(attr.alpha_cutoff.as_option().copied().unwrap_or(0.5) as f32)
-        }
+        Some("Mask") => AlphaMode::Mask(attr.alpha_cutoff.as_ref().copied().unwrap_or(0.5) as f32),
         Some("Multiply") => AlphaMode::Multiply,
         Some("Opaque") => AlphaMode::Opaque,
         Some("Premultiplied") => AlphaMode::Premultiplied,
@@ -276,16 +273,16 @@ fn apply_attr_to_material(
         }
     };
 
-    material.double_sided = attr.double_sided.as_option().copied().unwrap_or_default();
+    material.double_sided = attr.double_sided.as_ref().copied().unwrap_or_default();
     material.emissive =
-        color_from_color_vec(attr.emissive.as_option()).map_or(LinearRgba::BLACK, LinearRgba::from);
+        color_from_color_vec(attr.emissive.as_ref()).map_or(LinearRgba::BLACK, LinearRgba::from);
     material.metallic = attr
         .metallic
-        .as_option()
+        .as_ref()
         .map_or(METALLIC_DEFAULT, |v| *v as f32);
     material.perceptual_roughness = attr
         .roughness
-        .as_option()
+        .as_ref()
         .map_or(ROUGHNESS_DEFAULT, |v| *v as f32);
 
     material.base_color_texture = refs.base_color.and_then(|e| handle_for(images, e));

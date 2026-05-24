@@ -18,7 +18,7 @@ use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 use crate::{
     attributes::{
         ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
-        util::{MaybeMissingExt, shallow_map_updated_keys},
+        util::shallow_map_updated_keys,
     },
     diff::HsdDiffEvent,
 };
@@ -115,29 +115,29 @@ pub fn apply_image(trigger: On<ApplyEvent<ImageEvent>>, mut commands: Commands) 
         .id();
 
     let mut sampler = ImageSamplerDescriptor::default();
-    if let Some(&v) = attr.address_mode_u.as_option() {
+    if let Some(&v) = attr.address_mode_u.as_ref() {
         sampler.address_mode_u = address_mode(v);
     }
-    if let Some(&v) = attr.address_mode_v.as_option() {
+    if let Some(&v) = attr.address_mode_v.as_ref() {
         sampler.address_mode_v = address_mode(v);
     }
-    if let Some(&v) = attr.address_mode_w.as_option() {
+    if let Some(&v) = attr.address_mode_w.as_ref() {
         sampler.address_mode_w = address_mode(v);
     }
-    if let Some(&v) = attr.mag_filter.as_option() {
+    if let Some(&v) = attr.mag_filter.as_ref() {
         sampler.mag_filter = filter_mode(v);
     }
-    if let Some(&v) = attr.min_filter.as_option() {
+    if let Some(&v) = attr.min_filter.as_ref() {
         sampler.min_filter = filter_mode(v);
     }
-    if let Some(&v) = attr.mipmap_filter.as_option() {
+    if let Some(&v) = attr.mipmap_filter.as_ref() {
         sampler.mipmap_filter = filter_mode(v);
     }
 
     commands.entity(child).insert(ImageBlobs {
         data,
         sampler,
-        srgb: attr.srgb.as_option().copied(),
+        srgb: attr.srgb.as_ref().copied(),
     });
 }
 

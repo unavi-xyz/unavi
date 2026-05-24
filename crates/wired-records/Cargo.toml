@@ -10,10 +10,10 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow                = { optional = true, workspace = true }
-blake3.workspace      = true
-loro.workspace        = true
-lorosurgeon.workspace = true
-serde                 = { features = ["derive"], workspace = true }
-serde_with.workspace  = true
-xdid.workspace        = true
+anyhow                 = { optional = true, workspace = true }
+blake3.workspace       = true
+loro.workspace         = true
+loro-surgeon.workspace = true
+serde                  = { features = ["derive"], workspace = true }
+serde_with.workspace   = true
+xdid.workspace         = true

@@ -6828,6 +6828,7 @@ dependencies = [
  "blake3",
  "clap",
  "hsd",
+ "lorosurgeon",
  "ron",
  "serde",
  "toml 1.1.2+spec-1.1.0",
@@ -8362,7 +8363,6 @@ dependencies = [
 [[package]]
 name = "lorosurgeon"
 version = "0.2.1"
-source = "git+https://github.com/k-43/lorosurgeon#8fe7f2f57b56fae4ab3674371b16f8e112840d4e"
 dependencies = [
  "loro",
  "lorosurgeon-derive",
@@ -8375,7 +8375,6 @@ dependencies = [
 [[package]]
 name = "lorosurgeon-derive"
 version = "0.2.1"
-source = "git+https://github.com/k-43/lorosurgeon#8fe7f2f57b56fae4ab3674371b16f8e112840d4e"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -1,8 +1,9 @@
 use lorosurgeon::{ByteArray, Hydrate, Reconcile};
+use serde::{Deserialize, Serialize};
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug, Clone)]
+#[derive(Hydrate, Reconcile, Debug, Clone, Serialize, Deserialize)]
 pub enum ColliderAttr {
     Capsule { height: f64, radius: f64 },
     ConvexHull(ByteArray<32>),

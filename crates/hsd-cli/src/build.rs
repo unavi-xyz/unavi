@@ -5,12 +5,27 @@ use std::{
 
 use anyhow::{Context, Result};
 use blake3::Hash;
-use hsd::file::{
-    HsdFile, HsdFileAttributes, HsdFileCollider, HsdFileImage, HsdFileMaterial, HsdFilePrim,
-    HsdFileRigidBody, HsdFileXform,
+use hsd::{
+    attributes::{
+        Attributes,
+        asset::AssetAttr,
+        collider::ColliderAttr,
+        image::ImageAttr,
+        material::{ColorVec, MaterialAttr},
+        name::NameAttr,
+        rigid_body::{RigidBodyAttr, RigidBodyKind},
+        script::ScriptAttr,
+        xform::XformAttr,
+    },
+    file::{HsdFile, HsdFilePrim},
 };
+use lorosurgeon::{ByteArray, MaybeMissing};
 use ron::extensions::Extensions;
 use serde::{Deserialize, Serialize};
+
+fn opt_to_maybe<T>(opt: Option<T>) -> MaybeMissing<T> {
+    opt.map_or(MaybeMissing::Missing, MaybeMissing::Present)
+}
 
 use crate::{blobs::write_blob, wasm::build_wasm_for_crate};
 
@@ -24,7 +39,6 @@ fn ron_options() -> ron::Options {
         .with_default_extension(Extensions::UNWRAP_NEWTYPES)
 }
 
-/// Top-level `.hsdx` file: a list of root-level prims.
 #[derive(Serialize, Deserialize, Default)]
 pub struct Hsdx(pub Vec<HsdxPrim>);
 
@@ -49,14 +63,12 @@ pub struct HsdxPrim {
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxAttributes {
-    /// Relative path to another `.hsdx` file.
     pub asset: Option<String>,
     pub collider: Option<HsdxCollider>,
     pub image: Option<HsdxImage>,
     pub material: Option<HsdxMaterial>,
     pub name: Option<String>,
     pub rigid_body: Option<HsdxRigidBody>,
-    /// Relative path to a `Cargo.toml`; the crate is compiled to WASM.
     pub script: Option<String>,
     pub xform: Option<HsdxXform>,
 }
@@ -74,7 +86,6 @@ pub enum HsdxCollider {
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxImage {
-    /// Relative path to an image file.
     pub data: String,
     pub address_mode_u: Option<i64>,
     pub address_mode_v: Option<i64>,
@@ -180,7 +191,7 @@ fn compile_attrs<S: std::hash::BuildHasher>(
     input_dir: &Path,
     out_dir: &Path,
     built: &mut HashMap<String, Hash, S>,
-) -> Result<HsdFileAttributes> {
+) -> Result<Attributes> {
     let asset = attrs
         .asset
         .as_deref()
@@ -199,16 +210,16 @@ fn compile_attrs<S: std::hash::BuildHasher>(
         .map(|img| compile_image(img, input_dir, out_dir))
         .transpose()?;
 
-    Ok(HsdFileAttributes {
-        asset,
-        collider: attrs.collider.as_ref().map(compile_collider),
-        image,
-        material: attrs.material.as_ref().map(compile_material),
-        mesh: None,
-        name: attrs.name.clone(),
-        rigid_body: attrs.rigid_body.as_ref().map(compile_rigid_body),
-        script,
-        xform: attrs.xform.as_ref().map(compile_xform),
+    Ok(Attributes {
+        asset: opt_to_maybe(asset.map(|h| AssetAttr(ByteArray::new(h)))),
+        collider: opt_to_maybe(attrs.collider.as_ref().map(compile_collider)),
+        image: opt_to_maybe(image),
+        material: opt_to_maybe(attrs.material.as_ref().map(compile_material)),
+        mesh: MaybeMissing::Missing,
+        name: opt_to_maybe(attrs.name.clone().map(NameAttr)),
+        rigid_body: opt_to_maybe(attrs.rigid_body.as_ref().map(compile_rigid_body)),
+        script: opt_to_maybe(script.map(|h| ScriptAttr(ByteArray::new(h)))),
+        xform: opt_to_maybe(attrs.xform.as_ref().map(compile_xform)),
     })
 }
 
@@ -237,78 +248,89 @@ fn compile_script<S: std::hash::BuildHasher>(
     Ok(*hash.as_bytes())
 }
 
-fn compile_image(img: &HsdxImage, input_dir: &Path, out_dir: &Path) -> Result<HsdFileImage> {
+fn compile_image(img: &HsdxImage, input_dir: &Path, out_dir: &Path) -> Result<ImageAttr> {
     let abs = resolve(input_dir, &img.data)?;
     let bytes = std::fs::read(&abs).with_context(|| format!("reading image {}", abs.display()))?;
     let hash = write_blob(out_dir, &bytes)?;
-    Ok(HsdFileImage {
-        data: *hash.as_bytes(),
-        address_mode_u: img.address_mode_u,
-        address_mode_v: img.address_mode_v,
-        address_mode_w: img.address_mode_w,
-        mag_filter: img.mag_filter,
-        min_filter: img.min_filter,
-        mipmap_filter: img.mipmap_filter,
-        srgb: img.srgb,
+    Ok(ImageAttr {
+        data: ByteArray::new(*hash.as_bytes()),
+        address_mode_u: opt_to_maybe(img.address_mode_u),
+        address_mode_v: opt_to_maybe(img.address_mode_v),
+        address_mode_w: opt_to_maybe(img.address_mode_w),
+        mag_filter: opt_to_maybe(img.mag_filter),
+        min_filter: opt_to_maybe(img.min_filter),
+        mipmap_filter: opt_to_maybe(img.mipmap_filter),
+        srgb: opt_to_maybe(img.srgb),
     })
 }
 
-fn compile_collider(c: &HsdxCollider) -> HsdFileCollider {
+fn compile_collider(c: &HsdxCollider) -> ColliderAttr {
     match c {
-        HsdxCollider::Capsule { height, radius } => HsdFileCollider::Capsule {
+        HsdxCollider::Capsule { height, radius } => ColliderAttr::Capsule {
             height: *height,
             radius: *radius,
         },
         HsdxCollider::ConvexHull(_) | HsdxCollider::Trimesh { .. } => {
             unimplemented!("blob colliders are not supported in .hsdx source files")
         }
-        HsdxCollider::Cuboid { x, y, z } => HsdFileCollider::Cuboid {
+        HsdxCollider::Cuboid { x, y, z } => ColliderAttr::Cuboid {
             x: *x,
             y: *y,
             z: *z,
         },
-        HsdxCollider::Cylinder { height, radius } => HsdFileCollider::Cylinder {
+        HsdxCollider::Cylinder { height, radius } => ColliderAttr::Cylinder {
             height: *height,
             radius: *radius,
         },
-        HsdxCollider::Sphere(r) => HsdFileCollider::Sphere(*r),
+        HsdxCollider::Sphere(r) => ColliderAttr::Sphere(*r),
     }
 }
 
-fn compile_material(m: &HsdxMaterial) -> HsdFileMaterial {
-    HsdFileMaterial {
-        alpha_cutoff: m.alpha_cutoff,
-        alpha_mode: m.alpha_mode.clone(),
-        base_color: m.base_color.clone(),
-        base_color_texture: m.base_color_texture.clone(),
-        double_sided: m.double_sided,
-        emissive: m.emissive.clone(),
-        emissive_texture: m.emissive_texture.clone(),
-        metallic: m.metallic,
-        metallic_roughness_texture: m.metallic_roughness_texture.clone(),
-        normal_texture: m.normal_texture.clone(),
-        occlusion_texture: m.occlusion_texture.clone(),
-        roughness: m.roughness,
+fn compile_material(m: &HsdxMaterial) -> MaterialAttr {
+    MaterialAttr {
+        alpha_cutoff: opt_to_maybe(m.alpha_cutoff),
+        alpha_mode: opt_to_maybe(m.alpha_mode.clone()),
+        base_color: opt_to_maybe(m.base_color.clone().map(ColorVec)),
+        base_color_texture: opt_to_maybe(m.base_color_texture.clone()),
+        double_sided: opt_to_maybe(m.double_sided),
+        emissive: opt_to_maybe(m.emissive.clone().map(ColorVec)),
+        emissive_texture: opt_to_maybe(m.emissive_texture.clone()),
+        metallic: opt_to_maybe(m.metallic),
+        metallic_roughness_texture: opt_to_maybe(m.metallic_roughness_texture.clone()),
+        normal_texture: opt_to_maybe(m.normal_texture.clone()),
+        occlusion_texture: opt_to_maybe(m.occlusion_texture.clone()),
+        roughness: opt_to_maybe(m.roughness),
     }
 }
 
-fn compile_rigid_body(rb: &HsdxRigidBody) -> HsdFileRigidBody {
-    HsdFileRigidBody {
-        kind: rb.kind.clone(),
-        angular_damping: rb.angular_damping,
-        friction: rb.friction,
-        linear_damping: rb.linear_damping,
-        mass: rb.mass,
-        restitution: rb.restitution,
+fn compile_rigid_body(rb: &HsdxRigidBody) -> RigidBodyAttr {
+    let kind = match rb.kind.as_str() {
+        "Static" => RigidBodyKind::Static,
+        "Kinematic" => RigidBodyKind::Kinematic,
+        _ => RigidBodyKind::Dynamic,
+    };
+    RigidBodyAttr {
+        kind,
+        angular_damping: opt_to_maybe(rb.angular_damping),
+        friction: opt_to_maybe(rb.friction),
+        linear_damping: opt_to_maybe(rb.linear_damping),
+        mass: opt_to_maybe(rb.mass),
+        restitution: opt_to_maybe(rb.restitution),
     }
 }
 
-fn compile_xform(x: &HsdxXform) -> HsdFileXform {
-    HsdFileXform {
-        translation: x.translation.clone(),
-        rotation: x.rotation.clone(),
-        scale: x.scale.clone(),
+fn compile_xform(x: &HsdxXform) -> XformAttr {
+    let mut out = XformAttr::default();
+    if let Some(t) = x.translation.clone() {
+        out.translation = t;
     }
+    if let Some(r) = x.rotation.clone() {
+        out.rotation = r;
+    }
+    if let Some(s) = x.scale.clone() {
+        out.scale = s;
+    }
+    out
 }
 
 fn resolve(base: &Path, rel: &str) -> Result<PathBuf> {

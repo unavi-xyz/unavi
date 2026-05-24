@@ -88,6 +88,9 @@ zeroize              = "1.8.2"
 [patch.crates-io]
 iroh-blobs = { git = "https://github.com/k-43/iroh-blobs" }
 
+[patch."https://github.com/k-43/lorosurgeon"]
+lorosurgeon = { path = "../../k-43/lorosurgeon/lorosurgeon" }
+
 [profile.release]
 codegen-units = 1
 lto           = true

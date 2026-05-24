@@ -14,7 +14,11 @@ use bevy_wds::{
     record::write::{SchemaDef, WriteRecord},
 };
 use blake3::Hash;
-use hsd::file::{HsdFile, HsdFileCollider, HsdFilePrim};
+use hsd::{
+    attributes::collider::ColliderAttr,
+    file::{HsdFile, HsdFilePrim},
+};
+use lorosurgeon::MaybeMissing;
 use loro::LoroDoc;
 use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
 use wds::{Blobs, actor::Actor};
@@ -107,29 +111,29 @@ fn collect_blob_deps(file: &HsdFile, push: &mut impl FnMut([u8; 32])) {
 
 fn walk_prim(prim: &HsdFilePrim, push: &mut impl FnMut([u8; 32])) {
     let a = &prim.attributes;
-    if let Some(b) = a.asset {
-        push(b);
+    if let MaybeMissing::Present(asset) = &a.asset {
+        push(asset.0.0);
     }
-    if let Some(b) = a.script {
-        push(b);
+    if let MaybeMissing::Present(script) = &a.script {
+        push(script.0.0);
     }
-    if let Some(img) = &a.image {
-        push(img.data);
+    if let MaybeMissing::Present(img) = &a.image {
+        push(img.data.0);
     }
-    if let Some(mesh) = &a.mesh {
+    if let MaybeMissing::Present(mesh) = &a.mesh {
         for b in mesh.attributes.values() {
-            push(*b);
+            push(b.0);
         }
-        if let Some(b) = mesh.indices {
-            push(b);
+        if let MaybeMissing::Present(idx) = &mesh.indices {
+            push(idx.0);
         }
     }
-    if let Some(c) = &a.collider {
+    if let MaybeMissing::Present(c) = &a.collider {
         match c {
-            HsdFileCollider::ConvexHull(b) => push(*b),
-            HsdFileCollider::Trimesh { indices, vertices } => {
-                push(*indices);
-                push(*vertices);
+            ColliderAttr::ConvexHull(b) => push(b.0),
+            ColliderAttr::Trimesh { indices, vertices } => {
+                push(indices.0);
+                push(vertices.0);
             }
             _ => {}
         }

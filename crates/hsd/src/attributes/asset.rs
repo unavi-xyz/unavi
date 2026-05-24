@@ -1,8 +1,10 @@
 use lorosurgeon::{ByteArray, Hydrate, HydrateError, NoKey, Reconcile, ReconcileError, Reconciler};
+use serde::{Deserialize, Serialize};
 
 use crate::attributes::Attribute;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct AssetAttr(pub ByteArray<32>);
 
 impl Hydrate for AssetAttr {

@@ -1,7 +1,5 @@
 use loro::{Container, LoroMap, ValueOrContainer};
-use lorosurgeon::{
-    Hydrate, HydrateError, MaybeMissing, Reconcile, ReconcileError, reconcile::PropReconciler,
-};
+use loro_surgeon::{error::{HydrateError, ReconcileError}, reconcile::PropReconciler, {Hydrate, Reconcile}};
 use serde::{Deserialize, Serialize};
 
 pub mod asset;
@@ -24,7 +22,7 @@ pub trait Attribute: Reconcile + Hydrate {
     /// Hydrate this attribute from the inner attributes map (i.e. the map
     /// returned by [`attributes_map`]).
     fn attr_hydrate(attrs: &LoroMap) -> Result<Self, HydrateError> {
-        lorosurgeon::hydrate_prop(attrs, Self::KEY)
+        loro_surgeon::hydrate::hydrate_prop(attrs, Self::KEY)
     }
 
     fn attr_reconcile(&self, attrs: LoroMap) -> Result<(), ReconcileError> {
@@ -33,42 +31,34 @@ pub trait Attribute: Reconcile + Hydrate {
     }
 }
 
+#[serde_with::skip_serializing_none]
 #[derive(Reconcile, Hydrate, Default, Clone, Serialize, Deserialize)]
 #[loro(default)]
 #[serde(default)]
 pub struct Attributes {
-    #[serde(skip_serializing_if = "MaybeMissing::is_missing")]
-    pub asset: MaybeMissing<asset::AssetAttr>,
-    #[serde(skip_serializing_if = "MaybeMissing::is_missing")]
-    pub collider: MaybeMissing<collider::ColliderAttr>,
-    #[serde(skip_serializing_if = "MaybeMissing::is_missing")]
-    pub image: MaybeMissing<image::ImageAttr>,
-    #[serde(skip_serializing_if = "MaybeMissing::is_missing")]
-    pub material: MaybeMissing<material::MaterialAttr>,
-    #[serde(skip_serializing_if = "MaybeMissing::is_missing")]
-    pub mesh: MaybeMissing<mesh::MeshAttr>,
-    #[serde(skip_serializing_if = "MaybeMissing::is_missing")]
-    pub name: MaybeMissing<name::NameAttr>,
-    #[serde(skip_serializing_if = "MaybeMissing::is_missing")]
-    pub rigid_body: MaybeMissing<rigid_body::RigidBodyAttr>,
-    #[serde(skip_serializing_if = "MaybeMissing::is_missing")]
-    pub script: MaybeMissing<script::ScriptAttr>,
-    #[serde(skip_serializing_if = "MaybeMissing::is_missing")]
-    pub xform: MaybeMissing<xform::XformAttr>,
+    pub asset: Option<asset::AssetAttr>,
+    pub collider: Option<collider::ColliderAttr>,
+    pub image: Option<image::ImageAttr>,
+    pub material: Option<material::MaterialAttr>,
+    pub mesh: Option<mesh::MeshAttr>,
+    pub name: Option<name::NameAttr>,
+    pub rigid_body: Option<rigid_body::RigidBodyAttr>,
+    pub script: Option<script::ScriptAttr>,
+    pub xform: Option<xform::XformAttr>,
 }
 
 impl Attributes {
     #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.asset.is_missing()
-            && self.collider.is_missing()
-            && self.image.is_missing()
-            && self.material.is_missing()
-            && self.mesh.is_missing()
-            && self.name.is_missing()
-            && self.rigid_body.is_missing()
-            && self.script.is_missing()
-            && self.xform.is_missing()
+    pub const fn is_empty(&self) -> bool {
+        self.asset.is_none()
+            && self.collider.is_none()
+            && self.image.is_none()
+            && self.material.is_none()
+            && self.mesh.is_none()
+            && self.name.is_none()
+            && self.rigid_body.is_none()
+            && self.script.is_none()
+            && self.xform.is_none()
     }
 }
 

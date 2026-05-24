@@ -42,7 +42,7 @@ pub const SECTOR_INNER_R: f32 = 0.03;
 pub const SECTOR_SUBDIVISIONS: usize = 40;
 pub const Z_OFFSET: f32 = -0.5;
 
-fn xform_full(translation: Vec3, rotation: Quat, scale: Vec3) -> Xform {
+const fn xform_full(translation: Vec3, rotation: Quat, scale: Vec3) -> Xform {
     Xform {
         translation,
         rotation,
@@ -56,11 +56,7 @@ fn xform_scale(scale: Vec3) -> Xform {
 
 fn global_transform(prim: &Prim) -> Transform {
     let t = prim.global_xform();
-    Transform {
-        translation: t.translation,
-        rotation: t.rotation,
-        scale: t.scale,
-    }
+    t
 }
 
 fn place_sector_transform(bone: &Prim) -> Transform {
@@ -187,7 +183,8 @@ impl Gauntlet {
         };
         let tr = global_transform(bone);
         let pos = tr.translation + tr.rotation * Vec3::new(0.0, 0.0, Z_OFFSET);
-        self.core.set_xform(Some(xform_full(pos, tr.rotation, Vec3::ONE)));
+        self.core
+            .set_xform(Some(xform_full(pos, tr.rotation, Vec3::ONE)));
     }
 
     pub fn open_menu(&self, open_pos: Vec3) {
@@ -198,7 +195,8 @@ impl Gauntlet {
 
         let tr = global_transform(bone);
         let translation = tr.translation + tr.rotation * Vec3::new(0.0, 0.0, Z_OFFSET);
-        self.core.set_xform(Some(xform_full(translation, tr.rotation, Vec3::ZERO)));
+        self.core
+            .set_xform(Some(xform_full(translation, tr.rotation, Vec3::ZERO)));
 
         self.open_pos.set(Some(open_pos));
         let sectors = self.sectors.borrow();

@@ -10,12 +10,12 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace      = true
-bevy.workspace        = true
-loro.workspace        = true
-lorosurgeon.workspace = true
-ron.workspace         = true
-serde                 = { features = ["derive"], workspace = true }
-serde_with.workspace  = true
-smol_str.workspace    = true
-wired-records.path    = "../wired-records"
+anyhow.workspace       = true
+bevy.workspace         = true
+loro.workspace         = true
+loro-surgeon.workspace = true
+ron.workspace          = true
+serde                  = { features = ["derive"], workspace = true }
+serde_with.workspace   = true
+smol_str.workspace     = true
+wired-records.path     = "../wired-records"

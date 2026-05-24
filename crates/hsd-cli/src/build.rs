@@ -19,12 +19,12 @@ use hsd::{
     },
     file::{HsdFile, HsdFilePrim},
 };
-use lorosurgeon::{ByteArray, MaybeMissing};
+use loro_surgeon::bytes::ByteArray;
 use ron::extensions::Extensions;
 use serde::{Deserialize, Serialize};
 
-fn opt_to_maybe<T>(opt: Option<T>) -> MaybeMissing<T> {
-    opt.map_or(MaybeMissing::Missing, MaybeMissing::Present)
+fn opt_to_maybe<T>(opt: Option<T>) -> Option<T> {
+    opt
 }
 
 use crate::{blobs::write_blob, wasm::build_wasm_for_crate};
@@ -215,7 +215,7 @@ fn compile_attrs<S: std::hash::BuildHasher>(
         collider: opt_to_maybe(attrs.collider.as_ref().map(compile_collider)),
         image: opt_to_maybe(image),
         material: opt_to_maybe(attrs.material.as_ref().map(compile_material)),
-        mesh: MaybeMissing::Missing,
+        mesh: None,
         name: opt_to_maybe(attrs.name.clone().map(NameAttr)),
         rigid_body: opt_to_maybe(attrs.rigid_body.as_ref().map(compile_rigid_body)),
         script: opt_to_maybe(script.map(|h| ScriptAttr(ByteArray::new(h)))),

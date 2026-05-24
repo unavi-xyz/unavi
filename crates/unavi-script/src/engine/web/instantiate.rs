@@ -23,7 +23,14 @@ pub struct ScriptGuest(pub Arc<ScriptInstance>);
 pub fn instantiate_scripts(
     wasms: Res<Assets<Wasm>>,
     to_instantiate: Query<
-        (Entity, &Script, &ApiPermissions, NameOrEntity, &Prim, &HsdChild),
+        (
+            Entity,
+            &Script,
+            &ApiPermissions,
+            NameOrEntity,
+            &Prim,
+            &HsdChild,
+        ),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
     docs: Query<(&HsdRecordId, &Hsd)>,

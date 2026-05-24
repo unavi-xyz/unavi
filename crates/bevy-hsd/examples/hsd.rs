@@ -20,7 +20,7 @@ use hsd::{
 };
 use iroh_blobs::store::mem::MemStore;
 use loro::LoroDoc;
-use lorosurgeon::{ByteArray, MaybeMissing, Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{Reconcile, bytes::ByteArray, reconcile::RootReconciler};
 use unavi_util::async_task::spawn_async_task;
 use wds::Blobs;
 
@@ -73,10 +73,10 @@ fn populate(doc: &LoroDoc, blobs: &Blobs) {
     reconcile_prim(
         &tree.get_meta(red).expect("red meta"),
         Attributes {
-            material: MaybeMissing::Present(MaterialAttr {
-                base_color: MaybeMissing::Present(ColorVec(vec![0.9, 0.2, 0.15, 1.0])),
-                metallic: MaybeMissing::Present(0.1),
-                roughness: MaybeMissing::Present(0.35),
+            material: Some(MaterialAttr {
+                base_color: Some(ColorVec(vec![0.9, 0.2, 0.15, 1.0])),
+                metallic: Some(0.1),
+                roughness: Some(0.35),
                 ..Default::default()
             }),
             ..Default::default()
@@ -88,10 +88,10 @@ fn populate(doc: &LoroDoc, blobs: &Blobs) {
     reconcile_prim(
         &tree.get_meta(blue).expect("blue meta"),
         Attributes {
-            material: MaybeMissing::Present(MaterialAttr {
-                base_color: MaybeMissing::Present(ColorVec(vec![0.15, 0.4, 0.95, 1.0])),
-                metallic: MaybeMissing::Present(0.8),
-                roughness: MaybeMissing::Present(0.2),
+            material: Some(MaterialAttr {
+                base_color: Some(ColorVec(vec![0.15, 0.4, 0.95, 1.0])),
+                metallic: Some(0.8),
+                roughness: Some(0.2),
                 ..Default::default()
             }),
             ..Default::default()
@@ -112,8 +112,8 @@ fn populate(doc: &LoroDoc, blobs: &Blobs) {
         reconcile_prim(
             &tree.get_meta(prim).expect("cube meta"),
             Attributes {
-                mesh: MaybeMissing::Present(mesh_attr.clone()),
-                xform: MaybeMissing::Present(XformAttr {
+                mesh: Some(mesh_attr.clone()),
+                xform: Some(XformAttr {
                     rotation: vec![0.0, 0.0, 0.0, 1.0],
                     scale: vec![1.0, 1.0, 1.0],
                     translation: offset.to_array().to_vec(),
@@ -134,7 +134,7 @@ fn build_cube_mesh_attr(blobs: &Blobs) -> MeshAttr {
     let cube = Cuboid::new(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE).mesh().build();
 
     let mut attrs = BTreeMap::new();
-    let mut indices = MaybeMissing::Missing;
+    let mut indices = None;
 
     if let Some(VertexAttributeValues::Float32x3(positions)) =
         cube.attribute(Mesh::ATTRIBUTE_POSITION)
@@ -149,7 +149,7 @@ fn build_cube_mesh_attr(blobs: &Blobs) -> MeshAttr {
         attrs.insert("UV_0".to_string(), upload(blobs, cast_slice(uvs)));
     }
     if let Some(Indices::U32(idx)) = cube.indices() {
-        indices = MaybeMissing::Present(upload(blobs, cast_slice(idx)));
+        indices = Some(upload(blobs, cast_slice(idx)));
     }
 
     MeshAttr {
@@ -175,8 +175,8 @@ fn reconcile_prim(
     relationships: Option<BTreeMap<String, String>>,
 ) {
     let prim = PrimMeta {
-        attributes: MaybeMissing::Present(attributes),
-        relationships: relationships.map_or(MaybeMissing::Missing, MaybeMissing::Present),
+        attributes: Some(attributes),
+        relationships: relationships.and_then(Some),
     };
     prim.reconcile(RootReconciler::new(meta.clone()))
         .expect("reconcile prim");

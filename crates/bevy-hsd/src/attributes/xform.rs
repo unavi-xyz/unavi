@@ -61,11 +61,12 @@ impl AttributeParser for XformParser {
                 "translation" => XformEvent::Translation(Vec3::from_slice(&attr.translation)),
                 _ => continue,
             };
-            ctx.tx.send(HsdDiffEvent::AttrData {
-                prim,
-                data: AttrDataEvent::Xform(event),
-            })
-            .map_err(|_| ParseError::SendDiff)?;
+            ctx.tx
+                .send(HsdDiffEvent::AttrData {
+                    prim,
+                    data: AttrDataEvent::Xform(event),
+                })
+                .map_err(|_| ParseError::SendDiff)?;
         }
         Ok(())
     }

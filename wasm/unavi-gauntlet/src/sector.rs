@@ -62,7 +62,7 @@ pub fn make_sectors(doc: &Document, modules: &[ModuleRef], colors: &[Color]) -> 
         .collect()
 }
 
-fn translation(translation: Vec3) -> Xform {
+const fn translation(translation: Vec3) -> Xform {
     Xform {
         translation,
         rotation: IDENTITY_QUAT,
@@ -70,7 +70,7 @@ fn translation(translation: Vec3) -> Xform {
     }
 }
 
-fn scale(scale: Vec3) -> Xform {
+const fn scale(scale: Vec3) -> Xform {
     Xform {
         translation: Vec3::ZERO,
         rotation: IDENTITY_QUAT,

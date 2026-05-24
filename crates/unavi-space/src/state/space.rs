@@ -6,7 +6,7 @@ use std::{
 use bevy::{platform::collections::HashMap, prelude::*};
 use blake3::Hash;
 use loro::{LoroDoc, Subscription};
-use lorosurgeon::{Hydrate, Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{reconcile::RootReconciler, {Hydrate, Reconcile}};
 use serde::{Deserialize, Serialize};
 use unavi_util::async_commands::AsyncCommands;
 use wired_records::byte_array::ByteArray;

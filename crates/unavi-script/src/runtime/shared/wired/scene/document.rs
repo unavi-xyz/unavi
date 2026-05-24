@@ -6,9 +6,7 @@ use loro::{LoroDoc, TreeID, TreeParentId};
 
 use crate::{
     firewall::Channel,
-    runtime::shared::{
-        Api, registry::firewall::validate_firewall, wired::scene::prim::PrimRes,
-    },
+    runtime::shared::{Api, registry::firewall::validate_firewall, wired::scene::prim::PrimRes},
 };
 
 #[derive(Clone)]

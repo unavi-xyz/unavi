@@ -12,8 +12,7 @@ use bevy_wds::{
 };
 use blake3::Hash;
 use bytes::Bytes;
-use hsd::HSD_CONTAINER_ID;
-use hsd::file::HsdFile;
+use hsd::{HSD_CONTAINER_ID, file::HsdFile};
 use loro::LoroDoc;
 use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
 use wired_schemas::SCHEMA_HSD;

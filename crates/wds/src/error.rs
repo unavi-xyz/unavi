@@ -40,9 +40,9 @@ pub enum WdsError {
     #[error("database error: {0}")]
     Database(#[from] rusqlite::Error),
     #[error("hydration error: {0}")]
-    Hydration(#[from] lorosurgeon::HydrateError),
+    Hydration(#[from] loro_surgeon::error::HydrateError),
     #[error("reconciliation error: {0}")]
-    Reconciliation(#[from] lorosurgeon::ReconcileError),
+    Reconciliation(#[from] loro_surgeon::error::ReconcileError),
     #[error("sync protocol error")]
     SyncFailed,
 

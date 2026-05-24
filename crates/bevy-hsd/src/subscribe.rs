@@ -185,7 +185,7 @@ fn prim_from_path(path: &[(loro::ContainerID, loro::Index)]) -> anyhow::Result<T
         .ok_or_else(|| anyhow::anyhow!("invalid prim index type"))
 }
 
-/// Collapse `Some(Value(Null))` to `None`. Lorosurgeon's `MaybeMissing<T>`
+/// Collapse `Some(Value(Null))` to `None`. Lorosurgeon's `Option<T>`
 /// reconciles `Missing` by writing `Null`, but for our lifecycle dispatch
 /// "null in the doc" should mean "attribute absent".
 fn normalize_value(value: Option<ValueOrContainer>) -> Option<ValueOrContainer> {

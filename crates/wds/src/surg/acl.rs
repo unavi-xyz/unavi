@@ -1,5 +1,5 @@
 use loro::LoroDoc;
-use lorosurgeon::{Hydrate, HydrateError, Reconcile, ReconcileError, reconcile::RootReconciler};
+use loro_surgeon::{error::{HydrateError, ReconcileError}, reconcile::RootReconciler, {Hydrate, Reconcile}};
 use serde::{Deserialize, Serialize};
 use wired_records::did::HydratedDid;
 use xdid::core::did::Did;

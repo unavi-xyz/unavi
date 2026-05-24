@@ -3,9 +3,12 @@ use bevy::prelude::*;
 use bevy_hsd::attributes::collider::DisabledRigidBody;
 use hsd::{
     HSD_CONTAINER_ID, PrimMeta,
-    attributes::{Attribute, Attributes, attributes_map, rigid_body::{RigidBodyAttr, RigidBodyKind}},
+    attributes::{
+        Attribute, Attributes, attributes_map,
+        rigid_body::{RigidBodyAttr, RigidBodyKind},
+    },
 };
-use lorosurgeon::{MaybeMissing, Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{Reconcile, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -20,7 +23,13 @@ fn test_rigid_body_lifecycle(mut ctx: TestContext) {
     let root = tree.create(None).expect("create");
     let meta = tree.get_meta(root).expect("get meta");
 
-    reconcile_rigid_body(&meta, RigidBodyAttr { kind: RigidBodyKind::Dynamic, ..Default::default() });
+    reconcile_rigid_body(
+        &meta,
+        RigidBodyAttr {
+            kind: RigidBodyKind::Dynamic,
+            ..Default::default()
+        },
+    );
 
     ctx.doc.commit();
     ctx.app.update();
@@ -38,7 +47,10 @@ fn test_rigid_body_lifecycle(mut ctx: TestContext) {
 
     let world = ctx.app.world_mut();
     let mut q = world.query::<&RigidBody>();
-    assert!(q.iter(world).next().is_none(), "RigidBody should be removed");
+    assert!(
+        q.iter(world).next().is_none(),
+        "RigidBody should be removed"
+    );
 }
 
 #[traced_test]
@@ -49,13 +61,19 @@ fn test_rigid_body_kinds(mut ctx: TestContext) {
     let static_prim = tree.create(None).expect("create");
     reconcile_rigid_body(
         &tree.get_meta(static_prim).expect("meta"),
-        RigidBodyAttr { kind: RigidBodyKind::Static, ..Default::default() },
+        RigidBodyAttr {
+            kind: RigidBodyKind::Static,
+            ..Default::default()
+        },
     );
 
     let kinematic_prim = tree.create(None).expect("create");
     reconcile_rigid_body(
         &tree.get_meta(kinematic_prim).expect("meta"),
-        RigidBodyAttr { kind: RigidBodyKind::Kinematic, ..Default::default() },
+        RigidBodyAttr {
+            kind: RigidBodyKind::Kinematic,
+            ..Default::default()
+        },
     );
 
     ctx.doc.commit();
@@ -66,7 +84,10 @@ fn test_rigid_body_kinds(mut ctx: TestContext) {
     let bodies: Vec<&RigidBody> = q.iter(world).collect();
     assert_eq!(bodies.len(), 2);
     assert!(bodies.iter().any(|rb| rb.is_static()), "expected Static");
-    assert!(bodies.iter().any(|rb| rb.is_kinematic()), "expected Kinematic");
+    assert!(
+        bodies.iter().any(|rb| rb.is_kinematic()),
+        "expected Kinematic"
+    );
 }
 
 #[traced_test]
@@ -80,11 +101,11 @@ fn test_rigid_body_props(mut ctx: TestContext) {
         &meta,
         RigidBodyAttr {
             kind: RigidBodyKind::Dynamic,
-            friction: MaybeMissing::Present(0.5),
-            restitution: MaybeMissing::Present(0.3),
-            mass: MaybeMissing::Present(2.0),
-            linear_damping: MaybeMissing::Present(0.1),
-            angular_damping: MaybeMissing::Present(0.2),
+            friction: Some(0.5),
+            restitution: Some(0.3),
+            mass: Some(2.0),
+            linear_damping: Some(0.1),
+            angular_damping: Some(0.2),
         },
     );
 
@@ -127,7 +148,7 @@ fn test_rigid_body_invalid_mass(mut ctx: TestContext) {
             &meta,
             RigidBodyAttr {
                 kind: RigidBodyKind::Dynamic,
-                mass: MaybeMissing::Present(bad_mass),
+                mass: Some(bad_mass),
                 ..Default::default()
             },
         );
@@ -137,9 +158,15 @@ fn test_rigid_body_invalid_mass(mut ctx: TestContext) {
 
         let world = ctx.app.world_mut();
         let mut q_mass = world.query::<&Mass>();
-        assert!(q_mass.iter(world).next().is_none(), "Mass should not be inserted for invalid value {bad_mass}");
+        assert!(
+            q_mass.iter(world).next().is_none(),
+            "Mass should not be inserted for invalid value {bad_mass}"
+        );
         let mut q_rb = world.query::<&RigidBody>();
-        assert!(q_rb.iter(world).next().is_some(), "RigidBody should still be present");
+        assert!(
+            q_rb.iter(world).next().is_some(),
+            "RigidBody should still be present"
+        );
 
         assert!(logs_contain("mass must be finite and > 0"));
     }
@@ -152,7 +179,13 @@ fn test_rigid_body_invalid_transform_does_not_panic(mut ctx: TestContext) {
     let root = tree.create(None).expect("create");
     let meta = tree.get_meta(root).expect("get meta");
 
-    reconcile_rigid_body(&meta, RigidBodyAttr { kind: RigidBodyKind::Dynamic, ..Default::default() });
+    reconcile_rigid_body(
+        &meta,
+        RigidBodyAttr {
+            kind: RigidBodyKind::Dynamic,
+            ..Default::default()
+        },
+    );
 
     ctx.doc.commit();
     ctx.app.update();
@@ -184,9 +217,7 @@ fn test_rigid_body_invalid_transform_does_not_panic(mut ctx: TestContext) {
     );
 
     // Restore valid transform.
-    world
-        .entity_mut(prim_ent)
-        .insert(Transform::IDENTITY);
+    world.entity_mut(prim_ent).insert(Transform::IDENTITY);
 
     ctx.app.update();
 
@@ -203,8 +234,8 @@ fn test_rigid_body_invalid_transform_does_not_panic(mut ctx: TestContext) {
 
 fn reconcile_rigid_body(meta: &loro::LoroMap, attr: RigidBodyAttr) {
     let prim = PrimMeta {
-        attributes: MaybeMissing::Present(Attributes {
-            rigid_body: MaybeMissing::Present(attr),
+        attributes: Some(Attributes {
+            rigid_body: Some(attr),
             ..Default::default()
         }),
         ..Default::default()

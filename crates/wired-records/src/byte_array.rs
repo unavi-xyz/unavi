@@ -1,21 +1,21 @@
 use std::fmt::Display;
 
-use lorosurgeon::{Hydrate, Reconcile};
+use loro_surgeon::{Hydrate, Reconcile};
 use serde::{Deserialize, Serialize};
 
 #[derive(Hydrate, Reconcile, Debug, Clone)]
-pub struct ByteArray<const N: usize>(pub lorosurgeon::ByteArray<N>);
+pub struct ByteArray<const N: usize>(pub loro_surgeon::bytes::ByteArray<N>);
 
 impl<const N: usize> ByteArray<N> {
     #[must_use]
-    pub fn as_bytes(&self) -> &[u8; N] {
+    pub const fn as_bytes(&self) -> &[u8; N] {
         self.0.as_bytes()
     }
 }
 
 impl<const N: usize> Default for ByteArray<N> {
     fn default() -> Self {
-        Self(lorosurgeon::ByteArray::new([0; N]))
+        Self(loro_surgeon::bytes::ByteArray::new([0; N]))
     }
 }
 
@@ -46,13 +46,13 @@ impl<'de, const N: usize> Deserialize<'de> for ByteArray<N> {
         let arr: [u8; N] = vec
             .try_into()
             .map_err(|_| serde::de::Error::custom(format!("expected {N} bytes")))?;
-        Ok(Self(lorosurgeon::ByteArray(arr)))
+        Ok(Self(loro_surgeon::bytes::ByteArray(arr)))
     }
 }
 
 impl From<blake3::Hash> for ByteArray<32> {
     fn from(value: blake3::Hash) -> Self {
-        Self(lorosurgeon::ByteArray(value.into()))
+        Self(loro_surgeon::bytes::ByteArray(value.into()))
     }
 }
 

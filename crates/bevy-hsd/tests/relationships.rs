@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use bevy::prelude::*;
 use bevy_hsd::{HsdPrimIndex, HsdRelationships};
 use hsd::{HSD_CONTAINER_ID, PrimMeta};
-use lorosurgeon::{MaybeMissing, Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{Reconcile, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -21,7 +21,7 @@ fn test_relationship_storage(mut ctx: TestContext) {
     let source_meta = tree.get_meta(source).expect("get meta");
 
     let prim = PrimMeta {
-        relationships: MaybeMissing::Present(BTreeMap::from([(
+        relationships: Some(BTreeMap::from([(
             "material".to_string(),
             target.to_string(),
         )])),

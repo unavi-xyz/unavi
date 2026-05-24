@@ -48,7 +48,7 @@ fn set_scale(prim: &Prim, scale: Vec3) {
     }));
 }
 
-fn material(base_color: Option<Color>) -> Material {
+const fn material(base_color: Option<Color>) -> Material {
     Material {
         alpha_cutoff: None,
         alpha_mode: None,
@@ -65,7 +65,7 @@ fn material(base_color: Option<Color>) -> Material {
     }
 }
 
-fn static_body() -> RigidBody {
+const fn static_body() -> RigidBody {
     RigidBody {
         kind: RigidBodyKind::Static,
         angular_damping: None,

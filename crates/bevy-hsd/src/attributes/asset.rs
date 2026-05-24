@@ -23,7 +23,9 @@ impl AttributeParser for AssetParser {
         match value {
             Some(ValueOrContainer::Value(LoroValue::Binary(bytes))) => {
                 if let Ok(arr) = <[u8; 32]>::try_from(bytes.as_slice()) {
-                    commands.entity(prim).insert(HsdAsset(blake3::Hash::from_bytes(arr)));
+                    commands
+                        .entity(prim)
+                        .insert(HsdAsset(blake3::Hash::from_bytes(arr)));
                 } else {
                     warn!("asset attribute: expected 32-byte blob id");
                 }

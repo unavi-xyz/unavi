@@ -5,15 +5,14 @@ use wasm_bindgen::{JsValue, prelude::*};
 use crate::runtime::shared::{
     self, Api,
     wired::scene::prim::{
-        PrimAlphaMode, PrimCollider, PrimColor, PrimImage, PrimMaterial, PrimMesh,
-        PrimRigidBody, PrimRigidBodyKind, PrimTopology, PrimXform,
+        PrimAlphaMode, PrimCollider, PrimColor, PrimImage, PrimMaterial, PrimMesh, PrimRigidBody,
+        PrimRigidBodyKind, PrimTopology, PrimXform,
     },
 };
 
 use super::util::{
-    bytes32_to_js, js_to_bytes32, js_to_f32s, js_to_quat, js_to_u32s, js_to_vec3,
-    obj_get, obj_get_bool, obj_get_f32, obj_get_i32, obj_get_string, obj_set, quat_to_js,
-    vec3_to_js,
+    bytes32_to_js, js_to_bytes32, js_to_f32s, js_to_quat, js_to_u32s, js_to_vec3, obj_get,
+    obj_get_bool, obj_get_f32, obj_get_i32, obj_get_string, obj_set, quat_to_js, vec3_to_js,
 };
 
 #[wasm_bindgen]
@@ -84,7 +83,9 @@ impl PrimHandle {
     }
 
     pub fn name(&self) -> Option<String> {
-        shared::wired::scene::prim::name(&self.api, self.rep).ok().flatten()
+        shared::wired::scene::prim::name(&self.api, self.rep)
+            .ok()
+            .flatten()
     }
 
     #[wasm_bindgen(js_name = "setName")]
@@ -143,14 +144,9 @@ impl PrimHandle {
 
     #[wasm_bindgen(js_name = "setMeshStream")]
     pub async fn set_mesh_stream(&self, key: String, values: JsValue) -> Result<(), String> {
-        shared::wired::scene::prim::set_mesh_stream(
-            &self.api,
-            self.rep,
-            key,
-            js_to_f32s(values),
-        )
-        .await
-        .map_err(|e| e.to_string())
+        shared::wired::scene::prim::set_mesh_stream(&self.api, self.rep, key, js_to_f32s(values))
+            .await
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "setMeshIndicesU32")]
@@ -210,7 +206,8 @@ impl PrimHandle {
     #[wasm_bindgen(js_name = "setRigidBody")]
     pub fn set_rigid_body(&self, value: JsValue) -> Result<(), String> {
         let rb = js_to_rigid_body(&value);
-        shared::wired::scene::prim::set_rigid_body(&self.api, self.rep, rb).map_err(|e| e.to_string())
+        shared::wired::scene::prim::set_rigid_body(&self.api, self.rep, rb)
+            .map_err(|e| e.to_string())
     }
 
     pub fn relationships(&self) -> js_sys::Array {
@@ -323,8 +320,12 @@ fn js_to_mesh(v: &JsValue) -> Option<PrimMesh> {
         let arr = js_sys::Array::from(&attrs_val);
         for entry in arr.iter() {
             let tup = js_sys::Array::from(&entry);
-            let Some(k) = tup.get(0).as_string() else { continue };
-            let Some(b) = js_to_bytes32(&tup.get(1)) else { continue };
+            let Some(k) = tup.get(0).as_string() else {
+                continue;
+            };
+            let Some(b) = js_to_bytes32(&tup.get(1)) else {
+                continue;
+            };
             attributes.push((k, b));
         }
     }

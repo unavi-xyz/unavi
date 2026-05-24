@@ -6,8 +6,7 @@
 //! diff subscriber sees the array mid-rewrite at every intermediate length.
 
 use loro::{LoroMap, LoroValue, ValueOrContainer};
-use lorosurgeon::{HydrateError, MapReconciler, ReconcileError};
-
+use loro_surgeon::{error::{HydrateError, ReconcileError}, reconcile::MapReconciler};
 fn hydrate_with_default(
     map: &LoroMap,
     key: &str,
@@ -27,14 +26,10 @@ fn hydrate_with_default(
     }
 }
 
-fn reconcile_atomic(
-    value: &[f32],
-    m: &mut MapReconciler,
-    key: &str,
-) -> Result<(), ReconcileError> {
+fn reconcile_atomic(value: &[f32], m: &mut MapReconciler, key: &str) -> Result<(), ReconcileError> {
     let arr: Vec<LoroValue> = value
         .iter()
-        .map(|&f| LoroValue::Double(f as f64))
+        .map(|&f| LoroValue::Double(f64::from(f)))
         .collect();
     let new_value = LoroValue::from(arr);
     if let Some(ValueOrContainer::Value(existing)) = m.map.get(key)

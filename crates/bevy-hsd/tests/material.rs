@@ -11,7 +11,7 @@ use hsd::{
     },
 };
 use image::{ImageFormat, RgbaImage};
-use lorosurgeon::{ByteArray, MaybeMissing, Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{Reconcile, bytes::ByteArray, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -27,10 +27,10 @@ fn test_material_lifecycle(mut ctx: TestContext) {
     let meta = tree.get_meta(root).expect("get meta");
 
     let attr = MaterialAttr {
-        base_color: MaybeMissing::Present(ColorVec(vec![0.5, 0.1, 0.2, 1.0])),
-        alpha_mode: MaybeMissing::Present("Blend".to_string()),
-        metallic: MaybeMissing::Present(0.7),
-        roughness: MaybeMissing::Present(0.3),
+        base_color: Some(ColorVec(vec![0.5, 0.1, 0.2, 1.0])),
+        alpha_mode: Some("Blend".to_string()),
+        metallic: Some(0.7),
+        roughness: Some(0.3),
         ..Default::default()
     };
     reconcile_prim_material(&meta, attr);
@@ -89,19 +89,19 @@ fn test_material_texture_ref(#[from(ctx_wds)] mut ctx: TestContext) {
     let image_prim = tree.create(None).expect("create image");
     let image_meta = tree.get_meta(image_prim).expect("image meta");
     let image_attr = ImageAttr {
-        address_mode_u: MaybeMissing::Missing,
-        address_mode_v: MaybeMissing::Missing,
-        address_mode_w: MaybeMissing::Missing,
+        address_mode_u: None,
+        address_mode_v: None,
+        address_mode_w: None,
         data: ByteArray::<32>::new(*blob_hash.as_bytes()),
-        mag_filter: MaybeMissing::Missing,
-        min_filter: MaybeMissing::Missing,
-        mipmap_filter: MaybeMissing::Missing,
-        srgb: MaybeMissing::Present(true),
+        mag_filter: None,
+        min_filter: None,
+        mipmap_filter: None,
+        srgb: Some(true),
     };
     reconcile_prim(
         &image_meta,
         Attributes {
-            image: MaybeMissing::Present(image_attr),
+            image: Some(image_attr),
             ..Default::default()
         },
         None,
@@ -110,13 +110,13 @@ fn test_material_texture_ref(#[from(ctx_wds)] mut ctx: TestContext) {
     let material_prim = tree.create(None).expect("create material");
     let material_meta = tree.get_meta(material_prim).expect("material meta");
     let material_attr = MaterialAttr {
-        base_color_texture: MaybeMissing::Present(image_prim.to_string()),
+        base_color_texture: Some(image_prim.to_string()),
         ..Default::default()
     };
     reconcile_prim(
         &material_meta,
         Attributes {
-            material: MaybeMissing::Present(material_attr),
+            material: Some(material_attr),
             ..Default::default()
         },
         None,
@@ -170,13 +170,13 @@ fn test_material_relationship(mut ctx: TestContext) {
     let prim_a = tree.create(None).expect("create a");
     let meta_a = tree.get_meta(prim_a).expect("meta a");
     let attr_a = MaterialAttr {
-        base_color: MaybeMissing::Present(ColorVec(vec![1.0, 0.0, 0.0, 1.0])),
+        base_color: Some(ColorVec(vec![1.0, 0.0, 0.0, 1.0])),
         ..Default::default()
     };
     reconcile_prim(
         &meta_a,
         Attributes {
-            material: MaybeMissing::Present(attr_a),
+            material: Some(attr_a),
             ..Default::default()
         },
         None,
@@ -202,8 +202,8 @@ fn test_material_relationship(mut ctx: TestContext) {
 
 fn reconcile_relationship_only(meta: &loro::LoroMap, relationships: BTreeMap<String, String>) {
     let prim = PrimMeta {
-        attributes: MaybeMissing::Missing,
-        relationships: MaybeMissing::Present(relationships),
+        attributes: None,
+        relationships: Some(relationships),
     };
     prim.reconcile(RootReconciler::new(meta.clone()))
         .expect("reconcile");
@@ -213,7 +213,7 @@ fn reconcile_prim_material(meta: &loro::LoroMap, attr: MaterialAttr) {
     reconcile_prim(
         meta,
         Attributes {
-            material: MaybeMissing::Present(attr),
+            material: Some(attr),
             ..Default::default()
         },
         None,
@@ -226,8 +226,8 @@ fn reconcile_prim(
     relationships: Option<BTreeMap<String, String>>,
 ) {
     let prim = PrimMeta {
-        attributes: MaybeMissing::Present(attributes),
-        relationships: relationships.map_or(MaybeMissing::Missing, MaybeMissing::Present),
+        attributes: Some(attributes),
+        relationships: relationships.and_then(Some),
     };
     prim.reconcile(RootReconciler::new(meta.clone()))
         .expect("reconcile");

@@ -1,5 +1,16 @@
 use std::{collections::BTreeMap, sync::Arc};
 
+use crate::{
+    firewall::Channel,
+    runtime::shared::{
+        Api,
+        registry::{
+            firewall::validate_firewall,
+            transform::{AbsoluteNodeId, NODE_TRANSFORM_REGISTRY},
+        },
+        wired::scene::util::{f32s_to_bytes, u32s_to_bytes},
+    },
+};
 use anyhow::bail;
 use bevy::math::{Quat, Vec3};
 use blake3::Hash;
@@ -20,19 +31,7 @@ use hsd::{
     },
 };
 use loro::{LoroDoc, LoroMap, TreeID, TreeParentId};
-use lorosurgeon::{ByteArray, MaybeMissing};
-
-use crate::{
-    firewall::Channel,
-    runtime::shared::{
-        Api,
-        registry::{
-            firewall::validate_firewall,
-            transform::{AbsoluteNodeId, NODE_TRANSFORM_REGISTRY},
-        },
-        wired::scene::util::{f32s_to_bytes, u32s_to_bytes},
-    },
-};
+use loro_surgeon::bytes::ByteArray;
 
 #[derive(Clone)]
 pub struct PrimRes {
@@ -205,15 +204,12 @@ fn ensure_writable(api: &Api, prim: &PrimRes) -> anyhow::Result<()> {
     validate_firewall(&api.doc_id, &prim.doc_id, Channel::SceneWrite)
 }
 
-fn maybe<T>(value: Option<T>) -> MaybeMissing<T> {
-    value.map_or(MaybeMissing::Missing, MaybeMissing::Present)
+const fn maybe<T>(value: Option<T>) -> Option<T> {
+    value
 }
 
-fn from_maybe<T>(value: MaybeMissing<T>) -> Option<T> {
-    match value {
-        MaybeMissing::Present(v) => Some(v),
-        MaybeMissing::Missing => None,
-    }
+const fn from_maybe<T>(value: Option<T>) -> Option<T> {
+    value
 }
 
 pub fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
@@ -485,7 +481,7 @@ pub async fn set_mesh_stream(
     let mut attr = read_attr::<MeshAttr>(&meta).unwrap_or_else(|| MeshAttr {
         topology: Topology::TriangleList,
         attributes: BTreeMap::new(),
-        indices: MaybeMissing::Missing,
+        indices: None,
     });
     match values {
         Some(v) => {
@@ -512,14 +508,14 @@ pub async fn set_mesh_indices_u32(
     let mut attr = read_attr::<MeshAttr>(&meta).unwrap_or_else(|| MeshAttr {
         topology: Topology::TriangleList,
         attributes: BTreeMap::new(),
-        indices: MaybeMissing::Missing,
+        indices: None,
     });
     attr.indices = match values {
         Some(v) => {
             let hash = super::upload_blob(u32s_to_bytes(&v)).await?;
-            MaybeMissing::Present(ByteArray::new(*hash.as_bytes()))
+            Some(ByteArray::new(*hash.as_bytes()))
         }
-        None => MaybeMissing::Missing,
+        None => None,
     };
     write_attr(&meta, &attr)?;
     Ok(())
@@ -545,7 +541,7 @@ fn prim_to_mesh_attr(m: PrimMesh) -> MeshAttr {
     }
 }
 
-fn topology_to_prim(t: &Topology) -> PrimTopology {
+const fn topology_to_prim(t: &Topology) -> PrimTopology {
     match t {
         Topology::PointList => PrimTopology::PointList,
         Topology::LineList => PrimTopology::LineList,
@@ -555,7 +551,7 @@ fn topology_to_prim(t: &Topology) -> PrimTopology {
     }
 }
 
-fn topology_from_prim(t: PrimTopology) -> Topology {
+const fn topology_from_prim(t: PrimTopology) -> Topology {
     match t {
         PrimTopology::PointList => Topology::PointList,
         PrimTopology::LineList => Topology::LineList,

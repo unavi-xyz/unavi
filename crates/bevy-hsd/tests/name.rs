@@ -3,7 +3,7 @@ use hsd::{
     HSD_CONTAINER_ID, PrimMeta,
     attributes::{Attribute, Attributes, attributes_map, name::NameAttr},
 };
-use lorosurgeon::{MaybeMissing, Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{Reconcile, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -20,8 +20,8 @@ fn test_name_lifecycle(mut ctx: TestContext) {
 
     let attr = NameAttr("My Node".to_string());
     let prim = PrimMeta {
-        attributes: MaybeMissing::Present(Attributes {
-            name: MaybeMissing::Present(attr.clone()),
+        attributes: Some(Attributes {
+            name: Some(attr.clone()),
             ..Default::default()
         }),
         ..Default::default()

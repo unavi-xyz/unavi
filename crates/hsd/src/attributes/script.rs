@@ -1,4 +1,4 @@
-use lorosurgeon::{ByteArray, Hydrate, HydrateError, NoKey, Reconcile, ReconcileError, Reconciler};
+use loro_surgeon::{bytes::ByteArray, error::{HydrateError, ReconcileError}, reconcile::{NoKey, Reconciler}, {Hydrate, Reconcile}};
 use serde::{Deserialize, Serialize};
 
 use crate::attributes::Attribute;

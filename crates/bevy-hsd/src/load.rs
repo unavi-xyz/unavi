@@ -1,4 +1,8 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    collections::HashSet,
+    sync::Arc,
+    time::Duration,
+};
 
 use anyhow::Context;
 use async_channel::Receiver;
@@ -55,17 +59,40 @@ impl AssetLoader for HsdLoader {
             reader.read_to_string(&mut s).await?;
             let file = Arc::new(HsdFile::from_ron(&s)?);
 
+            let parent = load_context
+                .path()
+                .path()
+                .parent()
+                .expect("asset parent dir")
+                .to_path_buf();
+
             let mut deps = HashMap::new();
-            collect_blob_deps(&file, &mut |hash| {
-                let path = load_context
-                    .path()
-                    .path()
-                    .parent()
-                    .expect("asset parent dir")
-                    .join(Hash::from_bytes(hash).to_string());
-                deps.entry(Hash::from_bytes(hash))
-                    .or_insert_with(|| load_context.load(path));
-            });
+            let mut seen_assets: HashSet<Hash> = HashSet::new();
+            let mut queue: Vec<Arc<HsdFile>> = vec![Arc::clone(&file)];
+
+            while let Some(current) = queue.pop() {
+                collect_blob_deps(&current, &mut |hash| {
+                    let h = Hash::from_bytes(hash);
+                    let path = parent.join(h.to_string());
+                    deps.entry(h).or_insert_with(|| load_context.load(path));
+                });
+
+                let mut nested = Vec::new();
+                collect_asset_deps(&current, &mut |hash| {
+                    let h = Hash::from_bytes(hash);
+                    if seen_assets.insert(h) {
+                        nested.push(h);
+                    }
+                });
+
+                for asset_hash in nested {
+                    let asset_path = parent.join(asset_hash.to_string());
+                    let bytes = load_context.read_asset_bytes(asset_path).await?;
+                    let asset_str = std::str::from_utf8(&bytes)?;
+                    let asset_file = Arc::new(HsdFile::from_ron(asset_str)?);
+                    queue.push(asset_file);
+                }
+            }
 
             Ok(HsdAsset { file, deps })
         })
@@ -105,6 +132,21 @@ impl AssetLoader for BlobLoader {
 fn collect_blob_deps(file: &HsdFile, push: &mut impl FnMut([u8; 32])) {
     for prim in &file.0 {
         walk_prim(prim, push);
+    }
+}
+
+fn collect_asset_deps(file: &HsdFile, push: &mut impl FnMut([u8; 32])) {
+    for prim in &file.0 {
+        walk_asset_prim(prim, push);
+    }
+}
+
+fn walk_asset_prim(prim: &HsdFilePrim, push: &mut impl FnMut([u8; 32])) {
+    if let Some(asset) = &prim.attributes.asset {
+        push(asset.0.0);
+    }
+    for child in &prim.children {
+        walk_asset_prim(child, push);
     }
 }
 

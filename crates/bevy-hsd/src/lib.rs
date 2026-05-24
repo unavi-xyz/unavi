@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, sync::Arc};
 
-use bevy::{platform::collections::HashMap, prelude::*};
+use bevy::{platform::collections::HashMap, prelude::*, transform::TransformSystems};
 use loro::{LoroDoc, TreeID};
 
 pub mod attributes;
@@ -38,7 +38,11 @@ impl Plugin for HsdPlugin {
                 )
                     .chain(),
             )
-            .add_systems(PreUpdate, attributes::collider::watch_collider_scale);
+            .add_systems(
+                PostUpdate,
+                attributes::collider::watch_collider_scale
+                    .after(TransformSystems::Propagate),
+            );
     }
 }
 

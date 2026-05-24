@@ -2,7 +2,7 @@
 
 use std::{sync::Arc, time::Duration};
 
-use bevy::{asset::AssetPlugin, prelude::*};
+use bevy::{asset::AssetPlugin, prelude::*, transform::TransformPlugin};
 use bevy_wds::{LocalBlobs, WdsPlugin};
 use iroh_blobs::store::mem::MemStore;
 use loro::LoroDoc;
@@ -19,7 +19,12 @@ pub struct TestContext {
 impl Default for TestContext {
     fn default() -> Self {
         let mut app = App::new();
-        app.add_plugins((MinimalPlugins, AssetPlugin::default(), bevy_hsd::HsdPlugin))
+        app.add_plugins((
+            MinimalPlugins,
+            AssetPlugin::default(),
+            TransformPlugin,
+            bevy_hsd::HsdPlugin,
+        ))
             .init_asset::<Image>()
             .init_asset::<Mesh>()
             .init_asset::<StandardMaterial>();
@@ -44,6 +49,7 @@ impl TestContext {
         app.add_plugins((
             MinimalPlugins,
             AssetPlugin::default(),
+            TransformPlugin,
             WdsPlugin,
             bevy_hsd::HsdPlugin,
         ))

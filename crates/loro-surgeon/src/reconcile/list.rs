@@ -3,7 +3,11 @@
 use loro::ValueOrContainer;
 use similar::algorithms::DiffHook;
 
-use crate::{error::ReconcileError, hydrate::Hydrate, reconcile::{ListReconciler, PropReconciler, Reconcile, Reconciler}};
+use crate::{
+    error::ReconcileError,
+    hydrate::Hydrate,
+    reconcile::{ListReconciler, PropReconciler, Reconcile, Reconciler},
+};
 
 impl ListReconciler {
     #[must_use]

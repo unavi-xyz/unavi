@@ -1,6 +1,11 @@
 use loro::LoroValue;
 
-use crate::{error::ReconcileError, hydrate::Hydrate, inline::ToInlineValue, reconcile::{LoadKey, NoKey, Reconcile, Reconciler}};
+use crate::{
+    error::ReconcileError,
+    hydrate::Hydrate,
+    inline::ToInlineValue,
+    reconcile::{LoadKey, NoKey, Reconcile, Reconciler},
+};
 
 impl Reconcile for bool {
     type Key = NoKey;

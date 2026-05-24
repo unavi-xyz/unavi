@@ -1,5 +1,8 @@
 use loro::ValueOrContainer;
-use loro_surgeon::{reconcile::Reconciler, {Hydrate, Reconcile}};
+use loro_surgeon::{
+    reconcile::Reconciler,
+    {Hydrate, Reconcile},
+};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use xdid::core::did::Did;

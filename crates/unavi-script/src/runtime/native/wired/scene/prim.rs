@@ -1,5 +1,7 @@
 use wasmtime::component::Resource;
 
+use hsd::attributes::xform::XformAttr;
+
 use crate::runtime::native::wired::scene::bindings::wired::math::types::Transform;
 use crate::runtime::{
     Runtime,
@@ -11,7 +13,7 @@ use crate::runtime::{
         self,
         wired::scene::prim::{
             PrimAlphaMode, PrimCollider, PrimColor, PrimImage, PrimMaterial, PrimMesh, PrimRes,
-            PrimRigidBody, PrimRigidBodyKind, PrimTopology, PrimXform,
+            PrimRigidBody, PrimRigidBodyKind, PrimTopology,
         },
     },
 };
@@ -99,7 +101,7 @@ const fn color_shared(c: Color) -> PrimColor {
     }
 }
 
-const fn xform_wit(x: PrimXform) -> Xform {
+const fn xform_wit(x: XformAttr) -> Xform {
     use crate::runtime::native::wired::scene::bindings::wired::math::types::{Quat, Vec3};
     Xform {
         translation: Vec3 {
@@ -121,8 +123,8 @@ const fn xform_wit(x: PrimXform) -> Xform {
     }
 }
 
-const fn xform_shared(x: Xform) -> PrimXform {
-    PrimXform {
+const fn xform_shared(x: Xform) -> XformAttr {
+    XformAttr {
         translation: [x.translation.x, x.translation.y, x.translation.z],
         rotation: [x.rotation.x, x.rotation.y, x.rotation.z, x.rotation.w],
         scale: [x.scale.x, x.scale.y, x.scale.z],

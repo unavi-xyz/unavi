@@ -227,7 +227,7 @@ fn reconcile_prim(
 ) {
     let prim = PrimMeta {
         attributes: Some(attributes),
-        relationships: relationships.and_then(Some),
+        relationships,
     };
     prim.reconcile(RootReconciler::new(meta.clone()))
         .expect("reconcile");

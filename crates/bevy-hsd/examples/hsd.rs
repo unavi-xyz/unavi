@@ -114,9 +114,9 @@ fn populate(doc: &LoroDoc, blobs: &Blobs) {
             Attributes {
                 mesh: Some(mesh_attr.clone()),
                 xform: Some(XformAttr {
-                    rotation: vec![0.0, 0.0, 0.0, 1.0],
-                    scale: vec![1.0, 1.0, 1.0],
-                    translation: offset.to_array().to_vec(),
+                    rotation: [0.0, 0.0, 0.0, 1.0],
+                    scale: [1.0, 1.0, 1.0],
+                    translation: offset.to_array(),
                 }),
                 ..Default::default()
             },
@@ -176,7 +176,7 @@ fn reconcile_prim(
 ) {
     let prim = PrimMeta {
         attributes: Some(attributes),
-        relationships: relationships.and_then(Some),
+        relationships,
     };
     prim.reconcile(RootReconciler::new(meta.clone()))
         .expect("reconcile prim");

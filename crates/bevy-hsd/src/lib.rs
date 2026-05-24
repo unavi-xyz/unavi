@@ -40,8 +40,7 @@ impl Plugin for HsdPlugin {
             )
             .add_systems(
                 PostUpdate,
-                attributes::collider::watch_collider_scale
-                    .after(TransformSystems::Propagate),
+                attributes::collider::watch_collider_scale.after(TransformSystems::Propagate),
             );
     }
 }

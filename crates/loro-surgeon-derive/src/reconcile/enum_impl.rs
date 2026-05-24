@@ -17,7 +17,10 @@ pub fn derive_reconcile_enum(input: &DeriveInput, data: &DataEnum) -> TokenStrea
     let name = &input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
-    let all_unit = data.variants.iter().all(|v| matches!(v.fields, Fields::Unit));
+    let all_unit = data
+        .variants
+        .iter()
+        .all(|v| matches!(v.fields, Fields::Unit));
     let has_keys = data.variants.iter().any(variant_has_key);
 
     let match_arms: Vec<_> = data
@@ -92,7 +95,9 @@ fn reconcile_variant_arm(name: &Ident, v: &Variant, all_unit: bool) -> TokenStre
                 Ok(())
             }
         },
-        Fields::Unnamed(fields) => reconcile_tuple_variant(name, variant_name, &variant_str, fields),
+        Fields::Unnamed(fields) => {
+            reconcile_tuple_variant(name, variant_name, &variant_str, fields)
+        }
         Fields::Named(fields) => reconcile_named_variant(name, variant_name, &variant_str, fields),
     }
 }
@@ -242,7 +247,16 @@ fn key_parts_for_variant(name: &Ident, key_name: &Ident, variant: &Variant) -> K
                 .find(|f| FieldAttrs::from_attrs(&f.attrs).is_ok_and(|a| a.is_key));
             key_field.map_or_else(
                 || unkeyed_named_variant_parts(name, key_name, variant_name, &variant_str, fields),
-                |kf| keyed_named_variant_parts(name, key_name, variant_name, &variant_str, fields, kf),
+                |kf| {
+                    keyed_named_variant_parts(
+                        name,
+                        key_name,
+                        variant_name,
+                        &variant_str,
+                        fields,
+                        kf,
+                    )
+                },
             )
         }
         Fields::Unnamed(_) => KeyVariantParts {

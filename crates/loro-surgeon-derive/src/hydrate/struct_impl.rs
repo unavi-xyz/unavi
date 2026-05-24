@@ -4,7 +4,10 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{DataStruct, DeriveInput, Fields, Ident};
 
-use crate::{attrs::{FieldAttrs, MissingStrategy, Strategy}, type_util::{is_option_type, is_vec}};
+use crate::{
+    attrs::{FieldAttrs, MissingStrategy, Strategy},
+    type_util::{is_option_type, is_vec},
+};
 
 pub fn derive_hydrate_struct(input: &DeriveInput, data: &DataStruct) -> syn::Result<TokenStream> {
     let name = &input.ident;
@@ -90,7 +93,9 @@ fn hydrate_one_field(
                 None => Default::default(),
             },
         }),
-        Strategy::Plain => hydrate_scalar_field(field_name, field_ty, loro_key, attrs.missing.as_ref()),
+        Strategy::Plain => {
+            hydrate_scalar_field(field_name, field_ty, loro_key, attrs.missing.as_ref())
+        }
         Strategy::Flatten => unreachable!("flatten handled by caller"),
     }
 }

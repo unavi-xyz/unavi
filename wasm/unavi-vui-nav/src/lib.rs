@@ -138,7 +138,7 @@ impl ScriptBehavior for Script {
         root.add_child(&filter_table);
         prims.push(filter_table);
 
-        let basin = make_basin(&doc, &mut prims);
+        let basin = make_basin(&doc, color, &mut prims, &mut themed_prims);
         set_translation(&basin, Vec3::new(-BASIN_X, BASIN_Y, 0.0));
         root.add_child(&basin);
         prims.push(basin);
@@ -182,11 +182,12 @@ impl ScriptBehavior for Script {
                         &self.ring,
                         Vec3 {
                             x: t.translation.x - BASIN_X,
-                            y: t.translation.y + 0.5,
+                            y: BASIN_HEIGHT.mul_add(-0.5, t.translation.y + BASIN_Y)
+                                - RING_THICKNESS,
                             z: t.translation.z,
                         },
                     );
-                    // TODO fix ring position, grab, add phys joint
+                    // TODO grab, add phys joint
 
                     self.beacon_query = Some(get_wds().query(Some(&QueryFilter {
                         creator: None,
@@ -224,8 +225,7 @@ impl ScriptBehavior for Script {
 
                         let doc = self_document();
 
-                        let Some(beacon_asset) =
-                            doc.prims().into_iter().find_map(|p| p.asset())
+                        let Some(beacon_asset) = doc.prims().into_iter().find_map(|p| p.asset())
                         else {
                             eprintln!("Nav HSD missing beacon asset child prim");
                             continue;
@@ -242,7 +242,7 @@ impl ScriptBehavior for Script {
                             .root
                             .xform()
                             .map_or(Vec3::splat(0.0), |x| x.translation);
-                        pos.x += BASIN_X;
+                        pos.x -= BASIN_X;
                         pos.y += BASIN_Y + 1.0;
                         set_translation(&prim, pos);
 
@@ -310,16 +310,16 @@ fn make_filter_table(
     group
 }
 
-fn make_basin(doc: &Document, prims: &mut Vec<Prim>) -> Prim {
+fn make_basin(doc: &Document, color: Color, prims: &mut Vec<Prim>, themed: &mut Vec<Prim>) -> Prim {
     let group = doc.create_prim();
-
-    let mat = material(Some(Color::rgb(0.88, 0.88, 0.92)), true);
+    let mat = material(Some(color), true);
 
     let cylinder = Cylinder::new(BASIN_RADIUS, BASIN_HEIGHT);
     let dish = cylinder.mesh();
     dish.set_material(Some(&mat));
     dish.set_collider(Some(&cylinder.collider()));
     dish.set_rigid_body(Some(static_body()));
+    themed.push(dish.clone());
     group.add_child(&dish);
     prims.push(dish);
 

@@ -4,7 +4,10 @@ use std::collections::HashMap;
 
 use loro::ValueOrContainer;
 
-use crate::{error::ReconcileError, reconcile::{LoadKey, MovableListReconciler, PropReconciler, Reconcile}};
+use crate::{
+    error::ReconcileError,
+    reconcile::{LoadKey, MovableListReconciler, PropReconciler, Reconcile},
+};
 
 impl MovableListReconciler {
     #[must_use]

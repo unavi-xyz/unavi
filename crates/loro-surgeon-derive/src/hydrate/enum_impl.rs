@@ -4,14 +4,23 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::{DataEnum, DeriveInput, Fields, Ident, Variant};
 
-use crate::{attrs::{FieldAttrs, MissingStrategy, Strategy}, type_util::{is_option_type, is_vec}};
+use crate::{
+    attrs::{FieldAttrs, MissingStrategy, Strategy},
+    type_util::{is_option_type, is_vec},
+};
 
 pub fn derive_hydrate_enum(input: &DeriveInput, data: &DataEnum) -> TokenStream {
     let name = &input.ident;
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
 
-    let has_unit_variants = data.variants.iter().any(|v| matches!(v.fields, Fields::Unit));
-    let has_data_variants = data.variants.iter().any(|v| !matches!(v.fields, Fields::Unit));
+    let has_unit_variants = data
+        .variants
+        .iter()
+        .any(|v| matches!(v.fields, Fields::Unit));
+    let has_data_variants = data
+        .variants
+        .iter()
+        .any(|v| !matches!(v.fields, Fields::Unit));
 
     let hydrate_string_fn = hydrate_string_fn(name, data, has_unit_variants);
     let map_variant_arms: Vec<_> = data
@@ -19,7 +28,12 @@ pub fn derive_hydrate_enum(input: &DeriveInput, data: &DataEnum) -> TokenStream 
         .iter()
         .map(|v| hydrate_variant_arm(name, v))
         .collect();
-    let hydrate_map_fn = hydrate_map_fn(name, &map_variant_arms, has_unit_variants, has_data_variants);
+    let hydrate_map_fn = hydrate_map_fn(
+        name,
+        &map_variant_arms,
+        has_unit_variants,
+        has_data_variants,
+    );
     let hydrate_value_override = hydrate_value_override(has_unit_variants, has_data_variants);
 
     quote! {

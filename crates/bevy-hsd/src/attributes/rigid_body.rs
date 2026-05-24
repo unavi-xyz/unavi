@@ -35,9 +35,7 @@ impl AttributeParser for RigidBodyParser {
         prim: Entity,
         value: Option<ValueOrContainer>,
     ) -> Result<(), ParseError> {
-        if value.is_some() {
-            commands.entity(prim).insert(RigidBody::Dynamic);
-        } else {
+        if value.is_none() {
             commands
                 .entity(prim)
                 .remove::<RigidBody>()
@@ -81,7 +79,13 @@ pub fn apply_rigid_body(trigger: On<ApplyEvent<RigidBodyEvent>>, mut commands: C
     let ent = trigger.entity;
     let RigidBodyEvent::Rebuild(attr) = &trigger.value;
 
-    let rb = match attr.kind {
+    // Wait for kind to be committed; never fabricate one (a default Dynamic
+    // would let static meshes fall for a frame).
+    let Some(kind) = attr.kind.as_ref() else {
+        return;
+    };
+
+    let rb = match kind {
         RigidBodyKind::Dynamic => RigidBody::Dynamic,
         RigidBodyKind::Kinematic => RigidBody::Kinematic,
         RigidBodyKind::Static => RigidBody::Static,

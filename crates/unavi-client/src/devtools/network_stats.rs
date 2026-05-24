@@ -1,6 +1,9 @@
 //! Network statistics tracking for debug monitoring.
 
-use std::{collections::{HashMap, VecDeque}, time::Duration};
+use std::{
+    collections::{HashMap, VecDeque},
+    time::Duration,
+};
 
 use web_time::Instant;
 

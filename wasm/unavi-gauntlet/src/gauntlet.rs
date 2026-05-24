@@ -183,8 +183,24 @@ impl Gauntlet {
         };
         let tr = global_transform(bone);
         let pos = tr.translation + tr.rotation * Vec3::new(0.0, 0.0, Z_OFFSET);
-        self.core
-            .set_xform(Some(xform_full(pos, tr.rotation, Vec3::ONE)));
+        self.core.set_xform(Some(xform_full(
+            pos,
+            tr.rotation,
+            Vec3::splat(self.scale_t.get()),
+        )));
+    }
+
+    pub fn apply_scale(&self) {
+        let cur = self.core.xform().unwrap_or(Xform {
+            translation: Vec3::ZERO,
+            rotation: Quat::IDENTITY,
+            scale: Vec3::ONE,
+        });
+        self.core.set_xform(Some(Xform {
+            translation: cur.translation,
+            rotation: cur.rotation,
+            scale: Vec3::splat(self.scale_t.get()),
+        }));
     }
 
     pub fn open_menu(&self, open_pos: Vec3) {

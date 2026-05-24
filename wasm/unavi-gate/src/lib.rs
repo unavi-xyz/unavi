@@ -12,7 +12,7 @@ use crate::{
         event::types::{EventFilter, EventReceptor, EventScope, SpatialScope},
         scene::{
             api::self_document,
-            types::{Prim, RigidBody, RigidBodyKind, Xform},
+            types::{Material, Prim, RigidBody, RigidBodyKind, Xform},
         },
     },
 };
@@ -51,6 +51,28 @@ fn set_translation(prim: &Prim, translation: Vec3) {
     }));
 }
 
+fn gate_material() -> Material {
+    Material {
+        alpha_cutoff: None,
+        alpha_mode: None,
+        base_color: Some(Color {
+            r: 0.7,
+            g: 0.72,
+            b: 0.78,
+            a: 1.0,
+        }),
+        base_color_texture: None,
+        double_sided: None,
+        emissive: None,
+        emissive_texture: None,
+        metallic: Some(0.6),
+        metallic_roughness_texture: None,
+        normal_texture: None,
+        occlusion_texture: None,
+        roughness: Some(0.4),
+    }
+}
+
 struct Script {
     receptor: EventReceptor,
     target: Option<(Hash, SystemTime)>,
@@ -61,12 +83,15 @@ impl ScriptBehavior for Script {
         let doc = self_document();
         let root = doc.roots().into_iter().next().expect("root");
 
+        let material = gate_material();
+
         let pole = Cuboid::new(Vec3::new(BEAM_THICKNESS, PORTAL_HEIGHT, BEAM_THICKNESS));
 
         let pole_l = pole.mesh();
         root.add_child(&pole_l);
         pole_l.set_collider(Some(&pole.collider()));
         pole_l.set_rigid_body(Some(static_body()));
+        pole_l.set_material(Some(&material));
         set_translation(
             &pole_l,
             Vec3::new(
@@ -80,6 +105,7 @@ impl ScriptBehavior for Script {
         root.add_child(&pole_r);
         pole_r.set_collider(Some(&pole.collider()));
         pole_r.set_rigid_body(Some(static_body()));
+        pole_r.set_material(Some(&material));
         set_translation(
             &pole_r,
             Vec3::new(
@@ -99,6 +125,7 @@ impl ScriptBehavior for Script {
         root.add_child(&beam_top);
         beam_top.set_collider(Some(&beam.collider()));
         beam_top.set_rigid_body(Some(static_body()));
+        beam_top.set_material(Some(&material));
         set_translation(
             &beam_top,
             Vec3::new(0.0, PORTAL_HEIGHT + BEAM_THICKNESS / 2.0, 0.0),
@@ -114,6 +141,7 @@ impl ScriptBehavior for Script {
         root.add_child(&pedestal);
         pedestal.set_collider(Some(&pedestal_shape.collider()));
         pedestal.set_rigid_body(Some(static_body()));
+        pedestal.set_material(Some(&material));
         set_translation(
             &pedestal,
             Vec3::new(-PORTAL_WIDTH, PEDESTAL_HEIGHT / 2.0, 0.0),

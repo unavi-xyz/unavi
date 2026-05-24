@@ -2,6 +2,7 @@
 
 use std::{sync::Arc, time::Duration};
 
+use avian3d::PhysicsPlugins;
 use bevy::{asset::AssetPlugin, prelude::*, transform::TransformPlugin};
 use bevy_wds::{LocalBlobs, WdsPlugin};
 use iroh_blobs::store::mem::MemStore;
@@ -25,9 +26,9 @@ impl Default for TestContext {
             TransformPlugin,
             bevy_hsd::HsdPlugin,
         ))
-            .init_asset::<Image>()
-            .init_asset::<Mesh>()
-            .init_asset::<StandardMaterial>();
+        .init_asset::<Image>()
+        .init_asset::<Mesh>()
+        .init_asset::<StandardMaterial>();
 
         let mut ctx = Self {
             app,
@@ -42,6 +43,41 @@ impl Default for TestContext {
 }
 
 impl TestContext {
+    /// Same as `default()` but with avian's [`PhysicsPlugins`] enabled.
+    /// Use this for any test that exercises colliders or rigid bodies —
+    /// avian's `On<Add, Collider>` observer reads `Position` / `Rotation`
+    /// and will panic on the placeholder MAX values if our `apply_collider`
+    /// ever inserts a `Collider` without seeding them.
+    pub fn with_physics() -> Self {
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            AssetPlugin::default(),
+            TransformPlugin,
+            bevy::scene::ScenePlugin,
+            PhysicsPlugins::default(),
+            bevy_hsd::HsdPlugin,
+        ))
+        .init_asset::<Image>()
+        .init_asset::<Mesh>()
+        .init_asset::<StandardMaterial>()
+        .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+            Duration::from_secs_f32(1.0 / 60.0),
+        ));
+        app.finish();
+        app.cleanup();
+
+        let mut ctx = Self {
+            app,
+            doc: Arc::default(),
+            blobs: None,
+        };
+
+        ctx.spawn_hsd();
+
+        ctx
+    }
+
     pub fn with_wds() -> Self {
         let blobs = setup_blobs();
 
@@ -109,6 +145,11 @@ impl TestContext {
 #[fixture]
 pub fn ctx() -> TestContext {
     TestContext::default()
+}
+
+#[fixture]
+pub fn ctx_physics() -> TestContext {
+    TestContext::with_physics()
 }
 
 #[fixture]

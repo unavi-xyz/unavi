@@ -4,7 +4,10 @@ use std::collections::{BTreeMap, HashMap};
 
 use loro::ValueOrContainer;
 
-use crate::{error::ReconcileError, reconcile::{MapReconciler, NoKey, PropReconciler, Reconcile, Reconciler}};
+use crate::{
+    error::ReconcileError,
+    reconcile::{MapReconciler, NoKey, PropReconciler, Reconcile, Reconciler},
+};
 
 impl MapReconciler {
     pub fn entry<R: Reconcile>(&mut self, key: &str, value: &R) -> Result<(), ReconcileError> {
@@ -72,10 +75,7 @@ impl<V: Reconcile, S: std::hash::BuildHasher> Reconcile for HashMap<String, V, S
     }
 }
 
-pub fn reconcile_keyed_map<K, V, R, S>(
-    map: &HashMap<K, V, S>,
-    r: R,
-) -> Result<(), ReconcileError>
+pub fn reconcile_keyed_map<K, V, R, S>(map: &HashMap<K, V, S>, r: R) -> Result<(), ReconcileError>
 where
     K: std::fmt::Display + Eq + std::hash::Hash,
     V: Reconcile,

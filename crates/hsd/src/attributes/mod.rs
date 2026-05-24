@@ -1,5 +1,9 @@
 use loro::{Container, LoroMap, ValueOrContainer};
-use loro_surgeon::{error::{HydrateError, ReconcileError}, reconcile::PropReconciler, {Hydrate, Reconcile}};
+use loro_surgeon::{
+    error::{HydrateError, ReconcileError},
+    reconcile::PropReconciler,
+    {Hydrate, Reconcile},
+};
 use serde::{Deserialize, Serialize};
 
 pub mod asset;
@@ -10,7 +14,6 @@ pub mod mesh;
 pub mod name;
 pub mod rigid_body;
 pub mod script;
-pub mod value_array;
 pub mod xform;
 
 pub const ATTRIBUTES_KEY: &str = "attributes";

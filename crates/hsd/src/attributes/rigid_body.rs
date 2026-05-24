@@ -3,9 +3,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Hydrate, Reconcile, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RigidBodyKind {
-    #[default]
     Dynamic,
     Kinematic,
     Static,
@@ -18,7 +17,7 @@ pub enum RigidBodyKind {
 pub struct RigidBodyAttr {
     pub angular_damping: Option<f64>,
     pub friction: Option<f64>,
-    pub kind: RigidBodyKind,
+    pub kind: Option<RigidBodyKind>,
     pub linear_damping: Option<f64>,
     pub mass: Option<f64>,
     pub restitution: Option<f64>,

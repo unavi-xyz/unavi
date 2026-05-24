@@ -3,27 +3,27 @@ use serde::{Deserialize, Serialize};
 
 use crate::attributes::Attribute;
 
-fn default_rotation() -> Vec<f32> {
-    vec![0.0, 0.0, 0.0, 1.0]
+const fn default_rotation() -> [f32; 4] {
+    [0.0, 0.0, 0.0, 1.0]
 }
-fn default_scale() -> Vec<f32> {
-    vec![1.0, 1.0, 1.0]
+const fn default_scale() -> [f32; 3] {
+    [1.0, 1.0, 1.0]
 }
-fn default_translation() -> Vec<f32> {
-    vec![0.0, 0.0, 0.0]
+const fn default_translation() -> [f32; 3] {
+    [0.0, 0.0, 0.0]
 }
 
 #[derive(Hydrate, Reconcile, Debug, Clone, Serialize, Deserialize)]
 pub struct XformAttr {
-    #[loro(with = "crate::attributes::value_array::rotation")]
+    #[loro(default = "default_rotation")]
     #[serde(default = "default_rotation")]
-    pub rotation: Vec<f32>,
-    #[loro(with = "crate::attributes::value_array::scale")]
+    pub rotation: [f32; 4],
+    #[loro(default = "default_scale")]
     #[serde(default = "default_scale")]
-    pub scale: Vec<f32>,
-    #[loro(with = "crate::attributes::value_array::translation")]
+    pub scale: [f32; 3],
+    #[loro(default = "default_translation")]
     #[serde(default = "default_translation")]
-    pub translation: Vec<f32>,
+    pub translation: [f32; 3],
 }
 
 impl Default for XformAttr {

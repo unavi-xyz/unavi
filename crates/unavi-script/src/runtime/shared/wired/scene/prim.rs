@@ -42,23 +42,6 @@ pub struct PrimRes {
     pub is_proxy: bool,
 }
 
-#[derive(Clone, Copy)]
-pub struct PrimXform {
-    pub translation: [f32; 3],
-    pub rotation: [f32; 4],
-    pub scale: [f32; 3],
-}
-
-impl Default for PrimXform {
-    fn default() -> Self {
-        Self {
-            translation: [0.0; 3],
-            rotation: [0.0, 0.0, 0.0, 1.0],
-            scale: [1.0; 3],
-        }
-    }
-}
-
 #[derive(Clone, Copy, Default)]
 pub struct PrimColor {
     pub r: f32,
@@ -281,6 +264,7 @@ pub fn add_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<()>
             .get(child_rep)
             .cloned()
             .ok_or_else(|| anyhow::anyhow!("invalid child rep: {child_rep}"))?;
+        drop(scene);
         (parent, child)
     };
     ensure_writable(api, &parent)?;
@@ -309,6 +293,7 @@ pub fn remove_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<
             .get(child_rep)
             .cloned()
             .ok_or_else(|| anyhow::anyhow!("invalid child rep: {child_rep}"))?;
+        drop(scene);
         (parent, child)
     };
     ensure_writable(api, &parent)?;
@@ -366,7 +351,7 @@ pub fn set_asset(api: &Api, rep: u32, value: Option<Vec<u8>>) -> anyhow::Result<
     Ok(())
 }
 
-pub fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<PrimXform>> {
+pub fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<XformAttr>> {
     let prim = get_prim(api, rep)?;
     let local = NODE_TRANSFORM_REGISTRY
         .read()
@@ -376,33 +361,23 @@ pub fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<PrimXform>> {
         })
         .map(|v| v.local);
     if prim.is_proxy {
-        return Ok(local.map(|t| PrimXform {
+        return Ok(local.map(|t| XformAttr {
             translation: t.translation.to_array(),
             rotation: [t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w],
             scale: t.scale.to_array(),
         }));
     }
     let meta = prim_meta(&prim.doc, prim.id)?;
-    let Some(attr) = read_attr::<XformAttr>(&meta) else {
-        return Ok(None);
-    };
-    Ok(Some(xform_attr_to_prim(&attr)))
+    Ok(read_attr::<XformAttr>(&meta))
 }
 
-pub fn set_xform(api: &Api, rep: u32, value: Option<PrimXform>) -> anyhow::Result<()> {
+pub fn set_xform(api: &Api, rep: u32, value: Option<XformAttr>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep)?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     match value {
         Some(x) => {
-            write_attr(
-                &meta,
-                &XformAttr {
-                    translation: x.translation.to_vec(),
-                    rotation: x.rotation.to_vec(),
-                    scale: x.scale.to_vec(),
-                },
-            )?;
+            write_attr(&meta, &x)?;
             if let Some(v) = NODE_TRANSFORM_REGISTRY.write().get_mut(&AbsoluteNodeId {
                 doc: prim.doc_id,
                 node: prim.id,
@@ -417,7 +392,7 @@ pub fn set_xform(api: &Api, rep: u32, value: Option<PrimXform>) -> anyhow::Resul
     Ok(())
 }
 
-pub fn global_xform(api: &Api, rep: u32) -> anyhow::Result<PrimXform> {
+pub fn global_xform(api: &Api, rep: u32) -> anyhow::Result<XformAttr> {
     let prim = get_prim(api, rep)?;
     let snapshot = NODE_TRANSFORM_REGISTRY
         .read()
@@ -428,25 +403,11 @@ pub fn global_xform(api: &Api, rep: u32) -> anyhow::Result<PrimXform> {
         .cloned()
         .unwrap_or_default();
     let (sc, ro, tr) = snapshot.global.to_scale_rotation_translation();
-    Ok(PrimXform {
+    Ok(XformAttr {
         translation: [tr.x, tr.y, tr.z],
         rotation: [ro.x, ro.y, ro.z, ro.w],
         scale: [sc.x, sc.y, sc.z],
     })
-}
-
-fn xform_attr_to_prim(attr: &XformAttr) -> PrimXform {
-    let mut t = PrimXform::default();
-    for (dst, src) in t.translation.iter_mut().zip(attr.translation.iter()) {
-        *dst = *src;
-    }
-    for (dst, src) in t.rotation.iter_mut().zip(attr.rotation.iter()) {
-        *dst = *src;
-    }
-    for (dst, src) in t.scale.iter_mut().zip(attr.scale.iter()) {
-        *dst = *src;
-    }
-    t
 }
 
 pub fn mesh(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMesh>> {
@@ -779,7 +740,7 @@ pub fn set_rigid_body(api: &Api, rep: u32, value: Option<PrimRigidBody>) -> anyh
 
 fn rigid_body_attr_to_prim(attr: RigidBodyAttr) -> PrimRigidBody {
     PrimRigidBody {
-        kind: match attr.kind {
+        kind: match attr.kind.unwrap_or(RigidBodyKind::Dynamic) {
             RigidBodyKind::Dynamic => PrimRigidBodyKind::Dynamic,
             RigidBodyKind::Kinematic => PrimRigidBodyKind::Kinematic,
             RigidBodyKind::Static => PrimRigidBodyKind::Static,
@@ -794,11 +755,11 @@ fn rigid_body_attr_to_prim(attr: RigidBodyAttr) -> PrimRigidBody {
 
 fn prim_to_rigid_body_attr(rb: PrimRigidBody) -> RigidBodyAttr {
     RigidBodyAttr {
-        kind: match rb.kind {
+        kind: Some(match rb.kind {
             PrimRigidBodyKind::Dynamic => RigidBodyKind::Dynamic,
             PrimRigidBodyKind::Kinematic => RigidBodyKind::Kinematic,
             PrimRigidBodyKind::Static => RigidBodyKind::Static,
-        },
+        }),
         angular_damping: maybe(rb.angular_damping.map(f64::from)),
         friction: maybe(rb.friction.map(f64::from)),
         linear_damping: maybe(rb.linear_damping.map(f64::from)),

@@ -15,7 +15,7 @@ use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 use crate::{
     attributes::{
         ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
-        util::shallow_map_updated_keys,
+        util::{compute_global_transform, shallow_map_updated_keys},
     },
     diff::HsdDiffEvent,
 };
@@ -97,7 +97,8 @@ impl AttributeParser for ColliderParser {
 
 pub fn apply_collider(
     trigger: On<ApplyEvent<ColliderEvent>>,
-    transforms: Query<&GlobalTransform>,
+    locals: Query<&Transform>,
+    parents: Query<&ChildOf>,
     mut commands: Commands,
 ) {
     let prim = trigger.entity;
@@ -105,7 +106,8 @@ pub fn apply_collider(
 
     commands.entity(prim).remove::<ColliderBlobsChild>();
 
-    let transform_valid = transforms.get(prim).map_or(true, global_transform_is_valid);
+    let seed = compute_global_transform(prim, &locals, &parents);
+    let transform_valid = transform_is_valid(&seed);
 
     let collider = match attr {
         ColliderAttr::Sphere(r) => build_sphere(*r),
@@ -151,7 +153,7 @@ pub fn apply_collider(
 
     if let Some(c) = collider {
         if transform_valid {
-            commands.entity(prim).insert(c);
+            insert_collider_with_seed(&mut commands, prim, c, &seed);
         } else {
             commands.entity(prim).insert(DisabledCollider(c));
         }
@@ -162,7 +164,8 @@ pub fn on_collider_blobs_loaded(
     trigger: On<Add, BlobDepsLoaded>,
     collider_blobs: Query<(&ColliderBlobs, &ColliderBlobsOwner)>,
     mut blob_responses: Query<&mut BlobResponse>,
-    transforms: Query<&GlobalTransform>,
+    locals: Query<&Transform>,
+    parents: Query<&ChildOf>,
     mut commands: Commands,
 ) {
     let child = trigger.entity;
@@ -196,15 +199,43 @@ pub fn on_collider_blobs_loaded(
     };
 
     if let Some(c) = collider {
-        let transform_valid = transforms.get(prim).map_or(true, global_transform_is_valid);
-        if transform_valid {
-            commands.entity(prim).insert(c);
+        let seed = compute_global_transform(prim, &locals, &parents);
+        if transform_is_valid(&seed) {
+            insert_collider_with_seed(&mut commands, prim, c, &seed);
         } else {
             commands.entity(prim).insert(DisabledCollider(c));
         }
     }
 
     commands.entity(child).try_despawn();
+}
+
+// Seed avian's global `Position` / `Rotation` from the prim's transform
+// chain; `Position::PLACEHOLDER` / `Rotation::PLACEHOLDER` would crash
+// avian's `On<Add, Collider>` AABB observer.
+fn insert_collider_with_seed(
+    commands: &mut Commands,
+    prim: Entity,
+    collider: Collider,
+    seed: &Transform,
+) {
+    let translation = if seed.translation.is_finite() {
+        seed.translation
+    } else {
+        Vec3::ZERO
+    };
+    let rotation = if seed.rotation.x.is_finite()
+        && seed.rotation.y.is_finite()
+        && seed.rotation.z.is_finite()
+        && seed.rotation.w.is_finite()
+    {
+        seed.rotation
+    } else {
+        Quat::IDENTITY
+    };
+    commands
+        .entity(prim)
+        .insert((collider, Position(translation), Rotation(rotation)));
 }
 
 fn valid_positive(v: f64) -> bool {
@@ -313,6 +344,20 @@ pub struct DisabledCollider(pub Collider);
 #[derive(Component)]
 pub struct DisabledRigidBody(pub RigidBody);
 
+fn transform_is_valid(t: &Transform) -> bool {
+    t.translation.is_finite()
+        && t.rotation.x.is_finite()
+        && t.rotation.y.is_finite()
+        && t.rotation.z.is_finite()
+        && t.rotation.w.is_finite()
+        && t.scale.x.is_finite()
+        && t.scale.x != 0.0
+        && t.scale.y.is_finite()
+        && t.scale.y != 0.0
+        && t.scale.z.is_finite()
+        && t.scale.z != 0.0
+}
+
 fn global_transform_is_valid(t: &GlobalTransform) -> bool {
     let (s, r, tr) = t.to_scale_rotation_translation();
     s.x.is_finite()
@@ -349,10 +394,9 @@ pub fn watch_collider_scale(
     for (entity, disabled, transform) in &parked_col {
         if global_transform_is_valid(transform) {
             let restored = disabled.0.clone();
-            commands
-                .entity(entity)
-                .remove::<DisabledCollider>()
-                .insert(restored);
+            let seed = transform.compute_transform();
+            commands.entity(entity).remove::<DisabledCollider>();
+            insert_collider_with_seed(&mut commands, entity, restored, &seed);
         }
     }
     for (entity, rb, transform) in &active_rb {
@@ -367,10 +411,15 @@ pub fn watch_collider_scale(
     for (entity, disabled, transform) in &parked_rb {
         if global_transform_is_valid(transform) {
             let restored = disabled.0;
+            let global = transform.compute_transform();
             commands
                 .entity(entity)
                 .remove::<DisabledRigidBody>()
-                .insert(restored);
+                .insert((
+                    restored,
+                    Position(global.translation),
+                    Rotation(global.rotation),
+                ));
         }
     }
 }

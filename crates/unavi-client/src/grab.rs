@@ -74,21 +74,20 @@ const GRAB_SMOOTHING: f32 = 10.0;
 
 fn move_grabbed_objects(
     transforms: Query<&GlobalTransform>,
-    objects: Query<(
-        &Grabbed,
-        &mut Transform,
-        &mut LinearVelocity,
-        &mut AngularVelocity,
-    )>,
+    objects: Query<(Entity, &Grabbed, &mut LinearVelocity, &mut AngularVelocity)>,
 ) {
-    for (grabbed, obj_tr, mut obj_vel, mut obj_ang_vel) in objects {
+    for (entity, grabbed, mut obj_vel, mut obj_ang_vel) in objects {
         let Ok(pointer_tr) = transforms.get(grabbed.pointer) else {
             warn!(pointer = %grabbed.pointer, "pointer transform not found");
             continue;
         };
         let pointer_tr = pointer_tr.compute_transform();
 
-        // Position tracking
+        let Ok(obj_tr) = transforms.get(entity) else {
+            continue;
+        };
+        let obj_tr = obj_tr.compute_transform();
+
         let target_pos = pointer_tr.translation + pointer_tr.rotation * grabbed.offset_tra;
         let delta = target_pos - obj_tr.translation;
         let dist = delta.length();
@@ -99,7 +98,6 @@ fn move_grabbed_objects(
             delta * GRAB_SMOOTHING
         };
 
-        // Rotation tracking
         let target_rotation = pointer_tr.rotation * grabbed.offset_rot;
         let mut rotation_diff = target_rotation * obj_tr.rotation.inverse();
 

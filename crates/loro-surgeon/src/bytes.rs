@@ -7,7 +7,11 @@ use std::ops::{Deref, DerefMut};
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::{error::{HydrateError, ReconcileError}, hydrate::Hydrate, reconcile::{NoKey, Reconcile, Reconciler}};
+use crate::{
+    error::{HydrateError, ReconcileError},
+    hydrate::Hydrate,
+    reconcile::{NoKey, Reconcile, Reconciler},
+};
 
 /// A variable-length byte buffer that round-trips through `LoroValue::Binary`.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]

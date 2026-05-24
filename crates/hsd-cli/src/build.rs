@@ -23,10 +23,6 @@ use loro_surgeon::bytes::ByteArray;
 use ron::extensions::Extensions;
 use serde::{Deserialize, Serialize};
 
-fn opt_to_maybe<T>(opt: Option<T>) -> Option<T> {
-    opt
-}
-
 use crate::{blobs::write_blob, wasm::build_wasm_for_crate};
 
 pub struct BuildOutput {
@@ -211,15 +207,15 @@ fn compile_attrs<S: std::hash::BuildHasher>(
         .transpose()?;
 
     Ok(Attributes {
-        asset: opt_to_maybe(asset.map(|h| AssetAttr(ByteArray::new(h)))),
-        collider: opt_to_maybe(attrs.collider.as_ref().map(compile_collider)),
-        image: opt_to_maybe(image),
-        material: opt_to_maybe(attrs.material.as_ref().map(compile_material)),
+        asset: (asset.map(|h| AssetAttr(ByteArray::new(h)))),
+        collider: (attrs.collider.as_ref().map(compile_collider)),
+        image: (image),
+        material: (attrs.material.as_ref().map(compile_material)),
         mesh: None,
-        name: opt_to_maybe(attrs.name.clone().map(NameAttr)),
-        rigid_body: opt_to_maybe(attrs.rigid_body.as_ref().map(compile_rigid_body)),
-        script: opt_to_maybe(script.map(|h| ScriptAttr(ByteArray::new(h)))),
-        xform: opt_to_maybe(attrs.xform.as_ref().map(compile_xform)),
+        name: (attrs.name.clone().map(NameAttr)),
+        rigid_body: (attrs.rigid_body.as_ref().map(compile_rigid_body)),
+        script: (script.map(|h| ScriptAttr(ByteArray::new(h)))),
+        xform: (attrs.xform.as_ref().map(compile_xform)),
     })
 }
 
@@ -254,13 +250,13 @@ fn compile_image(img: &HsdxImage, input_dir: &Path, out_dir: &Path) -> Result<Im
     let hash = write_blob(out_dir, &bytes)?;
     Ok(ImageAttr {
         data: ByteArray::new(*hash.as_bytes()),
-        address_mode_u: opt_to_maybe(img.address_mode_u),
-        address_mode_v: opt_to_maybe(img.address_mode_v),
-        address_mode_w: opt_to_maybe(img.address_mode_w),
-        mag_filter: opt_to_maybe(img.mag_filter),
-        min_filter: opt_to_maybe(img.min_filter),
-        mipmap_filter: opt_to_maybe(img.mipmap_filter),
-        srgb: opt_to_maybe(img.srgb),
+        address_mode_u: (img.address_mode_u),
+        address_mode_v: (img.address_mode_v),
+        address_mode_w: (img.address_mode_w),
+        mag_filter: (img.mag_filter),
+        min_filter: (img.min_filter),
+        mipmap_filter: (img.mipmap_filter),
+        srgb: (img.srgb),
     })
 }
 
@@ -288,18 +284,18 @@ fn compile_collider(c: &HsdxCollider) -> ColliderAttr {
 
 fn compile_material(m: &HsdxMaterial) -> MaterialAttr {
     MaterialAttr {
-        alpha_cutoff: opt_to_maybe(m.alpha_cutoff),
-        alpha_mode: opt_to_maybe(m.alpha_mode.clone()),
-        base_color: opt_to_maybe(m.base_color.clone().map(ColorVec)),
-        base_color_texture: opt_to_maybe(m.base_color_texture.clone()),
-        double_sided: opt_to_maybe(m.double_sided),
-        emissive: opt_to_maybe(m.emissive.clone().map(ColorVec)),
-        emissive_texture: opt_to_maybe(m.emissive_texture.clone()),
-        metallic: opt_to_maybe(m.metallic),
-        metallic_roughness_texture: opt_to_maybe(m.metallic_roughness_texture.clone()),
-        normal_texture: opt_to_maybe(m.normal_texture.clone()),
-        occlusion_texture: opt_to_maybe(m.occlusion_texture.clone()),
-        roughness: opt_to_maybe(m.roughness),
+        alpha_cutoff: (m.alpha_cutoff),
+        alpha_mode: (m.alpha_mode.clone()),
+        base_color: (m.base_color.clone().map(ColorVec)),
+        base_color_texture: (m.base_color_texture.clone()),
+        double_sided: (m.double_sided),
+        emissive: (m.emissive.clone().map(ColorVec)),
+        emissive_texture: (m.emissive_texture.clone()),
+        metallic: (m.metallic),
+        metallic_roughness_texture: (m.metallic_roughness_texture.clone()),
+        normal_texture: (m.normal_texture.clone()),
+        occlusion_texture: (m.occlusion_texture.clone()),
+        roughness: (m.roughness),
     }
 }
 
@@ -310,25 +306,25 @@ fn compile_rigid_body(rb: &HsdxRigidBody) -> RigidBodyAttr {
         _ => RigidBodyKind::Dynamic,
     };
     RigidBodyAttr {
-        kind,
-        angular_damping: opt_to_maybe(rb.angular_damping),
-        friction: opt_to_maybe(rb.friction),
-        linear_damping: opt_to_maybe(rb.linear_damping),
-        mass: opt_to_maybe(rb.mass),
-        restitution: opt_to_maybe(rb.restitution),
+        kind: Some(kind),
+        angular_damping: (rb.angular_damping),
+        friction: (rb.friction),
+        linear_damping: (rb.linear_damping),
+        mass: (rb.mass),
+        restitution: (rb.restitution),
     }
 }
 
 fn compile_xform(x: &HsdxXform) -> XformAttr {
     let mut out = XformAttr::default();
     if let Some(t) = x.translation.clone() {
-        out.translation = t;
+        out.translation.copy_from_slice(&t);
     }
     if let Some(r) = x.rotation.clone() {
-        out.rotation = r;
+        out.rotation.copy_from_slice(&r);
     }
     if let Some(s) = x.scale.clone() {
-        out.scale = s;
+        out.scale.copy_from_slice(&s);
     }
     out
 }

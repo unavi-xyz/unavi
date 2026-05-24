@@ -1,6 +1,28 @@
+use bevy::prelude::*;
 use loro::{ContainerID, Index, event::Diff};
 
 use crate::attributes::ParseError;
+
+/// Compose the entity's local `Transform` chain up the `ChildOf` hierarchy
+/// without depending on `GlobalTransform` propagation, which only runs in
+/// `PostUpdate`.
+pub fn compute_global_transform(
+    entity: Entity,
+    locals: &Query<&Transform>,
+    parents: &Query<&ChildOf>,
+) -> Transform {
+    let mut chain: Vec<Transform> = Vec::new();
+    let mut current = Some(entity);
+    while let Some(e) = current {
+        chain.push(locals.get(e).copied().unwrap_or(Transform::IDENTITY));
+        current = parents.get(e).ok().map(ChildOf::parent);
+    }
+    let mut global = Transform::IDENTITY;
+    for local in chain.iter().rev() {
+        global = global.mul_transform(*local);
+    }
+    global
+}
 
 /// Parses the top-level updated keys out of a diff map.
 pub fn shallow_map_updated_keys(

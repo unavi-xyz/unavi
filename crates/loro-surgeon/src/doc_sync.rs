@@ -2,7 +2,11 @@
 
 use loro::LoroDoc;
 
-use crate::{error::{HydrateError, ReconcileError}, hydrate::Hydrate, reconcile::{Reconcile, RootReconciler}};
+use crate::{
+    error::{HydrateError, ReconcileError},
+    hydrate::Hydrate,
+    reconcile::{Reconcile, RootReconciler},
+};
 
 pub trait DocSync: Hydrate + Reconcile {
     const ROOT_KEY: &'static str;

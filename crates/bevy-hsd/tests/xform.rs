@@ -19,9 +19,9 @@ fn test_xform_lifecycle(mut ctx: TestContext) {
     let meta = tree.get_meta(root).expect("get meta");
 
     let attr = XformAttr {
-        rotation: vec![0.4, 0.5, 0.6, 0.9],
-        scale: vec![0.9, 0.8, 0.7],
-        translation: vec![1.0, 2.0, 3.0],
+        rotation: [0.4, 0.5, 0.6, 0.9],
+        scale: [0.9, 0.8, 0.7],
+        translation: [1.0, 2.0, 3.0],
     };
     let prim = PrimMeta {
         attributes: Some(Attributes {

@@ -2,11 +2,13 @@ use std::sync::Arc;
 
 use wasm_bindgen::{JsValue, prelude::*};
 
+use hsd::attributes::xform::XformAttr;
+
 use crate::runtime::shared::{
     self, Api,
     wired::scene::prim::{
         PrimAlphaMode, PrimCollider, PrimColor, PrimImage, PrimMaterial, PrimMesh, PrimRigidBody,
-        PrimRigidBodyKind, PrimTopology, PrimXform,
+        PrimRigidBodyKind, PrimTopology,
     },
 };
 
@@ -239,7 +241,7 @@ impl PrimHandle {
     }
 }
 
-fn xform_to_js(x: &PrimXform) -> JsValue {
+fn xform_to_js(x: &XformAttr) -> JsValue {
     let obj = js_sys::Object::new();
     obj_set(
         &obj,
@@ -259,11 +261,11 @@ fn xform_to_js(x: &PrimXform) -> JsValue {
     obj.into()
 }
 
-fn js_to_xform(v: &JsValue) -> Option<PrimXform> {
+fn js_to_xform(v: &JsValue) -> Option<XformAttr> {
     if v.is_null() || v.is_undefined() {
         return None;
     }
-    Some(PrimXform {
+    Some(XformAttr {
         translation: js_to_vec3(&obj_get(v, "translation"), [0.0; 3]),
         rotation: js_to_quat(&obj_get(v, "rotation"), [0.0, 0.0, 0.0, 1.0]),
         scale: js_to_vec3(&obj_get(v, "scale"), [1.0; 3]),

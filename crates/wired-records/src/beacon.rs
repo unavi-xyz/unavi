@@ -1,5 +1,9 @@
 use loro::LoroDoc;
-use loro_surgeon::{error::{HydrateError, ReconcileError}, reconcile::RootReconciler, {Hydrate, Reconcile}};
+use loro_surgeon::{
+    error::{HydrateError, ReconcileError},
+    reconcile::RootReconciler,
+    {Hydrate, Reconcile},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{byte_array::ByteArray, did::HydratedDid};

@@ -51,7 +51,7 @@ fn set_translation(prim: &Prim, translation: Vec3) {
     }));
 }
 
-fn gate_material() -> Material {
+const fn gate_material() -> Material {
     Material {
         alpha_cutoff: None,
         alpha_mode: None,

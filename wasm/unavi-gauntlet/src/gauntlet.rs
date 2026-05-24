@@ -50,13 +50,12 @@ const fn xform_full(translation: Vec3, rotation: Quat, scale: Vec3) -> Xform {
     }
 }
 
-fn xform_scale(scale: Vec3) -> Xform {
+const fn xform_scale(scale: Vec3) -> Xform {
     xform_full(Vec3::ZERO, Quat::IDENTITY, scale)
 }
 
 fn global_transform(prim: &Prim) -> Transform {
-    let t = prim.global_xform();
-    t
+    prim.global_xform()
 }
 
 fn place_sector_transform(bone: &Prim) -> Transform {

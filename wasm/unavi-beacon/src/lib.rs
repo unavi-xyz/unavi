@@ -12,7 +12,7 @@ use crate::{
         event::types::{EventFilter, EventScope, SpatialScope},
         scene::{
             api::self_document,
-            types::{Material, Prim, RigidBody, RigidBodyKind, Xform},
+            types::{Material, Prim, RigidBody, RigidBodyKind},
         },
     },
 };
@@ -72,12 +72,6 @@ impl ScriptBehavior for Script {
             occlusion_texture: None,
             roughness: Some(0.7),
         }));
-        prim.set_xform(Some(Xform {
-            translation: Vec3::ZERO,
-            rotation: Quat::IDENTITY,
-            scale: Vec3::ONE,
-        }));
-
         println!("Beacon initialized: {id}");
         Self {
             id,

@@ -66,9 +66,7 @@ pub fn drain_diff_queues(
 
         let mut events: Vec<HsdDiffEvent> = std::iter::from_fn(|| queue.try_recv().ok()).collect();
 
-        // Process Creates first so attribute/relationship events never arrive
-        // before the prim entity exists in the index.
-        // Not sure why this isn't already the case...
+        // Creates first so attribute events can resolve the prim entity.
         events.sort_by_key(|e| {
             !matches!(
                 e,

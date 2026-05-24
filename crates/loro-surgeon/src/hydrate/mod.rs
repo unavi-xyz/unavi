@@ -158,4 +158,3 @@ pub fn hydrate_list_item<T: Hydrate>(list: &LoroList, index: usize) -> Result<T,
         |voc| T::hydrate(&voc),
     )
 }
-

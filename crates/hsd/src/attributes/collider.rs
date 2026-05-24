@@ -1,4 +1,7 @@
-use loro_surgeon::{bytes::ByteArray, {Hydrate, Reconcile}};
+use loro_surgeon::{
+    bytes::ByteArray,
+    {Hydrate, Reconcile},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::attributes::Attribute;

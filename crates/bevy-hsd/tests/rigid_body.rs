@@ -26,7 +26,7 @@ fn test_rigid_body_lifecycle(mut ctx: TestContext) {
     reconcile_rigid_body(
         &meta,
         RigidBodyAttr {
-            kind: RigidBodyKind::Dynamic,
+            kind: Some(RigidBodyKind::Dynamic),
             ..Default::default()
         },
     );
@@ -62,7 +62,7 @@ fn test_rigid_body_kinds(mut ctx: TestContext) {
     reconcile_rigid_body(
         &tree.get_meta(static_prim).expect("meta"),
         RigidBodyAttr {
-            kind: RigidBodyKind::Static,
+            kind: Some(RigidBodyKind::Static),
             ..Default::default()
         },
     );
@@ -71,7 +71,7 @@ fn test_rigid_body_kinds(mut ctx: TestContext) {
     reconcile_rigid_body(
         &tree.get_meta(kinematic_prim).expect("meta"),
         RigidBodyAttr {
-            kind: RigidBodyKind::Kinematic,
+            kind: Some(RigidBodyKind::Kinematic),
             ..Default::default()
         },
     );
@@ -100,7 +100,7 @@ fn test_rigid_body_props(mut ctx: TestContext) {
     reconcile_rigid_body(
         &meta,
         RigidBodyAttr {
-            kind: RigidBodyKind::Dynamic,
+            kind: Some(RigidBodyKind::Dynamic),
             friction: Some(0.5),
             restitution: Some(0.3),
             mass: Some(2.0),
@@ -147,7 +147,7 @@ fn test_rigid_body_invalid_mass(mut ctx: TestContext) {
         reconcile_rigid_body(
             &meta,
             RigidBodyAttr {
-                kind: RigidBodyKind::Dynamic,
+                kind: Some(RigidBodyKind::Dynamic),
                 mass: Some(bad_mass),
                 ..Default::default()
             },
@@ -182,7 +182,7 @@ fn test_rigid_body_invalid_transform_does_not_panic(mut ctx: TestContext) {
     reconcile_rigid_body(
         &meta,
         RigidBodyAttr {
-            kind: RigidBodyKind::Dynamic,
+            kind: Some(RigidBodyKind::Dynamic),
             ..Default::default()
         },
     );

@@ -1,3 +1,4 @@
+use avian3d::prelude::{Position, Rotation};
 use bevy::prelude::*;
 use hsd::{
     HSD_CONTAINER_ID,
@@ -72,15 +73,46 @@ impl AttributeParser for XformParser {
     }
 }
 
-pub fn apply_xform(trigger: On<ApplyEvent<XformEvent>>, mut xforms: Query<&mut Transform>) {
-    let Ok(mut transform) = xforms.get_mut(trigger.entity) else {
-        warn!("Transform not found");
-        return;
+pub fn apply_xform(
+    trigger: On<ApplyEvent<XformEvent>>,
+    mut transforms: Query<&mut Transform>,
+    mut physics: Query<(Option<&mut Position>, Option<&mut Rotation>)>,
+    parents: Query<&ChildOf>,
+) {
+    let new_local = {
+        let Ok(mut transform) = transforms.get_mut(trigger.entity) else {
+            warn!("Transform not found");
+            return;
+        };
+        match trigger.value {
+            XformEvent::Rotation(v) => transform.rotation = v,
+            XformEvent::Scale(v) => transform.scale = v,
+            XformEvent::Translation(v) => transform.translation = v,
+        }
+        *transform
     };
 
-    match trigger.value {
-        XformEvent::Rotation(v) => transform.rotation = v,
-        XformEvent::Scale(v) => transform.scale = v,
-        XformEvent::Translation(v) => transform.translation = v,
+    let Ok((position, rotation)) = physics.get_mut(trigger.entity) else {
+        return;
+    };
+    if position.is_none() && rotation.is_none() {
+        return;
+    }
+
+    let mut chain = vec![new_local];
+    let mut current = parents.get(trigger.entity).ok().map(ChildOf::parent);
+    while let Some(e) = current {
+        chain.push(transforms.get(e).copied().unwrap_or(Transform::IDENTITY));
+        current = parents.get(e).ok().map(ChildOf::parent);
+    }
+    let mut global = Transform::IDENTITY;
+    for local in chain.iter().rev() {
+        global = global.mul_transform(*local);
+    }
+    if let Some(mut p) = position {
+        p.0 = global.translation;
+    }
+    if let Some(mut r) = rotation {
+        r.0 = global.rotation;
     }
 }

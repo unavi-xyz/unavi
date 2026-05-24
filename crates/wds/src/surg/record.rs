@@ -2,7 +2,11 @@ use std::collections::BTreeMap;
 
 use blake3::Hash;
 use loro::LoroDoc;
-use loro_surgeon::{error::{HydrateError, ReconcileError}, reconcile::RootReconciler, {Hydrate, Reconcile}};
+use loro_surgeon::{
+    error::{HydrateError, ReconcileError},
+    reconcile::RootReconciler,
+    {Hydrate, Reconcile},
+};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;

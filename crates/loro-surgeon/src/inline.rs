@@ -70,7 +70,8 @@ impl ToInlineValue for &str {
 
 impl<T: ToInlineValue> ToInlineValue for Option<T> {
     fn to_inline(&self) -> LoroValue {
-        self.as_ref().map_or(LoroValue::Null, ToInlineValue::to_inline)
+        self.as_ref()
+            .map_or(LoroValue::Null, ToInlineValue::to_inline)
     }
 }
 

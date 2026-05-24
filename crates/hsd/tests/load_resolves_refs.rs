@@ -58,26 +58,19 @@ fn material_texture_name_is_resolved_to_tree_id() {
     let mat_attr = MaterialAttr::attr_hydrate(&attributes_map(&mat_meta).expect("attrs"))
         .expect("hydrate material");
 
-    let base = match mat_attr.base_color_texture {
-        Some(s) => s,
-        None => panic!("base_color_texture missing"),
-    };
+    let base = mat_attr
+        .base_color_texture
+        .expect("base_color_texture missing");
     let parsed = TreeID::try_from(base.as_str()).expect("base_color_texture is a TreeID");
     assert_eq!(parsed, tex_id);
 
-    let emissive = match mat_attr.emissive_texture {
-        Some(s) => s,
-        None => panic!("emissive_texture missing"),
-    };
+    let emissive = mat_attr.emissive_texture.expect("emissive_texture missing");
     assert_eq!(
         TreeID::try_from(emissive.as_str()).expect("emissive is a TreeID"),
         tex_id,
     );
 
-    let normal = match mat_attr.normal_texture {
-        Some(s) => s,
-        None => panic!("normal_texture missing"),
-    };
+    let normal = mat_attr.normal_texture.expect("normal_texture missing");
     assert_eq!(normal, "missing", "unknown refs pass through unchanged");
     assert!(TreeID::try_from(normal.as_str()).is_err());
 }

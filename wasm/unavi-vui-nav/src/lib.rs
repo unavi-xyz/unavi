@@ -119,20 +119,21 @@ struct Script {
     module: VuiModule,
     ring: Prim,
     root: Prim,
+    themed_prims: Vec<Prim>,
 }
 
 impl ScriptBehavior for Script {
     fn init() -> Self {
         let doc = self_document();
         let mut prims = Vec::new();
+        let mut themed_prims = Vec::new();
 
         let color = Color::WHITE;
-        let color_mat = material(Some(color), true);
 
         let root = doc.create_prim();
         set_scale(&root, Vec3::splat(0.0));
 
-        let filter_table = make_filter_table(&doc, &color_mat, &mut prims);
+        let filter_table = make_filter_table(&doc, color, &mut prims, &mut themed_prims);
         set_translation(&filter_table, Vec3::new(BASIN_X, 0.0, 0.0));
         root.add_child(&filter_table);
         prims.push(filter_table);
@@ -142,19 +143,16 @@ impl ScriptBehavior for Script {
         root.add_child(&basin);
         prims.push(basin);
 
-        let ring_mat = material(Some(Color::WHITE), true);
-
         let ring = Torus::new(RING_THICKNESS, RING_RADIUS).mesh();
-        ring.set_material(Some(&ring_mat));
+        ring.set_material(Some(&material(Some(color), true)));
         ring.set_collider(Some(&Collider::Cylinder(ColliderCylinder {
             height: RING_COLLIDER_HEIGHT,
             radius: RING_COLLIDER_RADIUS,
         })));
         ring.set_rigid_body(Some(dynamic_body()));
         set_scale(&ring, Vec3::splat(0.0));
+        themed_prims.push(ring.clone());
 
-        // Icon: a torus from unavi-shapes. The old XZ → XY rotation is now
-        // applied via xform rather than by mutating mesh streams in-place.
         let icon = Torus::new(ICON_MINOR_R, ICON_MAJOR_R).mesh();
         let module = VuiModule::new(NAME, &icon);
 
@@ -167,6 +165,7 @@ impl ScriptBehavior for Script {
             module,
             ring,
             root,
+            themed_prims,
         }
     }
 
@@ -199,12 +198,16 @@ impl ScriptBehavior for Script {
                     set_scale(&self.ring, Vec3::splat(0.0));
                     self.beacon_query = None;
 
-                    for doc in &self.beacons {
+                    for doc in self.beacons.drain(..) {
                         remove_document(&doc.id());
                     }
                 }
                 ModuleEvent::SetColor(color) => {
                     self.color = color;
+                    let mat = material(Some(color), true);
+                    for prim in &self.themed_prims {
+                        prim.set_material(Some(&mat));
+                    }
                 }
             }
         }
@@ -221,11 +224,12 @@ impl ScriptBehavior for Script {
 
                         let doc = self_document();
 
-                        let (_, beacon_asset) = doc
-                            .roots()
-                            .into_iter()
-                            .find_map(|root| root.asset().map(|b| (root.id(), b)))
-                            .expect("beacon asset prim");
+                        let Some(beacon_asset) =
+                            doc.prims().into_iter().find_map(|p| p.asset())
+                        else {
+                            eprintln!("Nav HSD missing beacon asset child prim");
+                            continue;
+                        };
                         let Ok(beacon_doc) = load_hsd(&beacon_asset) else {
                             eprintln!("Failed to load beacon doc: {id}");
                             continue;
@@ -251,14 +255,21 @@ impl ScriptBehavior for Script {
     }
 }
 
-fn make_filter_table(doc: &Document, mat: &Material, prims: &mut Vec<Prim>) -> Prim {
+fn make_filter_table(
+    doc: &Document,
+    color: Color,
+    prims: &mut Vec<Prim>,
+    themed: &mut Vec<Prim>,
+) -> Prim {
     let group = doc.create_prim();
+    let mat = material(Some(color), true);
 
     let base_shape = Cuboid::new(Vec3::new(TABLE_W, BASE_H, TABLE_D));
     let base = base_shape.mesh();
     base.set_collider(Some(&base_shape.collider()));
     base.set_rigid_body(Some(static_body()));
-    base.set_material(Some(mat));
+    base.set_material(Some(&mat));
+    themed.push(base.clone());
     group.add_child(&base);
     prims.push(base);
 
@@ -267,7 +278,8 @@ fn make_filter_table(doc: &Document, mat: &Material, prims: &mut Vec<Prim>) -> P
         let lip = x_lip_shape.mesh();
         lip.set_collider(Some(&x_lip_shape.collider()));
         lip.set_rigid_body(Some(static_body()));
-        lip.set_material(Some(mat));
+        lip.set_material(Some(&mat));
+        themed.push(lip.clone());
         set_translation(&lip, Vec3::new(x_sign * X_LIP_X, LIP_Y, 0.0));
         group.add_child(&lip);
         prims.push(lip);
@@ -278,7 +290,8 @@ fn make_filter_table(doc: &Document, mat: &Material, prims: &mut Vec<Prim>) -> P
         let lip = z_lip_shape.mesh();
         lip.set_collider(Some(&z_lip_shape.collider()));
         lip.set_rigid_body(Some(static_body()));
-        lip.set_material(Some(mat));
+        lip.set_material(Some(&mat));
+        themed.push(lip.clone());
         set_translation(&lip, Vec3::new(0.0, LIP_Y, z_sign * Z_LIP_Z));
         group.add_child(&lip);
         prims.push(lip);
@@ -288,7 +301,8 @@ fn make_filter_table(doc: &Document, mat: &Material, prims: &mut Vec<Prim>) -> P
     let divider = divider_shape.mesh();
     divider.set_collider(Some(&divider_shape.collider()));
     divider.set_rigid_body(Some(static_body()));
-    divider.set_material(Some(mat));
+    divider.set_material(Some(&mat));
+    themed.push(divider.clone());
     set_translation(&divider, Vec3::new(0.0, LIP_Y, 0.0));
     group.add_child(&divider);
     prims.push(divider);

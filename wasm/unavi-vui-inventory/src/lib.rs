@@ -78,10 +78,10 @@ const fn static_body() -> RigidBody {
 
 struct Script {
     root: Prim,
-    _prims: Vec<Prim>,
     _icon: Prim,
     module: VuiModule,
     color: Color,
+    themed_prims: Vec<Prim>,
 }
 
 impl ScriptBehavior for Script {
@@ -94,7 +94,7 @@ impl ScriptBehavior for Script {
         let root = doc.create_prim();
         set_scale(&root, Vec3::splat(0.0));
 
-        let mut prims = Vec::new();
+        let mut themed_prims = Vec::new();
 
         let base_shape = Cuboid::new(Vec3::new(TABLE_W, BASE_H, TABLE_D));
         let base = base_shape.mesh();
@@ -102,7 +102,7 @@ impl ScriptBehavior for Script {
         base.set_rigid_body(Some(static_body()));
         base.set_material(Some(&color_mat));
         root.add_child(&base);
-        prims.push(base);
+        themed_prims.push(base);
 
         let x_lip_shape = Cuboid::new(Vec3::new(LIP_T, LIP_H, TABLE_D));
         for x_sign in [-1.0_f32, 1.0_f32] {
@@ -112,7 +112,7 @@ impl ScriptBehavior for Script {
             lip.set_material(Some(&color_mat));
             set_translation(&lip, Vec3::new(x_sign * X_LIP_X, LIP_Y, 0.0));
             root.add_child(&lip);
-            prims.push(lip);
+            themed_prims.push(lip);
         }
 
         let z_lip_shape = Cuboid::new(Vec3::new(TABLE_W, LIP_H, LIP_T));
@@ -123,7 +123,7 @@ impl ScriptBehavior for Script {
             lip.set_material(Some(&color_mat));
             set_translation(&lip, Vec3::new(0.0, LIP_Y, z_sign * Z_LIP_Z));
             root.add_child(&lip);
-            prims.push(lip);
+            themed_prims.push(lip);
         }
 
         let icon = Cuboid::new(Vec3::splat(ICON_SIZE)).mesh();
@@ -131,10 +131,10 @@ impl ScriptBehavior for Script {
 
         Self {
             root,
-            _prims: prims,
             _icon: icon,
             module,
             color,
+            themed_prims,
         }
     }
 
@@ -153,6 +153,10 @@ impl ScriptBehavior for Script {
                 }
                 ModuleEvent::SetColor(color) => {
                     self.color = color;
+                    let mat = material(Some(color));
+                    for prim in &self.themed_prims {
+                        prim.set_material(Some(&mat));
+                    }
                 }
             }
         }

@@ -186,13 +186,9 @@ impl ScriptBehavior for Script {
                 -delta / OPEN_SPEED_SECONDS
             };
             let new_t = (prev_t + inc).clamp(0.0, 1.0);
-            if new_t.to_bits() != prev_t.to_bits() {
+            let scale_changed = new_t.to_bits() != prev_t.to_bits();
+            if scale_changed {
                 g.scale_t.set(new_t);
-                g.core.set_xform(Some(Xform {
-                    translation: Vec3::ZERO,
-                    rotation: Quat::IDENTITY,
-                    scale: Vec3::splat(new_t),
-                }));
             }
 
             for sector in g.sectors.borrow().iter() {
@@ -201,6 +197,8 @@ impl ScriptBehavior for Script {
 
             if !g.open.get() && new_t > 0.0 {
                 g.track_bone();
+            } else if scale_changed {
+                g.apply_scale();
             }
 
             if !g.open.get() {

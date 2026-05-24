@@ -54,7 +54,7 @@ pub struct Hsd(pub Arc<LoroDoc>);
 pub struct HsdRecordId(pub blake3::Hash);
 
 #[derive(Component, Default)]
-#[relationship_target(relationship=HsdChild)]
+#[relationship_target(relationship=HsdChild, linked_spawn)]
 pub struct HsdChildren(Vec<Entity>);
 
 #[derive(Component)]

@@ -73,7 +73,7 @@ pub fn set_agent_tickrates(
 
         let dist = root.translation.distance(transform.translation);
         let dist = dist.abs().clamp(MIN_DIST, MAX_DIST);
-        let s = (dist - MIN_DIST) / MAX_DIST;
+        let s = (dist - MIN_DIST) / (MAX_DIST - MIN_DIST);
         let secs = MIN_TICKRATE
             .as_secs_f32()
             .lerp(MAX_TICKRATE.as_secs_f32(), s);

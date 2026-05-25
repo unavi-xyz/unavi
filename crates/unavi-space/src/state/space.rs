@@ -57,12 +57,15 @@ pub fn add_space_state(trigger: On<Add, Space>, spaces: Query<&Space>, mut comma
             state.reconcile(rec).expect("reconcile state");
 
             let sub = doc.subscribe_local_update(Box::new(move |update| {
-                let _ = AsyncCommands::default()
+                if let Err(err) = AsyncCommands::default()
                     .trigger(SpaceStateUpdate {
                         space,
                         data: update.clone(),
                     })
-                    .try_send();
+                    .try_send()
+                {
+                    warn!(?err, "dropped SpaceStateUpdate: async command queue full");
+                }
                 true
             }));
 

@@ -1,22 +1,27 @@
-use std::{sync::LazyLock, time::Duration};
+use std::{
+    mem,
+    sync::{LazyLock, Mutex},
+    time::Duration,
+};
 
-use async_channel::{Receiver, Sender};
 use bevy::{platform::collections::HashMap, prelude::*};
 use blake3::Hash;
-use iroh::EndpointAddr;
+use iroh::{EndpointAddr, EndpointId};
 
 use crate::peer::{ActiveSpaces, Peer};
-
-pub struct PresenceUpdate {
-    pub peer: EndpointAddr,
-    pub space: Hash,
-}
 
 pub const PRESENCE_INTERVAL: Duration = Duration::from_secs(20);
 const INACTIVE_SECS: f32 = PRESENCE_INTERVAL.as_secs_f32() * 4.0;
 
-pub static PRESENCE_QUEUE: LazyLock<(Sender<PresenceUpdate>, Receiver<PresenceUpdate>)> =
-    LazyLock::new(async_channel::unbounded);
+type PresenceKey = (EndpointId, Hash);
+
+static PRESENCE_INBOX: LazyLock<Mutex<HashMap<PresenceKey, EndpointAddr>>> =
+    LazyLock::new(|| Mutex::new(HashMap::default()));
+
+pub fn submit_presence(peer: EndpointAddr, space: Hash) {
+    let mut inbox = PRESENCE_INBOX.lock().expect("presence inbox");
+    inbox.insert((peer.id, space), peer);
+}
 
 pub fn manage_peers(
     time: Res<Time>,
@@ -26,25 +31,22 @@ pub fn manage_peers(
 ) {
     let now = time.elapsed_secs();
 
-    // Refresh active timers.
-    while let Ok(update) = PRESENCE_QUEUE.1.try_recv() {
-        let Some((entity, _, mut spaces)) =
-            peers.iter_mut().find(|(_, p, _)| p.0.id == update.peer.id)
+    let updates = mem::take(&mut *PRESENCE_INBOX.lock().expect("presence inbox"));
+
+    for ((_, space), peer) in updates {
+        let Some((entity, _, mut spaces)) = peers.iter_mut().find(|(_, p, _)| p.0.id == peer.id)
         else {
             let mut spaces = HashMap::default();
-            spaces.insert(update.space, now);
-            info!("+peer: {}", update.peer.id);
-            commands.spawn((Peer(update.peer), ActiveSpaces(spaces)));
+            spaces.insert(space, now);
+            info!("+peer: {}", peer.id);
+            commands.spawn((Peer(peer), ActiveSpaces(spaces)));
             continue;
         };
 
-        spaces.0.insert(update.space, now);
-
-        // Update component with most recent addresses.
-        commands.entity(entity).insert(Peer(update.peer));
+        spaces.0.insert(space, now);
+        commands.entity(entity).insert(Peer(peer));
     }
 
-    // Cull inactive peers.
     if peers.is_empty() {
         return;
     }

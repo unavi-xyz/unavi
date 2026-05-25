@@ -119,7 +119,8 @@
                 (
                   self: _:
                   let
-                    toolchain = with self.fenix;
+                    toolchain =
+                      with self.fenix;
                       combine [
                         complete.toolchain
                         targets.wasm32-unknown-unknown.latest.rust-std

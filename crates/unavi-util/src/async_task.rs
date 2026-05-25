@@ -4,7 +4,7 @@ use async_channel::Sender;
 
 type Fut = Pin<Box<dyn Future<Output = ()> + Send>>;
 
-const SIZE: usize = 8;
+const SIZE: usize = 32;
 
 pub static ASYNC_TASK: LazyLock<Sender<Fut>> = LazyLock::new(|| {
     let (tx, rx) = async_channel::bounded(SIZE);

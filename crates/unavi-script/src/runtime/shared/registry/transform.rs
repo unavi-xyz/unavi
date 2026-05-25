@@ -48,8 +48,14 @@ pub fn register_nodes(
 }
 
 pub fn snapshot_transforms(transforms: Query<(&RegisterTransforms, &GlobalTransform, &Transform)>) {
+    if transforms.is_empty() {
+        return;
+    }
+
+    let mut reg = NODE_TRANSFORM_REGISTRY.write();
+
     for (id, global, local) in transforms {
-        NODE_TRANSFORM_REGISTRY.write().insert(
+        reg.insert(
             id.0.clone(),
             TransformSnapshot {
                 global: *global,

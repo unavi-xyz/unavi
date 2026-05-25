@@ -37,7 +37,6 @@ pub fn init_scripts(
                     .await
                 {
                     Ok(()) => {
-                        store.data().api.doc.commit();
                         drop(store);
                         let _ = tx.send(());
                     }

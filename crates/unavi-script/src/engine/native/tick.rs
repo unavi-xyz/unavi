@@ -67,8 +67,6 @@ pub fn tick_scripts(
                 {
                     warn!(?err, "Failed to tick script");
                 }
-
-                store.data().api.doc.commit();
                 drop(store);
 
                 ticking.store(false, Ordering::SeqCst);

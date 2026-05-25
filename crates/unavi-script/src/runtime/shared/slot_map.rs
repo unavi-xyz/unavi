@@ -21,7 +21,7 @@ impl<T> SlotMap<T> {
 
     pub fn insert(&mut self, value: T) -> u32 {
         let key = self.next;
-        self.next += 1;
+        self.next = self.next.wrapping_add(1);
         self.items.insert(key, value);
         key
     }

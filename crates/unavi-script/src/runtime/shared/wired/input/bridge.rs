@@ -177,7 +177,7 @@ pub fn send_to_listeners(
     };
 
     for l in listeners {
-        if l.target_node != id.0 && l.target_doc != doc_id.0 {
+        if l.target_node != id.0 || l.target_doc != doc_id.0 {
             continue;
         }
         let _ = l.tx.try_send(trigger.event);

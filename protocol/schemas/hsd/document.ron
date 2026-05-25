@@ -26,15 +26,15 @@
                 })),
             })),
             "image": Optional(Struct({
-              "address_mode_u": Optional(I64),
-              "address_mode_v": Optional(I64),
-              "address_mode_w": Optional(I64),
-              "data": BlobId,
-              "mag_filter": Optional(I64),
-              "min_filter": Optional(I64),
-              "mipmap_filter": Optional(I64),
-              "name": Optional(String),
-              "srgb": Optional(Bool),
+                "address_mode_u": Optional(I64),
+                "address_mode_v": Optional(I64),
+                "address_mode_w": Optional(I64),
+                "data": BlobId,
+                "mag_filter": Optional(I64),
+                "min_filter": Optional(I64),
+                "mipmap_filter": Optional(I64),
+                "name": Optional(String),
+                "srgb": Optional(Bool),
             })),
             "material": Optional(Struct({
                 "alpha_cutoff": Optional(F64),
@@ -52,9 +52,9 @@
                 "roughness": Optional(F64),
             })),
             "mesh": Optional(Struct({
-                "topology": String,
                 "attributes": Map(BlobId),
                 "indices": Optional(BlobId),
+                "topology": String,
             })),
             "name": Optional(String),
             "rigid_body": Optional(Struct({
@@ -72,6 +72,6 @@
                 "translation": Optional(List(F64)),
             })),
         })),
-      "relationships": Map(String),
+        "relationships": Map(String),
     })),
 )

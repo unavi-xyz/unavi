@@ -34,9 +34,8 @@ pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
     while let Ok(SpaceStateUpdate { space, data }) = ss_rx.recv().await {
         let msg = StateMsg::Update { space, data };
 
-        let mut buf = Vec::new();
-        let out = postcard::to_slice(&msg, &mut buf)?;
-        let len = out.len();
+        let buf = postcard::to_allocvec(&msg)?;
+        let len = buf.len();
         tx.write_u16(u16::try_from(len).expect("max size")).await?;
         tx.write_all(&buf).await?;
     }
@@ -47,10 +46,9 @@ pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
 pub async fn recv_state_stream(_tx: SendStream, mut rx: RecvStream) -> anyhow::Result<()> {
     loop {
         let len = rx.read_u16().await? as usize;
-        let mut buf = Vec::with_capacity(len);
-        let buf = &mut buf[..len];
-        rx.read_exact(buf).await?;
-        let msg = postcard::from_bytes::<StateMsg>(buf)?;
+        let mut buf = vec![0u8; len];
+        rx.read_exact(&mut buf).await?;
+        let msg = postcard::from_bytes::<StateMsg>(&buf)?;
 
         match msg {
             StateMsg::Update { space, data } => {

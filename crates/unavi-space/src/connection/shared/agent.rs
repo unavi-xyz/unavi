@@ -66,7 +66,7 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
         let out = postcard::to_slice(&msg, &mut buf)?;
         let len = out.len();
         tx.write_u8(u8::try_from(len).expect("max size")).await?;
-        tx.write_all(&buf).await?;
+        tx.write_all(out).await?;
     }
 
     Ok(())

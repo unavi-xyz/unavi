@@ -15,10 +15,8 @@ pub struct PresenceUpdate {
 pub const PRESENCE_INTERVAL: Duration = Duration::from_secs(20);
 const INACTIVE_SECS: f32 = PRESENCE_INTERVAL.as_secs_f32() * 4.0;
 
-const SIZE: usize = 32;
-
 pub static PRESENCE_QUEUE: LazyLock<(Sender<PresenceUpdate>, Receiver<PresenceUpdate>)> =
-    LazyLock::new(|| async_channel::bounded(SIZE));
+    LazyLock::new(async_channel::unbounded);
 
 pub fn manage_peers(
     time: Res<Time>,

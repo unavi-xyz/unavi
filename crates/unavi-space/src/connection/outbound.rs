@@ -29,7 +29,7 @@ pub async fn try_open_connection(endpoint: Endpoint, peer: EndpointAddr) {
         let delay_extended = rand::rng().random_range((delay_secs / 2)..(delay_secs * 2));
         n0_future::time::sleep(Duration::from_secs(delay_extended)).await;
 
-        delay_secs = delay_secs.wrapping_mul(2);
+        delay_secs = delay_secs.saturating_mul(2).min(300);
     }
 
     let mut conns = CONNECTIONS.lock().expect("connections lock");

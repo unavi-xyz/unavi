@@ -63,7 +63,7 @@ impl AttributeParser for ColliderParser {
         } else {
             commands
                 .entity(prim)
-                .remove::<(HsdCollider, Collider, ColliderBlobsChild)>();
+                .remove::<(HsdCollider, Collider, DisabledCollider, ColliderBlobsChild)>();
         }
         Ok(())
     }

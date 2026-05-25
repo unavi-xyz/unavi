@@ -204,12 +204,12 @@ pub fn instance_hsd(
     actors: Query<(&LocalActor, &LocalBlobs)>,
     mut commands: Commands,
 ) {
+    let Ok((actor, local_blobs)) = actors.single() else {
+        return;
+    };
+
     'loading: for (entity, mut load) in loading {
         let Some(asset) = hsds.get(&load.handle) else {
-            continue;
-        };
-
-        let Ok((actor, local_blobs)) = actors.single() else {
             continue;
         };
 

@@ -12,7 +12,7 @@ use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 use crate::{
     attributes::{
         ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
-        util::shallow_map_updated_keys,
+        util::{shallow_map_updated_keys, valid_nonneg, valid_positive},
     },
     diff::HsdDiffEvent,
 };
@@ -131,12 +131,4 @@ pub fn apply_rigid_body(trigger: On<ApplyEvent<RigidBodyEvent>>, mut commands: C
             warn!("rigid_body: angular_damping must be finite and >= 0 (got {v})");
         }
     }
-}
-
-fn valid_positive(v: f64) -> bool {
-    v.is_finite() && v > 0.0
-}
-
-fn valid_nonneg(v: f64) -> bool {
-    v.is_finite() && v >= 0.0
 }

@@ -15,7 +15,7 @@ use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 use crate::{
     attributes::{
         ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
-        util::{compute_global_transform, shallow_map_updated_keys},
+        util::{compute_global_transform, shallow_map_updated_keys, valid_nonneg, valid_positive},
     },
     diff::HsdDiffEvent,
 };
@@ -225,14 +225,6 @@ fn insert_collider_with_seed(
         Position(seed.translation),
         Rotation(seed.rotation),
     ));
-}
-
-fn valid_positive(v: f64) -> bool {
-    v.is_finite() && v > 0.0
-}
-
-fn valid_nonneg(v: f64) -> bool {
-    v.is_finite() && v >= 0.0
 }
 
 fn build_sphere(r: f64) -> Option<Collider> {

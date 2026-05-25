@@ -56,6 +56,7 @@ pub fn drain_diff_queues(
     mut indices: Query<&mut HsdPrimIndex>,
     mut relationships: Query<&mut HsdRelationships>,
     has_material_data: Query<(), With<MaterialData>>,
+    mut events: Local<Vec<HsdDiffEvent>>,
     mut commands: Commands,
 ) {
     for (doc_ent, queue) in queues {
@@ -67,7 +68,8 @@ pub fn drain_diff_queues(
             continue;
         };
 
-        let mut events: Vec<HsdDiffEvent> = std::iter::from_fn(|| queue.try_recv().ok()).collect();
+        events.clear();
+        events.extend(std::iter::from_fn(|| queue.try_recv().ok()));
 
         if events.len() > DIFF_QUEUE_BACKPRESSURE_WARN {
             warn!(
@@ -88,7 +90,7 @@ pub fn drain_diff_queues(
             )
         });
 
-        for event in events {
+        for event in events.drain(..) {
             process_event(
                 event,
                 doc_ent,
@@ -229,6 +231,10 @@ fn apply_relationship(
     key: String,
     target: Option<TreeID>,
 ) {
+    // A prim without a MaterialAttr can still receive a material via relationship
+    // (inheriting from another prim's HsdMaterial). MaterialParser::lifecycle covers
+    // the attr-driven path; this branch covers the relationship-only path so the
+    // prim has the slots ready for propagate_material_to_dependents to fill.
     if key == MaterialAttr::KEY {
         match target {
             Some(_) => {

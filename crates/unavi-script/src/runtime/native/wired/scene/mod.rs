@@ -29,12 +29,14 @@ pub mod bindings {
 impl bindings::wired::scene::api::Host for Runtime {
     async fn self_prim(&mut self) -> wasmtime::Result<Resource<PrimRes>> {
         shared::wired::scene::self_prim(&self.api)
+            .await
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn self_document(&mut self) -> wasmtime::Result<Resource<DocRes>> {
         shared::wired::scene::self_document(&self.api)
+            .await
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -54,7 +56,9 @@ impl bindings::wired::scene::api::Host for Runtime {
     }
 
     async fn remove_document(&mut self, id: Vec<u8>) -> wasmtime::Result<()> {
-        shared::wired::scene::remove_document(&self.api, id).map_err(wasmtime::Error::from_anyhow)
+        shared::wired::scene::remove_document(&self.api, id)
+            .await
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn load_hsd(

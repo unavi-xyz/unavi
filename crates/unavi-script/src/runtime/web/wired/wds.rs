@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::{
@@ -22,7 +23,11 @@ impl WdsHandle {
 impl Drop for WdsHandle {
     fn drop(&mut self) {
         if self.rep != u32::MAX {
-            let _ = shared::wired::wds::wds_drop(&self.api, self.rep);
+            let api = Arc::clone(&self.api);
+            let rep = self.rep;
+            spawn_async_task(async move {
+                let _ = shared::wired::wds::wds_drop(&api, rep).await;
+            });
         }
     }
 }
@@ -42,7 +47,11 @@ impl QueryFutureHandle {
 impl Drop for QueryFutureHandle {
     fn drop(&mut self) {
         if self.rep != u32::MAX {
-            let _ = shared::wired::wds::query_future_drop(&self.api, self.rep);
+            let api = Arc::clone(&self.api);
+            let rep = self.rep;
+            spawn_async_task(async move {
+                let _ = shared::wired::wds::query_future_drop(&api, rep).await;
+            });
         }
     }
 }
@@ -62,7 +71,11 @@ impl ReadFutureHandle {
 impl Drop for ReadFutureHandle {
     fn drop(&mut self) {
         if self.rep != u32::MAX {
-            let _ = shared::wired::wds::read_future_drop(&self.api, self.rep);
+            let api = Arc::clone(&self.api);
+            let rep = self.rep;
+            spawn_async_task(async move {
+                let _ = shared::wired::wds::read_future_drop(&api, rep).await;
+            });
         }
     }
 }
@@ -82,7 +95,11 @@ impl BlobFutureHandle {
 impl Drop for BlobFutureHandle {
     fn drop(&mut self) {
         if self.rep != u32::MAX {
-            let _ = shared::wired::wds::blob_future_drop(&self.api, self.rep);
+            let api = Arc::clone(&self.api);
+            let rep = self.rep;
+            spawn_async_task(async move {
+                let _ = shared::wired::wds::blob_future_drop(&api, rep).await;
+            });
         }
     }
 }
@@ -117,28 +134,34 @@ fn variant_obj(tag: &str, val: JsValue) -> JsValue {
 
 #[wasm_bindgen]
 impl WdsHandle {
-    pub fn query(&self, filter: JsValue) -> QueryFutureHandle {
+    pub async fn query(&self, filter: JsValue) -> QueryFutureHandle {
         let rep = shared::wired::wds::query(&self.api, self.rep, js_to_query_filter(&filter))
+            .await
             .unwrap_or(u32::MAX);
         QueryFutureHandle::new(rep, Arc::clone(&self.api))
     }
 
-    pub fn read(&self, record_id: Vec<u8>) -> ReadFutureHandle {
-        let rep = shared::wired::wds::read(&self.api, self.rep, record_id).unwrap_or(u32::MAX);
+    pub async fn read(&self, record_id: Vec<u8>) -> ReadFutureHandle {
+        let rep = shared::wired::wds::read(&self.api, self.rep, record_id)
+            .await
+            .unwrap_or(u32::MAX);
         ReadFutureHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "getBlob")]
-    pub fn get_blob(&self, blob_id: Vec<u8>) -> BlobFutureHandle {
-        let rep = shared::wired::wds::get_blob(&self.api, self.rep, blob_id).unwrap_or(u32::MAX);
+    pub async fn get_blob(&self, blob_id: Vec<u8>) -> BlobFutureHandle {
+        let rep = shared::wired::wds::get_blob(&self.api, self.rep, blob_id)
+            .await
+            .unwrap_or(u32::MAX);
         BlobFutureHandle::new(rep, Arc::clone(&self.api))
     }
 }
 
 #[wasm_bindgen]
 impl BlobFutureHandle {
-    pub fn poll(&self) -> JsValue {
-        let Ok(Some(result)) = shared::wired::wds::blob_future_poll(&self.api, self.rep) else {
+    pub async fn poll(&self) -> JsValue {
+        let Ok(Some(result)) = shared::wired::wds::blob_future_poll(&self.api, self.rep).await
+        else {
             return JsValue::UNDEFINED;
         };
         match result {
@@ -150,8 +173,9 @@ impl BlobFutureHandle {
 
 #[wasm_bindgen]
 impl QueryFutureHandle {
-    pub fn poll(&self) -> JsValue {
-        let Ok(Some(result)) = shared::wired::wds::query_future_poll(&self.api, self.rep) else {
+    pub async fn poll(&self) -> JsValue {
+        let Ok(Some(result)) = shared::wired::wds::query_future_poll(&self.api, self.rep).await
+        else {
             return JsValue::UNDEFINED;
         };
         match result {
@@ -172,8 +196,9 @@ impl QueryFutureHandle {
 
 #[wasm_bindgen]
 impl ReadFutureHandle {
-    pub fn poll(&self) -> JsValue {
-        let Ok(Some(result)) = shared::wired::wds::read_future_poll(&self.api, self.rep) else {
+    pub async fn poll(&self) -> JsValue {
+        let Ok(Some(result)) = shared::wired::wds::read_future_poll(&self.api, self.rep).await
+        else {
             return JsValue::UNDEFINED;
         };
         match result {
@@ -237,8 +262,10 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredWdsGetWds")]
-    pub fn wired_wds_get_wds(&self) -> WdsHandle {
-        let rep = shared::wired::wds::get_wds(&self.api).unwrap_or(u32::MAX);
+    pub async fn wired_wds_get_wds(&self) -> WdsHandle {
+        let rep = shared::wired::wds::get_wds(&self.api)
+            .await
+            .unwrap_or(u32::MAX);
         WdsHandle::new(rep, Arc::clone(&self.api))
     }
 }

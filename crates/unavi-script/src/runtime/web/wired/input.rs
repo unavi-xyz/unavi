@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::{
@@ -26,14 +27,21 @@ impl InputListenerHandle {
 
 impl Drop for InputListenerHandle {
     fn drop(&mut self) {
-        let _ = shared::wired::input::listener::drop(&self.api, self.rep);
+        if self.rep != u32::MAX {
+            let api = Arc::clone(&self.api);
+            let rep = self.rep;
+            spawn_async_task(async move {
+                let _ = shared::wired::input::listener::drop(&api, rep).await;
+            });
+        }
     }
 }
 
 #[wasm_bindgen]
 impl InputListenerHandle {
-    pub fn poll(&self) -> JsValue {
-        let Ok(Some(event)) = shared::wired::input::listener::poll(&self.api, self.rep) else {
+    pub async fn poll(&self) -> JsValue {
+        let Ok(Some(event)) = shared::wired::input::listener::poll(&self.api, self.rep).await
+        else {
             return JsValue::UNDEFINED;
         };
 
@@ -66,16 +74,21 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredInputRegisterInputListener")]
-    pub fn wired_input_register_input_listener(&self, target: &PrimHandle) -> InputListenerHandle {
+    pub async fn wired_input_register_input_listener(
+        &self,
+        target: &PrimHandle,
+    ) -> InputListenerHandle {
         let rep = shared::wired::input::register_input_listener(&self.api, target.rep())
+            .await
             .unwrap_or(u32::MAX);
         InputListenerHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "wiredInputRegisterGlobalInputListener")]
-    pub fn wired_input_register_global_input_listener(&self) -> InputListenerHandle {
-        let rep =
-            shared::wired::input::register_global_input_listener(&self.api).unwrap_or(u32::MAX);
+    pub async fn wired_input_register_global_input_listener(&self) -> InputListenerHandle {
+        let rep = shared::wired::input::register_global_input_listener(&self.api)
+            .await
+            .unwrap_or(u32::MAX);
         InputListenerHandle::new(rep, Arc::clone(&self.api))
     }
 }

@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::{JsValue, prelude::*};
 
 use hsd::attributes::xform::XformAttr;
@@ -36,7 +37,11 @@ impl PrimHandle {
 impl Drop for PrimHandle {
     fn drop(&mut self) {
         if self.rep != u32::MAX {
-            let _ = shared::wired::scene::prim::on_drop(&self.api, self.rep);
+            let api = Arc::clone(&self.api);
+            let rep = self.rep;
+            spawn_async_task(async move {
+                let _ = shared::wired::scene::prim::on_drop(&api, rep).await;
+            });
         }
     }
 }
@@ -48,23 +53,29 @@ impl PrimHandle {
         self.rep
     }
 
-    pub fn id(&self) -> String {
-        shared::wired::scene::prim::id(&self.api, self.rep).unwrap_or_default()
+    pub async fn id(&self) -> String {
+        shared::wired::scene::prim::id(&self.api, self.rep)
+            .await
+            .unwrap_or_default()
     }
 
     #[wasm_bindgen(js_name = "clone")]
-    pub fn clone_prim(&self) -> Option<Self> {
-        let rep = shared::wired::scene::prim::clone(&self.api, self.rep).ok()?;
+    pub async fn clone_prim(&self) -> Option<Self> {
+        let rep = shared::wired::scene::prim::clone(&self.api, self.rep)
+            .await
+            .ok()?;
         Some(Self::new(rep, Arc::clone(&self.api)))
     }
 
-    pub fn parent(&self) -> Option<PrimHandle> {
-        let rep = shared::wired::scene::prim::parent(&self.api, self.rep).ok()??;
-        Some(PrimHandle::new(rep, Arc::clone(&self.api)))
+    pub async fn parent(&self) -> Option<Self> {
+        let rep = shared::wired::scene::prim::parent(&self.api, self.rep)
+            .await
+            .ok()??;
+        Some(Self::new(rep, Arc::clone(&self.api)))
     }
 
-    pub fn children(&self) -> js_sys::Array {
-        let Ok(reps) = shared::wired::scene::prim::children(&self.api, self.rep) else {
+    pub async fn children(&self) -> js_sys::Array {
+        let Ok(reps) = shared::wired::scene::prim::children(&self.api, self.rep).await else {
             return js_sys::Array::new();
         };
         reps.into_iter()
@@ -73,75 +84,88 @@ impl PrimHandle {
     }
 
     #[wasm_bindgen(js_name = "addChild")]
-    pub fn add_child(&self, child: &PrimHandle) -> Result<(), String> {
+    pub async fn add_child(&self, child: &PrimHandle) -> Result<(), String> {
         shared::wired::scene::prim::add_child(&self.api, self.rep, child.rep)
+            .await
             .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "removeChild")]
-    pub fn remove_child(&self, child: &PrimHandle) -> Result<(), String> {
+    pub async fn remove_child(&self, child: &PrimHandle) -> Result<(), String> {
         shared::wired::scene::prim::remove_child(&self.api, self.rep, child.rep)
+            .await
             .map_err(|e| e.to_string())
     }
 
-    pub fn name(&self) -> Option<String> {
+    pub async fn name(&self) -> Option<String> {
         shared::wired::scene::prim::name(&self.api, self.rep)
+            .await
             .ok()
             .flatten()
     }
 
     #[wasm_bindgen(js_name = "setName")]
-    pub fn set_name(&self, value: Option<String>) -> Result<(), String> {
-        shared::wired::scene::prim::set_name(&self.api, self.rep, value).map_err(|e| e.to_string())
+    pub async fn set_name(&self, value: Option<String>) -> Result<(), String> {
+        shared::wired::scene::prim::set_name(&self.api, self.rep, value)
+            .await
+            .map_err(|e| e.to_string())
     }
 
-    pub fn asset(&self) -> JsValue {
-        match shared::wired::scene::prim::asset(&self.api, self.rep) {
+    pub async fn asset(&self) -> JsValue {
+        match shared::wired::scene::prim::asset(&self.api, self.rep).await {
             Ok(Some(b)) => js_sys::Uint8Array::from(b.as_slice()).into(),
             _ => JsValue::UNDEFINED,
         }
     }
 
     #[wasm_bindgen(js_name = "setAsset")]
-    pub fn set_asset(&self, value: JsValue) -> Result<(), String> {
+    pub async fn set_asset(&self, value: JsValue) -> Result<(), String> {
         let bytes = if value.is_null() || value.is_undefined() {
             None
         } else {
             Some(js_sys::Uint8Array::new(&value).to_vec())
         };
-        shared::wired::scene::prim::set_asset(&self.api, self.rep, bytes).map_err(|e| e.to_string())
+        shared::wired::scene::prim::set_asset(&self.api, self.rep, bytes)
+            .await
+            .map_err(|e| e.to_string())
     }
 
-    pub fn xform(&self) -> JsValue {
-        match shared::wired::scene::prim::xform(&self.api, self.rep) {
+    pub async fn xform(&self) -> JsValue {
+        match shared::wired::scene::prim::xform(&self.api, self.rep).await {
             Ok(Some(x)) => xform_to_js(&x),
             _ => JsValue::UNDEFINED,
         }
     }
 
     #[wasm_bindgen(js_name = "setXform")]
-    pub fn set_xform(&self, value: JsValue) -> Result<(), String> {
+    pub async fn set_xform(&self, value: JsValue) -> Result<(), String> {
         let xf = js_to_xform(&value);
-        shared::wired::scene::prim::set_xform(&self.api, self.rep, xf).map_err(|e| e.to_string())
+        shared::wired::scene::prim::set_xform(&self.api, self.rep, xf)
+            .await
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "globalXform")]
-    pub fn global_xform(&self) -> JsValue {
-        let x = shared::wired::scene::prim::global_xform(&self.api, self.rep).unwrap_or_default();
+    pub async fn global_xform(&self) -> JsValue {
+        let x = shared::wired::scene::prim::global_xform(&self.api, self.rep)
+            .await
+            .unwrap_or_default();
         xform_to_js(&x)
     }
 
-    pub fn mesh(&self) -> JsValue {
-        match shared::wired::scene::prim::mesh(&self.api, self.rep) {
+    pub async fn mesh(&self) -> JsValue {
+        match shared::wired::scene::prim::mesh(&self.api, self.rep).await {
             Ok(Some(m)) => mesh_to_js(m),
             _ => JsValue::UNDEFINED,
         }
     }
 
     #[wasm_bindgen(js_name = "setMesh")]
-    pub fn set_mesh(&self, value: JsValue) -> Result<(), String> {
+    pub async fn set_mesh(&self, value: JsValue) -> Result<(), String> {
         let m = js_to_mesh(&value);
-        shared::wired::scene::prim::set_mesh(&self.api, self.rep, m).map_err(|e| e.to_string())
+        shared::wired::scene::prim::set_mesh(&self.api, self.rep, m)
+            .await
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "setMeshStream")]
@@ -158,62 +182,69 @@ impl PrimHandle {
             .map_err(|e| e.to_string())
     }
 
-    pub fn material(&self) -> JsValue {
-        match shared::wired::scene::prim::material(&self.api, self.rep) {
+    pub async fn material(&self) -> JsValue {
+        match shared::wired::scene::prim::material(&self.api, self.rep).await {
             Ok(Some(m)) => material_to_js(&m),
             _ => JsValue::UNDEFINED,
         }
     }
 
     #[wasm_bindgen(js_name = "setMaterial")]
-    pub fn set_material(&self, value: JsValue) -> Result<(), String> {
+    pub async fn set_material(&self, value: JsValue) -> Result<(), String> {
         let m = js_to_material(&value);
-        shared::wired::scene::prim::set_material(&self.api, self.rep, m).map_err(|e| e.to_string())
+        shared::wired::scene::prim::set_material(&self.api, self.rep, m)
+            .await
+            .map_err(|e| e.to_string())
     }
 
-    pub fn image(&self) -> JsValue {
-        match shared::wired::scene::prim::image(&self.api, self.rep) {
+    pub async fn image(&self) -> JsValue {
+        match shared::wired::scene::prim::image(&self.api, self.rep).await {
             Ok(Some(img)) => image_to_js(&img),
             _ => JsValue::UNDEFINED,
         }
     }
 
     #[wasm_bindgen(js_name = "setImage")]
-    pub fn set_image(&self, value: JsValue) -> Result<(), String> {
+    pub async fn set_image(&self, value: JsValue) -> Result<(), String> {
         let img = js_to_image(&value);
-        shared::wired::scene::prim::set_image(&self.api, self.rep, img).map_err(|e| e.to_string())
+        shared::wired::scene::prim::set_image(&self.api, self.rep, img)
+            .await
+            .map_err(|e| e.to_string())
     }
 
-    pub fn collider(&self) -> JsValue {
-        match shared::wired::scene::prim::collider(&self.api, self.rep) {
+    pub async fn collider(&self) -> JsValue {
+        match shared::wired::scene::prim::collider(&self.api, self.rep).await {
             Ok(Some(c)) => collider_to_js(c),
             _ => JsValue::UNDEFINED,
         }
     }
 
     #[wasm_bindgen(js_name = "setCollider")]
-    pub fn set_collider(&self, value: JsValue) -> Result<(), String> {
+    pub async fn set_collider(&self, value: JsValue) -> Result<(), String> {
         let c = js_to_collider(&value);
-        shared::wired::scene::prim::set_collider(&self.api, self.rep, c).map_err(|e| e.to_string())
+        shared::wired::scene::prim::set_collider(&self.api, self.rep, c)
+            .await
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "rigidBody")]
-    pub fn rigid_body(&self) -> JsValue {
-        match shared::wired::scene::prim::rigid_body(&self.api, self.rep) {
+    pub async fn rigid_body(&self) -> JsValue {
+        match shared::wired::scene::prim::rigid_body(&self.api, self.rep).await {
             Ok(Some(rb)) => rigid_body_to_js(&rb),
             _ => JsValue::UNDEFINED,
         }
     }
 
     #[wasm_bindgen(js_name = "setRigidBody")]
-    pub fn set_rigid_body(&self, value: JsValue) -> Result<(), String> {
+    pub async fn set_rigid_body(&self, value: JsValue) -> Result<(), String> {
         let rb = js_to_rigid_body(&value);
         shared::wired::scene::prim::set_rigid_body(&self.api, self.rep, rb)
+            .await
             .map_err(|e| e.to_string())
     }
 
-    pub fn relationships(&self) -> js_sys::Array {
-        let Ok(items) = shared::wired::scene::prim::relationships(&self.api, self.rep) else {
+    pub async fn relationships(&self) -> js_sys::Array {
+        let Ok(items) = shared::wired::scene::prim::relationships(&self.api, self.rep).await else {
             return js_sys::Array::new();
         };
         items
@@ -228,15 +259,21 @@ impl PrimHandle {
     }
 
     #[wasm_bindgen(js_name = "getRelationship")]
-    pub fn get_relationship(&self, key: String) -> Option<String> {
+    pub async fn get_relationship(&self, key: String) -> Option<String> {
         shared::wired::scene::prim::get_relationship(&self.api, self.rep, key)
+            .await
             .ok()
             .flatten()
     }
 
     #[wasm_bindgen(js_name = "setRelationship")]
-    pub fn set_relationship(&self, key: String, target: Option<String>) -> Result<(), String> {
+    pub async fn set_relationship(
+        &self,
+        key: String,
+        target: Option<String>,
+    ) -> Result<(), String> {
         shared::wired::scene::prim::set_relationship(&self.api, self.rep, key, target)
+            .await
             .map_err(|e| e.to_string())
     }
 }

@@ -28,14 +28,18 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredSceneSelfPrim")]
-    pub fn wired_scene_self_prim(&self) -> PrimHandle {
-        let rep = shared::wired::scene::self_prim(&self.api).unwrap_or(u32::MAX);
+    pub async fn wired_scene_self_prim(&self) -> PrimHandle {
+        let rep = shared::wired::scene::self_prim(&self.api)
+            .await
+            .unwrap_or(u32::MAX);
         PrimHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "wiredSceneSelfDocument")]
-    pub fn wired_scene_self_document(&self) -> DocHandle {
-        let rep = shared::wired::scene::self_document(&self.api).unwrap_or(u32::MAX);
+    pub async fn wired_scene_self_document(&self) -> DocHandle {
+        let rep = shared::wired::scene::self_document(&self.api)
+            .await
+            .unwrap_or(u32::MAX);
         DocHandle::new(rep, Arc::clone(&self.api))
     }
 
@@ -56,8 +60,10 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredSceneRemoveDocument")]
-    pub fn wired_scene_remove_document(&self, id: Vec<u8>) -> Result<(), String> {
-        shared::wired::scene::remove_document(&self.api, id).map_err(|e| e.to_string())
+    pub async fn wired_scene_remove_document(&self, id: Vec<u8>) -> Result<(), String> {
+        shared::wired::scene::remove_document(&self.api, id)
+            .await
+            .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "wiredSceneLoadHsd")]

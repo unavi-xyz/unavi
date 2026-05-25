@@ -18,24 +18,27 @@ pub struct WiredAgentApi {
     pub agents: SlotMap<AgentRes>,
 }
 
-pub fn local_agent(api: &Api) -> anyhow::Result<u32> {
-    Ok(api.wired_agent.try_lock()?.agents.insert(AgentRes {
+pub async fn local_agent(api: &Api) -> anyhow::Result<u32> {
+    Ok(api.wired_agent.lock().await.agents.insert(AgentRes {
         key: AgentKey::Local,
     }))
 }
 
-pub fn local_camera(api: &Api) -> anyhow::Result<u32> {
-    let guard = AGENT_REGISTRY.read();
-    let entry = guard
-        .get(&AgentKey::Local)
-        .ok_or_else(|| anyhow::anyhow!("agent entry not found"))?;
-    let id = entry
-        .camera
-        .as_ref()
-        .ok_or_else(|| anyhow::anyhow!("camera proxy not found"))?;
-    let (doc_id, node_id) = (id.doc, id.node);
-    drop(guard);
-    let rep = api.wired_scene.try_lock()?.prims.insert(PrimRes {
+pub async fn local_camera(api: &Api) -> anyhow::Result<u32> {
+    let (doc_id, node_id) = {
+        let guard = AGENT_REGISTRY.read();
+        let entry = guard
+            .get(&AgentKey::Local)
+            .ok_or_else(|| anyhow::anyhow!("agent entry not found"))?;
+        let id = entry
+            .camera
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("camera proxy not found"))?;
+        let out = (id.doc, id.node);
+        drop(guard);
+        out
+    };
+    let rep = api.wired_scene.lock().await.prims.insert(PrimRes {
         doc: Arc::default(),
         doc_id,
         id: node_id,
@@ -44,9 +47,9 @@ pub fn local_camera(api: &Api) -> anyhow::Result<u32> {
     Ok(rep)
 }
 
-pub fn bone(api: &Api, rep: u32, name: BoneName) -> anyhow::Result<Option<u32>> {
+pub async fn bone(api: &Api, rep: u32, name: BoneName) -> anyhow::Result<Option<u32>> {
     let key = {
-        let wired_agent = api.wired_agent.try_lock()?;
+        let wired_agent = api.wired_agent.lock().await;
         wired_agent
             .agents
             .get(rep)
@@ -54,14 +57,17 @@ pub fn bone(api: &Api, rep: u32, name: BoneName) -> anyhow::Result<Option<u32>> 
             .key
             .clone()
     };
-    let guard = AGENT_REGISTRY.read();
-    let entry = guard
-        .get(&key)
-        .ok_or_else(|| anyhow::anyhow!("agent entry not found"))?;
-    if let Some(id) = entry.bones.get(&name) {
-        let (doc_id, node_id) = (id.doc, id.node);
+    let absolute = {
+        let guard = AGENT_REGISTRY.read();
+        let entry = guard
+            .get(&key)
+            .ok_or_else(|| anyhow::anyhow!("agent entry not found"))?;
+        let out = entry.bones.get(&name).map(|id| (id.doc, id.node));
         drop(guard);
-        let rep = api.wired_scene.try_lock()?.prims.insert(PrimRes {
+        out
+    };
+    if let Some((doc_id, node_id)) = absolute {
+        let rep = api.wired_scene.lock().await.prims.insert(PrimRes {
             doc: Arc::default(),
             doc_id,
             id: node_id,
@@ -73,7 +79,7 @@ pub fn bone(api: &Api, rep: u32, name: BoneName) -> anyhow::Result<Option<u32>> 
     }
 }
 
-pub fn on_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
-    api.wired_agent.try_lock()?.agents.remove(rep);
+pub async fn on_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+    api.wired_agent.lock().await.agents.remove(rep);
     Ok(())
 }

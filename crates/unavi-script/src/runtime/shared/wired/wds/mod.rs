@@ -51,12 +51,12 @@ pub struct WdsRecord {
     pub containers: Vec<(String, Vec<u8>)>,
 }
 
-pub fn get_wds(api: &Api) -> anyhow::Result<u32> {
-    let mut wds = api.wired_wds.try_lock()?;
+pub async fn get_wds(api: &Api) -> anyhow::Result<u32> {
+    let mut wds = api.wired_wds.lock().await;
     Ok(wds.wds_slots.insert(WdsRes))
 }
 
-pub fn query(api: &Api, _wds_rep: u32, filter: Option<QueryFilter>) -> anyhow::Result<u32> {
+pub async fn query(api: &Api, _wds_rep: u32, filter: Option<QueryFilter>) -> anyhow::Result<u32> {
     let (mut event, rx, cancel) = QueryRecord::new();
 
     if let Some(f) = filter {
@@ -71,20 +71,20 @@ pub fn query(api: &Api, _wds_rep: u32, filter: Option<QueryFilter>) -> anyhow::R
 
     AsyncCommands::default().trigger(event).try_send()?;
 
-    let mut wds = api.wired_wds.try_lock()?;
+    let mut wds = api.wired_wds.lock().await;
     Ok(wds.query_futures.insert(QueryFutureRes {
         _cancel: cancel,
         rx,
     }))
 }
 
-pub fn read(api: &Api, _wds_rep: u32, record_id: Vec<u8>) -> anyhow::Result<u32> {
+pub async fn read(api: &Api, _wds_rep: u32, record_id: Vec<u8>) -> anyhow::Result<u32> {
     let id = Hash::from_slice(&record_id)?;
     let (event, rx, cancel) = ReadRecord::new(id);
 
     AsyncCommands::default().trigger(event).try_send()?;
 
-    let mut wds = api.wired_wds.try_lock()?;
+    let mut wds = api.wired_wds.lock().await;
     Ok(wds.read_futures.insert(ReadFutureRes {
         _cancel: cancel,
         id,
@@ -92,8 +92,11 @@ pub fn read(api: &Api, _wds_rep: u32, record_id: Vec<u8>) -> anyhow::Result<u32>
     }))
 }
 
-pub fn query_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<Vec<Vec<u8>>, ()>>> {
-    let wds = api.wired_wds.try_lock()?;
+pub async fn query_future_poll(
+    api: &Api,
+    rep: u32,
+) -> anyhow::Result<Option<Result<Vec<Vec<u8>>, ()>>> {
+    let wds = api.wired_wds.lock().await;
     let Some(res) = wds.query_futures.get(rep) else {
         bail!("query future resource not found")
     };
@@ -113,8 +116,11 @@ pub fn query_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<Ve
     }
 }
 
-pub fn read_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<WdsRecord, ()>>> {
-    let wds = api.wired_wds.try_lock()?;
+pub async fn read_future_poll(
+    api: &Api,
+    rep: u32,
+) -> anyhow::Result<Option<Result<WdsRecord, ()>>> {
+    let wds = api.wired_wds.lock().await;
     let Some(res) = wds.read_futures.get(rep) else {
         return Ok(Some(Err(())));
     };
@@ -134,17 +140,17 @@ pub fn read_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<Wds
     }
 }
 
-pub fn query_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
-    api.wired_wds.try_lock()?.query_futures.remove(rep);
+pub async fn query_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+    api.wired_wds.lock().await.query_futures.remove(rep);
     Ok(())
 }
 
-pub fn read_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
-    api.wired_wds.try_lock()?.read_futures.remove(rep);
+pub async fn read_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+    api.wired_wds.lock().await.read_futures.remove(rep);
     Ok(())
 }
 
-pub fn get_blob(api: &Api, _wds_rep: u32, blob_id: Vec<u8>) -> anyhow::Result<u32> {
+pub async fn get_blob(api: &Api, _wds_rep: u32, blob_id: Vec<u8>) -> anyhow::Result<u32> {
     let hash = Hash::from_slice(&blob_id)?;
     let (tx, rx) = async_channel::bounded(1);
     let (cancel_tx, mut cancel_rx) = oneshot::channel();
@@ -158,7 +164,8 @@ pub fn get_blob(api: &Api, _wds_rep: u32, blob_id: Vec<u8>) -> anyhow::Result<u3
     });
     Ok(api
         .wired_wds
-        .try_lock()?
+        .lock()
+        .await
         .blob_futures
         .insert(BlobFutureRes {
             _cancel: cancel_tx,
@@ -179,14 +186,18 @@ async fn fetch_blob(hash: Hash) -> anyhow::Result<Bytes> {
     Ok(rx.recv().await?)
 }
 
-pub fn blob_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<Vec<u8>, ()>>> {
-    let wds = api.wired_wds.try_lock()?;
+pub async fn blob_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<Vec<u8>, ()>>> {
+    let wds = api.wired_wds.lock().await;
     let Some(res) = wds.blob_futures.get(rep) else {
         bail!("blob future resource not found")
     };
     match res.rx.try_recv() {
-        Ok(Ok(bytes)) => Ok(Some(Ok(bytes.to_vec()))),
+        Ok(Ok(bytes)) => {
+            drop(wds);
+            Ok(Some(Ok(bytes.to_vec())))
+        }
         Ok(Err(err)) => {
+            drop(wds);
             warn!(?err, "blob_future_poll: fetch failed");
             Ok(Some(Err(())))
         }
@@ -195,12 +206,12 @@ pub fn blob_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<Vec
     }
 }
 
-pub fn blob_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
-    api.wired_wds.try_lock()?.blob_futures.remove(rep);
+pub async fn blob_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+    api.wired_wds.lock().await.blob_futures.remove(rep);
     Ok(())
 }
 
-pub fn wds_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
-    api.wired_wds.try_lock()?.wds_slots.remove(rep);
+pub async fn wds_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+    api.wired_wds.lock().await.wds_slots.remove(rep);
     Ok(())
 }

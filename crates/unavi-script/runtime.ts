@@ -5,14 +5,6 @@ import {
 } from "@bytecodealliance/jco/component";
 import { WASIShim } from "@bytecodealliance/preview2-shim/instantiation";
 
-const SCRIPT_ASYNC_IMPORTS = [
-  "wired:scene/api#create-document",
-  "wired:scene/api#get-document",
-  "wired:scene/api#load-hsd",
-  "wired:scene/types#[method]prim.set-mesh-indices-u32",
-  "wired:scene/types#[method]prim.set-mesh-stream",
-];
-
 const SCRIPT_ASYNC_EXPORTS = [
   "wired:script/guest-api#init",
   "wired:script/guest-api#render",
@@ -26,11 +18,21 @@ export async function instantiateScript(
 ): Promise<any> {
   console.log("Building script", name);
 
+  const wasi = new WASIShim({
+    sandbox: {
+      preopens: {},
+      env: {},
+      args: [],
+      enableNetwork: false,
+    },
+  });
+  const imports = buildImports(wasi, rt);
+
   const options: GenerateOptions = {
     asyncMode: {
       tag: "jspi",
       val: {
-        imports: SCRIPT_ASYNC_IMPORTS,
+        imports: collectAsyncImports(imports),
         exports: SCRIPT_ASYNC_EXPORTS,
       },
     },
@@ -69,16 +71,6 @@ export async function instantiateScript(
     return await WebAssembly.compile(bytes as BufferSource);
   }
 
-  const wasi = new WASIShim({
-    sandbox: {
-      preopens: {},
-      env: {},
-      args: [],
-      enableNetwork: false,
-    },
-  });
-  const imports = build_imports(wasi, rt);
-
   const instance = await mod.instantiate(getCoreModule, imports);
   if (options.tracing) {
     // Only run for a limited number of ticks if we are tracing calls for debugging.
@@ -113,7 +105,7 @@ export async function scriptTick(instance: any): Promise<void> {
   await instance.guestApi.tick();
 }
 
-function build_imports(wasi: WASIShim, rt: any) {
+function buildImports(wasi: WASIShim, rt: any) {
   return {
     ...wasi.getImportObject(),
     "wired:agent/api": {
@@ -169,4 +161,42 @@ function build_imports(wasi: WASIShim, rt: any) {
       Wds: rt.wiredWdsClass(),
     },
   };
+}
+
+const camelToKebab = (s: string): string =>
+  s
+    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1-$2")
+    .toLowerCase();
+
+const isResourceClass = (value: unknown): value is { prototype: object } =>
+  typeof value === "function" &&
+  (value as { prototype?: object }).prototype != null &&
+  Object.getOwnPropertyNames((value as { prototype: object }).prototype).some(
+    (n) => n !== "constructor",
+  );
+
+function collectAsyncImports(imports: Record<string, unknown>): string[] {
+  const out: string[] = [];
+  for (const [iface, members] of Object.entries(imports)) {
+    if (!iface.startsWith("wired:")) continue;
+    for (const [name, value] of Object.entries(
+      members as Record<string, unknown>,
+    )) {
+      if (isResourceClass(value)) {
+        const resource = camelToKebab(name);
+        const proto = value.prototype;
+        for (const method of Object.getOwnPropertyNames(proto)) {
+          if (method === "constructor" || method === "free") continue;
+          if (method.startsWith("__")) continue;
+          const desc = Object.getOwnPropertyDescriptor(proto, method);
+          if (!desc || typeof desc.value !== "function") continue;
+          out.push(`${iface}#[method]${resource}.${camelToKebab(method)}`);
+        }
+      } else if (typeof value === "function") {
+        out.push(`${iface}#${camelToKebab(name)}`);
+      }
+    }
+  }
+  return out;
 }

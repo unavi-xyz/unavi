@@ -52,7 +52,7 @@ pub struct WiredEventApi {
 
 const RECEPTOR_CAPACITY: usize = 16;
 
-pub fn emit(
+pub async fn emit(
     api: &Api,
     channel: String,
     payload: Vec<u8>,
@@ -65,7 +65,7 @@ pub fn emit(
     let emitter_spatial: Option<(AbsoluteNodeId, Option<bevy::math::Vec3>, f32)> =
         match &filter.scope {
             EventScope::Spatial { node, radius } => {
-                let scene = api.wired_scene.try_lock()?;
+                let scene = api.wired_scene.lock().await;
                 let abs = scene
                     .prims
                     .get(*node)
@@ -157,13 +157,13 @@ pub fn emit(
     Ok(())
 }
 
-pub fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::Result<u32> {
+pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::Result<u32> {
     let (tx, rx) = async_channel::bounded(RECEPTOR_CAPACITY);
 
     let scope = match filter.scope {
         EventScope::Global => ReceptorScope::Global,
         EventScope::Spatial { node, radius } => {
-            let scene = api.wired_scene.try_lock()?;
+            let scene = api.wired_scene.lock().await;
             let abs = scene
                 .prims
                 .get(node)
@@ -179,7 +179,8 @@ pub fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::
 
     let id = NEXT_RECEPTOR_ID.fetch_add(1, Ordering::Relaxed);
     api.wired_event
-        .try_lock()?
+        .lock()
+        .await
         .receptors
         .items
         .insert(id, EventReceptorRes { rx });
@@ -198,9 +199,10 @@ pub fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::
     Ok(id)
 }
 
-pub fn receptor_poll(api: &Api, rep: u32) -> anyhow::Result<Option<InboundEvent>> {
+pub async fn receptor_poll(api: &Api, rep: u32) -> anyhow::Result<Option<InboundEvent>> {
     api.wired_event
-        .try_lock()?
+        .lock()
+        .await
         .receptors
         .get(rep)
         .map(|res| {
@@ -211,8 +213,8 @@ pub fn receptor_poll(api: &Api, rep: u32) -> anyhow::Result<Option<InboundEvent>
         .ok_or_else(|| anyhow::anyhow!("receptor not found: {rep}"))?
 }
 
-pub fn receptor_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+pub async fn receptor_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
     EVENT_RECEPTOR_REGISTRY.write().remove(&rep);
-    api.wired_event.try_lock()?.receptors.remove(rep);
+    api.wired_event.lock().await.receptors.remove(rep);
     Ok(())
 }

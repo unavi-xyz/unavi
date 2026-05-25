@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use bevy_vrm::BoneName;
+use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::{
@@ -25,7 +26,11 @@ impl AgentHandle {
 impl Drop for AgentHandle {
     fn drop(&mut self) {
         if self.rep != u32::MAX {
-            let _ = shared::wired::agent::on_drop(&self.api, self.rep);
+            let api = Arc::clone(&self.api);
+            let rep = self.rep;
+            spawn_async_task(async move {
+                let _ = shared::wired::agent::on_drop(&api, rep).await;
+            });
         }
     }
 }
@@ -93,9 +98,10 @@ fn js_to_bone_name(s: &str) -> Option<BoneName> {
 
 #[wasm_bindgen]
 impl AgentHandle {
-    pub fn bone(&self, name: String) -> Option<PrimHandle> {
+    pub async fn bone(&self, name: String) -> Option<PrimHandle> {
         let bone = js_to_bone_name(&name)?;
         let rep = shared::wired::agent::bone(&self.api, self.rep, bone)
+            .await
             .ok()
             .flatten()?;
         Some(PrimHandle::new(rep, Arc::clone(&self.api)))
@@ -112,14 +118,18 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredAgentLocalAgent")]
-    pub fn wired_agent_local_agent(&self) -> AgentHandle {
-        let rep = shared::wired::agent::local_agent(&self.api).unwrap_or(u32::MAX);
+    pub async fn wired_agent_local_agent(&self) -> AgentHandle {
+        let rep = shared::wired::agent::local_agent(&self.api)
+            .await
+            .unwrap_or(u32::MAX);
         AgentHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "wiredAgentLocalCamera")]
-    pub fn wired_agent_local_camera(&self) -> PrimHandle {
-        let rep = shared::wired::agent::local_camera(&self.api).unwrap_or(u32::MAX);
+    pub async fn wired_agent_local_camera(&self) -> PrimHandle {
+        let rep = shared::wired::agent::local_camera(&self.api)
+            .await
+            .unwrap_or(u32::MAX);
         PrimHandle::new(rep, Arc::clone(&self.api))
     }
 }

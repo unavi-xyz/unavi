@@ -32,6 +32,7 @@ impl bindings::wired::input::api::Host for Runtime {
         target: Resource<PrimRes>,
     ) -> wasmtime::Result<Resource<InputListenerRes>> {
         let res = shared::wired::input::register_input_listener(&self.api, target.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)?;
         Ok(Resource::new_own(res))
     }
@@ -42,6 +43,7 @@ impl bindings::wired::input::context::Host for Runtime {
         &mut self,
     ) -> wasmtime::Result<Resource<InputListenerRes>> {
         let res = shared::wired::input::register_global_input_listener(&self.api)
+            .await
             .map_err(wasmtime::Error::from_anyhow)?;
         Ok(Resource::new_own(res))
     }

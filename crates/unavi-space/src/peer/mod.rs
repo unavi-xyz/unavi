@@ -1,6 +1,12 @@
-use bevy::{platform::collections::HashMap, prelude::*};
+use bevy::{
+    platform::collections::HashMap,
+    prelude::*,
+};
 use blake3::Hash;
-use iroh::{EndpointAddr, EndpointId};
+use iroh::{
+    EndpointAddr,
+    EndpointId,
+};
 
 use crate::state::space::SpaceStateUpdate;
 
@@ -15,7 +21,7 @@ pub struct ActiveSpaces(pub HashMap<Hash, f32>);
 
 #[derive(Event)]
 pub struct AddSpaceStateSender {
-    pub peer: EndpointId,
+    pub peer:   EndpointId,
     pub sender: async_channel::Sender<SpaceStateUpdate>,
 }
 

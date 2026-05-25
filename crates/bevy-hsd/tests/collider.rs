@@ -2,13 +2,26 @@ use std::time::Duration;
 
 use avian3d::prelude::Collider;
 use bevy::prelude::*;
-use bevy_hsd::attributes::collider::{DisabledCollider, HsdCollider};
+use bevy_hsd::attributes::collider::{
+    DisabledCollider,
+    HsdCollider,
+};
 use bytemuck::cast_slice;
 use hsd::{
-    HSD_CONTAINER_ID, PrimMeta,
-    attributes::{Attribute, Attributes, attributes_map, collider::ColliderAttr},
+    HSD_CONTAINER_ID,
+    PrimMeta,
+    attributes::{
+        Attribute,
+        Attributes,
+        attributes_map,
+        collider::ColliderAttr,
+    },
 };
-use loro_surgeon::{Reconcile, bytes::ByteArray, reconcile::RootReconciler};
+use loro_surgeon::{
+    Reconcile,
+    bytes::ByteArray,
+    reconcile::RootReconciler,
+};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -129,7 +142,7 @@ fn test_collider_trimesh_blob(#[from(ctx_wds)] mut ctx: TestContext) {
         &meta,
         ColliderAttr::Trimesh {
             vertices: ByteArray::<32>::new(*vertex_hash.as_bytes()),
-            indices: ByteArray::<32>::new(*index_hash.as_bytes()),
+            indices:  ByteArray::<32>::new(*index_hash.as_bytes()),
         },
     );
 

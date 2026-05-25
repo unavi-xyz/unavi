@@ -1,6 +1,9 @@
 use std::path::Path;
 
-use anyhow::{Context, Result};
+use anyhow::{
+    Context,
+    Result,
+};
 
 use crate::build::Hsdx;
 

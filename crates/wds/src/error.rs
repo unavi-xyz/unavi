@@ -4,7 +4,10 @@
 //! - [`WdsError`]: Internal error type with full context.
 //! - [`ApiError`]: External error type safe for client/server boundary.
 
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use thiserror::Error;
 
 /// Internal error type for WDS operations.
@@ -53,7 +56,8 @@ pub enum WdsError {
 /// External error type for the WDS API.
 ///
 /// Safe to send across the client/server boundary.
-/// Internal details should be logged server-side before converting to these variants.
+/// Internal details should be logged server-side before converting to these
+/// variants.
 #[derive(Debug, Clone, Serialize, Deserialize, Error)]
 pub enum ApiError {
     #[error("unauthenticated")]
@@ -77,7 +81,8 @@ pub enum ApiError {
 }
 
 impl WdsError {
-    /// Convert to [`ApiError`], recovering wrapped errors from [`WdsError::Other`].
+    /// Convert to [`ApiError`], recovering wrapped errors from
+    /// [`WdsError::Other`].
     fn to_api_error(&self) -> ApiError {
         match self {
             Self::InvalidSignature => ApiError::InvalidSignature,

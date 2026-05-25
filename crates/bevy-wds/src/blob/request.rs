@@ -10,7 +10,7 @@ pub struct BlobRequest(pub Hash);
 
 #[derive(Component)]
 pub struct BlobPending {
-    rx: async_channel::Receiver<Bytes>,
+    rx:      async_channel::Receiver<Bytes>,
     _cancel: oneshot::Sender<()>,
 }
 
@@ -18,7 +18,8 @@ pub struct BlobPending {
 pub struct BlobResponse(pub Option<Bytes>);
 
 pub(crate) fn on_blob_request_remove(trigger: On<Remove, BlobRequest>, mut commands: Commands) {
-    // Removing BlobPending drops the oneshot::Sender, signalling the task to cancel.
+    // Removing BlobPending drops the oneshot::Sender, signalling the task to
+    // cancel.
     commands.entity(trigger.entity).try_remove::<BlobPending>();
 }
 

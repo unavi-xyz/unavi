@@ -1,21 +1,30 @@
 use std::sync::Arc;
 
 use unavi_util::async_task::spawn_async_task;
-use wasm_bindgen::{JsValue, prelude::*};
+use wasm_bindgen::{
+    JsValue,
+    prelude::*,
+};
 
+use super::scene::{
+    prim::PrimHandle,
+    util::opt_rep,
+};
 use crate::runtime::{
     Runtime,
     shared::{
-        self, Api,
+        self,
+        Api,
         registry::event::SenderScope,
         wired::{
-            event::{EventFilter, EventScope},
+            event::{
+                EventFilter,
+                EventScope,
+            },
             scene::prim::PrimRes,
         },
     },
 };
-
-use super::scene::{prim::PrimHandle, util::opt_rep};
 
 async fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
     let obj = js_sys::Object::new();
@@ -25,9 +34,9 @@ async fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
         }
         SenderScope::Spatial { distance, node } => {
             let node_rep = api.wired_scene.lock().await.prims.insert(PrimRes {
-                doc: Arc::clone(&api.doc),
-                doc_id: node.doc,
-                id: node.node,
+                doc:      Arc::clone(&api.doc),
+                doc_id:   node.doc,
+                id:       node.node,
                 is_proxy: true,
             });
             let val = js_sys::Object::new();

@@ -4,12 +4,14 @@ use bevy_vrm::BoneName;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
+use super::scene::prim::PrimHandle;
 use crate::runtime::{
     Runtime,
-    shared::{self, Api},
+    shared::{
+        self,
+        Api,
+    },
 };
-
-use super::scene::prim::PrimHandle;
 
 #[wasm_bindgen]
 pub struct AgentHandle {

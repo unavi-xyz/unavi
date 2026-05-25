@@ -2,10 +2,8 @@ use bevy::prelude::*;
 
 use crate::Script;
 
-#[cfg(not(target_family = "wasm"))]
-mod native;
-#[cfg(target_family = "wasm")]
-mod web;
+#[cfg(not(target_family = "wasm"))] mod native;
+#[cfg(target_family = "wasm")] mod web;
 
 pub struct EnginePlugin;
 

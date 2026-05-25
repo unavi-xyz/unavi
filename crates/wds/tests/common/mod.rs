@@ -3,22 +3,40 @@
 mod did_key;
 mod did_web;
 
-use std::{fmt::Display, sync::Arc};
+use std::{
+    fmt::Display,
+    sync::Arc,
+};
 
-use iroh::{Endpoint, endpoint::presets::N0DisableRelay, protocol::Router};
+use did_key::{
+    generate_actor,
+    generate_actor_with_identity,
+};
+use did_web::{
+    DidWebServer,
+    generate_actor_web,
+};
+use iroh::{
+    Endpoint,
+    endpoint::presets::N0DisableRelay,
+    protocol::Router,
+};
 use rstest::fixture;
 use rusqlite::params;
-use wds::{DataStore, actor::Actor};
-use wired_schemas::{SCHEMA_ACL, SCHEMA_RECORD};
-
-use did_key::{generate_actor, generate_actor_with_identity};
-use did_web::{DidWebServer, generate_actor_web};
+use wds::{
+    DataStore,
+    actor::Actor,
+};
+use wired_schemas::{
+    SCHEMA_ACL,
+    SCHEMA_RECORD,
+};
 
 pub struct DataStoreCtx {
     pub store: DataStore,
     pub alice: Actor,
-    pub bob: Actor,
-    router: Router,
+    pub bob:   Actor,
+    router:    Router,
 }
 
 #[fixture]
@@ -59,10 +77,10 @@ pub async fn ctx() -> DataStoreCtx {
 }
 
 pub struct MultiStoreCtx {
-    pub rome: DataStoreCtx,
-    pub carthage: DataStoreCtx,
+    pub rome:      DataStoreCtx,
+    pub carthage:  DataStoreCtx,
     _alice_server: DidWebServer,
-    _bob_server: DidWebServer,
+    _bob_server:   DidWebServer,
 }
 
 /// Multi-store context using did:web with DID document service auth.
@@ -89,9 +107,9 @@ pub async fn multi_ctx() -> MultiStoreCtx {
             .db()
             .call(move |conn| {
                 conn.execute(
-                    "INSERT INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
-                    params![&did_str],
-                )?;
+               "INSERT INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
+               params![&did_str],
+            )?;
                 Ok(())
             })
             .await
@@ -125,7 +143,7 @@ pub struct LocalStoreCtx {
     /// Alice's store with her identity set.
     pub alice_ctx: DataStoreCtx,
     /// Bob's store with his identity set.
-    pub bob_ctx: DataStoreCtx,
+    pub bob_ctx:   DataStoreCtx,
 }
 
 /// Multi-store context using did:key with `set_user_identity` for sync auth.

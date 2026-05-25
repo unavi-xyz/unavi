@@ -6,13 +6,23 @@ use bytes::Bytes;
 use iroh::EndpointId;
 use loro::LoroDoc;
 use tracing::warn;
-use wired_schemas::{SCHEMA_ACL, SCHEMA_RECORD, StaticSchema};
+use wired_schemas::{
+    SCHEMA_ACL,
+    SCHEMA_RECORD,
+    StaticSchema,
+};
 
 use crate::{
-    actor::{Actor, into_actor::IntoActor},
+    actor::{
+        Actor,
+        into_actor::IntoActor,
+    },
     record::envelope::Envelope,
     signed_bytes::Signable,
-    surg::{acl::Acl, record::Record},
+    surg::{
+        acl::Acl,
+        record::Record,
+    },
 };
 
 pub(super) const DEFAULT_PIN_TTL: Duration = Duration::from_hours(1);
@@ -20,8 +30,8 @@ pub(super) const DEFAULT_PIN_TTL: Duration = Duration::from_hours(1);
 /// Result of creating a record.
 #[derive(Debug)]
 pub struct RecordResult {
-    pub id: Hash,
-    pub doc: LoroDoc,
+    pub id:           Hash,
+    pub doc:          LoroDoc,
     pub sync_results: Vec<(EndpointId, anyhow::Result<()>)>,
 }
 
@@ -29,27 +39,27 @@ pub struct RecordResult {
 #[derive(Clone)]
 pub struct SchemaData {
     pub container: String,
-    pub hash: Hash,
-    pub bytes: Bytes,
+    pub hash:      Hash,
+    pub bytes:     Bytes,
 }
 
 impl From<&StaticSchema> for SchemaData {
     fn from(s: &StaticSchema) -> Self {
         Self {
             container: "unknown".into(), // Will be set by add_schema
-            hash: s.hash,
-            bytes: s.bytes.clone(),
+            hash:      s.hash,
+            bytes:     s.bytes.clone(),
         }
     }
 }
 
 pub struct RecordBuilder {
-    actor: Actor,
-    doc: LoroDoc,
-    schemas: Vec<SchemaData>,
-    ttl: Duration,
+    actor:        Actor,
+    doc:          LoroDoc,
+    schemas:      Vec<SchemaData>,
+    ttl:          Duration,
     sync_targets: Vec<Actor>,
-    is_public: bool,
+    is_public:    bool,
 }
 
 impl RecordBuilder {
@@ -74,7 +84,8 @@ impl RecordBuilder {
     }
 
     /// Add a schema to the record.
-    /// Accepts `&StaticSchema` for builtins or [`SchemaData`] for custom schemas.
+    /// Accepts `&StaticSchema` for builtins or [`SchemaData`] for custom
+    /// schemas.
     pub fn add_schema(
         mut self,
         container: impl Into<String>,

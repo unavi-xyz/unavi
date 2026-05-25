@@ -1,7 +1,10 @@
 use std::{
     sync::{
         Arc,
-        atomic::{AtomicU32, Ordering},
+        atomic::{
+            AtomicU32,
+            Ordering,
+        },
     },
     time::UNIX_EPOCH,
 };
@@ -14,10 +17,17 @@ use crate::{
         Api,
         registry::{
             event::{
-                EVENT_RECEPTOR_REGISTRY, InboundEvent, ReceptorEntry, ReceptorScope, SenderScope,
+                EVENT_RECEPTOR_REGISTRY,
+                InboundEvent,
+                ReceptorEntry,
+                ReceptorScope,
+                SenderScope,
             },
             firewall::validate_firewall,
-            transform::{AbsoluteNodeId, NODE_TRANSFORM_REGISTRY},
+            transform::{
+                AbsoluteNodeId,
+                NODE_TRANSFORM_REGISTRY,
+            },
         },
         slot_map::SlotMap,
     },
@@ -28,7 +38,7 @@ static NEXT_RECEPTOR_ID: AtomicU32 = AtomicU32::new(0);
 #[derive(Default)]
 pub struct EventFilter {
     pub documents: Option<Vec<Vec<u8>>>,
-    pub scope: EventScope,
+    pub scope:     EventScope,
 }
 
 #[derive(Default)]
@@ -36,7 +46,7 @@ pub enum EventScope {
     #[default]
     Global,
     Spatial {
-        node: u32,
+        node:   u32,
         radius: f32,
     },
 }
@@ -70,7 +80,7 @@ pub async fn emit(
                     .prims
                     .get(*node)
                     .map(|res| AbsoluteNodeId {
-                        doc: res.doc_id,
+                        doc:  res.doc_id,
                         node: res.id,
                     })
                     .ok_or_else(|| anyhow::anyhow!("emit: node not found"))?;
@@ -112,9 +122,9 @@ pub async fn emit(
         let sender_scope = match (&emitter_spatial, &entry.scope) {
             (None, ReceptorScope::Global) => SenderScope::Global,
             (None, ReceptorScope::Spatial { .. }) => continue,
-            (Some((abs, _, _)), ReceptorScope::Global) => SenderScope::Spatial {
+            (Some((abs, ..)), ReceptorScope::Global) => SenderScope::Spatial {
                 distance: 0.0,
-                node: abs.clone(),
+                node:     abs.clone(),
             },
             (
                 Some((emitter_abs, emitter_pos, emitter_radius)),
@@ -139,7 +149,7 @@ pub async fn emit(
                 }
                 SenderScope::Spatial {
                     distance: dist,
-                    node: emitter_abs.clone(),
+                    node:     emitter_abs.clone(),
                 }
             }
         };
@@ -168,7 +178,7 @@ pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> an
                 .prims
                 .get(node)
                 .map(|res| AbsoluteNodeId {
-                    doc: res.doc_id,
+                    doc:  res.doc_id,
                     node: res.id,
                 })
                 .ok_or_else(|| anyhow::anyhow!("listen: node not found"))?;

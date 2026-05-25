@@ -3,16 +3,26 @@ use std::f32::consts::PI;
 use bevy::{
     camera::{
         RenderTarget,
-        primitives::{Frustum, HalfSpace},
+        primitives::{
+            Frustum,
+            HalfSpace,
+        },
     },
     math::Affine3A,
     prelude::*,
     render::render_resource::Extent3d,
-    window::{PrimaryWindow, WindowRef},
+    window::{
+        PrimaryWindow,
+        WindowRef,
+    },
 };
 
 use crate::{
-    IncomingPortals, Portal, PortalCamera, PortalDestination, TrackedCamera,
+    IncomingPortals,
+    Portal,
+    PortalCamera,
+    PortalDestination,
+    TrackedCamera,
     material::PortalMaterial,
 };
 
@@ -179,7 +189,7 @@ pub fn update_portal_camera_frustums(
         let near_half_space_distance = -destination_transform
             .translation_vec3a()
             .dot(half_space_normal.normalize())
-            - 1e-4;
+            - 1.0e-4;
 
         new_frustum.half_spaces[4] =
             HalfSpace::new(half_space_normal.extend(near_half_space_distance));

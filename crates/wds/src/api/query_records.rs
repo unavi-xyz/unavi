@@ -1,11 +1,18 @@
-use std::{fmt::Write, sync::Arc};
+use std::{
+    fmt::Write,
+    sync::Arc,
+};
 
 use blake3::Hash;
 use irpc::WithChannels;
 
+use super::{
+    ApiError,
+    ApiService,
+    QueryRecords,
+    authenticate,
+};
 use crate::StoreContext;
-
-use super::{ApiError, ApiService, QueryRecords, authenticate};
 
 pub async fn query_records(
     ctx: Arc<StoreContext>,
@@ -15,7 +22,8 @@ pub async fn query_records(
     let requester_str = requester.to_string();
 
     // Build dynamic query based on filters.
-    // Use LEFT JOIN to include public records or records the requester has access to.
+    // Use LEFT JOIN to include public records or records the requester has access
+    // to.
     let mut sql = String::from(
         "SELECT DISTINCT r.id FROM records r
          LEFT JOIN record_acl_read acl ON r.id = acl.record_id

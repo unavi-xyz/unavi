@@ -1,18 +1,39 @@
-use std::{path::PathBuf, sync::LazyLock};
+use std::{
+    path::PathBuf,
+    sync::LazyLock,
+};
 
 use avian3d::prelude::*;
 use bevy::{
     camera::visibility::RenderLayers,
-    log::{DEFAULT_FILTER, LogPlugin},
+    log::{
+        DEFAULT_FILTER,
+        LogPlugin,
+    },
     prelude::*,
 };
-use bevy_hsd::load::{LoadHsd, on_load_spawn_doc};
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
-use bevy_wds::{LocalActor, LocalBlobs};
+use bevy_hsd::load::{
+    LoadHsd,
+    on_load_spawn_doc,
+};
+use bevy_panorbit_camera::{
+    PanOrbitCamera,
+    PanOrbitCameraPlugin,
+};
+use bevy_vrm::first_person::{
+    DEFAULT_RENDER_LAYERS,
+    FirstPersonFlag,
+};
+use bevy_wds::{
+    LocalActor,
+    LocalBlobs,
+};
 use directories::ProjectDirs;
 use unavi_agent::LocalAgent;
-use unavi_script::permissions::{ApiName, ApiPermissions};
+use unavi_script::permissions::{
+    ApiName,
+    ApiPermissions,
+};
 
 use crate::util::create_test_wds;
 

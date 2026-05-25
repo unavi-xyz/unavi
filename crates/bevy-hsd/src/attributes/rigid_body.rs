@@ -1,19 +1,44 @@
-use avian3d::prelude::{AngularDamping, Friction, LinearDamping, Mass, Restitution, RigidBody};
+use avian3d::prelude::{
+    AngularDamping,
+    Friction,
+    LinearDamping,
+    Mass,
+    Restitution,
+    RigidBody,
+};
 use bevy::prelude::*;
 use hsd::{
     HSD_CONTAINER_ID,
     attributes::{
-        Attribute, hydrate_attr,
-        rigid_body::{RigidBodyAttr, RigidBodyKind},
+        Attribute,
+        hydrate_attr,
+        rigid_body::{
+            RigidBodyAttr,
+            RigidBodyKind,
+        },
     },
 };
-use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
+use loro::{
+    ContainerID,
+    Index,
+    TreeID,
+    ValueOrContainer,
+    event::Diff,
+};
 
 use crate::{
     attributes::{
-        ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
+        ApplyEvent,
+        AttrDataEvent,
+        AttributeParser,
+        DocContext,
+        ParseError,
         collider::DisabledRigidBody,
-        util::{shallow_map_updated_keys, valid_nonneg, valid_positive},
+        util::{
+            shallow_map_updated_keys,
+            valid_nonneg,
+            valid_positive,
+        },
     },
     diff::HsdDiffEvent,
 };

@@ -2,14 +2,14 @@ use bevy::platform::collections::HashMap;
 
 pub struct SlotMap<T> {
     pub items: HashMap<u32, T>,
-    next: u32,
+    next:      u32,
 }
 
 impl<T> Default for SlotMap<T> {
     fn default() -> Self {
         Self {
             items: HashMap::new(),
-            next: 0,
+            next:  0,
         }
     }
 }

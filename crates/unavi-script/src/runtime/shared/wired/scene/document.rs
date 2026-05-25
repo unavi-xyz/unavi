@@ -2,21 +2,29 @@ use std::sync::Arc;
 
 use blake3::Hash;
 use hsd::HSD_CONTAINER_ID;
-use loro::{LoroDoc, TreeID, TreeParentId};
+use loro::{
+    LoroDoc,
+    TreeID,
+    TreeParentId,
+};
 use tokio::sync::MutexGuard;
 
 use crate::{
     firewall::Channel,
     runtime::shared::{
-        Api, registry::firewall::validate_firewall, wired::scene::WiredSceneApi,
-        wired::scene::prim::PrimRes,
+        Api,
+        registry::firewall::validate_firewall,
+        wired::scene::{
+            WiredSceneApi,
+            prim::PrimRes,
+        },
     },
 };
 
 #[derive(Clone)]
 pub struct DocRes {
     pub doc: Arc<LoroDoc>,
-    pub id: Hash,
+    pub id:  Hash,
 }
 
 async fn get_doc(api: &Api, rep: u32) -> anyhow::Result<DocRes> {
@@ -91,9 +99,9 @@ pub async fn get_prim(api: &Api, rep: u32, prim_id: String) -> anyhow::Result<Op
     }
     let mut scene = api.wired_scene.lock().await;
     Ok(Some(scene.prims.insert(PrimRes {
-        doc: doc.doc,
-        doc_id: doc.id,
-        id: tree_id,
+        doc:      doc.doc,
+        doc_id:   doc.id,
+        id:       tree_id,
         is_proxy: false,
     })))
 }
@@ -106,9 +114,9 @@ pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
 
     let mut scene = api.wired_scene.lock().await;
     Ok(scene.prims.insert(PrimRes {
-        doc: doc.doc,
-        doc_id: doc.id,
-        id: tree_id,
+        doc:      doc.doc,
+        doc_id:   doc.id,
+        id:       tree_id,
         is_proxy: false,
     }))
 }

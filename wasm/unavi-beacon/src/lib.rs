@@ -1,6 +1,9 @@
 use std::{
     str::FromStr,
-    time::{Duration, SystemTime},
+    time::{
+        Duration,
+        SystemTime,
+    },
 };
 
 use blake3::Hash;
@@ -9,10 +12,19 @@ use wired_prelude::prelude::*;
 use crate::{
     unavi::shapes::api::Cuboid,
     wired::{
-        event::types::{EventFilter, EventScope, SpatialScope},
+        event::types::{
+            EventFilter,
+            EventScope,
+            SpatialScope,
+        },
         scene::{
             api::self_document,
-            types::{Material, Prim, RigidBody, RigidBodyKind},
+            types::{
+                Material,
+                Prim,
+                RigidBody,
+                RigidBodyKind,
+            },
         },
     },
 };
@@ -27,7 +39,7 @@ const EVENT_RADIUS: f32 = SIZE * 3.0;
 const SIZE: f32 = 0.15;
 
 struct Script {
-    id: Hash,
+    id:   Hash,
     prim: Prim,
     time: SystemTime,
 }
@@ -48,29 +60,29 @@ impl ScriptBehavior for Script {
         let cube = cuboid.mesh();
         cube.set_collider(Some(&cuboid.collider()));
         cube.set_rigid_body(Some(RigidBody {
-            kind: RigidBodyKind::Dynamic,
+            kind:            RigidBodyKind::Dynamic,
             angular_damping: None,
-            friction: None,
-            linear_damping: None,
-            mass: None,
-            restitution: None,
+            friction:        None,
+            linear_damping:  None,
+            mass:            None,
+            restitution:     None,
         }));
         prim.add_child(&cube);
 
         let color = color::generate_beacon_color(id);
         cube.set_material(Some(&Material {
-            alpha_cutoff: None,
-            alpha_mode: None,
-            base_color: Some(color),
-            base_color_texture: None,
-            double_sided: None,
-            emissive: None,
-            emissive_texture: None,
-            metallic: Some(0.3),
+            alpha_cutoff:               None,
+            alpha_mode:                 None,
+            base_color:                 Some(color),
+            base_color_texture:         None,
+            double_sided:               None,
+            emissive:                   None,
+            emissive_texture:           None,
+            metallic:                   Some(0.3),
             metallic_roughness_texture: None,
-            normal_texture: None,
-            occlusion_texture: None,
-            roughness: Some(0.7),
+            normal_texture:             None,
+            occlusion_texture:          None,
+            roughness:                  Some(0.7),
         }));
         println!("Beacon initialized: {id}");
         Self {
@@ -92,8 +104,8 @@ impl ScriptBehavior for Script {
             self.id.as_bytes(),
             EventFilter {
                 documents: None,
-                scope: EventScope::Spatial(SpatialScope {
-                    prim: self.prim.clone(),
+                scope:     EventScope::Spatial(SpatialScope {
+                    prim:   self.prim.clone(),
                     radius: EVENT_RADIUS,
                 }),
             },

@@ -2,15 +2,25 @@
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{DataStruct, DeriveInput, Fields, Ident};
+use syn::{
+    DataStruct,
+    DeriveInput,
+    Fields,
+    Ident,
+};
 
-use crate::attrs::{ContainerAttrs, FieldAttrs, Strategy};
+use crate::attrs::{
+    ContainerAttrs,
+    FieldAttrs,
+    Strategy,
+};
 
-/// Pieces emitted into the `impl Reconcile`: body, key type, `key` fn, `hydrate_key` fn.
+/// Pieces emitted into the `impl Reconcile`: body, key type, `key` fn,
+/// `hydrate_key` fn.
 struct ReconcileImpl {
-    body: TokenStream,
-    key_type: TokenStream,
-    key_fn: TokenStream,
+    body:           TokenStream,
+    key_type:       TokenStream,
+    key_fn:         TokenStream,
     hydrate_key_fn: TokenStream,
 }
 
@@ -159,13 +169,13 @@ fn derive_tuple_struct(fields: &syn::FieldsUnnamed) -> ReconcileImpl {
     if fields.unnamed.len() == 1 {
         let inner_ty = &fields.unnamed[0].ty;
         return ReconcileImpl {
-            body: quote! {
+            body:           quote! {
                 fn reconcile<R: ::loro_surgeon::reconcile::Reconciler>(&self, r: R) -> Result<(), ::loro_surgeon::error::ReconcileError> {
                     self.0.reconcile(r)
                 }
             },
-            key_type: quote! { <#inner_ty as ::loro_surgeon::reconcile::Reconcile>::Key },
-            key_fn: quote! {
+            key_type:       quote! { <#inner_ty as ::loro_surgeon::reconcile::Reconcile>::Key },
+            key_fn:         quote! {
                 fn key(&self) -> ::loro_surgeon::reconcile::LoadKey<Self::Key> {
                     self.0.key()
                 }
@@ -177,7 +187,7 @@ fn derive_tuple_struct(fields: &syn::FieldsUnnamed) -> ReconcileImpl {
     let field_indices: Vec<_> = (0..fields.unnamed.len()).map(syn::Index::from).collect();
 
     ReconcileImpl {
-        body: quote! {
+        body:           quote! {
             fn reconcile<R: ::loro_surgeon::reconcile::Reconciler>(&self, r: R) -> Result<(), ::loro_surgeon::error::ReconcileError> {
                 let mut l = ::loro_surgeon::reconcile::Reconciler::list(r)?;
                 #(
@@ -186,21 +196,21 @@ fn derive_tuple_struct(fields: &syn::FieldsUnnamed) -> ReconcileImpl {
                 Ok(())
             }
         },
-        key_type: quote! { ::loro_surgeon::reconcile::NoKey },
-        key_fn: TokenStream::new(),
+        key_type:       quote! { ::loro_surgeon::reconcile::NoKey },
+        key_fn:         TokenStream::new(),
         hydrate_key_fn: TokenStream::new(),
     }
 }
 
 fn derive_unit_struct() -> ReconcileImpl {
     ReconcileImpl {
-        body: quote! {
+        body:           quote! {
             fn reconcile<R: ::loro_surgeon::reconcile::Reconciler>(&self, r: R) -> Result<(), ::loro_surgeon::error::ReconcileError> {
                 r.null()
             }
         },
-        key_type: quote! { ::loro_surgeon::reconcile::NoKey },
-        key_fn: TokenStream::new(),
+        key_type:       quote! { ::loro_surgeon::reconcile::NoKey },
+        key_fn:         TokenStream::new(),
         hydrate_key_fn: TokenStream::new(),
     }
 }

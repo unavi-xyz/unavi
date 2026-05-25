@@ -1,12 +1,21 @@
 //! Reconcile struct fields and `HashMap` entries into a [`LoroMap`].
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{
+    BTreeMap,
+    HashMap,
+};
 
 use loro::ValueOrContainer;
 
 use crate::{
     error::ReconcileError,
-    reconcile::{MapReconciler, NoKey, PropReconciler, Reconcile, Reconciler},
+    reconcile::{
+        MapReconciler,
+        NoKey,
+        PropReconciler,
+        Reconcile,
+        Reconciler,
+    },
 };
 
 impl MapReconciler {

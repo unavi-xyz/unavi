@@ -1,19 +1,29 @@
 use loro::LoroDoc;
 use loro_surgeon::{
-    error::{HydrateError, ReconcileError},
+    Hydrate,
+    Reconcile,
+    error::{
+        HydrateError,
+        ReconcileError,
+    },
     reconcile::RootReconciler,
-    {Hydrate, Reconcile},
 };
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
-use crate::{byte_array::ByteArray, did::HydratedDid};
+use crate::{
+    byte_array::ByteArray,
+    did::HydratedDid,
+};
 
 #[derive(Hydrate, Reconcile, Debug, Clone, Serialize, Deserialize)]
 pub struct BeaconRecord {
-    pub did: HydratedDid,
+    pub did:      HydratedDid,
     pub endpoint: ByteArray<32>,
-    pub expires: i64,
-    pub space: ByteArray<32>,
+    pub expires:  i64,
+    pub space:    ByteArray<32>,
 }
 
 impl BeaconRecord {

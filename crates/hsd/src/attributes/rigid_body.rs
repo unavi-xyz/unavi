@@ -1,5 +1,11 @@
-use loro_surgeon::{Hydrate, Reconcile};
-use serde::{Deserialize, Serialize};
+use loro_surgeon::{
+    Hydrate,
+    Reconcile,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 use crate::attributes::Attribute;
 
@@ -16,11 +22,11 @@ pub enum RigidBodyKind {
 #[serde(default)]
 pub struct RigidBodyAttr {
     pub angular_damping: Option<f64>,
-    pub friction: Option<f64>,
-    pub kind: Option<RigidBodyKind>,
-    pub linear_damping: Option<f64>,
-    pub mass: Option<f64>,
-    pub restitution: Option<f64>,
+    pub friction:        Option<f64>,
+    pub kind:            Option<RigidBodyKind>,
+    pub linear_damping:  Option<f64>,
+    pub mass:            Option<f64>,
+    pub restitution:     Option<f64>,
 }
 
 impl Attribute for RigidBodyAttr {

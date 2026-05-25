@@ -1,12 +1,20 @@
 use std::sync::Arc;
 
-use wasm_bindgen::{JsValue, prelude::*};
+use wasm_bindgen::{
+    JsValue,
+    prelude::*,
+};
 
 use crate::runtime::{
     Runtime,
     shared::{
-        self, Api,
-        wired::portal::{PortalDestination, PortalParams, PortalTransform},
+        self,
+        Api,
+        wired::portal::{
+            PortalDestination,
+            PortalParams,
+            PortalTransform,
+        },
     },
 };
 
@@ -71,13 +79,13 @@ fn js_to_portal_params(value: &JsValue) -> PortalParams {
             f32_at(&tr, "y", 0.0),
             f32_at(&tr, "z", 0.0),
         ],
-        rotation: [
+        rotation:    [
             f32_at(&ro, "x", 0.0),
             f32_at(&ro, "y", 0.0),
             f32_at(&ro, "z", 0.0),
             f32_at(&ro, "w", 1.0),
         ],
-        scale: [
+        scale:       [
             f32_at(&sc, "x", 1.0),
             f32_at(&sc, "y", 1.0),
             f32_at(&sc, "z", 1.0),

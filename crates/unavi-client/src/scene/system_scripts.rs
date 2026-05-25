@@ -1,17 +1,28 @@
-use bevy::{platform::collections::HashMap, prelude::*};
+use bevy::{
+    platform::collections::HashMap,
+    prelude::*,
+};
 use bevy_hsd::{
     HsdRecordId,
-    load::{LoadHsd, on_load_spawn_doc},
+    load::{
+        LoadHsd,
+        on_load_spawn_doc,
+    },
 };
 use unavi_script::{
-    firewall::{Access, Channel, Firewall},
+    firewall::{
+        Access,
+        Channel,
+        Firewall,
+    },
     permissions::ApiPermissions,
 };
 
 const GAUNTLET_HSD: &str = "hsd/unavi_gauntlet.hsd";
 const MODULE_HSDS: &[&str] = &["hsd/unavi_vui_inventory.hsd", "hsd/unavi_vui_nav.hsd"];
 
-/// Updates the firewall with the record IDs of provided entities, once they load.
+/// Updates the firewall with the record IDs of provided entities, once they
+/// load.
 #[derive(Component)]
 pub struct FirewallEntities(pub HashMap<Entity, Vec<Channel>>);
 

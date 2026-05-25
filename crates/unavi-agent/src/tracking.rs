@@ -10,7 +10,7 @@ pub enum TrackingSource {
 
 #[derive(Component, Clone, Copy, Debug, Default)]
 pub struct TrackedPose {
-    pub rotation: Quat,
+    pub rotation:    Quat,
     pub translation: Vec3,
 }
 
@@ -26,7 +26,7 @@ impl TrackedPose {
     #[must_use]
     pub const fn from_transform(transform: &Transform) -> Self {
         Self {
-            rotation: transform.rotation,
+            rotation:    transform.rotation,
             translation: transform.translation,
         }
     }

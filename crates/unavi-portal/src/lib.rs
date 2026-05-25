@@ -1,8 +1,15 @@
 use std::time::Duration;
 
-use bevy::{asset::load_internal_asset, camera::visibility::VisibilitySystems, prelude::*};
+use bevy::{
+    asset::load_internal_asset,
+    camera::visibility::VisibilitySystems,
+    prelude::*,
+};
 
-use crate::material::{PORTAL_SHADER_HANDLE, PortalMaterial};
+use crate::material::{
+    PORTAL_SHADER_HANDLE,
+    PortalMaterial,
+};
 
 pub struct PortalPlugin;
 
@@ -45,9 +52,9 @@ pub struct Portal;
 /// Collision bounds for portal travel.
 #[derive(Component)]
 pub struct PortalBounds {
-    depth: f32,
+    depth:  f32,
     height: f32,
-    width: f32,
+    width:  f32,
 }
 
 #[derive(Component, Default)]
@@ -80,14 +87,14 @@ pub struct PortalTraveler;
 #[derive(Component)]
 pub struct TravelCooldown {
     last_travel: Option<Duration>,
-    duration: Duration,
+    duration:    Duration,
 }
 
 impl Default for TravelCooldown {
     fn default() -> Self {
         Self {
             last_travel: None,
-            duration: Duration::from_millis(100),
+            duration:    Duration::from_millis(100),
         }
     }
 }

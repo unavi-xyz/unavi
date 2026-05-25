@@ -8,5 +8,8 @@ pub mod inline;
 pub mod reconcile;
 
 pub use hydrate::Hydrate;
-pub use loro_surgeon_derive::{Hydrate, Reconcile};
+pub use loro_surgeon_derive::{
+    Hydrate,
+    Reconcile,
+};
 pub use reconcile::Reconcile;

@@ -1,9 +1,21 @@
 use std::sync::Arc;
 
-use iroh::{endpoint::presets::N0, protocol::Router};
+use iroh::{
+    endpoint::presets::N0,
+    protocol::Router,
+};
 use unavi_util::async_task::spawn_async_task;
-use wds::{Blobs, DataStore, Identity, actor::Actor};
-use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
+use wds::{
+    Blobs,
+    DataStore,
+    Identity,
+    actor::Actor,
+};
+use xdid::methods::key::{
+    DidKeyPair,
+    PublicKey,
+    p256::P256KeyPair,
+};
 
 #[must_use]
 pub fn create_test_wds() -> (Actor, Blobs) {

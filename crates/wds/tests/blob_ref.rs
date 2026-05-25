@@ -6,7 +6,10 @@ use rstest::rstest;
 use rusqlite::params;
 use tracing_test::traced_test;
 
-use crate::common::{DataStoreCtx, ctx};
+use crate::common::{
+    DataStoreCtx,
+    ctx,
+};
 
 #[rstest]
 #[timeout(Duration::from_secs(10))]
@@ -107,12 +110,13 @@ async fn test_ref_deps_delete_only_refs(#[future] ctx: DataStoreCtx) {
         .call({
             let id_str = id_str.clone();
             move |conn| {
-                conn.query_row(
-                    "SELECT COUNT(*) FROM record_blob_deps WHERE record_id = ? AND dep_type = 'ref'",
-                    params![&id_str],
-                    |row| row.get(0),
-                )
-                .map_err(Into::into)
+                conn
+               .query_row(
+                  "SELECT COUNT(*) FROM record_blob_deps WHERE record_id = ? AND dep_type = 'ref'",
+                  params![&id_str],
+                  |row| row.get(0),
+               )
+               .map_err(Into::into)
             }
         })
         .await

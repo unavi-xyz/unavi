@@ -4,9 +4,17 @@ use irpc::WithChannels;
 use loro::ExportMode;
 use tracing::warn;
 
-use crate::{StoreContext, surg::acl::Acl, sync::shared::reconstruct_current_doc};
-
-use super::{ApiError, ApiService, ReadRecord, authenticate};
+use super::{
+    ApiError,
+    ApiService,
+    ReadRecord,
+    authenticate,
+};
+use crate::{
+    StoreContext,
+    surg::acl::Acl,
+    sync::shared::reconstruct_current_doc,
+};
 
 pub async fn read_record(
     ctx: Arc<StoreContext>,

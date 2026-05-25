@@ -5,19 +5,33 @@
 //! Explicitly for WDS operations. Should not be used as general purpose
 //! connection-level auth.
 
-use std::{fmt::Debug, sync::Arc};
+use std::{
+    fmt::Debug,
+    sync::Arc,
+};
 
 use iroh::EndpointId;
-use irpc::{Client, channel::oneshot, rpc_requests};
+use irpc::{
+    Client,
+    channel::oneshot,
+    rpc_requests,
+};
 use irpc_iroh::IrohProtocol;
 use scc::HashCache;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use tracing::error;
 use xdid::core::did::Did;
 
 use crate::{
-    SessionToken, StoreContext,
-    signed_bytes::{Signable, SignedBytes},
+    SessionToken,
+    StoreContext,
+    signed_bytes::{
+        Signable,
+        SignedBytes,
+    },
 };
 
 pub mod client;
@@ -60,10 +74,10 @@ pub enum AuthService {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Challenge {
     /// Key must verify they are authenticating as DID.
-    pub did: Did,
+    pub did:   Did,
     /// Key must verify they are authenticating to us.
     /// Prevents impersonation by forwarding signed challenge to another node.
-    pub host: EndpointId,
+    pub host:  EndpointId,
     /// Key must sign our given nonce.
     pub nonce: Nonce,
     // TODO: add timestamp + expiration

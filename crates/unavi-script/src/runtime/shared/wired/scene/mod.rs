@@ -1,29 +1,50 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use bevy_hsd::{Hsd, HsdRecordId};
+use bevy_hsd::{
+    Hsd,
+    HsdRecordId,
+};
 use bevy_wds::{
     LocalActor,
     blob::get::GetBlob,
     record::{
         read::ReadRecord,
-        write::{SchemaDef, WriteRecord},
+        write::{
+            SchemaDef,
+            WriteRecord,
+        },
     },
 };
 use blake3::Hash;
 use bytes::Bytes;
-use hsd::{HSD_CONTAINER_ID, file::HsdFile};
+use hsd::{
+    HSD_CONTAINER_ID,
+    file::HsdFile,
+};
 use loro::LoroDoc;
-use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
+use unavi_util::{
+    async_commands::AsyncCommands,
+    async_task::spawn_async_task,
+};
 use wired_schemas::SCHEMA_HSD;
 
 use crate::{
-    firewall::{Channel, Firewall},
+    firewall::{
+        Channel,
+        Firewall,
+    },
     runtime::shared::{
         Api,
-        registry::firewall::{FIREWALL_REGISTRY, validate_firewall},
+        registry::firewall::{
+            FIREWALL_REGISTRY,
+            validate_firewall,
+        },
         slot_map::SlotMap,
-        wired::scene::{document::DocRes, prim::PrimRes},
+        wired::scene::{
+            document::DocRes,
+            prim::PrimRes,
+        },
     },
 };
 
@@ -33,7 +54,7 @@ pub mod util;
 
 #[derive(Default)]
 pub struct WiredSceneApi {
-    pub docs: SlotMap<DocRes>,
+    pub docs:  SlotMap<DocRes>,
     pub prims: SlotMap<PrimRes>,
 }
 
@@ -75,9 +96,9 @@ fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()>
 pub async fn self_prim(api: &Api) -> anyhow::Result<u32> {
     let mut scene = api.wired_scene.lock().await;
     Ok(scene.prims.insert(PrimRes {
-        doc: Arc::clone(&api.doc),
-        doc_id: api.doc_id,
-        id: api.prim,
+        doc:      Arc::clone(&api.doc),
+        doc_id:   api.doc_id,
+        id:       api.prim,
         is_proxy: false,
     }))
 }
@@ -86,7 +107,7 @@ pub async fn self_document(api: &Api) -> anyhow::Result<u32> {
     let mut scene = api.wired_scene.lock().await;
     Ok(scene.docs.insert(DocRes {
         doc: Arc::clone(&api.doc),
-        id: api.doc_id,
+        id:  api.doc_id,
     }))
 }
 
@@ -182,9 +203,9 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> anyhow::Result<u32> {
     let id = {
         let (mut write, rx, _cancel) = WriteRecord::new(None);
         write.schemas = vec![SchemaDef {
-            schema: (&*SCHEMA_HSD).into(),
+            schema:    (&*SCHEMA_HSD).into(),
             container: "hsd".into(),
-            f: Arc::new(move |doc| {
+            f:         Arc::new(move |doc| {
                 file.load_into_doc(doc)?;
                 Ok(())
             }),
@@ -209,9 +230,9 @@ pub async fn create_document(api: &Api) -> anyhow::Result<u32> {
     let id = {
         let (mut write, rx, cancel) = WriteRecord::new(None);
         write.schemas = vec![SchemaDef {
-            schema: (&*SCHEMA_HSD).into(),
+            schema:    (&*SCHEMA_HSD).into(),
             container: "hsd".into(),
-            f: Arc::new(|doc| {
+            f:         Arc::new(|doc| {
                 // Ensure the HSD tree container exists.
                 let _ = doc.get_tree(&*HSD_CONTAINER_ID);
                 Ok(())

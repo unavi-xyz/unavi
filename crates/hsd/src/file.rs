@@ -1,13 +1,30 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{
+    BTreeMap,
+    HashMap,
+};
 
 use anyhow::Result;
-use loro::{LoroDoc, TreeID, TreeParentId};
-use loro_surgeon::{Reconcile, reconcile::RootReconciler};
+use loro::{
+    LoroDoc,
+    TreeID,
+    TreeParentId,
+};
+use loro_surgeon::{
+    Reconcile,
+    reconcile::RootReconciler,
+};
 use ron::extensions::Extensions;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use tracing::warn;
 
-use crate::{HSD_CONTAINER_ID, PrimMeta, attributes::Attributes};
+use crate::{
+    HSD_CONTAINER_ID,
+    PrimMeta,
+    attributes::Attributes,
+};
 
 fn ron_options() -> ron::Options {
     ron::Options::default()
@@ -48,7 +65,7 @@ impl HsdFile {
             }
 
             let prim_meta = PrimMeta {
-                attributes: Some(attributes),
+                attributes:    Some(attributes),
                 relationships: if rels.is_empty() { None } else { Some(rels) },
             };
 
@@ -103,9 +120,9 @@ fn create_prims<'a>(
 #[derive(Serialize, Deserialize, Default, Clone)]
 pub struct HsdFilePrim {
     #[serde(default, skip_serializing_if = "Attributes::is_empty")]
-    pub attributes: Attributes,
+    pub attributes:    Attributes,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub relationships: BTreeMap<String, String>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub children: Vec<Self>,
+    pub children:      Vec<Self>,
 }

@@ -1,12 +1,18 @@
 use std::time::Duration;
 
 use rstest::rstest;
-use rusqlite::{OptionalExtension, params};
+use rusqlite::{
+    OptionalExtension,
+    params,
+};
 use time::OffsetDateTime;
 use tracing_test::traced_test;
 use wired_schemas::SCHEMA_HOME;
 
-use crate::common::{DataStoreCtx, ctx};
+use crate::common::{
+    DataStoreCtx,
+    ctx,
+};
 
 mod common;
 

@@ -1,8 +1,20 @@
-use bevy::prelude::{Name, *};
-use hsd::attributes::{Attribute, name::NameAttr};
-use loro::{LoroValue, ValueOrContainer};
+use bevy::prelude::{
+    Name,
+    *,
+};
+use hsd::attributes::{
+    Attribute,
+    name::NameAttr,
+};
+use loro::{
+    LoroValue,
+    ValueOrContainer,
+};
 
-use crate::attributes::{AttributeParser, ParseError};
+use crate::attributes::{
+    AttributeParser,
+    ParseError,
+};
 
 pub struct NameParser;
 

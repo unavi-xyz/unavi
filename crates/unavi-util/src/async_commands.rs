@@ -1,8 +1,16 @@
 use std::sync::LazyLock;
 
-use async_channel::{Receiver, SendError, Sender, TrySendError};
+use async_channel::{
+    Receiver,
+    SendError,
+    Sender,
+    TrySendError,
+};
 use bevy::{
-    ecs::{bundle::NoBundleEffect, world::CommandQueue},
+    ecs::{
+        bundle::NoBundleEffect,
+        world::CommandQueue,
+    },
     prelude::*,
 };
 

@@ -1,17 +1,41 @@
 use std::sync::{
-    Arc, Mutex,
-    mpsc::{Receiver, Sender},
+    Arc,
+    Mutex,
+    mpsc::{
+        Receiver,
+        Sender,
+    },
 };
 
-use bevy::{pbr::MeshMaterial3d, prelude::*};
-use hsd::attributes::{Attribute, material::MaterialAttr};
-use loro::{TreeDiffItem, TreeExternalDiff, TreeID, TreeParentId, ValueOrContainer};
+use bevy::{
+    pbr::MeshMaterial3d,
+    prelude::*,
+};
+use hsd::attributes::{
+    Attribute,
+    material::MaterialAttr,
+};
+use loro::{
+    TreeDiffItem,
+    TreeExternalDiff,
+    TreeID,
+    TreeParentId,
+    ValueOrContainer,
+};
 
 use crate::{
-    HsdChild, HsdPrimIndex, HsdRelationships, Prim,
+    HsdChild,
+    HsdPrimIndex,
+    HsdRelationships,
+    Prim,
     attributes::{
-        ApplyEvent, AttrDataEvent, PARSERS,
-        material::{HsdMaterial, MaterialData},
+        ApplyEvent,
+        AttrDataEvent,
+        PARSERS,
+        material::{
+            HsdMaterial,
+            MaterialData,
+        },
     },
 };
 
@@ -20,8 +44,8 @@ pub type DiffSender = Arc<Sender<HsdDiffEvent>>;
 pub enum HsdDiffEvent {
     Prim(TreeDiffItem),
     Attr {
-        prim: TreeID,
-        attr: String,
+        prim:  TreeID,
+        attr:  String,
         value: Option<ValueOrContainer>,
     },
     AttrData {
@@ -29,8 +53,8 @@ pub enum HsdDiffEvent {
         data: AttrDataEvent,
     },
     Relationship {
-        prim: TreeID,
-        key: String,
+        prim:   TreeID,
+        key:    String,
         target: Option<TreeID>,
     },
 }
@@ -232,9 +256,10 @@ fn apply_relationship(
     target: Option<TreeID>,
 ) {
     // A prim without a MaterialAttr can still receive a material via relationship
-    // (inheriting from another prim's HsdMaterial). MaterialParser::lifecycle covers
-    // the attr-driven path; this branch covers the relationship-only path so the
-    // prim has the slots ready for propagate_material_to_dependents to fill.
+    // (inheriting from another prim's HsdMaterial). MaterialParser::lifecycle
+    // covers the attr-driven path; this branch covers the relationship-only
+    // path so the prim has the slots ready for propagate_material_to_dependents
+    // to fill.
     if key == MaterialAttr::KEY {
         match target {
             Some(_) => {

@@ -2,21 +2,37 @@
 //!
 //! [`irpc`] user API, for use both locally or over the network.
 
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::Arc,
+    time::Duration,
+};
 
 use blake3::Hash;
 use bytes::Bytes;
 use iroh::EndpointAddr;
 use irpc::{
     Client,
-    channel::{mpsc, oneshot},
+    channel::{
+        mpsc,
+        oneshot,
+    },
     rpc_requests,
 };
 use irpc_iroh::IrohProtocol;
-use serde::{Deserialize, Serialize};
-use tracing::{error, warn};
+use serde::{
+    Deserialize,
+    Serialize,
+};
+use tracing::{
+    error,
+    warn,
+};
 
-use crate::{SessionToken, StoreContext, error::ApiError};
+use crate::{
+    SessionToken,
+    StoreContext,
+    error::ApiError,
+};
 
 mod blob_exists;
 mod get_record_pin;
@@ -55,19 +71,22 @@ pub enum ApiService {
     UploadBlob { s: SessionToken },
     #[rpc(rx=mpsc::Receiver<Bytes>,tx=oneshot::Sender<Result<(), ApiError>>)]
     #[wrap(UploadEnvelope)]
-    UploadEnvelope { s: SessionToken, record_id: Hash },
+    UploadEnvelope {
+        s:         SessionToken,
+        record_id: Hash,
+    },
     #[rpc(tx=oneshot::Sender<Result<(), ApiError>>)]
     #[wrap(PinBlob)]
     PinBlob {
-        s: SessionToken,
-        hash: Hash,
+        s:       SessionToken,
+        hash:    Hash,
         expires: i64,
     },
     #[rpc(tx=oneshot::Sender<Result<(), ApiError>>)]
     #[wrap(PinRecord)]
     PinRecord {
-        s: SessionToken,
-        id: Hash,
+        s:       SessionToken,
+        id:      Hash,
         expires: i64,
     },
     #[rpc(tx=oneshot::Sender<Result<Option<i64>, ApiError>>)]
@@ -79,18 +98,21 @@ pub enum ApiService {
     #[rpc(tx=oneshot::Sender<Result<Vec<Hash>, ApiError>>)]
     #[wrap(QueryRecords)]
     QueryRecords {
-        s: SessionToken,
+        s:      SessionToken,
         filter: QueryFilter,
     },
     #[rpc(tx=oneshot::Sender<Result<Vec<u8>, ApiError>>)]
     #[wrap(ReadRecord)]
-    ReadRecord { s: SessionToken, record_id: Hash },
+    ReadRecord {
+        s:         SessionToken,
+        record_id: Hash,
+    },
     #[rpc(tx=oneshot::Sender<Result<(), ApiError>>)]
     #[wrap(SyncRecord)]
     SyncRecord {
-        s: SessionToken,
+        s:         SessionToken,
         record_id: Hash,
-        remote: EndpointAddr,
+        remote:    EndpointAddr,
     },
 }
 
@@ -118,7 +140,7 @@ async fn handle_requests(
 }
 
 macro_rules! authenticate {
-    ($ctx:tt,$inner:tt,$tx:tt) => {
+    ($ctx:tt, $inner:tt, $tx:tt) => {
         match $ctx.connections.get_async(&$inner.s).await {
             Some(c) => c.did.clone(),
             None => {

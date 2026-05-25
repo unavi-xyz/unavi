@@ -2,7 +2,10 @@ use dioxus::prelude::*;
 use tracing::error;
 
 use super::app::Route;
-use crate::update::{UpdateStatus, client};
+use crate::update::{
+    UpdateStatus,
+    client,
+};
 
 #[component]
 pub fn ClientUpdate() -> Element {
@@ -12,16 +15,16 @@ pub fn ClientUpdate() -> Element {
     use_coroutine(move |_: UnboundedReceiver<()>| async move {
         tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
-        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        let (tx, rx) = async_channel::unbounded();
 
         let handle = tokio::spawn(async move {
             client::update_client_with_callback(move |s| {
-                let _ = tx.send(s);
+                let _ = tx.try_send(s);
             })
             .await
         });
 
-        while let Some(status) = rx.recv().await {
+        while let Ok(status) = rx.recv().await {
             update_status.set(Some(status));
         }
 

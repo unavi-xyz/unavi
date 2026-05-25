@@ -1,17 +1,23 @@
 use std::sync::Arc;
 
 use derive_more::Debug;
-use iroh::{Endpoint, EndpointAddr, EndpointId, protocol::Router};
+pub use identity::Identity;
+use iroh::{
+    Endpoint,
+    EndpointAddr,
+    EndpointId,
+};
 use iroh_blobs::api::Store as BlobStore;
+pub use iroh_blobs::api::blobs::Blobs;
 use irpc::Client;
 use n0_future::task::AbortOnDropHandle;
 use parking_lot::RwLock;
 use xdid::core::did::Did;
 
-pub use identity::Identity;
-pub use iroh_blobs::api::blobs::Blobs;
-
-use crate::builder::{BoxedBlobs, DataStoreBuilder};
+use crate::builder::{
+    BoxedBlobs,
+    DataStoreBuilder,
+};
 
 pub mod actor;
 pub mod api;
@@ -29,11 +35,11 @@ mod sync;
 mod tag;
 
 pub struct DataStore {
-    api_client: Client<api::ApiService>,
+    api_client:  Client<api::ApiService>,
     auth_client: Client<auth::AuthService>,
-    router: Router,
-    ctx: Arc<StoreContext>,
-    _gc_handle: Option<AbortOnDropHandle<()>>,
+    endpoint:    Endpoint,
+    ctx:         Arc<StoreContext>,
+    _gc_handle:  Option<AbortOnDropHandle<()>>,
 }
 // TODO: Replace session token auth with iroh hooks
 type SessionToken = [u8; 32];
@@ -41,13 +47,13 @@ type SessionToken = [u8; 32];
 #[derive(Debug)]
 struct StoreContext {
     #[debug("BlobStore")]
-    blobs: BoxedBlobs,
+    blobs:         BoxedBlobs,
     #[debug("HashMap({})", connections.len())]
-    connections: scc::HashMap<SessionToken, ConnectionState>,
+    connections:   scc::HashMap<SessionToken, ConnectionState>,
     #[debug("Database")]
-    db: db::Database,
+    db:            db::Database,
     #[debug("Endpoint")]
-    endpoint: Endpoint,
+    endpoint:      Endpoint,
     #[debug("Option<Identity>")]
     user_identity: RwLock<Option<Arc<Identity>>>,
 }
@@ -75,7 +81,7 @@ impl DataStore {
     pub fn local_actor(&self, identity: Arc<Identity>) -> actor::Actor {
         actor::Actor::new(
             identity,
-            self.router.endpoint().addr(),
+            self.endpoint.addr(),
             self.api_client.clone(),
             self.auth_client.clone(),
         )
@@ -84,15 +90,9 @@ impl DataStore {
     /// Create an actor targeting a remote WDS.
     #[must_use]
     pub fn remote_actor(&self, identity: Arc<Identity>, host: EndpointAddr) -> actor::Actor {
-        let api_client = irpc_iroh::client(self.router.endpoint().clone(), host.clone(), api::ALPN);
-        let auth_client =
-            irpc_iroh::client(self.router.endpoint().clone(), host.clone(), auth::ALPN);
+        let api_client = irpc_iroh::client(self.endpoint.clone(), host.clone(), api::ALPN);
+        let auth_client = irpc_iroh::client(self.endpoint.clone(), host.clone(), auth::ALPN);
         actor::Actor::new(identity, host, api_client, auth_client)
-    }
-
-    pub async fn shutdown(self) -> anyhow::Result<()> {
-        self.router.shutdown().await?;
-        Ok(())
     }
 
     /// Returns the blob store. Primarily for testing.

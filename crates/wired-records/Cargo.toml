@@ -9,19 +9,11 @@ version.workspace    = true
 [lints]
 workspace = true
 
-[features]
-default = []
-loro    = ["dep:anyhow", "dep:loro", "dep:loro-surgeon"]
-
 [dependencies]
-blake3.workspace   = true
-postcard.workspace = true
-serde              = { features = ["derive"], workspace = true }
-xdid.workspace     = true
-
-anyhow       = { optional = true, workspace = true }
-loro         = { optional = true, workspace = true }
-loro-surgeon = { optional = true, path = "../loro-surgeon" }
-
-[dev-dependencies]
-loro = { workspace = true }
+anyhow                 = { optional = true, workspace = true }
+blake3.workspace       = true
+loro.workspace         = true
+loro-surgeon.workspace = true
+serde                  = { features = ["derive"], workspace = true }
+serde_with.workspace   = true
+xdid.workspace         = true

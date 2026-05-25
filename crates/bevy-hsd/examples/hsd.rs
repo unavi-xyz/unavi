@@ -1,32 +1,64 @@
-use std::sync::Arc;
+use std::{
+    collections::BTreeMap,
+    sync::Arc,
+};
 
-use avian3d::{PhysicsPlugins, prelude::PhysicsDebugPlugin};
 use bevy::{
-    log::LogPlugin,
-    mesh::Indices,
-    pbr::{Atmosphere, AtmosphereSettings, ScatteringMedium},
+    mesh::{
+        Indices,
+        VertexAttributeValues,
+    },
+    pbr::{
+        Atmosphere,
+        AtmosphereSettings,
+        ScatteringMedium,
+    },
     prelude::*,
 };
-use bevy_hsd::HsdPlugin;
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_wds::{LocalBlobs, WdsPlugin};
+use bevy_hsd::{
+    Hsd,
+    HsdPlugin,
+};
+use bevy_panorbit_camera::{
+    PanOrbitCamera,
+    PanOrbitCameraPlugin,
+};
+use bevy_wds::{
+    LocalBlobs,
+    WdsPlugin,
+};
 use bytemuck::cast_slice;
+use hsd::{
+    HSD_CONTAINER_ID,
+    PrimMeta,
+    attributes::{
+        Attributes,
+        material::{
+            ColorVec,
+            MaterialAttr,
+        },
+        mesh::{
+            MeshAttr,
+            Topology,
+        },
+        xform::XformAttr,
+    },
+};
 use iroh_blobs::store::mem::MemStore;
 use loro::LoroDoc;
+use loro_surgeon::{
+    Reconcile,
+    bytes::ByteArray,
+    reconcile::RootReconciler,
+};
+use unavi_util::async_task::spawn_async_task;
+use wds::Blobs;
+
+const CUBE_SIZE: f32 = 1.0;
 
 fn main() {
     App::new()
-        .add_plugins((
-            DefaultPlugins.set(LogPlugin {
-                filter: "bevy_hsd=debug,bevy_wds=debug,warn".into(),
-                ..default()
-            }),
-            PanOrbitCameraPlugin,
-            PhysicsPlugins::default(),
-            PhysicsDebugPlugin,
-            HsdPlugin,
-            WdsPlugin,
-        ))
+        .add_plugins((DefaultPlugins, PanOrbitCameraPlugin, WdsPlugin, HsdPlugin))
         .add_systems(Startup, (setup_scene, load_hsd))
         .run();
 }
@@ -34,15 +66,18 @@ fn main() {
 fn setup_scene(mut commands: Commands, mut scattering_mediums: ResMut<Assets<ScatteringMedium>>) {
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(4.0, 5.0, 2.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(5.0, 4.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
         PanOrbitCamera::default(),
         Atmosphere::earthlike(scattering_mediums.add(ScatteringMedium::default())),
         AtmosphereSettings::default(),
     ));
 
     commands.spawn((
-        Transform::from_xyz(-2.0, 4.0, 1.0).looking_at(Vec3::ZERO, Vec3::Y),
-        DirectionalLight::default(),
+        Transform::from_xyz(-2.0, 6.0, 1.0).looking_at(Vec3::ZERO, Vec3::Y),
+        DirectionalLight {
+            shadows_enabled: true,
+            ..default()
+        },
     ));
 }
 
@@ -51,125 +86,139 @@ fn setup_scene(mut commands: Commands, mut scattering_mediums: ResMut<Assets<Sca
 struct BlobStore(MemStore);
 
 fn load_hsd(mut commands: Commands) {
-    let (tx, rx) = std::sync::mpsc::channel();
+    let (store, blobs) = spawn_mem_store();
+    commands.spawn(LocalBlobs(blobs.clone()));
 
-    unavi_wasm_compat::spawn_thread(async move {
-        let store = MemStore::default();
-        tx.send(store.clone()).expect("send");
-        tokio::signal::ctrl_c().await.expect("signal");
-    });
+    let doc = Arc::new(LoroDoc::new());
+    populate(&doc, &blobs);
 
-    let store = rx.recv().expect("recv");
-    commands.spawn(LocalBlobs(store.blobs().clone()));
-
-    let doc = LoroDoc::new();
-    let hsd = doc.get_map("hsd");
-
-    // Add a material.
-    let mat_id = "a";
-    let materials = hsd
-        .get_or_create_container("materials", loro::LoroMap::new())
-        .expect("materials");
-    let mat_map = materials
-        .insert_container(mat_id, loro::LoroMap::new())
-        .expect("push mat");
-    mat_map
-        .insert_container("base_color", {
-            let list = loro::LoroList::new();
-            list.push(0.4).expect("push");
-            list.push(0.3).expect("push");
-            list.push(0.7).expect("push");
-            list
-        })
-        .expect("base_color");
-    mat_map.insert("metallic", 0.8).expect("metallic");
-    mat_map.insert("roughness", 0.4).expect("roughness");
-
-    // Add a mesh.
-    let x_length = 2.0;
-    let y_length = 0.5;
-    let z_length = 1.0;
-    let cube = Cuboid::new(x_length, y_length, z_length).mesh().build();
-
-    let mesh_id = "b";
-    let meshes = hsd
-        .get_or_create_container("meshes", loro::LoroMap::new())
-        .expect("meshes ");
-    let mesh_map = meshes
-        .insert_container(mesh_id, loro::LoroMap::new())
-        .expect("push mesh");
-    mesh_map.insert("topology", 3i64).expect("topology");
-
-    // Attributes map.
-    let attrs = mesh_map
-        .get_or_create_container("attributes", loro::LoroMap::new())
-        .expect("attrs");
-
-    let Some(Indices::U32(indices)) = cube.indices() else {
-        unreachable!()
-    };
-    let indices_hash = add_blob(&store, cast_slice(indices));
-    mesh_map
-        .insert("indices", indices_hash.as_bytes().to_vec())
-        .expect("indices");
-
-    let Some(points) = cube.attribute(Mesh::ATTRIBUTE_POSITION) else {
-        unreachable!()
-    };
-    let hash = add_blob(&store, points.get_bytes());
-    attrs
-        .insert("POSITION", hash.as_bytes().to_vec())
-        .expect("position");
-
-    let Some(normals) = cube.attribute(Mesh::ATTRIBUTE_NORMAL) else {
-        unreachable!()
-    };
-    let hash = add_blob(&store, normals.get_bytes());
-    attrs
-        .insert("NORMAL", hash.as_bytes().to_vec())
-        .expect("normal");
-
-    // Add a node.
-    let nodes = hsd
-        .get_or_create_container("nodes", loro::LoroTree::new())
-        .expect("nodes tree");
-    let node_id = nodes.create(None).expect("create node");
-    let meta = nodes.get_meta(node_id).expect("meta");
-    meta.insert("mesh", mesh_id).expect("mesh ref");
-    meta.insert("material", mat_id).expect("material ref");
-    meta.insert_container("translation", {
-        let list = loro::LoroList::new();
-        list.push(0.0).expect("push");
-        list.push(-0.5).expect("push");
-        list.push(0.0).expect("push");
-        list
-    })
-    .expect("translation");
-
-    // Collider.
-    let collider = meta
-        .get_or_create_container("collider", loro::LoroMap::new())
-        .expect("collider");
-    collider.insert("tag", "Cuboid").expect("tag");
-    let cuboid = collider
-        .insert_container("Cuboid", loro::LoroMap::new())
-        .expect("Cuboid");
-    cuboid.insert("x", f64::from(x_length)).expect("x");
-    cuboid.insert("y", f64::from(y_length)).expect("y");
-    cuboid.insert("z", f64::from(z_length)).expect("z");
-
-    commands.spawn(bevy_hsd::HsdDoc(Arc::new(doc)));
-
-    // Keep store alive in memory.
+    commands.spawn(Hsd(Arc::clone(&doc)));
     commands.spawn(BlobStore(store));
 }
 
-fn add_blob(store: &MemStore, bytes: &[u8]) -> blake3::Hash {
+fn populate(doc: &LoroDoc, blobs: &Blobs) {
+    let tree = doc.get_tree(&*HSD_CONTAINER_ID);
+
+    let red = tree.create(None).expect("create red");
+    reconcile_prim(
+        &tree.get_meta(red).expect("red meta"),
+        Attributes {
+            material: Some(MaterialAttr {
+                base_color: Some(ColorVec(vec![0.9, 0.2, 0.15, 1.0])),
+                metallic: Some(0.1),
+                roughness: Some(0.35),
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
+        None,
+    );
+
+    let blue = tree.create(None).expect("create blue");
+    reconcile_prim(
+        &tree.get_meta(blue).expect("blue meta"),
+        Attributes {
+            material: Some(MaterialAttr {
+                base_color: Some(ColorVec(vec![0.15, 0.4, 0.95, 1.0])),
+                metallic: Some(0.8),
+                roughness: Some(0.2),
+                ..Default::default()
+            }),
+            ..Default::default()
+        },
+        None,
+    );
+
+    let mesh_attr = build_cube_mesh_attr(blobs);
+
+    for (offset, target) in [
+        (Vec3::new(-2.0, 0.0, 0.0), red),
+        (Vec3::new(0.0, 0.0, 0.0), blue),
+        (Vec3::new(2.0, 0.0, 0.0), red),
+        (Vec3::new(-1.0, 0.0, -2.0), blue),
+        (Vec3::new(1.0, 0.0, -2.0), red),
+    ] {
+        let prim = tree.create(None).expect("create cube");
+        reconcile_prim(
+            &tree.get_meta(prim).expect("cube meta"),
+            Attributes {
+                mesh: Some(mesh_attr.clone()),
+                xform: Some(XformAttr {
+                    rotation:    [0.0, 0.0, 0.0, 1.0],
+                    scale:       [1.0, 1.0, 1.0],
+                    translation: offset.to_array(),
+                }),
+                ..Default::default()
+            },
+            Some(BTreeMap::from([(
+                "material".to_string(),
+                target.to_string(),
+            )])),
+        );
+    }
+
+    doc.commit();
+}
+
+fn build_cube_mesh_attr(blobs: &Blobs) -> MeshAttr {
+    let cube = Cuboid::new(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE).mesh().build();
+
+    let mut attrs = BTreeMap::new();
+    let mut indices = None;
+
+    if let Some(VertexAttributeValues::Float32x3(positions)) =
+        cube.attribute(Mesh::ATTRIBUTE_POSITION)
+    {
+        attrs.insert("POSITION".to_string(), upload(blobs, cast_slice(positions)));
+    }
+    if let Some(VertexAttributeValues::Float32x3(normals)) = cube.attribute(Mesh::ATTRIBUTE_NORMAL)
+    {
+        attrs.insert("NORMAL".to_string(), upload(blobs, cast_slice(normals)));
+    }
+    if let Some(VertexAttributeValues::Float32x2(uvs)) = cube.attribute(Mesh::ATTRIBUTE_UV_0) {
+        attrs.insert("UV_0".to_string(), upload(blobs, cast_slice(uvs)));
+    }
+    if let Some(Indices::U32(idx)) = cube.indices() {
+        indices = Some(upload(blobs, cast_slice(idx)));
+    }
+
+    MeshAttr {
+        attributes: attrs,
+        indices,
+        topology: Topology::TriangleList,
+    }
+}
+
+fn upload(blobs: &Blobs, bytes: &[u8]) -> ByteArray<32> {
     let hash = blake3::hash(bytes);
-    let store = store.clone();
-    let bytes = bytes.to_vec();
-    unavi_wasm_compat::spawn_thread(async move {
-        store.add_bytes(bytes).await.expect("add bytes");
+    let blobs = blobs.clone();
+    let payload = bytes.to_vec();
+    spawn_async_task(async move {
+        blobs.add_slice(&payload).await.expect("add slice");
     });
-    hash
+    ByteArray::<32>::new(*hash.as_bytes())
+}
+
+fn reconcile_prim(
+    meta: &loro::LoroMap,
+    attributes: Attributes,
+    relationships: Option<BTreeMap<String, String>>,
+) {
+    let prim = PrimMeta {
+        attributes: Some(attributes),
+        relationships,
+    };
+    prim.reconcile(RootReconciler::new(meta.clone()))
+        .expect("reconcile prim");
+}
+
+fn spawn_mem_store() -> (MemStore, Blobs) {
+    let (tx, rx) = async_channel::bounded(1);
+    spawn_async_task(async move {
+        let store = MemStore::default();
+        let blobs = store.blobs().clone();
+        tx.send((store, blobs)).await.expect("send");
+        std::future::pending::<()>().await;
+    });
+    rx.recv_blocking().expect("recv store")
 }

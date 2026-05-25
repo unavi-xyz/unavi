@@ -4,5 +4,4 @@
 //! including both type validation and Restricted field authorization.
 
 pub mod schema;
-#[cfg(feature = "validation")]
-pub mod validate;
+#[cfg(feature = "validation")] pub mod validate;

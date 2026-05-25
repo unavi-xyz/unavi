@@ -14,20 +14,21 @@ workspace = true
 embed-resource.workspace = true
 
 [dependencies]
-anyhow.workspace      = true
-dioxus                = { features = ["desktop", "router"], version = "0.7.5" }
-directories.workspace = true
-futures.workspace     = true
-image                 = { features = ["png"], workspace = true }
-parking_lot.workspace = true
-reqwest               = { features = ["json", "stream"], workspace = true }
-runas                 = "1.2.0"
-self-replace          = "1.5.0"
-semver                = "1.0.28"
-serde.workspace       = true
-tar                   = "0.4"
-tempfile.workspace    = true
-tokio.workspace       = true
-toml                  = "1.1.2"
-tracing.workspace     = true
-xz2                   = { features = ["tokio"], version = "0.1.7" }
+anyhow.workspace        = true
+async-channel.workspace = true
+dioxus                  = { features = ["desktop", "router"], version = "0.7.5" }
+directories.workspace   = true
+futures.workspace       = true
+image                   = { features = ["png"], workspace = true }
+parking_lot.workspace   = true
+reqwest                 = { features = ["json", "stream"], workspace = true }
+runas                   = "1.2.0"
+self-replace            = "1.5.0"
+semver                  = "1.0.28"
+serde.workspace         = true
+tar                     = "0.4"
+tempfile.workspace      = true
+tokio.workspace         = true
+toml                    = "1.1.2"
+tracing.workspace       = true
+xz2                     = { features = ["tokio"], version = "0.1.7" }

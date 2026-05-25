@@ -1,12 +1,20 @@
 use avian3d::prelude::Collider;
 use bevy::prelude::*;
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
-use bevy_vrm::{BoneName, VrmInstanceId, first_person::SetupFirstPerson};
+use bevy_vrm::{
+    BoneName,
+    VrmInstanceId,
+    first_person::SetupFirstPerson,
+};
 use unavi_avatar::Avatar;
 
 use crate::{
-    AgentRig, LocalAgentEntities,
-    config::{AgentConfig, WorldScale},
+    AgentRig,
+    LocalAgentEntities,
+    config::{
+        AgentConfig,
+        WorldScale,
+    },
     tracking::TrackedPose,
 };
 

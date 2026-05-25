@@ -1,19 +1,25 @@
 use std::{
-    cell::{Cell, RefCell},
+    cell::{
+        Cell,
+        RefCell,
+    },
     f32::consts::TAU,
 };
 
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCone,
-    wired::scene::types::{Document, Mesh},
+    wired::scene::types::{
+        Document,
+        Prim,
+    },
 };
 
 #[derive(Default)]
 pub struct ConeWrapped {
-    doc: RefCell<Option<Document>>,
-    radius: f32,
-    height: f32,
+    doc:        RefCell<Option<Document>>,
+    radius:     f32,
+    height:     f32,
     resolution: Cell<u32>,
 }
 
@@ -27,7 +33,7 @@ impl GuestCone for ConeWrapped {
         }
     }
 
-    fn mesh(&self) -> Mesh {
+    fn mesh(&self) -> Prim {
         crate::convert_raw_mesh(
             self.doc.borrow().as_ref(),
             build(self.radius, self.height, self.resolution.get()),

@@ -1,225 +1,162 @@
-use bevy::mesh::{Indices, PrimitiveTopology, VertexAttributeValues};
-use bevy::prelude::*;
-use bevy_hsd::{CompiledMesh, HsdChild, NodeId, cache::MeshState};
-use loro::LoroMap;
+use std::collections::BTreeMap;
+
+use bevy::{
+    mesh::{
+        Indices,
+        VertexAttributeValues,
+    },
+    prelude::*,
+};
+use hsd::{
+    HSD_CONTAINER_ID,
+    PrimMeta,
+    attributes::{
+        Attribute,
+        Attributes,
+        attributes_map,
+        mesh::{
+            MeshAttr,
+            Topology,
+        },
+    },
+};
+use loro_surgeon::{
+    Reconcile,
+    bytes::ByteArray,
+    reconcile::RootReconciler,
+};
+use rstest::rstest;
+use tracing_test::traced_test;
+
+use crate::common::*;
 
 mod common;
 
-use common::TestHarness;
+#[traced_test]
+#[rstest]
+fn test_mesh_lifecycle(mut ctx: TestContext) {
+    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
+    let root = tree.create(None).expect("create");
+    let meta = tree.get_meta(root).expect("get meta");
 
-fn add_mesh(harness: &TestHarness, id: &str) {
-    harness
-        .doc
-        .get_map("hsd")
-        .get_or_create_container("meshes", LoroMap::new())
-        .expect("meshes map")
-        .get_or_create_container(id, LoroMap::new())
-        .expect("mesh map entry");
-}
-
-fn mesh_entity(h: &mut TestHarness) -> Entity {
-    h.app
-        .world_mut()
-        .query_filtered::<Entity, With<HsdChild>>()
-        .iter(h.app.world())
-        .next()
-        .expect("mesh entity")
-}
-
-#[test]
-fn mesh_entity_spawns() {
-    let mut h = TestHarness::new();
-    add_mesh(&h, "mesh-0");
-    h.commit_and_update();
-
-    let mut with_node = h.app.world_mut().query_filtered::<Entity, With<NodeId>>();
-    let node_count = with_node.iter(h.app.world()).count();
-
-    let mut with_child = h.app.world_mut().query_filtered::<Entity, With<HsdChild>>();
-    let child_count = with_child.iter(h.app.world()).count();
-
-    assert_eq!(node_count, 0, "no node entities expected");
-    assert_eq!(child_count, 1, "one mesh entity expected");
-}
-
-#[test]
-fn two_meshes_spawn_two_entities() {
-    let mut h = TestHarness::new();
-    add_mesh(&h, "mesh-a");
-    add_mesh(&h, "mesh-b");
-    h.commit_and_update();
-
-    let mut q = h.app.world_mut().query_filtered::<Entity, With<HsdChild>>();
-    assert_eq!(
-        q.iter(h.app.world()).count(),
-        2,
-        "two mesh entities expected"
-    );
-}
-
-#[test]
-fn mesh_removed() {
-    let mut h = TestHarness::new();
-    add_mesh(&h, "mesh-0");
-    h.commit_and_update();
-
-    let mut q = h.app.world_mut().query_filtered::<Entity, With<HsdChild>>();
-    assert_eq!(q.iter(h.app.world()).count(), 1);
-
-    h.doc
-        .get_map("hsd")
-        .get_or_create_container("meshes", LoroMap::new())
-        .expect("meshes map")
-        .delete("mesh-0")
-        .expect("delete mesh");
-    h.commit_and_update();
-
-    let mut q2 = h.app.world_mut().query_filtered::<Entity, With<HsdChild>>();
-    assert_eq!(
-        q2.iter(h.app.world()).count(),
-        0,
-        "mesh entity should be gone"
-    );
-
-    assert!(
-        h.app
-            .world()
-            .get::<bevy_hsd::HsdChildren>(h.doc_entity)
-            .is_none()
-    );
-}
-
-#[test]
-fn mesh_topology_line_list() {
-    let mut h = TestHarness::new();
-    h.attach_inline_mesh(
-        "mesh-0",
-        MeshState {
-            topology: PrimitiveTopology::LineList,
-            positions: Some(vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0]),
-            ..Default::default()
-        },
-    );
-
-    let ent = mesh_entity(&mut h);
-    let compiled = h
-        .app
-        .world()
-        .get::<CompiledMesh>(ent)
-        .expect("CompiledMesh");
-    let assets = h
-        .app
-        .world()
-        .get_resource::<Assets<Mesh>>()
-        .expect("Mesh assets");
-    let mesh = assets.get(&compiled.0).expect("Mesh asset");
-    assert_eq!(mesh.primitive_topology(), PrimitiveTopology::LineList);
-}
-
-#[test]
-#[expect(clippy::float_cmp)]
-fn mesh_attribute_positions() {
-    let mut h = TestHarness::new();
-    h.attach_inline_mesh(
-        "mesh-0",
-        MeshState {
-            positions: Some(vec![
-                0.0, 0.0, 0.0, // v0
-                1.0, 0.0, 0.0, // v1
-                0.0, 1.0, 0.0, // v2
-            ]),
-            ..Default::default()
-        },
-    );
-
-    let ent = mesh_entity(&mut h);
-    let compiled = h
-        .app
-        .world()
-        .get::<CompiledMesh>(ent)
-        .expect("CompiledMesh");
-    let assets = h
-        .app
-        .world()
-        .get_resource::<Assets<Mesh>>()
-        .expect("Mesh assets");
-    let mesh = assets.get(&compiled.0).expect("Mesh asset");
-
-    let Some(VertexAttributeValues::Float32x3(pos)) = mesh.attribute(Mesh::ATTRIBUTE_POSITION)
-    else {
-        panic!("POSITION attribute missing or wrong type");
+    let attr = MeshAttr {
+        attributes: BTreeMap::from([("POSITION".to_string(), ByteArray::<32>::new([1; 32]))]),
+        indices:    None,
+        topology:   Topology::TriangleList,
     };
-    assert_eq!(pos.len(), 3, "three vertices expected");
-    assert_eq!(pos[0], [0.0, 0.0, 0.0]);
-    assert_eq!(pos[1], [1.0, 0.0, 0.0]);
-    assert_eq!(pos[2], [0.0, 1.0, 0.0]);
+    reconcile_prim_mesh(&meta, attr);
+
+    ctx.doc.commit();
+    ctx.app.update();
+
+    let world = ctx.app.world_mut();
+    let mut query = world.query::<&Mesh3d>();
+
+    let res = query.query(world).into_iter().collect::<Vec<_>>();
+    assert_eq!(res.len(), 1);
+
+    let attrs = attributes_map(&meta).expect("attributes map");
+    attrs.delete(MeshAttr::KEY).expect("delete");
+
+    ctx.doc.commit();
+    ctx.app.update();
+
+    let world = ctx.app.world_mut();
+    let res = query.query(world).into_iter().collect::<Vec<_>>();
+    assert!(res.is_empty());
 }
 
-#[test]
-#[expect(clippy::float_cmp)]
-fn mesh_attribute_uv0() {
-    let mut h = TestHarness::new();
-    h.attach_inline_mesh(
-        "mesh-0",
-        MeshState {
-            uv0: Some(vec![
-                0.0, 0.0, // 0
-                1.0, 0.0, // 1
-            ]),
-            ..Default::default()
-        },
-    );
+const POSITIONS: [[f32; 3]; 3] = [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];
+const NORMALS: [[f32; 3]; 3] = [[0.0, 0.0, 1.0]; 3];
+const UVS: [[f32; 2]; 3] = [[0.0, 0.0], [1.0, 0.0], [0.0, 1.0]];
+const INDICES: [u32; 3] = [0, 1, 2];
 
-    let ent = mesh_entity(&mut h);
-    let compiled = h
-        .app
-        .world()
-        .get::<CompiledMesh>(ent)
-        .expect("CompiledMesh");
-    let assets = h
-        .app
-        .world()
-        .get_resource::<Assets<Mesh>>()
-        .expect("Mesh assets");
-    let mesh = assets.get(&compiled.0).expect("Mesh asset");
+#[traced_test]
+#[rstest]
+fn test_mesh_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
+    let pos_hash = ctx.upload_blob(bytemuck::cast_slice::<[f32; 3], u8>(&POSITIONS).to_vec());
+    let norm_hash = ctx.upload_blob(bytemuck::cast_slice::<[f32; 3], u8>(&NORMALS).to_vec());
+    let uv_hash = ctx.upload_blob(bytemuck::cast_slice::<[f32; 2], u8>(&UVS).to_vec());
+    let idx_hash = ctx.upload_blob(bytemuck::cast_slice::<u32, u8>(&INDICES).to_vec());
 
-    let Some(VertexAttributeValues::Float32x2(pos)) = mesh.attribute(Mesh::ATTRIBUTE_UV_0) else {
-        panic!("UV_0 attribute missing or wrong type");
+    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
+    let root = tree.create(None).expect("create");
+    let meta = tree.get_meta(root).expect("get meta");
+    let attr = MeshAttr {
+        attributes: BTreeMap::from([
+            (
+                "POSITION".to_string(),
+                ByteArray::<32>::new(*pos_hash.as_bytes()),
+            ),
+            (
+                "NORMAL".to_string(),
+                ByteArray::<32>::new(*norm_hash.as_bytes()),
+            ),
+            (
+                "UV_0".to_string(),
+                ByteArray::<32>::new(*uv_hash.as_bytes()),
+            ),
+        ]),
+        indices:    Some(ByteArray::<32>::new(*idx_hash.as_bytes())),
+        topology:   Topology::TriangleList,
     };
-    assert_eq!(pos.len(), 2, "two items expected");
-    assert_eq!(pos[0], [0.0, 0.0]);
-    assert_eq!(pos[1], [1.0, 0.0]);
-}
+    reconcile_prim_mesh(&meta, attr);
 
-// TODO test all mesh attributes
+    let mut handle: Option<Handle<Mesh>> = None;
+    ctx.tick_until(|world| {
+        let mut q = world.query::<&Mesh3d>();
+        let Some(m) = q.iter(world).next() else {
+            return false;
+        };
+        if m.0 != Handle::<Mesh>::default() {
+            handle = Some(m.0.clone());
+            return true;
+        }
+        false
+    });
 
-#[test]
-fn mesh_indices() {
-    let mut h = TestHarness::new();
-    h.attach_inline_mesh(
-        "mesh-0",
-        MeshState {
-            positions: Some(vec![0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0]),
-            indices: Some(vec![0, 1, 2]),
-            ..Default::default()
-        },
-    );
+    let handle = handle.expect("mesh handle");
+    let assets = ctx.app.world().resource::<Assets<Mesh>>();
+    let mesh = assets.get(&handle).expect("mesh asset");
 
-    let ent = mesh_entity(&mut h);
-    let compiled = h
-        .app
-        .world()
-        .get::<CompiledMesh>(ent)
-        .expect("CompiledMesh");
-    let assets = h
-        .app
-        .world()
-        .get_resource::<Assets<Mesh>>()
-        .expect("Mesh assets");
-    let mesh = assets.get(&compiled.0).expect("Mesh asset");
+    let pos = mesh
+        .attribute(Mesh::ATTRIBUTE_POSITION)
+        .expect("POSITION attribute");
+    let VertexAttributeValues::Float32x3(pos) = pos else {
+        panic!("POSITION wrong type");
+    };
+    assert_eq!(pos.as_slice(), &POSITIONS);
+
+    let norm = mesh
+        .attribute(Mesh::ATTRIBUTE_NORMAL)
+        .expect("NORMAL attribute");
+    let VertexAttributeValues::Float32x3(norm) = norm else {
+        panic!("NORMAL wrong type");
+    };
+    assert_eq!(norm.as_slice(), &NORMALS);
+
+    let uv = mesh
+        .attribute(Mesh::ATTRIBUTE_UV_0)
+        .expect("UV_0 attribute");
+    let VertexAttributeValues::Float32x2(uv) = uv else {
+        panic!("UV_0 wrong type");
+    };
+    assert_eq!(uv.as_slice(), &UVS);
 
     let Some(Indices::U32(idx)) = mesh.indices() else {
-        panic!("U32 indices expected");
+        panic!("indices missing or wrong type");
     };
-    assert_eq!(idx, &[0, 1, 2]);
+    assert_eq!(idx.as_slice(), &INDICES);
+}
+
+fn reconcile_prim_mesh(meta: &loro::LoroMap, attr: MeshAttr) {
+    let prim = PrimMeta {
+        attributes: Some(Attributes {
+            mesh: Some(attr),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+    prim.reconcile(RootReconciler::new(meta.clone()))
+        .expect("reconcile");
 }

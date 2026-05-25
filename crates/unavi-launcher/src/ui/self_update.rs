@@ -2,8 +2,10 @@ use dioxus::prelude::*;
 use tracing::error;
 
 use super::app::Route;
-
-use crate::update::{UpdateStatus, launcher};
+use crate::update::{
+    UpdateStatus,
+    launcher,
+};
 
 #[component]
 pub fn SelfUpdate() -> Element {
@@ -11,16 +13,16 @@ pub fn SelfUpdate() -> Element {
     let mut status = use_signal(|| UpdateStatus::Checking);
 
     use_coroutine(move |_: UnboundedReceiver<()>| async move {
-        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
+        let (tx, rx) = async_channel::unbounded();
 
         let handle = tokio::spawn(async move {
             launcher::update_launcher_with_callback(move |s| {
-                let _ = tx.send(s);
+                let _ = tx.try_send(s);
             })
             .await
         });
 
-        while let Some(update_status) = rx.recv().await {
+        while let Ok(update_status) = rx.recv().await {
             status.set(update_status);
         }
 

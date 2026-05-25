@@ -5,9 +5,8 @@ use std::collections::BTreeMap;
 use loro::LoroValue;
 use smol_str::SmolStr;
 
-use crate::schema::Field;
-
 use super::ValidationError;
+use crate::schema::Field;
 
 /// Validate a [`LoroValue`] against a [`Field`] layout.
 ///
@@ -71,8 +70,8 @@ fn validate_list(value: &LoroValue, inner: &Field, path: &str) -> Result<(), Val
     for (i, item) in items.iter().enumerate() {
         validate_value(item, inner, &format!("{path}[{i}]")).map_err(|e| {
             ValidationError::InvalidElement {
-                path: path.to_string(),
-                index: i,
+                path:   path.to_string(),
+                index:  i,
                 source: Box::new(e),
             }
         })?;
@@ -87,8 +86,8 @@ fn validate_map(value: &LoroValue, inner: &Field, path: &str) -> Result<(), Vali
     for (key, val) in map.iter() {
         validate_value(val, inner, &format!("{path}.{key}")).map_err(|e| {
             ValidationError::InvalidField {
-                path: path.to_string(),
-                key: key.into(),
+                path:   path.to_string(),
+                key:    key.into(),
                 source: Box::new(e),
             }
         })?;
@@ -109,8 +108,8 @@ fn validate_struct(
             Some(val) => {
                 validate_value(val, inner_field, &format!("{path}.{key}")).map_err(|e| {
                     ValidationError::InvalidField {
-                        path: path.to_string(),
-                        key: key.clone(),
+                        path:   path.to_string(),
+                        key:    key.clone(),
                         source: Box::new(e),
                     }
                 })?;
@@ -135,8 +134,8 @@ fn validate_tree(value: &LoroValue, inner: &Field, path: &str) -> Result<(), Val
         {
             validate_value(meta, inner, &format!("{path}[{i}].meta")).map_err(|e| {
                 ValidationError::InvalidElement {
-                    path: path.to_string(),
-                    index: i,
+                    path:   path.to_string(),
+                    index:  i,
                     source: Box::new(e),
                 }
             })?;
@@ -158,7 +157,7 @@ fn validate_enum(
         .ok_or_else(|| ValidationError::MissingField("tag".into()))?;
     let LoroValue::String(tag) = tag_value else {
         return Err(ValidationError::TypeMismatch {
-            path: format!("{path}.tag"),
+            path:     format!("{path}.tag"),
             expected: "string",
         });
     };
@@ -179,7 +178,10 @@ fn validate_enum(
 mod tests {
     use std::collections::BTreeMap;
 
-    use loro::{LoroTree, LoroValue};
+    use loro::{
+        LoroTree,
+        LoroValue,
+    };
 
     use super::*;
 
@@ -480,7 +482,7 @@ mod tests {
 
     #[test]
     fn validate_blob_id_valid() {
-        let value = LoroValue::Binary(vec![0xaf; 32].into());
+        let value = LoroValue::Binary(vec![0xAF; 32].into());
         assert!(validate_value(&value, &Field::BlobId, "test").is_ok());
     }
 
@@ -504,7 +506,7 @@ mod tests {
 
     #[test]
     fn validate_record_id_valid() {
-        let value = LoroValue::Binary(vec![0xaf; 32].into());
+        let value = LoroValue::Binary(vec![0xAF; 32].into());
         assert!(validate_value(&value, &Field::RecordId, "test").is_ok());
     }
 
@@ -529,11 +531,11 @@ mod tests {
     #[test]
     fn validate_enum_unit_variant() {
         let mut map = std::collections::HashMap::new();
-        map.insert("tag".to_string(), LoroValue::String("Fixed".into()));
+        map.insert("tag".to_string(), LoroValue::String("Static".into()));
         let value = LoroValue::Map(map.into());
 
         let mut variants = BTreeMap::new();
-        variants.insert("Fixed".into(), None);
+        variants.insert("Static".into(), None);
         variants.insert("Dynamic".into(), None);
 
         assert!(validate_value(&value, &Field::Enum(variants), "test").is_ok());
@@ -569,7 +571,7 @@ mod tests {
         let value = LoroValue::Map(map.into());
 
         let mut variants = BTreeMap::new();
-        variants.insert("Fixed".into(), None);
+        variants.insert("Static".into(), None);
 
         assert!(matches!(
             validate_value(&value, &Field::Enum(variants), "test"),
@@ -583,7 +585,7 @@ mod tests {
         let value = LoroValue::Map(map.into());
 
         let mut variants = BTreeMap::new();
-        variants.insert("Fixed".into(), None);
+        variants.insert("Static".into(), None);
 
         assert!(matches!(
             validate_value(&value, &Field::Enum(variants), "test"),
@@ -617,7 +619,7 @@ mod tests {
     fn validate_restricted_delegates_to_inner() {
         let field = Field::Restricted {
             actions: vec![],
-            value: Box::new(Field::String),
+            value:   Box::new(Field::String),
         };
         let good = LoroValue::String("ok".into());
         let bad = LoroValue::I64(42);

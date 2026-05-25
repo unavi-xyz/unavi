@@ -6,14 +6,23 @@ use bytes::Bytes;
 use iroh::EndpointId;
 use loro::LoroDoc;
 use tracing::warn;
-use wired_records::HydratedHash;
-use wired_schemas::{SCHEMA_ACL, SCHEMA_RECORD, StaticSchema};
+use wired_schemas::{
+    SCHEMA_ACL,
+    SCHEMA_RECORD,
+    StaticSchema,
+};
 
 use crate::{
-    actor::{Actor, into_actor::IntoActor},
+    actor::{
+        Actor,
+        into_actor::IntoActor,
+    },
     record::envelope::Envelope,
     signed_bytes::Signable,
-    surg::{acl::Acl, record::Record},
+    surg::{
+        acl::Acl,
+        record::Record,
+    },
 };
 
 pub(super) const DEFAULT_PIN_TTL: Duration = Duration::from_hours(1);
@@ -21,36 +30,36 @@ pub(super) const DEFAULT_PIN_TTL: Duration = Duration::from_hours(1);
 /// Result of creating a record.
 #[derive(Debug)]
 pub struct RecordResult {
-    pub id: Hash,
-    pub doc: LoroDoc,
+    pub id:           Hash,
+    pub doc:          LoroDoc,
     pub sync_results: Vec<(EndpointId, anyhow::Result<()>)>,
 }
 
 /// Schema data for dependency tracking.
 #[derive(Clone)]
 pub struct SchemaData {
-    pub container: smol_str::SmolStr,
-    pub hash: Hash,
-    pub bytes: Bytes,
+    pub container: String,
+    pub hash:      Hash,
+    pub bytes:     Bytes,
 }
 
 impl From<&StaticSchema> for SchemaData {
     fn from(s: &StaticSchema) -> Self {
         Self {
             container: "unknown".into(), // Will be set by add_schema
-            hash: s.hash,
-            bytes: s.bytes.clone(),
+            hash:      s.hash,
+            bytes:     s.bytes.clone(),
         }
     }
 }
 
 pub struct RecordBuilder {
-    actor: Actor,
-    doc: LoroDoc,
-    schemas: Vec<SchemaData>,
-    ttl: Duration,
+    actor:        Actor,
+    doc:          LoroDoc,
+    schemas:      Vec<SchemaData>,
+    ttl:          Duration,
     sync_targets: Vec<Actor>,
-    is_public: bool,
+    is_public:    bool,
 }
 
 impl RecordBuilder {
@@ -75,12 +84,13 @@ impl RecordBuilder {
     }
 
     /// Add a schema to the record.
-    /// Accepts `&StaticSchema` for builtins or [`SchemaData`] for custom schemas.
+    /// Accepts `&StaticSchema` for builtins or [`SchemaData`] for custom
+    /// schemas.
     pub fn add_schema(
         mut self,
-        container: impl Into<smol_str::SmolStr>,
+        container: impl Into<String>,
         schema: impl Into<SchemaData>,
-        f: impl Fn(&mut LoroDoc) -> anyhow::Result<()>,
+        f: impl FnOnce(&mut LoroDoc) -> anyhow::Result<()>,
     ) -> anyhow::Result<Self> {
         let mut schema_data = schema.into();
         schema_data.container = container.into();
@@ -116,7 +126,7 @@ impl RecordBuilder {
         // Build record with schema hashes.
         let mut record = Record::new(did.clone());
         for schema in &all_schemas {
-            record.add_schema(schema.container.clone(), HydratedHash(schema.hash));
+            record.add_schema(schema.container.clone(), schema.hash);
         }
         record.save(&self.doc)?;
 

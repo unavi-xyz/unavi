@@ -1,52 +1,69 @@
 use std::{
-    collections::HashSet,
-    sync::{Arc, RwLock},
+    collections::{
+        HashMap,
+        HashSet,
+    },
+    sync::Arc,
 };
 
 use bevy::prelude::*;
-use bevy_hsd::HsdRecordId;
 use blake3::Hash;
+use parking_lot::RwLock;
 
-/// Inbound whitelist for a document.
-/// Limits all cross-HSD access — such as events or scene resources.
-#[derive(Component, Clone, Default)]
-pub struct HsdFirewall(pub Arc<RwLock<HsdFirewallInner>>);
+/// Firewall controls how a document may communicate with other documents.
+#[derive(Component, Clone, Default, Deref)]
+pub struct Firewall(pub Arc<RwLock<HashMap<Channel, Access>>>);
 
-#[derive(Default, Debug)]
-pub struct HsdFirewallInner {
-    pub read: HashSet<Hash>,
-    pub write: HashSet<Hash>,
+#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
+pub enum Channel {
+    EventRead,
+    EventWrite,
+    SceneRead,
+    SceneWrite,
 }
 
-/// Automatically populate a firewall from documents attached to select entities.
-#[derive(Component, Default)]
-#[require(HsdFirewall)]
-pub struct HsdFirewallEntities {
-    pub read: Vec<Entity>,
-    pub write: Vec<Entity>,
+#[derive(Clone, Debug)]
+pub enum Access {
+    Open,
+    Restricted(HashSet<Hash>),
 }
 
-pub fn sync_hsd_firewall_entities(
-    documents: Query<&HsdRecordId>,
-    firewalls: Query<(&HsdFirewallEntities, &HsdFirewall)>,
-) {
-    for (ents, fw) in firewalls {
-        let Ok(mut fw) = fw.0.try_write() else {
-            continue;
-        };
+impl Default for Access {
+    fn default() -> Self {
+        Self::Restricted(HashSet::default())
+    }
+}
 
-        for ent in &ents.read {
-            let Ok(id) = documents.get(*ent) else {
-                continue;
-            };
-            fw.read.insert(id.0);
+impl Access {
+    #[must_use]
+    pub fn permits(&self, id: &Hash) -> bool {
+        match self {
+            Self::Open => true,
+            Self::Restricted(set) => set.contains(id),
         }
+    }
+}
 
-        for ent in &ents.write {
-            let Ok(id) = documents.get(*ent) else {
-                continue;
-            };
-            fw.write.insert(id.0);
-        }
+impl Firewall {
+    #[must_use]
+    pub fn default_space() -> Self {
+        let mut map = HashMap::new();
+        map.insert(Channel::EventRead, Access::Open);
+        map.insert(Channel::EventWrite, Access::Open);
+        map.insert(Channel::SceneRead, Access::Open);
+        Self(Arc::new(RwLock::new(map)))
+    }
+
+    #[must_use]
+    pub fn for_child_doc(creator_id: Hash) -> Self {
+        let mut map = HashMap::new();
+        map.insert(Channel::EventRead, Access::Open);
+        map.insert(Channel::EventWrite, Access::Open);
+        map.insert(Channel::SceneRead, Access::Open);
+        map.insert(
+            Channel::SceneWrite,
+            Access::Restricted(HashSet::from([creator_id])),
+        );
+        Self(Arc::new(RwLock::new(map)))
     }
 }

@@ -1,48 +1,58 @@
 package wired:event;
 
-interface types {
-  use wired:scene/types.{node, document-id};
+world all {
+  import api;
+  import types;
+}
 
-  type event-channel = string;
+interface api {
+  use types.{event-filter, event-receptor};
+
+  emit: func(channel: string, payload: list<u8>, filter: event-filter);
+  listen: func(channels: list<string>, filter: event-filter) -> event-receptor;
+}
+
+interface types {
+  use wired:scene/types.{prim, document-id};
+
+  record spatial-scope {
+    prim: prim,
+    radius: f32,
+  }
 
   variant event-scope {
     global,
-    /// Radius of spatial event
-    spatial(f32), 
+    spatial(spatial-scope),
   }
 
   record event-filter {
-    node:      option<node>,
-    scope:     event-scope,
     documents: option<list<document-id>>,
+    scope: event-scope,
   }
 
-  variant event-sender {
+  record spatial-sender {
+    distance: f32,
+    prim: prim,
+  }
+
+  variant sender-scope {
     global,
-    spatial,
+    spatial(spatial-sender),
+  }
+
+  record event-sender {
+    document: list<u8>,
+    scope: sender-scope,
   }
 
   record event {
-    channel:         event-channel,
-    payload:         list<u8>,
-    sender:          event-sender,
-    sender-document: document-id,
-    time:            u64,
+    channel: string,
+    payload: list<u8>,
+    sender: event-sender,
+    time: u64,
   }
 
   resource event-receptor {
     poll: func() -> option<event>;
   }
-}
-
-interface api {
-  use types.{event-channel, event-filter, event-receptor};
-
-  emit: func(channel: event-channel, payload: list<u8>, filter: event-filter);
-  listen: func(channels: list<event-channel>, filter: event-filter) -> event-receptor;
-}
-
-world prelude {
-  import api;
-  import types;
 }

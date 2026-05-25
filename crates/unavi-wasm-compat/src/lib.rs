@@ -1,11 +1,14 @@
 //! Cross-platform async helpers for WASM compatibility.
 
-use std::{future::Future, time::Duration};
+use std::{
+    future::Future,
+    time::Duration,
+};
 
 /// Spawn an async thread.
 ///
-/// On native: uses [`std::thread::spawn`].
-/// On WASM: uses [`wasm_bindgen_futures::spawn_local`].
+/// On native: [`std::thread::spawn`].
+/// On WASM: [`wasm_bindgen_futures::spawn_local`].
 #[cfg(not(target_family = "wasm"))]
 pub fn spawn_thread<F>(future: F)
 where
@@ -36,4 +39,4 @@ pub fn sleep_thread(duration: Duration) {
     std::thread::sleep(duration);
 }
 #[cfg(target_family = "wasm")]
-pub fn sleep_thread(_duration: Duration) {}
+pub const fn sleep_thread(_duration: Duration) {}

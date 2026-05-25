@@ -1,9 +1,13 @@
 use anyhow::Context;
-use rusqlite::{Connection, params};
+use rusqlite::{
+    Connection,
+    params,
+};
 
 const DEFAULT_QUOTA_BYTES: i64 = 512 * 1024 * 1024;
 
-/// Ensures a quota record exists for the user, creating one with defaults if not.
+/// Ensures a quota record exists for the user, creating one with defaults if
+/// not.
 pub fn ensure_quota_exists(conn: &Connection, owner: &str) -> anyhow::Result<()> {
     conn.execute(
         "INSERT OR IGNORE INTO user_quotas (owner, quota_bytes) VALUES (?, ?)",

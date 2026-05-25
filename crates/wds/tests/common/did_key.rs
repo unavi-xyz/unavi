@@ -1,8 +1,16 @@
 use std::sync::Arc;
 
 use rusqlite::params;
-use wds::{DataStore, actor::Actor, identity::Identity};
-use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
+use wds::{
+    DataStore,
+    actor::Actor,
+    identity::Identity,
+};
+use xdid::methods::key::{
+    DidKeyPair,
+    PublicKey,
+    p256::P256KeyPair,
+};
 
 pub async fn generate_actor(store: &DataStore) -> Actor {
     generate_actor_with_identity(store).await.0

@@ -1,0 +1,16 @@
+[
+    (
+        attributes: (
+            asset: None,
+            collider: None,
+            image: None,
+            material: None,
+            name: "example",
+            rigid_body: None,
+            script: "./Cargo.toml",
+            xform: None,
+        ),
+        relationships: {},
+        children: [],
+    ),
+]

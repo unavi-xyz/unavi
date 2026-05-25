@@ -1,58 +1,73 @@
 use std::time::SystemTime;
 
-use wired_prelude::{wired_math::types::Vec3, wired_scene::types::Color};
+use wired_prelude::prelude::*;
 
 use crate::{
     unavi::shapes::api::Cuboid,
     wired::{
-        agent::{context::local_agent, types::BoneName},
-        scene::{context::self_document, types::Node},
+        agent::{
+            api::local_agent,
+            types::BoneName,
+        },
+        scene::types::{
+            Material,
+            Prim,
+            Xform,
+        },
     },
 };
 
 wired_prelude::generate_script!(Script);
 
 struct Script {
-    node: Node,
+    hand: Prim,
+    prim: Prim,
     time: SystemTime,
 }
 
-impl GuestScript for Script {
-    fn new() -> Self {
-        let doc = self_document();
-
+impl ScriptBehavior for Script {
+    fn init() -> Self {
         let size = 0.1;
-        let mesh = Cuboid::new(size, size, size).mesh();
+        let prim = Cuboid::new(Vec3::splat(size)).mesh();
 
-        let mat = doc.create_material();
-        mat.set_base_color(Color::rgba(0.8, 0.1, 0.1, 1.0));
+        prim.set_material(Some(&Material {
+            alpha_cutoff:               None,
+            alpha_mode:                 None,
+            base_color:                 Some(Color::rgba(0.8, 0.1, 0.1, 1.0)),
+            base_color_texture:         None,
+            double_sided:               None,
+            emissive:                   None,
+            emissive_texture:           None,
+            metallic:                   None,
+            metallic_roughness_texture: None,
+            normal_texture:             None,
+            occlusion_texture:          None,
+            roughness:                  None,
+        }));
 
-        let node = doc.create_node();
-        node.set_mesh(Some(&mesh));
-        node.set_material(Some(&mat));
-
-        // Attach to bone.
         let agent = local_agent();
         let hand = agent.bone(BoneName::RightHand).expect("get bone");
-        hand.add_child(&node);
 
         Self {
-            node,
+            hand,
+            prim,
             time: SystemTime::now(),
         }
     }
 
-    fn tick(&self) {
+    fn tick(&mut self) {
         let now = self.time.elapsed().expect("elapsed").as_secs_f32();
+        let offset = Vec3::new(0.0, now.sin() * 0.1, 0.0);
 
-        let tr = self.node.global_transform().translation;
-        println!("{}x {}y {}z", tr.x, tr.y, tr.z);
-
-        self.node
-            .set_translation(Vec3::new(0.0, now.sin() * 0.1, 0.0));
+        let global = self.hand.global_xform();
+        let mut tr = global.translation;
+        tr.x += offset.x;
+        tr.y += offset.y;
+        tr.z += offset.z;
+        self.prim.set_xform(Some(Xform {
+            translation: tr,
+            rotation:    global.rotation,
+            scale:       global.scale,
+        }));
     }
-
-    fn render(&self) {}
-
-    fn drop(&self) {}
 }

@@ -1,13 +1,19 @@
 use std::{
     sync::{
         Arc,
-        atomic::{AtomicI64, Ordering},
+        atomic::{
+            AtomicI64,
+            Ordering,
+        },
     },
     time::Duration,
 };
 
 use blake3::Hash;
-use futures::{StreamExt, TryStreamExt};
+use futures::{
+    StreamExt,
+    TryStreamExt,
+};
 use irpc::WithChannels;
 use n0_error::Meta;
 use rusqlite::params;
@@ -16,8 +22,16 @@ use tracing::debug;
 
 use crate::{
     StoreContext,
-    api::{ApiError, ApiService, UploadBlob, authenticate},
-    quota::{ensure_quota_exists, reserve_bytes},
+    api::{
+        ApiError,
+        ApiService,
+        UploadBlob,
+        authenticate,
+    },
+    quota::{
+        ensure_quota_exists,
+        reserve_bytes,
+    },
     tag::BlobTag,
 };
 
@@ -104,9 +118,9 @@ pub async fn upload_blob(
                 }
 
                 tx.execute(
-                    "INSERT OR IGNORE INTO blob_pins (hash, owner, expires, size) VALUES (?, ?, ?, ?)",
-                    params![&hash_str, &did_str, expires, blob_len],
-                )?;
+               "INSERT OR IGNORE INTO blob_pins (hash, owner, expires, size) VALUES (?, ?, ?, ?)",
+               params![&hash_str, &did_str, expires, blob_len],
+            )?;
 
                 tx.commit()?;
                 Ok(true)

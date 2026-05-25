@@ -2,7 +2,7 @@ package wired:input;
 
 world prelude {
   import api;
-  import system-api;
+  import context;
   import types;
 }
 
@@ -32,16 +32,16 @@ interface types {
 
 interface api {
   use types.{input-listener};
-  use wired:scene/types.{node};
+  use wired:scene/types.{prim};
 
-  // Captures input events for a given node.
+  // Captures input events for a given prim.
   // Requires a collider to function.
-  register-input-listener: func(target: borrow<node>) -> input-listener;
+  register-input-listener: func(target: borrow<prim>) -> input-listener;
 }
 
-interface system-api {
+interface context {
   use types.{input-listener};
 
   // Captures all input events from the local agent.
-  system-input-listener: func() -> input-listener;
+  register-global-input-listener: func() -> input-listener;
 }

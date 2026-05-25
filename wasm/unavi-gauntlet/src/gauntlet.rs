@@ -1,20 +1,36 @@
 use std::{
-    cell::{Cell, RefCell},
+    cell::{
+        Cell,
+        RefCell,
+    },
     f32::consts::PI,
 };
 
-use wired_prelude::wired_math::types::{Quat, Transform, Vec3};
+use wired_prelude::prelude::*;
 
 use crate::{
-    Color, ModuleRef,
-    sector::{Sector, make_sectors},
+    Color,
+    ModuleRef,
+    sector::{
+        Sector,
+        make_sectors,
+    },
     unavi::vui_module::api::VuiModuleRegistry,
     wired::{
         agent::{
-            context::{local_agent, local_camera},
+            api::{
+                local_agent,
+                local_camera,
+            },
             types::BoneName,
         },
-        scene::{context::self_document, types::Node},
+        scene::{
+            api::self_document,
+            types::{
+                Prim,
+                Xform,
+            },
+        },
     },
 };
 
@@ -39,12 +55,28 @@ pub const SECTOR_INNER_R: f32 = 0.03;
 pub const SECTOR_SUBDIVISIONS: usize = 40;
 pub const Z_OFFSET: f32 = -0.5;
 
-fn place_sector_transform(bone: &Node) -> Transform {
-    let tr = bone.global_transform();
+const fn xform_full(translation: Vec3, rotation: Quat, scale: Vec3) -> Xform {
+    Xform {
+        translation,
+        rotation,
+        scale,
+    }
+}
+
+const fn xform_scale(scale: Vec3) -> Xform {
+    xform_full(Vec3::ZERO, Quat::IDENTITY, scale)
+}
+
+fn global_transform(prim: &Prim) -> Transform {
+    prim.global_xform()
+}
+
+fn place_sector_transform(bone: &Prim) -> Transform {
+    let tr = global_transform(bone);
     let forward = tr.rotation * Vec3::new(0.0, 0.0, -1.0);
 
     let fwd_len = forward.x.hypot(forward.z);
-    let forward_h = if fwd_len > 1e-3 {
+    let forward_h = if fwd_len > 1.0e-3 {
         Vec3::new(forward.x / fwd_len, 0.0, forward.z / fwd_len)
     } else {
         Vec3::new(0.0, 0.0, -1.0)
@@ -54,14 +86,14 @@ fn place_sector_transform(bone: &Node) -> Transform {
 
     let waist_y = agent
         .bone(BoneName::Hips)
-        .map_or(1.0, |h| h.global_transform().translation.y);
+        .map_or(1.0, |h| global_transform(&h).translation.y);
 
     let head_y = agent
         .bone(BoneName::Head)
-        .map_or(DEFAULT_AGENT_HEIGHT, |h| h.global_transform().translation.y);
+        .map_or(DEFAULT_AGENT_HEIGHT, |h| global_transform(&h).translation.y);
     let foot_y = agent
         .bone(BoneName::LeftFoot)
-        .map_or(0.0, |f| f.global_transform().translation.y);
+        .map_or(0.0, |f| global_transform(&f).translation.y);
     let agent_height = (head_y - foot_y).max(0.5);
     let scale_f = agent_height / DEFAULT_AGENT_HEIGHT;
 
@@ -80,16 +112,10 @@ fn place_sector_transform(bone: &Node) -> Transform {
         w: half.cos(),
     };
 
-    let scale = Vec3 {
-        x: scale_f,
-        y: scale_f,
-        z: scale_f,
-    };
-
     Transform {
         translation,
         rotation,
-        scale,
+        scale: Vec3::splat(scale_f),
     }
 }
 
@@ -99,22 +125,22 @@ pub enum Target {
 }
 
 pub struct Gauntlet {
-    pub bone: RefCell<Option<Node>>,
-    pub core: Node,
+    pub bone:           RefCell<Option<Prim>>,
+    pub core:           Prim,
     pub hovered_sector: Cell<Option<usize>>,
-    pub sectors: RefCell<Vec<Sector>>,
-    pub open: Cell<bool>,
-    pub open_pos: Cell<Option<Vec3>>,
-    pub pressed: Cell<bool>,
-    pub scale_t: Cell<f32>,
-    pub target: Target,
+    pub sectors:        RefCell<Vec<Sector>>,
+    pub open:           Cell<bool>,
+    pub open_pos:       Cell<Option<Vec3>>,
+    pub pressed:        Cell<bool>,
+    pub scale_t:        Cell<f32>,
+    pub target:         Target,
 }
 
 impl Gauntlet {
     pub fn new(target: Target) -> Self {
         let doc = self_document();
-        let core = doc.create_node();
-        core.set_scale(Vec3::ZERO);
+        let core = doc.create_prim();
+        core.set_xform(Some(xform_scale(Vec3::ZERO)));
         Self {
             bone: RefCell::new(None),
             core,
@@ -133,12 +159,12 @@ impl Gauntlet {
 
         for s in self.sectors.borrow().iter() {
             self.core.remove_child(&s.root);
-            doc.remove_node(&s.root);
+            doc.remove_prim(&s.root);
         }
 
         let new_sectors = make_sectors(&doc, modules, colors);
         for s in &new_sectors {
-            s.root.set_scale(Vec3::ZERO);
+            s.root.set_xform(Some(xform_scale(Vec3::ZERO)));
             self.core.add_child(&s.root);
         }
 
@@ -151,13 +177,13 @@ impl Gauntlet {
             return true;
         }
 
-        let node = match self.target {
+        let prim = match self.target {
             Target::Camera => Some(local_camera()),
             Target::Bone(b) => local_agent().bone(b),
         };
 
-        node.is_some_and(|node| {
-            *bone_ref = Some(node);
+        prim.is_some_and(|prim| {
+            *bone_ref = Some(prim);
             true
         })
     }
@@ -167,10 +193,26 @@ impl Gauntlet {
         let Some(bone) = bone_ref.as_ref() else {
             return;
         };
-        let tr = bone.global_transform();
+        let tr = global_transform(bone);
         let pos = tr.translation + tr.rotation * Vec3::new(0.0, 0.0, Z_OFFSET);
-        self.core.set_translation(pos);
-        self.core.set_rotation(tr.rotation);
+        self.core.set_xform(Some(xform_full(
+            pos,
+            tr.rotation,
+            Vec3::splat(self.scale_t.get()),
+        )));
+    }
+
+    pub fn apply_scale(&self) {
+        let cur = self.core.xform().unwrap_or(Xform {
+            translation: Vec3::ZERO,
+            rotation:    Quat::IDENTITY,
+            scale:       Vec3::ONE,
+        });
+        self.core.set_xform(Some(Xform {
+            translation: cur.translation,
+            rotation:    cur.rotation,
+            scale:       Vec3::splat(self.scale_t.get()),
+        }));
     }
 
     pub fn open_menu(&self, open_pos: Vec3) {
@@ -179,21 +221,18 @@ impl Gauntlet {
             return;
         };
 
-        let mut tr = bone.global_transform();
-        tr.translation += tr.rotation * Vec3::new(0.0, 0.0, Z_OFFSET);
-        tr.scale = Vec3::ZERO;
-        self.core.set_transform(tr);
+        let tr = global_transform(bone);
+        let translation = tr.translation + tr.rotation * Vec3::new(0.0, 0.0, Z_OFFSET);
+        self.core
+            .set_xform(Some(xform_full(translation, tr.rotation, Vec3::ZERO)));
 
         self.open_pos.set(Some(open_pos));
         let sectors = self.sectors.borrow();
         for sector in sectors.iter() {
             sector.raise_t.set(0.0);
-            sector.root.set_scale(Vec3::ONE);
-            sector.root.set_translation(Vec3::ZERO);
+            sector.root.set_xform(Some(xform_scale(Vec3::ONE)));
             let c = sector.bg_color;
-            sector
-                .bg_material
-                .set_base_color(Color::rgba(c.r, c.g, c.b, BG_ALPHA_BASE));
+            sector.set_bg_color(Color::rgba(c.r, c.g, c.b, BG_ALPHA_BASE));
         }
     }
 
@@ -204,11 +243,9 @@ impl Gauntlet {
         for sector in sectors.iter() {
             if sector.raise_t.get() != 0.0 {
                 sector.raise_t.set(0.0);
-                sector.root.set_translation(Vec3::ZERO);
+                sector.root.set_xform(Some(xform_scale(Vec3::ONE)));
                 let c = sector.bg_color;
-                sector
-                    .bg_material
-                    .set_base_color(Color::rgba(c.r, c.g, c.b, BG_ALPHA_BASE));
+                sector.set_bg_color(Color::rgba(c.r, c.g, c.b, BG_ALPHA_BASE));
             }
         }
     }
@@ -222,14 +259,14 @@ impl Gauntlet {
             return;
         };
         if sector.active_state.get() {
-            println!("deactivated {}", sector.name);
+            println!("Deactivated {}", sector.name);
             sector.active_state.set(false);
-            sector.outline_node.set_scale(Vec3::ZERO);
+            sector.outline_prim.set_xform(Some(xform_scale(Vec3::ZERO)));
             registry.deactivate(&module.doc_id);
         } else {
-            println!("activated {}", sector.name);
+            println!("Activated {}", sector.name);
             sector.active_state.set(true);
-            sector.outline_node.set_scale(Vec3::ONE);
+            sector.outline_prim.set_xform(Some(xform_scale(Vec3::ONE)));
             let bone_ref = self.bone.borrow();
             if let Some(bone) = bone_ref.as_ref() {
                 let transform = place_sector_transform(bone);
@@ -255,15 +292,15 @@ impl Gauntlet {
             return;
         };
 
-        let bone_tr = bone.global_transform();
-        let menu_tr = self.core.global_transform();
+        let bone_tr = global_transform(bone);
+        let menu_tr = global_transform(&self.core);
 
         let forward = bone_tr.rotation * Vec3::new(0.0, 0.0, -1.0);
 
         let menu_normal = menu_tr.rotation * Vec3::Z;
         let origin_to_menu = menu_tr.translation - bone_tr.translation;
         let denom = forward.dot(menu_normal);
-        if denom.abs() < 1e-6 {
+        if denom.abs() < 1.0e-6 {
             self.hovered_sector.set(None);
             return;
         }

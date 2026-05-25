@@ -1,6 +1,8 @@
-use crate::schema::{Action, Field};
-
 use super::ChangeType;
+use crate::schema::{
+    Action,
+    Field,
+};
 
 /// Unwrap Restricted and Optional wrappers to get the inner
 /// field type.
@@ -67,9 +69,11 @@ fn find_restrictions_recursive<'a>(
 mod tests {
     use std::collections::BTreeMap;
 
-    use crate::schema::{Can, Who};
-
     use super::*;
+    use crate::schema::{
+        Can,
+        Who,
+    };
 
     #[test]
     fn unwrap_plain_field() {
@@ -80,7 +84,7 @@ mod tests {
     fn unwrap_single_restricted() {
         let field = Field::Restricted {
             actions: vec![],
-            value: Box::new(Field::String),
+            value:   Box::new(Field::String),
         };
         assert!(matches!(unwrap_restricted(&field), Field::String));
     }
@@ -89,9 +93,9 @@ mod tests {
     fn unwrap_nested_restricted() {
         let field = Field::Restricted {
             actions: vec![],
-            value: Box::new(Field::Optional(Box::new(Field::Restricted {
+            value:   Box::new(Field::Optional(Box::new(Field::Restricted {
                 actions: vec![],
-                value: Box::new(Field::I64),
+                value:   Box::new(Field::I64),
             }))),
         };
         assert!(matches!(unwrap_restricted(&field), Field::I64));
@@ -104,7 +108,7 @@ mod tests {
                 who: Who::Anyone,
                 can: vec![Can::Update],
             }],
-            value: Box::new(Field::String),
+            value:   Box::new(Field::String),
         };
         let r = find_restrictions_for_path(&field, "container");
         assert_eq!(r.len(), 1);
@@ -120,7 +124,7 @@ mod tests {
                     who: Who::Anyone,
                     can: vec![Can::Create],
                 }],
-                value: Box::new(Field::String),
+                value:   Box::new(Field::String),
             }),
         );
         let field = Field::Struct(fields);
@@ -142,7 +146,7 @@ mod tests {
                 who: Who::Anyone,
                 can: vec![Can::Create, Can::Delete],
             }],
-            value: Box::new(Field::Struct(BTreeMap::new())),
+            value:   Box::new(Field::Struct(BTreeMap::new())),
         };
         let field = Field::Tree(Box::new(inner));
         let r = find_restrictions_for_path(&field, "nodes");

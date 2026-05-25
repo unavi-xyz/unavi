@@ -1,305 +1,256 @@
-use bevy::prelude::*;
-use bevy_hsd::{
-    CompiledMaterial, HsdChild, MaterialRef, NodeId,
-    data::{HsdMaterial, HsdNodeData},
+use std::{
+    collections::BTreeMap,
+    io::Cursor,
 };
-use loro::{LoroMap, LoroTree, TreeParentId};
-use loro_surgeon::Reconcile;
+
+use bevy::{
+    pbr::MeshMaterial3d,
+    prelude::*,
+};
+use bevy_hsd::attributes::{
+    image::HsdImage,
+    material::HsdMaterial,
+};
+use hsd::{
+    HSD_CONTAINER_ID,
+    PrimMeta,
+    attributes::{
+        Attribute,
+        Attributes,
+        attributes_map,
+        image::ImageAttr,
+        material::{
+            ColorVec,
+            MaterialAttr,
+        },
+    },
+};
+use image::{
+    ImageFormat,
+    RgbaImage,
+};
+use loro_surgeon::{
+    Reconcile,
+    bytes::ByteArray,
+    reconcile::RootReconciler,
+};
+use rstest::rstest;
+use tracing_test::traced_test;
+
+use crate::common::*;
 
 mod common;
 
-use common::TestHarness;
+#[traced_test]
+#[rstest]
+fn test_material_lifecycle(mut ctx: TestContext) {
+    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
+    let root = tree.create(None).expect("create");
+    let meta = tree.get_meta(root).expect("get meta");
 
-const EPSILON: f32 = 1e-5;
-
-fn add_material(harness: &TestHarness, id: &str) {
-    harness
-        .doc
-        .get_map("hsd")
-        .get_or_create_container("materials", LoroMap::new())
-        .expect("materials map")
-        .get_or_create_container(id, LoroMap::new())
-        .expect("material map entry");
-}
-
-fn set_material(harness: &TestHarness, id: &str, data: HsdMaterial) {
-    let mat_map = harness
-        .doc
-        .get_map("hsd")
-        .get_or_create_container("materials", LoroMap::new())
-        .expect("materials map")
-        .get_or_create_container(id, LoroMap::new())
-        .expect("material map entry");
-    data.reconcile(&mat_map).expect("reconcile material data");
-}
-
-fn mat_entity(h: &mut TestHarness) -> Entity {
-    h.app
-        .world_mut()
-        .query_filtered::<Entity, (With<HsdChild>, Without<NodeId>)>()
-        .iter(h.app.world())
-        .next()
-        .expect("material entity")
-}
-
-fn get_standard_material(h: &TestHarness, ent: Entity) -> &StandardMaterial {
-    let compiled = h
-        .app
-        .world()
-        .get::<CompiledMaterial>(ent)
-        .expect("CompiledMaterial");
-    h.app
-        .world()
-        .get_resource::<Assets<StandardMaterial>>()
-        .expect("assets resource")
-        .get(&compiled.0)
-        .expect("StandardMaterial asset")
-}
-
-#[test]
-fn material_entity_spawns() {
-    let mut h = TestHarness::new();
-    add_material(&h, "mat-0");
-    h.commit_and_update();
-
-    let mut q = h
-        .app
-        .world_mut()
-        .query_filtered::<Entity, (With<HsdChild>, Without<NodeId>)>();
-    assert_eq!(
-        q.iter(h.app.world()).count(),
-        1,
-        "one material entity expected"
-    );
-
-    assert!(
-        h.app
-            .world()
-            .get::<bevy_hsd::HsdChildren>(h.doc_entity)
-            .is_some()
-    );
-}
-
-#[test]
-fn material_removed() {
-    let mut h = TestHarness::new();
-    add_material(&h, "mat-0");
-    h.commit_and_update();
-
-    let mut q = h
-        .app
-        .world_mut()
-        .query_filtered::<Entity, (With<HsdChild>, Without<NodeId>)>();
-    assert_eq!(q.iter(h.app.world()).count(), 1);
-
-    h.doc
-        .get_map("hsd")
-        .get_or_create_container("materials", LoroMap::new())
-        .expect("materials map")
-        .delete("mat-0")
-        .expect("delete material");
-    h.commit_and_update();
-
-    let mut q2 = h
-        .app
-        .world_mut()
-        .query_filtered::<Entity, (With<HsdChild>, Without<NodeId>)>();
-    assert_eq!(
-        q2.iter(h.app.world()).count(),
-        0,
-        "material entity should be gone"
-    );
-}
-
-#[test]
-fn node_material_ref_set() {
-    let mut h = TestHarness::new();
-    add_material(&h, "mat-0");
-
-    let nodes = h
-        .doc
-        .get_map("hsd")
-        .get_or_create_container("nodes", LoroTree::new())
-        .expect("nodes tree");
-    let tid = nodes.create(TreeParentId::Root).expect("create node");
-    let meta = nodes.get_meta(tid).expect("node meta");
-    HsdNodeData {
-        material: Some("mat-0".into()),
+    let attr = MaterialAttr {
+        base_color: Some(ColorVec(vec![0.5, 0.1, 0.2, 1.0])),
+        alpha_mode: Some("Blend".to_string()),
+        metallic: Some(0.7),
+        roughness: Some(0.3),
         ..Default::default()
-    }
-    .reconcile(&meta)
-    .expect("reconcile node data");
-    h.commit_and_update();
-
-    let mut q = h.app.world_mut().query::<(&NodeId, &MaterialRef)>();
-    assert!(
-        q.iter(h.app.world()).next().is_some(),
-        "MaterialRef expected on node"
-    );
-}
-
-#[test]
-fn material_base_color_value() {
-    let mut h = TestHarness::new();
-    set_material(
-        &h,
-        "mat-0",
-        HsdMaterial {
-            base_color: Some(vec![1.0, 0.0, 0.0, 1.0]),
-            ..Default::default()
-        },
-    );
-    h.commit_and_update();
-
-    let ent = mat_entity(&mut h);
-    let mat = get_standard_material(&h, ent);
-    let Color::Srgba(c) = mat.base_color else {
-        panic!("expected Srgba color");
     };
-    assert!((c.red - 1.0).abs() < EPSILON, "red: {}", c.red);
-    assert!((c.green - 0.0).abs() < EPSILON, "green: {}", c.green);
-    assert!((c.blue - 0.0).abs() < EPSILON, "blue: {}", c.blue);
-    assert!((c.alpha - 1.0).abs() < EPSILON, "alpha: {}", c.alpha);
-}
+    reconcile_prim_material(&meta, attr);
 
-#[test]
-fn material_metallic_value() {
-    let mut h = TestHarness::new();
-    set_material(
-        &h,
-        "mat-0",
-        HsdMaterial {
-            metallic: Some(0.7),
-            ..Default::default()
-        },
-    );
-    h.commit_and_update();
+    ctx.doc.commit();
+    ctx.app.update();
 
-    let ent = mat_entity(&mut h);
-    let mat = get_standard_material(&h, ent);
-    assert!(
-        (mat.metallic - 0.7).abs() < EPSILON,
-        "metallic: {}",
-        mat.metallic
-    );
-}
+    let world = ctx.app.world_mut();
+    let mut q = world.query::<(&HsdMaterial, &MeshMaterial3d<StandardMaterial>)>();
+    let (hsd_mat, mesh_mat) = q.iter(world).next().expect("material on prim");
+    assert_eq!(hsd_mat.0, mesh_mat.0);
 
-#[test]
-fn material_roughness_value() {
-    let mut h = TestHarness::new();
-    set_material(
-        &h,
-        "mat-0",
-        HsdMaterial {
-            roughness: Some(0.2),
-            ..Default::default()
-        },
-    );
-    h.commit_and_update();
-
-    let ent = mat_entity(&mut h);
-    let mat = get_standard_material(&h, ent);
-    assert!(
-        (mat.perceptual_roughness - 0.2).abs() < EPSILON,
-        "roughness: {}",
-        mat.perceptual_roughness
-    );
-}
-
-#[test]
-fn material_double_sided() {
-    let mut h = TestHarness::new();
-    set_material(
-        &h,
-        "mat-0",
-        HsdMaterial {
-            double_sided: Some(true),
-            ..Default::default()
-        },
-    );
-    h.commit_and_update();
-
-    let ent = mat_entity(&mut h);
-    let mat = get_standard_material(&h, ent);
-    assert!(mat.double_sided, "double_sided should be true");
-}
-
-#[test]
-fn material_unlit() {
-    let mut h = TestHarness::new();
-    set_material(
-        &h,
-        "mat-0",
-        HsdMaterial {
-            unlit: Some(true),
-            ..Default::default()
-        },
-    );
-    h.commit_and_update();
-
-    let ent = mat_entity(&mut h);
-    let mat = get_standard_material(&h, ent);
-    assert!(mat.unlit, "unlit should be true");
-}
-
-#[test]
-fn material_alpha_mode_blend() {
-    let mut h = TestHarness::new();
-    set_material(
-        &h,
-        "mat-0",
-        HsdMaterial {
-            alpha_mode: Some("blend".into()),
-            ..Default::default()
-        },
-    );
-    h.commit_and_update();
-
-    let ent = mat_entity(&mut h);
-    let mat = get_standard_material(&h, ent);
+    let handle = hsd_mat.0.clone();
+    let assets = ctx.app.world().resource::<Assets<StandardMaterial>>();
+    let mat = assets.get(&handle).expect("standard material asset");
     assert_eq!(mat.alpha_mode, AlphaMode::Blend);
+    assert!((mat.metallic - 0.7).abs() < 1.0e-5);
+    assert!((mat.perceptual_roughness - 0.3).abs() < 1.0e-5);
+    let LinearRgba {
+        red,
+        green,
+        blue,
+        alpha,
+    } = mat.base_color.to_linear();
+    assert!((red - 0.5).abs() < 1.0e-5);
+    assert!((green - 0.1).abs() < 1.0e-5);
+    assert!((blue - 0.2).abs() < 1.0e-5);
+    assert!((alpha - 1.0).abs() < 1.0e-5);
+
+    let attrs = attributes_map(&meta).expect("attributes map");
+    attrs.delete(MaterialAttr::KEY).expect("delete");
+    ctx.doc.commit();
+    ctx.app.update();
+
+    let world = ctx.app.world_mut();
+    let mut q = world.query::<&HsdMaterial>();
+    assert!(q.iter(world).next().is_none());
 }
 
-#[test]
-fn material_alpha_mode_mask_with_cutoff() {
-    let mut h = TestHarness::new();
-    set_material(
-        &h,
-        "mat-0",
-        HsdMaterial {
-            alpha_mode: Some("mask".into()),
-            alpha_cutoff: Some(0.3),
-            ..Default::default()
-        },
-    );
-    h.commit_and_update();
+#[traced_test]
+#[rstest]
+fn test_material_texture_ref(#[from(ctx_wds)] mut ctx: TestContext) {
+    let mut rgba = RgbaImage::new(2, 2);
+    for (i, px) in rgba.pixels_mut().enumerate() {
+        let v = (i * 60) as u8;
+        *px = image::Rgba([v, v, v, 255]);
+    }
+    let mut png = Vec::new();
+    image::DynamicImage::ImageRgba8(rgba)
+        .write_to(&mut Cursor::new(&mut png), ImageFormat::Png)
+        .expect("encode png");
+    let blob_hash = ctx.upload_blob(png);
 
-    let ent = mat_entity(&mut h);
-    let mat = get_standard_material(&h, ent);
-    let AlphaMode::Mask(cutoff) = mat.alpha_mode else {
-        panic!("expected AlphaMode::Mask, got {:?}", mat.alpha_mode);
+    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
+
+    let image_prim = tree.create(None).expect("create image");
+    let image_meta = tree.get_meta(image_prim).expect("image meta");
+    let image_attr = ImageAttr {
+        address_mode_u: None,
+        address_mode_v: None,
+        address_mode_w: None,
+        data:           ByteArray::<32>::new(*blob_hash.as_bytes()),
+        mag_filter:     None,
+        min_filter:     None,
+        mipmap_filter:  None,
+        srgb:           Some(true),
     };
-    assert!((cutoff - 0.3).abs() < EPSILON, "alpha_cutoff: {cutoff}");
-}
-
-#[test]
-fn material_name() {
-    let mut h = TestHarness::new();
-    set_material(
-        &h,
-        "mat-0",
-        HsdMaterial {
-            name: Some("my-mat".into()),
+    reconcile_prim(
+        &image_meta,
+        Attributes {
+            image: Some(image_attr),
             ..Default::default()
         },
+        None,
     );
-    h.commit_and_update();
 
-    let ent = mat_entity(&mut h);
-    let name = h
-        .app
-        .world()
-        .get::<Name>(ent)
-        .expect("Name component on material entity");
-    assert_eq!(name.as_str(), "my-mat");
+    let material_prim = tree.create(None).expect("create material");
+    let material_meta = tree.get_meta(material_prim).expect("material meta");
+    let material_attr = MaterialAttr {
+        base_color_texture: Some(image_prim.to_string()),
+        ..Default::default()
+    };
+    reconcile_prim(
+        &material_meta,
+        Attributes {
+            material: Some(material_attr),
+            ..Default::default()
+        },
+        None,
+    );
+
+    let mut image_handle: Option<Handle<Image>> = None;
+    let mut material_handle: Option<Handle<StandardMaterial>> = None;
+    ctx.tick_until(|world| {
+        let imgs: Vec<Handle<Image>> = world
+            .query::<&HsdImage>()
+            .iter(world)
+            .map(|i| i.0.clone())
+            .collect();
+        let mats: Vec<Handle<StandardMaterial>> = world
+            .query::<&HsdMaterial>()
+            .iter(world)
+            .map(|m| m.0.clone())
+            .collect();
+        let assets = world.resource::<Assets<StandardMaterial>>();
+
+        let img = imgs.into_iter().find(|h| *h != Handle::<Image>::default());
+        let Some(img) = img else {
+            return false;
+        };
+
+        for handle in mats {
+            let Some(sm) = assets.get(&handle) else {
+                continue;
+            };
+            if sm.base_color_texture.as_ref() == Some(&img) {
+                image_handle = Some(img);
+                material_handle = Some(handle);
+                return true;
+            }
+        }
+        false
+    });
+
+    let image_handle = image_handle.expect("image handle");
+    let material_handle = material_handle.expect("material handle");
+    let assets = ctx.app.world().resource::<Assets<StandardMaterial>>();
+    let mat = assets.get(&material_handle).expect("standard material");
+    assert_eq!(mat.base_color_texture.as_ref(), Some(&image_handle));
+}
+
+#[traced_test]
+#[rstest]
+fn test_material_relationship(mut ctx: TestContext) {
+    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
+
+    let prim_a = tree.create(None).expect("create a");
+    let meta_a = tree.get_meta(prim_a).expect("meta a");
+    let attr_a = MaterialAttr {
+        base_color: Some(ColorVec(vec![1.0, 0.0, 0.0, 1.0])),
+        ..Default::default()
+    };
+    reconcile_prim(
+        &meta_a,
+        Attributes {
+            material: Some(attr_a),
+            ..Default::default()
+        },
+        None,
+    );
+
+    let prim_b = tree.create(None).expect("create b");
+    let meta_b = tree.get_meta(prim_b).expect("meta b");
+    reconcile_relationship_only(
+        &meta_b,
+        BTreeMap::from([("material".to_string(), prim_a.to_string())]),
+    );
+
+    ctx.doc.commit();
+    ctx.app.update();
+    ctx.app.update();
+
+    let world = ctx.app.world_mut();
+    let mut q = world.query::<&HsdMaterial>();
+    let handles: Vec<Handle<StandardMaterial>> = q.iter(world).map(|m| m.0.clone()).collect();
+    assert_eq!(handles.len(), 2);
+    assert_eq!(handles[0], handles[1], "B should share A's material handle");
+}
+
+fn reconcile_relationship_only(meta: &loro::LoroMap, relationships: BTreeMap<String, String>) {
+    let prim = PrimMeta {
+        attributes:    None,
+        relationships: Some(relationships),
+    };
+    prim.reconcile(RootReconciler::new(meta.clone()))
+        .expect("reconcile");
+}
+
+fn reconcile_prim_material(meta: &loro::LoroMap, attr: MaterialAttr) {
+    reconcile_prim(
+        meta,
+        Attributes {
+            material: Some(attr),
+            ..Default::default()
+        },
+        None,
+    );
+}
+
+fn reconcile_prim(
+    meta: &loro::LoroMap,
+    attributes: Attributes,
+    relationships: Option<BTreeMap<String, String>>,
+) {
+    let prim = PrimMeta {
+        attributes: Some(attributes),
+        relationships,
+    };
+    prim.reconcile(RootReconciler::new(meta.clone()))
+        .expect("reconcile");
 }

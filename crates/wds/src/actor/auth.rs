@@ -1,4 +1,7 @@
-use crate::{SessionToken, actor::Actor};
+use crate::{
+    SessionToken,
+    actor::Actor,
+};
 
 impl Actor {
     pub(crate) async fn authenticate(&self) -> anyhow::Result<SessionToken> {

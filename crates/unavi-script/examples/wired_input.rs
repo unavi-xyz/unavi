@@ -1,28 +1,41 @@
 use bevy::{
-    log::{DEFAULT_FILTER, LogPlugin},
+    log::{
+        DEFAULT_FILTER,
+        LogPlugin,
+    },
     prelude::*,
 };
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_wds::{LocalActor, LocalBlobs, util::create_test_wds};
-use unavi_script::{
-    load::local::{LoadLocalScript, ScriptSource},
-    permissions::{ApiName, ScriptPermissions},
+use bevy_hsd::load::{
+    LoadHsd,
+    on_load_spawn_doc,
 };
+use bevy_panorbit_camera::{
+    PanOrbitCamera,
+    PanOrbitCameraPlugin,
+};
+use bevy_wds::{
+    LocalActor,
+    LocalBlobs,
+};
+use unavi_script::permissions::{
+    ApiName,
+    ApiPermissions,
+};
+
+use crate::util::create_test_wds;
 
 mod util;
 
-const SCRIPT_PATH: &str = "wasm/example/wired_input.wasm";
+const SCRIPT_PATH: &str = "hsd/example_wired_input.hsd";
 
 fn main() {
-    util::copy_assets_to_project_dir(&[SCRIPT_PATH]);
-
     let (actor, blobs) = create_test_wds();
 
     let mut app = App::new();
     app.add_plugins((
         DefaultPlugins
             .set(AssetPlugin {
-                file_path: util::assets_dir().to_string_lossy().to_string(),
+                file_path: "../unavi-client/assets/".to_string(),
                 ..Default::default()
             })
             .set(LogPlugin {
@@ -30,8 +43,12 @@ fn main() {
                 ..Default::default()
             }),
         PanOrbitCameraPlugin,
+        bevy_inspector_egui::bevy_egui::EguiPlugin::default(),
+        bevy_inspector_egui::quick::WorldInspectorPlugin::default(),
         bevy_hsd::HsdPlugin,
+        bevy_iroh::IrohPlugin,
         bevy_wds::WdsPlugin,
+        unavi_util::UtilPlugin,
         unavi_input::InputPlugin,
         unavi_script::ScriptPlugin,
     ))
@@ -43,7 +60,7 @@ fn main() {
     app.run();
 }
 
-fn init_scene(mut commands: Commands) {
+fn init_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         DirectionalLight::default(),
         Transform::from_xyz(5.0, 8.0, 1.0).looking_at(Vec3::ZERO, Vec3::Y),
@@ -54,13 +71,13 @@ fn init_scene(mut commands: Commands) {
         Transform::from_xyz(3.0, 8.0, 8.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
-    let mut permissions = ScriptPermissions::default();
-    permissions.api.insert(ApiName::SystemInput);
-
-    commands
-        .spawn(permissions)
-        .trigger(|entity| LoadLocalScript {
-            entity,
-            source: ScriptSource::Path(SCRIPT_PATH.to_string()),
-        });
+    let handle = asset_server.load(SCRIPT_PATH);
+    commands.spawn((
+        LoadHsd {
+            handle,
+            extra_schemas: None,
+            on_load: Some(Box::new(on_load_spawn_doc)),
+        },
+        ApiPermissions::default().with(ApiName::InputContext),
+    ));
 }

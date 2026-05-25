@@ -297,7 +297,7 @@ version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40c48f72fd53cd289104fc64099abca73db4166ad86ea0b4341abe65af83dadc"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -308,7 +308,7 @@ checksum = "291e6a250ff86cd4a820112fb8898808a366d8f9f58ce16d1f538353ad55747d"
 dependencies = [
  "anstyle",
  "once_cell_polyfill",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -501,19 +501,6 @@ dependencies = [
  "event-listener-strategy",
  "futures-core",
  "pin-project-lite",
-]
-
-[[package]]
-name = "async-compat"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1ba85bc55464dcbf728b56d97e119d673f4cf9062be330a9a26f3acf504a590"
-dependencies = [
- "futures-core",
- "futures-io",
- "once_cell",
- "pin-project-lite",
- "tokio",
 ]
 
 [[package]]
@@ -864,7 +851,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cffb0e931875b666fc4fcb20fee52e9bbd1ef836fd9e9e04ec21555f9f85f7ef"
 dependencies = [
  "fastrand",
- "gloo-timers 0.3.0",
+ "gloo-timers",
  "tokio",
 ]
 
@@ -959,6 +946,7 @@ name = "bevy-hsd"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "async-channel",
  "avian3d",
  "bevy",
  "bevy-wds",
@@ -971,11 +959,14 @@ dependencies = [
  "iroh-blobs",
  "loro",
  "loro-surgeon",
+ "rstest",
  "smol_str 0.3.6",
- "tokio",
- "unavi-wasm-compat",
+ "test-macros",
+ "thiserror 2.0.18",
+ "tracing",
+ "tracing-test",
+ "unavi-util",
  "wds",
- "wired-records",
  "wired-schemas",
 ]
 
@@ -1027,6 +1018,19 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
+]
+
+[[package]]
+name = "bevy-iroh"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "bevy",
+ "iroh",
+ "n0-future",
+ "tracing",
+ "unavi-util",
 ]
 
 [[package]]
@@ -1082,12 +1086,16 @@ name = "bevy-wds"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "async-channel",
  "bevy",
  "blake3",
  "bytes 1.11.1",
- "iroh",
+ "iroh-base",
+ "loro",
+ "n0-future",
+ "smol_str 0.3.6",
  "tokio",
- "unavi-wasm-compat",
+ "unavi-util",
  "wds",
  "xdid",
 ]
@@ -1258,24 +1266,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.117",
-]
-
-[[package]]
-name = "bevy_async_task"
-version = "0.12.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac4554c32f842fb9fdea9cc5a884491c2ab9f3184d551fe60177f4c22e28cb99"
-dependencies = [
- "async-compat",
- "bevy_ecs",
- "bevy_platform",
- "bevy_tasks",
- "futures 0.3.32",
- "futures-timer",
- "getrandom 0.3.4",
- "gloo-timers 0.3.0",
- "thiserror 2.0.18",
- "web-time",
 ]
 
 [[package]]
@@ -2175,7 +2165,7 @@ dependencies = [
  "naga",
  "nonmax",
  "offset-allocator",
- "send_wrapper 0.6.0",
+ "send_wrapper",
  "smallvec",
  "thiserror 2.0.18",
  "tracing",
@@ -4756,11 +4746,11 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "generational-box",
- "gloo-timers 0.3.0",
+ "gloo-timers",
  "js-sys",
  "lazy-js-bundle",
  "rustc-hash 2.1.2",
- "send_wrapper 0.6.0",
+ "send_wrapper",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
@@ -4829,7 +4819,7 @@ dependencies = [
  "libc",
  "option-ext",
  "redox_users 0.5.2",
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -5299,7 +5289,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -5349,6 +5339,14 @@ dependencies = [
 
 [[package]]
 name = "example-wired-agent"
+version = "0.0.16"
+dependencies = [
+ "wired-prelude",
+ "wit-bindgen 0.55.0",
+]
+
+[[package]]
+name = "example-wired-event"
 version = "0.0.16"
 dependencies = [
  "wired-prelude",
@@ -5781,10 +5779,6 @@ name = "futures-timer"
 version = "3.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f288b0a4f20f9a56b5d1da57e2227c661b7b16168e2f72365f57b63326e29b24"
-dependencies = [
- "gloo-timers 0.2.6",
- "send_wrapper 0.4.0",
-]
 
 [[package]]
 name = "futures-util"
@@ -5972,8 +5966,8 @@ dependencies = [
  "libc",
  "log",
  "rustversion",
- "windows-link 0.2.1",
- "windows-result 0.4.1",
+ "windows-link 0.1.3",
+ "windows-result 0.3.4",
 ]
 
 [[package]]
@@ -6295,18 +6289,6 @@ dependencies = [
  "windows-sys 0.59.0",
  "x11rb",
  "xkeysym",
-]
-
-[[package]]
-name = "gloo-timers"
-version = "0.2.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b995a66bb87bebce9a0f4a95aed01daca4872c050bfcb21653361c03bc35e5c"
-dependencies = [
- "futures-channel",
- "futures-core",
- "js-sys",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -6827,8 +6809,16 @@ dependencies = [
 name = "hsd"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
+ "bevy",
+ "loro",
+ "loro-surgeon",
  "ron",
  "serde",
+ "serde_with",
+ "smol_str 0.3.6",
+ "tracing",
+ "wired-records",
 ]
 
 [[package]]
@@ -6836,8 +6826,10 @@ name = "hsd-cli"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "blake3",
  "clap",
  "hsd",
+ "loro-surgeon",
  "ron",
  "serde",
  "toml 1.1.2+spec-1.1.0",
@@ -7686,7 +7678,7 @@ checksum = "3640c1c38b8e4e43584d8df18be5fc6b0aa314ce6ebf51b53313d4306cca8e46"
 dependencies = [
  "hermit-abi",
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -7925,9 +7917,9 @@ dependencies = [
 
 [[package]]
 name = "js-sys"
-version = "0.3.94"
+version = "0.3.97"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e04e2ef80ce82e13552136fabeef8a5ed1f985a96805761cbb9a2c34e7664d9"
+checksum = "a1840c94c045fbcf8ba2812c95db44499f7c64910a912551aaaa541decebcacf"
 dependencies = [
  "cfg-if",
  "futures-util",
@@ -8359,7 +8351,9 @@ dependencies = [
  "loro",
  "loro-surgeon-derive",
  "rstest",
- "smol_str 0.3.6",
+ "serde",
+ "serde_json",
+ "similar",
  "thiserror 2.0.18",
 ]
 
@@ -8367,7 +8361,6 @@ dependencies = [
 name = "loro-surgeon-derive"
 version = "0.0.16"
 dependencies = [
- "proc-macro-crate 3.5.0",
  "proc-macro2",
  "quote",
  "syn 2.0.117",
@@ -8782,7 +8775,7 @@ dependencies = [
  "futures-util",
  "js-sys",
  "pin-project",
- "send_wrapper 0.6.0",
+ "send_wrapper",
  "tokio",
  "tokio-util",
  "wasm-bindgen",
@@ -9213,7 +9206,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -11632,6 +11625,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4147b952f3f819eca0e99527022f7d6a8d05f111aeb0a62960c74eb283bec8fc"
 dependencies = [
  "bitflags 2.11.0",
+ "indexmap 2.13.1",
  "once_cell",
  "serde",
  "serde_derive",
@@ -11801,7 +11795,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -11870,7 +11864,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -12082,7 +12076,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b55fb86dfd3a2f5f76ea78310a88f96c4ea21a3031f8d212443d56123fd0521"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -12129,12 +12123,6 @@ dependencies = [
  "serde",
  "serde_core",
 ]
-
-[[package]]
-name = "send_wrapper"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f638d531eccd6e23b980caf34876660d38e265409d8e99b397ab71eb3612fad0"
 
 [[package]]
 name = "send_wrapper"
@@ -12490,6 +12478,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
 
 [[package]]
+name = "similar"
+version = "2.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbbb5d9659141646ae647b42fe094daf6c6192d1620870b449d9557f748b2daa"
+
+[[package]]
 name = "simple-dns"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -12651,7 +12645,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a766e1110788c36f4fa1c2b71b387a7815aa65f88ce0229841826633d93723e"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.60.2",
 ]
 
 [[package]]
@@ -13140,7 +13134,7 @@ dependencies = [
  "getrandom 0.4.2",
  "once_cell",
  "rustix 1.1.4",
- "windows-sys 0.61.2",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
@@ -13164,43 +13158,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "test-event"
+name = "test-macros"
 version = "0.0.16"
 dependencies = [
- "wired-prelude",
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
-name = "test-input"
-version = "0.0.16"
-dependencies = [
- "wired-prelude",
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
-name = "test-log"
-version = "0.0.16"
-dependencies = [
- "wired-prelude",
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
-name = "test-scene"
-version = "0.0.16"
-dependencies = [
- "wired-prelude",
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
-name = "test-stall"
-version = "0.0.16"
-dependencies = [
- "wired-prelude",
- "wit-bindgen 0.55.0",
+ "proc-macro-crate 3.5.0",
+ "quote",
+ "syn 2.0.117",
 ]
 
 [[package]]
@@ -13955,10 +13918,12 @@ name = "unavi-client"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "async-channel",
  "avian3d",
  "bevy",
  "bevy-hsd",
  "bevy-inspector-egui",
+ "bevy-iroh",
  "bevy-wds",
  "bevy_mod_openxr",
  "bevy_mod_xr",
@@ -13966,41 +13931,27 @@ dependencies = [
  "bevy_xr_utils",
  "bitflags 2.11.0",
  "blake3",
- "bytemuck",
- "bytes 1.11.1",
  "clap",
  "directories",
  "embed-resource",
- "half",
  "image",
  "iroh",
- "iroh-gossip",
  "log",
- "loro",
- "n0-future",
- "parking_lot",
- "postcard",
- "rand 0.9.2",
  "reqwest 0.13.2",
- "scc",
- "serde",
- "smol_str 0.3.6",
- "time",
- "tokio",
  "tracing",
  "unavi-agent",
  "unavi-assets",
  "unavi-avatar",
+ "unavi-identity",
  "unavi-input",
  "unavi-portal",
  "unavi-script",
+ "unavi-space",
+ "unavi-util",
  "unavi-wasm-compat",
- "wasm-bindgen-futures",
- "wds",
  "web-sys",
  "web-time",
  "winit",
- "wired-records",
  "wired-schemas",
  "xdid",
  "zeroize",
@@ -14010,7 +13961,6 @@ dependencies = [
 name = "unavi-default-home"
 version = "0.0.16"
 dependencies = [
- "blake3",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -14029,9 +13979,23 @@ name = "unavi-gauntlet"
 version = "0.0.16"
 dependencies = [
  "blake3",
- "unavi-vui-module",
  "wired-prelude",
  "wit-bindgen 0.55.0",
+]
+
+[[package]]
+name = "unavi-identity"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy-iroh",
+ "bevy-wds",
+ "iroh",
+ "n0-future",
+ "unavi-util",
+ "wds",
+ "xdid",
 ]
 
 [[package]]
@@ -14050,6 +14014,7 @@ name = "unavi-launcher"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "async-channel",
  "dioxus",
  "directories",
  "embed-resource",
@@ -14083,21 +14048,24 @@ name = "unavi-script"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "async-channel",
  "avian3d",
  "bevy",
  "bevy-hsd",
+ "bevy-inspector-egui",
+ "bevy-iroh",
  "bevy-wds",
- "bevy_async_task",
  "bevy_panorbit_camera",
  "bevy_vrm",
  "blake3",
- "bytemuck",
  "bytes 1.11.1",
  "directories",
- "futures 0.3.32",
+ "hsd",
+ "iroh",
  "js-sys",
  "loro",
- "postcard",
+ "loro-surgeon",
+ "parking_lot",
  "rand 0.9.2",
  "smol_str 0.3.6",
  "tokio",
@@ -14106,12 +14074,12 @@ dependencies = [
  "unavi-agent",
  "unavi-avatar",
  "unavi-input",
- "unavi-wasm-compat",
+ "unavi-util",
  "wasm-bindgen",
+ "wasm-bindgen-futures",
  "wasmtime",
  "wasmtime-wasi",
  "wds",
- "wired-records",
  "wired-schemas",
  "xdid",
 ]
@@ -14147,6 +14115,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-space"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "bevy",
+ "bevy-hsd",
+ "bevy-iroh",
+ "bevy-wds",
+ "blake3",
+ "half",
+ "iroh",
+ "iroh-gossip",
+ "loro",
+ "loro-surgeon",
+ "n0-future",
+ "postcard",
+ "rand 0.9.2",
+ "serde",
+ "serde_vrm",
+ "time",
+ "tokio",
+ "tracing",
+ "unavi-agent",
+ "unavi-util",
+ "wds",
+ "wired-records",
+ "wired-schemas",
+]
+
+[[package]]
+name = "unavi-util"
+version = "0.0.16"
+dependencies = [
+ "async-channel",
+ "bevy",
+ "n0-future",
+ "unavi-wasm-compat",
+]
+
+[[package]]
 name = "unavi-vui-inventory"
 version = "0.0.16"
 dependencies = [
@@ -14158,6 +14167,7 @@ dependencies = [
 name = "unavi-vui-module"
 version = "0.0.16"
 dependencies = [
+ "blake3",
  "postcard",
  "serde",
  "wired-prelude",
@@ -14538,9 +14548,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.117"
+version = "0.2.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0551fc1bb415591e3372d0bc4780db7e587d84e2a7e79da121051c5c4b89d0b0"
+checksum = "df52b6d9b87e0c74c9edfa1eb2d9bf85e5d63515474513aa50fa181b3c4f5db1"
 dependencies = [
  "cfg-if",
  "once_cell",
@@ -14551,9 +14561,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-futures"
-version = "0.4.67"
+version = "0.4.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03623de6905b7206edd0a75f69f747f134b7f0a2323392d664448bf2d3c5d87e"
+checksum = "af934872acec734c2d80e6617bbb5ff4f12b052dd8e6332b0817bce889516084"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
@@ -14561,9 +14571,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.117"
+version = "0.2.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fbdf9a35adf44786aecd5ff89b4563a90325f9da0923236f6104e603c7e86be"
+checksum = "78b1041f495fb322e64aca85f5756b2172e35cd459376e67f2a6c9dffcedb103"
 dependencies = [
  "quote",
  "wasm-bindgen-macro-support",
@@ -14571,9 +14581,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.117"
+version = "0.2.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dca9693ef2bab6d4e6707234500350d8dad079eb508dca05530c85dc3a529ff2"
+checksum = "9dcd0ff20416988a18ac686d4d4d0f6aae9ebf08a389ff5d29012b05af2a1b41"
 dependencies = [
  "bumpalo",
  "proc-macro2",
@@ -14584,9 +14594,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.117"
+version = "0.2.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39129a682a6d2d841b6c429d0c51e5cb0ed1a03829d8b3d1e69a011e62cb3d3b"
+checksum = "49757b3c82ebf16c57d69365a142940b384176c24df52a087fb748e2085359ea"
 dependencies = [
  "unicode-ident",
 ]
@@ -15236,9 +15246,9 @@ dependencies = [
 
 [[package]]
 name = "web-sys"
-version = "0.3.94"
+version = "0.3.97"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd70027e39b12f0849461e08ffc50b9cd7688d942c1c8e3c7b22273236b4dd0a"
+checksum = "2eadbac71025cd7b0834f20d1fe8472e8495821b4e9801eb0a60bd1f19827602"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
@@ -15626,7 +15636,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
@@ -16386,8 +16396,8 @@ dependencies = [
  "blake3",
  "loro",
  "loro-surgeon",
- "postcard",
  "serde",
+ "serde_with",
  "xdid",
 ]
 
@@ -16694,7 +16704,7 @@ dependencies = [
  "log",
  "pharos",
  "rustc_version",
- "send_wrapper 0.6.0",
+ "send_wrapper",
  "thiserror 2.0.18",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -16780,8 +16790,7 @@ checksum = "bec9e4a500ca8864c5b47b8b482a73d62e4237670e5b5f1d6b9e3cae50f28f2b"
 [[package]]
 name = "xdid"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cde820af7a985484ccd8cd31c29e044818546122b34eaec958773837339e70d"
+source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
 dependencies = [
  "smallvec",
  "thiserror 2.0.18",
@@ -16793,8 +16802,7 @@ dependencies = [
 [[package]]
 name = "xdid-core"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e45a81f3142487061bfb83c1bfbc5796874ac67e26b356be8e0c46ddbae196ec"
+source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -16807,8 +16815,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-key"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2da4a6f59dafcf3511257253125249ff07d7cfdc8a1a258bfb94fd9d3da9c2aa"
+source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -16826,11 +16833,10 @@ dependencies = [
 [[package]]
 name = "xdid-method-web"
 version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5adc7dfd4cd05cd90749e497e5bfb86341e9687c69067cc8dc4b9c68b2fb2b1f"
+source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
 dependencies = [
  "reqwest 0.13.2",
- "send_wrapper 0.6.0",
+ "send_wrapper",
  "xdid-core",
 ]
 

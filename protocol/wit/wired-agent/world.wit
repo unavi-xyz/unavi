@@ -1,12 +1,20 @@
 package wired:agent;
 
-world prelude {
-  import context;
+world all {
+  import api;
   import types;
 }
 
+interface api {
+  use wired:scene/types.{prim};
+  use types.{agent};
+
+  local-agent: func() -> agent;
+  local-camera: func() -> prim;
+}
+
 interface types {
-  use wired:scene/types.{node, document};
+  use wired:scene/types.{prim, document};
 
   enum bone-name {
     hips,
@@ -67,16 +75,8 @@ interface types {
   }
 
   resource agent {
-    // Get a virtual node tracking the named bone.
+    // Get a virtual prim tracking the named bone.
     // Returns none if the bone is absent from the VRM model.
-    bone: func(name: bone-name) -> option<node>;
+    bone: func(name: bone-name) -> option<prim>;
   }
-}
-
-interface context {
-  use wired:scene/types.{node};
-  use types.{agent};
-
-  local-agent: func() -> agent;
-  local-camera: func() -> node;
 }

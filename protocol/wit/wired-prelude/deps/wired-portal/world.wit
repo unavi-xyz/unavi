@@ -1,0 +1,36 @@
+package wired:portal;
+
+world all {
+  import api;
+  import types;
+}
+
+interface api {
+  use types.{portal, portal-destination};
+  use wired:math/types.{transform, vec2};
+
+  list-portals: func() -> list<portal>;
+
+  record portal-params {
+    destination: portal-destination,
+    size: vec2,
+    transform: transform,
+  }
+
+  open-portal: func(params: portal-params) -> result<portal, string>;
+}
+
+interface types {
+  use wired:math/types.{transform};
+
+  record portal-destination {
+    space: list<u8>,
+    portal: option<string>,
+  }
+
+  resource portal {
+    id: func() -> string;
+    destination: func() -> portal-destination;
+    close: func();
+  }
+}

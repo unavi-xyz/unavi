@@ -26,6 +26,7 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: nix develop --command nu scripts/update-wasm.nu
       - run: nix develop --command cargo check --examples --tests --all-features --workspace
+      - run: nix develop --command npm install --prefix crates/unavi-script
       - run: nix develop --command nu scripts/build-wasm.nu
       # - run: nix develop --command cargo nextest run --all-features
       - run: nix develop --command cargo clippy --fix --allow-staged --allow-dirty --no-deps --examples --tests --all-features --workspace

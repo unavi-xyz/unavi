@@ -1,0 +1,37 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-space"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace        = true
+async-channel.workspace = true
+bevy.workspace          = true
+bevy-hsd.path           = "../bevy-hsd"
+bevy-iroh.path          = "../bevy-iroh"
+bevy-wds.path           = "../bevy-wds"
+blake3.workspace        = true
+half.workspace          = true
+iroh.workspace          = true
+iroh-gossip             = "0.97.0"
+loro.workspace          = true
+loro-surgeon.workspace  = true
+n0-future.workspace     = true
+postcard.workspace      = true
+rand.workspace          = true
+serde.workspace         = true
+serde_vrm               = "0.3.0"
+time.workspace          = true
+tokio.workspace         = true
+tracing.workspace       = true
+unavi-agent.path        = "../unavi-agent"
+unavi-util.path         = "../unavi-util"
+wds.path                = "../wds"
+wired-records.path      = "../wired-records"
+wired-schemas.path      = "../wired-schemas"

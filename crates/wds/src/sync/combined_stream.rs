@@ -1,4 +1,5 @@
-/// Combines `SendStream` and `RecvStream` into a single `AsyncRead` + `AsyncWrite`.
+/// Combines `SendStream` and `RecvStream` into a single `AsyncRead` +
+/// `AsyncWrite`.
 pub struct CombinedStream(
     pub iroh::endpoint::SendStream,
     pub iroh::endpoint::RecvStream,

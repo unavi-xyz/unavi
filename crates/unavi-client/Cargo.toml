@@ -12,7 +12,7 @@ devtools           = ["devtools-bevy", "devtools-inspector", "devtools-network"]
 devtools-bevy      = ["bevy/bevy_dev_tools", "bevy/debug"]
 devtools-inspector = ["dep:bevy-inspector-egui", "unavi-input/egui-filter"]
 devtools-network   = []
-mdns               = ["iroh/address-lookup-mdns"]
+mdns               = ["bevy-iroh/mdns"]
 webgpu             = ["bevy/webgpu", "unavi-agent/webgpu", "unavi-avatar/webgpu"]
 
 [lints]
@@ -22,59 +22,45 @@ workspace = true
 embed-resource.workspace = true
 
 [dependencies]
-anyhow.workspace       = true
-avian3d.workspace      = true
-bevy                   = { default-features = true, features = ["https", "jpeg"], workspace = true }
-bevy-hsd.path          = "../bevy-hsd"
-bevy-inspector-egui    = { optional = true, version = "0.36.0" }
-bevy-wds.path          = "../bevy-wds"
-bevy_vrm.workspace     = true
-bitflags               = "2.11.0"
-blake3.workspace       = true
-bytemuck.workspace     = true
-bytes.workspace        = true
-clap.workspace         = true
-half.workspace         = true
-image                  = { default-features = false, features = ["png"], workspace = true }
-iroh-gossip            = "0.97.0"
-log                    = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
-loro.workspace         = true
-n0-future.workspace    = true
-parking_lot.workspace  = true
-postcard.workspace     = true
-rand.workspace         = true
-scc.workspace          = true
-serde.workspace        = true
-smol_str.workspace     = true
-time.workspace         = true
-tracing                = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
-unavi-agent.path       = "../unavi-agent"
-unavi-assets.path      = "../unavi-assets"
-unavi-avatar.path      = "../unavi-avatar"
-unavi-input.path       = "../unavi-input"
-unavi-portal.path      = "../unavi-portal"
-unavi-script.path      = "../unavi-script"
-unavi-wasm-compat.path = "../unavi-wasm-compat"
-wds.path               = "../wds"
-web-time               = "1.1.0"
-winit                  = { default-features = false, version = "0.30.13" }
-wired-records          = { features = ["loro"], path = "../wired-records" }
-wired-schemas.path     = "../wired-schemas"
-xdid.workspace         = true
-zeroize.workspace      = true
+anyhow.workspace        = true
+async-channel.workspace = true
+avian3d.workspace       = true
+bevy                    = { default-features = true, features = ["https", "jpeg"], workspace = true }
+bevy-hsd.path           = "../bevy-hsd"
+bevy-inspector-egui     = { optional = true, workspace = true }
+bevy-iroh.path          = "../bevy-iroh"
+bevy-wds.path           = "../bevy-wds"
+bevy_vrm.workspace      = true
+bitflags                = "2.11.0"
+blake3.workspace        = true
+clap.workspace          = true
+image                   = { default-features = false, features = ["png"], workspace = true }
+iroh.workspace          = true
+log                     = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
+tracing                 = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
+unavi-agent.path        = "../unavi-agent"
+unavi-assets.path       = "../unavi-assets"
+unavi-avatar.path       = "../unavi-avatar"
+unavi-identity.path     = "../unavi-identity"
+unavi-input.path        = "../unavi-input"
+unavi-portal.path       = "../unavi-portal"
+unavi-script.path       = "../unavi-script"
+unavi-space.path        = "../unavi-space"
+unavi-util.path         = "../unavi-util"
+unavi-wasm-compat.path  = "../unavi-wasm-compat"
+web-time                = "1.1.0"
+winit                   = { default-features = false, version = "0.30.13" }
+wired-schemas.path      = "../wired-schemas"
+xdid.workspace          = true
+zeroize.workspace       = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-iroh.workspace       = true
-reqwest.workspace    = true
-tokio                = { features = ["rt"], workspace = true }
-wasm-bindgen-futures = "0.4.67"
-web-sys              = { features = ["Location", "UrlSearchParams"], workspace = true }
+reqwest.workspace = true
+web-sys           = { features = ["Location", "UrlSearchParams"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 bevy_mod_openxr         = "0.5.0"
 bevy_mod_xr.workspace   = true
 bevy_xr_utils.workspace = true
 directories.workspace   = true
-iroh                    = { default-features = true, workspace = true }
 reqwest                 = { features = ["blocking"], workspace = true }
-tokio                   = { features = ["rt", "rt-multi-thread"], workspace = true }

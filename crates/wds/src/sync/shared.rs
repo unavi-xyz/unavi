@@ -1,18 +1,38 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{
+    BTreeMap,
+    HashSet,
+};
 
 use anyhow::ensure;
 use blake3::Hash;
 use iroh_blobs::api::Store;
-use loro::{LoroDoc, LoroMap, LoroTree, LoroValue, VersionVector};
-use rusqlite::{Connection, params};
-use smol_str::SmolStr;
+use loro::{
+    LoroDoc,
+    LoroMap,
+    LoroTree,
+    LoroValue,
+    VersionVector,
+};
+use rusqlite::{
+    Connection,
+    params,
+};
 use wds_schema::{
-    schema::{Field, Schema},
+    schema::{
+        Field,
+        Schema,
+    },
     validate::restriction::unwrap_restricted,
 };
-use wired_records::HydratedDid;
-use wired_schemas::{SCHEMA_ACL, SCHEMA_RECORD};
-use xdid::{core::did::Did, resolver::DidResolver};
+use wired_records::did::HydratedDid;
+use wired_schemas::{
+    SCHEMA_ACL,
+    SCHEMA_RECORD,
+};
+use xdid::{
+    core::did::Did,
+    resolver::DidResolver,
+};
 
 use crate::{
     auth::jwk::verify_jwk_signature,
@@ -21,10 +41,16 @@ use crate::{
     quota,
     record::{
         envelope::Envelope,
-        validate::{fetch_schema, validate_diff},
+        validate::{
+            fetch_schema,
+            validate_diff,
+        },
     },
     signed_bytes::SignedBytes,
-    surg::{acl::Acl, record::Record},
+    surg::{
+        acl::Acl,
+        record::Record,
+    },
 };
 
 /// Checks if the ACL was modified between old and new states.
@@ -39,7 +65,8 @@ fn slices_eq(a: &[HydratedDid], b: &[HydratedDid]) -> bool {
     a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.0 == y.0)
 }
 
-/// Validates the signature of a signed envelope against the author's DID document.
+/// Validates the signature of a signed envelope against the author's DID
+/// document.
 async fn validate_signature(
     author: &Did,
     signature: &[u8],
@@ -75,12 +102,12 @@ async fn validate_schemas(
     record: &Record,
     author: &Did,
     is_first_envelope: bool,
-) -> Result<BTreeMap<SmolStr, Schema>, WdsError> {
+) -> Result<BTreeMap<String, Schema>, WdsError> {
     let old_frontiers = old_doc.state_frontiers();
     let new_frontiers = new_doc.state_frontiers();
 
     // Build schema map: container name -> schema.
-    let mut schemas: BTreeMap<SmolStr, Schema> = BTreeMap::new();
+    let mut schemas: BTreeMap<String, Schema> = BTreeMap::new();
 
     // Add built-in schemas.
     schemas.insert(
@@ -97,7 +124,7 @@ async fn validate_schemas(
 
     // Add record's schemas.
     for (container, schema_id) in &record.schemas {
-        let schema = fetch_schema(blobs, &schema_id.0)
+        let schema = fetch_schema(blobs, &schema_id.into())
             .await
             .map_err(|e| WdsError::SchemaValidation(format!("failed to fetch schema: {e}")))?;
         schemas.insert(container.clone(), schema);
@@ -160,7 +187,7 @@ fn resolve_deep_value(map: &LoroMap, layout: &Field) -> LoroValue {
 
 /// Extracts all [`Field::BlobId`] values from a Loro document
 /// by walking the schemas. Returns hashes as hex strings.
-fn extract_blob_refs(doc: &LoroDoc, schemas: &BTreeMap<SmolStr, Schema>) -> HashSet<String> {
+fn extract_blob_refs(doc: &LoroDoc, schemas: &BTreeMap<String, Schema>) -> HashSet<String> {
     let mut refs = HashSet::new();
     for (container_name, schema) in schemas {
         let map = doc.get_map(container_name.as_str());
@@ -244,7 +271,7 @@ fn collect_blob_refs(value: &LoroValue, field: &Field, refs: &mut HashSet<String
 
 /// Extracts all [`Field::RecordId`] values from a Loro
 /// document. Returns hashes as hex strings.
-fn extract_record_refs(doc: &LoroDoc, schemas: &BTreeMap<SmolStr, Schema>) -> HashSet<String> {
+fn extract_record_refs(doc: &LoroDoc, schemas: &BTreeMap<String, Schema>) -> HashSet<String> {
     let mut refs = HashSet::new();
     for (container_name, schema) in schemas {
         let map = doc.get_map(container_name.as_str());
@@ -328,19 +355,19 @@ fn collect_record_refs(value: &LoroValue, field: &Field, refs: &mut HashSet<Stri
 
 /// Parameters for storing an envelope in the database.
 struct StoreEnvelopeParams {
-    record_id: String,
-    author: String,
-    from_vv: Vec<u8>,
-    to_vv: Vec<u8>,
-    ops: Vec<u8>,
+    record_id:     String,
+    author:        String,
+    from_vv:       Vec<u8>,
+    to_vv:         Vec<u8>,
+    ops:           Vec<u8>,
     payload_bytes: Vec<u8>,
-    signature: Vec<u8>,
-    new_vv: Vec<u8>,
-    size: i64,
-    record: Record,
-    acl: Acl,
-    blob_refs: HashSet<String>,
-    record_refs: HashSet<String>,
+    signature:     Vec<u8>,
+    new_vv:        Vec<u8>,
+    size:          i64,
+    record:        Record,
+    acl:           Acl,
+    blob_refs:     HashSet<String>,
+    record_refs:   HashSet<String>,
 }
 
 /// Executes the database transaction to store an envelope.
@@ -400,7 +427,7 @@ fn initialize_new_record(
         "record ID does not match"
     );
 
-    let nonce: &[u8] = &params.record.nonce;
+    let nonce = params.record.nonce.as_bytes();
     tx.execute(
         "INSERT INTO records (id, creator, nonce, timestamp, vv, size)
          VALUES (?, ?, ?, ?, ?, ?)",
@@ -482,7 +509,7 @@ pub async fn store_envelope(
 
     validate_signature(author, signed.signature(), signed.payload_bytes()).await?;
 
-    // Get current document state (BEFORE applying envelope).
+    // Get current document state.
     let old_doc = reconstruct_current_doc(db, record_id)
         .await
         .map_err(WdsError::Other)?;
@@ -494,21 +521,22 @@ pub async fn store_envelope(
         .import(envelope.ops())
         .map_err(|e| WdsError::Other(e.into()))?;
 
-    // Check record-level write ACL against OLD state (prevent privilege escalation).
+    // Check record-level write ACL against old state (prevent privilege
+    // escalation).
     if !is_first_envelope {
-        let old_acl = Acl::load(&old_doc).map_err(WdsError::Other)?;
+        let old_acl = Acl::load(&old_doc)?;
         if !old_acl.can_write(author) {
             return Err(WdsError::AccessDenied);
         }
 
         // Check if ACL was modified - requires manage permission.
-        let new_acl = Acl::load(&new_doc).map_err(WdsError::Other)?;
+        let new_acl = Acl::load(&new_doc)?;
         if acl_modified(&old_acl, &new_acl) && !old_acl.can_manage(author) {
             return Err(WdsError::AccessDenied);
         }
     }
 
-    let record = Record::load(&new_doc).map_err(WdsError::Other)?;
+    let record = Record::load(&new_doc)?;
 
     // First envelope author must match record creator.
     if is_first_envelope && record.creator.0 != *author {
@@ -539,7 +567,7 @@ pub async fn store_envelope(
         size: i64::try_from(env_bytes.len())
             .map_err(|_| WdsError::Other(anyhow::anyhow!("envelope too large")))?,
         record,
-        acl: Acl::load(&new_doc).map_err(WdsError::Other)?,
+        acl: Acl::load(&new_doc)?,
         blob_refs,
         record_refs,
     };

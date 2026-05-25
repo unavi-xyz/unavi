@@ -1,21 +1,28 @@
 use loro::LoroDoc;
-use loro_surgeon::{Hydrate, Reconcile};
-use serde::{Deserialize, Serialize};
+use loro_surgeon::{
+    Hydrate,
+    Reconcile,
+    error::{
+        HydrateError,
+        ReconcileError,
+    },
+    reconcile::RootReconciler,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
+use wired_records::did::HydratedDid;
 use xdid::core::did::Did;
-
-use wired_records::HydratedDid;
 
 /// Access control list for a record.
 #[derive(Debug, Clone, Serialize, Deserialize, Default, Hydrate, Reconcile)]
+#[loro(default)]
 pub struct Acl {
-    #[loro(default)]
     pub public: bool,
-    #[loro(default)]
-    manage: Vec<HydratedDid>,
-    #[loro(default)]
-    read: Vec<HydratedDid>,
-    #[loro(default)]
-    write: Vec<HydratedDid>,
+    manage:     Vec<HydratedDid>,
+    read:       Vec<HydratedDid>,
+    write:      Vec<HydratedDid>,
 }
 
 impl Acl {
@@ -70,16 +77,15 @@ impl Acl {
         self.manage.iter().any(|d| d.0 == *did)
     }
 
-    pub fn save(&self, doc: &LoroDoc) -> anyhow::Result<()> {
+    pub fn save(&self, doc: &LoroDoc) -> Result<(), ReconcileError> {
         let map = doc.get_map("acl");
-        self.reconcile(&map)?;
-        Ok(())
+        let rec = RootReconciler::new(map);
+        self.reconcile(rec)
     }
 
-    pub fn load(doc: &LoroDoc) -> anyhow::Result<Self> {
+    pub fn load(doc: &LoroDoc) -> Result<Self, HydrateError> {
         let map = doc.get_map("acl");
-        let value = map.get_deep_value();
-        Self::hydrate(&value).map_err(|e| anyhow::anyhow!("{e}"))
+        Self::hydrate_map(&map)
     }
 }
 
@@ -117,8 +123,8 @@ mod tests {
         let acl = Acl {
             public: true,
             manage: vec![HydratedDid(did.clone())],
-            write: vec![HydratedDid(did.clone())],
-            read: vec![HydratedDid(did.clone())],
+            write:  vec![HydratedDid(did.clone())],
+            read:   vec![HydratedDid(did.clone())],
         };
 
         acl.save(&doc).expect("save failed");

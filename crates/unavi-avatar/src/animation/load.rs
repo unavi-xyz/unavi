@@ -1,19 +1,33 @@
-use bevy::{animation::animated_field, platform::collections::HashMap, prelude::*};
+use bevy::{
+    animation::animated_field,
+    platform::collections::HashMap,
+    prelude::*,
+};
 use bevy_gltf_kun::import::gltf::{
     GltfKun,
-    animation::{RawChannelData, RawGltfAnimation},
+    animation::{
+        RawChannelData,
+        RawGltfAnimation,
+    },
     node::GltfNode,
 };
-use bevy_vrm::{BoneName, animations::vrm::VRM_ANIMATION_TARGETS};
+use bevy_vrm::{
+    BoneName,
+    animations::vrm::VRM_ANIMATION_TARGETS,
+};
 
-use super::{AnimationName, bone_mask_group, mixamo::MIXAMO_BONE_NAMES};
+use super::{
+    AnimationName,
+    bone_mask_group,
+    mixamo::MIXAMO_BONE_NAMES,
+};
 
 #[derive(Component, Clone)]
 pub struct AvatarAnimationClips(pub HashMap<AnimationName, AvatarAnimation>);
 
 #[derive(Clone)]
 pub struct AvatarAnimation {
-    pub gltf: Handle<GltfKun>,
+    pub gltf:      Handle<GltfKun>,
     pub animation: Handle<RawGltfAnimation>,
 }
 

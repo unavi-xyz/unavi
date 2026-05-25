@@ -1,111 +1,181 @@
-#![allow(unused)]
+#![allow(dead_code)]
 
-use std::{sync::Arc, time::Duration};
-
-use avian3d::{
-    PhysicsPlugins, collider_tree::ColliderTreeDiagnostics, collision::CollisionDiagnostics,
-    dynamics::solver::SolverDiagnostics, prelude::SpatialQueryDiagnostics,
+use std::{
+    sync::Arc,
+    time::Duration,
 };
-use bevy::{prelude::*, scene::ScenePlugin, transform::TransformPlugin};
-use bevy_hsd::{
-    HsdDoc, HsdPlugin, HsdRecordId,
-    cache::{MeshState, SceneRegistry},
-    hydrate::compile::mesh::{HsdMeshGeometrySet, MeshGeometrySource},
+
+use avian3d::PhysicsPlugins;
+use bevy::{
+    asset::AssetPlugin,
+    prelude::*,
+    transform::TransformPlugin,
 };
-use loro::{LoroDoc, LoroMap};
+use bevy_wds::{
+    LocalBlobs,
+    WdsPlugin,
+};
+use iroh_blobs::store::mem::MemStore;
+use loro::LoroDoc;
+use rstest::fixture;
+use unavi_util::async_task::spawn_async_task;
+use wds::Blobs;
 
-const TICK: Duration = Duration::from_millis(100);
-
-pub struct TestHarness {
+pub struct TestContext {
     pub app: App,
-    pub doc_entity: Entity,
-    pub doc_id: blake3::Hash,
     pub doc: Arc<LoroDoc>,
+    blobs:   Option<Blobs>,
 }
 
-impl TestHarness {
-    pub fn new() -> Self {
+impl Default for TestContext {
+    fn default() -> Self {
         let mut app = App::new();
         app.add_plugins((
             MinimalPlugins,
-            TransformPlugin,
             AssetPlugin::default(),
-            ScenePlugin,
-            PhysicsPlugins::default(),
-            HsdPlugin,
+            TransformPlugin,
+            bevy_hsd::HsdPlugin,
         ))
-        .init_asset::<StandardMaterial>()
-        .init_asset::<Mesh>()
         .init_asset::<Image>()
-        .init_resource::<ColliderTreeDiagnostics>()
-        .init_resource::<CollisionDiagnostics>()
-        .init_resource::<SolverDiagnostics>()
-        .init_resource::<SpatialQueryDiagnostics>()
-        .insert_resource(Time::<Virtual>::from_max_delta(TICK))
-        .insert_resource(Time::<Fixed>::from_duration(TICK))
-        .add_systems(FixedUpdate, bevy_wds::blob_deps::load_blob_deps);
+        .init_asset::<Mesh>()
+        .init_asset::<StandardMaterial>();
 
-        let doc = Arc::new(LoroDoc::new());
-        let doc_id = blake3::hash(b"test-doc");
-        let doc_entity = app
-            .world_mut()
-            .spawn((HsdDoc(Arc::clone(&doc)), HsdRecordId(doc_id)))
-            .id();
-        Self::tick(&mut app);
-
-        Self {
+        let mut ctx = Self {
             app,
-            doc_entity,
-            doc_id,
-            doc,
-        }
+            doc: Arc::default(),
+            blobs: None,
+        };
+
+        ctx.spawn_hsd();
+
+        ctx
+    }
+}
+
+impl TestContext {
+    /// Same as `default()` but with avian's [`PhysicsPlugins`] enabled.
+    /// Use this for any test that exercises colliders or rigid bodies —
+    /// avian's `On<Add, Collider>` observer reads `Position` / `Rotation`
+    /// and will panic on the placeholder MAX values if our `apply_collider`
+    /// ever inserts a `Collider` without seeding them.
+    pub fn with_physics() -> Self {
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            AssetPlugin::default(),
+            TransformPlugin,
+            bevy::scene::ScenePlugin,
+            PhysicsPlugins::default(),
+            bevy_hsd::HsdPlugin,
+        ))
+        .init_asset::<Image>()
+        .init_asset::<Mesh>()
+        .init_asset::<StandardMaterial>()
+        .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
+            Duration::from_secs_f32(1.0 / 60.0),
+        ));
+        app.finish();
+        app.cleanup();
+
+        let mut ctx = Self {
+            app,
+            doc: Arc::default(),
+            blobs: None,
+        };
+
+        ctx.spawn_hsd();
+
+        ctx
     }
 
-    /// Commit the doc and advance one frame, flushing all queued HSD changes.
-    pub fn commit_and_update(&mut self) {
-        self.doc.commit();
-        Self::tick(&mut self.app);
+    pub fn with_wds() -> Self {
+        let blobs = setup_blobs();
+
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            AssetPlugin::default(),
+            TransformPlugin,
+            WdsPlugin,
+            bevy_hsd::HsdPlugin,
+        ))
+        .init_asset::<Image>()
+        .init_asset::<Mesh>()
+        .init_asset::<StandardMaterial>()
+        .insert_resource(Time::<Fixed>::from_duration(Duration::from_millis(10)));
+
+        app.world_mut().spawn(LocalBlobs(blobs.clone()));
+
+        let mut ctx = Self {
+            app,
+            doc: Arc::default(),
+            blobs: Some(blobs),
+        };
+
+        ctx.spawn_hsd();
+
+        ctx
     }
 
-    /// Add a mesh to the doc, set its inline geometry state, and compile it.
-    ///
-    /// After this call the mesh entity will have `CompiledMesh`.
-    pub fn attach_inline_mesh(&mut self, id: &str, state: MeshState) {
-        self.doc
-            .get_map("hsd")
-            .get_or_create_container("meshes", LoroMap::new())
-            .expect("meshes map")
-            .get_or_create_container(id, LoroMap::new())
-            .expect("mesh map entry");
-        self.commit_and_update();
+    pub fn spawn_hsd(&mut self) {
+        self.app
+            .world_mut()
+            .spawn(bevy_hsd::Hsd(Arc::clone(&self.doc)));
+    }
 
-        let registry = self
-            .app
-            .world()
-            .get::<SceneRegistry>(self.doc_entity)
-            .expect("SceneRegistry")
-            .clone();
-        let mesh_inner = registry
-            .0
-            .meshes
-            .lock()
-            .expect("meshes lock")
-            .get(id)
-            .cloned()
-            .expect("mesh inner");
-        *mesh_inner.state.lock().expect("mesh state lock") = state;
-
-        self.app.world_mut().trigger(HsdMeshGeometrySet {
-            doc_id: self.doc_id,
-            id: id.into(),
-            source: MeshGeometrySource::Inline,
+    /// Upload `bytes` to the local blob store and return its hash.
+    /// Panics if the context was not created with `with_wds`.
+    pub fn upload_blob(&self, bytes: Vec<u8>) -> blake3::Hash {
+        let blobs = self.blobs.clone().expect("wds not enabled");
+        let hash = blake3::hash(&bytes);
+        let (tx, rx) = async_channel::bounded(1);
+        spawn_async_task(async move {
+            blobs.add_slice(&bytes).await.expect("add slice");
+            tx.send(()).await.expect("send");
         });
-        self.app.world_mut().flush();
-        Self::tick(&mut self.app);
+        rx.recv_blocking().expect("upload");
+        hash
     }
 
-    fn tick(app: &mut App) {
-        std::thread::sleep(TICK);
-        app.update();
+    /// Commit the doc, then tick the app until `cond` returns true.
+    /// Panics if the condition is not met within the timeout.
+    pub fn tick_until<F: FnMut(&mut World) -> bool>(&mut self, mut cond: F) {
+        self.doc.commit();
+        for _ in 0..200 {
+            self.app.update();
+            if cond(self.app.world_mut()) {
+                return;
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        panic!("tick_until condition not met within timeout");
     }
+}
+
+#[fixture]
+pub fn ctx() -> TestContext {
+    TestContext::default()
+}
+
+#[fixture]
+pub fn ctx_physics() -> TestContext {
+    TestContext::with_physics()
+}
+
+#[fixture]
+pub fn ctx_wds() -> TestContext {
+    TestContext::with_wds()
+}
+
+fn setup_blobs() -> Blobs {
+    let (tx, rx) = async_channel::bounded(1);
+    spawn_async_task(async move {
+        let store = MemStore::default();
+        let blobs = store.blobs().clone();
+        tx.send(blobs).await.expect("send");
+        // Keep MemStore alive — its background task drives blob queries.
+        let _store = store;
+        std::future::pending::<()>().await;
+    });
+    rx.recv_blocking().expect("setup blobs")
 }

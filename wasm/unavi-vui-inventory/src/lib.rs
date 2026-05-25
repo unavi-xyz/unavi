@@ -1,13 +1,22 @@
-use wired_prelude::wired_math::types::Vec3;
+use wired_prelude::prelude::*;
 
 use crate::{
     unavi::{
         shapes::api::Cuboid,
-        vui_module::api::{ModuleEvent, VuiModule},
+        vui_module::api::{
+            ModuleEvent,
+            VuiModule,
+        },
     },
     wired::scene::{
-        context::self_document,
-        types::{Material, Mesh, Node, RigidBodyKind},
+        api::self_document,
+        types::{
+            Material,
+            Prim,
+            RigidBody,
+            RigidBodyKind,
+            Xform,
+        },
     },
 };
 
@@ -25,89 +34,140 @@ const TABLE_W: f32 = 0.60;
 const X_LIP_X: f32 = TABLE_W * 0.5 - LIP_T * 0.5;
 const Z_LIP_Z: f32 = TABLE_D * 0.5 - LIP_T * 0.5;
 
-struct Script {
-    root: Node,
-    _nodes: Vec<Node>,
-    _icon_mesh: Mesh,
-    module: VuiModule,
-    color_mat: Material,
+const IDENTITY_QUAT: Quat = Quat {
+    x: 0.0,
+    y: 0.0,
+    z: 0.0,
+    w: 1.0,
+};
+
+fn set_translation(prim: &Prim, translation: Vec3) {
+    prim.set_xform(Some(Xform {
+        translation,
+        rotation: IDENTITY_QUAT,
+        scale: Vec3::splat(1.0),
+    }));
 }
 
-impl GuestScript for Script {
-    fn new() -> Self {
+fn set_scale(prim: &Prim, scale: Vec3) {
+    prim.set_xform(Some(Xform {
+        translation: Vec3::splat(0.0),
+        rotation: IDENTITY_QUAT,
+        scale,
+    }));
+}
+
+const fn material(base_color: Option<Color>) -> Material {
+    Material {
+        alpha_cutoff: None,
+        alpha_mode: None,
+        base_color,
+        base_color_texture: None,
+        double_sided: Some(true),
+        emissive: None,
+        emissive_texture: None,
+        metallic: None,
+        metallic_roughness_texture: None,
+        normal_texture: None,
+        occlusion_texture: None,
+        roughness: None,
+    }
+}
+
+const fn static_body() -> RigidBody {
+    RigidBody {
+        kind:            RigidBodyKind::Static,
+        angular_damping: None,
+        friction:        None,
+        linear_damping:  None,
+        mass:            None,
+        restitution:     None,
+    }
+}
+
+struct Script {
+    root:         Prim,
+    _icon:        Prim,
+    module:       VuiModule,
+    color:        Color,
+    themed_prims: Vec<Prim>,
+}
+
+impl ScriptBehavior for Script {
+    fn init() -> Self {
         let doc = self_document();
 
-        let color_mat = doc.create_material();
-        color_mat.set_double_sided(true);
+        let color = Color::WHITE;
+        let color_mat = material(Some(color));
 
-        let root = doc.create_node();
-        root.set_scale(Vec3::ZERO);
+        let root = doc.create_prim();
+        set_scale(&root, Vec3::splat(0.0));
 
-        let mut nodes = Vec::new();
+        let mut themed_prims = Vec::new();
 
-        let base = doc.create_node();
-        let base_shape = Cuboid::new(TABLE_W, BASE_H, TABLE_D);
+        let base_shape = Cuboid::new(Vec3::new(TABLE_W, BASE_H, TABLE_D));
+        let base = base_shape.mesh();
         base.set_collider(Some(&base_shape.collider()));
-        base.set_rigid_body(Some(RigidBodyKind::Fixed));
-        base.set_mesh(Some(&base_shape.mesh()));
+        base.set_rigid_body(Some(static_body()));
         base.set_material(Some(&color_mat));
         root.add_child(&base);
-        nodes.push(base);
+        themed_prims.push(base);
 
-        let x_lip_shape = Cuboid::new(LIP_T, LIP_H, TABLE_D);
+        let x_lip_shape = Cuboid::new(Vec3::new(LIP_T, LIP_H, TABLE_D));
         for x_sign in [-1.0_f32, 1.0_f32] {
-            let lip = doc.create_node();
+            let lip = x_lip_shape.mesh();
             lip.set_collider(Some(&x_lip_shape.collider()));
-            lip.set_rigid_body(Some(RigidBodyKind::Fixed));
-            lip.set_mesh(Some(&x_lip_shape.mesh()));
+            lip.set_rigid_body(Some(static_body()));
             lip.set_material(Some(&color_mat));
-            lip.set_translation(Vec3::new(x_sign * X_LIP_X, LIP_Y, 0.0));
+            set_translation(&lip, Vec3::new(x_sign * X_LIP_X, LIP_Y, 0.0));
             root.add_child(&lip);
-            nodes.push(lip);
+            themed_prims.push(lip);
         }
 
-        let z_lip_shape = Cuboid::new(TABLE_W, LIP_H, LIP_T);
+        let z_lip_shape = Cuboid::new(Vec3::new(TABLE_W, LIP_H, LIP_T));
         for z_sign in [-1.0_f32, 1.0_f32] {
-            let lip = doc.create_node();
+            let lip = z_lip_shape.mesh();
             lip.set_collider(Some(&z_lip_shape.collider()));
-            lip.set_rigid_body(Some(RigidBodyKind::Fixed));
-            lip.set_mesh(Some(&z_lip_shape.mesh()));
+            lip.set_rigid_body(Some(static_body()));
             lip.set_material(Some(&color_mat));
-            lip.set_translation(Vec3::new(0.0, LIP_Y, z_sign * Z_LIP_Z));
+            set_translation(&lip, Vec3::new(0.0, LIP_Y, z_sign * Z_LIP_Z));
             root.add_child(&lip);
-            nodes.push(lip);
+            themed_prims.push(lip);
         }
 
-        let icon_mesh = Cuboid::new(ICON_SIZE, ICON_SIZE, ICON_SIZE).mesh();
-        let module = VuiModule::new(NAME, &icon_mesh);
+        let icon = Cuboid::new(Vec3::splat(ICON_SIZE)).mesh();
+        let module = VuiModule::new(NAME, &icon);
 
         Self {
             root,
-            _nodes: nodes,
-            _icon_mesh: icon_mesh,
+            _icon: icon,
             module,
-            color_mat,
+            color,
+            themed_prims,
         }
     }
 
-    fn tick(&self) {
+    fn tick(&mut self) {
         while let Some(event) = self.module.poll() {
             match event {
                 ModuleEvent::Activate(t) => {
-                    self.root.set_translation(t.translation);
-                    self.root.set_rotation(t.rotation);
-                    self.root.set_scale(t.scale);
+                    self.root.set_xform(Some(Xform {
+                        translation: t.translation,
+                        rotation:    t.rotation,
+                        scale:       t.scale,
+                    }));
                 }
                 ModuleEvent::Deactivate => {
-                    self.root.set_scale(Vec3::ZERO);
+                    set_scale(&self.root, Vec3::splat(0.0));
                 }
                 ModuleEvent::SetColor(color) => {
-                    self.color_mat.set_base_color(color);
+                    self.color = color;
+                    let mat = material(Some(color));
+                    for prim in &self.themed_prims {
+                        prim.set_material(Some(&mat));
+                    }
                 }
             }
         }
     }
-
-    fn render(&self) {}
-    fn drop(&self) {}
 }

@@ -1,28 +1,23 @@
 use bevy::{
-    asset::io::web::WebAssetPlugin, light::light_consts::lux, log::LogPlugin, prelude::*,
+    light::light_consts::lux,
+    log::LogPlugin,
+    prelude::*,
     window::WindowTheme,
 };
-
+use bevy_iroh::endpoint::LoadEndpoint;
 use bitflags::bitflags;
+use iroh::endpoint_info::AddrFilter;
 use tracing::Level;
 
-use crate::networking::thread::space::object::outbound::LocalGrabbedObjects;
-
-mod async_commands;
 mod camera;
 mod devtools;
 mod fade;
 mod grab;
 mod icon;
-mod networking;
 mod scene;
-mod space;
-mod system_scripts;
 
-#[cfg(not(target_family = "wasm"))]
-mod assets;
-#[cfg(not(target_family = "wasm"))]
-mod xr;
+#[cfg(not(target_family = "wasm"))] mod assets;
+#[cfg(not(target_family = "wasm"))] mod xr;
 
 bitflags! {
     #[derive(Clone, Copy, Debug, Default)]
@@ -35,10 +30,10 @@ bitflags! {
 }
 
 pub struct UnaviPlugin {
-    pub debug: DebugFlags,
+    pub debug:     DebugFlags,
     pub in_memory: bool,
     pub log_level: Level,
-    pub xr: bool,
+    pub xr:        bool,
 }
 
 const DISABLED_LOGS: &[&str] = &[
@@ -49,7 +44,6 @@ const DISABLED_LOGS: &[&str] = &[
 ];
 
 impl Plugin for UnaviPlugin {
-    #[expect(clippy::too_many_lines)]
     fn build(&self, app: &mut App) {
         #[cfg(not(target_family = "wasm"))]
         {
@@ -79,54 +73,30 @@ impl Plugin for UnaviPlugin {
                 ..default()
             });
 
-        #[cfg(not(target_family = "wasm"))]
-        {
-            let default_plugins = default_plugins
-                .set(AssetPlugin {
+        cfg_select! {
+            target_family = "wasm" => {
+                let default_plugins = default_plugins.set(AssetPlugin {
+                    meta_check: bevy::asset::AssetMetaCheck::Never,
+                    ..default()
+                });
+                app.add_plugins(default_plugins);
+            }
+            _ => {
+                let default_plugins = default_plugins.set(AssetPlugin {
                     file_path: assets::assets_dir().to_string_lossy().to_string(),
                     ..default()
                 })
-                .disable::<WebAssetPlugin>();
-
-            if self.xr {
-                app.add_plugins((
-                    bevy_mod_openxr::add_xr_plugins(default_plugins),
-                    xr::XrPlugin,
-                ));
-            } else {
-                app.add_plugins(default_plugins);
+                .disable::<bevy::asset::io::web::WebAssetPlugin>();
+                if self.xr {
+                    app.add_plugins((
+                        bevy_mod_openxr::add_xr_plugins(default_plugins),
+                        xr::XrPlugin,
+                    ));
+                } else {
+                    app.add_plugins(default_plugins);
+                }
             }
         }
-
-        #[cfg(target_family = "wasm")]
-        {
-            let default_plugins = default_plugins
-                .set(AssetPlugin {
-                    meta_check: bevy::asset::AssetMetaCheck::Never,
-                    ..default()
-                })
-                .set(WebAssetPlugin {
-                    silence_startup_warning: true,
-                });
-            app.add_plugins(default_plugins);
-        }
-
-        app.add_plugins((
-            avian3d::PhysicsPlugins::default(),
-            fade::FadePlugin,
-            bevy_wds::WdsPlugin,
-            bevy_hsd::HsdPlugin,
-            unavi_input::InputPlugin,
-            unavi_avatar::AvatarPlugin,
-            unavi_agent::AgentPlugin,
-            unavi_script::ScriptPlugin,
-            unavi_portal::PortalPlugin,
-            networking::NetworkingPlugin {
-                wds_in_memory: self.in_memory,
-            },
-            space::SpacePlugin,
-            MaterialPlugin::<camera::sky::SkyMaterial>::default(),
-        ));
 
         #[cfg(feature = "devtools-bevy")]
         {
@@ -138,38 +108,40 @@ impl Plugin for UnaviPlugin {
             }
         }
 
-        app.add_plugins(devtools::DevToolsPlugin {
-            inspector: self.debug.contains(DebugFlags::INSPECTOR),
-            network: self.debug.contains(DebugFlags::NETWORK),
-        })
+        app.add_plugins((
+            avian3d::PhysicsPlugins::default(),
+            bevy_hsd::HsdPlugin,
+            bevy_iroh::IrohPlugin,
+            bevy_wds::WdsPlugin,
+            unavi_agent::AgentPlugin,
+            unavi_avatar::AvatarPlugin,
+            unavi_identity::IdentityPlugin,
+            unavi_input::InputPlugin,
+            unavi_portal::PortalPlugin,
+            unavi_script::ScriptPlugin,
+            unavi_space::SpacePlugin,
+            unavi_util::UtilPlugin,
+        ))
+        .add_plugins((
+            camera::CameraPlugin,
+            devtools::DevToolsPlugin {
+                inspector: self.debug.contains(DebugFlags::INSPECTOR),
+                network:   self.debug.contains(DebugFlags::NETWORK),
+            },
+            fade::FadePlugin,
+            grab::GrabPlugin,
+            scene::ScenePlugin,
+        ))
         .insert_resource(GlobalAmbientLight {
             brightness: lux::OVERCAST_DAY,
             ..default()
         })
-        .init_resource::<grab::GrabbedObjects>()
-        .init_resource::<LocalGrabbedObjects>()
-        .add_observer(grab::handle_squeeze_down)
-        .add_observer(grab::handle_squeeze_up)
-        .add_systems(
-            Startup,
-            (
-                camera::sky::spawn_sky,
-                grab::setup_grabbed_hooks,
-                icon::set_window_icon,
-                scene::spawn_scene,
-                #[cfg(not(target_family = "wasm"))] // TODO fix web scripting
-                system_scripts::spawn_system_scripts,
-            ),
-        )
-        .add_systems(
-            FixedUpdate,
-            (
-                async_commands::apply_async_commands,
-                camera::apply_camera_effects,
-                grab::update_crosshair_mode,
-                scene::spawn_agent,
-            ),
-        )
-        .add_systems(Update, grab::move_grabbed_objects);
+        .add_systems(Startup, icon::set_window_icon);
+
+        app.world_mut().trigger(LoadEndpoint {
+            filter:                                                          AddrFilter::default(),
+            #[cfg(all(feature = "mdns", not(target_family = "wasm")))]
+            mdns:                                                            true,
+        });
     }
 }

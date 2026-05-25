@@ -1,0 +1,23 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "bevy-iroh"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[features]
+default = []
+mdns    = ["iroh/address-lookup-mdns"]
+
+[dependencies]
+anyhow.workspace        = true
+async-channel.workspace = true
+bevy.workspace          = true
+iroh.workspace          = true
+n0-future.workspace     = true
+tracing.workspace       = true
+unavi-util.path         = "../unavi-util"

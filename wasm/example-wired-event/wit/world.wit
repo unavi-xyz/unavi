@@ -1,0 +1,5 @@
+package example:wired-agent;
+
+world guest {
+  include wired:prelude/script-secure;
+}

@@ -1,19 +1,18 @@
 [package]
+description          = "Proc-macro support for loro-surgeon."
 edition.workspace    = true
 license.workspace    = true
 name                 = "loro-surgeon-derive"
-publish              = false
 repository.workspace = true
 version.workspace    = true
-
-[lints]
-workspace = true
 
 [lib]
 proc-macro = true
 
 [dependencies]
-proc-macro-crate = "3.5.0"
-proc-macro2      = "1.0.106"
-quote            = "1.0.45"
-syn              = { features = ["full"], version = "2.0.117" }
+proc-macro2 = "1"
+quote       = "1"
+syn         = { features = ["extra-traits", "full"], version = "2" }
+
+[lints]
+workspace = true

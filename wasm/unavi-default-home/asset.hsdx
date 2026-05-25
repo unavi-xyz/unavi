@@ -1,47 +1,89 @@
-(
-    assets: {
-        "gate": "../unavi-gate/asset.hsdx",
-    },
-    images: {
-        "ground_tex": (
-            path: "../../crates/unavi-client/assets/image/dev-white.png",
-            address_mode_u: Some(0),
-            address_mode_v: Some(0),
-            address_mode_w: Some(0),
-            mag_filter: Some(1),
-            min_filter: Some(1),
-            mipmap_filter: None,
-            name: None,
-            srgb: Some(true),
+[
+    (
+        attributes: (
+            asset: "../unavi-gate/asset.hsdx",
+            collider: None,
+            image: None,
+            material: None,
+            name: "gate",
+            rigid_body: None,
+            script: None,
+            xform: None,
         ),
-    },
-    materials: {
-        "ground": (
-            name: Some("Ground Material"),
-            base_color: Some([
-                0.9,
-                0.8,
-                0.95,
-                1.0,
-            ]),
-            base_color_texture: Some("ground_tex"),
-            roughness: Some(0.9),
-            metallic: None,
-            alpha_cutoff: None,
-            alpha_mode: None,
-            double_sided: None,
-            emissive: None,
-            emissive_texture: None,
-            metallic_roughness_texture: None,
-            normal_texture: None,
-            occlusion_texture: None,
+        relationships: {},
+        children: [],
+    ),
+    (
+        attributes: (
+            asset: None,
+            collider: None,
+            image: (
+                data: "../../crates/unavi-client/assets/image/dev-white.png",
+                address_mode_u: 0,
+                address_mode_v: 0,
+                address_mode_w: 0,
+                mag_filter: 1,
+                min_filter: 1,
+                mipmap_filter: None,
+                srgb: true,
+            ),
+            material: None,
+            name: "ground_tex",
+            rigid_body: None,
+            script: None,
+            xform: None,
         ),
-    },
-    nodes: {
-        "root": (
-            scripts: [
-                "./Cargo.toml",
-            ],
+        relationships: {},
+        children: [],
+    ),
+    (
+        attributes: (
+            asset: None,
+            collider: None,
+            image: None,
+            material: (
+                alpha_cutoff: None,
+                alpha_mode: None,
+                base_color: [
+                    0.9,
+                    0.8,
+                    0.95,
+                    1.0,
+                ],
+                base_color_texture: "ground_tex",
+                double_sided: None,
+                emissive: None,
+                emissive_texture: None,
+                metallic: None,
+                metallic_roughness_texture: None,
+                normal_texture: None,
+                occlusion_texture: None,
+                roughness: 0.9,
+            ),
+            name: "ground",
+            rigid_body: None,
+            script: None,
+            xform: None,
         ),
-    },
-)
+        relationships: {
+            "base_color_texture": "ground_tex",
+        },
+        children: [],
+    ),
+    (
+        attributes: (
+            asset: None,
+            collider: None,
+            image: None,
+            material: None,
+            name: "unavi-default-home",
+            rigid_body: None,
+            script: "./Cargo.toml",
+            xform: None,
+        ),
+        relationships: {
+            "material": "ground",
+        },
+        children: [],
+    ),
+]

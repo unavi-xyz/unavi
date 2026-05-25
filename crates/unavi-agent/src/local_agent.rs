@@ -1,35 +1,65 @@
 use avian3d::prelude::*;
-use bevy::{camera::visibility::RenderLayers, prelude::*};
+use bevy::{
+    camera::visibility::RenderLayers,
+    prelude::*,
+};
 use bevy_tnua::{
-    builtins::{TnuaBuiltinJumpConfig, TnuaBuiltinWalkConfig},
+    builtins::{
+        TnuaBuiltinJumpConfig,
+        TnuaBuiltinWalkConfig,
+    },
     prelude::*,
 };
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
-use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
+use bevy_vrm::first_person::{
+    DEFAULT_RENDER_LAYERS,
+    FirstPersonFlag,
+};
 use unavi_avatar::{
-    Avatar, VrmPath,
-    animation::{defaults::default_character_animations, velocity::AverageVelocity},
+    Avatar,
+    VrmPath,
+    animation::{
+        defaults::default_character_animations,
+        velocity::AverageVelocity,
+    },
 };
 use unavi_input::raycast::PrimaryRaycastInput;
-use unavi_portal::{PortalTraveler, create::PORTAL_RENDER_LAYER};
+use unavi_portal::{
+    PortalTraveler,
+    create::PORTAL_RENDER_LAYER,
+};
 
 use crate::{
-    Agent, AgentCamera, AgentRig, ControlScheme, ControlSchemeConfig, Grounded, LocalAgent,
+    Agent,
+    AgentAvatar,
+    AgentCamera,
+    AgentRig,
+    ControlScheme,
+    ControlSchemeConfig,
+    Grounded,
+    LocalAgent,
     LocalAgentEntities,
-    config::{AgentConfig, XrMode},
-    tracking::{TrackedHead, TrackedPose},
+    config::{
+        AgentConfig,
+        XrMode,
+    },
+    tracking::{
+        TrackedHead,
+        TrackedPose,
+    },
 };
 
 const RAYCAST_GRAB_DISTANCE: f32 = 2.5;
 
-pub fn on_local_agent_added(
-    event: On<Add, LocalAgent>,
+pub fn spawn_local_agent(
+    trigger: On<Add, LocalAgent>,
     asset_server: Res<AssetServer>,
     xr_mode: Res<XrMode>,
     agent: Query<(&AgentConfig, Option<&VrmPath>)>,
     mut commands: Commands,
 ) {
-    let Ok((config, vrm_path)) = agent.get(event.entity) else {
+    let Ok((config, vrm_path)) = agent.get(trigger.entity) else {
+        warn_once!("No agent config");
         return;
     };
 
@@ -47,10 +77,10 @@ pub fn on_local_agent_added(
             TnuaConfig::<ControlScheme>(asset_server.add(ControlSchemeConfig {
                 basis: TnuaBuiltinWalkConfig {
                     float_height: config.float_height(),
-                    max_slope: 55_f32.to_radians(),
+                    max_slope: 55.0f32.to_radians(),
                     ..Default::default()
                 },
-                jump: TnuaBuiltinJumpConfig {
+                jump:  TnuaBuiltinJumpConfig {
                     height: config.jump_height,
                     ..Default::default()
                 },
@@ -104,15 +134,12 @@ pub fn on_local_agent_added(
 
     commands.entity(body).add_children(&[avatar, tracked_head]);
     commands
-        .entity(event.entity)
+        .entity(trigger.entity)
         .insert((
             Agent,
-            LocalAgentEntities {
-                avatar,
-                camera,
-                body,
-                tracked_head,
-            },
+            AgentAvatar(avatar),
+            AgentCamera(camera),
+            LocalAgentEntities { body, tracked_head },
         ))
         .add_child(body);
 }
@@ -125,7 +152,6 @@ fn spawn_camera(commands: &mut Commands, is_xr: bool) -> Entity {
     };
 
     commands.entity(camera).insert((
-        AgentCamera,
         Projection::Perspective(PerspectiveProjection {
             near: 0.001,
             ..default()

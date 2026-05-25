@@ -51,8 +51,6 @@ fn main() {
 
     #[cfg(target_family = "wasm")]
     let args = {
-        web_sys::console::log_1(&"parsing url params".into());
-
         let window = web_sys::window().expect("get window");
         let search = window.location().search().expect("get search");
         let params = web_sys::UrlSearchParams::new_with_str(&search).expect("parse search params");
@@ -69,14 +67,14 @@ fn main() {
             let Some(value) = params.get(&key) else {
                 continue;
             };
-            argv.push(format!("--{}", key));
+            argv.push(format!("--{key}"));
 
             if !value.is_empty() {
                 argv.push(value);
             }
         }
 
-        web_sys::console::log_1(&format!("{argv:?}").into());
+        web_sys::console::log_1(&format!("URL params: {:?}", &argv[1..]).into());
 
         match Args::try_parse_from(argv) {
             Ok(a) => a,

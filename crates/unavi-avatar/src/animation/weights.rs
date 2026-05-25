@@ -1,7 +1,18 @@
-use bevy::{animation::ActiveAnimation, platform::collections::HashMap, prelude::*};
+use bevy::{
+    animation::ActiveAnimation,
+    platform::collections::HashMap,
+    prelude::*,
+};
 
-use super::{AnimationName, AvatarAnimationNodes, velocity::AverageVelocity};
-use crate::{Avatar, Grounded};
+use super::{
+    AnimationName,
+    AvatarAnimationNodes,
+    velocity::AverageVelocity,
+};
+use crate::{
+    Avatar,
+    Grounded,
+};
 
 #[derive(Component, Clone, Default, Deref, DerefMut)]
 pub struct AnimationWeights(pub HashMap<AnimationName, f32>);
@@ -25,20 +36,20 @@ struct MotionState {
     /// Signed forward velocity (positive = forward, negative = backward).
     forward_speed: f32,
     /// Signed strafe velocity (positive = left, negative = right).
-    strafe_speed: f32,
+    strafe_speed:  f32,
     /// Whether agent is grounded.
-    is_grounded: bool,
+    is_grounded:   bool,
 }
 
 /// Calculated animation weights for locomotion.
 #[derive(Debug, Clone, Copy, Default)]
 struct LocomotionWeights {
-    idle: f32,
-    walk: f32,
-    walk_left: f32,
+    idle:       f32,
+    walk:       f32,
+    walk_left:  f32,
     walk_right: f32,
-    sprint: f32,
-    falling: f32,
+    sprint:     f32,
+    falling:    f32,
 }
 
 /// Analyzes velocity and transform to produce motion state.
@@ -48,8 +59,8 @@ fn analyze_motion(velocity: Vec3, transform: &Transform) -> MotionState {
 
     MotionState {
         forward_speed: velocity.dot(dir_forward),
-        strafe_speed: velocity.dot(dir_left),
-        is_grounded: true,
+        strafe_speed:  velocity.dot(dir_left),
+        is_grounded:   true,
     }
 }
 

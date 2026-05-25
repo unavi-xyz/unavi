@@ -1,24 +1,71 @@
-use avian3d::prelude::Collider;
+use std::{
+    path::PathBuf,
+    sync::LazyLock,
+};
+
+use avian3d::prelude::*;
 use bevy::{
     camera::visibility::RenderLayers,
-    log::{DEFAULT_FILTER, LogPlugin},
+    log::{
+        DEFAULT_FILTER,
+        LogPlugin,
+    },
     prelude::*,
 };
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
-use bevy_wds::{LocalActor, LocalBlobs, util::create_test_wds};
-use unavi_agent::LocalAgent;
-use unavi_script::{
-    load::local::{LoadLocalScript, ScriptSource},
-    permissions::ScriptPermissions,
+use bevy_hsd::load::{
+    LoadHsd,
+    on_load_spawn_doc,
 };
+use bevy_panorbit_camera::{
+    PanOrbitCamera,
+    PanOrbitCameraPlugin,
+};
+use bevy_vrm::first_person::{
+    DEFAULT_RENDER_LAYERS,
+    FirstPersonFlag,
+};
+use bevy_wds::{
+    LocalActor,
+    LocalBlobs,
+};
+use directories::ProjectDirs;
+use unavi_agent::LocalAgent;
+use unavi_script::permissions::{
+    ApiName,
+    ApiPermissions,
+};
+
+use crate::util::create_test_wds;
 
 mod util;
 
-const SCRIPT_PATH: &str = "wasm/example/wired_agent.wasm";
+const SCRIPT_PATH: &str = "hsd/example_wired_agent.hsd";
 
-fn main() {
-    util::copy_assets_to_project_dir(&["model/default.vrm", SCRIPT_PATH]);
+pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
+    let dirs = ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs");
+    std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
+    dirs
+});
+
+fn main() -> anyhow::Result<()> {
+    let assets_path = "../unavi-client/assets/".to_string();
+
+    // Copy runtime assets (VRM and glb animations) to assets dir.
+    let src = DIRS.data_local_dir().join("assets");
+    let dst = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join(&assets_path)
+        .canonicalize()?;
+    std::fs::create_dir_all(dst.join("model"))?;
+    for path in ["model/animations.glb", "model/default.vrm"] {
+        let src = src.join(path);
+        let dst = dst.join(path);
+        println!(
+            "Copying {} -> {}",
+            src.to_string_lossy(),
+            dst.to_string_lossy()
+        );
+        std::fs::copy(src, dst)?;
+    }
 
     let (actor, blobs) = create_test_wds();
 
@@ -26,7 +73,7 @@ fn main() {
     app.add_plugins((
         DefaultPlugins
             .set(AssetPlugin {
-                file_path: util::assets_dir().to_string_lossy().to_string(),
+                file_path: assets_path,
                 ..Default::default()
             })
             .set(LogPlugin {
@@ -35,10 +82,14 @@ fn main() {
             }),
         PanOrbitCameraPlugin,
         avian3d::PhysicsPlugins::default(),
+        bevy_inspector_egui::bevy_egui::EguiPlugin::default(),
+        bevy_inspector_egui::quick::WorldInspectorPlugin::default(),
         bevy_hsd::HsdPlugin,
+        bevy_iroh::IrohPlugin,
         bevy_wds::WdsPlugin,
-        unavi_avatar::AvatarPlugin,
+        unavi_util::UtilPlugin,
         unavi_agent::AgentPlugin,
+        unavi_avatar::AvatarPlugin,
         unavi_script::ScriptPlugin,
     ))
     .add_observer(on_agent_load)
@@ -48,6 +99,8 @@ fn main() {
         .spawn((LocalActor(actor), LocalBlobs(blobs)));
 
     app.run();
+
+    Ok(())
 }
 
 fn init_scene(mut commands: Commands) {
@@ -69,11 +122,14 @@ fn on_agent_load(
     mut cameras: Query<&mut Camera>,
     mut commands: Commands,
     mut added: Local<bool>,
+    asset_server: Res<AssetServer>,
 ) {
     if *added {
         return;
     }
     *added = true;
+
+    info!("Local agent loaded, spawning script");
 
     let mut cam = cameras.single_mut().expect("single camera");
     cam.is_active = false;
@@ -85,10 +141,13 @@ fn on_agent_load(
             .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly]),
     ));
 
-    commands
-        .spawn(ScriptPermissions::system())
-        .trigger(|entity| LoadLocalScript {
-            entity,
-            source: ScriptSource::Path(SCRIPT_PATH.to_string()),
-        });
+    let handle = asset_server.load(SCRIPT_PATH);
+    commands.spawn((
+        LoadHsd {
+            handle,
+            extra_schemas: None,
+            on_load: Some(Box::new(on_load_spawn_doc)),
+        },
+        ApiPermissions::default().with(ApiName::LocalAgent),
+    ));
 }

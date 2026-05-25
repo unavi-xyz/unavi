@@ -1,13 +1,16 @@
 //! VRM agent controller for desktop and VR.
 
-use bevy::{post_process::auto_exposure::AutoExposurePlugin, prelude::*};
+use bevy::prelude::*;
 use bevy_tnua::prelude::*;
 use bevy_tnua_avian3d::TnuaAvian3dPlugin;
 use unavi_avatar::Grounded;
 use unavi_input::cursor_lock::CursorGrabState;
 use xdid::core::did::Did;
 
-use crate::{config::AgentConfig, tracking::TrackingSource};
+use crate::{
+    config::AgentConfig,
+    tracking::TrackingSource,
+};
 
 mod bones;
 pub mod config;
@@ -22,7 +25,7 @@ impl Plugin for AgentPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             #[cfg(not(target_family = "wasm"))]
-            AutoExposurePlugin,
+            bevy::post_process::auto_exposure::AutoExposurePlugin,
             TnuaControllerPlugin::<ControlScheme>::new(FixedUpdate),
             TnuaAvian3dPlugin::new(FixedUpdate),
         ))
@@ -31,7 +34,7 @@ impl Plugin for AgentPlugin {
         .init_resource::<movement::TargetBodyInput>()
         .init_resource::<movement::TargetHeadInput>()
         .add_observer(movement::teleport::handle_agent_teleport)
-        .add_observer(local_agent::on_local_agent_added);
+        .add_observer(local_agent::spawn_local_agent);
 
         #[cfg(not(target_family = "wasm"))]
         {
@@ -94,15 +97,17 @@ impl Plugin for AgentPlugin {
 pub struct Agent;
 
 #[derive(Component)]
+pub struct AgentAvatar(pub Entity);
+
+#[derive(Component)]
+pub struct AgentCamera(pub Entity);
+
+#[derive(Component)]
 pub struct AgentDid(pub Did);
 
 #[derive(Component, Default)]
 #[require(Transform, Visibility)]
 pub struct AgentRig;
-
-#[derive(Component, Default)]
-#[require(Transform, Visibility)]
-pub struct AgentCamera;
 
 #[derive(TnuaScheme)]
 #[scheme(basis = TnuaBuiltinWalk)]
@@ -112,9 +117,7 @@ pub enum ControlScheme {
 
 #[derive(Component)]
 pub struct LocalAgentEntities {
-    pub avatar: Entity,
-    pub camera: Entity,
-    pub body: Entity,
+    pub body:         Entity,
     pub tracked_head: Entity,
 }
 

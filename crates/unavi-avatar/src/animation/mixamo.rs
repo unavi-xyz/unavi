@@ -1,29 +1,39 @@
-use std::{cell::RefCell, rc::Rc, sync::LazyLock};
+use std::{
+    cell::RefCell,
+    rc::Rc,
+    sync::LazyLock,
+};
 
-use bevy::{animation::AnimationTargetId, platform::collections::HashMap};
-use bevy_vrm::{BoneName, animations::target_chain::TargetChain};
+use bevy::{
+    animation::AnimationTargetId,
+    platform::collections::HashMap,
+};
+use bevy_vrm::{
+    BoneName,
+    animations::target_chain::TargetChain,
+};
 
 macro_rules! finger {
-    ($chain:ident, $side:ident, $finger_vrm:ident, $finger_chain:ident) => {
-        paste::paste! {
-            {
-                let mut chain = $chain.clone();
+   ($chain:ident, $side:ident, $finger_vrm:ident, $finger_chain:ident) => {
+      paste::paste! {
+          {
+              let mut chain = $chain.clone();
 
-                chain.push_bone(
-                    BoneName::[<$side $finger_vrm Proximal>],
-                    concat!("mixamorig:", stringify!($side), "Hand", stringify!($finger_chain), "1"),
-                );
-                chain.push_bone(
-                    BoneName::[<$side $finger_vrm Intermediate>],
-                    concat!("mixamorig:", stringify!($side), "Hand", stringify!($finger_chain), "2"),
-                );
-                chain.push_bone(
-                    BoneName::[<$side $finger_vrm Distal>],
-                    concat!("mixamorig:", stringify!($side), "Hand", stringify!($finger_chain), "3"),
-                );
-            }
-        }
-    };
+              chain.push_bone(
+                  BoneName::[<$side $finger_vrm Proximal>],
+                  concat!("mixamorig:", stringify!($side), "Hand", stringify!($finger_chain), "1"),
+              );
+              chain.push_bone(
+                  BoneName::[<$side $finger_vrm Intermediate>],
+                  concat!("mixamorig:", stringify!($side), "Hand", stringify!($finger_chain), "2"),
+              );
+              chain.push_bone(
+                  BoneName::[<$side $finger_vrm Distal>],
+                  concat!("mixamorig:", stringify!($side), "Hand", stringify!($finger_chain), "3"),
+              );
+          }
+      }
+   };
 }
 
 macro_rules! arm {
@@ -66,8 +76,8 @@ macro_rules! leg {
 /// Allows code re-use for both animation targets and bone names.
 #[derive(Clone)]
 struct ChainWrapper<'a> {
-    chain: TargetChain,
-    names: Rc<RefCell<HashMap<BoneName, &'a str>>>,
+    chain:   TargetChain,
+    names:   Rc<RefCell<HashMap<BoneName, &'a str>>>,
     targets: Rc<RefCell<HashMap<BoneName, AnimationTargetId>>>,
 }
 

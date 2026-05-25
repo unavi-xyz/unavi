@@ -1,12 +1,16 @@
-(
-    assets: {},
-    images: {},
-    materials: {},
-    nodes: {
-        "root": (
-            scripts: [
-                "./Cargo.toml",
-            ],
+[
+    (
+        attributes: (
+            asset: None,
+            collider: None,
+            image: None,
+            material: None,
+            name: "unavi-gate",
+            rigid_body: None,
+            script: "./Cargo.toml",
+            xform: None,
         ),
-    },
-)
+        relationships: {},
+        children: [],
+    ),
+]

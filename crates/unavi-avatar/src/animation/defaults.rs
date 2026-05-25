@@ -1,10 +1,19 @@
-use bevy::{platform::collections::HashMap, prelude::*};
-use bevy_gltf_kun::import::gltf::{animation::RawGltfAnimation, loader::GltfLoaderSettings};
+use bevy::{
+    platform::collections::HashMap,
+    prelude::*,
+};
+use bevy_gltf_kun::import::gltf::{
+    animation::RawGltfAnimation,
+    loader::GltfLoaderSettings,
+};
 use unavi_assets::default_character_animations_path;
 
 use super::{
     AnimationName,
-    load::{AvatarAnimation, AvatarAnimationClips},
+    load::{
+        AvatarAnimation,
+        AvatarAnimationClips,
+    },
 };
 
 #[must_use]

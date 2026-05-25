@@ -40,7 +40,7 @@
       ...
     }:
     flake-parts.lib.mkFlake { inherit inputs; } (
-      { ... }:
+      _:
       let
         deployInfo = builtins.fromJSON (builtins.readFile ./infra/terraform/deploy.json);
       in
@@ -119,14 +119,13 @@
                 (
                   self: _:
                   let
-                    toolchain = (
+                    toolchain =
                       with self.fenix;
                       combine [
                         complete.toolchain
                         targets.wasm32-unknown-unknown.latest.rust-std
                         targets.wasm32-wasip2.latest.rust-std
-                      ]
-                    );
+                      ];
                   in
                   {
                     crane = (inputs.crane.mkLib self).overrideToolchain toolchain;
@@ -183,7 +182,6 @@
                   "*.ts"
                   "*.tsx"
                   "*.vue"
-
                 ];
               };
               yamlfmt.enable = true;
@@ -213,6 +211,7 @@
                     packages
                     ++ (with pkgs; [
                       age
+                      bacon
                       cargo-deny
                       cargo-edit
                       cargo-machete

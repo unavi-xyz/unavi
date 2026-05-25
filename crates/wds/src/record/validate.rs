@@ -1,15 +1,21 @@
 //! Document-level schema validation for WDS.
 //!
-//! Delegates to [`wds_schema::Validator`] for type and Restricted field checking.
+//! Delegates to [`wds_schema::Validator`] for type and Restricted field
+//! checking.
 
 use std::collections::BTreeMap;
 
 use blake3::Hash;
 use iroh_blobs::api::Store;
-use loro::{Frontiers, LoroDoc};
-use smol_str::SmolStr;
+use loro::{
+    Frontiers,
+    LoroDoc,
+};
 use thiserror::Error;
-use wds_schema::{schema::Schema, validate::validator::Validator};
+use wds_schema::{
+    schema::Schema,
+    validate::validator::Validator,
+};
 use xdid::core::did::Did;
 
 /// Validation errors for WDS documents.
@@ -36,14 +42,15 @@ pub async fn fetch_schema(blobs: &Store, hash: &Hash) -> Result<Schema, Validati
 /// Validate changes between two document states against schema restrictions.
 ///
 /// `old_doc` is used for authorization checks (the state before the change).
-/// `new_doc` is used for computing the diff (should have the new envelope applied).
-/// `is_first_envelope` skips restriction checks (allows ACL bootstrap).
+/// `new_doc` is used for computing the diff (should have the new envelope
+/// applied). `is_first_envelope` skips restriction checks (allows ACL
+/// bootstrap).
 pub fn validate_diff(
     old_doc: &LoroDoc,
     new_doc: &LoroDoc,
     old_frontiers: &Frontiers,
     new_frontiers: &Frontiers,
-    schemas: &BTreeMap<SmolStr, Schema>,
+    schemas: &BTreeMap<String, Schema>,
     author: &Did,
     is_first_envelope: bool,
 ) -> Result<(), ValidationError> {

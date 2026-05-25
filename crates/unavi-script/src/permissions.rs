@@ -1,17 +1,12 @@
-// Scripts are sandboxed by default: only the scene, event, input, and agent
-// APIs are available. System scripts (loaded by the client itself, not from
-// HSD) receive elevated permissions including WDS access and local-agent
-// control. Permissions are checked at linker-build time, so disallowed APIs
-// are never wired into the guest's import table.
-
-use std::collections::HashSet;
+use std::{
+    collections::HashSet,
+    sync::Arc,
+};
 
 use bevy::prelude::*;
 
-#[derive(Component, Clone, Debug)]
-pub struct ScriptPermissions {
-    pub api: HashSet<ApiName>,
-}
+#[derive(Component, Clone, Debug, Deref)]
+pub struct ApiPermissions(Arc<HashSet<ApiName>>);
 
 #[derive(Clone, Copy, Debug, PartialEq, Hash, Eq)]
 pub enum ApiName {
@@ -19,34 +14,42 @@ pub enum ApiName {
     CreateDocument,
     Event,
     Input,
+    InputContext,
     LocalAgent,
     Scene,
-    System,
-    SystemInput,
     Wds,
 }
 
-impl Default for ScriptPermissions {
+impl Default for ApiPermissions {
     fn default() -> Self {
-        let mut api = HashSet::default();
-        api.insert(ApiName::Agent);
-        api.insert(ApiName::Event);
-        api.insert(ApiName::Input);
-        api.insert(ApiName::Scene);
-
-        Self { api }
+        let mut set = HashSet::default();
+        set.insert(ApiName::Agent);
+        set.insert(ApiName::Event);
+        set.insert(ApiName::Input);
+        set.insert(ApiName::Scene);
+        Self(Arc::new(set))
     }
 }
 
-impl ScriptPermissions {
+impl ApiPermissions {
+    #[must_use]
+    pub fn with(self, name: ApiName) -> Self {
+        let mut set = (*self.0).clone();
+        set.insert(name);
+        Self(Arc::new(set))
+    }
+
     #[must_use]
     pub fn system() -> Self {
-        let mut perms = Self::default();
-        perms.api.insert(ApiName::CreateDocument);
-        perms.api.insert(ApiName::LocalAgent);
-        perms.api.insert(ApiName::System);
-        perms.api.insert(ApiName::SystemInput);
-        perms.api.insert(ApiName::Wds);
-        perms
+        let mut set = HashSet::default();
+        set.insert(ApiName::Agent);
+        set.insert(ApiName::LocalAgent);
+        set.insert(ApiName::CreateDocument);
+        set.insert(ApiName::Event);
+        set.insert(ApiName::Input);
+        set.insert(ApiName::InputContext);
+        set.insert(ApiName::Scene);
+        set.insert(ApiName::Wds);
+        Self(Arc::new(set))
     }
 }

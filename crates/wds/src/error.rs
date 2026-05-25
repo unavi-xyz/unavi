@@ -4,7 +4,10 @@
 //! - [`WdsError`]: Internal error type with full context.
 //! - [`ApiError`]: External error type safe for client/server boundary.
 
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use thiserror::Error;
 
 /// Internal error type for WDS operations.
@@ -13,7 +16,6 @@ use thiserror::Error;
 /// Convert to [`ApiError`] before sending to clients.
 #[derive(Debug, Error)]
 pub enum WdsError {
-    // Auth/identity errors.
     #[error("invalid signature")]
     InvalidSignature,
     #[error("unauthenticated")]
@@ -21,7 +23,6 @@ pub enum WdsError {
     #[error("DID resolution failed: {0}")]
     DidResolution(String),
 
-    // Access control.
     #[error("access denied")]
     AccessDenied,
     #[error("record not pinned")]
@@ -29,25 +30,25 @@ pub enum WdsError {
     #[error("quota exceeded")]
     QuotaExceeded,
 
-    // Resource errors.
     #[error("record not found")]
     RecordNotFound,
     #[error("blob not found")]
     BlobNotFound,
 
-    // Validation.
     #[error("schema validation failed: {0}")]
     SchemaValidation(String),
-
-    // Infrastructure.
-    #[error("database error: {0}")]
-    Database(#[from] rusqlite::Error),
     #[error("serialization error: {0}")]
     Serialization(#[from] postcard::Error),
+
+    #[error("database error: {0}")]
+    Database(#[from] rusqlite::Error),
+    #[error("hydration error: {0}")]
+    Hydration(#[from] loro_surgeon::error::HydrateError),
+    #[error("reconciliation error: {0}")]
+    Reconciliation(#[from] loro_surgeon::error::ReconcileError),
     #[error("sync protocol error")]
     SyncFailed,
 
-    // Fallback.
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
@@ -55,7 +56,8 @@ pub enum WdsError {
 /// External error type for the WDS API.
 ///
 /// Safe to send across the client/server boundary.
-/// Internal details should be logged server-side before converting to these variants.
+/// Internal details should be logged server-side before converting to these
+/// variants.
 #[derive(Debug, Clone, Serialize, Deserialize, Error)]
 pub enum ApiError {
     #[error("unauthenticated")]
@@ -79,7 +81,8 @@ pub enum ApiError {
 }
 
 impl WdsError {
-    /// Convert to [`ApiError`], recovering wrapped errors from [`WdsError::Other`].
+    /// Convert to [`ApiError`], recovering wrapped errors from
+    /// [`WdsError::Other`].
     fn to_api_error(&self) -> ApiError {
         match self {
             Self::InvalidSignature => ApiError::InvalidSignature,
@@ -101,6 +104,8 @@ impl WdsError {
             Self::DidResolution(_)
             | Self::Database(_)
             | Self::Serialization(_)
+            | Self::Hydration(_)
+            | Self::Reconciliation(_)
             | Self::SchemaValidation(_) => ApiError::Internal,
         }
     }

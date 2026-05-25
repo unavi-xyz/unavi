@@ -6,7 +6,8 @@ pub const DEFAULT_CHARACTER_ANIMATIONS: &str = "model/animations.glb";
 
 /// Returns the asset path appropriate for the current platform.
 ///
-/// - **Native**: Returns the relative path as-is (Bevy loads from local assets dir).
+/// - **Native**: Returns the relative path as-is (Bevy loads from local assets
+///   dir).
 /// - **Web**: Returns `{CDN_URL}/{relative_path}` for HTTP loading.
 #[must_use]
 pub fn asset_path(relative_path: &str) -> String {

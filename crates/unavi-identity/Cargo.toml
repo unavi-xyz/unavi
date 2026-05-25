@@ -1,0 +1,21 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-identity"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace    = true
+bevy.workspace      = true
+bevy-iroh.path      = "../bevy-iroh"
+bevy-wds.path       = "../bevy-wds"
+iroh.workspace      = true
+n0-future.workspace = true
+unavi-util.path     = "../unavi-util"
+wds.path            = "../wds"
+xdid.workspace      = true

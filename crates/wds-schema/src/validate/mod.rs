@@ -22,18 +22,21 @@ pub enum ChangeType {
 #[derive(Debug, Error)]
 pub enum ValidationError {
     #[error("access denied at {path}: {action} requires authorization")]
-    AccessDenied { path: String, action: &'static str },
+    AccessDenied {
+        path:   String,
+        action: &'static str,
+    },
     #[error("invalid element at {path}[{index}]")]
     InvalidElement {
-        path: String,
-        index: usize,
+        path:   String,
+        index:  usize,
         #[source]
         source: Box<Self>,
     },
     #[error("invalid field {path}.{key}")]
     InvalidField {
-        path: String,
-        key: SmolStr,
+        path:   String,
+        key:    SmolStr,
         #[source]
         source: Box<Self>,
     },
@@ -43,7 +46,7 @@ pub enum ValidationError {
     UnknownVariant(SmolStr),
     #[error("type mismatch at {path}: expected {expected}")]
     TypeMismatch {
-        path: String,
+        path:     String,
         expected: &'static str,
     },
 }

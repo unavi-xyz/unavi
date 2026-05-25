@@ -1,7 +1,11 @@
 //! Network monitoring events.
 
-use std::sync::{LazyLock, Mutex};
+use std::sync::LazyLock;
 
+use async_channel::{
+    Receiver,
+    Sender,
+};
 use iroh::EndpointId;
 
 /// Channel type for bandwidth tracking.
@@ -14,13 +18,13 @@ pub enum Channel {
 /// Network monitoring event types.
 pub enum NetworkEvent {
     Download {
-        peer: EndpointId,
-        bytes: usize,
+        peer:    EndpointId,
+        bytes:   usize,
         channel: Channel,
     },
     Upload {
-        peer: EndpointId,
-        bytes: usize,
+        peer:    EndpointId,
+        bytes:   usize,
         channel: Channel,
     },
     ValidTick {
@@ -32,10 +36,5 @@ pub enum NetworkEvent {
 }
 
 /// Global channel for network monitoring events.
-pub static NETWORK_EVENTS: LazyLock<(
-    tokio::sync::mpsc::Sender<NetworkEvent>,
-    Mutex<tokio::sync::mpsc::Receiver<NetworkEvent>>,
-)> = LazyLock::new(|| {
-    let (tx, rx) = tokio::sync::mpsc::channel(64);
-    (tx, Mutex::new(rx))
-});
+pub static NETWORK_EVENTS: LazyLock<(Sender<NetworkEvent>, Receiver<NetworkEvent>)> =
+    LazyLock::new(|| async_channel::bounded(64));

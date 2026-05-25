@@ -1,10 +1,16 @@
 use std::{
     fs,
-    io::{Read, Write},
+    io::{
+        Read,
+        Write,
+    },
     path::Path,
 };
 
-use anyhow::{Context, bail};
+use anyhow::{
+    Context,
+    bail,
+};
 use futures::StreamExt;
 use semver::Version;
 use serde::Deserialize;
@@ -73,12 +79,12 @@ pub fn get_platform_target() -> anyhow::Result<SimpleTarget> {
 #[derive(Debug, Deserialize)]
 pub struct GitHubRelease {
     pub tag_name: String,
-    pub assets: Vec<GitHubAsset>,
+    pub assets:   Vec<GitHubAsset>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct GitHubAsset {
-    pub name: String,
+    pub name:                 String,
     pub browser_download_url: String,
 }
 

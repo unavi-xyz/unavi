@@ -5,7 +5,10 @@ use rusqlite::params;
 use time::OffsetDateTime;
 use tracing_test::traced_test;
 
-use crate::common::{DataStoreCtx, ctx};
+use crate::common::{
+    DataStoreCtx,
+    ctx,
+};
 
 mod common;
 

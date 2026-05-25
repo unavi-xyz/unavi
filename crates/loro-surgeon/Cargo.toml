@@ -1,19 +1,21 @@
 [package]
+description          = "Typed serialization between Rust types and Loro CRDT containers."
 edition.workspace    = true
 license.workspace    = true
 name                 = "loro-surgeon"
-publish              = false
 repository.workspace = true
 version.workspace    = true
 
-[lints]
-workspace = true
-
 [dependencies]
-loro.workspace           = true
-loro-surgeon-derive.path = "../loro-surgeon-derive"
-smol_str.workspace       = true
-thiserror.workspace      = true
+loro                = { workspace = true }
+loro-surgeon-derive = { path = "../loro-surgeon-derive" }
+serde               = { workspace = true }
+serde_json          = "1"
+similar             = "2"
+thiserror           = { workspace = true }
 
 [dev-dependencies]
 rstest = "0.26.1"
+
+[lints]
+workspace = true

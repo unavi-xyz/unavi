@@ -1,119 +1,58 @@
 package wired:scene;
 
-world prelude {
-  import context;
+world all {
+  import api;
   import types;
 }
 
-interface context {
-  use types.{document, node, document-id};
+interface api {
+  use types.{document, prim, document-id};
 
-  // The node this script is attached to.
-  self-node: func() -> node;
-  // The document this script's node belongs to.
+  // The prim this script is attached to.
+  self-prim: func() -> prim;
+  // The document this script's prim belongs to.
   self-document: func() -> document;
-  // Get another document by ID. Returns none if the document does not exist
-  // or this script lacks read permission.
+  // Get another document by ID.
   get-document: func(id: document-id) -> option<document>;
   // Create a new HSD document owned by this script's document.
-  // Requires the create-document permission. Returns an error on failure.
-  create-document: func() -> result<document, string>;
-  // Destroy a previously created document. No-op if not found or no write access.
+  create-document: func() -> document;
+  // Destroy a previously created document.
   remove-document: func(id: document-id);
   // Load an HSD document from a WDS blob hash (32 bytes).
-  load-hsd: func(blob-id: list<u8>) -> result<document, string>;
+  load-hsd: func(blob: list<u8>) -> result<document, string>;
 }
 
 interface types {
   use wired:math/types.{vec3, quat, transform};
 
+  // Stringified loro TreeID ("counter@peer").
+  type prim-id = string;
+  // 32-byte blake3 hash identifying a document.
   type document-id = list<u8>;
+  // 32-byte blake3 hash identifying a WDS blob.
+  type blob-id = list<u8>;
 
-  resource document {
-    id: func() -> list<u8>;
-    clone: func() -> document;
-
-    roots: func() -> list<node>;
-    nodes: func() -> list<node>;
-    meshes: func() -> list<mesh>;
-    materials: func() -> list<material>;
-
-    create-node: func() -> node;
-    create-mesh: func() -> mesh;
-    create-material: func() -> material;
-
-    remove-node: func(value: borrow<node>);
-    remove-mesh: func(value: borrow<mesh>);
-    remove-material: func(value: borrow<material>);
-
-    sync: func() -> bool;
-    set-sync: func(value: bool);
-
-    // Whether this document is publicly readable on the network.
-    public: func() -> bool;
-    // Mark this document public or private. Syncs to the WDS ACL.
-    set-public: func(value: bool);
-
-    // Named blob assets stored in this document's assets map.
-    assets: func() -> list<tuple<string, list<u8>>>;
-    add-asset: func(name: string, blob-id: list<u8>);
-    remove-asset: func(name: string);
-
-    translation: func() -> vec3;
-    set-translation: func(value: vec3);
-
-    rotation: func() -> quat;
-    set-rotation: func(value: quat);
-
-    scale: func() -> vec3;
-    set-scale: func(value: vec3);
-
-    transform: func() -> transform;
-    set-transform: func(value: transform);
-
-    global-transform: func() -> transform;
+  record xform {
+    translation: vec3,
+    rotation: quat,
+    scale: vec3,
   }
 
-  resource node {
-    id: func() -> string;
-    clone: func() -> node;
+  enum topology {
+    point-list,
+    line-list,
+    line-strip,
+    triangle-list,
+    triangle-strip,
+  }
 
-    name: func() -> option<string>;
-    set-name: func(value: option<string>);
-
-    translation: func() -> vec3;
-    set-translation: func(value: vec3);
-
-    rotation: func() -> quat;
-    set-rotation: func(value: quat);
-
-    scale: func() -> vec3;
-    set-scale: func(value: vec3);
-
-    transform: func() -> transform;
-    set-transform: func(value: transform);
-
-    global-transform: func() -> transform;
-
-    parent: func() -> option<node>;
-    children: func() -> list<node>;
-    add-child: func(child: borrow<node>);
-    remove-child: func(child: borrow<node>);
-
-    mesh: func() -> option<mesh>;
-    set-mesh: func(value: option<borrow<mesh>>);
-
-    material: func() -> option<material>;
-    set-material: func(value: option<borrow<material>>);
-
-    collider: func() -> option<collider>;
-    set-collider: func(value: option<collider>);
-
-    rigid-body: func() -> option<rigid-body-kind>;
-    set-rigid-body: func(value: option<rigid-body-kind>);
-
-    sync: func() -> bool;
-    set-sync: func(value: bool);
+  // Mesh attribute. `attributes` maps a stream name (POSITION, NORMAL,
+  // TANGENT, COLOR, UV0, UV1, ...) to a 32-byte blake3 blob id pointing at
+  // packed f32 data in WDS.
+  record mesh {
+    topology: topology,
+    attributes: list<tuple<string, blob-id>>,
+    indices: option<blob-id>,
   }
 
   record color {
@@ -132,89 +71,35 @@ interface types {
     pre-multiplied,
   }
 
-  resource material {
-    id: func() -> string;
-    clone: func() -> material;
-
-    name: func() -> option<string>;
-    set-name: func(value: option<string>);
-
-    alpha-cutoff: func() -> f32;
-    set-alpha-cutoff: func(value: f32);
-
-    alpha-mode: func() -> option<alpha-mode>;
-    set-alpha-mode: func(value: option<alpha-mode>);
-
-    base-color: func() -> color;
-    set-base-color: func(value: color);
-
-    metallic: func() -> f32;
-    set-metallic: func(value: f32);
-
-    roughness: func() -> f32;
-    set-roughness: func(value: f32);
-
-    double-sided: func() -> bool;
-    set-double-sided: func(value: bool);
-
-    unlit: func() -> bool;
-    set-unlit: func(value: bool);
-
-    sync: func() -> bool;
-    set-sync: func(value: bool);
+  record material {
+    alpha-cutoff: option<f32>,
+    alpha-mode: option<alpha-mode>,
+    base-color: option<color>,
+    base-color-texture: option<prim-id>,
+    double-sided: option<bool>,
+    emissive: option<color>,
+    emissive-texture: option<prim-id>,
+    metallic: option<f32>,
+    metallic-roughness-texture: option<prim-id>,
+    normal-texture: option<prim-id>,
+    occlusion-texture: option<prim-id>,
+    roughness: option<f32>,
   }
 
-  enum primitive-topology {
-    point-list,
-    line-list,
-    line-strip,
-    triangle-list,
-    triangle-strip,
-  }
-
-  variant indices {
-    half(list<u16>),
-    full(list<u32>),
-  }
-
-  resource mesh {
-    id: func() -> string;
-    clone: func() -> mesh;
-
-    name: func() -> option<string>;
-    set-name: func(value: option<string>);
-
-    topology: func() -> primitive-topology;
-    set-topology: func(value: primitive-topology);
-
-    indices: func() -> option<indices>;
-    set-indices: func(value: option<indices>);
-
-    positions: func() -> option<list<f32>>;
-    set-positions: func(values: option<list<f32>>);
-
-    normals: func() -> option<list<f32>>;
-    set-normals: func(values: option<list<f32>>);
-
-    tangents: func() -> option<list<f32>>;
-    set-tangents: func(values: option<list<f32>>);
-
-    colors: func() -> option<list<f32>>;
-    set-colors: func(values: option<list<f32>>);
-
-    uv0: func() -> option<list<f32>>;
-    set-uv0: func(values: option<list<f32>>);
-
-    uv1: func() -> option<list<f32>>;
-    set-uv1: func(values: option<list<f32>>);
-
-    sync: func() -> bool;
-    set-sync: func(value: bool);
+  record image {
+    data: blob-id,
+    address-mode-u: option<s32>,
+    address-mode-v: option<s32>,
+    address-mode-w: option<s32>,
+    mag-filter: option<s32>,
+    min-filter: option<s32>,
+    mipmap-filter: option<s32>,
+    srgb: option<bool>,
   }
 
   variant collider {
     capsule(collider-capsule),
-    convex-hull(list<f32>),
+    convex-hull(blob-id),
     cuboid(vec3),
     cylinder(collider-cylinder),
     sphere(f32),
@@ -232,13 +117,79 @@ interface types {
   }
 
   record collider-trimesh {
-    indices: list<u32>,
-    vertices: list<f32>,
+    indices: blob-id,
+    vertices: blob-id,
   }
 
   enum rigid-body-kind {
     dynamic,
-    fixed,
     kinematic,
+    %static,
+  }
+
+  record rigid-body {
+    kind: rigid-body-kind,
+    angular-damping: option<f32>,
+    friction: option<f32>,
+    linear-damping: option<f32>,
+    mass: option<f32>,
+    restitution: option<f32>,
+  }
+
+  resource document {
+    id: func() -> document-id;
+    clone: func() -> document;
+
+    roots: func() -> list<prim>;
+    prims: func() -> list<prim>;
+    get-prim: func(id: prim-id) -> option<prim>;
+    create-prim: func() -> prim;
+    remove-prim: func(value: borrow<prim>);
+  }
+
+  resource prim {
+    id: func() -> prim-id;
+    clone: func() -> prim;
+
+    parent: func() -> option<prim>;
+    children: func() -> list<prim>;
+    add-child: func(child: borrow<prim>);
+    remove-child: func(child: borrow<prim>);
+
+    name: func() -> option<string>;
+    set-name: func(value: option<string>);
+
+    // The `asset` attribute pins a blob-id dep reachable from this prim.
+    asset: func() -> option<blob-id>;
+    set-asset: func(value: option<blob-id>);
+
+    xform: func() -> option<xform>;
+    set-xform: func(value: option<xform>);
+    // Computed global xform from the previous tick. Writes via set-xform do
+    // not retrigger a recompute.
+    global-xform: func() -> transform;
+
+    mesh: func() -> option<mesh>;
+    set-mesh: func(value: option<mesh>);
+    // High-level helpers: host hashes the values and uploads to WDS, then
+    // stores the resulting blob id in the mesh attribute.
+    set-mesh-stream: func(key: string, values: option<list<f32>>);
+    set-mesh-indices-u32: func(values: option<list<u32>>);
+
+    material: func() -> option<material>;
+    set-material: func(value: option<material>);
+
+    image: func() -> option<image>;
+    set-image: func(value: option<image>);
+
+    collider: func() -> option<collider>;
+    set-collider: func(value: option<collider>);
+
+    rigid-body: func() -> option<rigid-body>;
+    set-rigid-body: func(value: option<rigid-body>);
+
+    relationships: func() -> list<tuple<string, prim-id>>;
+    get-relationship: func(key: string) -> option<prim-id>;
+    set-relationship: func(key: string, target: option<prim-id>);
   }
 }

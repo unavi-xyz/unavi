@@ -1,15 +1,7 @@
 # Build WebGL and WebGPU web clients.
 def main [
-  --release         # Build with release optimizations.
-  --skip-jco        # Skip jco runtime bundle step.
+  --release
 ] {
-  if not $skip_jco {
-    npm-setup
-    bundle-jco-runtime
-  }
-
-  copy-scripts-to-client
-
   let trunk_args = if $release { ["--release"] } else { [] }
 
   print "Building WebGL variant..."
@@ -47,41 +39,4 @@ def main [
   mv dist-webgpu dist/webgpu
 
   print "Build complete: dist/"
-}
-
-# Install npm dependencies
-def npm-setup [] {
-  print "Installing npm dependencies..."
-  run-external "npm" "install" "--prefix" "crates/unavi-script" "--silent"
-}
-
-# Bundle @bytecodealliance/jco/component for use in the browser.
-# All WASM component scripts — built-in and HSD-fetched — are transpiled at
-# runtime via this bundle. Output: assets/scripts/jco-runtime.js.
-def bundle-jco-runtime [] {
-  let out = "crates/unavi-script/assets/scripts/jco-runtime.js"
-  print $"Bundling jco runtime → ($out)"
-  # Use jco's browser.js (the ./component export) and exclude the node:fs/promises
-  # dynamic import used only for the optional Binaryen optimisation pass.
-  (run-external "esbuild"
-    "crates/unavi-script/node_modules/@bytecodealliance/jco/src/browser.js"
-    "--bundle"
-    "--format=esm"
-    "--platform=browser"
-    "--external:node:fs/promises"
-    $"--outfile=($out)"
-  )
-
-  let jco_obj = "crates/unavi-script/node_modules/@bytecodealliance/jco/obj"
-  let scripts = "crates/unavi-script/assets/scripts"
-  cp $"($jco_obj)/js-component-bindgen-component.core.wasm" $scripts
-  cp $"($jco_obj)/js-component-bindgen-component.core2.wasm" $scripts
-}
-
-# Copy script assets from unavi-script to unavi-client for Trunk.
-def copy-scripts-to-client [] {
-  let source = "crates/unavi-script/assets/scripts"
-  let target = "crates/unavi-client/assets/scripts"
-  rm -rf $target
-  cp -r $source $target
 }

@@ -3,8 +3,7 @@ use schminput::DefaultSchminputPlugins;
 use schminput_rebinding::DefaultSchminputRebindingPlugins;
 
 pub mod actions;
-#[cfg(not(target_family = "wasm"))]
-mod config;
+#[cfg(not(target_family = "wasm"))] mod config;
 pub mod crosshair;
 pub mod cursor_lock;
 pub mod raycast;
@@ -20,7 +19,7 @@ impl Plugin for InputPlugin {
             use schminput_rebinding::config::ConfigFilePath;
 
             let config_path = ConfigFilePath::Config {
-                app_name: "unavi",
+                app_name:  "unavi",
                 file_name: "input.toml",
             };
 
@@ -53,14 +52,14 @@ impl Plugin for InputPlugin {
     }
 }
 
-#[derive(EntityEvent)]
+#[derive(Event)]
 pub struct SqueezeDown {
-    pub entity: Entity,
+    pub entity:  Option<Entity>,
     pub pointer: Entity,
 }
 
-#[derive(EntityEvent)]
+#[derive(Event)]
 pub struct SqueezeUp {
-    pub entity: Entity,
+    pub entity:  Option<Entity>,
     pub pointer: Entity,
 }

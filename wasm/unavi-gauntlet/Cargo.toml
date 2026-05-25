@@ -14,6 +14,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 blake3.workspace      = true
-unavi-vui-module.path = "../unavi-vui-module"
 wired-prelude.path    = "../wired-prelude"
 wit-bindgen.workspace = true

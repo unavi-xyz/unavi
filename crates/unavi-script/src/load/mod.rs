@@ -1,14 +1,17 @@
 use bevy::prelude::*;
-use smol_str::SmolStr;
 
+pub mod asset;
+mod hsd;
 pub mod local;
-#[cfg(not(target_family = "wasm"))]
-pub mod native;
 
-/// Links a script entity back to its HSD node.
-#[derive(Component)]
-pub struct HsdScriptSource {
-    pub node_entity: Entity,
-    pub doc_entity: Entity,
-    pub node_id: SmolStr,
+pub struct LoadPlugin;
+
+impl Plugin for LoadPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_asset_loader(asset::WasmLoader)
+            .init_asset::<asset::Wasm>()
+            .add_observer(hsd::load_hsd_scripts)
+            .add_observer(local::load_local_script)
+            .add_systems(FixedUpdate, hsd::process_pending_scripts);
+    }
 }

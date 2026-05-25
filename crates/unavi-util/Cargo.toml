@@ -1,0 +1,16 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-util"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+async-channel.workspace = true
+bevy.workspace          = true
+n0-future.workspace     = true
+unavi-wasm-compat.path  = "../unavi-wasm-compat"

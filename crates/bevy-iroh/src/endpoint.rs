@@ -48,19 +48,16 @@ pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands
 #[derive(Component)]
 pub(crate) struct LoadingEndpoint(async_channel::Receiver<Endpoint>);
 
-pub(crate) fn recieve_endpoint(mut commands: Commands, loading: Query<(Entity, &LoadingEndpoint)>) {
-    let Some((ent, rx)) = loading.iter().next() else {
-        return;
-    };
-
-    let Ok(endpoint) = rx.0.try_recv() else {
-        return;
-    };
-
-    commands
-        .entity(ent)
-        .insert(IrohEndpoint(endpoint))
-        .remove::<LoadingEndpoint>();
+pub(crate) fn receive_endpoint(mut commands: Commands, loading: Query<(Entity, &LoadingEndpoint)>) {
+    for (ent, rx) in loading.iter() {
+        let Ok(endpoint) = rx.0.try_recv() else {
+            continue;
+        };
+        commands
+            .entity(ent)
+            .insert(IrohEndpoint(endpoint))
+            .remove::<LoadingEndpoint>();
+    }
 }
 
 async fn init_endpoint(opts: &LoadEndpoint) -> anyhow::Result<Endpoint> {

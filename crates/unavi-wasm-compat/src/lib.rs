@@ -1,6 +1,9 @@
 //! Cross-platform async helpers for WASM compatibility.
 
-use std::{future::Future, time::Duration};
+use std::{
+    future::Future,
+    time::Duration,
+};
 
 /// Spawn an async thread.
 ///

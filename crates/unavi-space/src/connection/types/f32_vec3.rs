@@ -1,6 +1,9 @@
 use bevy::math::Vec3;
 use postcard::experimental::max_size::MaxSize;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 #[derive(Clone, Copy, Debug, MaxSize, Serialize, Deserialize, Default)]
 pub struct F32Vec3 {

@@ -1,8 +1,12 @@
 use loro_surgeon::{
+    Hydrate,
+    Reconcile,
     bytes::ByteArray,
-    {Hydrate, Reconcile},
 };
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 use crate::attributes::Attribute;
 
@@ -14,11 +18,11 @@ pub struct ImageAttr {
     pub address_mode_u: Option<i64>,
     pub address_mode_v: Option<i64>,
     pub address_mode_w: Option<i64>,
-    pub data: ByteArray<32>,
-    pub mag_filter: Option<i64>,
-    pub min_filter: Option<i64>,
-    pub mipmap_filter: Option<i64>,
-    pub srgb: Option<bool>,
+    pub data:           ByteArray<32>,
+    pub mag_filter:     Option<i64>,
+    pub min_filter:     Option<i64>,
+    pub mipmap_filter:  Option<i64>,
+    pub srgb:           Option<bool>,
 }
 
 impl Attribute for ImageAttr {

@@ -1,22 +1,33 @@
 use std::{
-    cell::{Cell, RefCell},
-    f32::consts::{FRAC_PI_2, TAU},
+    cell::{
+        Cell,
+        RefCell,
+    },
+    f32::consts::{
+        FRAC_PI_2,
+        TAU,
+    },
 };
 
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCapsule,
-    wired::scene::types::{Collider, ColliderCapsule, Document, Prim},
+    wired::scene::types::{
+        Collider,
+        ColliderCapsule,
+        Document,
+        Prim,
+    },
 };
 
 #[derive(Default)]
 pub struct CapsuleWrapped {
-    doc: RefCell<Option<Document>>,
-    radius: f32,
+    doc:         RefCell<Option<Document>>,
+    radius:      f32,
     half_length: f32,
-    latitudes: Cell<u32>,
-    longitudes: Cell<u32>,
-    rings: Cell<u32>,
+    latitudes:   Cell<u32>,
+    longitudes:  Cell<u32>,
+    rings:       Cell<u32>,
 }
 
 impl GuestCapsule for CapsuleWrapped {
@@ -95,8 +106,8 @@ fn build(radius: f32, half_len: f32, latitudes: u32, longitudes: u32, rings: u32
     let mut uvs = Vec::new();
     let mut indices = Vec::new();
 
-    // Generate rings from south pole cap → equator → cylinder → equator → north pole cap
-    // Ring index k in [0, total_rings]
+    // Generate rings from south pole cap → equator → cylinder → equator → north
+    // pole cap Ring index k in [0, total_rings]
     for k in 0..=total_rings {
         let (y, xz_r, ny, nxz) = ring_params(k, hemi_lats, rings, radius, half_len);
         let v = k as f32 / total_rings as f32;

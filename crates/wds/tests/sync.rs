@@ -6,7 +6,12 @@ use tracing_test::traced_test;
 use wds::surg::acl::Acl;
 use wired_schemas::SCHEMA_HOME;
 
-use crate::common::{LocalStoreCtx, MultiStoreCtx, multi_ctx, multi_ctx_local};
+use crate::common::{
+    LocalStoreCtx,
+    MultiStoreCtx,
+    multi_ctx,
+    multi_ctx_local,
+};
 
 mod common;
 
@@ -259,7 +264,8 @@ async fn test_sync_unpinned_fails(#[future] multi_ctx: MultiStoreCtx) {
         .expect_err("should fail without pinning");
 }
 
-/// Tests sync using did:key with `set_user_identity` (embedded WDS auth pattern).
+/// Tests sync using did:key with `set_user_identity` (embedded WDS auth
+/// pattern).
 #[rstest]
 #[timeout(Duration::from_secs(10))]
 #[awt]
@@ -331,7 +337,8 @@ async fn test_sync_with_user_identity(#[future] multi_ctx_local: LocalStoreCtx) 
     );
 }
 
-/// Tests that blob dependencies (schemas) are synced when a record uses a custom schema.
+/// Tests that blob dependencies (schemas) are synced when a record uses a
+/// custom schema.
 #[rstest]
 #[timeout(Duration::from_secs(10))]
 #[awt]

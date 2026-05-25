@@ -1,6 +1,9 @@
 use crate::{
     exports::unavi::shapes::api::Guest,
-    wired::scene::types::{Document, Prim},
+    wired::scene::types::{
+        Document,
+        Prim,
+    },
 };
 
 mod capsule;
@@ -25,9 +28,9 @@ impl Guest for World {
 
 struct RawMesh {
     positions: Vec<[f32; 3]>,
-    normals: Vec<[f32; 3]>,
-    uvs: Vec<[f32; 2]>,
-    indices: Vec<u32>,
+    normals:   Vec<[f32; 3]>,
+    uvs:       Vec<[f32; 2]>,
+    indices:   Vec<u32>,
 }
 
 fn convert_raw_mesh(doc: Option<&Document>, raw: RawMesh) -> Prim {

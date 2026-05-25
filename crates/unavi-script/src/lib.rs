@@ -1,8 +1,14 @@
-use std::sync::{Arc, atomic::AtomicBool};
+use std::sync::{
+    Arc,
+    atomic::AtomicBool,
+};
 
 use bevy::prelude::*;
 
-use crate::{load::asset::Wasm, permissions::ApiPermissions};
+use crate::{
+    load::asset::Wasm,
+    permissions::ApiPermissions,
+};
 
 mod engine;
 pub mod firewall;

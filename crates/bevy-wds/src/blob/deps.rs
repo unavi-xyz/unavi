@@ -19,7 +19,8 @@ pub fn mark_blob_deps_loaded(
     responses: Query<(), (With<BlobDep>, With<BlobResponse>)>,
 ) {
     for (ent, deps) in loading {
-        // Zero-dep entities are immediately marked loaded; observers fire on the next frame.
+        // Zero-dep entities are immediately marked loaded; observers fire on the next
+        // frame.
         let all_loaded = deps.0.iter().all(|dep_ent| responses.contains(*dep_ent));
 
         if all_loaded {

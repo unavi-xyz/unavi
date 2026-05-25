@@ -1,9 +1,19 @@
 use loro_surgeon::{
-    error::{HydrateError, ReconcileError},
-    reconcile::{NoKey, Reconciler},
-    {Hydrate, Reconcile},
+    Hydrate,
+    Reconcile,
+    error::{
+        HydrateError,
+        ReconcileError,
+    },
+    reconcile::{
+        NoKey,
+        Reconciler,
+    },
 };
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 use crate::attributes::Attribute;
 

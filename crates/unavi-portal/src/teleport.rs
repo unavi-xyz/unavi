@@ -1,7 +1,12 @@
 use bevy::prelude::*;
 
 use crate::{
-    Portal, PortalBounds, PortalDestination, PortalTraveler, PrevTranslation, TravelCooldown,
+    Portal,
+    PortalBounds,
+    PortalDestination,
+    PortalTraveler,
+    PrevTranslation,
+    TravelCooldown,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -10,10 +15,11 @@ enum PortalEntrySide {
     Back,
 }
 
-const EPSILON: f32 = 1e-4;
+const EPSILON: f32 = 1.0e-4;
 
-/// Check if the line segment from `prev_pos` to `curr_pos` intersects the portal box.
-/// Uses ray-box intersection to handle fast movement that might pass through entirely.
+/// Check if the line segment from `prev_pos` to `curr_pos` intersects the
+/// portal box. Uses ray-box intersection to handle fast movement that might
+/// pass through entirely.
 fn check_box_entry_with_side(
     prev_pos: Vec3,
     curr_pos: Vec3,
@@ -31,7 +37,7 @@ fn check_box_entry_with_side(
     let ray_dir = curr_local - prev_local;
     let ray_length = ray_dir.length();
 
-    if ray_length < 1e-6 {
+    if ray_length < 1.0e-6 {
         return None;
     }
 
@@ -72,7 +78,7 @@ fn check_box_entry_with_side(
 
 #[derive(EntityEvent)]
 pub struct PortalTeleport {
-    pub entity: Entity,
+    pub entity:         Entity,
     pub delta_rotation: Quat,
 }
 

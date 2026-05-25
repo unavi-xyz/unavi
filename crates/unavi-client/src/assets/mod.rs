@@ -1,4 +1,7 @@
-use std::{path::PathBuf, sync::LazyLock};
+use std::{
+    path::PathBuf,
+    sync::LazyLock,
+};
 
 use directories::ProjectDirs;
 

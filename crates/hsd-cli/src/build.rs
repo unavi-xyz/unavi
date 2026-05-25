@@ -1,9 +1,19 @@
 use std::{
-    collections::{BTreeMap, HashMap},
-    path::{Path, PathBuf},
+    collections::{
+        BTreeMap,
+        HashMap,
+    },
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 
-use anyhow::{Context, Result, bail};
+use anyhow::{
+    Context,
+    Result,
+    bail,
+};
 use blake3::Hash;
 use hsd::{
     attributes::{
@@ -11,19 +21,34 @@ use hsd::{
         asset::AssetAttr,
         collider::ColliderAttr,
         image::ImageAttr,
-        material::{ColorVec, MaterialAttr},
+        material::{
+            ColorVec,
+            MaterialAttr,
+        },
         name::NameAttr,
-        rigid_body::{RigidBodyAttr, RigidBodyKind},
+        rigid_body::{
+            RigidBodyAttr,
+            RigidBodyKind,
+        },
         script::ScriptAttr,
         xform::XformAttr,
     },
-    file::{HsdFile, HsdFilePrim},
+    file::{
+        HsdFile,
+        HsdFilePrim,
+    },
 };
 use loro_surgeon::bytes::ByteArray;
 use ron::extensions::Extensions;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
-use crate::{blobs::write_blob, wasm::build_wasm_for_crate};
+use crate::{
+    blobs::write_blob,
+    wasm::build_wasm_for_crate,
+};
 
 pub struct BuildOutput {
     pub hash: Hash,
@@ -51,22 +76,22 @@ impl Hsdx {
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxPrim {
-    pub attributes: HsdxAttributes,
+    pub attributes:    HsdxAttributes,
     pub relationships: BTreeMap<String, String>,
-    pub children: Vec<Self>,
+    pub children:      Vec<Self>,
 }
 
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxAttributes {
-    pub asset: Option<String>,
-    pub collider: Option<HsdxCollider>,
-    pub image: Option<HsdxImage>,
-    pub material: Option<HsdxMaterial>,
-    pub name: Option<String>,
+    pub asset:      Option<String>,
+    pub collider:   Option<HsdxCollider>,
+    pub image:      Option<HsdxImage>,
+    pub material:   Option<HsdxMaterial>,
+    pub name:       Option<String>,
     pub rigid_body: Option<HsdxRigidBody>,
-    pub script: Option<String>,
-    pub xform: Option<HsdxXform>,
+    pub script:     Option<String>,
+    pub xform:      Option<HsdxXform>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -82,50 +107,50 @@ pub enum HsdxCollider {
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxImage {
-    pub data: String,
+    pub data:           String,
     pub address_mode_u: Option<i64>,
     pub address_mode_v: Option<i64>,
     pub address_mode_w: Option<i64>,
-    pub mag_filter: Option<i64>,
-    pub min_filter: Option<i64>,
-    pub mipmap_filter: Option<i64>,
-    pub srgb: Option<bool>,
+    pub mag_filter:     Option<i64>,
+    pub min_filter:     Option<i64>,
+    pub mipmap_filter:  Option<i64>,
+    pub srgb:           Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxMaterial {
-    pub alpha_cutoff: Option<f64>,
-    pub alpha_mode: Option<String>,
-    pub base_color: Option<Vec<f64>>,
-    pub base_color_texture: Option<String>,
-    pub double_sided: Option<bool>,
-    pub emissive: Option<Vec<f64>>,
-    pub emissive_texture: Option<String>,
-    pub metallic: Option<f64>,
+    pub alpha_cutoff:               Option<f64>,
+    pub alpha_mode:                 Option<String>,
+    pub base_color:                 Option<Vec<f64>>,
+    pub base_color_texture:         Option<String>,
+    pub double_sided:               Option<bool>,
+    pub emissive:                   Option<Vec<f64>>,
+    pub emissive_texture:           Option<String>,
+    pub metallic:                   Option<f64>,
     pub metallic_roughness_texture: Option<String>,
-    pub normal_texture: Option<String>,
-    pub occlusion_texture: Option<String>,
-    pub roughness: Option<f64>,
+    pub normal_texture:             Option<String>,
+    pub occlusion_texture:          Option<String>,
+    pub roughness:                  Option<f64>,
 }
 
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxRigidBody {
-    pub kind: String,
+    pub kind:            String,
     pub angular_damping: Option<f64>,
-    pub friction: Option<f64>,
-    pub linear_damping: Option<f64>,
-    pub mass: Option<f64>,
-    pub restitution: Option<f64>,
+    pub friction:        Option<f64>,
+    pub linear_damping:  Option<f64>,
+    pub mass:            Option<f64>,
+    pub restitution:     Option<f64>,
 }
 
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxXform {
     pub translation: Option<Vec<f32>>,
-    pub rotation: Option<Vec<f32>>,
-    pub scale: Option<Vec<f32>>,
+    pub rotation:    Option<Vec<f32>>,
+    pub scale:       Option<Vec<f32>>,
 }
 
 pub fn build_hsdx_to_hsd<S: std::hash::BuildHasher>(
@@ -207,19 +232,19 @@ fn compile_attrs<S: std::hash::BuildHasher>(
         .transpose()?;
 
     Ok(Attributes {
-        asset: (asset.map(|h| AssetAttr(ByteArray::new(h)))),
-        collider: (attrs.collider.as_ref().map(compile_collider).transpose()?),
-        image: (image),
-        material: (attrs.material.as_ref().map(compile_material)),
-        mesh: None,
-        name: (attrs.name.clone().map(NameAttr)),
+        asset:      (asset.map(|h| AssetAttr(ByteArray::new(h)))),
+        collider:   (attrs.collider.as_ref().map(compile_collider).transpose()?),
+        image:      (image),
+        material:   (attrs.material.as_ref().map(compile_material)),
+        mesh:       None,
+        name:       (attrs.name.clone().map(NameAttr)),
         rigid_body: (attrs
             .rigid_body
             .as_ref()
             .map(compile_rigid_body)
             .transpose()?),
-        script: (script.map(|h| ScriptAttr(ByteArray::new(h)))),
-        xform: (attrs.xform.as_ref().map(compile_xform)),
+        script:     (script.map(|h| ScriptAttr(ByteArray::new(h)))),
+        xform:      (attrs.xform.as_ref().map(compile_xform)),
     })
 }
 
@@ -253,14 +278,14 @@ fn compile_image(img: &HsdxImage, input_dir: &Path, out_dir: &Path) -> Result<Im
     let bytes = std::fs::read(&abs).with_context(|| format!("reading image {}", abs.display()))?;
     let hash = write_blob(out_dir, &bytes)?;
     Ok(ImageAttr {
-        data: ByteArray::new(*hash.as_bytes()),
+        data:           ByteArray::new(*hash.as_bytes()),
         address_mode_u: (img.address_mode_u),
         address_mode_v: (img.address_mode_v),
         address_mode_w: (img.address_mode_w),
-        mag_filter: (img.mag_filter),
-        min_filter: (img.min_filter),
-        mipmap_filter: (img.mipmap_filter),
-        srgb: (img.srgb),
+        mag_filter:     (img.mag_filter),
+        min_filter:     (img.min_filter),
+        mipmap_filter:  (img.mipmap_filter),
+        srgb:           (img.srgb),
     })
 }
 
@@ -291,18 +316,18 @@ fn compile_collider(c: &HsdxCollider) -> Result<ColliderAttr> {
 
 fn compile_material(m: &HsdxMaterial) -> MaterialAttr {
     MaterialAttr {
-        alpha_cutoff: (m.alpha_cutoff),
-        alpha_mode: (m.alpha_mode.clone()),
-        base_color: (m.base_color.clone().map(ColorVec)),
-        base_color_texture: (m.base_color_texture.clone()),
-        double_sided: (m.double_sided),
-        emissive: (m.emissive.clone().map(ColorVec)),
-        emissive_texture: (m.emissive_texture.clone()),
-        metallic: (m.metallic),
+        alpha_cutoff:               (m.alpha_cutoff),
+        alpha_mode:                 (m.alpha_mode.clone()),
+        base_color:                 (m.base_color.clone().map(ColorVec)),
+        base_color_texture:         (m.base_color_texture.clone()),
+        double_sided:               (m.double_sided),
+        emissive:                   (m.emissive.clone().map(ColorVec)),
+        emissive_texture:           (m.emissive_texture.clone()),
+        metallic:                   (m.metallic),
         metallic_roughness_texture: (m.metallic_roughness_texture.clone()),
-        normal_texture: (m.normal_texture.clone()),
-        occlusion_texture: (m.occlusion_texture.clone()),
-        roughness: (m.roughness),
+        normal_texture:             (m.normal_texture.clone()),
+        occlusion_texture:          (m.occlusion_texture.clone()),
+        roughness:                  (m.roughness),
     }
 }
 
@@ -314,12 +339,12 @@ fn compile_rigid_body(rb: &HsdxRigidBody) -> Result<RigidBodyAttr> {
         other => bail!("unknown rigid body kind {other:?}; expected Static, Kinematic, or Dynamic"),
     };
     Ok(RigidBodyAttr {
-        kind: Some(kind),
+        kind:            Some(kind),
         angular_damping: (rb.angular_damping),
-        friction: (rb.friction),
-        linear_damping: (rb.linear_damping),
-        mass: (rb.mass),
-        restitution: (rb.restitution),
+        friction:        (rb.friction),
+        linear_damping:  (rb.linear_damping),
+        mass:            (rb.mass),
+        restitution:     (rb.restitution),
     })
 }
 

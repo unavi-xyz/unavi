@@ -1,6 +1,11 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
-use unavi_input::{SqueezeDown, SqueezeUp, crosshair::CrosshairMode, raycast::PrimaryRaycastInput};
+use unavi_input::{
+    SqueezeDown,
+    SqueezeUp,
+    crosshair::CrosshairMode,
+    raycast::PrimaryRaycastInput,
+};
 
 pub struct GrabPlugin;
 
@@ -15,7 +20,7 @@ impl Plugin for GrabPlugin {
 
 #[derive(Component)]
 struct Grabbed {
-    pointer: Entity,
+    pointer:    Entity,
     offset_tra: Vec3,
     offset_rot: Quat,
 }
@@ -101,7 +106,8 @@ fn move_grabbed_objects(
         let target_rotation = pointer_tr.rotation * grabbed.offset_rot;
         let mut rotation_diff = target_rotation * obj_tr.rotation.inverse();
 
-        // Ensure shortest path (quaternion double-cover: q and -q are the same rotation)
+        // Ensure shortest path (quaternion double-cover: q and -q are the same
+        // rotation)
         if rotation_diff.w < 0.0 {
             rotation_diff = -rotation_diff;
         }

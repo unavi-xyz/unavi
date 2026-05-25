@@ -2,7 +2,15 @@
 
 pub mod impls;
 
-use loro::{Container, LoroDoc, LoroList, LoroMap, LoroMovableList, LoroValue, ValueOrContainer};
+use loro::{
+    Container,
+    LoroDoc,
+    LoroList,
+    LoroMap,
+    LoroMovableList,
+    LoroValue,
+    ValueOrContainer,
+};
 
 use crate::error::HydrateError;
 
@@ -72,8 +80,8 @@ pub trait Hydrate: Sized {
         Err(HydrateError::unexpected("other", "binary"))
     }
 
-    /// Read from an atomic [`LoroValue::List`] (inline values, not a container).
-    /// Used by `[T; N]` fixed-size arrays.
+    /// Read from an atomic [`LoroValue::List`] (inline values, not a
+    /// container). Used by `[T; N]` fixed-size arrays.
     fn hydrate_inline_list(_items: &[LoroValue]) -> Result<Self, HydrateError> {
         Err(HydrateError::unexpected("other", "inline list"))
     }
@@ -127,7 +135,7 @@ pub fn hydrate_prop_json<T: serde::de::DeserializeOwned>(
     match map.get(key) {
         Some(ValueOrContainer::Value(LoroValue::String(s))) => {
             serde_json::from_str(&s).map_err(|e| HydrateError::Json {
-                key: key.to_string(),
+                key:    key.to_string(),
                 source: e,
             })
         }
@@ -143,7 +151,7 @@ pub fn hydrate_prop_json_or_default<T: serde::de::DeserializeOwned + Default>(
     match map.get(key) {
         Some(ValueOrContainer::Value(LoroValue::String(s))) => {
             serde_json::from_str(&s).map_err(|e| HydrateError::Json {
-                key: key.to_string(),
+                key:    key.to_string(),
                 source: e,
             })
         }

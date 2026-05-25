@@ -2,28 +2,32 @@ use avian3d::prelude::Collider;
 use bevy::prelude::*;
 use bevy_tnua::TnuaConfig;
 
-use crate::{ControlScheme, ControlSchemeConfig, LocalAgentEntities};
+use crate::{
+    ControlScheme,
+    ControlSchemeConfig,
+    LocalAgentEntities,
+};
 
 #[derive(Component, Clone, Debug)]
 pub struct AgentConfig {
     /// Real height, headset to ground.
-    pub real_height: f32,
+    pub real_height:  f32,
     pub sprint_multi: f32,
-    pub walk_speed: f32,
-    pub jump_height: f32,
-    pub vrm_height: Option<f32>,
-    pub vrm_radius: Option<f32>,
+    pub walk_speed:   f32,
+    pub jump_height:  f32,
+    pub vrm_height:   Option<f32>,
+    pub vrm_radius:   Option<f32>,
 }
 
 impl Default for AgentConfig {
     fn default() -> Self {
         Self {
-            real_height: DEFAULT_HEIGHT,
+            real_height:  DEFAULT_HEIGHT,
             sprint_multi: DEFAULT_SPRINT_MULTI,
-            walk_speed: DEFAULT_WALK_SPEED,
-            jump_height: DEFAULT_JUMP,
-            vrm_height: None,
-            vrm_radius: None,
+            walk_speed:   DEFAULT_WALK_SPEED,
+            jump_height:  DEFAULT_JUMP,
+            vrm_height:   None,
+            vrm_radius:   None,
         }
     }
 }

@@ -1,19 +1,25 @@
 use std::{
-    cell::{Cell, RefCell},
+    cell::{
+        Cell,
+        RefCell,
+    },
     f32::consts::TAU,
 };
 
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCone,
-    wired::scene::types::{Document, Prim},
+    wired::scene::types::{
+        Document,
+        Prim,
+    },
 };
 
 #[derive(Default)]
 pub struct ConeWrapped {
-    doc: RefCell<Option<Document>>,
-    radius: f32,
-    height: f32,
+    doc:        RefCell<Option<Document>>,
+    radius:     f32,
+    height:     f32,
     resolution: Cell<u32>,
 }
 

@@ -36,21 +36,21 @@ pub struct HandRight;
 
 #[derive(Resource)]
 pub struct CoreActions {
-    pub jump: Entity,
-    pub look: Entity,
-    pub menu_desktop: Entity,
-    pub menu_left: Entity,
-    pub menu_right: Entity,
-    pub movement: Entity,
-    pub sprint: Entity,
-    pub squeeze_left: Entity,
+    pub jump:          Entity,
+    pub look:          Entity,
+    pub menu_desktop:  Entity,
+    pub menu_left:     Entity,
+    pub menu_right:    Entity,
+    pub movement:      Entity,
+    pub sprint:        Entity,
+    pub squeeze_left:  Entity,
     pub squeeze_right: Entity,
 }
 
 #[cfg(not(target_family = "wasm"))]
 #[derive(Resource)]
 pub struct PoseActions {
-    pub left_pose: Entity,
+    pub left_pose:  Entity,
     pub right_pose: Entity,
 }
 

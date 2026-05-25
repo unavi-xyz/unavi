@@ -1,17 +1,39 @@
-use std::{collections::BTreeMap, io::Cursor};
+use std::{
+    collections::BTreeMap,
+    io::Cursor,
+};
 
-use bevy::{pbr::MeshMaterial3d, prelude::*};
-use bevy_hsd::attributes::{image::HsdImage, material::HsdMaterial};
+use bevy::{
+    pbr::MeshMaterial3d,
+    prelude::*,
+};
+use bevy_hsd::attributes::{
+    image::HsdImage,
+    material::HsdMaterial,
+};
 use hsd::{
-    HSD_CONTAINER_ID, PrimMeta,
+    HSD_CONTAINER_ID,
+    PrimMeta,
     attributes::{
-        Attribute, Attributes, attributes_map,
+        Attribute,
+        Attributes,
+        attributes_map,
         image::ImageAttr,
-        material::{ColorVec, MaterialAttr},
+        material::{
+            ColorVec,
+            MaterialAttr,
+        },
     },
 };
-use image::{ImageFormat, RgbaImage};
-use loro_surgeon::{Reconcile, bytes::ByteArray, reconcile::RootReconciler};
+use image::{
+    ImageFormat,
+    RgbaImage,
+};
+use loro_surgeon::{
+    Reconcile,
+    bytes::ByteArray,
+    reconcile::RootReconciler,
+};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -47,18 +69,18 @@ fn test_material_lifecycle(mut ctx: TestContext) {
     let assets = ctx.app.world().resource::<Assets<StandardMaterial>>();
     let mat = assets.get(&handle).expect("standard material asset");
     assert_eq!(mat.alpha_mode, AlphaMode::Blend);
-    assert!((mat.metallic - 0.7).abs() < 1e-5);
-    assert!((mat.perceptual_roughness - 0.3).abs() < 1e-5);
+    assert!((mat.metallic - 0.7).abs() < 1.0e-5);
+    assert!((mat.perceptual_roughness - 0.3).abs() < 1.0e-5);
     let LinearRgba {
         red,
         green,
         blue,
         alpha,
     } = mat.base_color.to_linear();
-    assert!((red - 0.5).abs() < 1e-5);
-    assert!((green - 0.1).abs() < 1e-5);
-    assert!((blue - 0.2).abs() < 1e-5);
-    assert!((alpha - 1.0).abs() < 1e-5);
+    assert!((red - 0.5).abs() < 1.0e-5);
+    assert!((green - 0.1).abs() < 1.0e-5);
+    assert!((blue - 0.2).abs() < 1.0e-5);
+    assert!((alpha - 1.0).abs() < 1.0e-5);
 
     let attrs = attributes_map(&meta).expect("attributes map");
     attrs.delete(MaterialAttr::KEY).expect("delete");
@@ -92,11 +114,11 @@ fn test_material_texture_ref(#[from(ctx_wds)] mut ctx: TestContext) {
         address_mode_u: None,
         address_mode_v: None,
         address_mode_w: None,
-        data: ByteArray::<32>::new(*blob_hash.as_bytes()),
-        mag_filter: None,
-        min_filter: None,
-        mipmap_filter: None,
-        srgb: Some(true),
+        data:           ByteArray::<32>::new(*blob_hash.as_bytes()),
+        mag_filter:     None,
+        min_filter:     None,
+        mipmap_filter:  None,
+        srgb:           Some(true),
     };
     reconcile_prim(
         &image_meta,
@@ -202,7 +224,7 @@ fn test_material_relationship(mut ctx: TestContext) {
 
 fn reconcile_relationship_only(meta: &loro::LoroMap, relationships: BTreeMap<String, String>) {
     let prim = PrimMeta {
-        attributes: None,
+        attributes:    None,
         relationships: Some(relationships),
     };
     prim.reconcile(RootReconciler::new(meta.clone()))

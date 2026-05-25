@@ -1,15 +1,34 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::Arc,
+    time::Duration,
+};
 
 use bevy::prelude::*;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
-    router::{RouterBuilderFn, RouterBuilderFnTarget},
+    router::{
+        RouterBuilderFn,
+        RouterBuilderFnTarget,
+    },
 };
-use bevy_wds::{LocalActor, LocalBlobs};
+use bevy_wds::{
+    LocalActor,
+    LocalBlobs,
+};
 use iroh::Endpoint;
-use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
-use wds::{DataStore, Identity};
-use xdid::methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair};
+use unavi_util::{
+    async_commands::AsyncCommands,
+    async_task::spawn_async_task,
+};
+use wds::{
+    DataStore,
+    Identity,
+};
+use xdid::methods::key::{
+    DidKeyPair,
+    PublicKey,
+    p256::P256KeyPair,
+};
 
 pub fn spawn_actors(trigger: On<Add, IrohEndpoint>, endpoints: Query<&IrohEndpoint>) {
     let entity = trigger.entity;

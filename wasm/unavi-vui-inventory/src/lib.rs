@@ -3,11 +3,20 @@ use wired_prelude::prelude::*;
 use crate::{
     unavi::{
         shapes::api::Cuboid,
-        vui_module::api::{ModuleEvent, VuiModule},
+        vui_module::api::{
+            ModuleEvent,
+            VuiModule,
+        },
     },
     wired::scene::{
         api::self_document,
-        types::{Material, Prim, RigidBody, RigidBodyKind, Xform},
+        types::{
+            Material,
+            Prim,
+            RigidBody,
+            RigidBodyKind,
+            Xform,
+        },
     },
 };
 
@@ -67,20 +76,20 @@ const fn material(base_color: Option<Color>) -> Material {
 
 const fn static_body() -> RigidBody {
     RigidBody {
-        kind: RigidBodyKind::Static,
+        kind:            RigidBodyKind::Static,
         angular_damping: None,
-        friction: None,
-        linear_damping: None,
-        mass: None,
-        restitution: None,
+        friction:        None,
+        linear_damping:  None,
+        mass:            None,
+        restitution:     None,
     }
 }
 
 struct Script {
-    root: Prim,
-    _icon: Prim,
-    module: VuiModule,
-    color: Color,
+    root:         Prim,
+    _icon:        Prim,
+    module:       VuiModule,
+    color:        Color,
     themed_prims: Vec<Prim>,
 }
 
@@ -144,8 +153,8 @@ impl ScriptBehavior for Script {
                 ModuleEvent::Activate(t) => {
                     self.root.set_xform(Some(Xform {
                         translation: t.translation,
-                        rotation: t.rotation,
-                        scale: t.scale,
+                        rotation:    t.rotation,
+                        scale:       t.scale,
                     }));
                 }
                 ModuleEvent::Deactivate => {

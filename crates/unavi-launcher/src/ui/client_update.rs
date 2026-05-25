@@ -2,7 +2,10 @@ use dioxus::prelude::*;
 use tracing::error;
 
 use super::app::Route;
-use crate::update::{UpdateStatus, client};
+use crate::update::{
+    UpdateStatus,
+    client,
+};
 
 #[component]
 pub fn ClientUpdate() -> Element {

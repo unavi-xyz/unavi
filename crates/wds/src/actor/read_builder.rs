@@ -4,17 +4,22 @@ use anyhow::Context;
 use blake3::Hash;
 use iroh::EndpointAddr;
 use loro::LoroDoc;
-use tracing::{debug, warn};
-
-use crate::{api::ReadRecord, error::ApiError};
+use tracing::{
+    debug,
+    warn,
+};
 
 use super::Actor;
+use crate::{
+    api::ReadRecord,
+    error::ApiError,
+};
 
 /// Builder for reading records with optional sync fallbacks.
 pub struct ReadBuilder {
-    actor: Actor,
-    record_id: Hash,
-    ttl: Duration,
+    actor:        Actor,
+    record_id:    Hash,
+    ttl:          Duration,
     sync_sources: Vec<EndpointAddr>,
 }
 

@@ -1,16 +1,37 @@
-use anyhow::{Context, bail};
+use anyhow::{
+    Context,
+    bail,
+};
 use blake3::Hash;
 use bytes::BytesMut;
-use futures::{SinkExt, StreamExt};
+use futures::{
+    SinkExt,
+    StreamExt,
+};
 use iroh::EndpointAddr;
-use iroh_blobs::{BlobFormat, HashAndFormat};
-use tokio_util::codec::{Framed, LengthDelimitedCodec};
-use tracing::{debug, warn};
-use xdid::{core::did::Did, methods::key::Signer};
-
-use crate::{StoreContext, auth::AuthService, sync::combined_stream::CombinedStream};
+use iroh_blobs::{
+    BlobFormat,
+    HashAndFormat,
+};
+use tokio_util::codec::{
+    Framed,
+    LengthDelimitedCodec,
+};
+use tracing::{
+    debug,
+    warn,
+};
+use xdid::{
+    core::did::Did,
+    methods::key::Signer,
+};
 
 use super::SyncMsg;
+use crate::{
+    StoreContext,
+    auth::AuthService,
+    sync::combined_stream::CombinedStream,
+};
 
 pub async fn sync_to_remote<S>(
     did: Did,
@@ -92,7 +113,7 @@ where
                 .fetch(
                     blob_conn.clone(),
                     HashAndFormat {
-                        hash: iroh_hash,
+                        hash:   iroh_hash,
                         format: BlobFormat::Raw,
                     },
                 )

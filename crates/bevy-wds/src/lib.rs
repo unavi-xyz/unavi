@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use wds::{Blobs, actor::Actor};
+use wds::{
+    Blobs,
+    actor::Actor,
+};
 
 pub mod blob;
 pub mod record;

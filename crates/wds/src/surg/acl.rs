@@ -1,10 +1,17 @@
 use loro::LoroDoc;
 use loro_surgeon::{
-    error::{HydrateError, ReconcileError},
+    Hydrate,
+    Reconcile,
+    error::{
+        HydrateError,
+        ReconcileError,
+    },
     reconcile::RootReconciler,
-    {Hydrate, Reconcile},
 };
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use wired_records::did::HydratedDid;
 use xdid::core::did::Did;
 
@@ -13,9 +20,9 @@ use xdid::core::did::Did;
 #[loro(default)]
 pub struct Acl {
     pub public: bool,
-    manage: Vec<HydratedDid>,
-    read: Vec<HydratedDid>,
-    write: Vec<HydratedDid>,
+    manage:     Vec<HydratedDid>,
+    read:       Vec<HydratedDid>,
+    write:      Vec<HydratedDid>,
 }
 
 impl Acl {
@@ -116,8 +123,8 @@ mod tests {
         let acl = Acl {
             public: true,
             manage: vec![HydratedDid(did.clone())],
-            write: vec![HydratedDid(did.clone())],
-            read: vec![HydratedDid(did.clone())],
+            write:  vec![HydratedDid(did.clone())],
+            read:   vec![HydratedDid(did.clone())],
         };
 
         acl.save(&doc).expect("save failed");

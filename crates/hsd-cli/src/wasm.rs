@@ -1,14 +1,25 @@
 use std::{
     collections::HashMap,
-    path::{Path, PathBuf},
+    path::{
+        Path,
+        PathBuf,
+    },
 };
 
-use anyhow::{Context, Result, ensure};
+use anyhow::{
+    Context,
+    Result,
+    ensure,
+};
 use blake3::Hash;
 
 use crate::{
     blobs::write_blob,
-    cargo::{derive_name, find_lib_deps, read_cargo_name},
+    cargo::{
+        derive_name,
+        find_lib_deps,
+        read_cargo_name,
+    },
 };
 
 pub fn build_wasm_for_crate<S: std::hash::BuildHasher>(

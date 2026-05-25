@@ -1,22 +1,46 @@
 use std::{
-    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
+    net::{
+        Ipv4Addr,
+        SocketAddr,
+        SocketAddrV4,
+    },
     sync::LazyLock,
     time::Duration,
 };
 
 use axum::Json;
 use directories::ProjectDirs;
-use iroh::{Endpoint, EndpointId, endpoint::presets::N0};
+use iroh::{
+    Endpoint,
+    EndpointId,
+    endpoint::presets::N0,
+};
 use tower_http::cors::CorsLayer;
 use tracing::info;
 use wds::DataStore;
 use xdid::{
     core::{
-        did::{Did, MethodId, MethodName},
-        did_url::{DidUrl, RelativeDidUrl, RelativeDidUrlPath},
-        document::{Document, ServiceEndpoint, VerificationMethod, VerificationMethodMap},
+        did::{
+            Did,
+            MethodId,
+            MethodName,
+        },
+        did_url::{
+            DidUrl,
+            RelativeDidUrl,
+            RelativeDidUrlPath,
+        },
+        document::{
+            Document,
+            ServiceEndpoint,
+            VerificationMethod,
+            VerificationMethodMap,
+        },
     },
-    methods::key::{DidKeyPair, PublicKey},
+    methods::key::{
+        DidKeyPair,
+        PublicKey,
+    },
 };
 
 mod key_pair;
@@ -29,7 +53,7 @@ pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
 
 pub struct ServerOptions {
     pub in_memory: bool,
-    pub port: u16,
+    pub port:      u16,
 }
 
 /// Run the UNAVI server.
@@ -76,7 +100,7 @@ fn create_did(port: u16) -> (Did, String) {
     let domain_encoded = domain.replace(':', "%3A");
     let did = Did {
         method_name: MethodName("web".into()),
-        method_id: MethodId(domain_encoded),
+        method_id:   MethodId(domain_encoded),
     };
     (did, domain)
 }
@@ -95,37 +119,41 @@ fn create_did_document_route(
             "/.well-known/did.json",
             axum::routing::get(move || async move {
                 let doc = Document {
-                    id: did.clone(),
-                    also_known_as: None,
-                    assertion_method: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
-                        path: RelativeDidUrlPath::Empty,
-                        query: None,
-                        fragment: Some(KEY_FRAGMENT.into()),
-                    })]),
-                    authentication: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
-                        path: RelativeDidUrlPath::Empty,
-                        query: None,
-                        fragment: Some(KEY_FRAGMENT.into()),
-                    })]),
+                    id:                    did.clone(),
+                    also_known_as:         None,
+                    assertion_method:      Some(vec![VerificationMethod::RelativeUrl(
+                        RelativeDidUrl {
+                            path:     RelativeDidUrlPath::Empty,
+                            query:    None,
+                            fragment: Some(KEY_FRAGMENT.into()),
+                        },
+                    )]),
+                    authentication:        Some(vec![VerificationMethod::RelativeUrl(
+                        RelativeDidUrl {
+                            path:     RelativeDidUrlPath::Empty,
+                            query:    None,
+                            fragment: Some(KEY_FRAGMENT.into()),
+                        },
+                    )]),
                     capability_delegation: None,
                     capability_invocation: None,
-                    controller: None,
-                    key_agreement: None,
-                    service: Some(vec![ServiceEndpoint {
-                        id: "wds".into(),
+                    controller:            None,
+                    key_agreement:         None,
+                    service:               Some(vec![ServiceEndpoint {
+                        id:  "wds".into(),
                         typ: vec![endpoint_id.to_string()],
                     }]),
-                    verification_method: Some(vec![VerificationMethodMap {
-                        id: DidUrl {
-                            did: did.clone(),
-                            fragment: Some(KEY_FRAGMENT.into()),
-                            query: None,
+                    verification_method:   Some(vec![VerificationMethodMap {
+                        id:                   DidUrl {
+                            did:          did.clone(),
+                            fragment:     Some(KEY_FRAGMENT.into()),
+                            query:        None,
                             path_abempty: None,
                         },
-                        controller: did.clone(),
-                        typ: "JsonWebKey2020".into(),
+                        controller:           did.clone(),
+                        typ:                  "JsonWebKey2020".into(),
                         public_key_multibase: None,
-                        public_key_jwk: Some(vc_public.clone()),
+                        public_key_jwk:       Some(vc_public.clone()),
                     }]),
                 };
 

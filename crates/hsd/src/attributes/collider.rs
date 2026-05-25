@@ -1,8 +1,12 @@
 use loro_surgeon::{
+    Hydrate,
+    Reconcile,
     bytes::ByteArray,
-    {Hydrate, Reconcile},
 };
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 use crate::attributes::Attribute;
 
@@ -24,7 +28,7 @@ pub enum ColliderAttr {
     },
     Sphere(f64),
     Trimesh {
-        indices: ByteArray<32>,
+        indices:  ByteArray<32>,
         vertices: ByteArray<32>,
     },
 }

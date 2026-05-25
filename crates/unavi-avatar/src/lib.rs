@@ -2,7 +2,10 @@
 //! Handles loading avatars and applying animations.
 
 use bevy::prelude::*;
-use bevy_vrm::{VrmInstance, VrmPlugins};
+use bevy_vrm::{
+    VrmInstance,
+    VrmPlugins,
+};
 use unavi_assets::default_avatar_path;
 
 pub mod animation;

@@ -5,7 +5,10 @@ use crate::runtime::{
     native::wired::scene::bindings::wired::scene::types::HostDocument,
     shared::{
         self,
-        wired::scene::{document::DocRes, prim::PrimRes},
+        wired::scene::{
+            document::DocRes,
+            prim::PrimRes,
+        },
     },
 };
 

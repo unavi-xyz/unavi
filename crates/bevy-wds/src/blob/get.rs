@@ -1,6 +1,9 @@
 use anyhow::bail;
 use async_channel::Sender;
-use bevy::{prelude::*, tasks::futures_lite::StreamExt};
+use bevy::{
+    prelude::*,
+    tasks::futures_lite::StreamExt,
+};
 use blake3::Hash;
 use bytes::Bytes;
 use tokio::sync::oneshot;
@@ -11,9 +14,9 @@ use crate::LocalBlobs;
 
 #[derive(Event)]
 pub struct GetBlob {
-    pub hash: Hash,
+    pub hash:   Hash,
     pub cancel: Option<oneshot::Receiver<()>>,
-    pub tx: Sender<Bytes>,
+    pub tx:     Sender<Bytes>,
 }
 
 pub(crate) fn on_get_blob(mut req: On<GetBlob>, blobs: Query<&LocalBlobs>) {

@@ -1,13 +1,30 @@
 use std::io::Cursor;
 
-use bevy::{image::ImageSampler, prelude::*, render::render_resource::TextureFormat};
+use bevy::{
+    image::ImageSampler,
+    prelude::*,
+    render::render_resource::TextureFormat,
+};
 use bevy_hsd::attributes::image::HsdImage;
 use hsd::{
-    HSD_CONTAINER_ID, PrimMeta,
-    attributes::{Attribute, Attributes, attributes_map, image::ImageAttr},
+    HSD_CONTAINER_ID,
+    PrimMeta,
+    attributes::{
+        Attribute,
+        Attributes,
+        attributes_map,
+        image::ImageAttr,
+    },
 };
-use image::{ImageFormat, RgbaImage};
-use loro_surgeon::{Reconcile, bytes::ByteArray, reconcile::RootReconciler};
+use image::{
+    ImageFormat,
+    RgbaImage,
+};
+use loro_surgeon::{
+    Reconcile,
+    bytes::ByteArray,
+    reconcile::RootReconciler,
+};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -26,11 +43,11 @@ fn test_image_lifecycle(mut ctx: TestContext) {
         address_mode_u: None,
         address_mode_v: None,
         address_mode_w: None,
-        data: ByteArray::<32>::new([1; 32]),
-        mag_filter: None,
-        min_filter: None,
-        mipmap_filter: None,
-        srgb: None,
+        data:           ByteArray::<32>::new([1; 32]),
+        mag_filter:     None,
+        min_filter:     None,
+        mipmap_filter:  None,
+        srgb:           None,
     };
     reconcile_prim_image(&meta, attr);
 
@@ -76,11 +93,11 @@ fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
         address_mode_u: Some(1),
         address_mode_v: None,
         address_mode_w: None,
-        data: ByteArray::<32>::new(*data_hash.as_bytes()),
-        mag_filter: Some(1),
-        min_filter: None,
-        mipmap_filter: None,
-        srgb: Some(true),
+        data:           ByteArray::<32>::new(*data_hash.as_bytes()),
+        mag_filter:     Some(1),
+        min_filter:     None,
+        mipmap_filter:  None,
+        srgb:           Some(true),
     };
     reconcile_prim_image(&meta, attr);
 

@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    Arc,
+    Mutex,
+};
 
 use bevy::prelude::*;
 use unavi_util::async_task::spawn_async_task;

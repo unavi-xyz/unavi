@@ -1,5 +1,9 @@
-use bevy::{light::light_consts::lux, log::LogPlugin, prelude::*, window::WindowTheme};
-
+use bevy::{
+    light::light_consts::lux,
+    log::LogPlugin,
+    prelude::*,
+    window::WindowTheme,
+};
 use bevy_iroh::endpoint::LoadEndpoint;
 use bitflags::bitflags;
 use iroh::endpoint_info::AddrFilter;
@@ -12,10 +16,8 @@ mod grab;
 mod icon;
 mod scene;
 
-#[cfg(not(target_family = "wasm"))]
-mod assets;
-#[cfg(not(target_family = "wasm"))]
-mod xr;
+#[cfg(not(target_family = "wasm"))] mod assets;
+#[cfg(not(target_family = "wasm"))] mod xr;
 
 bitflags! {
     #[derive(Clone, Copy, Debug, Default)]
@@ -28,10 +30,10 @@ bitflags! {
 }
 
 pub struct UnaviPlugin {
-    pub debug: DebugFlags,
+    pub debug:     DebugFlags,
     pub in_memory: bool,
     pub log_level: Level,
-    pub xr: bool,
+    pub xr:        bool,
 }
 
 const DISABLED_LOGS: &[&str] = &[
@@ -124,7 +126,7 @@ impl Plugin for UnaviPlugin {
             camera::CameraPlugin,
             devtools::DevToolsPlugin {
                 inspector: self.debug.contains(DebugFlags::INSPECTOR),
-                network: self.debug.contains(DebugFlags::NETWORK),
+                network:   self.debug.contains(DebugFlags::NETWORK),
             },
             fade::FadePlugin,
             grab::GrabPlugin,
@@ -137,9 +139,9 @@ impl Plugin for UnaviPlugin {
         .add_systems(Startup, icon::set_window_icon);
 
         app.world_mut().trigger(LoadEndpoint {
-            filter: AddrFilter::default(),
+            filter:                                                          AddrFilter::default(),
             #[cfg(all(feature = "mdns", not(target_family = "wasm")))]
-            mdns: true,
+            mdns:                                                            true,
         });
     }
 }

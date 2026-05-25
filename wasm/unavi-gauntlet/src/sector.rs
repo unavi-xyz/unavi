@@ -1,34 +1,51 @@
-use std::cell::Cell;
-use std::f32::consts::PI;
-
-use crate::{
-    Color, ModuleRef,
-    gauntlet::{
-        BG_ALPHA_BASE, ICON_R, ICON_Z_OFFSET, OUTLINE_COLOR, OUTLINE_WIDTH, OUTLINE_Z, RING_RADIUS,
-        SECTOR_GAP_WORLD, SECTOR_INNER_R, SECTOR_SUBDIVISIONS,
-    },
-    wired::scene::{
-        api::get_document,
-        types::{AlphaMode, Document, Material, Prim, Xform},
-    },
+use std::{
+    cell::Cell,
+    f32::consts::PI,
 };
 
 use wired_prelude::prelude::*;
+
+use crate::{
+    Color,
+    ModuleRef,
+    gauntlet::{
+        BG_ALPHA_BASE,
+        ICON_R,
+        ICON_Z_OFFSET,
+        OUTLINE_COLOR,
+        OUTLINE_WIDTH,
+        OUTLINE_Z,
+        RING_RADIUS,
+        SECTOR_GAP_WORLD,
+        SECTOR_INNER_R,
+        SECTOR_SUBDIVISIONS,
+    },
+    wired::scene::{
+        api::get_document,
+        types::{
+            AlphaMode,
+            Document,
+            Material,
+            Prim,
+            Xform,
+        },
+    },
+};
 
 const IDENTITY_QUAT: Quat = Quat::IDENTITY;
 
 pub struct Sector {
     pub module_doc_id: Vec<u8>,
-    pub active_state: Cell<bool>,
-    pub bg_color: Color,
-    pub bg_material: std::cell::RefCell<Material>,
-    pub bg_prim: Prim,
-    pub name: String,
-    pub outline_prim: Prim,
-    pub raise_t: Cell<f32>,
-    pub root: Prim,
-    icon_prim: Prim,
-    remote_icon: Option<Prim>,
+    pub active_state:  Cell<bool>,
+    pub bg_color:      Color,
+    pub bg_material:   std::cell::RefCell<Material>,
+    pub bg_prim:       Prim,
+    pub name:          String,
+    pub outline_prim:  Prim,
+    pub raise_t:       Cell<f32>,
+    pub root:          Prim,
+    icon_prim:         Prim,
+    remote_icon:       Option<Prim>,
 }
 
 impl Sector {
@@ -47,8 +64,8 @@ impl Sector {
         let g = self.icon_prim.global_xform();
         remote.set_xform(Some(Xform {
             translation: g.translation,
-            rotation: g.rotation,
-            scale: g.scale,
+            rotation:    g.rotation,
+            scale:       g.scale,
         }));
     }
 }
@@ -80,36 +97,36 @@ const fn scale(scale: Vec3) -> Xform {
 
 fn make_sector(doc: &Document, i: usize, n: usize, module: &ModuleRef, color: Color) -> Sector {
     let bg_material = Material {
-        alpha_cutoff: None,
-        alpha_mode: Some(AlphaMode::Blend),
-        base_color: Some(Color::rgba(color.r, color.g, color.b, BG_ALPHA_BASE)),
-        base_color_texture: None,
-        double_sided: Some(true),
-        emissive: None,
-        emissive_texture: None,
-        metallic: None,
+        alpha_cutoff:               None,
+        alpha_mode:                 Some(AlphaMode::Blend),
+        base_color:                 Some(Color::rgba(color.r, color.g, color.b, BG_ALPHA_BASE)),
+        base_color_texture:         None,
+        double_sided:               Some(true),
+        emissive:                   None,
+        emissive_texture:           None,
+        metallic:                   None,
         metallic_roughness_texture: None,
-        normal_texture: None,
-        occlusion_texture: None,
-        roughness: None,
+        normal_texture:             None,
+        occlusion_texture:          None,
+        roughness:                  None,
     };
 
     let bg = make_sector_prim(doc, i, n);
     bg.set_material(Some(&bg_material));
 
     let outline_mat = Material {
-        alpha_cutoff: None,
-        alpha_mode: None,
-        base_color: Some(OUTLINE_COLOR),
-        base_color_texture: None,
-        double_sided: Some(true),
-        emissive: None,
-        emissive_texture: None,
-        metallic: None,
+        alpha_cutoff:               None,
+        alpha_mode:                 None,
+        base_color:                 Some(OUTLINE_COLOR),
+        base_color_texture:         None,
+        double_sided:               Some(true),
+        emissive:                   None,
+        emissive_texture:           None,
+        metallic:                   None,
         metallic_roughness_texture: None,
-        normal_texture: None,
-        occlusion_texture: None,
-        roughness: None,
+        normal_texture:             None,
+        occlusion_texture:          None,
+        roughness:                  None,
     };
     let outline = make_outline_prim(doc, i, n);
     outline.set_material(Some(&outline_mat));

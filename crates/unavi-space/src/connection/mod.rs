@@ -1,17 +1,27 @@
-use std::sync::LazyLock;
+use std::sync::{
+    LazyLock,
+    Mutex,
+};
 
-use bevy::{platform::collections::HashMap, prelude::*};
+use bevy::{
+    platform::collections::HashMap,
+    prelude::*,
+};
 use bevy_iroh::{
     endpoint::IrohEndpoint,
-    router::{RouterBuilderFn, RouterBuilderFnTarget},
+    router::{
+        RouterBuilderFn,
+        RouterBuilderFnTarget,
+    },
 };
 use iroh::EndpointId;
-use std::sync::Mutex;
-
 use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
 
-use crate::{connection::ecs::PeerStream, peer::Peer};
+use crate::{
+    connection::ecs::PeerStream,
+    peer::Peer,
+};
 
 pub mod ecs;
 mod inbound;

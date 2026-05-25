@@ -1,14 +1,30 @@
-use avian3d::prelude::{AngularDamping, Friction, LinearDamping, Mass, Restitution, RigidBody};
+use avian3d::prelude::{
+    AngularDamping,
+    Friction,
+    LinearDamping,
+    Mass,
+    Restitution,
+    RigidBody,
+};
 use bevy::prelude::*;
 use bevy_hsd::attributes::collider::DisabledRigidBody;
 use hsd::{
-    HSD_CONTAINER_ID, PrimMeta,
+    HSD_CONTAINER_ID,
+    PrimMeta,
     attributes::{
-        Attribute, Attributes, attributes_map,
-        rigid_body::{RigidBodyAttr, RigidBodyKind},
+        Attribute,
+        Attributes,
+        attributes_map,
+        rigid_body::{
+            RigidBodyAttr,
+            RigidBodyKind,
+        },
     },
 };
-use loro_surgeon::{Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{
+    Reconcile,
+    reconcile::RootReconciler,
+};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -100,11 +116,11 @@ fn test_rigid_body_props(mut ctx: TestContext) {
     reconcile_rigid_body(
         &meta,
         RigidBodyAttr {
-            kind: Some(RigidBodyKind::Dynamic),
-            friction: Some(0.5),
-            restitution: Some(0.3),
-            mass: Some(2.0),
-            linear_damping: Some(0.1),
+            kind:            Some(RigidBodyKind::Dynamic),
+            friction:        Some(0.5),
+            restitution:     Some(0.3),
+            mass:            Some(2.0),
+            linear_damping:  Some(0.1),
             angular_damping: Some(0.2),
         },
     );
@@ -116,23 +132,23 @@ fn test_rigid_body_props(mut ctx: TestContext) {
 
     let mut q = world.query::<&Friction>();
     let f = q.iter(world).next().expect("Friction");
-    assert!((f.dynamic_coefficient - 0.5).abs() < 1e-5);
+    assert!((f.dynamic_coefficient - 0.5).abs() < 1.0e-5);
 
     let mut q = world.query::<&Restitution>();
     let r = q.iter(world).next().expect("Restitution");
-    assert!((r.coefficient - 0.3).abs() < 1e-5);
+    assert!((r.coefficient - 0.3).abs() < 1.0e-5);
 
     let mut q = world.query::<&Mass>();
     let m = q.iter(world).next().expect("Mass");
-    assert!((m.0 - 2.0).abs() < 1e-5);
+    assert!((m.0 - 2.0).abs() < 1.0e-5);
 
     let mut q = world.query::<&LinearDamping>();
     let ld = q.iter(world).next().expect("LinearDamping");
-    assert!((ld.0 - 0.1).abs() < 1e-5);
+    assert!((ld.0 - 0.1).abs() < 1.0e-5);
 
     let mut q = world.query::<&AngularDamping>();
     let ad = q.iter(world).next().expect("AngularDamping");
-    assert!((ad.0 - 0.2).abs() < 1e-5);
+    assert!((ad.0 - 0.2).abs() < 1.0e-5);
 }
 
 #[traced_test]

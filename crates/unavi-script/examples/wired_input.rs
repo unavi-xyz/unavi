@@ -1,11 +1,26 @@
 use bevy::{
-    log::{DEFAULT_FILTER, LogPlugin},
+    log::{
+        DEFAULT_FILTER,
+        LogPlugin,
+    },
     prelude::*,
 };
-use bevy_hsd::load::{LoadHsd, on_load_spawn_doc};
-use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
-use bevy_wds::{LocalActor, LocalBlobs};
-use unavi_script::permissions::{ApiName, ApiPermissions};
+use bevy_hsd::load::{
+    LoadHsd,
+    on_load_spawn_doc,
+};
+use bevy_panorbit_camera::{
+    PanOrbitCamera,
+    PanOrbitCameraPlugin,
+};
+use bevy_wds::{
+    LocalActor,
+    LocalBlobs,
+};
+use unavi_script::permissions::{
+    ApiName,
+    ApiPermissions,
+};
 
 use crate::util::create_test_wds;
 

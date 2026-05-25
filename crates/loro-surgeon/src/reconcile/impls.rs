@@ -4,7 +4,12 @@ use crate::{
     error::ReconcileError,
     hydrate::Hydrate,
     inline::ToInlineValue,
-    reconcile::{LoadKey, NoKey, Reconcile, Reconciler},
+    reconcile::{
+        LoadKey,
+        NoKey,
+        Reconcile,
+        Reconciler,
+    },
 };
 
 impl Reconcile for bool {
@@ -125,7 +130,7 @@ impl Reconcile for LoroValue {
             }
             Self::Container(_) => Err(ReconcileError::TypeMismatch {
                 expected: "value",
-                found: "container ref",
+                found:    "container ref",
             }),
         }
     }

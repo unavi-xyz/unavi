@@ -5,7 +5,11 @@ use wasm_bindgen::prelude::*;
 
 use crate::runtime::{
     Runtime,
-    shared::{self, Api, wired::wds::QueryFilter},
+    shared::{
+        self,
+        Api,
+        wired::wds::QueryFilter,
+    },
 };
 
 #[wasm_bindgen]

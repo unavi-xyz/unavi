@@ -1,14 +1,17 @@
 use std::collections::BTreeMap;
 
 use blake3::Hash;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use smol_str::SmolStr;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Schema {
-    id: SmolStr,
+    id:      SmolStr,
     version: u32,
-    layout: Field,
+    layout:  Field,
 }
 
 impl Schema {
@@ -53,7 +56,7 @@ pub enum Field {
     RecordId,
     Restricted {
         actions: Vec<Action>,
-        value: Box<Self>,
+        value:   Box<Self>,
     },
     String,
     /// Fixed keys with heterogeneous types per field.

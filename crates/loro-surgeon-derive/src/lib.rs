@@ -6,7 +6,11 @@ mod reconcile;
 mod type_util;
 
 use proc_macro::TokenStream;
-use syn::{Data, DeriveInput, parse_macro_input};
+use syn::{
+    Data,
+    DeriveInput,
+    parse_macro_input,
+};
 
 #[proc_macro_derive(Hydrate, attributes(loro, key))]
 pub fn derive_hydrate(input: TokenStream) -> TokenStream {

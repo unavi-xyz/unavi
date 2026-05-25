@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::shared::{self, Api};
@@ -21,25 +22,33 @@ impl DocHandle {
 impl Drop for DocHandle {
     fn drop(&mut self) {
         if self.rep != u32::MAX {
-            let _ = shared::wired::scene::document::on_drop(&self.api, self.rep);
+            let api = Arc::clone(&self.api);
+            let rep = self.rep;
+            spawn_async_task(async move {
+                let _ = shared::wired::scene::document::on_drop(&api, rep).await;
+            });
         }
     }
 }
 
 #[wasm_bindgen]
 impl DocHandle {
-    pub fn id(&self) -> Vec<u8> {
-        shared::wired::scene::document::id(&self.api, self.rep).unwrap_or_default()
+    pub async fn id(&self) -> Vec<u8> {
+        shared::wired::scene::document::id(&self.api, self.rep)
+            .await
+            .unwrap_or_default()
     }
 
     #[wasm_bindgen(js_name = "clone")]
-    pub fn clone_doc(&self) -> Option<Self> {
-        let rep = shared::wired::scene::document::clone(&self.api, self.rep).ok()?;
+    pub async fn clone_doc(&self) -> Option<Self> {
+        let rep = shared::wired::scene::document::clone(&self.api, self.rep)
+            .await
+            .ok()?;
         Some(Self::new(rep, Arc::clone(&self.api)))
     }
 
-    pub fn roots(&self) -> js_sys::Array {
-        let Ok(reps) = shared::wired::scene::document::roots(&self.api, self.rep) else {
+    pub async fn roots(&self) -> js_sys::Array {
+        let Ok(reps) = shared::wired::scene::document::roots(&self.api, self.rep).await else {
             return js_sys::Array::new();
         };
         reps.into_iter()
@@ -47,8 +56,8 @@ impl DocHandle {
             .collect()
     }
 
-    pub fn prims(&self) -> js_sys::Array {
-        let Ok(reps) = shared::wired::scene::document::prims(&self.api, self.rep) else {
+    pub async fn prims(&self) -> js_sys::Array {
+        let Ok(reps) = shared::wired::scene::document::prims(&self.api, self.rep).await else {
             return js_sys::Array::new();
         };
         reps.into_iter()
@@ -57,21 +66,25 @@ impl DocHandle {
     }
 
     #[wasm_bindgen(js_name = "getPrim")]
-    pub fn get_prim(&self, id: String) -> Option<PrimHandle> {
-        let rep = shared::wired::scene::document::get_prim(&self.api, self.rep, id).ok()??;
+    pub async fn get_prim(&self, id: String) -> Option<PrimHandle> {
+        let rep = shared::wired::scene::document::get_prim(&self.api, self.rep, id)
+            .await
+            .ok()??;
         Some(PrimHandle::new(rep, Arc::clone(&self.api)))
     }
 
     #[wasm_bindgen(js_name = "createPrim")]
-    pub fn create_prim(&self) -> PrimHandle {
-        let rep =
-            shared::wired::scene::document::create_prim(&self.api, self.rep).unwrap_or(u32::MAX);
+    pub async fn create_prim(&self) -> PrimHandle {
+        let rep = shared::wired::scene::document::create_prim(&self.api, self.rep)
+            .await
+            .unwrap_or(u32::MAX);
         PrimHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "removePrim")]
-    pub fn remove_prim(&self, value: &PrimHandle) -> Result<(), String> {
+    pub async fn remove_prim(&self, value: &PrimHandle) -> Result<(), String> {
         shared::wired::scene::document::remove_prim(&self.api, value.rep())
+            .await
             .map_err(|e| e.to_string())
     }
 }

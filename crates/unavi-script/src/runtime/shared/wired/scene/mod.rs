@@ -72,8 +72,8 @@ fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()>
     Ok(())
 }
 
-pub fn self_prim(api: &Api) -> anyhow::Result<u32> {
-    let mut scene = api.wired_scene.try_lock()?;
+pub async fn self_prim(api: &Api) -> anyhow::Result<u32> {
+    let mut scene = api.wired_scene.lock().await;
     Ok(scene.prims.insert(PrimRes {
         doc: Arc::clone(&api.doc),
         doc_id: api.doc_id,
@@ -82,8 +82,8 @@ pub fn self_prim(api: &Api) -> anyhow::Result<u32> {
     }))
 }
 
-pub fn self_document(api: &Api) -> anyhow::Result<u32> {
-    let mut scene = api.wired_scene.try_lock()?;
+pub async fn self_document(api: &Api) -> anyhow::Result<u32> {
+    let mut scene = api.wired_scene.lock().await;
     Ok(scene.docs.insert(DocRes {
         doc: Arc::clone(&api.doc),
         id: api.doc_id,
@@ -131,11 +131,11 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
     Ok(Some(scene.docs.insert(DocRes { doc, id })))
 }
 
-pub fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
+pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = Hash::from_slice(&id)?;
     validate_firewall(&api.doc_id, &id, Channel::SceneWrite)?;
 
-    let mut scene = api.wired_scene.try_lock()?;
+    let mut scene = api.wired_scene.lock().await;
     let key = scene
         .docs
         .items

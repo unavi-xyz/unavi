@@ -62,6 +62,7 @@ impl HostWds for Runtime {
         filter: Option<WitFilter>,
     ) -> wasmtime::Result<Resource<QueryFutureRes>> {
         shared::wired::wds::query(&self.api, self_.rep(), filter.map(Into::into))
+            .await
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -72,6 +73,7 @@ impl HostWds for Runtime {
         record_id: Vec<u8>,
     ) -> wasmtime::Result<Resource<ReadFutureRes>> {
         shared::wired::wds::read(&self.api, self_.rep(), record_id)
+            .await
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -82,12 +84,15 @@ impl HostWds for Runtime {
         blob_id: Vec<u8>,
     ) -> wasmtime::Result<Resource<BlobFutureRes>> {
         shared::wired::wds::get_blob(&self.api, self_.rep(), blob_id)
+            .await
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn drop(&mut self, rep: Resource<WdsRes>) -> wasmtime::Result<()> {
-        shared::wired::wds::wds_drop(&self.api, rep.rep()).map_err(wasmtime::Error::from_anyhow)
+        shared::wired::wds::wds_drop(&self.api, rep.rep())
+            .await
+            .map_err(wasmtime::Error::from_anyhow)
     }
 }
 
@@ -97,11 +102,13 @@ impl HostBlobFuture for Runtime {
         self_: Resource<BlobFutureRes>,
     ) -> wasmtime::Result<Option<Result<Vec<u8>, ()>>> {
         shared::wired::wds::blob_future_poll(&self.api, self_.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn drop(&mut self, rep: Resource<BlobFutureRes>) -> wasmtime::Result<()> {
         shared::wired::wds::blob_future_drop(&self.api, rep.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 }
@@ -112,11 +119,13 @@ impl HostQueryFuture for Runtime {
         self_: Resource<QueryFutureRes>,
     ) -> wasmtime::Result<Option<Result<Vec<Vec<u8>>, ()>>> {
         shared::wired::wds::query_future_poll(&self.api, self_.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn drop(&mut self, rep: Resource<QueryFutureRes>) -> wasmtime::Result<()> {
         shared::wired::wds::query_future_drop(&self.api, rep.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 }
@@ -127,12 +136,14 @@ impl HostReadFuture for Runtime {
         self_: Resource<ReadFutureRes>,
     ) -> wasmtime::Result<Option<Result<WitRecord, ()>>> {
         shared::wired::wds::read_future_poll(&self.api, self_.rep())
+            .await
             .map(|opt| opt.map(|r| r.map(Into::into)))
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn drop(&mut self, rep: Resource<ReadFutureRes>) -> wasmtime::Result<()> {
         shared::wired::wds::read_future_drop(&self.api, rep.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 }
@@ -140,6 +151,7 @@ impl HostReadFuture for Runtime {
 impl bindings::wired::wds::api::Host for Runtime {
     async fn get_wds(&mut self) -> wasmtime::Result<Resource<Wds>> {
         shared::wired::wds::get_wds(&self.api)
+            .await
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }

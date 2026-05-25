@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use wasmtime::component::Resource;
 
 use crate::runtime::{
@@ -54,6 +52,7 @@ impl bindings::wired::event::types::Host for Runtime {}
 impl HostEventReceptor for Runtime {
     async fn poll(&mut self, self_: Resource<EventReceptorRes>) -> wasmtime::Result<Option<Event>> {
         let Some(event) = shared::wired::event::receptor_poll(&self.api, self_.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)?
         else {
             return Ok(None);
@@ -65,18 +64,12 @@ impl HostEventReceptor for Runtime {
                 distance,
                 node: AbsoluteNodeId { doc: doc_id, node },
             } => {
-                let prim_rep = self
-                    .api
-                    .wired_scene
-                    .try_lock()
-                    .map_err(|e| wasmtime::Error::msg(e.to_string()))?
-                    .prims
-                    .insert(PrimRes {
-                        doc: Arc::clone(&self.api.doc),
-                        doc_id,
-                        id: node,
-                        is_proxy: true,
-                    });
+                let prim_rep = self.api.wired_scene.lock().await.prims.insert(PrimRes {
+                    doc: std::sync::Arc::clone(&self.api.doc),
+                    doc_id,
+                    id: node,
+                    is_proxy: true,
+                });
                 WitSenderScope::Spatial(SpatialSender {
                     distance,
                     prim: Resource::new_own(prim_rep),
@@ -97,6 +90,7 @@ impl HostEventReceptor for Runtime {
 
     async fn drop(&mut self, rep: Resource<EventReceptorRes>) -> wasmtime::Result<()> {
         shared::wired::event::receptor_drop(&self.api, rep.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 }
@@ -109,6 +103,7 @@ impl bindings::wired::event::api::Host for Runtime {
         filter: WitFilter,
     ) -> wasmtime::Result<()> {
         shared::wired::event::emit(&self.api, channel, payload, wit_filter_to_shared(filter))
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
@@ -118,6 +113,7 @@ impl bindings::wired::event::api::Host for Runtime {
         filter: WitFilter,
     ) -> wasmtime::Result<Resource<EventReceptor>> {
         shared::wired::event::listen(&self.api, channels, wit_filter_to_shared(filter))
+            .await
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }

@@ -139,9 +139,10 @@ pub enum PrimRigidBodyKind {
     Static,
 }
 
-fn get_prim(api: &Api, rep: u32) -> anyhow::Result<PrimRes> {
+async fn get_prim(api: &Api, rep: u32) -> anyhow::Result<PrimRes> {
     api.wired_scene
-        .try_lock()?
+        .lock()
+        .await
         .prims
         .get(rep)
         .cloned()
@@ -195,25 +196,26 @@ const fn from_maybe<T>(value: Option<T>) -> Option<T> {
     value
 }
 
-pub fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
+pub async fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
     api.wired_scene
-        .try_lock()?
+        .lock()
+        .await
         .prims
         .insert_clone(rep)
         .ok_or_else(|| anyhow::anyhow!("invalid prim"))
 }
 
-pub fn on_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
-    api.wired_scene.try_lock()?.prims.remove(rep);
+pub async fn on_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+    api.wired_scene.lock().await.prims.remove(rep);
     Ok(())
 }
 
-pub fn id(api: &Api, rep: u32) -> anyhow::Result<String> {
-    Ok(get_prim(api, rep)?.id.to_string())
+pub async fn id(api: &Api, rep: u32) -> anyhow::Result<String> {
+    Ok(get_prim(api, rep).await?.id.to_string())
 }
 
-pub fn parent(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
-    let prim = get_prim(api, rep)?;
+pub async fn parent(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
+    let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(None);
     }
@@ -221,7 +223,7 @@ pub fn parent(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
     let Some(TreeParentId::Node(parent_id)) = tree.parent(prim.id) else {
         return Ok(None);
     };
-    let mut scene = api.wired_scene.try_lock()?;
+    let mut scene = api.wired_scene.lock().await;
     Ok(Some(scene.prims.insert(PrimRes {
         doc: prim.doc,
         doc_id: prim.doc_id,
@@ -230,14 +232,14 @@ pub fn parent(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
     })))
 }
 
-pub fn children(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
-    let prim = get_prim(api, rep)?;
+pub async fn children(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
+    let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(Vec::new());
     }
     let tree = prim.doc.get_tree(&*HSD_CONTAINER_ID);
     let child_ids = tree.children(prim.id).unwrap_or_default();
-    let mut scene = api.wired_scene.try_lock()?;
+    let mut scene = api.wired_scene.lock().await;
     Ok(child_ids
         .into_iter()
         .map(|id| {
@@ -251,9 +253,9 @@ pub fn children(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
         .collect())
 }
 
-pub fn add_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<()> {
+pub async fn add_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<()> {
     let (parent, child) = {
-        let scene = api.wired_scene.try_lock()?;
+        let scene = api.wired_scene.lock().await;
         let parent = scene
             .prims
             .get(self_rep)
@@ -280,9 +282,9 @@ pub fn add_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<()>
     Ok(())
 }
 
-pub fn remove_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<()> {
+pub async fn remove_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<()> {
     let (parent, child) = {
-        let scene = api.wired_scene.try_lock()?;
+        let scene = api.wired_scene.lock().await;
         let parent = scene
             .prims
             .get(self_rep)
@@ -305,8 +307,8 @@ pub fn remove_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<
     Ok(())
 }
 
-pub fn name(api: &Api, rep: u32) -> anyhow::Result<Option<String>> {
-    let prim = get_prim(api, rep)?;
+pub async fn name(api: &Api, rep: u32) -> anyhow::Result<Option<String>> {
+    let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(None);
     }
@@ -314,8 +316,8 @@ pub fn name(api: &Api, rep: u32) -> anyhow::Result<Option<String>> {
     Ok(read_attr::<NameAttr>(&meta).map(|n| n.0))
 }
 
-pub fn set_name(api: &Api, rep: u32, value: Option<String>) -> anyhow::Result<()> {
-    let prim = get_prim(api, rep)?;
+pub async fn set_name(api: &Api, rep: u32, value: Option<String>) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     match value {
@@ -325,8 +327,8 @@ pub fn set_name(api: &Api, rep: u32, value: Option<String>) -> anyhow::Result<()
     Ok(())
 }
 
-pub fn asset(api: &Api, rep: u32) -> anyhow::Result<Option<Vec<u8>>> {
-    let prim = get_prim(api, rep)?;
+pub async fn asset(api: &Api, rep: u32) -> anyhow::Result<Option<Vec<u8>>> {
+    let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(None);
     }
@@ -334,8 +336,8 @@ pub fn asset(api: &Api, rep: u32) -> anyhow::Result<Option<Vec<u8>>> {
     Ok(read_attr::<AssetAttr>(&meta).map(|a| a.0.0.to_vec()))
 }
 
-pub fn set_asset(api: &Api, rep: u32, value: Option<Vec<u8>>) -> anyhow::Result<()> {
-    let prim = get_prim(api, rep)?;
+pub async fn set_asset(api: &Api, rep: u32, value: Option<Vec<u8>>) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     match value {
@@ -351,8 +353,8 @@ pub fn set_asset(api: &Api, rep: u32, value: Option<Vec<u8>>) -> anyhow::Result<
     Ok(())
 }
 
-pub fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<XformAttr>> {
-    let prim = get_prim(api, rep)?;
+pub async fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<XformAttr>> {
+    let prim = get_prim(api, rep).await?;
     let local = NODE_TRANSFORM_REGISTRY
         .read()
         .get(&AbsoluteNodeId {
@@ -371,8 +373,8 @@ pub fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<XformAttr>> {
     Ok(read_attr::<XformAttr>(&meta))
 }
 
-pub fn set_xform(api: &Api, rep: u32, value: Option<XformAttr>) -> anyhow::Result<()> {
-    let prim = get_prim(api, rep)?;
+pub async fn set_xform(api: &Api, rep: u32, value: Option<XformAttr>) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     match value {
@@ -392,8 +394,8 @@ pub fn set_xform(api: &Api, rep: u32, value: Option<XformAttr>) -> anyhow::Resul
     Ok(())
 }
 
-pub fn global_xform(api: &Api, rep: u32) -> anyhow::Result<XformAttr> {
-    let prim = get_prim(api, rep)?;
+pub async fn global_xform(api: &Api, rep: u32) -> anyhow::Result<XformAttr> {
+    let prim = get_prim(api, rep).await?;
     let snapshot = NODE_TRANSFORM_REGISTRY
         .read()
         .get(&AbsoluteNodeId {
@@ -410,8 +412,8 @@ pub fn global_xform(api: &Api, rep: u32) -> anyhow::Result<XformAttr> {
     })
 }
 
-pub fn mesh(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMesh>> {
-    let prim = get_prim(api, rep)?;
+pub async fn mesh(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMesh>> {
+    let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(None);
     }
@@ -419,8 +421,8 @@ pub fn mesh(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMesh>> {
     Ok(read_attr::<MeshAttr>(&meta).map(mesh_attr_to_prim))
 }
 
-pub fn set_mesh(api: &Api, rep: u32, value: Option<PrimMesh>) -> anyhow::Result<()> {
-    let prim = get_prim(api, rep)?;
+pub async fn set_mesh(api: &Api, rep: u32, value: Option<PrimMesh>) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     match value {
@@ -436,7 +438,7 @@ pub async fn set_mesh_stream(
     key: String,
     values: Option<Vec<f32>>,
 ) -> anyhow::Result<()> {
-    let prim = get_prim(api, rep)?;
+    let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     let mut attr = read_attr::<MeshAttr>(&meta).unwrap_or_else(|| MeshAttr {
@@ -463,7 +465,7 @@ pub async fn set_mesh_indices_u32(
     rep: u32,
     values: Option<Vec<u32>>,
 ) -> anyhow::Result<()> {
-    let prim = get_prim(api, rep)?;
+    let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     let mut attr = read_attr::<MeshAttr>(&meta).unwrap_or_else(|| MeshAttr {
@@ -522,8 +524,8 @@ const fn topology_from_prim(t: PrimTopology) -> Topology {
     }
 }
 
-pub fn material(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMaterial>> {
-    let prim = get_prim(api, rep)?;
+pub async fn material(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMaterial>> {
+    let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(None);
     }
@@ -531,8 +533,8 @@ pub fn material(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMaterial>> {
     Ok(read_attr::<MaterialAttr>(&meta).map(material_attr_to_prim))
 }
 
-pub fn set_material(api: &Api, rep: u32, value: Option<PrimMaterial>) -> anyhow::Result<()> {
-    let prim = get_prim(api, rep)?;
+pub async fn set_material(api: &Api, rep: u32, value: Option<PrimMaterial>) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     match value {
@@ -613,8 +615,8 @@ fn prim_color_to_vec(c: PrimColor) -> ColorVec {
     ])
 }
 
-pub fn image(api: &Api, rep: u32) -> anyhow::Result<Option<PrimImage>> {
-    let prim = get_prim(api, rep)?;
+pub async fn image(api: &Api, rep: u32) -> anyhow::Result<Option<PrimImage>> {
+    let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(None);
     }
@@ -622,8 +624,8 @@ pub fn image(api: &Api, rep: u32) -> anyhow::Result<Option<PrimImage>> {
     Ok(read_attr::<ImageAttr>(&meta).map(image_attr_to_prim))
 }
 
-pub fn set_image(api: &Api, rep: u32, value: Option<PrimImage>) -> anyhow::Result<()> {
-    let prim = get_prim(api, rep)?;
+pub async fn set_image(api: &Api, rep: u32, value: Option<PrimImage>) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     match value {
@@ -659,8 +661,8 @@ fn prim_to_image_attr(img: PrimImage) -> ImageAttr {
     }
 }
 
-pub fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<PrimCollider>> {
-    let prim = get_prim(api, rep)?;
+pub async fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<PrimCollider>> {
+    let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(None);
     }
@@ -684,8 +686,8 @@ pub fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<PrimCollider>> {
     }))
 }
 
-pub fn set_collider(api: &Api, rep: u32, value: Option<PrimCollider>) -> anyhow::Result<()> {
-    let prim = get_prim(api, rep)?;
+pub async fn set_collider(api: &Api, rep: u32, value: Option<PrimCollider>) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     match value {
@@ -718,8 +720,8 @@ pub fn set_collider(api: &Api, rep: u32, value: Option<PrimCollider>) -> anyhow:
     Ok(())
 }
 
-pub fn rigid_body(api: &Api, rep: u32) -> anyhow::Result<Option<PrimRigidBody>> {
-    let prim = get_prim(api, rep)?;
+pub async fn rigid_body(api: &Api, rep: u32) -> anyhow::Result<Option<PrimRigidBody>> {
+    let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(None);
     }
@@ -727,8 +729,12 @@ pub fn rigid_body(api: &Api, rep: u32) -> anyhow::Result<Option<PrimRigidBody>> 
     Ok(read_attr::<RigidBodyAttr>(&meta).map(rigid_body_attr_to_prim))
 }
 
-pub fn set_rigid_body(api: &Api, rep: u32, value: Option<PrimRigidBody>) -> anyhow::Result<()> {
-    let prim = get_prim(api, rep)?;
+pub async fn set_rigid_body(
+    api: &Api,
+    rep: u32,
+    value: Option<PrimRigidBody>,
+) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     match value {
@@ -768,8 +774,8 @@ fn prim_to_rigid_body_attr(rb: PrimRigidBody) -> RigidBodyAttr {
     }
 }
 
-pub fn relationships(api: &Api, rep: u32) -> anyhow::Result<Vec<(String, String)>> {
-    let prim = get_prim(api, rep)?;
+pub async fn relationships(api: &Api, rep: u32) -> anyhow::Result<Vec<(String, String)>> {
+    let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(Vec::new());
     }
@@ -786,8 +792,8 @@ pub fn relationships(api: &Api, rep: u32) -> anyhow::Result<Vec<(String, String)
     Ok(out)
 }
 
-pub fn get_relationship(api: &Api, rep: u32, key: String) -> anyhow::Result<Option<String>> {
-    let prim = get_prim(api, rep)?;
+pub async fn get_relationship(api: &Api, rep: u32, key: String) -> anyhow::Result<Option<String>> {
+    let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(None);
     }
@@ -801,13 +807,13 @@ pub fn get_relationship(api: &Api, rep: u32, key: String) -> anyhow::Result<Opti
     }
 }
 
-pub fn set_relationship(
+pub async fn set_relationship(
     api: &Api,
     rep: u32,
     key: String,
     target: Option<String>,
 ) -> anyhow::Result<()> {
-    let prim = get_prim(api, rep)?;
+    let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     match target {

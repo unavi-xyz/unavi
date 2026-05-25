@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::{JsValue, prelude::*};
 
 use crate::runtime::{
@@ -16,25 +17,19 @@ use crate::runtime::{
 
 use super::scene::{prim::PrimHandle, util::opt_rep};
 
-fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
+async fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
     let obj = js_sys::Object::new();
     match scope {
         SenderScope::Global => {
             js_sys::Reflect::set(&obj, &"tag".into(), &"global".into()).ok();
         }
         SenderScope::Spatial { distance, node } => {
-            let node_rep = api
-                .wired_scene
-                .try_lock()
-                .ok()
-                .map_or(u32::MAX, |mut scene| {
-                    scene.prims.insert(PrimRes {
-                        doc: Arc::clone(&api.doc),
-                        doc_id: node.doc,
-                        id: node.node,
-                        is_proxy: true,
-                    })
-                });
+            let node_rep = api.wired_scene.lock().await.prims.insert(PrimRes {
+                doc: Arc::clone(&api.doc),
+                doc_id: node.doc,
+                id: node.node,
+                is_proxy: true,
+            });
             let val = js_sys::Object::new();
             js_sys::Reflect::set(&val, &"distance".into(), &distance.into()).ok();
             js_sys::Reflect::set(
@@ -65,7 +60,11 @@ impl EventReceptorHandle {
 impl Drop for EventReceptorHandle {
     fn drop(&mut self) {
         if self.rep != u32::MAX {
-            let _ = shared::wired::event::receptor_drop(&self.api, self.rep);
+            let api = Arc::clone(&self.api);
+            let rep = self.rep;
+            spawn_async_task(async move {
+                let _ = shared::wired::event::receptor_drop(&api, rep).await;
+            });
         }
     }
 }
@@ -114,8 +113,8 @@ fn js_to_event_filter(value: &JsValue) -> EventFilter {
 
 #[wasm_bindgen]
 impl EventReceptorHandle {
-    pub fn poll(&self) -> JsValue {
-        let Ok(Some(event)) = shared::wired::event::receptor_poll(&self.api, self.rep) else {
+    pub async fn poll(&self) -> JsValue {
+        let Ok(Some(event)) = shared::wired::event::receptor_poll(&self.api, self.rep).await else {
             return JsValue::UNDEFINED;
         };
 
@@ -127,7 +126,7 @@ impl EventReceptorHandle {
         js_sys::Reflect::set(
             &sender,
             &"scope".into(),
-            &scope_to_js(event.sender_scope, &self.api),
+            &scope_to_js(event.sender_scope, &self.api).await,
         )
         .ok();
 
@@ -156,23 +155,29 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredEventEmit")]
-    pub fn wired_event_emit(
+    pub async fn wired_event_emit(
         &self,
         channel: String,
         payload: Vec<u8>,
         filter: JsValue,
     ) -> Result<(), String> {
         shared::wired::event::emit(&self.api, channel, payload, js_to_event_filter(&filter))
+            .await
             .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "wiredEventListen")]
-    pub fn wired_event_listen(&self, channels: JsValue, filter: JsValue) -> EventReceptorHandle {
+    pub async fn wired_event_listen(
+        &self,
+        channels: JsValue,
+        filter: JsValue,
+    ) -> EventReceptorHandle {
         let channels = js_sys::Array::from(&channels)
             .iter()
             .filter_map(|v| v.as_string())
             .collect();
         let rep = shared::wired::event::listen(&self.api, channels, js_to_event_filter(&filter))
+            .await
             .unwrap_or(u32::MAX);
         EventReceptorHandle::new(rep, Arc::clone(&self.api))
     }

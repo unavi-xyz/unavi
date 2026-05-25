@@ -20,10 +20,11 @@ pub struct WiredInputApi {
     listeners: SlotMap<InputListenerRes>,
 }
 
-pub fn register_input_listener(backend: &Api, node: u32) -> anyhow::Result<u32> {
+pub async fn register_input_listener(backend: &Api, node: u32) -> anyhow::Result<u32> {
     let (target_doc, target_node) = backend
         .wired_scene
-        .try_lock()?
+        .lock()
+        .await
         .prims
         .get(node)
         .map(|n| (n.doc_id, n.id))
@@ -41,14 +42,15 @@ pub fn register_input_listener(backend: &Api, node: u32) -> anyhow::Result<u32> 
 
     let rep = backend
         .wired_input
-        .try_lock()?
+        .lock()
+        .await
         .listeners
         .insert(InputListenerRes { rx });
 
     Ok(rep)
 }
 
-pub fn register_global_input_listener(backend: &Api) -> anyhow::Result<u32> {
+pub async fn register_global_input_listener(backend: &Api) -> anyhow::Result<u32> {
     let (tx, rx) = async_channel::bounded(INPUT_CHANNEL_LENGTH);
 
     AsyncCommands::default()
@@ -57,7 +59,8 @@ pub fn register_global_input_listener(backend: &Api) -> anyhow::Result<u32> {
 
     let rep = backend
         .wired_input
-        .try_lock()?
+        .lock()
+        .await
         .listeners
         .insert(InputListenerRes { rx });
 

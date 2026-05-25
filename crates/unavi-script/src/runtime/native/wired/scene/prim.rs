@@ -280,11 +280,14 @@ const fn rigid_body_shared(rb: RigidBody) -> PrimRigidBody {
 
 impl HostPrim for Runtime {
     async fn id(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<String> {
-        shared::wired::scene::prim::id(&self.api, self_.rep()).map_err(wasmtime::Error::from_anyhow)
+        shared::wired::scene::prim::id(&self.api, self_.rep())
+            .await
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn clone(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Resource<PrimRes>> {
         shared::wired::scene::prim::clone(&self.api, self_.rep())
+            .await
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -294,6 +297,7 @@ impl HostPrim for Runtime {
         self_: Resource<PrimRes>,
     ) -> wasmtime::Result<Option<Resource<PrimRes>>> {
         shared::wired::scene::prim::parent(&self.api, self_.rep())
+            .await
             .map(|r| r.map(Resource::new_own))
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -303,6 +307,7 @@ impl HostPrim for Runtime {
         self_: Resource<PrimRes>,
     ) -> wasmtime::Result<Vec<Resource<PrimRes>>> {
         shared::wired::scene::prim::children(&self.api, self_.rep())
+            .await
             .map(|v| v.into_iter().map(Resource::new_own).collect())
             .map_err(wasmtime::Error::from_anyhow)
     }
@@ -313,6 +318,7 @@ impl HostPrim for Runtime {
         child: Resource<PrimRes>,
     ) -> wasmtime::Result<()> {
         shared::wired::scene::prim::add_child(&self.api, self_.rep(), child.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
@@ -322,11 +328,13 @@ impl HostPrim for Runtime {
         child: Resource<PrimRes>,
     ) -> wasmtime::Result<()> {
         shared::wired::scene::prim::remove_child(&self.api, self_.rep(), child.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn name(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<String>> {
         shared::wired::scene::prim::name(&self.api, self_.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
@@ -336,11 +344,13 @@ impl HostPrim for Runtime {
         value: Option<String>,
     ) -> wasmtime::Result<()> {
         shared::wired::scene::prim::set_name(&self.api, self_.rep(), value)
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn asset(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Vec<u8>>> {
         shared::wired::scene::prim::asset(&self.api, self_.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
@@ -350,11 +360,13 @@ impl HostPrim for Runtime {
         value: Option<Vec<u8>>,
     ) -> wasmtime::Result<()> {
         shared::wired::scene::prim::set_asset(&self.api, self_.rep(), value)
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn xform(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Xform>> {
         Ok(shared::wired::scene::prim::xform(&self.api, self_.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)?
             .map(xform_wit))
     }
@@ -365,11 +377,13 @@ impl HostPrim for Runtime {
         value: Option<Xform>,
     ) -> wasmtime::Result<()> {
         shared::wired::scene::prim::set_xform(&self.api, self_.rep(), value.map(xform_shared))
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn global_xform(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Transform> {
         let x = shared::wired::scene::prim::global_xform(&self.api, self_.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)?;
         let Xform {
             translation,
@@ -385,6 +399,7 @@ impl HostPrim for Runtime {
 
     async fn mesh(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Mesh>> {
         Ok(shared::wired::scene::prim::mesh(&self.api, self_.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)?
             .map(mesh_wit))
     }
@@ -396,6 +411,7 @@ impl HostPrim for Runtime {
     ) -> wasmtime::Result<()> {
         let shared_mesh = value.map(mesh_shared).transpose()?;
         shared::wired::scene::prim::set_mesh(&self.api, self_.rep(), shared_mesh)
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
@@ -422,6 +438,7 @@ impl HostPrim for Runtime {
 
     async fn material(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Material>> {
         Ok(shared::wired::scene::prim::material(&self.api, self_.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)?
             .map(material_wit))
     }
@@ -432,11 +449,13 @@ impl HostPrim for Runtime {
         value: Option<Material>,
     ) -> wasmtime::Result<()> {
         shared::wired::scene::prim::set_material(&self.api, self_.rep(), value.map(material_shared))
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn image(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Image>> {
         Ok(shared::wired::scene::prim::image(&self.api, self_.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)?
             .map(image_wit))
     }
@@ -448,11 +467,13 @@ impl HostPrim for Runtime {
     ) -> wasmtime::Result<()> {
         let shared_img = value.map(image_shared).transpose()?;
         shared::wired::scene::prim::set_image(&self.api, self_.rep(), shared_img)
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn collider(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Collider>> {
         Ok(shared::wired::scene::prim::collider(&self.api, self_.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)?
             .map(collider_wit))
     }
@@ -464,6 +485,7 @@ impl HostPrim for Runtime {
     ) -> wasmtime::Result<()> {
         let shared_c = value.map(collider_shared).transpose()?;
         shared::wired::scene::prim::set_collider(&self.api, self_.rep(), shared_c)
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
@@ -473,6 +495,7 @@ impl HostPrim for Runtime {
     ) -> wasmtime::Result<Option<RigidBody>> {
         Ok(
             shared::wired::scene::prim::rigid_body(&self.api, self_.rep())
+                .await
                 .map_err(wasmtime::Error::from_anyhow)?
                 .map(rigid_body_wit),
         )
@@ -488,6 +511,7 @@ impl HostPrim for Runtime {
             self_.rep(),
             value.map(rigid_body_shared),
         )
+        .await
         .map_err(wasmtime::Error::from_anyhow)
     }
 
@@ -496,6 +520,7 @@ impl HostPrim for Runtime {
         self_: Resource<PrimRes>,
     ) -> wasmtime::Result<Vec<(String, String)>> {
         shared::wired::scene::prim::relationships(&self.api, self_.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
@@ -505,6 +530,7 @@ impl HostPrim for Runtime {
         key: String,
     ) -> wasmtime::Result<Option<String>> {
         shared::wired::scene::prim::get_relationship(&self.api, self_.rep(), key)
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
@@ -515,11 +541,13 @@ impl HostPrim for Runtime {
         target: Option<String>,
     ) -> wasmtime::Result<()> {
         shared::wired::scene::prim::set_relationship(&self.api, self_.rep(), key, target)
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn drop(&mut self, rep: Resource<PrimRes>) -> wasmtime::Result<()> {
         shared::wired::scene::prim::on_drop(&self.api, rep.rep())
+            .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 }

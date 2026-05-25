@@ -96,24 +96,29 @@ impl HostAgent for Runtime {
         name: WitBoneName,
     ) -> wasmtime::Result<Option<Resource<PrimRes>>> {
         shared::wired::agent::bone(&self.api, self_.rep(), name.into())
+            .await
             .map(|opt| opt.map(Resource::new_own))
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn drop(&mut self, rep: Resource<AgentRes>) -> wasmtime::Result<()> {
-        shared::wired::agent::on_drop(&self.api, rep.rep()).map_err(wasmtime::Error::from_anyhow)
+        shared::wired::agent::on_drop(&self.api, rep.rep())
+            .await
+            .map_err(wasmtime::Error::from_anyhow)
     }
 }
 
 impl bindings::wired::agent::api::Host for Runtime {
     async fn local_agent(&mut self) -> wasmtime::Result<Resource<AgentRes>> {
         shared::wired::agent::local_agent(&self.api)
+            .await
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn local_camera(&mut self) -> wasmtime::Result<Resource<PrimRes>> {
         shared::wired::agent::local_camera(&self.api)
+            .await
             .map(Resource::new_own)
             .map_err(wasmtime::Error::from_anyhow)
     }

@@ -12,6 +12,7 @@ use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 use crate::{
     attributes::{
         ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
+        collider::DisabledRigidBody,
         util::{shallow_map_updated_keys, valid_nonneg, valid_positive},
     },
     diff::HsdDiffEvent,
@@ -39,6 +40,7 @@ impl AttributeParser for RigidBodyParser {
             commands
                 .entity(prim)
                 .remove::<RigidBody>()
+                .remove::<DisabledRigidBody>()
                 .remove::<Friction>()
                 .remove::<Restitution>()
                 .remove::<Mass>()

@@ -6817,6 +6817,7 @@ dependencies = [
  "serde",
  "serde_with",
  "smol_str 0.3.6",
+ "tracing",
  "wired-records",
 ]
 

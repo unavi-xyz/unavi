@@ -93,10 +93,10 @@ fn dispatch_prim(ctx: &DocContext, event: ContainerDiff) -> anyhow::Result<()> {
         .into_tree()
         .map_err(|_| anyhow::anyhow!("invalid root diff type"))?;
 
-    for item in diff.diff.clone() {
-        ctx.tx
-            .send(HsdDiffEvent::Prim(item))
-            .map_err(|_| anyhow::anyhow!("failed to send diff event"))?;
+    for item in diff.into_owned().diff {
+        if ctx.tx.send(HsdDiffEvent::Prim(item)).is_err() {
+            return Ok(());
+        }
     }
     Ok(())
 }
@@ -117,25 +117,33 @@ fn dispatch_section(ctx: &DocContext, event: ContainerDiff) -> anyhow::Result<()
     match section.as_str() {
         ATTRIBUTES_KEY => {
             for (key, value) in &map_diff.updated {
-                ctx.tx
+                if ctx
+                    .tx
                     .send(HsdDiffEvent::Attr {
                         prim,
                         attr: key.to_string(),
                         value: normalize_value(value.clone()),
                     })
-                    .map_err(|_| anyhow::anyhow!("failed to send attr event"))?;
+                    .is_err()
+                {
+                    return Ok(());
+                }
             }
         }
         RELATIONSHIPS_KEY => {
             for (key, value) in &map_diff.updated {
                 let target = relationship_target(value.as_ref())?;
-                ctx.tx
+                if ctx
+                    .tx
                     .send(HsdDiffEvent::Relationship {
                         prim,
                         key: key.to_string(),
                         target,
                     })
-                    .map_err(|_| anyhow::anyhow!("failed to send relationship event"))?;
+                    .is_err()
+                {
+                    return Ok(());
+                }
             }
         }
         _ => {}

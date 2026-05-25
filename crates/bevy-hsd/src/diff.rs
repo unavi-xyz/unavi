@@ -49,6 +49,8 @@ impl HsdDiffEvent {
 #[derive(Component)]
 pub struct DiffQueue(pub Arc<Mutex<Receiver<HsdDiffEvent>>>);
 
+const DIFF_QUEUE_BACKPRESSURE_WARN: usize = 10_000;
+
 pub fn drain_diff_queues(
     queues: Query<(Entity, &DiffQueue)>,
     mut indices: Query<&mut HsdPrimIndex>,
@@ -58,6 +60,7 @@ pub fn drain_diff_queues(
 ) {
     for (doc_ent, queue) in queues {
         let Ok(queue) = queue.0.try_lock() else {
+            warn!("diff queue contended; will retry next frame");
             continue;
         };
         let Ok(mut index) = indices.get_mut(doc_ent) else {
@@ -65,6 +68,14 @@ pub fn drain_diff_queues(
         };
 
         let mut events: Vec<HsdDiffEvent> = std::iter::from_fn(|| queue.try_recv().ok()).collect();
+
+        if events.len() > DIFF_QUEUE_BACKPRESSURE_WARN {
+            warn!(
+                drained = events.len(),
+                threshold = DIFF_QUEUE_BACKPRESSURE_WARN,
+                "hsd diff queue draining a large batch; producer may be outpacing consumer",
+            );
+        }
 
         // Creates first so attribute events can resolve the prim entity.
         events.sort_by_key(|e| {

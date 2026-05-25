@@ -197,6 +197,7 @@ pub struct LoadHsd {
 }
 
 pub fn instance_hsd(
+    asset_server: Res<AssetServer>,
     hsds: Res<Assets<HsdAsset>>,
     blobs: Res<Assets<BlobAsset>>,
     loading: Query<(Entity, &mut LoadHsd)>,
@@ -213,11 +214,25 @@ pub fn instance_hsd(
         };
 
         let mut blob_assets = Vec::new();
-        for blob_handle in asset.deps.values() {
-            let Some(blob) = blobs.get(blob_handle) else {
-                continue 'loading;
-            };
-            blob_assets.push(blob.0.clone());
+        let mut failed = false;
+        for (hash, blob_handle) in &asset.deps {
+            if let Some(blob) = blobs.get(blob_handle) {
+                blob_assets.push(blob.0.clone());
+                continue;
+            }
+            if let Some(bevy::asset::LoadState::Failed(err)) =
+                asset_server.get_load_state(blob_handle)
+            {
+                error!(blob = %hash, ?err, "hsd blob dependency failed to load; aborting instance");
+                failed = true;
+            }
+        }
+        if failed {
+            commands.entity(entity).remove::<LoadHsd>();
+            continue;
+        }
+        if blob_assets.len() != asset.deps.len() {
+            continue 'loading;
         }
 
         let actor = actor.0.clone();

@@ -18,4 +18,5 @@ ron.workspace          = true
 serde                  = { features = ["derive"], workspace = true }
 serde_with.workspace   = true
 smol_str.workspace     = true
+tracing.workspace      = true
 wired-records.path     = "../wired-records"

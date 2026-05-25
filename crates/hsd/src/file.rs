@@ -5,6 +5,7 @@ use loro::{LoroDoc, TreeID, TreeParentId};
 use loro_surgeon::{Reconcile, reconcile::RootReconciler};
 use ron::extensions::Extensions;
 use serde::{Deserialize, Serialize};
+use tracing::warn;
 
 use crate::{HSD_CONTAINER_ID, PrimMeta, attributes::Attributes};
 
@@ -62,9 +63,13 @@ impl HsdFile {
 }
 
 fn resolve_ref(id_map: &HashMap<String, TreeID>, val: &str) -> String {
-    id_map
-        .get(val)
-        .map_or_else(|| val.to_owned(), TreeID::to_string)
+    id_map.get(val).map_or_else(
+        || {
+            warn!("hsd reference {val:?} does not match any named prim; keeping literal");
+            val.to_owned()
+        },
+        ToString::to_string,
+    )
 }
 
 fn create_prims<'a>(
@@ -76,8 +81,13 @@ fn create_prims<'a>(
 ) {
     for prim in prims {
         let tree_id = tree.create(parent).expect("create prim");
-        if let Some(name) = &prim.attributes.name {
-            id_map.insert(name.0.clone(), tree_id);
+        if let Some(name) = &prim.attributes.name
+            && let Some(prev) = id_map.insert(name.0.clone(), tree_id)
+        {
+            warn!(
+                "hsd: duplicate prim name {:?}; later definition (tree id {tree_id}) shadows {prev}",
+                name.0,
+            );
         }
         out.push((prim, tree_id));
         create_prims(

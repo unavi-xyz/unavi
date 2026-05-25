@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use blake3::Hash;
 use hsd::{
     attributes::{
@@ -208,12 +208,16 @@ fn compile_attrs<S: std::hash::BuildHasher>(
 
     Ok(Attributes {
         asset: (asset.map(|h| AssetAttr(ByteArray::new(h)))),
-        collider: (attrs.collider.as_ref().map(compile_collider)),
+        collider: (attrs.collider.as_ref().map(compile_collider).transpose()?),
         image: (image),
         material: (attrs.material.as_ref().map(compile_material)),
         mesh: None,
         name: (attrs.name.clone().map(NameAttr)),
-        rigid_body: (attrs.rigid_body.as_ref().map(compile_rigid_body)),
+        rigid_body: (attrs
+            .rigid_body
+            .as_ref()
+            .map(compile_rigid_body)
+            .transpose()?),
         script: (script.map(|h| ScriptAttr(ByteArray::new(h)))),
         xform: (attrs.xform.as_ref().map(compile_xform)),
     })
@@ -260,14 +264,17 @@ fn compile_image(img: &HsdxImage, input_dir: &Path, out_dir: &Path) -> Result<Im
     })
 }
 
-fn compile_collider(c: &HsdxCollider) -> ColliderAttr {
-    match c {
+fn compile_collider(c: &HsdxCollider) -> Result<ColliderAttr> {
+    Ok(match c {
         HsdxCollider::Capsule { height, radius } => ColliderAttr::Capsule {
             height: *height,
             radius: *radius,
         },
-        HsdxCollider::ConvexHull(_) | HsdxCollider::Trimesh { .. } => {
-            unimplemented!("blob colliders are not supported in .hsdx source files")
+        HsdxCollider::ConvexHull(_) => {
+            bail!("convex hull colliders are not supported in .hsdx source files");
+        }
+        HsdxCollider::Trimesh { .. } => {
+            bail!("trimesh colliders are not supported in .hsdx source files");
         }
         HsdxCollider::Cuboid { x, y, z } => ColliderAttr::Cuboid {
             x: *x,
@@ -279,7 +286,7 @@ fn compile_collider(c: &HsdxCollider) -> ColliderAttr {
             radius: *radius,
         },
         HsdxCollider::Sphere(r) => ColliderAttr::Sphere(*r),
-    }
+    })
 }
 
 fn compile_material(m: &HsdxMaterial) -> MaterialAttr {
@@ -299,20 +306,21 @@ fn compile_material(m: &HsdxMaterial) -> MaterialAttr {
     }
 }
 
-fn compile_rigid_body(rb: &HsdxRigidBody) -> RigidBodyAttr {
+fn compile_rigid_body(rb: &HsdxRigidBody) -> Result<RigidBodyAttr> {
     let kind = match rb.kind.as_str() {
         "Static" => RigidBodyKind::Static,
         "Kinematic" => RigidBodyKind::Kinematic,
-        _ => RigidBodyKind::Dynamic,
+        "Dynamic" => RigidBodyKind::Dynamic,
+        other => bail!("unknown rigid body kind {other:?}; expected Static, Kinematic, or Dynamic"),
     };
-    RigidBodyAttr {
+    Ok(RigidBodyAttr {
         kind: Some(kind),
         angular_damping: (rb.angular_damping),
         friction: (rb.friction),
         linear_damping: (rb.linear_damping),
         mass: (rb.mass),
         restitution: (rb.restitution),
-    }
+    })
 }
 
 fn compile_xform(x: &HsdxXform) -> XformAttr {

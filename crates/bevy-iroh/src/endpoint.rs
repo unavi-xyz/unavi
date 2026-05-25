@@ -7,6 +7,8 @@ use unavi_util::async_task::spawn_async_task;
 
 use crate::router::RouterBuilderFns;
 
+const MAX_BACKOFF_SECS: u64 = 300;
+
 #[derive(Component)]
 #[require(RouterBuilderFns)]
 pub struct IrohEndpoint(pub Endpoint);
@@ -34,7 +36,7 @@ pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands
                 Err(err) => {
                     error!(?err, "Failed to init endpoint");
                     n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
-                    delay_secs = delay_secs.wrapping_mul(2);
+                    delay_secs = delay_secs.wrapping_mul(2).min(MAX_BACKOFF_SECS);
                 }
             }
         }

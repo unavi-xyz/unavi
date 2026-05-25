@@ -13,6 +13,11 @@ use crate::{
     reconcile::{NoKey, Reconcile, Reconciler},
 };
 
+/// Cap to defend against malicious or malformed documents claiming
+/// gigantic binary payloads. 256 MiB is well above any legitimate
+/// in-document blob we expect.
+pub const MAX_BYTES_LEN: usize = 256 * 1024 * 1024;
+
 /// A variable-length byte buffer that round-trips through `LoroValue::Binary`.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
 pub struct Bytes(pub Vec<u8>);
@@ -61,6 +66,12 @@ impl DerefMut for Bytes {
 
 impl Hydrate for Bytes {
     fn hydrate_binary(b: &[u8]) -> Result<Self, HydrateError> {
+        if b.len() > MAX_BYTES_LEN {
+            return Err(HydrateError::Unexpected {
+                expected: "binary payload within size limit",
+                found: "binary payload exceeds MAX_BYTES_LEN",
+            });
+        }
         Ok(Self(b.to_vec()))
     }
 }

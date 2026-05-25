@@ -9,7 +9,7 @@ use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 use crate::{
     attributes::{
         ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
-        util::shallow_map_updated_keys,
+        util::{compute_global_transform, shallow_map_updated_keys},
     },
     diff::HsdDiffEvent,
 };
@@ -79,7 +79,7 @@ pub fn apply_xform(
     mut physics: Query<(Option<&mut Position>, Option<&mut Rotation>)>,
     parents: Query<&ChildOf>,
 ) {
-    let new_local = {
+    {
         let Ok(mut transform) = transforms.get_mut(trigger.entity) else {
             warn!("Transform not found");
             return;
@@ -89,8 +89,7 @@ pub fn apply_xform(
             XformEvent::Scale(v) => transform.scale = v,
             XformEvent::Translation(v) => transform.translation = v,
         }
-        *transform
-    };
+    }
 
     let Ok((position, rotation)) = physics.get_mut(trigger.entity) else {
         return;
@@ -99,16 +98,7 @@ pub fn apply_xform(
         return;
     }
 
-    let mut chain = vec![new_local];
-    let mut current = parents.get(trigger.entity).ok().map(ChildOf::parent);
-    while let Some(e) = current {
-        chain.push(transforms.get(e).copied().unwrap_or(Transform::IDENTITY));
-        current = parents.get(e).ok().map(ChildOf::parent);
-    }
-    let mut global = Transform::IDENTITY;
-    for local in chain.iter().rev() {
-        global = global.mul_transform(*local);
-    }
+    let global = compute_global_transform(trigger.entity, &transforms.as_readonly(), &parents);
     if let Some(mut p) = position {
         p.0 = global.translation;
     }

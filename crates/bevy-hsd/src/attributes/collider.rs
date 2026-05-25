@@ -212,30 +212,19 @@ pub fn on_collider_blobs_loaded(
 
 // Seed avian's global `Position` / `Rotation` from the prim's transform
 // chain; `Position::PLACEHOLDER` / `Rotation::PLACEHOLDER` would crash
-// avian's `On<Add, Collider>` AABB observer.
+// avian's `On<Add, Collider>` AABB observer. Callers must gate on
+// `transform_is_valid` / `global_transform_is_valid` first.
 fn insert_collider_with_seed(
     commands: &mut Commands,
     prim: Entity,
     collider: Collider,
     seed: &Transform,
 ) {
-    let translation = if seed.translation.is_finite() {
-        seed.translation
-    } else {
-        Vec3::ZERO
-    };
-    let rotation = if seed.rotation.x.is_finite()
-        && seed.rotation.y.is_finite()
-        && seed.rotation.z.is_finite()
-        && seed.rotation.w.is_finite()
-    {
-        seed.rotation
-    } else {
-        Quat::IDENTITY
-    };
-    commands
-        .entity(prim)
-        .insert((collider, Position(translation), Rotation(rotation)));
+    commands.entity(prim).insert((
+        collider,
+        Position(seed.translation),
+        Rotation(seed.rotation),
+    ));
 }
 
 fn valid_positive(v: f64) -> bool {
@@ -344,35 +333,22 @@ pub struct DisabledCollider(pub Collider);
 #[derive(Component)]
 pub struct DisabledRigidBody(pub RigidBody);
 
+fn is_valid_seed(scale: Vec3, rotation: Quat, translation: Vec3) -> bool {
+    translation.is_finite()
+        && rotation.is_finite()
+        && scale.is_finite()
+        && scale.x != 0.0
+        && scale.y != 0.0
+        && scale.z != 0.0
+}
+
 fn transform_is_valid(t: &Transform) -> bool {
-    t.translation.is_finite()
-        && t.rotation.x.is_finite()
-        && t.rotation.y.is_finite()
-        && t.rotation.z.is_finite()
-        && t.rotation.w.is_finite()
-        && t.scale.x.is_finite()
-        && t.scale.x != 0.0
-        && t.scale.y.is_finite()
-        && t.scale.y != 0.0
-        && t.scale.z.is_finite()
-        && t.scale.z != 0.0
+    is_valid_seed(t.scale, t.rotation, t.translation)
 }
 
 fn global_transform_is_valid(t: &GlobalTransform) -> bool {
     let (s, r, tr) = t.to_scale_rotation_translation();
-    s.x.is_finite()
-        && s.x != 0.0
-        && s.y.is_finite()
-        && s.y != 0.0
-        && s.z.is_finite()
-        && s.z != 0.0
-        && r.x.is_finite()
-        && r.y.is_finite()
-        && r.z.is_finite()
-        && r.w.is_finite()
-        && tr.x.is_finite()
-        && tr.y.is_finite()
-        && tr.z.is_finite()
+    is_valid_seed(s, r, tr)
 }
 
 pub fn watch_collider_scale(

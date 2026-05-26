@@ -1,19 +1,13 @@
 use std::{
     sync::{
         Arc,
-        atomic::{
-            AtomicI64,
-            Ordering,
-        },
+        atomic::{AtomicI64, Ordering},
     },
     time::Duration,
 };
 
 use blake3::Hash;
-use futures::{
-    StreamExt,
-    TryStreamExt,
-};
+use futures::{StreamExt, TryStreamExt};
 use irpc::WithChannels;
 use n0_error::Meta;
 use rusqlite::params;
@@ -22,16 +16,8 @@ use tracing::debug;
 
 use crate::{
     StoreContext,
-    api::{
-        ApiError,
-        ApiService,
-        UploadBlob,
-        authenticate,
-    },
-    quota::{
-        ensure_quota_exists,
-        reserve_bytes,
-    },
+    api::{ApiError, ApiService, UploadBlob, authenticate},
+    quota::{ensure_quota_exists, reserve_bytes},
     tag::BlobTag,
 };
 

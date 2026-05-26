@@ -4,26 +4,16 @@ use crate::runtime::{
     Runtime,
     shared::{
         self,
-        registry::{
-            event::SenderScope,
-            transform::AbsoluteNodeId,
-        },
+        registry::{event::SenderScope, transform::AbsoluteNodeId},
         wired::{
-            event::{
-                EventFilter,
-                EventReceptorRes,
-                EventScope,
-            },
+            event::{EventFilter, EventReceptorRes, EventScope},
             scene::prim::PrimRes,
         },
     },
 };
 
 pub mod bindings {
-    pub use crate::runtime::shared::wired::{
-        event::EventReceptorRes,
-        scene::prim::PrimRes,
-    };
+    pub use crate::runtime::shared::wired::{event::EventReceptorRes, scene::prim::PrimRes};
 
     wasmtime::component::bindgen!({
         path: "../../protocol/wit/wired-event",
@@ -39,23 +29,18 @@ pub mod bindings {
 use bindings::wired::event::{
     api::EventReceptor,
     types::{
-        Event,
-        EventFilter as WitFilter,
-        EventScope as WitScope,
-        EventSender,
-        HostEventReceptor,
-        SenderScope as WitSenderScope,
-        SpatialSender,
+        Event, EventFilter as WitFilter, EventScope as WitScope, EventSender, HostEventReceptor,
+        SenderScope as WitSenderScope, SpatialSender,
     },
 };
 
 fn wit_filter_to_shared(f: WitFilter) -> EventFilter {
     EventFilter {
         documents: f.documents,
-        scope:     match f.scope {
+        scope: match f.scope {
             WitScope::Global => EventScope::Global,
             WitScope::Spatial(v) => EventScope::Spatial {
-                node:   v.prim.rep(),
+                node: v.prim.rep(),
                 radius: v.radius,
             },
         },
@@ -95,11 +80,11 @@ impl HostEventReceptor for Runtime {
         Ok(Some(Event {
             channel: event.channel,
             payload: event.payload.as_ref().clone(),
-            sender:  EventSender {
+            sender: EventSender {
                 document: event.sender_document,
                 scope,
             },
-            time:    event.time,
+            time: event.time,
         }))
     }
 

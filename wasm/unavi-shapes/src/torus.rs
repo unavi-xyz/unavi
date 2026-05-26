@@ -1,8 +1,5 @@
 use std::{
-    cell::{
-        Cell,
-        RefCell,
-    },
+    cell::{Cell, RefCell},
     f32::consts::TAU,
 };
 
@@ -11,17 +8,14 @@ use glam::Vec3;
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestTorus,
-    wired::scene::types::{
-        Document,
-        Prim,
-    },
+    wired::scene::types::{Document, Prim},
 };
 
 #[derive(Default)]
 pub struct TorusWrapped {
-    doc:              RefCell<Option<Document>>,
-    minor_radius:     f32,
-    major_radius:     f32,
+    doc: RefCell<Option<Document>>,
+    minor_radius: f32,
+    major_radius: f32,
     minor_resolution: Cell<u32>,
     major_resolution: Cell<u32>,
 }

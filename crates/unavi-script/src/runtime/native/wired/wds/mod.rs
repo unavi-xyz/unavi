@@ -5,22 +5,14 @@ use crate::runtime::{
     shared::{
         self,
         wired::wds::{
-            BlobFutureRes,
-            QueryFilter,
-            QueryFutureRes,
-            ReadFutureRes,
-            WdsRecord,
-            WdsRes,
+            BlobFutureRes, QueryFilter, QueryFutureRes, ReadFutureRes, WdsRecord, WdsRes,
         },
     },
 };
 
 pub mod bindings {
     pub use crate::runtime::shared::wired::wds::{
-        BlobFutureRes,
-        QueryFutureRes,
-        ReadFutureRes,
-        WdsRes,
+        BlobFutureRes, QueryFutureRes, ReadFutureRes, WdsRes,
     };
 
     wasmtime::component::bindgen!({
@@ -37,12 +29,7 @@ pub mod bindings {
 }
 
 use bindings::wired::wds::types::{
-    HostBlobFuture,
-    HostQueryFuture,
-    HostReadFuture,
-    HostWds,
-    QueryFilter as WitFilter,
-    Wds,
+    HostBlobFuture, HostQueryFuture, HostReadFuture, HostWds, QueryFilter as WitFilter, Wds,
     WdsRecord as WitRecord,
 };
 
@@ -58,9 +45,9 @@ impl From<WitFilter> for QueryFilter {
 impl From<WdsRecord> for WitRecord {
     fn from(r: WdsRecord) -> Self {
         Self {
-            id:         r.id,
-            creator:    r.creator,
-            schemas:    r.schemas,
+            id: r.id,
+            creator: r.creator,
+            schemas: r.schemas,
             containers: r.containers,
         }
     }

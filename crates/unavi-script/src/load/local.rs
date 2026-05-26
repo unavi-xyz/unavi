@@ -5,7 +5,7 @@ use crate::Script;
 #[derive(EntityEvent, Clone)]
 pub struct LoadLocalScript {
     pub entity: Entity,
-    pub path:   String,
+    pub path: String,
 }
 
 pub(crate) fn load_local_script(

@@ -1,44 +1,17 @@
 use std::sync::Arc;
 
-use axum::{
-    Json,
-    Router,
-};
+use axum::{Json, Router};
 use iroh::EndpointId;
 use rusqlite::params;
-use tokio::{
-    net::TcpListener,
-    task::JoinHandle,
-};
-use wds::{
-    DataStore,
-    actor::Actor,
-    identity::Identity,
-};
+use tokio::{net::TcpListener, task::JoinHandle};
+use wds::{DataStore, actor::Actor, identity::Identity};
 use xdid::{
     core::{
-        did::{
-            Did,
-            MethodId,
-            MethodName,
-        },
-        did_url::{
-            DidUrl,
-            RelativeDidUrl,
-            RelativeDidUrlPath,
-        },
-        document::{
-            Document,
-            ServiceEndpoint,
-            VerificationMethod,
-            VerificationMethodMap,
-        },
+        did::{Did, MethodId, MethodName},
+        did_url::{DidUrl, RelativeDidUrl, RelativeDidUrlPath},
+        document::{Document, ServiceEndpoint, VerificationMethod, VerificationMethodMap},
     },
-    methods::key::{
-        DidKeyPair,
-        PublicKey,
-        p256::P256KeyPair,
-    },
+    methods::key::{DidKeyPair, PublicKey, p256::P256KeyPair},
 };
 
 pub struct DidWebServer {
@@ -57,7 +30,7 @@ pub async fn spawn_did_web_server(
     let domain_encoded = domain.replace(':', "%3A");
     let did = Did {
         method_name: MethodName("web".into()),
-        method_id:   MethodId(domain_encoded),
+        method_id: MethodId(domain_encoded),
     };
 
     let jwk = key.public().to_jwk();
@@ -65,7 +38,7 @@ pub async fn spawn_did_web_server(
 
     // WDS service allows these endpoints to authenticate on behalf of this DID.
     let wds_service = ServiceEndpoint {
-        id:  "wds".into(),
+        id: "wds".into(),
         typ: wds_endpoints.iter().map(ToString::to_string).collect(),
     };
 
@@ -77,38 +50,34 @@ pub async fn spawn_did_web_server(
             let service = wds_service.clone();
             async move {
                 Json(Document {
-                    id:                    did.clone(),
-                    also_known_as:         None,
-                    assertion_method:      Some(vec![VerificationMethod::RelativeUrl(
-                        RelativeDidUrl {
-                            path:     RelativeDidUrlPath::Empty,
-                            query:    None,
-                            fragment: Some("key".into()),
-                        },
-                    )]),
-                    authentication:        Some(vec![VerificationMethod::RelativeUrl(
-                        RelativeDidUrl {
-                            path:     RelativeDidUrlPath::Empty,
-                            query:    None,
-                            fragment: Some("key".into()),
-                        },
-                    )]),
+                    id: did.clone(),
+                    also_known_as: None,
+                    assertion_method: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
+                        path: RelativeDidUrlPath::Empty,
+                        query: None,
+                        fragment: Some("key".into()),
+                    })]),
+                    authentication: Some(vec![VerificationMethod::RelativeUrl(RelativeDidUrl {
+                        path: RelativeDidUrlPath::Empty,
+                        query: None,
+                        fragment: Some("key".into()),
+                    })]),
                     capability_delegation: None,
                     capability_invocation: None,
-                    controller:            None,
-                    key_agreement:         None,
-                    service:               Some(vec![service]),
-                    verification_method:   Some(vec![VerificationMethodMap {
-                        id:                   DidUrl {
-                            did:          did.clone(),
-                            fragment:     Some("key".into()),
-                            query:        None,
+                    controller: None,
+                    key_agreement: None,
+                    service: Some(vec![service]),
+                    verification_method: Some(vec![VerificationMethodMap {
+                        id: DidUrl {
+                            did: did.clone(),
+                            fragment: Some("key".into()),
+                            query: None,
                             path_abempty: None,
                         },
-                        controller:           did,
-                        typ:                  "JsonWebKey2020".into(),
+                        controller: did,
+                        typ: "JsonWebKey2020".into(),
                         public_key_multibase: None,
-                        public_key_jwk:       Some(jwk),
+                        public_key_jwk: Some(jwk),
                     }]),
                 })
             }
@@ -126,7 +95,7 @@ pub async fn spawn_did_web_server(
 }
 
 pub struct ActorWithServer {
-    pub actor:  Actor,
+    pub actor: Actor,
     pub server: DidWebServer,
 }
 

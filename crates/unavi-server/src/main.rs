@@ -1,13 +1,7 @@
 use clap::Parser;
-use tracing::{
-    Level,
-    error,
-};
+use tracing::{Level, error};
 use tracing_subscriber::{
-    EnvFilter,
-    fmt::writer::MakeWriterExt,
-    layer::SubscriberExt,
-    util::SubscriberInitExt,
+    EnvFilter, fmt::writer::MakeWriterExt, layer::SubscriberExt, util::SubscriberInitExt,
 };
 use unavi_server::ServerOptions;
 
@@ -18,7 +12,7 @@ struct Args {
     #[arg(long, default_value_t = false)]
     debug: bool,
     #[arg(short, long, default_value_t = 5000)]
-    port:  u16,
+    port: u16,
 }
 
 #[tokio::main]
@@ -48,7 +42,7 @@ async fn main() {
 
     if let Err(err) = unavi_server::run_server(ServerOptions {
         in_memory: false,
-        port:      args.port,
+        port: args.port,
     })
     .await
     {

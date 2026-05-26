@@ -6,12 +6,7 @@ use tracing::warn;
 
 use crate::{
     StoreContext,
-    api::{
-        ApiError,
-        ApiService,
-        UploadEnvelope,
-        authenticate,
-    },
+    api::{ApiError, ApiService, UploadEnvelope, authenticate},
     sync::shared::store_envelope,
 };
 

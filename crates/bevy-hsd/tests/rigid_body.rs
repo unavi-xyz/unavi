@@ -1,30 +1,14 @@
-use avian3d::prelude::{
-    AngularDamping,
-    Friction,
-    LinearDamping,
-    Mass,
-    Restitution,
-    RigidBody,
-};
+use avian3d::prelude::{AngularDamping, Friction, LinearDamping, Mass, Restitution, RigidBody};
 use bevy::prelude::*;
 use bevy_hsd::attributes::collider::DisabledRigidBody;
 use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
+    HSD_CONTAINER_ID, PrimMeta,
     attributes::{
-        Attribute,
-        Attributes,
-        attributes_map,
-        rigid_body::{
-            RigidBodyAttr,
-            RigidBodyKind,
-        },
+        Attribute, Attributes, attributes_map,
+        rigid_body::{RigidBodyAttr, RigidBodyKind},
     },
 };
-use loro_surgeon::{
-    Reconcile,
-    reconcile::RootReconciler,
-};
+use loro_surgeon::{Reconcile, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -116,11 +100,11 @@ fn test_rigid_body_props(mut ctx: TestContext) {
     reconcile_rigid_body(
         &meta,
         RigidBodyAttr {
-            kind:            Some(RigidBodyKind::Dynamic),
-            friction:        Some(0.5),
-            restitution:     Some(0.3),
-            mass:            Some(2.0),
-            linear_damping:  Some(0.1),
+            kind: Some(RigidBodyKind::Dynamic),
+            friction: Some(0.5),
+            restitution: Some(0.3),
+            mass: Some(2.0),
+            linear_damping: Some(0.1),
             angular_damping: Some(0.2),
         },
     );

@@ -1,10 +1,7 @@
 use std::collections::BTreeSet;
 
 use blake3::Hash;
-use iroh::{
-    EndpointId,
-    PublicKey,
-};
+use iroh::{EndpointId, PublicKey};
 use time::OffsetDateTime;
 use tracing::warn;
 use wired_records::beacon::BeaconRecord;

@@ -22,7 +22,7 @@ unsafe extern "C" {
 
 pub struct ScriptInstance {
     instance: JsValue,
-    runtime:  Runtime,
+    runtime: Runtime,
 }
 
 // Safe: wasm is single-threaded

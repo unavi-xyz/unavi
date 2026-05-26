@@ -1,33 +1,16 @@
 use std::time::Duration;
 
-use iroh::endpoint::{
-    Connection,
-    RecvStream,
-    SendStream,
-};
+use iroh::endpoint::{Connection, RecvStream, SendStream};
 use postcard::experimental::max_size::MaxSize;
-use serde::{
-    Deserialize,
-    Serialize,
-};
-use tokio::io::{
-    AsyncReadExt,
-    AsyncWriteExt,
-};
+use serde::{Deserialize, Serialize};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::connection::{
-    ecs::{
-        PeerStream,
-        agent::AgentSender,
-    },
+    ecs::{PeerStream, agent::AgentSender},
     shared::StreamIdent,
     types::{
-        IFrame,
-        PFrame,
-        f16_vec3::F16Vec3,
-        i8_vec3::I8Vec3,
-        pose::Pose,
+        IFrame, PFrame, f16_vec3::F16Vec3, i8_vec3::I8Vec3, pose::Pose,
         rigid_transform::RigidTransform,
     },
 };
@@ -75,7 +58,7 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
         } else {
             AgentMsg::PFrame {
                 iframe: iframe_id,
-                pose:   delta_pose(pose, &last_iframe),
+                pose: delta_pose(pose, &last_iframe),
             }
         };
 

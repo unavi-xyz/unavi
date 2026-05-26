@@ -1,22 +1,12 @@
 use blake3::Hash;
 use iroh::Signature;
-use iroh_gossip::api::{
-    Event,
-    GossipReceiver,
-};
+use iroh_gossip::api::{Event, GossipReceiver};
 use n0_future::StreamExt;
-use tracing::{
-    info,
-    warn,
-};
+use tracing::{info, warn};
 use wds::signed_bytes::SignedBytes;
 
 use crate::{
-    gossip::{
-        GossipCtx,
-        SpaceBroadcast,
-        SpaceMessage,
-    },
+    gossip::{GossipCtx, SpaceBroadcast, SpaceMessage},
     peer::presence::submit_presence,
 };
 

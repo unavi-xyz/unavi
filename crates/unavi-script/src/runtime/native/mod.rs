@@ -1,33 +1,22 @@
-use wasmtime::component::{
-    HasSelf,
-    Linker,
-};
-use wasmtime_wasi::{
-    ResourceTable,
-    WasiCtx,
-    WasiCtxView,
-    WasiView,
-};
+use wasmtime::component::{HasSelf, Linker};
+use wasmtime_wasi::{ResourceTable, WasiCtx, WasiCtxView, WasiView};
 
 use crate::{
-    permissions::{
-        ApiName,
-        ApiPermissions,
-    },
+    permissions::{ApiName, ApiPermissions},
     runtime::Runtime,
 };
 
 pub mod wired;
 
 pub struct NativeRuntime {
-    pub table:    ResourceTable,
+    pub table: ResourceTable,
     pub wasi_ctx: WasiCtx,
 }
 
 impl WasiView for Runtime {
     fn ctx(&mut self) -> WasiCtxView<'_> {
         WasiCtxView {
-            ctx:   &mut self.native.wasi_ctx,
+            ctx: &mut self.native.wasi_ctx,
             table: &mut self.native.table,
         }
     }

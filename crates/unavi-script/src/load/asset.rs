@@ -1,9 +1,5 @@
 use bevy::{
-    asset::{
-        AssetLoader,
-        LoadContext,
-        io::Reader,
-    },
+    asset::{AssetLoader, LoadContext, io::Reader},
     prelude::*,
     reflect::TypePath,
     tasks::ConditionalSendFuture,

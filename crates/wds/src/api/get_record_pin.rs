@@ -5,12 +5,7 @@ use rusqlite::params;
 
 use crate::{
     StoreContext,
-    api::{
-        ApiError,
-        ApiService,
-        GetRecordPin,
-        authenticate,
-    },
+    api::{ApiError, ApiService, GetRecordPin, authenticate},
 };
 
 pub async fn get_record_pin(

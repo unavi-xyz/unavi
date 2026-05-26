@@ -1,18 +1,9 @@
 use bevy::platform::collections::HashMap;
 use postcard::experimental::max_size::MaxSize;
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 use serde_vrm::vrm0::BoneName;
 
-use super::{
-    IFrame,
-    PFrame,
-    f16_vec3::F16Vec3,
-    f32_vec3::F32Vec3,
-    i8_vec3::I8Vec3,
-};
+use super::{IFrame, PFrame, f16_vec3::F16Vec3, f32_vec3::F32Vec3, i8_vec3::I8Vec3};
 use crate::connection::types::rigid_transform::RigidTransform;
 
 pub trait PosePrecision {
@@ -35,7 +26,7 @@ pub struct Pose<T>
 where
     T: PosePrecision + Serialize + for<'a> Deserialize<'a> + Clone,
 {
-    pub root:  T::RootTransform,
+    pub root: T::RootTransform,
     pub bones: HashMap<BoneName, T::BoneTransform>,
 }
 

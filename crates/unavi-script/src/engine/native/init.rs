@@ -5,11 +5,7 @@ use tracing::Instrument;
 use unavi_util::async_task::spawn_async_task;
 use wasmtime::AsContextMut;
 
-use crate::engine::native::instantiate::{
-    ScriptGuest,
-    ScriptSpan,
-    ScriptStore,
-};
+use crate::engine::native::instantiate::{ScriptGuest, ScriptSpan, ScriptStore};
 
 #[derive(Component)]
 pub struct InitializedScript;

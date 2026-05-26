@@ -1,12 +1,7 @@
 use bevy::{
     asset::uuid_handle,
     prelude::*,
-    render::render_resource::{
-        AsBindGroup,
-        Face,
-        ShaderType,
-        SpecializedMeshPipelineError,
-    },
+    render::render_resource::{AsBindGroup, Face, ShaderType, SpecializedMeshPipelineError},
 };
 
 pub const PORTAL_SHADER_HANDLE: Handle<Shader> =
@@ -17,10 +12,10 @@ pub const PORTAL_SHADER_HANDLE: Handle<Shader> =
 pub struct PortalMaterial {
     #[texture(0)]
     #[sampler(1)]
-    pub texture:   Option<Handle<Image>>,
+    pub texture: Option<Handle<Image>>,
     pub cull_mode: Option<Face>,
     #[uniform(2)]
-    pub params:    PortalParams,
+    pub params: PortalParams,
 }
 
 #[derive(Clone, Copy, ShaderType, Debug, Default)]

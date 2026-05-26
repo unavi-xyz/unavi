@@ -1,9 +1,6 @@
 //! Attribute parsing for `#[loro(...)]` and `#[key]`.
 
-use syn::{
-    Attribute,
-    Lit,
-};
+use syn::{Attribute, Lit};
 
 #[derive(Debug, Default)]
 pub struct ContainerAttrs {
@@ -27,12 +24,12 @@ pub enum Strategy {
 
 #[derive(Debug, Default)]
 pub struct FieldAttrs {
-    pub is_key:           bool,
-    pub strategy:         Strategy,
-    pub rename:           Option<String>,
-    pub missing:          Option<MissingStrategy>,
-    pub with_module:      Option<String>,
-    pub custom_hydrate:   Option<String>,
+    pub is_key: bool,
+    pub strategy: Strategy,
+    pub rename: Option<String>,
+    pub missing: Option<MissingStrategy>,
+    pub with_module: Option<String>,
+    pub custom_hydrate: Option<String>,
     pub custom_reconcile: Option<String>,
 }
 

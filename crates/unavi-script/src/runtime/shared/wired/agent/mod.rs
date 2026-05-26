@@ -4,10 +4,7 @@ use bevy_vrm::BoneName;
 
 use crate::runtime::shared::{
     Api,
-    registry::agent::{
-        AGENT_REGISTRY,
-        AgentKey,
-    },
+    registry::agent::{AGENT_REGISTRY, AgentKey},
     slot_map::SlotMap,
     wired::scene::prim::PrimRes,
 };

@@ -1,8 +1,5 @@
 use anyhow::Result;
-use bevy::{
-    prelude::*,
-    winit::WINIT_WINDOWS,
-};
+use bevy::{prelude::*, winit::WINIT_WINDOWS};
 use winit::window::Icon;
 
 const ICON_BYTES: &[u8] = include_bytes!("../assets/image/unavi-rounded.png");

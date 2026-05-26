@@ -3,30 +3,19 @@
 //! and prims spawning at the wrong location because `Position` ends up
 //! out of sync with the script's intended `Transform`.
 
-use avian3d::prelude::{
-    Collider,
-    Position,
-    Rotation,
-};
+use avian3d::prelude::{Collider, Position, Rotation};
 use bevy::prelude::*;
 use bevy_hsd::attributes::collider::DisabledCollider;
 use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
+    HSD_CONTAINER_ID, PrimMeta,
     attributes::{
         Attributes,
         collider::ColliderAttr,
-        rigid_body::{
-            RigidBodyAttr,
-            RigidBodyKind,
-        },
+        rigid_body::{RigidBodyAttr, RigidBodyKind},
         xform::XformAttr,
     },
 };
-use loro_surgeon::{
-    Reconcile,
-    reconcile::RootReconciler,
-};
+use loro_surgeon::{Reconcile, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -58,8 +47,8 @@ fn collider_plus_rigid_body_plus_zero_scale_does_not_panic(
         }),
         Some(XformAttr {
             translation: [0.0, 0.0, 0.0],
-            rotation:    [0.0, 0.0, 0.0, 1.0],
-            scale:       [0.0, 0.0, 0.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [0.0, 0.0, 0.0],
         }),
     );
 
@@ -142,8 +131,8 @@ fn xform_translation_is_not_clobbered_by_init_physics_transform(mut ctx_physics:
         }),
         Some(XformAttr {
             translation: [5.0, 2.0, -3.0],
-            rotation:    [0.0, 0.0, 0.0, 1.0],
-            scale:       [1.0, 1.0, 1.0],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0, 1.0, 1.0],
         }),
     );
 
@@ -183,8 +172,8 @@ fn scale_zero_then_nonzero_restores_collider(mut ctx_physics: TestContext) {
             }),
             xform: Some(XformAttr {
                 translation: [0.0, 0.0, 0.0],
-                rotation:    [0.0, 0.0, 0.0, 1.0],
-                scale:       [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0, 1.0],
+                scale: [0.0, 0.0, 0.0],
             }),
             ..Default::default()
         }),
@@ -211,8 +200,8 @@ fn scale_zero_then_nonzero_restores_collider(mut ctx_physics: TestContext) {
             }),
             xform: Some(XformAttr {
                 translation: [0.0, 0.0, 0.0],
-                rotation:    [0.0, 0.0, 0.0, 1.0],
-                scale:       [1.0, 1.0, 1.0],
+                rotation: [0.0, 0.0, 0.0, 1.0],
+                scale: [1.0, 1.0, 1.0],
             }),
             ..Default::default()
         }),
@@ -246,8 +235,8 @@ fn child_of_translated_parent_has_global_position(mut ctx_physics: TestContext) 
         attributes: Some(Attributes {
             xform: Some(XformAttr {
                 translation: [0.0, 0.0, -10.0],
-                rotation:    [0.0, 0.0, 0.0, 1.0],
-                scale:       [1.0, 1.0, 1.0],
+                rotation: [0.0, 0.0, 0.0, 1.0],
+                scale: [1.0, 1.0, 1.0],
             }),
             ..Default::default()
         }),
@@ -271,8 +260,8 @@ fn child_of_translated_parent_has_global_position(mut ctx_physics: TestContext) 
             }),
             xform: Some(XformAttr {
                 translation: [-1.5, 0.5, 0.0],
-                rotation:    [0.0, 0.0, 0.0, 1.0],
-                scale:       [1.0, 1.0, 1.0],
+                rotation: [0.0, 0.0, 0.0, 1.0],
+                scale: [1.0, 1.0, 1.0],
             }),
             ..Default::default()
         }),
@@ -317,8 +306,8 @@ fn no_xform_child_of_zero_scale_parent_has_finite_transform(mut ctx_physics: Tes
         attributes: Some(Attributes {
             xform: Some(XformAttr {
                 translation: [0.0, 0.0, 0.0],
-                rotation:    [0.0, 0.0, 0.0, 1.0],
-                scale:       [0.0, 0.0, 0.0],
+                rotation: [0.0, 0.0, 0.0, 1.0],
+                scale: [0.0, 0.0, 0.0],
             }),
             ..Default::default()
         }),

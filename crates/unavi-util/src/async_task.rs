@@ -1,7 +1,4 @@
-use std::{
-    pin::Pin,
-    sync::LazyLock,
-};
+use std::{pin::Pin, sync::LazyLock};
 
 use async_channel::Sender;
 

@@ -1,17 +1,7 @@
-use std::{
-    cell::RefCell,
-    rc::Rc,
-    sync::LazyLock,
-};
+use std::{cell::RefCell, rc::Rc, sync::LazyLock};
 
-use bevy::{
-    animation::AnimationTargetId,
-    platform::collections::HashMap,
-};
-use bevy_vrm::{
-    BoneName,
-    animations::target_chain::TargetChain,
-};
+use bevy::{animation::AnimationTargetId, platform::collections::HashMap};
+use bevy_vrm::{BoneName, animations::target_chain::TargetChain};
 
 macro_rules! finger {
    ($chain:ident, $side:ident, $finger_vrm:ident, $finger_chain:ident) => {
@@ -76,8 +66,8 @@ macro_rules! leg {
 /// Allows code re-use for both animation targets and bone names.
 #[derive(Clone)]
 struct ChainWrapper<'a> {
-    chain:   TargetChain,
-    names:   Rc<RefCell<HashMap<BoneName, &'a str>>>,
+    chain: TargetChain,
+    names: Rc<RefCell<HashMap<BoneName, &'a str>>>,
     targets: Rc<RefCell<HashMap<BoneName, AnimationTargetId>>>,
 }
 

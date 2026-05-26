@@ -7,10 +7,7 @@ use wasm_bindgen::prelude::*;
 use super::scene::prim::PrimHandle;
 use crate::runtime::{
     Runtime,
-    shared::{
-        self,
-        Api,
-    },
+    shared::{self, Api},
 };
 
 #[wasm_bindgen]

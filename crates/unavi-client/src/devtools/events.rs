@@ -2,10 +2,7 @@
 
 use std::sync::LazyLock;
 
-use async_channel::{
-    Receiver,
-    Sender,
-};
+use async_channel::{Receiver, Sender};
 use iroh::EndpointId;
 
 /// Channel type for bandwidth tracking.
@@ -18,13 +15,13 @@ pub enum Channel {
 /// Network monitoring event types.
 pub enum NetworkEvent {
     Download {
-        peer:    EndpointId,
-        bytes:   usize,
+        peer: EndpointId,
+        bytes: usize,
         channel: Channel,
     },
     Upload {
-        peer:    EndpointId,
-        bytes:   usize,
+        peer: EndpointId,
+        bytes: usize,
         channel: Channel,
     },
     ValidTick {

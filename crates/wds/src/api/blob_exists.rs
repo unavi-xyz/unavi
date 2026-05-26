@@ -2,12 +2,7 @@ use std::sync::Arc;
 
 use irpc::WithChannels;
 
-use super::{
-    ApiError,
-    ApiService,
-    BlobExists,
-    authenticate,
-};
+use super::{ApiError, ApiService, BlobExists, authenticate};
 use crate::StoreContext;
 
 pub async fn blob_exists(

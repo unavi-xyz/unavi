@@ -2,10 +2,7 @@ use std::f32::consts::FRAC_1_SQRT_2;
 
 use bevy::math::Quat;
 use postcard::experimental::max_size::MaxSize;
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 
 /// Smallest-three encoded quaternion packed into 32 bits.
 /// Format: 2-bit index (largest component) + 3×10-bit components.

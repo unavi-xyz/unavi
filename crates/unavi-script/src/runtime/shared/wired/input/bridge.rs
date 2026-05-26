@@ -1,29 +1,16 @@
 use async_channel::Sender;
 use bevy::prelude::*;
-use bevy_hsd::{
-    HsdChild,
-    HsdRecordId,
-    Prim,
-};
+use bevy_hsd::{HsdChild, HsdRecordId, Prim};
 use blake3::Hash;
 use loro::TreeID;
 use unavi_input::{
-    SqueezeDown,
-    SqueezeUp,
-    actions::{
-        MenuDesktopAction,
-        MenuLeftHandAction,
-        MenuRightHandAction,
-    },
+    SqueezeDown, SqueezeUp,
+    actions::{MenuDesktopAction, MenuLeftHandAction, MenuRightHandAction},
     raycast::PrimaryRaycastInput,
     schminput::BoolActionValue,
 };
 
-use crate::runtime::shared::wired::input::types::{
-    InputAction,
-    InputDevice,
-    InputEvent,
-};
+use crate::runtime::shared::wired::input::types::{InputAction, InputDevice, InputEvent};
 
 #[derive(Component)]
 pub struct GlobalInputListener {
@@ -32,9 +19,9 @@ pub struct GlobalInputListener {
 
 #[derive(Component)]
 pub struct InputListener {
-    pub target_doc:  Hash,
+    pub target_doc: Hash,
     pub target_node: TreeID,
-    pub tx:          Sender<InputEvent>,
+    pub tx: Sender<InputEvent>,
 }
 
 pub fn bridge_squeeze_down(
@@ -85,8 +72,8 @@ pub fn bridge_squeeze_up(
 
 pub struct MenuInput {
     device: InputDevice,
-    value:  bool,
-    prev:   bool,
+    value: bool,
+    prev: bool,
 }
 
 pub fn bridge_menu_desktop(
@@ -159,7 +146,7 @@ const fn bridge_menu(input: MenuInput) -> SendInput {
 }
 
 pub struct SendInput {
-    pub event:       InputEvent,
+    pub event: InputEvent,
     pub target_node: Option<Entity>,
 }
 

@@ -1,33 +1,26 @@
-use std::{
-    sync::Arc,
-    time::Duration,
-};
+use std::{sync::Arc, time::Duration};
 
 use bevy::prelude::*;
 use blake3::Hash;
 use iroh::Endpoint;
-use iroh_gossip::{
-    Gossip,
-    TopicId,
-    api::JoinOptions,
-};
+use iroh_gossip::{Gossip, TopicId, api::JoinOptions};
 use tokio::sync::oneshot;
 use tracing::Instrument;
 use wds::actor::Actor;
 
 #[derive(Clone)]
 pub struct GossipCtx {
-    pub endpoint:     Endpoint,
-    pub gossip:       Gossip,
-    pub actor:        Actor,
+    pub endpoint: Endpoint,
+    pub gossip: Gossip,
+    pub actor: Actor,
     pub sync_targets: Vec<Actor>,
 }
 
 pub enum GossipCommand {
     JoinSpace {
-        ctx:    GossipCtx,
+        ctx: GossipCtx,
         cancel: oneshot::Receiver<()>,
-        space:  Hash,
+        space: Hash,
     },
 }
 
@@ -63,7 +56,7 @@ async fn handle_space_topic(
         .subscribe_with_opts(
             topic_id,
             JoinOptions {
-                bootstrap:             peers,
+                bootstrap: peers,
                 subscription_capacity: 256,
             },
         )

@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 
 use super::bindings::wired::math::types::{
-    Quat as WitQuat,
-    Transform as WitTransform,
-    Vec3 as WitVec3,
+    Quat as WitQuat, Transform as WitTransform, Vec3 as WitVec3,
 };
 
 impl From<bevy::math::Vec3> for WitVec3 {
@@ -43,8 +41,8 @@ impl From<Transform> for WitTransform {
     fn from(t: Transform) -> Self {
         Self {
             translation: t.translation.into(),
-            rotation:    t.rotation.into(),
-            scale:       t.scale.into(),
+            rotation: t.rotation.into(),
+            scale: t.scale.into(),
         }
     }
 }
@@ -53,8 +51,8 @@ impl From<WitTransform> for Transform {
     fn from(t: WitTransform) -> Self {
         Self {
             translation: t.translation.into(),
-            rotation:    t.rotation.into(),
-            scale:       t.scale.into(),
+            rotation: t.rotation.into(),
+            scale: t.scale.into(),
         }
     }
 }
@@ -64,8 +62,8 @@ impl From<GlobalTransform> for WitTransform {
         let (scale, rotation, translation) = gt.to_scale_rotation_translation();
         Self {
             translation: translation.into(),
-            rotation:    rotation.into(),
-            scale:       scale.into(),
+            rotation: rotation.into(),
+            scale: scale.into(),
         }
     }
 }

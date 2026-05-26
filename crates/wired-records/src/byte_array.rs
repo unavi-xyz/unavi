@@ -1,13 +1,7 @@
 use std::fmt::Display;
 
-use loro_surgeon::{
-    Hydrate,
-    Reconcile,
-};
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use loro_surgeon::{Hydrate, Reconcile};
+use serde::{Deserialize, Serialize};
 
 #[derive(Hydrate, Reconcile, Debug, Clone)]
 pub struct ByteArray<const N: usize>(pub loro_surgeon::bytes::ByteArray<N>);

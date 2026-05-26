@@ -1,22 +1,11 @@
-use anyhow::{
-    Context,
-    bail,
-};
+use anyhow::{Context, bail};
 use iroh::EndpointId;
 use irpc::Client;
-use xdid::{
-    core::did::Did,
-    methods::key::Signer,
-};
+use xdid::{core::did::Did, methods::key::Signer};
 
 use crate::{
     SessionToken,
-    auth::{
-        AnswerChallenge,
-        AuthService,
-        Challenge,
-        RequestChallenge,
-    },
+    auth::{AnswerChallenge, AuthService, Challenge, RequestChallenge},
     signed_bytes::Signable,
 };
 

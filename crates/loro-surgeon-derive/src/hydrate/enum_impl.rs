@@ -2,24 +2,11 @@
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{
-    DataEnum,
-    DeriveInput,
-    Fields,
-    Ident,
-    Variant,
-};
+use syn::{DataEnum, DeriveInput, Fields, Ident, Variant};
 
 use crate::{
-    attrs::{
-        FieldAttrs,
-        MissingStrategy,
-        Strategy,
-    },
-    type_util::{
-        is_option_type,
-        is_vec,
-    },
+    attrs::{FieldAttrs, MissingStrategy, Strategy},
+    type_util::{is_option_type, is_vec},
 };
 
 pub fn derive_hydrate_enum(input: &DeriveInput, data: &DataEnum) -> TokenStream {

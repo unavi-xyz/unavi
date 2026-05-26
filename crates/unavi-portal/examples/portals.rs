@@ -1,35 +1,21 @@
-use std::f32::consts::{
-    FRAC_PI_2,
-    FRAC_PI_3,
-    TAU,
-};
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_3, TAU};
 
 use bevy::{
     camera::visibility::RenderLayers,
-    color::palettes::tailwind::{
-        BLUE_500,
-        ORANGE_500,
-    },
+    color::palettes::tailwind::{BLUE_500, ORANGE_500},
     light::light_consts::lux,
     prelude::*,
 };
-use bevy_panorbit_camera::{
-    PanOrbitCamera,
-    PanOrbitCameraPlugin,
-};
+use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
 use unavi_portal::{
-    PortalPlugin,
-    PortalTraveler,
-    create::{
-        CreatePortal,
-        PORTAL_RENDER_LAYER,
-    },
+    PortalPlugin, PortalTraveler,
+    create::{CreatePortal, PORTAL_RENDER_LAYER},
 };
 
 #[derive(Component)]
 struct MovingSinusoid {
-    amplitude:  f32,
-    period:     f32,
+    amplitude: f32,
+    period: f32,
     start_time: f32,
 }
 
@@ -147,8 +133,8 @@ fn setup_scene(
             .with_rotation(Quat::from_rotation_z(FRAC_PI_2)),
         PortalTraveler,
         MovingSinusoid {
-            amplitude:  portal_distance,
-            period:     8.0,
+            amplitude: portal_distance,
+            period: 8.0,
             start_time: time.elapsed_secs(),
         },
     ));

@@ -4,14 +4,11 @@ use xdid::core::did::Did;
 
 use crate::{
     actor::Actor,
-    api::{
-        QueryFilter,
-        QueryRecords,
-    },
+    api::{QueryFilter, QueryRecords},
 };
 
 pub struct QueryBuilder {
-    actor:   Actor,
+    actor: Actor,
     creator: Option<Did>,
     schemas: Vec<Hash>,
 }

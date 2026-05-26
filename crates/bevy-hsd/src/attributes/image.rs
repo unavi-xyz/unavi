@@ -1,53 +1,23 @@
 use bevy::{
     asset::RenderAssetUsages,
-    image::{
-        ImageAddressMode,
-        ImageFilterMode,
-        ImageSampler,
-        ImageSamplerDescriptor,
-    },
+    image::{ImageAddressMode, ImageFilterMode, ImageSampler, ImageSamplerDescriptor},
     prelude::*,
-    render::render_resource::{
-        Extent3d,
-        TextureDimension,
-        TextureFormat,
-    },
+    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 use bevy_wds::blob::{
-    deps::{
-        BlobDep,
-        BlobDeps,
-        BlobDepsLoaded,
-    },
-    request::{
-        BlobRequest,
-        BlobResponse,
-    },
+    deps::{BlobDep, BlobDeps, BlobDepsLoaded},
+    request::{BlobRequest, BlobResponse},
 };
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{
-        Attribute,
-        hydrate_attr,
-        image::ImageAttr,
-    },
+    attributes::{Attribute, hydrate_attr, image::ImageAttr},
 };
 use image::GenericImageView;
-use loro::{
-    ContainerID,
-    Index,
-    TreeID,
-    ValueOrContainer,
-    event::Diff,
-};
+use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 
 use crate::{
     attributes::{
-        ApplyEvent,
-        AttrDataEvent,
-        AttributeParser,
-        DocContext,
-        ParseError,
+        ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
         util::shallow_map_updated_keys,
     },
     diff::HsdDiffEvent,
@@ -63,9 +33,9 @@ pub enum ImageEvent {
 #[derive(Component)]
 #[require(BlobDeps)]
 pub struct ImageBlobs {
-    pub data:    Entity,
+    pub data: Entity,
     pub sampler: ImageSamplerDescriptor,
-    pub srgb:    Option<bool>,
+    pub srgb: Option<bool>,
 }
 
 #[derive(Component)]

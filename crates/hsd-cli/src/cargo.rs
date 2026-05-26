@@ -1,12 +1,6 @@
-use std::path::{
-    Path,
-    PathBuf,
-};
+use std::path::{Path, PathBuf};
 
-use anyhow::{
-    Context,
-    Result,
-};
+use anyhow::{Context, Result};
 
 pub fn read_cargo_name(cargo_toml: &Path) -> Result<String> {
     let content = std::fs::read_to_string(cargo_toml)

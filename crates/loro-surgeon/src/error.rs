@@ -6,7 +6,7 @@ pub enum HydrateError {
     #[error("expected {expected}, found {found}")]
     Unexpected {
         expected: &'static str,
-        found:    &'static str,
+        found: &'static str,
     },
 
     #[error("missing required property: {key}")]
@@ -14,14 +14,14 @@ pub enum HydrateError {
 
     #[error("json deserialization failed for {key}: {source}")]
     Json {
-        key:    String,
+        key: String,
         #[source]
         source: serde_json::Error,
     },
 
     #[error("integer overflow: {value} doesn't fit in {target_type}")]
     Overflow {
-        value:       i64,
+        value: i64,
         target_type: &'static str,
     },
 }
@@ -62,6 +62,6 @@ pub enum ReconcileError {
     #[error("type mismatch: expected {expected} container, found {found}")]
     TypeMismatch {
         expected: &'static str,
-        found:    &'static str,
+        found: &'static str,
     },
 }

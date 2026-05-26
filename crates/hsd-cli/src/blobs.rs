@@ -1,9 +1,6 @@
 use std::path::Path;
 
-use anyhow::{
-    Context,
-    Result,
-};
+use anyhow::{Context, Result};
 use blake3::Hash;
 
 pub fn write_blob(out_dir: &Path, bytes: &[u8]) -> Result<Hash> {

@@ -2,40 +2,17 @@ use std::sync::Arc;
 
 use hsd::attributes::xform::XformAttr;
 use unavi_util::async_task::spawn_async_task;
-use wasm_bindgen::{
-    JsValue,
-    prelude::*,
-};
+use wasm_bindgen::{JsValue, prelude::*};
 
 use super::util::{
-    bytes32_to_js,
-    js_to_bytes32,
-    js_to_f32s,
-    js_to_quat,
-    js_to_u32s,
-    js_to_vec3,
-    obj_get,
-    obj_get_bool,
-    obj_get_f32,
-    obj_get_i32,
-    obj_get_string,
-    obj_set,
-    quat_to_js,
-    vec3_to_js,
+    bytes32_to_js, js_to_bytes32, js_to_f32s, js_to_quat, js_to_u32s, js_to_vec3, obj_get,
+    obj_get_bool, obj_get_f32, obj_get_i32, obj_get_string, obj_set, quat_to_js, vec3_to_js,
 };
 use crate::runtime::shared::{
-    self,
-    Api,
+    self, Api,
     wired::scene::prim::{
-        PrimAlphaMode,
-        PrimCollider,
-        PrimColor,
-        PrimImage,
-        PrimMaterial,
-        PrimMesh,
-        PrimRigidBody,
-        PrimRigidBodyKind,
-        PrimTopology,
+        PrimAlphaMode, PrimCollider, PrimColor, PrimImage, PrimMaterial, PrimMesh, PrimRigidBody,
+        PrimRigidBodyKind, PrimTopology,
     },
 };
 
@@ -325,8 +302,8 @@ fn js_to_xform(v: &JsValue) -> Option<XformAttr> {
     }
     Some(XformAttr {
         translation: js_to_vec3(&obj_get(v, "translation"), [0.0; 3]),
-        rotation:    js_to_quat(&obj_get(v, "rotation"), [0.0, 0.0, 0.0, 1.0]),
-        scale:       js_to_vec3(&obj_get(v, "scale"), [1.0; 3]),
+        rotation: js_to_quat(&obj_get(v, "rotation"), [0.0, 0.0, 0.0, 1.0]),
+        scale: js_to_vec3(&obj_get(v, "scale"), [1.0; 3]),
     })
 }
 
@@ -487,18 +464,18 @@ fn js_to_material(v: &JsValue) -> Option<PrimMaterial> {
         return None;
     }
     Some(PrimMaterial {
-        alpha_cutoff:               obj_get_f32(v, "alpha-cutoff"),
-        alpha_mode:                 js_to_alpha_mode(&obj_get(v, "alpha-mode")),
-        base_color:                 js_to_color(&obj_get(v, "base-color")),
-        base_color_texture:         obj_get_string(v, "base-color-texture"),
-        double_sided:               obj_get_bool(v, "double-sided"),
-        emissive:                   js_to_color(&obj_get(v, "emissive")),
-        emissive_texture:           obj_get_string(v, "emissive-texture"),
-        metallic:                   obj_get_f32(v, "metallic"),
+        alpha_cutoff: obj_get_f32(v, "alpha-cutoff"),
+        alpha_mode: js_to_alpha_mode(&obj_get(v, "alpha-mode")),
+        base_color: js_to_color(&obj_get(v, "base-color")),
+        base_color_texture: obj_get_string(v, "base-color-texture"),
+        double_sided: obj_get_bool(v, "double-sided"),
+        emissive: js_to_color(&obj_get(v, "emissive")),
+        emissive_texture: obj_get_string(v, "emissive-texture"),
+        metallic: obj_get_f32(v, "metallic"),
         metallic_roughness_texture: obj_get_string(v, "metallic-roughness-texture"),
-        normal_texture:             obj_get_string(v, "normal-texture"),
-        occlusion_texture:          obj_get_string(v, "occlusion-texture"),
-        roughness:                  obj_get_f32(v, "roughness"),
+        normal_texture: obj_get_string(v, "normal-texture"),
+        occlusion_texture: obj_get_string(v, "occlusion-texture"),
+        roughness: obj_get_f32(v, "roughness"),
     })
 }
 
@@ -534,14 +511,14 @@ fn js_to_image(v: &JsValue) -> Option<PrimImage> {
         return None;
     }
     Some(PrimImage {
-        data:           js_to_bytes32(&obj_get(v, "data"))?,
+        data: js_to_bytes32(&obj_get(v, "data"))?,
         address_mode_u: obj_get_i32(v, "address-mode-u"),
         address_mode_v: obj_get_i32(v, "address-mode-v"),
         address_mode_w: obj_get_i32(v, "address-mode-w"),
-        mag_filter:     obj_get_i32(v, "mag-filter"),
-        min_filter:     obj_get_i32(v, "min-filter"),
-        mipmap_filter:  obj_get_i32(v, "mipmap-filter"),
-        srgb:           obj_get_bool(v, "srgb"),
+        mag_filter: obj_get_i32(v, "mag-filter"),
+        min_filter: obj_get_i32(v, "min-filter"),
+        mipmap_filter: obj_get_i32(v, "mipmap-filter"),
+        srgb: obj_get_bool(v, "srgb"),
     })
 }
 
@@ -597,7 +574,7 @@ fn js_to_collider(value: &JsValue) -> Option<PrimCollider> {
         },
         "sphere" => PrimCollider::Sphere(val.as_f64().unwrap_or(0.0) as f32),
         "trimesh" => PrimCollider::Trimesh {
-            indices:  js_to_bytes32(&obj_get(&val, "indices"))?,
+            indices: js_to_bytes32(&obj_get(&val, "indices"))?,
             vertices: js_to_bytes32(&obj_get(&val, "vertices"))?,
         },
         _ => return None,
@@ -646,11 +623,11 @@ fn js_to_rigid_body(v: &JsValue) -> Option<PrimRigidBody> {
         return None;
     }
     Some(PrimRigidBody {
-        kind:            js_to_rigid_kind(&obj_get(v, "kind")),
+        kind: js_to_rigid_kind(&obj_get(v, "kind")),
         angular_damping: obj_get_f32(v, "angular-damping"),
-        friction:        obj_get_f32(v, "friction"),
-        linear_damping:  obj_get_f32(v, "linear-damping"),
-        mass:            obj_get_f32(v, "mass"),
-        restitution:     obj_get_f32(v, "restitution"),
+        friction: obj_get_f32(v, "friction"),
+        linear_damping: obj_get_f32(v, "linear-damping"),
+        mass: obj_get_f32(v, "mass"),
+        restitution: obj_get_f32(v, "restitution"),
     })
 }

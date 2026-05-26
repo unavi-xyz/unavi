@@ -3,18 +3,14 @@ use wasmtime::component::Resource;
 use crate::runtime::{
     Runtime,
     native::wired::input::bindings::InputListenerRes,
-    shared::{
-        self,
-        wired::scene::prim::PrimRes,
-    },
+    shared::{self, wired::scene::prim::PrimRes},
 };
 
 mod listener;
 
 pub mod bindings {
     pub use crate::runtime::shared::wired::{
-        input::listener::InputListenerRes,
-        scene::prim::PrimRes,
+        input::listener::InputListenerRes, scene::prim::PrimRes,
     };
 
     wasmtime::component::bindgen!({

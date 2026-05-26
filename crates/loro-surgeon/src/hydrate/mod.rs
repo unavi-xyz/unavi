@@ -2,15 +2,7 @@
 
 pub mod impls;
 
-use loro::{
-    Container,
-    LoroDoc,
-    LoroList,
-    LoroMap,
-    LoroMovableList,
-    LoroValue,
-    ValueOrContainer,
-};
+use loro::{Container, LoroDoc, LoroList, LoroMap, LoroMovableList, LoroValue, ValueOrContainer};
 
 use crate::error::HydrateError;
 
@@ -135,7 +127,7 @@ pub fn hydrate_prop_json<T: serde::de::DeserializeOwned>(
     match map.get(key) {
         Some(ValueOrContainer::Value(LoroValue::String(s))) => {
             serde_json::from_str(&s).map_err(|e| HydrateError::Json {
-                key:    key.to_string(),
+                key: key.to_string(),
                 source: e,
             })
         }
@@ -151,7 +143,7 @@ pub fn hydrate_prop_json_or_default<T: serde::de::DeserializeOwned + Default>(
     match map.get(key) {
         Some(ValueOrContainer::Value(LoroValue::String(s))) => {
             serde_json::from_str(&s).map_err(|e| HydrateError::Json {
-                key:    key.to_string(),
+                key: key.to_string(),
                 source: e,
             })
         }

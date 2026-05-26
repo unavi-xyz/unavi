@@ -1,8 +1,4 @@
-use jose_jwk::{
-    EcCurves,
-    Jwk,
-    Key,
-};
+use jose_jwk::{EcCurves, Jwk, Key};
 use signature::Verifier;
 
 pub fn verify_jwk_signature(jwk: &Jwk, signature: &[u8], signed_bytes: &[u8]) -> bool {

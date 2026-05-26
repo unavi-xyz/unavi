@@ -1,39 +1,17 @@
-use std::{
-    collections::BTreeMap,
-    io::Cursor,
-};
+use std::{collections::BTreeMap, io::Cursor};
 
-use bevy::{
-    pbr::MeshMaterial3d,
-    prelude::*,
-};
-use bevy_hsd::attributes::{
-    image::HsdImage,
-    material::HsdMaterial,
-};
+use bevy::{pbr::MeshMaterial3d, prelude::*};
+use bevy_hsd::attributes::{image::HsdImage, material::HsdMaterial};
 use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
+    HSD_CONTAINER_ID, PrimMeta,
     attributes::{
-        Attribute,
-        Attributes,
-        attributes_map,
+        Attribute, Attributes, attributes_map,
         image::ImageAttr,
-        material::{
-            ColorVec,
-            MaterialAttr,
-        },
+        material::{ColorVec, MaterialAttr},
     },
 };
-use image::{
-    ImageFormat,
-    RgbaImage,
-};
-use loro_surgeon::{
-    Reconcile,
-    bytes::ByteArray,
-    reconcile::RootReconciler,
-};
+use image::{ImageFormat, RgbaImage};
+use loro_surgeon::{Reconcile, bytes::ByteArray, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -114,11 +92,11 @@ fn test_material_texture_ref(#[from(ctx_wds)] mut ctx: TestContext) {
         address_mode_u: None,
         address_mode_v: None,
         address_mode_w: None,
-        data:           ByteArray::<32>::new(*blob_hash.as_bytes()),
-        mag_filter:     None,
-        min_filter:     None,
-        mipmap_filter:  None,
-        srgb:           Some(true),
+        data: ByteArray::<32>::new(*blob_hash.as_bytes()),
+        mag_filter: None,
+        min_filter: None,
+        mipmap_filter: None,
+        srgb: Some(true),
     };
     reconcile_prim(
         &image_meta,
@@ -224,7 +202,7 @@ fn test_material_relationship(mut ctx: TestContext) {
 
 fn reconcile_relationship_only(meta: &loro::LoroMap, relationships: BTreeMap<String, String>) {
     let prim = PrimMeta {
-        attributes:    None,
+        attributes: None,
         relationships: Some(relationships),
     };
     prim.reconcile(RootReconciler::new(meta.clone()))

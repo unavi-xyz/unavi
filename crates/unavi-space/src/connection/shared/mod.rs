@@ -1,35 +1,14 @@
-use std::{
-    sync::Arc,
-    time::Duration,
-};
+use std::{sync::Arc, time::Duration};
 
 use anyhow::bail;
-use iroh::endpoint::{
-    Connection,
-    ConnectionError,
-    RecvStream,
-    SendStream,
-    VarInt,
-};
+use iroh::endpoint::{Connection, ConnectionError, RecvStream, SendStream, VarInt};
 use n0_future::task::AbortOnDropHandle;
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 use tokio::{
-    io::{
-        AsyncReadExt,
-        AsyncWriteExt,
-    },
+    io::{AsyncReadExt, AsyncWriteExt},
     sync::oneshot,
 };
-use tracing::{
-    Instrument,
-    error,
-    info,
-    info_span,
-    warn,
-};
+use tracing::{Instrument, error, info, info_span, warn};
 
 mod agent;
 mod object;

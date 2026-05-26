@@ -1,11 +1,7 @@
 use bevy::prelude::*;
 use bevy_tnua::prelude::TnuaController;
 
-use crate::{
-    AgentRig,
-    ControlScheme,
-    Grounded,
-};
+use crate::{AgentRig, ControlScheme, Grounded};
 
 pub fn sync_grounded_state(
     mut rigs: Query<(&TnuaController<ControlScheme>, &mut Grounded), With<AgentRig>>,

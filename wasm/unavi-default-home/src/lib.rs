@@ -3,15 +3,8 @@ use wired_prelude::prelude::*;
 use crate::{
     unavi::shapes::api::Cuboid,
     wired::scene::{
-        api::{
-            load_hsd,
-            self_document,
-        },
-        types::{
-            RigidBody,
-            RigidBodyKind,
-            Xform,
-        },
+        api::{load_hsd, self_document},
+        types::{RigidBody, RigidBodyKind, Xform},
     },
 };
 
@@ -41,12 +34,12 @@ impl ScriptBehavior for Script {
         let prim = shape.mesh();
         prim.set_collider(Some(&shape.collider()));
         prim.set_rigid_body(Some(RigidBody {
-            kind:            RigidBodyKind::Static,
+            kind: RigidBodyKind::Static,
             angular_damping: None,
-            friction:        None,
-            linear_damping:  None,
-            mass:            None,
-            restitution:     None,
+            friction: None,
+            linear_damping: None,
+            mass: None,
+            restitution: None,
         }));
         set_translation(&prim, Vec3::new(0.0, -GROUND_THICK / 2.0, 0.0));
 

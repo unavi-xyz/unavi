@@ -1,5 +1,8 @@
 use loro::LoroValue;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 /// Portable representation of a Loro container value for WASM transport.
 #[derive(Debug, Clone, Serialize, Deserialize)]

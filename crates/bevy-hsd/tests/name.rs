@@ -1,9 +1,18 @@
 use bevy::prelude::*;
 use hsd::{
-    HSD_CONTAINER_ID, PrimMeta,
-    attributes::{Attribute, Attributes, attributes_map, name::NameAttr},
+    HSD_CONTAINER_ID,
+    PrimMeta,
+    attributes::{
+        Attribute,
+        Attributes,
+        attributes_map,
+        name::NameAttr,
+    },
 };
-use loro_surgeon::{Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{
+    Reconcile,
+    reconcile::RootReconciler,
+};
 use rstest::rstest;
 use tracing_test::traced_test;
 

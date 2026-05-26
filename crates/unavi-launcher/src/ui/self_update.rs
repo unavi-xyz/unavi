@@ -2,7 +2,10 @@ use dioxus::prelude::*;
 use tracing::error;
 
 use super::app::Route;
-use crate::update::{UpdateStatus, launcher};
+use crate::update::{
+    UpdateStatus,
+    launcher,
+};
 
 #[component]
 pub fn SelfUpdate() -> Element {

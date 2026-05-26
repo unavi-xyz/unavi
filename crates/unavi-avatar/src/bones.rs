@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 use bevy::prelude::*;
-use bevy_vrm::{BoneName, VrmInstanceId};
+use bevy_vrm::{
+    BoneName,
+    VrmInstanceId,
+};
 
 #[derive(Component, Deref, DerefMut)]
 pub struct AvatarBones(pub HashMap<BoneName, Entity>);

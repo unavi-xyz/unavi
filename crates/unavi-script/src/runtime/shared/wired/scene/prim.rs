@@ -1,7 +1,13 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::{
+    collections::BTreeMap,
+    sync::Arc,
+};
 
 use anyhow::bail;
-use bevy::math::{Quat, Vec3};
+use bevy::math::{
+    Quat,
+    Vec3,
+};
 use blake3::Hash;
 use hsd::{
     HSD_CONTAINER_ID,
@@ -11,15 +17,29 @@ use hsd::{
         attributes_map,
         collider::ColliderAttr,
         image::ImageAttr,
-        material::{ColorVec, MaterialAttr},
-        mesh::{MeshAttr, Topology},
+        material::{
+            ColorVec,
+            MaterialAttr,
+        },
+        mesh::{
+            MeshAttr,
+            Topology,
+        },
         name::NameAttr,
         relationships_map,
-        rigid_body::{RigidBodyAttr, RigidBodyKind},
+        rigid_body::{
+            RigidBodyAttr,
+            RigidBodyKind,
+        },
         xform::XformAttr,
     },
 };
-use loro::{LoroDoc, LoroMap, TreeID, TreeParentId};
+use loro::{
+    LoroDoc,
+    LoroMap,
+    TreeID,
+    TreeParentId,
+};
 use loro_surgeon::bytes::ByteArray;
 
 use crate::{
@@ -28,17 +48,23 @@ use crate::{
         Api,
         registry::{
             firewall::validate_firewall,
-            transform::{AbsoluteNodeId, NODE_TRANSFORM_REGISTRY},
+            transform::{
+                AbsoluteNodeId,
+                NODE_TRANSFORM_REGISTRY,
+            },
         },
-        wired::scene::util::{f32s_to_bytes, u32s_to_bytes},
+        wired::scene::util::{
+            f32s_to_bytes,
+            u32s_to_bytes,
+        },
     },
 };
 
 #[derive(Clone)]
 pub struct PrimRes {
-    pub doc: Arc<LoroDoc>,
-    pub doc_id: Hash,
-    pub id: TreeID,
+    pub doc:      Arc<LoroDoc>,
+    pub doc_id:   Hash,
+    pub id:       TreeID,
     /// Proxy prims (e.g. agent bone nodes) are read-only from scripts.
     pub is_proxy: bool,
 }
@@ -72,36 +98,36 @@ pub enum PrimTopology {
 }
 
 pub struct PrimMesh {
-    pub topology: PrimTopology,
+    pub topology:   PrimTopology,
     pub attributes: Vec<(String, [u8; 32])>,
-    pub indices: Option<[u8; 32]>,
+    pub indices:    Option<[u8; 32]>,
 }
 
 #[derive(Default)]
 pub struct PrimMaterial {
-    pub alpha_cutoff: Option<f32>,
-    pub alpha_mode: Option<PrimAlphaMode>,
-    pub base_color: Option<PrimColor>,
-    pub base_color_texture: Option<String>,
-    pub double_sided: Option<bool>,
-    pub emissive: Option<PrimColor>,
-    pub emissive_texture: Option<String>,
-    pub metallic: Option<f32>,
+    pub alpha_cutoff:               Option<f32>,
+    pub alpha_mode:                 Option<PrimAlphaMode>,
+    pub base_color:                 Option<PrimColor>,
+    pub base_color_texture:         Option<String>,
+    pub double_sided:               Option<bool>,
+    pub emissive:                   Option<PrimColor>,
+    pub emissive_texture:           Option<String>,
+    pub metallic:                   Option<f32>,
     pub metallic_roughness_texture: Option<String>,
-    pub normal_texture: Option<String>,
-    pub occlusion_texture: Option<String>,
-    pub roughness: Option<f32>,
+    pub normal_texture:             Option<String>,
+    pub occlusion_texture:          Option<String>,
+    pub roughness:                  Option<f32>,
 }
 
 pub struct PrimImage {
-    pub data: [u8; 32],
+    pub data:           [u8; 32],
     pub address_mode_u: Option<i32>,
     pub address_mode_v: Option<i32>,
     pub address_mode_w: Option<i32>,
-    pub mag_filter: Option<i32>,
-    pub min_filter: Option<i32>,
-    pub mipmap_filter: Option<i32>,
-    pub srgb: Option<bool>,
+    pub mag_filter:     Option<i32>,
+    pub min_filter:     Option<i32>,
+    pub mipmap_filter:  Option<i32>,
+    pub srgb:           Option<bool>,
 }
 
 pub enum PrimCollider {
@@ -117,19 +143,19 @@ pub enum PrimCollider {
     },
     Sphere(f32),
     Trimesh {
-        indices: [u8; 32],
+        indices:  [u8; 32],
         vertices: [u8; 32],
     },
 }
 
 #[derive(Default)]
 pub struct PrimRigidBody {
-    pub kind: PrimRigidBodyKind,
+    pub kind:            PrimRigidBodyKind,
     pub angular_damping: Option<f32>,
-    pub friction: Option<f32>,
-    pub linear_damping: Option<f32>,
-    pub mass: Option<f32>,
-    pub restitution: Option<f32>,
+    pub friction:        Option<f32>,
+    pub linear_damping:  Option<f32>,
+    pub mass:            Option<f32>,
+    pub restitution:     Option<f32>,
 }
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]
@@ -226,9 +252,9 @@ pub async fn parent(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
     };
     let mut scene = api.wired_scene.lock().await;
     Ok(Some(scene.prims.insert(PrimRes {
-        doc: prim.doc,
-        doc_id: prim.doc_id,
-        id: parent_id,
+        doc:      prim.doc,
+        doc_id:   prim.doc_id,
+        id:       parent_id,
         is_proxy: prim.is_proxy,
     })))
 }
@@ -359,15 +385,15 @@ pub async fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<XformAttr>> {
     let local = NODE_TRANSFORM_REGISTRY
         .read()
         .get(&AbsoluteNodeId {
-            doc: prim.doc_id,
+            doc:  prim.doc_id,
             node: prim.id,
         })
         .map(|v| v.local);
     if prim.is_proxy {
         return Ok(local.map(|t| XformAttr {
             translation: t.translation.to_array(),
-            rotation: [t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w],
-            scale: t.scale.to_array(),
+            rotation:    [t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w],
+            scale:       t.scale.to_array(),
         }));
     }
     let meta = prim_meta(&prim.doc, prim.id)?;
@@ -382,7 +408,7 @@ pub async fn set_xform(api: &Api, rep: u32, value: Option<XformAttr>) -> anyhow:
         Some(x) => {
             write_attr(&meta, &x)?;
             if let Some(v) = NODE_TRANSFORM_REGISTRY.write().get_mut(&AbsoluteNodeId {
-                doc: prim.doc_id,
+                doc:  prim.doc_id,
                 node: prim.id,
             }) {
                 v.local.translation = Vec3::from_array(x.translation);
@@ -400,7 +426,7 @@ pub async fn global_xform(api: &Api, rep: u32) -> anyhow::Result<XformAttr> {
     let snapshot = NODE_TRANSFORM_REGISTRY
         .read()
         .get(&AbsoluteNodeId {
-            doc: prim.doc_id,
+            doc:  prim.doc_id,
             node: prim.id,
         })
         .cloned()
@@ -408,8 +434,8 @@ pub async fn global_xform(api: &Api, rep: u32) -> anyhow::Result<XformAttr> {
     let (sc, ro, tr) = snapshot.global.to_scale_rotation_translation();
     Ok(XformAttr {
         translation: [tr.x, tr.y, tr.z],
-        rotation: [ro.x, ro.y, ro.z, ro.w],
-        scale: [sc.x, sc.y, sc.z],
+        rotation:    [ro.x, ro.y, ro.z, ro.w],
+        scale:       [sc.x, sc.y, sc.z],
     })
 }
 
@@ -443,9 +469,9 @@ pub async fn set_mesh_stream(
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     let mut attr = read_attr::<MeshAttr>(&meta).unwrap_or_else(|| MeshAttr {
-        topology: Topology::TriangleList,
+        topology:   Topology::TriangleList,
         attributes: BTreeMap::new(),
-        indices: None,
+        indices:    None,
     });
     match values {
         Some(v) => {
@@ -470,9 +496,9 @@ pub async fn set_mesh_indices_u32(
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     let mut attr = read_attr::<MeshAttr>(&meta).unwrap_or_else(|| MeshAttr {
-        topology: Topology::TriangleList,
+        topology:   Topology::TriangleList,
         attributes: BTreeMap::new(),
-        indices: None,
+        indices:    None,
     });
     attr.indices = match values {
         Some(v) => {
@@ -487,21 +513,21 @@ pub async fn set_mesh_indices_u32(
 
 fn mesh_attr_to_prim(attr: MeshAttr) -> PrimMesh {
     PrimMesh {
-        topology: topology_to_prim(&attr.topology),
+        topology:   topology_to_prim(&attr.topology),
         attributes: attr.attributes.into_iter().map(|(k, v)| (k, v.0)).collect(),
-        indices: from_maybe(attr.indices).map(|b| b.0),
+        indices:    from_maybe(attr.indices).map(|b| b.0),
     }
 }
 
 fn prim_to_mesh_attr(m: PrimMesh) -> MeshAttr {
     MeshAttr {
-        topology: topology_from_prim(m.topology),
+        topology:   topology_from_prim(m.topology),
         attributes: m
             .attributes
             .into_iter()
             .map(|(k, v)| (k, ByteArray::new(v)))
             .collect(),
-        indices: maybe(m.indices.map(ByteArray::new)),
+        indices:    maybe(m.indices.map(ByteArray::new)),
     }
 }
 
@@ -547,8 +573,8 @@ pub async fn set_material(api: &Api, rep: u32, value: Option<PrimMaterial>) -> a
 
 fn material_attr_to_prim(attr: MaterialAttr) -> PrimMaterial {
     PrimMaterial {
-        alpha_cutoff: from_maybe(attr.alpha_cutoff).map(|v| v as f32),
-        alpha_mode: from_maybe(attr.alpha_mode).and_then(|s| match s.as_str() {
+        alpha_cutoff:               from_maybe(attr.alpha_cutoff).map(|v| v as f32),
+        alpha_mode:                 from_maybe(attr.alpha_mode).and_then(|s| match s.as_str() {
             "add" => Some(PrimAlphaMode::Add),
             "blend" => Some(PrimAlphaMode::Blend),
             "mask" => Some(PrimAlphaMode::Mask),
@@ -557,23 +583,23 @@ fn material_attr_to_prim(attr: MaterialAttr) -> PrimMaterial {
             "premultiplied" => Some(PrimAlphaMode::PreMultiplied),
             _ => None,
         }),
-        base_color: from_maybe(attr.base_color).map(color_vec_to_prim),
-        base_color_texture: from_maybe(attr.base_color_texture),
-        double_sided: from_maybe(attr.double_sided),
-        emissive: from_maybe(attr.emissive).map(color_vec_to_prim),
-        emissive_texture: from_maybe(attr.emissive_texture),
-        metallic: from_maybe(attr.metallic).map(|v| v as f32),
+        base_color:                 from_maybe(attr.base_color).map(color_vec_to_prim),
+        base_color_texture:         from_maybe(attr.base_color_texture),
+        double_sided:               from_maybe(attr.double_sided),
+        emissive:                   from_maybe(attr.emissive).map(color_vec_to_prim),
+        emissive_texture:           from_maybe(attr.emissive_texture),
+        metallic:                   from_maybe(attr.metallic).map(|v| v as f32),
         metallic_roughness_texture: from_maybe(attr.metallic_roughness_texture),
-        normal_texture: from_maybe(attr.normal_texture),
-        occlusion_texture: from_maybe(attr.occlusion_texture),
-        roughness: from_maybe(attr.roughness).map(|v| v as f32),
+        normal_texture:             from_maybe(attr.normal_texture),
+        occlusion_texture:          from_maybe(attr.occlusion_texture),
+        roughness:                  from_maybe(attr.roughness).map(|v| v as f32),
     }
 }
 
 fn prim_to_material_attr(m: PrimMaterial) -> MaterialAttr {
     MaterialAttr {
-        alpha_cutoff: maybe(m.alpha_cutoff.map(f64::from)),
-        alpha_mode: maybe(m.alpha_mode.map(|mode| {
+        alpha_cutoff:               maybe(m.alpha_cutoff.map(f64::from)),
+        alpha_mode:                 maybe(m.alpha_mode.map(|mode| {
             match mode {
                 PrimAlphaMode::Add => "add",
                 PrimAlphaMode::Blend => "blend",
@@ -584,16 +610,16 @@ fn prim_to_material_attr(m: PrimMaterial) -> MaterialAttr {
             }
             .to_string()
         })),
-        base_color: maybe(m.base_color.map(prim_color_to_vec)),
-        base_color_texture: maybe(m.base_color_texture),
-        double_sided: maybe(m.double_sided),
-        emissive: maybe(m.emissive.map(prim_color_to_vec)),
-        emissive_texture: maybe(m.emissive_texture),
-        metallic: maybe(m.metallic.map(f64::from)),
+        base_color:                 maybe(m.base_color.map(prim_color_to_vec)),
+        base_color_texture:         maybe(m.base_color_texture),
+        double_sided:               maybe(m.double_sided),
+        emissive:                   maybe(m.emissive.map(prim_color_to_vec)),
+        emissive_texture:           maybe(m.emissive_texture),
+        metallic:                   maybe(m.metallic.map(f64::from)),
         metallic_roughness_texture: maybe(m.metallic_roughness_texture),
-        normal_texture: maybe(m.normal_texture),
-        occlusion_texture: maybe(m.occlusion_texture),
-        roughness: maybe(m.roughness.map(f64::from)),
+        normal_texture:             maybe(m.normal_texture),
+        occlusion_texture:          maybe(m.occlusion_texture),
+        roughness:                  maybe(m.roughness.map(f64::from)),
     }
 }
 
@@ -638,14 +664,14 @@ pub async fn set_image(api: &Api, rep: u32, value: Option<PrimImage>) -> anyhow:
 
 fn image_attr_to_prim(attr: ImageAttr) -> PrimImage {
     PrimImage {
-        data: attr.data.0,
+        data:           attr.data.0,
         address_mode_u: from_maybe(attr.address_mode_u).map(|v| v as i32),
         address_mode_v: from_maybe(attr.address_mode_v).map(|v| v as i32),
         address_mode_w: from_maybe(attr.address_mode_w).map(|v| v as i32),
-        mag_filter: from_maybe(attr.mag_filter).map(|v| v as i32),
-        min_filter: from_maybe(attr.min_filter).map(|v| v as i32),
-        mipmap_filter: from_maybe(attr.mipmap_filter).map(|v| v as i32),
-        srgb: from_maybe(attr.srgb),
+        mag_filter:     from_maybe(attr.mag_filter).map(|v| v as i32),
+        min_filter:     from_maybe(attr.min_filter).map(|v| v as i32),
+        mipmap_filter:  from_maybe(attr.mipmap_filter).map(|v| v as i32),
+        srgb:           from_maybe(attr.srgb),
     }
 }
 
@@ -654,11 +680,11 @@ fn prim_to_image_attr(img: PrimImage) -> ImageAttr {
         address_mode_u: maybe(img.address_mode_u.map(i64::from)),
         address_mode_v: maybe(img.address_mode_v.map(i64::from)),
         address_mode_w: maybe(img.address_mode_w.map(i64::from)),
-        data: ByteArray::new(img.data),
-        mag_filter: maybe(img.mag_filter.map(i64::from)),
-        min_filter: maybe(img.min_filter.map(i64::from)),
-        mipmap_filter: maybe(img.mipmap_filter.map(i64::from)),
-        srgb: maybe(img.srgb),
+        data:           ByteArray::new(img.data),
+        mag_filter:     maybe(img.mag_filter.map(i64::from)),
+        min_filter:     maybe(img.min_filter.map(i64::from)),
+        mipmap_filter:  maybe(img.mipmap_filter.map(i64::from)),
+        srgb:           maybe(img.srgb),
     }
 }
 
@@ -681,7 +707,7 @@ pub async fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<PrimCollider
         },
         ColliderAttr::Sphere(r) => PrimCollider::Sphere(r as f32),
         ColliderAttr::Trimesh { indices, vertices } => PrimCollider::Trimesh {
-            indices: indices.0,
+            indices:  indices.0,
             vertices: vertices.0,
         },
     }))
@@ -710,7 +736,7 @@ pub async fn set_collider(api: &Api, rep: u32, value: Option<PrimCollider>) -> a
                 },
                 PrimCollider::Sphere(r) => ColliderAttr::Sphere(f64::from(r)),
                 PrimCollider::Trimesh { indices, vertices } => ColliderAttr::Trimesh {
-                    indices: ByteArray::new(indices),
+                    indices:  ByteArray::new(indices),
                     vertices: ByteArray::new(vertices),
                 },
             };
@@ -747,31 +773,31 @@ pub async fn set_rigid_body(
 
 fn rigid_body_attr_to_prim(attr: RigidBodyAttr) -> PrimRigidBody {
     PrimRigidBody {
-        kind: match attr.kind.unwrap_or(RigidBodyKind::Dynamic) {
+        kind:            match attr.kind.unwrap_or(RigidBodyKind::Dynamic) {
             RigidBodyKind::Dynamic => PrimRigidBodyKind::Dynamic,
             RigidBodyKind::Kinematic => PrimRigidBodyKind::Kinematic,
             RigidBodyKind::Static => PrimRigidBodyKind::Static,
         },
         angular_damping: from_maybe(attr.angular_damping).map(|v| v as f32),
-        friction: from_maybe(attr.friction).map(|v| v as f32),
-        linear_damping: from_maybe(attr.linear_damping).map(|v| v as f32),
-        mass: from_maybe(attr.mass).map(|v| v as f32),
-        restitution: from_maybe(attr.restitution).map(|v| v as f32),
+        friction:        from_maybe(attr.friction).map(|v| v as f32),
+        linear_damping:  from_maybe(attr.linear_damping).map(|v| v as f32),
+        mass:            from_maybe(attr.mass).map(|v| v as f32),
+        restitution:     from_maybe(attr.restitution).map(|v| v as f32),
     }
 }
 
 fn prim_to_rigid_body_attr(rb: PrimRigidBody) -> RigidBodyAttr {
     RigidBodyAttr {
-        kind: Some(match rb.kind {
+        kind:            Some(match rb.kind {
             PrimRigidBodyKind::Dynamic => RigidBodyKind::Dynamic,
             PrimRigidBodyKind::Kinematic => RigidBodyKind::Kinematic,
             PrimRigidBodyKind::Static => RigidBodyKind::Static,
         }),
         angular_damping: maybe(rb.angular_damping.map(f64::from)),
-        friction: maybe(rb.friction.map(f64::from)),
-        linear_damping: maybe(rb.linear_damping.map(f64::from)),
-        mass: maybe(rb.mass.map(f64::from)),
-        restitution: maybe(rb.restitution.map(f64::from)),
+        friction:        maybe(rb.friction.map(f64::from)),
+        linear_damping:  maybe(rb.linear_damping.map(f64::from)),
+        mass:            maybe(rb.mass.map(f64::from)),
+        restitution:     maybe(rb.restitution.map(f64::from)),
     }
 }
 

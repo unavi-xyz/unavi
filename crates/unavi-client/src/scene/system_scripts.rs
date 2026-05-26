@@ -1,10 +1,20 @@
-use bevy::{platform::collections::HashMap, prelude::*};
+use bevy::{
+    platform::collections::HashMap,
+    prelude::*,
+};
 use bevy_hsd::{
     HsdRecordId,
-    load::{LoadHsd, on_load_spawn_doc},
+    load::{
+        LoadHsd,
+        on_load_spawn_doc,
+    },
 };
 use unavi_script::{
-    firewall::{Access, Channel, Firewall},
+    firewall::{
+        Access,
+        Channel,
+        Firewall,
+    },
     permissions::ApiPermissions,
 };
 

@@ -7,7 +7,10 @@ use unavi_avatar::Grounded;
 use unavi_input::cursor_lock::CursorGrabState;
 use xdid::core::did::Did;
 
-use crate::{config::AgentConfig, tracking::TrackingSource};
+use crate::{
+    config::AgentConfig,
+    tracking::TrackingSource,
+};
 
 mod bones;
 pub mod config;
@@ -114,7 +117,7 @@ pub enum ControlScheme {
 
 #[derive(Component)]
 pub struct LocalAgentEntities {
-    pub body: Entity,
+    pub body:         Entity,
     pub tracked_head: Entity,
 }
 

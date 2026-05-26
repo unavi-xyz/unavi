@@ -1,9 +1,15 @@
-use std::sync::{Arc, atomic::Ordering};
+use std::sync::{
+    Arc,
+    atomic::Ordering,
+};
 
 use bevy::prelude::*;
 use unavi_util::async_task::spawn_async_task;
 
-use super::{init::InitializedScript, instantiate::ScriptGuest};
+use super::{
+    init::InitializedScript,
+    instantiate::ScriptGuest,
+};
 use crate::Ticking;
 
 pub fn render_tick_scripts(to_tick: Query<(&Ticking, &ScriptGuest), With<InitializedScript>>) {

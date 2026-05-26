@@ -6,12 +6,16 @@ use wired_prelude::wired_math::types::Vec3 as WVec3;
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCuboid,
-    wired::scene::types::{Collider, Document, Prim},
+    wired::scene::types::{
+        Collider,
+        Document,
+        Prim,
+    },
 };
 
 #[derive(Default)]
 pub struct CuboidWrapped {
-    doc: RefCell<Option<Document>>,
+    doc:  RefCell<Option<Document>>,
     half: Vec3,
 }
 

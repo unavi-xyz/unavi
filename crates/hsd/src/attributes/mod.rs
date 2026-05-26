@@ -1,10 +1,21 @@
-use loro::{Container, LoroMap, ValueOrContainer};
+use loro::{
+    Container,
+    LoroMap,
+    ValueOrContainer,
+};
 use loro_surgeon::{
-    Hydrate, Reconcile,
-    error::{HydrateError, ReconcileError},
+    Hydrate,
+    Reconcile,
+    error::{
+        HydrateError,
+        ReconcileError,
+    },
     reconcile::PropReconciler,
 };
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 pub mod asset;
 pub mod collider;
@@ -39,15 +50,15 @@ pub trait Attribute: Reconcile + Hydrate {
 #[loro(default)]
 #[serde(default)]
 pub struct Attributes {
-    pub asset: Option<asset::AssetAttr>,
-    pub collider: Option<collider::ColliderAttr>,
-    pub image: Option<image::ImageAttr>,
-    pub material: Option<material::MaterialAttr>,
-    pub mesh: Option<mesh::MeshAttr>,
-    pub name: Option<name::NameAttr>,
+    pub asset:      Option<asset::AssetAttr>,
+    pub collider:   Option<collider::ColliderAttr>,
+    pub image:      Option<image::ImageAttr>,
+    pub material:   Option<material::MaterialAttr>,
+    pub mesh:       Option<mesh::MeshAttr>,
+    pub name:       Option<name::NameAttr>,
     pub rigid_body: Option<rigid_body::RigidBodyAttr>,
-    pub script: Option<script::ScriptAttr>,
-    pub xform: Option<xform::XformAttr>,
+    pub script:     Option<script::ScriptAttr>,
+    pub xform:      Option<xform::XformAttr>,
 }
 
 impl Attributes {

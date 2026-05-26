@@ -1,34 +1,46 @@
 use std::time::Duration;
 
 use anyhow::bail;
-use async_channel::{Receiver, Sender};
-use bevy::{log::tracing::Instrument, prelude::*};
+use async_channel::{
+    Receiver,
+    Sender,
+};
+use bevy::{
+    log::tracing::Instrument,
+    prelude::*,
+};
 use blake3::Hash;
 use loro::LoroDoc;
 use smol_str::SmolStr;
 use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
-use wds::actor::{Actor, SchemaData};
+use wds::actor::{
+    Actor,
+    SchemaData,
+};
 
-use crate::{LocalActor, SyncTargets};
+use crate::{
+    LocalActor,
+    SyncTargets,
+};
 
 #[derive(Event)]
 pub struct WriteRecord {
     /// ID of the record to write.
     /// Leave empty to create a new record.
-    pub id: Option<Hash>,
-    pub ttl: Option<Duration>,
-    pub public: bool,
+    pub id:      Option<Hash>,
+    pub ttl:     Option<Duration>,
+    pub public:  bool,
     pub schemas: Vec<SchemaDef>,
-    pub cancel: Option<oneshot::Receiver<()>>,
-    pub tx: Sender<Hash>,
+    pub cancel:  Option<oneshot::Receiver<()>>,
+    pub tx:      Sender<Hash>,
 }
 
 #[derive(Event, Clone)]
 pub struct SchemaDef {
     pub container: SmolStr,
-    pub schema: SchemaData,
-    pub f: std::sync::Arc<dyn Fn(&mut LoroDoc) -> anyhow::Result<()> + Send + Sync>,
+    pub schema:    SchemaData,
+    pub f:         std::sync::Arc<dyn Fn(&mut LoroDoc) -> anyhow::Result<()> + Send + Sync>,
 }
 
 impl WriteRecord {

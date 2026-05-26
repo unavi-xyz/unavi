@@ -3,10 +3,17 @@ use std::time::Duration;
 use iroh::Watcher;
 use iroh_gossip::api::GossipSender;
 use tracing::info;
-use wds::signed_bytes::{IrohSigner, Signable};
+use wds::signed_bytes::{
+    IrohSigner,
+    Signable,
+};
 
 use crate::{
-    gossip::{GossipCtx, SpaceBroadcast, SpaceMessage},
+    gossip::{
+        GossipCtx,
+        SpaceBroadcast,
+        SpaceMessage,
+    },
     peer::presence::PRESENCE_INTERVAL,
 };
 
@@ -23,7 +30,7 @@ pub async fn handle_gossip_outbound(ctx: &GossipCtx, tx: &GossipSender) -> anyho
         info!("Broadcasting presence: {:?}", addr);
         let broadcast = SpaceBroadcast {
             sender: ctx.endpoint.id(),
-            msg: SpaceMessage::Presence(addr),
+            msg:    SpaceMessage::Presence(addr),
         };
 
         let bytes = postcard::to_stdvec(&broadcast.sign(&signer)?)?;

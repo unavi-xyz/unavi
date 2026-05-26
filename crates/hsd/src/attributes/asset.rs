@@ -1,10 +1,20 @@
 use loro_surgeon::{
-    Hydrate, Reconcile,
+    Hydrate,
+    Reconcile,
     bytes::ByteArray,
-    error::{HydrateError, ReconcileError},
-    reconcile::{NoKey, Reconciler},
+    error::{
+        HydrateError,
+        ReconcileError,
+    },
+    reconcile::{
+        NoKey,
+        Reconciler,
+    },
 };
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 use crate::attributes::Attribute;
 

@@ -4,7 +4,10 @@ use rand::RngCore;
 use rstest::rstest;
 use tracing_test::traced_test;
 
-use crate::common::{DataStoreCtx, ctx};
+use crate::common::{
+    DataStoreCtx,
+    ctx,
+};
 
 mod common;
 

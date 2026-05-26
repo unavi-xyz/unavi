@@ -1,8 +1,15 @@
 use std::str::FromStr;
 
 use loro::ValueOrContainer;
-use loro_surgeon::{Hydrate, Reconcile, reconcile::Reconciler};
-use serde::{Deserialize, Serialize};
+use loro_surgeon::{
+    Hydrate,
+    Reconcile,
+    reconcile::Reconciler,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use xdid::core::did::Did;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

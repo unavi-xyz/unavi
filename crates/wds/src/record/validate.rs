@@ -7,9 +7,15 @@ use std::collections::BTreeMap;
 
 use blake3::Hash;
 use iroh_blobs::api::Store;
-use loro::{Frontiers, LoroDoc};
+use loro::{
+    Frontiers,
+    LoroDoc,
+};
 use thiserror::Error;
-use wds_schema::{schema::Schema, validate::validator::Validator};
+use wds_schema::{
+    schema::Schema,
+    validate::validator::Validator,
+};
 use xdid::core::did::Did;
 
 /// Validation errors for WDS documents.

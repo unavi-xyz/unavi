@@ -1,7 +1,21 @@
-use std::sync::{Arc, LazyLock};
+use std::sync::{
+    Arc,
+    LazyLock,
+};
 
-use bevy::{platform::collections::HashMap, prelude::*};
-use loro::{ContainerID, Index, LoroDoc, LoroError, TreeID, ValueOrContainer, event::Diff};
+use bevy::{
+    platform::collections::HashMap,
+    prelude::*,
+};
+use loro::{
+    ContainerID,
+    Index,
+    LoroDoc,
+    LoroError,
+    TreeID,
+    ValueOrContainer,
+    event::Diff,
+};
 use loro_surgeon::error::HydrateError;
 use thiserror::Error;
 
@@ -51,7 +65,7 @@ pub enum AttrDataEvent {
 #[derive(Clone)]
 pub struct DocContext {
     pub doc: Arc<LoroDoc>,
-    pub tx: DiffSender,
+    pub tx:  DiffSender,
 }
 
 #[derive(Error, Debug)]
@@ -93,5 +107,5 @@ pub trait AttributeParser: Send + Sync {
 #[derive(EntityEvent)]
 pub struct ApplyEvent<T> {
     pub entity: Entity,
-    pub value: T,
+    pub value:  T,
 }

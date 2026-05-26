@@ -1,7 +1,14 @@
 use std::collections::BTreeMap;
 
-use loro_surgeon::{Hydrate, Reconcile, bytes::ByteArray};
-use serde::{Deserialize, Serialize};
+use loro_surgeon::{
+    Hydrate,
+    Reconcile,
+    bytes::ByteArray,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 
 use crate::attributes::Attribute;
 
@@ -22,8 +29,8 @@ pub enum Topology {
 pub struct MeshAttr {
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     pub attributes: BTreeMap<String, ByteArray<32>>,
-    pub indices: Option<ByteArray<32>>,
-    pub topology: Topology,
+    pub indices:    Option<ByteArray<32>>,
+    pub topology:   Topology,
 }
 
 impl Attribute for MeshAttr {

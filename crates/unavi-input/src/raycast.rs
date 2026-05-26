@@ -2,7 +2,12 @@ use avian3d::prelude::*;
 use bevy::prelude::*;
 use schminput::BoolActionValue;
 
-use crate::{SqueezeDown, SqueezeUp, actions::CoreActions, crosshair::Crosshair};
+use crate::{
+    SqueezeDown,
+    SqueezeUp,
+    actions::CoreActions,
+    crosshair::Crosshair,
+};
 
 #[derive(Component)]
 pub struct PrimaryRaycastInput;

@@ -1,4 +1,8 @@
-use crate::wired::event::types::{EventFilter, EventReceptor, EventScope};
+use crate::wired::event::types::{
+    EventFilter,
+    EventReceptor,
+    EventScope,
+};
 
 wired_prelude::generate_script!(Script);
 
@@ -14,7 +18,7 @@ impl ScriptBehavior for Script {
             &[CHANNEL.to_string()],
             EventFilter {
                 documents: None,
-                scope: EventScope::Global,
+                scope:     EventScope::Global,
             },
         );
 
@@ -23,7 +27,7 @@ impl ScriptBehavior for Script {
             b"hello, world!",
             EventFilter {
                 documents: None,
-                scope: EventScope::Global,
+                scope:     EventScope::Global,
             },
         );
 

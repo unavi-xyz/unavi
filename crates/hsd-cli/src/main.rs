@@ -1,8 +1,20 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::HashMap,
+    path::PathBuf,
+};
 
-use anyhow::{Context, Result};
-use clap::{Args, Parser};
-use hsd_cli::{build, format};
+use anyhow::{
+    Context,
+    Result,
+};
+use clap::{
+    Args,
+    Parser,
+};
+use hsd_cli::{
+    build,
+    format,
+};
 
 #[derive(Parser, Debug)]
 #[command(version)]
@@ -16,7 +28,7 @@ enum HsdCli {
 struct Build {
     /// Input HSDX file path
     #[arg(short, long)]
-    input: PathBuf,
+    input:   PathBuf,
     /// Output directory for the compiled HSD and WASM files
     #[arg(short, long)]
     out_dir: PathBuf,

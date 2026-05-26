@@ -1,21 +1,29 @@
 use std::{
-    cell::{Cell, RefCell},
+    cell::{
+        Cell,
+        RefCell,
+    },
     f32::consts::TAU,
 };
 
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestCylinder,
-    wired::scene::types::{Collider, ColliderCylinder, Document, Prim},
+    wired::scene::types::{
+        Collider,
+        ColliderCylinder,
+        Document,
+        Prim,
+    },
 };
 
 #[derive(Default)]
 pub struct CylinderWrapped {
-    doc: RefCell<Option<Document>>,
-    radius: f32,
+    doc:         RefCell<Option<Document>>,
+    radius:      f32,
     half_height: f32,
-    resolution: Cell<u32>,
-    segments: Cell<u32>,
+    resolution:  Cell<u32>,
+    segments:    Cell<u32>,
 }
 
 impl GuestCylinder for CylinderWrapped {

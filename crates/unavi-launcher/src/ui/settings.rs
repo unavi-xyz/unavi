@@ -2,7 +2,10 @@ use dioxus::prelude::*;
 use tracing::error;
 
 use super::app::Route;
-use crate::{CONFIG, config::UpdateChannel};
+use crate::{
+    CONFIG,
+    config::UpdateChannel,
+};
 
 #[component]
 pub fn Settings() -> Element {

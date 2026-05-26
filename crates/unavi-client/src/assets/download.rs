@@ -1,7 +1,11 @@
 use std::path::Path;
 
 use anyhow::Context;
-use unavi_assets::{CDN_URL, DEFAULT_AVATAR, DEFAULT_CHARACTER_ANIMATIONS};
+use unavi_assets::{
+    CDN_URL,
+    DEFAULT_AVATAR,
+    DEFAULT_CHARACTER_ANIMATIONS,
+};
 
 /// Download web assets to local storage if they don't already exist.
 pub fn download_web_assets() -> anyhow::Result<()> {

@@ -3,7 +3,10 @@
 use bevy::prelude::*;
 use iroh::EndpointId;
 
-use super::network_stats::{ConnectionQuality, NetworkStats};
+use super::network_stats::{
+    ConnectionQuality,
+    NetworkStats,
+};
 
 #[derive(Component)]
 pub struct DevToolsOverlay;

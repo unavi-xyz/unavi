@@ -1,23 +1,40 @@
 use std::collections::BTreeMap;
 
 use loro::{
-    LoroDoc, LoroValue, TreeExternalDiff,
-    event::{Diff, DiffBatch, ListDiffItem, TreeDiff},
+    LoroDoc,
+    LoroValue,
+    TreeExternalDiff,
+    event::{
+        Diff,
+        DiffBatch,
+        ListDiffItem,
+        TreeDiff,
+    },
 };
 
 use crate::{
-    schema::{Can, Field, Schema, Who},
+    schema::{
+        Can,
+        Field,
+        Schema,
+        Who,
+    },
     validate::{
-        ChangeType, ValidationError,
+        ChangeType,
+        ValidationError,
         diff::validate_container_diff,
-        restriction::{change_type_name, find_restrictions_for_path, unwrap_restricted},
+        restriction::{
+            change_type_name,
+            find_restrictions_for_path,
+            unwrap_restricted,
+        },
     },
 };
 
 /// Document-level schema validator.
 pub struct Validator<'a> {
-    schemas: &'a BTreeMap<String, Schema>,
-    author: &'a str,
+    schemas:           &'a BTreeMap<String, Schema>,
+    author:            &'a str,
     skip_restrictions: bool,
 }
 
@@ -168,7 +185,7 @@ impl<'a> Validator<'a> {
         if !dominated {
             // No restriction covers this change type → deny.
             return Err(ValidationError::AccessDenied {
-                path: path.to_string(),
+                path:   path.to_string(),
                 action: change_type_name(change_type),
             });
         }
@@ -190,7 +207,7 @@ impl<'a> Validator<'a> {
 
         if !authorized {
             return Err(ValidationError::AccessDenied {
-                path: path.to_string(),
+                path:   path.to_string(),
                 action: change_type_name(change_type),
             });
         }

@@ -1,22 +1,38 @@
 use crate::{
-    exports::unavi::vui_module::api::{GuestVuiModule, ModuleEvent},
+    exports::unavi::vui_module::api::{
+        GuestVuiModule,
+        ModuleEvent,
+    },
     protocol::{
-        ActivatePayload, CH_ACTIVATE, CH_DEACTIVATE, CH_DISCOVER, CH_REGISTER, CH_SET_COLOR,
-        RegisterPayload, SetColorPayload,
+        ActivatePayload,
+        CH_ACTIVATE,
+        CH_DEACTIVATE,
+        CH_DISCOVER,
+        CH_REGISTER,
+        CH_SET_COLOR,
+        RegisterPayload,
+        SetColorPayload,
     },
     wired::{
         event::{
-            api::{emit, listen},
-            types::{EventFilter, EventReceptor, EventScope},
+            api::{
+                emit,
+                listen,
+            },
+            types::{
+                EventFilter,
+                EventReceptor,
+                EventScope,
+            },
         },
         scene::types::Prim,
     },
 };
 
 pub struct VuiModule {
-    name: String,
-    icon_prim_id: String,
-    request_receptor: EventReceptor,
+    name:              String,
+    icon_prim_id:      String,
+    request_receptor:  EventReceptor,
     activate_receptor: EventReceptor,
 }
 
@@ -27,7 +43,7 @@ impl GuestVuiModule for VuiModule {
             &[CH_DISCOVER.to_string()],
             EventFilter {
                 documents: None,
-                scope: EventScope::Global,
+                scope:     EventScope::Global,
             },
         );
         let activate_receptor = listen(
@@ -38,7 +54,7 @@ impl GuestVuiModule for VuiModule {
             ],
             EventFilter {
                 documents: None,
-                scope: EventScope::Global,
+                scope:     EventScope::Global,
             },
         );
         Self {
@@ -52,7 +68,7 @@ impl GuestVuiModule for VuiModule {
     fn poll(&self) -> Option<ModuleEvent> {
         while let Some(event) = self.request_receptor.poll() {
             let payload = postcard::to_allocvec(&RegisterPayload {
-                name: self.name.clone(),
+                name:         self.name.clone(),
                 icon_prim_id: self.icon_prim_id.clone(),
             })
             .expect("encode register");
@@ -61,7 +77,7 @@ impl GuestVuiModule for VuiModule {
                 &payload,
                 EventFilter {
                     documents: Some(vec![event.sender.document]),
-                    scope: EventScope::Global,
+                    scope:     EventScope::Global,
                 },
             );
         }

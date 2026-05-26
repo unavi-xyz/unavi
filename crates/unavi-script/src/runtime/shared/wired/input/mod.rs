@@ -4,7 +4,10 @@ use crate::runtime::shared::{
     Api,
     slot_map::SlotMap,
     wired::input::{
-        bridge::{GlobalInputListener, InputListener},
+        bridge::{
+            GlobalInputListener,
+            InputListener,
+        },
         listener::InputListenerRes,
     },
 };

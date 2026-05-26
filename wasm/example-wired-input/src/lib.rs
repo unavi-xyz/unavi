@@ -1,4 +1,7 @@
-use crate::wired::input::{context::register_global_input_listener, types::InputListener};
+use crate::wired::input::{
+    context::register_global_input_listener,
+    types::InputListener,
+};
 
 wired_prelude::generate_script!(Script);
 

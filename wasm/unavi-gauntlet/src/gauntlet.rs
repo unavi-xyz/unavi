@@ -1,22 +1,35 @@
 use std::{
-    cell::{Cell, RefCell},
+    cell::{
+        Cell,
+        RefCell,
+    },
     f32::consts::PI,
 };
 
 use wired_prelude::prelude::*;
 
 use crate::{
-    Color, ModuleRef,
-    sector::{Sector, make_sectors},
+    Color,
+    ModuleRef,
+    sector::{
+        Sector,
+        make_sectors,
+    },
     unavi::vui_module::api::VuiModuleRegistry,
     wired::{
         agent::{
-            api::{local_agent, local_camera},
+            api::{
+                local_agent,
+                local_camera,
+            },
             types::BoneName,
         },
         scene::{
             api::self_document,
-            types::{Prim, Xform},
+            types::{
+                Prim,
+                Xform,
+            },
         },
     },
 };
@@ -112,15 +125,15 @@ pub enum Target {
 }
 
 pub struct Gauntlet {
-    pub bone: RefCell<Option<Prim>>,
-    pub core: Prim,
+    pub bone:           RefCell<Option<Prim>>,
+    pub core:           Prim,
     pub hovered_sector: Cell<Option<usize>>,
-    pub sectors: RefCell<Vec<Sector>>,
-    pub open: Cell<bool>,
-    pub open_pos: Cell<Option<Vec3>>,
-    pub pressed: Cell<bool>,
-    pub scale_t: Cell<f32>,
-    pub target: Target,
+    pub sectors:        RefCell<Vec<Sector>>,
+    pub open:           Cell<bool>,
+    pub open_pos:       Cell<Option<Vec3>>,
+    pub pressed:        Cell<bool>,
+    pub scale_t:        Cell<f32>,
+    pub target:         Target,
 }
 
 impl Gauntlet {
@@ -192,13 +205,13 @@ impl Gauntlet {
     pub fn apply_scale(&self) {
         let cur = self.core.xform().unwrap_or(Xform {
             translation: Vec3::ZERO,
-            rotation: Quat::IDENTITY,
-            scale: Vec3::ONE,
+            rotation:    Quat::IDENTITY,
+            scale:       Vec3::ONE,
         });
         self.core.set_xform(Some(Xform {
             translation: cur.translation,
-            rotation: cur.rotation,
-            scale: Vec3::splat(self.scale_t.get()),
+            rotation:    cur.rotation,
+            scale:       Vec3::splat(self.scale_t.get()),
         }));
     }
 

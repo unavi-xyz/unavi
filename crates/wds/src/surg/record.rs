@@ -3,15 +3,28 @@ use std::collections::BTreeMap;
 use blake3::Hash;
 use loro::LoroDoc;
 use loro_surgeon::{
-    Hydrate, Reconcile,
-    error::{HydrateError, ReconcileError},
+    Hydrate,
+    Reconcile,
+    error::{
+        HydrateError,
+        ReconcileError,
+    },
     reconcile::RootReconciler,
 };
 use rand::Rng;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use time::OffsetDateTime;
-use wired_records::{byte_array::ByteArray, did::HydratedDid};
-use wired_schemas::{SCHEMA_ACL, SCHEMA_RECORD};
+use wired_records::{
+    byte_array::ByteArray,
+    did::HydratedDid,
+};
+use wired_schemas::{
+    SCHEMA_ACL,
+    SCHEMA_RECORD,
+};
 use xdid::core::did::Did;
 
 /// Fixed-size nonce for record identification.
@@ -20,9 +33,9 @@ pub type RecordNonce = ByteArray<16>;
 /// A WDS record containing metadata about the document.
 #[derive(Debug, Clone, Serialize, Deserialize, Hydrate, Reconcile)]
 pub struct Record {
-    pub creator: HydratedDid,
-    pub nonce: RecordNonce,
-    pub schemas: BTreeMap<String, ByteArray<32>>,
+    pub creator:   HydratedDid,
+    pub nonce:     RecordNonce,
+    pub schemas:   BTreeMap<String, ByteArray<32>>,
     pub timestamp: i64,
 }
 

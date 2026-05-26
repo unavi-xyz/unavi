@@ -1,5 +1,8 @@
 use std::{
-    cell::{Cell, RefCell},
+    cell::{
+        Cell,
+        RefCell,
+    },
     collections::HashMap,
 };
 
@@ -8,13 +11,17 @@ use glam::Vec3;
 use crate::{
     RawMesh,
     exports::unavi::shapes::api::GuestSphere,
-    wired::scene::types::{Collider, Document, Prim},
+    wired::scene::types::{
+        Collider,
+        Document,
+        Prim,
+    },
 };
 
 #[derive(Default)]
 pub struct SphereWrapped {
-    doc: RefCell<Option<Document>>,
-    radius: f32,
+    doc:          RefCell<Option<Document>>,
+    radius:       f32,
     subdivisions: Cell<u32>,
 }
 

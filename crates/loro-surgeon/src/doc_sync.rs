@@ -3,9 +3,15 @@
 use loro::LoroDoc;
 
 use crate::{
-    error::{HydrateError, ReconcileError},
+    error::{
+        HydrateError,
+        ReconcileError,
+    },
     hydrate::Hydrate,
-    reconcile::{Reconcile, RootReconciler},
+    reconcile::{
+        Reconcile,
+        RootReconciler,
+    },
 };
 
 pub trait DocSync: Hydrate + Reconcile {

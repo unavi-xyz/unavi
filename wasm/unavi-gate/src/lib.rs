@@ -1,6 +1,9 @@
 use std::{
     f32::consts::GOLDEN_RATIO,
-    time::{Duration, SystemTime},
+    time::{
+        Duration,
+        SystemTime,
+    },
 };
 
 use blake3::Hash;
@@ -9,10 +12,21 @@ use wired_prelude::prelude::*;
 use crate::{
     unavi::shapes::api::Cuboid,
     wired::{
-        event::types::{EventFilter, EventReceptor, EventScope, SpatialScope},
+        event::types::{
+            EventFilter,
+            EventReceptor,
+            EventScope,
+            SpatialScope,
+        },
         scene::{
             api::self_document,
-            types::{Material, Prim, RigidBody, RigidBodyKind, Xform},
+            types::{
+                Material,
+                Prim,
+                RigidBody,
+                RigidBodyKind,
+                Xform,
+            },
         },
     },
 };
@@ -34,12 +48,12 @@ const TARGET_DECAY: Duration = Duration::from_secs(10);
 
 const fn static_body() -> RigidBody {
     RigidBody {
-        kind: RigidBodyKind::Static,
+        kind:            RigidBodyKind::Static,
         angular_damping: None,
-        friction: None,
-        linear_damping: None,
-        mass: None,
-        restitution: None,
+        friction:        None,
+        linear_damping:  None,
+        mass:            None,
+        restitution:     None,
     }
 }
 
@@ -53,29 +67,29 @@ fn set_translation(prim: &Prim, translation: Vec3) {
 
 const fn gate_material() -> Material {
     Material {
-        alpha_cutoff: None,
-        alpha_mode: None,
-        base_color: Some(Color {
+        alpha_cutoff:               None,
+        alpha_mode:                 None,
+        base_color:                 Some(Color {
             r: 0.7,
             g: 0.72,
             b: 0.78,
             a: 1.0,
         }),
-        base_color_texture: None,
-        double_sided: None,
-        emissive: None,
-        emissive_texture: None,
-        metallic: Some(0.6),
+        base_color_texture:         None,
+        double_sided:               None,
+        emissive:                   None,
+        emissive_texture:           None,
+        metallic:                   Some(0.6),
         metallic_roughness_texture: None,
-        normal_texture: None,
-        occlusion_texture: None,
-        roughness: Some(0.4),
+        normal_texture:             None,
+        occlusion_texture:          None,
+        roughness:                  Some(0.4),
     }
 }
 
 struct Script {
     receptor: EventReceptor,
-    target: Option<(Hash, SystemTime)>,
+    target:   Option<(Hash, SystemTime)>,
 }
 
 impl ScriptBehavior for Script {
@@ -155,8 +169,8 @@ impl ScriptBehavior for Script {
             &[CHANNEL.to_string()],
             EventFilter {
                 documents: None,
-                scope: EventScope::Spatial(SpatialScope {
-                    prim: receptor_prim,
+                scope:     EventScope::Spatial(SpatialScope {
+                    prim:   receptor_prim,
                     radius: EVENT_RADIUS,
                 }),
             },

@@ -1,16 +1,35 @@
 use std::cell::Cell;
 
-use wired_prelude::{wired_math::types::Transform, wired_scene::types::Color};
+use wired_prelude::{
+    wired_math::types::Transform,
+    wired_scene::types::Color,
+};
 
 use crate::{
-    exports::unavi::vui_module::api::{GuestVuiModuleRegistry, RegisteredModule},
+    exports::unavi::vui_module::api::{
+        GuestVuiModuleRegistry,
+        RegisteredModule,
+    },
     protocol::{
-        ActivatePayload, CH_ACTIVATE, CH_DEACTIVATE, CH_DISCOVER, CH_REGISTER, CH_SET_COLOR,
-        RegisterPayload, SetColorPayload,
+        ActivatePayload,
+        CH_ACTIVATE,
+        CH_DEACTIVATE,
+        CH_DISCOVER,
+        CH_REGISTER,
+        CH_SET_COLOR,
+        RegisterPayload,
+        SetColorPayload,
     },
     wired::event::{
-        api::{emit, listen},
-        types::{EventFilter, EventReceptor, EventScope},
+        api::{
+            emit,
+            listen,
+        },
+        types::{
+            EventFilter,
+            EventReceptor,
+            EventScope,
+        },
     },
 };
 
@@ -20,8 +39,8 @@ const DISCOVER_DELAY_TICKS: u32 = 60;
 
 pub struct VuiModuleRegistry {
     register_receptor: EventReceptor,
-    ticks: Cell<u32>,
-    fired: Cell<bool>,
+    ticks:             Cell<u32>,
+    fired:             Cell<bool>,
 }
 
 impl GuestVuiModuleRegistry for VuiModuleRegistry {
@@ -30,7 +49,7 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
             &[CH_REGISTER.to_string()],
             EventFilter {
                 documents: None,
-                scope: EventScope::Global,
+                scope:     EventScope::Global,
             },
         );
         Self {
@@ -51,7 +70,7 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
                     &[],
                     EventFilter {
                         documents: None,
-                        scope: EventScope::Global,
+                        scope:     EventScope::Global,
                     },
                 );
                 self.fired.set(true);
@@ -62,8 +81,8 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
         while let Some(event) = self.register_receptor.poll() {
             if let Ok(p) = postcard::from_bytes::<RegisterPayload>(&event.payload) {
                 results.push(RegisteredModule {
-                    doc_id: event.sender.document,
-                    name: p.name,
+                    doc_id:       event.sender.document,
+                    name:         p.name,
                     icon_prim_id: p.icon_prim_id,
                 });
             } else {
@@ -81,7 +100,7 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
             &payload,
             EventFilter {
                 documents: Some(vec![doc_id]),
-                scope: EventScope::Global,
+                scope:     EventScope::Global,
             },
         );
     }
@@ -92,7 +111,7 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
             &[],
             EventFilter {
                 documents: Some(vec![doc_id]),
-                scope: EventScope::Global,
+                scope:     EventScope::Global,
             },
         );
     }
@@ -104,7 +123,7 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
             &payload,
             EventFilter {
                 documents: Some(vec![doc_id]),
-                scope: EventScope::Global,
+                scope:     EventScope::Global,
             },
         );
     }

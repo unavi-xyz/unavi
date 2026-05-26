@@ -1,11 +1,17 @@
 use std::time::Duration;
 
-use iroh::{Endpoint, EndpointAddr};
+use iroh::{
+    Endpoint,
+    EndpointAddr,
+};
 use rand::Rng;
 use tokio::sync::oneshot;
 use tracing::error;
 
-use crate::connection::{ALPN, CONNECTIONS};
+use crate::connection::{
+    ALPN,
+    CONNECTIONS,
+};
 
 pub async fn try_open_connection(endpoint: Endpoint, peer: EndpointAddr) {
     let mut delay_secs = 2;

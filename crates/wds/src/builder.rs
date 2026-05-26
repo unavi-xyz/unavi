@@ -1,20 +1,35 @@
-use std::{path::PathBuf, sync::Arc, time::Duration};
+use std::{
+    path::PathBuf,
+    sync::Arc,
+    time::Duration,
+};
 
 use iroh::{
     Endpoint,
-    protocol::{DynProtocolHandler, RouterBuilder},
+    protocol::{
+        DynProtocolHandler,
+        RouterBuilder,
+    },
 };
-use iroh_blobs::{BlobsProtocol, api::Store as BlobStore, store::mem::MemStore};
+use iroh_blobs::{
+    BlobsProtocol,
+    api::Store as BlobStore,
+    store::mem::MemStore,
+};
 use n0_future::task::AbortOnDropHandle;
 use parking_lot::RwLock;
 
-use crate::{DataStore, StoreContext, db::Database};
+use crate::{
+    DataStore,
+    StoreContext,
+    db::Database,
+};
 
 pub struct DataStoreBuilder {
-    endpoint: Endpoint,
-    gc_timer: Option<Duration>,
+    endpoint:  Endpoint,
+    gc_timer:  Option<Duration>,
     protocols: Vec<(Vec<u8>, Box<dyn DynProtocolHandler>)>,
-    storage: Storage,
+    storage:   Storage,
 }
 
 pub enum Storage {

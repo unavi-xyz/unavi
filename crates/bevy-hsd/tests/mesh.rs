@@ -1,17 +1,30 @@
 use std::collections::BTreeMap;
 
 use bevy::{
-    mesh::{Indices, VertexAttributeValues},
+    mesh::{
+        Indices,
+        VertexAttributeValues,
+    },
     prelude::*,
 };
 use hsd::{
-    HSD_CONTAINER_ID, PrimMeta,
+    HSD_CONTAINER_ID,
+    PrimMeta,
     attributes::{
-        Attribute, Attributes, attributes_map,
-        mesh::{MeshAttr, Topology},
+        Attribute,
+        Attributes,
+        attributes_map,
+        mesh::{
+            MeshAttr,
+            Topology,
+        },
     },
 };
-use loro_surgeon::{Reconcile, bytes::ByteArray, reconcile::RootReconciler};
+use loro_surgeon::{
+    Reconcile,
+    bytes::ByteArray,
+    reconcile::RootReconciler,
+};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -28,8 +41,8 @@ fn test_mesh_lifecycle(mut ctx: TestContext) {
 
     let attr = MeshAttr {
         attributes: BTreeMap::from([("POSITION".to_string(), ByteArray::<32>::new([1; 32]))]),
-        indices: None,
-        topology: Topology::TriangleList,
+        indices:    None,
+        topology:   Topology::TriangleList,
     };
     reconcile_prim_mesh(&meta, attr);
 
@@ -84,8 +97,8 @@ fn test_mesh_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
                 ByteArray::<32>::new(*uv_hash.as_bytes()),
             ),
         ]),
-        indices: Some(ByteArray::<32>::new(*idx_hash.as_bytes())),
-        topology: Topology::TriangleList,
+        indices:    Some(ByteArray::<32>::new(*idx_hash.as_bytes())),
+        topology:   Topology::TriangleList,
     };
     reconcile_prim_mesh(&meta, attr);
 

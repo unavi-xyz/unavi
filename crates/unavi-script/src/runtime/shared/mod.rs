@@ -2,13 +2,19 @@ use std::sync::Arc;
 
 use bevy::prelude::*;
 use blake3::Hash;
-use loro::{LoroDoc, TreeID};
+use loro::{
+    LoroDoc,
+    TreeID,
+};
 use tokio::sync::Mutex;
 
 use crate::{
     permissions::ApiPermissions,
     runtime::shared::wired::{
-        agent::WiredAgentApi, event::WiredEventApi, input::WiredInputApi, scene::WiredSceneApi,
+        agent::WiredAgentApi,
+        event::WiredEventApi,
+        input::WiredInputApi,
+        scene::WiredSceneApi,
         wds::WiredWdsApi,
     },
 };
@@ -18,15 +24,15 @@ mod slot_map;
 pub mod wired;
 
 pub struct Api {
-    pub doc: Arc<LoroDoc>,
-    pub doc_id: Hash,
-    pub prim: TreeID,
+    pub doc:         Arc<LoroDoc>,
+    pub doc_id:      Hash,
+    pub prim:        TreeID,
     pub permissions: ApiPermissions,
     pub wired_agent: Mutex<WiredAgentApi>,
     pub wired_event: Mutex<WiredEventApi>,
     pub wired_input: Mutex<WiredInputApi>,
     pub wired_scene: Mutex<WiredSceneApi>,
-    pub wired_wds: Mutex<WiredWdsApi>,
+    pub wired_wds:   Mutex<WiredWdsApi>,
 }
 
 pub struct SharedRuntimePlugin;

@@ -1,9 +1,17 @@
-use std::{fmt::Write, sync::Arc};
+use std::{
+    fmt::Write,
+    sync::Arc,
+};
 
 use blake3::Hash;
 use irpc::WithChannels;
 
-use super::{ApiError, ApiService, QueryRecords, authenticate};
+use super::{
+    ApiError,
+    ApiService,
+    QueryRecords,
+    authenticate,
+};
 use crate::StoreContext;
 
 pub async fn query_records(

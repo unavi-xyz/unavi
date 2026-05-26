@@ -1,8 +1,21 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{
+    BTreeMap,
+    HashMap,
+};
 
-use loro::{Container, LoroList, LoroMap, LoroMovableList, LoroValue, ValueOrContainer};
+use loro::{
+    Container,
+    LoroList,
+    LoroMap,
+    LoroMovableList,
+    LoroValue,
+    ValueOrContainer,
+};
 
-use crate::{error::HydrateError, hydrate::Hydrate};
+use crate::{
+    error::HydrateError,
+    hydrate::Hydrate,
+};
 
 impl Hydrate for bool {
     fn hydrate_bool(b: bool) -> Result<Self, HydrateError> {
@@ -53,7 +66,7 @@ impl_hydrate_unsigned!(u8, u16, u32, u64);
 impl Hydrate for usize {
     fn hydrate_i64(i: i64) -> Result<Self, HydrateError> {
         Self::try_from(i).map_err(|_| HydrateError::Overflow {
-            value: i,
+            value:       i,
             target_type: "usize",
         })
     }

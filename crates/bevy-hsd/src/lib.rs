@@ -1,7 +1,17 @@
-use std::{collections::BTreeMap, sync::Arc};
+use std::{
+    collections::BTreeMap,
+    sync::Arc,
+};
 
-use bevy::{platform::collections::HashMap, prelude::*, transform::TransformSystems};
-use loro::{LoroDoc, TreeID};
+use bevy::{
+    platform::collections::HashMap,
+    prelude::*,
+    transform::TransformSystems,
+};
+use loro::{
+    LoroDoc,
+    TreeID,
+};
 
 pub mod attributes;
 mod diff;

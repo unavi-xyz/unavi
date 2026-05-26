@@ -5,12 +5,18 @@ use crate::runtime::{
     Runtime,
     shared::{
         self,
-        wired::{agent::AgentRes, scene::prim::PrimRes},
+        wired::{
+            agent::AgentRes,
+            scene::prim::PrimRes,
+        },
     },
 };
 
 pub mod bindings {
-    pub use crate::runtime::shared::wired::{agent::AgentRes, scene::prim::PrimRes};
+    pub use crate::runtime::shared::wired::{
+        agent::AgentRes,
+        scene::prim::PrimRes,
+    };
 
     wasmtime::component::bindgen!({
         path: "../../protocol/wit/wired-agent",
@@ -23,7 +29,10 @@ pub mod bindings {
     });
 }
 
-use bindings::wired::agent::types::{BoneName as WitBoneName, HostAgent};
+use bindings::wired::agent::types::{
+    BoneName as WitBoneName,
+    HostAgent,
+};
 
 impl From<WitBoneName> for BoneName {
     fn from(b: WitBoneName) -> Self {

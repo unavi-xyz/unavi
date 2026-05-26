@@ -5,8 +5,15 @@ use unavi_agent::LocalAgent;
 
 use crate::{
     connection::{
-        ecs::{LastTick, PeerStream, Tickrate},
-        types::{IFrame, pose::Pose},
+        ecs::{
+            LastTick,
+            PeerStream,
+            Tickrate,
+        },
+        types::{
+            IFrame,
+            pose::Pose,
+        },
     },
     peer::Peer,
 };

@@ -1,5 +1,8 @@
 use anyhow::Context;
-use rusqlite::{Connection, params};
+use rusqlite::{
+    Connection,
+    params,
+};
 
 const DEFAULT_QUOTA_BYTES: i64 = 512 * 1024 * 1024;
 

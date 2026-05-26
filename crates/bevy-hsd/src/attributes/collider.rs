@@ -1,21 +1,55 @@
-use avian3d::prelude::{Collider, Position, RigidBody, Rotation};
+use avian3d::prelude::{
+    Collider,
+    Position,
+    RigidBody,
+    Rotation,
+};
 use bevy::prelude::*;
 use bevy_wds::blob::{
-    deps::{BlobDep, BlobDeps, BlobDepsLoaded},
-    request::{BlobRequest, BlobResponse},
+    deps::{
+        BlobDep,
+        BlobDeps,
+        BlobDepsLoaded,
+    },
+    request::{
+        BlobRequest,
+        BlobResponse,
+    },
 };
-use bytemuck::{PodCastError, try_cast_slice};
+use bytemuck::{
+    PodCastError,
+    try_cast_slice,
+};
 use bytes::Bytes;
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{Attribute, collider::ColliderAttr, hydrate_attr},
+    attributes::{
+        Attribute,
+        collider::ColliderAttr,
+        hydrate_attr,
+    },
 };
-use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
+use loro::{
+    ContainerID,
+    Index,
+    TreeID,
+    ValueOrContainer,
+    event::Diff,
+};
 
 use crate::{
     attributes::{
-        ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
-        util::{compute_global_transform, shallow_map_updated_keys, valid_nonneg, valid_positive},
+        ApplyEvent,
+        AttrDataEvent,
+        AttributeParser,
+        DocContext,
+        ParseError,
+        util::{
+            compute_global_transform,
+            shallow_map_updated_keys,
+            valid_nonneg,
+            valid_positive,
+        },
     },
     diff::HsdDiffEvent,
 };
@@ -145,7 +179,7 @@ pub fn apply_collider(
                 .entity(child)
                 .insert(ColliderBlobs(ColliderBlobKind::Trimesh {
                     vertices: vertex_ent,
-                    indices: index_ent,
+                    indices:  index_ent,
                 }));
             return;
         }

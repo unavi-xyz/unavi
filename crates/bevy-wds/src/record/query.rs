@@ -1,4 +1,7 @@
-use async_channel::{Receiver, Sender};
+use async_channel::{
+    Receiver,
+    Sender,
+};
 use bevy::prelude::*;
 use blake3::Hash;
 use tokio::sync::oneshot;
@@ -12,8 +15,8 @@ use crate::LocalActor;
 pub struct QueryRecord {
     pub creator: Option<String>,
     pub schemas: Vec<Hash>,
-    pub cancel: Option<oneshot::Receiver<()>>,
-    pub tx: Sender<Vec<Hash>>,
+    pub cancel:  Option<oneshot::Receiver<()>>,
+    pub tx:      Sender<Vec<Hash>>,
 }
 
 impl QueryRecord {

@@ -6,7 +6,10 @@ use rstest::rstest;
 use rusqlite::params;
 use tracing_test::traced_test;
 
-use crate::common::{DataStoreCtx, ctx};
+use crate::common::{
+    DataStoreCtx,
+    ctx,
+};
 
 #[rstest]
 #[timeout(Duration::from_secs(10))]

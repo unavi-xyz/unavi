@@ -9,9 +9,9 @@ impl Plugin for FadePlugin {
         app.world_mut().spawn((
             FadeOverlay,
             FadeTimer {
-                elapsed: 0.0,
+                elapsed:  0.0,
                 duration: 2.0,
-                delay: 2.0,
+                delay:    2.0,
             },
             Node {
                 position_type: PositionType::Absolute,
@@ -32,9 +32,9 @@ struct FadeOverlay;
 
 #[derive(Component)]
 struct FadeTimer {
-    elapsed: f32,
+    elapsed:  f32,
     duration: f32,
-    delay: f32,
+    delay:    f32,
 }
 
 fn update_fade(

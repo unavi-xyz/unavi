@@ -1,26 +1,46 @@
 use std::{
     collections::BTreeMap,
-    sync::{Arc, LazyLock, Mutex},
+    sync::{
+        Arc,
+        LazyLock,
+        Mutex,
+    },
 };
 
-use bevy::{platform::collections::HashMap, prelude::*};
+use bevy::{
+    platform::collections::HashMap,
+    prelude::*,
+};
 use blake3::Hash;
-use loro::{LoroDoc, Subscription};
-use loro_surgeon::{Hydrate, Reconcile, reconcile::RootReconciler};
-use serde::{Deserialize, Serialize};
+use loro::{
+    LoroDoc,
+    Subscription,
+};
+use loro_surgeon::{
+    Hydrate,
+    Reconcile,
+    reconcile::RootReconciler,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use unavi_util::async_commands::AsyncCommands;
 use wired_records::byte_array::ByteArray;
 
 use crate::{
     Space,
-    peer::{ActiveSpaces, SpaceStateSender},
+    peer::{
+        ActiveSpaces,
+        SpaceStateSender,
+    },
 };
 
 pub static SPACES: LazyLock<Mutex<HashMap<Hash, SpaceStateRoot>>> = LazyLock::new(Mutex::default);
 
 pub struct SpaceStateRoot {
     pub doc: Arc<LoroDoc>,
-    _sub: Subscription,
+    _sub:    Subscription,
 }
 
 #[derive(Component)]
@@ -34,9 +54,9 @@ pub struct SpaceState {
 #[derive(Hydrate, Reconcile, Debug)]
 pub struct PortalState {
     dest_portal: Option<ByteArray<32>>,
-    dest_space: ByteArray<32>,
-    size_x: f32,
-    size_y: f32,
+    dest_space:  ByteArray<32>,
+    size_x:      f32,
+    size_y:      f32,
 }
 
 pub fn add_space_state(trigger: On<Add, Space>, spaces: Query<&Space>, mut commands: Commands) {
@@ -67,7 +87,7 @@ pub fn add_space_state(trigger: On<Add, Space>, spaces: Query<&Space>, mut comma
             }));
 
             SpaceStateRoot {
-                doc: Arc::new(doc),
+                doc:  Arc::new(doc),
                 _sub: sub,
             }
         });
@@ -90,7 +110,7 @@ pub fn remove_space_state(
 #[derive(Event, Clone, Serialize, Deserialize)]
 pub struct SpaceStateUpdate {
     pub space: Hash,
-    pub data: Vec<u8>,
+    pub data:  Vec<u8>,
 }
 
 pub fn publish_state_update(

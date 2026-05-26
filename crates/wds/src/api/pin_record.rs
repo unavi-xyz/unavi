@@ -1,4 +1,7 @@
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::Arc,
+    time::Duration,
+};
 
 use irpc::WithChannels;
 use rusqlite::params;
@@ -6,9 +9,18 @@ use time::OffsetDateTime;
 
 use crate::{
     StoreContext,
-    api::{ApiError, ApiService, MAX_PIN_DURATION, PinRecord, authenticate},
+    api::{
+        ApiError,
+        ApiService,
+        MAX_PIN_DURATION,
+        PinRecord,
+        authenticate,
+    },
     gc::FAST_GC_THRESHOLD,
-    quota::{ensure_quota_exists, reserve_bytes},
+    quota::{
+        ensure_quota_exists,
+        reserve_bytes,
+    },
 };
 
 #[expect(clippy::too_many_lines)]

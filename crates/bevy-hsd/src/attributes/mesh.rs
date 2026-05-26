@@ -1,27 +1,57 @@
 use bevy::{
     asset::RenderAssetUsages,
-    mesh::{Indices, MeshVertexAttribute, PrimitiveTopology, VertexAttributeValues},
+    mesh::{
+        Indices,
+        MeshVertexAttribute,
+        PrimitiveTopology,
+        VertexAttributeValues,
+    },
     prelude::*,
 };
 use bevy_wds::blob::{
-    deps::{BlobDep, BlobDeps, BlobDepsLoaded},
-    request::{BlobRequest, BlobResponse},
+    deps::{
+        BlobDep,
+        BlobDeps,
+        BlobDepsLoaded,
+    },
+    request::{
+        BlobRequest,
+        BlobResponse,
+    },
 };
-use bytemuck::{Pod, PodCastError, try_cast_slice};
+use bytemuck::{
+    Pod,
+    PodCastError,
+    try_cast_slice,
+};
 use bytes::Bytes;
 use hsd::{
     HSD_CONTAINER_ID,
     attributes::{
-        Attribute, hydrate_attr,
-        mesh::{MeshAttr, Topology},
+        Attribute,
+        hydrate_attr,
+        mesh::{
+            MeshAttr,
+            Topology,
+        },
     },
 };
-use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
+use loro::{
+    ContainerID,
+    Index,
+    TreeID,
+    ValueOrContainer,
+    event::Diff,
+};
 use smol_str::SmolStr;
 
 use crate::{
     attributes::{
-        ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
+        ApplyEvent,
+        AttrDataEvent,
+        AttributeParser,
+        DocContext,
+        ParseError,
         util::shallow_map_updated_keys,
     },
     diff::HsdDiffEvent,
@@ -39,8 +69,8 @@ pub struct MeshAttrName(pub SmolStr);
 #[require(BlobDeps)]
 pub struct MeshBlobs {
     pub topology: PrimitiveTopology,
-    pub attrs: Vec<Entity>,
-    pub indices: Option<Entity>,
+    pub attrs:    Vec<Entity>,
+    pub indices:  Option<Entity>,
 }
 
 #[derive(Component)]

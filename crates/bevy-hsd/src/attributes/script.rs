@@ -1,8 +1,17 @@
 use bevy::prelude::*;
-use hsd::attributes::{Attribute, script::ScriptAttr};
-use loro::{LoroValue, ValueOrContainer};
+use hsd::attributes::{
+    Attribute,
+    script::ScriptAttr,
+};
+use loro::{
+    LoroValue,
+    ValueOrContainer,
+};
 
-use crate::attributes::{AttributeParser, ParseError};
+use crate::attributes::{
+    AttributeParser,
+    ParseError,
+};
 
 #[derive(Component, Debug, Clone)]
 pub struct HsdScript(pub blake3::Hash);

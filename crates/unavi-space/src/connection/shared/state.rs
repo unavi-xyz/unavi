@@ -1,13 +1,26 @@
 use blake3::Hash;
-use iroh::endpoint::{Connection, RecvStream, SendStream};
-use serde::{Deserialize, Serialize};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use iroh::endpoint::{
+    Connection,
+    RecvStream,
+    SendStream,
+};
+use serde::{
+    Deserialize,
+    Serialize,
+};
+use tokio::io::{
+    AsyncReadExt,
+    AsyncWriteExt,
+};
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     connection::shared::StreamIdent,
     peer::AddSpaceStateSender,
-    state::space::{SPACES, SpaceStateUpdate},
+    state::space::{
+        SPACES,
+        SpaceStateUpdate,
+    },
 };
 
 #[derive(Serialize, Deserialize)]
@@ -23,7 +36,7 @@ pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
 
     let _ = AsyncCommands::default()
         .trigger(AddSpaceStateSender {
-            peer: connection.remote_id(),
+            peer:   connection.remote_id(),
             sender: ss_tx,
         })
         .send()

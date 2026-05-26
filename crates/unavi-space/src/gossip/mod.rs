@@ -1,19 +1,34 @@
 use bevy::prelude::*;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
-    router::{RouterBuilderFn, RouterBuilderFnTarget},
+    router::{
+        RouterBuilderFn,
+        RouterBuilderFnTarget,
+    },
 };
-use bevy_wds::{LocalActor, SyncTargets};
-use iroh::{EndpointAddr, EndpointId};
+use bevy_wds::{
+    LocalActor,
+    SyncTargets,
+};
+use iroh::{
+    EndpointAddr,
+    EndpointId,
+};
 use iroh_gossip::Gossip;
-use serde::{Deserialize, Serialize};
+use serde::{
+    Deserialize,
+    Serialize,
+};
 use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
 use wds::signed_bytes::Signable;
 
 use crate::{
     Space,
-    gossip::thread::{GossipCommand, GossipCtx},
+    gossip::thread::{
+        GossipCommand,
+        GossipCtx,
+    },
 };
 
 mod bootstrap;
@@ -24,7 +39,7 @@ mod thread;
 #[derive(Serialize, Deserialize)]
 struct SpaceBroadcast {
     sender: EndpointId,
-    msg: SpaceMessage,
+    msg:    SpaceMessage,
 }
 
 impl Signable for SpaceBroadcast {}
@@ -113,9 +128,9 @@ pub fn join_space_topic(
     };
 
     let ctx = GossipCtx {
-        endpoint: endpoint.0.clone(),
-        gossip: gossip.0.clone(),
-        actor: actor.0.clone(),
+        endpoint:     endpoint.0.clone(),
+        gossip:       gossip.0.clone(),
+        actor:        actor.0.clone(),
         sync_targets: sync_targets.0.clone(),
     };
 

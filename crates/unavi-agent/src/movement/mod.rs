@@ -1,23 +1,42 @@
 use std::f32::consts::FRAC_PI_2;
 
 use bevy::prelude::*;
-use bevy_tnua::prelude::{TnuaBuiltinJump, TnuaBuiltinWalk, TnuaController};
+use bevy_tnua::prelude::{
+    TnuaBuiltinJump,
+    TnuaBuiltinWalk,
+    TnuaController,
+};
 use unavi_input::{
-    actions::{JumpAction, LookAction, MoveAction, SprintAction},
-    schminput::{BoolActionValue, Vec2ActionValue},
+    actions::{
+        JumpAction,
+        LookAction,
+        MoveAction,
+        SprintAction,
+    },
+    schminput::{
+        BoolActionValue,
+        Vec2ActionValue,
+    },
 };
 
 use crate::{
-    AgentRig, ControlScheme, LocalAgentEntities,
-    config::{AgentConfig, XrMode},
-    tracking::{TrackedHead, TrackedPose},
+    AgentRig,
+    ControlScheme,
+    LocalAgentEntities,
+    config::{
+        AgentConfig,
+        XrMode,
+    },
+    tracking::{
+        TrackedHead,
+        TrackedPose,
+    },
 };
 
 pub mod grounded;
 mod sensitivity;
 pub mod teleport;
-#[cfg(not(target_family = "wasm"))]
-pub mod xr;
+#[cfg(not(target_family = "wasm"))] pub mod xr;
 
 #[derive(Resource, Default)]
 pub struct MovementYaw(pub f32);

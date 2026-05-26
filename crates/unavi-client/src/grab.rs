@@ -1,6 +1,11 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
-use unavi_input::{SqueezeDown, SqueezeUp, crosshair::CrosshairMode, raycast::PrimaryRaycastInput};
+use unavi_input::{
+    SqueezeDown,
+    SqueezeUp,
+    crosshair::CrosshairMode,
+    raycast::PrimaryRaycastInput,
+};
 
 pub struct GrabPlugin;
 
@@ -15,7 +20,7 @@ impl Plugin for GrabPlugin {
 
 #[derive(Component)]
 struct Grabbed {
-    pointer: Entity,
+    pointer:    Entity,
     offset_tra: Vec3,
     offset_rot: Quat,
 }

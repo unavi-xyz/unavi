@@ -70,8 +70,8 @@ fn validate_list(value: &LoroValue, inner: &Field, path: &str) -> Result<(), Val
     for (i, item) in items.iter().enumerate() {
         validate_value(item, inner, &format!("{path}[{i}]")).map_err(|e| {
             ValidationError::InvalidElement {
-                path: path.to_string(),
-                index: i,
+                path:   path.to_string(),
+                index:  i,
                 source: Box::new(e),
             }
         })?;
@@ -86,8 +86,8 @@ fn validate_map(value: &LoroValue, inner: &Field, path: &str) -> Result<(), Vali
     for (key, val) in map.iter() {
         validate_value(val, inner, &format!("{path}.{key}")).map_err(|e| {
             ValidationError::InvalidField {
-                path: path.to_string(),
-                key: key.into(),
+                path:   path.to_string(),
+                key:    key.into(),
                 source: Box::new(e),
             }
         })?;
@@ -108,8 +108,8 @@ fn validate_struct(
             Some(val) => {
                 validate_value(val, inner_field, &format!("{path}.{key}")).map_err(|e| {
                     ValidationError::InvalidField {
-                        path: path.to_string(),
-                        key: key.clone(),
+                        path:   path.to_string(),
+                        key:    key.clone(),
                         source: Box::new(e),
                     }
                 })?;
@@ -134,8 +134,8 @@ fn validate_tree(value: &LoroValue, inner: &Field, path: &str) -> Result<(), Val
         {
             validate_value(meta, inner, &format!("{path}[{i}].meta")).map_err(|e| {
                 ValidationError::InvalidElement {
-                    path: path.to_string(),
-                    index: i,
+                    path:   path.to_string(),
+                    index:  i,
                     source: Box::new(e),
                 }
             })?;
@@ -157,7 +157,7 @@ fn validate_enum(
         .ok_or_else(|| ValidationError::MissingField("tag".into()))?;
     let LoroValue::String(tag) = tag_value else {
         return Err(ValidationError::TypeMismatch {
-            path: format!("{path}.tag"),
+            path:     format!("{path}.tag"),
             expected: "string",
         });
     };
@@ -178,7 +178,10 @@ fn validate_enum(
 mod tests {
     use std::collections::BTreeMap;
 
-    use loro::{LoroTree, LoroValue};
+    use loro::{
+        LoroTree,
+        LoroValue,
+    };
 
     use super::*;
 
@@ -616,7 +619,7 @@ mod tests {
     fn validate_restricted_delegates_to_inner() {
         let field = Field::Restricted {
             actions: vec![],
-            value: Box::new(Field::String),
+            value:   Box::new(Field::String),
         };
         let good = LoroValue::String("ok".into());
         let bad = LoroValue::I64(42);

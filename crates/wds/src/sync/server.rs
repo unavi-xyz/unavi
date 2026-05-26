@@ -1,13 +1,25 @@
 use blake3::Hash;
 use bytes::BytesMut;
-use futures::{SinkExt, StreamExt};
+use futures::{
+    SinkExt,
+    StreamExt,
+};
 use loro::VersionVector;
 use rusqlite::params;
-use tokio_util::codec::{Framed, LengthDelimitedCodec};
+use tokio_util::codec::{
+    Framed,
+    LengthDelimitedCodec,
+};
 use tracing::info;
 use xdid::core::did::Did;
 
-use crate::{SessionToken, StoreContext, error::ApiError, surg::acl::Acl, sync::SyncMsg};
+use crate::{
+    SessionToken,
+    StoreContext,
+    error::ApiError,
+    surg::acl::Acl,
+    sync::SyncMsg,
+};
 
 /// Reads the next message from the stream and decodes it.
 async fn recv_msg<S>(framed: &mut Framed<S, LengthDelimitedCodec>) -> Result<SyncMsg, ApiError>

@@ -1,17 +1,38 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{
+    BTreeMap,
+    HashSet,
+};
 
 use anyhow::ensure;
 use blake3::Hash;
 use iroh_blobs::api::Store;
-use loro::{LoroDoc, LoroMap, LoroTree, LoroValue, VersionVector};
-use rusqlite::{Connection, params};
+use loro::{
+    LoroDoc,
+    LoroMap,
+    LoroTree,
+    LoroValue,
+    VersionVector,
+};
+use rusqlite::{
+    Connection,
+    params,
+};
 use wds_schema::{
-    schema::{Field, Schema},
+    schema::{
+        Field,
+        Schema,
+    },
     validate::restriction::unwrap_restricted,
 };
 use wired_records::did::HydratedDid;
-use wired_schemas::{SCHEMA_ACL, SCHEMA_RECORD};
-use xdid::{core::did::Did, resolver::DidResolver};
+use wired_schemas::{
+    SCHEMA_ACL,
+    SCHEMA_RECORD,
+};
+use xdid::{
+    core::did::Did,
+    resolver::DidResolver,
+};
 
 use crate::{
     auth::jwk::verify_jwk_signature,
@@ -20,10 +41,16 @@ use crate::{
     quota,
     record::{
         envelope::Envelope,
-        validate::{fetch_schema, validate_diff},
+        validate::{
+            fetch_schema,
+            validate_diff,
+        },
     },
     signed_bytes::SignedBytes,
-    surg::{acl::Acl, record::Record},
+    surg::{
+        acl::Acl,
+        record::Record,
+    },
 };
 
 /// Checks if the ACL was modified between old and new states.
@@ -328,19 +355,19 @@ fn collect_record_refs(value: &LoroValue, field: &Field, refs: &mut HashSet<Stri
 
 /// Parameters for storing an envelope in the database.
 struct StoreEnvelopeParams {
-    record_id: String,
-    author: String,
-    from_vv: Vec<u8>,
-    to_vv: Vec<u8>,
-    ops: Vec<u8>,
+    record_id:     String,
+    author:        String,
+    from_vv:       Vec<u8>,
+    to_vv:         Vec<u8>,
+    ops:           Vec<u8>,
     payload_bytes: Vec<u8>,
-    signature: Vec<u8>,
-    new_vv: Vec<u8>,
-    size: i64,
-    record: Record,
-    acl: Acl,
-    blob_refs: HashSet<String>,
-    record_refs: HashSet<String>,
+    signature:     Vec<u8>,
+    new_vv:        Vec<u8>,
+    size:          i64,
+    record:        Record,
+    acl:           Acl,
+    blob_refs:     HashSet<String>,
+    record_refs:   HashSet<String>,
 }
 
 /// Executes the database transaction to store an envelope.

@@ -5,7 +5,10 @@ use bevy_vrm::BoneName;
 
 use crate::animation::{
     load::AvatarAnimationNodes,
-    weights::{AnimationWeights, TargetAnimationWeights},
+    weights::{
+        AnimationWeights,
+        TargetAnimationWeights,
+    },
 };
 
 pub mod defaults;

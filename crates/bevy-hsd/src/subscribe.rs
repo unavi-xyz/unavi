@@ -1,17 +1,37 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{
+    Arc,
+    Mutex,
+};
 
 use anyhow::Context;
 use bevy::prelude::*;
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{ATTRIBUTES_KEY, RELATIONSHIPS_KEY},
+    attributes::{
+        ATTRIBUTES_KEY,
+        RELATIONSHIPS_KEY,
+    },
 };
-use loro::{ExportMode, LoroValue, Subscription, TreeID, ValueOrContainer, event::ContainerDiff};
+use loro::{
+    ExportMode,
+    LoroValue,
+    Subscription,
+    TreeID,
+    ValueOrContainer,
+    event::ContainerDiff,
+};
 
 use crate::{
-    Hsd, HsdPrimIndex,
-    attributes::{DocContext, PARSERS},
-    diff::{DiffQueue, HsdDiffEvent},
+    Hsd,
+    HsdPrimIndex,
+    attributes::{
+        DocContext,
+        PARSERS,
+    },
+    diff::{
+        DiffQueue,
+        HsdDiffEvent,
+    },
 };
 
 #[derive(Component)]
@@ -26,7 +46,7 @@ pub fn subscribe_to_docs(trigger: On<Add, Hsd>, docs: Query<&Hsd>, mut commands:
 
     let ctx = DocContext {
         doc: Arc::clone(&doc.0),
-        tx: Arc::new(tx),
+        tx:  Arc::new(tx),
     };
     let ctx_sub = ctx.clone();
 

@@ -1,7 +1,12 @@
 use bevy::prelude::*;
 
 use crate::{
-    Portal, PortalBounds, PortalDestination, PortalTraveler, PrevTranslation, TravelCooldown,
+    Portal,
+    PortalBounds,
+    PortalDestination,
+    PortalTraveler,
+    PrevTranslation,
+    TravelCooldown,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -73,7 +78,7 @@ fn check_box_entry_with_side(
 
 #[derive(EntityEvent)]
 pub struct PortalTeleport {
-    pub entity: Entity,
+    pub entity:         Entity,
     pub delta_rotation: Quat,
 }
 

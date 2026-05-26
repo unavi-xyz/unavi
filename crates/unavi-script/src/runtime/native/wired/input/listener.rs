@@ -4,9 +4,17 @@ use crate::runtime::{
     Runtime,
     native::wired::input::bindings::wired::input::{
         api::InputListener,
-        types::{HostInputListener, InputAction, InputDevice, InputEvent},
+        types::{
+            HostInputListener,
+            InputAction,
+            InputDevice,
+            InputEvent,
+        },
     },
-    shared::{self, wired::input::types as shared_types},
+    shared::{
+        self,
+        wired::input::types as shared_types,
+    },
 };
 
 impl From<shared_types::InputAction> for InputAction {

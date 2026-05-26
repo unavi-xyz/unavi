@@ -1,10 +1,23 @@
 use loro::{
-    Container, ValueOrContainer,
-    event::{Diff, ListDiffItem, MapDelta, TreeDiff},
+    Container,
+    ValueOrContainer,
+    event::{
+        Diff,
+        ListDiffItem,
+        MapDelta,
+        TreeDiff,
+    },
 };
 
-use super::{ValidationError, restriction::unwrap_restricted, value::validate_value};
-use crate::schema::{Field, Schema};
+use super::{
+    ValidationError,
+    restriction::unwrap_restricted,
+    value::validate_value,
+};
+use crate::schema::{
+    Field,
+    Schema,
+};
 
 /// Validate a container diff against its schema.
 pub fn validate_container_diff(
@@ -17,7 +30,7 @@ pub fn validate_container_diff(
         Diff::Map(map_delta) => validate_map_diff(map_delta, schema.layout(), container_name),
         Diff::Tree(tree_diff) => validate_tree_diff(tree_diff, schema.layout(), container_name),
         _ => Err(ValidationError::TypeMismatch {
-            path: container_name.to_string(),
+            path:     container_name.to_string(),
             expected: "map, list, or tree",
         }),
     }
@@ -102,7 +115,7 @@ fn validate_tree_diff(
             Ok(())
         }
         _ => Err(ValidationError::TypeMismatch {
-            path: path.to_string(),
+            path:     path.to_string(),
             expected: "tree",
         }),
     }
@@ -127,7 +140,12 @@ fn validate_value_or_container(
 mod tests {
     use std::collections::BTreeMap;
 
-    use loro::{Frontiers, LoroDoc, LoroTree, LoroValue};
+    use loro::{
+        Frontiers,
+        LoroDoc,
+        LoroTree,
+        LoroValue,
+    };
 
     use super::*;
 

@@ -1,29 +1,57 @@
-use std::{collections::HashSet, sync::Arc, time::Duration};
+use std::{
+    collections::HashSet,
+    sync::Arc,
+    time::Duration,
+};
 
 use anyhow::Context;
 use async_channel::Receiver;
 use bevy::{
-    asset::{AssetLoader, AsyncReadExt, LoadContext, io::Reader},
+    asset::{
+        AssetLoader,
+        AsyncReadExt,
+        LoadContext,
+        io::Reader,
+    },
     platform::collections::HashMap,
     prelude::*,
     reflect::TypePath,
-    tasks::{BoxedFuture, ConditionalSendFuture},
+    tasks::{
+        BoxedFuture,
+        ConditionalSendFuture,
+    },
 };
 use bevy_wds::{
-    LocalActor, LocalBlobs,
-    record::write::{SchemaDef, WriteRecord},
+    LocalActor,
+    LocalBlobs,
+    record::write::{
+        SchemaDef,
+        WriteRecord,
+    },
 };
 use blake3::Hash;
 use hsd::{
     attributes::collider::ColliderAttr,
-    file::{HsdFile, HsdFilePrim},
+    file::{
+        HsdFile,
+        HsdFilePrim,
+    },
 };
 use loro::LoroDoc;
-use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
-use wds::{Blobs, actor::Actor};
+use unavi_util::{
+    async_commands::AsyncCommands,
+    async_task::spawn_async_task,
+};
+use wds::{
+    Blobs,
+    actor::Actor,
+};
 use wired_schemas::SCHEMA_HSD;
 
-use crate::{Hsd, HsdRecordId};
+use crate::{
+    Hsd,
+    HsdRecordId,
+};
 
 const DEFAULT_TTL: Duration = Duration::from_hours(7 * 24);
 
@@ -181,8 +209,8 @@ fn walk_prim(prim: &HsdFilePrim, push: &mut impl FnMut([u8; 32])) {
 }
 
 pub struct OnLoadCtx {
-    pub doc: LoroDoc,
-    pub entity: Entity,
+    pub doc:       LoroDoc,
+    pub entity:    Entity,
     pub record_id: Hash,
 }
 
@@ -191,9 +219,9 @@ pub type OnLoadFn =
 
 #[derive(Component)]
 pub struct LoadHsd {
-    pub handle: Handle<HsdAsset>,
+    pub handle:        Handle<HsdAsset>,
     pub extra_schemas: Option<Vec<SchemaDef>>,
-    pub on_load: Option<OnLoadFn>,
+    pub on_load:       Option<OnLoadFn>,
 }
 
 pub fn instance_hsd(
@@ -243,8 +271,8 @@ pub fn instance_hsd(
         write.ttl = Some(DEFAULT_TTL);
         write.schemas = vec![SchemaDef {
             container: "hsd".into(),
-            schema: (&*SCHEMA_HSD).into(),
-            f: Arc::new(move |doc| {
+            schema:    (&*SCHEMA_HSD).into(),
+            f:         Arc::new(move |doc| {
                 file.load_into_doc(doc)?;
                 Ok(())
             }),

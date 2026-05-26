@@ -1,42 +1,75 @@
 use bevy::{
-    camera::{Exposure, RenderTarget, visibility::RenderLayers},
-    core_pipeline::tonemapping::{DebandDither, Tonemapping},
-    pbr::{Atmosphere, AtmosphereSettings},
-    post_process::{bloom::Bloom, dof::DepthOfField},
+    camera::{
+        Exposure,
+        RenderTarget,
+        visibility::RenderLayers,
+    },
+    core_pipeline::tonemapping::{
+        DebandDither,
+        Tonemapping,
+    },
+    pbr::{
+        Atmosphere,
+        AtmosphereSettings,
+    },
+    post_process::{
+        bloom::Bloom,
+        dof::DepthOfField,
+    },
     prelude::*,
     render::{
         render_resource::{
-            Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
+            Extent3d,
+            TextureDescriptor,
+            TextureDimension,
+            TextureFormat,
+            TextureUsages,
         },
-        view::{ColorGrading, Hdr},
+        view::{
+            ColorGrading,
+            Hdr,
+        },
     },
-    window::{PrimaryWindow, WindowRef},
+    window::{
+        PrimaryWindow,
+        WindowRef,
+    },
 };
-use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
+use bevy_vrm::first_person::{
+    DEFAULT_RENDER_LAYERS,
+    FirstPersonFlag,
+};
 
 use crate::{
-    Portal, PortalBounds, PortalCamera, PortalDestination, TrackedCamera,
-    material::{PortalMaterial, PortalParams},
+    Portal,
+    PortalBounds,
+    PortalCamera,
+    PortalDestination,
+    TrackedCamera,
+    material::{
+        PortalMaterial,
+        PortalParams,
+    },
 };
 
 pub const PORTAL_RENDER_LAYER: usize = 5;
 
 pub struct CreatePortal {
-    pub destination: Option<Entity>,
+    pub destination:    Option<Entity>,
     pub tracked_camera: Option<Entity>,
-    pub height: f32,
-    pub width: f32,
-    pub depth: f32,
+    pub height:         f32,
+    pub width:          f32,
+    pub depth:          f32,
 }
 
 impl Default for CreatePortal {
     fn default() -> Self {
         Self {
-            destination: None,
+            destination:    None,
             tracked_camera: None,
-            height: 1.0,
-            width: 1.0,
-            depth: 0.01,
+            height:         1.0,
+            width:          1.0,
+            depth:          0.01,
         }
     }
 }
@@ -122,9 +155,9 @@ impl EntityCommand for CreatePortal {
             let image_handle = world.resource_mut::<Assets<Image>>().add(image);
 
             let material = PortalMaterial {
-                texture: Some(image_handle.clone()),
+                texture:   Some(image_handle.clone()),
                 cull_mode: None,
-                params: PortalParams::default(),
+                params:    PortalParams::default(),
             };
             let material_handle = world.resource_mut::<Assets<PortalMaterial>>().add(material);
 
@@ -140,9 +173,9 @@ impl EntityCommand for CreatePortal {
                 .insert((
                     Portal,
                     PortalBounds {
-                        depth: self.depth,
+                        depth:  self.depth,
                         height: self.height,
-                        width: self.width,
+                        width:  self.width,
                     },
                     RenderLayers::layer(PORTAL_RENDER_LAYER),
                     MeshMaterial3d(material_handle),

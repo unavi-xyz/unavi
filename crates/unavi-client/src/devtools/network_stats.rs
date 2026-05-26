@@ -1,7 +1,10 @@
 //! Network statistics tracking for debug monitoring.
 
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{
+        HashMap,
+        VecDeque,
+    },
     time::Duration,
 };
 
@@ -9,7 +12,10 @@ use bevy::prelude::*;
 use iroh::EndpointId;
 use web_time::Instant;
 
-use super::events::{NETWORK_EVENTS, NetworkEvent};
+use super::events::{
+    NETWORK_EVENTS,
+    NetworkEvent,
+};
 
 const BANDWIDTH_WINDOW_SIZE: usize = 60; // 1 second at 60 FPS.
 const TICKRATE_WINDOW_SIZE: usize = 120; // 2 seconds at 60 FPS.
@@ -20,29 +26,29 @@ const SMOOTHING_ALPHA: f32 = 0.15;
 #[derive(Debug, Clone)]
 pub struct PeerNetworkStats {
     // Bandwidth tracking.
-    pub upload_bytes_per_sec: f32,
+    pub upload_bytes_per_sec:   f32,
     pub download_bytes_per_sec: f32,
-    pub stream_ratio: f32,
-    pub datagram_ratio: f32,
+    pub stream_ratio:           f32,
+    pub datagram_ratio:         f32,
 
     // Tickrate tracking.
     pub effective_tickrate: f32,
 
     // Frame tracking.
     pub total_frames_received: u64,
-    pub dropped_frames: u64,
+    pub dropped_frames:        u64,
 
     // Connection quality.
-    pub quality_score: ConnectionQuality,
+    pub quality_score:        ConnectionQuality,
     pub estimated_latency_ms: f32,
 
     // Internal tracking.
-    pub(crate) upload_samples: VecDeque<(Instant, usize)>,
+    pub(crate) upload_samples:   VecDeque<(Instant, usize)>,
     pub(crate) download_samples: VecDeque<(Instant, usize)>,
-    pub(crate) stream_bytes: usize,
-    pub(crate) datagram_bytes: usize,
-    pub(crate) tick_samples: VecDeque<Instant>,
-    pub(crate) last_update: Instant,
+    pub(crate) stream_bytes:     usize,
+    pub(crate) datagram_bytes:   usize,
+    pub(crate) tick_samples:     VecDeque<Instant>,
+    pub(crate) last_update:      Instant,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -56,21 +62,21 @@ pub enum ConnectionQuality {
 impl Default for PeerNetworkStats {
     fn default() -> Self {
         Self {
-            upload_bytes_per_sec: 0.0,
+            upload_bytes_per_sec:   0.0,
             download_bytes_per_sec: 0.0,
-            stream_ratio: 0.0,
-            datagram_ratio: 0.0,
-            effective_tickrate: 0.0,
-            total_frames_received: 0,
-            dropped_frames: 0,
-            quality_score: ConnectionQuality::Excellent,
-            estimated_latency_ms: 0.0,
-            upload_samples: VecDeque::with_capacity(BANDWIDTH_WINDOW_SIZE),
-            download_samples: VecDeque::with_capacity(BANDWIDTH_WINDOW_SIZE),
-            stream_bytes: 0,
-            datagram_bytes: 0,
-            tick_samples: VecDeque::with_capacity(TICKRATE_WINDOW_SIZE),
-            last_update: Instant::now(),
+            stream_ratio:           0.0,
+            datagram_ratio:         0.0,
+            effective_tickrate:     0.0,
+            total_frames_received:  0,
+            dropped_frames:         0,
+            quality_score:          ConnectionQuality::Excellent,
+            estimated_latency_ms:   0.0,
+            upload_samples:         VecDeque::with_capacity(BANDWIDTH_WINDOW_SIZE),
+            download_samples:       VecDeque::with_capacity(BANDWIDTH_WINDOW_SIZE),
+            stream_bytes:           0,
+            datagram_bytes:         0,
+            tick_samples:           VecDeque::with_capacity(TICKRATE_WINDOW_SIZE),
+            last_update:            Instant::now(),
         }
     }
 }

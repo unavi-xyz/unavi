@@ -1,12 +1,26 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use bevy_hsd::{Hsd, HsdChild, HsdRecordId, Prim};
+use bevy_hsd::{
+    Hsd,
+    HsdChild,
+    HsdRecordId,
+    Prim,
+};
 use tokio::sync::Mutex;
-use tracing::{Instrument, Span};
+use tracing::{
+    Instrument,
+    Span,
+};
 use unavi_util::async_task::spawn_async_task;
-use wasmtime::{Store, component::Linker};
-use wasmtime_wasi::{ResourceTable, WasiCtxBuilder};
+use wasmtime::{
+    Store,
+    component::Linker,
+};
+use wasmtime_wasi::{
+    ResourceTable,
+    WasiCtxBuilder,
+};
 
 use crate::{
     Script,
@@ -14,7 +28,10 @@ use crate::{
         ScriptEngine,
         native::{
             WasmtimeEngine,
-            log::{ScriptStderr, ScriptStdout},
+            log::{
+                ScriptStderr,
+                ScriptStdout,
+            },
             tick::LastTick,
         },
     },
@@ -22,7 +39,10 @@ use crate::{
     permissions::ApiPermissions,
     runtime::{
         Runtime,
-        native::{NativeRuntime, add_apis_to_linker},
+        native::{
+            NativeRuntime,
+            add_apis_to_linker,
+        },
         shared::Api,
     },
 };
@@ -86,16 +106,16 @@ pub fn instantiate_scripts(
         let perms = perms.cloned().unwrap_or_default();
 
         let state = Runtime {
-            api: Arc::new(Api {
-                doc: Arc::clone(&doc.0),
-                doc_id: doc_id.0,
-                prim: prim.0,
+            api:    Arc::new(Api {
+                doc:         Arc::clone(&doc.0),
+                doc_id:      doc_id.0,
+                prim:        prim.0,
                 permissions: perms.clone(),
                 wired_agent: Mutex::default(),
                 wired_event: Mutex::default(),
                 wired_input: Mutex::default(),
                 wired_scene: Mutex::default(),
-                wired_wds: Mutex::default(),
+                wired_wds:   Mutex::default(),
             }),
             native: NativeRuntime {
                 table: ResourceTable::default(),

@@ -1,4 +1,7 @@
-use std::{process::Child, sync::Arc};
+use std::{
+    process::Child,
+    sync::Arc,
+};
 
 use parking_lot::Mutex;
 

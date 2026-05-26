@@ -1,23 +1,52 @@
 use avian3d::prelude::*;
-use bevy::{camera::visibility::RenderLayers, prelude::*};
+use bevy::{
+    camera::visibility::RenderLayers,
+    prelude::*,
+};
 use bevy_tnua::{
-    builtins::{TnuaBuiltinJumpConfig, TnuaBuiltinWalkConfig},
+    builtins::{
+        TnuaBuiltinJumpConfig,
+        TnuaBuiltinWalkConfig,
+    },
     prelude::*,
 };
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
-use bevy_vrm::first_person::{DEFAULT_RENDER_LAYERS, FirstPersonFlag};
+use bevy_vrm::first_person::{
+    DEFAULT_RENDER_LAYERS,
+    FirstPersonFlag,
+};
 use unavi_avatar::{
-    Avatar, VrmPath,
-    animation::{defaults::default_character_animations, velocity::AverageVelocity},
+    Avatar,
+    VrmPath,
+    animation::{
+        defaults::default_character_animations,
+        velocity::AverageVelocity,
+    },
 };
 use unavi_input::raycast::PrimaryRaycastInput;
-use unavi_portal::{PortalTraveler, create::PORTAL_RENDER_LAYER};
+use unavi_portal::{
+    PortalTraveler,
+    create::PORTAL_RENDER_LAYER,
+};
 
 use crate::{
-    Agent, AgentAvatar, AgentCamera, AgentRig, ControlScheme, ControlSchemeConfig, Grounded,
-    LocalAgent, LocalAgentEntities,
-    config::{AgentConfig, XrMode},
-    tracking::{TrackedHead, TrackedPose},
+    Agent,
+    AgentAvatar,
+    AgentCamera,
+    AgentRig,
+    ControlScheme,
+    ControlSchemeConfig,
+    Grounded,
+    LocalAgent,
+    LocalAgentEntities,
+    config::{
+        AgentConfig,
+        XrMode,
+    },
+    tracking::{
+        TrackedHead,
+        TrackedPose,
+    },
 };
 
 const RAYCAST_GRAB_DISTANCE: f32 = 2.5;
@@ -51,7 +80,7 @@ pub fn spawn_local_agent(
                     max_slope: 55.0f32.to_radians(),
                     ..Default::default()
                 },
-                jump: TnuaBuiltinJumpConfig {
+                jump:  TnuaBuiltinJumpConfig {
                     height: config.jump_height,
                     ..Default::default()
                 },

@@ -3,11 +3,20 @@ use wired_prelude::prelude::*;
 use crate::{
     unavi::{
         shapes::api::Cuboid,
-        vui_module::api::{ModuleEvent, VuiModule},
+        vui_module::api::{
+            ModuleEvent,
+            VuiModule,
+        },
     },
     wired::scene::{
         api::self_document,
-        types::{Material, Prim, RigidBody, RigidBodyKind, Xform},
+        types::{
+            Material,
+            Prim,
+            RigidBody,
+            RigidBodyKind,
+            Xform,
+        },
     },
 };
 
@@ -20,8 +29,8 @@ const ICON_SIZE: f32 = 0.040;
 const LIP_H: f32 = 0.036;
 const LIP_T: f32 = 0.012;
 const LIP_Y: f32 = BASE_H * 0.5 + LIP_H * 0.5;
-const TABLE_D: f32 = 0.44;
-const TABLE_W: f32 = 0.60;
+const TABLE_D: f32 = 0.5;
+const TABLE_W: f32 = 1.0;
 const X_LIP_X: f32 = TABLE_W * 0.5 - LIP_T * 0.5;
 const Z_LIP_Z: f32 = TABLE_D * 0.5 - LIP_T * 0.5;
 
@@ -67,20 +76,20 @@ const fn material(base_color: Option<Color>) -> Material {
 
 const fn static_body() -> RigidBody {
     RigidBody {
-        kind: RigidBodyKind::Static,
+        kind:            RigidBodyKind::Static,
         angular_damping: None,
-        friction: None,
-        linear_damping: None,
-        mass: None,
-        restitution: None,
+        friction:        None,
+        linear_damping:  None,
+        mass:            None,
+        restitution:     None,
     }
 }
 
 struct Script {
-    root: Prim,
-    _icon: Prim,
-    module: VuiModule,
-    color: Color,
+    root:         Prim,
+    _icon:        Prim,
+    module:       VuiModule,
+    color:        Color,
     themed_prims: Vec<Prim>,
 }
 
@@ -144,8 +153,8 @@ impl ScriptBehavior for Script {
                 ModuleEvent::Activate(t) => {
                     self.root.set_xform(Some(Xform {
                         translation: t.translation,
-                        rotation: t.rotation,
-                        scale: t.scale,
+                        rotation:    t.rotation,
+                        scale:       t.scale,
                     }));
                 }
                 ModuleEvent::Deactivate => {

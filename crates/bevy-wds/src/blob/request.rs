@@ -10,7 +10,7 @@ pub struct BlobRequest(pub Hash);
 
 #[derive(Component)]
 pub struct BlobPending {
-    rx: async_channel::Receiver<Bytes>,
+    rx:      async_channel::Receiver<Bytes>,
     _cancel: oneshot::Sender<()>,
 }
 

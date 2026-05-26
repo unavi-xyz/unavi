@@ -1,10 +1,20 @@
 #![allow(dead_code)]
 
-use std::{sync::Arc, time::Duration};
+use std::{
+    sync::Arc,
+    time::Duration,
+};
 
 use avian3d::PhysicsPlugins;
-use bevy::{asset::AssetPlugin, prelude::*, transform::TransformPlugin};
-use bevy_wds::{LocalBlobs, WdsPlugin};
+use bevy::{
+    asset::AssetPlugin,
+    prelude::*,
+    transform::TransformPlugin,
+};
+use bevy_wds::{
+    LocalBlobs,
+    WdsPlugin,
+};
 use iroh_blobs::store::mem::MemStore;
 use loro::LoroDoc;
 use rstest::fixture;
@@ -14,7 +24,7 @@ use wds::Blobs;
 pub struct TestContext {
     pub app: App,
     pub doc: Arc<LoroDoc>,
-    blobs: Option<Blobs>,
+    blobs:   Option<Blobs>,
 }
 
 impl Default for TestContext {

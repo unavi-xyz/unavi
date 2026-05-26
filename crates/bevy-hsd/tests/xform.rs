@@ -1,9 +1,18 @@
 use bevy::prelude::*;
 use hsd::{
-    HSD_CONTAINER_ID, PrimMeta,
-    attributes::{Attribute, Attributes, attributes_map, xform::XformAttr},
+    HSD_CONTAINER_ID,
+    PrimMeta,
+    attributes::{
+        Attribute,
+        Attributes,
+        attributes_map,
+        xform::XformAttr,
+    },
 };
-use loro_surgeon::{Reconcile, reconcile::RootReconciler};
+use loro_surgeon::{
+    Reconcile,
+    reconcile::RootReconciler,
+};
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -19,8 +28,8 @@ fn test_xform_lifecycle(mut ctx: TestContext) {
     let meta = tree.get_meta(root).expect("get meta");
 
     let attr = XformAttr {
-        rotation: [0.4, 0.5, 0.6, 0.9],
-        scale: [0.9, 0.8, 0.7],
+        rotation:    [0.4, 0.5, 0.6, 0.9],
+        scale:       [0.9, 0.8, 0.7],
         translation: [1.0, 2.0, 3.0],
     };
     let prim = PrimMeta {

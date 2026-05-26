@@ -3,11 +3,17 @@ mod common;
 use std::time::Duration;
 
 use rstest::rstest;
-use rusqlite::{OptionalExtension, params};
+use rusqlite::{
+    OptionalExtension,
+    params,
+};
 use time::OffsetDateTime;
 use tracing_test::traced_test;
 
-use crate::common::{DataStoreCtx, ctx};
+use crate::common::{
+    DataStoreCtx,
+    ctx,
+};
 
 async fn insert_record_dep(ctx: &DataStoreCtx, record_id: &str, dep_record_id: &str) {
     let record_id = record_id.to_string();

@@ -1,15 +1,27 @@
 //! Reconcile derive for enums.
 
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
-use syn::{DataEnum, DeriveInput, Fields, Ident, Variant};
+use quote::{
+    format_ident,
+    quote,
+};
+use syn::{
+    DataEnum,
+    DeriveInput,
+    Fields,
+    Ident,
+    Variant,
+};
 
-use crate::attrs::{FieldAttrs, Strategy};
+use crate::attrs::{
+    FieldAttrs,
+    Strategy,
+};
 
 struct EnumKey {
-    decl: TokenStream,
-    ty: TokenStream,
-    key_fn: TokenStream,
+    decl:           TokenStream,
+    ty:             TokenStream,
+    key_fn:         TokenStream,
     hydrate_key_fn: TokenStream,
 }
 
@@ -33,9 +45,9 @@ pub fn derive_reconcile_enum(input: &DeriveInput, data: &DataEnum) -> TokenStrea
         generate_enum_key(name, data)
     } else {
         EnumKey {
-            decl: TokenStream::new(),
-            ty: quote! { ::loro_surgeon::reconcile::NoKey },
-            key_fn: TokenStream::new(),
+            decl:           TokenStream::new(),
+            ty:             quote! { ::loro_surgeon::reconcile::NoKey },
+            key_fn:         TokenStream::new(),
             hydrate_key_fn: TokenStream::new(),
         }
     };

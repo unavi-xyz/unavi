@@ -1,7 +1,12 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use bevy_hsd::{Hsd, HsdChild, HsdRecordId, Prim};
+use bevy_hsd::{
+    Hsd,
+    HsdChild,
+    HsdRecordId,
+    Prim,
+};
 use tokio::sync::Mutex;
 use unavi_util::async_task::spawn_async_task;
 
@@ -13,7 +18,10 @@ use crate::{
     runtime::{
         Runtime,
         shared::Api,
-        web::{ScriptCell, ScriptInstance},
+        web::{
+            ScriptCell,
+            ScriptInstance,
+        },
     },
 };
 
@@ -53,15 +61,15 @@ pub fn instantiate_scripts(
 
         let runtime = Runtime {
             api: Arc::new(Api {
-                doc: Arc::clone(&doc.0),
-                doc_id: doc_id.0,
-                prim: prim.0,
+                doc:         Arc::clone(&doc.0),
+                doc_id:      doc_id.0,
+                prim:        prim.0,
                 permissions: perms.clone(),
                 wired_agent: Mutex::default(),
                 wired_event: Mutex::default(),
                 wired_input: Mutex::default(),
                 wired_scene: Mutex::default(),
-                wired_wds: Mutex::default(),
+                wired_wds:   Mutex::default(),
             }),
         };
 

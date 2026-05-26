@@ -1,5 +1,8 @@
 use bevy::{
-    light::{CascadeShadowConfigBuilder, light_consts::lux},
+    light::{
+        CascadeShadowConfigBuilder,
+        light_consts::lux,
+    },
     prelude::*,
 };
 use bevy_vrm::mtoon::MtoonSun;

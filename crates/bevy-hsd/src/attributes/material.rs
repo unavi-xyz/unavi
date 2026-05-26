@@ -1,17 +1,38 @@
-use bevy::{ecs::system::SystemParam, pbr::MeshMaterial3d, prelude::*};
+use bevy::{
+    ecs::system::SystemParam,
+    pbr::MeshMaterial3d,
+    prelude::*,
+};
 use hsd::{
     HSD_CONTAINER_ID,
     attributes::{
-        Attribute, hydrate_attr,
-        material::{ColorVec, MaterialAttr},
+        Attribute,
+        hydrate_attr,
+        material::{
+            ColorVec,
+            MaterialAttr,
+        },
     },
 };
-use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
+use loro::{
+    ContainerID,
+    Index,
+    TreeID,
+    ValueOrContainer,
+    event::Diff,
+};
 
 use crate::{
-    HsdChild, HsdPrimIndex, HsdRelationships,
+    HsdChild,
+    HsdPrimIndex,
+    HsdRelationships,
     attributes::{
-        ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError, image::HsdImage,
+        ApplyEvent,
+        AttrDataEvent,
+        AttributeParser,
+        DocContext,
+        ParseError,
+        image::HsdImage,
         util::shallow_map_updated_keys,
     },
     diff::HsdDiffEvent,
@@ -33,11 +54,11 @@ pub struct MaterialData(pub MaterialAttr);
 
 #[derive(Component, Default, Debug, Clone)]
 pub struct MaterialTextureRefs {
-    pub base_color: Option<Entity>,
-    pub emissive: Option<Entity>,
+    pub base_color:         Option<Entity>,
+    pub emissive:           Option<Entity>,
     pub metallic_roughness: Option<Entity>,
-    pub normal: Option<Entity>,
-    pub occlusion: Option<Entity>,
+    pub normal:             Option<Entity>,
+    pub occlusion:          Option<Entity>,
 }
 
 impl MaterialTextureRefs {
@@ -113,11 +134,11 @@ impl AttributeParser for MaterialParser {
 
 #[derive(SystemParam)]
 pub struct MaterialCtx<'w, 's> {
-    pub children: Query<'w, 's, &'static HsdChild>,
-    pub indices: Query<'w, 's, &'static HsdPrimIndex>,
+    pub children:      Query<'w, 's, &'static HsdChild>,
+    pub indices:       Query<'w, 's, &'static HsdPrimIndex>,
     pub relationships: Query<'w, 's, &'static HsdRelationships>,
-    pub images: Query<'w, 's, &'static HsdImage>,
-    pub materials: Query<'w, 's, &'static HsdMaterial>,
+    pub images:        Query<'w, 's, &'static HsdImage>,
+    pub materials:     Query<'w, 's, &'static HsdMaterial>,
 }
 
 pub fn apply_material(
@@ -225,11 +246,11 @@ fn rebuild_material(
     };
 
     let texture_refs = MaterialTextureRefs {
-        base_color: lookup_image(attr.base_color_texture.as_ref(), index),
-        emissive: lookup_image(attr.emissive_texture.as_ref(), index),
+        base_color:         lookup_image(attr.base_color_texture.as_ref(), index),
+        emissive:           lookup_image(attr.emissive_texture.as_ref(), index),
         metallic_roughness: lookup_image(attr.metallic_roughness_texture.as_ref(), index),
-        normal: lookup_image(attr.normal_texture.as_ref(), index),
-        occlusion: lookup_image(attr.occlusion_texture.as_ref(), index),
+        normal:             lookup_image(attr.normal_texture.as_ref(), index),
+        occlusion:          lookup_image(attr.occlusion_texture.as_ref(), index),
     };
 
     let mut material = StandardMaterial::default();

@@ -4,7 +4,10 @@ use crate::runtime::{
     Runtime,
     shared::{
         self,
-        wired::scene::{document::DocRes, prim::PrimRes},
+        wired::scene::{
+            document::DocRes,
+            prim::PrimRes,
+        },
     },
 };
 
@@ -13,7 +16,10 @@ pub mod prim;
 mod types;
 
 pub mod bindings {
-    pub use crate::runtime::shared::wired::scene::{document::DocRes, prim::PrimRes};
+    pub use crate::runtime::shared::wired::scene::{
+        document::DocRes,
+        prim::PrimRes,
+    };
 
     wasmtime::component::bindgen!({
         path: "../../protocol/wit/wired-scene",

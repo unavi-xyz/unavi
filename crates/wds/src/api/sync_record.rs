@@ -3,8 +3,18 @@ use std::sync::Arc;
 use irpc::WithChannels;
 use tracing::warn;
 
-use super::{ApiError, ApiService, SyncRecord, authenticate};
-use crate::{Identity, StoreContext, signed_bytes::IrohSigner, sync::client::sync_to_remote};
+use super::{
+    ApiError,
+    ApiService,
+    SyncRecord,
+    authenticate,
+};
+use crate::{
+    Identity,
+    StoreContext,
+    signed_bytes::IrohSigner,
+    sync::client::sync_to_remote,
+};
 
 pub async fn sync_record(
     ctx: Arc<StoreContext>,

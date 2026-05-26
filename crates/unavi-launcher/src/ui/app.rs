@@ -1,11 +1,6 @@
 use dioxus::prelude::*;
 
-use super::{
-    client_update::ClientUpdate,
-    home::Home,
-    self_update::SelfUpdate,
-    settings::Settings,
-};
+use super::{client_update::ClientUpdate, home::Home, self_update::SelfUpdate, settings::Settings};
 
 const BASE_STYLES: Asset = asset!("/assets/base.css");
 const BUTTON_STYLES: Asset = asset!("/assets/buttons.css");

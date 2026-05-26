@@ -1,8 +1,5 @@
 use std::{
-    sync::{
-        Arc,
-        atomic::Ordering,
-    },
+    sync::{Arc, atomic::Ordering},
     time::Duration,
 };
 
@@ -15,11 +12,7 @@ use crate::{
     Ticking,
     engine::native::{
         init::InitializedScript,
-        instantiate::{
-            ScriptGuest,
-            ScriptSpan,
-            ScriptStore,
-        },
+        instantiate::{ScriptGuest, ScriptSpan, ScriptStore},
     },
 };
 

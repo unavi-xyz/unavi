@@ -1,13 +1,7 @@
 use std::time::Duration;
 
-use async_channel::{
-    Receiver,
-    Sender,
-};
-use bevy::{
-    log::tracing::Instrument,
-    prelude::*,
-};
+use async_channel::{Receiver, Sender};
+use bevy::{log::tracing::Instrument, prelude::*};
 use blake3::Hash;
 use iroh_base::EndpointAddr;
 use loro::LoroDoc;
@@ -15,19 +9,16 @@ use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
 use wds::actor::Actor;
 
-use crate::{
-    LocalActor,
-    SyncTargets,
-};
+use crate::{LocalActor, SyncTargets};
 
 #[derive(Event)]
 pub struct ReadRecord {
-    pub id:           Hash,
-    pub ttl:          Option<Duration>,
+    pub id: Hash,
+    pub ttl: Option<Duration>,
     pub backoff_secs: u64,
-    pub retries:      usize,
-    pub cancel:       Option<oneshot::Receiver<()>>,
-    pub tx:           Sender<LoroDoc>,
+    pub retries: usize,
+    pub cancel: Option<oneshot::Receiver<()>>,
+    pub tx: Sender<LoroDoc>,
 }
 
 impl ReadRecord {

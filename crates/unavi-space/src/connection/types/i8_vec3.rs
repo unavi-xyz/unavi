@@ -1,9 +1,6 @@
 use half::f16;
 use postcard::experimental::max_size::MaxSize;
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 
 use super::f16_vec3::F16Vec3;
 

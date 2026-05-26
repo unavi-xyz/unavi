@@ -3,23 +3,12 @@ use std::collections::BTreeMap;
 use hsd::{
     HSD_CONTAINER_ID,
     attributes::{
-        Attribute,
-        Attributes,
-        attributes_map,
-        image::ImageAttr,
-        material::MaterialAttr,
-        name::NameAttr,
-        relationships_map,
+        Attribute, Attributes, attributes_map, image::ImageAttr, material::MaterialAttr,
+        name::NameAttr, relationships_map,
     },
-    file::{
-        HsdFile,
-        HsdFilePrim,
-    },
+    file::{HsdFile, HsdFilePrim},
 };
-use loro::{
-    LoroDoc,
-    TreeID,
-};
+use loro::{LoroDoc, TreeID};
 use loro_surgeon::bytes::ByteArray;
 fn doc_with_file(file: &HsdFile) -> LoroDoc {
     let doc = LoroDoc::new();

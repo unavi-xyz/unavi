@@ -1,12 +1,6 @@
-use std::{
-    path::Path,
-    sync::Arc,
-};
+use std::{path::Path, sync::Arc};
 
-use anyhow::{
-    Context,
-    Result,
-};
+use anyhow::{Context, Result};
 use rusqlite::Connection;
 use time::OffsetDateTime;
 use tokio::sync::Mutex;

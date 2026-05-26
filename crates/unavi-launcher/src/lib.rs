@@ -1,11 +1,7 @@
 use std::sync::LazyLock;
 
 use config::ConfigStore;
-use dioxus::desktop::{
-    LogicalSize,
-    WindowBuilder,
-    tao::window::Icon,
-};
+use dioxus::desktop::{LogicalSize, WindowBuilder, tao::window::Icon};
 use directories::ProjectDirs;
 use process::ProcessTracker;
 

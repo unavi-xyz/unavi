@@ -1,12 +1,6 @@
 use iroh::{
-    endpoint::{
-        Connection,
-        VarInt,
-    },
-    protocol::{
-        AcceptError,
-        ProtocolHandler,
-    },
+    endpoint::{Connection, VarInt},
+    protocol::{AcceptError, ProtocolHandler},
 };
 use tokio::sync::oneshot;
 use tracing::error;

@@ -1,7 +1,4 @@
-use std::sync::{
-    Arc,
-    atomic::Ordering,
-};
+use std::sync::{Arc, atomic::Ordering};
 
 use bevy::prelude::*;
 use tracing::Instrument;
@@ -12,11 +9,7 @@ use crate::{
     RenderTicking,
     engine::native::{
         init::InitializedScript,
-        instantiate::{
-            ScriptGuest,
-            ScriptSpan,
-            ScriptStore,
-        },
+        instantiate::{ScriptGuest, ScriptSpan, ScriptStore},
     },
 };
 

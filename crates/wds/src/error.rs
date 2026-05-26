@@ -4,10 +4,7 @@
 //! - [`WdsError`]: Internal error type with full context.
 //! - [`ApiError`]: External error type safe for client/server boundary.
 
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// Internal error type for WDS operations.

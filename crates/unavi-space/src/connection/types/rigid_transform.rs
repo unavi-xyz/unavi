@@ -1,15 +1,9 @@
 use bevy::transform::components::Transform;
 use postcard::experimental::max_size::MaxSize;
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 
 use crate::connection::types::{
-    f16_vec3::F16Vec3,
-    f32_vec3::F32Vec3,
-    i8_vec3::I8Vec3,
-    quat::PackedQuat,
+    f16_vec3::F16Vec3, f32_vec3::F32Vec3, i8_vec3::I8Vec3, quat::PackedQuat,
 };
 
 #[derive(Clone, Debug, MaxSize, Serialize, Deserialize, Default)]

@@ -1,7 +1,4 @@
-use xdid::methods::key::{
-    DidKeyPair,
-    p256::P256KeyPair,
-};
+use xdid::methods::key::{DidKeyPair, p256::P256KeyPair};
 use zeroize::Zeroizing;
 
 use crate::DIRS;

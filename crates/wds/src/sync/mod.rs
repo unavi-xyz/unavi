@@ -6,31 +6,14 @@ use std::sync::Arc;
 
 use blake3::Hash;
 use iroh::{
-    endpoint::{
-        Connection,
-        VarInt,
-    },
-    protocol::{
-        AcceptError,
-        ProtocolHandler,
-    },
+    endpoint::{Connection, VarInt},
+    protocol::{AcceptError, ProtocolHandler},
 };
-use serde::{
-    Deserialize,
-    Serialize,
-};
-use tokio_util::codec::{
-    Framed,
-    LengthDelimitedCodec,
-};
+use serde::{Deserialize, Serialize};
+use tokio_util::codec::{Framed, LengthDelimitedCodec};
 use tracing::warn;
 
-use crate::{
-    SessionToken,
-    StoreContext,
-    error::ApiError,
-    sync::combined_stream::CombinedStream,
-};
+use crate::{SessionToken, StoreContext, error::ApiError, sync::combined_stream::CombinedStream};
 
 pub mod client;
 mod combined_stream;
@@ -42,9 +25,9 @@ pub const ALPN: &[u8] = b"wds/sync";
 #[derive(Debug, Serialize, Deserialize)]
 pub enum SyncMsg {
     Begin {
-        session:   SessionToken,
+        session: SessionToken,
         record_id: Hash,
-        vv:        Vec<u8>,
+        vv: Vec<u8>,
     },
     /// Server sends blob dependency hashes for the record.
     BlobHashes(Vec<Hash>),

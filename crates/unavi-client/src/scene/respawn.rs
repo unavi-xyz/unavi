@@ -1,12 +1,6 @@
-use avian3d::prelude::{
-    AngularVelocity,
-    LinearVelocity,
-};
+use avian3d::prelude::{AngularVelocity, LinearVelocity};
 use bevy::prelude::*;
-use unavi_agent::{
-    LocalAgent,
-    LocalAgentEntities,
-};
+use unavi_agent::{LocalAgent, LocalAgentEntities};
 
 #[derive(Event)]
 pub struct Respawn;

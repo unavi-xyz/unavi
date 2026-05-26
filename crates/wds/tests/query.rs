@@ -3,15 +3,9 @@ use std::time::Duration;
 use rstest::rstest;
 use tracing_test::traced_test;
 use wds::surg::acl::Acl;
-use wired_schemas::{
-    SCHEMA_BEACON,
-    SCHEMA_HOME,
-};
+use wired_schemas::{SCHEMA_BEACON, SCHEMA_HOME};
 
-use crate::common::{
-    DataStoreCtx,
-    ctx,
-};
+use crate::common::{DataStoreCtx, ctx};
 
 mod common;
 

@@ -1,24 +1,14 @@
-use std::{
-    sync::Arc,
-    time::Duration,
-};
+use std::{sync::Arc, time::Duration};
 
 use bevy::prelude::*;
 use bevy_iroh::endpoint::IrohEndpoint;
 use bevy_wds::{
     LocalActor,
-    record::write::{
-        SchemaDef,
-        WriteRecord,
-    },
+    record::write::{SchemaDef, WriteRecord},
 };
 use time::OffsetDateTime;
 use unavi_util::async_task::spawn_async_task;
-use wired_records::{
-    beacon::BeaconRecord,
-    byte_array::ByteArray,
-    did::HydratedDid,
-};
+use wired_records::{beacon::BeaconRecord, byte_array::ByteArray, did::HydratedDid};
 use wired_schemas::SCHEMA_BEACON;
 
 use crate::Space;
@@ -62,13 +52,13 @@ pub fn publish_beacons(
         event.public = true;
         event.schemas = vec![SchemaDef {
             container: "beacon".into(),
-            schema:    (&*SCHEMA_BEACON).into(),
-            f:         Arc::new(move |doc| {
+            schema: (&*SCHEMA_BEACON).into(),
+            f: Arc::new(move |doc| {
                 let beacon = BeaconRecord {
-                    did:      HydratedDid(did.clone()),
+                    did: HydratedDid(did.clone()),
                     endpoint: ByteArray(loro_surgeon::bytes::ByteArray(*endpoint_id.as_bytes())),
-                    expires:  (OffsetDateTime::now_utc() + BEACON_TTL).unix_timestamp(),
-                    space:    space.into(),
+                    expires: (OffsetDateTime::now_utc() + BEACON_TTL).unix_timestamp(),
+                    space: space.into(),
                 };
                 beacon.save(doc)?;
                 Ok(())

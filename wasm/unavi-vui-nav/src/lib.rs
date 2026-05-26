@@ -3,40 +3,20 @@ use wired_schemas::SCHEMA_BEACON;
 
 use crate::{
     unavi::{
-        shapes::api::{
-            Cuboid,
-            Cylinder,
-            Torus,
-        },
-        vui_module::api::{
-            ModuleEvent,
-            VuiModule,
-        },
+        shapes::api::{Cuboid, Cylinder, Torus},
+        vui_module::api::{ModuleEvent, VuiModule},
     },
     wired::{
         scene::{
-            api::{
-                load_hsd,
-                remove_document,
-                self_document,
-            },
+            api::{load_hsd, remove_document, self_document},
             types::{
-                Collider,
-                ColliderCylinder,
-                Document,
-                Material,
-                Prim,
-                RigidBody,
-                RigidBodyKind,
+                Collider, ColliderCylinder, Document, Material, Prim, RigidBody, RigidBodyKind,
                 Xform,
             },
         },
         wds::{
             api::get_wds,
-            types::{
-                QueryFilter,
-                QueryFuture,
-            },
+            types::{QueryFilter, QueryFuture},
         },
     },
 };
@@ -110,35 +90,35 @@ const fn material(base_color: Option<Color>, double_sided: bool) -> Material {
 
 const fn static_body() -> RigidBody {
     RigidBody {
-        kind:            RigidBodyKind::Static,
+        kind: RigidBodyKind::Static,
         angular_damping: None,
-        friction:        None,
-        linear_damping:  None,
-        mass:            None,
-        restitution:     None,
+        friction: None,
+        linear_damping: None,
+        mass: None,
+        restitution: None,
     }
 }
 
 const fn dynamic_body() -> RigidBody {
     RigidBody {
-        kind:            RigidBodyKind::Dynamic,
+        kind: RigidBodyKind::Dynamic,
         angular_damping: None,
-        friction:        None,
-        linear_damping:  None,
-        mass:            None,
-        restitution:     None,
+        friction: None,
+        linear_damping: None,
+        mass: None,
+        restitution: None,
     }
 }
 
 struct Script {
-    _icon:        Prim,
-    _prims:       Vec<Prim>,
+    _icon: Prim,
+    _prims: Vec<Prim>,
     beacon_query: Option<QueryFuture>,
-    beacons:      Vec<Document>,
-    color:        Color,
-    module:       VuiModule,
-    ring:         Prim,
-    root:         Prim,
+    beacons: Vec<Document>,
+    color: Color,
+    module: VuiModule,
+    ring: Prim,
+    root: Prim,
     themed_prims: Vec<Prim>,
 }
 
@@ -195,8 +175,8 @@ impl ScriptBehavior for Script {
                 ModuleEvent::Activate(t) => {
                     self.root.set_xform(Some(Xform {
                         translation: t.translation,
-                        rotation:    t.rotation,
-                        scale:       t.scale,
+                        rotation: t.rotation,
+                        scale: t.scale,
                     }));
                     set_translation(
                         &self.ring,

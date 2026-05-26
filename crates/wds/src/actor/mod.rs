@@ -1,42 +1,23 @@
-use std::{
-    sync::Arc,
-    time::Duration,
-};
+use std::{sync::Arc, time::Duration};
 
 use anyhow::Context;
 use blake3::Hash;
 use bytes::Bytes;
 use iroh::EndpointAddr;
 use irpc::Client;
-use loro::{
-    LoroDoc,
-    VersionVector,
-};
+use loro::{LoroDoc, VersionVector};
 use time::OffsetDateTime;
-use tokio::sync::{
-    Mutex,
-    OnceCell,
-};
+use tokio::sync::{Mutex, OnceCell};
 
 use crate::{
-    Identity,
-    SessionToken,
+    Identity, SessionToken,
     api::{
-        ApiService,
-        BlobExists,
-        GetRecordPin,
-        PinBlob,
-        PinRecord,
-        SyncRecord,
-        UploadBlob,
+        ApiService, BlobExists, GetRecordPin, PinBlob, PinRecord, SyncRecord, UploadBlob,
         UploadEnvelope,
     },
     auth::AuthService,
     record::envelope::Envelope,
-    signed_bytes::{
-        Signable,
-        SignedBytes,
-    },
+    signed_bytes::{Signable, SignedBytes},
 };
 
 mod auth;
@@ -45,10 +26,7 @@ mod query_builder;
 mod read_builder;
 mod record_builder;
 
-pub use record_builder::{
-    RecordResult,
-    SchemaData,
-};
+pub use record_builder::{RecordResult, SchemaData};
 
 /// Authenticated actor for WDS operations.
 ///
@@ -57,11 +35,11 @@ pub use record_builder::{
 /// different hosts.
 #[derive(Clone)]
 pub struct Actor {
-    identity:    Arc<Identity>,
-    host:        EndpointAddr,
-    api_client:  Client<ApiService>,
+    identity: Arc<Identity>,
+    host: EndpointAddr,
+    api_client: Client<ApiService>,
     auth_client: Client<AuthService>,
-    session:     Arc<Mutex<OnceCell<SessionToken>>>,
+    session: Arc<Mutex<OnceCell<SessionToken>>>,
 }
 
 impl Actor {

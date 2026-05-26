@@ -1,10 +1,6 @@
 use bevy::{
     prelude::*,
-    window::{
-        CursorGrabMode,
-        CursorOptions,
-        PrimaryWindow,
-    },
+    window::{CursorGrabMode, CursorOptions, PrimaryWindow},
 };
 
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]

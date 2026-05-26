@@ -1,11 +1,7 @@
 use bevy::prelude::*;
-use bevy_mod_xr::{
-    camera::XrCamera,
-    hand_debug_gizmos::HandGizmosPlugin,
-};
+use bevy_mod_xr::{camera::XrCamera, hand_debug_gizmos::HandGizmosPlugin};
 use bevy_xr_utils::{
-    actions::XRUtilsActionsPlugin,
-    tracking_utils::TrackingUtilitiesPlugin,
+    actions::XRUtilsActionsPlugin, tracking_utils::TrackingUtilitiesPlugin,
     transform_utils::TransformUtilitiesPlugin,
 };
 

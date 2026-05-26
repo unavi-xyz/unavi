@@ -1,9 +1,4 @@
-use bevy::{
-    camera::Exposure,
-    post_process::bloom::Bloom,
-    prelude::*,
-    render::view::Hdr,
-};
+use bevy::{camera::Exposure, post_process::bloom::Bloom, prelude::*, render::view::Hdr};
 
 mod sky;
 
@@ -32,7 +27,7 @@ pub fn apply_camera_effects(mut commands: Commands, new_cameras: Query<Entity, A
                 color: FOG_COLOR,
                 falloff: FogFalloff::Linear {
                     start: FOG_START,
-                    end:   FOG_END,
+                    end: FOG_END,
                 },
                 ..default()
             },

@@ -7,14 +7,8 @@ use tracing::info;
 use super::{
     UpdateStatus,
     common::{
-        decompress_xz,
-        download_with_progress,
-        extract_archive,
-        fetch_github_releases,
-        get_platform_target,
-        is_beta,
-        is_network_error,
-        needs_update,
+        decompress_xz, download_with_progress, extract_archive, fetch_github_releases,
+        get_platform_target, is_beta, is_network_error, needs_update,
     },
 };
 
@@ -90,7 +84,7 @@ where
     info!("Latest asset: {asset:#?}");
 
     on_status(UpdateStatus::Downloading {
-        version:  latest_version.to_string(),
+        version: latest_version.to_string(),
         progress: None,
     });
 
@@ -101,7 +95,7 @@ where
     // Download with progress tracking
     download_with_progress(&asset.browser_download_url, &tmp_archive_path, |progress| {
         on_status(UpdateStatus::Downloading {
-            version:  latest_version.to_string(),
+            version: latest_version.to_string(),
             progress: Some(progress),
         });
     })

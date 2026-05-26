@@ -4,10 +4,7 @@ use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
 use super::prim::PrimHandle;
-use crate::runtime::shared::{
-    self,
-    Api,
-};
+use crate::runtime::shared::{self, Api};
 
 #[wasm_bindgen]
 pub struct DocHandle {

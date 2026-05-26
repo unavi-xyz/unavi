@@ -1,14 +1,8 @@
-use std::{
-    sync::Arc,
-    time::Duration,
-};
+use std::{sync::Arc, time::Duration};
 
 use async_channel::Receiver;
 use bevy::prelude::*;
-use bevy_hsd::{
-    Hsd,
-    HsdRecordId,
-};
+use bevy_hsd::{Hsd, HsdRecordId};
 use bevy_wds::record::read::ReadRecord;
 use loro::LoroDoc;
 use tokio::sync::oneshot;
@@ -19,7 +13,7 @@ const SPACE_TTL: Duration = Duration::from_hours(7 * 24);
 
 #[derive(Component)]
 pub struct PendingScene {
-    rx:      Receiver<LoroDoc>,
+    rx: Receiver<LoroDoc>,
     _cancel: oneshot::Sender<()>,
 }
 

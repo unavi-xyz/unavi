@@ -4,12 +4,7 @@ use crate::runtime::{
     Runtime,
     shared::{
         self,
-        wired::portal::{
-            PortalDestination,
-            PortalParams,
-            PortalRes,
-            PortalTransform,
-        },
+        wired::portal::{PortalDestination, PortalParams, PortalRes, PortalTransform},
     },
 };
 
@@ -27,20 +22,14 @@ pub mod bindings {
 }
 
 use bindings::wired::portal::{
-    api::{
-        Portal as ApiPortal,
-        PortalParams as WitParams,
-    },
-    types::{
-        HostPortal,
-        PortalDestination as WitDest,
-    },
+    api::{Portal as ApiPortal, PortalParams as WitParams},
+    types::{HostPortal, PortalDestination as WitDest},
 };
 
 impl From<WitDest> for PortalDestination {
     fn from(d: WitDest) -> Self {
         Self {
-            space:  d.space,
+            space: d.space,
             portal: d.portal,
         }
     }
@@ -49,7 +38,7 @@ impl From<WitDest> for PortalDestination {
 impl From<PortalDestination> for WitDest {
     fn from(d: PortalDestination) -> Self {
         Self {
-            space:  d.space,
+            space: d.space,
             portal: d.portal,
         }
     }
@@ -59,11 +48,11 @@ fn wit_params_to_shared(p: WitParams) -> PortalParams {
     let t = p.transform;
     PortalParams {
         destination: p.destination.into(),
-        size:        [p.size.x, p.size.y],
-        transform:   PortalTransform {
+        size: [p.size.x, p.size.y],
+        transform: PortalTransform {
             translation: [t.translation.x, t.translation.y, t.translation.z],
-            rotation:    [t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w],
-            scale:       [t.scale.x, t.scale.y, t.scale.z],
+            rotation: [t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w],
+            scale: [t.scale.x, t.scale.y, t.scale.z],
         },
     }
 }

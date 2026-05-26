@@ -6,12 +6,7 @@ use loro::ValueOrContainer;
 
 use crate::{
     error::ReconcileError,
-    reconcile::{
-        LoadKey,
-        MovableListReconciler,
-        PropReconciler,
-        Reconcile,
-    },
+    reconcile::{LoadKey, MovableListReconciler, PropReconciler, Reconcile},
 };
 
 impl MovableListReconciler {

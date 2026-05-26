@@ -1,35 +1,15 @@
-use avian3d::prelude::{
-    Position,
-    Rotation,
-};
+use avian3d::prelude::{Position, Rotation};
 use bevy::prelude::*;
 use hsd::{
     HSD_CONTAINER_ID,
-    attributes::{
-        Attribute,
-        hydrate_attr,
-        xform::XformAttr,
-    },
+    attributes::{Attribute, hydrate_attr, xform::XformAttr},
 };
-use loro::{
-    ContainerID,
-    Index,
-    TreeID,
-    ValueOrContainer,
-    event::Diff,
-};
+use loro::{ContainerID, Index, TreeID, ValueOrContainer, event::Diff};
 
 use crate::{
     attributes::{
-        ApplyEvent,
-        AttrDataEvent,
-        AttributeParser,
-        DocContext,
-        ParseError,
-        util::{
-            compute_global_transform,
-            shallow_map_updated_keys,
-        },
+        ApplyEvent, AttrDataEvent, AttributeParser, DocContext, ParseError,
+        util::{compute_global_transform, shallow_map_updated_keys},
     },
     diff::HsdDiffEvent,
 };

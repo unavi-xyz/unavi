@@ -3,23 +3,23 @@ use bevy::prelude::*;
 /// Calculates the moving average of the velocity, via changes in [`Transform`].
 #[derive(Component)]
 pub struct AverageVelocity {
-    pub alpha:            f32,
-    pub initialized:      bool,
+    pub alpha: f32,
+    pub initialized: bool,
     pub prev_translation: Vec3,
     /// The target entity to track the velocity of.
     /// If set to None, the current entity will be used.
-    pub target:           Option<Entity>,
-    pub velocity:         Vec3,
+    pub target: Option<Entity>,
+    pub velocity: Vec3,
 }
 
 impl Default for AverageVelocity {
     fn default() -> Self {
         Self {
-            alpha:            0.4,
-            initialized:      false,
+            alpha: 0.4,
+            initialized: false,
             prev_translation: Vec3::default(),
-            target:           None,
-            velocity:         Vec3::default(),
+            target: None,
+            velocity: Vec3::default(),
         }
     }
 }

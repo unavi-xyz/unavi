@@ -3,29 +3,14 @@
 //! `Vec<u8>` and `[u8; N]` go through the regular list paths; binary fields
 //! must use these explicit wrappers.
 
-use std::ops::{
-    Deref,
-    DerefMut,
-};
+use std::ops::{Deref, DerefMut};
 
-use serde::{
-    Deserialize,
-    Deserializer,
-    Serialize,
-    Serializer,
-};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
-    error::{
-        HydrateError,
-        ReconcileError,
-    },
+    error::{HydrateError, ReconcileError},
     hydrate::Hydrate,
-    reconcile::{
-        NoKey,
-        Reconcile,
-        Reconciler,
-    },
+    reconcile::{NoKey, Reconcile, Reconciler},
 };
 
 /// Cap to defend against malicious or malformed documents claiming
@@ -84,7 +69,7 @@ impl Hydrate for Bytes {
         if b.len() > MAX_BYTES_LEN {
             return Err(HydrateError::Unexpected {
                 expected: "binary payload within size limit",
-                found:    "binary payload exceeds MAX_BYTES_LEN",
+                found: "binary payload exceeds MAX_BYTES_LEN",
             });
         }
         Ok(Self(b.to_vec()))
@@ -142,7 +127,7 @@ impl<const N: usize> Hydrate for ByteArray<N> {
     fn hydrate_binary(b: &[u8]) -> Result<Self, HydrateError> {
         let arr: [u8; N] = b.try_into().map_err(|_| HydrateError::Unexpected {
             expected: "binary of correct length",
-            found:    "binary of wrong length",
+            found: "binary of wrong length",
         })?;
         Ok(Self(arr))
     }

@@ -7,12 +7,8 @@ use super::scene::prim::PrimHandle;
 use crate::runtime::{
     Runtime,
     shared::{
-        self,
-        Api,
-        wired::input::types::{
-            InputAction,
-            InputDevice,
-        },
+        self, Api,
+        wired::input::types::{InputAction, InputDevice},
     },
 };
 

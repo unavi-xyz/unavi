@@ -6,35 +6,15 @@ use crate::runtime::{
     native::wired::scene::bindings::wired::{
         math::types::Transform,
         scene::types::{
-            AlphaMode,
-            Collider,
-            ColliderCapsule,
-            ColliderCylinder,
-            ColliderTrimesh,
-            Color,
-            HostPrim,
-            Image,
-            Material,
-            Mesh,
-            RigidBody,
-            RigidBodyKind,
-            Topology,
-            Xform,
+            AlphaMode, Collider, ColliderCapsule, ColliderCylinder, ColliderTrimesh, Color,
+            HostPrim, Image, Material, Mesh, RigidBody, RigidBodyKind, Topology, Xform,
         },
     },
     shared::{
         self,
         wired::scene::prim::{
-            PrimAlphaMode,
-            PrimCollider,
-            PrimColor,
-            PrimImage,
-            PrimMaterial,
-            PrimMesh,
-            PrimRes,
-            PrimRigidBody,
-            PrimRigidBodyKind,
-            PrimTopology,
+            PrimAlphaMode, PrimCollider, PrimColor, PrimImage, PrimMaterial, PrimMesh, PrimRes,
+            PrimRigidBody, PrimRigidBodyKind, PrimTopology,
         },
     },
 };
@@ -123,23 +103,20 @@ const fn color_shared(c: Color) -> PrimColor {
 }
 
 const fn xform_wit(x: XformAttr) -> Xform {
-    use crate::runtime::native::wired::scene::bindings::wired::math::types::{
-        Quat,
-        Vec3,
-    };
+    use crate::runtime::native::wired::scene::bindings::wired::math::types::{Quat, Vec3};
     Xform {
         translation: Vec3 {
             x: x.translation[0],
             y: x.translation[1],
             z: x.translation[2],
         },
-        rotation:    Quat {
+        rotation: Quat {
             x: x.rotation[0],
             y: x.rotation[1],
             z: x.rotation[2],
             w: x.rotation[3],
         },
-        scale:       Vec3 {
+        scale: Vec3 {
             x: x.scale[0],
             y: x.scale[1],
             z: x.scale[2],
@@ -150,20 +127,20 @@ const fn xform_wit(x: XformAttr) -> Xform {
 const fn xform_shared(x: Xform) -> XformAttr {
     XformAttr {
         translation: [x.translation.x, x.translation.y, x.translation.z],
-        rotation:    [x.rotation.x, x.rotation.y, x.rotation.z, x.rotation.w],
-        scale:       [x.scale.x, x.scale.y, x.scale.z],
+        rotation: [x.rotation.x, x.rotation.y, x.rotation.z, x.rotation.w],
+        scale: [x.scale.x, x.scale.y, x.scale.z],
     }
 }
 
 fn mesh_wit(m: PrimMesh) -> Mesh {
     Mesh {
-        topology:   topology_wit(m.topology),
+        topology: topology_wit(m.topology),
         attributes: m
             .attributes
             .into_iter()
             .map(|(k, v)| (k, v.to_vec()))
             .collect(),
-        indices:    m.indices.map(|b| b.to_vec()),
+        indices: m.indices.map(|b| b.to_vec()),
     }
 }
 
@@ -183,61 +160,61 @@ fn mesh_shared(m: Mesh) -> wasmtime::Result<PrimMesh> {
 
 fn material_wit(m: PrimMaterial) -> Material {
     Material {
-        alpha_cutoff:               m.alpha_cutoff,
-        alpha_mode:                 m.alpha_mode.map(alpha_mode_wit),
-        base_color:                 m.base_color.map(color_wit),
-        base_color_texture:         m.base_color_texture,
-        double_sided:               m.double_sided,
-        emissive:                   m.emissive.map(color_wit),
-        emissive_texture:           m.emissive_texture,
-        metallic:                   m.metallic,
+        alpha_cutoff: m.alpha_cutoff,
+        alpha_mode: m.alpha_mode.map(alpha_mode_wit),
+        base_color: m.base_color.map(color_wit),
+        base_color_texture: m.base_color_texture,
+        double_sided: m.double_sided,
+        emissive: m.emissive.map(color_wit),
+        emissive_texture: m.emissive_texture,
+        metallic: m.metallic,
         metallic_roughness_texture: m.metallic_roughness_texture,
-        normal_texture:             m.normal_texture,
-        occlusion_texture:          m.occlusion_texture,
-        roughness:                  m.roughness,
+        normal_texture: m.normal_texture,
+        occlusion_texture: m.occlusion_texture,
+        roughness: m.roughness,
     }
 }
 
 fn material_shared(m: Material) -> PrimMaterial {
     PrimMaterial {
-        alpha_cutoff:               m.alpha_cutoff,
-        alpha_mode:                 m.alpha_mode.map(alpha_mode_shared),
-        base_color:                 m.base_color.map(color_shared),
-        base_color_texture:         m.base_color_texture,
-        double_sided:               m.double_sided,
-        emissive:                   m.emissive.map(color_shared),
-        emissive_texture:           m.emissive_texture,
-        metallic:                   m.metallic,
+        alpha_cutoff: m.alpha_cutoff,
+        alpha_mode: m.alpha_mode.map(alpha_mode_shared),
+        base_color: m.base_color.map(color_shared),
+        base_color_texture: m.base_color_texture,
+        double_sided: m.double_sided,
+        emissive: m.emissive.map(color_shared),
+        emissive_texture: m.emissive_texture,
+        metallic: m.metallic,
         metallic_roughness_texture: m.metallic_roughness_texture,
-        normal_texture:             m.normal_texture,
-        occlusion_texture:          m.occlusion_texture,
-        roughness:                  m.roughness,
+        normal_texture: m.normal_texture,
+        occlusion_texture: m.occlusion_texture,
+        roughness: m.roughness,
     }
 }
 
 fn image_wit(img: PrimImage) -> Image {
     Image {
-        data:           img.data.to_vec(),
+        data: img.data.to_vec(),
         address_mode_u: img.address_mode_u,
         address_mode_v: img.address_mode_v,
         address_mode_w: img.address_mode_w,
-        mag_filter:     img.mag_filter,
-        min_filter:     img.min_filter,
-        mipmap_filter:  img.mipmap_filter,
-        srgb:           img.srgb,
+        mag_filter: img.mag_filter,
+        min_filter: img.min_filter,
+        mipmap_filter: img.mipmap_filter,
+        srgb: img.srgb,
     }
 }
 
 fn image_shared(img: Image) -> wasmtime::Result<PrimImage> {
     Ok(PrimImage {
-        data:           to_blob_array(img.data)?,
+        data: to_blob_array(img.data)?,
         address_mode_u: img.address_mode_u,
         address_mode_v: img.address_mode_v,
         address_mode_w: img.address_mode_w,
-        mag_filter:     img.mag_filter,
-        min_filter:     img.min_filter,
-        mipmap_filter:  img.mipmap_filter,
-        srgb:           img.srgb,
+        mag_filter: img.mag_filter,
+        min_filter: img.min_filter,
+        mipmap_filter: img.mipmap_filter,
+        srgb: img.srgb,
     })
 }
 
@@ -254,7 +231,7 @@ fn collider_wit(c: PrimCollider) -> Collider {
         }
         PrimCollider::Sphere(r) => Collider::Sphere(r),
         PrimCollider::Trimesh { indices, vertices } => Collider::Trimesh(ColliderTrimesh {
-            indices:  indices.to_vec(),
+            indices: indices.to_vec(),
             vertices: vertices.to_vec(),
         }),
     }
@@ -274,7 +251,7 @@ fn collider_shared(c: Collider) -> wasmtime::Result<PrimCollider> {
         },
         Collider::Sphere(r) => PrimCollider::Sphere(r),
         Collider::Trimesh(t) => PrimCollider::Trimesh {
-            indices:  to_blob_array(t.indices)?,
+            indices: to_blob_array(t.indices)?,
             vertices: to_blob_array(t.vertices)?,
         },
     })
@@ -282,23 +259,23 @@ fn collider_shared(c: Collider) -> wasmtime::Result<PrimCollider> {
 
 const fn rigid_body_wit(rb: PrimRigidBody) -> RigidBody {
     RigidBody {
-        kind:            rigid_kind_wit(rb.kind),
+        kind: rigid_kind_wit(rb.kind),
         angular_damping: rb.angular_damping,
-        friction:        rb.friction,
-        linear_damping:  rb.linear_damping,
-        mass:            rb.mass,
-        restitution:     rb.restitution,
+        friction: rb.friction,
+        linear_damping: rb.linear_damping,
+        mass: rb.mass,
+        restitution: rb.restitution,
     }
 }
 
 const fn rigid_body_shared(rb: RigidBody) -> PrimRigidBody {
     PrimRigidBody {
-        kind:            rigid_kind_shared(rb.kind),
+        kind: rigid_kind_shared(rb.kind),
         angular_damping: rb.angular_damping,
-        friction:        rb.friction,
-        linear_damping:  rb.linear_damping,
-        mass:            rb.mass,
-        restitution:     rb.restitution,
+        friction: rb.friction,
+        linear_damping: rb.linear_damping,
+        mass: rb.mass,
+        restitution: rb.restitution,
     }
 }
 

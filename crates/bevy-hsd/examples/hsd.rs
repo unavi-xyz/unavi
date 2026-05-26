@@ -1,56 +1,26 @@
-use std::{
-    collections::BTreeMap,
-    sync::Arc,
-};
+use std::{collections::BTreeMap, sync::Arc};
 
 use bevy::{
-    mesh::{
-        Indices,
-        VertexAttributeValues,
-    },
-    pbr::{
-        Atmosphere,
-        AtmosphereSettings,
-        ScatteringMedium,
-    },
+    mesh::{Indices, VertexAttributeValues},
+    pbr::{Atmosphere, AtmosphereSettings, ScatteringMedium},
     prelude::*,
 };
-use bevy_hsd::{
-    Hsd,
-    HsdPlugin,
-};
-use bevy_panorbit_camera::{
-    PanOrbitCamera,
-    PanOrbitCameraPlugin,
-};
-use bevy_wds::{
-    LocalBlobs,
-    WdsPlugin,
-};
+use bevy_hsd::{Hsd, HsdPlugin};
+use bevy_panorbit_camera::{PanOrbitCamera, PanOrbitCameraPlugin};
+use bevy_wds::{LocalBlobs, WdsPlugin};
 use bytemuck::cast_slice;
 use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
+    HSD_CONTAINER_ID, PrimMeta,
     attributes::{
         Attributes,
-        material::{
-            ColorVec,
-            MaterialAttr,
-        },
-        mesh::{
-            MeshAttr,
-            Topology,
-        },
+        material::{ColorVec, MaterialAttr},
+        mesh::{MeshAttr, Topology},
         xform::XformAttr,
     },
 };
 use iroh_blobs::store::mem::MemStore;
 use loro::LoroDoc;
-use loro_surgeon::{
-    Reconcile,
-    bytes::ByteArray,
-    reconcile::RootReconciler,
-};
+use loro_surgeon::{Reconcile, bytes::ByteArray, reconcile::RootReconciler};
 use unavi_util::async_task::spawn_async_task;
 use wds::Blobs;
 
@@ -144,8 +114,8 @@ fn populate(doc: &LoroDoc, blobs: &Blobs) {
             Attributes {
                 mesh: Some(mesh_attr.clone()),
                 xform: Some(XformAttr {
-                    rotation:    [0.0, 0.0, 0.0, 1.0],
-                    scale:       [1.0, 1.0, 1.0],
+                    rotation: [0.0, 0.0, 0.0, 1.0],
+                    scale: [1.0, 1.0, 1.0],
                     translation: offset.to_array(),
                 }),
                 ..Default::default()

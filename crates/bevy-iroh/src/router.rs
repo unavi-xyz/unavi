@@ -1,8 +1,5 @@
 use bevy::prelude::*;
-use iroh::protocol::{
-    Router,
-    RouterBuilder,
-};
+use iroh::protocol::{Router, RouterBuilder};
 
 use crate::endpoint::IrohEndpoint;
 

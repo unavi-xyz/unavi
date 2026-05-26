@@ -1,26 +1,14 @@
 use std::sync::LazyLock;
 
-use bevy::{
-    platform::collections::HashMap,
-    prelude::*,
-};
+use bevy::{platform::collections::HashMap, prelude::*};
 use bevy_vrm::BoneName;
 use blake3::Hash;
 use loro::TreeID;
-use unavi_agent::{
-    Agent,
-    AgentAvatar,
-    AgentCamera,
-    AgentDid,
-    LocalAgent,
-};
+use unavi_agent::{Agent, AgentAvatar, AgentCamera, AgentDid, LocalAgent};
 use unavi_avatar::bones::AvatarBones;
 use xdid::core::did::Did;
 
-use crate::runtime::shared::registry::transform::{
-    AbsoluteNodeId,
-    RegisterTransforms,
-};
+use crate::runtime::shared::registry::transform::{AbsoluteNodeId, RegisterTransforms};
 
 pub static AGENT_REGISTRY: LazyLock<parking_lot::RwLock<HashMap<AgentKey, AgentProxies>>> =
     LazyLock::new(|| parking_lot::RwLock::new(HashMap::new()));
@@ -33,7 +21,7 @@ pub enum AgentKey {
 
 #[derive(Default)]
 pub struct AgentProxies {
-    pub bones:  HashMap<BoneName, AbsoluteNodeId>,
+    pub bones: HashMap<BoneName, AbsoluteNodeId>,
     pub camera: Option<AbsoluteNodeId>,
 }
 
@@ -112,7 +100,7 @@ fn gen_proxy_id() -> AbsoluteNodeId {
     let peer = rand::random();
     let counter = rand::random();
     AbsoluteNodeId {
-        doc:  Hash::from_bytes([0; 32]),
+        doc: Hash::from_bytes([0; 32]),
         node: TreeID::new(peer, counter),
     }
 }

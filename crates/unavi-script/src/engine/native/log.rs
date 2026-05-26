@@ -1,15 +1,5 @@
-use tokio::io::{
-    AsyncBufReadExt,
-    AsyncRead,
-    BufReader,
-    DuplexStream,
-};
-use tracing::{
-    Instrument,
-    Span,
-    info,
-    warn,
-};
+use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader, DuplexStream};
+use tracing::{Instrument, Span, info, warn};
 use unavi_util::async_task::spawn_async_task;
 use wasmtime_wasi::cli::AsyncStdoutStream;
 

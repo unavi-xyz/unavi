@@ -1,44 +1,34 @@
 use std::f32::consts::FRAC_PI_6;
 
-use bevy::{
-    ecs::message::MessageWriter,
-    prelude::*,
-};
+use bevy::{ecs::message::MessageWriter, prelude::*};
 use bevy_mod_xr::session::XrTrackingRoot;
 use bevy_xr_utils::{
     tracking_utils::XrTrackedView,
-    transform_utils::{
-        SnapToPosition,
-        SnapToRotation,
-    },
+    transform_utils::{SnapToPosition, SnapToRotation},
 };
 
 use crate::{
-    AgentRig,
-    LocalAgentEntities,
+    AgentRig, LocalAgentEntities,
     movement::MovementYaw,
-    tracking::{
-        TrackedHead,
-        TrackedPose,
-    },
+    tracking::{TrackedHead, TrackedPose},
 };
 
 #[derive(Resource, Default)]
 pub struct HmdWorldPose {
     pub translation: Vec3,
-    pub rotation:    Quat,
-    pub yaw:         f32,
+    pub rotation: Quat,
+    pub yaw: f32,
 }
 
 #[derive(Resource)]
 pub enum TurnMode {
     Snap {
-        angle:     f32,
+        angle: f32,
         threshold: f32,
     },
     #[expect(unused, reason = "need config option")]
     Smooth {
-        speed:     f32,
+        speed: f32,
         threshold: f32,
     },
 }
@@ -46,7 +36,7 @@ pub enum TurnMode {
 impl Default for TurnMode {
     fn default() -> Self {
         Self::Snap {
-            angle:     FRAC_PI_6,
+            angle: FRAC_PI_6,
             threshold: 0.7,
         }
     }

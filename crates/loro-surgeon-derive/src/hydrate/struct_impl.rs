@@ -2,23 +2,11 @@
 
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{
-    DataStruct,
-    DeriveInput,
-    Fields,
-    Ident,
-};
+use syn::{DataStruct, DeriveInput, Fields, Ident};
 
 use crate::{
-    attrs::{
-        FieldAttrs,
-        MissingStrategy,
-        Strategy,
-    },
-    type_util::{
-        is_option_type,
-        is_vec,
-    },
+    attrs::{FieldAttrs, MissingStrategy, Strategy},
+    type_util::{is_option_type, is_vec},
 };
 
 pub fn derive_hydrate_struct(input: &DeriveInput, data: &DataStruct) -> syn::Result<TokenStream> {

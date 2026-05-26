@@ -1,9 +1,6 @@
 use std::marker::PhantomData;
 
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 use xdid::methods::key::Signer;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -12,8 +9,8 @@ where
     for<'a> T: Serialize + Deserialize<'a>,
 {
     payload_bytes: Vec<u8>,
-    signature:     Vec<u8>,
-    _type:         PhantomData<T>,
+    signature: Vec<u8>,
+    _type: PhantomData<T>,
 }
 
 impl<T> SignedBytes<T>

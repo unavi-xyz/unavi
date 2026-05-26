@@ -6,10 +6,7 @@ use unavi_portal::teleport::PortalTeleport;
 
 use crate::{
     AgentRig,
-    movement::{
-        TargetBodyInput,
-        TargetHeadInput,
-    },
+    movement::{TargetBodyInput, TargetHeadInput},
 };
 
 pub fn handle_agent_teleport(

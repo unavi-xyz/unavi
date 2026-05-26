@@ -1,7 +1,4 @@
-use std::{
-    str::FromStr,
-    time::Duration,
-};
+use std::{str::FromStr, time::Duration};
 
 use blake3::Hash;
 use futures::StreamExt;
@@ -9,11 +6,7 @@ use rusqlite::params;
 use time::OffsetDateTime;
 use xdid::core::did::Did;
 
-use crate::{
-    StoreContext,
-    quota::release_bytes,
-    tag::BlobTag,
-};
+use crate::{StoreContext, quota::release_bytes, tag::BlobTag};
 
 /// Pins with TTL shorter than this threshold get fast GC via spawned tasks.
 pub const FAST_GC_THRESHOLD: Duration = Duration::from_mins(5);

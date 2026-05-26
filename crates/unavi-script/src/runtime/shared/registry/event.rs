@@ -1,9 +1,6 @@
 use std::{
     collections::HashMap,
-    sync::{
-        Arc,
-        LazyLock,
-    },
+    sync::{Arc, LazyLock},
 };
 
 use async_channel::Sender;
@@ -16,11 +13,11 @@ pub static EVENT_RECEPTOR_REGISTRY: LazyLock<RwLock<HashMap<u32, ReceptorEntry>>
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
 pub struct ReceptorEntry {
-    pub channels:         Vec<String>,
-    pub doc_id:           Hash,
-    pub scope:            ReceptorScope,
+    pub channels: Vec<String>,
+    pub doc_id: Hash,
+    pub scope: ReceptorScope,
     pub source_documents: Option<Vec<Vec<u8>>>,
-    pub tx:               Sender<InboundEvent>,
+    pub tx: Sender<InboundEvent>,
 }
 
 pub enum ReceptorScope {
@@ -29,17 +26,14 @@ pub enum ReceptorScope {
 }
 
 pub struct InboundEvent {
-    pub channel:         String,
-    pub payload:         Arc<Vec<u8>>,
+    pub channel: String,
+    pub payload: Arc<Vec<u8>>,
     pub sender_document: Vec<u8>,
-    pub sender_scope:    SenderScope,
-    pub time:            u64,
+    pub sender_scope: SenderScope,
+    pub time: u64,
 }
 
 pub enum SenderScope {
     Global,
-    Spatial {
-        distance: f32,
-        node:     AbsoluteNodeId,
-    },
+    Spatial { distance: f32, node: AbsoluteNodeId },
 }

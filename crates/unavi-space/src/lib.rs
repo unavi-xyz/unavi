@@ -1,9 +1,6 @@
 use std::time::Duration;
 
-use bevy::{
-    prelude::*,
-    time::common_conditions::on_timer,
-};
+use bevy::{prelude::*, time::common_conditions::on_timer};
 use blake3::Hash;
 
 mod beacon;

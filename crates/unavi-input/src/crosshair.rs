@@ -1,7 +1,4 @@
-use bevy::{
-    light::NotShadowCaster,
-    prelude::*,
-};
+use bevy::{light::NotShadowCaster, prelude::*};
 
 const CROSSHAIR_RADIUS: f32 = 0.004;
 // pub(crate) const MIN_SCALE_DISTANCE: f32 = 0.01;
@@ -19,7 +16,7 @@ pub enum CrosshairMode {
 
 #[derive(Component)]
 pub struct CrosshairMeshes {
-    active:   Handle<Mesh>,
+    active: Handle<Mesh>,
     inactive: Handle<Mesh>,
 }
 

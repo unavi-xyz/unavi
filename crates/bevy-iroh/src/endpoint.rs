@@ -1,15 +1,8 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use iroh::{
-    Endpoint,
-    endpoint::presets::N0,
-    endpoint_info::AddrFilter,
-};
-use tracing::{
-    error,
-    info,
-};
+use iroh::{Endpoint, endpoint::presets::N0, endpoint_info::AddrFilter};
+use tracing::{error, info};
 use unavi_util::async_task::spawn_async_task;
 
 use crate::router::RouterBuilderFns;
@@ -22,7 +15,7 @@ pub struct IrohEndpoint(pub Endpoint);
 pub struct LoadEndpoint {
     pub filter: AddrFilter,
     #[cfg(all(feature = "mdns", not(target_family = "wasm")))]
-    pub mdns:   bool,
+    pub mdns: bool,
 }
 
 pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands) {

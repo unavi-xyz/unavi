@@ -6,12 +6,7 @@ use similar::algorithms::DiffHook;
 use crate::{
     error::ReconcileError,
     hydrate::Hydrate,
-    reconcile::{
-        ListReconciler,
-        PropReconciler,
-        Reconcile,
-        Reconciler,
-    },
+    reconcile::{ListReconciler, PropReconciler, Reconcile, Reconciler},
 };
 
 impl ListReconciler {
@@ -84,8 +79,8 @@ impl<T: PartialEq> PartialEq<T> for HydratedItem<T> {
 }
 
 struct LcsHook<'a, T> {
-    idx:   usize,
-    list:  &'a mut ListReconciler,
+    idx: usize,
+    list: &'a mut ListReconciler,
     items: &'a [T],
 }
 

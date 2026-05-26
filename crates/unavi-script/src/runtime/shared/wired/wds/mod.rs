@@ -1,60 +1,42 @@
 use anyhow::bail;
-use async_channel::{
-    Receiver,
-    TryRecvError,
-};
+use async_channel::{Receiver, TryRecvError};
 use bevy_wds::{
     blob::get::GetBlob,
-    record::{
-        query::QueryRecord,
-        read::ReadRecord,
-    },
+    record::{query::QueryRecord, read::ReadRecord},
 };
 use blake3::Hash;
 use bytes::Bytes;
-use loro::{
-    ExportMode,
-    LoroDoc,
-};
-use tokio::sync::oneshot::{
-    self,
-    Sender,
-};
+use loro::{ExportMode, LoroDoc};
+use tokio::sync::oneshot::{self, Sender};
 use tracing::warn;
-use unavi_util::{
-    async_commands::AsyncCommands,
-    async_task::spawn_async_task,
-};
+use unavi_util::{async_commands::AsyncCommands, async_task::spawn_async_task};
 
-use crate::runtime::shared::{
-    Api,
-    slot_map::SlotMap,
-};
+use crate::runtime::shared::{Api, slot_map::SlotMap};
 
 pub struct WdsRes;
 
 pub struct QueryFutureRes {
     _cancel: Sender<()>,
-    rx:      Receiver<Vec<Hash>>,
+    rx: Receiver<Vec<Hash>>,
 }
 
 pub struct ReadFutureRes {
     _cancel: Sender<()>,
-    id:      Hash,
-    rx:      Receiver<LoroDoc>,
+    id: Hash,
+    rx: Receiver<LoroDoc>,
 }
 
 pub struct BlobFutureRes {
     _cancel: Sender<()>,
-    rx:      Receiver<anyhow::Result<Bytes>>,
+    rx: Receiver<anyhow::Result<Bytes>>,
 }
 
 #[derive(Default)]
 pub struct WiredWdsApi {
-    wds_slots:     SlotMap<WdsRes>,
+    wds_slots: SlotMap<WdsRes>,
     query_futures: SlotMap<QueryFutureRes>,
-    read_futures:  SlotMap<ReadFutureRes>,
-    blob_futures:  SlotMap<BlobFutureRes>,
+    read_futures: SlotMap<ReadFutureRes>,
+    blob_futures: SlotMap<BlobFutureRes>,
 }
 
 pub struct QueryFilter {
@@ -63,9 +45,9 @@ pub struct QueryFilter {
 }
 
 pub struct WdsRecord {
-    pub id:         Vec<u8>,
-    pub creator:    String,
-    pub schemas:    Vec<Vec<u8>>,
+    pub id: Vec<u8>,
+    pub creator: String,
+    pub schemas: Vec<Vec<u8>>,
     pub containers: Vec<(String, Vec<u8>)>,
 }
 

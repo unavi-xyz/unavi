@@ -1,18 +1,9 @@
 use std::collections::BTreeMap;
 
 use bevy::prelude::*;
-use bevy_hsd::{
-    HsdPrimIndex,
-    HsdRelationships,
-};
-use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
-};
-use loro_surgeon::{
-    Reconcile,
-    reconcile::RootReconciler,
-};
+use bevy_hsd::{HsdPrimIndex, HsdRelationships};
+use hsd::{HSD_CONTAINER_ID, PrimMeta};
+use loro_surgeon::{Reconcile, reconcile::RootReconciler};
 use rstest::rstest;
 use tracing_test::traced_test;
 

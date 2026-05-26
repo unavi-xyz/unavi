@@ -1,9 +1,6 @@
 use std::{
     collections::HashMap,
-    sync::{
-        Arc,
-        LazyLock,
-    },
+    sync::{Arc, LazyLock},
 };
 
 use bevy::prelude::*;
@@ -11,10 +8,7 @@ use bevy_hsd::HsdRecordId;
 use blake3::Hash;
 use parking_lot::RwLock;
 
-use crate::firewall::{
-    Channel,
-    Firewall,
-};
+use crate::firewall::{Channel, Firewall};
 
 pub static FIREWALL_REGISTRY: LazyLock<RwLock<HashMap<Hash, Firewall>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));

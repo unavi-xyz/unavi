@@ -1,14 +1,8 @@
-use std::{
-    fs,
-    sync::Arc,
-};
+use std::{fs, sync::Arc};
 
 use anyhow::Context;
 use parking_lot::Mutex;
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use serde::{Deserialize, Serialize};
 use tracing::info;
 
 use crate::DIRS;
@@ -30,14 +24,14 @@ impl UpdateChannel {
 pub struct Config {
     pub update_channel: UpdateChannel,
     #[serde(default)]
-    pub xr_mode:        bool,
+    pub xr_mode: bool,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             update_channel: UpdateChannel::Beta,
-            xr_mode:        false,
+            xr_mode: false,
         }
     }
 }

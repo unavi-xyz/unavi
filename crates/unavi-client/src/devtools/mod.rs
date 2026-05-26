@@ -1,14 +1,17 @@
 use bevy::prelude::*;
 
-#[cfg(feature = "devtools-network")] pub mod events;
-#[cfg(feature = "devtools-network")] mod network_stats;
-#[cfg(feature = "devtools-network")] mod network_ui;
+#[cfg(feature = "devtools-network")]
+pub mod events;
+#[cfg(feature = "devtools-network")]
+mod network_stats;
+#[cfg(feature = "devtools-network")]
+mod network_ui;
 
 pub struct DevToolsPlugin {
     #[allow(dead_code)]
     pub inspector: bool,
     #[allow(dead_code)]
-    pub network:   bool,
+    pub network: bool,
 }
 
 impl Plugin for DevToolsPlugin {

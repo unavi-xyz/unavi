@@ -1,11 +1,5 @@
-use loro_surgeon::{
-    Hydrate,
-    Reconcile,
-};
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use loro_surgeon::{Hydrate, Reconcile};
+use serde::{Deserialize, Serialize};
 
 use crate::attributes::Attribute;
 
@@ -23,10 +17,10 @@ const fn default_translation() -> [f32; 3] {
 pub struct XformAttr {
     #[loro(default = "default_rotation")]
     #[serde(default = "default_rotation")]
-    pub rotation:    [f32; 4],
+    pub rotation: [f32; 4],
     #[loro(default = "default_scale")]
     #[serde(default = "default_scale")]
-    pub scale:       [f32; 3],
+    pub scale: [f32; 3],
     #[loro(default = "default_translation")]
     #[serde(default = "default_translation")]
     pub translation: [f32; 3],
@@ -35,8 +29,8 @@ pub struct XformAttr {
 impl Default for XformAttr {
     fn default() -> Self {
         Self {
-            rotation:    default_rotation(),
-            scale:       default_scale(),
+            rotation: default_rotation(),
+            scale: default_scale(),
             translation: default_translation(),
         }
     }

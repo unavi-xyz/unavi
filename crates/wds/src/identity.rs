@@ -1,7 +1,4 @@
-use xdid::{
-    core::did::Did,
-    methods::key::p256::P256KeyPair,
-};
+use xdid::{core::did::Did, methods::key::p256::P256KeyPair};
 
 /// User identity for WDS operations.
 ///
@@ -9,7 +6,7 @@ use xdid::{
 /// Shared across multiple [`Actor`](crate::actor::Actor) instances via `Arc`.
 #[derive(Clone)]
 pub struct Identity {
-    did:         Did,
+    did: Did,
     signing_key: P256KeyPair,
 }
 

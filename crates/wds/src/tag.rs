@@ -1,14 +1,11 @@
-use std::{
-    fmt::Display,
-    str::FromStr,
-};
+use std::{fmt::Display, str::FromStr};
 
 use blake3::Hash;
 use xdid::core::did::Did;
 
 pub struct BlobTag {
     owner: Did,
-    hash:  Hash,
+    hash: Hash,
 }
 
 const DELIM: char = '_';

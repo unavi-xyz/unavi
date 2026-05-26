@@ -1,22 +1,14 @@
 use avian3d::prelude::*;
 use bevy::{
     color::palettes::tailwind,
-    image::{
-        ImageAddressMode,
-        ImageLoaderSettings,
-        ImageSampler,
-        ImageSamplerDescriptor,
-    },
+    image::{ImageAddressMode, ImageLoaderSettings, ImageSampler, ImageSamplerDescriptor},
     math::Affine2,
     prelude::*,
 };
 use bevy_hsd::Hsd;
 use unavi_space::Space;
 
-use crate::scene::{
-    SceneState,
-    respawn::Respawn,
-};
+use crate::scene::{SceneState, respawn::Respawn};
 
 const PLANE_SIZE: f32 = 2048.0;
 const TEXTURE_SIZE: f32 = 16.0;

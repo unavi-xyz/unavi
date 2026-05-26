@@ -4,7 +4,7 @@ use blake3::Hash;
 use bytes::Bytes;
 
 pub struct StaticSchema {
-    pub hash:  Hash,
+    pub hash: Hash,
     pub bytes: Bytes,
 }
 
@@ -15,7 +15,7 @@ macro_rules! static_schema {
             let schema: wds_schema::schema::Schema = ron::from_str(RON_STR).expect("valid schema");
             let bytes = schema.to_bytes().expect("serialize schema");
             StaticSchema {
-                hash:  blake3::hash(&bytes),
+                hash: blake3::hash(&bytes),
                 bytes: Bytes::from(bytes),
             }
         });

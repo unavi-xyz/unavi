@@ -1,14 +1,7 @@
-use std::{
-    collections::HashMap,
-    sync::LazyLock,
-};
+use std::{collections::HashMap, sync::LazyLock};
 
 use bevy::prelude::*;
-use bevy_hsd::{
-    HsdChild,
-    HsdRecordId,
-    Prim,
-};
+use bevy_hsd::{HsdChild, HsdRecordId, Prim};
 use blake3::Hash;
 use loro::TreeID;
 use parking_lot::RwLock;
@@ -18,14 +11,14 @@ pub static NODE_TRANSFORM_REGISTRY: LazyLock<RwLock<HashMap<AbsoluteNodeId, Tran
 
 #[derive(Clone, Hash, PartialEq, Eq)]
 pub struct AbsoluteNodeId {
-    pub doc:  Hash,
+    pub doc: Hash,
     pub node: TreeID,
 }
 
 #[derive(Clone, Default)]
 pub struct TransformSnapshot {
     pub global: GlobalTransform,
-    pub local:  Transform,
+    pub local: Transform,
 }
 
 #[derive(Component)]
@@ -49,7 +42,7 @@ pub fn register_nodes(
     commands
         .entity(trigger.entity)
         .insert(RegisterTransforms(AbsoluteNodeId {
-            doc:  doc.0,
+            doc: doc.0,
             node: prim.0,
         }));
 }
@@ -66,7 +59,7 @@ pub fn snapshot_transforms(transforms: Query<(&RegisterTransforms, &GlobalTransf
             id.0.clone(),
             TransformSnapshot {
                 global: *global,
-                local:  *local,
+                local: *local,
             },
         );
     }

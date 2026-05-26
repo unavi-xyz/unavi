@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use wasm_bindgen::prelude::*;
 
-use crate::runtime::{
-    Runtime,
-    shared,
-};
+use crate::runtime::{Runtime, shared};
 
 pub mod document;
 pub mod prim;

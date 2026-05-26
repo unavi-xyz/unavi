@@ -8,13 +8,7 @@ pub mod movable_list;
 use std::hash::Hash;
 
 use loro::{
-    Container,
-    ContainerTrait,
-    LoroList,
-    LoroMap,
-    LoroMovableList,
-    LoroValue,
-    ValueOrContainer,
+    Container, ContainerTrait, LoroList, LoroMap, LoroMovableList, LoroValue, ValueOrContainer,
 };
 
 use crate::error::ReconcileError;
@@ -72,22 +66,10 @@ pub struct PropReconciler {
 }
 
 enum PropAction {
-    MapPut {
-        map: LoroMap,
-        key: String,
-    },
-    ListInsert {
-        list:  LoroList,
-        index: usize,
-    },
-    MovableListInsert {
-        list:  LoroMovableList,
-        index: usize,
-    },
-    MovableListSet {
-        list:  LoroMovableList,
-        index: usize,
-    },
+    MapPut { map: LoroMap, key: String },
+    ListInsert { list: LoroList, index: usize },
+    MovableListInsert { list: LoroMovableList, index: usize },
+    MovableListSet { list: LoroMovableList, index: usize },
 }
 
 impl PropReconciler {
@@ -238,43 +220,43 @@ impl Reconciler for RootReconciler {
     fn null(self) -> Result<(), ReconcileError> {
         Err(ReconcileError::TypeMismatch {
             expected: "map",
-            found:    "null",
+            found: "null",
         })
     }
     fn boolean(self, _v: bool) -> Result<(), ReconcileError> {
         Err(ReconcileError::TypeMismatch {
             expected: "map",
-            found:    "bool",
+            found: "bool",
         })
     }
     fn i64(self, _v: i64) -> Result<(), ReconcileError> {
         Err(ReconcileError::TypeMismatch {
             expected: "map",
-            found:    "i64",
+            found: "i64",
         })
     }
     fn f64(self, _v: f64) -> Result<(), ReconcileError> {
         Err(ReconcileError::TypeMismatch {
             expected: "map",
-            found:    "f64",
+            found: "f64",
         })
     }
     fn str(self, _v: &str) -> Result<(), ReconcileError> {
         Err(ReconcileError::TypeMismatch {
             expected: "map",
-            found:    "string",
+            found: "string",
         })
     }
     fn bytes(self, _v: &[u8]) -> Result<(), ReconcileError> {
         Err(ReconcileError::TypeMismatch {
             expected: "map",
-            found:    "binary",
+            found: "binary",
         })
     }
     fn inline_list(self, _v: LoroValue) -> Result<(), ReconcileError> {
         Err(ReconcileError::TypeMismatch {
             expected: "map",
-            found:    "inline list",
+            found: "inline list",
         })
     }
     fn map(self) -> Result<MapReconciler, ReconcileError> {
@@ -283,13 +265,13 @@ impl Reconciler for RootReconciler {
     fn list(self) -> Result<ListReconciler, ReconcileError> {
         Err(ReconcileError::TypeMismatch {
             expected: "map",
-            found:    "list",
+            found: "list",
         })
     }
     fn movable_list(self) -> Result<MovableListReconciler, ReconcileError> {
         Err(ReconcileError::TypeMismatch {
             expected: "map",
-            found:    "movable_list",
+            found: "movable_list",
         })
     }
 }

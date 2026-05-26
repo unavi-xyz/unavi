@@ -1,9 +1,6 @@
 use async_channel::Receiver;
 
-use crate::runtime::shared::{
-    Api,
-    wired::input::types::InputEvent,
-};
+use crate::runtime::shared::{Api, wired::input::types::InputEvent};
 
 pub struct InputListenerRes {
     pub rx: Receiver<InputEvent>,

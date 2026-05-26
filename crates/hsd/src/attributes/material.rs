@@ -1,11 +1,5 @@
-use loro_surgeon::{
-    Hydrate,
-    Reconcile,
-};
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use loro_surgeon::{Hydrate, Reconcile};
+use serde::{Deserialize, Serialize};
 
 use crate::attributes::Attribute;
 
@@ -18,18 +12,18 @@ pub struct ColorVec(pub Vec<f64>);
 #[loro(default)]
 #[serde(default)]
 pub struct MaterialAttr {
-    pub alpha_cutoff:               Option<f64>,
-    pub alpha_mode:                 Option<String>,
-    pub base_color:                 Option<ColorVec>,
-    pub base_color_texture:         Option<String>,
-    pub double_sided:               Option<bool>,
-    pub emissive:                   Option<ColorVec>,
-    pub emissive_texture:           Option<String>,
-    pub metallic:                   Option<f64>,
+    pub alpha_cutoff: Option<f64>,
+    pub alpha_mode: Option<String>,
+    pub base_color: Option<ColorVec>,
+    pub base_color_texture: Option<String>,
+    pub double_sided: Option<bool>,
+    pub emissive: Option<ColorVec>,
+    pub emissive_texture: Option<String>,
+    pub metallic: Option<f64>,
     pub metallic_roughness_texture: Option<String>,
-    pub normal_texture:             Option<String>,
-    pub occlusion_texture:          Option<String>,
-    pub roughness:                  Option<f64>,
+    pub normal_texture: Option<String>,
+    pub occlusion_texture: Option<String>,
+    pub roughness: Option<f64>,
 }
 
 impl MaterialAttr {

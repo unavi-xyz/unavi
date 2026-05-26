@@ -2,16 +2,10 @@ use bevy::prelude::*;
 use bevy_hsd::attributes::script::HsdScript;
 use bevy_wds::blob::{
     deps::BlobDep,
-    request::{
-        BlobRequest,
-        BlobResponse,
-    },
+    request::{BlobRequest, BlobResponse},
 };
 
-use crate::{
-    Script,
-    load::asset::Wasm,
-};
+use crate::{Script, load::asset::Wasm};
 
 #[derive(Component)]
 pub struct PendingScript;

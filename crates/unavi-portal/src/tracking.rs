@@ -3,26 +3,16 @@ use std::f32::consts::PI;
 use bevy::{
     camera::{
         RenderTarget,
-        primitives::{
-            Frustum,
-            HalfSpace,
-        },
+        primitives::{Frustum, HalfSpace},
     },
     math::Affine3A,
     prelude::*,
     render::render_resource::Extent3d,
-    window::{
-        PrimaryWindow,
-        WindowRef,
-    },
+    window::{PrimaryWindow, WindowRef},
 };
 
 use crate::{
-    IncomingPortals,
-    Portal,
-    PortalCamera,
-    PortalDestination,
-    TrackedCamera,
+    IncomingPortals, Portal, PortalCamera, PortalDestination, TrackedCamera,
     material::PortalMaterial,
 };
 

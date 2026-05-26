@@ -1,29 +1,15 @@
-use std::{
-    str::FromStr,
-    sync::Arc,
-    time::Duration,
-};
+use std::{str::FromStr, sync::Arc, time::Duration};
 
 use anyhow::bail;
-use iroh::{
-    EndpointId,
-    Signature,
-};
+use iroh::{EndpointId, Signature};
 use irpc::WithChannels;
 use rand::RngCore;
 use tracing::debug;
 use xdid::resolver::DidResolver;
 
 use crate::{
-    ConnectionState,
-    SessionToken,
-    StoreContext,
-    auth::{
-        AuthMessage,
-        HandlerState,
-        Nonce,
-        jwk::verify_jwk_signature,
-    },
+    ConnectionState, SessionToken, StoreContext,
+    auth::{AuthMessage, HandlerState, Nonce, jwk::verify_jwk_signature},
 };
 
 const NONCE_TTL: Duration = Duration::from_mins(3);

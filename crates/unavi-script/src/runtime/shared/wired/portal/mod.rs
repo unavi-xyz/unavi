@@ -6,30 +6,30 @@ pub struct PortalRes;
 pub struct WiredPortalApi;
 
 pub struct PortalDestination {
-    pub space:  Vec<u8>,
+    pub space: Vec<u8>,
     pub portal: Option<String>,
 }
 
 pub struct PortalTransform {
     pub translation: [f32; 3],
-    pub rotation:    [f32; 4],
-    pub scale:       [f32; 3],
+    pub rotation: [f32; 4],
+    pub scale: [f32; 3],
 }
 
 impl Default for PortalTransform {
     fn default() -> Self {
         Self {
             translation: [0.0; 3],
-            rotation:    [0.0, 0.0, 0.0, 1.0],
-            scale:       [1.0; 3],
+            rotation: [0.0, 0.0, 0.0, 1.0],
+            scale: [1.0; 3],
         }
     }
 }
 
 pub struct PortalParams {
     pub destination: PortalDestination,
-    pub size:        [f32; 2],
-    pub transform:   PortalTransform,
+    pub size: [f32; 2],
+    pub transform: PortalTransform,
 }
 
 pub fn list_portals(_api: &Api) -> anyhow::Result<Vec<u32>> {

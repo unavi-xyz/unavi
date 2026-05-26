@@ -4,25 +4,15 @@ use wired_prelude::prelude::*;
 
 use crate::{
     gauntlet::{
-        BG_ALPHA_BASE,
-        BG_ALPHA_HOVER,
-        CLOSE_ON_MOVE_THRESHOLD_SQ,
-        Gauntlet,
-        OPEN_SPEED_SECONDS,
-        RAISE_DIST,
-        RAISE_SPEED_SECONDS,
-        Target,
+        BG_ALPHA_BASE, BG_ALPHA_HOVER, CLOSE_ON_MOVE_THRESHOLD_SQ, Gauntlet, OPEN_SPEED_SECONDS,
+        RAISE_DIST, RAISE_SPEED_SECONDS, Target,
     },
     unavi::vui_module::api::VuiModuleRegistry,
     wired::{
         agent::types::BoneName,
         input::{
             context::register_global_input_listener,
-            types::{
-                InputAction,
-                InputDevice,
-                InputListener,
-            },
+            types::{InputAction, InputDevice, InputListener},
         },
         scene::types::Xform,
     },
@@ -45,16 +35,16 @@ fn palette(n: usize) -> Vec<Color> {
 }
 
 pub struct ModuleRef {
-    pub doc_id:       Vec<u8>,
+    pub doc_id: Vec<u8>,
     pub icon_prim_id: Option<String>,
-    pub name:         String,
+    pub name: String,
 }
 
 struct Script {
-    gauntlets:   [Gauntlet; 3],
-    input:       InputListener,
+    gauntlets: [Gauntlet; 3],
+    input: InputListener,
     module_refs: Vec<ModuleRef>,
-    registry:    VuiModuleRegistry,
+    registry: VuiModuleRegistry,
     render_time: SystemTime,
 }
 
@@ -87,13 +77,13 @@ impl ScriptBehavior for Script {
                 && !self.module_refs.iter().any(|d| d.doc_id == m.doc_id)
             {
                 self.module_refs.push(ModuleRef {
-                    doc_id:       m.doc_id,
+                    doc_id: m.doc_id,
                     icon_prim_id: if m.icon_prim_id.is_empty() {
                         None
                     } else {
                         Some(m.icon_prim_id)
                     },
-                    name:         m.name,
+                    name: m.name,
                 });
                 changed = true;
             }
@@ -230,8 +220,8 @@ impl ScriptBehavior for Script {
                     sector.raise_t.set(new_raise);
                     sector.root.set_xform(Some(Xform {
                         translation: Vec3::new(0.0, 0.0, new_raise * RAISE_DIST),
-                        rotation:    Quat::IDENTITY,
-                        scale:       Vec3::ONE,
+                        rotation: Quat::IDENTITY,
+                        scale: Vec3::ONE,
                     }));
                     let c = sector.bg_color;
                     let bg_alpha = new_raise.mul_add(BG_ALPHA_HOVER - BG_ALPHA_BASE, BG_ALPHA_BASE);

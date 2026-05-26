@@ -1,26 +1,14 @@
 use std::{
     mem,
-    sync::{
-        LazyLock,
-        Mutex,
-    },
+    sync::{LazyLock, Mutex},
     time::Duration,
 };
 
-use bevy::{
-    platform::collections::HashMap,
-    prelude::*,
-};
+use bevy::{platform::collections::HashMap, prelude::*};
 use blake3::Hash;
-use iroh::{
-    EndpointAddr,
-    EndpointId,
-};
+use iroh::{EndpointAddr, EndpointId};
 
-use crate::peer::{
-    ActiveSpaces,
-    Peer,
-};
+use crate::peer::{ActiveSpaces, Peer};
 
 pub const PRESENCE_INTERVAL: Duration = Duration::from_secs(20);
 const INACTIVE_SECS: f32 = PRESENCE_INTERVAL.as_secs_f32() * 4.0;

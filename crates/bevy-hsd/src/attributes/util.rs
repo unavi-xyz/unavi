@@ -1,11 +1,7 @@
 use std::collections::HashSet;
 
 use bevy::prelude::*;
-use loro::{
-    ContainerID,
-    Index,
-    event::Diff,
-};
+use loro::{ContainerID, Index, event::Diff};
 
 use crate::attributes::ParseError;
 

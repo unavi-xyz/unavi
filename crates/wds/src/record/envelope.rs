@@ -1,12 +1,5 @@
-use loro::{
-    ExportMode,
-    LoroDoc,
-    VersionVector,
-};
-use serde::{
-    Deserialize,
-    Serialize,
-};
+use loro::{ExportMode, LoroDoc, VersionVector};
+use serde::{Deserialize, Serialize};
 use xdid::core::did::Did;
 
 use crate::signed_bytes::Signable;
@@ -14,9 +7,9 @@ use crate::signed_bytes::Signable;
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Envelope {
     author: Did,
-    from:   VersionVector,
-    to:     VersionVector,
-    ops:    Vec<u8>,
+    from: VersionVector,
+    to: VersionVector,
+    ops: Vec<u8>,
 }
 
 impl Signable for Envelope {}

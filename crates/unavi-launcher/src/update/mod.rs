@@ -6,7 +6,7 @@ pub mod launcher;
 pub enum UpdateStatus {
     Checking,
     Downloading {
-        version:  String,
+        version: String,
         progress: Option<f32>,
     },
     UpToDate,

@@ -110,27 +110,22 @@
             system,
             ...
           }:
+          let
+            toolchain =
+              with inputs.fenix.packages.${system};
+              combine [
+                complete.toolchain
+                targets.wasm32-unknown-unknown.latest.rust-std
+                targets.wasm32-wasip2.latest.rust-std
+              ];
+          in
           {
             _module.args.pkgs = import inputs.nixpkgs {
               inherit system;
               config.allowUnfree = true;
               overlays = [
                 inputs.fenix.overlays.default
-                (
-                  self: _:
-                  let
-                    toolchain =
-                      with self.fenix;
-                      combine [
-                        complete.toolchain
-                        targets.wasm32-unknown-unknown.latest.rust-std
-                        targets.wasm32-wasip2.latest.rust-std
-                      ];
-                  in
-                  {
-                    crane = (inputs.crane.mkLib self).overrideToolchain toolchain;
-                  }
-                )
+                (self: _: { crane = (inputs.crane.mkLib self).overrideToolchain toolchain; })
               ];
             };
 
@@ -158,7 +153,10 @@
                 strict = true;
               };
               oxipng.enable = true;
-              rustfmt.enable = true;
+              rustfmt = {
+                enable = true;
+                package = toolchain;
+              };
               sqlfluff-lint.enable = true;
               sqlfluff = {
                 enable = true;

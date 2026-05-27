@@ -195,7 +195,7 @@ impl ScriptBehavior for Script {
             let Ok(id) = Hash::from_slice(&event.payload) else {
                 continue;
             };
-            if self.target.as_ref().is_some_and(|(x, _)| *x != id) {
+            if self.target.as_ref().is_some_and(|(x, _)| *x == id) {
                 continue;
             }
             println!("Loading beacon: {id}");

@@ -98,7 +98,6 @@ impl ScriptBehavior for Script {
         }
         self.time = SystemTime::now();
 
-        println!("Emitting beacon event");
         wired::event::api::emit(
             CHANNEL,
             self.id.as_bytes(),

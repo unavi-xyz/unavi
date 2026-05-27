@@ -13,9 +13,17 @@ use crate::attributes::Attribute;
 #[derive(Hydrate, Reconcile, Debug, Clone, Default, Serialize, Deserialize)]
 #[loro(default)]
 #[serde(default)]
-pub struct PortalDestination {
+pub struct PortalReceptor {
     pub document: ByteArray<32>,
-    pub node:     String,
+    pub prim:     String,
+}
+
+#[serde_with::skip_serializing_none]
+#[derive(Hydrate, Reconcile, Debug, Clone, Default, Serialize, Deserialize)]
+#[loro(default)]
+#[serde(default)]
+pub struct PortalDestination {
+    pub receptor: Option<PortalReceptor>,
     pub space:    ByteArray<32>,
 }
 

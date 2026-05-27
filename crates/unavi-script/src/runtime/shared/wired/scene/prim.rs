@@ -167,9 +167,13 @@ pub enum PrimRigidBodyKind {
     Static,
 }
 
-pub struct PrimPortalDestination {
+pub struct PrimPortalReceptor {
     pub document: [u8; 32],
-    pub node:     String,
+    pub prim:     String,
+}
+
+pub struct PrimPortalDestination {
+    pub receptor: Option<PrimPortalReceptor>,
     pub space:    [u8; 32],
 }
 
@@ -860,8 +864,10 @@ fn portal_attr_to_prim(attr: PortalAttr) -> PrimPortal {
     PrimPortal {
         allow_incoming: attr.allow_incoming,
         destination:    attr.destination.map(|d| PrimPortalDestination {
-            document: d.document.0,
-            node:     d.node,
+            receptor: d.receptor.map(|r| PrimPortalReceptor {
+                document: r.document.0,
+                prim:     r.prim,
+            }),
             space:    d.space.0,
         }),
         size_x:         attr.size_x as f32,

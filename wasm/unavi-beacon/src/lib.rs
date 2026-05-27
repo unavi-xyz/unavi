@@ -39,8 +39,8 @@ const EVENT_RADIUS: f32 = SIZE * 3.0;
 const SIZE: f32 = 0.15;
 
 struct Script {
+    cube: Prim,
     id:   Hash,
-    prim: Prim,
     time: SystemTime,
 }
 
@@ -86,8 +86,8 @@ impl ScriptBehavior for Script {
         }));
         println!("Beacon initialized: {id}");
         Self {
+            cube,
             id,
-            prim,
             time: SystemTime::now(),
         }
     }
@@ -105,7 +105,7 @@ impl ScriptBehavior for Script {
             EventFilter {
                 documents: None,
                 scope:     EventScope::Spatial(SpatialScope {
-                    prim:   self.prim.clone(),
+                    prim:   self.cube.clone(),
                     radius: EVENT_RADIUS,
                 }),
             },

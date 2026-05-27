@@ -192,7 +192,6 @@ impl ScriptBehavior for Script {
         }
 
         while let Some(event) = self.receptor.poll() {
-            println!("-> {event:#?}");
             let Ok(id) = Hash::from_slice(&event.payload) else {
                 continue;
             };

@@ -26,10 +26,7 @@ use hsd::{
             Topology,
         },
         name::NameAttr,
-        portal::{
-            PortalAttr,
-            PortalDestination as PortalDestAttr,
-        },
+        portal::PortalAttr,
         relationships_map,
         rigid_body::{
             RigidBodyAttr,
@@ -179,6 +176,12 @@ pub struct PrimPortalDestination {
 pub struct PrimPortal {
     pub allow_incoming: bool,
     pub destination:    Option<PrimPortalDestination>,
+    pub size_x:         f32,
+    pub size_y:         f32,
+}
+
+pub struct PrimPortalOptions {
+    pub allow_incoming: bool,
     pub size_x:         f32,
     pub size_y:         f32,
 }
@@ -827,12 +830,27 @@ pub async fn portal(api: &Api, rep: u32) -> anyhow::Result<Option<PrimPortal>> {
     Ok(read_attr::<PortalAttr>(&meta).map(portal_attr_to_prim))
 }
 
-pub async fn set_portal(api: &Api, rep: u32, value: Option<PrimPortal>) -> anyhow::Result<()> {
+pub async fn set_portal(
+    api: &Api,
+    rep: u32,
+    value: Option<PrimPortalOptions>,
+) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     match value {
-        Some(p) => write_attr(&meta, &prim_to_portal_attr(p))?,
+        Some(opts) => {
+            let destination = read_attr::<PortalAttr>(&meta).and_then(|p| p.destination);
+            write_attr(
+                &meta,
+                &PortalAttr {
+                    allow_incoming: opts.allow_incoming,
+                    destination,
+                    size_x: f64::from(opts.size_x),
+                    size_y: f64::from(opts.size_y),
+                },
+            )?;
+        }
         None => clear_attr(&meta, PortalAttr::KEY)?,
     }
     Ok(())
@@ -848,19 +866,6 @@ fn portal_attr_to_prim(attr: PortalAttr) -> PrimPortal {
         }),
         size_x:         attr.size_x as f32,
         size_y:         attr.size_y as f32,
-    }
-}
-
-fn prim_to_portal_attr(p: PrimPortal) -> PortalAttr {
-    PortalAttr {
-        allow_incoming: p.allow_incoming,
-        destination:    p.destination.map(|d| PortalDestAttr {
-            document: ByteArray::new(d.document),
-            node:     d.node,
-            space:    ByteArray::new(d.space),
-        }),
-        size_x:         f64::from(p.size_x),
-        size_y:         f64::from(p.size_y),
     }
 }
 

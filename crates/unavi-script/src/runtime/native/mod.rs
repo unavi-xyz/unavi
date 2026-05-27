@@ -65,6 +65,10 @@ pub fn add_apis_to_linker(
         }
     }
 
+    if perms.contains(&ApiName::Portal) {
+        wired::portal::bindings::wired::portal::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    }
+
     if perms.contains(&ApiName::Scene) {
         wired::scene::bindings::wired::scene::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
         wired::scene::bindings::wired::scene::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;

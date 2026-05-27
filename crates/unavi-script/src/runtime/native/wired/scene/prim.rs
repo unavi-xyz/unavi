@@ -18,6 +18,7 @@ use crate::runtime::{
             Mesh,
             Portal,
             PortalDestination,
+            PortalOptions,
             RigidBody,
             RigidBodyKind,
             Topology,
@@ -34,7 +35,7 @@ use crate::runtime::{
             PrimMaterial,
             PrimMesh,
             PrimPortal,
-            PrimPortalDestination,
+            PrimPortalOptions,
             PrimRes,
             PrimRigidBody,
             PrimRigidBodyKind,
@@ -297,21 +298,12 @@ fn portal_wit(p: PrimPortal) -> Portal {
     }
 }
 
-fn portal_shared(p: Portal) -> wasmtime::Result<PrimPortal> {
-    let destination = match p.destination {
-        Some(d) => Some(PrimPortalDestination {
-            document: to_blob_array(d.document)?,
-            node:     d.node,
-            space:    to_blob_array(d.space)?,
-        }),
-        None => None,
-    };
-    Ok(PrimPortal {
+const fn portal_options_shared(p: PortalOptions) -> PrimPortalOptions {
+    PrimPortalOptions {
         allow_incoming: p.allow_incoming,
-        destination,
-        size_x: p.size_x,
-        size_y: p.size_y,
-    })
+        size_x:         p.size_x,
+        size_y:         p.size_y,
+    }
 }
 
 const fn rigid_body_wit(rb: PrimRigidBody) -> RigidBody {
@@ -583,12 +575,15 @@ impl HostPrim for Runtime {
     async fn set_portal(
         &mut self,
         self_: Resource<PrimRes>,
-        value: Option<Portal>,
+        value: Option<PortalOptions>,
     ) -> wasmtime::Result<()> {
-        let shared_p = value.map(portal_shared).transpose()?;
-        shared::wired::scene::prim::set_portal(&self.api, self_.rep(), shared_p)
-            .await
-            .map_err(wasmtime::Error::from_anyhow)
+        shared::wired::scene::prim::set_portal(
+            &self.api,
+            self_.rep(),
+            value.map(portal_options_shared),
+        )
+        .await
+        .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn relationships(

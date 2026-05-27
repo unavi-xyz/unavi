@@ -16,6 +16,7 @@ pub enum ApiName {
     Input,
     InputContext,
     LocalAgent,
+    Portal,
     Scene,
     Wds,
 }
@@ -48,6 +49,7 @@ impl ApiPermissions {
         set.insert(ApiName::Event);
         set.insert(ApiName::Input);
         set.insert(ApiName::InputContext);
+        set.insert(ApiName::Portal);
         set.insert(ApiName::Scene);
         set.insert(ApiName::Wds);
         Self(Arc::new(set))

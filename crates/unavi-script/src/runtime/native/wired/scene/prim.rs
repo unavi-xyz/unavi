@@ -19,6 +19,7 @@ use crate::runtime::{
             Portal,
             PortalDestination,
             PortalOptions,
+            PortalReceptor,
             RigidBody,
             RigidBodyKind,
             Topology,
@@ -289,8 +290,10 @@ fn portal_wit(p: PrimPortal) -> Portal {
     Portal {
         allow_incoming: p.allow_incoming,
         destination:    p.destination.map(|d| PortalDestination {
-            document: d.document.to_vec(),
-            node:     d.node,
+            receptor: d.receptor.map(|r| PortalReceptor {
+                document: r.document.to_vec(),
+                prim:     r.prim,
+            }),
             space:    d.space.to_vec(),
         }),
         size_x:         p.size_x,

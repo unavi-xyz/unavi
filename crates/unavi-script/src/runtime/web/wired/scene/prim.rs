@@ -676,8 +676,12 @@ fn portal_to_js(p: &PrimPortal) -> JsValue {
     obj_set(&obj, "allow-incoming", &p.allow_incoming.into());
     if let Some(d) = &p.destination {
         let dest = js_sys::Object::new();
-        obj_set(&dest, "document", &bytes32_to_js(&d.document));
-        obj_set(&dest, "node", &JsValue::from_str(&d.node));
+        if let Some(r) = &d.receptor {
+            let rec = js_sys::Object::new();
+            obj_set(&rec, "document", &bytes32_to_js(&r.document));
+            obj_set(&rec, "prim", &JsValue::from_str(&r.prim));
+            obj_set(&dest, "receptor", &rec.into());
+        }
         obj_set(&dest, "space", &bytes32_to_js(&d.space));
         obj_set(&obj, "destination", &dest.into());
     }

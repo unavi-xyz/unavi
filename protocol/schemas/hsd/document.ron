@@ -58,8 +58,10 @@
             "portal": Optional(Struct({
                 "allow_incoming": Bool,
                 "destination": Optional(Struct({
-                    "document": RecordId,
-                    "node": String,
+                    "receptor": Optional(Struct({
+                        "document": RecordId,
+                        "prim": String,
+                    })),
                     "space": RecordId,
                 })),
                 "size_x": F64,

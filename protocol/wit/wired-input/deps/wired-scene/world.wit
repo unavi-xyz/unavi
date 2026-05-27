@@ -138,9 +138,13 @@ interface types {
     restitution: option<f32>,
   }
 
-  record portal-destination {
+  record portal-receptor {
     document: document-id,
-    node: prim-id,
+    prim: prim-id,
+  }
+
+  record portal-destination {
+    receptor: option<portal-receptor>,
     space: record-id,
   }
 

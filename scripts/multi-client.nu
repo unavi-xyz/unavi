@@ -6,8 +6,7 @@ def main [
   --debug-physics
   --debug-log
 ] {
-  let use_devtools = $debug_network or $debug_physics
-  let client_features = if $use_devtools { ["--features", "devtools", "--features", "mdns"] } else { [] }
+  let client_features =  ["--features", "mdns"] 
   let client_args = [
     (if $debug_network { "--debug-network" })
     (if $debug_physics { "--debug-physics" })

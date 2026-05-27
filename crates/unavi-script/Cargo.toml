@@ -6,6 +6,9 @@ publish              = false
 repository.workspace = true
 version.workspace    = true
 
+[features]
+debug = []
+
 [lints]
 workspace = true
 

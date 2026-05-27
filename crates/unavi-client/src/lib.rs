@@ -10,27 +10,29 @@ use iroh::endpoint_info::AddrFilter;
 use tracing::Level;
 
 mod camera;
-mod devtools;
 mod fade;
 mod grab;
 mod icon;
 mod scene;
+
+#[cfg(feature = "dev_tools")] mod dev_tools;
 
 #[cfg(not(target_family = "wasm"))] mod assets;
 #[cfg(not(target_family = "wasm"))] mod xr;
 
 bitflags! {
     #[derive(Clone, Copy, Debug, Default)]
-    pub struct DebugFlags: u8 {
-        const FPS       = 0b1000;
-        const INSPECTOR = 0b0100;
-        const NETWORK   = 0b0010;
-        const PHYSICS   = 0b0001;
+    pub struct Flags: u8 {
+        const DEBUG_EVENT     = 0b1_0000;
+        const DEBUG_FPS       = 0b0_1000;
+        const DEBUG_INSPECTOR = 0b0_0100;
+        const DEBUG_NETWORK   = 0b0_0010;
+        const DEBUG_PHYSICS   = 0b0_0001;
     }
 }
 
 pub struct UnaviPlugin {
-    pub debug:     DebugFlags,
+    pub flags:     Flags,
     pub in_memory: bool,
     pub log_level: Level,
     pub xr:        bool,
@@ -98,15 +100,8 @@ impl Plugin for UnaviPlugin {
             }
         }
 
-        #[cfg(feature = "devtools-bevy")]
-        {
-            if self.debug.contains(DebugFlags::FPS) {
-                app.add_plugins(bevy::dev_tools::fps_overlay::FpsOverlayPlugin::default());
-            }
-            if self.debug.contains(DebugFlags::PHYSICS) {
-                app.add_plugins(avian3d::debug_render::PhysicsDebugPlugin);
-            }
-        }
+        #[cfg(feature = "dev_tools")]
+        app.add_plugins(dev_tools::DevToolsPlugin { flags: self.flags });
 
         app.add_plugins((
             avian3d::PhysicsPlugins::default(),
@@ -124,10 +119,6 @@ impl Plugin for UnaviPlugin {
         ))
         .add_plugins((
             camera::CameraPlugin,
-            devtools::DevToolsPlugin {
-                inspector: self.debug.contains(DebugFlags::INSPECTOR),
-                network:   self.debug.contains(DebugFlags::NETWORK),
-            },
             fade::FadePlugin,
             grab::GrabPlugin,
             scene::ScenePlugin,

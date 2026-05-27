@@ -18,10 +18,12 @@ use crate::{
             EventScope,
             SpatialScope,
         },
+        portal::api::open_portal,
         scene::{
             api::self_document,
             types::{
                 Material,
+                PortalOptions,
                 Prim,
                 RigidBody,
                 RigidBodyKind,
@@ -88,14 +90,21 @@ const fn gate_material() -> Material {
 }
 
 struct Script {
-    receptor: EventReceptor,
-    target:   Option<(Hash, SystemTime)>,
+    root:            Prim,
+    receptor:        EventReceptor,
+    pedestal_target: Option<(Hash, SystemTime)>,
 }
 
 impl ScriptBehavior for Script {
     fn init() -> Self {
         let doc = self_document();
         let root = doc.roots().into_iter().next().expect("root");
+
+        root.set_portal(Some(PortalOptions {
+            allow_incoming: true,
+            size_x:         PORTAL_WIDTH,
+            size_y:         PORTAL_HEIGHT,
+        }));
 
         let material = gate_material();
 
@@ -179,27 +188,29 @@ impl ScriptBehavior for Script {
         println!("Gate ready");
 
         Self {
+            root,
             receptor,
-            target: None,
+            pedestal_target: None,
         }
     }
 
     fn tick(&mut self) {
-        if let Some((_, t)) = &self.target
+        if let Some((_, t)) = &self.pedestal_target
             && t.elapsed().expect("elapsed") >= TARGET_DECAY
         {
-            self.target = None;
+            self.pedestal_target = None;
         }
 
         while let Some(event) = self.receptor.poll() {
             let Ok(id) = Hash::from_slice(&event.payload) else {
                 continue;
             };
-            if self.target.as_ref().is_some_and(|(x, _)| *x == id) {
+            if self.pedestal_target.as_ref().is_some_and(|(x, _)| *x == id) {
                 continue;
             }
             println!("Loading beacon: {id}");
-            self.target = Some((id, SystemTime::now()));
+            self.pedestal_target = Some((id, SystemTime::now()));
+            open_portal(&self.root, id.as_bytes().as_ref());
         }
     }
 }

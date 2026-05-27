@@ -16,7 +16,7 @@ use parking_lot::RwLock;
 pub static NODE_TRANSFORM_REGISTRY: LazyLock<RwLock<HashMap<AbsoluteNodeId, TransformSnapshot>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
-#[derive(Clone, Hash, PartialEq, Eq)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct AbsoluteNodeId {
     pub doc:  Hash,
     pub node: TreeID,

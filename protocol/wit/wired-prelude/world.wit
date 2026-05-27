@@ -18,6 +18,7 @@ world api {
 world api-secure {
   import wired:agent/api;
   import wired:input/api;
+  import wired:portal/api;
   import wired:wds/api;
 }
 

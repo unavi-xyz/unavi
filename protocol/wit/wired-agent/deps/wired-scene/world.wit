@@ -151,6 +151,12 @@ interface types {
     size-y: f32,
   }
 
+  record portal-options {
+    allow-incoming: bool,
+    size-x: f32,
+    size-y: f32,
+  }
+
   resource document {
     id: func() -> document-id;
     clone: func() -> document;
@@ -174,7 +180,6 @@ interface types {
     name: func() -> option<string>;
     set-name: func(value: option<string>);
 
-    // The `asset` attribute pins a blob-id dep reachable from this prim.
     asset: func() -> option<blob-id>;
     set-asset: func(value: option<blob-id>);
 
@@ -204,7 +209,7 @@ interface types {
     set-rigid-body: func(value: option<rigid-body>);
 
     portal: func() -> option<portal>;
-    set-portal: func(value: option<portal>);
+    set-portal: func(value: option<portal-options>);
 
     relationships: func() -> list<tuple<string, prim-id>>;
     get-relationship: func(key: string) -> option<prim-id>;

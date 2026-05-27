@@ -132,6 +132,9 @@ function buildImports(wasi: WASIShim, rt: any) {
     "wired:input/types": {
       InputListener: rt.wiredInputListenerClass(),
     },
+    "wired:portal/api": {
+      openPortal: rt.wiredPortalOpenPortal.bind(rt),
+    },
     "wired:scene/api": {
       createDocument: rt.wiredSceneCreateDocument.bind(rt),
       getDocument: rt.wiredSceneGetDocument.bind(rt),

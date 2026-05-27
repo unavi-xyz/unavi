@@ -27,8 +27,10 @@ interface types {
 
   // Stringified loro TreeID ("counter@peer").
   type prim-id = string;
+  // 32-byte blake3 hash identifying a WDS record.
+  type record-id = list<u8>;
   // 32-byte blake3 hash identifying a document.
-  type document-id = list<u8>;
+  type document-id = record-id;
   // 32-byte blake3 hash identifying a WDS blob.
   type blob-id = list<u8>;
 
@@ -136,6 +138,19 @@ interface types {
     restitution: option<f32>,
   }
 
+  record portal-destination {
+    document: document-id,
+    node: prim-id,
+    space: record-id,
+  }
+
+  record portal {
+    allow-incoming: bool,
+    destination: option<portal-destination>,
+    size-x: f32,
+    size-y: f32,
+  }
+
   resource document {
     id: func() -> document-id;
     clone: func() -> document;
@@ -187,6 +202,9 @@ interface types {
 
     rigid-body: func() -> option<rigid-body>;
     set-rigid-body: func(value: option<rigid-body>);
+
+    portal: func() -> option<portal>;
+    set-portal: func(value: option<portal>);
 
     relationships: func() -> list<tuple<string, prim-id>>;
     get-relationship: func(key: string) -> option<prim-id>;

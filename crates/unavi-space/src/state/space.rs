@@ -1,10 +1,7 @@
-use std::{
-    collections::BTreeMap,
-    sync::{
-        Arc,
-        LazyLock,
-        Mutex,
-    },
+use std::sync::{
+    Arc,
+    LazyLock,
+    Mutex,
 };
 
 use bevy::{
@@ -26,7 +23,6 @@ use serde::{
     Serialize,
 };
 use unavi_util::async_commands::AsyncCommands;
-use wired_records::byte_array::ByteArray;
 
 use crate::{
     Space,
@@ -48,15 +44,8 @@ pub struct SpaceStateDoc;
 
 #[derive(Hydrate, Reconcile, Default, Debug)]
 pub struct SpaceState {
-    portals: BTreeMap<String, PortalState>,
-}
-
-#[derive(Hydrate, Reconcile, Debug)]
-pub struct PortalState {
-    dest_portal: Option<ByteArray<32>>,
-    dest_space:  ByteArray<32>,
-    size_x:      f32,
-    size_y:      f32,
+    // TODO support hash set in loro-surgeon
+    // docs: HashSet<Hash>,
 }
 
 pub fn add_space_state(trigger: On<Add, Space>, spaces: Query<&Space>, mut commands: Commands) {

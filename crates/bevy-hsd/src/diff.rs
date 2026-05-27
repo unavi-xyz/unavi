@@ -234,6 +234,11 @@ fn dispatch_attr_data(commands: &mut Commands, prim_ent: Entity, data: AttrDataE
                 .entity(prim_ent)
                 .trigger(|entity| ApplyEvent { entity, value });
         }
+        AttrDataEvent::Portal(value) => {
+            commands
+                .entity(prim_ent)
+                .trigger(|entity| ApplyEvent { entity, value });
+        }
         AttrDataEvent::RigidBody(value) => {
             commands
                 .entity(prim_ent)

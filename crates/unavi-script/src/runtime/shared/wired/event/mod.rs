@@ -149,7 +149,7 @@ pub async fn emit(
                     continue;
                 };
                 let dist = (*e_pos - r_pos).length();
-                if dist > *emitter_radius || dist > *receptor_radius {
+                if dist > *emitter_radius + *receptor_radius {
                     continue;
                 }
                 SenderScope::Spatial {

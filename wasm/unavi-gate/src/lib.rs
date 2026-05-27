@@ -42,7 +42,7 @@ const BEAM_THICKNESS: f32 = 1.0 / (4.0 * GOLDEN_RATIO);
 
 const PEDESTAL_HEIGHT: f32 = PORTAL_WIDTH / 2.0;
 const PEDESTAL_THICKNESS: f32 = BEAM_THICKNESS * GOLDEN_RATIO;
-const EVENT_RADIUS: f32 = PEDESTAL_THICKNESS * 2.0;
+const EVENT_RADIUS: f32 = PEDESTAL_THICKNESS;
 
 const TARGET_DECAY: Duration = Duration::from_secs(10);
 
@@ -163,7 +163,7 @@ impl ScriptBehavior for Script {
 
         let receptor_prim = doc.create_prim();
         pedestal.add_child(&receptor_prim);
-        set_translation(&receptor_prim, Vec3::new(0.0, PEDESTAL_HEIGHT, 0.0));
+        set_translation(&receptor_prim, Vec3::new(0.0, PEDESTAL_HEIGHT / 2.0, 0.0));
 
         let receptor = wired::event::api::listen(
             &[CHANNEL.to_string()],
@@ -192,6 +192,7 @@ impl ScriptBehavior for Script {
         }
 
         while let Some(event) = self.receptor.poll() {
+            println!("-> {event:#?}");
             let Ok(id) = Hash::from_slice(&event.payload) else {
                 continue;
             };

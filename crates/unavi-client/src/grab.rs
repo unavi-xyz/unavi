@@ -1,5 +1,8 @@
 use avian3d::prelude::*;
-use bevy::prelude::*;
+use bevy::{
+    ecs::system::entity_command,
+    prelude::*,
+};
 use unavi_input::{
     SqueezeDown,
     SqueezeUp,
@@ -70,7 +73,9 @@ fn on_squeeze_up(trigger: On<SqueezeUp>, mut commands: Commands) {
     let Some(entity) = trigger.entity else {
         return;
     };
-    commands.entity(entity).remove::<(Grabbed, GravityScale)>();
+    commands
+        .entity(entity)
+        .queue_silenced(entity_command::remove::<(Grabbed, GravityScale)>());
 }
 
 const GRAB_DEAD_ZONE: f32 = 0.001;

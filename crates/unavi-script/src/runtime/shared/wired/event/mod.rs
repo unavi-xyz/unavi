@@ -94,6 +94,11 @@ pub async fn emit(
             EventScope::Global => None,
         };
 
+    #[cfg(feature = "debug")]
+    if let Some((_, Some(pos), radius)) = emitter_spatial.as_ref() {
+        crate::debug::record_emit(&channel, *pos, *radius);
+    }
+
     let payload = Arc::new(payload);
     let sender_doc = api.doc_id.as_bytes().to_vec();
 

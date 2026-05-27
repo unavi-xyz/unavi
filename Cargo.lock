@@ -13937,6 +13937,7 @@ dependencies = [
  "image",
  "iroh",
  "log",
+ "parking_lot",
  "reqwest 0.13.2",
  "tracing",
  "unavi-agent",

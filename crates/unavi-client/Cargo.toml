@@ -8,12 +8,16 @@ repository.workspace = true
 version.workspace    = true
 
 [features]
-devtools           = ["devtools-bevy", "devtools-inspector", "devtools-network"]
-devtools-bevy      = ["bevy/bevy_dev_tools", "bevy/debug"]
-devtools-inspector = ["dep:bevy-inspector-egui", "unavi-input/egui-filter"]
-devtools-network   = []
-mdns               = ["bevy-iroh/mdns"]
-webgpu             = ["bevy/webgpu", "unavi-agent/webgpu", "unavi-avatar/webgpu"]
+default = ["dev_tools"]
+dev_tools = [
+  "bevy/bevy_dev_tools",
+  "bevy/debug",
+  "dep:bevy-inspector-egui",
+  "unavi-input/egui-filter",
+  "unavi-script/debug",
+]
+mdns = ["bevy-iroh/mdns"]
+webgpu = ["bevy/webgpu", "unavi-agent/webgpu", "unavi-avatar/webgpu"]
 
 [lints]
 workspace = true
@@ -37,6 +41,7 @@ clap.workspace          = true
 image                   = { default-features = false, features = ["png"], workspace = true }
 iroh.workspace          = true
 log                     = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
+parking_lot.workspace   = true
 tracing                 = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
 unavi-agent.path        = "../unavi-agent"
 unavi-assets.path       = "../unavi-assets"

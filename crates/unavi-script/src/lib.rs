@@ -10,6 +10,7 @@ use crate::{
     permissions::ApiPermissions,
 };
 
+#[cfg(feature = "debug")] pub mod debug;
 mod engine;
 pub mod firewall;
 pub mod load;

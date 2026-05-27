@@ -16,6 +16,8 @@ use crate::runtime::{
             Image,
             Material,
             Mesh,
+            Portal,
+            PortalDestination,
             RigidBody,
             RigidBodyKind,
             Topology,
@@ -31,6 +33,8 @@ use crate::runtime::{
             PrimImage,
             PrimMaterial,
             PrimMesh,
+            PrimPortal,
+            PrimPortalDestination,
             PrimRes,
             PrimRigidBody,
             PrimRigidBodyKind,
@@ -277,6 +281,36 @@ fn collider_shared(c: Collider) -> wasmtime::Result<PrimCollider> {
             indices:  to_blob_array(t.indices)?,
             vertices: to_blob_array(t.vertices)?,
         },
+    })
+}
+
+fn portal_wit(p: PrimPortal) -> Portal {
+    Portal {
+        allow_incoming: p.allow_incoming,
+        destination:    p.destination.map(|d| PortalDestination {
+            document: d.document.to_vec(),
+            node:     d.node,
+            space:    d.space.to_vec(),
+        }),
+        size_x:         p.size_x,
+        size_y:         p.size_y,
+    }
+}
+
+fn portal_shared(p: Portal) -> wasmtime::Result<PrimPortal> {
+    let destination = match p.destination {
+        Some(d) => Some(PrimPortalDestination {
+            document: to_blob_array(d.document)?,
+            node:     d.node,
+            space:    to_blob_array(d.space)?,
+        }),
+        None => None,
+    };
+    Ok(PrimPortal {
+        allow_incoming: p.allow_incoming,
+        destination,
+        size_x: p.size_x,
+        size_y: p.size_y,
     })
 }
 
@@ -537,6 +571,24 @@ impl HostPrim for Runtime {
         )
         .await
         .map_err(wasmtime::Error::from_anyhow)
+    }
+
+    async fn portal(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Portal>> {
+        Ok(shared::wired::scene::prim::portal(&self.api, self_.rep())
+            .await
+            .map_err(wasmtime::Error::from_anyhow)?
+            .map(portal_wit))
+    }
+
+    async fn set_portal(
+        &mut self,
+        self_: Resource<PrimRes>,
+        value: Option<Portal>,
+    ) -> wasmtime::Result<()> {
+        let shared_p = value.map(portal_shared).transpose()?;
+        shared::wired::scene::prim::set_portal(&self.api, self_.rep(), shared_p)
+            .await
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn relationships(

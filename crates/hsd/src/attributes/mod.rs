@@ -23,6 +23,7 @@ pub mod image;
 pub mod material;
 pub mod mesh;
 pub mod name;
+pub mod portal;
 pub mod rigid_body;
 pub mod script;
 pub mod xform;
@@ -56,6 +57,7 @@ pub struct Attributes {
     pub material:   Option<material::MaterialAttr>,
     pub mesh:       Option<mesh::MeshAttr>,
     pub name:       Option<name::NameAttr>,
+    pub portal:     Option<portal::PortalAttr>,
     pub rigid_body: Option<rigid_body::RigidBodyAttr>,
     pub script:     Option<script::ScriptAttr>,
     pub xform:      Option<xform::XformAttr>,
@@ -70,6 +72,7 @@ impl Attributes {
             && self.material.is_none()
             && self.mesh.is_none()
             && self.name.is_none()
+            && self.portal.is_none()
             && self.rigid_body.is_none()
             && self.script.is_none()
             && self.xform.is_none()

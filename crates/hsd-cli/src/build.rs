@@ -238,6 +238,7 @@ fn compile_attrs<S: std::hash::BuildHasher>(
         material:   (attrs.material.as_ref().map(compile_material)),
         mesh:       None,
         name:       (attrs.name.clone().map(NameAttr)),
+        portal:     None,
         rigid_body: (attrs
             .rigid_body
             .as_ref()

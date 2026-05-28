@@ -4,5 +4,5 @@ use iroh::endpoint::{
 };
 
 pub async fn recv_object_stream(_tx: SendStream, _rx: RecvStream) -> anyhow::Result<()> {
-    Ok(())
+    todo!()
 }

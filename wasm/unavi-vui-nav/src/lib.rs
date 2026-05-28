@@ -1,6 +1,8 @@
-use loro::LoroDoc;
 use wired_prelude::prelude::*;
-use wired_records::beacon::BeaconRecord;
+use wired_records::{
+    beacon::BeaconRecord,
+    value::RecordValue,
+};
 use wired_schemas::SCHEMA_BEACON;
 
 use crate::{
@@ -39,7 +41,6 @@ use crate::{
                 QueryFilter,
                 QueryFuture,
                 ReadFuture,
-                WdsRecord,
             },
         },
     },
@@ -260,8 +261,8 @@ impl ScriptBehavior for Script {
             if let Some(res) = fut.poll() {
                 self.beacon_reads.remove(i);
 
-                if let Ok(record) = res
-                    && let Some(beacon) = parse_beacon_record(&record)
+                if let Ok(bytes) = res
+                    && let Some(beacon) = parse_beacon_record(&bytes)
                 {
                     let space = blake3::Hash::from_bytes(*beacon.space.as_bytes());
                     println!("Found beacon: space={space}");
@@ -297,11 +298,9 @@ impl ScriptBehavior for Script {
     }
 }
 
-fn parse_beacon_record(record: &WdsRecord) -> Option<BeaconRecord> {
-    let (_, bytes) = record.containers.iter().find(|(k, _)| k == "data")?;
-    let doc = LoroDoc::new();
-    doc.import(bytes).ok()?;
-    BeaconRecord::load(&doc).ok()
+fn parse_beacon_record(bytes: &[u8]) -> Option<BeaconRecord> {
+    let value: RecordValue = postcard::from_bytes(bytes).ok()?;
+    value.get("beacon")?.clone().into_typed().ok()
 }
 
 fn make_filter_table(

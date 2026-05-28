@@ -14,13 +14,6 @@ interface types {
   type did  = string;
   type hash = list<u8>;
 
-  record wds-record {
-    id:         hash,
-    creator:    did,
-    schemas:    list<hash>,
-    containers: list<tuple<string, list<u8>>>,
-  }
-
   record query-filter {
     creator: option<did>,
     schemas: option<list<hash>>,
@@ -31,7 +24,7 @@ interface types {
   }
 
   resource read-future {
-    poll: func() -> option<result<wds-record>>;
+    poll: func() -> option<result<list<u8>>>;
   }
 
   resource blob-future {

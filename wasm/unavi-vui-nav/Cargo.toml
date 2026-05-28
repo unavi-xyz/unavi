@@ -14,7 +14,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 blake3.workspace      = true
-loro.workspace = true
+postcard.workspace    = true
 wired-prelude.path    = "../wired-prelude"
 wired-records.path    = "../../crates/wired-records"
 wired-schemas.path    = "../../crates/wired-schemas"

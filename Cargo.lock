@@ -14070,6 +14070,7 @@ dependencies = [
  "loro",
  "loro-surgeon",
  "parking_lot",
+ "postcard",
  "rand 0.9.2",
  "smol_str 0.3.6",
  "tokio",
@@ -14085,6 +14086,7 @@ dependencies = [
  "wasmtime",
  "wasmtime-wasi",
  "wds",
+ "wired-records",
  "wired-schemas",
  "xdid",
 ]
@@ -14192,7 +14194,7 @@ name = "unavi-vui-nav"
 version = "0.0.16"
 dependencies = [
  "blake3",
- "loro",
+ "postcard",
  "wired-prelude",
  "wired-records",
  "wired-schemas",
@@ -16411,6 +16413,7 @@ dependencies = [
  "blake3",
  "loro",
  "loro-surgeon",
+ "postcard",
  "serde",
  "serde_with",
  "xdid",

@@ -2,6 +2,5 @@ package unavi:gate;
 
 world guest {
   import unavi:shapes/api;
-  import wired:portal/api;
   include wired:prelude/script;
 }

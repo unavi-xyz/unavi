@@ -18,12 +18,12 @@ use crate::{
             EventScope,
             SpatialScope,
         },
-        portal::api::open_portal,
         scene::{
             api::self_document,
             types::{
                 Material,
-                PortalOptions,
+                Portal,
+                PortalDestination,
                 Prim,
                 RigidBody,
                 RigidBodyKind,
@@ -100,8 +100,9 @@ impl ScriptBehavior for Script {
         let doc = self_document();
         let root = doc.roots().into_iter().next().expect("root");
 
-        root.set_portal(Some(PortalOptions {
+        root.set_portal(Some(&Portal {
             allow_incoming: true,
+            destination:    None,
             size_x:         PORTAL_WIDTH,
             size_y:         PORTAL_HEIGHT,
         }));
@@ -210,7 +211,15 @@ impl ScriptBehavior for Script {
             }
             println!("Loading beacon: {id}");
             self.pedestal_target = Some((id, SystemTime::now()));
-            open_portal(&self.root, id.as_bytes().as_ref());
+            self.root.set_portal(Some(&Portal {
+                allow_incoming: true,
+                destination:    Some(PortalDestination {
+                    receptor: None,
+                    space:    id.as_bytes().to_vec(),
+                }),
+                size_x:         PORTAL_WIDTH,
+                size_y:         PORTAL_HEIGHT,
+            }));
         }
     }
 }

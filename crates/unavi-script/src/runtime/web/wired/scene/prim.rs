@@ -34,7 +34,8 @@ use crate::runtime::shared::{
         PrimMaterial,
         PrimMesh,
         PrimPortal,
-        PrimPortalOptions,
+        PrimPortalDestination,
+        PrimPortalReceptor,
         PrimRigidBody,
         PrimRigidBodyKind,
         PrimTopology,
@@ -275,7 +276,8 @@ impl PrimHandle {
 
     #[wasm_bindgen(js_name = "setPortal")]
     pub async fn set_portal(&self, value: JsValue) -> Result<(), String> {
-        shared::wired::scene::prim::set_portal(&self.api, self.rep, js_to_portal_options(&value))
+        let value = js_to_portal(&value).map_err(|e| e.to_string())?;
+        shared::wired::scene::prim::set_portal(&self.api, self.rep, value)
             .await
             .map_err(|e| e.to_string())
     }
@@ -690,13 +692,35 @@ fn portal_to_js(p: &PrimPortal) -> JsValue {
     obj.into()
 }
 
-fn js_to_portal_options(v: &JsValue) -> Option<PrimPortalOptions> {
+fn js_to_portal(v: &JsValue) -> Result<Option<PrimPortal>, String> {
     if v.is_null() || v.is_undefined() {
-        return None;
+        return Ok(None);
     }
-    Some(PrimPortalOptions {
+    let destination = {
+        let d = obj_get(v, "destination");
+        if d.is_null() || d.is_undefined() {
+            None
+        } else {
+            let receptor = {
+                let r = obj_get(&d, "receptor");
+                if r.is_null() || r.is_undefined() {
+                    None
+                } else {
+                    let document = js_to_bytes32(&obj_get(&r, "document"))
+                        .ok_or_else(|| "portal receptor document must be 32 bytes".to_string())?;
+                    let prim = obj_get_string(&r, "prim").unwrap_or_default();
+                    Some(PrimPortalReceptor { document, prim })
+                }
+            };
+            let space = js_to_bytes32(&obj_get(&d, "space"))
+                .ok_or_else(|| "portal destination space must be 32 bytes".to_string())?;
+            Some(PrimPortalDestination { receptor, space })
+        }
+    };
+    Ok(Some(PrimPortal {
         allow_incoming: obj_get_bool(v, "allow-incoming").unwrap_or(false),
-        size_x:         obj_get_f32(v, "size-x").unwrap_or(0.0),
-        size_y:         obj_get_f32(v, "size-y").unwrap_or(0.0),
-    })
+        destination,
+        size_x: obj_get_f32(v, "size-x").unwrap_or(0.0),
+        size_y: obj_get_f32(v, "size-y").unwrap_or(0.0),
+    }))
 }

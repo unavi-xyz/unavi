@@ -39,7 +39,7 @@ tokio.workspace        = true
 tokio-util             = { features = ["codec"], workspace = true }
 tracing.workspace      = true
 wds-schema.path        = "../wds-schema"
-wired-records.path     = "../wired-records"
+wired-records          = { features = ["loro"], path = "../wired-records" }
 wired-schemas.path     = "../wired-schemas"
 xdid.workspace         = true
 

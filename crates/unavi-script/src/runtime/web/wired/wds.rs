@@ -206,30 +206,7 @@ impl ReadFutureHandle {
             return JsValue::UNDEFINED;
         };
         match result {
-            Ok(record) => {
-                let record_obj = js_sys::Object::new();
-                let id: js_sys::Uint8Array = record.id.as_slice().into();
-                let schemas: js_sys::Array = record
-                    .schemas
-                    .iter()
-                    .map(|h| JsValue::from(js_sys::Uint8Array::from(h.as_slice())))
-                    .collect();
-                let containers: js_sys::Array = record
-                    .containers
-                    .iter()
-                    .map(|(k, v)| {
-                        let pair = js_sys::Array::new();
-                        pair.push(&k.into());
-                        pair.push(&js_sys::Uint8Array::from(v.as_slice()).into());
-                        JsValue::from(pair)
-                    })
-                    .collect();
-                js_sys::Reflect::set(&record_obj, &"id".into(), &id.into()).ok();
-                js_sys::Reflect::set(&record_obj, &"creator".into(), &record.creator.into()).ok();
-                js_sys::Reflect::set(&record_obj, &"schemas".into(), &schemas.into()).ok();
-                js_sys::Reflect::set(&record_obj, &"containers".into(), &containers.into()).ok();
-                variant_obj("ok", record_obj.into())
-            }
+            Ok(bytes) => variant_obj("ok", js_sys::Uint8Array::from(bytes.as_slice()).into()),
             Err(()) => variant_obj("err", JsValue::UNDEFINED),
         }
     }

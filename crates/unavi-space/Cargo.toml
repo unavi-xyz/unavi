@@ -33,5 +33,5 @@ tracing.workspace       = true
 unavi-agent.path        = "../unavi-agent"
 unavi-util.path         = "../unavi-util"
 wds.path                = "../wds"
-wired-records.path      = "../wired-records"
+wired-records           = { features = ["loro"], path = "../wired-records" }
 wired-schemas.path      = "../wired-schemas"

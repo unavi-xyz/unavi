@@ -26,6 +26,7 @@ hsd.path                = "../hsd"
 loro.workspace          = true
 loro-surgeon.workspace  = true
 parking_lot.workspace   = true
+postcard.workspace      = true
 rand.workspace          = true
 smol_str.workspace      = true
 tokio.workspace         = true
@@ -35,6 +36,7 @@ unavi-avatar.path       = "../unavi-avatar"
 unavi-input.path        = "../unavi-input"
 unavi-space.path        = "../unavi-space"
 unavi-util.path         = "../unavi-util"
+wired-records           = { features = ["loro"], path = "../wired-records" }
 wired-schemas.path      = "../wired-schemas"
 xdid.workspace          = true
 

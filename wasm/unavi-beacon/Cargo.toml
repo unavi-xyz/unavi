@@ -13,7 +13,7 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
-blake3.workspace          = true
-unavi-script-util.path    = "../unavi-script-util"
-wired-prelude.path        = "../wired-prelude"
-wit-bindgen.workspace     = true
+blake3.workspace       = true
+unavi-script-util.path = "../unavi-script-util"
+wired-prelude.path     = "../wired-prelude"
+wit-bindgen.workspace  = true

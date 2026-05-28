@@ -44,12 +44,7 @@
             material: (
                 alpha_cutoff: None,
                 alpha_mode: None,
-                base_color: [
-                    0.9,
-                    0.8,
-                    0.95,
-                    1.0,
-                ],
+                base_color: None,
                 base_color_texture: "ground_tex",
                 double_sided: None,
                 emissive: None,
@@ -58,7 +53,7 @@
                 metallic_roughness_texture: None,
                 normal_texture: None,
                 occlusion_texture: None,
-                roughness: 0.9,
+                roughness: None,
             ),
             name: "ground",
             rigid_body: None,

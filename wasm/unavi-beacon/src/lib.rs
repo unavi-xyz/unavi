@@ -29,8 +29,6 @@ use crate::{
     },
 };
 
-mod color;
-
 wired_prelude::generate_script!(Script);
 
 const CHANNEL: &str = "unavi::beacon::id";
@@ -69,7 +67,7 @@ impl ScriptBehavior for Script {
         }));
         prim.add_child(&cube);
 
-        let color = color::generate_beacon_color(id);
+        let color = unavi_script_util::color::generate_color(id);
         cube.set_material(Some(&Material {
             alpha_cutoff:               None,
             alpha_mode:                 None,

@@ -13909,6 +13909,7 @@ name = "unavi-beacon"
 version = "0.0.16"
 dependencies = [
  "blake3",
+ "unavi-script-util",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -13962,6 +13963,8 @@ dependencies = [
 name = "unavi-default-home"
 version = "0.0.16"
 dependencies = [
+ "blake3",
+ "unavi-script-util",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -14084,6 +14087,14 @@ dependencies = [
  "wds",
  "wired-schemas",
  "xdid",
+]
+
+[[package]]
+name = "unavi-script-util"
+version = "0.0.16"
+dependencies = [
+ "blake3",
+ "wired-prelude",
 ]
 
 [[package]]

@@ -1,0 +1,14 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-script-util"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+blake3.workspace   = true
+wired-prelude.path = "../wired-prelude"

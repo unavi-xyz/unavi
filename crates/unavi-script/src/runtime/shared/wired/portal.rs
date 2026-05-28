@@ -7,19 +7,9 @@ use crate::{
     firewall::Channel,
     runtime::shared::{
         Api,
-        registry::{
-            firewall::validate_firewall,
-            transform::AbsoluteNodeId,
-        },
+        registry::firewall::validate_firewall,
     },
 };
-
-#[derive(Event, Clone, Debug)]
-pub struct OpenPortal {
-    pub anchor: AbsoluteNodeId,
-    pub source: Hash,
-    pub dest:   Hash,
-}
 
 pub async fn open_portal(api: &Api, prim_rep: u32, dest: [u8; 32]) -> anyhow::Result<()> {
     let prim = api

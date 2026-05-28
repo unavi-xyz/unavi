@@ -82,7 +82,7 @@ impl ScriptBehavior for Script {
             occlusion_texture:          None,
             roughness:                  Some(0.7),
         }));
-        println!("Beacon initialized: {id}");
+        println!("Beacon initialized: space={id}");
         Self {
             cube,
             id,

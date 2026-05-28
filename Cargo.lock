@@ -14192,7 +14192,9 @@ name = "unavi-vui-nav"
 version = "0.0.16"
 dependencies = [
  "blake3",
+ "loro",
  "wired-prelude",
+ "wired-records",
  "wired-schemas",
  "wit-bindgen 0.55.0",
 ]

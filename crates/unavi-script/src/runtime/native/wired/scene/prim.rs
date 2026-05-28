@@ -18,7 +18,6 @@ use crate::runtime::{
             Mesh,
             Portal,
             PortalDestination,
-            PortalOptions,
             PortalReceptor,
             RigidBody,
             RigidBodyKind,
@@ -36,7 +35,8 @@ use crate::runtime::{
             PrimMaterial,
             PrimMesh,
             PrimPortal,
-            PrimPortalOptions,
+            PrimPortalDestination,
+            PrimPortalReceptor,
             PrimRes,
             PrimRigidBody,
             PrimRigidBodyKind,
@@ -301,12 +301,29 @@ fn portal_wit(p: PrimPortal) -> Portal {
     }
 }
 
-const fn portal_options_shared(p: PortalOptions) -> PrimPortalOptions {
-    PrimPortalOptions {
+fn portal_shared(p: Portal) -> wasmtime::Result<PrimPortal> {
+    Ok(PrimPortal {
         allow_incoming: p.allow_incoming,
+        destination:    p
+            .destination
+            .map(|d| -> wasmtime::Result<_> {
+                Ok(PrimPortalDestination {
+                    receptor: d
+                        .receptor
+                        .map(|r| -> wasmtime::Result<_> {
+                            Ok(PrimPortalReceptor {
+                                document: to_blob_array(r.document)?,
+                                prim:     r.prim,
+                            })
+                        })
+                        .transpose()?,
+                    space:    to_blob_array(d.space)?,
+                })
+            })
+            .transpose()?,
         size_x:         p.size_x,
         size_y:         p.size_y,
-    }
+    })
 }
 
 const fn rigid_body_wit(rb: PrimRigidBody) -> RigidBody {
@@ -578,15 +595,12 @@ impl HostPrim for Runtime {
     async fn set_portal(
         &mut self,
         self_: Resource<PrimRes>,
-        value: Option<PortalOptions>,
+        value: Option<Portal>,
     ) -> wasmtime::Result<()> {
-        shared::wired::scene::prim::set_portal(
-            &self.api,
-            self_.rep(),
-            value.map(portal_options_shared),
-        )
-        .await
-        .map_err(wasmtime::Error::from_anyhow)
+        let value = value.map(portal_shared).transpose()?;
+        shared::wired::scene::prim::set_portal(&self.api, self_.rep(), value)
+            .await
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn relationships(

@@ -155,12 +155,6 @@ interface types {
     size-y: f32,
   }
 
-  record portal-options {
-    allow-incoming: bool,
-    size-x: f32,
-    size-y: f32,
-  }
-
   resource document {
     id: func() -> document-id;
     clone: func() -> document;
@@ -213,7 +207,7 @@ interface types {
     set-rigid-body: func(value: option<rigid-body>);
 
     portal: func() -> option<portal>;
-    set-portal: func(value: option<portal-options>);
+    set-portal: func(value: option<portal>);
 
     relationships: func() -> list<tuple<string, prim-id>>;
     get-relationship: func(key: string) -> option<prim-id>;

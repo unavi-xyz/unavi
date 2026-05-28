@@ -10,6 +10,7 @@ mod beacon;
 mod connection;
 mod gossip;
 mod peer;
+mod portal;
 mod scene;
 mod state;
 
@@ -26,6 +27,7 @@ impl Plugin for SpacePlugin {
             .add_observer(gossip::leave_space_topic)
             .add_observer(gossip::spawn_gossip)
             .add_observer(peer::add_space_state_sender)
+            .add_observer(portal::spawn_portal_space)
             .add_observer(scene::despawn_space_scene)
             .add_observer(scene::spawn_space_scene)
             .add_observer(state::space::add_space_state)

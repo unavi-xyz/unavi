@@ -26,7 +26,11 @@ use hsd::{
             Topology,
         },
         name::NameAttr,
-        portal::PortalAttr,
+        portal::{
+            PortalAttr,
+            PortalDestination,
+            PortalReceptor,
+        },
         relationships_map,
         rigid_body::{
             RigidBodyAttr,
@@ -184,11 +188,6 @@ pub struct PrimPortal {
     pub size_y:         f32,
 }
 
-pub struct PrimPortalOptions {
-    pub allow_incoming: bool,
-    pub size_x:         f32,
-    pub size_y:         f32,
-}
 
 async fn get_prim(api: &Api, rep: u32) -> anyhow::Result<PrimRes> {
     api.wired_scene
@@ -837,27 +836,31 @@ pub async fn portal(api: &Api, rep: u32) -> anyhow::Result<Option<PrimPortal>> {
 pub async fn set_portal(
     api: &Api,
     rep: u32,
-    value: Option<PrimPortalOptions>,
+    value: Option<PrimPortal>,
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
     match value {
-        Some(opts) => {
-            let destination = read_attr::<PortalAttr>(&meta).and_then(|p| p.destination);
-            write_attr(
-                &meta,
-                &PortalAttr {
-                    allow_incoming: opts.allow_incoming,
-                    destination,
-                    size_x: f64::from(opts.size_x),
-                    size_y: f64::from(opts.size_y),
-                },
-            )?;
-        }
+        Some(p) => write_attr(&meta, &prim_portal_to_attr(p))?,
         None => clear_attr(&meta, PortalAttr::KEY)?,
     }
     Ok(())
+}
+
+fn prim_portal_to_attr(p: PrimPortal) -> PortalAttr {
+    PortalAttr {
+        allow_incoming: p.allow_incoming,
+        destination:    p.destination.map(|d| PortalDestination {
+            receptor: d.receptor.map(|r| PortalReceptor {
+                document: ByteArray(r.document),
+                prim:     r.prim,
+            }),
+            space:    ByteArray(d.space),
+        }),
+        size_x:         f64::from(p.size_x),
+        size_y:         f64::from(p.size_y),
+    }
 }
 
 fn portal_attr_to_prim(attr: PortalAttr) -> PrimPortal {

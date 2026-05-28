@@ -10,6 +10,7 @@ use crate::{
         },
         types::{
             Material,
+            Prim,
             RigidBody,
             RigidBodyKind,
             Xform,
@@ -24,7 +25,7 @@ const GROUND_THICK: f32 = 0.5;
 
 const IDENTITY_QUAT: Quat = Quat::IDENTITY;
 
-fn set_translation(prim: &crate::wired::scene::types::Prim, translation: Vec3) {
+fn set_translation(prim: &Prim, translation: Vec3) {
     prim.set_xform(Some(Xform {
         translation,
         rotation: IDENTITY_QUAT,
@@ -53,21 +54,32 @@ impl ScriptBehavior for Script {
         set_translation(&prim, Vec3::new(0.0, -GROUND_THICK / 2.0, 0.0));
 
         let id = Hash::from_slice(&doc.id()).expect("document id");
-        let base_color = unavi_script_util::color::generate_muted_color(id);
-        prim.set_material(Some(&Material {
-            alpha_cutoff:               None,
-            alpha_mode:                 None,
-            base_color:                 Some(base_color),
-            base_color_texture:         None,
-            double_sided:               None,
-            emissive:                   None,
-            emissive_texture:           None,
-            metallic:                   Some(0.1),
-            metallic_roughness_texture: None,
-            normal_texture:             None,
-            occlusion_texture:          None,
-            roughness:                  Some(0.85),
-        }));
+        let base_color =
+            unavi_script_util::color::desaturate(unavi_script_util::color::generate_color(id), 0.6);
+
+        let ground_root = doc
+            .roots()
+            .into_iter()
+            .find(|p| p.name().as_deref() == Some("ground"));
+        let mut mat = ground_root
+            .as_ref()
+            .and_then(Prim::material)
+            .unwrap_or(Material {
+                alpha_cutoff:               None,
+                alpha_mode:                 None,
+                base_color:                 None,
+                base_color_texture:         None,
+                double_sided:               None,
+                emissive:                   None,
+                emissive_texture:           None,
+                metallic:                   Some(0.1),
+                metallic_roughness_texture: None,
+                normal_texture:             None,
+                occlusion_texture:          None,
+                roughness:                  Some(0.85),
+            });
+        mat.base_color = Some(base_color);
+        prim.set_material(Some(&mat));
 
         // Find a root prim named "gate" and use its asset blob id.
         let gate_blob = doc

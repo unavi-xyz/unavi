@@ -1,4 +1,6 @@
+use loro::LoroDoc;
 use wired_prelude::prelude::*;
+use wired_records::beacon::BeaconRecord;
 use wired_schemas::SCHEMA_BEACON;
 
 use crate::{
@@ -36,6 +38,8 @@ use crate::{
             types::{
                 QueryFilter,
                 QueryFuture,
+                ReadFuture,
+                WdsRecord,
             },
         },
     },
@@ -134,6 +138,7 @@ struct Script {
     _icon:        Prim,
     _prims:       Vec<Prim>,
     beacon_query: Option<QueryFuture>,
+    beacon_reads: Vec<ReadFuture>,
     beacons:      Vec<Document>,
     color:        Color,
     module:       VuiModule,
@@ -180,6 +185,7 @@ impl ScriptBehavior for Script {
             _icon: icon,
             _prims: prims,
             beacon_query: None,
+            beacon_reads: Vec::new(),
             beacons: Vec::new(),
             color,
             module,
@@ -241,38 +247,61 @@ impl ScriptBehavior for Script {
                 Ok(ids) => {
                     for id in ids {
                         let id = blake3::Hash::from_slice(&id).expect("valid hash");
-                        println!("Found beacon: {id}");
-
-                        let doc = self_document();
-
-                        let Some(beacon_asset) = doc.prims().into_iter().find_map(|p| p.asset())
-                        else {
-                            eprintln!("Nav HSD missing beacon asset child prim");
-                            continue;
-                        };
-                        let Ok(beacon_doc) = load_hsd(&beacon_asset) else {
-                            eprintln!("Failed to load beacon doc: {id}");
-                            continue;
-                        };
-
-                        let prim = beacon_doc.create_prim();
-                        prim.set_name(Some(&id.to_string()));
-
-                        let mut pos = self
-                            .root
-                            .xform()
-                            .map_or(Vec3::splat(0.0), |x| x.translation);
-                        pos.x -= BASIN_X;
-                        pos.y += BASIN_Y + 1.0;
-                        set_translation(&prim, pos);
-
-                        self.beacons.push(beacon_doc);
+                        println!("Reading beacon: id={id}");
+                        let read_fut = get_wds().read(id.as_slice());
+                        self.beacon_reads.push(read_fut);
                     }
                 }
                 Err(()) => eprintln!("WDS query error"),
             }
         }
+
+        for (i, fut) in self.beacon_reads.iter().enumerate() {
+            if let Some(res) = fut.poll() {
+                self.beacon_reads.remove(i);
+
+                if let Ok(record) = res
+                    && let Some(beacon) = parse_beacon_record(&record)
+                {
+                    let space = blake3::Hash::from_bytes(*beacon.space.as_bytes());
+                    println!("Found beacon: space={space}");
+
+                    let doc = self_document();
+
+                    let Some(beacon_asset) = doc.prims().into_iter().find_map(|p| p.asset()) else {
+                        eprintln!("Nav HSD missing beacon asset child prim");
+                        break;
+                    };
+                    let Ok(beacon_doc) = load_hsd(&beacon_asset) else {
+                        eprintln!("Failed to load beacon doc");
+                        break;
+                    };
+
+                    let prim = beacon_doc.create_prim();
+                    prim.set_name(Some(&space.to_string()));
+
+                    let mut pos = self
+                        .root
+                        .xform()
+                        .map_or(Vec3::splat(0.0), |x| x.translation);
+                    pos.x -= BASIN_X;
+                    pos.y += BASIN_Y + 1.0;
+                    set_translation(&prim, pos);
+
+                    self.beacons.push(beacon_doc);
+                }
+
+                break;
+            }
+        }
     }
+}
+
+fn parse_beacon_record(record: &WdsRecord) -> Option<BeaconRecord> {
+    let (_, bytes) = record.containers.iter().find(|(k, _)| k == "data")?;
+    let doc = LoroDoc::new();
+    doc.import(bytes).ok()?;
+    BeaconRecord::load(&doc).ok()
 }
 
 fn make_filter_table(

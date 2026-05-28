@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use blake3::Hash;
-use loro::TreeID;
+use unavi_space::Space;
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
@@ -18,10 +18,10 @@ use crate::{
 pub struct OpenPortal {
     pub anchor: AbsoluteNodeId,
     pub source: Hash,
-    pub space:  Hash,
+    pub dest:   Hash,
 }
 
-pub async fn open_portal(api: &Api, prim_rep: u32, space: [u8; 32]) -> anyhow::Result<()> {
+pub async fn open_portal(api: &Api, prim_rep: u32, dest: [u8; 32]) -> anyhow::Result<()> {
     let prim = api
         .wired_scene
         .lock()
@@ -33,23 +33,18 @@ pub async fn open_portal(api: &Api, prim_rep: u32, space: [u8; 32]) -> anyhow::R
 
     validate_firewall(&api.doc_id, &prim.doc_id, Channel::SceneWrite)?;
 
-    emit_open_portal(api.doc_id, prim.doc_id, prim.id, Hash::from_bytes(space)).await
-}
+    let dest = Hash::from_bytes(dest);
 
-async fn emit_open_portal(
-    source: Hash,
-    anchor_doc: Hash,
-    anchor_node: TreeID,
-    space: Hash,
-) -> anyhow::Result<()> {
     AsyncCommands::default()
-        .trigger(OpenPortal {
-            anchor: AbsoluteNodeId {
-                doc:  anchor_doc,
-                node: anchor_node,
-            },
-            source,
-            space,
+        .push(move |world: &mut World| {
+            for space in world.query::<&Space>().query(world) {
+                // Only allow a single instance of each space.
+                // We run as an exclusive system to ensure singularity.
+                if space.0 == dest {
+                    return;
+                }
+            }
+            world.spawn(Space(dest));
         })
         .send()
         .await

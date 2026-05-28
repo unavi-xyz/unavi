@@ -14075,6 +14075,7 @@ dependencies = [
  "unavi-agent",
  "unavi-avatar",
  "unavi-input",
+ "unavi-space",
  "unavi-util",
  "wasm-bindgen",
  "wasm-bindgen-futures",

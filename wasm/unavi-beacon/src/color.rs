@@ -13,8 +13,8 @@ pub fn generate_beacon_color(hash: Hash) -> Color {
     let v_u16 = u16::from_le_bytes(bytes[10..12].try_into().expect("u16"));
 
     // Keep colors vivid but not neon / washed out
-    let s = (f32::from(s_u16) / f32::from(u16::MAX)).mul_add(0.35, 0.55); // 0.55–0.9
-    let v = (f32::from(v_u16) / f32::from(u16::MAX)).mul_add(0.30, 0.65); // 0.65–0.95
+    let s = (f32::from(s_u16) / f32::from(u16::MAX)).mul_add(0.35, 0.55);
+    let v = (f32::from(v_u16) / f32::from(u16::MAX)).mul_add(0.30, 0.65);
 
     Color::hsv(h, s, v)
 }

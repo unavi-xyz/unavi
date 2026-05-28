@@ -33,6 +33,7 @@ tracing.workspace       = true
 unavi-agent.path        = "../unavi-agent"
 unavi-avatar.path       = "../unavi-avatar"
 unavi-input.path        = "../unavi-input"
+unavi-space.path        = "../unavi-space"
 unavi-util.path         = "../unavi-util"
 wired-schemas.path      = "../wired-schemas"
 xdid.workspace          = true

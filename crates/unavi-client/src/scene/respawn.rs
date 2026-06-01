@@ -11,7 +11,7 @@ use unavi_agent::{
 use unavi_space::{
     Space,
     anchor::ActiveSpace,
-    spawn::resolve_spawn,
+    spawn::pick_spawn,
 };
 
 #[derive(Event)]
@@ -40,7 +40,7 @@ pub fn respawn(
     *ang_vel = AngularVelocity::default();
 
     tr.translation = active.0.map_or(Vec3::new(0.0, 0.5, 0.0), |space| {
-        resolve_spawn(space, &spaces, &spawn_points, &parents)
+        pick_spawn(space, &spawn_points, &parents, &spaces).unwrap_or_default()
     });
 }
 

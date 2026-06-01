@@ -72,7 +72,7 @@ impl Plugin for PortalPlugin {
 #[require(PortalState, PortalSize, PortalAllowIncoming)]
 pub struct Portal;
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, PartialEq)]
 pub struct PortalSize {
     pub width:  f32,
     pub height: f32,

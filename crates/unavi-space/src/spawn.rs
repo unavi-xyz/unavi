@@ -53,15 +53,3 @@ fn belongs_to_space(mut current: Entity, space: Entity, parents: &Query<&ChildOf
         }
     }
 }
-
-/// Convenience: returns a spawn position in the space's local frame, falling
-/// back to the space origin when no [`SpawnPoint`] is registered.
-#[must_use]
-pub fn resolve_spawn(
-    space: Entity,
-    spaces: &Query<&GlobalTransform, With<Space>>,
-    spawn_points: &Query<(&SpawnPoint, &GlobalTransform, &ChildOf)>,
-    parents: &Query<&ChildOf>,
-) -> Vec3 {
-    pick_spawn(space, spawn_points, parents, spaces).unwrap_or(Vec3::ZERO)
-}

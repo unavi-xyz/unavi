@@ -2,7 +2,10 @@ use wasmtime::component::Resource;
 
 use crate::runtime::{
     Runtime,
-    native::wired::scene::bindings::wired::scene::types::HostDocument,
+    native::wired::scene::bindings::wired::{
+        math::types::Transform as WitTransform,
+        scene::types::HostDocument,
+    },
     shared::{
         self,
         wired::scene::{
@@ -68,6 +71,23 @@ impl HostDocument for Runtime {
     ) -> wasmtime::Result<()> {
         shared::wired::scene::document::remove_prim(&self.api, value.rep())
             .await
+            .map_err(wasmtime::Error::from_anyhow)
+    }
+
+    async fn offset_to(
+        &mut self,
+        self_: Resource<DocRes>,
+        other: Resource<DocRes>,
+    ) -> wasmtime::Result<Option<WitTransform>> {
+        shared::wired::scene::document::offset_to(&self.api, self_.rep(), other.rep())
+            .await
+            .map(|opt| {
+                opt.map(|x| WitTransform {
+                    translation: bevy::math::Vec3::from_array(x.translation).into(),
+                    rotation:    bevy::math::Quat::from_array(x.rotation).into(),
+                    scale:       bevy::math::Vec3::from_array(x.scale).into(),
+                })
+            })
             .map_err(wasmtime::Error::from_anyhow)
     }
 

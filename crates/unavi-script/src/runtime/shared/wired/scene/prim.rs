@@ -234,8 +234,17 @@ fn ensure_writable(api: &Api, prim: &PrimRes) -> anyhow::Result<()> {
     if prim.is_proxy {
         bail!("cannot write proxy prim")
     }
-    if unavi_space::membership::doc_space(api.doc_id).is_none() {
+    let caller_is_system = api
+        .permissions
+        .contains(&crate::permissions::ApiName::System);
+    if !caller_is_system && unavi_space::membership::doc_space(api.doc_id).is_none() {
         bail!("caller document is not placed in a space")
+    }
+    if api.doc_id != prim.doc_id
+        && !caller_is_system
+        && !unavi_space::membership::same_space(api.doc_id, prim.doc_id)
+    {
+        bail!("cross-document write requires both documents in the same space")
     }
     validate_firewall(&api.doc_id, &prim.doc_id, Channel::SceneWrite)
 }

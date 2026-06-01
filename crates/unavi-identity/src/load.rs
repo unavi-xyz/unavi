@@ -1,4 +1,5 @@
 use std::{
+    str::FromStr,
     sync::Arc,
     time::Duration,
 };
@@ -14,8 +15,13 @@ use bevy_iroh::{
 use bevy_wds::{
     LocalActor,
     LocalBlobs,
+    SyncTargets,
 };
-use iroh::Endpoint;
+use iroh::{
+    Endpoint,
+    EndpointAddr,
+    EndpointId,
+};
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
@@ -23,11 +29,16 @@ use unavi_util::{
 use wds::{
     DataStore,
     Identity,
+    actor::Actor,
 };
-use xdid::methods::key::{
-    DidKeyPair,
-    PublicKey,
-    p256::P256KeyPair,
+use xdid::{
+    core::did::Did,
+    methods::key::{
+        DidKeyPair,
+        PublicKey,
+        p256::P256KeyPair,
+    },
+    resolver::DidResolver,
 };
 
 pub fn spawn_actors(trigger: On<Add, IrohEndpoint>, endpoints: Query<&IrohEndpoint>) {
@@ -69,15 +80,81 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
         .await?;
 
     store.set_user_identity(Arc::clone(&identity));
-    let actor = store.local_actor(identity);
+    let actor = store.local_actor(Arc::clone(&identity));
 
-    // TODO load sync targets from env
+    let sync_targets = load_sync_targets(&store, &identity).await;
 
     AsyncCommands::default()
         .spawn((RouterBuilderFnTarget(entity), RouterBuilderFn(Some(f))))
-        .spawn((LocalActor(actor), LocalBlobs(store.blobs().blobs().clone())))
+        .spawn((
+            LocalActor(actor),
+            LocalBlobs(store.blobs().blobs().clone()),
+            SyncTargets(sync_targets),
+        ))
         .send()
         .await?;
 
     Ok(())
+}
+
+async fn load_sync_targets(store: &DataStore, identity: &Arc<Identity>) -> Vec<Actor> {
+    let Ok(raw) = std::env::var("UNAVI_SYNC_TARGETS") else {
+        return Vec::new();
+    };
+
+    let dids: Vec<&str> = raw
+        .split(',')
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .collect();
+
+    if dids.is_empty() {
+        return Vec::new();
+    }
+
+    let resolver = match DidResolver::new() {
+        Ok(r) => r,
+        Err(err) => {
+            error!(?err, "failed to construct DID resolver for sync targets");
+            return Vec::new();
+        }
+    };
+
+    let mut actors = Vec::new();
+
+    for did_str in dids {
+        match resolve_sync_target(&resolver, did_str).await {
+            Ok(addr) => {
+                info!(target = did_str, "registering WDS sync target");
+                actors.push(store.remote_actor(Arc::clone(identity), addr));
+            }
+            Err(err) => {
+                warn!(target = did_str, ?err, "failed to resolve WDS sync target");
+            }
+        }
+    }
+
+    actors
+}
+
+async fn resolve_sync_target(
+    resolver: &DidResolver,
+    did_str: &str,
+) -> anyhow::Result<EndpointAddr> {
+    let did = Did::from_str(did_str)?;
+    let doc = resolver.resolve(&did).await?;
+
+    let services = doc.service.unwrap_or_default();
+    let wds = services
+        .iter()
+        .find(|s| s.id == "wds")
+        .ok_or_else(|| anyhow::anyhow!("no `wds` service in DID document"))?;
+
+    let endpoint_str = wds
+        .typ
+        .first()
+        .ok_or_else(|| anyhow::anyhow!("`wds` service has no endpoint id"))?;
+
+    let endpoint_id = EndpointId::from_str(endpoint_str)?;
+    Ok(EndpointAddr::from(endpoint_id))
 }

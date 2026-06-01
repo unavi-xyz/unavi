@@ -269,7 +269,7 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
             .ok_or_else(|| anyhow::anyhow!("doc has no space and no active space"))?
     };
 
-    if !unavi_space::state::space::add_doc(space, id) {
+    if !unavi_space::state::doc::add_doc(space, id) {
         anyhow::bail!("space state not tracked locally");
     }
 

@@ -1,13 +1,16 @@
 package wired:script;
 
-interface guest-api {
-  init: func();
-  // Called every frame, before rendering.
-  render: func();
-  // Called every tick, on a fixed interval.
-  tick: func();
-}
-
 world guest {
   export guest-api;
+}
+
+interface guest-api {
+  // Called once on instantiation.
+  init: func();
+
+  // Called every frame, before rendering.
+  render: func();
+
+  // Called every tick, on a fixed interval.
+  tick: func();
 }

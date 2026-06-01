@@ -6,6 +6,22 @@ world prelude {
   import types;
 }
 
+interface api {
+  use types.{input-listener};
+  use wired:scene/types.{prim};
+
+  // Captures input events for a given prim.
+  // Requires a collider to function.
+  register-input-listener: func(target: borrow<prim>) -> input-listener;
+}
+
+interface context {
+  use types.{input-listener};
+
+  // Captures all input events from the local agent.
+  register-global-input-listener: func() -> input-listener;
+}
+
 interface types {
   enum input-action {
     grab-down,
@@ -23,25 +39,9 @@ interface types {
   record input-event {
     action: input-action,
     device: input-device,
-  } 
+  }
 
   resource input-listener {
     poll: func() -> option<input-event>;
   }
-}
-
-interface api {
-  use types.{input-listener};
-  use wired:scene/types.{prim};
-
-  // Captures input events for a given prim.
-  // Requires a collider to function.
-  register-input-listener: func(target: borrow<prim>) -> input-listener;
-}
-
-interface context {
-  use types.{input-listener};
-
-  // Captures all input events from the local agent.
-  register-global-input-listener: func() -> input-listener;
 }

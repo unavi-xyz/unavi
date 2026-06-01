@@ -8,14 +8,14 @@ world all {
 interface api {
   use types.{document, prim, document-id};
 
-  self-prim: func() -> prim;
+  self-prim:     func() -> prim;
   self-document: func() -> document;
 
-  get-document: func(id: document-id) -> option<document>;
+  get-document:    func(id: document-id) -> option<document>;
   create-document: func() -> document;
   remove-document: func(id: document-id);
 
-  load-hsd: func(blob: list<u8>) -> result<document, string>;
+  load-hsd:         func(blob: list<u8>) -> result<document, string>;
   publish-document: func(id: document-id) -> result<_, string>;
 }
 
@@ -23,15 +23,15 @@ interface types {
   use wired:math/types.{vec3, quat, transform};
 
   // Stringified loro TreeID ("counter@peer").
-  type prim-id = string;
-  type record-id = list<u8>;
+  type prim-id     = string;
+  type record-id   = list<u8>;
   type document-id = record-id;
-  type blob-id = list<u8>;
+  type blob-id     = list<u8>;
 
   record xform {
     translation: vec3,
-    rotation: quat,
-    scale: vec3,
+    rotation:    quat,
+    scale:       vec3,
   }
 
   enum topology {
@@ -43,9 +43,9 @@ interface types {
   }
 
   record mesh {
-    topology: topology,
+    topology:   topology,
     attributes: list<tuple<string, blob-id>>,
-    indices: option<blob-id>,
+    indices:    option<blob-id>,
   }
 
   record color {
@@ -65,29 +65,29 @@ interface types {
   }
 
   record material {
-    alpha-cutoff: option<f32>,
-    alpha-mode: option<alpha-mode>,
-    base-color: option<color>,
-    base-color-texture: option<prim-id>,
-    double-sided: option<bool>,
-    emissive: option<color>,
-    emissive-texture: option<prim-id>,
-    metallic: option<f32>,
+    alpha-cutoff:               option<f32>,
+    alpha-mode:                 option<alpha-mode>,
+    base-color:                 option<color>,
+    base-color-texture:         option<prim-id>,
+    double-sided:               option<bool>,
+    emissive:                   option<color>,
+    emissive-texture:           option<prim-id>,
+    metallic:                   option<f32>,
     metallic-roughness-texture: option<prim-id>,
-    normal-texture: option<prim-id>,
-    occlusion-texture: option<prim-id>,
-    roughness: option<f32>,
+    normal-texture:             option<prim-id>,
+    occlusion-texture:          option<prim-id>,
+    roughness:                  option<f32>,
   }
 
   record image {
-    data: blob-id,
+    data:           blob-id,
     address-mode-u: option<s32>,
     address-mode-v: option<s32>,
     address-mode-w: option<s32>,
-    mag-filter: option<s32>,
-    min-filter: option<s32>,
-    mipmap-filter: option<s32>,
-    srgb: option<bool>,
+    mag-filter:     option<s32>,
+    min-filter:     option<s32>,
+    mipmap-filter:  option<s32>,
+    srgb:           option<bool>,
   }
 
   variant collider {
@@ -110,7 +110,7 @@ interface types {
   }
 
   record collider-trimesh {
-    indices: blob-id,
+    indices:  blob-id,
     vertices: blob-id,
   }
 
@@ -121,29 +121,29 @@ interface types {
   }
 
   record rigid-body {
-    kind: rigid-body-kind,
+    kind:            rigid-body-kind,
     angular-damping: option<f32>,
-    friction: option<f32>,
-    linear-damping: option<f32>,
-    mass: option<f32>,
-    restitution: option<f32>,
+    friction:        option<f32>,
+    linear-damping:  option<f32>,
+    mass:            option<f32>,
+    restitution:     option<f32>,
   }
 
   record portal-receptor {
     document: document-id,
-    prim: prim-id,
+    prim:     prim-id,
   }
 
   record portal-destination {
     receptor: option<portal-receptor>,
-    space: record-id,
+    space:    record-id,
   }
 
   record portal {
     allow-incoming: bool,
-    destination: option<portal-destination>,
-    size-x: f32,
-    size-y: f32,
+    destination:    option<portal-destination>,
+    size-x:         f32,
+    size-y:         f32,
   }
 
   // Marks a prim as a spawn area. Players entering the space (or arriving via
@@ -154,12 +154,12 @@ interface types {
   }
 
   resource document {
-    id: func() -> document-id;
+    id:    func() -> document-id;
     clone: func() -> document;
 
-    roots: func() -> list<prim>;
-    prims: func() -> list<prim>;
-    get-prim: func(id: prim-id) -> option<prim>;
+    roots:       func() -> list<prim>;
+    prims:       func() -> list<prim>;
+    get-prim:    func(id: prim-id) -> option<prim>;
     create-prim: func() -> prim;
     remove-prim: func(value: borrow<prim>);
 
@@ -170,52 +170,54 @@ interface types {
   }
 
   resource prim {
-    id: func() -> prim-id;
+    id:    func() -> prim-id;
     clone: func() -> prim;
 
-    parent: func() -> option<prim>;
-    children: func() -> list<prim>;
-    add-child: func(child: borrow<prim>);
+    parent:       func() -> option<prim>;
+    children:     func() -> list<prim>;
+    add-child:    func(child: borrow<prim>);
     remove-child: func(child: borrow<prim>);
 
-    name: func() -> option<string>;
+    name:     func() -> option<string>;
     set-name: func(value: option<string>);
 
-    asset: func() -> option<blob-id>;
+    asset:     func() -> option<blob-id>;
     set-asset: func(value: option<blob-id>);
 
-    xform: func() -> option<xform>;
+    xform:     func() -> option<xform>;
     set-xform: func(value: option<xform>);
+
     // Computed global xform from the previous tick. Writes via set-xform do
     // not retrigger a recompute.
     global-xform: func() -> transform;
 
-    mesh: func() -> option<mesh>;
+    mesh:     func() -> option<mesh>;
     set-mesh: func(value: option<mesh>);
+
     // High-level helpers: host hashes the values and uploads to WDS, then
     // stores the resulting blob id in the mesh attribute.
-    set-mesh-stream: func(key: string, values: option<list<f32>>);
+    set-mesh-stream:      func(key: string, values: option<list<f32>>);
     set-mesh-indices-u32: func(values: option<list<u32>>);
 
-    material: func() -> option<material>;
+    material:     func() -> option<material>;
     set-material: func(value: option<material>);
 
-    image: func() -> option<image>;
+    image:     func() -> option<image>;
     set-image: func(value: option<image>);
 
-    collider: func() -> option<collider>;
+    collider:     func() -> option<collider>;
     set-collider: func(value: option<collider>);
 
-    rigid-body: func() -> option<rigid-body>;
+    rigid-body:     func() -> option<rigid-body>;
     set-rigid-body: func(value: option<rigid-body>);
 
-    portal: func() -> option<portal>;
+    portal:     func() -> option<portal>;
     set-portal: func(value: option<portal>);
 
-    spawn: func() -> option<spawn>;
+    spawn:     func() -> option<spawn>;
     set-spawn: func(value: option<spawn>);
 
-    relationships: func() -> list<tuple<string, prim-id>>;
+    relationships:    func() -> list<tuple<string, prim-id>>;
     get-relationship: func(key: string) -> option<prim-id>;
     set-relationship: func(key: string, target: option<prim-id>);
   }

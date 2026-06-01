@@ -1,6 +1,7 @@
 wired-agent  = "../wired-agent"
 wired-event  = "../wired-event"
 wired-input  = "../wired-input"
+wired-kv     = "../wired-kv"
 wired-math   = "../wired-math"
 wired-scene  = "../wired-scene"
 wired-script = "../wired-script"

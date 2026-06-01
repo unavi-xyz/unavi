@@ -75,5 +75,10 @@ pub fn add_apis_to_linker(
         wired::wds::bindings::wired::wds::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
     }
 
+    if perms.contains(&ApiName::Kv) {
+        wired::kv::bindings::wired::kv::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+        wired::kv::bindings::wired::kv::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    }
+
     Ok(())
 }

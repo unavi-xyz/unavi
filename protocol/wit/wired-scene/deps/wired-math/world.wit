@@ -21,7 +21,7 @@ interface types {
 
   record transform {
     translation: vec3,
-    rotation: quat,
-    scale: vec3,
+    rotation:    quat,
+    scale:       vec3,
   }
 }

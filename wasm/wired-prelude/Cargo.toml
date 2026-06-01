@@ -10,5 +10,6 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
+wired-kv.path    = "../wired-kv"
 wired-math.path  = "../wired-math"
 wired-scene.path = "../wired-scene"

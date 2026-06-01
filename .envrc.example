@@ -1,0 +1,2 @@
+# Comma-separated DIDs of WDS sync targets to register on startup.
+export UNAVI_SYNC_TARGETS="did:web:localhost%3A5000"

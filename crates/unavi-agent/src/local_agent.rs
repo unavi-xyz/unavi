@@ -26,6 +26,7 @@ use unavi_avatar::{
 use unavi_input::raycast::PrimaryRaycastInput;
 use unavi_portal::{
     PortalTraveler,
+    PortalViewer,
     visuals::PORTAL_RENDER_LAYER,
 };
 
@@ -159,6 +160,7 @@ fn spawn_camera(commands: &mut Commands, is_xr: bool) -> Entity {
         Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
         RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER])
             .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
+        PortalViewer,
     ));
 
     camera

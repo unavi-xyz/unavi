@@ -134,6 +134,10 @@ pub struct TrackedCamera(pub Entity);
 #[derive(Component)]
 pub struct PortalActiveRender;
 
+/// Marker for the camera whose position drives portal render-budget selection.
+#[derive(Component)]
+pub struct PortalViewer;
+
 #[derive(Resource)]
 pub struct PortalRenderBudget {
     pub max_active:   usize,

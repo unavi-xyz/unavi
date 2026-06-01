@@ -30,6 +30,7 @@ deps/
 
 # Env
 .direnv
+.envrc
 
 # Other
 *.db

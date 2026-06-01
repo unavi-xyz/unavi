@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    platform::collections::HashSet,
+    prelude::*,
+};
 
 use crate::{
     Portal,
@@ -8,16 +11,22 @@ use crate::{
     PortalState,
     PortalTargetDoc,
     PortalTargetReceptor,
+    PortalViewer,
 };
+
+const HYSTERESIS_FACTOR: f32 = 1.1;
 
 pub fn select_active_portals(
     budget: Res<PortalRenderBudget>,
-    cameras: Query<&GlobalTransform, (With<Camera3d>, Without<PortalCamera>)>,
+    viewers: Query<
+        (Ref<GlobalTransform>, Entity),
+        (With<PortalViewer>, With<Camera3d>, Without<PortalCamera>),
+    >,
     portals: Query<
         (
             Entity,
-            &PortalState,
-            &GlobalTransform,
+            Ref<PortalState>,
+            Ref<GlobalTransform>,
             Has<PortalTargetDoc>,
             Has<PortalTargetReceptor>,
         ),
@@ -26,11 +35,22 @@ pub fn select_active_portals(
     actives: Query<Entity, (With<Portal>, With<PortalActiveRender>)>,
     mut commands: Commands,
 ) {
-    let Some(viewer) = cameras.iter().next() else {
+    let Some((viewer, _)) = viewers.iter().min_by_key(|(_, e)| *e) else {
         return;
     };
+
+    let inputs_changed = budget.is_changed()
+        || viewer.is_changed()
+        || portals
+            .iter()
+            .any(|(_, s, t, ..)| s.is_changed() || t.is_changed());
+    if !inputs_changed {
+        return;
+    }
+
     let origin = viewer.translation();
     let max_d2 = budget.max_distance * budget.max_distance;
+    let release_d2 = (budget.max_distance * HYSTERESIS_FACTOR).powi(2);
 
     let mut candidates: Vec<(Entity, f32)> = portals
         .iter()
@@ -43,14 +63,18 @@ pub fn select_active_portals(
                 return None;
             }
             let d2 = t.translation().distance_squared(origin);
-            (d2 <= max_d2).then_some((e, d2))
+            let cutoff = if actives.contains(e) {
+                release_d2
+            } else {
+                max_d2
+            };
+            (d2 <= cutoff).then_some((e, d2))
         })
         .collect();
     candidates.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
     candidates.truncate(budget.max_active);
 
-    let chosen: bevy::platform::collections::HashSet<Entity> =
-        candidates.iter().map(|(e, _)| *e).collect();
+    let chosen: HashSet<Entity> = candidates.iter().map(|(e, _)| *e).collect();
 
     for (entity, ..) in &portals {
         let want = chosen.contains(&entity);

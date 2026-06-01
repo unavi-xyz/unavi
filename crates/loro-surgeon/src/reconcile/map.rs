@@ -112,11 +112,11 @@ where
 
     fn reconcile<R: Reconciler>(&self, r: R) -> Result<(), ReconcileError> {
         let mut m = r.map()?;
+        for item in self {
+            m.entry(&item.to_string(), &loro::LoroValue::Null)?;
+        }
         let keys: std::collections::HashSet<String> =
             self.iter().map(std::string::ToString::to_string).collect();
-        for k in &keys {
-            m.entry(k, &loro::LoroValue::Null)?;
-        }
         m.retain(|k| keys.contains(k))?;
         Ok(())
     }

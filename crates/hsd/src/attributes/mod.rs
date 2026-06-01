@@ -26,6 +26,7 @@ pub mod name;
 pub mod portal;
 pub mod rigid_body;
 pub mod script;
+pub mod spawn;
 pub mod xform;
 
 pub const ATTRIBUTES_KEY: &str = "attributes";
@@ -60,6 +61,7 @@ pub struct Attributes {
     pub portal:     Option<portal::PortalAttr>,
     pub rigid_body: Option<rigid_body::RigidBodyAttr>,
     pub script:     Option<script::ScriptAttr>,
+    pub spawn:      Option<spawn::SpawnAttr>,
     pub xform:      Option<xform::XformAttr>,
 }
 
@@ -75,6 +77,7 @@ impl Attributes {
             && self.portal.is_none()
             && self.rigid_body.is_none()
             && self.script.is_none()
+            && self.spawn.is_none()
             && self.xform.is_none()
     }
 }

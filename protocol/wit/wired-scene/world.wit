@@ -146,6 +146,13 @@ interface types {
     size-y: f32,
   }
 
+  // Marks a prim as a spawn area. Players entering the space (or arriving via
+  // a portal with no receptor) are placed at a random point within a
+  // horizontal circle of `radius` around the prim's origin.
+  record spawn {
+    radius: f32,
+  }
+
   resource document {
     id: func() -> document-id;
     clone: func() -> document;
@@ -204,6 +211,9 @@ interface types {
 
     portal: func() -> option<portal>;
     set-portal: func(value: option<portal>);
+
+    spawn: func() -> option<spawn>;
+    set-spawn: func(value: option<spawn>);
 
     relationships: func() -> list<tuple<string, prim-id>>;
     get-relationship: func(key: string) -> option<prim-id>;

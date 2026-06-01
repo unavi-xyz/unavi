@@ -31,6 +31,7 @@ use hsd::{
             RigidBodyKind,
         },
         script::ScriptAttr,
+        spawn::SpawnAttr,
         xform::XformAttr,
     },
     file::{
@@ -91,7 +92,14 @@ pub struct HsdxAttributes {
     pub name:       Option<String>,
     pub rigid_body: Option<HsdxRigidBody>,
     pub script:     Option<String>,
+    pub spawn:      Option<HsdxSpawn>,
     pub xform:      Option<HsdxXform>,
+}
+
+#[derive(Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct HsdxSpawn {
+    pub radius: f64,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -245,6 +253,7 @@ fn compile_attrs<S: std::hash::BuildHasher>(
             .map(compile_rigid_body)
             .transpose()?),
         script:     (script.map(|h| ScriptAttr(ByteArray::new(h)))),
+        spawn:      attrs.spawn.as_ref().map(|s| SpawnAttr { radius: s.radius }),
         xform:      (attrs.xform.as_ref().map(compile_xform)),
     })
 }

@@ -14,6 +14,7 @@ pub mod membership;
 mod peer;
 mod portal;
 mod scene;
+pub mod spawn;
 pub mod state;
 
 pub struct SpacePlugin;

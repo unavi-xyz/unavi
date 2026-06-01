@@ -76,6 +76,9 @@
                 "restitution": Optional(F64),
             })),
             "script": Optional(BlobId),
+            "spawn": Optional(Struct({
+                "radius": F64,
+            })),
             "xform": Optional(Struct({
                 "rotation": Optional(List(F64)),
                 "scale": Optional(List(F64)),

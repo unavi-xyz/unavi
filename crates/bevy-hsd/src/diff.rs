@@ -247,6 +247,11 @@ fn dispatch_attr_data(commands: &mut Commands, prim_ent: Entity, data: AttrDataE
                 .entity(prim_ent)
                 .trigger(|entity| ApplyEvent { entity, value });
         }
+        AttrDataEvent::Spawn(value) => {
+            commands
+                .entity(prim_ent)
+                .trigger(|entity| ApplyEvent { entity, value });
+        }
         AttrDataEvent::Xform(value) => {
             commands
                 .entity(prim_ent)

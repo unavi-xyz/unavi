@@ -87,6 +87,11 @@ pub(super) async fn upload_blob(data: Vec<u8>) -> anyhow::Result<Hash> {
 fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()> {
     let firewall = Firewall::for_child_doc(api.doc_id);
     FIREWALL_REGISTRY.write().insert(id, firewall.clone());
+    if let Some(parent_space) = unavi_space::membership::doc_space(api.doc_id) {
+        unavi_space::membership::DOC_SPACE_REGISTRY
+            .write()
+            .insert(id, parent_space);
+    }
     AsyncCommands::default()
         .spawn((Hsd(doc), HsdRecordId(id), firewall, api.permissions.clone()))
         .try_send()?;

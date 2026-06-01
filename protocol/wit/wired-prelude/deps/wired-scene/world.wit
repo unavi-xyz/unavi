@@ -164,6 +164,11 @@ interface types {
     get-prim: func(id: prim-id) -> option<prim>;
     create-prim: func() -> prim;
     remove-prim: func(value: borrow<prim>);
+
+    // Rigid transform from this document's root frame to `other`'s root
+    // frame. Returns none if the two documents are not in the same space
+    // or if scene-read is denied for `other`.
+    offset-to: func(other: borrow<document>) -> option<transform>;
   }
 
   resource prim {

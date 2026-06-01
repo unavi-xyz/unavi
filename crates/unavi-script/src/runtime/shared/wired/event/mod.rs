@@ -141,10 +141,12 @@ pub async fn emit(
                 let Some(e_pos) = emitter_pos else {
                     continue;
                 };
-                if !unavi_space::membership::same_space(
-                    emitter_abs.doc,
-                    receptor_node.doc,
-                ) {
+                let emitter_is_system = api
+                    .permissions
+                    .contains(&crate::permissions::ApiName::System);
+                if !emitter_is_system
+                    && !unavi_space::membership::same_space(emitter_abs.doc, receptor_node.doc)
+                {
                     continue;
                 }
                 let Some(r_pos) = NODE_TRANSFORM_REGISTRY

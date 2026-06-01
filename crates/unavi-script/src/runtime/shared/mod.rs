@@ -52,6 +52,7 @@ impl Plugin for SharedRuntimePlugin {
         .add_observer(registry::firewall::deregister_firewalls)
         .add_observer(registry::transform::register_nodes)
         .add_observer(registry::transform::deregister_transforms)
+        .add_observer(registry::transform::deregister_doc_root)
         .add_systems(
             Update,
             (
@@ -66,7 +67,10 @@ impl Plugin for SharedRuntimePlugin {
         )
         .add_systems(
             PostUpdate,
-            registry::transform::snapshot_transforms
+            (
+                registry::transform::snapshot_transforms,
+                registry::transform::snapshot_doc_roots,
+            )
                 .after(bevy::transform::TransformSystems::Propagate),
         );
     }

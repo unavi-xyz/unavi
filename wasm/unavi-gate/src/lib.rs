@@ -90,7 +90,7 @@ const fn gate_material() -> Material {
 }
 
 struct Script {
-    root:            Prim,
+    portal_prim:     Prim,
     receptor:        EventReceptor,
     pedestal_target: Option<(Hash, SystemTime)>,
 }
@@ -100,7 +100,10 @@ impl ScriptBehavior for Script {
         let doc = self_document();
         let root = doc.roots().into_iter().next().expect("root");
 
-        root.set_portal(Some(&Portal {
+        let portal_prim = doc.create_prim();
+        root.add_child(&portal_prim);
+        set_translation(&portal_prim, Vec3::new(0.0, PORTAL_HEIGHT / 2.0, 0.0));
+        portal_prim.set_portal(Some(&Portal {
             allow_incoming: true,
             destination:    None,
             size_x:         PORTAL_WIDTH,
@@ -189,7 +192,7 @@ impl ScriptBehavior for Script {
         println!("Gate ready");
 
         Self {
-            root,
+            portal_prim,
             receptor,
             pedestal_target: None,
         }
@@ -211,7 +214,7 @@ impl ScriptBehavior for Script {
             }
             println!("Loading beacon: {id}");
             self.pedestal_target = Some((id, SystemTime::now()));
-            self.root.set_portal(Some(&Portal {
+            self.portal_prim.set_portal(Some(&Portal {
                 allow_incoming: true,
                 destination:    Some(PortalDestination {
                     receptor: None,

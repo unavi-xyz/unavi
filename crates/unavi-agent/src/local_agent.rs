@@ -26,7 +26,7 @@ use unavi_avatar::{
 use unavi_input::raycast::PrimaryRaycastInput;
 use unavi_portal::{
     PortalTraveler,
-    create::PORTAL_RENDER_LAYER,
+    visuals::PORTAL_RENDER_LAYER,
 };
 
 use crate::{

@@ -18,7 +18,6 @@ use bevy::{
 };
 
 use crate::{
-    IncomingPortals,
     Portal,
     PortalCamera,
     PortalDestination,
@@ -118,7 +117,7 @@ pub fn update_portal_camera_transforms(
     )>,
     cameras: Query<&GlobalTransform, (With<Camera>, Without<PortalCamera>)>,
     portals: Query<(&PortalDestination, &GlobalTransform), Without<PortalCamera>>,
-    destinations: Query<&GlobalTransform, (With<IncomingPortals>, Without<PortalCamera>)>,
+    destinations: Query<&GlobalTransform, Without<PortalCamera>>,
 ) {
     for (tracked_camera, portal_camera, mut transform, mut global_transform) in &mut portal_cameras
     {
@@ -164,7 +163,7 @@ pub fn update_portal_camera_frustums(
         &GlobalTransform,
     )>,
     portals: Query<&PortalDestination>,
-    destinations: Query<&GlobalTransform, (With<IncomingPortals>, Without<PortalCamera>)>,
+    destinations: Query<&GlobalTransform, Without<PortalCamera>>,
 ) {
     for (portal_camera, mut frustum, mut projection, transform) in &mut portal_cameras {
         let Ok(destination) = portals.get(portal_camera.portal) else {

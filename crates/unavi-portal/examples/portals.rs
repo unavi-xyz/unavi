@@ -18,12 +18,12 @@ use bevy_panorbit_camera::{
     PanOrbitCameraPlugin,
 };
 use unavi_portal::{
+    Portal,
+    PortalDestination,
     PortalPlugin,
+    PortalSize,
     PortalTraveler,
-    create::{
-        CreatePortal,
-        PORTAL_RENDER_LAYER,
-    },
+    visuals::PORTAL_RENDER_LAYER,
 };
 
 #[derive(Component)]
@@ -40,14 +40,11 @@ fn move_sinusoid(time: Res<Time>, mut query: Query<(&mut Transform, &mut MovingS
         let frequency = TAU / sinusoid.period;
         let velocity = sinusoid.amplitude * frequency;
 
-        // Calculate phase for current time.
         let elapsed = time.elapsed_secs() - sinusoid.start_time;
         let phase = elapsed * frequency;
 
-        // Velocity is derivative of sin: v = amplitude * frequency * cos(phase).
         let current_velocity = velocity * phase.cos();
 
-        // Apply relative movement along forward axis.
         let forward = transform.rotation * Vec3::Y;
         transform.translation += forward * current_velocity * delta;
     }
@@ -88,50 +85,51 @@ fn setup_scene(
     let portal_width = 3.0;
     let portal_height = 4.0;
 
-    // Spawn camera with panorbit controls and portal traveler.
     let camera_distance = 8.0;
-    let tracked_camera = commands
-        .spawn((
-            PanOrbitCamera {
-                focus: Vec3::new(-portal_distance * 0.8, portal_height / 3.0, 0.0),
-                ..default()
-            },
-            Transform::from_xyz(
-                portal_distance / 3.0 * camera_distance,
-                portal_height * 0.8 * camera_distance,
-                portal_distance / 2.0 * camera_distance,
-            )
-            .looking_at(Vec3::ZERO, Vec3::Y),
-            RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER]),
-            PortalTraveler,
-        ))
-        .id();
+    commands.spawn((
+        PanOrbitCamera {
+            focus: Vec3::new(-portal_distance * 0.8, portal_height / 3.0, 0.0),
+            ..default()
+        },
+        Transform::from_xyz(
+            portal_distance / 3.0 * camera_distance,
+            portal_height * 0.8 * camera_distance,
+            portal_distance / 2.0 * camera_distance,
+        )
+        .looking_at(Vec3::ZERO, Vec3::Y),
+        RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER]),
+        PortalTraveler,
+    ));
 
-    // Spawn linked portal pair.
     let portal_left_transform = Transform::from_xyz(-portal_distance, portal_height / 2.0, 0.0)
         .with_rotation(Quat::from_rotation_y(FRAC_PI_3));
     let portal_right_transform = Transform::from_xyz(portal_distance, portal_height / 2.0, 0.0)
         .with_rotation(Quat::from_rotation_y(-FRAC_PI_2));
 
-    let id_left = commands.spawn(portal_left_transform).id();
-    let id_right = commands.spawn(portal_right_transform).id();
+    let id_left = commands
+        .spawn((
+            Portal,
+            PortalSize {
+                width:  portal_width,
+                height: portal_height,
+            },
+            portal_left_transform,
+        ))
+        .id();
+    let id_right = commands
+        .spawn((
+            Portal,
+            PortalSize {
+                width:  portal_width,
+                height: portal_height,
+            },
+            portal_right_transform,
+        ))
+        .id();
 
-    commands.entity(id_left).queue(CreatePortal {
-        destination: Some(id_right),
-        tracked_camera: Some(tracked_camera),
-        height: portal_height,
-        width: portal_width,
-        ..Default::default()
-    });
-    commands.entity(id_right).queue(CreatePortal {
-        destination: Some(id_left),
-        tracked_camera: Some(tracked_camera),
-        height: portal_height,
-        width: portal_width,
-        ..Default::default()
-    });
+    commands.entity(id_left).insert(PortalDestination(id_right));
+    commands.entity(id_right).insert(PortalDestination(id_left));
 
-    // Spawn moving test traveler.
     let traveler_mesh = meshes.add(Cone::new(0.25, 0.5));
     let traveler_material = materials.add(StandardMaterial {
         base_color: Color::srgb(1.0, 0.5, 0.0),
@@ -153,79 +151,37 @@ fn setup_scene(
         },
     ));
 
-    // Ground plane.
     let ground_mesh = meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(20.0)));
     let ground_material = materials.add(StandardMaterial {
         base_color: Color::srgb(0.3, 0.3, 0.3),
         perceptual_roughness: 0.9,
         ..default()
     });
-
     commands.spawn((
         Mesh3d(ground_mesh),
         MeshMaterial3d(ground_material),
         Transform::from_xyz(0.0, -0.0001, 0.0),
     ));
 
-    // Reference cubes for spatial orientation.
     let cube_mesh = meshes.add(Cuboid::new(1.0, 1.0, 1.0));
+    for (xyz, rgb) in [
+        ([-6.0, 0.5, 3.0], [0.8, 0.2, 0.2]),
+        ([6.0, 0.5, 3.0], [0.2, 0.8, 0.2]),
+        ([0.0, 0.5, 0.0], [0.2, 0.2, 0.8]),
+        ([-portal_distance - 2.0, 0.5, 0.0], [0.8, 0.8, 0.2]),
+        ([portal_distance + 2.0, 0.5, 0.0], [0.8, 0.2, 0.8]),
+    ] {
+        let mat = materials.add(StandardMaterial {
+            base_color: Color::srgb(rgb[0], rgb[1], rgb[2]),
+            ..default()
+        });
+        commands.spawn((
+            Mesh3d(cube_mesh.clone()),
+            MeshMaterial3d(mat),
+            Transform::from_xyz(xyz[0], xyz[1], xyz[2]),
+        ));
+    }
 
-    // Cube near portal A.
-    let cube_material_a = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.8, 0.2, 0.2),
-        ..default()
-    });
-    commands.spawn((
-        Mesh3d(cube_mesh.clone()),
-        MeshMaterial3d(cube_material_a),
-        Transform::from_xyz(-6.0, 0.5, 3.0),
-    ));
-
-    // Cube near portal B.
-    let cube_material_b = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.2, 0.8, 0.2),
-        ..default()
-    });
-    commands.spawn((
-        Mesh3d(cube_mesh.clone()),
-        MeshMaterial3d(cube_material_b),
-        Transform::from_xyz(6.0, 0.5, 3.0),
-    ));
-
-    // Center cube for reference.
-    let cube_material_c = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.2, 0.2, 0.8),
-        ..default()
-    });
-    commands.spawn((
-        Mesh3d(cube_mesh.clone()),
-        MeshMaterial3d(cube_material_c),
-        Transform::from_xyz(0.0, 0.5, 0.0),
-    ));
-
-    // Cube behind portal A (left portal).
-    let cube_behind_a = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.8, 0.8, 0.2),
-        ..default()
-    });
-    commands.spawn((
-        Mesh3d(cube_mesh.clone()),
-        MeshMaterial3d(cube_behind_a),
-        Transform::from_xyz(-portal_distance - 2.0, 0.5, 0.0),
-    ));
-
-    // Cube behind portal B (right portal).
-    let cube_behind_b = materials.add(StandardMaterial {
-        base_color: Color::srgb(0.8, 0.2, 0.8),
-        ..default()
-    });
-    commands.spawn((
-        Mesh3d(cube_mesh),
-        MeshMaterial3d(cube_behind_b),
-        Transform::from_xyz(portal_distance + 2.0, 0.5, 0.0),
-    ));
-
-    // Directional light.
     commands.spawn((
         DirectionalLight {
             illuminance: lux::FULL_DAYLIGHT,
@@ -244,7 +200,6 @@ fn setup_scene(
         portal_height,
         Color::Srgba(BLUE_500),
     );
-
     spawn_portal_frame(
         &mut commands,
         &mut meshes,

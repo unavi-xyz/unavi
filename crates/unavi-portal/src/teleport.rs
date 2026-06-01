@@ -1,9 +1,11 @@
 use bevy::prelude::*;
 
 use crate::{
+    PORTAL_DEPTH,
     Portal,
-    PortalBounds,
     PortalDestination,
+    PortalSize,
+    PortalState,
     PortalTraveler,
     PrevTranslation,
     TravelCooldown,
@@ -24,15 +26,15 @@ fn check_box_entry_with_side(
     prev_pos: Vec3,
     curr_pos: Vec3,
     portal_transform: &GlobalTransform,
-    bounds: &PortalBounds,
+    size: PortalSize,
 ) -> Option<PortalEntrySide> {
     let portal_affine = portal_transform.affine();
     let prev_local = portal_affine.inverse().transform_point3(prev_pos);
     let curr_local = portal_affine.inverse().transform_point3(curr_pos);
 
-    let half_width = bounds.width / 2.0;
-    let half_height = bounds.height / 2.0;
-    let half_depth = bounds.depth / 2.0;
+    let half_width = size.width / 2.0;
+    let half_height = size.height / 2.0;
+    let half_depth = PORTAL_DEPTH / 2.0;
 
     let ray_dir = curr_local - prev_local;
     let ray_length = ray_dir.length();
@@ -97,8 +99,11 @@ pub(crate) fn handle_traveler_teleport(
         ),
         (With<PortalTraveler>, Without<Portal>),
     >,
-    portals: Query<(&GlobalTransform, &PortalBounds, &PortalDestination), With<Portal>>,
-    destination_portals: Query<&GlobalTransform, With<Portal>>,
+    portals: Query<
+        (&GlobalTransform, &PortalSize, &PortalDestination, &PortalState),
+        With<Portal>,
+    >,
+    destination_portals: Query<&GlobalTransform, Without<PortalTraveler>>,
 ) {
     let elapsed = time.elapsed();
 
@@ -126,12 +131,15 @@ pub(crate) fn handle_traveler_teleport(
             cooldown.last_travel = None;
         }
 
-        for (source_transform, bounds, destination) in &portals {
+        for (source_transform, size, destination, state) in &portals {
+            if *state != PortalState::Open {
+                continue;
+            }
             let Some(entry_side) = check_box_entry_with_side(
                 prev_translation,
                 curr_translation,
                 source_transform,
-                bounds,
+                *size,
             ) else {
                 continue;
             };
@@ -146,7 +154,7 @@ pub(crate) fn handle_traveler_teleport(
                 PortalEntrySide::Back => dest_transform.back(),
             };
 
-            let bounds_d = bounds.depth / 2.0;
+            let bounds_d = PORTAL_DEPTH / 2.0;
             let min_spawn = bounds_d + EXTRA_SPAWN_OFFSET;
             let offset = out_dir * min_spawn;
 

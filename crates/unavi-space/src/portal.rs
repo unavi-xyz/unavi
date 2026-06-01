@@ -1,12 +1,13 @@
 use bevy::prelude::*;
-use bevy_hsd::attributes::portal::Portal;
+use bevy_hsd::attributes::portal::PortalConfig;
 use blake3::Hash;
 
 use crate::Space;
 
+// TODO ensure singularity of spaces (if multiple opens on same frame)
 pub fn spawn_portal_space(
-    trigger: On<Insert, Portal>,
-    portals: Query<&Portal>,
+    trigger: On<Insert, PortalConfig>,
+    portals: Query<&PortalConfig>,
     spaces: Query<&Space>,
     mut commands: Commands,
 ) {

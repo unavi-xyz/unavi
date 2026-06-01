@@ -1,4 +1,4 @@
-const BASE_SENSITIVITY: f32 = 0.08;
+const BASE_SENSITIVITY: f32 = 0.1;
 
 #[cfg(target_family = "wasm")]
 pub fn sensitivity() -> f32 {

@@ -4,6 +4,7 @@ use std::{
 };
 
 use bevy::prelude::*;
+use unavi_space::Space;
 
 #[derive(Component, Clone, Debug, Deref)]
 pub struct ApiPermissions(Arc<HashSet<ApiName>>);
@@ -17,6 +18,7 @@ pub enum ApiName {
     InputContext,
     LocalAgent,
     Scene,
+    System,
     Wds,
 }
 
@@ -40,6 +42,18 @@ impl ApiPermissions {
     }
 
     #[must_use]
+    pub fn space() -> Self {
+        let mut set = HashSet::default();
+        set.insert(ApiName::Agent);
+        set.insert(ApiName::CreateDocument);
+        set.insert(ApiName::Event);
+        set.insert(ApiName::Input);
+        set.insert(ApiName::LocalAgent);
+        set.insert(ApiName::Scene);
+        Self(Arc::new(set))
+    }
+
+    #[must_use]
     pub fn system() -> Self {
         let mut set = HashSet::default();
         set.insert(ApiName::Agent);
@@ -49,7 +63,14 @@ impl ApiPermissions {
         set.insert(ApiName::Input);
         set.insert(ApiName::InputContext);
         set.insert(ApiName::Scene);
+        set.insert(ApiName::System);
         set.insert(ApiName::Wds);
         Self(Arc::new(set))
     }
+}
+
+pub fn grant_space_permissions(trigger: On<Add, Space>, mut commands: Commands) {
+    commands
+        .entity(trigger.entity)
+        .insert(ApiPermissions::space());
 }

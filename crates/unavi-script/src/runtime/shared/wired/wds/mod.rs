@@ -12,10 +12,7 @@ use bevy_wds::{
 };
 use blake3::Hash;
 use bytes::Bytes;
-use loro::{
-    ExportMode,
-    LoroDoc,
-};
+use loro::LoroDoc;
 use tokio::sync::oneshot::{
     self,
     Sender,
@@ -25,6 +22,7 @@ use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
 };
+use wired_records::value::RecordValue;
 
 use crate::runtime::shared::{
     Api,
@@ -40,7 +38,6 @@ pub struct QueryFutureRes {
 
 pub struct ReadFutureRes {
     _cancel: Sender<()>,
-    id:      Hash,
     rx:      Receiver<LoroDoc>,
 }
 
@@ -60,13 +57,6 @@ pub struct WiredWdsApi {
 pub struct QueryFilter {
     pub creator: Option<String>,
     pub schemas: Option<Vec<Vec<u8>>>,
-}
-
-pub struct WdsRecord {
-    pub id:         Vec<u8>,
-    pub creator:    String,
-    pub schemas:    Vec<Vec<u8>>,
-    pub containers: Vec<(String, Vec<u8>)>,
 }
 
 pub async fn get_wds(api: &Api) -> anyhow::Result<u32> {
@@ -105,7 +95,6 @@ pub async fn read(api: &Api, _wds_rep: u32, record_id: Vec<u8>) -> anyhow::Resul
     let mut wds = api.wired_wds.lock().await;
     Ok(wds.read_futures.insert(ReadFutureRes {
         _cancel: cancel,
-        id,
         rx,
     }))
 }
@@ -134,28 +123,26 @@ pub async fn query_future_poll(
     }
 }
 
-pub async fn read_future_poll(
-    api: &Api,
-    rep: u32,
-) -> anyhow::Result<Option<Result<WdsRecord, ()>>> {
+pub async fn read_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<Vec<u8>, ()>>> {
     let wds = api.wired_wds.lock().await;
     let Some(res) = wds.read_futures.get(rep) else {
         return Ok(Some(Err(())));
     };
     match res.rx.try_recv() {
         Ok(doc) => {
-            let id = res.id.as_bytes().to_vec();
             drop(wds);
-            Ok(Some(Ok(WdsRecord {
-                id,
-                creator: String::new(),
-                schemas: Vec::new(),
-                containers: vec![("data".to_string(), doc.export(ExportMode::Snapshot)?)],
-            })))
+            Ok(Some(encode_record(&doc)))
         }
         Err(TryRecvError::Empty) => Ok(None),
         Err(TryRecvError::Closed) => Ok(Some(Err(()))),
     }
+}
+
+fn encode_record(doc: &LoroDoc) -> Result<Vec<u8>, ()> {
+    let value = RecordValue::from(doc.get_deep_value());
+    postcard::to_stdvec(&value).map_err(|err| {
+        warn!(?err, "postcard encode failed");
+    })
 }
 
 pub async fn query_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {

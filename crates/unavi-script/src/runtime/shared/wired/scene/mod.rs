@@ -1,4 +1,7 @@
-use std::sync::Arc;
+use std::{
+    collections::HashSet,
+    sync::Arc,
+};
 
 use bevy::prelude::*;
 use bevy_hsd::{
@@ -31,6 +34,7 @@ use wired_schemas::SCHEMA_HSD;
 
 use crate::{
     firewall::{
+        Access,
         Channel,
         Firewall,
     },
@@ -87,6 +91,11 @@ pub(super) async fn upload_blob(data: Vec<u8>) -> anyhow::Result<Hash> {
 fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()> {
     let firewall = Firewall::for_child_doc(api.doc_id);
     FIREWALL_REGISTRY.write().insert(id, firewall.clone());
+    if let Some(parent_space) = unavi_space::membership::doc_space(api.doc_id) {
+        unavi_space::membership::DOC_SPACE_REGISTRY
+            .write()
+            .insert(id, parent_space);
+    }
     AsyncCommands::default()
         .spawn((Hsd(doc), HsdRecordId(id), firewall, api.permissions.clone()))
         .try_send()?;
@@ -154,7 +163,10 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
 
 pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = Hash::from_slice(&id)?;
-    validate_firewall(&api.doc_id, &id, Channel::SceneWrite)?;
+    if let Err(err) = validate_firewall(&api.doc_id, &id, Channel::SceneWrite) {
+        debug!(?err, "remove_document denied by firewall, skipping");
+        return Ok(());
+    }
 
     let mut scene = api.wired_scene.lock().await;
     let key = scene
@@ -224,6 +236,44 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> anyhow::Result<u32> {
 
     let mut scene = api.wired_scene.lock().await;
     Ok(scene.docs.insert(DocRes { doc, id }))
+}
+
+pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
+    let id = Hash::from_slice(&id)?;
+    validate_firewall(&api.doc_id, &id, Channel::SceneWrite)?;
+
+    let firewall = FIREWALL_REGISTRY.read().get(&id).cloned();
+    if let Some(firewall) = firewall {
+        firewall
+            .0
+            .write()
+            .insert(Channel::SceneWrite, Access::Restricted(HashSet::new()));
+    }
+
+    let space = if let Some(s) = unavi_space::membership::doc_space(id) {
+        s
+    } else {
+        let (tx, rx) = async_channel::bounded::<Option<Hash>>(1);
+        AsyncCommands::default()
+            .push(move |world: &mut World| {
+                let active = world
+                    .get_resource::<unavi_space::anchor::ActiveSpace>()
+                    .and_then(|a| a.0);
+                let hash = active.and_then(|e| world.get::<unavi_space::Space>(e).map(|s| s.0));
+                tx.try_send(hash).ok();
+            })
+            .send()
+            .await?;
+        rx.recv()
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("doc has no space and no active space"))?
+    };
+
+    if !unavi_space::state::space::add_doc(space, id) {
+        anyhow::bail!("space state not tracked locally");
+    }
+
+    Ok(())
 }
 
 pub async fn create_document(api: &Api) -> anyhow::Result<u32> {

@@ -52,11 +52,11 @@ impl Plugin for SharedRuntimePlugin {
         .add_observer(registry::firewall::deregister_firewalls)
         .add_observer(registry::transform::register_nodes)
         .add_observer(registry::transform::deregister_transforms)
+        .add_observer(registry::transform::deregister_doc_root)
         .add_systems(
             Update,
             (
                 registry::agent::spawn_proxy_nodes,
-                registry::transform::snapshot_transforms,
                 wired::input::bridge::bridge_menu_desktop
                     .pipe(wired::input::bridge::send_to_listeners),
                 wired::input::bridge::bridge_menu_left
@@ -64,6 +64,14 @@ impl Plugin for SharedRuntimePlugin {
                 wired::input::bridge::bridge_menu_right
                     .pipe(wired::input::bridge::send_to_listeners),
             ),
+        )
+        .add_systems(
+            PostUpdate,
+            (
+                registry::transform::snapshot_transforms,
+                registry::transform::snapshot_doc_roots,
+            )
+                .after(bevy::transform::TransformSystems::Propagate),
         );
     }
 }

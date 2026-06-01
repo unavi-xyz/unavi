@@ -9,7 +9,6 @@ use crate::runtime::{
             QueryFilter,
             QueryFutureRes,
             ReadFutureRes,
-            WdsRecord,
             WdsRes,
         },
     },
@@ -43,7 +42,6 @@ use bindings::wired::wds::types::{
     HostWds,
     QueryFilter as WitFilter,
     Wds,
-    WdsRecord as WitRecord,
 };
 
 impl From<WitFilter> for QueryFilter {
@@ -51,17 +49,6 @@ impl From<WitFilter> for QueryFilter {
         Self {
             creator: f.creator,
             schemas: f.schemas,
-        }
-    }
-}
-
-impl From<WdsRecord> for WitRecord {
-    fn from(r: WdsRecord) -> Self {
-        Self {
-            id:         r.id,
-            creator:    r.creator,
-            schemas:    r.schemas,
-            containers: r.containers,
         }
     }
 }
@@ -147,10 +134,9 @@ impl HostReadFuture for Runtime {
     async fn poll(
         &mut self,
         self_: Resource<ReadFutureRes>,
-    ) -> wasmtime::Result<Option<Result<WitRecord, ()>>> {
+    ) -> wasmtime::Result<Option<Result<Vec<u8>, ()>>> {
         shared::wired::wds::read_future_poll(&self.api, self_.rep())
             .await
-            .map(|opt| opt.map(|r| r.map(Into::into)))
             .map_err(wasmtime::Error::from_anyhow)
     }
 

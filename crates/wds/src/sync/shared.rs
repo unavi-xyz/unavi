@@ -62,7 +62,7 @@ fn acl_modified(old: &Acl, new: &Acl) -> bool {
 }
 
 fn slices_eq(a: &[HydratedDid], b: &[HydratedDid]) -> bool {
-    a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x.0 == y.0)
+    a.len() == b.len() && a.iter().zip(b).all(|(x, y)| x == y)
 }
 
 /// Validates the signature of a signed envelope against the author's DID
@@ -539,7 +539,7 @@ pub async fn store_envelope(
     let record = Record::load(&new_doc)?;
 
     // First envelope author must match record creator.
-    if is_first_envelope && record.creator.0 != *author {
+    if is_first_envelope && record.creator != *author {
         return Err(WdsError::AccessDenied);
     }
 
@@ -720,21 +720,21 @@ fn update_acl_read_index(conn: &Connection, record_id: &str, acl: &Acl) -> anyho
 
     // Insert all DIDs with read access (readers + writers + managers).
     for did in acl.readers() {
-        let did_str = did.0.to_string();
+        let did_str = did.0.clone();
         conn.execute(
             "INSERT OR IGNORE INTO record_acl_read (record_id, did) VALUES (?, ?)",
             params![record_id, &did_str],
         )?;
     }
     for did in acl.writers() {
-        let did_str = did.0.to_string();
+        let did_str = did.0.clone();
         conn.execute(
             "INSERT OR IGNORE INTO record_acl_read (record_id, did) VALUES (?, ?)",
             params![record_id, &did_str],
         )?;
     }
     for did in acl.managers() {
-        let did_str = did.0.to_string();
+        let did_str = did.0.clone();
         conn.execute(
             "INSERT OR IGNORE INTO record_acl_read (record_id, did) VALUES (?, ?)",
             params![record_id, &did_str],

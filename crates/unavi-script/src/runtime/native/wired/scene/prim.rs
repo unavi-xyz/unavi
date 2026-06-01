@@ -16,8 +16,12 @@ use crate::runtime::{
             Image,
             Material,
             Mesh,
+            Portal,
+            PortalDestination,
+            PortalReceptor,
             RigidBody,
             RigidBodyKind,
+            Spawn,
             Topology,
             Xform,
         },
@@ -31,9 +35,13 @@ use crate::runtime::{
             PrimImage,
             PrimMaterial,
             PrimMesh,
+            PrimPortal,
+            PrimPortalDestination,
+            PrimPortalReceptor,
             PrimRes,
             PrimRigidBody,
             PrimRigidBodyKind,
+            PrimSpawn,
             PrimTopology,
         },
     },
@@ -277,6 +285,46 @@ fn collider_shared(c: Collider) -> wasmtime::Result<PrimCollider> {
             indices:  to_blob_array(t.indices)?,
             vertices: to_blob_array(t.vertices)?,
         },
+    })
+}
+
+fn portal_wit(p: PrimPortal) -> Portal {
+    Portal {
+        allow_incoming: p.allow_incoming,
+        destination:    p.destination.map(|d| PortalDestination {
+            receptor: d.receptor.map(|r| PortalReceptor {
+                document: r.document.to_vec(),
+                prim:     r.prim,
+            }),
+            space:    d.space.to_vec(),
+        }),
+        size_x:         p.size_x,
+        size_y:         p.size_y,
+    }
+}
+
+fn portal_shared(p: Portal) -> wasmtime::Result<PrimPortal> {
+    Ok(PrimPortal {
+        allow_incoming: p.allow_incoming,
+        destination:    p
+            .destination
+            .map(|d| -> wasmtime::Result<_> {
+                Ok(PrimPortalDestination {
+                    receptor: d
+                        .receptor
+                        .map(|r| -> wasmtime::Result<_> {
+                            Ok(PrimPortalReceptor {
+                                document: to_blob_array(r.document)?,
+                                prim:     r.prim,
+                            })
+                        })
+                        .transpose()?,
+                    space:    to_blob_array(d.space)?,
+                })
+            })
+            .transpose()?,
+        size_x:         p.size_x,
+        size_y:         p.size_y,
     })
 }
 
@@ -537,6 +585,42 @@ impl HostPrim for Runtime {
         )
         .await
         .map_err(wasmtime::Error::from_anyhow)
+    }
+
+    async fn portal(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Portal>> {
+        Ok(shared::wired::scene::prim::portal(&self.api, self_.rep())
+            .await
+            .map_err(wasmtime::Error::from_anyhow)?
+            .map(portal_wit))
+    }
+
+    async fn set_portal(
+        &mut self,
+        self_: Resource<PrimRes>,
+        value: Option<Portal>,
+    ) -> wasmtime::Result<()> {
+        let value = value.map(portal_shared).transpose()?;
+        shared::wired::scene::prim::set_portal(&self.api, self_.rep(), value)
+            .await
+            .map_err(wasmtime::Error::from_anyhow)
+    }
+
+    async fn spawn(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Spawn>> {
+        Ok(shared::wired::scene::prim::spawn(&self.api, self_.rep())
+            .await
+            .map_err(wasmtime::Error::from_anyhow)?
+            .map(|s| Spawn { radius: s.radius }))
+    }
+
+    async fn set_spawn(
+        &mut self,
+        self_: Resource<PrimRes>,
+        value: Option<Spawn>,
+    ) -> wasmtime::Result<()> {
+        let value = value.map(|s| PrimSpawn { radius: s.radius });
+        shared::wired::scene::prim::set_spawn(&self.api, self_.rep(), value)
+            .await
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn relationships(

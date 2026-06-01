@@ -145,6 +145,7 @@ fn on_agent_load(
     commands.spawn((
         LoadHsd {
             handle,
+            public: false,
             extra_schemas: None,
             on_load: Some(Box::new(on_load_spawn_doc)),
         },

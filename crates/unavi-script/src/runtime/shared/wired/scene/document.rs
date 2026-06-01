@@ -13,13 +13,23 @@ use crate::{
     firewall::Channel,
     runtime::shared::{
         Api,
-        registry::firewall::validate_firewall,
+        registry::{
+            firewall::validate_firewall,
+            transform::DOC_ROOT_TRANSFORM_REGISTRY,
+        },
         wired::scene::{
             WiredSceneApi,
             prim::PrimRes,
         },
     },
 };
+
+#[derive(Clone, Copy, Default)]
+pub struct XformValue {
+    pub translation: [f32; 3],
+    pub rotation:    [f32; 4],
+    pub scale:       [f32; 3],
+}
 
 #[derive(Clone)]
 pub struct DocRes {
@@ -118,6 +128,38 @@ pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
         doc_id:   doc.id,
         id:       tree_id,
         is_proxy: false,
+    }))
+}
+
+pub async fn offset_to(
+    api: &Api,
+    self_rep: u32,
+    other_rep: u32,
+) -> anyhow::Result<Option<XformValue>> {
+    let self_doc = get_doc(api, self_rep).await?;
+    let other_doc = get_doc(api, other_rep).await?;
+
+    if !unavi_space::membership::same_space(self_doc.id, other_doc.id) {
+        return Ok(None);
+    }
+    if validate_firewall(&api.doc_id, &other_doc.id, Channel::SceneRead).is_err() {
+        return Ok(None);
+    }
+
+    let reg = DOC_ROOT_TRANSFORM_REGISTRY.read();
+    let (Some(self_root), Some(other_root)) = (reg.get(&self_doc.id), reg.get(&other_doc.id))
+    else {
+        return Ok(None);
+    };
+
+    let relative = self_root.affine().inverse() * other_root.affine();
+    let (scale, rotation, translation) =
+        bevy::math::Mat4::from(relative).to_scale_rotation_translation();
+    drop(reg);
+    Ok(Some(XformValue {
+        translation: [translation.x, translation.y, translation.z],
+        rotation:    [rotation.x, rotation.y, rotation.z, rotation.w],
+        scale:       [scale.x, scale.y, scale.z],
     }))
 }
 

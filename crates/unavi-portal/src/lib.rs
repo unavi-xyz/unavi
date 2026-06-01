@@ -5,18 +5,24 @@ use bevy::{
     camera::visibility::VisibilitySystems,
     prelude::*,
 };
+use blake3::Hash;
+use loro::TreeID;
 
 use crate::material::{
     PORTAL_SHADER_HANDLE,
     PortalMaterial,
 };
 
-pub struct PortalPlugin;
-
-pub mod create;
-mod material;
+pub mod bridge;
+pub mod discovery;
+pub mod material;
+pub mod render_budget;
+pub mod resolver;
 pub mod teleport;
-mod tracking;
+pub mod tracking;
+pub mod visuals;
+
+pub struct PortalPlugin;
 
 impl Plugin for PortalPlugin {
     fn build(&self, app: &mut App) {
@@ -28,7 +34,23 @@ impl Plugin for PortalPlugin {
         );
 
         app.add_plugins(MaterialPlugin::<PortalMaterial>::default())
-            .add_systems(Update, material::update_portal_time)
+            .init_resource::<PortalRenderBudget>()
+            .add_observer(bridge::sync_portal_config)
+            .add_observer(bridge::clear_portal_config)
+            .add_observer(discovery::on_hsd_ready)
+            .add_systems(
+                Update,
+                (
+                    material::update_portal_time,
+                    resolver::resolve_target_doc,
+                    resolver::resolve_target_receptor,
+                    visuals::ensure_portal_mesh,
+                    visuals::update_portal_state,
+                    render_budget::select_active_portals,
+                    visuals::apply_active_material,
+                )
+                    .chain(),
+            )
             .add_systems(
                 PostUpdate,
                 (
@@ -39,22 +61,52 @@ impl Plugin for PortalPlugin {
                         .chain()
                         .after(TransformSystems::Propagate)
                         .before(VisibilitySystems::UpdateFrusta),
-                    teleport::handle_traveler_teleport,
+                    teleport::handle_traveler_teleport.after(TransformSystems::Propagate),
                     tracking::update_portal_camera_frustums.after(VisibilitySystems::UpdateFrusta),
                 ),
             );
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Default)]
+#[require(PortalState, PortalSize, PortalAllowIncoming)]
 pub struct Portal;
 
-/// Collision bounds for portal travel.
-#[derive(Component)]
-pub struct PortalBounds {
-    depth:  f32,
-    height: f32,
-    width:  f32,
+#[derive(Component, Clone, Copy, PartialEq)]
+pub struct PortalSize {
+    pub width:  f32,
+    pub height: f32,
+}
+
+impl Default for PortalSize {
+    fn default() -> Self {
+        Self {
+            width:  1.0,
+            height: 1.0,
+        }
+    }
+}
+
+pub const PORTAL_DEPTH: f32 = 0.05;
+
+#[derive(Component, Default, Clone, Copy)]
+pub struct PortalAllowIncoming(pub bool);
+
+#[derive(Component, Clone, Copy)]
+pub struct PortalTargetDoc(pub Hash);
+
+#[derive(Component, Clone)]
+pub struct PortalTargetReceptor {
+    pub document: Hash,
+    pub prim:     TreeID,
+}
+
+#[derive(Component, Default, Debug, PartialEq, Eq, Clone, Copy)]
+pub enum PortalState {
+    #[default]
+    Closed,
+    Loading,
+    Open,
 }
 
 #[derive(Component, Default)]
@@ -63,7 +115,7 @@ pub struct IncomingPortals(Vec<Entity>);
 
 #[derive(Component)]
 #[relationship(relationship_target = IncomingPortals)]
-pub struct PortalDestination(Entity);
+pub struct PortalDestination(pub Entity);
 
 #[derive(Component, Default)]
 #[relationship_target(relationship = PortalCamera)]
@@ -73,21 +125,42 @@ pub struct PortalCameras(Vec<Entity>);
 #[relationship(relationship_target = PortalCameras)]
 #[require(Transform)]
 pub struct PortalCamera {
-    portal: Entity,
+    pub portal: Entity,
 }
 
 #[derive(Component)]
-pub struct TrackedCamera(Entity);
+pub struct TrackedCamera(pub Entity);
 
-/// Marker component for entities that can teleport through portals.
+#[derive(Component)]
+pub struct PortalActiveRender;
+
+/// Marker for the camera whose position drives portal render-budget selection.
+#[derive(Component)]
+pub struct PortalViewer;
+
+#[derive(Resource)]
+pub struct PortalRenderBudget {
+    pub max_active:   usize,
+    pub max_distance: f32,
+}
+
+impl Default for PortalRenderBudget {
+    fn default() -> Self {
+        Self {
+            max_active:   8,
+            max_distance: 64.0,
+        }
+    }
+}
+
 #[derive(Component)]
 #[require(TravelCooldown, PrevTranslation)]
 pub struct PortalTraveler;
 
 #[derive(Component)]
 pub struct TravelCooldown {
-    last_travel: Option<Duration>,
-    duration:    Duration,
+    pub last_travel: Option<Duration>,
+    pub duration:    Duration,
 }
 
 impl Default for TravelCooldown {
@@ -100,4 +173,4 @@ impl Default for TravelCooldown {
 }
 
 #[derive(Component, Default)]
-pub struct PrevTranslation(Vec3);
+pub struct PrevTranslation(pub Vec3);

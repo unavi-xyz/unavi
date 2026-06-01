@@ -26,11 +26,17 @@ use hsd::{
             Topology,
         },
         name::NameAttr,
+        portal::{
+            PortalAttr,
+            PortalDestination,
+            PortalReceptor,
+        },
         relationships_map,
         rigid_body::{
             RigidBodyAttr,
             RigidBodyKind,
         },
+        spawn::SpawnAttr,
         xform::XformAttr,
     },
 };
@@ -166,6 +172,27 @@ pub enum PrimRigidBodyKind {
     Static,
 }
 
+pub struct PrimPortalReceptor {
+    pub document: [u8; 32],
+    pub prim:     String,
+}
+
+pub struct PrimPortalDestination {
+    pub receptor: Option<PrimPortalReceptor>,
+    pub space:    [u8; 32],
+}
+
+pub struct PrimPortal {
+    pub allow_incoming: bool,
+    pub destination:    Option<PrimPortalDestination>,
+    pub size_x:         f32,
+    pub size_y:         f32,
+}
+
+pub struct PrimSpawn {
+    pub radius: f32,
+}
+
 async fn get_prim(api: &Api, rep: u32) -> anyhow::Result<PrimRes> {
     api.wired_scene
         .lock()
@@ -211,6 +238,18 @@ fn read_attr<A: Attribute>(meta: &LoroMap) -> Option<A> {
 fn ensure_writable(api: &Api, prim: &PrimRes) -> anyhow::Result<()> {
     if prim.is_proxy {
         bail!("cannot write proxy prim")
+    }
+    let caller_is_system = api
+        .permissions
+        .contains(&crate::permissions::ApiName::System);
+    if !caller_is_system && unavi_space::membership::doc_space(api.doc_id).is_none() {
+        bail!("caller document is not placed in a space")
+    }
+    if api.doc_id != prim.doc_id
+        && !caller_is_system
+        && !unavi_space::membership::same_space(api.doc_id, prim.doc_id)
+    {
+        bail!("cross-document write requires both documents in the same space")
     }
     validate_firewall(&api.doc_id, &prim.doc_id, Channel::SceneWrite)
 }
@@ -799,6 +838,83 @@ fn prim_to_rigid_body_attr(rb: PrimRigidBody) -> RigidBodyAttr {
         mass:            maybe(rb.mass.map(f64::from)),
         restitution:     maybe(rb.restitution.map(f64::from)),
     }
+}
+
+pub async fn portal(api: &Api, rep: u32) -> anyhow::Result<Option<PrimPortal>> {
+    let prim = get_prim(api, rep).await?;
+    if prim.is_proxy {
+        return Ok(None);
+    }
+    let meta = prim_meta(&prim.doc, prim.id)?;
+    Ok(read_attr::<PortalAttr>(&meta).map(portal_attr_to_prim))
+}
+
+pub async fn set_portal(api: &Api, rep: u32, value: Option<PrimPortal>) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
+    ensure_writable(api, &prim)?;
+    let meta = prim_meta(&prim.doc, prim.id)?;
+    match value {
+        Some(p) => write_attr(&meta, &prim_portal_to_attr(p))?,
+        None => clear_attr(&meta, PortalAttr::KEY)?,
+    }
+    Ok(())
+}
+
+fn prim_portal_to_attr(p: PrimPortal) -> PortalAttr {
+    PortalAttr {
+        allow_incoming: p.allow_incoming,
+        destination:    p.destination.map(|d| PortalDestination {
+            receptor: d.receptor.map(|r| PortalReceptor {
+                document: ByteArray(r.document),
+                prim:     r.prim,
+            }),
+            space:    ByteArray(d.space),
+        }),
+        size_x:         f64::from(p.size_x),
+        size_y:         f64::from(p.size_y),
+    }
+}
+
+fn portal_attr_to_prim(attr: PortalAttr) -> PrimPortal {
+    PrimPortal {
+        allow_incoming: attr.allow_incoming,
+        destination:    attr.destination.map(|d| PrimPortalDestination {
+            receptor: d.receptor.map(|r| PrimPortalReceptor {
+                document: r.document.0,
+                prim:     r.prim,
+            }),
+            space:    d.space.0,
+        }),
+        size_x:         attr.size_x as f32,
+        size_y:         attr.size_y as f32,
+    }
+}
+
+pub async fn spawn(api: &Api, rep: u32) -> anyhow::Result<Option<PrimSpawn>> {
+    let prim = get_prim(api, rep).await?;
+    if prim.is_proxy {
+        return Ok(None);
+    }
+    let meta = prim_meta(&prim.doc, prim.id)?;
+    Ok(read_attr::<SpawnAttr>(&meta).map(|a| PrimSpawn {
+        radius: a.radius as f32,
+    }))
+}
+
+pub async fn set_spawn(api: &Api, rep: u32, value: Option<PrimSpawn>) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
+    ensure_writable(api, &prim)?;
+    let meta = prim_meta(&prim.doc, prim.id)?;
+    match value {
+        Some(s) => write_attr(
+            &meta,
+            &SpawnAttr {
+                radius: f64::from(s.radius),
+            },
+        )?,
+        None => clear_attr(&meta, SpawnAttr::KEY)?,
+    }
+    Ok(())
 }
 
 pub async fn relationships(api: &Api, rep: u32) -> anyhow::Result<Vec<(String, String)>> {

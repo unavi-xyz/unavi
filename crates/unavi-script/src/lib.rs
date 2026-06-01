@@ -7,9 +7,13 @@ use bevy::prelude::*;
 
 use crate::{
     load::asset::Wasm,
-    permissions::ApiPermissions,
+    permissions::{
+        ApiPermissions,
+        grant_space_permissions,
+    },
 };
 
+#[cfg(feature = "debug")] pub mod debug;
 mod engine;
 pub mod firewall;
 pub mod load;
@@ -24,7 +28,8 @@ impl Plugin for ScriptPlugin {
             engine::EnginePlugin,
             load::LoadPlugin,
             runtime::shared::SharedRuntimePlugin,
-        ));
+        ))
+        .add_observer(grant_space_permissions);
     }
 }
 

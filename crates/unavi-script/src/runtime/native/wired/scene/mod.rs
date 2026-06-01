@@ -76,6 +76,12 @@ impl bindings::wired::scene::api::Host for Runtime {
             .map(Resource::new_own)
             .map_err(|e| e.to_string()))
     }
+
+    async fn publish_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Result<(), String>> {
+        Ok(shared::wired::scene::publish_document(&self.api, id)
+            .await
+            .map_err(|e| e.to_string()))
+    }
 }
 
 impl bindings::wired::scene::types::Host for Runtime {}

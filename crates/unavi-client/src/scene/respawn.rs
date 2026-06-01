@@ -3,9 +3,15 @@ use avian3d::prelude::{
     LinearVelocity,
 };
 use bevy::prelude::*;
+use bevy_hsd::attributes::spawn::SpawnPoint;
 use unavi_agent::{
     LocalAgent,
     LocalAgentEntities,
+};
+use unavi_space::{
+    Space,
+    anchor::ActiveSpace,
+    spawn::pick_spawn,
 };
 
 #[derive(Event)]
@@ -14,6 +20,10 @@ pub struct Respawn;
 pub fn respawn(
     _: On<Respawn>,
     local_agent: Query<&LocalAgentEntities, With<LocalAgent>>,
+    active: Res<ActiveSpace>,
+    spaces: Query<&GlobalTransform, With<Space>>,
+    spawn_points: Query<(&SpawnPoint, &GlobalTransform, &ChildOf)>,
+    parents: Query<&ChildOf>,
     mut body: Query<(&mut Transform, &mut LinearVelocity, &mut AngularVelocity)>,
 ) {
     let Ok(ents) = local_agent.single() else {
@@ -29,8 +39,9 @@ pub fn respawn(
     *vel = LinearVelocity::default();
     *ang_vel = AngularVelocity::default();
 
-    // For now, just use origin as respawn point.
-    tr.translation = Vec3::new(0.0, 0.5, 0.0);
+    tr.translation = active.0.map_or(Vec3::new(0.0, 0.5, 0.0), |space| {
+        pick_spawn(space, &spawn_points, &parents, &spaces).unwrap_or_default()
+    });
 }
 
 const VOID_LEVEL: f32 = -512.0;

@@ -27,8 +27,10 @@ pub mod image;
 pub mod material;
 pub mod mesh;
 pub mod name;
+pub mod portal;
 pub mod rigid_body;
 pub mod script;
+pub mod spawn;
 pub mod util;
 pub mod xform;
 
@@ -41,8 +43,10 @@ pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
             Box::new(material::MaterialParser),
             Box::new(mesh::MeshParser),
             Box::new(name::NameParser),
+            Box::new(portal::PortalParser),
             Box::new(rigid_body::RigidBodyParser),
             Box::new(script::ScriptParser),
+            Box::new(spawn::SpawnParser),
             Box::new(xform::XformParser),
         ];
         let mut map = HashMap::default();
@@ -58,7 +62,9 @@ pub enum AttrDataEvent {
     Image(image::ImageEvent),
     Material(material::MaterialEvent),
     Mesh(mesh::MeshEvent),
+    Portal(portal::PortalEvent),
     RigidBody(rigid_body::RigidBodyEvent),
+    Spawn(spawn::SpawnEvent),
     Xform(xform::XformEvent),
 }
 

@@ -13909,6 +13909,7 @@ name = "unavi-beacon"
 version = "0.0.16"
 dependencies = [
  "blake3",
+ "unavi-script-util",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -13937,6 +13938,7 @@ dependencies = [
  "image",
  "iroh",
  "log",
+ "parking_lot",
  "reqwest 0.13.2",
  "tracing",
  "unavi-agent",
@@ -13961,6 +13963,8 @@ dependencies = [
 name = "unavi-default-home"
 version = "0.0.16"
 dependencies = [
+ "blake3",
+ "unavi-script-util",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -14039,8 +14043,13 @@ name = "unavi-portal"
 version = "0.0.16"
 dependencies = [
  "bevy",
+ "bevy-hsd",
  "bevy_panorbit_camera",
  "bevy_vrm",
+ "blake3",
+ "hsd",
+ "loro",
+ "loro-surgeon",
 ]
 
 [[package]]
@@ -14066,6 +14075,7 @@ dependencies = [
  "loro",
  "loro-surgeon",
  "parking_lot",
+ "postcard",
  "rand 0.9.2",
  "smol_str 0.3.6",
  "tokio",
@@ -14074,14 +14084,24 @@ dependencies = [
  "unavi-agent",
  "unavi-avatar",
  "unavi-input",
+ "unavi-space",
  "unavi-util",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasmtime",
  "wasmtime-wasi",
  "wds",
+ "wired-records",
  "wired-schemas",
  "xdid",
+]
+
+[[package]]
+name = "unavi-script-util"
+version = "0.0.16"
+dependencies = [
+ "blake3",
+ "wired-prelude",
 ]
 
 [[package]]
@@ -14131,6 +14151,7 @@ dependencies = [
  "loro",
  "loro-surgeon",
  "n0-future",
+ "parking_lot",
  "postcard",
  "rand 0.9.2",
  "serde",
@@ -14139,6 +14160,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unavi-agent",
+ "unavi-portal",
  "unavi-util",
  "wds",
  "wired-records",
@@ -14179,7 +14201,9 @@ name = "unavi-vui-nav"
 version = "0.0.16"
 dependencies = [
  "blake3",
+ "postcard",
  "wired-prelude",
+ "wired-records",
  "wired-schemas",
  "wit-bindgen 0.55.0",
 ]
@@ -16396,6 +16420,7 @@ dependencies = [
  "blake3",
  "loro",
  "loro-surgeon",
+ "postcard",
  "serde",
  "serde_with",
  "xdid",
@@ -16790,7 +16815,7 @@ checksum = "bec9e4a500ca8864c5b47b8b482a73d62e4237670e5b5f1d6b9e3cae50f28f2b"
 [[package]]
 name = "xdid"
 version = "0.7.0"
-source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
+source = "git+https://github.com/unavi-xyz/xdid#e7285ef94777dec1982934a0eede1724a8afae01"
 dependencies = [
  "smallvec",
  "thiserror 2.0.18",
@@ -16802,7 +16827,7 @@ dependencies = [
 [[package]]
 name = "xdid-core"
 version = "0.7.0"
-source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
+source = "git+https://github.com/unavi-xyz/xdid#e7285ef94777dec1982934a0eede1724a8afae01"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -16815,7 +16840,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-key"
 version = "0.7.0"
-source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
+source = "git+https://github.com/unavi-xyz/xdid#e7285ef94777dec1982934a0eede1724a8afae01"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -16833,7 +16858,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-web"
 version = "0.7.0"
-source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
+source = "git+https://github.com/unavi-xyz/xdid#e7285ef94777dec1982934a0eede1724a8afae01"
 dependencies = [
  "reqwest 0.13.2",
  "send_wrapper",

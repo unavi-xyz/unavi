@@ -65,8 +65,8 @@ pub fn publish_beacons(
             schema:    (&*SCHEMA_BEACON).into(),
             f:         Arc::new(move |doc| {
                 let beacon = BeaconRecord {
-                    did:      HydratedDid(did.clone()),
-                    endpoint: ByteArray(loro_surgeon::bytes::ByteArray(*endpoint_id.as_bytes())),
+                    did:      HydratedDid::from(&did),
+                    endpoint: ByteArray::new(*endpoint_id.as_bytes()),
                     expires:  (OffsetDateTime::now_utc() + BEACON_TTL).unix_timestamp(),
                     space:    space.into(),
                 };

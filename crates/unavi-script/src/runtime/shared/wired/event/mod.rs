@@ -88,11 +88,16 @@ pub async fn emit(
                 let pos = NODE_TRANSFORM_REGISTRY
                     .read()
                     .get(&abs)
-                    .map(|s| s.global.translation());
+                    .map(|s| s.world.translation());
                 Some((abs, pos, *radius))
             }
             EventScope::Global => None,
         };
+
+    #[cfg(feature = "debug")]
+    if let Some((_, Some(pos), radius)) = emitter_spatial.as_ref() {
+        crate::debug::record_emit(&channel, *pos, *radius);
+    }
 
     let payload = Arc::new(payload);
     let sender_doc = api.doc_id.as_bytes().to_vec();
@@ -119,39 +124,9 @@ pub async fn emit(
             continue;
         }
 
-        let sender_scope = match (&emitter_spatial, &entry.scope) {
-            (None, ReceptorScope::Global) => SenderScope::Global,
-            (None, ReceptorScope::Spatial { .. }) => continue,
-            (Some((abs, ..)), ReceptorScope::Global) => SenderScope::Spatial {
-                distance: 0.0,
-                node:     abs.clone(),
-            },
-            (
-                Some((emitter_abs, emitter_pos, emitter_radius)),
-                ReceptorScope::Spatial {
-                    node: receptor_node,
-                    radius: receptor_radius,
-                },
-            ) => {
-                let Some(e_pos) = emitter_pos else {
-                    continue;
-                };
-                let Some(r_pos) = NODE_TRANSFORM_REGISTRY
-                    .read()
-                    .get(receptor_node)
-                    .map(|s| s.global.translation())
-                else {
-                    continue;
-                };
-                let dist = (*e_pos - r_pos).length();
-                if dist > *emitter_radius || dist > *receptor_radius {
-                    continue;
-                }
-                SenderScope::Spatial {
-                    distance: dist,
-                    node:     emitter_abs.clone(),
-                }
-            }
+        let Some(sender_scope) = resolve_sender_scope(api, emitter_spatial.as_ref(), &entry.scope)
+        else {
+            continue;
         };
 
         let _ = entry.tx.try_send(InboundEvent {
@@ -165,6 +140,50 @@ pub async fn emit(
     drop(registry);
 
     Ok(())
+}
+
+fn resolve_sender_scope(
+    api: &Api,
+    emitter_spatial: Option<&(AbsoluteNodeId, Option<bevy::math::Vec3>, f32)>,
+    receptor_scope: &ReceptorScope,
+) -> Option<SenderScope> {
+    match (emitter_spatial, receptor_scope) {
+        (None, ReceptorScope::Global) => Some(SenderScope::Global),
+        (None, ReceptorScope::Spatial { .. }) => None,
+        (Some((abs, ..)), ReceptorScope::Global) => Some(SenderScope::Spatial {
+            distance: 0.0,
+            node:     abs.clone(),
+        }),
+        (
+            Some((emitter_abs, emitter_pos, emitter_radius)),
+            ReceptorScope::Spatial {
+                node: receptor_node,
+                radius: receptor_radius,
+            },
+        ) => {
+            let e_pos = (*emitter_pos)?;
+            let emitter_is_system = api
+                .permissions
+                .contains(&crate::permissions::ApiName::System);
+            if !emitter_is_system
+                && !unavi_space::membership::same_space(emitter_abs.doc, receptor_node.doc)
+            {
+                return None;
+            }
+            let r_pos = NODE_TRANSFORM_REGISTRY
+                .read()
+                .get(receptor_node)
+                .map(|s| s.world.translation())?;
+            let dist = (e_pos - r_pos).length();
+            if dist > *emitter_radius + *receptor_radius {
+                return None;
+            }
+            Some(SenderScope::Spatial {
+                distance: dist,
+                node:     emitter_abs.clone(),
+            })
+        }
+    }
 }
 
 pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::Result<u32> {

@@ -82,10 +82,7 @@ pub fn ensure_portal_mesh(
     >,
 ) {
     for (entity, size, cached) in &portals {
-        if cached.is_some_and(|c| {
-            c.0.width.to_bits() == size.width.to_bits()
-                && c.0.height.to_bits() == size.height.to_bits()
-        }) {
+        if cached.is_some_and(|c| c.0 == *size) {
             continue;
         }
         let mesh = Plane3d::default()

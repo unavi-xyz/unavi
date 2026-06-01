@@ -19,7 +19,7 @@ const HYSTERESIS_FACTOR: f32 = 1.1;
 pub fn select_active_portals(
     budget: Res<PortalRenderBudget>,
     viewers: Query<
-        (Ref<GlobalTransform>, Entity),
+        Ref<GlobalTransform>,
         (With<PortalViewer>, With<Camera3d>, Without<PortalCamera>),
     >,
     portals: Query<
@@ -35,7 +35,7 @@ pub fn select_active_portals(
     actives: Query<Entity, (With<Portal>, With<PortalActiveRender>)>,
     mut commands: Commands,
 ) {
-    let Some((viewer, _)) = viewers.iter().min_by_key(|(_, e)| *e) else {
+    let Ok(viewer) = viewers.single() else {
         return;
     };
 

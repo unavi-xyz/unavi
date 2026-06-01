@@ -196,7 +196,7 @@ impl ScriptBehavior for Script {
                 -delta / OPEN_SPEED_SECONDS
             };
             let new_t = (prev_t + inc).clamp(0.0, 1.0);
-            let scale_changed = new_t.to_bits() != prev_t.to_bits();
+            let scale_changed = (new_t - prev_t).abs() > f32::EPSILON;
             if scale_changed {
                 g.scale_t.set(new_t);
             }
@@ -226,7 +226,7 @@ impl ScriptBehavior for Script {
                 } else {
                     (prev_raise - speed).max(target_raise)
                 };
-                if new_raise.to_bits() != prev_raise.to_bits() {
+                if (new_raise - prev_raise).abs() > f32::EPSILON {
                     sector.raise_t.set(new_raise);
                     sector.root.set_xform(Some(Xform {
                         translation: Vec3::new(0.0, 0.0, new_raise * RAISE_DIST),

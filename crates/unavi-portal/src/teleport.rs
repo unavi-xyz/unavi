@@ -17,8 +17,6 @@ enum PortalEntrySide {
     Back,
 }
 
-const EPSILON: f32 = 1.0e-4;
-
 /// Check if the line segment from `prev_pos` to `curr_pos` intersects the
 /// portal box. Uses ray-box intersection to handle fast movement that might
 /// pass through entirely.
@@ -67,9 +65,9 @@ fn check_box_entry_with_side(
 
     let entry_t = tmin.max(0.0);
 
-    if (entry_t - t5).abs() < EPSILON {
+    if (entry_t - t5).abs() < f32::EPSILON {
         Some(PortalEntrySide::Front)
-    } else if (entry_t - t6).abs() < EPSILON {
+    } else if (entry_t - t6).abs() < f32::EPSILON {
         Some(PortalEntrySide::Back)
     } else if prev_local.z < 0.0 {
         Some(PortalEntrySide::Front)
@@ -109,7 +107,7 @@ pub(crate) fn handle_traveler_teleport(
         ),
         With<Portal>,
     >,
-    destination_portals: Query<&GlobalTransform, Without<PortalTraveler>>,
+    destinations: Query<&GlobalTransform, Without<PortalTraveler>>,
     portal_destinations: Query<(), With<Portal>>,
 ) {
     let elapsed = time.elapsed();
@@ -151,7 +149,7 @@ pub(crate) fn handle_traveler_teleport(
                 continue;
             };
 
-            let Ok(dest_transform) = destination_portals.get(destination.0) else {
+            let Ok(dest_transform) = destinations.get(destination.0) else {
                 continue;
             };
 

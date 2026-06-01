@@ -16815,7 +16815,7 @@ checksum = "bec9e4a500ca8864c5b47b8b482a73d62e4237670e5b5f1d6b9e3cae50f28f2b"
 [[package]]
 name = "xdid"
 version = "0.7.0"
-source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
+source = "git+https://github.com/unavi-xyz/xdid#e7285ef94777dec1982934a0eede1724a8afae01"
 dependencies = [
  "smallvec",
  "thiserror 2.0.18",
@@ -16827,7 +16827,7 @@ dependencies = [
 [[package]]
 name = "xdid-core"
 version = "0.7.0"
-source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
+source = "git+https://github.com/unavi-xyz/xdid#e7285ef94777dec1982934a0eede1724a8afae01"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -16840,7 +16840,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-key"
 version = "0.7.0"
-source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
+source = "git+https://github.com/unavi-xyz/xdid#e7285ef94777dec1982934a0eede1724a8afae01"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -16858,7 +16858,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-web"
 version = "0.7.0"
-source = "git+https://github.com/unavi-xyz/xdid#955d6b99e28ddff62cc518518303b454abe0e992"
+source = "git+https://github.com/unavi-xyz/xdid#e7285ef94777dec1982934a0eede1724a8afae01"
 dependencies = [
  "reqwest 0.13.2",
  "send_wrapper",

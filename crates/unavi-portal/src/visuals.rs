@@ -16,7 +16,10 @@ use bevy::{
         bloom::Bloom,
         dof::DepthOfField,
     },
-    prelude::*,
+    prelude::{
+        ManualTextureViews,
+        *,
+    },
     render::{
         render_resource::{
             Extent3d,
@@ -29,6 +32,10 @@ use bevy::{
             ColorGrading,
             Hdr,
         },
+    },
+    window::{
+        PrimaryWindow,
+        WindowRef,
     },
 };
 use bevy_vrm::first_person::{
@@ -182,9 +189,10 @@ fn install_shader_visual(world: &mut World, portal: Entity) {
 
     despawn_portal_cameras(world, portal);
 
+    let initial_size = initial_render_size(world, tracked_camera);
     let size = Extent3d {
-        width: 128,
-        height: 128,
+        width: initial_size.x,
+        height: initial_size.y,
         ..default()
     };
     let mut image = Image {
@@ -236,6 +244,51 @@ fn install_shader_visual(world: &mut World, portal: Entity) {
         .id();
 
     copy_tracked_camera_extras(world, portal_camera_ent, tracked_camera);
+}
+
+/// Best-effort viewport size for the tracked camera. Used to allocate the
+/// initial portal render target at a reasonable resolution;
+/// [`tracking::update_portal_image_sizes`] continues to resize each frame as
+/// the viewport changes.
+fn initial_render_size(world: &mut World, tracked_camera: Entity) -> UVec2 {
+    const FALLBACK: UVec2 = UVec2::new(1024, 1024);
+
+    let Some(camera) = world.get::<Camera>(tracked_camera) else {
+        return FALLBACK;
+    };
+
+    if let Some(viewport) = camera.viewport.as_ref() {
+        return viewport.physical_size;
+    }
+
+    let Some(target) = world.get::<RenderTarget>(tracked_camera) else {
+        return FALLBACK;
+    };
+    let target = target.clone();
+
+    match target {
+        RenderTarget::Image(image) => world
+            .resource::<Assets<Image>>()
+            .get(image.handle.id())
+            .map_or(FALLBACK, Image::size),
+        RenderTarget::None { size } => size,
+        RenderTarget::TextureView(view) => world
+            .resource::<ManualTextureViews>()
+            .get(&view)
+            .map_or(FALLBACK, |v| v.size),
+        RenderTarget::Window(window) => {
+            let window_ent = match window {
+                WindowRef::Primary => world
+                    .query_filtered::<Entity, With<PrimaryWindow>>()
+                    .single(world)
+                    .ok(),
+                WindowRef::Entity(e) => Some(e),
+            };
+            window_ent
+                .and_then(|e| world.get::<Window>(e))
+                .map_or(FALLBACK, Window::physical_size)
+        }
+    }
 }
 
 fn copy_tracked_camera_extras(

@@ -46,9 +46,7 @@ pub fn on_hsd_ready(
         return;
     };
 
-    let Some((receptor_prim, receptor_prim_id)) =
-        find_open_receptor(dest_index, &candidate_portals)
-    else {
+    let Some(receptor_prim_id) = find_open_receptor(dest_index, &candidate_portals) else {
         return;
     };
 
@@ -70,20 +68,18 @@ pub fn on_hsd_ready(
             receptor_prim_id.clone(),
         );
     }
-
-    let _ = receptor_prim;
 }
 
 fn find_open_receptor(
     dest_index: &HsdPrimIndex,
     candidate_portals: &Query<(&Prim, &PortalConfig, &PortalAllowIncoming)>,
-) -> Option<(Entity, String)> {
+) -> Option<String> {
     for (&tree_id, &entity) in &dest_index.0 {
         let Ok((_, cfg, incoming)) = candidate_portals.get(entity) else {
             continue;
         };
         if incoming.0 && cfg.0.destination.is_none() {
-            return Some((entity, tree_id.to_string()));
+            return Some(tree_id.to_string());
         }
     }
     None
@@ -110,6 +106,9 @@ fn write_receptor_into_source(
             continue;
         };
         if dest.space.0 != *target_space.as_bytes() {
+            continue;
+        }
+        if dest.receptor.is_some() {
             continue;
         }
         attr.destination = Some(HsdPortalDestination {

@@ -29,6 +29,7 @@ use unavi_util::{
 use wds::{
     DataStore,
     Identity,
+    WDS_SERVICE_TYPE,
     actor::Actor,
 };
 use xdid::{
@@ -147,13 +148,13 @@ async fn resolve_sync_target(
     let services = doc.service.unwrap_or_default();
     let wds = services
         .iter()
-        .find(|s| s.id == "wds")
+        .find(|s| s.id == "wds" && s.typ.iter().any(|t| t == WDS_SERVICE_TYPE))
         .ok_or_else(|| anyhow::anyhow!("no `wds` service in DID document"))?;
 
     let endpoint_str = wds
-        .typ
+        .service_endpoint
         .first()
-        .ok_or_else(|| anyhow::anyhow!("`wds` service has no endpoint id"))?;
+        .ok_or_else(|| anyhow::anyhow!("`wds` service has no serviceEndpoint"))?;
 
     let endpoint_id = EndpointId::from_str(endpoint_str)?;
     Ok(EndpointAddr::from(endpoint_id))

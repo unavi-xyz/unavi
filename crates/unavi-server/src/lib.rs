@@ -17,7 +17,10 @@ use iroh::{
 };
 use tower_http::cors::CorsLayer;
 use tracing::info;
-use wds::DataStore;
+use wds::{
+    DataStore,
+    WDS_SERVICE_TYPE,
+};
 use xdid::{
     core::{
         did::{
@@ -140,8 +143,9 @@ fn create_did_document_route(
                     controller:            None,
                     key_agreement:         None,
                     service:               Some(vec![ServiceEndpoint {
-                        id:  "wds".into(),
-                        typ: vec![endpoint_id.to_string()],
+                        id:               "wds".into(),
+                        typ:              vec![WDS_SERVICE_TYPE.into()],
+                        service_endpoint: vec![endpoint_id.to_string()],
                     }]),
                     verification_method:   Some(vec![VerificationMethodMap {
                         id:                   DidUrl {

@@ -19,6 +19,9 @@ use crate::builder::{
     DataStoreBuilder,
 };
 
+/// DID document service `type` value identifying a WDS endpoint.
+pub const WDS_SERVICE_TYPE: &str = "WDSEndpoint";
+
 pub mod actor;
 pub mod api;
 mod auth;

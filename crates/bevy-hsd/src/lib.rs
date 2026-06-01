@@ -57,7 +57,7 @@ impl Plugin for HsdPlugin {
 }
 
 #[derive(Component)]
-#[require(HsdChildren)]
+#[require(HsdChildren, Transform, Visibility)]
 pub struct Hsd(pub Arc<LoroDoc>);
 
 #[derive(Component, Debug, Clone, Copy)]

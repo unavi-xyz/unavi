@@ -88,7 +88,7 @@ pub async fn emit(
                 let pos = NODE_TRANSFORM_REGISTRY
                     .read()
                     .get(&abs)
-                    .map(|s| s.global.translation());
+                    .map(|s| s.world.translation());
                 Some((abs, pos, *radius))
             }
             EventScope::Global => None,
@@ -141,10 +141,16 @@ pub async fn emit(
                 let Some(e_pos) = emitter_pos else {
                     continue;
                 };
+                if !unavi_space::membership::same_space(
+                    emitter_abs.doc,
+                    receptor_node.doc,
+                ) {
+                    continue;
+                }
                 let Some(r_pos) = NODE_TRANSFORM_REGISTRY
                     .read()
                     .get(receptor_node)
-                    .map(|s| s.global.translation())
+                    .map(|s| s.world.translation())
                 else {
                     continue;
                 };

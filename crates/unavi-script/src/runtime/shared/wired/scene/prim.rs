@@ -188,7 +188,6 @@ pub struct PrimPortal {
     pub size_y:         f32,
 }
 
-
 async fn get_prim(api: &Api, rep: u32) -> anyhow::Result<PrimRes> {
     api.wired_scene
         .lock()
@@ -234,6 +233,9 @@ fn read_attr<A: Attribute>(meta: &LoroMap) -> Option<A> {
 fn ensure_writable(api: &Api, prim: &PrimRes) -> anyhow::Result<()> {
     if prim.is_proxy {
         bail!("cannot write proxy prim")
+    }
+    if unavi_space::membership::doc_space(api.doc_id).is_none() {
+        bail!("caller document is not placed in a space")
     }
     validate_firewall(&api.doc_id, &prim.doc_id, Channel::SceneWrite)
 }
@@ -833,11 +835,7 @@ pub async fn portal(api: &Api, rep: u32) -> anyhow::Result<Option<PrimPortal>> {
     Ok(read_attr::<PortalAttr>(&meta).map(portal_attr_to_prim))
 }
 
-pub async fn set_portal(
-    api: &Api,
-    rep: u32,
-    value: Option<PrimPortal>,
-) -> anyhow::Result<()> {
+pub async fn set_portal(api: &Api, rep: u32, value: Option<PrimPortal>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;

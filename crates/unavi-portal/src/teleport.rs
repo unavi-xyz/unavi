@@ -81,6 +81,7 @@ fn check_box_entry_with_side(
 #[derive(EntityEvent)]
 pub struct PortalTeleport {
     pub entity:         Entity,
+    pub destination:    Entity,
     pub delta_rotation: Quat,
 }
 
@@ -100,10 +101,16 @@ pub(crate) fn handle_traveler_teleport(
         (With<PortalTraveler>, Without<Portal>),
     >,
     portals: Query<
-        (&GlobalTransform, &PortalSize, &PortalDestination, &PortalState),
+        (
+            &GlobalTransform,
+            &PortalSize,
+            &PortalDestination,
+            &PortalState,
+        ),
         With<Portal>,
     >,
     destination_portals: Query<&GlobalTransform, Without<PortalTraveler>>,
+    portal_destinations: Query<(), With<Portal>>,
 ) {
     let elapsed = time.elapsed();
 
@@ -148,38 +155,48 @@ pub(crate) fn handle_traveler_teleport(
                 continue;
             };
 
-            // Apply offset away from portal to avoid spam teleports.
-            let out_dir = match entry_side {
-                PortalEntrySide::Front => dest_transform.forward(),
-                PortalEntrySide::Back => dest_transform.back(),
+            let dest_is_portal = portal_destinations.contains(destination.0);
+
+            let (new_translation, new_rotation, delta_rotation) = if dest_is_portal {
+                let out_dir = match entry_side {
+                    PortalEntrySide::Front => dest_transform.forward(),
+                    PortalEntrySide::Back => dest_transform.back(),
+                };
+                let min_spawn = PORTAL_DEPTH / 2.0 + EXTRA_SPAWN_OFFSET;
+                let offset = out_dir * min_spawn;
+
+                let flip_rot = Quat::from_rotation_y(std::f32::consts::PI);
+                let flip_matrix = Mat4::from_quat(flip_rot);
+                let m = dest_transform.to_matrix()
+                    * flip_matrix
+                    * source_transform.to_matrix().inverse()
+                    * traveler_transform.to_matrix();
+                let (_, rotation, translation) = m.to_scale_rotation_translation();
+                let portal_delta =
+                    dest_transform.rotation() * source_transform.rotation().inverse();
+                (translation + offset, rotation, portal_delta * flip_rot)
+            } else {
+                (
+                    dest_transform.translation(),
+                    transform.rotation,
+                    Quat::IDENTITY,
+                )
             };
 
-            let bounds_d = PORTAL_DEPTH / 2.0;
-            let min_spawn = bounds_d + EXTRA_SPAWN_OFFSET;
-            let offset = out_dir * min_spawn;
-
-            let flip_rot = Quat::from_rotation_y(std::f32::consts::PI);
-            let flip_matrix = Mat4::from_quat(flip_rot);
-            let new_traveler_transform = dest_transform.to_matrix()
-                * flip_matrix
-                * source_transform.to_matrix().inverse()
-                * traveler_transform.to_matrix();
-
-            let (_, rotation, translation) = new_traveler_transform.to_scale_rotation_translation();
-
-            transform.translation = translation + offset;
-            transform.rotation = rotation;
+            transform.translation = new_translation;
+            transform.rotation = new_rotation;
 
             prev.0 = transform.translation;
             cooldown.last_travel = Some(elapsed);
 
-            let portal_delta = dest_transform.rotation() * source_transform.rotation().inverse();
-            let delta_rotation = portal_delta * flip_rot;
-
-            commands.entity(entity).trigger(|entity| PortalTeleport {
-                entity,
-                delta_rotation,
-            });
+            let dest_entity = destination.0;
+            commands
+                .entity(entity)
+                .trigger(move |entity| PortalTeleport {
+                    entity,
+                    destination: dest_entity,
+                    delta_rotation,
+                });
 
             break;
         }

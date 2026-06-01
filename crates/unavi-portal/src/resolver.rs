@@ -7,13 +7,13 @@ use bevy_hsd::{
 
 use crate::{
     PortalDestination,
+    PortalTargetDoc,
     PortalTargetReceptor,
-    PortalTargetSpace,
 };
 
-pub fn resolve_target_space(
+pub fn resolve_target_doc(
     portals: Query<
-        (Entity, &PortalTargetSpace, Option<&PortalDestination>),
+        (Entity, &PortalTargetDoc, Option<&PortalDestination>),
         Without<PortalTargetReceptor>,
     >,
     spaces: Query<(Entity, &HsdRecordId), With<Hsd>>,
@@ -36,8 +36,6 @@ pub fn resolve_target_space(
         }
     }
 }
-
-
 
 pub fn resolve_target_receptor(
     portals: Query<(Entity, &PortalTargetReceptor, Option<&PortalDestination>)>,

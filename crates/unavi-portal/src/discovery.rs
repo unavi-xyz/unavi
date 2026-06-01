@@ -30,18 +30,14 @@ use loro_surgeon::bytes::ByteArray;
 
 use crate::{
     PortalAllowIncoming,
+    PortalTargetDoc,
     PortalTargetReceptor,
-    PortalTargetSpace,
 };
 
 pub fn on_hsd_ready(
     trigger: On<Insert, Hsd>,
     dest_docs: Query<(&HsdRecordId, &HsdPrimIndex)>,
-    sources: Query<(
-        &PortalTargetSpace,
-        Option<&PortalTargetReceptor>,
-        &HsdChild,
-    )>,
+    sources: Query<(&PortalTargetDoc, Option<&PortalTargetReceptor>, &HsdChild)>,
     source_docs: Query<&Hsd>,
     candidate_portals: Query<(&Prim, &PortalConfig, &PortalAllowIncoming)>,
 ) {

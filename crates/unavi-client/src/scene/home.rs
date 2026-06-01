@@ -20,6 +20,7 @@ pub fn join_home(asset_server: Res<AssetServer>, mut commands: Commands) {
     let handle = asset_server.load("hsd/unavi_default_home.hsd");
     commands.spawn(LoadHsd {
         handle,
+        public: true,
         extra_schemas: Some(vec![
             SchemaDef {
                 container: "home".into(),

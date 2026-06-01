@@ -30,6 +30,7 @@ pub mod name;
 pub mod portal;
 pub mod rigid_body;
 pub mod script;
+pub mod spawn;
 pub mod util;
 pub mod xform;
 
@@ -45,6 +46,7 @@ pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
             Box::new(portal::PortalParser),
             Box::new(rigid_body::RigidBodyParser),
             Box::new(script::ScriptParser),
+            Box::new(spawn::SpawnParser),
             Box::new(xform::XformParser),
         ];
         let mut map = HashMap::default();
@@ -62,6 +64,7 @@ pub enum AttrDataEvent {
     Mesh(mesh::MeshEvent),
     Portal(portal::PortalEvent),
     RigidBody(rigid_body::RigidBodyEvent),
+    Spawn(spawn::SpawnEvent),
     Xform(xform::XformEvent),
 }
 

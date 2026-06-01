@@ -2,13 +2,17 @@ use bevy::{
     platform::collections::HashSet,
     prelude::*,
 };
-use bevy_hsd::Hsd;
+use bevy_hsd::{
+    Hsd,
+    attributes::spawn::SpawnPoint,
+};
 use unavi_agent::LocalAgent;
 use unavi_portal::teleport::PortalTeleport;
 
 use crate::{
     Space,
     membership::SpaceOwner,
+    spawn::pick_spawn,
 };
 
 #[derive(Component, Default)]
@@ -146,7 +150,10 @@ pub fn reparent_doc_traveler(
 pub fn promote_active_on_teleport(
     trigger: On<PortalTeleport>,
     local_agents: Query<(), With<LocalAgent>>,
-    spaces: Query<(), With<Space>>,
+    spaces_marker: Query<(), With<Space>>,
+    spaces: Query<&GlobalTransform, With<Space>>,
+    spawn_points: Query<(&SpawnPoint, &GlobalTransform, &ChildOf)>,
+    parents: Query<&ChildOf>,
     mut transforms: Query<&mut Transform>,
     mut active: ResMut<ActiveSpace>,
 ) {
@@ -154,7 +161,7 @@ pub fn promote_active_on_teleport(
     if !local_agents.contains(event.entity) {
         return;
     }
-    if !spaces.contains(event.destination) {
+    if !spaces_marker.contains(event.destination) {
         return;
     }
     if active.0 == Some(event.destination) {
@@ -162,7 +169,10 @@ pub fn promote_active_on_teleport(
     }
     active.0 = Some(event.destination);
     if let Ok(mut transform) = transforms.get_mut(event.entity) {
-        transform.translation = Vec3::ZERO;
+        // The newly active space is being snapped to the world origin this
+        // frame, so spawn coordinates are taken in the space's local frame.
+        transform.translation =
+            pick_spawn(event.destination, &spawn_points, &parents, &spaces).unwrap_or(Vec3::ZERO);
     }
 }
 

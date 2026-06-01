@@ -250,28 +250,23 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
             .insert(Channel::SceneWrite, Access::Restricted(HashSet::new()));
     }
 
-    let space = match unavi_space::membership::doc_space(id) {
-        Some(s) => s,
-        None => {
-            let (tx, rx) = async_channel::bounded::<Option<Hash>>(1);
-            AsyncCommands::default()
-                .push(move |world: &mut World| {
-                    let active = world
-                        .get_resource::<unavi_space::anchor::ActiveSpace>()
-                        .and_then(|a| a.0);
-                    let hash = active.and_then(|e| {
-                        world
-                            .get::<unavi_space::Space>(e)
-                            .map(|s| s.0)
-                    });
-                    tx.try_send(hash).ok();
-                })
-                .send()
-                .await?;
-            rx.recv()
-                .await?
-                .ok_or_else(|| anyhow::anyhow!("doc has no space and no active space"))?
-        }
+    let space = if let Some(s) = unavi_space::membership::doc_space(id) {
+        s
+    } else {
+        let (tx, rx) = async_channel::bounded::<Option<Hash>>(1);
+        AsyncCommands::default()
+            .push(move |world: &mut World| {
+                let active = world
+                    .get_resource::<unavi_space::anchor::ActiveSpace>()
+                    .and_then(|a| a.0);
+                let hash = active.and_then(|e| world.get::<unavi_space::Space>(e).map(|s| s.0));
+                tx.try_send(hash).ok();
+            })
+            .send()
+            .await?;
+        rx.recv()
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("doc has no space and no active space"))?
     };
 
     if !unavi_space::state::space::add_doc(space, id) {

@@ -21,6 +21,7 @@ use crate::runtime::{
             PortalReceptor,
             RigidBody,
             RigidBodyKind,
+            Spawn,
             Topology,
             Xform,
         },
@@ -40,6 +41,7 @@ use crate::runtime::{
             PrimRes,
             PrimRigidBody,
             PrimRigidBodyKind,
+            PrimSpawn,
             PrimTopology,
         },
     },
@@ -599,6 +601,24 @@ impl HostPrim for Runtime {
     ) -> wasmtime::Result<()> {
         let value = value.map(portal_shared).transpose()?;
         shared::wired::scene::prim::set_portal(&self.api, self_.rep(), value)
+            .await
+            .map_err(wasmtime::Error::from_anyhow)
+    }
+
+    async fn spawn(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Spawn>> {
+        Ok(shared::wired::scene::prim::spawn(&self.api, self_.rep())
+            .await
+            .map_err(wasmtime::Error::from_anyhow)?
+            .map(|s| Spawn { radius: s.radius }))
+    }
+
+    async fn set_spawn(
+        &mut self,
+        self_: Resource<PrimRes>,
+        value: Option<Spawn>,
+    ) -> wasmtime::Result<()> {
+        let value = value.map(|s| PrimSpawn { radius: s.radius });
+        shared::wired::scene::prim::set_spawn(&self.api, self_.rep(), value)
             .await
             .map_err(wasmtime::Error::from_anyhow)
     }

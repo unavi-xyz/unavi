@@ -36,6 +36,7 @@ use hsd::{
             RigidBodyAttr,
             RigidBodyKind,
         },
+        spawn::SpawnAttr,
         xform::XformAttr,
     },
 };
@@ -186,6 +187,10 @@ pub struct PrimPortal {
     pub destination:    Option<PrimPortalDestination>,
     pub size_x:         f32,
     pub size_y:         f32,
+}
+
+pub struct PrimSpawn {
+    pub radius: f32,
 }
 
 async fn get_prim(api: &Api, rep: u32) -> anyhow::Result<PrimRes> {
@@ -883,6 +888,33 @@ fn portal_attr_to_prim(attr: PortalAttr) -> PrimPortal {
         size_x:         attr.size_x as f32,
         size_y:         attr.size_y as f32,
     }
+}
+
+pub async fn spawn(api: &Api, rep: u32) -> anyhow::Result<Option<PrimSpawn>> {
+    let prim = get_prim(api, rep).await?;
+    if prim.is_proxy {
+        return Ok(None);
+    }
+    let meta = prim_meta(&prim.doc, prim.id)?;
+    Ok(read_attr::<SpawnAttr>(&meta).map(|a| PrimSpawn {
+        radius: a.radius as f32,
+    }))
+}
+
+pub async fn set_spawn(api: &Api, rep: u32, value: Option<PrimSpawn>) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
+    ensure_writable(api, &prim)?;
+    let meta = prim_meta(&prim.doc, prim.id)?;
+    match value {
+        Some(s) => write_attr(
+            &meta,
+            &SpawnAttr {
+                radius: f64::from(s.radius),
+            },
+        )?,
+        None => clear_attr(&meta, SpawnAttr::KEY)?,
+    }
+    Ok(())
 }
 
 pub async fn relationships(api: &Api, rep: u32) -> anyhow::Result<Vec<(String, String)>> {

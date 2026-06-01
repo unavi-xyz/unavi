@@ -96,12 +96,13 @@ pub fn ensure_portal_mesh(
 
 pub fn update_portal_state(
     mut portals: Query<(&mut PortalState, Option<&PortalDestination>), With<Portal>>,
-    destinations: Query<(), With<crate::IncomingPortals>>,
+    incoming: Query<(), With<crate::IncomingPortals>>,
+    doc_roots: Query<(), With<bevy_hsd::Hsd>>,
 ) {
     for (mut state, dest) in &mut portals {
         let next = match dest {
             None => PortalState::Closed,
-            Some(d) if destinations.contains(d.0) => PortalState::Open,
+            Some(d) if incoming.contains(d.0) || doc_roots.contains(d.0) => PortalState::Open,
             Some(_) => PortalState::Loading,
         };
         if *state != next {
@@ -112,7 +113,12 @@ pub fn update_portal_state(
 
 pub fn apply_active_material(
     portals: Query<
-        (Entity, &PortalState, Has<PortalActiveRender>, Option<&VisualKey>),
+        (
+            Entity,
+            &PortalState,
+            Has<PortalActiveRender>,
+            Option<&VisualKey>,
+        ),
         With<Portal>,
     >,
     mut std_materials: ResMut<Assets<StandardMaterial>>,
@@ -120,7 +126,7 @@ pub fn apply_active_material(
 ) {
     for (entity, state, active, key) in &portals {
         let next_key = VisualKey {
-            state:  *state,
+            state: *state,
             active,
         };
         if key.is_some_and(|k| *k == next_key) {
@@ -199,11 +205,13 @@ fn install_shader_visual(world: &mut World, portal: Entity) {
     image.resize(size);
     let image_handle = world.resource_mut::<Assets<Image>>().add(image);
 
-    let portal_material = world.resource_mut::<Assets<PortalMaterial>>().add(PortalMaterial {
-        texture:   Some(image_handle.clone()),
-        cull_mode: None,
-        params:    PortalParams::default(),
-    });
+    let portal_material = world
+        .resource_mut::<Assets<PortalMaterial>>()
+        .add(PortalMaterial {
+            texture:   Some(image_handle.clone()),
+            cull_mode: None,
+            params:    PortalParams::default(),
+        });
 
     if let Ok(mut e) = world.get_entity_mut(portal) {
         e.insert(MeshMaterial3d(portal_material));
@@ -230,7 +238,11 @@ fn install_shader_visual(world: &mut World, portal: Entity) {
     copy_tracked_camera_extras(world, portal_camera_ent, tracked_camera);
 }
 
-fn copy_tracked_camera_extras(world: &mut World, portal_camera_ent: Entity, tracked_camera: Entity) {
+fn copy_tracked_camera_extras(
+    world: &mut World,
+    portal_camera_ent: Entity,
+    tracked_camera: Entity,
+) {
     if let Some(v) = world.get::<Atmosphere>(tracked_camera).cloned() {
         world.entity_mut(portal_camera_ent).insert(v);
     }
@@ -268,4 +280,3 @@ fn copy_tracked_camera_extras(world: &mut World, portal_camera_ent: Entity, trac
         world.entity_mut(portal_camera_ent).insert(v);
     }
 }
-

@@ -4,10 +4,7 @@ use anyhow::Context;
 use blake3::Hash;
 use iroh::EndpointAddr;
 use loro::LoroDoc;
-use tracing::{
-    debug,
-    warn,
-};
+use tracing::debug;
 
 use super::Actor;
 use crate::{
@@ -88,7 +85,7 @@ impl ReadBuilder {
             debug!(remote = %remote_id, "attempting sync");
 
             if let Err(err) = self.actor.sync(self.record_id, remote).await {
-                warn!(remote = %remote_id, ?err, "sync failed");
+                debug!(remote = %remote_id, ?err, "sync source did not have record");
                 continue;
             }
 

@@ -26,6 +26,7 @@ pub struct AbsoluteNodeId {
 pub struct TransformSnapshot {
     pub global: GlobalTransform,
     pub local:  Transform,
+    pub world:  GlobalTransform,
 }
 
 #[derive(Component)]
@@ -54,19 +55,26 @@ pub fn register_nodes(
         }));
 }
 
-pub fn snapshot_transforms(transforms: Query<(&RegisterTransforms, &GlobalTransform, &Transform)>) {
+pub fn snapshot_transforms(
+    transforms: Query<(&RegisterTransforms, &GlobalTransform, &Transform, &HsdChild)>,
+    docs: Query<&GlobalTransform>,
+) {
     if transforms.is_empty() {
         return;
     }
 
     let mut reg = NODE_TRANSFORM_REGISTRY.write();
 
-    for (id, global, local) in transforms {
+    for (id, global, local, doc) in transforms {
+        let doc_relative = docs.get(doc.0).map_or(*global, |doc_global| {
+            GlobalTransform::from(doc_global.affine().inverse() * global.affine())
+        });
         reg.insert(
             id.0.clone(),
             TransformSnapshot {
-                global: *global,
+                global: doc_relative,
                 local:  *local,
+                world:  *global,
             },
         );
     }

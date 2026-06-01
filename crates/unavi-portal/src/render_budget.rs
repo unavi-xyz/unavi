@@ -6,8 +6,8 @@ use crate::{
     PortalCamera,
     PortalRenderBudget,
     PortalState,
+    PortalTargetDoc,
     PortalTargetReceptor,
-    PortalTargetSpace,
 };
 
 pub fn select_active_portals(
@@ -18,7 +18,7 @@ pub fn select_active_portals(
             Entity,
             &PortalState,
             &GlobalTransform,
-            Has<PortalTargetSpace>,
+            Has<PortalTargetDoc>,
             Has<PortalTargetReceptor>,
         ),
         With<Portal>,

@@ -42,10 +42,7 @@ impl QueryRecord {
     }
 }
 
-pub(crate) fn on_query_record(
-    mut req: On<QueryRecord>,
-    actor: Query<(&LocalActor, &SyncTargets)>,
-) {
+pub(crate) fn on_query_record(mut req: On<QueryRecord>, actor: Query<(&LocalActor, &SyncTargets)>) {
     let Ok((actor, sync_targets)) = actor.single() else {
         warn!("Unable to query records: no local actor");
         return;

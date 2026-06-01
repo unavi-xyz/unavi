@@ -8,8 +8,8 @@ use crate::{
     PortalAllowIncoming,
     PortalDestination,
     PortalSize,
+    PortalTargetDoc,
     PortalTargetReceptor,
-    PortalTargetSpace,
 };
 
 pub fn sync_portal_config(
@@ -35,7 +35,7 @@ pub fn sync_portal_config(
 
     match &attr.destination {
         Some(dest) => {
-            entity_cmds.insert(PortalTargetSpace(Hash::from_bytes(dest.space.0)));
+            entity_cmds.insert(PortalTargetDoc(Hash::from_bytes(dest.space.0)));
 
             match &dest.receptor {
                 Some(rcp) => {
@@ -55,7 +55,7 @@ pub fn sync_portal_config(
         }
         None => {
             entity_cmds
-                .remove::<PortalTargetSpace>()
+                .remove::<PortalTargetDoc>()
                 .remove::<PortalTargetReceptor>()
                 .remove::<PortalDestination>();
         }
@@ -63,14 +63,12 @@ pub fn sync_portal_config(
 }
 
 pub fn clear_portal_config(trigger: On<Remove, PortalConfig>, mut commands: Commands) {
-    commands
-        .entity(trigger.entity)
-        .remove::<(
-            Portal,
-            PortalSize,
-            PortalAllowIncoming,
-            PortalTargetSpace,
-            PortalTargetReceptor,
-            PortalDestination,
-        )>();
+    commands.entity(trigger.entity).remove::<(
+        Portal,
+        PortalSize,
+        PortalAllowIncoming,
+        PortalTargetDoc,
+        PortalTargetReceptor,
+        PortalDestination,
+    )>();
 }

@@ -42,7 +42,7 @@ impl Plugin for PortalPlugin {
                 Update,
                 (
                     material::update_portal_time,
-                    resolver::resolve_target_space,
+                    resolver::resolve_target_doc,
                     resolver::resolve_target_receptor,
                     visuals::ensure_portal_mesh,
                     visuals::update_portal_state,
@@ -93,7 +93,7 @@ pub const PORTAL_DEPTH: f32 = 0.05;
 pub struct PortalAllowIncoming(pub bool);
 
 #[derive(Component, Clone, Copy)]
-pub struct PortalTargetSpace(pub Hash);
+pub struct PortalTargetDoc(pub Hash);
 
 #[derive(Component, Clone)]
 pub struct PortalTargetReceptor {

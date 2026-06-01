@@ -35,6 +35,7 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
             .spawn((
                 LoadHsd {
                     handle,
+                    public: false,
                     extra_schemas: None,
                     on_load: Some(Box::new(on_load_spawn_doc)),
                 },
@@ -54,6 +55,7 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
             .spawn((
                 LoadHsd {
                     handle,
+                    public: false,
                     extra_schemas: None,
                     on_load: Some(Box::new(on_load_spawn_doc)),
                 },

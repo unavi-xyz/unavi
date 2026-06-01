@@ -76,4 +76,11 @@ impl Runtime {
             .map_err(|e| e.to_string())?;
         Ok(DocHandle::new(rep, Arc::clone(&self.api)))
     }
+
+    #[wasm_bindgen(js_name = "wiredScenePublishDocument")]
+    pub async fn wired_scene_publish_document(&self, id: Vec<u8>) -> Result<(), String> {
+        shared::wired::scene::publish_document(&self.api, id)
+            .await
+            .map_err(|e| e.to_string())
+    }
 }

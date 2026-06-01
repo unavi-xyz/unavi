@@ -14,7 +14,7 @@ pub mod membership;
 mod peer;
 mod portal;
 mod scene;
-mod state;
+pub mod state;
 
 pub struct SpacePlugin;
 
@@ -39,12 +39,12 @@ impl Plugin for SpacePlugin {
             .add_observer(gossip::join_space_topic)
             .add_observer(gossip::leave_space_topic)
             .add_observer(gossip::spawn_gossip)
-            .add_observer(peer::add_space_state_sender)
+            .add_observer(peer::state::add_space_state_sender)
+            .add_observer(peer::state::publish_state_update)
             .add_observer(portal::spawn_portal_space)
             .add_observer(scene::despawn_space_scene)
             .add_observer(scene::spawn_space_scene)
             .add_observer(state::space::add_space_state)
-            .add_observer(state::space::publish_state_update)
             .add_observer(state::space::remove_space_state)
             .add_systems(Update, anchor::apply_anchor_offsets)
             .add_systems(

@@ -8,18 +8,15 @@ world all {
 interface api {
   use types.{document, prim, document-id};
 
-  // The prim this script is attached to.
   self-prim: func() -> prim;
-  // The document this script's prim belongs to.
   self-document: func() -> document;
-  // Get another document by ID.
+
   get-document: func(id: document-id) -> option<document>;
-  // Create a new HSD document owned by this script's document.
   create-document: func() -> document;
-  // Destroy a previously created document.
   remove-document: func(id: document-id);
-  // Load an HSD document from a WDS blob hash (32 bytes).
+
   load-hsd: func(blob: list<u8>) -> result<document, string>;
+  publish-document: func(id: document-id) -> result<_, string>;
 }
 
 interface types {
@@ -27,11 +24,8 @@ interface types {
 
   // Stringified loro TreeID ("counter@peer").
   type prim-id = string;
-  // 32-byte blake3 hash identifying a WDS record.
   type record-id = list<u8>;
-  // 32-byte blake3 hash identifying a document.
   type document-id = record-id;
-  // 32-byte blake3 hash identifying a WDS blob.
   type blob-id = list<u8>;
 
   record xform {
@@ -48,9 +42,6 @@ interface types {
     triangle-strip,
   }
 
-  // Mesh attribute. `attributes` maps a stream name (POSITION, NORMAL,
-  // TANGENT, COLOR, UV0, UV1, ...) to a 32-byte blake3 blob id pointing at
-  // packed f32 data in WDS.
   record mesh {
     topology: topology,
     attributes: list<tuple<string, blob-id>>,
@@ -167,7 +158,7 @@ interface types {
 
     // Rigid transform from this document's root frame to `other`'s root
     // frame. Returns none if the two documents are not in the same space
-    // or if scene-read is denied for `other`.
+    // or if scene-read is denied.
     offset-to: func(other: borrow<document>) -> option<transform>;
   }
 

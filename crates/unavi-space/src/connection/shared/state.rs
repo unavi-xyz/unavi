@@ -16,10 +16,10 @@ use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     connection::shared::StreamIdent,
-    peer::AddSpaceStateSender,
+    peer::state::AddSpaceStateSender,
     state::space::{
-        SPACES,
         SpaceStateUpdate,
+        space_state,
     },
 };
 
@@ -65,12 +65,10 @@ pub async fn recv_state_stream(_tx: SendStream, mut rx: RecvStream) -> anyhow::R
 
         match msg {
             StateMsg::Update { space, data } => {
-                let lock = SPACES.lock().expect("spaces lock");
-                let Some(state) = lock.get(&space) else {
+                let Some(state) = space_state(space) else {
                     continue;
                 };
                 state.doc.import(&data)?;
-                drop(lock);
             }
         }
     }

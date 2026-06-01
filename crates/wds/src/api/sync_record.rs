@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use irpc::WithChannels;
-use tracing::warn;
+use tracing::debug;
 
 use super::{
     ApiError,
@@ -48,7 +48,7 @@ pub async fn sync_record(
     };
 
     tx.send(result.map_err(|err| {
-        warn!(?err, "SyncRecord failed");
+        debug!(?err, "SyncRecord failed");
         ApiError::SyncFailed
     }))
     .await?;

@@ -48,7 +48,7 @@ pub async fn find_bootstrap_peers(
                     if beacon.space.as_bytes() != space.as_bytes() {
                         continue;
                     }
-                    let Ok(endpoint) = EndpointId::from_bytes(beacon.endpoint.0.as_bytes()) else {
+                    let Ok(endpoint) = EndpointId::from_bytes(beacon.endpoint.as_bytes()) else {
                         continue;
                     };
                     if endpoint == ctx.endpoint.id() {

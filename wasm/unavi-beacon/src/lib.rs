@@ -17,8 +17,18 @@ use crate::{
             EventScope,
             SpatialScope,
         },
+        input::{
+            api::register_input_listener,
+            types::{
+                InputAction,
+                InputListener,
+            },
+        },
         scene::{
-            api::self_document,
+            api::{
+                publish_document,
+                self_document,
+            },
             types::{
                 Material,
                 Prim,
@@ -29,8 +39,6 @@ use crate::{
     },
 };
 
-mod color;
-
 wired_prelude::generate_script!(Script);
 
 const CHANNEL: &str = "unavi::beacon::id";
@@ -39,9 +47,11 @@ const EVENT_RADIUS: f32 = SIZE * 3.0;
 const SIZE: f32 = 0.15;
 
 struct Script {
-    id:   Hash,
-    prim: Prim,
-    time: SystemTime,
+    cube:      Prim,
+    id:        Hash,
+    input:     InputListener,
+    published: bool,
+    time:      SystemTime,
 }
 
 impl ScriptBehavior for Script {
@@ -69,7 +79,7 @@ impl ScriptBehavior for Script {
         }));
         prim.add_child(&cube);
 
-        let color = color::generate_beacon_color(id);
+        let color = unavi_script_util::color::generate_color(id);
         cube.set_material(Some(&Material {
             alpha_cutoff:               None,
             alpha_mode:                 None,
@@ -84,28 +94,43 @@ impl ScriptBehavior for Script {
             occlusion_texture:          None,
             roughness:                  Some(0.7),
         }));
-        println!("Beacon initialized: {id}");
+        let input = register_input_listener(&cube);
+        println!("Beacon initialized: space={id}");
         Self {
+            cube,
             id,
-            prim,
+            input,
+            published: false,
             time: SystemTime::now(),
         }
     }
 
     fn tick(&mut self) {
+        while let Some(event) = self.input.poll() {
+            if !self.published && matches!(event.action, InputAction::GrabDown) {
+                let doc = self_document();
+                match publish_document(&doc.id()) {
+                    Ok(()) => {
+                        self.published = true;
+                        println!("Beacon published: space={}", self.id);
+                    }
+                    Err(err) => eprintln!("Beacon publish failed: {err}"),
+                }
+            }
+        }
+
         if self.time.elapsed().expect("elapsed") < EMIT_INTERVAL {
             return;
         }
         self.time = SystemTime::now();
 
-        println!("Emitting beacon event");
         wired::event::api::emit(
             CHANNEL,
             self.id.as_bytes(),
             EventFilter {
                 documents: None,
                 scope:     EventScope::Spatial(SpatialScope {
-                    prim:   self.prim.clone(),
+                    prim:   self.cube.clone(),
                     radius: EVENT_RADIUS,
                 }),
             },

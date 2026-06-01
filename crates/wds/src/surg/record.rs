@@ -44,14 +44,14 @@ impl Record {
     #[must_use]
     pub fn new(creator: Did) -> Self {
         let mut nonce = RecordNonce::default();
-        rand::rng().fill(&mut nonce.0.0);
+        rand::rng().fill(&mut nonce.0);
 
         let mut schemas = BTreeMap::new();
         schemas.insert("acl".to_string(), ByteArray::from(SCHEMA_ACL.hash));
         schemas.insert("record".to_string(), ByteArray::from(SCHEMA_RECORD.hash));
 
         Self {
-            creator: HydratedDid(creator),
+            creator: HydratedDid::from(creator),
             nonce,
             schemas,
             timestamp: OffsetDateTime::now_utc().unix_timestamp(),

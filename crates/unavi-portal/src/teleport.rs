@@ -1,9 +1,11 @@
 use bevy::prelude::*;
 
 use crate::{
+    PORTAL_DEPTH,
     Portal,
-    PortalBounds,
     PortalDestination,
+    PortalSize,
+    PortalState,
     PortalTraveler,
     PrevTranslation,
     TravelCooldown,
@@ -15,8 +17,6 @@ enum PortalEntrySide {
     Back,
 }
 
-const EPSILON: f32 = 1.0e-4;
-
 /// Check if the line segment from `prev_pos` to `curr_pos` intersects the
 /// portal box. Uses ray-box intersection to handle fast movement that might
 /// pass through entirely.
@@ -24,15 +24,15 @@ fn check_box_entry_with_side(
     prev_pos: Vec3,
     curr_pos: Vec3,
     portal_transform: &GlobalTransform,
-    bounds: &PortalBounds,
+    size: PortalSize,
 ) -> Option<PortalEntrySide> {
     let portal_affine = portal_transform.affine();
     let prev_local = portal_affine.inverse().transform_point3(prev_pos);
     let curr_local = portal_affine.inverse().transform_point3(curr_pos);
 
-    let half_width = bounds.width / 2.0;
-    let half_height = bounds.height / 2.0;
-    let half_depth = bounds.depth / 2.0;
+    let half_width = size.width / 2.0;
+    let half_height = size.height / 2.0;
+    let half_depth = PORTAL_DEPTH / 2.0;
 
     let ray_dir = curr_local - prev_local;
     let ray_length = ray_dir.length();
@@ -65,9 +65,9 @@ fn check_box_entry_with_side(
 
     let entry_t = tmin.max(0.0);
 
-    if (entry_t - t5).abs() < EPSILON {
+    if (entry_t - t5).abs() < f32::EPSILON {
         Some(PortalEntrySide::Front)
-    } else if (entry_t - t6).abs() < EPSILON {
+    } else if (entry_t - t6).abs() < f32::EPSILON {
         Some(PortalEntrySide::Back)
     } else if prev_local.z < 0.0 {
         Some(PortalEntrySide::Front)
@@ -79,6 +79,7 @@ fn check_box_entry_with_side(
 #[derive(EntityEvent)]
 pub struct PortalTeleport {
     pub entity:         Entity,
+    pub destination:    Entity,
     pub delta_rotation: Quat,
 }
 
@@ -97,8 +98,17 @@ pub(crate) fn handle_traveler_teleport(
         ),
         (With<PortalTraveler>, Without<Portal>),
     >,
-    portals: Query<(&GlobalTransform, &PortalBounds, &PortalDestination), With<Portal>>,
-    destination_portals: Query<&GlobalTransform, With<Portal>>,
+    portals: Query<
+        (
+            &GlobalTransform,
+            &PortalSize,
+            &PortalDestination,
+            &PortalState,
+        ),
+        With<Portal>,
+    >,
+    destinations: Query<&GlobalTransform, Without<PortalTraveler>>,
+    portal_destinations: Query<(), With<Portal>>,
 ) {
     let elapsed = time.elapsed();
 
@@ -126,52 +136,65 @@ pub(crate) fn handle_traveler_teleport(
             cooldown.last_travel = None;
         }
 
-        for (source_transform, bounds, destination) in &portals {
+        for (source_transform, size, destination, state) in &portals {
+            if *state != PortalState::Open {
+                continue;
+            }
             let Some(entry_side) = check_box_entry_with_side(
                 prev_translation,
                 curr_translation,
                 source_transform,
-                bounds,
+                *size,
             ) else {
                 continue;
             };
 
-            let Ok(dest_transform) = destination_portals.get(destination.0) else {
+            let Ok(dest_transform) = destinations.get(destination.0) else {
                 continue;
             };
 
-            // Apply offset away from portal to avoid spam teleports.
-            let out_dir = match entry_side {
-                PortalEntrySide::Front => dest_transform.forward(),
-                PortalEntrySide::Back => dest_transform.back(),
+            let dest_is_portal = portal_destinations.contains(destination.0);
+
+            let (new_translation, new_rotation, delta_rotation) = if dest_is_portal {
+                let out_dir = match entry_side {
+                    PortalEntrySide::Front => dest_transform.forward(),
+                    PortalEntrySide::Back => dest_transform.back(),
+                };
+                let min_spawn = PORTAL_DEPTH / 2.0 + EXTRA_SPAWN_OFFSET;
+                let offset = out_dir * min_spawn;
+
+                let flip_rot = Quat::from_rotation_y(std::f32::consts::PI);
+                let flip_matrix = Mat4::from_quat(flip_rot);
+                let m = dest_transform.to_matrix()
+                    * flip_matrix
+                    * source_transform.to_matrix().inverse()
+                    * traveler_transform.to_matrix();
+                let (_, rotation, translation) = m.to_scale_rotation_translation();
+                let portal_delta =
+                    dest_transform.rotation() * source_transform.rotation().inverse();
+                (translation + offset, rotation, portal_delta * flip_rot)
+            } else {
+                (
+                    dest_transform.translation(),
+                    transform.rotation,
+                    Quat::IDENTITY,
+                )
             };
 
-            let bounds_d = bounds.depth / 2.0;
-            let min_spawn = bounds_d + EXTRA_SPAWN_OFFSET;
-            let offset = out_dir * min_spawn;
-
-            let flip_rot = Quat::from_rotation_y(std::f32::consts::PI);
-            let flip_matrix = Mat4::from_quat(flip_rot);
-            let new_traveler_transform = dest_transform.to_matrix()
-                * flip_matrix
-                * source_transform.to_matrix().inverse()
-                * traveler_transform.to_matrix();
-
-            let (_, rotation, translation) = new_traveler_transform.to_scale_rotation_translation();
-
-            transform.translation = translation + offset;
-            transform.rotation = rotation;
+            transform.translation = new_translation;
+            transform.rotation = new_rotation;
 
             prev.0 = transform.translation;
             cooldown.last_travel = Some(elapsed);
 
-            let portal_delta = dest_transform.rotation() * source_transform.rotation().inverse();
-            let delta_rotation = portal_delta * flip_rot;
-
-            commands.entity(entity).trigger(|entity| PortalTeleport {
-                entity,
-                delta_rotation,
-            });
+            let dest_entity = destination.0;
+            commands
+                .entity(entity)
+                .trigger(move |entity| PortalTeleport {
+                    entity,
+                    destination: dest_entity,
+                    delta_rotation,
+                });
 
             break;
         }

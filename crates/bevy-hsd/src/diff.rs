@@ -144,11 +144,13 @@ fn process_event(
         }) => {
             let prim_ent = commands.spawn((Prim(prim), HsdChild(doc_ent))).id();
             index.0.insert(prim, prim_ent);
-            if let TreeParentId::Node(parent_id) = parent
-                && let Some(&parent_ent) = index.0.get(&parent_id)
-            {
-                commands.entity(parent_ent).add_child(prim_ent);
-            }
+            let parent_ent = match parent {
+                TreeParentId::Node(parent_id) => {
+                    index.0.get(&parent_id).copied().unwrap_or(doc_ent)
+                }
+                _ => doc_ent,
+            };
+            commands.entity(parent_ent).add_child(prim_ent);
         }
         HsdDiffEvent::Prim(TreeDiffItem {
             action: TreeExternalDiff::Move { parent, .. },
@@ -158,12 +160,13 @@ fn process_event(
                 warn!("prim not found: {prim}");
                 return;
             };
-            commands.entity(prim_ent).remove::<ChildOf>();
-            if let TreeParentId::Node(parent_id) = parent
-                && let Some(&parent_ent) = index.0.get(&parent_id)
-            {
-                commands.entity(parent_ent).add_child(prim_ent);
-            }
+            let parent_ent = match parent {
+                TreeParentId::Node(parent_id) => {
+                    index.0.get(&parent_id).copied().unwrap_or(doc_ent)
+                }
+                _ => doc_ent,
+            };
+            commands.entity(parent_ent).add_child(prim_ent);
         }
         HsdDiffEvent::Prim(TreeDiffItem {
             action: TreeExternalDiff::Delete { .. },
@@ -234,7 +237,17 @@ fn dispatch_attr_data(commands: &mut Commands, prim_ent: Entity, data: AttrDataE
                 .entity(prim_ent)
                 .trigger(|entity| ApplyEvent { entity, value });
         }
+        AttrDataEvent::Portal(value) => {
+            commands
+                .entity(prim_ent)
+                .trigger(|entity| ApplyEvent { entity, value });
+        }
         AttrDataEvent::RigidBody(value) => {
+            commands
+                .entity(prim_ent)
+                .trigger(|entity| ApplyEvent { entity, value });
+        }
+        AttrDataEvent::Spawn(value) => {
             commands
                 .entity(prim_ent)
                 .trigger(|entity| ApplyEvent { entity, value });

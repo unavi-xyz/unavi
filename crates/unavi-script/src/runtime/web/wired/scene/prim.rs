@@ -33,8 +33,12 @@ use crate::runtime::shared::{
         PrimImage,
         PrimMaterial,
         PrimMesh,
+        PrimPortal,
+        PrimPortalDestination,
+        PrimPortalReceptor,
         PrimRigidBody,
         PrimRigidBodyKind,
+        PrimSpawn,
         PrimTopology,
     },
 };
@@ -260,6 +264,36 @@ impl PrimHandle {
     pub async fn set_rigid_body(&self, value: JsValue) -> Result<(), String> {
         let rb = js_to_rigid_body(&value);
         shared::wired::scene::prim::set_rigid_body(&self.api, self.rep, rb)
+            .await
+            .map_err(|e| e.to_string())
+    }
+
+    pub async fn portal(&self) -> JsValue {
+        match shared::wired::scene::prim::portal(&self.api, self.rep).await {
+            Ok(Some(p)) => portal_to_js(&p),
+            _ => JsValue::UNDEFINED,
+        }
+    }
+
+    #[wasm_bindgen(js_name = "setPortal")]
+    pub async fn set_portal(&self, value: JsValue) -> Result<(), String> {
+        let value = js_to_portal(&value).map_err(|e| e.to_string())?;
+        shared::wired::scene::prim::set_portal(&self.api, self.rep, value)
+            .await
+            .map_err(|e| e.to_string())
+    }
+
+    pub async fn spawn(&self) -> JsValue {
+        match shared::wired::scene::prim::spawn(&self.api, self.rep).await {
+            Ok(Some(s)) => spawn_to_js(&s),
+            _ => JsValue::UNDEFINED,
+        }
+    }
+
+    #[wasm_bindgen(js_name = "setSpawn")]
+    pub async fn set_spawn(&self, value: JsValue) -> Result<(), String> {
+        let value = js_to_spawn(&value);
+        shared::wired::scene::prim::set_spawn(&self.api, self.rep, value)
             .await
             .map_err(|e| e.to_string())
     }
@@ -653,4 +687,71 @@ fn js_to_rigid_body(v: &JsValue) -> Option<PrimRigidBody> {
         mass:            obj_get_f32(v, "mass"),
         restitution:     obj_get_f32(v, "restitution"),
     })
+}
+
+fn portal_to_js(p: &PrimPortal) -> JsValue {
+    let obj = js_sys::Object::new();
+    obj_set(&obj, "allow-incoming", &p.allow_incoming.into());
+    if let Some(d) = &p.destination {
+        let dest = js_sys::Object::new();
+        if let Some(r) = &d.receptor {
+            let rec = js_sys::Object::new();
+            obj_set(&rec, "document", &bytes32_to_js(&r.document));
+            obj_set(&rec, "prim", &JsValue::from_str(&r.prim));
+            obj_set(&dest, "receptor", &rec.into());
+        }
+        obj_set(&dest, "space", &bytes32_to_js(&d.space));
+        obj_set(&obj, "destination", &dest.into());
+    }
+    obj_set(&obj, "size-x", &p.size_x.into());
+    obj_set(&obj, "size-y", &p.size_y.into());
+    obj.into()
+}
+
+fn spawn_to_js(s: &PrimSpawn) -> JsValue {
+    let obj = js_sys::Object::new();
+    obj_set(&obj, "radius", &s.radius.into());
+    obj.into()
+}
+
+fn js_to_spawn(v: &JsValue) -> Option<PrimSpawn> {
+    if v.is_null() || v.is_undefined() {
+        return None;
+    }
+    Some(PrimSpawn {
+        radius: obj_get_f32(v, "radius").unwrap_or(0.0),
+    })
+}
+
+fn js_to_portal(v: &JsValue) -> Result<Option<PrimPortal>, String> {
+    if v.is_null() || v.is_undefined() {
+        return Ok(None);
+    }
+    let destination = {
+        let d = obj_get(v, "destination");
+        if d.is_null() || d.is_undefined() {
+            None
+        } else {
+            let receptor = {
+                let r = obj_get(&d, "receptor");
+                if r.is_null() || r.is_undefined() {
+                    None
+                } else {
+                    let document = js_to_bytes32(&obj_get(&r, "document"))
+                        .ok_or_else(|| "portal receptor document must be 32 bytes".to_string())?;
+                    let prim = obj_get_string(&r, "prim").unwrap_or_default();
+                    Some(PrimPortalReceptor { document, prim })
+                }
+            };
+            let space = js_to_bytes32(&obj_get(&d, "space"))
+                .ok_or_else(|| "portal destination space must be 32 bytes".to_string())?;
+            Some(PrimPortalDestination { receptor, space })
+        }
+    };
+    Ok(Some(PrimPortal {
+        allow_incoming: obj_get_bool(v, "allow-incoming").unwrap_or(false),
+        destination,
+        size_x: obj_get_f32(v, "size-x").unwrap_or(0.0),
+        size_y: obj_get_f32(v, "size-y").unwrap_or(0.0),
+    }))
 }

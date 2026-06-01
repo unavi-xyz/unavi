@@ -6,6 +6,9 @@ publish              = false
 repository.workspace = true
 version.workspace    = true
 
+[features]
+debug = []
+
 [lints]
 workspace = true
 
@@ -23,6 +26,7 @@ hsd.path                = "../hsd"
 loro.workspace          = true
 loro-surgeon.workspace  = true
 parking_lot.workspace   = true
+postcard.workspace      = true
 rand.workspace          = true
 smol_str.workspace      = true
 tokio.workspace         = true
@@ -30,7 +34,9 @@ tracing.workspace       = true
 unavi-agent.path        = "../unavi-agent"
 unavi-avatar.path       = "../unavi-avatar"
 unavi-input.path        = "../unavi-input"
+unavi-space.path        = "../unavi-space"
 unavi-util.path         = "../unavi-util"
+wired-records           = { features = ["loro"], path = "../wired-records" }
 wired-schemas.path      = "../wired-schemas"
 xdid.workspace          = true
 

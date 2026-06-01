@@ -8,18 +8,15 @@ world all {
 interface api {
   use types.{document, prim, document-id};
 
-  // The prim this script is attached to.
   self-prim: func() -> prim;
-  // The document this script's prim belongs to.
   self-document: func() -> document;
-  // Get another document by ID.
+
   get-document: func(id: document-id) -> option<document>;
-  // Create a new HSD document owned by this script's document.
   create-document: func() -> document;
-  // Destroy a previously created document.
   remove-document: func(id: document-id);
-  // Load an HSD document from a WDS blob hash (32 bytes).
+
   load-hsd: func(blob: list<u8>) -> result<document, string>;
+  publish-document: func(id: document-id) -> result<_, string>;
 }
 
 interface types {
@@ -27,9 +24,8 @@ interface types {
 
   // Stringified loro TreeID ("counter@peer").
   type prim-id = string;
-  // 32-byte blake3 hash identifying a document.
-  type document-id = list<u8>;
-  // 32-byte blake3 hash identifying a WDS blob.
+  type record-id = list<u8>;
+  type document-id = record-id;
   type blob-id = list<u8>;
 
   record xform {
@@ -46,9 +42,6 @@ interface types {
     triangle-strip,
   }
 
-  // Mesh attribute. `attributes` maps a stream name (POSITION, NORMAL,
-  // TANGENT, COLOR, UV0, UV1, ...) to a 32-byte blake3 blob id pointing at
-  // packed f32 data in WDS.
   record mesh {
     topology: topology,
     attributes: list<tuple<string, blob-id>>,
@@ -136,6 +129,30 @@ interface types {
     restitution: option<f32>,
   }
 
+  record portal-receptor {
+    document: document-id,
+    prim: prim-id,
+  }
+
+  record portal-destination {
+    receptor: option<portal-receptor>,
+    space: record-id,
+  }
+
+  record portal {
+    allow-incoming: bool,
+    destination: option<portal-destination>,
+    size-x: f32,
+    size-y: f32,
+  }
+
+  // Marks a prim as a spawn area. Players entering the space (or arriving via
+  // a portal with no receptor) are placed at a random point within a
+  // horizontal circle of `radius` around the prim's origin.
+  record spawn {
+    radius: f32,
+  }
+
   resource document {
     id: func() -> document-id;
     clone: func() -> document;
@@ -145,6 +162,11 @@ interface types {
     get-prim: func(id: prim-id) -> option<prim>;
     create-prim: func() -> prim;
     remove-prim: func(value: borrow<prim>);
+
+    // Rigid transform from this document's root frame to `other`'s root
+    // frame. Returns none if the two documents are not in the same space
+    // or if scene-read is denied.
+    offset-to: func(other: borrow<document>) -> option<transform>;
   }
 
   resource prim {
@@ -159,7 +181,6 @@ interface types {
     name: func() -> option<string>;
     set-name: func(value: option<string>);
 
-    // The `asset` attribute pins a blob-id dep reachable from this prim.
     asset: func() -> option<blob-id>;
     set-asset: func(value: option<blob-id>);
 
@@ -187,6 +208,12 @@ interface types {
 
     rigid-body: func() -> option<rigid-body>;
     set-rigid-body: func(value: option<rigid-body>);
+
+    portal: func() -> option<portal>;
+    set-portal: func(value: option<portal>);
+
+    spawn: func() -> option<spawn>;
+    set-spawn: func(value: option<spawn>);
 
     relationships: func() -> list<tuple<string, prim-id>>;
     get-relationship: func(key: string) -> option<prim-id>;

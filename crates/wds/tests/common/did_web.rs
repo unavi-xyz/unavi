@@ -12,6 +12,7 @@ use tokio::{
 };
 use wds::{
     DataStore,
+    WDS_SERVICE_TYPE,
     actor::Actor,
     identity::Identity,
 };
@@ -65,8 +66,9 @@ pub async fn spawn_did_web_server(
 
     // WDS service allows these endpoints to authenticate on behalf of this DID.
     let wds_service = ServiceEndpoint {
-        id:  "wds".into(),
-        typ: wds_endpoints.iter().map(ToString::to_string).collect(),
+        id:               "wds".into(),
+        typ:              vec![WDS_SERVICE_TYPE.into()],
+        service_endpoint: wds_endpoints.iter().map(ToString::to_string).collect(),
     };
 
     let app = Router::new().route(

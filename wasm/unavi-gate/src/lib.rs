@@ -22,6 +22,8 @@ use crate::{
             api::self_document,
             types::{
                 Material,
+                Portal,
+                PortalDestination,
                 Prim,
                 RigidBody,
                 RigidBodyKind,
@@ -42,7 +44,7 @@ const BEAM_THICKNESS: f32 = 1.0 / (4.0 * GOLDEN_RATIO);
 
 const PEDESTAL_HEIGHT: f32 = PORTAL_WIDTH / 2.0;
 const PEDESTAL_THICKNESS: f32 = BEAM_THICKNESS * GOLDEN_RATIO;
-const EVENT_RADIUS: f32 = PEDESTAL_THICKNESS * 2.0;
+const EVENT_RADIUS: f32 = PEDESTAL_THICKNESS;
 
 const TARGET_DECAY: Duration = Duration::from_secs(10);
 
@@ -88,14 +90,25 @@ const fn gate_material() -> Material {
 }
 
 struct Script {
-    receptor: EventReceptor,
-    target:   Option<(Hash, SystemTime)>,
+    portal_prim:     Prim,
+    receptor:        EventReceptor,
+    pedestal_target: Option<(Hash, SystemTime)>,
 }
 
 impl ScriptBehavior for Script {
     fn init() -> Self {
         let doc = self_document();
         let root = doc.roots().into_iter().next().expect("root");
+
+        let portal_prim = doc.create_prim();
+        root.add_child(&portal_prim);
+        set_translation(&portal_prim, Vec3::new(0.0, PORTAL_HEIGHT / 2.0, 0.0));
+        portal_prim.set_portal(Some(&Portal {
+            allow_incoming: true,
+            destination:    None,
+            size_x:         PORTAL_WIDTH,
+            size_y:         PORTAL_HEIGHT,
+        }));
 
         let material = gate_material();
 
@@ -163,7 +176,7 @@ impl ScriptBehavior for Script {
 
         let receptor_prim = doc.create_prim();
         pedestal.add_child(&receptor_prim);
-        set_translation(&receptor_prim, Vec3::new(0.0, PEDESTAL_HEIGHT, 0.0));
+        set_translation(&receptor_prim, Vec3::new(0.0, PEDESTAL_HEIGHT / 2.0, 0.0));
 
         let receptor = wired::event::api::listen(
             &[CHANNEL.to_string()],
@@ -179,27 +192,37 @@ impl ScriptBehavior for Script {
         println!("Gate ready");
 
         Self {
+            portal_prim,
             receptor,
-            target: None,
+            pedestal_target: None,
         }
     }
 
     fn tick(&mut self) {
-        if let Some((_, t)) = &self.target
+        if let Some((_, t)) = &self.pedestal_target
             && t.elapsed().expect("elapsed") >= TARGET_DECAY
         {
-            self.target = None;
+            self.pedestal_target = None;
         }
 
         while let Some(event) = self.receptor.poll() {
             let Ok(id) = Hash::from_slice(&event.payload) else {
                 continue;
             };
-            if self.target.as_ref().is_some_and(|(x, _)| *x != id) {
+            if self.pedestal_target.as_ref().is_some_and(|(x, _)| *x == id) {
                 continue;
             }
             println!("Loading beacon: {id}");
-            self.target = Some((id, SystemTime::now()));
+            self.pedestal_target = Some((id, SystemTime::now()));
+            self.portal_prim.set_portal(Some(&Portal {
+                allow_incoming: true,
+                destination:    Some(PortalDestination {
+                    receptor: None,
+                    space:    id.as_bytes().to_vec(),
+                }),
+                size_x:         PORTAL_WIDTH,
+                size_y:         PORTAL_HEIGHT,
+            }));
         }
     }
 }

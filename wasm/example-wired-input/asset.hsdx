@@ -8,6 +8,7 @@
             name: "example",
             rigid_body: None,
             script: "./Cargo.toml",
+            spawn: None,
             xform: None,
         ),
         relationships: {},

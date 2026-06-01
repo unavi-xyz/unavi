@@ -3,6 +3,7 @@
 use std::collections::{
     BTreeMap,
     HashMap,
+    HashSet,
 };
 
 use loro::ValueOrContainer;
@@ -100,6 +101,25 @@ where
         map.keys().map(std::string::ToString::to_string).collect();
     m.retain(|k| new_keys.contains(k))?;
     Ok(())
+}
+
+impl<T, S> Reconcile for HashSet<T, S>
+where
+    T: std::fmt::Display + Eq + std::hash::Hash,
+    S: std::hash::BuildHasher,
+{
+    type Key = NoKey;
+
+    fn reconcile<R: Reconciler>(&self, r: R) -> Result<(), ReconcileError> {
+        let mut m = r.map()?;
+        for item in self {
+            m.entry(&item.to_string(), &loro::LoroValue::Null)?;
+        }
+        let keys: std::collections::HashSet<String> =
+            self.iter().map(std::string::ToString::to_string).collect();
+        m.retain(|k| keys.contains(k))?;
+        Ok(())
+    }
 }
 
 impl<V: Reconcile> Reconcile for BTreeMap<String, V> {

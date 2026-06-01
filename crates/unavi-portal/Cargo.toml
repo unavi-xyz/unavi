@@ -10,8 +10,13 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-bevy.workspace     = true
-bevy_vrm.workspace = true
+bevy.workspace         = true
+bevy-hsd.path          = "../bevy-hsd"
+bevy_vrm.workspace     = true
+blake3.workspace       = true
+hsd.path               = "../hsd"
+loro.workspace         = true
+loro-surgeon.workspace = true
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true

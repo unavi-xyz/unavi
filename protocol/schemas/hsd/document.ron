@@ -33,7 +33,6 @@
                 "mag_filter": Optional(I64),
                 "min_filter": Optional(I64),
                 "mipmap_filter": Optional(I64),
-                "name": Optional(String),
                 "srgb": Optional(Bool),
             })),
             "material": Optional(Struct({
@@ -46,7 +45,6 @@
                 "emissive_texture": Optional(String),
                 "metallic": Optional(F64),
                 "metallic_roughness_texture": Optional(String),
-                "name": Optional(String),
                 "normal_texture": Optional(String),
                 "occlusion_texture": Optional(String),
                 "roughness": Optional(F64),
@@ -57,6 +55,18 @@
                 "topology": String,
             })),
             "name": Optional(String),
+            "portal": Optional(Struct({
+                "allow_incoming": Bool,
+                "destination": Optional(Struct({
+                    "receptor": Optional(Struct({
+                        "document": RecordId,
+                        "prim": String,
+                    })),
+                    "space": RecordId,
+                })),
+                "size_x": F64,
+                "size_y": F64,
+            })),
             "rigid_body": Optional(Struct({
                 "angular_damping": Optional(F64),
                 "friction": Optional(F64),
@@ -66,6 +76,9 @@
                 "restitution": Optional(F64),
             })),
             "script": Optional(BlobId),
+            "spawn": Optional(Struct({
+                "radius": F64,
+            })),
             "xform": Optional(Struct({
                 "rotation": Optional(List(F64)),
                 "scale": Optional(List(F64)),

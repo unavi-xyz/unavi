@@ -222,6 +222,7 @@ pub struct LoadHsd {
     pub handle:        Handle<HsdAsset>,
     pub extra_schemas: Option<Vec<SchemaDef>>,
     pub on_load:       Option<OnLoadFn>,
+    pub public:        bool,
 }
 
 pub fn instance_hsd(
@@ -269,6 +270,7 @@ pub fn instance_hsd(
 
         let (mut write, rx, cancel) = WriteRecord::new(None);
         write.ttl = Some(DEFAULT_TTL);
+        write.public = load.public;
         write.schemas = vec![SchemaDef {
             container: "hsd".into(),
             schema:    (&*SCHEMA_HSD).into(),

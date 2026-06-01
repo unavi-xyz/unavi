@@ -1,9 +1,8 @@
 use std::{
-    collections::BTreeMap,
+    collections::HashSet,
     sync::{
         Arc,
         LazyLock,
-        Mutex,
     },
 };
 
@@ -14,6 +13,8 @@ use bevy::{
 use blake3::Hash;
 use loro::{
     LoroDoc,
+    LoroMap,
+    LoroValue,
     Subscription,
 };
 use loro_surgeon::{
@@ -21,22 +22,17 @@ use loro_surgeon::{
     Reconcile,
     reconcile::RootReconciler,
 };
+use parking_lot::Mutex;
 use serde::{
     Deserialize,
     Serialize,
 };
 use unavi_util::async_commands::AsyncCommands;
-use wired_records::byte_array::ByteArray;
 
-use crate::{
-    Space,
-    peer::{
-        ActiveSpaces,
-        SpaceStateSender,
-    },
-};
+use crate::Space;
 
-pub static SPACES: LazyLock<Mutex<HashMap<Hash, SpaceStateRoot>>> = LazyLock::new(Mutex::default);
+pub static SPACE_STATES: LazyLock<Mutex<HashMap<Hash, Arc<SpaceStateRoot>>>> =
+    LazyLock::new(Mutex::default);
 
 pub struct SpaceStateRoot {
     pub doc: Arc<LoroDoc>,
@@ -48,49 +44,40 @@ pub struct SpaceStateDoc;
 
 #[derive(Hydrate, Reconcile, Default, Debug)]
 pub struct SpaceState {
-    portals: BTreeMap<String, PortalState>,
+    pub docs: HashSet<Hash>,
 }
 
-#[derive(Hydrate, Reconcile, Debug)]
-pub struct PortalState {
-    dest_portal: Option<ByteArray<32>>,
-    dest_space:  ByteArray<32>,
-    size_x:      f32,
-    size_y:      f32,
-}
+const ROOT_KEY: &str = "state";
+const DOCS_KEY: &str = "docs";
 
 pub fn add_space_state(trigger: On<Add, Space>, spaces: Query<&Space>, mut commands: Commands) {
     let space = spaces.get(trigger.entity).expect("space").0;
 
-    SPACES
-        .lock()
-        .expect("spaces lock")
-        .entry(space)
-        .or_insert_with(|| {
-            let doc = LoroDoc::new();
-            let map = doc.get_map("state");
-            let state = SpaceState::default();
-            let rec = RootReconciler::new(map);
-            state.reconcile(rec).expect("reconcile state");
+    SPACE_STATES.lock().entry(space).or_insert_with(|| {
+        let doc = LoroDoc::new();
+        let map = doc.get_map(ROOT_KEY);
+        let state = SpaceState::default();
+        let rec = RootReconciler::new(map);
+        state.reconcile(rec).expect("reconcile state");
 
-            let sub = doc.subscribe_local_update(Box::new(move |update| {
-                if let Err(err) = AsyncCommands::default()
-                    .trigger(SpaceStateUpdate {
-                        space,
-                        data: update.clone(),
-                    })
-                    .try_send()
-                {
-                    warn!(?err, "dropped SpaceStateUpdate: async command queue full");
-                }
-                true
-            }));
-
-            SpaceStateRoot {
-                doc:  Arc::new(doc),
-                _sub: sub,
+        let sub = doc.subscribe_local_update(Box::new(move |update| {
+            if let Err(err) = AsyncCommands::default()
+                .trigger(SpaceStateUpdate {
+                    space,
+                    data: update.clone(),
+                })
+                .try_send()
+            {
+                warn!(?err, "dropped SpaceStateUpdate: async command queue full");
             }
-        });
+            true
+        }));
+
+        Arc::new(SpaceStateRoot {
+            doc:  Arc::new(doc),
+            _sub: sub,
+        })
+    });
 
     commands.entity(trigger.entity).insert(SpaceStateDoc);
 }
@@ -102,7 +89,7 @@ pub fn remove_space_state(
 ) {
     let space = spaces.get(trigger.entity).expect("space");
 
-    SPACES.lock().expect("spaces lock").remove(&space.0);
+    SPACE_STATES.lock().remove(&space.0);
 
     commands.entity(trigger.entity).remove::<SpaceStateDoc>();
 }
@@ -113,14 +100,31 @@ pub struct SpaceStateUpdate {
     pub data:  Vec<u8>,
 }
 
-pub fn publish_state_update(
-    trigger: On<SpaceStateUpdate>,
-    peers: Query<(&ActiveSpaces, &SpaceStateSender)>,
-) {
-    for (spaces, sender) in peers {
-        if !spaces.0.contains_key(&trigger.space) {
-            continue;
+#[must_use]
+pub fn space_state(space: Hash) -> Option<Arc<SpaceStateRoot>> {
+    SPACE_STATES.lock().get(&space).cloned()
+}
+
+/// Add a document to the public state of a space. No-op if the space is not
+/// locally tracked (we don't host it).
+pub fn add_doc(space: Hash, doc: Hash) -> bool {
+    let Some(root) = space_state(space) else {
+        return false;
+    };
+    let map = root.doc.get_map(ROOT_KEY);
+    let docs = match map.get_or_create_container(DOCS_KEY, LoroMap::new()) {
+        Ok(m) => m,
+        Err(err) => {
+            warn!(?err, "failed to access docs map");
+            return false;
         }
-        let _ = sender.0.try_send(trigger.clone());
+    };
+    if docs.get(&doc.to_string()).is_some() {
+        return true;
     }
+    if let Err(err) = docs.insert(&doc.to_string(), LoroValue::Null) {
+        warn!(?err, "failed to insert doc into space state");
+        return false;
+    }
+    true
 }

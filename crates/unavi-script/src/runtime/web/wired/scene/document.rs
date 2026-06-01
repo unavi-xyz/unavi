@@ -89,4 +89,30 @@ impl DocHandle {
             .await
             .map_err(|e| e.to_string())
     }
+
+    #[wasm_bindgen(js_name = "offsetTo")]
+    pub async fn offset_to(&self, other: &DocHandle) -> JsValue {
+        let Ok(Some(x)) =
+            shared::wired::scene::document::offset_to(&self.api, self.rep, other.rep).await
+        else {
+            return JsValue::NULL;
+        };
+        let obj = js_sys::Object::new();
+        let _ = js_sys::Reflect::set(
+            &obj,
+            &JsValue::from_str("translation"),
+            &js_sys::Float32Array::from(&x.translation[..]),
+        );
+        let _ = js_sys::Reflect::set(
+            &obj,
+            &JsValue::from_str("rotation"),
+            &js_sys::Float32Array::from(&x.rotation[..]),
+        );
+        let _ = js_sys::Reflect::set(
+            &obj,
+            &JsValue::from_str("scale"),
+            &js_sys::Float32Array::from(&x.scale[..]),
+        );
+        obj.into()
+    }
 }

@@ -14043,8 +14043,13 @@ name = "unavi-portal"
 version = "0.0.16"
 dependencies = [
  "bevy",
+ "bevy-hsd",
  "bevy_panorbit_camera",
  "bevy_vrm",
+ "blake3",
+ "hsd",
+ "loro",
+ "loro-surgeon",
 ]
 
 [[package]]

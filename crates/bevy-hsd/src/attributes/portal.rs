@@ -27,7 +27,7 @@ use crate::{
 };
 
 #[derive(Component, Debug, Clone)]
-pub struct Portal(pub PortalAttr);
+pub struct PortalConfig(pub PortalAttr);
 
 #[derive(Debug)]
 pub enum PortalEvent {
@@ -48,7 +48,7 @@ impl AttributeParser for PortalParser {
         value: Option<ValueOrContainer>,
     ) -> Result<(), ParseError> {
         if value.is_none() {
-            commands.entity(prim).remove::<Portal>();
+            commands.entity(prim).remove::<PortalConfig>();
         }
         Ok(())
     }
@@ -76,5 +76,7 @@ impl AttributeParser for PortalParser {
 
 pub fn apply_portal(trigger: On<ApplyEvent<PortalEvent>>, mut commands: Commands) {
     let PortalEvent::Set(attr) = &trigger.value;
-    commands.entity(trigger.entity).insert(Portal(attr.clone()));
+    commands
+        .entity(trigger.entity)
+        .insert(PortalConfig(attr.clone()));
 }

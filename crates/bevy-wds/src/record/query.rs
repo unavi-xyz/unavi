@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use async_channel::{
     Receiver,
     Sender,
@@ -9,7 +11,10 @@ use unavi_util::async_task::spawn_async_task;
 use wds::actor::Actor;
 use xdid::core::did::Did;
 
-use crate::LocalActor;
+use crate::{
+    LocalActor,
+    SyncTargets,
+};
 
 #[derive(Event)]
 pub struct QueryRecord {
@@ -37,8 +42,11 @@ impl QueryRecord {
     }
 }
 
-pub(crate) fn on_query_record(mut req: On<QueryRecord>, actor: Query<&LocalActor>) {
-    let Ok(actor) = actor.single() else {
+pub(crate) fn on_query_record(
+    mut req: On<QueryRecord>,
+    actor: Query<(&LocalActor, &SyncTargets)>,
+) {
+    let Ok((actor, sync_targets)) = actor.single() else {
         warn!("Unable to query records: no local actor");
         return;
     };
@@ -49,7 +57,9 @@ pub(crate) fn on_query_record(mut req: On<QueryRecord>, actor: Query<&LocalActor
     let cancel = event.cancel.take();
     let tx = event.tx.clone();
 
-    let actor = actor.0.clone();
+    let mut actors = Vec::with_capacity(1 + sync_targets.0.len());
+    actors.push(actor.0.clone());
+    actors.extend(sync_targets.0.iter().cloned());
 
     spawn_async_task(async move {
         let cancel_fut = async move {
@@ -61,35 +71,58 @@ pub(crate) fn on_query_record(mut req: On<QueryRecord>, actor: Query<&LocalActor
             }
         };
 
-        info!(?creator, ?schemas, "Querying");
+        info!(?creator, ?schemas, targets = actors.len(), "Querying");
 
         tokio::select! {
             () = cancel_fut => {},
-            res = query(creator, schemas, &actor) => {
-                match res {
-                    Ok(ids) => {
-                        info!("Query result: {ids:?}");
-                        let _ = tx.send(ids).await;
-                    }
-                    Err(err) => warn!(?err, "Could not query records"),
-                }
+            ids = query_all(creator, schemas, &actors) => {
+                info!("Query result: {ids:?}");
+                let _ = tx.send(ids).await;
             }
         }
     });
 }
 
+async fn query_all(creator: Option<String>, schemas: Vec<Hash>, actors: &[Actor]) -> Vec<Hash> {
+    let creator_did = creator.and_then(|s| match s.parse::<Did>() {
+        Ok(did) => Some(did),
+        Err(err) => {
+            warn!(?err, "Ignoring invalid creator DID in query filter");
+            None
+        }
+    });
+
+    let futures = actors
+        .iter()
+        .map(|a| query(creator_did.clone(), schemas.clone(), a));
+    let results = n0_future::join_all(futures).await;
+
+    let mut seen = HashSet::new();
+    let mut merged = Vec::new();
+    for res in results {
+        match res {
+            Ok(ids) => {
+                for id in ids {
+                    if seen.insert(id) {
+                        merged.push(id);
+                    }
+                }
+            }
+            Err(err) => warn!(?err, "Query against target failed"),
+        }
+    }
+    merged
+}
+
 async fn query(
-    creator: Option<String>,
+    creator: Option<Did>,
     schemas: Vec<Hash>,
     actor: &Actor,
 ) -> anyhow::Result<Vec<Hash>> {
     let mut builder = actor.query();
 
-    if let Some(s) = creator {
-        match s.parse::<Did>() {
-            Ok(did) => builder = builder.creator(&did),
-            Err(err) => warn!(?err, "Ignoring invalid creator DID in query filter"),
-        }
+    if let Some(did) = creator {
+        builder = builder.creator(&did);
     }
 
     for schema in schemas {

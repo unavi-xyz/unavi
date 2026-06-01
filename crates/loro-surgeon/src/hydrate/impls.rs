@@ -1,6 +1,11 @@
-use std::collections::{
-    BTreeMap,
-    HashMap,
+use std::{
+    collections::{
+        BTreeMap,
+        HashMap,
+        HashSet,
+    },
+    hash::Hash as StdHash,
+    str::FromStr,
 };
 
 use loro::{
@@ -213,6 +218,24 @@ impl<T: Hydrate, const N: usize> Hydrate for [T; N] {
 impl<V: Hydrate, S: std::hash::BuildHasher + Default> Hydrate for HashMap<String, V, S> {
     fn hydrate_map(map: &LoroMap) -> Result<Self, HydrateError> {
         hydrate_string_map(map)
+    }
+}
+
+impl<T, S> Hydrate for HashSet<T, S>
+where
+    T: FromStr + Eq + StdHash,
+    S: std::hash::BuildHasher + Default,
+{
+    fn hydrate_map(map: &LoroMap) -> Result<Self, HydrateError> {
+        let mut keys = Vec::new();
+        map.for_each(|k, _| keys.push(k.to_string()));
+        let mut out = Self::with_capacity_and_hasher(keys.len(), S::default());
+        for k in keys {
+            let parsed = T::from_str(&k)
+                .map_err(|_| HydrateError::unexpected("parseable set key", "invalid"))?;
+            out.insert(parsed);
+        }
+        Ok(out)
     }
 }
 

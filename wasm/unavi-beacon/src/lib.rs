@@ -17,8 +17,18 @@ use crate::{
             EventScope,
             SpatialScope,
         },
+        input::{
+            api::register_input_listener,
+            types::{
+                InputAction,
+                InputListener,
+            },
+        },
         scene::{
-            api::self_document,
+            api::{
+                publish_document,
+                self_document,
+            },
             types::{
                 Material,
                 Prim,
@@ -37,9 +47,11 @@ const EVENT_RADIUS: f32 = SIZE * 3.0;
 const SIZE: f32 = 0.15;
 
 struct Script {
-    cube: Prim,
-    id:   Hash,
-    time: SystemTime,
+    cube:      Prim,
+    id:        Hash,
+    input:     InputListener,
+    published: bool,
+    time:      SystemTime,
 }
 
 impl ScriptBehavior for Script {
@@ -82,15 +94,31 @@ impl ScriptBehavior for Script {
             occlusion_texture:          None,
             roughness:                  Some(0.7),
         }));
+        let input = register_input_listener(&cube);
         println!("Beacon initialized: space={id}");
         Self {
             cube,
             id,
+            input,
+            published: false,
             time: SystemTime::now(),
         }
     }
 
     fn tick(&mut self) {
+        while let Some(event) = self.input.poll() {
+            if !self.published && matches!(event.action, InputAction::GrabDown) {
+                let doc = self_document();
+                match publish_document(&doc.id()) {
+                    Ok(()) => {
+                        self.published = true;
+                        println!("Beacon published: space={}", self.id);
+                    }
+                    Err(err) => eprintln!("Beacon publish failed: {err}"),
+                }
+            }
+        }
+
         if self.time.elapsed().expect("elapsed") < EMIT_INTERVAL {
             return;
         }

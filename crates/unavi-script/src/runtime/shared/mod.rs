@@ -14,6 +14,7 @@ use crate::{
         agent::WiredAgentApi,
         event::WiredEventApi,
         input::WiredInputApi,
+        kv::WiredKvApi,
         scene::WiredSceneApi,
         wds::WiredWdsApi,
     },
@@ -31,6 +32,7 @@ pub struct Api {
     pub wired_agent: Mutex<WiredAgentApi>,
     pub wired_event: Mutex<WiredEventApi>,
     pub wired_input: Mutex<WiredInputApi>,
+    pub wired_kv:    Mutex<WiredKvApi>,
     pub wired_scene: Mutex<WiredSceneApi>,
     pub wired_wds:   Mutex<WiredWdsApi>,
 }

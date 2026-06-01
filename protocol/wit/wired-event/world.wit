@@ -8,7 +8,7 @@ world all {
 interface api {
   use types.{event-filter, event-receptor};
 
-  emit: func(channel: string, payload: list<u8>, filter: event-filter);
+  emit:   func(channel: string, payload: list<u8>, filter: event-filter);
   listen: func(channels: list<string>, filter: event-filter) -> event-receptor;
 }
 
@@ -16,7 +16,7 @@ interface types {
   use wired:scene/types.{prim, document-id};
 
   record spatial-scope {
-    prim: prim,
+    prim:   prim,
     radius: f32,
   }
 
@@ -27,12 +27,12 @@ interface types {
 
   record event-filter {
     documents: option<list<document-id>>,
-    scope: event-scope,
+    scope:     event-scope,
   }
 
   record spatial-sender {
     distance: f32,
-    prim: prim,
+    prim:     prim,
   }
 
   variant sender-scope {
@@ -42,14 +42,14 @@ interface types {
 
   record event-sender {
     document: list<u8>,
-    scope: sender-scope,
+    scope:    sender-scope,
   }
 
   record event {
     channel: string,
     payload: list<u8>,
-    sender: event-sender,
-    time: u64,
+    sender:  event-sender,
+    time:    u64,
   }
 
   resource event-receptor {

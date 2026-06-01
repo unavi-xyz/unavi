@@ -9,7 +9,7 @@ interface api {
   use wired:scene/types.{prim};
   use types.{agent};
 
-  local-agent: func() -> agent;
+  local-agent:  func() -> agent;
   local-camera: func() -> prim;
 }
 
@@ -75,7 +75,7 @@ interface types {
   }
 
   resource agent {
-    // Get a virtual prim tracking the named bone.
+    // Virtual prim tracking the named bone.
     // Returns none if the bone is absent from the VRM model.
     bone: func(name: bone-name) -> option<prim>;
   }

@@ -5362,6 +5362,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "example-wired-kv"
+version = "0.0.16"
+dependencies = [
+ "serde",
+ "wired-prelude",
+ "wit-bindgen 0.55.0",
+]
+
+[[package]]
 name = "exr"
 version = "1.74.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -16397,6 +16406,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "wired-kv"
+version = "0.0.16"
+dependencies = [
+ "postcard",
+ "serde",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "wired-math"
 version = "0.0.16"
 dependencies = [
@@ -16408,6 +16426,7 @@ dependencies = [
 name = "wired-prelude"
 version = "0.0.16"
 dependencies = [
+ "wired-kv",
  "wired-math",
  "wired-scene",
 ]

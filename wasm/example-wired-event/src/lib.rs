@@ -36,7 +36,7 @@ impl ScriptBehavior for Script {
 
     fn tick(&mut self) {
         while let Some(event) = self.receptor.poll() {
-            println!("-> Got event: {event:?}");
+            println!("-> Got event on {}: {:?}", event.channel(), event.payload());
         }
     }
 }

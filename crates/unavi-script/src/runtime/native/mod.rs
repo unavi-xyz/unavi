@@ -80,5 +80,14 @@ pub fn add_apis_to_linker(
         wired::kv::bindings::wired::kv::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
     }
 
+    if perms.contains(&ApiName::Peer) {
+        wired::peer::bindings::wired::peer::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+        wired::peer::bindings::wired::peer::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    }
+
+    if perms.contains(&ApiName::Portal) {
+        wired::portal::bindings::wired::portal::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    }
+
     Ok(())
 }

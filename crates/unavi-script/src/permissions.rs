@@ -18,6 +18,8 @@ pub enum ApiName {
     InputContext,
     Kv,
     LocalAgent,
+    Peer,
+    Portal,
     Scene,
     System,
     Wds,
@@ -30,6 +32,8 @@ impl Default for ApiPermissions {
         set.insert(ApiName::Event);
         set.insert(ApiName::Input);
         set.insert(ApiName::Kv);
+        set.insert(ApiName::Peer);
+        set.insert(ApiName::Portal);
         set.insert(ApiName::Scene);
         Self(Arc::new(set))
     }
@@ -52,6 +56,8 @@ impl ApiPermissions {
         set.insert(ApiName::Input);
         set.insert(ApiName::Kv);
         set.insert(ApiName::LocalAgent);
+        set.insert(ApiName::Peer);
+        set.insert(ApiName::Portal);
         set.insert(ApiName::Scene);
         Self(Arc::new(set))
     }
@@ -66,6 +72,8 @@ impl ApiPermissions {
         set.insert(ApiName::Input);
         set.insert(ApiName::InputContext);
         set.insert(ApiName::Kv);
+        set.insert(ApiName::Peer);
+        set.insert(ApiName::Portal);
         set.insert(ApiName::Scene);
         set.insert(ApiName::System);
         set.insert(ApiName::Wds);

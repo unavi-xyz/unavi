@@ -6,6 +6,7 @@ world types {
   import wired:input/types;
   import wired:kv/types;
   import wired:math/types;
+  import wired:peer/types;
   import wired:scene/types;
   import wired:wds/types;
 }
@@ -14,6 +15,8 @@ world api {
   import wired:event/api;
   import wired:input/api;
   import wired:kv/api;
+  import wired:peer/api;
+  import wired:portal/api;
   import wired:scene/api;
 }
 

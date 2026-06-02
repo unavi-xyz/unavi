@@ -1,0 +1,13 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-portal-protocol"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde = { features = ["derive"], workspace = true }

@@ -13982,7 +13982,8 @@ dependencies = [
 name = "unavi-gate"
 version = "0.0.16"
 dependencies = [
- "blake3",
+ "postcard",
+ "unavi-portal-protocol",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -14059,6 +14060,15 @@ dependencies = [
  "hsd",
  "loro",
  "loro-surgeon",
+ "postcard",
+ "serde",
+]
+
+[[package]]
+name = "unavi-portal-protocol"
+version = "0.0.16"
+dependencies = [
+ "serde",
 ]
 
 [[package]]
@@ -14093,6 +14103,8 @@ dependencies = [
  "unavi-agent",
  "unavi-avatar",
  "unavi-input",
+ "unavi-portal",
+ "unavi-portal-protocol",
  "unavi-space",
  "unavi-util",
  "wasm-bindgen",
@@ -14155,6 +14167,7 @@ dependencies = [
  "bevy-wds",
  "blake3",
  "half",
+ "hsd",
  "iroh",
  "iroh-gossip",
  "loro",
@@ -14170,6 +14183,7 @@ dependencies = [
  "tracing",
  "unavi-agent",
  "unavi-portal",
+ "unavi-portal-protocol",
  "unavi-util",
  "wds",
  "wired-records",

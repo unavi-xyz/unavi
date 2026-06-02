@@ -79,9 +79,9 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
 
         let mut results = Vec::new();
         while let Some(event) = self.register_receptor.poll() {
-            if let Ok(p) = postcard::from_bytes::<RegisterPayload>(&event.payload) {
+            if let Ok(p) = postcard::from_bytes::<RegisterPayload>(&event.payload()) {
                 results.push(RegisteredModule {
-                    doc_id:       event.sender.document,
+                    doc_id:       event.sender().document,
                     name:         p.name,
                     icon_prim_id: p.icon_prim_id,
                 });

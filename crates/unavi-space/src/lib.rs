@@ -11,8 +11,9 @@ mod beacon;
 mod connection;
 mod gossip;
 pub mod membership;
-mod peer;
+pub mod peer;
 mod portal;
+mod portal_bridge;
 mod scene;
 pub mod spawn;
 pub mod state;
@@ -43,6 +44,8 @@ impl Plugin for SpacePlugin {
             .add_observer(peer::state::add_space_state_sender)
             .add_observer(peer::state::publish_state_update)
             .add_observer(portal::spawn_portal_space)
+            .add_observer(portal_bridge::sync_portal_config)
+            .add_observer(portal_bridge::clear_portal_config)
             .add_observer(scene::despawn_space_scene)
             .add_observer(scene::spawn_space_scene)
             .add_observer(state::space::add_space_state)

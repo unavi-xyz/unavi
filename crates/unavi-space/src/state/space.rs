@@ -26,10 +26,13 @@ use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     Space,
-    state::doc::DocStates,
+    state::{
+        doc::DocStates,
+        owner::DocOwners,
+    },
 };
 
-pub(super) const ROOT_KEY: &str = "state";
+pub const ROOT_KEY: &str = "state";
 
 pub static SPACE_STATES: LazyLock<Mutex<HashMap<Hash, Arc<SpaceStateRoot>>>> =
     LazyLock::new(Mutex::default);
@@ -51,7 +54,8 @@ pub struct SpaceStateDoc;
 
 #[derive(Hydrate, Reconcile, Default, Debug)]
 pub struct SpaceState {
-    pub docs: DocStates,
+    pub docs:   DocStates,
+    pub owners: DocOwners,
 }
 
 pub fn add_space_state(trigger: On<Add, Space>, spaces: Query<&Space>, mut commands: Commands) {

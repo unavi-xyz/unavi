@@ -55,6 +55,76 @@ async fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
 }
 
 #[wasm_bindgen]
+pub struct EventHandle {
+    rep: u32,
+    api: Arc<Api>,
+}
+
+impl EventHandle {
+    pub const fn new(rep: u32, api: Arc<Api>) -> Self {
+        Self { rep, api }
+    }
+}
+
+impl Drop for EventHandle {
+    fn drop(&mut self) {
+        if self.rep != u32::MAX {
+            let api = Arc::clone(&self.api);
+            let rep = self.rep;
+            spawn_async_task(async move {
+                let _ = shared::wired::event::event_drop(&api, rep).await;
+            });
+        }
+    }
+}
+
+#[wasm_bindgen]
+impl EventHandle {
+    pub async fn channel(&self) -> String {
+        shared::wired::event::event_clone_inner(&self.api, self.rep)
+            .await
+            .map(|e| e.channel)
+            .unwrap_or_default()
+    }
+
+    pub async fn payload(&self) -> JsValue {
+        match shared::wired::event::event_clone_inner(&self.api, self.rep).await {
+            Ok(inner) => js_sys::Uint8Array::from(inner.payload.as_slice()).into(),
+            Err(_) => JsValue::UNDEFINED,
+        }
+    }
+
+    pub async fn sender(&self) -> JsValue {
+        let Ok(inner) = shared::wired::event::event_clone_inner(&self.api, self.rep).await else {
+            return JsValue::UNDEFINED;
+        };
+        let sender_doc: js_sys::Uint8Array = inner.sender_document.as_slice().into();
+        let sender = js_sys::Object::new();
+        js_sys::Reflect::set(&sender, &"document".into(), &sender_doc.into()).ok();
+        js_sys::Reflect::set(
+            &sender,
+            &"scope".into(),
+            &scope_to_js(inner.sender_scope, &self.api).await,
+        )
+        .ok();
+        sender.into()
+    }
+
+    pub async fn time(&self) -> JsValue {
+        match shared::wired::event::event_clone_inner(&self.api, self.rep).await {
+            Ok(inner) => js_sys::BigInt::from(inner.time).into(),
+            Err(_) => JsValue::UNDEFINED,
+        }
+    }
+
+    pub async fn consume(&self) -> bool {
+        shared::wired::event::event_consume(&self.api, self.rep)
+            .await
+            .unwrap_or(false)
+    }
+}
+
+#[wasm_bindgen]
 pub struct EventReceptorHandle {
     rep: u32,
     api: Arc<Api>,
@@ -126,31 +196,8 @@ impl EventReceptorHandle {
         let Ok(Some(event)) = shared::wired::event::receptor_poll(&self.api, self.rep).await else {
             return JsValue::UNDEFINED;
         };
-
-        let sender_doc: js_sys::Uint8Array = event.sender_document.as_slice().into();
-        let payload: js_sys::Uint8Array = event.payload.as_slice().into();
-
-        let sender = js_sys::Object::new();
-        js_sys::Reflect::set(&sender, &"document".into(), &sender_doc.into()).ok();
-        js_sys::Reflect::set(
-            &sender,
-            &"scope".into(),
-            &scope_to_js(event.sender_scope, &self.api).await,
-        )
-        .ok();
-
-        let obj = js_sys::Object::new();
-        js_sys::Reflect::set(&obj, &"channel".into(), &event.channel.into()).ok();
-        js_sys::Reflect::set(&obj, &"payload".into(), &payload.into()).ok();
-        js_sys::Reflect::set(&obj, &"sender".into(), &sender.into()).ok();
-        js_sys::Reflect::set(
-            &obj,
-            &"time".into(),
-            &js_sys::BigInt::from(event.time).into(),
-        )
-        .ok();
-
-        obj.into()
+        let rep = shared::wired::event::insert_event(&self.api, event).await;
+        JsValue::from(EventHandle::new(rep, Arc::clone(&self.api)))
     }
 }
 
@@ -159,6 +206,13 @@ impl Runtime {
     #[wasm_bindgen(js_name = "wiredEventReceptorClass")]
     pub fn wired_event_receptor_class(&self) -> JsValue {
         let handle = EventReceptorHandle::new(u32::MAX, Arc::clone(&self.api));
+        let js = JsValue::from(handle);
+        js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
+    }
+
+    #[wasm_bindgen(js_name = "wiredEventClass")]
+    pub fn wired_event_class(&self) -> JsValue {
+        let handle = EventHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }

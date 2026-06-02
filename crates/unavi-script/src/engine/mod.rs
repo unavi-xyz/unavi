@@ -26,6 +26,9 @@ impl Plugin for EnginePlugin {
 }
 
 #[derive(Component)]
+pub struct InitializedScript;
+
+#[derive(Component)]
 #[require(Scripts)]
 pub struct Engine;
 

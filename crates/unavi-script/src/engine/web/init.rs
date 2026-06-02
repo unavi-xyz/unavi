@@ -7,9 +7,7 @@ use bevy::prelude::*;
 use unavi_util::async_task::spawn_async_task;
 
 use super::instantiate::ScriptGuest;
-
-#[derive(Component)]
-pub struct InitializedScript;
+use crate::engine::InitializedScript;
 
 type DoneCell = Arc<Mutex<Option<()>>>;
 

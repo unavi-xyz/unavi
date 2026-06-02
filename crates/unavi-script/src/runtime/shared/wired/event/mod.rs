@@ -2,6 +2,7 @@ use std::{
     sync::{
         Arc,
         atomic::{
+            AtomicBool,
             AtomicU32,
             Ordering,
         },
@@ -10,6 +11,7 @@ use std::{
 };
 
 use async_channel::Receiver;
+use blake3::Hash;
 
 use crate::{
     firewall::Channel,
@@ -35,6 +37,16 @@ use crate::{
 
 static NEXT_RECEPTOR_ID: AtomicU32 = AtomicU32::new(0);
 
+pub const HOST_SENDER_DOC: [u8; 32] = [0u8; 32];
+
+#[must_use]
+pub fn doc_has_receptor(doc: Hash, channel: &str) -> bool {
+    EVENT_RECEPTOR_REGISTRY
+        .read()
+        .values()
+        .any(|e| e.doc_id == doc && e.channels.iter().any(|c| c == channel))
+}
+
 #[derive(Default)]
 pub struct EventFilter {
     pub documents: Option<Vec<Vec<u8>>>,
@@ -55,9 +67,24 @@ pub struct EventReceptorRes {
     rx: Receiver<InboundEvent>,
 }
 
+pub struct EventRes {
+    pub inner: InboundEvent,
+}
+
+impl EventRes {
+    #[must_use]
+    pub fn consume(&self) -> bool {
+        self.inner
+            .claimed
+            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+            .is_ok()
+    }
+}
+
 #[derive(Default)]
 pub struct WiredEventApi {
     pub receptors: SlotMap<EventReceptorRes>,
+    pub events:    SlotMap<EventRes>,
 }
 
 const RECEPTOR_CAPACITY: usize = 16;
@@ -101,6 +128,7 @@ pub async fn emit(
 
     let payload = Arc::new(payload);
     let sender_doc = api.doc_id.as_bytes().to_vec();
+    let claimed = Arc::new(AtomicBool::new(false));
 
     let registry = EVENT_RECEPTOR_REGISTRY.read();
     for entry in registry.values() {
@@ -135,11 +163,39 @@ pub async fn emit(
             sender_document: sender_doc.clone(),
             sender_scope,
             time,
+            claimed: Arc::clone(&claimed),
         });
     }
     drop(registry);
 
     Ok(())
+}
+
+pub fn emit_from_host(target_doc: Hash, channel: &str, payload: Vec<u8>) {
+    let payload = Arc::new(payload);
+    let claimed = Arc::new(AtomicBool::new(false));
+    let time = std::time::SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs())
+        .unwrap_or_default();
+
+    let registry = EVENT_RECEPTOR_REGISTRY.read();
+    for entry in registry.values() {
+        if entry.doc_id != target_doc {
+            continue;
+        }
+        if !entry.channels.iter().any(|c| c == channel) {
+            continue;
+        }
+        let _ = entry.tx.try_send(InboundEvent {
+            channel: channel.into(),
+            payload: Arc::clone(&payload),
+            sender_document: HOST_SENDER_DOC.to_vec(),
+            sender_scope: SenderScope::Global,
+            time,
+            claimed: Arc::clone(&claimed),
+        });
+    }
 }
 
 fn resolve_sender_scope(
@@ -229,21 +285,67 @@ pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> an
 }
 
 pub async fn receptor_poll(api: &Api, rep: u32) -> anyhow::Result<Option<InboundEvent>> {
-    api.wired_event
-        .lock()
-        .await
-        .receptors
-        .get(rep)
-        .map(|res| {
-            res.rx
-                .try_recv()
-                .map_or_else(|_| Ok(None), |ev| Ok(Some(ev)))
-        })
-        .ok_or_else(|| anyhow::anyhow!("receptor not found: {rep}"))?
+    let rx = {
+        let slots = api.wired_event.lock().await;
+        slots
+            .receptors
+            .get(rep)
+            .map(|res| res.rx.clone())
+            .ok_or_else(|| anyhow::anyhow!("receptor not found: {rep}"))?
+    };
+    loop {
+        match rx.try_recv() {
+            Ok(ev) => {
+                if ev.claimed.load(Ordering::Acquire) {
+                    continue;
+                }
+                return Ok(Some(ev));
+            }
+            Err(_) => return Ok(None),
+        }
+    }
 }
 
 pub async fn receptor_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
     EVENT_RECEPTOR_REGISTRY.write().remove(&rep);
     api.wired_event.lock().await.receptors.remove(rep);
+    Ok(())
+}
+
+pub async fn insert_event(api: &Api, event: InboundEvent) -> u32 {
+    api.wired_event
+        .lock()
+        .await
+        .events
+        .insert(EventRes { inner: event })
+}
+
+pub async fn event_consume(api: &Api, rep: u32) -> anyhow::Result<bool> {
+    let claimed = {
+        let slots = api.wired_event.lock().await;
+        slots
+            .events
+            .get(rep)
+            .map(|res| Arc::clone(&res.inner.claimed))
+            .ok_or_else(|| anyhow::anyhow!("event not found: {rep}"))?
+    };
+    Ok(claimed
+        .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+        .is_ok())
+}
+
+pub async fn event_clone_inner(api: &Api, rep: u32) -> anyhow::Result<InboundEvent> {
+    let slots = api.wired_event.lock().await;
+    let inner = slots
+        .events
+        .get(rep)
+        .map(|res| res.inner.clone())
+        .ok_or_else(|| anyhow::anyhow!("event not found: {rep}"))?;
+    drop(slots);
+    Ok(inner)
+}
+
+pub async fn event_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+    api.wired_event.lock().await.events.remove(rep);
     Ok(())
 }

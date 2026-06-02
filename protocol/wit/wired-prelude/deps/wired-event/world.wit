@@ -45,11 +45,15 @@ interface types {
     scope:    sender-scope,
   }
 
-  record event {
-    channel: string,
-    payload: list<u8>,
-    sender:  event-sender,
-    time:    u64,
+  resource event {
+    channel: func() -> string;
+    payload: func() -> list<u8>;
+    sender:  func() -> event-sender;
+    time:    func() -> u64;
+    // Atomically claim this delivered event. Returns true exactly once
+    // across all receptors that received this emission. Callers that lose
+    // the race see false and should treat the event as gone.
+    consume: func() -> bool;
   }
 
   resource event-receptor {

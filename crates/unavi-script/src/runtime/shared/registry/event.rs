@@ -3,6 +3,7 @@ use std::{
     sync::{
         Arc,
         LazyLock,
+        atomic::AtomicBool,
     },
 };
 
@@ -28,14 +29,17 @@ pub enum ReceptorScope {
     Spatial { node: AbsoluteNodeId, radius: f32 },
 }
 
+#[derive(Clone)]
 pub struct InboundEvent {
     pub channel:         String,
     pub payload:         Arc<Vec<u8>>,
     pub sender_document: Vec<u8>,
     pub sender_scope:    SenderScope,
     pub time:            u64,
+    pub claimed:         Arc<AtomicBool>,
 }
 
+#[derive(Clone)]
 pub enum SenderScope {
     Global,
     Spatial {

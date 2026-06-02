@@ -2,11 +2,13 @@
 path = "../../unavi-shapes/wit"
 sha256 = "1ed7f1a7952c8cdb22ef1d311cda0c887566d55b0322175e75773d32a5977e0e"
 sha512 = "aacf2aad8e90734fa82cd1093ee2c594608c7cc6da2418699fc6428be3350caf9f8485b47697badfff9b38f01d0dcb12e3a1f4c1bfc450887f016763308f39e9"
+deps = ["wired-peer"]
 
 [unavi-vui-module]
 path = "../../unavi-vui-module/wit"
 sha256 = "e78b523b883ce88c7ddebd957e6c85ca35d84d062d499587c6a6c2eccf796121"
 sha512 = "1dcf21e1864502fd9eec9c80a329e6cfe6cad0109483e99668ba8548ff475c06220bf7a84f3ebb23b20bfef9a850080087ccebe7ef1bb99a686e59e7d44c4377"
+deps = ["wired-peer"]
 
 [wired-agent]
 path = "../../../protocol/wit/wired-agent"
@@ -15,8 +17,8 @@ sha512 = "7bdfb6fe32bc2d239d640c38b165fa6fd07217199eeaab37e8990d6d14e508ac4875eb
 
 [wired-event]
 path = "../../../protocol/wit/wired-event"
-sha256 = "9ed241344ca218d057b9b1e1423eb51c32849428e9c34b17df52bb20c667a32c"
-sha512 = "b1ae27091014ec92ea2841caf087debdc3b2ef8d7d605746a18b838dbc506f0b215355f576c402a9e178d7ff5961bc0f0bb96285db03ce73c4773fc7f68d2dbe"
+sha256 = "5ef8d4af8f9b3f8c607449b5da5e9cd05cde0c821661c2f2dea1efb169989936"
+sha512 = "5c6fbbf4dbf6515f847a99c406e67cd7975d56a4fd631647979c3720b2c70f95530798668f2a875b56fbbc58c97669e54cfb92702d667f71956f35e3061bd638"
 
 [wired-input]
 path = "../../../protocol/wit/wired-input"
@@ -33,15 +35,25 @@ path = "../../../protocol/wit/wired-math"
 sha256 = "5827c5d176d5b3ef5549fd894a6831a4e91bd1af99a6593b1914c1e786d1c37c"
 sha512 = "b4a9267ae32136b0fbce5aa009e87a5369715cc1f48f68adeaafff11734b9fab63fc5f3352de7afc17529f2219dcb459f321ff43816fb129101fb3d98c9a9d30"
 
+[wired-peer]
+sha256 = "50347adfabc09655839def61b89d8624701e1f26d9b27f7caf09ebeefcff4a30"
+sha512 = "003499f63e1ef1cba6514e78765c9c1e268ec6539edbc0b4676b2e39eb147e342c219e3de0e68a44a518eaf83d57ff33a39d5e539ee6ff0fa3e5b491b357c83f"
+
+[wired-portal]
+path = "../../../protocol/wit/wired-portal"
+sha256 = "cd24ab85889fe427b4f47d5db9f33e3f298d7177a4ce976cf042649d9c80fd07"
+sha512 = "fdd5bd5b3a35dce032ff2a75d35226333e992281b0180f57ebf4f26025c366341bde77fc2227683bfd079a22151b75e47ca6075e7b05d30e121ad403c95bd65a"
+
 [wired-prelude]
 path = "../../../protocol/wit/wired-prelude"
-sha256 = "bff409c914fc1aaad5813dafb3b9379ca6ac879b45fc8e00a59340c123001461"
-sha512 = "5c9371e7b3c01ba1cb389ea54e145e19c3fff1cb9c266124bee6f6e633ef2b258e0b27ca89d8fea77667b123907ccaba07c2f69c661d9dee717d669fe163d4eb"
+sha256 = "cbf7542255b4f887927fb9b45f926eed57eb82c4ec68de20b019e3ff8fba8e37"
+sha512 = "5648c26afb2fafa13a296dda63e5d9c93e072fc603da141dffaae95a7bb04d5d66ded5148cdda90ba39f046887144a9a964a6764ce9b5806dd23478ed26cd402"
+deps = ["wired-peer"]
 
 [wired-scene]
 path = "../../../protocol/wit/wired-scene"
-sha256 = "398b52c07d0daf639b24365640e76a68104c5c5f5ab29a45f643e74b1f0cf8f6"
-sha512 = "f85f51e6b10ecb52e8825ab38754b7e27ffee80f851dc422b297ca386e002e2697796cb4653458db74f8ebebb9ca6f1396a2ca8654073649cac33a02759731d0"
+sha256 = "0123a7802d4ea8b3009edd7caf229cef9ec1bdaac8913508f96a3dc03dc90a0f"
+sha512 = "460a0bd1e01b9aec7535b9a5bab7b44d5a83ee5c9de8c5ab1c07af1273dcbb071bf127b2ce1e48afb742edad8e3868adfa454bd220981d2b2dcc285d5f088f7b"
 
 [wired-script]
 path = "../../../protocol/wit/wired-script"

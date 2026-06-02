@@ -1,0 +1,19 @@
+package wired:peer;
+
+world all {
+  import api;
+  import types;
+}
+
+interface types {
+  type peer-id = list<u8>;
+}
+
+interface api {
+  use types.{peer-id};
+  use wired:scene/types.{document-id};
+
+  self-peer:     func() -> peer-id;
+  doc-owner:     func(doc: document-id) -> option<peer-id>;
+  is-self-owner: func() -> bool;
+}

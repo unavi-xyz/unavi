@@ -183,10 +183,9 @@ pub struct PrimPortalDestination {
 }
 
 pub struct PrimPortal {
-    pub allow_incoming: bool,
-    pub destination:    Option<PrimPortalDestination>,
-    pub size_x:         f32,
-    pub size_y:         f32,
+    pub destination: Option<PrimPortalDestination>,
+    pub size_x:      f32,
+    pub size_y:      f32,
 }
 
 pub struct PrimSpawn {
@@ -862,31 +861,29 @@ pub async fn set_portal(api: &Api, rep: u32, value: Option<PrimPortal>) -> anyho
 
 fn prim_portal_to_attr(p: PrimPortal) -> PortalAttr {
     PortalAttr {
-        allow_incoming: p.allow_incoming,
-        destination:    p.destination.map(|d| PortalDestination {
+        destination: p.destination.map(|d| PortalDestination {
             receptor: d.receptor.map(|r| PortalReceptor {
                 document: ByteArray(r.document),
                 prim:     r.prim,
             }),
             space:    ByteArray(d.space),
         }),
-        size_x:         f64::from(p.size_x),
-        size_y:         f64::from(p.size_y),
+        size_x:      f64::from(p.size_x),
+        size_y:      f64::from(p.size_y),
     }
 }
 
 fn portal_attr_to_prim(attr: PortalAttr) -> PrimPortal {
     PrimPortal {
-        allow_incoming: attr.allow_incoming,
-        destination:    attr.destination.map(|d| PrimPortalDestination {
+        destination: attr.destination.map(|d| PrimPortalDestination {
             receptor: d.receptor.map(|r| PrimPortalReceptor {
                 document: r.document.0,
                 prim:     r.prim,
             }),
             space:    d.space.0,
         }),
-        size_x:         attr.size_x as f32,
-        size_y:         attr.size_y as f32,
+        size_x:      attr.size_x as f32,
+        size_y:      attr.size_y as f32,
     }
 }
 

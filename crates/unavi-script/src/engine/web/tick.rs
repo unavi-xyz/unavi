@@ -9,11 +9,11 @@ use std::{
 use bevy::prelude::*;
 use unavi_util::async_task::spawn_async_task;
 
-use super::{
-    init::InitializedScript,
-    instantiate::ScriptGuest,
+use super::instantiate::ScriptGuest;
+use crate::{
+    Ticking,
+    engine::InitializedScript,
 };
-use crate::Ticking;
 
 const TICKRATE: Duration = Duration::from_millis(50);
 

@@ -56,7 +56,6 @@
             })),
             "name": Optional(String),
             "portal": Optional(Struct({
-                "allow_incoming": Bool,
                 "destination": Optional(Struct({
                     "receptor": Optional(Struct({
                         "document": RecordId,

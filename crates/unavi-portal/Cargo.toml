@@ -17,6 +17,8 @@ blake3.workspace       = true
 hsd.path               = "../hsd"
 loro.workspace         = true
 loro-surgeon.workspace = true
+postcard.workspace     = true
+serde.workspace        = true
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true

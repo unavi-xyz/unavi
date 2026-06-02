@@ -119,6 +119,10 @@ impl ScriptBehavior for Script {
             }
         }
 
+        if !wired::peer::api::is_self_owner() {
+            return;
+        }
+
         if self.time.elapsed().expect("elapsed") < EMIT_INTERVAL {
             return;
         }

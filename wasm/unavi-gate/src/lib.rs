@@ -1,12 +1,13 @@
-use std::{
-    f32::consts::GOLDEN_RATIO,
-    time::{
-        Duration,
-        SystemTime,
-    },
-};
+use std::f32::consts::GOLDEN_RATIO;
 
-use blake3::Hash;
+use unavi_portal_protocol::{
+    BACKLINK_CHANNEL,
+    BacklinkPayload,
+    INCOMING_CHANNEL,
+    IncomingPayload,
+    LinkState,
+    link_kv_key,
+};
 use wired_prelude::prelude::*;
 
 use crate::{
@@ -18,12 +19,17 @@ use crate::{
             EventScope,
             SpatialScope,
         },
+        kv::{
+            api::self_kv,
+            types::Kv,
+        },
         scene::{
             api::self_document,
             types::{
                 Material,
                 Portal,
                 PortalDestination,
+                PortalReceptor,
                 Prim,
                 RigidBody,
                 RigidBodyKind,
@@ -45,8 +51,6 @@ const BEAM_THICKNESS: f32 = 1.0 / (4.0 * GOLDEN_RATIO);
 const PEDESTAL_HEIGHT: f32 = PORTAL_WIDTH / 2.0;
 const PEDESTAL_THICKNESS: f32 = BEAM_THICKNESS * GOLDEN_RATIO;
 const EVENT_RADIUS: f32 = PEDESTAL_THICKNESS;
-
-const TARGET_DECAY: Duration = Duration::from_secs(10);
 
 const fn static_body() -> RigidBody {
     RigidBody {
@@ -89,10 +93,41 @@ const fn gate_material() -> Material {
     }
 }
 
+fn portal_from_link(link: Option<&LinkState>) -> Portal {
+    Portal {
+        destination: link.map(|s| PortalDestination {
+            space:    s.target_space.to_vec(),
+            receptor: s.receptor_doc.zip(s.receptor_prim.clone()).map(|(d, p)| {
+                PortalReceptor {
+                    document: d.to_vec(),
+                    prim:     p,
+                }
+            }),
+        }),
+        size_x:      PORTAL_WIDTH,
+        size_y:      PORTAL_HEIGHT,
+    }
+}
+
+fn write_link(kv: &Kv, key: &str, state: &LinkState) {
+    let bytes = postcard::to_allocvec(state).expect("encode link state");
+    if let Err(err) = kv.set(key, &bytes) {
+        eprintln!("Gate kv write failed: {err:?}");
+    }
+}
+
+fn read_link(kv: &Kv, key: &str) -> Option<LinkState> {
+    kv.get(key).and_then(|b| postcard::from_bytes::<LinkState>(&b).ok())
+}
+
 struct Script {
-    portal_prim:     Prim,
-    receptor:        EventReceptor,
-    pedestal_target: Option<(Hash, SystemTime)>,
+    portal_prim: Prim,
+    portal_key:  String,
+    kv:          Kv,
+    beacon_rx:   EventReceptor,
+    incoming_rx: EventReceptor,
+    backlink_rx: EventReceptor,
+    applied:     Option<LinkState>,
 }
 
 impl ScriptBehavior for Script {
@@ -103,15 +138,9 @@ impl ScriptBehavior for Script {
         let portal_prim = doc.create_prim();
         root.add_child(&portal_prim);
         set_translation(&portal_prim, Vec3::new(0.0, PORTAL_HEIGHT / 2.0, 0.0));
-        portal_prim.set_portal(Some(&Portal {
-            allow_incoming: true,
-            destination:    None,
-            size_x:         PORTAL_WIDTH,
-            size_y:         PORTAL_HEIGHT,
-        }));
+        portal_prim.set_portal(Some(&portal_from_link(None)));
 
         let material = gate_material();
-
         let pole = Cuboid::new(Vec3::new(BEAM_THICKNESS, PORTAL_HEIGHT, BEAM_THICKNESS));
 
         let pole_l = pole.mesh();
@@ -178,7 +207,7 @@ impl ScriptBehavior for Script {
         pedestal.add_child(&receptor_prim);
         set_translation(&receptor_prim, Vec3::new(0.0, PEDESTAL_HEIGHT / 2.0, 0.0));
 
-        let receptor = wired::event::api::listen(
+        let beacon_rx = wired::event::api::listen(
             &[CHANNEL.to_string()],
             EventFilter {
                 documents: None,
@@ -189,40 +218,89 @@ impl ScriptBehavior for Script {
             },
         );
 
+        let incoming_rx = wired::event::api::listen(
+            &[INCOMING_CHANNEL.to_string()],
+            EventFilter {
+                documents: None,
+                scope:     EventScope::Global,
+            },
+        );
+
+        let backlink_rx = wired::event::api::listen(
+            &[BACKLINK_CHANNEL.to_string()],
+            EventFilter {
+                documents: None,
+                scope:     EventScope::Global,
+            },
+        );
+
+        let portal_key = link_kv_key(&portal_prim.id());
+
         println!("Gate ready");
 
         Self {
             portal_prim,
-            receptor,
-            pedestal_target: None,
+            portal_key,
+            kv: self_kv(),
+            beacon_rx,
+            incoming_rx,
+            backlink_rx,
+            applied: None,
         }
     }
 
     fn tick(&mut self) {
-        if let Some((_, t)) = &self.pedestal_target
-            && t.elapsed().expect("elapsed") >= TARGET_DECAY
-        {
-            self.pedestal_target = None;
-        }
-
-        while let Some(event) = self.receptor.poll() {
-            let Ok(id) = Hash::from_slice(&event.payload) else {
+        while let Some(event) = self.beacon_rx.poll() {
+            let payload = event.payload();
+            let Ok(target) = <[u8; 32]>::try_from(payload.as_slice()) else {
                 continue;
             };
-            if self.pedestal_target.as_ref().is_some_and(|(x, _)| *x == id) {
+            wired::portal::api::open(self.portal_prim.clone(), target.as_ref());
+        }
+
+        while let Some(event) = self.incoming_rx.poll() {
+            if !event.consume() {
                 continue;
             }
-            println!("Loading beacon: {id}");
-            self.pedestal_target = Some((id, SystemTime::now()));
-            self.portal_prim.set_portal(Some(&Portal {
-                allow_incoming: true,
-                destination:    Some(PortalDestination {
-                    receptor: None,
-                    space:    id.as_bytes().to_vec(),
-                }),
-                size_x:         PORTAL_WIDTH,
-                size_y:         PORTAL_HEIGHT,
-            }));
+            let Ok(req) = postcard::from_bytes::<IncomingPayload>(&event.payload()) else {
+                continue;
+            };
+            write_link(
+                &self.kv,
+                &self.portal_key,
+                &LinkState {
+                    target_space:  req.source_space,
+                    receptor_doc:  Some(req.source_doc),
+                    receptor_prim: Some(req.source_prim),
+                },
+            );
+        }
+
+        while let Some(event) = self.backlink_rx.poll() {
+            let Ok(payload) = postcard::from_bytes::<BacklinkPayload>(&event.payload()) else {
+                continue;
+            };
+            if payload.source_prim != self.portal_prim.id() {
+                continue;
+            }
+            let Some(mut state) = read_link(&self.kv, &self.portal_key) else {
+                continue;
+            };
+            let new_doc = Some(payload.receptor_doc);
+            let new_prim = Some(payload.receptor_prim);
+            if state.receptor_doc == new_doc && state.receptor_prim == new_prim {
+                continue;
+            }
+            state.receptor_doc = new_doc;
+            state.receptor_prim = new_prim;
+            write_link(&self.kv, &self.portal_key, &state);
+        }
+
+        let next = read_link(&self.kv, &self.portal_key);
+        if next != self.applied {
+            self.portal_prim
+                .set_portal(Some(&portal_from_link(next.as_ref())));
+            self.applied = next;
         }
     }
 }

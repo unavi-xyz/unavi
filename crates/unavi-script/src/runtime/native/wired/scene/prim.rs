@@ -290,23 +290,21 @@ fn collider_shared(c: Collider) -> wasmtime::Result<PrimCollider> {
 
 fn portal_wit(p: PrimPortal) -> Portal {
     Portal {
-        allow_incoming: p.allow_incoming,
-        destination:    p.destination.map(|d| PortalDestination {
+        destination: p.destination.map(|d| PortalDestination {
             receptor: d.receptor.map(|r| PortalReceptor {
                 document: r.document.to_vec(),
                 prim:     r.prim,
             }),
             space:    d.space.to_vec(),
         }),
-        size_x:         p.size_x,
-        size_y:         p.size_y,
+        size_x:      p.size_x,
+        size_y:      p.size_y,
     }
 }
 
 fn portal_shared(p: Portal) -> wasmtime::Result<PrimPortal> {
     Ok(PrimPortal {
-        allow_incoming: p.allow_incoming,
-        destination:    p
+        destination: p
             .destination
             .map(|d| -> wasmtime::Result<_> {
                 Ok(PrimPortalDestination {
@@ -323,8 +321,8 @@ fn portal_shared(p: Portal) -> wasmtime::Result<PrimPortal> {
                 })
             })
             .transpose()?,
-        size_x:         p.size_x,
-        size_y:         p.size_y,
+        size_x:      p.size_x,
+        size_y:      p.size_y,
     })
 }
 

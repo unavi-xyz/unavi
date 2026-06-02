@@ -140,10 +140,9 @@ interface types {
   }
 
   record portal {
-    allow-incoming: bool,
-    destination:    option<portal-destination>,
-    size-x:         f32,
-    size-y:         f32,
+    destination: option<portal-destination>,
+    size-x:      f32,
+    size-y:      f32,
   }
 
   // Marks a prim as a spawn area. Players entering the space (or arriving via

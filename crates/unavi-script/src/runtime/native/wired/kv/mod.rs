@@ -31,8 +31,9 @@ use bindings::wired::kv::types::{
 impl From<KvError> for WitKvError {
     fn from(e: KvError) -> Self {
         match e {
-            KvError::QuotaExceeded => Self::QuotaExceeded,
             KvError::KeyTooLong => Self::KeyTooLong,
+            KvError::QuotaExceeded => Self::QuotaExceeded,
+            KvError::Other => Self::Other,
         }
     }
 }

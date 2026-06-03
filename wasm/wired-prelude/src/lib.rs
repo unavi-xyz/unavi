@@ -45,10 +45,12 @@ macro_rules! generate {
                 value: &[u8],
             ) -> ::core::result::Result<(), ::wired_prelude::wired_kv::KvErrorKind> {
                 self.set(key, value).map_err(|e| match e {
-                    wired::kv::types::KvError::QuotaExceeded =>
-                        ::wired_prelude::wired_kv::KvErrorKind::QuotaExceeded,
                     wired::kv::types::KvError::KeyTooLong =>
                         ::wired_prelude::wired_kv::KvErrorKind::KeyTooLong,
+                    wired::kv::types::KvError::QuotaExceeded =>
+                        ::wired_prelude::wired_kv::KvErrorKind::QuotaExceeded,
+                    wired::kv::types::KvError::Other =>
+                        ::wired_prelude::wired_kv::KvErrorKind::Other,
                 })
             }
             fn kv_delete(&self, key: &str) {

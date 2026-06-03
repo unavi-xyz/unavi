@@ -6,8 +6,9 @@ use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KvErrorKind {
-    QuotaExceeded,
     KeyTooLong,
+    QuotaExceeded,
+    Other,
 }
 
 #[derive(Debug, Error)]
@@ -20,13 +21,16 @@ pub enum TypedKvError {
     QuotaExceeded,
     #[error("key too long")]
     KeyTooLong,
+    #[error("other")]
+    Other,
 }
 
 impl From<KvErrorKind> for TypedKvError {
     fn from(e: KvErrorKind) -> Self {
         match e {
-            KvErrorKind::QuotaExceeded => Self::QuotaExceeded,
             KvErrorKind::KeyTooLong => Self::KeyTooLong,
+            KvErrorKind::QuotaExceeded => Self::QuotaExceeded,
+            KvErrorKind::Other => Self::Other,
         }
     }
 }

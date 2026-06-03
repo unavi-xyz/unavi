@@ -8,7 +8,7 @@ world all {
 interface api {
   use types.{kv, document-id};
 
-  // KV store for the script's own host document.
+  // KV store for the script's own document.
   self-kv: func() -> kv;
 
   // KV store for any document visible in the current space.
@@ -22,8 +22,10 @@ interface types {
   variant kv-error {
     quota-exceeded,
     key-too-long,
+    other,
   }
 
+  // Networked-synced key-value store, owned by a document.
   resource kv {
     get:    func(key: string) -> option<list<u8>>;
     set:    func(key: string, value: list<u8>) -> result<_, kv-error>;

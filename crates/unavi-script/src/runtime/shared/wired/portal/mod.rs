@@ -47,7 +47,8 @@ pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<()>
     let bytes = postcard::to_allocvec(&next)?;
     match doc_kv_set(space, doc, &key, &bytes) {
         Ok(()) => Ok(()),
-        Err(KvError::QuotaExceeded) => bail!("portal: kv quota exceeded"),
         Err(KvError::KeyTooLong) => bail!("portal: kv key too long"),
+        Err(KvError::QuotaExceeded) => bail!("portal: kv quota exceeded"),
+        Err(KvError::Other) => bail!("portal: kv error"),
     }
 }

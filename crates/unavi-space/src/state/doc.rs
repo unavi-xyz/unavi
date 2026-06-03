@@ -24,6 +24,7 @@ use loro_surgeon::{
 use tracing::warn;
 
 use crate::state::space::{
+    ROOT_KEY,
     SpaceStateRoot,
     space_state,
 };
@@ -68,12 +69,13 @@ pub struct DocState {
 
 #[derive(Debug, Clone, Copy)]
 pub enum KvError {
-    QuotaExceeded,
     KeyTooLong,
+    QuotaExceeded,
+    Other,
 }
 
 pub(super) fn docs_map_mut(root: &SpaceStateRoot) -> Option<LoroMap> {
-    let map = root.doc.get_map(crate::state::space::ROOT_KEY);
+    let map = root.doc.get_map(ROOT_KEY);
     match map.get_or_create_container(DOCS_KEY, LoroMap::new()) {
         Ok(m) => Some(m),
         Err(err) => {
@@ -84,7 +86,7 @@ pub(super) fn docs_map_mut(root: &SpaceStateRoot) -> Option<LoroMap> {
 }
 
 pub(super) fn docs_map_read(root: &SpaceStateRoot) -> Option<LoroMap> {
-    let map = root.doc.get_map(crate::state::space::ROOT_KEY);
+    let map = root.doc.get_map(ROOT_KEY);
     match map.get(DOCS_KEY)? {
         ValueOrContainer::Container(Container::Map(m)) => Some(m),
         _ => None,
@@ -188,7 +190,7 @@ pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(),
         return Err(KvError::KeyTooLong);
     }
     let Some(root) = space_state(space) else {
-        return Err(KvError::QuotaExceeded);
+        return Err(KvError::Other);
     };
     let Some(kv) = kv_map_mut(&root, doc) else {
         return Err(KvError::QuotaExceeded);
@@ -221,7 +223,7 @@ pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(),
 
     if let Err(err) = kv.insert(key, LoroValue::Binary(value.to_vec().into())) {
         warn!(?err, "failed to insert kv entry");
-        return Err(KvError::QuotaExceeded);
+        return Err(KvError::Other);
     }
     Ok(())
 }
@@ -294,7 +296,7 @@ mod tests {
 
     fn install_test_space(space: Hash) {
         let doc = LoroDoc::new();
-        let map = doc.get_map(crate::state::space::ROOT_KEY);
+        let map = doc.get_map(ROOT_KEY);
         SpaceState::default()
             .reconcile(RootReconciler::new(map))
             .expect("reconcile state");

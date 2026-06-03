@@ -8,8 +8,11 @@ use crate::runtime::{
 #[wasm_bindgen]
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredPeerSelfPeer")]
-    pub fn wired_peer_self_peer(&self) -> Vec<u8> {
-        shared::wired::peer::self_peer(&self.api)
+    pub fn wired_peer_self_peer(&self) -> JsValue {
+        match shared::wired::peer::self_peer(&self.api) {
+            Some(bytes) => js_sys::Uint8Array::from(bytes.as_slice()).into(),
+            None => JsValue::UNDEFINED,
+        }
     }
 
     #[wasm_bindgen(js_name = "wiredPeerDocOwner")]

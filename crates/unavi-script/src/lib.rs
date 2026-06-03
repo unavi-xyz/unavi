@@ -34,6 +34,7 @@ impl Plugin for ScriptPlugin {
         .add_observer(portal_host::enqueue_incoming_on_destination)
         .add_observer(portal_host::enqueue_incoming_on_doc_load)
         .add_observer(portal_host::enqueue_backlink_on_accept)
+        .add_observer(portal_host::enqueue_backlink_on_doc_load)
         .add_systems(Update, portal_host::drain_pending);
     }
 }

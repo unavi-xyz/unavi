@@ -14,7 +14,7 @@ pub mod bindings {
 impl bindings::wired::peer::types::Host for Runtime {}
 
 impl bindings::wired::peer::api::Host for Runtime {
-    async fn self_peer(&mut self) -> wasmtime::Result<Vec<u8>> {
+    async fn self_peer(&mut self) -> wasmtime::Result<Option<Vec<u8>>> {
         Ok(shared::wired::peer::self_peer(&self.api))
     }
 

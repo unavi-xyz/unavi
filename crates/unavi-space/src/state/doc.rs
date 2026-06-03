@@ -72,7 +72,7 @@ pub enum KvError {
     KeyTooLong,
 }
 
-pub(super) fn docs_map(root: &SpaceStateRoot) -> Option<LoroMap> {
+pub(super) fn docs_map_mut(root: &SpaceStateRoot) -> Option<LoroMap> {
     let map = root.doc.get_map(crate::state::space::ROOT_KEY);
     match map.get_or_create_container(DOCS_KEY, LoroMap::new()) {
         Ok(m) => Some(m),
@@ -83,8 +83,16 @@ pub(super) fn docs_map(root: &SpaceStateRoot) -> Option<LoroMap> {
     }
 }
 
-fn doc_entry(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
-    let docs = docs_map(root)?;
+pub(super) fn docs_map_read(root: &SpaceStateRoot) -> Option<LoroMap> {
+    let map = root.doc.get_map(crate::state::space::ROOT_KEY);
+    match map.get(DOCS_KEY)? {
+        ValueOrContainer::Container(Container::Map(m)) => Some(m),
+        _ => None,
+    }
+}
+
+fn doc_entry_mut(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
+    let docs = docs_map_mut(root)?;
     match docs.get_or_create_container(&doc.to_string(), LoroMap::new()) {
         Ok(m) => Some(m),
         Err(err) => {
@@ -94,8 +102,16 @@ fn doc_entry(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
     }
 }
 
-fn kv_map(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
-    let entry = doc_entry(root, doc)?;
+fn doc_entry_read(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
+    let docs = docs_map_read(root)?;
+    match docs.get(&doc.to_string())? {
+        ValueOrContainer::Container(Container::Map(m)) => Some(m),
+        _ => None,
+    }
+}
+
+fn kv_map_mut(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
+    let entry = doc_entry_mut(root, doc)?;
     match entry.get_or_create_container(KV_KEY, LoroMap::new()) {
         Ok(m) => Some(m),
         Err(err) => {
@@ -105,12 +121,20 @@ fn kv_map(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
     }
 }
 
+fn kv_map_read(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
+    let entry = doc_entry_read(root, doc)?;
+    match entry.get(KV_KEY)? {
+        ValueOrContainer::Container(Container::Map(m)) => Some(m),
+        _ => None,
+    }
+}
+
 #[must_use]
 pub fn add_doc(space: Hash, doc: Hash) -> bool {
     let Some(root) = space_state(space) else {
         return false;
     };
-    doc_entry(&root, doc).is_some()
+    doc_entry_mut(&root, doc).is_some()
 }
 
 #[must_use]
@@ -118,7 +142,7 @@ pub fn has_doc(space: Hash, doc: Hash) -> bool {
     let Some(root) = space_state(space) else {
         return false;
     };
-    let Some(docs) = docs_map(&root) else {
+    let Some(docs) = docs_map_read(&root) else {
         return false;
     };
     docs.get(&doc.to_string()).is_some()
@@ -127,7 +151,7 @@ pub fn has_doc(space: Hash, doc: Hash) -> bool {
 #[must_use]
 pub fn doc_kv_get(space: Hash, doc: Hash, key: &str) -> Option<Vec<u8>> {
     let root = space_state(space)?;
-    let kv = kv_map(&root, doc)?;
+    let kv = kv_map_read(&root, doc)?;
     match kv.get(key)? {
         ValueOrContainer::Value(LoroValue::Binary(b)) => Some((*b).clone()),
         _ => None,
@@ -139,7 +163,7 @@ pub fn doc_kv_keys(space: Hash, doc: Hash) -> Vec<String> {
     let Some(root) = space_state(space) else {
         return Vec::new();
     };
-    let Some(kv) = kv_map(&root, doc) else {
+    let Some(kv) = kv_map_read(&root, doc) else {
         return Vec::new();
     };
     let mut out = Vec::new();
@@ -151,7 +175,7 @@ pub fn doc_kv_delete(space: Hash, doc: Hash, key: &str) {
     let Some(root) = space_state(space) else {
         return;
     };
-    let Some(kv) = kv_map(&root, doc) else {
+    let Some(kv) = kv_map_read(&root, doc) else {
         return;
     };
     if let Err(err) = kv.delete(key) {
@@ -166,7 +190,7 @@ pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(),
     let Some(root) = space_state(space) else {
         return Err(KvError::QuotaExceeded);
     };
-    let Some(kv) = kv_map(&root, doc) else {
+    let Some(kv) = kv_map_mut(&root, doc) else {
         return Err(KvError::QuotaExceeded);
     };
 
@@ -207,7 +231,7 @@ pub fn doc_kv_total_bytes(space: Hash, doc: Hash) -> usize {
     let Some(root) = space_state(space) else {
         return 0;
     };
-    let Some(kv) = kv_map(&root, doc) else {
+    let Some(kv) = kv_map_read(&root, doc) else {
         return 0;
     };
     let mut total = 0usize;
@@ -226,7 +250,7 @@ pub fn over_quota_docs(space: Hash) -> Vec<Hash> {
     let Some(root) = space_state(space) else {
         return Vec::new();
     };
-    let Some(docs) = docs_map(&root) else {
+    let Some(docs) = docs_map_read(&root) else {
         return Vec::new();
     };
     let mut over = Vec::new();
@@ -234,7 +258,7 @@ pub fn over_quota_docs(space: Hash) -> Vec<Hash> {
         let ValueOrContainer::Container(Container::Map(entry)) = voc else {
             return;
         };
-        let Ok(kv) = entry.get_or_create_container(KV_KEY, LoroMap::new()) else {
+        let Some(ValueOrContainer::Container(Container::Map(kv))) = entry.get(KV_KEY) else {
             return;
         };
         let mut total = 0usize;

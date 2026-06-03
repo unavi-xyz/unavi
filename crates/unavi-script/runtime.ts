@@ -139,6 +139,15 @@ function buildImports(wasi: WASIShim, rt: any) {
     "wired:kv/types": {
       Kv: rt.wiredKvClass(),
     },
+    "wired:peer/api": {
+      selfPeer: rt.wiredPeerSelfPeer.bind(rt),
+      docOwner: rt.wiredPeerDocOwner.bind(rt),
+      isSelfOwner: rt.wiredPeerIsSelfOwner.bind(rt),
+    },
+    "wired:peer/types": {},
+    "wired:portal/api": {
+      open: rt.wiredPortalOpen.bind(rt),
+    },
     "wired:scene/api": {
       createDocument: rt.wiredSceneCreateDocument.bind(rt),
       getDocument: rt.wiredSceneGetDocument.bind(rt),

@@ -31,11 +31,37 @@ use crate::{
     },
 };
 
-#[derive(Component)]
-pub struct PendingIncoming(IncomingPayload);
+#[derive(Component, Default)]
+pub struct PendingIncoming(Vec<IncomingPayload>);
 
-#[derive(Component)]
-pub struct PendingBacklink(BacklinkPayload);
+#[derive(Component, Default)]
+pub struct PendingBacklink(Vec<BacklinkPayload>);
+
+fn push_incoming(
+    commands: &mut Commands,
+    pending: &mut Query<&mut PendingIncoming>,
+    entity: Entity,
+    payload: IncomingPayload,
+) {
+    if let Ok(mut existing) = pending.get_mut(entity) {
+        existing.0.push(payload);
+    } else {
+        commands.entity(entity).insert(PendingIncoming(vec![payload]));
+    }
+}
+
+fn push_backlink(
+    commands: &mut Commands,
+    pending: &mut Query<&mut PendingBacklink>,
+    entity: Entity,
+    payload: BacklinkPayload,
+) {
+    if let Ok(mut existing) = pending.get_mut(entity) {
+        existing.0.push(payload);
+    } else {
+        commands.entity(entity).insert(PendingBacklink(vec![payload]));
+    }
+}
 
 pub fn enqueue_incoming_on_destination(
     trigger: On<Insert, PortalDestination>,
@@ -44,6 +70,7 @@ pub fn enqueue_incoming_on_destination(
         (With<Portal>, Without<PortalTargetReceptor>),
     >,
     docs: Query<(Entity, &HsdRecordId), With<Hsd>>,
+    mut pending: Query<&mut PendingIncoming>,
     mut commands: Commands,
 ) {
     let Ok((cfg, hsd_child, prim)) = portals.get(trigger.entity) else {
@@ -74,9 +101,7 @@ pub fn enqueue_incoming_on_destination(
         if DOC_SPACE_REGISTRY.read().get(&target_record.0).copied() != Some(target_space) {
             continue;
         }
-        commands
-            .entity(target_entity)
-            .insert(PendingIncoming(payload.clone()));
+        push_incoming(&mut commands, &mut pending, target_entity, payload.clone());
     }
 }
 
@@ -88,6 +113,7 @@ pub fn enqueue_incoming_on_doc_load(
         (With<Portal>, Without<PortalTargetReceptor>),
     >,
     docs: Query<&HsdRecordId, With<Hsd>>,
+    mut pending: Query<&mut PendingIncoming>,
     mut commands: Commands,
 ) {
     let Ok(new_record) = new_docs.get(trigger.entity) else {
@@ -116,11 +142,12 @@ pub fn enqueue_incoming_on_doc_load(
         let Some(source_space) = doc_space(source_record.0) else {
             continue;
         };
-        commands.entity(trigger.entity).insert(PendingIncoming(IncomingPayload {
+        let payload = IncomingPayload {
             source_space: *source_space.as_bytes(),
             source_doc:   *source_record.0.as_bytes(),
             source_prim:  prim.0.to_string(),
-        }));
+        };
+        push_incoming(&mut commands, &mut pending, trigger.entity, payload);
     }
 }
 
@@ -128,6 +155,7 @@ pub fn enqueue_backlink_on_accept(
     trigger: On<Insert, PortalConfig>,
     portals: Query<(&PortalConfig, &HsdChild, &Prim)>,
     docs: Query<(Entity, &HsdRecordId), With<Hsd>>,
+    mut pending: Query<&mut PendingBacklink>,
     mut commands: Commands,
 ) {
     let Ok((cfg, hsd_child, prim)) = portals.get(trigger.entity) else {
@@ -149,16 +177,53 @@ pub fn enqueue_backlink_on_accept(
     let Some((source_entity, _)) = docs.iter().find(|(_, r)| r.0 == source_doc) else {
         return;
     };
-    commands.entity(source_entity).insert(PendingBacklink(BacklinkPayload {
+    let payload = BacklinkPayload {
         source_prim:   receptor.prim.clone(),
         receptor_doc:  *this_record.0.as_bytes(),
         receptor_prim: prim.0.to_string(),
-    }));
+    };
+    push_backlink(&mut commands, &mut pending, source_entity, payload);
+}
+
+pub fn enqueue_backlink_on_doc_load(
+    trigger: On<Insert, HsdRecordId>,
+    new_docs: Query<&HsdRecordId, With<Hsd>>,
+    portals: Query<(&PortalConfig, &HsdChild, &Prim)>,
+    docs: Query<&HsdRecordId, With<Hsd>>,
+    mut pending: Query<&mut PendingBacklink>,
+    mut commands: Commands,
+) {
+    let Ok(new_record) = new_docs.get(trigger.entity) else {
+        return;
+    };
+    for (cfg, hsd_child, prim) in &portals {
+        let Some(dest) = cfg.0.destination.as_ref() else {
+            continue;
+        };
+        let Some(receptor) = dest.receptor.as_ref() else {
+            continue;
+        };
+        if Hash::from(receptor.document.0) != new_record.0 {
+            continue;
+        }
+        let Ok(this_record) = docs.get(hsd_child.0) else {
+            continue;
+        };
+        if new_record.0 == this_record.0 {
+            continue;
+        }
+        let payload = BacklinkPayload {
+            source_prim:   receptor.prim.clone(),
+            receptor_doc:  *this_record.0.as_bytes(),
+            receptor_prim: prim.0.to_string(),
+        };
+        push_backlink(&mut commands, &mut pending, trigger.entity, payload);
+    }
 }
 
 pub fn drain_pending(
-    incoming: Query<(Entity, &PendingIncoming, &HsdRecordId)>,
-    backlink: Query<(Entity, &PendingBacklink, &HsdRecordId)>,
+    mut incoming: Query<(Entity, &mut PendingIncoming, &HsdRecordId)>,
+    mut backlink: Query<(Entity, &mut PendingBacklink, &HsdRecordId)>,
     ready: Query<&HsdChild, With<InitializedScript>>,
     mut commands: Commands,
 ) {
@@ -167,24 +232,28 @@ pub fn drain_pending(
         ready_docs.insert(c.0);
     }
 
-    for (entity, pending, record) in &incoming {
+    for (entity, mut pending, record) in &mut incoming {
         if !ready_docs.contains(&entity) || !doc_has_receptor(record.0, INCOMING_CHANNEL) {
             continue;
         }
-        match postcard::to_allocvec(&pending.0) {
-            Ok(bytes) => emit_from_host(record.0, INCOMING_CHANNEL, bytes),
-            Err(err) => warn!(?err, "encode incoming payload"),
+        for payload in pending.0.drain(..) {
+            match postcard::to_allocvec(&payload) {
+                Ok(bytes) => emit_from_host(record.0, INCOMING_CHANNEL, bytes),
+                Err(err) => warn!(?err, "encode incoming payload"),
+            }
         }
         commands.entity(entity).remove::<PendingIncoming>();
     }
 
-    for (entity, pending, record) in &backlink {
+    for (entity, mut pending, record) in &mut backlink {
         if !ready_docs.contains(&entity) || !doc_has_receptor(record.0, BACKLINK_CHANNEL) {
             continue;
         }
-        match postcard::to_allocvec(&pending.0) {
-            Ok(bytes) => emit_from_host(record.0, BACKLINK_CHANNEL, bytes),
-            Err(err) => warn!(?err, "encode backlink payload"),
+        for payload in pending.0.drain(..) {
+            match postcard::to_allocvec(&payload) {
+                Ok(bytes) => emit_from_host(record.0, BACKLINK_CHANNEL, bytes),
+                Err(err) => warn!(?err, "encode backlink payload"),
+            }
         }
         commands.entity(entity).remove::<PendingBacklink>();
     }

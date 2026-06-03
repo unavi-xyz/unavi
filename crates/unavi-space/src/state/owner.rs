@@ -70,7 +70,7 @@ impl Default for OwnerEntry {
     }
 }
 
-fn owners_map(root: &SpaceStateRoot) -> Option<LoroMap> {
+fn owners_map_mut(root: &SpaceStateRoot) -> Option<LoroMap> {
     let map = root.doc.get_map(ROOT_KEY);
     match map.get_or_create_container(OWNERS_KEY, LoroMap::new()) {
         Ok(m) => Some(m),
@@ -81,8 +81,16 @@ fn owners_map(root: &SpaceStateRoot) -> Option<LoroMap> {
     }
 }
 
+fn owners_map_read(root: &SpaceStateRoot) -> Option<LoroMap> {
+    let map = root.doc.get_map(ROOT_KEY);
+    match map.get(OWNERS_KEY)? {
+        ValueOrContainer::Container(Container::Map(m)) => Some(m),
+        _ => None,
+    }
+}
+
 fn entry(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
-    let owners = owners_map(root)?;
+    let owners = owners_map_mut(root)?;
     match owners.get_or_create_container(&doc.to_string(), LoroMap::new()) {
         Ok(m) => Some(m),
         Err(err) => {
@@ -93,6 +101,16 @@ fn entry(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
 }
 
 pub fn set_doc_owner(space: Hash, doc: Hash, peer: [u8; 32]) {
+    if let Some(existing) = doc_owner(space, doc)
+        && existing != [0u8; 32]
+        && existing != peer
+    {
+        warn!(
+            doc = %doc,
+            "refusing to overwrite owner held by another peer",
+        );
+        return;
+    }
     let Some(root) = space_state(space) else {
         return;
     };
@@ -115,7 +133,7 @@ pub fn set_doc_owner(space: Hash, doc: Hash, peer: [u8; 32]) {
 #[must_use]
 pub fn doc_owner(space: Hash, doc: Hash) -> Option<[u8; 32]> {
     let root = space_state(space)?;
-    let owners = owners_map(&root)?;
+    let owners = owners_map_read(&root)?;
     let voc = owners.get(&doc.to_string())?;
     let ValueOrContainer::Container(Container::Map(map)) = voc else {
         return None;
@@ -172,6 +190,23 @@ mod tests {
 
         let other = [9u8; 32];
         set_doc_owner(space, doc, other);
-        assert_eq!(doc_owner(space, doc), Some(other));
+        assert_eq!(
+            doc_owner(space, doc),
+            Some(peer),
+            "ownership must not be overwritten by a different peer",
+        );
+    }
+
+    #[test]
+    fn set_owner_refuses_steal() {
+        let space = blake3::hash(b"owner-steal-space");
+        let doc = blake3::hash(b"owner-steal-doc");
+        install_test_space(space);
+
+        let original = [1u8; 32];
+        let thief = [2u8; 32];
+        set_doc_owner(space, doc, original);
+        set_doc_owner(space, doc, thief);
+        assert_eq!(doc_owner(space, doc), Some(original));
     }
 }

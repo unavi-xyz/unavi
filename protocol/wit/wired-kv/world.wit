@@ -12,7 +12,6 @@ interface api {
   self-kv: func() -> kv;
 
   // KV store for any document visible in the current space.
-  // Returns none if the doc is not present or allowed.
   get-kv: func(id: document-id) -> option<kv>;
 }
 

@@ -97,12 +97,13 @@ fn portal_from_link(link: Option<&LinkState>) -> Portal {
     Portal {
         destination: link.map(|s| PortalDestination {
             space:    s.target_space.to_vec(),
-            receptor: s.receptor_doc.zip(s.receptor_prim.clone()).map(|(d, p)| {
-                PortalReceptor {
+            receptor: s
+                .receptor_doc
+                .zip(s.receptor_prim.clone())
+                .map(|(d, p)| PortalReceptor {
                     document: d.to_vec(),
                     prim:     p,
-                }
-            }),
+                }),
         }),
         size_x:      PORTAL_WIDTH,
         size_y:      PORTAL_HEIGHT,
@@ -117,7 +118,8 @@ fn write_link(kv: &Kv, key: &str, state: &LinkState) {
 }
 
 fn read_link(kv: &Kv, key: &str) -> Option<LinkState> {
-    kv.get(key).and_then(|b| postcard::from_bytes::<LinkState>(&b).ok())
+    kv.get(key)
+        .and_then(|b| postcard::from_bytes::<LinkState>(&b).ok())
 }
 
 struct Script {

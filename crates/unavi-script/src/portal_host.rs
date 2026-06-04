@@ -46,7 +46,9 @@ fn push_incoming(
     if let Ok(mut existing) = pending.get_mut(entity) {
         existing.0.push(payload);
     } else {
-        commands.entity(entity).insert(PendingIncoming(vec![payload]));
+        commands
+            .entity(entity)
+            .insert(PendingIncoming(vec![payload]));
     }
 }
 
@@ -59,7 +61,9 @@ fn push_backlink(
     if let Ok(mut existing) = pending.get_mut(entity) {
         existing.0.push(payload);
     } else {
-        commands.entity(entity).insert(PendingBacklink(vec![payload]));
+        commands
+            .entity(entity)
+            .insert(PendingBacklink(vec![payload]));
     }
 }
 

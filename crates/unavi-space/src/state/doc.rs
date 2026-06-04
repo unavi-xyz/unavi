@@ -195,7 +195,7 @@ pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(),
         return Err(KvError::Other);
     };
     let Some(kv) = kv_map_mut(&root, doc) else {
-        return Err(KvError::QuotaExceeded);
+        return Err(KvError::Other);
     };
 
     let mut current = 0usize;

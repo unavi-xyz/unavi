@@ -182,7 +182,9 @@ pub fn doc_kv_delete(space: Hash, doc: Hash, key: &str) {
     };
     if let Err(err) = kv.delete(key) {
         warn!(?err, "failed to delete kv entry");
+        return;
     }
+    root.doc.commit();
 }
 
 pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(), KvError> {
@@ -225,6 +227,7 @@ pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(),
         warn!(?err, "failed to insert kv entry");
         return Err(KvError::Other);
     }
+    root.doc.commit();
     Ok(())
 }
 
@@ -245,39 +248,6 @@ pub fn doc_kv_total_bytes(space: Hash, doc: Hash) -> usize {
         total += k.len() + v_len;
     });
     total
-}
-
-#[must_use]
-pub fn over_quota_docs(space: Hash) -> Vec<Hash> {
-    let Some(root) = space_state(space) else {
-        return Vec::new();
-    };
-    let Some(docs) = docs_map_read(&root) else {
-        return Vec::new();
-    };
-    let mut over = Vec::new();
-    docs.for_each(|k, voc| {
-        let ValueOrContainer::Container(Container::Map(entry)) = voc else {
-            return;
-        };
-        let Some(ValueOrContainer::Container(Container::Map(kv))) = entry.get(KV_KEY) else {
-            return;
-        };
-        let mut total = 0usize;
-        kv.for_each(|kk, vv| {
-            let v_len = match vv {
-                ValueOrContainer::Value(LoroValue::Binary(b)) => b.len(),
-                _ => 0,
-            };
-            total += kk.len() + v_len;
-        });
-        if total > DOC_KV_MAX_BYTES
-            && let Ok(parsed) = k.parse::<Hash>()
-        {
-            over.push(parsed);
-        }
-    });
-    over
 }
 
 #[cfg(test)]

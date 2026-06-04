@@ -47,6 +47,7 @@ fn kv_error_tag(e: KvError) -> &'static str {
     match e {
         KvError::QuotaExceeded => "quota-exceeded",
         KvError::KeyTooLong => "key-too-long",
+        KvError::Other => "other",
     }
 }
 
@@ -63,7 +64,7 @@ impl KvHandle {
         match shared::wired::kv::kv_set(&self.api, self.rep, key, value).await {
             Ok(Ok(())) => variant_obj("ok", JsValue::UNDEFINED),
             Ok(Err(e)) => variant_obj("err", variant_obj(kv_error_tag(e), JsValue::UNDEFINED)),
-            Err(_) => variant_obj("err", variant_obj("quota-exceeded", JsValue::UNDEFINED)),
+            Err(_) => variant_obj("err", variant_obj("other", JsValue::UNDEFINED)),
         }
     }
 

@@ -71,16 +71,6 @@ pub struct EventRes {
     pub inner: InboundEvent,
 }
 
-impl EventRes {
-    #[must_use]
-    pub fn consume(&self) -> bool {
-        self.inner
-            .claimed
-            .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-            .is_ok()
-    }
-}
-
 #[derive(Default)]
 pub struct WiredEventApi {
     pub receptors: SlotMap<EventReceptorRes>,

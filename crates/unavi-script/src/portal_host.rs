@@ -1,4 +1,7 @@
-use std::collections::HashSet;
+use std::collections::{
+    HashMap,
+    HashSet,
+};
 
 use bevy::prelude::*;
 use bevy_hsd::{
@@ -71,45 +74,50 @@ pub struct PendingIncoming(Vec<IncomingPayload>);
 #[derive(Component, Default)]
 pub struct PendingBacklink(Vec<BacklinkPayload>);
 
-fn push_incoming(
-    commands: &mut Commands,
-    pending: &mut Query<&mut PendingIncoming>,
-    entity: Entity,
-    payload: IncomingPayload,
-) {
-    if let Ok(mut existing) = pending.get_mut(entity) {
-        if existing.0.contains(&payload) {
-            return;
-        }
-        if existing.0.len() >= PENDING_CAP {
-            existing.0.remove(0);
-        }
-        existing.0.push(payload);
-    } else {
-        commands
-            .entity(entity)
-            .insert(PendingIncoming(vec![payload]));
+fn stage_push<T: PartialEq>(stage: &mut HashMap<Entity, Vec<T>>, entity: Entity, payload: T) {
+    let buf = stage.entry(entity).or_default();
+    if !buf.contains(&payload) {
+        buf.push(payload);
     }
 }
 
-fn push_backlink(
+fn merge_pending<T: PartialEq>(existing: &mut Vec<T>, payloads: Vec<T>) {
+    for payload in payloads {
+        if existing.contains(&payload) {
+            continue;
+        }
+        if existing.len() >= PENDING_CAP {
+            existing.remove(0);
+        }
+        existing.push(payload);
+    }
+}
+
+fn flush_incoming(
+    commands: &mut Commands,
+    pending: &mut Query<&mut PendingIncoming>,
+    stage: HashMap<Entity, Vec<IncomingPayload>>,
+) {
+    for (entity, payloads) in stage {
+        if let Ok(mut existing) = pending.get_mut(entity) {
+            merge_pending(&mut existing.0, payloads);
+        } else {
+            commands.entity(entity).insert(PendingIncoming(payloads));
+        }
+    }
+}
+
+fn flush_backlink(
     commands: &mut Commands,
     pending: &mut Query<&mut PendingBacklink>,
-    entity: Entity,
-    payload: BacklinkPayload,
+    stage: HashMap<Entity, Vec<BacklinkPayload>>,
 ) {
-    if let Ok(mut existing) = pending.get_mut(entity) {
-        if existing.0.contains(&payload) {
-            return;
+    for (entity, payloads) in stage {
+        if let Ok(mut existing) = pending.get_mut(entity) {
+            merge_pending(&mut existing.0, payloads);
+        } else {
+            commands.entity(entity).insert(PendingBacklink(payloads));
         }
-        if existing.0.len() >= PENDING_CAP {
-            existing.0.remove(0);
-        }
-        existing.0.push(payload);
-    } else {
-        commands
-            .entity(entity)
-            .insert(PendingBacklink(vec![payload]));
     }
 }
 
@@ -124,6 +132,9 @@ pub fn service_portal_watches(
     mut backlink: Query<&mut PendingBacklink>,
     mut commands: Commands,
 ) {
+    let mut stage_incoming: HashMap<Entity, Vec<IncomingPayload>> = HashMap::new();
+    let mut stage_backlink: HashMap<Entity, Vec<BacklinkPayload>> = HashMap::new();
+
     for (entity, mut watch) in &mut watches {
         if watch.timer.tick(time.delta()).is_finished() {
             commands.entity(entity).despawn();
@@ -143,9 +154,8 @@ pub fn service_portal_watches(
         });
         if let Some((receptor_doc, receptor_prim)) = answer {
             if let Some((source_entity, _)) = docs.iter().find(|(_, r)| r.0 == watch.source_doc) {
-                push_backlink(
-                    &mut commands,
-                    &mut backlink,
+                stage_push(
+                    &mut stage_backlink,
                     source_entity,
                     BacklinkPayload {
                         source_prim: watch.source_prim.clone(),
@@ -173,9 +183,12 @@ pub fn service_portal_watches(
             if !watch.emitted.insert(record.0) {
                 continue;
             }
-            push_incoming(&mut commands, &mut incoming, doc_entity, payload.clone());
+            stage_push(&mut stage_incoming, doc_entity, payload.clone());
         }
     }
+
+    flush_incoming(&mut commands, &mut incoming, stage_incoming);
+    flush_backlink(&mut commands, &mut backlink, stage_backlink);
 }
 
 pub fn drain_pending(

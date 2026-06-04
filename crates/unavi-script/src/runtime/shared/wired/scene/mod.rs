@@ -88,7 +88,7 @@ pub(super) async fn upload_blob(data: Vec<u8>) -> anyhow::Result<Hash> {
     rx.recv().await?
 }
 
-fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()> {
+async fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()> {
     let firewall = Firewall::for_child_doc(api.doc_id);
     FIREWALL_REGISTRY.write().insert(id, firewall.clone());
     if let Some(parent_space) = unavi_space::membership::doc_space(api.doc_id) {
@@ -98,7 +98,8 @@ fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()>
     }
     AsyncCommands::default()
         .spawn((Hsd(doc), HsdRecordId(id), firewall, api.permissions.clone()))
-        .try_send()?;
+        .send()
+        .await?;
     Ok(())
 }
 
@@ -153,7 +154,8 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
                 .map(|(_, d)| Arc::clone(&d.0));
             tx.try_send(doc).ok();
         })
-        .try_send()?;
+        .send()
+        .await?;
 
     let Some(doc) = rx.recv().await? else {
         return Ok(None);
@@ -188,7 +190,8 @@ pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
                 world.despawn(entity);
             }
         })
-        .try_send()?;
+        .send()
+        .await?;
 
     Ok(())
 }
@@ -232,7 +235,7 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> anyhow::Result<u32> {
         Arc::new(rx.recv().await?)
     };
 
-    spawn_child_doc(api, Arc::clone(&doc), id)?;
+    spawn_child_doc(api, Arc::clone(&doc), id).await?;
 
     let mut scene = api.wired_scene.lock().await;
     Ok(scene.docs.insert(DocRes { doc, id }))
@@ -302,7 +305,7 @@ pub async fn create_document(api: &Api) -> anyhow::Result<u32> {
         Arc::new(doc)
     };
 
-    spawn_child_doc(api, Arc::clone(&doc), id)?;
+    spawn_child_doc(api, Arc::clone(&doc), id).await?;
 
     let mut scene = api.wired_scene.lock().await;
     Ok(scene.docs.insert(DocRes { doc, id }))

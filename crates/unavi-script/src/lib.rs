@@ -31,11 +31,14 @@ impl Plugin for ScriptPlugin {
             runtime::shared::SharedRuntimePlugin,
         ))
         .add_observer(grant_space_permissions)
-        .add_observer(portal_host::enqueue_incoming_on_destination)
-        .add_observer(portal_host::enqueue_incoming_on_doc_load)
-        .add_observer(portal_host::enqueue_backlink_on_accept)
-        .add_observer(portal_host::enqueue_backlink_on_doc_load)
-        .add_systems(Update, portal_host::drain_pending);
+        .add_systems(
+            Update,
+            (
+                portal_host::service_portal_watches,
+                portal_host::drain_pending,
+            )
+                .chain(),
+        );
     }
 }
 

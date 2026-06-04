@@ -257,6 +257,18 @@ impl ScriptBehavior for Script {
             let Ok(target) = <[u8; 32]>::try_from(payload.as_slice()) else {
                 continue;
             };
+            if read_link(&self.kv, &self.portal_key).is_some_and(|s| s.target_space == target) {
+                continue;
+            }
+            write_link(
+                &self.kv,
+                &self.portal_key,
+                &LinkState {
+                    target_space:  target,
+                    receptor_doc:  None,
+                    receptor_prim: None,
+                },
+            );
             wired::portal::api::open(self.portal_prim.clone(), target.as_ref());
         }
 

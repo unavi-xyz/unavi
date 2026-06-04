@@ -25,6 +25,7 @@ pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<()>
             .prims
             .get(prim_rep)
             .ok_or_else(|| anyhow!("invalid prim rep: {prim_rep}"))?;
+        drop(scene);
         (prim.doc_id, prim.id.to_string())
     };
     let space = doc_space(doc).ok_or_else(|| anyhow!("prim doc is not in a tracked space"))?;

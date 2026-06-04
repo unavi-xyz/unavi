@@ -1,3 +1,4 @@
+use bevy::prelude::*;
 use blake3::Hash;
 use unavi_space::{
     membership::doc_space,
@@ -7,9 +8,13 @@ use unavi_space::{
     },
 };
 
-use crate::runtime::shared::{
-    Api,
-    slot_map::SlotMap,
+use crate::{
+    firewall::Channel,
+    runtime::shared::{
+        Api,
+        registry::firewall::validate_firewall,
+        slot_map::SlotMap,
+    },
 };
 
 #[derive(Clone, Copy)]
@@ -47,6 +52,10 @@ pub async fn get_kv(api: &Api, doc_id: Vec<u8>) -> anyhow::Result<Option<u32>> {
         return Ok(None);
     }
 
+    if validate_firewall(&api.doc_id, &doc, Channel::KvRead).is_err() {
+        return Ok(None);
+    }
+
     let mut slots = api.wired_kv.lock().await;
     Ok(Some(slots.kv_slots.insert(KvRes { space, doc })))
 }
@@ -57,6 +66,9 @@ pub async fn kv_get(api: &Api, rep: u32, key: String) -> anyhow::Result<Option<V
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
+    if validate_firewall(&api.doc_id, &res.doc, Channel::KvRead).is_err() {
+        return Ok(None);
+    }
     Ok(doc::doc_kv_get(res.space, res.doc, &key))
 }
 
@@ -71,6 +83,9 @@ pub async fn kv_set(
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
+    if validate_firewall(&api.doc_id, &res.doc, Channel::KvWrite).is_err() {
+        return Ok(Err(KvError::Other));
+    }
     Ok(doc::doc_kv_set(res.space, res.doc, &key, &value))
 }
 
@@ -80,6 +95,10 @@ pub async fn kv_delete(api: &Api, rep: u32, key: String) -> anyhow::Result<()> {
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
+    if let Err(err) = validate_firewall(&api.doc_id, &res.doc, Channel::KvWrite) {
+        debug!(?err, "kv_delete denied by firewall, skipping");
+        return Ok(());
+    }
     doc::doc_kv_delete(res.space, res.doc, &key);
     Ok(())
 }
@@ -90,6 +109,9 @@ pub async fn kv_keys(api: &Api, rep: u32) -> anyhow::Result<Vec<String>> {
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
+    if validate_firewall(&api.doc_id, &res.doc, Channel::KvRead).is_err() {
+        return Ok(Vec::new());
+    }
     Ok(doc::doc_kv_keys(res.space, res.doc))
 }
 

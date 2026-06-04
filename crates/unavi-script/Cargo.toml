@@ -13,34 +13,34 @@ debug = []
 workspace = true
 
 [dependencies]
-anyhow.workspace        = true
-async-channel.workspace = true
-bevy                    = { default-features = true, workspace = true }
-bevy-hsd.path           = "../bevy-hsd"
-bevy-iroh.path          = "../bevy-iroh"
-bevy-wds.path           = "../bevy-wds"
-bevy_vrm.workspace      = true
-blake3.workspace        = true
-bytes.workspace         = true
-hsd.path                = "../hsd"
-loro.workspace          = true
-loro-surgeon.workspace  = true
-parking_lot.workspace   = true
-postcard.workspace      = true
-rand.workspace          = true
-smol_str.workspace      = true
-tokio.workspace         = true
-tracing.workspace       = true
-unavi-agent.path        = "../unavi-agent"
-unavi-avatar.path       = "../unavi-avatar"
-unavi-input.path        = "../unavi-input"
+anyhow.workspace           = true
+async-channel.workspace    = true
+bevy                       = { default-features = true, workspace = true }
+bevy-hsd.path              = "../bevy-hsd"
+bevy-iroh.path             = "../bevy-iroh"
+bevy-wds.path              = "../bevy-wds"
+bevy_vrm.workspace         = true
+blake3.workspace           = true
+bytes.workspace            = true
+hsd.path                   = "../hsd"
+loro.workspace             = true
+loro-surgeon.workspace     = true
+parking_lot.workspace      = true
+postcard.workspace         = true
+rand.workspace             = true
+smol_str.workspace         = true
+tokio.workspace            = true
+tracing.workspace          = true
+unavi-agent.path           = "../unavi-agent"
+unavi-avatar.path          = "../unavi-avatar"
+unavi-input.path           = "../unavi-input"
 unavi-portal               = { path = "../unavi-portal", version = "0.0.16" }
 unavi-portal-protocol.path = "../unavi-portal-protocol"
-unavi-space.path        = "../unavi-space"
-unavi-util.path         = "../unavi-util"
-wired-records           = { features = ["loro"], path = "../wired-records" }
-wired-schemas.path      = "../wired-schemas"
-xdid.workspace          = true
+unavi-space.path           = "../unavi-space"
+unavi-util.path            = "../unavi-util"
+wired-records              = { features = ["loro"], path = "../wired-records" }
+wired-schemas.path         = "../wired-schemas"
+xdid.workspace             = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 wasmtime      = "43.0.0"

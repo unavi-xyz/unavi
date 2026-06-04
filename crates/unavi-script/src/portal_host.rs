@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
@@ -7,21 +9,14 @@ use bevy_hsd::{
     attributes::portal::PortalConfig,
 };
 use blake3::Hash;
-use unavi_portal::{
-    Portal,
-    PortalDestination,
-    PortalTargetReceptor,
-};
+use unavi_portal::Portal;
 use unavi_portal_protocol::{
     BACKLINK_CHANNEL,
     BacklinkPayload,
     INCOMING_CHANNEL,
     IncomingPayload,
 };
-use unavi_space::membership::{
-    DOC_SPACE_REGISTRY,
-    doc_space,
-};
+use unavi_space::membership::doc_space;
 
 use crate::{
     engine::InitializedScript,
@@ -31,9 +26,44 @@ use crate::{
     },
 };
 
+/// Window during which `open` awaits a matching receptor in the target space
+/// before the handshake lapses and the portal stays merely space-aimed.
+const WATCH_TTL_SECS: f32 = 60.0;
+
 /// Cap on buffered notifications per document, so a target whose script never
 /// listens on the portal channels cannot accumulate payloads without bound.
 const PENDING_CAP: usize = 64;
+
+/// A live handshake armed by `open`: transient by design, so a lapsed attempt
+/// despawns without leaving any trace in the synced document state.
+#[derive(Component)]
+pub struct PortalWatch {
+    source_space: Hash,
+    source_doc:   Hash,
+    source_prim:  String,
+    target_space: Hash,
+    timer:        Timer,
+    emitted:      HashSet<Hash>,
+}
+
+impl PortalWatch {
+    #[must_use]
+    pub fn new(
+        source_space: Hash,
+        source_doc: Hash,
+        source_prim: String,
+        target_space: Hash,
+    ) -> Self {
+        Self {
+            source_space,
+            source_doc,
+            source_prim,
+            target_space,
+            timer: Timer::from_seconds(WATCH_TTL_SECS, TimerMode::Once),
+            emitted: HashSet::new(),
+        }
+    }
+}
 
 #[derive(Component, Default)]
 pub struct PendingIncoming(Vec<IncomingPayload>);
@@ -83,161 +113,68 @@ fn push_backlink(
     }
 }
 
-pub fn enqueue_incoming_on_destination(
-    trigger: On<Insert, PortalDestination>,
-    portals: Query<
-        (&PortalConfig, &HsdChild, &Prim),
-        (With<Portal>, Without<PortalTargetReceptor>),
-    >,
+/// Drives every armed watch each frame: expiring the stale, confirming the
+/// answered, and announcing the rest into their target space.
+pub fn service_portal_watches(
+    time: Res<Time>,
+    mut watches: Query<(Entity, &mut PortalWatch)>,
     docs: Query<(Entity, &HsdRecordId), With<Hsd>>,
-    mut pending: Query<&mut PendingIncoming>,
+    receptors: Query<(&PortalConfig, &HsdChild, &Prim), With<Portal>>,
+    mut incoming: Query<&mut PendingIncoming>,
+    mut backlink: Query<&mut PendingBacklink>,
     mut commands: Commands,
 ) {
-    let Ok((cfg, hsd_child, prim)) = portals.get(trigger.entity) else {
-        return;
-    };
-    let Some(dest) = cfg.0.destination.as_ref() else {
-        return;
-    };
-    if dest.receptor.is_some() {
-        return;
-    }
-    let Ok((_, source_record)) = docs.get(hsd_child.0) else {
-        return;
-    };
-    let Some(source_space) = doc_space(source_record.0) else {
-        return;
-    };
-    let target_space = Hash::from(dest.space.0);
-    let payload = IncomingPayload {
-        source_space: *source_space.as_bytes(),
-        source_doc:   *source_record.0.as_bytes(),
-        source_prim:  prim.0.to_string(),
-    };
-    for (target_entity, target_record) in &docs {
-        if target_record.0 == source_record.0 {
+    for (entity, mut watch) in &mut watches {
+        if watch.timer.tick(time.delta()).is_finished() {
+            commands.entity(entity).despawn();
             continue;
         }
-        if DOC_SPACE_REGISTRY.read().get(&target_record.0).copied() != Some(target_space) {
-            continue;
-        }
-        push_incoming(&mut commands, &mut pending, target_entity, payload.clone());
-    }
-}
 
-pub fn enqueue_incoming_on_doc_load(
-    trigger: On<Insert, HsdRecordId>,
-    new_docs: Query<&HsdRecordId, With<Hsd>>,
-    portals: Query<
-        (&PortalConfig, &HsdChild, &Prim),
-        (With<Portal>, Without<PortalTargetReceptor>),
-    >,
-    docs: Query<&HsdRecordId, With<Hsd>>,
-    mut pending: Query<&mut PendingIncoming>,
-    mut commands: Commands,
-) {
-    let Ok(new_record) = new_docs.get(trigger.entity) else {
-        return;
-    };
-    let Some(new_space) = doc_space(new_record.0) else {
-        return;
-    };
+        let answer = receptors.iter().find_map(|(cfg, hsd_child, prim)| {
+            let receptor = cfg.0.destination.as_ref()?.receptor.as_ref()?;
+            if Hash::from(receptor.document.0) != watch.source_doc
+                || receptor.prim != watch.source_prim
+            {
+                return None;
+            }
+            let (_, this_record) = docs.get(hsd_child.0).ok()?;
+            (doc_space(this_record.0) == Some(watch.target_space))
+                .then(|| (this_record.0, prim.0.to_string()))
+        });
+        if let Some((receptor_doc, receptor_prim)) = answer {
+            if let Some((source_entity, _)) = docs.iter().find(|(_, r)| r.0 == watch.source_doc) {
+                push_backlink(
+                    &mut commands,
+                    &mut backlink,
+                    source_entity,
+                    BacklinkPayload {
+                        source_prim: watch.source_prim.clone(),
+                        receptor_doc: *receptor_doc.as_bytes(),
+                        receptor_prim,
+                    },
+                );
+            }
+            commands.entity(entity).despawn();
+            continue;
+        }
 
-    for (cfg, hsd_child, prim) in &portals {
-        let Some(dest) = cfg.0.destination.as_ref() else {
-            continue;
-        };
-        if dest.receptor.is_some() {
-            continue;
-        }
-        if Hash::from(dest.space.0) != new_space {
-            continue;
-        }
-        let Ok(source_record) = docs.get(hsd_child.0) else {
-            continue;
-        };
-        if new_record.0 == source_record.0 {
-            continue;
-        }
-        let Some(source_space) = doc_space(source_record.0) else {
-            continue;
-        };
         let payload = IncomingPayload {
-            source_space: *source_space.as_bytes(),
-            source_doc:   *source_record.0.as_bytes(),
-            source_prim:  prim.0.to_string(),
+            source_space: *watch.source_space.as_bytes(),
+            source_doc:   *watch.source_doc.as_bytes(),
+            source_prim:  watch.source_prim.clone(),
         };
-        push_incoming(&mut commands, &mut pending, trigger.entity, payload);
-    }
-}
-
-pub fn enqueue_backlink_on_accept(
-    trigger: On<Insert, PortalConfig>,
-    portals: Query<(&PortalConfig, &HsdChild, &Prim)>,
-    docs: Query<(Entity, &HsdRecordId), With<Hsd>>,
-    mut pending: Query<&mut PendingBacklink>,
-    mut commands: Commands,
-) {
-    let Ok((cfg, hsd_child, prim)) = portals.get(trigger.entity) else {
-        return;
-    };
-    let Some(dest) = cfg.0.destination.as_ref() else {
-        return;
-    };
-    let Some(receptor) = dest.receptor.as_ref() else {
-        return;
-    };
-    let Ok((_, this_record)) = docs.get(hsd_child.0) else {
-        return;
-    };
-    let source_doc = Hash::from(receptor.document.0);
-    if source_doc == this_record.0 {
-        return;
-    }
-    let Some((source_entity, _)) = docs.iter().find(|(_, r)| r.0 == source_doc) else {
-        return;
-    };
-    let payload = BacklinkPayload {
-        source_prim:   receptor.prim.clone(),
-        receptor_doc:  *this_record.0.as_bytes(),
-        receptor_prim: prim.0.to_string(),
-    };
-    push_backlink(&mut commands, &mut pending, source_entity, payload);
-}
-
-pub fn enqueue_backlink_on_doc_load(
-    trigger: On<Insert, HsdRecordId>,
-    new_docs: Query<&HsdRecordId, With<Hsd>>,
-    portals: Query<(&PortalConfig, &HsdChild, &Prim)>,
-    docs: Query<&HsdRecordId, With<Hsd>>,
-    mut pending: Query<&mut PendingBacklink>,
-    mut commands: Commands,
-) {
-    let Ok(new_record) = new_docs.get(trigger.entity) else {
-        return;
-    };
-    for (cfg, hsd_child, prim) in &portals {
-        let Some(dest) = cfg.0.destination.as_ref() else {
-            continue;
-        };
-        let Some(receptor) = dest.receptor.as_ref() else {
-            continue;
-        };
-        if Hash::from(receptor.document.0) != new_record.0 {
-            continue;
+        for (doc_entity, record) in &docs {
+            if record.0 == watch.source_doc {
+                continue;
+            }
+            if doc_space(record.0) != Some(watch.target_space) {
+                continue;
+            }
+            if !watch.emitted.insert(record.0) {
+                continue;
+            }
+            push_incoming(&mut commands, &mut incoming, doc_entity, payload.clone());
         }
-        let Ok(this_record) = docs.get(hsd_child.0) else {
-            continue;
-        };
-        if new_record.0 == this_record.0 {
-            continue;
-        }
-        let payload = BacklinkPayload {
-            source_prim:   receptor.prim.clone(),
-            receptor_doc:  *this_record.0.as_bytes(),
-            receptor_prim: prim.0.to_string(),
-        };
-        push_backlink(&mut commands, &mut pending, trigger.entity, payload);
     }
 }
 
@@ -247,7 +184,7 @@ pub fn drain_pending(
     ready: Query<&HsdChild, With<InitializedScript>>,
     mut commands: Commands,
 ) {
-    let mut ready_docs = std::collections::HashSet::<Entity>::new();
+    let mut ready_docs = HashSet::<Entity>::new();
     for c in &ready {
         ready_docs.insert(c.0);
     }

@@ -1,4 +1,4 @@
-package example:wired-agent;
+package example:wired-kv;
 
 world guest {
   include wired:prelude/script-secure;

@@ -2,7 +2,6 @@
 path = "../../unavi-vui-module/wit"
 sha256 = "e78b523b883ce88c7ddebd957e6c85ca35d84d062d499587c6a6c2eccf796121"
 sha512 = "1dcf21e1864502fd9eec9c80a329e6cfe6cad0109483e99668ba8548ff475c06220bf7a84f3ebb23b20bfef9a850080087ccebe7ef1bb99a686e59e7d44c4377"
-deps = ["wired-peer"]
 
 [wired-agent]
 path = "../../../protocol/wit/wired-agent"

@@ -47,6 +47,13 @@ impl Access {
 }
 
 impl Firewall {
+    /// Denies all cross-document access. Used as the fallback for documents
+    /// with no registered firewall, so an unknown target is closed by default.
+    #[must_use]
+    pub fn closed() -> Self {
+        Self(Arc::new(RwLock::new(HashMap::new())))
+    }
+
     #[must_use]
     pub fn for_child_doc(creator_id: Hash) -> Self {
         let mut map = HashMap::new();

@@ -19,7 +19,7 @@ use crate::firewall::{
 pub static FIREWALL_REGISTRY: LazyLock<RwLock<HashMap<Hash, Firewall>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
-static DEFAULT_FIREWALL: LazyLock<Firewall> = LazyLock::new(Firewall::default);
+static DEFAULT_FIREWALL: LazyLock<Firewall> = LazyLock::new(Firewall::closed);
 
 #[derive(Component)]
 pub struct RegisteredFirewall(Hash);

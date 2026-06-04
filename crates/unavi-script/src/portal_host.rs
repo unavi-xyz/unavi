@@ -31,6 +31,10 @@ use crate::{
     },
 };
 
+/// Cap on buffered notifications per document, so a target whose script never
+/// listens on the portal channels cannot accumulate payloads without bound.
+const PENDING_CAP: usize = 64;
+
 #[derive(Component, Default)]
 pub struct PendingIncoming(Vec<IncomingPayload>);
 
@@ -44,6 +48,12 @@ fn push_incoming(
     payload: IncomingPayload,
 ) {
     if let Ok(mut existing) = pending.get_mut(entity) {
+        if existing.0.contains(&payload) {
+            return;
+        }
+        if existing.0.len() >= PENDING_CAP {
+            existing.0.remove(0);
+        }
         existing.0.push(payload);
     } else {
         commands
@@ -59,6 +69,12 @@ fn push_backlink(
     payload: BacklinkPayload,
 ) {
     if let Ok(mut existing) = pending.get_mut(entity) {
+        if existing.0.contains(&payload) {
+            return;
+        }
+        if existing.0.len() >= PENDING_CAP {
+            existing.0.remove(0);
+        }
         existing.0.push(payload);
     } else {
         commands

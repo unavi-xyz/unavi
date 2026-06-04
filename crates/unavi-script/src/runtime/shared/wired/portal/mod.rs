@@ -25,8 +25,9 @@ pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<()>
             .prims
             .get(prim_rep)
             .ok_or_else(|| anyhow!("invalid prim rep: {prim_rep}"))?;
+        let ids = (prim.doc_id, prim.id.to_string());
         drop(scene);
-        (prim.doc_id, prim.id.to_string())
+        ids
     };
     let space = doc_space(doc).ok_or_else(|| anyhow!("prim doc is not in a tracked space"))?;
     let target = <[u8; 32]>::try_from(target_space.as_slice())

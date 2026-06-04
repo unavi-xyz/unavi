@@ -12,18 +12,14 @@ use tokio::io::{
     AsyncReadExt,
     AsyncWriteExt,
 };
-use tracing::warn;
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     connection::shared::StreamIdent,
     peer::state::AddSpaceStateSender,
-    state::{
-        doc::over_quota_docs,
-        space::{
-            SpaceStateUpdate,
-            space_state,
-        },
+    state::space::{
+        SpaceStateUpdate,
+        space_state,
     },
 };
 
@@ -73,14 +69,6 @@ pub async fn recv_state_stream(_tx: SendStream, mut rx: RecvStream) -> anyhow::R
                     continue;
                 };
                 state.doc.import(&data)?;
-                let over = over_quota_docs(space);
-                if !over.is_empty() {
-                    warn!(
-                        ?space,
-                        docs = ?over,
-                        "peer state update pushed doc kv over cap; entries retained but flagged",
-                    );
-                }
             }
         }
     }

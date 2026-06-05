@@ -187,7 +187,7 @@ mod tests {
         let doc = blake3::hash(b"owner-doc");
         let peer = [7u8; 32];
         install_test_space(space);
-        crate::peer::SELF_PEER.set(peer).ok();
+        crate::peer::set_self_peer_id(peer);
 
         assert_eq!(doc_owner(space, doc), None);
         set_doc_owner(space, doc, peer);

@@ -32,7 +32,7 @@ impl Plugin for ScriptPlugin {
         ))
         .add_observer(grant_space_permissions)
         .add_systems(
-            Update,
+            FixedUpdate,
             (
                 portal_host::service_portal_watches,
                 portal_host::drain_pending,

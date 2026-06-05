@@ -40,7 +40,7 @@ pub fn register_protocol(
     mut commands: Commands,
 ) {
     if let Ok(endpoint) = endpoints.get(trigger.entity) {
-        let _ = crate::peer::SELF_PEER.set(*endpoint.0.id().as_bytes());
+        crate::peer::set_self_peer_id(*endpoint.0.id().as_bytes());
     }
     commands.spawn((
         RouterBuilderFn(Some(Box::new(|builder| {

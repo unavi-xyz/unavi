@@ -15,6 +15,11 @@ use blake3::Hash;
 
 use crate::{
     firewall::Channel,
+    quota::{
+        QuotaError,
+        Stock,
+        limits::MAX_EVENT_PAYLOAD_BYTES,
+    },
     runtime::shared::{
         Api,
         registry::{
@@ -87,7 +92,7 @@ pub async fn emit(
     filter: EventFilter,
 ) -> anyhow::Result<()> {
     anyhow::ensure!(
-        payload.len() <= crate::quota::limits::MAX_EVENT_PAYLOAD_BYTES,
+        payload.len() <= MAX_EVENT_PAYLOAD_BYTES,
         "event payload too large"
     );
     api.quota
@@ -244,7 +249,7 @@ fn resolve_sender_scope(
 pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::Result<u32> {
     let guard = api
         .quota
-        .charge(crate::quota::Stock::Receptors, 1)
+        .charge(Stock::Receptors, 1)
         .map_err(|err| anyhow::anyhow!("receptor quota exceeded: {err:?}"))?;
     let (tx, rx) = async_channel::bounded(RECEPTOR_CAPACITY);
 
@@ -266,12 +271,11 @@ pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> an
     };
 
     let id = NEXT_RECEPTOR_ID.fetch_add(1, Ordering::Relaxed);
-    api.wired_event
-        .lock()
-        .await
-        .receptors
-        .items
-        .insert(id, EventReceptorRes { rx, _guard: guard });
+    api.wired_event.lock().await.receptors.insert_at(
+        id,
+        EventReceptorRes { rx, _guard: guard },
+        &api.quota,
+    )?;
 
     EVENT_RECEPTOR_REGISTRY.write().insert(
         id,
@@ -315,12 +319,12 @@ pub async fn receptor_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn insert_event(api: &Api, event: InboundEvent) -> u32 {
+pub async fn insert_event(api: &Api, event: InboundEvent) -> Result<u32, QuotaError> {
     api.wired_event
         .lock()
         .await
         .events
-        .insert(EventRes { inner: event })
+        .insert(EventRes { inner: event }, &api.quota)
 }
 
 pub async fn event_consume(api: &Api, rep: u32) -> anyhow::Result<bool> {

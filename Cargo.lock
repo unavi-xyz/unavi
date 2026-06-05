@@ -14106,6 +14106,7 @@ dependencies = [
  "postcard",
  "rand 0.9.2",
  "smol_str 0.3.6",
+ "sysinfo",
  "tokio",
  "tracing",
  "tracing-subscriber",

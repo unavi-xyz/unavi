@@ -43,6 +43,7 @@ wired-schemas.path         = "../wired-schemas"
 xdid.workspace             = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
+sysinfo       = { default-features = false, features = ["system"], version = "0.37.2" }
 wasmtime      = "43.0.0"
 wasmtime-wasi = "43.0.0"
 

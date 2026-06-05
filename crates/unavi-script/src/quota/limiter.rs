@@ -36,7 +36,7 @@ impl ResourceLimiter for QuotaLimiter {
             return Ok(true);
         }
         let delta = want - self.charged;
-        match self.quota.try_charge(Stock::WasmBytes, delta) {
+        match self.quota.try_charge(Stock::WasmMemory, delta) {
             Ok(()) => {
                 self.charged = want;
                 Ok(true)
@@ -57,6 +57,6 @@ impl ResourceLimiter for QuotaLimiter {
 
 impl Drop for QuotaLimiter {
     fn drop(&mut self) {
-        self.quota.release(Stock::WasmBytes, self.charged);
+        self.quota.release(Stock::WasmMemory, self.charged);
     }
 }

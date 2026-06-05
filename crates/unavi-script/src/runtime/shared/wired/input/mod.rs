@@ -49,7 +49,7 @@ pub async fn register_input_listener(backend: &Api, node: u32) -> anyhow::Result
         .lock()
         .await
         .listeners
-        .insert(InputListenerRes { rx });
+        .insert(InputListenerRes { rx }, &backend.quota)?;
 
     Ok(rep)
 }
@@ -67,7 +67,7 @@ pub async fn register_global_input_listener(backend: &Api) -> anyhow::Result<u32
         .lock()
         .await
         .listeners
-        .insert(InputListenerRes { rx });
+        .insert(InputListenerRes { rx }, &backend.quota)?;
 
     Ok(rep)
 }

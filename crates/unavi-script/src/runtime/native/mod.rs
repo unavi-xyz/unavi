@@ -9,14 +9,17 @@ use wasmtime_wasi::{
     WasiView,
 };
 
-use crate::runtime::Runtime;
+use crate::{
+    quota::limiter::QuotaLimiter,
+    runtime::Runtime,
+};
 
 pub mod wired;
 
 pub struct NativeRuntime {
     pub table:    ResourceTable,
     pub wasi_ctx: WasiCtx,
-    pub limiter:  crate::quota::limiter::QuotaLimiter,
+    pub limiter:  QuotaLimiter,
 }
 
 impl WasiView for Runtime {

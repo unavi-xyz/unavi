@@ -105,12 +105,22 @@ impl HostEvent for Runtime {
                 distance,
                 node: AbsoluteNodeId { doc: doc_id, node },
             } => {
-                let prim_rep = self.api.wired_scene.lock().await.prims.insert(PrimRes {
-                    doc: Arc::clone(&self.api.doc),
-                    doc_id,
-                    id: node,
-                    is_proxy: true,
-                });
+                let prim_rep = self
+                    .api
+                    .wired_scene
+                    .lock()
+                    .await
+                    .prims
+                    .insert(
+                        PrimRes {
+                            doc: Arc::clone(&self.api.doc),
+                            doc_id,
+                            id: node,
+                            is_proxy: true,
+                        },
+                        &self.api.quota,
+                    )
+                    .map_err(wasmtime::Error::from)?;
                 WitSenderScope::Spatial(SpatialSender {
                     distance,
                     prim: Resource::new_own(prim_rep),
@@ -156,7 +166,9 @@ impl HostEventReceptor for Runtime {
         else {
             return Ok(None);
         };
-        let rep = shared::wired::event::insert_event(&self.api, event).await;
+        let rep = shared::wired::event::insert_event(&self.api, event)
+            .await
+            .map_err(wasmtime::Error::from)?;
         Ok(Some(Resource::new_own(rep)))
     }
 

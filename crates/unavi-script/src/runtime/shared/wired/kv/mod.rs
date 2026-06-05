@@ -33,10 +33,13 @@ pub async fn self_kv(api: &Api) -> anyhow::Result<u32> {
         anyhow::bail!("script's host document is not in a tracked space");
     };
     let mut slots = api.wired_kv.lock().await;
-    Ok(slots.kv_slots.insert(KvRes {
-        space,
-        doc: api.doc_id,
-    }))
+    Ok(slots.kv_slots.insert(
+        KvRes {
+            space,
+            doc: api.doc_id,
+        },
+        &api.quota,
+    )?)
 }
 
 pub async fn get_kv(api: &Api, doc_id: Vec<u8>) -> anyhow::Result<Option<u32>> {
@@ -57,7 +60,9 @@ pub async fn get_kv(api: &Api, doc_id: Vec<u8>) -> anyhow::Result<Option<u32>> {
     }
 
     let mut slots = api.wired_kv.lock().await;
-    Ok(Some(slots.kv_slots.insert(KvRes { space, doc })))
+    Ok(Some(
+        slots.kv_slots.insert(KvRes { space, doc }, &api.quota)?,
+    ))
 }
 
 pub async fn kv_get(api: &Api, rep: u32, key: String) -> anyhow::Result<Option<Vec<u8>>> {

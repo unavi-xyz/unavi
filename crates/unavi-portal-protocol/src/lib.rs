@@ -6,13 +6,6 @@ use serde::{
 pub const INCOMING_CHANNEL: &str = "unavi:portal:incoming";
 pub const BACKLINK_CHANNEL: &str = "unavi:portal:backlink";
 
-pub const LINK_KV_KEY_PREFIX: &str = "portal:link:";
-
-#[must_use]
-pub fn link_kv_key(prim_tree_id: &str) -> String {
-    format!("{LINK_KV_KEY_PREFIX}{prim_tree_id}")
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq, Eq)]
 pub struct LinkState {
     pub target_space:  [u8; 32],

@@ -96,9 +96,9 @@ fn merge_pending<T: PartialEq>(existing: &mut Vec<T>, payloads: Vec<T>) {
 fn flush_incoming(
     commands: &mut Commands,
     pending: &mut Query<&mut PendingIncoming>,
-    stage: HashMap<Entity, Vec<IncomingPayload>>,
+    stage: &mut HashMap<Entity, Vec<IncomingPayload>>,
 ) {
-    for (entity, payloads) in stage {
+    for (entity, payloads) in stage.drain() {
         if let Ok(mut existing) = pending.get_mut(entity) {
             merge_pending(&mut existing.0, payloads);
         } else {
@@ -110,9 +110,9 @@ fn flush_incoming(
 fn flush_backlink(
     commands: &mut Commands,
     pending: &mut Query<&mut PendingBacklink>,
-    stage: HashMap<Entity, Vec<BacklinkPayload>>,
+    stage: &mut HashMap<Entity, Vec<BacklinkPayload>>,
 ) {
-    for (entity, payloads) in stage {
+    for (entity, payloads) in stage.drain() {
         if let Ok(mut existing) = pending.get_mut(entity) {
             merge_pending(&mut existing.0, payloads);
         } else {
@@ -131,28 +131,27 @@ pub fn service_portal_watches(
     mut incoming: Query<&mut PendingIncoming>,
     mut backlink: Query<&mut PendingBacklink>,
     mut commands: Commands,
+    mut stage_incoming: Local<HashMap<Entity, Vec<IncomingPayload>>>,
+    mut stage_backlink: Local<HashMap<Entity, Vec<BacklinkPayload>>>,
 ) {
-    let mut stage_incoming: HashMap<Entity, Vec<IncomingPayload>> = HashMap::new();
-    let mut stage_backlink: HashMap<Entity, Vec<BacklinkPayload>> = HashMap::new();
-
     for (entity, mut watch) in &mut watches {
         if watch.timer.tick(time.delta()).is_finished() {
             commands.entity(entity).despawn();
             continue;
         }
 
-        let answer = receptors.iter().find_map(|(cfg, hsd_child, prim)| {
+        let found_receptor = receptors.iter().find_map(|(cfg, hsd_child, prim)| {
             let receptor = cfg.0.destination.as_ref()?.receptor.as_ref()?;
             if Hash::from(receptor.document.0) != watch.source_doc
                 || receptor.prim != watch.source_prim
             {
                 return None;
             }
-            let (_, this_record) = docs.get(hsd_child.0).ok()?;
-            (doc_space(this_record.0) == Some(watch.target_space))
-                .then(|| (this_record.0, prim.0.to_string()))
+            let (_, recp_record) = docs.get(hsd_child.0).ok()?;
+            (doc_space(recp_record.0) == Some(watch.target_space))
+                .then(|| (recp_record.0, prim.0.to_string()))
         });
-        if let Some((receptor_doc, receptor_prim)) = answer {
+        if let Some((receptor_doc, receptor_prim)) = found_receptor {
             if let Some((source_entity, _)) = docs.iter().find(|(_, r)| r.0 == watch.source_doc) {
                 stage_push(
                     &mut stage_backlink,
@@ -187,8 +186,14 @@ pub fn service_portal_watches(
         }
     }
 
-    flush_incoming(&mut commands, &mut incoming, stage_incoming);
-    flush_backlink(&mut commands, &mut backlink, stage_backlink);
+    if !stage_incoming.is_empty() {
+        flush_incoming(&mut commands, &mut incoming, &mut stage_incoming);
+        stage_incoming.shrink_to(64);
+    }
+    if !stage_backlink.is_empty() {
+        flush_backlink(&mut commands, &mut backlink, &mut stage_backlink);
+        stage_backlink.shrink_to(64);
+    }
 }
 
 pub fn drain_pending(

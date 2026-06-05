@@ -37,6 +37,7 @@ const GLOBAL_WASM_MEMORY_PERCENT: u64 = 30;
 
 fn host_total_memory() -> u64 {
     cfg_select! {
+        // WasmMemory is not currently tracked on wasm, so this value isn't used.
         target_family = "wasm" =>  2 * GB,
         _ => {
             use sysinfo::{
@@ -164,7 +165,7 @@ impl Limits {
     }
 
     #[must_use]
-    pub fn user() -> Self {
+    pub fn peer() -> Self {
         let stock = HashMap::from([
             (Stock::WasmMemory, GB as u64),
             (Stock::Documents, 1_000),

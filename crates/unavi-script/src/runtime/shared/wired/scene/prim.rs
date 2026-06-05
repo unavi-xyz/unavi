@@ -270,8 +270,9 @@ pub async fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
         .lock()
         .await
         .prims
-        .insert_clone(rep)
-        .ok_or_else(|| anyhow::anyhow!("invalid prim"))
+        .insert_clone(rep, &api.quota)
+        .ok_or_else(|| anyhow::anyhow!("invalid prim"))?
+        .map_err(Into::into)
 }
 
 pub async fn on_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
@@ -293,12 +294,15 @@ pub async fn parent(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
         return Ok(None);
     };
     let mut scene = api.wired_scene.lock().await;
-    Ok(Some(scene.prims.insert(PrimRes {
-        doc:      prim.doc,
-        doc_id:   prim.doc_id,
-        id:       parent_id,
-        is_proxy: prim.is_proxy,
-    })))
+    Ok(Some(scene.prims.insert(
+        PrimRes {
+            doc:      prim.doc,
+            doc_id:   prim.doc_id,
+            id:       parent_id,
+            is_proxy: prim.is_proxy,
+        },
+        &api.quota,
+    )?))
 }
 
 pub async fn children(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
@@ -312,14 +316,17 @@ pub async fn children(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
     Ok(child_ids
         .into_iter()
         .map(|id| {
-            scene.prims.insert(PrimRes {
-                doc: Arc::clone(&prim.doc),
-                doc_id: prim.doc_id,
-                id,
-                is_proxy: prim.is_proxy,
-            })
+            scene.prims.insert(
+                PrimRes {
+                    doc: Arc::clone(&prim.doc),
+                    doc_id: prim.doc_id,
+                    id,
+                    is_proxy: prim.is_proxy,
+                },
+                &api.quota,
+            )
         })
-        .collect())
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 pub async fn add_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<()> {

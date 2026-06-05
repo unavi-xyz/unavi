@@ -36,12 +36,19 @@ async fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
             js_sys::Reflect::set(&obj, &"tag".into(), &"global".into()).ok();
         }
         SenderScope::Spatial { distance, node } => {
-            let node_rep = api.wired_scene.lock().await.prims.insert(PrimRes {
-                doc:      Arc::clone(&api.doc),
-                doc_id:   node.doc,
-                id:       node.node,
-                is_proxy: true,
-            });
+            let inserted = api.wired_scene.lock().await.prims.insert(
+                PrimRes {
+                    doc:      Arc::clone(&api.doc),
+                    doc_id:   node.doc,
+                    id:       node.node,
+                    is_proxy: true,
+                },
+                &api.quota,
+            );
+            let Ok(node_rep) = inserted else {
+                js_sys::Reflect::set(&obj, &"tag".into(), &"global".into()).ok();
+                return obj.into();
+            };
             let val = js_sys::Object::new();
             js_sys::Reflect::set(&val, &"distance".into(), &distance.into()).ok();
             js_sys::Reflect::set(
@@ -199,7 +206,9 @@ impl EventReceptorHandle {
         let Ok(Some(event)) = shared::wired::event::receptor_poll(&self.api, self.rep).await else {
             return JsValue::UNDEFINED;
         };
-        let rep = shared::wired::event::insert_event(&self.api, event).await;
+        let Ok(rep) = shared::wired::event::insert_event(&self.api, event).await else {
+            return JsValue::UNDEFINED;
+        };
         JsValue::from(EventHandle::new(rep, Arc::clone(&self.api)))
     }
 }

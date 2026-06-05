@@ -4,6 +4,7 @@ use std::{
     time::Instant,
 };
 
+use bevy::ecs::component::Component;
 use parking_lot::Mutex;
 
 #[cfg(not(target_family = "wasm"))] pub mod limiter;
@@ -13,11 +14,9 @@ pub mod registry;
 use crate::quota::limits::Limits;
 
 /// A countable, releasable resource: held while live, refunded when freed.
-/// Charges roll up the scope chain, so a per-document cap and the enclosing
-/// space and owner caps are honored at once.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Stock {
-    WasmBytes,
+    WasmMemory,
     Documents,
     Prims,
     Slots,
@@ -25,7 +24,7 @@ pub enum Stock {
     Receptors,
 }
 
-/// A rate-limited action: spent from a token bucket that refills over time.
+/// A rate-limited action spent from a token bucket that refills over time.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Flow {
     CreateDocument,
@@ -42,42 +41,49 @@ pub enum QuotaError {
     Flow(Flow),
 }
 
+impl std::fmt::Display for QuotaError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Stock(s) => write!(f, "stock quota exceeded: {s:?}"),
+            Self::Flow(flow) => write!(f, "flow quota exceeded: {flow:?}"),
+        }
+    }
+}
+
+impl std::error::Error for QuotaError {}
+
 struct Bucket {
     tokens: f64,
     last:   Instant,
 }
 
-/// One scope in the document / space / user lattice.
-///
-/// A document charges into both its space and its owning user, so a node may
-/// have several parents. Charges and spends recurse into every parent and roll
-/// back on the way out if any refuses, so partial charges never linger.
+/// Resource limits plus an optional owner to rolls up into.
 pub struct Quota {
     limits:  Limits,
     stock:   Mutex<HashMap<Stock, u64>>,
     buckets: Mutex<HashMap<Flow, Bucket>>,
-    parents: Vec<Arc<Self>>,
+    owner:   Mutex<Option<Arc<Self>>>,
 }
 
 impl Quota {
     #[must_use]
-    pub fn new(limits: Limits, parents: Vec<Arc<Self>>) -> Arc<Self> {
+    pub fn new(limits: Limits, owner: Option<Arc<Self>>) -> Arc<Self> {
         Arc::new(Self {
             limits,
-            stock: Mutex::new(HashMap::new()),
-            buckets: Mutex::new(HashMap::new()),
-            parents,
+            stock: Mutex::default(),
+            buckets: Mutex::default(),
+            owner: Mutex::new(owner),
         })
     }
 
     #[must_use]
     pub fn root(limits: Limits) -> Arc<Self> {
-        Self::new(limits, Vec::new())
+        Self::new(limits, None)
     }
 
     #[must_use]
-    pub fn child(self: &Arc<Self>, limits: Limits) -> Arc<Self> {
-        Self::new(limits, vec![Arc::clone(self)])
+    pub fn owner(&self) -> Option<Arc<Self>> {
+        self.owner.lock().clone()
     }
 
     /// Charges `n` units of `stock`, returning a guard that refunds on drop.
@@ -100,14 +106,12 @@ impl Quota {
         *cur = next;
         drop(map);
 
-        for (i, parent) in self.parents.iter().enumerate() {
-            if let Err(err) = parent.charge_inner(stock, n) {
-                for done in &self.parents[..i] {
-                    done.refund(stock, n);
-                }
-                self.refund_local(stock, n);
-                return Err(err);
-            }
+        let Some(owner) = self.owner() else {
+            return Ok(());
+        };
+        if let Err(err) = owner.charge_inner(stock, n) {
+            self.refund_local(stock, n);
+            return Err(err);
         }
         Ok(())
     }
@@ -121,9 +125,54 @@ impl Quota {
 
     fn refund(&self, stock: Stock, n: u64) {
         self.refund_local(stock, n);
-        for parent in &self.parents {
-            parent.refund(stock, n);
+        if let Some(owner) = self.owner() {
+            owner.refund(stock, n);
         }
+    }
+
+    /// Adds standing stock without enforcing caps, for moving already-held
+    /// resources to a new owner during [`Self::set_owner`].
+    fn adopt(&self, stock: Stock, n: u64) {
+        let mut map = self.stock.lock();
+        let cur = map.entry(stock).or_insert(0);
+        *cur = cur.saturating_add(n);
+        drop(map);
+
+        if let Some(owner) = self.owner() {
+            owner.adopt(stock, n);
+        }
+    }
+
+    /// Repoints this quota at a new owner, moving its standing stock from the
+    /// old owner to the new so an ownership change leaks neither cap.
+    pub fn set_owner(&self, new_owner: Option<Arc<Self>>) {
+        let mut slot = self.owner.lock();
+        let same = match (slot.as_ref(), new_owner.as_ref()) {
+            (Some(a), Some(b)) => Arc::ptr_eq(a, b),
+            (None, None) => true,
+            _ => false,
+        };
+        if same {
+            return;
+        }
+        let held = self
+            .stock
+            .lock()
+            .iter()
+            .filter(|&(_, &n)| n > 0)
+            .map(|(&s, &n)| (s, n))
+            .collect::<Vec<_>>();
+        if let Some(old) = slot.as_ref() {
+            for &(stock, n) in &held {
+                old.refund(stock, n);
+            }
+        }
+        if let Some(new) = new_owner.as_ref() {
+            for &(stock, n) in &held {
+                new.adopt(stock, n);
+            }
+        }
+        *slot = new_owner;
     }
 
     /// Spends `n` tokens of `flow`, refilling each bucket by elapsed time
@@ -133,8 +182,7 @@ impl Quota {
     }
 
     fn spend_inner(&self, flow: Flow, n: f64, now: Instant) -> Result<(), QuotaError> {
-        let limit = self.limits.flow.get(&flow).copied();
-        if let Some(limit) = limit {
+        if let Some(limit) = self.limits.flow.get(&flow).copied() {
             let mut buckets = self.buckets.lock();
             let bucket = buckets.entry(flow).or_insert(Bucket {
                 tokens: limit.capacity,
@@ -151,14 +199,12 @@ impl Quota {
             bucket.tokens -= n;
             drop(buckets);
         }
-        for (i, parent) in self.parents.iter().enumerate() {
-            if let Err(err) = parent.spend_inner(flow, n, now) {
-                self.refill_local(flow, n);
-                for done in &self.parents[..i] {
-                    done.refill(flow, n);
-                }
-                return Err(err);
-            }
+        let Some(owner) = self.owner() else {
+            return Ok(());
+        };
+        if let Err(err) = owner.spend_inner(flow, n, now) {
+            self.refill_local(flow, n);
+            return Err(err);
         }
         Ok(())
     }
@@ -169,13 +215,6 @@ impl Quota {
             if let Some(bucket) = buckets.get_mut(&flow) {
                 bucket.tokens += n;
             }
-        }
-    }
-
-    fn refill(&self, flow: Flow, n: f64) {
-        self.refill_local(flow, n);
-        for parent in &self.parents {
-            parent.refill(flow, n);
         }
     }
 
@@ -204,9 +243,7 @@ pub struct StockGuard {
     n:     u64,
 }
 
-/// Carries stock guards on a spawned entity, so despawning the entity refunds
-/// the charges it held (e.g. a child document or a portal watch).
-#[derive(bevy::prelude::Component, Default)]
+#[derive(Component, Default)]
 pub struct QuotaGuards(pub Vec<StockGuard>);
 
 impl Drop for StockGuard {
@@ -255,60 +292,51 @@ mod tests {
     }
 
     #[test]
-    fn child_charge_rolls_up_to_parent() {
-        let parent = Quota::root(limits_stock(Stock::Documents, 1));
-        let child = parent.child(Limits::default());
-        let _g = child
-            .charge(Stock::Documents, 1)
-            .expect("within parent cap");
-        assert_eq!(parent.usage(Stock::Documents), 1);
+    fn charge_rolls_up_to_owner() {
+        let owner = Quota::root(limits_stock(Stock::Documents, 1));
+        let doc = Quota::new(Limits::default(), Some(Arc::clone(&owner)));
+        let _g = doc.charge(Stock::Documents, 1).expect("within owner cap");
+        assert_eq!(owner.usage(Stock::Documents), 1);
         assert!(matches!(
-            child.charge(Stock::Documents, 1),
+            doc.charge(Stock::Documents, 1),
             Err(QuotaError::Stock(Stock::Documents))
         ));
     }
 
     #[test]
-    fn failed_child_charge_does_not_leak_into_parent() {
-        let parent = Quota::root(limits_stock(Stock::Documents, 5));
-        let child = parent.child(limits_stock(Stock::Documents, 1));
-        let _g = child.charge(Stock::Documents, 1).expect("ok");
-        assert!(child.charge(Stock::Documents, 1).is_err());
-        assert_eq!(
-            parent.usage(Stock::Documents),
-            1,
-            "no phantom parent charge"
-        );
+    fn failed_owner_charge_does_not_leak_into_document() {
+        let owner = Quota::root(limits_stock(Stock::Documents, 1));
+        let doc = Quota::new(limits_stock(Stock::Documents, 5), Some(Arc::clone(&owner)));
+        let _g = doc.charge(Stock::Documents, 1).expect("ok");
+        assert!(doc.charge(Stock::Documents, 1).is_err());
+        assert_eq!(doc.usage(Stock::Documents), 1, "no phantom doc charge");
+        assert_eq!(owner.usage(Stock::Documents), 1);
     }
 
     #[test]
-    fn charge_rolls_into_every_parent_and_rolls_back_cleanly() {
-        let space = Quota::root(limits_stock(Stock::Prims, 10));
-        let user = Quota::root(limits_stock(Stock::Prims, 1));
-        let doc = Quota::new(
-            Limits::default(),
-            vec![Arc::clone(&space), Arc::clone(&user)],
-        );
-
-        let _g = doc.charge(Stock::Prims, 1).expect("within both parents");
-        assert_eq!(space.usage(Stock::Prims), 1);
-        assert_eq!(user.usage(Stock::Prims), 1);
-
-        // The user cap (1) is the binding constraint; the failed charge must
-        // leave no residue in the space it already touched.
-        assert!(doc.charge(Stock::Prims, 1).is_err());
-        assert_eq!(space.usage(Stock::Prims), 1, "space rolled back");
-        assert_eq!(user.usage(Stock::Prims), 1);
-    }
-
-    #[test]
-    fn child_refund_rolls_up() {
-        let parent = Quota::root(limits_stock(Stock::Prims, 4));
-        let child = parent.child(Limits::default());
-        let g = child.charge(Stock::Prims, 2).expect("ok");
-        assert_eq!(parent.usage(Stock::Prims), 2);
+    fn owner_refund_rolls_up() {
+        let owner = Quota::root(limits_stock(Stock::Prims, 4));
+        let doc = Quota::new(Limits::default(), Some(Arc::clone(&owner)));
+        let g = doc.charge(Stock::Prims, 2).expect("ok");
+        assert_eq!(owner.usage(Stock::Prims), 2);
         drop(g);
-        assert_eq!(parent.usage(Stock::Prims), 0);
+        assert_eq!(owner.usage(Stock::Prims), 0);
+    }
+
+    #[test]
+    fn set_owner_migrates_standing_stock() {
+        let old = Quota::root(limits_stock(Stock::Prims, 10));
+        let new = Quota::root(limits_stock(Stock::Prims, 10));
+        let doc = Quota::new(Limits::default(), Some(Arc::clone(&old)));
+        let g = doc.charge(Stock::Prims, 3).expect("ok");
+        assert_eq!(old.usage(Stock::Prims), 3);
+
+        doc.set_owner(Some(Arc::clone(&new)));
+        assert_eq!(old.usage(Stock::Prims), 0, "old owner released");
+        assert_eq!(new.usage(Stock::Prims), 3, "new owner adopted");
+
+        drop(g);
+        assert_eq!(new.usage(Stock::Prims), 0, "refund follows the new owner");
     }
 
     fn limits_flow(flow: Flow, capacity: f64, refill_per_sec: f64) -> Limits {
@@ -345,18 +373,17 @@ mod tests {
     }
 
     #[test]
-    fn failed_child_spend_refunds_self() {
-        let parent = Quota::root(limits_flow(Flow::Emit, 1.0, 0.0));
-        let child = parent.child(limits_flow(Flow::Emit, 10.0, 0.0));
+    fn failed_owner_spend_refunds_self() {
+        let owner = Quota::root(limits_flow(Flow::Emit, 1.0, 0.0));
+        let doc = Quota::new(limits_flow(Flow::Emit, 10.0, 0.0), Some(Arc::clone(&owner)));
         let t0 = Instant::now();
-        child.spend_inner(Flow::Emit, 1.0, t0).expect("first ok");
+        doc.spend_inner(Flow::Emit, 1.0, t0).expect("first ok");
         assert!(
-            child.spend_inner(Flow::Emit, 1.0, t0).is_err(),
-            "parent exhausted"
+            doc.spend_inner(Flow::Emit, 1.0, t0).is_err(),
+            "owner exhausted"
         );
-        // The failed attempt must not have spent the child's own token.
         assert_eq!(
-            child.buckets.lock().get(&Flow::Emit).map(|b| b.tokens),
+            doc.buckets.lock().get(&Flow::Emit).map(|b| b.tokens),
             Some(9.0),
         );
     }

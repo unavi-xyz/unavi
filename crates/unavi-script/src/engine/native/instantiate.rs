@@ -37,6 +37,7 @@ use crate::{
     },
     load::asset::Wasm,
     permissions::ApiPermissions,
+    quota::limiter::QuotaLimiter,
     runtime::{
         Runtime,
         native::{
@@ -123,7 +124,7 @@ pub fn instantiate_scripts(
             native: NativeRuntime {
                 table: ResourceTable::default(),
                 wasi_ctx,
-                limiter: crate::quota::limiter::QuotaLimiter::new(quota),
+                limiter: QuotaLimiter::new(quota),
             },
         };
         let mut store = Store::new(&engine.0, state);

@@ -11,6 +11,13 @@ use tokio::sync::MutexGuard;
 
 use crate::{
     firewall::Channel,
+    quota::{
+        Flow,
+        Quota,
+        QuotaError,
+        Stock,
+        registry::document_quota,
+    },
     runtime::shared::{
         Api,
         registry::{
@@ -56,8 +63,9 @@ pub async fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
         .lock()
         .await
         .docs
-        .insert_clone(rep)
-        .ok_or_else(|| anyhow::anyhow!("invalid doc"))
+        .insert_clone(rep, &api.quota)
+        .ok_or_else(|| anyhow::anyhow!("invalid doc"))?
+        .map_err(Into::into)
 }
 
 pub async fn on_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
@@ -67,17 +75,21 @@ pub async fn on_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
 
 fn insert_prims(
     scene: &mut MutexGuard<'_, WiredSceneApi>,
+    quota: &Arc<Quota>,
     doc: &DocRes,
     ids: Vec<TreeID>,
-) -> Vec<u32> {
+) -> Result<Vec<u32>, QuotaError> {
     ids.into_iter()
         .map(|id| {
-            scene.prims.insert(PrimRes {
-                doc: Arc::clone(&doc.doc),
-                doc_id: doc.id,
-                id,
-                is_proxy: false,
-            })
+            scene.prims.insert(
+                PrimRes {
+                    doc: Arc::clone(&doc.doc),
+                    doc_id: doc.id,
+                    id,
+                    is_proxy: false,
+                },
+                quota,
+            )
         })
         .collect()
 }
@@ -87,7 +99,7 @@ pub async fn roots(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
     let tree = doc.doc.get_tree(&*HSD_CONTAINER_ID);
     let roots = tree.roots();
     let mut scene = api.wired_scene.lock().await;
-    Ok(insert_prims(&mut scene, &doc, roots))
+    Ok(insert_prims(&mut scene, &api.quota, &doc, roots)?)
 }
 
 pub async fn prims(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
@@ -95,7 +107,7 @@ pub async fn prims(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
     let tree = doc.doc.get_tree(&*HSD_CONTAINER_ID);
     let nodes = tree.nodes();
     let mut scene = api.wired_scene.lock().await;
-    Ok(insert_prims(&mut scene, &doc, nodes))
+    Ok(insert_prims(&mut scene, &api.quota, &doc, nodes)?)
 }
 
 pub async fn get_prim(api: &Api, rep: u32, prim_id: String) -> anyhow::Result<Option<u32>> {
@@ -108,34 +120,50 @@ pub async fn get_prim(api: &Api, rep: u32, prim_id: String) -> anyhow::Result<Op
         return Ok(None);
     }
     let mut scene = api.wired_scene.lock().await;
-    Ok(Some(scene.prims.insert(PrimRes {
-        doc:      doc.doc,
-        doc_id:   doc.id,
-        id:       tree_id,
-        is_proxy: false,
-    })))
+    Ok(Some(scene.prims.insert(
+        PrimRes {
+            doc:      doc.doc,
+            doc_id:   doc.id,
+            id:       tree_id,
+            is_proxy: false,
+        },
+        &api.quota,
+    )?))
 }
 
 pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let doc = get_doc(api, rep).await?;
     validate_firewall(&api.doc_id, &doc.id, Channel::SceneWrite)?;
     api.quota
-        .spend(crate::quota::Flow::CreatePrim, 1.0)
+        .spend(Flow::CreatePrim, 1.0)
+        .map_err(|err| anyhow::anyhow!("prim quota exceeded: {err:?}"))?;
+    let quota = document_quota(doc.id);
+    quota
+        .try_charge(Stock::Prims, 1)
         .map_err(|err| anyhow::anyhow!("prim quota exceeded: {err:?}"))?;
     let tree = doc.doc.get_tree(&*HSD_CONTAINER_ID);
-    anyhow::ensure!(
-        tree.nodes().len() < crate::quota::limits::MAX_PRIMS_PER_DOC,
-        "document prim limit reached"
-    );
-    let tree_id = tree.create(TreeParentId::Root)?;
+    let tree_id = tree
+        .create(TreeParentId::Root)
+        .inspect_err(|_| quota.release(Stock::Prims, 1))?;
 
     let mut scene = api.wired_scene.lock().await;
-    Ok(scene.prims.insert(PrimRes {
-        doc:      doc.doc,
-        doc_id:   doc.id,
-        id:       tree_id,
-        is_proxy: false,
-    }))
+    match scene.prims.insert(
+        PrimRes {
+            doc:      doc.doc,
+            doc_id:   doc.id,
+            id:       tree_id,
+            is_proxy: false,
+        },
+        &api.quota,
+    ) {
+        Ok(rep) => Ok(rep),
+        Err(err) => {
+            drop(scene);
+            tree.delete(tree_id).ok();
+            quota.release(Stock::Prims, 1);
+            Err(err.into())
+        }
+    }
 }
 
 pub async fn offset_to(
@@ -184,6 +212,9 @@ pub async fn remove_prim(api: &Api, prim_rep: u32) -> anyhow::Result<()> {
     }
     validate_firewall(&api.doc_id, &prim.doc_id, Channel::SceneWrite)?;
     let tree = prim.doc.get_tree(&*HSD_CONTAINER_ID);
+    let before = tree.nodes().len();
     tree.delete(prim.id)?;
+    let removed = before.saturating_sub(tree.nodes().len()) as u64;
+    document_quota(prim.doc_id).release(Stock::Prims, removed);
     Ok(())
 }

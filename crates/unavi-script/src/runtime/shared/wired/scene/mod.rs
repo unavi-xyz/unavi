@@ -121,20 +121,26 @@ async fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> Result<(), S
 
 pub async fn self_prim(api: &Api) -> anyhow::Result<u32> {
     let mut scene = api.wired_scene.lock().await;
-    Ok(scene.prims.insert(PrimRes {
-        doc:      Arc::clone(&api.doc),
-        doc_id:   api.doc_id,
-        id:       api.prim,
-        is_proxy: false,
-    }))
+    Ok(scene.prims.insert(
+        PrimRes {
+            doc:      Arc::clone(&api.doc),
+            doc_id:   api.doc_id,
+            id:       api.prim,
+            is_proxy: false,
+        },
+        &api.quota,
+    )?)
 }
 
 pub async fn self_document(api: &Api) -> anyhow::Result<u32> {
     let mut scene = api.wired_scene.lock().await;
-    Ok(scene.docs.insert(DocRes {
-        doc: Arc::clone(&api.doc),
-        id:  api.doc_id,
-    }))
+    Ok(scene.docs.insert(
+        DocRes {
+            doc: Arc::clone(&api.doc),
+            id:  api.doc_id,
+        },
+        &api.quota,
+    )?)
 }
 
 pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
@@ -143,21 +149,19 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
 
     let mut scene = api.wired_scene.lock().await;
 
-    if let Some(key) = scene
-        .docs
-        .items
-        .iter()
-        .find(|(_, v)| v.id == id)
-        .map(|(k, _)| *k)
-    {
-        return Ok(scene.docs.insert_clone(key));
+    let existing = scene.docs.iter().find(|(_, v)| v.id == id).map(|(k, _)| k);
+    if let Some(key) = existing {
+        return Ok(scene.docs.insert_clone(key, &api.quota).transpose()?);
     }
 
     if id == api.doc_id {
-        return Ok(Some(scene.docs.insert(DocRes {
-            doc: Arc::clone(&api.doc),
-            id,
-        })));
+        return Ok(Some(scene.docs.insert(
+            DocRes {
+                doc: Arc::clone(&api.doc),
+                id,
+            },
+            &api.quota,
+        )?));
     }
 
     let (tx, rx) = async_channel::bounded::<Option<Arc<LoroDoc>>>(1);
@@ -176,7 +180,7 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
     let Some(doc) = rx.recv().await? else {
         return Ok(None);
     };
-    Ok(Some(scene.docs.insert(DocRes { doc, id })))
+    Ok(Some(scene.docs.insert(DocRes { doc, id }, &api.quota)?))
 }
 
 pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
@@ -189,10 +193,9 @@ pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let mut scene = api.wired_scene.lock().await;
     let key = scene
         .docs
-        .items
         .iter()
         .find(|(_, v)| v.id == id)
-        .map(|(k, _)| *k)
+        .map(|(k, _)| k)
         .ok_or_else(|| anyhow::anyhow!("resource not found"))?;
     let Some(doc) = scene.docs.remove(key) else {
         return Ok(());
@@ -260,7 +263,7 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> Result<u32, ScriptError> {
     spawn_child_doc(api, Arc::clone(&doc), id).await?;
 
     let mut scene = api.wired_scene.lock().await;
-    Ok(scene.docs.insert(DocRes { doc, id }))
+    Ok(scene.docs.insert(DocRes { doc, id }, &api.quota)?)
 }
 
 pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
@@ -339,5 +342,5 @@ pub async fn create_document(api: &Api) -> Result<u32, ScriptError> {
     spawn_child_doc(api, Arc::clone(&doc), id).await?;
 
     let mut scene = api.wired_scene.lock().await;
-    Ok(scene.docs.insert(DocRes { doc, id }))
+    Ok(scene.docs.insert(DocRes { doc, id }, &api.quota)?)
 }

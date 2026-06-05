@@ -28,10 +28,6 @@ impl WasiView for Runtime {
     }
 }
 
-/// Links every API.
-///
-/// Each host call gates itself with [`crate::runtime::shared::Api::require`],
-/// so an ungranted API is reachable but returns a `permission` error.
 pub fn add_apis_to_linker(linker: &mut Linker<Runtime>) -> wasmtime::Result<()> {
     wired::agent::bindings::wired::agent::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
     wired::agent::bindings::wired::agent::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;

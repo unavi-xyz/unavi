@@ -69,9 +69,14 @@ impl HostKv for Runtime {
             .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn delete(&mut self, self_: Resource<KvRes>, key: String) -> wasmtime::Result<()> {
+    async fn delete(
+        &mut self,
+        self_: Resource<KvRes>,
+        key: String,
+    ) -> wasmtime::Result<Result<(), WitKvError>> {
         shared::wired::kv::kv_delete(&self.api, self_.rep(), key)
             .await
+            .map(|r| r.map_err(WitKvError::from))
             .map_err(wasmtime::Error::from_anyhow)
     }
 

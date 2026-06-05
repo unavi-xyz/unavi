@@ -71,8 +71,12 @@ impl KvHandle {
         }
     }
 
-    pub async fn delete(&self, key: String) {
-        let _ = shared::wired::kv::kv_delete(&self.api, self.rep, key).await;
+    pub async fn delete(&self, key: String) -> JsValue {
+        match shared::wired::kv::kv_delete(&self.api, self.rep, key).await {
+            Ok(Ok(())) => variant_obj("ok", JsValue::UNDEFINED),
+            Ok(Err(e)) => variant_obj("err", variant_obj(kv_error_tag(e), JsValue::UNDEFINED)),
+            Err(_) => variant_obj("err", variant_obj("other", JsValue::UNDEFINED)),
+        }
     }
 
     pub async fn keys(&self) -> JsValue {

@@ -29,7 +29,7 @@ interface types {
   resource kv {
     get:    func(key: string) -> option<list<u8>>;
     set:    func(key: string, value: list<u8>) -> result<_, kv-error>;
-    delete: func(key: string);
+    delete: func(key: string) -> result<_, kv-error>;
     keys:   func() -> list<string>;
   }
 }

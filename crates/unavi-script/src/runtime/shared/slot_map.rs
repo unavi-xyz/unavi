@@ -45,7 +45,7 @@ impl<T> SlotMap<T> {
         while self.items.contains_key(&self.next) {
             self.next = self.next.wrapping_add(1);
 
-            // We use `u32::MAX` as an "invalid" rep value
+            // We use `u32::MAX` as an invalid rep value
             if self.next == u32::MAX {
                 self.next = self.next.wrapping_add(1);
             }

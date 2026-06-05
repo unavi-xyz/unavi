@@ -101,11 +101,6 @@ fn entry(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
 }
 
 /// Records `peer` as the owner of `doc` in the local replica.
-///
-/// The check below only prevents the local node from clobbering an owner it
-/// already sees; it is not a cross-peer security boundary. Ownership lives in a
-/// CRDT map, so a remote write still merges last-writer-wins on import — true
-/// transfer enforcement would have to validate owner changes as they arrive.
 pub fn set_doc_owner(space: Hash, doc: Hash, peer: [u8; 32]) {
     if let Some(existing) = doc_owner(space, doc)
         && existing != [0u8; 32]

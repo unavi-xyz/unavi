@@ -6,7 +6,6 @@ use unavi_portal_protocol::{
     INCOMING_CHANNEL,
     IncomingPayload,
     LinkState,
-    link_kv_key,
 };
 use wired_prelude::prelude::*;
 
@@ -236,7 +235,7 @@ impl ScriptBehavior for Script {
             },
         )?;
 
-        let portal_key = link_kv_key(&portal_prim.id());
+        let portal_key = format!("gate:link:{}", portal_prim.id());
 
         println!("Gate ready");
 

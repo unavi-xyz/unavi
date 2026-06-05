@@ -10,18 +10,21 @@ use super::scene::{
     prim::PrimHandle,
     util::opt_rep,
 };
-use crate::runtime::{
-    Runtime,
-    shared::{
-        self,
-        Api,
-        registry::event::SenderScope,
-        wired::{
-            event::{
-                EventFilter,
-                EventScope,
+use crate::{
+    permissions::ApiName,
+    runtime::{
+        Runtime,
+        shared::{
+            self,
+            Api,
+            registry::event::SenderScope,
+            wired::{
+                event::{
+                    EventFilter,
+                    EventScope,
+                },
+                scene::prim::PrimRes,
             },
-            scene::prim::PrimRes,
         },
     },
 };
@@ -224,6 +227,9 @@ impl Runtime {
         payload: Vec<u8>,
         filter: JsValue,
     ) -> Result<(), String> {
+        self.api
+            .require(ApiName::Event)
+            .map_err(|e| e.to_string())?;
         shared::wired::event::emit(&self.api, channel, payload, js_to_event_filter(&filter))
             .await
             .map_err(|e| e.to_string())
@@ -235,13 +241,17 @@ impl Runtime {
         channels: JsValue,
         filter: JsValue,
     ) -> EventReceptorHandle {
-        let channels = js_sys::Array::from(&channels)
-            .iter()
-            .filter_map(|v| v.as_string())
-            .collect();
-        let rep = shared::wired::event::listen(&self.api, channels, js_to_event_filter(&filter))
-            .await
-            .unwrap_or(u32::MAX);
+        let rep = if self.api.require(ApiName::Event).is_ok() {
+            let channels = js_sys::Array::from(&channels)
+                .iter()
+                .filter_map(|v| v.as_string())
+                .collect();
+            shared::wired::event::listen(&self.api, channels, js_to_event_filter(&filter))
+                .await
+                .unwrap_or(u32::MAX)
+        } else {
+            u32::MAX
+        };
         EventReceptorHandle::new(rep, Arc::clone(&self.api))
     }
 }

@@ -7,12 +7,13 @@ world all {
 
 interface api {
   use types.{kv, document-id};
+  use wired:error/types.{error};
 
   // KV store for the script's own document.
-  self-kv: func() -> kv;
+  self-kv: func() -> result<kv, error>;
 
   // KV store for any document visible in the current space.
-  get-kv: func(id: document-id) -> option<kv>;
+  get-kv: func(id: document-id) -> result<option<kv>, error>;
 }
 
 interface types {

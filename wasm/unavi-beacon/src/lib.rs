@@ -55,8 +55,8 @@ struct Script {
 }
 
 impl ScriptBehavior for Script {
-    fn init() -> Self {
-        let doc = self_document();
+    fn init() -> anyhow::Result<Self> {
+        let doc = self_document()?;
 
         let Some((id, prim)) = doc.prims().into_iter().find_map(|p| {
             Hash::from_str(&p.name().unwrap_or_default())
@@ -94,37 +94,37 @@ impl ScriptBehavior for Script {
             occlusion_texture:          None,
             roughness:                  Some(0.7),
         }));
-        let input = register_input_listener(&cube);
+        let input = register_input_listener(&cube)?;
         println!("Beacon initialized: space={id}");
-        Self {
+        Ok(Self {
             cube,
             id,
             input,
             published: false,
             time: SystemTime::now(),
-        }
+        })
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.input.poll() {
             if !self.published && matches!(event.action, InputAction::GrabDown) {
-                let doc = self_document();
+                let doc = self_document()?;
                 match publish_document(&doc.id()) {
                     Ok(()) => {
                         self.published = true;
                         println!("Beacon published: space={}", self.id);
                     }
-                    Err(err) => eprintln!("Beacon publish failed: {err}"),
+                    Err(err) => eprintln!("Beacon publish failed: {err:?}"),
                 }
             }
         }
 
-        if !wired::peer::api::is_self_owner() {
-            return;
+        if !wired::peer::api::is_self_owner()? {
+            return Ok(());
         }
 
         if self.time.elapsed().expect("elapsed") < EMIT_INTERVAL {
-            return;
+            return Ok(());
         }
         self.time = SystemTime::now();
 
@@ -138,6 +138,7 @@ impl ScriptBehavior for Script {
                     radius: EVENT_RADIUS,
                 }),
             },
-        );
+        )?;
+        Ok(())
     }
 }

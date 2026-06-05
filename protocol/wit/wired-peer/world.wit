@@ -12,8 +12,9 @@ interface types {
 interface api {
   use types.{peer-id};
   use wired:scene/types.{document-id};
+  use wired:error/types.{error};
 
-  self-peer:     func() -> option<peer-id>;
-  doc-owner:     func(doc: document-id) -> option<peer-id>;
-  is-self-owner: func() -> bool;
+  self-peer:     func() -> result<option<peer-id>, error>;
+  doc-owner:     func(doc: document-id) -> result<option<peer-id>, error>;
+  is-self-owner: func() -> result<bool, error>;
 }

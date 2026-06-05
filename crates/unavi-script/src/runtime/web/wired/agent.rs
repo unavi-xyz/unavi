@@ -5,11 +5,14 @@ use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
 use super::scene::prim::PrimHandle;
-use crate::runtime::{
-    Runtime,
-    shared::{
-        self,
-        Api,
+use crate::{
+    permissions::ApiName,
+    runtime::{
+        Runtime,
+        shared::{
+            self,
+            Api,
+        },
     },
 };
 
@@ -121,17 +124,23 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredAgentLocalAgent")]
     pub async fn wired_agent_local_agent(&self) -> AgentHandle {
-        let rep = shared::wired::agent::local_agent(&self.api)
-            .await
-            .unwrap_or(u32::MAX);
+        let rep = match self.api.require(ApiName::LocalAgent) {
+            Ok(()) => shared::wired::agent::local_agent(&self.api)
+                .await
+                .unwrap_or(u32::MAX),
+            Err(_) => u32::MAX,
+        };
         AgentHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "wiredAgentLocalCamera")]
     pub async fn wired_agent_local_camera(&self) -> PrimHandle {
-        let rep = shared::wired::agent::local_camera(&self.api)
-            .await
-            .unwrap_or(u32::MAX);
+        let rep = match self.api.require(ApiName::LocalAgent) {
+            Ok(()) => shared::wired::agent::local_camera(&self.api)
+                .await
+                .unwrap_or(u32::MAX),
+            Err(_) => u32::MAX,
+        };
         PrimHandle::new(rep, Arc::clone(&self.api))
     }
 }

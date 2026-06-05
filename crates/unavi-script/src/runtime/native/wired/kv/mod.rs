@@ -1,11 +1,16 @@
 use unavi_space::state::doc::KvError;
 use wasmtime::component::Resource;
 
-use crate::runtime::{
-    Runtime,
-    shared::{
-        self,
-        wired::kv::KvRes,
+use crate::{
+    error::ScriptError,
+    permissions::ApiName,
+    runtime::{
+        Runtime,
+        native::wired::error::Error,
+        shared::{
+            self,
+            wired::kv::KvRes,
+        },
     },
 };
 
@@ -16,6 +21,7 @@ pub mod bindings {
         path: "../../protocol/wit/wired-kv",
         with: {
             "wired:kv/types.kv": KvRes,
+            "wired:error/types": crate::runtime::native::wired::error::types,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
@@ -83,17 +89,26 @@ impl HostKv for Runtime {
 }
 
 impl bindings::wired::kv::api::Host for Runtime {
-    async fn self_kv(&mut self) -> wasmtime::Result<Resource<Kv>> {
-        shared::wired::kv::self_kv(&self.api)
+    async fn self_kv(&mut self) -> wasmtime::Result<Result<Resource<Kv>, Error>> {
+        if let Err(err) = self.api.require(ApiName::Kv) {
+            return Ok(Err(err.into()));
+        }
+        Ok(shared::wired::kv::self_kv(&self.api)
             .await
             .map(Resource::new_own)
-            .map_err(wasmtime::Error::from_anyhow)
+            .map_err(|err| ScriptError::from(err).into()))
     }
 
-    async fn get_kv(&mut self, id: Vec<u8>) -> wasmtime::Result<Option<Resource<Kv>>> {
-        shared::wired::kv::get_kv(&self.api, id)
+    async fn get_kv(
+        &mut self,
+        id: Vec<u8>,
+    ) -> wasmtime::Result<Result<Option<Resource<Kv>>, Error>> {
+        if let Err(err) = self.api.require(ApiName::Kv) {
+            return Ok(Err(err.into()));
+        }
+        Ok(shared::wired::kv::get_kv(&self.api, id)
             .await
             .map(|opt| opt.map(Resource::new_own))
-            .map_err(wasmtime::Error::from_anyhow)
+            .map_err(|err| ScriptError::from(err).into()))
     }
 }

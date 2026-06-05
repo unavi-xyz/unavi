@@ -45,7 +45,8 @@ impl GuestVuiModule for VuiModule {
                 documents: None,
                 scope:     EventScope::Global,
             },
-        );
+        )
+        .expect("listen");
         let activate_receptor = listen(
             &[
                 CH_ACTIVATE.to_string(),
@@ -56,7 +57,8 @@ impl GuestVuiModule for VuiModule {
                 documents: None,
                 scope:     EventScope::Global,
             },
-        );
+        )
+        .expect("listen");
         Self {
             name,
             icon_prim_id,
@@ -79,7 +81,8 @@ impl GuestVuiModule for VuiModule {
                     documents: Some(vec![event.sender().document]),
                     scope:     EventScope::Global,
                 },
-            );
+            )
+            .ok();
         }
 
         while let Some(event) = self.activate_receptor.poll() {

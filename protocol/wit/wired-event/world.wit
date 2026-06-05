@@ -7,9 +7,10 @@ world all {
 
 interface api {
   use types.{event-filter, event-receptor};
+  use wired:error/types.{error};
 
-  emit:   func(channel: string, payload: list<u8>, filter: event-filter);
-  listen: func(channels: list<string>, filter: event-filter) -> event-receptor;
+  emit:   func(channel: string, payload: list<u8>, filter: event-filter) -> result<_, error>;
+  listen: func(channels: list<string>, filter: event-filter) -> result<event-receptor, error>;
 }
 
 interface types {

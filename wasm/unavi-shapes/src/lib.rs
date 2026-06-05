@@ -35,7 +35,11 @@ struct RawMesh {
 
 fn convert_raw_mesh(doc: Option<&Document>, raw: RawMesh) -> Prim {
     let prim = doc.map_or_else(
-        || wired::scene::api::self_document().create_prim(),
+        || {
+            wired::scene::api::self_document()
+                .expect("self_document")
+                .create_prim()
+        },
         Document::create_prim,
     );
     prim.set_mesh_stream("POSITION", Some(raw.positions.as_flattened()));

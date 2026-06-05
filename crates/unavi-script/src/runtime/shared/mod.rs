@@ -9,7 +9,12 @@ use loro::{
 use tokio::sync::Mutex;
 
 use crate::{
-    permissions::ApiPermissions,
+    error::ScriptError,
+    permissions::{
+        ApiName,
+        ApiPermissions,
+    },
+    quota::Quota,
     runtime::shared::wired::{
         agent::WiredAgentApi,
         event::WiredEventApi,
@@ -29,12 +34,24 @@ pub struct Api {
     pub doc_id:      Hash,
     pub prim:        TreeID,
     pub permissions: ApiPermissions,
+    pub quota:       Arc<Quota>,
     pub wired_agent: Mutex<WiredAgentApi>,
     pub wired_event: Mutex<WiredEventApi>,
     pub wired_input: Mutex<WiredInputApi>,
     pub wired_kv:    Mutex<WiredKvApi>,
     pub wired_scene: Mutex<WiredSceneApi>,
     pub wired_wds:   Mutex<WiredWdsApi>,
+}
+
+impl Api {
+    /// Gates a call on the document holding the named permission.
+    pub fn require(&self, name: ApiName) -> Result<(), ScriptError> {
+        if self.permissions.contains(&name) {
+            Ok(())
+        } else {
+            Err(ScriptError::permission(format!("{name:?}")))
+        }
+    }
 }
 
 pub struct SharedRuntimePlugin;

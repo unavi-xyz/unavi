@@ -33,10 +33,16 @@ use unavi_util::{
 use wired_schemas::SCHEMA_HSD;
 
 use crate::{
+    error::ScriptError,
     firewall::{
         Access,
         Channel,
         Firewall,
+    },
+    quota::{
+        Flow,
+        QuotaGuards,
+        Stock,
     },
     runtime::shared::{
         Api,
@@ -88,7 +94,9 @@ pub(super) async fn upload_blob(data: Vec<u8>) -> anyhow::Result<Hash> {
     rx.recv().await?
 }
 
-async fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Result<()> {
+async fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> Result<(), ScriptError> {
+    let doc_guard = api.quota.charge(Stock::Documents, 1)?;
+
     let firewall = Firewall::for_child_doc(api.doc_id);
     FIREWALL_REGISTRY.write().insert(id, firewall.clone());
     if let Some(parent_space) = unavi_space::membership::doc_space(api.doc_id) {
@@ -96,10 +104,18 @@ async fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> anyhow::Resu
             .write()
             .insert(id, parent_space);
     }
+    crate::quota::registry::child_document_quota(id, api.doc_id);
     AsyncCommands::default()
-        .spawn((Hsd(doc), HsdRecordId(id), firewall, api.permissions.clone()))
+        .spawn((
+            Hsd(doc),
+            HsdRecordId(id),
+            firewall,
+            api.permissions.clone(),
+            QuotaGuards(vec![doc_guard]),
+        ))
         .send()
-        .await?;
+        .await
+        .map_err(|err| ScriptError::other(err.to_string()))?;
     Ok(())
 }
 
@@ -196,44 +212,50 @@ pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> anyhow::Result<u32> {
-    let blob_hash = Hash::from_slice(&blob_id)?;
+pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> Result<u32, ScriptError> {
+    api.quota.spend(Flow::CreateDocument, 1.0)?;
 
-    let bytes = {
-        let (tx, rx) = async_channel::bounded(1);
-        AsyncCommands::default()
-            .trigger(GetBlob {
-                hash: blob_hash,
-                cancel: None,
-                tx,
-            })
-            .send()
-            .await?;
-        rx.recv().await?
-    };
+    let (doc, id) = async {
+        let blob_hash = Hash::from_slice(&blob_id)?;
 
-    let hsd_str = std::str::from_utf8(&bytes)?.to_owned();
-    let file = HsdFile::from_ron(&hsd_str)?;
+        let bytes = {
+            let (tx, rx) = async_channel::bounded(1);
+            AsyncCommands::default()
+                .trigger(GetBlob {
+                    hash: blob_hash,
+                    cancel: None,
+                    tx,
+                })
+                .send()
+                .await?;
+            rx.recv().await?
+        };
 
-    let id = {
-        let (mut write, rx, _cancel) = WriteRecord::new(None);
-        write.schemas = vec![SchemaDef {
-            schema:    (&*SCHEMA_HSD).into(),
-            container: "hsd".into(),
-            f:         Arc::new(move |doc| {
-                file.load_into_doc(doc)?;
-                Ok(())
-            }),
-        }];
-        AsyncCommands::default().trigger(write).send().await?;
-        rx.recv().await?
-    };
+        let hsd_str = std::str::from_utf8(&bytes)?.to_owned();
+        let file = HsdFile::from_ron(&hsd_str)?;
 
-    let doc = {
-        let (read, rx, _cancel) = ReadRecord::new(id);
-        AsyncCommands::default().trigger(read).send().await?;
-        Arc::new(rx.recv().await?)
-    };
+        let id = {
+            let (mut write, rx, _cancel) = WriteRecord::new(None);
+            write.schemas = vec![SchemaDef {
+                schema:    (&*SCHEMA_HSD).into(),
+                container: "hsd".into(),
+                f:         Arc::new(move |doc| {
+                    file.load_into_doc(doc)?;
+                    Ok(())
+                }),
+            }];
+            AsyncCommands::default().trigger(write).send().await?;
+            rx.recv().await?
+        };
+
+        let doc = {
+            let (read, rx, _cancel) = ReadRecord::new(id);
+            AsyncCommands::default().trigger(read).send().await?;
+            Arc::new(rx.recv().await?)
+        };
+        anyhow::Ok((doc, id))
+    }
+    .await?;
 
     spawn_child_doc(api, Arc::clone(&doc), id).await?;
 
@@ -244,6 +266,9 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> anyhow::Result<u32> {
 pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = Hash::from_slice(&id)?;
     validate_firewall(&api.doc_id, &id, Channel::SceneWrite)?;
+    api.quota
+        .spend(Flow::Publish, 1.0)
+        .map_err(|err| anyhow::anyhow!("publish quota exceeded: {err:?}"))?;
 
     let firewall = FIREWALL_REGISTRY.read().get(&id).cloned();
     if let Some(firewall) = firewall {
@@ -279,31 +304,37 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn create_document(api: &Api) -> anyhow::Result<u32> {
-    let id = {
-        let (mut write, rx, cancel) = WriteRecord::new(None);
-        write.schemas = vec![SchemaDef {
-            schema:    (&*SCHEMA_HSD).into(),
-            container: "hsd".into(),
-            f:         Arc::new(|doc| {
-                // Ensure the HSD tree container exists.
-                let _ = doc.get_tree(&*HSD_CONTAINER_ID);
-                Ok(())
-            }),
-        }];
-        AsyncCommands::default().trigger(write).send().await?;
-        let id = rx.recv().await?;
-        drop(cancel);
-        id
-    };
+pub async fn create_document(api: &Api) -> Result<u32, ScriptError> {
+    api.quota.spend(Flow::CreateDocument, 1.0)?;
 
-    let doc = {
-        let (read, rx, cancel) = ReadRecord::new(id);
-        AsyncCommands::default().trigger(read).send().await?;
-        let doc = rx.recv().await?;
-        drop(cancel);
-        Arc::new(doc)
-    };
+    let (doc, id) = async {
+        let id = {
+            let (mut write, rx, cancel) = WriteRecord::new(None);
+            write.schemas = vec![SchemaDef {
+                schema:    (&*SCHEMA_HSD).into(),
+                container: "hsd".into(),
+                f:         Arc::new(|doc| {
+                    // Ensure the HSD tree container exists.
+                    let _ = doc.get_tree(&*HSD_CONTAINER_ID);
+                    Ok(())
+                }),
+            }];
+            AsyncCommands::default().trigger(write).send().await?;
+            let id = rx.recv().await?;
+            drop(cancel);
+            id
+        };
+
+        let doc = {
+            let (read, rx, cancel) = ReadRecord::new(id);
+            AsyncCommands::default().trigger(read).send().await?;
+            let doc = rx.recv().await?;
+            drop(cancel);
+            Arc::new(doc)
+        };
+        anyhow::Ok((doc, id))
+    }
+    .await?;
 
     spawn_child_doc(api, Arc::clone(&doc), id).await?;
 

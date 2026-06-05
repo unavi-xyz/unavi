@@ -15,10 +15,12 @@ use crate::{
 
 #[cfg(feature = "debug")] pub mod debug;
 mod engine;
+pub mod error;
 pub mod firewall;
 pub mod load;
 pub mod permissions;
 mod portal_host;
+pub mod quota;
 pub mod runtime;
 
 pub struct ScriptPlugin;

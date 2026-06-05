@@ -60,6 +60,7 @@ pub fn deregister_firewalls(
 ) {
     let id = ids.get(trigger.entity).expect("id");
     FIREWALL_REGISTRY.write().remove(&id.0);
+    crate::quota::registry::forget_document(id.0);
 }
 
 pub fn validate_firewall(me: &Hash, target: &Hash, channel: Channel) -> anyhow::Result<()> {

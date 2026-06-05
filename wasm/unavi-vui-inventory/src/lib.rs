@@ -94,8 +94,8 @@ struct Script {
 }
 
 impl ScriptBehavior for Script {
-    fn init() -> Self {
-        let doc = self_document();
+    fn init() -> anyhow::Result<Self> {
+        let doc = self_document()?;
 
         let color = Color::WHITE;
         let color_mat = material(Some(color));
@@ -138,16 +138,16 @@ impl ScriptBehavior for Script {
         let icon = Cuboid::new(Vec3::splat(ICON_SIZE)).mesh();
         let module = VuiModule::new(NAME, &icon);
 
-        Self {
+        Ok(Self {
             root,
             _icon: icon,
             module,
             color,
             themed_prims,
-        }
+        })
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.module.poll() {
             match event {
                 ModuleEvent::Activate(t) => {
@@ -169,5 +169,6 @@ impl ScriptBehavior for Script {
                 }
             }
         }
+        Ok(())
     }
 }

@@ -51,7 +51,8 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
                 documents: None,
                 scope:     EventScope::Global,
             },
-        );
+        )
+        .expect("listen");
         Self {
             register_receptor,
             ticks: Cell::new(0),
@@ -72,7 +73,8 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
                         documents: None,
                         scope:     EventScope::Global,
                     },
-                );
+                )
+                .ok();
                 self.fired.set(true);
             }
         }
@@ -102,7 +104,8 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
                 documents: Some(vec![doc_id]),
                 scope:     EventScope::Global,
             },
-        );
+        )
+        .ok();
     }
 
     fn deactivate(&self, doc_id: Vec<u8>) {
@@ -113,7 +116,8 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
                 documents: Some(vec![doc_id]),
                 scope:     EventScope::Global,
             },
-        );
+        )
+        .ok();
     }
 
     fn set_color(&self, doc_id: Vec<u8>, color: Color) {
@@ -125,6 +129,7 @@ impl GuestVuiModuleRegistry for VuiModuleRegistry {
                 documents: Some(vec![doc_id]),
                 scope:     EventScope::Global,
             },
-        );
+        )
+        .ok();
     }
 }

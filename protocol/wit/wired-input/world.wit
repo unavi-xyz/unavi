@@ -9,17 +9,19 @@ world prelude {
 interface api {
   use types.{input-listener};
   use wired:scene/types.{prim};
+  use wired:error/types.{error};
 
   // Captures input events for a given prim.
   // Requires a collider to function.
-  register-input-listener: func(target: borrow<prim>) -> input-listener;
+  register-input-listener: func(target: borrow<prim>) -> result<input-listener, error>;
 }
 
 interface context {
   use types.{input-listener};
+  use wired:error/types.{error};
 
   // Captures all input events from the local agent.
-  register-global-input-listener: func() -> input-listener;
+  register-global-input-listener: func() -> result<input-listener, error>;
 }
 
 interface types {

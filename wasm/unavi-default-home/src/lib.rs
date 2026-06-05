@@ -36,8 +36,8 @@ fn set_translation(prim: &Prim, translation: Vec3) {
 struct Script;
 
 impl ScriptBehavior for Script {
-    fn init() -> Self {
-        let doc = self_document();
+    fn init() -> anyhow::Result<Self> {
+        let doc = self_document()?;
 
         let shape = Cuboid::new(Vec3::new(GROUND_SIZE, GROUND_THICK, GROUND_SIZE));
 
@@ -90,11 +90,11 @@ impl ScriptBehavior for Script {
 
         let Some(gate_blob) = gate_blob else {
             eprintln!("no gate asset");
-            return Self;
+            return Ok(Self);
         };
         let Ok(gate_doc) = load_hsd(&gate_blob) else {
             eprintln!("error loading gate HSD");
-            return Self;
+            return Ok(Self);
         };
 
         for root in gate_doc.roots() {
@@ -103,6 +103,6 @@ impl ScriptBehavior for Script {
 
         println!("Welcome home! =)");
 
-        Self
+        Ok(Self)
     }
 }

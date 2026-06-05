@@ -20,15 +20,15 @@ struct Script {
 }
 
 impl ScriptBehavior for Script {
-    fn init() -> Self {
+    fn init() -> anyhow::Result<Self> {
         let kv = TypedKv::default();
         if kv.get::<Counter>(KEY).expect("decode").is_none() {
             kv.set(KEY, &Counter::default()).expect("seed");
         }
-        Self { kv }
+        Ok(Self { kv })
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self) -> anyhow::Result<()> {
         let mut counter = self
             .kv
             .get::<Counter>(KEY)
@@ -38,5 +38,6 @@ impl ScriptBehavior for Script {
         if let Err(err) = self.kv.set(KEY, &counter) {
             println!("kv set failed: {err}");
         }
+        Ok(())
     }
 }

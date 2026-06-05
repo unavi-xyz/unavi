@@ -89,18 +89,17 @@ pub async fn kv_set(
     Ok(doc::doc_kv_set(res.space, res.doc, &key, &value))
 }
 
-pub async fn kv_delete(api: &Api, rep: u32, key: String) -> anyhow::Result<()> {
+pub async fn kv_delete(api: &Api, rep: u32, key: String) -> anyhow::Result<Result<(), KvError>> {
     let slots = api.wired_kv.lock().await;
     let Some(res) = slots.kv_slots.get(rep).copied() else {
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if let Err(err) = validate_firewall(&api.doc_id, &res.doc, Channel::KvWrite) {
-        debug!(?err, "kv_delete denied by firewall, skipping");
-        return Ok(());
+    if validate_firewall(&api.doc_id, &res.doc, Channel::KvWrite).is_err() {
+        return Ok(Err(KvError::Other));
     }
     doc::doc_kv_delete(res.space, res.doc, &key);
-    Ok(())
+    Ok(Ok(()))
 }
 
 pub async fn kv_keys(api: &Api, rep: u32) -> anyhow::Result<Vec<String>> {

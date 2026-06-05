@@ -2,9 +2,12 @@ use std::sync::Arc;
 
 use wasm_bindgen::prelude::*;
 
-use crate::runtime::{
-    Runtime,
-    shared,
+use crate::{
+    permissions::ApiName,
+    runtime::{
+        Runtime,
+        shared,
+    },
 };
 
 pub mod document;
@@ -32,22 +35,29 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredSceneSelfPrim")]
     pub async fn wired_scene_self_prim(&self) -> PrimHandle {
-        let rep = shared::wired::scene::self_prim(&self.api)
-            .await
-            .unwrap_or(u32::MAX);
+        let rep = match self.api.require(ApiName::Scene) {
+            Ok(()) => shared::wired::scene::self_prim(&self.api)
+                .await
+                .unwrap_or(u32::MAX),
+            Err(_) => u32::MAX,
+        };
         PrimHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "wiredSceneSelfDocument")]
     pub async fn wired_scene_self_document(&self) -> DocHandle {
-        let rep = shared::wired::scene::self_document(&self.api)
-            .await
-            .unwrap_or(u32::MAX);
+        let rep = match self.api.require(ApiName::Scene) {
+            Ok(()) => shared::wired::scene::self_document(&self.api)
+                .await
+                .unwrap_or(u32::MAX),
+            Err(_) => u32::MAX,
+        };
         DocHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "wiredSceneGetDocument")]
     pub async fn wired_scene_get_document(&self, id: Vec<u8>) -> Option<DocHandle> {
+        self.api.require(ApiName::Scene).ok()?;
         let rep = shared::wired::scene::get_document(&self.api, id)
             .await
             .ok()??;
@@ -56,6 +66,9 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredSceneCreateDocument")]
     pub async fn wired_scene_create_document(&self) -> Result<DocHandle, String> {
+        self.api
+            .require(ApiName::CreateDocument)
+            .map_err(|e| e.to_string())?;
         let rep = shared::wired::scene::create_document(&self.api)
             .await
             .map_err(|e| e.to_string())?;
@@ -64,6 +77,9 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredSceneRemoveDocument")]
     pub async fn wired_scene_remove_document(&self, id: Vec<u8>) -> Result<(), String> {
+        self.api
+            .require(ApiName::Scene)
+            .map_err(|e| e.to_string())?;
         shared::wired::scene::remove_document(&self.api, id)
             .await
             .map_err(|e| e.to_string())
@@ -71,6 +87,9 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredSceneLoadHsd")]
     pub async fn wired_scene_load_hsd(&self, blob_id: Vec<u8>) -> Result<DocHandle, String> {
+        self.api
+            .require(ApiName::CreateDocument)
+            .map_err(|e| e.to_string())?;
         let rep = shared::wired::scene::load_hsd(&self.api, blob_id)
             .await
             .map_err(|e| e.to_string())?;
@@ -79,6 +98,9 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredScenePublishDocument")]
     pub async fn wired_scene_publish_document(&self, id: Vec<u8>) -> Result<(), String> {
+        self.api
+            .require(ApiName::CreateDocument)
+            .map_err(|e| e.to_string())?;
         shared::wired::scene::publish_document(&self.api, id)
             .await
             .map_err(|e| e.to_string())

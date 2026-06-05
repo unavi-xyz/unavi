@@ -9,11 +9,15 @@ pub mod prelude {
 
 pub trait ScriptBehavior: Sized {
     /// Called once to initialize the script.
-    fn init() -> Self;
+    fn init() -> ::anyhow::Result<Self>;
     /// Called on a fixed interval.
-    fn tick(&mut self) {}
+    fn tick(&mut self) -> ::anyhow::Result<()> {
+        Ok(())
+    }
     /// Called every frame before rendering.
-    fn render(&mut self) {}
+    fn render(&mut self) -> ::anyhow::Result<()> {
+        Ok(())
+    }
 }
 
 /// Helper around [`wit_bindgen::generate!`], using better, manually-defined
@@ -31,10 +35,10 @@ macro_rules! generate {
 
         impl ::wired_prelude::wired_kv::WiredKv for wired::kv::types::Kv {
             fn self_kv() -> Self {
-                wired::kv::api::self_kv()
+                wired::kv::api::self_kv().expect("self_kv")
             }
             fn get_kv(doc_id: &[u8]) -> ::core::option::Option<Self> {
-                wired::kv::api::get_kv(doc_id)
+                wired::kv::api::get_kv(doc_id).ok().flatten()
             }
             fn kv_get(&self, key: &str) -> ::core::option::Option<::std::vec::Vec<u8>> {
                 self.get(key)
@@ -74,8 +78,8 @@ macro_rules! generate {
 /// wired_prelude::generate_script!(Script);
 ///
 /// impl ScriptBehavior for Script {
-///     fn init() -> Self {
-///         Self
+///     fn init() -> anyhow::Result<Self> {
+///         Ok(Self)
 ///     }
 /// }
 /// ```
@@ -93,19 +97,28 @@ macro_rules! generate_script {
         struct World;
         impl exports::wired::script::guest_api::Guest for World {
             fn init() {
-                __SCRIPT.with(|s| *s.borrow_mut() = Some($script::init()));
+                match $script::init() {
+                    ::core::result::Result::Ok(state) => {
+                        __SCRIPT.with(|s| *s.borrow_mut() = ::core::option::Option::Some(state));
+                    }
+                    ::core::result::Result::Err(err) => ::std::eprintln!("script init: {err:?}"),
+                }
             }
             fn tick() {
                 __SCRIPT.with(|s| {
-                    if let Some(state) = s.borrow_mut().as_mut() {
-                        state.tick();
+                    if let Some(state) = s.borrow_mut().as_mut()
+                        && let ::core::result::Result::Err(err) = state.tick()
+                    {
+                        ::std::eprintln!("script tick: {err:?}");
                     }
                 });
             }
             fn render() {
                 __SCRIPT.with(|s| {
-                    if let Some(state) = s.borrow_mut().as_mut() {
-                        state.render();
+                    if let Some(state) = s.borrow_mut().as_mut()
+                        && let ::core::result::Result::Err(err) = state.render()
+                    {
+                        ::std::eprintln!("script render: {err:?}");
                     }
                 });
             }

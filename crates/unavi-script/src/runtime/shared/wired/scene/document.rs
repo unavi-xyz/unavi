@@ -119,7 +119,14 @@ pub async fn get_prim(api: &Api, rep: u32, prim_id: String) -> anyhow::Result<Op
 pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let doc = get_doc(api, rep).await?;
     validate_firewall(&api.doc_id, &doc.id, Channel::SceneWrite)?;
+    api.quota
+        .spend(crate::quota::Flow::CreatePrim, 1.0)
+        .map_err(|err| anyhow::anyhow!("prim quota exceeded: {err:?}"))?;
     let tree = doc.doc.get_tree(&*HSD_CONTAINER_ID);
+    anyhow::ensure!(
+        tree.nodes().len() < crate::quota::limits::MAX_PRIMS_PER_DOC,
+        "document prim limit reached"
+    );
     let tree_id = tree.create(TreeParentId::Root)?;
 
     let mut scene = api.wired_scene.lock().await;

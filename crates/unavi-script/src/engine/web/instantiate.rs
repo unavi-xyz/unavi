@@ -65,6 +65,7 @@ pub fn instantiate_scripts(
                 doc_id:      doc_id.0,
                 prim:        prim.0,
                 permissions: perms.clone(),
+                quota:       crate::quota::registry::document_quota(doc_id.0),
                 wired_agent: Mutex::default(),
                 wired_event: Mutex::default(),
                 wired_input: Mutex::default(),

@@ -13,6 +13,7 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+anyhow.workspace           = true
 postcard.workspace         = true
 unavi-portal-protocol.path = "../../crates/unavi-portal-protocol"
 wired-prelude.path         = "../wired-prelude"

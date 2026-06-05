@@ -8,9 +8,10 @@ world all {
 interface api {
   use wired:scene/types.{prim};
   use types.{agent};
+  use wired:error/types.{error};
 
-  local-agent:  func() -> agent;
-  local-camera: func() -> prim;
+  local-agent:  func() -> result<agent, error>;
+  local-camera: func() -> result<prim, error>;
 }
 
 interface types {

@@ -6,6 +6,7 @@ world all {
 
 interface api {
   use wired:scene/types.{prim, document-id};
+  use wired:error/types.{error};
 
-  open: func(prim: prim, target-space: document-id);
+  open: func(prim: prim, target-space: document-id) -> result<_, error>;
 }

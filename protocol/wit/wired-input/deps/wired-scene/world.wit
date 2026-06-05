@@ -7,16 +7,17 @@ world all {
 
 interface api {
   use types.{document, prim, document-id};
+  use wired:error/types.{error};
 
-  self-prim:     func() -> prim;
-  self-document: func() -> document;
+  self-prim:     func() -> result<prim, error>;
+  self-document: func() -> result<document, error>;
 
-  get-document:    func(id: document-id) -> option<document>;
-  create-document: func() -> document;
-  remove-document: func(id: document-id);
+  get-document:    func(id: document-id) -> result<option<document>, error>;
+  create-document: func() -> result<document, error>;
+  remove-document: func(id: document-id) -> result<_, error>;
 
-  load-hsd:         func(blob: list<u8>) -> result<document, string>;
-  publish-document: func(id: document-id) -> result<_, string>;
+  load-hsd:         func(blob: list<u8>) -> result<document, error>;
+  publish-document: func(id: document-id) -> result<_, error>;
 }
 
 interface types {

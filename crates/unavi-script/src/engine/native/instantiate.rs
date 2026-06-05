@@ -104,6 +104,7 @@ pub fn instantiate_scripts(
             .build();
 
         let perms = perms.cloned().unwrap_or_default();
+        let quota = crate::quota::registry::document_quota(doc_id.0);
 
         let state = Runtime {
             api:    Arc::new(Api {
@@ -111,6 +112,7 @@ pub fn instantiate_scripts(
                 doc_id:      doc_id.0,
                 prim:        prim.0,
                 permissions: perms.clone(),
+                quota:       Arc::clone(&quota),
                 wired_agent: Mutex::default(),
                 wired_event: Mutex::default(),
                 wired_input: Mutex::default(),
@@ -121,10 +123,12 @@ pub fn instantiate_scripts(
             native: NativeRuntime {
                 table: ResourceTable::default(),
                 wasi_ctx,
+                limiter: crate::quota::limiter::QuotaLimiter::new(quota),
             },
         };
         let mut store = Store::new(&engine.0, state);
         store.epoch_deadline_async_yield_and_update(1);
+        store.limiter(|state| &mut state.native.limiter);
         let store = Arc::new(Mutex::new(store));
 
         let engine = engine.0.clone();
@@ -136,7 +140,7 @@ pub fn instantiate_scripts(
             let store = Arc::clone(&store);
             async move {
                 let mut store = store.lock().await;
-                match instantiate_component(&engine, &wasm, &mut store, &perms).await {
+                match instantiate_component(&engine, &wasm, &mut store).await {
                     Ok(g) => {
                         let _ = tx.send(g);
                     }
@@ -170,13 +174,12 @@ async fn instantiate_component(
     engine: &wasmtime::Engine,
     binary: &[u8],
     store: &mut Store<Runtime>,
-    perms: &ApiPermissions,
 ) -> anyhow::Result<bindings::Guest> {
     let component = wasmtime::component::Component::from_binary(engine, binary)?;
 
     let mut linker = Linker::new(engine);
     wasmtime_wasi::p2::add_to_linker_async(&mut linker)?;
-    add_apis_to_linker(&mut linker, perms)?;
+    add_apis_to_linker(&mut linker)?;
 
     info!("Instantiating script");
     let guest = bindings::Guest::instantiate_async(store, &component, &linker).await?;

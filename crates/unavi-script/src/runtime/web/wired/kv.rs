@@ -4,11 +4,14 @@ use unavi_space::state::doc::KvError;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
-use crate::runtime::{
-    Runtime,
-    shared::{
-        self,
-        Api,
+use crate::{
+    permissions::ApiName,
+    runtime::{
+        Runtime,
+        shared::{
+            self,
+            Api,
+        },
     },
 };
 
@@ -94,14 +97,20 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredKvSelfKv")]
     pub async fn wired_kv_self_kv(&self) -> KvHandle {
-        let rep = shared::wired::kv::self_kv(&self.api)
-            .await
-            .unwrap_or(u32::MAX);
+        let rep = match self.api.require(ApiName::Kv) {
+            Ok(()) => shared::wired::kv::self_kv(&self.api)
+                .await
+                .unwrap_or(u32::MAX),
+            Err(_) => u32::MAX,
+        };
         KvHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "wiredKvGetKv")]
     pub async fn wired_kv_get_kv(&self, id: Vec<u8>) -> JsValue {
+        if self.api.require(ApiName::Kv).is_err() {
+            return JsValue::UNDEFINED;
+        }
         match shared::wired::kv::get_kv(&self.api, id).await {
             Ok(Some(rep)) => JsValue::from(KvHandle::new(rep, Arc::clone(&self.api))),
             _ => JsValue::UNDEFINED,

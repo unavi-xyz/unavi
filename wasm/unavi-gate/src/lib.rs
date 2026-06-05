@@ -133,8 +133,8 @@ struct Script {
 }
 
 impl ScriptBehavior for Script {
-    fn init() -> Self {
-        let doc = self_document();
+    fn init() -> anyhow::Result<Self> {
+        let doc = self_document()?;
         let root = doc.roots().into_iter().next().expect("root");
 
         let portal_prim = doc.create_prim();
@@ -218,7 +218,7 @@ impl ScriptBehavior for Script {
                     radius: EVENT_RADIUS,
                 }),
             },
-        );
+        )?;
 
         let incoming_rx = wired::event::api::listen(
             &[INCOMING_CHANNEL.to_string()],
@@ -226,7 +226,7 @@ impl ScriptBehavior for Script {
                 documents: None,
                 scope:     EventScope::Global,
             },
-        );
+        )?;
 
         let backlink_rx = wired::event::api::listen(
             &[BACKLINK_CHANNEL.to_string()],
@@ -234,24 +234,24 @@ impl ScriptBehavior for Script {
                 documents: None,
                 scope:     EventScope::Global,
             },
-        );
+        )?;
 
         let portal_key = link_kv_key(&portal_prim.id());
 
         println!("Gate ready");
 
-        Self {
+        Ok(Self {
             portal_prim,
             portal_key,
-            kv: self_kv(),
+            kv: self_kv()?,
             beacon_rx,
             incoming_rx,
             backlink_rx,
             applied: None,
-        }
+        })
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.beacon_rx.poll() {
             let payload = event.payload();
             let Ok(target) = <[u8; 32]>::try_from(payload.as_slice()) else {
@@ -269,7 +269,7 @@ impl ScriptBehavior for Script {
                     receptor_prim: None,
                 },
             );
-            wired::portal::api::open(self.portal_prim.clone(), target.as_ref());
+            wired::portal::api::open(self.portal_prim.clone(), target.as_ref())?;
         }
 
         while let Some(event) = self.incoming_rx.poll() {
@@ -316,5 +316,6 @@ impl ScriptBehavior for Script {
                 .set_portal(Some(&portal_from_link(next.as_ref())));
             self.applied = next;
         }
+        Ok(())
     }
 }

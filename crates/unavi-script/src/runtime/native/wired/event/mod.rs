@@ -2,22 +2,27 @@ use std::sync::Arc;
 
 use wasmtime::component::Resource;
 
-use crate::runtime::{
-    Runtime,
-    shared::{
-        self,
-        registry::{
-            event::SenderScope,
-            transform::AbsoluteNodeId,
-        },
-        wired::{
-            event::{
-                EventFilter,
-                EventReceptorRes,
-                EventRes,
-                EventScope,
+use crate::{
+    error::ScriptError,
+    permissions::ApiName,
+    runtime::{
+        Runtime,
+        native::wired::error::Error,
+        shared::{
+            self,
+            registry::{
+                event::SenderScope,
+                transform::AbsoluteNodeId,
             },
-            scene::prim::PrimRes,
+            wired::{
+                event::{
+                    EventFilter,
+                    EventReceptorRes,
+                    EventRes,
+                    EventScope,
+                },
+                scene::prim::PrimRes,
+            },
         },
     },
 };
@@ -37,6 +42,7 @@ pub mod bindings {
             "wired:event/types.event": EventRes,
             "wired:event/types.event-receptor": EventReceptorRes,
             "wired:scene/types.prim": PrimRes,
+            "wired:error/types": crate::runtime::native::wired::error::types,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
@@ -167,20 +173,30 @@ impl bindings::wired::event::api::Host for Runtime {
         channel: String,
         payload: Vec<u8>,
         filter: WitFilter,
-    ) -> wasmtime::Result<()> {
-        shared::wired::event::emit(&self.api, channel, payload, wit_filter_to_shared(filter))
-            .await
-            .map_err(wasmtime::Error::from_anyhow)
+    ) -> wasmtime::Result<Result<(), Error>> {
+        if let Err(err) = self.api.require(ApiName::Event) {
+            return Ok(Err(err.into()));
+        }
+        Ok(
+            shared::wired::event::emit(&self.api, channel, payload, wit_filter_to_shared(filter))
+                .await
+                .map_err(|err| ScriptError::from(err).into()),
+        )
     }
 
     async fn listen(
         &mut self,
         channels: Vec<String>,
         filter: WitFilter,
-    ) -> wasmtime::Result<Resource<EventReceptor>> {
-        shared::wired::event::listen(&self.api, channels, wit_filter_to_shared(filter))
-            .await
-            .map(Resource::new_own)
-            .map_err(wasmtime::Error::from_anyhow)
+    ) -> wasmtime::Result<Result<Resource<EventReceptor>, Error>> {
+        if let Err(err) = self.api.require(ApiName::Event) {
+            return Ok(Err(err.into()));
+        }
+        Ok(
+            shared::wired::event::listen(&self.api, channels, wit_filter_to_shared(filter))
+                .await
+                .map(Resource::new_own)
+                .map_err(|err| ScriptError::from(err).into()),
+        )
     }
 }

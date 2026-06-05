@@ -1,15 +1,19 @@
 use wasmtime::component::Resource;
 
-use crate::runtime::{
-    Runtime,
-    shared::{
-        self,
-        wired::wds::{
-            BlobFutureRes,
-            QueryFilter,
-            QueryFutureRes,
-            ReadFutureRes,
-            WdsRes,
+use crate::{
+    error::ScriptError,
+    permissions::ApiName,
+    runtime::{
+        Runtime,
+        shared::{
+            self,
+            wired::wds::{
+                BlobFutureRes,
+                QueryFilter,
+                QueryFutureRes,
+                ReadFutureRes,
+                WdsRes,
+            },
         },
     },
 };
@@ -29,6 +33,7 @@ pub mod bindings {
             "wired:wds/types.query-future": QueryFutureRes,
             "wired:wds/types.read-future":  ReadFutureRes,
             "wired:wds/types.blob-future":  BlobFutureRes,
+            "wired:error/types": crate::runtime::native::wired::error::types,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
@@ -43,6 +48,8 @@ use bindings::wired::wds::types::{
     QueryFilter as WitFilter,
     Wds,
 };
+
+use crate::runtime::native::wired::error::Error;
 
 impl From<WitFilter> for QueryFilter {
     fn from(f: WitFilter) -> Self {
@@ -148,10 +155,13 @@ impl HostReadFuture for Runtime {
 }
 
 impl bindings::wired::wds::api::Host for Runtime {
-    async fn get_wds(&mut self) -> wasmtime::Result<Resource<Wds>> {
-        shared::wired::wds::get_wds(&self.api)
+    async fn get_wds(&mut self) -> wasmtime::Result<Result<Resource<Wds>, Error>> {
+        if let Err(err) = self.api.require(ApiName::Wds) {
+            return Ok(Err(err.into()));
+        }
+        Ok(shared::wired::wds::get_wds(&self.api)
             .await
             .map(Resource::new_own)
-            .map_err(wasmtime::Error::from_anyhow)
+            .map_err(|err| ScriptError::from(err).into()))
     }
 }

@@ -64,7 +64,8 @@ pub enum EventScope {
 }
 
 pub struct EventReceptorRes {
-    rx: Receiver<InboundEvent>,
+    rx:     Receiver<InboundEvent>,
+    _guard: crate::quota::StockGuard,
 }
 
 pub struct EventRes {
@@ -85,6 +86,14 @@ pub async fn emit(
     payload: Vec<u8>,
     filter: EventFilter,
 ) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        payload.len() <= crate::quota::limits::MAX_EVENT_PAYLOAD_BYTES,
+        "event payload too large"
+    );
+    api.quota
+        .spend(crate::quota::Flow::Emit, 1.0)
+        .map_err(|err| anyhow::anyhow!("emit quota exceeded: {err:?}"))?;
+
     let time = std::time::SystemTime::now()
         .duration_since(UNIX_EPOCH)?
         .as_secs();
@@ -233,6 +242,10 @@ fn resolve_sender_scope(
 }
 
 pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::Result<u32> {
+    let guard = api
+        .quota
+        .charge(crate::quota::Stock::Receptors, 1)
+        .map_err(|err| anyhow::anyhow!("receptor quota exceeded: {err:?}"))?;
     let (tx, rx) = async_channel::bounded(RECEPTOR_CAPACITY);
 
     let scope = match filter.scope {
@@ -258,7 +271,7 @@ pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> an
         .await
         .receptors
         .items
-        .insert(id, EventReceptorRes { rx });
+        .insert(id, EventReceptorRes { rx, _guard: guard });
 
     EVENT_RECEPTOR_REGISTRY.write().insert(
         id,

@@ -26,7 +26,7 @@ struct Script {
 }
 
 impl ScriptBehavior for Script {
-    fn init() -> Self {
+    fn init() -> anyhow::Result<Self> {
         let size = 0.1;
         let prim = Cuboid::new(Vec3::splat(size)).mesh();
 
@@ -45,17 +45,17 @@ impl ScriptBehavior for Script {
             roughness:                  None,
         }));
 
-        let agent = local_agent();
+        let agent = local_agent()?;
         let hand = agent.bone(BoneName::RightHand).expect("get bone");
 
-        Self {
+        Ok(Self {
             hand,
             prim,
             time: SystemTime::now(),
-        }
+        })
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self) -> anyhow::Result<()> {
         let now = self.time.elapsed().expect("elapsed").as_secs_f32();
         let offset = Vec3::new(0.0, now.sin() * 0.1, 0.0);
 
@@ -69,5 +69,6 @@ impl ScriptBehavior for Script {
             rotation:    global.rotation,
             scale:       global.scale,
         }));
+        Ok(())
     }
 }

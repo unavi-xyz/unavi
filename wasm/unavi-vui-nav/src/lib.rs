@@ -149,8 +149,8 @@ struct Script {
 }
 
 impl ScriptBehavior for Script {
-    fn init() -> Self {
-        let doc = self_document();
+    fn init() -> anyhow::Result<Self> {
+        let doc = self_document()?;
         let mut prims = Vec::new();
         let mut themed_prims = Vec::new();
 
@@ -182,7 +182,7 @@ impl ScriptBehavior for Script {
         let icon = Torus::new(ICON_MINOR_R, ICON_MAJOR_R).mesh();
         let module = VuiModule::new(NAME, &icon);
 
-        Self {
+        Ok(Self {
             _icon: icon,
             _prims: prims,
             beacon_query: None,
@@ -193,10 +193,10 @@ impl ScriptBehavior for Script {
             ring,
             root,
             themed_prims,
-        }
+        })
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.module.poll() {
             match event {
                 ModuleEvent::Activate(t) => {
@@ -216,7 +216,7 @@ impl ScriptBehavior for Script {
                     );
                     // TODO grab, add phys joint
 
-                    self.beacon_query = Some(get_wds().query(Some(&QueryFilter {
+                    self.beacon_query = Some(get_wds()?.query(Some(&QueryFilter {
                         creator: None,
                         schemas: Some(vec![SCHEMA_BEACON.hash.as_bytes().to_vec()]),
                     })));
@@ -227,7 +227,7 @@ impl ScriptBehavior for Script {
                     self.beacon_query = None;
 
                     for doc in self.beacons.drain(..) {
-                        remove_document(&doc.id());
+                        remove_document(&doc.id())?;
                     }
                 }
                 ModuleEvent::SetColor(color) => {
@@ -249,7 +249,7 @@ impl ScriptBehavior for Script {
                     for id in ids {
                         let id = blake3::Hash::from_slice(&id).expect("valid hash");
                         println!("Reading beacon: id={id}");
-                        let read_fut = get_wds().read(id.as_slice());
+                        let read_fut = get_wds()?.read(id.as_slice());
                         self.beacon_reads.push(read_fut);
                     }
                 }
@@ -267,7 +267,7 @@ impl ScriptBehavior for Script {
                     let space = blake3::Hash::from_bytes(*beacon.space.as_bytes());
                     println!("Found beacon: space={space}");
 
-                    let doc = self_document();
+                    let doc = self_document()?;
 
                     let Some(beacon_asset) = doc.prims().into_iter().find_map(|p| p.asset()) else {
                         eprintln!("Nav HSD missing beacon asset child prim");
@@ -295,6 +295,7 @@ impl ScriptBehavior for Script {
                 break;
             }
         }
+        Ok(())
     }
 }
 

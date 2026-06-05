@@ -50,6 +50,10 @@ use loro_surgeon::bytes::ByteArray;
 
 use crate::{
     firewall::Channel,
+    quota::limits::{
+        MAX_MESH_ELEMENTS,
+        MAX_NAME_BYTES,
+    },
     runtime::shared::{
         Api,
         registry::{
@@ -384,6 +388,9 @@ pub async fn name(api: &Api, rep: u32) -> anyhow::Result<Option<String>> {
 pub async fn set_name(api: &Api, rep: u32, value: Option<String>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
+    if let Some(s) = &value {
+        anyhow::ensure!(s.len() <= MAX_NAME_BYTES, "name too long");
+    }
     let meta = prim_meta(&prim.doc, prim.id)?;
     match value {
         Some(s) => write_attr(&meta, &NameAttr(s))?,
@@ -513,6 +520,11 @@ pub async fn set_mesh_stream(
     });
     match values {
         Some(v) => {
+            anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "mesh stream too large");
+            anyhow::ensure!(key.len() <= MAX_NAME_BYTES, "mesh attribute key too long");
+            api.quota
+                .spend(crate::quota::Flow::BlobUpload, 1.0)
+                .map_err(|err| anyhow::anyhow!("blob upload quota exceeded: {err:?}"))?;
             let hash = super::upload_blob(f32s_to_bytes(&v)).await?;
             attr.attributes
                 .insert(key, ByteArray::new(*hash.as_bytes()));
@@ -540,6 +552,10 @@ pub async fn set_mesh_indices_u32(
     });
     attr.indices = match values {
         Some(v) => {
+            anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "mesh indices too large");
+            api.quota
+                .spend(crate::quota::Flow::BlobUpload, 1.0)
+                .map_err(|err| anyhow::anyhow!("blob upload quota exceeded: {err:?}"))?;
             let hash = super::upload_blob(u32s_to_bytes(&v)).await?;
             Some(ByteArray::new(*hash.as_bytes()))
         }
@@ -955,6 +971,7 @@ pub async fn set_relationship(
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
+    anyhow::ensure!(key.len() <= MAX_NAME_BYTES, "relationship key too long");
     let meta = prim_meta(&prim.doc, prim.id)?;
     match target {
         Some(target_id) => {

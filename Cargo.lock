@@ -5333,6 +5333,7 @@ dependencies = [
 name = "example-unavi-shapes"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -5341,6 +5342,7 @@ dependencies = [
 name = "example-wired-agent"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -5349,6 +5351,7 @@ dependencies = [
 name = "example-wired-event"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -5357,6 +5360,7 @@ dependencies = [
 name = "example-wired-input"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -5365,6 +5369,7 @@ dependencies = [
 name = "example-wired-kv"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "serde",
  "wired-prelude",
  "wit-bindgen 0.55.0",
@@ -13917,6 +13922,7 @@ dependencies = [
 name = "unavi-beacon"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "blake3",
  "unavi-script-util",
  "wired-prelude",
@@ -13972,6 +13978,7 @@ dependencies = [
 name = "unavi-default-home"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "blake3",
  "unavi-script-util",
  "wired-prelude",
@@ -13982,6 +13989,7 @@ dependencies = [
 name = "unavi-gate"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "postcard",
  "unavi-portal-protocol",
  "wired-prelude",
@@ -13992,6 +14000,7 @@ dependencies = [
 name = "unavi-gauntlet"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "blake3",
  "wired-prelude",
  "wit-bindgen 0.55.0",
@@ -14150,6 +14159,7 @@ dependencies = [
 name = "unavi-shapes"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "glam 0.32.1",
  "wired-prelude",
  "wit-bindgen 0.55.0",
@@ -14204,6 +14214,7 @@ dependencies = [
 name = "unavi-vui-inventory"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -14212,6 +14223,7 @@ dependencies = [
 name = "unavi-vui-module"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "blake3",
  "postcard",
  "serde",
@@ -14223,6 +14235,7 @@ dependencies = [
 name = "unavi-vui-nav"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "blake3",
  "postcard",
  "wired-prelude",
@@ -16440,6 +16453,7 @@ dependencies = [
 name = "wired-prelude"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "wired-kv",
  "wired-math",
  "wired-scene",

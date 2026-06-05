@@ -1,13 +1,17 @@
 use bevy_vrm::BoneName;
 use wasmtime::component::Resource;
 
-use crate::runtime::{
-    Runtime,
-    shared::{
-        self,
-        wired::{
-            agent::AgentRes,
-            scene::prim::PrimRes,
+use crate::{
+    error::ScriptError,
+    permissions::ApiName,
+    runtime::{
+        Runtime,
+        shared::{
+            self,
+            wired::{
+                agent::AgentRes,
+                scene::prim::PrimRes,
+            },
         },
     },
 };
@@ -23,6 +27,7 @@ pub mod bindings {
         with: {
             "wired:agent/types.agent": AgentRes,
             "wired:scene/types.prim": PrimRes,
+            "wired:error/types": crate::runtime::native::wired::error::types,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
@@ -33,6 +38,8 @@ use bindings::wired::agent::types::{
     BoneName as WitBoneName,
     HostAgent,
 };
+
+use crate::runtime::native::wired::error::Error;
 
 impl From<WitBoneName> for BoneName {
     fn from(b: WitBoneName) -> Self {
@@ -118,17 +125,23 @@ impl HostAgent for Runtime {
 }
 
 impl bindings::wired::agent::api::Host for Runtime {
-    async fn local_agent(&mut self) -> wasmtime::Result<Resource<AgentRes>> {
-        shared::wired::agent::local_agent(&self.api)
+    async fn local_agent(&mut self) -> wasmtime::Result<Result<Resource<AgentRes>, Error>> {
+        if let Err(err) = self.api.require(ApiName::LocalAgent) {
+            return Ok(Err(err.into()));
+        }
+        Ok(shared::wired::agent::local_agent(&self.api)
             .await
             .map(Resource::new_own)
-            .map_err(wasmtime::Error::from_anyhow)
+            .map_err(|err| ScriptError::from(err).into()))
     }
 
-    async fn local_camera(&mut self) -> wasmtime::Result<Resource<PrimRes>> {
-        shared::wired::agent::local_camera(&self.api)
+    async fn local_camera(&mut self) -> wasmtime::Result<Result<Resource<PrimRes>, Error>> {
+        if let Err(err) = self.api.require(ApiName::LocalAgent) {
+            return Ok(Err(err.into()));
+        }
+        Ok(shared::wired::agent::local_camera(&self.api)
             .await
             .map(Resource::new_own)
-            .map_err(wasmtime::Error::from_anyhow)
+            .map_err(|err| ScriptError::from(err).into()))
     }
 }

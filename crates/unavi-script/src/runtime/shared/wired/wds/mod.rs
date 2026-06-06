@@ -61,7 +61,7 @@ pub struct QueryFilter {
 
 pub async fn get_wds(api: &Api) -> anyhow::Result<u32> {
     let mut wds = api.wired_wds.lock().await;
-    Ok(wds.wds_slots.insert(WdsRes))
+    Ok(wds.wds_slots.insert(WdsRes, &api.quota)?)
 }
 
 pub async fn query(api: &Api, _wds_rep: u32, filter: Option<QueryFilter>) -> anyhow::Result<u32> {
@@ -77,26 +77,32 @@ pub async fn query(api: &Api, _wds_rep: u32, filter: Option<QueryFilter>) -> any
             .collect();
     }
 
-    AsyncCommands::default().trigger(event).try_send()?;
+    AsyncCommands::default().trigger(event).send().await?;
 
     let mut wds = api.wired_wds.lock().await;
-    Ok(wds.query_futures.insert(QueryFutureRes {
-        _cancel: cancel,
-        rx,
-    }))
+    Ok(wds.query_futures.insert(
+        QueryFutureRes {
+            _cancel: cancel,
+            rx,
+        },
+        &api.quota,
+    )?)
 }
 
 pub async fn read(api: &Api, _wds_rep: u32, record_id: Vec<u8>) -> anyhow::Result<u32> {
     let id = Hash::from_slice(&record_id)?;
     let (event, rx, cancel) = ReadRecord::new(id);
 
-    AsyncCommands::default().trigger(event).try_send()?;
+    AsyncCommands::default().trigger(event).send().await?;
 
     let mut wds = api.wired_wds.lock().await;
-    Ok(wds.read_futures.insert(ReadFutureRes {
-        _cancel: cancel,
-        rx,
-    }))
+    Ok(wds.read_futures.insert(
+        ReadFutureRes {
+            _cancel: cancel,
+            rx,
+        },
+        &api.quota,
+    )?)
 }
 
 pub async fn query_future_poll(
@@ -167,15 +173,13 @@ pub async fn get_blob(api: &Api, _wds_rep: u32, blob_id: Vec<u8>) -> anyhow::Res
             }
         }
     });
-    Ok(api
-        .wired_wds
-        .lock()
-        .await
-        .blob_futures
-        .insert(BlobFutureRes {
+    Ok(api.wired_wds.lock().await.blob_futures.insert(
+        BlobFutureRes {
             _cancel: cancel_tx,
             rx,
-        }))
+        },
+        &api.quota,
+    )?)
 }
 
 async fn fetch_blob(hash: Hash) -> anyhow::Result<Bytes> {

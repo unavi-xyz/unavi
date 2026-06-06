@@ -13,9 +13,9 @@ use wasmtime::AsContextMut;
 
 use crate::{
     Ticking,
-    engine::native::{
-        init::InitializedScript,
-        instantiate::{
+    engine::{
+        InitializedScript,
+        native::instantiate::{
             ScriptGuest,
             ScriptSpan,
             ScriptStore,

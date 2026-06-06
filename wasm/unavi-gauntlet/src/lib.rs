@@ -59,7 +59,7 @@ struct Script {
 }
 
 impl ScriptBehavior for Script {
-    fn init() -> Self {
+    fn init() -> anyhow::Result<Self> {
         let registry = VuiModuleRegistry::new();
 
         let gauntlets = [
@@ -69,16 +69,16 @@ impl ScriptBehavior for Script {
         ]
         .map(Gauntlet::new);
 
-        Self {
+        Ok(Self {
             gauntlets,
-            input: register_global_input_listener(),
+            input: register_global_input_listener()?,
             module_refs: Vec::new(),
             registry,
             render_time: SystemTime::now(),
-        }
+        })
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self) -> anyhow::Result<()> {
         let mut changed = false;
 
         for m in self.registry.poll() {
@@ -115,7 +115,7 @@ impl ScriptBehavior for Script {
             .iter()
             .all(gauntlet::Gauntlet::lazy_init_bone)
         {
-            return;
+            return Ok(());
         }
 
         let camera_pos: Option<Vec3> = {
@@ -182,9 +182,10 @@ impl ScriptBehavior for Script {
                 InputAction::GrabUp => {}
             }
         }
+        Ok(())
     }
 
-    fn render(&mut self) {
+    fn render(&mut self) -> anyhow::Result<()> {
         let delta = self.render_time.elapsed().expect("elapsed").as_secs_f32();
         self.render_time = SystemTime::now();
 
@@ -239,5 +240,6 @@ impl ScriptBehavior for Script {
                 }
             }
         }
+        Ok(())
     }
 }

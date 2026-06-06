@@ -19,7 +19,7 @@ use crate::firewall::{
 pub static FIREWALL_REGISTRY: LazyLock<RwLock<HashMap<Hash, Firewall>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
-static DEFAULT_FIREWALL: LazyLock<Firewall> = LazyLock::new(Firewall::default);
+static DEFAULT_FIREWALL: LazyLock<Firewall> = LazyLock::new(Firewall::closed);
 
 #[derive(Component)]
 pub struct RegisteredFirewall(Hash);
@@ -60,6 +60,7 @@ pub fn deregister_firewalls(
 ) {
     let id = ids.get(trigger.entity).expect("id");
     FIREWALL_REGISTRY.write().remove(&id.0);
+    crate::quota::registry::forget_document(id.0);
 }
 
 pub fn validate_firewall(me: &Hash, target: &Hash, channel: Channel) -> anyhow::Result<()> {

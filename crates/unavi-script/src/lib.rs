@@ -15,10 +15,13 @@ use crate::{
 
 #[cfg(feature = "debug")] pub mod debug;
 mod engine;
+pub mod error;
 pub mod firewall;
 pub mod load;
 pub mod permissions;
-mod runtime;
+mod portal_host;
+pub mod quota;
+pub mod runtime;
 
 pub struct ScriptPlugin;
 
@@ -29,7 +32,15 @@ impl Plugin for ScriptPlugin {
             load::LoadPlugin,
             runtime::shared::SharedRuntimePlugin,
         ))
-        .add_observer(grant_space_permissions);
+        .add_observer(grant_space_permissions)
+        .add_systems(
+            FixedUpdate,
+            (
+                portal_host::service_portal_watches,
+                portal_host::drain_pending,
+            )
+                .chain(),
+        );
     }
 }
 

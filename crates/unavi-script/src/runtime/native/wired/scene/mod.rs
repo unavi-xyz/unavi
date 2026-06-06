@@ -1,12 +1,17 @@
 use wasmtime::component::Resource;
 
-use crate::runtime::{
-    Runtime,
-    shared::{
-        self,
-        wired::scene::{
-            document::DocRes,
-            prim::PrimRes,
+use crate::{
+    error::ScriptError,
+    permissions::ApiName,
+    runtime::{
+        Runtime,
+        native::wired::error::Error,
+        shared::{
+            self,
+            wired::scene::{
+                document::DocRes,
+                prim::PrimRes,
+            },
         },
     },
 };
@@ -26,6 +31,7 @@ pub mod bindings {
         with: {
             "wired:scene/types.document": DocRes,
             "wired:scene/types.prim":     PrimRes,
+            "wired:error/types": crate::runtime::native::wired::error::types,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
@@ -33,54 +39,78 @@ pub mod bindings {
 }
 
 impl bindings::wired::scene::api::Host for Runtime {
-    async fn self_prim(&mut self) -> wasmtime::Result<Resource<PrimRes>> {
-        shared::wired::scene::self_prim(&self.api)
+    async fn self_prim(&mut self) -> wasmtime::Result<Result<Resource<PrimRes>, Error>> {
+        if let Err(err) = self.api.require(ApiName::Scene) {
+            return Ok(Err(err.into()));
+        }
+        Ok(shared::wired::scene::self_prim(&self.api)
             .await
             .map(Resource::new_own)
-            .map_err(wasmtime::Error::from_anyhow)
+            .map_err(|err| ScriptError::from(err).into()))
     }
 
-    async fn self_document(&mut self) -> wasmtime::Result<Resource<DocRes>> {
-        shared::wired::scene::self_document(&self.api)
+    async fn self_document(&mut self) -> wasmtime::Result<Result<Resource<DocRes>, Error>> {
+        if let Err(err) = self.api.require(ApiName::Scene) {
+            return Ok(Err(err.into()));
+        }
+        Ok(shared::wired::scene::self_document(&self.api)
             .await
             .map(Resource::new_own)
-            .map_err(wasmtime::Error::from_anyhow)
+            .map_err(|err| ScriptError::from(err).into()))
     }
 
-    async fn get_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Option<Resource<DocRes>>> {
-        shared::wired::scene::get_document(&self.api, id)
+    async fn get_document(
+        &mut self,
+        id: Vec<u8>,
+    ) -> wasmtime::Result<Result<Option<Resource<DocRes>>, Error>> {
+        if let Err(err) = self.api.require(ApiName::Scene) {
+            return Ok(Err(err.into()));
+        }
+        Ok(shared::wired::scene::get_document(&self.api, id)
             .await
             .map(|r| r.map(Resource::new_own))
-            .map_err(wasmtime::Error::from_anyhow)
+            .map_err(|err| ScriptError::from(err).into()))
     }
 
-    async fn create_document(&mut self) -> wasmtime::Result<Resource<DocRes>> {
-        shared::wired::scene::create_document(&self.api)
+    async fn create_document(&mut self) -> wasmtime::Result<Result<Resource<DocRes>, Error>> {
+        if let Err(err) = self.api.require(ApiName::CreateDocument) {
+            return Ok(Err(err.into()));
+        }
+        Ok(shared::wired::scene::create_document(&self.api)
             .await
             .map(Resource::new_own)
-            .map_err(wasmtime::Error::from_anyhow)
+            .map_err(Into::into))
     }
 
-    async fn remove_document(&mut self, id: Vec<u8>) -> wasmtime::Result<()> {
-        shared::wired::scene::remove_document(&self.api, id)
+    async fn remove_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Result<(), Error>> {
+        if let Err(err) = self.api.require(ApiName::Scene) {
+            return Ok(Err(err.into()));
+        }
+        Ok(shared::wired::scene::remove_document(&self.api, id)
             .await
-            .map_err(wasmtime::Error::from_anyhow)
+            .map_err(|err| ScriptError::from(err).into()))
     }
 
     async fn load_hsd(
         &mut self,
         blob: Vec<u8>,
-    ) -> wasmtime::Result<Result<Resource<DocRes>, String>> {
+    ) -> wasmtime::Result<Result<Resource<DocRes>, Error>> {
+        if let Err(err) = self.api.require(ApiName::CreateDocument) {
+            return Ok(Err(err.into()));
+        }
         Ok(shared::wired::scene::load_hsd(&self.api, blob)
             .await
             .map(Resource::new_own)
-            .map_err(|e| e.to_string()))
+            .map_err(Into::into))
     }
 
-    async fn publish_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Result<(), String>> {
+    async fn publish_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Result<(), Error>> {
+        if let Err(err) = self.api.require(ApiName::CreateDocument) {
+            return Ok(Err(err.into()));
+        }
         Ok(shared::wired::scene::publish_document(&self.api, id)
             .await
-            .map_err(|e| e.to_string()))
+            .map_err(|err| ScriptError::from(err).into()))
     }
 }
 

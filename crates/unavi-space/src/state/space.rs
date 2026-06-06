@@ -1,20 +1,15 @@
 use std::{
-    collections::HashSet,
+    collections::HashMap,
     sync::{
         Arc,
         LazyLock,
     },
 };
 
-use bevy::{
-    platform::collections::HashMap,
-    prelude::*,
-};
+use bevy::prelude::*;
 use blake3::Hash;
 use loro::{
     LoroDoc,
-    LoroMap,
-    LoroValue,
     Subscription,
 };
 use loro_surgeon::{
@@ -22,21 +17,50 @@ use loro_surgeon::{
     Reconcile,
     reconcile::RootReconciler,
 };
-use parking_lot::Mutex;
+use parking_lot::{
+    Mutex,
+    MutexGuard,
+};
 use serde::{
     Deserialize,
     Serialize,
 };
 use unavi_util::async_commands::AsyncCommands;
 
-use crate::Space;
+use crate::{
+    Space,
+    state::{
+        doc::DocStates,
+        owner::DocOwners,
+    },
+};
+
+pub const ROOT_KEY: &str = "state";
 
 pub static SPACE_STATES: LazyLock<Mutex<HashMap<Hash, Arc<SpaceStateRoot>>>> =
     LazyLock::new(Mutex::default);
 
 pub struct SpaceStateRoot {
-    pub doc: Arc<LoroDoc>,
-    _sub:    Subscription,
+    pub doc:  Arc<LoroDoc>,
+    kv_write: Mutex<()>,
+    _sub:     Subscription,
+}
+
+impl SpaceStateRoot {
+    #[must_use]
+    pub const fn new(doc: Arc<LoroDoc>, sub: Subscription) -> Self {
+        Self {
+            doc,
+            kv_write: Mutex::new(()),
+            _sub: sub,
+        }
+    }
+
+    /// Serializes the check-and-insert in `doc_kv_set` so concurrent writers
+    /// cannot both pass the byte-budget check and overshoot the cap.
+    pub fn lock_kv_write(&self) -> MutexGuard<'_, ()> {
+        self.kv_write.lock()
+    }
 }
 
 #[derive(Component)]
@@ -44,11 +68,9 @@ pub struct SpaceStateDoc;
 
 #[derive(Hydrate, Reconcile, Default, Debug)]
 pub struct SpaceState {
-    pub docs: HashSet<Hash>,
+    pub docs:   DocStates,
+    pub owners: DocOwners,
 }
-
-const ROOT_KEY: &str = "state";
-const DOCS_KEY: &str = "docs";
 
 pub fn add_space_state(trigger: On<Add, Space>, spaces: Query<&Space>, mut commands: Commands) {
     let space = spaces.get(trigger.entity).expect("space").0;
@@ -73,10 +95,7 @@ pub fn add_space_state(trigger: On<Add, Space>, spaces: Query<&Space>, mut comma
             true
         }));
 
-        Arc::new(SpaceStateRoot {
-            doc:  Arc::new(doc),
-            _sub: sub,
-        })
+        Arc::new(SpaceStateRoot::new(Arc::new(doc), sub))
     });
 
     commands.entity(trigger.entity).insert(SpaceStateDoc);
@@ -103,28 +122,4 @@ pub struct SpaceStateUpdate {
 #[must_use]
 pub fn space_state(space: Hash) -> Option<Arc<SpaceStateRoot>> {
     SPACE_STATES.lock().get(&space).cloned()
-}
-
-/// Add a document to the public state of a space. No-op if the space is not
-/// locally tracked (we don't host it).
-pub fn add_doc(space: Hash, doc: Hash) -> bool {
-    let Some(root) = space_state(space) else {
-        return false;
-    };
-    let map = root.doc.get_map(ROOT_KEY);
-    let docs = match map.get_or_create_container(DOCS_KEY, LoroMap::new()) {
-        Ok(m) => m,
-        Err(err) => {
-            warn!(?err, "failed to access docs map");
-            return false;
-        }
-    };
-    if docs.get(&doc.to_string()).is_some() {
-        return true;
-    }
-    if let Err(err) = docs.insert(&doc.to_string(), LoroValue::Null) {
-        warn!(?err, "failed to insert doc into space state");
-        return false;
-    }
-    true
 }

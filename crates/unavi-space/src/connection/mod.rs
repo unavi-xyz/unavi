@@ -34,7 +34,14 @@ static CONNECTIONS: LazyLock<Mutex<HashMap<EndpointId, oneshot::Sender<()>>>> =
 
 pub const ALPN: &[u8] = b"wired/space/0";
 
-pub fn register_protocol(trigger: On<Add, IrohEndpoint>, mut commands: Commands) {
+pub fn register_protocol(
+    trigger: On<Add, IrohEndpoint>,
+    endpoints: Query<&IrohEndpoint>,
+    mut commands: Commands,
+) {
+    if let Ok(endpoint) = endpoints.get(trigger.entity) {
+        crate::peer::set_self_peer_id(*endpoint.0.id().as_bytes());
+    }
     commands.spawn((
         RouterBuilderFn(Some(Box::new(|builder| {
             builder.accept(ALPN, inbound::SpaceProtocol)

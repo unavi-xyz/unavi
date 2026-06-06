@@ -141,7 +141,7 @@ fn make_sector(doc: &Document, i: usize, n: usize, module: &ModuleRef, color: Co
     ))));
 
     let remote_icon = module.icon_prim_id.as_deref().and_then(|prim_id| {
-        let remote_doc = get_document(&module.doc_id)?;
+        let remote_doc = get_document(&module.doc_id).ok().flatten()?;
         remote_doc.get_prim(prim_id)
     });
 

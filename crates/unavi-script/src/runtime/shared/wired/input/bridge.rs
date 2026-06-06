@@ -37,6 +37,7 @@ pub struct InputListener {
     pub tx:          Sender<InputEvent>,
 }
 
+#[must_use]
 pub fn bridge_squeeze_down(
     trigger: On<SqueezeDown>,
     raycasters: Query<(), With<PrimaryRaycastInput>>,
@@ -60,6 +61,7 @@ pub fn bridge_squeeze_down(
     })
 }
 
+#[must_use]
 pub fn bridge_squeeze_up(
     trigger: On<SqueezeUp>,
     raycasters: Query<(), With<PrimaryRaycastInput>>,
@@ -89,6 +91,7 @@ pub struct MenuInput {
     prev:   bool,
 }
 
+#[must_use]
 pub fn bridge_menu_desktop(
     action: Query<&BoolActionValue, With<MenuDesktopAction>>,
     mut prev: Local<bool>,
@@ -106,6 +109,7 @@ pub fn bridge_menu_desktop(
     Some(bridge_menu(input))
 }
 
+#[must_use]
 pub fn bridge_menu_left(
     action: Query<&BoolActionValue, With<MenuLeftHandAction>>,
     mut prev: Local<bool>,
@@ -123,6 +127,7 @@ pub fn bridge_menu_left(
     Some(bridge_menu(input))
 }
 
+#[must_use]
 pub fn bridge_menu_right(
     action: Query<&BoolActionValue, With<MenuRightHandAction>>,
     mut prev: Local<bool>,

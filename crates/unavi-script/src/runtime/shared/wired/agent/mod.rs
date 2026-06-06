@@ -22,9 +22,12 @@ pub struct WiredAgentApi {
 }
 
 pub async fn local_agent(api: &Api) -> anyhow::Result<u32> {
-    Ok(api.wired_agent.lock().await.agents.insert(AgentRes {
-        key: AgentKey::Local,
-    }))
+    Ok(api.wired_agent.lock().await.agents.insert(
+        AgentRes {
+            key: AgentKey::Local,
+        },
+        &api.quota,
+    )?)
 }
 
 pub async fn local_camera(api: &Api) -> anyhow::Result<u32> {
@@ -41,12 +44,15 @@ pub async fn local_camera(api: &Api) -> anyhow::Result<u32> {
         drop(guard);
         out
     };
-    let rep = api.wired_scene.lock().await.prims.insert(PrimRes {
-        doc: Arc::default(),
-        doc_id,
-        id: node_id,
-        is_proxy: true,
-    });
+    let rep = api.wired_scene.lock().await.prims.insert(
+        PrimRes {
+            doc: Arc::default(),
+            doc_id,
+            id: node_id,
+            is_proxy: true,
+        },
+        &api.quota,
+    )?;
     Ok(rep)
 }
 
@@ -70,12 +76,15 @@ pub async fn bone(api: &Api, rep: u32, name: BoneName) -> anyhow::Result<Option<
         out
     };
     if let Some((doc_id, node_id)) = absolute {
-        let rep = api.wired_scene.lock().await.prims.insert(PrimRes {
-            doc: Arc::default(),
-            doc_id,
-            id: node_id,
-            is_proxy: true,
-        });
+        let rep = api.wired_scene.lock().await.prims.insert(
+            PrimRes {
+                doc: Arc::default(),
+                doc_id,
+                id: node_id,
+                is_proxy: true,
+            },
+            &api.quota,
+        )?;
         Ok(Some(rep))
     } else {
         Ok(None)

@@ -8,9 +8,10 @@ world all {
 interface api {
   use wired:scene/types.{prim};
   use types.{agent};
+  use wired:error/types.{error};
 
-  local-agent: func() -> agent;
-  local-camera: func() -> prim;
+  local-agent:  func() -> result<agent, error>;
+  local-camera: func() -> result<prim, error>;
 }
 
 interface types {
@@ -75,7 +76,7 @@ interface types {
   }
 
   resource agent {
-    // Get a virtual prim tracking the named bone.
+    // Virtual prim tracking the named bone.
     // Returns none if the bone is absent from the VRM model.
     bone: func(name: bone-name) -> option<prim>;
   }

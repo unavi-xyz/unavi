@@ -53,7 +53,7 @@ pub(crate) fn recv_blob_responses(mut commands: Commands, loading: Query<(Entity
 
         commands
             .entity(entity)
-            .remove::<BlobPending>()
-            .insert(BlobResponse(Some(bytes)));
+            .try_remove::<BlobPending>()
+            .try_insert(BlobResponse(Some(bytes)));
     }
 }

@@ -45,7 +45,8 @@ impl GuestVuiModule for VuiModule {
                 documents: None,
                 scope:     EventScope::Global,
             },
-        );
+        )
+        .expect("listen");
         let activate_receptor = listen(
             &[
                 CH_ACTIVATE.to_string(),
@@ -56,7 +57,8 @@ impl GuestVuiModule for VuiModule {
                 documents: None,
                 scope:     EventScope::Global,
             },
-        );
+        )
+        .expect("listen");
         Self {
             name,
             icon_prim_id,
@@ -76,22 +78,23 @@ impl GuestVuiModule for VuiModule {
                 CH_REGISTER,
                 &payload,
                 EventFilter {
-                    documents: Some(vec![event.sender.document]),
+                    documents: Some(vec![event.sender().document]),
                     scope:     EventScope::Global,
                 },
-            );
+            )
+            .ok();
         }
 
         while let Some(event) = self.activate_receptor.poll() {
-            match event.channel.as_str() {
+            match event.channel().as_str() {
                 CH_ACTIVATE => {
-                    if let Ok(p) = postcard::from_bytes::<ActivatePayload>(&event.payload) {
+                    if let Ok(p) = postcard::from_bytes::<ActivatePayload>(&event.payload()) {
                         return Some(ModuleEvent::Activate(p.transform));
                     }
                 }
                 CH_DEACTIVATE => return Some(ModuleEvent::Deactivate),
                 CH_SET_COLOR => {
-                    if let Ok(p) = postcard::from_bytes::<SetColorPayload>(&event.payload) {
+                    if let Ok(p) = postcard::from_bytes::<SetColorPayload>(&event.payload()) {
                         return Some(ModuleEvent::SetColor(p.color));
                     }
                 }

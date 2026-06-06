@@ -4,14 +4,17 @@ use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
 use super::scene::prim::PrimHandle;
-use crate::runtime::{
-    Runtime,
-    shared::{
-        self,
-        Api,
-        wired::input::types::{
-            InputAction,
-            InputDevice,
+use crate::{
+    permissions::ApiName,
+    runtime::{
+        Runtime,
+        shared::{
+            self,
+            Api,
+            wired::input::types::{
+                InputAction,
+                InputDevice,
+            },
         },
     },
 };
@@ -81,17 +84,23 @@ impl Runtime {
         &self,
         target: &PrimHandle,
     ) -> InputListenerHandle {
-        let rep = shared::wired::input::register_input_listener(&self.api, target.rep())
-            .await
-            .unwrap_or(u32::MAX);
+        let rep = match self.api.require(ApiName::Input) {
+            Ok(()) => shared::wired::input::register_input_listener(&self.api, target.rep())
+                .await
+                .unwrap_or(u32::MAX),
+            Err(_) => u32::MAX,
+        };
         InputListenerHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "wiredInputRegisterGlobalInputListener")]
     pub async fn wired_input_register_global_input_listener(&self) -> InputListenerHandle {
-        let rep = shared::wired::input::register_global_input_listener(&self.api)
-            .await
-            .unwrap_or(u32::MAX);
+        let rep = match self.api.require(ApiName::InputContext) {
+            Ok(()) => shared::wired::input::register_global_input_listener(&self.api)
+                .await
+                .unwrap_or(u32::MAX),
+            Err(_) => u32::MAX,
+        };
         InputListenerHandle::new(rep, Arc::clone(&self.api))
     }
 }

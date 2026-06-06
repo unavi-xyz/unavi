@@ -11,13 +11,15 @@ use blake3::Hash;
 use parking_lot::RwLock;
 
 /// Firewall controls how a document may communicate with other documents.
-#[derive(Component, Clone, Default, Deref)]
+#[derive(Component, Clone, Deref)]
 pub struct Firewall(pub Arc<RwLock<HashMap<Channel, Access>>>);
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
 pub enum Channel {
     EventRead,
     EventWrite,
+    KvRead,
+    KvWrite,
     SceneRead,
     SceneWrite,
 }
@@ -45,13 +47,11 @@ impl Access {
 }
 
 impl Firewall {
+    /// Denies all cross-document access. Used as the fallback for documents
+    /// with no registered firewall, so an unknown target is closed by default.
     #[must_use]
-    pub fn default_space() -> Self {
-        let mut map = HashMap::new();
-        map.insert(Channel::EventRead, Access::Open);
-        map.insert(Channel::EventWrite, Access::Open);
-        map.insert(Channel::SceneRead, Access::Open);
-        Self(Arc::new(RwLock::new(map)))
+    pub fn closed() -> Self {
+        Self(Arc::new(RwLock::new(HashMap::new())))
     }
 
     #[must_use]
@@ -59,11 +59,27 @@ impl Firewall {
         let mut map = HashMap::new();
         map.insert(Channel::EventRead, Access::Open);
         map.insert(Channel::EventWrite, Access::Open);
+        map.insert(Channel::KvRead, Access::Open);
+        map.insert(
+            Channel::KvWrite,
+            Access::Restricted(HashSet::from([creator_id])),
+        );
         map.insert(Channel::SceneRead, Access::Open);
         map.insert(
             Channel::SceneWrite,
             Access::Restricted(HashSet::from([creator_id])),
         );
+        Self(Arc::new(RwLock::new(map)))
+    }
+}
+
+impl Default for Firewall {
+    fn default() -> Self {
+        let mut map = HashMap::new();
+        map.insert(Channel::EventRead, Access::Open);
+        map.insert(Channel::EventWrite, Access::Open);
+        map.insert(Channel::KvRead, Access::Open);
+        map.insert(Channel::SceneRead, Access::Open);
         Self(Arc::new(RwLock::new(map)))
     }
 }

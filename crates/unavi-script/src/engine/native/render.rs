@@ -10,9 +10,9 @@ use wasmtime::AsContextMut;
 
 use crate::{
     RenderTicking,
-    engine::native::{
-        init::InitializedScript,
-        instantiate::{
+    engine::{
+        InitializedScript,
+        native::instantiate::{
             ScriptGuest,
             ScriptSpan,
             ScriptStore,

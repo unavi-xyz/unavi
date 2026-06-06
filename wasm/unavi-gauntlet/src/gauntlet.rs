@@ -82,7 +82,7 @@ fn place_sector_transform(bone: &Prim) -> Transform {
         Vec3::new(0.0, 0.0, -1.0)
     };
 
-    let agent = local_agent();
+    let agent = local_agent().expect("local_agent");
 
     let waist_y = agent
         .bone(BoneName::Hips)
@@ -138,7 +138,7 @@ pub struct Gauntlet {
 
 impl Gauntlet {
     pub fn new(target: Target) -> Self {
-        let doc = self_document();
+        let doc = self_document().expect("self_document");
         let core = doc.create_prim();
         core.set_xform(Some(xform_scale(Vec3::ZERO)));
         Self {
@@ -155,7 +155,7 @@ impl Gauntlet {
     }
 
     pub fn rebuild_sectors(&self, modules: &[ModuleRef], colors: &[Color]) {
-        let doc = self_document();
+        let doc = self_document().expect("self_document");
 
         for s in self.sectors.borrow().iter() {
             self.core.remove_child(&s.root);
@@ -178,8 +178,8 @@ impl Gauntlet {
         }
 
         let prim = match self.target {
-            Target::Camera => Some(local_camera()),
-            Target::Bone(b) => local_agent().bone(b),
+            Target::Camera => Some(local_camera().expect("local_camera")),
+            Target::Bone(b) => local_agent().expect("local_agent").bone(b),
         };
 
         prim.is_some_and(|prim| {

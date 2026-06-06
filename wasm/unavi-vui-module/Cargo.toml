@@ -13,6 +13,7 @@ workspace = true
 crate-type = ["cdylib"]
 
 [dependencies]
+anyhow.workspace      = true
 blake3.workspace      = true
 postcard.workspace    = true
 serde                 = { features = ["derive"], workspace = true }

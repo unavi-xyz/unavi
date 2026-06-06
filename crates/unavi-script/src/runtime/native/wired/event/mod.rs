@@ -166,9 +166,9 @@ impl HostEventReceptor for Runtime {
         else {
             return Ok(None);
         };
-        let rep = shared::wired::event::insert_event(&self.api, event)
-            .await
-            .map_err(wasmtime::Error::from)?;
+        let Ok(rep) = shared::wired::event::insert_event(&self.api, event).await else {
+            return Ok(None);
+        };
         Ok(Some(Resource::new_own(rep)))
     }
 

@@ -9,9 +9,9 @@ use crate::quota::{
 
 /// Binds a store's linear-memory growth to its document quota.
 ///
-/// Growth past the [`Stock::WasmBytes`] cap is refused, which the guest sees as
-/// an allocation failure. The charge is released in full when the store, and so
-/// this limiter, is dropped.
+/// Growth past the [`Stock::WasmMemory`] cap is refused, which the guest sees
+/// as an allocation failure. The charge is released in full when the store, and
+/// so this limiter, is dropped.
 pub struct QuotaLimiter {
     quota:   Arc<Quota>,
     charged: u64,

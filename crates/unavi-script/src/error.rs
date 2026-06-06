@@ -51,6 +51,13 @@ impl From<QuotaError> for ScriptError {
 
 impl From<anyhow::Error> for ScriptError {
     fn from(err: anyhow::Error) -> Self {
-        Self::Other(err.to_string())
+        let err = match err.downcast::<QuotaError>() {
+            Ok(quota) => return quota.into(),
+            Err(err) => err,
+        };
+        match err.downcast::<Self>() {
+            Ok(script) => script,
+            Err(err) => Self::Other(err.to_string()),
+        }
     }
 }

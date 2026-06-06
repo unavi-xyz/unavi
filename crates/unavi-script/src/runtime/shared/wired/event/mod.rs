@@ -95,9 +95,7 @@ pub async fn emit(
         payload.len() <= MAX_EVENT_PAYLOAD_BYTES,
         "event payload too large"
     );
-    api.quota
-        .spend(crate::quota::Flow::Emit, 1.0)
-        .map_err(|err| anyhow::anyhow!("emit quota exceeded: {err:?}"))?;
+    api.quota.spend(crate::quota::Flow::Emit, 1.0)?;
 
     let time = std::time::SystemTime::now()
         .duration_since(UNIX_EPOCH)?
@@ -247,10 +245,7 @@ fn resolve_sender_scope(
 }
 
 pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::Result<u32> {
-    let guard = api
-        .quota
-        .charge(Stock::Receptors, 1)
-        .map_err(|err| anyhow::anyhow!("receptor quota exceeded: {err:?}"))?;
+    let guard = api.quota.charge(Stock::Receptors, 1)?;
     let (tx, rx) = async_channel::bounded(RECEPTOR_CAPACITY);
 
     let scope = match filter.scope {

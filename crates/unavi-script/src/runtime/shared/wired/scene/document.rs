@@ -134,13 +134,9 @@ pub async fn get_prim(api: &Api, rep: u32, prim_id: String) -> anyhow::Result<Op
 pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let doc = get_doc(api, rep).await?;
     validate_firewall(&api.doc_id, &doc.id, Channel::SceneWrite)?;
-    api.quota
-        .spend(Flow::CreatePrim, 1.0)
-        .map_err(|err| anyhow::anyhow!("prim quota exceeded: {err:?}"))?;
+    api.quota.spend(Flow::CreatePrim, 1.0)?;
     let quota = document_quota(doc.id);
-    quota
-        .try_charge(Stock::Prims, 1)
-        .map_err(|err| anyhow::anyhow!("prim quota exceeded: {err:?}"))?;
+    quota.try_charge(Stock::Prims, 1)?;
     let tree = doc.doc.get_tree(&*HSD_CONTAINER_ID);
     let tree_id = tree
         .create(TreeParentId::Root)

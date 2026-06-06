@@ -99,8 +99,8 @@ impl Limits {
             (
                 Flow::BlobUpload,
                 FlowLimit {
-                    capacity:       32.0,
-                    refill_per_sec: 4.0,
+                    capacity:       256.0,
+                    refill_per_sec: 32.0,
                 },
             ),
         ]);
@@ -156,8 +156,8 @@ impl Limits {
             (
                 Flow::BlobUpload,
                 FlowLimit {
-                    capacity:       512.0,
-                    refill_per_sec: 16.0,
+                    capacity:       4_096.0,
+                    refill_per_sec: 256.0,
                 },
             ),
         ]);
@@ -213,8 +213,8 @@ impl Limits {
             (
                 Flow::BlobUpload,
                 FlowLimit {
-                    capacity:       256.0,
-                    refill_per_sec: 16.0,
+                    capacity:       2_048.0,
+                    refill_per_sec: 128.0,
                 },
             ),
         ]);
@@ -225,6 +225,24 @@ impl Limits {
 #[cfg(all(test, not(target_family = "wasm")))]
 mod tests {
     use super::*;
+    use crate::quota::{
+        Flow,
+        Quota,
+    };
+
+    /// A shape mesh uploads POSITION, NORMAL, UV_0, and its index buffer: four
+    /// blobs per mesh, each charged against [`Flow::BlobUpload`].
+    const BLOBS_PER_MESH: usize = 4;
+
+    #[test]
+    fn document_blob_upload_sustains_an_init_burst() {
+        let peer = Quota::root(Limits::peer());
+        let doc = Quota::new(Limits::document(), Some(peer));
+        for _ in 0..32 * BLOBS_PER_MESH {
+            doc.spend(Flow::BlobUpload, 1.0)
+                .expect("building init geometry must not exhaust the blob-upload quota");
+        }
+    }
 
     #[test]
     fn global_caps_wasm_memory_at_a_fraction_of_host_ram() {

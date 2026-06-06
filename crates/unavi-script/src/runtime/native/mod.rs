@@ -10,10 +10,7 @@ use wasmtime_wasi::{
 };
 
 use crate::{
-    permissions::{
-        ApiName,
-        ApiPermissions,
-    },
+    quota::limiter::QuotaLimiter,
     runtime::Runtime,
 };
 
@@ -22,6 +19,7 @@ pub mod wired;
 pub struct NativeRuntime {
     pub table:    ResourceTable,
     pub wasi_ctx: WasiCtx,
+    pub limiter:  QuotaLimiter,
 }
 
 impl WasiView for Runtime {
@@ -33,47 +31,30 @@ impl WasiView for Runtime {
     }
 }
 
-pub fn add_apis_to_linker(
-    linker: &mut Linker<Runtime>,
-    perms: &ApiPermissions,
-) -> wasmtime::Result<()> {
-    if perms.contains(&ApiName::Agent) {
-        wired::agent::bindings::wired::agent::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+pub fn add_apis_to_linker(linker: &mut Linker<Runtime>) -> wasmtime::Result<()> {
+    wired::agent::bindings::wired::agent::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    wired::agent::bindings::wired::agent::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
 
-        if perms.contains(&ApiName::LocalAgent) {
-            wired::agent::bindings::wired::agent::api::add_to_linker::<_, HasSelf<_>>(
-                linker,
-                |r| r,
-            )?;
-        }
-    }
+    wired::event::bindings::wired::event::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    wired::event::bindings::wired::event::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
 
-    if perms.contains(&ApiName::Event) {
-        wired::event::bindings::wired::event::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
-        wired::event::bindings::wired::event::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
-    }
+    wired::input::bindings::wired::input::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    wired::input::bindings::wired::input::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    wired::input::bindings::wired::input::context::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
 
-    if perms.contains(&ApiName::Input) {
-        wired::input::bindings::wired::input::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
-        wired::input::bindings::wired::input::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    wired::scene::bindings::wired::scene::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    wired::scene::bindings::wired::scene::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
 
-        if perms.contains(&ApiName::InputContext) {
-            wired::input::bindings::wired::input::context::add_to_linker::<_, HasSelf<_>>(
-                linker,
-                |r| r,
-            )?;
-        }
-    }
+    wired::wds::bindings::wired::wds::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    wired::wds::bindings::wired::wds::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
 
-    if perms.contains(&ApiName::Scene) {
-        wired::scene::bindings::wired::scene::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
-        wired::scene::bindings::wired::scene::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
-    }
+    wired::kv::bindings::wired::kv::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    wired::kv::bindings::wired::kv::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
 
-    if perms.contains(&ApiName::Wds) {
-        wired::wds::bindings::wired::wds::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
-        wired::wds::bindings::wired::wds::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
-    }
+    wired::peer::bindings::wired::peer::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    wired::peer::bindings::wired::peer::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+
+    wired::portal::bindings::wired::portal::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
 
     Ok(())
 }

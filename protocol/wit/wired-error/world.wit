@@ -1,0 +1,20 @@
+package wired:error;
+
+world all {
+  import types;
+}
+
+interface types {
+  // Shared error surfaced by fallible host APIs.
+  variant error {
+    // Catch-all for failures that do not fit the structured variants below.
+    other(string),
+    // A per-document, per-space, or per-user resource cap was hit. Often
+    // transient for rate-limited actions: retrying may succeed later.
+    quota,
+    // The script's document lacks the API permission for this call.
+    permission,
+    // The target document's firewall forbids this cross-document access.
+    firewall,
+  }
+}

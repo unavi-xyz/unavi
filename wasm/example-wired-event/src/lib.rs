@@ -13,14 +13,14 @@ struct Script {
 }
 
 impl ScriptBehavior for Script {
-    fn init() -> Self {
+    fn init() -> anyhow::Result<Self> {
         let receptor = wired::event::api::listen(
             &[CHANNEL.to_string()],
             EventFilter {
                 documents: None,
                 scope:     EventScope::Global,
             },
-        );
+        )?;
 
         wired::event::api::emit(
             CHANNEL,
@@ -29,14 +29,15 @@ impl ScriptBehavior for Script {
                 documents: None,
                 scope:     EventScope::Global,
             },
-        );
+        )?;
 
-        Self { receptor }
+        Ok(Self { receptor })
     }
 
-    fn tick(&mut self) {
+    fn tick(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.receptor.poll() {
-            println!("-> Got event: {event:?}");
+            println!("-> Got event on {}: {:?}", event.channel(), event.payload());
         }
+        Ok(())
     }
 }

@@ -50,6 +50,10 @@ use loro_surgeon::bytes::ByteArray;
 
 use crate::{
     firewall::Channel,
+    quota::limits::{
+        MAX_MESH_ELEMENTS,
+        MAX_NAME_BYTES,
+    },
     runtime::shared::{
         Api,
         registry::{
@@ -183,10 +187,9 @@ pub struct PrimPortalDestination {
 }
 
 pub struct PrimPortal {
-    pub allow_incoming: bool,
-    pub destination:    Option<PrimPortalDestination>,
-    pub size_x:         f32,
-    pub size_y:         f32,
+    pub destination: Option<PrimPortalDestination>,
+    pub size_x:      f32,
+    pub size_y:      f32,
 }
 
 pub struct PrimSpawn {
@@ -267,8 +270,9 @@ pub async fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
         .lock()
         .await
         .prims
-        .insert_clone(rep)
-        .ok_or_else(|| anyhow::anyhow!("invalid prim"))
+        .insert_clone(rep, &api.quota)
+        .ok_or_else(|| anyhow::anyhow!("invalid prim"))?
+        .map_err(Into::into)
 }
 
 pub async fn on_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
@@ -290,12 +294,15 @@ pub async fn parent(api: &Api, rep: u32) -> anyhow::Result<Option<u32>> {
         return Ok(None);
     };
     let mut scene = api.wired_scene.lock().await;
-    Ok(Some(scene.prims.insert(PrimRes {
-        doc:      prim.doc,
-        doc_id:   prim.doc_id,
-        id:       parent_id,
-        is_proxy: prim.is_proxy,
-    })))
+    Ok(Some(scene.prims.insert(
+        PrimRes {
+            doc:      prim.doc,
+            doc_id:   prim.doc_id,
+            id:       parent_id,
+            is_proxy: prim.is_proxy,
+        },
+        &api.quota,
+    )?))
 }
 
 pub async fn children(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
@@ -309,14 +316,17 @@ pub async fn children(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
     Ok(child_ids
         .into_iter()
         .map(|id| {
-            scene.prims.insert(PrimRes {
-                doc: Arc::clone(&prim.doc),
-                doc_id: prim.doc_id,
-                id,
-                is_proxy: prim.is_proxy,
-            })
+            scene.prims.insert(
+                PrimRes {
+                    doc: Arc::clone(&prim.doc),
+                    doc_id: prim.doc_id,
+                    id,
+                    is_proxy: prim.is_proxy,
+                },
+                &api.quota,
+            )
         })
-        .collect())
+        .collect::<Result<Vec<_>, _>>()?)
 }
 
 pub async fn add_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<()> {
@@ -385,6 +395,9 @@ pub async fn name(api: &Api, rep: u32) -> anyhow::Result<Option<String>> {
 pub async fn set_name(api: &Api, rep: u32, value: Option<String>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
+    if let Some(s) = &value {
+        anyhow::ensure!(s.len() <= MAX_NAME_BYTES, "name too long");
+    }
     let meta = prim_meta(&prim.doc, prim.id)?;
     match value {
         Some(s) => write_attr(&meta, &NameAttr(s))?,
@@ -514,6 +527,9 @@ pub async fn set_mesh_stream(
     });
     match values {
         Some(v) => {
+            anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "mesh stream too large");
+            anyhow::ensure!(key.len() <= MAX_NAME_BYTES, "mesh attribute key too long");
+            api.quota.spend(crate::quota::Flow::BlobUpload, 1.0)?;
             let hash = super::upload_blob(f32s_to_bytes(&v)).await?;
             attr.attributes
                 .insert(key, ByteArray::new(*hash.as_bytes()));
@@ -541,6 +557,8 @@ pub async fn set_mesh_indices_u32(
     });
     attr.indices = match values {
         Some(v) => {
+            anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "mesh indices too large");
+            api.quota.spend(crate::quota::Flow::BlobUpload, 1.0)?;
             let hash = super::upload_blob(u32s_to_bytes(&v)).await?;
             Some(ByteArray::new(*hash.as_bytes()))
         }
@@ -862,31 +880,29 @@ pub async fn set_portal(api: &Api, rep: u32, value: Option<PrimPortal>) -> anyho
 
 fn prim_portal_to_attr(p: PrimPortal) -> PortalAttr {
     PortalAttr {
-        allow_incoming: p.allow_incoming,
-        destination:    p.destination.map(|d| PortalDestination {
+        destination: p.destination.map(|d| PortalDestination {
             receptor: d.receptor.map(|r| PortalReceptor {
                 document: ByteArray(r.document),
                 prim:     r.prim,
             }),
             space:    ByteArray(d.space),
         }),
-        size_x:         f64::from(p.size_x),
-        size_y:         f64::from(p.size_y),
+        size_x:      f64::from(p.size_x),
+        size_y:      f64::from(p.size_y),
     }
 }
 
 fn portal_attr_to_prim(attr: PortalAttr) -> PrimPortal {
     PrimPortal {
-        allow_incoming: attr.allow_incoming,
-        destination:    attr.destination.map(|d| PrimPortalDestination {
+        destination: attr.destination.map(|d| PrimPortalDestination {
             receptor: d.receptor.map(|r| PrimPortalReceptor {
                 document: r.document.0,
                 prim:     r.prim,
             }),
             space:    d.space.0,
         }),
-        size_x:         attr.size_x as f32,
-        size_y:         attr.size_y as f32,
+        size_x:      attr.size_x as f32,
+        size_y:      attr.size_y as f32,
     }
 }
 
@@ -958,6 +974,7 @@ pub async fn set_relationship(
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
+    anyhow::ensure!(key.len() <= MAX_NAME_BYTES, "relationship key too long");
     let meta = prim_meta(&prim.doc, prim.id)?;
     match target {
         Some(target_id) => {

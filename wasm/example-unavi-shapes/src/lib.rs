@@ -14,7 +14,7 @@ wired_prelude::generate_script!(Script);
 struct Script;
 
 impl ScriptBehavior for Script {
-    fn init() -> Self {
+    fn init() -> anyhow::Result<Self> {
         let spacing = 1.5_f32;
         let prims = [
             Capsule::new(0.3, 0.8).mesh(),
@@ -57,6 +57,6 @@ impl ScriptBehavior for Script {
             }));
         }
 
-        Self
+        Ok(Self)
     }
 }

@@ -13,8 +13,6 @@ use crate::material::{
     PortalMaterial,
 };
 
-pub mod bridge;
-pub mod discovery;
 pub mod material;
 pub mod render_budget;
 pub mod resolver;
@@ -35,9 +33,6 @@ impl Plugin for PortalPlugin {
 
         app.add_plugins(MaterialPlugin::<PortalMaterial>::default())
             .init_resource::<PortalRenderBudget>()
-            .add_observer(bridge::sync_portal_config)
-            .add_observer(bridge::clear_portal_config)
-            .add_observer(discovery::on_hsd_ready)
             .add_systems(
                 Update,
                 (
@@ -69,7 +64,7 @@ impl Plugin for PortalPlugin {
 }
 
 #[derive(Component, Default)]
-#[require(PortalState, PortalSize, PortalAllowIncoming)]
+#[require(PortalState, PortalSize)]
 pub struct Portal;
 
 #[derive(Component, Clone, Copy, PartialEq)]
@@ -89,13 +84,10 @@ impl Default for PortalSize {
 
 pub const PORTAL_DEPTH: f32 = 0.05;
 
-#[derive(Component, Default, Clone, Copy)]
-pub struct PortalAllowIncoming(pub bool);
-
 #[derive(Component, Clone, Copy)]
 pub struct PortalTargetDoc(pub Hash);
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, PartialEq, Eq)]
 pub struct PortalTargetReceptor {
     pub document: Hash,
     pub prim:     TreeID,

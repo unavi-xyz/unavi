@@ -3,12 +3,15 @@ use std::sync::Arc;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
-use crate::runtime::{
-    Runtime,
-    shared::{
-        self,
-        Api,
-        wired::wds::QueryFilter,
+use crate::{
+    permissions::ApiName,
+    runtime::{
+        Runtime,
+        shared::{
+            self,
+            Api,
+            wired::wds::QueryFilter,
+        },
     },
 };
 
@@ -244,9 +247,12 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredWdsGetWds")]
     pub async fn wired_wds_get_wds(&self) -> WdsHandle {
-        let rep = shared::wired::wds::get_wds(&self.api)
-            .await
-            .unwrap_or(u32::MAX);
+        let rep = match self.api.require(ApiName::Wds) {
+            Ok(()) => shared::wired::wds::get_wds(&self.api)
+                .await
+                .unwrap_or(u32::MAX),
+            Err(_) => u32::MAX,
+        };
         WdsHandle::new(rep, Arc::clone(&self.api))
     }
 }

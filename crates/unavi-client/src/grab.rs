@@ -3,11 +3,23 @@ use bevy::{
     ecs::system::entity_command,
     prelude::*,
 };
+use bevy_hsd::{
+    Hsd,
+    HsdChild,
+    HsdRecordId,
+};
+use blake3::Hash;
 use unavi_input::{
     SqueezeDown,
     SqueezeUp,
     crosshair::CrosshairMode,
     raycast::PrimaryRaycastInput,
+};
+use unavi_space::{
+    Space,
+    anchor::ActiveSpace,
+    peer::self_peer_id,
+    state::owner::set_doc_owner,
 };
 
 pub struct GrabPlugin;
@@ -32,6 +44,11 @@ fn on_squeeze_down(
     trigger: On<SqueezeDown>,
     transforms: Query<&GlobalTransform>,
     rigid_bodies: Query<&RigidBody>,
+    hsd_children: Query<&HsdChild>,
+    docs: Query<&HsdRecordId, With<Hsd>>,
+    spaces: Query<&Space>,
+    parents: Query<&ChildOf>,
+    active_space: Res<ActiveSpace>,
     mut commands: Commands,
 ) {
     let Some(entity) = trigger.entity else {
@@ -57,7 +74,14 @@ fn on_squeeze_down(
     let offset_tra = pointer_tr.rotation.inverse() * (obj_tr.translation - pointer_tr.translation);
     let offset_rot = pointer_tr.rotation.inverse() * obj_tr.rotation;
 
-    // TODO claim / broadcast over network within unavi-space
+    claim_doc_ownership(
+        entity,
+        &hsd_children,
+        &docs,
+        &spaces,
+        &parents,
+        active_space.0,
+    );
 
     commands.entity(entity).insert((
         Grabbed {
@@ -67,6 +91,72 @@ fn on_squeeze_down(
         },
         GravityScale(0.0),
     ));
+}
+
+fn claim_doc_ownership(
+    entity: Entity,
+    hsd_children: &Query<&HsdChild>,
+    docs: &Query<&HsdRecordId, With<Hsd>>,
+    spaces: &Query<&Space>,
+    parents: &Query<&ChildOf>,
+    active_space_entity: Option<Entity>,
+) {
+    let Some(peer) = self_peer_id() else {
+        debug!("grab: local peer id not initialized yet, skipping ownership claim");
+        return;
+    };
+
+    let Some((doc_entity, doc_hash)) = resolve_doc(entity, hsd_children, docs) else {
+        debug!(
+            ?entity,
+            "grab: grabbed entity has no HSD doc, skipping ownership claim",
+        );
+        return;
+    };
+
+    let space_hash = resolve_space(doc_entity, spaces, parents).or_else(|| {
+        let active = active_space_entity?;
+        spaces.get(active).ok().map(|s| s.0)
+    });
+
+    let Some(space_hash) = space_hash else {
+        warn!(
+            doc = %doc_hash,
+            "grab: no enclosing space and no active space, skipping ownership claim",
+        );
+        return;
+    };
+
+    info!(doc = %doc_hash, space = %space_hash, "grab: claiming doc ownership");
+    set_doc_owner(space_hash, doc_hash, peer);
+}
+
+fn resolve_doc(
+    entity: Entity,
+    hsd_children: &Query<&HsdChild>,
+    docs: &Query<&HsdRecordId, With<Hsd>>,
+) -> Option<(Entity, Hash)> {
+    if let Ok(record) = docs.get(entity) {
+        return Some((entity, record.0));
+    }
+    let child = hsd_children.get(entity).ok()?;
+    let record = docs.get(child.0).ok()?;
+    Some((child.0, record.0))
+}
+
+fn resolve_space(
+    doc_entity: Entity,
+    spaces: &Query<&Space>,
+    parents: &Query<&ChildOf>,
+) -> Option<Hash> {
+    let mut cursor = Some(doc_entity);
+    while let Some(current) = cursor {
+        if let Ok(space) = spaces.get(current) {
+            return Some(space.0);
+        }
+        cursor = parents.get(current).ok().map(|p| p.0);
+    }
+    None
 }
 
 fn on_squeeze_up(trigger: On<SqueezeUp>, mut commands: Commands) {

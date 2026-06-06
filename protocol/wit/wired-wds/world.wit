@@ -7,7 +7,9 @@ world all {
 
 interface api {
   use types.{wds};
-  get-wds: func() -> wds;
+  use wired:error/types.{error};
+
+  get-wds: func() -> result<wds, error>;
 }
 
 interface types {

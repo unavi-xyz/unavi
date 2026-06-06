@@ -32,10 +32,9 @@ pub struct PortalDestination {
 #[loro(default)]
 #[serde(default)]
 pub struct PortalAttr {
-    pub allow_incoming: bool,
-    pub destination:    Option<PortalDestination>,
-    pub size_x:         f64,
-    pub size_y:         f64,
+    pub destination: Option<PortalDestination>,
+    pub size_x:      f64,
+    pub size_y:      f64,
 }
 
 impl Attribute for PortalAttr {

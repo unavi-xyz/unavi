@@ -1,0 +1,35 @@
+package wired:kv;
+
+world all {
+  import api;
+  import types;
+}
+
+interface api {
+  use types.{kv, document-id};
+  use wired:error/types.{error};
+
+  // KV store for the script's own document.
+  self-kv: func() -> result<kv, error>;
+
+  // KV store for any document visible in the current space.
+  get-kv: func(id: document-id) -> result<option<kv>, error>;
+}
+
+interface types {
+  type document-id = list<u8>;
+
+  variant kv-error {
+    quota-exceeded,
+    key-too-long,
+    other,
+  }
+
+  // Networked-synced key-value store, owned by a document.
+  resource kv {
+    get:    func(key: string) -> option<list<u8>>;
+    set:    func(key: string, value: list<u8>) -> result<_, kv-error>;
+    delete: func(key: string) -> result<_, kv-error>;
+    keys:   func() -> list<string>;
+  }
+}

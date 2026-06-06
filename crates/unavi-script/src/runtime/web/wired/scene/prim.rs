@@ -691,7 +691,6 @@ fn js_to_rigid_body(v: &JsValue) -> Option<PrimRigidBody> {
 
 fn portal_to_js(p: &PrimPortal) -> JsValue {
     let obj = js_sys::Object::new();
-    obj_set(&obj, "allow-incoming", &p.allow_incoming.into());
     if let Some(d) = &p.destination {
         let dest = js_sys::Object::new();
         if let Some(r) = &d.receptor {
@@ -749,7 +748,6 @@ fn js_to_portal(v: &JsValue) -> Result<Option<PrimPortal>, String> {
         }
     };
     Ok(Some(PrimPortal {
-        allow_incoming: obj_get_bool(v, "allow-incoming").unwrap_or(false),
         destination,
         size_x: obj_get_f32(v, "size-x").unwrap_or(0.0),
         size_y: obj_get_f32(v, "size-y").unwrap_or(0.0),

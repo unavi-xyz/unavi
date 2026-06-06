@@ -27,8 +27,8 @@ deps = ["wired-error"]
 
 [wired-kv]
 path = "../../../protocol/wit/wired-kv"
-sha256 = "659f478c56b3eaf9999fdc8f09e7595afec545882df473e04209e2162b0299be"
-sha512 = "f7b06e5b1e7299645fab583adced620aa5eda3c2b1db1f84e9666f48ed24d2f3a6df0570be347b4aa849ec902e46f609868e957f06adb3f5f51ef124174bd938"
+sha256 = "ab730d8bfad64dfdf35162dd62f480f8e96c69852fddff5d1eb9c5a51252b74e"
+sha512 = "6452cd79dc7c7c58d27ff78c6818e7ae1fff3b7dab5fabde0928935abe0537250789a9ee867614cd8276822bdab71c465c8613973daa283d5cb7f5c3265c1593"
 deps = ["wired-error"]
 
 [wired-math]

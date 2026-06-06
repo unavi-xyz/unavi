@@ -230,8 +230,8 @@ mod tests {
         Quota,
     };
 
-    /// A shape mesh uploads POSITION, NORMAL, UV_0, and its index buffer: four
-    /// blobs per mesh, each charged against [`Flow::BlobUpload`].
+    /// A shape mesh uploads POSITION, NORMAL, `UV_0`, and its index buffer:
+    /// four blobs per mesh, each charged against [`Flow::BlobUpload`].
     const BLOBS_PER_MESH: usize = 4;
 
     #[test]

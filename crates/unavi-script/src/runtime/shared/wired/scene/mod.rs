@@ -269,9 +269,7 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> Result<u32, ScriptError> {
 pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = Hash::from_slice(&id)?;
     validate_firewall(&api.doc_id, &id, Channel::SceneWrite)?;
-    api.quota
-        .spend(Flow::Publish, 1.0)
-        .map_err(|err| anyhow::anyhow!("publish quota exceeded: {err:?}"))?;
+    api.quota.spend(Flow::Publish, 1.0)?;
 
     let firewall = FIREWALL_REGISTRY.read().get(&id).cloned();
     if let Some(firewall) = firewall {

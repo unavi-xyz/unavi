@@ -194,6 +194,7 @@ pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(),
     let Some(root) = space_state(space) else {
         return Err(KvError::Other);
     };
+    let guard = root.lock_kv_write();
     let Some(kv) = kv_map_mut(&root, doc) else {
         return Err(KvError::Other);
     };
@@ -228,6 +229,7 @@ pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(),
         return Err(KvError::Other);
     }
     root.doc.commit();
+    drop(guard);
     Ok(())
 }
 

@@ -17,7 +17,10 @@ use loro_surgeon::{
     Reconcile,
     reconcile::RootReconciler,
 };
-use parking_lot::Mutex;
+use parking_lot::{
+    Mutex,
+    MutexGuard,
+};
 use serde::{
     Deserialize,
     Serialize,
@@ -38,14 +41,25 @@ pub static SPACE_STATES: LazyLock<Mutex<HashMap<Hash, Arc<SpaceStateRoot>>>> =
     LazyLock::new(Mutex::default);
 
 pub struct SpaceStateRoot {
-    pub doc: Arc<LoroDoc>,
-    _sub:    Subscription,
+    pub doc:  Arc<LoroDoc>,
+    kv_write: Mutex<()>,
+    _sub:     Subscription,
 }
 
 impl SpaceStateRoot {
     #[must_use]
     pub const fn new(doc: Arc<LoroDoc>, sub: Subscription) -> Self {
-        Self { doc, _sub: sub }
+        Self {
+            doc,
+            kv_write: Mutex::new(()),
+            _sub: sub,
+        }
+    }
+
+    /// Serializes the check-and-insert in `doc_kv_set` so concurrent writers
+    /// cannot both pass the byte-budget check and overshoot the cap.
+    pub fn lock_kv_write(&self) -> MutexGuard<'_, ()> {
+        self.kv_write.lock()
     }
 }
 

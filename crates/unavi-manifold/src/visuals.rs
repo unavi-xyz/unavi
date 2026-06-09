@@ -4,18 +4,11 @@ use bevy::{
         RenderTarget,
         visibility::RenderLayers,
     },
-    core_pipeline::tonemapping::{
-        DebandDither,
-        Tonemapping,
-    },
     pbr::{
         Atmosphere,
         AtmosphereSettings,
     },
-    post_process::{
-        bloom::Bloom,
-        dof::DepthOfField,
-    },
+    post_process::dof::DepthOfField,
     prelude::{
         ManualTextureViews,
         *,
@@ -28,10 +21,7 @@ use bevy::{
             TextureFormat,
             TextureUsages,
         },
-        view::{
-            ColorGrading,
-            Hdr,
-        },
+        view::Hdr,
     },
     window::{
         PrimaryWindow,
@@ -195,7 +185,7 @@ fn install_shader_visual(world: &mut World, seam: Entity) {
     let mut image = Image {
         texture_descriptor: TextureDescriptor {
             dimension: TextureDimension::D2,
-            format: TextureFormat::Rgba8UnormSrgb,
+            format: TextureFormat::Rgba16Float,
             label: Some("SeamImage"),
             mip_level_count: 1,
             sample_count: 1,
@@ -243,10 +233,7 @@ fn install_shader_visual(world: &mut World, seam: Entity) {
     copy_tracked_camera_extras(world, seam_camera_ent, tracked_camera);
 }
 
-/// Best-effort viewport size for the tracked camera. Used to allocate the
-/// initial seam render target at a reasonable resolution;
-/// [`develop::update_develop_image_sizes`] continues to resize each frame as
-/// the viewport changes.
+/// Best-effort initial viewport size for the tracked camera.
 fn initial_render_size(world: &mut World, tracked_camera: Entity) -> UVec2 {
     const FALLBACK: UVec2 = UVec2::new(1024, 1024);
 
@@ -288,20 +275,15 @@ fn initial_render_size(world: &mut World, tracked_camera: Entity) -> UVec2 {
     }
 }
 
+/// Mirror the scene-stage view settings onto the seam camera. Output-stage
+/// effects are deliberately omitted: the seam camera writes linear HDR
+/// radiance, and the main camera applies those passes once when it renders the
+/// seam mesh.
 fn copy_tracked_camera_extras(world: &mut World, seam_camera_ent: Entity, tracked_camera: Entity) {
     if let Some(v) = world.get::<Atmosphere>(tracked_camera).cloned() {
         world.entity_mut(seam_camera_ent).insert(v);
     }
     if let Some(v) = world.get::<AtmosphereSettings>(tracked_camera).cloned() {
-        world.entity_mut(seam_camera_ent).insert(v);
-    }
-    if let Some(v) = world.get::<Bloom>(tracked_camera).cloned() {
-        world.entity_mut(seam_camera_ent).insert(v);
-    }
-    if let Some(v) = world.get::<ColorGrading>(tracked_camera).cloned() {
-        world.entity_mut(seam_camera_ent).insert(v);
-    }
-    if let Some(v) = world.get::<DebandDither>(tracked_camera).copied() {
         world.entity_mut(seam_camera_ent).insert(v);
     }
     if let Some(v) = world.get::<DepthOfField>(tracked_camera).copied() {
@@ -321,8 +303,5 @@ fn copy_tracked_camera_extras(world: &mut World, seam_camera_ent: Entity, tracke
             .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::Both])
             .without(SEAM_RENDER_LAYER);
         world.entity_mut(seam_camera_ent).insert(merged);
-    }
-    if let Some(v) = world.get::<Tonemapping>(tracked_camera).copied() {
-        world.entity_mut(seam_camera_ent).insert(v);
     }
 }

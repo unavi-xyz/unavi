@@ -10,55 +10,52 @@ use bevy_hsd::{
 use blake3::Hash;
 
 use crate::{
-    PortalDestination,
-    PortalTargetDoc,
-    PortalTargetReceptor,
+    GluedTo,
+    SeamTargetDoc,
+    SeamTargetReceptor,
 };
 
 pub fn resolve_target_doc(
-    portals: Query<
-        (Entity, &PortalTargetDoc, Option<&PortalDestination>),
-        Without<PortalTargetReceptor>,
-    >,
+    seams: Query<(Entity, &SeamTargetDoc, Option<&GluedTo>), Without<SeamTargetReceptor>>,
     spaces: Query<(Entity, &HsdRecordId), With<Hsd>>,
     mut commands: Commands,
 ) {
     let index: HashMap<Hash, Entity> = spaces.iter().map(|(e, rid)| (rid.0, e)).collect();
 
-    for (portal, target, current) in &portals {
+    for (seam, target, current) in &seams {
         let resolved = index.get(&target.0).copied();
-        reconcile(portal, resolved, current, &mut commands);
+        reconcile(seam, resolved, current, &mut commands);
     }
 }
 
 pub fn resolve_target_receptor(
-    portals: Query<(Entity, &PortalTargetReceptor, Option<&PortalDestination>)>,
+    seams: Query<(Entity, &SeamTargetReceptor, Option<&GluedTo>)>,
     docs: Query<(&HsdRecordId, &HsdPrimIndex), With<Hsd>>,
     mut commands: Commands,
 ) {
     let index: HashMap<Hash, &HsdPrimIndex> = docs.iter().map(|(rid, idx)| (rid.0, idx)).collect();
 
-    for (portal, target, current) in &portals {
+    for (seam, target, current) in &seams {
         let resolved = index
             .get(&target.document)
             .and_then(|idx| idx.0.get(&target.prim).copied());
-        reconcile(portal, resolved, current, &mut commands);
+        reconcile(seam, resolved, current, &mut commands);
     }
 }
 
 fn reconcile(
-    portal: Entity,
+    seam: Entity,
     resolved: Option<Entity>,
-    current: Option<&PortalDestination>,
+    current: Option<&GluedTo>,
     commands: &mut Commands,
 ) {
     match (resolved, current) {
         (Some(e), Some(cur)) if cur.0 == e => {}
         (Some(e), _) => {
-            commands.entity(portal).insert(PortalDestination(e));
+            commands.entity(seam).insert(GluedTo(e));
         }
         (None, Some(_)) => {
-            commands.entity(portal).remove::<PortalDestination>();
+            commands.entity(seam).remove::<GluedTo>();
         }
         (None, None) => {}
     }

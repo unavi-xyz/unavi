@@ -9,39 +9,39 @@ use blake3::Hash;
 use loro::TreeID;
 
 use crate::material::{
-    PORTAL_SHADER_HANDLE,
-    PortalMaterial,
+    SEAM_SHADER_HANDLE,
+    SeamMaterial,
 };
 
+pub mod develop;
+pub mod horizon;
 pub mod material;
-pub mod render_budget;
 pub mod resolver;
-pub mod teleport;
-pub mod tracking;
+pub mod transition;
 pub mod visuals;
 
-pub struct PortalPlugin;
+pub struct ManifoldPlugin;
 
-impl Plugin for PortalPlugin {
+impl Plugin for ManifoldPlugin {
     fn build(&self, app: &mut App) {
         load_internal_asset!(
             app,
-            PORTAL_SHADER_HANDLE,
-            concat!(env!("CARGO_MANIFEST_DIR"), "/assets/portal.wgsl"),
+            SEAM_SHADER_HANDLE,
+            concat!(env!("CARGO_MANIFEST_DIR"), "/assets/seam.wgsl"),
             Shader::from_wgsl
         );
 
-        app.add_plugins(MaterialPlugin::<PortalMaterial>::default())
-            .init_resource::<PortalRenderBudget>()
+        app.add_plugins(MaterialPlugin::<SeamMaterial>::default())
+            .init_resource::<DevelopmentHorizon>()
             .add_systems(
                 Update,
                 (
-                    material::update_portal_time,
+                    material::update_seam_time,
                     resolver::resolve_target_doc,
                     resolver::resolve_target_receptor,
-                    visuals::ensure_portal_mesh,
-                    visuals::update_portal_state,
-                    render_budget::select_active_portals,
+                    visuals::ensure_seam_mesh,
+                    visuals::update_seam_state,
+                    horizon::select_developed_seams,
                     visuals::apply_active_material,
                 )
                     .chain(),
@@ -50,30 +50,31 @@ impl Plugin for PortalPlugin {
                 PostUpdate,
                 (
                     (
-                        tracking::update_portal_image_sizes,
-                        tracking::update_portal_camera_transforms,
+                        develop::update_develop_image_sizes,
+                        develop::update_develop_camera_transforms,
                     )
                         .chain()
                         .after(TransformSystems::Propagate)
                         .before(VisibilitySystems::UpdateFrusta),
-                    teleport::handle_traveler_teleport.after(TransformSystems::Propagate),
-                    tracking::update_portal_camera_frustums.after(VisibilitySystems::UpdateFrusta),
+                    transition::apply_seam_crossings.after(TransformSystems::Propagate),
+                    develop::update_develop_camera_frustums.after(VisibilitySystems::UpdateFrusta),
                 ),
-            );
+            )
+            .add_observer(transition::carry_momentum);
     }
 }
 
 #[derive(Component, Default)]
-#[require(PortalState, PortalSize)]
-pub struct Portal;
+#[require(SeamState, SeamSize)]
+pub struct Seam;
 
 #[derive(Component, Clone, Copy, PartialEq)]
-pub struct PortalSize {
+pub struct SeamSize {
     pub width:  f32,
     pub height: f32,
 }
 
-impl Default for PortalSize {
+impl Default for SeamSize {
     fn default() -> Self {
         Self {
             width:  1.0,
@@ -82,19 +83,19 @@ impl Default for PortalSize {
     }
 }
 
-pub const PORTAL_DEPTH: f32 = 0.05;
+pub const SEAM_DEPTH: f32 = 0.05;
 
 #[derive(Component, Clone, Copy)]
-pub struct PortalTargetDoc(pub Hash);
+pub struct SeamTargetDoc(pub Hash);
 
 #[derive(Component, Clone, PartialEq, Eq)]
-pub struct PortalTargetReceptor {
+pub struct SeamTargetReceptor {
     pub document: Hash,
     pub prim:     TreeID,
 }
 
 #[derive(Component, Default, Debug, PartialEq, Eq, Clone, Copy)]
-pub enum PortalState {
+pub enum SeamState {
     #[default]
     Closed,
     Loading,
@@ -102,41 +103,41 @@ pub enum PortalState {
 }
 
 #[derive(Component, Default)]
-#[relationship_target(relationship = PortalDestination)]
-pub struct IncomingPortals(Vec<Entity>);
+#[relationship_target(relationship = GluedTo)]
+pub struct GluedFrom(Vec<Entity>);
 
 #[derive(Component)]
-#[relationship(relationship_target = IncomingPortals)]
-pub struct PortalDestination(pub Entity);
+#[relationship(relationship_target = GluedFrom)]
+pub struct GluedTo(pub Entity);
 
 #[derive(Component, Default)]
-#[relationship_target(relationship = PortalCamera)]
-pub struct PortalCameras(Vec<Entity>);
+#[relationship_target(relationship = DevelopCamera)]
+pub struct DevelopCameras(Vec<Entity>);
 
 #[derive(Component)]
-#[relationship(relationship_target = PortalCameras)]
+#[relationship(relationship_target = DevelopCameras)]
 #[require(Transform)]
-pub struct PortalCamera {
-    pub portal: Entity,
+pub struct DevelopCamera {
+    pub seam: Entity,
 }
 
 #[derive(Component)]
 pub struct TrackedCamera(pub Entity);
 
 #[derive(Component)]
-pub struct PortalActiveRender;
+pub struct SeamActiveRender;
 
-/// Marker for the camera whose position drives portal render-budget selection.
+/// Marker for the camera whose position drives seam render-budget selection.
 #[derive(Component)]
-pub struct PortalViewer;
+pub struct ManifoldViewer;
 
 #[derive(Resource)]
-pub struct PortalRenderBudget {
+pub struct DevelopmentHorizon {
     pub max_active:   usize,
     pub max_distance: f32,
 }
 
-impl Default for PortalRenderBudget {
+impl Default for DevelopmentHorizon {
     fn default() -> Self {
         Self {
             max_active:   8,
@@ -146,16 +147,16 @@ impl Default for PortalRenderBudget {
 }
 
 #[derive(Component)]
-#[require(TravelCooldown, PrevTranslation)]
-pub struct PortalTraveler;
+#[require(TransitionCooldown, PrevTranslation)]
+pub struct ManifoldBody;
 
 #[derive(Component)]
-pub struct TravelCooldown {
+pub struct TransitionCooldown {
     pub last_travel: Option<Duration>,
     pub duration:    Duration,
 }
 
-impl Default for TravelCooldown {
+impl Default for TransitionCooldown {
     fn default() -> Self {
         Self {
             last_travel: None,

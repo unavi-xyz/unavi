@@ -33,7 +33,7 @@ time.workspace             = true
 tokio.workspace            = true
 tracing.workspace          = true
 unavi-agent.path           = "../unavi-agent"
-unavi-portal               = { path = "../unavi-portal", version = "0.0.16" }
+unavi-manifold             = { path = "../unavi-manifold", version = "0.0.16" }
 unavi-portal-protocol.path = "../unavi-portal-protocol"
 unavi-util.path            = "../unavi-util"
 wds.path                   = "../wds"

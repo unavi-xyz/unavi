@@ -13898,7 +13898,7 @@ dependencies = [
  "bevy_xr_utils",
  "unavi-avatar",
  "unavi-input",
- "unavi-portal",
+ "unavi-manifold",
  "web-sys",
  "xdid",
 ]
@@ -13961,7 +13961,7 @@ dependencies = [
  "unavi-avatar",
  "unavi-identity",
  "unavi-input",
- "unavi-portal",
+ "unavi-manifold",
  "unavi-script",
  "unavi-space",
  "unavi-util",
@@ -14058,9 +14058,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-portal"
+name = "unavi-manifold"
 version = "0.0.16"
 dependencies = [
+ "avian3d",
  "bevy",
  "bevy-hsd",
  "bevy_panorbit_camera",
@@ -14113,7 +14114,7 @@ dependencies = [
  "unavi-agent",
  "unavi-avatar",
  "unavi-input",
- "unavi-portal",
+ "unavi-manifold",
  "unavi-portal-protocol",
  "unavi-space",
  "unavi-util",
@@ -14193,7 +14194,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unavi-agent",
- "unavi-portal",
+ "unavi-manifold",
  "unavi-portal-protocol",
  "unavi-util",
  "wds",

@@ -4,35 +4,35 @@ use bevy::{
 };
 
 use crate::{
-    Portal,
-    PortalActiveRender,
-    PortalCamera,
-    PortalRenderBudget,
-    PortalState,
-    PortalTargetDoc,
-    PortalTargetReceptor,
-    PortalViewer,
+    DevelopCamera,
+    DevelopmentHorizon,
+    ManifoldViewer,
+    Seam,
+    SeamActiveRender,
+    SeamState,
+    SeamTargetDoc,
+    SeamTargetReceptor,
 };
 
 const HYSTERESIS_FACTOR: f32 = 1.1;
 
-pub fn select_active_portals(
-    budget: Res<PortalRenderBudget>,
+pub fn select_developed_seams(
+    budget: Res<DevelopmentHorizon>,
     viewers: Query<
         Ref<GlobalTransform>,
-        (With<PortalViewer>, With<Camera3d>, Without<PortalCamera>),
+        (With<ManifoldViewer>, With<Camera3d>, Without<DevelopCamera>),
     >,
-    portals: Query<
+    seams: Query<
         (
             Entity,
-            Ref<PortalState>,
+            Ref<SeamState>,
             Ref<GlobalTransform>,
-            Has<PortalTargetDoc>,
-            Has<PortalTargetReceptor>,
+            Has<SeamTargetDoc>,
+            Has<SeamTargetReceptor>,
         ),
-        With<Portal>,
+        With<Seam>,
     >,
-    actives: Query<Entity, (With<Portal>, With<PortalActiveRender>)>,
+    actives: Query<Entity, (With<Seam>, With<SeamActiveRender>)>,
     mut commands: Commands,
 ) {
     let Ok(viewer) = viewers.single() else {
@@ -41,7 +41,7 @@ pub fn select_active_portals(
 
     let inputs_changed = budget.is_changed()
         || viewer.is_changed()
-        || portals
+        || seams
             .iter()
             .any(|(_, s, t, ..)| s.is_changed() || t.is_changed());
     if !inputs_changed {
@@ -52,13 +52,13 @@ pub fn select_active_portals(
     let max_d2 = budget.max_distance * budget.max_distance;
     let release_d2 = (budget.max_distance * HYSTERESIS_FACTOR).powi(2);
 
-    let mut candidates: Vec<(Entity, f32)> = portals
+    let mut candidates: Vec<(Entity, f32)> = seams
         .iter()
         .filter_map(|(e, state, t, has_space, has_receptor)| {
-            if *state != PortalState::Open {
+            if *state != SeamState::Open {
                 return None;
             }
-            // Opaque portals (without a receptor) are cheap to render.
+            // Opaque seams (without a receptor) are cheap to render.
             if has_space && !has_receptor {
                 return None;
             }
@@ -76,13 +76,13 @@ pub fn select_active_portals(
 
     let chosen: HashSet<Entity> = candidates.iter().map(|(e, _)| *e).collect();
 
-    for (entity, ..) in &portals {
+    for (entity, ..) in &seams {
         let want = chosen.contains(&entity);
         let has = actives.contains(entity);
         if want && !has {
-            commands.entity(entity).insert(PortalActiveRender);
+            commands.entity(entity).insert(SeamActiveRender);
         } else if !want && has {
-            commands.entity(entity).remove::<PortalActiveRender>();
+            commands.entity(entity).remove::<SeamActiveRender>();
         }
     }
 }

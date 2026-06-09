@@ -1,8 +1,5 @@
-use std::f32::consts::FRAC_PI_2;
-
-use avian3d::prelude::LinearVelocity;
 use bevy::prelude::*;
-use unavi_portal::teleport::PortalTeleport;
+use unavi_manifold::transition::CrossedSeam;
 
 use crate::{
     AgentRig,
@@ -12,29 +9,26 @@ use crate::{
     },
 };
 
+/// Reorient the local agent's look and input intent across a chart transition.
+///
+/// Physical momentum is carried by `unavi_portal`'s `carry_momentum`; this only
+/// rotates the camera/look target and the world-space input direction so they
+/// stay consistent with the agent's new heading after the seam.
 pub fn handle_agent_teleport(
-    event: On<PortalTeleport>,
+    event: On<CrossedSeam>,
     mut target_body: ResMut<TargetBodyInput>,
     mut target_head: ResMut<TargetHeadInput>,
-    mut agents: Query<&mut LinearVelocity, With<AgentRig>>,
+    agents: Query<(), With<AgentRig>>,
 ) {
-    let Ok(mut velocity) = agents.get_mut(event.entity) else {
+    if !agents.contains(event.entity) {
         return;
-    };
-
-    // Update target head input.
-    let (mut yaw, pitch, _) = event.delta_rotation.to_euler(EulerRot::YXZ);
-
-    if yaw.is_sign_negative() {
-        yaw -= FRAC_PI_2;
-    } else {
-        yaw += FRAC_PI_2;
     }
 
-    target_head.0.x += yaw;
-    target_head.0.y += pitch;
+    let delta_yaw = event.transition_rotation.to_euler(EulerRot::YXZ).0;
 
-    // Update target body input and velocity.
-    target_body.0 = target_body.rotate_y(-yaw);
-    velocity.0 = velocity.rotate_y(-yaw);
+    // Body world yaw is `-target_head.x`, so subtract to rotate the heading by
+    // `+delta_yaw`, matching the new transform from the portal teleport math.
+    target_head.0.x -= delta_yaw;
+
+    target_body.0 = target_body.rotate_y(delta_yaw);
 }

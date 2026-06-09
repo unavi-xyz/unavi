@@ -34,7 +34,7 @@ tracing.workspace          = true
 unavi-agent.path           = "../unavi-agent"
 unavi-avatar.path          = "../unavi-avatar"
 unavi-input.path           = "../unavi-input"
-unavi-portal               = { path = "../unavi-portal", version = "0.0.16" }
+unavi-manifold             = { path = "../unavi-manifold", version = "0.0.16" }
 unavi-portal-protocol.path = "../unavi-portal-protocol"
 unavi-space.path           = "../unavi-space"
 unavi-util.path            = "../unavi-util"

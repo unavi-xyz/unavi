@@ -44,44 +44,44 @@ use bevy_vrm::first_person::{
 };
 
 use crate::{
-    Portal,
-    PortalActiveRender,
-    PortalCamera,
-    PortalCameras,
-    PortalDestination,
-    PortalSize,
-    PortalState,
+    DevelopCamera,
+    DevelopCameras,
+    GluedTo,
+    Seam,
+    SeamActiveRender,
+    SeamSize,
+    SeamState,
     TrackedCamera,
     material::{
-        PortalMaterial,
-        PortalParams,
+        SeamMaterial,
+        SeamParams,
     },
 };
 
-pub const PORTAL_RENDER_LAYER: usize = 5;
+pub const SEAM_RENDER_LAYER: usize = 5;
 
 const CLOSED_COLOR: Color = Color::srgb(0.05, 0.05, 0.08);
 const LOADING_COLOR: Color = Color::srgb(0.4, 0.4, 0.7);
 const OPEN_FALLBACK_COLOR: Color = Color::srgb(0.2, 0.6, 1.0);
 
 #[derive(Component)]
-pub struct CachedSize(pub PortalSize);
+pub struct CachedSize(pub SeamSize);
 
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
 pub struct VisualKey {
-    pub state:  PortalState,
+    pub state:  SeamState,
     pub active: bool,
 }
 
-pub fn ensure_portal_mesh(
+pub fn ensure_seam_mesh(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    portals: Query<
-        (Entity, &PortalSize, Option<&CachedSize>),
-        (With<Portal>, Or<(Changed<PortalSize>, Without<CachedSize>)>),
+    seams: Query<
+        (Entity, &SeamSize, Option<&CachedSize>),
+        (With<Seam>, Or<(Changed<SeamSize>, Without<CachedSize>)>),
     >,
 ) {
-    for (entity, size, cached) in &portals {
+    for (entity, size, cached) in &seams {
         if cached.is_some_and(|c| c.0 == *size) {
             continue;
         }
@@ -92,22 +92,22 @@ pub fn ensure_portal_mesh(
             .build();
         commands.entity(entity).insert((
             Mesh3d(meshes.add(mesh)),
-            RenderLayers::layer(PORTAL_RENDER_LAYER),
+            RenderLayers::layer(SEAM_RENDER_LAYER),
             CachedSize(*size),
         ));
     }
 }
 
-pub fn update_portal_state(
-    mut portals: Query<(&mut PortalState, Option<&PortalDestination>), With<Portal>>,
-    incoming: Query<(), With<crate::IncomingPortals>>,
+pub fn update_seam_state(
+    mut seams: Query<(&mut SeamState, Option<&GluedTo>), With<Seam>>,
+    incoming: Query<(), With<crate::GluedFrom>>,
     doc_roots: Query<(), With<bevy_hsd::Hsd>>,
 ) {
-    for (mut state, dest) in &mut portals {
+    for (mut state, dest) in &mut seams {
         let next = match dest {
-            None => PortalState::Closed,
-            Some(d) if incoming.contains(d.0) || doc_roots.contains(d.0) => PortalState::Open,
-            Some(_) => PortalState::Loading,
+            None => SeamState::Closed,
+            Some(d) if incoming.contains(d.0) || doc_roots.contains(d.0) => SeamState::Open,
+            Some(_) => SeamState::Loading,
         };
         if *state != next {
             *state = next;
@@ -116,19 +116,19 @@ pub fn update_portal_state(
 }
 
 pub fn apply_active_material(
-    portals: Query<
+    seams: Query<
         (
             Entity,
-            &PortalState,
-            Has<PortalActiveRender>,
+            &SeamState,
+            Has<SeamActiveRender>,
             Option<&VisualKey>,
         ),
-        With<Portal>,
+        With<Seam>,
     >,
     mut std_materials: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
 ) {
-    for (entity, state, active, key) in &portals {
+    for (entity, state, active, key) in &seams {
         let next_key = VisualKey {
             state: *state,
             active,
@@ -137,14 +137,14 @@ pub fn apply_active_material(
             continue;
         }
 
-        let want_shader = active && *state == PortalState::Open;
+        let want_shader = active && *state == SeamState::Open;
         if want_shader {
             commands.queue(move |world: &mut World| install_shader_visual(world, entity));
         } else {
             let color = match state {
-                PortalState::Closed => CLOSED_COLOR,
-                PortalState::Loading => LOADING_COLOR,
-                PortalState::Open => OPEN_FALLBACK_COLOR,
+                SeamState::Closed => CLOSED_COLOR,
+                SeamState::Loading => LOADING_COLOR,
+                SeamState::Open => OPEN_FALLBACK_COLOR,
             };
             let mat = std_materials.add(StandardMaterial {
                 base_color: color,
@@ -156,16 +156,16 @@ pub fn apply_active_material(
             commands
                 .entity(entity)
                 .insert((MeshMaterial3d(mat), next_key))
-                .remove::<MeshMaterial3d<PortalMaterial>>();
-            commands.queue(move |world: &mut World| despawn_portal_cameras(world, entity));
+                .remove::<MeshMaterial3d<SeamMaterial>>();
+            commands.queue(move |world: &mut World| despawn_seam_cameras(world, entity));
         }
         commands.entity(entity).insert(next_key);
     }
 }
 
-fn despawn_portal_cameras(world: &mut World, portal: Entity) {
+fn despawn_seam_cameras(world: &mut World, seam: Entity) {
     let cameras: Vec<Entity> = world
-        .get::<PortalCameras>(portal)
+        .get::<DevelopCameras>(seam)
         .map(|c| c.0.clone())
         .unwrap_or_default();
     for cam in cameras {
@@ -175,16 +175,16 @@ fn despawn_portal_cameras(world: &mut World, portal: Entity) {
     }
 }
 
-fn install_shader_visual(world: &mut World, portal: Entity) {
+fn install_shader_visual(world: &mut World, seam: Entity) {
     let Some(tracked_camera) = world
-        .query_filtered::<Entity, (With<Camera3d>, Without<PortalCamera>)>()
+        .query_filtered::<Entity, (With<Camera3d>, Without<DevelopCamera>)>()
         .iter(world)
         .next()
     else {
         return;
     };
 
-    despawn_portal_cameras(world, portal);
+    despawn_seam_cameras(world, seam);
 
     let initial_size = initial_render_size(world, tracked_camera);
     let size = Extent3d {
@@ -196,7 +196,7 @@ fn install_shader_visual(world: &mut World, portal: Entity) {
         texture_descriptor: TextureDescriptor {
             dimension: TextureDimension::D2,
             format: TextureFormat::Rgba8UnormSrgb,
-            label: Some("PortalImage"),
+            label: Some("SeamImage"),
             mip_level_count: 1,
             sample_count: 1,
             size,
@@ -210,16 +210,16 @@ fn install_shader_visual(world: &mut World, portal: Entity) {
     image.resize(size);
     let image_handle = world.resource_mut::<Assets<Image>>().add(image);
 
-    let portal_material = world
-        .resource_mut::<Assets<PortalMaterial>>()
-        .add(PortalMaterial {
+    let seam_material = world
+        .resource_mut::<Assets<SeamMaterial>>()
+        .add(SeamMaterial {
             texture:   Some(image_handle.clone()),
             cull_mode: None,
-            params:    PortalParams::default(),
+            params:    SeamParams::default(),
         });
 
-    if let Ok(mut e) = world.get_entity_mut(portal) {
-        e.insert(MeshMaterial3d(portal_material));
+    if let Ok(mut e) = world.get_entity_mut(seam) {
+        e.insert(MeshMaterial3d(seam_material));
         e.remove::<MeshMaterial3d<StandardMaterial>>();
     }
 
@@ -227,9 +227,9 @@ fn install_shader_visual(world: &mut World, portal: Entity) {
         .get::<Camera3d>(tracked_camera)
         .cloned()
         .unwrap_or_default();
-    let portal_camera_ent = world
+    let seam_camera_ent = world
         .spawn((
-            PortalCamera { portal },
+            DevelopCamera { seam },
             TrackedCamera(tracked_camera),
             Camera {
                 order: -1,
@@ -240,12 +240,12 @@ fn install_shader_visual(world: &mut World, portal: Entity) {
         ))
         .id();
 
-    copy_tracked_camera_extras(world, portal_camera_ent, tracked_camera);
+    copy_tracked_camera_extras(world, seam_camera_ent, tracked_camera);
 }
 
 /// Best-effort viewport size for the tracked camera. Used to allocate the
-/// initial portal render target at a reasonable resolution;
-/// [`tracking::update_portal_image_sizes`] continues to resize each frame as
+/// initial seam render target at a reasonable resolution;
+/// [`develop::update_develop_image_sizes`] continues to resize each frame as
 /// the viewport changes.
 fn initial_render_size(world: &mut World, tracked_camera: Entity) -> UVec2 {
     const FALLBACK: UVec2 = UVec2::new(1024, 1024);
@@ -288,45 +288,41 @@ fn initial_render_size(world: &mut World, tracked_camera: Entity) -> UVec2 {
     }
 }
 
-fn copy_tracked_camera_extras(
-    world: &mut World,
-    portal_camera_ent: Entity,
-    tracked_camera: Entity,
-) {
+fn copy_tracked_camera_extras(world: &mut World, seam_camera_ent: Entity, tracked_camera: Entity) {
     if let Some(v) = world.get::<Atmosphere>(tracked_camera).cloned() {
-        world.entity_mut(portal_camera_ent).insert(v);
+        world.entity_mut(seam_camera_ent).insert(v);
     }
     if let Some(v) = world.get::<AtmosphereSettings>(tracked_camera).cloned() {
-        world.entity_mut(portal_camera_ent).insert(v);
+        world.entity_mut(seam_camera_ent).insert(v);
     }
     if let Some(v) = world.get::<Bloom>(tracked_camera).cloned() {
-        world.entity_mut(portal_camera_ent).insert(v);
+        world.entity_mut(seam_camera_ent).insert(v);
     }
     if let Some(v) = world.get::<ColorGrading>(tracked_camera).cloned() {
-        world.entity_mut(portal_camera_ent).insert(v);
+        world.entity_mut(seam_camera_ent).insert(v);
     }
     if let Some(v) = world.get::<DebandDither>(tracked_camera).copied() {
-        world.entity_mut(portal_camera_ent).insert(v);
+        world.entity_mut(seam_camera_ent).insert(v);
     }
     if let Some(v) = world.get::<DepthOfField>(tracked_camera).copied() {
-        world.entity_mut(portal_camera_ent).insert(v);
+        world.entity_mut(seam_camera_ent).insert(v);
     }
     if let Some(v) = world.get::<Exposure>(tracked_camera).copied() {
-        world.entity_mut(portal_camera_ent).insert(v);
+        world.entity_mut(seam_camera_ent).insert(v);
     }
     if let Some(v) = world.get::<Hdr>(tracked_camera).copied() {
-        world.entity_mut(portal_camera_ent).insert(v);
+        world.entity_mut(seam_camera_ent).insert(v);
     }
     if let Some(v) = world.get::<Projection>(tracked_camera).cloned() {
-        world.entity_mut(portal_camera_ent).insert(v);
+        world.entity_mut(seam_camera_ent).insert(v);
     }
     if let Some(v) = world.get::<RenderLayers>(tracked_camera).cloned() {
         let merged = v
             .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::Both])
-            .without(PORTAL_RENDER_LAYER);
-        world.entity_mut(portal_camera_ent).insert(merged);
+            .without(SEAM_RENDER_LAYER);
+        world.entity_mut(seam_camera_ent).insert(merged);
     }
     if let Some(v) = world.get::<Tonemapping>(tracked_camera).copied() {
-        world.entity_mut(portal_camera_ent).insert(v);
+        world.entity_mut(seam_camera_ent).insert(v);
     }
 }

@@ -112,7 +112,7 @@ impl Plugin for UnaviPlugin {
             unavi_avatar::AvatarPlugin,
             unavi_identity::IdentityPlugin,
             unavi_input::InputPlugin,
-            unavi_portal::PortalPlugin,
+            unavi_manifold::ManifoldPlugin,
             unavi_script::ScriptPlugin,
             unavi_space::SpacePlugin,
             unavi_util::UtilPlugin,

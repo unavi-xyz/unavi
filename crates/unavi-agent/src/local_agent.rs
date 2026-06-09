@@ -24,10 +24,10 @@ use unavi_avatar::{
     },
 };
 use unavi_input::raycast::PrimaryRaycastInput;
-use unavi_portal::{
-    PortalTraveler,
-    PortalViewer,
-    visuals::PORTAL_RENDER_LAYER,
+use unavi_manifold::{
+    ManifoldBody,
+    ManifoldViewer,
+    visuals::SEAM_RENDER_LAYER,
 };
 
 use crate::{
@@ -92,7 +92,7 @@ pub fn spawn_local_agent(
             )),
             LockedAxes::ROTATION_LOCKED,
             Transform::from_xyz(0.0, config.effective_vrm_height() / 2.0, 0.0),
-            PortalTraveler,
+            ManifoldBody,
         ))
         .id();
 
@@ -158,9 +158,9 @@ fn spawn_camera(commands: &mut Commands, is_xr: bool) -> Entity {
             ..default()
         }),
         Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),
-        RenderLayers::from_layers(&[0, PORTAL_RENDER_LAYER])
+        RenderLayers::from_layers(&[0, SEAM_RENDER_LAYER])
             .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::FirstPersonOnly]),
-        PortalViewer,
+        ManifoldViewer,
     ));
 
     camera

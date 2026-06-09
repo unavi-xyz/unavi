@@ -50,9 +50,9 @@ use crate::{
 
 pub const SEAM_RENDER_LAYER: usize = 5;
 
-const CLOSED_COLOR: Color = Color::srgb(0.05, 0.05, 0.08);
-const LOADING_COLOR: Color = Color::srgb(0.4, 0.4, 0.7);
-const OPEN_FALLBACK_COLOR: Color = Color::srgb(0.2, 0.6, 1.0);
+const CLOSED_COLOR: Color = Color::srgb(0.1, 0.1, 0.1);
+const LOADING_COLOR: Color = Color::srgb(0.7, 0.7, 0.7);
+const OPEN_FALLBACK_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
 
 #[derive(Component)]
 pub struct CachedSize(pub SeamSize);

@@ -23,8 +23,6 @@ use unavi_manifold::{
     visuals::SEAM_RENDER_LAYER,
 };
 
-/// A ball that rolls down the ramp, through a seam, then returns to the ramp
-/// top after a short delay.
 #[derive(Component)]
 struct RollingBall {
     start:      Vec3,
@@ -72,7 +70,6 @@ fn main() {
         .run();
 }
 
-/// When the ball crosses a seam, arm its return to the ramp top.
 fn schedule_respawn(event: On<CrossedSeam>, time: Res<Time>, mut balls: Query<&mut RollingBall>) {
     if let Ok(mut ball) = balls.get_mut(event.entity)
         && ball.respawn_at.is_none()
@@ -153,7 +150,16 @@ fn setup_scene(
     ));
 
     spawn_ramp(&mut commands, &mut meshes, &mut materials);
+    spawn_seams(&mut commands, &mut meshes, &mut materials);
+    spawn_landmarks(&mut commands, &mut meshes, &mut materials);
+    spawn_ball(&mut commands, &mut meshes, &mut materials);
+}
 
+fn spawn_seams(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+) {
     let seam_size = SeamSize {
         width:  SEAM_WIDTH,
         height: SEAM_HEIGHT,
@@ -170,22 +176,26 @@ fn setup_scene(
     commands.entity(id_b).insert(GluedTo(id_a));
 
     spawn_seam_frame(
-        &mut commands,
-        &mut meshes,
-        &mut materials,
+        commands,
+        meshes,
+        materials,
         seam_a,
         Color::srgb(1.0, 0.55, 0.1),
     );
     spawn_seam_frame(
-        &mut commands,
-        &mut meshes,
-        &mut materials,
+        commands,
+        meshes,
+        materials,
         seam_b,
         Color::srgb(0.2, 0.65, 1.0),
     );
+}
 
-    // Distinct-coloured landmark cubes; the cluster near the exit seam shows
-    // through the entry seam, proving the link.
+fn spawn_landmarks(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+) {
     for (xyz, rgb) in [
         ([-5.0, 0.5, 1.8], [0.90, 0.20, 0.25]),
         ([-6.5, 0.5, -1.2], [0.25, 0.80, 0.35]),
@@ -207,7 +217,13 @@ fn setup_scene(
             Collider::cuboid(1.0, 1.0, 1.0),
         ));
     }
+}
 
+fn spawn_ball(
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+) {
     let ball_material = materials.add(StandardMaterial {
         base_color: Color::srgb(0.85, 0.12, 0.12),
         metallic: 0.3,
@@ -230,7 +246,6 @@ fn setup_scene(
     ));
 }
 
-/// A wedge resting flush on the ground, sloping down toward the entry seam.
 fn spawn_ramp(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
@@ -277,8 +292,6 @@ fn spawn_ramp(
     ));
 }
 
-/// Frame around a seam with no bottom bar, so it reads as a doorway flush with
-/// the ground.
 fn spawn_seam_frame(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,

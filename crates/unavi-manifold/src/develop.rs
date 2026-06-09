@@ -1,13 +1,7 @@
 use std::f32::consts::PI;
 
 use bevy::{
-    camera::{
-        RenderTarget,
-        primitives::{
-            Frustum,
-            HalfSpace,
-        },
-    },
+    camera::RenderTarget,
     math::Affine3A,
     prelude::*,
     render::render_resource::Extent3d,
@@ -153,18 +147,15 @@ pub fn update_develop_camera_transforms(
     }
 }
 
-/// Set seam camera near frustum to seam back.
-pub fn update_develop_camera_frustums(
-    mut seam_cameras: Query<(
-        &DevelopCamera,
-        &mut Frustum,
-        &mut Projection,
-        &GlobalTransform,
-    )>,
+/// Clip the seam camera at the destination seam plane via Lengyel oblique
+/// near-plane projection, so geometry between the camera and the seam cannot
+/// occlude the portal view.
+pub fn update_develop_camera_clip_planes(
+    mut seam_cameras: Query<(&DevelopCamera, &mut Projection, &GlobalTransform)>,
     seams: Query<&GluedTo>,
     destinations: Query<&GlobalTransform, Without<DevelopCamera>>,
 ) {
-    for (seam_camera, mut frustum, mut projection, transform) in &mut seam_cameras {
+    for (seam_camera, mut projection, transform) in &mut seam_cameras {
         let Ok(destination) = seams.get(seam_camera.seam) else {
             continue;
         };
@@ -173,34 +164,23 @@ pub fn update_develop_camera_frustums(
             continue;
         };
 
-        let view_projection = projection.get_clip_from_view() * transform.to_matrix().inverse();
+        let Projection::Perspective(perspective) = projection.as_mut() else {
+            continue;
+        };
 
-        let mut new_frustum = Frustum::from_clip_from_world_custom_far(
-            &view_projection,
-            &transform.translation(),
-            &transform.back(),
-            projection.far(),
-        );
+        let view_from_world = transform.affine().inverse();
+        let plane_point = view_from_world.transform_point3(destination_transform.translation());
+        let plane_normal = view_from_world
+            .transform_vector3(destination_transform.back().as_vec3())
+            .normalize();
 
-        let half_space_normal = transform.forward().to_vec3a();
+        // Orient the normal away from the camera so only the far side renders.
+        let normal = if plane_normal.dot(plane_point) < 0.0 {
+            -plane_normal
+        } else {
+            plane_normal
+        };
 
-        let near_half_space_distance = -destination_transform
-            .translation_vec3a()
-            .dot(half_space_normal.normalize())
-            - 1.0e-4;
-
-        new_frustum.half_spaces[4] =
-            HalfSpace::new(half_space_normal.extend(near_half_space_distance));
-
-        // Culling frustum.
-        *frustum = new_frustum;
-
-        // Projection matrix near plane.
-        // TODO: Proper Lengyel oblique clipping
-        if let Projection::Perspective(pp) = projection.as_mut() {
-            pp.near = destination_transform
-                .translation_vec3a()
-                .distance(transform.translation_vec3a());
-        }
+        perspective.near_clip_plane = normal.extend(-normal.dot(plane_point));
     }
 }

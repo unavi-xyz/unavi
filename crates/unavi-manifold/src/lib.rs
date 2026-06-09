@@ -52,12 +52,12 @@ impl Plugin for ManifoldPlugin {
                     (
                         develop::update_develop_image_sizes,
                         develop::update_develop_camera_transforms,
+                        develop::update_develop_camera_clip_planes,
                     )
                         .chain()
                         .after(TransformSystems::Propagate)
                         .before(VisibilitySystems::UpdateFrusta),
                     transition::apply_seam_crossings.after(TransformSystems::Propagate),
-                    develop::update_develop_camera_frustums.after(VisibilitySystems::UpdateFrusta),
                 ),
             )
             .add_observer(transition::carry_momentum);

@@ -90,7 +90,7 @@ pub fn update_develop_image_sizes(
             continue;
         };
 
-        // info!(?size, "Resizing seam image");
+        debug!(?size, "Resizing seam image");
         image.texture_descriptor.size = size;
         image.resize(size);
 
@@ -149,13 +149,13 @@ pub fn update_develop_camera_transforms(
 
 /// Clip the seam camera at the destination seam plane via Lengyel oblique
 /// near-plane projection, so geometry between the camera and the seam cannot
-/// occlude the portal view.
+/// occlude the view.
 pub fn update_develop_camera_clip_planes(
-    mut seam_cameras: Query<(&DevelopCamera, &mut Projection, &GlobalTransform)>,
+    mut seam_cameras: Query<(&DevelopCamera, &mut Camera, &mut Projection, &GlobalTransform)>,
     seams: Query<&GluedTo>,
     destinations: Query<&GlobalTransform, Without<DevelopCamera>>,
 ) {
-    for (seam_camera, mut projection, transform) in &mut seam_cameras {
+    for (seam_camera, mut camera, mut projection, transform) in &mut seam_cameras {
         let Ok(destination) = seams.get(seam_camera.seam) else {
             continue;
         };
@@ -182,5 +182,12 @@ pub fn update_develop_camera_clip_planes(
         };
 
         perspective.near_clip_plane = normal.extend(-normal.dot(plane_point));
+
+        // `camera_system` caches `clip_from_view` before transform propagation,
+        // so it bakes the oblique plane from the previous frame's pose. Recompute
+        // it here from the freshly written pose, otherwise the clip plane trails
+        // the rendered view by a frame and clips a velocity-dependent sliver of
+        // the far side while moving.
+        camera.computed.clip_from_view = projection.get_clip_from_view();
     }
 }

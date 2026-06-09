@@ -9,28 +9,27 @@ use bevy::{
     },
 };
 
-pub const PORTAL_SHADER_HANDLE: Handle<Shader> =
-    uuid_handle!("339faa2e-314e-45fc-b310-34b31639fcd7");
+pub const SEAM_SHADER_HANDLE: Handle<Shader> = uuid_handle!("339faa2e-314e-45fc-b310-34b31639fcd7");
 
 #[derive(Asset, AsBindGroup, Clone, TypePath)]
-#[bind_group_data(PortalMaterialKey)]
-pub struct PortalMaterial {
+#[bind_group_data(SeamMaterialKey)]
+pub struct SeamMaterial {
     #[texture(0)]
     #[sampler(1)]
     pub texture:   Option<Handle<Image>>,
     pub cull_mode: Option<Face>,
     #[uniform(2)]
-    pub params:    PortalParams,
+    pub params:    SeamParams,
 }
 
 #[derive(Clone, Copy, ShaderType, Debug, Default)]
-pub struct PortalParams {
+pub struct SeamParams {
     pub time: f32,
 }
 
-impl Material for PortalMaterial {
+impl Material for SeamMaterial {
     fn fragment_shader() -> bevy::shader::ShaderRef {
-        PORTAL_SHADER_HANDLE.into()
+        SEAM_SHADER_HANDLE.into()
     }
 
     fn specialize(
@@ -45,19 +44,19 @@ impl Material for PortalMaterial {
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
-pub struct PortalMaterialKey {
+pub struct SeamMaterialKey {
     cull_mode: Option<Face>,
 }
 
-impl From<&PortalMaterial> for PortalMaterialKey {
-    fn from(material: &PortalMaterial) -> Self {
+impl From<&SeamMaterial> for SeamMaterialKey {
+    fn from(material: &SeamMaterial) -> Self {
         Self {
             cull_mode: material.cull_mode,
         }
     }
 }
 
-pub fn update_portal_time(time: Res<Time>, mut materials: ResMut<Assets<PortalMaterial>>) {
+pub fn update_seam_time(time: Res<Time>, mut materials: ResMut<Assets<SeamMaterial>>) {
     let t = time.elapsed_secs();
 
     for (_, mat) in materials.iter_mut() {

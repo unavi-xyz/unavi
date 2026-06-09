@@ -12,7 +12,7 @@ use bevy_hsd::{
     attributes::portal::PortalConfig,
 };
 use blake3::Hash;
-use unavi_portal::Portal;
+use unavi_manifold::Seam;
 use unavi_portal_protocol::{
     BACKLINK_CHANNEL,
     BacklinkPayload,
@@ -127,7 +127,7 @@ pub fn service_portal_watches(
     time: Res<Time>,
     mut watches: Query<(Entity, &mut PortalWatch)>,
     docs: Query<(Entity, &HsdRecordId), With<Hsd>>,
-    receptors: Query<(&PortalConfig, &HsdChild, &Prim), With<Portal>>,
+    receptors: Query<(&PortalConfig, &HsdChild, &Prim), With<Seam>>,
     mut incoming: Query<&mut PendingIncoming>,
     mut backlink: Query<&mut PendingBacklink>,
     mut commands: Commands,

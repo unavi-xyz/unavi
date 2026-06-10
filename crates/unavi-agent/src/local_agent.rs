@@ -51,6 +51,7 @@ use crate::{
 };
 
 const RAYCAST_GRAB_DISTANCE: f32 = 2.5;
+const CAMERA_NEAR_PLANE: f32 = 0.001;
 
 pub fn spawn_local_agent(
     trigger: On<Add, LocalAgent>,
@@ -154,7 +155,7 @@ fn spawn_camera(commands: &mut Commands, is_xr: bool) -> Entity {
 
     commands.entity(camera).insert((
         Projection::Perspective(PerspectiveProjection {
-            near: 0.001,
+            near: CAMERA_NEAR_PLANE,
             ..default()
         }),
         Transform::default().looking_at(Vec3::NEG_Z, Vec3::Y),

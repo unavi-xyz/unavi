@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use bevy::{
     asset::load_internal_asset,
     camera::visibility::VisibilitySystems,
@@ -36,7 +34,6 @@ impl Plugin for ManifoldPlugin {
             .add_systems(
                 Update,
                 (
-                    material::update_seam_time,
                     resolver::resolve_target_doc,
                     resolver::resolve_target_receptor,
                     visuals::ensure_seam_mesh,
@@ -57,7 +54,8 @@ impl Plugin for ManifoldPlugin {
                         .chain()
                         .after(TransformSystems::Propagate)
                         .before(VisibilitySystems::UpdateFrusta),
-                    transition::apply_seam_crossings.after(TransformSystems::Propagate),
+                    transition::apply_seam_crossings.before(TransformSystems::Propagate),
+                    material::update_seam_params.after(TransformSystems::Propagate),
                 ),
             )
             .add_observer(transition::carry_momentum);
@@ -83,7 +81,11 @@ impl Default for SeamSize {
     }
 }
 
-pub const SEAM_DEPTH: f32 = 0.05;
+/// Depth of the latch slab around the seam plane.
+///
+/// Crossing triggers exactly at the plane; this band only suppresses an
+/// immediate re-crossing after a body lands near the destination plane.
+pub const SEAM_DEPTH: f32 = 0.2;
 
 #[derive(Component, Clone, Copy)]
 pub struct SeamTargetDoc(pub Hash);
@@ -147,23 +149,13 @@ impl Default for DevelopmentHorizon {
 }
 
 #[derive(Component)]
-#[require(TransitionCooldown, PrevTranslation)]
+#[require(SeamLatch, PrevTranslation)]
 pub struct ManifoldBody;
 
-#[derive(Component)]
-pub struct TransitionCooldown {
-    pub last_travel: Option<Duration>,
-    pub duration:    Duration,
-}
-
-impl Default for TransitionCooldown {
-    fn default() -> Self {
-        Self {
-            last_travel: None,
-            duration:    Duration::from_millis(100),
-        }
-    }
-}
+/// Set after a crossing, cleared once the body leaves every slab; stops it
+/// teleporting straight back out of the slab it lands in.
+#[derive(Component, Default)]
+pub struct SeamLatch(pub bool);
 
 #[derive(Component, Default)]
 pub struct PrevTranslation(pub Vec3);

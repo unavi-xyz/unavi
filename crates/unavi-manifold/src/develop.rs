@@ -151,7 +151,12 @@ pub fn update_develop_camera_transforms(
 /// near-plane projection, so geometry between the camera and the seam cannot
 /// occlude the view.
 pub fn update_develop_camera_clip_planes(
-    mut seam_cameras: Query<(&DevelopCamera, &mut Camera, &mut Projection, &GlobalTransform)>,
+    mut seam_cameras: Query<(
+        &DevelopCamera,
+        &mut Camera,
+        &mut Projection,
+        &GlobalTransform,
+    )>,
     seams: Query<&GluedTo>,
     destinations: Query<&GlobalTransform, Without<DevelopCamera>>,
 ) {

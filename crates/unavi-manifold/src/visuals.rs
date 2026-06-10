@@ -2,8 +2,12 @@ use bevy::{
     camera::{
         Exposure,
         RenderTarget,
-        visibility::RenderLayers,
+        visibility::{
+            NoFrustumCulling,
+            RenderLayers,
+        },
     },
+    core_pipeline::tonemapping::Tonemapping,
     pbr::{
         Atmosphere,
         AtmosphereSettings,
@@ -83,6 +87,7 @@ pub fn ensure_seam_mesh(
         commands.entity(entity).insert((
             Mesh3d(meshes.add(mesh)),
             RenderLayers::layer(SEAM_RENDER_LAYER),
+            NoFrustumCulling,
             CachedSize(*size),
         ));
     }
@@ -200,12 +205,21 @@ fn install_shader_visual(world: &mut World, seam: Entity) {
     image.resize(size);
     let image_handle = world.resource_mut::<Assets<Image>>().add(image);
 
+    let size = world.get::<SeamSize>(seam).copied().unwrap_or_default();
+    let seam_transform = world
+        .get::<GlobalTransform>(seam)
+        .copied()
+        .unwrap_or_default();
+
     let seam_material = world
         .resource_mut::<Assets<SeamMaterial>>()
         .add(SeamMaterial {
             texture:   Some(image_handle.clone()),
             cull_mode: None,
-            params:    SeamParams::default(),
+            params:    SeamParams {
+                world_from_seam: seam_transform.to_matrix(),
+                half_size:       Vec2::new(size.width / 2.0, size.height / 2.0),
+            },
         });
 
     if let Ok(mut e) = world.get_entity_mut(seam) {
@@ -227,6 +241,10 @@ fn install_shader_visual(world: &mut World, seam: Entity) {
             },
             RenderTarget::Image(image_handle.into()),
             camera_3d,
+            // Write linear HDR to the RTT; the main camera applies tonemapping
+            // once when it composites the seam, so the destination must not be
+            // tonemapped here (else it is darkened twice).
+            Tonemapping::None,
         ))
         .id();
 

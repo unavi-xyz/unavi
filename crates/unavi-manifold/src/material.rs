@@ -9,6 +9,11 @@ use bevy::{
     },
 };
 
+use crate::{
+    Seam,
+    SeamSize,
+};
+
 pub const SEAM_SHADER_HANDLE: Handle<Shader> = uuid_handle!("339faa2e-314e-45fc-b310-34b31639fcd7");
 
 #[derive(Asset, AsBindGroup, Clone, TypePath)]
@@ -24,12 +29,21 @@ pub struct SeamMaterial {
 
 #[derive(Clone, Copy, ShaderType, Debug, Default)]
 pub struct SeamParams {
-    pub time: f32,
+    pub world_from_seam: Mat4,
+    pub half_size:       Vec2,
 }
 
 impl Material for SeamMaterial {
+    fn vertex_shader() -> bevy::shader::ShaderRef {
+        SEAM_SHADER_HANDLE.into()
+    }
+
     fn fragment_shader() -> bevy::shader::ShaderRef {
         SEAM_SHADER_HANDLE.into()
+    }
+
+    fn alpha_mode(&self) -> AlphaMode {
+        AlphaMode::Blend
     }
 
     fn specialize(
@@ -56,10 +70,15 @@ impl From<&SeamMaterial> for SeamMaterialKey {
     }
 }
 
-pub fn update_seam_time(time: Res<Time>, mut materials: ResMut<Assets<SeamMaterial>>) {
-    let t = time.elapsed_secs();
-
-    for (_, mat) in materials.iter_mut() {
-        mat.params.time = t;
+pub fn update_seam_params(
+    seams: Query<(&GlobalTransform, &SeamSize, &MeshMaterial3d<SeamMaterial>), With<Seam>>,
+    mut materials: ResMut<Assets<SeamMaterial>>,
+) {
+    for (transform, size, handle) in &seams {
+        let Some(material) = materials.get_mut(handle.0.id()) else {
+            continue;
+        };
+        material.params.world_from_seam = transform.to_matrix();
+        material.params.half_size = Vec2::new(size.width / 2.0, size.height / 2.0);
     }
 }

@@ -4,6 +4,7 @@ use bevy::{
     prelude::*,
     render::view::Hdr,
 };
+use unavi_manifold::DevelopCamera;
 
 mod sky;
 
@@ -21,7 +22,10 @@ impl Plugin for CameraPlugin {
     }
 }
 
-pub fn apply_camera_effects(mut commands: Commands, new_cameras: Query<Entity, Added<Camera3d>>) {
+pub fn apply_camera_effects(
+    mut commands: Commands,
+    new_cameras: Query<Entity, (Added<Camera3d>, Without<DevelopCamera>)>,
+) {
     for entity in new_cameras {
         commands.entity(entity).insert((
             Hdr,

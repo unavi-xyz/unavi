@@ -46,7 +46,7 @@ bevy                 = "0.18.1"
 bevy-inspector-egui  = "0.36.0"
 bevy_mod_xr          = "0.5.0"
 bevy_panorbit_camera = "0.34.0"
-bevy_vrm             = "0.3.0"
+bevy_vrm             = { git = "https://github.com/unavi-xyz/bevy_vrm" }
 bevy_xr_utils        = "0.5.0"
 blake3               = { features = ["serde"], version = "1.8.4" }
 bytemuck             = "1.25.0"
@@ -86,7 +86,7 @@ xdid                 = { git = "https://github.com/unavi-xyz/xdid" }
 zeroize              = "1.8.2"
 
 [patch.crates-io]
-iroh-blobs = { git = "https://github.com/k-43/iroh-blobs" }
+iroh-blobs = { git = "https://github.com/m11m/iroh-blobs" }
 
 [profile.release]
 codegen-units = 1

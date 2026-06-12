@@ -1,5 +1,3 @@
-use std::f32::consts::PI;
-
 use bevy::{
     camera::RenderTarget,
     math::Affine3A,
@@ -17,6 +15,7 @@ use crate::{
     Seam,
     TrackedCamera,
     material::SeamMaterial,
+    seam_transfer,
 };
 
 /// Resize seam image sizes when the tracked camera changes.
@@ -126,16 +125,11 @@ pub fn update_develop_camera_transforms(
             continue;
         };
 
-        // Mirror camera view through seam.
-        let seam_to_camera = seam_transform.affine().inverse() * camera_transform.affine();
-        let flipped = Affine3A::from_rotation_translation(Quat::from_rotation_y(PI), Vec3::ZERO)
-            * seam_to_camera;
-        let new_position = Vec3::from((destination_transform.affine() * flipped).translation);
-
-        let camera_rot = camera_transform.rotation();
-        let seam_rot = seam_transform.rotation();
-        let dest_rot = destination_transform.rotation();
-        let new_rotation = dest_rot * Quat::from_rotation_y(PI) * seam_rot.inverse() * camera_rot;
+        // Mirror camera view through seam, dropping any scale picked up along
+        // the way so the camera pose stays rigid.
+        let mirrored =
+            seam_transfer(seam_transform, destination_transform) * camera_transform.affine();
+        let (_, new_rotation, new_position) = mirrored.to_scale_rotation_translation();
 
         let new_transform = GlobalTransform::from(Affine3A::from_rotation_translation(
             new_rotation,

@@ -34,6 +34,7 @@ use bevy::{
 };
 use bevy_vrm::first_person::{
     DEFAULT_RENDER_LAYERS,
+    FIRST_PERSON_LAYER,
     FirstPersonFlag,
 };
 
@@ -41,11 +42,14 @@ use crate::{
     DevelopCamera,
     DevelopCameras,
     GluedTo,
+    ManifoldBody,
+    ManifoldViewer,
     Seam,
     SeamActiveRender,
     SeamSize,
     SeamState,
     TrackedCamera,
+    clip::ClippedBody,
     material::{
         SeamMaterial,
         SeamParams,
@@ -104,9 +108,7 @@ pub fn update_seam_state(
             Some(d) if incoming.contains(d.0) || doc_roots.contains(d.0) => SeamState::Open,
             Some(_) => SeamState::Loading,
         };
-        if *state != next {
-            *state = next;
-        }
+        state.set_if_neq(next);
     }
 }
 
@@ -134,7 +136,7 @@ pub fn apply_active_material(
 
         let want_shader = active && *state == SeamState::Open;
         if want_shader {
-            commands.queue(move |world: &mut World| install_shader_visual(world, entity));
+            commands.queue(move |world: &mut World| install_shader_visual(world, entity, next_key));
         } else {
             let color = match state {
                 SeamState::Closed => CLOSED_COLOR,
@@ -154,7 +156,6 @@ pub fn apply_active_material(
                 .remove::<MeshMaterial3d<SeamMaterial>>();
             commands.queue(move |world: &mut World| despawn_seam_cameras(world, entity));
         }
-        commands.entity(entity).insert(next_key);
     }
 }
 
@@ -170,12 +171,20 @@ fn despawn_seam_cameras(world: &mut World, seam: Entity) {
     }
 }
 
-fn install_shader_visual(world: &mut World, seam: Entity) {
-    let Some(tracked_camera) = world
-        .query_filtered::<Entity, (With<Camera3d>, Without<DevelopCamera>)>()
+// `key` is only written once installation succeeds, so a frame without a
+// usable camera retries instead of sticking on a stale visual.
+fn install_shader_visual(world: &mut World, seam: Entity, key: VisualKey) {
+    let mut tracked_camera = world
+        .query_filtered::<Entity, (With<Camera3d>, With<ManifoldViewer>, Without<DevelopCamera>)>()
         .iter(world)
-        .next()
-    else {
+        .next();
+    if tracked_camera.is_none() {
+        tracked_camera = world
+            .query_filtered::<Entity, (With<Camera3d>, Without<DevelopCamera>)>()
+            .iter(world)
+            .next();
+    }
+    let Some(tracked_camera) = tracked_camera else {
         return;
     };
 
@@ -223,7 +232,7 @@ fn install_shader_visual(world: &mut World, seam: Entity) {
         });
 
     if let Ok(mut e) = world.get_entity_mut(seam) {
-        e.insert(MeshMaterial3d(seam_material));
+        e.insert((MeshMaterial3d(seam_material), key));
         e.remove::<MeshMaterial3d<StandardMaterial>>();
     }
 
@@ -231,6 +240,18 @@ fn install_shader_visual(world: &mut World, seam: Entity) {
         .get::<Camera3d>(tracked_camera)
         .cloned()
         .unwrap_or_default();
+    // An HDR tracked camera tonemaps as a post-pass over the composited view,
+    // so the RTT must stay linear or the seam is darkened twice. An LDR
+    // tracked camera tonemaps per-material in-shader, which the seam shader
+    // bypasses, so the RTT must be tonemapped here instead.
+    let tonemapping = if world.get::<Hdr>(tracked_camera).is_some() {
+        Tonemapping::None
+    } else {
+        world
+            .get::<Tonemapping>(tracked_camera)
+            .copied()
+            .unwrap_or_default()
+    };
     let seam_camera_ent = world
         .spawn((
             DevelopCamera { seam },
@@ -241,10 +262,7 @@ fn install_shader_visual(world: &mut World, seam: Entity) {
             },
             RenderTarget::Image(image_handle.into()),
             camera_3d,
-            // Write linear HDR to the RTT; the main camera applies tonemapping
-            // once when it composites the seam, so the destination must not be
-            // tonemapped here (else it is darkened twice).
-            Tonemapping::None,
+            tonemapping,
         ))
         .id();
 
@@ -316,10 +334,58 @@ fn copy_tracked_camera_extras(world: &mut World, seam_camera_ent: Entity, tracke
     if let Some(v) = world.get::<Projection>(tracked_camera).cloned() {
         world.entity_mut(seam_camera_ent).insert(v);
     }
-    if let Some(v) = world.get::<RenderLayers>(tracked_camera).cloned() {
-        let merged = v
-            .union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::Both])
-            .without(SEAM_RENDER_LAYER);
-        world.entity_mut(seam_camera_ent).insert(merged);
+    // Placeholder until `update_develop_camera_layers` runs this frame.
+    let layers = world
+        .get::<RenderLayers>(tracked_camera)
+        .cloned()
+        .unwrap_or_default()
+        .without(SEAM_RENDER_LAYER);
+    world.entity_mut(seam_camera_ent).insert(layers);
+}
+
+/// Choose seam camera layers per frame.
+///
+/// The portal view is an external view, so bodies seen through it (including
+/// the viewer's own, via multiple portals) render in third person — except
+/// while the tracked camera's own body straddles the portal pair, where the
+/// view continues first person.
+pub fn update_develop_camera_layers(
+    mut seam_cameras: Query<(&DevelopCamera, &TrackedCamera, &mut RenderLayers)>,
+    tracked_layers: Query<&RenderLayers, Without<DevelopCamera>>,
+    parents: Query<&ChildOf>,
+    bodies: Query<(), With<ManifoldBody>>,
+    clipped: Query<&ClippedBody>,
+    glued: Query<&GluedTo>,
+) {
+    for (develop_camera, tracked_camera, mut layers) in &mut seam_cameras {
+        let base = tracked_layers
+            .get(tracked_camera.0)
+            .cloned()
+            .unwrap_or_default();
+
+        let mut node = tracked_camera.0;
+        let mut body = bodies.contains(node).then_some(node);
+        while body.is_none()
+            && let Ok(parent) = parents.get(node)
+        {
+            node = parent.parent();
+            body = bodies.contains(node).then_some(node);
+        }
+
+        let straddling = body.and_then(|b| clipped.get(b).ok()).is_some_and(|c| {
+            c.seam == develop_camera.seam
+                || glued.get(c.seam).is_ok_and(|g| g.0 == develop_camera.seam)
+        });
+
+        let next = if straddling {
+            base.without(SEAM_RENDER_LAYER)
+        } else {
+            base.union(&DEFAULT_RENDER_LAYERS[&FirstPersonFlag::ThirdPersonOnly])
+                .without(FIRST_PERSON_LAYER)
+                .without(SEAM_RENDER_LAYER)
+        };
+        if *layers != next {
+            *layers = next;
+        }
     }
 }

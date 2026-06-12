@@ -13,6 +13,7 @@ use crate::{
     SeamLatch,
     SeamSize,
     SeamState,
+    seam_transfer,
 };
 
 /// Whether the prev→curr segment crosses the seam plane within the opening.
@@ -123,12 +124,8 @@ pub(crate) fn apply_seam_crossings(
             let dest_is_seam = seam_destinations.contains(destination.0);
 
             let (new_translation, new_rotation, transition_rotation) = if dest_is_seam {
-                let flip_rot = Quat::from_rotation_y(std::f32::consts::PI);
-                let flip_matrix = Mat4::from_quat(flip_rot);
-                let m = dest_transform.to_matrix()
-                    * flip_matrix
-                    * source_transform.to_matrix().inverse()
-                    * transform.to_matrix();
+                let m =
+                    seam_transfer(source_transform, dest_transform) * transform.compute_affine();
                 let (_, rotation, translation) = m.to_scale_rotation_translation();
                 let transition_rotation = rotation * transform.rotation.inverse();
                 (translation, rotation, transition_rotation)

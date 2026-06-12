@@ -27,7 +27,7 @@ pub struct SeamMaterial {
     pub params:    SeamParams,
 }
 
-#[derive(Clone, Copy, ShaderType, Debug, Default)]
+#[derive(Clone, Copy, ShaderType, Debug, Default, PartialEq)]
 pub struct SeamParams {
     pub world_from_seam: Mat4,
     pub half_size:       Vec2,
@@ -75,10 +75,20 @@ pub fn update_seam_params(
     mut materials: ResMut<Assets<SeamMaterial>>,
 ) {
     for (transform, size, handle) in &seams {
-        let Some(material) = materials.get_mut(handle.0.id()) else {
-            continue;
+        let next = SeamParams {
+            world_from_seam: transform.to_matrix(),
+            half_size:       Vec2::new(size.width / 2.0, size.height / 2.0),
         };
-        material.params.world_from_seam = transform.to_matrix();
-        material.params.half_size = Vec2::new(size.width / 2.0, size.height / 2.0);
+        // Skip the no-op `get_mut`: it flags the asset as modified and forces a
+        // GPU re-upload every frame.
+        if materials
+            .get(handle.0.id())
+            .is_none_or(|m| m.params == next)
+        {
+            continue;
+        }
+        if let Some(material) = materials.get_mut(handle.0.id()) {
+            material.params = next;
+        }
     }
 }

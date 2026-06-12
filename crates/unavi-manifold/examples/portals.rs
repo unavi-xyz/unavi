@@ -31,7 +31,7 @@ struct RollingBall {
 
 const RESPAWN_DELAY: f32 = 2.5;
 const BALL_RADIUS: f32 = 0.4;
-const BALL_START: Vec3 = Vec3::new(14.0, 5.4, 0.0);
+const BALL_START: Vec3 = Vec3::new(12.0, 3.0, 0.0);
 
 const SEAM_X: f32 = 3.0;
 const SEAM_WIDTH: f32 = 2.5;
@@ -251,8 +251,8 @@ fn spawn_ramp(
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
 ) {
-    let length = 8.0;
-    let height = 5.0;
+    let length = 7.0;
+    let height = 1.0;
     let width = 4.0;
     let center_x = 11.0;
 

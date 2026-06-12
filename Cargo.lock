@@ -14064,11 +14064,7 @@ dependencies = [
  "bevy_panorbit_camera",
  "bevy_vrm",
  "blake3",
- "hsd",
  "loro",
- "loro-surgeon",
- "postcard",
- "serde",
 ]
 
 [[package]]

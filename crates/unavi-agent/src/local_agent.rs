@@ -51,7 +51,7 @@ use crate::{
 };
 
 const RAYCAST_GRAB_DISTANCE: f32 = 2.5;
-const CAMERA_NEAR_PLANE: f32 = 0.001;
+const CAMERA_NEAR_PLANE: f32 = 0.01;
 
 pub fn spawn_local_agent(
     trigger: On<Add, LocalAgent>,

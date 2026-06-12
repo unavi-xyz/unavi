@@ -18,7 +18,7 @@ use crate::{
 #[derive(Component, Default)]
 pub struct DocTraveler;
 
-pub const SPACE_CELL_SIZE: f32 = 10_000.0;
+pub const SPACE_CELL_SIZE: f32 = 1_000.0;
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct SpaceAnchor {

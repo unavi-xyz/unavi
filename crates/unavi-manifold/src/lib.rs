@@ -6,11 +6,21 @@ use bevy::{
 use blake3::Hash;
 use loro::TreeID;
 
-use crate::material::{
-    SEAM_SHADER_HANDLE,
-    SeamMaterial,
+use crate::{
+    clip::{
+        ClippedMtoonMaterial,
+        ClippedStandardMaterial,
+        SEAM_CLIP_MTOON_SHADER_HANDLE,
+        SEAM_CLIP_SHADER_HANDLE,
+        SEAM_CLIP_STANDARD_SHADER_HANDLE,
+    },
+    material::{
+        SEAM_SHADER_HANDLE,
+        SeamMaterial,
+    },
 };
 
+pub mod clip;
 pub mod develop;
 pub mod horizon;
 pub mod material;
@@ -28,37 +38,62 @@ impl Plugin for ManifoldPlugin {
             concat!(env!("CARGO_MANIFEST_DIR"), "/assets/seam.wgsl"),
             Shader::from_wgsl
         );
+        load_internal_asset!(
+            app,
+            SEAM_CLIP_SHADER_HANDLE,
+            concat!(env!("CARGO_MANIFEST_DIR"), "/assets/seam_clip.wgsl"),
+            Shader::from_wgsl
+        );
+        load_internal_asset!(
+            app,
+            SEAM_CLIP_STANDARD_SHADER_HANDLE,
+            concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/assets/seam_clip_standard.wgsl"
+            ),
+            Shader::from_wgsl
+        );
+        load_internal_asset!(
+            app,
+            SEAM_CLIP_MTOON_SHADER_HANDLE,
+            concat!(env!("CARGO_MANIFEST_DIR"), "/assets/seam_clip_mtoon.wgsl"),
+            Shader::from_wgsl
+        );
 
-        app.add_plugins(MaterialPlugin::<SeamMaterial>::default())
-            .init_resource::<DevelopmentHorizon>()
-            .add_systems(
-                Update,
+        app.add_plugins((
+            MaterialPlugin::<SeamMaterial>::default(),
+            MaterialPlugin::<ClippedStandardMaterial>::default(),
+            MaterialPlugin::<ClippedMtoonMaterial>::default(),
+        ))
+        .init_resource::<DevelopmentHorizon>()
+        .add_systems(
+            Update,
+            (
+                resolver::resolve_target_doc,
+                resolver::resolve_target_receptor,
+                visuals::ensure_seam_mesh,
+                visuals::update_seam_state,
+                horizon::select_developed_seams,
+                visuals::apply_active_material,
+            )
+                .chain(),
+        )
+        .add_systems(
+            PostUpdate,
+            (
                 (
-                    resolver::resolve_target_doc,
-                    resolver::resolve_target_receptor,
-                    visuals::ensure_seam_mesh,
-                    visuals::update_seam_state,
-                    horizon::select_developed_seams,
-                    visuals::apply_active_material,
+                    develop::update_develop_image_sizes,
+                    develop::update_develop_camera_transforms,
+                    develop::update_develop_camera_clip_planes,
                 )
-                    .chain(),
-            )
-            .add_systems(
-                PostUpdate,
-                (
-                    (
-                        develop::update_develop_image_sizes,
-                        develop::update_develop_camera_transforms,
-                        develop::update_develop_camera_clip_planes,
-                    )
-                        .chain()
-                        .after(TransformSystems::Propagate)
-                        .before(VisibilitySystems::UpdateFrusta),
-                    transition::apply_seam_crossings.before(TransformSystems::Propagate),
-                    material::update_seam_params.after(TransformSystems::Propagate),
-                ),
-            )
-            .add_observer(transition::carry_momentum);
+                    .chain()
+                    .after(TransformSystems::Propagate)
+                    .before(VisibilitySystems::UpdateFrusta),
+                transition::apply_seam_crossings.before(TransformSystems::Propagate),
+                material::update_seam_params.after(TransformSystems::Propagate),
+            ),
+        )
+        .add_observer(transition::carry_momentum);
     }
 }
 

@@ -5,6 +5,7 @@ use bevy::{
     time::common_conditions::on_timer,
 };
 use blake3::Hash;
+use unavi_manifold::transition::apply_seam_crossings;
 
 pub mod anchor;
 mod beacon;
@@ -50,7 +51,12 @@ impl Plugin for SpacePlugin {
             .add_observer(scene::spawn_space_scene)
             .add_observer(state::space::add_space_state)
             .add_observer(state::space::remove_space_state)
-            .add_systems(Update, anchor::apply_anchor_offsets)
+            .add_systems(
+                PostUpdate,
+                anchor::apply_anchor_offsets
+                    .after(apply_seam_crossings)
+                    .before(TransformSystems::Propagate),
+            )
             .add_systems(
                 FixedUpdate,
                 (

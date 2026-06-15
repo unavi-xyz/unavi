@@ -152,7 +152,7 @@ fn xform_translation_is_not_clobbered_by_init_physics_transform(mut ctx_physics:
     ctx_physics.app.update();
 
     let world = ctx_physics.app.world_mut();
-    let mut q = world.query::<&Transform>();
+    let mut q = world.query_filtered::<&Transform, Without<bevy_hsd::Hsd>>();
     let transform = q.iter(world).next().expect("transform");
     assert!(
         (transform.translation - Vec3::new(5.0, 2.0, -3.0)).length() < 1.0e-4,

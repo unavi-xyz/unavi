@@ -13950,6 +13950,7 @@ dependencies = [
  "image",
  "iroh",
  "log",
+ "n0-future",
  "parking_lot",
  "reqwest 0.13.2",
  "tracing",

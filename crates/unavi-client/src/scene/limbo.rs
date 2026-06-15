@@ -17,6 +17,7 @@ use bevy_hsd::{
     loaded::HsdLoaded,
 };
 use unavi_space::Space;
+use unavi_util::async_commands::AsyncCommands;
 
 use crate::scene::{
     SceneState,
@@ -26,6 +27,9 @@ use crate::scene::{
 /// Exit limbo anyway if a space never reports loaded, so a missing or broken
 /// asset can't strand the local agent on the limbo floor indefinitely.
 const SPACE_LOAD_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Delay after a space loads, to allow scripts to execute and spawn the scene.
+const SPACE_LOAD_DELAY: Duration = Duration::from_secs(1);
 
 #[derive(Component)]
 pub struct SpaceLoadDeadline(Duration);
@@ -99,8 +103,6 @@ pub fn exit_limbo_on_space_loaded(
     trigger: On<Add, HsdLoaded>,
     spaces: Query<(), With<Space>>,
     state: Res<State<SceneState>>,
-    mut next: ResMut<NextState<SceneState>>,
-    mut commands: Commands,
 ) {
     if !matches!(state.get(), SceneState::Limbo) {
         return;
@@ -109,15 +111,20 @@ pub fn exit_limbo_on_space_loaded(
         return;
     }
 
-    info!("Space loaded, exiting limbo");
-    enter_space(&mut next, &mut commands);
+    unavi_util::async_task::spawn_async_task(async {
+        n0_future::time::sleep(SPACE_LOAD_DELAY).await;
+        info!("Space loaded, exiting limbo");
+
+        if let Err(err) = AsyncCommands::default().trigger(EnterSpace).send().await {
+            error!(?err, "Failed to send command");
+        }
+    });
 }
 
 pub fn exit_limbo_on_load_timeout(
     state: Res<State<SceneState>>,
     time: Res<Time>,
     spaces: Query<&SpaceLoadDeadline, (With<Space>, Without<HsdLoaded>)>,
-    mut next: ResMut<NextState<SceneState>>,
     mut commands: Commands,
 ) {
     if !matches!(state.get(), SceneState::Limbo) {
@@ -125,11 +132,18 @@ pub fn exit_limbo_on_load_timeout(
     }
     if spaces.iter().any(|deadline| time.elapsed() >= deadline.0) {
         warn!("Space load timed out, exiting limbo anyway");
-        enter_space(&mut next, &mut commands);
+        commands.trigger(EnterSpace);
     }
 }
 
-fn enter_space(next: &mut NextState<SceneState>, commands: &mut Commands) {
+#[derive(Event, Default)]
+pub struct EnterSpace;
+
+pub fn enter_space(
+    _: On<EnterSpace>,
+    mut next: ResMut<NextState<SceneState>>,
+    mut commands: Commands,
+) {
     next.set(SceneState::Space);
     commands.trigger(Respawn);
 }

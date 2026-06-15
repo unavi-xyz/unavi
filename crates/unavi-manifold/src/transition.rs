@@ -70,7 +70,7 @@ pub(crate) fn carry_momentum(
     angular.0 = rotation * angular.0;
 }
 
-pub(crate) fn apply_seam_crossings(
+pub fn apply_seam_crossings(
     mut commands: Commands,
     mut travelers: Query<
         (Entity, &mut SeamLatch, &mut Transform, &mut PrevTranslation),

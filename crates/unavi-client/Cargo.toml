@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace    = true
 
 [features]
-default = ["dev_tools"]
+default = ["dev_tools", "mdns"]
 dev_tools = [
   "bevy/bevy_dev_tools",
   "bevy/debug",

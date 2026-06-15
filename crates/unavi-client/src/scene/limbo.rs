@@ -92,19 +92,15 @@ pub fn offset_agent_to_limbo(
     agents: Query<&LocalAgentEntities>,
     mut bodies: Query<&mut Transform>,
 ) {
-    info!("(1)");
     if !matches!(state.get(), SceneState::Limbo) {
         return;
     }
-    info!("(2)");
     let Ok(ents) = agents.get(trigger.entity) else {
         return;
     };
-    info!("(3)");
     let Ok(mut tr) = bodies.get_mut(ents.body) else {
         return;
     };
-    info!("(4)");
     tr.translation += LIMBO_OFFSET;
 }
 

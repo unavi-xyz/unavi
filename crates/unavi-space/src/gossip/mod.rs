@@ -71,7 +71,7 @@ pub fn spawn_gossip(
         .expect("endpoint");
 
     let (gossip_tx, gossip_rx) = async_channel::bounded(1);
-    let (tx, rx) = async_channel::bounded(16);
+    let (tx, rx) = async_channel::bounded(32);
 
     spawn_async_task(async move {
         let gossip = Gossip::builder().spawn(endpoint);
@@ -141,13 +141,20 @@ pub fn join_space_topic(
         .entity(trigger.entity)
         .insert(SpaceGossipCancel { _cancel: cancel_tx });
 
-    if let Err(err) = sender.0.try_send(GossipCommand::JoinSpace {
-        ctx,
-        cancel: cancel_rx,
-        space,
-    }) {
-        error!(?err, "Failed to send gossip command");
-    }
+    let sender = sender.0.clone();
+
+    unavi_util::async_task::spawn_async_task(async move {
+        if let Err(err) = sender
+            .send(GossipCommand::JoinSpace {
+                ctx,
+                cancel: cancel_rx,
+                space,
+            })
+            .await
+        {
+            error!(?err, "Failed to send gossip command");
+        }
+    });
 }
 
 #[derive(Component)]

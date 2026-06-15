@@ -5,6 +5,7 @@ use iroh::endpoint::{
     RecvStream,
     SendStream,
 };
+use n0_future::time::Instant;
 use postcard::experimental::max_size::MaxSize;
 use serde::{
     Deserialize,
@@ -56,12 +57,12 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
 
     let mut iframe_id = 0;
     let mut last_iframe = Pose::default();
-    let mut last_iframe_time = n0_future::time::Instant::now() - IFRAME_FREQ;
+    let mut last_iframe_time = Instant::now() - IFRAME_FREQ;
 
     let mut buf = [0; AgentMsg::POSTCARD_MAX_SIZE];
 
     while let Ok(pose) = pose_rx.recv().await {
-        let now = n0_future::time::Instant::now();
+        let now = Instant::now();
 
         // Convert to i-frame or p-frame.
         let msg = if now.duration_since(last_iframe_time) >= IFRAME_FREQ {

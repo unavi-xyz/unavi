@@ -46,8 +46,8 @@ where
     T: PosePrecision + Serialize + for<'a> Deserialize<'a> + Clone,
 {
     // Root
-    // HashMap varint prefix (1 byte)
-    // N * [Key (1 byte)  + Value]
+    // + HashMap varint prefix (1 byte)
+    // + N * [Key (1 byte)  + Value]
     const POSTCARD_MAX_SIZE: usize = T::RootTransform::POSTCARD_MAX_SIZE
         + 1
         + MAX_POSE_BONES * (1 + T::BoneTransform::POSTCARD_MAX_SIZE);

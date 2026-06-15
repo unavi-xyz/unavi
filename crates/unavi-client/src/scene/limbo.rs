@@ -16,7 +16,11 @@ use bevy_hsd::{
     Hsd,
     loaded::HsdLoaded,
 };
-use unavi_space::Space;
+use unavi_agent::LocalAgentEntities;
+use unavi_space::{
+    Space,
+    anchor::SPACE_CELL_SIZE,
+};
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::scene::{
@@ -24,16 +28,16 @@ use crate::scene::{
     respawn::Respawn,
 };
 
+/// Delay after a space loads, to allow scripts to execute and spawn the scene.
+const SPACE_LOAD_DELAY: Duration = Duration::from_secs(1);
 /// Exit limbo anyway if a space never reports loaded, so a missing or broken
 /// asset can't strand the local agent on the limbo floor indefinitely.
 const SPACE_LOAD_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// Delay after a space loads, to allow scripts to execute and spawn the scene.
-const SPACE_LOAD_DELAY: Duration = Duration::from_secs(1);
-
 #[derive(Component)]
 pub struct SpaceLoadDeadline(Duration);
 
+const LIMBO_OFFSET: Vec3 = Vec3::new(SPACE_CELL_SIZE, 0.0, SPACE_CELL_SIZE);
 const PLANE_SIZE: f32 = 2048.0;
 const TEXTURE_SIZE: f32 = 16.0;
 
@@ -74,10 +78,34 @@ pub fn spawn_limbo(
         Limbo,
         RigidBody::Static,
         Collider::half_space(Vec3::Y),
-        Transform::default(),
+        Transform::from_translation(LIMBO_OFFSET),
         Mesh3d(meshes.add(mesh)),
         MeshMaterial3d(materials.add(material)),
     ));
+}
+
+/// Offsets a freshly spawned agent body onto the limbo floor, keeping it clear
+/// of the active space loading in at the origin.
+pub fn offset_agent_to_limbo(
+    trigger: On<Add, LocalAgentEntities>,
+    state: Res<State<SceneState>>,
+    agents: Query<&LocalAgentEntities>,
+    mut bodies: Query<&mut Transform>,
+) {
+    info!("(1)");
+    if !matches!(state.get(), SceneState::Limbo) {
+        return;
+    }
+    info!("(2)");
+    let Ok(ents) = agents.get(trigger.entity) else {
+        return;
+    };
+    info!("(3)");
+    let Ok(mut tr) = bodies.get_mut(ents.body) else {
+        return;
+    };
+    info!("(4)");
+    tr.translation += LIMBO_OFFSET;
 }
 
 pub fn despawn_limbo(limbo: Query<Entity, With<Limbo>>, mut commands: Commands) {

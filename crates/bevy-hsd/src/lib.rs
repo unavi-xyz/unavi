@@ -16,6 +16,7 @@ use loro::{
 pub mod attributes;
 mod diff;
 pub mod load;
+pub mod loaded;
 mod subscribe;
 
 pub struct HsdPlugin;
@@ -52,7 +53,10 @@ impl Plugin for HsdPlugin {
             )
             .add_systems(
                 PostUpdate,
-                attributes::collider::watch_collider_scale.after(TransformSystems::Propagate),
+                (
+                    loaded::evaluate_hsd_loaded,
+                    attributes::collider::watch_collider_scale.after(TransformSystems::Propagate),
+                ),
             );
     }
 }

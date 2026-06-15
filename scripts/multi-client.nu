@@ -21,6 +21,6 @@ def main [
   [
     { delay: 0sec, cmd: ["cargo", "run", "-p", "unavi-server"] }
     { delay: 1sec, cmd: $client_cmd }
-    { delay: 5sec, cmd: $client_cmd }
+    { delay: 1sec, cmd: $client_cmd }
   ] | par-each { |it| sleep $it.delay; run-external ...$it.cmd }
 }

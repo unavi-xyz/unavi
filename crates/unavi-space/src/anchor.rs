@@ -7,7 +7,7 @@ use bevy_hsd::{
     attributes::spawn::SpawnPoint,
 };
 use unavi_agent::LocalAgent;
-use unavi_portal::teleport::PortalTeleport;
+use unavi_manifold::transition::CrossedSeam;
 
 use crate::{
     Space,
@@ -18,7 +18,7 @@ use crate::{
 #[derive(Component, Default)]
 pub struct DocTraveler;
 
-pub const SPACE_CELL_SIZE: f32 = 10_000.0;
+pub const SPACE_CELL_SIZE: f32 = 1_000.0;
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct SpaceAnchor {
@@ -111,7 +111,7 @@ pub fn apply_anchor_offsets(
 }
 
 pub fn reparent_doc_traveler(
-    trigger: On<PortalTeleport>,
+    trigger: On<CrossedSeam>,
     travelers: Query<(), (With<Hsd>, With<DocTraveler>)>,
     parents: Query<&ChildOf>,
     spaces: Query<(), With<Space>>,
@@ -148,7 +148,7 @@ pub fn reparent_doc_traveler(
 }
 
 pub fn promote_active_on_teleport(
-    trigger: On<PortalTeleport>,
+    trigger: On<CrossedSeam>,
     local_agents: Query<(), With<LocalAgent>>,
     spaces_marker: Query<(), With<Space>>,
     spaces: Query<&GlobalTransform, With<Space>>,

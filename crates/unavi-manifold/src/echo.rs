@@ -302,7 +302,6 @@ mod tests {
         prelude::*,
         transform::TransformPlugin,
     };
-
     use bevy_vrm::mtoon::MtoonMaterial;
 
     use crate::{

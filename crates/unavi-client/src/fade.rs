@@ -11,7 +11,7 @@ impl Plugin for FadePlugin {
             FadeTimer {
                 elapsed:  0.0,
                 duration: 1.0,
-                delay:    1.0,
+                delay:    2.0,
             },
             Node {
                 position_type: PositionType::Absolute,

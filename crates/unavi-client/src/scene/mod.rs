@@ -20,6 +20,7 @@ impl Plugin for ScenePlugin {
         app.init_state::<SceneState>()
             .add_observer(limbo::track_space_load)
             .add_observer(limbo::exit_limbo_on_space_loaded)
+            .add_observer(limbo::enter_space)
             .add_observer(respawn::respawn)
             .add_systems(
                 OnEnter(SceneState::Limbo),

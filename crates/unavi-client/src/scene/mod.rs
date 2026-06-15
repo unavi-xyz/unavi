@@ -18,7 +18,8 @@ pub struct ScenePlugin;
 impl Plugin for ScenePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<SceneState>()
-            .add_observer(limbo::exit_limbo_on_space_join)
+            .add_observer(limbo::track_space_load)
+            .add_observer(limbo::exit_limbo_on_space_loaded)
             .add_observer(respawn::respawn)
             .add_systems(
                 OnEnter(SceneState::Limbo),
@@ -36,6 +37,7 @@ impl Plugin for ScenePlugin {
             .add_systems(
                 FixedUpdate,
                 (
+                    limbo::exit_limbo_on_load_timeout,
                     respawn::teleport_from_void,
                     system_scripts::populate_firewall_entities,
                 ),

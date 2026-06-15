@@ -34,14 +34,14 @@ pub fn respawn(
         return;
     };
 
-    info!("Respawn");
-
     *vel = LinearVelocity::default();
     *ang_vel = AngularVelocity::default();
 
-    tr.translation = active.0.map_or(Vec3::new(0.0, 0.5, 0.0), |space| {
+    tr.translation = active.0.map_or_else(Vec3::default, |space| {
         pick_spawn(space, &spawn_points, &parents, &spaces).unwrap_or_default()
     });
+
+    info!("Respawning at {}", tr.translation);
 }
 
 const VOID_LEVEL: f32 = -512.0;

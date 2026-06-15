@@ -10,8 +10,8 @@ impl Plugin for FadePlugin {
             FadeOverlay,
             FadeTimer {
                 elapsed:  0.0,
-                duration: 2.0,
-                delay:    2.0,
+                duration: 1.0,
+                delay:    1.0,
             },
             Node {
                 position_type: PositionType::Absolute,

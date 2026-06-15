@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use avian3d::prelude::*;
 use bevy::{
     color::palettes::tailwind,
@@ -10,13 +12,23 @@ use bevy::{
     math::Affine2,
     prelude::*,
 };
-use bevy_hsd::Hsd;
+use bevy_hsd::{
+    Hsd,
+    loaded::HsdLoaded,
+};
 use unavi_space::Space;
 
 use crate::scene::{
     SceneState,
     respawn::Respawn,
 };
+
+/// Exit limbo anyway if a space never reports loaded, so a missing or broken
+/// asset can't strand the local agent on the limbo floor indefinitely.
+const SPACE_LOAD_TIMEOUT: Duration = Duration::from_secs(30);
+
+#[derive(Component)]
+pub struct SpaceLoadDeadline(Duration);
 
 const PLANE_SIZE: f32 = 2048.0;
 const TEXTURE_SIZE: f32 = 16.0;
@@ -70,8 +82,21 @@ pub fn despawn_limbo(limbo: Query<Entity, With<Limbo>>, mut commands: Commands) 
     }
 }
 
-pub fn exit_limbo_on_space_join(
+pub fn track_space_load(
     trigger: On<Add, Hsd>,
+    spaces: Query<(), With<Space>>,
+    time: Res<Time>,
+    mut commands: Commands,
+) {
+    if spaces.contains(trigger.entity) {
+        commands
+            .entity(trigger.entity)
+            .insert(SpaceLoadDeadline(time.elapsed() + SPACE_LOAD_TIMEOUT));
+    }
+}
+
+pub fn exit_limbo_on_space_loaded(
+    trigger: On<Add, HsdLoaded>,
     spaces: Query<(), With<Space>>,
     state: Res<State<SceneState>>,
     mut next: ResMut<NextState<SceneState>>,
@@ -80,15 +105,31 @@ pub fn exit_limbo_on_space_join(
     if !matches!(state.get(), SceneState::Limbo) {
         return;
     }
-
     if !spaces.contains(trigger.entity) {
         return;
     }
 
-    // TODO track asset loads within space to ensure all blobs are downloaded
-
     info!("Space loaded, exiting limbo");
-    next.set(SceneState::Space);
+    enter_space(&mut next, &mut commands);
+}
 
+pub fn exit_limbo_on_load_timeout(
+    state: Res<State<SceneState>>,
+    time: Res<Time>,
+    spaces: Query<&SpaceLoadDeadline, (With<Space>, Without<HsdLoaded>)>,
+    mut next: ResMut<NextState<SceneState>>,
+    mut commands: Commands,
+) {
+    if !matches!(state.get(), SceneState::Limbo) {
+        return;
+    }
+    if spaces.iter().any(|deadline| time.elapsed() >= deadline.0) {
+        warn!("Space load timed out, exiting limbo anyway");
+        enter_space(&mut next, &mut commands);
+    }
+}
+
+fn enter_space(next: &mut NextState<SceneState>, commands: &mut Commands) {
+    next.set(SceneState::Space);
     commands.trigger(Respawn);
 }

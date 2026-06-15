@@ -18,6 +18,7 @@ pub struct ScenePlugin;
 impl Plugin for ScenePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<SceneState>()
+            .add_observer(limbo::offset_agent_to_limbo)
             .add_observer(limbo::track_space_load)
             .add_observer(limbo::exit_limbo_on_space_loaded)
             .add_observer(limbo::enter_space)

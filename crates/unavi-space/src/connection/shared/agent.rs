@@ -15,6 +15,7 @@ use tokio::io::{
     AsyncReadExt,
     AsyncWriteExt,
 };
+use tracing::info;
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::connection::{

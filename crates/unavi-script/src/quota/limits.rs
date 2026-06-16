@@ -37,7 +37,7 @@ const GLOBAL_WASM_MEMORY_PERCENT: u64 = 30;
 
 fn host_total_memory() -> u64 {
     cfg_select! {
-        // WasmMemory is not currently tracked on wasm, so this value isn't used.
+        // Not currently tracked on wasm, so this value isn't used.
         target_family = "wasm" =>  2 * GB,
         _ => {
             use sysinfo::{

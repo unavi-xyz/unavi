@@ -3,7 +3,10 @@ use std::{
     time::Duration,
 };
 
-use anyhow::bail;
+use anyhow::{
+    Context,
+    bail,
+};
 use iroh::endpoint::{
     Connection,
     ConnectionError,
@@ -28,7 +31,6 @@ use tracing::{
     error,
     info,
     info_span,
-    warn,
 };
 
 mod agent;
@@ -101,7 +103,7 @@ async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
         let span = info_span!("stream", i);
         i += 1;
 
-        let (tx, rx) = connection.accept_bi().await?;
+        let (tx, rx) = connection.accept_bi().await.context("accept_bi")?;
 
         let handle = n0_future::task::spawn(
             async move {
@@ -116,15 +118,14 @@ async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
 }
 
 async fn recv_stream(tx: SendStream, mut rx: RecvStream) -> anyhow::Result<()> {
-    let ident = StreamIdent::read(&mut rx).await?;
+    let ident = StreamIdent::read(&mut rx).await.context("read ident")?;
+    info!("Stream ident: {ident:?}");
 
     match ident {
         StreamIdent::Agent => agent::recv_agent_stream(tx, rx).await?,
         StreamIdent::Object => object::recv_object_stream(tx, rx).await?,
         StreamIdent::State => state::recv_state_stream(tx, rx).await?,
-        StreamIdent::Unknown(i) => {
-            warn!("Got unknown stream ident: {i}");
-        }
+        StreamIdent::Unknown(_) => {}
     }
 
     Ok(())

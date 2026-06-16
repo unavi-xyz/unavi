@@ -22,14 +22,17 @@ use loro_surgeon::{
     },
 };
 use tracing::warn;
+use unavi_quota::Stock;
 
-use crate::state::space::{
-    ROOT_KEY,
-    SpaceStateRoot,
-    space_state,
+use crate::{
+    quota::document_quota,
+    state::space::{
+        ROOT_KEY,
+        SpaceStateRoot,
+        space_state,
+    },
 };
 
-pub const DOC_KV_MAX_BYTES: usize = 8 * 1024 * 1024;
 pub const KV_KEY_MAX_BYTES: usize = 256;
 
 pub(super) const DOCS_KEY: &str = "docs";
@@ -177,14 +180,22 @@ pub fn doc_kv_delete(space: Hash, doc: Hash, key: &str) {
     let Some(root) = space_state(space) else {
         return;
     };
+    let guard = root.lock_kv_write();
     let Some(kv) = kv_map_read(&root, doc) else {
         return;
+    };
+    let removed = match kv.get(key) {
+        Some(ValueOrContainer::Value(LoroValue::Binary(b))) => key.len() + b.len(),
+        Some(_) => key.len(),
+        None => return,
     };
     if let Err(err) = kv.delete(key) {
         warn!(?err, "failed to delete kv entry");
         return;
     }
+    document_quota(doc).release(Stock::KvMemory, removed as u64);
     root.doc.commit();
+    drop(guard);
 }
 
 pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(), KvError> {
@@ -201,6 +212,7 @@ pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(),
 
     let mut current = 0usize;
     let mut old_value_len = 0usize;
+    let mut key_present = false;
     kv.for_each(|k, voc| {
         let v_len = match voc {
             ValueOrContainer::Value(LoroValue::Binary(b)) => b.len(),
@@ -209,24 +221,35 @@ pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(),
         current += k.len() + v_len;
         if k == key {
             old_value_len = v_len;
+            key_present = true;
         }
     });
 
     let new_total = current
         .saturating_sub(old_value_len)
         .saturating_add(value.len());
-    let new_total = if kv.get(key).is_some() {
+    let new_total = if key_present {
         new_total
     } else {
         new_total.saturating_add(key.len())
     };
-    if new_total > DOC_KV_MAX_BYTES {
-        return Err(KvError::QuotaExceeded);
+
+    let quota = document_quota(doc);
+    let charge = new_total.saturating_sub(current) as u64;
+    let release = current.saturating_sub(new_total) as u64;
+    if charge > 0 {
+        quota
+            .try_charge(Stock::KvMemory, charge)
+            .map_err(|_| KvError::QuotaExceeded)?;
     }
 
     if let Err(err) = kv.insert(key, LoroValue::Binary(value.to_vec().into())) {
         warn!(?err, "failed to insert kv entry");
+        quota.release(Stock::KvMemory, charge);
         return Err(KvError::Other);
+    }
+    if release > 0 {
+        quota.release(Stock::KvMemory, release);
     }
     root.doc.commit();
     drop(guard);
@@ -258,6 +281,7 @@ mod tests {
 
     use loro::LoroDoc;
     use loro_surgeon::reconcile::RootReconciler;
+    use unavi_quota::limits::Limits;
 
     use super::*;
     use crate::state::space::{
@@ -324,7 +348,11 @@ mod tests {
         install_test_space(space);
         assert!(add_doc(space, doc));
 
-        let big = vec![0u8; DOC_KV_MAX_BYTES - 32];
+        let cap = *Limits::document()
+            .stock
+            .get(&Stock::KvMemory)
+            .expect("document caps kv memory") as usize;
+        let big = vec![0u8; cap - 32];
         doc_kv_set(space, doc, "a", &big).expect("set within cap");
         let result = doc_kv_set(space, doc, "b", &[0u8; 64]);
         assert!(matches!(result, Err(KvError::QuotaExceeded)));

@@ -105,7 +105,7 @@ pub fn instantiate_scripts(
             .build();
 
         let perms = perms.cloned().unwrap_or_default();
-        let quota = crate::quota::registry::document_quota(doc_id.0);
+        let quota = unavi_space::quota::document_quota(doc_id.0);
 
         let state = Runtime {
             api:    Arc::new(Api {

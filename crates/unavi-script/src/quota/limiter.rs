@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
-use wasmtime::ResourceLimiter;
-
-use crate::quota::{
+use unavi_quota::{
     Quota,
     Stock,
 };
+use wasmtime::ResourceLimiter;
 
 /// Binds a store's linear-memory growth to its document quota.
 ///

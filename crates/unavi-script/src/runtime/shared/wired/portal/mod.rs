@@ -1,4 +1,8 @@
 use blake3::Hash;
+use unavi_quota::{
+    Flow,
+    Stock,
+};
 use unavi_space::membership::doc_space;
 use unavi_util::async_commands::AsyncCommands;
 
@@ -6,11 +10,7 @@ use crate::{
     error::ScriptError,
     firewall::Channel,
     portal_host::PortalWatch,
-    quota::{
-        Flow,
-        QuotaGuards,
-        Stock,
-    },
+    quota::QuotaGuards,
     runtime::shared::{
         Api,
         registry::firewall::validate_firewall,

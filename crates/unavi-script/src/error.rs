@@ -1,4 +1,4 @@
-use crate::quota::QuotaError;
+use unavi_quota::QuotaError;
 
 /// Host-side canonical error, mirroring `wired:error/types.error`.
 ///

@@ -4,16 +4,15 @@ use bevy_hsd::{
     HsdRecordId,
 };
 use blake3::Hash;
+use unavi_quota::registry::{
+    forget_peer,
+    forget_space,
+};
 use unavi_space::{
     Space,
     membership::SpaceOwner,
     peer::Peer,
-};
-
-use crate::quota::registry::{
-    forget_peer,
-    forget_space,
-    reassign_document_in_space,
+    quota::reassign_document_in_space,
 };
 
 /// Repoints a document's quota at its owner when it joins or changes space,

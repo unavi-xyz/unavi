@@ -12,6 +12,7 @@ use tracing::{
     Instrument,
     Span,
 };
+use unavi_quota::Quota;
 use unavi_util::async_task::spawn_async_task;
 use wasmtime::{
     Store,
@@ -37,7 +38,10 @@ use crate::{
     },
     load::asset::Wasm,
     permissions::ApiPermissions,
-    quota::limiter::QuotaLimiter,
+    quota::{
+        QuotaExempt,
+        limiter::QuotaLimiter,
+    },
     runtime::{
         Runtime,
         native::{
@@ -75,14 +79,19 @@ pub fn instantiate_scripts(
         ),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
-    docs: Query<(&HsdRecordId, &Hsd, Option<&ApiPermissions>)>,
+    docs: Query<(
+        &HsdRecordId,
+        &Hsd,
+        Option<&ApiPermissions>,
+        Has<QuotaExempt>,
+    )>,
     mut commands: Commands,
 ) {
     for (entity, script, engine_ent, name, prim, doc_ent) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };
-        let Ok((doc_id, doc, perms)) = docs.get(doc_ent.0) else {
+        let Ok((doc_id, doc, perms, exempt)) = docs.get(doc_ent.0) else {
             continue;
         };
         let Ok(engine) = engines.get(engine_ent.0) else {
@@ -105,7 +114,11 @@ pub fn instantiate_scripts(
             .build();
 
         let perms = perms.cloned().unwrap_or_default();
-        let quota = unavi_space::quota::document_quota(doc_id.0);
+        let quota = if exempt {
+            Quota::unlimited()
+        } else {
+            unavi_space::quota::document_quota(doc_id.0)
+        };
 
         let state = Runtime {
             api:    Arc::new(Api {

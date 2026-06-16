@@ -80,6 +80,13 @@ impl Quota {
         Self::new(limits, None)
     }
 
+    /// An uncapped, owner-less quota for trusted scripts that must keep running
+    /// even when shared budgets are exhausted.
+    #[must_use]
+    pub fn unlimited() -> Arc<Self> {
+        Self::new(Limits::default(), None)
+    }
+
     #[must_use]
     pub fn owner(&self) -> Option<Arc<Self>> {
         self.owner.lock().clone()

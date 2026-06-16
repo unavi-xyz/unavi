@@ -1,3 +1,7 @@
+use anyhow::{
+    Context,
+    bail,
+};
 use blake3::Hash;
 use iroh::endpoint::{
     Connection,
@@ -17,11 +21,16 @@ use unavi_util::async_commands::AsyncCommands;
 use crate::{
     connection::shared::StreamIdent,
     peer::state::AddSpaceStateSender,
-    state::space::{
-        SpaceStateUpdate,
-        space_state,
+    state::{
+        doc::DOC_KV_MAX_BYTES,
+        space::{
+            SpaceStateUpdate,
+            space_state,
+        },
     },
 };
+
+const MAX_MSG_LEN: usize = DOC_KV_MAX_BYTES;
 
 #[derive(Serialize, Deserialize)]
 enum StateMsg {
@@ -46,10 +55,14 @@ pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
 
     while let Ok(SpaceStateUpdate { space, data }) = ss_rx.recv().await {
         let msg = StateMsg::Update { space, data };
-
         let buf = postcard::to_allocvec(&msg)?;
+
         let len = buf.len();
-        tx.write_u16(u16::try_from(len).expect("max size")).await?;
+        if len > MAX_MSG_LEN {
+            bail!("message too large")
+        }
+
+        tx.write_u32(u32::try_from(len)?).await?;
         tx.write_all(&buf).await?;
     }
 
@@ -58,10 +71,14 @@ pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
 
 pub async fn recv_state_stream(_tx: SendStream, mut rx: RecvStream) -> anyhow::Result<()> {
     loop {
-        let len = rx.read_u16().await? as usize;
-        let mut buf = vec![0u8; len];
-        rx.read_exact(&mut buf).await?;
-        let msg = postcard::from_bytes::<StateMsg>(&buf)?;
+        let len = rx.read_u32().await.context("read len")? as usize;
+        if len > MAX_MSG_LEN {
+            bail!("message too large")
+        }
+
+        let mut buf = vec![0; len];
+        rx.read_exact(&mut buf).await.context("read msg")?;
+        let msg = postcard::from_bytes::<StateMsg>(&buf).context("parse msg")?;
 
         match msg {
             StateMsg::Update { space, data } => {

@@ -79,10 +79,7 @@ pub(crate) fn on_build_router(
     commands.entity(entity).insert(PendingRouter(rx));
 }
 
-pub(crate) fn receive_router(
-    loading: Query<(Entity, &PendingRouter)>,
-    mut commands: Commands,
-) {
+pub(crate) fn receive_router(loading: Query<(Entity, &PendingRouter)>, mut commands: Commands) {
     for (entity, pending) in &loading {
         let Ok(router) = pending.0.try_recv() else {
             continue;

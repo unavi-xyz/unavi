@@ -7,6 +7,7 @@ use loro::{
     TreeID,
 };
 use tokio::sync::Mutex;
+use unavi_quota::Quota;
 
 use crate::{
     error::ScriptError,
@@ -14,7 +15,6 @@ use crate::{
         ApiName,
         ApiPermissions,
     },
-    quota::Quota,
     runtime::shared::wired::{
         agent::WiredAgentApi,
         event::WiredEventApi,

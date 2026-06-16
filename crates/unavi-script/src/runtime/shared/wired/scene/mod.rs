@@ -26,6 +26,10 @@ use hsd::{
     file::HsdFile,
 };
 use loro::LoroDoc;
+use unavi_quota::{
+    Flow,
+    Stock,
+};
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
@@ -39,11 +43,7 @@ use crate::{
         Channel,
         Firewall,
     },
-    quota::{
-        Flow,
-        QuotaGuards,
-        Stock,
-    },
+    quota::QuotaGuards,
     runtime::shared::{
         Api,
         registry::firewall::{
@@ -104,7 +104,7 @@ async fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> Result<(), S
             .write()
             .insert(id, parent_space);
     }
-    crate::quota::registry::child_document_quota(id, api.doc_id);
+    unavi_quota::registry::child_document_quota(id, api.doc_id);
     AsyncCommands::default()
         .spawn((
             Hsd(doc),

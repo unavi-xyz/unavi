@@ -14076,6 +14076,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-quota"
+version = "0.0.16"
+dependencies = [
+ "blake3",
+ "parking_lot",
+ "sysinfo",
+]
+
+[[package]]
 name = "unavi-script"
 version = "0.0.16"
 dependencies = [
@@ -14110,6 +14119,7 @@ dependencies = [
  "unavi-input",
  "unavi-manifold",
  "unavi-portal-protocol",
+ "unavi-quota",
  "unavi-space",
  "unavi-util",
  "wasm-bindgen",
@@ -14190,6 +14200,7 @@ dependencies = [
  "unavi-agent",
  "unavi-manifold",
  "unavi-portal-protocol",
+ "unavi-quota",
  "unavi-util",
  "wds",
  "wired-records",

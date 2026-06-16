@@ -1,0 +1,17 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-quota"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+blake3.workspace      = true
+parking_lot.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+sysinfo = { default-features = false, features = ["system"], version = "0.37.2" }

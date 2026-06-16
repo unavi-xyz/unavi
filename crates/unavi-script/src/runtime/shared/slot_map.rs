@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use bevy::platform::collections::HashMap;
-
-use crate::quota::{
+use unavi_quota::{
     Quota,
     QuotaError,
     Stock,
@@ -98,8 +97,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    use unavi_quota::limits::Limits;
+
     use super::*;
-    use crate::quota::limits::Limits;
 
     fn quota(slots: u64) -> Arc<Quota> {
         let mut limits = Limits::default();

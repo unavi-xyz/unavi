@@ -8,16 +8,16 @@ use loro::{
     TreeParentId,
 };
 use tokio::sync::MutexGuard;
+use unavi_quota::{
+    Flow,
+    Quota,
+    QuotaError,
+    Stock,
+};
+use unavi_space::quota::document_quota;
 
 use crate::{
     firewall::Channel,
-    quota::{
-        Flow,
-        Quota,
-        QuotaError,
-        Stock,
-        registry::document_quota,
-    },
     runtime::shared::{
         Api,
         registry::{

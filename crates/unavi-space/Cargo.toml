@@ -35,6 +35,7 @@ tracing.workspace          = true
 unavi-agent.path           = "../unavi-agent"
 unavi-manifold             = { path = "../unavi-manifold", version = "0.0.16" }
 unavi-portal-protocol.path = "../unavi-portal-protocol"
+unavi-quota.path           = "../unavi-quota"
 unavi-util.path            = "../unavi-util"
 wds.path                   = "../wds"
 wired-records              = { features = ["loro"], path = "../wired-records" }

@@ -15,6 +15,7 @@ pub mod membership;
 pub mod peer;
 mod portal;
 mod portal_bridge;
+pub mod quota;
 mod scene;
 pub mod spawn;
 pub mod state;
@@ -25,6 +26,7 @@ const TICKRATE_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
 
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
+
         app.init_resource::<anchor::SpaceGridAllocator>()
             .init_resource::<anchor::ActiveSpace>()
             .add_observer(anchor::assign_anchor)

@@ -21,16 +21,13 @@ use unavi_util::async_commands::AsyncCommands;
 use crate::{
     connection::shared::StreamIdent,
     peer::state::AddSpaceStateSender,
-    state::{
-        doc::DOC_KV_MAX_BYTES,
-        space::{
-            SpaceStateUpdate,
-            space_state,
-        },
+    state::space::{
+        SpaceStateUpdate,
+        space_state,
     },
 };
 
-const MAX_MSG_LEN: usize = DOC_KV_MAX_BYTES;
+const MAX_MSG_LEN: usize = 8 * 1024 * 1024;
 
 #[derive(Serialize, Deserialize)]
 enum StateMsg {

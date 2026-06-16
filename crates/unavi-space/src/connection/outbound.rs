@@ -4,7 +4,6 @@ use iroh::{
     Endpoint,
     EndpointAddr,
 };
-use rand::Rng;
 use tokio::sync::oneshot;
 use tracing::error;
 
@@ -12,6 +11,8 @@ use crate::connection::{
     ALPN,
     CONNECTIONS,
 };
+
+const MAX_BACKOFF_SECS: u64 = 300;
 
 pub async fn try_open_connection(endpoint: Endpoint, peer: EndpointAddr) {
     let mut delay_secs = 2;
@@ -24,18 +25,8 @@ pub async fn try_open_connection(endpoint: Endpoint, peer: EndpointAddr) {
             conns.remove(&peer.id);
         }
 
-        // If two peers try to connect to each other at the same time, they will
-        // only think their own outbound connection attempt is valid and deny the
-        // inbound request. (see [`CONNECTIONS`] key tracking)
-        //
-        // Add random offset, so conflicting peers drift out of sync.
-        //
-        // TODO This could use a better solution, perhaps a deterministic choosing of
-        // one of the two pending connections based on endpoint id.
-        let delay_extended = rand::rng().random_range((delay_secs / 2)..(delay_secs * 2));
-        n0_future::time::sleep(Duration::from_secs(delay_extended)).await;
-
-        delay_secs = delay_secs.saturating_mul(2).min(300);
+        n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
+        delay_secs = delay_secs.saturating_mul(2).min(MAX_BACKOFF_SECS);
     }
 
     let mut conns = CONNECTIONS.lock().expect("connections lock");

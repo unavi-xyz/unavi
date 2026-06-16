@@ -72,16 +72,10 @@ async fn inner(connection: Connection, cancel: oneshot::Receiver<()>) -> anyhow:
             n0_future::time::sleep(Duration::from_secs(5)).await;
         },
         err = connection.closed() => {
-            match err {
-                ConnectionError::ConnectionClosed(reason) => {
-                    info!("Peer closed connection: {reason}");
-                }
-                ConnectionError::LocallyClosed => {
-                    info!("Closed connection");
-                }
-                err => {
-                    bail!("connection error: {err:?}")
-                }
+            if is_graceful_close(&err) {
+                info!("Connection closed: {err}");
+            } else {
+                bail!("connection error: {err:?}")
             }
         },
         res = task_recv => {
@@ -103,7 +97,11 @@ async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
         let span = info_span!("stream", i);
         i += 1;
 
-        let (tx, rx) = connection.accept_bi().await.context("accept_bi")?;
+        let (tx, rx) = match connection.accept_bi().await {
+            Ok(pair) => pair,
+            Err(err) if is_graceful_close(&err) => return Ok(()),
+            Err(err) => return Err(err).context("accept_bi"),
+        };
 
         let handle = n0_future::task::spawn(
             async move {
@@ -173,6 +171,29 @@ async fn send_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
     n0_future::join_all([task_agent, task_state, task_objects]).await;
 
     Ok(())
+}
+
+const fn is_graceful_close(err: &ConnectionError) -> bool {
+    matches!(
+        err,
+        ConnectionError::ConnectionClosed(_)
+            | ConnectionError::LocallyClosed
+            | ConnectionError::ApplicationClosed(_)
+    )
+}
+
+fn read_disconnected(err: &std::io::Error) -> bool {
+    use std::io::ErrorKind::{
+        BrokenPipe,
+        ConnectionAborted,
+        ConnectionReset,
+        NotConnected,
+        UnexpectedEof,
+    };
+    matches!(
+        err.kind(),
+        UnexpectedEof | ConnectionReset | ConnectionAborted | NotConnected | BrokenPipe
+    )
 }
 
 #[derive(Serialize, Deserialize, Debug)]

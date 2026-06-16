@@ -43,7 +43,6 @@ impl Plugin for SpacePlugin {
             .add_observer(gossip::join_space_topic)
             .add_observer(gossip::leave_space_topic)
             .add_observer(gossip::spawn_gossip)
-            .add_observer(peer::state::add_space_state_sender)
             .add_observer(peer::state::publish_state_update)
             .add_observer(portal::spawn_portal_space)
             .add_observer(portal_bridge::sync_portal_config)

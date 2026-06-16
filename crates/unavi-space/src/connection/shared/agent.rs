@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use anyhow::Context;
 use iroh::endpoint::{
     Connection,
     RecvStream,
@@ -107,7 +108,11 @@ pub async fn recv_agent_stream(_tx: SendStream, mut rx: RecvStream) -> anyhow::R
     let mut buf = [0; AgentMsg::POSTCARD_MAX_SIZE];
 
     loop {
-        let len = rx.read_u8().await? as usize;
+        let len = match rx.read_u8().await {
+            Ok(len) => len as usize,
+            Err(err) if super::read_disconnected(&err) => return Ok(()),
+            Err(err) => return Err(err).context("read len"),
+        };
         let buf = &mut buf[..len];
         rx.read_exact(buf).await?;
         let _msg = postcard::from_bytes::<AgentMsg>(buf)?;

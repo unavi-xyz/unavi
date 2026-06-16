@@ -20,7 +20,10 @@ use unavi_util::async_task::spawn_async_task;
 
 use crate::{
     connection::ecs::PeerStream,
-    peer::Peer,
+    peer::{
+        Peer,
+        self_peer_id,
+    },
 };
 
 pub mod ecs;
@@ -64,6 +67,17 @@ pub fn connect_to_peer(
         .get(trigger.entity)
         .map(|p| p.0.clone())
         .expect("peer");
+
+    // Deterministic glare avoidance: only the peer with the greater id dials,
+    // the other waits to accept the inbound connection. Without this, both peers
+    // dial simultaneously and the connections flap as each rejects the other.
+    let Some(self_id) = self_peer_id() else {
+        warn!("Unable to connect to peer: no self id");
+        return;
+    };
+    if self_id < *peer.id.as_bytes() {
+        return;
+    }
 
     spawn_async_task(async move {
         outbound::try_open_connection(endpoint, peer).await;

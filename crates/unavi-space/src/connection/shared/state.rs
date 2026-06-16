@@ -19,8 +19,11 @@ use tokio::io::{
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
-    connection::shared::StreamIdent,
-    peer::state::AddSpaceStateSender,
+    connection::{
+        ecs::PeerStream,
+        shared::StreamIdent,
+    },
+    peer::state::SpaceStateSender,
     state::space::{
         SpaceStateUpdate,
         space_state,
@@ -40,13 +43,10 @@ pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
 
     let (ss_tx, ss_rx) = async_channel::bounded(4);
 
-    let _ = AsyncCommands::default()
-        .trigger(AddSpaceStateSender {
-            peer:   connection.remote_id(),
-            sender: ss_tx,
-        })
+    AsyncCommands::default()
+        .spawn((PeerStream(connection.remote_id()), SpaceStateSender(ss_tx)))
         .send()
-        .await;
+        .await?;
 
     // TODO Request / send full state snapshot
 
@@ -68,7 +68,11 @@ pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
 
 pub async fn recv_state_stream(_tx: SendStream, mut rx: RecvStream) -> anyhow::Result<()> {
     loop {
-        let len = rx.read_u32().await.context("read len")? as usize;
+        let len = match rx.read_u32().await {
+            Ok(len) => len as usize,
+            Err(err) if super::read_disconnected(&err) => return Ok(()),
+            Err(err) => return Err(err).context("read len"),
+        };
         if len > MAX_MSG_LEN {
             bail!("message too large")
         }

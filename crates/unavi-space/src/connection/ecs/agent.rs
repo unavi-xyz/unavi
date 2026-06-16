@@ -1,6 +1,10 @@
 use std::time::Duration;
 
-use bevy::prelude::*;
+use async_channel::TrySendError;
+use bevy::{
+    ecs::system::ParallelCommands,
+    prelude::*,
+};
 use unavi_agent::LocalAgent;
 
 use crate::{
@@ -25,7 +29,8 @@ pub struct AgentSender(pub async_channel::Sender<Pose<IFrame>>);
 pub fn send_agent_pose(
     time: Res<Time>,
     agent: Query<&Transform, With<LocalAgent>>,
-    mut streams: Query<(&AgentSender, &Tickrate, &mut LastTick)>,
+    mut streams: Query<(Entity, &AgentSender, &Tickrate, &mut LastTick)>,
+    commands: ParallelCommands,
 ) {
     let Ok(root) = agent.single() else {
         return;
@@ -40,7 +45,7 @@ pub fn send_agent_pose(
 
     streams
         .par_iter_mut()
-        .for_each(|(sender, tickrate, mut last_tick)| {
+        .for_each(|(entity, sender, tickrate, mut last_tick)| {
             if sender.0.is_full() {
                 return;
             }
@@ -51,8 +56,11 @@ pub fn send_agent_pose(
 
             last_tick.0 = now;
 
-            if let Err(err) = sender.0.try_send(pose.clone()) {
-                error!(?err, "Send error");
+            match sender.0.try_send(pose.clone()) {
+                Ok(()) | Err(TrySendError::Full(_)) => {}
+                Err(TrySendError::Closed(_)) => {
+                    commands.command_scope(|mut commands| commands.entity(entity).despawn());
+                }
             }
         });
 }

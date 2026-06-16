@@ -72,8 +72,9 @@ pub fn child_document_quota(doc: Hash, parent: Hash) -> Arc<Quota> {
     quota
 }
 
-/// Repoints a live document's quota at `owner`, migrating its standing usage off
-/// the previous owner. `owner` is resolved only if the document is still tracked.
+/// Repoints a live document's quota at `owner`, migrating its standing usage
+/// off the previous owner. `owner` is resolved only if the document is still
+/// tracked.
 pub fn reassign_document(doc: Hash, owner: impl FnOnce() -> Option<Arc<Quota>>) {
     let Some(quota) = DOC_QUOTAS.read().get(&doc).cloned() else {
         return;

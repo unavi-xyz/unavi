@@ -8,6 +8,7 @@ use bevy_hsd::{
     Prim,
 };
 use tokio::sync::Mutex;
+use unavi_quota::Quota;
 use unavi_util::async_task::spawn_async_task;
 
 use crate::{
@@ -15,6 +16,7 @@ use crate::{
     engine::web::tick::LastTick,
     load::asset::Wasm,
     permissions::ApiPermissions,
+    quota::QuotaExempt,
     runtime::{
         Runtime,
         shared::Api,
@@ -45,15 +47,20 @@ pub fn instantiate_scripts(
         ),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
-    docs: Query<(&HsdRecordId, &Hsd)>,
+    docs: Query<(&HsdRecordId, &Hsd, Has<QuotaExempt>)>,
     mut commands: Commands,
 ) {
     for (entity, script, perms, name, prim, doc_ent) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };
-        let Ok((doc_id, doc)) = docs.get(doc_ent.0) else {
+        let Ok((doc_id, doc, exempt)) = docs.get(doc_ent.0) else {
             continue;
+        };
+        let quota = if exempt {
+            Quota::unlimited()
+        } else {
+            unavi_space::quota::document_quota(doc_id.0)
         };
 
         let bytes = wasm.0.clone();
@@ -61,17 +68,17 @@ pub fn instantiate_scripts(
 
         let runtime = Runtime {
             api: Arc::new(Api {
-                doc:         Arc::clone(&doc.0),
-                doc_id:      doc_id.0,
-                prim:        prim.0,
+                doc: Arc::clone(&doc.0),
+                doc_id: doc_id.0,
+                prim: prim.0,
                 permissions: perms.clone(),
-                quota:       unavi_space::quota::document_quota(doc_id.0),
+                quota,
                 wired_agent: Mutex::default(),
                 wired_event: Mutex::default(),
                 wired_input: Mutex::default(),
-                wired_kv:    Mutex::default(),
+                wired_kv: Mutex::default(),
                 wired_scene: Mutex::default(),
-                wired_wds:   Mutex::default(),
+                wired_wds: Mutex::default(),
             }),
         };
 

@@ -302,6 +302,12 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
         anyhow::bail!("space state not tracked locally");
     }
 
+    // Publishing claims the doc for the local peer.
+    if let Some(peer) = unavi_space::peer::self_peer_id() {
+        unavi_space::state::owner::set_doc_owner(space, id, peer);
+    }
+    unavi_space::quota::reassign_document_in_space(id, space);
+
     Ok(())
 }
 

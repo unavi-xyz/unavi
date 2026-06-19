@@ -14177,6 +14177,7 @@ version = "0.0.16"
 dependencies = [
  "anyhow",
  "async-channel",
+ "avian3d",
  "bevy",
  "bevy-hsd",
  "bevy-iroh",
@@ -14198,6 +14199,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unavi-agent",
+ "unavi-avatar",
  "unavi-manifold",
  "unavi-portal-protocol",
  "unavi-quota",

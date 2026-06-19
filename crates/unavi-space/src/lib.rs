@@ -5,7 +5,10 @@ use bevy::{
     time::common_conditions::on_timer,
 };
 use blake3::Hash;
-use unavi_manifold::transition::apply_seam_crossings;
+use unavi_manifold::{
+    echo::maintain_seam_echoes,
+    transition::apply_seam_crossings,
+};
 
 pub mod anchor;
 mod beacon;
@@ -29,7 +32,6 @@ impl Plugin for SpacePlugin {
         app.init_resource::<anchor::SpaceGridAllocator>()
             .init_resource::<anchor::ActiveSpace>()
             .add_observer(anchor::assign_anchor)
-            .add_observer(anchor::promote_active_on_teleport)
             .add_observer(anchor::reparent_doc_traveler)
             .add_observer(membership::self_own_space)
             .add_observer(membership::parent_doc_under_space)
@@ -39,6 +41,7 @@ impl Plugin for SpacePlugin {
             .add_observer(anchor::release_anchor)
             .add_observer(connection::connect_to_peer)
             .add_observer(connection::disconnect_peer)
+            .add_observer(connection::ecs::remote::despawn_remote_agent)
             .add_observer(connection::register_protocol)
             .add_observer(gossip::join_space_topic)
             .add_observer(gossip::leave_space_topic)
@@ -53,8 +56,13 @@ impl Plugin for SpacePlugin {
             .add_observer(state::space::remove_space_state)
             .add_systems(
                 PostUpdate,
-                anchor::apply_anchor_offsets
+                (anchor::recenter_active_space, anchor::apply_anchor_offsets)
+                    .chain()
                     .after(apply_seam_crossings)
+                    // Recenter the world before the seam echoes are posed, so a
+                    // crossing's echo clones aren't placed from stale positions
+                    // for a frame.
+                    .before(maintain_seam_echoes)
                     .before(TransformSystems::Propagate),
             )
             .add_systems(
@@ -68,6 +76,15 @@ impl Plugin for SpacePlugin {
                     peer::presence::manage_peers,
                     scene::instantiate_pending_scenes,
                 ),
+            )
+            .add_systems(
+                Update,
+                (
+                    gossip::publish_active_space,
+                    connection::ecs::remote::apply_remote_poses,
+                    connection::ecs::remote::advance_remote_lerp,
+                )
+                    .chain(),
             );
     }
 }

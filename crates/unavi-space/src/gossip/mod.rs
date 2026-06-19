@@ -1,3 +1,8 @@
+use std::sync::{
+    LazyLock,
+    RwLock,
+};
+
 use bevy::prelude::*;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
@@ -10,6 +15,7 @@ use bevy_wds::{
     LocalActor,
     SyncTargets,
 };
+use blake3::Hash;
 use iroh::{
     EndpointAddr,
     EndpointId,
@@ -35,6 +41,38 @@ mod bootstrap;
 mod inbound;
 mod outbound;
 mod thread;
+
+/// The space we currently occupy, mirrored from [`crate::anchor::ActiveSpace`]
+/// for the async gossip tasks. We only broadcast presence to this space, while
+/// still receiving on every space we have loaded.
+static ACTIVE_SPACE: RwLock<Option<Hash>> = RwLock::new(None);
+
+/// Woken whenever the active space changes, so the outbound task for the space
+/// we just entered broadcasts presence immediately rather than waiting out the
+/// heartbeat interval.
+static ACTIVE_CHANGED: LazyLock<tokio::sync::Notify> = LazyLock::new(tokio::sync::Notify::new);
+
+fn active_space() -> Option<Hash> {
+    *ACTIVE_SPACE.read().expect("active space poisoned")
+}
+
+fn active_changed() -> &'static tokio::sync::Notify {
+    &ACTIVE_CHANGED
+}
+
+pub fn publish_active_space(active: Res<crate::anchor::ActiveSpace>, spaces: Query<&Space>) {
+    if !active.is_changed() {
+        return;
+    }
+    let hash = active.0.and_then(|e| spaces.get(e).ok()).map(|s| s.0);
+    let mut current = ACTIVE_SPACE.write().expect("active space poisoned");
+    if *current == hash {
+        return;
+    }
+    *current = hash;
+    drop(current);
+    ACTIVE_CHANGED.notify_waiters();
+}
 
 #[derive(Serialize, Deserialize)]
 struct SpaceBroadcast {

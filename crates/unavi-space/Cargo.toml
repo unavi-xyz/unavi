@@ -12,6 +12,7 @@ workspace = true
 [dependencies]
 anyhow.workspace           = true
 async-channel.workspace    = true
+avian3d.workspace          = true
 bevy.workspace             = true
 bevy-hsd.path              = "../bevy-hsd"
 bevy-iroh.path             = "../bevy-iroh"
@@ -33,6 +34,7 @@ time.workspace             = true
 tokio.workspace            = true
 tracing.workspace          = true
 unavi-agent.path           = "../unavi-agent"
+unavi-avatar               = { path = "../unavi-avatar", version = "0.0.16" }
 unavi-manifold             = { path = "../unavi-manifold", version = "0.0.16" }
 unavi-portal-protocol.path = "../unavi-portal-protocol"
 unavi-quota.path           = "../unavi-quota"

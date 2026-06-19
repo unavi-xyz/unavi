@@ -7,12 +7,15 @@ use anyhow::{
     Context,
     bail,
 };
-use iroh::endpoint::{
-    Connection,
-    ConnectionError,
-    RecvStream,
-    SendStream,
-    VarInt,
+use iroh::{
+    EndpointId,
+    endpoint::{
+        Connection,
+        ConnectionError,
+        RecvStream,
+        SendStream,
+        VarInt,
+    },
 };
 use n0_future::task::AbortOnDropHandle;
 use serde::{
@@ -90,6 +93,7 @@ async fn inner(connection: Connection, cancel: oneshot::Receiver<()>) -> anyhow:
 }
 
 async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
+    let peer = connection.remote_id();
     let mut i = 0;
     let mut streams = Vec::new();
 
@@ -105,7 +109,7 @@ async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
 
         let handle = n0_future::task::spawn(
             async move {
-                if let Err(err) = recv_stream(tx, rx).await {
+                if let Err(err) = recv_stream(peer, tx, rx).await {
                     error!(?err);
                 }
             }
@@ -115,12 +119,12 @@ async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
     }
 }
 
-async fn recv_stream(tx: SendStream, mut rx: RecvStream) -> anyhow::Result<()> {
+async fn recv_stream(peer: EndpointId, tx: SendStream, mut rx: RecvStream) -> anyhow::Result<()> {
     let ident = StreamIdent::read(&mut rx).await.context("read ident")?;
     info!("Stream ident: {ident:?}");
 
     match ident {
-        StreamIdent::Agent => agent::recv_agent_stream(tx, rx).await?,
+        StreamIdent::Agent => agent::recv_agent_stream(peer, tx, rx).await?,
         StreamIdent::Object => object::recv_object_stream(tx, rx).await?,
         StreamIdent::State => state::recv_state_stream(tx, rx).await?,
         StreamIdent::Unknown(_) => {}

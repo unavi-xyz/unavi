@@ -5,9 +5,15 @@ use bevy::{
     ecs::system::ParallelCommands,
     prelude::*,
 };
-use unavi_agent::LocalAgent;
+use blake3::Hash;
+use unavi_agent::{
+    AgentAvatar,
+    LocalAgent,
+};
 
 use crate::{
+    Space,
+    anchor::ActiveSpace,
     connection::{
         ecs::{
             LastTick,
@@ -22,23 +28,48 @@ use crate::{
     peer::Peer,
 };
 
+#[derive(Clone)]
+pub struct OutgoingPose {
+    pub space: Hash,
+    pub pose:  Pose<IFrame>,
+}
+
 #[derive(Component)]
 #[require(Tickrate)]
-pub struct AgentSender(pub async_channel::Sender<Pose<IFrame>>);
+pub struct AgentSender(pub async_channel::Sender<OutgoingPose>);
 
 pub fn send_agent_pose(
     time: Res<Time>,
-    agent: Query<&Transform, With<LocalAgent>>,
+    active: Res<ActiveSpace>,
+    spaces: Query<&Space>,
+    agent: Query<&AgentAvatar, With<LocalAgent>>,
+    globals: Query<&GlobalTransform>,
     mut streams: Query<(Entity, &AgentSender, &Tickrate, &mut LastTick)>,
     commands: ParallelCommands,
 ) {
-    let Ok(root) = agent.single() else {
+    // The active space is the agent's space and sits at the world origin, so the
+    // avatar's world transform is also its pose in that space's local frame.
+    // Movement is driven by the body rigid-body rather than the `LocalAgent`
+    // entity, hence reading the avatar's global transform.
+    let Some(root) = agent
+        .single()
+        .ok()
+        .and_then(|avatar| globals.get(avatar.0).ok())
+        .map(GlobalTransform::compute_transform)
+    else {
         return;
     };
 
-    let pose = Pose {
-        root: root.into(),
-        ..Default::default()
+    let Some(space) = active.0.and_then(|e| spaces.get(e).ok()) else {
+        return;
+    };
+
+    let outgoing = OutgoingPose {
+        space: space.0,
+        pose:  Pose {
+            root: (&root).into(),
+            ..Default::default()
+        },
     };
 
     let now = time.elapsed();
@@ -56,7 +87,7 @@ pub fn send_agent_pose(
 
             last_tick.0 = now;
 
-            match sender.0.try_send(pose.clone()) {
+            match sender.0.try_send(outgoing.clone()) {
                 Ok(()) | Err(TrySendError::Full(_)) => {}
                 Err(TrySendError::Closed(_)) => {
                     commands.command_scope(|mut commands| commands.entity(entity).despawn());

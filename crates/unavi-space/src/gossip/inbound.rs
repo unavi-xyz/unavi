@@ -5,6 +5,7 @@ use iroh_gossip::api::{
     GossipReceiver,
 };
 use n0_future::StreamExt;
+use tokio::sync::Notify;
 use tracing::{
     info,
     warn,
@@ -24,11 +25,17 @@ pub async fn handle_gossip_inbound(
     _ctx: &GossipCtx,
     rx: &mut GossipReceiver,
     space: Hash,
+    wake: &Notify,
 ) -> anyhow::Result<()> {
     while let Some(event) = rx.next().await {
         match event? {
             Event::NeighborUp(n) => {
                 info!("+neighbor: {n}");
+                // Prompt an immediate presence broadcast so the new neighbor
+                // discovers us without waiting a full interval. `notify_one`
+                // stores a permit so the wake isn't lost if the outbound task
+                // is momentarily not parked.
+                wake.notify_one();
             }
             Event::NeighborDown(n) => {
                 info!("-neighbor: {n}");

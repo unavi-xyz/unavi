@@ -46,14 +46,11 @@ impl Plugin for SpacePlugin {
             .add_observer(gossip::join_space_topic)
             .add_observer(gossip::leave_space_topic)
             .add_observer(gossip::spawn_gossip)
-            .add_observer(peer::state::publish_state_update)
             .add_observer(portal::spawn_portal_space)
             .add_observer(portal_bridge::sync_portal_config)
             .add_observer(portal_bridge::clear_portal_config)
             .add_observer(scene::despawn_space_scene)
             .add_observer(scene::spawn_space_scene)
-            .add_observer(state::space::add_space_state)
-            .add_observer(state::space::remove_space_state)
             .add_systems(
                 PostUpdate,
                 (anchor::recenter_active_space, anchor::apply_anchor_offsets)
@@ -75,6 +72,9 @@ impl Plugin for SpacePlugin {
                         .run_if(on_timer(TICKRATE_UPDATE_INTERVAL)),
                     peer::presence::manage_peers,
                     scene::instantiate_pending_scenes,
+                    state::pin::spawn_pinned_docs,
+                    state::pin::instantiate_pinned_docs,
+                    state::pin::despawn_unpinned_docs,
                 ),
             )
             .add_systems(

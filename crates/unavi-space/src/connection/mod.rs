@@ -119,6 +119,10 @@ pub fn disconnect_peer(
 ) {
     let peer = peers.get(trigger.entity).expect("peer");
 
+    // Release the peer's replicated state and quota. Idempotent with the state
+    // stream's own teardown, in case presence expires before the stream closes.
+    crate::state::store::remove_peer(*peer.0.id.as_bytes());
+
     // Dropping the sender signals the connection task to exit.
     let mut conns = CONNECTIONS.lock().expect("connections lock");
     conns.remove(&peer.0.id);

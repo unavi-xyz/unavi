@@ -1,3 +1,5 @@
 pub mod doc;
+pub mod message;
 pub mod owner;
-pub mod space;
+pub mod pin;
+pub mod store;

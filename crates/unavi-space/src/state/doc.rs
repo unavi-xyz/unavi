@@ -1,74 +1,16 @@
-use std::collections::HashMap;
+use std::sync::LazyLock;
 
 use blake3::Hash;
-use loro::{
-    Container,
-    LoroMap,
-    LoroValue,
-    ValueOrContainer,
-};
-use loro_surgeon::{
-    Hydrate,
-    Reconcile,
-    bytes::Bytes,
-    error::{
-        HydrateError,
-        ReconcileError,
-    },
-    reconcile::{
-        NoKey,
-        Reconciler,
-        map::reconcile_keyed_map,
-    },
-};
-use tracing::warn;
+use parking_lot::Mutex;
 use unavi_quota::Stock;
 
 use crate::{
+    peer::self_peer_id,
     quota::document_quota,
-    state::space::{
-        ROOT_KEY,
-        SpaceStateRoot,
-        space_state,
-    },
+    state::store,
 };
 
 pub const KV_KEY_MAX_BYTES: usize = 256;
-
-pub(super) const DOCS_KEY: &str = "docs";
-const KV_KEY: &str = "kv";
-
-#[derive(Default, Debug)]
-pub struct DocStates(pub HashMap<Hash, DocState>);
-
-impl Hydrate for DocStates {
-    fn hydrate_map(map: &LoroMap) -> Result<Self, HydrateError> {
-        let mut pairs = Vec::new();
-        map.for_each(|k, voc| pairs.push((k.to_string(), voc)));
-        let mut out = HashMap::new();
-        for (k, voc) in pairs {
-            let parsed = k
-                .parse::<Hash>()
-                .map_err(|_| HydrateError::unexpected("blake3 hash key", "invalid"))?;
-            out.insert(parsed, DocState::hydrate(&voc)?);
-        }
-        Ok(Self(out))
-    }
-}
-
-impl Reconcile for DocStates {
-    type Key = NoKey;
-
-    fn reconcile<R: Reconciler>(&self, r: R) -> Result<(), ReconcileError> {
-        reconcile_keyed_map(&self.0, r)
-    }
-}
-
-#[derive(Hydrate, Reconcile, Default, Debug)]
-#[loro(default)]
-pub struct DocState {
-    pub kv: HashMap<String, Bytes>,
-}
 
 #[derive(Debug, Clone, Copy)]
 pub enum KvError {
@@ -77,154 +19,60 @@ pub enum KvError {
     Other,
 }
 
-pub(super) fn docs_map_mut(root: &SpaceStateRoot) -> Option<LoroMap> {
-    let map = root.doc.get_map(ROOT_KEY);
-    match map.get_or_create_container(DOCS_KEY, LoroMap::new()) {
-        Ok(m) => Some(m),
-        Err(err) => {
-            warn!(?err, "failed to access docs map");
-            None
-        }
-    }
-}
+/// Serializes the check-and-insert in `doc_kv_set` so concurrent writers cannot
+/// both pass the byte-budget check and overshoot the cap.
+static KV_WRITE: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
-pub(super) fn docs_map_read(root: &SpaceStateRoot) -> Option<LoroMap> {
-    let map = root.doc.get_map(ROOT_KEY);
-    match map.get(DOCS_KEY)? {
-        ValueOrContainer::Container(Container::Map(m)) => Some(m),
-        _ => None,
-    }
-}
-
-fn doc_entry_mut(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
-    let docs = docs_map_mut(root)?;
-    match docs.get_or_create_container(&doc.to_string(), LoroMap::new()) {
-        Ok(m) => Some(m),
-        Err(err) => {
-            warn!(?err, "failed to access doc state entry");
-            None
-        }
-    }
-}
-
-fn doc_entry_read(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
-    let docs = docs_map_read(root)?;
-    match docs.get(&doc.to_string())? {
-        ValueOrContainer::Container(Container::Map(m)) => Some(m),
-        _ => None,
-    }
-}
-
-fn kv_map_mut(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
-    let entry = doc_entry_mut(root, doc)?;
-    match entry.get_or_create_container(KV_KEY, LoroMap::new()) {
-        Ok(m) => Some(m),
-        Err(err) => {
-            warn!(?err, "failed to access kv map");
-            None
-        }
-    }
-}
-
-fn kv_map_read(root: &SpaceStateRoot, doc: Hash) -> Option<LoroMap> {
-    let entry = doc_entry_read(root, doc)?;
-    match entry.get(KV_KEY)? {
-        ValueOrContainer::Container(Container::Map(m)) => Some(m),
-        _ => None,
-    }
-}
-
+/// Pins `doc` in the local peer's state. Returns whether a local peer identity
+/// exists to author the pin.
 #[must_use]
 pub fn add_doc(space: Hash, doc: Hash) -> bool {
-    let Some(root) = space_state(space) else {
+    if self_peer_id().is_none() {
         return false;
-    };
-    doc_entry_mut(&root, doc).is_some()
+    }
+    store::self_pin(space, doc);
+    true
 }
 
 #[must_use]
 pub fn has_doc(space: Hash, doc: Hash) -> bool {
-    let Some(root) = space_state(space) else {
-        return false;
-    };
-    let Some(docs) = docs_map_read(&root) else {
-        return false;
-    };
-    docs.get(&doc.to_string()).is_some()
+    store::has_doc(space, doc)
 }
 
 #[must_use]
 pub fn doc_kv_get(space: Hash, doc: Hash, key: &str) -> Option<Vec<u8>> {
-    let root = space_state(space)?;
-    let kv = kv_map_read(&root, doc)?;
-    match kv.get(key)? {
-        ValueOrContainer::Value(LoroValue::Binary(b)) => Some((*b).clone()),
-        _ => None,
-    }
+    store::kv_get(space, doc, key)
 }
 
 #[must_use]
 pub fn doc_kv_keys(space: Hash, doc: Hash) -> Vec<String> {
-    let Some(root) = space_state(space) else {
-        return Vec::new();
-    };
-    let Some(kv) = kv_map_read(&root, doc) else {
-        return Vec::new();
-    };
-    let mut out = Vec::new();
-    kv.for_each(|k, _| out.push(k.to_string()));
-    out
+    store::kv_keys(space, doc)
+}
+
+#[must_use]
+pub fn doc_kv_total_bytes(space: Hash, doc: Hash) -> usize {
+    store::kv_total_bytes(space, doc)
 }
 
 pub fn doc_kv_delete(space: Hash, doc: Hash, key: &str) {
-    let Some(root) = space_state(space) else {
-        return;
-    };
-    let guard = root.lock_kv_write();
-    let Some(kv) = kv_map_read(&root, doc) else {
-        return;
-    };
-    let removed = match kv.get(key) {
-        Some(ValueOrContainer::Value(LoroValue::Binary(b))) => key.len() + b.len(),
-        Some(_) => key.len(),
-        None => return,
-    };
-    if let Err(err) = kv.delete(key) {
-        warn!(?err, "failed to delete kv entry");
-        return;
+    let _guard = KV_WRITE.lock();
+    let (_, old_value_len, present) = store::self_kv_accounting(doc, key);
+    store::self_kv_delete(space, doc, key);
+    if present {
+        document_quota(doc).release(Stock::KvMemory, (key.len() + old_value_len) as u64);
     }
-    document_quota(doc).release(Stock::KvMemory, removed as u64);
-    root.doc.commit();
-    drop(guard);
 }
 
 pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(), KvError> {
     if key.len() > KV_KEY_MAX_BYTES {
         return Err(KvError::KeyTooLong);
     }
-    let Some(root) = space_state(space) else {
+    if self_peer_id().is_none() {
         return Err(KvError::Other);
-    };
-    let guard = root.lock_kv_write();
-    let Some(kv) = kv_map_mut(&root, doc) else {
-        return Err(KvError::Other);
-    };
+    }
+    let _guard = KV_WRITE.lock();
 
-    let mut current = 0usize;
-    let mut old_value_len = 0usize;
-    let mut key_present = false;
-    kv.for_each(|k, voc| {
-        let v_len = match voc {
-            ValueOrContainer::Value(LoroValue::Binary(b)) => b.len(),
-            _ => 0,
-        };
-        current += k.len() + v_len;
-        if k == key {
-            old_value_len = v_len;
-            key_present = true;
-        }
-    });
-
+    let (current, old_value_len, key_present) = store::self_kv_accounting(doc, key);
     let new_total = current
         .saturating_sub(old_value_len)
         .saturating_add(value.len());
@@ -243,74 +91,38 @@ pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(),
             .map_err(|_| KvError::QuotaExceeded)?;
     }
 
-    if let Err(err) = kv.insert(key, LoroValue::Binary(value.to_vec().into())) {
-        warn!(?err, "failed to insert kv entry");
-        quota.release(Stock::KvMemory, charge);
-        return Err(KvError::Other);
-    }
+    store::self_kv_set(space, doc, key, value);
+
     if release > 0 {
         quota.release(Stock::KvMemory, release);
     }
-    root.doc.commit();
-    drop(guard);
     Ok(())
-}
-
-#[must_use]
-pub fn doc_kv_total_bytes(space: Hash, doc: Hash) -> usize {
-    let Some(root) = space_state(space) else {
-        return 0;
-    };
-    let Some(kv) = kv_map_read(&root, doc) else {
-        return 0;
-    };
-    let mut total = 0usize;
-    kv.for_each(|k, voc| {
-        let v_len = match voc {
-            ValueOrContainer::Value(LoroValue::Binary(b)) => b.len(),
-            _ => 0,
-        };
-        total += k.len() + v_len;
-    });
-    total
 }
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
-    use loro::LoroDoc;
-    use loro_surgeon::reconcile::RootReconciler;
+    use parking_lot::MutexGuard;
     use unavi_quota::limits::Limits;
 
     use super::*;
-    use crate::state::space::{
-        SPACE_STATES,
-        SpaceState,
-        SpaceStateRoot,
-    };
-
-    fn install_test_space(space: Hash) {
-        let doc = LoroDoc::new();
-        let map = doc.get_map(ROOT_KEY);
-        SpaceState::default()
-            .reconcile(RootReconciler::new(map))
-            .expect("reconcile state");
-        let sub = doc.subscribe_local_update(Box::new(move |_| true));
-        SPACE_STATES
-            .lock()
-            .insert(space, Arc::new(SpaceStateRoot::new(Arc::new(doc), sub)));
-    }
+    use crate::peer::set_self_peer_id;
 
     fn h(seed: &[u8]) -> Hash {
         blake3::hash(seed)
     }
 
+    fn setup(peer: [u8; 32]) -> MutexGuard<'static, ()> {
+        let guard = store::TEST_LOCK.lock();
+        store::reset();
+        set_self_peer_id(peer);
+        guard
+    }
+
     #[test]
     fn kv_set_get_delete_keys() {
+        let _g = setup([1u8; 32]);
         let space = h(b"kv_set_get_delete_keys-space");
         let doc = h(b"kv_set_get_delete_keys-doc");
-        install_test_space(space);
         assert!(add_doc(space, doc));
 
         assert_eq!(doc_kv_get(space, doc, "foo"), None);
@@ -329,9 +141,9 @@ mod tests {
 
     #[test]
     fn kv_rejects_long_key() {
+        let _g = setup([2u8; 32]);
         let space = h(b"kv_rejects_long_key-space");
         let doc = h(b"kv_rejects_long_key-doc");
-        install_test_space(space);
         assert!(add_doc(space, doc));
 
         let key = "k".repeat(KV_KEY_MAX_BYTES + 1);
@@ -343,9 +155,9 @@ mod tests {
 
     #[test]
     fn kv_rejects_when_over_quota() {
+        let _g = setup([3u8; 32]);
         let space = h(b"kv_rejects_when_over_quota-space");
         let doc = h(b"kv_rejects_when_over_quota-doc");
-        install_test_space(space);
         assert!(add_doc(space, doc));
 
         let cap = *Limits::document()
@@ -360,9 +172,9 @@ mod tests {
 
     #[test]
     fn kv_overwrite_does_not_double_count_key() {
+        let _g = setup([4u8; 32]);
         let space = h(b"kv_overwrite-space");
         let doc = h(b"kv_overwrite-doc");
-        install_test_space(space);
         assert!(add_doc(space, doc));
 
         doc_kv_set(space, doc, "k", b"v1").expect("set");

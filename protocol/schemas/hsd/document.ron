@@ -1,7 +1,18 @@
 (
     id: "hsd/document",
     version: 0,
-    layout: Tree(Struct({
+    layout: Restricted(
+        actions: [
+            (
+                who: Path("acl.write"),
+                can: [
+                    Create,
+                    Update,
+                    Delete,
+                ],
+            ),
+        ],
+        value: Tree(Struct({
         "attributes": Optional(Struct({
             "asset": Optional(BlobId),
             "collider": Optional(Enum({
@@ -85,5 +96,6 @@
             })),
         })),
         "relationships": Map(String),
-    })),
+        })),
+    ),
 )

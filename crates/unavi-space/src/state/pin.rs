@@ -19,13 +19,19 @@ use tokio::sync::oneshot;
 
 use crate::{
     Space,
+    peer::Peer,
     state::store,
 };
 
 /// How long a no-longer-pinned document lingers in the scene before despawn.
 const UNPIN_TTL: Duration = Duration::from_mins(3);
 
-const READ_RETRIES: usize = 5;
+const READ_RETRIES: usize = 4;
+
+/// The publish path makes a record public and uploads it before announcing the
+/// pin, so a holder almost always has it the moment we learn of it. Retries with
+/// a short backoff only cover transient connectivity to the holder.
+const READ_BACKOFF_SECS: u64 = 1;
 
 /// A document instanced into the scene because some peer pins it. Tags only the
 /// entities this module spawns, so script-authored docs keep their own
@@ -47,6 +53,7 @@ pub fn spawn_pinned_docs(
     spaces: Query<(Entity, &Space)>,
     present: Query<&HsdRecordId>,
     pending: Query<&PinnedDoc, With<PendingPinnedDoc>>,
+    peers: Query<&Peer>,
     mut commands: Commands,
 ) {
     let pinned = store::pinned_docs();
@@ -65,8 +72,22 @@ pub fn spawn_pinned_docs(
             continue;
         };
 
+        // The record lives in the holders' WDS, not our host stores, so sync it
+        // directly from the peers that pin it (owner first) and from nowhere else.
+        // Their addresses come from the live `Peer` entities; holders we are not
+        // connected to are skipped.
+        let holders = store::doc_holders(doc);
+        let sync_from = holders
+            .iter()
+            .filter_map(|h| peers.iter().find(|p| p.0.id.as_bytes() == h))
+            .map(|p| p.0.clone())
+            .collect::<Vec<_>>();
+
         let (mut event, rx, cancel) = ReadRecord::new(doc);
         event.retries = READ_RETRIES;
+        event.backoff_secs = READ_BACKOFF_SECS;
+        event.sync_from = sync_from;
+        event.exclusive_sources = true;
         commands.trigger(event);
         commands.spawn((
             PinnedDoc(doc),

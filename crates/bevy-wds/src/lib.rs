@@ -14,6 +14,7 @@ impl Plugin for WdsPlugin {
         app.add_observer(blob::get::on_get_blob)
             .add_observer(blob::request::on_blob_request_add)
             .add_observer(blob::request::on_blob_request_remove)
+            .add_observer(record::acl::on_set_record_public)
             .add_observer(record::query::on_query_record)
             .add_observer(record::read::on_read_record)
             .add_observer(record::write::on_write_record)

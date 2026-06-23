@@ -25,20 +25,21 @@ use crate::{
 
 const MAX_MSG_LEN: usize = 8 * 1024 * 1024;
 
-/// Streams the local peer's state to the remote: a full snapshot first, then
-/// every subsequent delta. Registration is atomic with the snapshot, so no
-/// delta is missed or replayed.
 pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
     let (mut tx, _rx) = connection.open_bi().await?;
     StreamIdent::State.write(&mut tx).await?;
 
     let (token, rx) = store::register_stream();
-    let res = pump(&mut tx, &rx).await;
+    let res = send_loop(&mut tx, &rx).await;
     store::unregister_stream(token);
+
     res
 }
 
-async fn pump(tx: &mut SendStream, rx: &async_channel::Receiver<StateMsg>) -> anyhow::Result<()> {
+async fn send_loop(
+    tx: &mut SendStream,
+    rx: &async_channel::Receiver<StateMsg>,
+) -> anyhow::Result<()> {
     while let Ok(msg) = rx.recv().await {
         let buf = postcard::to_allocvec(&msg)?;
         let len = buf.len();

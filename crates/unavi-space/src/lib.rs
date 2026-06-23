@@ -67,6 +67,13 @@ impl Plugin for SpacePlugin {
                 (
                     beacon::publish_beacons,
                     connection::ecs::agent::send_agent_pose,
+                    connection::ecs::object::send_object_poses,
+                    connection::ecs::object::reconcile_object_authority,
+                    (
+                        connection::ecs::object::apply_remote_objects,
+                        connection::ecs::object::advance_object_interp,
+                    )
+                        .chain(),
                     gossip::poll_gossip,
                     connection::ecs::agent::set_agent_tickrates
                         .run_if(on_timer(TICKRATE_UPDATE_INTERVAL)),

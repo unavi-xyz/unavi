@@ -18,8 +18,6 @@ pub enum StateMsg {
         doc: Hash,
         at:  u64,
     },
-    /// KV write merged per key by `at` (last-write-wins). `value: None` is a
-    /// tombstone so a delete also wins against an older write on another peer.
     Kv {
         doc:   Hash,
         key:   String,

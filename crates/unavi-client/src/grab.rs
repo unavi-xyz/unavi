@@ -19,7 +19,10 @@ use unavi_space::{
     Space,
     anchor::ActiveSpace,
     peer::self_peer_id,
-    state::owner::set_doc_owner,
+    state::{
+        owner::set_doc_owner,
+        store,
+    },
 };
 
 pub struct GrabPlugin;
@@ -126,6 +129,15 @@ fn claim_doc_ownership(
         );
         return;
     };
+
+    // Only claim a doc already tracked in state. An untracked doc (e.g. a beacon
+    // not yet published) gets its ownership established by the publish path,
+    // which makes the record public before announcing the pin; claiming here
+    // would broadcast a pin ahead of that upload and race remote reads.
+    if !store::has_doc(space_hash, doc_hash) {
+        debug!(doc = %doc_hash, "grab: doc not tracked in state, skipping ownership claim");
+        return;
+    }
 
     info!(doc = %doc_hash, space = %space_hash, "grab: claiming doc ownership");
     set_doc_owner(space_hash, doc_hash, peer);

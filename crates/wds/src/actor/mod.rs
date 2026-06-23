@@ -37,6 +37,7 @@ use crate::{
         Signable,
         SignedBytes,
     },
+    surg::acl::Acl,
 };
 
 mod auth;
@@ -172,6 +173,37 @@ impl Actor {
         let envelope = Envelope::updates(self.identity.did().clone(), doc, from)?;
         let signed = envelope.sign(self.identity.signing_key())?;
         self.upload_envelope(record_id, &signed).await
+    }
+
+    /// Sets the record's ACL `public` flag, letting any peer read (and sync) it,
+    /// and uploads `doc`'s state to the host. The local identity must manage the
+    /// record.
+    ///
+    /// The delta is computed against the host's current version (not from
+    /// scratch), so locally-authored content not yet uploaded is included while
+    /// the already-created containers are not re-created — re-creation is
+    /// rejected by the schema validator outside the first envelope.
+    pub async fn set_record_public(
+        &self,
+        record_id: Hash,
+        doc: &LoroDoc,
+        public: bool,
+    ) -> anyhow::Result<()> {
+        let from = self
+            .read(record_id)
+            .send()
+            .await
+            .context("read host version")?
+            .oplog_vv();
+
+        let mut acl = Acl::load(doc).context("load acl")?;
+        if acl.public != public {
+            acl.public = public;
+            acl.save(doc).context("save acl")?;
+            doc.commit();
+        }
+
+        self.update_record(record_id, doc, from).await
     }
 
     /// Uploads bytes to the WDS as a blob.

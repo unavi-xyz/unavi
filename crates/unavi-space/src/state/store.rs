@@ -66,9 +66,10 @@ struct KvValue {
 }
 
 /// Holds every peer's replicated state (self included) alongside the live delta
-/// senders. Both live under one lock so a stream's snapshot and its delta feed
-/// are registered atomically: a stream sees exactly the deltas applied after
-/// its snapshot, never one before or twice.
+/// senders.
+///
+/// Both live under one lock so a stream's snapshot and its delta feed
+/// are registered atomically.
 #[derive(Default)]
 struct Store {
     peers:   HashMap<PeerId, PeerState>,
@@ -491,6 +492,42 @@ pub fn kv_total_bytes(space: Hash, doc: Hash) -> usize {
         .sum();
     drop(store);
     total
+}
+
+/// Remote peers that hold `doc`, i.e. those we can sync the record from.
+/// Excludes the local peer, since we read our own store first anyway. The
+/// current owner is listed first, as the freshest source.
+#[must_use]
+pub fn doc_holders(doc: Hash) -> Vec<PeerId> {
+    let me = self_peer_id();
+    let store = STORE.lock();
+    let space = store
+        .peers
+        .values()
+        .find_map(|ps| ps.docs.get(&doc).map(|e| e.space));
+    let owner = space.and_then(|space| resolve_owner(&store, space, doc));
+    let mut holders = store
+        .peers
+        .iter()
+        .filter(|(pid, ps)| Some(**pid) != me && Some(**pid) != owner && ps.docs.contains_key(&doc))
+        .map(|(pid, _)| *pid)
+        .collect::<Vec<_>>();
+    if let Some(owner) = owner.filter(|o| Some(*o) != me) {
+        holders.insert(0, owner);
+    }
+    drop(store);
+    holders
+}
+
+/// The space `doc` is pinned in, per any peer's replica. Lets membership resolve
+/// a synced doc's space without a local ownership claim.
+#[must_use]
+pub fn space_of(doc: Hash) -> Option<Hash> {
+    STORE
+        .lock()
+        .peers
+        .values()
+        .find_map(|ps| ps.docs.get(&doc).map(|e| e.space))
 }
 
 /// Every pinned document across all peers, deduped to `(doc, space)`.

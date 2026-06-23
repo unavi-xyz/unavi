@@ -12,6 +12,7 @@ use bevy_wds::{
     LocalActor,
     blob::get::GetBlob,
     record::{
+        acl::SetRecordPublic,
         read::ReadRecord,
         write::{
             SchemaDef,
@@ -297,6 +298,27 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
             .await?
             .ok_or_else(|| anyhow::anyhow!("doc has no space and no active space"))?
     };
+
+    // Records are private with content only in memory until published. Make the
+    // record public and upload its current state to our host *before* announcing
+    // the pin, so peers that learn of it can immediately sync it from us rather
+    // than retrying against a private or empty record.
+    let doc = {
+        let scene = api.wired_scene.lock().await;
+        scene
+            .docs
+            .iter()
+            .find_map(|(_, d)| (d.id == id).then(|| Arc::clone(&d.doc)))
+    };
+    let Some(doc) = doc else {
+        anyhow::bail!("published doc not held by script");
+    };
+    let (event, rx) = SetRecordPublic::new(id, doc, true);
+    AsyncCommands::default().trigger(event).send().await?;
+    rx.recv()
+        .await
+        .map_err(|err| anyhow::anyhow!("set record public response dropped: {err}"))?
+        .map_err(|err| anyhow::anyhow!("failed to make published record public: {err}"))?;
 
     if !unavi_space::state::doc::add_doc(space, id) {
         anyhow::bail!("space state not tracked locally");

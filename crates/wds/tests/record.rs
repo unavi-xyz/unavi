@@ -1,6 +1,9 @@
 use std::time::Duration;
 
-use loro::LoroDoc;
+use loro::{
+    LoroDoc,
+    TreeParentId,
+};
 use rstest::rstest;
 use rusqlite::{
     OptionalExtension,
@@ -15,6 +18,7 @@ use wds::{
         record::Record,
     },
 };
+use wired_schemas::SCHEMA_HSD;
 
 use crate::common::{
     DataStoreCtx,
@@ -23,6 +27,41 @@ use crate::common::{
 };
 
 mod common;
+
+/// HSD records are authored incrementally: a script creates an empty document,
+/// then adds prims before publishing. The schema must let the record's writer
+/// (its creator) edit the `hsd` tree outside the first envelope.
+#[rstest]
+#[timeout(Duration::from_secs(5))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_writer_edits_hsd_after_creation(#[future] ctx: DataStoreCtx) {
+    let result = ctx
+        .alice
+        .create_record()
+        .add_schema("hsd", &*SCHEMA_HSD, |doc| {
+            doc.get_tree("hsd");
+            Ok(())
+        })
+        .expect("add hsd schema")
+        .send()
+        .await
+        .expect("create hsd record");
+    let (record_id, doc) = (result.id, result.doc);
+
+    // Author a prim after the first envelope, as a script builds its scene.
+    let from = doc.oplog_vv();
+    doc.get_tree("hsd")
+        .create(TreeParentId::Root)
+        .expect("create prim");
+    doc.commit();
+
+    ctx.alice
+        .update_record(record_id, &doc, from)
+        .await
+        .expect("writer may edit hsd content after creation");
+}
 
 #[rstest]
 #[timeout(Duration::from_secs(5))]

@@ -28,6 +28,13 @@ pub struct ReadRecord {
     pub retries:      usize,
     pub cancel:       Option<oneshot::Receiver<()>>,
     pub tx:           Sender<LoroDoc>,
+    /// Peers to sync the record from, in addition to the configured
+    /// [`SyncTargets`]. Use this to fetch a record directly from a peer known
+    /// to hold it when it may be absent or stale on the host stores.
+    pub sync_from:    Vec<EndpointAddr>,
+    /// When set, sync only from [`Self::sync_from`], ignoring the configured
+    /// [`SyncTargets`]. Use to resolve a record exclusively from a known holder.
+    pub exclusive_sources: bool,
 }
 
 impl ReadRecord {
@@ -43,6 +50,8 @@ impl ReadRecord {
                 retries: 3,
                 cancel: Some(cancel_rx),
                 tx,
+                sync_from: Vec::new(),
+                exclusive_sources: false,
             },
             rx,
             cancel_tx,
@@ -65,7 +74,16 @@ pub(crate) fn on_read_record(mut req: On<ReadRecord>, actor: Query<(&LocalActor,
     let tx = event.tx.clone();
 
     let actor = actor.0.clone();
-    let sync_targets = sync_targets.0.iter().map(|a| a.host().clone()).collect();
+    let mut sync_targets = if event.exclusive_sources {
+        Vec::new()
+    } else {
+        sync_targets
+            .0
+            .iter()
+            .map(|a| a.host().clone())
+            .collect::<Vec<_>>()
+    };
+    sync_targets.extend(std::mem::take(&mut event.sync_from));
 
     spawn_async_task(async move {
         let span = info_span!("read", id = %id);

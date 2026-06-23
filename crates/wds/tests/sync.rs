@@ -238,6 +238,81 @@ async fn test_sync_updates_after_initial_sync(#[future] multi_ctx: MultiStoreCtx
     );
 }
 
+/// A record created privately, then populated with content only in memory
+/// (mirroring a script authoring its scene), can be published so a peer with no
+/// prior access syncs both the content and the public ACL. Guards against a
+/// regression where publishing re-uploaded from scratch and the schema rejected
+/// re-creating the already-existing containers.
+#[rstest]
+#[timeout(Duration::from_secs(10))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_set_record_public_uploads_late_content(#[future] multi_ctx: MultiStoreCtx) {
+    // Alice creates a private record on Rome.
+    let result = multi_ctx
+        .rome
+        .alice
+        .create_record()
+        .send()
+        .await
+        .expect("create record on Rome");
+    let (record_id, doc) = (result.id, result.doc);
+
+    // Author content after creation, not yet uploaded to the host.
+    doc.get_map("data")
+        .insert("key", "published_value")
+        .expect("insert");
+    doc.commit();
+
+    // Bob pins on Carthage but cannot sync the private record.
+    multi_ctx
+        .carthage
+        .bob
+        .pin_record(record_id, Duration::from_hours(1))
+        .await
+        .expect("pin record on Carthage");
+    multi_ctx
+        .carthage
+        .bob
+        .sync(record_id, multi_ctx.rome.store.endpoint().addr())
+        .await
+        .expect_err("private record must not sync to a non-reader");
+
+    // Alice publishes: flips the ACL public and uploads the late content.
+    multi_ctx
+        .rome
+        .alice
+        .set_record_public(record_id, &doc, true)
+        .await
+        .expect("set record public");
+
+    // Bob now syncs and reads the content and public ACL.
+    multi_ctx
+        .carthage
+        .bob
+        .sync(record_id, multi_ctx.rome.store.endpoint().addr())
+        .await
+        .expect("sync public record");
+    let read_doc = multi_ctx
+        .carthage
+        .bob
+        .read(record_id)
+        .send()
+        .await
+        .expect("read public record");
+
+    let value = read_doc.get_map("data").get_deep_value();
+    let loro::LoroValue::Map(map) = value else {
+        panic!("expected map");
+    };
+    assert_eq!(
+        map.get("key"),
+        Some(&loro::LoroValue::String("published_value".into()))
+    );
+    assert!(Acl::load(&read_doc).expect("load acl").public);
+}
+
 #[rstest]
 #[timeout(Duration::from_secs(5))]
 #[awt]

@@ -125,7 +125,7 @@ async fn recv_stream(peer: EndpointId, tx: SendStream, mut rx: RecvStream) -> an
 
     match ident {
         StreamIdent::Agent => agent::recv_agent_stream(peer, tx, rx).await?,
-        StreamIdent::Object => object::recv_object_stream(tx, rx).await?,
+        StreamIdent::Object => object::recv_object_stream(peer, tx, rx).await?,
         StreamIdent::State => state::recv_state_stream(peer, tx, rx).await?,
         StreamIdent::Unknown(_) => {}
     }
@@ -163,10 +163,13 @@ async fn send_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
     };
 
     let task_objects = {
+        let connection = Arc::clone(&connection);
         let handle = n0_future::task::spawn(async move {
             loop {
-                // TODO recv commands from ecs
-                n0_future::time::sleep(Duration::from_mins(1)).await;
+                if let Err(err) = object::send_object_stream(&connection).await {
+                    error!(?err, "Object stream error");
+                }
+                n0_future::time::sleep(STREAM_LOOP_DELAY).await;
             }
         });
         AbortOnDropHandle::new(handle)

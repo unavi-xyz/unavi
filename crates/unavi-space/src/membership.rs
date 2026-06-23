@@ -74,15 +74,21 @@ pub fn deregister_doc_membership(trigger: On<Remove, SpaceOwner>, docs: Query<&H
     }
 }
 
+/// The space a doc belongs to. Prefers the local registry (authored docs),
+/// falling back to the replicated state store so a doc synced from a peer also
+/// resolves its space.
 #[must_use]
 pub fn doc_space(doc: Hash) -> Option<Hash> {
-    DOC_SPACE_REGISTRY.read().get(&doc).copied()
+    DOC_SPACE_REGISTRY
+        .read()
+        .get(&doc)
+        .copied()
+        .or_else(|| crate::state::store::space_of(doc))
 }
 
 #[must_use]
 pub fn same_space(a: Hash, b: Hash) -> bool {
-    let reg = DOC_SPACE_REGISTRY.read();
-    match (reg.get(&a), reg.get(&b)) {
+    match (doc_space(a), doc_space(b)) {
         (Some(x), Some(y)) => x == y,
         _ => false,
     }

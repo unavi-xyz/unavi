@@ -126,7 +126,7 @@ async fn recv_stream(peer: EndpointId, tx: SendStream, mut rx: RecvStream) -> an
     match ident {
         StreamIdent::Agent => agent::recv_agent_stream(peer, tx, rx).await?,
         StreamIdent::Object => object::recv_object_stream(tx, rx).await?,
-        StreamIdent::State => state::recv_state_stream(tx, rx).await?,
+        StreamIdent::State => state::recv_state_stream(peer, tx, rx).await?,
         StreamIdent::Unknown(_) => {}
     }
 

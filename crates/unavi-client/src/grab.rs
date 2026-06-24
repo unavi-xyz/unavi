@@ -21,7 +21,7 @@ use unavi_space::{
     peer::self_peer_id,
     state::{
         owner::set_doc_owner,
-        store,
+        peer,
     },
 };
 
@@ -134,7 +134,7 @@ fn claim_doc_ownership(
     // not yet published) gets its ownership established by the publish path,
     // which makes the record public before announcing the pin; claiming here
     // would broadcast a pin ahead of that upload and race remote reads.
-    if !store::has_doc(space_hash, doc_hash) {
+    if !peer::has_doc(space_hash, doc_hash) {
         debug!(doc = %doc_hash, "grab: doc not tracked in state, skipping ownership claim");
         return;
     }

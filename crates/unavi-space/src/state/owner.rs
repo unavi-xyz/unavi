@@ -3,36 +3,30 @@ use tracing::warn;
 
 use crate::{
     peer::self_peer_id,
-    state::store,
+    state::peer,
 };
 
 /// Claims `doc` for `peer` in the local replica. Only the local peer can author
 /// a claim; the network resolves the definitive owner as the latest claimer.
+///
+/// `self_claim` records the doc's space in the store, so membership resolves it
+/// via `space_of` without a separate registry write.
 pub fn set_doc_owner(space: Hash, doc: Hash, peer: [u8; 32]) {
     match self_peer_id() {
-        Some(me) if me == peer => store::self_claim(space, doc),
-        Some(_) => {
-            warn!(doc = %doc, "ignoring ownership claim for a non-local peer");
-            return;
-        }
-        None => {
-            warn!(doc = %doc, "cannot claim doc: local peer id unset");
-            return;
-        }
+        Some(me) if me == peer => peer::self_claim(space, doc),
+        Some(_) => warn!(doc = %doc, "ignoring ownership claim for a non-local peer"),
+        None => warn!(doc = %doc, "cannot claim doc: local peer id unset"),
     }
-    crate::membership::DOC_SPACE_REGISTRY
-        .write()
-        .insert(doc, space);
 }
 
 #[must_use]
 pub fn doc_owner(space: Hash, doc: Hash) -> Option<[u8; 32]> {
-    store::owner(space, doc)
+    peer::owner(space, doc)
 }
 
 #[must_use]
 pub fn is_self_doc_owner(space: Hash, doc: Hash) -> bool {
-    store::is_self_owner(space, doc)
+    peer::is_self_owner(space, doc)
 }
 
 #[cfg(test)]
@@ -43,8 +37,8 @@ mod tests {
     use crate::peer::set_self_peer_id;
 
     fn setup(peer: [u8; 32]) -> MutexGuard<'static, ()> {
-        let guard = store::TEST_LOCK.lock();
-        store::reset();
+        let guard = peer::TEST_LOCK.lock();
+        peer::reset();
         set_self_peer_id(peer);
         guard
     }

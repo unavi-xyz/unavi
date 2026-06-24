@@ -59,7 +59,6 @@ pub struct ServerOptions {
     pub port:      u16,
 }
 
-/// Run the UNAVI server.
 pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     let port = opts.port;
 

@@ -37,11 +37,12 @@ impl Plugin for SpacePlugin {
             .add_observer(membership::parent_doc_under_space)
             .add_observer(membership::register_on_owner_change)
             .add_observer(membership::deregister_doc_membership)
+            .add_observer(membership::deregister_space_docs)
             .add_observer(anchor::promote_first_space)
             .add_observer(anchor::release_anchor)
             .add_observer(connection::connect_to_peer)
             .add_observer(connection::disconnect_peer)
-            .add_observer(connection::ecs::remote::despawn_remote_agent)
+            .add_observer(connection::ecs::agent::inbound::despawn_remote_agent)
             .add_observer(connection::register_protocol)
             .add_observer(gossip::join_space_topic)
             .add_observer(gossip::leave_space_topic)
@@ -66,7 +67,7 @@ impl Plugin for SpacePlugin {
                 FixedUpdate,
                 (
                     beacon::publish_beacons,
-                    connection::ecs::agent::send_agent_pose,
+                    connection::ecs::agent::outbound::send_agent_pose,
                     connection::ecs::object::send_object_poses,
                     connection::ecs::object::reconcile_object_authority,
                     (
@@ -75,7 +76,7 @@ impl Plugin for SpacePlugin {
                     )
                         .chain(),
                     gossip::poll_gossip,
-                    connection::ecs::agent::set_agent_tickrates
+                    connection::ecs::agent::outbound::set_agent_tickrates
                         .run_if(on_timer(TICKRATE_UPDATE_INTERVAL)),
                     peer::presence::manage_peers,
                     scene::instantiate_pending_scenes,
@@ -88,8 +89,8 @@ impl Plugin for SpacePlugin {
                 Update,
                 (
                     gossip::publish_active_space,
-                    connection::ecs::remote::apply_remote_poses,
-                    connection::ecs::remote::advance_remote_lerp,
+                    connection::ecs::agent::inbound::apply_remote_poses,
+                    connection::ecs::agent::inbound::advance_remote_lerp,
                 )
                     .chain(),
             );

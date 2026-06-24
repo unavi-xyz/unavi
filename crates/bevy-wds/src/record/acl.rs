@@ -14,8 +14,6 @@ use unavi_util::async_task::spawn_async_task;
 
 use crate::LocalActor;
 
-/// Sets a record's ACL `public` flag, letting any peer read and sync it. The
-/// local identity must manage the record (e.g. it created the record).
 #[derive(Event)]
 pub struct SetRecordPublic {
     pub id:     Hash,

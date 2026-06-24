@@ -20,7 +20,7 @@ use tokio::sync::oneshot;
 use crate::{
     Space,
     peer::Peer,
-    state::store,
+    state::peer,
 };
 
 /// How long a no-longer-pinned document lingers in the scene before despawn.
@@ -29,8 +29,8 @@ const UNPIN_TTL: Duration = Duration::from_mins(3);
 const READ_RETRIES: usize = 4;
 
 /// The publish path makes a record public and uploads it before announcing the
-/// pin, so a holder almost always has it the moment we learn of it. Retries with
-/// a short backoff only cover transient connectivity to the holder.
+/// pin, so a holder almost always has it the moment we learn of it. Retries
+/// with a short backoff only cover transient connectivity to the holder.
 const READ_BACKOFF_SECS: u64 = 1;
 
 /// A document instanced into the scene because some peer pins it. Tags only the
@@ -56,7 +56,7 @@ pub fn spawn_pinned_docs(
     peers: Query<&Peer>,
     mut commands: Commands,
 ) {
-    let pinned = store::pinned_docs();
+    let pinned = peer::pinned_docs();
     if pinned.is_empty() {
         return;
     }
@@ -76,7 +76,7 @@ pub fn spawn_pinned_docs(
         // directly from the peers that pin it (owner first) and from nowhere else.
         // Their addresses come from the live `Peer` entities; holders we are not
         // connected to are skipped.
-        let holders = store::doc_holders(doc);
+        let holders = peer::doc_holders(doc);
         let sync_from = holders
             .iter()
             .filter_map(|h| peers.iter().find(|p| p.0.id.as_bytes() == h))
@@ -122,7 +122,7 @@ pub fn despawn_unpinned_docs(
     pins: Query<(Entity, &PinnedDoc, Option<&UnpinnedAt>)>,
     mut commands: Commands,
 ) {
-    let pinned = store::pinned_docs()
+    let pinned = peer::pinned_docs()
         .into_iter()
         .map(|(doc, _)| doc)
         .collect::<HashSet<_>>();

@@ -175,14 +175,8 @@ impl Actor {
         self.upload_envelope(record_id, &signed).await
     }
 
-    /// Sets the record's ACL `public` flag, letting any peer read (and sync) it,
-    /// and uploads `doc`'s state to the host. The local identity must manage the
-    /// record.
-    ///
-    /// The delta is computed against the host's current version (not from
-    /// scratch), so locally-authored content not yet uploaded is included while
-    /// the already-created containers are not re-created — re-creation is
-    /// rejected by the schema validator outside the first envelope.
+    /// Sets the record's ACL `public` flag and uploads `doc`'s state to the
+    /// host.
     pub async fn set_record_public(
         &self,
         record_id: Hash,

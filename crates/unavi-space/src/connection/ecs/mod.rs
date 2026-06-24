@@ -5,7 +5,6 @@ use iroh::EndpointId;
 
 pub mod agent;
 pub mod object;
-pub mod remote;
 
 #[derive(Component)]
 pub struct PeerStream(pub EndpointId);

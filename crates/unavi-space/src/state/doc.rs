@@ -7,7 +7,7 @@ use unavi_quota::Stock;
 use crate::{
     peer::self_peer_id,
     quota::document_quota,
-    state::store,
+    state::peer,
 };
 
 pub const KV_KEY_MAX_BYTES: usize = 256;
@@ -30,34 +30,34 @@ pub fn add_doc(space: Hash, doc: Hash) -> bool {
     if self_peer_id().is_none() {
         return false;
     }
-    store::self_pin(space, doc);
+    peer::self_pin(space, doc);
     true
 }
 
 #[must_use]
 pub fn has_doc(space: Hash, doc: Hash) -> bool {
-    store::has_doc(space, doc)
+    peer::has_doc(space, doc)
 }
 
 #[must_use]
 pub fn doc_kv_get(space: Hash, doc: Hash, key: &str) -> Option<Vec<u8>> {
-    store::kv_get(space, doc, key)
+    peer::kv_get(space, doc, key)
 }
 
 #[must_use]
 pub fn doc_kv_keys(space: Hash, doc: Hash) -> Vec<String> {
-    store::kv_keys(space, doc)
+    peer::kv_keys(space, doc)
 }
 
 #[must_use]
 pub fn doc_kv_total_bytes(space: Hash, doc: Hash) -> usize {
-    store::kv_total_bytes(space, doc)
+    peer::kv_total_bytes(space, doc)
 }
 
 pub fn doc_kv_delete(space: Hash, doc: Hash, key: &str) {
     let _guard = KV_WRITE.lock();
-    let (_, old_value_len, present) = store::self_kv_accounting(doc, key);
-    store::self_kv_delete(space, doc, key);
+    let (_, old_value_len, present) = peer::self_kv_accounting(doc, key);
+    peer::self_kv_delete(space, doc, key);
     if present {
         document_quota(doc).release(Stock::KvMemory, (key.len() + old_value_len) as u64);
     }
@@ -72,7 +72,7 @@ pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(),
     }
     let _guard = KV_WRITE.lock();
 
-    let (current, old_value_len, key_present) = store::self_kv_accounting(doc, key);
+    let (current, old_value_len, key_present) = peer::self_kv_accounting(doc, key);
     let new_total = current
         .saturating_sub(old_value_len)
         .saturating_add(value.len());
@@ -91,7 +91,7 @@ pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(),
             .map_err(|_| KvError::QuotaExceeded)?;
     }
 
-    store::self_kv_set(space, doc, key, value);
+    peer::self_kv_set(space, doc, key, value);
 
     if release > 0 {
         quota.release(Stock::KvMemory, release);
@@ -112,8 +112,8 @@ mod tests {
     }
 
     fn setup(peer: [u8; 32]) -> MutexGuard<'static, ()> {
-        let guard = store::TEST_LOCK.lock();
-        store::reset();
+        let guard = peer::TEST_LOCK.lock();
+        peer::reset();
         set_self_peer_id(peer);
         guard
     }

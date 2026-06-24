@@ -19,7 +19,7 @@ use crate::{
     connection::shared::StreamIdent,
     state::{
         message::StateMsg,
-        store,
+        peer,
     },
 };
 
@@ -29,9 +29,9 @@ pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
     let (mut tx, _rx) = connection.open_bi().await?;
     StreamIdent::State.write(&mut tx).await?;
 
-    let (token, rx) = store::register_stream();
+    let (token, rx) = peer::register_stream();
     let res = send_loop(&mut tx, &rx).await;
-    store::unregister_stream(token);
+    peer::unregister_stream(token);
 
     res
 }
@@ -58,7 +58,7 @@ pub async fn recv_state_stream(
     mut rx: RecvStream,
 ) -> anyhow::Result<()> {
     let res = recv_loop(peer, &mut rx).await;
-    store::remove_peer(*peer.as_bytes());
+    peer::remove_peer(*peer.as_bytes());
     res
 }
 
@@ -76,6 +76,6 @@ async fn recv_loop(peer: EndpointId, rx: &mut RecvStream) -> anyhow::Result<()> 
         let mut buf = vec![0; len];
         rx.read_exact(&mut buf).await.context("read msg")?;
         let msg = postcard::from_bytes::<StateMsg>(&buf).context("parse msg")?;
-        store::apply_remote(*peer.as_bytes(), msg);
+        peer::apply_remote(*peer.as_bytes(), msg);
     }
 }

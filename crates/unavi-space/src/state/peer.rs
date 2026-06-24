@@ -83,7 +83,7 @@ impl Store {
     }
 }
 
-static STORE: LazyLock<Mutex<Store>> = LazyLock::new(|| Mutex::new(Store::default()));
+static PEER_STORE: LazyLock<Mutex<Store>> = LazyLock::new(|| Mutex::new(Store::default()));
 static SENDER_TOKEN: AtomicU64 = AtomicU64::new(0);
 
 fn now_millis() -> u64 {
@@ -163,7 +163,7 @@ fn merged_cell(store: &Store, space: Hash, doc: Hash, key: &str) -> Option<Vec<u
 /// first message is a full snapshot of the local peer's state.
 pub fn register_stream() -> (u64, async_channel::Receiver<StateMsg>) {
     let (tx, rx) = async_channel::unbounded();
-    let mut store = STORE.lock();
+    let mut store = PEER_STORE.lock();
     let snapshot = self_snapshot(&store);
     let _ = tx.try_send(StateMsg::Snapshot(snapshot));
     let token = SENDER_TOKEN.fetch_add(1, Ordering::Relaxed);
@@ -173,7 +173,7 @@ pub fn register_stream() -> (u64, async_channel::Receiver<StateMsg>) {
 }
 
 pub fn unregister_stream(token: u64) {
-    STORE.lock().senders.remove(&token);
+    PEER_STORE.lock().senders.remove(&token);
 }
 
 /// Applies a remote peer's update to its replica.
@@ -182,7 +182,7 @@ pub fn unregister_stream(token: u64) {
 /// its cap are dropped rather than stored, bounding what one peer can cost us.
 pub fn apply_remote(peer: PeerId, msg: StateMsg) {
     let quota = peer_quota(Hash::from(peer));
-    let mut store = STORE.lock();
+    let mut store = PEER_STORE.lock();
     let docs = &mut store.peers.entry(peer).or_default().docs;
     match msg {
         StateMsg::Snapshot(snaps) => {
@@ -290,7 +290,7 @@ fn apply_remote_kv(
 
 /// Removes a disconnected peer's replica and releases its quota.
 pub fn remove_peer(peer: PeerId) {
-    let mut store = STORE.lock();
+    let mut store = PEER_STORE.lock();
     let Some(ps) = store.peers.remove(&peer) else {
         return;
     };
@@ -304,7 +304,7 @@ pub fn self_pin(space: Hash, doc: Hash) {
     let Some(me) = self_peer_id() else {
         return;
     };
-    let mut store = STORE.lock();
+    let mut store = PEER_STORE.lock();
     let newly = match store.peers.entry(me).or_default().docs.entry(doc) {
         Entry::Vacant(v) => {
             v.insert(DocEntry::new(space));
@@ -322,7 +322,7 @@ pub fn self_claim(space: Hash, doc: Hash) {
         return;
     };
     let at = now_millis();
-    let mut store = STORE.lock();
+    let mut store = PEER_STORE.lock();
     let newly = {
         let docs = &mut store.peers.entry(me).or_default().docs;
         let newly = !docs.contains_key(&doc);
@@ -341,7 +341,7 @@ pub fn self_unpin(doc: Hash) {
     let Some(me) = self_peer_id() else {
         return;
     };
-    let mut store = STORE.lock();
+    let mut store = PEER_STORE.lock();
     let removed = store
         .peers
         .get_mut(&me)
@@ -356,7 +356,7 @@ pub fn self_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) {
         return;
     };
     let at = now_millis();
-    let mut store = STORE.lock();
+    let mut store = PEER_STORE.lock();
     let newly = {
         let docs = &mut store.peers.entry(me).or_default().docs;
         let newly = !docs.contains_key(&doc);
@@ -389,7 +389,7 @@ pub fn self_kv_delete(space: Hash, doc: Hash, key: &str) {
         return;
     };
     let at = now_millis();
-    let mut store = STORE.lock();
+    let mut store = PEER_STORE.lock();
     let newly = {
         let docs = &mut store.peers.entry(me).or_default().docs;
         let newly = !docs.contains_key(&doc);
@@ -416,7 +416,7 @@ pub fn self_kv_accounting(doc: Hash, key: &str) -> (usize, usize, bool) {
     let Some(me) = self_peer_id() else {
         return (0, 0, false);
     };
-    let store = STORE.lock();
+    let store = PEER_STORE.lock();
     let mut current = 0;
     let mut old_value_len = 0;
     let mut key_present = false;
@@ -438,7 +438,7 @@ pub fn self_kv_accounting(doc: Hash, key: &str) -> (usize, usize, bool) {
 
 #[must_use]
 pub fn owner(space: Hash, doc: Hash) -> Option<PeerId> {
-    resolve_owner(&STORE.lock(), space, doc)
+    resolve_owner(&PEER_STORE.lock(), space, doc)
 }
 
 #[must_use]
@@ -448,7 +448,7 @@ pub fn is_self_owner(space: Hash, doc: Hash) -> bool {
 
 #[must_use]
 pub fn has_doc(space: Hash, doc: Hash) -> bool {
-    STORE
+    PEER_STORE
         .lock()
         .peers
         .values()
@@ -457,12 +457,12 @@ pub fn has_doc(space: Hash, doc: Hash) -> bool {
 
 #[must_use]
 pub fn kv_get(space: Hash, doc: Hash, key: &str) -> Option<Vec<u8>> {
-    merged_cell(&STORE.lock(), space, doc, key)
+    merged_cell(&PEER_STORE.lock(), space, doc, key)
 }
 
 #[must_use]
 pub fn kv_keys(space: Hash, doc: Hash) -> Vec<String> {
-    let store = STORE.lock();
+    let store = PEER_STORE.lock();
     let mut keys = HashSet::new();
     for ps in store.peers.values() {
         if let Some(e) = ps.docs.get(&doc).filter(|e| e.space == space) {
@@ -479,7 +479,7 @@ pub fn kv_keys(space: Hash, doc: Hash) -> Vec<String> {
 
 #[must_use]
 pub fn kv_total_bytes(space: Hash, doc: Hash) -> usize {
-    let store = STORE.lock();
+    let store = PEER_STORE.lock();
     let mut keys = HashSet::new();
     for ps in store.peers.values() {
         if let Some(e) = ps.docs.get(&doc).filter(|e| e.space == space) {
@@ -500,7 +500,7 @@ pub fn kv_total_bytes(space: Hash, doc: Hash) -> usize {
 #[must_use]
 pub fn doc_holders(doc: Hash) -> Vec<PeerId> {
     let me = self_peer_id();
-    let store = STORE.lock();
+    let store = PEER_STORE.lock();
     let space = store
         .peers
         .values()
@@ -519,11 +519,11 @@ pub fn doc_holders(doc: Hash) -> Vec<PeerId> {
     holders
 }
 
-/// The space `doc` is pinned in, per any peer's replica. Lets membership resolve
-/// a synced doc's space without a local ownership claim.
+/// The space `doc` is pinned in, per any peer's replica. Lets membership
+/// resolve a synced doc's space without a local ownership claim.
 #[must_use]
 pub fn space_of(doc: Hash) -> Option<Hash> {
-    STORE
+    PEER_STORE
         .lock()
         .peers
         .values()
@@ -533,7 +533,7 @@ pub fn space_of(doc: Hash) -> Option<Hash> {
 /// Every pinned document across all peers, deduped to `(doc, space)`.
 #[must_use]
 pub fn pinned_docs() -> Vec<(Hash, Hash)> {
-    let store = STORE.lock();
+    let store = PEER_STORE.lock();
     let mut out = HashMap::new();
     for ps in store.peers.values() {
         for (doc, e) in &ps.docs {
@@ -546,7 +546,7 @@ pub fn pinned_docs() -> Vec<(Hash, Hash)> {
 
 #[cfg(test)]
 pub fn reset() {
-    let mut store = STORE.lock();
+    let mut store = PEER_STORE.lock();
     store.peers.clear();
     store.senders.clear();
 }

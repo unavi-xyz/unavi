@@ -36,9 +36,8 @@ pub fn register_docs(
 
     let mut reg = FIREWALL_REGISTRY.write();
     if let Some(existing) = reg.get(&doc.0) {
-        // Child docs are pre-registered synchronously by spawn_child_doc so
-        // the firewall is queryable before this observer fires. Allow that
-        // case (same Arc) but reject anything else as a privilege leak.
+        // Child docs are pre-registered by spawn_child_doc, so allow the same
+        // Arc; reject anything else as a privilege leak.
         if !Arc::ptr_eq(&existing.0, &firewall.0) {
             error!("unable to register firewall: document already registered");
             commands.entity(trigger.entity).despawn();

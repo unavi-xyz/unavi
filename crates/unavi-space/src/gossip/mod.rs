@@ -43,13 +43,11 @@ mod outbound;
 mod thread;
 
 /// The space we currently occupy, mirrored from [`crate::anchor::ActiveSpace`]
-/// for the async gossip tasks. We only broadcast presence to this space, while
-/// still receiving on every space we have loaded.
+/// for the async gossip tasks. Presence broadcasts only to this space.
 static ACTIVE_SPACE: RwLock<Option<Hash>> = RwLock::new(None);
 
-/// Woken whenever the active space changes, so the outbound task for the space
-/// we just entered broadcasts presence immediately rather than waiting out the
-/// heartbeat interval.
+/// Woken when the active space changes, so the entered space broadcasts presence
+/// immediately instead of waiting out the heartbeat.
 static ACTIVE_CHANGED: LazyLock<tokio::sync::Notify> = LazyLock::new(tokio::sync::Notify::new);
 
 fn active_space() -> Option<Hash> {

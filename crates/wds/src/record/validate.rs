@@ -39,12 +39,9 @@ pub async fn fetch_schema(blobs: &Store, hash: &Hash) -> Result<Schema, Validati
     Schema::from_bytes(&bytes).map_err(|_| ValidationError::ParseError)
 }
 
-/// Validate changes between two document states against schema restrictions.
-///
-/// `old_doc` is used for authorization checks (the state before the change).
-/// `new_doc` is used for computing the diff (should have the new envelope
-/// applied). `is_first_envelope` skips restriction checks (allows ACL
-/// bootstrap).
+/// Validates changes between two document states against schema restrictions.
+/// `old_doc` is the pre-change state (authorization); `new_doc` carries the new
+/// envelope (diff). `is_first_envelope` skips checks to allow ACL bootstrap.
 pub fn validate_diff(
     old_doc: &LoroDoc,
     new_doc: &LoroDoc,

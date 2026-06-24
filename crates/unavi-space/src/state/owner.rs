@@ -8,9 +8,6 @@ use crate::{
 
 /// Claims `doc` for `peer` in the local replica. Only the local peer can author
 /// a claim; the network resolves the definitive owner as the latest claimer.
-///
-/// `self_claim` records the doc's space in the store, so membership resolves it
-/// via `space_of` without a separate registry write.
 pub fn set_doc_owner(space: Hash, doc: Hash, peer: [u8; 32]) {
     match self_peer_id() {
         Some(me) if me == peer => peer::self_claim(space, doc),

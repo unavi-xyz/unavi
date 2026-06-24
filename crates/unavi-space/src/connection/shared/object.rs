@@ -49,10 +49,9 @@ use crate::connection::{
     },
 };
 
-/// A message on a per-document object stream. The stream's document id is fixed
-/// in its header, so frames omit it; [`ObjectMsg::SpaceChange`] announces the
-/// space the document currently sits in, sent only when it changes, and the
-/// i/p-frames carry one prim's rigid-body update.
+/// A message on a per-document object stream (doc id is fixed in the header).
+/// [`ObjectMsg::SpaceChange`] announces the document's space on change; i/p-frames
+/// carry one prim's rigid-body update.
 #[derive(Serialize, Deserialize, MaxSize)]
 enum ObjectMsg {
     SpaceChange {

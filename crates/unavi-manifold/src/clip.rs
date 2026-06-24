@@ -21,9 +21,8 @@ pub const SEAM_CLIP_MTOON_SHADER_HANDLE: Handle<Shader> =
 
 /// Base material that can be clipped at a world-space seam plane.
 pub trait Clippable: Material {
-    /// Fragment shader reproducing this material's shading with the seam clip
-    /// applied. It must bind the clip plane at `@binding(100)` (see
-    /// `assets/seam_clip.wgsl`).
+    /// Fragment shader reproducing this material's shading with the seam clip,
+    /// binding the clip plane at `@binding(100)` (see `assets/seam_clip.wgsl`).
     const CLIP_SHADER: Handle<Shader>;
 
     /// Render both faces, so the cap exposed at the cut is drawn.
@@ -158,10 +157,8 @@ fn update_node<M: Clippable>(world: &mut World, node: Entity, plane: Vec4) {
     }
 }
 
-/// Clone `source`'s `M` material onto `clone` as a clipped variant.
-///
-/// The source may hold the live material or, while straddling, its clipped
-/// variant with the original stashed; either resolves to the unclipped handle.
+/// Clones `source`'s `M` material onto `clone` as a clipped variant, resolving
+/// to the unclipped handle whether the source is live or straddling.
 #[must_use]
 pub fn clone_clipped_node<M: Clippable>(
     world: &mut World,

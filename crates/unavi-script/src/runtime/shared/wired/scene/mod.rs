@@ -31,6 +31,10 @@ use unavi_quota::{
     Flow,
     Stock,
 };
+use unavi_space::{
+    anchor::ActiveSpace,
+    membership::DocSpaceHint,
+};
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
@@ -100,20 +104,28 @@ async fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> Result<(), S
 
     let firewall = Firewall::for_child_doc(api.doc_id);
     FIREWALL_REGISTRY.write().insert(id, firewall.clone());
-    if let Some(parent_space) = unavi_space::membership::doc_space(api.doc_id) {
-        unavi_space::membership::DOC_SPACE_REGISTRY
-            .write()
-            .insert(id, parent_space);
-    }
     unavi_quota::registry::child_document_quota(id, api.doc_id);
+
+    let parent_space = unavi_space::membership::doc_space(api.doc_id);
+    let permissions = api.permissions.clone();
     AsyncCommands::default()
-        .spawn((
-            Hsd(doc),
-            HsdRecordId(id),
-            firewall,
-            api.permissions.clone(),
-            QuotaGuards(vec![doc_guard]),
-        ))
+        .push(move |world: &mut World| {
+            let bundle = (
+                Hsd(doc),
+                HsdRecordId(id),
+                firewall,
+                permissions,
+                QuotaGuards(vec![doc_guard]),
+            );
+            match parent_space {
+                Some(space) => {
+                    world.spawn((bundle, DocSpaceHint(space)));
+                }
+                None => {
+                    world.spawn(bundle);
+                }
+            }
+        })
         .send()
         .await
         .map_err(|err| ScriptError::other(err.to_string()))?;
@@ -283,12 +295,11 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let space = if let Some(s) = unavi_space::membership::doc_space(id) {
         s
     } else {
+        // If document doesn't belong to a space, add it to the active space.
         let (tx, rx) = async_channel::bounded::<Option<Hash>>(1);
         AsyncCommands::default()
             .push(move |world: &mut World| {
-                let active = world
-                    .get_resource::<unavi_space::anchor::ActiveSpace>()
-                    .and_then(|a| a.0);
+                let active = world.get_resource::<ActiveSpace>().and_then(|a| a.0);
                 let hash = active.and_then(|e| world.get::<unavi_space::Space>(e).map(|s| s.0));
                 tx.try_send(hash).ok();
             })
@@ -299,10 +310,7 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
             .ok_or_else(|| anyhow::anyhow!("doc has no space and no active space"))?
     };
 
-    // Records are private with content only in memory until published. Make the
-    // record public and upload its current state to our host *before* announcing
-    // the pin, so peers that learn of it can immediately sync it from us rather
-    // than retrying against a private or empty record.
+    // Ensure document is public within the WDS so others can read it.
     let doc = {
         let scene = api.wired_scene.lock().await;
         scene
@@ -320,11 +328,12 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
         .map_err(|err| anyhow::anyhow!("set record public response dropped: {err}"))?
         .map_err(|err| anyhow::anyhow!("failed to make published record public: {err}"))?;
 
+    // Pin document in local state.
     if !unavi_space::state::doc::add_doc(space, id) {
         anyhow::bail!("space state not tracked locally");
     }
 
-    // Publishing claims the doc for the local peer.
+    // Claim document for local peer.
     if let Some(peer) = unavi_space::peer::self_peer_id() {
         unavi_space::state::owner::set_doc_owner(space, id, peer);
     }

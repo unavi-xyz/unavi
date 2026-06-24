@@ -22,18 +22,19 @@ use crate::{
 
 #[derive(Event)]
 pub struct ReadRecord {
-    pub id:           Hash,
-    pub ttl:          Option<Duration>,
-    pub backoff_secs: u64,
-    pub retries:      usize,
-    pub cancel:       Option<oneshot::Receiver<()>>,
-    pub tx:           Sender<LoroDoc>,
+    pub id:                Hash,
+    pub ttl:               Option<Duration>,
+    pub backoff_secs:      u64,
+    pub retries:           usize,
+    pub cancel:            Option<oneshot::Receiver<()>>,
+    pub tx:                Sender<LoroDoc>,
     /// Peers to sync the record from, in addition to the configured
     /// [`SyncTargets`]. Use this to fetch a record directly from a peer known
     /// to hold it when it may be absent or stale on the host stores.
-    pub sync_from:    Vec<EndpointAddr>,
+    pub sync_from:         Vec<EndpointAddr>,
     /// When set, sync only from [`Self::sync_from`], ignoring the configured
-    /// [`SyncTargets`]. Use to resolve a record exclusively from a known holder.
+    /// [`SyncTargets`]. Use to resolve a record exclusively from a known
+    /// holder.
     pub exclusive_sources: bool,
 }
 

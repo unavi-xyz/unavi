@@ -13,6 +13,7 @@ use parking_lot::RwLock;
 
 use crate::Space;
 
+/// Maps document -> space it belongs to.
 pub static DOC_SPACE_REGISTRY: LazyLock<RwLock<HashMap<Hash, Hash>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
@@ -24,6 +25,10 @@ pub struct SpaceOwner(pub Entity);
 #[relationship_target(relationship = SpaceOwner)]
 pub struct SpaceMembers(Vec<Entity>);
 
+/// Declares the space a freshly spawned, unparented doc should belong to.
+#[derive(Component)]
+pub struct DocSpaceHint(pub Hash);
+
 pub fn self_own_space(trigger: On<Add, Space>, spaces: Query<&Space>) {
     let Ok(space) = spaces.get(trigger.entity) else {
         return;
@@ -33,25 +38,23 @@ pub fn self_own_space(trigger: On<Add, Space>, spaces: Query<&Space>) {
 
 pub fn parent_doc_under_space(
     trigger: On<Insert, HsdRecordId>,
-    docs: Query<&HsdRecordId, (With<Hsd>, Without<Space>, Without<ChildOf>)>,
+    docs: Query<&DocSpaceHint, (With<Hsd>, Without<Space>, Without<ChildOf>)>,
     spaces: Query<(Entity, &HsdRecordId), With<Space>>,
     mut commands: Commands,
 ) {
-    let Ok(doc_record) = docs.get(trigger.entity) else {
-        return;
-    };
-    let Some(space_hash) = DOC_SPACE_REGISTRY.read().get(&doc_record.0).copied() else {
+    let Ok(hint) = docs.get(trigger.entity) else {
         return;
     };
     let Some(space_entity) = spaces
         .iter()
-        .find_map(|(e, r)| (r.0 == space_hash).then_some(e))
+        .find_map(|(e, r)| (r.0 == hint.0).then_some(e))
     else {
         return;
     };
     commands
         .entity(trigger.entity)
-        .insert((ChildOf(space_entity), SpaceOwner(space_entity)));
+        .insert((ChildOf(space_entity), SpaceOwner(space_entity)))
+        .remove::<DocSpaceHint>();
 }
 
 pub fn register_on_owner_change(
@@ -74,16 +77,20 @@ pub fn deregister_doc_membership(trigger: On<Remove, SpaceOwner>, docs: Query<&H
     }
 }
 
-/// The space a doc belongs to. Prefers the local registry (authored docs),
-/// falling back to the replicated state store so a doc synced from a peer also
-/// resolves its space.
+pub fn deregister_space_docs(trigger: On<Remove, Space>, spaces: Query<&Space>) {
+    if let Ok(space) = spaces.get(trigger.entity) {
+        DOC_SPACE_REGISTRY.write().retain(|_, v| *v != space.0);
+    }
+}
+
+/// The space a doc belongs to.
 #[must_use]
 pub fn doc_space(doc: Hash) -> Option<Hash> {
     DOC_SPACE_REGISTRY
         .read()
         .get(&doc)
         .copied()
-        .or_else(|| crate::state::store::space_of(doc))
+        .or_else(|| crate::state::peer::space_of(doc))
 }
 
 #[must_use]

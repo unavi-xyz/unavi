@@ -226,8 +226,8 @@ struct Baseline {
 }
 
 /// Reconstructs a full-precision update for a frame, tracking the i-frame
-/// baseline per prim. Returns `None` for a [`ObjectMsg::SpaceChange`], a p-frame
-/// that arrives before its i-frame, or one referencing a stale i-frame.
+/// baseline per prim. Returns `None` for a [`ObjectMsg::SpaceChange`], a
+/// p-frame that arrives before its i-frame, or one referencing a stale i-frame.
 fn resolve_msg(
     msg: ObjectMsg,
     doc: Hash,
@@ -376,7 +376,11 @@ mod tests {
         let space = h(b"space");
         let now = Instant::now();
 
-        let iframe = build_msg(&mut prims, &outgoing(doc, space, Vec3::new(1.0, 2.0, 3.0)), now);
+        let iframe = build_msg(
+            &mut prims,
+            &outgoing(doc, space, Vec3::new(1.0, 2.0, 3.0)),
+            now,
+        );
         resolve_msg(iframe, doc, space, &mut baselines);
 
         let moved = Vec3::new(1.1, 1.8, 3.05);
@@ -421,7 +425,11 @@ mod tests {
         let doc = h(b"doc");
         let space = h(b"space");
 
-        let iframe = build_msg(&mut prims, &outgoing(doc, space, Vec3::ZERO), Instant::now());
+        let iframe = build_msg(
+            &mut prims,
+            &outgoing(doc, space, Vec3::ZERO),
+            Instant::now(),
+        );
         resolve_msg(iframe, doc, space, &mut baselines);
 
         let stale = ObjectMsg::PFrame {
@@ -452,8 +460,10 @@ mod tests {
             ..outgoing(doc, space, Vec3::new(-5.0, 0.0, 0.0))
         };
 
-        let ra = resolve_msg(build_msg(&mut prims, &a, now), doc, space, &mut baselines).expect("a");
-        let rb = resolve_msg(build_msg(&mut prims, &b, now), doc, space, &mut baselines).expect("b");
+        let ra =
+            resolve_msg(build_msg(&mut prims, &a, now), doc, space, &mut baselines).expect("a");
+        let rb =
+            resolve_msg(build_msg(&mut prims, &b, now), doc, space, &mut baselines).expect("b");
         assert!((ra.root.translation - Vec3::new(5.0, 0.0, 0.0)).length() < 0.01);
         assert!((rb.root.translation - Vec3::new(-5.0, 0.0, 0.0)).length() < 0.01);
         assert_eq!(baselines.len(), 2);

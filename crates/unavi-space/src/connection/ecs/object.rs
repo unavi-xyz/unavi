@@ -35,7 +35,7 @@ use loro::TreeID;
 use crate::{
     Space,
     membership,
-    state::store,
+    state::peer,
 };
 
 /// One owned dynamic prim's space-relative pose, queued for broadcast. Captured
@@ -95,7 +95,7 @@ pub fn send_object_poses(
             }
             let doc = roots.get(child_of.0).ok()?.0;
             let space = membership::doc_space(doc)?;
-            if !store::is_self_owner(space, doc) {
+            if !peer::is_self_owner(space, doc) {
                 return None;
             }
             let origin = space_origins.get(&space)?;
@@ -162,8 +162,8 @@ pub fn submit_object(peer: EndpointId, resolved: ResolvedObject) {
 }
 
 /// Drives a remotely-owned prim from network updates. The replica is held
-/// [`RigidBody::Kinematic`] so local physics never fights the owner; its pose is
-/// smoothed toward the last received space-relative target each tick.
+/// [`RigidBody::Kinematic`] so local physics never fights the owner; its pose
+/// is smoothed toward the last received space-relative target each tick.
 #[derive(Component)]
 pub struct ObjectInterp {
     space:     Entity,
@@ -189,8 +189,8 @@ pub fn apply_remote_objects(
 
     for ((peer, doc, prim), (recv, resolved)) in updates {
         // Only the document's current owner may move it, and never ourselves.
-        if store::owner(resolved.space, doc) != Some(*peer.as_bytes())
-            || store::is_self_owner(resolved.space, doc)
+        if peer::owner(resolved.space, doc) != Some(*peer.as_bytes())
+            || peer::is_self_owner(resolved.space, doc)
         {
             continue;
         }
@@ -227,7 +227,8 @@ pub fn apply_remote_objects(
 }
 
 /// Smooths each replica toward its velocity-extrapolated target. The body is
-/// kinematic, so writing [`Position`]/[`Rotation`] places it without contention.
+/// kinematic, so writing [`Position`]/[`Rotation`] places it without
+/// contention.
 pub fn advance_object_interp(
     time: Res<Time>,
     spaces: Query<&GlobalTransform, With<Space>>,
@@ -245,7 +246,10 @@ pub fn advance_object_interp(
             .saturating_duration_since(interp.last_recv)
             .min(MAX_EXTRAPOLATION)
             .as_secs_f32();
-        let target_pos = origin + interp.lin.mul_add(Vec3::splat(extrap), interp.target.translation);
+        let target_pos = origin
+            + interp
+                .lin
+                .mul_add(Vec3::splat(extrap), interp.target.translation);
         let target_rot = Quat::from_scaled_axis(interp.ang * extrap) * interp.target.rotation;
 
         position.0 = position.0.lerp(target_pos, alpha);
@@ -253,9 +257,9 @@ pub fn advance_object_interp(
     }
 }
 
-/// A prim parked under [`RigidBody::Kinematic`] because its document is owned by
-/// a remote peer. Held still until owner frames drive it, so a freshly-instanced
-/// replica never free-falls before its first update arrives.
+/// A prim parked under [`RigidBody::Kinematic`] because its document is owned
+/// by a remote peer. Held still until owner frames drive it, so a
+/// freshly-instanced replica never free-falls before its first update arrives.
 #[derive(Component)]
 pub struct ReplicaObject;
 
@@ -276,7 +280,7 @@ pub fn reconcile_object_authority(
             continue;
         };
         let remote_owned = membership::doc_space(doc).is_some_and(|space| {
-            store::owner(space, doc).is_some() && !store::is_self_owner(space, doc)
+            peer::owner(space, doc).is_some() && !peer::is_self_owner(space, doc)
         });
 
         match (remote_owned, is_replica) {

@@ -47,17 +47,9 @@ struct DesiredEcho {
     plane: Vec4,
 }
 
-/// Maintain mirrored copies of bodies overlapping a seam plane.
-///
-/// An echo is a clone of the body's render subtree, posed through the seam
-/// and despawned once the body pulls clear. Both the body and its echo are
-/// clipped at their seam plane so neither protrudes out a portal's back side.
-/// Echo colliders are kinematic: they push dynamic bodies on the far side but
-/// feed no force back to the source body.
-///
-/// Runs between seam crossings and transform propagation: the body's
-/// `Transform` is its current world pose, and spawned echoes are propagated
-/// the same frame.
+/// Maintains mirrored clones of bodies overlapping a seam plane. An echo is the
+/// body's render subtree posed through the seam, clipped at the plane so neither
+/// side protrudes; its colliders are kinematic. Runs before transform propagation.
 pub fn maintain_seam_echoes(
     mut commands: Commands,
     bodies: Query<(Entity, &Transform, &GlobalTransform), (With<ManifoldBody>, Without<SeamEcho>)>,
@@ -169,9 +161,8 @@ pub fn maintain_seam_echoes(
     }
 }
 
-/// Copy source node transforms and morph weights onto their echo clones,
-/// carrying animation through the seam. Echo roots are posed by
-/// [`maintain_seam_echoes`] instead.
+/// Copies source node transforms and morph weights onto echo clones, carrying
+/// animation through the seam. Echo roots are posed by [`maintain_seam_echoes`].
 pub fn sync_echo_nodes(
     mut clones: Query<
         (&EchoNode, &mut Transform, Option<&mut MeshMorphWeights>),

@@ -97,11 +97,8 @@ pub fn release_anchor(
     }
 }
 
-/// Positions every space relative to the active one, which sits at the origin.
-///
-/// Offsets are relative to the active space's grid cell so the layout stays
-/// Euclidean: the world is a rigid lattice translated so the active cell is at
-/// the origin. [`recenter_active_space`] applies the matching shift to bodies.
+/// Positions every space on a rigid grid lattice, translated so the active
+/// space sits at the origin. [`recenter_active_space`] shifts bodies to match.
 pub fn apply_anchor_offsets(
     active: Res<ActiveSpace>,
     mut spaces: Query<(Entity, &SpaceAnchor, &mut Transform), With<Space>>,
@@ -161,26 +158,15 @@ pub fn reparent_doc_traveler(
     }
 }
 
-/// Keeps [`ActiveSpace`] pointed at the space the local agent occupies, and
-/// recenters the world so that space sits at the origin.
+/// Keeps [`ActiveSpace`] on the space the local agent occupies and recenters the
+/// world to the origin, shifting every space transform and physics `Position` by
+/// one delta together.
 ///
-/// On entering a new space the whole world is shifted by a single delta: every
-/// space transform and every physics body's [`Position`] move together, so the
-/// layout and physics stay consistent. Avian treats nested bodies as flat, so
-/// body positions must be shifted explicitly rather than riding their parent
-/// space.
-///
-/// A body's `Transform` is shifted in the same frame unless an ancestor already
-/// carries the shift, because avian's `Position`→`Transform` writeback runs in
-/// `FixedPostUpdate`: a `Position`-only shift here would not reach the
-/// `Transform` until the next fixed tick, rendering the body at its stale pose
-/// for a frame. A body rides an ancestor's shift when some ancestor is a space
-/// (moved by [`apply_anchor_offsets`]), the agent body (resynced below), or
-/// another physics body (shifted in turn); shifting its local `Transform` too
-/// would double-apply the delta. World docs hung under a plain container ride
-/// nothing, so their bodies are shifted directly. `PrevTranslation` is shifted
-/// alongside so a recentered `ManifoldBody` does not register a false seam
-/// crossing next frame.
+/// A body's `Transform` is shifted directly unless an ancestor already carries
+/// the shift (a space, the agent body, or another body); avian's
+/// `Position`→`Transform` writeback runs only in `FixedPostUpdate`, so a
+/// `Position`-only shift would render a stale pose for a frame. `PrevTranslation`
+/// shifts too, avoiding a false seam crossing.
 pub fn recenter_active_space(
     agents: Query<&LocalAgentEntities, With<LocalAgent>>,
     spaces: Query<(Entity, &Transform), With<Space>>,
@@ -254,9 +240,8 @@ pub fn recenter_active_space(
         }
     }
 
-    // The agent body was just teleported through the seam via its `Transform`,
-    // so its physics `Position` is stale this frame; resync it from the shifted
-    // `Transform` rather than shifting the stale value back to the crossing.
+    // The agent body's `Position` is stale after a seam teleport; resync it from
+    // the shifted `Transform`.
     if let Ok((_, mut position, transform, prev)) = bodies.get_mut(body) {
         if let Some(mut transform) = transform {
             transform.translation += delta;
@@ -369,11 +354,8 @@ mod tests {
         let b_pos = translation(&app, b);
         assert_eq!(app.world().resource::<ActiveSpace>().0, Some(a));
 
-        // Drop the agent body inside b's grid cell, plus an unrelated physics
-        // body to confirm the shift is uniform across the whole world. The
-        // body's `Position` is deliberately stale (as it is the frame a seam
-        // crossing teleports it via `Transform`) to prove it is resynced from
-        // the transform rather than blindly shifted.
+        // Agent body in b's cell plus an unrelated body; the body's `Position` is
+        // deliberately stale to prove it resyncs from the transform.
         let local = Vec3::new(2.0, 0.0, -1.0);
         let stale = Vec3::new(7.0, 0.0, 7.0);
         let body = app
@@ -426,9 +408,8 @@ mod tests {
             ))
             .id();
 
-        // A root physics body whose `Transform` and `Position` agree, as avian's
-        // writeback leaves them. The recenter shift must reach its `Transform`
-        // this same frame, before any fixed-tick writeback runs.
+        // A root body must have its `Transform` shifted this frame, before any
+        // fixed-tick writeback.
         let world = Vec3::new(50.0, 0.0, -10.0);
         let root = app
             .world_mut()
@@ -470,9 +451,8 @@ mod tests {
             ))
             .id();
 
-        // A physics body parented to a space rides that space's transform via
-        // propagation, so its local `Transform` must stay put; only `Position`
-        // shifts, keeping the next writeback consistent.
+        // A body parented to a space rides its transform, so only `Position`
+        // shifts; the local `Transform` stays put.
         let child_local = Vec3::new(3.0, 0.0, 4.0);
         let child = app
             .world_mut()
@@ -515,10 +495,8 @@ mod tests {
             ))
             .id();
 
-        // A world doc (e.g. a system-script gauntlet): a plain container with no
-        // physics, holding a physics-body prim. The prim rides nothing, so its
-        // local Transform must be shifted directly this frame, not left to lag
-        // behind its Position until the next fixed-tick writeback.
+        // A prim under a plain (non-physics) container rides nothing, so its local
+        // `Transform` must be shifted directly this frame.
         let root = app
             .world_mut()
             .spawn((Transform::default(), GlobalTransform::default()))

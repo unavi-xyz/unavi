@@ -32,9 +32,8 @@ pub fn load_hsd_scripts(
     records: Query<&HsdRecordId>,
     mut commands: Commands,
 ) {
-    // A doc owned by another peer is a pure replica: its content arrives over WDS
-    // sync, so running its script locally would duplicate whatever the script
-    // spawns. Only run scripts for docs we own or that no peer owns yet.
+    // A doc owned by another peer is a pure replica synced over WDS; running its
+    // script locally would duplicate its spawns. Only run ours or unowned docs.
     if let Ok(doc) = children.get(trigger.entity).and_then(|c| records.get(c.0))
         && doc_space(doc.0)
             .and_then(|space| doc_owner(space, doc.0))

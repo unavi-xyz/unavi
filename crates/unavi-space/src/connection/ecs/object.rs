@@ -61,10 +61,8 @@ pub struct LastObjectTick(Duration);
 /// updates, so they tick far less often than agent poses.
 const OBJECT_TICKRATE: Duration = Duration::from_millis(200);
 
-/// Broadcasts the pose of every dynamic prim within documents the local peer
-/// owns. Poses are space-relative so receivers can place them under their own
-/// (independently anchored) copy of the space; velocities are space-invariant
-/// since spaces are only translated, never rotated.
+/// Broadcasts every dynamic prim in documents the local peer owns. Poses are
+/// space-relative; velocities are space-invariant (spaces only translate).
 pub fn send_object_poses(
     time: Res<Time>,
     spaces: Query<(&Space, &GlobalTransform)>,
@@ -257,19 +255,14 @@ pub fn advance_object_interp(
     }
 }
 
-/// A prim parked under [`RigidBody::Kinematic`] because its document is owned
-/// by a remote peer. Held still until owner frames drive it, so a
-/// freshly-instanced replica never free-falls before its first update arrives.
+/// A prim parked [`RigidBody::Kinematic`] because a remote peer owns its
+/// document, so a fresh replica never free-falls before its first update.
 #[derive(Component)]
 pub struct ReplicaObject;
 
-/// Keeps each dynamic prim's body kind in step with its document's owner:
-///
-/// - owned by a remote peer: park as [`RigidBody::Kinematic`] (a replica),
-/// - owned by us or unowned: run under local physics ([`RigidBody::Dynamic`]).
-///
-/// `store::owner` resolves the strongest (latest) claim, so a prim only follows
-/// the peer we accept as owner; a weaker claim elsewhere is ignored.
+/// Parks remote-owned prims as kinematic replicas and runs ours/unowned ones as
+/// dynamic. `peer::owner` resolves the latest claim, so only the accepted owner
+/// drives a prim.
 pub fn reconcile_object_authority(
     roots: Query<&HsdRecordId>,
     prims: Query<(Entity, &HsdChild, &RigidBody, Has<ReplicaObject>), With<Prim>>,

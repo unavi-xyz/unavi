@@ -31,10 +31,7 @@ use unavi_quota::{
     Flow,
     Stock,
 };
-use unavi_space::{
-    anchor::ActiveSpace,
-    membership::DocSpaceHint,
-};
+use unavi_space::anchor::ActiveSpace;
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
@@ -104,28 +101,21 @@ async fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> Result<(), S
 
     let firewall = Firewall::for_child_doc(api.doc_id);
     FIREWALL_REGISTRY.write().insert(id, firewall.clone());
+    // Seed the child's space now; the spawn command applies later.
+    if let Some(parent_space) = unavi_space::membership::doc_space(api.doc_id) {
+        unavi_space::membership::DOC_SPACE_REGISTRY
+            .write()
+            .insert(id, parent_space);
+    }
     unavi_quota::registry::child_document_quota(id, api.doc_id);
-
-    let parent_space = unavi_space::membership::doc_space(api.doc_id);
-    let permissions = api.permissions.clone();
     AsyncCommands::default()
-        .push(move |world: &mut World| {
-            let bundle = (
-                Hsd(doc),
-                HsdRecordId(id),
-                firewall,
-                permissions,
-                QuotaGuards(vec![doc_guard]),
-            );
-            match parent_space {
-                Some(space) => {
-                    world.spawn((bundle, DocSpaceHint(space)));
-                }
-                None => {
-                    world.spawn(bundle);
-                }
-            }
-        })
+        .spawn((
+            Hsd(doc),
+            HsdRecordId(id),
+            firewall,
+            api.permissions.clone(),
+            QuotaGuards(vec![doc_guard]),
+        ))
         .send()
         .await
         .map_err(|err| ScriptError::other(err.to_string()))?;

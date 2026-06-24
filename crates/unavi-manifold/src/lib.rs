@@ -127,10 +127,8 @@ impl Default for SeamSize {
     }
 }
 
-/// Depth of the latch slab around the seam plane.
-///
-/// Crossing triggers exactly at the plane; this band only suppresses an
-/// immediate re-crossing after a body lands near the destination plane.
+/// Depth of the latch slab around the seam plane; suppresses an immediate
+/// re-crossing after a body lands near the destination plane.
 pub const SEAM_DEPTH: f32 = 0.05;
 
 #[derive(Component, Clone, Copy)]
@@ -158,10 +156,8 @@ pub struct GluedFrom(Vec<Entity>);
 #[relationship(relationship_target = GluedFrom)]
 pub struct GluedTo(pub Entity);
 
-/// Mirrored stand-in on the far side of a seam.
-///
-/// Spawned while its body straddles the seam plane, so a half-inserted object
-/// protrudes from both faces.
+/// Mirrored stand-in on the far side of a seam, spawned while its body straddles
+/// the plane so a half-inserted object protrudes from both faces.
 #[derive(Component, Clone, Copy)]
 pub struct SeamEcho {
     pub body: Entity,
@@ -222,10 +218,8 @@ pub struct SeamLatch(pub bool);
 #[derive(Component, Default)]
 pub struct PrevTranslation(pub Vec3);
 
-/// Affine map carrying poses through a seam.
-///
-/// Maps into the source seam's space, through the half-turn that aligns the
-/// two faces, then out into world space at the destination.
+/// Affine map carrying poses through a seam: into the source seam's space,
+/// through the half-turn aligning the two faces, then out at the destination.
 #[must_use]
 pub fn seam_transfer(source: &GlobalTransform, destination: &GlobalTransform) -> Affine3A {
     let flip = Affine3A::from_quat(Quat::from_rotation_y(std::f32::consts::PI));

@@ -3,7 +3,10 @@ use std::{
     time::Duration,
 };
 
-use async_channel::Receiver;
+use async_channel::{
+    Receiver,
+    TryRecvError,
+};
 use bevy::{
     platform::collections::HashSet,
     prelude::*,
@@ -72,16 +75,18 @@ pub fn spawn_pinned_docs(
             continue;
         };
 
-        // The record lives in the holders' WDS, not our host stores, so sync it
-        // directly from the peers that pin it (owner first) and from nowhere else.
-        // Their addresses come from the live `Peer` entities; holders we are not
-        // connected to are skipped.
+        // Sync the document from our peers.
         let holders = peer::doc_holders(doc);
         let sync_from = holders
             .iter()
             .filter_map(|h| peers.iter().find(|p| p.0.id.as_bytes() == h))
             .map(|p| p.0.clone())
             .collect::<Vec<_>>();
+
+        if sync_from.is_empty() {
+            // Try again next frame.
+            continue;
+        }
 
         let (mut event, rx, cancel) = ReadRecord::new(doc);
         event.retries = READ_RETRIES;
@@ -106,13 +111,18 @@ pub fn instantiate_pinned_docs(
     mut commands: Commands,
 ) {
     for (entity, pin, pending) in &pending {
-        let Ok(doc) = pending.rx.try_recv() else {
-            continue;
-        };
-        commands
-            .entity(entity)
-            .insert((Hsd(Arc::new(doc)), HsdRecordId(pin.0)))
-            .remove::<PendingPinnedDoc>();
+        match pending.rx.try_recv() {
+            Ok(doc) => {
+                commands
+                    .entity(entity)
+                    .insert((Hsd(Arc::new(doc)), HsdRecordId(pin.0)))
+                    .remove::<PendingPinnedDoc>();
+            }
+            Err(TryRecvError::Empty) => {}
+            Err(TryRecvError::Closed) => {
+                commands.entity(entity).despawn();
+            }
+        }
     }
 }
 

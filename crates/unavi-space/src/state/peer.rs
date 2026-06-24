@@ -67,9 +67,6 @@ struct KvValue {
 
 /// Holds every peer's replicated state (self included) alongside the live delta
 /// senders.
-///
-/// Both live under one lock so a stream's snapshot and its delta feed
-/// are registered atomically.
 #[derive(Default)]
 struct Store {
     peers:   HashMap<PeerId, PeerState>,

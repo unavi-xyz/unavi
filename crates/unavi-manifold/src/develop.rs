@@ -141,9 +141,8 @@ pub fn update_develop_camera_transforms(
     }
 }
 
-/// Clip the seam camera at the destination seam plane via Lengyel oblique
-/// near-plane projection, so geometry between the camera and the seam cannot
-/// occlude the view.
+/// Clips the seam camera at the destination plane via Lengyel oblique near-plane
+/// projection, so geometry between camera and seam cannot occlude the view.
 pub fn update_develop_camera_clip_planes(
     mut seam_cameras: Query<(
         &DevelopCamera,
@@ -182,11 +181,8 @@ pub fn update_develop_camera_clip_planes(
 
         perspective.near_clip_plane = normal.extend(-normal.dot(plane_point));
 
-        // `camera_system` caches `clip_from_view` before transform propagation,
-        // so it bakes the oblique plane from the previous frame's pose. Recompute
-        // it here from the freshly written pose, otherwise the clip plane trails
-        // the rendered view by a frame and clips a velocity-dependent sliver of
-        // the far side while moving.
+        // `camera_system` caches `clip_from_view` before propagation (last frame's
+        // pose); recompute from the fresh pose so the clip plane doesn't trail a frame.
         camera.computed.clip_from_view = projection.get_clip_from_view();
     }
 }

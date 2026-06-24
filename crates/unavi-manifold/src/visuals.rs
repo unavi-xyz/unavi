@@ -240,10 +240,8 @@ fn install_shader_visual(world: &mut World, seam: Entity, key: VisualKey) {
         .get::<Camera3d>(tracked_camera)
         .cloned()
         .unwrap_or_default();
-    // An HDR tracked camera tonemaps as a post-pass over the composited view,
-    // so the RTT must stay linear or the seam is darkened twice. An LDR
-    // tracked camera tonemaps per-material in-shader, which the seam shader
-    // bypasses, so the RTT must be tonemapped here instead.
+    // An HDR tracked camera tonemaps as a post-pass, so the RTT must stay linear
+    // to avoid double-darkening; an LDR one tonemaps in-shader, so tonemap here.
     let tonemapping = if world.get::<Hdr>(tracked_camera).is_some() {
         Tonemapping::None
     } else {
@@ -311,10 +309,8 @@ fn initial_render_size(world: &mut World, tracked_camera: Entity) -> UVec2 {
     }
 }
 
-/// Mirror the scene-stage view settings onto the seam camera. Output-stage
-/// effects are deliberately omitted: the seam camera writes linear HDR
-/// radiance, and the main camera applies those passes once when it renders the
-/// seam mesh.
+/// Mirrors scene-stage view settings onto the seam camera. Output-stage effects
+/// are omitted; the main camera applies them once when it renders the seam mesh.
 fn copy_tracked_camera_extras(world: &mut World, seam_camera_ent: Entity, tracked_camera: Entity) {
     if let Some(v) = world.get::<Atmosphere>(tracked_camera).cloned() {
         world.entity_mut(seam_camera_ent).insert(v);
@@ -343,12 +339,9 @@ fn copy_tracked_camera_extras(world: &mut World, seam_camera_ent: Entity, tracke
     world.entity_mut(seam_camera_ent).insert(layers);
 }
 
-/// Choose seam camera layers per frame.
-///
-/// The portal view is an external view, so bodies seen through it (including
-/// the viewer's own, via multiple portals) render in third person — except
-/// while the tracked camera's own body straddles the portal pair, where the
-/// view continues first person.
+/// Chooses seam camera layers per frame. Bodies seen through the portal render
+/// third person, except while the tracked camera's body straddles the portal
+/// pair, where the view stays first person.
 pub fn update_develop_camera_layers(
     mut seam_cameras: Query<(&DevelopCamera, &TrackedCamera, &mut RenderLayers)>,
     tracked_layers: Query<&RenderLayers, Without<DevelopCamera>>,

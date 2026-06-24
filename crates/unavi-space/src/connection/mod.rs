@@ -40,15 +40,10 @@ static CONNECTIONS: LazyLock<Mutex<HashMap<EndpointId, (u64, oneshot::Sender<()>
 
 static CONN_TOKEN: AtomicU64 = AtomicU64::new(0);
 
-/// Claims the connection slot for `peer`, returning a cancel receiver and the
-/// slot token, or `None` if a connection should be rejected.
-///
-/// Both peers dial on discovery; this resolves the simultaneous-open race
-/// deterministically. The "canonical" connection is the one dialed by the
-/// greater endpoint id: it always wins (replacing any existing connection,
-/// which is cancelled when its sender drops). A non-canonical connection is
-/// only kept while no other connection exists, so one-directional discovery
-/// (e.g. peeking through a portal) still connects.
+/// Claims the connection slot for `peer`, or `None` if rejected. Both peers dial
+/// on discovery; the canonical connection (dialed by the greater endpoint id)
+/// always wins, while a non-canonical one is kept only when no other exists, so
+/// one-directional discovery (peeking through a portal) still connects.
 fn claim_connection(peer: EndpointId, canonical: bool) -> Option<(u64, oneshot::Receiver<()>)> {
     let mut conns = CONNECTIONS.lock().expect("connections lock");
     if !canonical && conns.contains_key(&peer) {
@@ -103,9 +98,8 @@ pub fn connect_to_peer(
         .map(|p| p.0.clone())
         .expect("peer");
 
-    // Always dial on discovery; [`claim_connection`] resolves simultaneous
-    // opens. Restricting dialing to one side breaks one-directional discovery,
-    // where only the peer that has the other's space loaded learns of it.
+    // Always dial; [`claim_connection`] resolves simultaneous opens. Dialing one
+    // side only would break one-directional discovery.
     spawn_async_task(async move {
         outbound::try_open_connection(endpoint, peer).await;
     });

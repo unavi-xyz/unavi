@@ -13,9 +13,8 @@ use crate::{
 };
 
 pub fn render_tick_scripts(to_tick: Query<(&Ticking, &ScriptGuest), With<InitializedScript>>) {
-    // Use [`Ticking`] not [`RenderTicking`], to enforce we only every call one at a
-    // time. We use RenderTicking on native because a lock ensures sequential
-    // execution regardless.
+    // Use [`Ticking`] not [`RenderTicking`] to ensure only one call at a time;
+    // native relies on a lock for sequential execution instead.
     for (ticking, guest) in to_tick {
         if ticking.0.swap(true, Ordering::SeqCst) {
             continue;

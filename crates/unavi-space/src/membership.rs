@@ -25,10 +25,6 @@ pub struct SpaceOwner(pub Entity);
 #[relationship_target(relationship = SpaceOwner)]
 pub struct SpaceMembers(Vec<Entity>);
 
-/// Declares the space a freshly spawned, unparented doc should belong to.
-#[derive(Component)]
-pub struct DocSpaceHint(pub Hash);
-
 pub fn self_own_space(trigger: On<Add, Space>, spaces: Query<&Space>) {
     let Ok(space) = spaces.get(trigger.entity) else {
         return;
@@ -38,23 +34,25 @@ pub fn self_own_space(trigger: On<Add, Space>, spaces: Query<&Space>) {
 
 pub fn parent_doc_under_space(
     trigger: On<Insert, HsdRecordId>,
-    docs: Query<&DocSpaceHint, (With<Hsd>, Without<Space>, Without<ChildOf>)>,
+    docs: Query<&HsdRecordId, (With<Hsd>, Without<Space>, Without<ChildOf>)>,
     spaces: Query<(Entity, &HsdRecordId), With<Space>>,
     mut commands: Commands,
 ) {
-    let Ok(hint) = docs.get(trigger.entity) else {
+    let Ok(doc_record) = docs.get(trigger.entity) else {
+        return;
+    };
+    let Some(space_hash) = DOC_SPACE_REGISTRY.read().get(&doc_record.0).copied() else {
         return;
     };
     let Some(space_entity) = spaces
         .iter()
-        .find_map(|(e, r)| (r.0 == hint.0).then_some(e))
+        .find_map(|(e, r)| (r.0 == space_hash).then_some(e))
     else {
         return;
     };
     commands
         .entity(trigger.entity)
-        .insert((ChildOf(space_entity), SpaceOwner(space_entity)))
-        .remove::<DocSpaceHint>();
+        .insert((ChildOf(space_entity), SpaceOwner(space_entity)));
 }
 
 pub fn register_on_owner_change(

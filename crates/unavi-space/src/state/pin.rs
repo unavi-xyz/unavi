@@ -64,8 +64,8 @@ pub struct UnpinnedAt(Duration);
 #[derive(Resource)]
 pub struct PinChanges(pub Receiver<PinChange>);
 
-/// Reconciles the scene to pin transitions: a doc's first holder spawns a fetch,
-/// its last holder schedules despawn after [`UNPIN_TTL`].
+/// Reconciles the scene to pin transitions: a doc's first holder spawns a
+/// fetch, its last holder schedules despawn after [`UNPIN_TTL`].
 pub fn apply_pin_changes(
     changes: Res<PinChanges>,
     pins: Query<(Entity, &PinnedDoc)>,
@@ -81,7 +81,10 @@ pub fn apply_pin_changes(
         return;
     }
 
-    let existing = pins.iter().map(|(e, p)| (p.0, e)).collect::<HashMap<_, _>>();
+    let existing = pins
+        .iter()
+        .map(|(e, p)| (p.0, e))
+        .collect::<HashMap<_, _>>();
     let now = time.elapsed();
     for change in events {
         match change {

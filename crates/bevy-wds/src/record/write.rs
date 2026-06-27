@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::bail;
+use anyhow::Context;
 use async_channel::{
     Receiver,
     Sender,
@@ -14,9 +14,12 @@ use loro::LoroDoc;
 use smol_str::SmolStr;
 use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
-use wds::actor::{
-    Actor,
-    SchemaData,
+use wds::{
+    actor::{
+        Actor,
+        SchemaData,
+    },
+    surg::acl::Acl,
 };
 
 use crate::{
@@ -123,29 +126,84 @@ async fn write_record(
     actor: &Actor,
     sync_targets: &[Actor],
 ) -> anyhow::Result<Hash> {
-    if id.is_none() {
-        let mut builder = actor.create_record();
+    let Some(id) = id else {
+        return create_record(ttl, public, schemas, actor, sync_targets).await;
+    };
 
-        if let Some(ttl) = ttl {
-            builder = builder.ttl(ttl);
+    update_record(id, ttl, public, schemas, actor)
+        .await
+        .context("update at local actor")?;
+    for target in sync_targets {
+        if let Err(err) = update_record(id, ttl, public, schemas, target).await {
+            warn!(host = %target.host().id, ?err, "failed to update record at sync target");
         }
-
-        if public {
-            builder = builder.public();
-        }
-
-        for a in sync_targets {
-            builder = builder.sync_to(a.clone());
-        }
-
-        for s in schemas {
-            builder =
-                builder.add_schema(s.container.clone(), s.schema.clone(), |doc| (s.f)(doc))?;
-        }
-
-        let res = builder.send().await?;
-        Ok(res.id)
-    } else {
-        bail!("Updating records not yet supported")
     }
+    Ok(id)
+}
+
+async fn create_record(
+    ttl: Option<Duration>,
+    public: bool,
+    schemas: &[SchemaDef],
+    actor: &Actor,
+    sync_targets: &[Actor],
+) -> anyhow::Result<Hash> {
+    let mut builder = actor.create_record();
+
+    if let Some(ttl) = ttl {
+        builder = builder.ttl(ttl);
+    }
+
+    if public {
+        builder = builder.public();
+    }
+
+    for a in sync_targets {
+        builder = builder.sync_to(a.clone());
+    }
+
+    for s in schemas {
+        builder = builder.add_schema(s.container.clone(), s.schema.clone(), |doc| (s.f)(doc))?;
+    }
+
+    let res = builder.send().await?;
+    Ok(res.id)
+}
+
+/// Applies the schema mutations to an existing record at `actor` and uploads
+/// the diff. Reads the host's current version first so only the new ops are
+/// sent.
+async fn update_record(
+    id: Hash,
+    ttl: Option<Duration>,
+    public: bool,
+    schemas: &[SchemaDef],
+    actor: &Actor,
+) -> anyhow::Result<()> {
+    let mut doc = actor.read(id).send().await.context("read record")?;
+    let from = doc.oplog_vv();
+
+    for s in schemas {
+        (s.f)(&mut doc).context("apply schema update")?;
+    }
+
+    if public {
+        let mut acl = Acl::load(&doc).context("load acl")?;
+        if !acl.public {
+            acl.public = true;
+            acl.save(&doc).context("save acl")?;
+        }
+    }
+
+    doc.commit();
+    actor
+        .update_record(id, &doc, from)
+        .await
+        .context("upload update")?;
+
+    if let Some(ttl) = ttl {
+        actor.pin_record(id, ttl).await.context("repin")?;
+    }
+
+    Ok(())
 }

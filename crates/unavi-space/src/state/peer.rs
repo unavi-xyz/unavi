@@ -239,61 +239,70 @@ pub fn apply_remote(peer: PeerId, msg: StateMsg) {
     {
         let docs = &mut store.peers.entry(peer).or_default().docs;
         match msg {
-        StateMsg::Snapshot(snaps) => {
-            apply_snapshot(docs, &quota, peer, snaps, &mut added, &mut removed);
-        }
-        StateMsg::Pin { doc, space } => match docs.entry(doc) {
-            Entry::Vacant(v) => {
-                if quota.try_charge(Stock::Documents, 1).is_ok() {
-                    let mut e = DocEntry::new(space);
-                    e.pinned = true;
-                    v.insert(e);
-                    added.push((doc, space));
-                } else {
-                    warn!(?peer, "pin dropped over peer quota");
+            StateMsg::Snapshot(snaps) => {
+                apply_snapshot(docs, &quota, peer, snaps, &mut added, &mut removed);
+            }
+            StateMsg::Pin { doc, space } => match docs.entry(doc) {
+                Entry::Vacant(v) => {
+                    if quota.try_charge(Stock::Documents, 1).is_ok() {
+                        let mut e = DocEntry::new(space);
+                        e.pinned = true;
+                        v.insert(e);
+                        added.push((doc, space));
+                    } else {
+                        warn!(?peer, "pin dropped over peer quota");
+                    }
+                }
+                Entry::Occupied(mut o) if !o.get().pinned => {
+                    o.get_mut().pinned = true;
+                    added.push((doc, o.get().space));
+                }
+                Entry::Occupied(_) => {}
+            },
+            StateMsg::Unpin { doc } => {
+                if let Entry::Occupied(mut o) = docs.entry(doc) {
+                    if o.get().pinned {
+                        o.get_mut().pinned = false;
+                        o.get_mut().claim = None;
+                        removed.push(doc);
+                    }
+                    if o.get().is_empty() {
+                        let e = o.remove();
+                        quota.release(Stock::Documents, 1);
+                        quota.release(Stock::KvMemory, entry_bytes(&e));
+                    }
                 }
             }
-            Entry::Occupied(mut o) if !o.get().pinned => {
-                o.get_mut().pinned = true;
-                added.push((doc, o.get().space));
-            }
-            Entry::Occupied(_) => {}
-        },
-        StateMsg::Unpin { doc } => {
-            if let Entry::Occupied(mut o) = docs.entry(doc) {
-                if o.get().pinned {
-                    o.get_mut().pinned = false;
-                    o.get_mut().claim = None;
-                    removed.push(doc);
-                }
-                if o.get().is_empty() {
-                    let e = o.remove();
-                    quota.release(Stock::Documents, 1);
-                    quota.release(Stock::KvMemory, entry_bytes(&e));
+            StateMsg::Claim { doc, at } => {
+                if let Some(e) = docs.get_mut(&doc) {
+                    e.claim = Some(at);
                 }
             }
-        }
-        StateMsg::Claim { doc, at } => {
-            if let Some(e) = docs.get_mut(&doc) {
-                e.claim = Some(at);
-            }
-        }
-        StateMsg::Kv {
-            doc,
-            space,
-            key,
-            value,
-            at,
-        } => match docs.entry(doc) {
-            Entry::Occupied(mut o) => apply_remote_kv(&quota, o.get_mut(), key, value, at, peer),
-            Entry::Vacant(v) => {
-                if quota.try_charge(Stock::Documents, 1).is_ok() {
-                    apply_remote_kv(&quota, v.insert(DocEntry::new(space)), key, value, at, peer);
-                } else {
-                    warn!(?peer, "kv doc dropped over peer quota");
+            StateMsg::Kv {
+                doc,
+                space,
+                key,
+                value,
+                at,
+            } => match docs.entry(doc) {
+                Entry::Occupied(mut o) => {
+                    apply_remote_kv(&quota, o.get_mut(), key, value, at, peer);
                 }
-            }
-        },
+                Entry::Vacant(v) => {
+                    if quota.try_charge(Stock::Documents, 1).is_ok() {
+                        apply_remote_kv(
+                            &quota,
+                            v.insert(DocEntry::new(space)),
+                            key,
+                            value,
+                            at,
+                            peer,
+                        );
+                    } else {
+                        warn!(?peer, "kv doc dropped over peer quota");
+                    }
+                }
+            },
         }
     }
     for (doc, space) in added {
@@ -326,11 +335,10 @@ fn apply_snapshot(
 
     let mut dropped = 0u32;
     for s in snaps {
-        let bytes = s
-            .kv
-            .iter()
-            .map(|k| (k.key.len() + k.value.as_ref().map_or(0, Vec::len)) as u64)
-            .sum();
+        let bytes =
+            s.kv.iter()
+                .map(|k| (k.key.len() + k.value.as_ref().map_or(0, Vec::len)) as u64)
+                .sum();
         if quota.try_charge(Stock::Documents, 1).is_err() {
             dropped += 1;
             continue;
@@ -644,9 +652,7 @@ pub fn doc_holders(doc: Hash) -> Vec<PeerId> {
         .peers
         .iter()
         .filter(|(pid, ps)| {
-            Some(**pid) != me
-                && Some(**pid) != owner
-                && ps.docs.get(&doc).is_some_and(|e| e.pinned)
+            Some(**pid) != me && Some(**pid) != owner && ps.docs.get(&doc).is_some_and(|e| e.pinned)
         })
         .map(|(pid, _)| *pid)
         .collect::<Vec<_>>();

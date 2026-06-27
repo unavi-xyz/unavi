@@ -56,20 +56,14 @@ impl Firewall {
 
     #[must_use]
     pub fn for_child_doc(creator_id: Hash) -> Self {
-        let mut map = HashMap::new();
-        map.insert(Channel::EventRead, Access::Open);
-        map.insert(Channel::EventWrite, Access::Open);
-        map.insert(Channel::KvRead, Access::Open);
-        map.insert(
-            Channel::KvWrite,
-            Access::Restricted(HashSet::from([creator_id])),
-        );
-        map.insert(Channel::SceneRead, Access::Open);
-        map.insert(
-            Channel::SceneWrite,
-            Access::Restricted(HashSet::from([creator_id])),
-        );
-        Self(Arc::new(RwLock::new(map)))
+        let firewall = Self::default();
+        {
+            let mut map = firewall.0.write();
+            let owner = Access::Restricted(HashSet::from([creator_id]));
+            map.insert(Channel::KvWrite, owner.clone());
+            map.insert(Channel::SceneWrite, owner);
+        }
+        firewall
     }
 }
 

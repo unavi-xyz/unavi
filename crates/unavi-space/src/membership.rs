@@ -6,6 +6,7 @@ use std::{
 use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
+    HsdChild,
     HsdRecordId,
 };
 use blake3::Hash;
@@ -32,15 +33,39 @@ pub fn self_own_space(trigger: On<Add, Space>, spaces: Query<&Space>) {
     DOC_SPACE_REGISTRY.write().insert(space.0, space.0);
 }
 
+/// A networked record resolves its space from [`DOC_SPACE_REGISTRY`] and parents
+/// under the space root; a sub-document, spawned `ChildOf` the prim that declares
+/// it, resolves the space structurally from that prim's doc and keeps its parent.
 pub fn parent_doc_under_space(
     trigger: On<Insert, HsdRecordId>,
-    docs: Query<&HsdRecordId, (With<Hsd>, Without<Space>, Without<ChildOf>)>,
+    docs: Query<
+        (&HsdRecordId, Option<&ChildOf>),
+        (With<Hsd>, Without<Space>, Without<SpaceOwner>),
+    >,
+    prims: Query<&HsdChild>,
     spaces: Query<(Entity, &HsdRecordId), With<Space>>,
+    is_space: Query<(), With<Space>>,
+    owners: Query<&SpaceOwner>,
     mut commands: Commands,
 ) {
-    let Ok(doc_record) = docs.get(trigger.entity) else {
+    let Ok((doc_record, parent)) = docs.get(trigger.entity) else {
         return;
     };
+
+    if let Some(prim) = parent.map(ChildOf::parent)
+        && let Ok(doc) = prims.get(prim).map(|c| c.0)
+    {
+        let space = if is_space.contains(doc) {
+            doc
+        } else if let Ok(owner) = owners.get(doc) {
+            owner.0
+        } else {
+            return;
+        };
+        commands.entity(trigger.entity).insert(SpaceOwner(space));
+        return;
+    }
+
     let Some(space_hash) = DOC_SPACE_REGISTRY.read().get(&doc_record.0).copied() else {
         return;
     };

@@ -58,9 +58,6 @@ impl Plugin for SpacePlugin {
                 (anchor::recenter_active_space, anchor::apply_anchor_offsets)
                     .chain()
                     .after(apply_seam_crossings)
-                    // Recenter the world before the seam echoes are posed, so a
-                    // crossing's echo clones aren't placed from stale positions
-                    // for a frame.
                     .before(maintain_seam_echoes)
                     .before(TransformSystems::Propagate),
             )

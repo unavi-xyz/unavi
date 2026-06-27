@@ -38,7 +38,6 @@ struct Build {
 #[derive(Args, Debug)]
 struct Format {
     /// HSD or HSDX file to format
-    #[arg(short, long)]
     input: PathBuf,
 }
 

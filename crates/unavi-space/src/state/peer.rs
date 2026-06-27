@@ -37,24 +37,41 @@ use crate::{
 
 pub type PeerId = [u8; 32];
 
+/// A change to whether any peer pins a document, emitted on the 0↔1 holder
+/// transition so the scene can react without scanning every pin each frame.
+#[derive(Debug, Clone)]
+pub enum PinChange {
+    Pinned { doc: Hash, space: Hash },
+    Unpinned { doc: Hash },
+}
+
 #[derive(Default)]
 struct PeerState {
     docs: HashMap<Hash, DocEntry>,
 }
 
 struct DocEntry {
-    space: Hash,
-    claim: Option<u64>,
-    kv:    HashMap<String, KvValue>,
+    space:  Hash,
+    /// Whether this peer pins the doc for scene instancing. KV state syncs
+    /// independently, so a doc can carry KV without being pinned.
+    pinned: bool,
+    claim:  Option<u64>,
+    kv:     HashMap<String, KvValue>,
 }
 
 impl DocEntry {
     fn new(space: Hash) -> Self {
         Self {
             space,
+            pinned: false,
             claim: None,
             kv: HashMap::new(),
         }
+    }
+
+    /// A doc no longer worth retaining: not pinned and holding no KV state.
+    fn is_empty(&self) -> bool {
+        !self.pinned && self.kv.is_empty()
     }
 }
 
@@ -71,12 +88,40 @@ struct KvValue {
 struct Store {
     peers:   HashMap<PeerId, PeerState>,
     senders: HashMap<u64, async_channel::Sender<StateMsg>>,
+    pins:    HashMap<Hash, u32>,
+    pin_tx:  Option<async_channel::Sender<PinChange>>,
 }
 
 impl Store {
     fn broadcast(&mut self, msg: &StateMsg) {
         self.senders
             .retain(|_, tx| tx.try_send(msg.clone()).is_ok());
+    }
+
+    /// Records a holder for `doc`, emitting [`PinChange::Pinned`] on the first.
+    fn note_pin(&mut self, doc: Hash, space: Hash) {
+        let holders = self.pins.entry(doc).or_insert(0);
+        *holders += 1;
+        if *holders == 1
+            && let Some(tx) = &self.pin_tx
+        {
+            let _ = tx.try_send(PinChange::Pinned { doc, space });
+        }
+    }
+
+    /// Drops a holder for `doc`, emitting [`PinChange::Unpinned`] on the last.
+    fn note_unpin(&mut self, doc: Hash) {
+        let Entry::Occupied(mut e) = self.pins.entry(doc) else {
+            return;
+        };
+        let holders = e.get_mut();
+        *holders = holders.saturating_sub(1);
+        if *holders == 0 {
+            e.remove();
+            if let Some(tx) = &self.pin_tx {
+                let _ = tx.try_send(PinChange::Unpinned { doc });
+            }
+        }
     }
 }
 
@@ -108,10 +153,11 @@ fn self_snapshot(store: &Store) -> Vec<DocSnapshot> {
             ps.docs
                 .iter()
                 .map(|(doc, e)| DocSnapshot {
-                    doc:   *doc,
-                    space: e.space,
-                    claim: e.claim,
-                    kv:    e
+                    doc:    *doc,
+                    space:  e.space,
+                    pinned: e.pinned,
+                    claim:  e.claim,
+                    kv:     e
                         .kv
                         .iter()
                         .map(|(k, c)| KvSnapshot {
@@ -173,6 +219,14 @@ pub fn unregister_stream(token: u64) {
     PEER_STORE.lock().senders.remove(&token);
 }
 
+/// Registers the scene's pin lifecycle stream, receiving a [`PinChange`] each
+/// time a document gains its first or loses its last holder.
+pub fn register_pin_stream() -> async_channel::Receiver<PinChange> {
+    let (tx, rx) = async_channel::unbounded();
+    PEER_STORE.lock().pin_tx = Some(tx);
+    rx
+}
+
 /// Applies a remote peer's update to its replica.
 ///
 /// Bytes added are charged against that peer's quota; updates that would exceed
@@ -180,66 +234,43 @@ pub fn unregister_stream(token: u64) {
 pub fn apply_remote(peer: PeerId, msg: StateMsg) {
     let quota = peer_quota(Hash::from(peer));
     let mut store = PEER_STORE.lock();
-    let docs = &mut store.peers.entry(peer).or_default().docs;
-    match msg {
+    let mut added = Vec::<(Hash, Hash)>::new();
+    let mut removed = Vec::<Hash>::new();
+    {
+        let docs = &mut store.peers.entry(peer).or_default().docs;
+        match msg {
         StateMsg::Snapshot(snaps) => {
-            quota.release(Stock::Documents, docs.len() as u64);
-            quota.release(Stock::KvMemory, docs.values().map(entry_bytes).sum());
-            docs.clear();
-
-            let mut dropped = 0u32;
-            for s in snaps {
-                let bytes =
-                    s.kv.iter()
-                        .map(|k| (k.key.len() + k.value.as_ref().map_or(0, Vec::len)) as u64)
-                        .sum();
-                if quota.try_charge(Stock::Documents, 1).is_err() {
-                    dropped += 1;
-                    continue;
-                }
-                if quota.try_charge(Stock::KvMemory, bytes).is_err() {
-                    quota.release(Stock::Documents, 1);
-                    dropped += 1;
-                    continue;
-                }
-                docs.insert(
-                    s.doc,
-                    DocEntry {
-                        space: s.space,
-                        claim: s.claim,
-                        kv:    s
-                            .kv
-                            .into_iter()
-                            .map(|k| {
-                                (
-                                    k.key,
-                                    KvValue {
-                                        at:    k.at,
-                                        value: k.value,
-                                    },
-                                )
-                            })
-                            .collect(),
-                    },
-                );
-            }
-            if dropped > 0 {
-                warn!(?peer, dropped, "snapshot entries dropped over peer quota");
-            }
+            apply_snapshot(docs, &quota, peer, snaps, &mut added, &mut removed);
         }
-        StateMsg::Pin { doc, space } => {
-            if let Entry::Vacant(v) = docs.entry(doc) {
+        StateMsg::Pin { doc, space } => match docs.entry(doc) {
+            Entry::Vacant(v) => {
                 if quota.try_charge(Stock::Documents, 1).is_ok() {
-                    v.insert(DocEntry::new(space));
+                    let mut e = DocEntry::new(space);
+                    e.pinned = true;
+                    v.insert(e);
+                    added.push((doc, space));
                 } else {
                     warn!(?peer, "pin dropped over peer quota");
                 }
             }
-        }
+            Entry::Occupied(mut o) if !o.get().pinned => {
+                o.get_mut().pinned = true;
+                added.push((doc, o.get().space));
+            }
+            Entry::Occupied(_) => {}
+        },
         StateMsg::Unpin { doc } => {
-            if let Some(e) = docs.remove(&doc) {
-                quota.release(Stock::Documents, 1);
-                quota.release(Stock::KvMemory, entry_bytes(&e));
+            if let Entry::Occupied(mut o) = docs.entry(doc) {
+                if o.get().pinned {
+                    o.get_mut().pinned = false;
+                    o.get_mut().claim = None;
+                    removed.push(doc);
+                }
+                if o.get().is_empty() {
+                    let e = o.remove();
+                    quota.release(Stock::Documents, 1);
+                    quota.release(Stock::KvMemory, entry_bytes(&e));
+                }
             }
         }
         StateMsg::Claim { doc, at } => {
@@ -249,16 +280,102 @@ pub fn apply_remote(peer: PeerId, msg: StateMsg) {
         }
         StateMsg::Kv {
             doc,
+            space,
             key,
             value,
             at,
-        } => {
-            if let Some(e) = docs.get_mut(&doc) {
-                apply_remote_kv(&quota, e, key, value, at, peer);
+        } => match docs.entry(doc) {
+            Entry::Occupied(mut o) => apply_remote_kv(&quota, o.get_mut(), key, value, at, peer),
+            Entry::Vacant(v) => {
+                if quota.try_charge(Stock::Documents, 1).is_ok() {
+                    apply_remote_kv(&quota, v.insert(DocEntry::new(space)), key, value, at, peer);
+                } else {
+                    warn!(?peer, "kv doc dropped over peer quota");
+                }
             }
+        },
         }
     }
+    for (doc, space) in added {
+        store.note_pin(doc, space);
+    }
+    for doc in removed {
+        store.note_unpin(doc);
+    }
     drop(store);
+}
+
+/// Replaces a peer's replica with a fresh snapshot, recording pinned-doc
+/// transitions in `added`/`removed` so holder counts and fetches reconcile.
+fn apply_snapshot(
+    docs: &mut HashMap<Hash, DocEntry>,
+    quota: &Quota,
+    peer: PeerId,
+    snaps: Vec<DocSnapshot>,
+    added: &mut Vec<(Hash, Hash)>,
+    removed: &mut Vec<Hash>,
+) {
+    let old_pinned = docs
+        .iter()
+        .filter(|(_, e)| e.pinned)
+        .map(|(d, e)| (*d, e.space))
+        .collect::<HashMap<_, _>>();
+    quota.release(Stock::Documents, docs.len() as u64);
+    quota.release(Stock::KvMemory, docs.values().map(entry_bytes).sum());
+    docs.clear();
+
+    let mut dropped = 0u32;
+    for s in snaps {
+        let bytes = s
+            .kv
+            .iter()
+            .map(|k| (k.key.len() + k.value.as_ref().map_or(0, Vec::len)) as u64)
+            .sum();
+        if quota.try_charge(Stock::Documents, 1).is_err() {
+            dropped += 1;
+            continue;
+        }
+        if quota.try_charge(Stock::KvMemory, bytes).is_err() {
+            quota.release(Stock::Documents, 1);
+            dropped += 1;
+            continue;
+        }
+        docs.insert(
+            s.doc,
+            DocEntry {
+                space:  s.space,
+                pinned: s.pinned,
+                claim:  s.claim,
+                kv:     s
+                    .kv
+                    .into_iter()
+                    .map(|k| {
+                        (
+                            k.key,
+                            KvValue {
+                                at:    k.at,
+                                value: k.value,
+                            },
+                        )
+                    })
+                    .collect(),
+            },
+        );
+    }
+    if dropped > 0 {
+        warn!(?peer, dropped, "snapshot entries dropped over peer quota");
+    }
+    added.extend(
+        docs.iter()
+            .filter(|(d, e)| e.pinned && !old_pinned.contains_key(*d))
+            .map(|(d, e)| (*d, e.space)),
+    );
+    removed.extend(
+        old_pinned
+            .keys()
+            .filter(|d| docs.get(*d).is_none_or(|e| !e.pinned))
+            .copied(),
+    );
 }
 
 fn apply_remote_kv(
@@ -291,10 +408,13 @@ pub fn remove_peer(peer: PeerId) {
     let Some(ps) = store.peers.remove(&peer) else {
         return;
     };
-    drop(store);
     let quota = peer_quota(Hash::from(peer));
     quota.release(Stock::Documents, ps.docs.len() as u64);
     quota.release(Stock::KvMemory, ps.docs.values().map(entry_bytes).sum());
+    for doc in ps.docs.keys() {
+        store.note_unpin(*doc);
+    }
+    drop(store);
 }
 
 pub fn self_pin(space: Hash, doc: Hash) {
@@ -302,14 +422,20 @@ pub fn self_pin(space: Hash, doc: Hash) {
         return;
     };
     let mut store = PEER_STORE.lock();
-    let newly = match store.peers.entry(me).or_default().docs.entry(doc) {
-        Entry::Vacant(v) => {
-            v.insert(DocEntry::new(space));
-            true
-        }
-        Entry::Occupied(_) => false,
+    let newly = {
+        let entry = store
+            .peers
+            .entry(me)
+            .or_default()
+            .docs
+            .entry(doc)
+            .or_insert_with(|| DocEntry::new(space));
+        let newly = !entry.pinned;
+        entry.pinned = true;
+        newly
     };
     if newly {
+        store.note_pin(doc, space);
         store.broadcast(&StateMsg::Pin { doc, space });
     }
 }
@@ -321,14 +447,20 @@ pub fn self_claim(space: Hash, doc: Hash) {
     let at = now_millis();
     let mut store = PEER_STORE.lock();
     let newly = {
-        let docs = &mut store.peers.entry(me).or_default().docs;
-        let newly = !docs.contains_key(&doc);
-        docs.entry(doc)
-            .or_insert_with(|| DocEntry::new(space))
-            .claim = Some(at);
+        let entry = store
+            .peers
+            .entry(me)
+            .or_default()
+            .docs
+            .entry(doc)
+            .or_insert_with(|| DocEntry::new(space));
+        entry.claim = Some(at);
+        let newly = !entry.pinned;
+        entry.pinned = true;
         newly
     };
     if newly {
+        store.note_pin(doc, space);
         store.broadcast(&StateMsg::Pin { doc, space });
     }
     store.broadcast(&StateMsg::Claim { doc, at });
@@ -339,11 +471,20 @@ pub fn self_unpin(doc: Hash) {
         return;
     };
     let mut store = PEER_STORE.lock();
-    let removed = store
-        .peers
-        .get_mut(&me)
-        .is_some_and(|p| p.docs.remove(&doc).is_some());
-    if removed {
+    let unpinned = store.peers.get_mut(&me).is_some_and(|p| {
+        let Entry::Occupied(mut o) = p.docs.entry(doc) else {
+            return false;
+        };
+        let was_pinned = o.get().pinned;
+        o.get_mut().pinned = false;
+        o.get_mut().claim = None;
+        if o.get().is_empty() {
+            o.remove();
+        }
+        was_pinned
+    });
+    if unpinned {
+        store.note_unpin(doc);
         store.broadcast(&StateMsg::Unpin { doc });
     }
 }
@@ -354,26 +495,24 @@ pub fn self_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) {
     };
     let at = now_millis();
     let mut store = PEER_STORE.lock();
-    let newly = {
-        let docs = &mut store.peers.entry(me).or_default().docs;
-        let newly = !docs.contains_key(&doc);
-        docs.entry(doc)
-            .or_insert_with(|| DocEntry::new(space))
-            .kv
-            .insert(
-                key.to_string(),
-                KvValue {
-                    at,
-                    value: Some(value.to_vec()),
-                },
-            );
-        newly
-    };
-    if newly {
-        store.broadcast(&StateMsg::Pin { doc, space });
-    }
+    store
+        .peers
+        .entry(me)
+        .or_default()
+        .docs
+        .entry(doc)
+        .or_insert_with(|| DocEntry::new(space))
+        .kv
+        .insert(
+            key.to_string(),
+            KvValue {
+                at,
+                value: Some(value.to_vec()),
+            },
+        );
     store.broadcast(&StateMsg::Kv {
         doc,
+        space,
         key: key.to_string(),
         value: Some(value.to_vec()),
         at,
@@ -387,20 +526,18 @@ pub fn self_kv_delete(space: Hash, doc: Hash, key: &str) {
     };
     let at = now_millis();
     let mut store = PEER_STORE.lock();
-    let newly = {
-        let docs = &mut store.peers.entry(me).or_default().docs;
-        let newly = !docs.contains_key(&doc);
-        docs.entry(doc)
-            .or_insert_with(|| DocEntry::new(space))
-            .kv
-            .insert(key.to_string(), KvValue { at, value: None });
-        newly
-    };
-    if newly {
-        store.broadcast(&StateMsg::Pin { doc, space });
-    }
+    store
+        .peers
+        .entry(me)
+        .or_default()
+        .docs
+        .entry(doc)
+        .or_insert_with(|| DocEntry::new(space))
+        .kv
+        .insert(key.to_string(), KvValue { at, value: None });
     store.broadcast(&StateMsg::Kv {
         doc,
+        space,
         key: key.to_string(),
         value: None,
         at,
@@ -506,7 +643,11 @@ pub fn doc_holders(doc: Hash) -> Vec<PeerId> {
     let mut holders = store
         .peers
         .iter()
-        .filter(|(pid, ps)| Some(**pid) != me && Some(**pid) != owner && ps.docs.contains_key(&doc))
+        .filter(|(pid, ps)| {
+            Some(**pid) != me
+                && Some(**pid) != owner
+                && ps.docs.get(&doc).is_some_and(|e| e.pinned)
+        })
         .map(|(pid, _)| *pid)
         .collect::<Vec<_>>();
     if let Some(owner) = owner.filter(|o| Some(*o) != me) {
@@ -527,25 +668,13 @@ pub fn space_of(doc: Hash) -> Option<Hash> {
         .find_map(|ps| ps.docs.get(&doc).map(|e| e.space))
 }
 
-/// Every pinned document across all peers, deduped to `(doc, space)`.
-#[must_use]
-pub fn pinned_docs() -> Vec<(Hash, Hash)> {
-    let store = PEER_STORE.lock();
-    let mut out = HashMap::new();
-    for ps in store.peers.values() {
-        for (doc, e) in &ps.docs {
-            out.entry(*doc).or_insert(e.space);
-        }
-    }
-    drop(store);
-    out.into_iter().collect()
-}
-
 #[cfg(test)]
 pub fn reset() {
     let mut store = PEER_STORE.lock();
     store.peers.clear();
     store.senders.clear();
+    store.pins.clear();
+    store.pin_tx = None;
 }
 
 /// Serializes tests, which share the global store and self-peer identity.
@@ -581,6 +710,7 @@ mod tests {
             StateMsg::Snapshot(vec![DocSnapshot {
                 doc,
                 space,
+                pinned: true,
                 claim: Some(1),
                 kv: vec![kv("k", Some(b"v1"), 1)],
             }]),
@@ -592,6 +722,7 @@ mod tests {
             peer,
             StateMsg::Kv {
                 doc,
+                space,
                 key: "k".into(),
                 value: Some(b"v2".to_vec()),
                 at: 2,
@@ -603,6 +734,7 @@ mod tests {
             peer,
             StateMsg::Kv {
                 doc,
+                space,
                 key: "k".into(),
                 value: None,
                 at: 3,
@@ -630,6 +762,7 @@ mod tests {
             a,
             StateMsg::Kv {
                 doc,
+                space,
                 key: "a".into(),
                 value: Some(b"x".to_vec()),
                 at: 1,
@@ -639,6 +772,7 @@ mod tests {
             b,
             StateMsg::Kv {
                 doc,
+                space,
                 key: "b".into(),
                 value: Some(b"y".to_vec()),
                 at: 1,
@@ -653,6 +787,7 @@ mod tests {
             a,
             StateMsg::Kv {
                 doc,
+                space,
                 key: "k".into(),
                 value: Some(b"old".to_vec()),
                 at: 10,
@@ -662,6 +797,7 @@ mod tests {
             b,
             StateMsg::Kv {
                 doc,
+                space,
                 key: "k".into(),
                 value: Some(b"new".to_vec()),
                 at: 20,
@@ -674,6 +810,7 @@ mod tests {
             a,
             StateMsg::Kv {
                 doc,
+                space,
                 key: "k".into(),
                 value: None,
                 at: 30,
@@ -683,6 +820,37 @@ mod tests {
 
         remove_peer(a);
         remove_peer(b);
+    }
+
+    #[test]
+    fn kv_syncs_without_pinning() {
+        let _g = TEST_LOCK.lock();
+        reset();
+        let rx = register_pin_stream();
+        let peer = [5u8; 32];
+        let space = h(b"kvnopin-space");
+        let doc = h(b"kvnopin-doc");
+
+        // A bare Kv delta self-creates the doc's state with no prior pin.
+        apply_remote(
+            peer,
+            StateMsg::Kv {
+                doc,
+                space,
+                key: "k".into(),
+                value: Some(b"v".to_vec()),
+                at: 1,
+            },
+        );
+
+        // Readable by scripts, yet never announced as a pin to instance/fetch.
+        assert_eq!(kv_get(space, doc, "k").as_deref(), Some(&b"v"[..]));
+        assert!(has_doc(space, doc));
+        assert!(doc_holders(doc).is_empty());
+        assert!(rx.try_recv().is_err());
+
+        remove_peer(peer);
+        reset();
     }
 
     #[test]
@@ -708,6 +876,78 @@ mod tests {
 
         remove_peer(early);
         assert_eq!(owner(space, doc), None);
+    }
+
+    #[test]
+    fn pin_changes_emit_on_holder_transitions() {
+        let _g = TEST_LOCK.lock();
+        reset();
+        let rx = register_pin_stream();
+        let space = h(b"pinchange-space");
+        let doc = h(b"pinchange-doc");
+        let a = [1u8; 32];
+        let b = [2u8; 32];
+
+        apply_remote(a, StateMsg::Pin { doc, space });
+        assert!(matches!(
+            rx.try_recv(),
+            Ok(PinChange::Pinned { doc: d, space: s }) if d == doc && s == space
+        ));
+
+        // A second holder does not re-emit.
+        apply_remote(b, StateMsg::Pin { doc, space });
+        assert!(rx.try_recv().is_err());
+
+        // Losing one of two holders keeps the doc pinned.
+        apply_remote(a, StateMsg::Unpin { doc });
+        assert!(rx.try_recv().is_err());
+
+        // The last holder leaving emits Unpinned.
+        remove_peer(b);
+        assert!(matches!(rx.try_recv(), Ok(PinChange::Unpinned { doc: d }) if d == doc));
+
+        reset();
+    }
+
+    #[test]
+    fn snapshot_resend_does_not_churn_pins() {
+        let _g = TEST_LOCK.lock();
+        reset();
+        let rx = register_pin_stream();
+        let space = h(b"churn-space");
+        let doc = h(b"churn-doc");
+        let peer = [7u8; 32];
+
+        apply_remote(
+            peer,
+            StateMsg::Snapshot(vec![DocSnapshot {
+                doc,
+                space,
+                pinned: true,
+                claim: None,
+                kv: vec![],
+            }]),
+        );
+        assert!(matches!(rx.try_recv(), Ok(PinChange::Pinned { .. })));
+
+        // Re-snapshotting the same doc must not emit unpin/pin churn.
+        apply_remote(
+            peer,
+            StateMsg::Snapshot(vec![DocSnapshot {
+                doc,
+                space,
+                pinned: true,
+                claim: Some(1),
+                kv: vec![],
+            }]),
+        );
+        assert!(rx.try_recv().is_err());
+
+        // Dropping the doc from a later snapshot emits Unpinned.
+        apply_remote(peer, StateMsg::Snapshot(vec![]));
+        assert!(matches!(rx.try_recv(), Ok(PinChange::Unpinned { doc: d }) if d == doc));
+
+        reset();
     }
 
     #[test]

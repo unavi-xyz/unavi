@@ -156,8 +156,8 @@ pub struct GluedFrom(Vec<Entity>);
 #[relationship(relationship_target = GluedFrom)]
 pub struct GluedTo(pub Entity);
 
-/// Mirrored stand-in on the far side of a seam, spawned while its body straddles
-/// the plane so a half-inserted object protrudes from both faces.
+/// Mirrored stand-in on the far side of a seam, spawned while its body
+/// straddles the plane so a half-inserted object protrudes from both faces.
 #[derive(Component, Clone, Copy)]
 pub struct SeamEcho {
     pub body: Entity,

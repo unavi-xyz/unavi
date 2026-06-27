@@ -141,8 +141,9 @@ pub fn update_develop_camera_transforms(
     }
 }
 
-/// Clips the seam camera at the destination plane via Lengyel oblique near-plane
-/// projection, so geometry between camera and seam cannot occlude the view.
+/// Clips the seam camera at the destination plane via Lengyel oblique
+/// near-plane projection, so geometry between camera and seam cannot occlude
+/// the view.
 pub fn update_develop_camera_clip_planes(
     mut seam_cameras: Query<(
         &DevelopCamera,

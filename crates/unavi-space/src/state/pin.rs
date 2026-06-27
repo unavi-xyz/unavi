@@ -8,7 +8,7 @@ use async_channel::{
     TryRecvError,
 };
 use bevy::{
-    platform::collections::HashSet,
+    platform::collections::HashMap,
     prelude::*,
 };
 use bevy_hsd::{
@@ -23,7 +23,10 @@ use tokio::sync::oneshot;
 use crate::{
     Space,
     peer::Peer,
-    state::peer,
+    state::peer::{
+        self,
+        PinChange,
+    },
 };
 
 /// How long a no-longer-pinned document lingers in the scene before despawn.
@@ -42,6 +45,12 @@ const READ_BACKOFF_SECS: u64 = 1;
 #[derive(Component)]
 pub struct PinnedDoc(pub Hash);
 
+/// A pinned document we lack and must sync from a holder once one is reachable.
+#[derive(Component)]
+pub struct FetchPinnedDoc {
+    space: Hash,
+}
+
 #[derive(Component)]
 pub struct PendingPinnedDoc {
     rx:      Receiver<LoroDoc>,
@@ -51,58 +60,86 @@ pub struct PendingPinnedDoc {
 #[derive(Component)]
 pub struct UnpinnedAt(Duration);
 
-/// Fetches and instances any pinned document not already present in the scene.
-pub fn spawn_pinned_docs(
-    spaces: Query<(Entity, &Space)>,
+/// Receives pin lifecycle transitions from the peer state store.
+#[derive(Resource)]
+pub struct PinChanges(pub Receiver<PinChange>);
+
+/// Reconciles the scene to pin transitions: a doc's first holder spawns a fetch,
+/// its last holder schedules despawn after [`UNPIN_TTL`].
+pub fn apply_pin_changes(
+    changes: Res<PinChanges>,
+    pins: Query<(Entity, &PinnedDoc)>,
     present: Query<&HsdRecordId>,
-    pending: Query<&PinnedDoc, With<PendingPinnedDoc>>,
-    peers: Query<&Peer>,
+    time: Res<Time>,
     mut commands: Commands,
 ) {
-    let pinned = peer::pinned_docs();
-    if pinned.is_empty() {
+    let mut events = Vec::new();
+    while let Ok(change) = changes.0.try_recv() {
+        events.push(change);
+    }
+    if events.is_empty() {
         return;
     }
 
-    let mut known = present.iter().map(|r| r.0).collect::<HashSet<_>>();
-    known.extend(pending.iter().map(|p| p.0));
-
-    for (doc, space) in pinned {
-        if known.contains(&doc) {
-            continue;
+    let existing = pins.iter().map(|(e, p)| (p.0, e)).collect::<HashMap<_, _>>();
+    let now = time.elapsed();
+    for change in events {
+        match change {
+            PinChange::Pinned { doc, space } => {
+                if let Some(entity) = existing.get(&doc) {
+                    commands.entity(*entity).remove::<UnpinnedAt>();
+                } else if !present.iter().any(|r| r.0 == doc) {
+                    commands.spawn((PinnedDoc(doc), FetchPinnedDoc { space }));
+                }
+            }
+            PinChange::Unpinned { doc } => {
+                if let Some(entity) = existing.get(&doc) {
+                    commands.entity(*entity).insert(UnpinnedAt(now));
+                }
+            }
         }
-        let Some((space_entity, _)) = spaces.iter().find(|(_, s)| s.0 == space) else {
+    }
+}
+
+/// Syncs and instances documents awaiting a reachable holder, parenting them
+/// under their space.
+pub fn fetch_pinned_docs(
+    to_fetch: Query<(Entity, &PinnedDoc, &FetchPinnedDoc)>,
+    spaces: Query<(Entity, &Space)>,
+    peers: Query<&Peer>,
+    mut commands: Commands,
+) {
+    for (entity, pin, fetch) in &to_fetch {
+        let Some((space_entity, _)) = spaces.iter().find(|(_, s)| s.0 == fetch.space) else {
             continue;
         };
 
-        // Sync the document from our peers.
-        let holders = peer::doc_holders(doc);
+        let holders = peer::doc_holders(pin.0);
         let sync_from = holders
             .iter()
             .filter_map(|h| peers.iter().find(|p| p.0.id.as_bytes() == h))
             .map(|p| p.0.clone())
             .collect::<Vec<_>>();
-
         if sync_from.is_empty() {
-            // Try again next frame.
             continue;
         }
 
-        let (mut event, rx, cancel) = ReadRecord::new(doc);
+        let (mut event, rx, cancel) = ReadRecord::new(pin.0);
         event.retries = READ_RETRIES;
         event.backoff_secs = READ_BACKOFF_SECS;
         event.sync_from = sync_from;
         event.exclusive_sources = true;
         commands.trigger(event);
-        commands.spawn((
-            PinnedDoc(doc),
-            PendingPinnedDoc {
-                rx,
-                _cancel: cancel,
-            },
-            ChildOf(space_entity),
-        ));
-        known.insert(doc);
+        commands
+            .entity(entity)
+            .insert((
+                PendingPinnedDoc {
+                    rx,
+                    _cancel: cancel,
+                },
+                ChildOf(space_entity),
+            ))
+            .remove::<FetchPinnedDoc>();
     }
 }
 
@@ -126,33 +163,16 @@ pub fn instantiate_pinned_docs(
     }
 }
 
-/// Despawns instanced documents once nobody pins them, after [`UNPIN_TTL`].
+/// Despawns instanced documents once they have gone unpinned for [`UNPIN_TTL`].
 pub fn despawn_unpinned_docs(
     time: Res<Time>,
-    pins: Query<(Entity, &PinnedDoc, Option<&UnpinnedAt>)>,
+    pins: Query<(Entity, &UnpinnedAt)>,
     mut commands: Commands,
 ) {
-    let pinned = peer::pinned_docs()
-        .into_iter()
-        .map(|(doc, _)| doc)
-        .collect::<HashSet<_>>();
     let now = time.elapsed();
-
-    for (entity, pin, unpinned) in &pins {
-        if pinned.contains(&pin.0) {
-            if unpinned.is_some() {
-                commands.entity(entity).remove::<UnpinnedAt>();
-            }
-            continue;
-        }
-        match unpinned {
-            None => {
-                commands.entity(entity).insert(UnpinnedAt(now));
-            }
-            Some(at) if now.saturating_sub(at.0) >= UNPIN_TTL => {
-                commands.entity(entity).despawn();
-            }
-            Some(_) => {}
+    for (entity, unpinned) in &pins {
+        if now.saturating_sub(unpinned.0) >= UNPIN_TTL {
+            commands.entity(entity).despawn();
         }
     }
 }

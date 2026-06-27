@@ -310,7 +310,8 @@ fn initial_render_size(world: &mut World, tracked_camera: Entity) -> UVec2 {
 }
 
 /// Mirrors scene-stage view settings onto the seam camera. Output-stage effects
-/// are omitted; the main camera applies them once when it renders the seam mesh.
+/// are omitted; the main camera applies them once when it renders the seam
+/// mesh.
 fn copy_tracked_camera_extras(world: &mut World, seam_camera_ent: Entity, tracked_camera: Entity) {
     if let Some(v) = world.get::<Atmosphere>(tracked_camera).cloned() {
         world.entity_mut(seam_camera_ent).insert(v);

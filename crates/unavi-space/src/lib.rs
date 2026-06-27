@@ -29,7 +29,8 @@ const TICKRATE_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
 
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<anchor::SpaceGridAllocator>()
+        app.insert_resource(state::pin::PinChanges(state::peer::register_pin_stream()))
+            .init_resource::<anchor::SpaceGridAllocator>()
             .init_resource::<anchor::ActiveSpace>()
             .add_observer(anchor::assign_anchor)
             .add_observer(anchor::reparent_doc_traveler)
@@ -80,7 +81,8 @@ impl Plugin for SpacePlugin {
                         .run_if(on_timer(TICKRATE_UPDATE_INTERVAL)),
                     peer::presence::manage_peers,
                     scene::instantiate_pending_scenes,
-                    state::pin::spawn_pinned_docs,
+                    state::pin::apply_pin_changes,
+                    state::pin::fetch_pinned_docs,
                     state::pin::instantiate_pinned_docs,
                     state::pin::despawn_unpinned_docs,
                 ),

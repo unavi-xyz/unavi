@@ -48,8 +48,9 @@ struct DesiredEcho {
 }
 
 /// Maintains mirrored clones of bodies overlapping a seam plane. An echo is the
-/// body's render subtree posed through the seam, clipped at the plane so neither
-/// side protrudes; its colliders are kinematic. Runs before transform propagation.
+/// body's render subtree posed through the seam, clipped at the plane so
+/// neither side protrudes; its colliders are kinematic. Runs before transform
+/// propagation.
 pub fn maintain_seam_echoes(
     mut commands: Commands,
     bodies: Query<(Entity, &Transform, &GlobalTransform), (With<ManifoldBody>, Without<SeamEcho>)>,
@@ -162,7 +163,8 @@ pub fn maintain_seam_echoes(
 }
 
 /// Copies source node transforms and morph weights onto echo clones, carrying
-/// animation through the seam. Echo roots are posed by [`maintain_seam_echoes`].
+/// animation through the seam. Echo roots are posed by
+/// [`maintain_seam_echoes`].
 pub fn sync_echo_nodes(
     mut clones: Query<
         (&EchoNode, &mut Transform, Option<&mut MeshMorphWeights>),

@@ -158,15 +158,15 @@ pub fn reparent_doc_traveler(
     }
 }
 
-/// Keeps [`ActiveSpace`] on the space the local agent occupies and recenters the
-/// world to the origin, shifting every space transform and physics `Position` by
-/// one delta together.
+/// Keeps [`ActiveSpace`] on the space the local agent occupies and recenters
+/// the world to the origin, shifting every space transform and physics
+/// `Position` by one delta together.
 ///
 /// A body's `Transform` is shifted directly unless an ancestor already carries
 /// the shift (a space, the agent body, or another body); avian's
 /// `Position`→`Transform` writeback runs only in `FixedPostUpdate`, so a
-/// `Position`-only shift would render a stale pose for a frame. `PrevTranslation`
-/// shifts too, avoiding a false seam crossing.
+/// `Position`-only shift would render a stale pose for a frame.
+/// `PrevTranslation` shifts too, avoiding a false seam crossing.
 pub fn recenter_active_space(
     agents: Query<&LocalAgentEntities, With<LocalAgent>>,
     spaces: Query<(Entity, &Transform), With<Space>>,

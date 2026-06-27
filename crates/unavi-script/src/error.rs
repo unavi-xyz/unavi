@@ -1,7 +1,7 @@
 use unavi_quota::QuotaError;
 
-/// Host-side canonical error, mirroring `wired:error/types.error`. Each fallible
-/// host binding lowers it via the single `From` impl in
+/// Host-side canonical error, mirroring `wired:error/types.error`. Each
+/// fallible host binding lowers it via the single `From` impl in
 /// [`crate::runtime::native::wired::error`].
 #[derive(Debug, Clone)]
 pub enum ScriptError {

@@ -27,13 +27,13 @@ use crate::connection::{
     ecs::{
         PeerStream,
         agent::{
-            outbound::{
-                AgentSender,
-                OutgoingPose,
-            },
             inbound::{
                 ResolvedPose,
                 submit_pose,
+            },
+            outbound::{
+                AgentSender,
+                OutgoingPose,
             },
         },
     },

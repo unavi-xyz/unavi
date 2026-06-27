@@ -7,8 +7,8 @@ use unavi_quota::{
 use wasmtime::ResourceLimiter;
 
 /// Binds a store's linear-memory growth to its document quota. Growth past the
-/// [`Stock::WasmMemory`] cap is refused (a guest allocation failure); the charge
-/// releases when the store and this limiter drop.
+/// [`Stock::WasmMemory`] cap is refused (a guest allocation failure); the
+/// charge releases when the store and this limiter drop.
 pub struct QuotaLimiter {
     quota:   Arc<Quota>,
     charged: u64,

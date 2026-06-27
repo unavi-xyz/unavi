@@ -20,6 +20,7 @@ pub enum StateMsg {
     },
     Kv {
         doc:   Hash,
+        space: Hash,
         key:   String,
         value: Option<Vec<u8>>,
         at:    u64,
@@ -28,10 +29,13 @@ pub enum StateMsg {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct DocSnapshot {
-    pub doc:   Hash,
-    pub space: Hash,
-    pub claim: Option<u64>,
-    pub kv:    Vec<KvSnapshot>,
+    pub doc:    Hash,
+    pub space:  Hash,
+    /// Whether the source peer pins this doc for instancing, as opposed to
+    /// merely holding KV state for it.
+    pub pinned: bool,
+    pub claim:  Option<u64>,
+    pub kv:     Vec<KvSnapshot>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

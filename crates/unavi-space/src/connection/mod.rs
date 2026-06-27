@@ -40,10 +40,11 @@ static CONNECTIONS: LazyLock<Mutex<HashMap<EndpointId, (u64, oneshot::Sender<()>
 
 static CONN_TOKEN: AtomicU64 = AtomicU64::new(0);
 
-/// Claims the connection slot for `peer`, or `None` if rejected. Both peers dial
-/// on discovery; the canonical connection (dialed by the greater endpoint id)
-/// always wins, while a non-canonical one is kept only when no other exists, so
-/// one-directional discovery (peeking through a portal) still connects.
+/// Claims the connection slot for `peer`, or `None` if rejected. Both peers
+/// dial on discovery; the canonical connection (dialed by the greater endpoint
+/// id) always wins, while a non-canonical one is kept only when no other
+/// exists, so one-directional discovery (peeking through a portal) still
+/// connects.
 fn claim_connection(peer: EndpointId, canonical: bool) -> Option<(u64, oneshot::Receiver<()>)> {
     let mut conns = CONNECTIONS.lock().expect("connections lock");
     if !canonical && conns.contains_key(&peer) {

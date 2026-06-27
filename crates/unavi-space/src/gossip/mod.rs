@@ -46,8 +46,8 @@ mod thread;
 /// for the async gossip tasks. Presence broadcasts only to this space.
 static ACTIVE_SPACE: RwLock<Option<Hash>> = RwLock::new(None);
 
-/// Woken when the active space changes, so the entered space broadcasts presence
-/// immediately instead of waiting out the heartbeat.
+/// Woken when the active space changes, so the entered space broadcasts
+/// presence immediately instead of waiting out the heartbeat.
 static ACTIVE_CHANGED: LazyLock<tokio::sync::Notify> = LazyLock::new(tokio::sync::Notify::new);
 
 fn active_space() -> Option<Hash> {

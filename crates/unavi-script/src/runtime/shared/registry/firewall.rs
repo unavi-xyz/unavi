@@ -7,7 +7,11 @@ use std::{
 };
 
 use bevy::prelude::*;
-use bevy_hsd::HsdRecordId;
+use bevy_hsd::{
+    Hsd,
+    HsdChild,
+    HsdRecordId,
+};
 use blake3::Hash;
 use parking_lot::RwLock;
 
@@ -51,6 +55,30 @@ pub fn register_docs(
     commands
         .entity(trigger.entity)
         .insert(RegisteredFirewall(doc.0));
+}
+
+/// A sub-document is spawned `ChildOf` the prim that declares it; it inherits a
+/// child-doc firewall keyed to that prim's document so other docs may exchange
+/// events and read its scene/kv across the boundary.
+pub fn register_subdoc_firewall(
+    trigger: On<Insert, HsdRecordId>,
+    subdocs: Query<&ChildOf, (With<Hsd>, Without<Firewall>)>,
+    prims: Query<&HsdChild>,
+    docs: Query<&HsdRecordId>,
+    mut commands: Commands,
+) {
+    let Ok(prim) = subdocs.get(trigger.entity).map(ChildOf::parent) else {
+        return;
+    };
+    let Ok(parent) = prims.get(prim).map(|c| c.0) else {
+        return;
+    };
+    let Ok(parent_id) = docs.get(parent) else {
+        return;
+    };
+    commands
+        .entity(trigger.entity)
+        .insert(Firewall::for_child_doc(parent_id.0));
 }
 
 pub fn deregister_firewalls(

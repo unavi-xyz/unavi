@@ -21,7 +21,7 @@ use crate::{
 #[derive(Component, Default)]
 pub struct DocTraveler;
 
-pub const SPACE_CELL_SIZE: f32 = 1_000.0;
+pub const SPACE_CELL_SIZE: f32 = 5_000.0;
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct SpaceAnchor {
@@ -144,7 +144,6 @@ pub fn reparent_doc_traveler(
             Err(_) => break None,
         }
     };
-
     let Some(space) = dest_space else {
         return;
     };
@@ -152,21 +151,13 @@ pub fn reparent_doc_traveler(
     commands
         .entity(event.entity)
         .insert((ChildOf(space), SpaceOwner(space)));
+
     if let Ok(mut transform) = transforms.get_mut(event.entity) {
         transform.translation = Vec3::ZERO;
         transform.rotation = Quat::IDENTITY;
     }
 }
 
-/// Keeps [`ActiveSpace`] on the space the local agent occupies and recenters
-/// the world to the origin, shifting every space transform and physics
-/// `Position` by one delta together.
-///
-/// A body's `Transform` is shifted directly unless an ancestor already carries
-/// the shift (a space, the agent body, or another body); avian's
-/// `Position`→`Transform` writeback runs only in `FixedPostUpdate`, so a
-/// `Position`-only shift would render a stale pose for a frame.
-/// `PrevTranslation` shifts too, avoiding a false seam crossing.
 pub fn recenter_active_space(
     agents: Query<&LocalAgentEntities, With<LocalAgent>>,
     spaces: Query<(Entity, &Transform), With<Space>>,

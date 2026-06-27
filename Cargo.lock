@@ -6821,7 +6821,6 @@ name = "hsd"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "bevy",
  "loro",
  "loro-surgeon",
  "ron",
@@ -6843,6 +6842,7 @@ dependencies = [
  "loro-surgeon",
  "ron",
  "serde",
+ "serde_with",
  "toml 1.1.2+spec-1.1.0",
 ]
 

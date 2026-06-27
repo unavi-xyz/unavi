@@ -52,13 +52,9 @@ impl AttributeParser for XformParser {
         &self,
         commands: &mut Commands,
         prim: Entity,
-        value: Option<ValueOrContainer>,
+        _value: Option<ValueOrContainer>,
     ) -> Result<(), ParseError> {
-        if value.is_some() {
-            commands.entity(prim).insert(Transform::default());
-        } else {
-            commands.entity(prim).remove::<Transform>();
-        }
+        commands.entity(prim).insert(Transform::default());
         Ok(())
     }
 

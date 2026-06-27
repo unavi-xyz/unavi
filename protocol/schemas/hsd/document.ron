@@ -89,6 +89,10 @@
             "spawn": Optional(Struct({
                 "radius": F64,
             })),
+            "subdocument": Optional(Enum({
+                "Template": Some(BlobId),
+                "Record": Some(RecordId),
+            })),
             "xform": Optional(Struct({
                 "rotation": Optional(List(F64)),
                 "scale": Optional(List(F64)),

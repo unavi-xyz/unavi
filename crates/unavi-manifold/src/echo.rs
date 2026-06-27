@@ -47,10 +47,7 @@ struct DesiredEcho {
     plane: Vec4,
 }
 
-/// Maintains mirrored clones of bodies overlapping a seam plane. An echo is the
-/// body's render subtree posed through the seam, clipped at the plane so
-/// neither side protrudes; its colliders are kinematic. Runs before transform
-/// propagation.
+/// Maintains mirrored clones of bodies overlapping a seam plane.
 pub fn maintain_seam_echoes(
     mut commands: Commands,
     bodies: Query<(Entity, &Transform, &GlobalTransform), (With<ManifoldBody>, Without<SeamEcho>)>,

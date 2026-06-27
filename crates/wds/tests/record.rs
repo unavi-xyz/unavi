@@ -2,6 +2,7 @@ use std::time::Duration;
 
 use loro::{
     LoroDoc,
+    LoroMap,
     TreeParentId,
 };
 use rstest::rstest;
@@ -61,6 +62,83 @@ async fn test_writer_edits_hsd_after_creation(#[future] ctx: DataStoreCtx) {
         .update_record(record_id, &doc, from)
         .await
         .expect("writer may edit hsd content after creation");
+}
+
+/// HSD stores its scene in a root `Tree` container, so blob references buried in
+/// a prim's attributes must be discovered as record dependencies (and thus
+/// synced) rather than missed by reading the root as a map.
+#[rstest]
+#[timeout(Duration::from_secs(5))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_hsd_tree_blob_refs_tracked(#[future] ctx: DataStoreCtx) {
+    let result = ctx
+        .alice
+        .create_record()
+        .add_schema("hsd", &*SCHEMA_HSD, |doc| {
+            doc.get_tree("hsd");
+            Ok(())
+        })
+        .expect("add hsd schema")
+        .send()
+        .await
+        .expect("create hsd record");
+    let (record_id, doc) = (result.id, result.doc);
+
+    let asset_blob = [7u8; 32];
+    let mesh_blob = [9u8; 32];
+    let asset_hex = "07".repeat(32);
+    let mesh_hex = "09".repeat(32);
+
+    let from = doc.oplog_vv();
+    let tree = doc.get_tree("hsd");
+    let node = tree.create(TreeParentId::Root).expect("create prim");
+    let meta = tree.get_meta(node).expect("meta");
+    let attrs = meta
+        .insert_container("attributes", LoroMap::new())
+        .expect("attributes");
+    attrs.insert("asset", asset_blob.to_vec()).expect("asset blob");
+    // Mirror how `MeshAttr` reconciles: nested `mesh.attributes` map of named
+    // blob ids, the structure a script-authored cube produces.
+    let mesh = attrs
+        .insert_container("mesh", LoroMap::new())
+        .expect("mesh");
+    let mesh_attrs = mesh
+        .insert_container("attributes", LoroMap::new())
+        .expect("mesh attributes");
+    mesh_attrs
+        .insert("position", mesh_blob.to_vec())
+        .expect("mesh blob");
+    doc.commit();
+
+    ctx.alice
+        .update_record(record_id, &doc, from)
+        .await
+        .expect("update with blob ref");
+
+    let id_str = record_id.to_string();
+    let deps: Vec<String> = ctx
+        .store
+        .db()
+        .call(move |conn| {
+            let mut stmt = conn.prepare(
+                "SELECT blob_hash FROM record_blob_deps WHERE record_id = ? AND dep_type = 'ref'",
+            )?;
+            let rows = stmt.query_map(params![&id_str], |row| row.get(0))?;
+            rows.collect::<Result<Vec<String>, _>>().map_err(Into::into)
+        })
+        .await
+        .expect("query deps");
+
+    assert!(
+        deps.contains(&asset_hex),
+        "asset blob ref should be tracked, got {deps:?}"
+    );
+    assert!(
+        deps.contains(&mesh_hex),
+        "nested mesh blob ref should be tracked, got {deps:?}"
+    );
 }
 
 #[rstest]

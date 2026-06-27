@@ -41,6 +41,7 @@ use crate::{
 wired_prelude::generate_script!(Script);
 
 const CHANNEL: &str = "unavi::beacon::id";
+const LINK_KEY: &str = "gate:link";
 
 const PORTAL_WIDTH: f32 = GOLDEN_RATIO;
 const PORTAL_HEIGHT: f32 = PORTAL_WIDTH * GOLDEN_RATIO;
@@ -109,21 +110,20 @@ fn portal_from_link(link: Option<&LinkState>) -> Portal {
     }
 }
 
-fn write_link(kv: &Kv, key: &str, state: &LinkState) {
+fn write_link(kv: &Kv, state: &LinkState) {
     let bytes = postcard::to_allocvec(state).expect("encode link state");
-    if let Err(err) = kv.set(key, &bytes) {
+    if let Err(err) = kv.set(LINK_KEY, &bytes) {
         eprintln!("Gate kv write failed: {err:?}");
     }
 }
 
-fn read_link(kv: &Kv, key: &str) -> Option<LinkState> {
-    kv.get(key)
+fn read_link(kv: &Kv) -> Option<LinkState> {
+    kv.get(LINK_KEY)
         .and_then(|b| postcard::from_bytes::<LinkState>(&b).ok())
 }
 
 struct Script {
     portal_prim: Prim,
-    portal_key:  String,
     kv:          Kv,
     beacon_rx:   EventReceptor,
     incoming_rx: EventReceptor,
@@ -235,13 +235,10 @@ impl ScriptBehavior for Script {
             },
         )?;
 
-        let portal_key = format!("gate:link:{}", portal_prim.id());
-
         println!("Gate ready");
 
         Ok(Self {
             portal_prim,
-            portal_key,
             kv: self_kv()?,
             beacon_rx,
             incoming_rx,
@@ -256,12 +253,11 @@ impl ScriptBehavior for Script {
             let Ok(target) = <[u8; 32]>::try_from(payload.as_slice()) else {
                 continue;
             };
-            if read_link(&self.kv, &self.portal_key).is_some_and(|s| s.target_space == target) {
+            if read_link(&self.kv).is_some_and(|s| s.target_space == target) {
                 continue;
             }
             write_link(
                 &self.kv,
-                &self.portal_key,
                 &LinkState {
                     target_space:  target,
                     receptor_doc:  None,
@@ -280,7 +276,6 @@ impl ScriptBehavior for Script {
             };
             write_link(
                 &self.kv,
-                &self.portal_key,
                 &LinkState {
                     target_space:  req.source_space,
                     receptor_doc:  Some(req.source_doc),
@@ -296,7 +291,7 @@ impl ScriptBehavior for Script {
             if payload.source_prim != self.portal_prim.id() {
                 continue;
             }
-            let Some(mut state) = read_link(&self.kv, &self.portal_key) else {
+            let Some(mut state) = read_link(&self.kv) else {
                 continue;
             };
             let new_doc = Some(payload.receptor_doc);
@@ -306,10 +301,10 @@ impl ScriptBehavior for Script {
             }
             state.receptor_doc = new_doc;
             state.receptor_prim = new_prim;
-            write_link(&self.kv, &self.portal_key, &state);
+            write_link(&self.kv, &state);
         }
 
-        let next = read_link(&self.kv, &self.portal_key);
+        let next = read_link(&self.kv);
         if next != self.applied {
             self.portal_prim
                 .set_portal(Some(&portal_from_link(next.as_ref())));

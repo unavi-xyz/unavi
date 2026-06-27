@@ -4,7 +4,10 @@ use rstest::rstest;
 use rusqlite::params;
 use tracing_test::traced_test;
 use wds::surg::acl::Acl;
-use wired_schemas::SCHEMA_HOME;
+use wired_schemas::{
+    SCHEMA_HOME,
+    SCHEMA_HSD,
+};
 
 use crate::common::{
     LocalStoreCtx,
@@ -539,5 +542,117 @@ async fn test_sync_transfers_blob_dependencies(#[future] multi_ctx: MultiStoreCt
     assert_eq!(
         map.get("space"),
         Some(&loro::LoroValue::String("test_space".into()))
+    );
+}
+
+/// An HSD record stores its scene in a root `Tree`, with mesh blobs referenced
+/// deep inside a prim's attributes. Those blobs must be discovered as record
+/// dependencies and transferred on sync, mirroring a script-authored mesh that
+/// otherwise renders invisible on a peer lacking the blob.
+#[rstest]
+#[timeout(Duration::from_secs(10))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_sync_transfers_hsd_mesh_blob(#[future] multi_ctx: MultiStoreCtx) {
+    multi_ctx
+        .rome
+        .store
+        .blobs()
+        .blobs()
+        .add_slice(&SCHEMA_HSD.bytes)
+        .await
+        .expect("add hsd schema to Rome");
+
+    let blob_bytes = b"hsd-mesh-vertex-bytes".to_vec();
+    let blob_hash = iroh_blobs::Hash::new(&blob_bytes);
+    multi_ctx
+        .rome
+        .store
+        .blobs()
+        .blobs()
+        .add_slice(blob_bytes.clone())
+        .await
+        .expect("add mesh blob to Rome");
+
+    assert!(
+        !multi_ctx
+            .carthage
+            .store
+            .blobs()
+            .blobs()
+            .has(blob_hash)
+            .await
+            .expect("check blob"),
+        "Carthage should not have the mesh blob yet"
+    );
+
+    let result = multi_ctx
+        .rome
+        .alice
+        .create_record()
+        .add_schema("hsd", &*SCHEMA_HSD, |doc| {
+            doc.get_tree("hsd");
+            Ok(())
+        })
+        .expect("add hsd schema")
+        .send()
+        .await
+        .expect("create hsd record on Rome");
+    let (record_id, doc) = (result.id, result.doc);
+
+    // Author a prim referencing the mesh blob, then grant Bob read, as a script
+    // would after creation.
+    let from = doc.oplog_vv();
+    let tree = doc.get_tree("hsd");
+    let node = tree.create(loro::TreeParentId::Root).expect("create prim");
+    let meta = tree.get_meta(node).expect("meta");
+    let attrs = meta
+        .insert_container("attributes", loro::LoroMap::new())
+        .expect("attributes");
+    let mesh = attrs
+        .insert_container("mesh", loro::LoroMap::new())
+        .expect("mesh");
+    let mesh_attrs = mesh
+        .insert_container("attributes", loro::LoroMap::new())
+        .expect("mesh attributes");
+    mesh_attrs
+        .insert("position", blob_hash.as_bytes().to_vec())
+        .expect("mesh blob ref");
+
+    let mut acl = Acl::load(&doc).expect("load acl");
+    acl.add_reader(multi_ctx.carthage.bob.identity().did().clone());
+    acl.save(&doc).expect("save acl");
+    doc.commit();
+    multi_ctx
+        .rome
+        .alice
+        .update_record(record_id, &doc, from)
+        .await
+        .expect("update record");
+
+    multi_ctx
+        .carthage
+        .alice
+        .pin_record(record_id, Duration::from_hours(1))
+        .await
+        .expect("pin record on Carthage");
+    multi_ctx
+        .carthage
+        .bob
+        .sync(record_id, multi_ctx.rome.store.endpoint().addr())
+        .await
+        .expect("sync from Rome to Carthage");
+
+    assert!(
+        multi_ctx
+            .carthage
+            .store
+            .blobs()
+            .blobs()
+            .has(blob_hash)
+            .await
+            .expect("check blob after sync"),
+        "Carthage should have the mesh blob after sync"
     );
 }

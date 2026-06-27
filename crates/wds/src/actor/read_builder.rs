@@ -55,7 +55,16 @@ impl ReadBuilder {
             self.actor.pin_record(self.record_id, self.ttl).await?;
         }
 
-        // Try to read from local first.
+        // Sync from each source before reading so the record's envelopes and
+        // all its referenced blobs are present locally, even when a partial copy
+        // of the record already exists.
+        for remote in &self.sync_sources {
+            debug!(remote = %remote.id, "attempting sync");
+            if let Err(err) = self.actor.sync(self.record_id, remote.clone()).await {
+                debug!(remote = %remote.id, ?err, "sync source did not have record");
+            }
+        }
+
         let result = self
             .actor
             .api_client
@@ -67,45 +76,12 @@ impl ReadBuilder {
 
         match result {
             Ok(bytes) => {
-                // TODO: Still sync local record with remote sources
-
                 let doc = LoroDoc::new();
                 doc.import(&bytes)?;
-                return Ok(doc);
+                Ok(doc)
             }
-            Err(ApiError::RecordNotFound) => {
-                // Try sync below.
-            }
-            Err(err) => return Err(anyhow::anyhow!("read failed: {err}")),
+            Err(ApiError::RecordNotFound) => anyhow::bail!("record not found"),
+            Err(err) => Err(anyhow::anyhow!("read failed: {err}")),
         }
-
-        // Check each sync source.
-        for remote in self.sync_sources {
-            let remote_id = remote.id;
-            debug!(remote = %remote_id, "attempting sync");
-
-            if let Err(err) = self.actor.sync(self.record_id, remote).await {
-                debug!(remote = %remote_id, ?err, "sync source did not have record");
-                continue;
-            }
-
-            // Try reading again after sync.
-            let result = self
-                .actor
-                .api_client
-                .rpc(ReadRecord {
-                    s,
-                    record_id: self.record_id,
-                })
-                .await?;
-
-            if let Ok(bytes) = result {
-                let doc = LoroDoc::new();
-                doc.import(&bytes)?;
-                return Ok(doc);
-            }
-        }
-
-        anyhow::bail!("record not found")
     }
 }

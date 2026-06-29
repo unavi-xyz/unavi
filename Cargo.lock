@@ -1790,6 +1790,7 @@ dependencies = [
  "bevy_transform",
  "bevy_ui",
  "bevy_ui_render",
+ "bevy_ui_widgets",
  "bevy_utils",
  "bevy_window",
  "bevy_winit",
@@ -13942,7 +13943,6 @@ dependencies = [
  "bevy_mod_xr",
  "bevy_vrm",
  "bevy_xr_utils",
- "bitflags 2.11.0",
  "blake3",
  "clap",
  "directories",
@@ -13957,6 +13957,7 @@ dependencies = [
  "unavi-agent",
  "unavi-assets",
  "unavi-avatar",
+ "unavi-devtools",
  "unavi-identity",
  "unavi-input",
  "unavi-manifold",
@@ -13981,6 +13982,14 @@ dependencies = [
  "unavi-script-util",
  "wired-prelude",
  "wit-bindgen 0.55.0",
+]
+
+[[package]]
+name = "unavi-devtools"
+version = "0.0.16"
+dependencies = [
+ "async-channel",
+ "bevy",
 ]
 
 [[package]]
@@ -14028,6 +14037,7 @@ dependencies = [
  "bevy_egui",
  "schminput",
  "schminput_rebinding",
+ "unavi-devtools",
 ]
 
 [[package]]
@@ -14199,6 +14209,7 @@ dependencies = [
  "tracing",
  "unavi-agent",
  "unavi-avatar",
+ "unavi-devtools",
  "unavi-manifold",
  "unavi-portal-protocol",
  "unavi-quota",

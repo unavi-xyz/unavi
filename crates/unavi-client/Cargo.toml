@@ -8,13 +8,17 @@ repository.workspace = true
 version.workspace    = true
 
 [features]
-default = ["dev_tools", "mdns"]
-dev_tools = [
+default = ["devtools", "mdns"]
+devtools = [
   "bevy/bevy_dev_tools",
   "bevy/debug",
+  "bevy/experimental_bevy_feathers",
   "dep:bevy-inspector-egui",
+  "dep:unavi-devtools",
+  "unavi-input/devtools",
   "unavi-input/egui-filter",
   "unavi-script/debug",
+  "unavi-space/devtools",
 ]
 mdns = ["bevy-iroh/mdns"]
 webgpu = ["bevy/webgpu", "unavi-agent/webgpu", "unavi-avatar/webgpu"]
@@ -35,7 +39,6 @@ bevy-inspector-egui     = { optional = true, workspace = true }
 bevy-iroh.path          = "../bevy-iroh"
 bevy-wds.path           = "../bevy-wds"
 bevy_vrm.workspace      = true
-bitflags                = "2.11.0"
 blake3.workspace        = true
 clap.workspace          = true
 image                   = { default-features = false, features = ["png"], workspace = true }
@@ -47,6 +50,7 @@ tracing                 = { features = ["max_level_debug", "release_max_level_wa
 unavi-agent.path        = "../unavi-agent"
 unavi-assets.path       = "../unavi-assets"
 unavi-avatar.path       = "../unavi-avatar"
+unavi-devtools          = { optional = true, path = "../unavi-devtools" }
 unavi-identity.path     = "../unavi-identity"
 unavi-input.path        = "../unavi-input"
 unavi-manifold.path     = "../unavi-manifold"

@@ -13,6 +13,7 @@ use unavi_manifold::{
 pub mod anchor;
 mod beacon;
 mod connection;
+#[cfg(feature = "devtools")] mod devtools;
 mod gossip;
 pub mod membership;
 pub mod peer;
@@ -29,6 +30,9 @@ const TICKRATE_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
 
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
+        #[cfg(feature = "devtools")]
+        app.add_plugins(devtools::SpaceDevToolsPlugin);
+
         app.insert_resource(state::pin::PinChanges(state::peer::register_pin_stream()))
             .init_resource::<anchor::SpaceGridAllocator>()
             .init_resource::<anchor::ActiveSpace>()

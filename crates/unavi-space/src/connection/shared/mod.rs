@@ -53,6 +53,9 @@ async fn inner(connection: Connection, cancel: oneshot::Receiver<()>) -> anyhow:
     info!("Connected");
     let connection = Arc::new(connection);
 
+    #[cfg(feature = "devtools")]
+    let _conn_guard = crate::devtools::conn::track(connection.remote_id(), Arc::clone(&connection));
+
     let task_recv = {
         let span = info_span!("recv");
         let connection = Arc::clone(&connection);

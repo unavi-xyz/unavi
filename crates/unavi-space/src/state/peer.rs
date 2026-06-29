@@ -674,6 +674,70 @@ pub fn space_of(doc: Hash) -> Option<Hash> {
         .find_map(|ps| ps.docs.get(&doc).map(|e| e.space))
 }
 
+/// Read-only views of the peer store for the dev tools state inspector.
+#[cfg(feature = "devtools")]
+pub mod debug {
+    use super::{
+        Hash,
+        PEER_STORE,
+        PeerId,
+        self_peer_id,
+    };
+
+    /// A KV cell: the value's byte length, or `None` for a tombstone.
+    pub struct DebugKv {
+        pub key:   String,
+        pub bytes: Option<usize>,
+    }
+
+    pub struct DebugDoc {
+        pub doc:    Hash,
+        pub space:  Hash,
+        pub pinned: bool,
+        pub claim:  Option<u64>,
+        pub kv:     Vec<DebugKv>,
+    }
+
+    pub struct DebugPeer {
+        pub peer:    PeerId,
+        pub is_self: bool,
+        pub docs:    Vec<DebugDoc>,
+    }
+
+    /// A read-only dump of every peer's replicated state.
+    #[must_use]
+    pub fn snapshot() -> Vec<DebugPeer> {
+        let me = self_peer_id();
+        let store = PEER_STORE.lock();
+        store
+            .peers
+            .iter()
+            .map(|(pid, ps)| DebugPeer {
+                peer:    *pid,
+                is_self: Some(*pid) == me,
+                docs:    ps
+                    .docs
+                    .iter()
+                    .map(|(doc, e)| DebugDoc {
+                        doc:    *doc,
+                        space:  e.space,
+                        pinned: e.pinned,
+                        claim:  e.claim,
+                        kv:     e
+                            .kv
+                            .iter()
+                            .map(|(k, c)| DebugKv {
+                                key:   k.clone(),
+                                bytes: c.value.as_ref().map(Vec::len),
+                            })
+                            .collect(),
+                    })
+                    .collect(),
+            })
+            .collect()
+    }
+}
+
 #[cfg(test)]
 pub fn reset() {
     let mut store = PEER_STORE.lock();

@@ -5,7 +5,6 @@ use bevy::{
     window::WindowTheme,
 };
 use bevy_iroh::endpoint::LoadEndpoint;
-use bitflags::bitflags;
 use iroh::endpoint_info::AddrFilter;
 use tracing::Level;
 
@@ -15,24 +14,12 @@ mod grab;
 mod icon;
 mod scene;
 
-#[cfg(feature = "dev_tools")] mod dev_tools;
+#[cfg(feature = "devtools")] mod dev_tools;
 
 #[cfg(not(target_family = "wasm"))] mod assets;
 #[cfg(not(target_family = "wasm"))] mod xr;
 
-bitflags! {
-    #[derive(Clone, Copy, Debug, Default)]
-    pub struct Flags: u8 {
-        const DEBUG_EVENT     = 0b1_0000;
-        const DEBUG_FPS       = 0b0_1000;
-        const DEBUG_INSPECTOR = 0b0_0100;
-        const DEBUG_NETWORK   = 0b0_0010;
-        const DEBUG_PHYSICS   = 0b0_0001;
-    }
-}
-
 pub struct UnaviPlugin {
-    pub flags:     Flags,
     pub in_memory: bool,
     pub log_level: Level,
     pub xr:        bool,
@@ -100,8 +87,8 @@ impl Plugin for UnaviPlugin {
             }
         }
 
-        #[cfg(feature = "dev_tools")]
-        app.add_plugins(dev_tools::DevToolsPlugin { flags: self.flags });
+        #[cfg(feature = "devtools")]
+        app.add_plugins(dev_tools::ClientDevToolsPlugin);
 
         app.add_plugins((
             avian3d::PhysicsPlugins::default(),

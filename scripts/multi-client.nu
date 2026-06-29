@@ -2,14 +2,10 @@
 # Useful for testing multiplayer.
 
 def main [
-  --debug-network
-  --debug-physics
   --debug-log
 ] {
-  let client_features =  [] 
+  let client_features =  []
   let client_args = [
-    (if $debug_network { "--debug-network" })
-    (if $debug_physics { "--debug-physics" })
     (if $debug_log { "--debug-log" })
   ] | compact
 

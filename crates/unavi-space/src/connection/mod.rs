@@ -57,12 +57,16 @@ fn claim_connection(peer: EndpointId, canonical: bool) -> Option<(u64, oneshot::
     Some((token, cancel_rx))
 }
 
-/// Clears the connection slot for `peer`, but only if it still holds `token`
-/// (a newer connection may have taken it over).
-fn release_connection(peer: EndpointId, token: u64) {
+/// Clears the connection slot for `peer`, returning whether this token still
+/// held it. A newer connection may have taken it over, in which case this one
+/// was superseded and must not run per-peer teardown.
+fn release_connection(peer: EndpointId, token: u64) -> bool {
     let mut conns = CONNECTIONS.lock().expect("connections lock");
     if conns.get(&peer).is_some_and(|(t, _)| *t == token) {
         conns.remove(&peer);
+        true
+    } else {
+        false
     }
 }
 
@@ -114,8 +118,8 @@ pub fn disconnect_peer(
 ) {
     let peer = peers.get(trigger.entity).expect("peer");
 
-    // Release the peer's replicated state and quota. Idempotent with the state
-    // stream's own teardown, in case presence expires before the stream closes.
+    // Release the peer's replicated state and quota. Idempotent with the
+    // connection's own teardown, in case presence expires before it closes.
     crate::state::replicas::remove_peer(*peer.0.id.as_bytes());
 
     // Dropping the sender signals the connection task to exit.

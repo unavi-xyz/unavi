@@ -43,6 +43,8 @@ async fn open_connection(endpoint: Endpoint, peer: EndpointAddr) -> anyhow::Resu
     };
 
     let res = super::shared::handle_connection(connection, cancel_rx).await;
-    release_connection(peer.id, token);
+    if release_connection(peer.id, token) {
+        crate::state::replicas::remove_peer(*peer.id.as_bytes());
+    }
     res
 }

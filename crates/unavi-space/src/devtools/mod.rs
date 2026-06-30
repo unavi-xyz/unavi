@@ -18,14 +18,13 @@ impl Plugin for SpaceDevToolsPlugin {
             .init_resource::<state::StateSelection>()
             .init_resource::<state::SelectorPeers>()
             .add_systems(Startup, (network::spawn, state::spawn))
+            .add_observer(state::handle_select)
             .add_systems(
                 Update,
                 (
-                    network::update
-                        .run_if(panel_active::<network::NetworkPanel>)
-                        .run_if(on_timer(Duration::from_secs(1))),
+                    network::update.run_if(panel_active::<network::NetworkPanel>),
                     state::sync_selector.run_if(panel_active::<state::StatePanel>),
-                    state::handle_select.run_if(panel_active::<state::StatePanel>),
+                    state::highlight_selected.run_if(panel_active::<state::StatePanel>),
                     state::render
                         .run_if(panel_active::<state::StatePanel>)
                         .run_if(on_timer(Duration::from_millis(500))),

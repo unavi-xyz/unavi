@@ -57,9 +57,7 @@ pub async fn recv_state_stream(
     _tx: SendStream,
     mut rx: RecvStream,
 ) -> anyhow::Result<()> {
-    let res = recv_loop(peer, &mut rx).await;
-    replicas::remove_peer(*peer.as_bytes());
-    res
+    recv_loop(peer, &mut rx).await
 }
 
 async fn recv_loop(peer: EndpointId, rx: &mut RecvStream) -> anyhow::Result<()> {

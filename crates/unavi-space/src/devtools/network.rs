@@ -15,11 +15,16 @@ pub(super) struct NetworkPanel;
 #[derive(Component)]
 pub(super) struct NetworkText;
 
+#[derive(Clone, Copy)]
 struct Prev {
-    tx: u64,
-    rx: u64,
-    at: f32,
+    tx:   u64,
+    rx:   u64,
+    at:   f32,
+    up:   f32,
+    down: f32,
 }
+
+const SAMPLE_INTERVAL: f32 = 1.0;
 
 #[derive(Resource, Default)]
 pub(super) struct NetSampler {
@@ -66,35 +71,40 @@ pub(super) fn update(
     let mut total_down = 0.0;
 
     for s in &snap {
-        let (up, down) = match sampler.prev.get(&s.peer) {
-            Some(p) if now > p.at => {
+        // Show each peer's line immediately, but only re-sample rates once a
+        // full interval of bytes has accrued, reusing the last rate in between.
+        let entry = match sampler.prev.get(&s.peer).copied() {
+            Some(p) if now - p.at >= SAMPLE_INTERVAL => {
                 let dt = now - p.at;
-                (
-                    s.bytes_tx.saturating_sub(p.tx) as f32 / dt,
-                    s.bytes_rx.saturating_sub(p.rx) as f32 / dt,
-                )
+                Prev {
+                    tx:   s.bytes_tx,
+                    rx:   s.bytes_rx,
+                    at:   now,
+                    up:   s.bytes_tx.saturating_sub(p.tx) as f32 / dt,
+                    down: s.bytes_rx.saturating_sub(p.rx) as f32 / dt,
+                }
             }
-            _ => (0.0, 0.0),
+            Some(p) => p,
+            None => Prev {
+                tx:   s.bytes_tx,
+                rx:   s.bytes_rx,
+                at:   now,
+                up:   0.0,
+                down: 0.0,
+            },
         };
-        total_up += up;
-        total_down += down;
+        total_up += entry.up;
+        total_down += entry.down;
 
         lines.push(format!(
             "{} ↑{:>7.1} ↓{:>7.1} KB/s  rtt {:>4.0}ms",
             short(&s.peer),
-            up / 1024.0,
-            down / 1024.0,
+            entry.up / 1024.0,
+            entry.down / 1024.0,
             s.rtt_ms,
         ));
 
-        next.insert(
-            s.peer,
-            Prev {
-                tx: s.bytes_tx,
-                rx: s.bytes_rx,
-                at: now,
-            },
-        );
+        next.insert(s.peer, entry);
     }
     sampler.prev = next;
 

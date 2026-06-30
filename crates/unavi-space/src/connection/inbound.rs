@@ -38,7 +38,9 @@ impl ProtocolHandler for SpaceProtocol {
             // On error disconnect, it is up to the "client" side to re-connect.
         }
 
-        release_connection(peer, token);
+        if release_connection(peer, token) {
+            crate::state::replicas::remove_peer(*peer.as_bytes());
+        }
 
         Ok(())
     }

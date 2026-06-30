@@ -298,6 +298,47 @@ impl ReplicatedPeerState {
         }
     }
 
+    /// Copies a departing peer's space-owned (neutral) KV into the local
+    /// replica so it survives the writer leaving.
+    fn absorb_space_kv(&mut self, leaving: PeerId) {
+        let Some(me) = self_peer_id() else {
+            return;
+        };
+        if me == leaving {
+            return;
+        }
+        let mut candidates: Vec<(Hash, Hash, Vec<(String, Option<Vec<u8>>, u64)>)> = Vec::new();
+        if let Some(replica) = self.peers.get(&leaving) {
+            for (doc, entry) in &replica.docs {
+                if entry.kv.is_empty() {
+                    continue;
+                }
+                let Some(space) = self.docs.get(doc).map(|p| p.space) else {
+                    continue;
+                };
+                let cells = entry
+                    .kv
+                    .iter()
+                    .map(|(k, c)| (k.clone(), c.value.clone(), c.at))
+                    .collect();
+                candidates.push((*doc, space, cells));
+            }
+        }
+        for (doc, space, cells) in candidates {
+            if !is_space_owned(self, space, doc) {
+                continue;
+            }
+            let Some(quota) = self.docs.get(&doc).map(|p| Arc::clone(&p.quota)) else {
+                continue;
+            };
+            for (key, value, at) in cells {
+                if self.ensure_entry(me, doc, space, &quota) {
+                    self.write_kv(me, doc, key, value, at);
+                }
+            }
+        }
+    }
+
     /// Owner of `doc`: the oldest valid pin, breaking ties by peer id. Resolved
     /// per-client; ownership migrates to the next-oldest pinner when an owner
     /// leaves.
@@ -518,7 +559,10 @@ fn apply_snapshot_doc(
 /// ownership of any docs it owned to the next-oldest pinner.
 pub fn remove_peer(peer: PeerId) {
     let mut reassign = Vec::new();
-    PEER_STATE.lock().clear_peer(peer, &mut reassign);
+    let mut state = PEER_STATE.lock();
+    state.absorb_space_kv(peer);
+    state.clear_peer(peer, &mut reassign);
+    drop(state);
     settle_reassigns(reassign);
 }
 
@@ -1005,6 +1049,39 @@ mod tests {
         assert_eq!(doc_kv_get(space, doc, "bad"), None);
 
         remove_peer(peer);
+        reset();
+    }
+
+    #[test]
+    fn space_owned_kv_survives_writer_disconnect() {
+        let _g = TEST_LOCK.lock();
+        reset();
+        set_self_peer_id([1u8; 32]);
+        let space = h(b"persist-space");
+        let doc = h(b"persist-doc");
+
+        let alice = [2u8; 32];
+        apply_remote(
+            alice,
+            StateMsg::Kv {
+                doc,
+                space,
+                key: "link".into(),
+                value: Some(b"dest".to_vec()),
+                at: 1,
+            },
+        );
+        assert_eq!(
+            doc_kv_get(space, doc, "link").as_deref(),
+            Some(&b"dest"[..])
+        );
+
+        remove_peer(alice);
+        assert_eq!(
+            doc_kv_get(space, doc, "link").as_deref(),
+            Some(&b"dest"[..]),
+            "space-owned kv should persist after the writer disconnects"
+        );
         reset();
     }
 

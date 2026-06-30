@@ -1,10 +1,26 @@
 use std::fmt::Write;
 
-use bevy::prelude::*;
+use bevy::{
+    ecs::spawn::Spawn,
+    feathers::{
+        controls::{
+            ButtonProps,
+            ButtonVariant,
+            button,
+        },
+        theme::ThemedText,
+    },
+    prelude::*,
+    ui_widgets::Activate,
+};
 use unavi_devtools::tabs::DevPanel;
 
 use crate::{
-    devtools::short,
+    devtools::{
+        conn,
+        short,
+    },
+    peer::self_peer_id,
     state::replicas::debug,
 };
 
@@ -46,21 +62,43 @@ pub(super) fn spawn(mut commands: Commands) {
                 Selector,
                 Node {
                     flex_direction: FlexDirection::Row,
-                    column_gap: Val::Px(4.0),
+                    column_gap: Val::Px(6.0),
+                    row_gap: Val::Px(6.0),
                     flex_wrap: FlexWrap::Wrap,
                     ..default()
                 },
             ));
             p.spawn((
-                StateText,
-                Text::new("No peer state."),
-                TextFont {
-                    font_size: 13.0,
+                Node {
+                    padding: UiRect::all(Val::Px(10.0)),
                     ..default()
                 },
-                TextColor(Color::srgb(0.85, 0.9, 0.95)),
-            ));
+                BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.25)),
+            ))
+            .with_children(|c| {
+                c.spawn((
+                    StateText,
+                    Text::new("No peer state."),
+                    ThemedText,
+                    TextFont {
+                        font_size: 13.0,
+                        ..default()
+                    },
+                ));
+            });
         });
+}
+
+/// Every connected peer plus self, sorted by id and flagged when self, so the
+/// selector lists peers we have a connection to even before any state syncs.
+fn peer_ids() -> Vec<([u8; 32], bool)> {
+    let me = self_peer_id();
+    let mut ids = me.into_iter().collect::<Vec<_>>();
+    ids.extend(conn::snapshot().into_iter().map(|s| s.peer));
+    ids.extend(debug::snapshot().into_iter().map(|p| p.peer));
+    ids.sort_unstable();
+    ids.dedup();
+    ids.into_iter().map(|id| (id, Some(id) == me)).collect()
 }
 
 pub(super) fn sync_selector(
@@ -69,9 +107,8 @@ pub(super) fn sync_selector(
     buttons: Query<Entity, With<SelectButton>>,
     mut commands: Commands,
 ) {
-    let peers = debug::snapshot();
-    let mut ids = peers.iter().map(|p| p.peer).collect::<Vec<_>>();
-    ids.sort_unstable();
+    let peers = peer_ids();
+    let ids = peers.iter().map(|(p, _)| *p).collect::<Vec<_>>();
     if ids == stored.0 {
         return;
     }
@@ -84,63 +121,73 @@ pub(super) fn sync_selector(
         return;
     };
     commands.entity(row).with_children(|row| {
-        for p in &peers {
-            let label = format!("{}{}", short(&p.peer), if p.is_self { "*" } else { "" });
-            row.spawn((
-                Button,
-                SelectButton(p.peer),
-                Node {
-                    padding: UiRect::axes(Val::Px(6.0), Val::Px(2.0)),
-                    ..default()
-                },
-                BackgroundColor(Color::srgb(0.2, 0.2, 0.25)),
-                children![(
-                    Text::new(label),
-                    TextFont {
-                        font_size: 12.0,
-                        ..default()
-                    },
-                    TextColor(Color::WHITE),
-                )],
+        for (peer, is_self) in &peers {
+            let label = format!("{}{}", short(peer), if *is_self { " (self)" } else { "" });
+            row.spawn(button(
+                ButtonProps::default(),
+                SelectButton(*peer),
+                Spawn((Text::new(label), ThemedText)),
             ));
         }
     });
 }
 
 pub(super) fn handle_select(
-    interactions: Query<(&Interaction, &SelectButton), Changed<Interaction>>,
+    activate: On<Activate>,
+    buttons: Query<&SelectButton>,
     mut selection: ResMut<StateSelection>,
 ) {
-    for (interaction, button) in &interactions {
-        if *interaction == Interaction::Pressed {
-            selection.0 = Some(button.0);
-        }
+    if let Ok(button) = buttons.get(activate.entity) {
+        selection.0 = Some(button.0);
+    }
+}
+
+/// Paints the inspected peer's button in the primary variant, following the
+/// local peer while the selection is unset.
+pub(super) fn highlight_selected(
+    selection: Res<StateSelection>,
+    added: Query<(), Added<SelectButton>>,
+    mut buttons: Query<(&SelectButton, &mut ButtonVariant)>,
+) {
+    if !selection.is_changed() && added.is_empty() {
+        return;
+    }
+    let chosen = selection.0.or_else(self_peer_id);
+    for (button, mut variant) in &mut buttons {
+        *variant = if Some(button.0) == chosen {
+            ButtonVariant::Primary
+        } else {
+            ButtonVariant::Normal
+        };
     }
 }
 
 pub(super) fn render(selection: Res<StateSelection>, mut text: Query<&mut Text, With<StateText>>) {
-    let peers = debug::snapshot();
-    let chosen = selection
-        .0
-        .or_else(|| peers.iter().find(|p| p.is_self).map(|p| p.peer));
+    let me = self_peer_id();
+    let states = debug::snapshot();
 
     let Ok(mut text) = text.single_mut() else {
         return;
     };
-    let Some(p) = chosen.and_then(|c| peers.iter().find(|p| p.peer == c)) else {
+    let Some(chosen) = selection.0.or(me) else {
         text.0 = "No peer state.".into();
         return;
     };
 
     let mut out = format!(
         "Peer {}{}\n",
-        short(&p.peer),
-        if p.is_self { " (self)" } else { "" }
+        short(&chosen),
+        if Some(chosen) == me { " (self)" } else { "" }
     );
-    if p.docs.is_empty() {
+    let docs = states
+        .iter()
+        .find(|p| p.peer == chosen)
+        .map(|p| p.docs.as_slice())
+        .unwrap_or_default();
+    if docs.is_empty() {
         let _ = writeln!(out, "{:2}(no docs)", "");
     }
-    for d in &p.docs {
+    for d in docs {
         let _ = writeln!(
             out,
             "{:2}doc {} space {}{}{}",

@@ -13,11 +13,11 @@ use iroh::{
     },
 };
 
-static CONNS: LazyLock<Mutex<HashMap<EndpointId, Arc<Connection>>>> =
-    LazyLock::new(Mutex::default);
+static CONNS: LazyLock<Mutex<HashMap<EndpointId, Arc<Connection>>>> = LazyLock::new(Mutex::default);
 
 /// A point-in-time bandwidth and latency reading for one peer, pulled from the
-/// underlying QUIC connection. Byte counters are cumulative; the panel diffs them.
+/// underlying QUIC connection. Byte counters are cumulative; the panel diffs
+/// them.
 #[derive(Clone, Copy)]
 pub struct PeerNetStats {
     pub peer:     [u8; 32],

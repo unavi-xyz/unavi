@@ -15,6 +15,8 @@ use tokio::sync::oneshot;
 
 use crate::Space;
 
+pub mod pinned_docs;
+
 const SPACE_TTL: Duration = Duration::from_hours(7 * 24);
 
 #[derive(Component)]

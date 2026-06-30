@@ -230,6 +230,18 @@ impl Quota {
         self.charge_inner(stock, n)
     }
 
+    /// Charges `n` units of `stock`, returning a resizable [`StockHold`] that
+    /// refunds whatever it holds on drop. Use for data whose footprint changes
+    /// over its lifetime, like a KV cell.
+    pub fn hold(self: &Arc<Self>, stock: Stock, n: u64) -> Result<StockHold, QuotaError> {
+        self.charge_inner(stock, n)?;
+        Ok(StockHold {
+            quota: Arc::clone(self),
+            stock,
+            n,
+        })
+    }
+
     pub fn release(&self, stock: Stock, n: u64) {
         self.refund(stock, n);
     }
@@ -249,6 +261,43 @@ pub struct StockGuard {
 }
 
 impl Drop for StockGuard {
+    fn drop(&mut self) {
+        self.quota.refund(self.stock, self.n);
+    }
+}
+
+/// A resizable stock hold that refunds whatever it currently holds on drop.
+///
+/// [`Self::resize`] charges only the positive delta when growing and refunds
+/// when shrinking, so an overwrite that does not grow always succeeds even at a
+/// full cap.
+#[must_use = "dropping the hold immediately refunds the held stock"]
+pub struct StockHold {
+    quota: Arc<Quota>,
+    stock: Stock,
+    n:     u64,
+}
+
+impl StockHold {
+    /// Adjusts the held amount to `new_n`. On growth the delta is charged and
+    /// may fail (leaving the hold unchanged); on shrink it always succeeds.
+    pub fn resize(&mut self, new_n: u64) -> Result<(), QuotaError> {
+        if new_n > self.n {
+            self.quota.charge_inner(self.stock, new_n - self.n)?;
+        } else {
+            self.quota.refund(self.stock, self.n - new_n);
+        }
+        self.n = new_n;
+        Ok(())
+    }
+
+    #[must_use]
+    pub const fn held(&self) -> u64 {
+        self.n
+    }
+}
+
+impl Drop for StockHold {
     fn drop(&mut self) {
         self.quota.refund(self.stock, self.n);
     }
@@ -339,6 +388,51 @@ mod tests {
 
         drop(g);
         assert_eq!(new.usage(Stock::Prims), 0, "refund follows the new owner");
+    }
+
+    #[test]
+    fn hold_grows_shrinks_and_refunds_on_drop() {
+        let q = Quota::root(limits_stock(Stock::KvMemory, 100));
+        let mut hold = q.hold(Stock::KvMemory, 40).expect("initial");
+        assert_eq!(q.usage(Stock::KvMemory), 40);
+
+        hold.resize(90).expect("grow within cap");
+        assert_eq!(q.usage(Stock::KvMemory), 90);
+
+        assert!(
+            hold.resize(120).is_err(),
+            "growth past the cap fails and leaves the hold unchanged"
+        );
+        assert_eq!(hold.held(), 90);
+        assert_eq!(q.usage(Stock::KvMemory), 90);
+
+        drop(hold);
+        assert_eq!(q.usage(Stock::KvMemory), 0, "drop refunds the full hold");
+    }
+
+    /// A shrink must always succeed, even when the cap is otherwise exhausted —
+    /// the basis for overwriting a large KV value with a small one when full.
+    #[test]
+    fn hold_shrink_succeeds_at_full_cap() {
+        let q = Quota::root(limits_stock(Stock::KvMemory, 50));
+        let mut hold = q.hold(Stock::KvMemory, 50).expect("fill the cap");
+        assert!(q.hold(Stock::KvMemory, 1).is_err(), "cap is full");
+
+        hold.resize(10).expect("shrink frees stock");
+        assert_eq!(q.usage(Stock::KvMemory), 10);
+        let _room = q.hold(Stock::KvMemory, 40).expect("freed room is reusable");
+    }
+
+    #[test]
+    fn hold_rolls_up_and_refunds_to_owner() {
+        let owner = Quota::root(limits_stock(Stock::KvMemory, 100));
+        let doc = Quota::new(Limits::default(), Some(Arc::clone(&owner)));
+        let mut hold = doc.hold(Stock::KvMemory, 30).expect("ok");
+        assert_eq!(owner.usage(Stock::KvMemory), 30);
+        hold.resize(10).expect("shrink");
+        assert_eq!(owner.usage(Stock::KvMemory), 10);
+        drop(hold);
+        assert_eq!(owner.usage(Stock::KvMemory), 0);
     }
 
     fn limits_flow(flow: Flow, capacity: f64, refill_per_sec: f64) -> Limits {

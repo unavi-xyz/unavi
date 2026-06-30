@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use unavi_space::state::doc::KvError;
+use unavi_space::state::replicas::KvError;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
@@ -50,7 +50,7 @@ fn kv_error_tag(e: KvError) -> &'static str {
     match e {
         KvError::QuotaExceeded => "quota-exceeded",
         KvError::KeyTooLong => "key-too-long",
-        KvError::Other => "other",
+        KvError::NotOwner | KvError::Other => "other",
     }
 }
 

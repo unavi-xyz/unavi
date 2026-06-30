@@ -67,7 +67,8 @@ pub(super) fn spawn(mut commands: Commands) {
                             },
                             TextColor(Color::WHITE),
                         ));
-                        row.spawn(toggle_switch(toggle)).observe(checkbox_self_update);
+                        row.spawn(toggle_switch(toggle))
+                            .observe(checkbox_self_update);
                     });
             }
         });

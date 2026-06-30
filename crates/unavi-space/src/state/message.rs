@@ -10,11 +10,15 @@ pub enum StateMsg {
     Pin {
         doc:   Hash,
         space: Hash,
+        /// Time the peer pinned; the oldest pin owns the document.
+        at:    u64,
     },
     Unpin {
         doc: Hash,
     },
-    Claim {
+    /// Transient transform authority over a document's rigid bodies (e.g. on
+    /// grab); the latest claim wins, independent of ownership.
+    Authority {
         doc: Hash,
         at:  u64,
     },
@@ -29,13 +33,13 @@ pub enum StateMsg {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct DocSnapshot {
-    pub doc:    Hash,
-    pub space:  Hash,
-    /// Whether the source peer pins this doc for instancing, as opposed to
-    /// merely holding KV state for it.
-    pub pinned: bool,
-    pub claim:  Option<u64>,
-    pub kv:     Vec<KvSnapshot>,
+    pub doc:       Hash,
+    pub space:     Hash,
+    /// Time the source peer pinned the doc, if it does.
+    pub pin:       Option<u64>,
+    /// The source peer's latest transform-authority claim, if any.
+    pub authority: Option<u64>,
+    pub kv:        Vec<KvSnapshot>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

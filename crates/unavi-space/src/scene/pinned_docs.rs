@@ -23,7 +23,7 @@ use tokio::sync::oneshot;
 use crate::{
     Space,
     peer::Peer,
-    state::peer::{
+    state::replicas::{
         self,
         PinChange,
     },
@@ -117,7 +117,7 @@ pub fn fetch_pinned_docs(
             continue;
         };
 
-        let holders = peer::doc_holders(pin.0);
+        let holders = replicas::doc_holders(pin.0);
         let sync_from = holders
             .iter()
             .filter_map(|h| peers.iter().find(|p| p.0.id.as_bytes() == h))

@@ -5,7 +5,7 @@ use unavi_devtools::tabs::DevPanel;
 
 use crate::{
     devtools::short,
-    state::peer::debug,
+    state::replicas::debug,
 };
 
 #[derive(Component)]
@@ -147,8 +147,10 @@ pub(super) fn render(selection: Res<StateSelection>, mut text: Query<&mut Text, 
             "",
             short(d.doc.as_bytes()),
             short(d.space.as_bytes()),
-            if d.pinned { " [pinned]" } else { "" },
-            d.claim.map(|c| format!(" claim={c}")).unwrap_or_default(),
+            d.pin.map(|p| format!(" [pin={p}]")).unwrap_or_default(),
+            d.authority
+                .map(|a| format!(" authority={a}"))
+                .unwrap_or_default(),
         );
         for kv in &d.kv {
             let _ = match kv.bytes {

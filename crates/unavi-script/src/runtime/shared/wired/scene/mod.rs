@@ -318,16 +318,11 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
         .map_err(|err| anyhow::anyhow!("set record public response dropped: {err}"))?
         .map_err(|err| anyhow::anyhow!("failed to make published record public: {err}"))?;
 
-    // Pin document in local state.
-    if !unavi_space::state::doc::add_doc(space, id) {
-        anyhow::bail!("space state not tracked locally");
+    // Pin the document locally; ownership follows from the pin, and the pin's
+    // quota is charged to the resulting owner.
+    if !unavi_space::state::replicas::self_pin(space, id) {
+        anyhow::bail!("space state not tracked locally or pin over quota");
     }
-
-    // Claim document for local peer.
-    if let Some(peer) = unavi_space::peer::self_peer_id() {
-        unavi_space::state::owner::set_doc_owner(space, id, peer);
-    }
-    unavi_space::quota::reassign_document_in_space(id, space);
 
     Ok(())
 }

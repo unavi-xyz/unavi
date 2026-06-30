@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use blake3::Hash;
 use unavi_space::{
     membership::doc_space,
-    state::doc::{
+    state::replicas::{
         self,
         KvError,
     },
@@ -51,7 +51,7 @@ pub async fn get_kv(api: &Api, doc_id: Vec<u8>) -> anyhow::Result<Option<u32>> {
     };
     let doc = Hash::from(bytes);
 
-    if !doc::has_doc(space, doc) {
+    if !replicas::has_doc(space, doc) {
         return Ok(None);
     }
 
@@ -74,7 +74,7 @@ pub async fn kv_get(api: &Api, rep: u32, key: String) -> anyhow::Result<Option<V
     if validate_firewall(&api.doc_id, &res.doc, Channel::KvRead).is_err() {
         return Ok(None);
     }
-    Ok(doc::doc_kv_get(res.space, res.doc, &key))
+    Ok(replicas::doc_kv_get(res.space, res.doc, &key))
 }
 
 pub async fn kv_set(
@@ -91,7 +91,7 @@ pub async fn kv_set(
     if validate_firewall(&api.doc_id, &res.doc, Channel::KvWrite).is_err() {
         return Ok(Err(KvError::Other));
     }
-    Ok(doc::doc_kv_set(res.space, res.doc, &key, &value))
+    Ok(replicas::doc_kv_set(res.space, res.doc, &key, &value))
 }
 
 pub async fn kv_delete(api: &Api, rep: u32, key: String) -> anyhow::Result<Result<(), KvError>> {
@@ -103,7 +103,7 @@ pub async fn kv_delete(api: &Api, rep: u32, key: String) -> anyhow::Result<Resul
     if validate_firewall(&api.doc_id, &res.doc, Channel::KvWrite).is_err() {
         return Ok(Err(KvError::Other));
     }
-    doc::doc_kv_delete(res.space, res.doc, &key);
+    replicas::doc_kv_delete(res.space, res.doc, &key);
     Ok(Ok(()))
 }
 
@@ -116,7 +116,7 @@ pub async fn kv_keys(api: &Api, rep: u32) -> anyhow::Result<Vec<String>> {
     if validate_firewall(&api.doc_id, &res.doc, Channel::KvRead).is_err() {
         return Ok(Vec::new());
     }
-    Ok(doc::doc_kv_keys(res.space, res.doc))
+    Ok(replicas::doc_kv_keys(res.space, res.doc))
 }
 
 pub async fn kv_drop(api: &Api, rep: u32) -> anyhow::Result<()> {

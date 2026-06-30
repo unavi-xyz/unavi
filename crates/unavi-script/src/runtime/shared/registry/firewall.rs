@@ -57,9 +57,6 @@ pub fn register_docs(
         .insert(RegisteredFirewall(doc.0));
 }
 
-/// A sub-document is spawned `ChildOf` the prim that declares it; it inherits a
-/// child-doc firewall keyed to that prim's document so other docs may exchange
-/// events and read its scene/kv across the boundary.
 pub fn register_subdoc_firewall(
     trigger: On<Insert, HsdRecordId>,
     subdocs: Query<&ChildOf, (With<Hsd>, Without<Firewall>)>,

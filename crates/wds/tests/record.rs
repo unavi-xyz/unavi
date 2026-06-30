@@ -64,8 +64,8 @@ async fn test_writer_edits_hsd_after_creation(#[future] ctx: DataStoreCtx) {
         .expect("writer may edit hsd content after creation");
 }
 
-/// HSD stores its scene in a root `Tree` container, so blob references buried in
-/// a prim's attributes must be discovered as record dependencies (and thus
+/// HSD stores its scene in a root `Tree` container, so blob references buried
+/// in a prim's attributes must be discovered as record dependencies (and thus
 /// synced) rather than missed by reading the root as a map.
 #[rstest]
 #[timeout(Duration::from_secs(5))]
@@ -98,7 +98,9 @@ async fn test_hsd_tree_blob_refs_tracked(#[future] ctx: DataStoreCtx) {
     let attrs = meta
         .insert_container("attributes", LoroMap::new())
         .expect("attributes");
-    attrs.insert("asset", asset_blob.to_vec()).expect("asset blob");
+    attrs
+        .insert("asset", asset_blob.to_vec())
+        .expect("asset blob");
     // Mirror how `MeshAttr` reconciles: nested `mesh.attributes` map of named
     // blob ids, the structure a script-authored cube produces.
     let mesh = attrs

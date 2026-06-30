@@ -1,4 +1,4 @@
-use unavi_space::state::doc::KvError;
+use unavi_space::state::replicas::KvError;
 use wasmtime::component::Resource;
 
 use crate::{
@@ -39,7 +39,7 @@ impl From<KvError> for WitKvError {
         match e {
             KvError::KeyTooLong => Self::KeyTooLong,
             KvError::QuotaExceeded => Self::QuotaExceeded,
-            KvError::Other => Self::Other,
+            KvError::NotOwner | KvError::Other => Self::Other,
         }
     }
 }

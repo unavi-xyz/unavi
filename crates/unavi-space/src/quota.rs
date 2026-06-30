@@ -13,7 +13,7 @@ use unavi_quota::{
 use crate::{
     membership::doc_space,
     peer::self_peer_id,
-    state::owner::doc_owner,
+    state::replicas::owner,
 };
 
 /// Quota for a document, attributed to its owning peer or space.
@@ -39,5 +39,5 @@ fn space_document_owner(doc: Hash, space: Hash) -> Arc<Quota> {
     if space == doc {
         return space_quota(space);
     }
-    doc_owner(space, doc).map_or_else(|| space_quota(space), |peer| peer_quota(Hash::from(peer)))
+    owner(space, doc).map_or_else(|| space_quota(space), |peer| peer_quota(Hash::from(peer)))
 }

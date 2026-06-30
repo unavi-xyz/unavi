@@ -33,15 +33,9 @@ pub fn self_own_space(trigger: On<Add, Space>, spaces: Query<&Space>) {
     DOC_SPACE_REGISTRY.write().insert(space.0, space.0);
 }
 
-/// A networked record resolves its space from [`DOC_SPACE_REGISTRY`] and parents
-/// under the space root; a sub-document, spawned `ChildOf` the prim that declares
-/// it, resolves the space structurally from that prim's doc and keeps its parent.
 pub fn parent_doc_under_space(
     trigger: On<Insert, HsdRecordId>,
-    docs: Query<
-        (&HsdRecordId, Option<&ChildOf>),
-        (With<Hsd>, Without<Space>, Without<SpaceOwner>),
-    >,
+    docs: Query<(&HsdRecordId, Option<&ChildOf>), (With<Hsd>, Without<Space>, Without<SpaceOwner>)>,
     prims: Query<&HsdChild>,
     spaces: Query<(Entity, &HsdRecordId), With<Space>>,
     is_space: Query<(), With<Space>>,
@@ -113,7 +107,7 @@ pub fn doc_space(doc: Hash) -> Option<Hash> {
         .read()
         .get(&doc)
         .copied()
-        .or_else(|| crate::state::peer::space_of(doc))
+        .or_else(|| crate::state::replicas::space_of(doc))
 }
 
 #[must_use]

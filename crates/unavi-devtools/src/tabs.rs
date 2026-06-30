@@ -15,15 +15,15 @@ use bevy::{
 use crate::overlay::DevOverlay;
 
 /// Marks a node as a dev tools panel's content root. Spawn one (with a panel
-/// marker component) to contribute a tab; the framework mounts it and builds the
-/// tab button.
+/// marker component) to contribute a tab; the framework mounts it and builds
+/// the tab button.
 #[derive(Component)]
 pub struct DevPanel {
     pub title: String,
 }
 
-/// Present on the panel whose tab is currently selected. Panel systems filter on
-/// this so their work only runs while visible.
+/// Present on the panel whose tab is currently selected. Panel systems filter
+/// on this so their work only runs while visible.
 #[derive(Component)]
 pub struct ActivePanel;
 

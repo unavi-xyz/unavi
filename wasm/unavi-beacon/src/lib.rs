@@ -68,7 +68,7 @@ impl ScriptBehavior for Script {
 
         // A published beacon bakes its cube into the synced record, so a peer
         // that already holds it reuses that cube rather than authoring a copy.
-        let cube = if let Some(cube) = prim.children().into_iter().next() { cube } else {
+        let cube = prim.children().into_iter().next().unwrap_or_else(|| {
             let cuboid = Cuboid::new(Vec3::splat(SIZE));
             let cube = cuboid.mesh();
             cube.set_collider(Some(&cuboid.collider()));
@@ -96,7 +96,7 @@ impl ScriptBehavior for Script {
             }));
             prim.add_child(&cube);
             cube
-        };
+        });
 
         let input = register_input_listener(&cube)?;
         println!("Beacon initialized: space={id}");

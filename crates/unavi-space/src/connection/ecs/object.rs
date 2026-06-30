@@ -35,7 +35,7 @@ use loro::TreeID;
 use crate::{
     Space,
     membership,
-    state::peer,
+    state::replicas,
 };
 
 /// One owned dynamic prim's space-relative pose, queued for broadcast. Captured
@@ -61,8 +61,9 @@ pub struct LastObjectTick(Duration);
 /// updates, so they tick far less often than agent poses.
 const OBJECT_TICKRATE: Duration = Duration::from_millis(200);
 
-/// Broadcasts every dynamic prim in documents the local peer owns. Poses are
-/// space-relative; velocities are space-invariant (spaces only translate).
+/// Broadcasts every dynamic prim in documents the local peer has authority
+/// over. Poses are space-relative; velocities are space-invariant (spaces only
+/// translate).
 pub fn send_object_poses(
     time: Res<Time>,
     spaces: Query<(&Space, &GlobalTransform)>,
@@ -93,7 +94,7 @@ pub fn send_object_poses(
             }
             let doc = roots.get(child_of.0).ok()?.0;
             let space = membership::doc_space(doc)?;
-            if !peer::is_self_owner(space, doc) {
+            if !replicas::is_self_authority(space, doc) {
                 return None;
             }
             let origin = space_origins.get(&space)?;
@@ -186,9 +187,9 @@ pub fn apply_remote_objects(
     let updates = std::mem::take(&mut *OBJECT_INBOX.lock().expect("object inbox"));
 
     for ((peer, doc, prim), (recv, resolved)) in updates {
-        // Only the document's current owner may move it, and never ourselves.
-        if peer::owner(resolved.space, doc) != Some(*peer.as_bytes())
-            || peer::is_self_owner(resolved.space, doc)
+        // Only the document's current authority may move it, and never ourselves.
+        if replicas::authority(resolved.space, doc) != Some(*peer.as_bytes())
+            || replicas::is_self_authority(resolved.space, doc)
         {
             continue;
         }
@@ -255,14 +256,15 @@ pub fn advance_object_interp(
     }
 }
 
-/// A prim parked [`RigidBody::Kinematic`] because a remote peer owns its
-/// document, so a fresh replica never free-falls before its first update.
+/// A prim parked [`RigidBody::Kinematic`] because a remote peer has authority
+/// over its document, so a fresh replica never free-falls before its first
+/// update.
 #[derive(Component)]
 pub struct ReplicaObject;
 
-/// Parks remote-owned prims as kinematic replicas and runs ours/unowned ones as
-/// dynamic. `peer::owner` resolves the latest claim, so only the accepted owner
-/// drives a prim.
+/// Parks remotely-controlled prims as kinematic replicas and runs
+/// ours/unclaimed ones as dynamic. `replicas::authority` resolves the latest
+/// claim, so only the accepted controller drives a prim.
 pub fn reconcile_object_authority(
     roots: Query<&HsdRecordId>,
     prims: Query<(Entity, &HsdChild, &RigidBody, Has<ReplicaObject>), With<Prim>>,
@@ -272,11 +274,11 @@ pub fn reconcile_object_authority(
         let Some(doc) = roots.get(child_of.0).ok().map(|r| r.0) else {
             continue;
         };
-        let remote_owned = membership::doc_space(doc).is_some_and(|space| {
-            peer::owner(space, doc).is_some() && !peer::is_self_owner(space, doc)
+        let remote_controlled = membership::doc_space(doc).is_some_and(|space| {
+            replicas::authority(space, doc).is_some() && !replicas::is_self_authority(space, doc)
         });
 
-        match (remote_owned, is_replica) {
+        match (remote_controlled, is_replica) {
             (true, false) if matches!(body, RigidBody::Dynamic) => {
                 commands
                     .entity(entity)

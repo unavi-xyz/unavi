@@ -15,7 +15,7 @@ jobs:
           remove-codeql: true
           remove-dotnet: true
           remove-haskell: true
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - uses: DeterminateSystems/flake-checker-action@v12

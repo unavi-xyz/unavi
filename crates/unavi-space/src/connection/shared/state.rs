@@ -1,7 +1,13 @@
+use std::sync::atomic::{
+    AtomicU64,
+    Ordering,
+};
+
 use anyhow::{
     Context,
     bail,
 };
+use bevy::prelude::World;
 use iroh::{
     EndpointId,
     endpoint::{
@@ -14,12 +20,17 @@ use tokio::io::{
     AsyncReadExt,
     AsyncWriteExt,
 };
+use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     connection::shared::StreamIdent,
     state::{
+        entities,
         message::StateMsg,
-        replicas,
+        replicas::{
+            self,
+            PeerId,
+        },
     },
 };
 
@@ -52,15 +63,46 @@ async fn send_loop(
     Ok(())
 }
 
+static STREAM_GEN: AtomicU64 = AtomicU64::new(0);
+
 pub async fn recv_state_stream(
     peer: EndpointId,
     _tx: SendStream,
     mut rx: RecvStream,
 ) -> anyhow::Result<()> {
-    recv_loop(peer, &mut rx).await
+    let peer_id = *peer.as_bytes();
+    // Racing connections to the same peer share one state entity; the
+    // generation lets only the latest stream tear it down, so a superseded
+    // connection's exit cannot erase the peer's replicated state.
+    let generation = STREAM_GEN.fetch_add(1, Ordering::Relaxed);
+    let (ent_tx, ent_rx) = async_channel::bounded(1);
+    if AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let ent = entities::claim_remote_peer(world, peer_id, generation);
+            let _ = ent_tx.try_send(ent);
+        })
+        .send()
+        .await
+        .is_err()
+    {
+        bail!("async command queue closed");
+    }
+    let peer_ent = ent_rx.recv().await.context("claim remote peer")?;
+    let res = recv_loop(peer_ent, peer_id, &mut rx).await;
+    let _ = AsyncCommands::default()
+        .push(move |world: &mut World| {
+            entities::release_remote_peer(world, peer_ent, generation);
+        })
+        .send()
+        .await;
+    res
 }
 
-async fn recv_loop(peer: EndpointId, rx: &mut RecvStream) -> anyhow::Result<()> {
+async fn recv_loop(
+    peer_ent: bevy::prelude::Entity,
+    peer: PeerId,
+    rx: &mut RecvStream,
+) -> anyhow::Result<()> {
     loop {
         let len = match rx.read_u32().await {
             Ok(len) => len as usize,
@@ -74,6 +116,6 @@ async fn recv_loop(peer: EndpointId, rx: &mut RecvStream) -> anyhow::Result<()> 
         let mut buf = vec![0; len];
         rx.read_exact(&mut buf).await.context("read msg")?;
         let msg = postcard::from_bytes::<StateMsg>(&buf).context("parse msg")?;
-        replicas::apply_remote(*peer.as_bytes(), msg);
+        entities::apply_remote(peer_ent, peer, msg);
     }
 }

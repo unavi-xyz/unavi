@@ -68,6 +68,7 @@ impl AsyncCommands {
             let ent = world.spawn(bundle).id();
             tx.try_send(ent).expect("send");
         });
+        self.send().await.expect("async command queue closed");
         rx.recv().await.expect("recv")
     }
 
@@ -78,5 +79,36 @@ impl AsyncCommands {
     pub fn try_send(self) -> Result<(), TrySendError<CommandQueue>> {
         ASYNC_COMMAND_QUEUE.0.try_send(self.queue)?;
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::task::{
+        Context,
+        Poll,
+        Waker,
+    };
+
+    use super::*;
+
+    #[derive(Component)]
+    struct Marker;
+
+    #[test]
+    fn send_spawn_submits_queue() {
+        let mut fut = Box::pin(AsyncCommands::default().send_spawn(Marker));
+        let mut cx = Context::from_waker(Waker::noop());
+        assert!(fut.as_mut().poll(&mut cx).is_pending());
+
+        let mut world = World::new();
+        while let Ok(mut queue) = ASYNC_COMMAND_QUEUE.1.try_recv() {
+            queue.apply(&mut world);
+        }
+
+        let Poll::Ready(ent) = fut.as_mut().poll(&mut cx) else {
+            panic!("entity not spawned");
+        };
+        assert!(world.get::<Marker>(ent).is_some());
     }
 }

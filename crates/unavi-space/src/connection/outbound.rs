@@ -43,8 +43,8 @@ async fn open_connection(endpoint: Endpoint, peer: EndpointAddr) -> anyhow::Resu
     };
 
     let res = super::shared::handle_connection(connection, cancel_rx).await;
-    if release_connection(peer.id, token) {
-        crate::state::replicas::remove_peer(*peer.id.as_bytes());
-    }
+    // The peer's replicated state is owned by its inbound stream's `RemotePeer`
+    // entity, despawned when the stream ends.
+    release_connection(peer.id, token);
     res
 }

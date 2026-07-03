@@ -2,9 +2,12 @@ use bevy::prelude::*;
 use blake3::Hash;
 use unavi_space::{
     membership::doc_space,
-    state::replicas::{
-        self,
-        KvError,
+    state::{
+        entities,
+        replicas::{
+            self,
+            KvError,
+        },
     },
 };
 
@@ -91,7 +94,7 @@ pub async fn kv_set(
     if validate_firewall(&api.doc_id, &res.doc, Channel::KvWrite).is_err() {
         return Ok(Err(KvError::Other));
     }
-    Ok(replicas::doc_kv_set(res.space, res.doc, &key, &value))
+    Ok(entities::doc_kv_set(res.space, res.doc, key, value).await)
 }
 
 pub async fn kv_delete(api: &Api, rep: u32, key: String) -> anyhow::Result<Result<(), KvError>> {
@@ -103,8 +106,7 @@ pub async fn kv_delete(api: &Api, rep: u32, key: String) -> anyhow::Result<Resul
     if validate_firewall(&api.doc_id, &res.doc, Channel::KvWrite).is_err() {
         return Ok(Err(KvError::Other));
     }
-    replicas::doc_kv_delete(res.space, res.doc, &key);
-    Ok(Ok(()))
+    Ok(entities::doc_kv_delete(res.space, res.doc, key).await)
 }
 
 pub async fn kv_keys(api: &Api, rep: u32) -> anyhow::Result<Vec<String>> {

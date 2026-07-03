@@ -320,7 +320,7 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
 
     // Pin the document locally; ownership follows from the pin, and the pin's
     // quota is charged to the resulting owner.
-    if !unavi_space::state::replicas::self_pin(space, id) {
+    if !unavi_space::state::entities::self_pin(space, id).await {
         anyhow::bail!("space state not tracked locally or pin over quota");
     }
 

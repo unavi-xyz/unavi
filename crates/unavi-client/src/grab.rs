@@ -19,7 +19,10 @@ use unavi_space::{
     Space,
     anchor::ActiveSpace,
     peer::self_peer_id,
-    state::replicas,
+    state::{
+        entities,
+        replicas,
+    },
 };
 
 pub struct GrabPlugin;
@@ -136,7 +139,7 @@ fn claim_doc_authority(
     }
 
     info!(doc = %doc_hash, space = %space_hash, "grab: claiming object authority");
-    replicas::claim_authority(space_hash, doc_hash);
+    entities::claim_authority(space_hash, doc_hash);
 }
 
 fn resolve_doc(
@@ -167,10 +170,18 @@ fn resolve_space(
     None
 }
 
-fn on_squeeze_up(trigger: On<SqueezeUp>, mut commands: Commands) {
+fn on_squeeze_up(
+    trigger: On<SqueezeUp>,
+    hsd_children: Query<&HsdChild>,
+    docs: Query<&HsdRecordId, With<Hsd>>,
+    mut commands: Commands,
+) {
     let Some(entity) = trigger.entity else {
         return;
     };
+    if let Some((_, doc_hash)) = resolve_doc(entity, &hsd_children, &docs) {
+        entities::release_authority(doc_hash);
+    }
     commands
         .entity(entity)
         .queue_silenced(entity_command::remove::<(Grabbed, GravityScale)>());

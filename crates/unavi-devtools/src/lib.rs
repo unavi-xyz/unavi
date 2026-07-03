@@ -9,6 +9,7 @@ use bevy::{
 
 pub mod channel;
 pub mod overlay;
+pub mod scroll;
 pub mod tabs;
 
 /// Installs the dev tools overlay: a tabbed, `~`-toggled surface that other
@@ -28,6 +29,8 @@ impl Plugin for DevToolsPlugin {
                     overlay::toggle_overlay,
                     tabs::apply_active_panel,
                     tabs::highlight_active_tab,
+                    scroll::apply_wheel_scroll
+                        .run_if(|active: Res<overlay::DevToolsActive>| active.0),
                 ),
             )
             .add_observer(tabs::register_panel)

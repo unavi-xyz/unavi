@@ -5,6 +5,14 @@
             script: "./Cargo.toml",
         ),
         relationships: {},
-        children: [],
+        children: [
+            (
+                attributes: (
+                    name: "portal",
+                ),
+                relationships: {},
+                children: [],
+            ),
+        ],
     ),
 ]

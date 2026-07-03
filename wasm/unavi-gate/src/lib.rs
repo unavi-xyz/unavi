@@ -1,5 +1,6 @@
 use std::f32::consts::GOLDEN_RATIO;
 
+use anyhow::Context;
 use unavi_portal_protocol::{
     BACKLINK_CHANNEL,
     BacklinkPayload,
@@ -42,6 +43,7 @@ wired_prelude::generate_script!(Script);
 
 const CHANNEL: &str = "unavi::beacon::id";
 const LINK_KEY: &str = "gate:link";
+const PORTAL_PRIM_NAME: &str = "portal";
 
 const PORTAL_WIDTH: f32 = GOLDEN_RATIO;
 const PORTAL_HEIGHT: f32 = PORTAL_WIDTH * GOLDEN_RATIO;
@@ -51,76 +53,6 @@ const BEAM_THICKNESS: f32 = 1.0 / (4.0 * GOLDEN_RATIO);
 const PEDESTAL_HEIGHT: f32 = PORTAL_WIDTH / 2.0;
 const PEDESTAL_THICKNESS: f32 = BEAM_THICKNESS * GOLDEN_RATIO;
 const EVENT_RADIUS: f32 = PEDESTAL_THICKNESS;
-
-const fn static_body() -> RigidBody {
-    RigidBody {
-        kind:            RigidBodyKind::Static,
-        angular_damping: None,
-        friction:        None,
-        linear_damping:  None,
-        mass:            None,
-        restitution:     None,
-    }
-}
-
-fn set_translation(prim: &Prim, translation: Vec3) {
-    prim.set_xform(Some(Xform {
-        translation,
-        rotation: Quat::IDENTITY,
-        scale: Vec3::ONE,
-    }));
-}
-
-const fn gate_material() -> Material {
-    Material {
-        alpha_cutoff:               None,
-        alpha_mode:                 None,
-        base_color:                 Some(Color {
-            r: 0.7,
-            g: 0.72,
-            b: 0.78,
-            a: 1.0,
-        }),
-        base_color_texture:         None,
-        double_sided:               None,
-        emissive:                   None,
-        emissive_texture:           None,
-        metallic:                   Some(0.6),
-        metallic_roughness_texture: None,
-        normal_texture:             None,
-        occlusion_texture:          None,
-        roughness:                  Some(0.4),
-    }
-}
-
-fn portal_from_link(link: Option<&LinkState>) -> Portal {
-    Portal {
-        destination: link.map(|s| PortalDestination {
-            space:    s.target_space.to_vec(),
-            receptor: s
-                .receptor_doc
-                .zip(s.receptor_prim.clone())
-                .map(|(d, p)| PortalReceptor {
-                    document: d.to_vec(),
-                    prim:     p,
-                }),
-        }),
-        size_x:      PORTAL_WIDTH,
-        size_y:      PORTAL_HEIGHT,
-    }
-}
-
-fn write_link(kv: &Kv, state: &LinkState) {
-    let bytes = postcard::to_allocvec(state).expect("encode link state");
-    if let Err(err) = kv.set(LINK_KEY, &bytes) {
-        eprintln!("Gate kv write failed: {err:?}");
-    }
-}
-
-fn read_link(kv: &Kv) -> Option<LinkState> {
-    kv.get(LINK_KEY)
-        .and_then(|b| postcard::from_bytes::<LinkState>(&b).ok())
-}
 
 struct Script {
     portal_prim: Prim,
@@ -136,57 +68,18 @@ impl ScriptBehavior for Script {
         let doc = self_document()?;
         let root = doc.roots().into_iter().next().expect("root");
 
-        let portal_prim = doc.create_prim();
-        root.add_child(&portal_prim);
+        // Authored in asset.hsdx so its TreeID is identical on every peer;
+        // portal links carry that id and must resolve off-opener.
+        let portal_prim = doc
+            .prims()
+            .into_iter()
+            .find(|p| p.name().is_some_and(|n| n == PORTAL_PRIM_NAME))
+            .context("portal prim not found")?;
         set_translation(&portal_prim, Vec3::new(0.0, PORTAL_HEIGHT / 2.0, 0.0));
         portal_prim.set_portal(Some(&portal_from_link(None)));
 
         let material = gate_material();
-        let pole = Cuboid::new(Vec3::new(BEAM_THICKNESS, PORTAL_HEIGHT, BEAM_THICKNESS));
-
-        let pole_l = pole.mesh();
-        root.add_child(&pole_l);
-        pole_l.set_collider(Some(&pole.collider()));
-        pole_l.set_rigid_body(Some(static_body()));
-        pole_l.set_material(Some(&material));
-        set_translation(
-            &pole_l,
-            Vec3::new(
-                -PORTAL_WIDTH / 2.0 - BEAM_THICKNESS / 2.0,
-                PORTAL_HEIGHT / 2.0,
-                0.0,
-            ),
-        );
-
-        let pole_r = pole.mesh();
-        root.add_child(&pole_r);
-        pole_r.set_collider(Some(&pole.collider()));
-        pole_r.set_rigid_body(Some(static_body()));
-        pole_r.set_material(Some(&material));
-        set_translation(
-            &pole_r,
-            Vec3::new(
-                PORTAL_WIDTH / 2.0 + BEAM_THICKNESS / 2.0,
-                PORTAL_HEIGHT / 2.0,
-                0.0,
-            ),
-        );
-
-        let beam = Cuboid::new(Vec3::new(
-            BEAM_THICKNESS.mul_add(2.0, PORTAL_WIDTH),
-            BEAM_THICKNESS,
-            BEAM_THICKNESS,
-        ));
-
-        let beam_top = beam.mesh();
-        root.add_child(&beam_top);
-        beam_top.set_collider(Some(&beam.collider()));
-        beam_top.set_rigid_body(Some(static_body()));
-        beam_top.set_material(Some(&material));
-        set_translation(
-            &beam_top,
-            Vec3::new(0.0, PORTAL_HEIGHT + BEAM_THICKNESS / 2.0, 0.0),
-        );
+        spawn_frame(&root, &material);
 
         let pedestal_shape = Cuboid::new(Vec3::new(
             PEDESTAL_THICKNESS,
@@ -312,4 +205,122 @@ impl ScriptBehavior for Script {
         }
         Ok(())
     }
+}
+
+fn spawn_frame(root: &Prim, material: &Material) {
+    let pole = Cuboid::new(Vec3::new(BEAM_THICKNESS, PORTAL_HEIGHT, BEAM_THICKNESS));
+
+    let pole_l = pole.mesh();
+    root.add_child(&pole_l);
+    pole_l.set_collider(Some(&pole.collider()));
+    pole_l.set_rigid_body(Some(static_body()));
+    pole_l.set_material(Some(material));
+    set_translation(
+        &pole_l,
+        Vec3::new(
+            -PORTAL_WIDTH / 2.0 - BEAM_THICKNESS / 2.0,
+            PORTAL_HEIGHT / 2.0,
+            0.0,
+        ),
+    );
+
+    let pole_r = pole.mesh();
+    root.add_child(&pole_r);
+    pole_r.set_collider(Some(&pole.collider()));
+    pole_r.set_rigid_body(Some(static_body()));
+    pole_r.set_material(Some(material));
+    set_translation(
+        &pole_r,
+        Vec3::new(
+            PORTAL_WIDTH / 2.0 + BEAM_THICKNESS / 2.0,
+            PORTAL_HEIGHT / 2.0,
+            0.0,
+        ),
+    );
+
+    let beam = Cuboid::new(Vec3::new(
+        BEAM_THICKNESS.mul_add(2.0, PORTAL_WIDTH),
+        BEAM_THICKNESS,
+        BEAM_THICKNESS,
+    ));
+
+    let beam_top = beam.mesh();
+    root.add_child(&beam_top);
+    beam_top.set_collider(Some(&beam.collider()));
+    beam_top.set_rigid_body(Some(static_body()));
+    beam_top.set_material(Some(material));
+    set_translation(
+        &beam_top,
+        Vec3::new(0.0, PORTAL_HEIGHT + BEAM_THICKNESS / 2.0, 0.0),
+    );
+}
+
+const fn static_body() -> RigidBody {
+    RigidBody {
+        kind:            RigidBodyKind::Static,
+        angular_damping: None,
+        friction:        None,
+        linear_damping:  None,
+        mass:            None,
+        restitution:     None,
+    }
+}
+
+fn set_translation(prim: &Prim, translation: Vec3) {
+    prim.set_xform(Some(Xform {
+        translation,
+        rotation: Quat::IDENTITY,
+        scale: Vec3::ONE,
+    }));
+}
+
+const fn gate_material() -> Material {
+    Material {
+        alpha_cutoff:               None,
+        alpha_mode:                 None,
+        base_color:                 Some(Color {
+            r: 0.7,
+            g: 0.72,
+            b: 0.78,
+            a: 1.0,
+        }),
+        base_color_texture:         None,
+        double_sided:               None,
+        emissive:                   None,
+        emissive_texture:           None,
+        metallic:                   Some(0.6),
+        metallic_roughness_texture: None,
+        normal_texture:             None,
+        occlusion_texture:          None,
+        roughness:                  Some(0.4),
+    }
+}
+
+fn portal_from_link(link: Option<&LinkState>) -> Portal {
+    Portal {
+        destination: link.map(|s| PortalDestination {
+            space:    s.target_space.to_vec(),
+            receptor: s
+                .receptor_doc
+                .zip(s.receptor_prim.clone())
+                .map(|(d, p)| PortalReceptor {
+                    document: d.to_vec(),
+                    prim:     p,
+                }),
+        }),
+        size_x:      PORTAL_WIDTH,
+        size_y:      PORTAL_HEIGHT,
+    }
+}
+
+fn write_link(kv: &Kv, state: &LinkState) {
+    let bytes = postcard::to_allocvec(state).expect("encode link state");
+    if let Err(err) = kv.set(LINK_KEY, &bytes) {
+        eprintln!("Gate kv write failed: {err:?}");
+    }
+}
+
+fn read_link(kv: &Kv) -> Option<LinkState> {
+    kv.get(LINK_KEY)
+        .and_then(|b| postcard::from_bytes::<LinkState>(&b).ok())
 }

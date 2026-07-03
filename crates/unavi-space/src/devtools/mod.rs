@@ -7,27 +7,43 @@ use bevy::{
 use unavi_devtools::tabs::panel_active;
 
 pub mod conn;
+mod inspect;
 mod network;
-mod state;
 
 pub struct SpaceDevToolsPlugin;
 
 impl Plugin for SpaceDevToolsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<network::NetSampler>()
-            .init_resource::<state::StateSelection>()
-            .init_resource::<state::SelectorPeers>()
-            .add_systems(Startup, (network::spawn, state::spawn))
-            .add_observer(state::handle_select)
+            .init_resource::<inspect::CurrentPage>()
+            .init_resource::<inspect::History>()
+            .init_resource::<inspect::Expanded>()
+            .init_resource::<inspect::RenderedPage>()
+            .init_resource::<inspect::sidebar::SidebarEntries>()
+            .add_systems(Startup, (network::spawn, inspect::spawn))
+            .add_observer(inspect::handle_link)
+            .add_observer(inspect::handle_back)
+            .add_observer(inspect::handle_expand)
             .add_systems(
                 Update,
                 (
                     network::update.run_if(panel_active::<network::NetworkPanel>),
-                    state::sync_selector.run_if(panel_active::<state::StatePanel>),
-                    state::highlight_selected.run_if(panel_active::<state::StatePanel>),
-                    state::render
-                        .run_if(panel_active::<state::StatePanel>)
-                        .run_if(on_timer(Duration::from_millis(500))),
+                    inspect::sidebar::sync.run_if(
+                        panel_active::<inspect::InspectPanel>
+                            .and(on_timer(Duration::from_millis(500))),
+                    ),
+                    inspect::sidebar::highlight.run_if(panel_active::<inspect::InspectPanel>),
+                    inspect::render.run_if(
+                        panel_active::<inspect::InspectPanel>.and(
+                            on_timer(Duration::from_millis(500))
+                                .or(resource_changed::<inspect::CurrentPage>)
+                                .or(resource_changed::<inspect::Expanded>)
+                                .or(resource_changed::<inspect::History>),
+                        ),
+                    ),
+                    inspect::widgets::refresh_times.run_if(
+                        panel_active::<inspect::InspectPanel>.and(on_timer(Duration::from_secs(1))),
+                    ),
                 ),
             );
     }

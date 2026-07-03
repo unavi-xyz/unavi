@@ -20,7 +20,6 @@ use std::{
 
 use blake3::Hash;
 use parking_lot::Mutex;
-use tracing::warn;
 use unavi_quota::{
     Quota,
     Stock,
@@ -48,40 +47,39 @@ pub const KV_KEY_MAX_BYTES: usize = 256;
 /// forged future `at` cannot pin ownership/authority or win KV merges forever.
 const MAX_CLOCK_SKEW_MILLIS: u64 = 5 * 60 * 1000;
 
-/// A change to whether any peer pins a document, emitted on the 0↔1 holder
-/// transition so the scene can react without scanning every pin each frame.
-#[derive(Debug, Clone)]
-pub enum PinChange {
-    Pinned { doc: Hash, space: Hash },
-    Unpinned { doc: Hash },
-}
-
 /// A KV cell merged last-write-wins. `value: None` is a tombstone retained so a
 /// delete keeps winning over an older live write on another peer. `_hold`
 /// charges the cell's bytes to the document's quota for exactly its lifetime,
 /// so dropping the cell refunds with no separate bookkeeping.
-struct LwwCell {
+struct OwnedCell {
     at:    u64,
     value: Option<Vec<u8>>,
     hold:  StockHold,
 }
 
-impl LwwCell {
-    fn bytes(key: &str, value: Option<&[u8]>) -> u64 {
-        (key.len() + value.map_or(0, <[u8]>::len)) as u64
-    }
+/// A space-owned (neutral) KV cell. Stored on the document rather than under
+/// any peer, so it persists once written until explicitly deleted or the
+/// document is forgotten by everyone; `peer` is retained only as the merge
+/// tiebreak.
+struct NeutralCell {
+    at:    u64,
+    peer:  PeerId,
+    value: Option<Vec<u8>>,
+    hold:  StockHold,
+}
+
+fn cell_bytes(key: &str, value: Option<&[u8]>) -> u64 {
+    (key.len() + value.map_or(0, <[u8]>::len)) as u64
 }
 
 /// One peer's contribution to a document: its pin (timestamped, so the oldest
-/// pin owns the doc), its latest object-authority claim, and the KV it
-/// authored. KV is owner-authoritative for peer-owned docs and open for
-/// space-owned docs, so per-peer cells exist mainly to merge writes to open
-/// documents.
+/// pin owns the doc), its latest object-authority claim, and the owner-authored
+/// KV it wrote while owning the doc.
 #[derive(Default)]
 struct PeerDocEntry {
     pin:       Option<u64>,
     authority: Option<u64>,
-    kv:        HashMap<String, LwwCell>,
+    kv:        HashMap<String, OwnedCell>,
 }
 
 impl PeerDocEntry {
@@ -97,23 +95,24 @@ struct PeerReplica {
 
 /// Per-document state shared across peers: its space, its quota (charged to the
 /// owner, migrated on handoff), a `Documents` hold held while the doc is known
-/// locally, and the holder/reference counts that drive scene lifecycle.
+/// locally, its space-owned KV, and a reference count of the live state data
+/// (pins, authority claims, and KV cells) keeping the presence alive.
 struct DocPresence {
-    space:       Hash,
-    quota:       Arc<Quota>,
-    _doc_hold:   StockHold,
-    pin_holders: u32,
-    entry_refs:  u32,
+    space:      Hash,
+    _doc_hold:  StockHold,
+    neutral_kv: HashMap<String, NeutralCell>,
+    refs:       u32,
 }
 
 /// Holds every peer's replicated state (self included), per-document presence,
-/// and the live delta/pin senders.
+/// and the live delta senders. State is mutated only by the RAII guards in
+/// [`crate::state::entities`]; everything here is a read index plus the
+/// low-level add/remove those guards drive.
 #[derive(Default)]
 struct ReplicatedPeerState {
     peers:   HashMap<PeerId, PeerReplica>,
     docs:    HashMap<Hash, DocPresence>,
     senders: HashMap<u64, async_channel::Sender<StateMsg>>,
-    pin_tx:  Option<async_channel::Sender<PinChange>>,
 }
 
 impl ReplicatedPeerState {
@@ -122,218 +121,217 @@ impl ReplicatedPeerState {
             .retain(|_, tx| tx.try_send(msg.clone()).is_ok());
     }
 
-    fn emit_pin(&self, change: PinChange) {
-        if let Some(tx) = &self.pin_tx {
-            let _ = tx.try_send(change);
-        }
-    }
-
-    /// Ensures a per-peer entry for `doc`, creating its [`DocPresence`] (and
-    /// charging one `Documents` unit) on first sight. Returns `false` when that
-    /// charge is refused, so the caller drops the update rather than store it
-    /// untracked.
-    fn ensure_entry(&mut self, peer: PeerId, doc: Hash, space: Hash, quota: &Arc<Quota>) -> bool {
+    /// Ensures a [`DocPresence`] for `doc`, charging one `Documents` unit on
+    /// first sight. Returns `false` when that charge is refused.
+    fn ensure_presence(&mut self, doc: Hash, space: Hash, quota: &Arc<Quota>) -> bool {
         if let Entry::Vacant(v) = self.docs.entry(doc) {
             let Ok(hold) = quota.hold(Stock::Documents, 1) else {
                 return false;
             };
             v.insert(DocPresence {
                 space,
-                quota: Arc::clone(quota),
                 _doc_hold: hold,
-                pin_holders: 0,
-                entry_refs: 0,
+                neutral_kv: HashMap::new(),
+                refs: 0,
             });
-        }
-        let replica = self.peers.entry(peer).or_default();
-        if let Entry::Vacant(v) = replica.docs.entry(doc) {
-            v.insert(PeerDocEntry::default());
-            if let Some(p) = self.docs.get_mut(&doc) {
-                p.entry_refs += 1;
-            }
         }
         true
     }
 
-    /// Drops a peer's now-empty entry, releasing its document presence (and the
-    /// `Documents` hold) once no peer references the doc.
-    fn prune_entry(&mut self, peer: PeerId, doc: Hash, reassign: &mut Vec<(Hash, Hash)>) {
-        let Some(replica) = self.peers.get_mut(&peer) else {
-            return;
-        };
-        let Entry::Occupied(e) = replica.docs.entry(doc) else {
-            return;
-        };
-        if !e.get().is_empty() {
-            return;
-        }
-        e.remove();
-        if let Entry::Occupied(mut p) = self.docs.entry(doc) {
-            p.get_mut().entry_refs -= 1;
-            if p.get().entry_refs == 0 {
-                p.remove();
-            } else {
-                reassign.push((doc, p.get().space));
-            }
-        }
-    }
-
-    fn set_pin(&mut self, peer: PeerId, doc: Hash, at: u64, reassign: &mut Vec<(Hash, Hash)>) {
-        let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc)) else {
-            return;
-        };
-        if entry.pin.is_some() {
-            return;
-        }
-        entry.pin = Some(at);
-        let Some(p) = self.docs.get_mut(&doc) else {
-            return;
-        };
-        p.pin_holders += 1;
-        let space = p.space;
-        let first = p.pin_holders == 1;
-        if first {
-            self.emit_pin(PinChange::Pinned { doc, space });
-        }
-        reassign.push((doc, space));
-    }
-
-    fn clear_pin(&mut self, peer: PeerId, doc: Hash, reassign: &mut Vec<(Hash, Hash)>) {
-        let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc)) else {
-            return;
-        };
-        if entry.pin.take().is_none() {
-            return;
-        }
+    fn inc_ref(&mut self, doc: Hash) {
         if let Some(p) = self.docs.get_mut(&doc) {
-            p.pin_holders = p.pin_holders.saturating_sub(1);
-            let space = p.space;
-            let last = p.pin_holders == 0;
-            if last {
-                self.emit_pin(PinChange::Unpinned { doc });
+            p.refs += 1;
+        }
+    }
+
+    /// Drops one reference to `doc`, releasing its presence (and the
+    /// `Documents` hold) once nothing references it.
+    fn dec_ref(&mut self, doc: Hash) {
+        if let Entry::Occupied(mut p) = self.docs.entry(doc) {
+            p.get_mut().refs = p.get().refs.saturating_sub(1);
+            if p.get().refs == 0 {
+                p.remove();
             }
-            reassign.push((doc, space));
         }
     }
 
-    fn set_authority(&mut self, peer: PeerId, doc: Hash, at: u64) {
-        if let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc)) {
-            entry.authority = Some(at);
+    /// Removes a peer's entry for `doc` once it holds no data.
+    fn prune_entry(&mut self, peer: PeerId, doc: Hash) {
+        if let Some(replica) = self.peers.get_mut(&peer)
+            && let Entry::Occupied(e) = replica.docs.entry(doc)
+            && e.get().is_empty()
+        {
+            e.remove();
         }
     }
 
-    /// Applies a KV write to a peer's entry, sizing the cell's quota hold to
-    /// the net byte delta. A smaller value or tombstone always fits, even
-    /// at a full cap; a growth that exceeds the cap leaves the old value
-    /// and returns `false`. A stale (older `at`) write is a no-op and
-    /// returns `true`.
-    fn write_kv(
+    fn add_pin(
         &mut self,
         peer: PeerId,
         doc: Hash,
+        space: Hash,
+        at: u64,
+        quota: &Arc<Quota>,
+        reassign: &mut Vec<(Hash, Hash)>,
+    ) -> bool {
+        if !self.ensure_presence(doc, space, quota) {
+            return false;
+        }
+        let entry = self
+            .peers
+            .entry(peer)
+            .or_default()
+            .docs
+            .entry(doc)
+            .or_default();
+        if entry.pin.is_none() {
+            entry.pin = Some(at);
+            self.inc_ref(doc);
+            reassign.push((doc, space));
+        }
+        true
+    }
+
+    fn remove_pin(&mut self, peer: PeerId, doc: Hash, reassign: &mut Vec<(Hash, Hash)>) {
+        if let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc))
+            && entry.pin.take().is_some()
+        {
+            if let Some(space) = self.docs.get(&doc).map(|p| p.space) {
+                reassign.push((doc, space));
+            }
+            self.dec_ref(doc);
+            self.prune_entry(peer, doc);
+        }
+    }
+
+    fn add_authority(
+        &mut self,
+        peer: PeerId,
+        doc: Hash,
+        space: Hash,
+        at: u64,
+        quota: &Arc<Quota>,
+    ) -> bool {
+        if !self.ensure_presence(doc, space, quota) {
+            return false;
+        }
+        let entry = self
+            .peers
+            .entry(peer)
+            .or_default()
+            .docs
+            .entry(doc)
+            .or_default();
+        let was_set = entry.authority.is_some();
+        entry.authority = Some(at);
+        if !was_set {
+            self.inc_ref(doc);
+        }
+        true
+    }
+
+    fn remove_authority(&mut self, peer: PeerId, doc: Hash) {
+        if let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc))
+            && entry.authority.take().is_some()
+        {
+            self.dec_ref(doc);
+            self.prune_entry(peer, doc);
+        }
+    }
+
+    fn add_kv(
+        &mut self,
+        peer: PeerId,
+        doc: Hash,
+        space: Hash,
         key: String,
         value: Option<Vec<u8>>,
         at: u64,
-    ) -> bool {
-        let Some(p) = self.docs.get(&doc) else {
-            return false;
-        };
-        let quota = Arc::clone(&p.quota);
-        let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc)) else {
-            return false;
-        };
-        let new_bytes = LwwCell::bytes(&key, value.as_deref());
+        quota: &Arc<Quota>,
+    ) -> Result<KvPlacement, KvError> {
+        let neutral = self.is_space_owned(space, doc);
+        if !neutral && self.owner(space, doc) != Some(peer) {
+            return Err(KvError::NotOwner);
+        }
+        if !self.ensure_presence(doc, space, quota) {
+            return Err(KvError::QuotaExceeded);
+        }
+        let new_bytes = cell_bytes(&key, value.as_deref());
+        if neutral {
+            let presence = self.docs.get_mut(&doc).expect("presence ensured");
+            match presence.neutral_kv.entry(key) {
+                Entry::Occupied(mut o) => {
+                    if at < o.get().at {
+                        return Ok(KvPlacement::Neutral);
+                    }
+                    let cell = o.get_mut();
+                    if cell.hold.resize(new_bytes).is_err() {
+                        return Err(KvError::QuotaExceeded);
+                    }
+                    cell.at = at;
+                    cell.peer = peer;
+                    cell.value = value;
+                }
+                Entry::Vacant(v) => {
+                    let Ok(hold) = quota.hold(Stock::KvMemory, new_bytes) else {
+                        return Err(KvError::QuotaExceeded);
+                    };
+                    v.insert(NeutralCell {
+                        at,
+                        peer,
+                        value,
+                        hold,
+                    });
+                    self.inc_ref(doc);
+                }
+            }
+            return Ok(KvPlacement::Neutral);
+        }
+        let entry = self
+            .peers
+            .entry(peer)
+            .or_default()
+            .docs
+            .entry(doc)
+            .or_default();
         match entry.kv.entry(key) {
             Entry::Occupied(mut o) => {
                 if at < o.get().at {
-                    return true;
+                    return Ok(KvPlacement::Owned);
                 }
                 let cell = o.get_mut();
                 if cell.hold.resize(new_bytes).is_err() {
-                    warn!(?peer, "kv update dropped over quota");
-                    return false;
+                    return Err(KvError::QuotaExceeded);
                 }
                 cell.at = at;
                 cell.value = value;
-                true
             }
             Entry::Vacant(v) => {
                 let Ok(hold) = quota.hold(Stock::KvMemory, new_bytes) else {
-                    warn!(?peer, "kv write dropped over quota");
-                    return false;
+                    return Err(KvError::QuotaExceeded);
                 };
-                v.insert(LwwCell { at, value, hold });
-                true
+                v.insert(OwnedCell { at, value, hold });
+                self.inc_ref(doc);
             }
         }
+        Ok(KvPlacement::Owned)
     }
 
-    /// Removes a peer's entire replica, dropping its holds and decrementing the
-    /// per-document holder/reference counts.
-    fn clear_peer(&mut self, peer: PeerId, reassign: &mut Vec<(Hash, Hash)>) {
-        let Some(replica) = self.peers.remove(&peer) else {
-            return;
-        };
-        for (doc, entry) in replica.docs {
-            let Entry::Occupied(mut p) = self.docs.entry(doc) else {
-                continue;
-            };
-            let emit_unpin = if entry.pin.is_some() {
-                let h = p.get_mut();
-                h.pin_holders = h.pin_holders.saturating_sub(1);
-                h.pin_holders == 0
-            } else {
-                false
-            };
-            p.get_mut().entry_refs -= 1;
-            let space = p.get().space;
-            if p.get().entry_refs == 0 {
-                p.remove();
-            } else {
-                reassign.push((doc, space));
-            }
-            if emit_unpin {
-                self.emit_pin(PinChange::Unpinned { doc });
-            }
-        }
-    }
-
-    /// Copies a departing peer's space-owned (neutral) KV into the local
-    /// replica so it survives the writer leaving.
-    fn absorb_space_kv(&mut self, leaving: PeerId) {
-        let Some(me) = self_peer_id() else {
-            return;
-        };
-        if me == leaving {
-            return;
-        }
-        let mut candidates: Vec<(Hash, Hash, Vec<(String, Option<Vec<u8>>, u64)>)> = Vec::new();
-        if let Some(replica) = self.peers.get(&leaving) {
-            for (doc, entry) in &replica.docs {
-                if entry.kv.is_empty() {
-                    continue;
+    fn remove_kv(&mut self, peer: PeerId, doc: Hash, key: &str, placement: KvPlacement) {
+        match placement {
+            KvPlacement::Neutral => {
+                if let Some(p) = self.docs.get_mut(&doc)
+                    && p.neutral_kv.remove(key).is_some()
+                {
+                    self.dec_ref(doc);
                 }
-                let Some(space) = self.docs.get(doc).map(|p| p.space) else {
-                    continue;
-                };
-                let cells = entry
-                    .kv
-                    .iter()
-                    .map(|(k, c)| (k.clone(), c.value.clone(), c.at))
-                    .collect();
-                candidates.push((*doc, space, cells));
             }
-        }
-        for (doc, space, cells) in candidates {
-            if !is_space_owned(self, space, doc) {
-                continue;
-            }
-            let Some(quota) = self.docs.get(&doc).map(|p| Arc::clone(&p.quota)) else {
-                continue;
-            };
-            for (key, value, at) in cells {
-                if self.ensure_entry(me, doc, space, &quota) {
-                    self.write_kv(me, doc, key, value, at);
+            KvPlacement::Owned => {
+                if let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc))
+                    && entry.kv.remove(key).is_some()
+                {
+                    self.dec_ref(doc);
+                    self.prune_entry(peer, doc);
                 }
             }
         }
@@ -353,9 +351,9 @@ impl ReplicatedPeerState {
             .map(|(_, pid)| pid)
     }
 
-    /// Transform authority for `doc`: the latest explicit claimer (e.g. whoever
-    /// last grabbed it), or the document's owner when no one has claimed, so an
-    /// owner drives its objects by default until a peer grabs them.
+    /// Transform authority for `doc`: the latest explicit claimer, or the
+    /// document's owner when no one has claimed, so an owner drives its objects
+    /// by default until a peer grabs them.
     fn authority(&self, space: Hash, doc: Hash) -> Option<PeerId> {
         if self.docs.get(&doc).is_none_or(|p| p.space != space) {
             return None;
@@ -369,45 +367,92 @@ impl ReplicatedPeerState {
     }
 
     fn merged_cell(&self, space: Hash, doc: Hash, key: &str) -> Option<Vec<u8>> {
-        if self.docs.get(&doc).is_none_or(|p| p.space != space) {
-            return None;
-        }
-        self.peers
-            .iter()
-            .filter_map(|(pid, r)| {
-                let cell = r.docs.get(&doc)?.kv.get(key)?;
-                Some((cell.at, *pid, cell.value.clone()))
-            })
+        let presence = self.docs.get(&doc).filter(|p| p.space == space)?;
+        let owned = self.peers.iter().filter_map(|(pid, r)| {
+            let cell = r.docs.get(&doc)?.kv.get(key)?;
+            Some((cell.at, *pid, cell.value.clone()))
+        });
+        let neutral = presence
+            .neutral_kv
+            .get(key)
+            .map(|c| (c.at, c.peer, c.value.clone()));
+        owned
+            .chain(neutral)
             .max_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)))
             .and_then(|(_, _, value)| value)
     }
 
+    /// Whether `doc` is space-owned: the space's base document, or a doc with
+    /// no pin-owner. Space-owned documents accept KV writes from any peer
+    /// and store them neutrally; peer-owned documents only from their
+    /// owner.
+    fn is_space_owned(&self, space: Hash, doc: Hash) -> bool {
+        doc == space || self.owner(space, doc).is_none()
+    }
+
+    fn key_set(&self, doc: Hash) -> HashSet<String> {
+        let mut keys = HashSet::new();
+        for r in self.peers.values() {
+            if let Some(e) = r.docs.get(&doc) {
+                keys.extend(e.kv.keys().cloned());
+            }
+        }
+        if let Some(p) = self.docs.get(&doc) {
+            keys.extend(p.neutral_kv.keys().cloned());
+        }
+        keys
+    }
+
     fn self_snapshot(&self, me: PeerId) -> Vec<DocSnapshot> {
-        let Some(replica) = self.peers.get(&me) else {
-            return Vec::new();
-        };
-        replica
-            .docs
-            .iter()
-            .filter_map(|(doc, e)| {
-                let space = self.docs.get(doc)?.space;
-                Some(DocSnapshot {
-                    doc: *doc,
-                    space,
-                    pin: e.pin,
-                    authority: e.authority,
-                    kv: e
-                        .kv
-                        .iter()
-                        .map(|(k, c)| KvSnapshot {
-                            key:   k.clone(),
-                            value: c.value.clone(),
-                            at:    c.at,
-                        })
-                        .collect(),
-                })
-            })
-            .collect()
+        let mut by_doc: HashMap<Hash, DocSnapshot> = HashMap::new();
+        if let Some(replica) = self.peers.get(&me) {
+            for (doc, e) in &replica.docs {
+                let Some(space) = self.docs.get(doc).map(|p| p.space) else {
+                    continue;
+                };
+                by_doc.insert(
+                    *doc,
+                    DocSnapshot {
+                        doc: *doc,
+                        space,
+                        pin: e.pin,
+                        authority: e.authority,
+                        kv: e
+                            .kv
+                            .iter()
+                            .map(|(k, c)| KvSnapshot {
+                                key:   k.clone(),
+                                value: c.value.clone(),
+                                at:    c.at,
+                            })
+                            .collect(),
+                    },
+                );
+            }
+        }
+        for (doc, p) in &self.docs {
+            for (key, c) in &p.neutral_kv {
+                if c.peer != me {
+                    continue;
+                }
+                by_doc
+                    .entry(*doc)
+                    .or_insert_with(|| DocSnapshot {
+                        doc:       *doc,
+                        space:     p.space,
+                        pin:       None,
+                        authority: None,
+                        kv:        Vec::new(),
+                    })
+                    .kv
+                    .push(KvSnapshot {
+                        key:   key.clone(),
+                        value: c.value.clone(),
+                        at:    c.at,
+                    });
+            }
+        }
+        by_doc.into_values().collect()
     }
 }
 
@@ -421,8 +466,14 @@ fn now_millis() -> u64 {
         .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
 }
 
+#[must_use]
+pub fn current_millis() -> u64 {
+    now_millis()
+}
+
 /// Whether `at` is within the accepted clock skew of local time.
-fn time_valid(at: u64) -> bool {
+#[must_use]
+pub fn time_valid(at: u64) -> bool {
     at <= now_millis().saturating_add(MAX_CLOCK_SKEW_MILLIS)
 }
 
@@ -453,235 +504,79 @@ pub fn unregister_stream(token: u64) {
     PEER_STATE.lock().senders.remove(&token);
 }
 
-/// Registers the scene's pin lifecycle stream, receiving a [`PinChange`] each
-/// time a document gains its first or loses its last holder.
-pub fn register_pin_stream() -> async_channel::Receiver<PinChange> {
-    let (tx, rx) = async_channel::unbounded();
-    PEER_STATE.lock().pin_tx = Some(tx);
-    rx
+/// Broadcasts a delta to every connected peer's state stream.
+pub fn broadcast(msg: &StateMsg) {
+    PEER_STATE.lock().broadcast(msg);
 }
 
-/// Applies a remote peer's update to its replica.
+/// Where a KV write landed, so the guard knows which store location to clear on
+/// drop.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KvPlacement {
+    Owned,
+    Neutral,
+}
+
+/// Adds a peer's pin on `doc`. Returns `false` if the document quota refuses
+/// the presence. Idempotent: a repeat pin from the same peer is a no-op.
+pub fn add_pin(peer: PeerId, doc: Hash, space: Hash, at: u64) -> bool {
+    let quota = document_quota(doc);
+    let mut reassign = Vec::new();
+    let mut state = PEER_STATE.lock();
+    let ok = state.add_pin(peer, doc, space, at, &quota, &mut reassign);
+    drop(state);
+    settle_reassigns(reassign);
+    ok
+}
+
+pub fn remove_pin(peer: PeerId, doc: Hash) {
+    let mut reassign = Vec::new();
+    let mut state = PEER_STATE.lock();
+    state.remove_pin(peer, doc, &mut reassign);
+    drop(state);
+    settle_reassigns(reassign);
+}
+
+/// Adds or refreshes a peer's authority claim on `doc`. Returns `false` if the
+/// document quota refuses the presence.
+pub fn add_authority(peer: PeerId, doc: Hash, space: Hash, at: u64) -> bool {
+    let quota = document_quota(doc);
+    let mut state = PEER_STATE.lock();
+    let ok = state.add_authority(peer, doc, space, at, &quota);
+    drop(state);
+    ok
+}
+
+pub fn remove_authority(peer: PeerId, doc: Hash) {
+    let mut state = PEER_STATE.lock();
+    state.remove_authority(peer, doc);
+    drop(state);
+}
+
+/// Applies a KV write for `peer`, placing it neutrally for space-owned
+/// documents or under the peer for owner-authored ones.
 ///
-/// Forged-future timestamps are rejected, and bytes are charged to the
-/// document's owner/space; updates that exceed that quota are dropped rather
-/// than stored. Document quotas are resolved before locking, since the owner
-/// resolver re-enters the store.
-pub fn apply_remote(peer: PeerId, msg: StateMsg) {
-    let mut reassign = Vec::new();
-    match msg {
-        StateMsg::Snapshot(snaps) => {
-            let resolved = snaps
-                .into_iter()
-                .map(|s| (document_quota(s.doc), s))
-                .collect::<Vec<_>>();
-            let mut state = PEER_STATE.lock();
-            state.clear_peer(peer, &mut reassign);
-            for (quota, s) in resolved {
-                apply_snapshot_doc(&mut state, peer, s, &quota, &mut reassign);
-            }
-            drop(state);
-        }
-        StateMsg::Pin { doc, space, at } if time_valid(at) => {
-            let quota = document_quota(doc);
-            let mut state = PEER_STATE.lock();
-            if state.ensure_entry(peer, doc, space, &quota) {
-                state.set_pin(peer, doc, at, &mut reassign);
-            } else {
-                warn!(?peer, "pin dropped over quota");
-            }
-            drop(state);
-        }
-        StateMsg::Unpin { doc } => {
-            let mut state = PEER_STATE.lock();
-            state.clear_pin(peer, doc, &mut reassign);
-            state.prune_entry(peer, doc, &mut reassign);
-            drop(state);
-        }
-        StateMsg::Authority { doc, at } if time_valid(at) => {
-            let quota = document_quota(doc);
-            let mut state = PEER_STATE.lock();
-            if let Some(space) = state.docs.get(&doc).map(|p| p.space)
-                && state.ensure_entry(peer, doc, space, &quota)
-            {
-                state.set_authority(peer, doc, at);
-            }
-            drop(state);
-        }
-        StateMsg::Kv {
-            doc,
-            space,
-            key,
-            value,
-            at,
-        } if time_valid(at) => {
-            let quota = document_quota(doc);
-            let mut state = PEER_STATE.lock();
-            if writer_permitted(&state, space, doc, peer)
-                && state.ensure_entry(peer, doc, space, &quota)
-            {
-                state.write_kv(peer, doc, key, value, at);
-            }
-            drop(state);
-        }
-        _ => {}
-    }
-    settle_reassigns(reassign);
-}
-
-fn apply_snapshot_doc(
-    state: &mut ReplicatedPeerState,
+/// Rejects writes to a peer-owned document by a non-owner, and drops writes
+/// that exceed quota.
+pub fn add_kv(
     peer: PeerId,
-    s: DocSnapshot,
-    quota: &Arc<Quota>,
-    reassign: &mut Vec<(Hash, Hash)>,
-) {
-    if !state.ensure_entry(peer, s.doc, s.space, quota) {
-        warn!(?peer, "snapshot doc dropped over quota");
-        return;
-    }
-    if let Some(at) = s.pin.filter(|at| time_valid(*at)) {
-        state.set_pin(peer, s.doc, at, reassign);
-    }
-    if let Some(at) = s.authority.filter(|at| time_valid(*at)) {
-        state.set_authority(peer, s.doc, at);
-    }
-    let open = is_space_owned(state, s.space, s.doc);
-    for kv in s.kv {
-        if time_valid(kv.at) && (open || state.owner(s.space, s.doc) == Some(peer)) {
-            state.write_kv(peer, s.doc, kv.key, kv.value, kv.at);
-        }
-    }
-    state.prune_entry(peer, s.doc, reassign);
-}
-
-/// Removes a disconnected peer's replica, releasing its quota and handing off
-/// ownership of any docs it owned to the next-oldest pinner.
-pub fn remove_peer(peer: PeerId) {
-    let mut reassign = Vec::new();
-    let mut state = PEER_STATE.lock();
-    state.absorb_space_kv(peer);
-    state.clear_peer(peer, &mut reassign);
-    drop(state);
-    settle_reassigns(reassign);
-}
-
-/// Whether `doc` is space-owned: the space's base document, or a doc with no
-/// pin-owner. Space-owned documents accept KV writes from any peer; peer-owned
-/// documents only from their owner.
-fn is_space_owned(state: &ReplicatedPeerState, space: Hash, doc: Hash) -> bool {
-    doc == space || state.owner(space, doc).is_none()
-}
-
-fn writer_permitted(state: &ReplicatedPeerState, space: Hash, doc: Hash, writer: PeerId) -> bool {
-    is_space_owned(state, space, doc) || state.owner(space, doc) == Some(writer)
-}
-
-pub fn self_pin(space: Hash, doc: Hash) -> bool {
-    let Some(me) = self_peer_id() else {
-        return false;
-    };
-    let at = now_millis();
-    let quota = document_quota(doc);
-    let mut reassign = Vec::new();
-    let mut state = PEER_STATE.lock();
-    let pinned = if state.ensure_entry(me, doc, space, &quota) {
-        state.set_pin(me, doc, at, &mut reassign);
-        state.broadcast(&StateMsg::Pin { doc, space, at });
-        true
-    } else {
-        false
-    };
-    drop(state);
-    settle_reassigns(reassign);
-    pinned
-}
-
-pub fn self_unpin(doc: Hash) {
-    let Some(me) = self_peer_id() else {
-        return;
-    };
-    let mut reassign = Vec::new();
-    let mut state = PEER_STATE.lock();
-    let was_pinned = state
-        .peers
-        .get(&me)
-        .and_then(|r| r.docs.get(&doc))
-        .is_some_and(|e| e.pin.is_some());
-    if was_pinned {
-        state.clear_pin(me, doc, &mut reassign);
-        state.prune_entry(me, doc, &mut reassign);
-        state.broadcast(&StateMsg::Unpin { doc });
-    }
-    drop(state);
-    settle_reassigns(reassign);
-}
-
-/// Claims transient transform authority over `doc` for the local peer, e.g. on
-/// grabbing its rigid body. Distinct from ownership: latest claim wins.
-pub fn claim_authority(space: Hash, doc: Hash) {
-    let Some(me) = self_peer_id() else {
-        return;
-    };
-    let at = now_millis();
+    doc: Hash,
+    space: Hash,
+    key: String,
+    value: Option<Vec<u8>>,
+    at: u64,
+) -> Result<KvPlacement, KvError> {
     let quota = document_quota(doc);
     let mut state = PEER_STATE.lock();
-    if state.ensure_entry(me, doc, space, &quota) {
-        state.set_authority(me, doc, at);
-        state.broadcast(&StateMsg::Authority { doc, at });
-    }
-}
-
-pub fn doc_kv_set(space: Hash, doc: Hash, key: &str, value: &[u8]) -> Result<(), KvError> {
-    if key.len() > KV_KEY_MAX_BYTES {
-        return Err(KvError::KeyTooLong);
-    }
-    let Some(me) = self_peer_id() else {
-        return Err(KvError::Other);
-    };
-    let at = now_millis();
-    let quota = document_quota(doc);
-    let mut reassign = Vec::new();
-    let mut state = PEER_STATE.lock();
-    let result = if !writer_permitted(&state, space, doc, me) {
-        Err(KvError::NotOwner)
-    } else if !state.ensure_entry(me, doc, space, &quota) {
-        Err(KvError::QuotaExceeded)
-    } else if state.write_kv(me, doc, key.to_string(), Some(value.to_vec()), at) {
-        state.broadcast(&StateMsg::Kv {
-            doc,
-            space,
-            key: key.to_string(),
-            value: Some(value.to_vec()),
-            at,
-        });
-        Ok(())
-    } else {
-        state.prune_entry(me, doc, &mut reassign);
-        Err(KvError::QuotaExceeded)
-    };
+    let result = state.add_kv(peer, doc, space, key, value, at, &quota);
     drop(state);
-    settle_reassigns(reassign);
     result
 }
 
-pub fn doc_kv_delete(space: Hash, doc: Hash, key: &str) {
-    let Some(me) = self_peer_id() else {
-        return;
-    };
-    let at = now_millis();
-    let quota = document_quota(doc);
+pub fn remove_kv(peer: PeerId, doc: Hash, key: &str, placement: KvPlacement) {
     let mut state = PEER_STATE.lock();
-    if writer_permitted(&state, space, doc, me) && state.ensure_entry(me, doc, space, &quota) {
-        state.write_kv(me, doc, key.to_string(), None, at);
-        state.broadcast(&StateMsg::Kv {
-            doc,
-            space,
-            key: key.to_string(),
-            value: None,
-            at,
-        });
-    }
+    state.remove_kv(peer, doc, key, placement);
+    drop(state);
 }
 
 #[must_use]
@@ -724,13 +619,8 @@ pub fn doc_kv_keys(space: Hash, doc: Hash) -> Vec<String> {
     if state.docs.get(&doc).is_none_or(|p| p.space != space) {
         return Vec::new();
     }
-    let mut keys = HashSet::new();
-    for r in state.peers.values() {
-        if let Some(e) = r.docs.get(&doc) {
-            keys.extend(e.kv.keys().cloned());
-        }
-    }
-    let out = keys
+    let out = state
+        .key_set(doc)
         .into_iter()
         .filter(|k| state.merged_cell(space, doc, k).is_some())
         .collect();
@@ -744,13 +634,8 @@ pub fn doc_kv_total_bytes(space: Hash, doc: Hash) -> usize {
     if state.docs.get(&doc).is_none_or(|p| p.space != space) {
         return 0;
     }
-    let mut keys = HashSet::new();
-    for r in state.peers.values() {
-        if let Some(e) = r.docs.get(&doc) {
-            keys.extend(e.kv.keys().cloned());
-        }
-    }
-    let total = keys
+    let total = state
+        .key_set(doc)
         .into_iter()
         .filter_map(|k| state.merged_cell(space, doc, &k).map(|v| k.len() + v.len()))
         .sum();
@@ -792,7 +677,18 @@ pub fn space_of(doc: Hash) -> Option<Hash> {
     PEER_STATE.lock().docs.get(&doc).map(|p| p.space)
 }
 
-#[derive(Debug, Clone, Copy)]
+/// Whether any peer currently pins `doc`. Drives the scene's fetch/despawn of
+/// tracked documents.
+#[must_use]
+pub fn is_pinned(doc: Hash) -> bool {
+    PEER_STATE
+        .lock()
+        .peers
+        .values()
+        .any(|r| r.docs.get(&doc).is_some_and(|e| e.pin.is_some()))
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KvError {
     KeyTooLong,
     NotOwner,
@@ -805,14 +701,20 @@ pub enum KvError {
 pub mod debug {
     use super::{
         Hash,
+        HashMap,
+        OwnedCell,
         PEER_STATE,
         PeerId,
-        self_peer_id,
     };
 
     pub struct DebugKv {
-        pub key:   String,
-        pub bytes: Option<usize>,
+        pub key:    String,
+        /// The cell's value bytes; `None` is a tombstone.
+        pub value:  Option<Vec<u8>>,
+        pub at:     u64,
+        /// The authoring peer for neutral cells; owned cells' writer is the
+        /// peer they sit under.
+        pub writer: Option<PeerId>,
     }
 
     pub struct DebugDoc {
@@ -824,22 +726,40 @@ pub mod debug {
     }
 
     pub struct DebugPeer {
-        pub peer:    PeerId,
-        pub is_self: bool,
-        pub docs:    Vec<DebugDoc>,
+        pub peer: PeerId,
+        pub docs: Vec<DebugDoc>,
     }
 
+    pub struct DebugSnapshot {
+        pub peers:   Vec<DebugPeer>,
+        /// Space-owned (neutral) KV, held by documents rather than any peer.
+        pub neutral: Vec<DebugDoc>,
+    }
+
+    fn debug_kv(kv: &HashMap<String, OwnedCell>) -> Vec<DebugKv> {
+        let mut out = kv
+            .iter()
+            .map(|(k, c)| DebugKv {
+                key:    k.clone(),
+                value:  c.value.clone(),
+                at:     c.at,
+                writer: None,
+            })
+            .collect::<Vec<_>>();
+        out.sort_unstable_by(|a, b| a.key.cmp(&b.key));
+        out
+    }
+
+    /// A deterministically ordered snapshot, so the panel can fingerprint it
+    /// and rebuild only on change.
     #[must_use]
-    pub fn snapshot() -> Vec<DebugPeer> {
-        let me = self_peer_id();
+    pub fn snapshot() -> DebugSnapshot {
         let state = PEER_STATE.lock();
-        state
+        let mut peers = state
             .peers
             .iter()
-            .map(|(pid, r)| DebugPeer {
-                peer:    *pid,
-                is_self: Some(*pid) == me,
-                docs:    r
+            .map(|(pid, r)| {
+                let mut docs = r
                     .docs
                     .iter()
                     .map(|(doc, e)| DebugDoc {
@@ -847,18 +767,42 @@ pub mod debug {
                         space:     state.docs.get(doc).map_or(*doc, |p| p.space),
                         pin:       e.pin,
                         authority: e.authority,
-                        kv:        e
-                            .kv
-                            .iter()
-                            .map(|(k, c)| DebugKv {
-                                key:   k.clone(),
-                                bytes: c.value.as_ref().map(Vec::len),
-                            })
-                            .collect(),
+                        kv:        debug_kv(&e.kv),
                     })
-                    .collect(),
+                    .collect::<Vec<_>>();
+                docs.sort_unstable_by_key(|d| *d.doc.as_bytes());
+                DebugPeer { peer: *pid, docs }
             })
-            .collect()
+            .collect::<Vec<_>>();
+        peers.sort_unstable_by_key(|p| p.peer);
+        let mut neutral = state
+            .docs
+            .iter()
+            .filter(|(_, p)| !p.neutral_kv.is_empty())
+            .map(|(doc, p)| {
+                let mut kv = p
+                    .neutral_kv
+                    .iter()
+                    .map(|(k, c)| DebugKv {
+                        key:    k.clone(),
+                        value:  c.value.clone(),
+                        at:     c.at,
+                        writer: Some(c.peer),
+                    })
+                    .collect::<Vec<_>>();
+                kv.sort_unstable_by(|a, b| a.key.cmp(&b.key));
+                DebugDoc {
+                    doc: *doc,
+                    space: p.space,
+                    pin: None,
+                    authority: None,
+                    kv,
+                }
+            })
+            .collect::<Vec<_>>();
+        neutral.sort_unstable_by_key(|d| *d.doc.as_bytes());
+        drop(state);
+        DebugSnapshot { peers, neutral }
     }
 }
 
@@ -873,74 +817,14 @@ pub static TEST_LOCK: Mutex<()> = Mutex::new(());
 
 #[cfg(test)]
 mod tests {
-    use unavi_quota::limits::Limits;
-
     use super::*;
-    use crate::peer::set_self_peer_id;
 
     fn h(seed: &[u8]) -> Hash {
         blake3::hash(seed)
     }
 
-    fn kv(key: &str, value: Option<&[u8]>, at: u64) -> KvSnapshot {
-        KvSnapshot {
-            key: key.into(),
-            value: value.map(<[u8]>::to_vec),
-            at,
-        }
-    }
-
     #[test]
-    fn snapshot_then_deltas_converge() {
-        let _g = TEST_LOCK.lock();
-        reset();
-        let peer = [9u8; 32];
-        let space = h(b"converge-space");
-        let doc = h(b"converge-doc");
-
-        apply_remote(
-            peer,
-            StateMsg::Snapshot(vec![DocSnapshot {
-                doc,
-                space,
-                pin: Some(1),
-                authority: None,
-                kv: vec![kv("k", Some(b"v1"), 1)],
-            }]),
-        );
-        assert_eq!(doc_kv_get(space, doc, "k").as_deref(), Some(&b"v1"[..]));
-        assert_eq!(owner(space, doc), Some(peer));
-
-        apply_remote(
-            peer,
-            StateMsg::Kv {
-                doc,
-                space,
-                key: "k".into(),
-                value: Some(b"v2".to_vec()),
-                at: 2,
-            },
-        );
-        assert_eq!(doc_kv_get(space, doc, "k").as_deref(), Some(&b"v2"[..]));
-
-        apply_remote(
-            peer,
-            StateMsg::Kv {
-                doc,
-                space,
-                key: "k".into(),
-                value: None,
-                at: 3,
-            },
-        );
-        assert_eq!(doc_kv_get(space, doc, "k"), None);
-
-        remove_peer(peer);
-        reset();
-    }
-
-    #[test]
-    fn owner_is_oldest_pin_and_hands_off() {
+    fn pin_owner_is_oldest_and_releases() {
         let _g = TEST_LOCK.lock();
         reset();
         let space = h(b"oldest-space");
@@ -948,24 +832,21 @@ mod tests {
         let early = [1u8; 32];
         let late = [2u8; 32];
 
-        apply_remote(late, StateMsg::Pin { doc, space, at: 20 });
+        assert!(add_pin(late, doc, space, 20));
         assert_eq!(owner(space, doc), Some(late));
-
-        // An older pin takes ownership regardless of arrival order.
-        apply_remote(early, StateMsg::Pin { doc, space, at: 10 });
+        assert!(add_pin(early, doc, space, 10));
         assert_eq!(owner(space, doc), Some(early));
 
-        // The owner leaving hands ownership to the next-oldest pinner.
-        remove_peer(early);
+        remove_pin(early, doc);
         assert_eq!(owner(space, doc), Some(late));
-
-        remove_peer(late);
+        remove_pin(late, doc);
         assert_eq!(owner(space, doc), None);
+        assert!(!has_doc(space, doc));
         reset();
     }
 
     #[test]
-    fn authority_is_latest_and_independent_of_owner() {
+    fn authority_latest_and_defaults_to_owner() {
         let _g = TEST_LOCK.lock();
         reset();
         let space = h(b"auth-space");
@@ -973,266 +854,100 @@ mod tests {
         let owner_peer = [1u8; 32];
         let grabber = [2u8; 32];
 
-        apply_remote(owner_peer, StateMsg::Pin { doc, space, at: 10 });
-        apply_remote(grabber, StateMsg::Pin { doc, space, at: 20 });
-        assert_eq!(owner(space, doc), Some(owner_peer));
-
-        // With no explicit claim, authority defaults to the owner.
+        assert!(add_pin(owner_peer, doc, space, 10));
+        assert!(add_pin(grabber, doc, space, 20));
         assert_eq!(authority(space, doc), Some(owner_peer));
 
-        // A later authority claim by a non-owner wins authority but not ownership.
-        apply_remote(grabber, StateMsg::Authority { doc, at: 200 });
+        assert!(add_authority(grabber, doc, space, 200));
         assert_eq!(authority(space, doc), Some(grabber));
         assert_eq!(owner(space, doc), Some(owner_peer));
 
-        remove_peer(owner_peer);
-        remove_peer(grabber);
+        remove_authority(grabber, doc);
+        assert_eq!(authority(space, doc), Some(owner_peer));
         reset();
     }
 
     #[test]
-    fn rejects_far_future_timestamps() {
+    fn neutral_kv_persists_across_owned_kv() {
         let _g = TEST_LOCK.lock();
         reset();
-        let peer = [3u8; 32];
-        let space = h(b"skew-space");
-        let doc = h(b"skew-doc");
-
-        // A forged-future pin and authority are ignored.
-        apply_remote(
-            peer,
-            StateMsg::Pin {
-                doc,
-                space,
-                at: u64::MAX,
-            },
-        );
-        assert!(!has_doc(space, doc));
-
-        // Establish the doc with a valid pin, then a forged-future KV is dropped.
-        apply_remote(peer, StateMsg::Pin { doc, space, at: 1 });
-        apply_remote(
-            peer,
-            StateMsg::Kv {
-                doc,
-                space,
-                key: "k".into(),
-                value: Some(b"future".to_vec()),
-                at: u64::MAX,
-            },
-        );
-        assert_eq!(doc_kv_get(space, doc, "k"), None);
-
-        remove_peer(peer);
-        reset();
-    }
-
-    #[test]
-    fn far_future_snapshot_cell_dropped_siblings_kept() {
-        let _g = TEST_LOCK.lock();
-        reset();
-        let peer = [4u8; 32];
-        let space = h(b"snap-skew-space");
-        let doc = h(b"snap-skew-doc");
-
-        apply_remote(
-            peer,
-            StateMsg::Snapshot(vec![DocSnapshot {
-                doc,
-                space,
-                pin: Some(1),
-                authority: None,
-                kv: vec![kv("ok", Some(b"v"), 1), kv("bad", Some(b"v"), u64::MAX)],
-            }]),
-        );
-        assert_eq!(doc_kv_get(space, doc, "ok").as_deref(), Some(&b"v"[..]));
-        assert_eq!(doc_kv_get(space, doc, "bad"), None);
-
-        remove_peer(peer);
-        reset();
-    }
-
-    #[test]
-    fn space_owned_kv_survives_writer_disconnect() {
-        let _g = TEST_LOCK.lock();
-        reset();
-        set_self_peer_id([1u8; 32]);
-        let space = h(b"persist-space");
-        let doc = h(b"persist-doc");
-
+        let space = h(b"kv-space");
         let alice = [2u8; 32];
-        apply_remote(
-            alice,
-            StateMsg::Kv {
-                doc,
+
+        // Space base doc is always neutral.
+        assert_eq!(
+            add_kv(
+                alice,
                 space,
-                key: "link".into(),
-                value: Some(b"dest".to_vec()),
-                at: 1,
-            },
+                space,
+                "link".into(),
+                Some(b"dest".to_vec()),
+                1
+            ),
+            Ok(KvPlacement::Neutral)
         );
         assert_eq!(
-            doc_kv_get(space, doc, "link").as_deref(),
+            doc_kv_get(space, space, "link").as_deref(),
             Some(&b"dest"[..])
         );
 
-        remove_peer(alice);
+        // Removing the writer's other state leaves neutral kv intact.
+        remove_kv(alice, space, "missing", KvPlacement::Owned);
         assert_eq!(
-            doc_kv_get(space, doc, "link").as_deref(),
-            Some(&b"dest"[..]),
-            "space-owned kv should persist after the writer disconnects"
+            doc_kv_get(space, space, "link").as_deref(),
+            Some(&b"dest"[..])
         );
+
+        remove_kv(alice, space, "link", KvPlacement::Neutral);
+        assert_eq!(doc_kv_get(space, space, "link"), None);
+        assert!(!has_doc(space, space));
         reset();
     }
 
     #[test]
-    fn pin_changes_emit_on_holder_transitions() {
+    fn owned_kv_gated_by_ownership() {
         let _g = TEST_LOCK.lock();
         reset();
-        let rx = register_pin_stream();
-        let space = h(b"pinchange-space");
-        let doc = h(b"pinchange-doc");
-        let a = [1u8; 32];
-        let b = [2u8; 32];
-
-        apply_remote(a, StateMsg::Pin { doc, space, at: 1 });
-        assert!(matches!(
-            rx.try_recv(),
-            Ok(PinChange::Pinned { doc: d, space: s }) if d == doc && s == space
-        ));
-
-        apply_remote(b, StateMsg::Pin { doc, space, at: 2 });
-        assert!(rx.try_recv().is_err());
-
-        apply_remote(a, StateMsg::Unpin { doc });
-        assert!(rx.try_recv().is_err());
-
-        remove_peer(b);
-        assert!(matches!(rx.try_recv(), Ok(PinChange::Unpinned { doc: d }) if d == doc));
-        reset();
-    }
-
-    #[test]
-    fn kv_write_gated_by_ownership() {
-        let _g = TEST_LOCK.lock();
-        reset();
-        set_self_peer_id([1u8; 32]);
         let space = h(b"perm-space");
+        let owner_peer = [1u8; 32];
+        let other = [2u8; 32];
+        let doc = h(b"perm-doc");
 
-        // A peer doc the local peer owns (only pinner) is writable.
-        let owned = h(b"perm-owned-doc");
-        assert!(self_pin(space, owned));
-        assert!(doc_kv_set(space, owned, "k", b"v").is_ok());
-
-        // A peer doc owned by an older remote pinner is not writable locally.
-        let foreign = h(b"perm-foreign-doc");
-        apply_remote(
-            [2u8; 32],
-            StateMsg::Pin {
-                doc: foreign,
-                space,
-                at: 1,
-            },
+        assert!(add_pin(owner_peer, doc, space, 1));
+        assert_eq!(
+            add_kv(owner_peer, doc, space, "k".into(), Some(b"v".to_vec()), 2),
+            Ok(KvPlacement::Owned)
         );
-        assert!(self_pin(space, foreign));
         assert!(matches!(
-            doc_kv_set(space, foreign, "k", b"v"),
+            add_kv(other, doc, space, "k".into(), Some(b"v".to_vec()), 3),
             Err(KvError::NotOwner)
         ));
-
-        // The space's base document is open to all writers.
-        assert!(doc_kv_set(space, space, "k", b"v").is_ok());
-
+        assert_eq!(doc_kv_get(space, doc, "k").as_deref(), Some(&b"v"[..]));
         reset();
     }
 
     #[test]
-    fn small_overwrite_succeeds_at_full_cap() {
+    fn refs_release_presence_and_quota() {
         let _g = TEST_LOCK.lock();
         reset();
-        set_self_peer_id([8u8; 32]);
-        let space = h(b"full-space");
-        let doc = h(b"full-doc");
-        assert!(self_pin(space, doc));
-
-        let cap = *Limits::document()
-            .stock
-            .get(&Stock::KvMemory)
-            .expect("document caps kv memory") as usize;
-        let big = vec![0u8; cap - 64];
-        doc_kv_set(space, doc, "a", &big).expect("fills near the cap");
-
-        // A new key that would grow past the cap is refused.
-        assert!(matches!(
-            doc_kv_set(space, doc, "b", &[0u8; 128]),
-            Err(KvError::QuotaExceeded)
-        ));
-
-        // Overwriting the large value with a tiny one succeeds despite the cap.
-        doc_kv_set(space, doc, "a", b"x").expect("shrinking overwrite at a full cap");
-        assert_eq!(doc_kv_get(space, doc, "a").as_deref(), Some(&b"x"[..]));
-
-        reset();
-    }
-
-    #[test]
-    fn dropping_replica_refunds_quota() {
-        let _g = TEST_LOCK.lock();
-        reset();
-        let peer = [11u8; 32];
         let space = h(b"refund-space");
         let doc = h(b"refund-doc");
+        let peer = [11u8; 32];
 
-        apply_remote(peer, StateMsg::Pin { doc, space, at: 1 });
-        apply_remote(
-            peer,
-            StateMsg::Kv {
-                doc,
-                space,
-                key: "k".into(),
-                value: Some(b"value".to_vec()),
-                at: 2,
-            },
+        assert!(add_pin(peer, doc, space, 1));
+        assert_eq!(
+            add_kv(peer, doc, space, "k".into(), Some(b"value".to_vec()), 2),
+            Ok(KvPlacement::Owned)
         );
-        let quota = crate::quota::document_quota(doc);
+        let quota = document_quota(doc);
         assert!(quota.usage(Stock::KvMemory) > 0);
         assert_eq!(quota.usage(Stock::Documents), 1);
 
-        // Dropping the peer's replica refunds every hold it owned, with no
-        // recompute.
-        remove_peer(peer);
+        remove_kv(peer, doc, "k", KvPlacement::Owned);
+        remove_pin(peer, doc);
         assert_eq!(quota.usage(Stock::KvMemory), 0);
         assert_eq!(quota.usage(Stock::Documents), 0);
-
-        reset();
-    }
-
-    #[test]
-    fn kv_syncs_without_pinning_on_open_doc() {
-        let _g = TEST_LOCK.lock();
-        reset();
-        let rx = register_pin_stream();
-        let peer = [5u8; 32];
-        // A space-owned (open) doc: doc == space.
-        let space = h(b"open-doc");
-        let doc = space;
-
-        apply_remote(
-            peer,
-            StateMsg::Kv {
-                doc,
-                space,
-                key: "k".into(),
-                value: Some(b"v".to_vec()),
-                at: 1,
-            },
-        );
-        assert_eq!(doc_kv_get(space, doc, "k").as_deref(), Some(&b"v"[..]));
-        assert!(has_doc(space, doc));
-        assert!(doc_holders(doc).is_empty());
-        assert!(rx.try_recv().is_err());
-
-        remove_peer(peer);
+        assert!(!has_doc(space, doc));
         reset();
     }
 }

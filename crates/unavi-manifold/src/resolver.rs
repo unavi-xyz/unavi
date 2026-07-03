@@ -32,13 +32,27 @@ pub fn resolve_target_receptor(
     seams: Query<(Entity, &SeamTargetReceptor, Option<&GluedTo>)>,
     docs: Query<(&HsdRecordId, &HsdPrimIndex), With<Hsd>>,
     mut commands: Commands,
+    mut unresolved: Local<HashMap<Entity, bool>>,
 ) {
     let index: HashMap<Hash, &HsdPrimIndex> = docs.iter().map(|(rid, idx)| (rid.0, idx)).collect();
 
     for (seam, target, current) in &seams {
-        let resolved = index
-            .get(&target.document)
-            .and_then(|idx| idx.0.get(&target.prim).copied());
+        let doc = index.get(&target.document);
+        let resolved = doc.and_then(|idx| idx.0.get(&target.prim).copied());
+        if resolved.is_none() {
+            let doc_loaded = doc.is_some();
+            if unresolved.insert(seam, doc_loaded) != Some(doc_loaded) {
+                warn!(
+                    ?seam,
+                    document = %target.document,
+                    prim = %target.prim,
+                    doc_loaded,
+                    "seam receptor unresolved"
+                );
+            }
+        } else if unresolved.remove(&seam).is_some() {
+            info!(?seam, "seam receptor resolved");
+        }
         reconcile(seam, resolved, current, &mut commands);
     }
 }

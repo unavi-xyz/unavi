@@ -38,9 +38,9 @@ impl ProtocolHandler for SpaceProtocol {
             // On error disconnect, it is up to the "client" side to re-connect.
         }
 
-        if release_connection(peer, token) {
-            crate::state::replicas::remove_peer(*peer.as_bytes());
-        }
+        // The peer's replicated state is owned by its inbound stream's
+        // `RemotePeer` entity, despawned when the stream ends.
+        release_connection(peer, token);
 
         Ok(())
     }

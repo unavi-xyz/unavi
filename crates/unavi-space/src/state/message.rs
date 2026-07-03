@@ -22,12 +22,24 @@ pub enum StateMsg {
         doc: Hash,
         at:  u64,
     },
+    /// Releases the peer's authority claim over `doc`, falling authority back
+    /// to the document's owner.
+    Unclaim {
+        doc: Hash,
+    },
     Kv {
         doc:   Hash,
         space: Hash,
         key:   String,
         value: Option<Vec<u8>>,
         at:    u64,
+    },
+    /// Drops the peer's own cell for `key` on a peer-owned document, without
+    /// leaving a tombstone. Neutral (space-owned) cells are never forgotten
+    /// this way; they outlive any single peer.
+    KvForget {
+        doc: Hash,
+        key: String,
     },
 }
 

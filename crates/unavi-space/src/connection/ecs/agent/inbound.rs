@@ -16,6 +16,7 @@ use bevy::{
 use blake3::Hash;
 use iroh::EndpointId;
 use unavi_avatar::Avatar;
+use unavi_manifold::EchoBody;
 
 use crate::{
     Space,
@@ -122,6 +123,7 @@ pub fn apply_remote_poses(
             commands.spawn((
                 RemoteAgent(peer),
                 Avatar,
+                EchoBody,
                 resolved.root,
                 PoseLerp::snapped(resolved.root, recv),
                 ChildOf(space),

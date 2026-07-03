@@ -207,8 +207,14 @@ impl Default for DevelopmentHorizon {
 }
 
 #[derive(Component)]
-#[require(SeamLatch, PrevTranslation)]
+#[require(SeamLatch, PrevTranslation, EchoBody)]
 pub struct ManifoldBody;
+
+/// Casts seam echoes but is never locally teleported across a seam. Every
+/// [`ManifoldBody`] is one; bodies whose crossings are driven externally, such
+/// as network-replicated avatars, carry it alone.
+#[derive(Component, Default)]
+pub struct EchoBody;
 
 /// Set after a crossing, cleared once the body leaves every slab; stops it
 /// teleporting straight back out of the slab it lands in.

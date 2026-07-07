@@ -19,8 +19,9 @@ pub enum StateMsg {
     /// Transient transform authority over a document's rigid bodies (e.g. on
     /// grab); the latest claim wins, independent of ownership.
     Authority {
-        doc: Hash,
-        at:  u64,
+        doc:   Hash,
+        space: Hash,
+        at:    u64,
     },
     /// Releases the peer's authority claim over `doc`, falling authority back
     /// to the document's owner.

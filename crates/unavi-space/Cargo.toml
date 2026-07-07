@@ -32,6 +32,7 @@ postcard.workspace         = true
 rand.workspace             = true
 serde.workspace            = true
 serde_vrm                  = "0.3.0"
+thiserror.workspace        = true
 time.workspace             = true
 tokio.workspace            = true
 tracing.workspace          = true

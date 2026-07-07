@@ -72,6 +72,21 @@ impl AsyncCommands {
         rx.recv().await.expect("recv")
     }
 
+    /// Runs `f` against the world and awaits its return value, or `None` if the
+    /// command queue is closed.
+    pub async fn send_with<T, F>(mut self, f: F) -> Option<T>
+    where
+        T: Send + 'static,
+        F: FnOnce(&mut World) -> T + Send + 'static,
+    {
+        let (tx, rx) = async_channel::bounded(1);
+        self.queue.push(move |world: &mut World| {
+            let _ = tx.try_send(f(world));
+        });
+        self.send().await.ok()?;
+        rx.recv().await.ok()
+    }
+
     pub async fn send(self) -> Result<(), SendError<CommandQueue>> {
         ASYNC_COMMAND_QUEUE.0.send(self.queue).await
     }

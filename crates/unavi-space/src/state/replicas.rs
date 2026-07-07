@@ -340,46 +340,60 @@ impl ReplicatedPeerState {
     /// Owner of `doc`: the oldest valid pin, breaking ties by peer id. Resolved
     /// per-client; ownership migrates to the next-oldest pinner when an owner
     /// leaves.
-    fn owner(&self, space: Hash, doc: Hash) -> Option<PeerId> {
+    fn resolve_peer(
+        &self,
+        space: Hash,
+        doc: Hash,
+        newest: bool,
+        field: impl Fn(&PeerDocEntry) -> Option<u64>,
+    ) -> Option<PeerId> {
         if self.docs.get(&doc).is_none_or(|p| p.space != space) {
             return None;
         }
-        self.peers
+        let candidates = self
+            .peers
             .iter()
-            .filter_map(|(pid, r)| Some((r.docs.get(&doc)?.pin?, *pid)))
-            .min_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)))
-            .map(|(_, pid)| pid)
+            .filter_map(|(pid, r)| Some((field(r.docs.get(&doc)?)?, *pid)));
+        let tiebreak =
+            |a: &(u64, PeerId), b: &(u64, PeerId)| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1));
+        if newest {
+            candidates.max_by(tiebreak)
+        } else {
+            candidates.min_by(tiebreak)
+        }
+        .map(|(_, pid)| pid)
+    }
+
+    fn owner(&self, space: Hash, doc: Hash) -> Option<PeerId> {
+        self.resolve_peer(space, doc, false, |e| e.pin)
     }
 
     /// Transform authority for `doc`: the latest explicit claimer, or the
     /// document's owner when no one has claimed, so an owner drives its objects
     /// by default until a peer grabs them.
     fn authority(&self, space: Hash, doc: Hash) -> Option<PeerId> {
-        if self.docs.get(&doc).is_none_or(|p| p.space != space) {
-            return None;
-        }
-        self.peers
-            .iter()
-            .filter_map(|(pid, r)| Some((r.docs.get(&doc)?.authority?, *pid)))
-            .max_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)))
-            .map(|(_, pid)| pid)
+        self.resolve_peer(space, doc, true, |e| e.authority)
             .or_else(|| self.owner(space, doc))
     }
 
-    fn merged_cell(&self, space: Hash, doc: Hash, key: &str) -> Option<Vec<u8>> {
+    fn merged_cell_ref(&self, space: Hash, doc: Hash, key: &str) -> Option<&Option<Vec<u8>>> {
         let presence = self.docs.get(&doc).filter(|p| p.space == space)?;
         let owned = self.peers.iter().filter_map(|(pid, r)| {
             let cell = r.docs.get(&doc)?.kv.get(key)?;
-            Some((cell.at, *pid, cell.value.clone()))
+            Some((cell.at, *pid, &cell.value))
         });
         let neutral = presence
             .neutral_kv
             .get(key)
-            .map(|c| (c.at, c.peer, c.value.clone()));
+            .map(|c| (c.at, c.peer, &c.value));
         owned
             .chain(neutral)
             .max_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)))
-            .and_then(|(_, _, value)| value)
+            .map(|(_, _, value)| value)
+    }
+
+    fn merged_cell(&self, space: Hash, doc: Hash, key: &str) -> Option<Vec<u8>> {
+        self.merged_cell_ref(space, doc, key).and_then(Clone::clone)
     }
 
     /// Whether `doc` is space-owned: the space's base document, or a doc with
@@ -460,21 +474,17 @@ static PEER_STATE: LazyLock<Mutex<ReplicatedPeerState>> =
     LazyLock::new(|| Mutex::new(ReplicatedPeerState::default()));
 static SENDER_TOKEN: AtomicU64 = AtomicU64::new(0);
 
-fn now_millis() -> u64 {
+#[must_use]
+pub fn current_millis() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
 }
 
-#[must_use]
-pub fn current_millis() -> u64 {
-    now_millis()
-}
-
 /// Whether `at` is within the accepted clock skew of local time.
 #[must_use]
 pub fn time_valid(at: u64) -> bool {
-    at <= now_millis().saturating_add(MAX_CLOCK_SKEW_MILLIS)
+    at <= current_millis().saturating_add(MAX_CLOCK_SKEW_MILLIS)
 }
 
 /// Runs `reassign` against the document quotas after the state lock is
@@ -622,7 +632,11 @@ pub fn doc_kv_keys(space: Hash, doc: Hash) -> Vec<String> {
     let out = state
         .key_set(doc)
         .into_iter()
-        .filter(|k| state.merged_cell(space, doc, k).is_some())
+        .filter(|k| {
+            state
+                .merged_cell_ref(space, doc, k)
+                .is_some_and(Option::is_some)
+        })
         .collect();
     drop(state);
     out
@@ -637,7 +651,10 @@ pub fn doc_kv_total_bytes(space: Hash, doc: Hash) -> usize {
     let total = state
         .key_set(doc)
         .into_iter()
-        .filter_map(|k| state.merged_cell(space, doc, &k).map(|v| k.len() + v.len()))
+        .filter_map(|k| {
+            let len = state.merged_cell_ref(space, doc, &k)?.as_ref()?.len();
+            Some(k.len() + len)
+        })
         .sum();
     drop(state);
     total
@@ -688,11 +705,15 @@ pub fn is_pinned(doc: Hash) -> bool {
         .any(|r| r.docs.get(&doc).is_some_and(|e| e.pin.is_some()))
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum KvError {
+    #[error("kv key exceeds maximum length")]
     KeyTooLong,
+    #[error("kv write to a peer-owned document by a non-owner")]
     NotOwner,
+    #[error("kv write exceeds quota")]
     QuotaExceeded,
+    #[error("kv write failed")]
     Other,
 }
 

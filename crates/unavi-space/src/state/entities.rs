@@ -117,14 +117,16 @@ pub struct AuthorityState {
 }
 
 impl AuthorityState {
+    fn apply(peer: PeerId, doc: Hash, space: Hash, at: u64, local: bool) -> bool {
+        let ok = replicas::add_authority(peer, doc, space, at);
+        if ok && local {
+            replicas::broadcast(&StateMsg::Authority { doc, space, at });
+        }
+        ok
+    }
+
     fn register(peer: PeerId, doc: Hash, space: Hash, at: u64, local: bool) -> Option<Self> {
-        if !replicas::add_authority(peer, doc, space, at) {
-            return None;
-        }
-        if local {
-            replicas::broadcast(&StateMsg::Authority { doc, at });
-        }
-        Some(Self { peer, doc, local })
+        Self::apply(peer, doc, space, at, local).then_some(Self { peer, doc, local })
     }
 }
 
@@ -250,10 +252,7 @@ fn spawn_authority(
     local: bool,
 ) {
     if find_state::<AuthorityState, _>(world, peer_ent, |a| a.doc == doc).is_some() {
-        replicas::add_authority(peer, doc, space, at);
-        if local {
-            replicas::broadcast(&StateMsg::Authority { doc, at });
-        }
+        AuthorityState::apply(peer, doc, space, at, local);
         return;
     }
     let anchor = doc_anchor(world, doc, space);
@@ -286,6 +285,9 @@ fn set_kv(
     at: u64,
     local: bool,
 ) -> Result<(), KvError> {
+    if key.len() > replicas::KV_KEY_MAX_BYTES {
+        return Err(KvError::KeyTooLong);
+    }
     let anchor = doc_anchor(world, doc, space);
     let placement = replicas::add_kv(peer, doc, space, key.clone(), value.clone(), at)?;
     if local {
@@ -355,19 +357,13 @@ pub async fn self_pin(space: Hash, doc: Hash) -> bool {
         return false;
     };
     let at = replicas::current_millis();
-    let (tx, rx) = async_channel::bounded(1);
-    let queued = AsyncCommands::default()
-        .push(move |world: &mut World| {
+    AsyncCommands::default()
+        .send_with(move |world: &mut World| {
             let peer_ent = local_peer_entity(world);
-            let ok = spawn_pin(world, peer_ent, me, doc, space, at, true);
-            let _ = tx.try_send(ok);
+            spawn_pin(world, peer_ent, me, doc, space, at, true)
         })
-        .send()
-        .await;
-    if queued.is_err() {
-        return false;
-    }
-    rx.recv().await.unwrap_or(false)
+        .await
+        .unwrap_or(false)
 }
 
 pub fn claim_authority(space: Hash, doc: Hash) {
@@ -399,26 +395,17 @@ pub async fn doc_kv_set(
     key: String,
     value: Vec<u8>,
 ) -> Result<(), KvError> {
-    if key.len() > replicas::KV_KEY_MAX_BYTES {
-        return Err(KvError::KeyTooLong);
-    }
     let Some(me) = crate::peer::self_peer_id() else {
         return Err(KvError::Other);
     };
     let at = replicas::current_millis();
-    let (tx, rx) = async_channel::bounded(1);
-    let queued = AsyncCommands::default()
-        .push(move |world: &mut World| {
+    AsyncCommands::default()
+        .send_with(move |world: &mut World| {
             let peer_ent = local_peer_entity(world);
-            let r = set_kv(world, peer_ent, me, doc, space, key, Some(value), at, true);
-            let _ = tx.try_send(r);
+            set_kv(world, peer_ent, me, doc, space, key, Some(value), at, true)
         })
-        .send()
-        .await;
-    if queued.is_err() {
-        return Err(KvError::Other);
-    }
-    rx.recv().await.unwrap_or(Err(KvError::Other))
+        .await
+        .unwrap_or(Err(KvError::Other))
 }
 
 pub async fn doc_kv_delete(space: Hash, doc: Hash, key: String) -> Result<(), KvError> {
@@ -426,19 +413,13 @@ pub async fn doc_kv_delete(space: Hash, doc: Hash, key: String) -> Result<(), Kv
         return Err(KvError::Other);
     };
     let at = replicas::current_millis();
-    let (tx, rx) = async_channel::bounded(1);
-    let queued = AsyncCommands::default()
-        .push(move |world: &mut World| {
+    AsyncCommands::default()
+        .send_with(move |world: &mut World| {
             let peer_ent = local_peer_entity(world);
-            let r = set_kv(world, peer_ent, me, doc, space, key, None, at, true);
-            let _ = tx.try_send(r);
+            set_kv(world, peer_ent, me, doc, space, key, None, at, true)
         })
-        .send()
-        .await;
-    if queued.is_err() {
-        return Err(KvError::Other);
-    }
-    rx.recv().await.unwrap_or(Err(KvError::Other))
+        .await
+        .unwrap_or(Err(KvError::Other))
 }
 
 /// Applies a remote peer's delta by spawning or despawning its state entities
@@ -484,10 +465,8 @@ fn apply_in_world(world: &mut World, peer_ent: Entity, peer: PeerId, msg: StateM
             spawn_pin(world, peer_ent, peer, doc, space, at, false);
         }
         StateMsg::Unpin { doc } => clear_pin(world, peer_ent, doc),
-        StateMsg::Authority { doc, at } if replicas::time_valid(at) => {
-            if let Some(space) = replicas::space_of(doc) {
-                spawn_authority(world, peer_ent, peer, doc, space, at, false);
-            }
+        StateMsg::Authority { doc, space, at } if replicas::time_valid(at) => {
+            spawn_authority(world, peer_ent, peer, doc, space, at, false);
         }
         StateMsg::Unclaim { doc } => clear_authority(world, peer_ent, doc),
         StateMsg::Kv {

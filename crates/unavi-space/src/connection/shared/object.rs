@@ -304,6 +304,9 @@ pub async fn recv_object_stream(
             Err(err) if super::read_disconnected(&err) => return Ok(()),
             Err(err) => return Err(err).context("read len"),
         };
+        if len > buf.len() {
+            anyhow::bail!("object frame length {len} exceeds max {}", buf.len());
+        }
         let buf = &mut buf[..len];
         rx.read_exact(buf).await?;
         let msg = postcard::from_bytes::<ObjectMsg>(buf)?;

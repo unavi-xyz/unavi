@@ -34,22 +34,13 @@ pub enum Flow {
     Publish,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum QuotaError {
+    #[error("flow quota exceeded: {0:?}")]
     Flow(Flow),
+    #[error("stock quota exceeded: {0:?}")]
     Stock(Stock),
 }
-
-impl std::fmt::Display for QuotaError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Flow(flow) => write!(f, "flow quota exceeded: {flow:?}"),
-            Self::Stock(s) => write!(f, "stock quota exceeded: {s:?}"),
-        }
-    }
-}
-
-impl std::error::Error for QuotaError {}
 
 struct Bucket {
     tokens: f64,

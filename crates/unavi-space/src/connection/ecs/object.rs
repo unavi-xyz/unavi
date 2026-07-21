@@ -122,6 +122,9 @@ pub fn send_object_poses(
         .par_iter_mut()
         .for_each(|(entity, sender, mut last_tick)| {
             if sender.0.is_full() {
+                if sender.0.is_closed() {
+                    commands.command_scope(|mut commands| commands.entity(entity).despawn());
+                }
                 return;
             }
             if last_tick.0 + OBJECT_TICKRATE > now {
@@ -205,6 +208,7 @@ pub fn apply_remote_objects(
         };
 
         if let Ok(mut interp) = interps.get_mut(prim_entity) {
+            interp.space = space;
             interp.target = resolved.root;
             interp.lin = resolved.lin;
             interp.ang = resolved.ang;

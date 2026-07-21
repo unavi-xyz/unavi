@@ -144,6 +144,14 @@ impl ReplicatedPeerState {
         }
     }
 
+    fn prune_presence(&mut self, doc: Hash) {
+        if let Entry::Occupied(p) = self.docs.entry(doc)
+            && p.get().refs == 0
+        {
+            p.remove();
+        }
+    }
+
     /// Drops one reference to `doc`, releasing its presence (and the
     /// `Documents` hold) once nothing references it.
     fn dec_ref(&mut self, doc: Hash) {
@@ -258,60 +266,83 @@ impl ReplicatedPeerState {
         }
         let new_bytes = cell_bytes(&key, value.as_deref());
         if neutral {
-            let presence = self.docs.get_mut(&doc).expect("presence ensured");
-            match presence.neutral_kv.entry(key) {
-                Entry::Occupied(mut o) => {
-                    if at < o.get().at {
-                        return Ok(KvPlacement::Neutral);
+            let inserted = {
+                let presence = self.docs.get_mut(&doc).expect("presence ensured");
+                match presence.neutral_kv.entry(key) {
+                    Entry::Occupied(mut o) => {
+                        if at < o.get().at {
+                            Ok(false)
+                        } else if o.get_mut().hold.resize(new_bytes).is_err() {
+                            Err(KvError::QuotaExceeded)
+                        } else {
+                            let cell = o.get_mut();
+                            cell.at = at;
+                            cell.peer = peer;
+                            cell.value = value;
+                            Ok(false)
+                        }
                     }
-                    let cell = o.get_mut();
-                    if cell.hold.resize(new_bytes).is_err() {
-                        return Err(KvError::QuotaExceeded);
-                    }
-                    cell.at = at;
-                    cell.peer = peer;
-                    cell.value = value;
+                    Entry::Vacant(v) => quota.hold(Stock::KvMemory, new_bytes).map_or(
+                        Err(KvError::QuotaExceeded),
+                        |hold| {
+                            v.insert(NeutralCell {
+                                at,
+                                peer,
+                                value,
+                                hold,
+                            });
+                            Ok(true)
+                        },
+                    ),
                 }
-                Entry::Vacant(v) => {
-                    let Ok(hold) = quota.hold(Stock::KvMemory, new_bytes) else {
-                        return Err(KvError::QuotaExceeded);
-                    };
-                    v.insert(NeutralCell {
-                        at,
-                        peer,
-                        value,
-                        hold,
-                    });
-                    self.inc_ref(doc);
+            };
+            match inserted {
+                Ok(true) => self.inc_ref(doc),
+                Ok(false) => {}
+                Err(err) => {
+                    self.prune_presence(doc);
+                    return Err(err);
                 }
             }
             return Ok(KvPlacement::Neutral);
         }
-        let entry = self
-            .peers
-            .entry(peer)
-            .or_default()
-            .docs
-            .entry(doc)
-            .or_default();
-        match entry.kv.entry(key) {
-            Entry::Occupied(mut o) => {
-                if at < o.get().at {
-                    return Ok(KvPlacement::Owned);
+        let inserted = {
+            let entry = self
+                .peers
+                .entry(peer)
+                .or_default()
+                .docs
+                .entry(doc)
+                .or_default();
+            match entry.kv.entry(key) {
+                Entry::Occupied(mut o) => {
+                    if at < o.get().at {
+                        Ok(false)
+                    } else if o.get_mut().hold.resize(new_bytes).is_err() {
+                        Err(KvError::QuotaExceeded)
+                    } else {
+                        let cell = o.get_mut();
+                        cell.at = at;
+                        cell.value = value;
+                        Ok(false)
+                    }
                 }
-                let cell = o.get_mut();
-                if cell.hold.resize(new_bytes).is_err() {
-                    return Err(KvError::QuotaExceeded);
-                }
-                cell.at = at;
-                cell.value = value;
+                Entry::Vacant(v) => quota.hold(Stock::KvMemory, new_bytes).map_or(
+                    Err(KvError::QuotaExceeded),
+                    |hold| {
+                        v.insert(OwnedCell { at, value, hold });
+                        Ok(true)
+                    },
+                ),
             }
-            Entry::Vacant(v) => {
-                let Ok(hold) = quota.hold(Stock::KvMemory, new_bytes) else {
-                    return Err(KvError::QuotaExceeded);
-                };
-                v.insert(OwnedCell { at, value, hold });
-                self.inc_ref(doc);
+        };
+        match inserted {
+            Ok(true) => self.inc_ref(doc),
+            Ok(false) => {}
+            Err(err) => {
+                self.prune_entry(peer, doc);
+                self.prune_presence(doc);
+                return Err(err);
             }
         }
         Ok(KvPlacement::Owned)

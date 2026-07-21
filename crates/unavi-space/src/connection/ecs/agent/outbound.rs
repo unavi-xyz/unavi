@@ -78,6 +78,9 @@ pub fn send_agent_pose(
         .par_iter_mut()
         .for_each(|(entity, sender, tickrate, mut last_tick)| {
             if sender.0.is_full() {
+                if sender.0.is_closed() {
+                    commands.command_scope(|mut commands| commands.entity(entity).despawn());
+                }
                 return;
             }
 

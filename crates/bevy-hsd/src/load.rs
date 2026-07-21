@@ -426,7 +426,9 @@ pub fn instance_subdocuments(
             if let Ok(doc) = rx.recv().await {
                 let _ = AsyncCommands::default()
                     .push(move |world: &mut World| {
-                        world.spawn((Hsd(Arc::new(doc)), HsdRecordId(id), ChildOf(prim_ent)));
+                        if world.get_entity(prim_ent).is_ok() {
+                            world.spawn((Hsd(Arc::new(doc)), HsdRecordId(id), ChildOf(prim_ent)));
+                        }
                     })
                     .send()
                     .await;

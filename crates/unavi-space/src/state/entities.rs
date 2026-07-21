@@ -53,7 +53,10 @@ pub struct StreamGen(u64);
 /// streams for the same peer never hold duplicate store guards.
 pub fn claim_remote_peer(world: &mut World, peer: PeerId, generation: u64) -> Entity {
     if let Some(e) = entity_by::<RemotePeer, _>(world, |r| r.0 == peer) {
-        world.entity_mut(e).insert(StreamGen(generation));
+        let newer = world.get::<StreamGen>(e).is_none_or(|g| generation > g.0);
+        if newer {
+            world.entity_mut(e).insert(StreamGen(generation));
+        }
         return e;
     }
     world.spawn((RemotePeer(peer), StreamGen(generation))).id()

@@ -70,7 +70,7 @@ fn release_connection(peer: EndpointId, token: u64) -> bool {
     }
 }
 
-pub const ALPN: &[u8] = b"wired/space/0";
+pub const ALPN: &[u8] = b"wired/space/1";
 
 pub fn register_protocol(
     trigger: On<Add, IrohEndpoint>,

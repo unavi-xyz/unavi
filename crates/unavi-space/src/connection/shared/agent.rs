@@ -52,12 +52,12 @@ use crate::connection::{
 #[derive(Serialize, Deserialize, MaxSize)]
 enum AgentMsg {
     IFrame {
-        id:    usize,
+        id:    u32,
         space: [u8; 32],
         pose:  Pose<IFrame>,
     },
     PFrame {
-        iframe: usize,
+        iframe: u32,
         space:  [u8; 32],
         pose:   Pose<PFrame>,
     },
@@ -136,7 +136,7 @@ fn delta_pose(pose: Pose<IFrame>, last: &Pose<IFrame>) -> Pose<PFrame> {
 }
 
 struct Baseline {
-    id:   usize,
+    id:   u32,
     root: RigidTransform<F32Vec3>,
 }
 

@@ -16,6 +16,7 @@ use loro::{
 pub mod attributes;
 mod diff;
 pub mod load;
+pub mod loaded;
 mod subscribe;
 
 pub struct HsdPlugin;
@@ -47,12 +48,16 @@ impl Plugin for HsdPlugin {
                     attributes::material::propagate_image_to_material,
                     attributes::material::propagate_material_to_dependents,
                     load::instance_hsd,
+                    load::instance_subdocuments,
                 )
                     .chain(),
             )
             .add_systems(
                 PostUpdate,
-                attributes::collider::watch_collider_scale.after(TransformSystems::Propagate),
+                (
+                    loaded::evaluate_hsd_loaded,
+                    attributes::collider::watch_collider_scale.after(TransformSystems::Propagate),
+                ),
             );
     }
 }
@@ -73,7 +78,7 @@ pub struct HsdChildren(Vec<Entity>);
 pub struct HsdChild(pub Entity);
 
 #[derive(Component)]
-#[require(Visibility)]
+#[require(Visibility, Transform)]
 pub struct Prim(pub TreeID);
 
 #[derive(Component, Default, Debug)]

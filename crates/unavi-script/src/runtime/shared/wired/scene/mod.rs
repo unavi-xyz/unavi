@@ -12,6 +12,7 @@ use bevy_wds::{
     LocalActor,
     blob::get::GetBlob,
     record::{
+        acl::SetRecordPublic,
         read::ReadRecord,
         write::{
             SchemaDef,
@@ -26,6 +27,11 @@ use hsd::{
     file::HsdFile,
 };
 use loro::LoroDoc;
+use unavi_quota::{
+    Flow,
+    Stock,
+};
+use unavi_space::anchor::ActiveSpace;
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
@@ -39,11 +45,7 @@ use crate::{
         Channel,
         Firewall,
     },
-    quota::{
-        Flow,
-        QuotaGuards,
-        Stock,
-    },
+    quota::QuotaGuards,
     runtime::shared::{
         Api,
         registry::firewall::{
@@ -99,12 +101,13 @@ async fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> Result<(), S
 
     let firewall = Firewall::for_child_doc(api.doc_id);
     FIREWALL_REGISTRY.write().insert(id, firewall.clone());
+    // Seed the child's space now; the spawn command applies later.
     if let Some(parent_space) = unavi_space::membership::doc_space(api.doc_id) {
         unavi_space::membership::DOC_SPACE_REGISTRY
             .write()
             .insert(id, parent_space);
     }
-    crate::quota::registry::child_document_quota(id, api.doc_id);
+    unavi_quota::registry::child_document_quota(id, api.doc_id);
     AsyncCommands::default()
         .spawn((
             Hsd(doc),
@@ -282,12 +285,11 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let space = if let Some(s) = unavi_space::membership::doc_space(id) {
         s
     } else {
+        // If document doesn't belong to a space, add it to the active space.
         let (tx, rx) = async_channel::bounded::<Option<Hash>>(1);
         AsyncCommands::default()
             .push(move |world: &mut World| {
-                let active = world
-                    .get_resource::<unavi_space::anchor::ActiveSpace>()
-                    .and_then(|a| a.0);
+                let active = world.get_resource::<ActiveSpace>().and_then(|a| a.0);
                 let hash = active.and_then(|e| world.get::<unavi_space::Space>(e).map(|s| s.0));
                 tx.try_send(hash).ok();
             })
@@ -298,8 +300,28 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
             .ok_or_else(|| anyhow::anyhow!("doc has no space and no active space"))?
     };
 
-    if !unavi_space::state::doc::add_doc(space, id) {
-        anyhow::bail!("space state not tracked locally");
+    // Ensure document is public within the WDS so others can read it.
+    let doc = {
+        let scene = api.wired_scene.lock().await;
+        scene
+            .docs
+            .iter()
+            .find_map(|(_, d)| (d.id == id).then(|| Arc::clone(&d.doc)))
+    };
+    let Some(doc) = doc else {
+        anyhow::bail!("published doc not held by script");
+    };
+    let (event, rx) = SetRecordPublic::new(id, doc, true);
+    AsyncCommands::default().trigger(event).send().await?;
+    rx.recv()
+        .await
+        .map_err(|err| anyhow::anyhow!("set record public response dropped: {err}"))?
+        .map_err(|err| anyhow::anyhow!("failed to make published record public: {err}"))?;
+
+    // Pin the document locally; ownership follows from the pin, and the pin's
+    // quota is charged to the resulting owner.
+    if !unavi_space::state::entities::self_pin(space, id).await {
+        anyhow::bail!("space state not tracked locally or pin over quota");
     }
 
     Ok(())

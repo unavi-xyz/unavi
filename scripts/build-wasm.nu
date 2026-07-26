@@ -26,7 +26,7 @@ for crate_dir in $crates {
         }
     }
 
-    let fmt = (cargo run --quiet -p hsd-cli --release -- format --input $hsdx | complete)
+    let fmt = (cargo run --quiet -p hsd-cli --release -- format $hsdx | complete)
     if $fmt.exit_code != 0 {
         error make {
             msg: $"HSD format failed for ($crate): ($fmt.stderr | str trim)"

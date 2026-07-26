@@ -1,3 +1,8 @@
+use std::sync::{
+    LazyLock,
+    RwLock,
+};
+
 use bevy::prelude::*;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
@@ -10,6 +15,7 @@ use bevy_wds::{
     LocalActor,
     SyncTargets,
 };
+use blake3::Hash;
 use iroh::{
     EndpointAddr,
     EndpointId,
@@ -35,6 +41,36 @@ mod bootstrap;
 mod inbound;
 mod outbound;
 mod thread;
+
+/// The space we currently occupy, mirrored from [`crate::anchor::ActiveSpace`]
+/// for the async gossip tasks. Presence broadcasts only to this space.
+static ACTIVE_SPACE: RwLock<Option<Hash>> = RwLock::new(None);
+
+/// Woken when the active space changes, so the entered space broadcasts
+/// presence immediately instead of waiting out the heartbeat.
+static ACTIVE_CHANGED: LazyLock<tokio::sync::Notify> = LazyLock::new(tokio::sync::Notify::new);
+
+fn active_space() -> Option<Hash> {
+    *ACTIVE_SPACE.read().expect("active space poisoned")
+}
+
+fn active_changed() -> &'static tokio::sync::Notify {
+    &ACTIVE_CHANGED
+}
+
+pub fn publish_active_space(active: Res<crate::anchor::ActiveSpace>, spaces: Query<&Space>) {
+    if !active.is_changed() {
+        return;
+    }
+    let hash = active.0.and_then(|e| spaces.get(e).ok()).map(|s| s.0);
+    let mut current = ACTIVE_SPACE.write().expect("active space poisoned");
+    if *current == hash {
+        return;
+    }
+    *current = hash;
+    drop(current);
+    ACTIVE_CHANGED.notify_waiters();
+}
 
 #[derive(Serialize, Deserialize)]
 struct SpaceBroadcast {
@@ -71,7 +107,7 @@ pub fn spawn_gossip(
         .expect("endpoint");
 
     let (gossip_tx, gossip_rx) = async_channel::bounded(1);
-    let (tx, rx) = async_channel::bounded(16);
+    let (tx, rx) = async_channel::bounded(32);
 
     spawn_async_task(async move {
         let gossip = Gossip::builder().spawn(endpoint);
@@ -141,13 +177,20 @@ pub fn join_space_topic(
         .entity(trigger.entity)
         .insert(SpaceGossipCancel { _cancel: cancel_tx });
 
-    if let Err(err) = sender.0.try_send(GossipCommand::JoinSpace {
-        ctx,
-        cancel: cancel_rx,
-        space,
-    }) {
-        error!(?err, "Failed to send gossip command");
-    }
+    let sender = sender.0.clone();
+
+    unavi_util::async_task::spawn_async_task(async move {
+        if let Err(err) = sender
+            .send(GossipCommand::JoinSpace {
+                ctx,
+                cancel: cancel_rx,
+                space,
+            })
+            .await
+        {
+            error!(?err, "Failed to send gossip command");
+        }
+    });
 }
 
 #[derive(Component)]

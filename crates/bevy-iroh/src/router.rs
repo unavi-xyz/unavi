@@ -3,11 +3,15 @@ use iroh::protocol::{
     Router,
     RouterBuilder,
 };
+use unavi_util::async_task::spawn_async_task;
 
 use crate::endpoint::IrohEndpoint;
 
 #[derive(Component)]
 pub struct IrohRouter(pub Router);
+
+#[derive(Component)]
+pub struct PendingRouter(async_channel::Receiver<Router>);
 
 #[derive(EntityEvent)]
 pub struct BuildRouter(pub Entity);
@@ -31,10 +35,15 @@ pub(crate) fn on_build_router(
     trigger: On<BuildRouter>,
     mut commands: Commands,
     endpoints: Query<&IrohEndpoint>,
+    existing: Query<(), Or<(With<IrohRouter>, With<PendingRouter>)>>,
     mut builders: Query<&mut RouterBuilderFns>,
     mut fs: Query<&mut RouterBuilderFn>,
 ) {
     let entity = trigger.event().event_target();
+
+    if existing.get(entity).is_ok() {
+        return;
+    }
 
     let Ok(endpoint) = endpoints.get(entity).map(|v| v.0.clone()) else {
         warn!(%entity, "cannot build router, endpoint not found");
@@ -45,20 +54,39 @@ pub(crate) fn on_build_router(
         return;
     };
 
-    let mut builder = RouterBuilder::new(endpoint);
+    let mut collected = Vec::new();
 
     for fn_ent in &fns.0 {
         let mut f = fs.get_mut(*fn_ent).expect("router builder");
 
         commands.entity(*fn_ent).despawn();
-        let Some(f) = f.0.take() else {
-            continue;
-        };
-
-        builder = f(builder);
+        if let Some(f) = f.0.take() {
+            collected.push(f);
+        }
     }
 
-    let router = builder.spawn();
+    // `Router::spawn` calls `tokio::spawn` internally, so the build must run
+    // inside the async runtime rather than on the Bevy main thread.
+    let (tx, rx) = async_channel::bounded(1);
+    spawn_async_task(async move {
+        let mut builder = RouterBuilder::new(endpoint);
+        for f in collected {
+            builder = f(builder);
+        }
+        tx.send(builder.spawn()).await.ok();
+    });
 
-    commands.entity(entity).insert(IrohRouter(router));
+    commands.entity(entity).insert(PendingRouter(rx));
+}
+
+pub(crate) fn receive_router(loading: Query<(Entity, &PendingRouter)>, mut commands: Commands) {
+    for (entity, pending) in &loading {
+        let Ok(router) = pending.0.try_recv() else {
+            continue;
+        };
+        commands
+            .entity(entity)
+            .insert(IrohRouter(router))
+            .remove::<PendingRouter>();
+    }
 }

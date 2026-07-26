@@ -5,40 +5,14 @@ use std::time::Duration;
 use bevy::prelude::*;
 use clap::Parser;
 use tracing::Level;
-use unavi_client::Flags;
 
 #[derive(Parser, Debug)]
 #[command(version)]
 #[allow(clippy::struct_excessive_bools)]
 struct Args {
-    /// Enable spatial event receptor debug gizmos.
-    #[cfg(feature = "dev_tools")]
-    #[arg(long, default_value_t = false)]
-    debug_event: bool,
-
-    /// Enable FPS counter.
-    #[cfg(feature = "dev_tools")]
-    #[arg(long, default_value_t = false)]
-    debug_fps: bool,
-
-    /// Enable ECS inspector.
-    #[cfg(feature = "dev_tools")]
-    #[arg(long, default_value_t = false)]
-    debug_inspector: bool,
-
     /// Enable debug logging.
     #[arg(long, default_value_t = false)]
     debug_log: bool,
-
-    /// Enable debug network monitoring.
-    #[cfg(feature = "dev_tools")]
-    #[arg(long, default_value_t = false)]
-    debug_network: bool,
-
-    /// Enable physics debug gizmos.
-    #[cfg(feature = "dev_tools")]
-    #[arg(long, default_value_t = false)]
-    debug_physics: bool,
 
     /// Runs certain functions, like the local WDS, in-memory.
     /// Useful for running multiple clients on the same machine.
@@ -96,31 +70,8 @@ fn main() {
         Level::INFO
     };
 
-    #[allow(unused_mut)]
-    let mut flags = Flags::empty();
-
-    #[cfg(feature = "dev_tools")]
-    {
-        if args.debug_event {
-            flags |= Flags::DEBUG_EVENT;
-        }
-        if args.debug_fps {
-            flags |= Flags::DEBUG_FPS;
-        }
-        if args.debug_inspector {
-            flags |= Flags::DEBUG_INSPECTOR;
-        }
-        if args.debug_network {
-            flags |= Flags::DEBUG_NETWORK;
-        }
-        if args.debug_physics {
-            flags |= Flags::DEBUG_PHYSICS;
-        }
-    }
-
     App::new()
         .add_plugins(unavi_client::UnaviPlugin {
-            flags,
             in_memory: args.in_memory,
             log_level,
             xr: args.xr,

@@ -17,4 +17,5 @@ hsd.path               = "../hsd"
 loro-surgeon.workspace = true
 ron                    = { features = ["indexmap"], workspace = true }
 serde                  = { features = ["derive"], workspace = true }
+serde_with.workspace   = true
 toml                   = "1.1.2"

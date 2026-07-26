@@ -131,7 +131,7 @@ where
         return Err(ApiError::SyncFailed);
     };
 
-    info!(?record_id, "handling sync");
+    info!(%record_id, "handling sync");
 
     let (_requester_did, local_vv) = authenticate_and_authorize(ctx, &session, &record_id).await?;
 

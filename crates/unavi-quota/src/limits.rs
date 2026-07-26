@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::quota::{
+use crate::{
     Flow,
     Stock,
 };
@@ -21,7 +21,6 @@ pub struct Limits {
 
 const KB: usize = 1024;
 const MB: usize = 1024 * KB;
-const GB: usize = 1024 * MB;
 
 /// Largest payload a single `emit` may carry, fanned out to every receptor.
 pub const MAX_EVENT_PAYLOAD_BYTES: usize = 64 * KB;
@@ -37,16 +36,11 @@ const GLOBAL_WASM_MEMORY_PERCENT: u64 = 30;
 
 fn host_total_memory() -> u64 {
     cfg_select! {
-        // WasmMemory is not currently tracked on wasm, so this value isn't used.
-        target_family = "wasm" =>  2 * GB,
+        // Not currently tracked on wasm, so this value isn't used.
+        target_family = "wasm" => 2 * 1024 * MB as u64,
         _ => {
-            use sysinfo::{
-                MemoryRefreshKind,
-                RefreshKind,
-                System,
-            };
-            System::new_with_specifics(
-                RefreshKind::nothing().with_memory(MemoryRefreshKind::nothing().with_ram()),
+            sysinfo::System::new_with_specifics(
+                sysinfo::RefreshKind::nothing().with_memory(sysinfo::MemoryRefreshKind::nothing().with_ram()),
             )
             .total_memory()
         }
@@ -67,7 +61,8 @@ impl Limits {
     #[must_use]
     pub fn document() -> Self {
         let stock = HashMap::from([
-            (Stock::WasmMemory, (256 * MB) as u64),
+            (Stock::KvMemory, 8 * MB as u64),
+            (Stock::WasmMemory, 128 * MB as u64),
             (Stock::Documents, 256),
             (Stock::Prims, 50_000),
             (Stock::Slots, 50_000),
@@ -110,7 +105,8 @@ impl Limits {
     #[must_use]
     pub fn space() -> Self {
         let stock = HashMap::from([
-            (Stock::WasmMemory, GB as u64),
+            (Stock::KvMemory, 256 * MB as u64),
+            (Stock::WasmMemory, 512 * MB as u64),
             (Stock::Documents, 4_000),
             (Stock::Prims, 4_000_000),
             (Stock::Slots, 8_000_000),
@@ -167,7 +163,8 @@ impl Limits {
     #[must_use]
     pub fn peer() -> Self {
         let stock = HashMap::from([
-            (Stock::WasmMemory, GB as u64),
+            (Stock::KvMemory, 64 * MB as u64),
+            (Stock::WasmMemory, 256 * MB as u64),
             (Stock::Documents, 1_000),
             (Stock::Prims, 1_000_000),
             (Stock::Slots, 2_000_000),
@@ -225,7 +222,7 @@ impl Limits {
 #[cfg(all(test, not(target_family = "wasm")))]
 mod tests {
     use super::*;
-    use crate::quota::{
+    use crate::{
         Flow,
         Quota,
     };

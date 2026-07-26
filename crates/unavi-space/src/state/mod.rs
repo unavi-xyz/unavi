@@ -1,3 +1,3 @@
-pub mod doc;
-pub mod owner;
-pub mod space;
+pub mod entities;
+pub mod message;
+pub mod replicas;

@@ -10,6 +10,7 @@ use bevy::{
             RenderLayers,
         },
     },
+    math::Affine3A,
     mesh::{
         morph::{
             MeshMorphWeights,
@@ -23,6 +24,7 @@ use bevy::{
 use bevy_vrm::mtoon::MtoonMaterial;
 
 use crate::{
+    EchoBody,
     EchoNode,
     GluedTo,
     ManifoldBody,
@@ -47,25 +49,16 @@ struct DesiredEcho {
     plane: Vec4,
 }
 
-/// Maintain mirrored copies of bodies overlapping a seam plane.
-///
-/// An echo is a clone of the body's render subtree, posed through the seam
-/// and despawned once the body pulls clear. Both the body and its echo are
-/// clipped at their seam plane so neither protrudes out a portal's back side.
-/// Echo colliders are kinematic: they push dynamic bodies on the far side but
-/// feed no force back to the source body.
-///
-/// Runs between seam crossings and transform propagation: the body's
-/// `Transform` is its current world pose, and spawned echoes are propagated
-/// the same frame.
+/// Maintains mirrored clones of bodies overlapping a seam plane.
 pub fn maintain_seam_echoes(
     mut commands: Commands,
-    bodies: Query<(Entity, &Transform, &GlobalTransform), (With<ManifoldBody>, Without<SeamEcho>)>,
+    bodies: Query<(Entity, &Transform, &GlobalTransform), (With<EchoBody>, Without<SeamEcho>)>,
     seams: Query<
         (Entity, &GlobalTransform, &SeamSize, &GluedTo, &SeamState),
         (With<Seam>, Without<SeamEcho>),
     >,
     destinations: Query<&GlobalTransform, Without<SeamEcho>>,
+    parents: Query<&ChildOf>,
     children: Query<&Children>,
     aabbs: Query<(&GlobalTransform, &Aabb)>,
     clipped_bodies: Query<(Entity, &ClippedBody)>,
@@ -97,7 +90,10 @@ pub fn maintain_seam_echoes(
             let Some(&radius) = radii.get(&body) else {
                 continue;
             };
-            let local = seam_from_world.transform_point3(body_transform.translation);
+            // Seams live in world space, so the body must too; a body parented
+            // under an offset space anchor would otherwise echo in the wrong cell.
+            let body_affine = world_affine(body, body_transform, &parents, &destinations);
+            let local = seam_from_world.transform_point3(Vec3::from(body_affine.translation));
             if local.z.abs() > radius
                 || local.x.abs() > size.width / 2.0 + radius
                 || local.y.abs() > size.height / 2.0 + radius
@@ -106,7 +102,7 @@ pub fn maintain_seam_echoes(
             }
 
             let side = if local.z >= 0.0 { 1.0 } else { -1.0 };
-            let affine = transfer * body_transform.compute_affine();
+            let affine = transfer * body_affine;
             let (scale, rotation, translation) = affine.to_scale_rotation_translation();
 
             desired.insert(
@@ -169,9 +165,9 @@ pub fn maintain_seam_echoes(
     }
 }
 
-/// Copy source node transforms and morph weights onto their echo clones,
-/// carrying animation through the seam. Echo roots are posed by
-/// [`maintain_seam_echoes`] instead.
+/// Copies source node transforms and morph weights onto echo clones, carrying
+/// animation through the seam. Echo roots are posed by
+/// [`maintain_seam_echoes`].
 pub fn sync_echo_nodes(
     mut clones: Query<
         (&EchoNode, &mut Transform, Option<&mut MeshMorphWeights>),
@@ -190,6 +186,22 @@ pub fn sync_echo_nodes(
             weights.clone_from(source_weights);
         }
     }
+}
+
+/// World transform of a body from its parent's world pose and current local
+/// transform, so a fresh local write is not lagged by unpropagated globals.
+fn world_affine(
+    body: Entity,
+    local: &Transform,
+    parents: &Query<&ChildOf>,
+    globals: &Query<&GlobalTransform, Without<SeamEcho>>,
+) -> Affine3A {
+    let parent = parents
+        .get(body)
+        .ok()
+        .and_then(|c| globals.get(c.parent()).ok())
+        .map_or(Affine3A::IDENTITY, GlobalTransform::affine);
+    parent * local.compute_affine()
 }
 
 /// Bounding-sphere radius of a body's subtree around the body origin.
@@ -305,9 +317,11 @@ mod tests {
     use bevy_vrm::mtoon::MtoonMaterial;
 
     use crate::{
+        EchoBody,
         EchoNode,
         GluedTo,
         ManifoldBody,
+        PrevTranslation,
         Seam,
         SeamEcho,
         SeamSize,
@@ -557,6 +571,90 @@ mod tests {
             .iter(app.world())
             .any(|node| node.source == child);
         assert!(cloned, "echo mtoon node missing clipped material");
+    }
+
+    #[test]
+    fn echo_body_under_offset_anchor_echoes_in_world_space() {
+        let (mut app, ..) = setup();
+        let offset = Vec3::new(100.0, 0.0, 0.0);
+        let anchor = app
+            .world_mut()
+            .spawn((
+                Transform::from_translation(offset),
+                GlobalTransform::from(Transform::from_translation(offset)),
+            ))
+            .id();
+
+        let material = app
+            .world_mut()
+            .resource_mut::<Assets<StandardMaterial>>()
+            .add(StandardMaterial::default());
+        // World pose (0, 0, 0.2) straddles seam A; the local transform under the
+        // offset anchor is the mirror image the buggy path used to echo from.
+        let world = Vec3::new(0.0, 0.0, 0.2);
+        let body = app
+            .world_mut()
+            .spawn((
+                EchoBody,
+                Mesh3d(Handle::default()),
+                MeshMaterial3d(material),
+                Aabb::from_min_max(Vec3::splat(-0.5), Vec3::splat(0.5)),
+                Transform::from_translation(world - offset),
+                GlobalTransform::from(Transform::from_translation(world)),
+                ChildOf(anchor),
+            ))
+            .id();
+        app.update();
+        app.update();
+
+        let echo = app
+            .world_mut()
+            .query::<(&SeamEcho, &EchoNode, &GlobalTransform)>()
+            .iter(app.world())
+            .find(|(_, node, _)| node.source == body)
+            .map(|(_, _, t)| t.translation())
+            .expect("offset body cast no echo");
+        // transfer through seam A lands the echo at world (10, 0, 0.2); the buggy
+        // local-space path would place it near the anchor cell instead.
+        assert!(
+            echo.distance(Vec3::new(10.0, 0.0, 0.2)) < 1.0e-4,
+            "echo at {echo}, expected world-space destination"
+        );
+    }
+
+    #[test]
+    fn echo_body_casts_echo_but_never_crosses() {
+        let (mut app, ..) = setup();
+        let material = app
+            .world_mut()
+            .resource_mut::<Assets<StandardMaterial>>()
+            .add(StandardMaterial::default());
+        let pose = Transform::from_xyz(0.0, 0.0, 0.2);
+        let remote = app
+            .world_mut()
+            .spawn((
+                EchoBody,
+                Mesh3d(Handle::default()),
+                MeshMaterial3d(material),
+                Aabb::from_min_max(Vec3::splat(-0.5), Vec3::splat(0.5)),
+                pose,
+                GlobalTransform::from(pose),
+            ))
+            .id();
+        app.update();
+        app.update();
+
+        let has_echo = app
+            .world_mut()
+            .query::<(&SeamEcho, &EchoNode)>()
+            .iter(app.world())
+            .any(|(_, node)| node.source == remote);
+        assert!(has_echo, "echo-only body cast no echo");
+
+        // Crossing state is exclusive to teleporting bodies; an echo body must
+        // never be dragged through a seam by the local simulation.
+        assert!(app.world().get::<PrevTranslation>(remote).is_none());
+        assert!(app.world().get::<ClippedBody>(remote).is_some());
     }
 
     #[test]

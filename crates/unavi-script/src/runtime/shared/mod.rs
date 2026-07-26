@@ -7,6 +7,7 @@ use loro::{
     TreeID,
 };
 use tokio::sync::Mutex;
+use unavi_quota::Quota;
 
 use crate::{
     error::ScriptError,
@@ -14,7 +15,6 @@ use crate::{
         ApiName,
         ApiPermissions,
     },
-    quota::Quota,
     runtime::shared::wired::{
         agent::WiredAgentApi,
         event::WiredEventApi,
@@ -68,6 +68,7 @@ impl Plugin for SharedRuntimePlugin {
         .add_observer(registry::agent::register_local_agent)
         .add_observer(registry::agent::deregister_agents)
         .add_observer(registry::firewall::register_docs)
+        .add_observer(registry::firewall::register_subdoc_firewall)
         .add_observer(registry::firewall::deregister_firewalls)
         .add_observer(registry::quota::reassign_doc_quota)
         .add_observer(registry::quota::forget_space_quota)

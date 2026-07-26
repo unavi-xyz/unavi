@@ -71,12 +71,14 @@ async fn handle_space_topic(
     let (tx, mut rx) = topic.split();
 
     let ctx = Arc::new(ctx);
+    let wake = Arc::new(tokio::sync::Notify::new());
 
     let inbound_task = n0_future::task::spawn({
         let ctx = Arc::clone(&ctx);
+        let wake = Arc::clone(&wake);
         async move {
             loop {
-                match super::inbound::handle_gossip_inbound(&ctx, &mut rx, space).await {
+                match super::inbound::handle_gossip_inbound(&ctx, &mut rx, space, &wake).await {
                     Ok(()) => {
                         break;
                     }
@@ -90,7 +92,8 @@ async fn handle_space_topic(
     });
 
     let outbound_task = n0_future::task::spawn(async move {
-        while let Err(err) = super::outbound::handle_gossip_outbound(&ctx, &tx).await {
+        while let Err(err) = super::outbound::handle_gossip_outbound(&ctx, &tx, space, &wake).await
+        {
             error!(?err, "Error handling outbound gossip");
             n0_future::time::sleep(Duration::from_secs(1)).await;
         }

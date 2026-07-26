@@ -4,12 +4,6 @@ use rand::Rng;
 
 use crate::Space;
 
-/// Pick a spawn position for `space`, expressed in the space's local frame.
-///
-/// Each [`SpawnPoint`] inside the space defines a horizontal circle around its
-/// prim origin; we pick one such circle uniformly at random and then a uniform
-/// random point inside it. Returns `None` when no spawn point belongs to the
-/// space — callers should fall back to the space origin.
 #[must_use]
 pub fn pick_spawn(
     space: Entity,

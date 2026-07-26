@@ -9,9 +9,13 @@ version.workspace    = true
 [lints]
 workspace = true
 
+[features]
+devtools = ["dep:unavi-devtools"]
+
 [dependencies]
 anyhow.workspace           = true
 async-channel.workspace    = true
+avian3d.workspace          = true
 bevy.workspace             = true
 bevy-hsd.path              = "../bevy-hsd"
 bevy-iroh.path             = "../bevy-iroh"
@@ -22,19 +26,22 @@ hsd.path                   = "../hsd"
 iroh.workspace             = true
 iroh-gossip                = "0.97.0"
 loro.workspace             = true
-loro-surgeon.workspace     = true
 n0-future.workspace        = true
 parking_lot.workspace      = true
 postcard.workspace         = true
 rand.workspace             = true
 serde.workspace            = true
 serde_vrm                  = "0.3.0"
+thiserror.workspace        = true
 time.workspace             = true
 tokio.workspace            = true
 tracing.workspace          = true
 unavi-agent.path           = "../unavi-agent"
+unavi-avatar               = { path = "../unavi-avatar", version = "0.0.16" }
+unavi-devtools             = { optional = true, path = "../unavi-devtools" }
 unavi-manifold             = { path = "../unavi-manifold", version = "0.0.16" }
 unavi-portal-protocol.path = "../unavi-portal-protocol"
+unavi-quota.path           = "../unavi-quota"
 unavi-util.path            = "../unavi-util"
 wds.path                   = "../wds"
 wired-records              = { features = ["loro"], path = "../wired-records" }

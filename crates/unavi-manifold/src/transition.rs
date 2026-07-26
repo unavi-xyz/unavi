@@ -17,10 +17,8 @@ use crate::{
 };
 
 /// Whether the prev→curr segment crosses the seam plane within the opening.
-///
-/// Tests for a sign change in the plane-local `z` and checks the crossing point
-/// against the rectangle, so the teleport fires exactly at the plane and fast
-/// single-frame passes are still caught.
+/// Tests a sign change in plane-local `z` and the crossing point against the
+/// rectangle, catching fast single-frame passes exactly at the plane.
 fn segment_crosses_seam(
     prev_pos: Vec3,
     curr_pos: Vec3,
@@ -70,7 +68,7 @@ pub(crate) fn carry_momentum(
     angular.0 = rotation * angular.0;
 }
 
-pub(crate) fn apply_seam_crossings(
+pub fn apply_seam_crossings(
     mut commands: Commands,
     mut travelers: Query<
         (Entity, &mut SeamLatch, &mut Transform, &mut PrevTranslation),
@@ -80,10 +78,8 @@ pub(crate) fn apply_seam_crossings(
     destinations: Query<&GlobalTransform, Without<ManifoldBody>>,
     seam_destinations: Query<(), With<Seam>>,
 ) {
-    // Runs before transform propagation so a teleport reaches the body's
-    // descendants (the eye camera) the same frame, avoiding a one-frame view of
-    // the space behind the seam. The body's parent chain is identity, so its
-    // `Transform` is the current world pose.
+    // Runs before transform propagation so a teleport reaches the body's eye
+    // camera the same frame. The body's parent chain is identity (world pose).
     for (entity, mut latch, mut transform, mut prev) in &mut travelers {
         let curr_translation = transform.translation;
 

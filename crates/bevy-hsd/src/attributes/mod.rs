@@ -31,6 +31,7 @@ pub mod portal;
 pub mod rigid_body;
 pub mod script;
 pub mod spawn;
+pub mod subdocument;
 pub mod util;
 pub mod xform;
 
@@ -47,6 +48,7 @@ pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
             Box::new(rigid_body::RigidBodyParser),
             Box::new(script::ScriptParser),
             Box::new(spawn::SpawnParser),
+            Box::new(subdocument::SubdocumentParser),
             Box::new(xform::XformParser),
         ];
         let mut map = HashMap::default();

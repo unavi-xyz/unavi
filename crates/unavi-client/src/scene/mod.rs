@@ -5,6 +5,13 @@ use bevy::{
     },
     prelude::*,
 };
+use bevy_iroh::{
+    endpoint::IrohEndpoint,
+    router::{
+        BuildRouter,
+        IrohRouter,
+    },
+};
 use bevy_vrm::mtoon::MtoonSun;
 use unavi_agent::LocalAgent;
 
@@ -18,13 +25,19 @@ pub struct ScenePlugin;
 impl Plugin for ScenePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<SceneState>()
-            .add_observer(limbo::exit_limbo_on_space_join)
+            .add_observer(limbo::offset_agent_to_limbo)
+            .add_observer(limbo::track_space_load)
+            .add_observer(limbo::exit_limbo_on_space_loaded)
+            .add_observer(limbo::enter_space)
             .add_observer(respawn::respawn)
             .add_systems(
                 OnEnter(SceneState::Limbo),
                 (limbo::spawn_limbo, spawn_local_agent),
             )
-            .add_systems(OnExit(SceneState::Limbo), limbo::despawn_limbo)
+            .add_systems(
+                OnExit(SceneState::Limbo),
+                (limbo::despawn_limbo, build_iroh_router),
+            )
             .add_systems(
                 Startup,
                 (
@@ -36,6 +49,7 @@ impl Plugin for ScenePlugin {
             .add_systems(
                 FixedUpdate,
                 (
+                    limbo::exit_limbo_on_load_timeout,
                     respawn::teleport_from_void,
                     system_scripts::populate_firewall_entities,
                 ),
@@ -52,6 +66,18 @@ enum SceneState {
     /// Main scene state.
     /// Actively within a space.
     Space,
+}
+
+/// Builds the iroh router on first space entry, once gossip, space, and data
+/// store protocols have registered their handlers. The router can only be
+/// spawned once, so [`IrohRouter`] gates against rebuilding on later re-entry.
+fn build_iroh_router(
+    endpoints: Query<Entity, (With<IrohEndpoint>, Without<IrohRouter>)>,
+    mut commands: Commands,
+) {
+    for entity in &endpoints {
+        commands.entity(entity).trigger(BuildRouter);
+    }
 }
 
 fn spawn_local_agent(local_agent: Query<(), With<LocalAgent>>, mut commands: Commands) {

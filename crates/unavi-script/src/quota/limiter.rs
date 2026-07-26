@@ -1,17 +1,14 @@
 use std::sync::Arc;
 
-use wasmtime::ResourceLimiter;
-
-use crate::quota::{
+use unavi_quota::{
     Quota,
     Stock,
 };
+use wasmtime::ResourceLimiter;
 
-/// Binds a store's linear-memory growth to its document quota.
-///
-/// Growth past the [`Stock::WasmMemory`] cap is refused, which the guest sees
-/// as an allocation failure. The charge is released in full when the store, and
-/// so this limiter, is dropped.
+/// Binds a store's linear-memory growth to its document quota. Growth past the
+/// [`Stock::WasmMemory`] cap is refused (a guest allocation failure); the
+/// charge releases when the store and this limiter drop.
 pub struct QuotaLimiter {
     quota:   Arc<Quota>,
     charged: u64,

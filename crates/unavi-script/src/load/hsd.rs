@@ -16,6 +16,8 @@ use crate::{
 #[derive(Component)]
 pub struct PendingScript;
 
+/// Every peer runs every script; a script differentiates owner-only logic at
+/// runtime via `is_self_owner`, rather than being skipped on non-owners.
 pub fn load_hsd_scripts(
     trigger: On<Add, HsdScript>,
     scripts: Query<&HsdScript>,

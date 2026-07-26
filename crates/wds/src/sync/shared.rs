@@ -185,13 +185,23 @@ fn resolve_deep_value(map: &LoroMap, layout: &Field) -> LoroValue {
     LoroValue::Map(result.into())
 }
 
+/// Resolves a schema container's root value, reading a root tree directly so a
+/// `Tree`-rooted layout (such as HSD) is walked rather than missed as an empty
+/// root map.
+fn root_value(doc: &LoroDoc, container_name: &str, layout: &Field) -> LoroValue {
+    if matches!(unwrap_restricted(layout), Field::Tree(_)) {
+        doc.get_tree(container_name).get_value_with_meta()
+    } else {
+        resolve_deep_value(&doc.get_map(container_name), layout)
+    }
+}
+
 /// Extracts all [`Field::BlobId`] values from a Loro document
 /// by walking the schemas. Returns hashes as hex strings.
 fn extract_blob_refs(doc: &LoroDoc, schemas: &BTreeMap<String, Schema>) -> HashSet<String> {
     let mut refs = HashSet::new();
     for (container_name, schema) in schemas {
-        let map = doc.get_map(container_name.as_str());
-        let value = resolve_deep_value(&map, schema.layout());
+        let value = root_value(doc, container_name.as_str(), schema.layout());
         collect_blob_refs(&value, schema.layout(), &mut refs);
     }
     refs
@@ -274,8 +284,7 @@ fn collect_blob_refs(value: &LoroValue, field: &Field, refs: &mut HashSet<String
 fn extract_record_refs(doc: &LoroDoc, schemas: &BTreeMap<String, Schema>) -> HashSet<String> {
     let mut refs = HashSet::new();
     for (container_name, schema) in schemas {
-        let map = doc.get_map(container_name.as_str());
-        let value = resolve_deep_value(&map, schema.layout());
+        let value = root_value(doc, container_name.as_str(), schema.layout());
         collect_record_refs(&value, schema.layout(), &mut refs);
     }
     refs

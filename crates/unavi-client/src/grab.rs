@@ -19,7 +19,10 @@ use unavi_space::{
     Space,
     anchor::ActiveSpace,
     peer::self_peer_id,
-    state::owner::set_doc_owner,
+    state::{
+        entities,
+        replicas,
+    },
 };
 
 pub struct GrabPlugin;
@@ -74,7 +77,7 @@ fn on_squeeze_down(
     let offset_tra = pointer_tr.rotation.inverse() * (obj_tr.translation - pointer_tr.translation);
     let offset_rot = pointer_tr.rotation.inverse() * obj_tr.rotation;
 
-    claim_doc_ownership(
+    claim_doc_authority(
         entity,
         &hsd_children,
         &docs,
@@ -93,7 +96,7 @@ fn on_squeeze_down(
     ));
 }
 
-fn claim_doc_ownership(
+fn claim_doc_authority(
     entity: Entity,
     hsd_children: &Query<&HsdChild>,
     docs: &Query<&HsdRecordId, With<Hsd>>,
@@ -101,15 +104,15 @@ fn claim_doc_ownership(
     parents: &Query<&ChildOf>,
     active_space_entity: Option<Entity>,
 ) {
-    let Some(peer) = self_peer_id() else {
-        debug!("grab: local peer id not initialized yet, skipping ownership claim");
+    if self_peer_id().is_none() {
+        debug!("grab: local peer id not initialized yet, skipping authority claim");
         return;
-    };
+    }
 
     let Some((doc_entity, doc_hash)) = resolve_doc(entity, hsd_children, docs) else {
         debug!(
             ?entity,
-            "grab: grabbed entity has no HSD doc, skipping ownership claim",
+            "grab: grabbed entity has no HSD doc, skipping authority claim",
         );
         return;
     };
@@ -122,13 +125,21 @@ fn claim_doc_ownership(
     let Some(space_hash) = space_hash else {
         warn!(
             doc = %doc_hash,
-            "grab: no enclosing space and no active space, skipping ownership claim",
+            "grab: no enclosing space and no active space, skipping authority claim",
         );
         return;
     };
 
-    info!(doc = %doc_hash, space = %space_hash, "grab: claiming doc ownership");
-    set_doc_owner(space_hash, doc_hash, peer);
+    // Only claim authority over a doc already tracked in state. An untracked doc
+    // (e.g. a beacon not yet published) gets established by the publish path;
+    // claiming here would create presence ahead of that upload.
+    if !replicas::has_doc(space_hash, doc_hash) {
+        debug!(doc = %doc_hash, "grab: doc not tracked in state, skipping authority claim");
+        return;
+    }
+
+    info!(doc = %doc_hash, space = %space_hash, "grab: claiming object authority");
+    entities::claim_authority(space_hash, doc_hash);
 }
 
 fn resolve_doc(
@@ -159,10 +170,18 @@ fn resolve_space(
     None
 }
 
-fn on_squeeze_up(trigger: On<SqueezeUp>, mut commands: Commands) {
+fn on_squeeze_up(
+    trigger: On<SqueezeUp>,
+    hsd_children: Query<&HsdChild>,
+    docs: Query<&HsdRecordId, With<Hsd>>,
+    mut commands: Commands,
+) {
     let Some(entity) = trigger.entity else {
         return;
     };
+    if let Some((_, doc_hash)) = resolve_doc(entity, &hsd_children, &docs) {
+        entities::release_authority(doc_hash);
+    }
     commands
         .entity(entity)
         .queue_silenced(entity_command::remove::<(Grabbed, GravityScale)>());

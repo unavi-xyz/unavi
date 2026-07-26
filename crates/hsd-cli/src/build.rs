@@ -32,6 +32,7 @@ use hsd::{
         },
         script::ScriptAttr,
         spawn::SpawnAttr,
+        subdocument::SubdocumentAttr,
         xform::XformAttr,
     },
     file::{
@@ -45,6 +46,7 @@ use serde::{
     Deserialize,
     Serialize,
 };
+use serde_with::skip_serializing_none;
 
 use crate::{
     blobs::write_blob,
@@ -82,18 +84,20 @@ pub struct HsdxPrim {
     pub children:      Vec<Self>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxAttributes {
-    pub asset:      Option<String>,
-    pub collider:   Option<HsdxCollider>,
-    pub image:      Option<HsdxImage>,
-    pub material:   Option<HsdxMaterial>,
-    pub name:       Option<String>,
-    pub rigid_body: Option<HsdxRigidBody>,
-    pub script:     Option<String>,
-    pub spawn:      Option<HsdxSpawn>,
-    pub xform:      Option<HsdxXform>,
+    pub asset:       Option<String>,
+    pub collider:    Option<HsdxCollider>,
+    pub image:       Option<HsdxImage>,
+    pub material:    Option<HsdxMaterial>,
+    pub name:        Option<String>,
+    pub rigid_body:  Option<HsdxRigidBody>,
+    pub script:      Option<String>,
+    pub spawn:       Option<HsdxSpawn>,
+    pub subdocument: Option<String>,
+    pub xform:       Option<HsdxXform>,
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -112,6 +116,7 @@ pub enum HsdxCollider {
     Trimesh { indices: String, vertices: String },
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxImage {
@@ -125,6 +130,7 @@ pub struct HsdxImage {
     pub srgb:           Option<bool>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxMaterial {
@@ -142,6 +148,7 @@ pub struct HsdxMaterial {
     pub roughness:                  Option<f64>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxRigidBody {
@@ -153,6 +160,7 @@ pub struct HsdxRigidBody {
     pub restitution:     Option<f64>,
 }
 
+#[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxXform {
@@ -239,22 +247,29 @@ fn compile_attrs<S: std::hash::BuildHasher>(
         .map(|img| compile_image(img, input_dir, out_dir))
         .transpose()?;
 
+    let subdocument = attrs
+        .subdocument
+        .as_deref()
+        .map(|rel| compile_asset(rel, input_dir, out_dir, built))
+        .transpose()?;
+
     Ok(Attributes {
-        asset:      (asset.map(|h| AssetAttr(ByteArray::new(h)))),
-        collider:   (attrs.collider.as_ref().map(compile_collider).transpose()?),
-        image:      (image),
-        material:   (attrs.material.as_ref().map(compile_material)),
-        mesh:       None,
-        name:       (attrs.name.clone().map(NameAttr)),
-        portal:     None,
-        rigid_body: (attrs
+        asset:       (asset.map(|h| AssetAttr(ByteArray::new(h)))),
+        collider:    (attrs.collider.as_ref().map(compile_collider).transpose()?),
+        image:       (image),
+        material:    (attrs.material.as_ref().map(compile_material)),
+        mesh:        None,
+        name:        (attrs.name.clone().map(NameAttr)),
+        portal:      None,
+        rigid_body:  (attrs
             .rigid_body
             .as_ref()
             .map(compile_rigid_body)
             .transpose()?),
-        script:     (script.map(|h| ScriptAttr(ByteArray::new(h)))),
-        spawn:      attrs.spawn.as_ref().map(|s| SpawnAttr { radius: s.radius }),
-        xform:      (attrs.xform.as_ref().map(compile_xform)),
+        script:      (script.map(|h| ScriptAttr(ByteArray::new(h)))),
+        spawn:       attrs.spawn.as_ref().map(|s| SpawnAttr { radius: s.radius }),
+        subdocument: subdocument.map(|h| SubdocumentAttr::Template(ByteArray::new(h))),
+        xform:       (attrs.xform.as_ref().map(compile_xform)),
     })
 }
 

@@ -37,6 +37,7 @@ use crate::{
             MaterialData,
         },
     },
+    loaded::HsdSnapshotDrained,
 };
 
 pub type DiffSender = Arc<Sender<HsdDiffEvent>>;
@@ -80,6 +81,7 @@ pub fn drain_diff_queues(
     mut indices: Query<&mut HsdPrimIndex>,
     mut relationships: Query<&mut HsdRelationships>,
     has_material_data: Query<(), With<MaterialData>>,
+    drained: Query<(), With<HsdSnapshotDrained>>,
     mut events: Local<Vec<HsdDiffEvent>>,
     mut commands: Commands,
 ) {
@@ -123,6 +125,12 @@ pub fn drain_diff_queues(
                 &has_material_data,
                 &mut commands,
             );
+        }
+
+        // The initial snapshot is fully queued before `Add<Hsd>` returns, so one
+        // drain realizes the whole scene; mark it so readiness can be evaluated.
+        if !drained.contains(doc_ent) {
+            commands.entity(doc_ent).insert(HsdSnapshotDrained);
         }
     }
 }

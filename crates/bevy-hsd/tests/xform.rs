@@ -46,7 +46,7 @@ fn test_xform_lifecycle(mut ctx: TestContext) {
     ctx.app.update();
 
     let world = ctx.app.world_mut();
-    let mut query = world.query::<&Transform>();
+    let mut query = world.query_filtered::<&Transform, Without<bevy_hsd::Hsd>>();
 
     let res = query.query(world).into_iter().collect::<Vec<_>>();
     assert_eq!(res.len(), 1);

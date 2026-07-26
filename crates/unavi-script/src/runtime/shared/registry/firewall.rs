@@ -7,7 +7,11 @@ use std::{
 };
 
 use bevy::prelude::*;
-use bevy_hsd::HsdRecordId;
+use bevy_hsd::{
+    Hsd,
+    HsdChild,
+    HsdRecordId,
+};
 use blake3::Hash;
 use parking_lot::RwLock;
 
@@ -36,9 +40,8 @@ pub fn register_docs(
 
     let mut reg = FIREWALL_REGISTRY.write();
     if let Some(existing) = reg.get(&doc.0) {
-        // Child docs are pre-registered synchronously by spawn_child_doc so
-        // the firewall is queryable before this observer fires. Allow that
-        // case (same Arc) but reject anything else as a privilege leak.
+        // Child docs are pre-registered by spawn_child_doc, so allow the same
+        // Arc; reject anything else as a privilege leak.
         if !Arc::ptr_eq(&existing.0, &firewall.0) {
             error!("unable to register firewall: document already registered");
             commands.entity(trigger.entity).despawn();
@@ -54,13 +57,34 @@ pub fn register_docs(
         .insert(RegisteredFirewall(doc.0));
 }
 
+pub fn register_subdoc_firewall(
+    trigger: On<Insert, HsdRecordId>,
+    subdocs: Query<&ChildOf, (With<Hsd>, Without<Firewall>)>,
+    prims: Query<&HsdChild>,
+    docs: Query<&HsdRecordId>,
+    mut commands: Commands,
+) {
+    let Ok(prim) = subdocs.get(trigger.entity).map(ChildOf::parent) else {
+        return;
+    };
+    let Ok(parent) = prims.get(prim).map(|c| c.0) else {
+        return;
+    };
+    let Ok(parent_id) = docs.get(parent) else {
+        return;
+    };
+    commands
+        .entity(trigger.entity)
+        .insert(Firewall::for_child_doc(parent_id.0));
+}
+
 pub fn deregister_firewalls(
     trigger: On<Remove, RegisteredFirewall>,
     ids: Query<&RegisteredFirewall>,
 ) {
     let id = ids.get(trigger.entity).expect("id");
     FIREWALL_REGISTRY.write().remove(&id.0);
-    crate::quota::registry::forget_document(id.0);
+    unavi_quota::registry::forget_document(id.0);
 }
 
 pub fn validate_firewall(me: &Hash, target: &Hash, channel: Channel) -> anyhow::Result<()> {

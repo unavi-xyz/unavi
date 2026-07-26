@@ -4,10 +4,7 @@ use wired_prelude::prelude::*;
 use crate::{
     unavi::shapes::api::Cuboid,
     wired::scene::{
-        api::{
-            load_hsd,
-            self_document,
-        },
+        api::self_document,
         types::{
             Material,
             Prim,
@@ -80,26 +77,6 @@ impl ScriptBehavior for Script {
             });
         mat.base_color = Some(base_color);
         prim.set_material(Some(&mat));
-
-        // Find a root prim named "gate" and use its asset blob id.
-        let gate_blob = doc
-            .roots()
-            .into_iter()
-            .find(|p| p.name().as_deref() == Some("gate"))
-            .and_then(|p| p.asset());
-
-        let Some(gate_blob) = gate_blob else {
-            eprintln!("no gate asset");
-            return Ok(Self);
-        };
-        let Ok(gate_doc) = load_hsd(&gate_blob) else {
-            eprintln!("error loading gate HSD");
-            return Ok(Self);
-        };
-
-        for root in gate_doc.roots() {
-            set_translation(&root, Vec3::new(0.0, 0.0, -GROUND_SIZE / 3.0));
-        }
 
         println!("Welcome home! =)");
 

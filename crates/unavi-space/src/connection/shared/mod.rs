@@ -3,13 +3,19 @@ use std::{
     time::Duration,
 };
 
-use anyhow::bail;
-use iroh::endpoint::{
-    Connection,
-    ConnectionError,
-    RecvStream,
-    SendStream,
-    VarInt,
+use anyhow::{
+    Context,
+    bail,
+};
+use iroh::{
+    EndpointId,
+    endpoint::{
+        Connection,
+        ConnectionError,
+        RecvStream,
+        SendStream,
+        VarInt,
+    },
 };
 use n0_future::task::AbortOnDropHandle;
 use serde::{
@@ -28,7 +34,6 @@ use tracing::{
     error,
     info,
     info_span,
-    warn,
 };
 
 mod agent;
@@ -47,6 +52,9 @@ pub async fn handle_connection(
 async fn inner(connection: Connection, cancel: oneshot::Receiver<()>) -> anyhow::Result<()> {
     info!("Connected");
     let connection = Arc::new(connection);
+
+    #[cfg(feature = "devtools")]
+    let _conn_guard = crate::devtools::conn::track(connection.remote_id(), Arc::clone(&connection));
 
     let task_recv = {
         let span = info_span!("recv");
@@ -70,16 +78,10 @@ async fn inner(connection: Connection, cancel: oneshot::Receiver<()>) -> anyhow:
             n0_future::time::sleep(Duration::from_secs(5)).await;
         },
         err = connection.closed() => {
-            match err {
-                ConnectionError::ConnectionClosed(reason) => {
-                    info!("Peer closed connection: {reason}");
-                }
-                ConnectionError::LocallyClosed => {
-                    info!("Closed connection");
-                }
-                err => {
-                    bail!("connection error: {err:?}")
-                }
+            if is_graceful_close(&err) {
+                info!("Connection closed: {err}");
+            } else {
+                bail!("connection error: {err:?}")
             }
         },
         res = task_recv => {
@@ -94,6 +96,7 @@ async fn inner(connection: Connection, cancel: oneshot::Receiver<()>) -> anyhow:
 }
 
 async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
+    let peer = connection.remote_id();
     let mut i = 0;
     let mut streams = Vec::new();
 
@@ -101,11 +104,15 @@ async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
         let span = info_span!("stream", i);
         i += 1;
 
-        let (tx, rx) = connection.accept_bi().await?;
+        let (tx, rx) = match connection.accept_bi().await {
+            Ok(pair) => pair,
+            Err(err) if is_graceful_close(&err) => return Ok(()),
+            Err(err) => return Err(err).context("accept_bi"),
+        };
 
         let handle = n0_future::task::spawn(
             async move {
-                if let Err(err) = recv_stream(tx, rx).await {
+                if let Err(err) = recv_stream(peer, tx, rx).await {
                     error!(?err);
                 }
             }
@@ -115,16 +122,15 @@ async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
     }
 }
 
-async fn recv_stream(tx: SendStream, mut rx: RecvStream) -> anyhow::Result<()> {
-    let ident = StreamIdent::read(&mut rx).await?;
+async fn recv_stream(peer: EndpointId, tx: SendStream, mut rx: RecvStream) -> anyhow::Result<()> {
+    let ident = StreamIdent::read(&mut rx).await.context("read ident")?;
+    info!("Stream ident: {ident:?}");
 
     match ident {
-        StreamIdent::Agent => agent::recv_agent_stream(tx, rx).await?,
-        StreamIdent::Object => object::recv_object_stream(tx, rx).await?,
-        StreamIdent::State => state::recv_state_stream(tx, rx).await?,
-        StreamIdent::Unknown(i) => {
-            warn!("Got unknown stream ident: {i}");
-        }
+        StreamIdent::Agent => agent::recv_agent_stream(peer, tx, rx).await?,
+        StreamIdent::Object => object::recv_object_stream(peer, tx, rx).await?,
+        StreamIdent::State => state::recv_state_stream(peer, tx, rx).await?,
+        StreamIdent::Unknown(_) => {}
     }
 
     Ok(())
@@ -160,10 +166,13 @@ async fn send_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
     };
 
     let task_objects = {
+        let connection = Arc::clone(&connection);
         let handle = n0_future::task::spawn(async move {
             loop {
-                // TODO recv commands from ecs
-                n0_future::time::sleep(Duration::from_mins(1)).await;
+                if let Err(err) = object::send_object_stream(&connection).await {
+                    error!(?err, "Object stream error");
+                }
+                n0_future::time::sleep(STREAM_LOOP_DELAY).await;
             }
         });
         AbortOnDropHandle::new(handle)
@@ -172,6 +181,29 @@ async fn send_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
     n0_future::join_all([task_agent, task_state, task_objects]).await;
 
     Ok(())
+}
+
+const fn is_graceful_close(err: &ConnectionError) -> bool {
+    matches!(
+        err,
+        ConnectionError::ConnectionClosed(_)
+            | ConnectionError::LocallyClosed
+            | ConnectionError::ApplicationClosed(_)
+    )
+}
+
+fn read_disconnected(err: &std::io::Error) -> bool {
+    use std::io::ErrorKind::{
+        BrokenPipe,
+        ConnectionAborted,
+        ConnectionReset,
+        NotConnected,
+        UnexpectedEof,
+    };
+    matches!(
+        err.kind(),
+        UnexpectedEof | ConnectionReset | ConnectionAborted | NotConnected | BrokenPipe
+    )
 }
 
 #[derive(Serialize, Deserialize, Debug)]

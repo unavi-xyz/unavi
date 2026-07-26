@@ -8,7 +8,6 @@ use blake3::Hash;
 use iroh::EndpointAddr;
 
 pub mod presence;
-pub mod state;
 
 pub static SELF_PEER: RwLock<Option<[u8; 32]>> = RwLock::new(None);
 

@@ -66,34 +66,38 @@ impl ScriptBehavior for Script {
             panic!("invalid beacon: id prim not found")
         };
 
-        let cuboid = Cuboid::new(Vec3::splat(SIZE));
-        let cube = cuboid.mesh();
-        cube.set_collider(Some(&cuboid.collider()));
-        cube.set_rigid_body(Some(RigidBody {
-            kind:            RigidBodyKind::Dynamic,
-            angular_damping: None,
-            friction:        None,
-            linear_damping:  None,
-            mass:            None,
-            restitution:     None,
-        }));
-        prim.add_child(&cube);
+        // A published beacon bakes its cube into the synced record, so a peer
+        // that already holds it reuses that cube rather than authoring a copy.
+        let cube = prim.children().into_iter().next().unwrap_or_else(|| {
+            let cuboid = Cuboid::new(Vec3::splat(SIZE));
+            let cube = cuboid.mesh();
+            cube.set_collider(Some(&cuboid.collider()));
+            cube.set_rigid_body(Some(RigidBody {
+                kind:            RigidBodyKind::Dynamic,
+                angular_damping: None,
+                friction:        None,
+                linear_damping:  None,
+                mass:            None,
+                restitution:     None,
+            }));
+            cube.set_material(Some(&Material {
+                alpha_cutoff:               None,
+                alpha_mode:                 None,
+                base_color:                 Some(unavi_script_util::color::generate_color(id)),
+                base_color_texture:         None,
+                double_sided:               None,
+                emissive:                   None,
+                emissive_texture:           None,
+                metallic:                   Some(0.3),
+                metallic_roughness_texture: None,
+                normal_texture:             None,
+                occlusion_texture:          None,
+                roughness:                  Some(0.7),
+            }));
+            prim.add_child(&cube);
+            cube
+        });
 
-        let color = unavi_script_util::color::generate_color(id);
-        cube.set_material(Some(&Material {
-            alpha_cutoff:               None,
-            alpha_mode:                 None,
-            base_color:                 Some(color),
-            base_color_texture:         None,
-            double_sided:               None,
-            emissive:                   None,
-            emissive_texture:           None,
-            metallic:                   Some(0.3),
-            metallic_roughness_texture: None,
-            normal_texture:             None,
-            occlusion_texture:          None,
-            roughness:                  Some(0.7),
-        }));
         let input = register_input_listener(&cube)?;
         println!("Beacon initialized: space={id}");
         Ok(Self {

@@ -12,14 +12,16 @@ use std::{
 
 use async_channel::Receiver;
 use blake3::Hash;
+use unavi_quota::{
+    Flow,
+    QuotaError,
+    Stock,
+    StockGuard,
+    limits::MAX_EVENT_PAYLOAD_BYTES,
+};
 
 use crate::{
     firewall::Channel,
-    quota::{
-        QuotaError,
-        Stock,
-        limits::MAX_EVENT_PAYLOAD_BYTES,
-    },
     runtime::shared::{
         Api,
         registry::{
@@ -70,7 +72,7 @@ pub enum EventScope {
 
 pub struct EventReceptorRes {
     rx:     Receiver<InboundEvent>,
-    _guard: crate::quota::StockGuard,
+    _guard: StockGuard,
 }
 
 pub struct EventRes {
@@ -95,7 +97,7 @@ pub async fn emit(
         payload.len() <= MAX_EVENT_PAYLOAD_BYTES,
         "event payload too large"
     );
-    api.quota.spend(crate::quota::Flow::Emit, 1.0)?;
+    api.quota.spend(Flow::Emit, 1.0)?;
 
     let time = std::time::SystemTime::now()
         .duration_since(UNIX_EPOCH)?

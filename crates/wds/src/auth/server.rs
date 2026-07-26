@@ -18,6 +18,7 @@ use crate::{
     ConnectionState,
     SessionToken,
     StoreContext,
+    WDS_SERVICE_TYPE,
     auth::{
         AuthMessage,
         HandlerState,
@@ -108,12 +109,12 @@ pub async fn handle_message(
             // Any written data still must be signed and verified by an attestation method.
             if !found_valid && let Some(services) = doc.service {
                 for service in services {
-                    if service.id != "wds" {
+                    if !service.typ.iter().any(|t| t == WDS_SERVICE_TYPE) {
                         continue;
                     }
 
-                    for t in service.typ {
-                        let Ok(endpoint) = EndpointId::from_str(&t) else {
+                    for endpoint_id in service.service_endpoint {
+                        let Ok(endpoint) = EndpointId::from_str(&endpoint_id) else {
                             continue;
                         };
 
@@ -127,6 +128,10 @@ pub async fn handle_message(
                         }
 
                         found_valid = true;
+                        break;
+                    }
+
+                    if found_valid {
                         break;
                     }
                 }

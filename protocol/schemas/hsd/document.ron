@@ -1,7 +1,18 @@
 (
     id: "hsd/document",
     version: 0,
-    layout: Tree(Struct({
+    layout: Restricted(
+        actions: [
+            (
+                who: Path("acl.write"),
+                can: [
+                    Create,
+                    Update,
+                    Delete,
+                ],
+            ),
+        ],
+        value: Tree(Struct({
         "attributes": Optional(Struct({
             "asset": Optional(BlobId),
             "collider": Optional(Enum({
@@ -78,6 +89,10 @@
             "spawn": Optional(Struct({
                 "radius": F64,
             })),
+            "subdocument": Optional(Enum({
+                "Template": Some(BlobId),
+                "Record": Some(RecordId),
+            })),
             "xform": Optional(Struct({
                 "rotation": Optional(List(F64)),
                 "scale": Optional(List(F64)),
@@ -85,5 +100,6 @@
             })),
         })),
         "relationships": Map(String),
-    })),
+        })),
+    ),
 )

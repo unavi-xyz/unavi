@@ -1,23 +1,21 @@
 [
     (
         attributes: (
-            asset: "../unavi-gate/asset.hsdx",
-            collider: None,
-            image: None,
-            material: None,
             name: "gate",
-            rigid_body: None,
-            script: None,
-            spawn: None,
-            xform: None,
+            subdocument: "../unavi-gate/asset.hsdx",
+            xform: (
+                translation: [
+                    0.0,
+                    0.0,
+                    -10.0,
+                ],
+            ),
         ),
         relationships: {},
         children: [],
     ),
     (
         attributes: (
-            asset: None,
-            collider: None,
             image: (
                 data: "../../crates/unavi-client/assets/image/dev-white.png",
                 address_mode_u: 0,
@@ -25,43 +23,19 @@
                 address_mode_w: 0,
                 mag_filter: 1,
                 min_filter: 1,
-                mipmap_filter: None,
                 srgb: true,
             ),
-            material: None,
             name: "ground_tex",
-            rigid_body: None,
-            script: None,
-            spawn: None,
-            xform: None,
         ),
         relationships: {},
         children: [],
     ),
     (
         attributes: (
-            asset: None,
-            collider: None,
-            image: None,
             material: (
-                alpha_cutoff: None,
-                alpha_mode: None,
-                base_color: None,
                 base_color_texture: "ground_tex",
-                double_sided: None,
-                emissive: None,
-                emissive_texture: None,
-                metallic: None,
-                metallic_roughness_texture: None,
-                normal_texture: None,
-                occlusion_texture: None,
-                roughness: None,
             ),
             name: "ground",
-            rigid_body: None,
-            script: None,
-            spawn: None,
-            xform: None,
         ),
         relationships: {
             "base_color_texture": "ground_tex",
@@ -70,15 +44,8 @@
     ),
     (
         attributes: (
-            asset: None,
-            collider: None,
-            image: None,
-            material: None,
             name: "unavi-default-home",
-            rigid_body: None,
             script: "./Cargo.toml",
-            spawn: None,
-            xform: None,
         ),
         relationships: {
             "material": "ground",
@@ -87,13 +54,7 @@
     ),
     (
         attributes: (
-            asset: None,
-            collider: None,
-            image: None,
-            material: None,
             name: "spawn",
-            rigid_body: None,
-            script: None,
             spawn: (
                 radius: 4.0,
             ),
@@ -103,8 +64,6 @@
                     0.5,
                     0.0,
                 ],
-                rotation: None,
-                scale: None,
             ),
         ),
         relationships: {},

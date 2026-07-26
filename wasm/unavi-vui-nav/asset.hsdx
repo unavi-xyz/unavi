@@ -1,29 +1,14 @@
 [
     (
         attributes: (
-            asset: None,
-            collider: None,
-            image: None,
-            material: None,
             name: "nav",
-            rigid_body: None,
             script: "./Cargo.toml",
-            spawn: None,
-            xform: None,
         ),
         relationships: {},
         children: [
             (
                 attributes: (
                     asset: "../unavi-beacon/asset.hsdx",
-                    collider: None,
-                    image: None,
-                    material: None,
-                    name: None,
-                    rigid_body: None,
-                    script: None,
-                    spawn: None,
-                    xform: None,
                 ),
                 relationships: {},
                 children: [],

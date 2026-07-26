@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
 use bevy::platform::collections::HashMap;
-
-use crate::quota::{
+use unavi_quota::{
     Quota,
     QuotaError,
     Stock,
@@ -37,9 +36,8 @@ impl<T> SlotMap<T> {
         self.items.iter().map(|(&k, s)| (k, &s.value))
     }
 
-    /// Charges one [`Stock::Slots`] for the new entry, refunded when it is
-    /// removed or the map drops. A guest that exhausts its slot budget can mint
-    /// no further resource handles.
+    /// Charges one [`Stock::Slots`] for the new entry, refunded on removal or
+    /// drop, so a guest cannot mint handles past its slot budget.
     pub fn insert(&mut self, value: T, quota: &Arc<Quota>) -> Result<u32, QuotaError> {
         let guard = quota.charge(Stock::Slots, 1)?;
         while self.items.contains_key(&self.next) {
@@ -61,9 +59,8 @@ impl<T> SlotMap<T> {
         Ok(key)
     }
 
-    /// Inserts at a caller-chosen key, for entries keyed by an externally
-    /// assigned id rather than the map's own counter. Charges a slot like
-    /// [`Self::insert`]; any displaced entry refunds its own.
+    /// Inserts at a caller-chosen key (for externally-assigned ids). Charges a
+    /// slot like [`Self::insert`]; any displaced entry refunds its own.
     pub fn insert_at(&mut self, key: u32, value: T, quota: &Arc<Quota>) -> Result<(), QuotaError> {
         let guard = quota.charge(Stock::Slots, 1)?;
         self.items.insert(
@@ -98,8 +95,9 @@ where
 
 #[cfg(test)]
 mod tests {
+    use unavi_quota::limits::Limits;
+
     use super::*;
-    use crate::quota::limits::Limits;
 
     fn quota(slots: u64) -> Arc<Quota> {
         let mut limits = Limits::default();

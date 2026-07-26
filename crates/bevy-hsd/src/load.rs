@@ -395,15 +395,27 @@ async fn write_hsd_record(
     Ok(id)
 }
 
+/// Records which subdocument record a prim currently has instanced, so a
+/// changed target re-instances and a detached one is torn down.
 #[derive(Component)]
-pub struct SubdocLoaded;
+pub struct SubdocLoaded(pub Hash);
 
 pub fn instance_subdocuments(
-    prims: Query<(Entity, &Prim, &HsdChild), (With<HsdSubdocument>, Without<SubdocLoaded>)>,
+    subdoc_prims: Query<
+        (Entity, &Prim, &HsdChild, Option<&SubdocLoaded>, Option<&Children>),
+        With<HsdSubdocument>,
+    >,
+    detached: Query<(Entity, Option<&Children>), (With<SubdocLoaded>, Without<HsdSubdocument>)>,
+    hsd_docs: Query<(), With<Hsd>>,
     docs: Query<&Hsd>,
     mut commands: Commands,
 ) {
-    for (prim_ent, prim, doc_ent) in &prims {
+    for (prim_ent, children) in &detached {
+        despawn_subdoc_docs(&mut commands, &hsd_docs, children);
+        commands.entity(prim_ent).remove::<SubdocLoaded>();
+    }
+
+    for (prim_ent, prim, doc_ent, loaded, children) in &subdoc_prims {
         let Ok(parent) = docs.get(doc_ent.0) else {
             continue;
         };
@@ -414,7 +426,15 @@ pub fn instance_subdocuments(
             Ok(SubdocumentAttr::Record(id)) => Hash::from_bytes(id.0),
             _ => continue,
         };
-        commands.entity(prim_ent).insert(SubdocLoaded);
+
+        if let Some(loaded) = loaded {
+            if loaded.0 == id {
+                continue;
+            }
+            despawn_subdoc_docs(&mut commands, &hsd_docs, children);
+        }
+
+        commands.entity(prim_ent).insert(SubdocLoaded(id));
 
         let (mut event, rx, cancel) = ReadRecord::new(id);
         event.ttl = Some(DEFAULT_TTL);
@@ -426,7 +446,11 @@ pub fn instance_subdocuments(
             if let Ok(doc) = rx.recv().await {
                 let _ = AsyncCommands::default()
                     .push(move |world: &mut World| {
-                        if world.get_entity(prim_ent).is_ok() {
+                        let current = world
+                            .get_entity(prim_ent)
+                            .ok()
+                            .and_then(|e| e.get::<SubdocLoaded>().map(|l| l.0));
+                        if current == Some(id) {
                             world.spawn((Hsd(Arc::new(doc)), HsdRecordId(id), ChildOf(prim_ent)));
                         }
                     })
@@ -434,6 +458,21 @@ pub fn instance_subdocuments(
                     .await;
             }
         });
+    }
+}
+
+fn despawn_subdoc_docs(
+    commands: &mut Commands,
+    hsd_docs: &Query<(), With<Hsd>>,
+    children: Option<&Children>,
+) {
+    let Some(children) = children else {
+        return;
+    };
+    for child in children.iter() {
+        if hsd_docs.contains(child) {
+            commands.entity(child).despawn();
+        }
     }
 }
 

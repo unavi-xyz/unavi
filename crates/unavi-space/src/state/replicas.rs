@@ -515,6 +515,7 @@ pub fn current_millis() -> u64 {
 /// Whether `at` is within the accepted clock skew of local time.
 #[must_use]
 pub fn time_valid(at: u64) -> bool {
+    // TODO lower bound check or use "recieved" time only
     at <= current_millis().saturating_add(MAX_CLOCK_SKEW_MILLIS)
 }
 

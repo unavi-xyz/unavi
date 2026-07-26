@@ -2517,7 +2517,7 @@ dependencies = [
  "paste",
  "petgraph 0.8.3",
  "serde",
- "serde_vrm 0.3.0 (git+https://github.com/unavi-xyz/bevy_vrm)",
+ "serde_vrm",
  "thiserror 2.0.18",
 ]
 
@@ -6393,7 +6393,7 @@ dependencies = [
  "gltf_kun",
  "serde",
  "serde_json",
- "serde_vrm 0.3.0 (git+https://github.com/unavi-xyz/bevy_vrm)",
+ "serde_vrm",
  "thiserror 2.0.18",
  "tracing",
 ]
@@ -12280,16 +12280,6 @@ dependencies = [
 [[package]]
 name = "serde_vrm"
 version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75fda0f18def44b1951df5e8f12d5535230a06660322b0229e7ebdcc72297196"
-dependencies = [
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "serde_vrm"
-version = "0.3.0"
 source = "git+https://github.com/unavi-xyz/bevy_vrm#16744ef19dc744d685073c0cf51bcb975021889d"
 dependencies = [
  "bevy",
@@ -14204,7 +14194,7 @@ dependencies = [
  "postcard",
  "rand 0.9.2",
  "serde",
- "serde_vrm 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_vrm",
  "thiserror 2.0.18",
  "time",
  "tokio",

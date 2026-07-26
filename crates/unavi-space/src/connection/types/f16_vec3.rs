@@ -1,3 +1,4 @@
+use bevy::math::Vec3;
 use half::f16;
 use postcard::experimental::max_size::MaxSize;
 use serde::{
@@ -35,6 +36,22 @@ impl F16Vec3 {
             y: baseline.y + self.y.to_f32(),
             z: baseline.z + self.z.to_f32(),
         }
+    }
+}
+
+impl From<Vec3> for F16Vec3 {
+    fn from(v: Vec3) -> Self {
+        Self {
+            x: f16::from_f32(v.x),
+            y: f16::from_f32(v.y),
+            z: f16::from_f32(v.z),
+        }
+    }
+}
+
+impl From<F16Vec3> for Vec3 {
+    fn from(v: F16Vec3) -> Self {
+        Self::new(v.x.to_f32(), v.y.to_f32(), v.z.to_f32())
     }
 }
 
@@ -81,6 +98,14 @@ mod tests {
         let restored = pos.apply_to(baseline);
 
         assert!(error(current, restored) < 0.01);
+    }
+
+    #[test]
+    fn absolute_roundtrip() {
+        let original = Vec3::new(0.12, -0.03, 0.45);
+        let packed = F16Vec3::from(original);
+        let restored = Vec3::from(packed);
+        assert!((original - restored).length() < 0.001);
     }
 
     #[test]

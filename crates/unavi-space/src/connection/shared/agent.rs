@@ -1,7 +1,10 @@
 use std::time::Duration;
 
 use anyhow::Context;
-use bevy::transform::components::Transform;
+use bevy::{
+    platform::collections::HashMap,
+    transform::components::Transform,
+};
 use blake3::Hash;
 use iroh::{
     EndpointId,
@@ -17,6 +20,7 @@ use serde::{
     Deserialize,
     Serialize,
 };
+use serde_vrm::vrm0::BoneName;
 use tokio::io::{
     AsyncReadExt,
     AsyncWriteExt,
@@ -136,8 +140,9 @@ fn delta_pose(pose: Pose<IFrame>, last: &Pose<IFrame>) -> Pose<PFrame> {
 }
 
 struct Baseline {
-    id:   u32,
-    root: RigidTransform<F32Vec3>,
+    id:    u32,
+    root:  RigidTransform<F32Vec3>,
+    bones: HashMap<BoneName, RigidTransform<F16Vec3>>,
 }
 
 /// Reconstructs a full-precision pose from a message, tracking the i-frame
@@ -147,13 +152,20 @@ fn resolve_msg(msg: AgentMsg, baseline: &mut Option<Baseline>) -> Option<Resolve
     match msg {
         AgentMsg::IFrame { id, space, pose } => {
             let root = pose.root.clone().into();
+            let bones = pose
+                .bones
+                .iter()
+                .map(|(name, bone)| (*name, bone.clone().into()))
+                .collect();
             *baseline = Some(Baseline {
                 id,
                 root: pose.root,
+                bones: pose.bones,
             });
             Some(ResolvedPose {
                 space: Hash::from_bytes(space),
                 root,
+                bones,
             })
         }
         AgentMsg::PFrame {
@@ -166,13 +178,29 @@ fn resolve_msg(msg: AgentMsg, baseline: &mut Option<Baseline>) -> Option<Resolve
                 return None;
             }
             let translation = pose.root.tra.apply_to(baseline.root.tra).into();
+            let bones = pose
+                .bones
+                .iter()
+                .filter_map(|(name, bone)| {
+                    let base = baseline.bones.get(name)?;
+                    Some((
+                        *name,
+                        Transform {
+                            translation: bone.tra.apply_to(base.tra).into(),
+                            rotation: bone.rot.into(),
+                            ..Default::default()
+                        },
+                    ))
+                })
+                .collect();
             Some(ResolvedPose {
                 space: Hash::from_bytes(space),
-                root:  Transform {
+                root: Transform {
                     translation,
                     rotation: pose.root.rot.into(),
                     ..Default::default()
                 },
+                bones,
             })
         }
     }
@@ -207,7 +235,10 @@ pub async fn recv_agent_stream(
 
 #[cfg(test)]
 mod tests {
-    use bevy::math::Vec3;
+    use bevy::math::{
+        Quat,
+        Vec3,
+    };
 
     use super::*;
 
@@ -218,6 +249,12 @@ mod tests {
             root: RigidTransform::from(&Transform::from_translation(t)),
             ..Default::default()
         }
+    }
+
+    fn iframe_pose_with_bone(t: Vec3, bone: BoneName, bone_local: Transform) -> Pose<IFrame> {
+        let mut pose = iframe_pose(t);
+        pose.bones.insert(bone, (&bone_local).into());
+        pose
     }
 
     #[test]
@@ -276,6 +313,70 @@ mod tests {
         .expect("resolved");
 
         assert!((resolved.root.translation - moved).length() < 0.05);
+    }
+
+    #[test]
+    fn iframe_resolves_bones() {
+        let mut baseline = None;
+        let bone_local = Transform {
+            translation: Vec3::new(0.0, 0.1, 0.02),
+            rotation: Quat::from_rotation_x(0.5),
+            ..Default::default()
+        };
+        let resolved = resolve_msg(
+            AgentMsg::IFrame {
+                id:    1,
+                space: SPACE,
+                pose:  iframe_pose_with_bone(Vec3::ZERO, BoneName::LeftUpperArm, bone_local),
+            },
+            &mut baseline,
+        )
+        .expect("resolved");
+
+        let bone = resolved.bones.get(&BoneName::LeftUpperArm).expect("bone");
+        assert!((bone.translation - bone_local.translation).length() < 0.01);
+        assert!(bone.rotation.angle_between(bone_local.rotation) < 0.02);
+    }
+
+    #[test]
+    fn pframe_applies_bone_delta() {
+        let mut baseline = None;
+        let base_bone = Transform {
+            translation: Vec3::new(0.0, 0.1, 0.0),
+            rotation: Quat::from_rotation_x(0.2),
+            ..Default::default()
+        };
+        resolve_msg(
+            AgentMsg::IFrame {
+                id:    1,
+                space: SPACE,
+                pose:  iframe_pose_with_bone(Vec3::ZERO, BoneName::Head, base_bone),
+            },
+            &mut baseline,
+        );
+
+        let moved_bone = Transform {
+            translation: base_bone.translation + Vec3::new(0.01, -0.02, 0.005),
+            rotation: Quat::from_rotation_x(0.35),
+            ..Default::default()
+        };
+        let pframe = delta_pose(
+            iframe_pose_with_bone(Vec3::ZERO, BoneName::Head, moved_bone),
+            &iframe_pose_with_bone(Vec3::ZERO, BoneName::Head, base_bone),
+        );
+        let resolved = resolve_msg(
+            AgentMsg::PFrame {
+                iframe: 1,
+                space:  SPACE,
+                pose:   pframe,
+            },
+            &mut baseline,
+        )
+        .expect("resolved");
+
+        let bone = resolved.bones.get(&BoneName::Head).expect("bone");
+        assert!((bone.translation - moved_bone.translation).length() < 0.02);
+        assert!(bone.rotation.angle_between(moved_bone.rotation) < 0.05);
     }
 
     #[test]

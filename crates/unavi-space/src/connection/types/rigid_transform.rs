@@ -54,3 +54,22 @@ impl From<RigidTransform<F32Vec3>> for Transform {
         }
     }
 }
+
+impl From<&Transform> for RigidTransform<F16Vec3> {
+    fn from(value: &Transform) -> Self {
+        Self {
+            tra: value.translation.into(),
+            rot: value.rotation.into(),
+        }
+    }
+}
+
+impl From<RigidTransform<F16Vec3>> for Transform {
+    fn from(val: RigidTransform<F16Vec3>) -> Self {
+        Self {
+            translation: val.tra.into(),
+            rotation: val.rot.into(),
+            ..Default::default()
+        }
+    }
+}

@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use bevy::{
+    app::AnimationSystems,
     prelude::*,
     time::common_conditions::on_timer,
 };
@@ -63,6 +64,12 @@ impl Plugin for SpacePlugin {
                     .chain()
                     .after(apply_seam_crossings)
                     .before(maintain_seam_echoes)
+                    .before(TransformSystems::Propagate),
+            )
+            .add_systems(
+                PostUpdate,
+                connection::ecs::agent::inbound::apply_remote_bones
+                    .after(AnimationSystems)
                     .before(TransformSystems::Propagate),
             )
             .add_systems(

@@ -31,7 +31,7 @@ parking_lot.workspace      = true
 postcard.workspace         = true
 rand.workspace             = true
 serde.workspace            = true
-serde_vrm                  = "0.3.0"
+serde_vrm                  = { git = "https://github.com/unavi-xyz/bevy_vrm", version = "0.3.0" }
 thiserror.workspace        = true
 time.workspace             = true
 tokio.workspace            = true

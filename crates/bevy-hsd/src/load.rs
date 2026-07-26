@@ -402,7 +402,13 @@ pub struct SubdocLoaded(pub Hash);
 
 pub fn instance_subdocuments(
     subdoc_prims: Query<
-        (Entity, &Prim, &HsdChild, Option<&SubdocLoaded>, Option<&Children>),
+        (
+            Entity,
+            &Prim,
+            &HsdChild,
+            Option<&SubdocLoaded>,
+            Option<&Children>,
+        ),
         With<HsdSubdocument>,
     >,
     detached: Query<(Entity, Option<&Children>), (With<SubdocLoaded>, Without<HsdSubdocument>)>,

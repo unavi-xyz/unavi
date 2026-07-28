@@ -1,0 +1,74 @@
+use wired_prelude::prelude::*;
+
+use crate::wired::scene::types::{
+    AlphaMode,
+    Material,
+};
+
+pub const ACCENT: Color = rgb(0.96, 0.20, 0.16);
+pub const SECONDARY: Color = rgb(0.24, 0.72, 1.0);
+pub const NEUTRAL: Color = rgb(0.90, 0.94, 0.98);
+pub const DIM: Color = rgb(0.52, 0.60, 0.70);
+
+pub const GLASS_ALPHA: f32 = 0.15;
+pub const GLASS_ALPHA_HOVER: f32 = 0.36;
+pub const EMISSIVE_BASE: f32 = 0.12;
+pub const EMISSIVE_HOVER: f32 = 0.55;
+
+pub const fn rgb(r: f32, g: f32, b: f32) -> Color {
+    Color { r, g, b, a: 1.0 }
+}
+
+pub const fn with_alpha(color: Color, a: f32) -> Color {
+    Color {
+        r: color.r,
+        g: color.g,
+        b: color.b,
+        a,
+    }
+}
+
+pub const fn scale(color: Color, f: f32) -> Color {
+    Color {
+        r: color.r * f,
+        g: color.g * f,
+        b: color.b * f,
+        a: 1.0,
+    }
+}
+
+/// Translucent frosted panel with a faint self-glow of `color`.
+pub fn glass(color: Color, fill_alpha: f32, emissive: f32) -> Material {
+    Material {
+        alpha_cutoff:               None,
+        alpha_mode:                 Some(AlphaMode::Blend),
+        base_color:                 Some(with_alpha(color, fill_alpha)),
+        base_color_texture:         None,
+        double_sided:               Some(true),
+        emissive:                   Some(scale(color, emissive)),
+        emissive_texture:           None,
+        metallic:                   None,
+        metallic_roughness_texture: None,
+        normal_texture:             None,
+        occlusion_texture:          None,
+        roughness:                  None,
+    }
+}
+
+/// Bright unlit-ish edge / glyph material.
+pub fn solid(color: Color, emissive: f32) -> Material {
+    Material {
+        alpha_cutoff:               None,
+        alpha_mode:                 Some(AlphaMode::Blend),
+        base_color:                 Some(color),
+        base_color_texture:         None,
+        double_sided:               Some(true),
+        emissive:                   Some(scale(color, emissive)),
+        emissive_texture:           None,
+        metallic:                   None,
+        metallic_roughness_texture: None,
+        normal_texture:             None,
+        occlusion_texture:          None,
+        roughness:                  None,
+    }
+}

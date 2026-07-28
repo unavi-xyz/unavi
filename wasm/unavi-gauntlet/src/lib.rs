@@ -1,182 +1,289 @@
-use std::time::SystemTime;
+use std::{
+    cell::{
+        Cell,
+        RefCell,
+    },
+    time::SystemTime,
+};
 
+use unavi_gauntlet_menu::{
+    Menu,
+    Outcome,
+    ToolChange,
+};
 use wired_prelude::prelude::*;
 
 use crate::{
-    gauntlet::{
-        BG_ALPHA_BASE,
-        BG_ALPHA_HOVER,
-        CLOSE_ON_MOVE_THRESHOLD_SQ,
-        Gauntlet,
-        OPEN_SPEED_SECONDS,
-        RAISE_DIST,
-        RAISE_SPEED_SECONDS,
-        Target,
+    artifact::Artifact,
+    home::Home,
+    unavi::gauntlet_tool::api::{
+        ToolRegistry,
+        ToolState,
     },
-    unavi::vui_module::api::VuiModuleRegistry,
+    wheel::{
+        Wheel,
+        hovered_sector,
+    },
     wired::{
-        agent::types::BoneName,
+        agent::api::local_camera,
         input::{
             context::register_global_input_listener,
             types::{
                 InputAction,
-                InputDevice,
                 InputListener,
             },
         },
-        scene::types::Xform,
+        scene::{
+            api::self_document,
+            types::{
+                Prim,
+                Xform,
+            },
+        },
     },
 };
 
-mod gauntlet;
-mod sector;
+mod artifact;
+mod geometry;
+mod home;
+mod palette;
+mod wheel;
 
 wired_prelude::generate_script!(Script);
 
-pub const MAX_MODULES: usize = 8;
+const MENU_FORWARD: f32 = 0.7;
+const ARTIFACT_OFFSET: Vec3 = Vec3::new(0.22, -0.18, -0.5);
+const CLOSE_MOVE_SQ: f32 = 0.09;
+const OPEN_SPEED: f32 = 7.0;
+const ART_SPEED: f32 = 5.0;
+const TOOL_PLACE_DIST: f32 = 1.2;
 
-fn palette(n: usize) -> Vec<Color> {
-    (0..n)
-        .map(|i| {
-            let h = (0.6 + i as f32 / n as f32) % 1.0;
-            Color::hsv(h, 0.75, 0.85)
-        })
-        .collect()
-}
-
-pub struct ModuleRef {
-    pub doc_id:       Vec<u8>,
-    pub icon_prim_id: Option<String>,
-    pub name:         String,
+struct ToolRef {
+    doc_id: Vec<u8>,
+    name:   String,
 }
 
 struct Script {
-    gauntlets:   [Gauntlet; 3],
-    input:       InputListener,
-    module_refs: Vec<ModuleRef>,
-    registry:    VuiModuleRegistry,
-    render_time: SystemTime,
+    menu:          Menu,
+    registry:      ToolRegistry,
+    tools:         Vec<ToolRef>,
+    wheel:         Wheel,
+    artifact:      Artifact,
+    artifact_root: Prim,
+    home:          Home,
+    input:         InputListener,
+    camera:        RefCell<Option<Prim>>,
+    placement:     Cell<Option<Transform>>,
+    open_pos:      Cell<Option<Vec3>>,
+    open_t:        Cell<f32>,
+    art_t:         Cell<f32>,
+    hovered:       Cell<Option<usize>>,
+    pressed:       Cell<bool>,
+    render_time:   SystemTime,
+}
+
+impl Script {
+    fn camera(&self) -> Option<Transform> {
+        let mut cam = self.camera.borrow_mut();
+        if cam.is_none() {
+            *cam = local_camera().ok();
+        }
+        cam.as_ref().map(Prim::global_xform)
+    }
+
+    fn open(&mut self, cam: &Transform) {
+        let forward = cam.rotation * Vec3::new(0.0, 0.0, -1.0);
+        let placement = Transform {
+            translation: cam.translation + forward * MENU_FORWARD,
+            rotation:    cam.rotation,
+            scale:       Vec3::ONE,
+        };
+        self.open_pos.set(Some(cam.translation));
+        self.placement.set(Some(placement));
+        self.menu.open();
+        self.wheel.rebuild(&self.menu.slots());
+        self.wheel.root.set_xform(Some(Xform {
+            translation: placement.translation,
+            rotation:    placement.rotation,
+            scale:       Vec3::ZERO,
+        }));
+    }
+
+    fn close(&mut self) {
+        self.menu.close();
+        self.hovered.set(None);
+        self.open_pos.set(None);
+    }
+
+    fn handle_outcome(&mut self, outcome: Outcome, cam: &Transform) {
+        match outcome {
+            Outcome::None => {
+                if self.menu.is_open() {
+                    self.wheel.rebuild(&self.menu.slots());
+                    self.hovered.set(None);
+                }
+            }
+            Outcome::Home => {
+                println!("traveling home");
+                self.home.request();
+            }
+            Outcome::Tool(change) => self.apply_tool_change(&change, cam),
+        }
+    }
+
+    fn tool_name(&self, doc: &[u8]) -> String {
+        self.tools
+            .iter()
+            .find(|t| t.doc_id == doc)
+            .map_or_else(|| "?".to_string(), |t| t.name.clone())
+    }
+
+    fn apply_tool_change(&self, change: &ToolChange, cam: &Transform) {
+        if let Some(doc) = &change.deactivated {
+            println!("deactivated tool '{}'", self.tool_name(doc));
+            self.registry.deactivate(doc);
+            self.registry
+                .set_state(doc, ToolState {
+                    color:  palette::SECONDARY,
+                    in_use: false,
+                });
+        }
+        if let Some(doc) = &change.activated {
+            println!("activated tool '{}'", self.tool_name(doc));
+            let forward = cam.rotation * Vec3::new(0.0, 0.0, -1.0);
+            self.registry.activate(doc, Transform {
+                translation: cam.translation + forward * TOOL_PLACE_DIST,
+                rotation:    cam.rotation,
+                scale:       Vec3::ONE,
+            });
+            self.registry
+                .set_state(doc, ToolState {
+                    color:  palette::ACCENT,
+                    in_use: false,
+                });
+        }
+    }
+
+    fn poll_tools(&mut self) {
+        let mut changed = false;
+        for tool in self.registry.poll() {
+            if self.tools.iter().any(|t| t.doc_id == tool.doc_id) {
+                continue;
+            }
+            self.registry
+                .set_state(&tool.doc_id, ToolState {
+                    color:  palette::SECONDARY,
+                    in_use: false,
+                });
+            self.tools.push(ToolRef {
+                doc_id: tool.doc_id,
+                name:   tool.name,
+            });
+            changed = true;
+        }
+        if changed {
+            self.tools.sort_by(|a, b| a.name.cmp(&b.name));
+            self.menu.set_tools(
+                self.tools
+                    .iter()
+                    .map(|t| (t.doc_id.clone(), t.name.clone()))
+                    .collect(),
+            );
+            if self.menu.is_open() {
+                self.wheel.rebuild(&self.menu.slots());
+            }
+        }
+    }
 }
 
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
-        let registry = VuiModuleRegistry::new();
+        let artifact_root = self_document()?.create_prim();
+        artifact_root.set_xform(Some(Xform {
+            translation: Vec3::ZERO,
+            rotation:    Quat::IDENTITY,
+            scale:       Vec3::ZERO,
+        }));
+        let artifact = Artifact::new(&artifact_root);
 
-        let gauntlets = [
-            Target::Camera,
-            Target::Bone(BoneName::LeftHand),
-            Target::Bone(BoneName::RightHand),
-        ]
-        .map(Gauntlet::new);
-
-        Ok(Self {
-            gauntlets,
+        let script = Self {
+            menu: Menu::new(),
+            registry: ToolRegistry::new(),
+            tools: Vec::new(),
+            wheel: Wheel::new(),
+            artifact,
+            artifact_root,
+            home: Home::default(),
             input: register_global_input_listener()?,
-            module_refs: Vec::new(),
-            registry,
+            camera: RefCell::new(None),
+            placement: Cell::new(None),
+            open_pos: Cell::new(None),
+            open_t: Cell::new(0.0),
+            art_t: Cell::new(0.0),
+            hovered: Cell::new(None),
+            pressed: Cell::new(false),
             render_time: SystemTime::now(),
-        })
+        };
+        // Warm the root menu's meshes during load so the first open animates
+        // instead of popping in once the async mesh upload lands.
+        script.wheel.rebuild(&script.menu.slots());
+        Ok(script)
     }
 
     fn tick(&mut self) -> anyhow::Result<()> {
-        let mut changed = false;
+        self.poll_tools();
+        self.home.tick();
 
-        for m in self.registry.poll() {
-            println!("Found module: {}", m.name);
-            if self.module_refs.len() < MAX_MODULES
-                && !self.module_refs.iter().any(|d| d.doc_id == m.doc_id)
-            {
-                self.module_refs.push(ModuleRef {
-                    doc_id:       m.doc_id,
-                    icon_prim_id: if m.icon_prim_id.is_empty() {
-                        None
-                    } else {
-                        Some(m.icon_prim_id)
-                    },
-                    name:         m.name,
-                });
-                changed = true;
-            }
-        }
-
-        if changed {
-            self.module_refs.sort_by(|a, b| a.name.cmp(&b.name));
-            let n = self.module_refs.len();
-            for g in &self.gauntlets {
-                g.rebuild_sectors(&self.module_refs, &palette(n));
-                for s in g.sectors.borrow().as_slice() {
-                    self.registry.set_color(&s.module_doc_id, s.bg_color);
-                }
-            }
-        }
-
-        if !self
-            .gauntlets
-            .iter()
-            .all(gauntlet::Gauntlet::lazy_init_bone)
-        {
+        let Some(cam) = self.camera() else {
             return Ok(());
-        }
-
-        let camera_pos: Option<Vec3> = {
-            let bone_ref = self.gauntlets[0].bone.borrow();
-            bone_ref.as_ref().map(|b| b.global_xform().translation)
         };
 
-        if let Some(pos) = camera_pos {
-            for g in &self.gauntlets {
-                if let Some(open_pos) = g.open_pos.get() {
-                    let delta = pos - open_pos;
-                    if delta.dot(delta) > CLOSE_ON_MOVE_THRESHOLD_SQ {
-                        g.open.set(false);
-                        g.close_menu();
-                    }
-                }
+        if self.menu.is_open()
+            && let Some(open_pos) = self.open_pos.get()
+        {
+            let delta = cam.translation - open_pos;
+            if delta.dot(delta) > CLOSE_MOVE_SQ {
+                self.close();
             }
         }
 
-        for g in &self.gauntlets {
-            g.update_hovered_sector();
+        if self.menu.is_open()
+            && let Some(plane) = self.placement.get()
+        {
+            let forward = cam.rotation * Vec3::new(0.0, 0.0, -1.0);
+            self.hovered.set(hovered_sector(
+                cam.translation,
+                forward,
+                plane.translation,
+                plane.rotation,
+                self.wheel.len(),
+            ));
         }
 
         while let Some(event) = self.input.poll() {
-            let menu_idx = match event.device {
-                InputDevice::Keyboard => 0,
-                InputDevice::LeftHand => 1,
-                InputDevice::RightHand => 2,
-            };
-
             match event.action {
                 InputAction::MenuDown => {
-                    let g = &self.gauntlets[menu_idx];
-                    if !g.pressed.get() {
-                        g.pressed.set(true);
-                        if g.open.get() {
-                            g.open.set(false);
-                            g.close_menu();
+                    if !self.pressed.get() {
+                        self.pressed.set(true);
+                        if self.menu.is_open() {
+                            println!("menu closed");
+                            self.close();
                         } else {
-                            g.open.set(true);
-                            g.open_menu(camera_pos.unwrap_or(Vec3::ZERO));
+                            println!("menu opened");
+                            self.open(&cam);
                         }
                     }
                 }
-                InputAction::MenuUp => {
-                    self.gauntlets[menu_idx].pressed.set(false);
-                }
+                InputAction::MenuUp => self.pressed.set(false),
                 InputAction::GrabDown => {
-                    for g in &self.gauntlets {
-                        let matches = matches!(
-                            (&g.target, event.device),
-                            (Target::Camera, _)
-                                | (Target::Bone(BoneName::LeftHand), InputDevice::LeftHand)
-                                | (Target::Bone(BoneName::RightHand), InputDevice::RightHand)
-                        );
-                        if matches
-                            && g.open.get()
-                            && let Some(sector) = g.hovered_sector.get()
-                        {
-                            g.select(sector, &self.module_refs, &self.registry);
+                    if self.menu.is_open()
+                        && let Some(idx) = self.hovered.get()
+                    {
+                        if let Some(slot) = self.menu.slots().get(idx) {
+                            println!("selected '{}'", slot.label);
                         }
+                        let outcome = self.menu.select(idx);
+                        self.handle_outcome(outcome, &cam);
                     }
                 }
                 InputAction::GrabUp => {}
@@ -189,57 +296,45 @@ impl ScriptBehavior for Script {
         let delta = self.render_time.elapsed().expect("elapsed").as_secs_f32();
         self.render_time = SystemTime::now();
 
-        for g in &self.gauntlets {
-            let prev_t = g.scale_t.get();
-            let inc = if g.open.get() {
-                delta / OPEN_SPEED_SECONDS
-            } else {
-                -delta / OPEN_SPEED_SECONDS
-            };
-            let new_t = (prev_t + inc).clamp(0.0, 1.0);
-            let scale_changed = (new_t - prev_t).abs() > f32::EPSILON;
-            if scale_changed {
-                g.scale_t.set(new_t);
-            }
+        let Some(cam) = self.camera() else {
+            return Ok(());
+        };
 
-            for sector in g.sectors.borrow().iter() {
-                sector.sync_remote_icon();
-            }
+        let open_t = approach(self.open_t.get(), self.menu.is_open(), delta * OPEN_SPEED);
+        self.open_t.set(open_t);
 
-            if !g.open.get() && new_t > 0.0 {
-                g.track_bone();
-            } else if scale_changed {
-                g.apply_scale();
-            }
-
-            if !g.open.get() {
-                continue;
-            }
-
-            let hovered = g.hovered_sector.get();
-            let sectors = g.sectors.borrow();
-            for (i, sector) in sectors.iter().enumerate() {
-                let target_raise = if Some(i) == hovered { 1.0_f32 } else { 0.0_f32 };
-                let prev_raise = sector.raise_t.get();
-                let speed = delta / RAISE_SPEED_SECONDS;
-                let new_raise = if target_raise > prev_raise {
-                    (prev_raise + speed).min(target_raise)
-                } else {
-                    (prev_raise - speed).max(target_raise)
-                };
-                if (new_raise - prev_raise).abs() > f32::EPSILON {
-                    sector.raise_t.set(new_raise);
-                    sector.root.set_xform(Some(Xform {
-                        translation: Vec3::new(0.0, 0.0, new_raise * RAISE_DIST),
-                        rotation:    Quat::IDENTITY,
-                        scale:       Vec3::ONE,
-                    }));
-                    let c = sector.bg_color;
-                    let bg_alpha = new_raise.mul_add(BG_ALPHA_HOVER - BG_ALPHA_BASE, BG_ALPHA_BASE);
-                    sector.set_bg_color(Color::rgba(c.r, c.g, c.b, bg_alpha));
-                }
+        if let Some(plane) = self.placement.get() {
+            self.wheel.root.set_xform(Some(Xform {
+                translation: plane.translation,
+                rotation:    plane.rotation,
+                scale:       Vec3::splat(open_t),
+            }));
+            if open_t > 0.0 {
+                self.wheel.animate(delta, self.hovered.get());
+            } else if !self.menu.is_open() {
+                self.placement.set(None);
             }
         }
+
+        let active = self.menu.active_tool().is_some();
+        let art_t = approach(self.art_t.get(), active, delta * ART_SPEED);
+        self.art_t.set(art_t);
+        self.artifact_root.set_xform(Some(Xform {
+            translation: cam.translation + cam.rotation * ARTIFACT_OFFSET,
+            rotation:    cam.rotation,
+            scale:       Vec3::splat(art_t),
+        }));
+        if art_t > 0.0 {
+            self.artifact.animate(delta, art_t);
+        }
         Ok(())
+    }
+}
+
+fn approach(current: f32, toward_one: bool, step: f32) -> f32 {
+    if toward_one {
+        (current + step).min(1.0)
+    } else {
+        (current - step).max(0.0)
     }
 }

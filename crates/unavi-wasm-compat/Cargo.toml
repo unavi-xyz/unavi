@@ -13,4 +13,4 @@ workspace = true
 n0-future.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-tokio = { features = ["rt", "time"], workspace = true }
+tokio = { features = ["rt", "rt-multi-thread", "time"], workspace = true }

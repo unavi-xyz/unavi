@@ -16,6 +16,14 @@ use bevy::{
 
 const SIZE: usize = 1024;
 
+/// Adapts a command with any output into one that discards it, satisfying
+/// [`CommandQueue::push`]'s `Out = ()` bound.
+fn discard<C: Command>(command: C) -> impl Command<Out = ()> {
+    move |world: &mut World| {
+        command.apply(world);
+    }
+}
+
 pub static ASYNC_COMMAND_QUEUE: LazyLock<(Sender<CommandQueue>, Receiver<CommandQueue>)> =
     LazyLock::new(|| async_channel::bounded(SIZE));
 
@@ -32,7 +40,7 @@ pub struct AsyncCommands {
 
 impl AsyncCommands {
     #[must_use]
-    pub fn push(mut self, command: impl Command) -> Self {
+    pub fn push(mut self, command: impl Command<Out = ()>) -> Self {
         self.queue.push(command);
         self
     }
@@ -42,7 +50,8 @@ impl AsyncCommands {
     where
         E: Event<Trigger<'a>: Default>,
     {
-        self.queue.push(bevy::ecs::system::command::trigger(event));
+        self.queue
+            .push(discard(bevy::ecs::system::command::trigger(event)));
         self
     }
 
@@ -52,7 +61,7 @@ impl AsyncCommands {
         B: Bundle<Effect: NoBundleEffect>,
     {
         self.queue
-            .push(bevy::ecs::system::command::spawn_batch([bundle]));
+            .push(discard(bevy::ecs::system::command::spawn_batch([bundle])));
         self
     }
 

@@ -2,9 +2,8 @@ use bevy::{
     ecs::spawn::Spawn,
     feathers::{
         controls::{
-            ButtonProps,
+            ButtonBundleProps,
             ButtonVariant,
-            button,
         },
         theme::ThemedText,
     },
@@ -39,6 +38,10 @@ pub fn panel_active<M: Component>(q: Query<(), (With<M>, With<ActivePanel>)>) ->
     !q.is_empty()
 }
 
+#[expect(
+    deprecated,
+    reason = "feathers button() BSN requires scene spawning; button_bundle is the transitional API"
+)]
 pub(crate) fn register_panel(
     add: On<Add, DevPanel>,
     panels: Query<&DevPanel>,
@@ -57,8 +60,8 @@ pub(crate) fn register_panel(
 
     commands.entity(panel).insert(ChildOf(overlay.body));
     commands.entity(overlay.tab_bar).with_children(|tabs| {
-        tabs.spawn(button(
-            ButtonProps::default(),
+        tabs.spawn(bevy::feathers::controls::button_bundle(
+            ButtonBundleProps::default(),
             PanelButton(panel),
             Spawn((Text::new(title), ThemedText)),
         ));

@@ -107,4 +107,5 @@ impl Plugin for SpacePlugin {
 }
 
 #[derive(Component)]
+#[require(Transform, Visibility)]
 pub struct Space(pub Hash);

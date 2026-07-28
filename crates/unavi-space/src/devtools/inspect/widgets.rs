@@ -6,10 +6,7 @@ use bevy::{
         spawn::Spawn,
     },
     feathers::{
-        controls::{
-            ButtonProps,
-            button,
-        },
+        controls::ButtonBundleProps,
         theme::ThemedText,
     },
     prelude::*,
@@ -61,18 +58,22 @@ pub fn swatch(color: Color) -> impl Bundle {
 /// Spawns a clickable id chip: colored swatch plus short hex, navigating to
 /// `page`. The compact layout is inserted after spawn because the feathers
 /// button bundle already carries a `Node` and duplicates panic.
+#[expect(
+    deprecated,
+    reason = "feathers button() BSN requires scene spawning; button_bundle is the transitional API"
+)]
 pub fn chip(parent: &mut RelatedSpawnerCommands<ChildOf>, bytes: &[u8], page: Page) {
     let color = hash_color(bytes);
     parent
-        .spawn(button(
-            ButtonProps::default(),
+        .spawn(bevy::feathers::controls::button_bundle(
+            ButtonBundleProps::default(),
             LinkTo(page),
             (
                 Spawn(swatch(color)),
                 Spawn((
                     Text::new(short(bytes)),
                     TextFont {
-                        font_size: 12.0,
+                        font_size: FontSize::Px(12.0),
                         ..default()
                     },
                     TextColor(color),
@@ -90,20 +91,24 @@ pub fn chip(parent: &mut RelatedSpawnerCommands<ChildOf>, bytes: &[u8], page: Pa
 
 /// Spawns a compact labeled button carrying `marker` (e.g. back or view
 /// toggles).
+#[expect(
+    deprecated,
+    reason = "feathers button() BSN requires scene spawning; button_bundle is the transitional API"
+)]
 pub fn small_button(
     parent: &mut RelatedSpawnerCommands<ChildOf>,
     label: &str,
     marker: impl Bundle,
 ) {
     parent
-        .spawn(button(
-            ButtonProps::default(),
+        .spawn(bevy::feathers::controls::button_bundle(
+            ButtonBundleProps::default(),
             marker,
             Spawn((
                 Text::new(label),
                 ThemedText,
                 TextFont {
-                    font_size: 11.0,
+                    font_size: FontSize::Px(11.0),
                     ..default()
                 },
             )),
@@ -144,7 +149,7 @@ pub fn section_title(title: &str) -> impl Bundle {
     (
         Text::new(title),
         TextFont {
-            font_size: 13.0,
+            font_size: FontSize::Px(13.0),
             ..default()
         },
         TextColor(Color::srgba(1.0, 1.0, 1.0, 0.85)),
@@ -159,7 +164,7 @@ pub fn header_cell(header: &str) -> impl Bundle {
     (
         Text::new(header.to_uppercase()),
         TextFont {
-            font_size: 10.0,
+            font_size: FontSize::Px(10.0),
             ..default()
         },
         TextColor(Color::srgba(1.0, 1.0, 1.0, 0.4)),
@@ -170,7 +175,7 @@ pub fn value_text(value: String) -> impl Bundle {
     (
         Text::new(value),
         TextFont {
-            font_size: 12.0,
+            font_size: FontSize::Px(12.0),
             ..default()
         },
         TextColor(Color::srgba(1.0, 1.0, 1.0, 0.85)),
@@ -181,7 +186,7 @@ pub fn dim_text(value: &str) -> impl Bundle {
     (
         Text::new(value),
         TextFont {
-            font_size: 12.0,
+            font_size: FontSize::Px(12.0),
             ..default()
         },
         TextColor(Color::srgba(1.0, 1.0, 1.0, 0.45)),
@@ -198,7 +203,7 @@ pub fn mono_block(content: String) -> impl Bundle {
         children![(
             Text::new(content),
             TextFont {
-                font_size: 11.0,
+                font_size: FontSize::Px(11.0),
                 ..default()
             },
             TextColor(Color::srgb(0.75, 0.85, 0.75)),
@@ -237,7 +242,7 @@ pub fn value_detail(value: &[u8], cols: usize) -> impl Bundle {
             (
                 Text::new(hex),
                 TextFont {
-                    font_size: 11.0,
+                    font_size: FontSize::Px(11.0),
                     ..default()
                 },
                 TextColor(Color::srgb(0.75, 0.85, 0.75)),
@@ -245,7 +250,7 @@ pub fn value_detail(value: &[u8], cols: usize) -> impl Bundle {
             (
                 Text::new(text),
                 TextFont {
-                    font_size: 11.0,
+                    font_size: FontSize::Px(11.0),
                     ..default()
                 },
                 TextColor(Color::srgba(1.0, 1.0, 1.0, 0.6)),

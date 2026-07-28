@@ -1,6 +1,7 @@
 use bevy::{
     camera::{
         Exposure,
+        Hdr,
         RenderTarget,
         visibility::{
             NoFrustumCulling,
@@ -8,24 +9,19 @@ use bevy::{
         },
     },
     core_pipeline::tonemapping::Tonemapping,
-    pbr::{
-        Atmosphere,
-        AtmosphereSettings,
-    },
+    light::Atmosphere,
+    pbr::AtmosphereSettings,
     post_process::dof::DepthOfField,
     prelude::{
         ManualTextureViews,
         *,
     },
-    render::{
-        render_resource::{
-            Extent3d,
-            TextureDescriptor,
-            TextureDimension,
-            TextureFormat,
-            TextureUsages,
-        },
-        view::Hdr,
+    render::render_resource::{
+        Extent3d,
+        TextureDescriptor,
+        TextureDimension,
+        TextureFormat,
+        TextureUsages,
     },
     window::{
         PrimaryWindow,

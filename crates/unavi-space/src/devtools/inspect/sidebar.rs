@@ -4,9 +4,8 @@ use bevy::{
         spawn::Spawn,
     },
     feathers::controls::{
-        ButtonProps,
+        ButtonBundleProps,
         ButtonVariant,
-        button,
     },
     prelude::*,
 };
@@ -101,21 +100,25 @@ fn rows(spaces: &Query<(Entity, &Space)>, active: Option<Hash>) -> Vec<SidebarRo
     out
 }
 
+#[expect(
+    deprecated,
+    reason = "feathers button() BSN requires scene spawning; button_bundle is the transitional API"
+)]
 fn entry_button(l: &mut RelatedSpawnerCommands<ChildOf>, page: Page, label: String) {
     let bytes = match page {
         Page::Peer(id) => id,
         Page::Space(hash) | Page::Doc(hash) => *hash.as_bytes(),
     };
     let color = widgets::hash_color(&bytes);
-    l.spawn(button(
-        ButtonProps::default(),
+    l.spawn(bevy::feathers::controls::button_bundle(
+        ButtonBundleProps::default(),
         (SidebarButton(page), LinkTo(page)),
         (
             Spawn(widgets::swatch(color)),
             Spawn((
                 Text::new(label),
                 TextFont {
-                    font_size: 12.0,
+                    font_size: FontSize::Px(12.0),
                     ..default()
                 },
                 TextColor(color),

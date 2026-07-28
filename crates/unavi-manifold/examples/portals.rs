@@ -125,7 +125,7 @@ fn setup_scene(
     commands.spawn((
         DirectionalLight {
             illuminance: lux::FULL_DAYLIGHT,
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             ..default()
         },
         Transform::from_xyz(6.0, 10.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),

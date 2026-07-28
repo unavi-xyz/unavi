@@ -152,7 +152,7 @@ fn update_node<M: Clippable>(world: &mut World, node: Entity, plane: Vec4) {
     else {
         return;
     };
-    if let Some(material) = world.resource_mut::<Assets<Clipped<M>>>().get_mut(id) {
+    if let Some(mut material) = world.resource_mut::<Assets<Clipped<M>>>().get_mut(id) {
         material.extension.plane = plane;
     }
 }

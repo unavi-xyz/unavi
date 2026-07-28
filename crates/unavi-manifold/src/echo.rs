@@ -181,10 +181,17 @@ pub fn sync_echo_nodes(
         };
         transform.set_if_neq(*source_transform);
         if let (Some(mut weights), Some(source_weights)) = (weights, source_weights)
-            && weights.weights() != source_weights.weights()
+            && morph_weights(&weights) != morph_weights(source_weights)
         {
             weights.clone_from(source_weights);
         }
+    }
+}
+
+fn morph_weights(weights: &MeshMorphWeights) -> &[f32] {
+    match weights {
+        MeshMorphWeights::Value { weights } => weights,
+        MeshMorphWeights::Reference(_) => &[],
     }
 }
 

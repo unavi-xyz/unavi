@@ -144,45 +144,30 @@ pub fn apply_remote_poses(
     mut peers: Query<(&Peer, &mut ActiveSpaces)>,
     mut remotes: Query<(Entity, &RemoteAgent, &ChildOf, &mut PoseLerp)>,
     mut commands: Commands,
-    mut warned: Local<bevy::platform::collections::HashSet<Hash>>,
 ) {
     let updates = std::mem::take(&mut *POSE_INBOX.lock().expect("pose inbox"));
     let now = time.elapsed_secs();
 
     for (peer, (recv, resolved)) in updates {
-        // The live pose stream is the authoritative, low-latency signal for
-        // which space a peer is in; refresh presence from it so a connected
-        // peer never expires from stale gossip (gossip is discovery only).
+        // Pose stream is the live presence signal; refresh so a connected peer
+        // never expires from stale discovery gossip.
         if let Some((_, mut active_spaces)) = peers.iter_mut().find(|(p, _)| p.0.id == peer) {
             active_spaces.0.insert(resolved.space, now);
         }
 
         let Some((space, _)) = spaces.iter().find(|(_, s)| s.0 == resolved.space) else {
-            // The peer moved into a space we have not instanced locally, so they
-            // have left our view; despawn any avatar rather than leaving it
-            // frozen at its last known position.
+            // Space not instanced (may still be loading); drop any orphaned avatar
+            // and wait for it.
             if let Some((entity, ..)) = remotes.iter().find(|(_, r, ..)| r.0 == peer) {
                 commands.entity(entity).despawn();
             }
-            if warned.insert(resolved.space) {
-                warn!(
-                    peer = %peer,
-                    space = %resolved.space,
-                    local = ?spaces.iter().map(|(_, s)| s.0).collect::<Vec<_>>(),
-                    "Dropping remote pose: peer's space is not instanced locally",
-                );
-            }
             continue;
         };
-        warned.remove(&resolved.space);
 
         let Some((entity, _, child_of, mut lerp)) =
             remotes.iter_mut().find(|(_, r, ..)| r.0 == peer)
         else {
             info!(peer = %peer, space = %resolved.space, pos = ?resolved.root.translation, "Instancing remote agent");
-            // Remote avatars run the same locomotion animation pipeline as the
-            // local agent, driving limbs from their networked root velocity.
-            // Networked bones later overwrite these animated bones.
             let mut remote = commands.spawn((
                 RemoteAgent(peer),
                 Avatar,
@@ -204,8 +189,7 @@ pub fn apply_remote_poses(
         if child_of.parent() == space {
             lerp.retarget(&resolved, recv);
         } else {
-            // Space changed: reparent under the new anchor and snap rather than
-            // interpolating across a grid jump.
+            // Space changed: reparent and snap rather than lerp across the grid jump.
             commands.entity(entity).insert(ChildOf(space));
             *lerp = PoseLerp::snapped(&resolved, recv);
         }

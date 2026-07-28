@@ -14,6 +14,7 @@ use crate::animation::{
 pub mod defaults;
 pub mod load;
 mod mixamo;
+pub mod raw;
 pub mod velocity;
 pub mod weights;
 

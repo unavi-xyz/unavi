@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 use bevy_vrm::{
     BoneName,
-    VrmInstanceId,
+    VrmInstanceReady,
 };
 
 #[derive(Component, Deref, DerefMut)]
 pub struct AvatarBones(pub HashMap<BoneName, Entity>);
 
 pub(crate) fn populate_avatar_bones(
-    avatars: Query<Entity, (With<VrmInstanceId>, Without<AvatarBones>)>,
+    avatars: Query<Entity, (With<VrmInstanceReady>, Without<AvatarBones>)>,
     bones: Query<(Entity, &BoneName)>,
     mut commands: Commands,
     parents: Query<&ChildOf>,

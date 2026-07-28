@@ -90,7 +90,7 @@ pub fn apply_config_to_controller(
     let Ok((tnua_handle, mut collider)) = bodies.get_mut(entities.body) else {
         return;
     };
-    let Some(tnua_config) = controller_configs.get_mut(tnua_handle.0.id()) else {
+    let Some(mut tnua_config) = controller_configs.get_mut(tnua_handle.0.id()) else {
         return;
     };
 

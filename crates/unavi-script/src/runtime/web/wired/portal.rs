@@ -25,4 +25,14 @@ impl Runtime {
             .await
             .map_err(|e| e.to_string())
     }
+
+    #[wasm_bindgen(js_name = "wiredPortalTravel")]
+    pub async fn wired_portal_travel(&self, target_space: Vec<u8>) -> Result<(), String> {
+        self.api
+            .require(ApiName::System)
+            .map_err(|e| e.to_string())?;
+        shared::wired::portal::travel(&self.api, target_space)
+            .await
+            .map_err(|e| e.to_string())
+    }
 }

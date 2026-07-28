@@ -15,6 +15,7 @@ interface api {
   use wired:error/types.{error};
 
   self-peer:     func() -> result<option<peer-id>, error>;
+  self-did:      func() -> result<option<string>, error>;
   doc-owner:     func(doc: document-id) -> result<option<peer-id>, error>;
   is-self-owner: func() -> result<bool, error>;
 }

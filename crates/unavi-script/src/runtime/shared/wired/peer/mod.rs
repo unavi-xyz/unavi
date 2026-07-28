@@ -1,7 +1,10 @@
 use blake3::Hash;
 use unavi_space::{
     membership::doc_space,
-    peer::self_peer_id,
+    peer::{
+        self_did as space_self_did,
+        self_peer_id,
+    },
     state::replicas,
 };
 
@@ -10,6 +13,11 @@ use crate::runtime::shared::Api;
 #[must_use]
 pub fn self_peer(_api: &Api) -> Option<Vec<u8>> {
     self_peer_id().map(|p| p.to_vec())
+}
+
+#[must_use]
+pub fn self_did(_api: &Api) -> Option<String> {
+    space_self_did()
 }
 
 #[must_use]

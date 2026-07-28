@@ -30,6 +30,14 @@ impl bindings::wired::peer::api::Host for Runtime {
             .map_err(Into::into))
     }
 
+    async fn self_did(&mut self) -> wasmtime::Result<Result<Option<String>, Error>> {
+        Ok(self
+            .api
+            .require(ApiName::Peer)
+            .map(|()| shared::wired::peer::self_did(&self.api))
+            .map_err(Into::into))
+    }
+
     async fn doc_owner(
         &mut self,
         doc: Vec<u8>,

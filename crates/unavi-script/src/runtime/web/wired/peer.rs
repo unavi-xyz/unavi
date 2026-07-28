@@ -21,6 +21,17 @@ impl Runtime {
         }
     }
 
+    #[wasm_bindgen(js_name = "wiredPeerSelfDid")]
+    pub fn wired_peer_self_did(&self) -> JsValue {
+        if self.api.require(ApiName::Peer).is_err() {
+            return JsValue::UNDEFINED;
+        }
+        match shared::wired::peer::self_did(&self.api) {
+            Some(did) => JsValue::from_str(&did),
+            None => JsValue::UNDEFINED,
+        }
+    }
+
     #[wasm_bindgen(js_name = "wiredPeerDocOwner")]
     pub fn wired_peer_doc_owner(&self, doc: Vec<u8>) -> JsValue {
         if self.api.require(ApiName::Peer).is_err() {

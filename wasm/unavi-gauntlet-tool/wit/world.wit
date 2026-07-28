@@ -1,0 +1,45 @@
+package unavi:gauntlet-tool;
+
+world guest {
+  include wired:prelude/lib;
+  export api;
+}
+
+interface api {
+  use wired:math/types.{transform};
+  use wired:scene/types.{color, prim, prim-id};
+
+  // Visual state the gauntlet pushes onto a tool so its artifact and effects
+  // reflect the active theme and whether the tool is currently in use.
+  record tool-state {
+    color:  color,
+    in-use: bool,
+  }
+
+  variant tool-event {
+    activate(transform),
+    deactivate,
+    set-state(tool-state),
+  }
+
+  resource tool {
+    // `icon` should be a prim carrying a `mesh` attribute rendered as the
+    // tool's wheel icon.
+    constructor(name: string, icon: borrow<prim>);
+    poll: func() -> option<tool-event>;
+  }
+
+  record registered-tool {
+    doc-id:       list<u8>,
+    name:         string,
+    icon-prim-id: prim-id,
+  }
+
+  resource tool-registry {
+    constructor();
+    poll: func() -> list<registered-tool>;
+    activate: func(doc-id: list<u8>, transform: transform);
+    deactivate: func(doc-id: list<u8>);
+    set-state: func(doc-id: list<u8>, state: tool-state);
+  }
+}

@@ -1,8 +1,10 @@
 use bevy::{
-    camera::Exposure,
+    camera::{
+        Exposure,
+        Hdr,
+    },
     post_process::bloom::Bloom,
     prelude::*,
-    render::view::Hdr,
 };
 use unavi_manifold::DevelopCamera;
 

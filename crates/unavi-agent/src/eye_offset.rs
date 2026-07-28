@@ -3,10 +3,12 @@ use bevy::prelude::*;
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use bevy_vrm::{
     BoneName,
-    VrmInstanceId,
     first_person::SetupFirstPerson,
 };
-use unavi_avatar::Avatar;
+use unavi_avatar::{
+    Avatar,
+    bones::AvatarBones,
+};
 
 use crate::{
     AgentRig,
@@ -25,21 +27,16 @@ const DEFAULT_EYE_OFFSET_PCT: f32 = 1.05;
 
 pub fn setup_vrm_eye_offset(
     mut commands: Commands,
-    scene_spawner: Res<SceneSpawner>,
-    avatars: Query<(Entity, &VrmInstanceId, &ChildOf), (With<Avatar>, Without<EyeOffsetProcessed>)>,
+    avatars: Query<(Entity, &AvatarBones, &ChildOf), (With<Avatar>, Without<EyeOffsetProcessed>)>,
     rigs: Query<&ChildOf, With<AgentRig>>,
     mut local_agents: Query<(&mut AgentConfig, &LocalAgentEntities)>,
     mut transforms: Query<&mut Transform>,
     mut tracked_poses: Query<&mut TrackedPose>,
     mut colliders: Query<&mut Collider, With<AgentRig>>,
     mut sensor_shapes: Query<&mut TnuaAvian3dSensorShape, With<AgentRig>>,
-    bones: Query<(&BoneName, &GlobalTransform)>,
+    bones: Query<&GlobalTransform, With<BoneName>>,
 ) {
-    for (avatar_ent, vrm_instance_id, avatar_parent) in avatars.iter() {
-        if !scene_spawner.instance_is_ready(vrm_instance_id.0) {
-            continue;
-        }
-
+    for (avatar_ent, avatar_bones, avatar_parent) in avatars.iter() {
         let Ok(rig_parent) = rigs.get(avatar_parent.parent()) else {
             continue;
         };
@@ -52,8 +49,8 @@ pub fn setup_vrm_eye_offset(
         let mut right_shoulder = None;
         let mut lowest_y = f32::MAX;
 
-        for entity in scene_spawner.iter_instance_entities(vrm_instance_id.0) {
-            let Ok((bone_name, bone_transform)) = bones.get(entity) else {
+        for (bone_name, &entity) in avatar_bones.iter() {
+            let Ok(bone_transform) = bones.get(entity) else {
                 continue;
             };
 

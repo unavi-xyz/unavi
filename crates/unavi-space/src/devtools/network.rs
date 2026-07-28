@@ -49,7 +49,7 @@ pub(super) fn spawn(mut commands: Commands) {
                 NetworkText,
                 Text::new("No peers connected."),
                 TextFont {
-                    font_size: 14.0,
+                    font_size: FontSize::Px(14.0),
                     ..default()
                 },
                 TextColor(Color::srgb(0.85, 0.9, 0.95)),

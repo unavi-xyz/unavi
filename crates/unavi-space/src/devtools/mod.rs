@@ -30,19 +30,20 @@ impl Plugin for SpaceDevToolsPlugin {
                     network::update.run_if(panel_active::<network::NetworkPanel>),
                     inspect::sidebar::sync.run_if(
                         panel_active::<inspect::InspectPanel>
-                            .and(on_timer(Duration::from_millis(500))),
+                            .and_then(on_timer(Duration::from_millis(500))),
                     ),
                     inspect::sidebar::highlight.run_if(panel_active::<inspect::InspectPanel>),
                     inspect::render.run_if(
-                        panel_active::<inspect::InspectPanel>.and(
+                        panel_active::<inspect::InspectPanel>.and_then(
                             on_timer(Duration::from_millis(500))
-                                .or(resource_changed::<inspect::CurrentPage>)
-                                .or(resource_changed::<inspect::Expanded>)
-                                .or(resource_changed::<inspect::History>),
+                                .or_else(resource_changed::<inspect::CurrentPage>)
+                                .or_else(resource_changed::<inspect::Expanded>)
+                                .or_else(resource_changed::<inspect::History>),
                         ),
                     ),
                     inspect::widgets::refresh_times.run_if(
-                        panel_active::<inspect::InspectPanel>.and(on_timer(Duration::from_secs(1))),
+                        panel_active::<inspect::InspectPanel>
+                            .and_then(on_timer(Duration::from_secs(1))),
                     ),
                 ),
             );

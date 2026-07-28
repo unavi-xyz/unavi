@@ -4,15 +4,15 @@ use std::{
 };
 
 use bevy::{
+    light::{
+        Atmosphere,
+        atmosphere::ScatteringMedium,
+    },
     mesh::{
         Indices,
         VertexAttributeValues,
     },
-    pbr::{
-        Atmosphere,
-        AtmosphereSettings,
-        ScatteringMedium,
-    },
+    pbr::AtmosphereSettings,
     prelude::*,
 };
 use bevy_hsd::{
@@ -68,14 +68,14 @@ fn setup_scene(mut commands: Commands, mut scattering_mediums: ResMut<Assets<Sca
         Camera3d::default(),
         Transform::from_xyz(5.0, 4.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
         PanOrbitCamera::default(),
-        Atmosphere::earthlike(scattering_mediums.add(ScatteringMedium::default())),
+        Atmosphere::earth(scattering_mediums.add(ScatteringMedium::default())),
         AtmosphereSettings::default(),
     ));
 
     commands.spawn((
         Transform::from_xyz(-2.0, 6.0, 1.0).looking_at(Vec3::ZERO, Vec3::Y),
         DirectionalLight {
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             ..default()
         },
     ));

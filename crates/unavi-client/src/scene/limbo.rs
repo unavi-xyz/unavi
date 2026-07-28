@@ -50,14 +50,16 @@ pub fn spawn_limbo(
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
-    let dev_white =
-        asset_server.load_with_settings::<_, ImageLoaderSettings>("image/dev-white.png", |s| {
+    let dev_white = asset_server
+        .load_builder()
+        .with_settings(|s: &mut ImageLoaderSettings| {
             let mut desc = ImageSamplerDescriptor::nearest();
             desc.address_mode_u = ImageAddressMode::Repeat;
             desc.address_mode_v = ImageAddressMode::Repeat;
             desc.address_mode_w = ImageAddressMode::Repeat;
             s.sampler = ImageSampler::Descriptor(desc);
-        });
+        })
+        .load("image/dev-white.png");
 
     let material = StandardMaterial {
         base_color: tailwind::SKY_100.into(),

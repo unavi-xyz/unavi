@@ -85,7 +85,7 @@ pub fn update_develop_image_sizes(
             ..default()
         };
 
-        let Some(image) = images.get_mut(texture_handle.id()) else {
+        let Some(mut image) = images.get_mut(texture_handle.id()) else {
             continue;
         };
 
@@ -93,8 +93,10 @@ pub fn update_develop_image_sizes(
         image.texture_descriptor.size = size;
         image.resize(size);
 
-        // Force material to update.
-        let _ = seam_materials.get_mut(mesh_material.0.id());
+        // Force material to update so it rebinds the resized texture.
+        if let Some(material) = seam_materials.get_mut(mesh_material.0.id()) {
+            material.into_inner();
+        }
 
         projection.set_changed();
     }

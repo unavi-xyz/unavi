@@ -16,6 +16,8 @@ pub struct AvatarPlugin;
 impl Plugin for AvatarPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(VrmPlugins)
+            .init_asset::<animation::raw::RawAnimations>()
+            .init_asset_loader::<animation::raw::RawAnimationsLoader>()
             .add_observer(on_avatar_added)
             .add_systems(
                 Update,

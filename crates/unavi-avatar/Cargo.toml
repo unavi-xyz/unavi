@@ -13,8 +13,9 @@ workspace = true
 webgpu = ["bevy/webgpu"]
 
 [dependencies]
-bevy               = { default-features = true, workspace = true }
-bevy_gltf_kun      = "0.4.0"
-bevy_vrm.workspace = true
-paste              = "1.0.15"
-unavi-assets.path  = "../unavi-assets"
+bevy                = { default-features = true, workspace = true }
+bevy_vrm.workspace  = true
+gltf                = { default-features = false, features = ["names", "utils"], version = "1.4.1" }
+paste               = "1.0.15"
+thiserror.workspace = true
+unavi-assets.path   = "../unavi-assets"

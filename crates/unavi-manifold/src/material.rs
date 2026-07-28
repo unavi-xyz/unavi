@@ -87,7 +87,7 @@ pub fn update_seam_params(
         {
             continue;
         }
-        if let Some(material) = materials.get_mut(handle.0.id()) {
+        if let Some(mut material) = materials.get_mut(handle.0.id()) {
             material.params = next;
         }
     }

@@ -1,9 +1,11 @@
 use bevy::{
+    app::PluginGroup,
     feathers::{
         FeathersPlugins,
         dark_theme::create_dark_theme,
         theme::UiTheme,
     },
+    input_focus::tab_navigation::TabNavigationPlugin,
     prelude::*,
 };
 
@@ -18,7 +20,7 @@ pub struct DevToolsPlugin;
 
 impl Plugin for DevToolsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(FeathersPlugins)
+        app.add_plugins(FeathersPlugins.build().disable::<TabNavigationPlugin>())
             .insert_resource(UiTheme(create_dark_theme()))
             .init_resource::<overlay::DevToolsActive>()
             .init_resource::<tabs::ActiveDevPanel>()

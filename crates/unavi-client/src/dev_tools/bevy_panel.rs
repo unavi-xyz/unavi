@@ -1,7 +1,7 @@
 use avian3d::prelude::PhysicsGizmos;
 use bevy::{
     dev_tools::fps_overlay::FpsOverlayConfig,
-    feathers::controls::toggle_switch,
+    feathers::controls::FeathersToggleSwitch,
     prelude::*,
     ui_widgets::{
         ValueChange,
@@ -33,7 +33,7 @@ pub(super) fn toggled(toggle: Toggle) -> impl Fn(Res<DevToggles>) -> bool + Clon
 }
 
 pub(super) fn spawn(mut commands: Commands) {
-    commands
+    let panel = commands
         .spawn((
             DevPanel {
                 title: "Bevy".into(),
@@ -44,34 +44,42 @@ pub(super) fn spawn(mut commands: Commands) {
                 ..default()
             },
         ))
-        .with_children(|panel| {
-            for (label, toggle) in [
-                ("FPS overlay", Toggle::Fps),
-                ("World inspector", Toggle::Inspector),
-                ("Physics gizmos", Toggle::Physics),
-                ("Event gizmos", Toggle::Events),
-            ] {
-                panel
-                    .spawn(Node {
-                        flex_direction: FlexDirection::Row,
-                        column_gap: Val::Px(8.0),
-                        align_items: AlignItems::Center,
-                        ..default()
-                    })
-                    .with_children(|row| {
-                        row.spawn((
-                            Text::new(label),
-                            TextFont {
-                                font_size: 14.0,
-                                ..default()
-                            },
-                            TextColor(Color::WHITE),
-                        ));
-                        row.spawn(toggle_switch(toggle))
-                            .observe(checkbox_self_update);
-                    });
-            }
-        });
+        .id();
+
+    for (label, toggle) in [
+        ("FPS overlay", Toggle::Fps),
+        ("World inspector", Toggle::Inspector),
+        ("Physics gizmos", Toggle::Physics),
+        ("Event gizmos", Toggle::Events),
+    ] {
+        let row = commands
+            .spawn((
+                Node {
+                    flex_direction: FlexDirection::Row,
+                    column_gap: Val::Px(8.0),
+                    align_items: AlignItems::Center,
+                    ..default()
+                },
+                ChildOf(panel),
+            ))
+            .id();
+
+        commands.spawn((
+            Text::new(label),
+            TextFont {
+                font_size: FontSize::Px(14.0),
+                ..default()
+            },
+            TextColor(Color::WHITE),
+            ChildOf(row),
+        ));
+
+        // FeathersToggleSwitch is a scene component and must be spawned as a scene.
+        commands
+            .spawn_scene(FeathersToggleSwitch::scene(()))
+            .insert((toggle, ChildOf(row)))
+            .observe(checkbox_self_update);
+    }
 }
 
 pub(super) fn on_toggle(

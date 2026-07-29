@@ -75,7 +75,7 @@ impl Artifact {
 
     pub fn animate(&self, delta: f32, energy: f32) {
         let speed = energy.mul_add(SPIN_ACTIVE - SPIN_IDLE, SPIN_IDLE);
-        let spin = self.spin.get() + delta * speed;
+        let spin = delta.mul_add(speed, self.spin.get());
         self.spin.set(spin);
 
         self.core.set_xform(Some(Xform {

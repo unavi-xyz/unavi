@@ -21,12 +21,11 @@ pub struct Home {
 
 impl Home {
     pub fn request(&mut self) {
-        let did = match self_did() {
-            Ok(Some(did)) => did,
-            _ => {
-                eprintln!("self did unavailable, cannot travel home");
-                return;
-            }
+        let did = if let Ok(Some(did)) = self_did() {
+            did
+        } else {
+            eprintln!("self did unavailable, cannot travel home");
+            return;
         };
         let Ok(wds) = get_wds() else {
             return;

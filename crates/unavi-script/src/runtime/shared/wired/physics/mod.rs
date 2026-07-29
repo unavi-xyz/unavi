@@ -85,9 +85,9 @@ pub async fn raycast(
                         let point = origin_v + direction.as_vec3() * hit.distance;
                         Some(RayHit {
                             document: document.as_bytes().to_vec(),
-                            prim: tree.to_string(),
-                            point: point.to_array(),
-                            normal: hit.normal.to_array(),
+                            prim:     tree.to_string(),
+                            point:    point.to_array(),
+                            normal:   hit.normal.to_array(),
                             distance: hit.distance,
                         })
                     },
@@ -156,7 +156,11 @@ pub async fn set_linear_velocity(api: &Api, prim_rep: u32, v: [f32; 3]) -> Resul
     set_velocity(api, prim_rep, v, false).await
 }
 
-pub async fn set_angular_velocity(api: &Api, prim_rep: u32, v: [f32; 3]) -> Result<(), ScriptError> {
+pub async fn set_angular_velocity(
+    api: &Api,
+    prim_rep: u32,
+    v: [f32; 3],
+) -> Result<(), ScriptError> {
     set_velocity(api, prim_rep, v, true).await
 }
 

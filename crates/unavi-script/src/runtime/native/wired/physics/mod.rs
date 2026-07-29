@@ -48,9 +48,7 @@ impl bindings::wired::physics::api::Host for Runtime {
             max_dist,
         )
         .await;
-        Ok(result
-            .map(|hit| hit.map(into_wit_hit))
-            .map_err(Into::into))
+        Ok(result.map(|hit| hit.map(into_wit_hit)).map_err(Into::into))
     }
 
     async fn set_linear_velocity(
@@ -110,7 +108,7 @@ fn into_wit_hit(hit: shared::wired::physics::RayHit) -> RayHit {
     }
 }
 
-fn vec3(v: [f32; 3]) -> bindings::wired::math::types::Vec3 {
+const fn vec3(v: [f32; 3]) -> bindings::wired::math::types::Vec3 {
     bindings::wired::math::types::Vec3 {
         x: v[0],
         y: v[1],

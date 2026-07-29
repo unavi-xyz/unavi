@@ -142,25 +142,32 @@ impl Script {
         if let Some(doc) = &change.deactivated {
             println!("deactivated tool '{}'", self.tool_name(doc));
             self.registry.deactivate(doc);
-            self.registry
-                .set_state(doc, ToolState {
+            self.registry.set_state(
+                doc,
+                ToolState {
                     color:  palette::SECONDARY,
                     in_use: false,
-                });
+                },
+            );
         }
         if let Some(doc) = &change.activated {
             println!("activated tool '{}'", self.tool_name(doc));
             let forward = cam.rotation * Vec3::new(0.0, 0.0, -1.0);
-            self.registry.activate(doc, Transform {
-                translation: cam.translation + forward * TOOL_PLACE_DIST,
-                rotation:    cam.rotation,
-                scale:       Vec3::ONE,
-            });
-            self.registry
-                .set_state(doc, ToolState {
+            self.registry.activate(
+                doc,
+                Transform {
+                    translation: cam.translation + forward * TOOL_PLACE_DIST,
+                    rotation:    cam.rotation,
+                    scale:       Vec3::ONE,
+                },
+            );
+            self.registry.set_state(
+                doc,
+                ToolState {
                     color:  palette::ACCENT,
                     in_use: false,
-                });
+                },
+            );
         }
     }
 
@@ -170,11 +177,13 @@ impl Script {
             if self.tools.iter().any(|t| t.doc_id == tool.doc_id) {
                 continue;
             }
-            self.registry
-                .set_state(&tool.doc_id, ToolState {
+            self.registry.set_state(
+                &tool.doc_id,
+                ToolState {
                     color:  palette::SECONDARY,
                     in_use: false,
-                });
+                },
+            );
             self.tools.push(ToolRef {
                 doc_id: tool.doc_id,
                 name:   tool.name,

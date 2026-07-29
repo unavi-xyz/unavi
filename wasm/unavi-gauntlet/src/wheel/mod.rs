@@ -50,7 +50,7 @@ const fn scaled(scale: f32) -> Xform {
     }
 }
 
-fn placed(translation: Vec3) -> Xform {
+const fn placed(translation: Vec3) -> Xform {
     Xform {
         translation,
         rotation: IDENTITY,
@@ -58,9 +58,9 @@ fn placed(translation: Vec3) -> Xform {
     }
 }
 
-/// A persistent sector slot. Prims are created once and reconfigured on rebuild,
-/// so nothing is ever spawned mid-session (avoids the one-frame origin flash of
-/// freshly created prims).
+/// A persistent sector slot. Prims are created once and reconfigured on
+/// rebuild, so nothing is ever spawned mid-session (avoids the one-frame origin
+/// flash of freshly created prims).
 struct SlotPrims {
     root:      Prim,
     bg:        Prim,
@@ -70,6 +70,10 @@ struct SlotPrims {
     hover_mat: RefCell<Material>,
     hovered:   Cell<bool>,
     raise_t:   Cell<f32>,
+    /// (index, count, icon, active) last applied; skips the async mesh
+    /// re-upload when a slot's content is unchanged (e.g. reopening the
+    /// same menu).
+    key:       Cell<Option<(usize, usize, Icon, bool)>>,
 }
 
 impl SlotPrims {
@@ -95,10 +99,17 @@ impl SlotPrims {
     }
 
     fn hide(&self) {
+        self.key.set(None);
         self.root.set_xform(Some(scaled(0.0)));
     }
 
     fn configure(&self, i: usize, n: usize, slot: &Slot) {
+        let key = (i, n, slot.icon, slot.active);
+        if self.key.get() == Some(key) {
+            return;
+        }
+        self.key.set(Some(key));
+
         let color = icon_color(slot.icon, slot.active);
         *self.base_mat.borrow_mut() =
             palette::glass(color, palette::GLASS_ALPHA, palette::EMISSIVE_BASE);
@@ -177,6 +188,7 @@ impl Wheel {
                     )),
                     hovered: Cell::new(false),
                     raise_t: Cell::new(0.0),
+                    key: Cell::new(None),
                 }
             })
             .collect();
@@ -189,7 +201,7 @@ impl Wheel {
     }
 
     #[must_use]
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.count.get()
     }
 
@@ -229,7 +241,7 @@ impl Default for Wheel {
     }
 }
 
-fn icon_color(icon: Icon, active: bool) -> Color {
+const fn icon_color(icon: Icon, active: bool) -> Color {
     match icon {
         Icon::Home | Icon::Confirm => palette::ACCENT,
         Icon::Tools => palette::SECONDARY,
@@ -249,8 +261,8 @@ fn icon_mesh(icon: Icon) -> MeshData {
     }
 }
 
-/// Projects the `forward` ray from `origin` onto the wheel plane and returns the
-/// index of the sector the cursor falls in, if any.
+/// Projects the `forward` ray from `origin` onto the wheel plane and returns
+/// the index of the sector the cursor falls in, if any.
 #[must_use]
 pub fn hovered_sector(
     origin: Vec3,
@@ -279,13 +291,13 @@ pub fn hovered_sector(
     let x = rel.dot(right);
     let y = rel.dot(up);
     let dist = x.hypot(y);
-    if dist < SECTOR_INNER_R || dist > RING_RADIUS + 0.05 {
+    if !(SECTOR_INNER_R..=RING_RADIUS + 0.05).contains(&dist) {
         return None;
     }
 
     let mut angle = y.atan2(x);
     if angle < 0.0 {
-        angle += 2.0 * PI;
+        angle = 2.0f32.mul_add(PI, angle);
     }
     let n = sector_count;
     let sector = (angle * n as f32 / (2.0 * PI)).round() as usize % n;

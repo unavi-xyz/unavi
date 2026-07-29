@@ -38,7 +38,7 @@ pub const fn scale(color: Color, f: f32) -> Color {
 }
 
 /// Translucent frosted panel with a faint self-glow of `color`.
-pub fn glass(color: Color, fill_alpha: f32, emissive: f32) -> Material {
+pub const fn glass(color: Color, fill_alpha: f32, emissive: f32) -> Material {
     Material {
         alpha_cutoff:               None,
         alpha_mode:                 Some(AlphaMode::Blend),
@@ -56,7 +56,7 @@ pub fn glass(color: Color, fill_alpha: f32, emissive: f32) -> Material {
 }
 
 /// Bright unlit-ish edge / glyph material.
-pub fn solid(color: Color, emissive: f32) -> Material {
+pub const fn solid(color: Color, emissive: f32) -> Material {
     Material {
         alpha_cutoff:               None,
         alpha_mode:                 Some(AlphaMode::Blend),

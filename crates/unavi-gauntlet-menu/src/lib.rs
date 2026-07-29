@@ -47,8 +47,8 @@ pub struct Slot {
     pub active: bool,
 }
 
-/// The tool transition a selection produced, so the caller can emit the matching
-/// activate/deactivate to the tool documents.
+/// The tool transition a selection produced, so the caller can emit the
+/// matching activate/deactivate to the tool documents.
 #[derive(Clone, Debug, PartialEq, Eq, Default)]
 pub struct ToolChange {
     pub activated:   Option<DocId>,
@@ -77,7 +77,7 @@ impl Default for Menu {
 
 impl Menu {
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             tools:  Vec::new(),
             stack:  Vec::new(),
@@ -87,31 +87,29 @@ impl Menu {
     }
 
     #[must_use]
-    pub fn is_open(&self) -> bool {
+    pub const fn is_open(&self) -> bool {
         self.open
     }
 
     #[must_use]
-    pub fn active_tool(&self) -> Option<&DocId> {
+    pub const fn active_tool(&self) -> Option<&DocId> {
         self.active.as_ref()
     }
 
     #[must_use]
-    pub fn depth(&self) -> usize {
+    pub const fn depth(&self) -> usize {
         self.stack.len()
     }
 
-    pub fn open(&mut self) {
+    pub const fn open(&mut self) {
         self.open = true;
-        self.stack.clear();
     }
 
-    pub fn close(&mut self) {
+    pub const fn close(&mut self) {
         self.open = false;
-        self.stack.clear();
     }
 
-    pub fn toggle_open(&mut self) {
+    pub const fn toggle_open(&mut self) {
         if self.open {
             self.close();
         } else {
@@ -359,12 +357,23 @@ mod tests {
     }
 
     #[test]
+    fn reopens_at_last_level() {
+        let mut menu = menu_with_tools();
+        open_tools(&mut menu);
+        assert_eq!(menu.depth(), 1);
+        menu.close();
+        menu.open();
+        assert_eq!(menu.depth(), 1);
+        assert_eq!(labels(&menu), vec!["Back", "Physgun", "Spawner"]);
+    }
+
+    #[test]
     fn only_one_tool_active_at_a_time() {
         let mut menu = menu_with_tools();
         open_tools(&mut menu);
-        menu.select(1); // Physgun
+        menu.select(1); // Physgun, closes at Tools level
 
-        open_tools(&mut menu);
+        menu.open(); // reopens at Tools
         let outcome = menu.select(2); // Spawner
         assert_eq!(
             outcome,
@@ -380,9 +389,9 @@ mod tests {
     fn reselecting_active_tool_deactivates_it() {
         let mut menu = menu_with_tools();
         open_tools(&mut menu);
-        menu.select(1); // Physgun on
+        menu.select(1); // Physgun on, closes at Tools level
 
-        open_tools(&mut menu);
+        menu.open(); // reopens at Tools
         let outcome = menu.select(1); // Physgun off
         assert_eq!(
             outcome,
@@ -398,9 +407,9 @@ mod tests {
     fn active_slot_is_flagged() {
         let mut menu = menu_with_tools();
         open_tools(&mut menu);
-        menu.select(1); // Physgun on
+        menu.select(1); // Physgun on, closes at Tools level
 
-        open_tools(&mut menu);
+        menu.open(); // reopens at Tools
         let slots = menu.slots();
         assert!(slots[1].active); // Physgun
         assert!(!slots[2].active); // Spawner

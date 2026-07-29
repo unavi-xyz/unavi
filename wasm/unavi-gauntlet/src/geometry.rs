@@ -83,22 +83,6 @@ fn annulus(i: usize, n: usize, r_inner: f32, r_outer: f32, z: f32) -> MeshData {
 }
 
 const GLYPH: f32 = 0.018;
-/// Every glyph is padded to this vertex count so a pooled glyph prim never
-/// changes its POSITION/NORMAL length, avoiding transient count mismatches when
-/// its icon changes (mesh streams commit independently).
-const GLYPH_VERTS: usize = 24;
-
-fn pad(mut mesh: MeshData) -> MeshData {
-    let verts = mesh.0.len() / 3;
-    let (lx, ly, lz) = mesh.0.last_chunk::<3>().map_or((0.0, 0.0, 0.0), |c| {
-        (c[0], c[1], c[2])
-    });
-    for _ in verts..GLYPH_VERTS {
-        mesh.0.extend_from_slice(&[lx, ly, lz]);
-        mesh.1.extend_from_slice(&[0.0, 0.0, 1.0]);
-    }
-    mesh
-}
 
 /// A house silhouette (roof triangle over a wall block).
 #[must_use]
@@ -114,7 +98,7 @@ pub fn home_mesh() -> MeshData {
         [w, -GLYPH],
     ];
     let idx = [0, 1, 2, 3, 5, 4, 4, 5, 6];
-    pad(tris(&verts, &idx, 0.0))
+    tris(&verts, &idx, 0.0)
 }
 
 /// A cog / gear silhouette for the tools submenu.
@@ -130,7 +114,7 @@ pub fn gear_mesh() -> MeshData {
             [r * angle.cos(), r * angle.sin()]
         })
         .collect::<Vec<_>>();
-    pad(fan(&points, 0.0))
+    fan(&points, 0.0)
 }
 
 /// A left-pointing chevron for the back sector.
@@ -148,7 +132,7 @@ pub fn chevron_mesh() -> MeshData {
         [t + t, -h],
     ];
     let idx = [0, 1, 3, 3, 1, 4, 1, 2, 4, 4, 2, 5];
-    pad(tris(&verts, &idx, 0.0))
+    tris(&verts, &idx, 0.0)
 }
 
 /// A small diamond for an individual tool.
@@ -157,36 +141,46 @@ pub fn diamond_mesh() -> MeshData {
     let r = GLYPH * 0.85;
     let verts = [[0.0, r], [r, 0.0], [0.0, -r], [-r, 0.0]];
     let idx = [0, 3, 1, 1, 3, 2];
-    pad(tris(&verts, &idx, 0.0))
+    tris(&verts, &idx, 0.0)
 }
 
-/// A mitered checkmark for the home-travel confirmation.
+/// A checkmark: a short arm and a long arm meeting at the crux with a miter
+/// join so the tip is sharp with no overhang. Arms share the chevron's opening
+/// angle.
 #[must_use]
 pub fn check_mesh() -> MeshData {
-    let t = GLYPH * 0.34;
-    let p0 = [-GLYPH * 0.7, 0.0];
-    let p1 = [-GLYPH * 0.15, -GLYPH * 0.62];
-    let p2 = [GLYPH * 0.85, GLYPH * 0.72];
+    let t = GLYPH * 0.36;
+    let half = 1.0_f32.atan2(0.9);
+    let bisector = PI / 2.0;
+    let crux = [-GLYPH * 0.26, -GLYPH * 0.48];
+    let p0 = arm(crux, bisector + half, GLYPH * 0.72);
+    let p2 = arm(crux, bisector - half, GLYPH * 1.45);
 
-    let n0 = left_normal(p0, p1);
-    let n1 = left_normal(p1, p2);
-    let miter = normalize([n0[0] + n1[0], n0[1] + n1[1]]);
-    let denom = (miter[0] * n0[0] + miter[1] * n0[1]).max(0.35);
-    let ml = t * 0.5 / denom;
+    let n0 = left_normal(p0, crux);
+    let n1 = left_normal(crux, p2);
+    let m = normalize([n0[0] + n1[0], n0[1] + n1[1]]);
+    let ml = t * 0.5 / m[1].mul_add(n0[1], m[0] * n0[0]);
     let h0 = [n0[0] * t * 0.5, n0[1] * t * 0.5];
     let h1 = [n1[0] * t * 0.5, n1[1] * t * 0.5];
-    let m = [miter[0] * ml, miter[1] * ml];
+    let mm = [m[0] * ml, m[1] * ml];
 
     let verts = [
-        [p0[0] + h0[0], p0[1] + h0[1]], // 0 p0 left
-        [p1[0] + m[0], p1[1] + m[1]],   // 1 miter left
-        [p2[0] + h1[0], p2[1] + h1[1]], // 2 p2 left
-        [p2[0] - h1[0], p2[1] - h1[1]], // 3 p2 right
-        [p1[0] - m[0], p1[1] - m[1]],   // 4 miter right
-        [p0[0] - h0[0], p0[1] - h0[1]], // 5 p0 right
+        [p0[0] + h0[0], p0[1] + h0[1]],
+        [crux[0] + mm[0], crux[1] + mm[1]],
+        [p2[0] + h1[0], p2[1] + h1[1]],
+        [p2[0] - h1[0], p2[1] - h1[1]],
+        [crux[0] - mm[0], crux[1] - mm[1]],
+        [p0[0] - h0[0], p0[1] - h0[1]],
     ];
-    let idx = [0, 1, 4, 0, 4, 5, 1, 2, 3, 1, 3, 4];
-    pad(tris(&verts, &idx, 0.0))
+    let idx = [0, 4, 1, 0, 5, 4, 1, 3, 2, 1, 4, 3];
+    tris(&verts, &idx, 0.0)
+}
+
+fn arm(from: [f32; 2], angle: f32, len: f32) -> [f32; 2] {
+    [
+        len.mul_add(angle.cos(), from[0]),
+        len.mul_add(angle.sin(), from[1]),
+    ]
 }
 
 fn left_normal(a: [f32; 2], b: [f32; 2]) -> [f32; 2] {

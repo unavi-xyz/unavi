@@ -64,7 +64,6 @@ impl Plugin for SpacePlugin {
             .add_systems(
                 PostUpdate,
                 (
-                    travel::apply_pending_travel,
                     anchor::recenter_active_space,
                     anchor::apply_anchor_offsets,
                 )

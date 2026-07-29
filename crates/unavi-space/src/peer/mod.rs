@@ -35,8 +35,7 @@ pub fn self_did() -> Option<String> {
 
 pub fn capture_self_did(trigger: On<Add, LocalActor>, actors: Query<&LocalActor>) {
     if let Ok(actor) = actors.get(trigger.entity) {
-        *SELF_DID.write().expect("SELF_DID poisoned") =
-            Some(actor.0.identity().did().to_string());
+        *SELF_DID.write().expect("SELF_DID poisoned") = Some(actor.0.identity().did().to_string());
     }
 }
 

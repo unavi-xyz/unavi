@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
     HsdChild,
+    HsdCommitGate,
     HsdRecordId,
     Prim,
 };
@@ -25,6 +26,7 @@ use wasmtime_wasi::{
 
 use crate::{
     Script,
+    Ticking,
     engine::{
         ScriptEngine,
         native::{
@@ -76,6 +78,7 @@ pub fn instantiate_scripts(
             NameOrEntity,
             &Prim,
             &HsdChild,
+            &Ticking,
         ),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
@@ -87,13 +90,16 @@ pub fn instantiate_scripts(
     )>,
     mut commands: Commands,
 ) {
-    for (entity, script, engine_ent, name, prim, doc_ent) in to_instantiate {
+    for (entity, script, engine_ent, name, prim, doc_ent, ticking) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };
         let Ok((doc_id, doc, perms, exempt)) = docs.get(doc_ent.0) else {
             continue;
         };
+        commands
+            .entity(doc_ent.0)
+            .insert(HsdCommitGate(Arc::clone(&ticking.0)));
         let Ok(engine) = engines.get(engine_ent.0) else {
             warn_once!("Can't instantiate: no engine");
             continue;

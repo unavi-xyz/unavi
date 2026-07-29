@@ -9,7 +9,6 @@ use bevy_hsd::{
     HsdRecordId,
 };
 use bevy_wds::{
-    LocalActor,
     blob::get::GetBlob,
     record::{
         acl::SetRecordPublic,
@@ -32,10 +31,7 @@ use unavi_quota::{
     Stock,
 };
 use unavi_space::anchor::ActiveSpace;
-use unavi_util::{
-    async_commands::AsyncCommands,
-    async_task::spawn_async_task,
-};
+use unavi_util::async_commands::AsyncCommands;
 use wired_schemas::SCHEMA_HSD;
 
 use crate::{
@@ -71,29 +67,8 @@ pub struct WiredSceneApi {
 }
 
 pub(super) async fn upload_blob(data: Vec<u8>) -> anyhow::Result<Hash> {
-    let (tx, rx) = async_channel::bounded::<anyhow::Result<Hash>>(1);
-    AsyncCommands::default()
-        .push(move |world: &mut World| {
-            let actor = world
-                .query::<&LocalActor>()
-                .single(world)
-                .map(|a| a.0.clone());
-            match actor {
-                Err(_) => {
-                    tx.try_send(Err(anyhow::anyhow!("no local actor"))).ok();
-                }
-                Ok(actor) => {
-                    let bytes = Bytes::from(data);
-                    spawn_async_task(async move {
-                        let result = actor.upload_blob(bytes).await;
-                        tx.try_send(result).ok();
-                    });
-                }
-            }
-        })
-        .send()
-        .await?;
-    rx.recv().await?
+    let actor = bevy_wds::local_actor().ok_or_else(|| anyhow::anyhow!("no local actor"))?;
+    actor.upload_blob(Bytes::from(data)).await
 }
 
 async fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> Result<(), ScriptError> {

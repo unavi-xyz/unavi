@@ -1,6 +1,12 @@
 use std::{
     collections::BTreeMap,
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{
+            AtomicBool,
+            Ordering,
+        },
+    },
 };
 
 use bevy::{
@@ -84,8 +90,17 @@ pub struct Prim(pub TreeID);
 #[derive(Component, Default, Debug)]
 pub struct HsdPrimIndex(pub HashMap<TreeID, Entity>);
 
-fn commit_all_docs(docs: Query<&Hsd>) {
-    for doc in &docs {
+/// Pauses per-frame commits of a doc while a batched writer (e.g. a mid-flight
+/// script tick) holds it, so the doc's ops publish atomically once released
+/// instead of tearing across frames.
+#[derive(Component, Clone)]
+pub struct HsdCommitGate(pub Arc<AtomicBool>);
+
+fn commit_all_docs(docs: Query<(&Hsd, Option<&HsdCommitGate>)>) {
+    for (doc, gate) in &docs {
+        if gate.is_some_and(|g| g.0.load(Ordering::SeqCst)) {
+            continue;
+        }
         doc.0.commit();
     }
 }

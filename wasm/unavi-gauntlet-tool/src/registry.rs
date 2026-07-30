@@ -17,9 +17,13 @@ use crate::{
         CH_DEACTIVATE,
         CH_DISCOVER,
         CH_REGISTER,
+        CH_SCROLL,
         CH_SET_STATE,
+        CH_TRIGGER,
         RegisterPayload,
+        ScrollPayload,
         ToolStatePayload,
+        TriggerPayload,
     },
     wired::event::{
         api::{
@@ -129,6 +133,32 @@ impl GuestToolRegistry for ToolRegistry {
         .expect("encode set state");
         emit(
             CH_SET_STATE,
+            &payload,
+            EventFilter {
+                documents: Some(vec![doc_id]),
+                scope:     EventScope::Global,
+            },
+        )
+        .ok();
+    }
+
+    fn trigger(&self, doc_id: Vec<u8>, pressed: bool) {
+        let payload = postcard::to_allocvec(&TriggerPayload { pressed }).expect("encode trigger");
+        emit(
+            CH_TRIGGER,
+            &payload,
+            EventFilter {
+                documents: Some(vec![doc_id]),
+                scope:     EventScope::Global,
+            },
+        )
+        .ok();
+    }
+
+    fn scroll(&self, doc_id: Vec<u8>, delta: f32) {
+        let payload = postcard::to_allocvec(&ScrollPayload { delta }).expect("encode scroll");
+        emit(
+            CH_SCROLL,
             &payload,
             EventFilter {
                 documents: Some(vec![doc_id]),

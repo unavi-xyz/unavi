@@ -20,6 +20,12 @@ interface api {
     activate(transform),
     deactivate,
     set-state(tool-state),
+    // Primary action forwarded by the gauntlet while the menu is closed. The
+    // gauntlet is the sole global input consumer, so tools react to this
+    // instead of listening for grab themselves.
+    trigger(bool),
+    // Signed scroll notches (+ in, - out), forwarded like `trigger`.
+    scroll(f32),
   }
 
   resource tool {
@@ -41,5 +47,7 @@ interface api {
     activate: func(doc-id: list<u8>, transform: transform);
     deactivate: func(doc-id: list<u8>);
     set-state: func(doc-id: list<u8>, state: tool-state);
+    trigger: func(doc-id: list<u8>, pressed: bool);
+    scroll: func(doc-id: list<u8>, delta: f32);
   }
 }

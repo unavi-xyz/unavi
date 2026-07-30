@@ -10,9 +10,13 @@ use crate::{
         CH_DEACTIVATE,
         CH_DISCOVER,
         CH_REGISTER,
+        CH_SCROLL,
         CH_SET_STATE,
+        CH_TRIGGER,
         RegisterPayload,
+        ScrollPayload,
         ToolStatePayload,
+        TriggerPayload,
     },
     wired::{
         event::{
@@ -53,6 +57,8 @@ impl GuestTool for Tool {
                 CH_ACTIVATE.to_string(),
                 CH_DEACTIVATE.to_string(),
                 CH_SET_STATE.to_string(),
+                CH_TRIGGER.to_string(),
+                CH_SCROLL.to_string(),
             ],
             EventFilter {
                 documents: None,
@@ -100,6 +106,16 @@ impl GuestTool for Tool {
                             color:  p.color,
                             in_use: p.in_use,
                         }));
+                    }
+                }
+                CH_TRIGGER => {
+                    if let Ok(p) = postcard::from_bytes::<TriggerPayload>(&event.payload()) {
+                        return Some(ToolEvent::Trigger(p.pressed));
+                    }
+                }
+                CH_SCROLL => {
+                    if let Ok(p) = postcard::from_bytes::<ScrollPayload>(&event.payload()) {
+                        return Some(ToolEvent::Scroll(p.delta));
                     }
                 }
                 _ => {}

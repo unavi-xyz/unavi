@@ -36,6 +36,7 @@ impl Plugin for HsdPlugin {
             .add_observer(subscribe::subscribe_to_docs)
             .add_observer(attributes::collider::apply_collider)
             .add_observer(attributes::collider::on_collider_blobs_loaded)
+            .add_observer(attributes::gravity_scale::apply_gravity_scale)
             .add_observer(attributes::image::apply_image)
             .add_observer(attributes::image::on_image_blob_loaded)
             .add_observer(attributes::material::apply_material)

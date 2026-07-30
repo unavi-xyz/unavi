@@ -1,6 +1,10 @@
 use hsd::attributes::xform::XformAttr;
 use wasmtime::component::Resource;
 
+use crate::{
+    error::ScriptError,
+    runtime::native::wired::error::Error,
+};
 use crate::runtime::{
     Runtime,
     native::wired::scene::bindings::wired::{
@@ -465,6 +469,24 @@ impl HostPrim for Runtime {
             rotation,
             scale,
         })
+    }
+
+    async fn gravity_scale(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<f32> {
+        shared::wired::scene::prim::gravity_scale(&self.api, self_.rep())
+            .await
+            .map_err(wasmtime::Error::from_anyhow)
+    }
+
+    async fn set_gravity_scale(
+        &mut self,
+        self_: Resource<PrimRes>,
+        value: f32,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        Ok(
+            shared::wired::scene::prim::set_gravity_scale(&self.api, self_.rep(), value)
+                .await
+                .map_err(|e| ScriptError::from(e).into()),
+        )
     }
 
     async fn mesh(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Mesh>> {

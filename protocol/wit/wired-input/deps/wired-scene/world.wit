@@ -22,6 +22,7 @@ interface api {
 
 interface types {
   use wired:math/types.{vec3, quat, transform};
+  use wired:error/types.{error};
 
   // Stringified loro TreeID ("counter@peer").
   type prim-id     = string;
@@ -187,9 +188,11 @@ interface types {
     xform:     func() -> option<xform>;
     set-xform: func(value: option<xform>);
 
-    // Computed global xform from the previous tick. Writes via set-xform do
-    // not retrigger a recompute.
+    // Live world-space transform, recomputed each call.
     global-xform: func() -> transform;
+
+    gravity-scale:     func() -> f32;
+    set-gravity-scale: func(value: f32) -> result<_, error>;
 
     mesh:     func() -> option<mesh>;
     set-mesh: func(value: option<mesh>);

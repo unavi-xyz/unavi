@@ -20,6 +20,7 @@ use hsd::{
         Attributes,
         asset::AssetAttr,
         collider::ColliderAttr,
+        gravity_scale::GravityScaleAttr,
         image::ImageAttr,
         material::{
             ColorVec,
@@ -88,16 +89,17 @@ pub struct HsdxPrim {
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdxAttributes {
-    pub asset:       Option<String>,
-    pub collider:    Option<HsdxCollider>,
-    pub image:       Option<HsdxImage>,
-    pub material:    Option<HsdxMaterial>,
-    pub name:        Option<String>,
-    pub rigid_body:  Option<HsdxRigidBody>,
-    pub script:      Option<String>,
-    pub spawn:       Option<HsdxSpawn>,
-    pub subdocument: Option<String>,
-    pub xform:       Option<HsdxXform>,
+    pub asset:         Option<String>,
+    pub collider:      Option<HsdxCollider>,
+    pub gravity_scale: Option<f64>,
+    pub image:         Option<HsdxImage>,
+    pub material:      Option<HsdxMaterial>,
+    pub name:          Option<String>,
+    pub rigid_body:    Option<HsdxRigidBody>,
+    pub script:        Option<String>,
+    pub spawn:         Option<HsdxSpawn>,
+    pub subdocument:   Option<String>,
+    pub xform:         Option<HsdxXform>,
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -254,22 +256,23 @@ fn compile_attrs<S: std::hash::BuildHasher>(
         .transpose()?;
 
     Ok(Attributes {
-        asset:       (asset.map(|h| AssetAttr(ByteArray::new(h)))),
-        collider:    (attrs.collider.as_ref().map(compile_collider).transpose()?),
-        image:       (image),
-        material:    (attrs.material.as_ref().map(compile_material)),
-        mesh:        None,
-        name:        (attrs.name.clone().map(NameAttr)),
-        portal:      None,
-        rigid_body:  (attrs
+        asset:         (asset.map(|h| AssetAttr(ByteArray::new(h)))),
+        collider:      (attrs.collider.as_ref().map(compile_collider).transpose()?),
+        gravity_scale: attrs.gravity_scale.map(|scale| GravityScaleAttr { scale }),
+        image:         (image),
+        material:      (attrs.material.as_ref().map(compile_material)),
+        mesh:          None,
+        name:          (attrs.name.clone().map(NameAttr)),
+        portal:        None,
+        rigid_body:    (attrs
             .rigid_body
             .as_ref()
             .map(compile_rigid_body)
             .transpose()?),
-        script:      (script.map(|h| ScriptAttr(ByteArray::new(h)))),
-        spawn:       attrs.spawn.as_ref().map(|s| SpawnAttr { radius: s.radius }),
-        subdocument: subdocument.map(|h| SubdocumentAttr::Template(ByteArray::new(h))),
-        xform:       (attrs.xform.as_ref().map(compile_xform)),
+        script:        (script.map(|h| ScriptAttr(ByteArray::new(h)))),
+        spawn:         attrs.spawn.as_ref().map(|s| SpawnAttr { radius: s.radius }),
+        subdocument:   subdocument.map(|h| SubdocumentAttr::Template(ByteArray::new(h))),
+        xform:         (attrs.xform.as_ref().map(compile_xform)),
     })
 }
 

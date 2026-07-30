@@ -51,8 +51,8 @@ deps = ["wired-error"]
 
 [wired-scene]
 path = "../wired-scene"
-sha256 = "0429bea11ed8dcc4c436ad41e64a4823e3fb0fb06487f2f4c51ce20c2b55fc48"
-sha512 = "893f588f2c8a097da985ad616f5f2cbe2dd1c1bf0b12e3e49bc86095a0845bdf450d3fddb1b9b81fe0882ca5be291f9fb60f225612b613ed09192c27d0f8da5b"
+sha256 = "893f65fbbf8bfb6f783a0f5c3a4e8f2d50879ad5f66531ca07d1e7dcebf0fa45"
+sha512 = "6a243727a7243cd0dc824ba209a8dc97000ca0cbbded7d274008da167e56ed4ca41d008c8da1ca98311599fce5cadd290e19278fa95843cd4db0e39ae3c3ffe9"
 deps = ["wired-error"]
 
 [wired-script]

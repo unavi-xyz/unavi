@@ -30,6 +30,16 @@ impl Quat {
     pub const fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
         Self { x, y, z, w }
     }
+
+    #[must_use]
+    pub const fn conjugate(self) -> Self {
+        Self::new(-self.x, -self.y, -self.z, self.w)
+    }
+
+    #[must_use]
+    pub const fn inverse(self) -> Self {
+        self.conjugate()
+    }
 }
 
 impl Mul<Vec3> for Quat {
@@ -58,5 +68,15 @@ impl Transform {
             rotation,
             scale,
         }
+    }
+
+    #[must_use]
+    pub fn forward(&self) -> Vec3 {
+        self.rotation * Vec3::NEG_Z
+    }
+
+    #[must_use]
+    pub fn transform_point(&self, point: Vec3) -> Vec3 {
+        self.translation + self.rotation * (self.scale * point)
     }
 }

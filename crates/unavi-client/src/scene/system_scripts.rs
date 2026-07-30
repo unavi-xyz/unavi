@@ -20,7 +20,7 @@ use unavi_script::{
 };
 
 const GAUNTLET_HSD: &str = "hsd/unavi_gauntlet.hsd";
-const TOOL_HSDS: &[&str] = &[];
+const TOOL_HSDS: &[&str] = &["hsd/unavi_spawner.hsd", "hsd/unavi_physgun.hsd"];
 
 /// Updates the firewall with the record IDs of provided entities, once they
 /// load.

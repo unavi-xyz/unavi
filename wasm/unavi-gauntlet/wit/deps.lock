@@ -1,7 +1,7 @@
 [unavi-gauntlet-tool]
 path = "../../unavi-gauntlet-tool/wit"
-sha256 = "7c18fc644c4a3dc5edb67cd0eaff77956c6bd0d517cc865440b77c7b21cfebad"
-sha512 = "e2016edc130bf2194250a3e793bed5967e5c98a56d611e2ed1b18563597f14f6d7d44d9fc7276f572c9b3cd3fbb44a1f4eeefe0ea7a7008cefb780a623bf6b5f"
+sha256 = "943f22ecf41ef71fbe4b84996adf6fd780ef42fbd30833fcd0e9d4014c38eb7b"
+sha512 = "75d6766f735ae7278ee0f6f13404bdb4a98b3c7f6c6ad20c1eff0f833afda895ffbddc9d3cbfcd014674bc91740933a896aec97245f1bcffe23aa40f15fa4872"
 deps = ["wired-error"]
 
 [unavi-shapes]
@@ -28,8 +28,8 @@ deps = ["wired-error"]
 
 [wired-input]
 path = "../../../protocol/wit/wired-input"
-sha256 = "b7dd75455213868ab2ea6486c88665400ceaae44fc2714e7ba1637fbfebd0dd4"
-sha512 = "31d36015ee0ff04bf4475b248320d964de41e8f64d7532ccc39b10b3d454a6e07ffd2963198a7bfbc10ccf75720b4d1ef916e6672f1f81d08edb3ba3a5bf8cd5"
+sha256 = "967d7ad9b253b8d7af1ef1cddd8de0a6a466822f17686020a39c8a32168a19c5"
+sha512 = "acaa8622641fdf94c9d885b6b4d58946f3823febb1af2b0fd50bb0c3bc2d2504b69ec42a5bad6b0fc2e69c8c95403abbe94f6b8d4151c67b7ba9fe4bde9d136b"
 deps = ["wired-error"]
 
 [wired-kv]
@@ -49,6 +49,12 @@ sha256 = "1fbfc47dc7eb082b096e210bb42607eb1c19a64d2fbb7a612bf97bf41ca5002d"
 sha512 = "86f1cda126348c12e654cdec89e1a3ea4e35c46c4c6d2188f1df75c6ce75ad73ecb2de0c6aaba385b11d910f6831a299d1766eeeca98e45b545f82e23fe945b2"
 deps = ["wired-error"]
 
+[wired-physics]
+path = "../../../protocol/wit/wired-physics"
+sha256 = "a7faedb3f0d372cf919e34f331ac8e4314dcb48df13c9edc61a5e80d589a7262"
+sha512 = "5c56e1360a5a0a8b820b180b27feb5f9342a6abb19feede471027527db020fe02e51f03d0c31988b73d9b6da3660e46c5ba2b96cacf83c1ec02a5d9413dc3f7b"
+deps = ["wired-error"]
+
 [wired-portal]
 path = "../../../protocol/wit/wired-portal"
 sha256 = "53197c78ec66ead39509aec3506f55828b635487c25b95e5dad61030589dc21b"
@@ -57,8 +63,8 @@ deps = ["wired-error"]
 
 [wired-prelude]
 path = "../../../protocol/wit/wired-prelude"
-sha256 = "cbf7542255b4f887927fb9b45f926eed57eb82c4ec68de20b019e3ff8fba8e37"
-sha512 = "5648c26afb2fafa13a296dda63e5d9c93e072fc603da141dffaae95a7bb04d5d66ded5148cdda90ba39f046887144a9a964a6764ce9b5806dd23478ed26cd402"
+sha256 = "412ead66c675ef5675b969c32b56e8e2b9ecebbe6114ea7f21aa2bc891c45995"
+sha512 = "e395255a1fea1315cfb172753c865ed517667ec4486d578132017821e940629f76069f4e42b5764c21346ccc8d3ccadaa54e4f9639a58a0ed5b4f26440633b23"
 deps = ["wired-error"]
 
 [wired-scene]

@@ -56,6 +56,8 @@ impl InputListenerHandle {
             InputAction::GrabUp => "grab-up",
             InputAction::MenuDown => "menu-down",
             InputAction::MenuUp => "menu-up",
+            InputAction::ScrollUp => "scroll-up",
+            InputAction::ScrollDown => "scroll-down",
         };
         let device = match event.device {
             InputDevice::Keyboard => "keyboard",

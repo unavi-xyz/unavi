@@ -1,0 +1,7 @@
+package unavi:physgun;
+
+world guest {
+  import unavi:gauntlet-tool/api;
+  import unavi:shapes/api;
+  include wired:prelude/script-secure;
+}

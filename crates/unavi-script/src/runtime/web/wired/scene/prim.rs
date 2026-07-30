@@ -178,6 +178,20 @@ impl PrimHandle {
         xform_to_js(&x)
     }
 
+    #[wasm_bindgen(js_name = "gravityScale")]
+    pub async fn gravity_scale(&self) -> f32 {
+        shared::wired::scene::prim::gravity_scale(&self.api, self.rep)
+            .await
+            .unwrap_or(1.0)
+    }
+
+    #[wasm_bindgen(js_name = "setGravityScale")]
+    pub async fn set_gravity_scale(&self, value: f32) -> Result<(), String> {
+        shared::wired::scene::prim::set_gravity_scale(&self.api, self.rep, value)
+            .await
+            .map_err(|e| e.to_string())
+    }
+
     pub async fn mesh(&self) -> JsValue {
         match shared::wired::scene::prim::mesh(&self.api, self.rep).await {
             Ok(Some(m)) => mesh_to_js(m),

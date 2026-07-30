@@ -1,5 +1,6 @@
 use avian3d::prelude::{
     AngularVelocity,
+    ConstantForce,
     LinearVelocity,
     RigidBody,
     SpatialQuery,
@@ -110,7 +111,9 @@ async fn prim_ident(api: &Api, prim_rep: u32) -> Result<(Hash, TreeID), ScriptEr
         .prims
         .get(prim_rep)
         .ok_or_else(|| ScriptError::other(format!("invalid prim rep: {prim_rep}")))?;
-    Ok((prim.doc_id, prim.id))
+    let ident = (prim.doc_id, prim.id);
+    drop(scene);
+    Ok(ident)
 }
 
 fn entity_for(world: &mut World, doc: Hash, tree: TreeID) -> Option<Entity> {
@@ -162,6 +165,51 @@ pub async fn set_angular_velocity(
     v: [f32; 3],
 ) -> Result<(), ScriptError> {
     set_velocity(api, prim_rep, v, true).await
+}
+
+pub async fn get_linear_velocity(api: &Api, prim_rep: u32) -> Result<[f32; 3], ScriptError> {
+    let (doc, tree) = prim_ident(api, prim_rep).await?;
+    let (tx, rx) = async_channel::bounded::<[f32; 3]>(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let v = entity_for(world, doc, tree)
+                .and_then(|entity| world.get::<LinearVelocity>(entity))
+                .map_or([0.0; 3], |lv| lv.0.to_array());
+            tx.try_send(v).ok();
+        })
+        .send()
+        .await
+        .map_err(|err| ScriptError::other(err.to_string()))?;
+    rx.recv()
+        .await
+        .map_err(|err| ScriptError::other(err.to_string()))
+}
+
+/// Sets a persistent world-space force (avian `ConstantForce`); the solver
+/// reads it every step until changed. A zero vector removes it, so a hold that
+/// stops refreshing must pass zero to stop pushing.
+pub async fn apply_force(api: &Api, prim_rep: u32, v: [f32; 3]) -> Result<(), ScriptError> {
+    let (doc, tree) = prim_ident(api, prim_rep).await?;
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let Some(entity) = entity_for(world, doc, tree) else {
+                return;
+            };
+            if !matches!(world.get::<RigidBody>(entity), Some(RigidBody::Dynamic)) {
+                return;
+            }
+            let value = Vec3::from_array(v);
+            let mut ent = world.entity_mut(entity);
+            if value == Vec3::ZERO {
+                ent.remove::<ConstantForce>();
+            } else {
+                ent.insert(ConstantForce(value));
+            }
+        })
+        .send()
+        .await
+        .map_err(|err| ScriptError::other(err.to_string()))?;
+    Ok(())
 }
 
 pub fn claim_authority(_api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {

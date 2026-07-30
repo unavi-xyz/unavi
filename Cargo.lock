@@ -13985,6 +13985,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-physgun"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "wired-prelude",
+ "wit-bindgen 0.55.0",
+]
+
+[[package]]
 name = "unavi-portal-protocol"
 version = "0.0.16"
 dependencies = [
@@ -14125,6 +14134,15 @@ dependencies = [
  "wds",
  "wired-records",
  "wired-schemas",
+]
+
+[[package]]
+name = "unavi-spawner"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "wired-prelude",
+ "wit-bindgen 0.55.0",
 ]
 
 [[package]]

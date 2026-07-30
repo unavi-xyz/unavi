@@ -86,6 +86,8 @@ impl Plugin for SharedRuntimePlugin {
                     .pipe(wired::input::bridge::send_to_listeners),
                 wired::input::bridge::bridge_menu_right
                     .pipe(wired::input::bridge::send_to_listeners),
+                wired::input::bridge::bridge_scroll
+                    .pipe(wired::input::bridge::send_to_listeners),
             ),
         )
         .add_systems(

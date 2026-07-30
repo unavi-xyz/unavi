@@ -51,6 +51,17 @@ impl bindings::wired::physics::api::Host for Runtime {
         Ok(result.map(|hit| hit.map(into_wit_hit)).map_err(Into::into))
     }
 
+    async fn get_linear_velocity(
+        &mut self,
+        prim: Resource<PrimRes>,
+    ) -> wasmtime::Result<Result<bindings::wired::math::types::Vec3, Error>> {
+        let result = match self.api.require(ApiName::Physics) {
+            Ok(()) => shared::wired::physics::get_linear_velocity(&self.api, prim.rep()).await,
+            Err(err) => Err(err),
+        };
+        Ok(result.map(vec3).map_err(Into::into))
+    }
+
     async fn set_linear_velocity(
         &mut self,
         prim: Resource<PrimRes>,
@@ -60,6 +71,25 @@ impl bindings::wired::physics::api::Host for Runtime {
             Ok(()) => {
                 shared::wired::physics::set_linear_velocity(&self.api, prim.rep(), [v.x, v.y, v.z])
                     .await
+            }
+            Err(err) => Err(err),
+        };
+        Ok(result.map_err(Into::into))
+    }
+
+    async fn apply_force(
+        &mut self,
+        prim: Resource<PrimRes>,
+        force: bindings::wired::math::types::Vec3,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        let result = match self.api.require(ApiName::Physics) {
+            Ok(()) => {
+                shared::wired::physics::apply_force(
+                    &self.api,
+                    prim.rep(),
+                    [force.x, force.y, force.z],
+                )
+                .await
             }
             Err(err) => Err(err),
         };

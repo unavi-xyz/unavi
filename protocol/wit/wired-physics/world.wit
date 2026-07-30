@@ -27,10 +27,16 @@ interface api {
   // Closest dynamic/static collider hit along the world-space ray.
   raycast: func(origin: vec3, dir: vec3, max-dist: f32) -> result<option<ray-hit>, error>;
 
-  // Live velocity writes on a dynamic body. Only take networked effect while
-  // the caller holds authority over the prim's document.
+  // Live velocity reads/writes on a dynamic body. Writes only take networked
+  // effect while the caller holds authority over the prim's document.
+  get-linear-velocity:  func(prim: borrow<prim>) -> result<vec3, error>;
   set-linear-velocity:  func(prim: borrow<prim>, v: vec3) -> result<_, error>;
   set-angular-velocity: func(prim: borrow<prim>, v: vec3) -> result<_, error>;
+
+  // Sets a persistent world-space force the solver applies every step until
+  // changed; a zero vector clears it. Respects the body's real mass (heavier
+  // bodies accelerate less). Authority-gated like the velocity writes.
+  apply-force: func(prim: borrow<prim>, force: vec3) -> result<_, error>;
 
   claim-authority:   func(doc: document-id) -> result<_, error>;
   release-authority: func(doc: document-id) -> result<_, error>;

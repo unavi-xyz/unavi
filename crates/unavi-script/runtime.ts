@@ -145,6 +145,15 @@ function buildImports(wasi: WASIShim, rt: any) {
       isSelfOwner: rt.wiredPeerIsSelfOwner.bind(rt),
     },
     "wired:peer/types": {},
+    "wired:physics/api": {
+      raycast: rt.wiredPhysicsRaycast.bind(rt),
+      getLinearVelocity: rt.wiredPhysicsGetLinearVelocity.bind(rt),
+      setLinearVelocity: rt.wiredPhysicsSetLinearVelocity.bind(rt),
+      setAngularVelocity: rt.wiredPhysicsSetAngularVelocity.bind(rt),
+      applyForce: rt.wiredPhysicsApplyForce.bind(rt),
+      claimAuthority: rt.wiredPhysicsClaimAuthority.bind(rt),
+      releaseAuthority: rt.wiredPhysicsReleaseAuthority.bind(rt),
+    },
     "wired:portal/api": {
       open: rt.wiredPortalOpen.bind(rt),
     },
@@ -152,6 +161,7 @@ function buildImports(wasi: WASIShim, rt: any) {
       createDocument: rt.wiredSceneCreateDocument.bind(rt),
       getDocument: rt.wiredSceneGetDocument.bind(rt),
       loadHsd: rt.wiredSceneLoadHsd.bind(rt),
+      publishDocument: rt.wiredScenePublishDocument.bind(rt),
       removeDocument: rt.wiredSceneRemoveDocument.bind(rt),
       selfDocument: rt.wiredSceneSelfDocument.bind(rt),
       selfPrim: rt.wiredSceneSelfPrim.bind(rt),

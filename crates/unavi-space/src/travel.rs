@@ -1,9 +1,11 @@
 use bevy::prelude::*;
 use blake3::Hash;
 
-/// A queued request to travel the local agent into `target`. Consumed by the
-/// client's travel driver, which unloads the current space and routes arrival
-/// through the limbo load-gate so spawning honors the target's spawn points.
+/// A queued request to travel the local agent into `target`.
+///
+/// Consumed by the client's travel driver, which unloads the current space and
+/// routes arrival through the limbo load-gate so spawning honors the target's
+/// spawn points.
 #[derive(Resource, Default)]
 pub struct PendingTravel(pub Option<Hash>);
 

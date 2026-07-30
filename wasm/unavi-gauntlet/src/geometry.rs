@@ -55,7 +55,7 @@ pub fn outline_mesh(i: usize, n: usize) -> MeshData {
     annulus(i, n, RING_RADIUS, RING_RADIUS + OUTLINE_WIDTH, OUTLINE_Z)
 }
 
-fn annulus(i: usize, n: usize, r_inner: f32, r_outer: f32, z: f32) -> MeshData {
+fn annulus(i: usize, n: usize, r_inner: f32, r_outer: f32, depth: f32) -> MeshData {
     let half_span = PI / n as f32;
     let center = i as f32 * 2.0 * PI / n as f32;
     let subs = SECTOR_SUBDIVISIONS;
@@ -69,9 +69,9 @@ fn annulus(i: usize, n: usize, r_inner: f32, r_outer: f32, z: f32) -> MeshData {
         let start = center - half_span + half_gap;
         let end = center + half_span - half_gap;
         for j in 0..=subs {
-            let t = j as f32 / subs as f32;
-            let a = t.mul_add(end - start, start);
-            positions.extend_from_slice(&[r * a.cos(), r * a.sin(), z]);
+            let frac = j as f32 / subs as f32;
+            let angle = frac.mul_add(end - start, start);
+            positions.extend_from_slice(&[r * angle.cos(), r * angle.sin(), depth]);
             normals.extend_from_slice(&[0.0, 0.0, 1.0]);
         }
     }

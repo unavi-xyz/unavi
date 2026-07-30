@@ -73,6 +73,13 @@ impl Artifact {
         }
     }
 
+    pub fn set_color(&self, color: Color) {
+        self.core.set_material(Some(&palette::solid(color, 0.6)));
+        for orbiter in &self.orbiters {
+            orbiter.set_material(Some(&palette::solid(color, 0.7)));
+        }
+    }
+
     pub fn animate(&self, delta: f32, energy: f32) {
         let speed = energy.mul_add(SPIN_ACTIVE - SPIN_IDLE, SPIN_IDLE);
         let spin = delta.mul_add(speed, self.spin.get());

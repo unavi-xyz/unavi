@@ -21,9 +21,7 @@ pub struct Home {
 
 impl Home {
     pub fn request(&mut self) {
-        let did = if let Ok(Some(did)) = self_did() {
-            did
-        } else {
+        let Ok(Some(did)) = self_did() else {
             eprintln!("self did unavailable, cannot travel home");
             return;
         };

@@ -10,6 +10,22 @@ pub const SECONDARY: Color = rgb(0.24, 0.72, 1.0);
 pub const NEUTRAL: Color = rgb(0.90, 0.94, 0.98);
 pub const DIM: Color = rgb(0.52, 0.60, 0.70);
 
+/// Distinct accent colors cycled per tool so each tool's artifact reads
+/// differently.
+const TOOL_COLORS: [Color; 6] = [
+    rgb(0.24, 0.72, 1.00),
+    rgb(1.00, 0.62, 0.16),
+    rgb(0.42, 0.90, 0.44),
+    rgb(0.86, 0.36, 0.98),
+    rgb(1.00, 0.32, 0.44),
+    rgb(0.30, 0.94, 0.86),
+];
+
+#[must_use]
+pub const fn tool_color(index: usize) -> Color {
+    TOOL_COLORS[index % TOOL_COLORS.len()]
+}
+
 pub const GLASS_ALPHA: f32 = 0.15;
 pub const GLASS_ALPHA_HOVER: f32 = 0.36;
 pub const EMISSIVE_BASE: f32 = 0.12;

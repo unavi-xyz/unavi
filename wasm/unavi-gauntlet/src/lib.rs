@@ -138,6 +138,11 @@ impl Script {
             .map_or_else(|| "?".to_string(), |t| t.name.clone())
     }
 
+    fn tool_color(&self, doc: &[u8]) -> Color {
+        let index = self.tools.iter().position(|t| t.doc_id == doc).unwrap_or(0);
+        palette::tool_color(index)
+    }
+
     fn apply_tool_change(&self, change: &ToolChange, cam: &Transform) {
         if let Some(doc) = &change.deactivated {
             println!("deactivated tool '{}'", self.tool_name(doc));
@@ -152,6 +157,8 @@ impl Script {
         }
         if let Some(doc) = &change.activated {
             println!("activated tool '{}'", self.tool_name(doc));
+            let color = self.tool_color(doc);
+            self.artifact.set_color(color);
             let forward = cam.rotation * Vec3::new(0.0, 0.0, -1.0);
             self.registry.activate(
                 doc,
@@ -161,13 +168,7 @@ impl Script {
                     scale:       Vec3::ONE,
                 },
             );
-            self.registry.set_state(
-                doc,
-                ToolState {
-                    color:  palette::ACCENT,
-                    in_use: false,
-                },
-            );
+            self.registry.set_state(doc, ToolState { color, in_use: false });
         }
     }
 
@@ -285,17 +286,38 @@ impl ScriptBehavior for Script {
                 }
                 InputAction::MenuUp => self.pressed.set(false),
                 InputAction::GrabDown => {
-                    if self.menu.is_open()
-                        && let Some(idx) = self.hovered.get()
-                    {
-                        if let Some(slot) = self.menu.slots().get(idx) {
-                            println!("selected '{}'", slot.label);
+                    if self.menu.is_open() {
+                        if let Some(idx) = self.hovered.get() {
+                            if let Some(slot) = self.menu.slots().get(idx) {
+                                println!("selected '{}'", slot.label);
+                            }
+                            let outcome = self.menu.select(idx);
+                            self.handle_outcome(outcome, &cam);
                         }
-                        let outcome = self.menu.select(idx);
-                        self.handle_outcome(outcome, &cam);
+                    } else if let Some(doc) = self.menu.active_tool().cloned() {
+                        println!("gauntlet: forwarding trigger down to active tool");
+                        self.registry.trigger(&doc, true);
                     }
                 }
-                InputAction::GrabUp => {}
+                InputAction::GrabUp => {
+                    if !self.menu.is_open()
+                        && let Some(doc) = self.menu.active_tool().cloned()
+                    {
+                        self.registry.trigger(&doc, false);
+                    }
+                }
+                InputAction::ScrollUp | InputAction::ScrollDown => {
+                    if !self.menu.is_open()
+                        && let Some(doc) = self.menu.active_tool().cloned()
+                    {
+                        let delta = if matches!(event.action, InputAction::ScrollUp) {
+                            1.0
+                        } else {
+                            -1.0
+                        };
+                        self.registry.scroll(&doc, delta);
+                    }
+                }
             }
         }
         Ok(())

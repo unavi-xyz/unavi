@@ -145,6 +145,28 @@ pub fn bridge_menu_right(
     Some(bridge_menu(input))
 }
 
+#[must_use]
+pub fn bridge_scroll(
+    mut wheel: MessageReader<bevy::input::mouse::MouseWheel>,
+) -> Option<SendInput> {
+    let y: f32 = wheel.read().map(|ev| ev.y).sum();
+    if y == 0.0 {
+        return None;
+    }
+    let action = if y > 0.0 {
+        InputAction::ScrollUp
+    } else {
+        InputAction::ScrollDown
+    };
+    Some(SendInput {
+        event:       InputEvent {
+            action,
+            device: InputDevice::Keyboard,
+        },
+        target_node: None,
+    })
+}
+
 const fn bridge_menu(input: MenuInput) -> SendInput {
     let action = if input.value && !input.prev {
         InputAction::MenuDown

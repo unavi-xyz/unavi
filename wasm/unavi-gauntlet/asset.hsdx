@@ -5,6 +5,14 @@
             script: "./Cargo.toml",
         ),
         relationships: {},
-        children: [],
+        children: [
+            (
+                attributes: (
+                    asset: "../unavi-beacon/asset.hsdx",
+                ),
+                relationships: {},
+                children: [],
+            ),
+        ],
     ),
 ]

@@ -16,6 +16,7 @@ use wired_prelude::prelude::*;
 use crate::{
     artifact::Artifact,
     home::Home,
+    nav::Nav,
     unavi::gauntlet_tool::api::{
         ToolRegistry,
         ToolState,
@@ -46,6 +47,7 @@ use crate::{
 mod artifact;
 mod geometry;
 mod home;
+mod nav;
 mod palette;
 mod wheel;
 
@@ -57,6 +59,8 @@ const CLOSE_MOVE_SQ: f32 = 0.09;
 const OPEN_SPEED: f32 = 7.0;
 const ART_SPEED: f32 = 5.0;
 const TOOL_PLACE_DIST: f32 = 1.2;
+const NAV_FORWARD_DIST: f32 = 0.9;
+const NAV_DROP: f32 = 0.32;
 
 struct ToolRef {
     doc_id: Vec<u8>,
@@ -71,6 +75,7 @@ struct Script {
     artifact:      Artifact,
     artifact_root: Prim,
     home:          Home,
+    nav:           Nav,
     input:         InputListener,
     camera:        RefCell<Option<Prim>>,
     placement:     Cell<Option<Transform>>,
@@ -130,7 +135,30 @@ impl Script {
                 println!("traveling home");
                 self.home.request();
             }
+            Outcome::Nav(open) => self.apply_nav_change(open, cam),
             Outcome::Tool(change) => self.apply_tool_change(&change, cam),
+        }
+    }
+
+    fn apply_nav_change(&mut self, open: bool, cam: &Transform) {
+        if open {
+            println!("nav table opened");
+            let forward = cam.rotation * Vec3::new(0.0, 0.0, -1.0);
+            let forward_flat = Vec3::new(forward.x, 0.0, forward.z).normalize_or_zero();
+            let placement = Transform {
+                translation: cam.translation + forward_flat * NAV_FORWARD_DIST
+                    - Vec3::new(0.0, NAV_DROP, 0.0),
+                rotation:    flat_yaw(forward_flat),
+                scale:       Vec3::ONE,
+            };
+            if let Err(err) = self.nav.open(placement) {
+                eprintln!("nav open failed: {err:?}");
+            }
+        } else {
+            println!("nav table closed");
+            if let Err(err) = self.nav.close() {
+                eprintln!("nav close failed: {err:?}");
+            }
         }
     }
 
@@ -233,6 +261,7 @@ impl ScriptBehavior for Script {
             artifact,
             artifact_root,
             home: Home::default(),
+            nav: Nav::new(),
             input: register_global_input_listener()?,
             camera: RefCell::new(None),
             placement: Cell::new(None),
@@ -252,6 +281,7 @@ impl ScriptBehavior for Script {
     fn fixed_update(&mut self) -> anyhow::Result<()> {
         self.poll_tools();
         self.home.fixed_update();
+        self.nav.fixed_update()?;
 
         let Some(cam) = self.camera() else {
             return Ok(());
@@ -377,4 +407,11 @@ fn approach(current: f32, toward_one: bool, step: f32) -> f32 {
     } else {
         (current - step).max(0.0)
     }
+}
+
+/// The level (yaw-only) rotation facing `forward`, so a placed object stays
+/// flat regardless of the camera's pitch or roll.
+fn flat_yaw(forward: Vec3) -> Quat {
+    let theta = (-forward.x).atan2(-forward.z);
+    Quat::new(0.0, (theta * 0.5).sin(), 0.0, (theta * 0.5).cos())
 }

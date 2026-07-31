@@ -251,9 +251,10 @@ impl Default for Wheel {
 const fn icon_color(icon: Icon, active: bool) -> Color {
     match icon {
         Icon::Home | Icon::Confirm => palette::ACCENT,
+        Icon::Nav | Icon::Tool if active => palette::ACCENT,
+        Icon::Nav => palette::TERTIARY,
         Icon::Tools => palette::SECONDARY,
         Icon::Back => palette::DIM,
-        Icon::Tool if active => palette::ACCENT,
         Icon::Tool => palette::NEUTRAL,
     }
 }
@@ -261,6 +262,7 @@ const fn icon_color(icon: Icon, active: bool) -> Color {
 fn icon_mesh(icon: Icon) -> MeshData {
     match icon {
         Icon::Home => geometry::home_mesh(),
+        Icon::Nav => geometry::pin_mesh(),
         Icon::Tools => geometry::gear_mesh(),
         Icon::Back => geometry::chevron_mesh(),
         Icon::Confirm => geometry::check_mesh(),

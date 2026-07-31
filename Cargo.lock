@@ -13897,8 +13897,11 @@ name = "unavi-gauntlet"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "blake3",
+ "postcard",
  "unavi-gauntlet-menu",
  "wired-prelude",
+ "wired-records",
  "wired-schemas",
  "wit-bindgen 0.55.0",
 ]
@@ -14153,40 +14156,6 @@ dependencies = [
  "bevy",
  "n0-future",
  "unavi-wasm-compat",
-]
-
-[[package]]
-name = "unavi-vui-inventory"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "wired-prelude",
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
-name = "unavi-vui-module"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "blake3",
- "postcard",
- "serde",
- "wired-prelude",
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
-name = "unavi-vui-nav"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "blake3",
- "postcard",
- "wired-prelude",
- "wired-records",
- "wired-schemas",
- "wit-bindgen 0.55.0",
 ]
 
 [[package]]

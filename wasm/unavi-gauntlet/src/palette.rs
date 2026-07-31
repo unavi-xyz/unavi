@@ -7,8 +7,10 @@ use crate::wired::scene::types::{
 
 pub const ACCENT: Color = rgb(0.96, 0.20, 0.16);
 pub const SECONDARY: Color = rgb(0.24, 0.72, 1.0);
+pub const TERTIARY: Color = rgb(0.42, 0.90, 0.44);
 pub const NEUTRAL: Color = rgb(0.90, 0.94, 0.98);
 pub const DIM: Color = rgb(0.52, 0.60, 0.70);
+pub const SURFACE: Color = rgb(0.14, 0.15, 0.18);
 
 /// Distinct accent colors cycled per tool so each tool's artifact reads
 /// differently.

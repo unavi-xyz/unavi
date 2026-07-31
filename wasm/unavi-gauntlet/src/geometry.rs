@@ -1,4 +1,7 @@
-use std::f32::consts::PI;
+use std::f32::consts::{
+    PI,
+    TAU,
+};
 
 use crate::wired::scene::types::Prim;
 
@@ -133,6 +136,49 @@ pub fn chevron_mesh() -> MeshData {
     ];
     let idx = [0, 1, 3, 3, 1, 4, 1, 2, 4, 4, 2, 5];
     tris(&verts, &idx, 0.0)
+}
+
+/// A map-pin (circular head over a tapered point) for the nav table.
+#[must_use]
+pub fn pin_mesh() -> MeshData {
+    let head_r = GLYPH * 0.62;
+    let head_cy = GLYPH * 0.32;
+    let segments = 10;
+
+    let mut positions = vec![0.0, head_cy, 0.0];
+    let mut normals = vec![0.0, 0.0, 1.0];
+    for i in 0..=segments {
+        let angle = i as f32 / segments as f32 * TAU;
+        positions.extend_from_slice(&[
+            head_r.mul_add(angle.cos(), 0.0),
+            head_r.mul_add(angle.sin(), head_cy),
+            0.0,
+        ]);
+        normals.extend_from_slice(&[0.0, 0.0, 1.0]);
+    }
+    let mut indices = Vec::with_capacity(3 * segments);
+    for i in 0..segments as u32 {
+        indices.extend_from_slice(&[0, 1 + i, 2 + i]);
+    }
+
+    let tail_w = head_r * 0.85;
+    let tail_base_y = head_cy - head_r * 0.55;
+    let base = (positions.len() / 3) as u32;
+    positions.extend_from_slice(&[
+        -tail_w,
+        tail_base_y,
+        0.0,
+        tail_w,
+        tail_base_y,
+        0.0,
+        0.0,
+        -GLYPH,
+        0.0,
+    ]);
+    normals.extend_from_slice(&[0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0]);
+    indices.extend_from_slice(&[base, base + 1, base + 2]);
+
+    (positions, normals, indices)
 }
 
 /// A small diamond for an individual tool.

@@ -5,6 +5,7 @@
 pub type DocId = Vec<u8>;
 
 pub const HOME_LABEL: &str = "Home";
+pub const NAV_LABEL: &str = "Nav";
 pub const TOOLS_LABEL: &str = "Tools";
 pub const BACK_LABEL: &str = "Back";
 pub const CONFIRM_LABEL: &str = "Confirm";
@@ -13,6 +14,7 @@ pub const CONFIRM_LABEL: &str = "Confirm";
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Icon {
     Home,
+    Nav,
     Tools,
     Back,
     Confirm,
@@ -22,6 +24,7 @@ pub enum Icon {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Action {
     GoHome,
+    ToggleNav,
     ActivateTool(DocId),
 }
 
@@ -59,14 +62,16 @@ pub struct ToolChange {
 pub enum Outcome {
     None,
     Home,
+    Nav(bool),
     Tool(ToolChange),
 }
 
 pub struct Menu {
-    tools:  Vec<(DocId, String)>,
-    stack:  Vec<usize>,
-    open:   bool,
-    active: Option<DocId>,
+    tools:    Vec<(DocId, String)>,
+    stack:    Vec<usize>,
+    open:     bool,
+    active:   Option<DocId>,
+    nav_open: bool,
 }
 
 impl Default for Menu {
@@ -79,10 +84,11 @@ impl Menu {
     #[must_use]
     pub const fn new() -> Self {
         Self {
-            tools:  Vec::new(),
-            stack:  Vec::new(),
-            open:   false,
-            active: None,
+            tools:    Vec::new(),
+            stack:    Vec::new(),
+            open:     false,
+            active:   None,
+            nav_open: false,
         }
     }
 
@@ -94,6 +100,11 @@ impl Menu {
     #[must_use]
     pub const fn active_tool(&self) -> Option<&DocId> {
         self.active.as_ref()
+    }
+
+    #[must_use]
+    pub const fn nav_open(&self) -> bool {
+        self.nav_open
     }
 
     #[must_use]
@@ -146,6 +157,7 @@ impl Menu {
         for node in self.level_nodes() {
             let active = match &node.kind {
                 NodeKind::Action(Action::ActivateTool(id)) => self.active.as_ref() == Some(id),
+                NodeKind::Action(Action::ToggleNav) => self.nav_open,
                 _ => false,
             };
             slots.push(Slot {
@@ -180,6 +192,11 @@ impl Menu {
             NodeKind::Action(Action::GoHome) => {
                 self.close();
                 Outcome::Home
+            }
+            NodeKind::Action(Action::ToggleNav) => {
+                self.nav_open = !self.nav_open;
+                self.close();
+                Outcome::Nav(self.nav_open)
             }
             NodeKind::Action(Action::ActivateTool(id)) => {
                 let change = self.toggle_tool(id);
@@ -216,6 +233,11 @@ impl Menu {
                     icon:  Icon::Confirm,
                     kind:  NodeKind::Action(Action::GoHome),
                 }]),
+            },
+            MenuNode {
+                label: NAV_LABEL.to_string(),
+                icon:  Icon::Nav,
+                kind:  NodeKind::Action(Action::ToggleNav),
             },
             MenuNode {
                 label: TOOLS_LABEL.to_string(),
@@ -264,7 +286,8 @@ mod tests {
     use super::*;
 
     const HOME_SLOT: usize = 0;
-    const TOOLS_SLOT: usize = 1;
+    const NAV_SLOT: usize = 1;
+    const TOOLS_SLOT: usize = 2;
 
     fn id(byte: u8) -> DocId {
         vec![byte]
@@ -288,9 +311,9 @@ mod tests {
     #[test]
     fn root_shows_home_and_tools() {
         let menu = menu_with_tools();
-        assert_eq!(labels(&menu), vec!["Home", "Tools"]);
+        assert_eq!(labels(&menu), vec!["Home", "Nav", "Tools"]);
         let icons = menu.slots().into_iter().map(|s| s.icon).collect::<Vec<_>>();
-        assert_eq!(icons, vec![Icon::Home, Icon::Tools]);
+        assert_eq!(icons, vec![Icon::Home, Icon::Nav, Icon::Tools]);
         assert!(!menu.is_open());
     }
 
@@ -317,7 +340,7 @@ mod tests {
         open_tools(&mut menu);
         assert_eq!(menu.select(0), Outcome::None); // Back
         assert_eq!(menu.depth(), 0);
-        assert_eq!(labels(&menu), vec!["Home", "Tools"]);
+        assert_eq!(labels(&menu), vec!["Home", "Nav", "Tools"]);
     }
 
     #[test]
@@ -337,7 +360,7 @@ mod tests {
         menu.select(HOME_SLOT); // descend into Home
         assert_eq!(menu.select(0), Outcome::None); // Back = cancel
         assert!(menu.is_open());
-        assert_eq!(labels(&menu), vec!["Home", "Tools"]);
+        assert_eq!(labels(&menu), vec!["Home", "Nav", "Tools"]);
     }
 
     #[test]
@@ -433,5 +456,29 @@ mod tests {
         assert_eq!(menu.depth(), 1);
         menu.set_tools(Vec::new());
         assert_eq!(labels(&menu), vec!["Back"]);
+    }
+
+    #[test]
+    fn selecting_nav_toggles_and_closes() {
+        let mut menu = menu_with_tools();
+        menu.open();
+        assert_eq!(menu.select(NAV_SLOT), Outcome::Nav(true));
+        assert!(menu.nav_open());
+        assert!(!menu.is_open());
+
+        menu.open();
+        assert_eq!(menu.select(NAV_SLOT), Outcome::Nav(false));
+        assert!(!menu.nav_open());
+    }
+
+    #[test]
+    fn nav_slot_is_flagged_while_open() {
+        let mut menu = menu_with_tools();
+        menu.open();
+        menu.select(NAV_SLOT);
+
+        menu.open();
+        let slots = menu.slots();
+        assert!(slots[NAV_SLOT].active);
     }
 }

@@ -79,7 +79,7 @@ struct Script {
     art_t:         Cell<f32>,
     hovered:       Cell<Option<usize>>,
     pressed:       Cell<bool>,
-    render_time:   SystemTime,
+    update_time:   SystemTime,
 }
 
 impl Script {
@@ -241,7 +241,7 @@ impl ScriptBehavior for Script {
             art_t: Cell::new(0.0),
             hovered: Cell::new(None),
             pressed: Cell::new(false),
-            render_time: SystemTime::now(),
+            update_time: SystemTime::now(),
         };
         // Warm the root menu's meshes during load so the first open animates
         // instead of popping in once the async mesh upload lands.
@@ -249,9 +249,9 @@ impl ScriptBehavior for Script {
         Ok(script)
     }
 
-    fn tick(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(&mut self) -> anyhow::Result<()> {
         self.poll_tools();
-        self.home.tick();
+        self.home.fixed_update();
 
         let Some(cam) = self.camera() else {
             return Ok(());
@@ -332,9 +332,9 @@ impl ScriptBehavior for Script {
         Ok(())
     }
 
-    fn render(&mut self) -> anyhow::Result<()> {
-        let delta = self.render_time.elapsed().expect("elapsed").as_secs_f32();
-        self.render_time = SystemTime::now();
+    fn update(&mut self) -> anyhow::Result<()> {
+        let delta = self.update_time.elapsed().expect("elapsed").as_secs_f32();
+        self.update_time = SystemTime::now();
 
         let Some(cam) = self.camera() else {
             return Ok(());

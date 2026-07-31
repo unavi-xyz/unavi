@@ -33,6 +33,9 @@ use crate::{
     sync::combined_stream::CombinedStream,
 };
 
+// n0_future futures are intentionally !Send on wasm (single-threaded, no
+// Send needed there); Send-bounded elsewhere.
+#[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
 pub async fn sync_to_remote<S>(
     did: Did,
     signer: &S,

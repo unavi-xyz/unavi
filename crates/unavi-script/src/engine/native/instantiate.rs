@@ -25,17 +25,17 @@ use wasmtime_wasi::{
 };
 
 use crate::{
+    FixedUpdating,
     Script,
-    Ticking,
     engine::{
         ScriptEngine,
         native::{
             WasmtimeEngine,
+            fixed_update::LastFixedUpdate,
             log::{
                 ScriptStderr,
                 ScriptStdout,
             },
-            tick::LastTick,
         },
     },
     load::asset::Wasm,
@@ -61,7 +61,7 @@ pub struct InstantiatingScript(tokio::sync::oneshot::Receiver<bindings::Guest>);
 pub struct ScriptStore(pub Arc<Mutex<Store<Runtime>>>);
 
 #[derive(Component)]
-#[require(LastTick)]
+#[require(LastFixedUpdate)]
 pub struct ScriptGuest(pub Arc<bindings::Guest>);
 
 #[derive(Component)]
@@ -78,7 +78,7 @@ pub fn instantiate_scripts(
             NameOrEntity,
             &Prim,
             &HsdChild,
-            &Ticking,
+            &FixedUpdating,
         ),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
@@ -90,7 +90,7 @@ pub fn instantiate_scripts(
     )>,
     mut commands: Commands,
 ) {
-    for (entity, script, engine_ent, name, prim, doc_ent, ticking) in to_instantiate {
+    for (entity, script, engine_ent, name, prim, doc_ent, fixed_updating) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };
@@ -99,7 +99,7 @@ pub fn instantiate_scripts(
         };
         commands
             .entity(doc_ent.0)
-            .insert(HsdCommitGate(Arc::clone(&ticking.0)));
+            .insert(HsdCommitGate(Arc::clone(&fixed_updating.0)));
         let Ok(engine) = engines.get(engine_ent.0) else {
             warn_once!("Can't instantiate: no engine");
             continue;

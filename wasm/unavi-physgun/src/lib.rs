@@ -89,7 +89,7 @@ impl ScriptBehavior for Script {
         })
     }
 
-    fn tick(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.tool.poll() {
             match event {
                 ToolEvent::Activate(_) => self.active.set(true),
@@ -128,7 +128,7 @@ impl ScriptBehavior for Script {
         Ok(())
     }
 
-    fn render(&mut self) -> anyhow::Result<()> {
+    fn update(&mut self) -> anyhow::Result<()> {
         let Some(cam) = self.camera() else {
             return Ok(());
         };

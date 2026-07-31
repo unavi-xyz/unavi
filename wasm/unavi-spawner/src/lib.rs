@@ -83,7 +83,7 @@ impl ScriptBehavior for Script {
         })
     }
 
-    fn tick(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.tool.poll() {
             match event {
                 ToolEvent::Activate(_) => self.active.set(true),
@@ -109,7 +109,7 @@ impl ScriptBehavior for Script {
         Ok(())
     }
 
-    fn render(&mut self) -> anyhow::Result<()> {
+    fn update(&mut self) -> anyhow::Result<()> {
         let delta = self.time.elapsed().expect("elapsed").as_secs_f32();
         self.time = SystemTime::now();
 
@@ -120,7 +120,7 @@ impl ScriptBehavior for Script {
         let art_t = approach(self.art_t.get(), self.active.get(), delta * ART_SPEED);
         self.art_t.set(art_t);
         self.preview
-            .render(&cam, ARTIFACT_OFFSET, art_t, self.color.get(), delta);
+            .update(&cam, ARTIFACT_OFFSET, art_t, self.color.get(), delta);
         Ok(())
     }
 }

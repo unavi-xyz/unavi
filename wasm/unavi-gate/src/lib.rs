@@ -140,7 +140,7 @@ impl ScriptBehavior for Script {
         })
     }
 
-    fn tick(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.beacon_rx.poll() {
             let payload = event.payload();
             let Ok(target) = <[u8; 32]>::try_from(payload.as_slice()) else {

@@ -4,10 +4,13 @@ use std::{
 };
 
 use anyhow::bail;
-use bevy::math::{
-    Affine3A,
-    Quat,
-    Vec3,
+use bevy::{
+    math::{
+        Affine3A,
+        Quat,
+        Vec3,
+    },
+    transform::components::GlobalTransform,
 };
 use blake3::Hash;
 use hsd::{
@@ -484,20 +487,25 @@ pub async fn set_xform(api: &Api, rep: u32, value: Option<XformAttr>) -> anyhow:
 
 pub async fn global_xform(api: &Api, rep: u32) -> anyhow::Result<XformAttr> {
     let prim = get_prim(api, rep).await?;
-    let reg = NODE_TRANSFORM_REGISTRY.read();
     let node = |node| AbsoluteNodeId {
         doc: prim.doc_id,
         node,
     };
     let world = if prim.is_proxy {
-        reg.get(&node(prim.id))
+        NODE_TRANSFORM_REGISTRY
+            .read()
+            .get(&node(prim.id))
             .map_or(Affine3A::IDENTITY, |s| s.world.affine())
     } else {
         let tree = prim.doc.get_tree(&*HSD_CONTAINER_ID);
         let mut local = Affine3A::IDENTITY;
         let mut cur = Some(prim.id);
         while let Some(id) = cur {
-            let t = reg.get(&node(id)).map(|s| s.local).unwrap_or_default();
+            let t = NODE_TRANSFORM_REGISTRY
+                .read()
+                .get(&node(id))
+                .map(|s| s.local)
+                .unwrap_or_default();
             local = t.compute_affine() * local;
             cur = match tree.parent(id) {
                 Some(TreeParentId::Node(p)) => Some(p),
@@ -507,7 +515,7 @@ pub async fn global_xform(api: &Api, rep: u32) -> anyhow::Result<XformAttr> {
         let root = DOC_ROOT_TRANSFORM_REGISTRY
             .read()
             .get(&prim.doc_id)
-            .map_or(Affine3A::IDENTITY, |g| g.affine());
+            .map_or(Affine3A::IDENTITY, GlobalTransform::affine);
         root * local
     };
     let (sc, ro, tr) = world.to_scale_rotation_translation();

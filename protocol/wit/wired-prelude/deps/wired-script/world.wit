@@ -9,8 +9,8 @@ interface guest-api {
   init: func();
 
   // Called every frame, before rendering.
-  render: func();
+  update: func();
 
-  // Called every tick, on a fixed interval.
-  tick: func();
+  // Called on a fixed interval.
+  fixed-update: func();
 }

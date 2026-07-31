@@ -15,7 +15,7 @@ impl ScriptBehavior for Script {
         Ok(Self { input })
     }
 
-    fn tick(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.input.poll() {
             println!("got input: {event:#?}");
         }

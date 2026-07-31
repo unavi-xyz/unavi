@@ -75,16 +75,16 @@ impl ScriptBehavior for Script {
             translation: Vec3::ZERO,
             rotation:    Quat::IDENTITY,
             scale:       Vec3::ZERO,
-        }));
+        }))?;
 
         Ok(Self {
-            tool: Tool::new("Physgun", &icon),
-            laser: Laser::new(),
-            camera: RefCell::new(None),
-            active: Cell::new(false),
-            color: Cell::new(palette::DEFAULT),
-            pressed: Cell::new(false),
-            held: RefCell::new(None),
+            tool:     Tool::new("Physgun", &icon),
+            laser:    Laser::new(),
+            camera:   RefCell::new(None),
+            active:   Cell::new(false),
+            color:    Cell::new(palette::DEFAULT),
+            pressed:  Cell::new(false),
+            held:     RefCell::new(None),
             hold_pos: Cell::new(None),
         })
     }

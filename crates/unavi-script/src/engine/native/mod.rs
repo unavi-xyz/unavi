@@ -1,8 +1,13 @@
 use bevy::prelude::*;
+use bevy_hsd::HsdCommitSet;
 use wasmtime::Config;
 
-use crate::engine::Engine;
+use crate::{
+    ScriptSnapshotSet,
+    engine::Engine,
+};
 
+mod drive;
 mod init;
 mod instantiate;
 mod log;
@@ -15,7 +20,12 @@ impl Plugin for NativeEnginePlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(init_wasmtime_engine)
             .add_systems(PreUpdate, increment_epochs)
-            .add_systems(Update, render::render_tick_scripts)
+            .add_systems(
+                Update,
+                render::render_tick_scripts
+                    .after(ScriptSnapshotSet)
+                    .before(HsdCommitSet),
+            )
             .add_systems(
                 FixedUpdate,
                 (

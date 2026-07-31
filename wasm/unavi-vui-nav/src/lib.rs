@@ -85,7 +85,7 @@ const fn xform_translation(translation: Vec3) -> Xform {
 }
 
 fn set_translation(prim: &Prim, translation: Vec3) {
-    prim.set_xform(Some(xform_translation(translation)));
+    prim.set_xform(Some(xform_translation(translation))).ok();
 }
 
 fn set_scale(prim: &Prim, scale: Vec3) {
@@ -93,7 +93,8 @@ fn set_scale(prim: &Prim, scale: Vec3) {
         translation: Vec3::splat(0.0),
         rotation: IDENTITY_QUAT,
         scale,
-    }));
+    }))
+    .ok();
 }
 
 const fn material(base_color: Option<Color>, double_sided: bool) -> Material {
@@ -156,26 +157,26 @@ impl ScriptBehavior for Script {
 
         let color = Color::WHITE;
 
-        let root = doc.create_prim();
+        let root = doc.create_prim()?;
         set_scale(&root, Vec3::splat(0.0));
 
         let filter_table = make_filter_table(&doc, color, &mut prims, &mut themed_prims);
         set_translation(&filter_table, Vec3::new(BASIN_X, 0.0, 0.0));
-        root.add_child(&filter_table);
+        root.add_child(&filter_table)?;
         prims.push(filter_table);
 
         let basin = make_basin(&doc, color, &mut prims, &mut themed_prims);
         set_translation(&basin, Vec3::new(-BASIN_X, BASIN_Y, 0.0));
-        root.add_child(&basin);
+        root.add_child(&basin)?;
         prims.push(basin);
 
         let ring = Torus::new(RING_THICKNESS, RING_RADIUS).mesh();
-        ring.set_material(Some(&material(Some(color), true)));
+        ring.set_material(Some(&material(Some(color), true)))?;
         ring.set_collider(Some(&Collider::Cylinder(ColliderCylinder {
             height: RING_COLLIDER_HEIGHT,
             radius: RING_COLLIDER_RADIUS,
-        })));
-        ring.set_rigid_body(Some(dynamic_body()));
+        })))?;
+        ring.set_rigid_body(Some(dynamic_body()))?;
         set_scale(&ring, Vec3::splat(0.0));
         themed_prims.push(ring.clone());
 
@@ -204,7 +205,7 @@ impl ScriptBehavior for Script {
                         translation: t.translation,
                         rotation:    t.rotation,
                         scale:       t.scale,
-                    }));
+                    }))?;
                     set_translation(
                         &self.ring,
                         Vec3 {
@@ -234,7 +235,7 @@ impl ScriptBehavior for Script {
                     self.color = color;
                     let mat = material(Some(color), true);
                     for prim in &self.themed_prims {
-                        prim.set_material(Some(&mat));
+                        prim.set_material(Some(&mat))?;
                     }
                 }
             }
@@ -278,8 +279,8 @@ impl ScriptBehavior for Script {
                         break;
                     };
 
-                    let prim = beacon_doc.create_prim();
-                    prim.set_name(Some(&space.to_string()));
+                    let prim = beacon_doc.create_prim()?;
+                    prim.set_name(Some(&space.to_string()))?;
 
                     let mut pos = self
                         .root
@@ -310,66 +311,66 @@ fn make_filter_table(
     prims: &mut Vec<Prim>,
     themed: &mut Vec<Prim>,
 ) -> Prim {
-    let group = doc.create_prim();
+    let group = doc.create_prim().expect("create_prim");
     let mat = material(Some(color), true);
 
     let base_shape = Cuboid::new(Vec3::new(TABLE_W, BASE_H, TABLE_D));
     let base = base_shape.mesh();
-    base.set_collider(Some(&base_shape.collider()));
-    base.set_rigid_body(Some(static_body()));
-    base.set_material(Some(&mat));
+    base.set_collider(Some(&base_shape.collider())).ok();
+    base.set_rigid_body(Some(static_body())).ok();
+    base.set_material(Some(&mat)).ok();
     themed.push(base.clone());
-    group.add_child(&base);
+    group.add_child(&base).ok();
     prims.push(base);
 
     let x_lip_shape = Cuboid::new(Vec3::new(LIP_T, LIP_H, TABLE_D));
     for x_sign in [-1.0_f32, 1.0_f32] {
         let lip = x_lip_shape.mesh();
-        lip.set_collider(Some(&x_lip_shape.collider()));
-        lip.set_rigid_body(Some(static_body()));
-        lip.set_material(Some(&mat));
+        lip.set_collider(Some(&x_lip_shape.collider())).ok();
+        lip.set_rigid_body(Some(static_body())).ok();
+        lip.set_material(Some(&mat)).ok();
         themed.push(lip.clone());
         set_translation(&lip, Vec3::new(x_sign * X_LIP_X, LIP_Y, 0.0));
-        group.add_child(&lip);
+        group.add_child(&lip).ok();
         prims.push(lip);
     }
 
     let z_lip_shape = Cuboid::new(Vec3::new(TABLE_W, LIP_H, LIP_T));
     for z_sign in [-1.0_f32, 1.0_f32] {
         let lip = z_lip_shape.mesh();
-        lip.set_collider(Some(&z_lip_shape.collider()));
-        lip.set_rigid_body(Some(static_body()));
-        lip.set_material(Some(&mat));
+        lip.set_collider(Some(&z_lip_shape.collider())).ok();
+        lip.set_rigid_body(Some(static_body())).ok();
+        lip.set_material(Some(&mat)).ok();
         themed.push(lip.clone());
         set_translation(&lip, Vec3::new(0.0, LIP_Y, z_sign * Z_LIP_Z));
-        group.add_child(&lip);
+        group.add_child(&lip).ok();
         prims.push(lip);
     }
 
     let divider_shape = Cuboid::new(Vec3::new(LIP_T, LIP_H, TABLE_D));
     let divider = divider_shape.mesh();
-    divider.set_collider(Some(&divider_shape.collider()));
-    divider.set_rigid_body(Some(static_body()));
-    divider.set_material(Some(&mat));
+    divider.set_collider(Some(&divider_shape.collider())).ok();
+    divider.set_rigid_body(Some(static_body())).ok();
+    divider.set_material(Some(&mat)).ok();
     themed.push(divider.clone());
     set_translation(&divider, Vec3::new(0.0, LIP_Y, 0.0));
-    group.add_child(&divider);
+    group.add_child(&divider).ok();
     prims.push(divider);
 
     group
 }
 
 fn make_basin(doc: &Document, color: Color, prims: &mut Vec<Prim>, themed: &mut Vec<Prim>) -> Prim {
-    let group = doc.create_prim();
+    let group = doc.create_prim().expect("create_prim");
     let mat = material(Some(color), true);
 
     let cylinder = Cylinder::new(BASIN_RADIUS, BASIN_HEIGHT);
     let dish = cylinder.mesh();
-    dish.set_material(Some(&mat));
-    dish.set_collider(Some(&cylinder.collider()));
-    dish.set_rigid_body(Some(static_body()));
+    dish.set_material(Some(&mat)).ok();
+    dish.set_collider(Some(&cylinder.collider())).ok();
+    dish.set_rigid_body(Some(static_body())).ok();
     themed.push(dish.clone());
-    group.add_child(&dish);
+    group.add_child(&dish).ok();
     prims.push(dish);
 
     group

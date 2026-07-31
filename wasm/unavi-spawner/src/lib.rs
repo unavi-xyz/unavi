@@ -69,17 +69,17 @@ impl ScriptBehavior for Script {
             translation: Vec3::ZERO,
             rotation:    Quat::IDENTITY,
             scale:       Vec3::ZERO,
-        }));
+        }))?;
 
         Ok(Self {
-            tool: Tool::new("Spawner", &icon),
+            tool:    Tool::new("Spawner", &icon),
             preview: Preview::new(),
-            camera: RefCell::new(None),
-            active: Cell::new(false),
-            color: Cell::new(palette::DEFAULT),
+            camera:  RefCell::new(None),
+            active:  Cell::new(false),
+            color:   Cell::new(palette::DEFAULT),
             pressed: Cell::new(false),
-            art_t: Cell::new(0.0),
-            time: SystemTime::now(),
+            art_t:   Cell::new(0.0),
+            time:    SystemTime::now(),
         })
     }
 

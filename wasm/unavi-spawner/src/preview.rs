@@ -39,13 +39,16 @@ pub struct Preview {
 impl Preview {
     #[must_use]
     pub fn new() -> Self {
-        let root = self_document().expect("self_document").create_prim();
-        root.set_xform(Some(hidden()));
+        let root = self_document()
+            .expect("self_document")
+            .create_prim()
+            .expect("create_prim");
+        root.set_xform(Some(hidden())).ok();
 
         let cuboid = Cuboid::new(Vec3::splat(PREVIEW_SIZE));
         cuboid.set_doc(self_document().expect("self_document"));
         let cube = cuboid.mesh();
-        root.add_child(&cube);
+        root.add_child(&cube).ok();
 
         Self {
             root,
@@ -58,21 +61,25 @@ impl Preview {
     pub fn render(&self, cam: &Transform, offset: Vec3, t: f32, color: Color, delta: f32) {
         if self.color.get() != Some(color) {
             self.color.set(Some(color));
-            self.cube.set_material(Some(&palette::preview(color)));
+            self.cube.set_material(Some(&palette::preview(color))).ok();
         }
 
-        self.root.set_xform(Some(Xform {
-            translation: cam.translation + cam.rotation * offset,
-            rotation:    cam.rotation,
-            scale:       Vec3::splat(t),
-        }));
+        self.root
+            .set_xform(Some(Xform {
+                translation: cam.translation + cam.rotation * offset,
+                rotation:    cam.rotation,
+                scale:       Vec3::splat(t),
+            }))
+            .ok();
 
         let spin = delta.mul_add(SPIN, self.spin.get());
         self.spin.set(spin);
-        self.cube.set_xform(Some(Xform {
-            translation: Vec3::new(0.0, ABOVE, 0.0),
-            rotation:    Quat::new(0.0, (spin * 0.5).sin(), 0.0, (spin * 0.5).cos()),
-            scale:       Vec3::ONE,
-        }));
+        self.cube
+            .set_xform(Some(Xform {
+                translation: Vec3::new(0.0, ABOVE, 0.0),
+                rotation:    Quat::new(0.0, (spin * 0.5).sin(), 0.0, (spin * 0.5).cos()),
+                scale:       Vec3::ONE,
+            }))
+            .ok();
     }
 }

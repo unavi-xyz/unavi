@@ -23,6 +23,14 @@ mod portal_host;
 pub mod quota;
 pub mod runtime;
 
+/// Refreshes the transform snapshot to the current frame's poses.
+///
+/// Runs in `Update` after agent movement so per-frame script reads observe this
+/// frame's camera rather than the previous frame's. Script execution runs after
+/// this set.
+#[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct ScriptSnapshotSet;
+
 pub struct ScriptPlugin;
 
 impl Plugin for ScriptPlugin {

@@ -25,6 +25,12 @@ pub mod load;
 pub mod loaded;
 mod subscribe;
 
+/// Commits pending doc mutations and applies the resulting diffs to the world.
+/// Systems that write to docs and want their changes reflected the same frame
+/// should run before this set.
+#[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct HsdCommitSet;
+
 pub struct HsdPlugin;
 
 impl Plugin for HsdPlugin {
@@ -57,7 +63,8 @@ impl Plugin for HsdPlugin {
                     load::instance_hsd,
                     load::instance_subdocuments,
                 )
-                    .chain(),
+                    .chain()
+                    .in_set(HsdCommitSet),
             )
             .add_systems(
                 PostUpdate,

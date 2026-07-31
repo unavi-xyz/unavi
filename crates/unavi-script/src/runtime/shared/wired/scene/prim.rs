@@ -531,9 +531,12 @@ pub async fn set_gravity_scale(api: &Api, rep: u32, value: f32) -> anyhow::Resul
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     let meta = prim_meta(&prim.doc, prim.id)?;
-    write_attr(&meta, &GravityScaleAttr {
-        scale: f64::from(value),
-    })?;
+    write_attr(
+        &meta,
+        &GravityScaleAttr {
+            scale: f64::from(value),
+        },
+    )?;
     Ok(())
 }
 

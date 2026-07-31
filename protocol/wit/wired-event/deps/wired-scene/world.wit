@@ -161,8 +161,8 @@ interface types {
     roots:       func() -> list<prim>;
     prims:       func() -> list<prim>;
     get-prim:    func(id: prim-id) -> option<prim>;
-    create-prim: func() -> prim;
-    remove-prim: func(value: borrow<prim>);
+    create-prim: func() -> result<prim, error>;
+    remove-prim: func(value: borrow<prim>) -> result<_, error>;
 
     // Rigid transform from this document's root frame to `other`'s root
     // frame. Returns none if the two documents are not in the same space
@@ -176,17 +176,17 @@ interface types {
 
     parent:       func() -> option<prim>;
     children:     func() -> list<prim>;
-    add-child:    func(child: borrow<prim>);
-    remove-child: func(child: borrow<prim>);
+    add-child:    func(child: borrow<prim>) -> result<_, error>;
+    remove-child: func(child: borrow<prim>) -> result<_, error>;
 
     name:     func() -> option<string>;
-    set-name: func(value: option<string>);
+    set-name: func(value: option<string>) -> result<_, error>;
 
     asset:     func() -> option<blob-id>;
-    set-asset: func(value: option<blob-id>);
+    set-asset: func(value: option<blob-id>) -> result<_, error>;
 
     xform:     func() -> option<xform>;
-    set-xform: func(value: option<xform>);
+    set-xform: func(value: option<xform>) -> result<_, error>;
 
     // Live world-space transform, recomputed each call.
     global-xform: func() -> transform;
@@ -195,33 +195,33 @@ interface types {
     set-gravity-scale: func(value: f32) -> result<_, error>;
 
     mesh:     func() -> option<mesh>;
-    set-mesh: func(value: option<mesh>);
+    set-mesh: func(value: option<mesh>) -> result<_, error>;
 
     // High-level helpers: host hashes the values and uploads to WDS, then
     // stores the resulting blob id in the mesh attribute.
-    set-mesh-stream:      func(key: string, values: option<list<f32>>);
-    set-mesh-indices-u32: func(values: option<list<u32>>);
+    set-mesh-stream:      func(key: string, values: option<list<f32>>) -> result<_, error>;
+    set-mesh-indices-u32: func(values: option<list<u32>>) -> result<_, error>;
 
     material:     func() -> option<material>;
-    set-material: func(value: option<material>);
+    set-material: func(value: option<material>) -> result<_, error>;
 
     image:     func() -> option<image>;
-    set-image: func(value: option<image>);
+    set-image: func(value: option<image>) -> result<_, error>;
 
     collider:     func() -> option<collider>;
-    set-collider: func(value: option<collider>);
+    set-collider: func(value: option<collider>) -> result<_, error>;
 
     rigid-body:     func() -> option<rigid-body>;
-    set-rigid-body: func(value: option<rigid-body>);
+    set-rigid-body: func(value: option<rigid-body>) -> result<_, error>;
 
     portal:     func() -> option<portal>;
-    set-portal: func(value: option<portal>);
+    set-portal: func(value: option<portal>) -> result<_, error>;
 
     spawn:     func() -> option<spawn>;
-    set-spawn: func(value: option<spawn>);
+    set-spawn: func(value: option<spawn>) -> result<_, error>;
 
     relationships:    func() -> list<tuple<string, prim-id>>;
     get-relationship: func(key: string) -> option<prim-id>;
-    set-relationship: func(key: string, target: option<prim-id>);
+    set-relationship: func(key: string, target: option<prim-id>) -> result<_, error>;
   }
 }

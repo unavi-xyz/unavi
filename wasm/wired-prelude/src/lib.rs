@@ -58,7 +58,7 @@ macro_rules! generate {
                 })
             }
             fn kv_delete(&self, key: &str) {
-                self.delete(key);
+                let _ = self.delete(key);
             }
             fn kv_keys(&self) -> ::std::vec::Vec<::std::string::String> {
                 self.keys()

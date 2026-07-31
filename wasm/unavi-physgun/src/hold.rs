@@ -33,8 +33,8 @@ pub struct Held {
 }
 
 impl Held {
-    /// Raycasts from the camera; on a hit, claims authority, disables the body's
-    /// gravity, and returns the grab handle.
+    /// Raycasts from the camera; on a hit, claims authority, disables the
+    /// body's gravity, and returns the grab handle.
     pub fn grab(cam: &Transform) -> Option<Self> {
         let dir = cam.forward();
         let origin = cam.translation + dir * RAY_START;

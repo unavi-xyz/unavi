@@ -53,7 +53,7 @@ impl Laser {
         let cuboid = Cuboid::new(Vec3::ONE);
         cuboid.set_doc(self_document().expect("self_document"));
         let prim = cuboid.mesh();
-        prim.set_xform(Some(hidden()));
+        prim.set_xform(Some(hidden())).ok();
         Self {
             prim,
             color: Cell::new(None),
@@ -63,7 +63,7 @@ impl Laser {
     pub fn show(&self, from: Vec3, to: Vec3, color: Color) {
         if self.color.get() != Some(color) {
             self.color.set(Some(color));
-            self.prim.set_material(Some(&palette::beam(color)));
+            self.prim.set_material(Some(&palette::beam(color))).ok();
         }
         let delta = to - from;
         let len = delta.length();
@@ -71,14 +71,16 @@ impl Laser {
             self.hide();
             return;
         }
-        self.prim.set_xform(Some(Xform {
-            translation: (from + to) * 0.5,
-            rotation:    align_y_to(delta),
-            scale:       Vec3::new(THIN, len, THIN),
-        }));
+        self.prim
+            .set_xform(Some(Xform {
+                translation: (from + to) * 0.5,
+                rotation:    align_y_to(delta),
+                scale:       Vec3::new(THIN, len, THIN),
+            }))
+            .ok();
     }
 
     pub fn hide(&self) {
-        self.prim.set_xform(Some(hidden()));
+        self.prim.set_xform(Some(hidden())).ok();
     }
 }

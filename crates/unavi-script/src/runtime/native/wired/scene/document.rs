@@ -1,16 +1,22 @@
 use wasmtime::component::Resource;
 
-use crate::runtime::{
-    Runtime,
-    native::wired::scene::bindings::wired::{
-        math::types::Transform as WitTransform,
-        scene::types::HostDocument,
-    },
-    shared::{
-        self,
-        wired::scene::{
-            document::DocRes,
-            prim::PrimRes,
+use crate::{
+    error::ScriptError,
+    runtime::{
+        Runtime,
+        native::wired::{
+            error::Error,
+            scene::bindings::wired::{
+                math::types::Transform as WitTransform,
+                scene::types::HostDocument,
+            },
+        },
+        shared::{
+            self,
+            wired::scene::{
+                document::DocRes,
+                prim::PrimRes,
+            },
         },
     },
 };
@@ -57,21 +63,25 @@ impl HostDocument for Runtime {
     async fn create_prim(
         &mut self,
         self_: Resource<DocRes>,
-    ) -> wasmtime::Result<Resource<PrimRes>> {
-        shared::wired::scene::document::create_prim(&self.api, self_.rep())
-            .await
-            .map(Resource::new_own)
-            .map_err(wasmtime::Error::from_anyhow)
+    ) -> wasmtime::Result<Result<Resource<PrimRes>, Error>> {
+        Ok(
+            shared::wired::scene::document::create_prim(&self.api, self_.rep())
+                .await
+                .map(Resource::new_own)
+                .map_err(|e| ScriptError::from(e).into()),
+        )
     }
 
     async fn remove_prim(
         &mut self,
         _self_: Resource<DocRes>,
         value: Resource<PrimRes>,
-    ) -> wasmtime::Result<()> {
-        shared::wired::scene::document::remove_prim(&self.api, value.rep())
-            .await
-            .map_err(wasmtime::Error::from_anyhow)
+    ) -> wasmtime::Result<Result<(), Error>> {
+        Ok(
+            shared::wired::scene::document::remove_prim(&self.api, value.rep())
+                .await
+                .map_err(|e| ScriptError::from(e).into()),
+        )
     }
 
     async fn offset_to(

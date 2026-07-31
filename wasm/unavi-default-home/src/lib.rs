@@ -27,7 +27,8 @@ fn set_translation(prim: &Prim, translation: Vec3) {
         translation,
         rotation: IDENTITY_QUAT,
         scale: Vec3::ONE,
-    }));
+    }))
+    .ok();
 }
 
 struct Script;
@@ -39,7 +40,7 @@ impl ScriptBehavior for Script {
         let shape = Cuboid::new(Vec3::new(GROUND_SIZE, GROUND_THICK, GROUND_SIZE));
 
         let prim = shape.mesh();
-        prim.set_collider(Some(&shape.collider()));
+        prim.set_collider(Some(&shape.collider()))?;
         prim.set_rigid_body(Some(RigidBody {
             kind:            RigidBodyKind::Static,
             angular_damping: None,
@@ -47,7 +48,7 @@ impl ScriptBehavior for Script {
             linear_damping:  None,
             mass:            None,
             restitution:     None,
-        }));
+        }))?;
         set_translation(&prim, Vec3::new(0.0, -GROUND_THICK / 2.0, 0.0));
 
         let id = Hash::from_slice(&doc.id()).expect("document id");
@@ -76,7 +77,7 @@ impl ScriptBehavior for Script {
                 roughness:                  Some(0.85),
             });
         mat.base_color = Some(base_color);
-        prim.set_material(Some(&mat));
+        prim.set_material(Some(&mat))?;
 
         println!("Welcome home! =)");
 

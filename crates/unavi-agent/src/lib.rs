@@ -19,6 +19,11 @@ mod local_agent;
 mod movement;
 pub mod tracking;
 
+/// Systems that update the local agent's head and body transforms each frame.
+/// Consumers that read the resulting camera pose should run after this set.
+#[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct AgentMovementSet;
+
 pub struct AgentPlugin;
 
 impl Plugin for AgentPlugin {
@@ -66,7 +71,8 @@ impl Plugin for AgentPlugin {
                     tracking::sync_tracked_pose_to_transform,
                     bones::apply_head_tracking,
                 )
-                    .chain(),
+                    .chain()
+                    .in_set(AgentMovementSet),
             );
         }
 
@@ -80,7 +86,8 @@ impl Plugin for AgentPlugin {
                 tracking::sync_tracked_pose_to_transform,
                 bones::apply_head_tracking,
             )
-                .chain(),
+                .chain()
+                .in_set(AgentMovementSet),
         );
 
         app.add_systems(

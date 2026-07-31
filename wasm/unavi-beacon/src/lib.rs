@@ -71,7 +71,7 @@ impl ScriptBehavior for Script {
         let cube = prim.children().into_iter().next().unwrap_or_else(|| {
             let cuboid = Cuboid::new(Vec3::splat(SIZE));
             let cube = cuboid.mesh();
-            cube.set_collider(Some(&cuboid.collider()));
+            cube.set_collider(Some(&cuboid.collider())).ok();
             cube.set_rigid_body(Some(RigidBody {
                 kind:            RigidBodyKind::Dynamic,
                 angular_damping: None,
@@ -79,7 +79,8 @@ impl ScriptBehavior for Script {
                 linear_damping:  None,
                 mass:            None,
                 restitution:     None,
-            }));
+            }))
+            .ok();
             cube.set_material(Some(&Material {
                 alpha_cutoff:               None,
                 alpha_mode:                 None,
@@ -93,8 +94,9 @@ impl ScriptBehavior for Script {
                 normal_texture:             None,
                 occlusion_texture:          None,
                 roughness:                  Some(0.7),
-            }));
-            prim.add_child(&cube);
+            }))
+            .ok();
+            prim.add_child(&cube).ok();
             cube
         });
 

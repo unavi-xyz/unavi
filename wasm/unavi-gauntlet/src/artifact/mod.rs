@@ -51,16 +51,18 @@ impl Artifact {
         let doc = self_document().expect("self_document");
 
         let core = Cuboid::new(Vec3::splat(CORE_SIZE)).mesh();
-        core.set_material(Some(&palette::solid(palette::ACCENT, 0.6)));
-        core.set_xform(Some(hidden()));
-        root.add_child(&core);
+        core.set_material(Some(&palette::solid(palette::ACCENT, 0.6)))
+            .ok();
+        core.set_xform(Some(hidden())).ok();
+        root.add_child(&core).ok();
 
         let orbiters = (0..ORBITERS)
             .map(|_| {
                 let prim = Cuboid::new(Vec3::splat(ORBITER_SIZE)).mesh();
-                prim.set_material(Some(&palette::solid(palette::ACCENT, 0.7)));
-                prim.set_xform(Some(hidden()));
-                root.add_child(&prim);
+                prim.set_material(Some(&palette::solid(palette::ACCENT, 0.7)))
+                    .ok();
+                prim.set_xform(Some(hidden())).ok();
+                root.add_child(&prim).ok();
                 prim
             })
             .collect();
@@ -74,9 +76,11 @@ impl Artifact {
     }
 
     pub fn set_color(&self, color: Color) {
-        self.core.set_material(Some(&palette::solid(color, 0.6)));
+        self.core
+            .set_material(Some(&palette::solid(color, 0.6)))
+            .ok();
         for orbiter in &self.orbiters {
-            orbiter.set_material(Some(&palette::solid(color, 0.7)));
+            orbiter.set_material(Some(&palette::solid(color, 0.7))).ok();
         }
     }
 
@@ -85,28 +89,32 @@ impl Artifact {
         let spin = delta.mul_add(speed, self.spin.get());
         self.spin.set(spin);
 
-        self.core.set_xform(Some(Xform {
-            translation: Vec3::ZERO,
-            rotation:    Quat {
-                x: 0.0,
-                y: (spin * 0.5).sin(),
-                z: 0.0,
-                w: (spin * 0.5).cos(),
-            },
-            scale:       Vec3::ONE,
-        }));
+        self.core
+            .set_xform(Some(Xform {
+                translation: Vec3::ZERO,
+                rotation:    Quat {
+                    x: 0.0,
+                    y: (spin * 0.5).sin(),
+                    z: 0.0,
+                    w: (spin * 0.5).cos(),
+                },
+                scale:       Vec3::ONE,
+            }))
+            .ok();
 
         for (i, orbiter) in self.orbiters.iter().enumerate() {
             let phase = spin + i as f32 * std::f32::consts::TAU / ORBITERS as f32;
-            orbiter.set_xform(Some(Xform {
-                translation: Vec3::new(
-                    ORBIT_RADIUS * phase.cos(),
-                    ORBIT_RADIUS * TILT * (phase * 2.0).sin(),
-                    ORBIT_RADIUS * phase.sin(),
-                ),
-                rotation:    IDENTITY,
-                scale:       Vec3::ONE,
-            }));
+            orbiter
+                .set_xform(Some(Xform {
+                    translation: Vec3::new(
+                        ORBIT_RADIUS * phase.cos(),
+                        ORBIT_RADIUS * TILT * (phase * 2.0).sin(),
+                        ORBIT_RADIUS * phase.sin(),
+                    ),
+                    rotation:    IDENTITY,
+                    scale:       Vec3::ONE,
+                }))
+                .ok();
         }
     }
 }

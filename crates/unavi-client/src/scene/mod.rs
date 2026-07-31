@@ -33,7 +33,11 @@ impl Plugin for ScenePlugin {
             .add_observer(respawn::respawn)
             .add_systems(
                 OnEnter(SceneState::Limbo),
-                (limbo::spawn_limbo, spawn_local_agent, limbo::park_agent_in_limbo),
+                (
+                    limbo::spawn_limbo,
+                    spawn_local_agent,
+                    limbo::park_agent_in_limbo,
+                ),
             )
             .add_systems(
                 OnExit(SceneState::Limbo),

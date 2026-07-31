@@ -63,10 +63,7 @@ impl Plugin for SpacePlugin {
             .add_observer(scene::spawn_space_scene)
             .add_systems(
                 PostUpdate,
-                (
-                    anchor::recenter_active_space,
-                    anchor::apply_anchor_offsets,
-                )
+                (anchor::recenter_active_space, anchor::apply_anchor_offsets)
                     .chain()
                     .after(apply_seam_crossings)
                     .before(maintain_seam_echoes)

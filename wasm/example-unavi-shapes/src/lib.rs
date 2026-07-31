@@ -44,7 +44,7 @@ impl ScriptBehavior for Script {
         };
 
         for (i, prim) in prims.into_iter().enumerate() {
-            prim.set_material(Some(&material));
+            prim.set_material(Some(&material))?;
             prim.set_xform(Some(wired::scene::types::Xform {
                 translation: Vec3::new((i as f32).mul_add(spacing, start), 0.0, 0.0),
                 rotation:    Quat {
@@ -54,7 +54,7 @@ impl ScriptBehavior for Script {
                     w: 1.0,
                 },
                 scale:       Vec3::splat(1.0),
-            }));
+            }))?;
         }
 
         Ok(Self)

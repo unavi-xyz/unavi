@@ -46,7 +46,8 @@ fn set_translation(prim: &Prim, translation: Vec3) {
         translation,
         rotation: IDENTITY_QUAT,
         scale: Vec3::splat(1.0),
-    }));
+    }))
+    .ok();
 }
 
 fn set_scale(prim: &Prim, scale: Vec3) {
@@ -54,7 +55,8 @@ fn set_scale(prim: &Prim, scale: Vec3) {
         translation: Vec3::splat(0.0),
         rotation: IDENTITY_QUAT,
         scale,
-    }));
+    }))
+    .ok();
 }
 
 const fn material(base_color: Option<Color>) -> Material {
@@ -100,38 +102,38 @@ impl ScriptBehavior for Script {
         let color = Color::WHITE;
         let color_mat = material(Some(color));
 
-        let root = doc.create_prim();
+        let root = doc.create_prim()?;
         set_scale(&root, Vec3::splat(0.0));
 
         let mut themed_prims = Vec::new();
 
         let base_shape = Cuboid::new(Vec3::new(TABLE_W, BASE_H, TABLE_D));
         let base = base_shape.mesh();
-        base.set_collider(Some(&base_shape.collider()));
-        base.set_rigid_body(Some(static_body()));
-        base.set_material(Some(&color_mat));
-        root.add_child(&base);
+        base.set_collider(Some(&base_shape.collider()))?;
+        base.set_rigid_body(Some(static_body()))?;
+        base.set_material(Some(&color_mat))?;
+        root.add_child(&base)?;
         themed_prims.push(base);
 
         let x_lip_shape = Cuboid::new(Vec3::new(LIP_T, LIP_H, TABLE_D));
         for x_sign in [-1.0_f32, 1.0_f32] {
             let lip = x_lip_shape.mesh();
-            lip.set_collider(Some(&x_lip_shape.collider()));
-            lip.set_rigid_body(Some(static_body()));
-            lip.set_material(Some(&color_mat));
+            lip.set_collider(Some(&x_lip_shape.collider()))?;
+            lip.set_rigid_body(Some(static_body()))?;
+            lip.set_material(Some(&color_mat))?;
             set_translation(&lip, Vec3::new(x_sign * X_LIP_X, LIP_Y, 0.0));
-            root.add_child(&lip);
+            root.add_child(&lip)?;
             themed_prims.push(lip);
         }
 
         let z_lip_shape = Cuboid::new(Vec3::new(TABLE_W, LIP_H, LIP_T));
         for z_sign in [-1.0_f32, 1.0_f32] {
             let lip = z_lip_shape.mesh();
-            lip.set_collider(Some(&z_lip_shape.collider()));
-            lip.set_rigid_body(Some(static_body()));
-            lip.set_material(Some(&color_mat));
+            lip.set_collider(Some(&z_lip_shape.collider()))?;
+            lip.set_rigid_body(Some(static_body()))?;
+            lip.set_material(Some(&color_mat))?;
             set_translation(&lip, Vec3::new(0.0, LIP_Y, z_sign * Z_LIP_Z));
-            root.add_child(&lip);
+            root.add_child(&lip)?;
             themed_prims.push(lip);
         }
 
@@ -155,7 +157,7 @@ impl ScriptBehavior for Script {
                         translation: t.translation,
                         rotation:    t.rotation,
                         scale:       t.scale,
-                    }));
+                    }))?;
                 }
                 ModuleEvent::Deactivate => {
                     set_scale(&self.root, Vec3::splat(0.0));
@@ -164,7 +166,7 @@ impl ScriptBehavior for Script {
                     self.color = color;
                     let mat = material(Some(color));
                     for prim in &self.themed_prims {
-                        prim.set_material(Some(&mat));
+                        prim.set_material(Some(&mat))?;
                     }
                 }
             }

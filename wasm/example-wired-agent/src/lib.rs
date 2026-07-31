@@ -43,7 +43,7 @@ impl ScriptBehavior for Script {
             normal_texture:             None,
             occlusion_texture:          None,
             roughness:                  None,
-        }));
+        }))?;
 
         let agent = local_agent()?;
         let hand = agent.bone(BoneName::RightHand).expect("get bone");
@@ -68,7 +68,7 @@ impl ScriptBehavior for Script {
             translation: tr,
             rotation:    global.rotation,
             scale:       global.scale,
-        }));
+        }))?;
         Ok(())
     }
 }

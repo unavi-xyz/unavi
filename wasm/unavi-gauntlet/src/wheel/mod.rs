@@ -85,22 +85,24 @@ impl SlotPrims {
             } else {
                 self.base_mat.borrow()
             };
-            self.bg.set_material(Some(&mat));
+            self.bg.set_material(Some(&mat)).ok();
         }
     }
 
     fn set_raise(&self, raise: f32) {
         self.raise_t.set(raise);
-        self.root.set_xform(Some(Xform {
-            translation: Vec3::new(0.0, 0.0, raise * RAISE_DIST),
-            rotation:    IDENTITY,
-            scale:       Vec3::ONE,
-        }));
+        self.root
+            .set_xform(Some(Xform {
+                translation: Vec3::new(0.0, 0.0, raise * RAISE_DIST),
+                rotation:    IDENTITY,
+                scale:       Vec3::ONE,
+            }))
+            .ok();
     }
 
     fn hide(&self) {
         self.key.set(None);
-        self.root.set_xform(Some(scaled(0.0)));
+        self.root.set_xform(Some(scaled(0.0))).ok();
     }
 
     fn configure(&self, i: usize, n: usize, slot: &Slot) {
@@ -118,26 +120,31 @@ impl SlotPrims {
 
         geometry::apply_mesh(&self.bg, &geometry::sector_mesh(i, n));
         let base = self.base_mat.borrow();
-        self.bg.set_material(Some(&base));
+        self.bg.set_material(Some(&base)).ok();
         drop(base);
 
         if slot.active {
             geometry::apply_mesh(&self.outline, &geometry::outline_mesh(i, n));
             self.outline
-                .set_material(Some(&palette::solid(palette::ACCENT, 0.7)));
-            self.outline.set_xform(Some(scaled(1.0)));
+                .set_material(Some(&palette::solid(palette::ACCENT, 0.7)))
+                .ok();
+            self.outline.set_xform(Some(scaled(1.0))).ok();
         } else {
-            self.outline.set_xform(Some(scaled(0.0)));
+            self.outline.set_xform(Some(scaled(0.0))).ok();
         }
 
         geometry::apply_mesh(&self.glyph, &icon_mesh(slot.icon));
-        self.glyph.set_material(Some(&palette::solid(color, 0.6)));
+        self.glyph
+            .set_material(Some(&palette::solid(color, 0.6)))
+            .ok();
         let angle = i as f32 * 2.0 * PI / n as f32;
-        self.glyph.set_xform(Some(placed(Vec3::new(
-            ICON_R * angle.cos(),
-            ICON_R * angle.sin(),
-            0.006,
-        ))));
+        self.glyph
+            .set_xform(Some(placed(Vec3::new(
+                ICON_R * angle.cos(),
+                ICON_R * angle.sin(),
+                0.006,
+            ))))
+            .ok();
 
         self.hovered.set(false);
         self.set_raise(0.0);
@@ -154,23 +161,23 @@ impl Wheel {
     #[must_use]
     pub fn new() -> Self {
         let doc = self_document().expect("self_document");
-        let root = doc.create_prim();
-        root.set_xform(Some(scaled(0.0)));
+        let root = doc.create_prim().expect("create_prim");
+        root.set_xform(Some(scaled(0.0))).ok();
 
         let slots = (0..MAX_SLOTS)
             .map(|_| {
-                let slot_root = doc.create_prim();
-                slot_root.set_xform(Some(scaled(0.0)));
-                let bg = doc.create_prim();
-                bg.set_xform(Some(scaled(1.0)));
-                let outline = doc.create_prim();
-                outline.set_xform(Some(scaled(0.0)));
-                let glyph = doc.create_prim();
-                glyph.set_xform(Some(scaled(1.0)));
-                slot_root.add_child(&bg);
-                slot_root.add_child(&outline);
-                slot_root.add_child(&glyph);
-                root.add_child(&slot_root);
+                let slot_root = doc.create_prim().expect("create_prim");
+                slot_root.set_xform(Some(scaled(0.0))).ok();
+                let bg = doc.create_prim().expect("create_prim");
+                bg.set_xform(Some(scaled(1.0))).ok();
+                let outline = doc.create_prim().expect("create_prim");
+                outline.set_xform(Some(scaled(0.0))).ok();
+                let glyph = doc.create_prim().expect("create_prim");
+                glyph.set_xform(Some(scaled(1.0))).ok();
+                slot_root.add_child(&bg).ok();
+                slot_root.add_child(&outline).ok();
+                slot_root.add_child(&glyph).ok();
+                root.add_child(&slot_root).ok();
                 SlotPrims {
                     root: slot_root,
                     bg,

@@ -26,7 +26,6 @@ use crate::{
 pub static FIREWALL_REGISTRY: LazyLock<RwLock<HashMap<Hash, Firewall>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
-
 #[derive(Component)]
 pub struct RegisteredFirewall(Hash);
 

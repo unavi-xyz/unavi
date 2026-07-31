@@ -102,11 +102,14 @@ impl Script {
         self.placement.set(Some(placement));
         self.menu.open();
         self.wheel.rebuild(&self.menu.slots());
-        self.wheel.root.set_xform(Some(Xform {
-            translation: placement.translation,
-            rotation:    placement.rotation,
-            scale:       Vec3::ZERO,
-        }));
+        self.wheel
+            .root
+            .set_xform(Some(Xform {
+                translation: placement.translation,
+                rotation:    placement.rotation,
+                scale:       Vec3::ZERO,
+            }))
+            .ok();
     }
 
     fn close(&mut self) {
@@ -168,7 +171,13 @@ impl Script {
                     scale:       Vec3::ONE,
                 },
             );
-            self.registry.set_state(doc, ToolState { color, in_use: false });
+            self.registry.set_state(
+                doc,
+                ToolState {
+                    color,
+                    in_use: false,
+                },
+            );
         }
     }
 
@@ -208,12 +217,12 @@ impl Script {
 
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
-        let artifact_root = self_document()?.create_prim();
+        let artifact_root = self_document()?.create_prim()?;
         artifact_root.set_xform(Some(Xform {
             translation: Vec3::ZERO,
             rotation:    Quat::IDENTITY,
             scale:       Vec3::ZERO,
-        }));
+        }))?;
         let artifact = Artifact::new(&artifact_root);
 
         let script = Self {
@@ -339,7 +348,7 @@ impl ScriptBehavior for Script {
                 translation: plane.translation,
                 rotation:    plane.rotation,
                 scale:       Vec3::splat(open_t),
-            }));
+            }))?;
             if open_t > 0.0 {
                 self.wheel.animate(delta, self.hovered.get());
             } else if !self.menu.is_open() {
@@ -354,7 +363,7 @@ impl ScriptBehavior for Script {
             translation: cam.translation + cam.rotation * ARTIFACT_OFFSET,
             rotation:    cam.rotation,
             scale:       Vec3::splat(art_t),
-        }));
+        }))?;
         if art_t > 0.0 {
             self.artifact.animate(delta, art_t);
         }

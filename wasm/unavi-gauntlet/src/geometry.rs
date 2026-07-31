@@ -14,9 +14,9 @@ pub const ICON_R: f32 = (SECTOR_INNER_R + RING_RADIUS) * 0.5;
 pub type MeshData = (Vec<f32>, Vec<f32>, Vec<u32>);
 
 pub fn apply_mesh(prim: &Prim, mesh: &MeshData) {
-    prim.set_mesh_stream("POSITION", Some(&mesh.0));
-    prim.set_mesh_stream("NORMAL", Some(&mesh.1));
-    prim.set_mesh_indices_u32(Some(&mesh.2));
+    prim.set_mesh_stream("POSITION", Some(&mesh.0)).ok();
+    prim.set_mesh_stream("NORMAL", Some(&mesh.1)).ok();
+    prim.set_mesh_indices_u32(Some(&mesh.2)).ok();
 }
 
 fn fan(points: &[[f32; 2]], z: f32) -> MeshData {

@@ -33,6 +33,17 @@ pub(crate) fn apply_async_commands(mut commands: Commands) {
     }
 }
 
+/// Drains and applies every queued command directly against the world.
+///
+/// Unlike [`apply_async_commands`], this takes effect immediately rather than
+/// at the next system boundary, letting a system that blocks the main thread
+/// keep draining the queue so awaiting async commands can make progress.
+pub fn pump_async_commands(world: &mut World) {
+    while let Ok(mut queue) = ASYNC_COMMAND_QUEUE.1.try_recv() {
+        queue.apply(world);
+    }
+}
+
 #[derive(Default)]
 pub struct AsyncCommands {
     queue: CommandQueue,

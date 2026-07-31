@@ -58,7 +58,7 @@ impl Preview {
         }
     }
 
-    pub fn render(&self, cam: &Transform, offset: Vec3, t: f32, color: Color, delta: f32) {
+    pub fn update(&self, cam: &Transform, offset: Vec3, t: f32, color: Color, delta: f32) {
         if self.color.get() != Some(color) {
             self.color.set(Some(color));
             self.cube.set_material(Some(&palette::preview(color))).ok();

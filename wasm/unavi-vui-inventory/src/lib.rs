@@ -149,7 +149,7 @@ impl ScriptBehavior for Script {
         })
     }
 
-    fn tick(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.module.poll() {
             match event {
                 ModuleEvent::Activate(t) => {

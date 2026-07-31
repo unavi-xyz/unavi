@@ -91,7 +91,7 @@ impl DocHandle {
     }
 
     #[wasm_bindgen(js_name = "offsetTo")]
-    pub async fn offset_to(&self, other: &DocHandle) -> JsValue {
+    pub async fn offset_to(&self, other: &Self) -> JsValue {
         let Ok(Some(x)) =
             shared::wired::scene::document::offset_to(&self.api, self.rep, other.rep).await
         else {

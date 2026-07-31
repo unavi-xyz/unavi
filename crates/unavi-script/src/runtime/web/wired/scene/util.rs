@@ -22,7 +22,7 @@ pub fn js_to_vec3(v: &JsValue, default: [f32; 3]) -> [f32; 3] {
         js_sys::Reflect::get(v, &k.into())
             .ok()
             .and_then(|v| v.as_f64())
-            .unwrap_or(d as f64) as f32
+            .unwrap_or_else(|| f64::from(d)) as f32
     };
     [
         get("x", default[0]),
@@ -36,7 +36,7 @@ pub fn js_to_quat(v: &JsValue, default: [f32; 4]) -> [f32; 4] {
         js_sys::Reflect::get(v, &k.into())
             .ok()
             .and_then(|v| v.as_f64())
-            .unwrap_or(d as f64) as f32
+            .unwrap_or_else(|| f64::from(d)) as f32
     };
     [
         get("x", default[0]),
@@ -60,12 +60,12 @@ pub fn js_to_u32s(value: JsValue) -> Option<Vec<u32>> {
     Some(js_sys::Uint32Array::new(&value).to_vec())
 }
 
-/// Convert a 32-byte hash to a JS Uint8Array.
+/// Convert a 32-byte hash to a JS `Uint8Array`.
 pub fn bytes32_to_js(b: &[u8; 32]) -> JsValue {
     js_sys::Uint8Array::from(b.as_slice()).into()
 }
 
-/// Decode a JS Uint8Array (or array-like) into a 32-byte blob id.
+/// Decode a JS `Uint8Array` (or array-like) into a 32-byte blob id.
 pub fn js_to_bytes32(value: &JsValue) -> Option<[u8; 32]> {
     if value.is_null() || value.is_undefined() {
         return None;
@@ -74,7 +74,7 @@ pub fn js_to_bytes32(value: &JsValue) -> Option<[u8; 32]> {
     arr.as_slice().try_into().ok()
 }
 
-/// Extract our SlotMap index from a resource handle.
+/// Extract our `SlotMap` index from a resource handle.
 /// Each handle exposes it via a `__rep` wasm-bindgen getter.
 pub fn opt_rep(value: &JsValue) -> Option<u32> {
     if value.is_null() || value.is_undefined() {

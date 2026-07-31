@@ -1,5 +1,3 @@
-#![expect(clippy::future_not_send)]
-
 use wasm_bindgen::prelude::*;
 
 use crate::{

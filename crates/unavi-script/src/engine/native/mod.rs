@@ -8,11 +8,11 @@ use crate::{
 };
 
 mod drive;
+mod fixed_update;
 mod init;
 mod instantiate;
 mod log;
-mod render;
-mod tick;
+mod update;
 
 pub struct NativeEnginePlugin;
 
@@ -22,7 +22,7 @@ impl Plugin for NativeEnginePlugin {
             .add_systems(PreUpdate, increment_epochs)
             .add_systems(
                 Update,
-                render::render_tick_scripts
+                update::update_scripts
                     .after(ScriptSnapshotSet)
                     .before(HsdCommitSet),
             )
@@ -33,7 +33,7 @@ impl Plugin for NativeEnginePlugin {
                     init::poll_initing_scripts,
                     instantiate::instantiate_scripts,
                     instantiate::poll_instantiating,
-                    tick::tick_scripts,
+                    fixed_update::fixed_update_scripts,
                 ),
             );
     }

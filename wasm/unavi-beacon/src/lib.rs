@@ -111,7 +111,7 @@ impl ScriptBehavior for Script {
         })
     }
 
-    fn tick(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.input.poll() {
             if !self.published && matches!(event.action, InputAction::GrabDown) {
                 let doc = self_document()?;

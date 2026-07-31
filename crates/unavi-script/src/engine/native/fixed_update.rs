@@ -18,7 +18,7 @@ use unavi_util::async_task::spawn_async_task;
 use wasmtime::AsContextMut;
 
 use crate::{
-    Ticking,
+    FixedUpdating,
     engine::{
         InitializedScript,
         native::{
@@ -35,53 +35,53 @@ use crate::{
     },
 };
 
-const TICKRATE: Duration = Duration::from_millis(50);
+const FIXED_UPDATE_INTERVAL: Duration = Duration::from_millis(50);
 
 #[derive(Component, Default)]
-pub struct LastTick(Duration);
+pub struct LastFixedUpdate(Duration);
 
-type TickQuery<'w, 's> = Query<
+type FixedUpdateQuery<'w, 's> = Query<
     'w,
     's,
     (
-        &'static Ticking,
+        &'static FixedUpdating,
         &'static ScriptGuest,
         &'static ScriptStore,
         &'static ScriptSpan,
-        &'static mut LastTick,
+        &'static mut LastFixedUpdate,
     ),
     With<InitializedScript>,
 >;
 
-pub fn tick_scripts(
+pub fn fixed_update_scripts(
     world: &mut World,
-    state: &mut SystemState<(Res<'static, Time<Real>>, TickQuery<'static, 'static>)>,
+    state: &mut SystemState<(Res<'static, Time<Real>>, FixedUpdateQuery<'static, 'static>)>,
 ) {
     let outstanding = Arc::new(AtomicUsize::new(0));
 
     let budget = {
-        let Ok((time, mut to_tick)) = state.get_mut(world) else {
+        let Ok((time, mut to_update)) = state.get_mut(world) else {
             return;
         };
         let budget = script_budget(&time);
         let now = time.elapsed();
 
-        for (ticking, guest, store, span, mut last) in &mut to_tick {
+        for (updating, guest, store, span, mut last) in &mut to_update {
             let delta = now.checked_sub(last.0).unwrap_or_default();
-            if delta < TICKRATE {
+            if delta < FIXED_UPDATE_INTERVAL {
                 continue;
             }
-            if ticking.0.swap(true, Ordering::SeqCst) {
+            if updating.0.swap(true, Ordering::SeqCst) {
                 continue;
             }
 
             let margin = delta
-                .checked_sub(TICKRATE)
+                .checked_sub(FIXED_UPDATE_INTERVAL)
                 .expect("always greater")
-                .min(TICKRATE);
+                .min(FIXED_UPDATE_INTERVAL);
             last.0 = now.checked_sub(margin).unwrap_or_default();
 
-            let ticking = Arc::clone(&ticking.0);
+            let updating = Arc::clone(&updating.0);
             let guest = Arc::clone(&guest.0);
             let store = Arc::clone(&store.0);
             let outstanding = Arc::clone(&outstanding);
@@ -94,14 +94,14 @@ pub fn tick_scripts(
 
                     if let Err(err) = guest
                         .wired_script_guest_api()
-                        .call_tick(store.as_context_mut())
+                        .call_fixed_update(store.as_context_mut())
                         .await
                     {
-                        warn!(?err, "Failed to tick script");
+                        warn!(?err, "Failed to fixed-update script");
                     }
                     drop(store);
 
-                    ticking.store(false, Ordering::SeqCst);
+                    updating.store(false, Ordering::SeqCst);
                     outstanding.fetch_sub(1, Ordering::AcqRel);
                 }
                 .instrument(span.0.clone()),

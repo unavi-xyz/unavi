@@ -99,8 +99,8 @@ pub struct Prim(pub TreeID);
 pub struct HsdPrimIndex(pub HashMap<TreeID, Entity>);
 
 /// Pauses per-frame commits of a doc while a batched writer (e.g. a mid-flight
-/// script tick) holds it, so the doc's ops publish atomically once released
-/// instead of tearing across frames.
+/// script fixed-update) holds it, so the doc's ops publish atomically once
+/// released instead of tearing across frames.
 #[derive(Component, Clone)]
 pub struct HsdCommitGate(pub Arc<AtomicBool>);
 

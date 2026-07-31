@@ -14,10 +14,10 @@ unsafe extern "C" {
     async fn js_instantiate_script(bytes: &[u8], name: &str, runtime: Runtime) -> JsValue;
     #[wasm_bindgen(js_name = "scriptInit")]
     async fn js_script_init(instance: &JsValue);
-    #[wasm_bindgen(js_name = "scriptRender")]
-    async fn js_script_render(instance: &JsValue);
-    #[wasm_bindgen(js_name = "scriptTick")]
-    async fn js_script_tick(instance: &JsValue);
+    #[wasm_bindgen(js_name = "scriptUpdate")]
+    async fn js_script_update(instance: &JsValue);
+    #[wasm_bindgen(js_name = "scriptFixedUpdate")]
+    async fn js_script_fixed_update(instance: &JsValue);
 }
 
 pub struct ScriptInstance {
@@ -40,13 +40,13 @@ impl ScriptInstance {
         self.runtime.api.doc.commit();
     }
 
-    pub async fn render(&self) {
-        js_script_render(&self.instance).await;
+    pub async fn update(&self) {
+        js_script_update(&self.instance).await;
         self.runtime.api.doc.commit();
     }
 
-    pub async fn tick(&self) {
-        js_script_tick(&self.instance).await;
+    pub async fn fixed_update(&self) {
+        js_script_fixed_update(&self.instance).await;
         self.runtime.api.doc.commit();
     }
 }

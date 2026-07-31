@@ -34,7 +34,7 @@ impl Home {
         })));
     }
 
-    pub fn tick(&mut self) {
+    pub fn fixed_update(&mut self) {
         if let Some(fut) = &self.pending
             && let Some(result) = fut.poll()
         {

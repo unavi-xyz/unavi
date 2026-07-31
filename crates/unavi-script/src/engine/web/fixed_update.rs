@@ -11,42 +11,42 @@ use unavi_util::async_task::spawn_async_task;
 
 use super::instantiate::ScriptGuest;
 use crate::{
-    Ticking,
+    FixedUpdating,
     engine::InitializedScript,
 };
 
-const TICKRATE: Duration = Duration::from_millis(50);
+const FIXED_UPDATE_INTERVAL: Duration = Duration::from_millis(50);
 
 #[derive(Component, Default)]
-pub struct LastTick(Duration);
+pub struct LastFixedUpdate(Duration);
 
-pub fn tick_scripts(
+pub fn fixed_update_scripts(
     time: Res<Time>,
-    to_tick: Query<(&Ticking, &ScriptGuest, &mut LastTick), With<InitializedScript>>,
+    to_update: Query<(&FixedUpdating, &ScriptGuest, &mut LastFixedUpdate), With<InitializedScript>>,
 ) {
     let now = time.elapsed();
 
-    for (ticking, guest, mut last) in to_tick {
+    for (updating, guest, mut last) in to_update {
         let delta = now.checked_sub(last.0).unwrap_or_default();
-        if delta < TICKRATE {
+        if delta < FIXED_UPDATE_INTERVAL {
             continue;
         }
-        if ticking.0.swap(true, Ordering::SeqCst) {
+        if updating.0.swap(true, Ordering::SeqCst) {
             continue;
         }
 
         let margin = delta
-            .checked_sub(TICKRATE)
+            .checked_sub(FIXED_UPDATE_INTERVAL)
             .expect("always greater")
-            .min(TICKRATE);
+            .min(FIXED_UPDATE_INTERVAL);
         last.0 = now.checked_sub(margin).unwrap_or_default();
 
-        let ticking = Arc::clone(&ticking.0);
+        let updating = Arc::clone(&updating.0);
         let guest = Arc::clone(&guest.0);
 
         spawn_async_task(async move {
-            guest.tick().await;
-            ticking.store(false, Ordering::SeqCst);
+            guest.fixed_update().await;
+            updating.store(false, Ordering::SeqCst);
         });
     }
 }

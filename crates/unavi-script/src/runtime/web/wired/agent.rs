@@ -116,6 +116,7 @@ impl AgentHandle {
 #[wasm_bindgen]
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredAgentClass")]
+    #[must_use]
     pub fn wired_agent_class(&self) -> JsValue {
         let handle = AgentHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);

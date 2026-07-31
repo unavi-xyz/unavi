@@ -16,6 +16,9 @@ use crate::{
     sync::client::sync_to_remote,
 };
 
+// n0_future futures are intentionally !Send on wasm (single-threaded, no
+// Send needed there); Send-bounded elsewhere.
+#[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
 pub async fn sync_record(
     ctx: Arc<StoreContext>,
     WithChannels { inner, tx, .. }: WithChannels<SyncRecord, ApiService>,

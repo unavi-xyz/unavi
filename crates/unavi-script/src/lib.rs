@@ -53,11 +53,11 @@ impl Plugin for ScriptPlugin {
 }
 
 #[derive(Component)]
-#[require(ApiPermissions, Ticking, RenderTicking)]
+#[require(ApiPermissions, FixedUpdating, Updating)]
 pub struct Script(pub Handle<Wasm>);
 
 #[derive(Component, Default)]
-pub struct Ticking(pub Arc<AtomicBool>);
+pub struct FixedUpdating(pub Arc<AtomicBool>);
 
 #[derive(Component, Default)]
-pub struct RenderTicking(pub Arc<AtomicBool>);
+pub struct Updating(pub Arc<AtomicBool>);

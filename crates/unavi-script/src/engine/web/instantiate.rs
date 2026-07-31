@@ -13,7 +13,7 @@ use unavi_util::async_task::spawn_async_task;
 
 use crate::{
     Script,
-    engine::web::tick::LastTick,
+    engine::web::fixed_update::LastFixedUpdate,
     load::asset::Wasm,
     permissions::ApiPermissions,
     quota::QuotaExempt,
@@ -31,7 +31,7 @@ use crate::{
 pub struct InstantiatingScript(pub ScriptCell);
 
 #[derive(Component)]
-#[require(LastTick)]
+#[require(LastFixedUpdate)]
 pub struct ScriptGuest(pub Arc<ScriptInstance>);
 
 pub fn instantiate_scripts(

@@ -24,6 +24,7 @@ pub mod quota;
 mod scene;
 pub mod spawn;
 pub mod state;
+pub mod travel;
 
 pub struct SpacePlugin;
 
@@ -36,6 +37,7 @@ impl Plugin for SpacePlugin {
 
         app.init_resource::<anchor::SpaceGridAllocator>()
             .init_resource::<anchor::ActiveSpace>()
+            .init_resource::<travel::PendingTravel>()
             .add_observer(anchor::assign_anchor)
             .add_observer(anchor::reparent_doc_traveler)
             .add_observer(membership::self_own_space)
@@ -49,6 +51,7 @@ impl Plugin for SpacePlugin {
             .add_observer(connection::disconnect_peer)
             .add_observer(connection::ecs::agent::inbound::despawn_remote_agent)
             .add_observer(connection::register_protocol)
+            .add_observer(peer::capture_self_did)
             .add_observer(gossip::join_space_topic)
             .add_observer(gossip::leave_space_topic)
             .add_observer(gossip::spawn_gossip)

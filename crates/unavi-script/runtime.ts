@@ -7,8 +7,8 @@ import { WASIShim } from "@bytecodealliance/preview2-shim/instantiation";
 
 const SCRIPT_ASYNC_EXPORTS = [
   "wired:script/guest-api#init",
-  "wired:script/guest-api#render",
-  "wired:script/guest-api#tick",
+  "wired:script/guest-api#update",
+  "wired:script/guest-api#fixed-update",
 ];
 
 export async function instantiateScript(
@@ -88,21 +88,21 @@ export async function scriptInit(instance: any): Promise<void> {
   await instance.guestApi.init();
 }
 
-export async function scriptRender(instance: any): Promise<void> {
+export async function scriptUpdate(instance: any): Promise<void> {
   if (instance.ticks !== undefined && instance.ticks >= instance.maxTicks) {
     return;
   }
-  await instance.guestApi.render();
+  await instance.guestApi.update();
 }
 
-export async function scriptTick(instance: any): Promise<void> {
+export async function scriptFixedUpdate(instance: any): Promise<void> {
   if (instance.ticks !== undefined) {
     if (instance.ticks >= instance.maxTicks) {
       return;
     }
     instance.ticks += 1;
   }
-  await instance.guestApi.tick();
+  await instance.guestApi.fixedUpdate();
 }
 
 function buildImports(wasi: WASIShim, rt: any) {
@@ -145,6 +145,15 @@ function buildImports(wasi: WASIShim, rt: any) {
       isSelfOwner: rt.wiredPeerIsSelfOwner.bind(rt),
     },
     "wired:peer/types": {},
+    "wired:physics/api": {
+      raycast: rt.wiredPhysicsRaycast.bind(rt),
+      getLinearVelocity: rt.wiredPhysicsGetLinearVelocity.bind(rt),
+      setLinearVelocity: rt.wiredPhysicsSetLinearVelocity.bind(rt),
+      setAngularVelocity: rt.wiredPhysicsSetAngularVelocity.bind(rt),
+      applyForce: rt.wiredPhysicsApplyForce.bind(rt),
+      claimAuthority: rt.wiredPhysicsClaimAuthority.bind(rt),
+      releaseAuthority: rt.wiredPhysicsReleaseAuthority.bind(rt),
+    },
     "wired:portal/api": {
       open: rt.wiredPortalOpen.bind(rt),
     },
@@ -152,6 +161,7 @@ function buildImports(wasi: WASIShim, rt: any) {
       createDocument: rt.wiredSceneCreateDocument.bind(rt),
       getDocument: rt.wiredSceneGetDocument.bind(rt),
       loadHsd: rt.wiredSceneLoadHsd.bind(rt),
+      publishDocument: rt.wiredScenePublishDocument.bind(rt),
       removeDocument: rt.wiredSceneRemoveDocument.bind(rt),
       selfDocument: rt.wiredSceneSelfDocument.bind(rt),
       selfPrim: rt.wiredSceneSelfPrim.bind(rt),

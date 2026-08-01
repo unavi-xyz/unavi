@@ -23,6 +23,7 @@ world api {
 world api-secure {
   import wired:agent/api;
   import wired:input/api;
+  import wired:physics/api;
   import wired:wds/api;
 }
 

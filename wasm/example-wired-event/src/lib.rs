@@ -34,7 +34,7 @@ impl ScriptBehavior for Script {
         Ok(Self { receptor })
     }
 
-    fn tick(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.receptor.poll() {
             println!("-> Got event on {}: {:?}", event.channel(), event.payload());
         }

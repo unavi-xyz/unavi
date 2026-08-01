@@ -11,11 +11,11 @@ pub trait ScriptBehavior: Sized {
     /// Called once to initialize the script.
     fn init() -> ::anyhow::Result<Self>;
     /// Called on a fixed interval.
-    fn tick(&mut self) -> ::anyhow::Result<()> {
+    fn fixed_update(&mut self) -> ::anyhow::Result<()> {
         Ok(())
     }
     /// Called every frame before rendering.
-    fn render(&mut self) -> ::anyhow::Result<()> {
+    fn update(&mut self) -> ::anyhow::Result<()> {
         Ok(())
     }
 }
@@ -58,7 +58,7 @@ macro_rules! generate {
                 })
             }
             fn kv_delete(&self, key: &str) {
-                self.delete(key);
+                let _ = self.delete(key);
             }
             fn kv_keys(&self) -> ::std::vec::Vec<::std::string::String> {
                 self.keys()
@@ -104,21 +104,21 @@ macro_rules! generate_script {
                     ::core::result::Result::Err(err) => ::std::eprintln!("script init: {err:?}"),
                 }
             }
-            fn tick() {
+            fn fixed_update() {
                 __SCRIPT.with(|s| {
                     if let Some(state) = s.borrow_mut().as_mut()
-                        && let ::core::result::Result::Err(err) = state.tick()
+                        && let ::core::result::Result::Err(err) = state.fixed_update()
                     {
-                        ::std::eprintln!("script tick: {err:?}");
+                        ::std::eprintln!("script fixed update: {err:?}");
                     }
                 });
             }
-            fn render() {
+            fn update() {
                 __SCRIPT.with(|s| {
                     if let Some(state) = s.borrow_mut().as_mut()
-                        && let ::core::result::Result::Err(err) = state.render()
+                        && let ::core::result::Result::Err(err) = state.update()
                     {
-                        ::std::eprintln!("script render: {err:?}");
+                        ::std::eprintln!("script update: {err:?}");
                     }
                 });
             }

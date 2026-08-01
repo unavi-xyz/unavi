@@ -15,15 +15,16 @@ use bevy_hsd::{
 use blake3::Hash;
 use parking_lot::RwLock;
 
-use crate::firewall::{
-    Channel,
-    Firewall,
+use crate::{
+    error::ScriptError,
+    firewall::{
+        Channel,
+        Firewall,
+    },
 };
 
 pub static FIREWALL_REGISTRY: LazyLock<RwLock<HashMap<Hash, Firewall>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
-
-static DEFAULT_FIREWALL: LazyLock<Firewall> = LazyLock::new(Firewall::closed);
 
 #[derive(Component)]
 pub struct RegisteredFirewall(Hash);
@@ -92,17 +93,19 @@ pub fn validate_firewall(me: &Hash, target: &Hash, channel: Channel) -> anyhow::
         return Ok(());
     }
 
+    // Documents with no registered firewall (e.g. pinned space docs) fall back
+    // to the open default; same-space membership remains the gate.
     let firewall = FIREWALL_REGISTRY
         .read()
         .get(target)
         .cloned()
-        .unwrap_or_else(|| DEFAULT_FIREWALL.clone());
+        .unwrap_or_default();
 
     if let Some(whitelist) = firewall.0.read().get(&channel).cloned()
         && whitelist.permits(me)
     {
         Ok(())
     } else {
-        Err(anyhow::anyhow!("{channel:?} blocked by firewall"))
+        Err(ScriptError::firewall(format!("{channel:?}")).into())
     }
 }

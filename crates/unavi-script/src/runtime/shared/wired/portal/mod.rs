@@ -53,3 +53,20 @@ pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<(),
         .map_err(|err| ScriptError::other(err.to_string()))?;
     Ok(())
 }
+
+pub async fn travel(api: &Api, target_space: Vec<u8>) -> Result<(), ScriptError> {
+    api.quota.spend(Flow::PortalOpen, 1.0)?;
+
+    let target = <[u8; 32]>::try_from(target_space.as_slice())
+        .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
+    let hash = Hash::from(target);
+
+    AsyncCommands::default()
+        .push(move |world: &mut bevy::prelude::World| {
+            unavi_space::travel::request_travel(world, hash);
+        })
+        .send()
+        .await
+        .map_err(|err| ScriptError::other(err.to_string()))?;
+    Ok(())
+}

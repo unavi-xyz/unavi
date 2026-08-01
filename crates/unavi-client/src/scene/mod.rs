@@ -19,6 +19,7 @@ mod home;
 mod limbo;
 mod respawn;
 mod system_scripts;
+mod travel;
 
 pub struct ScenePlugin;
 
@@ -32,7 +33,11 @@ impl Plugin for ScenePlugin {
             .add_observer(respawn::respawn)
             .add_systems(
                 OnEnter(SceneState::Limbo),
-                (limbo::spawn_limbo, spawn_local_agent),
+                (
+                    limbo::spawn_limbo,
+                    spawn_local_agent,
+                    limbo::park_agent_in_limbo,
+                ),
             )
             .add_systems(
                 OnExit(SceneState::Limbo),
@@ -49,6 +54,7 @@ impl Plugin for ScenePlugin {
             .add_systems(
                 FixedUpdate,
                 (
+                    travel::drive_travel,
                     limbo::exit_limbo_on_load_timeout,
                     respawn::teleport_from_void,
                     system_scripts::populate_firewall_entities,

@@ -16,7 +16,10 @@ use bevy_hsd::{
     Hsd,
     loaded::HsdLoaded,
 };
-use unavi_agent::LocalAgentEntities;
+use unavi_agent::{
+    LocalAgent,
+    LocalAgentEntities,
+};
 use unavi_space::{
     Space,
     anchor::SPACE_CELL_SIZE,
@@ -104,6 +107,23 @@ pub fn offset_agent_to_limbo(
         return;
     };
     tr.translation += LIMBO_OFFSET;
+}
+
+/// Sets an already-spawned agent body onto the limbo floor on limbo re-entry
+/// (e.g. travel), where [`offset_agent_to_limbo`]'s spawn trigger never fires.
+pub fn park_agent_in_limbo(
+    agents: Query<&LocalAgentEntities, With<LocalAgent>>,
+    mut bodies: Query<(&mut Transform, &mut LinearVelocity, &mut AngularVelocity)>,
+) {
+    let Ok(ents) = agents.single() else {
+        return;
+    };
+    let Ok((mut tr, mut vel, mut ang_vel)) = bodies.get_mut(ents.body) else {
+        return;
+    };
+    tr.translation = LIMBO_OFFSET;
+    *vel = LinearVelocity::default();
+    *ang_vel = AngularVelocity::default();
 }
 
 pub fn despawn_limbo(limbo: Query<Entity, With<Limbo>>, mut commands: Commands) {

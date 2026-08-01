@@ -30,6 +30,8 @@ interface types {
     grab-up,
     menu-down,
     menu-up,
+    scroll-up,
+    scroll-down,
   }
 
   enum input-device {

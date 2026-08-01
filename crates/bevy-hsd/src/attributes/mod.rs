@@ -23,6 +23,7 @@ use crate::diff::DiffSender;
 
 pub mod asset;
 pub mod collider;
+pub mod gravity_scale;
 pub mod image;
 pub mod material;
 pub mod mesh;
@@ -40,6 +41,7 @@ pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
         let parsers: [Box<dyn AttributeParser>; _] = [
             Box::new(asset::AssetParser),
             Box::new(collider::ColliderParser),
+            Box::new(gravity_scale::GravityScaleParser),
             Box::new(image::ImageParser),
             Box::new(material::MaterialParser),
             Box::new(mesh::MeshParser),
@@ -61,6 +63,7 @@ pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
 #[derive(Debug)]
 pub enum AttrDataEvent {
     Collider(collider::ColliderEvent),
+    GravityScale(gravity_scale::GravityScaleEvent),
     Image(image::ImageEvent),
     Material(material::MaterialEvent),
     Mesh(mesh::MeshEvent),

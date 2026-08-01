@@ -310,6 +310,9 @@ pub fn instance_hsd(
 }
 
 #[expect(clippy::too_many_arguments)]
+// n0_future futures are intentionally !Send on wasm (single-threaded, no
+// Send needed there); Send-bounded elsewhere.
+#[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
 async fn build_and_instance(
     actor: Actor,
     local_blobs: Blobs,

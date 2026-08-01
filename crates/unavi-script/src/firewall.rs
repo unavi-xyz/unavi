@@ -47,22 +47,15 @@ impl Access {
 }
 
 impl Firewall {
-    /// Denies all cross-document access. Used as the fallback for documents
-    /// with no registered firewall, so an unknown target is closed by default.
     #[must_use]
-    pub fn closed() -> Self {
-        Self(Arc::new(RwLock::new(HashMap::new())))
-    }
-
-    #[must_use]
-    pub fn for_child_doc(creator_id: Hash) -> Self {
+    pub fn for_child_doc(_creator_id: Hash) -> Self {
         let firewall = Self::default();
-        {
-            let mut map = firewall.0.write();
-            let owner = Access::Restricted(HashSet::from([creator_id]));
-            map.insert(Channel::KvWrite, owner.clone());
-            map.insert(Channel::SceneWrite, owner);
-        }
+        // {
+        //     let mut map = firewall.0.write();
+        //     let owner = Access::Restricted(HashSet::from([creator_id]));
+        //     map.insert(Channel::KvWrite, owner.clone());
+        //     map.insert(Channel::SceneWrite, owner);
+        // }
         firewall
     }
 }
@@ -73,7 +66,9 @@ impl Default for Firewall {
         map.insert(Channel::EventRead, Access::Open);
         map.insert(Channel::EventWrite, Access::Open);
         map.insert(Channel::KvRead, Access::Open);
+        map.insert(Channel::KvWrite, Access::Open);
         map.insert(Channel::SceneRead, Access::Open);
+        map.insert(Channel::SceneWrite, Access::Open);
         Self(Arc::new(RwLock::new(map)))
     }
 }

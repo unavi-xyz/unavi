@@ -28,7 +28,7 @@ impl ScriptBehavior for Script {
         Ok(Self { kv })
     }
 
-    fn tick(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(&mut self) -> anyhow::Result<()> {
         let mut counter = self
             .kv
             .get::<Counter>(KEY)

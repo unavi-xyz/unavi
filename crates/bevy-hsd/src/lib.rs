@@ -1,6 +1,12 @@
 use std::{
     collections::BTreeMap,
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{
+            AtomicBool,
+            Ordering,
+        },
+    },
 };
 
 use bevy::{
@@ -19,6 +25,12 @@ pub mod load;
 pub mod loaded;
 mod subscribe;
 
+/// Commits pending doc mutations and applies the resulting diffs to the world.
+/// Systems that write to docs and want their changes reflected the same frame
+/// should run before this set.
+#[derive(SystemSet, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct HsdCommitSet;
+
 pub struct HsdPlugin;
 
 impl Plugin for HsdPlugin {
@@ -30,6 +42,7 @@ impl Plugin for HsdPlugin {
             .add_observer(subscribe::subscribe_to_docs)
             .add_observer(attributes::collider::apply_collider)
             .add_observer(attributes::collider::on_collider_blobs_loaded)
+            .add_observer(attributes::gravity_scale::apply_gravity_scale)
             .add_observer(attributes::image::apply_image)
             .add_observer(attributes::image::on_image_blob_loaded)
             .add_observer(attributes::material::apply_material)
@@ -50,7 +63,8 @@ impl Plugin for HsdPlugin {
                     load::instance_hsd,
                     load::instance_subdocuments,
                 )
-                    .chain(),
+                    .chain()
+                    .in_set(HsdCommitSet),
             )
             .add_systems(
                 PostUpdate,
@@ -84,8 +98,17 @@ pub struct Prim(pub TreeID);
 #[derive(Component, Default, Debug)]
 pub struct HsdPrimIndex(pub HashMap<TreeID, Entity>);
 
-fn commit_all_docs(docs: Query<&Hsd>) {
-    for doc in &docs {
+/// Pauses per-frame commits of a doc while a batched writer (e.g. a mid-flight
+/// script fixed-update) holds it, so the doc's ops publish atomically once
+/// released instead of tearing across frames.
+#[derive(Component, Clone)]
+pub struct HsdCommitGate(pub Arc<AtomicBool>);
+
+fn commit_all_docs(docs: Query<(&Hsd, Option<&HsdCommitGate>)>) {
+    for (doc, gate) in &docs {
+        if gate.is_some_and(|g| g.0.load(Ordering::SeqCst)) {
+            continue;
+        }
         doc.0.commit();
     }
 }

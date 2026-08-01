@@ -43,7 +43,7 @@ impl ScriptBehavior for Script {
             normal_texture:             None,
             occlusion_texture:          None,
             roughness:                  None,
-        }));
+        }))?;
 
         let agent = local_agent()?;
         let hand = agent.bone(BoneName::RightHand).expect("get bone");
@@ -55,7 +55,7 @@ impl ScriptBehavior for Script {
         })
     }
 
-    fn tick(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(&mut self) -> anyhow::Result<()> {
         let now = self.time.elapsed().expect("elapsed").as_secs_f32();
         let offset = Vec3::new(0.0, now.sin() * 0.1, 0.0);
 
@@ -68,7 +68,7 @@ impl ScriptBehavior for Script {
             translation: tr,
             rotation:    global.rotation,
             scale:       global.scale,
-        }));
+        }))?;
         Ok(())
     }
 }

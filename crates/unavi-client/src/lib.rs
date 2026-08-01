@@ -121,9 +121,7 @@ impl Plugin for UnaviPlugin {
         .add_systems(Startup, icon::set_window_icon);
 
         app.world_mut().trigger(LoadEndpoint {
-            filter:                                                          AddrFilter::default(),
-            #[cfg(all(feature = "mdns", not(target_family = "wasm")))]
-            mdns:                                                            true,
+            filter: AddrFilter::default(),
         });
     }
 }

@@ -24,7 +24,7 @@ blake3.workspace           = true
 half.workspace             = true
 hsd.path                   = "../hsd"
 iroh.workspace             = true
-iroh-gossip                = "0.97.0"
+iroh-gossip                = { features = ["net"], workspace = true }
 loro.workspace             = true
 n0-future.workspace        = true
 parking_lot.workspace      = true

@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace    = true
 
 [features]
-default = ["devtools", "mdns"]
+default = ["devtools"]
 devtools = [
   "bevy/bevy_dev_tools",
   "bevy/bevy_feathers",
@@ -20,7 +20,6 @@ devtools = [
   "unavi-script/debug",
   "unavi-space/devtools",
 ]
-mdns = ["bevy-iroh/mdns"]
 webgpu = ["bevy/webgpu", "unavi-agent/webgpu", "unavi-avatar/webgpu"]
 
 [lints]

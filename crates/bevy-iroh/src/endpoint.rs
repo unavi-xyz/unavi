@@ -21,8 +21,6 @@ pub struct IrohEndpoint(pub Endpoint);
 #[derive(Event, Clone, Default)]
 pub struct LoadEndpoint {
     pub filter: AddrFilter,
-    #[cfg(all(feature = "mdns", not(target_family = "wasm")))]
-    pub mdns:   bool,
 }
 
 pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands) {
@@ -67,13 +65,6 @@ pub(crate) fn receive_endpoint(mut commands: Commands, loading: Query<(Entity, &
 
 async fn init_endpoint(opts: &LoadEndpoint) -> anyhow::Result<Endpoint> {
     let endpoint = Endpoint::builder(N0).addr_filter(opts.filter.clone());
-
-    #[cfg(all(feature = "mdns", not(target_family = "wasm")))]
-    let endpoint = if opts.mdns {
-        endpoint.address_lookup(iroh::address_lookup::mdns::MdnsAddressLookup::builder())
-    } else {
-        endpoint
-    };
 
     let endpoint = endpoint.bind().await?;
     info!("Spawned endpoint: {}", endpoint.id());

@@ -16,12 +16,12 @@ bytes                  = "1.11.1"
 derive_more            = { features = ["debug"], version = "2.1.1" }
 futures.workspace      = true
 iroh.workspace         = true
-irpc                   = "0.13.0"
-irpc-iroh              = "0.13.0"
+irpc.workspace         = true
+irpc-iroh.workspace    = true
 jose-jwk               = "0.1.2"
 loro.workspace         = true
 loro-surgeon.workspace = true
-n0-error               = { features = ["anyhow"], version = "0.1.3" }
+n0-error               = { features = ["anyhow"], version = "1.0.0" }
 n0-future.workspace    = true
 p256                   = { default-features = false, features = ["ecdsa"], version = "0.13.2" }
 p384                   = { default-features = false, features = ["ecdsa"], version = "0.13.1" }
@@ -45,9 +45,11 @@ xdid.workspace         = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 iroh-blobs = { features = ["hide-proto-docs"], workspace = true }
+iroh-docs  = { workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 iroh-blobs = { default-features = true, workspace = true }
+iroh-docs  = { features = ["fs-store", "rpc"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 axum.workspace = true

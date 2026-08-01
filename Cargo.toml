@@ -58,8 +58,13 @@ futures              = "0.3.32"
 glam                 = "0.32.1"
 half                 = { features = ["serde"], version = "2.7.1" }
 image                = { default-features = false, version = "0.25.10" }
-iroh                 = { default-features = false, version = "0.97.0" }
-iroh-blobs           = { default-features = false, version = "0.99.0" }
+iroh                 = { default-features = false, features = ["tls-ring"], version = "1.0.3" }
+iroh-base            = { default-features = false, version = "1.0.3" }
+iroh-blobs           = { default-features = false, version = "0.103.0" }
+iroh-docs            = { default-features = false, version = "0.101.0" }
+iroh-gossip          = { default-features = false, version = "0.101.0" }
+irpc                 = { default-features = false, version = "0.17.0" }
+irpc-iroh            = "0.17.0"
 loro                 = "1.10.8"
 loro-surgeon         = { path = "crates/loro-surgeon" }
 n0-future            = "0.3.2"
@@ -84,9 +89,6 @@ web-sys              = "0.3.94"
 wit-bindgen          = "0.55.0"
 xdid                 = { git = "https://github.com/unavi-xyz/xdid" }
 zeroize              = "1.8.2"
-
-[patch.crates-io]
-iroh-blobs = { git = "https://github.com/m11m/iroh-blobs" }
 
 [profile.release]
 codegen-units = 1

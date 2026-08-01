@@ -41,7 +41,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref || github.ref }}
-      - uses: DeterminateSystems/determinate-nix-action@v3
+      - uses: DeterminateSystems/determinate-nix-action@v3.21.8
         with:
           extra-conf: extra-experimental-features = pipe-operators
       - name: Get deploy info

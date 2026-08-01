@@ -28,7 +28,7 @@ jobs:
         run: |
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git config user.name github-actions
-      - uses: DeterminateSystems/determinate-nix-action@v3
+      - uses: DeterminateSystems/determinate-nix-action@v3.21.8
       - run: |
           nix profile add nixpkgs#rustup
           rustup default nightly
@@ -103,7 +103,7 @@ jobs:
             cd ..
             rm -rf "$dir"
           done
-      - uses: DeterminateSystems/determinate-nix-action@v3
+      - uses: DeterminateSystems/determinate-nix-action@v3.21.8
       - run: |
           nix profile add nixpkgs#rustup
           rustup default nightly

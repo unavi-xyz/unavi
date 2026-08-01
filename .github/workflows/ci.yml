@@ -19,7 +19,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
       - uses: DeterminateSystems/flake-checker-action@v12
-      - uses: DeterminateSystems/determinate-nix-action@v3
+      - uses: DeterminateSystems/determinate-nix-action@v3.21.8
         with:
           extra-conf: extra-experimental-features = pipe-operators
       - uses: DeterminateSystems/magic-nix-cache-action@main

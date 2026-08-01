@@ -56,6 +56,8 @@ impl InputListenerHandle {
             InputAction::GrabUp => "grab-up",
             InputAction::MenuDown => "menu-down",
             InputAction::MenuUp => "menu-up",
+            InputAction::ScrollUp => "scroll-up",
+            InputAction::ScrollDown => "scroll-down",
         };
         let device = match event.device {
             InputDevice::Keyboard => "keyboard",
@@ -73,6 +75,7 @@ impl InputListenerHandle {
 #[wasm_bindgen]
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredInputListenerClass")]
+    #[must_use]
     pub fn wired_input_listener_class(&self) -> JsValue {
         let handle = InputListenerHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);

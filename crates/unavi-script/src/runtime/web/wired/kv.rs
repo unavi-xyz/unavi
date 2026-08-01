@@ -46,7 +46,7 @@ fn variant_obj(tag: &str, val: JsValue) -> JsValue {
     obj.into()
 }
 
-fn kv_error_tag(e: KvError) -> &'static str {
+const fn kv_error_tag(e: KvError) -> &'static str {
     match e {
         KvError::QuotaExceeded => "quota-exceeded",
         KvError::KeyTooLong => "key-too-long",
@@ -93,6 +93,7 @@ impl KvHandle {
 #[wasm_bindgen]
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredKvClass")]
+    #[must_use]
     pub fn wired_kv_class(&self) -> JsValue {
         let handle = KvHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);

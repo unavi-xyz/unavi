@@ -20,6 +20,7 @@ use prim::PrimHandle;
 #[wasm_bindgen]
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredSceneDocClass")]
+    #[must_use]
     pub fn wired_scene_doc_class(&self) -> JsValue {
         let handle = DocHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
@@ -27,6 +28,7 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredScenePrimClass")]
+    #[must_use]
     pub fn wired_scene_prim_class(&self) -> JsValue {
         let handle = PrimHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);

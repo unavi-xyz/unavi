@@ -76,7 +76,7 @@ impl ScriptBehavior for Script {
             .find(|p| p.name().is_some_and(|n| n == PORTAL_PRIM_NAME))
             .context("portal prim not found")?;
         set_translation(&portal_prim, Vec3::new(0.0, PORTAL_HEIGHT / 2.0, 0.0));
-        portal_prim.set_portal(Some(&portal_from_link(None)));
+        portal_prim.set_portal(Some(&portal_from_link(None)))?;
 
         let material = gate_material();
         spawn_frame(&root, &material);
@@ -88,17 +88,17 @@ impl ScriptBehavior for Script {
         ));
 
         let pedestal = pedestal_shape.mesh();
-        root.add_child(&pedestal);
-        pedestal.set_collider(Some(&pedestal_shape.collider()));
-        pedestal.set_rigid_body(Some(static_body()));
-        pedestal.set_material(Some(&material));
+        root.add_child(&pedestal)?;
+        pedestal.set_collider(Some(&pedestal_shape.collider()))?;
+        pedestal.set_rigid_body(Some(static_body()))?;
+        pedestal.set_material(Some(&material))?;
         set_translation(
             &pedestal,
             Vec3::new(-PORTAL_WIDTH, PEDESTAL_HEIGHT / 2.0, 0.0),
         );
 
-        let receptor_prim = doc.create_prim();
-        pedestal.add_child(&receptor_prim);
+        let receptor_prim = doc.create_prim()?;
+        pedestal.add_child(&receptor_prim)?;
         set_translation(&receptor_prim, Vec3::new(0.0, PEDESTAL_HEIGHT / 2.0, 0.0));
 
         let beacon_rx = wired::event::api::listen(
@@ -140,7 +140,7 @@ impl ScriptBehavior for Script {
         })
     }
 
-    fn tick(&mut self) -> anyhow::Result<()> {
+    fn fixed_update(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.beacon_rx.poll() {
             let payload = event.payload();
             let Ok(target) = <[u8; 32]>::try_from(payload.as_slice()) else {
@@ -200,7 +200,7 @@ impl ScriptBehavior for Script {
         let next = read_link(&self.kv);
         if next != self.applied {
             self.portal_prim
-                .set_portal(Some(&portal_from_link(next.as_ref())));
+                .set_portal(Some(&portal_from_link(next.as_ref())))?;
             self.applied = next;
         }
         Ok(())
@@ -211,10 +211,10 @@ fn spawn_frame(root: &Prim, material: &Material) {
     let pole = Cuboid::new(Vec3::new(BEAM_THICKNESS, PORTAL_HEIGHT, BEAM_THICKNESS));
 
     let pole_l = pole.mesh();
-    root.add_child(&pole_l);
-    pole_l.set_collider(Some(&pole.collider()));
-    pole_l.set_rigid_body(Some(static_body()));
-    pole_l.set_material(Some(material));
+    root.add_child(&pole_l).ok();
+    pole_l.set_collider(Some(&pole.collider())).ok();
+    pole_l.set_rigid_body(Some(static_body())).ok();
+    pole_l.set_material(Some(material)).ok();
     set_translation(
         &pole_l,
         Vec3::new(
@@ -225,10 +225,10 @@ fn spawn_frame(root: &Prim, material: &Material) {
     );
 
     let pole_r = pole.mesh();
-    root.add_child(&pole_r);
-    pole_r.set_collider(Some(&pole.collider()));
-    pole_r.set_rigid_body(Some(static_body()));
-    pole_r.set_material(Some(material));
+    root.add_child(&pole_r).ok();
+    pole_r.set_collider(Some(&pole.collider())).ok();
+    pole_r.set_rigid_body(Some(static_body())).ok();
+    pole_r.set_material(Some(material)).ok();
     set_translation(
         &pole_r,
         Vec3::new(
@@ -245,10 +245,10 @@ fn spawn_frame(root: &Prim, material: &Material) {
     ));
 
     let beam_top = beam.mesh();
-    root.add_child(&beam_top);
-    beam_top.set_collider(Some(&beam.collider()));
-    beam_top.set_rigid_body(Some(static_body()));
-    beam_top.set_material(Some(material));
+    root.add_child(&beam_top).ok();
+    beam_top.set_collider(Some(&beam.collider())).ok();
+    beam_top.set_rigid_body(Some(static_body())).ok();
+    beam_top.set_material(Some(material)).ok();
     set_translation(
         &beam_top,
         Vec3::new(0.0, PORTAL_HEIGHT + BEAM_THICKNESS / 2.0, 0.0),
@@ -271,7 +271,8 @@ fn set_translation(prim: &Prim, translation: Vec3) {
         translation,
         rotation: Quat::IDENTITY,
         scale: Vec3::ONE,
-    }));
+    }))
+    .ok();
 }
 
 const fn gate_material() -> Material {

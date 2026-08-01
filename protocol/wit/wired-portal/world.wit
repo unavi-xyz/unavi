@@ -9,4 +9,7 @@ interface api {
   use wired:error/types.{error};
 
   open: func(prim: prim, target-space: document-id) -> result<_, error>;
+
+  // Teleport the local agent into `target-space`, loading it if needed.
+  travel: func(target-space: document-id) -> result<_, error>;
 }

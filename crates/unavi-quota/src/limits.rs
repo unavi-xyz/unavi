@@ -34,6 +34,9 @@ pub const MAX_MESH_ELEMENTS: usize = 4 * MB;
 /// Fraction of host RAM the combined wasm memory of every script may occupy.
 const GLOBAL_WASM_MEMORY_PERCENT: u64 = 30;
 
+// On wasm this reduces to a constant expression, which clippy flags as
+// `const fn`-able; it can't be, since the non-wasm arm calls into `sysinfo`.
+#[cfg_attr(target_family = "wasm", expect(clippy::missing_const_for_fn))]
 fn host_total_memory() -> u64 {
     cfg_select! {
         // Not currently tracked on wasm, so this value isn't used.

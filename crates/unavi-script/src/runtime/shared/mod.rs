@@ -86,7 +86,23 @@ impl Plugin for SharedRuntimePlugin {
                     .pipe(wired::input::bridge::send_to_listeners),
                 wired::input::bridge::bridge_menu_right
                     .pipe(wired::input::bridge::send_to_listeners),
+                wired::input::bridge::bridge_scroll.pipe(wired::input::bridge::send_to_listeners),
             ),
+        )
+        .add_systems(
+            Update,
+            (
+                (
+                    bevy::transform::systems::mark_dirty_trees,
+                    bevy::transform::systems::propagate_parent_transforms,
+                    bevy::transform::systems::sync_simple_transforms,
+                )
+                    .chain(),
+                registry::transform::snapshot_transforms,
+                registry::transform::snapshot_doc_roots,
+            )
+                .chain()
+                .in_set(crate::ScriptSnapshotSet),
         )
         .add_systems(
             PostUpdate,

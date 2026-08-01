@@ -218,6 +218,7 @@ impl ReadFutureHandle {
 #[wasm_bindgen]
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredWdsClass")]
+    #[must_use]
     pub fn wired_wds_class(&self) -> JsValue {
         let handle = WdsHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
@@ -225,6 +226,7 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredQueryFutureClass")]
+    #[must_use]
     pub fn wired_query_future_class(&self) -> JsValue {
         let handle = QueryFutureHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
@@ -232,6 +234,7 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredReadFutureClass")]
+    #[must_use]
     pub fn wired_read_future_class(&self) -> JsValue {
         let handle = ReadFutureHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
@@ -239,6 +242,7 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredBlobFutureClass")]
+    #[must_use]
     pub fn wired_blob_future_class(&self) -> JsValue {
         let handle = BlobFutureHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);

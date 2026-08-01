@@ -20,7 +20,7 @@ use unavi_script::{
 };
 
 const GAUNTLET_HSD: &str = "hsd/unavi_gauntlet.hsd";
-const MODULE_HSDS: &[&str] = &["hsd/unavi_vui_inventory.hsd", "hsd/unavi_vui_nav.hsd"];
+const TOOL_HSDS: &[&str] = &["hsd/unavi_spawner.hsd", "hsd/unavi_physgun.hsd"];
 
 /// Updates the firewall with the record IDs of provided entities, once they
 /// load.
@@ -28,15 +28,15 @@ const MODULE_HSDS: &[&str] = &["hsd/unavi_vui_inventory.hsd", "hsd/unavi_vui_nav
 pub struct FirewallEntities(pub HashMap<Entity, Vec<Channel>>);
 
 pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let mut module_ents = Vec::new();
+    let mut tool_ents = Vec::new();
 
-    for &path in MODULE_HSDS {
+    for &path in TOOL_HSDS {
         let handle = asset_server.load(path);
         let ent = commands
             .spawn((
                 LoadHsd {
                     handle,
-                    public: false,
+                    public: true,
                     extra_schemas: None,
                     on_load: Some(Box::new(on_load_spawn_doc)),
                 },
@@ -44,12 +44,12 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
                 QuotaExempt,
             ))
             .id();
-        module_ents.push(ent);
+        tool_ents.push(ent);
     }
 
     let gauntlet_ent = {
         let mut fw = HashMap::new();
-        for ent in &module_ents {
+        for ent in &tool_ents {
             fw.insert(*ent, vec![Channel::EventRead, Channel::EventWrite]);
         }
         let handle = asset_server.load(GAUNTLET_HSD);
@@ -68,7 +68,7 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
             .id()
     };
 
-    for module_ent in module_ents {
+    for tool_ent in tool_ents {
         let mut fw = HashMap::new();
         fw.insert(
             gauntlet_ent,
@@ -79,7 +79,7 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
                 Channel::SceneWrite,
             ],
         );
-        commands.entity(module_ent).insert(FirewallEntities(fw));
+        commands.entity(tool_ent).insert(FirewallEntities(fw));
     }
 }
 

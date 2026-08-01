@@ -1,3 +1,5 @@
+use std::sync::RwLock;
+
 use bevy::prelude::*;
 use wds::{
     Blobs,
@@ -6,6 +8,22 @@ use wds::{
 
 pub mod blob;
 pub mod record;
+
+static LOCAL_ACTOR: RwLock<Option<Actor>> = RwLock::new(None);
+
+/// Publishes the process's local actor for off-world async access, so callers
+/// on background tasks can reach it without a main-world command hop.
+pub fn set_local_actor(actor: Actor) {
+    *LOCAL_ACTOR.write().expect("local actor lock poisoned") = Some(actor);
+}
+
+#[must_use]
+pub fn local_actor() -> Option<Actor> {
+    LOCAL_ACTOR
+        .read()
+        .expect("local actor lock poisoned")
+        .clone()
+}
 
 pub struct WdsPlugin;
 

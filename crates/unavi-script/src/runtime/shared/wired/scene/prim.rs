@@ -4,9 +4,13 @@ use std::{
 };
 
 use anyhow::bail;
-use bevy::math::{
-    Quat,
-    Vec3,
+use bevy::{
+    math::{
+        Affine3A,
+        Quat,
+        Vec3,
+    },
+    transform::components::GlobalTransform,
 };
 use blake3::Hash;
 use hsd::{
@@ -16,6 +20,7 @@ use hsd::{
         asset::AssetAttr,
         attributes_map,
         collider::ColliderAttr,
+        gravity_scale::GravityScaleAttr,
         image::ImageAttr,
         material::{
             ColorVec,
@@ -63,6 +68,7 @@ use crate::{
             firewall::validate_firewall,
             transform::{
                 AbsoluteNodeId,
+                DOC_ROOT_TRANSFORM_REGISTRY,
                 NODE_TRANSFORM_REGISTRY,
             },
         },
@@ -444,12 +450,15 @@ pub async fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<XformAttr>> {
             node: prim.id,
         })
         .map(|v| v.local);
-    if prim.is_proxy {
-        return Ok(local.map(|t| XformAttr {
+    if let Some(t) = local {
+        return Ok(Some(XformAttr {
             translation: t.translation.to_array(),
             rotation:    [t.rotation.x, t.rotation.y, t.rotation.z, t.rotation.w],
             scale:       t.scale.to_array(),
         }));
+    }
+    if prim.is_proxy {
+        return Ok(None);
     }
     let meta = prim_meta(&prim.doc, prim.id)?;
     Ok(read_attr::<XformAttr>(&meta))
@@ -478,20 +487,65 @@ pub async fn set_xform(api: &Api, rep: u32, value: Option<XformAttr>) -> anyhow:
 
 pub async fn global_xform(api: &Api, rep: u32) -> anyhow::Result<XformAttr> {
     let prim = get_prim(api, rep).await?;
-    let snapshot = NODE_TRANSFORM_REGISTRY
-        .read()
-        .get(&AbsoluteNodeId {
-            doc:  prim.doc_id,
-            node: prim.id,
-        })
-        .cloned()
-        .unwrap_or_default();
-    let (sc, ro, tr) = snapshot.global.to_scale_rotation_translation();
+    let node = |node| AbsoluteNodeId {
+        doc: prim.doc_id,
+        node,
+    };
+    let world = if prim.is_proxy {
+        NODE_TRANSFORM_REGISTRY
+            .read()
+            .get(&node(prim.id))
+            .map_or(Affine3A::IDENTITY, |s| s.world.affine())
+    } else {
+        let tree = prim.doc.get_tree(&*HSD_CONTAINER_ID);
+        let mut local = Affine3A::IDENTITY;
+        let mut cur = Some(prim.id);
+        while let Some(id) = cur {
+            let t = NODE_TRANSFORM_REGISTRY
+                .read()
+                .get(&node(id))
+                .map(|s| s.local)
+                .unwrap_or_default();
+            local = t.compute_affine() * local;
+            cur = match tree.parent(id) {
+                Some(TreeParentId::Node(p)) => Some(p),
+                _ => None,
+            };
+        }
+        let root = DOC_ROOT_TRANSFORM_REGISTRY
+            .read()
+            .get(&prim.doc_id)
+            .map_or(Affine3A::IDENTITY, GlobalTransform::affine);
+        root * local
+    };
+    let (sc, ro, tr) = world.to_scale_rotation_translation();
     Ok(XformAttr {
         translation: [tr.x, tr.y, tr.z],
         rotation:    [ro.x, ro.y, ro.z, ro.w],
         scale:       [sc.x, sc.y, sc.z],
     })
+}
+
+pub async fn gravity_scale(api: &Api, rep: u32) -> anyhow::Result<f32> {
+    let prim = get_prim(api, rep).await?;
+    if prim.is_proxy {
+        return Ok(1.0);
+    }
+    let meta = prim_meta(&prim.doc, prim.id)?;
+    Ok(read_attr::<GravityScaleAttr>(&meta).map_or(1.0, |g| g.scale as f32))
+}
+
+pub async fn set_gravity_scale(api: &Api, rep: u32, value: f32) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
+    ensure_writable(api, &prim)?;
+    let meta = prim_meta(&prim.doc, prim.id)?;
+    write_attr(
+        &meta,
+        &GravityScaleAttr {
+            scale: f64::from(value),
+        },
+    )?;
+    Ok(())
 }
 
 pub async fn mesh(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMesh>> {

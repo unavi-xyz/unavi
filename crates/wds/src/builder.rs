@@ -138,7 +138,10 @@ impl DataStoreBuilder {
 
 pub type BoxedBlobs = Box<dyn AsRef<BlobStore> + Send + Sync>;
 
+// Kept async to match the non-wasm arm's signature, so the call site's
+// `.await` works uniformly across targets.
 #[cfg(target_family = "wasm")]
+#[expect(clippy::unused_async)]
 async fn init_storage(_storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database)> {
     let blobs = MemStore::new();
     let blobs: BoxedBlobs = Box::new(blobs);

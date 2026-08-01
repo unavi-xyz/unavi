@@ -4,6 +4,8 @@ pub enum InputAction {
     GrabUp,
     MenuDown,
     MenuUp,
+    ScrollUp,
+    ScrollDown,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

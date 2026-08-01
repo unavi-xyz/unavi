@@ -24,6 +24,8 @@ impl From<shared_types::InputAction> for InputAction {
             shared_types::InputAction::GrabUp => Self::GrabUp,
             shared_types::InputAction::MenuDown => Self::MenuDown,
             shared_types::InputAction::MenuUp => Self::MenuUp,
+            shared_types::InputAction::ScrollUp => Self::ScrollUp,
+            shared_types::InputAction::ScrollDown => Self::ScrollDown,
         }
     }
 }

@@ -216,6 +216,7 @@ impl EventReceptorHandle {
 #[wasm_bindgen]
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredEventReceptorClass")]
+    #[must_use]
     pub fn wired_event_receptor_class(&self) -> JsValue {
         let handle = EventReceptorHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
@@ -223,6 +224,7 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredEventClass")]
+    #[must_use]
     pub fn wired_event_class(&self) -> JsValue {
         let handle = EventHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);

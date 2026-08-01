@@ -153,6 +153,9 @@ macro_rules! authenticate {
 
 pub(crate) use authenticate;
 
+// n0_future futures are intentionally !Send on wasm (single-threaded, no
+// Send needed there); Send-bounded elsewhere.
+#[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
 async fn handle_message(ctx: Arc<StoreContext>, msg: ApiMessage) -> anyhow::Result<()> {
     match msg {
         ApiMessage::UploadBlob(channels) => {

@@ -230,6 +230,11 @@ fn dispatch_attr_data(commands: &mut Commands, prim_ent: Entity, data: AttrDataE
                 .entity(prim_ent)
                 .trigger(|entity| ApplyEvent { entity, value });
         }
+        AttrDataEvent::GravityScale(value) => {
+            commands
+                .entity(prim_ent)
+                .trigger(|entity| ApplyEvent { entity, value });
+        }
         AttrDataEvent::Image(value) => {
             commands
                 .entity(prim_ent)

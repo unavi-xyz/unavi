@@ -34,18 +34,23 @@ struct RawMesh {
 }
 
 fn convert_raw_mesh(doc: Option<&Document>, raw: RawMesh) -> Prim {
-    let prim = doc.map_or_else(
-        || {
-            wired::scene::api::self_document()
-                .expect("self_document")
-                .create_prim()
-        },
-        Document::create_prim,
-    );
-    prim.set_mesh_stream("POSITION", Some(raw.positions.as_flattened()));
-    prim.set_mesh_stream("NORMAL", Some(raw.normals.as_flattened()));
-    prim.set_mesh_stream("UV_0", Some(raw.uvs.as_flattened()));
-    prim.set_mesh_indices_u32(Some(&raw.indices));
+    let prim = doc
+        .map_or_else(
+            || {
+                wired::scene::api::self_document()
+                    .expect("self_document")
+                    .create_prim()
+            },
+            Document::create_prim,
+        )
+        .expect("create_prim");
+    prim.set_mesh_stream("POSITION", Some(raw.positions.as_flattened()))
+        .ok();
+    prim.set_mesh_stream("NORMAL", Some(raw.normals.as_flattened()))
+        .ok();
+    prim.set_mesh_stream("UV_0", Some(raw.uvs.as_flattened()))
+        .ok();
+    prim.set_mesh_indices_u32(Some(&raw.indices)).ok();
     prim
 }
 

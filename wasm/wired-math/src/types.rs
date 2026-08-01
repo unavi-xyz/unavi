@@ -1,4 +1,7 @@
-use std::ops::Mul;
+use std::ops::{
+    Mul,
+    Neg,
+};
 
 pub use glam::{
     Vec2,
@@ -30,6 +33,48 @@ impl Quat {
     pub const fn new(x: f32, y: f32, z: f32, w: f32) -> Self {
         Self { x, y, z, w }
     }
+
+    #[must_use]
+    pub const fn conjugate(self) -> Self {
+        Self::new(-self.x, -self.y, -self.z, self.w)
+    }
+
+    #[must_use]
+    pub const fn inverse(self) -> Self {
+        self.conjugate()
+    }
+
+    #[must_use]
+    pub fn normalize(self) -> Self {
+        Self::from(glam::Quat::from(self).normalize())
+    }
+
+    /// Decomposes into a rotation axis and angle in radians, the inverse of
+    /// the axis-angle construction used elsewhere to build rotations by hand.
+    #[must_use]
+    pub fn to_axis_angle(self) -> (Vec3, f32) {
+        glam::Quat::from(self).to_axis_angle()
+    }
+}
+
+impl From<Quat> for glam::Quat {
+    fn from(q: Quat) -> Self {
+        Self::from_xyzw(q.x, q.y, q.z, q.w)
+    }
+}
+
+impl From<glam::Quat> for Quat {
+    fn from(q: glam::Quat) -> Self {
+        Self::new(q.x, q.y, q.z, q.w)
+    }
+}
+
+impl Neg for Quat {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        Self::new(-self.x, -self.y, -self.z, -self.w)
+    }
 }
 
 impl Mul<Vec3> for Quat {
@@ -38,6 +83,14 @@ impl Mul<Vec3> for Quat {
     fn mul(self, v: Vec3) -> Vec3 {
         let q = Vec3::new(self.x, self.y, self.z);
         v + 2.0 * self.w * q.cross(v) + 2.0 * q.cross(q.cross(v))
+    }
+}
+
+impl Mul for Quat {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self {
+        Self::from(glam::Quat::from(self) * glam::Quat::from(rhs))
     }
 }
 
@@ -58,5 +111,15 @@ impl Transform {
             rotation,
             scale,
         }
+    }
+
+    #[must_use]
+    pub fn forward(&self) -> Vec3 {
+        self.rotation * Vec3::NEG_Z
+    }
+
+    #[must_use]
+    pub fn transform_point(&self, point: Vec3) -> Vec3 {
+        self.translation + self.rotation * (self.scale * point)
     }
 }

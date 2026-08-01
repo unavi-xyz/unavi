@@ -16,6 +16,7 @@ use bevy_wds::{
     LocalActor,
     LocalBlobs,
     SyncTargets,
+    set_local_actor,
 };
 use iroh::{
     Endpoint,
@@ -82,6 +83,7 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
 
     store.set_user_identity(Arc::clone(&identity));
     let actor = store.local_actor(Arc::clone(&identity));
+    set_local_actor(actor.clone());
 
     let sync_targets = load_sync_targets(&store, &identity).await;
 

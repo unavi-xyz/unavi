@@ -74,6 +74,8 @@ impl Drop for PrimHandle {
 #[wasm_bindgen]
 impl PrimHandle {
     #[wasm_bindgen(getter, js_name = "__rep")]
+    // wasm_bindgen forbids `const fn`.
+    #[expect(clippy::missing_const_for_fn)]
     pub fn js_rep(&self) -> u32 {
         self.rep
     }
@@ -104,19 +106,19 @@ impl PrimHandle {
             return js_sys::Array::new();
         };
         reps.into_iter()
-            .map(|rep| JsValue::from(PrimHandle::new(rep, Arc::clone(&self.api))))
+            .map(|rep| JsValue::from(Self::new(rep, Arc::clone(&self.api))))
             .collect()
     }
 
     #[wasm_bindgen(js_name = "addChild")]
-    pub async fn add_child(&self, child: &PrimHandle) -> Result<(), String> {
+    pub async fn add_child(&self, child: &Self) -> Result<(), String> {
         shared::wired::scene::prim::add_child(&self.api, self.rep, child.rep)
             .await
             .map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "removeChild")]
-    pub async fn remove_child(&self, child: &PrimHandle) -> Result<(), String> {
+    pub async fn remove_child(&self, child: &Self) -> Result<(), String> {
         shared::wired::scene::prim::remove_child(&self.api, self.rep, child.rep)
             .await
             .map_err(|e| e.to_string())
@@ -176,6 +178,20 @@ impl PrimHandle {
             .await
             .unwrap_or_default();
         xform_to_js(&x)
+    }
+
+    #[wasm_bindgen(js_name = "gravityScale")]
+    pub async fn gravity_scale(&self) -> f32 {
+        shared::wired::scene::prim::gravity_scale(&self.api, self.rep)
+            .await
+            .unwrap_or(1.0)
+    }
+
+    #[wasm_bindgen(js_name = "setGravityScale")]
+    pub async fn set_gravity_scale(&self, value: f32) -> Result<(), String> {
+        shared::wired::scene::prim::set_gravity_scale(&self.api, self.rep, value)
+            .await
+            .map_err(|e| e.to_string())
     }
 
     pub async fn mesh(&self) -> JsValue {
@@ -277,7 +293,7 @@ impl PrimHandle {
 
     #[wasm_bindgen(js_name = "setPortal")]
     pub async fn set_portal(&self, value: JsValue) -> Result<(), String> {
-        let value = js_to_portal(&value).map_err(|e| e.to_string())?;
+        let value = js_to_portal(&value)?;
         shared::wired::scene::prim::set_portal(&self.api, self.rep, value)
             .await
             .map_err(|e| e.to_string())

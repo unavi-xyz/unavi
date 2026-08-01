@@ -19,6 +19,7 @@ use serde::{
 
 pub mod asset;
 pub mod collider;
+pub mod gravity_scale;
 pub mod image;
 pub mod material;
 pub mod mesh;
@@ -53,18 +54,19 @@ pub trait Attribute: Reconcile + Hydrate {
 #[loro(default)]
 #[serde(default)]
 pub struct Attributes {
-    pub asset:       Option<asset::AssetAttr>,
-    pub collider:    Option<collider::ColliderAttr>,
-    pub image:       Option<image::ImageAttr>,
-    pub material:    Option<material::MaterialAttr>,
-    pub mesh:        Option<mesh::MeshAttr>,
-    pub name:        Option<name::NameAttr>,
-    pub portal:      Option<portal::PortalAttr>,
-    pub rigid_body:  Option<rigid_body::RigidBodyAttr>,
-    pub script:      Option<script::ScriptAttr>,
-    pub spawn:       Option<spawn::SpawnAttr>,
-    pub subdocument: Option<subdocument::SubdocumentAttr>,
-    pub xform:       Option<xform::XformAttr>,
+    pub asset:         Option<asset::AssetAttr>,
+    pub collider:      Option<collider::ColliderAttr>,
+    pub gravity_scale: Option<gravity_scale::GravityScaleAttr>,
+    pub image:         Option<image::ImageAttr>,
+    pub material:      Option<material::MaterialAttr>,
+    pub mesh:          Option<mesh::MeshAttr>,
+    pub name:          Option<name::NameAttr>,
+    pub portal:        Option<portal::PortalAttr>,
+    pub rigid_body:    Option<rigid_body::RigidBodyAttr>,
+    pub script:        Option<script::ScriptAttr>,
+    pub spawn:         Option<spawn::SpawnAttr>,
+    pub subdocument:   Option<subdocument::SubdocumentAttr>,
+    pub xform:         Option<xform::XformAttr>,
 }
 
 impl Attributes {
@@ -72,6 +74,7 @@ impl Attributes {
     pub const fn is_empty(&self) -> bool {
         self.asset.is_none()
             && self.collider.is_none()
+            && self.gravity_scale.is_none()
             && self.image.is_none()
             && self.material.is_none()
             && self.mesh.is_none()

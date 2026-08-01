@@ -114,6 +114,10 @@ impl Plugin for UnaviPlugin {
             brightness: lux::OVERCAST_DAY,
             ..default()
         })
+        .configure_sets(
+            Update,
+            unavi_script::ScriptSnapshotSet.after(unavi_agent::AgentMovementSet),
+        )
         .add_systems(Startup, icon::set_window_icon);
 
         app.world_mut().trigger(LoadEndpoint {

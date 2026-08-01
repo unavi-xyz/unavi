@@ -56,5 +56,8 @@ pub fn add_apis_to_linker(linker: &mut Linker<Runtime>) -> wasmtime::Result<()> 
 
     wired::portal::bindings::wired::portal::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
 
+    wired::physics::bindings::wired::physics::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    wired::physics::bindings::wired::physics::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+
     Ok(())
 }

@@ -76,11 +76,11 @@ impl DocHandle {
     }
 
     #[wasm_bindgen(js_name = "createPrim")]
-    pub async fn create_prim(&self) -> PrimHandle {
+    pub async fn create_prim(&self) -> Result<PrimHandle, String> {
         let rep = shared::wired::scene::document::create_prim(&self.api, self.rep)
             .await
-            .unwrap_or(u32::MAX);
-        PrimHandle::new(rep, Arc::clone(&self.api))
+            .map_err(|e| e.to_string())?;
+        Ok(PrimHandle::new(rep, Arc::clone(&self.api)))
     }
 
     #[wasm_bindgen(js_name = "removePrim")]
@@ -91,7 +91,7 @@ impl DocHandle {
     }
 
     #[wasm_bindgen(js_name = "offsetTo")]
-    pub async fn offset_to(&self, other: &DocHandle) -> JsValue {
+    pub async fn offset_to(&self, other: &Self) -> JsValue {
         let Ok(Some(x)) =
             shared::wired::scene::document::offset_to(&self.api, self.rep, other.rep).await
         else {

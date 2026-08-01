@@ -1,7 +1,8 @@
 package unavi:gauntlet;
 
 world guest {
-  import unavi:vui-module/api;
+  import unavi:gauntlet-tool/api;
+  import unavi:shapes/api;
   import wired:input/context;
   include wired:prelude/script-secure;
 }

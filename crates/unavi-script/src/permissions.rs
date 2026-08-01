@@ -19,6 +19,7 @@ pub enum ApiName {
     Kv,
     LocalAgent,
     Peer,
+    Physics,
     Portal,
     Scene,
     System,
@@ -73,6 +74,7 @@ impl ApiPermissions {
         set.insert(ApiName::InputContext);
         set.insert(ApiName::Kv);
         set.insert(ApiName::Peer);
+        set.insert(ApiName::Physics);
         set.insert(ApiName::Portal);
         set.insert(ApiName::Scene);
         set.insert(ApiName::System);

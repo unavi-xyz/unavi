@@ -16,7 +16,7 @@ avian3d.workspace       = true
 bevy.workspace          = true
 bevy-wds.path           = "../bevy-wds"
 blake3.workspace        = true
-bytemuck.workspace      = true
+bytemuck                = "1.25.0"
 bytes.workspace         = true
 hsd.path                = "../hsd"
 image                   = { features = ["jpeg", "png"], workspace = true }
@@ -32,7 +32,7 @@ wds.path                = "../wds"
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
 iroh-blobs.workspace           = true
-rstest                         = "0.26.1"
+rstest.workspace               = true
 test-macros.path               = "../test-macros"
 tracing.workspace              = true
 tracing-test                   = { features = ["no-env-filter"], workspace = true }

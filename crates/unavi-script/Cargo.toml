@@ -45,14 +45,13 @@ wds.path                   = "../wds"
 xdid.workspace             = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-sysinfo       = { default-features = false, features = ["system"], version = "0.37.2" }
-wasmtime      = "43.0.0"
-wasmtime-wasi = "43.0.0"
+wasmtime          = "43.0.0"
+wasmtime-wasi     = "43.0.0"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-js-sys                 = "0.3.97"
-wasm-bindgen.workspace = true
-wasm-bindgen-futures   = "0.4.70"
+js-sys               = "0.3.97"
+wasm-bindgen         = "0.2.117"
+wasm-bindgen-futures = "0.4.70"
 
 [dev-dependencies]
 avian3d.workspace              = true

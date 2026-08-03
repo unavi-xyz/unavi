@@ -1,7 +1,6 @@
 use std::{
     collections::HashSet,
     sync::Arc,
-    time::Duration,
 };
 
 use anyhow::Context;
@@ -21,15 +20,8 @@ use bevy::{
     },
 };
 use bevy_wds::{
-    LocalActor,
     LocalBlobs,
-    record::{
-        read::ReadRecord,
-        write::{
-            SchemaDef,
-            WriteRecord,
-        },
-    },
+    LocalDocs,
 };
 use blake3::Hash;
 use hsd::{
@@ -44,27 +36,33 @@ use hsd::{
         HsdFilePrim,
     },
 };
-use loro::LoroDoc;
+use iroh_blobs::api::blobs::Blobs;
+use iroh_docs::{
+    NamespaceId,
+    protocol::Docs,
+};
+use loro::{
+    ExportMode,
+    LoroDoc,
+};
 use loro_surgeon::bytes::ByteArray;
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
 };
-use wds::{
-    Blobs,
-    actor::Actor,
-};
-use wired_schemas::SCHEMA_HSD;
+use wds::space;
 
 use crate::{
     Hsd,
     HsdChild,
-    HsdRecordId,
+    HsdNamespace,
     Prim,
     attributes::subdocument::HsdSubdocument,
 };
 
-const DEFAULT_TTL: Duration = Duration::from_hours(7 * 24);
+/// A closure that writes extra Loro containers into an HSD doc before it is
+/// snapshotted, replacing the former schema-injection mechanism.
+pub type ExtraWriter = Box<dyn FnOnce(&LoroDoc) -> anyhow::Result<()> + Send + Sync>;
 
 #[derive(Asset, TypePath)]
 pub struct HsdAsset {
@@ -228,7 +226,7 @@ fn walk_prim(prim: &HsdFilePrim, push: &mut impl FnMut([u8; 32])) {
 pub struct OnLoadCtx {
     pub doc:       LoroDoc,
     pub entity:    Entity,
-    pub record_id: Hash,
+    pub namespace: NamespaceId,
 }
 
 pub type OnLoadFn =
@@ -236,10 +234,11 @@ pub type OnLoadFn =
 
 #[derive(Component)]
 pub struct LoadHsd {
-    pub handle:        Handle<HsdAsset>,
-    pub extra_schemas: Option<Vec<SchemaDef>>,
-    pub on_load:       Option<OnLoadFn>,
-    pub public:        bool,
+    pub handle:  Handle<HsdAsset>,
+    /// Runs after the HSD prims are loaded, to write extra Loro containers into
+    /// the doc before it is snapshotted into its namespace.
+    pub extra:   Option<ExtraWriter>,
+    pub on_load: Option<OnLoadFn>,
 }
 
 pub fn instance_hsd(
@@ -247,10 +246,10 @@ pub fn instance_hsd(
     hsds: Res<Assets<HsdAsset>>,
     blobs: Res<Assets<BlobAsset>>,
     loading: Query<(Entity, &mut LoadHsd)>,
-    actors: Query<(&LocalActor, &LocalBlobs)>,
+    stores: Query<(&LocalDocs, &LocalBlobs)>,
     mut commands: Commands,
 ) {
-    let Ok((actor, local_blobs)) = actors.single() else {
+    let Ok((local_docs, local_blobs)) = stores.single() else {
         return;
     };
 
@@ -281,27 +280,17 @@ pub fn instance_hsd(
             continue 'loading;
         }
 
-        let actor = actor.0.clone();
+        let docs = local_docs.0.clone();
         let local_blobs = local_blobs.0.clone();
         let prims = asset.file.0.clone();
-        let public = load.public;
-        let extra_schemas = load.extra_schemas.take().unwrap_or_default();
+        let extra = load.extra.take();
         let on_load = load.on_load.take();
 
         spawn_async_task(async move {
-            if let Err(err) = build_and_instance(
-                actor,
-                local_blobs,
-                blob_map,
-                prims,
-                public,
-                extra_schemas,
-                entity,
-                on_load,
-            )
-            .await
+            if let Err(err) =
+                build_and_instance(docs, local_blobs, blob_map, prims, extra, entity, on_load).await
             {
-                error!(?err, "Failed to build HSD record");
+                error!(?err, "Failed to build HSD doc");
             }
         });
 
@@ -309,17 +298,15 @@ pub fn instance_hsd(
     }
 }
 
-#[expect(clippy::too_many_arguments)]
 // n0_future futures are intentionally !Send on wasm (single-threaded, no
 // Send needed there); Send-bounded elsewhere.
 #[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
 async fn build_and_instance(
-    actor: Actor,
+    docs: Docs,
     local_blobs: Blobs,
     blob_map: HashMap<Hash, Vec<u8>>,
     mut prims: Vec<HsdFilePrim>,
-    public: bool,
-    extra_schemas: Vec<SchemaDef>,
+    extra: Option<ExtraWriter>,
     entity: Entity,
     on_load: Option<OnLoadFn>,
 ) -> anyhow::Result<()> {
@@ -327,16 +314,17 @@ async fn build_and_instance(
         local_blobs.add_slice(blob).await?;
     }
 
-    materialize_subdocuments(&mut prims, &blob_map, public).await?;
+    materialize_subdocuments(&mut prims, &blob_map, &docs, &local_blobs).await?;
 
-    let record_id = write_hsd_record(prims, public, extra_schemas).await?;
-    let doc = actor.read(record_id).send().await?;
+    let deps = blob_deps(&prims, &blob_map);
+    let namespace = write_hsd_doc(&docs, &local_blobs, prims, &deps, extra).await?;
+    let doc = read_hsd_doc(&docs, &local_blobs, namespace).await?;
 
     if let Some(on_load) = on_load {
         on_load(OnLoadCtx {
             doc,
             entity,
-            record_id,
+            namespace,
         })
         .await
         .context("on_load")?;
@@ -345,12 +333,32 @@ async fn build_and_instance(
     Ok(())
 }
 
-/// Writes each `Template` subdocument (its own subdocuments first) as a record,
-/// rewriting the prim's attribute to the resulting `Record` id.
+/// Collects the directly-referenced blob dependencies of a set of prims as
+/// `(hash, size)` pairs, for the doc's `deps/` entries.
+fn blob_deps(
+    prims: &[HsdFilePrim],
+    blob_map: &HashMap<Hash, Vec<u8>>,
+) -> Vec<(iroh_blobs::Hash, u64)> {
+    let mut seen = std::collections::HashSet::new();
+    let mut out = Vec::new();
+    collect_blob_deps(&HsdFile(prims.to_vec()), &mut |bytes| {
+        let hash = Hash::from_bytes(bytes);
+        if seen.insert(hash)
+            && let Some(blob) = blob_map.get(&hash)
+        {
+            out.push((iroh_blobs::Hash::from_bytes(bytes), blob.len() as u64));
+        }
+    });
+    out
+}
+
+/// Instances each `Template` subdocument (its own subdocuments first) as its
+/// own namespace, rewriting the prim's attribute to the resulting namespace id.
 fn materialize_subdocuments<'a>(
     prims: &'a mut [HsdFilePrim],
     blob_map: &'a HashMap<Hash, Vec<u8>>,
-    public: bool,
+    docs: &'a Docs,
+    blobs: &'a Blobs,
 ) -> BoxedFuture<'a, anyhow::Result<()>> {
     Box::pin(async move {
         for prim in prims.iter_mut() {
@@ -363,45 +371,48 @@ fn materialize_subdocuments<'a>(
                     .get(&blob_hash)
                     .with_context(|| format!("subdocument blob {blob_hash} missing"))?;
                 let mut sub_prims = HsdFile::from_ron(std::str::from_utf8(bytes)?)?.0;
-                materialize_subdocuments(&mut sub_prims, blob_map, public).await?;
-                let sub_id = write_hsd_record(sub_prims, public, Vec::new()).await?;
+                materialize_subdocuments(&mut sub_prims, blob_map, docs, blobs).await?;
+                let deps = blob_deps(&sub_prims, blob_map);
+                let sub_ns = write_hsd_doc(docs, blobs, sub_prims, &deps, None).await?;
                 prim.attributes.subdocument =
-                    Some(SubdocumentAttr::Record(ByteArray::new(*sub_id.as_bytes())));
+                    Some(SubdocumentAttr::Doc(ByteArray::new(sub_ns.to_bytes())));
             }
-            materialize_subdocuments(&mut prim.children, blob_map, public).await?;
+            materialize_subdocuments(&mut prim.children, blob_map, docs, blobs).await?;
         }
         Ok(())
     })
 }
 
-async fn write_hsd_record(
+async fn write_hsd_doc(
+    docs: &Docs,
+    blobs: &Blobs,
     prims: Vec<HsdFilePrim>,
-    public: bool,
-    extra_schemas: Vec<SchemaDef>,
-) -> anyhow::Result<Hash> {
-    let file = HsdFile(prims);
-    let (mut write, rx, cancel) = WriteRecord::new(None);
-    write.ttl = Some(DEFAULT_TTL);
-    write.public = public;
-    write.schemas = vec![SchemaDef {
-        container: "hsd".into(),
-        schema:    (&*SCHEMA_HSD).into(),
-        f:         Arc::new(move |doc| {
-            file.load_into_doc(doc)?;
-            Ok(())
-        }),
-    }];
-    write.schemas.extend(extra_schemas);
-    AsyncCommands::default().trigger(write).send().await?;
-    let id = rx.recv().await?;
-    drop(cancel);
-    Ok(id)
+    deps: &[(iroh_blobs::Hash, u64)],
+    extra: Option<ExtraWriter>,
+) -> anyhow::Result<NamespaceId> {
+    let doc = LoroDoc::new();
+    HsdFile(prims).load_into_doc(&doc)?;
+    if let Some(extra) = extra {
+        extra(&doc)?;
+    }
+    doc.commit();
+    let snapshot = doc.export(ExportMode::Snapshot)?;
+    space::create_snapshot_doc(docs, blobs, snapshot.into(), deps).await
 }
 
-/// Records which subdocument record a prim currently has instanced, so a
+async fn read_hsd_doc(docs: &Docs, blobs: &Blobs, ns: NamespaceId) -> anyhow::Result<LoroDoc> {
+    let bytes = space::read_snapshot(docs, blobs, ns)
+        .await?
+        .with_context(|| format!("snapshot missing for doc {ns}"))?;
+    let doc = LoroDoc::new();
+    doc.import(&bytes)?;
+    Ok(doc)
+}
+
+/// Records which subdocument namespace a prim currently has instanced, so a
 /// changed target re-instances and a detached one is torn down.
 #[derive(Component)]
-pub struct SubdocLoaded(pub Hash);
+pub struct SubdocLoaded(pub NamespaceId);
 
 pub fn instance_subdocuments(
     subdoc_prims: Query<
@@ -417,12 +428,17 @@ pub fn instance_subdocuments(
     detached: Query<(Entity, Option<&Children>), (With<SubdocLoaded>, Without<HsdSubdocument>)>,
     hsd_docs: Query<(), With<Hsd>>,
     docs: Query<&Hsd>,
+    stores: Query<(&LocalDocs, &LocalBlobs)>,
     mut commands: Commands,
 ) {
     for (prim_ent, children) in &detached {
         despawn_subdoc_docs(&mut commands, &hsd_docs, children);
         commands.entity(prim_ent).remove::<SubdocLoaded>();
     }
+
+    let Ok((local_docs, local_blobs)) = stores.single() else {
+        return;
+    };
 
     for (prim_ent, prim, doc_ent, loaded, children) in &subdoc_prims {
         let Ok(parent) = docs.get(doc_ent.0) else {
@@ -432,7 +448,7 @@ pub fn instance_subdocuments(
             continue;
         };
         let id = match hydrate_attr::<SubdocumentAttr>(&meta) {
-            Ok(SubdocumentAttr::Record(id)) => Hash::from_bytes(id.0),
+            Ok(SubdocumentAttr::Doc(id)) => NamespaceId::from(&id.0),
             _ => continue,
         };
 
@@ -445,14 +461,10 @@ pub fn instance_subdocuments(
 
         commands.entity(prim_ent).insert(SubdocLoaded(id));
 
-        let (mut event, rx, cancel) = ReadRecord::new(id);
-        event.ttl = Some(DEFAULT_TTL);
-        event.retries = 5;
-        commands.trigger(event);
-
+        let docs = local_docs.0.clone();
+        let blobs = local_blobs.0.clone();
         spawn_async_task(async move {
-            let _cancel = cancel;
-            if let Ok(doc) = rx.recv().await {
+            if let Ok(doc) = read_hsd_doc(&docs, &blobs, id).await {
                 let _ = AsyncCommands::default()
                     .push(move |world: &mut World| {
                         let current = world
@@ -460,7 +472,7 @@ pub fn instance_subdocuments(
                             .ok()
                             .and_then(|e| e.get::<SubdocLoaded>().map(|l| l.0));
                         if current == Some(id) {
-                            world.spawn((Hsd(Arc::new(doc)), HsdRecordId(id), ChildOf(prim_ent)));
+                            world.spawn((Hsd(Arc::new(doc)), HsdNamespace(id), ChildOf(prim_ent)));
                         }
                     })
                     .send()
@@ -492,7 +504,7 @@ pub fn on_load_spawn_doc(ctx: OnLoadCtx) -> BoxedFuture<'static, anyhow::Result<
             .push(move |world: &mut World| {
                 world
                     .entity_mut(ctx.entity)
-                    .insert((Hsd(Arc::new(ctx.doc)), HsdRecordId(ctx.record_id)));
+                    .insert((Hsd(Arc::new(ctx.doc)), HsdNamespace(ctx.namespace)));
             })
             .send()
             .await?;

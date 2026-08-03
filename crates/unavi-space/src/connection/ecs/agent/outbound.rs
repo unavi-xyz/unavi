@@ -6,7 +6,7 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use serde_vrm::vrm0::BoneName;
 use unavi_agent::{
     AgentAvatar,
@@ -58,7 +58,7 @@ const _: () = assert!(NETWORKED_BONES.len() <= MAX_POSE_BONES);
 
 #[derive(Clone)]
 pub struct OutgoingPose {
-    pub space: Hash,
+    pub space: NamespaceId,
     pub pose:  Pose<IFrame>,
 }
 

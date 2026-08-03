@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_hsd::attributes::portal::PortalConfig;
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use loro::TreeID;
 use unavi_manifold::{
     GluedTo,
@@ -36,12 +36,12 @@ pub fn sync_portal_config(
         return;
     };
 
-    entity.insert(SeamTargetDoc(Hash::from(dest.space.0)));
+    entity.insert(SeamTargetDoc(NamespaceId::from(&dest.space.0)));
 
     match dest.receptor.as_ref().and_then(|r| {
         TreeID::try_from(r.prim.as_str())
             .ok()
-            .map(|p| (Hash::from(r.document.0), p))
+            .map(|p| (NamespaceId::from(&r.document.0), p))
     }) {
         Some((document, prim)) => {
             entity.insert(SeamTargetReceptor { document, prim });

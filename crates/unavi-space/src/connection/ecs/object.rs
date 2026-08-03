@@ -24,12 +24,12 @@ use bevy::{
 };
 use bevy_hsd::{
     HsdChild,
+    HsdNamespace,
     HsdPrimIndex,
-    HsdRecordId,
     Prim,
 };
-use blake3::Hash;
 use iroh::EndpointId;
+use iroh_docs::NamespaceId;
 use loro::TreeID;
 
 use crate::{
@@ -42,8 +42,8 @@ use crate::{
 /// once per tick and cloned to each [`ObjectSender`].
 #[derive(Clone)]
 pub struct OutgoingObject {
-    pub doc:   Hash,
-    pub space: Hash,
+    pub doc:   NamespaceId,
+    pub space: NamespaceId,
     pub prim:  TreeID,
     pub root:  Transform,
     pub lin:   Vec3,
@@ -67,7 +67,7 @@ const OBJECT_TICKRATE: Duration = Duration::from_millis(200);
 pub fn send_object_poses(
     time: Res<Time>,
     spaces: Query<(&Space, &GlobalTransform)>,
-    roots: Query<&HsdRecordId>,
+    roots: Query<&HsdNamespace>,
     prims: Query<(
         &Prim,
         &HsdChild,
@@ -142,8 +142,8 @@ pub fn send_object_poses(
 }
 
 pub struct ResolvedObject {
-    pub doc:   Hash,
-    pub space: Hash,
+    pub doc:   NamespaceId,
+    pub space: NamespaceId,
     pub prim:  TreeID,
     pub root:  Transform,
     pub lin:   Vec3,
@@ -153,7 +153,7 @@ pub struct ResolvedObject {
 /// Latest update received per `(peer, doc, prim)`, so a peer can drive every
 /// prim of every document it owns independently.
 static OBJECT_INBOX: LazyLock<
-    Mutex<HashMap<(EndpointId, Hash, TreeID), (Instant, ResolvedObject)>>,
+    Mutex<HashMap<(EndpointId, NamespaceId, TreeID), (Instant, ResolvedObject)>>,
 > = LazyLock::new(|| Mutex::new(HashMap::default()));
 
 pub fn submit_object(peer: EndpointId, resolved: ResolvedObject) {
@@ -182,7 +182,7 @@ const MAX_EXTRAPOLATION: Duration = Duration::from_millis(300);
 const SMOOTH_RATE: f32 = 16.0;
 
 pub fn apply_remote_objects(
-    roots: Query<(&HsdRecordId, &HsdPrimIndex)>,
+    roots: Query<(&HsdNamespace, &HsdPrimIndex)>,
     spaces: Query<(Entity, &Space)>,
     mut interps: Query<&mut ObjectInterp>,
     mut commands: Commands,
@@ -270,7 +270,7 @@ pub struct ReplicaObject;
 /// ours/unclaimed ones as dynamic. `replicas::authority` resolves the latest
 /// claim, so only the accepted controller drives a prim.
 pub fn reconcile_object_authority(
-    roots: Query<&HsdRecordId>,
+    roots: Query<&HsdNamespace>,
     prims: Query<(Entity, &HsdChild, &RigidBody, Has<ReplicaObject>), With<Prim>>,
     mut commands: Commands,
 ) {

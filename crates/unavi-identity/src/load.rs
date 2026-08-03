@@ -15,8 +15,11 @@ use bevy_iroh::{
 use bevy_wds::{
     LocalActor,
     LocalBlobs,
+    LocalDocs,
     SyncTargets,
     set_local_actor,
+    set_registries,
+    set_root_doc,
 };
 use iroh::{
     Endpoint,
@@ -85,19 +88,45 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
     let actor = store.local_actor(Arc::clone(&identity));
     set_local_actor(actor.clone());
 
+    if let Ok(root) = wds::kv::create(store.docs()).await {
+        set_root_doc(root);
+    }
+
     let sync_targets = load_sync_targets(&store, &identity).await;
+    sync_registries(&store, &actor, &sync_targets).await;
 
     AsyncCommands::default()
         .spawn((RouterBuilderFnTarget(entity), RouterBuilderFn(Some(f))))
         .spawn((
             LocalActor(actor),
             LocalBlobs(store.blobs().blobs().clone()),
+            LocalDocs(store.docs().clone()),
             SyncTargets(sync_targets),
         ))
         .send()
         .await?;
 
     Ok(())
+}
+
+/// Fetches each home server's registry namespace, syncs it locally, and
+/// publishes the set so scripts can `list` them under `beacons/`.
+async fn sync_registries(store: &DataStore, local: &Actor, targets: &[Actor]) {
+    let actors: &[Actor] = if targets.is_empty() {
+        std::slice::from_ref(local)
+    } else {
+        targets
+    };
+
+    let mut namespaces = Vec::new();
+    for actor in actors {
+        if let Ok(Some(registry)) = actor.registry_id().await {
+            let _ =
+                wds::registry::sync_registry(store.docs(), registry, actor.host().clone()).await;
+            namespaces.push(registry);
+        }
+    }
+    set_registries(namespaces);
 }
 
 async fn load_sync_targets(store: &DataStore, identity: &Arc<Identity>) -> Vec<Actor> {

@@ -7,11 +7,11 @@ use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
     HsdChild,
-    HsdRecordId,
+    HsdNamespace,
     Prim,
     attributes::portal::PortalConfig,
 };
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use unavi_manifold::Seam;
 use unavi_portal_protocol::{
     BACKLINK_CHANNEL,
@@ -41,21 +41,21 @@ const PENDING_CAP: usize = 64;
 /// despawns without leaving any trace in the synced document state.
 #[derive(Component)]
 pub struct PortalWatch {
-    source_space: Hash,
-    source_doc:   Hash,
+    source_space: NamespaceId,
+    source_doc:   NamespaceId,
     source_prim:  String,
-    target_space: Hash,
+    target_space: NamespaceId,
     timer:        Timer,
-    emitted:      HashSet<Hash>,
+    emitted:      HashSet<NamespaceId>,
 }
 
 impl PortalWatch {
     #[must_use]
     pub fn new(
-        source_space: Hash,
-        source_doc: Hash,
+        source_space: NamespaceId,
+        source_doc: NamespaceId,
         source_prim: String,
-        target_space: Hash,
+        target_space: NamespaceId,
     ) -> Self {
         Self {
             source_space,
@@ -126,7 +126,7 @@ fn flush_backlink(
 pub fn service_portal_watches(
     time: Res<Time>,
     mut watches: Query<(Entity, &mut PortalWatch)>,
-    docs: Query<(Entity, &HsdRecordId), With<Hsd>>,
+    docs: Query<(Entity, &HsdNamespace), With<Hsd>>,
     receptors: Query<(&PortalConfig, &HsdChild, &Prim), With<Seam>>,
     mut incoming: Query<&mut PendingIncoming>,
     mut backlink: Query<&mut PendingBacklink>,
@@ -142,7 +142,7 @@ pub fn service_portal_watches(
 
         let found_receptor = receptors.iter().find_map(|(cfg, hsd_child, prim)| {
             let receptor = cfg.0.destination.as_ref()?.receptor.as_ref()?;
-            if Hash::from(receptor.document.0) != watch.source_doc
+            if NamespaceId::from(&receptor.document.0) != watch.source_doc
                 || receptor.prim != watch.source_prim
             {
                 return None;
@@ -197,8 +197,8 @@ pub fn service_portal_watches(
 }
 
 pub fn drain_pending(
-    mut incoming: Query<(Entity, &mut PendingIncoming, &HsdRecordId)>,
-    mut backlink: Query<(Entity, &mut PendingBacklink, &HsdRecordId)>,
+    mut incoming: Query<(Entity, &mut PendingIncoming, &HsdNamespace)>,
+    mut backlink: Query<(Entity, &mut PendingBacklink, &HsdNamespace)>,
     ready: Query<&HsdChild, With<InitializedScript>>,
     mut commands: Commands,
 ) {

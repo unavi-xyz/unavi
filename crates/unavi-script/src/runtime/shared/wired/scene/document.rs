@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use blake3::Hash;
 use hsd::HSD_CONTAINER_ID;
+use iroh_docs::NamespaceId;
 use loro::{
     LoroDoc,
     TreeID,
@@ -41,7 +41,7 @@ pub struct XformValue {
 #[derive(Clone)]
 pub struct DocRes {
     pub doc: Arc<LoroDoc>,
-    pub id:  Hash,
+    pub id:  NamespaceId,
 }
 
 async fn get_doc(api: &Api, rep: u32) -> anyhow::Result<DocRes> {

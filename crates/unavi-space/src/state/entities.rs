@@ -1,6 +1,6 @@
 use bevy::prelude::*;
-use bevy_hsd::HsdRecordId;
-use blake3::Hash;
+use bevy_hsd::HsdNamespace;
+use iroh_docs::NamespaceId;
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
@@ -77,22 +77,28 @@ pub fn release_remote_peer(world: &mut World, peer_ent: Entity, generation: u64)
 ///
 /// Parented under the [`Space`] so leaving the space cascades it away, or
 /// unparented until the space is entered and adopts it. Coexists with
-/// [`HsdRecordId`] once the document is fetched and instanced.
+/// [`HsdNamespace`] once the document is fetched and instanced.
 #[derive(Component)]
 pub struct SpaceDoc {
-    pub doc:   Hash,
-    pub space: Hash,
+    pub doc:   NamespaceId,
+    pub space: NamespaceId,
 }
 
 #[derive(Component)]
 pub struct PinState {
     peer:  PeerId,
-    doc:   Hash,
+    doc:   NamespaceId,
     local: bool,
 }
 
 impl PinState {
-    fn register(peer: PeerId, doc: Hash, space: Hash, at: u64, local: bool) -> Option<Self> {
+    fn register(
+        peer: PeerId,
+        doc: NamespaceId,
+        space: NamespaceId,
+        at: u64,
+        local: bool,
+    ) -> Option<Self> {
         if !replicas::add_pin(peer, doc, space, at) {
             return None;
         }
@@ -115,12 +121,12 @@ impl Drop for PinState {
 #[derive(Component)]
 pub struct AuthorityState {
     peer:  PeerId,
-    doc:   Hash,
+    doc:   NamespaceId,
     local: bool,
 }
 
 impl AuthorityState {
-    fn apply(peer: PeerId, doc: Hash, space: Hash, at: u64, local: bool) -> bool {
+    fn apply(peer: PeerId, doc: NamespaceId, space: NamespaceId, at: u64, local: bool) -> bool {
         let ok = replicas::add_authority(peer, doc, space, at);
         if ok && local {
             replicas::broadcast(&StateMsg::Authority { doc, space, at });
@@ -128,7 +134,13 @@ impl AuthorityState {
         ok
     }
 
-    fn register(peer: PeerId, doc: Hash, space: Hash, at: u64, local: bool) -> Option<Self> {
+    fn register(
+        peer: PeerId,
+        doc: NamespaceId,
+        space: NamespaceId,
+        at: u64,
+        local: bool,
+    ) -> Option<Self> {
         Self::apply(peer, doc, space, at, local).then_some(Self { peer, doc, local })
     }
 }
@@ -145,7 +157,7 @@ impl Drop for AuthorityState {
 #[derive(Component)]
 pub struct KvState {
     peer:      PeerId,
-    doc:       Hash,
+    doc:       NamespaceId,
     key:       String,
     placement: KvPlacement,
     local:     bool,
@@ -170,19 +182,19 @@ fn entity_by<C: Component, F: Fn(&C) -> bool>(world: &mut World, pred: F) -> Opt
     query.iter(world).find(|(_, c)| pred(c)).map(|(e, _)| e)
 }
 
-fn space_entity(world: &mut World, space: Hash) -> Option<Entity> {
+fn space_entity(world: &mut World, space: NamespaceId) -> Option<Entity> {
     entity_by::<Space, _>(world, |s| s.0 == space)
 }
 
 /// Resolves the entity anchoring `doc`: the [`Space`] for the base document, an
-/// instanced [`HsdRecordId`], or a [`SpaceDoc`] tracker; spawning a tracker
+/// instanced [`HsdNamespace`], or a [`SpaceDoc`] tracker; spawning a tracker
 /// when nothing exists yet. Trackers for spaces not yet entered stay
 /// unparented so their state is kept until the space is joined.
-fn doc_anchor(world: &mut World, doc: Hash, space: Hash) -> Entity {
+fn doc_anchor(world: &mut World, doc: NamespaceId, space: NamespaceId) -> Entity {
     if let Some(e) = space_entity(world, doc) {
         return e;
     }
-    if let Some(e) = entity_by::<HsdRecordId, _>(world, |r| r.0 == doc) {
+    if let Some(e) = entity_by::<HsdNamespace, _>(world, |r| r.0 == doc) {
         return e;
     }
     if let Some(e) = entity_by::<SpaceDoc, _>(world, |d| d.doc == doc) {
@@ -216,7 +228,7 @@ fn find_state<C: Component, F: Fn(&C) -> bool>(
 }
 
 /// Finds the doc-anchored neutral cell guard for `key`, if one exists.
-fn find_neutral_kv(world: &World, anchor: Entity, doc: Hash, key: &str) -> Option<Entity> {
+fn find_neutral_kv(world: &World, anchor: Entity, doc: NamespaceId, key: &str) -> Option<Entity> {
     world.get::<DocStates>(anchor)?.iter().find(|e| {
         world
             .get::<KvState>(*e)
@@ -228,8 +240,8 @@ fn spawn_pin(
     world: &mut World,
     peer_ent: Entity,
     peer: PeerId,
-    doc: Hash,
-    space: Hash,
+    doc: NamespaceId,
+    space: NamespaceId,
     at: u64,
     local: bool,
 ) -> bool {
@@ -249,8 +261,8 @@ fn spawn_authority(
     world: &mut World,
     peer_ent: Entity,
     peer: PeerId,
-    doc: Hash,
-    space: Hash,
+    doc: NamespaceId,
+    space: NamespaceId,
     at: u64,
     local: bool,
 ) {
@@ -265,13 +277,13 @@ fn spawn_authority(
     world.spawn((state, StateDoc(anchor), StatePeer(peer_ent)));
 }
 
-fn clear_authority(world: &mut World, peer_ent: Entity, doc: Hash) {
+fn clear_authority(world: &mut World, peer_ent: Entity, doc: NamespaceId) {
     if let Some(e) = find_state::<AuthorityState, _>(world, peer_ent, |a| a.doc == doc) {
         world.despawn(e);
     }
 }
 
-fn clear_pin(world: &mut World, peer_ent: Entity, doc: Hash) {
+fn clear_pin(world: &mut World, peer_ent: Entity, doc: NamespaceId) {
     if let Some(e) = find_state::<PinState, _>(world, peer_ent, |p| p.doc == doc) {
         world.despawn(e);
     }
@@ -281,8 +293,8 @@ fn set_kv(
     world: &mut World,
     peer_ent: Entity,
     peer: PeerId,
-    doc: Hash,
-    space: Hash,
+    doc: NamespaceId,
+    space: NamespaceId,
     key: String,
     value: Option<Vec<u8>>,
     at: u64,
@@ -349,13 +361,13 @@ fn set_kv(
     Ok(())
 }
 
-fn forget_kv(world: &mut World, peer_ent: Entity, doc: Hash, key: &str) {
+fn forget_kv(world: &mut World, peer_ent: Entity, doc: NamespaceId, key: &str) {
     if let Some(e) = find_state::<KvState, _>(world, peer_ent, |c| c.doc == doc && c.key == key) {
         world.despawn(e);
     }
 }
 
-pub async fn self_pin(space: Hash, doc: Hash) -> bool {
+pub async fn self_pin(space: NamespaceId, doc: NamespaceId) -> bool {
     let Some(me) = crate::peer::self_peer_id() else {
         return false;
     };
@@ -369,7 +381,7 @@ pub async fn self_pin(space: Hash, doc: Hash) -> bool {
         .unwrap_or(false)
 }
 
-pub fn claim_authority(space: Hash, doc: Hash) {
+pub fn claim_authority(space: NamespaceId, doc: NamespaceId) {
     let Some(me) = crate::peer::self_peer_id() else {
         return;
     };
@@ -382,7 +394,7 @@ pub fn claim_authority(space: Hash, doc: Hash) {
         .try_send();
 }
 
-pub fn release_authority(doc: Hash) {
+pub fn release_authority(doc: NamespaceId) {
     let _ = AsyncCommands::default()
         .push(move |world: &mut World| {
             if let Some(peer_ent) = entity_by::<LocalPeer, _>(world, |_| true) {
@@ -393,8 +405,8 @@ pub fn release_authority(doc: Hash) {
 }
 
 pub async fn doc_kv_set(
-    space: Hash,
-    doc: Hash,
+    space: NamespaceId,
+    doc: NamespaceId,
     key: String,
     value: Vec<u8>,
 ) -> Result<(), KvError> {
@@ -411,7 +423,11 @@ pub async fn doc_kv_set(
         .unwrap_or(Err(KvError::Other))
 }
 
-pub async fn doc_kv_delete(space: Hash, doc: Hash, key: String) -> Result<(), KvError> {
+pub async fn doc_kv_delete(
+    space: NamespaceId,
+    doc: NamespaceId,
+    key: String,
+) -> Result<(), KvError> {
     let Some(me) = crate::peer::self_peer_id() else {
         return Err(KvError::Other);
     };
@@ -497,8 +513,8 @@ mod tests {
         },
     };
 
-    fn h(seed: &[u8]) -> Hash {
-        blake3::hash(seed)
+    fn h(seed: &[u8]) -> NamespaceId {
+        NamespaceId::from(blake3::hash(seed).as_bytes())
     }
 
     #[test]

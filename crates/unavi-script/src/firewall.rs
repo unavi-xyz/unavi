@@ -7,7 +7,7 @@ use std::{
 };
 
 use bevy::prelude::*;
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use parking_lot::RwLock;
 
 /// Firewall controls how a document may communicate with other documents.
@@ -27,7 +27,7 @@ pub enum Channel {
 #[derive(Clone, Debug)]
 pub enum Access {
     Open,
-    Restricted(HashSet<Hash>),
+    Restricted(HashSet<NamespaceId>),
 }
 
 impl Default for Access {
@@ -38,7 +38,7 @@ impl Default for Access {
 
 impl Access {
     #[must_use]
-    pub fn permits(&self, id: &Hash) -> bool {
+    pub fn permits(&self, id: &NamespaceId) -> bool {
         match self {
             Self::Open => true,
             Self::Restricted(set) => set.contains(id),
@@ -48,7 +48,7 @@ impl Access {
 
 impl Firewall {
     #[must_use]
-    pub fn for_child_doc(_creator_id: Hash) -> Self {
+    pub fn for_child_doc(_creator_id: NamespaceId) -> Self {
         let firewall = Self::default();
         // {
         //     let mut map = firewall.0.write();

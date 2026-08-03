@@ -5,7 +5,7 @@ use bevy::{
     prelude::*,
     time::common_conditions::on_timer,
 };
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use unavi_manifold::{
     echo::maintain_seam_echoes,
     transition::apply_seam_crossings,
@@ -111,4 +111,4 @@ impl Plugin for SpacePlugin {
 
 #[derive(Component)]
 #[require(Transform, Visibility)]
-pub struct Space(pub Hash);
+pub struct Space(pub NamespaceId);

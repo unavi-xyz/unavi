@@ -27,6 +27,7 @@ use bevy_vrm::first_person::{
 use bevy_wds::{
     LocalActor,
     LocalBlobs,
+    LocalDocs,
 };
 use directories::ProjectDirs;
 use unavi_agent::LocalAgent;
@@ -67,7 +68,7 @@ fn main() -> anyhow::Result<()> {
         std::fs::copy(src, dst)?;
     }
 
-    let (actor, blobs) = create_test_wds();
+    let (actor, docs, blobs) = create_test_wds();
 
     let mut app = App::new();
     app.add_plugins((
@@ -96,7 +97,7 @@ fn main() -> anyhow::Result<()> {
     .add_systems(Startup, init_scene);
 
     app.world_mut()
-        .spawn((LocalActor(actor), LocalBlobs(blobs)));
+        .spawn((LocalActor(actor), LocalDocs(docs), LocalBlobs(blobs)));
 
     app.run();
 
@@ -145,8 +146,7 @@ fn on_agent_load(
     commands.spawn((
         LoadHsd {
             handle,
-            public: false,
-            extra_schemas: None,
+            extra: None,
             on_load: Some(Box::new(on_load_spawn_doc)),
         },
         ApiPermissions::default().with(ApiName::LocalAgent),

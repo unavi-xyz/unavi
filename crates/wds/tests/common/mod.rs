@@ -27,10 +27,6 @@ use wds::{
     DataStore,
     actor::Actor,
 };
-use wired_schemas::{
-    SCHEMA_ACL,
-    SCHEMA_RECORD,
-};
 
 pub struct DataStoreCtx {
     pub store: DataStore,
@@ -54,16 +50,6 @@ pub async fn ctx() -> DataStoreCtx {
     let rb = Router::builder(endpoint);
     let rb = f(rb);
     let router = rb.spawn();
-
-    // Upload schemas to the blob store.
-    for schema in [&SCHEMA_ACL, &SCHEMA_RECORD] {
-        store
-            .blobs()
-            .blobs()
-            .add_slice(&schema.bytes)
-            .await
-            .expect("add schema");
-    }
 
     let alice = generate_actor(&store).await;
     let bob = generate_actor(&store).await;

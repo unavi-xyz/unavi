@@ -83,7 +83,10 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
         (store, router)
     };
 
-    let app = create_did_document_route(did, &vc, store.endpoint_id());
+    let registry = store.create_registry().await?;
+    info!(%registry, "Serving registry doc");
+
+    let app = create_did_document_route(did, &vc, store.endpoint_id(), registry);
 
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port));
     info!("HTTP listening on port {port}");
@@ -113,6 +116,7 @@ fn create_did_document_route(
     did: Did,
     vc: &impl DidKeyPair,
     endpoint_id: EndpointId,
+    registry: iroh_docs::NamespaceId,
 ) -> axum::Router {
     let vc_public = vc.public().to_jwk();
 
@@ -144,7 +148,7 @@ fn create_did_document_route(
                     service:               Some(vec![ServiceEndpoint {
                         id:               "wds".into(),
                         typ:              vec![WDS_SERVICE_TYPE.into()],
-                        service_endpoint: vec![endpoint_id.to_string()],
+                        service_endpoint: vec![endpoint_id.to_string(), format!("ns:{registry}")],
                     }]),
                     verification_method:   Some(vec![VerificationMethodMap {
                         id:                   DidUrl {

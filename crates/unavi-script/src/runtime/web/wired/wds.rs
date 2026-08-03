@@ -10,7 +10,6 @@ use crate::{
         shared::{
             self,
             Api,
-            wired::wds::QueryFilter,
         },
     },
 };
@@ -40,48 +39,48 @@ impl Drop for WdsHandle {
 }
 
 #[wasm_bindgen]
-pub struct QueryFutureHandle {
+pub struct GetFutureHandle {
     rep: u32,
     api: Arc<Api>,
 }
 
-impl QueryFutureHandle {
+impl GetFutureHandle {
     pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
     }
 }
 
-impl Drop for QueryFutureHandle {
+impl Drop for GetFutureHandle {
     fn drop(&mut self) {
         if self.rep != u32::MAX {
             let api = Arc::clone(&self.api);
             let rep = self.rep;
             spawn_async_task(async move {
-                let _ = shared::wired::wds::query_future_drop(&api, rep).await;
+                let _ = shared::wired::wds::get_future_drop(&api, rep).await;
             });
         }
     }
 }
 
 #[wasm_bindgen]
-pub struct ReadFutureHandle {
+pub struct ListFutureHandle {
     rep: u32,
     api: Arc<Api>,
 }
 
-impl ReadFutureHandle {
+impl ListFutureHandle {
     pub const fn new(rep: u32, api: Arc<Api>) -> Self {
         Self { rep, api }
     }
 }
 
-impl Drop for ReadFutureHandle {
+impl Drop for ListFutureHandle {
     fn drop(&mut self) {
         if self.rep != u32::MAX {
             let api = Arc::clone(&self.api);
             let rep = self.rep;
             spawn_async_task(async move {
-                let _ = shared::wired::wds::read_future_drop(&api, rep).await;
+                let _ = shared::wired::wds::list_future_drop(&api, rep).await;
             });
         }
     }
@@ -111,27 +110,6 @@ impl Drop for BlobFutureHandle {
     }
 }
 
-fn js_to_query_filter(value: &JsValue) -> Option<QueryFilter> {
-    if value.is_null() || value.is_undefined() {
-        return None;
-    }
-    let get = |k: &str| {
-        js_sys::Reflect::get(value, &k.into())
-            .ok()
-            .filter(|v| !v.is_undefined() && !v.is_null())
-    };
-
-    let creator = get("creator").and_then(|v| v.as_string());
-    let schemas = get("schemas").map(|v| {
-        js_sys::Array::from(&v)
-            .iter()
-            .map(|item| js_sys::Uint8Array::new(&item).to_vec())
-            .collect()
-    });
-
-    Some(QueryFilter { creator, schemas })
-}
-
 fn variant_obj(tag: &str, val: JsValue) -> JsValue {
     let obj = js_sys::Object::new();
     js_sys::Reflect::set(&obj, &"tag".into(), &tag.into()).ok();
@@ -141,18 +119,33 @@ fn variant_obj(tag: &str, val: JsValue) -> JsValue {
 
 #[wasm_bindgen]
 impl WdsHandle {
-    pub async fn query(&self, filter: JsValue) -> QueryFutureHandle {
-        let rep = shared::wired::wds::query(&self.api, self.rep, js_to_query_filter(&filter))
+    #[wasm_bindgen(js_name = "createDoc")]
+    pub async fn create_doc(&self) -> Option<Vec<u8>> {
+        shared::wired::wds::create_doc(&self.api, self.rep)
             .await
-            .unwrap_or(u32::MAX);
-        QueryFutureHandle::new(rep, Arc::clone(&self.api))
+            .ok()
     }
 
-    pub async fn read(&self, record_id: Vec<u8>) -> ReadFutureHandle {
-        let rep = shared::wired::wds::read(&self.api, self.rep, record_id)
+    pub async fn set(&self, ns: Vec<u8>, key: String, value: Vec<u8>) {
+        let _ = shared::wired::wds::set(&self.api, self.rep, ns, key, value).await;
+    }
+
+    pub async fn delete(&self, ns: Vec<u8>, key: String) {
+        let _ = shared::wired::wds::delete(&self.api, self.rep, ns, key).await;
+    }
+
+    pub async fn get(&self, ns: Vec<u8>, key: String) -> GetFutureHandle {
+        let rep = shared::wired::wds::get(&self.api, self.rep, ns, key)
             .await
             .unwrap_or(u32::MAX);
-        ReadFutureHandle::new(rep, Arc::clone(&self.api))
+        GetFutureHandle::new(rep, Arc::clone(&self.api))
+    }
+
+    pub async fn list(&self, ns: Vec<u8>, prefix: String) -> ListFutureHandle {
+        let rep = shared::wired::wds::list(&self.api, self.rep, ns, prefix)
+            .await
+            .unwrap_or(u32::MAX);
+        ListFutureHandle::new(rep, Arc::clone(&self.api))
     }
 
     #[wasm_bindgen(js_name = "getBlob")]
@@ -162,36 +155,62 @@ impl WdsHandle {
             .unwrap_or(u32::MAX);
         BlobFutureHandle::new(rep, Arc::clone(&self.api))
     }
+
+    #[wasm_bindgen(js_name = "rootDoc")]
+    pub async fn root_doc(&self) -> Option<Vec<u8>> {
+        shared::wired::wds::root_doc_ns(&self.api, self.rep)
+            .ok()
+            .flatten()
+    }
+
+    pub async fn registries(&self) -> JsValue {
+        let Ok(namespaces) = shared::wired::wds::registry_namespaces(&self.api, self.rep) else {
+            return js_sys::Array::new().into();
+        };
+        namespaces
+            .into_iter()
+            .map(|ns| JsValue::from(js_sys::Uint8Array::from(ns.as_slice())))
+            .collect::<js_sys::Array>()
+            .into()
+    }
 }
 
 #[wasm_bindgen]
-impl BlobFutureHandle {
+impl GetFutureHandle {
     pub async fn poll(&self) -> JsValue {
-        let Ok(Some(result)) = shared::wired::wds::blob_future_poll(&self.api, self.rep).await
+        let Ok(Some(result)) = shared::wired::wds::get_future_poll(&self.api, self.rep).await
         else {
             return JsValue::UNDEFINED;
         };
         match result {
-            Ok(bytes) => variant_obj("ok", js_sys::Uint8Array::from(bytes.as_slice()).into()),
+            Ok(Some(bytes)) => variant_obj("ok", js_sys::Uint8Array::from(bytes.as_slice()).into()),
+            Ok(None) => variant_obj("ok", JsValue::UNDEFINED),
             Err(()) => variant_obj("err", JsValue::UNDEFINED),
         }
     }
 }
 
 #[wasm_bindgen]
-impl QueryFutureHandle {
+impl ListFutureHandle {
     pub async fn poll(&self) -> JsValue {
-        let Ok(Some(result)) = shared::wired::wds::query_future_poll(&self.api, self.rep).await
+        let Ok(Some(result)) = shared::wired::wds::list_future_poll(&self.api, self.rep).await
         else {
             return JsValue::UNDEFINED;
         };
         match result {
-            Ok(hashes) => {
-                let arr: js_sys::Array = hashes
-                    .iter()
-                    .map(|h| {
-                        let bytes: js_sys::Uint8Array = h.as_slice().into();
-                        JsValue::from(bytes)
+            Ok(entries) => {
+                let arr: js_sys::Array = entries
+                    .into_iter()
+                    .map(|entry| {
+                        let obj = js_sys::Object::new();
+                        js_sys::Reflect::set(&obj, &"key".into(), &entry.key.into()).ok();
+                        js_sys::Reflect::set(
+                            &obj,
+                            &"value".into(),
+                            &js_sys::Uint8Array::from(entry.value.as_slice()).into(),
+                        )
+                        .ok();
+                        JsValue::from(obj)
                     })
                     .collect();
                 variant_obj("ok", arr.into())
@@ -202,9 +221,9 @@ impl QueryFutureHandle {
 }
 
 #[wasm_bindgen]
-impl ReadFutureHandle {
+impl BlobFutureHandle {
     pub async fn poll(&self) -> JsValue {
-        let Ok(Some(result)) = shared::wired::wds::read_future_poll(&self.api, self.rep).await
+        let Ok(Some(result)) = shared::wired::wds::blob_future_poll(&self.api, self.rep).await
         else {
             return JsValue::UNDEFINED;
         };
@@ -225,18 +244,18 @@ impl Runtime {
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
 
-    #[wasm_bindgen(js_name = "wiredQueryFutureClass")]
+    #[wasm_bindgen(js_name = "wiredGetFutureClass")]
     #[must_use]
-    pub fn wired_query_future_class(&self) -> JsValue {
-        let handle = QueryFutureHandle::new(u32::MAX, Arc::clone(&self.api));
+    pub fn wired_get_future_class(&self) -> JsValue {
+        let handle = GetFutureHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }
 
-    #[wasm_bindgen(js_name = "wiredReadFutureClass")]
+    #[wasm_bindgen(js_name = "wiredListFutureClass")]
     #[must_use]
-    pub fn wired_read_future_class(&self) -> JsValue {
-        let handle = ReadFutureHandle::new(u32::MAX, Arc::clone(&self.api));
+    pub fn wired_list_future_class(&self) -> JsValue {
+        let handle = ListFutureHandle::new(u32::MAX, Arc::clone(&self.api));
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &JsValue::from_str("constructor")).expect("reflect")
     }

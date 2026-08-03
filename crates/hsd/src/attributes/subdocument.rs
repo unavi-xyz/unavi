@@ -13,7 +13,9 @@ use crate::attributes::Attribute;
 #[derive(Hydrate, Reconcile, Debug, Clone, Serialize, Deserialize)]
 pub enum SubdocumentAttr {
     Template(ByteArray<32>),
-    Record(ByteArray<32>),
+    /// A nested subdocument instanced as its own iroh-docs namespace; the bytes
+    /// are its [`NamespaceId`](iroh_docs::NamespaceId).
+    Doc(ByteArray<32>),
 }
 
 impl Attribute for SubdocumentAttr {

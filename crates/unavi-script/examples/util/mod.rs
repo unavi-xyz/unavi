@@ -4,9 +4,10 @@ use iroh::{
     endpoint::presets::N0,
     protocol::Router,
 };
+use iroh_blobs::api::blobs::Blobs;
+use iroh_docs::protocol::Docs;
 use unavi_util::async_task::spawn_async_task;
 use wds::{
-    Blobs,
     DataStore,
     Identity,
     actor::Actor,
@@ -18,7 +19,7 @@ use xdid::methods::key::{
 };
 
 #[must_use]
-pub fn create_test_wds() -> (Actor, Blobs) {
+pub fn create_test_wds() -> (Actor, Docs, Blobs) {
     let (tx, rx) = async_channel::bounded(1);
 
     spawn_async_task(async move {
@@ -37,13 +38,14 @@ pub fn create_test_wds() -> (Actor, Blobs) {
         let _router = rb.spawn();
 
         let blobs = store.blobs().blobs().clone();
+        let docs = store.docs().clone();
 
         let signing_key = P256KeyPair::generate();
         let did = signing_key.public().to_did();
         let identity = Arc::new(Identity::new(did, signing_key));
         let actor = store.local_actor(identity);
 
-        tx.send((actor, blobs)).await.expect("send");
+        tx.send((actor, docs, blobs)).await.expect("send");
     });
 
     rx.recv_blocking().expect("wds setup")

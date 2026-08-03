@@ -35,14 +35,17 @@ impl FromStr for BlobTag {
 }
 
 impl BlobTag {
+    #[must_use]
     pub const fn new(owner: Did, hash: Hash) -> Self {
         Self { owner, hash }
     }
 
+    #[must_use]
     pub const fn owner(&self) -> &Did {
         &self.owner
     }
 
+    #[must_use]
     pub const fn hash(&self) -> &Hash {
         &self.hash
     }

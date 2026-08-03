@@ -12,7 +12,6 @@ use bevy::{
     },
     transform::components::GlobalTransform,
 };
-use blake3::Hash;
 use hsd::{
     HSD_CONTAINER_ID,
     attributes::{
@@ -45,6 +44,7 @@ use hsd::{
         xform::XformAttr,
     },
 };
+use iroh_docs::NamespaceId;
 use loro::{
     LoroDoc,
     LoroMap,
@@ -82,7 +82,7 @@ use crate::{
 #[derive(Clone)]
 pub struct PrimRes {
     pub doc:      Arc<LoroDoc>,
-    pub doc_id:   Hash,
+    pub doc_id:   NamespaceId,
     pub id:       TreeID,
     /// Proxy prims (e.g. agent bone nodes) are read-only from scripts.
     pub is_proxy: bool,
@@ -222,12 +222,11 @@ fn prim_meta(doc: &LoroDoc, id: TreeID) -> anyhow::Result<LoroMap> {
 }
 
 fn attrs_or_create(meta: &LoroMap) -> anyhow::Result<LoroMap> {
-    meta.get_or_create_container("attributes", LoroMap::new())
-        .map_err(Into::into)
+    meta.ensure_mergeable_map("attributes").map_err(Into::into)
 }
 
 fn rels_or_create(meta: &LoroMap) -> anyhow::Result<LoroMap> {
-    meta.get_or_create_container("relationships", LoroMap::new())
+    meta.ensure_mergeable_map("relationships")
         .map_err(Into::into)
 }
 

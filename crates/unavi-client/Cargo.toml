@@ -42,6 +42,7 @@ blake3.workspace        = true
 clap.workspace          = true
 image                   = { default-features = false, features = ["png"], workspace = true }
 iroh.workspace          = true
+iroh-docs.workspace     = true
 log                     = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
 n0-future.workspace     = true
 parking_lot.workspace   = true
@@ -59,7 +60,6 @@ unavi-util.path         = "../unavi-util"
 unavi-wasm-compat.path  = "../unavi-wasm-compat"
 web-time                = "1.1.0"
 winit                   = { default-features = false, version = "0.30.13" }
-wired-schemas.path      = "../wired-schemas"
 xdid.workspace          = true
 zeroize.workspace       = true
 

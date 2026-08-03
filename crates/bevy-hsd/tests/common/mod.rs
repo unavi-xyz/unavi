@@ -15,11 +15,13 @@ use bevy_wds::{
     LocalBlobs,
     WdsPlugin,
 };
-use iroh_blobs::store::mem::MemStore;
+use iroh_blobs::{
+    api::blobs::Blobs,
+    store::mem::MemStore,
+};
 use loro::LoroDoc;
 use rstest::fixture;
 use unavi_util::async_task::spawn_async_task;
-use wds::Blobs;
 
 pub struct TestContext {
     pub app: App,

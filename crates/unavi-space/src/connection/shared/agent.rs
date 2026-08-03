@@ -5,7 +5,6 @@ use bevy::{
     platform::collections::HashMap,
     transform::components::Transform,
 };
-use blake3::Hash;
 use iroh::{
     EndpointId,
     endpoint::{
@@ -14,6 +13,7 @@ use iroh::{
         SendStream,
     },
 };
+use iroh_docs::NamespaceId;
 use n0_future::time::Instant;
 use postcard::experimental::max_size::MaxSize;
 use serde::{
@@ -86,7 +86,7 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
     let mut iframe_id = 0;
     let mut last_iframe = Pose::default();
     let mut last_iframe_time = Instant::now() - IFRAME_FREQ;
-    let mut last_space = Hash::from_bytes([0; 32]);
+    let mut last_space = NamespaceId::from(&[0; 32]);
 
     let mut buf = [0; AgentMsg::POSTCARD_MAX_SIZE];
 
@@ -163,7 +163,7 @@ fn resolve_msg(msg: AgentMsg, baseline: &mut Option<Baseline>) -> Option<Resolve
                 bones: pose.bones,
             });
             Some(ResolvedPose {
-                space: Hash::from_bytes(space),
+                space: NamespaceId::from(&space),
                 root,
                 bones,
             })
@@ -194,7 +194,7 @@ fn resolve_msg(msg: AgentMsg, baseline: &mut Option<Baseline>) -> Option<Resolve
                 })
                 .collect();
             Some(ResolvedPose {
-                space: Hash::from_bytes(space),
+                space: NamespaceId::from(&space),
                 root: Transform {
                     translation,
                     rotation: pose.root.rot.into(),
@@ -282,7 +282,7 @@ mod tests {
         )
         .expect("resolved");
 
-        assert_eq!(Hash::from_bytes(SPACE), resolved.space);
+        assert_eq!(NamespaceId::from(&SPACE), resolved.space);
         assert!((resolved.root.translation - pos).length() < 0.01);
         assert!(baseline.is_some());
     }

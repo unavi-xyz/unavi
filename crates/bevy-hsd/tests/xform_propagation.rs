@@ -23,9 +23,7 @@ use crate::common::*;
 mod common;
 
 fn write_attr<A: Attribute>(meta: &LoroMap, attr: &A) {
-    let attrs = meta
-        .get_or_create_container("attributes", LoroMap::new())
-        .expect("attrs");
+    let attrs = meta.ensure_mergeable_map("attributes").expect("attrs");
     attr.attr_reconcile(attrs).expect("reconcile");
 }
 

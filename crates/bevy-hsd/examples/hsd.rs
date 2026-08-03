@@ -44,7 +44,10 @@ use hsd::{
         xform::XformAttr,
     },
 };
-use iroh_blobs::store::mem::MemStore;
+use iroh_blobs::{
+    api::blobs::Blobs,
+    store::mem::MemStore,
+};
 use loro::LoroDoc;
 use loro_surgeon::{
     Reconcile,
@@ -52,7 +55,6 @@ use loro_surgeon::{
     reconcile::RootReconciler,
 };
 use unavi_util::async_task::spawn_async_task;
-use wds::Blobs;
 
 const CUBE_SIZE: f32 = 1.0;
 

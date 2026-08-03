@@ -257,13 +257,13 @@ pub fn promote_first_space(
 #[cfg(test)]
 mod tests {
     use bevy::transform::TransformPlugin;
-    use blake3::Hash;
+    use iroh_docs::NamespaceId;
     use unavi_manifold::transition::apply_seam_crossings;
 
     use super::*;
 
-    fn space_hash(seed: &[u8]) -> Hash {
-        blake3::hash(seed)
+    fn space_hash(seed: &[u8]) -> NamespaceId {
+        NamespaceId::from(blake3::hash(seed).as_bytes())
     }
 
     fn setup() -> App {

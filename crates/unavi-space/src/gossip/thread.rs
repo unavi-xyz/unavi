@@ -4,8 +4,12 @@ use std::{
 };
 
 use bevy::prelude::*;
-use blake3::Hash;
 use iroh::Endpoint;
+use iroh_blobs::api::blobs::Blobs;
+use iroh_docs::{
+    NamespaceId,
+    protocol::Docs,
+};
 use iroh_gossip::{
     Gossip,
     TopicId,
@@ -21,13 +25,15 @@ pub struct GossipCtx {
     pub gossip:       Gossip,
     pub actor:        Actor,
     pub sync_targets: Vec<Actor>,
+    pub docs:         Docs,
+    pub blobs:        Blobs,
 }
 
 pub enum GossipCommand {
     JoinSpace {
         ctx:    GossipCtx,
         cancel: oneshot::Receiver<()>,
-        space:  Hash,
+        space:  NamespaceId,
     },
 }
 
@@ -53,7 +59,7 @@ pub async fn handle_gossip_thread(rx: async_channel::Receiver<GossipCommand>) {
 async fn handle_space_topic(
     ctx: GossipCtx,
     cancel: oneshot::Receiver<()>,
-    space: Hash,
+    space: NamespaceId,
 ) -> anyhow::Result<()> {
     let peers = super::bootstrap::find_bootstrap_peers(&ctx, space).await?;
 

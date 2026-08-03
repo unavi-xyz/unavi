@@ -1,10 +1,4 @@
-use blake3::Hash;
 use wired_prelude::prelude::*;
-use wired_records::{
-    beacon::BeaconRecord,
-    value::RecordValue,
-};
-use wired_schemas::SCHEMA_BEACON;
 
 use crate::{
     palette,
@@ -27,11 +21,7 @@ use crate::{
         },
         wds::{
             api::get_wds,
-            types::{
-                QueryFilter,
-                QueryFuture,
-                ReadFuture,
-            },
+            types::ListFuture,
         },
     },
 };
@@ -124,17 +114,22 @@ fn add_slab(parent: &Prim, size: Vec3, translation: Vec3, color: Color) {
     parent.add_child(&slab).ok();
 }
 
-fn parse_beacon_record(bytes: &[u8]) -> Option<BeaconRecord> {
-    let value: RecordValue = postcard::from_bytes(bytes).ok()?;
-    value.get("beacon")?.clone().into_typed().ok()
+/// Parses the space namespace out of a beacon entry key of the form
+/// `beacons/<space-hex>/<did>`, returning its 64-char hex identity.
+fn beacon_space_hex(key: &str) -> Option<&str> {
+    key.strip_prefix("beacons/")?
+        .split('/')
+        .next()
+        .filter(|s| !s.is_empty())
 }
 
-/// The gauntlet's nav table: on open, queries WDS for known beacons and lays
-/// them out in a grid on a small table placed in front of the player.
+/// The gauntlet's nav table: on open, lists known beacons from the home
+/// servers' registry docs and lays them out in a grid on a small table placed
+/// in front of the player.
 pub struct Nav {
     root:         Prim,
-    beacon_query: Option<QueryFuture>,
-    beacon_reads: Vec<ReadFuture>,
+    beacon_lists: Vec<ListFuture>,
+    seen:         Vec<String>,
     beacons:      Vec<Document>,
 }
 
@@ -173,8 +168,8 @@ impl Nav {
 
         Self {
             root,
-            beacon_query: None,
-            beacon_reads: Vec::new(),
+            beacon_lists: Vec::new(),
+            seen: Vec::new(),
             beacons: Vec::new(),
         }
     }
@@ -185,17 +180,19 @@ impl Nav {
             rotation:    placement.rotation,
             scale:       Vec3::ONE,
         }))?;
-        self.beacon_query = Some(get_wds()?.query(Some(&QueryFilter {
-            creator: None,
-            schemas: Some(vec![SCHEMA_BEACON.hash.as_bytes().to_vec()]),
-        })));
+        let wds = get_wds()?;
+        self.beacon_lists = wds
+            .registries()
+            .iter()
+            .map(|registry| wds.list(registry, "beacons/"))
+            .collect();
         Ok(())
     }
 
     pub fn close(&mut self) -> anyhow::Result<()> {
         self.root.set_xform(Some(hidden()))?;
-        self.beacon_query = None;
-        self.beacon_reads.clear();
+        self.beacon_lists.clear();
+        self.seen.clear();
         for doc in self.beacons.drain(..) {
             remove_document(&doc.id())?;
         }
@@ -203,34 +200,29 @@ impl Nav {
     }
 
     pub fn fixed_update(&mut self) -> anyhow::Result<()> {
-        if let Some(fut) = &self.beacon_query
-            && let Some(result) = fut.poll()
-        {
-            self.beacon_query = None;
+        let mut spaces = Vec::new();
+        for i in (0..self.beacon_lists.len()).rev() {
+            let Some(result) = self.beacon_lists[i].poll() else {
+                continue;
+            };
+            self.beacon_lists.remove(i);
             match result {
-                Ok(ids) => {
-                    for id in ids {
-                        let id = Hash::from_slice(&id).expect("valid hash");
-                        self.beacon_reads.push(get_wds()?.read(id.as_slice()));
+                Ok(entries) => {
+                    for entry in entries {
+                        if let Some(space) = beacon_space_hex(&entry.key) {
+                            spaces.push(space.to_string());
+                        }
                     }
                 }
-                Err(()) => eprintln!("nav: WDS beacon query error"),
+                Err(()) => eprintln!("nav: WDS beacon list error"),
             }
         }
 
-        for i in (0..self.beacon_reads.len()).rev() {
-            let Some(res) = self.beacon_reads[i].poll() else {
+        for space in spaces {
+            if self.seen.contains(&space) {
                 continue;
-            };
-            self.beacon_reads.remove(i);
-
-            let Ok(bytes) = res else {
-                continue;
-            };
-            let Some(beacon) = parse_beacon_record(&bytes) else {
-                continue;
-            };
-            let space = Hash::from_bytes(*beacon.space.as_bytes());
+            }
+            self.seen.push(space.clone());
 
             let doc = self_document()?;
             let Some(beacon_asset) = doc.prims().into_iter().find_map(|p| p.asset()) else {
@@ -243,7 +235,7 @@ impl Nav {
             };
 
             let prim = beacon_doc.create_prim()?;
-            prim.set_name(Some(&space.to_string()))?;
+            prim.set_name(Some(&space))?;
 
             let root_xform = self.root.xform().unwrap_or(Xform {
                 translation: Vec3::ZERO,

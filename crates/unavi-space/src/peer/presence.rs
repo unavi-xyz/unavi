@@ -11,11 +11,11 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use blake3::Hash;
 use iroh::{
     EndpointAddr,
     EndpointId,
 };
+use iroh_docs::NamespaceId;
 
 use crate::peer::{
     ActiveSpaces,
@@ -25,12 +25,12 @@ use crate::peer::{
 pub const PRESENCE_INTERVAL: Duration = Duration::from_secs(20);
 const INACTIVE_SECS: f32 = PRESENCE_INTERVAL.as_secs_f32() * 4.0;
 
-type PresenceKey = (EndpointId, Hash);
+type PresenceKey = (EndpointId, NamespaceId);
 
 static PRESENCE_INBOX: LazyLock<Mutex<HashMap<PresenceKey, EndpointAddr>>> =
     LazyLock::new(|| Mutex::new(HashMap::default()));
 
-pub fn submit_presence(peer: EndpointAddr, space: Hash) {
+pub fn submit_presence(peer: EndpointAddr, space: NamespaceId) {
     let mut inbox = PRESENCE_INBOX.lock().expect("presence inbox");
     inbox.insert((peer.id, space), peer);
 }
@@ -39,7 +39,7 @@ pub fn manage_peers(
     time: Res<Time>,
     mut peers: Query<(Entity, &Peer, &mut ActiveSpaces)>,
     mut commands: Commands,
-    mut to_remove: Local<Vec<Hash>>,
+    mut to_remove: Local<Vec<NamespaceId>>,
 ) {
     let now = time.elapsed_secs();
 

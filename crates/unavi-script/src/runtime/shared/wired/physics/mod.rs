@@ -12,11 +12,11 @@ use bevy::{
 };
 use bevy_hsd::{
     HsdChild,
+    HsdNamespace,
     HsdPrimIndex,
-    HsdRecordId,
     Prim as HsdPrim,
 };
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use loro::TreeID;
 use unavi_util::async_commands::AsyncCommands;
 
@@ -36,9 +36,9 @@ pub struct RayHit {
 fn resolve_doc(
     mut entity: Entity,
     children: &Query<&HsdChild>,
-    docs: &Query<&HsdRecordId>,
+    docs: &Query<&HsdNamespace>,
     parents: &Query<&ChildOf>,
-) -> Option<Hash> {
+) -> Option<NamespaceId> {
     loop {
         if let Ok(child) = children.get(entity)
             && let Ok(rec) = docs.get(child.0)
@@ -69,7 +69,7 @@ pub async fn raycast(
                     move |spatial: SpatialQuery,
                           prims: Query<&HsdPrim>,
                           children: Query<&HsdChild>,
-                          docs: Query<&HsdRecordId>,
+                          docs: Query<&HsdNamespace>,
                           parents: Query<&ChildOf>|
                           -> Option<RayHit> {
                         let origin_v = Vec3::from_array(origin);
@@ -105,7 +105,7 @@ pub async fn raycast(
         .map_err(|err| ScriptError::other(err.to_string()))
 }
 
-async fn prim_ident(api: &Api, prim_rep: u32) -> Result<(Hash, TreeID), ScriptError> {
+async fn prim_ident(api: &Api, prim_rep: u32) -> Result<(NamespaceId, TreeID), ScriptError> {
     let scene = api.wired_scene.lock().await;
     let prim = scene
         .prims
@@ -116,8 +116,8 @@ async fn prim_ident(api: &Api, prim_rep: u32) -> Result<(Hash, TreeID), ScriptEr
     Ok(ident)
 }
 
-fn entity_for(world: &mut World, doc: Hash, tree: TreeID) -> Option<Entity> {
-    let mut query = world.query::<(&HsdRecordId, &HsdPrimIndex)>();
+fn entity_for(world: &mut World, doc: NamespaceId, tree: TreeID) -> Option<Entity> {
+    let mut query = world.query::<(&HsdNamespace, &HsdPrimIndex)>();
     for (rec, index) in query.iter(world) {
         if rec.0 == doc {
             return index.0.get(&tree).copied();
@@ -215,7 +215,7 @@ pub async fn apply_force(api: &Api, prim_rep: u32, v: [f32; 3]) -> Result<(), Sc
 pub fn claim_authority(_api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
     let bytes = <[u8; 32]>::try_from(doc_id.as_slice())
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
-    let doc = Hash::from(bytes);
+    let doc = NamespaceId::from(&bytes);
     let space = unavi_space::membership::doc_space(doc)
         .ok_or_else(|| ScriptError::other("document is not in a tracked space"))?;
     unavi_space::state::entities::claim_authority(space, doc);
@@ -225,6 +225,6 @@ pub fn claim_authority(_api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
 pub fn release_authority(_api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
     let bytes = <[u8; 32]>::try_from(doc_id.as_slice())
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
-    unavi_space::state::entities::release_authority(Hash::from(bytes));
+    unavi_space::state::entities::release_authority(NamespaceId::from(&bytes));
     Ok(())
 }

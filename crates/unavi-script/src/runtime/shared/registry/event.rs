@@ -8,7 +8,7 @@ use std::{
 };
 
 use async_channel::Sender;
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use parking_lot::RwLock;
 
 use crate::runtime::shared::registry::transform::AbsoluteNodeId;
@@ -18,7 +18,7 @@ pub static EVENT_RECEPTOR_REGISTRY: LazyLock<RwLock<HashMap<u32, ReceptorEntry>>
 
 pub struct ReceptorEntry {
     pub channels:         Vec<String>,
-    pub doc_id:           Hash,
+    pub doc_id:           NamespaceId,
     pub scope:            ReceptorScope,
     pub source_documents: Option<Vec<Vec<u8>>>,
     pub tx:               Sender<InboundEvent>,

@@ -951,6 +951,7 @@ dependencies = [
  "hsd",
  "image",
  "iroh-blobs",
+ "iroh-docs",
  "loro",
  "loro-surgeon",
  "rstest",
@@ -961,7 +962,6 @@ dependencies = [
  "tracing-test",
  "unavi-util",
  "wds",
- "wired-schemas",
 ]
 
 [[package]]
@@ -1085,8 +1085,8 @@ dependencies = [
  "bevy",
  "blake3",
  "bytes 1.12.1",
- "iroh-base",
- "loro",
+ "iroh-blobs",
+ "iroh-docs",
  "n0-future",
  "smol_str 0.3.6",
  "tokio",
@@ -6867,7 +6867,6 @@ dependencies = [
  "serde_with",
  "smol_str 0.3.6",
  "tracing",
- "wired-records",
 ]
 
 [[package]]
@@ -14305,6 +14304,7 @@ dependencies = [
  "embed-resource",
  "image",
  "iroh",
+ "iroh-docs",
  "log",
  "n0-future",
  "parking_lot",
@@ -14324,7 +14324,6 @@ dependencies = [
  "web-sys",
  "web-time",
  "winit",
- "wired-schemas",
  "xdid",
  "zeroize",
 ]
@@ -14368,8 +14367,6 @@ dependencies = [
  "postcard",
  "unavi-gauntlet-menu",
  "wired-prelude",
- "wired-records",
- "wired-schemas",
  "wit-bindgen 0.55.0",
 ]
 
@@ -14451,6 +14448,7 @@ dependencies = [
  "bevy_panorbit_camera",
  "bevy_vrm",
  "blake3",
+ "iroh-docs",
  "loro",
 ]
 
@@ -14475,6 +14473,7 @@ name = "unavi-quota"
 version = "0.0.16"
 dependencies = [
  "blake3",
+ "iroh-docs",
  "parking_lot",
  "sysinfo 0.37.2",
  "thiserror 2.0.19",
@@ -14499,6 +14498,8 @@ dependencies = [
  "directories",
  "hsd",
  "iroh",
+ "iroh-blobs",
+ "iroh-docs",
  "js-sys",
  "loro",
  "loro-surgeon",
@@ -14523,8 +14524,6 @@ dependencies = [
  "wasmtime",
  "wasmtime-wasi",
  "wds",
- "wired-records",
- "wired-schemas",
  "xdid",
 ]
 
@@ -14547,6 +14546,7 @@ dependencies = [
  "console-subscriber",
  "directories",
  "iroh",
+ "iroh-docs",
  "p256",
  "tokio",
  "tower-http",
@@ -14582,6 +14582,8 @@ dependencies = [
  "half",
  "hsd",
  "iroh",
+ "iroh-blobs",
+ "iroh-docs",
  "iroh-gossip",
  "loro",
  "n0-future",
@@ -14602,8 +14604,6 @@ dependencies = [
  "unavi-quota",
  "unavi-util",
  "wds",
- "wired-records",
- "wired-schemas",
 ]
 
 [[package]]
@@ -15602,11 +15602,10 @@ dependencies = [
  "iroh",
  "iroh-blobs",
  "iroh-docs",
+ "iroh-gossip",
  "irpc",
  "irpc-iroh",
  "jose-jwk",
- "loro",
- "loro-surgeon",
  "n0-error",
  "n0-future",
  "p256",
@@ -15626,23 +15625,7 @@ dependencies = [
  "tokio-util",
  "tracing",
  "tracing-test",
- "wds-schema",
- "wired-records",
- "wired-schemas",
  "xdid",
-]
-
-[[package]]
-name = "wds-schema"
-version = "0.0.16"
-dependencies = [
- "blake3",
- "loro",
- "postcard",
- "ron",
- "serde",
- "smol_str 0.3.6",
- "thiserror 2.0.19",
 ]
 
 [[package]]
@@ -16744,34 +16727,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "wired-records"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "blake3",
- "loro",
- "loro-surgeon",
- "postcard",
- "serde",
- "serde_with",
- "xdid",
-]
-
-[[package]]
 name = "wired-scene"
 version = "0.0.16"
 dependencies = [
  "serde",
-]
-
-[[package]]
-name = "wired-schemas"
-version = "0.0.16"
-dependencies = [
- "blake3",
- "bytes 1.12.1",
- "ron",
- "wds-schema",
 ]
 
 [[package]]

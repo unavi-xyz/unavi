@@ -13,13 +13,15 @@ use bevy_iroh::{
 };
 use bevy_wds::{
     LocalActor,
+    LocalBlobs,
+    LocalDocs,
     SyncTargets,
 };
-use blake3::Hash;
 use iroh::{
     EndpointAddr,
     EndpointId,
 };
+use iroh_docs::NamespaceId;
 use iroh_gossip::Gossip;
 use serde::{
     Deserialize,
@@ -44,13 +46,13 @@ mod thread;
 
 /// The space we currently occupy, mirrored from [`crate::anchor::ActiveSpace`]
 /// for the async gossip tasks. Presence broadcasts only to this space.
-static ACTIVE_SPACE: RwLock<Option<Hash>> = RwLock::new(None);
+static ACTIVE_SPACE: RwLock<Option<NamespaceId>> = RwLock::new(None);
 
 /// Woken when the active space changes, so the entered space broadcasts
 /// presence immediately instead of waiting out the heartbeat.
 static ACTIVE_CHANGED: LazyLock<tokio::sync::Notify> = LazyLock::new(tokio::sync::Notify::new);
 
-fn active_space() -> Option<Hash> {
+fn active_space() -> Option<NamespaceId> {
     *ACTIVE_SPACE.read().expect("active space poisoned")
 }
 
@@ -145,7 +147,7 @@ pub fn join_space_topic(
     spaces: Query<&Space>,
     sender: Query<&GossipSender>,
     endpoints: Query<(&IrohEndpoint, &IrohGossip)>,
-    actors: Query<(&LocalActor, &SyncTargets)>,
+    actors: Query<(&LocalActor, &SyncTargets, &LocalDocs, &LocalBlobs)>,
     mut commands: Commands,
 ) {
     let Ok(sender) = sender.single() else {
@@ -158,7 +160,7 @@ pub fn join_space_topic(
         return;
     };
 
-    let Ok((actor, sync_targets)) = actors.single() else {
+    let Ok((actor, sync_targets, docs, blobs)) = actors.single() else {
         warn!("Space add failed: no actor");
         return;
     };
@@ -168,6 +170,8 @@ pub fn join_space_topic(
         gossip:       gossip.0.clone(),
         actor:        actor.0.clone(),
         sync_targets: sync_targets.0.clone(),
+        docs:         docs.0.clone(),
+        blobs:        blobs.0.clone(),
     };
 
     let (cancel_tx, cancel_rx) = oneshot::channel();

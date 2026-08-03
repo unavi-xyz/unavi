@@ -1,4 +1,4 @@
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use unavi_space::{
     membership::doc_space,
     peer::{
@@ -23,7 +23,7 @@ pub fn self_did(_api: &Api) -> Option<String> {
 #[must_use]
 pub fn doc_owner(_api: &Api, doc_id: Vec<u8>) -> Option<Vec<u8>> {
     let bytes = <[u8; 32]>::try_from(doc_id.as_slice()).ok()?;
-    let doc = Hash::from(bytes);
+    let doc = NamespaceId::from(&bytes);
     let space = doc_space(doc)?;
     replicas::owner(space, doc).map(|p| p.to_vec())
 }

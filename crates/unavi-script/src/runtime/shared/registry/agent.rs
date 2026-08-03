@@ -5,7 +5,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_vrm::BoneName;
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use loro::TreeID;
 use unavi_agent::{
     Agent,
@@ -112,7 +112,7 @@ fn gen_proxy_id() -> AbsoluteNodeId {
     let peer = rand::random();
     let counter = rand::random();
     AbsoluteNodeId {
-        doc:  Hash::from_bytes([0; 32]),
+        doc:  NamespaceId::from(&[0; 32]),
         node: TreeID::new(peer, counter),
     }
 }

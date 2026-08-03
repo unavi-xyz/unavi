@@ -18,7 +18,7 @@ use std::{
     },
 };
 
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use parking_lot::Mutex;
 use unavi_quota::{
     Quota,
@@ -90,7 +90,7 @@ impl PeerDocEntry {
 
 #[derive(Default)]
 struct PeerReplica {
-    docs: HashMap<Hash, PeerDocEntry>,
+    docs: HashMap<NamespaceId, PeerDocEntry>,
 }
 
 /// Per-document state shared across peers: its space, its quota (charged to the
@@ -98,7 +98,7 @@ struct PeerReplica {
 /// locally, its space-owned KV, and a reference count of the live state data
 /// (pins, authority claims, and KV cells) keeping the presence alive.
 struct DocPresence {
-    space:      Hash,
+    space:      NamespaceId,
     _doc_hold:  StockHold,
     neutral_kv: HashMap<String, NeutralCell>,
     refs:       u32,
@@ -111,7 +111,7 @@ struct DocPresence {
 #[derive(Default)]
 struct ReplicatedPeerState {
     peers:   HashMap<PeerId, PeerReplica>,
-    docs:    HashMap<Hash, DocPresence>,
+    docs:    HashMap<NamespaceId, DocPresence>,
     senders: HashMap<u64, async_channel::Sender<StateMsg>>,
 }
 
@@ -123,7 +123,12 @@ impl ReplicatedPeerState {
 
     /// Ensures a [`DocPresence`] for `doc`, charging one `Documents` unit on
     /// first sight. Returns `false` when that charge is refused.
-    fn ensure_presence(&mut self, doc: Hash, space: Hash, quota: &Arc<Quota>) -> bool {
+    fn ensure_presence(
+        &mut self,
+        doc: NamespaceId,
+        space: NamespaceId,
+        quota: &Arc<Quota>,
+    ) -> bool {
         if let Entry::Vacant(v) = self.docs.entry(doc) {
             let Ok(hold) = quota.hold(Stock::Documents, 1) else {
                 return false;
@@ -138,13 +143,13 @@ impl ReplicatedPeerState {
         true
     }
 
-    fn inc_ref(&mut self, doc: Hash) {
+    fn inc_ref(&mut self, doc: NamespaceId) {
         if let Some(p) = self.docs.get_mut(&doc) {
             p.refs += 1;
         }
     }
 
-    fn prune_presence(&mut self, doc: Hash) {
+    fn prune_presence(&mut self, doc: NamespaceId) {
         if let Entry::Occupied(p) = self.docs.entry(doc)
             && p.get().refs == 0
         {
@@ -154,7 +159,7 @@ impl ReplicatedPeerState {
 
     /// Drops one reference to `doc`, releasing its presence (and the
     /// `Documents` hold) once nothing references it.
-    fn dec_ref(&mut self, doc: Hash) {
+    fn dec_ref(&mut self, doc: NamespaceId) {
         if let Entry::Occupied(mut p) = self.docs.entry(doc) {
             p.get_mut().refs = p.get().refs.saturating_sub(1);
             if p.get().refs == 0 {
@@ -164,7 +169,7 @@ impl ReplicatedPeerState {
     }
 
     /// Removes a peer's entry for `doc` once it holds no data.
-    fn prune_entry(&mut self, peer: PeerId, doc: Hash) {
+    fn prune_entry(&mut self, peer: PeerId, doc: NamespaceId) {
         if let Some(replica) = self.peers.get_mut(&peer)
             && let Entry::Occupied(e) = replica.docs.entry(doc)
             && e.get().is_empty()
@@ -176,11 +181,11 @@ impl ReplicatedPeerState {
     fn add_pin(
         &mut self,
         peer: PeerId,
-        doc: Hash,
-        space: Hash,
+        doc: NamespaceId,
+        space: NamespaceId,
         at: u64,
         quota: &Arc<Quota>,
-        reassign: &mut Vec<(Hash, Hash)>,
+        reassign: &mut Vec<(NamespaceId, NamespaceId)>,
     ) -> bool {
         if !self.ensure_presence(doc, space, quota) {
             return false;
@@ -200,7 +205,12 @@ impl ReplicatedPeerState {
         true
     }
 
-    fn remove_pin(&mut self, peer: PeerId, doc: Hash, reassign: &mut Vec<(Hash, Hash)>) {
+    fn remove_pin(
+        &mut self,
+        peer: PeerId,
+        doc: NamespaceId,
+        reassign: &mut Vec<(NamespaceId, NamespaceId)>,
+    ) {
         if let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc))
             && entry.pin.take().is_some()
         {
@@ -215,8 +225,8 @@ impl ReplicatedPeerState {
     fn add_authority(
         &mut self,
         peer: PeerId,
-        doc: Hash,
-        space: Hash,
+        doc: NamespaceId,
+        space: NamespaceId,
         at: u64,
         quota: &Arc<Quota>,
     ) -> bool {
@@ -238,7 +248,7 @@ impl ReplicatedPeerState {
         true
     }
 
-    fn remove_authority(&mut self, peer: PeerId, doc: Hash) {
+    fn remove_authority(&mut self, peer: PeerId, doc: NamespaceId) {
         if let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc))
             && entry.authority.take().is_some()
         {
@@ -250,8 +260,8 @@ impl ReplicatedPeerState {
     fn add_kv(
         &mut self,
         peer: PeerId,
-        doc: Hash,
-        space: Hash,
+        doc: NamespaceId,
+        space: NamespaceId,
         key: String,
         value: Option<Vec<u8>>,
         at: u64,
@@ -348,7 +358,7 @@ impl ReplicatedPeerState {
         Ok(KvPlacement::Owned)
     }
 
-    fn remove_kv(&mut self, peer: PeerId, doc: Hash, key: &str, placement: KvPlacement) {
+    fn remove_kv(&mut self, peer: PeerId, doc: NamespaceId, key: &str, placement: KvPlacement) {
         match placement {
             KvPlacement::Neutral => {
                 if let Some(p) = self.docs.get_mut(&doc)
@@ -373,8 +383,8 @@ impl ReplicatedPeerState {
     /// leaves.
     fn resolve_peer(
         &self,
-        space: Hash,
-        doc: Hash,
+        space: NamespaceId,
+        doc: NamespaceId,
         newest: bool,
         field: impl Fn(&PeerDocEntry) -> Option<u64>,
     ) -> Option<PeerId> {
@@ -395,19 +405,24 @@ impl ReplicatedPeerState {
         .map(|(_, pid)| pid)
     }
 
-    fn owner(&self, space: Hash, doc: Hash) -> Option<PeerId> {
+    fn owner(&self, space: NamespaceId, doc: NamespaceId) -> Option<PeerId> {
         self.resolve_peer(space, doc, false, |e| e.pin)
     }
 
     /// Transform authority for `doc`: the latest explicit claimer, or the
     /// document's owner when no one has claimed, so an owner drives its objects
     /// by default until a peer grabs them.
-    fn authority(&self, space: Hash, doc: Hash) -> Option<PeerId> {
+    fn authority(&self, space: NamespaceId, doc: NamespaceId) -> Option<PeerId> {
         self.resolve_peer(space, doc, true, |e| e.authority)
             .or_else(|| self.owner(space, doc))
     }
 
-    fn merged_cell_ref(&self, space: Hash, doc: Hash, key: &str) -> Option<&Option<Vec<u8>>> {
+    fn merged_cell_ref(
+        &self,
+        space: NamespaceId,
+        doc: NamespaceId,
+        key: &str,
+    ) -> Option<&Option<Vec<u8>>> {
         let presence = self.docs.get(&doc).filter(|p| p.space == space)?;
         let owned = self.peers.iter().filter_map(|(pid, r)| {
             let cell = r.docs.get(&doc)?.kv.get(key)?;
@@ -423,7 +438,7 @@ impl ReplicatedPeerState {
             .map(|(_, _, value)| value)
     }
 
-    fn merged_cell(&self, space: Hash, doc: Hash, key: &str) -> Option<Vec<u8>> {
+    fn merged_cell(&self, space: NamespaceId, doc: NamespaceId, key: &str) -> Option<Vec<u8>> {
         self.merged_cell_ref(space, doc, key).and_then(Clone::clone)
     }
 
@@ -431,11 +446,11 @@ impl ReplicatedPeerState {
     /// no pin-owner. Space-owned documents accept KV writes from any peer
     /// and store them neutrally; peer-owned documents only from their
     /// owner.
-    fn is_space_owned(&self, space: Hash, doc: Hash) -> bool {
+    fn is_space_owned(&self, space: NamespaceId, doc: NamespaceId) -> bool {
         doc == space || self.owner(space, doc).is_none()
     }
 
-    fn key_set(&self, doc: Hash) -> HashSet<String> {
+    fn key_set(&self, doc: NamespaceId) -> HashSet<String> {
         let mut keys = HashSet::new();
         for r in self.peers.values() {
             if let Some(e) = r.docs.get(&doc) {
@@ -449,7 +464,7 @@ impl ReplicatedPeerState {
     }
 
     fn self_snapshot(&self, me: PeerId) -> Vec<DocSnapshot> {
-        let mut by_doc: HashMap<Hash, DocSnapshot> = HashMap::new();
+        let mut by_doc: HashMap<NamespaceId, DocSnapshot> = HashMap::new();
         if let Some(replica) = self.peers.get(&me) {
             for (doc, e) in &replica.docs {
                 let Some(space) = self.docs.get(doc).map(|p| p.space) else {
@@ -521,7 +536,7 @@ pub fn time_valid(at: u64) -> bool {
 
 /// Runs `reassign` against the document quotas after the state lock is
 /// released, since the owner resolver re-enters the store.
-fn settle_reassigns(reassign: Vec<(Hash, Hash)>) {
+fn settle_reassigns(reassign: Vec<(NamespaceId, NamespaceId)>) {
     for (doc, space) in reassign {
         reassign_document_in_space(doc, space);
     }
@@ -561,7 +576,7 @@ pub enum KvPlacement {
 
 /// Adds a peer's pin on `doc`. Returns `false` if the document quota refuses
 /// the presence. Idempotent: a repeat pin from the same peer is a no-op.
-pub fn add_pin(peer: PeerId, doc: Hash, space: Hash, at: u64) -> bool {
+pub fn add_pin(peer: PeerId, doc: NamespaceId, space: NamespaceId, at: u64) -> bool {
     let quota = document_quota(doc);
     let mut reassign = Vec::new();
     let mut state = PEER_STATE.lock();
@@ -571,7 +586,7 @@ pub fn add_pin(peer: PeerId, doc: Hash, space: Hash, at: u64) -> bool {
     ok
 }
 
-pub fn remove_pin(peer: PeerId, doc: Hash) {
+pub fn remove_pin(peer: PeerId, doc: NamespaceId) {
     let mut reassign = Vec::new();
     let mut state = PEER_STATE.lock();
     state.remove_pin(peer, doc, &mut reassign);
@@ -581,7 +596,7 @@ pub fn remove_pin(peer: PeerId, doc: Hash) {
 
 /// Adds or refreshes a peer's authority claim on `doc`. Returns `false` if the
 /// document quota refuses the presence.
-pub fn add_authority(peer: PeerId, doc: Hash, space: Hash, at: u64) -> bool {
+pub fn add_authority(peer: PeerId, doc: NamespaceId, space: NamespaceId, at: u64) -> bool {
     let quota = document_quota(doc);
     let mut state = PEER_STATE.lock();
     let ok = state.add_authority(peer, doc, space, at, &quota);
@@ -589,7 +604,7 @@ pub fn add_authority(peer: PeerId, doc: Hash, space: Hash, at: u64) -> bool {
     ok
 }
 
-pub fn remove_authority(peer: PeerId, doc: Hash) {
+pub fn remove_authority(peer: PeerId, doc: NamespaceId) {
     let mut state = PEER_STATE.lock();
     state.remove_authority(peer, doc);
     drop(state);
@@ -602,8 +617,8 @@ pub fn remove_authority(peer: PeerId, doc: Hash) {
 /// that exceed quota.
 pub fn add_kv(
     peer: PeerId,
-    doc: Hash,
-    space: Hash,
+    doc: NamespaceId,
+    space: NamespaceId,
     key: String,
     value: Option<Vec<u8>>,
     at: u64,
@@ -615,34 +630,34 @@ pub fn add_kv(
     result
 }
 
-pub fn remove_kv(peer: PeerId, doc: Hash, key: &str, placement: KvPlacement) {
+pub fn remove_kv(peer: PeerId, doc: NamespaceId, key: &str, placement: KvPlacement) {
     let mut state = PEER_STATE.lock();
     state.remove_kv(peer, doc, key, placement);
     drop(state);
 }
 
 #[must_use]
-pub fn owner(space: Hash, doc: Hash) -> Option<PeerId> {
+pub fn owner(space: NamespaceId, doc: NamespaceId) -> Option<PeerId> {
     PEER_STATE.lock().owner(space, doc)
 }
 
 #[must_use]
-pub fn is_self_owner(space: Hash, doc: Hash) -> bool {
+pub fn is_self_owner(space: NamespaceId, doc: NamespaceId) -> bool {
     self_peer_id().is_some_and(|me| owner(space, doc) == Some(me))
 }
 
 #[must_use]
-pub fn authority(space: Hash, doc: Hash) -> Option<PeerId> {
+pub fn authority(space: NamespaceId, doc: NamespaceId) -> Option<PeerId> {
     PEER_STATE.lock().authority(space, doc)
 }
 
 #[must_use]
-pub fn is_self_authority(space: Hash, doc: Hash) -> bool {
+pub fn is_self_authority(space: NamespaceId, doc: NamespaceId) -> bool {
     self_peer_id().is_some_and(|me| authority(space, doc) == Some(me))
 }
 
 #[must_use]
-pub fn has_doc(space: Hash, doc: Hash) -> bool {
+pub fn has_doc(space: NamespaceId, doc: NamespaceId) -> bool {
     PEER_STATE
         .lock()
         .docs
@@ -651,12 +666,12 @@ pub fn has_doc(space: Hash, doc: Hash) -> bool {
 }
 
 #[must_use]
-pub fn doc_kv_get(space: Hash, doc: Hash, key: &str) -> Option<Vec<u8>> {
+pub fn doc_kv_get(space: NamespaceId, doc: NamespaceId, key: &str) -> Option<Vec<u8>> {
     PEER_STATE.lock().merged_cell(space, doc, key)
 }
 
 #[must_use]
-pub fn doc_kv_keys(space: Hash, doc: Hash) -> Vec<String> {
+pub fn doc_kv_keys(space: NamespaceId, doc: NamespaceId) -> Vec<String> {
     let state = PEER_STATE.lock();
     if state.docs.get(&doc).is_none_or(|p| p.space != space) {
         return Vec::new();
@@ -675,7 +690,7 @@ pub fn doc_kv_keys(space: Hash, doc: Hash) -> Vec<String> {
 }
 
 #[must_use]
-pub fn doc_kv_total_bytes(space: Hash, doc: Hash) -> usize {
+pub fn doc_kv_total_bytes(space: NamespaceId, doc: NamespaceId) -> usize {
     let state = PEER_STATE.lock();
     if state.docs.get(&doc).is_none_or(|p| p.space != space) {
         return 0;
@@ -695,7 +710,7 @@ pub fn doc_kv_total_bytes(space: Hash, doc: Hash) -> usize {
 /// Remote peers that hold `doc`, i.e. those we can sync the record from.
 /// Excludes the local peer; the owner is listed first as the freshest source.
 #[must_use]
-pub fn doc_holders(doc: Hash) -> Vec<PeerId> {
+pub fn doc_holders(doc: NamespaceId) -> Vec<PeerId> {
     let me = self_peer_id();
     let state = PEER_STATE.lock();
     let Some(space) = state.docs.get(&doc).map(|p| p.space) else {
@@ -722,14 +737,14 @@ pub fn doc_holders(doc: Hash) -> Vec<PeerId> {
 /// The space `doc` is pinned in, per any peer's replica. Lets membership
 /// resolve a synced doc's space without a local ownership claim.
 #[must_use]
-pub fn space_of(doc: Hash) -> Option<Hash> {
+pub fn space_of(doc: NamespaceId) -> Option<NamespaceId> {
     PEER_STATE.lock().docs.get(&doc).map(|p| p.space)
 }
 
 /// Whether any peer currently pins `doc`. Drives the scene's fetch/despawn of
 /// tracked documents.
 #[must_use]
-pub fn is_pinned(doc: Hash) -> bool {
+pub fn is_pinned(doc: NamespaceId) -> bool {
     PEER_STATE
         .lock()
         .peers
@@ -753,8 +768,8 @@ pub enum KvError {
 #[cfg(feature = "devtools")]
 pub mod debug {
     use super::{
-        Hash,
         HashMap,
+        NamespaceId,
         OwnedCell,
         PEER_STATE,
         PeerId,
@@ -771,8 +786,8 @@ pub mod debug {
     }
 
     pub struct DebugDoc {
-        pub doc:       Hash,
-        pub space:     Hash,
+        pub doc:       NamespaceId,
+        pub space:     NamespaceId,
         pub pin:       Option<u64>,
         pub authority: Option<u64>,
         pub kv:        Vec<DebugKv>,
@@ -872,8 +887,8 @@ pub static TEST_LOCK: Mutex<()> = Mutex::new(());
 mod tests {
     use super::*;
 
-    fn h(seed: &[u8]) -> Hash {
-        blake3::hash(seed)
+    fn h(seed: &[u8]) -> NamespaceId {
+        NamespaceId::from(blake3::hash(seed).as_bytes())
     }
 
     #[test]

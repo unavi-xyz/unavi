@@ -11,7 +11,7 @@ use std::{
 };
 
 use async_channel::Receiver;
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use unavi_quota::{
     Flow,
     QuotaError,
@@ -47,7 +47,7 @@ static NEXT_RECEPTOR_ID: AtomicU32 = AtomicU32::new(0);
 pub const HOST_SENDER_DOC: [u8; 32] = [0u8; 32];
 
 #[must_use]
-pub fn doc_has_receptor(doc: Hash, channel: &str) -> bool {
+pub fn doc_has_receptor(doc: NamespaceId, channel: &str) -> bool {
     EVENT_RECEPTOR_REGISTRY
         .read()
         .values()
@@ -175,7 +175,7 @@ pub async fn emit(
     Ok(())
 }
 
-pub fn emit_from_host(target_doc: Hash, channel: &str, payload: Vec<u8>) {
+pub fn emit_from_host(target_doc: NamespaceId, channel: &str, payload: Vec<u8>) {
     let payload = Arc::new(payload);
     let claimed = Arc::new(AtomicBool::new(false));
     let time = std::time::SystemTime::now()

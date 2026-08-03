@@ -10,11 +10,16 @@ use async_channel::{
 use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
-    HsdRecordId,
+    HsdNamespace,
 };
-use bevy_wds::record::read::ReadRecord;
+use bevy_wds::{
+    LocalBlobs,
+    LocalDocs,
+};
 use loro::LoroDoc;
 use tokio::sync::oneshot;
+use unavi_util::async_task::spawn_async_task;
+use wds::space;
 
 use crate::{
     Space,
@@ -82,8 +87,12 @@ pub fn fetch_tracked_docs(
         (Without<Hsd>, Without<PendingPinnedDoc>, With<ChildOf>),
     >,
     peers: Query<&Peer>,
+    stores: Query<(&LocalDocs, &LocalBlobs)>,
     mut commands: Commands,
 ) {
+    let Ok((docs, blobs)) = stores.single() else {
+        return;
+    };
     let now = time.elapsed();
     for (entity, doc, backoff) in &tracked {
         if backoff.is_some_and(|b| now < b.0) {
@@ -93,8 +102,7 @@ pub fn fetch_tracked_docs(
             continue;
         }
 
-        let holders = replicas::doc_holders(doc.doc);
-        let sync_from = holders
+        let sync_from = replicas::doc_holders(doc.doc)
             .iter()
             .filter_map(|h| peers.iter().find(|p| p.0.id.as_bytes() == h))
             .map(|p| p.0.clone())
@@ -103,18 +111,40 @@ pub fn fetch_tracked_docs(
             continue;
         }
 
-        let (mut event, rx, cancel) = ReadRecord::new(doc.doc);
-        event.retries = READ_RETRIES;
-        event.backoff_secs = READ_BACKOFF_SECS;
-        event.sync_from = sync_from;
-        event.exclusive_sources = true;
-        commands.trigger(event);
+        let ns = doc.doc;
+        let docs = docs.0.clone();
+        let blobs = blobs.0.clone();
+        let (tx, rx) = async_channel::bounded(1);
+        let (cancel_tx, cancel_rx) = oneshot::channel();
+
+        spawn_async_task(async move {
+            let fetch = space::fetch_snapshot(
+                &docs,
+                &blobs,
+                ns,
+                sync_from,
+                READ_RETRIES,
+                Duration::from_secs(READ_BACKOFF_SECS),
+            );
+            tokio::select! {
+                () = async { cancel_rx.await.ok(); } => {}
+                res = fetch => {
+                    if let Ok(Some(bytes)) = res {
+                        let loro = LoroDoc::new();
+                        if loro.import(&bytes).is_ok() {
+                            tx.send(loro).await.ok();
+                        }
+                    }
+                }
+            }
+        });
+
         commands
             .entity(entity)
             .remove::<FetchBackoff>()
             .insert(PendingPinnedDoc {
                 rx,
-                _cancel: cancel,
+                _cancel: cancel_tx,
             });
     }
 }
@@ -129,7 +159,7 @@ pub fn instantiate_tracked_docs(
             Ok(loro) => {
                 commands
                     .entity(entity)
-                    .insert((Hsd(Arc::new(loro)), HsdRecordId(doc.doc)))
+                    .insert((Hsd(Arc::new(loro)), HsdNamespace(doc.doc)))
                     .remove::<PendingPinnedDoc>();
             }
             Err(TryRecvError::Empty) => {}

@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
-    HsdRecordId,
+    HsdNamespace,
 };
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use unavi_quota::registry::{
     forget_peer,
     forget_space,
@@ -19,7 +19,7 @@ use unavi_space::{
 /// migrating standing usage off the previous owner.
 pub fn reassign_doc_quota(
     trigger: On<Insert, SpaceOwner>,
-    docs: Query<(&HsdRecordId, &SpaceOwner), With<Hsd>>,
+    docs: Query<(&HsdNamespace, &SpaceOwner), With<Hsd>>,
     spaces: Query<&Space>,
 ) {
     let Ok((record, owner)) = docs.get(trigger.entity) else {
@@ -41,6 +41,6 @@ pub fn forget_space_quota(trigger: On<Remove, Space>, spaces: Query<&Space>) {
 /// Sheds a disconnected peer's quota the same way [`forget_space_quota`] does.
 pub fn forget_peer_quota(trigger: On<Remove, Peer>, peers: Query<&Peer>) {
     if let Ok(peer) = peers.get(trigger.entity) {
-        forget_peer(Hash::from(*peer.0.id.as_bytes()));
+        forget_peer(NamespaceId::from(peer.0.id.as_bytes()));
     }
 }

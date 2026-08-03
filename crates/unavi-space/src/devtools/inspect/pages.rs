@@ -2,6 +2,7 @@ use bevy::{
     ecs::relationship::RelatedSpawnerCommands,
     prelude::*,
 };
+use iroh_docs::NamespaceId;
 
 use crate::devtools::inspect::{
     BackButton,
@@ -264,7 +265,7 @@ fn doc_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &DocModel, expanded: &Ex
 /// expanded value detail spanning `cols`.
 fn kv_value_cells(
     g: &mut RelatedSpawnerCommands<ChildOf>,
-    doc: blake3::Hash,
+    doc: NamespaceId,
     key: &str,
     at: u64,
     value: Option<&[u8]>,

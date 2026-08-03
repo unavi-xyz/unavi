@@ -1,25 +1,14 @@
-use std::{
-    sync::Arc,
-    time::Duration,
-};
+use std::time::Duration;
 
 use bevy::prelude::*;
 use bevy_iroh::endpoint::IrohEndpoint;
 use bevy_wds::{
     LocalActor,
-    record::write::{
-        SchemaDef,
-        WriteRecord,
-    },
+    SyncTargets,
 };
 use time::OffsetDateTime;
 use unavi_util::async_task::spawn_async_task;
-use wired_records::{
-    beacon::BeaconRecord,
-    byte_array::ByteArray,
-    did::HydratedDid,
-};
-use wired_schemas::SCHEMA_BEACON;
+use wds::format::Beacon;
 
 use crate::Space;
 
@@ -28,10 +17,9 @@ const BEACON_TTL: Duration = Duration::from_mins(2);
 pub fn publish_beacons(
     time: Res<Time>,
     spaces: Query<&Space>,
-    actor: Query<&LocalActor>,
+    actors: Query<(&LocalActor, &SyncTargets)>,
     endpoint: Query<&IrohEndpoint>,
     mut last: Local<Duration>,
-    mut commands: Commands,
 ) {
     if spaces.is_empty() {
         return;
@@ -43,7 +31,7 @@ pub fn publish_beacons(
     }
     *last = now;
 
-    let Ok(actor) = actor.single() else {
+    let Ok((actor, sync_targets)) = actors.single() else {
         return;
     };
     let Ok(endpoint) = endpoint.single() else {
@@ -51,37 +39,31 @@ pub fn publish_beacons(
     };
 
     let did = actor.0.identity().did().clone();
-    let endpoint_id = endpoint.0.id();
+    let endpoint_id = *endpoint.0.id().as_bytes();
+
+    // Announce to the home servers we sync with; fall back to the local host.
+    let targets = if sync_targets.0.is_empty() {
+        vec![actor.0.clone()]
+    } else {
+        sync_targets.0.clone()
+    };
 
     for space in spaces {
-        let did = did.clone();
-        let space = space.0;
+        let beacon = Beacon {
+            did:      did.clone(),
+            endpoint: endpoint_id,
+            space:    space.0,
+            expires:  (OffsetDateTime::now_utc() + BEACON_TTL).unix_timestamp(),
+        };
 
-        let (mut event, rx, cancel) = WriteRecord::new(None);
-        event.ttl = Some(BEACON_TTL);
-        event.public = true;
-        event.schemas = vec![SchemaDef {
-            container: "beacon".into(),
-            schema:    (&*SCHEMA_BEACON).into(),
-            f:         Arc::new(move |doc| {
-                let beacon = BeaconRecord {
-                    did:      HydratedDid::from(&did),
-                    endpoint: ByteArray::new(*endpoint_id.as_bytes()),
-                    expires:  (OffsetDateTime::now_utc() + BEACON_TTL).unix_timestamp(),
-                    space:    space.into(),
-                };
-                beacon.save(doc)?;
-                Ok(())
-            }),
-        }];
-
-        spawn_async_task(async move {
-            if let Ok(id) = rx.recv().await {
-                info!(%id, "Published beacon");
-            }
-            drop(cancel);
-        });
-
-        commands.trigger(event);
+        for target in &targets {
+            let target = target.clone();
+            let beacon = beacon.clone();
+            spawn_async_task(async move {
+                if let Err(err) = target.announce(beacon).await {
+                    warn!(?err, "Failed to announce beacon");
+                }
+            });
+        }
     }
 }

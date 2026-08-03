@@ -9,16 +9,25 @@ use tracing_subscriber::{
     layer::SubscriberExt,
     util::SubscriberInitExt,
 };
-use unavi_server::ServerOptions;
+use unavi_server::{
+    Features,
+    ServerOptions,
+};
 
 #[derive(Parser, Debug)]
 #[command(version)]
 struct Args {
     /// Enable debug logging.
     #[arg(long, default_value_t = false)]
-    debug: bool,
+    debug:    bool,
     #[arg(short, long, default_value_t = 5000)]
-    port:  u16,
+    port:     u16,
+    /// Do not serve discovery: catalog, curated views, and live presence.
+    #[arg(long, default_value_t = false)]
+    no_registry: bool,
+    /// Do not serve storage: hosted docs, blob pins, and quotas.
+    #[arg(long, default_value_t = false)]
+    no_wds:      bool,
 }
 
 #[tokio::main]
@@ -47,6 +56,10 @@ async fn main() {
     registry.init();
 
     if let Err(err) = unavi_server::run_server(ServerOptions {
+        features:  Features {
+            registry: !args.no_registry,
+            wds:      !args.no_wds,
+        },
         in_memory: false,
         port:      args.port,
     })

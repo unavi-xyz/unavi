@@ -69,7 +69,7 @@ pub async fn handle_gossip_inbound(
                 };
                 let sig = Signature::from_bytes(sig_bytes);
 
-                if let Err(err) = broadcast.sender.verify(signed_bytes.payload_bytes(), &sig) {
+                if let Err(err) = broadcast.sender.verify(&signed_bytes.signing_bytes(), &sig) {
                     warn!(?err, "Invalid gossip signature");
                     continue;
                 }

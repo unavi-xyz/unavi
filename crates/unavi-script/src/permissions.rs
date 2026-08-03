@@ -21,6 +21,7 @@ pub enum ApiName {
     Peer,
     Physics,
     Portal,
+    Registry,
     Scene,
     System,
     Wds,
@@ -76,6 +77,7 @@ impl ApiPermissions {
         set.insert(ApiName::Peer);
         set.insert(ApiName::Physics);
         set.insert(ApiName::Portal);
+        set.insert(ApiName::Registry);
         set.insert(ApiName::Scene);
         set.insert(ApiName::System);
         set.insert(ApiName::Wds);

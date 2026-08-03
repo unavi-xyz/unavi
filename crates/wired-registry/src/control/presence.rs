@@ -1,0 +1,57 @@
+use std::sync::Arc;
+
+use irpc::WithChannels;
+use time::OffsetDateTime;
+use wds::signed_bytes::verify_did_signature;
+
+use crate::{
+    RegistryContext,
+    control::{
+        Announce,
+        Occupants,
+        RegistryService,
+        authenticate,
+    },
+    error::RegistryError,
+};
+
+pub async fn announce(
+    ctx: Arc<RegistryContext>,
+    WithChannels { inner, tx, .. }: WithChannels<Announce, RegistryService>,
+) -> anyhow::Result<()> {
+    let did = authenticate!(ctx, inner, tx);
+
+    let Ok(presence) = inner.presence.payload() else {
+        tx.send(Err(RegistryError::Malformed)).await?;
+        return Ok(());
+    };
+
+    if presence.did != did {
+        tx.send(Err(RegistryError::NotPermitted)).await?;
+        return Ok(());
+    }
+
+    if presence.expires <= OffsetDateTime::now_utc().unix_timestamp() {
+        tx.send(Err(RegistryError::Expired)).await?;
+        return Ok(());
+    }
+
+    if !verify_did_signature(&inner.presence, &presence.did).await {
+        tx.send(Err(RegistryError::InvalidSignature)).await?;
+        return Ok(());
+    }
+
+    ctx.presence.insert(&presence, inner.presence).await;
+
+    tx.send(Ok(())).await?;
+    Ok(())
+}
+
+pub async fn occupants(
+    ctx: Arc<RegistryContext>,
+    WithChannels { inner, tx, .. }: WithChannels<Occupants, RegistryService>,
+) -> anyhow::Result<()> {
+    let occupants = ctx.presence.occupants(inner.ns).await;
+    tx.send(Ok(occupants)).await?;
+    Ok(())
+}

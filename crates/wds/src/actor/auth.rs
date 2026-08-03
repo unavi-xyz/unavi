@@ -4,6 +4,14 @@ use crate::{
 };
 
 impl Actor {
+    /// The actor's session at its host, establishing one if needed.
+    ///
+    /// Exposed so a service co-deployed with the store can authorize against
+    /// the same session rather than running its own handshake.
+    pub async fn session(&self) -> anyhow::Result<SessionToken> {
+        self.authenticate().await
+    }
+
     pub(crate) async fn authenticate(&self) -> anyhow::Result<SessionToken> {
         let session = self.session.lock().await;
 

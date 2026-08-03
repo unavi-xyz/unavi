@@ -45,8 +45,8 @@ wds.path                   = "../wds"
 xdid.workspace             = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-wasmtime          = "43.0.0"
-wasmtime-wasi     = "43.0.0"
+wasmtime      = "43.0.0"
+wasmtime-wasi = "43.0.0"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 js-sys               = "0.3.97"

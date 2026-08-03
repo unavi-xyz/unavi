@@ -31,7 +31,7 @@ pub enum Flow {
     CreatePrim,
     Emit,
     PortalOpen,
-    Publish,
+    SyncDoc,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]

@@ -19,7 +19,7 @@ use bevy_wds::{
 use loro::LoroDoc;
 use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
-use wds::space;
+use wds::snapshot;
 
 use crate::{
     Space,
@@ -118,7 +118,7 @@ pub fn fetch_tracked_docs(
         let (cancel_tx, cancel_rx) = oneshot::channel();
 
         spawn_async_task(async move {
-            let fetch = space::fetch_snapshot(
+            let fetch = snapshot::fetch(
                 &docs,
                 &blobs,
                 ns,

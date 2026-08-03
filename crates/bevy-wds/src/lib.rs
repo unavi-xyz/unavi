@@ -7,6 +7,7 @@ use iroh_docs::{
     protocol::Docs,
 };
 use wds::actor::Actor;
+use wired_registry::client::RegistryClient;
 
 pub mod blob;
 pub mod doc;
@@ -14,6 +15,7 @@ pub mod doc;
 static LOCAL_ACTOR: RwLock<Option<Actor>> = RwLock::new(None);
 static ROOT_DOC: RwLock<Option<NamespaceId>> = RwLock::new(None);
 static REGISTRIES: RwLock<Vec<NamespaceId>> = RwLock::new(Vec::new());
+static REGISTRY_CLIENTS: RwLock<Vec<RegistryClient>> = RwLock::new(Vec::new());
 
 /// Publishes the process's root doc namespace for off-world access (e.g. the
 /// script runtime's `root-doc` call).
@@ -26,10 +28,11 @@ pub fn root_doc() -> Option<NamespaceId> {
     *ROOT_DOC.read().expect("root doc lock poisoned")
 }
 
-/// Publishes the home servers' registry doc namespaces for off-world access.
+/// Publishes the view docs of the registries this client follows, for
+/// off-world access.
 ///
-/// The namespaces are kept synced locally by the client. The script runtime's
-/// `registries` call `list`s them under `beacons/` to discover spaces.
+/// Views are the curated docs a registry publishes; the client keeps them
+/// synced locally, and the script runtime's `registries` call `list`s them.
 pub fn set_registries(namespaces: Vec<NamespaceId>) {
     *REGISTRIES.write().expect("registries lock poisoned") = namespaces;
 }
@@ -37,6 +40,21 @@ pub fn set_registries(namespaces: Vec<NamespaceId>) {
 #[must_use]
 pub fn registries() -> Vec<NamespaceId> {
     REGISTRIES.read().expect("registries lock poisoned").clone()
+}
+
+/// Publishes clients for the registries this process announces to.
+pub fn set_registry_clients(clients: Vec<RegistryClient>) {
+    *REGISTRY_CLIENTS
+        .write()
+        .expect("registry clients lock poisoned") = clients;
+}
+
+#[must_use]
+pub fn registry_clients() -> Vec<RegistryClient> {
+    REGISTRY_CLIENTS
+        .read()
+        .expect("registry clients lock poisoned")
+        .clone()
 }
 
 /// Publishes the process's local actor for off-world async access, so callers

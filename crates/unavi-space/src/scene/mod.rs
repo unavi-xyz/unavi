@@ -9,15 +9,22 @@ use bevy_hsd::{
     Hsd,
     HsdNamespace,
 };
+use bevy_iroh::endpoint::IrohEndpoint;
 use bevy_wds::{
     LocalBlobs,
     LocalDocs,
     SyncTargets,
+    registry_clients,
 };
+use iroh::{
+    EndpointAddr,
+    EndpointId,
+};
+use iroh_docs::NamespaceId;
 use loro::LoroDoc;
 use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
-use wds::space;
+use wds::snapshot;
 
 use crate::Space;
 
@@ -36,6 +43,7 @@ pub fn spawn_space_scene(
     trigger: On<Add, Space>,
     spaces: Query<&Space>,
     stores: Query<(&LocalDocs, &LocalBlobs, &SyncTargets)>,
+    endpoints: Query<&IrohEndpoint>,
     mut commands: Commands,
 ) {
     let ns = spaces.get(trigger.entity).map(|v| v.0).expect("space");
@@ -47,7 +55,8 @@ pub fn spawn_space_scene(
 
     let docs = docs.0.clone();
     let blobs = blobs.0.clone();
-    let peers = sync_targets
+    let self_id = endpoints.single().ok().map(|e| e.0.id());
+    let sync_targets = sync_targets
         .0
         .iter()
         .map(|a| a.host().clone())
@@ -57,7 +66,10 @@ pub fn spawn_space_scene(
     let (cancel_tx, cancel_rx) = oneshot::channel();
 
     spawn_async_task(async move {
-        let fetch = space::fetch_snapshot(&docs, &blobs, ns, peers, READ_ATTEMPTS, READ_DELAY);
+        let mut peers = sync_targets;
+        peers.extend(occupant_peers(ns, self_id).await);
+
+        let fetch = snapshot::fetch(&docs, &blobs, ns, peers, READ_ATTEMPTS, READ_DELAY);
         tokio::select! {
             () = async { cancel_rx.await.ok(); } => {}
             res = fetch => match res {
@@ -77,6 +89,32 @@ pub fn spawn_space_scene(
         rx,
         _cancel: cancel_tx,
     });
+}
+
+/// Endpoints currently in `ns`, per the registries this client follows.
+///
+/// A space's document lives with the peers who are in it. A home server holds a
+/// copy only if it was explicitly asked to host one, so syncing against sync
+/// targets alone finds nothing for a peer-hosted space.
+async fn occupant_peers(ns: NamespaceId, self_id: Option<EndpointId>) -> Vec<EndpointAddr> {
+    let mut out = Vec::new();
+
+    for registry in registry_clients() {
+        let Ok(occupants) = registry.occupants(ns).await else {
+            continue;
+        };
+        for presence in occupants {
+            let Ok(id) = EndpointId::from_bytes(&presence.endpoint) else {
+                continue;
+            };
+            if Some(id) == self_id {
+                continue;
+            }
+            out.push(EndpointAddr::from(id));
+        }
+    }
+
+    out
 }
 
 pub fn instantiate_pending_scenes(

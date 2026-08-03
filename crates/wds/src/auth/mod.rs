@@ -60,7 +60,7 @@ type Nonce = [u8; 32];
 #[rpc_requests(message = AuthMessage)]
 #[derive(Debug, Serialize, Deserialize)]
 pub enum AuthService {
-    #[rpc(tx=oneshot::Sender<Nonce>)]
+    #[rpc(tx=oneshot::Sender<Issued>)]
     #[wrap(RequestChallenge)]
     RequestChallenge(Did),
     /// Answer a challenge, signing the nonce with either an:
@@ -71,22 +71,39 @@ pub enum AuthService {
     AnswerChallenge(SignedBytes<Challenge>),
 }
 
+/// A freshly minted nonce and the deadline its answer must beat.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct Issued {
+    pub nonce:   Nonce,
+    pub expires: i64,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Challenge {
     /// Key must verify they are authenticating as DID.
-    pub did:   Did,
+    pub did:     Did,
     /// Key must verify they are authenticating to us.
     /// Prevents impersonation by forwarding signed challenge to another node.
-    pub host:  EndpointId,
+    pub host:    EndpointId,
     /// Key must sign our given nonce.
-    pub nonce: Nonce,
-    // TODO: add timestamp + expiration
+    pub nonce:   Nonce,
+    /// Unix timestamp echoed from [`Issued`], binding the signature to the
+    /// window the server issued it for. Cross-checked against the server's own
+    /// record, so a client cannot widen it.
+    pub expires: i64,
 }
 
-impl Signable for Challenge {}
+impl Signable for Challenge {
+    const SIGNING_CONTEXT: &'static str = "wds/auth/challenge";
+}
+
+struct Pending {
+    did:     Did,
+    expires: i64,
+}
 
 struct HandlerState {
-    nonces: scc::HashCache<Nonce, Did>,
+    nonces: scc::HashCache<Nonce, Pending>,
 }
 
 async fn handle_requests(

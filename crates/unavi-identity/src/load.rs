@@ -4,6 +4,7 @@ use std::{
     time::Duration,
 };
 
+use anyhow::Context;
 use bevy::prelude::*;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
@@ -19,6 +20,7 @@ use bevy_wds::{
     SyncTargets,
     set_local_actor,
     set_registries,
+    set_registry_clients,
     set_root_doc,
 };
 use iroh::{
@@ -36,6 +38,7 @@ use wds::{
     WDS_SERVICE_TYPE,
     actor::Actor,
 };
+use wired_registry::client::RegistryClient;
 use xdid::{
     core::did::Did,
     methods::key::{
@@ -79,7 +82,7 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
     let did = signing_key.public().to_did();
     let identity = Arc::new(Identity::new(did, signing_key));
 
-    let (store, f) = DataStore::builder(endpoint)
+    let (store, f) = DataStore::builder(endpoint.clone())
         .gc_timer(Duration::from_mins(15))
         .build()
         .await?;
@@ -92,8 +95,8 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
         set_root_doc(root);
     }
 
-    let sync_targets = load_sync_targets(&store, &identity).await;
-    sync_registries(&store, &actor, &sync_targets).await;
+    let sync_targets = load_sync_targets(&store, &identity).await?;
+    sync_registries(&store, &endpoint, &sync_targets).await;
 
     AsyncCommands::default()
         .spawn((RouterBuilderFnTarget(entity), RouterBuilderFn(Some(f))))
@@ -109,29 +112,46 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// Fetches each home server's registry namespace, syncs it locally, and
-/// publishes the set so scripts can `list` them under `beacons/`.
-async fn sync_registries(store: &DataStore, local: &Actor, targets: &[Actor]) {
-    let actors: &[Actor] = if targets.is_empty() {
-        std::slice::from_ref(local)
-    } else {
-        targets
-    };
-
+/// Builds a client per followed registry, syncs each one's view docs locally,
+/// and publishes both for off-world access.
+///
+/// A registry is a service the client consults, never one it runs; with no sync
+/// targets configured there is simply nothing to follow.
+async fn sync_registries(store: &DataStore, endpoint: &Endpoint, targets: &[Actor]) {
+    let mut clients = Vec::new();
     let mut namespaces = Vec::new();
-    for actor in actors {
-        if let Ok(Some(registry)) = actor.registry_id().await {
-            let _ =
-                wds::registry::sync_registry(store.docs(), registry, actor.host().clone()).await;
-            namespaces.push(registry);
+
+    for actor in targets {
+        let client = RegistryClient::new(endpoint, actor.host().clone(), actor.clone());
+
+        match client.sync_views(store.docs()).await {
+            Ok(mut views) => namespaces.append(&mut views),
+            Err(err) => {
+                warn!(?err, "failed syncing registry views");
+                continue;
+            }
         }
+
+        clients.push(client);
     }
+
     set_registries(namespaces);
+    set_registry_clients(clients);
 }
 
-async fn load_sync_targets(store: &DataStore, identity: &Arc<Identity>) -> Vec<Actor> {
+/// Resolves every configured sync target, or fails if none could be reached.
+///
+/// Failing is the point: a configured target that does not resolve is almost
+/// always a server that has not finished starting, and the caller retries with
+/// backoff. Returning an empty list instead would leave the client permanently
+/// without a registry — no presence published, nothing discovered — with only a
+/// warning to show for it.
+async fn load_sync_targets(
+    store: &DataStore,
+    identity: &Arc<Identity>,
+) -> anyhow::Result<Vec<Actor>> {
     let Ok(raw) = std::env::var("UNAVI_SYNC_TARGETS") else {
-        return Vec::new();
+        return Ok(Vec::new());
     };
 
     let dids: Vec<&str> = raw
@@ -141,17 +161,10 @@ async fn load_sync_targets(store: &DataStore, identity: &Arc<Identity>) -> Vec<A
         .collect();
 
     if dids.is_empty() {
-        return Vec::new();
+        return Ok(Vec::new());
     }
 
-    let resolver = match DidResolver::new() {
-        Ok(r) => r,
-        Err(err) => {
-            error!(?err, "failed to construct DID resolver for sync targets");
-            return Vec::new();
-        }
-    };
-
+    let resolver = DidResolver::new().context("construct DID resolver for sync targets")?;
     let mut actors = Vec::new();
 
     for did_str in dids {
@@ -166,7 +179,11 @@ async fn load_sync_targets(store: &DataStore, identity: &Arc<Identity>) -> Vec<A
         }
     }
 
-    actors
+    if actors.is_empty() {
+        anyhow::bail!("no configured sync target resolved: {raw}");
+    }
+
+    Ok(actors)
 }
 
 async fn resolve_sync_target(

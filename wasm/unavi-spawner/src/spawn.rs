@@ -6,7 +6,7 @@ use crate::{
     wired::scene::{
         api::{
             create_document,
-            publish_document,
+            sync_document,
         },
         types::{
             RigidBody,
@@ -47,6 +47,6 @@ pub fn spawn(color: Color, cam: &Transform) -> anyhow::Result<()> {
         scale:       Vec3::ONE,
     }))?;
 
-    publish_document(&id)?;
+    sync_document(&id)?;
     Ok(())
 }

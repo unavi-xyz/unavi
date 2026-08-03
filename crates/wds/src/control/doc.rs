@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use futures::StreamExt;
 use iroh_docs::{
-    Capability,
     NamespaceId,
     api::Doc,
     engine::LiveEvent,
@@ -49,16 +48,12 @@ pub async fn host_doc(
         })
         .await?;
 
-    // Idempotent: reuse an already-open replica, otherwise import read-only.
-    let doc = match ctx.docs.api().open(inner.ns).await? {
-        Some(doc) => doc,
-        None => {
-            ctx.docs
-                .api()
-                .import_namespace(Capability::Read(inner.ns))
-                .await?
-        }
-    };
+    let doc = crate::docs::ensure_open(&ctx.docs, inner.ns).await?;
+
+    // Agreeing to host means agreeing to replicate. Importing alone leaves the
+    // namespace out of the sync set, where the host rejects every incoming
+    // request with `NotFound` — availability being the entire point of hosting.
+    doc.start_sync(Vec::new()).await?;
 
     n0_future::task::spawn(meter_doc(Arc::clone(&ctx), did, inner.ns, doc));
 

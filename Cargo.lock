@@ -1085,6 +1085,7 @@ dependencies = [
  "bevy",
  "blake3",
  "bytes 1.12.1",
+ "iroh",
  "iroh-blobs",
  "iroh-docs",
  "n0-future",
@@ -1092,6 +1093,7 @@ dependencies = [
  "tokio",
  "unavi-util",
  "wds",
+ "wired-registry",
  "xdid",
 ]
 
@@ -14398,6 +14400,7 @@ dependencies = [
  "n0-future",
  "unavi-util",
  "wds",
+ "wired-registry",
  "xdid",
 ]
 
@@ -14551,6 +14554,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "wds",
+ "wired-registry",
  "xdid",
  "zeroize",
 ]
@@ -14602,6 +14606,7 @@ dependencies = [
  "unavi-quota",
  "unavi-util",
  "wds",
+ "wired-registry",
 ]
 
 [[package]]
@@ -16722,6 +16727,29 @@ dependencies = [
  "wired-kv",
  "wired-math",
  "wired-scene",
+]
+
+[[package]]
+name = "wired-registry"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "futures 0.3.33",
+ "iroh",
+ "iroh-blobs",
+ "iroh-docs",
+ "irpc",
+ "irpc-iroh",
+ "n0-future",
+ "postcard",
+ "scc",
+ "serde",
+ "smol_str 0.3.6",
+ "thiserror 2.0.19",
+ "time",
+ "tracing",
+ "wds",
+ "xdid",
 ]
 
 [[package]]

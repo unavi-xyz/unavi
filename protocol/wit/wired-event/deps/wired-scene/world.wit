@@ -16,8 +16,14 @@ interface api {
   create-document: func() -> result<document, error>;
   remove-document: func(id: document-id) -> result<_, error>;
 
-  load-hsd:         func(blob: list<u8>) -> result<document, error>;
-  publish-document: func(id: document-id) -> result<_, error>;
+  load-hsd: func(blob: list<u8>) -> result<document, error>;
+
+  /// Shares a document with the other peers in the space.
+  ///
+  /// Documents start local: only this peer sees them. Syncing hands the
+  /// document to the space, after which its contents replicate to everyone
+  /// present and the calling script gives up exclusive write access to it.
+  sync-document: func(id: document-id) -> result<_, error>;
 }
 
 interface types {

@@ -1,5 +1,6 @@
 use std::collections::BTreeSet;
 
+use bevy_wds::registry_clients;
 use iroh::{
     EndpointId,
     PublicKey,
@@ -9,41 +10,29 @@ use tracing::warn;
 
 use crate::gossip::GossipCtx;
 
-/// Discovers peers hosting `space` by syncing each home server's registry doc
-/// and reading its signature-verified beacons.
+/// Discovers peers to bootstrap gossip against by asking each followed registry
+/// who is currently in `space`.
+///
+/// Presence is queried rather than synced: it is soft state with a short TTL,
+/// and every returned record is verified against its announcer's DID before it
+/// is trusted enough to dial.
 pub async fn find_bootstrap_peers(
     ctx: &GossipCtx,
     space: NamespaceId,
 ) -> anyhow::Result<BTreeSet<PublicKey>> {
     let mut bootstrap = BTreeSet::new();
 
-    let target_actors = if ctx.sync_targets.is_empty() {
-        vec![ctx.actor.clone()]
-    } else {
-        ctx.sync_targets.clone()
-    };
-
-    for actor in target_actors {
-        let Some(registry_ns) = actor.registry_id().await? else {
-            continue;
-        };
-
-        if let Err(err) =
-            wds::registry::sync_registry(&ctx.docs, registry_ns, actor.host().clone()).await
-        {
-            warn!(?err, "Failed to sync registry doc");
-            continue;
-        }
-
-        let beacons = wds::registry::read_verified_beacons(&ctx.docs, &ctx.blobs, registry_ns)
-            .await
-            .unwrap_or_default();
-
-        for beacon in beacons {
-            if beacon.space != space {
+    for registry in registry_clients() {
+        let occupants = match registry.occupants(space).await {
+            Ok(occupants) => occupants,
+            Err(err) => {
+                warn!(?err, "Failed querying registry presence");
                 continue;
             }
-            let Ok(endpoint) = EndpointId::from_bytes(&beacon.endpoint) else {
+        };
+
+        for presence in occupants {
+            let Ok(endpoint) = EndpointId::from_bytes(&presence.endpoint) else {
                 continue;
             };
             if endpoint == ctx.endpoint.id() {

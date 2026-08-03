@@ -43,7 +43,7 @@ clap.workspace          = true
 image                   = { default-features = false, features = ["png"], workspace = true }
 iroh.workspace          = true
 iroh-docs.workspace     = true
-log                     = { features = ["max_level_debug", "release_max_level_warn"], version = "*" }
+log                     = { features = ["max_level_debug", "release_max_level_warn"], version = "0.4.33" }
 n0-future.workspace     = true
 parking_lot.workspace   = true
 tracing                 = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }

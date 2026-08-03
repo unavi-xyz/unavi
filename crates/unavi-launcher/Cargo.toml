@@ -26,9 +26,9 @@ runas                   = "1.2.0"
 self-replace            = "1.5.0"
 semver                  = "1.0.28"
 serde.workspace         = true
-tar                     = "0.4"
-tempfile.workspace      = true
+tar                     = "0.4.46"
+tempfile                = "3.27.0"
 tokio.workspace         = true
-toml                    = "1.1.2"
+toml.workspace          = true
 tracing.workspace       = true
 xz2                     = { features = ["tokio"], version = "0.1.7" }

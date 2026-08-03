@@ -12,13 +12,13 @@ workspace = true
 [dependencies]
 anyhow.workspace      = true
 blake3.workspace      = true
-bytes                 = "1.11.1"
+bytes.workspace       = true
 derive_more           = { features = ["debug"], version = "2.1.1" }
 futures.workspace     = true
 iroh.workspace        = true
 iroh-gossip           = { features = ["net"], workspace = true }
-irpc.workspace        = true
-irpc-iroh.workspace   = true
+irpc                  = { default-features = false, version = "0.17.0" }
+irpc-iroh             = "0.17.0"
 jose-jwk              = "0.1.2"
 n0-error              = { features = ["anyhow"], version = "1.0.0" }
 n0-future.workspace   = true
@@ -27,28 +27,28 @@ p384                  = { default-features = false, features = ["ecdsa"], versio
 parking_lot.workspace = true
 postcard.workspace    = true
 rand.workspace        = true
-rusqlite              = { features = ["bundled"], version = "0.39" }
+rusqlite              = { features = ["bundled"], version = "0.39.0" }
 scc                   = "3.6.12"
 serde.workspace       = true
 signature             = "2.2.0"
-smol_str              = "0.3.6"
-thiserror             = "2.0.18"
+smol_str.workspace    = true
+thiserror.workspace   = true
 time.workspace        = true
 tokio.workspace       = true
-tokio-util            = { features = ["codec"], workspace = true }
+tokio-util            = { features = ["codec"], version = "0.7.18" }
 tracing.workspace     = true
 xdid.workspace        = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-iroh-blobs = { features = ["hide-proto-docs"], workspace = true }
-iroh-docs  = { workspace = true }
+iroh-blobs          = { features = ["hide-proto-docs"], workspace = true }
+iroh-docs.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 iroh-blobs = { default-features = true, workspace = true }
 iroh-docs  = { features = ["fs-store", "rpc"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
-axum.workspace = true
-rstest         = "0.26.1"
-tokio          = { features = ["macros", "rt-multi-thread"], workspace = true }
-tracing-test   = { features = ["no-env-filter"], workspace = true }
+axum.workspace   = true
+rstest.workspace = true
+tokio            = { features = ["macros", "rt-multi-thread"], workspace = true }
+tracing-test     = { features = ["no-env-filter"], workspace = true }

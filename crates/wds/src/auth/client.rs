@@ -29,12 +29,17 @@ pub async fn authenticate<S>(
 where
     S: Signer + Sync,
 {
-    let nonce = auth_client
+    let issued = auth_client
         .rpc(RequestChallenge(did.clone()))
         .await
         .context("request challenge")?;
 
-    let challenge = Challenge { did, host, nonce };
+    let challenge = Challenge {
+        did,
+        host,
+        nonce: issued.nonce,
+        expires: issued.expires,
+    };
 
     let payload = challenge.sign(signer).context("sign challenge")?;
 

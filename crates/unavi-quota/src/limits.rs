@@ -146,7 +146,7 @@ impl Limits {
                 },
             ),
             (
-                Flow::Publish,
+                Flow::SyncDoc,
                 FlowLimit {
                     capacity:       64.0,
                     refill_per_sec: 4.0,
@@ -204,7 +204,7 @@ impl Limits {
                 },
             ),
             (
-                Flow::Publish,
+                Flow::SyncDoc,
                 FlowLimit {
                     capacity:       32.0,
                     refill_per_sec: 2.0,

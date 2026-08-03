@@ -3,7 +3,7 @@ use std::time::Duration;
 use bytes::Bytes;
 use rstest::rstest;
 use tracing_test::traced_test;
-use wds::space;
+use wds::snapshot;
 
 use crate::common::{
     DataStoreCtx,
@@ -20,7 +20,7 @@ mod common;
 async fn test_snapshot_doc_roundtrip(#[future] ctx: DataStoreCtx) {
     let snapshot = Bytes::from_static(b"loro-snapshot-bytes");
 
-    let ns = space::create_snapshot_doc(
+    let ns = snapshot::create_doc(
         ctx.store.docs(),
         ctx.store.blobs().blobs(),
         snapshot.clone(),
@@ -29,7 +29,7 @@ async fn test_snapshot_doc_roundtrip(#[future] ctx: DataStoreCtx) {
     .await
     .expect("create snapshot doc");
 
-    let read = space::read_snapshot(ctx.store.docs(), ctx.store.blobs().blobs(), ns)
+    let read = snapshot::read(ctx.store.docs(), ctx.store.blobs().blobs(), ns)
         .await
         .expect("read snapshot")
         .expect("snapshot present");

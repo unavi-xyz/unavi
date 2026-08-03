@@ -99,11 +99,11 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredScenePublishDocument")]
-    pub async fn wired_scene_publish_document(&self, id: Vec<u8>) -> Result<(), String> {
+    pub async fn wired_scene_sync_document(&self, id: Vec<u8>) -> Result<(), String> {
         self.api
             .require(ApiName::CreateDocument)
             .map_err(|e| e.to_string())?;
-        shared::wired::scene::publish_document(&self.api, id)
+        shared::wired::scene::sync_document(&self.api, id)
             .await
             .map_err(|e| e.to_string())
     }

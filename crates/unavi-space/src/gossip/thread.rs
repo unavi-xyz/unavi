@@ -5,11 +5,7 @@ use std::{
 
 use bevy::prelude::*;
 use iroh::Endpoint;
-use iroh_blobs::api::blobs::Blobs;
-use iroh_docs::{
-    NamespaceId,
-    protocol::Docs,
-};
+use iroh_docs::NamespaceId;
 use iroh_gossip::{
     Gossip,
     TopicId,
@@ -17,16 +13,28 @@ use iroh_gossip::{
 };
 use tokio::sync::oneshot;
 use tracing::Instrument;
-use wds::actor::Actor;
 
 #[derive(Clone)]
 pub struct GossipCtx {
-    pub endpoint:     Endpoint,
-    pub gossip:       Gossip,
-    pub actor:        Actor,
-    pub sync_targets: Vec<Actor>,
-    pub docs:         Docs,
-    pub blobs:        Blobs,
+    pub endpoint: Endpoint,
+    pub gossip:   Gossip,
+}
+
+/// Separates this crate's per-space gossip from iroh-docs'.
+///
+/// iroh-docs subscribes to a namespace's own bytes as its sync topic, so
+/// deriving ours the same way put two protocols on one topic: each received the
+/// other's frames, and iroh-docs drops a namespace's gossip sync permanently on
+/// the first frame it cannot decode. Live document updates would stop arriving
+/// the moment a space broadcast anything.
+const TOPIC_CONTEXT: &str = "unavi/space/gossip";
+
+fn space_topic(space: NamespaceId) -> TopicId {
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(TOPIC_CONTEXT.as_bytes());
+    hasher.update(&[0]);
+    hasher.update(space.as_bytes());
+    TopicId::from_bytes(*hasher.finalize().as_bytes())
 }
 
 pub enum GossipCommand {
@@ -63,7 +71,7 @@ async fn handle_space_topic(
 ) -> anyhow::Result<()> {
     let peers = super::bootstrap::find_bootstrap_peers(&ctx, space).await?;
 
-    let topic_id = TopicId::from_bytes(*space.as_bytes());
+    let topic_id = space_topic(space);
     let topic = ctx
         .gossip
         .subscribe_with_opts(

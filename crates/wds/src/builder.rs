@@ -86,7 +86,6 @@ impl DataStoreBuilder {
             db,
             docs: docs.clone(),
             endpoint: self.endpoint.clone(),
-            registry: RwLock::new(None),
             user_identity: RwLock::new(None),
         });
 
@@ -143,6 +142,9 @@ async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database
     if let Storage::Path(path) = storage {
         let blob_path = path.join("blob");
         tokio::fs::create_dir_all(&blob_path).await?;
+        // `Docs::persistent` opens its directory rather than creating it, so
+        // the whole layout is laid out here before any store is loaded.
+        tokio::fs::create_dir_all(path.join("docs")).await?;
 
         let blobs = iroh_blobs::store::fs::FsStore::load_with_opts(
             blob_path.join("blobs.db"),

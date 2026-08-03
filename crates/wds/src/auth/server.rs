@@ -9,10 +9,20 @@ use iroh::{
     EndpointId,
     Signature,
 };
-use irpc::WithChannels;
+use irpc::{
+    WithChannels,
+    channel::oneshot,
+};
 use rand::RngCore;
+use time::OffsetDateTime;
 use tracing::debug;
-use xdid::resolver::DidResolver;
+use xdid::{
+    core::{
+        did::Did,
+        document::Document,
+    },
+    resolver::DidResolver,
+};
 
 use crate::{
     ConnectionState,
@@ -20,11 +30,17 @@ use crate::{
     StoreContext,
     WDS_SERVICE_TYPE,
     auth::{
+        AnswerChallenge,
         AuthMessage,
+        Challenge,
         HandlerState,
+        Issued,
         Nonce,
+        Pending,
+        RequestChallenge,
         jwk::verify_jwk_signature,
     },
+    signed_bytes::SignedBytes,
 };
 
 const NONCE_TTL: Duration = Duration::from_mins(3);
@@ -36,131 +52,149 @@ pub async fn handle_message(
 ) -> anyhow::Result<()> {
     match msg {
         AuthMessage::RequestChallenge(WithChannels { inner, tx, .. }) => {
-            let mut nonce = Nonce::default();
-            rand::rng().fill_bytes(&mut nonce);
-
-            if let Err((_, did)) = state.nonces.put_async(nonce, inner.0).await {
-                bail!("Failed to generate nonce for {did}")
-            }
-
-            // Remove nonce after time limit.
-            n0_future::task::spawn(async move {
-                n0_future::time::sleep(NONCE_TTL).await;
-                state.nonces.remove_async(&nonce).await;
-            });
-
-            tx.send(nonce).await?;
+            request_challenge(state, inner, tx).await
         }
         AuthMessage::AnswerChallenge(WithChannels { inner, tx, .. }) => {
-            let challenge = inner.0.payload()?;
-
-            if challenge.host != ctx.endpoint.id() {
-                debug!("invalid host");
-                tx.send(None).await?;
-                return Ok(());
-            }
-
-            let Some(did) = state
-                .nonces
-                .read_async(&challenge.nonce, |_, d| d.clone())
-                .await
-            else {
-                debug!("invalid nonce");
-                tx.send(None).await?;
-                return Ok(());
-            };
-
-            if did != challenge.did {
-                debug!("wrong did");
-                tx.send(None).await?;
-                return Ok(());
-            }
-
-            let resolver = DidResolver::new()?;
-            let doc = resolver.resolve(&did).await?;
-
-            // Validate signature.
-            let mut found_valid = false;
-
-            // Check auth methods.
-            if let Some(auth_methods) = &doc.authentication {
-                for method in auth_methods {
-                    let Some(map) = doc.resolve_verification_method(method) else {
-                        continue;
-                    };
-
-                    let Some(jwk) = &map.public_key_jwk else {
-                        continue;
-                    };
-
-                    let is_valid =
-                        verify_jwk_signature(jwk, inner.0.signature(), inner.0.payload_bytes());
-
-                    if is_valid {
-                        found_valid = true;
-                        break;
-                    }
-                }
-            }
-
-            // Check WDS services.
-            // We allow defined WDSes to authenticate on behalf of the DID.
-            // This enables cross-WDS operations like reading or syncing.
-            // Any written data still must be signed and verified by an attestation method.
-            if !found_valid && let Some(services) = doc.service {
-                for service in services {
-                    if !service.typ.iter().any(|t| t == WDS_SERVICE_TYPE) {
-                        continue;
-                    }
-
-                    for endpoint_id in service.service_endpoint {
-                        let Ok(endpoint) = EndpointId::from_str(&endpoint_id) else {
-                            continue;
-                        };
-
-                        let Ok(sig_bytes) = inner.0.signature().try_into() else {
-                            continue;
-                        };
-                        let sig = Signature::from_bytes(sig_bytes);
-
-                        if endpoint.verify(inner.0.payload_bytes(), &sig).is_err() {
-                            continue;
-                        }
-
-                        found_valid = true;
-                        break;
-                    }
-
-                    if found_valid {
-                        break;
-                    }
-                }
-            }
-
-            if !found_valid {
-                debug!("signature not from valid source");
-                tx.send(None).await?;
-                return Ok(());
-            }
-
-            // Generate and save session token.
-            let mut token = SessionToken::default();
-            rand::rng().fill_bytes(&mut token);
-
-            if ctx
-                .connections
-                .insert_async(token, ConnectionState { did })
-                .await
-                .is_err()
-            {
-                debug!("already authenticated");
-                tx.send(None).await?;
-                return Ok(());
-            }
-
-            tx.send(Some(token)).await?;
+            answer_challenge(ctx, state, inner, tx).await
         }
     }
+}
 
+async fn request_challenge(
+    state: Arc<HandlerState>,
+    RequestChallenge(did): RequestChallenge,
+    tx: oneshot::Sender<Issued>,
+) -> anyhow::Result<()> {
+    let mut nonce = Nonce::default();
+    rand::rng().fill_bytes(&mut nonce);
+
+    let expires = (OffsetDateTime::now_utc() + NONCE_TTL).unix_timestamp();
+
+    if let Err((_, pending)) = state
+        .nonces
+        .put_async(nonce, Pending { did, expires })
+        .await
+    {
+        bail!("Failed to generate nonce for {}", pending.did)
+    }
+
+    // Reap the nonce if it is never answered.
+    n0_future::task::spawn(async move {
+        n0_future::time::sleep(NONCE_TTL).await;
+        state.nonces.remove_async(&nonce).await;
+    });
+
+    tx.send(Issued { nonce, expires }).await?;
     Ok(())
+}
+
+async fn answer_challenge(
+    ctx: Arc<StoreContext>,
+    state: Arc<HandlerState>,
+    AnswerChallenge(signed): AnswerChallenge,
+    tx: oneshot::Sender<Option<SessionToken>>,
+) -> anyhow::Result<()> {
+    let Some(did) = redeem_nonce(&state, &signed.payload()?, &ctx).await else {
+        tx.send(None).await?;
+        return Ok(());
+    };
+
+    let doc = DidResolver::new()?.resolve(&did).await?;
+    if !signature_is_authorized(&doc, &signed) {
+        debug!("signature not from valid source");
+        tx.send(None).await?;
+        return Ok(());
+    }
+
+    let mut token = SessionToken::default();
+    rand::rng().fill_bytes(&mut token);
+
+    if ctx
+        .connections
+        .insert_async(token, ConnectionState { did })
+        .await
+        .is_err()
+    {
+        debug!("already authenticated");
+        tx.send(None).await?;
+        return Ok(());
+    }
+
+    tx.send(Some(token)).await?;
+    Ok(())
+}
+
+/// Consumes the challenge's nonce and returns the DID it was issued to, once
+/// the answer is shown to match that issuance and to be in-window.
+async fn redeem_nonce(
+    state: &HandlerState,
+    challenge: &Challenge,
+    ctx: &StoreContext,
+) -> Option<Did> {
+    if challenge.host != ctx.endpoint.id() {
+        debug!("invalid host");
+        return None;
+    }
+
+    // Taken, not read: a nonce answers exactly one challenge, so a captured
+    // signature cannot be replayed for a second session.
+    let Some((_, pending)) = state.nonces.remove_async(&challenge.nonce).await else {
+        debug!("invalid nonce");
+        return None;
+    };
+
+    if pending.did != challenge.did {
+        debug!("wrong did");
+        return None;
+    }
+
+    if challenge.expires != pending.expires {
+        debug!("wrong expiry");
+        return None;
+    }
+
+    if OffsetDateTime::now_utc().unix_timestamp() >= pending.expires {
+        debug!("challenge expired");
+        return None;
+    }
+
+    Some(pending.did)
+}
+
+fn signature_is_authorized(doc: &Document, signed: &SignedBytes<Challenge>) -> bool {
+    signed_by_authentication_method(doc, signed) || signed_by_wds_service(doc, signed)
+}
+
+fn signed_by_authentication_method(doc: &Document, signed: &SignedBytes<Challenge>) -> bool {
+    let Some(auth_methods) = &doc.authentication else {
+        return false;
+    };
+    let signing_bytes = signed.signing_bytes();
+
+    auth_methods.iter().any(|method| {
+        doc.resolve_verification_method(method)
+            .and_then(|map| map.public_key_jwk)
+            .is_some_and(|jwk| verify_jwk_signature(&jwk, signed.signature(), &signing_bytes))
+    })
+}
+
+/// Defined WDSes may authenticate on behalf of the DID, enabling cross-WDS
+/// operations like reading or syncing. Written data still must be signed and
+/// verified by an attestation method.
+fn signed_by_wds_service(doc: &Document, signed: &SignedBytes<Challenge>) -> bool {
+    let Some(services) = &doc.service else {
+        return false;
+    };
+    let Ok(sig_bytes) = signed.signature().try_into() else {
+        return false;
+    };
+    let sig = Signature::from_bytes(sig_bytes);
+    let signing_bytes = signed.signing_bytes();
+
+    services
+        .iter()
+        .filter(|service| service.typ.iter().any(|t| t == WDS_SERVICE_TYPE))
+        .flat_map(|service| &service.service_endpoint)
+        .filter_map(|id| EndpointId::from_str(id).ok())
+        .any(|endpoint| endpoint.verify(&signing_bytes, &sig).is_ok())
 }

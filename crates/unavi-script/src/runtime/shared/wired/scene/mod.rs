@@ -95,7 +95,7 @@ async fn create_snapshot_namespace(doc: &LoroDoc) -> anyhow::Result<NamespaceId>
                 return;
             };
             spawn_async_task(async move {
-                let res = wds::space::create_snapshot_doc(&docs, &blobs, snapshot, &[]).await;
+                let res = wds::snapshot::create_doc(&docs, &blobs, snapshot, &[]).await;
                 tx.try_send(res).ok();
             });
         })
@@ -128,7 +128,7 @@ async fn write_namespace_snapshot(ns: NamespaceId, doc: &LoroDoc) -> anyhow::Res
                         .await?
                         .ok_or_else(|| anyhow::anyhow!("namespace {ns} not open"))?;
                     let author = docs.api().author_default().await?;
-                    wds::space::write_snapshot(&doc, &blobs, author, snapshot, &[]).await
+                    wds::snapshot::write(&doc, &blobs, author, snapshot, &[]).await
                 }
                 .await;
                 tx.try_send(res).ok();
@@ -296,10 +296,10 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> Result<u32, ScriptError> {
     Ok(scene.docs.insert(DocRes { doc, id }, &api.quota)?)
 }
 
-pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
+pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = namespace(&id)?;
     validate_firewall(&api.doc_id, &id, Channel::SceneWrite)?;
-    api.quota.spend(Flow::Publish, 1.0)?;
+    api.quota.spend(Flow::SyncDoc, 1.0)?;
 
     let firewall = FIREWALL_REGISTRY.read().get(&id).cloned();
     if let Some(firewall) = firewall {

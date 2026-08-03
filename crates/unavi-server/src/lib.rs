@@ -4,7 +4,10 @@ use std::{
         SocketAddr,
         SocketAddrV4,
     },
-    sync::LazyLock,
+    sync::{
+        Arc,
+        LazyLock,
+    },
     time::Duration,
 };
 
@@ -20,6 +23,11 @@ use tracing::info;
 use wds::{
     DataStore,
     WDS_SERVICE_TYPE,
+};
+use wired_registry::{
+    Registry,
+    config::Config as RegistryConfig,
+    views::ViewIds,
 };
 use xdid::{
     core::{
@@ -54,7 +62,28 @@ pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     dirs
 });
 
+/// Which services this node runs.
+///
+/// One DID, one endpoint, one storage directory; the roles are toggles rather
+/// than separate processes, so a registry-only deployment still has a
+/// resolvable identity and a storage node still shares its endpoint with
+/// discovery.
+pub struct Features {
+    pub registry: bool,
+    pub wds:      bool,
+}
+
+impl Default for Features {
+    fn default() -> Self {
+        Self {
+            registry: true,
+            wds:      true,
+        }
+    }
+}
+
 pub struct ServerOptions {
+    pub features:  Features,
     pub in_memory: bool,
     pub port:      u16,
 }
@@ -68,25 +97,34 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let endpoint = Endpoint::builder(N0).bind().await?;
 
-    let (store, router) = {
-        let path = DIRS.data_local_dir().join("wds");
-        let (store, f) = DataStore::builder(endpoint.clone())
-            .storage_path(path)
-            .gc_timer(Duration::from_mins(15))
-            .build()
-            .await?;
+    let path = DIRS.data_local_dir().join("wds");
+    let (store, f) = DataStore::builder(endpoint.clone())
+        .storage_path(path)
+        .gc_timer(Duration::from_mins(15))
+        .build()
+        .await?;
+    let store = Arc::new(store);
 
-        let rb = iroh::protocol::Router::builder(endpoint);
-        let rb = f(rb);
-        let router = rb.spawn();
+    let mut rb = iroh::protocol::Router::builder(endpoint);
+    if opts.features.wds {
+        info!("Serving WDS storage");
+        rb = f(rb);
+    }
 
-        (store, router)
+    let (_registry, views) = if opts.features.registry {
+        let (registry, protocol) =
+            Registry::create(Arc::clone(&store), RegistryConfig::default()).await?;
+        let views = registry.views();
+        info!(recent = %views.recent, "Serving registry");
+        rb = rb.accept(wired_registry::control::ALPN, protocol);
+        (Some(registry), Some(views))
+    } else {
+        (None, None)
     };
 
-    let registry = store.create_registry().await?;
-    info!(%registry, "Serving registry doc");
+    let router = rb.spawn();
 
-    let app = create_did_document_route(did, &vc, store.endpoint_id(), registry);
+    let app = create_did_document_route(did, &vc, store.endpoint_id(), views);
 
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port));
     info!("HTTP listening on port {port}");
@@ -116,9 +154,16 @@ fn create_did_document_route(
     did: Did,
     vc: &impl DidKeyPair,
     endpoint_id: EndpointId,
-    registry: iroh_docs::NamespaceId,
+    views: Option<ViewIds>,
 ) -> axum::Router {
     let vc_public = vc.public().to_jwk();
+
+    // Advertise the endpoint always, and the registry's entry view only when
+    // this node runs one, so resolvers learn which roles it serves.
+    let mut service_endpoint = vec![endpoint_id.to_string()];
+    if let Some(views) = views {
+        service_endpoint.push(format!("registry:{}", views.recent));
+    }
 
     axum::Router::new()
         .route(
@@ -148,7 +193,7 @@ fn create_did_document_route(
                     service:               Some(vec![ServiceEndpoint {
                         id:               "wds".into(),
                         typ:              vec![WDS_SERVICE_TYPE.into()],
-                        service_endpoint: vec![endpoint_id.to_string(), format!("ns:{registry}")],
+                        service_endpoint: service_endpoint.clone(),
                     }]),
                     verification_method:   Some(vec![VerificationMethodMap {
                         id:                   DidUrl {

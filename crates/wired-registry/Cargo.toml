@@ -1,0 +1,35 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "wired-registry"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace    = true
+futures.workspace   = true
+iroh.workspace      = true
+irpc                = { default-features = false, version = "0.17.0" }
+irpc-iroh           = "0.17.0"
+n0-future.workspace = true
+postcard.workspace  = true
+scc                 = "3.6.12"
+serde.workspace     = true
+smol_str.workspace  = true
+thiserror.workspace = true
+time.workspace      = true
+tracing.workspace   = true
+wds.path            = "../wds"
+xdid.workspace      = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+iroh-blobs          = { features = ["hide-proto-docs"], workspace = true }
+iroh-docs.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+iroh-blobs = { default-features = true, workspace = true }
+iroh-docs  = { features = ["fs-store", "rpc"], workspace = true }

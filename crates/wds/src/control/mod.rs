@@ -35,14 +35,11 @@ use crate::{
     SessionToken,
     StoreContext,
     error::ApiError,
-    format::Beacon,
-    signed_bytes::SignedBytes,
 };
 
 mod blob;
 mod doc;
 mod quota;
-mod registry;
 
 const MAX_PIN_DURATION: Duration = Duration::from_hours(24 * 90);
 
@@ -96,15 +93,6 @@ pub enum ControlService {
     #[rpc(tx=oneshot::Sender<Result<QuotaInfo, ApiError>>)]
     #[wrap(GetQuota)]
     GetQuota { s: SessionToken },
-    #[rpc(tx=oneshot::Sender<Result<(), ApiError>>)]
-    #[wrap(Announce)]
-    Announce {
-        s:      SessionToken,
-        beacon: SignedBytes<Beacon>,
-    },
-    #[rpc(tx=oneshot::Sender<Result<Option<NamespaceId>, ApiError>>)]
-    #[wrap(RegistryId)]
-    RegistryId { s: SessionToken },
 }
 
 async fn handle_requests(
@@ -150,7 +138,5 @@ async fn handle_message(ctx: Arc<StoreContext>, msg: ControlMessage) -> anyhow::
         ControlMessage::HostDoc(channels) => doc::host_doc(ctx, channels).await,
         ControlMessage::UnhostDoc(channels) => doc::unhost_doc(ctx, channels).await,
         ControlMessage::GetQuota(channels) => quota::get_quota(ctx, channels).await,
-        ControlMessage::Announce(channels) => registry::announce(ctx, channels).await,
-        ControlMessage::RegistryId(channels) => registry::registry_id(ctx, channels).await,
     }
 }

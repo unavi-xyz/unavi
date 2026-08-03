@@ -20,19 +20,15 @@ use crate::{
     SessionToken,
     auth::AuthService,
     control::{
-        Announce,
         BlobExists,
         ControlService,
         GetQuota,
         HostDoc,
         PinBlob,
         QuotaInfo,
-        RegistryId,
         UnhostDoc,
         UploadBlob,
     },
-    format::Beacon,
-    signed_bytes::Signable,
 };
 
 mod auth;
@@ -149,33 +145,6 @@ impl Actor {
             .map_err(|e| anyhow::anyhow!("unhost doc failed: {e}"))?;
 
         Ok(())
-    }
-
-    /// Signs `beacon` with this actor's identity and announces it to the host's
-    /// registry doc.
-    pub async fn announce(&self, beacon: Beacon) -> anyhow::Result<()> {
-        let s = self.authenticate().await.context("auth")?;
-        let signed = beacon.sign(self.identity.signing_key())?;
-
-        self.control_client
-            .rpc(Announce { s, beacon: signed })
-            .await?
-            .map_err(|e| anyhow::anyhow!("announce failed: {e}"))?;
-
-        Ok(())
-    }
-
-    /// Fetches the host's registry doc namespace, if it hosts one.
-    pub async fn registry_id(&self) -> anyhow::Result<Option<NamespaceId>> {
-        let s = self.authenticate().await.context("auth")?;
-
-        let ns = self
-            .control_client
-            .rpc(RegistryId { s })
-            .await?
-            .map_err(|e| anyhow::anyhow!("registry id failed: {e}"))?;
-
-        Ok(ns)
     }
 
     /// Reports the actor's quota usage at this host.

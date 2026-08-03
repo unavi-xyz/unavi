@@ -114,18 +114,24 @@ fn add_slab(parent: &Prim, size: Vec3, translation: Vec3, color: Color) {
     parent.add_child(&slab).ok();
 }
 
-/// Parses the space namespace out of a beacon entry key of the form
-/// `beacons/<space-hex>/<did>`, returning its 64-char hex identity.
-fn beacon_space_hex(key: &str) -> Option<&str> {
-    key.strip_prefix("beacons/")?
+/// Prefix of a registry's active-spaces view. Only that view uses it, so
+/// listing it across every registry namespace picks out activity and ignores
+/// the rest.
+const ACTIVE_PREFIX: &str = "active/";
+
+/// Parses the space namespace out of an active-view entry key of the form
+/// `active/<rank>/<space-hex>`, returning its 64-char hex identity. Keys arrive
+/// in rank order, so the registry's ordering is preserved by iterating them.
+fn active_space_hex(key: &str) -> Option<&str> {
+    key.strip_prefix(ACTIVE_PREFIX)?
         .split('/')
-        .next()
+        .nth(1)
         .filter(|s| !s.is_empty())
 }
 
-/// The gauntlet's nav table: on open, lists known beacons from the home
-/// servers' registry docs and lays them out in a grid on a small table placed
-/// in front of the player.
+/// The gauntlet's nav table: on open, lists the spaces currently occupied
+/// according to the registries this client follows, and lays them out in a grid
+/// on a small table placed in front of the player.
 pub struct Nav {
     root:         Prim,
     beacon_lists: Vec<ListFuture>,
@@ -184,7 +190,7 @@ impl Nav {
         self.beacon_lists = wds
             .registries()
             .iter()
-            .map(|registry| wds.list(registry, "beacons/"))
+            .map(|registry| wds.list(registry, ACTIVE_PREFIX))
             .collect();
         Ok(())
     }
@@ -209,12 +215,12 @@ impl Nav {
             match result {
                 Ok(entries) => {
                     for entry in entries {
-                        if let Some(space) = beacon_space_hex(&entry.key) {
+                        if let Some(space) = active_space_hex(&entry.key) {
                             spaces.push(space.to_string());
                         }
                     }
                 }
-                Err(()) => eprintln!("nav: WDS beacon list error"),
+                Err(()) => eprintln!("nav: registry active-space list error"),
             }
         }
 

@@ -12,7 +12,6 @@ use unavi_manifold::{
 };
 
 pub mod anchor;
-mod beacon;
 mod connection;
 #[cfg(feature = "devtools")] mod devtools;
 mod gossip;
@@ -20,6 +19,7 @@ pub mod membership;
 pub mod peer;
 mod portal;
 mod portal_bridge;
+mod presence;
 pub mod quota;
 mod scene;
 pub mod spawn;
@@ -78,7 +78,7 @@ impl Plugin for SpacePlugin {
             .add_systems(
                 FixedUpdate,
                 (
-                    beacon::publish_beacons,
+                    presence::publish_presence,
                     connection::ecs::agent::outbound::send_agent_pose,
                     connection::ecs::object::send_object_poses,
                     connection::ecs::object::reconcile_object_authority,

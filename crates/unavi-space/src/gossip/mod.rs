@@ -11,12 +11,6 @@ use bevy_iroh::{
         RouterBuilderFnTarget,
     },
 };
-use bevy_wds::{
-    LocalActor,
-    LocalBlobs,
-    LocalDocs,
-    SyncTargets,
-};
 use iroh::{
     EndpointAddr,
     EndpointId,
@@ -80,7 +74,9 @@ struct SpaceBroadcast {
     msg:    SpaceMessage,
 }
 
-impl Signable for SpaceBroadcast {}
+impl Signable for SpaceBroadcast {
+    const SIGNING_CONTEXT: &'static str = "unavi/space/broadcast";
+}
 
 #[derive(Serialize, Deserialize)]
 #[non_exhaustive]
@@ -147,7 +143,6 @@ pub fn join_space_topic(
     spaces: Query<&Space>,
     sender: Query<&GossipSender>,
     endpoints: Query<(&IrohEndpoint, &IrohGossip)>,
-    actors: Query<(&LocalActor, &SyncTargets, &LocalDocs, &LocalBlobs)>,
     mut commands: Commands,
 ) {
     let Ok(sender) = sender.single() else {
@@ -160,18 +155,9 @@ pub fn join_space_topic(
         return;
     };
 
-    let Ok((actor, sync_targets, docs, blobs)) = actors.single() else {
-        warn!("Space add failed: no actor");
-        return;
-    };
-
     let ctx = GossipCtx {
-        endpoint:     endpoint.0.clone(),
-        gossip:       gossip.0.clone(),
-        actor:        actor.0.clone(),
-        sync_targets: sync_targets.0.clone(),
-        docs:         docs.0.clone(),
-        blobs:        blobs.0.clone(),
+        endpoint: endpoint.0.clone(),
+        gossip:   gossip.0.clone(),
     };
 
     let (cancel_tx, cancel_rx) = oneshot::channel();

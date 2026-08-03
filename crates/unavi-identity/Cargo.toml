@@ -18,4 +18,5 @@ iroh.workspace      = true
 n0-future.workspace = true
 unavi-util.path     = "../unavi-util"
 wds.path            = "../wds"
+wired-registry.path = "../wired-registry"
 xdid.workspace      = true

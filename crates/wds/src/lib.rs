@@ -8,10 +8,7 @@ use iroh::{
     EndpointId,
 };
 use iroh_blobs::api::Store as BlobStore;
-use iroh_docs::{
-    NamespaceId,
-    protocol::Docs,
-};
+use iroh_docs::protocol::Docs;
 use irpc::Client;
 use n0_future::task::AbortOnDropHandle;
 use parking_lot::RwLock;
@@ -30,15 +27,14 @@ mod auth;
 pub mod builder;
 pub mod control;
 pub mod db;
+pub mod docs;
 pub mod error;
-pub mod format;
 mod gc;
 pub mod identity;
 pub mod kv;
 mod quota;
-pub mod registry;
 pub mod signed_bytes;
-pub mod space;
+pub mod snapshot;
 pub mod tag;
 
 pub struct DataStore {
@@ -50,7 +46,7 @@ pub struct DataStore {
 }
 
 // TODO: Replace session token auth with iroh hooks
-type SessionToken = [u8; 32];
+pub type SessionToken = [u8; 32];
 
 #[derive(Debug)]
 struct StoreContext {
@@ -64,8 +60,6 @@ struct StoreContext {
     docs:          Docs,
     #[debug("Endpoint")]
     endpoint:      Endpoint,
-    #[debug("Option<NamespaceId>")]
-    registry:      RwLock<Option<NamespaceId>>,
     #[debug("Option<Identity>")]
     user_identity: RwLock<Option<Arc<Identity>>>,
 }
@@ -113,15 +107,15 @@ impl DataStore {
         &self.ctx.docs
     }
 
-    /// Creates and adopts a registry doc for this host, returning its
-    /// namespace id to advertise. The host holds the write secret; peers only
-    /// ever receive the id (read/sync capability) and announce via the
-    /// `Announce` control-plane RPC.
-    pub async fn create_registry(&self) -> anyhow::Result<NamespaceId> {
-        let doc = self.ctx.docs.api().create().await?;
-        let ns = doc.id();
-        *self.ctx.registry.write() = Some(ns);
-        Ok(ns)
+    /// Resolves an authenticated session token to the DID that holds it.
+    ///
+    /// Lets another service co-deployed on this node reuse the sessions this
+    /// store has already established, rather than running a second handshake.
+    pub async fn session_did(&self, token: &SessionToken) -> Option<Did> {
+        self.ctx
+            .connections
+            .read_async(token, |_, c| c.did.clone())
+            .await
     }
 
     /// Returns the blob store. Primarily for testing.

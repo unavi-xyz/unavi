@@ -26,5 +26,6 @@ tower-http            = { features = ["cors"], version = "0.6.8" }
 tracing.workspace     = true
 tracing-subscriber    = { features = ["env-filter"], workspace = true }
 wds.path              = "../wds"
+wired-registry.path   = "../wired-registry"
 xdid.workspace        = true
 zeroize.workspace     = true

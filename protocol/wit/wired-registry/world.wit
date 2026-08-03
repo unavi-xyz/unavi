@@ -1,0 +1,122 @@
+package wired:registry;
+
+world all {
+  import api;
+  import types;
+}
+
+/// Discovery: finding spaces and people you have no prior reference to.
+///
+/// A registry is a service, not a document. Its curated listings are published
+/// as documents and can be read through `wired:wds`, but occupancy and search
+/// are queries answered from live state and have no document to list. This
+/// interface covers the query half.
+///
+/// Reading is unprivileged in the protocol — a registry serves anyone — but the
+/// host gates this API to system scripts, since choosing which registries to
+/// trust is a decision for the client rather than for arbitrary content.
+interface api {
+  use types.{registry, error};
+
+  /// The registries this client follows, in preference order.
+  registries: func() -> list<registry>;
+}
+
+interface types {
+  use wired:error/types.{error};
+
+  /// A doc identity: the 32-byte iroh-docs NamespaceId.
+  type namespace = list<u8>;
+  /// A content-addressed blob hash (32 bytes).
+  type hash      = list<u8>;
+  /// A decentralized identifier, as a string.
+  type did       = string;
+
+  /// What a listing points at.
+  enum kind {
+    space,
+    avatar,
+    object,
+  }
+
+  /// A durable listing: something published to this registry.
+  ///
+  /// Every field but `ns` and `publisher` is self-declared by whoever submitted
+  /// it. A registry decides what to carry, never what a listing says, so treat
+  /// this as a claim rather than a fact.
+  record listing {
+    ns:          namespace,
+    publisher:   did,
+    kind:        kind,
+    title:       string,
+    description: option<string>,
+    tags:        list<string>,
+    preview:     option<hash>,
+  }
+
+  /// A space with people in it, most recently active first.
+  record active-space {
+    ns:        namespace,
+    /// Occupants seen within the registry's activity window.
+    occupants: u32,
+    /// Seconds since this space was last known to be active.
+    idle-secs: u32,
+  }
+
+  /// Someone reachable in a space right now.
+  record occupant {
+    did:      did,
+    /// The 32-byte iroh EndpointId to connect to.
+    endpoint: list<u8>,
+  }
+
+  /// Which listings to return.
+  record query {
+    /// Free text matched against titles, descriptions and tags. Empty matches
+    /// everything.
+    text:  string,
+    kind:  option<kind>,
+    tag:   option<string>,
+    limit: u32,
+  }
+
+  resource active-future {
+    poll: func() -> option<result<list<active-space>, error>>;
+  }
+
+  resource occupants-future {
+    poll: func() -> option<result<list<occupant>, error>>;
+  }
+
+  resource listings-future {
+    poll: func() -> option<result<list<listing>, error>>;
+  }
+
+  /// A single registry a client follows.
+  resource registry {
+    /// The DID of the server running this registry.
+    host: func() -> did;
+
+    /// Spaces with recent activity, most recent first.
+    ///
+    /// This is the discovery entry point: it answers "where is anyone" without
+    /// requiring a namespace up front. Results are drawn from an activity
+    /// window rather than instantaneous presence, so a space does not vanish
+    /// from the list between one peer's heartbeats.
+    active: func(limit: u32) -> active-future;
+
+    /// Who is reachable in a space right now.
+    ///
+    /// Answered from live state, so unlike `active` this reflects the moment it
+    /// is called. Each record is verified against its announcer's DID before
+    /// being returned.
+    occupants: func(ns: namespace) -> occupants-future;
+
+    /// Listings this registry carries, ranked by its own policy.
+    search: func(q: query) -> listings-future;
+
+    /// The namespaces of this registry's curated view documents, for reading
+    /// through `wired:wds` when a synced local copy is preferable to a query.
+    views: func() -> list<namespace>;
+  }
+}

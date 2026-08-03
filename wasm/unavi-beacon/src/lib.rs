@@ -28,7 +28,7 @@ use crate::{
         },
         scene::{
             api::{
-                publish_document,
+                sync_document,
                 self_document,
             },
             types::{
@@ -204,7 +204,7 @@ impl ScriptBehavior for Script {
         while let Some(event) = self.input.poll() {
             if !self.published && matches!(event.action, InputAction::GrabDown) {
                 let doc = self_document()?;
-                match publish_document(&doc.id()) {
+                match sync_document(&doc.id()) {
                     Ok(()) => {
                         self.published = true;
                         println!("Beacon published: space={}", self.id);

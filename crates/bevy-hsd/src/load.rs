@@ -50,7 +50,7 @@ use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
 };
-use wds::space;
+use wds::snapshot;
 
 use crate::{
     Hsd,
@@ -397,11 +397,11 @@ async fn write_hsd_doc(
     }
     doc.commit();
     let snapshot = doc.export(ExportMode::Snapshot)?;
-    space::create_snapshot_doc(docs, blobs, snapshot.into(), deps).await
+    snapshot::create_doc(docs, blobs, snapshot.into(), deps).await
 }
 
 async fn read_hsd_doc(docs: &Docs, blobs: &Blobs, ns: NamespaceId) -> anyhow::Result<LoroDoc> {
-    let bytes = space::read_snapshot(docs, blobs, ns)
+    let bytes = snapshot::read(docs, blobs, ns)
         .await?
         .with_context(|| format!("snapshot missing for doc {ns}"))?;
     let doc = LoroDoc::new();
@@ -464,20 +464,36 @@ pub fn instance_subdocuments(
         let docs = local_docs.0.clone();
         let blobs = local_blobs.0.clone();
         spawn_async_task(async move {
-            if let Ok(doc) = read_hsd_doc(&docs, &blobs, id).await {
-                let _ = AsyncCommands::default()
-                    .push(move |world: &mut World| {
-                        let current = world
-                            .get_entity(prim_ent)
-                            .ok()
-                            .and_then(|e| e.get::<SubdocLoaded>().map(|l| l.0));
-                        if current == Some(id) {
-                            world.spawn((Hsd(Arc::new(doc)), HsdNamespace(id), ChildOf(prim_ent)));
-                        }
-                    })
-                    .send()
-                    .await;
-            }
+            let doc = match read_hsd_doc(&docs, &blobs, id).await {
+                Ok(doc) => doc,
+                Err(err) => {
+                    warn!(%id, ?err, "failed reading subdocument");
+                    // Clear the marker so a later attempt retries once peers
+                    // are reachable; the fetch's own retries pace this.
+                    let _ = AsyncCommands::default()
+                        .push(move |world: &mut World| {
+                            if let Ok(mut e) = world.get_entity_mut(prim_ent) {
+                                e.remove::<SubdocLoaded>();
+                            }
+                        })
+                        .send()
+                        .await;
+                    return;
+                }
+            };
+
+            let _ = AsyncCommands::default()
+                .push(move |world: &mut World| {
+                    let current = world
+                        .get_entity(prim_ent)
+                        .ok()
+                        .and_then(|e| e.get::<SubdocLoaded>().map(|l| l.0));
+                    if current == Some(id) {
+                        world.spawn((Hsd(Arc::new(doc)), HsdNamespace(id), ChildOf(prim_ent)));
+                    }
+                })
+                .send()
+                .await;
         });
     }
 }

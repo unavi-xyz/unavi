@@ -6,9 +6,9 @@ use bevy::{
 };
 use blake3::Hash;
 use bytes::Bytes;
+use iroh_blobs::api::blobs::Blobs;
 use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
-use wds::Blobs;
 
 use crate::LocalBlobs;
 

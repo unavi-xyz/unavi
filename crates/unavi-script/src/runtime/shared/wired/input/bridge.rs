@@ -2,10 +2,10 @@ use async_channel::Sender;
 use bevy::prelude::*;
 use bevy_hsd::{
     HsdChild,
-    HsdRecordId,
+    HsdNamespace,
     Prim,
 };
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use loro::TreeID;
 use unavi_input::{
     SqueezeDown,
@@ -32,7 +32,7 @@ pub struct GlobalInputListener {
 
 #[derive(Component)]
 pub struct InputListener {
-    pub target_doc:  Hash,
+    pub target_doc:  NamespaceId,
     pub target_node: TreeID,
     pub tx:          Sender<InputEvent>,
 }
@@ -195,7 +195,7 @@ pub fn send_to_listeners(
     global: Query<&GlobalInputListener>,
     listeners: Query<&InputListener>,
     nodes: Query<(&Prim, &HsdChild)>,
-    docs: Query<&HsdRecordId>,
+    docs: Query<&HsdNamespace>,
 ) {
     let Some(trigger) = &*trigger else {
         return;

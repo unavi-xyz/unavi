@@ -25,29 +25,15 @@ pub enum WdsError {
 
     #[error("access denied")]
     AccessDenied,
-    #[error("record not pinned")]
-    NotPinned,
     #[error("quota exceeded")]
     QuotaExceeded,
-
-    #[error("record not found")]
-    RecordNotFound,
     #[error("blob not found")]
     BlobNotFound,
 
-    #[error("schema validation failed: {0}")]
-    SchemaValidation(String),
     #[error("serialization error: {0}")]
     Serialization(#[from] postcard::Error),
-
     #[error("database error: {0}")]
     Database(#[from] rusqlite::Error),
-    #[error("hydration error: {0}")]
-    Hydration(#[from] loro_surgeon::error::HydrateError),
-    #[error("reconciliation error: {0}")]
-    Reconciliation(#[from] loro_surgeon::error::ReconcileError),
-    #[error("sync protocol error")]
-    SyncFailed,
 
     #[error(transparent)]
     Other(#[from] anyhow::Error),
@@ -62,18 +48,12 @@ pub enum WdsError {
 pub enum ApiError {
     #[error("unauthenticated")]
     Unauthenticated,
-    #[error("record not found")]
-    RecordNotFound,
     #[error("access denied")]
     AccessDenied,
     #[error("quota exceeded")]
     QuotaExceeded,
     #[error("blob not found")]
     BlobNotFound,
-    #[error("not pinned")]
-    NotPinned,
-    #[error("sync failed")]
-    SyncFailed,
     #[error("invalid signature")]
     InvalidSignature,
     #[error("internal error")]
@@ -88,25 +68,17 @@ impl WdsError {
             Self::InvalidSignature => ApiError::InvalidSignature,
             Self::Unauthenticated => ApiError::Unauthenticated,
             Self::AccessDenied => ApiError::AccessDenied,
-            Self::NotPinned => ApiError::NotPinned,
             Self::QuotaExceeded => ApiError::QuotaExceeded,
-            Self::RecordNotFound => ApiError::RecordNotFound,
             Self::BlobNotFound => ApiError::BlobNotFound,
-            Self::SyncFailed => ApiError::SyncFailed,
-            Self::SchemaValidation(msg) if msg.contains("access denied") => ApiError::AccessDenied,
             Self::Other(e) => {
-                // Try to recover WdsError that was wrapped via .into().
                 if let Some(inner) = e.downcast_ref::<Self>() {
                     return inner.to_api_error();
                 }
                 ApiError::Internal
             }
-            Self::DidResolution(_)
-            | Self::Database(_)
-            | Self::Serialization(_)
-            | Self::Hydration(_)
-            | Self::Reconciliation(_)
-            | Self::SchemaValidation(_) => ApiError::Internal,
+            Self::DidResolution(_) | Self::Database(_) | Self::Serialization(_) => {
+                ApiError::Internal
+            }
         }
     }
 }

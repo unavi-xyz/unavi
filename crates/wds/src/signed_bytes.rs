@@ -4,7 +4,13 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use xdid::methods::key::Signer;
+use xdid::{
+    core::did::Did,
+    methods::key::Signer,
+    resolver::DidResolver,
+};
+
+use crate::auth::jwk::verify_jwk_signature;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedBytes<T>
@@ -63,6 +69,33 @@ where
     fn sign(&self, key: &impl Signer) -> anyhow::Result<SignedBytes<Self>> {
         SignedBytes::sign(self, key)
     }
+}
+
+/// Verifies that `signed` was produced by an authentication key of `did`, by
+/// resolving the DID document and checking the signature against its
+/// authentication verification methods.
+pub async fn verify_did_signature<T>(signed: &SignedBytes<T>, did: &Did) -> bool
+where
+    for<'a> T: Serialize + Deserialize<'a> + Sync,
+{
+    let Ok(resolver) = DidResolver::new() else {
+        return false;
+    };
+    let Ok(doc) = resolver.resolve(did).await else {
+        return false;
+    };
+    let Some(auth_methods) = &doc.authentication else {
+        return false;
+    };
+    for method in auth_methods {
+        if let Some(map) = doc.resolve_verification_method(method)
+            && let Some(jwk) = &map.public_key_jwk
+            && verify_jwk_signature(jwk, signed.signature(), signed.payload_bytes())
+        {
+            return true;
+        }
+    }
+    false
 }
 
 pub struct IrohSigner<'a>(pub &'a iroh::SecretKey);

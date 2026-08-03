@@ -15,8 +15,8 @@ async-channel.workspace = true
 bevy.workspace          = true
 blake3.workspace        = true
 bytes.workspace         = true
-iroh-base.workspace     = true
-loro.workspace          = true
+iroh-blobs              = { features = ["hide-proto-docs"], workspace = true }
+iroh-docs.workspace     = true
 n0-future.workspace     = true
 smol_str.workspace      = true
 tokio.workspace         = true

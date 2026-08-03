@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use unavi_space::{
     membership::doc_space,
     state::{
@@ -22,8 +22,8 @@ use crate::{
 
 #[derive(Clone, Copy)]
 pub struct KvRes {
-    pub space: Hash,
-    pub doc:   Hash,
+    pub space: NamespaceId,
+    pub doc:   NamespaceId,
 }
 
 #[derive(Default)]
@@ -52,7 +52,7 @@ pub async fn get_kv(api: &Api, doc_id: Vec<u8>) -> anyhow::Result<Option<u32>> {
     let Ok(bytes) = <[u8; 32]>::try_from(doc_id.as_slice()) else {
         return Ok(None);
     };
-    let doc = Hash::from(bytes);
+    let doc = NamespaceId::from(&bytes);
 
     if !replicas::has_doc(space, doc) {
         return Ok(None);

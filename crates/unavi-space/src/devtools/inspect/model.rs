@@ -7,11 +7,11 @@ use bevy::{
 use bevy_hsd::{
     Hsd,
     HsdChild,
+    HsdNamespace,
     HsdPrimIndex,
-    HsdRecordId,
 };
-use blake3::Hash;
 use hsd::HSD_CONTAINER_ID;
+use iroh_docs::NamespaceId;
 use loro::{
     LoroTree,
     LoroValue,
@@ -44,7 +44,7 @@ pub struct InspectData<'w, 's> {
         's,
         (
             Entity,
-            &'static HsdRecordId,
+            &'static HsdNamespace,
             Has<Hsd>,
             Option<&'static HsdPrimIndex>,
             Option<&'static ChildOf>,
@@ -67,14 +67,14 @@ pub struct PeerModel {
     pub is_self:   bool,
     pub connected: bool,
     /// Pinned docs as (doc, space, pinned-at).
-    pub pins:      Vec<(Hash, Hash, u64)>,
-    pub claims:    Vec<(Hash, u64)>,
+    pub pins:      Vec<(NamespaceId, NamespaceId, u64)>,
+    pub claims:    Vec<(NamespaceId, u64)>,
     pub kv:        Vec<PeerKvRow>,
 }
 
 #[derive(std::hash::Hash)]
 pub struct PeerKvRow {
-    pub doc:   Hash,
+    pub doc:   NamespaceId,
     pub key:   String,
     pub value: Option<Vec<u8>>,
     pub at:    u64,
@@ -82,7 +82,7 @@ pub struct PeerKvRow {
 
 #[derive(std::hash::Hash)]
 pub struct SpaceModel {
-    pub space:  Hash,
+    pub space:  NamespaceId,
     pub joined: bool,
     pub active: bool,
     pub docs:   Vec<SpaceDocRow>,
@@ -91,7 +91,7 @@ pub struct SpaceModel {
 
 #[derive(std::hash::Hash)]
 pub struct SpaceDocRow {
-    pub doc:       Hash,
+    pub doc:       NamespaceId,
     pub owner:     Option<[u8; 32]>,
     pub pins:      usize,
     pub instanced: bool,
@@ -99,8 +99,8 @@ pub struct SpaceDocRow {
 
 #[derive(std::hash::Hash)]
 pub struct DocModel {
-    pub doc:           Hash,
-    pub space:         Option<Hash>,
+    pub doc:           NamespaceId,
+    pub space:         Option<NamespaceId>,
     pub is_space_base: bool,
     pub owner:         Option<[u8; 32]>,
     pub authority:     Option<[u8; 32]>,
@@ -108,8 +108,8 @@ pub struct DocModel {
     pub kv:            Vec<MergedKv>,
     pub instanced:     bool,
     pub prims:         Option<usize>,
-    pub parent:        Option<Hash>,
-    pub subdocs:       Vec<Hash>,
+    pub parent:        Option<NamespaceId>,
+    pub subdocs:       Vec<NamespaceId>,
     pub tree:          Option<String>,
 }
 
@@ -134,7 +134,10 @@ impl InspectData<'_, '_> {
     }
 }
 
-pub fn active_space(spaces: &Query<(Entity, &Space)>, active: Option<Entity>) -> Option<Hash> {
+pub fn active_space(
+    spaces: &Query<(Entity, &Space)>,
+    active: Option<Entity>,
+) -> Option<NamespaceId> {
     active.and_then(|e| spaces.get(e).ok()).map(|(_, s)| s.0)
 }
 
@@ -172,7 +175,7 @@ fn peer_model(id: [u8; 32], snap: &debug::DebugSnapshot) -> PeerModel {
 }
 
 impl InspectData<'_, '_> {
-    fn space_model(&self, space: Hash, snap: &debug::DebugSnapshot) -> SpaceModel {
+    fn space_model(&self, space: NamespaceId, snap: &debug::DebugSnapshot) -> SpaceModel {
         let mut docs = membership::DOC_SPACE_REGISTRY
             .read()
             .iter()
@@ -228,7 +231,7 @@ impl InspectData<'_, '_> {
         }
     }
 
-    fn doc_model(&self, doc: Hash, snap: &debug::DebugSnapshot) -> DocModel {
+    fn doc_model(&self, doc: NamespaceId, snap: &debug::DebugSnapshot) -> DocModel {
         let space = membership::doc_space(doc);
         let mut pinned_by = snap
             .peers
@@ -268,7 +271,10 @@ impl InspectData<'_, '_> {
         }
     }
 
-    fn doc_entity(&self, doc: Hash) -> Option<(Entity, bool, Option<usize>, Option<Entity>)> {
+    fn doc_entity(
+        &self,
+        doc: NamespaceId,
+    ) -> Option<(Entity, bool, Option<usize>, Option<Entity>)> {
         self.docs
             .iter()
             .find(|(_, record, ..)| record.0 == doc)
@@ -284,7 +290,7 @@ impl InspectData<'_, '_> {
 
     /// Resolves the document containing `entity`: its Bevy parent is a prim,
     /// whose [`HsdChild`] points at the owning document.
-    fn parent_doc(&self, entity: Entity) -> Option<Hash> {
+    fn parent_doc(&self, entity: Entity) -> Option<NamespaceId> {
         let (.., parent) = self.docs.get(entity).ok()?;
         let prim = parent.map(ChildOf::parent)?;
         let owner = self.prims.get(prim).ok()?.0;
@@ -292,7 +298,7 @@ impl InspectData<'_, '_> {
     }
 }
 
-fn merged_kv(doc: Hash, snap: &debug::DebugSnapshot) -> Vec<MergedKv> {
+fn merged_kv(doc: NamespaceId, snap: &debug::DebugSnapshot) -> Vec<MergedKv> {
     let mut cells = Vec::new();
     for p in &snap.peers {
         if let Some(d) = p.docs.iter().find(|d| d.doc == doc) {
@@ -390,7 +396,7 @@ mod tests {
         DebugSnapshot,
     };
 
-    fn doc_with_kv(doc: Hash, kv: Vec<DebugKv>) -> DebugDoc {
+    fn doc_with_kv(doc: NamespaceId, kv: Vec<DebugKv>) -> DebugDoc {
         DebugDoc {
             doc,
             space: doc,
@@ -402,7 +408,7 @@ mod tests {
 
     #[test]
     fn merged_kv_latest_write_wins_across_peers_and_neutral() {
-        let doc = blake3::hash(b"merged-kv-doc");
+        let doc = NamespaceId::from(blake3::hash(b"merged-kv-doc").as_bytes());
         let early = [1u8; 32];
         let late = [2u8; 32];
         let snap = DebugSnapshot {

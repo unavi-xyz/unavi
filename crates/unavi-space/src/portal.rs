@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_hsd::attributes::portal::PortalConfig;
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 
 use crate::Space;
 
@@ -17,7 +17,7 @@ pub fn spawn_portal_space(
     let Some(dest) = &portal.0.destination else {
         return;
     };
-    let id = Hash::from_bytes(dest.space.0);
+    let id = NamespaceId::from(&dest.space.0);
     if spaces.iter().any(|s| s.0 == id) {
         return;
     }

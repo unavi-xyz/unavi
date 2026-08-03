@@ -6,18 +6,12 @@ use std::{
 use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
-    HsdRecordId,
+    HsdNamespace,
 };
 use bevy_wds::{
+    LocalBlobs,
+    LocalDocs,
     blob::get::GetBlob,
-    record::{
-        acl::SetRecordPublic,
-        read::ReadRecord,
-        write::{
-            SchemaDef,
-            WriteRecord,
-        },
-    },
 };
 use blake3::Hash;
 use bytes::Bytes;
@@ -25,14 +19,20 @@ use hsd::{
     HSD_CONTAINER_ID,
     file::HsdFile,
 };
-use loro::LoroDoc;
+use iroh_docs::NamespaceId;
+use loro::{
+    ExportMode,
+    LoroDoc,
+};
 use unavi_quota::{
     Flow,
     Stock,
 };
 use unavi_space::anchor::ActiveSpace;
-use unavi_util::async_commands::AsyncCommands;
-use wired_schemas::SCHEMA_HSD;
+use unavi_util::{
+    async_commands::AsyncCommands,
+    async_task::spawn_async_task,
+};
 
 use crate::{
     error::ScriptError,
@@ -71,7 +71,75 @@ pub(super) async fn upload_blob(data: Vec<u8>) -> anyhow::Result<Hash> {
     actor.upload_blob(Bytes::from(data)).await
 }
 
-async fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> Result<(), ScriptError> {
+fn namespace(bytes: &[u8]) -> anyhow::Result<NamespaceId> {
+    let arr: [u8; 32] = bytes
+        .try_into()
+        .map_err(|_| anyhow::anyhow!("namespace id must be 32 bytes"))?;
+    Ok(NamespaceId::from(&arr))
+}
+
+/// Exports `doc` to a Loro snapshot and writes it into a freshly created
+/// namespace, returning the namespace id.
+async fn create_snapshot_namespace(doc: &LoroDoc) -> anyhow::Result<NamespaceId> {
+    doc.commit();
+    let snapshot: Bytes = doc.export(ExportMode::Snapshot)?.into();
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let Some((docs, blobs)) = world
+                .query::<(&LocalDocs, &LocalBlobs)>()
+                .single(world)
+                .ok()
+                .map(|(d, b)| (d.0.clone(), b.0.clone()))
+            else {
+                return;
+            };
+            spawn_async_task(async move {
+                let res = wds::space::create_snapshot_doc(&docs, &blobs, snapshot, &[]).await;
+                tx.try_send(res).ok();
+            });
+        })
+        .send()
+        .await?;
+    rx.recv().await?
+}
+
+/// Overwrites `ns`'s `snapshot` entry with `doc`'s current Loro state, so a
+/// subsequently hosted namespace serves the script's live edits.
+async fn write_namespace_snapshot(ns: NamespaceId, doc: &LoroDoc) -> anyhow::Result<()> {
+    doc.commit();
+    let snapshot: Bytes = doc.export(ExportMode::Snapshot)?.into();
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let Some((docs, blobs)) = world
+                .query::<(&LocalDocs, &LocalBlobs)>()
+                .single(world)
+                .ok()
+                .map(|(d, b)| (d.0.clone(), b.0.clone()))
+            else {
+                return;
+            };
+            spawn_async_task(async move {
+                let res = async {
+                    let doc = docs
+                        .api()
+                        .open(ns)
+                        .await?
+                        .ok_or_else(|| anyhow::anyhow!("namespace {ns} not open"))?;
+                    let author = docs.api().author_default().await?;
+                    wds::space::write_snapshot(&doc, &blobs, author, snapshot, &[]).await
+                }
+                .await;
+                tx.try_send(res).ok();
+            });
+        })
+        .send()
+        .await?;
+    rx.recv().await?
+}
+
+async fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: NamespaceId) -> Result<(), ScriptError> {
     let doc_guard = api.quota.charge(Stock::Documents, 1)?;
 
     let firewall = Firewall::for_child_doc(api.doc_id);
@@ -86,7 +154,7 @@ async fn spawn_child_doc(api: &Api, doc: Arc<LoroDoc>, id: Hash) -> Result<(), S
     AsyncCommands::default()
         .spawn((
             Hsd(doc),
-            HsdRecordId(id),
+            HsdNamespace(id),
             firewall,
             api.permissions.clone(),
             QuotaGuards(vec![doc_guard]),
@@ -122,7 +190,7 @@ pub async fn self_document(api: &Api) -> anyhow::Result<u32> {
 }
 
 pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
-    let id = Hash::from_slice(&id)?;
+    let id = namespace(&id)?;
     validate_firewall(&api.doc_id, &id, Channel::SceneRead)?;
 
     let mut scene = api.wired_scene.lock().await;
@@ -146,7 +214,7 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
     AsyncCommands::default()
         .push(move |world: &mut World| {
             let doc = world
-                .query::<(&HsdRecordId, &Hsd)>()
+                .query::<(&HsdNamespace, &Hsd)>()
                 .iter(world)
                 .find(|(rid, _)| rid.0 == id)
                 .map(|(_, d)| Arc::clone(&d.0));
@@ -162,7 +230,7 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
 }
 
 pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
-    let id = Hash::from_slice(&id)?;
+    let id = namespace(&id)?;
     if let Err(err) = validate_firewall(&api.doc_id, &id, Channel::SceneWrite) {
         debug!(?err, "remove_document denied by firewall, skipping");
         return Ok(());
@@ -182,7 +250,7 @@ pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
 
     AsyncCommands::default()
         .push(move |world: &mut World| {
-            let mut query = world.query::<(Entity, &HsdRecordId)>();
+            let mut query = world.query::<(Entity, &HsdNamespace)>();
             if let Some((entity, _)) = query.iter(world).find(|(_, v)| v.0 == doc.id) {
                 world.despawn(entity);
             }
@@ -215,26 +283,10 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> Result<u32, ScriptError> {
         let hsd_str = std::str::from_utf8(&bytes)?.to_owned();
         let file = HsdFile::from_ron(&hsd_str)?;
 
-        let id = {
-            let (mut write, rx, _cancel) = WriteRecord::new(None);
-            write.schemas = vec![SchemaDef {
-                schema:    (&*SCHEMA_HSD).into(),
-                container: "hsd".into(),
-                f:         Arc::new(move |doc| {
-                    file.load_into_doc(doc)?;
-                    Ok(())
-                }),
-            }];
-            AsyncCommands::default().trigger(write).send().await?;
-            rx.recv().await?
-        };
-
-        let doc = {
-            let (read, rx, _cancel) = ReadRecord::new(id);
-            AsyncCommands::default().trigger(read).send().await?;
-            Arc::new(rx.recv().await?)
-        };
-        anyhow::Ok((doc, id))
+        let doc = LoroDoc::new();
+        file.load_into_doc(&doc)?;
+        let id = create_snapshot_namespace(&doc).await?;
+        anyhow::Ok((Arc::new(doc), id))
     }
     .await?;
 
@@ -245,7 +297,7 @@ pub async fn load_hsd(api: &Api, blob_id: Vec<u8>) -> Result<u32, ScriptError> {
 }
 
 pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
-    let id = Hash::from_slice(&id)?;
+    let id = namespace(&id)?;
     validate_firewall(&api.doc_id, &id, Channel::SceneWrite)?;
     api.quota.spend(Flow::Publish, 1.0)?;
 
@@ -261,12 +313,12 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
         s
     } else {
         // If document doesn't belong to a space, add it to the active space.
-        let (tx, rx) = async_channel::bounded::<Option<Hash>>(1);
+        let (tx, rx) = async_channel::bounded::<Option<NamespaceId>>(1);
         AsyncCommands::default()
             .push(move |world: &mut World| {
                 let active = world.get_resource::<ActiveSpace>().and_then(|a| a.0);
-                let hash = active.and_then(|e| world.get::<unavi_space::Space>(e).map(|s| s.0));
-                tx.try_send(hash).ok();
+                let ns = active.and_then(|e| world.get::<unavi_space::Space>(e).map(|s| s.0));
+                tx.try_send(ns).ok();
             })
             .send()
             .await?;
@@ -275,7 +327,8 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
             .ok_or_else(|| anyhow::anyhow!("doc has no space and no active space"))?
     };
 
-    // Ensure document is public within the WDS so others can read it.
+    // Checkpoint the script's live edits into the namespace snapshot so hosts
+    // and peers serve the current state, then ask the home server to host it.
     let doc = {
         let scene = api.wired_scene.lock().await;
         scene
@@ -286,12 +339,10 @@ pub async fn publish_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let Some(doc) = doc else {
         anyhow::bail!("published doc not held by script");
     };
-    let (event, rx) = SetRecordPublic::new(id, doc, true);
-    AsyncCommands::default().trigger(event).send().await?;
-    rx.recv()
-        .await
-        .map_err(|err| anyhow::anyhow!("set record public response dropped: {err}"))?
-        .map_err(|err| anyhow::anyhow!("failed to make published record public: {err}"))?;
+    write_namespace_snapshot(id, &doc).await?;
+
+    let actor = bevy_wds::local_actor().ok_or_else(|| anyhow::anyhow!("no local actor"))?;
+    actor.host_doc(id).await?;
 
     // Pin the document locally; ownership follows from the pin, and the pin's
     // quota is charged to the resulting owner.
@@ -306,31 +357,11 @@ pub async fn create_document(api: &Api) -> Result<u32, ScriptError> {
     api.quota.spend(Flow::CreateDocument, 1.0)?;
 
     let (doc, id) = async {
-        let id = {
-            let (mut write, rx, cancel) = WriteRecord::new(None);
-            write.schemas = vec![SchemaDef {
-                schema:    (&*SCHEMA_HSD).into(),
-                container: "hsd".into(),
-                f:         Arc::new(|doc| {
-                    // Ensure the HSD tree container exists.
-                    let _ = doc.get_tree(&*HSD_CONTAINER_ID);
-                    Ok(())
-                }),
-            }];
-            AsyncCommands::default().trigger(write).send().await?;
-            let id = rx.recv().await?;
-            drop(cancel);
-            id
-        };
-
-        let doc = {
-            let (read, rx, cancel) = ReadRecord::new(id);
-            AsyncCommands::default().trigger(read).send().await?;
-            let doc = rx.recv().await?;
-            drop(cancel);
-            Arc::new(doc)
-        };
-        anyhow::Ok((doc, id))
+        let doc = LoroDoc::new();
+        // Ensure the HSD tree container exists.
+        let _ = doc.get_tree(&*HSD_CONTAINER_ID);
+        let id = create_snapshot_namespace(&doc).await?;
+        anyhow::Ok((Arc::new(doc), id))
     }
     .await?;
 

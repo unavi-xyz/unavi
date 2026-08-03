@@ -20,13 +20,14 @@ bytemuck.workspace      = true
 bytes.workspace         = true
 hsd.path                = "../hsd"
 image                   = { features = ["jpeg", "png"], workspace = true }
+iroh-blobs              = { features = ["hide-proto-docs"], workspace = true }
+iroh-docs.workspace     = true
 loro.workspace          = true
 loro-surgeon.workspace  = true
 smol_str.workspace      = true
 thiserror.workspace     = true
 unavi-util.path         = "../unavi-util"
 wds.path                = "../wds"
-wired-schemas.path      = "../wired-schemas"
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true

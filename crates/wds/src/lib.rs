@@ -8,7 +8,10 @@ use iroh::{
     EndpointId,
 };
 use iroh_blobs::api::Store as BlobStore;
-pub use iroh_blobs::api::blobs::Blobs;
+use iroh_docs::{
+    NamespaceId,
+    protocol::Docs,
+};
 use irpc::Client;
 use n0_future::task::AbortOnDropHandle;
 use parking_lot::RwLock;
@@ -23,27 +26,29 @@ use crate::builder::{
 pub const WDS_SERVICE_TYPE: &str = "WDSEndpoint";
 
 pub mod actor;
-pub mod api;
 mod auth;
 pub mod builder;
+pub mod control;
 pub mod db;
 pub mod error;
+pub mod format;
 mod gc;
 pub mod identity;
+pub mod kv;
 mod quota;
-pub mod record;
+pub mod registry;
 pub mod signed_bytes;
-pub mod surg;
-mod sync;
-mod tag;
+pub mod space;
+pub mod tag;
 
 pub struct DataStore {
-    api_client:  Client<api::ApiService>,
-    auth_client: Client<auth::AuthService>,
-    endpoint:    Endpoint,
-    ctx:         Arc<StoreContext>,
-    _gc_handle:  Option<AbortOnDropHandle<()>>,
+    control_client: Client<control::ControlService>,
+    auth_client:    Client<auth::AuthService>,
+    endpoint:       Endpoint,
+    ctx:            Arc<StoreContext>,
+    _gc_handle:     Option<AbortOnDropHandle<()>>,
 }
+
 // TODO: Replace session token auth with iroh hooks
 type SessionToken = [u8; 32];
 
@@ -55,8 +60,12 @@ struct StoreContext {
     connections:   scc::HashMap<SessionToken, ConnectionState>,
     #[debug("Database")]
     db:            db::Database,
+    #[debug("Docs")]
+    docs:          Docs,
     #[debug("Endpoint")]
     endpoint:      Endpoint,
+    #[debug("Option<NamespaceId>")]
+    registry:      RwLock<Option<NamespaceId>>,
     #[debug("Option<Identity>")]
     user_identity: RwLock<Option<Arc<Identity>>>,
 }
@@ -70,7 +79,7 @@ struct ConnectionState {
 impl DataStore {
     /// Create a new [`DataStoreBuilder`].
     #[must_use]
-    pub fn builder(endpoint: Endpoint) -> DataStoreBuilder {
+    pub const fn builder(endpoint: Endpoint) -> DataStoreBuilder {
         DataStoreBuilder::new(endpoint)
     }
 
@@ -85,7 +94,7 @@ impl DataStore {
         actor::Actor::new(
             identity,
             self.endpoint.addr(),
-            self.api_client.clone(),
+            self.control_client.clone(),
             self.auth_client.clone(),
         )
     }
@@ -93,9 +102,26 @@ impl DataStore {
     /// Create an actor targeting a remote WDS.
     #[must_use]
     pub fn remote_actor(&self, identity: Arc<Identity>, host: EndpointAddr) -> actor::Actor {
-        let api_client = irpc_iroh::client(self.endpoint.clone(), host.clone(), api::ALPN);
+        let control_client = irpc_iroh::client(self.endpoint.clone(), host.clone(), control::ALPN);
         let auth_client = irpc_iroh::client(self.endpoint.clone(), host.clone(), auth::ALPN);
-        actor::Actor::new(identity, host, api_client, auth_client)
+        actor::Actor::new(identity, host, control_client, auth_client)
+    }
+
+    /// Returns the docs protocol handle. Primarily for local doc access.
+    #[must_use]
+    pub fn docs(&self) -> &Docs {
+        &self.ctx.docs
+    }
+
+    /// Creates and adopts a registry doc for this host, returning its
+    /// namespace id to advertise. The host holds the write secret; peers only
+    /// ever receive the id (read/sync capability) and announce via the
+    /// `Announce` control-plane RPC.
+    pub async fn create_registry(&self) -> anyhow::Result<NamespaceId> {
+        let doc = self.ctx.docs.api().create().await?;
+        let ns = doc.id();
+        *self.ctx.registry.write() = Some(ns);
+        Ok(ns)
     }
 
     /// Returns the blob store. Primarily for testing.
@@ -111,16 +137,11 @@ impl DataStore {
     }
 
     /// Sets the user identity for WDS-to-WDS authentication.
-    ///
-    /// For embedded/local WDS instances, this allows sync operations to
-    /// authenticate to remote stores using the user's signing key instead of
-    /// requiring the endpoint to be listed in the DID document.
     pub fn set_user_identity(&self, identity: Arc<Identity>) {
         *self.ctx.user_identity.write() = Some(identity);
     }
 
     /// Runs garbage collection on the data store.
-    /// Cleans up expired pins, orphaned records, and blob tags.
     pub async fn run_gc(&self) -> anyhow::Result<()> {
         self.ctx.run_gc().await
     }

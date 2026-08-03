@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use loro::{
     LoroDoc,
     TreeID,
@@ -31,7 +31,7 @@ pub mod wired;
 
 pub struct Api {
     pub doc:         Arc<LoroDoc>,
-    pub doc_id:      Hash,
+    pub doc_id:      NamespaceId,
     pub prim:        TreeID,
     pub permissions: ApiPermissions,
     pub quota:       Arc<Quota>,

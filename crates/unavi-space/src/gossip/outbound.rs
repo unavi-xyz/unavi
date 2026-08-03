@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use blake3::Hash;
 use iroh::Watcher;
+use iroh_docs::NamespaceId;
 use iroh_gossip::api::GossipSender;
 use tokio::sync::Notify;
 use tracing::info;
@@ -24,7 +24,7 @@ use crate::{
 pub async fn handle_gossip_outbound(
     ctx: &GossipCtx,
     tx: &GossipSender,
-    space: Hash,
+    space: NamespaceId,
     wake: &Notify,
 ) -> anyhow::Result<()> {
     let signer = IrohSigner(ctx.endpoint.secret_key());

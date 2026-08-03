@@ -3,7 +3,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::{
-    HsdRecordId,
+    HsdNamespace,
     load::{
         LoadHsd,
         on_load_spawn_doc,
@@ -36,8 +36,7 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
             .spawn((
                 LoadHsd {
                     handle,
-                    public: true,
-                    extra_schemas: None,
+                    extra: None,
                     on_load: Some(Box::new(on_load_spawn_doc)),
                 },
                 ApiPermissions::system(),
@@ -57,8 +56,7 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
             .spawn((
                 LoadHsd {
                     handle,
-                    public: false,
-                    extra_schemas: None,
+                    extra: None,
                     on_load: Some(Box::new(on_load_spawn_doc)),
                 },
                 ApiPermissions::system(),
@@ -84,8 +82,8 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
 }
 
 pub fn populate_firewall_entities(
-    firewalls: Query<(Entity, &FirewallEntities, Option<&mut Firewall>), With<HsdRecordId>>,
-    ids: Query<&HsdRecordId>,
+    firewalls: Query<(Entity, &FirewallEntities, Option<&mut Firewall>), With<HsdNamespace>>,
+    ids: Query<&HsdNamespace>,
     mut commands: Commands,
 ) {
     for (ent, fw_ents, fw) in firewalls {

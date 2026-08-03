@@ -1,4 +1,4 @@
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use serde::{
     Deserialize,
     Serialize,
@@ -8,29 +8,29 @@ use serde::{
 pub enum StateMsg {
     Snapshot(Vec<DocSnapshot>),
     Pin {
-        doc:   Hash,
-        space: Hash,
+        doc:   NamespaceId,
+        space: NamespaceId,
         /// Time the peer pinned; the oldest pin owns the document.
         at:    u64,
     },
     Unpin {
-        doc: Hash,
+        doc: NamespaceId,
     },
     /// Transient transform authority over a document's rigid bodies (e.g. on
     /// grab); the latest claim wins, independent of ownership.
     Authority {
-        doc:   Hash,
-        space: Hash,
+        doc:   NamespaceId,
+        space: NamespaceId,
         at:    u64,
     },
     /// Releases the peer's authority claim over `doc`, falling authority back
     /// to the document's owner.
     Unclaim {
-        doc: Hash,
+        doc: NamespaceId,
     },
     Kv {
-        doc:   Hash,
-        space: Hash,
+        doc:   NamespaceId,
+        space: NamespaceId,
         key:   String,
         value: Option<Vec<u8>>,
         at:    u64,
@@ -39,15 +39,15 @@ pub enum StateMsg {
     /// leaving a tombstone. Neutral (space-owned) cells are never forgotten
     /// this way; they outlive any single peer.
     KvForget {
-        doc: Hash,
+        doc: NamespaceId,
         key: String,
     },
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct DocSnapshot {
-    pub doc:       Hash,
-    pub space:     Hash,
+    pub doc:       NamespaceId,
+    pub space:     NamespaceId,
     /// Time the source peer pinned the doc, if it does.
     pub pin:       Option<u64>,
     /// The source peer's latest transform-authority claim, if any.

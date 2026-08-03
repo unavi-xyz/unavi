@@ -2,7 +2,7 @@ use std::{
     collections::HashSet,
     hash::{
         DefaultHasher,
-        Hash as _,
+        Hash,
         Hasher,
     },
 };
@@ -11,7 +11,7 @@ use bevy::{
     prelude::*,
     ui_widgets::Activate,
 };
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use unavi_devtools::{
     scroll::Scrollable,
     tabs::DevPanel,
@@ -35,8 +35,8 @@ const HISTORY_MAX: usize = 32;
 #[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash)]
 pub enum Page {
     Peer([u8; 32]),
-    Space(Hash),
-    Doc(Hash),
+    Space(NamespaceId),
+    Doc(NamespaceId),
 }
 
 #[derive(Component)]
@@ -56,7 +56,7 @@ pub struct BackButton;
 /// Toggles a KV cell's value view open or closed.
 #[derive(Component)]
 pub struct ExpandButton {
-    doc: Hash,
+    doc: NamespaceId,
     key: String,
 }
 
@@ -69,7 +69,7 @@ pub struct History(Vec<Page>);
 
 /// KV cells expanded into their value view, keyed by document and key.
 #[derive(Resource, Default)]
-pub struct Expanded(pub HashSet<(Hash, String)>);
+pub struct Expanded(pub HashSet<(NamespaceId, String)>);
 
 /// Fingerprint of the last built page, so the tree rebuilds only on change and
 /// buttons stay stable under the pointer in between.

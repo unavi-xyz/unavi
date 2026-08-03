@@ -11,6 +11,7 @@ workspace = true
 
 [dependencies]
 blake3.workspace      = true
+iroh-docs.workspace   = true
 parking_lot.workspace = true
 thiserror.workspace   = true
 

@@ -14,6 +14,7 @@ use bevy::{
     prelude::*,
     transform::TransformSystems,
 };
+use iroh_docs::NamespaceId;
 use loro::{
     LoroDoc,
     TreeID,
@@ -81,7 +82,7 @@ impl Plugin for HsdPlugin {
 pub struct Hsd(pub Arc<LoroDoc>);
 
 #[derive(Component, Debug, Clone, Copy)]
-pub struct HsdRecordId(pub blake3::Hash);
+pub struct HsdNamespace(pub NamespaceId);
 
 #[derive(Component, Default)]
 #[relationship_target(relationship=HsdChild, linked_spawn)]

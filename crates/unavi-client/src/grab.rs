@@ -6,9 +6,9 @@ use bevy::{
 use bevy_hsd::{
     Hsd,
     HsdChild,
-    HsdRecordId,
+    HsdNamespace,
 };
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use unavi_input::{
     SqueezeDown,
     SqueezeUp,
@@ -48,7 +48,7 @@ fn on_squeeze_down(
     transforms: Query<&GlobalTransform>,
     rigid_bodies: Query<&RigidBody>,
     hsd_children: Query<&HsdChild>,
-    docs: Query<&HsdRecordId, With<Hsd>>,
+    docs: Query<&HsdNamespace, With<Hsd>>,
     spaces: Query<&Space>,
     parents: Query<&ChildOf>,
     active_space: Res<ActiveSpace>,
@@ -99,7 +99,7 @@ fn on_squeeze_down(
 fn claim_doc_authority(
     entity: Entity,
     hsd_children: &Query<&HsdChild>,
-    docs: &Query<&HsdRecordId, With<Hsd>>,
+    docs: &Query<&HsdNamespace, With<Hsd>>,
     spaces: &Query<&Space>,
     parents: &Query<&ChildOf>,
     active_space_entity: Option<Entity>,
@@ -145,8 +145,8 @@ fn claim_doc_authority(
 fn resolve_doc(
     entity: Entity,
     hsd_children: &Query<&HsdChild>,
-    docs: &Query<&HsdRecordId, With<Hsd>>,
-) -> Option<(Entity, Hash)> {
+    docs: &Query<&HsdNamespace, With<Hsd>>,
+) -> Option<(Entity, NamespaceId)> {
     if let Ok(record) = docs.get(entity) {
         return Some((entity, record.0));
     }
@@ -159,7 +159,7 @@ fn resolve_space(
     doc_entity: Entity,
     spaces: &Query<&Space>,
     parents: &Query<&ChildOf>,
-) -> Option<Hash> {
+) -> Option<NamespaceId> {
     let mut cursor = Some(doc_entity);
     while let Some(current) = cursor {
         if let Ok(space) = spaces.get(current) {
@@ -173,7 +173,7 @@ fn resolve_space(
 fn on_squeeze_up(
     trigger: On<SqueezeUp>,
     hsd_children: Query<&HsdChild>,
-    docs: Query<&HsdRecordId, With<Hsd>>,
+    docs: Query<&HsdNamespace, With<Hsd>>,
     mut commands: Commands,
 ) {
     let Some(entity) = trigger.entity else {

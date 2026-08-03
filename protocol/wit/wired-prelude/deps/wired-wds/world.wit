@@ -13,29 +13,50 @@ interface api {
 }
 
 interface types {
-  type did  = string;
-  type hash = list<u8>;
+  /// A doc identity: the 32-byte iroh-docs NamespaceId.
+  type namespace = list<u8>;
+  /// A content-addressed blob hash (32 bytes).
+  type hash      = list<u8>;
 
-  record query-filter {
-    creator: option<did>,
-    schemas: option<list<hash>>,
+  /// A single key -> value entry within a doc.
+  record entry {
+    key:   string,
+    value: list<u8>,
   }
 
-  resource query-future {
-    poll: func() -> option<result<list<hash>>>;
+  resource get-future {
+    poll: func() -> option<result<option<list<u8>>>>;
   }
 
-  resource read-future {
-    poll: func() -> option<result<list<u8>>>;
+  resource list-future {
+    poll: func() -> option<result<list<entry>>>;
   }
 
   resource blob-future {
     poll: func() -> option<result<list<u8>>>;
   }
 
+  /// Generic personal data store: arbitrary key/value entries in docs
+  /// (iroh-docs namespaces), plus content-addressed blobs. Everything is a
+  /// doc: discovery is `list(registries()[i], "beacons/")`, a DID's
+  /// collections are `list(root-doc(), "...")`.
   resource wds {
-    query:    func(filter: option<query-filter>) -> query-future;
-    read:     func(record-id: hash) -> read-future;
-    get-blob: func(blob-id: hash) -> blob-future;
+    /// Creates a new writable doc, returning its namespace.
+    create-doc:  func() -> namespace;
+    /// Writes a key -> value entry into a doc held with write capability.
+    set:         func(ns: namespace, key: string, value: list<u8>);
+    /// Removes a key from a doc held with write capability.
+    delete:      func(ns: namespace, key: string);
+    /// Reads the value at a key.
+    get:         func(ns: namespace, key: string) -> get-future;
+    /// Lists the latest entries whose key starts with `prefix`.
+    %list:       func(ns: namespace, prefix: string) -> list-future;
+    /// Fetches a content-addressed blob.
+    get-blob:    func(blob-id: hash) -> blob-future;
+    /// This DID's root doc namespace, if one is set.
+    root-doc:    func() -> option<namespace>;
+    /// The home servers' registry docs, kept synced locally. `list` them under
+    /// the `beacons/` prefix to discover populated spaces.
+    registries:  func() -> list<namespace>;
   }
 }

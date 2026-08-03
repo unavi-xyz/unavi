@@ -7,15 +7,15 @@ use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
     HsdChild,
-    HsdRecordId,
+    HsdNamespace,
 };
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use parking_lot::RwLock;
 
 use crate::Space;
 
 /// Maps document -> space it belongs to.
-pub static DOC_SPACE_REGISTRY: LazyLock<RwLock<HashMap<Hash, Hash>>> =
+pub static DOC_SPACE_REGISTRY: LazyLock<RwLock<HashMap<NamespaceId, NamespaceId>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
 #[derive(Component)]
@@ -34,10 +34,13 @@ pub fn self_own_space(trigger: On<Add, Space>, spaces: Query<&Space>) {
 }
 
 pub fn parent_doc_under_space(
-    trigger: On<Insert, HsdRecordId>,
-    docs: Query<(&HsdRecordId, Option<&ChildOf>), (With<Hsd>, Without<Space>, Without<SpaceOwner>)>,
+    trigger: On<Insert, HsdNamespace>,
+    docs: Query<
+        (&HsdNamespace, Option<&ChildOf>),
+        (With<Hsd>, Without<Space>, Without<SpaceOwner>),
+    >,
     prims: Query<&HsdChild>,
-    spaces: Query<(Entity, &HsdRecordId), With<Space>>,
+    spaces: Query<(Entity, &HsdNamespace), With<Space>>,
     is_space: Query<(), With<Space>>,
     owners: Query<&SpaceOwner>,
     mut commands: Commands,
@@ -76,7 +79,7 @@ pub fn parent_doc_under_space(
 
 pub fn register_on_owner_change(
     trigger: On<Insert, SpaceOwner>,
-    owners: Query<(&HsdRecordId, &SpaceOwner), With<Hsd>>,
+    owners: Query<(&HsdNamespace, &SpaceOwner), With<Hsd>>,
     spaces: Query<&Space>,
 ) {
     let Ok((doc_record, owner)) = owners.get(trigger.entity) else {
@@ -88,7 +91,7 @@ pub fn register_on_owner_change(
     DOC_SPACE_REGISTRY.write().insert(doc_record.0, space.0);
 }
 
-pub fn deregister_doc_membership(trigger: On<Remove, SpaceOwner>, docs: Query<&HsdRecordId>) {
+pub fn deregister_doc_membership(trigger: On<Remove, SpaceOwner>, docs: Query<&HsdNamespace>) {
     if let Ok(record) = docs.get(trigger.entity) {
         DOC_SPACE_REGISTRY.write().remove(&record.0);
     }
@@ -102,7 +105,7 @@ pub fn deregister_space_docs(trigger: On<Remove, Space>, spaces: Query<&Space>) 
 
 /// The space a doc belongs to.
 #[must_use]
-pub fn doc_space(doc: Hash) -> Option<Hash> {
+pub fn doc_space(doc: NamespaceId) -> Option<NamespaceId> {
     DOC_SPACE_REGISTRY
         .read()
         .get(&doc)
@@ -111,7 +114,7 @@ pub fn doc_space(doc: Hash) -> Option<Hash> {
 }
 
 #[must_use]
-pub fn same_space(a: Hash, b: Hash) -> bool {
+pub fn same_space(a: NamespaceId, b: NamespaceId) -> bool {
     match (doc_space(a), doc_space(b)) {
         (Some(x), Some(y)) => x == y,
         _ => false,

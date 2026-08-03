@@ -1,5 +1,5 @@
-use blake3::Hash;
 use iroh::Signature;
+use iroh_docs::NamespaceId;
 use iroh_gossip::api::{
     Event,
     GossipReceiver,
@@ -24,7 +24,7 @@ use crate::{
 pub async fn handle_gossip_inbound(
     _ctx: &GossipCtx,
     rx: &mut GossipReceiver,
-    space: Hash,
+    space: NamespaceId,
     wake: &Notify,
 ) -> anyhow::Result<()> {
     while let Some(event) = rx.next().await {

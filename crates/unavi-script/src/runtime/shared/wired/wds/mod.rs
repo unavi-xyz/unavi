@@ -5,24 +5,24 @@ use async_channel::{
 };
 use bevy_wds::{
     blob::get::GetBlob,
-    record::{
-        query::QueryRecord,
-        read::ReadRecord,
+    doc::{
+        DocCreate,
+        DocDelete,
+        DocGet,
+        DocList,
+        DocSet,
     },
+    registries,
+    root_doc,
 };
 use blake3::Hash;
 use bytes::Bytes;
-use loro::LoroDoc;
-use tokio::sync::oneshot::{
-    self,
-    Sender,
-};
+use iroh_docs::NamespaceId;
 use tracing::warn;
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
 };
-use wired_records::value::RecordValue;
 
 use crate::runtime::shared::{
     Api,
@@ -31,32 +31,38 @@ use crate::runtime::shared::{
 
 pub struct WdsRes;
 
-pub struct QueryFutureRes {
-    _cancel: Sender<()>,
-    rx:      Receiver<Vec<Hash>>,
+/// A single key/value entry, as returned to guests.
+pub struct EntryOut {
+    pub key:   String,
+    pub value: Vec<u8>,
 }
 
-pub struct ReadFutureRes {
-    _cancel: Sender<()>,
-    rx:      Receiver<LoroDoc>,
+pub struct GetFutureRes {
+    rx: Receiver<Option<Bytes>>,
+}
+
+pub struct ListFutureRes {
+    rx: Receiver<Vec<(String, Bytes)>>,
 }
 
 pub struct BlobFutureRes {
-    _cancel: Sender<()>,
+    _cancel: tokio::sync::oneshot::Sender<()>,
     rx:      Receiver<anyhow::Result<Bytes>>,
 }
 
 #[derive(Default)]
 pub struct WiredWdsApi {
-    wds_slots:     SlotMap<WdsRes>,
-    query_futures: SlotMap<QueryFutureRes>,
-    read_futures:  SlotMap<ReadFutureRes>,
-    blob_futures:  SlotMap<BlobFutureRes>,
+    wds_slots:    SlotMap<WdsRes>,
+    get_futures:  SlotMap<GetFutureRes>,
+    list_futures: SlotMap<ListFutureRes>,
+    blob_futures: SlotMap<BlobFutureRes>,
 }
 
-pub struct QueryFilter {
-    pub creator: Option<String>,
-    pub schemas: Option<Vec<Vec<u8>>>,
+fn namespace(bytes: &[u8]) -> anyhow::Result<NamespaceId> {
+    let arr: [u8; 32] = bytes
+        .try_into()
+        .map_err(|_| anyhow::anyhow!("namespace id must be 32 bytes"))?;
+    Ok(NamespaceId::from(&arr))
 }
 
 pub async fn get_wds(api: &Api) -> anyhow::Result<u32> {
@@ -64,107 +70,145 @@ pub async fn get_wds(api: &Api) -> anyhow::Result<u32> {
     Ok(wds.wds_slots.insert(WdsRes, &api.quota)?)
 }
 
-pub async fn query(api: &Api, _wds_rep: u32, filter: Option<QueryFilter>) -> anyhow::Result<u32> {
-    let (mut event, rx, cancel) = QueryRecord::new();
+pub async fn create_doc(_api: &Api, _wds_rep: u32) -> anyhow::Result<Vec<u8>> {
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .trigger(DocCreate { tx })
+        .send()
+        .await?;
+    let ns = rx
+        .recv()
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("create doc failed"))?;
+    Ok(ns.to_bytes().to_vec())
+}
 
-    if let Some(f) = filter {
-        event.creator = f.creator;
-        event.schemas = f
-            .schemas
-            .unwrap_or_default()
-            .into_iter()
-            .filter_map(|b| Hash::from_slice(&b).ok())
-            .collect();
+pub async fn set(
+    api: &Api,
+    _wds_rep: u32,
+    ns: Vec<u8>,
+    key: String,
+    value: Vec<u8>,
+) -> anyhow::Result<()> {
+    let ns = namespace(&ns)?;
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .trigger(DocSet {
+            ns,
+            key,
+            value: value.into(),
+            tx,
+        })
+        .send()
+        .await?;
+    if !rx.recv().await? {
+        bail!("doc set failed (no write capability?)");
     }
-
-    AsyncCommands::default().trigger(event).send().await?;
-
-    let mut wds = api.wired_wds.lock().await;
-    Ok(wds.query_futures.insert(
-        QueryFutureRes {
-            _cancel: cancel,
-            rx,
-        },
-        &api.quota,
-    )?)
+    let _ = api;
+    Ok(())
 }
 
-pub async fn read(api: &Api, _wds_rep: u32, record_id: Vec<u8>) -> anyhow::Result<u32> {
-    let id = Hash::from_slice(&record_id)?;
-    let (event, rx, cancel) = ReadRecord::new(id);
-
-    AsyncCommands::default().trigger(event).send().await?;
-
-    let mut wds = api.wired_wds.lock().await;
-    Ok(wds.read_futures.insert(
-        ReadFutureRes {
-            _cancel: cancel,
-            rx,
-        },
-        &api.quota,
-    )?)
+pub async fn delete(api: &Api, _wds_rep: u32, ns: Vec<u8>, key: String) -> anyhow::Result<()> {
+    let ns = namespace(&ns)?;
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .trigger(DocDelete { ns, key, tx })
+        .send()
+        .await?;
+    rx.recv().await?;
+    let _ = api;
+    Ok(())
 }
 
-pub async fn query_future_poll(
+pub async fn get(api: &Api, _wds_rep: u32, ns: Vec<u8>, key: String) -> anyhow::Result<u32> {
+    let ns = namespace(&ns)?;
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .trigger(DocGet { ns, key, tx })
+        .send()
+        .await?;
+    let mut wds = api.wired_wds.lock().await;
+    Ok(wds.get_futures.insert(GetFutureRes { rx }, &api.quota)?)
+}
+
+pub async fn list(api: &Api, _wds_rep: u32, ns: Vec<u8>, prefix: String) -> anyhow::Result<u32> {
+    let ns = namespace(&ns)?;
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .trigger(DocList { ns, prefix, tx })
+        .send()
+        .await?;
+    let mut wds = api.wired_wds.lock().await;
+    Ok(wds.list_futures.insert(ListFutureRes { rx }, &api.quota)?)
+}
+
+pub fn root_doc_ns(_api: &Api, _wds_rep: u32) -> anyhow::Result<Option<Vec<u8>>> {
+    Ok(root_doc().map(|ns| ns.to_bytes().to_vec()))
+}
+
+pub fn registry_namespaces(_api: &Api, _wds_rep: u32) -> anyhow::Result<Vec<Vec<u8>>> {
+    Ok(registries()
+        .into_iter()
+        .map(|ns| ns.to_bytes().to_vec())
+        .collect())
+}
+
+pub async fn get_future_poll(
     api: &Api,
     rep: u32,
-) -> anyhow::Result<Option<Result<Vec<Vec<u8>>, ()>>> {
+) -> anyhow::Result<Option<Result<Option<Vec<u8>>, ()>>> {
     let wds = api.wired_wds.lock().await;
-    let Some(res) = wds.query_futures.get(rep) else {
-        bail!("query future resource not found")
+    let Some(res) = wds.get_futures.get(rep) else {
+        bail!("get future resource not found")
     };
     match res.rx.try_recv() {
-        Ok(hashes) => {
+        Ok(opt) => {
             drop(wds);
-            Ok(Some(Ok(hashes
-                .into_iter()
-                .map(|h| h.as_bytes().to_vec())
-                .collect())))
-        }
-        Err(TryRecvError::Empty) => Ok(None),
-        Err(TryRecvError::Closed) => {
-            warn!("query_future_poll: channel closed");
-            Ok(Some(Err(())))
-        }
-    }
-}
-
-pub async fn read_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<Vec<u8>, ()>>> {
-    let wds = api.wired_wds.lock().await;
-    let Some(res) = wds.read_futures.get(rep) else {
-        return Ok(Some(Err(())));
-    };
-    match res.rx.try_recv() {
-        Ok(doc) => {
-            drop(wds);
-            Ok(Some(encode_record(&doc)))
+            Ok(Some(Ok(opt.map(|b| b.to_vec()))))
         }
         Err(TryRecvError::Empty) => Ok(None),
         Err(TryRecvError::Closed) => Ok(Some(Err(()))),
     }
 }
 
-fn encode_record(doc: &LoroDoc) -> Result<Vec<u8>, ()> {
-    let value = RecordValue::from(doc.get_deep_value());
-    postcard::to_stdvec(&value).map_err(|err| {
-        warn!(?err, "postcard encode failed");
-    })
+pub async fn list_future_poll(
+    api: &Api,
+    rep: u32,
+) -> anyhow::Result<Option<Result<Vec<EntryOut>, ()>>> {
+    let wds = api.wired_wds.lock().await;
+    let Some(res) = wds.list_futures.get(rep) else {
+        bail!("list future resource not found")
+    };
+    match res.rx.try_recv() {
+        Ok(entries) => {
+            drop(wds);
+            Ok(Some(Ok(entries
+                .into_iter()
+                .map(|(key, value)| EntryOut {
+                    key,
+                    value: value.to_vec(),
+                })
+                .collect())))
+        }
+        Err(TryRecvError::Empty) => Ok(None),
+        Err(TryRecvError::Closed) => Ok(Some(Err(()))),
+    }
 }
 
-pub async fn query_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
-    api.wired_wds.lock().await.query_futures.remove(rep);
+pub async fn get_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+    api.wired_wds.lock().await.get_futures.remove(rep);
     Ok(())
 }
 
-pub async fn read_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
-    api.wired_wds.lock().await.read_futures.remove(rep);
+pub async fn list_future_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
+    api.wired_wds.lock().await.list_futures.remove(rep);
     Ok(())
 }
 
 pub async fn get_blob(api: &Api, _wds_rep: u32, blob_id: Vec<u8>) -> anyhow::Result<u32> {
     let hash = Hash::from_slice(&blob_id)?;
     let (tx, rx) = async_channel::bounded(1);
-    let (cancel_tx, mut cancel_rx) = oneshot::channel();
+    let (cancel_tx, mut cancel_rx) = tokio::sync::oneshot::channel();
     spawn_async_task(async move {
         tokio::select! {
             _ = &mut cancel_rx => {}

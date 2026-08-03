@@ -5,7 +5,7 @@ use bevy_hsd::{
     Hsd,
     HsdChild,
     HsdCommitGate,
-    HsdRecordId,
+    HsdNamespace,
     Prim,
 };
 use tokio::sync::Mutex;
@@ -83,7 +83,7 @@ pub fn instantiate_scripts(
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
     docs: Query<(
-        &HsdRecordId,
+        &HsdNamespace,
         &Hsd,
         Option<&ApiPermissions>,
         Has<QuotaExempt>,

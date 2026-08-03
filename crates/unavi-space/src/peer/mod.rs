@@ -5,8 +5,8 @@ use bevy::{
     prelude::*,
 };
 use bevy_wds::LocalActor;
-use blake3::Hash;
 use iroh::EndpointAddr;
+use iroh_docs::NamespaceId;
 
 pub mod presence;
 
@@ -44,4 +44,4 @@ pub fn capture_self_did(trigger: On<Add, LocalActor>, actors: Query<&LocalActor>
 pub struct Peer(pub EndpointAddr);
 
 #[derive(Component, Default)]
-pub struct ActiveSpaces(pub HashMap<Hash, f32>);
+pub struct ActiveSpaces(pub HashMap<NamespaceId, f32>);

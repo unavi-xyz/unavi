@@ -13,8 +13,8 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use blake3::Hash;
 use iroh::EndpointId;
+use iroh_docs::NamespaceId;
 use serde_vrm::vrm0::BoneName;
 use unavi_avatar::{
     Avatar,
@@ -39,7 +39,7 @@ const MIN_LERP: Duration = Duration::from_millis(50);
 const MAX_LERP: Duration = Duration::from_millis(500);
 
 pub struct ResolvedPose {
-    pub space: Hash,
+    pub space: NamespaceId,
     pub root:  Transform,
     pub bones: HashMap<BoneName, Transform>,
 }

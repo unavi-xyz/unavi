@@ -149,18 +149,6 @@ impl PropReconciler {
         Ok(())
     }
 
-    fn get_or_create_container<C: ContainerTrait>(self, detached: C) -> Result<C, ReconcileError> {
-        let container = match self.action {
-            PropAction::MapPut { map, key } => map.get_or_create_container(&key, detached)?,
-            PropAction::ListInsert { list, index } => list.insert_container(index, detached)?,
-            PropAction::MovableListInsert { list, index } => {
-                list.insert_container(index, detached)?
-            }
-            PropAction::MovableListSet { list, index } => list.set_container(index, detached)?,
-        };
-        Ok(container)
-    }
-
     fn try_get_existing_map(&self) -> Option<LoroMap> {
         match &self.action {
             PropAction::MovableListSet { list, index } => {
@@ -208,19 +196,41 @@ impl Reconciler for PropReconciler {
         if let Some(existing) = self.try_get_existing_map() {
             return Ok(MapReconciler { map: existing });
         }
-        let m = self.get_or_create_container(LoroMap::new())?;
+        let m = match self.action {
+            PropAction::MapPut { map, key } => map.ensure_mergeable_map(&key)?,
+            other => insert_container(other, LoroMap::new())?,
+        };
         Ok(MapReconciler { map: m })
     }
 
     fn list(self) -> Result<ListReconciler, ReconcileError> {
-        let l = self.get_or_create_container(LoroList::new())?;
+        let l = match self.action {
+            PropAction::MapPut { map, key } => map.ensure_mergeable_list(&key)?,
+            other => insert_container(other, LoroList::new())?,
+        };
         Ok(ListReconciler { list: l })
     }
 
     fn movable_list(self) -> Result<MovableListReconciler, ReconcileError> {
-        let l = self.get_or_create_container(LoroMovableList::new())?;
+        let l = match self.action {
+            PropAction::MapPut { map, key } => map.ensure_mergeable_movable_list(&key)?,
+            other => insert_container(other, LoroMovableList::new())?,
+        };
         Ok(MovableListReconciler { list: l })
     }
+}
+
+fn insert_container<C: ContainerTrait>(
+    action: PropAction,
+    detached: C,
+) -> Result<C, ReconcileError> {
+    let container = match action {
+        PropAction::MapPut { .. } => unreachable!("map put is handled by the caller"),
+        PropAction::ListInsert { list, index } => list.insert_container(index, detached)?,
+        PropAction::MovableListInsert { list, index } => list.insert_container(index, detached)?,
+        PropAction::MovableListSet { list, index } => list.set_container(index, detached)?,
+    };
+    Ok(container)
 }
 
 pub struct RootReconciler {

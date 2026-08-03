@@ -16,6 +16,7 @@ use bevy_panorbit_camera::{
 use bevy_wds::{
     LocalActor,
     LocalBlobs,
+    LocalDocs,
 };
 use unavi_script::permissions::ApiPermissions;
 
@@ -26,7 +27,7 @@ mod util;
 const SCRIPT_PATH: &str = "hsd/example_unavi_shapes.hsd";
 
 fn main() {
-    let (actor, blobs) = create_test_wds();
+    let (actor, docs, blobs) = create_test_wds();
 
     let mut app = App::new();
     app.add_plugins((
@@ -51,7 +52,7 @@ fn main() {
     .add_systems(Startup, init_scene);
 
     app.world_mut()
-        .spawn((LocalActor(actor), LocalBlobs(blobs)));
+        .spawn((LocalActor(actor), LocalDocs(docs), LocalBlobs(blobs)));
 
     app.run();
 }
@@ -71,8 +72,7 @@ fn init_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         LoadHsd {
             handle,
-            public: false,
-            extra_schemas: None,
+            extra: None,
             on_load: Some(Box::new(on_load_spawn_doc)),
         },
         ApiPermissions::default(),

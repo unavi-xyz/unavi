@@ -6,22 +6,22 @@ use std::{
 use bevy::prelude::*;
 use bevy_hsd::{
     HsdChild,
-    HsdRecordId,
+    HsdNamespace,
     Prim,
 };
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use loro::TreeID;
 use parking_lot::RwLock;
 
 pub static NODE_TRANSFORM_REGISTRY: LazyLock<RwLock<HashMap<AbsoluteNodeId, TransformSnapshot>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
-pub static DOC_ROOT_TRANSFORM_REGISTRY: LazyLock<RwLock<HashMap<Hash, GlobalTransform>>> =
+pub static DOC_ROOT_TRANSFORM_REGISTRY: LazyLock<RwLock<HashMap<NamespaceId, GlobalTransform>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub struct AbsoluteNodeId {
-    pub doc:  Hash,
+    pub doc:  NamespaceId,
     pub node: TreeID,
 }
 
@@ -39,7 +39,7 @@ pub struct RegisterTransforms(pub AbsoluteNodeId);
 pub fn register_nodes(
     trigger: On<Add, Prim>,
     prims: Query<(&Prim, &HsdChild)>,
-    docs: Query<&HsdRecordId>,
+    docs: Query<&HsdNamespace>,
     mut commands: Commands,
 ) {
     let Ok((prim, doc)) = prims.get(trigger.entity) else {
@@ -98,7 +98,7 @@ pub fn deregister_transforms(
     NODE_TRANSFORM_REGISTRY.write().remove(&id.0);
 }
 
-pub fn snapshot_doc_roots(docs: Query<(&HsdRecordId, &GlobalTransform), With<bevy_hsd::Hsd>>) {
+pub fn snapshot_doc_roots(docs: Query<(&HsdNamespace, &GlobalTransform), With<bevy_hsd::Hsd>>) {
     if docs.is_empty() {
         return;
     }
@@ -108,7 +108,7 @@ pub fn snapshot_doc_roots(docs: Query<(&HsdRecordId, &GlobalTransform), With<bev
     }
 }
 
-pub fn deregister_doc_root(trigger: On<Remove, bevy_hsd::Hsd>, docs: Query<&HsdRecordId>) {
+pub fn deregister_doc_root(trigger: On<Remove, bevy_hsd::Hsd>, docs: Query<&HsdNamespace>) {
     if let Ok(record) = docs.get(trigger.entity) {
         DOC_ROOT_TRANSFORM_REGISTRY.write().remove(&record.0);
     }

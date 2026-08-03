@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 
 /// A queued request to travel the local agent into `target`.
 ///
@@ -7,8 +7,8 @@ use blake3::Hash;
 /// routes arrival through the limbo load-gate so spawning honors the target's
 /// spawn points.
 #[derive(Resource, Default)]
-pub struct PendingTravel(pub Option<Hash>);
+pub struct PendingTravel(pub Option<NamespaceId>);
 
-pub fn request_travel(world: &mut World, target: Hash) {
+pub fn request_travel(world: &mut World, target: NamespaceId) {
     world.resource_mut::<PendingTravel>().0 = Some(target);
 }

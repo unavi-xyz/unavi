@@ -24,6 +24,8 @@ blake3.workspace           = true
 half.workspace             = true
 hsd.path                   = "../hsd"
 iroh.workspace             = true
+iroh-blobs                 = { features = ["hide-proto-docs"], workspace = true }
+iroh-docs.workspace        = true
 iroh-gossip                = { features = ["net"], workspace = true }
 loro.workspace             = true
 n0-future.workspace        = true
@@ -44,5 +46,3 @@ unavi-portal-protocol.path = "../unavi-portal-protocol"
 unavi-quota.path           = "../unavi-quota"
 unavi-util.path            = "../unavi-util"
 wds.path                   = "../wds"
-wired-records              = { features = ["loro"], path = "../wired-records" }
-wired-schemas.path         = "../wired-schemas"

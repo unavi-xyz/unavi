@@ -24,6 +24,7 @@ bevy_vrm.workspace         = true
 blake3.workspace           = true
 bytes.workspace            = true
 hsd.path                   = "../hsd"
+iroh-docs.workspace        = true
 loro.workspace             = true
 loro-surgeon.workspace     = true
 parking_lot.workspace      = true
@@ -40,8 +41,7 @@ unavi-portal-protocol.path = "../unavi-portal-protocol"
 unavi-quota.path           = "../unavi-quota"
 unavi-space.path           = "../unavi-space"
 unavi-util.path            = "../unavi-util"
-wired-records              = { features = ["loro"], path = "../wired-records" }
-wired-schemas.path         = "../wired-schemas"
+wds.path                   = "../wds"
 xdid.workspace             = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
@@ -60,5 +60,5 @@ bevy-inspector-egui.workspace  = true
 bevy_panorbit_camera.workspace = true
 directories.workspace          = true
 iroh.workspace                 = true
+iroh-blobs.workspace           = true
 tracing-subscriber.workspace   = true
-wds.path                       = "../wds"

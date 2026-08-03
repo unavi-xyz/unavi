@@ -8,6 +8,7 @@ deps = ["wired-error"]
 path = "../../unavi-shapes/wit"
 sha256 = "1ed7f1a7952c8cdb22ef1d311cda0c887566d55b0322175e75773d32a5977e0e"
 sha512 = "aacf2aad8e90734fa82cd1093ee2c594608c7cc6da2418699fc6428be3350caf9f8485b47697badfff9b38f01d0dcb12e3a1f4c1bfc450887f016763308f39e9"
+deps = ["wired-error"]
 
 [wired-agent]
 path = "../../../protocol/wit/wired-agent"
@@ -79,6 +80,6 @@ sha512 = "19866da1e92d6de38428da62e77a49fe8800d0629789f7fad88fbbe74c7a8e4734fe8c
 
 [wired-wds]
 path = "../../../protocol/wit/wired-wds"
-sha256 = "3d96bfbcfe9159b5d01a09cffe1c0740cb43c3a062447d9579d77e4a26f1c214"
-sha512 = "2fe1fc97c4556d741fb9d42899ac4b3d8b571e7ddf4103be69f30e27d119d8569b4fd8f2a9520199f4925f62acfa149fad9879a1288fcf4845058ef580735c28"
+sha256 = "8eed40aedca1aa56f4beacaad6013446cb3ff1904e53071240ade5cecd632cfd"
+sha512 = "5a74cc04b20acb6a1580278407c1c66868d8008f767a12c877824ea418ffe5cfe58bb173f87c69bb27a0187e6c2991daa0d90a6ce57f9bed58f2850bd461fc6f"
 deps = ["wired-error"]

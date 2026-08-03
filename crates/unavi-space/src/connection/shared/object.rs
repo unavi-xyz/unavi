@@ -9,7 +9,6 @@ use std::{
 
 use anyhow::Context;
 use bevy::transform::components::Transform;
-use blake3::Hash;
 use iroh::{
     EndpointId,
     endpoint::{
@@ -18,6 +17,7 @@ use iroh::{
         SendStream,
     },
 };
+use iroh_docs::NamespaceId;
 use loro::TreeID;
 use n0_future::time::Instant;
 use postcard::experimental::max_size::MaxSize;
@@ -83,7 +83,7 @@ struct SendState {
     iframe_id:        u32,
     last_iframe_root: RigidTransform<F32Vec3>,
     last_iframe_time: Instant,
-    last_space:       Hash,
+    last_space:       NamespaceId,
 }
 
 /// One open stream carrying every dynamic prim of a single document. The space
@@ -91,7 +91,7 @@ struct SendState {
 /// rather than per frame.
 struct DocStream {
     tx:         SendStream,
-    last_space: Option<Hash>,
+    last_space: Option<NamespaceId>,
     prims:      HashMap<TreeID, SendState>,
 }
 
@@ -103,7 +103,7 @@ pub async fn send_object_stream(connection: &Connection) -> anyhow::Result<()> {
         .send()
         .await?;
 
-    let mut streams: HashMap<Hash, DocStream> = HashMap::new();
+    let mut streams: HashMap<NamespaceId, DocStream> = HashMap::new();
     let mut buf = [0; ObjectMsg::POSTCARD_MAX_SIZE];
 
     while let Ok(objects) = obj_rx.recv().await {
@@ -133,7 +133,7 @@ pub async fn send_object_stream(connection: &Connection) -> anyhow::Result<()> {
 
 async fn send_object(
     connection: &Connection,
-    streams: &mut HashMap<Hash, DocStream>,
+    streams: &mut HashMap<NamespaceId, DocStream>,
     buf: &mut [u8],
     obj: &OutgoingObject,
     now: Instant,
@@ -185,7 +185,7 @@ fn build_msg(
         iframe_id:        0,
         last_iframe_root: root.clone(),
         last_iframe_time: now - IFRAME_FREQ,
-        last_space:       Hash::from_bytes([0; 32]),
+        last_space:       NamespaceId::from(&[0; 32]),
     });
 
     // A p-frame delta is only valid against an i-frame in the same space, so a
@@ -229,8 +229,8 @@ struct Baseline {
 /// p-frame that arrives before its i-frame, or one referencing a stale i-frame.
 fn resolve_msg(
     msg: ObjectMsg,
-    doc: Hash,
-    space: Hash,
+    doc: NamespaceId,
+    space: NamespaceId,
     baselines: &mut HashMap<TreeID, Baseline>,
 ) -> Option<ResolvedObject> {
     match msg {
@@ -292,11 +292,11 @@ pub async fn recv_object_stream(
 ) -> anyhow::Result<()> {
     let mut doc = [0u8; 32];
     rx.read_exact(&mut doc).await.context("read doc header")?;
-    let doc = Hash::from_bytes(doc);
+    let doc = NamespaceId::from(&doc);
 
     let mut buf = [0; ObjectMsg::POSTCARD_MAX_SIZE];
     let mut baselines: HashMap<TreeID, Baseline> = HashMap::new();
-    let mut current_space: Option<Hash> = None;
+    let mut current_space: Option<NamespaceId> = None;
 
     loop {
         let len = match rx.read_u8().await {
@@ -312,7 +312,7 @@ pub async fn recv_object_stream(
         let msg = postcard::from_bytes::<ObjectMsg>(buf)?;
 
         match msg {
-            ObjectMsg::SpaceChange { space } => current_space = Some(Hash::from_bytes(space)),
+            ObjectMsg::SpaceChange { space } => current_space = Some(NamespaceId::from(&space)),
             frame => {
                 let Some(space) = current_space else {
                     continue;
@@ -331,15 +331,15 @@ mod tests {
 
     use super::*;
 
-    fn h(seed: &[u8]) -> Hash {
-        blake3::hash(seed)
+    fn h(seed: &[u8]) -> NamespaceId {
+        NamespaceId::from(blake3::hash(seed).as_bytes())
     }
 
     fn prim() -> TreeID {
         TreeID::new(42, 7)
     }
 
-    fn outgoing(doc: Hash, space: Hash, t: Vec3) -> OutgoingObject {
+    fn outgoing(doc: NamespaceId, space: NamespaceId, t: Vec3) -> OutgoingObject {
         OutgoingObject {
             doc,
             space,

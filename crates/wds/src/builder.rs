@@ -6,16 +6,15 @@ use std::{
 
 use iroh::{
     Endpoint,
-    protocol::{
-        DynProtocolHandler,
-        RouterBuilder,
-    },
+    protocol::RouterBuilder,
 };
 use iroh_blobs::{
     BlobsProtocol,
     api::Store as BlobStore,
     store::mem::MemStore,
 };
+use iroh_docs::protocol::Docs;
+use iroh_gossip::net::Gossip;
 use n0_future::task::AbortOnDropHandle;
 use parking_lot::RwLock;
 
@@ -26,10 +25,9 @@ use crate::{
 };
 
 pub struct DataStoreBuilder {
-    endpoint:  Endpoint,
-    gc_timer:  Option<Duration>,
-    protocols: Vec<(Vec<u8>, Box<dyn DynProtocolHandler>)>,
-    storage:   Storage,
+    endpoint: Endpoint,
+    gc_timer: Option<Duration>,
+    storage:  Storage,
 }
 
 pub enum Storage {
@@ -38,15 +36,14 @@ pub enum Storage {
 }
 
 pub type BoxedRouterBuilder = Box<dyn FnOnce(RouterBuilder) -> RouterBuilder + Send + Sync>;
+pub type BoxedBlobs = Box<dyn AsRef<BlobStore> + Send + Sync>;
 
 impl DataStoreBuilder {
-    /// Create a new builder.
     #[must_use]
-    pub fn new(endpoint: Endpoint) -> Self {
+    pub const fn new(endpoint: Endpoint) -> Self {
         Self {
             endpoint,
             gc_timer: None,
-            protocols: Vec::new(),
             storage: Storage::InMemory,
         }
     }
@@ -67,50 +64,46 @@ impl DataStoreBuilder {
         self
     }
 
-    /// Add a custom protocol handler.
-    #[must_use]
-    pub fn accept(
-        mut self,
-        alpn: impl AsRef<[u8]>,
-        handler: impl Into<Box<dyn DynProtocolHandler>>,
-    ) -> Self {
-        self.protocols
-            .push((alpn.as_ref().to_vec(), handler.into()));
-        self
-    }
-
     /// Build the [`DataStore`].
     pub async fn build(self) -> anyhow::Result<(DataStore, BoxedRouterBuilder)> {
         let (blobs, db) = init_storage(&self.storage).await?;
+        let blob_store = blobs.as_ref().as_ref().clone();
 
-        let blob_protocol = BlobsProtocol::new(blobs.as_ref().as_ref(), None);
+        let gossip = Gossip::builder().spawn(self.endpoint.clone());
+
+        let docs = match &self.storage {
+            Storage::Path(path) => Docs::persistent(path.join("docs")),
+            Storage::InMemory => Docs::memory(),
+        }
+        .spawn(self.endpoint.clone(), blob_store.clone(), gossip.clone())
+        .await?;
+
+        let blob_protocol = BlobsProtocol::new(&blob_store, None);
 
         let ctx = Arc::new(StoreContext {
             blobs,
             connections: scc::HashMap::default(),
             db,
+            docs: docs.clone(),
             endpoint: self.endpoint.clone(),
+            registry: RwLock::new(None),
             user_identity: RwLock::new(None),
         });
 
-        let (api_client, api_protocol) = crate::api::protocol(Arc::clone(&ctx));
+        let (control_client, control_protocol) = crate::control::protocol(Arc::clone(&ctx));
         let (auth_client, auth_protocol) = crate::auth::protocol(Arc::clone(&ctx));
 
-        let router_builder_fn = Box::new({
-            let ctx = Arc::clone(&ctx);
-            |builder: RouterBuilder| {
-                builder
-                    .accept(iroh_blobs::ALPN, blob_protocol)
-                    .accept(crate::api::ALPN, api_protocol)
-                    .accept(crate::auth::ALPN, auth_protocol)
-                    .accept(crate::sync::ALPN, crate::sync::SyncProtocol::new(ctx))
-            }
+        let router_builder_fn = Box::new(move |builder: RouterBuilder| {
+            builder
+                .accept(iroh_blobs::ALPN, blob_protocol)
+                .accept(iroh_gossip::ALPN, gossip)
+                .accept(iroh_docs::ALPN, docs)
+                .accept(crate::control::ALPN, control_protocol)
+                .accept(crate::auth::ALPN, auth_protocol)
         });
 
-        // Spawn gc task if enabled.
         let gc_handle = self.gc_timer.map(|duration| {
             let ctx = Arc::clone(&ctx);
-
             let handle = n0_future::task::spawn(async move {
                 loop {
                     if let Err(err) = ctx.run_gc().await {
@@ -119,13 +112,12 @@ impl DataStoreBuilder {
                     n0_future::time::sleep(duration).await;
                 }
             });
-
             AbortOnDropHandle::new(handle)
         });
 
         Ok((
             DataStore {
-                api_client,
+                control_client,
                 auth_client,
                 endpoint: self.endpoint,
                 ctx,
@@ -136,18 +128,13 @@ impl DataStoreBuilder {
     }
 }
 
-pub type BoxedBlobs = Box<dyn AsRef<BlobStore> + Send + Sync>;
-
 // Kept async to match the non-wasm arm's signature, so the call site's
 // `.await` works uniformly across targets.
 #[cfg(target_family = "wasm")]
 #[expect(clippy::unused_async)]
 async fn init_storage(_storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database)> {
-    let blobs = MemStore::new();
-    let blobs: BoxedBlobs = Box::new(blobs);
-
+    let blobs: BoxedBlobs = Box::new(MemStore::new());
     let db = Database::new_in_memory()?;
-
     Ok((blobs, db))
 }
 
@@ -155,28 +142,21 @@ async fn init_storage(_storage: &Storage) -> anyhow::Result<(BoxedBlobs, Databas
 async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database)> {
     if let Storage::Path(path) = storage {
         let blob_path = path.join("blob");
-        let record_path = path.join("record");
         tokio::fs::create_dir_all(&blob_path).await?;
-        tokio::fs::create_dir_all(&record_path).await?;
 
-        let blob_db_path = blob_path.join("blobs.db");
         let blobs = iroh_blobs::store::fs::FsStore::load_with_opts(
-            blob_db_path,
+            blob_path.join("blobs.db"),
             iroh_blobs::store::fs::options::Options::new(&blob_path),
         )
         .await?;
         let blobs: BoxedBlobs = Box::new(blobs);
 
-        let db_path = path.join("index.db");
-        let db = Database::new(&db_path)?;
+        let db = Database::new(&path.join("index.db"))?;
 
         Ok((blobs, db))
     } else {
-        let blobs = MemStore::new();
-        let blobs: BoxedBlobs = Box::new(blobs);
-
+        let blobs: BoxedBlobs = Box::new(MemStore::new());
         let db = Database::new_in_memory()?;
-
         Ok((blobs, db))
     }
 }

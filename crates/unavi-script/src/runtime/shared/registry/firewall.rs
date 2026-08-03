@@ -10,9 +10,9 @@ use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
     HsdChild,
-    HsdRecordId,
+    HsdNamespace,
 };
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use parking_lot::RwLock;
 
 use crate::{
@@ -23,15 +23,15 @@ use crate::{
     },
 };
 
-pub static FIREWALL_REGISTRY: LazyLock<RwLock<HashMap<Hash, Firewall>>> =
+pub static FIREWALL_REGISTRY: LazyLock<RwLock<HashMap<NamespaceId, Firewall>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
 #[derive(Component)]
-pub struct RegisteredFirewall(Hash);
+pub struct RegisteredFirewall(NamespaceId);
 
 pub fn register_docs(
     trigger: On<Add, Firewall>,
-    docs: Query<(&HsdRecordId, &Firewall)>,
+    docs: Query<(&HsdNamespace, &Firewall)>,
     mut commands: Commands,
 ) {
     let Ok((doc, firewall)) = docs.get(trigger.entity) else {
@@ -59,10 +59,10 @@ pub fn register_docs(
 }
 
 pub fn register_subdoc_firewall(
-    trigger: On<Insert, HsdRecordId>,
+    trigger: On<Insert, HsdNamespace>,
     subdocs: Query<&ChildOf, (With<Hsd>, Without<Firewall>)>,
     prims: Query<&HsdChild>,
-    docs: Query<&HsdRecordId>,
+    docs: Query<&HsdNamespace>,
     mut commands: Commands,
 ) {
     let Ok(prim) = subdocs.get(trigger.entity).map(ChildOf::parent) else {
@@ -88,7 +88,11 @@ pub fn deregister_firewalls(
     unavi_quota::registry::forget_document(id.0);
 }
 
-pub fn validate_firewall(me: &Hash, target: &Hash, channel: Channel) -> anyhow::Result<()> {
+pub fn validate_firewall(
+    me: &NamespaceId,
+    target: &NamespaceId,
+    channel: Channel,
+) -> anyhow::Result<()> {
     if me == target {
         return Ok(());
     }

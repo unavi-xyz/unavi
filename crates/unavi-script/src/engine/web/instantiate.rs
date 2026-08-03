@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
     HsdChild,
-    HsdRecordId,
+    HsdNamespace,
     Prim,
 };
 use tokio::sync::Mutex;
@@ -47,7 +47,7 @@ pub fn instantiate_scripts(
         ),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
-    docs: Query<(&HsdRecordId, &Hsd, Has<QuotaExempt>)>,
+    docs: Query<(&HsdNamespace, &Hsd, Has<QuotaExempt>)>,
     mut commands: Commands,
 ) {
     for (entity, script, perms, name, prim, doc_ent) in to_instantiate {

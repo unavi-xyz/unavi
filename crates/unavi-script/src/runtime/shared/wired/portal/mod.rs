@@ -1,4 +1,4 @@
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 use unavi_quota::{
     Flow,
     Stock,
@@ -45,7 +45,7 @@ pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<(),
 
     AsyncCommands::default()
         .spawn((
-            PortalWatch::new(source_space, doc, tree_id, Hash::from(target)),
+            PortalWatch::new(source_space, doc, tree_id, NamespaceId::from(&target)),
             QuotaGuards(vec![watch_guard]),
         ))
         .send()
@@ -59,7 +59,7 @@ pub async fn travel(api: &Api, target_space: Vec<u8>) -> Result<(), ScriptError>
 
     let target = <[u8; 32]>::try_from(target_space.as_slice())
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
-    let hash = Hash::from(target);
+    let hash = NamespaceId::from(&target);
 
     AsyncCommands::default()
         .push(move |world: &mut bevy::prelude::World| {

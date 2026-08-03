@@ -9,7 +9,7 @@ use bevy::{
     },
     prelude::*,
 };
-use blake3::Hash;
+use iroh_docs::NamespaceId;
 
 use crate::{
     Space,
@@ -47,7 +47,7 @@ pub enum SidebarRow {
 #[derive(Resource, Default)]
 pub struct SidebarEntries(Vec<SidebarRow>);
 
-fn rows(spaces: &Query<(Entity, &Space)>, active: Option<Hash>) -> Vec<SidebarRow> {
+fn rows(spaces: &Query<(Entity, &Space)>, active: Option<NamespaceId>) -> Vec<SidebarRow> {
     let snap = debug::snapshot();
     let me = self_peer_id();
     let mut out = Vec::new();

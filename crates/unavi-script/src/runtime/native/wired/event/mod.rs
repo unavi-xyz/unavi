@@ -113,7 +113,7 @@ impl HostEvent for Runtime {
                     .prims
                     .insert(
                         PrimRes {
-                            doc: Arc::clone(&self.api.doc),
+                            state: Arc::clone(&self.api.state),
                             doc_id,
                             id: node,
                             is_proxy: true,

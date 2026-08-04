@@ -1,13 +1,20 @@
 #![allow(dead_code)]
 
 use std::{
-    sync::Arc,
+    sync::{
+        Arc,
+        Mutex,
+    },
     time::Duration,
 };
 
 use avian3d::PhysicsPlugins;
 use bevy::{
     asset::AssetPlugin,
+    ecs::schedule::{
+        ScheduleLabel,
+        SingleThreadedExecutor,
+    },
     prelude::*,
     transform::TransformPlugin,
 };
@@ -15,18 +22,38 @@ use bevy_wds::{
     LocalBlobs,
     WdsPlugin,
 };
+use hsd::{
+    attributes::Attribute,
+    id::{
+        BlobId,
+        PrimId,
+    },
+    state::{
+        SceneState,
+        entry::BulkRef,
+    },
+};
 use iroh_blobs::{
     api::blobs::Blobs,
     store::mem::MemStore,
 };
-use loro::LoroDoc;
 use rstest::fixture;
 use unavi_util::async_task::spawn_async_task;
 
 pub struct TestContext {
-    pub app: App,
-    pub doc: Arc<LoroDoc>,
-    blobs:   Option<Blobs>,
+    pub app:   App,
+    pub state: Arc<Mutex<SceneState>>,
+    blobs:     Option<Blobs>,
+}
+
+/// `#[traced_test]` installs a thread-local subscriber, so a warning emitted
+/// from a system running on a worker thread is invisible to `logs_contain`.
+/// Running the schedules on the calling thread keeps validation warnings
+/// assertable.
+fn run_on_test_thread(app: &mut App) {
+    app.edit_schedule(Update.intern(), |schedule| {
+        schedule.set_executor(SingleThreadedExecutor::default());
+    });
 }
 
 impl Default for TestContext {
@@ -41,10 +68,11 @@ impl Default for TestContext {
         .init_asset::<Image>()
         .init_asset::<Mesh>()
         .init_asset::<StandardMaterial>();
+        run_on_test_thread(&mut app);
 
         let mut ctx = Self {
             app,
-            doc: Arc::default(),
+            state: Arc::default(),
             blobs: None,
         };
 
@@ -58,7 +86,7 @@ impl TestContext {
     /// Same as `default()` but with avian's [`PhysicsPlugins`] enabled.
     /// Use this for any test that exercises colliders or rigid bodies —
     /// avian's `On<Add, Collider>` observer reads `Position` / `Rotation`
-    /// and will panic on the placeholder MAX values if our `apply_collider`
+    /// and will panic on the placeholder MAX values if the collider path
     /// ever inserts a `Collider` without seeding them.
     pub fn with_physics() -> Self {
         let mut app = App::new();
@@ -76,12 +104,13 @@ impl TestContext {
         .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
             Duration::from_secs_f32(1.0 / 60.0),
         ));
+        run_on_test_thread(&mut app);
         app.finish();
         app.cleanup();
 
         let mut ctx = Self {
             app,
-            doc: Arc::default(),
+            state: Arc::default(),
             blobs: None,
         };
 
@@ -105,12 +134,13 @@ impl TestContext {
         .init_asset::<Mesh>()
         .init_asset::<StandardMaterial>()
         .insert_resource(Time::<Fixed>::from_duration(Duration::from_millis(10)));
+        run_on_test_thread(&mut app);
 
         app.world_mut().spawn(LocalBlobs(blobs.clone()));
 
         let mut ctx = Self {
             app,
-            doc: Arc::default(),
+            state: Arc::default(),
             blobs: Some(blobs),
         };
 
@@ -122,7 +152,58 @@ impl TestContext {
     pub fn spawn_hsd(&mut self) {
         self.app
             .world_mut()
-            .spawn(bevy_hsd::Hsd(Arc::clone(&self.doc)));
+            .spawn(bevy_hsd::Hsd(Arc::clone(&self.state)));
+    }
+
+    fn with_state<T>(&self, f: impl FnOnce(&mut SceneState) -> T) -> T {
+        f(&mut self.state.lock().expect("lock state"))
+    }
+
+    pub fn create_prim(&self) -> PrimId {
+        self.with_state(|state| state.create_prim(None))
+    }
+
+    pub fn create_child(&self, parent: PrimId) -> PrimId {
+        self.with_state(|state| state.create_prim(Some(parent)))
+    }
+
+    pub fn set_attr<A: Attribute>(&self, prim: PrimId, value: &A) {
+        self.with_state(|state| state.set_attribute(prim, value).expect("set attribute"));
+    }
+
+    pub fn remove_attr<A: Attribute>(&self, prim: PrimId) {
+        self.with_state(|state| state.remove_property(prim, A::KEY));
+    }
+
+    pub fn set_relationship(&self, prim: PrimId, name: &str, target: PrimId) {
+        self.with_state(|state| {
+            state
+                .set_relationship(prim, name, target)
+                .expect("set relationship");
+        });
+    }
+
+    pub fn remove_property(&self, prim: PrimId, name: &str) {
+        self.with_state(|state| state.remove_property(prim, name));
+    }
+
+    pub fn set_bulk(&self, prim: PrimId, slot: &str, hash: blake3::Hash, size: u64) {
+        self.with_state(|state| {
+            state
+                .set_bulk(
+                    prim,
+                    slot,
+                    BulkRef {
+                        hash: BlobId(*hash.as_bytes()),
+                        size,
+                    },
+                )
+                .expect("set bulk");
+        });
+    }
+
+    pub fn remove_prim(&self, prim: PrimId) {
+        self.with_state(|state| state.remove_prim(prim));
     }
 
     /// Upload `bytes` to the local blob store and return its hash.
@@ -139,10 +220,9 @@ impl TestContext {
         hash
     }
 
-    /// Commit the doc, then tick the app until `cond` returns true.
+    /// Tick the app until `cond` returns true.
     /// Panics if the condition is not met within the timeout.
     pub fn tick_until<F: FnMut(&mut World) -> bool>(&mut self, mut cond: F) {
-        self.doc.commit();
         for _ in 0..200 {
             self.app.update();
             if cond(self.app.world_mut()) {

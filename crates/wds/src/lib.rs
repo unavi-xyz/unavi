@@ -28,13 +28,13 @@ pub mod builder;
 pub mod control;
 pub mod db;
 pub mod docs;
+pub mod entries;
 pub mod error;
 mod gc;
 pub mod identity;
 pub mod kv;
 mod quota;
 pub mod signed_bytes;
-pub mod snapshot;
 pub mod tag;
 
 pub struct DataStore {

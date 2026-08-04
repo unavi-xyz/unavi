@@ -1,7 +1,4 @@
-use std::{
-    collections::BTreeMap,
-    io::Cursor,
-};
+use std::io::Cursor;
 
 use bevy::{
     pbr::MeshMaterial3d,
@@ -11,28 +8,18 @@ use bevy_hsd::attributes::{
     image::HsdImage,
     material::HsdMaterial,
 };
-use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
-    attributes::{
-        Attribute,
-        Attributes,
-        attributes_map,
-        image::ImageAttr,
-        material::{
-            ColorVec,
-            MaterialAttr,
-        },
+use hsd::attributes::{
+    image::ImageAttr,
+    material::{
+        self,
+        ColorVec,
+        MaterialAttr,
     },
+    slots,
 };
 use image::{
     ImageFormat,
     RgbaImage,
-};
-use loro_surgeon::{
-    Reconcile,
-    bytes::ByteArray,
-    reconcile::RootReconciler,
 };
 use rstest::rstest;
 use tracing_test::traced_test;
@@ -44,20 +31,19 @@ mod common;
 #[traced_test]
 #[rstest]
 fn test_material_lifecycle(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
+    let root = ctx.create_prim();
 
-    let attr = MaterialAttr {
-        base_color: Some(ColorVec(vec![0.5, 0.1, 0.2, 1.0])),
-        alpha_mode: Some("Blend".to_string()),
-        metallic: Some(0.7),
-        roughness: Some(0.3),
-        ..Default::default()
-    };
-    reconcile_prim_material(&meta, attr);
+    ctx.set_attr(
+        root,
+        &MaterialAttr {
+            base_color: Some(ColorVec(vec![0.5, 0.1, 0.2, 1.0])),
+            alpha_mode: Some("Blend".to_string()),
+            metallic: Some(0.7),
+            roughness: Some(0.3),
+            ..Default::default()
+        },
+    );
 
-    ctx.doc.commit();
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -82,9 +68,7 @@ fn test_material_lifecycle(mut ctx: TestContext) {
     assert!((blue - 0.2).abs() < 1.0e-5);
     assert!((alpha - 1.0).abs() < 1.0e-5);
 
-    let attrs = attributes_map(&meta).expect("attributes map");
-    attrs.delete(MaterialAttr::KEY).expect("delete");
-    ctx.doc.commit();
+    ctx.remove_attr::<MaterialAttr>(root);
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -92,6 +76,8 @@ fn test_material_lifecycle(mut ctx: TestContext) {
     assert!(q.iter(world).next().is_none());
 }
 
+/// A texture slot is a relationship, not a hash inside the material payload:
+/// one property namespace, one home for a cross-prim reference.
 #[traced_test]
 #[rstest]
 fn test_material_texture_ref(#[from(ctx_wds)] mut ctx: TestContext) {
@@ -104,45 +90,22 @@ fn test_material_texture_ref(#[from(ctx_wds)] mut ctx: TestContext) {
     image::DynamicImage::ImageRgba8(rgba)
         .write_to(&mut Cursor::new(&mut png), ImageFormat::Png)
         .expect("encode png");
+    let size = png.len() as u64;
     let blob_hash = ctx.upload_blob(png);
 
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-
-    let image_prim = tree.create(None).expect("create image");
-    let image_meta = tree.get_meta(image_prim).expect("image meta");
-    let image_attr = ImageAttr {
-        address_mode_u: None,
-        address_mode_v: None,
-        address_mode_w: None,
-        data:           ByteArray::<32>::new(*blob_hash.as_bytes()),
-        mag_filter:     None,
-        min_filter:     None,
-        mipmap_filter:  None,
-        srgb:           Some(true),
-    };
-    reconcile_prim(
-        &image_meta,
-        Attributes {
-            image: Some(image_attr),
+    let image_prim = ctx.create_prim();
+    ctx.set_attr(
+        image_prim,
+        &ImageAttr {
+            srgb: Some(true),
             ..Default::default()
         },
-        None,
     );
+    ctx.set_bulk(image_prim, slots::IMAGE_DATA, blob_hash, size);
 
-    let material_prim = tree.create(None).expect("create material");
-    let material_meta = tree.get_meta(material_prim).expect("material meta");
-    let material_attr = MaterialAttr {
-        base_color_texture: Some(image_prim.to_string()),
-        ..Default::default()
-    };
-    reconcile_prim(
-        &material_meta,
-        Attributes {
-            material: Some(material_attr),
-            ..Default::default()
-        },
-        None,
-    );
+    let material_prim = ctx.create_prim();
+    ctx.set_attr(material_prim, &MaterialAttr::default());
+    ctx.set_relationship(material_prim, material::BASE_COLOR_TEXTURE, image_prim);
 
     let mut image_handle: Option<Handle<Image>> = None;
     let mut material_handle: Option<Handle<StandardMaterial>> = None;
@@ -184,34 +147,23 @@ fn test_material_texture_ref(#[from(ctx_wds)] mut ctx: TestContext) {
     assert_eq!(mat.base_color_texture.as_ref(), Some(&image_handle));
 }
 
+/// `material:binding` is USD's precedent: a prim uses another prim's material
+/// rather than defining its own.
 #[traced_test]
 #[rstest]
-fn test_material_relationship(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-
-    let prim_a = tree.create(None).expect("create a");
-    let meta_a = tree.get_meta(prim_a).expect("meta a");
-    let attr_a = MaterialAttr {
-        base_color: Some(ColorVec(vec![1.0, 0.0, 0.0, 1.0])),
-        ..Default::default()
-    };
-    reconcile_prim(
-        &meta_a,
-        Attributes {
-            material: Some(attr_a),
+fn test_material_binding(mut ctx: TestContext) {
+    let prim_a = ctx.create_prim();
+    ctx.set_attr(
+        prim_a,
+        &MaterialAttr {
+            base_color: Some(ColorVec(vec![1.0, 0.0, 0.0, 1.0])),
             ..Default::default()
         },
-        None,
     );
 
-    let prim_b = tree.create(None).expect("create b");
-    let meta_b = tree.get_meta(prim_b).expect("meta b");
-    reconcile_relationship_only(
-        &meta_b,
-        BTreeMap::from([("material".to_string(), prim_a.to_string())]),
-    );
+    let prim_b = ctx.create_prim();
+    ctx.set_relationship(prim_b, material::BINDING, prim_a);
 
-    ctx.doc.commit();
     ctx.app.update();
     ctx.app.update();
 
@@ -220,37 +172,4 @@ fn test_material_relationship(mut ctx: TestContext) {
     let handles: Vec<Handle<StandardMaterial>> = q.iter(world).map(|m| m.0.clone()).collect();
     assert_eq!(handles.len(), 2);
     assert_eq!(handles[0], handles[1], "B should share A's material handle");
-}
-
-fn reconcile_relationship_only(meta: &loro::LoroMap, relationships: BTreeMap<String, String>) {
-    let prim = PrimMeta {
-        attributes:    None,
-        relationships: Some(relationships),
-    };
-    prim.reconcile(RootReconciler::new(meta.clone()))
-        .expect("reconcile");
-}
-
-fn reconcile_prim_material(meta: &loro::LoroMap, attr: MaterialAttr) {
-    reconcile_prim(
-        meta,
-        Attributes {
-            material: Some(attr),
-            ..Default::default()
-        },
-        None,
-    );
-}
-
-fn reconcile_prim(
-    meta: &loro::LoroMap,
-    attributes: Attributes,
-    relationships: Option<BTreeMap<String, String>>,
-) {
-    let prim = PrimMeta {
-        attributes: Some(attributes),
-        relationships,
-    };
-    prim.reconcile(RootReconciler::new(meta.clone()))
-        .expect("reconcile");
 }

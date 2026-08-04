@@ -16,21 +16,27 @@ interface api {
   create-document: func() -> result<document, error>;
   remove-document: func(id: document-id) -> result<_, error>;
 
-  load-hsd: func(blob: list<u8>) -> result<document, error>;
-
   /// Shares a document with the other peers in the space.
   ///
   /// Documents start local: only this peer sees them. Syncing hands the
   /// document to the space, after which its contents replicate to everyone
   /// present and the calling script gives up exclusive write access to it.
   sync-document: func(id: document-id) -> result<_, error>;
+
+  /// Writes a document's live state into its entries.
+  ///
+  /// Writes never reach storage on their own: they reach this peer's world
+  /// immediately, other peers through the space protocol, and the document
+  /// only here. Prims a script created are transient and are not written.
+  save-document: func(id: document-id) -> result<_, error>;
 }
 
 interface types {
   use wired:math/types.{vec3, quat, transform};
   use wired:error/types.{error};
 
-  // Stringified loro TreeID ("counter@peer").
+  // A ULID rendered as 26 characters of Crockford base32. Fixed-length, so no
+  // id is a prefix of another.
   type prim-id     = string;
   type record-id   = list<u8>;
   type document-id = record-id;
@@ -50,10 +56,11 @@ interface types {
     triangle-strip,
   }
 
+  /// Vertex buffers are not named here. Each is its own `mesh:<NAME>` entry,
+  /// set with `set-mesh-stream`, so nothing in this payload has to be kept
+  /// consistent with the blob store.
   record mesh {
-    topology:   topology,
-    attributes: list<tuple<string, blob-id>>,
-    indices:    option<blob-id>,
+    topology: topology,
   }
 
   record color {
@@ -72,23 +79,22 @@ interface types {
     pre-multiplied,
   }
 
+  /// Texture slots are relationships, not fields: as in USD, a cross-prim
+  /// reference lives in the prim's property namespace, under
+  /// `material:base-color-texture` and friends. Use `set-relationship`.
   record material {
-    alpha-cutoff:               option<f32>,
-    alpha-mode:                 option<alpha-mode>,
-    base-color:                 option<color>,
-    base-color-texture:         option<prim-id>,
-    double-sided:               option<bool>,
-    emissive:                   option<color>,
-    emissive-texture:           option<prim-id>,
-    metallic:                   option<f32>,
-    metallic-roughness-texture: option<prim-id>,
-    normal-texture:             option<prim-id>,
-    occlusion-texture:          option<prim-id>,
-    roughness:                  option<f32>,
+    alpha-cutoff: option<f32>,
+    alpha-mode:   option<alpha-mode>,
+    base-color:   option<color>,
+    double-sided: option<bool>,
+    emissive:     option<color>,
+    metallic:     option<f32>,
+    roughness:    option<f32>,
   }
 
+  /// The encoded bytes are the prim's `image:data` entry, set with
+  /// `set-image-data`; this record is sampler settings only.
   record image {
-    data:           blob-id,
     address-mode-u: option<s32>,
     address-mode-v: option<s32>,
     address-mode-w: option<s32>,
@@ -98,13 +104,16 @@ interface types {
     srgb:           option<bool>,
   }
 
+  /// `convex-hull` and `trimesh` read their buffers from the prim's
+  /// `collider:vertices` and `collider:indices` entries, set with
+  /// `set-collider-vertices` and `set-collider-indices`.
   variant collider {
     capsule(collider-capsule),
-    convex-hull(blob-id),
+    convex-hull,
     cuboid(vec3),
     cylinder(collider-cylinder),
     sphere(f32),
-    trimesh(collider-trimesh),
+    trimesh,
   }
 
   record collider-capsule {
@@ -115,11 +124,6 @@ interface types {
   record collider-cylinder {
     height: f32,
     radius: f32,
-  }
-
-  record collider-trimesh {
-    indices:  blob-id,
-    vertices: blob-id,
   }
 
   enum rigid-body-kind {
@@ -174,6 +178,12 @@ interface types {
     // frame. Returns none if the two documents are not in the same space
     // or if scene-read is denied.
     offset-to: func(other: borrow<document>) -> option<transform>;
+
+    /// Attaches this document's root to a prim, or to the space root when
+    /// `none`. Per-peer runtime state, never persisted: everyone's gauntlet
+    /// attaches to their own camera.
+    set-anchor: func(target: option<borrow<prim>>) -> result<_, error>;
+    set-offset: func(value: xform) -> result<_, error>;
   }
 
   resource prim {
@@ -188,8 +198,11 @@ interface types {
     name:     func() -> option<string>;
     set-name: func(value: option<string>) -> result<_, error>;
 
-    asset:     func() -> option<blob-id>;
-    set-asset: func(value: option<blob-id>) -> result<_, error>;
+    /// The compiled document instanced as a child of this prim. Setting it is
+    /// what spawns the instance; clearing it, or deleting the prim, is what
+    /// tears the instance down.
+    prefab:     func() -> option<blob-id>;
+    set-prefab: func(value: option<blob-id>) -> result<_, error>;
 
     xform:     func() -> option<xform>;
     set-xform: func(value: option<xform>) -> result<_, error>;
@@ -203,19 +216,22 @@ interface types {
     mesh:     func() -> option<mesh>;
     set-mesh: func(value: option<mesh>) -> result<_, error>;
 
-    // High-level helpers: host hashes the values and uploads to WDS, then
-    // stores the resulting blob id in the mesh attribute.
+    // Host hashes the values, uploads to WDS, and points the prim's bulk entry
+    // at the result.
     set-mesh-stream:      func(key: string, values: option<list<f32>>) -> result<_, error>;
     set-mesh-indices-u32: func(values: option<list<u32>>) -> result<_, error>;
 
     material:     func() -> option<material>;
     set-material: func(value: option<material>) -> result<_, error>;
 
-    image:     func() -> option<image>;
-    set-image: func(value: option<image>) -> result<_, error>;
+    image:          func() -> option<image>;
+    set-image:      func(value: option<image>) -> result<_, error>;
+    set-image-data: func(bytes: option<list<u8>>) -> result<_, error>;
 
-    collider:     func() -> option<collider>;
-    set-collider: func(value: option<collider>) -> result<_, error>;
+    collider:               func() -> option<collider>;
+    set-collider:           func(value: option<collider>) -> result<_, error>;
+    set-collider-vertices:  func(values: option<list<f32>>) -> result<_, error>;
+    set-collider-indices:   func(values: option<list<u32>>) -> result<_, error>;
 
     rigid-body:     func() -> option<rigid-body>;
     set-rigid-body: func(value: option<rigid-body>) -> result<_, error>;

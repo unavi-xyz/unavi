@@ -1,7 +1,3 @@
-use loro_surgeon::{
-    Hydrate,
-    Reconcile,
-};
 use serde::{
     Deserialize,
     Serialize,
@@ -9,13 +5,11 @@ use serde::{
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug, Clone, Default, Serialize, Deserialize)]
-#[loro(default)]
-#[serde(default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 pub struct SpawnAttr {
     pub radius: f64,
 }
 
 impl Attribute for SpawnAttr {
-    const KEY: &str = "spawn";
+    const KEY: &'static str = "spawn";
 }

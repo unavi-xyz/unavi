@@ -22,8 +22,7 @@ hsd.path                = "../hsd"
 image                   = { features = ["jpeg", "png"], workspace = true }
 iroh-blobs              = { features = ["hide-proto-docs"], workspace = true }
 iroh-docs.workspace     = true
-loro.workspace          = true
-loro-surgeon.workspace  = true
+postcard.workspace      = true
 smol_str.workspace      = true
 thiserror.workspace     = true
 unavi-util.path         = "../unavi-util"

@@ -7,11 +7,11 @@ use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
     HsdChild,
-    HsdNamespace,
+    HsdDocId,
     Prim,
     attributes::portal::PortalConfig,
 };
-use iroh_docs::NamespaceId;
+use hsd::id::DocId;
 use unavi_manifold::Seam;
 use unavi_portal_protocol::{
     BACKLINK_CHANNEL,
@@ -41,21 +41,21 @@ const PENDING_CAP: usize = 64;
 /// despawns without leaving any trace in the synced document state.
 #[derive(Component)]
 pub struct PortalWatch {
-    source_space: NamespaceId,
-    source_doc:   NamespaceId,
+    source_space: DocId,
+    source_doc:   DocId,
     source_prim:  String,
-    target_space: NamespaceId,
+    target_space: DocId,
     timer:        Timer,
-    emitted:      HashSet<NamespaceId>,
+    emitted:      HashSet<DocId>,
 }
 
 impl PortalWatch {
     #[must_use]
     pub fn new(
-        source_space: NamespaceId,
-        source_doc: NamespaceId,
+        source_space: DocId,
+        source_doc: DocId,
         source_prim: String,
-        target_space: NamespaceId,
+        target_space: DocId,
     ) -> Self {
         Self {
             source_space,
@@ -126,7 +126,7 @@ fn flush_backlink(
 pub fn service_portal_watches(
     time: Res<Time>,
     mut watches: Query<(Entity, &mut PortalWatch)>,
-    docs: Query<(Entity, &HsdNamespace), With<Hsd>>,
+    docs: Query<(Entity, &HsdDocId), With<Hsd>>,
     receptors: Query<(&PortalConfig, &HsdChild, &Prim), With<Seam>>,
     mut incoming: Query<&mut PendingIncoming>,
     mut backlink: Query<&mut PendingBacklink>,
@@ -142,8 +142,8 @@ pub fn service_portal_watches(
 
         let found_receptor = receptors.iter().find_map(|(cfg, hsd_child, prim)| {
             let receptor = cfg.0.destination.as_ref()?.receptor.as_ref()?;
-            if NamespaceId::from(&receptor.document.0) != watch.source_doc
-                || receptor.prim != watch.source_prim
+            if receptor.document != watch.source_doc
+                || receptor.prim.to_string() != watch.source_prim
             {
                 return None;
             }
@@ -158,7 +158,7 @@ pub fn service_portal_watches(
                     source_entity,
                     BacklinkPayload {
                         source_prim: watch.source_prim.clone(),
-                        receptor_doc: *receptor_doc.as_bytes(),
+                        receptor_doc: receptor_doc.0,
                         receptor_prim,
                     },
                 );
@@ -168,8 +168,8 @@ pub fn service_portal_watches(
         }
 
         let payload = IncomingPayload {
-            source_space: *watch.source_space.as_bytes(),
-            source_doc:   *watch.source_doc.as_bytes(),
+            source_space: watch.source_space.0,
+            source_doc:   watch.source_doc.0,
             source_prim:  watch.source_prim.clone(),
         };
         for (doc_entity, record) in &docs {
@@ -197,8 +197,8 @@ pub fn service_portal_watches(
 }
 
 pub fn drain_pending(
-    mut incoming: Query<(Entity, &mut PendingIncoming, &HsdNamespace)>,
-    mut backlink: Query<(Entity, &mut PendingBacklink, &HsdNamespace)>,
+    mut incoming: Query<(Entity, &mut PendingIncoming, &HsdDocId)>,
+    mut backlink: Query<(Entity, &mut PendingBacklink, &HsdDocId)>,
     ready: Query<&HsdChild, With<InitializedScript>>,
     mut commands: Commands,
 ) {

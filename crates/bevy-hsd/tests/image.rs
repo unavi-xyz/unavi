@@ -6,24 +6,13 @@ use bevy::{
     render::render_resource::TextureFormat,
 };
 use bevy_hsd::attributes::image::HsdImage;
-use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
-    attributes::{
-        Attribute,
-        Attributes,
-        attributes_map,
-        image::ImageAttr,
-    },
+use hsd::attributes::{
+    image::ImageAttr,
+    slots,
 };
 use image::{
     ImageFormat,
     RgbaImage,
-};
-use loro_surgeon::{
-    Reconcile,
-    bytes::ByteArray,
-    reconcile::RootReconciler,
 };
 use rstest::rstest;
 use tracing_test::traced_test;
@@ -35,23 +24,10 @@ mod common;
 #[traced_test]
 #[rstest]
 fn test_image_lifecycle(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
+    let root = ctx.create_prim();
+    ctx.set_attr(root, &ImageAttr::default());
+    ctx.set_bulk(root, slots::IMAGE_DATA, blake3::hash(b"png"), 3);
 
-    let attr = ImageAttr {
-        address_mode_u: None,
-        address_mode_v: None,
-        address_mode_w: None,
-        data:           ByteArray::<32>::new([1; 32]),
-        mag_filter:     None,
-        min_filter:     None,
-        mipmap_filter:  None,
-        srgb:           None,
-    };
-    reconcile_prim_image(&meta, attr);
-
-    ctx.doc.commit();
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -60,9 +36,7 @@ fn test_image_lifecycle(mut ctx: TestContext) {
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].0, Handle::<Image>::default());
 
-    let attrs = attributes_map(&meta).expect("attributes map");
-    attrs.delete(ImageAttr::KEY).expect("delete");
-    ctx.doc.commit();
+    ctx.remove_attr::<ImageAttr>(root);
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -84,22 +58,20 @@ fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
         .write_to(&mut Cursor::new(&mut png_bytes), ImageFormat::Png)
         .expect("encode png");
 
+    let size = png_bytes.len() as u64;
     let data_hash = ctx.upload_blob(png_bytes);
 
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
-    let attr = ImageAttr {
-        address_mode_u: Some(1),
-        address_mode_v: None,
-        address_mode_w: None,
-        data:           ByteArray::<32>::new(*data_hash.as_bytes()),
-        mag_filter:     Some(1),
-        min_filter:     None,
-        mipmap_filter:  None,
-        srgb:           Some(true),
-    };
-    reconcile_prim_image(&meta, attr);
+    let root = ctx.create_prim();
+    ctx.set_attr(
+        root,
+        &ImageAttr {
+            address_mode_u: Some(1),
+            mag_filter: Some(1),
+            srgb: Some(true),
+            ..Default::default()
+        },
+    );
+    ctx.set_bulk(root, slots::IMAGE_DATA, data_hash, size);
 
     let mut handle: Option<Handle<Image>> = None;
     ctx.tick_until(|world| {
@@ -131,16 +103,4 @@ fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
         bevy::image::ImageAddressMode::MirrorRepeat
     );
     assert_eq!(sampler.mag_filter, bevy::image::ImageFilterMode::Nearest);
-}
-
-fn reconcile_prim_image(meta: &loro::LoroMap, attr: ImageAttr) {
-    let prim = PrimMeta {
-        attributes: Some(Attributes {
-            image: Some(attr),
-            ..Default::default()
-        }),
-        ..Default::default()
-    };
-    prim.reconcile(RootReconciler::new(meta.clone()))
-        .expect("reconcile");
 }

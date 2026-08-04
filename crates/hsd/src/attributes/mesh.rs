@@ -1,10 +1,3 @@
-use std::collections::BTreeMap;
-
-use loro_surgeon::{
-    Hydrate,
-    Reconcile,
-    bytes::ByteArray,
-};
 use serde::{
     Deserialize,
     Serialize,
@@ -12,7 +5,7 @@ use serde::{
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Topology {
     PointList,
     LineList,
@@ -22,17 +15,13 @@ pub enum Topology {
     TriangleStrip,
 }
 
-#[serde_with::skip_serializing_none]
-#[derive(Hydrate, Reconcile, Debug, Clone, Default, Serialize, Deserialize)]
-#[loro(default)]
-#[serde(default)]
+/// Vertex buffers are not named here. Each is its own `mesh:<NAME>` bulk entry,
+/// so nothing in the payload has to be kept consistent with the blob store.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MeshAttr {
-    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
-    pub attributes: BTreeMap<String, ByteArray<32>>,
-    pub indices:    Option<ByteArray<32>>,
-    pub topology:   Topology,
+    pub topology: Topology,
 }
 
 impl Attribute for MeshAttr {
-    const KEY: &str = "mesh";
+    const KEY: &'static str = "mesh";
 }

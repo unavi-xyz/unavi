@@ -40,7 +40,7 @@ impl ScriptBehavior for Script {
         let shape = Cuboid::new(Vec3::new(GROUND_SIZE, GROUND_THICK, GROUND_SIZE));
 
         let prim = shape.mesh();
-        prim.set_collider(Some(&shape.collider()))?;
+        prim.set_collider(Some(shape.collider()))?;
         prim.set_rigid_body(Some(RigidBody {
             kind:            RigidBodyKind::Static,
             angular_damping: None,
@@ -63,21 +63,16 @@ impl ScriptBehavior for Script {
             .as_ref()
             .and_then(Prim::material)
             .unwrap_or(Material {
-                alpha_cutoff:               None,
-                alpha_mode:                 None,
-                base_color:                 None,
-                base_color_texture:         None,
-                double_sided:               None,
-                emissive:                   None,
-                emissive_texture:           None,
-                metallic:                   Some(0.1),
-                metallic_roughness_texture: None,
-                normal_texture:             None,
-                occlusion_texture:          None,
-                roughness:                  Some(0.85),
+                alpha_cutoff: None,
+                alpha_mode:   None,
+                base_color:   None,
+                double_sided: None,
+                emissive:     None,
+                metallic:     Some(0.1),
+                roughness:    Some(0.85),
             });
         mat.base_color = Some(base_color);
-        prim.set_material(Some(&mat))?;
+        prim.set_material(Some(mat))?;
 
         println!("Welcome home! =)");
 

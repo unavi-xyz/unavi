@@ -91,24 +91,20 @@ impl bindings::wired::scene::api::Host for Runtime {
             .map_err(|err| ScriptError::from(err).into()))
     }
 
-    async fn load_hsd(
-        &mut self,
-        blob: Vec<u8>,
-    ) -> wasmtime::Result<Result<Resource<DocRes>, Error>> {
-        if let Err(err) = self.api.require(ApiName::CreateDocument) {
-            return Ok(Err(err.into()));
-        }
-        Ok(shared::wired::scene::load_hsd(&self.api, blob)
-            .await
-            .map(Resource::new_own)
-            .map_err(Into::into))
-    }
-
     async fn sync_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Result<(), Error>> {
         if let Err(err) = self.api.require(ApiName::CreateDocument) {
             return Ok(Err(err.into()));
         }
         Ok(shared::wired::scene::sync_document(&self.api, id)
+            .await
+            .map_err(|err| ScriptError::from(err).into()))
+    }
+
+    async fn save_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Result<(), Error>> {
+        if let Err(err) = self.api.require(ApiName::Scene) {
+            return Ok(Err(err.into()));
+        }
+        Ok(shared::wired::scene::save_document(&self.api, id)
             .await
             .map_err(|err| ScriptError::from(err).into()))
     }

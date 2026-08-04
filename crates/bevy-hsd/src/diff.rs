@@ -1,134 +1,135 @@
-use std::sync::{
-    Arc,
-    Mutex,
-    mpsc::{
-        Receiver,
-        Sender,
-    },
-};
+use std::collections::BTreeMap;
 
 use bevy::{
-    pbr::MeshMaterial3d,
+    platform::collections::HashMap,
     prelude::*,
 };
-use hsd::attributes::{
-    Attribute,
-    material::MaterialAttr,
+use hsd::{
+    id::{
+        BlobId,
+        PrimId,
+    },
+    property::Property,
+    state::event::SceneEvent,
 };
-use loro::{
-    TreeDiffItem,
-    TreeExternalDiff,
-    TreeID,
-    TreeParentId,
-    ValueOrContainer,
-};
+use smol_str::SmolStr;
 
 use crate::{
+    Hsd,
+    HsdBulk,
     HsdChild,
+    HsdCommitGate,
     HsdPrimIndex,
     HsdRelationships,
     Prim,
-    attributes::{
-        ApplyEvent,
-        AttrDataEvent,
-        PARSERS,
-        material::{
-            HsdMaterial,
-            MaterialData,
-        },
-    },
+    attributes::PARSERS,
     loaded::HsdSnapshotDrained,
 };
 
-pub type DiffSender = Arc<Sender<HsdDiffEvent>>;
-
-pub enum HsdDiffEvent {
-    Prim(TreeDiffItem),
-    Attr {
-        prim:  TreeID,
-        attr:  String,
-        value: Option<ValueOrContainer>,
-    },
-    AttrData {
-        prim: TreeID,
-        data: AttrDataEvent,
-    },
-    Relationship {
-        prim:   TreeID,
-        key:    String,
-        target: Option<TreeID>,
-    },
+/// Re-emits the whole realized scene when a document enters the world, so a
+/// document built before its entity existed still reaches the ECS. Replaces
+/// the export-then-reimport trick that forced Loro to replay its own state.
+pub fn resync_on_spawn(trigger: On<Add, Hsd>, docs: Query<&Hsd>, mut commands: Commands) {
+    if let Ok(doc) = docs.get(trigger.entity)
+        && let Ok(mut state) = doc.0.lock()
+    {
+        state.resync();
+    }
+    commands
+        .entity(trigger.entity)
+        .insert(HsdPrimIndex::default());
 }
 
-impl HsdDiffEvent {
-    const fn target_prim(&self) -> TreeID {
-        match self {
-            Self::Prim(p) => p.target,
-            Self::Attr { prim, .. }
-            | Self::AttrData { prim, .. }
-            | Self::Relationship { prim, .. } => *prim,
-        }
+/// Per-prim maps accumulated across a whole batch.
+///
+/// Component writes go through `Commands` and are not visible until the next
+/// sync point, so two slots written in one batch would otherwise clobber each
+/// other. Each map is seeded from the live component the first time its prim
+/// is touched.
+#[derive(Default)]
+struct Staged {
+    rels: HashMap<Entity, BTreeMap<SmolStr, PrimId>>,
+    bulk: HashMap<Entity, BTreeMap<SmolStr, BlobId>>,
+}
+
+impl Staged {
+    fn rels<'a>(
+        &'a mut self,
+        prim_ent: Entity,
+        live: &Query<&HsdRelationships>,
+    ) -> &'a mut BTreeMap<SmolStr, PrimId> {
+        self.rels
+            .entry(prim_ent)
+            .or_insert_with(|| live.get(prim_ent).map(|r| r.0.clone()).unwrap_or_default())
+    }
+
+    fn bulk<'a>(
+        &'a mut self,
+        prim_ent: Entity,
+        live: &Query<&HsdBulk>,
+    ) -> &'a mut BTreeMap<SmolStr, BlobId> {
+        self.bulk
+            .entry(prim_ent)
+            .or_insert_with(|| live.get(prim_ent).map(|b| b.0.clone()).unwrap_or_default())
     }
 }
 
-#[derive(Component)]
-pub struct DiffQueue(pub Arc<Mutex<Receiver<HsdDiffEvent>>>);
-
-const DIFF_QUEUE_BACKPRESSURE_WARN: usize = 10_000;
-
-pub fn drain_diff_queues(
-    queues: Query<(Entity, &DiffQueue)>,
+pub fn drain_scene_events(
+    docs: Query<(Entity, &Hsd, Option<&HsdCommitGate>)>,
     mut indices: Query<&mut HsdPrimIndex>,
-    mut relationships: Query<&mut HsdRelationships>,
-    has_material_data: Query<(), With<MaterialData>>,
+    rels_now: Query<&HsdRelationships>,
+    bulk_now: Query<&HsdBulk>,
     drained: Query<(), With<HsdSnapshotDrained>>,
-    mut events: Local<Vec<HsdDiffEvent>>,
     mut commands: Commands,
 ) {
-    for (doc_ent, queue) in queues {
-        let Ok(queue) = queue.0.try_lock() else {
-            warn!("diff queue contended; will retry next frame");
+    for (doc_ent, doc, gate) in &docs {
+        if gate.is_some_and(HsdCommitGate::is_held) {
+            continue;
+        }
+        let Ok(mut state) = doc.0.lock() else {
+            warn!("scene state poisoned");
             continue;
         };
+        let events = state.drain_events();
+        drop(state);
+
+        if events.is_empty() && drained.contains(doc_ent) {
+            continue;
+        }
+
         let Ok(mut index) = indices.get_mut(doc_ent) else {
             continue;
         };
 
-        events.clear();
-        events.extend(std::iter::from_fn(|| queue.try_recv().ok()));
-
-        if events.len() > DIFF_QUEUE_BACKPRESSURE_WARN {
-            warn!(
-                drained = events.len(),
-                threshold = DIFF_QUEUE_BACKPRESSURE_WARN,
-                "hsd diff queue draining a large batch; producer may be outpacing consumer",
-            );
-        }
-
-        // Creates first so attribute events can resolve the prim entity.
-        events.sort_by_key(|e| {
-            !matches!(
-                e,
-                HsdDiffEvent::Prim(TreeDiffItem {
-                    action: TreeExternalDiff::Create { .. },
-                    ..
-                })
-            )
-        });
-
-        for event in events.drain(..) {
+        let mut staged = Staged::default();
+        for event in events {
             process_event(
                 event,
                 doc_ent,
                 &mut index,
-                &mut relationships,
-                &has_material_data,
+                &mut staged,
+                &rels_now,
+                &bulk_now,
                 &mut commands,
             );
         }
 
-        // The initial snapshot is fully queued before `Add<Hsd>` returns, so one
-        // drain realizes the whole scene; mark it so readiness can be evaluated.
+        // Writing an identical map would still trip `Changed`, and the mesh
+        // and collider rebuilds it drives tear down and respawn their blob
+        // loaders.
+        for (prim_ent, rels) in staged.rels {
+            if rels_now.get(prim_ent).is_ok_and(|live| live.0 == rels) {
+                continue;
+            }
+            commands.entity(prim_ent).insert(HsdRelationships(rels));
+        }
+        for (prim_ent, slots) in staged.bulk {
+            if bulk_now.get(prim_ent).is_ok_and(|live| live.0 == slots) {
+                continue;
+            }
+            commands.entity(prim_ent).insert(HsdBulk(slots));
+        }
+
         if !drained.contains(doc_ent) {
             commands.entity(doc_ent).insert(HsdSnapshotDrained);
         }
@@ -136,189 +137,97 @@ pub fn drain_diff_queues(
 }
 
 fn process_event(
-    event: HsdDiffEvent,
+    event: SceneEvent,
     doc_ent: Entity,
     index: &mut HsdPrimIndex,
-    relationships: &mut Query<&mut HsdRelationships>,
-    has_material_data: &Query<(), With<MaterialData>>,
+    staged: &mut Staged,
+    rels_now: &Query<&HsdRelationships>,
+    bulk_now: &Query<&HsdBulk>,
     commands: &mut Commands,
 ) {
-    let prim = event.target_prim();
-
     match event {
-        HsdDiffEvent::Prim(TreeDiffItem {
-            action: TreeExternalDiff::Create { parent, .. },
-            ..
-        }) => {
+        SceneEvent::Realized { prim, parent } => {
             let prim_ent = commands.spawn((Prim(prim), HsdChild(doc_ent))).id();
             index.0.insert(prim, prim_ent);
-            let parent_ent = match parent {
-                TreeParentId::Node(parent_id) => {
-                    index.0.get(&parent_id).copied().unwrap_or(doc_ent)
-                }
-                _ => doc_ent,
-            };
+            let parent_ent = parent_entity(index, doc_ent, parent);
             commands.entity(parent_ent).add_child(prim_ent);
         }
-        HsdDiffEvent::Prim(TreeDiffItem {
-            action: TreeExternalDiff::Move { parent, .. },
-            ..
-        }) => {
+        SceneEvent::Reparented { prim, parent } => {
             let Some(&prim_ent) = index.0.get(&prim) else {
-                warn!("prim not found: {prim}");
+                warn!(%prim, "reparented prim not found");
                 return;
             };
-            let parent_ent = match parent {
-                TreeParentId::Node(parent_id) => {
-                    index.0.get(&parent_id).copied().unwrap_or(doc_ent)
-                }
-                _ => doc_ent,
-            };
+            let parent_ent = parent_entity(index, doc_ent, parent);
             commands.entity(parent_ent).add_child(prim_ent);
         }
-        HsdDiffEvent::Prim(TreeDiffItem {
-            action: TreeExternalDiff::Delete { .. },
-            ..
-        }) => {
+        SceneEvent::Unrealized { prim } => {
             let Some(prim_ent) = index.0.remove(&prim) else {
-                warn!("prim not found: {prim}");
                 return;
             };
+            staged.rels.remove(&prim_ent);
+            staged.bulk.remove(&prim_ent);
             commands.entity(prim_ent).despawn();
         }
-        HsdDiffEvent::Attr { attr, value, .. } => {
+        SceneEvent::Property { prim, name, value } => {
             let Some(&prim_ent) = index.0.get(&prim) else {
-                warn!("prim not found: {prim}");
+                warn!(%prim, "prim not found for property {name}");
                 return;
             };
-            let Some(parser) = PARSERS.get(attr.as_str()) else {
-                warn!("unknown attribute: {attr}");
+            apply_property(commands, staged, rels_now, prim_ent, &name, value);
+        }
+        SceneEvent::Bulk { prim, slot, value } => {
+            let Some(&prim_ent) = index.0.get(&prim) else {
+                warn!(%prim, "prim not found for slot {slot}");
                 return;
             };
-            if let Err(err) = parser.lifecycle(commands, prim_ent, value) {
-                error!(%attr, ?err, "failed to handle attribute lifecycle");
+            let slots = staged.bulk(prim_ent, bulk_now);
+            match value {
+                Some(value) => {
+                    slots.insert(slot, value.hash);
+                }
+                None => {
+                    slots.remove(&slot);
+                }
             }
         }
-        HsdDiffEvent::AttrData { data, .. } => {
-            let Some(&prim_ent) = index.0.get(&prim) else {
-                warn!("prim not found: {prim}");
-                return;
-            };
-            dispatch_attr_data(commands, prim_ent, data);
-        }
-        HsdDiffEvent::Relationship { key, target, .. } => {
-            let Some(&prim_ent) = index.0.get(&prim) else {
-                warn!("prim not found: {prim}");
-                return;
-            };
-            apply_relationship(
-                commands,
-                relationships,
-                has_material_data,
-                prim_ent,
-                key,
-                target,
-            );
-        }
     }
 }
 
-fn dispatch_attr_data(commands: &mut Commands, prim_ent: Entity, data: AttrDataEvent) {
-    match data {
-        AttrDataEvent::Collider(value) => {
-            commands
-                .entity(prim_ent)
-                .trigger(|entity| ApplyEvent { entity, value });
-        }
-        AttrDataEvent::GravityScale(value) => {
-            commands
-                .entity(prim_ent)
-                .trigger(|entity| ApplyEvent { entity, value });
-        }
-        AttrDataEvent::Image(value) => {
-            commands
-                .entity(prim_ent)
-                .trigger(|entity| ApplyEvent { entity, value });
-        }
-        AttrDataEvent::Material(value) => {
-            commands
-                .entity(prim_ent)
-                .trigger(|entity| ApplyEvent { entity, value });
-        }
-        AttrDataEvent::Mesh(value) => {
-            commands
-                .entity(prim_ent)
-                .trigger(|entity| ApplyEvent { entity, value });
-        }
-        AttrDataEvent::Portal(value) => {
-            commands
-                .entity(prim_ent)
-                .trigger(|entity| ApplyEvent { entity, value });
-        }
-        AttrDataEvent::RigidBody(value) => {
-            commands
-                .entity(prim_ent)
-                .trigger(|entity| ApplyEvent { entity, value });
-        }
-        AttrDataEvent::Spawn(value) => {
-            commands
-                .entity(prim_ent)
-                .trigger(|entity| ApplyEvent { entity, value });
-        }
-        AttrDataEvent::Xform(value) => {
-            commands
-                .entity(prim_ent)
-                .trigger(|entity| ApplyEvent { entity, value });
-        }
-    }
+fn parent_entity(index: &HsdPrimIndex, doc_ent: Entity, parent: Option<PrimId>) -> Entity {
+    parent
+        .and_then(|parent| index.0.get(&parent).copied())
+        .unwrap_or(doc_ent)
 }
 
-fn apply_relationship(
+/// A property key holds either an attribute or a relationship, so removal
+/// clears both — the key is gone and the reader cannot know which it was.
+fn apply_property(
     commands: &mut Commands,
-    relationships: &mut Query<&mut HsdRelationships>,
-    has_material_data: &Query<(), With<MaterialData>>,
+    staged: &mut Staged,
+    rels_now: &Query<&HsdRelationships>,
     prim_ent: Entity,
-    key: String,
-    target: Option<TreeID>,
+    name: &str,
+    value: Option<Property>,
 ) {
-    // A prim without a MaterialAttr can still receive a material via relationship
-    // (inheriting from another prim's HsdMaterial). MaterialParser::lifecycle
-    // covers the attr-driven path; this branch covers the relationship-only
-    // path so the prim has the slots ready for propagate_material_to_dependents
-    // to fill.
-    if key == MaterialAttr::KEY {
-        match target {
-            Some(_) => {
-                commands.entity(prim_ent).insert((
-                    HsdMaterial::default(),
-                    MeshMaterial3d::<StandardMaterial>::default(),
-                ));
-            }
-            None if !has_material_data.contains(prim_ent) => {
-                commands
-                    .entity(prim_ent)
-                    .remove::<HsdMaterial>()
-                    .remove::<MeshMaterial3d<StandardMaterial>>();
-            }
-            None => {}
+    match value {
+        Some(Property::Relationship(target)) => {
+            staged.rels(prim_ent, rels_now).insert(name.into(), target);
         }
-    }
-
-    if let Ok(mut rels) = relationships.get_mut(prim_ent) {
-        match target {
-            Some(target) => {
-                rels.0.insert(key, target);
-            }
-            None => {
-                rels.0.remove(&key);
+        Some(Property::Attribute(payload)) => {
+            let Some(parser) = PARSERS.get(name) else {
+                return;
+            };
+            if let Err(err) = parser.lifecycle(commands, prim_ent, Some(&payload)) {
+                error!(%name, ?err, "failed to apply attribute");
             }
         }
-        if rels.0.is_empty() {
-            commands.entity(prim_ent).remove::<HsdRelationships>();
+        None => {
+            staged.rels(prim_ent, rels_now).remove(name);
+            if let Some(parser) = PARSERS.get(name)
+                && let Err(err) = parser.lifecycle(commands, prim_ent, None)
+            {
+                error!(%name, ?err, "failed to remove attribute");
+            }
         }
-    } else if let Some(target) = target {
-        let mut rels = HsdRelationships::default();
-        rels.0.insert(key, target);
-        commands.entity(prim_ent).insert(rels);
     }
 }

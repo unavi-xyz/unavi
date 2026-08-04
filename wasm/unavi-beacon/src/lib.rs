@@ -28,8 +28,8 @@ use crate::{
         },
         scene::{
             api::{
-                sync_document,
                 self_document,
+                sync_document,
             },
             types::{
                 Document,
@@ -88,23 +88,18 @@ fn set_translation(prim: &Prim, translation: Vec3) {
 
 const fn material(color: Color, emissive_scale: f32) -> Material {
     Material {
-        alpha_cutoff:               None,
-        alpha_mode:                 None,
-        base_color:                 Some(color),
-        base_color_texture:         None,
-        double_sided:               None,
-        emissive:                   Some(Color {
+        alpha_cutoff: None,
+        alpha_mode:   None,
+        base_color:   Some(color),
+        double_sided: None,
+        emissive:     Some(Color {
             r: color.r * emissive_scale,
             g: color.g * emissive_scale,
             b: color.b * emissive_scale,
             a: color.a,
         }),
-        emissive_texture:           None,
-        metallic:                   Some(0.3),
-        metallic_roughness_texture: None,
-        normal_texture:             None,
-        occlusion_texture:          None,
-        roughness:                  Some(0.7),
+        metallic:     Some(0.3),
+        roughness:    Some(0.7),
     }
 }
 
@@ -116,7 +111,7 @@ const fn material(color: Color, emissive_scale: f32) -> Material {
 fn build_shell(doc: &Document, parent: &Prim, id: Hash) -> Prim {
     let shape = Cuboid::new(Vec3::splat(SIZE));
     let group = doc.create_prim().expect("create_prim");
-    group.set_collider(Some(&shape.collider())).ok();
+    group.set_collider(Some(shape.collider())).ok();
     group
         .set_rigid_body(Some(RigidBody {
             kind:            RigidBodyKind::Dynamic,
@@ -133,7 +128,7 @@ fn build_shell(doc: &Document, parent: &Prim, id: Hash) -> Prim {
         for y in [-1.0_f32, 1.0] {
             for z in [-1.0_f32, 1.0] {
                 let corner = Cuboid::new(Vec3::splat(CORNER)).mesh();
-                corner.set_material(Some(&shell_mat)).ok();
+                corner.set_material(Some(shell_mat)).ok();
                 set_translation(&corner, Vec3::new(x, y, z) * CORNER_OFFSET);
                 group.add_child(&corner).ok();
             }
@@ -141,7 +136,7 @@ fn build_shell(doc: &Document, parent: &Prim, id: Hash) -> Prim {
     }
 
     let core = Cuboid::new(Vec3::splat(CORE_SIZE)).mesh();
-    core.set_material(Some(&material(generate_color(id), PULSE_MIN_EMISSIVE)))
+    core.set_material(Some(material(generate_color(id), PULSE_MIN_EMISSIVE)))
         .ok();
     core.set_name(Some(CORE_NAME)).ok();
     group.add_child(&core).ok();
@@ -254,7 +249,7 @@ impl Script {
         let emissive = (step as f32 / PULSE_LEVELS as f32)
             .mul_add(PULSE_MAX_EMISSIVE - PULSE_MIN_EMISSIVE, PULSE_MIN_EMISSIVE);
         self.core
-            .set_material(Some(&material(self.color, emissive)))
+            .set_material(Some(material(self.color, emissive)))
             .ok();
     }
 }

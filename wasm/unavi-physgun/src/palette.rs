@@ -24,17 +24,12 @@ const fn scale(color: Color, f: f32) -> Color {
 /// Bright additive beam material for the physics tractor ray.
 pub const fn beam(color: Color) -> Material {
     Material {
-        alpha_cutoff:               None,
-        alpha_mode:                 Some(AlphaMode::Add),
-        base_color:                 Some(color),
-        base_color_texture:         None,
-        double_sided:               Some(true),
-        emissive:                   Some(scale(color, 2.0)),
-        emissive_texture:           None,
-        metallic:                   None,
-        metallic_roughness_texture: None,
-        normal_texture:             None,
-        occlusion_texture:          None,
-        roughness:                  None,
+        alpha_cutoff: None,
+        alpha_mode:   Some(AlphaMode::Add),
+        base_color:   Some(color),
+        double_sided: Some(true),
+        emissive:     Some(scale(color, 2.0)),
+        metallic:     None,
+        roughness:    None,
     }
 }

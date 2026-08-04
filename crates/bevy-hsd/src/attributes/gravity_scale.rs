@@ -1,36 +1,17 @@
 use avian3d::prelude::GravityScale;
 use bevy::prelude::*;
-use hsd::{
-    HSD_CONTAINER_ID,
-    attributes::{
-        Attribute,
-        gravity_scale::GravityScaleAttr,
-        hydrate_attr,
-    },
-};
-use loro::{
-    ContainerID,
-    Index,
-    TreeID,
-    ValueOrContainer,
-    event::Diff,
+use hsd::attributes::{
+    Attribute,
+    gravity_scale::GravityScaleAttr,
 };
 
-use crate::{
-    attributes::{
-        ApplyEvent,
-        AttrDataEvent,
-        AttributeParser,
-        DocContext,
-        ParseError,
-    },
-    diff::HsdDiffEvent,
+use crate::attributes::{
+    AttributeParser,
+    ParseError,
 };
 
-#[derive(Debug)]
-pub enum GravityScaleEvent {
-    Set(GravityScaleAttr),
-}
+#[derive(Component, Debug, Clone, Copy)]
+pub struct GravityScaleData(pub GravityScaleAttr);
 
 pub struct GravityScaleParser;
 
@@ -43,38 +24,31 @@ impl AttributeParser for GravityScaleParser {
         &self,
         commands: &mut Commands,
         prim: Entity,
-        value: Option<ValueOrContainer>,
+        payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
-        if value.is_none() {
-            commands.entity(prim).remove::<GravityScale>();
+        match payload {
+            Some(payload) => {
+                commands
+                    .entity(prim)
+                    .insert(GravityScaleData(GravityScaleAttr::decode(payload)?));
+            }
+            None => {
+                commands
+                    .entity(prim)
+                    .remove::<(GravityScaleData, GravityScale)>();
+            }
         }
-        Ok(())
-    }
-
-    fn parse(
-        &self,
-        ctx: &DocContext,
-        prim: TreeID,
-        _path: &[(ContainerID, Index)],
-        _diff: Diff,
-    ) -> Result<(), ParseError> {
-        let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-        let meta = tree.get_meta(prim)?;
-        let attr: GravityScaleAttr = hydrate_attr(&meta)?;
-
-        ctx.tx
-            .send(HsdDiffEvent::AttrData {
-                prim,
-                data: AttrDataEvent::GravityScale(GravityScaleEvent::Set(attr)),
-            })
-            .map_err(|_| ParseError::SendDiff)?;
         Ok(())
     }
 }
 
-pub fn apply_gravity_scale(trigger: On<ApplyEvent<GravityScaleEvent>>, mut commands: Commands) {
-    let GravityScaleEvent::Set(attr) = &trigger.value;
-    commands
-        .entity(trigger.entity)
-        .insert(GravityScale(attr.scale as f32));
+pub fn apply_gravity_scale(
+    changed: Query<(Entity, &GravityScaleData), Changed<GravityScaleData>>,
+    mut commands: Commands,
+) {
+    for (entity, data) in &changed {
+        commands
+            .entity(entity)
+            .insert(GravityScale(data.0.scale as f32));
+    }
 }

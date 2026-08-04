@@ -27,7 +27,6 @@ iroh.workspace             = true
 iroh-blobs                 = { features = ["hide-proto-docs"], workspace = true }
 iroh-docs.workspace        = true
 iroh-gossip                = { features = ["net"], workspace = true }
-loro.workspace             = true
 n0-future.workspace        = true
 parking_lot.workspace      = true
 postcard.workspace         = true

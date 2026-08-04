@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
     HsdChild,
-    HsdNamespace,
+    HsdDocId,
     Prim,
 };
 use tokio::sync::Mutex;
@@ -47,7 +47,7 @@ pub fn instantiate_scripts(
         ),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
-    docs: Query<(&HsdNamespace, &Hsd, Has<QuotaExempt>)>,
+    docs: Query<(&HsdDocId, &Hsd, Has<QuotaExempt>)>,
     mut commands: Commands,
 ) {
     for (entity, script, perms, name, prim, doc_ent) in to_instantiate {
@@ -68,7 +68,7 @@ pub fn instantiate_scripts(
 
         let runtime = Runtime {
             api: Arc::new(Api {
-                doc: Arc::clone(&doc.0),
+                state: Arc::clone(&doc.0),
                 doc_id: doc_id.0,
                 prim: prim.0,
                 permissions: perms.clone(),

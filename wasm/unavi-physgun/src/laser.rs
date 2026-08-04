@@ -63,7 +63,7 @@ impl Laser {
     pub fn show(&self, from: Vec3, to: Vec3, color: Color) {
         if self.color.get() != Some(color) {
             self.color.set(Some(color));
-            self.prim.set_material(Some(&palette::beam(color))).ok();
+            self.prim.set_material(Some(palette::beam(color))).ok();
         }
         let delta = to - from;
         let len = delta.length();

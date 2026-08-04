@@ -10,8 +10,9 @@ use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
     HsdChild,
-    HsdNamespace,
+    HsdDocId,
 };
+use hsd::id::DocId;
 use iroh_docs::NamespaceId;
 use parking_lot::RwLock;
 
@@ -23,15 +24,15 @@ use crate::{
     },
 };
 
-pub static FIREWALL_REGISTRY: LazyLock<RwLock<HashMap<NamespaceId, Firewall>>> =
+pub static FIREWALL_REGISTRY: LazyLock<RwLock<HashMap<DocId, Firewall>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
 #[derive(Component)]
-pub struct RegisteredFirewall(NamespaceId);
+pub struct RegisteredFirewall(DocId);
 
 pub fn register_docs(
     trigger: On<Add, Firewall>,
-    docs: Query<(&HsdNamespace, &Firewall)>,
+    docs: Query<(&HsdDocId, &Firewall)>,
     mut commands: Commands,
 ) {
     let Ok((doc, firewall)) = docs.get(trigger.entity) else {
@@ -58,11 +59,12 @@ pub fn register_docs(
         .insert(RegisteredFirewall(doc.0));
 }
 
-pub fn register_subdoc_firewall(
-    trigger: On<Insert, HsdNamespace>,
+/// A prefab instance inherits a firewall from the document that spawned it.
+pub fn register_instance_firewall(
+    trigger: On<Insert, HsdDocId>,
     subdocs: Query<&ChildOf, (With<Hsd>, Without<Firewall>)>,
     prims: Query<&HsdChild>,
-    docs: Query<&HsdNamespace>,
+    docs: Query<&HsdDocId>,
     mut commands: Commands,
 ) {
     let Ok(prim) = subdocs.get(trigger.entity).map(ChildOf::parent) else {
@@ -85,14 +87,10 @@ pub fn deregister_firewalls(
 ) {
     let id = ids.get(trigger.entity).expect("id");
     FIREWALL_REGISTRY.write().remove(&id.0);
-    unavi_quota::registry::forget_document(id.0);
+    unavi_quota::registry::forget_document(NamespaceId::from(&id.0.0));
 }
 
-pub fn validate_firewall(
-    me: &NamespaceId,
-    target: &NamespaceId,
-    channel: Channel,
-) -> anyhow::Result<()> {
+pub fn validate_firewall(me: &DocId, target: &DocId, channel: Channel) -> anyhow::Result<()> {
     if me == target {
         return Ok(());
     }

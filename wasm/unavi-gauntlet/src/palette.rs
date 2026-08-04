@@ -58,35 +58,25 @@ pub const fn scale(color: Color, f: f32) -> Color {
 /// Translucent frosted panel with a faint self-glow of `color`.
 pub const fn glass(color: Color, fill_alpha: f32, emissive: f32) -> Material {
     Material {
-        alpha_cutoff:               None,
-        alpha_mode:                 Some(AlphaMode::Blend),
-        base_color:                 Some(with_alpha(color, fill_alpha)),
-        base_color_texture:         None,
-        double_sided:               Some(true),
-        emissive:                   Some(scale(color, emissive)),
-        emissive_texture:           None,
-        metallic:                   None,
-        metallic_roughness_texture: None,
-        normal_texture:             None,
-        occlusion_texture:          None,
-        roughness:                  None,
+        alpha_cutoff: None,
+        alpha_mode:   Some(AlphaMode::Blend),
+        base_color:   Some(with_alpha(color, fill_alpha)),
+        double_sided: Some(true),
+        emissive:     Some(scale(color, emissive)),
+        metallic:     None,
+        roughness:    None,
     }
 }
 
 /// Bright unlit-ish edge / glyph material.
 pub const fn solid(color: Color, emissive: f32) -> Material {
     Material {
-        alpha_cutoff:               None,
-        alpha_mode:                 Some(AlphaMode::Blend),
-        base_color:                 Some(color),
-        base_color_texture:         None,
-        double_sided:               Some(true),
-        emissive:                   Some(scale(color, emissive)),
-        emissive_texture:           None,
-        metallic:                   None,
-        metallic_roughness_texture: None,
-        normal_texture:             None,
-        occlusion_texture:          None,
-        roughness:                  None,
+        alpha_cutoff: None,
+        alpha_mode:   Some(AlphaMode::Blend),
+        base_color:   Some(color),
+        double_sided: Some(true),
+        emissive:     Some(scale(color, emissive)),
+        metallic:     None,
+        roughness:    None,
     }
 }

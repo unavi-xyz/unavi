@@ -5,8 +5,10 @@ use bevy::{
     prelude::*,
 };
 use bevy_vrm::BoneName;
-use iroh_docs::NamespaceId;
-use loro::TreeID;
+use hsd::id::{
+    DocId,
+    PrimId,
+};
 use unavi_agent::{
     Agent,
     AgentAvatar,
@@ -77,7 +79,7 @@ pub fn spawn_proxy_nodes(
 
         if let Some(camera_ent) = camera_ent {
             let id = gen_proxy_id();
-            proxies.camera = Some(id.clone());
+            proxies.camera = Some(id);
             let child = commands
                 .spawn((
                     Name::new("camera"),
@@ -90,7 +92,7 @@ pub fn spawn_proxy_nodes(
 
         for (name, entity) in &bones.0 {
             let id = gen_proxy_id();
-            proxies.bones.insert(*name, id.clone());
+            proxies.bones.insert(*name, id);
             let child = commands
                 .spawn((
                     Name::new(name.to_string()),
@@ -107,13 +109,11 @@ pub fn spawn_proxy_nodes(
 }
 
 fn gen_proxy_id() -> AbsoluteNodeId {
-    // The actual ID for proxy nodes isn't important.
-    // Generate a random node ID, with a blank document hash.
-    let peer = rand::random();
-    let counter = rand::random();
+    // A proxy is per-peer by nature and never referenced across peers, so a
+    // freshly minted id under a blank document is exactly right.
     AbsoluteNodeId {
-        doc:  NamespaceId::from(&[0; 32]),
-        node: TreeID::new(peer, counter),
+        doc:  DocId([0; 32]),
+        node: PrimId::new(),
     }
 }
 

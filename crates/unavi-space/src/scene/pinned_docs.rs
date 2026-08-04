@@ -1,7 +1,4 @@
-use std::{
-    sync::Arc,
-    time::Duration,
-};
+use std::time::Duration;
 
 use async_channel::{
     Receiver,
@@ -10,16 +7,21 @@ use async_channel::{
 use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
+    HsdDocId,
     HsdNamespace,
+    document,
 };
 use bevy_wds::{
     LocalBlobs,
     LocalDocs,
 };
-use loro::LoroDoc;
+use hsd::{
+    id::DocId,
+    key,
+    state::SceneState,
+};
 use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
-use wds::snapshot;
 
 use crate::{
     Space,
@@ -48,7 +50,7 @@ const REFETCH_DELAY: Duration = Duration::from_secs(10);
 
 #[derive(Component)]
 pub struct PendingPinnedDoc {
-    rx:      Receiver<LoroDoc>,
+    rx:      Receiver<SceneState>,
     _cancel: oneshot::Sender<()>,
 }
 
@@ -118,22 +120,21 @@ pub fn fetch_tracked_docs(
         let (cancel_tx, cancel_rx) = oneshot::channel();
 
         spawn_async_task(async move {
-            let fetch = snapshot::fetch(
+            let fetch = wds::entries::fetch(
                 &docs,
-                &blobs,
                 ns,
                 sync_from,
+                key::PRIM_PREFIX,
                 READ_RETRIES,
                 Duration::from_secs(READ_BACKOFF_SECS),
             );
             tokio::select! {
                 () = async { cancel_rx.await.ok(); } => {}
                 res = fetch => {
-                    if let Ok(Some(bytes)) = res {
-                        let loro = LoroDoc::new();
-                        if loro.import(&bytes).is_ok() {
-                            tx.send(loro).await.ok();
-                        }
+                    if let Ok(Some(doc)) = res
+                        && let Ok(state) = document::read_state(&doc, &blobs).await
+                    {
+                        tx.send(state).await.ok();
                     }
                 }
             }
@@ -156,10 +157,14 @@ pub fn instantiate_tracked_docs(
 ) {
     for (entity, doc, pending) in &pending {
         match pending.rx.try_recv() {
-            Ok(loro) => {
+            Ok(state) => {
                 commands
                     .entity(entity)
-                    .insert((Hsd(Arc::new(loro)), HsdNamespace(doc.doc)))
+                    .insert((
+                        Hsd::new(state),
+                        HsdDocId(DocId(*doc.doc.as_bytes())),
+                        HsdNamespace(doc.doc),
+                    ))
                     .remove::<PendingPinnedDoc>();
             }
             Err(TryRecvError::Empty) => {}

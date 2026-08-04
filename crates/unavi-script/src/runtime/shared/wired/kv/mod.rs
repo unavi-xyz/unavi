@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use hsd::id::DocId;
 use iroh_docs::NamespaceId;
 use unavi_space::{
     membership::doc_space,
@@ -22,8 +23,15 @@ use crate::{
 
 #[derive(Clone, Copy)]
 pub struct KvRes {
-    pub space: NamespaceId,
-    pub doc:   NamespaceId,
+    pub space: DocId,
+    pub doc:   DocId,
+}
+
+/// Replicas key by 32 opaque bytes, which a document id equally is. Keying kv
+/// by document id is what lets a prefab instance — which has an id but no
+/// namespace — hold shared state at all.
+fn ns(id: DocId) -> NamespaceId {
+    NamespaceId::from(&id.0)
 }
 
 #[derive(Default)]
@@ -52,9 +60,9 @@ pub async fn get_kv(api: &Api, doc_id: Vec<u8>) -> anyhow::Result<Option<u32>> {
     let Ok(bytes) = <[u8; 32]>::try_from(doc_id.as_slice()) else {
         return Ok(None);
     };
-    let doc = NamespaceId::from(&bytes);
+    let doc = DocId(bytes);
 
-    if !replicas::has_doc(space, doc) {
+    if !replicas::has_doc(ns(space), ns(doc)) {
         return Ok(None);
     }
 
@@ -77,7 +85,7 @@ pub async fn kv_get(api: &Api, rep: u32, key: String) -> anyhow::Result<Option<V
     if validate_firewall(&api.doc_id, &res.doc, Channel::KvRead).is_err() {
         return Ok(None);
     }
-    Ok(replicas::doc_kv_get(res.space, res.doc, &key))
+    Ok(replicas::doc_kv_get(ns(res.space), ns(res.doc), &key))
 }
 
 pub async fn kv_set(
@@ -94,7 +102,7 @@ pub async fn kv_set(
     if validate_firewall(&api.doc_id, &res.doc, Channel::KvWrite).is_err() {
         return Ok(Err(KvError::Other));
     }
-    Ok(entities::doc_kv_set(res.space, res.doc, key, value).await)
+    Ok(entities::doc_kv_set(ns(res.space), ns(res.doc), key, value).await)
 }
 
 pub async fn kv_delete(api: &Api, rep: u32, key: String) -> anyhow::Result<Result<(), KvError>> {
@@ -106,7 +114,7 @@ pub async fn kv_delete(api: &Api, rep: u32, key: String) -> anyhow::Result<Resul
     if validate_firewall(&api.doc_id, &res.doc, Channel::KvWrite).is_err() {
         return Ok(Err(KvError::Other));
     }
-    Ok(entities::doc_kv_delete(res.space, res.doc, key).await)
+    Ok(entities::doc_kv_delete(ns(res.space), ns(res.doc), key).await)
 }
 
 pub async fn kv_keys(api: &Api, rep: u32) -> anyhow::Result<Vec<String>> {
@@ -118,7 +126,7 @@ pub async fn kv_keys(api: &Api, rep: u32) -> anyhow::Result<Vec<String>> {
     if validate_firewall(&api.doc_id, &res.doc, Channel::KvRead).is_err() {
         return Ok(Vec::new());
     }
-    Ok(replicas::doc_kv_keys(res.space, res.doc))
+    Ok(replicas::doc_kv_keys(ns(res.space), ns(res.doc)))
 }
 
 pub async fn kv_drop(api: &Api, rep: u32) -> anyhow::Result<()> {

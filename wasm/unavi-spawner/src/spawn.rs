@@ -29,7 +29,7 @@ pub fn spawn(color: Color, cam: &Transform) -> anyhow::Result<()> {
     let cuboid = Cuboid::new(Vec3::splat(SIZE));
     cuboid.set_doc(doc);
     let cube = cuboid.mesh();
-    cube.set_collider(Some(&cuboid.collider()))?;
+    cube.set_collider(Some(cuboid.collider()))?;
     cube.set_rigid_body(Some(RigidBody {
         kind:            RigidBodyKind::Dynamic,
         angular_damping: None,
@@ -38,7 +38,7 @@ pub fn spawn(color: Color, cam: &Transform) -> anyhow::Result<()> {
         mass:            None,
         restitution:     None,
     }))?;
-    cube.set_material(Some(&palette::cube(color)))?;
+    cube.set_material(Some(palette::cube(color)))?;
 
     let forward = cam.rotation * Vec3::new(0.0, 0.0, -1.0);
     cube.set_xform(Some(Xform {

@@ -1,0 +1,70 @@
+[
+    (
+        attributes: (
+            name: "gate",
+            prefab: "../unavi-gate/asset.hsda",
+            xform: (
+                translation: [
+                    0.0,
+                    0.0,
+                    -10.0,
+                ],
+            ),
+        ),
+        relationships: {},
+        children: [],
+    ),
+    (
+        attributes: (
+            image: (
+                data: "../../crates/unavi-client/assets/image/dev-white.png",
+                address_mode_u: 0,
+                address_mode_v: 0,
+                address_mode_w: 0,
+                mag_filter: 1,
+                min_filter: 1,
+                srgb: true,
+            ),
+            name: "ground_tex",
+        ),
+        relationships: {},
+        children: [],
+    ),
+    (
+        attributes: (
+            material: (
+                base_color_texture: "ground_tex",
+            ),
+            name: "ground",
+        ),
+        relationships: {},
+        children: [],
+    ),
+    (
+        attributes: (
+            name: "unavi-default-home",
+            script: "./Cargo.toml",
+        ),
+        relationships: {
+            "material:binding": "ground",
+        },
+        children: [],
+    ),
+    (
+        attributes: (
+            name: "spawn",
+            spawn: (
+                radius: 4.0,
+            ),
+            xform: (
+                translation: [
+                    0.0,
+                    0.5,
+                    0.0,
+                ],
+            ),
+        ),
+        relationships: {},
+        children: [],
+    ),
+]

@@ -5,13 +5,8 @@ use crate::{
     unavi::shapes::api::Cuboid,
     wired::{
         scene::{
-            api::{
-                load_hsd,
-                remove_document,
-                self_document,
-            },
+            api::self_document,
             types::{
-                Document,
                 Material,
                 Prim,
                 RigidBody,
@@ -46,18 +41,13 @@ const IDENTITY: Quat = Quat {
 
 const fn material(color: Color) -> Material {
     Material {
-        alpha_cutoff:               None,
-        alpha_mode:                 None,
-        base_color:                 Some(color),
-        base_color_texture:         None,
-        double_sided:               Some(true),
-        emissive:                   None,
-        emissive_texture:           None,
-        metallic:                   None,
-        metallic_roughness_texture: None,
-        normal_texture:             None,
-        occlusion_texture:          None,
-        roughness:                  None,
+        alpha_cutoff: None,
+        alpha_mode:   None,
+        base_color:   Some(color),
+        double_sided: Some(true),
+        emissive:     None,
+        metallic:     None,
+        roughness:    None,
     }
 }
 
@@ -107,9 +97,9 @@ fn grid_offset(index: usize) -> Vec3 {
 fn add_slab(parent: &Prim, size: Vec3, translation: Vec3, color: Color) {
     let shape = Cuboid::new(size);
     let slab = shape.mesh();
-    slab.set_collider(Some(&shape.collider())).ok();
+    slab.set_collider(Some(shape.collider())).ok();
     slab.set_rigid_body(Some(static_body())).ok();
-    slab.set_material(Some(&material(color))).ok();
+    slab.set_material(Some(material(color))).ok();
     set_translation(&slab, translation);
     parent.add_child(&slab).ok();
 }
@@ -132,11 +122,15 @@ fn active_space_hex(key: &str) -> Option<&str> {
 /// The gauntlet's nav table: on open, lists the spaces currently occupied
 /// according to the registries this client follows, and lays them out in a grid
 /// on a small table placed in front of the player.
+/// The authored prim whose `prefab` slot every beacon copies. It is kept at
+/// zero scale so the template itself never shows.
+const TEMPLATE_PRIM_NAME: &str = "beacon_template";
+
 pub struct Nav {
     root:         Prim,
     beacon_lists: Vec<ListFuture>,
     seen:         Vec<String>,
-    beacons:      Vec<Document>,
+    beacons:      Vec<Prim>,
 }
 
 impl Nav {
@@ -199,8 +193,12 @@ impl Nav {
         self.root.set_xform(Some(hidden()))?;
         self.beacon_lists.clear();
         self.seen.clear();
-        for doc in self.beacons.drain(..) {
-            remove_document(&doc.id())?;
+
+        // An instance exists because a prim carries the attribute, so deleting
+        // the prim is the whole teardown.
+        let doc = self_document()?;
+        for prim in self.beacons.drain(..) {
+            doc.remove_prim(&prim)?;
         }
         Ok(())
     }
@@ -224,23 +222,28 @@ impl Nav {
             }
         }
 
+        if spaces.is_empty() {
+            return Ok(());
+        }
+
+        let doc = self_document()?;
+        let Some(template) = doc
+            .prims()
+            .into_iter()
+            .find(|p| p.name().is_some_and(|n| n == TEMPLATE_PRIM_NAME))
+            .and_then(|p| p.prefab())
+        else {
+            eprintln!("nav: gauntlet HSD missing {TEMPLATE_PRIM_NAME} prim");
+            return Ok(());
+        };
+
         for space in spaces {
             if self.seen.contains(&space) {
                 continue;
             }
             self.seen.push(space.clone());
 
-            let doc = self_document()?;
-            let Some(beacon_asset) = doc.prims().into_iter().find_map(|p| p.asset()) else {
-                eprintln!("nav: gauntlet HSD missing beacon asset child prim");
-                continue;
-            };
-            let Ok(beacon_doc) = load_hsd(&beacon_asset) else {
-                eprintln!("nav: failed to load beacon doc");
-                continue;
-            };
-
-            let prim = beacon_doc.create_prim()?;
+            let prim = doc.create_prim()?;
             prim.set_name(Some(&space))?;
 
             let root_xform = self.root.xform().unwrap_or(Xform {
@@ -252,7 +255,11 @@ impl Nav {
             let pos = root_xform.translation + root_xform.rotation * offset;
             set_translation(&prim, pos);
 
-            self.beacons.push(beacon_doc);
+            // Setting the attribute is what spawns the instance; there is no
+            // imperative load step and no namespace minted per loader.
+            prim.set_prefab(Some(&template))?;
+
+            self.beacons.push(prim);
         }
         Ok(())
     }

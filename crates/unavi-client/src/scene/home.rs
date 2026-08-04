@@ -10,14 +10,9 @@ use unavi_space::Space;
 use unavi_util::async_commands::AsyncCommands;
 
 pub fn join_home(asset_server: Res<AssetServer>, mut commands: Commands) {
-    let handle = asset_server.load("hsd/unavi_default_home.hsd");
+    let handle = asset_server.load("hsd/unavi_default_home.hsdz");
     commands.spawn(LoadHsd {
         handle,
-        extra: Some(Box::new(|doc| {
-            let map = doc.get_map("space");
-            map.insert("name", "My Home".to_string())?;
-            Ok(())
-        })),
         on_load: Some(Box::new(on_load_spawn_space)),
     });
 }

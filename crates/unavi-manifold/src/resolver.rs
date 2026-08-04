@@ -4,10 +4,10 @@ use bevy::{
 };
 use bevy_hsd::{
     Hsd,
-    HsdNamespace,
+    HsdDocId,
     HsdPrimIndex,
 };
-use iroh_docs::NamespaceId;
+use hsd::id::DocId;
 
 use crate::{
     GluedTo,
@@ -17,10 +17,10 @@ use crate::{
 
 pub fn resolve_target_doc(
     seams: Query<(Entity, &SeamTargetDoc, Option<&GluedTo>), Without<SeamTargetReceptor>>,
-    spaces: Query<(Entity, &HsdNamespace), With<Hsd>>,
+    spaces: Query<(Entity, &HsdDocId), With<Hsd>>,
     mut commands: Commands,
 ) {
-    let index: HashMap<NamespaceId, Entity> = spaces.iter().map(|(e, rid)| (rid.0, e)).collect();
+    let index: HashMap<DocId, Entity> = spaces.iter().map(|(e, rid)| (rid.0, e)).collect();
 
     for (seam, target, current) in &seams {
         let resolved = index.get(&target.0).copied();
@@ -30,11 +30,10 @@ pub fn resolve_target_doc(
 
 pub fn resolve_target_receptor(
     seams: Query<(Entity, &SeamTargetReceptor, Option<&GluedTo>)>,
-    docs: Query<(&HsdNamespace, &HsdPrimIndex), With<Hsd>>,
+    docs: Query<(&HsdDocId, &HsdPrimIndex), With<Hsd>>,
     mut commands: Commands,
 ) {
-    let index: HashMap<NamespaceId, &HsdPrimIndex> =
-        docs.iter().map(|(rid, idx)| (rid.0, idx)).collect();
+    let index: HashMap<DocId, &HsdPrimIndex> = docs.iter().map(|(rid, idx)| (rid.0, idx)).collect();
 
     for (seam, target, current) in &seams {
         let resolved = index

@@ -46,7 +46,7 @@ pub async fn local_camera(api: &Api) -> anyhow::Result<u32> {
     };
     let rep = api.wired_scene.lock().await.prims.insert(
         PrimRes {
-            doc: Arc::default(),
+            state: Arc::default(),
             doc_id,
             id: node_id,
             is_proxy: true,
@@ -78,7 +78,7 @@ pub async fn bone(api: &Api, rep: u32, name: BoneName) -> anyhow::Result<Option<
     if let Some((doc_id, node_id)) = absolute {
         let rep = api.wired_scene.lock().await.prims.insert(
             PrimRes {
-                doc: Arc::default(),
+                state: Arc::default(),
                 doc_id,
                 id: node_id,
                 is_proxy: true,

@@ -1,7 +1,3 @@
-use loro_surgeon::{
-    Hydrate,
-    Reconcile,
-};
 use serde::{
     Deserialize,
     Serialize,
@@ -9,9 +5,7 @@ use serde::{
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug, Clone, Copy, Serialize, Deserialize)]
-#[loro(default)]
-#[serde(default)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct GravityScaleAttr {
     pub scale: f64,
 }
@@ -23,5 +17,5 @@ impl Default for GravityScaleAttr {
 }
 
 impl Attribute for GravityScaleAttr {
-    const KEY: &str = "gravity_scale";
+    const KEY: &'static str = "gravity_scale";
 }

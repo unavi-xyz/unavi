@@ -1,38 +1,19 @@
 use bevy::prelude::*;
-use hsd::{
-    HSD_CONTAINER_ID,
-    attributes::{
-        Attribute,
-        hydrate_attr,
-        portal::PortalAttr,
-    },
-};
-use loro::{
-    ContainerID,
-    Index,
-    TreeID,
-    ValueOrContainer,
-    event::Diff,
+use hsd::attributes::{
+    Attribute,
+    portal::PortalAttr,
 };
 
-use crate::{
-    attributes::{
-        ApplyEvent,
-        AttrDataEvent,
-        AttributeParser,
-        DocContext,
-        ParseError,
-    },
-    diff::HsdDiffEvent,
+use crate::attributes::{
+    AttributeParser,
+    ParseError,
 };
 
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Debug, Clone, Copy)]
+pub struct PortalData(pub PortalAttr);
+
+#[derive(Component, Debug, Clone, Copy)]
 pub struct PortalConfig(pub PortalAttr);
-
-#[derive(Debug)]
-pub enum PortalEvent {
-    Set(PortalAttr),
-}
 
 pub struct PortalParser;
 
@@ -45,38 +26,27 @@ impl AttributeParser for PortalParser {
         &self,
         commands: &mut Commands,
         prim: Entity,
-        value: Option<ValueOrContainer>,
+        payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
-        if value.is_none() {
-            commands.entity(prim).remove::<PortalConfig>();
+        match payload {
+            Some(payload) => {
+                commands
+                    .entity(prim)
+                    .insert(PortalData(PortalAttr::decode(payload)?));
+            }
+            None => {
+                commands.entity(prim).remove::<(PortalData, PortalConfig)>();
+            }
         }
-        Ok(())
-    }
-
-    fn parse(
-        &self,
-        ctx: &DocContext,
-        prim: TreeID,
-        _path: &[(ContainerID, Index)],
-        _diff: Diff,
-    ) -> Result<(), ParseError> {
-        let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-        let meta = tree.get_meta(prim)?;
-        let attr: PortalAttr = hydrate_attr(&meta)?;
-
-        ctx.tx
-            .send(HsdDiffEvent::AttrData {
-                prim,
-                data: AttrDataEvent::Portal(PortalEvent::Set(attr)),
-            })
-            .map_err(|_| ParseError::SendDiff)?;
         Ok(())
     }
 }
 
-pub fn apply_portal(trigger: On<ApplyEvent<PortalEvent>>, mut commands: Commands) {
-    let PortalEvent::Set(attr) = &trigger.value;
-    commands
-        .entity(trigger.entity)
-        .insert(PortalConfig(attr.clone()));
+pub fn apply_portal(
+    changed: Query<(Entity, &PortalData), Changed<PortalData>>,
+    mut commands: Commands,
+) {
+    for (entity, data) in &changed {
+        commands.entity(entity).insert(PortalConfig(data.0));
+    }
 }

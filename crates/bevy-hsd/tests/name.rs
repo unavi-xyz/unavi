@@ -1,18 +1,4 @@
-use bevy::prelude::*;
-use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
-    attributes::{
-        Attribute,
-        Attributes,
-        attributes_map,
-        name::NameAttr,
-    },
-};
-use loro_surgeon::{
-    Reconcile,
-    reconcile::RootReconciler,
-};
+use hsd::attributes::name::NameAttr;
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -23,22 +9,11 @@ mod common;
 #[traced_test]
 #[rstest]
 fn test_name_lifecycle(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
+    let root = ctx.create_prim();
 
     let attr = NameAttr("My Node".to_string());
-    let prim = PrimMeta {
-        attributes: Some(Attributes {
-            name: Some(attr.clone()),
-            ..Default::default()
-        }),
-        ..Default::default()
-    };
-    prim.reconcile(RootReconciler::new(meta.clone()))
-        .expect("reconcile");
+    ctx.set_attr(root, &attr);
 
-    ctx.doc.commit();
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -48,10 +23,7 @@ fn test_name_lifecycle(mut ctx: TestContext) {
     assert_eq!(res.len(), 1);
     assert_eq!(res[0].as_str(), attr.0);
 
-    let attrs = attributes_map(&meta).expect("attributes map");
-    attrs.delete(NameAttr::KEY).expect("delete");
-
-    ctx.doc.commit();
+    ctx.remove_attr::<NameAttr>(root);
     ctx.app.update();
 
     let world = ctx.app.world_mut();

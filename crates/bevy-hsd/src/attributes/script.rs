@@ -1,51 +1,25 @@
-use bevy::prelude::*;
-use hsd::attributes::{
-    Attribute,
-    script::ScriptAttr,
-};
-use loro::{
-    LoroValue,
-    ValueOrContainer,
-};
+//! A script has no attribute payload: the wasm component *is* its
+//! `b/<prim>/script/` entry, and presence of that entry is what attaches it.
 
-use crate::attributes::{
-    AttributeParser,
-    ParseError,
-};
+use bevy::prelude::*;
+use hsd::attributes::slots;
+
+use crate::HsdBulk;
 
 #[derive(Component, Debug, Clone)]
 pub struct HsdScript(pub blake3::Hash);
 
-pub struct ScriptParser;
-
-impl AttributeParser for ScriptParser {
-    fn key(&self) -> &'static str {
-        ScriptAttr::KEY
-    }
-
-    fn lifecycle(
-        &self,
-        commands: &mut Commands,
-        prim: Entity,
-        value: Option<ValueOrContainer>,
-    ) -> Result<(), ParseError> {
-        match value {
-            Some(ValueOrContainer::Value(LoroValue::Binary(bytes))) => {
-                if let Ok(arr) = <[u8; 32]>::try_from(bytes.as_slice()) {
-                    commands
-                        .entity(prim)
-                        .insert(HsdScript(blake3::Hash::from_bytes(arr)));
-                } else {
-                    warn!("script attribute: expected 32-byte blob id");
-                }
-            }
-            Some(other) => {
-                warn!(?other, "script attribute must be a binary blob id");
+pub fn track_script(changed: Query<(Entity, &HsdBulk), Changed<HsdBulk>>, mut commands: Commands) {
+    for (entity, bulk) in &changed {
+        match bulk.0.get(slots::SCRIPT) {
+            Some(hash) => {
+                commands
+                    .entity(entity)
+                    .insert(HsdScript(blake3::Hash::from_bytes(hash.0)));
             }
             None => {
-                commands.entity(prim).remove::<HsdScript>();
+                commands.entity(entity).remove::<HsdScript>();
             }
         }
-        Ok(())
     }
 }

@@ -24,41 +24,25 @@ use bevy_wds::blob::{
         BlobResponse,
     },
 };
-use hsd::{
-    HSD_CONTAINER_ID,
-    attributes::{
-        Attribute,
-        hydrate_attr,
-        image::ImageAttr,
-    },
+use hsd::attributes::{
+    Attribute,
+    image::ImageAttr,
+    slots,
 };
 use image::GenericImageView;
-use loro::{
-    ContainerID,
-    Index,
-    TreeID,
-    ValueOrContainer,
-    event::Diff,
-};
 
 use crate::{
+    HsdBulk,
     attributes::{
-        ApplyEvent,
-        AttrDataEvent,
         AttributeParser,
-        DocContext,
         ParseError,
-        util::shallow_map_updated_keys,
     },
-    diff::HsdDiffEvent,
 };
 
 const MAX_TEXTURE_DIMS: u32 = 8192;
 
-#[derive(Debug)]
-pub enum ImageEvent {
-    Rebuild(ImageAttr),
-}
+#[derive(Component, Debug, Clone, Copy)]
+pub struct ImageData(pub ImageAttr);
 
 #[derive(Component)]
 #[require(BlobDeps)]
@@ -90,85 +74,70 @@ impl AttributeParser for ImageParser {
         &self,
         commands: &mut Commands,
         prim: Entity,
-        value: Option<ValueOrContainer>,
+        payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
-        if value.is_some() {
-            commands.entity(prim).insert(HsdImage::default());
-        } else {
-            commands
-                .entity(prim)
-                .remove::<(HsdImage, ImageBlobsChild)>();
+        match payload {
+            Some(payload) => {
+                commands
+                    .entity(prim)
+                    .insert((ImageData(ImageAttr::decode(payload)?), HsdImage::default()));
+            }
+            None => {
+                commands
+                    .entity(prim)
+                    .remove::<(ImageData, HsdImage, ImageBlobsChild)>();
+            }
         }
-        Ok(())
-    }
-
-    fn parse(
-        &self,
-        ctx: &DocContext,
-        prim: TreeID,
-        path: &[(ContainerID, Index)],
-        diff: Diff,
-    ) -> Result<(), ParseError> {
-        let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-        let meta = tree.get_meta(prim)?;
-
-        let attr: ImageAttr = hydrate_attr(&meta)?;
-
-        let keys = shallow_map_updated_keys(path, diff)?;
-        if keys.is_empty() {
-            return Ok(());
-        }
-
-        ctx.tx
-            .send(HsdDiffEvent::AttrData {
-                prim,
-                data: AttrDataEvent::Image(ImageEvent::Rebuild(attr)),
-            })
-            .map_err(|_| ParseError::SendDiff)?;
         Ok(())
     }
 }
 
-pub fn apply_image(trigger: On<ApplyEvent<ImageEvent>>, mut commands: Commands) {
-    let prim = trigger.entity;
-    let ImageEvent::Rebuild(attr) = &trigger.value;
+pub fn rebuild_image(
+    changed: Query<(Entity, &ImageData, &HsdBulk), Or<(Changed<ImageData>, Changed<HsdBulk>)>>,
+    mut commands: Commands,
+) {
+    for (prim, image, bulk) in &changed {
+        let Some(hash) = bulk.0.get(slots::IMAGE_DATA) else {
+            continue;
+        };
 
-    commands.entity(prim).remove::<ImageBlobsChild>();
+        commands.entity(prim).remove::<ImageBlobsChild>();
 
-    let child = commands.spawn(ImageBlobsOwner(prim)).id();
+        let child = commands.spawn(ImageBlobsOwner(prim)).id();
+        let data = commands
+            .spawn((
+                BlobDep(child),
+                BlobRequest(blake3::Hash::from_bytes(hash.0)),
+            ))
+            .id();
 
-    let data = commands
-        .spawn((
-            BlobDep(child),
-            BlobRequest(blake3::Hash::from_bytes(attr.data.0)),
-        ))
-        .id();
+        let attr = &image.0;
+        let mut sampler = ImageSamplerDescriptor::default();
+        if let Some(v) = attr.address_mode_u {
+            sampler.address_mode_u = address_mode(v);
+        }
+        if let Some(v) = attr.address_mode_v {
+            sampler.address_mode_v = address_mode(v);
+        }
+        if let Some(v) = attr.address_mode_w {
+            sampler.address_mode_w = address_mode(v);
+        }
+        if let Some(v) = attr.mag_filter {
+            sampler.mag_filter = filter_mode(v);
+        }
+        if let Some(v) = attr.min_filter {
+            sampler.min_filter = filter_mode(v);
+        }
+        if let Some(v) = attr.mipmap_filter {
+            sampler.mipmap_filter = filter_mode(v);
+        }
 
-    let mut sampler = ImageSamplerDescriptor::default();
-    if let Some(&v) = attr.address_mode_u.as_ref() {
-        sampler.address_mode_u = address_mode(v);
+        commands.entity(child).insert(ImageBlobs {
+            data,
+            sampler,
+            srgb: attr.srgb,
+        });
     }
-    if let Some(&v) = attr.address_mode_v.as_ref() {
-        sampler.address_mode_v = address_mode(v);
-    }
-    if let Some(&v) = attr.address_mode_w.as_ref() {
-        sampler.address_mode_w = address_mode(v);
-    }
-    if let Some(&v) = attr.mag_filter.as_ref() {
-        sampler.mag_filter = filter_mode(v);
-    }
-    if let Some(&v) = attr.min_filter.as_ref() {
-        sampler.min_filter = filter_mode(v);
-    }
-    if let Some(&v) = attr.mipmap_filter.as_ref() {
-        sampler.mipmap_filter = filter_mode(v);
-    }
-
-    commands.entity(child).insert(ImageBlobs {
-        data,
-        sampler,
-        srgb: attr.srgb.as_ref().copied(),
-    });
 }
 
 pub fn on_image_blob_loaded(

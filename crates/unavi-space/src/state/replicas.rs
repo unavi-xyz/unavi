@@ -18,6 +18,7 @@ use std::{
     },
 };
 
+use hsd::id::DocId;
 use iroh_docs::NamespaceId;
 use parking_lot::Mutex;
 use unavi_quota::{
@@ -538,7 +539,7 @@ pub fn time_valid(at: u64) -> bool {
 /// released, since the owner resolver re-enters the store.
 fn settle_reassigns(reassign: Vec<(NamespaceId, NamespaceId)>) {
     for (doc, space) in reassign {
-        reassign_document_in_space(doc, space);
+        reassign_document_in_space(DocId(*doc.as_bytes()), DocId(*space.as_bytes()));
     }
 }
 
@@ -577,7 +578,7 @@ pub enum KvPlacement {
 /// Adds a peer's pin on `doc`. Returns `false` if the document quota refuses
 /// the presence. Idempotent: a repeat pin from the same peer is a no-op.
 pub fn add_pin(peer: PeerId, doc: NamespaceId, space: NamespaceId, at: u64) -> bool {
-    let quota = document_quota(doc);
+    let quota = document_quota(DocId(*doc.as_bytes()));
     let mut reassign = Vec::new();
     let mut state = PEER_STATE.lock();
     let ok = state.add_pin(peer, doc, space, at, &quota, &mut reassign);
@@ -597,7 +598,7 @@ pub fn remove_pin(peer: PeerId, doc: NamespaceId) {
 /// Adds or refreshes a peer's authority claim on `doc`. Returns `false` if the
 /// document quota refuses the presence.
 pub fn add_authority(peer: PeerId, doc: NamespaceId, space: NamespaceId, at: u64) -> bool {
-    let quota = document_quota(doc);
+    let quota = document_quota(DocId(*doc.as_bytes()));
     let mut state = PEER_STATE.lock();
     let ok = state.add_authority(peer, doc, space, at, &quota);
     drop(state);
@@ -623,7 +624,7 @@ pub fn add_kv(
     value: Option<Vec<u8>>,
     at: u64,
 ) -> Result<KvPlacement, KvError> {
-    let quota = document_quota(doc);
+    let quota = document_quota(DocId(*doc.as_bytes()));
     let mut state = PEER_STATE.lock();
     let result = state.add_kv(peer, doc, space, key, value, at, &quota);
     drop(state);
@@ -1007,7 +1008,7 @@ mod tests {
             add_kv(peer, doc, space, "k".into(), Some(b"value".to_vec()), 2),
             Ok(KvPlacement::Owned)
         );
-        let quota = document_quota(doc);
+        let quota = document_quota(DocId(*doc.as_bytes()));
         assert!(quota.usage(Stock::KvMemory) > 0);
         assert_eq!(quota.usage(Stock::Documents), 1);
 

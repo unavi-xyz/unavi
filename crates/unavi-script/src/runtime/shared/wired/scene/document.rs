@@ -1,11 +1,20 @@
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    Mutex,
+};
 
-use hsd::HSD_CONTAINER_ID;
-use iroh_docs::NamespaceId;
-use loro::{
-    LoroDoc,
-    TreeID,
-    TreeParentId,
+use bevy::prelude::*;
+use bevy_hsd::{
+    HsdDocId,
+    HsdPrimIndex,
+    anchor::DocAnchor,
+};
+use hsd::{
+    id::{
+        DocId,
+        PrimId,
+    },
+    state::SceneState,
 };
 use tokio::sync::MutexGuard;
 use unavi_quota::{
@@ -15,6 +24,7 @@ use unavi_quota::{
     Stock,
 };
 use unavi_space::quota::document_quota;
+use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     firewall::Channel,
@@ -40,8 +50,18 @@ pub struct XformValue {
 
 #[derive(Clone)]
 pub struct DocRes {
-    pub doc: Arc<LoroDoc>,
-    pub id:  NamespaceId,
+    pub state: Arc<Mutex<SceneState>>,
+    pub id:    DocId,
+}
+
+impl DocRes {
+    fn with<T>(&self, f: impl FnOnce(&mut SceneState) -> T) -> anyhow::Result<T> {
+        let mut state = self
+            .state
+            .lock()
+            .map_err(|_| anyhow::anyhow!("scene state poisoned"))?;
+        Ok(f(&mut state))
+    }
 }
 
 async fn get_doc(api: &Api, rep: u32) -> anyhow::Result<DocRes> {
@@ -55,7 +75,7 @@ async fn get_doc(api: &Api, rep: u32) -> anyhow::Result<DocRes> {
 }
 
 pub async fn id(api: &Api, rep: u32) -> anyhow::Result<Vec<u8>> {
-    Ok(get_doc(api, rep).await?.id.as_bytes().to_vec())
+    Ok(get_doc(api, rep).await?.id.0.to_vec())
 }
 
 pub async fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
@@ -77,13 +97,13 @@ fn insert_prims(
     scene: &mut MutexGuard<'_, WiredSceneApi>,
     quota: &Arc<Quota>,
     doc: &DocRes,
-    ids: Vec<TreeID>,
+    ids: Vec<PrimId>,
 ) -> Result<Vec<u32>, QuotaError> {
     ids.into_iter()
         .map(|id| {
             scene.prims.insert(
                 PrimRes {
-                    doc: Arc::clone(&doc.doc),
+                    state: Arc::clone(&doc.state),
                     doc_id: doc.id,
                     id,
                     is_proxy: false,
@@ -96,35 +116,32 @@ fn insert_prims(
 
 pub async fn roots(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
     let doc = get_doc(api, rep).await?;
-    let tree = doc.doc.get_tree(&*HSD_CONTAINER_ID);
-    let roots = tree.roots();
+    let roots = doc.with(|state| state.roots())?;
     let mut scene = api.wired_scene.lock().await;
     Ok(insert_prims(&mut scene, &api.quota, &doc, roots)?)
 }
 
 pub async fn prims(api: &Api, rep: u32) -> anyhow::Result<Vec<u32>> {
     let doc = get_doc(api, rep).await?;
-    let tree = doc.doc.get_tree(&*HSD_CONTAINER_ID);
-    let nodes = tree.nodes();
+    let all = doc.with(|state| state.prims().collect::<Vec<_>>())?;
     let mut scene = api.wired_scene.lock().await;
-    Ok(insert_prims(&mut scene, &api.quota, &doc, nodes)?)
+    Ok(insert_prims(&mut scene, &api.quota, &doc, all)?)
 }
 
 pub async fn get_prim(api: &Api, rep: u32, prim_id: String) -> anyhow::Result<Option<u32>> {
     let doc = get_doc(api, rep).await?;
-    let Ok(tree_id) = TreeID::try_from(prim_id.as_str()) else {
+    let Ok(id) = prim_id.parse::<PrimId>() else {
         return Ok(None);
     };
-    let tree = doc.doc.get_tree(&*HSD_CONTAINER_ID);
-    if !tree.contains(tree_id) {
+    if !doc.with(|state| state.is_realized(id))? {
         return Ok(None);
     }
     let mut scene = api.wired_scene.lock().await;
     Ok(Some(scene.prims.insert(
         PrimRes {
-            doc:      doc.doc,
-            doc_id:   doc.id,
-            id:       tree_id,
+            state: doc.state,
+            doc_id: doc.id,
+            id,
             is_proxy: false,
         },
         &api.quota,
@@ -137,17 +154,15 @@ pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
     api.quota.spend(Flow::CreatePrim, 1.0)?;
     let quota = document_quota(doc.id);
     quota.try_charge(Stock::Prims, 1)?;
-    let tree = doc.doc.get_tree(&*HSD_CONTAINER_ID);
-    let tree_id = tree
-        .create(TreeParentId::Root)
-        .inspect_err(|_| quota.release(Stock::Prims, 1))?;
+
+    let id = doc.with(|state| state.create_prim(None))?;
 
     let mut scene = api.wired_scene.lock().await;
     match scene.prims.insert(
         PrimRes {
-            doc:      doc.doc,
-            doc_id:   doc.id,
-            id:       tree_id,
+            state: Arc::clone(&doc.state),
+            doc_id: doc.id,
+            id,
             is_proxy: false,
         },
         &api.quota,
@@ -155,7 +170,7 @@ pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
         Ok(rep) => Ok(rep),
         Err(err) => {
             drop(scene);
-            tree.delete(tree_id).ok();
+            doc.with(|state| state.remove_prim(id))?;
             quota.release(Stock::Prims, 1);
             Err(err.into())
         }
@@ -207,10 +222,99 @@ pub async fn remove_prim(api: &Api, prim_rep: u32) -> anyhow::Result<()> {
         return Ok(());
     }
     validate_firewall(&api.doc_id, &prim.doc_id, Channel::SceneWrite)?;
-    let tree = prim.doc.get_tree(&*HSD_CONTAINER_ID);
-    let before = tree.nodes().len();
-    tree.delete(prim.id)?;
-    let removed = before.saturating_sub(tree.nodes().len()) as u64;
+
+    let mut state = prim
+        .state
+        .lock()
+        .map_err(|_| anyhow::anyhow!("scene state poisoned"))?;
+    let before = state.prims().count();
+    state.remove_prim(prim.id);
+    let removed = before.saturating_sub(state.prims().count()) as u64;
+    drop(state);
+
     document_quota(prim.doc_id).release(Stock::Prims, removed);
     Ok(())
+}
+
+/// Anchoring is per-peer runtime state, so it is applied to the world and
+/// never written to the document.
+pub async fn set_anchor(api: &Api, rep: u32, target: Option<u32>) -> anyhow::Result<()> {
+    let doc = get_doc(api, rep).await?;
+    validate_firewall(&api.doc_id, &doc.id, Channel::SceneWrite)?;
+
+    let target = match target {
+        Some(target_rep) => {
+            let prim = api
+                .wired_scene
+                .lock()
+                .await
+                .prims
+                .get(target_rep)
+                .cloned()
+                .ok_or_else(|| anyhow::anyhow!("invalid prim rep: {target_rep}"))?;
+            Some((prim.doc_id, prim.id))
+        }
+        None => None,
+    };
+
+    let id = doc.id;
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let Some(doc_ent) = find_doc(world, id) else {
+                return;
+            };
+            let target_ent = target.and_then(|(doc, prim)| find_prim(world, doc, prim));
+            if target.is_some() && target_ent.is_none() {
+                return;
+            }
+            let offset = world
+                .get::<DocAnchor>(doc_ent)
+                .map_or_else(Transform::default, |a| a.offset);
+            world.entity_mut(doc_ent).insert(DocAnchor {
+                target: target_ent,
+                offset,
+            });
+        })
+        .send()
+        .await?;
+    Ok(())
+}
+
+pub async fn set_offset(api: &Api, rep: u32, value: XformValue) -> anyhow::Result<()> {
+    let doc = get_doc(api, rep).await?;
+    validate_firewall(&api.doc_id, &doc.id, Channel::SceneWrite)?;
+
+    let id = doc.id;
+    let offset = Transform {
+        translation: Vec3::from_array(value.translation),
+        rotation:    Quat::from_array(value.rotation),
+        scale:       Vec3::from_array(value.scale),
+    };
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let Some(doc_ent) = find_doc(world, id) else {
+                return;
+            };
+            let target = world.get::<DocAnchor>(doc_ent).and_then(|a| a.target);
+            world
+                .entity_mut(doc_ent)
+                .insert(DocAnchor { target, offset });
+        })
+        .send()
+        .await?;
+    Ok(())
+}
+
+fn find_doc(world: &mut World, id: DocId) -> Option<Entity> {
+    world
+        .query::<(Entity, &HsdDocId)>()
+        .iter(world)
+        .find_map(|(e, d)| (d.0 == id).then_some(e))
+}
+
+fn find_prim(world: &mut World, doc: DocId, prim: PrimId) -> Option<Entity> {
+    let doc_ent = find_doc(world, doc)?;
+    world
+        .get::<HsdPrimIndex>(doc_ent)
+        .and_then(|index| index.0.get(&prim).copied())
 }

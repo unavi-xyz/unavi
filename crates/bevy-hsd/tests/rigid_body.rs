@@ -8,22 +8,9 @@ use avian3d::prelude::{
 };
 use bevy::prelude::*;
 use bevy_hsd::attributes::collider::DisabledRigidBody;
-use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
-    attributes::{
-        Attribute,
-        Attributes,
-        attributes_map,
-        rigid_body::{
-            RigidBodyAttr,
-            RigidBodyKind,
-        },
-    },
-};
-use loro_surgeon::{
-    Reconcile,
-    reconcile::RootReconciler,
+use hsd::attributes::rigid_body::{
+    RigidBodyAttr,
+    RigidBodyKind,
 };
 use rstest::rstest;
 use tracing_test::traced_test;
@@ -35,19 +22,15 @@ mod common;
 #[traced_test]
 #[rstest]
 fn test_rigid_body_lifecycle(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
-
-    reconcile_rigid_body(
-        &meta,
-        RigidBodyAttr {
+    let root = ctx.create_prim();
+    ctx.set_attr(
+        root,
+        &RigidBodyAttr {
             kind: Some(RigidBodyKind::Dynamic),
             ..Default::default()
         },
     );
 
-    ctx.doc.commit();
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -55,10 +38,7 @@ fn test_rigid_body_lifecycle(mut ctx: TestContext) {
     let rb = q.iter(world).next().expect("RigidBody expected");
     assert!(rb.is_dynamic());
 
-    let attrs = attributes_map(&meta).expect("attributes map");
-    attrs.delete(RigidBodyAttr::KEY).expect("delete");
-
-    ctx.doc.commit();
+    ctx.remove_attr::<RigidBodyAttr>(root);
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -72,27 +52,24 @@ fn test_rigid_body_lifecycle(mut ctx: TestContext) {
 #[traced_test]
 #[rstest]
 fn test_rigid_body_kinds(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-
-    let static_prim = tree.create(None).expect("create");
-    reconcile_rigid_body(
-        &tree.get_meta(static_prim).expect("meta"),
-        RigidBodyAttr {
+    let static_prim = ctx.create_prim();
+    ctx.set_attr(
+        static_prim,
+        &RigidBodyAttr {
             kind: Some(RigidBodyKind::Static),
             ..Default::default()
         },
     );
 
-    let kinematic_prim = tree.create(None).expect("create");
-    reconcile_rigid_body(
-        &tree.get_meta(kinematic_prim).expect("meta"),
-        RigidBodyAttr {
+    let kinematic_prim = ctx.create_prim();
+    ctx.set_attr(
+        kinematic_prim,
+        &RigidBodyAttr {
             kind: Some(RigidBodyKind::Kinematic),
             ..Default::default()
         },
     );
 
-    ctx.doc.commit();
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -109,13 +86,10 @@ fn test_rigid_body_kinds(mut ctx: TestContext) {
 #[traced_test]
 #[rstest]
 fn test_rigid_body_props(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
-
-    reconcile_rigid_body(
-        &meta,
-        RigidBodyAttr {
+    let root = ctx.create_prim();
+    ctx.set_attr(
+        root,
+        &RigidBodyAttr {
             kind:            Some(RigidBodyKind::Dynamic),
             friction:        Some(0.5),
             restitution:     Some(0.3),
@@ -125,7 +99,6 @@ fn test_rigid_body_props(mut ctx: TestContext) {
         },
     );
 
-    ctx.doc.commit();
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -154,22 +127,17 @@ fn test_rigid_body_props(mut ctx: TestContext) {
 #[traced_test]
 #[rstest]
 fn test_rigid_body_invalid_mass(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-
     for bad_mass in [0.0_f64, -1.0, f64::NAN] {
-        let root = tree.create(None).expect("create");
-        let meta = tree.get_meta(root).expect("get meta");
-
-        reconcile_rigid_body(
-            &meta,
-            RigidBodyAttr {
+        let root = ctx.create_prim();
+        ctx.set_attr(
+            root,
+            &RigidBodyAttr {
                 kind: Some(RigidBodyKind::Dynamic),
                 mass: Some(bad_mass),
                 ..Default::default()
             },
         );
 
-        ctx.doc.commit();
         ctx.app.update();
 
         let world = ctx.app.world_mut();
@@ -191,19 +159,15 @@ fn test_rigid_body_invalid_mass(mut ctx: TestContext) {
 #[traced_test]
 #[rstest]
 fn test_rigid_body_invalid_transform_does_not_panic(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
-
-    reconcile_rigid_body(
-        &meta,
-        RigidBodyAttr {
+    let root = ctx.create_prim();
+    ctx.set_attr(
+        root,
+        &RigidBodyAttr {
             kind: Some(RigidBodyKind::Dynamic),
             ..Default::default()
         },
     );
 
-    ctx.doc.commit();
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -246,16 +210,4 @@ fn test_rigid_body_invalid_transform_does_not_panic(mut ctx: TestContext) {
         world.entity(prim_ent).get::<DisabledRigidBody>().is_none(),
         "DisabledRigidBody should be removed after restore"
     );
-}
-
-fn reconcile_rigid_body(meta: &loro::LoroMap, attr: RigidBodyAttr) {
-    let prim = PrimMeta {
-        attributes: Some(Attributes {
-            rigid_body: Some(attr),
-            ..Default::default()
-        }),
-        ..Default::default()
-    };
-    prim.reconcile(RootReconciler::new(meta.clone()))
-        .expect("reconcile");
 }

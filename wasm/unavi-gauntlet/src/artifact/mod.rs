@@ -51,7 +51,7 @@ impl Artifact {
         let doc = self_document().expect("self_document");
 
         let core = Cuboid::new(Vec3::splat(CORE_SIZE)).mesh();
-        core.set_material(Some(&palette::solid(palette::ACCENT, 0.6)))
+        core.set_material(Some(palette::solid(palette::ACCENT, 0.6)))
             .ok();
         core.set_xform(Some(hidden())).ok();
         root.add_child(&core).ok();
@@ -59,7 +59,7 @@ impl Artifact {
         let orbiters = (0..ORBITERS)
             .map(|_| {
                 let prim = Cuboid::new(Vec3::splat(ORBITER_SIZE)).mesh();
-                prim.set_material(Some(&palette::solid(palette::ACCENT, 0.7)))
+                prim.set_material(Some(palette::solid(palette::ACCENT, 0.7)))
                     .ok();
                 prim.set_xform(Some(hidden())).ok();
                 root.add_child(&prim).ok();
@@ -77,10 +77,10 @@ impl Artifact {
 
     pub fn set_color(&self, color: Color) {
         self.core
-            .set_material(Some(&palette::solid(color, 0.6)))
+            .set_material(Some(palette::solid(color, 0.6)))
             .ok();
         for orbiter in &self.orbiters {
-            orbiter.set_material(Some(&palette::solid(color, 0.7))).ok();
+            orbiter.set_material(Some(palette::solid(color, 0.7))).ok();
         }
     }
 

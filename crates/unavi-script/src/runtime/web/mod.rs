@@ -37,17 +37,14 @@ impl ScriptInstance {
 
     pub async fn init(&self) {
         js_script_init(&self.instance).await;
-        self.runtime.api.doc.commit();
     }
 
     pub async fn update(&self) {
         js_script_update(&self.instance).await;
-        self.runtime.api.doc.commit();
     }
 
     pub async fn fixed_update(&self) {
         js_script_fixed_update(&self.instance).await;
-        self.runtime.api.doc.commit();
     }
 }
 

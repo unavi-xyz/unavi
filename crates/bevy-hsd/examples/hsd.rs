@@ -1,8 +1,3 @@
-use std::{
-    collections::BTreeMap,
-    sync::Arc,
-};
-
 use bevy::{
     light::{
         Atmosphere,
@@ -29,11 +24,9 @@ use bevy_wds::{
 };
 use bytemuck::cast_slice;
 use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
     attributes::{
-        Attributes,
         material::{
+            self,
             ColorVec,
             MaterialAttr,
         },
@@ -41,18 +34,21 @@ use hsd::{
             MeshAttr,
             Topology,
         },
+        slots,
         xform::XformAttr,
+    },
+    id::{
+        BlobId,
+        PrimId,
+    },
+    state::{
+        SceneState,
+        entry::BulkRef,
     },
 };
 use iroh_blobs::{
     api::blobs::Blobs,
     store::mem::MemStore,
-};
-use loro::LoroDoc;
-use loro_surgeon::{
-    Reconcile,
-    bytes::ByteArray,
-    reconcile::RootReconciler,
 };
 use unavi_util::async_task::spawn_async_task;
 
@@ -91,47 +87,18 @@ fn load_hsd(mut commands: Commands) {
     let (store, blobs) = spawn_mem_store();
     commands.spawn(LocalBlobs(blobs.clone()));
 
-    let doc = Arc::new(LoroDoc::new());
-    populate(&doc, &blobs);
+    let mut state = SceneState::new();
+    populate(&mut state, &blobs);
 
-    commands.spawn(Hsd(Arc::clone(&doc)));
+    commands.spawn(Hsd::new(state));
     commands.spawn(BlobStore(store));
 }
 
-fn populate(doc: &LoroDoc, blobs: &Blobs) {
-    let tree = doc.get_tree(&*HSD_CONTAINER_ID);
+fn populate(state: &mut SceneState, blobs: &Blobs) {
+    let red = material_prim(state, ColorVec(vec![0.9, 0.2, 0.15, 1.0]), 0.1, 0.35);
+    let blue = material_prim(state, ColorVec(vec![0.15, 0.4, 0.95, 1.0]), 0.8, 0.2);
 
-    let red = tree.create(None).expect("create red");
-    reconcile_prim(
-        &tree.get_meta(red).expect("red meta"),
-        Attributes {
-            material: Some(MaterialAttr {
-                base_color: Some(ColorVec(vec![0.9, 0.2, 0.15, 1.0])),
-                metallic: Some(0.1),
-                roughness: Some(0.35),
-                ..Default::default()
-            }),
-            ..Default::default()
-        },
-        None,
-    );
-
-    let blue = tree.create(None).expect("create blue");
-    reconcile_prim(
-        &tree.get_meta(blue).expect("blue meta"),
-        Attributes {
-            material: Some(MaterialAttr {
-                base_color: Some(ColorVec(vec![0.15, 0.4, 0.95, 1.0])),
-                metallic: Some(0.8),
-                roughness: Some(0.2),
-                ..Default::default()
-            }),
-            ..Default::default()
-        },
-        None,
-    );
-
-    let mesh_attr = build_cube_mesh_attr(blobs);
+    let buffers = cube_buffers(blobs);
 
     for (offset, target) in [
         (Vec3::new(-2.0, 0.0, 0.0), red),
@@ -140,78 +107,104 @@ fn populate(doc: &LoroDoc, blobs: &Blobs) {
         (Vec3::new(-1.0, 0.0, -2.0), blue),
         (Vec3::new(1.0, 0.0, -2.0), red),
     ] {
-        let prim = tree.create(None).expect("create cube");
-        reconcile_prim(
-            &tree.get_meta(prim).expect("cube meta"),
-            Attributes {
-                mesh: Some(mesh_attr.clone()),
-                xform: Some(XformAttr {
+        let prim = state.create_prim(None);
+        state
+            .set_attribute(
+                prim,
+                &MeshAttr {
+                    topology: Topology::TriangleList,
+                },
+            )
+            .expect("mesh");
+        state
+            .set_attribute(
+                prim,
+                &XformAttr {
                     rotation:    [0.0, 0.0, 0.0, 1.0],
                     scale:       [1.0, 1.0, 1.0],
                     translation: offset.to_array(),
-                }),
-                ..Default::default()
-            },
-            Some(BTreeMap::from([(
-                "material".to_string(),
-                target.to_string(),
-            )])),
-        );
-    }
+                },
+            )
+            .expect("xform");
+        state
+            .set_relationship(prim, material::BINDING, target)
+            .expect("binding");
 
-    doc.commit();
+        for (slot, value) in &buffers {
+            state.set_bulk(prim, slot, *value).expect("bulk");
+        }
+    }
 }
 
-fn build_cube_mesh_attr(blobs: &Blobs) -> MeshAttr {
+fn material_prim(
+    state: &mut SceneState,
+    base_color: ColorVec,
+    metallic: f64,
+    roughness: f64,
+) -> PrimId {
+    let prim = state.create_prim(None);
+    state
+        .set_attribute(
+            prim,
+            &MaterialAttr {
+                base_color: Some(base_color),
+                metallic: Some(metallic),
+                roughness: Some(roughness),
+                ..Default::default()
+            },
+        )
+        .expect("material");
+    prim
+}
+
+fn cube_buffers(blobs: &Blobs) -> Vec<(String, BulkRef)> {
     let cube = Cuboid::new(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE).mesh().build();
 
-    let mut attrs = BTreeMap::new();
-    let mut indices = None;
+    let mut out = Vec::new();
 
     if let Some(VertexAttributeValues::Float32x3(positions)) =
         cube.attribute(Mesh::ATTRIBUTE_POSITION)
     {
-        attrs.insert("POSITION".to_string(), upload(blobs, cast_slice(positions)));
+        out.push((
+            slots::mesh_attribute("POSITION"),
+            upload(blobs, cast_slice(positions)),
+        ));
     }
     if let Some(VertexAttributeValues::Float32x3(normals)) = cube.attribute(Mesh::ATTRIBUTE_NORMAL)
     {
-        attrs.insert("NORMAL".to_string(), upload(blobs, cast_slice(normals)));
+        out.push((
+            slots::mesh_attribute("NORMAL"),
+            upload(blobs, cast_slice(normals)),
+        ));
     }
     if let Some(VertexAttributeValues::Float32x2(uvs)) = cube.attribute(Mesh::ATTRIBUTE_UV_0) {
-        attrs.insert("UV_0".to_string(), upload(blobs, cast_slice(uvs)));
+        out.push((
+            slots::mesh_attribute("UV_0"),
+            upload(blobs, cast_slice(uvs)),
+        ));
     }
     if let Some(Indices::U32(idx)) = cube.indices() {
-        indices = Some(upload(blobs, cast_slice(idx)));
+        out.push((
+            slots::MESH_INDICES.to_owned(),
+            upload(blobs, cast_slice(idx)),
+        ));
     }
 
-    MeshAttr {
-        attributes: attrs,
-        indices,
-        topology: Topology::TriangleList,
-    }
+    out
 }
 
-fn upload(blobs: &Blobs, bytes: &[u8]) -> ByteArray<32> {
+fn upload(blobs: &Blobs, bytes: &[u8]) -> BulkRef {
     let hash = blake3::hash(bytes);
+    let size = bytes.len() as u64;
     let blobs = blobs.clone();
     let payload = bytes.to_vec();
     spawn_async_task(async move {
         blobs.add_slice(&payload).await.expect("add slice");
     });
-    ByteArray::<32>::new(*hash.as_bytes())
-}
-
-fn reconcile_prim(
-    meta: &loro::LoroMap,
-    attributes: Attributes,
-    relationships: Option<BTreeMap<String, String>>,
-) {
-    let prim = PrimMeta {
-        attributes: Some(attributes),
-        relationships,
-    };
-    prim.reconcile(RootReconciler::new(meta.clone()))
-        .expect("reconcile prim");
+    BulkRef {
+        hash: BlobId(*hash.as_bytes()),
+        size,
+    }
 }
 
 fn spawn_mem_store() -> (MemStore, Blobs) {

@@ -6,23 +6,27 @@ use std::{
 use bevy::prelude::*;
 use bevy_hsd::{
     HsdChild,
-    HsdNamespace,
+    HsdDocId,
     Prim,
 };
-use iroh_docs::NamespaceId;
-use loro::TreeID;
+use hsd::id::{
+    DocId,
+    PrimId,
+};
 use parking_lot::RwLock;
 
 pub static NODE_TRANSFORM_REGISTRY: LazyLock<RwLock<HashMap<AbsoluteNodeId, TransformSnapshot>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
-pub static DOC_ROOT_TRANSFORM_REGISTRY: LazyLock<RwLock<HashMap<NamespaceId, GlobalTransform>>> =
+pub static DOC_ROOT_TRANSFORM_REGISTRY: LazyLock<RwLock<HashMap<DocId, GlobalTransform>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+/// Keyed by document id rather than namespace: a prefab instance has an id
+/// from birth but no namespace at all.
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct AbsoluteNodeId {
-    pub doc:  NamespaceId,
-    pub node: TreeID,
+    pub doc:  DocId,
+    pub node: PrimId,
 }
 
 #[derive(Clone, Default)]
@@ -39,7 +43,7 @@ pub struct RegisterTransforms(pub AbsoluteNodeId);
 pub fn register_nodes(
     trigger: On<Add, Prim>,
     prims: Query<(&Prim, &HsdChild)>,
-    docs: Query<&HsdNamespace>,
+    docs: Query<&HsdDocId>,
     mut commands: Commands,
 ) {
     let Ok((prim, doc)) = prims.get(trigger.entity) else {
@@ -80,7 +84,7 @@ pub fn snapshot_transforms(
                 GlobalTransform::from(doc_global.affine().inverse() * global.affine())
             });
         reg.insert(
-            id.0.clone(),
+            id.0,
             TransformSnapshot {
                 global: doc_relative,
                 local:  *local,
@@ -98,7 +102,7 @@ pub fn deregister_transforms(
     NODE_TRANSFORM_REGISTRY.write().remove(&id.0);
 }
 
-pub fn snapshot_doc_roots(docs: Query<(&HsdNamespace, &GlobalTransform), With<bevy_hsd::Hsd>>) {
+pub fn snapshot_doc_roots(docs: Query<(&HsdDocId, &GlobalTransform), With<bevy_hsd::Hsd>>) {
     if docs.is_empty() {
         return;
     }
@@ -108,7 +112,7 @@ pub fn snapshot_doc_roots(docs: Query<(&HsdNamespace, &GlobalTransform), With<be
     }
 }
 
-pub fn deregister_doc_root(trigger: On<Remove, bevy_hsd::Hsd>, docs: Query<&HsdNamespace>) {
+pub fn deregister_doc_root(trigger: On<Remove, bevy_hsd::Hsd>, docs: Query<&HsdDocId>) {
     if let Ok(record) = docs.get(trigger.entity) {
         DOC_ROOT_TRANSFORM_REGISTRY.write().remove(&record.0);
     }

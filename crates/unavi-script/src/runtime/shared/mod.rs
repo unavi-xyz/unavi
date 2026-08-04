@@ -1,10 +1,12 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
-use iroh_docs::NamespaceId;
-use loro::{
-    LoroDoc,
-    TreeID,
+use hsd::{
+    id::{
+        DocId,
+        PrimId,
+    },
+    state::SceneState,
 };
 use tokio::sync::Mutex;
 use unavi_quota::Quota;
@@ -30,9 +32,9 @@ mod slot_map;
 pub mod wired;
 
 pub struct Api {
-    pub doc:         Arc<LoroDoc>,
-    pub doc_id:      NamespaceId,
-    pub prim:        TreeID,
+    pub state:       Arc<std::sync::Mutex<SceneState>>,
+    pub doc_id:      DocId,
+    pub prim:        PrimId,
     pub permissions: ApiPermissions,
     pub quota:       Arc<Quota>,
     pub wired_agent: Mutex<WiredAgentApi>,
@@ -68,7 +70,7 @@ impl Plugin for SharedRuntimePlugin {
         .add_observer(registry::agent::register_local_agent)
         .add_observer(registry::agent::deregister_agents)
         .add_observer(registry::firewall::register_docs)
-        .add_observer(registry::firewall::register_subdoc_firewall)
+        .add_observer(registry::firewall::register_instance_firewall)
         .add_observer(registry::firewall::deregister_firewalls)
         .add_observer(registry::quota::reassign_doc_quota)
         .add_observer(registry::quota::forget_space_quota)

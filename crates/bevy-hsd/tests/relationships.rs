@@ -1,18 +1,8 @@
-use std::collections::BTreeMap;
-
-use bevy::prelude::*;
 use bevy_hsd::{
     HsdPrimIndex,
     HsdRelationships,
 };
-use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
-};
-use loro_surgeon::{
-    Reconcile,
-    reconcile::RootReconciler,
-};
+use hsd::attributes::material;
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -20,26 +10,16 @@ use crate::common::*;
 
 mod common;
 
+/// A relationship and an attribute share one property namespace, so a reader
+/// classifies them by the payload's tag byte rather than by the name.
 #[traced_test]
 #[rstest]
 fn test_relationship_storage(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
+    let target = ctx.create_prim();
+    let source = ctx.create_prim();
 
-    let target = tree.create(None).expect("create target");
-    let source = tree.create(None).expect("create source");
-    let source_meta = tree.get_meta(source).expect("get meta");
+    ctx.set_relationship(source, material::BINDING, target);
 
-    let prim = PrimMeta {
-        relationships: Some(BTreeMap::from([(
-            "material".to_string(),
-            target.to_string(),
-        )])),
-        ..Default::default()
-    };
-    prim.reconcile(RootReconciler::new(source_meta.clone()))
-        .expect("reconcile");
-
-    ctx.doc.commit();
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -56,21 +36,19 @@ fn test_relationship_storage(mut ctx: TestContext) {
         .entity(source_ent)
         .get::<HsdRelationships>()
         .expect("relationships");
-    assert_eq!(rels.0.get("material"), Some(&target));
+    assert_eq!(rels.0.get(material::BINDING), Some(&target));
 
-    let source_rel_map = source_meta
-        .get("relationships")
-        .and_then(|v| match v {
-            loro::ValueOrContainer::Container(loro::Container::Map(m)) => Some(m),
-            _ => None,
-        })
-        .expect("relationships map");
-    source_rel_map.delete("material").expect("delete rel");
-
-    ctx.doc.commit();
+    ctx.remove_property(source, material::BINDING);
     ctx.app.update();
 
     let world = ctx.app.world_mut();
-    let has_rels = world.entity(source_ent).get::<HsdRelationships>().is_some();
-    assert!(!has_rels, "relationships component should be removed");
+    let rels = world
+        .entity(source_ent)
+        .get::<HsdRelationships>()
+        .expect("relationships");
+    assert!(
+        rels.0.is_empty(),
+        "relationship should be cleared: {:?}",
+        rels.0
+    );
 }

@@ -1,13 +1,12 @@
-use std::{
-    sync::Arc,
-    time::Duration,
-};
+use std::time::Duration;
 
 use async_channel::Receiver;
 use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
+    HsdDocId,
     HsdNamespace,
+    document,
 };
 use bevy_iroh::endpoint::IrohEndpoint;
 use bevy_wds::{
@@ -16,15 +15,18 @@ use bevy_wds::{
     SyncTargets,
     registry_clients,
 };
+use hsd::{
+    id::DocId,
+    key,
+    state::SceneState,
+};
 use iroh::{
     EndpointAddr,
     EndpointId,
 };
 use iroh_docs::NamespaceId;
-use loro::LoroDoc;
 use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
-use wds::snapshot;
 
 use crate::Space;
 
@@ -35,7 +37,7 @@ const READ_DELAY: Duration = Duration::from_secs(1);
 
 #[derive(Component)]
 pub struct PendingScene {
-    rx:      Receiver<LoroDoc>,
+    rx:      Receiver<SceneState>,
     _cancel: oneshot::Sender<()>,
 }
 
@@ -69,18 +71,27 @@ pub fn spawn_space_scene(
         let mut peers = sync_targets;
         peers.extend(occupant_peers(ns, self_id).await);
 
-        let fetch = snapshot::fetch(&docs, &blobs, ns, peers, READ_ATTEMPTS, READ_DELAY);
+        // Waiting on the prim prefix rather than a single snapshot key: the
+        // document is its entries now, and the first prim proves it arrived.
+        let fetch = wds::entries::fetch(
+            &docs,
+            ns,
+            peers,
+            key::PRIM_PREFIX,
+            READ_ATTEMPTS,
+            READ_DELAY,
+        );
         tokio::select! {
             () = async { cancel_rx.await.ok(); } => {}
             res = fetch => match res {
-                Ok(Some(bytes)) => {
-                    let doc = LoroDoc::new();
-                    if doc.import(&bytes).is_ok() {
-                        tx.send(doc).await.ok();
+                Ok(Some(doc)) => match document::read_state(&doc, &blobs).await {
+                    Ok(state) => {
+                        tx.send(state).await.ok();
                     }
-                }
-                Ok(None) => warn!(%ns, "space snapshot never arrived"),
-                Err(err) => error!(?err, "failed reading space snapshot"),
+                    Err(err) => error!(?err, "failed reading space entries"),
+                },
+                Ok(None) => warn!(%ns, "space document never arrived"),
+                Err(err) => error!(?err, "failed syncing space document"),
             },
         }
     });
@@ -122,14 +133,18 @@ pub fn instantiate_pending_scenes(
     mut commands: Commands,
 ) {
     for (entity, space, pending) in &pending {
-        let Ok(doc) = pending.rx.try_recv() else {
+        let Ok(state) = pending.rx.try_recv() else {
             continue;
         };
 
         info!(space = %space.0, "Instantiating scene");
         commands
             .entity(entity)
-            .insert((Hsd(Arc::new(doc)), HsdNamespace(space.0)))
+            .insert((
+                Hsd::new(state),
+                HsdDocId(DocId(*space.0.as_bytes())),
+                HsdNamespace(space.0),
+            ))
             .remove::<PendingScene>();
     }
 }

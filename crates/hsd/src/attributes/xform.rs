@@ -1,7 +1,3 @@
-use loro_surgeon::{
-    Hydrate,
-    Reconcile,
-};
 use serde::{
     Deserialize,
     Serialize,
@@ -19,15 +15,12 @@ const fn default_translation() -> [f32; 3] {
     [0.0, 0.0, 0.0]
 }
 
-#[derive(Hydrate, Reconcile, Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct XformAttr {
-    #[loro(default = "default_rotation")]
     #[serde(default = "default_rotation")]
     pub rotation:    [f32; 4],
-    #[loro(default = "default_scale")]
     #[serde(default = "default_scale")]
     pub scale:       [f32; 3],
-    #[loro(default = "default_translation")]
     #[serde(default = "default_translation")]
     pub translation: [f32; 3],
 }
@@ -43,5 +36,5 @@ impl Default for XformAttr {
 }
 
 impl Attribute for XformAttr {
-    const KEY: &str = "xform";
+    const KEY: &'static str = "xform";
 }

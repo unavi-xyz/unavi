@@ -12,32 +12,43 @@ use clap::{
     Parser,
 };
 use hsd_cli::{
-    build,
-    format,
+    compile,
+    dump,
+    hsda::Hsda,
 };
 
 #[derive(Parser, Debug)]
 #[command(version)]
 enum HsdCli {
     Build(Build),
+    Dump(Dump),
     Format(Format),
 }
 
-/// Compile an HSDX source into a flat output directory.
+/// Compile a `.hsda` source into a single `.hsdz` package.
 #[derive(Args, Debug)]
 struct Build {
-    /// Input HSDX file path
+    /// Input `.hsda` file path
     #[arg(short, long)]
     input:   PathBuf,
-    /// Output directory for the compiled HSD and WASM files
+    /// Output directory for the compiled `.hsdz`
     #[arg(short, long)]
     out_dir: PathBuf,
 }
 
-/// Pretty-print an HSD or HSDX file using RON pretty formatting.
+/// Print a compiled `.hsdz` as `.hsda`-shaped RON.
+///
+/// An inspection view, not source: compilation replaced paths with content.
+#[derive(Args, Debug)]
+struct Dump {
+    /// `.hsdz` file to inspect
+    input: PathBuf,
+}
+
+/// Pretty-print a `.hsda` source file in place.
 #[derive(Args, Debug)]
 struct Format {
-    /// HSD or HSDX file to format
+    /// `.hsda` file to format
     input: PathBuf,
 }
 
@@ -46,11 +57,28 @@ fn main() -> Result<()> {
         HsdCli::Build(Build { input, out_dir }) => {
             std::fs::create_dir_all(&out_dir)
                 .with_context(|| format!("creating {}", out_dir.display()))?;
+
+            let input_abs = std::fs::canonicalize(&input)
+                .with_context(|| format!("resolving {}", input.display()))?;
+
             let mut built = HashMap::new();
-            build::build_hsdx_to_hsd(&input, &out_dir, &mut built)?;
+            let package = compile::compile_file(&input_abs, &mut built)?;
+
+            let name = compile::output_name(&input_abs);
+            let out = out_dir.join(format!("{name}.{}", hsd::package::EXTENSION));
+            std::fs::write(&out, package.encode()?)
+                .with_context(|| format!("writing {}", out.display()))?;
+            println!("wrote {}", out.display());
+        }
+        HsdCli::Dump(Dump { input }) => {
+            println!("{}", dump::dump_file(&input)?);
         }
         HsdCli::Format(Format { input }) => {
-            format::format_file(&input)?;
+            let src = std::fs::read_to_string(&input)
+                .with_context(|| format!("reading {}", input.display()))?;
+            let hsda = Hsda::parse(&src).with_context(|| format!("parsing {}", input.display()))?;
+            std::fs::write(&input, hsda.to_ron()?)
+                .with_context(|| format!("writing {}", input.display()))?;
         }
     }
     Ok(())

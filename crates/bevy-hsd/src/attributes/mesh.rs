@@ -25,42 +25,26 @@ use bytemuck::{
     try_cast_slice,
 };
 use bytes::Bytes;
-use hsd::{
-    HSD_CONTAINER_ID,
-    attributes::{
-        Attribute,
-        hydrate_attr,
-        mesh::{
-            MeshAttr,
-            Topology,
-        },
+use hsd::attributes::{
+    Attribute,
+    mesh::{
+        MeshAttr,
+        Topology,
     },
-};
-use loro::{
-    ContainerID,
-    Index,
-    TreeID,
-    ValueOrContainer,
-    event::Diff,
+    slots,
 };
 use smol_str::SmolStr;
 
 use crate::{
+    HsdBulk,
     attributes::{
-        ApplyEvent,
-        AttrDataEvent,
         AttributeParser,
-        DocContext,
         ParseError,
-        util::shallow_map_updated_keys,
     },
-    diff::HsdDiffEvent,
 };
 
-#[derive(Debug)]
-pub enum MeshEvent {
-    Rebuild(MeshAttr),
-}
+#[derive(Component, Debug, Clone, Copy)]
+pub struct MeshData(pub MeshAttr);
 
 #[derive(Component)]
 pub struct MeshAttrName(pub SmolStr);
@@ -92,81 +76,67 @@ impl AttributeParser for MeshParser {
         &self,
         commands: &mut Commands,
         prim: Entity,
-        value: Option<ValueOrContainer>,
+        payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
-        if value.is_some() {
-            commands.entity(prim).insert(Mesh3d::default());
-        } else {
-            commands.entity(prim).remove::<(MeshBlobsChild, Mesh3d)>();
+        match payload {
+            Some(payload) => {
+                commands
+                    .entity(prim)
+                    .insert((MeshData(MeshAttr::decode(payload)?), Mesh3d::default()));
+            }
+            None => {
+                commands
+                    .entity(prim)
+                    .remove::<(MeshData, MeshBlobsChild, Mesh3d)>();
+            }
         }
-        Ok(())
-    }
-
-    fn parse(
-        &self,
-        ctx: &DocContext,
-        prim: TreeID,
-        path: &[(ContainerID, Index)],
-        diff: Diff,
-    ) -> Result<(), ParseError> {
-        let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-        let meta = tree.get_meta(prim)?;
-
-        let attr: MeshAttr = hydrate_attr(&meta)?;
-
-        let keys = shallow_map_updated_keys(path, diff)?;
-        if keys.is_empty() {
-            return Ok(());
-        }
-
-        ctx.tx
-            .send(HsdDiffEvent::AttrData {
-                prim,
-                data: AttrDataEvent::Mesh(MeshEvent::Rebuild(attr)),
-            })
-            .map_err(|_| ParseError::SendDiff)?;
         Ok(())
     }
 }
 
-pub fn apply_mesh(trigger: On<ApplyEvent<MeshEvent>>, mut commands: Commands) {
-    let prim = trigger.entity;
-    let MeshEvent::Rebuild(attr) = &trigger.value;
+/// Rebuilds on either half changing, since the topology attribute and the
+/// vertex buffers are separate entries and arrive in no particular order.
+pub fn rebuild_mesh(
+    changed: Query<(Entity, &MeshData, &HsdBulk), Or<(Changed<MeshData>, Changed<HsdBulk>)>>,
+    mut commands: Commands,
+) {
+    for (prim, data, bulk) in &changed {
+        commands.entity(prim).remove::<MeshBlobsChild>();
 
-    commands.entity(prim).remove::<MeshBlobsChild>();
+        let child = commands.spawn(MeshBlobsOwner(prim)).id();
 
-    let topology = topology_to_primitive(&attr.topology);
+        let attrs = bulk
+            .0
+            .iter()
+            .filter_map(|(slot, hash)| {
+                let name = slots::mesh_attribute_name(slot)?;
+                Some(
+                    commands
+                        .spawn((
+                            BlobDep(child),
+                            BlobRequest(blake3::Hash::from_bytes(hash.0)),
+                            MeshAttrName(SmolStr::new(name)),
+                        ))
+                        .id(),
+                )
+            })
+            .collect();
 
-    let child = commands.spawn(MeshBlobsOwner(prim)).id();
-
-    let attrs = attr
-        .attributes
-        .iter()
-        .map(|(name, hash)| {
+        let indices = bulk.0.get(slots::MESH_INDICES).map(|hash| {
             commands
                 .spawn((
                     BlobDep(child),
                     BlobRequest(blake3::Hash::from_bytes(hash.0)),
-                    MeshAttrName(SmolStr::new(name)),
                 ))
                 .id()
-        })
-        .collect();
+        });
 
-    let indices = attr.indices.as_ref().map(|hash| {
-        commands
-            .spawn((
-                BlobDep(child),
-                BlobRequest(blake3::Hash::from_bytes(hash.0)),
-            ))
-            .id()
-    });
-
-    commands.entity(child).insert(MeshBlobs {
-        topology,
-        attrs,
-        indices,
-    });
+        commands.entity(child).insert(MeshBlobs {
+            topology: topology_to_primitive(data.0.topology),
+            attrs,
+            indices,
+        });
+    }
 }
 
 pub fn on_mesh_blobs_loaded(
@@ -247,7 +217,7 @@ pub fn on_mesh_blobs_loaded(
     commands.entity(child).try_despawn();
 }
 
-const fn topology_to_primitive(t: &Topology) -> PrimitiveTopology {
+const fn topology_to_primitive(t: Topology) -> PrimitiveTopology {
     match t {
         Topology::PointList => PrimitiveTopology::PointList,
         Topology::LineList => PrimitiveTopology::LineList,

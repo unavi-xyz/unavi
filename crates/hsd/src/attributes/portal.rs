@@ -1,36 +1,29 @@
-use loro_surgeon::{
-    Hydrate,
-    Reconcile,
-    bytes::ByteArray,
-};
 use serde::{
     Deserialize,
     Serialize,
 };
 
-use crate::attributes::Attribute;
+use crate::{
+    attributes::Attribute,
+    id::{
+        DocId,
+        PrimId,
+    },
+};
 
-#[derive(Hydrate, Reconcile, Debug, Clone, Default, Serialize, Deserialize)]
-#[loro(default)]
-#[serde(default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PortalReceptor {
-    pub document: ByteArray<32>,
-    pub prim:     String,
+    pub document: DocId,
+    pub prim:     PrimId,
 }
 
-#[serde_with::skip_serializing_none]
-#[derive(Hydrate, Reconcile, Debug, Clone, Default, Serialize, Deserialize)]
-#[loro(default)]
-#[serde(default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct PortalDestination {
     pub receptor: Option<PortalReceptor>,
-    pub space:    ByteArray<32>,
+    pub space:    [u8; 32],
 }
 
-#[serde_with::skip_serializing_none]
-#[derive(Hydrate, Reconcile, Debug, Clone, Default, Serialize, Deserialize)]
-#[loro(default)]
-#[serde(default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 pub struct PortalAttr {
     pub destination: Option<PortalDestination>,
     pub size_x:      f64,
@@ -38,5 +31,5 @@ pub struct PortalAttr {
 }
 
 impl Attribute for PortalAttr {
-    const KEY: &str = "portal";
+    const KEY: &'static str = "portal";
 }

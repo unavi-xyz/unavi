@@ -1,0 +1,39 @@
+[
+    (
+        attributes: (
+            name: "gate",
+            script: "./Cargo.toml",
+        ),
+        relationships: {},
+        children: [
+            (
+                attributes: (
+                    name: "portal",
+                    xform: (
+                        translation: [
+                            0.0,
+                            1.3090171,
+                            0.0,
+                        ],
+                    ),
+                ),
+                relationships: {},
+                children: [],
+            ),
+            (
+                attributes: (
+                    name: "receptor",
+                    xform: (
+                        translation: [
+                            -1.618034,
+                            0.809017,
+                            0.0,
+                        ],
+                    ),
+                ),
+                relationships: {},
+                children: [],
+            ),
+        ],
+    ),
+]

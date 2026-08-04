@@ -17,7 +17,7 @@ pub fn spawn_portal_space(
     let Some(dest) = &portal.0.destination else {
         return;
     };
-    let id = NamespaceId::from(&dest.space.0);
+    let id = NamespaceId::from(&dest.space);
     if spaces.iter().any(|s| s.0 == id) {
         return;
     }

@@ -7,17 +7,17 @@ rm -rf $hsd_out
 mkdir $hsd_out
 
 let crates = ls $wasm_src | where type == "dir" | where {|d|
-    ($"($d.name)/asset.hsdx" | path exists)
+    ($"($d.name)/asset.hsda" | path exists)
 }
 
 for crate_dir in $crates {
     let crate = $crate_dir.name | path basename
     print $"→ ($crate)"
 
-    let hsdx = $"($crate_dir.name)/asset.hsdx"
+    let hsda = $"($crate_dir.name)/asset.hsda"
 
     let build = (cargo run --quiet -p hsd-cli --release -- build
-        --input $hsdx
+        --input $hsda
         --out-dir $hsd_out
         | complete)
     if $build.exit_code != 0 {
@@ -26,7 +26,7 @@ for crate_dir in $crates {
         }
     }
 
-    let fmt = (cargo run --quiet -p hsd-cli --release -- format $hsdx | complete)
+    let fmt = (cargo run --quiet -p hsd-cli --release -- format $hsda | complete)
     if $fmt.exit_code != 0 {
         error make {
             msg: $"HSD format failed for ($crate): ($fmt.stderr | str trim)"

@@ -24,27 +24,37 @@ use bevy::{
 };
 use bevy_hsd::{
     HsdChild,
-    HsdNamespace,
+    HsdDocId,
     HsdPrimIndex,
     Prim,
 };
+use hsd::id::{
+    DocId,
+    PrimId,
+};
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
-use loro::TreeID;
 
 use crate::{
     Space,
-    membership,
+    membership::{
+        self,
+    },
     state::replicas,
 };
+
+/// Replicas key by 32 opaque bytes, which a document id equally is.
+fn ns(id: DocId) -> NamespaceId {
+    NamespaceId::from(&id.0)
+}
 
 /// One owned dynamic prim's space-relative pose, queued for broadcast. Captured
 /// once per tick and cloned to each [`ObjectSender`].
 #[derive(Clone)]
 pub struct OutgoingObject {
-    pub doc:   NamespaceId,
-    pub space: NamespaceId,
-    pub prim:  TreeID,
+    pub doc:   DocId,
+    pub space: DocId,
+    pub prim:  PrimId,
     pub root:  Transform,
     pub lin:   Vec3,
     pub ang:   Vec3,
@@ -67,7 +77,7 @@ const OBJECT_TICKRATE: Duration = Duration::from_millis(200);
 pub fn send_object_poses(
     time: Res<Time>,
     spaces: Query<(&Space, &GlobalTransform)>,
-    roots: Query<&HsdNamespace>,
+    roots: Query<&HsdDocId>,
     prims: Query<(
         &Prim,
         &HsdChild,
@@ -83,7 +93,7 @@ pub fn send_object_poses(
 
     let space_origins = spaces
         .iter()
-        .map(|(space, gt)| (space.0, gt.translation()))
+        .map(|(space, gt)| (crate::membership::space_doc_id(space), gt.translation()))
         .collect::<HashMap<_, _>>();
 
     let outgoing = prims
@@ -94,7 +104,7 @@ pub fn send_object_poses(
             }
             let doc = roots.get(child_of.0).ok()?.0;
             let space = membership::doc_space(doc)?;
-            if !replicas::is_self_authority(space, doc) {
+            if !replicas::is_self_authority(ns(space), ns(doc)) {
                 return None;
             }
             let origin = space_origins.get(&space)?;
@@ -142,9 +152,9 @@ pub fn send_object_poses(
 }
 
 pub struct ResolvedObject {
-    pub doc:   NamespaceId,
-    pub space: NamespaceId,
-    pub prim:  TreeID,
+    pub doc:   DocId,
+    pub space: DocId,
+    pub prim:  PrimId,
     pub root:  Transform,
     pub lin:   Vec3,
     pub ang:   Vec3,
@@ -153,7 +163,7 @@ pub struct ResolvedObject {
 /// Latest update received per `(peer, doc, prim)`, so a peer can drive every
 /// prim of every document it owns independently.
 static OBJECT_INBOX: LazyLock<
-    Mutex<HashMap<(EndpointId, NamespaceId, TreeID), (Instant, ResolvedObject)>>,
+    Mutex<HashMap<(EndpointId, DocId, PrimId), (Instant, ResolvedObject)>>,
 > = LazyLock::new(|| Mutex::new(HashMap::default()));
 
 pub fn submit_object(peer: EndpointId, resolved: ResolvedObject) {
@@ -182,7 +192,7 @@ const MAX_EXTRAPOLATION: Duration = Duration::from_millis(300);
 const SMOOTH_RATE: f32 = 16.0;
 
 pub fn apply_remote_objects(
-    roots: Query<(&HsdNamespace, &HsdPrimIndex)>,
+    roots: Query<(&HsdDocId, &HsdPrimIndex)>,
     spaces: Query<(Entity, &Space)>,
     mut interps: Query<&mut ObjectInterp>,
     mut commands: Commands,
@@ -191,8 +201,8 @@ pub fn apply_remote_objects(
 
     for ((peer, doc, prim), (recv, resolved)) in updates {
         // Only the document's current authority may move it, and never ourselves.
-        if replicas::authority(resolved.space, doc) != Some(*peer.as_bytes())
-            || replicas::is_self_authority(resolved.space, doc)
+        if replicas::authority(ns(resolved.space), ns(doc)) != Some(*peer.as_bytes())
+            || replicas::is_self_authority(ns(resolved.space), ns(doc))
         {
             continue;
         }
@@ -203,7 +213,10 @@ pub fn apply_remote_objects(
         else {
             continue;
         };
-        let Some((space, _)) = spaces.iter().find(|(_, s)| s.0 == resolved.space) else {
+        let Some((space, _)) = spaces
+            .iter()
+            .find(|(_, s)| crate::membership::space_doc_id(s) == resolved.space)
+        else {
             continue;
         };
 
@@ -270,7 +283,7 @@ pub struct ReplicaObject;
 /// ours/unclaimed ones as dynamic. `replicas::authority` resolves the latest
 /// claim, so only the accepted controller drives a prim.
 pub fn reconcile_object_authority(
-    roots: Query<&HsdNamespace>,
+    roots: Query<&HsdDocId>,
     prims: Query<(Entity, &HsdChild, &RigidBody, Has<ReplicaObject>), With<Prim>>,
     mut commands: Commands,
 ) {
@@ -279,7 +292,8 @@ pub fn reconcile_object_authority(
             continue;
         };
         let remote_controlled = membership::doc_space(doc).is_some_and(|space| {
-            replicas::authority(space, doc).is_some() && !replicas::is_self_authority(space, doc)
+            replicas::authority(ns(space), ns(doc)).is_some()
+                && !replicas::is_self_authority(ns(space), ns(doc))
         });
 
         match (remote_controlled, is_replica) {

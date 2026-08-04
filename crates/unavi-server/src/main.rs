@@ -19,9 +19,9 @@ use unavi_server::{
 struct Args {
     /// Enable debug logging.
     #[arg(long, default_value_t = false)]
-    debug:    bool,
+    debug:       bool,
     #[arg(short, long, default_value_t = 5000)]
-    port:     u16,
+    port:        u16,
     /// Do not serve discovery: catalog, curated views, and live presence.
     #[arg(long, default_value_t = false)]
     no_registry: bool,
@@ -49,8 +49,7 @@ async fn main() {
 
     let registry = registry.with(
         EnvFilter::from_default_env()
-            .add_directive(level.to_string().parse().expect("valid directive"))
-            .add_directive("loro_internal=off".parse().expect("valid directive")),
+            .add_directive(level.to_string().parse().expect("valid directive")),
     );
 
     registry.init();

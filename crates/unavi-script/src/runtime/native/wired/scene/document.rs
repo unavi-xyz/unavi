@@ -8,7 +8,10 @@ use crate::{
             error::Error,
             scene::bindings::wired::{
                 math::types::Transform as WitTransform,
-                scene::types::HostDocument,
+                scene::types::{
+                    HostDocument,
+                    Xform as WitXform,
+                },
             },
         },
         shared::{
@@ -99,6 +102,45 @@ impl HostDocument for Runtime {
                 })
             })
             .map_err(wasmtime::Error::from_anyhow)
+    }
+
+    async fn set_anchor(
+        &mut self,
+        self_: Resource<DocRes>,
+        target: Option<Resource<PrimRes>>,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        let target = target.map(|t| t.rep());
+        Ok(
+            shared::wired::scene::document::set_anchor(&self.api, self_.rep(), target)
+                .await
+                .map_err(|e| ScriptError::from(e).into()),
+        )
+    }
+
+    async fn set_offset(
+        &mut self,
+        self_: Resource<DocRes>,
+        value: WitXform,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        let value = shared::wired::scene::document::XformValue {
+            translation: [
+                value.translation.x,
+                value.translation.y,
+                value.translation.z,
+            ],
+            rotation:    [
+                value.rotation.x,
+                value.rotation.y,
+                value.rotation.z,
+                value.rotation.w,
+            ],
+            scale:       [value.scale.x, value.scale.y, value.scale.z],
+        };
+        Ok(
+            shared::wired::scene::document::set_offset(&self.api, self_.rep(), value)
+                .await
+                .map_err(|e| ScriptError::from(e).into()),
+        )
     }
 
     async fn drop(&mut self, rep: Resource<DocRes>) -> wasmtime::Result<()> {

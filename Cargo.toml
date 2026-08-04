@@ -60,8 +60,6 @@ iroh                 = { default-features = false, features = ["tls-ring"], vers
 iroh-blobs           = { default-features = false, version = "0.103.0" }
 iroh-docs            = { default-features = false, version = "0.101.0" }
 iroh-gossip          = { default-features = false, version = "0.101.0" }
-loro                 = "1.10.8"
-loro-surgeon         = { path = "crates/loro-surgeon" }
 n0-future            = "0.3.2"
 parking_lot          = "0.12.5"
 postcard             = { features = ["experimental-derive", "use-std"], version = "1.1.3" }

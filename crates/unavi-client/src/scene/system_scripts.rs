@@ -3,11 +3,8 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::{
-    HsdNamespace,
-    load::{
-        LoadHsd,
-        on_load_spawn_doc,
-    },
+    HsdDocId,
+    load::LoadHsd,
 };
 use unavi_script::{
     firewall::{
@@ -19,8 +16,8 @@ use unavi_script::{
     quota::QuotaExempt,
 };
 
-const GAUNTLET_HSD: &str = "hsd/unavi_gauntlet.hsd";
-const TOOL_HSDS: &[&str] = &["hsd/unavi_spawner.hsd", "hsd/unavi_physgun.hsd"];
+const GAUNTLET_HSD: &str = "hsd/unavi_gauntlet.hsdz";
+const TOOL_HSDS: &[&str] = &["hsd/unavi_spawner.hsdz", "hsd/unavi_physgun.hsdz"];
 
 /// Updates the firewall with the record IDs of provided entities, once they
 /// load.
@@ -36,8 +33,7 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
             .spawn((
                 LoadHsd {
                     handle,
-                    extra: None,
-                    on_load: Some(Box::new(on_load_spawn_doc)),
+                    on_load: None,
                 },
                 ApiPermissions::system(),
                 QuotaExempt,
@@ -56,8 +52,7 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
             .spawn((
                 LoadHsd {
                     handle,
-                    extra: None,
-                    on_load: Some(Box::new(on_load_spawn_doc)),
+                    on_load: None,
                 },
                 ApiPermissions::system(),
                 QuotaExempt,
@@ -82,8 +77,8 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
 }
 
 pub fn populate_firewall_entities(
-    firewalls: Query<(Entity, &FirewallEntities, Option<&mut Firewall>), With<HsdNamespace>>,
-    ids: Query<&HsdNamespace>,
+    firewalls: Query<(Entity, &FirewallEntities, Option<&mut Firewall>), With<HsdDocId>>,
+    ids: Query<&HsdDocId>,
     mut commands: Commands,
 ) {
     for (ent, fw_ents, fw) in firewalls {

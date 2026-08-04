@@ -10,12 +10,11 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace       = true
-blake3.workspace       = true
-clap.workspace         = true
-hsd.path               = "../hsd"
-loro-surgeon.workspace = true
-ron                    = { features = ["indexmap"], workspace = true }
-serde                  = { features = ["derive"], workspace = true }
-serde_with.workspace   = true
-toml.workspace         = true
+anyhow.workspace     = true
+blake3.workspace     = true
+clap.workspace       = true
+hsd.path             = "../hsd"
+ron                  = { features = ["indexmap"], workspace = true }
+serde                = { features = ["derive"], workspace = true }
+serde_with.workspace = true
+toml.workspace       = true

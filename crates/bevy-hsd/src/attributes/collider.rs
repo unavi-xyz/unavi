@@ -21,43 +21,27 @@ use bytemuck::{
     try_cast_slice,
 };
 use bytes::Bytes;
-use hsd::{
-    HSD_CONTAINER_ID,
-    attributes::{
-        Attribute,
-        collider::ColliderAttr,
-        hydrate_attr,
-    },
-};
-use loro::{
-    ContainerID,
-    Index,
-    TreeID,
-    ValueOrContainer,
-    event::Diff,
+use hsd::attributes::{
+    Attribute,
+    collider::ColliderAttr,
+    slots,
 };
 
 use crate::{
+    HsdBulk,
     attributes::{
-        ApplyEvent,
-        AttrDataEvent,
         AttributeParser,
-        DocContext,
         ParseError,
         util::{
             compute_global_transform,
-            shallow_map_updated_keys,
             valid_nonneg,
             valid_positive,
         },
     },
-    diff::HsdDiffEvent,
 };
 
-#[derive(Debug)]
-pub enum ColliderEvent {
-    Rebuild(ColliderAttr),
-}
+#[derive(Component, Debug, Clone, Copy)]
+pub struct ColliderData(pub ColliderAttr);
 
 #[derive(Component)]
 pub struct HsdCollider;
@@ -90,106 +74,101 @@ impl AttributeParser for ColliderParser {
         &self,
         commands: &mut Commands,
         prim: Entity,
-        value: Option<ValueOrContainer>,
+        payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
-        if value.is_some() {
-            commands.entity(prim).insert(HsdCollider);
-        } else {
-            commands
-                .entity(prim)
-                .remove::<(HsdCollider, Collider, DisabledCollider, ColliderBlobsChild)>();
+        match payload {
+            Some(payload) => {
+                commands
+                    .entity(prim)
+                    .insert((ColliderData(ColliderAttr::decode(payload)?), HsdCollider));
+            }
+            None => {
+                commands.entity(prim).remove::<(
+                    ColliderData,
+                    HsdCollider,
+                    Collider,
+                    DisabledCollider,
+                    ColliderBlobsChild,
+                )>();
+            }
         }
-        Ok(())
-    }
-
-    fn parse(
-        &self,
-        ctx: &DocContext,
-        prim: TreeID,
-        path: &[(ContainerID, Index)],
-        diff: Diff,
-    ) -> Result<(), ParseError> {
-        let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-        let meta = tree.get_meta(prim)?;
-
-        let attr: ColliderAttr = hydrate_attr(&meta)?;
-
-        let keys = shallow_map_updated_keys(path, diff)?;
-        if keys.is_empty() {
-            return Ok(());
-        }
-
-        ctx.tx
-            .send(HsdDiffEvent::AttrData {
-                prim,
-                data: AttrDataEvent::Collider(ColliderEvent::Rebuild(attr)),
-            })
-            .map_err(|_| ParseError::SendDiff)?;
         Ok(())
     }
 }
 
-pub fn apply_collider(
-    trigger: On<ApplyEvent<ColliderEvent>>,
+pub fn rebuild_collider(
+    changed: Query<
+        (Entity, &ColliderData, Option<&HsdBulk>),
+        Or<(Changed<ColliderData>, Changed<HsdBulk>)>,
+    >,
     locals: Query<&Transform>,
     parents: Query<&ChildOf>,
     mut commands: Commands,
 ) {
-    let prim = trigger.entity;
-    let ColliderEvent::Rebuild(attr) = &trigger.value;
+    for (prim, data, bulk) in &changed {
+        commands.entity(prim).remove::<ColliderBlobsChild>();
 
-    commands.entity(prim).remove::<ColliderBlobsChild>();
+        let seed = compute_global_transform(prim, &locals, &parents);
+        let transform_valid = transform_is_valid(&seed);
 
-    let seed = compute_global_transform(prim, &locals, &parents);
-    let transform_valid = transform_is_valid(&seed);
+        let collider = match data.0 {
+            ColliderAttr::Sphere(r) => build_sphere(r),
+            ColliderAttr::Capsule { height, radius } => build_capsule(height, radius),
+            ColliderAttr::Cuboid { x, y, z } => build_cuboid(x, y, z),
+            ColliderAttr::Cylinder { height, radius } => build_cylinder(height, radius),
+            ColliderAttr::ConvexHull => {
+                let Some(hash) = bulk.and_then(|b| b.0.get(slots::COLLIDER_VERTICES)) else {
+                    continue;
+                };
+                let child = commands.spawn(ColliderBlobsOwner(prim)).id();
+                let points = commands
+                    .spawn((
+                        BlobDep(child),
+                        BlobRequest(blake3::Hash::from_bytes(hash.0)),
+                    ))
+                    .id();
+                commands
+                    .entity(child)
+                    .insert(ColliderBlobs(ColliderBlobKind::ConvexHull { points }));
+                continue;
+            }
+            ColliderAttr::Trimesh => {
+                let Some(bulk) = bulk else { continue };
+                let (Some(vertices), Some(indices)) = (
+                    bulk.0.get(slots::COLLIDER_VERTICES),
+                    bulk.0.get(slots::COLLIDER_INDICES),
+                ) else {
+                    continue;
+                };
+                let child = commands.spawn(ColliderBlobsOwner(prim)).id();
+                let vertex_ent = commands
+                    .spawn((
+                        BlobDep(child),
+                        BlobRequest(blake3::Hash::from_bytes(vertices.0)),
+                    ))
+                    .id();
+                let index_ent = commands
+                    .spawn((
+                        BlobDep(child),
+                        BlobRequest(blake3::Hash::from_bytes(indices.0)),
+                    ))
+                    .id();
+                commands
+                    .entity(child)
+                    .insert(ColliderBlobs(ColliderBlobKind::Trimesh {
+                        vertices: vertex_ent,
+                        indices:  index_ent,
+                    }));
+                continue;
+            }
+        };
 
-    let collider = match attr {
-        ColliderAttr::Sphere(r) => build_sphere(*r),
-        ColliderAttr::Capsule { height, radius } => build_capsule(*height, *radius),
-        ColliderAttr::Cuboid { x, y, z } => build_cuboid(*x, *y, *z),
-        ColliderAttr::Cylinder { height, radius } => build_cylinder(*height, *radius),
-        ColliderAttr::ConvexHull(hash) => {
-            let child = commands.spawn(ColliderBlobsOwner(prim)).id();
-            let points = commands
-                .spawn((
-                    BlobDep(child),
-                    BlobRequest(blake3::Hash::from_bytes(hash.0)),
-                ))
-                .id();
-            commands
-                .entity(child)
-                .insert(ColliderBlobs(ColliderBlobKind::ConvexHull { points }));
-            return;
-        }
-        ColliderAttr::Trimesh { vertices, indices } => {
-            let child = commands.spawn(ColliderBlobsOwner(prim)).id();
-            let vertex_ent = commands
-                .spawn((
-                    BlobDep(child),
-                    BlobRequest(blake3::Hash::from_bytes(vertices.0)),
-                ))
-                .id();
-            let index_ent = commands
-                .spawn((
-                    BlobDep(child),
-                    BlobRequest(blake3::Hash::from_bytes(indices.0)),
-                ))
-                .id();
-            commands
-                .entity(child)
-                .insert(ColliderBlobs(ColliderBlobKind::Trimesh {
-                    vertices: vertex_ent,
-                    indices:  index_ent,
-                }));
-            return;
-        }
-    };
-
-    if let Some(c) = collider {
-        if transform_valid {
-            insert_collider_with_seed(&mut commands, prim, c, &seed);
-        } else {
-            commands.entity(prim).insert(DisabledCollider(c));
+        if let Some(c) = collider {
+            if transform_valid {
+                insert_collider_with_seed(&mut commands, prim, c, &seed);
+            } else {
+                commands.entity(prim).insert(DisabledCollider(c));
+            }
         }
     }
 }

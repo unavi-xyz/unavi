@@ -5,8 +5,10 @@ use bevy::{
     math::Affine3A,
     prelude::*,
 };
-use iroh_docs::NamespaceId;
-use loro::TreeID;
+use hsd::id::{
+    DocId,
+    PrimId,
+};
 
 use crate::{
     clip::{
@@ -132,12 +134,12 @@ impl Default for SeamSize {
 pub const SEAM_DEPTH: f32 = 0.05;
 
 #[derive(Component, Clone, Copy)]
-pub struct SeamTargetDoc(pub NamespaceId);
+pub struct SeamTargetDoc(pub DocId);
 
 #[derive(Component, Clone, PartialEq, Eq)]
 pub struct SeamTargetReceptor {
-    pub document: NamespaceId,
-    pub prim:     TreeID,
+    pub document: DocId,
+    pub prim:     PrimId,
 }
 
 #[derive(Component, Default, Debug, PartialEq, Eq, Clone, Copy)]

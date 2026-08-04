@@ -14,7 +14,6 @@ use crate::{
                     Collider,
                     ColliderCapsule,
                     ColliderCylinder,
-                    ColliderTrimesh,
                     Color,
                     HostPrim,
                     Image,
@@ -175,69 +174,44 @@ const fn xform_shared(x: Xform) -> XformAttr {
     }
 }
 
-fn mesh_wit(m: PrimMesh) -> Mesh {
+const fn mesh_wit(m: PrimMesh) -> Mesh {
     Mesh {
-        topology:   topology_wit(m.topology),
-        attributes: m
-            .attributes
-            .into_iter()
-            .map(|(k, v)| (k, v.to_vec()))
-            .collect(),
-        indices:    m.indices.map(|b| b.to_vec()),
+        topology: topology_wit(m.topology),
     }
 }
 
-fn mesh_shared(m: Mesh) -> wasmtime::Result<PrimMesh> {
-    let attributes = m
-        .attributes
-        .into_iter()
-        .map(|(k, v)| to_blob_array(v).map(|b| (k, b)))
-        .collect::<wasmtime::Result<Vec<_>>>()?;
-    let indices = m.indices.map(to_blob_array).transpose()?;
-    Ok(PrimMesh {
+const fn mesh_shared(m: Mesh) -> PrimMesh {
+    PrimMesh {
         topology: topology_shared(m.topology),
-        attributes,
-        indices,
-    })
+    }
 }
 
 fn material_wit(m: PrimMaterial) -> Material {
     Material {
-        alpha_cutoff:               m.alpha_cutoff,
-        alpha_mode:                 m.alpha_mode.map(alpha_mode_wit),
-        base_color:                 m.base_color.map(color_wit),
-        base_color_texture:         m.base_color_texture,
-        double_sided:               m.double_sided,
-        emissive:                   m.emissive.map(color_wit),
-        emissive_texture:           m.emissive_texture,
-        metallic:                   m.metallic,
-        metallic_roughness_texture: m.metallic_roughness_texture,
-        normal_texture:             m.normal_texture,
-        occlusion_texture:          m.occlusion_texture,
-        roughness:                  m.roughness,
+        alpha_cutoff: m.alpha_cutoff,
+        alpha_mode:   m.alpha_mode.map(alpha_mode_wit),
+        base_color:   m.base_color.map(color_wit),
+        double_sided: m.double_sided,
+        emissive:     m.emissive.map(color_wit),
+        metallic:     m.metallic,
+        roughness:    m.roughness,
     }
 }
 
 fn material_shared(m: Material) -> PrimMaterial {
     PrimMaterial {
-        alpha_cutoff:               m.alpha_cutoff,
-        alpha_mode:                 m.alpha_mode.map(alpha_mode_shared),
-        base_color:                 m.base_color.map(color_shared),
-        base_color_texture:         m.base_color_texture,
-        double_sided:               m.double_sided,
-        emissive:                   m.emissive.map(color_shared),
-        emissive_texture:           m.emissive_texture,
-        metallic:                   m.metallic,
-        metallic_roughness_texture: m.metallic_roughness_texture,
-        normal_texture:             m.normal_texture,
-        occlusion_texture:          m.occlusion_texture,
-        roughness:                  m.roughness,
+        alpha_cutoff: m.alpha_cutoff,
+        alpha_mode:   m.alpha_mode.map(alpha_mode_shared),
+        base_color:   m.base_color.map(color_shared),
+        double_sided: m.double_sided,
+        emissive:     m.emissive.map(color_shared),
+        metallic:     m.metallic,
+        roughness:    m.roughness,
     }
 }
 
-fn image_wit(img: PrimImage) -> Image {
+const fn image_wit(img: PrimImage) -> Image {
     Image {
-        data:           img.data.to_vec(),
         address_mode_u: img.address_mode_u,
         address_mode_v: img.address_mode_v,
         address_mode_w: img.address_mode_w,
@@ -248,9 +222,8 @@ fn image_wit(img: PrimImage) -> Image {
     }
 }
 
-fn image_shared(img: Image) -> wasmtime::Result<PrimImage> {
-    Ok(PrimImage {
-        data:           to_blob_array(img.data)?,
+const fn image_shared(img: Image) -> PrimImage {
+    PrimImage {
         address_mode_u: img.address_mode_u,
         address_mode_v: img.address_mode_v,
         address_mode_w: img.address_mode_w,
@@ -258,46 +231,40 @@ fn image_shared(img: Image) -> wasmtime::Result<PrimImage> {
         min_filter:     img.min_filter,
         mipmap_filter:  img.mipmap_filter,
         srgb:           img.srgb,
-    })
+    }
 }
 
-fn collider_wit(c: PrimCollider) -> Collider {
+const fn collider_wit(c: PrimCollider) -> Collider {
     use crate::runtime::native::wired::scene::bindings::wired::math::types::Vec3;
     match c {
         PrimCollider::Capsule { height, radius } => {
             Collider::Capsule(ColliderCapsule { height, radius })
         }
-        PrimCollider::ConvexHull(hash) => Collider::ConvexHull(hash.to_vec()),
+        PrimCollider::ConvexHull => Collider::ConvexHull,
         PrimCollider::Cuboid([x, y, z]) => Collider::Cuboid(Vec3 { x, y, z }),
         PrimCollider::Cylinder { height, radius } => {
             Collider::Cylinder(ColliderCylinder { height, radius })
         }
         PrimCollider::Sphere(r) => Collider::Sphere(r),
-        PrimCollider::Trimesh { indices, vertices } => Collider::Trimesh(ColliderTrimesh {
-            indices:  indices.to_vec(),
-            vertices: vertices.to_vec(),
-        }),
+        PrimCollider::Trimesh => Collider::Trimesh,
     }
 }
 
-fn collider_shared(c: Collider) -> wasmtime::Result<PrimCollider> {
-    Ok(match c {
+const fn collider_shared(c: Collider) -> PrimCollider {
+    match c {
         Collider::Capsule(c) => PrimCollider::Capsule {
             height: c.height,
             radius: c.radius,
         },
-        Collider::ConvexHull(hash) => PrimCollider::ConvexHull(to_blob_array(hash)?),
+        Collider::ConvexHull => PrimCollider::ConvexHull,
         Collider::Cuboid(v) => PrimCollider::Cuboid([v.x, v.y, v.z]),
         Collider::Cylinder(c) => PrimCollider::Cylinder {
             height: c.height,
             radius: c.radius,
         },
         Collider::Sphere(r) => PrimCollider::Sphere(r),
-        Collider::Trimesh(t) => PrimCollider::Trimesh {
-            indices:  to_blob_array(t.indices)?,
-            vertices: to_blob_array(t.vertices)?,
-        },
-    })
+        Collider::Trimesh => PrimCollider::Trimesh,
+    }
 }
 
 fn portal_wit(p: PrimPortal) -> Portal {
@@ -430,19 +397,19 @@ impl HostPrim for Runtime {
         ))
     }
 
-    async fn asset(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Vec<u8>>> {
-        shared::wired::scene::prim::asset(&self.api, self_.rep())
+    async fn prefab(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Vec<u8>>> {
+        shared::wired::scene::prim::prefab(&self.api, self_.rep())
             .await
             .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn set_asset(
+    async fn set_prefab(
         &mut self,
         self_: Resource<PrimRes>,
         value: Option<Vec<u8>>,
     ) -> wasmtime::Result<Result<(), Error>> {
         Ok(lower(
-            shared::wired::scene::prim::set_asset(&self.api, self_.rep(), value).await,
+            shared::wired::scene::prim::set_prefab(&self.api, self_.rep(), value).await,
         ))
     }
 
@@ -508,7 +475,7 @@ impl HostPrim for Runtime {
         self_: Resource<PrimRes>,
         value: Option<Mesh>,
     ) -> wasmtime::Result<Result<(), Error>> {
-        let shared_mesh = value.map(mesh_shared).transpose()?;
+        let shared_mesh = value.map(mesh_shared);
         Ok(lower(
             shared::wired::scene::prim::set_mesh(&self.api, self_.rep(), shared_mesh).await,
         ))
@@ -532,6 +499,36 @@ impl HostPrim for Runtime {
     ) -> wasmtime::Result<Result<(), Error>> {
         Ok(lower(
             shared::wired::scene::prim::set_mesh_indices_u32(&self.api, self_.rep(), values).await,
+        ))
+    }
+
+    async fn set_collider_vertices(
+        &mut self,
+        self_: Resource<PrimRes>,
+        values: Option<Vec<f32>>,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        Ok(lower(
+            shared::wired::scene::prim::set_collider_vertices(&self.api, self_.rep(), values).await,
+        ))
+    }
+
+    async fn set_collider_indices(
+        &mut self,
+        self_: Resource<PrimRes>,
+        values: Option<Vec<u32>>,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        Ok(lower(
+            shared::wired::scene::prim::set_collider_indices(&self.api, self_.rep(), values).await,
+        ))
+    }
+
+    async fn set_image_data(
+        &mut self,
+        self_: Resource<PrimRes>,
+        bytes: Option<Vec<u8>>,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        Ok(lower(
+            shared::wired::scene::prim::set_image_data(&self.api, self_.rep(), bytes).await,
         ))
     }
 
@@ -569,7 +566,7 @@ impl HostPrim for Runtime {
         self_: Resource<PrimRes>,
         value: Option<Image>,
     ) -> wasmtime::Result<Result<(), Error>> {
-        let shared_img = value.map(image_shared).transpose()?;
+        let shared_img = value.map(image_shared);
         Ok(lower(
             shared::wired::scene::prim::set_image(&self.api, self_.rep(), shared_img).await,
         ))
@@ -587,7 +584,7 @@ impl HostPrim for Runtime {
         self_: Resource<PrimRes>,
         value: Option<Collider>,
     ) -> wasmtime::Result<Result<(), Error>> {
-        let shared_c = value.map(collider_shared).transpose()?;
+        let shared_c = value.map(collider_shared);
         Ok(lower(
             shared::wired::scene::prim::set_collider(&self.api, self_.rep(), shared_c).await,
         ))

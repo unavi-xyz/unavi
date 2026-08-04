@@ -10,11 +10,9 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace       = true
-loro.workspace         = true
-loro-surgeon.workspace = true
-ron.workspace          = true
-serde                  = { features = ["derive"], workspace = true }
-serde_with.workspace   = true
-smol_str.workspace     = true
-tracing.workspace      = true
+blake3.workspace    = true
+postcard.workspace  = true
+rand.workspace      = true
+serde               = { features = ["derive"], workspace = true }
+smol_str.workspace  = true
+thiserror.workspace = true

@@ -1,18 +1,5 @@
 use bevy::prelude::*;
-use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
-    attributes::{
-        Attribute,
-        Attributes,
-        attributes_map,
-        xform::XformAttr,
-    },
-};
-use loro_surgeon::{
-    Reconcile,
-    reconcile::RootReconciler,
-};
+use hsd::attributes::xform::XformAttr;
 use rstest::rstest;
 use tracing_test::traced_test;
 
@@ -23,26 +10,15 @@ mod common;
 #[traced_test]
 #[rstest]
 fn test_xform_lifecycle(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
+    let root = ctx.create_prim();
 
     let attr = XformAttr {
         rotation:    [0.4, 0.5, 0.6, 0.9],
         scale:       [0.9, 0.8, 0.7],
         translation: [1.0, 2.0, 3.0],
     };
-    let prim = PrimMeta {
-        attributes: Some(Attributes {
-            xform: Some(attr.clone()),
-            ..Default::default()
-        }),
-        ..Default::default()
-    };
-    prim.reconcile(RootReconciler::new(meta.clone()))
-        .expect("reconcile");
+    ctx.set_attr(root, &attr);
 
-    ctx.doc.commit();
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -52,14 +28,20 @@ fn test_xform_lifecycle(mut ctx: TestContext) {
     assert_eq!(res.len(), 1);
 
     let out = res[0];
-    assert_eq!(out.rotation.to_array().to_vec(), attr.rotation);
-    assert_eq!(out.scale.to_array().to_vec(), attr.scale);
-    assert_eq!(out.translation.to_array().to_vec(), attr.translation);
+    assert!(
+        out.rotation
+            .abs_diff_eq(Quat::from_array(attr.rotation), f32::EPSILON)
+    );
+    assert!(
+        out.scale
+            .abs_diff_eq(Vec3::from_array(attr.scale), f32::EPSILON)
+    );
+    assert!(
+        out.translation
+            .abs_diff_eq(Vec3::from_array(attr.translation), f32::EPSILON)
+    );
 
-    let attrs = attributes_map(&meta).expect("attributes map");
-    attrs.delete(XformAttr::KEY).expect("delete");
-
-    ctx.doc.commit();
+    ctx.remove_attr::<XformAttr>(root);
     ctx.app.update();
 
     // `Prim` requires `Transform`, so removing the xform attr resets the prim to

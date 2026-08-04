@@ -10,13 +10,18 @@ use bevy_hsd::{
     HsdNamespace,
     HsdPrimIndex,
 };
-use hsd::HSD_CONTAINER_ID;
-use iroh_docs::NamespaceId;
-use loro::{
-    LoroTree,
-    LoroValue,
-    TreeID,
+use hsd::{
+    attributes::{
+        Attribute,
+        name::NameAttr,
+    },
+    id::{
+        DocId,
+        PrimId,
+    },
+    state::SceneState,
 };
+use iroh_docs::NamespaceId;
 
 use crate::{
     Space,
@@ -179,8 +184,8 @@ impl InspectData<'_, '_> {
         let mut docs = membership::DOC_SPACE_REGISTRY
             .read()
             .iter()
-            .filter(|(_, s)| **s == space)
-            .map(|(d, _)| *d)
+            .filter(|(_, s)| s.0 == *space.as_bytes())
+            .map(|(d, _)| NamespaceId::from(&d.0))
             .collect::<Vec<_>>();
         for d in snap
             .peers
@@ -232,7 +237,7 @@ impl InspectData<'_, '_> {
     }
 
     fn doc_model(&self, doc: NamespaceId, snap: &debug::DebugSnapshot) -> DocModel {
-        let space = membership::doc_space(doc);
+        let space = membership::doc_space(DocId(*doc.as_bytes())).map(|s| NamespaceId::from(&s.0));
         let mut pinned_by = snap
             .peers
             .iter()
@@ -267,7 +272,12 @@ impl InspectData<'_, '_> {
             prims: entity.and_then(|(.., prims, _)| prims),
             parent: entity.and_then(|(e, ..)| self.parent_doc(e)),
             subdocs,
-            tree: entity.and_then(|(e, ..)| self.hsds.get(e).ok().map(|hsd| hsd_tree_text(&hsd.0))),
+            tree: entity.and_then(|(e, ..)| {
+                self.hsds
+                    .get(e)
+                    .ok()
+                    .and_then(|hsd| hsd.0.lock().ok().map(|state| hsd_tree_text(&state)))
+            }),
         }
     }
 
@@ -335,12 +345,11 @@ fn merged_kv(doc: NamespaceId, snap: &debug::DebugSnapshot) -> Vec<MergedKv> {
     cells
 }
 
-fn hsd_tree_text(doc: &loro::LoroDoc) -> String {
-    let tree = doc.get_tree(&*HSD_CONTAINER_ID);
+fn hsd_tree_text(state: &SceneState) -> String {
     let mut out = String::new();
     let mut budget = HSD_TREE_MAX_PRIMS;
-    for root in tree.roots() {
-        walk_prim(&tree, root, 0, &mut out, &mut budget);
+    for root in state.roots() {
+        walk_prim(state, root, 0, &mut out, &mut budget);
     }
     if budget == 0 {
         let _ = write!(out, "…");
@@ -351,36 +360,32 @@ fn hsd_tree_text(doc: &loro::LoroDoc) -> String {
     out
 }
 
-fn walk_prim(tree: &LoroTree, id: TreeID, depth: usize, out: &mut String, budget: &mut usize) {
+fn walk_prim(state: &SceneState, id: PrimId, depth: usize, out: &mut String, budget: &mut usize) {
     if *budget == 0 {
         return;
     }
     *budget -= 1;
-    let (name, attrs) = tree
-        .get_meta(id)
-        .map(|m| prim_summary(&m.get_deep_value()))
-        .unwrap_or_default();
+    let (name, attrs) = prim_summary(state, id);
     let _ = writeln!(out, "{:indent$}{name} [{attrs}]", "", indent = depth * 2);
-    for child in tree.children(id).unwrap_or_default() {
-        walk_prim(tree, child, depth + 1, out, budget);
+    for child in state.children(id) {
+        walk_prim(state, child, depth + 1, out, budget);
     }
 }
 
-fn prim_summary(meta: &LoroValue) -> (String, String) {
+fn prim_summary(state: &SceneState, id: PrimId) -> (String, String) {
     let mut name = "prim".to_string();
     let mut keys = Vec::new();
-    if let LoroValue::Map(meta) = meta
-        && let Some(LoroValue::Map(attrs)) = meta.get("attributes")
-    {
-        for (key, value) in attrs.iter() {
-            if key == "name"
-                && let LoroValue::String(s) = value
-            {
-                name = format!("{:?}", s.as_str());
+    if let Some(prim) = state.get(id) {
+        for (key, _) in prim.properties() {
+            if key == NameAttr::KEY {
+                if let Some(Ok(n)) = state.attribute::<NameAttr>(id) {
+                    name = format!("{:?}", n.0);
+                }
                 continue;
             }
-            keys.push(key.clone());
+            keys.push(key.to_string());
         }
+        keys.extend(prim.bulk_slots().map(|(slot, _)| slot.to_string()));
         keys.sort_unstable();
     }
     (name, keys.join(", "))

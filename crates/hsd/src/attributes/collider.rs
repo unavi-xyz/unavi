@@ -1,8 +1,3 @@
-use loro_surgeon::{
-    Hydrate,
-    Reconcile,
-    bytes::ByteArray,
-};
 use serde::{
     Deserialize,
     Serialize,
@@ -10,29 +5,18 @@ use serde::{
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug, Clone, Serialize, Deserialize)]
+/// `ConvexHull` and `Trimesh` read their buffers from the `collider:vertices`
+/// and `collider:indices` bulk entries.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum ColliderAttr {
-    Capsule {
-        height: f64,
-        radius: f64,
-    },
-    ConvexHull(ByteArray<32>),
-    Cuboid {
-        x: f64,
-        y: f64,
-        z: f64,
-    },
-    Cylinder {
-        height: f64,
-        radius: f64,
-    },
+    Capsule { height: f64, radius: f64 },
+    ConvexHull,
+    Cuboid { x: f64, y: f64, z: f64 },
+    Cylinder { height: f64, radius: f64 },
     Sphere(f64),
-    Trimesh {
-        indices:  ByteArray<32>,
-        vertices: ByteArray<32>,
-    },
+    Trimesh,
 }
 
 impl Attribute for ColliderAttr {
-    const KEY: &str = "collider";
+    const KEY: &'static str = "collider";
 }

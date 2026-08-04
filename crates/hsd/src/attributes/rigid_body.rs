@@ -1,7 +1,3 @@
-use loro_surgeon::{
-    Hydrate,
-    Reconcile,
-};
 use serde::{
     Deserialize,
     Serialize,
@@ -9,17 +5,15 @@ use serde::{
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RigidBodyKind {
     Dynamic,
     Kinematic,
+    #[default]
     Static,
 }
 
-#[serde_with::skip_serializing_none]
-#[derive(Hydrate, Reconcile, Debug, Clone, Default, Serialize, Deserialize)]
-#[loro(default)]
-#[serde(default)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 pub struct RigidBodyAttr {
     pub angular_damping: Option<f64>,
     pub friction:        Option<f64>,
@@ -30,5 +24,5 @@ pub struct RigidBodyAttr {
 }
 
 impl Attribute for RigidBodyAttr {
-    const KEY: &str = "rigid_body";
+    const KEY: &'static str = "rigid_body";
 }

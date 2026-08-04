@@ -12,12 +12,14 @@ use bevy::{
 };
 use bevy_hsd::{
     HsdChild,
-    HsdNamespace,
+    HsdDocId,
     HsdPrimIndex,
     Prim as HsdPrim,
 };
-use iroh_docs::NamespaceId;
-use loro::TreeID;
+use hsd::id::{
+    DocId,
+    PrimId,
+};
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
@@ -36,9 +38,9 @@ pub struct RayHit {
 fn resolve_doc(
     mut entity: Entity,
     children: &Query<&HsdChild>,
-    docs: &Query<&HsdNamespace>,
+    docs: &Query<&HsdDocId>,
     parents: &Query<&ChildOf>,
-) -> Option<NamespaceId> {
+) -> Option<DocId> {
     loop {
         if let Ok(child) = children.get(entity)
             && let Ok(rec) = docs.get(child.0)
@@ -69,7 +71,7 @@ pub async fn raycast(
                     move |spatial: SpatialQuery,
                           prims: Query<&HsdPrim>,
                           children: Query<&HsdChild>,
-                          docs: Query<&HsdNamespace>,
+                          docs: Query<&HsdDocId>,
                           parents: Query<&ChildOf>|
                           -> Option<RayHit> {
                         let origin_v = Vec3::from_array(origin);
@@ -82,11 +84,11 @@ pub async fn raycast(
                             &SpatialQueryFilter::default(),
                         )?;
                         let document = resolve_doc(hit.entity, &children, &docs, &parents)?;
-                        let tree = prims.get(hit.entity).ok()?.0;
+                        let hit_prim = prims.get(hit.entity).ok()?.0;
                         let point = origin_v + direction.as_vec3() * hit.distance;
                         Some(RayHit {
-                            document: document.as_bytes().to_vec(),
-                            prim:     tree.to_string(),
+                            document: document.0.to_vec(),
+                            prim:     hit_prim.to_string(),
                             point:    point.to_array(),
                             normal:   hit.normal.to_array(),
                             distance: hit.distance,
@@ -105,7 +107,7 @@ pub async fn raycast(
         .map_err(|err| ScriptError::other(err.to_string()))
 }
 
-async fn prim_ident(api: &Api, prim_rep: u32) -> Result<(NamespaceId, TreeID), ScriptError> {
+async fn prim_ident(api: &Api, prim_rep: u32) -> Result<(DocId, PrimId), ScriptError> {
     let scene = api.wired_scene.lock().await;
     let prim = scene
         .prims
@@ -116,11 +118,11 @@ async fn prim_ident(api: &Api, prim_rep: u32) -> Result<(NamespaceId, TreeID), S
     Ok(ident)
 }
 
-fn entity_for(world: &mut World, doc: NamespaceId, tree: TreeID) -> Option<Entity> {
-    let mut query = world.query::<(&HsdNamespace, &HsdPrimIndex)>();
+fn entity_for(world: &mut World, doc: DocId, prim: PrimId) -> Option<Entity> {
+    let mut query = world.query::<(&HsdDocId, &HsdPrimIndex)>();
     for (rec, index) in query.iter(world) {
         if rec.0 == doc {
-            return index.0.get(&tree).copied();
+            return index.0.get(&prim).copied();
         }
     }
     None
@@ -132,10 +134,10 @@ async fn set_velocity(
     v: [f32; 3],
     angular: bool,
 ) -> Result<(), ScriptError> {
-    let (doc, tree) = prim_ident(api, prim_rep).await?;
+    let (doc, prim_id) = prim_ident(api, prim_rep).await?;
     AsyncCommands::default()
         .push(move |world: &mut World| {
-            let Some(entity) = entity_for(world, doc, tree) else {
+            let Some(entity) = entity_for(world, doc, prim_id) else {
                 return;
             };
             if !matches!(world.get::<RigidBody>(entity), Some(RigidBody::Dynamic)) {
@@ -168,11 +170,11 @@ pub async fn set_angular_velocity(
 }
 
 pub async fn get_linear_velocity(api: &Api, prim_rep: u32) -> Result<[f32; 3], ScriptError> {
-    let (doc, tree) = prim_ident(api, prim_rep).await?;
+    let (doc, prim_id) = prim_ident(api, prim_rep).await?;
     let (tx, rx) = async_channel::bounded::<[f32; 3]>(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
-            let v = entity_for(world, doc, tree)
+            let v = entity_for(world, doc, prim_id)
                 .and_then(|entity| world.get::<LinearVelocity>(entity))
                 .map_or([0.0; 3], |lv| lv.0.to_array());
             tx.try_send(v).ok();
@@ -189,10 +191,10 @@ pub async fn get_linear_velocity(api: &Api, prim_rep: u32) -> Result<[f32; 3], S
 /// reads it every step until changed. A zero vector removes it, so a hold that
 /// stops refreshing must pass zero to stop pushing.
 pub async fn apply_force(api: &Api, prim_rep: u32, v: [f32; 3]) -> Result<(), ScriptError> {
-    let (doc, tree) = prim_ident(api, prim_rep).await?;
+    let (doc, prim_id) = prim_ident(api, prim_rep).await?;
     AsyncCommands::default()
         .push(move |world: &mut World| {
-            let Some(entity) = entity_for(world, doc, tree) else {
+            let Some(entity) = entity_for(world, doc, prim_id) else {
                 return;
             };
             if !matches!(world.get::<RigidBody>(entity), Some(RigidBody::Dynamic)) {
@@ -215,16 +217,19 @@ pub async fn apply_force(api: &Api, prim_rep: u32, v: [f32; 3]) -> Result<(), Sc
 pub fn claim_authority(_api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
     let bytes = <[u8; 32]>::try_from(doc_id.as_slice())
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
-    let doc = NamespaceId::from(&bytes);
+    let doc = DocId(bytes);
     let space = unavi_space::membership::doc_space(doc)
         .ok_or_else(|| ScriptError::other("document is not in a tracked space"))?;
-    unavi_space::state::entities::claim_authority(space, doc);
+    unavi_space::state::entities::claim_authority(
+        iroh_docs::NamespaceId::from(&space.0),
+        iroh_docs::NamespaceId::from(&doc.0),
+    );
     Ok(())
 }
 
 pub fn release_authority(_api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
     let bytes = <[u8; 32]>::try_from(doc_id.as_slice())
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
-    unavi_space::state::entities::release_authority(NamespaceId::from(&bytes));
+    unavi_space::state::entities::release_authority(iroh_docs::NamespaceId::from(&bytes));
     Ok(())
 }

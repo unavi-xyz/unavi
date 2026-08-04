@@ -3,43 +3,19 @@ use avian3d::prelude::{
     Rotation,
 };
 use bevy::prelude::*;
-use hsd::{
-    HSD_CONTAINER_ID,
-    attributes::{
-        Attribute,
-        hydrate_attr,
-        xform::XformAttr,
-    },
-};
-use loro::{
-    ContainerID,
-    Index,
-    TreeID,
-    ValueOrContainer,
-    event::Diff,
+use hsd::attributes::{
+    Attribute,
+    xform::XformAttr,
 };
 
-use crate::{
-    attributes::{
-        ApplyEvent,
-        AttrDataEvent,
-        AttributeParser,
-        DocContext,
-        ParseError,
-        util::{
-            compute_global_transform,
-            shallow_map_updated_keys,
-        },
-    },
-    diff::HsdDiffEvent,
+use crate::attributes::{
+    AttributeParser,
+    ParseError,
+    util::compute_global_transform,
 };
 
-#[derive(Debug)]
-pub enum XformEvent {
-    Rotation(Quat),
-    Scale(Vec3),
-    Translation(Vec3),
-}
+#[derive(Component, Debug, Clone, Copy)]
+pub struct XformData(pub XformAttr);
 
 pub struct XformParser;
 
@@ -48,77 +24,61 @@ impl AttributeParser for XformParser {
         XformAttr::KEY
     }
 
+    /// Removal resets the transform rather than removing it: `Prim` requires
+    /// `Transform`, and a removed one breaks propagation to every child.
     fn lifecycle(
         &self,
         commands: &mut Commands,
         prim: Entity,
-        _value: Option<ValueOrContainer>,
+        payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
-        commands.entity(prim).insert(Transform::default());
-        Ok(())
-    }
-
-    fn parse(
-        &self,
-        ctx: &DocContext,
-        prim: TreeID,
-        path: &[(ContainerID, Index)],
-        diff: Diff,
-    ) -> Result<(), ParseError> {
-        let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-        let meta = tree.get_meta(prim)?;
-
-        let attr: XformAttr = hydrate_attr(&meta)?;
-
-        let keys = shallow_map_updated_keys(path, diff)?;
-        for key in keys {
-            let event = match key.as_str() {
-                "rotation" => XformEvent::Rotation(Quat::from_slice(&attr.rotation)),
-                "scale" => XformEvent::Scale(Vec3::from_slice(&attr.scale)),
-                "translation" => XformEvent::Translation(Vec3::from_slice(&attr.translation)),
-                _ => continue,
-            };
-            ctx.tx
-                .send(HsdDiffEvent::AttrData {
-                    prim,
-                    data: AttrDataEvent::Xform(event),
-                })
-                .map_err(|_| ParseError::SendDiff)?;
+        match payload {
+            Some(payload) => {
+                commands
+                    .entity(prim)
+                    .insert(XformData(XformAttr::decode(payload)?));
+            }
+            None => {
+                commands
+                    .entity(prim)
+                    .remove::<XformData>()
+                    .insert(Transform::default());
+            }
         }
         Ok(())
     }
 }
 
 pub fn apply_xform(
-    trigger: On<ApplyEvent<XformEvent>>,
+    changed: Query<(Entity, &XformData), Changed<XformData>>,
     mut transforms: Query<&mut Transform>,
     mut physics: Query<(Option<&mut Position>, Option<&mut Rotation>)>,
     parents: Query<&ChildOf>,
 ) {
-    {
-        let Ok(mut transform) = transforms.get_mut(trigger.entity) else {
-            warn!("Transform not found");
-            return;
-        };
-        match trigger.value {
-            XformEvent::Rotation(v) => transform.rotation = v,
-            XformEvent::Scale(v) => transform.scale = v,
-            XformEvent::Translation(v) => transform.translation = v,
+    for (entity, data) in &changed {
+        {
+            let Ok(mut transform) = transforms.get_mut(entity) else {
+                warn!("Transform not found");
+                continue;
+            };
+            transform.translation = Vec3::from_slice(&data.0.translation);
+            transform.rotation = Quat::from_slice(&data.0.rotation);
+            transform.scale = Vec3::from_slice(&data.0.scale);
         }
-    }
 
-    let Ok((position, rotation)) = physics.get_mut(trigger.entity) else {
-        return;
-    };
-    if position.is_none() && rotation.is_none() {
-        return;
-    }
+        let Ok((position, rotation)) = physics.get_mut(entity) else {
+            continue;
+        };
+        if position.is_none() && rotation.is_none() {
+            continue;
+        }
 
-    let global = compute_global_transform(trigger.entity, &transforms.as_readonly(), &parents);
-    if let Some(mut p) = position {
-        p.0 = global.translation;
-    }
-    if let Some(mut r) = rotation {
-        r.0 = global.rotation;
+        let global = compute_global_transform(entity, &transforms.as_readonly(), &parents);
+        if let Some(mut p) = position {
+            p.0 = global.translation;
+        }
+        if let Some(mut r) = rotation {
+            r.0 = global.rotation;
+        }
     }
 }

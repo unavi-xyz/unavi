@@ -27,7 +27,6 @@ pub struct UnaviPlugin {
 
 const DISABLED_LOGS: &[&str] = &[
     "cranelift_codegen",
-    "loro_internal",
     "offset_allocator",
     "wasmtime_internal_cranelift",
 ];

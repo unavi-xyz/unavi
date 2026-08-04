@@ -9,6 +9,10 @@ use std::{
 
 use anyhow::Context;
 use bevy::transform::components::Transform;
+use hsd::id::{
+    DocId,
+    PrimId,
+};
 use iroh::{
     EndpointId,
     endpoint::{
@@ -17,8 +21,6 @@ use iroh::{
         SendStream,
     },
 };
-use iroh_docs::NamespaceId;
-use loro::TreeID;
 use n0_future::time::Instant;
 use postcard::experimental::max_size::MaxSize;
 use serde::{
@@ -58,20 +60,18 @@ enum ObjectMsg {
         space: [u8; 32],
     },
     IFrame {
-        id:           u32,
-        prim_peer:    u64,
-        prim_counter: i32,
-        root:         RigidTransform<F32Vec3>,
-        lin:          F32Vec3,
-        ang:          F32Vec3,
+        id:   u32,
+        prim: [u8; 16],
+        root: RigidTransform<F32Vec3>,
+        lin:  F32Vec3,
+        ang:  F32Vec3,
     },
     PFrame {
-        iframe:       u32,
-        prim_peer:    u64,
-        prim_counter: i32,
-        root:         RigidTransform<F16Vec3>,
-        lin:          F32Vec3,
-        ang:          F32Vec3,
+        iframe: u32,
+        prim:   [u8; 16],
+        root:   RigidTransform<F16Vec3>,
+        lin:    F32Vec3,
+        ang:    F32Vec3,
     },
 }
 
@@ -83,7 +83,7 @@ struct SendState {
     iframe_id:        u32,
     last_iframe_root: RigidTransform<F32Vec3>,
     last_iframe_time: Instant,
-    last_space:       NamespaceId,
+    last_space:       DocId,
 }
 
 /// One open stream carrying every dynamic prim of a single document. The space
@@ -91,8 +91,8 @@ struct SendState {
 /// rather than per frame.
 struct DocStream {
     tx:         SendStream,
-    last_space: Option<NamespaceId>,
-    prims:      HashMap<TreeID, SendState>,
+    last_space: Option<DocId>,
+    prims:      HashMap<PrimId, SendState>,
 }
 
 pub async fn send_object_stream(connection: &Connection) -> anyhow::Result<()> {
@@ -103,7 +103,7 @@ pub async fn send_object_stream(connection: &Connection) -> anyhow::Result<()> {
         .send()
         .await?;
 
-    let mut streams: HashMap<NamespaceId, DocStream> = HashMap::new();
+    let mut streams: HashMap<DocId, DocStream> = HashMap::new();
     let mut buf = [0; ObjectMsg::POSTCARD_MAX_SIZE];
 
     while let Ok(objects) = obj_rx.recv().await {
@@ -133,7 +133,7 @@ pub async fn send_object_stream(connection: &Connection) -> anyhow::Result<()> {
 
 async fn send_object(
     connection: &Connection,
-    streams: &mut HashMap<NamespaceId, DocStream>,
+    streams: &mut HashMap<DocId, DocStream>,
     buf: &mut [u8],
     obj: &OutgoingObject,
     now: Instant,
@@ -143,7 +143,7 @@ async fn send_object(
         Entry::Vacant(e) => {
             let mut tx = connection.open_bi().await?.0;
             StreamIdent::Object.write(&mut tx).await?;
-            tx.write_all(obj.doc.as_bytes()).await?;
+            tx.write_all(&obj.doc.0).await?;
             e.insert(DocStream {
                 tx,
                 last_space: None,
@@ -154,9 +154,7 @@ async fn send_object(
 
     if stream.last_space != Some(obj.space) {
         stream.last_space = Some(obj.space);
-        let msg = ObjectMsg::SpaceChange {
-            space: *obj.space.as_bytes(),
-        };
+        let msg = ObjectMsg::SpaceChange { space: obj.space.0 };
         write_frame(&mut stream.tx, &msg, buf).await?;
     }
 
@@ -173,7 +171,7 @@ async fn write_frame(tx: &mut SendStream, msg: &ObjectMsg, buf: &mut [u8]) -> an
 }
 
 fn build_msg(
-    prims: &mut HashMap<TreeID, SendState>,
+    prims: &mut HashMap<PrimId, SendState>,
     obj: &OutgoingObject,
     now: Instant,
 ) -> ObjectMsg {
@@ -185,7 +183,7 @@ fn build_msg(
         iframe_id:        0,
         last_iframe_root: root.clone(),
         last_iframe_time: now - IFRAME_FREQ,
-        last_space:       NamespaceId::from(&[0; 32]),
+        last_space:       DocId([0; 32]),
     });
 
     // A p-frame delta is only valid against an i-frame in the same space, so a
@@ -200,8 +198,7 @@ fn build_msg(
         state.last_space = obj.space;
         ObjectMsg::IFrame {
             id: state.iframe_id,
-            prim_peer: obj.prim.peer,
-            prim_counter: obj.prim.counter,
+            prim: obj.prim.0,
             root,
             lin,
             ang,
@@ -209,8 +206,7 @@ fn build_msg(
     } else {
         ObjectMsg::PFrame {
             iframe: state.iframe_id,
-            prim_peer: obj.prim.peer,
-            prim_counter: obj.prim.counter,
+            prim: obj.prim.0,
             root: RigidTransform::<F16Vec3>::delta(&root, &state.last_iframe_root),
             lin,
             ang,
@@ -229,21 +225,20 @@ struct Baseline {
 /// p-frame that arrives before its i-frame, or one referencing a stale i-frame.
 fn resolve_msg(
     msg: ObjectMsg,
-    doc: NamespaceId,
-    space: NamespaceId,
-    baselines: &mut HashMap<TreeID, Baseline>,
+    doc: DocId,
+    space: DocId,
+    baselines: &mut HashMap<PrimId, Baseline>,
 ) -> Option<ResolvedObject> {
     match msg {
         ObjectMsg::SpaceChange { .. } => None,
         ObjectMsg::IFrame {
             id,
-            prim_peer,
-            prim_counter,
+            prim,
             root,
             lin,
             ang,
         } => {
-            let prim = TreeID::new(prim_peer, prim_counter);
+            let prim = PrimId(prim);
             let transform = root.clone().into();
             baselines.insert(prim, Baseline { id, root });
             Some(ResolvedObject {
@@ -257,13 +252,12 @@ fn resolve_msg(
         }
         ObjectMsg::PFrame {
             iframe,
-            prim_peer,
-            prim_counter,
+            prim,
             root,
             lin,
             ang,
         } => {
-            let prim = TreeID::new(prim_peer, prim_counter);
+            let prim = PrimId(prim);
             let baseline = baselines.get(&prim)?;
             if baseline.id != iframe {
                 return None;
@@ -292,11 +286,11 @@ pub async fn recv_object_stream(
 ) -> anyhow::Result<()> {
     let mut doc = [0u8; 32];
     rx.read_exact(&mut doc).await.context("read doc header")?;
-    let doc = NamespaceId::from(&doc);
+    let doc = DocId(doc);
 
     let mut buf = [0; ObjectMsg::POSTCARD_MAX_SIZE];
-    let mut baselines: HashMap<TreeID, Baseline> = HashMap::new();
-    let mut current_space: Option<NamespaceId> = None;
+    let mut baselines: HashMap<PrimId, Baseline> = HashMap::new();
+    let mut current_space: Option<DocId> = None;
 
     loop {
         let len = match rx.read_u8().await {
@@ -312,7 +306,7 @@ pub async fn recv_object_stream(
         let msg = postcard::from_bytes::<ObjectMsg>(buf)?;
 
         match msg {
-            ObjectMsg::SpaceChange { space } => current_space = Some(NamespaceId::from(&space)),
+            ObjectMsg::SpaceChange { space } => current_space = Some(DocId(space)),
             frame => {
                 let Some(space) = current_space else {
                     continue;
@@ -331,15 +325,15 @@ mod tests {
 
     use super::*;
 
-    fn h(seed: &[u8]) -> NamespaceId {
-        NamespaceId::from(blake3::hash(seed).as_bytes())
+    fn h(seed: &[u8]) -> DocId {
+        DocId(*blake3::hash(seed).as_bytes())
     }
 
-    fn prim() -> TreeID {
-        TreeID::new(42, 7)
+    fn prim() -> PrimId {
+        PrimId([42; 16])
     }
 
-    fn outgoing(doc: NamespaceId, space: NamespaceId, t: Vec3) -> OutgoingObject {
+    fn outgoing(doc: DocId, space: DocId, t: Vec3) -> OutgoingObject {
         OutgoingObject {
             doc,
             space,
@@ -410,12 +404,11 @@ mod tests {
     fn pframe_before_iframe_is_dropped() {
         let mut baselines = HashMap::new();
         let msg = ObjectMsg::PFrame {
-            iframe:       1,
-            prim_peer:    42,
-            prim_counter: 7,
-            root:         RigidTransform::default(),
-            lin:          F32Vec3::default(),
-            ang:          F32Vec3::default(),
+            iframe: 1,
+            prim:   [42; 16],
+            root:   RigidTransform::default(),
+            lin:    F32Vec3::default(),
+            ang:    F32Vec3::default(),
         };
         assert!(resolve_msg(msg, h(b"doc"), h(b"space"), &mut baselines).is_none());
     }
@@ -435,12 +428,11 @@ mod tests {
         resolve_msg(iframe, doc, space, &mut baselines);
 
         let stale = ObjectMsg::PFrame {
-            iframe:       99,
-            prim_peer:    42,
-            prim_counter: 7,
-            root:         RigidTransform::default(),
-            lin:          F32Vec3::default(),
-            ang:          F32Vec3::default(),
+            iframe: 99,
+            prim:   [42; 16],
+            root:   RigidTransform::default(),
+            lin:    F32Vec3::default(),
+            ang:    F32Vec3::default(),
         };
         assert!(resolve_msg(stale, doc, space, &mut baselines).is_none());
     }
@@ -454,11 +446,11 @@ mod tests {
         let now = Instant::now();
 
         let a = OutgoingObject {
-            prim: TreeID::new(1, 1),
+            prim: PrimId([1; 16]),
             ..outgoing(doc, space, Vec3::new(5.0, 0.0, 0.0))
         };
         let b = OutgoingObject {
-            prim: TreeID::new(2, 2),
+            prim: PrimId([2; 16]),
             ..outgoing(doc, space, Vec3::new(-5.0, 0.0, 0.0))
         };
 

@@ -15,8 +15,8 @@ bevy.workspace      = true
 bevy-hsd.path       = "../bevy-hsd"
 bevy_vrm.workspace  = true
 blake3.workspace    = true
+hsd.path            = "../hsd"
 iroh-docs.workspace = true
-loro.workspace      = true
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true

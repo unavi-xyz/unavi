@@ -1,5 +1,5 @@
-pub mod blobs;
-pub mod build;
 pub mod cargo;
-pub mod format;
+pub mod compile;
+pub mod dump;
+pub mod hsda;
 pub mod wasm;

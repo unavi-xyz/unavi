@@ -24,40 +24,30 @@ const fn scale(color: Color, f: f32) -> Color {
 /// Opaque physical cube material with a faint self-glow.
 pub const fn cube(color: Color) -> Material {
     Material {
-        alpha_cutoff:               None,
-        alpha_mode:                 None,
-        base_color:                 Some(color),
-        base_color_texture:         None,
-        double_sided:               None,
-        emissive:                   Some(scale(color, 0.15)),
-        emissive_texture:           None,
-        metallic:                   Some(0.2),
-        metallic_roughness_texture: None,
-        normal_texture:             None,
-        occlusion_texture:          None,
-        roughness:                  Some(0.6),
+        alpha_cutoff: None,
+        alpha_mode:   None,
+        base_color:   Some(color),
+        double_sided: None,
+        emissive:     Some(scale(color, 0.15)),
+        metallic:     Some(0.2),
+        roughness:    Some(0.6),
     }
 }
 
 /// Translucent preview material shown above the artifact.
 pub const fn preview(color: Color) -> Material {
     Material {
-        alpha_cutoff:               None,
-        alpha_mode:                 Some(AlphaMode::Blend),
-        base_color:                 Some(Color {
+        alpha_cutoff: None,
+        alpha_mode:   Some(AlphaMode::Blend),
+        base_color:   Some(Color {
             r: color.r,
             g: color.g,
             b: color.b,
             a: 0.4,
         }),
-        base_color_texture:         None,
-        double_sided:               Some(true),
-        emissive:                   Some(scale(color, 0.5)),
-        emissive_texture:           None,
-        metallic:                   None,
-        metallic_roughness_texture: None,
-        normal_texture:             None,
-        occlusion_texture:          None,
-        roughness:                  None,
+        double_sided: Some(true),
+        emissive:     Some(scale(color, 0.5)),
+        metallic:     None,
+        roughness:    None,
     }
 }

@@ -5,7 +5,7 @@ use bevy_hsd::{
     Hsd,
     HsdChild,
     HsdCommitGate,
-    HsdNamespace,
+    HsdDocId,
     Prim,
 };
 use tokio::sync::Mutex;
@@ -82,12 +82,7 @@ pub fn instantiate_scripts(
         ),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
-    docs: Query<(
-        &HsdNamespace,
-        &Hsd,
-        Option<&ApiPermissions>,
-        Has<QuotaExempt>,
-    )>,
+    docs: Query<(&HsdDocId, &Hsd, Option<&ApiPermissions>, Has<QuotaExempt>)>,
     mut commands: Commands,
 ) {
     for (entity, script, engine_ent, name, prim, doc_ent, fixed_updating) in to_instantiate {
@@ -128,7 +123,7 @@ pub fn instantiate_scripts(
 
         let state = Runtime {
             api:    Arc::new(Api {
-                doc:         Arc::clone(&doc.0),
+                state:       Arc::clone(&doc.0),
                 doc_id:      doc_id.0,
                 prim:        prim.0,
                 permissions: perms.clone(),

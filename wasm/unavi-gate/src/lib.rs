@@ -26,6 +26,7 @@ use crate::{
         scene::{
             api::self_document,
             types::{
+                Document,
                 Material,
                 Portal,
                 PortalDestination,
@@ -44,6 +45,7 @@ wired_prelude::generate_script!(Script);
 const CHANNEL: &str = "unavi::beacon::id";
 const LINK_KEY: &str = "gate:link";
 const PORTAL_PRIM_NAME: &str = "portal";
+const RECEPTOR_PRIM_NAME: &str = "receptor";
 
 const PORTAL_WIDTH: f32 = GOLDEN_RATIO;
 const PORTAL_HEIGHT: f32 = PORTAL_WIDTH * GOLDEN_RATIO;
@@ -68,18 +70,15 @@ impl ScriptBehavior for Script {
         let doc = self_document()?;
         let root = doc.roots().into_iter().next().expect("root");
 
-        // Authored in asset.hsdx so its TreeID is identical on every peer;
-        // portal links carry that id and must resolve off-opener.
-        let portal_prim = doc
-            .prims()
-            .into_iter()
-            .find(|p| p.name().is_some_and(|n| n == PORTAL_PRIM_NAME))
-            .context("portal prim not found")?;
-        set_translation(&portal_prim, Vec3::new(0.0, PORTAL_HEIGHT / 2.0, 0.0));
+        // Authored in asset.hsda, so their ids are baked at build time and are
+        // identical on every peer. Anything referenced across peers has to be
+        // authored: a prim minted at runtime gets a per-peer id.
+        let portal_prim = named_prim(&doc, PORTAL_PRIM_NAME)?;
+        let receptor_prim = named_prim(&doc, RECEPTOR_PRIM_NAME)?;
         portal_prim.set_portal(Some(&portal_from_link(None)))?;
 
         let material = gate_material();
-        spawn_frame(&root, &material);
+        spawn_frame(&root, material);
 
         let pedestal_shape = Cuboid::new(Vec3::new(
             PEDESTAL_THICKNESS,
@@ -89,17 +88,13 @@ impl ScriptBehavior for Script {
 
         let pedestal = pedestal_shape.mesh();
         root.add_child(&pedestal)?;
-        pedestal.set_collider(Some(&pedestal_shape.collider()))?;
+        pedestal.set_collider(Some(pedestal_shape.collider()))?;
         pedestal.set_rigid_body(Some(static_body()))?;
-        pedestal.set_material(Some(&material))?;
+        pedestal.set_material(Some(material))?;
         set_translation(
             &pedestal,
             Vec3::new(-PORTAL_WIDTH, PEDESTAL_HEIGHT / 2.0, 0.0),
         );
-
-        let receptor_prim = doc.create_prim()?;
-        pedestal.add_child(&receptor_prim)?;
-        set_translation(&receptor_prim, Vec3::new(0.0, PEDESTAL_HEIGHT / 2.0, 0.0));
 
         let beacon_rx = wired::event::api::listen(
             &[CHANNEL.to_string()],
@@ -207,12 +202,19 @@ impl ScriptBehavior for Script {
     }
 }
 
-fn spawn_frame(root: &Prim, material: &Material) {
+fn named_prim(doc: &Document, name: &str) -> anyhow::Result<Prim> {
+    doc.prims()
+        .into_iter()
+        .find(|p| p.name().is_some_and(|n| n == name))
+        .with_context(|| format!("{name} prim not found"))
+}
+
+fn spawn_frame(root: &Prim, material: Material) {
     let pole = Cuboid::new(Vec3::new(BEAM_THICKNESS, PORTAL_HEIGHT, BEAM_THICKNESS));
 
     let pole_l = pole.mesh();
     root.add_child(&pole_l).ok();
-    pole_l.set_collider(Some(&pole.collider())).ok();
+    pole_l.set_collider(Some(pole.collider())).ok();
     pole_l.set_rigid_body(Some(static_body())).ok();
     pole_l.set_material(Some(material)).ok();
     set_translation(
@@ -226,7 +228,7 @@ fn spawn_frame(root: &Prim, material: &Material) {
 
     let pole_r = pole.mesh();
     root.add_child(&pole_r).ok();
-    pole_r.set_collider(Some(&pole.collider())).ok();
+    pole_r.set_collider(Some(pole.collider())).ok();
     pole_r.set_rigid_body(Some(static_body())).ok();
     pole_r.set_material(Some(material)).ok();
     set_translation(
@@ -246,7 +248,7 @@ fn spawn_frame(root: &Prim, material: &Material) {
 
     let beam_top = beam.mesh();
     root.add_child(&beam_top).ok();
-    beam_top.set_collider(Some(&beam.collider())).ok();
+    beam_top.set_collider(Some(beam.collider())).ok();
     beam_top.set_rigid_body(Some(static_body())).ok();
     beam_top.set_material(Some(material)).ok();
     set_translation(
@@ -277,23 +279,18 @@ fn set_translation(prim: &Prim, translation: Vec3) {
 
 const fn gate_material() -> Material {
     Material {
-        alpha_cutoff:               None,
-        alpha_mode:                 None,
-        base_color:                 Some(Color {
+        alpha_cutoff: None,
+        alpha_mode:   None,
+        base_color:   Some(Color {
             r: 0.7,
             g: 0.72,
             b: 0.78,
             a: 1.0,
         }),
-        base_color_texture:         None,
-        double_sided:               None,
-        emissive:                   None,
-        emissive_texture:           None,
-        metallic:                   Some(0.6),
-        metallic_roughness_texture: None,
-        normal_texture:             None,
-        occlusion_texture:          None,
-        roughness:                  Some(0.4),
+        double_sided: None,
+        emissive:     None,
+        metallic:     Some(0.6),
+        roughness:    Some(0.4),
     }
 }
 

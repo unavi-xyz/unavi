@@ -5,10 +5,7 @@ use bevy::{
     },
     prelude::*,
 };
-use bevy_hsd::load::{
-    LoadHsd,
-    on_load_spawn_doc,
-};
+use bevy_hsd::load::LoadHsd;
 use bevy_panorbit_camera::{
     PanOrbitCamera,
     PanOrbitCameraPlugin,
@@ -24,7 +21,7 @@ use crate::util::create_test_wds;
 
 mod util;
 
-const SCRIPT_PATH: &str = "hsd/example_unavi_shapes.hsd";
+const SCRIPT_PATH: &str = "hsd/example_unavi_shapes.hsdz";
 
 fn main() {
     let (actor, docs, blobs) = create_test_wds();
@@ -37,7 +34,7 @@ fn main() {
                 ..Default::default()
             })
             .set(LogPlugin {
-                filter: format!("{DEFAULT_FILTER},loro_internal=off"),
+                filter: DEFAULT_FILTER.to_string(),
                 ..Default::default()
             }),
         PanOrbitCameraPlugin,
@@ -72,8 +69,7 @@ fn init_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         LoadHsd {
             handle,
-            extra: None,
-            on_load: Some(Box::new(on_load_spawn_doc)),
+            on_load: None,
         },
         ApiPermissions::default(),
     ));

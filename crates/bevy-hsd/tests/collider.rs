@@ -7,20 +7,9 @@ use bevy_hsd::attributes::collider::{
     HsdCollider,
 };
 use bytemuck::cast_slice;
-use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
-    attributes::{
-        Attribute,
-        Attributes,
-        attributes_map,
-        collider::ColliderAttr,
-    },
-};
-use loro_surgeon::{
-    Reconcile,
-    bytes::ByteArray,
-    reconcile::RootReconciler,
+use hsd::attributes::{
+    collider::ColliderAttr,
+    slots,
 };
 use rstest::rstest;
 use tracing_test::traced_test;
@@ -32,13 +21,9 @@ mod common;
 #[traced_test]
 #[rstest]
 fn test_collider_lifecycle(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
+    let root = ctx.create_prim();
+    ctx.set_attr(root, &ColliderAttr::Sphere(0.5));
 
-    reconcile_collider(&meta, ColliderAttr::Sphere(0.5));
-
-    ctx.doc.commit();
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -48,10 +33,7 @@ fn test_collider_lifecycle(mut ctx: TestContext) {
         "HsdCollider + Collider expected"
     );
 
-    let attrs = attributes_map(&meta).expect("attributes map");
-    attrs.delete(ColliderAttr::KEY).expect("delete");
-
-    ctx.doc.commit();
+    ctx.remove_attr::<ColliderAttr>(root);
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -71,13 +53,9 @@ fn test_collider_lifecycle(mut ctx: TestContext) {
 #[rstest]
 fn test_collider_invalid_sphere(mut ctx: TestContext) {
     for bad_r in [0.0_f64, -1.0, f64::NAN, f64::INFINITY] {
-        let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-        let root = tree.create(None).expect("create");
-        let meta = tree.get_meta(root).expect("get meta");
+        let root = ctx.create_prim();
+        ctx.set_attr(root, &ColliderAttr::Sphere(bad_r));
 
-        reconcile_collider(&meta, ColliderAttr::Sphere(bad_r));
-
-        ctx.doc.commit();
         ctx.app.update();
 
         let world = ctx.app.world_mut();
@@ -100,13 +78,9 @@ fn test_collider_invalid_sphere(mut ctx: TestContext) {
 #[rstest]
 fn test_collider_invalid_cuboid(mut ctx: TestContext) {
     for (x, y, z) in [(0.0_f64, 1.0, 1.0), (1.0, -1.0, 1.0), (1.0, 1.0, f64::NAN)] {
-        let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-        let root = tree.create(None).expect("create");
-        let meta = tree.get_meta(root).expect("get meta");
+        let root = ctx.create_prim();
+        ctx.set_attr(root, &ColliderAttr::Cuboid { x, y, z });
 
-        reconcile_collider(&meta, ColliderAttr::Cuboid { x, y, z });
-
-        ctx.doc.commit();
         ctx.app.update();
 
         let world = ctx.app.world_mut();
@@ -120,6 +94,8 @@ fn test_collider_invalid_cuboid(mut ctx: TestContext) {
     }
 }
 
+/// The shape and its buffers are separate entries and arrive in no fixed
+/// order, so the collider must build once both halves are present.
 #[traced_test]
 #[rstest]
 fn test_collider_trimesh_blob(#[from(ctx_wds)] mut ctx: TestContext) {
@@ -134,17 +110,10 @@ fn test_collider_trimesh_blob(#[from(ctx_wds)] mut ctx: TestContext) {
     let vertex_hash = ctx.upload_blob(cast_slice::<[f32; 3], u8>(&VERTS).to_vec());
     let index_hash = ctx.upload_blob(cast_slice::<[u32; 3], u8>(&IDXS).to_vec());
 
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
-
-    reconcile_collider(
-        &meta,
-        ColliderAttr::Trimesh {
-            vertices: ByteArray::<32>::new(*vertex_hash.as_bytes()),
-            indices:  ByteArray::<32>::new(*index_hash.as_bytes()),
-        },
-    );
+    let root = ctx.create_prim();
+    ctx.set_bulk(root, slots::COLLIDER_VERTICES, vertex_hash, 48);
+    ctx.set_attr(root, &ColliderAttr::Trimesh);
+    ctx.set_bulk(root, slots::COLLIDER_INDICES, index_hash, 48);
 
     ctx.tick_until(|world| world.query::<&Collider>().iter(world).next().is_some());
 }
@@ -152,20 +121,16 @@ fn test_collider_trimesh_blob(#[from(ctx_wds)] mut ctx: TestContext) {
 #[traced_test]
 #[rstest]
 fn test_collider_scale_zero_does_not_panic(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
-
-    reconcile_collider(
-        &meta,
-        ColliderAttr::Cuboid {
+    let root = ctx.create_prim();
+    ctx.set_attr(
+        root,
+        &ColliderAttr::Cuboid {
             x: 1.0,
             y: 1.0,
             z: 1.0,
         },
     );
 
-    ctx.doc.commit();
     ctx.app.update();
 
     // Collider should be present with valid default scale.
@@ -213,16 +178,4 @@ fn test_collider_scale_zero_does_not_panic(mut ctx: TestContext) {
         world.entity(prim_ent).get::<DisabledCollider>().is_none(),
         "DisabledCollider should be removed after restore"
     );
-}
-
-fn reconcile_collider(meta: &loro::LoroMap, attr: ColliderAttr) {
-    let prim = PrimMeta {
-        attributes: Some(Attributes {
-            collider: Some(attr),
-            ..Default::default()
-        }),
-        ..Default::default()
-    };
-    prim.reconcile(RootReconciler::new(meta.clone()))
-        .expect("reconcile");
 }

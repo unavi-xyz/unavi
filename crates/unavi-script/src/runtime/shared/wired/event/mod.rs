@@ -11,7 +11,7 @@ use std::{
 };
 
 use async_channel::Receiver;
-use iroh_docs::NamespaceId;
+use hsd::id::DocId;
 use unavi_quota::{
     Flow,
     QuotaError,
@@ -47,7 +47,7 @@ static NEXT_RECEPTOR_ID: AtomicU32 = AtomicU32::new(0);
 pub const HOST_SENDER_DOC: [u8; 32] = [0u8; 32];
 
 #[must_use]
-pub fn doc_has_receptor(doc: NamespaceId, channel: &str) -> bool {
+pub fn doc_has_receptor(doc: DocId, channel: &str) -> bool {
     EVENT_RECEPTOR_REGISTRY
         .read()
         .values()
@@ -131,7 +131,7 @@ pub async fn emit(
     }
 
     let payload = Arc::new(payload);
-    let sender_doc = api.doc_id.as_bytes().to_vec();
+    let sender_doc = api.doc_id.0.to_vec();
     let claimed = Arc::new(AtomicBool::new(false));
 
     let registry = EVENT_RECEPTOR_REGISTRY.read();
@@ -141,13 +141,15 @@ pub async fn emit(
         }
 
         if let Some(docs) = &filter.documents
-            && !docs.iter().any(|d| d.as_slice() == entry.doc_id.as_bytes())
+            && !docs
+                .iter()
+                .any(|d| d.as_slice() == entry.doc_id.0.as_slice())
         {
             continue;
         }
 
         if let Some(docs) = &entry.source_documents
-            && !docs.iter().any(|d| d.as_slice() == api.doc_id.as_bytes())
+            && !docs.iter().any(|d| d.as_slice() == api.doc_id.0.as_slice())
         {
             continue;
         }
@@ -175,7 +177,7 @@ pub async fn emit(
     Ok(())
 }
 
-pub fn emit_from_host(target_doc: NamespaceId, channel: &str, payload: Vec<u8>) {
+pub fn emit_from_host(target_doc: DocId, channel: &str, payload: Vec<u8>) {
     let payload = Arc::new(payload);
     let claimed = Arc::new(AtomicBool::new(false));
     let time = std::time::SystemTime::now()
@@ -212,7 +214,7 @@ fn resolve_sender_scope(
         (None, ReceptorScope::Spatial { .. }) => None,
         (Some((abs, ..)), ReceptorScope::Global) => Some(SenderScope::Spatial {
             distance: 0.0,
-            node:     abs.clone(),
+            node:     *abs,
         }),
         (
             Some((emitter_abs, emitter_pos, emitter_radius)),
@@ -240,7 +242,7 @@ fn resolve_sender_scope(
             }
             Some(SenderScope::Spatial {
                 distance: dist,
-                node:     emitter_abs.clone(),
+                node:     *emitter_abs,
             })
         }
     }

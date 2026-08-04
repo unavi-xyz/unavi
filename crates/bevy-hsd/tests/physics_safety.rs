@@ -11,10 +11,7 @@ use avian3d::prelude::{
 use bevy::prelude::*;
 use bevy_hsd::attributes::collider::DisabledCollider;
 use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
     attributes::{
-        Attributes,
         collider::ColliderAttr,
         rigid_body::{
             RigidBodyAttr,
@@ -22,10 +19,7 @@ use hsd::{
         },
         xform::XformAttr,
     },
-};
-use loro_surgeon::{
-    Reconcile,
-    reconcile::RootReconciler,
+    id::PrimId,
 };
 use rstest::rstest;
 use tracing_test::traced_test;
@@ -34,7 +28,26 @@ use crate::common::*;
 
 mod common;
 
-/// One commit writes collider + rigid body + zero-scale xform — must not
+fn write_full_prim(
+    ctx: &TestContext,
+    collider: Option<ColliderAttr>,
+    rigid_body: Option<RigidBodyAttr>,
+    xform: Option<XformAttr>,
+) -> PrimId {
+    let prim = ctx.create_prim();
+    if let Some(collider) = collider {
+        ctx.set_attr(prim, &collider);
+    }
+    if let Some(rigid_body) = rigid_body {
+        ctx.set_attr(prim, &rigid_body);
+    }
+    if let Some(xform) = xform {
+        ctx.set_attr(prim, &xform);
+    }
+    prim
+}
+
+/// One batch writes collider + rigid body + zero-scale xform — must not
 /// panic on avian's placeholder `Position` / `Rotation`.
 #[traced_test]
 #[rstest]
@@ -46,7 +59,7 @@ fn collider_plus_rigid_body_plus_zero_scale_does_not_panic(
     #[case] kind: RigidBodyKind,
 ) {
     write_full_prim(
-        &ctx_physics.doc,
+        &ctx_physics,
         Some(ColliderAttr::Cuboid {
             x: 1.0,
             y: 0.5,
@@ -63,7 +76,6 @@ fn collider_plus_rigid_body_plus_zero_scale_does_not_panic(
         }),
     );
 
-    ctx_physics.doc.commit();
     // The original panic fired during this update's command apply.
     ctx_physics.app.update();
     ctx_physics.app.update();
@@ -81,14 +93,8 @@ fn collider_plus_rigid_body_plus_zero_scale_does_not_panic(
 #[traced_test]
 #[rstest]
 fn collider_without_rigid_body_does_not_panic(mut ctx_physics: TestContext) {
-    write_full_prim(
-        &ctx_physics.doc,
-        Some(ColliderAttr::Sphere(0.5)),
-        None,
-        None,
-    );
+    write_full_prim(&ctx_physics, Some(ColliderAttr::Sphere(0.5)), None, None);
 
-    ctx_physics.doc.commit();
     ctx_physics.app.update();
     ctx_physics.app.update();
 
@@ -107,7 +113,7 @@ fn collider_without_rigid_body_does_not_panic(mut ctx_physics: TestContext) {
 #[rstest]
 fn collider_without_xform_does_not_panic(mut ctx_physics: TestContext) {
     write_full_prim(
-        &ctx_physics.doc,
+        &ctx_physics,
         Some(ColliderAttr::Cylinder {
             height: 0.1,
             radius: 0.6,
@@ -119,7 +125,6 @@ fn collider_without_xform_does_not_panic(mut ctx_physics: TestContext) {
         None,
     );
 
-    ctx_physics.doc.commit();
     ctx_physics.app.update();
     ctx_physics.app.update();
 }
@@ -130,7 +135,7 @@ fn collider_without_xform_does_not_panic(mut ctx_physics: TestContext) {
 #[rstest]
 fn xform_translation_is_not_clobbered_by_init_physics_transform(mut ctx_physics: TestContext) {
     write_full_prim(
-        &ctx_physics.doc,
+        &ctx_physics,
         Some(ColliderAttr::Cuboid {
             x: 0.2,
             y: 0.2,
@@ -147,7 +152,6 @@ fn xform_translation_is_not_clobbered_by_init_physics_transform(mut ctx_physics:
         }),
     );
 
-    ctx_physics.doc.commit();
     ctx_physics.app.update();
     ctx_physics.app.update();
 
@@ -166,63 +170,36 @@ fn xform_translation_is_not_clobbered_by_init_physics_transform(mut ctx_physics:
 #[traced_test]
 #[rstest]
 fn scale_zero_then_nonzero_restores_collider(mut ctx_physics: TestContext) {
-    let tree = ctx_physics.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
-
-    let prim = PrimMeta {
-        attributes: Some(Attributes {
-            collider: Some(ColliderAttr::Cuboid {
-                x: 1.0,
-                y: 1.0,
-                z: 1.0,
-            }),
-            rigid_body: Some(RigidBodyAttr {
-                kind: Some(RigidBodyKind::Static),
-                ..Default::default()
-            }),
-            xform: Some(XformAttr {
-                translation: [0.0, 0.0, 0.0],
-                rotation:    [0.0, 0.0, 0.0, 1.0],
-                scale:       [0.0, 0.0, 0.0],
-            }),
+    let prim = write_full_prim(
+        &ctx_physics,
+        Some(ColliderAttr::Cuboid {
+            x: 1.0,
+            y: 1.0,
+            z: 1.0,
+        }),
+        Some(RigidBodyAttr {
+            kind: Some(RigidBodyKind::Static),
             ..Default::default()
         }),
-        ..Default::default()
-    };
-    prim.reconcile(RootReconciler::new(meta.clone()))
-        .expect("reconcile");
+        Some(XformAttr {
+            translation: [0.0, 0.0, 0.0],
+            rotation:    [0.0, 0.0, 0.0, 1.0],
+            scale:       [0.0, 0.0, 0.0],
+        }),
+    );
 
-    ctx_physics.doc.commit();
     ctx_physics.app.update();
     ctx_physics.app.update();
 
-    // Now flip scale to 1.
-    let prim_active = PrimMeta {
-        attributes: Some(Attributes {
-            collider: Some(ColliderAttr::Cuboid {
-                x: 1.0,
-                y: 1.0,
-                z: 1.0,
-            }),
-            rigid_body: Some(RigidBodyAttr {
-                kind: Some(RigidBodyKind::Static),
-                ..Default::default()
-            }),
-            xform: Some(XformAttr {
-                translation: [0.0, 0.0, 0.0],
-                rotation:    [0.0, 0.0, 0.0, 1.0],
-                scale:       [1.0, 1.0, 1.0],
-            }),
-            ..Default::default()
-        }),
-        ..Default::default()
-    };
-    prim_active
-        .reconcile(RootReconciler::new(meta))
-        .expect("reconcile");
+    ctx_physics.set_attr(
+        prim,
+        &XformAttr {
+            translation: [0.0, 0.0, 0.0],
+            rotation:    [0.0, 0.0, 0.0, 1.0],
+            scale:       [1.0, 1.0, 1.0],
+        },
+    );
 
-    ctx_physics.doc.commit();
     ctx_physics.app.update();
     ctx_physics.app.update();
 
@@ -239,49 +216,41 @@ fn scale_zero_then_nonzero_restores_collider(mut ctx_physics: TestContext) {
 #[traced_test]
 #[rstest]
 fn child_of_translated_parent_has_global_position(mut ctx_physics: TestContext) {
-    let tree = ctx_physics.doc.get_tree(&*HSD_CONTAINER_ID);
-    let parent = tree.create(None).expect("create parent");
-    let parent_meta = tree.get_meta(parent).expect("parent meta");
-    PrimMeta {
-        attributes: Some(Attributes {
-            xform: Some(XformAttr {
-                translation: [0.0, 0.0, -10.0],
-                rotation:    [0.0, 0.0, 0.0, 1.0],
-                scale:       [1.0, 1.0, 1.0],
-            }),
-            ..Default::default()
-        }),
-        ..Default::default()
-    }
-    .reconcile(RootReconciler::new(parent_meta))
-    .expect("reconcile parent");
+    let parent = ctx_physics.create_prim();
+    ctx_physics.set_attr(
+        parent,
+        &XformAttr {
+            translation: [0.0, 0.0, -10.0],
+            rotation:    [0.0, 0.0, 0.0, 1.0],
+            scale:       [1.0, 1.0, 1.0],
+        },
+    );
 
-    let child = tree.create(Some(parent)).expect("create child");
-    let child_meta = tree.get_meta(child).expect("child meta");
-    PrimMeta {
-        attributes: Some(Attributes {
-            collider: Some(ColliderAttr::Cuboid {
-                x: 0.2,
-                y: 0.2,
-                z: 0.2,
-            }),
-            rigid_body: Some(RigidBodyAttr {
-                kind: Some(RigidBodyKind::Static),
-                ..Default::default()
-            }),
-            xform: Some(XformAttr {
-                translation: [-1.5, 0.5, 0.0],
-                rotation:    [0.0, 0.0, 0.0, 1.0],
-                scale:       [1.0, 1.0, 1.0],
-            }),
+    let child = ctx_physics.create_child(parent);
+    ctx_physics.set_attr(
+        child,
+        &ColliderAttr::Cuboid {
+            x: 0.2,
+            y: 0.2,
+            z: 0.2,
+        },
+    );
+    ctx_physics.set_attr(
+        child,
+        &RigidBodyAttr {
+            kind: Some(RigidBodyKind::Static),
             ..Default::default()
-        }),
-        ..Default::default()
-    }
-    .reconcile(RootReconciler::new(child_meta))
-    .expect("reconcile child");
+        },
+    );
+    ctx_physics.set_attr(
+        child,
+        &XformAttr {
+            translation: [-1.5, 0.5, 0.0],
+            rotation:    [0.0, 0.0, 0.0, 1.0],
+            scale:       [1.0, 1.0, 1.0],
+        },
+    );
 
-    ctx_physics.doc.commit();
     ctx_physics.app.update();
     ctx_physics.app.update();
 
@@ -310,44 +279,33 @@ fn child_of_translated_parent_has_global_position(mut ctx_physics: TestContext) 
 #[traced_test]
 #[rstest]
 fn no_xform_child_of_zero_scale_parent_has_finite_transform(mut ctx_physics: TestContext) {
-    let tree = ctx_physics.doc.get_tree(&*HSD_CONTAINER_ID);
-    let parent = tree.create(None).expect("create parent");
-    let parent_meta = tree.get_meta(parent).expect("parent meta");
-    PrimMeta {
-        attributes: Some(Attributes {
-            xform: Some(XformAttr {
-                translation: [0.0, 0.0, 0.0],
-                rotation:    [0.0, 0.0, 0.0, 1.0],
-                scale:       [0.0, 0.0, 0.0],
-            }),
-            ..Default::default()
-        }),
-        ..Default::default()
-    }
-    .reconcile(RootReconciler::new(parent_meta))
-    .expect("reconcile parent");
+    let parent = ctx_physics.create_prim();
+    ctx_physics.set_attr(
+        parent,
+        &XformAttr {
+            translation: [0.0, 0.0, 0.0],
+            rotation:    [0.0, 0.0, 0.0, 1.0],
+            scale:       [0.0, 0.0, 0.0],
+        },
+    );
 
-    let child = tree.create(Some(parent)).expect("create child");
-    let child_meta = tree.get_meta(child).expect("child meta");
-    PrimMeta {
-        attributes: Some(Attributes {
-            collider: Some(ColliderAttr::Cuboid {
-                x: 0.5,
-                y: 0.5,
-                z: 0.5,
-            }),
-            rigid_body: Some(RigidBodyAttr {
-                kind: Some(RigidBodyKind::Static),
-                ..Default::default()
-            }),
+    let child = ctx_physics.create_child(parent);
+    ctx_physics.set_attr(
+        child,
+        &ColliderAttr::Cuboid {
+            x: 0.5,
+            y: 0.5,
+            z: 0.5,
+        },
+    );
+    ctx_physics.set_attr(
+        child,
+        &RigidBodyAttr {
+            kind: Some(RigidBodyKind::Static),
             ..Default::default()
-        }),
-        ..Default::default()
-    }
-    .reconcile(RootReconciler::new(child_meta))
-    .expect("reconcile child");
+        },
+    );
 
-    ctx_physics.doc.commit();
     ctx_physics.app.update();
     ctx_physics.app.update();
 
@@ -362,27 +320,4 @@ fn no_xform_child_of_zero_scale_parent_has_finite_transform(mut ctx_physics: Tes
             && transform.rotation.w.is_finite(),
         "Transform must stay finite even under a degenerate parent, got {transform:?}"
     );
-}
-
-fn write_full_prim(
-    doc: &loro::LoroDoc,
-    collider: Option<ColliderAttr>,
-    rigid_body: Option<RigidBodyAttr>,
-    xform: Option<XformAttr>,
-) {
-    let tree = doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
-
-    let prim = PrimMeta {
-        attributes: Some(Attributes {
-            collider,
-            rigid_body,
-            xform,
-            ..Default::default()
-        }),
-        ..Default::default()
-    };
-    prim.reconcile(RootReconciler::new(meta))
-        .expect("reconcile");
 }

@@ -38,7 +38,7 @@ async fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
         SenderScope::Spatial { distance, node } => {
             let inserted = api.wired_scene.lock().await.prims.insert(
                 PrimRes {
-                    doc:      Arc::clone(&api.doc),
+                    state:    Arc::clone(&api.state),
                     doc_id:   node.doc,
                     id:       node.node,
                     is_proxy: true,

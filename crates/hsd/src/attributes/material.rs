@@ -1,7 +1,3 @@
-use loro_surgeon::{
-    Hydrate,
-    Reconcile,
-};
 use serde::{
     Deserialize,
     Serialize,
@@ -9,44 +5,41 @@ use serde::{
 
 use crate::attributes::Attribute;
 
-#[derive(Hydrate, Reconcile, Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct ColorVec(pub Vec<f64>);
 
-#[serde_with::skip_serializing_none]
-#[derive(Hydrate, Reconcile, Debug, Clone, Default, Serialize, Deserialize)]
-#[loro(default)]
-#[serde(default)]
+/// Texture slots are relationship properties (`material:base_color_texture`
+/// and friends), following USD: a cross-prim reference has one home, and it is
+/// not inside an attribute payload.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MaterialAttr {
-    pub alpha_cutoff:               Option<f64>,
-    pub alpha_mode:                 Option<String>,
-    pub base_color:                 Option<ColorVec>,
-    pub base_color_texture:         Option<String>,
-    pub double_sided:               Option<bool>,
-    pub emissive:                   Option<ColorVec>,
-    pub emissive_texture:           Option<String>,
-    pub metallic:                   Option<f64>,
-    pub metallic_roughness_texture: Option<String>,
-    pub normal_texture:             Option<String>,
-    pub occlusion_texture:          Option<String>,
-    pub roughness:                  Option<f64>,
-}
-
-impl MaterialAttr {
-    pub(crate) fn resolve_refs(&mut self, mut resolve: impl FnMut(&str) -> String) {
-        let mut apply = |slot: &mut Option<String>| {
-            if let Some(v) = slot {
-                *v = resolve(v.as_str());
-            }
-        };
-        apply(&mut self.base_color_texture);
-        apply(&mut self.emissive_texture);
-        apply(&mut self.metallic_roughness_texture);
-        apply(&mut self.normal_texture);
-        apply(&mut self.occlusion_texture);
-    }
+    pub alpha_cutoff: Option<f64>,
+    pub alpha_mode:   Option<String>,
+    pub base_color:   Option<ColorVec>,
+    pub double_sided: Option<bool>,
+    pub emissive:     Option<ColorVec>,
+    pub metallic:     Option<f64>,
+    pub roughness:    Option<f64>,
 }
 
 impl Attribute for MaterialAttr {
-    const KEY: &str = "material";
+    const KEY: &'static str = "material";
 }
+
+/// The relationship carrying a prim's material from another prim.
+pub const BINDING: &str = "material:binding";
+
+pub const BASE_COLOR_TEXTURE: &str = "material:base_color_texture";
+pub const EMISSIVE_TEXTURE: &str = "material:emissive_texture";
+pub const METALLIC_ROUGHNESS_TEXTURE: &str = "material:metallic_roughness_texture";
+pub const NORMAL_TEXTURE: &str = "material:normal_texture";
+pub const OCCLUSION_TEXTURE: &str = "material:occlusion_texture";
+
+pub const TEXTURES: [&str; 5] = [
+    BASE_COLOR_TEXTURE,
+    EMISSIVE_TEXTURE,
+    METALLIC_ROUGHNESS_TEXTURE,
+    NORMAL_TEXTURE,
+    OCCLUSION_TEXTURE,
+];

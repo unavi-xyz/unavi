@@ -85,7 +85,7 @@ impl SlotPrims {
             } else {
                 self.base_mat.borrow()
             };
-            self.bg.set_material(Some(&mat)).ok();
+            self.bg.set_material(Some(*mat)).ok();
         }
     }
 
@@ -120,13 +120,13 @@ impl SlotPrims {
 
         geometry::apply_mesh(&self.bg, &geometry::sector_mesh(i, n));
         let base = self.base_mat.borrow();
-        self.bg.set_material(Some(&base)).ok();
+        self.bg.set_material(Some(*base)).ok();
         drop(base);
 
         if slot.active {
             geometry::apply_mesh(&self.outline, &geometry::outline_mesh(i, n));
             self.outline
-                .set_material(Some(&palette::solid(palette::ACCENT, 0.7)))
+                .set_material(Some(palette::solid(palette::ACCENT, 0.7)))
                 .ok();
             self.outline.set_xform(Some(scaled(1.0))).ok();
         } else {
@@ -135,7 +135,7 @@ impl SlotPrims {
 
         geometry::apply_mesh(&self.glyph, &icon_mesh(slot.icon));
         self.glyph
-            .set_material(Some(&palette::solid(color, 0.6)))
+            .set_material(Some(palette::solid(color, 0.6)))
             .ok();
         let angle = i as f32 * 2.0 * PI / n as f32;
         self.glyph

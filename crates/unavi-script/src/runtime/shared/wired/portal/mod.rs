@@ -1,3 +1,4 @@
+use hsd::id::DocId;
 use iroh_docs::NamespaceId;
 use unavi_quota::{
     Flow,
@@ -45,7 +46,7 @@ pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<(),
 
     AsyncCommands::default()
         .spawn((
-            PortalWatch::new(source_space, doc, tree_id, NamespaceId::from(&target)),
+            PortalWatch::new(source_space, doc, tree_id, DocId(target)),
             QuotaGuards(vec![watch_guard]),
         ))
         .send()

@@ -3,23 +3,13 @@ use bevy::{
     pbr::MeshMaterial3d,
     prelude::*,
 };
-use hsd::{
-    HSD_CONTAINER_ID,
-    attributes::{
-        Attribute,
-        hydrate_attr,
-        material::{
-            ColorVec,
-            MaterialAttr,
-        },
+use hsd::attributes::{
+    Attribute,
+    material::{
+        self,
+        ColorVec,
+        MaterialAttr,
     },
-};
-use loro::{
-    ContainerID,
-    Index,
-    TreeID,
-    ValueOrContainer,
-    event::Diff,
 };
 
 use crate::{
@@ -27,24 +17,14 @@ use crate::{
     HsdPrimIndex,
     HsdRelationships,
     attributes::{
-        ApplyEvent,
-        AttrDataEvent,
         AttributeParser,
-        DocContext,
         ParseError,
         image::HsdImage,
-        util::shallow_map_updated_keys,
     },
-    diff::HsdDiffEvent,
 };
 
 const METALLIC_DEFAULT: f32 = 0.5;
 const ROUGHNESS_DEFAULT: f32 = 0.5;
-
-#[derive(Debug)]
-pub enum MaterialEvent {
-    Rebuild(MaterialAttr),
-}
 
 #[derive(Component, Default, Clone)]
 pub struct HsdMaterial(pub Handle<StandardMaterial>);
@@ -87,47 +67,25 @@ impl AttributeParser for MaterialParser {
         &self,
         commands: &mut Commands,
         prim: Entity,
-        value: Option<ValueOrContainer>,
+        payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
-        if value.is_some() {
-            commands.entity(prim).insert((
-                HsdMaterial::default(),
-                MeshMaterial3d::<StandardMaterial>::default(),
-            ));
-        } else {
-            commands
-                .entity(prim)
-                .remove::<HsdMaterial>()
-                .remove::<MaterialData>()
-                .remove::<MaterialTextureRefs>()
-                .remove::<MeshMaterial3d<StandardMaterial>>();
+        match payload {
+            Some(payload) => {
+                commands.entity(prim).insert((
+                    MaterialData(MaterialAttr::decode(payload)?),
+                    HsdMaterial::default(),
+                    MeshMaterial3d::<StandardMaterial>::default(),
+                ));
+            }
+            None => {
+                commands
+                    .entity(prim)
+                    .remove::<HsdMaterial>()
+                    .remove::<MaterialData>()
+                    .remove::<MaterialTextureRefs>()
+                    .remove::<MeshMaterial3d<StandardMaterial>>();
+            }
         }
-        Ok(())
-    }
-
-    fn parse(
-        &self,
-        ctx: &DocContext,
-        prim: TreeID,
-        path: &[(ContainerID, Index)],
-        diff: Diff,
-    ) -> Result<(), ParseError> {
-        let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-        let meta = tree.get_meta(prim)?;
-
-        let attr: MaterialAttr = hydrate_attr(&meta)?;
-
-        let keys = shallow_map_updated_keys(path, diff)?;
-        if keys.is_empty() {
-            return Ok(());
-        }
-
-        ctx.tx
-            .send(HsdDiffEvent::AttrData {
-                prim,
-                data: AttrDataEvent::Material(MaterialEvent::Rebuild(attr)),
-            })
-            .map_err(|_| ParseError::SendDiff)?;
         Ok(())
     }
 }
@@ -141,27 +99,20 @@ pub struct MaterialCtx<'w, 's> {
     pub materials:     Query<'w, 's, &'static HsdMaterial>,
 }
 
-pub fn apply_material(
-    trigger: On<ApplyEvent<MaterialEvent>>,
-    ctx: MaterialCtx,
-    mut assets: ResMut<Assets<StandardMaterial>>,
-    mut commands: Commands,
-) {
-    let ent = trigger.entity;
-    let MaterialEvent::Rebuild(attr) = &trigger.value;
-
-    commands.entity(ent).insert(MaterialData(attr.clone()));
-    rebuild_material(ent, Some(attr), &ctx, &mut assets, &mut commands);
-}
-
-pub fn propagate_material_relationship(
-    changed: Query<(Entity, Option<&MaterialData>), Changed<HsdRelationships>>,
+/// Rebuilds on either the inline definition or the relationships changing: a
+/// prim can carry both `material/` and `material:binding/`, and which wins is
+/// this renderer's rule, not the format's.
+pub fn rebuild_material(
+    changed: Query<
+        (Entity, Option<&MaterialData>),
+        Or<(Changed<MaterialData>, Changed<HsdRelationships>)>,
+    >,
     ctx: MaterialCtx,
     mut assets: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
 ) {
     for (ent, data) in &changed {
-        rebuild_material(ent, data.map(|d| &d.0), &ctx, &mut assets, &mut commands);
+        build(ent, data.map(|d| &d.0), &ctx, &mut assets, &mut commands);
     }
 }
 
@@ -175,7 +126,7 @@ pub fn propagate_image_to_material(
     for img_ent in &changed {
         for (mat_ent, refs, data) in &dependents {
             if refs.references(img_ent) {
-                rebuild_material(mat_ent, Some(&data.0), &ctx, &mut assets, &mut commands);
+                build(mat_ent, Some(&data.0), &ctx, &mut assets, &mut commands);
             }
         }
     }
@@ -191,14 +142,14 @@ pub fn propagate_material_to_dependents(
 ) {
     for src_ent in &changed {
         for (dep_ent, rels, data, doc_child) in &dependents {
-            let Some(target_tree_id) = rels.0.get(MaterialAttr::KEY) else {
+            let Some(target) = rels.0.get(material::BINDING) else {
                 continue;
             };
             let Ok(index) = indices.get(doc_child.0) else {
                 continue;
             };
-            if index.0.get(target_tree_id) == Some(&src_ent) && dep_ent != src_ent {
-                rebuild_material(
+            if index.0.get(target) == Some(&src_ent) && dep_ent != src_ent {
+                build(
                     dep_ent,
                     data.map(|d| &d.0),
                     &ctx,
@@ -210,7 +161,7 @@ pub fn propagate_material_to_dependents(
     }
 }
 
-fn rebuild_material(
+fn build(
     ent: Entity,
     attr: Option<&MaterialAttr>,
     ctx: &MaterialCtx,
@@ -226,9 +177,11 @@ fn rebuild_material(
         return;
     };
 
-    if let Ok(rels) = ctx.relationships.get(ent)
-        && let Some(target_tree_id) = rels.0.get(MaterialAttr::KEY)
-        && let Some(&target_ent) = index.0.get(target_tree_id)
+    let rels = ctx.relationships.get(ent).ok();
+
+    if let Some(rels) = rels
+        && let Some(target) = rels.0.get(material::BINDING)
+        && let Some(&target_ent) = index.0.get(target)
         && target_ent != ent
         && let Ok(target_mat) = ctx.materials.get(target_ent)
     {
@@ -245,18 +198,23 @@ fn rebuild_material(
         return;
     };
 
-    let texture_refs = MaterialTextureRefs {
-        base_color:         lookup_image(attr.base_color_texture.as_ref(), index),
-        emissive:           lookup_image(attr.emissive_texture.as_ref(), index),
-        metallic_roughness: lookup_image(attr.metallic_roughness_texture.as_ref(), index),
-        normal:             lookup_image(attr.normal_texture.as_ref(), index),
-        occlusion:          lookup_image(attr.occlusion_texture.as_ref(), index),
+    let texture = |name: &str| {
+        rels.and_then(|rels| rels.0.get(name))
+            .and_then(|target| index.0.get(target).copied())
     };
 
-    let mut material = StandardMaterial::default();
-    apply_attr_to_material(&mut material, attr, &texture_refs, &ctx.images);
+    let texture_refs = MaterialTextureRefs {
+        base_color:         texture(material::BASE_COLOR_TEXTURE),
+        emissive:           texture(material::EMISSIVE_TEXTURE),
+        metallic_roughness: texture(material::METALLIC_ROUGHNESS_TEXTURE),
+        normal:             texture(material::NORMAL_TEXTURE),
+        occlusion:          texture(material::OCCLUSION_TEXTURE),
+    };
 
-    let handle = assets.add(material);
+    let mut standard = StandardMaterial::default();
+    apply_attr(&mut standard, attr, &texture_refs, &ctx.images);
+
+    let handle = assets.add(standard);
 
     commands.entity(ent).insert((
         HsdMaterial(handle.clone()),
@@ -265,28 +223,23 @@ fn rebuild_material(
     ));
 }
 
-fn lookup_image(field: Option<&String>, index: &HsdPrimIndex) -> Option<Entity> {
-    let target = TreeID::try_from(field?.as_str()).ok()?;
-    index.0.get(&target).copied()
-}
-
-fn apply_attr_to_material(
-    material: &mut StandardMaterial,
+fn apply_attr(
+    standard: &mut StandardMaterial,
     attr: &MaterialAttr,
     refs: &MaterialTextureRefs,
     images: &Query<&HsdImage>,
 ) {
-    material.base_color = color_from_color_vec(attr.base_color.as_ref()).unwrap_or(Color::WHITE);
+    standard.base_color = color_from_color_vec(attr.base_color.as_ref()).unwrap_or(Color::WHITE);
 
-    material.alpha_mode = match attr.alpha_mode.as_deref() {
+    standard.alpha_mode = match attr.alpha_mode.as_deref() {
         Some("Add") => AlphaMode::Add,
         Some("Blend") => AlphaMode::Blend,
-        Some("Mask") => AlphaMode::Mask(attr.alpha_cutoff.as_ref().copied().unwrap_or(0.5) as f32),
+        Some("Mask") => AlphaMode::Mask(attr.alpha_cutoff.unwrap_or(0.5) as f32),
         Some("Multiply") => AlphaMode::Multiply,
         Some("Opaque") => AlphaMode::Opaque,
         Some("Premultiplied") => AlphaMode::Premultiplied,
         _ => {
-            if material.base_color.alpha() < 1.0 {
+            if standard.base_color.alpha() < 1.0 {
                 AlphaMode::Blend
             } else {
                 AlphaMode::Opaque
@@ -294,24 +247,18 @@ fn apply_attr_to_material(
         }
     };
 
-    material.double_sided = attr.double_sided.as_ref().copied().unwrap_or_default();
-    material.emissive =
+    standard.double_sided = attr.double_sided.unwrap_or_default();
+    standard.emissive =
         color_from_color_vec(attr.emissive.as_ref()).map_or(LinearRgba::BLACK, LinearRgba::from);
-    material.metallic = attr
-        .metallic
-        .as_ref()
-        .map_or(METALLIC_DEFAULT, |v| *v as f32);
-    material.perceptual_roughness = attr
-        .roughness
-        .as_ref()
-        .map_or(ROUGHNESS_DEFAULT, |v| *v as f32);
+    standard.metallic = attr.metallic.map_or(METALLIC_DEFAULT, |v| v as f32);
+    standard.perceptual_roughness = attr.roughness.map_or(ROUGHNESS_DEFAULT, |v| v as f32);
 
-    material.base_color_texture = refs.base_color.and_then(|e| handle_for(images, e));
-    material.emissive_texture = refs.emissive.and_then(|e| handle_for(images, e));
-    material.metallic_roughness_texture =
+    standard.base_color_texture = refs.base_color.and_then(|e| handle_for(images, e));
+    standard.emissive_texture = refs.emissive.and_then(|e| handle_for(images, e));
+    standard.metallic_roughness_texture =
         refs.metallic_roughness.and_then(|e| handle_for(images, e));
-    material.normal_map_texture = refs.normal.and_then(|e| handle_for(images, e));
-    material.occlusion_texture = refs.occlusion.and_then(|e| handle_for(images, e));
+    standard.normal_map_texture = refs.normal.and_then(|e| handle_for(images, e));
+    standard.occlusion_texture = refs.occlusion.and_then(|e| handle_for(images, e));
 }
 
 fn handle_for(images: &Query<&HsdImage>, ent: Entity) -> Option<Handle<Image>> {
@@ -325,5 +272,27 @@ fn color_from_color_vec(vec: Option<&ColorVec>) -> Option<Color> {
         )),
         [r, g, b] => Some(Color::linear_rgb(*r as f32, *g as f32, *b as f32)),
         _ => None,
+    }
+}
+
+/// A prim can receive a material purely by relationship, with no inline
+/// definition of its own, so the slots have to exist before
+/// `propagate_material_to_dependents` can fill them.
+pub fn prepare_bound_material(
+    changed: Query<(Entity, Option<&MaterialData>, &HsdRelationships), Changed<HsdRelationships>>,
+    mut commands: Commands,
+) {
+    for (ent, data, rels) in &changed {
+        if rels.0.contains_key(material::BINDING) {
+            commands.entity(ent).insert((
+                HsdMaterial::default(),
+                MeshMaterial3d::<StandardMaterial>::default(),
+            ));
+        } else if data.is_none() {
+            commands
+                .entity(ent)
+                .remove::<HsdMaterial>()
+                .remove::<MeshMaterial3d<StandardMaterial>>();
+        }
     }
 }

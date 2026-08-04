@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use bevy::{
     mesh::{
         Indices,
@@ -7,23 +5,12 @@ use bevy::{
     },
     prelude::*,
 };
-use hsd::{
-    HSD_CONTAINER_ID,
-    PrimMeta,
-    attributes::{
-        Attribute,
-        Attributes,
-        attributes_map,
-        mesh::{
-            MeshAttr,
-            Topology,
-        },
+use hsd::attributes::{
+    mesh::{
+        MeshAttr,
+        Topology,
     },
-};
-use loro_surgeon::{
-    Reconcile,
-    bytes::ByteArray,
-    reconcile::RootReconciler,
+    slots,
 };
 use rstest::rstest;
 use tracing_test::traced_test;
@@ -35,18 +22,20 @@ mod common;
 #[traced_test]
 #[rstest]
 fn test_mesh_lifecycle(mut ctx: TestContext) {
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
+    let root = ctx.create_prim();
+    ctx.set_attr(
+        root,
+        &MeshAttr {
+            topology: Topology::TriangleList,
+        },
+    );
+    ctx.set_bulk(
+        root,
+        &slots::mesh_attribute("POSITION"),
+        blake3::hash(b"p"),
+        36,
+    );
 
-    let attr = MeshAttr {
-        attributes: BTreeMap::from([("POSITION".to_string(), ByteArray::<32>::new([1; 32]))]),
-        indices:    None,
-        topology:   Topology::TriangleList,
-    };
-    reconcile_prim_mesh(&meta, attr);
-
-    ctx.doc.commit();
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -55,10 +44,7 @@ fn test_mesh_lifecycle(mut ctx: TestContext) {
     let res = query.query(world).into_iter().collect::<Vec<_>>();
     assert_eq!(res.len(), 1);
 
-    let attrs = attributes_map(&meta).expect("attributes map");
-    attrs.delete(MeshAttr::KEY).expect("delete");
-
-    ctx.doc.commit();
+    ctx.remove_attr::<MeshAttr>(root);
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -74,33 +60,43 @@ const INDICES: [u32; 3] = [0, 1, 2];
 #[traced_test]
 #[rstest]
 fn test_mesh_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
-    let pos_hash = ctx.upload_blob(bytemuck::cast_slice::<[f32; 3], u8>(&POSITIONS).to_vec());
-    let norm_hash = ctx.upload_blob(bytemuck::cast_slice::<[f32; 3], u8>(&NORMALS).to_vec());
-    let uv_hash = ctx.upload_blob(bytemuck::cast_slice::<[f32; 2], u8>(&UVS).to_vec());
-    let idx_hash = ctx.upload_blob(bytemuck::cast_slice::<u32, u8>(&INDICES).to_vec());
+    let positions = bytemuck::cast_slice::<[f32; 3], u8>(&POSITIONS).to_vec();
+    let normals = bytemuck::cast_slice::<[f32; 3], u8>(&NORMALS).to_vec();
+    let uvs = bytemuck::cast_slice::<[f32; 2], u8>(&UVS).to_vec();
+    let indices = bytemuck::cast_slice::<u32, u8>(&INDICES).to_vec();
 
-    let tree = ctx.doc.get_tree(&*HSD_CONTAINER_ID);
-    let root = tree.create(None).expect("create");
-    let meta = tree.get_meta(root).expect("get meta");
-    let attr = MeshAttr {
-        attributes: BTreeMap::from([
-            (
-                "POSITION".to_string(),
-                ByteArray::<32>::new(*pos_hash.as_bytes()),
-            ),
-            (
-                "NORMAL".to_string(),
-                ByteArray::<32>::new(*norm_hash.as_bytes()),
-            ),
-            (
-                "UV_0".to_string(),
-                ByteArray::<32>::new(*uv_hash.as_bytes()),
-            ),
-        ]),
-        indices:    Some(ByteArray::<32>::new(*idx_hash.as_bytes())),
-        topology:   Topology::TriangleList,
-    };
-    reconcile_prim_mesh(&meta, attr);
+    let sizes = [positions.len(), normals.len(), uvs.len(), indices.len()];
+    let pos_hash = ctx.upload_blob(positions);
+    let norm_hash = ctx.upload_blob(normals);
+    let uv_hash = ctx.upload_blob(uvs);
+    let idx_hash = ctx.upload_blob(indices);
+
+    let root = ctx.create_prim();
+    ctx.set_attr(
+        root,
+        &MeshAttr {
+            topology: Topology::TriangleList,
+        },
+    );
+    ctx.set_bulk(
+        root,
+        &slots::mesh_attribute("POSITION"),
+        pos_hash,
+        sizes[0] as u64,
+    );
+    ctx.set_bulk(
+        root,
+        &slots::mesh_attribute("NORMAL"),
+        norm_hash,
+        sizes[1] as u64,
+    );
+    ctx.set_bulk(
+        root,
+        &slots::mesh_attribute("UV_0"),
+        uv_hash,
+        sizes[2] as u64,
+    );
+    ctx.set_bulk(root, slots::MESH_INDICES, idx_hash, sizes[3] as u64);
 
     let mut handle: Option<Handle<Mesh>> = None;
     ctx.tick_until(|world| {
@@ -147,16 +143,4 @@ fn test_mesh_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
         panic!("indices missing or wrong type");
     };
     assert_eq!(idx.as_slice(), &INDICES);
-}
-
-fn reconcile_prim_mesh(meta: &loro::LoroMap, attr: MeshAttr) {
-    let prim = PrimMeta {
-        attributes: Some(Attributes {
-            mesh: Some(attr),
-            ..Default::default()
-        }),
-        ..Default::default()
-    };
-    prim.reconcile(RootReconciler::new(meta.clone()))
-        .expect("reconcile");
 }

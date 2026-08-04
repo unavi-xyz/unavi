@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
-    HsdNamespace,
+    HsdDocId,
 };
 use iroh_docs::NamespaceId;
 use unavi_quota::registry::{
@@ -19,7 +19,7 @@ use unavi_space::{
 /// migrating standing usage off the previous owner.
 pub fn reassign_doc_quota(
     trigger: On<Insert, SpaceOwner>,
-    docs: Query<(&HsdNamespace, &SpaceOwner), With<Hsd>>,
+    docs: Query<(&HsdDocId, &SpaceOwner), With<Hsd>>,
     spaces: Query<&Space>,
 ) {
     let Ok((record, owner)) = docs.get(trigger.entity) else {
@@ -28,7 +28,7 @@ pub fn reassign_doc_quota(
     let Ok(space) = spaces.get(owner.0) else {
         return;
     };
-    reassign_document_in_space(record.0, space.0);
+    reassign_document_in_space(record.0, unavi_space::membership::space_doc_id(space));
 }
 
 /// Sheds a departed space's quota so the table does not retain dead scopes.

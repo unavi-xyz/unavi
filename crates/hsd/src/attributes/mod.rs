@@ -1,23 +1,8 @@
-use loro::{
-    Container,
-    LoroMap,
-    ValueOrContainer,
-};
-use loro_surgeon::{
-    Hydrate,
-    Reconcile,
-    error::{
-        HydrateError,
-        ReconcileError,
-    },
-    reconcile::PropReconciler,
-};
 use serde::{
-    Deserialize,
     Serialize,
+    de::DeserializeOwned,
 };
 
-pub mod asset;
 pub mod collider;
 pub mod gravity_scale;
 pub mod image;
@@ -26,88 +11,43 @@ pub mod mesh;
 pub mod name;
 pub mod portal;
 pub mod rigid_body;
-pub mod script;
 pub mod spawn;
-pub mod subdocument;
 pub mod xform;
 
-pub const ATTRIBUTES_KEY: &str = "attributes";
-pub const RELATIONSHIPS_KEY: &str = "relationships";
+/// A postcard payload under a string key.
+///
+/// The set is open: a new kind is one module that names itself, with no shared
+/// struct to edit, and a payload no client recognizes still stores, syncs and
+/// re-serves untouched.
+pub trait Attribute: Serialize + DeserializeOwned {
+    const KEY: &'static str;
 
-pub trait Attribute: Reconcile + Hydrate {
-    const KEY: &str;
-
-    /// Hydrate this attribute from the inner attributes map (i.e. the map
-    /// returned by [`attributes_map`]).
-    fn attr_hydrate(attrs: &LoroMap) -> Result<Self, HydrateError> {
-        loro_surgeon::hydrate::hydrate_prop(attrs, Self::KEY)
+    fn encode(&self) -> Result<Vec<u8>, postcard::Error> {
+        postcard::to_stdvec(self)
     }
 
-    fn attr_reconcile(&self, attrs: LoroMap) -> Result<(), ReconcileError> {
-        let rec = PropReconciler::map_put(attrs, Self::KEY.to_string());
-        self.reconcile(rec)
+    fn decode(bytes: &[u8]) -> Result<Self, postcard::Error> {
+        postcard::from_bytes(bytes)
     }
 }
 
-#[serde_with::skip_serializing_none]
-#[derive(Reconcile, Hydrate, Default, Clone, Serialize, Deserialize)]
-#[loro(default)]
-#[serde(default)]
-pub struct Attributes {
-    pub asset:         Option<asset::AssetAttr>,
-    pub collider:      Option<collider::ColliderAttr>,
-    pub gravity_scale: Option<gravity_scale::GravityScaleAttr>,
-    pub image:         Option<image::ImageAttr>,
-    pub material:      Option<material::MaterialAttr>,
-    pub mesh:          Option<mesh::MeshAttr>,
-    pub name:          Option<name::NameAttr>,
-    pub portal:        Option<portal::PortalAttr>,
-    pub rigid_body:    Option<rigid_body::RigidBodyAttr>,
-    pub script:        Option<script::ScriptAttr>,
-    pub spawn:         Option<spawn::SpawnAttr>,
-    pub subdocument:   Option<subdocument::SubdocumentAttr>,
-    pub xform:         Option<xform::XformAttr>,
-}
+/// Bulk slots, the `b/<prim>/<slot>/` entries whose value is the data itself.
+pub mod slots {
+    pub const PREFAB: &str = "prefab";
+    pub const SCRIPT: &str = "script";
+    pub const IMAGE_DATA: &str = "image:data";
+    pub const MESH_INDICES: &str = "mesh:indices";
+    pub const COLLIDER_INDICES: &str = "collider:indices";
+    pub const COLLIDER_VERTICES: &str = "collider:vertices";
 
-impl Attributes {
     #[must_use]
-    pub const fn is_empty(&self) -> bool {
-        self.asset.is_none()
-            && self.collider.is_none()
-            && self.gravity_scale.is_none()
-            && self.image.is_none()
-            && self.material.is_none()
-            && self.mesh.is_none()
-            && self.name.is_none()
-            && self.portal.is_none()
-            && self.rigid_body.is_none()
-            && self.script.is_none()
-            && self.spawn.is_none()
-            && self.subdocument.is_none()
-            && self.xform.is_none()
+    pub fn mesh_attribute(name: &str) -> String {
+        format!("mesh:{name}")
     }
-}
 
-/// Returns the inner `attributes` map from a prim's meta map, if present.
-#[must_use]
-pub fn attributes_map(prim_meta: &LoroMap) -> Option<LoroMap> {
-    match prim_meta.get(ATTRIBUTES_KEY)? {
-        ValueOrContainer::Container(Container::Map(m)) => Some(m),
-        _ => None,
+    #[must_use]
+    pub fn mesh_attribute_name(slot: &str) -> Option<&str> {
+        let name = slot.strip_prefix("mesh:")?;
+        (name != "indices").then_some(name)
     }
-}
-
-/// Returns the inner `relationships` map from a prim's meta map, if present.
-#[must_use]
-pub fn relationships_map(prim_meta: &LoroMap) -> Option<LoroMap> {
-    match prim_meta.get(RELATIONSHIPS_KEY)? {
-        ValueOrContainer::Container(Container::Map(m)) => Some(m),
-        _ => None,
-    }
-}
-
-/// Hydrate an attribute from a prim's meta map.
-pub fn hydrate_attr<A: Attribute>(prim_meta: &LoroMap) -> Result<A, HydrateError> {
-    let attrs = attributes_map(prim_meta).ok_or_else(|| HydrateError::missing(ATTRIBUTES_KEY))?;
-    A::attr_hydrate(&attrs)
 }

@@ -86,6 +86,7 @@ impl DataStoreBuilder {
             db,
             docs: docs.clone(),
             endpoint: self.endpoint.clone(),
+            gossip: gossip.clone(),
             user_identity: RwLock::new(None),
         });
 

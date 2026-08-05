@@ -9,6 +9,7 @@ use iroh::{
 };
 use iroh_blobs::api::Store as BlobStore;
 use iroh_docs::protocol::Docs;
+use iroh_gossip::Gossip;
 use irpc::Client;
 use n0_future::task::AbortOnDropHandle;
 use parking_lot::RwLock;
@@ -60,6 +61,8 @@ struct StoreContext {
     docs:          Docs,
     #[debug("Endpoint")]
     endpoint:      Endpoint,
+    #[debug("Gossip")]
+    gossip:        Gossip,
     #[debug("Option<Identity>")]
     user_identity: RwLock<Option<Arc<Identity>>>,
 }
@@ -105,6 +108,17 @@ impl DataStore {
     #[must_use]
     pub fn docs(&self) -> &Docs {
         &self.ctx.docs
+    }
+
+    /// The one gossip instance for this endpoint.
+    ///
+    /// `iroh_gossip::ALPN` can be accepted only once per router, so a second
+    /// instance registering it takes every inbound connection from the first,
+    /// leaving that one able to dial out and never to receive. Anything that
+    /// wants a gossip topic subscribes on this.
+    #[must_use]
+    pub fn gossip(&self) -> &Gossip {
+        &self.ctx.gossip
     }
 
     /// Resolves an authenticated session token to the DID that holds it.

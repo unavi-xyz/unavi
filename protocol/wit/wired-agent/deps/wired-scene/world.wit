@@ -6,7 +6,7 @@ world all {
 }
 
 interface api {
-  use types.{document, prim, document-id};
+  use types.{blob-id, document, prim, document-id};
   use wired:error/types.{error};
 
   self-prim:     func() -> result<prim, error>;
@@ -15,6 +15,14 @@ interface api {
   get-document:    func(id: document-id) -> result<option<document>, error>;
   create-document: func() -> result<document, error>;
   remove-document: func(id: document-id) -> result<_, error>;
+
+  /// Unpacks a compiled document blob into a document of its own, with a
+  /// namespace and an id that can be synced, saved and owned.
+  ///
+  /// A prim's `prefab` slot instances the same blob *under that prim*, which is
+  /// local forever and has no namespace to share. Use this instead when the
+  /// content is meant to become a shared, owned object.
+  create-document-from-prefab: func(prefab: blob-id) -> result<document, error>;
 
   /// Shares a document with the other peers in the space.
   ///

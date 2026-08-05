@@ -1,3 +1,8 @@
+use std::sync::atomic::{
+    AtomicUsize,
+    Ordering,
+};
+
 use iroh::Signature;
 use iroh_docs::NamespaceId;
 use iroh_gossip::api::{
@@ -26,11 +31,13 @@ pub async fn handle_gossip_inbound(
     rx: &mut GossipReceiver,
     space: NamespaceId,
     wake: &Notify,
+    neighbors: &AtomicUsize,
 ) -> anyhow::Result<()> {
     while let Some(event) = rx.next().await {
         match event? {
             Event::NeighborUp(n) => {
                 info!("+neighbor: {n}");
+                neighbors.fetch_add(1, Ordering::Relaxed);
                 // Prompt an immediate presence broadcast so the new neighbor
                 // discovers us without waiting a full interval. `notify_one`
                 // stores a permit so the wake isn't lost if the outbound task
@@ -39,6 +46,11 @@ pub async fn handle_gossip_inbound(
             }
             Event::NeighborDown(n) => {
                 info!("-neighbor: {n}");
+                neighbors
+                    .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
+                        Some(n.saturating_sub(1))
+                    })
+                    .ok();
             }
             Event::Lagged => warn!("lagged"),
             Event::Received(msg) => {

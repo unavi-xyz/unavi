@@ -5,6 +5,7 @@ use bevy::{
     prelude::*,
     time::common_conditions::on_timer,
 };
+use bevy_hsd::HsdCommitSet;
 use iroh_docs::NamespaceId;
 use unavi_manifold::{
     echo::maintain_seam_echoes,
@@ -41,7 +42,6 @@ impl Plugin for SpacePlugin {
             .add_observer(anchor::assign_anchor)
             .add_observer(anchor::reparent_doc_traveler)
             .add_observer(membership::self_own_space)
-            .add_observer(membership::parent_doc_under_space)
             .add_observer(membership::register_on_owner_change)
             .add_observer(membership::deregister_doc_membership)
             .add_observer(membership::deregister_space_docs)
@@ -52,7 +52,6 @@ impl Plugin for SpacePlugin {
             .add_observer(connection::ecs::agent::inbound::despawn_remote_agent)
             .add_observer(connection::register_protocol)
             .add_observer(peer::capture_self_did)
-            .add_observer(gossip::join_space_topic)
             .add_observer(gossip::leave_space_topic)
             .add_observer(gossip::spawn_gossip)
             .add_observer(portal::spawn_portal_space)
@@ -87,7 +86,8 @@ impl Plugin for SpacePlugin {
                         connection::ecs::object::advance_object_interp,
                     )
                         .chain(),
-                    gossip::poll_gossip,
+                    gossip::adopt_gossip,
+                    gossip::join_space_topics,
                     connection::ecs::agent::outbound::set_agent_tickrates
                         .run_if(on_timer(TICKRATE_UPDATE_INTERVAL)),
                     peer::presence::manage_peers,
@@ -96,6 +96,10 @@ impl Plugin for SpacePlugin {
                     scene::pinned_docs::instantiate_tracked_docs,
                     scene::pinned_docs::prune_tracked_docs,
                 ),
+            )
+            .add_systems(
+                Update,
+                membership::parent_docs_under_space.before(HsdCommitSet),
             )
             .add_systems(
                 Update,

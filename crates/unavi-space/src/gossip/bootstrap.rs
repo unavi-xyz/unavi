@@ -6,7 +6,10 @@ use iroh::{
     PublicKey,
 };
 use iroh_docs::NamespaceId;
-use tracing::warn;
+use tracing::{
+    info,
+    warn,
+};
 
 use crate::gossip::GossipCtx;
 
@@ -31,15 +34,26 @@ pub async fn find_bootstrap_peers(
             }
         };
 
+        let mut listed = Vec::new();
         for presence in occupants {
             let Ok(endpoint) = EndpointId::from_bytes(&presence.endpoint) else {
                 continue;
             };
+            listed.push(endpoint.fmt_short().to_string());
             if endpoint == ctx.endpoint.id() {
                 continue;
             }
             bootstrap.insert(endpoint);
         }
+
+        // A registry holds presence in memory with a short TTL, so this list
+        // routinely contains endpoints from processes that have already exited
+        // — dialable in principle, answering nothing in practice.
+        info!(
+            me = %ctx.endpoint.id().fmt_short(),
+            occupants = ?listed,
+            "Registry presence for space"
+        );
     }
 
     Ok(bootstrap)

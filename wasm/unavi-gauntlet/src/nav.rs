@@ -5,8 +5,13 @@ use crate::{
     unavi::shapes::api::Cuboid,
     wired::{
         scene::{
-            api::self_document,
+            api::{
+                create_document_from_prefab,
+                remove_document,
+                self_document,
+            },
             types::{
+                Document,
                 Material,
                 Prim,
                 RigidBody,
@@ -130,7 +135,7 @@ pub struct Nav {
     root:         Prim,
     beacon_lists: Vec<ListFuture>,
     seen:         Vec<String>,
-    beacons:      Vec<Prim>,
+    beacons:      Vec<Document>,
 }
 
 impl Nav {
@@ -194,11 +199,8 @@ impl Nav {
         self.beacon_lists.clear();
         self.seen.clear();
 
-        // An instance exists because a prim carries the attribute, so deleting
-        // the prim is the whole teardown.
-        let doc = self_document()?;
-        for prim in self.beacons.drain(..) {
-            doc.remove_prim(&prim)?;
+        for doc in self.beacons.drain(..) {
+            remove_document(&doc.id())?;
         }
         Ok(())
     }
@@ -243,23 +245,17 @@ impl Nav {
             }
             self.seen.push(space.clone());
 
-            let prim = doc.create_prim()?;
+            // A beacon is grabbed and published, so it needs a namespace of its
+            // own rather than an instance under one of our prims: syncing is
+            // per document, and an instance has no document to sync.
+            let beacon = create_document_from_prefab(&template)?;
+            let prim = beacon.create_prim()?;
             prim.set_name(Some(&space))?;
+            set_translation(&prim, grid_offset(self.beacons.len()));
 
-            let root_xform = self.root.xform().unwrap_or(Xform {
-                translation: Vec3::ZERO,
-                rotation:    IDENTITY,
-                scale:       Vec3::ONE,
-            });
-            let offset = grid_offset(self.beacons.len());
-            let pos = root_xform.translation + root_xform.rotation * offset;
-            set_translation(&prim, pos);
+            beacon.set_anchor(Some(&self.root))?;
 
-            // Setting the attribute is what spawns the instance; there is no
-            // imperative load step and no namespace minted per loader.
-            prim.set_prefab(Some(&template))?;
-
-            self.beacons.push(prim);
+            self.beacons.push(beacon);
         }
         Ok(())
     }

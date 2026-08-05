@@ -17,6 +17,7 @@ use bevy_wds::{
     LocalActor,
     LocalBlobs,
     LocalDocs,
+    LocalGossip,
     SyncTargets,
     set_local_actor,
     set_registries,
@@ -48,6 +49,9 @@ use xdid::{
     },
     resolver::DidResolver,
 };
+
+const RETRY_DELAY: Duration = Duration::from_secs(4);
+const MAX_RETRY_DELAY: Duration = Duration::from_mins(1);
 
 pub fn spawn_actors(trigger: On<Add, IrohEndpoint>, endpoints: Query<&IrohEndpoint>) {
     let entity = trigger.entity;
@@ -86,6 +90,7 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
         .gc_timer(Duration::from_mins(15))
         .build()
         .await?;
+    let store = Arc::new(store);
 
     store.set_user_identity(Arc::clone(&identity));
     let actor = store.local_actor(Arc::clone(&identity));
@@ -95,19 +100,30 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
         set_root_doc(root);
     }
 
-    let sync_targets = load_sync_targets(&store, &identity).await?;
+    let (sync_targets, unresolved) = resolve_sync_targets(&store, &identity).await;
     sync_registries(&store, &endpoint, &sync_targets).await;
 
-    AsyncCommands::default()
+    let store_entity = AsyncCommands::default()
         .spawn((RouterBuilderFnTarget(entity), RouterBuilderFn(Some(f))))
-        .spawn((
+        .send_spawn((
             LocalActor(actor),
             LocalBlobs(store.blobs().blobs().clone()),
             LocalDocs(store.docs().clone()),
-            SyncTargets(sync_targets),
+            LocalGossip(store.gossip().clone()),
+            SyncTargets(sync_targets.clone()),
         ))
-        .send()
-        .await?;
+        .await;
+
+    if !unresolved.is_empty() {
+        spawn_async_task(retry_sync_targets(
+            store,
+            endpoint,
+            identity,
+            sync_targets,
+            unresolved,
+            store_entity,
+        ));
+    }
 
     Ok(())
 }
@@ -139,51 +155,118 @@ async fn sync_registries(store: &DataStore, endpoint: &Endpoint, targets: &[Acto
     set_registry_clients(clients);
 }
 
-/// Resolves every configured sync target, or fails if none could be reached.
+/// Resolves every configured sync target, returning the ones that answered
+/// alongside the DIDs that did not.
 ///
-/// Failing is the point: a configured target that does not resolve is almost
-/// always a server that has not finished starting, and the caller retries with
-/// backoff. Returning an empty list instead would leave the client permanently
-/// without a registry — no presence published, nothing discovered — with only a
-/// warning to show for it.
-async fn load_sync_targets(
+/// A target that does not resolve is almost always a server that has not
+/// finished starting, so it is handed to [`retry_sync_targets`] rather than
+/// failing the load: a client with no reachable server still runs peer to peer,
+/// and holding the whole data store hostage to a home server would take that
+/// away.
+async fn resolve_sync_targets(
     store: &DataStore,
     identity: &Arc<Identity>,
-) -> anyhow::Result<Vec<Actor>> {
+) -> (Vec<Actor>, Vec<String>) {
     let Ok(raw) = std::env::var("UNAVI_SYNC_TARGETS") else {
-        return Ok(Vec::new());
+        return (Vec::new(), Vec::new());
     };
 
-    let dids: Vec<&str> = raw
+    let dids = raw
         .split(',')
         .map(str::trim)
         .filter(|s| !s.is_empty())
-        .collect();
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
 
     if dids.is_empty() {
-        return Ok(Vec::new());
+        return (Vec::new(), Vec::new());
     }
 
-    let resolver = DidResolver::new().context("construct DID resolver for sync targets")?;
+    let resolver = match DidResolver::new().context("construct DID resolver for sync targets") {
+        Ok(resolver) => resolver,
+        Err(err) => {
+            error!(?err, "cannot resolve WDS sync targets");
+            return (Vec::new(), Vec::new());
+        }
+    };
+
+    resolve_batch(store, identity, &resolver, dids).await
+}
+
+async fn resolve_batch(
+    store: &DataStore,
+    identity: &Arc<Identity>,
+    resolver: &DidResolver,
+    dids: Vec<String>,
+) -> (Vec<Actor>, Vec<String>) {
     let mut actors = Vec::new();
+    let mut unresolved = Vec::new();
 
     for did_str in dids {
-        match resolve_sync_target(&resolver, did_str).await {
+        match resolve_sync_target(resolver, &did_str).await {
             Ok(addr) => {
                 info!(target = did_str, "registering WDS sync target");
                 actors.push(store.remote_actor(Arc::clone(identity), addr));
             }
             Err(err) => {
                 warn!(target = did_str, ?err, "failed to resolve WDS sync target");
+                unresolved.push(did_str);
             }
         }
     }
 
-    if actors.is_empty() {
-        anyhow::bail!("no configured sync target resolved: {raw}");
-    }
+    (actors, unresolved)
+}
 
-    Ok(actors)
+/// Keeps resolving the targets that were unreachable at startup, so a server
+/// brought up after the client is still followed without a restart.
+async fn retry_sync_targets(
+    store: Arc<DataStore>,
+    endpoint: Endpoint,
+    identity: Arc<Identity>,
+    mut targets: Vec<Actor>,
+    mut unresolved: Vec<String>,
+    store_entity: Entity,
+) {
+    let resolver = match DidResolver::new() {
+        Ok(resolver) => resolver,
+        Err(err) => {
+            error!(?err, "cannot retry WDS sync targets");
+            return;
+        }
+    };
+
+    let mut delay = RETRY_DELAY;
+
+    while !unresolved.is_empty() {
+        n0_future::time::sleep(delay).await;
+        delay = (delay * 2).min(MAX_RETRY_DELAY);
+
+        let (actors, pending) = resolve_batch(&store, &identity, &resolver, unresolved).await;
+        unresolved = pending;
+
+        if actors.is_empty() {
+            continue;
+        }
+        targets.extend(actors);
+
+        sync_registries(&store, &endpoint, &targets).await;
+
+        let published = targets.clone();
+        let sent = AsyncCommands::default()
+            .push(move |world: &mut World| {
+                if let Some(mut existing) = world.get_mut::<SyncTargets>(store_entity) {
+                    existing.0 = published;
+                }
+            })
+            .send()
+            .await;
+
+        if let Err(err) = sent {
+            error!(?err, "failed to publish resolved sync targets");
+            return;
+        }
+    }
 }
 
 async fn resolve_sync_target(

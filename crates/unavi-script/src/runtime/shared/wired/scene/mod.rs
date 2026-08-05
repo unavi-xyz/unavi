@@ -20,7 +20,10 @@ use bevy_wds::{
 use blake3::Hash;
 use bytes::Bytes;
 use hsd::{
-    id::DocId,
+    id::{
+        BlobId,
+        DocId,
+    },
     key,
     state::{
         SceneState,
@@ -111,6 +114,29 @@ async fn create_namespace() -> anyhow::Result<NamespaceId> {
 /// A per-key diff against what the namespace already holds: only the keys that
 /// changed are written, so two peers editing different prims no longer
 /// overwrite each other.
+/// The namespace backing a document.
+///
+/// A prefab instance derives its id and has no namespace at all, so a write to
+/// storage has to refuse it rather than address a namespace nobody created —
+/// which `Docs` would happily import as a read capability and then reject.
+async fn namespace_of(id: DocId) -> anyhow::Result<NamespaceId> {
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let ns = world
+                .query::<(&HsdDocId, &HsdNamespace)>()
+                .iter(world)
+                .find_map(|(doc, ns)| (doc.0 == id).then_some(ns.0));
+            tx.try_send(ns).ok();
+        })
+        .send()
+        .await?;
+
+    rx.recv()
+        .await?
+        .ok_or_else(|| anyhow::anyhow!("document has no namespace: {id}"))
+}
+
 async fn save_namespace(ns: NamespaceId, state: Arc<Mutex<SceneState>>) -> anyhow::Result<()> {
     let current = state
         .lock()
@@ -312,7 +338,7 @@ async fn drop_replica(ns: NamespaceId) {
 
 pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
-    let ns = NamespaceId::from(&id.0);
+    let ns = namespace_of(id).await?;
     validate_firewall(&api.doc_id, &id, Channel::SceneWrite)?;
     api.quota.spend(Flow::SyncDoc, 1.0)?;
 
@@ -386,16 +412,37 @@ pub async fn save_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let Some(state) = state else {
         anyhow::bail!("saved doc not held by script");
     };
-    save_namespace(NamespaceId::from(&id.0), state).await
+    save_namespace(namespace_of(id).await?, state).await
 }
 
 pub async fn create_document(api: &Api) -> Result<u32, ScriptError> {
+    mint_document(api, SceneState::new()).await
+}
+
+/// Unpacks a prefab blob into a document with a namespace of its own.
+///
+/// The same blob set on a prim's `prefab` slot instances *under* that prim and
+/// stays local forever. Content that is meant to be grabbed, published and
+/// owned needs a namespace, which is to say a document.
+pub async fn create_document_from_prefab(api: &Api, prefab: Vec<u8>) -> Result<u32, ScriptError> {
+    let prefab = <[u8; 32]>::try_from(prefab.as_slice())
+        .map(BlobId)
+        .map_err(|_| ScriptError::other("invalid prefab id".to_owned()))?;
+
+    let state = unpack_prefab(prefab)
+        .await
+        .map_err(|err| ScriptError::other(err.to_string()))?;
+
+    mint_document(api, state).await
+}
+
+async fn mint_document(api: &Api, state: SceneState) -> Result<u32, ScriptError> {
     api.quota.spend(Flow::CreateDocument, 1.0)?;
 
     let ns = create_namespace()
         .await
         .map_err(|err| ScriptError::other(err.to_string()))?;
-    let state = Arc::new(Mutex::new(SceneState::new()));
+    let state = Arc::new(Mutex::new(state));
 
     spawn_child_doc(api, Arc::clone(&state), ns).await?;
 
@@ -407,4 +454,26 @@ pub async fn create_document(api: &Api) -> Result<u32, ScriptError> {
         },
         &api.quota,
     )?)
+}
+
+async fn unpack_prefab(prefab: BlobId) -> anyhow::Result<SceneState> {
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let Some(blobs) = world
+                .query::<&LocalBlobs>()
+                .single(world)
+                .ok()
+                .map(|b| b.0.clone())
+            else {
+                return;
+            };
+            spawn_async_task(async move {
+                tx.try_send(bevy_hsd::load::unpack_prefab(&blobs, prefab).await)
+                    .ok();
+            });
+        })
+        .send()
+        .await?;
+    rx.recv().await?
 }

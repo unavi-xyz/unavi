@@ -43,16 +43,35 @@ pub struct PendingScene {
 
 pub fn spawn_space_scene(
     trigger: On<Add, Space>,
-    spaces: Query<&Space>,
+    spaces: Query<(&Space, Option<&HsdNamespace>)>,
     stores: Query<(&LocalDocs, &LocalBlobs, &SyncTargets)>,
     endpoints: Query<&IrohEndpoint>,
     mut commands: Commands,
 ) {
-    let ns = spaces.get(trigger.entity).map(|v| v.0).expect("space");
+    let (ns, instanced) = spaces
+        .get(trigger.entity)
+        .map(|(space, ns)| (space.0, ns.map(|v| v.0)))
+        .expect("space");
+
     let Ok((docs, blobs, sync_targets)) = stores.single() else {
         warn!("Cannot read space: no local store");
         return;
     };
+
+    // A space built locally, such as the home document, is already realized on
+    // this entity. Reading it back would replace its live state with a second
+    // copy, duplicating every prim and re-running every script. It still has to
+    // be served: presence is announced for it, so peers arrive expecting an
+    // answer.
+    if instanced == Some(ns) {
+        let docs = docs.0.clone();
+        spawn_async_task(async move {
+            if let Err(err) = wds::docs::serve(&docs, ns).await {
+                warn!(%ns, ?err, "Failed to serve local space");
+            }
+        });
+        return;
+    }
     info!(%ns, "Reading space");
 
     let docs = docs.0.clone();

@@ -22,6 +22,10 @@ struct Args {
     /// Runs in XR mode.
     #[arg(long, default_value_t = false)]
     xr: bool,
+
+    /// Enters this space namespace instead of the local home.
+    #[arg(long)]
+    join: Option<String>,
 }
 
 fn main() {
@@ -73,6 +77,7 @@ fn main() {
     App::new()
         .add_plugins(unavi_client::UnaviPlugin {
             in_memory: args.in_memory,
+            join: args.join,
             log_level,
             xr: args.xr,
         })

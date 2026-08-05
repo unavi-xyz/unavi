@@ -209,14 +209,13 @@ pub fn instance_prefabs(
         commands.entity(prim_ent).insert(PrefabLoaded(prefab.0));
 
         let blobs = local_blobs.0.clone();
-        let hash = iroh_blobs::Hash::from_bytes(prefab.0.0);
         let expected = prefab.0;
 
         spawn_async_task(async move {
-            let state = match instance_prefab(&blobs, hash).await {
+            let state = match unpack_prefab(&blobs, expected).await {
                 Ok(state) => state,
                 Err(err) => {
-                    warn!(%hash, ?err, "failed to instance prefab");
+                    warn!(?err, "failed to instance prefab");
                     let _ = AsyncCommands::default()
                         .push(move |world: &mut World| {
                             if let Ok(mut e) = world.get_entity_mut(prim_ent) {
@@ -246,11 +245,13 @@ pub fn instance_prefabs(
 }
 
 #[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
-async fn instance_prefab(
+pub async fn unpack_prefab(
     blobs: &Blobs,
-    hash: iroh_blobs::Hash,
+    prefab: hsd::id::BlobId,
 ) -> anyhow::Result<hsd::state::SceneState> {
-    let bytes = blobs.get_bytes(hash).await?;
+    let bytes = blobs
+        .get_bytes(iroh_blobs::Hash::from_bytes(prefab.0))
+        .await?;
     let package = Package::decode(&bytes)?;
     document::unpack_into_state(package, blobs).await
 }

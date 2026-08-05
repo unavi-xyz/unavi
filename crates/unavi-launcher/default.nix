@@ -33,7 +33,6 @@ _: {
             clang
             dioxus-cli
             lld
-            mold
             pkg-config
             python3
           ]

@@ -47,7 +47,6 @@
               clang
               esbuild
               lld
-              mold
               pkg-config
               wac-cli
               wasm-tools

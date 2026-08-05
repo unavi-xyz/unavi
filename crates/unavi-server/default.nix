@@ -26,7 +26,6 @@ _: {
           [
             clang
             lld
-            mold
             pkg-config
           ]
         );

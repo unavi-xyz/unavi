@@ -6,6 +6,7 @@ use iroh_docs::{
     NamespaceId,
     protocol::Docs,
 };
+use iroh_gossip::Gossip;
 use wds::actor::Actor;
 use wired_registry::client::RegistryClient;
 
@@ -98,6 +99,12 @@ pub struct LocalBlobs(pub Blobs);
 
 #[derive(Component)]
 pub struct LocalDocs(pub Docs);
+
+/// The store's gossip, which is the only one on this endpoint: the router
+/// accepts `iroh_gossip::ALPN` once, so a second instance would silently take
+/// every inbound connection from the first.
+#[derive(Component)]
+pub struct LocalGossip(pub Gossip);
 
 #[derive(Component)]
 #[require(SyncTargets)]

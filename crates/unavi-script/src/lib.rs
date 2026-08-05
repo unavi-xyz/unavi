@@ -10,6 +10,7 @@ use crate::{
     permissions::{
         ApiPermissions,
         grant_space_permissions,
+        inherit_host_permissions,
     },
 };
 
@@ -41,6 +42,7 @@ impl Plugin for ScriptPlugin {
             runtime::shared::SharedRuntimePlugin,
         ))
         .add_observer(grant_space_permissions)
+        .add_observer(inherit_host_permissions)
         .add_systems(
             FixedUpdate,
             (

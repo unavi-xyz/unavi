@@ -87,12 +87,15 @@ impl Runtime {
             .map_err(|e| e.to_string())
     }
 
-    #[wasm_bindgen(js_name = "wiredSceneLoadHsd")]
-    pub async fn wired_scene_load_hsd(&self, blob_id: Vec<u8>) -> Result<DocHandle, String> {
+    #[wasm_bindgen(js_name = "wiredSceneCreateDocumentFromPrefab")]
+    pub async fn wired_scene_create_document_from_prefab(
+        &self,
+        prefab: Vec<u8>,
+    ) -> Result<DocHandle, String> {
         self.api
             .require(ApiName::CreateDocument)
             .map_err(|e| e.to_string())?;
-        let rep = shared::wired::scene::load_hsd(&self.api, blob_id)
+        let rep = shared::wired::scene::create_document_from_prefab(&self.api, prefab)
             .await
             .map_err(|e| e.to_string())?;
         Ok(DocHandle::new(rep, Arc::clone(&self.api)))

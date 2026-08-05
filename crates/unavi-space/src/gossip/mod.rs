@@ -4,13 +4,8 @@ use std::sync::{
 };
 
 use bevy::prelude::*;
-use bevy_iroh::{
-    endpoint::IrohEndpoint,
-    router::{
-        RouterBuilderFn,
-        RouterBuilderFnTarget,
-    },
-};
+use bevy_iroh::endpoint::IrohEndpoint;
+use bevy_wds::LocalGossip;
 use iroh::{
     EndpointAddr,
     EndpointId,
@@ -91,96 +86,89 @@ pub struct IrohGossip(Gossip);
 #[derive(Component)]
 pub struct GossipSender(async_channel::Sender<thread::GossipCommand>);
 
-#[derive(Component)]
-pub struct PendingGossip(async_channel::Receiver<Gossip>);
-
-pub fn spawn_gossip(
-    trigger: On<Add, IrohEndpoint>,
-    endpoints: Query<&IrohEndpoint>,
-    mut commands: Commands,
-) {
-    let endpoint = endpoints
-        .get(trigger.entity)
-        .map(|e| e.0.clone())
-        .expect("endpoint");
-
-    let (gossip_tx, gossip_rx) = async_channel::bounded(1);
+pub fn spawn_gossip(trigger: On<Add, IrohEndpoint>, mut commands: Commands) {
     let (tx, rx) = async_channel::bounded(32);
 
     spawn_async_task(async move {
-        let gossip = Gossip::builder().spawn(endpoint);
-        gossip_tx.send(gossip).await.ok();
         thread::handle_gossip_thread(rx).await;
     });
 
-    commands
-        .entity(trigger.entity)
-        .insert((GossipSender(tx), PendingGossip(gossip_rx)));
+    commands.entity(trigger.entity).insert(GossipSender(tx));
 }
 
-pub fn poll_gossip(pending: Query<(Entity, &PendingGossip)>, mut commands: Commands) {
-    for (entity, p) in &pending {
-        let Ok(gossip) = p.0.try_recv() else {
-            continue;
-        };
+/// Adopts the data store's gossip rather than spawning one.
+///
+/// `iroh_gossip::ALPN` can be accepted once per router. A second instance
+/// registering it wins every inbound connection, so the loser dials out
+/// normally, has its messages delivered to the winner, and never learns a
+/// topic it was not told about — space presence is sent and silently dropped,
+/// while iroh-docs, sharing the winner, works throughout.
+pub fn adopt_gossip(
+    endpoints: Query<Entity, (With<IrohEndpoint>, Without<IrohGossip>)>,
+    stores: Query<&LocalGossip>,
+    mut commands: Commands,
+) {
+    let Ok(gossip) = stores.single() else {
+        return;
+    };
 
-        commands
-            .entity(entity)
-            .insert(IrohGossip(gossip.clone()))
-            .remove::<PendingGossip>();
-
-        commands.spawn((
-            RouterBuilderFnTarget(entity),
-            RouterBuilderFn(Some(Box::new(|router| {
-                router.accept(iroh_gossip::ALPN, gossip)
-            }))),
-        ));
+    for entity in &endpoints {
+        commands.entity(entity).insert(IrohGossip(gossip.0.clone()));
     }
 }
 
-pub fn join_space_topic(
-    trigger: On<Add, Space>,
-    spaces: Query<&Space>,
+/// Subscribes every space that is not subscribed yet.
+///
+/// A pass rather than an observer: gossip is built asynchronously, so a space
+/// entered before it is ready — anything spawned at startup — finds no sender
+/// and would be dropped by a hook that fires once. An unsubscribed space
+/// broadcasts nothing and hears nothing, which looks from the outside exactly
+/// like a space with no one in it.
+pub fn join_space_topics(
+    spaces: Query<(Entity, &Space), Without<SpaceGossipCancel>>,
     sender: Query<&GossipSender>,
     endpoints: Query<(&IrohEndpoint, &IrohGossip)>,
     mut commands: Commands,
 ) {
+    if spaces.is_empty() {
+        return;
+    }
+
     let Ok(sender) = sender.single() else {
-        warn!("Cannot join space topic: no gossip sender");
         return;
     };
-
     let Ok((endpoint, gossip)) = endpoints.single() else {
-        warn!("Space add failed: no endpoint");
         return;
     };
 
-    let ctx = GossipCtx {
-        endpoint: endpoint.0.clone(),
-        gossip:   gossip.0.clone(),
-    };
+    for (entity, space) in &spaces {
+        let ctx = GossipCtx {
+            endpoint: endpoint.0.clone(),
+            gossip:   gossip.0.clone(),
+        };
 
-    let (cancel_tx, cancel_rx) = oneshot::channel();
-    let space = spaces.get(trigger.entity).map(|s| s.0).expect("space");
+        let (cancel_tx, cancel_rx) = oneshot::channel();
+        let space = space.0;
 
-    commands
-        .entity(trigger.entity)
-        .insert(SpaceGossipCancel { _cancel: cancel_tx });
+        commands
+            .entity(entity)
+            .insert(SpaceGossipCancel { _cancel: cancel_tx });
 
-    let sender = sender.0.clone();
+        let sender = sender.0.clone();
 
-    unavi_util::async_task::spawn_async_task(async move {
-        if let Err(err) = sender
-            .send(GossipCommand::JoinSpace {
-                ctx,
-                cancel: cancel_rx,
-                space,
-            })
-            .await
-        {
-            error!(?err, "Failed to send gossip command");
-        }
-    });
+        unavi_util::async_task::spawn_async_task(async move {
+            if let Err(err) = sender
+                .send(GossipCommand::JoinSpace {
+                    ctx,
+                    cancel: cancel_rx,
+                    space,
+                })
+                .await
+            {
+                error!(?err, "Failed to send gossip command");
+            }
+        });
+    }
 }
 
 #[derive(Component)]

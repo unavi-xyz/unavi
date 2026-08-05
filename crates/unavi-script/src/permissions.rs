@@ -4,6 +4,11 @@ use std::{
 };
 
 use bevy::prelude::*;
+use bevy_hsd::{
+    Hsd,
+    HsdChild,
+    HsdDocId,
+};
 use unavi_space::Space;
 
 #[derive(Component, Clone, Debug, Deref)]
@@ -89,4 +94,30 @@ pub fn grant_space_permissions(trigger: On<Add, Space>, mut commands: Commands) 
     commands
         .entity(trigger.entity)
         .insert(ApiPermissions::space());
+}
+
+/// A prefab instance runs with the permissions of the document that composed
+/// it in.
+///
+/// The blob is part of that document's compiled content, reached only through
+/// a prim it authored, so it is the same grant an imperatively spawned child
+/// document already inherits — and without it the gauntlet's own nav beacons
+/// come up with less authority than the gauntlet.
+pub fn inherit_host_permissions(
+    trigger: On<Insert, HsdDocId>,
+    instances: Query<&ChildOf, (With<Hsd>, Without<ApiPermissions>)>,
+    prims: Query<&HsdChild>,
+    hosts: Query<&ApiPermissions>,
+    mut commands: Commands,
+) {
+    let Ok(prim) = instances.get(trigger.entity).map(ChildOf::parent) else {
+        return;
+    };
+    let Ok(host) = prims.get(prim).map(|c| c.0) else {
+        return;
+    };
+    let Ok(permissions) = hosts.get(host) else {
+        return;
+    };
+    commands.entity(trigger.entity).insert(permissions.clone());
 }

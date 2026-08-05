@@ -20,6 +20,8 @@ wired_prelude::generate_script!(Script);
 const GROUND_SIZE: f32 = 30.0;
 const GROUND_THICK: f32 = 0.5;
 
+const MATERIAL_BINDING: &str = "material:binding";
+
 const IDENTITY_QUAT: Quat = Quat::IDENTITY;
 
 fn set_translation(prim: &Prim, translation: Vec3) {
@@ -72,7 +74,17 @@ impl ScriptBehavior for Script {
                 roughness:    Some(0.85),
             });
         mat.base_color = Some(base_color);
-        prim.set_material(Some(mat))?;
+
+        // The authored prim owns the texture relationships, and a material
+        // payload cannot carry them, so the mesh binds to it instead of
+        // copying it.
+        match &ground_root {
+            Some(ground) => {
+                ground.set_material(Some(mat))?;
+                prim.set_relationship(MATERIAL_BINDING, Some(&ground.id()))?;
+            }
+            None => prim.set_material(Some(mat))?,
+        }
 
         println!("Welcome home! =)");
 

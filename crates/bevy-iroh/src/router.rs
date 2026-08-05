@@ -65,6 +65,11 @@ pub(crate) fn on_build_router(
         }
     }
 
+    // A router is spawned once and never rebuilt, so a handler registered after
+    // this point is silently absent: its protocol dials fine and accepts
+    // nothing.
+    info!(handlers = collected.len(), "Building iroh router");
+
     // `Router::spawn` calls `tokio::spawn` internally, so the build must run
     // inside the async runtime rather than on the Bevy main thread.
     let (tx, rx) = async_channel::bounded(1);

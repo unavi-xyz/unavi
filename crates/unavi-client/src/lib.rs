@@ -21,6 +21,7 @@ mod scene;
 
 pub struct UnaviPlugin {
     pub in_memory: bool,
+    pub join:      Option<String>,
     pub log_level: Level,
     pub xr:        bool,
 }
@@ -109,6 +110,7 @@ impl Plugin for UnaviPlugin {
             grab::GrabPlugin,
             scene::ScenePlugin,
         ))
+        .insert_resource(scene::home::JoinSpace(self.join.clone()))
         .insert_resource(GlobalAmbientLight {
             brightness: lux::OVERCAST_DAY,
             ..default()

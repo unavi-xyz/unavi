@@ -15,7 +15,7 @@ use bevy_iroh::{
 use bevy_vrm::mtoon::MtoonSun;
 use unavi_agent::LocalAgent;
 
-mod home;
+pub mod home;
 mod limbo;
 mod respawn;
 mod system_scripts;
@@ -47,7 +47,7 @@ impl Plugin for ScenePlugin {
                 Startup,
                 (
                     spawn_sun,
-                    home::join_home,
+                    home::join_startup_space,
                     system_scripts::spawn_system_scripts,
                 ),
             )

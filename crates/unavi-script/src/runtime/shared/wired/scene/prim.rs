@@ -560,6 +560,16 @@ async fn set_buffer(
     }
 }
 
+/// The attribute and its buffers are separate entries, and a prim renders only
+/// when it has both. Writing a buffer implies the attribute, so a caller that
+/// wants the default topology never has to call `set-mesh` first.
+fn ensure_mesh_attr(prim: &PrimRes) -> anyhow::Result<()> {
+    if prim.read_attr::<MeshAttr>()?.is_some() {
+        return Ok(());
+    }
+    prim.write_attr(&MeshAttr::default())
+}
+
 pub async fn set_mesh_stream(
     api: &Api,
     rep: u32,
@@ -572,6 +582,7 @@ pub async fn set_mesh_stream(
     let bytes = match values {
         Some(v) => {
             anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "mesh stream too large");
+            ensure_mesh_attr(&prim)?;
             Some(f32s_to_bytes(&v))
         }
         None => None,
@@ -589,6 +600,7 @@ pub async fn set_mesh_indices_u32(
     let bytes = match values {
         Some(v) => {
             anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "mesh indices too large");
+            ensure_mesh_attr(&prim)?;
             Some(u32s_to_bytes(&v))
         }
         None => None,
@@ -980,5 +992,49 @@ pub async fn set_relationship(
             })?
         }
         None => prim.clear(&key),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn prim_res() -> PrimRes {
+        let mut state = SceneState::new();
+        let id = state.create_prim(None);
+        PrimRes {
+            state: Arc::new(Mutex::new(state)),
+            doc_id: DocId([0; 32]),
+            id,
+            is_proxy: false,
+        }
+    }
+
+    #[test]
+    fn first_buffer_defaults_the_mesh_attr() {
+        let prim = prim_res();
+        ensure_mesh_attr(&prim).expect("ensure mesh attr");
+        assert_eq!(
+            prim.read_attr::<MeshAttr>().expect("read mesh attr"),
+            Some(MeshAttr {
+                topology: Topology::TriangleList,
+            })
+        );
+    }
+
+    #[test]
+    fn an_authored_topology_survives_a_buffer_write() {
+        let prim = prim_res();
+        prim.write_attr(&MeshAttr {
+            topology: Topology::LineList,
+        })
+        .expect("write mesh attr");
+        ensure_mesh_attr(&prim).expect("ensure mesh attr");
+        assert_eq!(
+            prim.read_attr::<MeshAttr>().expect("read mesh attr"),
+            Some(MeshAttr {
+                topology: Topology::LineList,
+            })
+        );
     }
 }

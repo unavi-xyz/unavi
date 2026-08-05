@@ -1,0 +1,19 @@
+// Unlit fresnel rim, tint via a public input so two prims can share the graph.
+(
+    public_inputs: [
+        Color((0.1, 0.6, 1.0, 1.0)), // 0: rim tint
+    ],
+    surface: (
+        nodes: [
+            (kind: Fresnel(power: Const(Float(2.0)))),
+            (kind: Lerp(
+                a: Const(Color((0.0, 0.0, 0.0, 1.0))),
+                b: Input(0),
+                t: Node(0),
+            )),
+        ],
+        output: Unlit((
+            color: Node(1),
+        )),
+    ),
+)

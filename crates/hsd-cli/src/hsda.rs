@@ -7,6 +7,7 @@
 use std::collections::BTreeMap;
 
 use anyhow::Result;
+use hsd::attributes::material_graph::GraphValue;
 use ron::extensions::Extensions;
 use serde::{
     Deserialize,
@@ -48,18 +49,19 @@ pub struct HsdaPrim {
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
 pub struct HsdaAttributes {
-    pub collider:      Option<HsdaCollider>,
-    pub gravity_scale: Option<f64>,
-    pub image:         Option<HsdaImage>,
-    pub material:      Option<HsdaMaterial>,
-    pub name:          Option<String>,
+    pub collider:       Option<HsdaCollider>,
+    pub gravity_scale:  Option<f64>,
+    pub image:          Option<HsdaImage>,
+    pub material:       Option<HsdaMaterial>,
+    pub material_graph: Option<HsdaMaterialGraph>,
+    pub name:           Option<String>,
     /// Path to another `.hsda`, compiled and inlined as a nested package.
-    pub prefab:        Option<String>,
-    pub rigid_body:    Option<HsdaRigidBody>,
+    pub prefab:         Option<String>,
+    pub rigid_body:     Option<HsdaRigidBody>,
     /// Path to a wasm crate's `Cargo.toml`.
-    pub script:        Option<String>,
-    pub spawn:         Option<HsdaSpawn>,
-    pub xform:         Option<HsdaXform>,
+    pub script:         Option<String>,
+    pub spawn:          Option<HsdaSpawn>,
+    pub xform:          Option<HsdaXform>,
 }
 
 #[derive(Serialize, Deserialize, Default)]
@@ -108,6 +110,16 @@ pub struct HsdaMaterial {
     pub normal_texture:             Option<String>,
     pub occlusion_texture:          Option<String>,
     pub roughness:                  Option<f64>,
+}
+
+/// Path to a `.shader` file, compiled into the `material:graph_data` bulk
+/// entry, plus optional per-instance overrides of the graph's public inputs.
+#[skip_serializing_none]
+#[derive(Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct HsdaMaterialGraph {
+    pub path:      String,
+    pub overrides: BTreeMap<u16, GraphValue>,
 }
 
 #[skip_serializing_none]

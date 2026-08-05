@@ -67,7 +67,9 @@ impl Default for TestContext {
         ))
         .init_asset::<Image>()
         .init_asset::<Mesh>()
-        .init_asset::<StandardMaterial>();
+        .init_asset::<StandardMaterial>()
+        .init_asset::<Shader>()
+        .init_asset::<bevy_hsd::attributes::material_graph::ShaderGraphMaterial>();
         run_on_test_thread(&mut app);
 
         let mut ctx = Self {
@@ -101,6 +103,8 @@ impl TestContext {
         .init_asset::<Image>()
         .init_asset::<Mesh>()
         .init_asset::<StandardMaterial>()
+        .init_asset::<Shader>()
+        .init_asset::<bevy_hsd::attributes::material_graph::ShaderGraphMaterial>()
         .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
             Duration::from_secs_f32(1.0 / 60.0),
         ));
@@ -133,6 +137,8 @@ impl TestContext {
         .init_asset::<Image>()
         .init_asset::<Mesh>()
         .init_asset::<StandardMaterial>()
+        .init_asset::<Shader>()
+        .init_asset::<bevy_hsd::attributes::material_graph::ShaderGraphMaterial>()
         .insert_resource(Time::<Fixed>::from_duration(Duration::from_millis(10)));
         run_on_test_thread(&mut app);
 
@@ -200,6 +206,10 @@ impl TestContext {
                 )
                 .expect("set bulk");
         });
+    }
+
+    pub fn remove_bulk(&self, prim: PrimId, slot: &str) {
+        self.with_state(|state| state.remove_bulk(prim, slot));
     }
 
     pub fn remove_prim(&self, prim: PrimId) {

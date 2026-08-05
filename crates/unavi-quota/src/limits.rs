@@ -71,6 +71,7 @@ impl Limits {
             (Stock::Slots, 50_000),
             (Stock::PortalWatches, 16),
             (Stock::Receptors, 64),
+            (Stock::ShaderPrograms, 32),
         ]);
         let flow = HashMap::from([
             (
@@ -115,6 +116,7 @@ impl Limits {
             (Stock::Slots, 8_000_000),
             (Stock::PortalWatches, 128),
             (Stock::Receptors, 32_000),
+            (Stock::ShaderPrograms, 4_096),
         ]);
         let flow = HashMap::from([
             (
@@ -173,6 +175,7 @@ impl Limits {
             (Stock::Slots, 2_000_000),
             (Stock::PortalWatches, 32),
             (Stock::Receptors, 2_000),
+            (Stock::ShaderPrograms, 1_024),
         ]);
         let flow = HashMap::from([
             (

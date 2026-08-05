@@ -10,6 +10,7 @@ pub mod collider;
 pub mod gravity_scale;
 pub mod image;
 pub mod material;
+pub mod material_graph;
 pub mod mesh;
 pub mod name;
 pub mod portal;
@@ -27,6 +28,7 @@ pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
             Box::new(gravity_scale::GravityScaleParser),
             Box::new(image::ImageParser),
             Box::new(material::MaterialParser),
+            Box::new(material_graph::ShaderGraphOverridesParser),
             Box::new(mesh::MeshParser),
             Box::new(name::NameParser),
             Box::new(portal::PortalParser),

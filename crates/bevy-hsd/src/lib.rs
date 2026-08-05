@@ -44,29 +44,47 @@ pub struct HsdPlugin;
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
         app.init_asset::<load::HsdAsset>()
+            .init_resource::<attributes::material_graph::ShaderGraphCache>()
             .register_asset_loader(load::HsdLoader)
             .add_observer(diff::resync_on_spawn)
             .add_systems(
+                Startup,
+                attributes::material_graph::register_fallback_shader,
+            )
+            .add_systems(
                 Update,
                 (
-                    diff::drain_scene_events,
-                    attributes::script::track_script,
-                    attributes::prefab::track_prefab,
-                    attributes::xform::apply_xform,
-                    attributes::name::apply_name,
-                    attributes::gravity_scale::apply_gravity_scale,
-                    attributes::rigid_body::apply_rigid_body,
-                    attributes::spawn::apply_spawn,
-                    attributes::portal::apply_portal,
-                    attributes::mesh::rebuild_mesh,
-                    attributes::image::rebuild_image,
-                    attributes::collider::rebuild_collider,
-                    attributes::material::prepare_bound_material,
-                    attributes::material::rebuild_material,
-                    attributes::material::propagate_image_to_material,
-                    attributes::material::propagate_material_to_dependents,
-                    load::instance_hsd,
-                    load::instance_prefabs,
+                    // Bevy's tuple `IntoSystemConfigs` impl tops out below
+                    // one flat chain's worth of attribute systems; nesting
+                    // splits it without giving up ordering, since `.chain()`
+                    // on the outer tuple still orders the two inner groups.
+                    (
+                        diff::drain_scene_events,
+                        attributes::script::track_script,
+                        attributes::prefab::track_prefab,
+                        attributes::material_graph::track_material_graph,
+                        attributes::xform::apply_xform,
+                        attributes::name::apply_name,
+                        attributes::gravity_scale::apply_gravity_scale,
+                        attributes::rigid_body::apply_rigid_body,
+                        attributes::spawn::apply_spawn,
+                        attributes::portal::apply_portal,
+                        attributes::mesh::rebuild_mesh,
+                        attributes::image::rebuild_image,
+                        attributes::collider::rebuild_collider,
+                        attributes::material::prepare_bound_material,
+                        attributes::material::rebuild_material,
+                        attributes::material::propagate_image_to_material,
+                        attributes::material::propagate_material_to_dependents,
+                    )
+                        .chain(),
+                    (
+                        attributes::material_graph::rebuild_material_graph,
+                        attributes::material_graph::advance_material_graph_time,
+                        load::instance_hsd,
+                        load::instance_prefabs,
+                    )
+                        .chain(),
                 )
                     .chain()
                     .in_set(HsdCommitSet),
@@ -74,6 +92,7 @@ impl Plugin for HsdPlugin {
             .add_observer(attributes::mesh::on_mesh_blobs_loaded)
             .add_observer(attributes::image::on_image_blob_loaded)
             .add_observer(attributes::collider::on_collider_blobs_loaded)
+            .add_observer(attributes::material_graph::on_material_graph_blob_loaded)
             .add_systems(
                 PostUpdate,
                 (

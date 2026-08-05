@@ -31,6 +31,7 @@ wds.path                = "../wds"
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
 iroh-blobs.workspace           = true
+naga                           = { version = "29.0.4", default-features = false, features = ["wgsl-in"] }
 rstest.workspace               = true
 test-macros.path               = "../test-macros"
 tracing.workspace              = true

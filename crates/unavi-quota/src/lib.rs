@@ -19,6 +19,7 @@ pub enum Stock {
     PortalWatches,
     Prims,
     Receptors,
+    ShaderPrograms,
     Slots,
     WasmMemory,
 }

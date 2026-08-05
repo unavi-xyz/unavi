@@ -7,6 +7,7 @@ pub mod collider;
 pub mod gravity_scale;
 pub mod image;
 pub mod material;
+pub mod material_graph;
 pub mod mesh;
 pub mod name;
 pub mod portal;
@@ -39,6 +40,14 @@ pub mod slots {
     pub const MESH_INDICES: &str = "mesh:indices";
     pub const COLLIDER_INDICES: &str = "collider:indices";
     pub const COLLIDER_VERTICES: &str = "collider:vertices";
+    /// The compiled, validated node graph. Bulk, not an attribute payload —
+    /// see `material_graph`'s module docs for why.
+    pub const MATERIAL_GRAPH_DATA: &str = "material:graph_data";
+    /// One relationship per fixed texture-sample slot a graph may use.
+    #[must_use]
+    pub fn material_graph_texture(slot: u8) -> String {
+        format!("material:graph_texture:{slot}")
+    }
 
     #[must_use]
     pub fn mesh_attribute(name: &str) -> String {

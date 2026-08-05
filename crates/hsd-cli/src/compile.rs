@@ -30,6 +30,11 @@ use hsd::{
             ColorVec,
             MaterialAttr,
         },
+        material_graph::{
+            self,
+            GraphOverridesAttr,
+            ShaderGraph,
+        },
         name::NameAttr,
         rigid_body::{
             RigidBodyAttr,
@@ -56,6 +61,7 @@ use crate::{
         HsdaCollider,
         HsdaImage,
         HsdaMaterial,
+        HsdaMaterialGraph,
         HsdaPrim,
         HsdaRigidBody,
         HsdaXform,
@@ -216,6 +222,9 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         if let Some(mat) = &attrs.material {
             self.emit_material(id, mat)?;
         }
+        if let Some(graph) = &attrs.material_graph {
+            self.emit_material_graph(id, graph)?;
+        }
         if let Some(rel) = &attrs.script {
             let bytes = self.compile_script(rel)?;
             self.set_bulk(id, slots::SCRIPT, bytes);
@@ -274,6 +283,41 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
                 let target = self.resolve(target)?;
                 self.set_property(id, name, Property::Relationship(target));
             }
+        }
+        Ok(())
+    }
+
+    /// Compiles a `.shader` file to bulk content and, if the prim specifies
+    /// overrides, an attribute alongside it. The graph itself never appears
+    /// in the attribute payload — see `hsd::attributes::material_graph`.
+    fn emit_material_graph(&mut self, id: PrimId, graph: &HsdaMaterialGraph) -> Result<()> {
+        let path = self.input_dir.join(&graph.path);
+        let src = std::fs::read_to_string(&path)
+            .with_context(|| format!("reading shader graph {}", path.display()))?;
+        let parsed: ShaderGraph = ron::Options::default()
+            .with_default_extension(ron::extensions::Extensions::IMPLICIT_SOME)
+            .from_str(&src)
+            .with_context(|| format!("parsing shader graph {}", path.display()))?;
+        material_graph::validate(&parsed)
+            .with_context(|| format!("validating shader graph {}", path.display()))?;
+
+        let bytes = parsed.encode().context("encoding shader graph")?;
+        self.set_bulk(id, slots::MATERIAL_GRAPH_DATA, bytes);
+
+        if !graph.overrides.is_empty() {
+            material_graph::validate_overrides(
+                &parsed,
+                &GraphOverridesAttr {
+                    overrides: graph.overrides.clone(),
+                },
+            )
+            .with_context(|| format!("validating overrides for {}", path.display()))?;
+            self.set_attribute(
+                id,
+                &GraphOverridesAttr {
+                    overrides: graph.overrides.clone(),
+                },
+            )?;
         }
         Ok(())
     }

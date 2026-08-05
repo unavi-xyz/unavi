@@ -1,18 +1,14 @@
 use bevy::{
-    light::{
-        Atmosphere,
-        atmosphere::ScatteringMedium,
-    },
     mesh::{
         Indices,
         VertexAttributeValues,
     },
-    pbr::AtmosphereSettings,
     prelude::*,
 };
 use bevy_hsd::{
     Hsd,
     HsdPlugin,
+    attributes::material_graph::ShaderGraphMaterial,
 };
 use bevy_panorbit_camera::{
     PanOrbitCamera,
@@ -29,6 +25,18 @@ use hsd::{
             self,
             ColorVec,
             MaterialAttr,
+        },
+        material_graph::{
+            DisplacementGraph,
+            GraphValue,
+            LitOutput,
+            Node,
+            NodeKind,
+            Port,
+            ShaderGraph,
+            SurfaceGraph,
+            SurfaceOutput,
+            UnlitOutput,
         },
         mesh::{
             MeshAttr,
@@ -56,18 +64,23 @@ const CUBE_SIZE: f32 = 1.0;
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, PanOrbitCameraPlugin, WdsPlugin, HsdPlugin))
+        .add_plugins((
+            DefaultPlugins,
+            PanOrbitCameraPlugin,
+            WdsPlugin,
+            HsdPlugin,
+            MaterialPlugin::<ShaderGraphMaterial>::default(),
+        ))
+        .insert_resource(ClearColor(Color::srgb(0.08, 0.09, 0.13)))
         .add_systems(Startup, (setup_scene, load_hsd))
         .run();
 }
 
-fn setup_scene(mut commands: Commands, mut scattering_mediums: ResMut<Assets<ScatteringMedium>>) {
+fn setup_scene(mut commands: Commands) {
     commands.spawn((
         Camera3d::default(),
         Transform::from_xyz(5.0, 4.0, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
         PanOrbitCamera::default(),
-        Atmosphere::earth(scattering_mediums.add(ScatteringMedium::default())),
-        AtmosphereSettings::default(),
     ));
 
     commands.spawn((
@@ -134,6 +147,26 @@ fn populate(state: &mut SceneState, blobs: &Blobs) {
             state.set_bulk(prim, slot, *value).expect("bulk");
         }
     }
+
+    // Two effects a fixed `MaterialAttr` cannot express: an unlit fresnel
+    // glow and a sine-driven vertex displacement. Both use a smooth sphere —
+    // a cube's per-face normals split apart when displaced along them.
+    let graph_buffers = sphere_buffers(blobs);
+
+    shader_graph_cube(
+        state,
+        blobs,
+        &graph_buffers,
+        Vec3::new(-1.0, 0.0, 2.0),
+        glow_graph(),
+    );
+    shader_graph_cube(
+        state,
+        blobs,
+        &graph_buffers,
+        Vec3::new(1.0, 0.0, 2.0),
+        pulse_graph(),
+    );
 }
 
 fn material_prim(
@@ -157,33 +190,158 @@ fn material_prim(
     prim
 }
 
+/// A prim carrying a compiled shader graph as bulk `material:graph_data`
+/// rather than a bound PBR `MaterialAttr` — a hash may never sit inside an
+/// attribute payload, and a compiled graph is exactly that kind of content.
+fn shader_graph_cube(
+    state: &mut SceneState,
+    blobs: &Blobs,
+    buffers: &[(String, BulkRef)],
+    offset: Vec3,
+    graph: ShaderGraph,
+) -> PrimId {
+    let prim = state.create_prim(None);
+    state
+        .set_attribute(
+            prim,
+            &MeshAttr {
+                topology: Topology::TriangleList,
+            },
+        )
+        .expect("mesh");
+    state
+        .set_attribute(
+            prim,
+            &XformAttr {
+                rotation:    [0.0, 0.0, 0.0, 1.0],
+                scale:       [1.0, 1.0, 1.0],
+                translation: offset.to_array(),
+            },
+        )
+        .expect("xform");
+    for (slot, value) in buffers {
+        state.set_bulk(prim, slot, *value).expect("bulk");
+    }
+
+    let bytes = graph.encode().expect("encode shader graph");
+    state
+        .set_bulk(prim, slots::MATERIAL_GRAPH_DATA, upload(blobs, &bytes))
+        .expect("shader graph bulk");
+
+    prim
+}
+
+/// Unlit fresnel rim, the rim tint a public input so it can be overridden.
+fn glow_graph() -> ShaderGraph {
+    ShaderGraph {
+        public_inputs: vec![GraphValue::Color([0.2, 0.8, 1.0, 1.0])],
+        surface:       SurfaceGraph {
+            nodes:  vec![
+                Node {
+                    kind: NodeKind::Fresnel {
+                        power: Port::Const(GraphValue::Float(2.5)),
+                    },
+                },
+                Node {
+                    kind: NodeKind::Lerp {
+                        a: Port::Const(GraphValue::Color([0.02, 0.02, 0.05, 1.0])),
+                        b: Port::Input(0),
+                        t: Port::Node(0),
+                    },
+                },
+            ],
+            output: SurfaceOutput::Unlit(UnlitOutput {
+                color:                Port::Node(1),
+                alpha_clip_threshold: None,
+            }),
+        },
+        displacement:  None,
+    }
+}
+
+/// Lit PBR with a slow sine displacement that breathes the sphere along its
+/// normals.
+fn pulse_graph() -> ShaderGraph {
+    ShaderGraph {
+        public_inputs: Vec::new(),
+        surface:       SurfaceGraph {
+            nodes:  Vec::new(),
+            output: SurfaceOutput::Lit(LitOutput {
+                base_color: Some(Port::Const(GraphValue::Color([0.9, 0.5, 0.1, 1.0]))),
+                metallic: Some(Port::Const(GraphValue::Float(0.1))),
+                roughness: Some(Port::Const(GraphValue::Float(0.4))),
+                ..Default::default()
+            }),
+        },
+        displacement:  Some(DisplacementGraph {
+            nodes:           vec![
+                Node {
+                    kind: NodeKind::Time,
+                },
+                Node {
+                    kind: NodeKind::Sin { x: Port::Node(0) },
+                },
+                // `Mul` needs matching kinds, so scale the scalar first, then
+                // drive `Lerp`'s `t` with it: `mix(0, normal, sin*0.15)`.
+                Node {
+                    kind: NodeKind::Mul {
+                        a: Port::Node(1),
+                        b: Port::Const(GraphValue::Float(0.15)),
+                    },
+                },
+                Node {
+                    kind: NodeKind::LocalNormal,
+                },
+                Node {
+                    kind: NodeKind::Lerp {
+                        a: Port::Const(GraphValue::Vec3([0.0, 0.0, 0.0])),
+                        b: Port::Node(3),
+                        t: Port::Node(2),
+                    },
+                },
+            ],
+            position_offset: Some(Port::Node(4)),
+            normal_override: None,
+        }),
+    }
+}
+
 fn cube_buffers(blobs: &Blobs) -> Vec<(String, BulkRef)> {
     let cube = Cuboid::new(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE).mesh().build();
+    mesh_buffers(blobs, cube)
+}
 
+/// Smoothly-normalled sphere, so a displacement graph breathes the whole
+/// shell rather than splitting a cube's per-face vertices apart.
+fn sphere_buffers(blobs: &Blobs) -> Vec<(String, BulkRef)> {
+    mesh_buffers(blobs, Sphere::new(CUBE_SIZE / 2.0).mesh().build())
+}
+
+fn mesh_buffers(blobs: &Blobs, mesh: Mesh) -> Vec<(String, BulkRef)> {
     let mut out = Vec::new();
 
     if let Some(VertexAttributeValues::Float32x3(positions)) =
-        cube.attribute(Mesh::ATTRIBUTE_POSITION)
+        mesh.attribute(Mesh::ATTRIBUTE_POSITION)
     {
         out.push((
             slots::mesh_attribute("POSITION"),
             upload(blobs, cast_slice(positions)),
         ));
     }
-    if let Some(VertexAttributeValues::Float32x3(normals)) = cube.attribute(Mesh::ATTRIBUTE_NORMAL)
+    if let Some(VertexAttributeValues::Float32x3(normals)) = mesh.attribute(Mesh::ATTRIBUTE_NORMAL)
     {
         out.push((
             slots::mesh_attribute("NORMAL"),
             upload(blobs, cast_slice(normals)),
         ));
     }
-    if let Some(VertexAttributeValues::Float32x2(uvs)) = cube.attribute(Mesh::ATTRIBUTE_UV_0) {
+    if let Some(VertexAttributeValues::Float32x2(uvs)) = mesh.attribute(Mesh::ATTRIBUTE_UV_0) {
         out.push((
             slots::mesh_attribute("UV_0"),
             upload(blobs, cast_slice(uvs)),
         ));
     }
-    if let Some(Indices::U32(idx)) = cube.indices() {
+    if let Some(Indices::U32(idx)) = mesh.indices() {
         out.push((
             slots::MESH_INDICES.to_owned(),
             upload(blobs, cast_slice(idx)),

@@ -937,6 +937,7 @@ dependencies = [
  "image",
  "iroh-blobs",
  "iroh-docs",
+ "naga",
  "postcard",
  "rstest",
  "smol_str 0.3.6",

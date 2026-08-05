@@ -1,0 +1,19 @@
+// Two prims sharing one shader graph: `default_glow` uses its defaults,
+// `red_glow` overrides public input 0 (the rim tint) to red.
+[
+    (
+        attributes: (
+            name: "default_glow",
+            material_graph: (path: "./glow.shader"),
+        ),
+    ),
+    (
+        attributes: (
+            name: "red_glow",
+            material_graph: (
+                path: "./glow.shader",
+                overrides: {0: Color((1.0, 0.0, 0.0, 1.0))},
+            ),
+        ),
+    ),
+]

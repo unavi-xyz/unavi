@@ -29,12 +29,7 @@ fn test_mesh_lifecycle(mut ctx: TestContext) {
             topology: Topology::TriangleList,
         },
     );
-    ctx.set_bulk(
-        root,
-        &slots::mesh_attribute("POSITION"),
-        blake3::hash(b"p"),
-        36,
-    );
+    ctx.set_slot(root, &slots::mesh_attribute("POSITION"), vec![0u8; 36]);
 
     ctx.app.update();
 
@@ -59,17 +54,11 @@ const INDICES: [u32; 3] = [0, 1, 2];
 
 #[traced_test]
 #[rstest]
-fn test_mesh_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
+fn test_mesh_build(#[from(ctx_wds)] mut ctx: TestContext) {
     let positions = bytemuck::cast_slice::<[f32; 3], u8>(&POSITIONS).to_vec();
     let normals = bytemuck::cast_slice::<[f32; 3], u8>(&NORMALS).to_vec();
     let uvs = bytemuck::cast_slice::<[f32; 2], u8>(&UVS).to_vec();
     let indices = bytemuck::cast_slice::<u32, u8>(&INDICES).to_vec();
-
-    let sizes = [positions.len(), normals.len(), uvs.len(), indices.len()];
-    let pos_hash = ctx.upload_blob(positions);
-    let norm_hash = ctx.upload_blob(normals);
-    let uv_hash = ctx.upload_blob(uvs);
-    let idx_hash = ctx.upload_blob(indices);
 
     let root = ctx.create_prim();
     ctx.set_attr(
@@ -78,25 +67,10 @@ fn test_mesh_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
             topology: Topology::TriangleList,
         },
     );
-    ctx.set_bulk(
-        root,
-        &slots::mesh_attribute("POSITION"),
-        pos_hash,
-        sizes[0] as u64,
-    );
-    ctx.set_bulk(
-        root,
-        &slots::mesh_attribute("NORMAL"),
-        norm_hash,
-        sizes[1] as u64,
-    );
-    ctx.set_bulk(
-        root,
-        &slots::mesh_attribute("UV_0"),
-        uv_hash,
-        sizes[2] as u64,
-    );
-    ctx.set_bulk(root, slots::MESH_INDICES, idx_hash, sizes[3] as u64);
+    ctx.set_slot(root, &slots::mesh_attribute("POSITION"), positions);
+    ctx.set_slot(root, &slots::mesh_attribute("NORMAL"), normals);
+    ctx.set_slot(root, &slots::mesh_attribute("UV_0"), uvs);
+    ctx.set_slot(root, slots::MESH_INDICES, indices);
 
     let mut handle: Option<Handle<Mesh>> = None;
     ctx.tick_until(|world| {

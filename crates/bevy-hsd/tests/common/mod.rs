@@ -24,14 +24,8 @@ use bevy_wds::{
 };
 use hsd::{
     attributes::Attribute,
-    id::{
-        BlobId,
-        PrimId,
-    },
-    state::{
-        SceneState,
-        entry::BulkRef,
-    },
+    id::PrimId,
+    state::SceneState,
 };
 use iroh_blobs::{
     api::blobs::Blobs,
@@ -193,41 +187,16 @@ impl TestContext {
         self.with_state(|state| state.remove_property(prim, name));
     }
 
-    pub fn set_bulk(&self, prim: PrimId, slot: &str, hash: blake3::Hash, size: u64) {
-        self.with_state(|state| {
-            state
-                .set_bulk(
-                    prim,
-                    slot,
-                    BulkRef {
-                        hash: BlobId(*hash.as_bytes()),
-                        size,
-                    },
-                )
-                .expect("set bulk");
-        });
+    pub fn set_slot(&self, prim: PrimId, slot: &str, bytes: Vec<u8>) {
+        self.with_state(|state| state.set_slot(prim, slot, bytes).expect("set slot"));
     }
 
-    pub fn remove_bulk(&self, prim: PrimId, slot: &str) {
-        self.with_state(|state| state.remove_bulk(prim, slot));
+    pub fn remove_slot(&self, prim: PrimId, slot: &str) {
+        self.with_state(|state| state.remove_slot(prim, slot));
     }
 
     pub fn remove_prim(&self, prim: PrimId) {
         self.with_state(|state| state.remove_prim(prim));
-    }
-
-    /// Upload `bytes` to the local blob store and return its hash.
-    /// Panics if the context was not created with `with_wds`.
-    pub fn upload_blob(&self, bytes: Vec<u8>) -> blake3::Hash {
-        let blobs = self.blobs.clone().expect("wds not enabled");
-        let hash = blake3::hash(&bytes);
-        let (tx, rx) = async_channel::bounded(1);
-        spawn_async_task(async move {
-            blobs.add_slice(&bytes).await.expect("add slice");
-            tx.send(()).await.expect("send");
-        });
-        rx.recv_blocking().expect("upload");
-        hash
     }
 
     /// Tick the app until `cond` returns true.

@@ -12,12 +12,8 @@ use hsd::{
         GraphValue,
         ShaderGraph,
     },
-    id::BlobId,
     key,
-    package::{
-        self,
-        Package,
-    },
+    package::Package,
     state::{
         SceneState,
         entry::Entry,
@@ -37,18 +33,12 @@ fn compile(input: &Path) -> anyhow::Result<Package> {
 }
 
 fn realize(package: &Package) -> SceneState {
-    let (inline, bulk) = package::split(package.clone());
+    let bytes = package.encode().expect("encode");
+    let package = Package::decode(&bytes).expect("decode");
 
     let mut state = SceneState::new();
-    for (key, value) in inline {
-        state.apply(&Entry::bytes(key, value, 1)).expect("apply");
-    }
-    for (key, value) in bulk {
-        let size = value.len() as u64;
-        let hash = BlobId(*blake3::hash(&value).as_bytes());
-        state
-            .apply(&Entry::blob(key, hash, size, 1))
-            .expect("apply bulk");
+    for (key, value) in package.entries {
+        state.apply(&Entry::new(key, value, 1)).expect("apply");
     }
     state
 }
@@ -65,25 +55,24 @@ fn prim_named(state: &SceneState, name: &str) -> hsd::id::PrimId {
         .unwrap_or_else(|| panic!("no prim named {name}"))
 }
 
-/// Looks a bulk slot's raw bytes up straight from the package, since a
-/// realized [`SceneState`] tracks only the blob hash/size a bulk entry
-/// resolved to, not the bytes themselves.
-fn bulk_bytes<'a>(package: &'a Package, prim: hsd::id::PrimId, slot: &str) -> &'a [u8] {
-    let key = key::bulk(prim, slot);
+/// Looks a slot's raw bytes up straight from the package, since a realized
+/// [`SceneState`] and the package agree on where a slot's data lives.
+fn slot_bytes<'a>(package: &'a Package, prim: hsd::id::PrimId, slot: &str) -> &'a [u8] {
+    let key = key::prop(prim, slot);
     package
         .entries
         .iter()
         .find(|(k, _)| *k == key)
-        .map_or_else(|| panic!("no bulk entry at {key}"), |(_, v)| v.as_slice())
+        .map_or_else(|| panic!("no slot entry at {key}"), |(_, v)| v.as_slice())
 }
 
 #[test]
-fn a_shader_graph_compiles_to_a_bulk_entry() {
+fn a_shader_graph_compiles_to_a_slot_entry() {
     let package = compile(&glow_fixture()).expect("compile");
     let state = realize(&package);
     let prim = prim_named(&state, "default_glow");
 
-    let bytes = bulk_bytes(&package, prim, hsd::attributes::slots::MATERIAL_GRAPH_DATA);
+    let bytes = slot_bytes(&package, prim, hsd::attributes::slots::MATERIAL_GRAPH_DATA);
     let graph = ShaderGraph::decode(bytes).expect("decode graph");
     assert_eq!(
         graph.public_inputs,
@@ -120,18 +109,18 @@ fn overrides_compile_to_the_overrides_attribute() {
 /// The dedup story this format depends on: two prims authored against the
 /// same `.shader` file, one with overrides and one without, still compile
 /// to byte-identical `material:graph_data` entries — overrides live in the
-/// separate, small attribute, never in the bulk graph bytes.
+/// separate, small attribute, never in the slot graph bytes.
 #[test]
-fn two_prims_sharing_a_graph_get_byte_identical_bulk_entries() {
+fn two_prims_sharing_a_graph_get_byte_identical_slot_entries() {
     let package = compile(&glow_fixture()).expect("compile");
     let state = realize(&package);
 
-    let a = bulk_bytes(
+    let a = slot_bytes(
         &package,
         prim_named(&state, "default_glow"),
         hsd::attributes::slots::MATERIAL_GRAPH_DATA,
     );
-    let b = bulk_bytes(
+    let b = slot_bytes(
         &package,
         prim_named(&state, "red_glow"),
         hsd::attributes::slots::MATERIAL_GRAPH_DATA,
@@ -237,7 +226,7 @@ fn a_displacement_graph_compiles() {
     let package = compile(&write_source("displacement", shader)).expect("compile");
     let state = realize(&package);
     let prim = prim_named(&state, "p");
-    let bytes = bulk_bytes(&package, prim, hsd::attributes::slots::MATERIAL_GRAPH_DATA);
+    let bytes = slot_bytes(&package, prim, hsd::attributes::slots::MATERIAL_GRAPH_DATA);
     let graph = ShaderGraph::decode(bytes).expect("decode graph");
     assert!(graph.displacement.is_some());
 }

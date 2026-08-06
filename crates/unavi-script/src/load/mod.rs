@@ -11,7 +11,6 @@ impl Plugin for LoadPlugin {
         app.register_asset_loader(asset::WasmLoader)
             .init_asset::<asset::Wasm>()
             .add_observer(hsd::load_hsd_scripts)
-            .add_observer(local::load_local_script)
-            .add_systems(FixedUpdate, hsd::process_pending_scripts);
+            .add_observer(local::load_local_script);
     }
 }

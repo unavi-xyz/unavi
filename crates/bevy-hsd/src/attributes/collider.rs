@@ -5,22 +5,10 @@ use avian3d::prelude::{
     Rotation,
 };
 use bevy::prelude::*;
-use bevy_wds::blob::{
-    deps::{
-        BlobDep,
-        BlobDeps,
-        BlobDepsLoaded,
-    },
-    request::{
-        BlobRequest,
-        BlobResponse,
-    },
-};
 use bytemuck::{
     PodCastError,
     try_cast_slice,
 };
-use bytes::Bytes;
 use hsd::attributes::{
     Attribute,
     collider::ColliderAttr,
@@ -28,7 +16,7 @@ use hsd::attributes::{
 };
 
 use crate::{
-    HsdBulk,
+    HsdSlots,
     attributes::{
         AttributeParser,
         ParseError,
@@ -45,23 +33,6 @@ pub struct ColliderData(pub ColliderAttr);
 
 #[derive(Component)]
 pub struct HsdCollider;
-
-pub enum ColliderBlobKind {
-    ConvexHull { points: Entity },
-    Trimesh { vertices: Entity, indices: Entity },
-}
-
-#[derive(Component)]
-#[require(BlobDeps)]
-pub struct ColliderBlobs(pub ColliderBlobKind);
-
-#[derive(Component)]
-#[relationship(relationship_target = ColliderBlobsChild)]
-pub struct ColliderBlobsOwner(pub Entity);
-
-#[derive(Component)]
-#[relationship_target(relationship = ColliderBlobsOwner, linked_spawn)]
-pub struct ColliderBlobsChild(Entity);
 
 pub struct ColliderParser;
 
@@ -83,13 +54,9 @@ impl AttributeParser for ColliderParser {
                     .insert((ColliderData(ColliderAttr::decode(payload)?), HsdCollider));
             }
             None => {
-                commands.entity(prim).remove::<(
-                    ColliderData,
-                    HsdCollider,
-                    Collider,
-                    DisabledCollider,
-                    ColliderBlobsChild,
-                )>();
+                commands
+                    .entity(prim)
+                    .remove::<(ColliderData, HsdCollider, Collider, DisabledCollider)>();
             }
         }
         Ok(())
@@ -98,15 +65,15 @@ impl AttributeParser for ColliderParser {
 
 pub fn rebuild_collider(
     changed: Query<
-        (Entity, &ColliderData, Option<&HsdBulk>),
-        Or<(Changed<ColliderData>, Changed<HsdBulk>)>,
+        (Entity, &ColliderData, Option<&HsdSlots>),
+        Or<(Changed<ColliderData>, Changed<HsdSlots>)>,
     >,
     locals: Query<&Transform>,
     parents: Query<&ChildOf>,
     mut commands: Commands,
 ) {
-    for (prim, data, bulk) in &changed {
-        commands.entity(prim).remove::<ColliderBlobsChild>();
+    for (prim, data, slots) in &changed {
+        commands.entity(prim).remove::<Collider>();
 
         let seed = compute_global_transform(prim, &locals, &parents);
         let transform_valid = transform_is_valid(&seed);
@@ -117,49 +84,20 @@ pub fn rebuild_collider(
             ColliderAttr::Cuboid { x, y, z } => build_cuboid(x, y, z),
             ColliderAttr::Cylinder { height, radius } => build_cylinder(height, radius),
             ColliderAttr::ConvexHull => {
-                let Some(hash) = bulk.and_then(|b| b.0.get(slots::COLLIDER_VERTICES)) else {
+                let Some(bytes) = slots.and_then(|s| s.0.get(slots::COLLIDER_VERTICES)) else {
                     continue;
                 };
-                let child = commands.spawn(ColliderBlobsOwner(prim)).id();
-                let points = commands
-                    .spawn((
-                        BlobDep(child),
-                        BlobRequest(blake3::Hash::from_bytes(hash.0)),
-                    ))
-                    .id();
-                commands
-                    .entity(child)
-                    .insert(ColliderBlobs(ColliderBlobKind::ConvexHull { points }));
-                continue;
+                build_convex_hull(bytes)
             }
             ColliderAttr::Trimesh => {
-                let Some(bulk) = bulk else { continue };
+                let Some(slots) = slots else { continue };
                 let (Some(vertices), Some(indices)) = (
-                    bulk.0.get(slots::COLLIDER_VERTICES),
-                    bulk.0.get(slots::COLLIDER_INDICES),
+                    slots.0.get(slots::COLLIDER_VERTICES),
+                    slots.0.get(slots::COLLIDER_INDICES),
                 ) else {
                     continue;
                 };
-                let child = commands.spawn(ColliderBlobsOwner(prim)).id();
-                let vertex_ent = commands
-                    .spawn((
-                        BlobDep(child),
-                        BlobRequest(blake3::Hash::from_bytes(vertices.0)),
-                    ))
-                    .id();
-                let index_ent = commands
-                    .spawn((
-                        BlobDep(child),
-                        BlobRequest(blake3::Hash::from_bytes(indices.0)),
-                    ))
-                    .id();
-                commands
-                    .entity(child)
-                    .insert(ColliderBlobs(ColliderBlobKind::Trimesh {
-                        vertices: vertex_ent,
-                        indices:  index_ent,
-                    }));
-                continue;
+                build_trimesh(vertices, indices)
             }
         };
 
@@ -171,56 +109,6 @@ pub fn rebuild_collider(
             }
         }
     }
-}
-
-pub fn on_collider_blobs_loaded(
-    trigger: On<Add, BlobDepsLoaded>,
-    collider_blobs: Query<(&ColliderBlobs, &ColliderBlobsOwner)>,
-    mut blob_responses: Query<&mut BlobResponse>,
-    locals: Query<&Transform>,
-    parents: Query<&ChildOf>,
-    mut commands: Commands,
-) {
-    let child = trigger.entity;
-    let Ok((blobs, owner)) = collider_blobs.get(child) else {
-        return;
-    };
-    let prim = owner.0;
-
-    let collider = match &blobs.0 {
-        ColliderBlobKind::ConvexHull { points } => {
-            let Ok(Some(bytes)) = blob_responses.get_mut(*points).map(|mut b| b.0.take()) else {
-                warn!("convex hull blob not ready");
-                commands.entity(child).try_despawn();
-                return;
-            };
-            build_convex_hull(&bytes)
-        }
-        ColliderBlobKind::Trimesh { vertices, indices } => {
-            let Ok(Some(vb)) = blob_responses.get_mut(*vertices).map(|mut b| b.0.take()) else {
-                warn!("trimesh vertex blob not ready");
-                commands.entity(child).try_despawn();
-                return;
-            };
-            let Ok(Some(ib)) = blob_responses.get_mut(*indices).map(|mut b| b.0.take()) else {
-                warn!("trimesh index blob not ready");
-                commands.entity(child).try_despawn();
-                return;
-            };
-            build_trimesh(&vb, &ib)
-        }
-    };
-
-    if let Some(c) = collider {
-        let seed = compute_global_transform(prim, &locals, &parents);
-        if transform_is_valid(&seed) {
-            insert_collider_with_seed(&mut commands, prim, c, &seed);
-        } else {
-            commands.entity(prim).insert(DisabledCollider(c));
-        }
-    }
-
-    commands.entity(child).try_despawn();
 }
 
 // Seed avian's global `Position` / `Rotation` from the prim's transform
@@ -280,7 +168,7 @@ fn build_cylinder(height: f64, radius: f64) -> Option<Collider> {
     Some(Collider::cylinder(radius as f32, height as f32))
 }
 
-fn build_convex_hull(bytes: &Bytes) -> Option<Collider> {
+fn build_convex_hull(bytes: &[u8]) -> Option<Collider> {
     let points: Vec<Vec3> = match cast_to_vec3(bytes) {
         Ok(v) => v,
         Err(err) => {
@@ -299,7 +187,7 @@ fn build_convex_hull(bytes: &Bytes) -> Option<Collider> {
     c
 }
 
-fn build_trimesh(vertex_bytes: &Bytes, index_bytes: &Bytes) -> Option<Collider> {
+fn build_trimesh(vertex_bytes: &[u8], index_bytes: &[u8]) -> Option<Collider> {
     let vertices: Vec<Vec3> = match cast_to_vec3(vertex_bytes) {
         Ok(v) => v,
         Err(err) => {
@@ -327,7 +215,7 @@ fn build_trimesh(vertex_bytes: &Bytes, index_bytes: &Bytes) -> Option<Collider> 
     }
 }
 
-fn cast_to_vec3(bytes: &Bytes) -> Result<Vec<Vec3>, PodCastError> {
+fn cast_to_vec3(bytes: &[u8]) -> Result<Vec<Vec3>, PodCastError> {
     let raw: &[[f32; 3]] = try_cast_slice(bytes)?;
     Ok(raw.iter().map(|&[x, y, z]| Vec3::new(x, y, z)).collect())
 }

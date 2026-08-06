@@ -32,7 +32,7 @@ pub trait Attribute: Serialize + DeserializeOwned {
     }
 }
 
-/// Bulk slots, the `b/<prim>/<slot>/` entries whose value is the data itself.
+/// Slots, the `p/<prim>/<slot>/` entries whose value is the raw data.
 pub mod slots {
     pub const PREFAB: &str = "prefab";
     pub const SCRIPT: &str = "script";
@@ -40,8 +40,7 @@ pub mod slots {
     pub const MESH_INDICES: &str = "mesh:indices";
     pub const COLLIDER_INDICES: &str = "collider:indices";
     pub const COLLIDER_VERTICES: &str = "collider:vertices";
-    /// The compiled, validated node graph. Bulk, not an attribute payload —
-    /// see `material_graph`'s module docs for why.
+    /// The compiled, validated node graph.
     pub const MATERIAL_GRAPH_DATA: &str = "material:graph_data";
     /// One relationship per fixed texture-sample slot a graph may use.
     #[must_use]
@@ -58,5 +57,22 @@ pub mod slots {
     pub fn mesh_attribute_name(slot: &str) -> Option<&str> {
         let name = slot.strip_prefix("mesh:")?;
         (name != "indices").then_some(name)
+    }
+
+    /// Whether `name` is a known raw-data slot rather than a property. The
+    /// distinction survives the collapse of `b/` into `p/`: a slot's value is
+    /// opaque bytes, a property's value is a postcard `Property`.
+    #[must_use]
+    pub fn is_slot_name(name: &str) -> bool {
+        const STATIC: &[&str] = &[
+            PREFAB,
+            SCRIPT,
+            IMAGE_DATA,
+            MESH_INDICES,
+            COLLIDER_INDICES,
+            COLLIDER_VERTICES,
+            MATERIAL_GRAPH_DATA,
+        ];
+        STATIC.contains(&name) || name.starts_with("mesh:")
     }
 }

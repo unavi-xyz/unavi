@@ -21,7 +21,7 @@ use crate::cargo::{
 /// Builds a wasm component, returning its bytes.
 ///
 /// Bytes rather than a hash: a script is the value of its own
-/// `b/<prim>/script/` entry, so nothing addresses it by hash on disk and the
+/// `p/<prim>/script/` entry, so nothing addresses it by hash on disk and the
 /// build directory holds no loose blob files.
 pub fn build_wasm_for_crate<S: std::hash::BuildHasher>(
     crate_dir: &Path,

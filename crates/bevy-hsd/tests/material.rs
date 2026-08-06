@@ -90,8 +90,6 @@ fn test_material_texture_ref(#[from(ctx_wds)] mut ctx: TestContext) {
     image::DynamicImage::ImageRgba8(rgba)
         .write_to(&mut Cursor::new(&mut png), ImageFormat::Png)
         .expect("encode png");
-    let size = png.len() as u64;
-    let blob_hash = ctx.upload_blob(png);
 
     let image_prim = ctx.create_prim();
     ctx.set_attr(
@@ -101,7 +99,7 @@ fn test_material_texture_ref(#[from(ctx_wds)] mut ctx: TestContext) {
             ..Default::default()
         },
     );
-    ctx.set_bulk(image_prim, slots::IMAGE_DATA, blob_hash, size);
+    ctx.set_slot(image_prim, slots::IMAGE_DATA, png);
 
     let material_prim = ctx.create_prim();
     ctx.set_attr(material_prim, &MaterialAttr::default());

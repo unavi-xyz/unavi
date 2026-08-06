@@ -60,18 +60,16 @@ fn glow_graph() -> ShaderGraph {
     }
 }
 
-/// No `GraphOverridesAttr` set: `HsdBulk` alone must be enough to trigger the
+/// No `GraphOverridesAttr` set: `HsdSlots` alone must be enough to trigger the
 /// pipeline, since that attribute is optional and this is the common case —
 /// see `HsdMaterialGraphSlot`'s docs.
 #[traced_test]
 #[rstest]
 fn test_shader_graph_without_overrides(#[from(ctx_wds)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
-    let size = bytes.len() as u64;
-    let hash = ctx.upload_blob(bytes);
 
     let prim = ctx.create_prim();
-    ctx.set_bulk(prim, slots::MATERIAL_GRAPH_DATA, hash, size);
+    ctx.set_slot(prim, slots::MATERIAL_GRAPH_DATA, bytes);
 
     let mut handle: Option<Handle<ShaderGraphMaterial>> = None;
     ctx.tick_until(|world| {
@@ -104,11 +102,9 @@ fn test_shader_graph_without_overrides(#[from(ctx_wds)] mut ctx: TestContext) {
 #[rstest]
 fn test_shader_graph_with_overrides(#[from(ctx_wds)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
-    let size = bytes.len() as u64;
-    let hash = ctx.upload_blob(bytes);
 
     let prim = ctx.create_prim();
-    ctx.set_bulk(prim, slots::MATERIAL_GRAPH_DATA, hash, size);
+    ctx.set_slot(prim, slots::MATERIAL_GRAPH_DATA, bytes);
     ctx.set_attr(
         prim,
         &GraphOverridesAttr {
@@ -143,13 +139,11 @@ fn test_shader_graph_with_overrides(#[from(ctx_wds)] mut ctx: TestContext) {
 #[rstest]
 fn test_shader_graph_shares_compiled_shader_across_prims(#[from(ctx_wds)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
-    let size = bytes.len() as u64;
-    let hash = ctx.upload_blob(bytes);
 
     let a = ctx.create_prim();
-    ctx.set_bulk(a, slots::MATERIAL_GRAPH_DATA, hash, size);
+    ctx.set_slot(a, slots::MATERIAL_GRAPH_DATA, bytes.clone());
     let b = ctx.create_prim();
-    ctx.set_bulk(b, slots::MATERIAL_GRAPH_DATA, hash, size);
+    ctx.set_slot(b, slots::MATERIAL_GRAPH_DATA, bytes);
 
     let mut handles: Vec<Handle<ShaderGraphMaterial>> = Vec::new();
     ctx.tick_until(|world| {
@@ -169,17 +163,15 @@ fn test_shader_graph_shares_compiled_shader_across_prims(#[from(ctx_wds)] mut ct
     );
 }
 
-/// Removing the bulk slot removes the built material, mirroring how
+/// Removing the slot removes the built material, mirroring how
 /// `ImageAttr`/`MaterialAttr` removal already works.
 #[traced_test]
 #[rstest]
-fn test_shader_graph_removed_when_bulk_slot_removed(#[from(ctx_wds)] mut ctx: TestContext) {
+fn test_shader_graph_removed_when_slot_removed(#[from(ctx_wds)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
-    let size = bytes.len() as u64;
-    let hash = ctx.upload_blob(bytes);
 
     let prim = ctx.create_prim();
-    ctx.set_bulk(prim, slots::MATERIAL_GRAPH_DATA, hash, size);
+    ctx.set_slot(prim, slots::MATERIAL_GRAPH_DATA, bytes);
 
     ctx.tick_until(|world| {
         world
@@ -189,7 +181,7 @@ fn test_shader_graph_removed_when_bulk_slot_removed(#[from(ctx_wds)] mut ctx: Te
             .is_some()
     });
 
-    ctx.remove_bulk(prim, slots::MATERIAL_GRAPH_DATA);
+    ctx.remove_slot(prim, slots::MATERIAL_GRAPH_DATA);
     ctx.app.update();
 
     let world = ctx.app.world_mut();
@@ -228,11 +220,9 @@ fn test_shader_graph_with_displacement_compiles_a_vertex_shader(
         }),
     };
     let bytes = graph.encode().expect("encode graph");
-    let size = bytes.len() as u64;
-    let hash = ctx.upload_blob(bytes);
 
     let prim = ctx.create_prim();
-    ctx.set_bulk(prim, slots::MATERIAL_GRAPH_DATA, hash, size);
+    ctx.set_slot(prim, slots::MATERIAL_GRAPH_DATA, bytes);
 
     let mut handle: Option<Handle<ShaderGraphMaterial>> = None;
     ctx.tick_until(|world| {

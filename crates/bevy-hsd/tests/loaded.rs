@@ -46,13 +46,14 @@ fn test_loaded_when_no_blob_work(mut ctx: TestContext) {
 
 #[traced_test]
 #[rstest]
-fn test_not_loaded_while_blob_pending(mut ctx: TestContext) {
+fn test_not_loaded_while_collider_broken(mut ctx: TestContext) {
     let root = ctx.create_prim();
 
-    // Blobs are never served (no wds), so the loader stays in-flight forever.
+    // Garbage bytes for a trimesh: the collider cannot be built, so readiness
+    // must never fire while it is missing.
     ctx.set_attr(root, &ColliderAttr::Trimesh);
-    ctx.set_bulk(root, slots::COLLIDER_VERTICES, blake3::hash(b"v"), 12);
-    ctx.set_bulk(root, slots::COLLIDER_INDICES, blake3::hash(b"i"), 12);
+    ctx.set_slot(root, slots::COLLIDER_VERTICES, b"not-vertices".to_vec());
+    ctx.set_slot(root, slots::COLLIDER_INDICES, b"not-indices".to_vec());
 
     for _ in 0..16 {
         ctx.app.update();
@@ -65,23 +66,20 @@ fn test_not_loaded_while_blob_pending(mut ctx: TestContext) {
     );
     assert!(
         !has::<HsdLoaded>(world),
-        "HsdLoaded must not fire while a collider blob is still loading"
+        "HsdLoaded must not fire while a collider is still broken"
     );
 }
 
 #[traced_test]
 #[rstest]
-fn test_loaded_after_blob_resolves(#[from(ctx_wds)] mut ctx: TestContext) {
+fn test_loaded_after_collider_built(mut ctx: TestContext) {
     let vertices = cast_slice::<[f32; 3], u8>(&VERTS).to_vec();
     let indices = cast_slice::<[u32; 3], u8>(&IDXS).to_vec();
-    let (vsize, isize) = (vertices.len() as u64, indices.len() as u64);
-    let vertex_hash = ctx.upload_blob(vertices);
-    let index_hash = ctx.upload_blob(indices);
 
     let root = ctx.create_prim();
     ctx.set_attr(root, &ColliderAttr::Trimesh);
-    ctx.set_bulk(root, slots::COLLIDER_VERTICES, vertex_hash, vsize);
-    ctx.set_bulk(root, slots::COLLIDER_INDICES, index_hash, isize);
+    ctx.set_slot(root, slots::COLLIDER_VERTICES, vertices);
+    ctx.set_slot(root, slots::COLLIDER_INDICES, indices);
 
     ctx.tick_until(has::<Collider>);
     ctx.tick_until(has::<HsdLoaded>);

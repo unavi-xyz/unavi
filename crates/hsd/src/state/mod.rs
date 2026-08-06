@@ -15,7 +15,10 @@ use smol_str::SmolStr;
 use thiserror::Error;
 
 use crate::{
-    attributes::Attribute,
+    attributes::{
+        Attribute,
+        slots::is_slot_name,
+    },
     id::PrimId,
     key,
     meta::DocMeta,
@@ -26,9 +29,7 @@ use crate::{
     },
     state::{
         entry::{
-            BulkRef,
             Entry,
-            EntryValue,
             Stamp,
         },
         event::SceneEvent,
@@ -270,18 +271,18 @@ impl SceneState {
         self.write_property(prim, name, None, Origin::Script, stamp);
     }
 
-    pub fn set_bulk(&mut self, prim: PrimId, slot: &str, value: BulkRef) -> Result<(), StateError> {
-        if !key::is_valid_name(slot) {
-            return Err(StateError::Name(slot.to_owned()));
+    pub fn set_slot(&mut self, prim: PrimId, name: &str, value: Vec<u8>) -> Result<(), StateError> {
+        if !key::is_valid_name(name) {
+            return Err(StateError::Name(name.to_owned()));
         }
-        let stamp = Stamp::from_hash(now_micros(), value.hash);
-        self.write_bulk(prim, slot, Some(value), Origin::Script, stamp);
+        let stamp = Stamp::new(now_micros(), &value);
+        self.write_slot(prim, name, Some(value), Origin::Script, stamp);
         Ok(())
     }
 
-    pub fn remove_bulk(&mut self, prim: PrimId, slot: &str) {
+    pub fn remove_slot(&mut self, prim: PrimId, name: &str) {
         let stamp = Stamp::new(now_micros(), &[]);
-        self.write_bulk(prim, slot, None, Origin::Script, stamp);
+        self.write_slot(prim, name, None, Origin::Script, stamp);
     }
 }
 
@@ -290,37 +291,38 @@ impl SceneState {
 /// here has to be order-independent.
 impl SceneState {
     pub fn apply(&mut self, entry: &Entry) -> Result<(), StateError> {
-        let stamp = entry.value.stamp(entry.timestamp);
+        let stamp = Stamp::new(entry.timestamp, &entry.value);
         let empty = entry.value.is_empty();
 
         match key::parse(&entry.key) {
             Some(key::Key::Meta) => {
-                if let EntryValue::Bytes(bytes) = &entry.value
-                    && !empty
-                {
-                    self.meta = DocMeta::decode(bytes)?;
+                if !empty {
+                    self.meta = DocMeta::decode(&entry.value)?;
                 }
             }
             Some(key::Key::Prop { prim, name }) if name == key::PARENT => {
-                let parent = match &entry.value {
-                    EntryValue::Bytes(bytes) if !empty => Some(Parent::decode(bytes)?),
-                    _ => None,
+                let parent = if empty {
+                    None
+                } else {
+                    Some(Parent::decode(&entry.value)?)
                 };
                 self.write_parent(prim, parent, Origin::Document, Some(stamp));
             }
+            Some(key::Key::Prop { prim, name }) if is_slot_name(&name) => {
+                let value = if empty {
+                    None
+                } else {
+                    Some(entry.value.clone())
+                };
+                self.write_slot(prim, &name, value, Origin::Document, stamp);
+            }
             Some(key::Key::Prop { prim, name }) => {
-                let value = match &entry.value {
-                    EntryValue::Bytes(bytes) if !empty => Some(Property::decode(bytes)?),
-                    _ => None,
+                let value = if empty {
+                    None
+                } else {
+                    Some(Property::decode(&entry.value)?)
                 };
                 self.write_property(prim, &name, value, Origin::Document, stamp);
-            }
-            Some(key::Key::Bulk { prim, slot }) => {
-                let value = match &entry.value {
-                    EntryValue::Blob(bulk) if !empty => Some(*bulk),
-                    _ => None,
-                };
-                self.write_bulk(prim, &slot, value, Origin::Document, stamp);
             }
             None => {}
         }
@@ -341,12 +343,9 @@ impl SceneState {
     /// prims are transient and absent, which is what keeps a spawn/despawn loop
     /// from accumulating in a namespace that never reclaims.
     #[must_use]
-    pub fn entries(&self) -> BTreeMap<String, EntryValue> {
+    pub fn entries(&self) -> BTreeMap<String, Vec<u8>> {
         let mut out = BTreeMap::new();
-        out.insert(
-            key::META.to_owned(),
-            EntryValue::Bytes(self.meta.encode().unwrap_or_default()),
-        );
+        out.insert(key::META.to_owned(), self.meta.encode().unwrap_or_default());
 
         for (prim, state) in &self.prims {
             if state.origin != Origin::Document {
@@ -355,12 +354,12 @@ impl SceneState {
             let Some(parent) = state.parent else {
                 continue;
             };
-            out.insert(key::parent(*prim), EntryValue::Bytes(parent.encode()));
+            out.insert(key::parent(*prim), parent.encode());
             for (name, value) in state.properties() {
-                out.insert(key::prop(*prim, name), EntryValue::Bytes(value.encode()));
+                out.insert(key::prop(*prim, name), value.encode());
             }
-            for (slot, value) in state.bulk_slots() {
-                out.insert(key::bulk(*prim, slot), EntryValue::Blob(value));
+            for (name, value) in state.slots() {
+                out.insert(key::prop(*prim, name), value.to_vec());
             }
         }
         out
@@ -432,11 +431,11 @@ impl SceneState {
         }
     }
 
-    fn write_bulk(
+    fn write_slot(
         &mut self,
         prim: PrimId,
-        slot: &str,
-        value: Option<BulkRef>,
+        name: &str,
+        value: Option<Vec<u8>>,
         origin: Origin,
         stamp: Stamp,
     ) {
@@ -444,14 +443,14 @@ impl SceneState {
             .prims
             .entry(prim)
             .or_insert_with(|| PrimState::new(origin));
-        let changed = match value {
-            Some(value) => state.set_bulk(slot, value, stamp),
-            None => state.remove_bulk(slot, stamp),
+        let changed = match value.clone() {
+            Some(value) => state.set_slot(name, value, stamp),
+            None => state.remove_slot(name, stamp),
         };
         if changed && self.realized.contains_key(&prim) {
-            self.events.push(SceneEvent::Bulk {
+            self.events.push(SceneEvent::Slot {
                 prim,
-                slot: SmolStr::new(slot),
+                name: SmolStr::new(name),
                 value,
             });
         }
@@ -519,9 +518,9 @@ impl SceneState {
             .properties()
             .map(|(name, value)| (name.clone(), value.clone()))
             .collect::<Vec<_>>();
-        let bulk = state
-            .bulk_slots()
-            .map(|(slot, value)| (slot.clone(), value))
+        let slots = state
+            .slots()
+            .map(|(name, value)| (name.clone(), value.to_vec()))
             .collect::<Vec<_>>();
 
         for (name, value) in props {
@@ -531,10 +530,10 @@ impl SceneState {
                 value: Some(value),
             });
         }
-        for (slot, value) in bulk {
-            self.events.push(SceneEvent::Bulk {
+        for (name, value) in slots {
+            self.events.push(SceneEvent::Slot {
                 prim,
-                slot,
+                name,
                 value: Some(value),
             });
         }

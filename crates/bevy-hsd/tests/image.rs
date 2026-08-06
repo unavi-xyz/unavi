@@ -26,7 +26,7 @@ mod common;
 fn test_image_lifecycle(mut ctx: TestContext) {
     let root = ctx.create_prim();
     ctx.set_attr(root, &ImageAttr::default());
-    ctx.set_bulk(root, slots::IMAGE_DATA, blake3::hash(b"png"), 3);
+    ctx.set_slot(root, slots::IMAGE_DATA, b"png".to_vec());
 
     ctx.app.update();
 
@@ -58,9 +58,6 @@ fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
         .write_to(&mut Cursor::new(&mut png_bytes), ImageFormat::Png)
         .expect("encode png");
 
-    let size = png_bytes.len() as u64;
-    let data_hash = ctx.upload_blob(png_bytes);
-
     let root = ctx.create_prim();
     ctx.set_attr(
         root,
@@ -71,7 +68,7 @@ fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
             ..Default::default()
         },
     );
-    ctx.set_bulk(root, slots::IMAGE_DATA, data_hash, size);
+    ctx.set_slot(root, slots::IMAGE_DATA, png_bytes);
 
     let mut handle: Option<Handle<Image>> = None;
     ctx.tick_until(|world| {

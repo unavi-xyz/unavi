@@ -41,7 +41,7 @@ use crate::{
     document,
 };
 
-/// A compiled document. One file, bulk inlined, arriving complete — so there
+/// A compiled document. One file, bytes inlined, arriving complete — so there
 /// is no dependency list, no blob loader, and no wait-for-every-dependency
 /// loop behind it.
 #[derive(Asset, TypePath)]
@@ -133,7 +133,7 @@ async fn build_and_instance(
     let doc = wds::docs::ensure_open(&docs, namespace).await?;
     let author = wds::entries::author(&docs).await?;
 
-    let writes = document::unpack(package, &blobs).await?;
+    let writes = document::unpack(package, &blobs)?;
     wds::entries::apply(&doc, &blobs, author, writes).await?;
 
     let state = document::read_state(&doc, &blobs).await?;
@@ -158,10 +158,10 @@ async fn build_and_instance(
     Ok(())
 }
 
-/// Records which prefab blob a prim currently has instanced, so a changed
-/// blob re-instances and a removed one tears down.
+/// Records which prefab a prim currently has instanced, so a changed prefab
+/// re-instances and a removed one tears down.
 #[derive(Component)]
-pub struct PrefabLoaded(pub hsd::id::BlobId);
+pub struct PrefabLoaded(pub blake3::Hash);
 
 /// Instancing is declarative: the instance exists because the prim carries the
 /// slot.
@@ -181,7 +181,6 @@ pub fn instance_prefabs(
     detached: Query<(Entity, Option<&Children>), (With<PrefabLoaded>, Without<HsdPrefab>)>,
     hsd_docs: Query<(), With<Hsd>>,
     parent_ids: Query<&HsdDocId>,
-    stores: Query<&LocalBlobs>,
     mut commands: Commands,
 ) {
     for (prim_ent, children) in &detached {
@@ -189,13 +188,10 @@ pub fn instance_prefabs(
         commands.entity(prim_ent).remove::<PrefabLoaded>();
     }
 
-    let Ok(local_blobs) = stores.single() else {
-        return;
-    };
-
     for (prim_ent, prim, prefab, doc_child, loaded, children) in &prefabs {
+        let expected = blake3::hash(&prefab.0);
         if let Some(loaded) = loaded {
-            if loaded.0 == prefab.0 {
+            if loaded.0 == expected {
                 continue;
             }
             despawn_instances(&mut commands, &hsd_docs, children);
@@ -206,13 +202,12 @@ pub fn instance_prefabs(
         };
         let doc_id = DocId::instance(parent_id.0, prim.0);
 
-        commands.entity(prim_ent).insert(PrefabLoaded(prefab.0));
+        commands.entity(prim_ent).insert(PrefabLoaded(expected));
 
-        let blobs = local_blobs.0.clone();
-        let expected = prefab.0;
+        let bytes = prefab.0.clone();
 
         spawn_async_task(async move {
-            let state = match unpack_prefab(&blobs, expected).await {
+            let state = match unpack_prefab(&bytes) {
                 Ok(state) => state,
                 Err(err) => {
                     warn!(?err, "failed to instance prefab");
@@ -245,15 +240,9 @@ pub fn instance_prefabs(
 }
 
 #[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
-pub async fn unpack_prefab(
-    blobs: &Blobs,
-    prefab: hsd::id::BlobId,
-) -> anyhow::Result<hsd::state::SceneState> {
-    let bytes = blobs
-        .get_bytes(iroh_blobs::Hash::from_bytes(prefab.0))
-        .await?;
-    let package = Package::decode(&bytes)?;
-    document::unpack_into_state(package, blobs).await
+pub fn unpack_prefab(bytes: &[u8]) -> anyhow::Result<hsd::state::SceneState> {
+    let package = Package::decode(bytes)?;
+    document::unpack_into_state(package)
 }
 
 fn despawn_instances(

@@ -25,6 +25,7 @@ use hsd::{
         name::NameAttr,
         portal::PortalAttr,
         rigid_body::RigidBodyAttr,
+        slots,
         spawn::SpawnAttr,
         xform::XformAttr,
     },
@@ -47,7 +48,7 @@ struct DumpPrim {
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     relationships: BTreeMap<String, String>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
-    bulk:          BTreeMap<String, String>,
+    slots:         BTreeMap<String, String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     children:      Vec<Self>,
 }
@@ -57,7 +58,7 @@ struct Node {
     parent:        Option<Parent>,
     attributes:    BTreeMap<String, String>,
     relationships: BTreeMap<String, String>,
-    bulk:          BTreeMap<String, String>,
+    slots:         BTreeMap<String, String>,
 }
 
 pub fn dump_file(input: &Path) -> Result<String> {
@@ -71,6 +72,13 @@ pub fn dump_file(input: &Path) -> Result<String> {
             Some(key::Key::Prop { prim, name }) if name == key::PARENT => {
                 nodes.entry(prim).or_default().parent = Some(Parent::decode(value)?);
             }
+            Some(key::Key::Prop { prim, name }) if slots::is_slot_name(&name) => {
+                nodes
+                    .entry(prim)
+                    .or_default()
+                    .slots
+                    .insert(name.to_string(), format!("{} bytes", value.len()));
+            }
             Some(key::Key::Prop { prim, name }) => {
                 let node = nodes.entry(prim).or_default();
                 match Property::decode(value)? {
@@ -83,13 +91,6 @@ pub fn dump_file(input: &Path) -> Result<String> {
                             .insert(name.to_string(), render(&name, &payload));
                     }
                 }
-            }
-            Some(key::Key::Bulk { prim, slot }) => {
-                nodes
-                    .entry(prim)
-                    .or_default()
-                    .bulk
-                    .insert(slot.to_string(), format!("{} bytes", value.len()));
             }
             Some(key::Key::Meta) | None => {}
         }
@@ -111,7 +112,7 @@ fn build(nodes: &BTreeMap<PrimId, Node>, parent: Option<PrimId>) -> Vec<DumpPrim
             id:            id.to_string(),
             attributes:    node.attributes.clone(),
             relationships: node.relationships.clone(),
-            bulk:          node.bulk.clone(),
+            slots:         node.slots.clone(),
             children:      build(nodes, Some(*id)),
         })
         .collect()

@@ -8,12 +8,8 @@
 use std::collections::BTreeMap;
 
 use crate::{
-    id::{
-        BlobId,
-        PrimId,
-    },
+    id::PrimId,
     key,
-    state::entry::EntryValue,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -21,11 +17,6 @@ pub enum Change {
     Set {
         key:   String,
         value: Vec<u8>,
-    },
-    SetBlob {
-        key:  String,
-        hash: BlobId,
-        size: u64,
     },
     /// An empty value at the key. `del` only sweeps the caller's own entries,
     /// so removing a key another peer authored has to be expressed as data.
@@ -36,26 +27,16 @@ pub enum Change {
 
 /// The writes that turn `base` into `current`, key-ordered.
 #[must_use]
-pub fn diff(
-    base: &BTreeMap<String, EntryValue>,
-    current: &BTreeMap<String, EntryValue>,
-) -> Vec<Change> {
+pub fn diff(base: &BTreeMap<String, Vec<u8>>, current: &BTreeMap<String, Vec<u8>>) -> Vec<Change> {
     let mut changes = Vec::new();
 
     for (key, value) in current {
         if base.get(key) == Some(value) {
             continue;
         }
-        changes.push(match value {
-            EntryValue::Bytes(bytes) => Change::Set {
-                key:   key.clone(),
-                value: bytes.clone(),
-            },
-            EntryValue::Blob(bulk) => Change::SetBlob {
-                key:  key.clone(),
-                hash: bulk.hash,
-                size: bulk.size,
-            },
+        changes.push(Change::Set {
+            key:   key.clone(),
+            value: value.clone(),
         });
     }
 
@@ -70,17 +51,14 @@ pub fn diff(
 
 /// The writes that delete a prim, in the order the format requires.
 ///
-/// The two prefix wipes sweep every entry this author wrote for the prim; the
+/// The prefix wipe sweeps every entry this author wrote for the prim; the
 /// tombstone is what other peers read. Order matters — `p/<prim>/` prefixes
 /// `p/<prim>/parent/`, so wiping afterwards would eat the tombstone.
 #[must_use]
-pub fn delete_prim(prim: PrimId) -> [Change; 3] {
+pub fn delete_prim(prim: PrimId) -> [Change; 2] {
     [
         Change::Remove {
             key: key::prim_prefix(prim),
-        },
-        Change::Remove {
-            key: key::bulk_prefix(prim),
         },
         Change::Remove {
             key: key::parent(prim),
@@ -91,13 +69,16 @@ pub fn delete_prim(prim: PrimId) -> [Change; 3] {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::entry::BulkRef;
+    use crate::{
+        id::PrimId,
+        key,
+    };
 
-    fn bytes(value: &[u8]) -> EntryValue {
-        EntryValue::Bytes(value.to_vec())
+    fn bytes(value: &[u8]) -> Vec<u8> {
+        value.to_vec()
     }
 
-    fn base() -> BTreeMap<String, EntryValue> {
+    fn base() -> BTreeMap<String, Vec<u8>> {
         BTreeMap::from([
             ("p/a/xform/".to_owned(), bytes(&[1])),
             ("p/a/name/".to_owned(), bytes(&[2])),
@@ -135,21 +116,14 @@ mod tests {
     }
 
     #[test]
-    fn a_bulk_entry_writes_its_hash() {
+    fn a_slot_entry_writes_its_bytes() {
         let mut current = base();
-        current.insert(
-            "b/a/script/".to_owned(),
-            EntryValue::Blob(BulkRef {
-                hash: BlobId([3; 32]),
-                size: 12,
-            }),
-        );
+        current.insert("p/a/script/".to_owned(), vec![9, 9, 9]);
         assert_eq!(
             diff(&base(), &current),
-            vec![Change::SetBlob {
-                key:  "b/a/script/".to_owned(),
-                hash: BlobId([3; 32]),
-                size: 12,
+            vec![Change::Set {
+                key:   "p/a/script/".to_owned(),
+                value: vec![9, 9, 9],
             }]
         );
     }
@@ -159,7 +133,7 @@ mod tests {
         let prim = PrimId([1; 16]);
         let changes = delete_prim(prim);
         assert_eq!(
-            changes[2],
+            changes[1],
             Change::Remove {
                 key: key::parent(prim),
             }

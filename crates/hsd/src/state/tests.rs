@@ -6,10 +6,7 @@ use crate::{
         name::NameAttr,
         xform::XformAttr,
     },
-    id::{
-        BlobId,
-        PrimId,
-    },
+    id::PrimId,
     key,
     property::{
         Parent,
@@ -17,11 +14,7 @@ use crate::{
     },
     state::{
         SceneState,
-        entry::{
-            BulkRef,
-            Entry,
-            EntryValue,
-        },
+        entry::Entry,
         event::SceneEvent,
         prim::Origin,
     },
@@ -298,10 +291,7 @@ fn an_unknown_attribute_round_trips_untouched() {
     let stored = entries
         .get(&key::prop(prim(1), "shader_graph"))
         .expect("entry");
-    assert_eq!(
-        stored,
-        &EntryValue::Bytes(Property::Attribute(payload).encode())
-    );
+    assert_eq!(stored, &Property::Attribute(payload).encode());
 }
 
 #[test]
@@ -369,49 +359,45 @@ fn a_document_prim_edited_by_a_script_stays_persistent() {
 }
 
 #[test]
-fn bulk_is_tracked_as_a_reference_not_bytes() {
+fn a_slot_is_tracked_as_inline_bytes() {
     let mut state = SceneState::new();
-    let reference = BulkRef {
-        hash: BlobId([5; 32]),
-        size: 1024,
-    };
+    let payload = vec![9; 1024];
     apply(&mut state, &[root_entry(prim(1), 1)]);
     state.drain_events();
 
     apply(
         &mut state,
-        &[Entry::blob(
-            key::bulk(prim(1), "mesh:POSITION"),
-            reference.hash,
-            reference.size,
+        &[Entry::new(
+            key::prop(prim(1), "mesh:POSITION"),
+            payload.clone(),
             2,
         )],
     );
 
     assert_eq!(
-        state.get(prim(1)).expect("prim").bulk("mesh:POSITION"),
-        Some(reference)
+        state.get(prim(1)).expect("prim").slot("mesh:POSITION"),
+        Some(payload.as_slice())
     );
-    assert!(state.drain_events().contains(&SceneEvent::Bulk {
+    assert!(state.drain_events().contains(&SceneEvent::Slot {
         prim:  prim(1),
-        slot:  "mesh:POSITION".into(),
-        value: Some(reference),
+        name:  "mesh:POSITION".into(),
+        value: Some(payload),
     }));
 }
 
 #[test]
-fn a_zero_size_bulk_entry_reads_as_absence() {
+fn a_zero_size_slot_entry_reads_as_absence() {
     let mut state = SceneState::new();
     apply(
         &mut state,
         &[
             root_entry(prim(1), 1),
-            Entry::blob(key::bulk(prim(1), "script"), BlobId([1; 32]), 64, 2),
-            Entry::blob(key::bulk(prim(1), "script"), BlobId([0; 32]), 0, 3),
+            Entry::new(key::prop(prim(1), "script"), vec![1; 64], 2),
+            Entry::new(key::prop(prim(1), "script"), Vec::new(), 3),
         ],
     );
 
-    assert_eq!(state.get(prim(1)).expect("prim").bulk("script"), None);
+    assert_eq!(state.get(prim(1)).expect("prim").slot("script"), None);
 }
 
 #[test]
@@ -478,7 +464,7 @@ fn the_save_set_round_trips_through_a_fresh_state() {
             root_entry(prim(1), 1),
             child_entry(prim(2), prim(1), 2),
             attr_entry(prim(2), &NameAttr("kept".into()), 3),
-            Entry::blob(key::bulk(prim(2), "script"), BlobId([7; 32]), 32, 4),
+            Entry::new(key::prop(prim(2), "script"), vec![7; 32], 4),
         ],
     );
 

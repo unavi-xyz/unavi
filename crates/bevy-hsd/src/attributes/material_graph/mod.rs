@@ -15,17 +15,6 @@ use bevy::{
         SpecializedMeshPipelineError,
     },
 };
-use bevy_wds::blob::{
-    deps::{
-        BlobDep,
-        BlobDeps,
-        BlobDepsLoaded,
-    },
-    request::{
-        BlobRequest,
-        BlobResponse,
-    },
-};
 use hsd::{
     attributes::{
         Attribute,
@@ -42,9 +31,9 @@ use hsd::{
 };
 
 use crate::{
-    HsdBulk,
     HsdChild,
     HsdRelationships,
+    HsdSlots,
     attributes::{
         AttributeParser,
         ParseError,
@@ -99,24 +88,26 @@ impl AttributeParser for ShaderGraphOverridesParser {
     }
 }
 
-/// A prim's compiled-graph bulk slot.
+/// A prim's compiled-graph slot.
 ///
 /// Unlike `image`/`mesh`, there is no always-present attribute a script must
 /// set to mark "this prim has a shader graph" — [`GraphOverridesAttr`] is
 /// optional, present only when a prim overrides a public input. Tracking
-/// `HsdBulk` directly, the way `prefab` does, is the only trigger that does
+/// `HsdSlots` directly, the way `prefab` does, is the only trigger that does
 /// not miss the common no-overrides case.
-#[derive(Component, Debug, Clone, Copy)]
-pub struct HsdMaterialGraphSlot(pub BlobId);
+#[derive(Component, Debug, Clone)]
+pub struct HsdMaterialGraphSlot(pub Vec<u8>);
 
 pub fn track_material_graph(
-    changed: Query<(Entity, &HsdBulk), Changed<HsdBulk>>,
+    changed: Query<(Entity, &HsdSlots), Changed<HsdSlots>>,
     mut commands: Commands,
 ) {
-    for (entity, bulk) in &changed {
-        match bulk.0.get(slots::MATERIAL_GRAPH_DATA) {
-            Some(hash) => {
-                commands.entity(entity).insert(HsdMaterialGraphSlot(*hash));
+    for (entity, slots) in &changed {
+        match slots.0.get(slots::MATERIAL_GRAPH_DATA) {
+            Some(bytes) => {
+                commands
+                    .entity(entity)
+                    .insert(HsdMaterialGraphSlot(bytes.clone()));
             }
             None => {
                 commands.entity(entity).remove::<HsdMaterialGraphSlot>();
@@ -128,18 +119,6 @@ pub fn track_material_graph(
 #[derive(Component, Debug, Clone)]
 pub struct HsdShaderGraphMaterial(pub Handle<ShaderGraphMaterial>);
 
-#[derive(Component)]
-#[require(BlobDeps)]
-struct MaterialGraphBlob;
-
-#[derive(Component)]
-#[relationship(relationship_target = MaterialGraphBlobChild)]
-pub struct MaterialGraphBlobOwner(Entity);
-
-#[derive(Component)]
-#[relationship_target(relationship = MaterialGraphBlobOwner, linked_spawn)]
-pub struct MaterialGraphBlobChild(Entity);
-
 pub fn rebuild_material_graph(
     changed: Query<
         Entity,
@@ -150,6 +129,13 @@ pub fn rebuild_material_graph(
         )>,
     >,
     slots: Query<&HsdMaterialGraphSlot>,
+    overrides: Query<&ShaderGraphOverridesData>,
+    texture_ctx: TextureCtx,
+    time: Res<Time>,
+    mut cache: ResMut<ShaderGraphCache>,
+    mut shaders: ResMut<Assets<Shader>>,
+    mut materials: ResMut<Assets<ShaderGraphMaterial>>,
+    mut existing: Query<&mut HsdShaderGraphMaterial>,
     mut commands: Commands,
 ) {
     for prim in &changed {
@@ -157,13 +143,82 @@ pub fn rebuild_material_graph(
             continue;
         };
 
-        commands.entity(prim).remove::<MaterialGraphBlobChild>();
-        commands.spawn((
-            MaterialGraphBlobOwner(prim),
-            MaterialGraphBlob,
-            BlobDep(prim),
-            BlobRequest(blake3::Hash::from_bytes(slot.0.0)),
-        ));
+        let graph = match ShaderGraph::decode(&slot.0) {
+            Ok(graph) => graph,
+            Err(err) => {
+                warn!(?err, "undecodable shader graph");
+                continue;
+            }
+        };
+        let validated = match material_graph::validate(&graph) {
+            Ok(validated) => validated,
+            Err(err) => {
+                warn!(?err, "invalid shader graph");
+                continue;
+            }
+        };
+
+        let overrides_attr = overrides.get(prim).ok().map(|o| &o.0);
+        if let Some(overrides) = overrides_attr
+            && let Err(err) = material_graph::validate_overrides(&graph, overrides)
+        {
+            warn!(
+                ?err,
+                "shader graph overrides do not match the graph; using its defaults"
+            );
+        }
+        let overrides_attr =
+            overrides_attr.filter(|o| material_graph::validate_overrides(&graph, o).is_ok());
+
+        let hash = BlobId(*blake3::hash(&slot.0).as_bytes());
+        let cached = cache.0.entry(hash).or_insert_with(|| {
+            let fragment_source = codegen::generate_fragment_shader(&graph, &validated.surface);
+            let fragment = shaders.add(Shader::from_wgsl(
+                fragment_source,
+                format!("generated://material_graph/{hash}/fragment"),
+            ));
+            let vertex = graph
+                .displacement
+                .as_ref()
+                .zip(validated.displacement.as_ref())
+                .map(|(displacement, kinds)| {
+                    let source =
+                        codegen::generate_vertex_shader(displacement, &graph.public_inputs, kinds);
+                    shaders.add(Shader::from_wgsl(
+                        source,
+                        format!("generated://material_graph/{hash}/vertex"),
+                    ))
+                });
+            CachedShaders { fragment, vertex }
+        });
+
+        let params = build_params(&graph, overrides_attr, time.elapsed_secs());
+        let textures = resolve_textures(prim, &texture_ctx);
+
+        let material = ShaderGraphMaterial {
+            params,
+            texture_0: textures[0].clone(),
+            texture_1: textures[1].clone(),
+            texture_2: textures[2].clone(),
+            texture_3: textures[3].clone(),
+            fragment_shader: cached.fragment.clone(),
+            vertex_shader: cached.vertex.clone(),
+            alpha_mode: alpha_mode(&graph.surface.output),
+        };
+
+        if let Ok(mut existing) = existing.get_mut(prim) {
+            if let Some(mut asset) = materials.get_mut(&existing.0) {
+                *asset = material;
+            } else {
+                existing.0 = materials.add(material);
+            }
+        } else {
+            let handle = materials.add(material);
+            commands.entity(prim).insert((
+                HsdShaderGraphMaterial(handle.clone()),
+                MeshMaterial3d(handle),
+            ));
+        }
     }
 }
 
@@ -241,7 +296,7 @@ fn build_params(
 
 /// A graph's compiled shaders. Every prim referencing the same graph reuses
 /// these — the fragment/vertex `Handle<Shader>`s are cached keyed by the
-/// bulk entry's own content hash, free since that hash already uniquely
+/// slot's own content hash, free since that hash already uniquely
 /// identifies the compiled graph bytes.
 #[derive(Clone)]
 struct CachedShaders {
@@ -278,113 +333,6 @@ const fn alpha_mode(output: &SurfaceOutput) -> AlphaMode {
             }
         }
     }
-}
-
-pub fn on_material_graph_blob_loaded(
-    trigger: On<Add, BlobDepsLoaded>,
-    blobs: Query<(&MaterialGraphBlobOwner, &BlobRequest)>,
-    mut blob_responses: Query<&mut BlobResponse>,
-    overrides: Query<&ShaderGraphOverridesData>,
-    texture_ctx: TextureCtx,
-    time: Res<Time>,
-    mut cache: ResMut<ShaderGraphCache>,
-    mut shaders: ResMut<Assets<Shader>>,
-    mut materials: ResMut<Assets<ShaderGraphMaterial>>,
-    mut existing: Query<&mut HsdShaderGraphMaterial>,
-    mut commands: Commands,
-) {
-    let child = trigger.entity;
-    let Ok((owner, request)) = blobs.get(child) else {
-        return;
-    };
-    let prim = owner.0;
-    let hash = BlobId(*request.0.as_bytes());
-
-    let Ok(Some(bytes)) = blob_responses.get_mut(child).map(|mut b| b.0.take()) else {
-        warn!("shader graph blob not found");
-        commands.entity(child).try_despawn();
-        return;
-    };
-
-    let graph = match ShaderGraph::decode(&bytes) {
-        Ok(graph) => graph,
-        Err(err) => {
-            warn!(?err, "undecodable shader graph");
-            commands.entity(child).try_despawn();
-            return;
-        }
-    };
-    let validated = match material_graph::validate(&graph) {
-        Ok(validated) => validated,
-        Err(err) => {
-            warn!(?err, "invalid shader graph");
-            commands.entity(child).try_despawn();
-            return;
-        }
-    };
-
-    let overrides_attr = overrides.get(prim).ok().map(|o| &o.0);
-    if let Some(overrides) = overrides_attr
-        && let Err(err) = material_graph::validate_overrides(&graph, overrides)
-    {
-        warn!(
-            ?err,
-            "shader graph overrides do not match the graph; using its defaults"
-        );
-    }
-    let overrides_attr =
-        overrides_attr.filter(|o| material_graph::validate_overrides(&graph, o).is_ok());
-
-    let cached = cache.0.entry(hash).or_insert_with(|| {
-        let fragment_source = codegen::generate_fragment_shader(&graph, &validated.surface);
-        let fragment = shaders.add(Shader::from_wgsl(
-            fragment_source,
-            format!("generated://material_graph/{hash}/fragment"),
-        ));
-        let vertex = graph
-            .displacement
-            .as_ref()
-            .zip(validated.displacement.as_ref())
-            .map(|(displacement, kinds)| {
-                let source =
-                    codegen::generate_vertex_shader(displacement, &graph.public_inputs, kinds);
-                shaders.add(Shader::from_wgsl(
-                    source,
-                    format!("generated://material_graph/{hash}/vertex"),
-                ))
-            });
-        CachedShaders { fragment, vertex }
-    });
-
-    let params = build_params(&graph, overrides_attr, time.elapsed_secs());
-    let textures = resolve_textures(prim, &texture_ctx);
-
-    let material = ShaderGraphMaterial {
-        params,
-        texture_0: textures[0].clone(),
-        texture_1: textures[1].clone(),
-        texture_2: textures[2].clone(),
-        texture_3: textures[3].clone(),
-        fragment_shader: cached.fragment.clone(),
-        vertex_shader: cached.vertex.clone(),
-        alpha_mode: alpha_mode(&graph.surface.output),
-    };
-
-    if let Ok(mut existing) = existing.get_mut(prim) {
-        if let Some(mut asset) = materials.get_mut(&existing.0) {
-            *asset = material;
-        } else {
-            existing.0 = materials.add(material);
-        }
-    } else {
-        let handle = materials.add(material);
-        commands.entity(prim).insert((
-            HsdShaderGraphMaterial(handle.clone()),
-            MeshMaterial3d(handle),
-        ));
-    }
-
-    commands.entity(child).try_despawn();
 }
 
 /// Advances the graph's `time` public leaf every frame.

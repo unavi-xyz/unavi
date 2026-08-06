@@ -1,4 +1,4 @@
-//! A prefab is a compiled `.hsdz` in the prim's `b/<prim>/prefab/` entry.
+//! A prefab is a compiled `.hsdz` in the prim's `p/<prim>/prefab/` entry.
 //!
 //! Instancing is declarative: an instance exists because the prim carries the
 //! slot, and disappears when the prim or the slot does. There is no imperative
@@ -6,21 +6,21 @@
 //! disagree on a nested document's id.
 
 use bevy::prelude::*;
-use hsd::{
-    attributes::slots,
-    id::BlobId,
-};
+use hsd::attributes::slots;
 
-use crate::HsdBulk;
+use crate::HsdSlots;
 
-#[derive(Component, Debug, Clone, Copy)]
-pub struct HsdPrefab(pub BlobId);
+#[derive(Component, Debug, Clone)]
+pub struct HsdPrefab(pub Vec<u8>);
 
-pub fn track_prefab(changed: Query<(Entity, &HsdBulk), Changed<HsdBulk>>, mut commands: Commands) {
-    for (entity, bulk) in &changed {
-        match bulk.0.get(slots::PREFAB) {
-            Some(hash) => {
-                commands.entity(entity).insert(HsdPrefab(*hash));
+pub fn track_prefab(
+    changed: Query<(Entity, &HsdSlots), Changed<HsdSlots>>,
+    mut commands: Commands,
+) {
+    for (entity, slots) in &changed {
+        match slots.0.get(slots::PREFAB) {
+            Some(bytes) => {
+                commands.entity(entity).insert(HsdPrefab(bytes.clone()));
             }
             None => {
                 commands.entity(entity).remove::<HsdPrefab>();

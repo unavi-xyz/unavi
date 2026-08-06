@@ -93,12 +93,7 @@ impl StoreContext {
 
         if deleted {
             let tag = BlobTag::new(Did::from_str(&owner_str)?, Hash::from_str(&hash_str)?);
-            self.blobs
-                .as_ref()
-                .as_ref()
-                .tags()
-                .delete(tag.to_string())
-                .await?;
+            self.blob_store().tags().delete(tag.to_string()).await?;
         }
 
         Ok(())

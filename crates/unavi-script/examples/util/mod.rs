@@ -9,8 +9,8 @@ use iroh_docs::protocol::Docs;
 use unavi_util::async_task::spawn_async_task;
 use wds::{
     DataStore,
-    Identity,
     actor::Actor,
+    identity::Identity,
 };
 use xdid::methods::key::{
     DidKeyPair,

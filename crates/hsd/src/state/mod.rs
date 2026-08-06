@@ -345,7 +345,10 @@ impl SceneState {
     #[must_use]
     pub fn entries(&self) -> BTreeMap<String, Vec<u8>> {
         let mut out = BTreeMap::new();
-        out.insert(key::META.to_owned(), self.meta.encode().unwrap_or_default());
+        out.insert(
+            key::META.to_owned(),
+            self.meta.encode().expect("DocMeta always encodes"),
+        );
 
         for (prim, state) in &self.prims {
             if state.origin != Origin::Document {

@@ -18,6 +18,7 @@ use anyhow::{
     Context,
     Result,
     bail,
+    ensure,
 };
 use hsd::{
     attributes::{
@@ -31,9 +32,12 @@ use hsd::{
             MaterialAttr,
         },
         material_graph::{
-            self,
-            GraphOverridesAttr,
             ShaderGraph,
+            overrides::{
+                GraphOverridesAttr,
+                validate_overrides,
+            },
+            validate::validate,
         },
         name::NameAttr,
         rigid_body::{
@@ -206,7 +210,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
             )?;
         }
         if let Some(xform) = &attrs.xform {
-            self.set_attribute(id, &compile_xform(xform))?;
+            self.set_attribute(id, &compile_xform(xform)?)?;
         }
         if let Some(collider) = &attrs.collider {
             self.set_attribute(id, &compile_collider(collider))?;
@@ -297,26 +301,18 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
             .with_default_extension(ron::extensions::Extensions::IMPLICIT_SOME)
             .from_str(&src)
             .with_context(|| format!("parsing shader graph {}", path.display()))?;
-        material_graph::validate(&parsed)
-            .with_context(|| format!("validating shader graph {}", path.display()))?;
+        validate(&parsed).with_context(|| format!("validating shader graph {}", path.display()))?;
 
         let bytes = parsed.encode().context("encoding shader graph")?;
         self.set_slot(id, slots::MATERIAL_GRAPH_DATA, bytes);
 
         if !graph.overrides.is_empty() {
-            material_graph::validate_overrides(
-                &parsed,
-                &GraphOverridesAttr {
-                    overrides: graph.overrides.clone(),
-                },
-            )
-            .with_context(|| format!("validating overrides for {}", path.display()))?;
-            self.set_attribute(
-                id,
-                &GraphOverridesAttr {
-                    overrides: graph.overrides.clone(),
-                },
-            )?;
+            let overrides = GraphOverridesAttr {
+                overrides: graph.overrides.clone(),
+            };
+            validate_overrides(&parsed, &overrides)
+                .with_context(|| format!("validating overrides for {}", path.display()))?;
+            self.set_attribute(id, &overrides)?;
         }
         Ok(())
     }
@@ -388,18 +384,33 @@ fn compile_rigid_body(rb: &SourceRigidBody) -> Result<RigidBodyAttr> {
     })
 }
 
-fn compile_xform(x: &SourceXform) -> XformAttr {
+fn compile_xform(x: &SourceXform) -> Result<XformAttr> {
     let mut out = XformAttr::default();
     if let Some(t) = &x.translation {
+        ensure!(
+            t.len() == 3,
+            "translation must have 3 components, got {}",
+            t.len()
+        );
         out.translation.copy_from_slice(t);
     }
     if let Some(r) = &x.rotation {
+        ensure!(
+            r.len() == 4,
+            "rotation must have 4 components, got {}",
+            r.len()
+        );
         out.rotation.copy_from_slice(r);
     }
     if let Some(s) = &x.scale {
+        ensure!(
+            s.len() == 3,
+            "scale must have 3 components, got {}",
+            s.len()
+        );
         out.scale.copy_from_slice(s);
     }
-    out
+    Ok(out)
 }
 
 #[cfg(test)]

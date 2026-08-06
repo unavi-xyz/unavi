@@ -7,11 +7,17 @@ use std::{
 };
 
 use hsd::{
-    attributes::material_graph::{
-        GraphOverridesAttr,
-        GraphValue,
-        ShaderGraph,
+    attributes::{
+        material_graph::{
+            GraphValue,
+            MAX_NODES,
+            ShaderGraph,
+            overrides::GraphOverridesAttr,
+        },
+        name::NameAttr,
+        slots::MATERIAL_GRAPH_DATA,
     },
+    id::PrimId,
     key,
     package::Package,
     state::{
@@ -43,12 +49,12 @@ fn realize(package: &Package) -> SceneState {
     state
 }
 
-fn prim_named(state: &SceneState, name: &str) -> hsd::id::PrimId {
+fn prim_named(state: &SceneState, name: &str) -> PrimId {
     state
         .prims()
         .find(|prim| {
             state
-                .attribute::<hsd::attributes::name::NameAttr>(*prim)
+                .attribute::<NameAttr>(*prim)
                 .and_then(Result::ok)
                 .is_some_and(|n| n.0 == name)
         })
@@ -57,7 +63,7 @@ fn prim_named(state: &SceneState, name: &str) -> hsd::id::PrimId {
 
 /// Looks a slot's raw bytes up straight from the package, since a realized
 /// [`SceneState`] and the package agree on where a slot's data lives.
-fn slot_bytes<'a>(package: &'a Package, prim: hsd::id::PrimId, slot: &str) -> &'a [u8] {
+fn slot_bytes<'a>(package: &'a Package, prim: PrimId, slot: &str) -> &'a [u8] {
     let key = key::prop(prim, slot);
     package
         .entries
@@ -72,7 +78,7 @@ fn a_shader_graph_compiles_to_a_slot_entry() {
     let state = realize(&package);
     let prim = prim_named(&state, "default_glow");
 
-    let bytes = slot_bytes(&package, prim, hsd::attributes::slots::MATERIAL_GRAPH_DATA);
+    let bytes = slot_bytes(&package, prim, MATERIAL_GRAPH_DATA);
     let graph = ShaderGraph::decode(bytes).expect("decode graph");
     assert_eq!(
         graph.public_inputs,
@@ -118,12 +124,12 @@ fn two_prims_sharing_a_graph_get_byte_identical_slot_entries() {
     let a = slot_bytes(
         &package,
         prim_named(&state, "default_glow"),
-        hsd::attributes::slots::MATERIAL_GRAPH_DATA,
+        MATERIAL_GRAPH_DATA,
     );
     let b = slot_bytes(
         &package,
         prim_named(&state, "red_glow"),
-        hsd::attributes::slots::MATERIAL_GRAPH_DATA,
+        MATERIAL_GRAPH_DATA,
     );
 
     assert_eq!(a, b, "identical .hss source must compile byte-identically");
@@ -175,7 +181,7 @@ fn a_forward_reference_fails_the_build() {
 /// graph.
 #[test]
 fn exceeding_the_node_cap_fails_the_build() {
-    let nodes = "Time,".repeat(hsd::attributes::material_graph::MAX_NODES + 1);
+    let nodes = "Time,".repeat(MAX_NODES + 1);
     let shader = format!(
         "(surface: (nodes: [{nodes}], output: Unlit((color: Const(Color((1.0, 1.0, 1.0, 1.0)))))))"
     );
@@ -223,7 +229,7 @@ fn a_displacement_graph_compiles() {
     let package = compile(&write_source("displacement", shader)).expect("compile");
     let state = realize(&package);
     let prim = prim_named(&state, "p");
-    let bytes = slot_bytes(&package, prim, hsd::attributes::slots::MATERIAL_GRAPH_DATA);
+    let bytes = slot_bytes(&package, prim, MATERIAL_GRAPH_DATA);
     let graph = ShaderGraph::decode(bytes).expect("decode graph");
     assert!(graph.displacement.is_some());
 }

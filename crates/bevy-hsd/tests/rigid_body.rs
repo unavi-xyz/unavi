@@ -196,7 +196,6 @@ fn test_rigid_body_invalid_transform_does_not_panic(mut ctx: TestContext) {
         "DisabledRigidBody should hold the stashed rigid body"
     );
 
-    // Restore valid transform.
     world.entity_mut(prim_ent).insert(Transform::IDENTITY);
 
     ctx.app.update();

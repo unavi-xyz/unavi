@@ -12,6 +12,7 @@ use std::fmt::Write;
 
 use hsd::attributes::material_graph::{
     DisplacementGraph,
+    GraphValue,
     Node,
     Port,
     ShaderGraph,
@@ -33,8 +34,7 @@ const fn wgsl_type(kind: ValueKind) -> &'static str {
 
 /// `{:?}` rather than `{}`: `f32`'s `Debug` always prints a decimal point
 /// (`2.0`, not `2`), which a bare integer is not in WGSL.
-fn literal(value: hsd::attributes::material_graph::GraphValue) -> String {
-    use hsd::attributes::material_graph::GraphValue;
+fn literal(value: GraphValue) -> String {
     match value {
         GraphValue::Float(v) => format!("{v:?}"),
         GraphValue::Vec2([x, y]) => format!("vec2<f32>({x:?}, {y:?})"),
@@ -46,7 +46,7 @@ fn literal(value: hsd::attributes::material_graph::GraphValue) -> String {
 /// A public input is stored as a full `vec4` slot; only the components its
 /// declared kind actually uses are meaningful, so a lower-kind reference
 /// swizzles down to them.
-fn port_expr(public_inputs: &[hsd::attributes::material_graph::GraphValue], port: Port) -> String {
+fn port_expr(public_inputs: &[GraphValue], port: Port) -> String {
     match port {
         Port::Const(value) => literal(value),
         Port::Input(index) => {
@@ -63,7 +63,7 @@ fn port_expr(public_inputs: &[hsd::attributes::material_graph::GraphValue], port
     }
 }
 
-fn node_expr(public_inputs: &[hsd::attributes::material_graph::GraphValue], node: &Node) -> String {
+fn node_expr(public_inputs: &[GraphValue], node: &Node) -> String {
     match *node {
         Node::Uv => "in.uv".to_owned(),
         Node::WorldNormal => "pbr_input.world_normal".to_owned(),
@@ -117,12 +117,7 @@ fn node_expr(public_inputs: &[hsd::attributes::material_graph::GraphValue], node
     }
 }
 
-fn emit_nodes(
-    out: &mut String,
-    public_inputs: &[hsd::attributes::material_graph::GraphValue],
-    nodes: &[Node],
-    kinds: &[ValueKind],
-) {
+fn emit_nodes(out: &mut String, public_inputs: &[GraphValue], nodes: &[Node], kinds: &[ValueKind]) {
     for (index, node) in nodes.iter().enumerate() {
         let ty = wgsl_type(kinds[index]);
         let expr = node_expr(public_inputs, node);
@@ -132,7 +127,7 @@ fn emit_nodes(
 
 fn emit_alpha_clip(
     out: &mut String,
-    public_inputs: &[hsd::attributes::material_graph::GraphValue],
+    public_inputs: &[GraphValue],
     alpha_expr: &str,
     threshold: Option<Port>,
 ) {
@@ -216,7 +211,7 @@ pub fn generate_surface_body(graph: &ShaderGraph, kinds: &[ValueKind]) -> String
 #[must_use]
 pub fn generate_displacement_body(
     displacement: &DisplacementGraph,
-    public_inputs: &[hsd::attributes::material_graph::GraphValue],
+    public_inputs: &[GraphValue],
     kinds: &[ValueKind],
 ) -> String {
     let mut out = String::new();
@@ -360,7 +355,7 @@ pub fn generate_fragment_shader(graph: &ShaderGraph, kinds: &[ValueKind]) -> Str
 #[must_use]
 pub fn generate_vertex_shader(
     displacement: &DisplacementGraph,
-    public_inputs: &[hsd::attributes::material_graph::GraphValue],
+    public_inputs: &[GraphValue],
     kinds: &[ValueKind],
 ) -> String {
     let body = generate_displacement_body(displacement, public_inputs, kinds);
@@ -399,7 +394,10 @@ mod tests {
         Node,
         SurfaceGraph,
         UnlitOutput,
-        validate,
+        validate::{
+            validate,
+            validate_displacement,
+        },
     };
     use naga::front::wgsl;
 
@@ -495,7 +493,7 @@ mod tests {
         let graph = ShaderGraph {
             surface: SurfaceGraph {
                 nodes:  vec![Node::Uv, Node::WorldNormal],
-                output: hsd::attributes::material_graph::SurfaceOutput::Lit(LitOutput {
+                output: SurfaceOutput::Lit(LitOutput {
                     base_color:           Some(Port::Const(GraphValue::Color([1.0; 4]))),
                     emissive:             Some(Port::Node(1)),
                     metallic:             Some(Port::Const(GraphValue::Float(0.5))),
@@ -557,7 +555,7 @@ mod tests {
                         b:    Port::Input(0),
                     },
                 ],
-                output: hsd::attributes::material_graph::SurfaceOutput::Unlit(UnlitOutput {
+                output: SurfaceOutput::Unlit(UnlitOutput {
                     color:                Port::Node(14),
                     alpha_clip_threshold: Some(Port::Node(4)),
                 }),
@@ -575,7 +573,7 @@ mod tests {
             public_inputs: vec![GraphValue::Float(1.0)],
             surface: SurfaceGraph {
                 nodes:  Vec::new(),
-                output: hsd::attributes::material_graph::SurfaceOutput::Unlit(UnlitOutput {
+                output: SurfaceOutput::Unlit(UnlitOutput {
                     color:                Port::Const(GraphValue::Color([1.0; 4])),
                     alpha_clip_threshold: Some(Port::Input(0)),
                 }),
@@ -598,7 +596,7 @@ mod tests {
         let graph = ShaderGraph {
             surface: SurfaceGraph {
                 nodes:  Vec::new(),
-                output: hsd::attributes::material_graph::SurfaceOutput::Unlit(UnlitOutput {
+                output: SurfaceOutput::Unlit(UnlitOutput {
                     color:                Port::Const(GraphValue::Color([1.0; 4])),
                     alpha_clip_threshold: None,
                 }),
@@ -622,7 +620,7 @@ mod tests {
         let graph = ShaderGraph {
             surface: SurfaceGraph {
                 nodes:  Vec::new(),
-                output: hsd::attributes::material_graph::SurfaceOutput::Lit(LitOutput::default()),
+                output: SurfaceOutput::Lit(LitOutput::default()),
             },
             ..Default::default()
         };
@@ -640,9 +638,7 @@ mod tests {
             normal_override: None,
         };
         let public_inputs = Vec::new();
-        let validated =
-            hsd::attributes::material_graph::validate_displacement(&displacement, &public_inputs)
-                .expect("valid");
+        let validated = validate_displacement(&displacement, &public_inputs).expect("valid");
         let body = generate_displacement_body(&displacement, &public_inputs, &validated);
         assert_displacement_valid(&body);
     }
@@ -672,9 +668,7 @@ mod tests {
             normal_override: None,
         };
         let public_inputs = Vec::new();
-        let validated =
-            hsd::attributes::material_graph::validate_displacement(&displacement, &public_inputs)
-                .expect("valid");
+        let validated = validate_displacement(&displacement, &public_inputs).expect("valid");
         let body = generate_displacement_body(&displacement, &public_inputs, &validated);
         assert!(body.contains("sin("), "{body}");
         assert_displacement_valid(&body);
@@ -688,9 +682,7 @@ mod tests {
             normal_override: None,
         };
         let public_inputs = Vec::new();
-        let validated =
-            hsd::attributes::material_graph::validate_displacement(&displacement, &public_inputs)
-                .expect("valid");
+        let validated = validate_displacement(&displacement, &public_inputs).expect("valid");
         let source = generate_vertex_shader(&displacement, &public_inputs, &validated);
         assert!(source.contains("#import bevy_pbr"));
         assert!(source.contains("vertex.position += out_position_offset;"));

@@ -20,7 +20,7 @@ use hsd::{
         gravity_scale::GravityScaleAttr,
         image::ImageAttr,
         material::MaterialAttr,
-        material_graph::GraphOverridesAttr,
+        material_graph::overrides::GraphOverridesAttr,
         mesh::MeshAttr,
         name::NameAttr,
         portal::PortalAttr,

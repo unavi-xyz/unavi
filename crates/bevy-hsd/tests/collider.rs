@@ -142,7 +142,6 @@ fn test_collider_scale_zero_does_not_panic(mut ctx: TestContext) {
         .next()
         .expect("collider entity");
 
-    // Give the prim entity a Transform with zero scale.
     world
         .entity_mut(prim_ent)
         .insert(Transform::from_scale(Vec3::ZERO));
@@ -160,7 +159,6 @@ fn test_collider_scale_zero_does_not_panic(mut ctx: TestContext) {
         "DisabledCollider should hold the stashed collider"
     );
 
-    // Restore a valid scale.
     world
         .entity_mut(prim_ent)
         .insert(Transform::from_scale(Vec3::ONE));

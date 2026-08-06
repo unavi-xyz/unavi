@@ -35,9 +35,9 @@ use unavi_util::{
 };
 use wds::{
     DataStore,
-    Identity,
     WDS_SERVICE_TYPE,
     actor::Actor,
+    identity::Identity,
 };
 use wired_registry::client::RegistryClient;
 use xdid::{

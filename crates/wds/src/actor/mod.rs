@@ -16,7 +16,6 @@ use tokio::sync::{
 };
 
 use crate::{
-    Identity,
     SessionToken,
     auth::AuthService,
     control::{
@@ -29,12 +28,10 @@ use crate::{
         UnhostDoc,
         UploadBlob,
     },
+    identity::Identity,
 };
 
 mod auth;
-mod into_actor;
-
-pub use into_actor::IntoActor;
 
 /// Authenticated actor for WDS control-plane operations.
 ///

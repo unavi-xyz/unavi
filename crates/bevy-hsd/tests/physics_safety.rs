@@ -9,7 +9,10 @@ use avian3d::prelude::{
     Rotation,
 };
 use bevy::prelude::*;
-use bevy_hsd::attributes::collider::DisabledCollider;
+use bevy_hsd::{
+    Hsd,
+    attributes::collider::DisabledCollider,
+};
 use hsd::{
     attributes::{
         collider::ColliderAttr,
@@ -156,7 +159,7 @@ fn xform_translation_is_not_clobbered_by_init_physics_transform(mut ctx_physics:
     ctx_physics.app.update();
 
     let world = ctx_physics.app.world_mut();
-    let mut q = world.query_filtered::<&Transform, Without<bevy_hsd::Hsd>>();
+    let mut q = world.query_filtered::<&Transform, Without<Hsd>>();
     let transform = q.iter(world).next().expect("transform");
     assert!(
         (transform.translation - Vec3::new(5.0, 2.0, -3.0)).length() < 1.0e-4,

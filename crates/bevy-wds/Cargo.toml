@@ -20,7 +20,6 @@ iroh-blobs              = { features = ["hide-proto-docs"], workspace = true }
 iroh-docs.workspace     = true
 iroh-gossip.workspace   = true
 n0-future.workspace     = true
-smol_str.workspace      = true
 tokio.workspace         = true
 unavi-util.path         = "../unavi-util"
 wds.path                = "../wds"

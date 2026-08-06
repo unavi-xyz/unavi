@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use derive_more::Debug;
-pub use identity::Identity;
+use identity::Identity;
 use iroh::{
     Endpoint,
     EndpointAddr,
@@ -65,6 +65,12 @@ struct StoreContext {
     gossip:        Gossip,
     #[debug("Option<Identity>")]
     user_identity: RwLock<Option<Arc<Identity>>>,
+}
+
+impl StoreContext {
+    fn blob_store(&self) -> &BlobStore {
+        self.blobs.as_ref().as_ref()
+    }
 }
 
 struct ConnectionState {
@@ -135,7 +141,7 @@ impl DataStore {
     /// Returns the blob store. Primarily for testing.
     #[must_use]
     pub fn blobs(&self) -> &BlobStore {
-        self.ctx.blobs.as_ref().as_ref()
+        self.ctx.blob_store()
     }
 
     /// Returns the iroh endpoint. Primarily for testing.

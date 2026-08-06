@@ -12,6 +12,7 @@ use hsd::{
         name::NameAttr,
         slots,
     },
+    id::PrimId,
     package::Package,
     state::{
         SceneState,
@@ -63,7 +64,7 @@ fn realize(package: &Package) -> SceneState {
     state
 }
 
-fn prim_named(state: &SceneState, name: &str) -> hsd::id::PrimId {
+fn prim_named(state: &SceneState, name: &str) -> PrimId {
     state
         .prims()
         .find(|prim| {

@@ -19,11 +19,14 @@ use hsd::{
     attributes::{
         Attribute,
         material_graph::{
-            self,
-            GraphOverridesAttr,
             GraphValue,
             ShaderGraph,
             SurfaceOutput,
+            overrides::{
+                GraphOverridesAttr,
+                validate_overrides,
+            },
+            validate::validate,
         },
         slots,
     },
@@ -150,7 +153,7 @@ pub fn rebuild_material_graph(
                 continue;
             }
         };
-        let validated = match material_graph::validate(&graph) {
+        let validated = match validate(&graph) {
             Ok(validated) => validated,
             Err(err) => {
                 warn!(?err, "invalid shader graph");
@@ -160,15 +163,14 @@ pub fn rebuild_material_graph(
 
         let overrides_attr = overrides.get(prim).ok().map(|o| &o.0);
         if let Some(overrides) = overrides_attr
-            && let Err(err) = material_graph::validate_overrides(&graph, overrides)
+            && let Err(err) = validate_overrides(&graph, overrides)
         {
             warn!(
                 ?err,
                 "shader graph overrides do not match the graph; using its defaults"
             );
         }
-        let overrides_attr =
-            overrides_attr.filter(|o| material_graph::validate_overrides(&graph, o).is_ok());
+        let overrides_attr = overrides_attr.filter(|o| validate_overrides(&graph, o).is_ok());
 
         let hash = BlobId(*blake3::hash(&slot.0).as_bytes());
         let cached = cache.0.entry(hash).or_insert_with(|| {
@@ -312,8 +314,9 @@ pub struct ShaderGraphCache(HashMap<BlobId, CachedShaders>);
 
 /// Unity's Alpha Clip Threshold / Unreal's Opacity Mask maps to
 /// `AlphaMode::Mask`; an explicit `alpha`/`Unlit` output that can be
-/// translucent maps to `Blend`; otherwise `Opaque`. A heuristic, not an
-/// explicit graph field — see the shader-graph design doc's open questions.
+/// translucent maps to `Blend`; otherwise `Opaque`. A heuristic inferred from
+/// which terminals are set, not an explicit graph field the format asks an
+/// author to choose.
 const fn alpha_mode(output: &SurfaceOutput) -> AlphaMode {
     match output {
         SurfaceOutput::Lit(lit) => {

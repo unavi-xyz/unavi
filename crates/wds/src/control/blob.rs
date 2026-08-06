@@ -67,9 +67,7 @@ pub async fn upload_blob(
     };
 
     let Ok(temp_tag) = ctx
-        .blobs
-        .as_ref()
-        .as_ref()
+        .blob_store()
         .blobs()
         .add_stream(stream)
         .await
@@ -114,12 +112,7 @@ pub async fn upload_blob(
 
     // Only persist the blob tag after tracking the blob in the DB.
     let tag_name = BlobTag::new(did.clone(), hash).to_string();
-    ctx.blobs
-        .as_ref()
-        .as_ref()
-        .tags()
-        .set(tag_name, temp_tag)
-        .await?;
+    ctx.blob_store().tags().set(tag_name, temp_tag).await?;
 
     tx.send(Ok(hash)).await?;
     Ok(())
@@ -186,9 +179,7 @@ pub async fn blob_exists(
     let _did = authenticate!(ctx, inner, tx);
 
     let exists = ctx
-        .blobs
-        .as_ref()
-        .as_ref()
+        .blob_store()
         .blobs()
         .has(inner.hash)
         .await

@@ -78,11 +78,9 @@ pub async fn multi_ctx() -> MultiStoreCtx {
     // Both WDS endpoints can authenticate on behalf of these actors.
     let wds_endpoints = vec![rome.store.endpoint().id(), carthage.store.endpoint().id()];
 
-    // Generate did:web actors shared across both stores.
     let alice_with_server = generate_actor_web(&rome.store, wds_endpoints.clone()).await;
     let bob_with_server = generate_actor_web(&rome.store, wds_endpoints).await;
 
-    // Set up quotas on carthage for these actors.
     for did in [
         alice_with_server.actor.identity().did(),
         bob_with_server.actor.identity().did(),
@@ -102,7 +100,6 @@ pub async fn multi_ctx() -> MultiStoreCtx {
             .expect("create quota on carthage");
     }
 
-    // Replace actors with did:web versions.
     rome.alice = rome
         .store
         .local_actor(Arc::clone(alice_with_server.actor.identity()));
@@ -139,17 +136,14 @@ pub async fn multi_ctx_local() -> LocalStoreCtx {
     let mut alice_ctx = ctx().await;
     let mut bob_ctx = ctx().await;
 
-    // Generate did:key identities for each user.
     let (_, alice_identity) = generate_actor_with_identity(&alice_ctx.store).await;
     let (_, bob_identity) = generate_actor_with_identity(&bob_ctx.store).await;
 
-    // Set user identities on respective stores for sync authentication.
     alice_ctx
         .store
         .set_user_identity(Arc::clone(&alice_identity));
     bob_ctx.store.set_user_identity(Arc::clone(&bob_identity));
 
-    // Set up quotas on both stores for both users.
     for (store, did) in [
         (&alice_ctx.store, alice_identity.did()),
         (&alice_ctx.store, bob_identity.did()),
@@ -170,7 +164,6 @@ pub async fn multi_ctx_local() -> LocalStoreCtx {
             .expect("create quota");
     }
 
-    // Replace actors with their respective identities.
     alice_ctx.alice = alice_ctx.store.local_actor(Arc::clone(&alice_identity));
     alice_ctx.bob = alice_ctx.store.local_actor(Arc::clone(&bob_identity));
     bob_ctx.alice = bob_ctx.store.local_actor(Arc::clone(&alice_identity));

@@ -11,8 +11,8 @@ use iroh_docs::{
 };
 use irpc::Client;
 use wds::{
-    Identity,
     actor::Actor,
+    identity::Identity,
     signed_bytes::{
         Signable,
         SignedBytes,

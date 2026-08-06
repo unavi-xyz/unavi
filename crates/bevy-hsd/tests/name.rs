@@ -1,3 +1,4 @@
+use bevy::prelude::Name;
 use hsd::attributes::name::NameAttr;
 use rstest::rstest;
 use tracing_test::traced_test;
@@ -17,7 +18,7 @@ fn test_name_lifecycle(mut ctx: TestContext) {
     ctx.app.update();
 
     let world = ctx.app.world_mut();
-    let mut query = world.query::<&bevy::prelude::Name>();
+    let mut query = world.query::<&Name>();
 
     let res = query.query(world).into_iter().collect::<Vec<_>>();
     assert_eq!(res.len(), 1);

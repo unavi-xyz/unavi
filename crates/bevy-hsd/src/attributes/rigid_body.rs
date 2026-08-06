@@ -84,44 +84,67 @@ pub fn apply_rigid_body(
         };
         commands.entity(ent).insert(rb);
 
-        if let Some(v) = attr.friction {
-            if valid_nonneg(v) {
-                commands.entity(ent).insert(Friction::new(v as f32));
-            } else {
-                warn!("rigid_body: friction must be finite and >= 0 (got {v})");
-            }
-        }
+        apply_scalar(
+            &mut commands,
+            ent,
+            attr.friction,
+            valid_nonneg,
+            Friction::new,
+            "friction",
+            ">= 0",
+        );
+        apply_scalar(
+            &mut commands,
+            ent,
+            attr.restitution,
+            valid_nonneg,
+            Restitution::new,
+            "restitution",
+            ">= 0",
+        );
+        apply_scalar(
+            &mut commands,
+            ent,
+            attr.mass,
+            valid_positive,
+            Mass,
+            "mass",
+            "> 0",
+        );
+        apply_scalar(
+            &mut commands,
+            ent,
+            attr.linear_damping,
+            valid_nonneg,
+            LinearDamping,
+            "linear_damping",
+            ">= 0",
+        );
+        apply_scalar(
+            &mut commands,
+            ent,
+            attr.angular_damping,
+            valid_nonneg,
+            AngularDamping,
+            "angular_damping",
+            ">= 0",
+        );
+    }
+}
 
-        if let Some(v) = attr.restitution {
-            if valid_nonneg(v) {
-                commands.entity(ent).insert(Restitution::new(v as f32));
-            } else {
-                warn!("rigid_body: restitution must be finite and >= 0 (got {v})");
-            }
-        }
-
-        if let Some(v) = attr.mass {
-            if valid_positive(v) {
-                commands.entity(ent).insert(Mass(v as f32));
-            } else {
-                warn!("rigid_body: mass must be finite and > 0 (got {v})");
-            }
-        }
-
-        if let Some(v) = attr.linear_damping {
-            if valid_nonneg(v) {
-                commands.entity(ent).insert(LinearDamping(v as f32));
-            } else {
-                warn!("rigid_body: linear_damping must be finite and >= 0 (got {v})");
-            }
-        }
-
-        if let Some(v) = attr.angular_damping {
-            if valid_nonneg(v) {
-                commands.entity(ent).insert(AngularDamping(v as f32));
-            } else {
-                warn!("rigid_body: angular_damping must be finite and >= 0 (got {v})");
-            }
-        }
+fn apply_scalar<C: Component>(
+    commands: &mut Commands,
+    ent: Entity,
+    value: Option<f64>,
+    valid: fn(f64) -> bool,
+    ctor: fn(f32) -> C,
+    name: &str,
+    constraint: &str,
+) {
+    let Some(v) = value else { return };
+    if valid(v) {
+        commands.entity(ent).insert(ctor(v as f32));
+    } else {
+        warn!("rigid_body: {name} must be finite and {constraint} (got {v})");
     }
 }

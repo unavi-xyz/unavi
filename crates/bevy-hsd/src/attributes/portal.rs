@@ -12,6 +12,10 @@ use crate::attributes::{
 #[derive(Component, Debug, Clone, Copy)]
 pub struct PortalData(pub PortalAttr);
 
+/// Same payload as [`PortalData`], published a frame later by [`apply_portal`].
+///
+/// The stable component external crates (`unavi-space`, `unavi-script`)
+/// depend on, decoupled from the raw parser-lifecycle type.
 #[derive(Component, Debug, Clone, Copy)]
 pub struct PortalConfig(pub PortalAttr);
 

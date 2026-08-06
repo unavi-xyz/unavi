@@ -35,16 +35,13 @@ pub async fn host_doc(
     let ns_str = inner.ns.to_string();
 
     ctx.db
-        .call_mut({
-            let did_str = did_str.clone();
-            move |conn| {
-                ensure_quota_exists(conn, &did_str)?;
-                conn.execute(
-                    "INSERT OR IGNORE INTO hosted_docs (ns, owner, bytes_used) VALUES (?, ?, 0)",
-                    params![ns_str, did_str],
-                )?;
-                Ok(())
-            }
+        .call_mut(move |conn| {
+            ensure_quota_exists(conn, &did_str)?;
+            conn.execute(
+                "INSERT OR IGNORE INTO hosted_docs (ns, owner, bytes_used) VALUES (?, ?, 0)",
+                params![ns_str, did_str],
+            )?;
+            Ok(())
         })
         .await?;
 
@@ -70,25 +67,22 @@ pub async fn unhost_doc(
     let ns_str = inner.ns.to_string();
 
     ctx.db
-        .call_mut({
-            let did_str = did_str.clone();
-            move |conn| {
-                let bytes_used: i64 = conn
-                    .query_row(
-                        "SELECT bytes_used FROM hosted_docs WHERE owner = ? AND ns = ?",
-                        params![did_str, ns_str],
-                        |row| row.get(0),
-                    )
-                    .unwrap_or(0);
-                conn.execute(
-                    "DELETE FROM hosted_docs WHERE owner = ? AND ns = ?",
+        .call_mut(move |conn| {
+            let bytes_used: i64 = conn
+                .query_row(
+                    "SELECT bytes_used FROM hosted_docs WHERE owner = ? AND ns = ?",
                     params![did_str, ns_str],
-                )?;
-                if bytes_used > 0 {
-                    release_bytes(conn, &did_str, bytes_used)?;
-                }
-                Ok(())
+                    |row| row.get(0),
+                )
+                .unwrap_or(0);
+            conn.execute(
+                "DELETE FROM hosted_docs WHERE owner = ? AND ns = ?",
+                params![did_str, ns_str],
+            )?;
+            if bytes_used > 0 {
+                release_bytes(conn, &did_str, bytes_used)?;
             }
+            Ok(())
         })
         .await?;
 
@@ -128,7 +122,10 @@ async fn meter_doc(ctx: Arc<StoreContext>, owner: Did, ns: NamespaceId, doc: Doc
         };
 
         if let Err(err) = charge(&ctx, &owner, ns, i64::try_from(len).unwrap_or(i64::MAX)).await {
-            tracing::warn!(%ns, %owner, "hosted doc over quota, metering stopped: {err}");
+            // Metering stops for the rest of this doc's lifetime here, so
+            // this is not a transient warning: the doc keeps syncing
+            // unbounded and uncharged until pause/unhost lands.
+            tracing::error!(%ns, %owner, "hosted doc over quota, metering stopped: {err}");
             return;
         }
     }

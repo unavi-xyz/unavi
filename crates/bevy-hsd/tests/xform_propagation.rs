@@ -24,7 +24,7 @@ const fn xform(t: [f32; 3]) -> XformAttr {
 /// propagation collapses its children onto the parent's origin.
 #[traced_test]
 #[rstest]
-fn root_without_xform_keeps_child_transforms(mut ctx: TestContext) {
+fn test_root_without_xform_keeps_child_transforms(mut ctx: TestContext) {
     let root = ctx.create_prim();
     ctx.set_attr(root, &NameAttr("gate".to_string()));
 

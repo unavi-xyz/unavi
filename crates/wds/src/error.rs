@@ -1,43 +1,10 @@
-//! Error types for WDS.
-//!
-//! Two error types are defined:
-//! - [`WdsError`]: Internal error type with full context.
-//! - [`ApiError`]: External error type safe for client/server boundary.
+//! [`ApiError`]: WDS's error type safe for the client/server boundary.
 
 use serde::{
     Deserialize,
     Serialize,
 };
 use thiserror::Error;
-
-/// Internal error type for WDS operations.
-///
-/// Contains full error context for debugging and logging.
-/// Convert to [`ApiError`] before sending to clients.
-#[derive(Debug, Error)]
-pub enum WdsError {
-    #[error("invalid signature")]
-    InvalidSignature,
-    #[error("unauthenticated")]
-    Unauthenticated,
-    #[error("DID resolution failed: {0}")]
-    DidResolution(String),
-
-    #[error("access denied")]
-    AccessDenied,
-    #[error("quota exceeded")]
-    QuotaExceeded,
-    #[error("blob not found")]
-    BlobNotFound,
-
-    #[error("serialization error: {0}")]
-    Serialization(#[from] postcard::Error),
-    #[error("database error: {0}")]
-    Database(#[from] rusqlite::Error),
-
-    #[error(transparent)]
-    Other(#[from] anyhow::Error),
-}
 
 /// External error type for the WDS API.
 ///
@@ -58,33 +25,4 @@ pub enum ApiError {
     InvalidSignature,
     #[error("internal error")]
     Internal,
-}
-
-impl WdsError {
-    /// Convert to [`ApiError`], recovering wrapped errors from
-    /// [`WdsError::Other`].
-    fn to_api_error(&self) -> ApiError {
-        match self {
-            Self::InvalidSignature => ApiError::InvalidSignature,
-            Self::Unauthenticated => ApiError::Unauthenticated,
-            Self::AccessDenied => ApiError::AccessDenied,
-            Self::QuotaExceeded => ApiError::QuotaExceeded,
-            Self::BlobNotFound => ApiError::BlobNotFound,
-            Self::Other(e) => {
-                if let Some(inner) = e.downcast_ref::<Self>() {
-                    return inner.to_api_error();
-                }
-                ApiError::Internal
-            }
-            Self::DidResolution(_) | Self::Database(_) | Self::Serialization(_) => {
-                ApiError::Internal
-            }
-        }
-    }
-}
-
-impl From<WdsError> for ApiError {
-    fn from(err: WdsError) -> Self {
-        err.to_api_error()
-    }
 }

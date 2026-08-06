@@ -1,14 +1,14 @@
 //! Entry-level document access.
 //!
-//! Replaces the snapshot-doc primitive, where a whole document was one blob
-//! under one key and two peers checkpointing concurrently meant one peer's
-//! scene losing. Here every key is its own entry, so iroh-docs' per-key
-//! last-writer-wins merge runs between peers for the first time.
+//! Every key is its own entry rather than a whole document under one key, so
+//! iroh-docs' per-key last-writer-wins merge resolves concurrent writes
+//! between peers — a whole-document snapshot under one key would instead
+//! have one peer's checkpoint overwrite the other's scene outright.
 //!
 //! Nothing here interprets a payload, and nothing tracks dependencies: an
 //! entry's value *is* a blob hash, so a replicating host fetches, tags and
-//! meters every byte without reading any of it. The `deps/` convention has no
-//! successor.
+//! meters every byte without reading any of it. There is no `deps/`-style
+//! dependency-tracking convention.
 
 use std::time::Duration;
 

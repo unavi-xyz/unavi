@@ -5,13 +5,13 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::attributes::material_graph::{
+    HsdMaterialGraphSlot,
     HsdShaderGraphMaterial,
     ShaderGraphMaterial,
 };
 use hsd::attributes::{
     material_graph::{
         DisplacementGraph,
-        GraphOverridesAttr,
         GraphValue,
         Node,
         Port,
@@ -19,6 +19,7 @@ use hsd::attributes::{
         SurfaceGraph,
         SurfaceOutput,
         UnlitOutput,
+        overrides::GraphOverridesAttr,
     },
     slots,
 };
@@ -180,7 +181,7 @@ fn test_shader_graph_removed_when_slot_removed(#[from(ctx_wds)] mut ctx: TestCon
     ctx.app.update();
 
     let world = ctx.app.world_mut();
-    let mut q = world.query::<&bevy_hsd::attributes::material_graph::HsdMaterialGraphSlot>();
+    let mut q = world.query::<&HsdMaterialGraphSlot>();
     assert!(q.iter(world).next().is_none());
 }
 

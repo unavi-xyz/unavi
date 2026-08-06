@@ -1,4 +1,6 @@
-#![allow(dead_code)]
+// Compiled into every integration-test binary in this crate, each of which
+// only uses a subset of these helpers.
+#![expect(dead_code)]
 
 use std::{
     sync::{
@@ -18,6 +20,7 @@ use bevy::{
     prelude::*,
     transform::TransformPlugin,
 };
+use bevy_hsd::attributes::material_graph::ShaderGraphMaterial;
 use bevy_wds::{
     LocalBlobs,
     WdsPlugin,
@@ -63,7 +66,7 @@ impl Default for TestContext {
         .init_asset::<Mesh>()
         .init_asset::<StandardMaterial>()
         .init_asset::<Shader>()
-        .init_asset::<bevy_hsd::attributes::material_graph::ShaderGraphMaterial>();
+        .init_asset::<ShaderGraphMaterial>();
         run_on_test_thread(&mut app);
 
         let mut ctx = Self {
@@ -98,7 +101,7 @@ impl TestContext {
         .init_asset::<Mesh>()
         .init_asset::<StandardMaterial>()
         .init_asset::<Shader>()
-        .init_asset::<bevy_hsd::attributes::material_graph::ShaderGraphMaterial>()
+        .init_asset::<ShaderGraphMaterial>()
         .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
             Duration::from_secs_f32(1.0 / 60.0),
         ));
@@ -132,7 +135,7 @@ impl TestContext {
         .init_asset::<Mesh>()
         .init_asset::<StandardMaterial>()
         .init_asset::<Shader>()
-        .init_asset::<bevy_hsd::attributes::material_graph::ShaderGraphMaterial>()
+        .init_asset::<ShaderGraphMaterial>()
         .insert_resource(Time::<Fixed>::from_duration(Duration::from_millis(10)));
         run_on_test_thread(&mut app);
 

@@ -23,6 +23,10 @@ use crate::cargo::{
 /// Bytes rather than a hash: a script is the value of its own
 /// `p/<prim>/script/` entry, so nothing addresses it by hash on disk and the
 /// build directory holds no loose blob files.
+///
+/// Assumes the process's current directory is the workspace root: both the
+/// `target/` build output and the jco adapter path below are workspace-root
+/// relative.
 pub fn build_wasm_for_crate<S: std::hash::BuildHasher>(
     crate_dir: &Path,
     built: &mut HashMap<String, Vec<u8>, S>,
@@ -121,6 +125,10 @@ pub fn build_wasm_for_crate<S: std::hash::BuildHasher>(
 
         if !output.status.success() {
             let err = String::from_utf8_lossy(&output.stderr);
+            // A dependency crate that exports nothing the parent imports
+            // fails `wac plug` with this message; skipping it is correct
+            // since there is nothing to wire up, but the check is a stderr
+            // substring match against `wac`'s own wording, not a stable API.
             if err.contains("no matching imports") {
                 continue;
             }

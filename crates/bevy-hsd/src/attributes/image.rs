@@ -75,23 +75,23 @@ pub fn rebuild_image(
 
         let attr = &image.0;
         let mut sampler = ImageSamplerDescriptor::default();
-        if let Some(v) = attr.address_mode_u {
-            sampler.address_mode_u = address_mode(v);
+        for (value, target) in [
+            (attr.address_mode_u, &mut sampler.address_mode_u),
+            (attr.address_mode_v, &mut sampler.address_mode_v),
+            (attr.address_mode_w, &mut sampler.address_mode_w),
+        ] {
+            if let Some(v) = value {
+                *target = address_mode(v);
+            }
         }
-        if let Some(v) = attr.address_mode_v {
-            sampler.address_mode_v = address_mode(v);
-        }
-        if let Some(v) = attr.address_mode_w {
-            sampler.address_mode_w = address_mode(v);
-        }
-        if let Some(v) = attr.mag_filter {
-            sampler.mag_filter = filter_mode(v);
-        }
-        if let Some(v) = attr.min_filter {
-            sampler.min_filter = filter_mode(v);
-        }
-        if let Some(v) = attr.mipmap_filter {
-            sampler.mipmap_filter = filter_mode(v);
+        for (value, target) in [
+            (attr.mag_filter, &mut sampler.mag_filter),
+            (attr.min_filter, &mut sampler.min_filter),
+            (attr.mipmap_filter, &mut sampler.mipmap_filter),
+        ] {
+            if let Some(v) = value {
+                *target = filter_mode(v);
+            }
         }
 
         let dyn_img = match image::load_from_memory(bytes) {

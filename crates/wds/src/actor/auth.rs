@@ -1,6 +1,7 @@
 use crate::{
     SessionToken,
     actor::Actor,
+    auth::client::authenticate,
 };
 
 impl Actor {
@@ -20,7 +21,7 @@ impl Actor {
             return Ok(s);
         }
 
-        let s = crate::auth::client::authenticate(
+        let s = authenticate(
             self.identity().did().clone(),
             self.identity().signing_key(),
             self.host.id,

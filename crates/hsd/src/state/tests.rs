@@ -3,6 +3,10 @@ use std::collections::BTreeMap;
 use crate::{
     attributes::{
         Attribute,
+        material::{
+            BINDING,
+            MaterialAttr,
+        },
         name::NameAttr,
         xform::XformAttr,
     },
@@ -303,13 +307,10 @@ fn relationships_and_attributes_share_one_namespace() {
     );
 
     state
-        .set_attribute(
-            prim(1),
-            &crate::attributes::material::MaterialAttr::default(),
-        )
+        .set_attribute(prim(1), &MaterialAttr::default())
         .expect("attribute");
     state
-        .set_relationship(prim(1), crate::attributes::material::BINDING, prim(2))
+        .set_relationship(prim(1), BINDING, prim(2))
         .expect("relationship");
 
     let prim_state = state.get(prim(1)).expect("prim");
@@ -321,10 +322,7 @@ fn relationships_and_attributes_share_one_namespace() {
             .is_some()
     );
     assert_eq!(
-        prim_state
-            .property(crate::attributes::material::BINDING)
-            .expect("rel")
-            .as_relationship(),
+        prim_state.property(BINDING).expect("rel").as_relationship(),
         Some(prim(2))
     );
 }

@@ -58,6 +58,9 @@ impl DataStoreBuilder {
 
     /// Specify a directory path for file storage.
     /// If not provided, defaults to in-memory storage.
+    ///
+    /// Not supported on wasm — [`Self::build`] errors if this is set there,
+    /// since there is no filesystem to fall back to.
     #[must_use]
     pub fn storage_path(mut self, path: PathBuf) -> Self {
         self.storage = Storage::Path(path);
@@ -132,7 +135,11 @@ impl DataStoreBuilder {
 // `.await` works uniformly across targets.
 #[cfg(target_family = "wasm")]
 #[expect(clippy::unused_async)]
-async fn init_storage(_storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database)> {
+async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database)> {
+    anyhow::ensure!(
+        matches!(storage, Storage::InMemory),
+        "file storage is not supported on wasm; use Storage::InMemory"
+    );
     let blobs: BoxedBlobs = Box::new(MemStore::new());
     let db = Database::new_in_memory()?;
     Ok((blobs, db))

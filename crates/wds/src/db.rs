@@ -69,7 +69,6 @@ impl Database {
 }
 
 fn run_migrations(conn: &Connection) -> Result<()> {
-    // Create migrations table if needed.
     conn.execute(
         "CREATE TABLE IF NOT EXISTS _migrations (
                 id INTEGER PRIMARY KEY,
@@ -79,14 +78,12 @@ fn run_migrations(conn: &Connection) -> Result<()> {
     )
     .context("create migrations table")?;
 
-    // Get current migration version.
     let current: i64 = conn
         .query_row("SELECT COALESCE(MAX(id), 0) FROM _migrations", [], |row| {
             row.get(0)
         })
         .context("get migration version")?;
 
-    // Apply pending migrations.
     for (i, migration) in MIGRATIONS.iter().enumerate() {
         let version = i64::try_from(i + 1).expect("migration count exceeds i64::MAX");
         if version <= current {

@@ -6,14 +6,14 @@
 
 use std::collections::BTreeMap;
 
-use anyhow::Result;
-use hsd::attributes::material_graph::GraphValue;
 use ron::extensions::Extensions;
 use serde::{
     Deserialize,
     Serialize,
 };
 use serde_with::skip_serializing_none;
+
+use crate::attributes::material_graph::GraphValue;
 
 pub const EXTENSION: &str = "hsda";
 

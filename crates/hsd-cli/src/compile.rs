@@ -44,17 +44,6 @@ use hsd::{
         spawn::SpawnAttr,
         xform::XformAttr,
     },
-    id::PrimId,
-    key,
-    meta::DocMeta,
-    package::Package,
-    property::{
-        Parent,
-        Property,
-    },
-};
-
-use crate::{
     hsda::{
         Hsda,
         HsdaAttributes,
@@ -66,8 +55,17 @@ use crate::{
         HsdaRigidBody,
         HsdaXform,
     },
-    wasm::build_wasm_for_crate,
+    id::PrimId,
+    key,
+    meta::DocMeta,
+    package::Package,
+    property::{
+        Parent,
+        Property,
+    },
 };
+
+use crate::wasm::build_wasm_for_crate;
 
 /// Identifies a source file in a way that is the same on every machine, so a
 /// prim id derived from it does not depend on where the repo is checked out.

@@ -1,4 +1,5 @@
 pub mod attributes;
+pub mod hsda;
 pub mod id;
 pub mod key;
 pub mod meta;

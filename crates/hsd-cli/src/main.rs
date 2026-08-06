@@ -11,10 +11,10 @@ use clap::{
     Args,
     Parser,
 };
+use hsd::hsda::Hsda;
 use hsd_cli::{
     compile,
     dump,
-    hsda::Hsda,
 };
 
 #[derive(Parser, Debug)]

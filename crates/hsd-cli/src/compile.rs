@@ -44,17 +44,6 @@ use hsd::{
         spawn::SpawnAttr,
         xform::XformAttr,
     },
-    hsda::{
-        Hsda,
-        HsdaAttributes,
-        HsdaCollider,
-        HsdaImage,
-        HsdaMaterial,
-        HsdaMaterialGraph,
-        HsdaPrim,
-        HsdaRigidBody,
-        HsdaXform,
-    },
     id::PrimId,
     key,
     meta::DocMeta,
@@ -62,6 +51,17 @@ use hsd::{
     property::{
         Parent,
         Property,
+    },
+    source::{
+        Source,
+        SourceAttributes,
+        SourceCollider,
+        SourceImage,
+        SourceMaterial,
+        SourceMaterialGraph,
+        SourcePrim,
+        SourceRigidBody,
+        SourceXform,
     },
 };
 
@@ -119,12 +119,12 @@ pub fn compile_file<S: std::hash::BuildHasher>(
 
     let src = std::fs::read_to_string(&input_abs)
         .with_context(|| format!("reading {}", input_abs.display()))?;
-    let hsda = Hsda::parse(&src).with_context(|| format!("parsing {}", input_abs.display()))?;
+    let doc = Source::parse(&src).with_context(|| format!("parsing {}", input_abs.display()))?;
 
     let source = source_identity(&input_abs)?;
 
     let mut names = HashMap::new();
-    index_names(&hsda.0, &source, &mut Vec::new(), &mut names)?;
+    index_names(&doc.0, &source, &mut Vec::new(), &mut names)?;
 
     let mut compiler = Compiler {
         source,
@@ -137,13 +137,13 @@ pub fn compile_file<S: std::hash::BuildHasher>(
         key::META.to_owned(),
         DocMeta::default().encode().context("encoding meta")?,
     );
-    compiler.emit(&hsda.0, Parent::Root, &mut Vec::new())?;
+    compiler.emit(&doc.0, Parent::Root, &mut Vec::new())?;
 
     Ok(Package::new(compiler.entries))
 }
 
 fn index_names(
-    prims: &[HsdaPrim],
+    prims: &[SourcePrim],
     source: &str,
     path: &mut Vec<usize>,
     names: &mut HashMap<String, PrimId>,
@@ -171,7 +171,7 @@ struct Compiler<'a, S: std::hash::BuildHasher> {
 }
 
 impl<S: std::hash::BuildHasher> Compiler<'_, S> {
-    fn emit(&mut self, prims: &[HsdaPrim], parent: Parent, path: &mut Vec<usize>) -> Result<()> {
+    fn emit(&mut self, prims: &[SourcePrim], parent: Parent, path: &mut Vec<usize>) -> Result<()> {
         for (index, prim) in prims.iter().enumerate() {
             path.push(index);
             let id = derive_prim_id(&self.source, path);
@@ -190,7 +190,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         Ok(())
     }
 
-    fn emit_attributes(&mut self, id: PrimId, attrs: &HsdaAttributes) -> Result<()> {
+    fn emit_attributes(&mut self, id: PrimId, attrs: &SourceAttributes) -> Result<()> {
         if let Some(name) = &attrs.name {
             self.set_attribute(id, &NameAttr(name.clone()))?;
         }
@@ -234,7 +234,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         Ok(())
     }
 
-    fn emit_image(&mut self, id: PrimId, image: &HsdaImage) -> Result<()> {
+    fn emit_image(&mut self, id: PrimId, image: &SourceImage) -> Result<()> {
         let path = self.input_dir.join(&image.data);
         let bytes =
             std::fs::read(&path).with_context(|| format!("reading image {}", path.display()))?;
@@ -253,7 +253,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         )
     }
 
-    fn emit_material(&mut self, id: PrimId, mat: &HsdaMaterial) -> Result<()> {
+    fn emit_material(&mut self, id: PrimId, mat: &SourceMaterial) -> Result<()> {
         self.set_attribute(
             id,
             &MaterialAttr {
@@ -289,7 +289,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
     /// the prim specifies overrides, an attribute alongside it. The graph
     /// itself never appears in the attribute payload — see
     /// `hsd::attributes::material_graph`.
-    fn emit_material_graph(&mut self, id: PrimId, graph: &HsdaMaterialGraph) -> Result<()> {
+    fn emit_material_graph(&mut self, id: PrimId, graph: &SourceMaterialGraph) -> Result<()> {
         let path = self.input_dir.join(&graph.path);
         let src = std::fs::read_to_string(&path)
             .with_context(|| format!("reading shader graph {}", path.display()))?;
@@ -362,16 +362,16 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
     }
 }
 
-const fn compile_collider(c: &HsdaCollider) -> ColliderAttr {
+const fn compile_collider(c: &SourceCollider) -> ColliderAttr {
     match *c {
-        HsdaCollider::Capsule { height, radius } => ColliderAttr::Capsule { height, radius },
-        HsdaCollider::Cuboid { x, y, z } => ColliderAttr::Cuboid { x, y, z },
-        HsdaCollider::Cylinder { height, radius } => ColliderAttr::Cylinder { height, radius },
-        HsdaCollider::Sphere(r) => ColliderAttr::Sphere(r),
+        SourceCollider::Capsule { height, radius } => ColliderAttr::Capsule { height, radius },
+        SourceCollider::Cuboid { x, y, z } => ColliderAttr::Cuboid { x, y, z },
+        SourceCollider::Cylinder { height, radius } => ColliderAttr::Cylinder { height, radius },
+        SourceCollider::Sphere(r) => ColliderAttr::Sphere(r),
     }
 }
 
-fn compile_rigid_body(rb: &HsdaRigidBody) -> Result<RigidBodyAttr> {
+fn compile_rigid_body(rb: &SourceRigidBody) -> Result<RigidBodyAttr> {
     let kind = match rb.kind.as_str() {
         "Static" => RigidBodyKind::Static,
         "Kinematic" => RigidBodyKind::Kinematic,
@@ -388,7 +388,7 @@ fn compile_rigid_body(rb: &HsdaRigidBody) -> Result<RigidBodyAttr> {
     })
 }
 
-fn compile_xform(x: &HsdaXform) -> XformAttr {
+fn compile_xform(x: &SourceXform) -> XformAttr {
     let mut out = XformAttr::default();
     if let Some(t) = &x.translation {
         out.translation.copy_from_slice(t);

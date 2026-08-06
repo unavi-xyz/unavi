@@ -11,7 +11,7 @@ use clap::{
     Args,
     Parser,
 };
-use hsd::hsda::Hsda;
+use hsd::source::Source;
 use hsd_cli::{
     compile,
     dump,
@@ -76,8 +76,8 @@ fn main() -> Result<()> {
         HsdCli::Format(Format { input }) => {
             let src = std::fs::read_to_string(&input)
                 .with_context(|| format!("reading {}", input.display()))?;
-            let hsda = Hsda::parse(&src).with_context(|| format!("parsing {}", input.display()))?;
-            std::fs::write(&input, hsda.to_ron()?)
+            let doc = Source::parse(&src).with_context(|| format!("parsing {}", input.display()))?;
+            std::fs::write(&input, doc.to_ron()?)
                 .with_context(|| format!("writing {}", input.display()))?;
         }
     }

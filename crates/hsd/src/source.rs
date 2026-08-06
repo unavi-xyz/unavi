@@ -24,9 +24,9 @@ fn ron_options() -> ron::Options {
 }
 
 #[derive(Serialize, Deserialize, Default)]
-pub struct Hsda(pub Vec<HsdaPrim>);
+pub struct Source(pub Vec<SourcePrim>);
 
-impl Hsda {
+impl Source {
     pub fn parse(s: &str) -> Result<Self, ron::error::SpannedError> {
         ron_options().from_str(s)
     }
@@ -38,8 +38,8 @@ impl Hsda {
 
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
-pub struct HsdaPrim {
-    pub attributes:    HsdaAttributes,
+pub struct SourcePrim {
+    pub attributes:    SourceAttributes,
     /// Cross-prim references by prim name, resolved to ids at build time.
     pub relationships: BTreeMap<String, String>,
     pub children:      Vec<Self>,
@@ -48,30 +48,30 @@ pub struct HsdaPrim {
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
-pub struct HsdaAttributes {
-    pub collider:       Option<HsdaCollider>,
+pub struct SourceAttributes {
+    pub collider:       Option<SourceCollider>,
     pub gravity_scale:  Option<f64>,
-    pub image:          Option<HsdaImage>,
-    pub material:       Option<HsdaMaterial>,
-    pub material_graph: Option<HsdaMaterialGraph>,
+    pub image:          Option<SourceImage>,
+    pub material:       Option<SourceMaterial>,
+    pub material_graph: Option<SourceMaterialGraph>,
     pub name:           Option<String>,
     /// Path to another `.hsda`, compiled and inlined as a nested package.
     pub prefab:         Option<String>,
-    pub rigid_body:     Option<HsdaRigidBody>,
+    pub rigid_body:     Option<SourceRigidBody>,
     /// Path to a wasm crate's `Cargo.toml`.
     pub script:         Option<String>,
-    pub spawn:          Option<HsdaSpawn>,
-    pub xform:          Option<HsdaXform>,
+    pub spawn:          Option<SourceSpawn>,
+    pub xform:          Option<SourceXform>,
 }
 
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
-pub struct HsdaSpawn {
+pub struct SourceSpawn {
     pub radius: f64,
 }
 
 #[derive(Serialize, Deserialize)]
-pub enum HsdaCollider {
+pub enum SourceCollider {
     Capsule { height: f64, radius: f64 },
     Cuboid { x: f64, y: f64, z: f64 },
     Cylinder { height: f64, radius: f64 },
@@ -81,7 +81,7 @@ pub enum HsdaCollider {
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
-pub struct HsdaImage {
+pub struct SourceImage {
     pub data:           String,
     pub address_mode_u: Option<i64>,
     pub address_mode_v: Option<i64>,
@@ -97,7 +97,7 @@ pub struct HsdaImage {
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
-pub struct HsdaMaterial {
+pub struct SourceMaterial {
     pub alpha_cutoff:               Option<f64>,
     pub alpha_mode:                 Option<String>,
     pub base_color:                 Option<Vec<f64>>,
@@ -117,7 +117,7 @@ pub struct HsdaMaterial {
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
-pub struct HsdaMaterialGraph {
+pub struct SourceMaterialGraph {
     pub path:      String,
     pub overrides: BTreeMap<u16, GraphValue>,
 }
@@ -125,7 +125,7 @@ pub struct HsdaMaterialGraph {
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
-pub struct HsdaRigidBody {
+pub struct SourceRigidBody {
     pub kind:            String,
     pub angular_damping: Option<f64>,
     pub friction:        Option<f64>,
@@ -137,7 +137,7 @@ pub struct HsdaRigidBody {
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]
 #[serde(default)]
-pub struct HsdaXform {
+pub struct SourceXform {
     pub translation: Option<Vec<f32>>,
     pub rotation:    Option<Vec<f32>>,
     pub scale:       Option<Vec<f32>>,

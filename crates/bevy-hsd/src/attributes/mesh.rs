@@ -21,6 +21,8 @@ use hsd::attributes::{
     },
     slots,
 };
+use thiserror::Error;
+use unavi_quota::limits::MAX_MESH_ELEMENTS;
 
 use crate::{
     HsdSlots,
@@ -68,49 +70,107 @@ pub fn rebuild_mesh(
     mut commands: Commands,
 ) {
     for (prim, data, slots) in &changed {
-        let mut mesh = Mesh::new(
-            topology_to_primitive(data.0.topology),
-            RenderAssetUsages::default(),
-        );
-
-        if let Some(bytes) = slots.0.get(slots::MESH_INDICES) {
-            match bytes_to_vec::<u32>(bytes) {
-                Ok(v) => mesh.insert_indices(Indices::U32(v)),
-                Err(err) => warn!(?err, "invalid indices buffer"),
+        match build_mesh(data.0.topology, slots) {
+            Ok(mesh) => {
+                let handle = mesh_assets.add(mesh);
+                commands.entity(prim).insert(Mesh3d(handle));
             }
+            Err(MeshRejected::NoPosition) => {}
+            Err(err) => warn!("rejected mesh: {err}"),
         }
-
-        for (slot_name, bytes) in &slots.0 {
-            let Some(name) = slots::mesh_attribute_name(slot_name) else {
-                continue;
-            };
-            let Some((attr, kind)) = mesh_attr_id(name) else {
-                continue;
-            };
-
-            match kind {
-                MeshAttrKind::Float32x2 => match bytes_to_vec::<[f32; 2]>(bytes) {
-                    Ok(v) => mesh.insert_attribute(attr, VertexAttributeValues::Float32x2(v)),
-                    Err(err) => warn!(?err, "invalid {name} buffer"),
-                },
-                MeshAttrKind::Float32x3 => match bytes_to_vec::<[f32; 3]>(bytes) {
-                    Ok(v) => mesh.insert_attribute(attr, VertexAttributeValues::Float32x3(v)),
-                    Err(err) => warn!(?err, "invalid {name} buffer"),
-                },
-                MeshAttrKind::Float32x4 => match bytes_to_vec::<[f32; 4]>(bytes) {
-                    Ok(v) => mesh.insert_attribute(attr, VertexAttributeValues::Float32x4(v)),
-                    Err(err) => warn!(?err, "invalid {name} buffer"),
-                },
-            }
-        }
-
-        if !mesh.contains_attribute(Mesh::ATTRIBUTE_POSITION) {
-            continue;
-        }
-
-        let handle = mesh_assets.add(mesh);
-        commands.entity(prim).insert(Mesh3d(handle));
     }
+}
+
+/// Why a document's mesh buffers were refused.
+///
+/// These arrive over document sync from a peer, so none of the invariants the
+/// GPU relies on can be assumed: an index past the vertex count is an
+/// out-of-bounds read at draw time, and attributes of differing lengths fail
+/// in Bevy's vertex-buffer assembly.
+#[derive(Debug, Error)]
+enum MeshRejected {
+    #[error("no POSITION attribute")]
+    NoPosition,
+    #[error("buffer is not a whole number of elements: {0}")]
+    Cast(PodCastError),
+    #[error("{name} buffer is {len} bytes, over the cap of {MAX_MESH_ELEMENTS}")]
+    TooLarge { name: String, len: usize },
+    #[error("{name} has {len} vertices, but POSITION has {expected}")]
+    LengthMismatch {
+        name:     String,
+        len:      usize,
+        expected: usize,
+    },
+    #[error("index {index} is past the {vertices} vertices in the mesh")]
+    IndexOutOfBounds { index: u32, vertices: usize },
+}
+
+fn build_mesh(topology: Topology, slots: &HsdSlots) -> Result<Mesh, MeshRejected> {
+    let mut mesh = Mesh::new(
+        topology_to_primitive(topology),
+        RenderAssetUsages::default(),
+    );
+
+    let positions = slots
+        .0
+        .get(slots::mesh_attribute("POSITION").as_str())
+        .ok_or(MeshRejected::NoPosition)?;
+    let vertices = checked::<[f32; 3]>("POSITION", positions)?.len();
+
+    for (slot_name, bytes) in &slots.0 {
+        let Some(name) = slots::mesh_attribute_name(slot_name) else {
+            continue;
+        };
+        let Some((attr, kind)) = mesh_attr_id(name) else {
+            continue;
+        };
+
+        let values = match kind {
+            MeshAttrKind::Float32x2 => {
+                VertexAttributeValues::Float32x2(checked::<[f32; 2]>(name, bytes)?)
+            }
+            MeshAttrKind::Float32x3 => {
+                VertexAttributeValues::Float32x3(checked::<[f32; 3]>(name, bytes)?)
+            }
+            MeshAttrKind::Float32x4 => {
+                VertexAttributeValues::Float32x4(checked::<[f32; 4]>(name, bytes)?)
+            }
+        };
+
+        if values.len() != vertices {
+            return Err(MeshRejected::LengthMismatch {
+                name:     name.to_owned(),
+                len:      values.len(),
+                expected: vertices,
+            });
+        }
+        mesh.insert_attribute(attr, values);
+    }
+
+    if let Some(bytes) = slots.0.get(slots::MESH_INDICES) {
+        let indices = checked::<u32>("indices", bytes)?;
+        if let Some(&index) = indices
+            .iter()
+            .find(|&&i| usize::try_from(i).unwrap_or(usize::MAX) >= vertices)
+        {
+            return Err(MeshRejected::IndexOutOfBounds { index, vertices });
+        }
+        mesh.insert_indices(Indices::U32(indices));
+    }
+
+    Ok(mesh)
+}
+
+/// Casts a slot's bytes, refusing anything past the per-stream element cap.
+fn checked<T: Pod>(name: &str, bytes: &[u8]) -> Result<Vec<T>, MeshRejected> {
+    if bytes.len() > MAX_MESH_ELEMENTS {
+        return Err(MeshRejected::TooLarge {
+            name: name.to_owned(),
+            len:  bytes.len(),
+        });
+    }
+    let slice = try_cast_slice::<u8, T>(bytes).map_err(MeshRejected::Cast)?;
+    Ok(slice.to_vec())
 }
 
 const fn topology_to_primitive(t: Topology) -> PrimitiveTopology {
@@ -142,9 +202,4 @@ enum MeshAttrKind {
     Float32x2,
     Float32x3,
     Float32x4,
-}
-
-fn bytes_to_vec<T: Pod>(bytes: &[u8]) -> Result<Vec<T>, PodCastError> {
-    let slice = try_cast_slice::<u8, T>(bytes)?;
-    Ok(slice.to_vec())
 }

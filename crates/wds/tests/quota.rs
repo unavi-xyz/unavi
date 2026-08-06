@@ -119,3 +119,59 @@ async fn test_quota_released_on_gc(#[future] ctx: DataStoreCtx) {
 
     assert_eq!(bytes_used(&ctx.store, &did).await, 0);
 }
+
+/// Re-uploading identical bytes must not charge twice: the pin is a single
+/// row, so a second charge could never be released.
+#[rstest]
+#[timeout(Duration::from_secs(5))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_reupload_does_not_double_charge(#[future] ctx: DataStoreCtx) {
+    let did = ctx.alice.identity().did().to_string();
+
+    let mut bytes = vec![0u8; 4096];
+    rand::rng().fill_bytes(&mut bytes);
+
+    for _ in 0..3 {
+        ctx.alice
+            .upload_blob(bytes.clone().into())
+            .await
+            .expect("upload blob");
+    }
+
+    assert_eq!(bytes_used(&ctx.store, &did).await, 4096);
+}
+
+/// The cap is applied while the body streams in, so an over-quota upload is
+/// refused rather than landing on disk and being rejected afterwards.
+#[rstest]
+#[timeout(Duration::from_secs(5))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn test_upload_past_quota_is_refused_midstream(#[future] ctx: DataStoreCtx) {
+    let did = ctx.alice.identity().did().to_string();
+
+    ctx.store
+        .db()
+        .call({
+            let did = did.clone();
+            move |conn| {
+                conn.execute(
+                    "INSERT INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 1024)
+                     ON CONFLICT(owner) DO UPDATE SET quota_bytes = 1024, bytes_used = 0",
+                    params![&did],
+                )?;
+                Ok(())
+            }
+        })
+        .await
+        .expect("seed quota");
+
+    let mut bytes = vec![0u8; 64 * 1024];
+    rand::rng().fill_bytes(&mut bytes);
+
+    assert!(ctx.alice.upload_blob(bytes.into()).await.is_err());
+    assert_eq!(bytes_used(&ctx.store, &did).await, 0);
+}

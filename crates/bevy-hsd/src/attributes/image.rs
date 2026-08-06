@@ -29,6 +29,9 @@ use crate::{
 };
 
 const MAX_TEXTURE_DIMS: u32 = 8192;
+/// Ceiling on what one decode may allocate, sized to hold the largest texture
+/// the dimension cap admits.
+const MAX_DECODE_BYTES: u64 = 4 * (MAX_TEXTURE_DIMS as u64) * (MAX_TEXTURE_DIMS as u64);
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct ImageData(pub ImageAttr);
@@ -94,10 +97,10 @@ pub fn rebuild_image(
             }
         }
 
-        let dyn_img = match image::load_from_memory(bytes) {
+        let dyn_img = match decode(bytes) {
             Ok(img) => img,
             Err(err) => {
-                warn!(?err, "failed to decode image");
+                warn!("failed to decode image: {err}");
                 continue;
             }
         };
@@ -105,6 +108,22 @@ pub fn rebuild_image(
         let handle = image_assets.add(build_img(dyn_img, sampler, attr.srgb));
         commands.entity(prim).insert(HsdImage(handle));
     }
+}
+
+/// Decodes with the dimensions bounded up front.
+///
+/// A decompression bomb declares enormous dimensions in a few bytes of header,
+/// so the limit has to reach the decoder itself: checking `dimensions()` after
+/// a plain `load_from_memory` is checking an allocation that already happened.
+fn decode(bytes: &[u8]) -> Result<image::DynamicImage, image::ImageError> {
+    let mut limits = image::Limits::default();
+    limits.max_image_width = Some(MAX_TEXTURE_DIMS);
+    limits.max_image_height = Some(MAX_TEXTURE_DIMS);
+    limits.max_alloc = Some(MAX_DECODE_BYTES);
+
+    let mut reader = image::ImageReader::new(std::io::Cursor::new(bytes)).with_guessed_format()?;
+    reader.limits(limits);
+    reader.decode()
 }
 
 fn build_img(

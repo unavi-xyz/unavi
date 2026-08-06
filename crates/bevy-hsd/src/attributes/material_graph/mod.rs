@@ -20,6 +20,7 @@ use hsd::{
         Attribute,
         material_graph::{
             GraphValue,
+            Node as GraphNode,
             ShaderGraph,
             SurfaceOutput,
             overrides::{
@@ -34,6 +35,7 @@ use hsd::{
 };
 
 use crate::{
+    Hsd,
     HsdChild,
     HsdRelationships,
     HsdSlots,
@@ -133,6 +135,7 @@ pub fn rebuild_material_graph(
     >,
     slots: Query<&HsdMaterialGraphSlot>,
     overrides: Query<&ShaderGraphOverridesData>,
+    doc_of: Query<&HsdChild>,
     texture_ctx: TextureCtx,
     time: Res<Time>,
     mut cache: ResMut<ShaderGraphCache>,
@@ -143,6 +146,9 @@ pub fn rebuild_material_graph(
 ) {
     for prim in &changed {
         let Ok(slot) = slots.get(prim) else {
+            continue;
+        };
+        let Ok(doc) = doc_of.get(prim).map(|c| c.0) else {
             continue;
         };
 
@@ -161,38 +167,45 @@ pub fn rebuild_material_graph(
             }
         };
 
-        let overrides_attr = overrides.get(prim).ok().map(|o| &o.0);
-        if let Some(overrides) = overrides_attr
-            && let Err(err) = validate_overrides(&graph, overrides)
-        {
-            warn!(
-                ?err,
-                "shader graph overrides do not match the graph; using its defaults"
-            );
-        }
-        let overrides_attr = overrides_attr.filter(|o| validate_overrides(&graph, o).is_ok());
+        let overrides_attr = overrides.get(prim).ok().map(|o| &o.0).filter(|o| {
+            match validate_overrides(&graph, o) {
+                Ok(()) => true,
+                Err(err) => {
+                    warn!(
+                        ?err,
+                        "shader graph overrides do not match the graph; using its defaults"
+                    );
+                    false
+                }
+            }
+        });
 
         let hash = BlobId(*blake3::hash(&slot.0).as_bytes());
-        let cached = cache.0.entry(hash).or_insert_with(|| {
-            let fragment_source = codegen::generate_fragment_shader(&graph, &validated.surface);
+        let programs = cache.0.entry(doc).or_default();
+        if !programs.contains_key(&hash) {
+            if programs.len() >= MAX_SHADER_PROGRAMS {
+                warn!(
+                    "document is at its cap of {MAX_SHADER_PROGRAMS} shader programs; ignoring \
+                     another"
+                );
+                continue;
+            }
+            let fragment_source = codegen::generate_fragment_shader(&graph, &validated);
             let fragment = shaders.add(Shader::from_wgsl(
                 fragment_source,
                 format!("generated://material_graph/{hash}/fragment"),
             ));
-            let vertex = graph
-                .displacement
-                .as_ref()
-                .zip(validated.displacement.as_ref())
-                .map(|(displacement, kinds)| {
-                    let source =
-                        codegen::generate_vertex_shader(displacement, &graph.public_inputs, kinds);
-                    shaders.add(Shader::from_wgsl(
-                        source,
-                        format!("generated://material_graph/{hash}/vertex"),
-                    ))
-                });
-            CachedShaders { fragment, vertex }
-        });
+            let vertex = codegen::generate_vertex_shader(&graph, &validated).map(|source| {
+                shaders.add(Shader::from_wgsl(
+                    source,
+                    format!("generated://material_graph/{hash}/vertex"),
+                ))
+            });
+            programs.insert(hash, CachedShaders { fragment, vertex });
+        }
+        let Some(cached) = programs.get(&hash) else {
+            continue;
+        };
 
         let params = build_params(&graph, overrides_attr, time.elapsed_secs());
         let textures = resolve_textures(prim, &texture_ctx);
@@ -207,6 +220,12 @@ pub fn rebuild_material_graph(
             vertex_shader: cached.vertex.clone(),
             alpha_mode: alpha_mode(&graph.surface.output),
         };
+
+        if reads_time(&graph) {
+            commands.entity(prim).insert(AnimatedGraph);
+        } else {
+            commands.entity(prim).remove::<AnimatedGraph>();
+        }
 
         if let Ok(mut existing) = existing.get_mut(prim) {
             if let Some(mut asset) = materials.get_mut(&existing.0) {
@@ -309,8 +328,21 @@ struct CachedShaders {
     vertex:   Option<Handle<Shader>>,
 }
 
+/// Distinct compiled graphs one document may hold at once.
+///
+/// Each is a shader asset and a specialized render pipeline that lives until
+/// the document does, and a graph's hash changes with any edit — so without a
+/// ceiling a document that varies one constant mints them without bound.
+pub const MAX_SHADER_PROGRAMS: usize = 32;
+
+/// Compiled shaders, grouped by the document whose prims asked for them, so
+/// that dropping a document drops its shaders with it.
 #[derive(Resource, Default)]
-pub struct ShaderGraphCache(HashMap<BlobId, CachedShaders>);
+pub struct ShaderGraphCache(HashMap<Entity, HashMap<BlobId, CachedShaders>>);
+
+pub fn evict_document_shaders(trigger: On<Remove, Hsd>, mut cache: ResMut<ShaderGraphCache>) {
+    cache.0.remove(&trigger.entity);
+}
 
 /// Unity's Alpha Clip Threshold / Unreal's Opacity Mask maps to
 /// `AlphaMode::Mask`; an explicit `alpha`/`Unlit` output that can be
@@ -340,12 +372,13 @@ const fn alpha_mode(output: &SurfaceOutput) -> AlphaMode {
 
 /// Advances the graph's `time` public leaf every frame.
 ///
-/// Mirrors `SeamMaterial`'s per-frame uniform update — a plain `get_mut` on
-/// every tick would flag every shader-graph material dirty and force a GPU
-/// re-upload each frame regardless of whether anything else changed.
+/// Only for graphs that actually read
+/// [`hsd::attributes::material_graph::Node::Time`]: `get_mut` flags the asset
+/// dirty and forces a GPU re-upload, so touching every shader-graph material
+/// each tick would re-upload uniforms that never change.
 pub fn advance_material_graph_time(
     time: Res<Time>,
-    graphs: Query<&HsdShaderGraphMaterial>,
+    graphs: Query<&HsdShaderGraphMaterial, With<AnimatedGraph>>,
     mut materials: ResMut<Assets<ShaderGraphMaterial>>,
 ) {
     let now = time.elapsed_secs();
@@ -354,6 +387,21 @@ pub fn advance_material_graph_time(
             material.params.time = now;
         }
     }
+}
+
+/// Marks a prim whose graph reads `Time`, and so needs a uniform refresh each
+/// frame.
+#[derive(Component)]
+pub struct AnimatedGraph;
+
+fn reads_time(graph: &ShaderGraph) -> bool {
+    let displacement = graph.displacement.as_ref().map(|d| d.nodes.as_slice());
+    graph
+        .surface
+        .nodes
+        .iter()
+        .chain(displacement.unwrap_or_default())
+        .any(|node| matches!(node, GraphNode::Time))
 }
 
 #[derive(Clone, Copy, ShaderType, Debug, Default, PartialEq)]

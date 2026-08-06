@@ -63,14 +63,37 @@ pub enum GraphError {
         expected: ValueKind,
         found:    ValueKind,
     },
+    #[error("{network:?} network node {node} holds a non-finite constant")]
+    NonFiniteConst { network: Network, node: usize },
+    #[error("public input {0} holds a non-finite value")]
+    NonFinitePublicInput(usize),
+    #[error("terminal {0} holds a non-finite constant")]
+    NonFiniteTerminal(&'static str),
 }
 
 /// The per-node-index output kinds of a validated network, one entry per
 /// network present.
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
+///
+/// Fields are private and there is no public constructor, so holding one is
+/// proof [`validate`] accepted the graph it came from. Codegen takes this
+/// rather than a loose `&[ValueKind]`, which a caller could otherwise pair
+/// with the wrong graph and index out of bounds.
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Validated {
-    pub surface:      Vec<ValueKind>,
-    pub displacement: Option<Vec<ValueKind>>,
+    surface:      Vec<ValueKind>,
+    displacement: Option<Vec<ValueKind>>,
+}
+
+impl Validated {
+    #[must_use]
+    pub fn surface(&self) -> &[ValueKind] {
+        &self.surface
+    }
+
+    #[must_use]
+    pub fn displacement(&self) -> Option<&[ValueKind]> {
+        self.displacement.as_deref()
+    }
 }
 
 /// Validates structure and types for both networks, and returns each node's
@@ -81,6 +104,11 @@ pub struct Validated {
 pub fn validate(graph: &ShaderGraph) -> Result<Validated, GraphError> {
     if graph.public_inputs.len() > MAX_PUBLIC_INPUTS {
         return Err(GraphError::TooManyPublicInputs(graph.public_inputs.len()));
+    }
+    for (index, value) in graph.public_inputs.iter().enumerate() {
+        if !is_finite(*value) {
+            return Err(GraphError::NonFinitePublicInput(index));
+        }
     }
     let surface = validate_surface(&graph.surface, &graph.public_inputs)?;
     let displacement = graph
@@ -94,7 +122,7 @@ pub fn validate(graph: &ShaderGraph) -> Result<Validated, GraphError> {
     })
 }
 
-pub fn validate_surface(
+fn validate_surface(
     surface: &SurfaceGraph,
     public_inputs: &[GraphValue],
 ) -> Result<Vec<ValueKind>, GraphError> {
@@ -102,6 +130,7 @@ pub fn validate_surface(
     match &surface.output {
         SurfaceOutput::Lit(lit) => {
             check_terminal(
+                Network::Surface,
                 "base_color",
                 lit.base_color,
                 ValueKind::Color,
@@ -109,6 +138,7 @@ pub fn validate_surface(
                 &kinds,
             )?;
             check_terminal(
+                Network::Surface,
                 "emissive",
                 lit.emissive,
                 ValueKind::Vec3,
@@ -116,6 +146,7 @@ pub fn validate_surface(
                 &kinds,
             )?;
             check_terminal(
+                Network::Surface,
                 "metallic",
                 lit.metallic,
                 ValueKind::Float,
@@ -123,15 +154,31 @@ pub fn validate_surface(
                 &kinds,
             )?;
             check_terminal(
+                Network::Surface,
                 "roughness",
                 lit.roughness,
                 ValueKind::Float,
                 public_inputs,
                 &kinds,
             )?;
-            check_terminal("normal", lit.normal, ValueKind::Vec3, public_inputs, &kinds)?;
-            check_terminal("alpha", lit.alpha, ValueKind::Float, public_inputs, &kinds)?;
             check_terminal(
+                Network::Surface,
+                "normal",
+                lit.normal,
+                ValueKind::Vec3,
+                public_inputs,
+                &kinds,
+            )?;
+            check_terminal(
+                Network::Surface,
+                "alpha",
+                lit.alpha,
+                ValueKind::Float,
+                public_inputs,
+                &kinds,
+            )?;
+            check_terminal(
+                Network::Surface,
                 "alpha_clip_threshold",
                 lit.alpha_clip_threshold,
                 ValueKind::Float,
@@ -141,6 +188,7 @@ pub fn validate_surface(
         }
         SurfaceOutput::Unlit(unlit) => {
             check_terminal(
+                Network::Surface,
                 "color",
                 Some(unlit.color),
                 ValueKind::Color,
@@ -148,6 +196,7 @@ pub fn validate_surface(
                 &kinds,
             )?;
             check_terminal(
+                Network::Surface,
                 "alpha_clip_threshold",
                 unlit.alpha_clip_threshold,
                 ValueKind::Float,
@@ -159,12 +208,13 @@ pub fn validate_surface(
     Ok(kinds)
 }
 
-pub fn validate_displacement(
+fn validate_displacement(
     displacement: &DisplacementGraph,
     public_inputs: &[GraphValue],
 ) -> Result<Vec<ValueKind>, GraphError> {
     let kinds = validate_network(Network::Displacement, &displacement.nodes, public_inputs)?;
     check_terminal(
+        Network::Displacement,
         "position_offset",
         displacement.position_offset,
         ValueKind::Vec3,
@@ -172,6 +222,7 @@ pub fn validate_displacement(
         &kinds,
     )?;
     check_terminal(
+        Network::Displacement,
         "normal_override",
         displacement.normal_override,
         ValueKind::Vec3,
@@ -251,6 +302,23 @@ const fn check_network_leaf(network: Network, index: usize, node: &Node) -> Resu
     }
 }
 
+/// Whether every component is a real number.
+///
+/// `NaN` and the infinities have no WGSL literal — `f32`'s own formatting
+/// renders them `NaN`/`inf`, which no shader compiler accepts — so they are
+/// refused here rather than in any one backend.
+#[must_use]
+pub const fn is_finite(value: GraphValue) -> bool {
+    match value {
+        GraphValue::Float(v) => v.is_finite(),
+        GraphValue::Vec2([x, y]) => x.is_finite() && y.is_finite(),
+        GraphValue::Vec3([x, y, z]) => x.is_finite() && y.is_finite() && z.is_finite(),
+        GraphValue::Color([r, g, b, a]) => {
+            r.is_finite() && g.is_finite() && b.is_finite() && a.is_finite()
+        }
+    }
+}
+
 /// Resolves a port's value kind. `at` is the index of the node (or, for a
 /// terminal, `kinds.len()`) the port belongs to; a [`Port::Node`] must
 /// reference a strictly lower index than that, which is the entire cycle
@@ -263,6 +331,9 @@ fn port_kind(
     kinds: &[ValueKind],
 ) -> Result<ValueKind, GraphError> {
     match port {
+        Port::Const(value) if !is_finite(value) => {
+            Err(GraphError::NonFiniteConst { network, node: at })
+        }
         Port::Const(value) => Ok(value.kind()),
         Port::Input(index) => public_inputs
             .get(usize::from(index))
@@ -388,6 +459,7 @@ fn node_output_kind(
 }
 
 fn check_terminal(
+    network: Network,
     name: &'static str,
     port: Option<Port>,
     expected: ValueKind,
@@ -398,7 +470,7 @@ fn check_terminal(
     // Terminals aren't a node in either list; using `kinds.len()` as `at`
     // means a `Port::Node` reference is valid iff it names an existing node,
     // matching how a real terminal sits "after" every node in the network.
-    let found = port_kind(Network::Surface, public_inputs, kinds.len(), port, kinds)
+    let found = port_kind(network, public_inputs, kinds.len(), port, kinds)
         .map_err(|err| terminal_err(name, err))?;
     if found == expected {
         Ok(())
@@ -417,6 +489,7 @@ const fn terminal_err(name: &'static str, err: GraphError) -> GraphError {
             GraphError::UnknownTerminalNode(name, target)
         }
         GraphError::UnknownInput { index, .. } => GraphError::UnknownTerminalInput(name, index),
+        GraphError::NonFiniteConst { .. } => GraphError::NonFiniteTerminal(name),
         other => other,
     }
 }

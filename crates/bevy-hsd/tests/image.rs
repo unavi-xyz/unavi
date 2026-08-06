@@ -101,3 +101,62 @@ fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
     );
     assert_eq!(sampler.mag_filter, bevy::image::ImageFilterMode::Nearest);
 }
+
+/// The dimension cap has to reach the decoder: a header declaring more pixels
+/// than we will ever upload must be refused before it is allocated, not after.
+#[traced_test]
+#[rstest]
+fn test_oversized_image_is_refused(mut ctx: TestContext) {
+    let mut bytes = Cursor::new(Vec::new());
+    RgbaImage::new(8193, 1)
+        .write_to(&mut bytes, ImageFormat::Png)
+        .expect("encode oversized png");
+
+    let root = ctx.create_prim();
+    ctx.set_attr(root, &ImageAttr::default());
+    ctx.set_slot(root, slots::IMAGE_DATA, bytes.into_inner());
+
+    ctx.app.update();
+
+    let world = ctx.app.world_mut();
+    let mut query = world.query::<&HsdImage>();
+    let handles = query
+        .query(world)
+        .into_iter()
+        .map(|h| h.0.clone())
+        .collect::<Vec<_>>();
+    let images = world.resource::<Assets<Image>>();
+    assert!(
+        handles.iter().all(|h| images.get(h).is_none()),
+        "an image past the dimension cap never becomes an asset"
+    );
+}
+
+/// Control for the cap: the same encoder output within bounds does load.
+#[traced_test]
+#[rstest]
+fn test_image_within_the_cap_loads(mut ctx: TestContext) {
+    let mut bytes = Cursor::new(Vec::new());
+    RgbaImage::new(4, 4)
+        .write_to(&mut bytes, ImageFormat::Png)
+        .expect("encode png");
+
+    let root = ctx.create_prim();
+    ctx.set_attr(root, &ImageAttr::default());
+    ctx.set_slot(root, slots::IMAGE_DATA, bytes.into_inner());
+
+    ctx.app.update();
+
+    let world = ctx.app.world_mut();
+    let mut query = world.query::<&HsdImage>();
+    let handles = query
+        .query(world)
+        .into_iter()
+        .map(|h| h.0.clone())
+        .collect::<Vec<_>>();
+    let images = world.resource::<Assets<Image>>();
+    assert!(
+        handles.iter().any(|h| images.get(h).is_some()),
+        "a normal image still loads"
+    );
+}

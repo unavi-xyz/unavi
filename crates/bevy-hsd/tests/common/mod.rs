@@ -198,10 +198,6 @@ impl TestContext {
         self.with_state(|state| state.remove_slot(prim, slot));
     }
 
-    pub fn remove_prim(&self, prim: PrimId) {
-        self.with_state(|state| state.remove_prim(prim));
-    }
-
     /// Tick the app until `cond` returns true.
     /// Panics if the condition is not met within the timeout.
     pub fn tick_until<F: FnMut(&mut World) -> bool>(&mut self, mut cond: F) {

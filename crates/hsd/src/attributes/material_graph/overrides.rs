@@ -12,6 +12,7 @@ use crate::attributes::{
         GraphValue,
         ShaderGraph,
         ValueKind,
+        validate::is_finite,
     },
 };
 
@@ -41,6 +42,8 @@ pub enum OverridesError {
         expected: ValueKind,
         found:    ValueKind,
     },
+    #[error("override for public input {0} is non-finite")]
+    NonFinite(u16),
 }
 
 /// Cross-checks overrides against the graph they apply to.
@@ -64,6 +67,9 @@ pub fn validate_overrides(
                 expected,
                 found: value.kind(),
             });
+        }
+        if !is_finite(*value) {
+            return Err(OverridesError::NonFinite(index));
         }
     }
     Ok(())

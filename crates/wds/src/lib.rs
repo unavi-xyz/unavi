@@ -35,6 +35,7 @@ mod gc;
 pub mod identity;
 pub mod kv;
 mod quota;
+pub mod resolve;
 pub mod signed_bytes;
 pub mod tag;
 
@@ -48,6 +49,10 @@ pub struct DataStore {
 
 // TODO: Replace session token auth with iroh hooks
 pub type SessionToken = [u8; 32];
+
+/// How long an authenticated session stays valid before the holder must
+/// answer a fresh challenge.
+pub const SESSION_TTL: std::time::Duration = std::time::Duration::from_hours(12);
 
 #[derive(Debug)]
 struct StoreContext {
@@ -63,8 +68,17 @@ struct StoreContext {
     endpoint:      Endpoint,
     #[debug("Gossip")]
     gossip:        Gossip,
+    /// Namespaces this node replicates on someone's behalf, each holding the
+    /// doc handle and metering task that hosting it entails.
+    #[debug("HashMap({})", hosted.len())]
+    hosted:        scc::HashMap<iroh_docs::NamespaceId, HostedDoc>,
     #[debug("Option<Identity>")]
     user_identity: RwLock<Option<Arc<Identity>>>,
+}
+
+struct HostedDoc {
+    doc:    iroh_docs::api::Doc,
+    _meter: AbortOnDropHandle<()>,
 }
 
 impl StoreContext {
@@ -76,7 +90,11 @@ impl StoreContext {
 struct ConnectionState {
     /// The authenticated DID of the connection.
     /// Set by the `wds/auth` protocol.
-    did: Did,
+    did:     Did,
+    /// Unix timestamp past which the token no longer authenticates. Without
+    /// one a leaked token is valid for the life of the process, and the table
+    /// only ever grows.
+    expires: i64,
 }
 
 impl DataStore {
@@ -132,10 +150,12 @@ impl DataStore {
     /// Lets another service co-deployed on this node reuse the sessions this
     /// store has already established, rather than running a second handshake.
     pub async fn session_did(&self, token: &SessionToken) -> Option<Did> {
+        let now = time::OffsetDateTime::now_utc().unix_timestamp();
         self.ctx
             .connections
-            .read_async(token, |_, c| c.did.clone())
+            .read_async(token, |_, c| (c.did.clone(), c.expires))
             .await
+            .and_then(|(did, expires)| (expires > now).then_some(did))
     }
 
     /// Returns the blob store. Primarily for testing.

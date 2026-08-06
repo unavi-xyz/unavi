@@ -12,7 +12,7 @@ use wds::{
     actor::Actor,
     identity::Identity,
 };
-use xdid::methods::key::{
+use xdid::methods::key::keys::{
     DidKeyPair,
     PublicKey,
     p256::P256KeyPair,

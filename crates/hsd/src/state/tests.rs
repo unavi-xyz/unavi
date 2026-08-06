@@ -17,6 +17,7 @@ use crate::{
         Property,
     },
     state::{
+        MAX_PRIM_DEPTH,
         SceneState,
         entry::Entry,
         event::SceneEvent,
@@ -480,4 +481,38 @@ fn the_save_set_round_trips_through_a_fresh_state() {
 
     assert_eq!(shape(&original), shape(&restored));
     assert_eq!(original.entries(), restored.entries());
+}
+
+/// A chain deeper than the cap holds its tail rather than realizing it, so a
+/// hostile document cannot force an unbounded walk or an unbounded ECS
+/// hierarchy.
+#[test]
+fn nesting_past_the_depth_cap_is_not_realized() {
+    let mut state = SceneState::new();
+
+    let deep = MAX_PRIM_DEPTH + 8;
+    let ids = (0..deep)
+        .map(|i| {
+            let mut bytes = [0u8; 32];
+            bytes[..8].copy_from_slice(&(i as u64).to_be_bytes());
+            PrimId::from_digest(&bytes)
+        })
+        .collect::<Vec<_>>();
+
+    state.apply(&root_entry(ids[0], 0)).expect("root");
+    for (i, window) in ids.windows(2).enumerate() {
+        state
+            .apply(&child_entry(window[1], window[0], i as u64 + 1))
+            .expect("child");
+    }
+
+    assert!(state.is_realized(ids[0]), "the root realizes");
+    assert!(
+        state.is_realized(ids[MAX_PRIM_DEPTH - 1]),
+        "prims within the cap realize"
+    );
+    assert!(
+        !state.is_realized(ids[deep - 1]),
+        "prims past the cap are held"
+    );
 }

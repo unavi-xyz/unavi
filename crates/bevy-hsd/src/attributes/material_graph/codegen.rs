@@ -11,13 +11,13 @@
 use std::fmt::Write;
 
 use hsd::attributes::material_graph::{
-    DisplacementGraph,
     GraphValue,
     Node,
     Port,
     ShaderGraph,
     SurfaceOutput,
     ValueKind,
+    validate::Validated,
 };
 
 pub const MAX_TEXTURE_SAMPLES: usize = hsd::attributes::material_graph::MAX_TEXTURE_SAMPLES;
@@ -147,9 +147,14 @@ fn emit_alpha_clip(
 /// `out_color` written straight to the fragment output (`Unlit`) — see
 /// `SurfaceOutput`'s docs for why there are two shapes rather than one.
 #[must_use]
-pub fn generate_surface_body(graph: &ShaderGraph, kinds: &[ValueKind]) -> String {
+pub fn generate_surface_body(graph: &ShaderGraph, validated: &Validated) -> String {
     let mut out = String::new();
-    emit_nodes(&mut out, &graph.public_inputs, &graph.surface.nodes, kinds);
+    emit_nodes(
+        &mut out,
+        &graph.public_inputs,
+        &graph.surface.nodes,
+        validated.surface(),
+    );
 
     match &graph.surface.output {
         SurfaceOutput::Lit(lit) => {
@@ -208,12 +213,13 @@ pub fn generate_surface_body(graph: &ShaderGraph, kinds: &[ValueKind]) -> String
 /// `out_position_offset`/`out_normal_override` locals a caller adds to
 /// `vertex.position`/replaces `vertex.normal` with, before the standard
 /// mesh transform runs.
+/// `None` for a graph with no displacement network.
 #[must_use]
-pub fn generate_displacement_body(
-    displacement: &DisplacementGraph,
-    public_inputs: &[GraphValue],
-    kinds: &[ValueKind],
-) -> String {
+pub fn generate_displacement_body(graph: &ShaderGraph, validated: &Validated) -> Option<String> {
+    let displacement = graph.displacement.as_ref()?;
+    let kinds = validated.displacement()?;
+    let public_inputs = &graph.public_inputs;
+
     let mut out = String::new();
     emit_nodes(&mut out, public_inputs, &displacement.nodes, kinds);
 
@@ -235,7 +241,7 @@ pub fn generate_displacement_body(
         );
     }
 
-    out
+    Some(out)
 }
 
 /// Value-noise helpers the generated body calls into; defined once per
@@ -287,8 +293,8 @@ fn uniform_block() -> String {
 /// syntax, not plain WGSL — see [`generate_surface_body`]'s tests for the
 /// part that is.
 #[must_use]
-pub fn generate_fragment_shader(graph: &ShaderGraph, kinds: &[ValueKind]) -> String {
-    let body = generate_surface_body(graph, kinds);
+pub fn generate_fragment_shader(graph: &ShaderGraph, validated: &Validated) -> String {
+    let body = generate_surface_body(graph, validated);
     let preamble = format!(
         "{uniform}\n{textures}\n{noise}",
         uniform = uniform_block(),
@@ -352,14 +358,13 @@ pub fn generate_fragment_shader(graph: &ShaderGraph, kinds: &[ValueKind]) -> Str
 /// `view_transformations::position_world_to_clip` calls it already does —
 /// rather than reimplementing mesh-transform logic. Skinning/morph targets
 /// are out of scope for v1; this targets the static-mesh path only.
+///
+/// `None` for a graph with no displacement network, where the mesh pipeline's
+/// own vertex shader runs unmodified.
 #[must_use]
-pub fn generate_vertex_shader(
-    displacement: &DisplacementGraph,
-    public_inputs: &[GraphValue],
-    kinds: &[ValueKind],
-) -> String {
-    let body = generate_displacement_body(displacement, public_inputs, kinds);
-    format!(
+pub fn generate_vertex_shader(graph: &ShaderGraph, validated: &Validated) -> Option<String> {
+    let body = generate_displacement_body(graph, validated)?;
+    Some(format!(
         "#import bevy_pbr::{{\n    forward_io::{{Vertex, VertexOutput}},\n    mesh_functions,\n    view_transformations::position_world_to_clip,\n}}\n\
          \n\
          {uniform}\n\
@@ -383,21 +388,19 @@ pub fn generate_vertex_shader(
          }}\n",
         uniform = uniform_block(),
         noise = NOISE_FUNCTIONS,
-    )
+    ))
 }
 
 #[cfg(test)]
 mod tests {
     use hsd::attributes::material_graph::{
+        DisplacementGraph,
         GraphValue,
         LitOutput,
         Node,
         SurfaceGraph,
         UnlitOutput,
-        validate::{
-            validate,
-            validate_displacement,
-        },
+        validate::validate,
     };
     use naga::front::wgsl;
 
@@ -484,7 +487,7 @@ mod tests {
     fn empty_unlit_graph_generates_valid_wgsl() {
         let graph = ShaderGraph::default();
         let validated = validate(&graph).expect("valid");
-        let body = generate_surface_body(&graph, &validated.surface);
+        let body = generate_surface_body(&graph, &validated);
         assert_surface_valid(&body, "out_color");
     }
 
@@ -506,7 +509,7 @@ mod tests {
             ..Default::default()
         };
         let validated = validate(&graph).expect("valid");
-        let body = generate_surface_body(&graph, &validated.surface);
+        let body = generate_surface_body(&graph, &validated);
         assert!(body.contains("discard"), "{body}");
         assert_surface_valid(&body, "out_base_color");
     }
@@ -563,7 +566,7 @@ mod tests {
             ..Default::default()
         };
         let validated = validate(&graph).expect("valid");
-        let body = generate_surface_body(&graph, &validated.surface);
+        let body = generate_surface_body(&graph, &validated);
         assert_surface_valid(&body, "out_color");
     }
 
@@ -581,7 +584,7 @@ mod tests {
             ..Default::default()
         };
         let validated = validate(&graph).expect("valid");
-        let body = generate_surface_body(&graph, &validated.surface);
+        let body = generate_surface_body(&graph, &validated);
         assert!(body.contains("params.inputs[0].x"), "{body}");
         assert_surface_valid(&body, "out_color");
     }
@@ -604,7 +607,7 @@ mod tests {
             ..Default::default()
         };
         let validated = validate(&graph).expect("valid");
-        let source = generate_fragment_shader(&graph, &validated.surface);
+        let source = generate_fragment_shader(&graph, &validated);
         assert!(source.contains("#import bevy_pbr"));
         assert!(source.contains("var out_color: vec4<f32> = vec4<f32>(1.0, 1.0, 1.0, 1.0);"));
         assert!(source.contains("var<uniform> params: GraphParams;"));
@@ -625,7 +628,7 @@ mod tests {
             ..Default::default()
         };
         let validated = validate(&graph).expect("valid");
-        let source = generate_fragment_shader(&graph, &validated.surface);
+        let source = generate_fragment_shader(&graph, &validated);
         assert!(source.contains("apply_pbr_lighting"));
         assert!(source.contains("pbr_input_from_vertex_output"));
     }
@@ -637,9 +640,12 @@ mod tests {
             position_offset: Some(Port::Node(0)),
             normal_override: None,
         };
-        let public_inputs = Vec::new();
-        let validated = validate_displacement(&displacement, &public_inputs).expect("valid");
-        let body = generate_displacement_body(&displacement, &public_inputs, &validated);
+        let graph = ShaderGraph {
+            displacement: Some(displacement),
+            ..Default::default()
+        };
+        let validated = validate(&graph).expect("valid");
+        let body = generate_displacement_body(&graph, &validated).expect("has displacement");
         assert_displacement_valid(&body);
     }
 
@@ -667,9 +673,12 @@ mod tests {
             position_offset: Some(Port::Node(4)),
             normal_override: None,
         };
-        let public_inputs = Vec::new();
-        let validated = validate_displacement(&displacement, &public_inputs).expect("valid");
-        let body = generate_displacement_body(&displacement, &public_inputs, &validated);
+        let graph = ShaderGraph {
+            displacement: Some(displacement),
+            ..Default::default()
+        };
+        let validated = validate(&graph).expect("valid");
+        let body = generate_displacement_body(&graph, &validated).expect("has displacement");
         assert!(body.contains("sin("), "{body}");
         assert_displacement_valid(&body);
     }
@@ -681,9 +690,12 @@ mod tests {
             position_offset: Some(Port::Node(0)),
             normal_override: None,
         };
-        let public_inputs = Vec::new();
-        let validated = validate_displacement(&displacement, &public_inputs).expect("valid");
-        let source = generate_vertex_shader(&displacement, &public_inputs, &validated);
+        let graph = ShaderGraph {
+            displacement: Some(displacement),
+            ..Default::default()
+        };
+        let validated = validate(&graph).expect("valid");
+        let source = generate_vertex_shader(&graph, &validated).expect("has displacement");
         assert!(source.contains("#import bevy_pbr"));
         assert!(source.contains("vertex.position += out_position_offset;"));
         assert!(source.contains("mesh_position_local_to_world"));

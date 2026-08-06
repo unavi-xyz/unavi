@@ -19,9 +19,20 @@ pub enum Stock {
     PortalWatches,
     Prims,
     Receptors,
-    ShaderPrograms,
     Slots,
     WasmMemory,
+}
+
+impl Stock {
+    pub const ALL: [Self; 7] = [
+        Self::Documents,
+        Self::KvMemory,
+        Self::PortalWatches,
+        Self::Prims,
+        Self::Receptors,
+        Self::Slots,
+        Self::WasmMemory,
+    ];
 }
 
 /// A rate-limited action spent from a token bucket that refills over time.
@@ -33,6 +44,17 @@ pub enum Flow {
     Emit,
     PortalOpen,
     SyncDoc,
+}
+
+impl Flow {
+    pub const ALL: [Self; 6] = [
+        Self::BlobUpload,
+        Self::CreateDocument,
+        Self::CreatePrim,
+        Self::Emit,
+        Self::PortalOpen,
+        Self::SyncDoc,
+    ];
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
@@ -141,9 +163,33 @@ impl Quota {
         }
     }
 
+    /// Whether `other` is this quota or anything it rolls up into.
+    ///
+    /// Every charge, refund and adoption walks the owner chain, so a cycle in
+    /// it is unbounded recursion rather than a wrong number.
+    fn rolls_up_into(&self, other: &Arc<Self>) -> bool {
+        let mut current = self.owner();
+        while let Some(quota) = current {
+            if Arc::ptr_eq(&quota, other) {
+                return true;
+            }
+            current = quota.owner();
+        }
+        false
+    }
+
     /// Repoints this quota at a new owner, moving its standing stock from the
     /// old owner to the new so an ownership change leaks neither cap.
-    pub fn set_owner(&self, new_owner: Option<Arc<Self>>) {
+    ///
+    /// Refuses an owner that already rolls up into this quota, which would
+    /// close the chain into a cycle.
+    pub fn set_owner(self: &Arc<Self>, new_owner: Option<Arc<Self>>) {
+        if let Some(new) = new_owner.as_ref()
+            && (Arc::ptr_eq(new, self) || new.rolls_up_into(self))
+        {
+            return;
+        }
+
         let mut slot = self.owner.lock();
         let same = match (slot.as_ref(), new_owner.as_ref()) {
             (Some(a), Some(b)) => Arc::ptr_eq(a, b),

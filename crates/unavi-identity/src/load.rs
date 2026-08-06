@@ -4,7 +4,6 @@ use std::{
     time::Duration,
 };
 
-use anyhow::Context;
 use bevy::prelude::*;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
@@ -38,16 +37,19 @@ use wds::{
     WDS_SERVICE_TYPE,
     actor::Actor,
     identity::Identity,
+    resolve::{
+        resolve,
+        resolve_allowing_loopback,
+    },
 };
 use wired_registry::client::RegistryClient;
 use xdid::{
     core::did::Did,
-    methods::key::{
+    methods::key::keys::{
         DidKeyPair,
         PublicKey,
         p256::P256KeyPair,
     },
-    resolver::DidResolver,
 };
 
 const RETRY_DELAY: Duration = Duration::from_secs(4);
@@ -182,28 +184,19 @@ async fn resolve_sync_targets(
         return (Vec::new(), Vec::new());
     }
 
-    let resolver = match DidResolver::new().context("construct DID resolver for sync targets") {
-        Ok(resolver) => resolver,
-        Err(err) => {
-            error!(?err, "cannot resolve WDS sync targets");
-            return (Vec::new(), Vec::new());
-        }
-    };
-
-    resolve_batch(store, identity, &resolver, dids).await
+    resolve_batch(store, identity, dids).await
 }
 
 async fn resolve_batch(
     store: &DataStore,
     identity: &Arc<Identity>,
-    resolver: &DidResolver,
     dids: Vec<String>,
 ) -> (Vec<Actor>, Vec<String>) {
     let mut actors = Vec::new();
     let mut unresolved = Vec::new();
 
     for did_str in dids {
-        match resolve_sync_target(resolver, &did_str).await {
+        match resolve_sync_target(&did_str).await {
             Ok(addr) => {
                 info!(target = did_str, "registering WDS sync target");
                 actors.push(store.remote_actor(Arc::clone(identity), addr));
@@ -228,21 +221,13 @@ async fn retry_sync_targets(
     mut unresolved: Vec<String>,
     store_entity: Entity,
 ) {
-    let resolver = match DidResolver::new() {
-        Ok(resolver) => resolver,
-        Err(err) => {
-            error!(?err, "cannot retry WDS sync targets");
-            return;
-        }
-    };
-
     let mut delay = RETRY_DELAY;
 
     while !unresolved.is_empty() {
         n0_future::time::sleep(delay).await;
         delay = (delay * 2).min(MAX_RETRY_DELAY);
 
-        let (actors, pending) = resolve_batch(&store, &identity, &resolver, unresolved).await;
+        let (actors, pending) = resolve_batch(&store, &identity, unresolved).await;
         unresolved = pending;
 
         if actors.is_empty() {
@@ -269,12 +254,21 @@ async fn retry_sync_targets(
     }
 }
 
-async fn resolve_sync_target(
-    resolver: &DidResolver,
-    did_str: &str,
-) -> anyhow::Result<EndpointAddr> {
+/// Sync targets are named by the operator rather than by a peer, so a loopback
+/// `did:web` is a local server they chose to run, not an SSRF probe.
+fn loopback_targets_allowed() -> bool {
+    std::env::var_os("UNAVI_ALLOW_LOOPBACK_SYNC_TARGETS").is_some()
+}
+
+async fn resolve_sync_target(did_str: &str) -> anyhow::Result<EndpointAddr> {
     let did = Did::from_str(did_str)?;
-    let doc = resolver.resolve(&did).await?;
+
+    let doc = if loopback_targets_allowed() {
+        resolve_allowing_loopback(&did).await
+    } else {
+        resolve(&did).await
+    }
+    .ok_or_else(|| anyhow::anyhow!("could not resolve {did}"))?;
 
     let services = doc.service.unwrap_or_default();
     let wds = services

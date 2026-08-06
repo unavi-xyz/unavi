@@ -86,7 +86,7 @@ fn setup_scene(mut commands: Commands) {
 }
 
 #[derive(Component)]
-#[expect(dead_code)]
+#[expect(dead_code, reason = "held so the store outlives the blobs handle")]
 struct BlobStore(MemStore);
 
 fn load_hsd(mut commands: Commands) {

@@ -82,7 +82,14 @@ pub fn build_wasm_for_crate<S: std::hash::BuildHasher>(
         "wasm-opt",
         &[
             "-O4",
-            "--enable-bulk-memory-opt",
+            // rustc's default `wasm32-wasip2` feature set; the linked module
+            // carries no `target_features` section for wasm-opt to infer it.
+            "--enable-bulk-memory",
+            "--enable-multivalue",
+            "--enable-mutable-globals",
+            "--enable-nontrapping-float-to-int",
+            "--enable-reference-types",
+            "--enable-sign-ext",
             "-ffm",
             src.to_str().context("src wasm path")?,
             "-o",

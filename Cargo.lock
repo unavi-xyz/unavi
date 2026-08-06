@@ -6742,7 +6742,9 @@ dependencies = [
  "blake3",
  "postcard",
  "rand 0.9.5",
+ "ron",
  "serde",
+ "serde_with",
  "smol_str 0.3.6",
  "thiserror 2.0.19",
 ]
@@ -6757,7 +6759,6 @@ dependencies = [
  "hsd",
  "ron",
  "serde",
- "serde_with",
  "toml 1.1.4+spec-1.1.0",
 ]
 

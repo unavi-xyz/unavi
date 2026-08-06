@@ -5,12 +5,12 @@
     ],
     surface: (
         nodes: [
-            (kind: Fresnel(power: Const(Float(2.0)))),
-            (kind: Lerp(
+            Fresnel(power: Const(Float(2.0))),
+            Lerp(
                 a: Const(Color((0.0, 0.0, 0.0, 1.0))),
                 b: Input(0),
                 t: Node(0),
-            )),
+            ),
         ],
         output: Unlit((
             color: Node(1),

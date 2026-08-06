@@ -126,10 +126,7 @@ fn two_prims_sharing_a_graph_get_byte_identical_slot_entries() {
         hsd::attributes::slots::MATERIAL_GRAPH_DATA,
     );
 
-    assert_eq!(
-        a, b,
-        "identical .hss source must compile byte-identically"
-    );
+    assert_eq!(a, b, "identical .hss source must compile byte-identically");
 }
 
 #[test]
@@ -164,8 +161,8 @@ fn a_forward_reference_fails_the_build() {
     let shader = r"(
         surface: (
             nodes: [
-                (kind: Add(a: Node(1), b: Const(Float(1.0)))),
-                (kind: Time),
+                Add(a: Node(1), b: Const(Float(1.0))),
+                Time,
             ],
             output: Unlit((color: Const(Color((1.0, 1.0, 1.0, 1.0))))),
         ),
@@ -178,7 +175,7 @@ fn a_forward_reference_fails_the_build() {
 /// graph.
 #[test]
 fn exceeding_the_node_cap_fails_the_build() {
-    let nodes = "(kind: Time),".repeat(hsd::attributes::material_graph::MAX_NODES + 1);
+    let nodes = "Time,".repeat(hsd::attributes::material_graph::MAX_NODES + 1);
     let shader = format!(
         "(surface: (nodes: [{nodes}], output: Unlit((color: Const(Color((1.0, 1.0, 1.0, 1.0)))))))"
     );
@@ -219,7 +216,7 @@ fn a_displacement_graph_compiles() {
             output: Unlit((color: Const(Color((1.0, 1.0, 1.0, 1.0))))),
         ),
         displacement: (
-            nodes: [(kind: LocalNormal)],
+            nodes: [LocalNormal],
             position_offset: Node(0),
         ),
     )";
@@ -242,7 +239,7 @@ fn a_wrong_network_leaf_fails_the_build() {
             output: Unlit((color: Const(Color((1.0, 1.0, 1.0, 1.0))))),
         ),
         displacement: (
-            nodes: [(kind: WorldNormal)],
+            nodes: [WorldNormal],
             position_offset: Node(0),
         ),
     )";

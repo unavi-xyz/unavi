@@ -87,9 +87,13 @@ pub enum Port {
     Node(u16),
 }
 
-/// Fixed arity per kind.
+/// A graph node.
 ///
-/// As struct-variants rather than a generic `Vec<Port>`: total shader cost is
+/// Fixed arity per variant, and no separate wrapper struct: a node's kind IS
+/// the node, so authoring writes `Fresnel(power: ...)` directly in a `nodes`
+/// list rather than `(kind: Fresnel(power: ...))`.
+///
+/// Struct-variants rather than a generic `Vec<Port>`: total shader cost is
 /// a static function of node count, and an author mistake is a type error at
 /// validation, not a runtime graph walk.
 ///
@@ -100,7 +104,7 @@ pub enum Port {
 /// varyings), `LocalPosition`/`LocalNormal` are displacement-only
 /// (vertex-stage attributes), `Time` is legal in both.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum NodeKind {
+pub enum Node {
     Uv,
     WorldNormal,
     WorldPosition,
@@ -160,14 +164,9 @@ pub enum NodeKind {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Node {
-    pub kind: NodeKind,
-}
-
 /// Which shader stage a network compiles to. Carried in errors so a
 /// validation failure names the network it came from; also what
-/// [`validate`] checks each leaf [`NodeKind`] against.
+/// [`validate`] checks each leaf [`Node`] against.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Network {
     Surface,
@@ -466,9 +465,9 @@ fn validate_network(
     let mut texture_samples = 0usize;
 
     for (index, node) in nodes.iter().enumerate() {
-        check_network_leaf(network, index, &node.kind)?;
+        check_network_leaf(network, index, node)?;
 
-        if let NodeKind::TextureSample { slot, .. } = &node.kind {
+        if let Node::TextureSample { slot, .. } = node {
             if network == Network::Displacement {
                 return Err(GraphError::TextureSampleInDisplacement(index));
             }
@@ -482,7 +481,7 @@ fn validate_network(
             network,
             public_inputs,
             index,
-            &node.kind,
+            node,
             &kinds,
         )?);
     }
@@ -500,16 +499,12 @@ fn validate_network(
 /// `LocalPosition`/`LocalNormal` are vertex-stage attributes that have no
 /// meaning post-rasterization. `Time` and every non-leaf node kind are
 /// legal in both.
-const fn check_network_leaf(
-    network: Network,
-    index: usize,
-    kind: &NodeKind,
-) -> Result<(), GraphError> {
+const fn check_network_leaf(network: Network, index: usize, node: &Node) -> Result<(), GraphError> {
     let surface_only = matches!(
-        kind,
-        NodeKind::Uv | NodeKind::WorldNormal | NodeKind::WorldPosition | NodeKind::VertexColor
-    ) || matches!(kind, NodeKind::Fresnel { .. });
-    let displacement_only = matches!(kind, NodeKind::LocalPosition | NodeKind::LocalNormal);
+        node,
+        Node::Uv | Node::WorldNormal | Node::WorldPosition | Node::VertexColor
+    ) || matches!(node, Node::Fresnel { .. });
+    let displacement_only = matches!(node, Node::LocalPosition | Node::LocalNormal);
 
     match network {
         Network::Displacement if surface_only => Err(GraphError::WrongNetwork {
@@ -599,34 +594,33 @@ fn node_output_kind(
     network: Network,
     public_inputs: &[GraphValue],
     at: usize,
-    kind: &NodeKind,
+    node: &Node,
     kinds: &[ValueKind],
 ) -> Result<ValueKind, GraphError> {
-    match *kind {
-        NodeKind::Uv => Ok(ValueKind::Vec2),
-        NodeKind::WorldNormal
-        | NodeKind::WorldPosition
-        | NodeKind::LocalPosition
-        | NodeKind::LocalNormal => Ok(ValueKind::Vec3),
-        NodeKind::VertexColor => Ok(ValueKind::Color),
-        NodeKind::Time => Ok(ValueKind::Float),
-        NodeKind::Add { a, b } | NodeKind::Mul { a, b } => {
+    match *node {
+        Node::Uv => Ok(ValueKind::Vec2),
+        Node::WorldNormal | Node::WorldPosition | Node::LocalPosition | Node::LocalNormal => {
+            Ok(ValueKind::Vec3)
+        }
+        Node::VertexColor => Ok(ValueKind::Color),
+        Node::Time => Ok(ValueKind::Float),
+        Node::Add { a, b } | Node::Mul { a, b } => {
             matching(network, public_inputs, at, a, "b", b, kinds)
         }
-        NodeKind::Lerp { a, b, t } => {
+        Node::Lerp { a, b, t } => {
             let value_kind = matching(network, public_inputs, at, a, "b", b, kinds)?;
             require(network, public_inputs, at, "t", t, kinds, ValueKind::Float)?;
             Ok(value_kind)
         }
-        NodeKind::Dot { a, b } => {
+        Node::Dot { a, b } => {
             matching(network, public_inputs, at, a, "b", b, kinds)?;
             Ok(ValueKind::Float)
         }
-        NodeKind::Sin { x } | NodeKind::Cos { x } => {
+        Node::Sin { x } | Node::Cos { x } => {
             require(network, public_inputs, at, "x", x, kinds, ValueKind::Float)?;
             Ok(ValueKind::Float)
         }
-        NodeKind::Fresnel { power } => {
+        Node::Fresnel { power } => {
             require(
                 network,
                 public_inputs,
@@ -638,15 +632,15 @@ fn node_output_kind(
             )?;
             Ok(ValueKind::Float)
         }
-        NodeKind::Noise { uv } => {
+        Node::Noise { uv } => {
             require(network, public_inputs, at, "uv", uv, kinds, ValueKind::Vec2)?;
             Ok(ValueKind::Float)
         }
-        NodeKind::TextureSample { uv, .. } => {
+        Node::TextureSample { uv, .. } => {
             require(network, public_inputs, at, "uv", uv, kinds, ValueKind::Vec2)?;
             Ok(ValueKind::Color)
         }
-        NodeKind::Select { cond, a, b } => {
+        Node::Select { cond, a, b } => {
             require(
                 network,
                 public_inputs,
@@ -753,10 +747,6 @@ pub fn validate_overrides(
 mod tests {
     use super::*;
 
-    fn leaf(kind: NodeKind) -> Node {
-        Node { kind }
-    }
-
     fn unlit(color: Port) -> SurfaceGraph {
         SurfaceGraph {
             nodes:  Vec::new(),
@@ -779,11 +769,11 @@ mod tests {
         let graph = ShaderGraph {
             surface: SurfaceGraph {
                 nodes:  vec![
-                    leaf(NodeKind::Time),
-                    leaf(NodeKind::Add {
+                    Node::Time,
+                    Node::Add {
                         a: Port::Node(0),
                         b: Port::Const(GraphValue::Float(1.0)),
-                    }),
+                    },
                 ],
                 output: SurfaceOutput::Lit(LitOutput {
                     roughness: Some(Port::Node(1)),
@@ -802,10 +792,10 @@ mod tests {
     fn a_node_may_not_reference_itself_or_a_later_node() {
         let self_ref = ShaderGraph {
             surface: SurfaceGraph {
-                nodes: vec![leaf(NodeKind::Add {
+                nodes: vec![Node::Add {
                     a: Port::Node(0),
                     b: Port::Const(GraphValue::Float(1.0)),
-                })],
+                }],
                 ..unlit(Port::Const(GraphValue::Color([0.0; 4])))
             },
             ..Default::default()
@@ -822,11 +812,11 @@ mod tests {
         let forward_ref = ShaderGraph {
             surface: SurfaceGraph {
                 nodes: vec![
-                    leaf(NodeKind::Add {
+                    Node::Add {
                         a: Port::Node(1),
                         b: Port::Const(GraphValue::Float(1.0)),
-                    }),
-                    leaf(NodeKind::Time),
+                    },
+                    Node::Time,
                 ],
                 ..unlit(Port::Const(GraphValue::Color([0.0; 4])))
             },
@@ -847,11 +837,11 @@ mod tests {
         let graph = ShaderGraph {
             surface: SurfaceGraph {
                 nodes: vec![
-                    leaf(NodeKind::Uv),
-                    leaf(NodeKind::Add {
+                    Node::Uv,
+                    Node::Add {
                         a: Port::Node(0),
                         b: Port::Const(GraphValue::Float(1.0)),
-                    }),
+                    },
                 ],
                 ..unlit(Port::Const(GraphValue::Color([0.0; 4])))
             },
@@ -885,7 +875,7 @@ mod tests {
     fn terminal_type_mismatch_is_rejected() {
         let graph = ShaderGraph {
             surface: SurfaceGraph {
-                nodes: vec![leaf(NodeKind::Uv)],
+                nodes: vec![Node::Uv],
                 ..unlit(Port::Node(0))
             },
             ..Default::default()
@@ -902,7 +892,7 @@ mod tests {
 
     #[test]
     fn node_count_cap_is_enforced_per_network() {
-        let nodes = (0..=MAX_NODES).map(|_| leaf(NodeKind::Time)).collect();
+        let nodes = (0..=MAX_NODES).map(|_| Node::Time).collect();
         let graph = ShaderGraph {
             surface: SurfaceGraph {
                 nodes,
@@ -921,12 +911,10 @@ mod tests {
 
     #[test]
     fn texture_sample_cap_is_enforced() {
-        let mut nodes = vec![leaf(NodeKind::Uv)];
-        nodes.extend((0..=MAX_TEXTURE_SAMPLES).map(|_| {
-            leaf(NodeKind::TextureSample {
-                uv:   Port::Node(0),
-                slot: 0,
-            })
+        let mut nodes = vec![Node::Uv];
+        nodes.extend((0..=MAX_TEXTURE_SAMPLES).map(|_| Node::TextureSample {
+            uv:   Port::Node(0),
+            slot: 0,
         }));
         let graph = ShaderGraph {
             surface: SurfaceGraph {
@@ -946,11 +934,11 @@ mod tests {
         let graph = ShaderGraph {
             surface: SurfaceGraph {
                 nodes: vec![
-                    leaf(NodeKind::Uv),
-                    leaf(NodeKind::TextureSample {
+                    Node::Uv,
+                    Node::TextureSample {
                         uv:   Port::Node(0),
                         slot: MAX_TEXTURE_SAMPLES as u8,
-                    }),
+                    },
                 ],
                 ..unlit(Port::Const(GraphValue::Color([0.0; 4])))
             },
@@ -988,10 +976,10 @@ mod tests {
     fn unknown_public_input_reference_is_rejected() {
         let graph = ShaderGraph {
             surface: SurfaceGraph {
-                nodes: vec![leaf(NodeKind::Add {
+                nodes: vec![Node::Add {
                     a: Port::Input(0),
                     b: Port::Const(GraphValue::Float(1.0)),
-                })],
+                }],
                 ..unlit(Port::Const(GraphValue::Color([0.0; 4])))
             },
             ..Default::default()
@@ -1029,7 +1017,7 @@ mod tests {
         let graph = ShaderGraph {
             surface: unlit(Port::Const(GraphValue::Color([0.0; 4]))),
             displacement: Some(DisplacementGraph {
-                nodes: vec![leaf(NodeKind::WorldNormal)],
+                nodes: vec![Node::WorldNormal],
                 position_offset: Some(Port::Node(0)),
                 ..Default::default()
             }),
@@ -1050,7 +1038,7 @@ mod tests {
     fn displacement_only_leaves_are_rejected_in_surface() {
         let graph = ShaderGraph {
             surface: SurfaceGraph {
-                nodes: vec![leaf(NodeKind::LocalPosition)],
+                nodes: vec![Node::LocalPosition],
                 ..unlit(Port::Const(GraphValue::Color([0.0; 4])))
             },
             ..Default::default()
@@ -1070,12 +1058,12 @@ mod tests {
             surface: unlit(Port::Const(GraphValue::Color([1.0; 4]))),
             displacement: Some(DisplacementGraph {
                 nodes:           vec![
-                    leaf(NodeKind::LocalNormal),
-                    leaf(NodeKind::Time),
-                    leaf(NodeKind::Mul {
+                    Node::LocalNormal,
+                    Node::Time,
+                    Node::Mul {
                         a: Port::Node(0),
                         b: Port::Const(GraphValue::Vec3([1.0, 1.0, 1.0])),
-                    }),
+                    },
                 ],
                 position_offset: Some(Port::Node(2)),
                 normal_override: None,
@@ -1097,14 +1085,14 @@ mod tests {
             surface: unlit(Port::Const(GraphValue::Color([1.0; 4]))),
             displacement: Some(DisplacementGraph {
                 nodes:           vec![
-                    leaf(NodeKind::Time),
-                    leaf(NodeKind::Sin { x: Port::Node(0) }),
-                    leaf(NodeKind::Cos { x: Port::Node(0) }),
-                    leaf(NodeKind::LocalNormal),
-                    leaf(NodeKind::Mul {
+                    Node::Time,
+                    Node::Sin { x: Port::Node(0) },
+                    Node::Cos { x: Port::Node(0) },
+                    Node::LocalNormal,
+                    Node::Mul {
                         a: Port::Node(3),
                         b: Port::Const(GraphValue::Vec3([0.1, 0.1, 0.1])),
-                    }),
+                    },
                 ],
                 position_offset: Some(Port::Node(4)),
                 normal_override: None,
@@ -1128,7 +1116,7 @@ mod tests {
     fn sin_and_cos_require_a_float_input() {
         let graph = ShaderGraph {
             surface: SurfaceGraph {
-                nodes: vec![leaf(NodeKind::Uv), leaf(NodeKind::Sin { x: Port::Node(0) })],
+                nodes: vec![Node::Uv, Node::Sin { x: Port::Node(0) }],
                 ..unlit(Port::Const(GraphValue::Color([0.0; 4])))
             },
             ..Default::default()
@@ -1151,7 +1139,7 @@ mod tests {
             surface: unlit(Port::Const(GraphValue::Color([1.0; 4]))),
             displacement: Some(DisplacementGraph {
                 nodes:           vec![
-                    leaf(NodeKind::Uv), // wrong-network check fires first
+                    Node::Uv, // wrong-network check fires first
                 ],
                 position_offset: None,
                 normal_override: None,
@@ -1198,11 +1186,11 @@ mod tests {
             public_inputs: vec![GraphValue::Float(0.5)],
             surface:       SurfaceGraph {
                 nodes:  vec![
-                    leaf(NodeKind::Uv),
-                    leaf(NodeKind::TextureSample {
+                    Node::Uv,
+                    Node::TextureSample {
                         uv:   Port::Node(0),
                         slot: 2,
-                    }),
+                    },
                 ],
                 output: SurfaceOutput::Lit(LitOutput {
                     base_color: Some(Port::Node(1)),
@@ -1211,7 +1199,7 @@ mod tests {
                 }),
             },
             displacement:  Some(DisplacementGraph {
-                nodes:           vec![leaf(NodeKind::LocalPosition)],
+                nodes:           vec![Node::LocalPosition],
                 position_offset: Some(Port::Node(0)),
                 normal_override: None,
             }),
@@ -1228,7 +1216,7 @@ mod tests {
     fn identical_graphs_encode_identically() {
         let make = || ShaderGraph {
             surface: SurfaceGraph {
-                nodes:  vec![leaf(NodeKind::Uv), leaf(NodeKind::Time)],
+                nodes:  vec![Node::Uv, Node::Time],
                 output: SurfaceOutput::Unlit(UnlitOutput {
                     color:                Port::Const(GraphValue::Color([1.0; 4])),
                     alpha_clip_threshold: Some(Port::Node(1)),

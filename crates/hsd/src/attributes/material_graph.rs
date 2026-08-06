@@ -1,4 +1,5 @@
-//! A closed-by-construction shader node graph, compiled host-side into WGSL.
+//! HSS (Hyper-Space Shader), HSD's shader graph format: a closed-by-
+//! construction node graph, compiled host-side into WGSL.
 //!
 //! Never accepts shader text as data: nodes are a flat, ordered list where a
 //! node's inputs may reference only nodes at a strictly lower index, so a
@@ -28,6 +29,9 @@ use thiserror::Error;
 
 use crate::attributes::Attribute;
 
+/// File extension for a hand-written shader graph source: Hyper-Space
+/// Shader, HSD's shader format for The Wired.
+pub const EXTENSION: &str = "hss";
 /// Per-network node cap: shader cost is a static function of node count
 /// alone, and surface/displacement run as different shader stages with
 /// independent budgets.

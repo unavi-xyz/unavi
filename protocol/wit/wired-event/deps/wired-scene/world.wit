@@ -224,8 +224,7 @@ interface types {
     mesh:     func() -> option<mesh>;
     set-mesh: func(value: option<mesh>) -> result<_, error>;
 
-    // Host hashes the values, uploads to WDS, and points the prim's bulk entry
-    // at the result.
+    // Host stores the values inline in the prim's slot entry.
     set-mesh-stream:      func(key: string, values: option<list<f32>>) -> result<_, error>;
     set-mesh-indices-u32: func(values: option<list<u32>>) -> result<_, error>;
 

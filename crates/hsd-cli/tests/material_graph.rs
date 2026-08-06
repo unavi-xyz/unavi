@@ -9,10 +9,10 @@ use std::{
 use hsd::{
     attributes::{
         material_graph::{
-            GraphValue,
             MAX_NODES,
             ShaderGraph,
             overrides::GraphOverridesAttr,
+            value::GraphValue,
         },
         name::NameAttr,
         slots::MATERIAL_GRAPH_DATA,

@@ -13,7 +13,7 @@ use serde::{
 };
 use serde_with::skip_serializing_none;
 
-use crate::attributes::material_graph::GraphValue;
+use crate::attributes::material_graph::value::GraphValue;
 
 pub const EXTENSION: &str = "hsda";
 

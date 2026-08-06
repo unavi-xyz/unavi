@@ -9,10 +9,12 @@ use thiserror::Error;
 use crate::attributes::{
     Attribute,
     material_graph::{
-        GraphValue,
         ShaderGraph,
-        ValueKind,
-        validate::is_finite,
+        value::{
+            GraphValue,
+            ValueKind,
+            is_finite,
+        },
     },
 };
 

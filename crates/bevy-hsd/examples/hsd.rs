@@ -45,14 +45,8 @@ use hsd::{
         slots,
         xform::XformAttr,
     },
-    id::{
-        BlobId,
-        PrimId,
-    },
-    state::{
-        SceneState,
-        entry::BulkRef,
-    },
+    id::PrimId,
+    state::SceneState,
 };
 use iroh_blobs::{
     api::blobs::Blobs,
@@ -98,20 +92,20 @@ struct BlobStore(MemStore);
 
 fn load_hsd(mut commands: Commands) {
     let (store, blobs) = spawn_mem_store();
-    commands.spawn(LocalBlobs(blobs.clone()));
+    commands.spawn(LocalBlobs(blobs));
 
     let mut state = SceneState::new();
-    populate(&mut state, &blobs);
+    populate(&mut state);
 
     commands.spawn(Hsd::new(state));
     commands.spawn(BlobStore(store));
 }
 
-fn populate(state: &mut SceneState, blobs: &Blobs) {
+fn populate(state: &mut SceneState) {
     let red = material_prim(state, ColorVec(vec![0.9, 0.2, 0.15, 1.0]), 0.1, 0.35);
     let blue = material_prim(state, ColorVec(vec![0.15, 0.4, 0.95, 1.0]), 0.8, 0.2);
 
-    let buffers = cube_buffers(blobs);
+    let buffers = cube_buffers();
 
     for (offset, target) in [
         (Vec3::new(-2.0, 0.0, 0.0), red),
@@ -144,25 +138,23 @@ fn populate(state: &mut SceneState, blobs: &Blobs) {
             .expect("binding");
 
         for (slot, value) in &buffers {
-            state.set_bulk(prim, slot, *value).expect("bulk");
+            state.set_slot(prim, slot, value.clone()).expect("slot");
         }
     }
 
     // Two effects a fixed `MaterialAttr` cannot express: an unlit fresnel
     // glow and a sine-driven vertex displacement. Both use a smooth sphere —
     // a cube's per-face normals split apart when displaced along them.
-    let graph_buffers = sphere_buffers(blobs);
+    let graph_buffers = sphere_buffers();
 
     shader_graph_cube(
         state,
-        blobs,
         &graph_buffers,
         Vec3::new(-1.0, 0.0, 2.0),
         glow_graph(),
     );
     shader_graph_cube(
         state,
-        blobs,
         &graph_buffers,
         Vec3::new(1.0, 0.0, 2.0),
         pulse_graph(),
@@ -190,13 +182,12 @@ fn material_prim(
     prim
 }
 
-/// A prim carrying a compiled shader graph as bulk `material:graph_data`
-/// rather than a bound PBR `MaterialAttr` — a hash may never sit inside an
-/// attribute payload, and a compiled graph is exactly that kind of content.
+/// A prim carrying a compiled shader graph as a `material:graph_data` slot
+/// rather than a bound PBR `MaterialAttr` — a compiled graph is exactly the
+/// kind of content that belongs inline in a slot.
 fn shader_graph_cube(
     state: &mut SceneState,
-    blobs: &Blobs,
-    buffers: &[(String, BulkRef)],
+    buffers: &[(String, Vec<u8>)],
     offset: Vec3,
     graph: ShaderGraph,
 ) -> PrimId {
@@ -220,13 +211,13 @@ fn shader_graph_cube(
         )
         .expect("xform");
     for (slot, value) in buffers {
-        state.set_bulk(prim, slot, *value).expect("bulk");
+        state.set_slot(prim, slot, value.clone()).expect("slot");
     }
 
     let bytes = graph.encode().expect("encode shader graph");
     state
-        .set_bulk(prim, slots::MATERIAL_GRAPH_DATA, upload(blobs, &bytes))
-        .expect("shader graph bulk");
+        .set_slot(prim, slots::MATERIAL_GRAPH_DATA, bytes)
+        .expect("shader graph slot");
 
     prim
 }
@@ -306,18 +297,18 @@ fn pulse_graph() -> ShaderGraph {
     }
 }
 
-fn cube_buffers(blobs: &Blobs) -> Vec<(String, BulkRef)> {
+fn cube_buffers() -> Vec<(String, Vec<u8>)> {
     let cube = Cuboid::new(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE).mesh().build();
-    mesh_buffers(blobs, cube)
+    mesh_buffers(cube)
 }
 
 /// Smoothly-normalled sphere, so a displacement graph breathes the whole
 /// shell rather than splitting a cube's per-face vertices apart.
-fn sphere_buffers(blobs: &Blobs) -> Vec<(String, BulkRef)> {
-    mesh_buffers(blobs, Sphere::new(CUBE_SIZE / 2.0).mesh().build())
+fn sphere_buffers() -> Vec<(String, Vec<u8>)> {
+    mesh_buffers(Sphere::new(CUBE_SIZE / 2.0).mesh().build())
 }
 
-fn mesh_buffers(blobs: &Blobs, mesh: Mesh) -> Vec<(String, BulkRef)> {
+fn mesh_buffers(mesh: Mesh) -> Vec<(String, Vec<u8>)> {
     let mut out = Vec::new();
 
     if let Some(VertexAttributeValues::Float32x3(positions)) =
@@ -325,44 +316,24 @@ fn mesh_buffers(blobs: &Blobs, mesh: Mesh) -> Vec<(String, BulkRef)> {
     {
         out.push((
             slots::mesh_attribute("POSITION"),
-            upload(blobs, cast_slice(positions)),
+            cast_slice(positions).to_vec(),
         ));
     }
     if let Some(VertexAttributeValues::Float32x3(normals)) = mesh.attribute(Mesh::ATTRIBUTE_NORMAL)
     {
         out.push((
             slots::mesh_attribute("NORMAL"),
-            upload(blobs, cast_slice(normals)),
+            cast_slice(normals).to_vec(),
         ));
     }
     if let Some(VertexAttributeValues::Float32x2(uvs)) = mesh.attribute(Mesh::ATTRIBUTE_UV_0) {
-        out.push((
-            slots::mesh_attribute("UV_0"),
-            upload(blobs, cast_slice(uvs)),
-        ));
+        out.push((slots::mesh_attribute("UV_0"), cast_slice(uvs).to_vec()));
     }
     if let Some(Indices::U32(idx)) = mesh.indices() {
-        out.push((
-            slots::MESH_INDICES.to_owned(),
-            upload(blobs, cast_slice(idx)),
-        ));
+        out.push((slots::MESH_INDICES.to_owned(), cast_slice(idx).to_vec()));
     }
 
     out
-}
-
-fn upload(blobs: &Blobs, bytes: &[u8]) -> BulkRef {
-    let hash = blake3::hash(bytes);
-    let size = bytes.len() as u64;
-    let blobs = blobs.clone();
-    let payload = bytes.to_vec();
-    spawn_async_task(async move {
-        blobs.add_slice(&payload).await.expect("add slice");
-    });
-    BulkRef {
-        hash: BlobId(*hash.as_bytes()),
-        size,
-    }
 }
 
 fn spawn_mem_store() -> (MemStore, Blobs) {

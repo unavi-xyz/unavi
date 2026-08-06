@@ -17,7 +17,6 @@ use bevy::{
 };
 use hsd::{
     id::{
-        BlobId,
         DocId,
         PrimId,
     },
@@ -89,10 +88,6 @@ impl Plugin for HsdPlugin {
                     .chain()
                     .in_set(HsdCommitSet),
             )
-            .add_observer(attributes::mesh::on_mesh_blobs_loaded)
-            .add_observer(attributes::image::on_image_blob_loaded)
-            .add_observer(attributes::collider::on_collider_blobs_loaded)
-            .add_observer(attributes::material_graph::on_material_graph_blob_loaded)
             .add_systems(
                 PostUpdate,
                 (
@@ -152,10 +147,10 @@ pub struct HsdPrimIndex(pub HashMap<PrimId, Entity>);
 #[derive(Component, Default, Debug)]
 pub struct HsdRelationships(pub BTreeMap<SmolStr, PrimId>);
 
-/// A prim's bulk slots. The bytes live in the blob store; this is the hash
-/// each slot's entry carries.
+/// A prim's slots, held inline as bytes. Since a document must be loaded
+/// in full before it realizes, no slot value is a deferred reference.
 #[derive(Component, Default, Debug)]
-pub struct HsdBulk(pub BTreeMap<SmolStr, BlobId>);
+pub struct HsdSlots(pub BTreeMap<SmolStr, Vec<u8>>);
 
 /// Pauses event draining while a batched writer (a mid-flight script fixed
 /// update) holds it, so its writes reach the world atomically instead of

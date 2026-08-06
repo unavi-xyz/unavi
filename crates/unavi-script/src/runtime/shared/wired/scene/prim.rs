@@ -41,7 +41,6 @@ use hsd::{
         xform::XformAttr,
     },
     id::{
-        BlobId,
         DocId,
         PrimId,
     },
@@ -49,10 +48,7 @@ use hsd::{
         Parent,
         Property,
     },
-    state::{
-        SceneState,
-        entry::BulkRef,
-    },
+    state::SceneState,
 };
 use unavi_quota::{
     Flow,
@@ -229,22 +225,22 @@ impl PrimRes {
         value.map_or_else(|| self.clear(A::KEY), |attr| self.write_attr(&attr))
     }
 
-    fn bulk(&self, slot: &str) -> anyhow::Result<Option<BlobId>> {
+    fn slot(&self, name: &str) -> anyhow::Result<Option<Vec<u8>>> {
         self.with(|state| {
             state
                 .get(self.id)
-                .and_then(|p| p.bulk(slot))
-                .map(|b| b.hash)
+                .and_then(|p| p.slot(name))
+                .map(ToOwned::to_owned)
         })
     }
 
-    fn set_bulk(&self, slot: &str, value: Option<BulkRef>) -> anyhow::Result<()> {
+    fn set_slot(&self, name: &str, value: Option<Vec<u8>>) -> anyhow::Result<()> {
         self.with(|state| {
             let Some(value) = value else {
-                state.remove_bulk(self.id, slot);
+                state.remove_slot(self.id, name);
                 return Ok(());
             };
-            state.set_bulk(self.id, slot, value)
+            state.set_slot(self.id, name, value)
         })??;
         Ok(())
     }
@@ -394,30 +390,13 @@ pub async fn prefab(api: &Api, rep: u32) -> anyhow::Result<Option<Vec<u8>>> {
     if prim.is_proxy {
         return Ok(None);
     }
-    Ok(prim.bulk(slots::PREFAB)?.map(|hash| hash.0.to_vec()))
+    prim.slot(slots::PREFAB)
 }
 
 pub async fn set_prefab(api: &Api, rep: u32, value: Option<Vec<u8>>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
-    match value {
-        Some(bytes) => {
-            let hash: [u8; 32] = bytes
-                .as_slice()
-                .try_into()
-                .map_err(|_| anyhow::anyhow!("prefab blob id must be 32 bytes"))?;
-            // Size is unknown here and only distinguishes presence from a
-            // tombstone; the real length arrives when the entry is written.
-            prim.set_bulk(
-                slots::PREFAB,
-                Some(BulkRef {
-                    hash: BlobId(hash),
-                    size: 1,
-                }),
-            )
-        }
-        None => prim.set_bulk(slots::PREFAB, None),
-    }
+    prim.set_slot(slots::PREFAB, value)
 }
 
 pub async fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<XformAttr>> {
@@ -535,29 +514,13 @@ pub async fn set_mesh(api: &Api, rep: u32, value: Option<PrimMesh>) -> anyhow::R
     }))
 }
 
-/// Uploads a buffer and points the prim's bulk entry at it. Attribute and
-/// buffers are separate entries, so writing one never rewrites the other.
-async fn set_buffer(
-    api: &Api,
-    prim: &PrimRes,
-    slot: &str,
-    bytes: Option<Vec<u8>>,
-) -> anyhow::Result<()> {
-    match bytes {
-        Some(bytes) => {
-            api.quota.spend(Flow::BlobUpload, 1.0)?;
-            let size = bytes.len() as u64;
-            let hash = super::upload_blob(bytes).await?;
-            prim.set_bulk(
-                slot,
-                Some(BulkRef {
-                    hash: BlobId(*hash.as_bytes()),
-                    size,
-                }),
-            )
-        }
-        None => prim.set_bulk(slot, None),
+/// Writes a buffer to the prim's slot entry. Attribute and buffers are
+/// separate entries, so writing one never rewrites the other.
+fn set_buffer(api: &Api, prim: &PrimRes, slot: &str, bytes: Option<Vec<u8>>) -> anyhow::Result<()> {
+    if bytes.is_some() {
+        api.quota.spend(Flow::BlobUpload, 1.0)?;
     }
+    prim.set_slot(slot, bytes)
 }
 
 /// The attribute and its buffers are separate entries, and a prim renders only
@@ -587,7 +550,7 @@ pub async fn set_mesh_stream(
         }
         None => None,
     };
-    set_buffer(api, &prim, &slots::mesh_attribute(&key), bytes).await
+    set_buffer(api, &prim, &slots::mesh_attribute(&key), bytes)
 }
 
 pub async fn set_mesh_indices_u32(
@@ -605,7 +568,7 @@ pub async fn set_mesh_indices_u32(
         }
         None => None,
     };
-    set_buffer(api, &prim, slots::MESH_INDICES, bytes).await
+    set_buffer(api, &prim, slots::MESH_INDICES, bytes)
 }
 
 pub async fn set_collider_vertices(
@@ -622,7 +585,7 @@ pub async fn set_collider_vertices(
         }
         None => None,
     };
-    set_buffer(api, &prim, slots::COLLIDER_VERTICES, bytes).await
+    set_buffer(api, &prim, slots::COLLIDER_VERTICES, bytes)
 }
 
 pub async fn set_collider_indices(
@@ -639,13 +602,13 @@ pub async fn set_collider_indices(
         }
         None => None,
     };
-    set_buffer(api, &prim, slots::COLLIDER_INDICES, bytes).await
+    set_buffer(api, &prim, slots::COLLIDER_INDICES, bytes)
 }
 
 pub async fn set_image_data(api: &Api, rep: u32, bytes: Option<Vec<u8>>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
-    set_buffer(api, &prim, slots::IMAGE_DATA, bytes).await
+    set_buffer(api, &prim, slots::IMAGE_DATA, bytes)
 }
 
 const fn topology_to_prim(t: Topology) -> PrimTopology {

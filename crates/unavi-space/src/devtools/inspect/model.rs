@@ -385,7 +385,7 @@ fn prim_summary(state: &SceneState, id: PrimId) -> (String, String) {
             }
             keys.push(key.to_string());
         }
-        keys.extend(prim.bulk_slots().map(|(slot, _)| slot.to_string()));
+        keys.extend(prim.slots().map(|(slot, _)| slot.to_string()));
         keys.sort_unstable();
     }
     (name, keys.join(", "))

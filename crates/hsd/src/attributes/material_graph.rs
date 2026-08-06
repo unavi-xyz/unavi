@@ -14,7 +14,7 @@
 //! than a PBR-parameter tinter — unlit looks and vertex displacement are
 //! both unreachable through a single fixed terminal set.
 //!
-//! The compiled graph is bulk content (`material:graph_data`), never a hash
+//! The compiled graph is slot content (`material:graph_data`), never a hash
 //! inside an attribute payload; [`GraphOverridesAttr`] is the small attribute
 //! that names the same prim's per-instance tint of the graph's public inputs.
 
@@ -251,7 +251,7 @@ pub struct DisplacementGraph {
     pub normal_override: Option<Port>,
 }
 
-/// A compiled, closed shader graph. This is bulk content
+/// A compiled, closed shader graph. This is slot content
 /// (`material:graph_data`), never an attribute payload — see the module docs.
 ///
 /// No field here may become a `HashMap`: dedup across prims depends on
@@ -695,7 +695,7 @@ const fn terminal_err(name: &'static str, err: GraphError) -> GraphError {
 ///
 /// Follows `MaterialX`'s "bind a nodegraph, override its public inputs"
 /// pattern. Never carries the graph itself — that is `material:graph_data`,
-/// bulk content, since a hash may not appear inside an attribute payload.
+/// slot content, since a hash may not appear inside an attribute payload.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct GraphOverridesAttr {
     /// Public-input index -> override value. Empty if the graph's own
@@ -721,7 +721,7 @@ pub enum OverridesError {
 
 /// Cross-checks overrides against the graph they apply to.
 ///
-/// The two are separate entries (an attribute and a bulk slot) that can
+/// The two are separate entries (an attribute and a slot) that can
 /// arrive out of order or go stale independently, so this is re-run whenever
 /// either changes, not folded into [`validate`].
 pub fn validate_overrides(
@@ -1218,7 +1218,7 @@ mod tests {
     }
 
     /// Cross-prim dedup depends on this: two structurally identical graphs
-    /// must compile to byte-identical bulk entries so their content hashes
+    /// must compile to byte-identical slot entries so their content hashes
     /// collide in the blob store.
     #[test]
     fn identical_graphs_encode_identically() {

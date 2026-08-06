@@ -1,21 +1,22 @@
 //! A script has no attribute payload: the wasm component *is* its
-//! `b/<prim>/script/` entry, and presence of that entry is what attaches it.
+//! `p/<prim>/script/` entry, and presence of that entry is what attaches it.
 
 use bevy::prelude::*;
 use hsd::attributes::slots;
 
-use crate::HsdBulk;
+use crate::HsdSlots;
 
 #[derive(Component, Debug, Clone)]
-pub struct HsdScript(pub blake3::Hash);
+pub struct HsdScript(pub Vec<u8>);
 
-pub fn track_script(changed: Query<(Entity, &HsdBulk), Changed<HsdBulk>>, mut commands: Commands) {
-    for (entity, bulk) in &changed {
-        match bulk.0.get(slots::SCRIPT) {
-            Some(hash) => {
-                commands
-                    .entity(entity)
-                    .insert(HsdScript(blake3::Hash::from_bytes(hash.0)));
+pub fn track_script(
+    changed: Query<(Entity, &HsdSlots), Changed<HsdSlots>>,
+    mut commands: Commands,
+) {
+    for (entity, slots) in &changed {
+        match slots.0.get(slots::SCRIPT) {
+            Some(bytes) => {
+                commands.entity(entity).insert(HsdScript(bytes.clone()));
             }
             None => {
                 commands.entity(entity).remove::<HsdScript>();

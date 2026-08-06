@@ -13,17 +13,6 @@ use bevy::{
         TextureFormat,
     },
 };
-use bevy_wds::blob::{
-    deps::{
-        BlobDep,
-        BlobDeps,
-        BlobDepsLoaded,
-    },
-    request::{
-        BlobRequest,
-        BlobResponse,
-    },
-};
 use hsd::attributes::{
     Attribute,
     image::ImageAttr,
@@ -32,7 +21,7 @@ use hsd::attributes::{
 use image::GenericImageView;
 
 use crate::{
-    HsdBulk,
+    HsdSlots,
     attributes::{
         AttributeParser,
         ParseError,
@@ -43,22 +32,6 @@ const MAX_TEXTURE_DIMS: u32 = 8192;
 
 #[derive(Component, Debug, Clone, Copy)]
 pub struct ImageData(pub ImageAttr);
-
-#[derive(Component)]
-#[require(BlobDeps)]
-pub struct ImageBlobs {
-    pub data:    Entity,
-    pub sampler: ImageSamplerDescriptor,
-    pub srgb:    Option<bool>,
-}
-
-#[derive(Component)]
-#[relationship(relationship_target = ImageBlobsChild)]
-pub struct ImageBlobsOwner(pub Entity);
-
-#[derive(Component)]
-#[relationship_target(relationship = ImageBlobsOwner, linked_spawn)]
-pub struct ImageBlobsChild(Entity);
 
 #[derive(Component, Default)]
 pub struct HsdImage(pub Handle<Image>);
@@ -83,9 +56,7 @@ impl AttributeParser for ImageParser {
                     .insert((ImageData(ImageAttr::decode(payload)?), HsdImage::default()));
             }
             None => {
-                commands
-                    .entity(prim)
-                    .remove::<(ImageData, HsdImage, ImageBlobsChild)>();
+                commands.entity(prim).remove::<(ImageData, HsdImage)>();
             }
         }
         Ok(())
@@ -93,23 +64,14 @@ impl AttributeParser for ImageParser {
 }
 
 pub fn rebuild_image(
-    changed: Query<(Entity, &ImageData, &HsdBulk), Or<(Changed<ImageData>, Changed<HsdBulk>)>>,
+    changed: Query<(Entity, &ImageData, &HsdSlots), Or<(Changed<ImageData>, Changed<HsdSlots>)>>,
+    mut image_assets: ResMut<Assets<Image>>,
     mut commands: Commands,
 ) {
-    for (prim, image, bulk) in &changed {
-        let Some(hash) = bulk.0.get(slots::IMAGE_DATA) else {
+    for (prim, image, slots) in &changed {
+        let Some(bytes) = slots.0.get(slots::IMAGE_DATA) else {
             continue;
         };
-
-        commands.entity(prim).remove::<ImageBlobsChild>();
-
-        let child = commands.spawn(ImageBlobsOwner(prim)).id();
-        let data = commands
-            .spawn((
-                BlobDep(child),
-                BlobRequest(blake3::Hash::from_bytes(hash.0)),
-            ))
-            .id();
 
         let attr = &image.0;
         let mut sampler = ImageSamplerDescriptor::default();
@@ -132,53 +94,17 @@ pub fn rebuild_image(
             sampler.mipmap_filter = filter_mode(v);
         }
 
-        commands.entity(child).insert(ImageBlobs {
-            data,
-            sampler,
-            srgb: attr.srgb,
-        });
-    }
-}
+        let dyn_img = match image::load_from_memory(bytes) {
+            Ok(img) => img,
+            Err(err) => {
+                warn!(?err, "failed to decode image");
+                continue;
+            }
+        };
 
-pub fn on_image_blob_loaded(
-    trigger: On<Add, BlobDepsLoaded>,
-    image_blobs: Query<(&ImageBlobs, &ImageBlobsOwner)>,
-    mut blob_responses: Query<&mut BlobResponse>,
-    mut hsd_images: Query<&mut HsdImage>,
-    mut image_assets: ResMut<Assets<Image>>,
-    mut commands: Commands,
-) {
-    let child = trigger.entity;
-    let Ok((params, owner)) = image_blobs.get(child) else {
-        return;
-    };
-    let prim = owner.0;
-
-    let Ok(Some(bytes)) = blob_responses.get_mut(params.data).map(|mut b| b.0.take()) else {
-        warn!("image blob not found");
-        commands.entity(child).try_despawn();
-        return;
-    };
-
-    let dyn_img = match image::load_from_memory(&bytes) {
-        Ok(img) => img,
-        Err(err) => {
-            warn!(?err, "failed to decode image");
-            commands.entity(child).try_despawn();
-            return;
-        }
-    };
-
-    let img = build_img(dyn_img, params.sampler.clone(), params.srgb);
-    let handle = image_assets.add(img);
-
-    if let Ok(mut hsd_image) = hsd_images.get_mut(prim) {
-        hsd_image.0 = handle;
-    } else {
+        let handle = image_assets.add(build_img(dyn_img, sampler, attr.srgb));
         commands.entity(prim).insert(HsdImage(handle));
     }
-
-    commands.entity(child).try_despawn();
 }
 
 fn build_img(

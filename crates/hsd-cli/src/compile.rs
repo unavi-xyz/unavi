@@ -1,7 +1,7 @@
 //! `.hsda` → `.hsdz`.
 //!
 //! Output is an entry set, not a prim tree: the same keys a live document
-//! holds, with bulk inlined so the package is one self-contained blob.
+//! holds, with bytes inlined so the package is one self-contained blob.
 
 use std::{
     collections::{
@@ -227,11 +227,11 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         }
         if let Some(rel) = &attrs.script {
             let bytes = self.compile_script(rel)?;
-            self.set_bulk(id, slots::SCRIPT, bytes);
+            self.set_slot(id, slots::SCRIPT, bytes);
         }
         if let Some(rel) = &attrs.prefab {
             let bytes = self.compile_prefab(rel)?;
-            self.set_bulk(id, slots::PREFAB, bytes);
+            self.set_slot(id, slots::PREFAB, bytes);
         }
         Ok(())
     }
@@ -240,7 +240,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         let path = self.input_dir.join(&image.data);
         let bytes =
             std::fs::read(&path).with_context(|| format!("reading image {}", path.display()))?;
-        self.set_bulk(id, slots::IMAGE_DATA, bytes);
+        self.set_slot(id, slots::IMAGE_DATA, bytes);
         self.set_attribute(
             id,
             &ImageAttr {
@@ -287,7 +287,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         Ok(())
     }
 
-    /// Compiles a `.shader` file to bulk content and, if the prim specifies
+    /// Compiles a `.shader` file to slot content and, if the prim specifies
     /// overrides, an attribute alongside it. The graph itself never appears
     /// in the attribute payload — see `hsd::attributes::material_graph`.
     fn emit_material_graph(&mut self, id: PrimId, graph: &HsdaMaterialGraph) -> Result<()> {
@@ -302,7 +302,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
             .with_context(|| format!("validating shader graph {}", path.display()))?;
 
         let bytes = parsed.encode().context("encoding shader graph")?;
-        self.set_bulk(id, slots::MATERIAL_GRAPH_DATA, bytes);
+        self.set_slot(id, slots::MATERIAL_GRAPH_DATA, bytes);
 
         if !graph.overrides.is_empty() {
             material_graph::validate_overrides(
@@ -358,8 +358,8 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         self.entries.insert(key::prop(id, name), value.encode());
     }
 
-    fn set_bulk(&mut self, id: PrimId, slot: &str, bytes: Vec<u8>) {
-        self.entries.insert(key::bulk(id, slot), bytes);
+    fn set_slot(&mut self, id: PrimId, slot: &str, bytes: Vec<u8>) {
+        self.entries.insert(key::prop(id, slot), bytes);
     }
 }
 

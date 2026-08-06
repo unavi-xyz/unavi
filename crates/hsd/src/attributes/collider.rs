@@ -6,7 +6,7 @@ use serde::{
 use crate::attributes::Attribute;
 
 /// `ConvexHull` and `Trimesh` read their buffers from the `collider:vertices`
-/// and `collider:indices` bulk entries.
+/// and `collider:indices` slots.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum ColliderAttr {
     Capsule { height: f64, radius: f64 },

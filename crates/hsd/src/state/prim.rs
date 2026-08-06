@@ -7,10 +7,7 @@ use crate::{
         Parent,
         Property,
     },
-    state::entry::{
-        BulkRef,
-        Stamp,
-    },
+    state::entry::Stamp,
 };
 
 /// Where a prim came from, which is what decides whether saving writes it.
@@ -31,7 +28,7 @@ pub struct PrimState {
     pub origin:   Origin,
     parent_stamp: Stamp,
     props:        BTreeMap<SmolStr, (Property, Stamp)>,
-    bulk:         BTreeMap<SmolStr, (BulkRef, Stamp)>,
+    slots:        BTreeMap<SmolStr, (Vec<u8>, Stamp)>,
 }
 
 impl PrimState {
@@ -44,7 +41,7 @@ impl PrimState {
                 content:   [0; 32],
             },
             props: BTreeMap::new(),
-            bulk: BTreeMap::new(),
+            slots: BTreeMap::new(),
         }
     }
 
@@ -58,12 +55,14 @@ impl PrimState {
     }
 
     #[must_use]
-    pub fn bulk(&self, slot: &str) -> Option<BulkRef> {
-        self.bulk.get(slot).map(|(value, _)| *value)
+    pub fn slot(&self, name: &str) -> Option<&[u8]> {
+        self.slots.get(name).map(|(value, _)| value.as_slice())
     }
 
-    pub fn bulk_slots(&self) -> impl Iterator<Item = (&SmolStr, BulkRef)> {
-        self.bulk.iter().map(|(slot, (value, _))| (slot, *value))
+    pub fn slots(&self) -> impl Iterator<Item = (&SmolStr, &[u8])> {
+        self.slots
+            .iter()
+            .map(|(name, (value, _))| (name, value.as_slice()))
     }
 
     #[must_use]
@@ -95,18 +94,18 @@ impl PrimState {
         self.props.remove(name).is_some()
     }
 
-    pub(super) fn set_bulk(&mut self, slot: &str, value: BulkRef, stamp: Stamp) -> bool {
-        if self.bulk.get(slot).is_some_and(|(_, old)| stamp < *old) {
+    pub(super) fn set_slot(&mut self, name: &str, value: Vec<u8>, stamp: Stamp) -> bool {
+        if self.slots.get(name).is_some_and(|(_, old)| stamp < *old) {
             return false;
         }
-        self.bulk.insert(SmolStr::new(slot), (value, stamp));
+        self.slots.insert(SmolStr::new(name), (value, stamp));
         true
     }
 
-    pub(super) fn remove_bulk(&mut self, slot: &str, stamp: Stamp) -> bool {
-        if self.bulk.get(slot).is_some_and(|(_, old)| stamp < *old) {
+    pub(super) fn remove_slot(&mut self, name: &str, stamp: Stamp) -> bool {
+        if self.slots.get(name).is_some_and(|(_, old)| stamp < *old) {
             return false;
         }
-        self.bulk.remove(slot).is_some()
+        self.slots.remove(name).is_some()
     }
 }

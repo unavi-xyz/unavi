@@ -12,11 +12,7 @@ use hsd::{
         name::NameAttr,
         slots,
     },
-    id::BlobId,
-    package::{
-        self,
-        Package,
-    },
+    package::Package,
     state::{
         SceneState,
         entry::Entry,
@@ -59,18 +55,10 @@ fn compile(input: &Path) -> anyhow::Result<Package> {
 fn realize(package: &Package) -> SceneState {
     let bytes = package.encode().expect("encode");
     let package = Package::decode(&bytes).expect("decode");
-    let (inline, bulk) = package::split(package);
 
     let mut state = SceneState::new();
-    for (key, value) in inline {
-        state.apply(&Entry::bytes(key, value, 1)).expect("apply");
-    }
-    for (key, value) in bulk {
-        let size = value.len() as u64;
-        let hash = BlobId(*blake3::hash(&value).as_bytes());
-        state
-            .apply(&Entry::blob(key, hash, size, 1))
-            .expect("apply bulk");
+    for (key, value) in package.entries {
+        state.apply(&Entry::new(key, value, 1)).expect("apply");
     }
     state
 }
@@ -112,16 +100,15 @@ fn a_texture_field_compiles_to_a_relationship() {
 }
 
 #[test]
-fn an_image_file_compiles_to_a_bulk_entry() {
+fn an_image_file_compiles_to_a_slot_entry() {
     let state = realize(&compile(&write_source("image", SOURCE)).expect("compile"));
 
-    let bulk = state
+    let bytes = state
         .get(prim_named(&state, "tex"))
-        .and_then(|prim| prim.bulk(slots::IMAGE_DATA))
-        .expect("image bulk");
+        .and_then(|prim| prim.slot(slots::IMAGE_DATA))
+        .expect("image slot");
 
-    assert_eq!(bulk.size, TEXTURE.len() as u64);
-    assert_eq!(bulk.hash, BlobId(*blake3::hash(TEXTURE).as_bytes()));
+    assert_eq!(bytes, TEXTURE);
 }
 
 /// Ids come from the source path and tree position, so an unchanged input

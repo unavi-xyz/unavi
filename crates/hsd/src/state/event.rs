@@ -3,7 +3,6 @@ use smol_str::SmolStr;
 use crate::{
     id::PrimId,
     property::Property,
-    state::entry::BulkRef,
 };
 
 /// Describes the *realized* scene only.
@@ -31,9 +30,9 @@ pub enum SceneEvent {
         name:  SmolStr,
         value: Option<Property>,
     },
-    Bulk {
+    Slot {
         prim:  PrimId,
-        slot:  SmolStr,
-        value: Option<BulkRef>,
+        name:  SmolStr,
+        value: Option<Vec<u8>>,
     },
 }

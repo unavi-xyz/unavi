@@ -17,13 +17,8 @@ use bevy_wds::{
     LocalBlobs,
     LocalDocs,
 };
-use blake3::Hash;
-use bytes::Bytes;
 use hsd::{
-    id::{
-        BlobId,
-        DocId,
-    },
+    id::DocId,
     key,
     state::{
         SceneState,
@@ -71,11 +66,6 @@ pub mod util;
 pub struct WiredSceneApi {
     pub docs:  SlotMap<DocRes>,
     pub prims: SlotMap<PrimRes>,
-}
-
-pub(super) async fn upload_blob(data: Vec<u8>) -> anyhow::Result<Hash> {
-    let actor = bevy_wds::local_actor().ok_or_else(|| anyhow::anyhow!("no local actor"))?;
-    actor.upload_blob(Bytes::from(data)).await
 }
 
 fn doc_id(bytes: &[u8]) -> anyhow::Result<DocId> {
@@ -160,10 +150,7 @@ async fn save_namespace(ns: NamespaceId, state: Arc<Mutex<SceneState>>) -> anyho
                     let author = wds::entries::author(&docs).await?;
 
                     let mut base = std::collections::BTreeMap::new();
-                    for entry in
-                        wds::entries::list(&doc, &[key::META, key::PRIM_PREFIX, key::BULK_PREFIX])
-                            .await?
-                    {
+                    for entry in wds::entries::list(&doc, &[key::META, key::PRIM_PREFIX]).await? {
                         if let Some(entry) = hsd_document::to_entry(&blobs, &entry).await {
                             base.insert(entry.key, entry.value);
                         }
@@ -419,19 +406,13 @@ pub async fn create_document(api: &Api) -> Result<u32, ScriptError> {
     mint_document(api, SceneState::new()).await
 }
 
-/// Unpacks a prefab blob into a document with a namespace of its own.
+/// Unpacks a prefab into a document with a namespace of its own.
 ///
-/// The same blob set on a prim's `prefab` slot instances *under* that prim and
+/// The same bytes set on a prim's `prefab` slot instance *under* that prim and
 /// stays local forever. Content that is meant to be grabbed, published and
 /// owned needs a namespace, which is to say a document.
 pub async fn create_document_from_prefab(api: &Api, prefab: Vec<u8>) -> Result<u32, ScriptError> {
-    let prefab = <[u8; 32]>::try_from(prefab.as_slice())
-        .map(BlobId)
-        .map_err(|_| ScriptError::other("invalid prefab id".to_owned()))?;
-
-    let state = unpack_prefab(prefab)
-        .await
-        .map_err(|err| ScriptError::other(err.to_string()))?;
+    let state = unpack_prefab(&prefab).map_err(|err| ScriptError::other(err.to_string()))?;
 
     mint_document(api, state).await
 }
@@ -456,24 +437,6 @@ async fn mint_document(api: &Api, state: SceneState) -> Result<u32, ScriptError>
     )?)
 }
 
-async fn unpack_prefab(prefab: BlobId) -> anyhow::Result<SceneState> {
-    let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
-        .push(move |world: &mut World| {
-            let Some(blobs) = world
-                .query::<&LocalBlobs>()
-                .single(world)
-                .ok()
-                .map(|b| b.0.clone())
-            else {
-                return;
-            };
-            spawn_async_task(async move {
-                tx.try_send(bevy_hsd::load::unpack_prefab(&blobs, prefab).await)
-                    .ok();
-            });
-        })
-        .send()
-        .await?;
-    rx.recv().await?
+fn unpack_prefab(bytes: &[u8]) -> anyhow::Result<SceneState> {
+    bevy_hsd::load::unpack_prefab(bytes)
 }

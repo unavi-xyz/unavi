@@ -1,9 +1,8 @@
 //! `.hsdz`: a compiled document as one self-contained blob.
 //!
-//! Bulk is inlined rather than referenced by hash. A package holding only
-//! hashes would be unresolvable across the network, since those blobs are not
-//! entries of the document that carries the package and so are never pinned by
-//! a replicating host nor fetched by a syncing peer.
+//! Every entry's value is its raw bytes; there is no bloom as a separate
+//! store to reconcile and no published set to preserve during replication. A
+//! package holds only what a document's entries hold.
 
 use std::collections::BTreeMap;
 
@@ -13,10 +12,7 @@ use serde::{
 };
 use thiserror::Error;
 
-use crate::{
-    meta::VERSION,
-    state::entry::EntryValue,
-};
+use crate::meta::VERSION;
 
 pub const MAGIC: &[u8; 4] = b"HSDZ";
 pub const EXTENSION: &str = "hsdz";
@@ -64,25 +60,6 @@ impl Package {
     }
 }
 
-/// Splits a package's entries into inline values and bulk payloads.
-///
-/// Unpacking is `add_bytes` each bulk payload into the blob store, then apply
-/// every entry — the same shape as loading a live document, with the fetch
-/// already done.
-#[must_use]
-pub fn split(package: Package) -> (Vec<(String, Vec<u8>)>, Vec<(String, Vec<u8>)>) {
-    package
-        .entries
-        .into_iter()
-        .partition(|(key, _)| !key.starts_with(crate::key::BULK_PREFIX))
-}
-
-/// The value an inline entry contributes when applied.
-#[must_use]
-pub const fn inline_value(bytes: Vec<u8>) -> EntryValue {
-    EntryValue::Bytes(bytes)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -90,7 +67,7 @@ mod tests {
     fn package() -> Package {
         let mut entries = BTreeMap::new();
         entries.insert("p/A/xform/".to_owned(), vec![0, 1, 2]);
-        entries.insert("b/A/mesh:POSITION/".to_owned(), vec![9; 64]);
+        entries.insert("p/A/mesh:POSITION/".to_owned(), vec![9; 64]);
         entries.insert("meta/".to_owned(), vec![1, 0]);
         Package::new(entries)
     }
@@ -133,13 +110,5 @@ mod tests {
         package.version = VERSION + 1;
         let bytes = package.encode().expect("encode");
         assert!(Package::decode(&bytes).is_err());
-    }
-
-    #[test]
-    fn split_separates_bulk() {
-        let (inline, bulk) = split(package());
-        assert_eq!(inline.len(), 2);
-        assert_eq!(bulk.len(), 1);
-        assert!(bulk[0].0.starts_with("b/"));
     }
 }

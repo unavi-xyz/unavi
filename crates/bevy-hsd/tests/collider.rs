@@ -98,7 +98,7 @@ fn test_collider_invalid_cuboid(mut ctx: TestContext) {
 /// order, so the collider must build once both halves are present.
 #[traced_test]
 #[rstest]
-fn test_collider_trimesh_blob(#[from(ctx_wds)] mut ctx: TestContext) {
+fn test_collider_trimesh(#[from(ctx)] mut ctx: TestContext) {
     const VERTS: [[f32; 3]; 4] = [
         [0.0, 0.0, 0.0],
         [1.0, 0.0, 0.0],
@@ -107,13 +107,13 @@ fn test_collider_trimesh_blob(#[from(ctx_wds)] mut ctx: TestContext) {
     ];
     const IDXS: [[u32; 3]; 4] = [[0, 1, 2], [0, 1, 3], [0, 2, 3], [1, 2, 3]];
 
-    let vertex_hash = ctx.upload_blob(cast_slice::<[f32; 3], u8>(&VERTS).to_vec());
-    let index_hash = ctx.upload_blob(cast_slice::<[u32; 3], u8>(&IDXS).to_vec());
+    let vertices = cast_slice::<[f32; 3], u8>(&VERTS).to_vec();
+    let indices = cast_slice::<[u32; 3], u8>(&IDXS).to_vec();
 
     let root = ctx.create_prim();
-    ctx.set_bulk(root, slots::COLLIDER_VERTICES, vertex_hash, 48);
+    ctx.set_slot(root, slots::COLLIDER_VERTICES, vertices);
     ctx.set_attr(root, &ColliderAttr::Trimesh);
-    ctx.set_bulk(root, slots::COLLIDER_INDICES, index_hash, 48);
+    ctx.set_slot(root, slots::COLLIDER_INDICES, indices);
 
     ctx.tick_until(|world| world.query::<&Collider>().iter(world).next().is_some());
 }

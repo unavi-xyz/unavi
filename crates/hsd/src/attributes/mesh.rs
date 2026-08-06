@@ -15,7 +15,7 @@ pub enum Topology {
     TriangleStrip,
 }
 
-/// Vertex buffers are not named here. Each is its own `mesh:<NAME>` bulk entry,
+/// Vertex buffers are not named here. Each is its own `mesh:<NAME>` slot,
 /// so nothing in the payload has to be kept consistent with the blob store.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MeshAttr {

@@ -5,10 +5,7 @@ use bevy::{
     prelude::*,
 };
 use hsd::{
-    id::{
-        BlobId,
-        PrimId,
-    },
+    id::PrimId,
     property::Property,
     state::event::SceneEvent,
 };
@@ -16,11 +13,11 @@ use smol_str::SmolStr;
 
 use crate::{
     Hsd,
-    HsdBulk,
     HsdChild,
     HsdCommitGate,
     HsdPrimIndex,
     HsdRelationships,
+    HsdSlots,
     Prim,
     attributes::PARSERS,
     loaded::HsdSnapshotDrained,
@@ -48,8 +45,8 @@ pub fn resync_on_spawn(trigger: On<Add, Hsd>, docs: Query<&Hsd>, mut commands: C
 /// is touched.
 #[derive(Default)]
 struct Staged {
-    rels: HashMap<Entity, BTreeMap<SmolStr, PrimId>>,
-    bulk: HashMap<Entity, BTreeMap<SmolStr, BlobId>>,
+    rels:  HashMap<Entity, BTreeMap<SmolStr, PrimId>>,
+    slots: HashMap<Entity, BTreeMap<SmolStr, Vec<u8>>>,
 }
 
 impl Staged {
@@ -63,14 +60,14 @@ impl Staged {
             .or_insert_with(|| live.get(prim_ent).map(|r| r.0.clone()).unwrap_or_default())
     }
 
-    fn bulk<'a>(
+    fn slots<'a>(
         &'a mut self,
         prim_ent: Entity,
-        live: &Query<&HsdBulk>,
-    ) -> &'a mut BTreeMap<SmolStr, BlobId> {
-        self.bulk
+        live: &Query<&HsdSlots>,
+    ) -> &'a mut BTreeMap<SmolStr, Vec<u8>> {
+        self.slots
             .entry(prim_ent)
-            .or_insert_with(|| live.get(prim_ent).map(|b| b.0.clone()).unwrap_or_default())
+            .or_insert_with(|| live.get(prim_ent).map(|s| s.0.clone()).unwrap_or_default())
     }
 }
 
@@ -78,7 +75,7 @@ pub fn drain_scene_events(
     docs: Query<(Entity, &Hsd, Option<&HsdCommitGate>)>,
     mut indices: Query<&mut HsdPrimIndex>,
     rels_now: Query<&HsdRelationships>,
-    bulk_now: Query<&HsdBulk>,
+    slots_now: Query<&HsdSlots>,
     drained: Query<(), With<HsdSnapshotDrained>>,
     mut commands: Commands,
 ) {
@@ -109,25 +106,24 @@ pub fn drain_scene_events(
                 &mut index,
                 &mut staged,
                 &rels_now,
-                &bulk_now,
+                &slots_now,
                 &mut commands,
             );
         }
 
         // Writing an identical map would still trip `Changed`, and the mesh
-        // and collider rebuilds it drives tear down and respawn their blob
-        // loaders.
+        // and collider rebuilds it drives would rebuild anyway.
         for (prim_ent, rels) in staged.rels {
             if rels_now.get(prim_ent).is_ok_and(|live| live.0 == rels) {
                 continue;
             }
             commands.entity(prim_ent).insert(HsdRelationships(rels));
         }
-        for (prim_ent, slots) in staged.bulk {
-            if bulk_now.get(prim_ent).is_ok_and(|live| live.0 == slots) {
+        for (prim_ent, slots) in staged.slots {
+            if slots_now.get(prim_ent).is_ok_and(|live| live.0 == slots) {
                 continue;
             }
-            commands.entity(prim_ent).insert(HsdBulk(slots));
+            commands.entity(prim_ent).insert(HsdSlots(slots));
         }
 
         if !drained.contains(doc_ent) {
@@ -142,7 +138,7 @@ fn process_event(
     index: &mut HsdPrimIndex,
     staged: &mut Staged,
     rels_now: &Query<&HsdRelationships>,
-    bulk_now: &Query<&HsdBulk>,
+    slots_now: &Query<&HsdSlots>,
     commands: &mut Commands,
 ) {
     match event {
@@ -165,7 +161,7 @@ fn process_event(
                 return;
             };
             staged.rels.remove(&prim_ent);
-            staged.bulk.remove(&prim_ent);
+            staged.slots.remove(&prim_ent);
             commands.entity(prim_ent).despawn();
         }
         SceneEvent::Property { prim, name, value } => {
@@ -175,18 +171,18 @@ fn process_event(
             };
             apply_property(commands, staged, rels_now, prim_ent, &name, value);
         }
-        SceneEvent::Bulk { prim, slot, value } => {
+        SceneEvent::Slot { prim, name, value } => {
             let Some(&prim_ent) = index.0.get(&prim) else {
-                warn!(%prim, "prim not found for slot {slot}");
+                warn!(%prim, "prim not found for slot {name}");
                 return;
             };
-            let slots = staged.bulk(prim_ent, bulk_now);
+            let slots = staged.slots(prim_ent, slots_now);
             match value {
                 Some(value) => {
-                    slots.insert(slot, value.hash);
+                    slots.insert(name, value);
                 }
                 None => {
-                    slots.remove(&slot);
+                    slots.remove(&name);
                 }
             }
         }

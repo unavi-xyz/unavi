@@ -14,7 +14,6 @@ use crate::id::PrimId;
 
 pub const META: &str = "meta/";
 pub const PRIM_PREFIX: &str = "p/";
-pub const BULK_PREFIX: &str = "b/";
 pub const PARENT: &str = "parent";
 
 #[must_use]
@@ -23,18 +22,8 @@ pub fn prim_prefix(prim: PrimId) -> String {
 }
 
 #[must_use]
-pub fn bulk_prefix(prim: PrimId) -> String {
-    format!("{BULK_PREFIX}{prim}/")
-}
-
-#[must_use]
 pub fn prop(prim: PrimId, name: &str) -> String {
     format!("{PRIM_PREFIX}{prim}/{name}/")
-}
-
-#[must_use]
-pub fn bulk(prim: PrimId, slot: &str) -> String {
-    format!("{BULK_PREFIX}{prim}/{slot}/")
 }
 
 #[must_use]
@@ -46,7 +35,6 @@ pub fn parent(prim: PrimId) -> String {
 pub enum Key {
     Meta,
     Prop { prim: PrimId, name: SmolStr },
-    Bulk { prim: PrimId, slot: SmolStr },
 }
 
 /// Parses a document key, returning `None` for anything this format does not
@@ -58,12 +46,7 @@ pub fn parse(key: &str) -> Option<Key> {
         return Some(Key::Meta);
     }
 
-    let (prefix, rest) = if let Some(rest) = key.strip_prefix(PRIM_PREFIX) {
-        (PRIM_PREFIX, rest)
-    } else {
-        (BULK_PREFIX, key.strip_prefix(BULK_PREFIX)?)
-    };
-
+    let rest = key.strip_prefix(PRIM_PREFIX)?;
     let rest = rest.strip_suffix('/')?;
     let (prim, name) = rest.split_once('/')?;
     let prim = prim.parse::<PrimId>().ok()?;
@@ -71,16 +54,9 @@ pub fn parse(key: &str) -> Option<Key> {
         return None;
     }
 
-    Some(if prefix == PRIM_PREFIX {
-        Key::Prop {
-            prim,
-            name: SmolStr::new(name),
-        }
-    } else {
-        Key::Bulk {
-            prim,
-            slot: SmolStr::new(name),
-        }
+    Some(Key::Prop {
+        prim,
+        name: SmolStr::new(name),
     })
 }
 
@@ -112,13 +88,13 @@ mod tests {
     }
 
     #[test]
-    fn round_trips_bulk() {
-        let key = bulk(id(), "mesh:POSITION");
+    fn round_trips_a_slot_property() {
+        let key = prop(id(), "mesh:POSITION");
         assert_eq!(
             parse(&key),
-            Some(Key::Bulk {
+            Some(Key::Prop {
                 prim: id(),
-                slot: SmolStr::new("mesh:POSITION"),
+                name: SmolStr::new("mesh:POSITION"),
             })
         );
     }
@@ -131,7 +107,6 @@ mod tests {
     #[test]
     fn bare_prim_prefix_is_not_a_key() {
         assert_eq!(parse(&prim_prefix(id())), None);
-        assert_eq!(parse(&bulk_prefix(id())), None);
     }
 
     #[test]
@@ -142,13 +117,6 @@ mod tests {
     #[test]
     fn nested_slot_spelling_is_rejected() {
         assert_eq!(parse(&format!("p/{}/mesh/POSITION/", id())), None);
-    }
-
-    #[test]
-    fn slot_names_do_not_prefix_siblings() {
-        let index = bulk(id(), "mesh:index");
-        let indices = bulk(id(), "mesh:indices");
-        assert!(!indices.starts_with(&index));
     }
 
     #[test]

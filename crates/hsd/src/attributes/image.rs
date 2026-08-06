@@ -5,7 +5,7 @@ use serde::{
 
 use crate::attributes::Attribute;
 
-/// Sampler settings only; the encoded image is the `image:data` bulk entry.
+/// Sampler settings only; the encoded image is the `image:data` slot.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ImageAttr {
     pub address_mode_u: Option<i64>,

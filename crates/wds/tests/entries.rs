@@ -140,14 +140,14 @@ async fn test_sweep_then_tombstone_leaves_the_tombstone(#[future] ctx: DataStore
     assert!(entries::list(&doc, &["p/"]).await.expect("list").is_empty());
 }
 
-/// Bulk entries carry a hash the caller already holds, so the same bytes
+/// Hash entries reference a blob the caller already holds, so the same bytes
 /// referenced by many prims deduplicate in the blob store.
 #[rstest]
 #[timeout(Duration::from_secs(5))]
 #[awt]
 #[traced_test]
 #[tokio::test]
-async fn test_bulk_entries_share_one_blob(#[future] ctx: DataStoreCtx) {
+async fn test_hash_entries_share_one_blob(#[future] ctx: DataStoreCtx) {
     let doc = doc(&ctx).await;
     let blobs = ctx.store.blobs().blobs();
     let author = entries::author(ctx.store.docs()).await.expect("author");
@@ -160,7 +160,7 @@ async fn test_bulk_entries_share_one_blob(#[future] ctx: DataStoreCtx) {
         blobs,
         author,
         ["A", "B"].map(|prim| Write::Hash {
-            key:  format!("b/{prim}/mesh:POSITION/"),
+            key:  format!("h/{prim}/mesh:POSITION/"),
             hash: info.hash,
             size: payload.len() as u64,
         }),
@@ -168,7 +168,7 @@ async fn test_bulk_entries_share_one_blob(#[future] ctx: DataStoreCtx) {
     .await
     .expect("apply");
 
-    let listed = entries::list(&doc, &["b/"]).await.expect("list");
+    let listed = entries::list(&doc, &["h/"]).await.expect("list");
     assert_eq!(listed.len(), 2);
     assert!(listed.iter().all(|entry| entry.hash == info.hash));
     assert!(entries::list(&doc, &["p/"]).await.expect("list").is_empty());

@@ -112,7 +112,7 @@ pub struct HsdaMaterial {
     pub roughness:                  Option<f64>,
 }
 
-/// Path to a `.shader` file, compiled into the `material:graph_data` bulk
+/// Path to a `.shader` file, compiled into the `material:graph_data` slot
 /// entry, plus optional per-instance overrides of the graph's public inputs.
 #[skip_serializing_none]
 #[derive(Serialize, Deserialize, Default)]

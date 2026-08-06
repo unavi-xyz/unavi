@@ -285,9 +285,10 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         Ok(())
     }
 
-    /// Compiles a `.shader` file to slot content and, if the prim specifies
-    /// overrides, an attribute alongside it. The graph itself never appears
-    /// in the attribute payload — see `hsd::attributes::material_graph`.
+    /// Compiles a `.hss` (Hyper-Space Shader) file to slot content and, if
+    /// the prim specifies overrides, an attribute alongside it. The graph
+    /// itself never appears in the attribute payload — see
+    /// `hsd::attributes::material_graph`.
     fn emit_material_graph(&mut self, id: PrimId, graph: &HsdaMaterialGraph) -> Result<()> {
         let path = self.input_dir.join(&graph.path);
         let src = std::fs::read_to_string(&path)

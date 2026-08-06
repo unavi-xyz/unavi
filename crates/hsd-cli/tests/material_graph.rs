@@ -107,7 +107,7 @@ fn overrides_compile_to_the_overrides_attribute() {
 }
 
 /// The dedup story this format depends on: two prims authored against the
-/// same `.shader` file, one with overrides and one without, still compile
+/// same `.hss` file, one with overrides and one without, still compile
 /// to byte-identical `material:graph_data` entries — overrides live in the
 /// separate, small attribute, never in the slot graph bytes.
 #[test]
@@ -128,7 +128,7 @@ fn two_prims_sharing_a_graph_get_byte_identical_slot_entries() {
 
     assert_eq!(
         a, b,
-        "identical .shader source must compile byte-identically"
+        "identical .hss source must compile byte-identically"
     );
 }
 
@@ -149,15 +149,15 @@ fn compilation_is_reproducible() {
 fn write_source(case: &str, shader: &str) -> PathBuf {
     let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join(case);
     std::fs::create_dir_all(&dir).expect("create case dir");
-    std::fs::write(dir.join("glow.shader"), shader).expect("write shader");
-    let hsda = r#"[(attributes: (name: "p", material_graph: (path: "./glow.shader")))]"#;
+    std::fs::write(dir.join("glow.hss"), shader).expect("write shader");
+    let hsda = r#"[(attributes: (name: "p", material_graph: (path: "./glow.hss")))]"#;
     let input = dir.join("asset.hsda");
     std::fs::write(&input, hsda).expect("write source");
     input
 }
 
 /// A node referencing a later index cannot be constructed by the format
-/// itself, but a hand-written `.shader` file can still spell it out — the
+/// itself, but a hand-written `.hss` file can still spell it out — the
 /// build must reject it rather than silently compiling an invalid graph.
 #[test]
 fn a_forward_reference_fails_the_build() {
@@ -193,12 +193,12 @@ fn a_mistyped_override_fails_the_build() {
     let dir = Path::new(env!("CARGO_TARGET_TMPDIR")).join("mistyped_override");
     std::fs::create_dir_all(&dir).expect("create case dir");
     std::fs::write(
-        dir.join("glow.shader"),
+        dir.join("glow.hss"),
         r"(public_inputs: [Float(1.0)], surface: (nodes: [], output: Lit((alpha: Input(0)))))",
     )
     .expect("write shader");
     let hsda = r#"[(attributes: (name: "p", material_graph: (
-        path: "./glow.shader",
+        path: "./glow.hss",
         overrides: {0: Vec3((0.0, 0.0, 0.0))},
     )))]"#;
     let input = dir.join("asset.hsda");

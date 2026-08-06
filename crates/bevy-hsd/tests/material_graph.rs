@@ -14,7 +14,6 @@ use hsd::attributes::{
         GraphOverridesAttr,
         GraphValue,
         Node,
-        NodeKind,
         Port,
         ShaderGraph,
         SurfaceGraph,
@@ -38,17 +37,13 @@ fn glow_graph() -> ShaderGraph {
         public_inputs: vec![GraphValue::Color([0.1, 0.6, 1.0, 1.0])],
         surface:       SurfaceGraph {
             nodes:  vec![
-                Node {
-                    kind: NodeKind::Fresnel {
-                        power: Port::Const(GraphValue::Float(2.0)),
-                    },
+                Node::Fresnel {
+                    power: Port::Const(GraphValue::Float(2.0)),
                 },
-                Node {
-                    kind: NodeKind::Lerp {
-                        a: Port::Const(GraphValue::Color([0.0, 0.0, 0.0, 1.0])),
-                        b: Port::Input(0),
-                        t: Port::Node(0),
-                    },
+                Node::Lerp {
+                    a: Port::Const(GraphValue::Color([0.0, 0.0, 0.0, 1.0])),
+                    b: Port::Input(0),
+                    t: Port::Node(0),
                 },
             ],
             output: SurfaceOutput::Unlit(UnlitOutput {
@@ -207,14 +202,7 @@ fn test_shader_graph_with_displacement_compiles_a_vertex_shader(
             }),
         },
         displacement:  Some(DisplacementGraph {
-            nodes:           vec![
-                Node {
-                    kind: NodeKind::LocalNormal,
-                },
-                Node {
-                    kind: NodeKind::Time,
-                },
-            ],
+            nodes:           vec![Node::LocalNormal, Node::Time],
             position_offset: Some(Port::Node(0)),
             normal_override: None,
         }),

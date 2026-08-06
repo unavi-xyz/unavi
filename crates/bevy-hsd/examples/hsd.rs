@@ -31,7 +31,6 @@ use hsd::{
             GraphValue,
             LitOutput,
             Node,
-            NodeKind,
             Port,
             ShaderGraph,
             SurfaceGraph,
@@ -228,17 +227,13 @@ fn glow_graph() -> ShaderGraph {
         public_inputs: vec![GraphValue::Color([0.2, 0.8, 1.0, 1.0])],
         surface:       SurfaceGraph {
             nodes:  vec![
-                Node {
-                    kind: NodeKind::Fresnel {
-                        power: Port::Const(GraphValue::Float(2.5)),
-                    },
+                Node::Fresnel {
+                    power: Port::Const(GraphValue::Float(2.5)),
                 },
-                Node {
-                    kind: NodeKind::Lerp {
-                        a: Port::Const(GraphValue::Color([0.02, 0.02, 0.05, 1.0])),
-                        b: Port::Input(0),
-                        t: Port::Node(0),
-                    },
+                Node::Lerp {
+                    a: Port::Const(GraphValue::Color([0.02, 0.02, 0.05, 1.0])),
+                    b: Port::Input(0),
+                    t: Port::Node(0),
                 },
             ],
             output: SurfaceOutput::Unlit(UnlitOutput {
@@ -266,29 +261,19 @@ fn pulse_graph() -> ShaderGraph {
         },
         displacement:  Some(DisplacementGraph {
             nodes:           vec![
-                Node {
-                    kind: NodeKind::Time,
-                },
-                Node {
-                    kind: NodeKind::Sin { x: Port::Node(0) },
-                },
+                Node::Time,
+                Node::Sin { x: Port::Node(0) },
                 // `Mul` needs matching kinds, so scale the scalar first, then
                 // drive `Lerp`'s `t` with it: `mix(0, normal, sin*0.15)`.
-                Node {
-                    kind: NodeKind::Mul {
-                        a: Port::Node(1),
-                        b: Port::Const(GraphValue::Float(0.15)),
-                    },
+                Node::Mul {
+                    a: Port::Node(1),
+                    b: Port::Const(GraphValue::Float(0.15)),
                 },
-                Node {
-                    kind: NodeKind::LocalNormal,
-                },
-                Node {
-                    kind: NodeKind::Lerp {
-                        a: Port::Const(GraphValue::Vec3([0.0, 0.0, 0.0])),
-                        b: Port::Node(3),
-                        t: Port::Node(2),
-                    },
+                Node::LocalNormal,
+                Node::Lerp {
+                    a: Port::Const(GraphValue::Vec3([0.0, 0.0, 0.0])),
+                    b: Port::Node(3),
+                    t: Port::Node(2),
                 },
             ],
             position_offset: Some(Port::Node(4)),

@@ -12,7 +12,7 @@ use std::fmt::Write;
 
 use hsd::attributes::material_graph::{
     DisplacementGraph,
-    NodeKind,
+    Node,
     Port,
     ShaderGraph,
     SurfaceOutput,
@@ -63,55 +63,52 @@ fn port_expr(public_inputs: &[hsd::attributes::material_graph::GraphValue], port
     }
 }
 
-fn node_expr(
-    public_inputs: &[hsd::attributes::material_graph::GraphValue],
-    kind: &NodeKind,
-) -> String {
-    match *kind {
-        NodeKind::Uv => "in.uv".to_owned(),
-        NodeKind::WorldNormal => "pbr_input.world_normal".to_owned(),
-        NodeKind::WorldPosition => "in.world_position.xyz".to_owned(),
-        NodeKind::VertexColor => "in.color".to_owned(),
-        NodeKind::LocalPosition => "vertex.position".to_owned(),
-        NodeKind::LocalNormal => "vertex.normal".to_owned(),
-        NodeKind::Time => "params.time".to_owned(),
-        NodeKind::Add { a, b } => format!(
+fn node_expr(public_inputs: &[hsd::attributes::material_graph::GraphValue], node: &Node) -> String {
+    match *node {
+        Node::Uv => "in.uv".to_owned(),
+        Node::WorldNormal => "pbr_input.world_normal".to_owned(),
+        Node::WorldPosition => "in.world_position.xyz".to_owned(),
+        Node::VertexColor => "in.color".to_owned(),
+        Node::LocalPosition => "vertex.position".to_owned(),
+        Node::LocalNormal => "vertex.normal".to_owned(),
+        Node::Time => "params.time".to_owned(),
+        Node::Add { a, b } => format!(
             "({} + {})",
             port_expr(public_inputs, a),
             port_expr(public_inputs, b)
         ),
-        NodeKind::Mul { a, b } => format!(
+        Node::Mul { a, b } => format!(
             "({} * {})",
             port_expr(public_inputs, a),
             port_expr(public_inputs, b)
         ),
-        NodeKind::Lerp { a, b, t } => format!(
+        Node::Lerp { a, b, t } => format!(
             "mix({}, {}, {})",
             port_expr(public_inputs, a),
             port_expr(public_inputs, b),
             port_expr(public_inputs, t)
         ),
-        NodeKind::Dot { a, b } => format!(
+        Node::Dot { a, b } => format!(
             "dot({}, {})",
             port_expr(public_inputs, a),
             port_expr(public_inputs, b)
         ),
-        NodeKind::Sin { x } => format!("sin({})", port_expr(public_inputs, x)),
-        NodeKind::Cos { x } => format!("cos({})", port_expr(public_inputs, x)),
+        Node::Sin { x } => format!("sin({})", port_expr(public_inputs, x)),
+        Node::Cos { x } => format!("cos({})", port_expr(public_inputs, x)),
         // `N`/`V` are plain locals declared by both fragment templates
         // (`generate_fragment_shader`), not `pbr_input.N`/`.V` — `Unlit`
         // never constructs a `PbrInput` at all, so Fresnel needs a normal/
         // view pair that exists independent of the PBR lighting path.
-        NodeKind::Fresnel { power } => format!(
+        Node::Fresnel { power } => format!(
             "pow(clamp(1.0 - dot(N, V), 0.0, 1.0), {})",
             port_expr(public_inputs, power)
         ),
-        NodeKind::Noise { uv } => format!("graph_noise({})", port_expr(public_inputs, uv)),
-        NodeKind::TextureSample { uv, slot } => format!(
+        Node::Noise { uv } => format!("graph_noise({})", port_expr(public_inputs, uv)),
+        Node::TextureSample { uv, slot } => format!(
             "textureSample(tex_{slot}, samp_{slot}, {})",
             port_expr(public_inputs, uv)
         ),
-        NodeKind::Select { cond, a, b } => format!(
+        Node::Select { cond, a, b } => format!(
             "select({}, {}, {} > 0.5)",
             port_expr(public_inputs, b),
             port_expr(public_inputs, a),
@@ -123,12 +120,12 @@ fn node_expr(
 fn emit_nodes(
     out: &mut String,
     public_inputs: &[hsd::attributes::material_graph::GraphValue],
-    nodes: &[hsd::attributes::material_graph::Node],
+    nodes: &[Node],
     kinds: &[ValueKind],
 ) {
     for (index, node) in nodes.iter().enumerate() {
         let ty = wgsl_type(kinds[index]);
-        let expr = node_expr(public_inputs, &node.kind);
+        let expr = node_expr(public_inputs, node);
         let _ = writeln!(out, "    let n{index}: {ty} = {expr};");
     }
 }
@@ -247,7 +244,7 @@ pub fn generate_displacement_body(
 }
 
 /// Value-noise helpers the generated body calls into; defined once per
-/// shader rather than inlined per [`NodeKind::Noise`] node.
+/// shader rather than inlined per [`Node::Noise`] node.
 const NOISE_FUNCTIONS: &str = "\
 fn graph_hash(p: vec2<f32>) -> f32 {
     return fract(sin(dot(p, vec2<f32>(127.1, 311.7))) * 43758.5453123);
@@ -485,10 +482,6 @@ mod tests {
         out
     }
 
-    fn leaf(kind: NodeKind) -> Node {
-        Node { kind }
-    }
-
     #[test]
     fn empty_unlit_graph_generates_valid_wgsl() {
         let graph = ShaderGraph::default();
@@ -501,7 +494,7 @@ mod tests {
     fn lit_output_with_every_terminal_generates_valid_wgsl() {
         let graph = ShaderGraph {
             surface: SurfaceGraph {
-                nodes:  vec![leaf(NodeKind::Uv), leaf(NodeKind::WorldNormal)],
+                nodes:  vec![Node::Uv, Node::WorldNormal],
                 output: hsd::attributes::material_graph::SurfaceOutput::Lit(LitOutput {
                     base_color:           Some(Port::Const(GraphValue::Color([1.0; 4]))),
                     emissive:             Some(Port::Node(1)),
@@ -526,43 +519,43 @@ mod tests {
             public_inputs: vec![GraphValue::Color([1.0, 0.0, 0.0, 1.0])],
             surface: SurfaceGraph {
                 nodes:  vec![
-                    leaf(NodeKind::Uv),
-                    leaf(NodeKind::WorldNormal),
-                    leaf(NodeKind::WorldPosition),
-                    leaf(NodeKind::VertexColor),
-                    leaf(NodeKind::Time),
-                    leaf(NodeKind::Add {
+                    Node::Uv,
+                    Node::WorldNormal,
+                    Node::WorldPosition,
+                    Node::VertexColor,
+                    Node::Time,
+                    Node::Add {
                         a: Port::Const(GraphValue::Float(1.0)),
                         b: Port::Node(4),
-                    }),
-                    leaf(NodeKind::Mul {
+                    },
+                    Node::Mul {
                         a: Port::Const(GraphValue::Float(2.0)),
                         b: Port::Node(4),
-                    }),
-                    leaf(NodeKind::Lerp {
+                    },
+                    Node::Lerp {
                         a: Port::Const(GraphValue::Float(0.0)),
                         b: Port::Const(GraphValue::Float(1.0)),
                         t: Port::Node(4),
-                    }),
-                    leaf(NodeKind::Dot {
+                    },
+                    Node::Dot {
                         a: Port::Node(1),
                         b: Port::Node(1),
-                    }),
-                    leaf(NodeKind::Sin { x: Port::Node(4) }),
-                    leaf(NodeKind::Cos { x: Port::Node(4) }),
-                    leaf(NodeKind::Fresnel {
+                    },
+                    Node::Sin { x: Port::Node(4) },
+                    Node::Cos { x: Port::Node(4) },
+                    Node::Fresnel {
                         power: Port::Const(GraphValue::Float(2.0)),
-                    }),
-                    leaf(NodeKind::Noise { uv: Port::Node(0) }),
-                    leaf(NodeKind::TextureSample {
+                    },
+                    Node::Noise { uv: Port::Node(0) },
+                    Node::TextureSample {
                         uv:   Port::Node(0),
                         slot: 3,
-                    }),
-                    leaf(NodeKind::Select {
+                    },
+                    Node::Select {
                         cond: Port::Node(4),
                         a:    Port::Input(0),
                         b:    Port::Input(0),
-                    }),
+                    },
                 ],
                 output: hsd::attributes::material_graph::SurfaceOutput::Unlit(UnlitOutput {
                     color:                Port::Node(14),
@@ -642,7 +635,7 @@ mod tests {
     #[test]
     fn displacement_body_generates_valid_wgsl() {
         let displacement = DisplacementGraph {
-            nodes:           vec![leaf(NodeKind::LocalNormal), leaf(NodeKind::Time)],
+            nodes:           vec![Node::LocalNormal, Node::Time],
             position_offset: Some(Port::Node(0)),
             normal_override: None,
         };
@@ -660,20 +653,20 @@ mod tests {
     fn a_sin_driven_displacement_body_generates_valid_wgsl() {
         let displacement = DisplacementGraph {
             nodes:           vec![
-                leaf(NodeKind::Time),
-                leaf(NodeKind::Sin { x: Port::Node(0) }),
+                Node::Time,
+                Node::Sin { x: Port::Node(0) },
                 // `Mul` needs matching kinds (no vector*scalar scaling), so
                 // scale the scalar first, then drive `Lerp`'s `t` with it.
-                leaf(NodeKind::Mul {
+                Node::Mul {
                     a: Port::Node(1),
                     b: Port::Const(GraphValue::Float(0.15)),
-                }),
-                leaf(NodeKind::LocalNormal),
-                leaf(NodeKind::Lerp {
+                },
+                Node::LocalNormal,
+                Node::Lerp {
                     a: Port::Const(GraphValue::Vec3([0.0, 0.0, 0.0])),
                     b: Port::Node(3),
                     t: Port::Node(2),
-                }),
+                },
             ],
             position_offset: Some(Port::Node(4)),
             normal_override: None,
@@ -690,7 +683,7 @@ mod tests {
     #[test]
     fn vertex_shader_splices_the_displacement_body() {
         let displacement = DisplacementGraph {
-            nodes:           vec![leaf(NodeKind::LocalPosition)],
+            nodes:           vec![Node::LocalPosition],
             position_offset: Some(Port::Node(0)),
             normal_override: None,
         };

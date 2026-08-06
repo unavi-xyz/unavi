@@ -80,7 +80,6 @@ impl Plugin for HsdPlugin {
                         .chain(),
                     (
                         attributes::material_graph::rebuild_material_graph,
-                        attributes::material_graph::advance_material_graph_time,
                         load::instance_hsd,
                         load::instance_prefabs,
                     )

@@ -19,15 +19,16 @@ use hsd::{
     attributes::{
         Attribute,
         material_graph::{
-            GraphValue,
-            Node as GraphNode,
+            MAX_PUBLIC_INPUTS,
+            MAX_TEXTURE_SAMPLES,
             ShaderGraph,
-            SurfaceOutput,
+            graph::SurfaceOutput,
             overrides::{
                 GraphOverridesAttr,
                 validate_overrides,
             },
             validate::validate,
+            value::GraphValue,
         },
         slots,
     },
@@ -137,7 +138,6 @@ pub fn rebuild_material_graph(
     overrides: Query<&ShaderGraphOverridesData>,
     doc_of: Query<&HsdChild>,
     texture_ctx: TextureCtx,
-    time: Res<Time>,
     mut cache: ResMut<ShaderGraphCache>,
     mut shaders: ResMut<Assets<Shader>>,
     mut materials: ResMut<Assets<ShaderGraphMaterial>>,
@@ -207,7 +207,7 @@ pub fn rebuild_material_graph(
             continue;
         };
 
-        let params = build_params(&graph, overrides_attr, time.elapsed_secs());
+        let params = build_params(&graph, overrides_attr);
         let textures = resolve_textures(prim, &texture_ctx);
 
         let material = ShaderGraphMaterial {
@@ -220,12 +220,6 @@ pub fn rebuild_material_graph(
             vertex_shader: cached.vertex.clone(),
             alpha_mode: alpha_mode(&graph.surface.output),
         };
-
-        if reads_time(&graph) {
-            commands.entity(prim).insert(AnimatedGraph);
-        } else {
-            commands.entity(prim).remove::<AnimatedGraph>();
-        }
 
         if let Ok(mut existing) = existing.get_mut(prim) {
             if let Some(mut asset) = materials.get_mut(&existing.0) {
@@ -251,15 +245,15 @@ pub struct TextureCtx<'w, 's> {
     images:        Query<'w, 's, &'static HsdImage>,
 }
 
-/// Resolves up to [`codegen::MAX_TEXTURE_SAMPLES`] fixed texture slots by
+/// Resolves up to [`MAX_TEXTURE_SAMPLES`] fixed texture slots by
 /// relationship, mirroring `MaterialTextureRefs` — no blob fetch of its own,
 /// since a referenced image prim's own `ImageParser`/`rebuild_image`
 /// pipeline already loads it; this just reads the resulting handle.
 fn resolve_textures(
     prim: Entity,
     ctx: &TextureCtx,
-) -> [Option<Handle<Image>>; codegen::MAX_TEXTURE_SAMPLES] {
-    let mut out: [Option<Handle<Image>>; codegen::MAX_TEXTURE_SAMPLES] = Default::default();
+) -> [Option<Handle<Image>>; MAX_TEXTURE_SAMPLES] {
+    let mut out: [Option<Handle<Image>>; MAX_TEXTURE_SAMPLES] = Default::default();
 
     let Ok(doc_child) = ctx.children.get(prim) else {
         return out;
@@ -293,17 +287,13 @@ const fn pack_input(value: GraphValue) -> Vec4 {
     }
 }
 
-fn build_params(
-    graph: &ShaderGraph,
-    overrides: Option<&GraphOverridesAttr>,
-    time: f32,
-) -> GraphParams {
-    let mut inputs = [Vec4::ZERO; codegen::MAX_PUBLIC_INPUTS];
+fn build_params(graph: &ShaderGraph, overrides: Option<&GraphOverridesAttr>) -> GraphParams {
+    let mut inputs = [Vec4::ZERO; MAX_PUBLIC_INPUTS];
     for (index, default) in graph
         .public_inputs
         .iter()
         .enumerate()
-        .take(codegen::MAX_PUBLIC_INPUTS)
+        .take(MAX_PUBLIC_INPUTS)
     {
         let value = overrides
             .and_then(|o| o.overrides.get(&(index as u16)))
@@ -312,7 +302,7 @@ fn build_params(
             .unwrap_or(*default);
         inputs[index] = pack_input(value);
     }
-    GraphParams { inputs, time }
+    GraphParams { inputs }
 }
 
 /// A graph's compiled shaders. Every prim referencing the same graph reuses
@@ -370,44 +360,9 @@ const fn alpha_mode(output: &SurfaceOutput) -> AlphaMode {
     }
 }
 
-/// Advances the graph's `time` public leaf every frame.
-///
-/// Only for graphs that actually read
-/// [`hsd::attributes::material_graph::Node::Time`]: `get_mut` flags the asset
-/// dirty and forces a GPU re-upload, so touching every shader-graph material
-/// each tick would re-upload uniforms that never change.
-pub fn advance_material_graph_time(
-    time: Res<Time>,
-    graphs: Query<&HsdShaderGraphMaterial, With<AnimatedGraph>>,
-    mut materials: ResMut<Assets<ShaderGraphMaterial>>,
-) {
-    let now = time.elapsed_secs();
-    for graph in &graphs {
-        if let Some(mut material) = materials.get_mut(&graph.0) {
-            material.params.time = now;
-        }
-    }
-}
-
-/// Marks a prim whose graph reads `Time`, and so needs a uniform refresh each
-/// frame.
-#[derive(Component)]
-pub struct AnimatedGraph;
-
-fn reads_time(graph: &ShaderGraph) -> bool {
-    let displacement = graph.displacement.as_ref().map(|d| d.nodes.as_slice());
-    graph
-        .surface
-        .nodes
-        .iter()
-        .chain(displacement.unwrap_or_default())
-        .any(|node| matches!(node, GraphNode::Time))
-}
-
 #[derive(Clone, Copy, ShaderType, Debug, Default, PartialEq)]
 pub struct GraphParams {
-    pub inputs: [Vec4; codegen::MAX_PUBLIC_INPUTS],
-    pub time:   f32,
+    pub inputs: [Vec4; MAX_PUBLIC_INPUTS],
 }
 
 /// Fixed-budget `AsBindGroup`.

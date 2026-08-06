@@ -1,0 +1,28 @@
+#import bevy_pbr::{
+    forward_io::{VertexOutput, FragmentOutput},
+    mesh_view_bindings::globals,
+    pbr_fragment::pbr_input_from_vertex_output,
+    pbr_functions::{apply_pbr_lighting, main_pass_post_lighting_processing, alpha_discard},
+}
+
+//#PREAMBLE
+@fragment
+fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> FragmentOutput {
+    var pbr_input = pbr_input_from_vertex_output(in, is_front, false);
+    let N = pbr_input.N;
+    let V = pbr_input.V;
+
+//#BODY
+    pbr_input.material.base_color = vec4<f32>(out_base_color.rgb, out_alpha);
+    pbr_input.material.emissive = vec4<f32>(out_emissive, 1.0);
+    pbr_input.material.metallic = out_metallic;
+    pbr_input.material.perceptual_roughness = out_roughness;
+    pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);
+    pbr_input.world_normal = out_normal;
+    pbr_input.N = normalize(out_normal);
+
+    var out: FragmentOutput;
+    out.color = apply_pbr_lighting(pbr_input);
+    out.color = main_pass_post_lighting_processing(pbr_input, out.color);
+    return out;
+}

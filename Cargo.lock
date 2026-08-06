@@ -941,7 +941,6 @@ dependencies = [
  "postcard",
  "rstest",
  "smol_str 0.3.6",
- "test-macros",
  "thiserror 2.0.19",
  "tracing",
  "tracing-test",
@@ -6743,6 +6742,7 @@ dependencies = [
  "postcard",
  "rand 0.9.5",
  "ron",
+ "rstest",
  "serde",
  "serde_with",
  "smol_str 0.3.6",
@@ -13095,15 +13095,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
 dependencies = [
  "winapi-util",
-]
-
-[[package]]
-name = "test-macros"
-version = "0.0.16"
-dependencies = [
- "proc-macro-crate 3.5.0",
- "quote",
- "syn 2.0.119",
 ]
 
 [[package]]

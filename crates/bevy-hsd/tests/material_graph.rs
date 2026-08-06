@@ -11,15 +11,19 @@ use bevy_hsd::attributes::material_graph::{
 };
 use hsd::attributes::{
     material_graph::{
-        DisplacementGraph,
-        GraphValue,
-        Node,
-        Port,
         ShaderGraph,
-        SurfaceGraph,
-        SurfaceOutput,
-        UnlitOutput,
+        graph::{
+            DisplacementGraph,
+            SurfaceGraph,
+            SurfaceOutput,
+            UnlitOutput,
+        },
+        node::{
+            Node,
+            Port,
+        },
         overrides::GraphOverridesAttr,
+        value::GraphValue,
     },
     slots,
 };

@@ -27,15 +27,19 @@ use hsd::{
             MaterialAttr,
         },
         material_graph::{
-            DisplacementGraph,
-            GraphValue,
-            LitOutput,
-            Node,
-            Port,
             ShaderGraph,
-            SurfaceGraph,
-            SurfaceOutput,
-            UnlitOutput,
+            graph::{
+                DisplacementGraph,
+                LitOutput,
+                SurfaceGraph,
+                SurfaceOutput,
+                UnlitOutput,
+            },
+            node::{
+                Node,
+                Port,
+            },
+            value::GraphValue,
         },
         mesh::{
             MeshAttr,
@@ -263,17 +267,14 @@ fn pulse_graph() -> ShaderGraph {
             nodes:           vec![
                 Node::Time,
                 Node::Sin { x: Port::Node(0) },
-                // `Mul` needs matching kinds, so scale the scalar first, then
-                // drive `Lerp`'s `t` with it: `mix(0, normal, sin*0.15)`.
-                Node::Mul {
-                    a: Port::Node(1),
-                    b: Port::Const(GraphValue::Float(0.15)),
-                },
                 Node::LocalNormal,
-                Node::Lerp {
-                    a: Port::Const(GraphValue::Vec3([0.0, 0.0, 0.0])),
-                    b: Port::Node(3),
-                    t: Port::Node(2),
+                Node::Mul {
+                    a: Port::Node(2),
+                    b: Port::Node(1),
+                },
+                Node::Mul {
+                    a: Port::Node(3),
+                    b: Port::Const(GraphValue::Float(0.15)),
                 },
             ],
             position_offset: Some(Port::Node(4)),

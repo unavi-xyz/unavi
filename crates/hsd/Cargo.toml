@@ -18,3 +18,6 @@ serde                = { features = ["derive"], workspace = true }
 serde_with.workspace = true
 smol_str.workspace   = true
 thiserror.workspace  = true
+
+[dev-dependencies]
+rstest.workspace = true

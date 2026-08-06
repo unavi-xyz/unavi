@@ -32,11 +32,11 @@ use hsd::{
             MaterialAttr,
         },
         material_graph::{
-            ShaderGraph,
             overrides::{
                 GraphOverridesAttr,
                 validate_overrides,
             },
+            parse::parse as parse_hss,
             validate::validate,
         },
         name::NameAttr,
@@ -297,12 +297,9 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
         let path = self.input_dir.join(&graph.path);
         let src = std::fs::read_to_string(&path)
             .with_context(|| format!("reading shader graph {}", path.display()))?;
-        let parsed: ShaderGraph = ron::Options::default()
-            .with_default_extension(ron::extensions::Extensions::IMPLICIT_SOME)
-            .from_str(&src)
-            .with_context(|| format!("parsing shader graph {}", path.display()))?;
+        let parsed =
+            parse_hss(&src).with_context(|| format!("parsing shader graph {}", path.display()))?;
         validate(&parsed).with_context(|| format!("validating shader graph {}", path.display()))?;
-
         let bytes = parsed.encode().context("encoding shader graph")?;
         self.set_slot(id, slots::MATERIAL_GRAPH_DATA, bytes);
 

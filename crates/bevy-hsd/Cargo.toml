@@ -34,7 +34,6 @@ bevy_panorbit_camera.workspace = true
 iroh-blobs.workspace           = true
 naga                           = { default-features = false, features = ["wgsl-in"], version = "29.0.4" }
 rstest.workspace               = true
-test-macros.path               = "../test-macros"
 tracing.workspace              = true
 tracing-test                   = { features = ["no-env-filter"], workspace = true }
 wds.path                       = "../wds"

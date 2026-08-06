@@ -1,6 +1,6 @@
 use xdid::{
     core::did::Did,
-    methods::key::p256::P256KeyPair,
+    methods::key::keys::p256::P256KeyPair,
 };
 
 /// User identity for WDS operations.

@@ -49,3 +49,6 @@ axum.workspace   = true
 rstest.workspace = true
 tokio            = { features = ["macros", "rt-multi-thread"], workspace = true }
 tracing-test     = { features = ["no-env-filter"], workspace = true }
+
+[dev-dependencies]
+serde_json = "1.0.151"

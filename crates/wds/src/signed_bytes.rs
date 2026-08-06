@@ -6,11 +6,13 @@ use serde::{
 };
 use xdid::{
     core::did::Did,
-    methods::key::Signer,
-    resolver::DidResolver,
+    methods::key::keys::Signer,
 };
 
-use crate::auth::jwk::verify_jwk_signature;
+use crate::{
+    auth::jwk::verify_jwk_signature,
+    resolve::resolve,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedBytes<T>
@@ -91,10 +93,7 @@ pub async fn verify_did_signature<T>(signed: &SignedBytes<T>, did: &Did) -> bool
 where
     T: Signable + Sync,
 {
-    let Ok(resolver) = DidResolver::new() else {
-        return false;
-    };
-    let Ok(doc) = resolver.resolve(did).await else {
+    let Some(doc) = resolve(did).await else {
         return false;
     };
     let Some(auth_methods) = &doc.authentication else {

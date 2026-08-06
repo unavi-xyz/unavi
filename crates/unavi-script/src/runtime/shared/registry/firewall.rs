@@ -85,7 +85,9 @@ pub fn deregister_firewalls(
     trigger: On<Remove, RegisteredFirewall>,
     ids: Query<&RegisteredFirewall>,
 ) {
-    let id = ids.get(trigger.entity).expect("id");
+    let Ok(id) = ids.get(trigger.entity) else {
+        return;
+    };
     FIREWALL_REGISTRY.write().remove(&id.0);
     unavi_quota::registry::forget_document(NamespaceId::from(&id.0.0));
 }
@@ -95,13 +97,13 @@ pub fn validate_firewall(me: &DocId, target: &DocId, channel: Channel) -> anyhow
         return Ok(());
     }
 
-    // Documents with no registered firewall (e.g. pinned space docs) fall back
-    // to the open default; same-space membership remains the gate.
+    // Documents with no registered firewall (pinned space docs) are open, with
+    // same-space membership as the gate instead.
     let firewall = FIREWALL_REGISTRY
         .read()
         .get(target)
         .cloned()
-        .unwrap_or_default();
+        .unwrap_or_else(Firewall::open);
 
     if let Some(whitelist) = firewall.0.read().get(&channel).cloned()
         && whitelist.permits(me)

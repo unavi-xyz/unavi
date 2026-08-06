@@ -1,32 +1,24 @@
-use std::sync::Arc;
+use std::str::FromStr;
 
 use axum::{
     Json,
     Router,
 };
 use iroh::EndpointId;
-use rusqlite::params;
 use tokio::{
     net::TcpListener,
     task::JoinHandle,
 };
-use wds::{
-    DataStore,
-    WDS_SERVICE_TYPE,
-    actor::Actor,
-    identity::Identity,
-};
+use wds::WDS_SERVICE_TYPE;
 use xdid::{
     core::{
-        did::{
-            Did,
-            MethodId,
-            MethodName,
-        },
+        did::Did,
         did_url::{
-            DidUrl,
-            RelativeDidUrl,
-            RelativeDidUrlPath,
+            relative::{
+                RelativeDidUrl,
+                RelativeDidUrlPath,
+            },
+            url::DidUrl,
         },
         document::{
             Document,
@@ -35,7 +27,7 @@ use xdid::{
             VerificationMethodMap,
         },
     },
-    methods::key::{
+    methods::key::keys::{
         DidKeyPair,
         PublicKey,
         p256::P256KeyPair,
@@ -54,15 +46,7 @@ pub async fn spawn_did_web_server(
     let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
     let port = listener.local_addr().expect("local addr").port();
 
-    let domain = format!("localhost:{port}");
-    let domain_encoded = domain.replace(':', "%3A");
-    let did = Did {
-        method_name: MethodName("web".into()),
-        method_id:   MethodId(domain_encoded),
-    };
-
-    let jwk = key.public().to_jwk();
-    let did_clone = did.clone();
+    let did = Did::from_str(&format!("did:web:localhost%3A{port}")).expect("valid did");
 
     // WDS service allows these endpoints to authenticate on behalf of this DID.
     let wds_service = ServiceEndpoint {
@@ -71,49 +55,39 @@ pub async fn spawn_did_web_server(
         service_endpoint: wds_endpoints.iter().map(ToString::to_string).collect(),
     };
 
+    let key_ref = VerificationMethod::RelativeUrl(
+        RelativeDidUrl::new(RelativeDidUrlPath::Empty, None, Some("key".into()))
+            .expect("valid relative url"),
+    );
+
+    let doc = Document {
+        context:               None,
+        id:                    did.clone(),
+        also_known_as:         None,
+        assertion_method:      Some(vec![key_ref.clone()]),
+        authentication:        Some(vec![key_ref]),
+        capability_delegation: None,
+        capability_invocation: None,
+        controller:            None,
+        key_agreement:         None,
+        service:               Some(vec![wds_service]),
+        verification_method:   Some(vec![VerificationMethodMap {
+            id:                   DidUrl::new(did.clone(), None, None, Some("key".into()))
+                .expect("valid did url"),
+            controller:           did.clone(),
+            typ:                  "JsonWebKey2020".into(),
+            public_key_multibase: None,
+            public_key_jwk:       Some(key.public().to_jwk()),
+        }]),
+    };
+
+    let body = serde_json::to_value(&doc).expect("serialize document");
+
     let app = Router::new().route(
         "/.well-known/did.json",
         axum::routing::get(move || {
-            let did = did_clone.clone();
-            let jwk = jwk.clone();
-            let service = wds_service.clone();
-            async move {
-                Json(Document {
-                    id:                    did.clone(),
-                    also_known_as:         None,
-                    assertion_method:      Some(vec![VerificationMethod::RelativeUrl(
-                        RelativeDidUrl {
-                            path:     RelativeDidUrlPath::Empty,
-                            query:    None,
-                            fragment: Some("key".into()),
-                        },
-                    )]),
-                    authentication:        Some(vec![VerificationMethod::RelativeUrl(
-                        RelativeDidUrl {
-                            path:     RelativeDidUrlPath::Empty,
-                            query:    None,
-                            fragment: Some("key".into()),
-                        },
-                    )]),
-                    capability_delegation: None,
-                    capability_invocation: None,
-                    controller:            None,
-                    key_agreement:         None,
-                    service:               Some(vec![service]),
-                    verification_method:   Some(vec![VerificationMethodMap {
-                        id:                   DidUrl {
-                            did:          did.clone(),
-                            fragment:     Some("key".into()),
-                            query:        None,
-                            path_abempty: None,
-                        },
-                        controller:           did,
-                        typ:                  "JsonWebKey2020".into(),
-                        public_key_multibase: None,
-                        public_key_jwk:       Some(jwk),
-                    }]),
-                })
-            }
+            let body = body.clone();
+            async move { Json(body) }
         }),
     );
 
@@ -125,35 +99,4 @@ pub async fn spawn_did_web_server(
         did,
         _handle: handle,
     }
-}
-
-pub struct ActorWithServer {
-    pub actor:  Actor,
-    pub server: DidWebServer,
-}
-
-pub async fn generate_actor_web(
-    store: &DataStore,
-    wds_endpoints: Vec<EndpointId>,
-) -> ActorWithServer {
-    let key = P256KeyPair::generate();
-    let server = spawn_did_web_server(&key, wds_endpoints).await;
-
-    let identity = Arc::new(Identity::new(server.did.clone(), key));
-    let actor = store.local_actor(identity);
-
-    let did_str = server.did.to_string();
-    store
-        .db()
-        .call(move |conn| {
-            conn.execute(
-                "INSERT INTO user_quotas (owner, bytes_used, quota_bytes) VALUES (?, 0, 10000000)",
-                params![&did_str],
-            )?;
-            Ok(())
-        })
-        .await
-        .expect("create quota");
-
-    ActorWithServer { actor, server }
 }

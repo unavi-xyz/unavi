@@ -4,6 +4,7 @@ use std::{
         SocketAddr,
         SocketAddrV4,
     },
+    str::FromStr,
     sync::{
         Arc,
         LazyLock,
@@ -31,15 +32,13 @@ use wired_registry::{
 };
 use xdid::{
     core::{
-        did::{
-            Did,
-            MethodId,
-            MethodName,
-        },
+        did::Did,
         did_url::{
-            DidUrl,
-            RelativeDidUrl,
-            RelativeDidUrlPath,
+            relative::{
+                RelativeDidUrl,
+                RelativeDidUrlPath,
+            },
+            url::DidUrl,
         },
         document::{
             Document,
@@ -48,7 +47,7 @@ use xdid::{
             VerificationMethodMap,
         },
     },
-    methods::key::{
+    methods::key::keys::{
         DidKeyPair,
         PublicKey,
     },
@@ -91,7 +90,7 @@ pub struct ServerOptions {
 pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     let port = opts.port;
 
-    let (did, _domain) = create_did(port);
+    let (did, _domain) = create_did(port)?;
     let vc = key_pair::get_or_create_key(opts.in_memory)?;
     info!("Running server as {did}");
 
@@ -124,7 +123,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let router = rb.spawn();
 
-    let app = create_did_document_route(did, &vc, store.endpoint_id(), views);
+    let app = create_did_document_route(did, &vc, store.endpoint_id(), views)?;
 
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port));
     info!("HTTP listening on port {port}");
@@ -138,14 +137,11 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn create_did(port: u16) -> (Did, String) {
+fn create_did(port: u16) -> anyhow::Result<(Did, String)> {
     let domain = std::env::var("UNAVI_DOMAIN").unwrap_or_else(|_| format!("localhost:{port}"));
     let domain_encoded = domain.replace(':', "%3A");
-    let did = Did {
-        method_name: MethodName("web".into()),
-        method_id:   MethodId(domain_encoded),
-    };
-    (did, domain)
+    let did = Did::from_str(&format!("did:web:{domain_encoded}"))?;
+    Ok((did, domain))
 }
 
 const KEY_FRAGMENT: &str = "key";
@@ -155,9 +151,7 @@ fn create_did_document_route(
     vc: &impl DidKeyPair,
     endpoint_id: EndpointId,
     views: Option<ViewIds>,
-) -> axum::Router {
-    let vc_public = vc.public().to_jwk();
-
+) -> anyhow::Result<axum::Router> {
     // Advertise the endpoint always, and the registry's entry view only when
     // this node runs one, so resolvers learn which roles it serves.
     let mut service_endpoint = vec![endpoint_id.to_string()];
@@ -165,56 +159,49 @@ fn create_did_document_route(
         service_endpoint.push(format!("registry:{}", views.recent));
     }
 
-    axum::Router::new()
+    let key_ref = VerificationMethod::RelativeUrl(RelativeDidUrl::new(
+        RelativeDidUrlPath::Empty,
+        None,
+        Some(KEY_FRAGMENT.into()),
+    )?);
+
+    let doc = Document {
+        context:               None,
+        id:                    did.clone(),
+        also_known_as:         None,
+        assertion_method:      Some(vec![key_ref.clone()]),
+        authentication:        Some(vec![key_ref]),
+        capability_delegation: None,
+        capability_invocation: None,
+        controller:            None,
+        key_agreement:         None,
+        service:               Some(vec![ServiceEndpoint {
+            id: "wds".into(),
+            typ: vec![WDS_SERVICE_TYPE.into()],
+            service_endpoint,
+        }]),
+        verification_method:   Some(vec![VerificationMethodMap {
+            id:                   DidUrl::new(did.clone(), None, None, Some(KEY_FRAGMENT.into()))?,
+            controller:           did,
+            typ:                  "JsonWebKey2020".into(),
+            public_key_multibase: None,
+            public_key_jwk:       Some(vc.public().to_jwk()),
+        }]),
+    };
+
+    let body = serde_json::to_value(&doc)?;
+
+    Ok(axum::Router::new()
         .route(
             "/.well-known/did.json",
-            axum::routing::get(move || async move {
-                let doc = Document {
-                    id:                    did.clone(),
-                    also_known_as:         None,
-                    assertion_method:      Some(vec![VerificationMethod::RelativeUrl(
-                        RelativeDidUrl {
-                            path:     RelativeDidUrlPath::Empty,
-                            query:    None,
-                            fragment: Some(KEY_FRAGMENT.into()),
-                        },
-                    )]),
-                    authentication:        Some(vec![VerificationMethod::RelativeUrl(
-                        RelativeDidUrl {
-                            path:     RelativeDidUrlPath::Empty,
-                            query:    None,
-                            fragment: Some(KEY_FRAGMENT.into()),
-                        },
-                    )]),
-                    capability_delegation: None,
-                    capability_invocation: None,
-                    controller:            None,
-                    key_agreement:         None,
-                    service:               Some(vec![ServiceEndpoint {
-                        id:               "wds".into(),
-                        typ:              vec![WDS_SERVICE_TYPE.into()],
-                        service_endpoint: service_endpoint.clone(),
-                    }]),
-                    verification_method:   Some(vec![VerificationMethodMap {
-                        id:                   DidUrl {
-                            did:          did.clone(),
-                            fragment:     Some(KEY_FRAGMENT.into()),
-                            query:        None,
-                            path_abempty: None,
-                        },
-                        controller:           did.clone(),
-                        typ:                  "JsonWebKey2020".into(),
-                        public_key_multibase: None,
-                        public_key_jwk:       Some(vc_public.clone()),
-                    }]),
-                };
-
-                Json(doc)
+            axum::routing::get(move || {
+                let body = body.clone();
+                async move { Json(body) }
             }),
         )
         .layer(
             CorsLayer::new()
                 .allow_origin(tower_http::cors::Any)
                 .allow_methods([axum::http::Method::GET]),
-        )
+        ))
 }

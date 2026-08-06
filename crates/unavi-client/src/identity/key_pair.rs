@@ -1,4 +1,4 @@
-use xdid::methods::key::{
+use xdid::methods::key::keys::{
     DidKeyPair,
     p256::P256KeyPair,
 };

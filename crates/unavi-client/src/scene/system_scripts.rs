@@ -83,7 +83,7 @@ pub fn populate_firewall_entities(
 ) {
     for (ent, fw_ents, fw) in firewalls {
         let Some(fw) = fw else {
-            commands.entity(ent).insert(Firewall::default());
+            commands.entity(ent).insert(Firewall::open());
             continue;
         };
         let Some(mut fw) = fw.0.try_write() else {

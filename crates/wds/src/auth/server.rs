@@ -16,16 +16,14 @@ use irpc::{
 use rand::RngCore;
 use time::OffsetDateTime;
 use tracing::debug;
-use xdid::{
-    core::{
-        did::Did,
-        document::Document,
-    },
-    resolver::DidResolver,
+use xdid::core::{
+    did::Did,
+    document::Document,
 };
 
 use crate::{
     ConnectionState,
+    SESSION_TTL,
     SessionToken,
     StoreContext,
     WDS_SERVICE_TYPE,
@@ -40,6 +38,7 @@ use crate::{
         RequestChallenge,
         jwk::verify_jwk_signature,
     },
+    resolve::resolve,
     signed_bytes::SignedBytes,
 };
 
@@ -70,6 +69,8 @@ async fn request_challenge(
 
     let expires = (OffsetDateTime::now_utc() + NONCE_TTL).unix_timestamp();
 
+    // Unanswered nonces need no reaper: the cache is capacity-bound, so it
+    // evicts on its own, and `redeem_nonce` refuses anything past `expires`.
     if let Err((_, pending)) = state
         .nonces
         .put_async(nonce, Pending { did, expires })
@@ -77,12 +78,6 @@ async fn request_challenge(
     {
         bail!("Failed to generate nonce for {}", pending.did)
     }
-
-    // Reap the nonce if it is never answered.
-    n0_future::task::spawn(async move {
-        n0_future::time::sleep(NONCE_TTL).await;
-        state.nonces.remove_async(&nonce).await;
-    });
 
     tx.send(Issued { nonce, expires }).await?;
     Ok(())
@@ -99,7 +94,10 @@ async fn answer_challenge(
         return Ok(());
     };
 
-    let doc = DidResolver::new()?.resolve(&did).await?;
+    let Some(doc) = resolve(&did).await else {
+        tx.send(None).await?;
+        return Ok(());
+    };
     if !signature_is_authorized(&doc, &signed) {
         debug!("signature not from valid source");
         tx.send(None).await?;
@@ -108,10 +106,11 @@ async fn answer_challenge(
 
     let mut token = SessionToken::default();
     rand::rng().fill_bytes(&mut token);
+    let expires = (OffsetDateTime::now_utc() + SESSION_TTL).unix_timestamp();
 
     if ctx
         .connections
-        .insert_async(token, ConnectionState { did })
+        .insert_async(token, ConnectionState { did, expires })
         .await
         .is_err()
     {
@@ -173,8 +172,8 @@ fn signed_by_authentication_method(doc: &Document, signed: &SignedBytes<Challeng
 
     auth_methods.iter().any(|method| {
         doc.resolve_verification_method(method)
-            .and_then(|map| map.public_key_jwk)
-            .is_some_and(|jwk| verify_jwk_signature(&jwk, signed.signature(), &signing_bytes))
+            .and_then(|map| map.public_key_jwk.as_ref())
+            .is_some_and(|jwk| verify_jwk_signature(jwk, signed.signature(), &signing_bytes))
     })
 }
 

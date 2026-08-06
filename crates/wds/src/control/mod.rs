@@ -115,8 +115,10 @@ async fn handle_requests(
 macro_rules! authenticate {
     ($ctx:tt, $inner:tt, $tx:tt) => {
         match $ctx.connections.get_async(&$inner.s).await {
-            Some(c) => c.did.clone(),
-            None => {
+            Some(c) if c.expires > ::time::OffsetDateTime::now_utc().unix_timestamp() => {
+                c.did.clone()
+            }
+            _ => {
                 $tx.send(Err($crate::error::ApiError::Unauthenticated))
                     .await?;
                 return Ok(());

@@ -46,6 +46,7 @@ impl Plugin for HsdPlugin {
             .init_resource::<attributes::material_graph::ShaderGraphCache>()
             .register_asset_loader(load::HsdLoader)
             .add_observer(diff::resync_on_spawn)
+            .add_observer(attributes::material_graph::evict_document_shaders)
             .add_systems(
                 Startup,
                 attributes::material_graph::register_fallback_shader,

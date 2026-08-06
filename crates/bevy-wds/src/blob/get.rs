@@ -61,12 +61,16 @@ async fn inner(
 }
 
 const MB: u64 = 1024 * 1024;
-const MAX_SIZE: u64 = 512 * MB;
+/// Every read here lands the whole blob in memory at once, so this bounds a
+/// single allocation rather than a transfer.
+const MAX_SIZE: u64 = 64 * MB;
 
+/// Checks the size for a blob already held as well as one being fetched: a
+/// cached blob is no smaller for having arrived earlier, and may have been
+/// written by a path that did not bound it.
 async fn get_blob(hash: Hash, blobs: Blobs) -> anyhow::Result<Bytes> {
     if blobs.has(hash).await? {
-        let res = blobs.get_bytes(hash).await?;
-        return Ok(res);
+        return read_bounded(hash, &blobs).await;
     }
 
     let mut stream = blobs.observe(hash).stream().await?;
@@ -89,6 +93,13 @@ async fn get_blob(hash: Hash, blobs: Blobs) -> anyhow::Result<Bytes> {
         }
     }
 
-    let res = blobs.get_bytes(hash).await?;
-    Ok(res)
+    read_bounded(hash, &blobs).await
+}
+
+async fn read_bounded(hash: Hash, blobs: &Blobs) -> anyhow::Result<Bytes> {
+    let size = blobs.observe(hash).await?.size();
+    if size >= MAX_SIZE {
+        bail!("blob too large: {size}");
+    }
+    Ok(blobs.get_bytes(hash).await?)
 }

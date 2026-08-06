@@ -6,7 +6,7 @@ use iroh::EndpointId;
 use irpc::Client;
 use xdid::{
     core::did::Did,
-    methods::key::Signer,
+    methods::key::keys::Signer,
 };
 
 use crate::{

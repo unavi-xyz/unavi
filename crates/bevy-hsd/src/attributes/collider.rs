@@ -14,6 +14,7 @@ use hsd::attributes::{
     collider::ColliderAttr,
     slots,
 };
+use unavi_quota::limits::MAX_MESH_ELEMENTS;
 
 use crate::{
     HsdSlots,
@@ -169,6 +170,9 @@ fn build_cylinder(height: f64, radius: f64) -> Option<Collider> {
 }
 
 fn build_convex_hull(bytes: &[u8]) -> Option<Collider> {
+    if !within_cap("convex hull", bytes) {
+        return None;
+    }
     let points: Vec<Vec3> = match cast_to_vec3(bytes) {
         Ok(v) => v,
         Err(err) => {
@@ -188,6 +192,10 @@ fn build_convex_hull(bytes: &[u8]) -> Option<Collider> {
 }
 
 fn build_trimesh(vertex_bytes: &[u8], index_bytes: &[u8]) -> Option<Collider> {
+    if !within_cap("trimesh vertices", vertex_bytes) || !within_cap("trimesh indices", index_bytes)
+    {
+        return None;
+    }
     let vertices: Vec<Vec3> = match cast_to_vec3(vertex_bytes) {
         Ok(v) => v,
         Err(err) => {
@@ -218,6 +226,20 @@ fn build_trimesh(vertex_bytes: &[u8], index_bytes: &[u8]) -> Option<Collider> {
 fn cast_to_vec3(bytes: &[u8]) -> Result<Vec<Vec3>, PodCastError> {
     let raw: &[[f32; 3]] = try_cast_slice(bytes)?;
     Ok(raw.iter().map(|&[x, y, z]| Vec3::new(x, y, z)).collect())
+}
+
+/// Collider buffers arrive over document sync, so hull and trimesh
+/// construction — both superlinear in point count — are only handed input
+/// this side has bounded first.
+fn within_cap(name: &str, bytes: &[u8]) -> bool {
+    if bytes.len() > MAX_MESH_ELEMENTS {
+        warn!(
+            "{name}: buffer is {} bytes, over the cap of {MAX_MESH_ELEMENTS}",
+            bytes.len()
+        );
+        return false;
+    }
+    true
 }
 
 #[derive(Component)]

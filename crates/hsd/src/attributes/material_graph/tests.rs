@@ -42,8 +42,8 @@ fn unlit(color: Port) -> SurfaceGraph {
 #[test]
 fn default_graph_is_valid_and_unlit() {
     let validated = validate(&ShaderGraph::default()).expect("valid");
-    assert_eq!(validated.surface, Vec::new());
-    assert_eq!(validated.displacement, None);
+    assert_eq!(validated.surface(), Vec::new());
+    assert_eq!(validated.displacement(), None);
 }
 
 #[test]
@@ -65,7 +65,10 @@ fn a_node_may_reference_an_earlier_node_in_the_same_network() {
         ..Default::default()
     };
     let validated = validate(&graph).expect("valid");
-    assert_eq!(validated.surface, vec![ValueKind::Float, ValueKind::Float]);
+    assert_eq!(
+        validated.surface(),
+        vec![ValueKind::Float, ValueKind::Float]
+    );
 }
 
 /// The DAG-safety property: a node's inputs may only reference strictly
@@ -251,7 +254,7 @@ fn a_node_may_reference_a_public_input() {
         surface: unlit(Port::Input(0)),
         ..Default::default()
     };
-    assert_eq!(validate(&graph).expect("valid").surface, Vec::new());
+    assert_eq!(validate(&graph).expect("valid").surface(), Vec::new());
 }
 
 #[test]
@@ -354,8 +357,8 @@ fn a_displacement_graph_computes_a_position_offset() {
     };
     let validated = validate(&graph).expect("valid");
     assert_eq!(
-        validated.displacement,
-        Some(vec![ValueKind::Vec3, ValueKind::Float, ValueKind::Vec3])
+        validated.displacement(),
+        Some([ValueKind::Vec3, ValueKind::Float, ValueKind::Vec3].as_slice())
     );
 }
 
@@ -383,14 +386,17 @@ fn sin_and_cos_compose_a_time_driven_oscillator() {
     };
     let validated = validate(&graph).expect("valid");
     assert_eq!(
-        validated.displacement,
-        Some(vec![
-            ValueKind::Float,
-            ValueKind::Float,
-            ValueKind::Float,
-            ValueKind::Vec3,
-            ValueKind::Vec3,
-        ])
+        validated.displacement(),
+        Some(
+            [
+                ValueKind::Float,
+                ValueKind::Float,
+                ValueKind::Float,
+                ValueKind::Vec3,
+                ValueKind::Vec3,
+            ]
+            .as_slice()
+        )
     );
 }
 
@@ -551,4 +557,71 @@ fn overrides_attribute_round_trips() {
     };
     let bytes = attr.encode().expect("encode");
     assert_eq!(GraphOverridesAttr::decode(&bytes).expect("decode"), attr);
+}
+
+/// `f32`'s own formatting renders these `NaN`/`inf`, neither of which is a
+/// WGSL literal, so a graph carrying one would compile to a shader that does
+/// not parse. Every route a float can enter by is checked.
+#[test]
+fn non_finite_floats_are_rejected() {
+    for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+        let in_a_node = ShaderGraph {
+            public_inputs: Vec::new(),
+            surface:       SurfaceGraph {
+                nodes:  vec![Node::Sin {
+                    x: Port::Const(GraphValue::Float(bad)),
+                }],
+                output: SurfaceOutput::Unlit(UnlitOutput::default()),
+            },
+            displacement:  None,
+        };
+        assert_eq!(
+            validate(&in_a_node),
+            Err(GraphError::NonFiniteConst {
+                network: Network::Surface,
+                node:    0,
+            }),
+            "node constant {bad}"
+        );
+
+        let in_a_public_input = ShaderGraph {
+            public_inputs: vec![GraphValue::Vec3([0.0, bad, 0.0])],
+            ..Default::default()
+        };
+        assert_eq!(
+            validate(&in_a_public_input),
+            Err(GraphError::NonFinitePublicInput(0)),
+            "public input {bad}"
+        );
+
+        let in_a_terminal = ShaderGraph {
+            public_inputs: Vec::new(),
+            surface:       SurfaceGraph {
+                nodes:  Vec::new(),
+                output: SurfaceOutput::Unlit(UnlitOutput {
+                    color:                Port::Const(GraphValue::Color([bad, 0.0, 0.0, 1.0])),
+                    alpha_clip_threshold: None,
+                }),
+            },
+            displacement:  None,
+        };
+        assert_eq!(
+            validate(&in_a_terminal),
+            Err(GraphError::NonFiniteTerminal("color")),
+            "terminal constant {bad}"
+        );
+
+        let graph = ShaderGraph {
+            public_inputs: vec![GraphValue::Float(0.0)],
+            ..Default::default()
+        };
+        let overrides = GraphOverridesAttr {
+            overrides: BTreeMap::from([(0, GraphValue::Float(bad))]),
+        };
+        assert_eq!(
+            validate_overrides(&graph, &overrides),
+            Err(OverridesError::NonFinite(0)),
+            "override {bad}"
+        );
+    }
 }

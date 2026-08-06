@@ -90,6 +90,7 @@ impl DataStoreBuilder {
             docs: docs.clone(),
             endpoint: self.endpoint.clone(),
             gossip: gossip.clone(),
+            hosted: scc::HashMap::default(),
             user_identity: RwLock::new(None),
         });
 

@@ -59,6 +59,22 @@ pub enum StateError {
     Postcard(#[from] postcard::Error),
 }
 
+/// Deepest parent chain a prim may sit under.
+///
+/// A document nesting past this holds its deeper prims rather than realizing
+/// them: resolving one prim's placement walks its whole chain, and the ECS
+/// hierarchy it becomes is walked recursively again on every propagation and
+/// despawn.
+pub const MAX_PRIM_DEPTH: usize = 512;
+
+/// Most prims one document may realize at once.
+///
+/// Enforced here rather than at any one consumer: entries arrive from peers
+/// over document sync, which never passes through the authoring API where the
+/// per-document `Stock::Prims` quota is charged. Prims past the cap stay held,
+/// exactly as an orphan does, and realize if room frees up.
+pub const MAX_REALIZED_PRIMS: usize = 100_000;
+
 /// Where a prim sits once the tree's integrity rules have been applied.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Placement {
@@ -549,6 +565,11 @@ impl SceneState {
         let Some(state) = self.prims.get(&prim) else {
             return Placement::Unrealized;
         };
+        // Already-realized prims stay realized; only new ones are turned away,
+        // so a full document keeps converging instead of thrashing.
+        if self.realized.len() >= MAX_REALIZED_PRIMS && !self.realized.contains_key(&prim) {
+            return Placement::Unrealized;
+        }
         let parent = match state.parent {
             None => return Placement::Unrealized,
             Some(Parent::Root) => return Placement::Root,
@@ -556,13 +577,14 @@ impl SceneState {
         };
 
         let mut chain = vec![prim];
+        let mut seen = HashMap::from([(prim, 0usize)]);
         let mut current = parent;
         loop {
-            if let Some(index) = chain.iter().position(|id| *id == current) {
+            if let Some(&index) = seen.get(&current) {
                 let breaker = chain[index..]
                     .iter()
                     .copied()
-                    .max_by_key(|id| (self.prims[id].parent_stamp(), *id))
+                    .max_by_key(|id| (self.parent_stamp(*id), *id))
                     .unwrap_or(prim);
                 return if breaker == prim {
                     Placement::Root
@@ -570,6 +592,10 @@ impl SceneState {
                     Placement::Child(parent)
                 };
             }
+            if chain.len() >= MAX_PRIM_DEPTH {
+                return Placement::Unrealized;
+            }
+            seen.insert(current, chain.len());
             chain.push(current);
 
             match self.prims.get(&current).and_then(|s| s.parent) {
@@ -578,6 +604,13 @@ impl SceneState {
                 Some(Parent::Prim(next)) => current = next,
             }
         }
+    }
+
+    fn parent_stamp(&self, prim: PrimId) -> Stamp {
+        self.prims
+            .get(&prim)
+            .map(PrimState::parent_stamp)
+            .unwrap_or_default()
     }
 }
 

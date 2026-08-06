@@ -23,7 +23,15 @@ impl StoreContext {
     /// Content referenced by hosted docs is protected by iroh-docs' own store
     /// tags; this pass only reclaims explicit blob pins that have expired.
     pub async fn run_gc(&self) -> anyhow::Result<()> {
+        self.gc_sessions().await;
         self.gc_blob_pins().await
+    }
+
+    /// Drops sessions past their expiry, so the table tracks live sessions
+    /// rather than every session the process has ever issued.
+    async fn gc_sessions(&self) {
+        let now = OffsetDateTime::now_utc().unix_timestamp();
+        self.connections.retain_async(|_, c| c.expires > now).await;
     }
 
     async fn gc_blob_pins(&self) -> anyhow::Result<()> {

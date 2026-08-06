@@ -945,6 +945,7 @@ dependencies = [
  "thiserror 2.0.19",
  "tracing",
  "tracing-test",
+ "unavi-quota",
  "unavi-util",
  "wds",
 ]
@@ -13070,7 +13071,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32497e9a4c7b38532efcdebeef879707aa9f794296a4f0244f6f69e9bc8574bd"
 dependencies = [
  "fastrand",
- "getrandom 0.4.3",
+ "getrandom 0.3.4",
  "once_cell",
  "rustix 1.1.4",
  "windows-sys 0.61.2",
@@ -14097,6 +14098,7 @@ dependencies = [
  "directories",
  "iroh",
  "iroh-docs",
+ "serde_json",
  "tokio",
  "tower-http",
  "tracing",
@@ -14222,12 +14224,6 @@ name = "unsafe-libyaml"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "673aac59facbab8a9007c7f6108d11f63b603f7cabff99fabf650fea5c32b861"
-
-[[package]]
-name = "unsigned-varint"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb066959b24b5196ae73cb057f45598450d2c5f71460e98c49b738086eff9c06"
 
 [[package]]
 name = "untrusted"
@@ -15166,6 +15162,7 @@ dependencies = [
  "rusqlite",
  "scc",
  "serde",
+ "serde_json",
  "signature 2.2.0",
  "thiserror 2.0.19",
  "time",
@@ -16593,7 +16590,7 @@ checksum = "163b33ed8786455e2fa5d72f554057ce3f3182425434f756cd39c99839d88e23"
 [[package]]
 name = "xdid"
 version = "0.7.0"
-source = "git+https://github.com/unavi-xyz/xdid#222ecfb92ca6b7f26f008bf2aefdc43c25a5ee15"
+source = "git+https://github.com/unavi-xyz/xdid#75d3d50097149e93c1efcb005e8d79c54f2e3483"
 dependencies = [
  "smallvec",
  "thiserror 2.0.19",
@@ -16605,11 +16602,12 @@ dependencies = [
 [[package]]
 name = "xdid-core"
 version = "0.7.0"
-source = "git+https://github.com/unavi-xyz/xdid#222ecfb92ca6b7f26f008bf2aefdc43c25a5ee15"
+source = "git+https://github.com/unavi-xyz/xdid#75d3d50097149e93c1efcb005e8d79c54f2e3483"
 dependencies = [
  "anyhow",
  "jose-jwk",
  "serde",
+ "serde_json",
  "serde_with",
  "smol_str 0.3.6",
  "thiserror 2.0.19",
@@ -16618,7 +16616,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-key"
 version = "0.7.0"
-source = "git+https://github.com/unavi-xyz/xdid#222ecfb92ca6b7f26f008bf2aefdc43c25a5ee15"
+source = "git+https://github.com/unavi-xyz/xdid#75d3d50097149e93c1efcb005e8d79c54f2e3483"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -16628,7 +16626,6 @@ dependencies = [
  "serde_json",
  "smallvec",
  "thiserror 2.0.19",
- "unsigned-varint",
  "xdid-core",
  "zeroize",
 ]
@@ -16636,10 +16633,14 @@ dependencies = [
 [[package]]
 name = "xdid-method-web"
 version = "0.7.0"
-source = "git+https://github.com/unavi-xyz/xdid#222ecfb92ca6b7f26f008bf2aefdc43c25a5ee15"
+source = "git+https://github.com/unavi-xyz/xdid#75d3d50097149e93c1efcb005e8d79c54f2e3483"
 dependencies = [
+ "percent-encoding",
  "reqwest",
  "send_wrapper",
+ "serde_json",
+ "thiserror 2.0.19",
+ "tokio",
  "xdid-core",
 ]
 

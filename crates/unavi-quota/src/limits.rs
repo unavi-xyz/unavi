@@ -19,6 +19,27 @@ pub struct Limits {
     pub flow:  HashMap<Flow, FlowLimit>,
 }
 
+impl Limits {
+    /// Builds a scope's caps by asking for every variant in turn.
+    ///
+    /// The scopes below answer with an exhaustive `match` and no wildcard, so
+    /// a new [`Stock`] or [`Flow`] fails to compile until each scope has said
+    /// what it costs there — an absent entry means unbounded, which is not
+    /// something to arrive at by forgetting.
+    fn new(stock: impl Fn(Stock) -> Option<u64>, flow: impl Fn(Flow) -> Option<FlowLimit>) -> Self {
+        Self {
+            stock: Stock::ALL
+                .into_iter()
+                .filter_map(|s| stock(s).map(|cap| (s, cap)))
+                .collect(),
+            flow:  Flow::ALL
+                .into_iter()
+                .filter_map(|f| flow(f).map(|cap| (f, cap)))
+                .collect(),
+        }
+    }
+}
+
 const KB: usize = 1024;
 const MB: usize = 1024 * KB;
 
@@ -54,174 +75,140 @@ impl Limits {
     #[must_use]
     pub fn global() -> Self {
         let budget = (host_total_memory() / 100).saturating_mul(GLOBAL_WASM_MEMORY_PERCENT);
-        let stock = HashMap::from([(Stock::WasmMemory, budget)]);
-        Self {
-            stock,
-            flow: HashMap::new(),
-        }
+        Self::new(
+            |stock| match stock {
+                Stock::WasmMemory => Some(budget),
+                Stock::Documents
+                | Stock::KvMemory
+                | Stock::PortalWatches
+                | Stock::Prims
+                | Stock::Receptors
+                | Stock::Slots => None,
+            },
+            |flow| match flow {
+                Flow::BlobUpload
+                | Flow::CreateDocument
+                | Flow::CreatePrim
+                | Flow::Emit
+                | Flow::PortalOpen
+                | Flow::SyncDoc => None,
+            },
+        )
     }
 
     #[must_use]
     pub fn document() -> Self {
-        let stock = HashMap::from([
-            (Stock::KvMemory, 8 * MB as u64),
-            (Stock::WasmMemory, 128 * MB as u64),
-            (Stock::Documents, 256),
-            (Stock::Prims, 50_000),
-            (Stock::Slots, 50_000),
-            (Stock::PortalWatches, 16),
-            (Stock::Receptors, 64),
-            (Stock::ShaderPrograms, 32),
-        ]);
-        let flow = HashMap::from([
-            (
-                Flow::CreateDocument,
-                FlowLimit {
+        Self::new(
+            |stock| match stock {
+                Stock::KvMemory => Some(8 * MB as u64),
+                Stock::WasmMemory => Some(128 * MB as u64),
+                Stock::Documents => Some(256),
+                Stock::Prims | Stock::Slots => Some(50_000),
+                Stock::PortalWatches => Some(16),
+                Stock::Receptors => Some(64),
+            },
+            |flow| match flow {
+                Flow::CreateDocument => Some(FlowLimit {
                     capacity:       8.0,
                     refill_per_sec: 1.0,
-                },
-            ),
-            (
-                Flow::CreatePrim,
-                FlowLimit {
+                }),
+                Flow::CreatePrim => Some(FlowLimit {
                     capacity:       2_000.0,
                     refill_per_sec: 500.0,
-                },
-            ),
-            (
-                Flow::Emit,
-                FlowLimit {
+                }),
+                Flow::Emit => Some(FlowLimit {
                     capacity:       256.0,
                     refill_per_sec: 16.0,
-                },
-            ),
-            (
-                Flow::BlobUpload,
-                FlowLimit {
+                }),
+                Flow::BlobUpload => Some(FlowLimit {
                     capacity:       256.0,
                     refill_per_sec: 32.0,
-                },
-            ),
-        ]);
-        Self { stock, flow }
+                }),
+                Flow::PortalOpen | Flow::SyncDoc => None,
+            },
+        )
     }
 
     #[must_use]
     pub fn space() -> Self {
-        let stock = HashMap::from([
-            (Stock::KvMemory, 256 * MB as u64),
-            (Stock::WasmMemory, 512 * MB as u64),
-            (Stock::Documents, 4_000),
-            (Stock::Prims, 4_000_000),
-            (Stock::Slots, 8_000_000),
-            (Stock::PortalWatches, 128),
-            (Stock::Receptors, 32_000),
-            (Stock::ShaderPrograms, 4_096),
-        ]);
-        let flow = HashMap::from([
-            (
-                Flow::CreateDocument,
-                FlowLimit {
+        Self::new(
+            |stock| match stock {
+                Stock::KvMemory => Some(256 * MB as u64),
+                Stock::WasmMemory => Some(512 * MB as u64),
+                Stock::Documents => Some(4_000),
+                Stock::Prims => Some(4_000_000),
+                Stock::Slots => Some(8_000_000),
+                Stock::PortalWatches => Some(128),
+                Stock::Receptors => Some(32_000),
+            },
+            |flow| match flow {
+                Flow::CreateDocument => Some(FlowLimit {
                     capacity:       256.0,
                     refill_per_sec: 16.0,
-                },
-            ),
-            (
-                Flow::CreatePrim,
-                FlowLimit {
+                }),
+                Flow::CreatePrim => Some(FlowLimit {
                     capacity:       32_000.0,
                     refill_per_sec: 8_000.0,
-                },
-            ),
-            (
-                Flow::PortalOpen,
-                FlowLimit {
+                }),
+                Flow::PortalOpen => Some(FlowLimit {
                     capacity:       8.0,
                     refill_per_sec: 1.0,
-                },
-            ),
-            (
-                Flow::Emit,
-                FlowLimit {
+                }),
+                Flow::Emit => Some(FlowLimit {
                     capacity:       4_096.0,
                     refill_per_sec: 2_048.0,
-                },
-            ),
-            (
-                Flow::SyncDoc,
-                FlowLimit {
+                }),
+                Flow::SyncDoc => Some(FlowLimit {
                     capacity:       64.0,
                     refill_per_sec: 4.0,
-                },
-            ),
-            (
-                Flow::BlobUpload,
-                FlowLimit {
+                }),
+                Flow::BlobUpload => Some(FlowLimit {
                     capacity:       4_096.0,
                     refill_per_sec: 256.0,
-                },
-            ),
-        ]);
-        Self { stock, flow }
+                }),
+            },
+        )
     }
 
     #[must_use]
     pub fn peer() -> Self {
-        let stock = HashMap::from([
-            (Stock::KvMemory, 64 * MB as u64),
-            (Stock::WasmMemory, 256 * MB as u64),
-            (Stock::Documents, 1_000),
-            (Stock::Prims, 1_000_000),
-            (Stock::Slots, 2_000_000),
-            (Stock::PortalWatches, 32),
-            (Stock::Receptors, 2_000),
-            (Stock::ShaderPrograms, 1_024),
-        ]);
-        let flow = HashMap::from([
-            (
-                Flow::CreateDocument,
-                FlowLimit {
+        Self::new(
+            |stock| match stock {
+                Stock::KvMemory => Some(64 * MB as u64),
+                Stock::WasmMemory => Some(256 * MB as u64),
+                Stock::Documents => Some(1_000),
+                Stock::Prims => Some(1_000_000),
+                Stock::Slots => Some(2_000_000),
+                Stock::PortalWatches => Some(32),
+                Stock::Receptors => Some(2_000),
+            },
+            |flow| match flow {
+                Flow::CreateDocument => Some(FlowLimit {
                     capacity:       64.0,
                     refill_per_sec: 8.0,
-                },
-            ),
-            (
-                Flow::CreatePrim,
-                FlowLimit {
+                }),
+                Flow::CreatePrim => Some(FlowLimit {
                     capacity:       16_000.0,
                     refill_per_sec: 4_000.0,
-                },
-            ),
-            (
-                Flow::PortalOpen,
-                FlowLimit {
+                }),
+                Flow::PortalOpen => Some(FlowLimit {
                     capacity:       4.0,
                     refill_per_sec: 0.5,
-                },
-            ),
-            (
-                Flow::Emit,
-                FlowLimit {
+                }),
+                Flow::Emit => Some(FlowLimit {
                     capacity:       2_048.0,
                     refill_per_sec: 1_024.0,
-                },
-            ),
-            (
-                Flow::SyncDoc,
-                FlowLimit {
+                }),
+                Flow::SyncDoc => Some(FlowLimit {
                     capacity:       32.0,
                     refill_per_sec: 2.0,
-                },
-            ),
-            (
-                Flow::BlobUpload,
-                FlowLimit {
+                }),
+                Flow::BlobUpload => Some(FlowLimit {
                     capacity:       2_048.0,
                     refill_per_sec: 128.0,
-                },
-            ),
-        ]);
-        Self { stock, flow }
+                }),
+            },
+        )
     }
 }
 

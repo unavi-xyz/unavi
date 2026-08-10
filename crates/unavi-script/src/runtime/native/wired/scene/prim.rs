@@ -8,13 +8,18 @@ use crate::{
         native::wired::{
             error::Error,
             scene::bindings::wired::{
-                math::types::Transform,
+                math::types::{
+                    Transform,
+                    Vec2,
+                    Vec3,
+                },
                 scene::types::{
                     AlphaMode,
                     Collider,
                     ColliderCapsule,
                     ColliderCylinder,
                     Color,
+                    GraphValue,
                     HostPrim,
                     Image,
                     Material,
@@ -36,6 +41,7 @@ use crate::{
                 PrimAlphaMode,
                 PrimCollider,
                 PrimColor,
+                PrimGraphValue,
                 PrimImage,
                 PrimMaterial,
                 PrimMesh,
@@ -195,6 +201,24 @@ fn material_wit(m: PrimMaterial) -> Material {
         emissive:     m.emissive.map(color_wit),
         metallic:     m.metallic,
         roughness:    m.roughness,
+    }
+}
+
+const fn graph_value_wit(value: PrimGraphValue) -> GraphValue {
+    match value {
+        PrimGraphValue::Float(v) => GraphValue::Float(v),
+        PrimGraphValue::Vec2([x, y]) => GraphValue::Vec2(Vec2 { x, y }),
+        PrimGraphValue::Vec3([x, y, z]) => GraphValue::Vec3(Vec3 { x, y, z }),
+        PrimGraphValue::Color(c) => GraphValue::Color(color_wit(c)),
+    }
+}
+
+const fn graph_value_shared(value: GraphValue) -> PrimGraphValue {
+    match value {
+        GraphValue::Float(v) => PrimGraphValue::Float(v),
+        GraphValue::Vec2(v) => PrimGraphValue::Vec2([v.x, v.y]),
+        GraphValue::Vec3(v) => PrimGraphValue::Vec3([v.x, v.y, v.z]),
+        GraphValue::Color(c) => PrimGraphValue::Color(color_shared(c)),
     }
 }
 
@@ -549,6 +573,38 @@ impl HostPrim for Runtime {
                 &self.api,
                 self_.rep(),
                 value.map(material_shared),
+            )
+            .await,
+        ))
+    }
+
+    async fn graph_overrides(
+        &mut self,
+        self_: Resource<PrimRes>,
+    ) -> wasmtime::Result<Vec<(u16, GraphValue)>> {
+        Ok(
+            shared::wired::scene::prim::graph_overrides(&self.api, self_.rep())
+                .await
+                .map_err(wasmtime::Error::from_anyhow)?
+                .into_iter()
+                .map(|(index, value)| (index, graph_value_wit(value)))
+                .collect(),
+        )
+    }
+
+    async fn set_graph_overrides(
+        &mut self,
+        self_: Resource<PrimRes>,
+        values: Vec<(u16, GraphValue)>,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        Ok(lower(
+            shared::wired::scene::prim::set_graph_overrides(
+                &self.api,
+                self_.rep(),
+                values
+                    .into_iter()
+                    .map(|(index, value)| (index, graph_value_shared(value)))
+                    .collect(),
             )
             .await,
         ))

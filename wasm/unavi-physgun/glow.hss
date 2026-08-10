@@ -1,0 +1,44 @@
+// The held prop's highlight: an inverted hull.
+//
+// The shell stands off the prop's collider, and `cull: Front` throws away
+// its near faces so only the far wall draws. That wall sits behind the prop,
+// so the depth test against the (opaque, depth-writing) prop rejects it
+// everywhere except the ring that pokes past the silhouette — a stroke
+// around the object rather than a wash over it. Drawing the near faces
+// instead puts a translucent shell in front of the prop, which is what
+// "rendering over the object" looks like.
+(
+    public_inputs: [
+        Color((1.0, 0.62, 0.16, 1.0)), // 0: tint, overridden per player
+        Float(1.0),                    // 1: unused by the hull; see below
+        Float(2.5),                    // 2: intensity
+    ],
+    surface: (
+        nodes: [
+            // On a back face `dot(N, V)` is negative, so the clamp inside
+            // `Fresnel` pins this to 1 across the whole surviving ring. That
+            // is exactly what an inverted hull wants — a flat stroke — and
+            // it is why input 1 no longer changes anything. Kept as a node
+            // rather than a constant so the graph still reads as a rim if
+            // the cull mode is ever flipped back.
+            Fresnel(power: Input(1)),
+            Saturate(x: Node(0)),
+            Mul(a: Node(1), b: Input(2)),
+            Mul(a: Input(0), b: Node(2)),
+
+            // Alpha pinned to 1, as in `beam.hss`: `AlphaMode::Add` scales
+            // rgb by alpha, so carrying brightness into alpha would square it.
+            Extract(v: Node(3), channel: 0),
+            Extract(v: Node(3), channel: 1),
+            Extract(v: Node(3), channel: 2),
+            Combine4(x: Node(4), y: Node(5), z: Node(6), w: Const(Float(1.0))),
+        ],
+        output: Unlit((color: Node(7))),
+        blend: Add,
+        cull: Front,
+        // The hull is a stroke around the prop, not matter. Casting a shadow
+        // from a shell the prop is already inside puts a second, slightly
+        // larger silhouette on the ground.
+        cast_shadows: false,
+    ),
+)

@@ -96,13 +96,14 @@ opt-level = "z"
 
 [profile.dev]
 codegen-backend = "cranelift"
+debug           = "line-tables-only"
+split-debuginfo = "unpacked"
 
 [profile.test]
 incremental = false
 
 [profile.dev.package."*"]
 codegen-backend = "llvm"
-opt-level       = 3
 
 [profile.wasm-dev]
 inherits  = "dev"

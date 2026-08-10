@@ -1,10 +1,5 @@
 use wired_prelude::prelude::*;
 
-use crate::wired::scene::types::{
-    AlphaMode,
-    Material,
-};
-
 pub const DEFAULT: Color = Color {
     r: 1.0,
     g: 0.62,
@@ -12,24 +7,13 @@ pub const DEFAULT: Color = Color {
     a: 1.0,
 };
 
-const fn scale(color: Color, f: f32) -> Color {
+/// The tint `beam.hss` multiplies its whole output by. Brightness lives in
+/// the graph's own intensity input, so this stays a plain colour.
+pub const fn beam_tint(color: Color) -> Color {
     Color {
-        r: color.r * f,
-        g: color.g * f,
-        b: color.b * f,
+        r: color.r,
+        g: color.g,
+        b: color.b,
         a: 1.0,
-    }
-}
-
-/// Bright additive beam material for the physics tractor ray.
-pub const fn beam(color: Color) -> Material {
-    Material {
-        alpha_cutoff: None,
-        alpha_mode:   Some(AlphaMode::Add),
-        base_color:   Some(color),
-        double_sided: Some(true),
-        emissive:     Some(scale(color, 2.0)),
-        metallic:     None,
-        roughness:    None,
     }
 }

@@ -6,11 +6,13 @@ pub mod codegen;
 use bevy::{
     asset::uuid_handle,
     ecs::system::SystemParam,
+    light::NotShadowCaster,
     pbr::MeshMaterial3d,
     platform::collections::HashMap,
     prelude::*,
     render::render_resource::{
         AsBindGroup,
+        Face,
         ShaderType,
         SpecializedMeshPipelineError,
     },
@@ -22,7 +24,10 @@ use hsd::{
             MAX_PUBLIC_INPUTS,
             MAX_TEXTURE_SAMPLES,
             ShaderGraph,
-            graph::SurfaceOutput,
+            graph::{
+                BlendMode,
+                CullMode,
+            },
             overrides::{
                 GraphOverridesAttr,
                 validate_overrides,
@@ -44,6 +49,7 @@ use crate::{
         AttributeParser,
         ParseError,
         image::HsdImage,
+        material_source::MaterialSource,
     },
 };
 
@@ -125,15 +131,54 @@ pub fn track_material_graph(
 #[derive(Component, Debug, Clone)]
 pub struct HsdShaderGraphMaterial(pub Handle<ShaderGraphMaterial>);
 
+/// The graph's own public-input defaults, kept so an override change can be
+/// applied without decoding and re-validating the graph again.
+///
+/// Overrides are a per-frame channel — the physgun writes one every frame it
+/// drags a prop — while the graph behind them changes almost never, so the
+/// two must not share a rebuild path.
+#[derive(Component, Debug, Clone)]
+pub struct GraphInputDefaults(pub Vec<GraphValue>);
+
+/// Writes changed overrides straight into the existing material's uniform
+/// block, skipping decode, validation and codegen entirely.
+///
+/// A prim whose graph is still being built has no [`GraphInputDefaults`] yet
+/// and is picked up by [`rebuild_material_graph`] instead.
+pub fn apply_graph_overrides(
+    changed: Query<
+        (
+            &HsdShaderGraphMaterial,
+            &GraphInputDefaults,
+            Option<&ShaderGraphOverridesData>,
+        ),
+        Changed<ShaderGraphOverridesData>,
+    >,
+    mut materials: ResMut<Assets<ShaderGraphMaterial>>,
+) {
+    for (material, defaults, overrides) in &changed {
+        let params = build_params_from(&defaults.0, overrides.map(|o| &o.0));
+        let Some(mut asset) = materials.get_mut(&material.0) else {
+            continue;
+        };
+        // Guarded because `get_mut` marks the asset changed regardless, and a
+        // changed material re-uploads its whole bind group.
+        if asset.params != params {
+            asset.params = params;
+        }
+    }
+}
+
 pub fn rebuild_material_graph(
     changed: Query<
         Entity,
         Or<(
             Changed<HsdMaterialGraphSlot>,
-            Changed<ShaderGraphOverridesData>,
             Changed<HsdRelationships>,
+            Changed<MaterialSource>,
         )>,
     >,
+    sources: Query<&MaterialSource>,
     slots: Query<&HsdMaterialGraphSlot>,
     overrides: Query<&ShaderGraphOverridesData>,
     doc_of: Query<&HsdChild>,
@@ -145,7 +190,13 @@ pub fn rebuild_material_graph(
     mut commands: Commands,
 ) {
     for prim in &changed {
-        let Ok(slot) = slots.get(prim) else {
+        // The graph may live on another prim: `material:binding` names a
+        // prim, and a prim bound to one carrying a graph renders that graph
+        // with its own overrides.
+        let Ok(&MaterialSource::Graph(source)) = sources.get(prim) else {
+            continue;
+        };
+        let Ok(slot) = slots.get(source) else {
             continue;
         };
         let Ok(doc) = doc_of.get(prim).map(|c| c.0) else {
@@ -218,8 +269,19 @@ pub fn rebuild_material_graph(
             texture_3: textures[3].clone(),
             fragment_shader: cached.fragment.clone(),
             vertex_shader: cached.vertex.clone(),
-            alpha_mode: alpha_mode(&graph.surface.output),
+            alpha_mode: alpha_mode(graph.surface.blend),
+            cull_mode: cull_mode(graph.surface.cull),
         };
+
+        commands
+            .entity(prim)
+            .insert(GraphInputDefaults(graph.public_inputs.clone()));
+
+        if graph.surface.cast_shadows {
+            commands.entity(prim).remove::<NotShadowCaster>();
+        } else {
+            commands.entity(prim).insert(NotShadowCaster);
+        }
 
         if let Ok(mut existing) = existing.get_mut(prim) {
             if let Some(mut asset) = materials.get_mut(&existing.0) {
@@ -288,13 +350,15 @@ const fn pack_input(value: GraphValue) -> Vec4 {
 }
 
 fn build_params(graph: &ShaderGraph, overrides: Option<&GraphOverridesAttr>) -> GraphParams {
+    build_params_from(&graph.public_inputs, overrides)
+}
+
+fn build_params_from(
+    defaults: &[GraphValue],
+    overrides: Option<&GraphOverridesAttr>,
+) -> GraphParams {
     let mut inputs = [Vec4::ZERO; MAX_PUBLIC_INPUTS];
-    for (index, default) in graph
-        .public_inputs
-        .iter()
-        .enumerate()
-        .take(MAX_PUBLIC_INPUTS)
-    {
+    for (index, default) in defaults.iter().enumerate().take(MAX_PUBLIC_INPUTS) {
         let value = overrides
             .and_then(|o| o.overrides.get(&(index as u16)))
             .filter(|v| v.kind() == default.kind())
@@ -334,29 +398,23 @@ pub fn evict_document_shaders(trigger: On<Remove, Hsd>, mut cache: ResMut<Shader
     cache.0.remove(&trigger.entity);
 }
 
-/// Unity's Alpha Clip Threshold / Unreal's Opacity Mask maps to
-/// `AlphaMode::Mask`; an explicit `alpha`/`Unlit` output that can be
-/// translucent maps to `Blend`; otherwise `Opaque`. A heuristic inferred from
-/// which terminals are set, not an explicit graph field the format asks an
-/// author to choose.
-const fn alpha_mode(output: &SurfaceOutput) -> AlphaMode {
-    match output {
-        SurfaceOutput::Lit(lit) => {
-            if lit.alpha_clip_threshold.is_some() {
-                AlphaMode::Mask(0.5)
-            } else if lit.alpha.is_some() {
-                AlphaMode::Blend
-            } else {
-                AlphaMode::Opaque
-            }
-        }
-        SurfaceOutput::Unlit(unlit) => {
-            if unlit.alpha_clip_threshold.is_some() {
-                AlphaMode::Mask(0.5)
-            } else {
-                AlphaMode::Blend
-            }
-        }
+const fn alpha_mode(blend: BlendMode) -> AlphaMode {
+    match blend {
+        BlendMode::Opaque => AlphaMode::Opaque,
+        BlendMode::Blend => AlphaMode::Blend,
+        BlendMode::Add => AlphaMode::Add,
+        BlendMode::Multiply => AlphaMode::Multiply,
+    }
+}
+
+/// `None` is wgpu's "cull nothing", which is why this cannot just be
+/// `Option<Face>`'s `None` by accident — [`CullMode::Back`] is the default a
+/// graph gets, and only an explicit [`CullMode::None`] disables culling.
+const fn cull_mode(cull: CullMode) -> Option<Face> {
+    match cull {
+        CullMode::Back => Some(Face::Back),
+        CullMode::Front => Some(Face::Front),
+        CullMode::None => None,
     }
 }
 
@@ -392,12 +450,14 @@ pub struct ShaderGraphMaterial {
     /// pipeline's own default vertex shader runs unmodified.
     pub vertex_shader:   Option<Handle<Shader>>,
     pub alpha_mode:      AlphaMode,
+    pub cull_mode:       Option<Face>,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct ShaderGraphMaterialKey {
     fragment_shader: Handle<Shader>,
     vertex_shader:   Option<Handle<Shader>>,
+    cull_mode:       Option<Face>,
 }
 
 impl From<&ShaderGraphMaterial> for ShaderGraphMaterialKey {
@@ -405,6 +465,7 @@ impl From<&ShaderGraphMaterial> for ShaderGraphMaterialKey {
         Self {
             fragment_shader: material.fragment_shader.clone(),
             vertex_shader:   material.vertex_shader.clone(),
+            cull_mode:       material.cull_mode,
         }
     }
 }
@@ -438,6 +499,7 @@ impl Material for ShaderGraphMaterial {
         _layout: &bevy::mesh::MeshVertexBufferLayoutRef,
         key: bevy::pbr::MaterialPipelineKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
+        descriptor.primitive.cull_mode = key.bind_group_data.cull_mode;
         if let Some(fragment) = descriptor.fragment.as_mut() {
             fragment.shader = key.bind_group_data.fragment_shader;
             if let Some(vertex_shader) = key.bind_group_data.vertex_shader {

@@ -230,7 +230,7 @@ fn glow_graph() -> ShaderGraph {
     ShaderGraph {
         public_inputs: vec![GraphValue::Color([0.2, 0.8, 1.0, 1.0])],
         surface:       SurfaceGraph {
-            nodes:  vec![
+            nodes: vec![
                 Node::Fresnel {
                     power: Port::Const(GraphValue::Float(2.5)),
                 },
@@ -244,6 +244,7 @@ fn glow_graph() -> ShaderGraph {
                 color:                Port::Node(1),
                 alpha_clip_threshold: None,
             }),
+            ..Default::default()
         },
         displacement:  None,
     }
@@ -255,16 +256,17 @@ fn pulse_graph() -> ShaderGraph {
     ShaderGraph {
         public_inputs: Vec::new(),
         surface:       SurfaceGraph {
-            nodes:  Vec::new(),
+            nodes: Vec::new(),
             output: SurfaceOutput::Lit(LitOutput {
                 base_color: Some(Port::Const(GraphValue::Color([0.9, 0.5, 0.1, 1.0]))),
                 metallic: Some(Port::Const(GraphValue::Float(0.1))),
                 roughness: Some(Port::Const(GraphValue::Float(0.4))),
                 ..Default::default()
             }),
+            ..Default::default()
         },
         displacement:  Some(DisplacementGraph {
-            nodes:           vec![
+            nodes:                 vec![
                 Node::Time,
                 Node::Sin { x: Port::Node(0) },
                 Node::LocalNormal,
@@ -277,8 +279,9 @@ fn pulse_graph() -> ShaderGraph {
                     b: Port::Const(GraphValue::Float(0.15)),
                 },
             ],
-            position_offset: Some(Port::Node(4)),
-            normal_override: None,
+            position_offset:       Some(Port::Node(4)),
+            normal_override:       None,
+            world_position_offset: None,
         }),
     }
 }

@@ -181,8 +181,9 @@ fn non_finite_floats_are_rejected() {
         let in_a_node = ShaderGraph {
             public_inputs: Vec::new(),
             surface:       SurfaceGraph {
-                nodes:  vec![Node::Sin { x: const_f(bad) }],
+                nodes: vec![Node::Sin { x: const_f(bad) }],
                 output: SurfaceOutput::Unlit(UnlitOutput::default()),
+                ..Default::default()
             },
             displacement:  None,
         };
@@ -208,8 +209,9 @@ fn non_finite_floats_are_rejected() {
         let in_a_terminal = ShaderGraph {
             public_inputs: Vec::new(),
             surface:       SurfaceGraph {
-                nodes:  Vec::new(),
+                nodes: Vec::new(),
                 output: unlit(Port::Const(GraphValue::Color([bad, 0.0, 0.0, 1.0]))),
+                ..Default::default()
             },
             displacement:  None,
         };

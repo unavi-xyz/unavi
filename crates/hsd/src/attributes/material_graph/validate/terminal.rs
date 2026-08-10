@@ -71,6 +71,11 @@ pub(super) fn displacement_terminals(
             "normal_override",
             ValueKind::Vec3,
         ),
+        (
+            displacement.world_position_offset,
+            "world_position_offset",
+            ValueKind::Vec3,
+        ),
     ]
     .into_iter()
     .filter_map(|(port, name, expected)| port.map(|port| (name, port, expected)))

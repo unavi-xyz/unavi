@@ -23,5 +23,7 @@ fn graph_noise(p: vec2<f32>) -> f32 {
 fn fragment() -> @location(0) vec4<f32> {
     var vertex: vec3<f32>;
 //#BODY
-    return vec4<f32>(out_position_offset, 1.0) + vec4<f32>(out_normal_override, 1.0);
+    return vec4<f32>(out_position_offset, 1.0)
+        + vec4<f32>(out_normal_override, 1.0)
+        + vec4<f32>(out_world_position_offset, 1.0);
 }

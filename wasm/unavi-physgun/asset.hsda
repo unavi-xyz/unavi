@@ -7,4 +7,26 @@
         relationships: {},
         children: [],
     ),
+    (
+        attributes: (
+            material_graph: (
+                path: "./beam.hss",
+                overrides: {},
+            ),
+            name: "beam_template",
+        ),
+        relationships: {},
+        children: [],
+    ),
+    (
+        attributes: (
+            material_graph: (
+                path: "./glow.hss",
+                overrides: {},
+            ),
+            name: "glow_template",
+        ),
+        relationships: {},
+        children: [],
+    ),
 ]

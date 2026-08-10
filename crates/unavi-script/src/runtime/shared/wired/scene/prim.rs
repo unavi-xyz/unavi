@@ -1,6 +1,9 @@
-use std::sync::{
-    Arc,
-    Mutex,
+use std::{
+    collections::BTreeMap,
+    sync::{
+        Arc,
+        Mutex,
+    },
 };
 
 use anyhow::bail;
@@ -21,6 +24,14 @@ use hsd::{
         material::{
             ColorVec,
             MaterialAttr,
+        },
+        material_graph::{
+            MAX_PUBLIC_INPUTS,
+            overrides::GraphOverridesAttr,
+            value::{
+                GraphValue,
+                is_finite,
+            },
         },
         mesh::{
             MeshAttr,
@@ -92,6 +103,16 @@ pub struct PrimColor {
     pub g: f32,
     pub b: f32,
     pub a: f32,
+}
+
+/// Runtime mirror of the graph format's `GraphValue`, kept separate so the
+/// two WIT backends share one conversion rather than each writing their own.
+#[derive(Clone, Copy)]
+pub enum PrimGraphValue {
+    Float(f32),
+    Vec2([f32; 2]),
+    Vec3([f32; 3]),
+    Color(PrimColor),
 }
 
 #[derive(Clone, Copy)]
@@ -643,6 +664,66 @@ pub async fn set_material(api: &Api, rep: u32, value: Option<PrimMaterial>) -> a
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     prim.write_or_clear(value.map(prim_to_material_attr))
+}
+
+pub async fn graph_overrides(api: &Api, rep: u32) -> anyhow::Result<Vec<(u16, PrimGraphValue)>> {
+    let prim = get_prim(api, rep).await?;
+    Ok(prim
+        .read_attr::<GraphOverridesAttr>()?
+        .map(|attr| {
+            attr.overrides
+                .into_iter()
+                .map(|(index, value)| (index, graph_value_to_prim(value)))
+                .collect()
+        })
+        .unwrap_or_default())
+}
+
+/// Clearing every override removes the attribute rather than writing an
+/// empty map.
+///
+/// A prim using the graph's own defaults then carries no property at all,
+/// which is the same shape `hsd-cli` compiles to.
+pub async fn set_graph_overrides(
+    api: &Api,
+    rep: u32,
+    values: Vec<(u16, PrimGraphValue)>,
+) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
+    ensure_writable(api, &prim)?;
+    anyhow::ensure!(
+        values.len() <= MAX_PUBLIC_INPUTS,
+        "a graph has at most {MAX_PUBLIC_INPUTS} public inputs"
+    );
+
+    let overrides = values
+        .into_iter()
+        .map(|(index, value)| {
+            let value = prim_to_graph_value(value);
+            anyhow::ensure!(is_finite(value), "override {index} is not finite");
+            Ok((index, value))
+        })
+        .collect::<anyhow::Result<BTreeMap<_, _>>>()?;
+
+    prim.write_or_clear((!overrides.is_empty()).then_some(GraphOverridesAttr { overrides }))
+}
+
+const fn graph_value_to_prim(value: GraphValue) -> PrimGraphValue {
+    match value {
+        GraphValue::Float(v) => PrimGraphValue::Float(v),
+        GraphValue::Vec2(v) => PrimGraphValue::Vec2(v),
+        GraphValue::Vec3(v) => PrimGraphValue::Vec3(v),
+        GraphValue::Color([r, g, b, a]) => PrimGraphValue::Color(PrimColor { r, g, b, a }),
+    }
+}
+
+const fn prim_to_graph_value(value: PrimGraphValue) -> GraphValue {
+    match value {
+        PrimGraphValue::Float(v) => GraphValue::Float(v),
+        PrimGraphValue::Vec2(v) => GraphValue::Vec2(v),
+        PrimGraphValue::Vec3(v) => GraphValue::Vec3(v),
+        PrimGraphValue::Color(c) => GraphValue::Color([c.r, c.g, c.b, c.a]),
+    }
 }
 
 fn material_attr_to_prim(attr: MaterialAttr) -> PrimMaterial {

@@ -1,0 +1,100 @@
+// The physgun tractor beam: a thin, additive, glowing line.
+//
+// The prim is a unit cylinder stretched between muzzle and grab point with
+// scale (W, length, W). Brightness is a tight Fresnel core plus a soft halo
+// rather than a lit surface, so it reads as light rather than as a
+// translucent tube.
+//
+// The beam is straight at rest. Its curve comes entirely from public input
+// 4, a world-space offset the script updates as the muzzle moves — rope
+// drag, not a procedural wave. `world_position_offset` is what makes that
+// expressible: the prim rotates to point at the prop, so no local-space
+// vector stays fixed in world space.
+(
+    public_inputs: [
+        Color((1.0, 0.62, 0.16, 1.0)), // 0: tint, overridden per player
+        Float(14.0),                   // 1: intensity, well past 1.0 so the
+                                       //    camera's bloom actually catches it
+        Float(1.6),                    // 2: energy scroll speed
+        Float(7.0),                    // 3: energy tiling
+        Vec3((0.0, 0.0, 0.0)),         // 4: rope drag, world metres at midpoint
+    ],
+    surface: (
+        nodes: [
+            Uv,
+            Extract(v: Node(0), channel: 1),
+
+            // Energy travelling toward the prop.
+            Mul(a: Node(1), b: Input(3)),
+            Time,
+            Mul(a: Node(3), b: Input(2)),
+            Sub(a: Node(2), b: Node(4)),
+            Fract(x: Node(5)),
+            Smoothstep(low: Const(Float(0.0)), high: Const(Float(0.4)), x: Node(6)),
+            OneMinus(x: Node(7)),
+            Mul(a: Node(8), b: Const(Float(0.45))),
+            Add(a: Const(Float(0.75)), b: Node(9)),
+
+            // Fade in at the muzzle and out at the prop.
+            Smoothstep(low: Const(Float(0.0)), high: Const(Float(0.06)), x: Node(1)),
+            OneMinus(x: Node(1)),
+            Smoothstep(low: Const(Float(0.0)), high: Const(Float(0.06)), x: Node(12)),
+            Mul(a: Node(11), b: Node(13)),
+
+            Mul(a: Node(10), b: Node(14)),
+            Mul(a: Node(15), b: Input(1)),
+            Mul(a: Input(0), b: Node(16)),
+
+            // Alpha is pinned to 1 rather than carried along by the tint
+            // multiply. `AlphaMode::Add` blends `src.rgb * src.a + dst`, so
+            // letting brightness reach alpha too would square it — raising
+            // intensity would blow straight to white instead of getting
+            // brighter. Fading happens in RGB, which under additive blending
+            // is what "invisible" already means.
+            Extract(v: Node(17), channel: 0),
+            Extract(v: Node(17), channel: 1),
+            Extract(v: Node(17), channel: 2),
+            Combine4(x: Node(18), y: Node(19), z: Node(20), w: Const(Float(1.0))),
+        ],
+        output: Unlit((color: Node(21))),
+        blend: Add,
+        // No view-dependent term anywhere above, deliberately. `Fresnel`
+        // emits `pow(clamp(1 - dot(N, V), 0, 1), p)`, and that clamp folds
+        // every back-facing normal to exactly 1 — so on a tube the two walls
+        // shade differently and, at this radius, the lit band is a sliver.
+        // A uniformly bright additive tube is both what a beam looks like
+        // and free of any front/back asymmetry. Culling backfaces then costs
+        // nothing, since the far wall would only double the brightness.
+        cull: Back,
+    ),
+    displacement: (
+        nodes: [
+            LocalPosition,
+            Extract(v: Node(0), channel: 1),
+
+            // t runs 0 at the muzzle to 1 at the prop: local +Y is the axis
+            // the script aligns from muzzle toward grab point.
+            Add(a: Node(1), b: Const(Float(0.5))),
+
+            // 5.379 * t^1.5 * (1 - t): zero at both ends so the beam still
+            // meets the muzzle and the prop exactly, peaking at t = 0.6.
+            //
+            // A centred parabola bows the rope into a symmetric "U", so the
+            // exponent biases the peak toward the trailing end. But it is
+            // easy to overdo: t^3 (peak 0.75) leaves the first half of the
+            // rope visibly dead straight and then folds sharply, which reads
+            // as a kink rather than a drag. The 1.5 power keeps the bias
+            // while spreading the bend across most of the span — the curve
+            // starts moving early and eases into its peak. The constant
+            // normalises that peak back to 1.
+            Pow(x: Node(2), y: Const(Float(1.5))),
+            OneMinus(x: Node(2)),
+            Mul(a: Node(3), b: Node(4)),
+            Mul(a: Node(5), b: Const(Float(5.379))),
+            Saturate(x: Node(6)),
+
+            Mul(a: Input(4), b: Node(7)),
+        ],
+        world_position_offset: Node(8),
+    ),
+)

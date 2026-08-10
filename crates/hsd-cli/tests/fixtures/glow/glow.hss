@@ -15,5 +15,6 @@
         output: Unlit((
             color: Node(1),
         )),
+        blend: Add,
     ),
 )

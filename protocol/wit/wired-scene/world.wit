@@ -40,7 +40,7 @@ interface api {
 }
 
 interface types {
-  use wired:math/types.{vec3, quat, transform};
+  use wired:math/types.{vec2, vec3, quat, transform};
   use wired:error/types.{error};
 
   // A ULID rendered as 26 characters of Crockford base32. Fixed-length, so no
@@ -98,6 +98,18 @@ interface types {
     emissive:     option<color>,
     metallic:     option<f32>,
     roughness:    option<f32>,
+  }
+
+  /// A value a shader graph's public input can be overridden with.
+  ///
+  /// Mirrors the graph format's own value kinds exactly. A script may
+  /// override the inputs of a graph its package already carries; it may not
+  /// author one, so no shader content of any kind appears in this API.
+  variant graph-value {
+    float(f32),
+    vec2(vec2),
+    vec3(vec3),
+    color(color),
   }
 
   /// The encoded bytes are the prim's `image:data` entry, set with
@@ -230,6 +242,14 @@ interface types {
 
     material:     func() -> option<material>;
     set-material: func(value: option<material>) -> result<_, error>;
+
+    /// Per-instance overrides of the shader graph this prim renders, keyed
+    /// by public-input index. The graph itself is package content, reached
+    /// through the `material:binding` relationship — the same one a PBR
+    /// material uses, since a prim has one material whichever backend
+    /// draws it.
+    graph-overrides:     func() -> list<tuple<u16, graph-value>>;
+    set-graph-overrides: func(values: list<tuple<u16, graph-value>>) -> result<_, error>;
 
     image:          func() -> option<image>;
     set-image:      func(value: option<image>) -> result<_, error>;

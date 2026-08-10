@@ -302,6 +302,7 @@ pub fn graph(nodes: Vec<Node>) -> ShaderGraph {
         surface: SurfaceGraph {
             nodes,
             output: SurfaceOutput::Unlit(UnlitOutput::default()),
+            ..Default::default()
         },
         ..Default::default()
     }
@@ -311,7 +312,11 @@ pub fn graph(nodes: Vec<Node>) -> ShaderGraph {
 #[must_use]
 pub fn graph_with_output(nodes: Vec<Node>, output: SurfaceOutput) -> ShaderGraph {
     ShaderGraph {
-        surface: SurfaceGraph { nodes, output },
+        surface: SurfaceGraph {
+            nodes,
+            output,
+            ..Default::default()
+        },
         ..Default::default()
     }
 }
@@ -325,6 +330,22 @@ pub fn displaced(nodes: Vec<Node>, position_offset: Option<Port>) -> ShaderGraph
             nodes,
             position_offset,
             normal_override: None,
+            world_position_offset: None,
+        }),
+        ..Default::default()
+    }
+}
+
+/// A graph displacing in world space rather than local space.
+#[must_use]
+pub fn displaced_world(nodes: Vec<Node>, world_position_offset: Option<Port>) -> ShaderGraph {
+    ShaderGraph {
+        surface: SurfaceGraph::default(),
+        displacement: Some(DisplacementGraph {
+            nodes,
+            position_offset: None,
+            normal_override: None,
+            world_position_offset,
         }),
         ..Default::default()
     }

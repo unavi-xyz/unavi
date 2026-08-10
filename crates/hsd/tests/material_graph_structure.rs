@@ -133,8 +133,9 @@ fn a_node_may_reference_a_public_input() {
     let graph = ShaderGraph {
         public_inputs: vec![GraphValue::Color([1.0, 0.0, 0.0, 1.0])],
         surface:       SurfaceGraph {
-            nodes:  Vec::new(),
+            nodes: Vec::new(),
             output: unlit(input(0)),
+            ..Default::default()
         },
         displacement:  None,
     };

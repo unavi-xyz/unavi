@@ -8,6 +8,7 @@ use wired_prelude::prelude::*;
 use crate::{
     hold::Held,
     laser::Laser,
+    outline::Outline,
     unavi::{
         gauntlet_tool::api::{
             Tool,
@@ -29,6 +30,7 @@ use crate::{
 
 mod hold;
 mod laser;
+mod outline;
 mod palette;
 
 wired_prelude::generate_script!(Script);
@@ -39,14 +41,14 @@ const ICON_SIZE: f32 = 0.05;
 const SCROLL_STEP: f32 = 0.4;
 
 struct Script {
-    tool:     Tool,
-    laser:    Laser,
-    camera:   RefCell<Option<Prim>>,
-    active:   Cell<bool>,
-    color:    Cell<Color>,
-    pressed:  Cell<bool>,
-    held:     RefCell<Option<Held>>,
-    hold_pos: Cell<Option<Vec3>>,
+    tool:    Tool,
+    laser:   Laser,
+    camera:  RefCell<Option<Prim>>,
+    active:  Cell<bool>,
+    color:   Cell<Color>,
+    pressed: Cell<bool>,
+    held:    RefCell<Option<Held>>,
+    outline: Outline,
 }
 
 impl Script {
@@ -62,7 +64,7 @@ impl Script {
         if let Some(held) = self.held.borrow_mut().take() {
             held.release();
         }
-        self.hold_pos.set(None);
+        self.outline.clear();
     }
 }
 
@@ -78,14 +80,14 @@ impl ScriptBehavior for Script {
         }))?;
 
         Ok(Self {
-            tool:     Tool::new("Physgun", &icon),
-            laser:    Laser::new(),
-            camera:   RefCell::new(None),
-            active:   Cell::new(false),
-            color:    Cell::new(palette::DEFAULT),
-            pressed:  Cell::new(false),
-            held:     RefCell::new(None),
-            hold_pos: Cell::new(None),
+            tool:    Tool::new("Physgun", &icon),
+            laser:   Laser::new(),
+            camera:  RefCell::new(None),
+            active:  Cell::new(false),
+            color:   Cell::new(palette::DEFAULT),
+            pressed: Cell::new(false),
+            held:    RefCell::new(None),
+            outline: Outline::default(),
         })
     }
 
@@ -108,7 +110,13 @@ impl ScriptBehavior for Script {
                     println!("physgun: trigger {pressed} (active={})", self.active.get());
                     if pressed && !self.pressed.get() && self.active.get() {
                         if let Some(cam) = self.camera() {
-                            *self.held.borrow_mut() = Held::grab(&cam);
+                            let held = Held::grab(&cam);
+                            if let Some(held) = &held
+                                && let Some(collider) = held.collider()
+                            {
+                                self.outline.attach(&collider, self.color.get());
+                            }
+                            *self.held.borrow_mut() = held;
                         } else {
                             println!("physgun: no camera");
                         }
@@ -123,7 +131,7 @@ impl ScriptBehavior for Script {
         if let Some(cam) = self.camera()
             && let Some(held) = &*self.held.borrow()
         {
-            self.hold_pos.set(Some(held.update(&cam)));
+            held.update(&cam);
         }
         Ok(())
     }
@@ -132,10 +140,15 @@ impl ScriptBehavior for Script {
         let Some(cam) = self.camera() else {
             return Ok(());
         };
-        match self.hold_pos.get() {
-            Some(pos) => {
+        // Re-read the grab point here rather than reusing the one
+        // `fixed_update` cached: the muzzle end follows the camera at render
+        // rate, and pinning the far end to the fixed rate as well made the
+        // beam visibly step while the near end swept smoothly.
+        match self.held.borrow().as_ref() {
+            Some(held) => {
                 let muzzle = cam.translation + cam.rotation * ARTIFACT_OFFSET;
-                self.laser.show(muzzle, pos, self.color.get());
+                self.laser.show(muzzle, held.grab_point(), self.color.get());
+                self.outline.track(&held.body());
             }
             None => self.laser.hide(),
         }

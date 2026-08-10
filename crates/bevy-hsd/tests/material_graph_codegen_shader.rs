@@ -13,6 +13,7 @@ use common::{
     const_f,
     const_v3,
     displaced,
+    displaced_world,
     graph_with_output,
     input,
     node,
@@ -21,6 +22,7 @@ use common::{
 use hsd::attributes::material_graph::{
     ShaderGraph,
     graph::{
+        DisplacementGraph,
         LitOutput,
         SurfaceGraph,
         SurfaceOutput,
@@ -134,7 +136,7 @@ fn every_surface_node_kind_generates_valid_wgsl() {
     let graph = ShaderGraph {
         public_inputs: vec![GraphValue::Color([1.0, 0.0, 0.0, 1.0])],
         surface:       SurfaceGraph {
-            nodes:  vec![
+            nodes: vec![
                 Node::Uv,
                 Node::WorldNormal,
                 Node::WorldPosition,
@@ -177,6 +179,7 @@ fn every_surface_node_kind_generates_valid_wgsl() {
                 color:                node(14),
                 alpha_clip_threshold: Some(node(4)),
             }),
+            ..Default::default()
         },
         displacement:  None,
     };
@@ -221,11 +224,12 @@ fn public_input_swizzles_down_to_its_declared_kind() {
     let graph = ShaderGraph {
         public_inputs: vec![GraphValue::Float(1.0)],
         surface:       SurfaceGraph {
-            nodes:  Vec::new(),
+            nodes: Vec::new(),
             output: SurfaceOutput::Unlit(UnlitOutput {
                 color:                const_color([1.0, 1.0, 1.0, 1.0]),
                 alpha_clip_threshold: Some(input(0)),
             }),
+            ..Default::default()
         },
         displacement:  None,
     };
@@ -302,4 +306,76 @@ fn vertex_shader_splices_the_displacement_body() {
     assert!(source.contains("#import bevy_pbr"));
     assert!(source.contains("vertex.position += out_position_offset;"));
     assert!(source.contains("mesh_position_local_to_world"));
+}
+
+/// The physgun beam's rope sag: a parabola in local `y` driving a constant
+/// world-down offset. A local-space offset could not express it — the beam
+/// prim is stretched and rotated between two points, so no local vector
+/// stays world-down.
+#[test]
+fn a_world_space_sag_body_generates_valid_wgsl() {
+    let graph = displaced_world(
+        vec![
+            Node::LocalPosition,
+            Node::Extract {
+                v:       node(0),
+                channel: 1,
+            },
+            Node::Mul {
+                a: node(1),
+                b: node(1),
+            },
+            Node::Mul {
+                a: node(2),
+                b: const_f(4.0),
+            },
+            Node::OneMinus { x: node(3) },
+            Node::Saturate { x: node(4) },
+            Node::Mul {
+                a: node(5),
+                b: const_f(-0.35),
+            },
+            Node::Combine3 {
+                x: const_f(0.0),
+                y: node(6),
+                z: const_f(0.0),
+            },
+        ],
+        Some(node(7)),
+    );
+    let validated = validate(&graph).expect("valid");
+    let body = generate_displacement_body(&graph, &validated).expect("has displacement");
+    assert!(body.contains("out_world_position_offset = n7;"), "{body}");
+    assert_displacement_valid(&body);
+}
+
+/// World and local offsets compose rather than exclude each other: the beam
+/// sags in world space while wavering in its own local space.
+#[test]
+fn vertex_shader_applies_the_world_offset_after_the_mesh_transform() {
+    let graph = ShaderGraph {
+        displacement: Some(DisplacementGraph {
+            nodes:                 vec![Node::LocalNormal],
+            position_offset:       Some(node(0)),
+            normal_override:       None,
+            world_position_offset: Some(node(0)),
+        }),
+        ..Default::default()
+    };
+    let validated = validate(&graph).expect("valid");
+    let source = generate_vertex_shader(&graph, &validated).expect("has displacement");
+
+    let transform = source
+        .find("mesh_position_local_to_world")
+        .expect("mesh transform");
+    let world_offset = source
+        .find("+ out_world_position_offset")
+        .expect("world offset applied");
+    let clip = source
+        .find("out.position = position_world_to_clip")
+        .expect("clip transform");
+    assert!(
+        transform < world_offset && world_offset < clip,
+        "world offset must land between the mesh and clip transforms:\n{source}"
+    );
 }

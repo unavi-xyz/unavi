@@ -44,7 +44,7 @@ fn encode_decode_round_trips() {
     let graph = ShaderGraph {
         public_inputs: vec![GraphValue::Float(0.5)],
         surface:       SurfaceGraph {
-            nodes:  vec![
+            nodes: vec![
                 Node::Uv,
                 Node::TextureSample {
                     uv:   node(0),
@@ -56,11 +56,13 @@ fn encode_decode_round_trips() {
                 alpha: Some(input(0)),
                 ..Default::default()
             }),
+            ..Default::default()
         },
         displacement:  Some(DisplacementGraph {
-            nodes:           vec![Node::LocalPosition],
-            position_offset: Some(node(0)),
-            normal_override: None,
+            nodes:                 vec![Node::LocalPosition],
+            position_offset:       Some(node(0)),
+            normal_override:       None,
+            world_position_offset: None,
         }),
     };
     let bytes = graph.encode().expect("encode");

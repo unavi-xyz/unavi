@@ -72,7 +72,7 @@ impl Plugin for HsdPlugin {
                         attributes::mesh::rebuild_mesh,
                         attributes::image::rebuild_image,
                         attributes::collider::rebuild_collider,
-                        attributes::material::prepare_bound_material,
+                        attributes::material_source::resolve_material_source,
                         attributes::material::rebuild_material,
                         attributes::material::propagate_image_to_material,
                         attributes::material::propagate_material_to_dependents,
@@ -80,6 +80,7 @@ impl Plugin for HsdPlugin {
                         .chain(),
                     (
                         attributes::material_graph::rebuild_material_graph,
+                        attributes::material_graph::apply_graph_overrides,
                         load::instance_hsd,
                         load::instance_prefabs,
                     )

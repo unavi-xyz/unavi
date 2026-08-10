@@ -11,6 +11,7 @@ pub mod gravity_scale;
 pub mod image;
 pub mod material;
 pub mod material_graph;
+pub mod material_source;
 pub mod mesh;
 pub mod name;
 pub mod portal;

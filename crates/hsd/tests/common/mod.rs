@@ -68,6 +68,7 @@ pub fn graph(nodes: Vec<Node>) -> ShaderGraph {
         surface: SurfaceGraph {
             nodes,
             output: SurfaceOutput::Unlit(UnlitOutput::default()),
+            ..Default::default()
         },
         ..Default::default()
     }
@@ -77,7 +78,11 @@ pub fn graph(nodes: Vec<Node>) -> ShaderGraph {
 #[must_use]
 pub fn graph_with_output(nodes: Vec<Node>, output: SurfaceOutput) -> ShaderGraph {
     ShaderGraph {
-        surface: SurfaceGraph { nodes, output },
+        surface: SurfaceGraph {
+            nodes,
+            output,
+            ..Default::default()
+        },
         ..Default::default()
     }
 }
@@ -91,6 +96,7 @@ pub fn displaced(nodes: Vec<Node>, position_offset: Option<Port>) -> ShaderGraph
             nodes,
             position_offset,
             normal_override: None,
+            world_position_offset: None,
         }),
         ..Default::default()
     }

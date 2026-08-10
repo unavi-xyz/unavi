@@ -11,7 +11,13 @@ use hsd::{
         material_graph::{
             MAX_NODES,
             ShaderGraph,
+            graph::{
+                BlendMode,
+                CullMode,
+            },
             overrides::GraphOverridesAttr,
+            parse::parse,
+            validate::validate,
             value::GraphValue,
         },
         name::NameAttr,
@@ -253,5 +259,68 @@ fn a_wrong_network_leaf_fails_the_build() {
     assert!(
         format!("{err:#}").contains("not legal outside its own network"),
         "{err:#}"
+    );
+}
+
+/// The physgun beam graph, as actually shipped in `wasm/unavi-physgun`.
+///
+/// It is the most demanding graph in the tree — both networks, both
+/// displacement offsets, and every public input — so parsing and validating
+/// it here catches an authoring mistake at `cargo test` rather than at the
+/// next asset build.
+#[test]
+fn the_physgun_beam_graph_is_valid() {
+    let src = include_str!("../../../wasm/unavi-physgun/beam.hss");
+    let graph = parse(src).expect("parse beam.hss");
+    validate(&graph).expect("validate beam.hss");
+
+    assert_eq!(graph.public_inputs.len(), 5);
+    assert_eq!(
+        graph.surface.blend,
+        BlendMode::Add,
+        "a beam is made of light"
+    );
+    assert_eq!(
+        graph.surface.cull,
+        CullMode::Back,
+        "the beam has no view-dependent term, so the far wall would only \
+         double its brightness"
+    );
+
+    let displacement = graph.displacement.expect("beam bows while dragged");
+    assert!(
+        displacement.world_position_offset.is_some(),
+        "rope drag is a world-space offset; no local vector survives the prim \
+         rotating to point at the prop"
+    );
+    assert!(
+        displacement.position_offset.is_none(),
+        "the beam is straight at rest: its only curve is the drag the script \
+         feeds in, never a procedural wave"
+    );
+}
+
+/// The physgun prop-highlight graph, as shipped.
+#[test]
+fn the_physgun_glow_graph_is_valid() {
+    let src = include_str!("../../../wasm/unavi-physgun/glow.hss");
+    let graph = parse(src).expect("parse glow.hss");
+    validate(&graph).expect("validate glow.hss");
+
+    assert_eq!(graph.surface.blend, BlendMode::Add);
+    assert_eq!(
+        graph.surface.cull,
+        CullMode::Front,
+        "an inverted hull draws only the far wall, so the depth test leaves \
+         just the ring past the silhouette"
+    );
+    assert!(
+        !graph.surface.cast_shadows,
+        "a stroke around the prop is not matter; the prop already casts its \
+         own shadow"
+    );
+    assert!(
+        graph.displacement.is_none(),
+        "the highlight is a rim on a shell mesh, not a displaced hull"
     );
 }

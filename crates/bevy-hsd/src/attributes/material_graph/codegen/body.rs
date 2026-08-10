@@ -158,21 +158,26 @@ pub fn generate_displacement_body(graph: &ShaderGraph, validated: &Validated) ->
     emit_nodes(&mut out, public_inputs, &displacement.nodes, kinds);
 
     out.push_str("    var out_position_offset: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);\n");
+    out.push_str("    var out_world_position_offset: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);\n");
     out.push_str(
         "#ifdef VERTEX_NORMALS\n    var out_normal_override: vec3<f32> = \
          vertex.normal;\n#else\n    var out_normal_override: vec3<f32> = vec3<f32>(0.0, 0.0, \
          1.0);\n#endif\n",
     );
 
-    if let Some(port) = displacement.position_offset {
-        let _ = write!(out, "    out_position_offset = ");
-        port_expr(&mut out, public_inputs, port);
-        out.push_str(";\n");
-    }
-    if let Some(port) = displacement.normal_override {
-        let _ = write!(out, "    out_normal_override = ");
-        port_expr(&mut out, public_inputs, port);
-        out.push_str(";\n");
+    for (name, port) in [
+        ("out_position_offset", displacement.position_offset),
+        ("out_normal_override", displacement.normal_override),
+        (
+            "out_world_position_offset",
+            displacement.world_position_offset,
+        ),
+    ] {
+        if let Some(port) = port {
+            let _ = write!(out, "    {name} = ");
+            port_expr(&mut out, public_inputs, port);
+            out.push_str(";\n");
+        }
     }
 
     Some(out)

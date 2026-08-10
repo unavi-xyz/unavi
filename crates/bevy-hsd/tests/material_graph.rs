@@ -3,16 +3,21 @@ use std::collections::BTreeMap;
 use bevy::{
     pbr::MeshMaterial3d,
     prelude::*,
+    render::render_resource::Face,
 };
 use bevy_hsd::attributes::material_graph::{
     HsdMaterialGraphSlot,
     HsdShaderGraphMaterial,
     ShaderGraphMaterial,
+    ShaderGraphOverridesData,
 };
 use hsd::attributes::{
+    material,
     material_graph::{
         ShaderGraph,
         graph::{
+            BlendMode,
+            CullMode,
             DisplacementGraph,
             SurfaceGraph,
             SurfaceOutput,
@@ -41,7 +46,7 @@ fn glow_graph() -> ShaderGraph {
     ShaderGraph {
         public_inputs: vec![GraphValue::Color([0.1, 0.6, 1.0, 1.0])],
         surface:       SurfaceGraph {
-            nodes:  vec![
+            nodes: vec![
                 Node::Fresnel {
                     power: Port::Const(GraphValue::Float(2.0)),
                 },
@@ -55,6 +60,8 @@ fn glow_graph() -> ShaderGraph {
                 color:                Port::Node(1),
                 alpha_clip_threshold: None,
             }),
+            blend: BlendMode::Add,
+            ..Default::default()
         },
         displacement:  None,
     }
@@ -92,7 +99,7 @@ fn test_shader_graph_without_overrides(#[from(ctx_wds)] mut ctx: TestContext) {
     // Public input 0 (the rim tint) keeps the graph's own default: no
     // overrides attribute was ever set on this prim.
     assert_eq!(material.params.inputs[0], Vec4::new(0.1, 0.6, 1.0, 1.0));
-    assert_eq!(material.alpha_mode, AlphaMode::Blend);
+    assert_eq!(material.alpha_mode, AlphaMode::Add);
     assert!(material.vertex_shader.is_none(), "no displacement network");
 }
 
@@ -200,16 +207,18 @@ fn test_shader_graph_with_displacement_compiles_a_vertex_shader(
     let graph = ShaderGraph {
         public_inputs: Vec::new(),
         surface:       SurfaceGraph {
-            nodes:  Vec::new(),
+            nodes: Vec::new(),
             output: SurfaceOutput::Unlit(UnlitOutput {
                 color:                Port::Const(GraphValue::Color([1.0, 1.0, 1.0, 1.0])),
                 alpha_clip_threshold: None,
             }),
+            ..Default::default()
         },
         displacement:  Some(DisplacementGraph {
-            nodes:           vec![Node::LocalNormal, Node::Time],
-            position_offset: Some(Port::Node(0)),
-            normal_override: None,
+            nodes:                 vec![Node::LocalNormal, Node::Time],
+            position_offset:       Some(Port::Node(0)),
+            normal_override:       None,
+            world_position_offset: None,
         }),
     };
     let bytes = graph.encode().expect("encode graph");
@@ -233,5 +242,96 @@ fn test_shader_graph_with_displacement_compiles_a_vertex_shader(
     assert!(
         material.vertex_shader.is_some(),
         "a displacement network must compile a vertex shader"
+    );
+}
+
+/// Blend and cull are declared by the graph, not inferred from which
+/// terminals happen to be connected — an inferred mode put every unlit graph
+/// in the transparent queue and left `Add` (what a beam needs) unreachable.
+#[traced_test]
+#[rstest]
+fn blend_and_cull_reach_the_material(#[from(ctx_wds)] mut ctx: TestContext) {
+    let graph = ShaderGraph {
+        surface: SurfaceGraph {
+            blend: BlendMode::Add,
+            cull: CullMode::Front,
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    let bytes = graph.encode().expect("encode graph");
+
+    let prim = ctx.create_prim();
+    ctx.set_slot(prim, slots::MATERIAL_GRAPH_DATA, bytes);
+
+    let mut handle: Option<Handle<ShaderGraphMaterial>> = None;
+    ctx.tick_until(|world| {
+        let mut q = world.query::<&HsdShaderGraphMaterial>();
+        let Some(hsd_mat) = q.iter(world).next() else {
+            return false;
+        };
+        handle = Some(hsd_mat.0.clone());
+        true
+    });
+
+    let handle = handle.expect("material handle");
+    let assets = ctx.app.world().resource::<Assets<ShaderGraphMaterial>>();
+    let material = assets.get(&handle).expect("material asset");
+    assert!(matches!(material.alpha_mode, AlphaMode::Add));
+    assert_eq!(material.cull_mode, Some(Face::Front));
+}
+
+/// One binding, two backends: `material:binding` names a prim, not a
+/// backend, so a prim bound to one carrying a graph renders that graph —
+/// and must not also carry a competing `StandardMaterial`. This is the path
+/// the physgun uses to reach a graph its package authored, since a script
+/// cannot author one.
+#[traced_test]
+#[rstest]
+fn binding_to_a_graph_prim_renders_that_graph(#[from(ctx_wds)] mut ctx: TestContext) {
+    let bytes = glow_graph().encode().expect("encode graph");
+
+    let template = ctx.create_prim();
+    ctx.set_slot(template, slots::MATERIAL_GRAPH_DATA, bytes);
+
+    let beam = ctx.create_prim();
+    ctx.set_relationship(beam, material::BINDING, template);
+    ctx.set_attr(
+        beam,
+        &GraphOverridesAttr {
+            overrides: BTreeMap::from([(0, GraphValue::Color([1.0, 0.0, 0.0, 1.0]))]),
+        },
+    );
+
+    let mut bound: Option<Handle<ShaderGraphMaterial>> = None;
+    ctx.tick_until(|world| {
+        let mut q = world.query::<(Entity, &HsdShaderGraphMaterial)>();
+        let found = q.iter(world).count();
+        if found < 2 {
+            return false;
+        }
+        let mut q = world.query::<(&HsdShaderGraphMaterial, &ShaderGraphOverridesData)>();
+        let Some((mat, _)) = q.iter(world).next() else {
+            return false;
+        };
+        bound = Some(mat.0.clone());
+        true
+    });
+
+    let bound = bound.expect("bound prim built a shader graph material");
+    let world = ctx.app.world_mut();
+    let assets = world.resource::<Assets<ShaderGraphMaterial>>();
+    let material = assets.get(&bound).expect("material asset");
+    assert_eq!(
+        material.params.inputs[0],
+        Vec4::new(1.0, 0.0, 0.0, 1.0),
+        "a graph binding shares the program but keeps this prim's own overrides"
+    );
+
+    let mut q = world.query::<&MeshMaterial3d<StandardMaterial>>();
+    assert_eq!(
+        q.iter(world).count(),
+        0,
+        "a prim rendered by a graph must not also carry a PBR material"
     );
 }

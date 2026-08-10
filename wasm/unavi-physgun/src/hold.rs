@@ -10,14 +10,20 @@ use crate::wired::{
     },
     scene::{
         api::get_document,
-        types::Prim,
+        types::{
+            Collider,
+            Prim,
+        },
     },
 };
 
 const RAY_MAX: f32 = 100.0;
-/// Gap fraction closed per second; kept low so actuation latency can't make the
-/// tracking oscillate. The lag it leaves is the inertia.
-const FOLLOW: f32 = 10.0;
+/// Gap fraction closed per second; kept low so actuation latency can't make
+/// the tracking oscillate. The lag it leaves is the inertia — and it is what
+/// makes the prop trail behind the cursor when you sweep sideways, which the
+/// beam then curves into. Tracking the target rigidly instead left the prop
+/// pinned under the cursor and all the slack in the rope.
+const FOLLOW: f32 = 5.5;
 const MAX_SPEED: f32 = 30.0;
 const SETTLE: f32 = 0.01;
 const ROTATE_SETTLE: f32 = 0.01;
@@ -33,6 +39,10 @@ pub struct Held {
     offset:     Vec3,
     offset_rot: Quat,
     gravity:    f32,
+    /// Where on the body the ray landed, in body-local space. The beam
+    /// attaches here and the body hangs off it, so grabbing a corner drags
+    /// that corner rather than teleporting the centre under the cursor.
+    grab_local: Vec3,
 }
 
 impl Held {
@@ -74,26 +84,60 @@ impl Held {
         }
 
         let gravity = prim.gravity_scale();
-        prim.set_gravity_scale(0.0).ok();
+        if let Err(err) = prim.set_gravity_scale(0.0) {
+            // Swallowing this leaves the prop falling while the controller
+            // fights to lift it, which looks like a tuning problem rather
+            // than a failed write.
+            eprintln!("physgun: could not disable gravity on the held prop: {err:?}");
+        }
         let body = prim.global_xform();
+        let grab_local = body.rotation.inverse() * (hit.point - body.translation);
         Some(Self {
             doc: hit.document,
             prim,
-            offset: cam.rotation.inverse() * (body.translation - cam.translation),
+            offset: cam.rotation.inverse() * (hit.point - cam.translation),
             offset_rot: cam.rotation.inverse() * body.rotation,
             gravity,
+            grab_local,
         })
     }
 
-    /// Drags the body toward the grab point and turns it to match the
-    /// camera's look direction, returning its current world position for the
-    /// laser to track.
-    pub fn update(&self, cam: &Transform) -> Vec3 {
-        let body = self.prim.global_xform();
-        let current = body.translation;
+    /// The prop's collider, for building a highlight shell around it.
+    #[must_use]
+    pub fn collider(&self) -> Option<Collider> {
+        self.prim.collider()
+    }
 
+    /// The prop's current pose.
+    #[must_use]
+    pub fn body(&self) -> Transform {
+        self.prim.global_xform()
+    }
+
+    /// The world position of the point that was originally clicked, now that
+    /// the body has moved and turned. Read at render rate by the beam, since
+    /// the body itself only steps at the fixed rate.
+    #[must_use]
+    pub fn grab_point(&self) -> Vec3 {
+        let body = self.prim.global_xform();
+        body.translation + body.rotation * self.grab_local
+    }
+
+    /// Drags the grabbed point toward the cursor and turns the body to match
+    /// the camera's look direction. The beam reads the resulting position
+    /// itself via `grab_point`, at render rate rather than this fixed one.
+    pub fn update(&self, cam: &Transform) {
+        let body = self.prim.global_xform();
         let target = cam.transform_point(self.offset);
-        let error = target - current;
+
+        // Aim the body's centre at where it has to be for the grab point to
+        // land on target, rather than measuring error at the grab point
+        // itself. Measuring at the grab point couples this against the
+        // angular controller below — every correction rotates the body,
+        // which swings the grab point, which the linear controller then
+        // chases — and the two fighting reads as the prop bobbing.
+        let desired_centre = target - body.rotation * self.grab_local;
+        let error = desired_centre - body.translation;
         let mut vel = if error.length() < SETTLE {
             Vec3::ZERO
         } else {
@@ -119,8 +163,6 @@ impl Held {
             axis * angle * FOLLOW
         };
         set_angular_velocity(&self.prim, ang_vel).ok();
-
-        current
     }
 
     /// Adjusts the hold distance along the view (physgun scroll / push-pull).

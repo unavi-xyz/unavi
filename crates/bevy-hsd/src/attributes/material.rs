@@ -20,6 +20,7 @@ use crate::{
         AttributeParser,
         ParseError,
         image::HsdImage,
+        material_source::MaterialSource,
     },
 };
 
@@ -70,12 +71,14 @@ impl AttributeParser for MaterialParser {
         payload: Option<&[u8]>,
     ) -> Result<(), ParseError> {
         match payload {
+            // Only the decoded definition: whether this prim renders as PBR
+            // at all is `MaterialSource`'s call, and `build` inserts the
+            // render components once it is. Inserting them here would give a
+            // graph-backed prim a competing material for a frame.
             Some(payload) => {
-                commands.entity(prim).insert((
-                    MaterialData(MaterialAttr::decode(payload)?),
-                    HsdMaterial::default(),
-                    MeshMaterial3d::<StandardMaterial>::default(),
-                ));
+                commands
+                    .entity(prim)
+                    .insert(MaterialData(MaterialAttr::decode(payload)?));
             }
             None => {
                 commands
@@ -97,15 +100,22 @@ pub struct MaterialCtx<'w, 's> {
     pub relationships: Query<'w, 's, &'static HsdRelationships>,
     pub images:        Query<'w, 's, &'static HsdImage>,
     pub materials:     Query<'w, 's, &'static HsdMaterial>,
+    pub sources:       Query<'w, 's, &'static MaterialSource>,
 }
 
-/// Rebuilds on either the inline definition or the relationships changing: a
-/// prim can carry both `material/` and `material:binding/`, and which wins is
-/// this renderer's rule, not the format's.
+/// Rebuilds on the definition, the relationships, or the resolved source.
+///
+/// [`MaterialSource`] is in that list because a binding only becomes ours
+/// once the resolver has decided the target is a PBR material rather than a
+/// shader graph.
 pub fn rebuild_material(
     changed: Query<
         (Entity, Option<&MaterialData>),
-        Or<(Changed<MaterialData>, Changed<HsdRelationships>)>,
+        Or<(
+            Changed<MaterialData>,
+            Changed<HsdRelationships>,
+            Changed<MaterialSource>,
+        )>,
     >,
     ctx: MaterialCtx,
     mut assets: ResMut<Assets<StandardMaterial>>,
@@ -132,23 +142,21 @@ pub fn propagate_image_to_material(
     }
 }
 
+/// A prim bound to one whose `StandardMaterial` just changed picks it up.
+///
+/// Keyed off the resolved [`MaterialSource`] rather than the raw
+/// relationship, so a binding that resolved to a shader graph is skipped
+/// here rather than building a second material for the same prim.
 pub fn propagate_material_to_dependents(
     changed: Query<Entity, Changed<HsdMaterial>>,
-    dependents: Query<(Entity, &HsdRelationships, Option<&MaterialData>, &HsdChild)>,
-    indices: Query<&HsdPrimIndex>,
+    dependents: Query<(Entity, &MaterialSource, Option<&MaterialData>)>,
     ctx: MaterialCtx,
     mut assets: ResMut<Assets<StandardMaterial>>,
     mut commands: Commands,
 ) {
     for src_ent in &changed {
-        for (dep_ent, rels, data, doc_child) in &dependents {
-            let Some(target) = rels.0.get(material::BINDING) else {
-                continue;
-            };
-            let Ok(index) = indices.get(doc_child.0) else {
-                continue;
-            };
-            if index.0.get(target) == Some(&src_ent) && dep_ent != src_ent {
+        for (dep_ent, source, data) in &dependents {
+            if *source == MaterialSource::Pbr(src_ent) && dep_ent != src_ent {
                 build(
                     dep_ent,
                     data.map(|d| &d.0),
@@ -177,14 +185,17 @@ fn build(
         return;
     };
 
-    let rels = ctx.relationships.get(ent).ok();
+    // Which backend owns this prim is `MaterialSource`'s call, not this
+    // system's: a prim whose binding resolved to a shader graph is not ours
+    // to build, and must not get a competing `MeshMaterial3d`.
+    let Ok(&MaterialSource::Pbr(source)) = ctx.sources.get(ent) else {
+        return;
+    };
 
-    if let Some(rels) = rels
-        && let Some(target) = rels.0.get(material::BINDING)
-        && let Some(&target_ent) = index.0.get(target)
-        && target_ent != ent
-        && let Ok(target_mat) = ctx.materials.get(target_ent)
-    {
+    if source != ent {
+        let Ok(target_mat) = ctx.materials.get(source) else {
+            return;
+        };
         let handle = target_mat.0.clone();
         commands.entity(ent).insert((
             HsdMaterial(handle.clone()),
@@ -193,6 +204,8 @@ fn build(
         ));
         return;
     }
+
+    let rels = ctx.relationships.get(ent).ok();
 
     let Some(attr) = attr else {
         return;
@@ -272,27 +285,5 @@ fn color_from_color_vec(vec: Option<&ColorVec>) -> Option<Color> {
         )),
         [r, g, b] => Some(Color::linear_rgb(*r as f32, *g as f32, *b as f32)),
         _ => None,
-    }
-}
-
-/// A prim can receive a material purely by relationship, with no inline
-/// definition of its own, so the slots have to exist before
-/// `propagate_material_to_dependents` can fill them.
-pub fn prepare_bound_material(
-    changed: Query<(Entity, Option<&MaterialData>, &HsdRelationships), Changed<HsdRelationships>>,
-    mut commands: Commands,
-) {
-    for (ent, data, rels) in &changed {
-        if rels.0.contains_key(material::BINDING) {
-            commands.entity(ent).insert((
-                HsdMaterial::default(),
-                MeshMaterial3d::<StandardMaterial>::default(),
-            ));
-        } else if data.is_none() {
-            commands
-                .entity(ent)
-                .remove::<HsdMaterial>()
-                .remove::<MeshMaterial3d<StandardMaterial>>();
-        }
     }
 }

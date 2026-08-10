@@ -1,0 +1,16 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-vui"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+serde.workspace    = true
+smol_str.workspace = true
+wired-math.path    = "../../wasm/wired-math"
+wired-scene.path   = "../../wasm/wired-scene"

@@ -93,7 +93,6 @@ impl Plugin for UnaviPlugin {
         app.add_plugins((
             avian3d::PhysicsPlugins::default(),
             bevy_hsd::HsdPlugin,
-            MaterialPlugin::<bevy_hsd::attributes::material_graph::ShaderGraphMaterial>::default(),
             bevy_iroh::IrohPlugin,
             bevy_wds::WdsPlugin,
             unavi_agent::AgentPlugin,

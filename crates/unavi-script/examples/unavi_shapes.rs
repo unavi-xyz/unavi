@@ -71,6 +71,6 @@ fn init_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
             handle,
             on_load: None,
         },
-        ApiPermissions::default(),
+        ApiPermissions::system(),
     ));
 }

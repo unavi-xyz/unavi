@@ -42,7 +42,8 @@ pub struct HsdPlugin;
 
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
-        app.init_asset::<load::HsdAsset>()
+        app.add_plugins(MaterialPlugin::<attributes::material_graph::ShaderGraphMaterial>::default())
+            .init_asset::<load::HsdAsset>()
             .init_resource::<attributes::material_graph::ShaderGraphCache>()
             .register_asset_loader(load::HsdLoader)
             .add_observer(diff::resync_on_spawn)

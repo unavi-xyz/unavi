@@ -28,10 +28,7 @@ use bevy_wds::{
 };
 use directories::ProjectDirs;
 use unavi_agent::LocalAgent;
-use unavi_script::permissions::{
-    ApiName,
-    ApiPermissions,
-};
+use unavi_script::permissions::ApiPermissions;
 
 use crate::util::create_test_wds;
 
@@ -145,6 +142,6 @@ fn on_agent_load(
             handle,
             on_load: None,
         },
-        ApiPermissions::default().with(ApiName::LocalAgent),
+        ApiPermissions::system(),
     ));
 }

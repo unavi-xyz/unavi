@@ -11,8 +11,8 @@ use bevy_wds::{
 };
 use iroh_docs::NamespaceId;
 use time::OffsetDateTime;
+use unavi_registry::entry::Presence;
 use unavi_util::async_task::spawn_async_task;
-use wired_registry::entry::Presence;
 
 use crate::Space;
 

@@ -1,0 +1,73 @@
+[wired-agent]
+path = "../../../protocol/wit/wired-agent"
+sha256 = "f560caa8de90121c33ee15232d1d27ff711bdf2727d18f960ababaaa9139a40f"
+sha512 = "d759a492de0118cad94e82611b8ac156144362aa113845a14fd981e8f07105e19d01252806df84a13f9e1db8032ef23f5155a3089f341c36891194fd634a8ae6"
+deps = ["wired-error"]
+
+[wired-error]
+sha256 = "c364e480a9913d5e2c61838fd4a63f676b970e45e903a3edc4f2709cb95a280e"
+sha512 = "6d1ded9ad0da5f72f7de98ec13c3ef5ac204928a065906394838f52bd16a69b340ff948860617601ceeb3e6847282168e4397524c006e53f31c9a3bd224fe777"
+
+[wired-event]
+path = "../../../protocol/wit/wired-event"
+sha256 = "5732e8d287589bcb515252f1981a51b31b67b49da18c2b248e72ff5e447aab26"
+sha512 = "12e5d341095dd1ee18857b4b42de9d73cf317293f8046b3a252dbf792c8c436dc5cb3e4eef4de5e3a3bf3e4e960b1e507df45b21ff6db722885a2617f8494f49"
+deps = ["wired-error"]
+
+[wired-input]
+path = "../../../protocol/wit/wired-input"
+sha256 = "967d7ad9b253b8d7af1ef1cddd8de0a6a466822f17686020a39c8a32168a19c5"
+sha512 = "acaa8622641fdf94c9d885b6b4d58946f3823febb1af2b0fd50bb0c3bc2d2504b69ec42a5bad6b0fc2e69c8c95403abbe94f6b8d4151c67b7ba9fe4bde9d136b"
+deps = ["wired-error"]
+
+[wired-kv]
+path = "../../../protocol/wit/wired-kv"
+sha256 = "ab730d8bfad64dfdf35162dd62f480f8e96c69852fddff5d1eb9c5a51252b74e"
+sha512 = "6452cd79dc7c7c58d27ff78c6818e7ae1fff3b7dab5fabde0928935abe0537250789a9ee867614cd8276822bdab71c465c8613973daa283d5cb7f5c3265c1593"
+deps = ["wired-error"]
+
+[wired-math]
+path = "../../../protocol/wit/wired-math"
+sha256 = "5827c5d176d5b3ef5549fd894a6831a4e91bd1af99a6593b1914c1e786d1c37c"
+sha512 = "b4a9267ae32136b0fbce5aa009e87a5369715cc1f48f68adeaafff11734b9fab63fc5f3352de7afc17529f2219dcb459f321ff43816fb129101fb3d98c9a9d30"
+
+[wired-peer]
+path = "../../../protocol/wit/wired-peer"
+sha256 = "1fbfc47dc7eb082b096e210bb42607eb1c19a64d2fbb7a612bf97bf41ca5002d"
+sha512 = "86f1cda126348c12e654cdec89e1a3ea4e35c46c4c6d2188f1df75c6ce75ad73ecb2de0c6aaba385b11d910f6831a299d1766eeeca98e45b545f82e23fe945b2"
+deps = ["wired-error"]
+
+[wired-physics]
+path = "../../../protocol/wit/wired-physics"
+sha256 = "a7faedb3f0d372cf919e34f331ac8e4314dcb48df13c9edc61a5e80d589a7262"
+sha512 = "5c56e1360a5a0a8b820b180b27feb5f9342a6abb19feede471027527db020fe02e51f03d0c31988b73d9b6da3660e46c5ba2b96cacf83c1ec02a5d9413dc3f7b"
+deps = ["wired-error"]
+
+[wired-portal]
+path = "../../../protocol/wit/wired-portal"
+sha256 = "53197c78ec66ead39509aec3506f55828b635487c25b95e5dad61030589dc21b"
+sha512 = "f441a65aca37cdc374c1c77a761e72be2cd72cc417254517cf02aaf55c5d2dcb5f8a8ded71f0fa195cbd74f90d17411edc49b1392e7e63f6fea648cc5eba6fe5"
+deps = ["wired-error"]
+
+[wired-prelude]
+path = "../../../protocol/wit/wired-prelude"
+sha256 = "412ead66c675ef5675b969c32b56e8e2b9ecebbe6114ea7f21aa2bc891c45995"
+sha512 = "e395255a1fea1315cfb172753c865ed517667ec4486d578132017821e940629f76069f4e42b5764c21346ccc8d3ccadaa54e4f9639a58a0ed5b4f26440633b23"
+deps = ["wired-error"]
+
+[wired-scene]
+path = "../../../protocol/wit/wired-scene"
+sha256 = "c08a83b33d8eb7a6b3d4feb94a278ced0c518bac325ca89240780be00a968897"
+sha512 = "cb0b788df9acfea9ac6b8961aaff51bb3445afc08898b8fc93733b1adebe00963882033710154def4fcf57bbd4dff0b3c2155caa8174858cea100ade1ccab1c5"
+deps = ["wired-error"]
+
+[wired-script]
+path = "../../../protocol/wit/wired-script"
+sha256 = "8f869298ace5dfcd9ad73296bfb3d60eb5388e42f5bd139f958440a817815f64"
+sha512 = "19866da1e92d6de38428da62e77a49fe8800d0629789f7fad88fbbe74c7a8e4734fe8cb2fa1be5cb9c36f709c15be52bb3d5cb34220066e2137b4d623e453245"
+
+[wired-wds]
+path = "../../../protocol/wit/wired-wds"
+sha256 = "6f311b7bf9f1eb5304b62eaf6f8a833e884a1646cb7c9103cb640ca2c0fa690e"
+sha512 = "77bf91f66efd66773aa90baed8b7383e18b2d30b792778b9162af5ca382ac69f5f563885d9ee386f5ed9a46bd69c451d6b613fd824be3457ae7d254844172a62"
+deps = ["wired-error"]

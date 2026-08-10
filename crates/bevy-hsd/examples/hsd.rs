@@ -8,7 +8,6 @@ use bevy::{
 use bevy_hsd::{
     Hsd,
     HsdPlugin,
-    attributes::material_graph::ShaderGraphMaterial,
 };
 use bevy_panorbit_camera::{
     PanOrbitCamera,
@@ -66,7 +65,6 @@ fn main() {
             PanOrbitCameraPlugin,
             WdsPlugin,
             HsdPlugin,
-            MaterialPlugin::<ShaderGraphMaterial>::default(),
         ))
         .insert_resource(ClearColor(Color::srgb(0.08, 0.09, 0.13)))
         .add_systems(Startup, (setup_scene, load_hsd))

@@ -1076,9 +1076,9 @@ dependencies = [
  "iroh-gossip",
  "n0-future",
  "tokio",
+ "unavi-registry",
  "unavi-util",
  "wds",
- "wired-registry",
  "xdid",
 ]
 
@@ -5302,6 +5302,17 @@ name = "example-unavi-shapes"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "wired-prelude",
+ "wit-bindgen 0.55.0",
+]
+
+[[package]]
+name = "example-unavi-vui"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "smol_str 0.3.6",
+ "unavi-vui",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -13940,9 +13951,9 @@ dependencies = [
  "bevy-wds",
  "iroh",
  "n0-future",
+ "unavi-registry",
  "unavi-util",
  "wds",
- "wired-registry",
  "xdid",
 ]
 
@@ -14025,6 +14036,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-registry"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "futures 0.3.33",
+ "iroh",
+ "iroh-blobs",
+ "iroh-docs",
+ "irpc",
+ "irpc-iroh",
+ "n0-future",
+ "postcard",
+ "scc",
+ "serde",
+ "smol_str 0.3.6",
+ "thiserror 2.0.19",
+ "time",
+ "tracing",
+ "wds",
+ "xdid",
+]
+
+[[package]]
 name = "unavi-script"
 version = "0.0.16"
 dependencies = [
@@ -14094,8 +14128,8 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "unavi-registry",
  "wds",
- "wired-registry",
  "xdid",
  "zeroize",
 ]
@@ -14144,9 +14178,9 @@ dependencies = [
  "unavi-manifold",
  "unavi-portal-protocol",
  "unavi-quota",
+ "unavi-registry",
  "unavi-util",
  "wds",
- "wired-registry",
 ]
 
 [[package]]
@@ -14166,6 +14200,16 @@ dependencies = [
  "bevy",
  "n0-future",
  "unavi-wasm-compat",
+]
+
+[[package]]
+name = "unavi-vui"
+version = "0.0.16"
+dependencies = [
+ "serde",
+ "smol_str 0.3.6",
+ "wired-math",
+ "wired-scene",
 ]
 
 [[package]]
@@ -16259,29 +16303,6 @@ dependencies = [
  "wired-kv",
  "wired-math",
  "wired-scene",
-]
-
-[[package]]
-name = "wired-registry"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "futures 0.3.33",
- "iroh",
- "iroh-blobs",
- "iroh-docs",
- "irpc",
- "irpc-iroh",
- "n0-future",
- "postcard",
- "scc",
- "serde",
- "smol_str 0.3.6",
- "thiserror 2.0.19",
- "time",
- "tracing",
- "wds",
- "xdid",
 ]
 
 [[package]]

@@ -28,6 +28,7 @@ use iroh::{
     EndpointAddr,
     EndpointId,
 };
+use unavi_registry::client::RegistryClient;
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
@@ -42,7 +43,6 @@ use wds::{
         resolve_allowing_loopback,
     },
 };
-use wired_registry::client::RegistryClient;
 use xdid::{
     core::did::Did,
     methods::key::keys::{

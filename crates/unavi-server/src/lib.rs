@@ -21,14 +21,14 @@ use iroh::{
 };
 use tower_http::cors::CorsLayer;
 use tracing::info;
-use wds::{
-    DataStore,
-    WDS_SERVICE_TYPE,
-};
-use wired_registry::{
+use unavi_registry::{
     Registry,
     config::Config as RegistryConfig,
     views::ViewIds,
+};
+use wds::{
+    DataStore,
+    WDS_SERVICE_TYPE,
 };
 use xdid::{
     core::{
@@ -115,7 +115,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
             Registry::create(Arc::clone(&store), RegistryConfig::default()).await?;
         let views = registry.views();
         info!(recent = %views.recent, "Serving registry");
-        rb = rb.accept(wired_registry::control::ALPN, protocol);
+        rb = rb.accept(unavi_registry::control::ALPN, protocol);
         (Some(registry), Some(views))
     } else {
         (None, None)

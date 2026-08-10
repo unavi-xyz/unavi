@@ -7,8 +7,8 @@ use iroh_docs::{
     protocol::Docs,
 };
 use iroh_gossip::Gossip;
+use unavi_registry::client::RegistryClient;
 use wds::actor::Actor;
-use wired_registry::client::RegistryClient;
 
 pub mod blob;
 pub mod doc;

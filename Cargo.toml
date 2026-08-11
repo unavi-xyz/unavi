@@ -104,6 +104,7 @@ incremental = false
 
 [profile.dev.package."*"]
 codegen-backend = "llvm"
+opt-level       = 1
 
 [profile.wasm-dev]
 inherits  = "dev"

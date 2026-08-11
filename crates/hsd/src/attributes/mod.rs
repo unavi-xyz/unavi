@@ -13,6 +13,7 @@ pub mod name;
 pub mod portal;
 pub mod rigid_body;
 pub mod spawn;
+pub mod text;
 pub mod xform;
 
 /// A postcard payload under a string key.

@@ -37,6 +37,7 @@ impl Plugin for GrabPlugin {
             .add_systems(
                 Update,
                 (
+                    note_promoted_bodies,
                     start_pending_grabs,
                     reach_grabbed_objects,
                     move_grabbed_objects,
@@ -47,21 +48,34 @@ impl Plugin for GrabPlugin {
     }
 }
 
-/// How long a squeeze onto something not yet grabbable keeps waiting for it
-/// to become grabbable.
-const PENDING_GRAB_WINDOW: Duration = Duration::from_millis(500);
+/// Backstop for a squeeze whose release never arrives. A pending grab
+/// ordinarily ends at [`on_squeeze_up`], so this is long enough that the
+/// tap-versus-take decision is never on a clock.
+const PENDING_GRAB_TIMEOUT: Duration = Duration::from_secs(5);
 
-/// Squeezes that landed on a collider with no dynamic body.
+/// How long a body stays an answer to a squeeze after becoming grabbable.
+const PROMOTION_WINDOW: Duration = Duration::from_millis(500);
+
+/// Squeezes that found nothing to carry.
 ///
 /// A script only learns of a grab after the observer has run, so it cannot
-/// make something grabbable in time. Holding the squeeze briefly lets it
-/// answer by adding a rigid body, and the grab starts then. Nothing here
-/// knows why a body might appear, which is the point.
+/// make something grabbable in time. Holding the squeeze lets it answer by
+/// adding a rigid body, and the grab starts then. Nothing here knows why a
+/// body might appear, which is the point.
 #[derive(Resource, Default)]
-struct PendingGrabs(Vec<PendingGrab>);
+struct PendingGrabs {
+    grabs:    Vec<PendingGrab>,
+    /// Bodies that recently became grabbable. A waiting squeeze may latch onto
+    /// one of these that is under its pointer even though its own ray hit
+    /// something else — which is how a squeeze that slipped past its target
+    /// still catches the body the script promoted in answer. Bounded to recent
+    /// promotions so a held squeeze cannot claim a body it merely swept over.
+    promoted: Vec<(Entity, Duration)>,
+}
 
 struct PendingGrab {
-    entity:  Entity,
+    /// None when the squeeze landed on nothing at all.
+    entity:  Option<Entity>,
     pointer: Entity,
     since:   Duration,
 }
@@ -129,18 +143,18 @@ fn on_squeeze_down(
     mut pending: ResMut<PendingGrabs>,
     mut commands: Commands,
 ) {
-    let Some(entity) = trigger.entity else {
-        return;
-    };
+    let grabbable = trigger
+        .entity
+        .filter(|entity| matches!(rigid_bodies.get(*entity), Ok(RigidBody::Dynamic)));
 
-    if !matches!(rigid_bodies.get(entity), Ok(RigidBody::Dynamic)) {
-        pending.0.push(PendingGrab {
-            entity,
+    let Some(entity) = grabbable else {
+        pending.grabs.push(PendingGrab {
+            entity:  trigger.entity,
             pointer: trigger.pointer,
-            since: time.elapsed(),
+            since:   time.elapsed(),
         });
         return;
-    }
+    };
 
     begin_grab(
         entity,
@@ -155,11 +169,31 @@ fn on_squeeze_down(
     );
 }
 
-/// Starts any pending grab whose target has since become dynamic, and drops
-/// the ones that ran out of time or went away.
+/// Records bodies that just became grabbable, so a waiting squeeze has
+/// something to recognize them by.
+fn note_promoted_bodies(
+    promoted: Query<(Entity, &RigidBody), Changed<RigidBody>>,
+    time: Res<Time>,
+    mut pending: ResMut<PendingGrabs>,
+) {
+    let now = time.elapsed();
+    pending
+        .promoted
+        .retain(|(_, at)| now.saturating_sub(*at) <= PROMOTION_WINDOW);
+
+    for (entity, body) in &promoted {
+        if matches!(body, RigidBody::Dynamic) {
+            pending.promoted.push((entity, now));
+        }
+    }
+}
+
+/// Starts any pending grab that has found something to carry, and drops the
+/// ones that ran out of time.
 fn start_pending_grabs(
     transforms: Query<&GlobalTransform>,
     rigid_bodies: Query<&RigidBody>,
+    pointers: Query<&RayCaster>,
     hsd_children: Query<&HsdChild>,
     docs: Docs,
     spaces: Query<&Space>,
@@ -169,38 +203,96 @@ fn start_pending_grabs(
     mut pending: ResMut<PendingGrabs>,
     mut commands: Commands,
 ) {
-    if pending.0.is_empty() {
+    if pending.grabs.is_empty() {
         return;
     }
 
     let active_space = active_space.and_then(|active| active.0);
     let now = time.elapsed();
-    let waiting = std::mem::take(&mut pending.0);
+    let waiting = std::mem::take(&mut pending.grabs);
 
-    pending.0 = waiting
-        .into_iter()
-        .filter(|grab| {
-            match rigid_bodies.get(grab.entity) {
-                Ok(RigidBody::Dynamic) => {
-                    begin_grab(
-                        grab.entity,
-                        grab.pointer,
-                        &transforms,
-                        &hsd_children,
-                        &docs,
-                        &spaces,
-                        &parents,
-                        active_space,
-                        &mut commands,
-                    );
-                    false
-                }
-                // Gone, or still not grabbable: keep waiting until the window
-                // closes.
-                _ => now.saturating_sub(grab.since) <= PENDING_GRAB_WINDOW,
+    let mut remaining = Vec::with_capacity(waiting.len());
+    for grab in waiting {
+        if let Some(entity) = target_for(
+            &grab,
+            &rigid_bodies,
+            &pointers,
+            &transforms,
+            &pending.promoted,
+        ) {
+            begin_grab(
+                entity,
+                grab.pointer,
+                &transforms,
+                &hsd_children,
+                &docs,
+                &spaces,
+                &parents,
+                active_space,
+                &mut commands,
+            );
+        } else if now.saturating_sub(grab.since) <= PENDING_GRAB_TIMEOUT {
+            // Nothing to carry yet: keep waiting for the release, or for the
+            // backstop.
+            remaining.push(grab);
+        }
+    }
+    pending.grabs = remaining;
+}
+
+/// How far off a pointer's line a promoted body may be and still count as the
+/// answer to its squeeze, as a tangent — an angle rather than a distance,
+/// because what this tolerates is pointer *motion*, which is angular.
+///
+/// Generous on purpose. A body promoted mid-squeeze sits where the pointer was
+/// when the script answered, and by the time the promotion has crossed into
+/// the ECS the pointer has moved on — fastest during a drag, which is the case
+/// this exists for. An exact hit-test here asks a script to have predicted the
+/// aim several frames ahead; when it inevitably misses, the body it minted is
+/// left loose in the world. Becoming grabbable during a waiting squeeze is
+/// already a strong enough signal to carry the rest.
+const GRAB_CATCH_TANGENT: f32 = 0.2;
+
+/// What a waiting squeeze should carry: the thing it landed on once that
+/// becomes grabbable, or failing that a body promoted in front of its pointer.
+fn target_for(
+    grab: &PendingGrab,
+    rigid_bodies: &Query<&RigidBody>,
+    pointers: &Query<&RayCaster>,
+    transforms: &Query<&GlobalTransform>,
+    promoted: &[(Entity, Duration)],
+) -> Option<Entity> {
+    if let Some(entity) = grab.entity
+        && matches!(rigid_bodies.get(entity), Ok(RigidBody::Dynamic))
+    {
+        return Some(entity);
+    }
+    nearest_promoted(grab.pointer, pointers, transforms, promoted)
+}
+
+fn nearest_promoted(
+    pointer: Entity,
+    pointers: &Query<&RayCaster>,
+    transforms: &Query<&GlobalTransform>,
+    promoted: &[(Entity, Duration)],
+) -> Option<Entity> {
+    let ray = pointers.get(pointer).ok()?;
+    let origin = ray.global_origin();
+    let direction = *ray.global_direction();
+
+    promoted
+        .iter()
+        .filter_map(|(entity, _)| {
+            let offset = transforms.get(*entity).ok()?.translation() - origin;
+            let along = offset.dot(direction);
+            if along <= 0.0 || along > ray.max_distance {
+                return None;
             }
+            let off_axis = (offset - direction * along).length();
+            (off_axis <= along * GRAB_CATCH_TANGENT).then_some((*entity, along))
         })
-        .collect();
+        .min_by(|(_, a), (_, b)| a.total_cmp(b))
+        .map(|(entity, _)| entity)
 }
 
 fn claim_doc_authority(
@@ -284,7 +376,7 @@ fn on_squeeze_up(
     mut pending: ResMut<PendingGrabs>,
     mut commands: Commands,
 ) {
-    pending.0.retain(|grab| grab.pointer != trigger.pointer);
+    pending.grabs.retain(|grab| grab.pointer != trigger.pointer);
 
     let Some(entity) = trigger.entity else {
         return;

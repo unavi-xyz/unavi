@@ -1,0 +1,45 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "msdf"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[features]
+bake = [
+  "dep:anyhow",
+  "dep:clap",
+  "dep:etagere",
+  "dep:fdsm",
+  "dep:fdsm-ttf-parser",
+  "dep:image",
+  "dep:nalgebra",
+  "dep:notosans",
+  "dep:rustybuzz",
+  "dep:ttf-parser",
+]
+
+[dependencies]
+postcard.workspace  = true
+serde.workspace     = true
+thiserror.workspace = true
+
+anyhow          = { optional = true, workspace = true }
+clap            = { optional = true, workspace = true }
+etagere         = { optional = true, version = "0.3.0" }
+fdsm            = { optional = true, version = "0.8.0" }
+fdsm-ttf-parser = { optional = true, version = "0.2.0" }
+image           = { features = ["png"], optional = true, workspace = true }
+nalgebra        = { optional = true, version = "0.34.2" }
+notosans        = { optional = true, version = "0.1.0" }
+rustybuzz       = { optional = true, version = "0.20.1" }
+ttf-parser      = { optional = true, version = "0.25.1" }
+
+[[bin]]
+name              = "msdf-bake"
+path              = "src/bin/bake.rs"
+required-features = ["bake"]

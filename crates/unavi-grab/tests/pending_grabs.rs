@@ -1,5 +1,6 @@
-//! A squeeze onto something not yet grabbable waits briefly, so a script can
-//! answer a grab by making the thing grabbable.
+//! A squeeze onto something not yet grabbable waits, so a script can answer a
+//! grab by making the thing grabbable — either the thing the ray hit, or one
+//! that arrives under the pointer afterwards.
 
 use std::time::Duration;
 
@@ -10,8 +11,10 @@ use unavi_input::{
     SqueezeUp,
 };
 
-/// Matches `unavi_grab`'s own window.
-const WINDOW: Duration = Duration::from_millis(500);
+/// Matches `unavi_grab`'s own safety timeout.
+const TIMEOUT: Duration = Duration::from_secs(5);
+/// Matches `unavi_grab`'s own promotion window.
+const PROMOTION: Duration = Duration::from_millis(500);
 const STEP: Duration = Duration::from_millis(50);
 
 fn app() -> App {
@@ -27,6 +30,10 @@ fn app() -> App {
         unavi_grab::GrabPlugin,
     ))
     .init_asset::<Mesh>()
+    // Bodies here are placed to be aimed at, not dropped, and a grab is
+    // recognized by the `GravityScale` the grab itself adds — which a falling
+    // body would need one of its own.
+    .insert_resource(Gravity(Vec3::ZERO))
     .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(STEP));
     app.finish();
     app.cleanup();
@@ -44,11 +51,24 @@ fn spawn_pointer(app: &mut App) -> Entity {
     app.world_mut().spawn(Transform::default()).id()
 }
 
-fn squeeze_down(app: &mut App, entity: Entity, pointer: Entity) {
-    app.world_mut().trigger(SqueezeDown {
-        entity: Some(entity),
-        pointer,
-    });
+/// A pointer that raycasts, as the desktop player's head does.
+fn spawn_aiming_pointer(app: &mut App) -> Entity {
+    app.world_mut()
+        .spawn((
+            Transform::default(),
+            RayCaster::new(Vec3::ZERO, Dir3::NEG_Z)
+                .with_max_hits(1)
+                .with_max_distance(10.0),
+        ))
+        .id()
+}
+
+fn squeeze_down(app: &mut App, entity: Option<Entity>, pointer: Entity) {
+    app.world_mut().trigger(SqueezeDown { entity, pointer });
+}
+
+const fn steps_over(duration: Duration) -> usize {
+    (duration.as_millis() / STEP.as_millis()) as usize + 3
 }
 
 fn step(app: &mut App, times: usize) {
@@ -67,7 +87,7 @@ fn a_body_added_after_the_squeeze_still_gets_grabbed() {
     let pointer = spawn_pointer(&mut app);
     let target = spawn_target(&mut app);
 
-    squeeze_down(&mut app, target, pointer);
+    squeeze_down(&mut app, Some(target), pointer);
     step(&mut app, 1);
     assert!(!is_grabbed(&app, target), "nothing grabbable yet");
 
@@ -83,16 +103,34 @@ fn a_body_added_after_the_squeeze_still_gets_grabbed() {
 }
 
 #[test]
-fn a_body_added_after_the_window_is_too_late() {
+fn a_hold_that_pauses_before_the_drag_is_still_a_grab() {
     let mut app = app();
     let pointer = spawn_pointer(&mut app);
     let target = spawn_target(&mut app);
 
-    squeeze_down(&mut app, target, pointer);
-    step(
-        &mut app,
-        (WINDOW.as_millis() / STEP.as_millis()) as usize + 3,
+    squeeze_down(&mut app, Some(target), pointer);
+    step(&mut app, steps_over(PROMOTION) * 2);
+
+    app.world_mut()
+        .entity_mut(target)
+        .insert(RigidBody::Dynamic);
+    step(&mut app, 2);
+
+    assert!(
+        is_grabbed(&app, target),
+        "a squeeze held still for a while and then dragged was refused, which \
+         puts the whole tap-versus-take decision on a timer"
     );
+}
+
+#[test]
+fn a_body_added_after_the_timeout_is_too_late() {
+    let mut app = app();
+    let pointer = spawn_pointer(&mut app);
+    let target = spawn_target(&mut app);
+
+    squeeze_down(&mut app, Some(target), pointer);
+    step(&mut app, steps_over(TIMEOUT));
 
     app.world_mut()
         .entity_mut(target)
@@ -101,7 +139,7 @@ fn a_body_added_after_the_window_is_too_late() {
 
     assert!(
         !is_grabbed(&app, target),
-        "a pending grab outlived its window"
+        "a pending grab outlived its safety timeout"
     );
 }
 
@@ -111,7 +149,7 @@ fn releasing_cancels_a_pending_grab() {
     let pointer = spawn_pointer(&mut app);
     let target = spawn_target(&mut app);
 
-    squeeze_down(&mut app, target, pointer);
+    squeeze_down(&mut app, Some(target), pointer);
     step(&mut app, 1);
 
     app.world_mut().trigger(SqueezeUp {
@@ -139,8 +177,143 @@ fn an_already_dynamic_body_is_grabbed_at_once() {
         .insert(RigidBody::Dynamic);
     step(&mut app, 1);
 
-    squeeze_down(&mut app, target, pointer);
+    squeeze_down(&mut app, Some(target), pointer);
     step(&mut app, 1);
 
     assert!(is_grabbed(&app, target));
+}
+
+/// The near miss: the ray slipped past whatever the user was plainly aiming
+/// at, so there is no entity to wait on. Holding the squeeze still catches the
+/// body that arrives under the pointer.
+#[test]
+fn a_squeeze_that_hit_nothing_catches_a_body_that_arrives_under_the_pointer() {
+    let mut app = app();
+    let pointer = spawn_aiming_pointer(&mut app);
+
+    squeeze_down(&mut app, None, pointer);
+    step(&mut app, 1);
+
+    let target = app
+        .world_mut()
+        .spawn((
+            RigidBody::Dynamic,
+            Collider::sphere(0.1),
+            Transform::from_xyz(0.0, 0.0, -1.0),
+        ))
+        .id();
+    step(&mut app, 4);
+
+    assert!(
+        app.world().entity(target).contains::<LinearVelocity>(),
+        "the body was never simulated, so the test proves nothing"
+    );
+    assert!(
+        is_grabbed(&app, target),
+        "a squeeze that missed refused the body that then appeared under it"
+    );
+}
+
+/// The body a script promotes sits where the pointer *was* when it answered,
+/// and the pointer has kept moving — during a drag, which is exactly when
+/// this path runs, it moves fast. Demanding the answer be dead under the
+/// crosshair some frames later asks the script to have predicted the aim.
+#[test]
+fn a_body_that_appears_beside_the_pointer_is_still_caught() {
+    let mut app = app();
+    let pointer = spawn_aiming_pointer(&mut app);
+
+    squeeze_down(&mut app, None, pointer);
+    step(&mut app, 1);
+
+    let target = app
+        .world_mut()
+        .spawn((
+            RigidBody::Dynamic,
+            Collider::sphere(0.05),
+            Transform::from_xyz(0.15, 0.0, -1.0),
+        ))
+        .id();
+    step(&mut app, 4);
+
+    assert!(
+        is_grabbed(&app, target),
+        "the answer to the squeeze drifted off the crosshair and was dropped"
+    );
+}
+
+#[test]
+fn a_body_promoted_well_off_the_pointer_is_left_alone() {
+    let mut app = app();
+    let pointer = spawn_aiming_pointer(&mut app);
+
+    squeeze_down(&mut app, None, pointer);
+    step(&mut app, 1);
+
+    let elsewhere = app
+        .world_mut()
+        .spawn((
+            RigidBody::Dynamic,
+            Collider::sphere(0.05),
+            Transform::from_xyz(1.5, 0.0, -1.0),
+        ))
+        .id();
+    step(&mut app, 4);
+
+    assert!(
+        !is_grabbed(&app, elsewhere),
+        "a squeeze caught a body nowhere near what it was pointing at"
+    );
+}
+
+#[test]
+fn a_body_promoted_behind_the_pointer_is_left_alone() {
+    let mut app = app();
+    let pointer = spawn_aiming_pointer(&mut app);
+
+    squeeze_down(&mut app, None, pointer);
+    step(&mut app, 1);
+
+    let behind = app
+        .world_mut()
+        .spawn((
+            RigidBody::Dynamic,
+            Collider::sphere(0.05),
+            Transform::from_xyz(0.0, 0.0, 1.0),
+        ))
+        .id();
+    step(&mut app, 4);
+
+    assert!(!is_grabbed(&app, behind), "a squeeze reached backwards");
+}
+
+/// The other half of that rule: a squeeze must not quietly steal whatever
+/// grabbable thing the pointer happens to sweep across while it is held.
+#[test]
+fn a_pending_grab_does_not_steal_a_body_it_merely_swept_over() {
+    let mut app = app();
+    let pointer = spawn_aiming_pointer(&mut app);
+
+    let bystander = app
+        .world_mut()
+        .spawn((
+            RigidBody::Dynamic,
+            Collider::sphere(0.1),
+            Transform::from_xyz(4.0, 0.0, -1.0),
+        ))
+        .id();
+    step(&mut app, steps_over(PROMOTION));
+
+    squeeze_down(&mut app, None, pointer);
+    *app.world_mut()
+        .entity_mut(bystander)
+        .get_mut::<Transform>()
+        .expect("transform") = Transform::from_xyz(0.0, 0.0, -1.0);
+    step(&mut app, 4);
+
+    assert!(
+        !is_grabbed(&app, bystander),
+        "a held squeeze grabbed a body that was already grabbable and simply \
+         passed under the pointer"
+    );
 }

@@ -41,9 +41,10 @@ pub struct HsdPlugin;
 
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(MaterialPlugin::<
-            attributes::material_graph::ShaderGraphMaterial,
-        >::default())
+        app.add_plugins((
+            MaterialPlugin::<attributes::material_graph::ShaderGraphMaterial>::default(),
+            bevy_msdf::MsdfPlugin,
+        ))
             .init_asset::<load::HsdAsset>()
             .init_resource::<attributes::material_graph::ShaderGraphCache>()
             .register_asset_loader(load::HsdLoader)
@@ -70,6 +71,7 @@ impl Plugin for HsdPlugin {
                         attributes::gravity_scale::apply_gravity_scale,
                         attributes::rigid_body::apply_rigid_body,
                         attributes::spawn::apply_spawn,
+                        attributes::text::apply_text,
                         attributes::portal::apply_portal,
                         attributes::mesh::rebuild_mesh,
                         attributes::image::rebuild_image,
@@ -91,6 +93,9 @@ impl Plugin for HsdPlugin {
                     .chain()
                     .in_set(HsdCommitSet),
             )
+            // A text prim's attribute lands in `HsdCommitSet`; the renderer
+            // has to see it after, or every label is a frame stale.
+            .configure_sets(Update, bevy_msdf::MsdfSet.after(HsdCommitSet))
             .add_systems(
                 PostUpdate,
                 (loaded::evaluate_hsd_loaded, anchor::apply_anchors),

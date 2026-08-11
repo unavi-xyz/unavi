@@ -30,6 +30,10 @@ use crate::{
                     RigidBody,
                     RigidBodyKind,
                     Spawn,
+                    Text,
+                    TextAlign,
+                    TextAnchor,
+                    TextBillboard,
                     Topology,
                     Xform,
                 },
@@ -52,6 +56,10 @@ use crate::{
                 PrimRigidBody,
                 PrimRigidBodyKind,
                 PrimSpawn,
+                PrimText,
+                PrimTextAlign,
+                PrimTextAnchor,
+                PrimTextBillboard,
                 PrimTopology,
             },
         },
@@ -126,6 +134,64 @@ const fn rigid_kind_shared(k: RigidBodyKind) -> PrimRigidBodyKind {
         RigidBodyKind::Dynamic => PrimRigidBodyKind::Dynamic,
         RigidBodyKind::Kinematic => PrimRigidBodyKind::Kinematic,
         RigidBodyKind::Static => PrimRigidBodyKind::Static,
+    }
+}
+
+fn text_wit(t: PrimText) -> Text {
+    Text {
+        value:         t.value,
+        size:          t.size,
+        align:         t.align.map(|align| match align {
+            PrimTextAlign::Left => TextAlign::Left,
+            PrimTextAlign::Center => TextAlign::Center,
+            PrimTextAlign::Right => TextAlign::Right,
+        }),
+        anchor:        t.anchor.map(|anchor| match anchor {
+            PrimTextAnchor::Baseline => TextAnchor::Baseline,
+            PrimTextAnchor::Top => TextAnchor::Top,
+            PrimTextAnchor::Middle => TextAnchor::Middle,
+            PrimTextAnchor::Bottom => TextAnchor::Bottom,
+        }),
+        wrap:          t.wrap,
+        line_height:   t.line_height,
+        color:         t.color.map(color_wit),
+        outline:       t.outline.map(color_wit),
+        outline_width: t.outline_width,
+        emissive:      t.emissive,
+        billboard:     t.billboard.map(|billboard| match billboard {
+            PrimTextBillboard::None => TextBillboard::None,
+            PrimTextBillboard::Yaw => TextBillboard::Yaw,
+            PrimTextBillboard::Full => TextBillboard::Full,
+        }),
+    }
+}
+
+fn text_shared(t: Text) -> PrimText {
+    PrimText {
+        value:         t.value,
+        size:          t.size,
+        align:         t.align.map(|align| match align {
+            TextAlign::Left => PrimTextAlign::Left,
+            TextAlign::Center => PrimTextAlign::Center,
+            TextAlign::Right => PrimTextAlign::Right,
+        }),
+        anchor:        t.anchor.map(|anchor| match anchor {
+            TextAnchor::Baseline => PrimTextAnchor::Baseline,
+            TextAnchor::Top => PrimTextAnchor::Top,
+            TextAnchor::Middle => PrimTextAnchor::Middle,
+            TextAnchor::Bottom => PrimTextAnchor::Bottom,
+        }),
+        wrap:          t.wrap,
+        line_height:   t.line_height,
+        color:         t.color.map(color_shared),
+        outline:       t.outline.map(color_shared),
+        outline_width: t.outline_width,
+        emissive:      t.emissive,
+        billboard:     t.billboard.map(|billboard| match billboard {
+            TextBillboard::None => PrimTextBillboard::None,
+            TextBillboard::Yaw => PrimTextBillboard::Yaw,
+            TextBillboard::Full => PrimTextBillboard::Full,
+        }),
     }
 }
 
@@ -706,6 +772,24 @@ impl HostPrim for Runtime {
         let value = value.map(|s| PrimSpawn { radius: s.radius });
         Ok(lower(
             shared::wired::scene::prim::set_spawn(&self.api, self_.rep(), value).await,
+        ))
+    }
+
+    async fn text(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Text>> {
+        Ok(shared::wired::scene::prim::text(&self.api, self_.rep())
+            .await
+            .map_err(wasmtime::Error::from_anyhow)?
+            .map(text_wit))
+    }
+
+    async fn set_text(
+        &mut self,
+        self_: Resource<PrimRes>,
+        value: Option<Text>,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        let value = value.map(text_shared);
+        Ok(lower(
+            shared::wired::scene::prim::set_text(&self.api, self_.rep(), value).await,
         ))
     }
 

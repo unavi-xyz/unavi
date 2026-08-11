@@ -1,0 +1,30 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "bevy-msdf"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy.workspace      = true
+image               = { features = ["png"], workspace = true }
+msdf.path           = "../msdf"
+smol_str.workspace  = true
+thiserror.workspace = true
+
+# The bake runs at build time and lands in `OUT_DIR`, so nothing generated is
+# committed and a fresh clone needs no asset step. Cargo resolves build
+# dependencies' features separately from normal ones, which is what keeps
+# `fdsm` and `nalgebra` out of the client and out of the wasm build.
+[build-dependencies]
+anyhow.workspace = true
+image            = { features = ["png"], workspace = true }
+msdf             = { features = ["bake"], path = "../msdf" }
+
+[dev-dependencies]
+bevy_panorbit_camera.workspace = true
+naga                           = { default-features = false, features = ["wgsl-in"], version = "29.0.4" }

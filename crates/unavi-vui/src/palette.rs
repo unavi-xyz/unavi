@@ -1,9 +1,6 @@
 use wired_scene::types::Color;
 
-use crate::{
-    attention::Attention,
-    mote::MoteKind,
-};
+use crate::attention::Attention;
 
 /// Every colour and surface value VUI draws with.
 ///
@@ -18,12 +15,8 @@ pub struct Palette {
     pub accent:  Color,
     /// Receded: the way back, and anything inactive.
     pub dim:     Color,
-    /// Backing surfaces — racks, tables, cast circles.
+    /// Backing surfaces — racks, tables, cast circles, placards.
     pub surface: Color,
-    /// Per-[`MoteKind`] hue, indexed by [`MoteKind::index`]. Kept close to
-    /// `base` on purpose: identity is carried by silhouette, and colour is
-    /// reserved for state.
-    pub kinds:   [Color; MoteKind::COUNT],
 
     /// A container is see-through because you are meant to see into it.
     pub glass_alpha:          f32,
@@ -38,23 +31,13 @@ pub struct Palette {
 }
 
 impl Palette {
-    /// One cool near-white family at eight lightnesses. Kinds vary by shade,
-    /// never by hue — identity is carried by silhouette.
+    /// One cool near-white family. Colour says only what state a mote is in;
+    /// what it *is* comes from its label and its silhouette.
     pub const DEFAULT: Self = Self {
         base:    shade(0.92),
         accent:  rgb(0.60, 0.84, 1.00),
         dim:     shade(0.42),
         surface: rgb(0.12, 0.13, 0.16),
-        kinds:   [
-            shade(0.97),
-            shade(0.90),
-            shade(0.83),
-            shade(0.77),
-            shade(0.71),
-            shade(0.65),
-            shade(0.59),
-            shade(0.53),
-        ],
 
         glass_alpha:          0.16,
         glass_alpha_attended: 0.34,
@@ -67,19 +50,14 @@ impl Palette {
     };
 
     #[must_use]
-    pub const fn kind(&self, kind: MoteKind) -> Color {
-        self.kinds[kind.index()]
-    }
-
     /// Attention lifts toward white rather than repainting, so the accent
     /// stays free for the rarer state of being in hand.
-    #[must_use]
-    pub const fn tint(&self, kind: MoteKind, attention: Attention) -> Color {
+    pub const fn tint(&self, attention: Attention) -> Color {
         match attention {
             Attention::Engaged => self.accent,
-            Attention::Attended => lift(self.kind(kind), 0.55),
-            Attention::Near => lift(self.kind(kind), 0.18),
-            Attention::Idle => self.kind(kind),
+            Attention::Attended => lift(self.base, 0.55),
+            Attention::Near => lift(self.base, 0.18),
+            Attention::Idle => self.base,
         }
     }
 
@@ -159,27 +137,6 @@ pub const fn scale(color: Color, factor: f32) -> Color {
 mod tests {
     use super::*;
 
-    const ALL: [MoteKind; MoteKind::COUNT] = [
-        MoteKind::Command,
-        MoteKind::Folder,
-        MoteKind::Document,
-        MoteKind::Space,
-        MoteKind::Person,
-        MoteKind::Tool,
-        MoteKind::Item,
-        MoteKind::Result,
-    ];
-
-    #[test]
-    fn every_kind_indexes_a_distinct_hue() {
-        let palette = Palette::DEFAULT;
-        for (position, kind) in ALL.iter().enumerate() {
-            assert_eq!(kind.index(), position, "index order must match the table");
-            let color = palette.kind(*kind);
-            assert!((0.0..=1.0).contains(&color.r));
-        }
-    }
-
     fn lightness(color: Color) -> f32 {
         (color.r + color.g + color.b) / 3.0
     }
@@ -191,9 +148,9 @@ mod tests {
     #[test]
     fn attention_brightens_rather_than_repainting() {
         let palette = Palette::DEFAULT;
-        let idle = palette.tint(MoteKind::Tool, Attention::Idle);
-        let near = palette.tint(MoteKind::Tool, Attention::Near);
-        let attended = palette.tint(MoteKind::Tool, Attention::Attended);
+        let idle = palette.tint(Attention::Idle);
+        let near = palette.tint(Attention::Near);
+        let attended = palette.tint(Attention::Attended);
 
         assert!(lightness(idle) < lightness(near));
         assert!(lightness(near) < lightness(attended));
@@ -208,32 +165,13 @@ mod tests {
     #[test]
     fn the_accent_is_reserved_for_what_is_in_hand() {
         let palette = Palette::DEFAULT;
-        assert_eq!(
-            palette.tint(MoteKind::Tool, Attention::Engaged),
-            palette.accent
-        );
+        assert_eq!(palette.tint(Attention::Engaged), palette.accent);
         for quiet in [Attention::Idle, Attention::Near, Attention::Attended] {
             assert_ne!(
-                palette.tint(MoteKind::Tool, quiet),
+                palette.tint(quiet),
                 palette.accent,
                 "hover is not rare enough to spend the accent on"
             );
-        }
-    }
-
-    #[test]
-    fn kinds_differ_by_shade_and_never_by_hue() {
-        let palette = Palette::DEFAULT;
-        let reference = spread(palette.kind(MoteKind::Command));
-        for kind in ALL {
-            assert!(
-                (spread(palette.kind(kind)) - reference).abs() < 0.02,
-                "{kind:?} is a different hue, not a different shade"
-            );
-        }
-        let lightnesses = ALL.map(|kind| lightness(palette.kind(kind)));
-        for pair in lightnesses.windows(2) {
-            assert!(pair[0] > pair[1], "shades must stay distinguishable");
         }
     }
 
@@ -248,11 +186,10 @@ mod tests {
     #[test]
     fn the_field_is_desaturated_so_the_accent_can_carry_meaning() {
         let palette = Palette::DEFAULT;
-        let spread = |c: Color| c.r.max(c.g).max(c.b) - c.r.min(c.g).min(c.b);
-        for kind in ALL {
+        for quiet in [palette.base, palette.dim, palette.surface] {
             assert!(
-                spread(palette.kind(kind)) < spread(palette.accent),
-                "{kind:?} competes with the accent"
+                spread(quiet) < spread(palette.accent),
+                "a resting colour must not compete with the accent"
             );
         }
     }
@@ -263,9 +200,6 @@ mod tests {
             accent: rgb(0.0, 1.0, 0.6),
             ..Palette::DEFAULT
         };
-        assert_eq!(
-            custom.tint(MoteKind::Item, Attention::Engaged),
-            rgb(0.0, 1.0, 0.6)
-        );
+        assert_eq!(custom.tint(Attention::Engaged), rgb(0.0, 1.0, 0.6));
     }
 }

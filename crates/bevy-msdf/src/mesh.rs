@@ -1,0 +1,215 @@
+use bevy::{
+    asset::RenderAssetUsages,
+    mesh::{
+        Indices,
+        PrimitiveTopology,
+    },
+    prelude::*,
+};
+use msdf::layout::Laid;
+
+/// Where the text block sits relative to its transform. Horizontal placement
+/// is [`msdf::layout::Align`]'s job, so this only answers the vertical.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub enum Anchor {
+    /// The origin is the first baseline — where a caller positioning text
+    /// against other text wants it.
+    #[default]
+    Baseline,
+    Top,
+    Middle,
+    Bottom,
+}
+
+impl Anchor {
+    /// How far to lift the block so the anchor lands on the origin.
+    #[must_use]
+    pub fn offset(self, laid: &Laid) -> f32 {
+        match self {
+            Self::Baseline => 0.0,
+            Self::Top => -laid.bounds.max[1],
+            Self::Middle => -(laid.bounds.min[1] + laid.bounds.max[1]) / 2.0,
+            Self::Bottom => -laid.bounds.min[1],
+        }
+    }
+}
+
+/// Builds one quad per glyph in the XY plane, facing +Z.
+#[must_use]
+pub fn build(laid: &Laid, anchor: Anchor) -> Mesh {
+    let raise = anchor.offset(laid);
+    let count = laid.quads.len();
+
+    let mut positions = Vec::with_capacity(count * 4);
+    let mut uvs = Vec::with_capacity(count * 4);
+    let mut indices = Vec::with_capacity(count * 6);
+
+    for (index, quad) in laid.quads.iter().enumerate() {
+        let (left, right) = (quad.plane.min[0], quad.plane.max[0]);
+        let (bottom, top) = (quad.plane.min[1] + raise, quad.plane.max[1] + raise);
+        positions.extend([
+            [left, top, 0.0],
+            [right, top, 0.0],
+            [left, bottom, 0.0],
+            [right, bottom, 0.0],
+        ]);
+        // The plane is y-up and the field is y-down, so the top corners take
+        // the lower texture coordinate.
+        uvs.extend([
+            [quad.uv.min[0], quad.uv.min[1]],
+            [quad.uv.max[0], quad.uv.min[1]],
+            [quad.uv.min[0], quad.uv.max[1]],
+            [quad.uv.max[0], quad.uv.max[1]],
+        ]);
+
+        let base = (index * 4) as u32;
+        indices.extend([base, base + 2, base + 1, base + 1, base + 2, base + 3]);
+    }
+
+    let normals = vec![[0.0, 0.0, 1.0]; positions.len()];
+
+    Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::default(),
+    )
+    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
+    .with_inserted_indices(Indices::U32(indices))
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy::mesh::VertexAttributeValues;
+    use msdf::{
+        atlas::{
+            Atlas,
+            Glyph,
+            Rect,
+            VerticalMetrics,
+        },
+        layout::{
+            LayoutOpts,
+            layout,
+        },
+    };
+
+    use super::*;
+
+    fn atlas() -> Atlas {
+        let glyph = Glyph {
+            plane:   Rect {
+                min: [0.0, 0.0],
+                max: [1.0, 0.5],
+            },
+            uv:      Rect {
+                min: [0.25, 0.25],
+                max: [0.5, 0.5],
+            },
+            advance: 1.0,
+        };
+        Atlas {
+            width:    64,
+            height:   64,
+            range:    4.0,
+            vertical: VerticalMetrics {
+                ascender:  0.75,
+                descender: -0.25,
+                line_gap:  0.0,
+            },
+            glyphs:   ('a'..='z').map(|ch| (ch, glyph)).collect(),
+            kerning:  std::collections::BTreeMap::new(),
+        }
+    }
+
+    fn opts() -> LayoutOpts {
+        LayoutOpts {
+            size: 1.0,
+            ..Default::default()
+        }
+    }
+
+    fn mesh(text: &str, anchor: Anchor) -> Mesh {
+        build(&layout(text, &atlas(), &opts()).expect("layout"), anchor)
+    }
+
+    fn positions(mesh: &Mesh) -> Vec<[f32; 3]> {
+        match mesh.attribute(Mesh::ATTRIBUTE_POSITION) {
+            Some(VertexAttributeValues::Float32x3(values)) => values.clone(),
+            _ => panic!("positions"),
+        }
+    }
+
+    #[test]
+    fn a_glyph_becomes_one_quad() {
+        let mesh = mesh("abc", Anchor::Baseline);
+        assert_eq!(positions(&mesh).len(), 12);
+        assert_eq!(mesh.indices().expect("indices").len(), 18);
+    }
+
+    #[test]
+    fn an_empty_string_builds_an_empty_mesh() {
+        let mesh = mesh("", Anchor::Baseline);
+        assert!(positions(&mesh).is_empty());
+        assert_eq!(mesh.indices().expect("indices").len(), 0);
+    }
+
+    #[test]
+    fn the_top_corners_take_the_lower_texture_coordinate() {
+        let mesh = mesh("a", Anchor::Baseline);
+        let Some(VertexAttributeValues::Float32x2(uvs)) = mesh.attribute(Mesh::ATTRIBUTE_UV_0)
+        else {
+            panic!("uvs")
+        };
+        let positions = positions(&mesh);
+        assert!(
+            positions[0][1] > positions[2][1],
+            "vertex 0 is the top-left"
+        );
+        assert!(uvs[0][1] < uvs[2][1], "and the field runs the other way");
+    }
+
+    #[test]
+    fn every_triangle_faces_the_camera() {
+        let mesh = mesh("ab", Anchor::Baseline);
+        let positions = positions(&mesh);
+        let Some(indices) = mesh.indices() else {
+            panic!("indices")
+        };
+        for triangle in indices.iter().collect::<Vec<_>>().chunks(3) {
+            let [a, b, c] = [
+                positions[triangle[0]],
+                positions[triangle[1]],
+                positions[triangle[2]],
+            ];
+            let edge = |from: [f32; 3], to: [f32; 3]| [to[0] - from[0], to[1] - from[1]];
+            let (first, second) = (edge(a, b), edge(b, c));
+            assert!(
+                second[0].mul_add(-first[1], first[0] * second[1]) > 0.0,
+                "a back-facing quad is an invisible one"
+            );
+        }
+    }
+
+    #[test]
+    fn anchoring_moves_the_block_and_not_its_shape() {
+        let baseline = positions(&mesh("ab", Anchor::Baseline));
+        let top = positions(&mesh("ab", Anchor::Top));
+        let lift = top[0][1] - baseline[0][1];
+        assert!(lift < 0.0, "anchoring to the top hangs the text below");
+        for (before, after) in baseline.iter().zip(&top) {
+            assert!((after[1] - before[1] - lift).abs() < 1.0e-5);
+            assert!((after[0] - before[0]).abs() < 1.0e-5);
+        }
+    }
+
+    #[test]
+    fn a_middle_anchored_block_straddles_the_origin() {
+        let laid = layout("ab\ncd", &atlas(), &opts()).expect("layout");
+        let lift = Anchor::Middle.offset(&laid);
+        assert!(
+            (laid.bounds.min[1] + lift + (laid.bounds.max[1] + lift)).abs() < 1.0e-5,
+            "the metric box centres, so a two-line block does not drift"
+        );
+    }
+}

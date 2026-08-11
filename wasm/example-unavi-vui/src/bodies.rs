@@ -1,14 +1,23 @@
 //! Prim pool. The only thing this file decides is how a [`SlotView`] becomes
 //! prims; every value it reads was computed by `unavi-vui`.
 
-use std::cell::Cell;
+use std::cell::{
+    Cell,
+    RefCell,
+};
 
+use smol_str::SmolStr;
 use unavi_vui::{
+    attention::Attention,
     mesh,
     mote::{
+        MoteSpec,
         PipPlacement,
         Role,
     },
+    palette::Palette,
+    placard::PlacardView,
+    tuning::Tuning,
     view::{
         SlotView,
         Style,
@@ -16,24 +25,31 @@ use unavi_vui::{
 };
 use wired_prelude::prelude::*;
 
-use crate::wired::{
-    input::{
-        api::register_input_listener,
-        types::{
-            InputAction,
-            InputListener,
+use crate::{
+    placard::Placard,
+    wired::{
+        input::{
+            api::register_input_listener,
+            types::{
+                InputAction,
+                InputListener,
+            },
         },
-    },
-    physics::api::get_linear_velocity,
-    scene::types::{
-        AlphaMode,
-        Collider,
-        Document,
-        Material,
-        Prim,
-        RigidBody,
-        RigidBodyKind,
-        Xform,
+        physics::api::get_linear_velocity,
+        scene::types::{
+            AlphaMode,
+            Collider,
+            ColliderCylinder,
+            Document,
+            Material,
+            Prim,
+            RigidBody,
+            RigidBodyKind,
+            Text,
+            TextAlign,
+            TextAnchor,
+            Xform,
+        },
     },
 };
 
@@ -47,13 +63,16 @@ const MARK_RADIUS: f32 = 0.09;
 const OVERFLOW_RADIUS: f32 = 0.11;
 const SPHERE_RINGS: usize = 10;
 const SPHERE_SEGMENTS: usize = 16;
+/// Thin enough that the reticle resting on the field's face reads as being at
+/// the dial's own depth, thick enough to be a solid raycast target.
+const FIELD_THICKNESS: f32 = 0.01;
 
 /// What a slot's pip meshes were last built for. Rebuilding costs blob
 /// uploads, so nothing is re-uploaded while this is unchanged.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct PipShape {
     count:     usize,
-    branches:  usize,
+    groups:    usize,
     overflow:  bool,
     placement: PipPlacement,
 }
@@ -61,29 +80,60 @@ struct PipShape {
 struct SlotPrims {
     root:     Prim,
     body:     Prim,
-    /// Grabs on this mote, reported by the host's own hit-test against the
-    /// body's collider.
-    input:    InputListener,
-    hit:      Cell<f32>,
     /// Container children, drawn see-through — the same rule their own motes
     /// follow one level down.
     nested:   Prim,
     /// Leaf children, or depth marks, drawn solid.
     plain:    Prim,
     overflow: Prim,
+    /// The mote's name, drawn always rather than on attention.
+    label:    Prim,
     style:    Cell<Option<Style>>,
     shape:    Cell<Option<PipShape>>,
+    /// What the label was last written for. A `set_text` write costs a sync
+    /// whether or not the string changed, and a slot's name only changes when
+    /// the orbit navigates.
+    ///
+    /// Keyed on the inputs rather than the resulting colour: the tint is a
+    /// pure function of these two, and comparing the floats it produces would
+    /// be asking whether two identical computations agree.
+    written:  RefCell<Option<(SmolStr, Attention)>>,
 }
 
 pub struct Bodies {
-    root:  Prim,
-    slots: Vec<SlotPrims>,
+    root:    Prim,
+    /// The dial's surface, and the orbit's only resting collider. A mote is a
+    /// drawing until it is taken; the thing a pointer can actually touch is
+    /// the face of the dial it sits on, which is why what lights up and what a
+    /// press lands on cannot come apart.
+    field:   Prim,
+    surface: Collider,
+    /// Grabs on that surface, reported by the host's own hit-test. Anything
+    /// that lands elsewhere belongs to whatever it hit, not to the orbit.
+    input:   InputListener,
+    slots:   Vec<SlotPrims>,
+    placard: Placard,
 }
 
 impl Bodies {
-    pub fn new(doc: &Document, capacity: usize) -> anyhow::Result<Self> {
+    pub fn new(doc: &Document, capacity: usize, tuning: &Tuning) -> anyhow::Result<Self> {
         let root = doc.create_prim()?;
         root.set_xform(Some(placed(Vec3::ZERO, 1.0)))?;
+
+        let field = doc.create_prim()?;
+        field.set_xform(Some(Xform {
+            translation: Vec3::new(0.0, 0.0, FIELD_THICKNESS.mul_add(-0.5, tuning.field_lift)),
+            // A cylinder stands on its own Y, and the dial faces along Z.
+            rotation:    Quat::new(0.5_f32.sqrt(), 0.0, 0.0, 0.5_f32.sqrt()),
+            scale:       Vec3::ONE,
+        }))?;
+        let surface = Collider::Cylinder(ColliderCylinder {
+            height: FIELD_THICKNESS,
+            radius: tuning.orbit_radius * tuning.reach_frac,
+        });
+        field.set_collider(Some(surface))?;
+        root.add_child(&field)?;
+        let input = register_input_listener(&field)?;
 
         let unit = mesh::sphere(1.0, SPHERE_RINGS, SPHERE_SEGMENTS);
         let mut slots = Vec::with_capacity(capacity);
@@ -111,25 +161,36 @@ impl Bodies {
             overflow.set_xform(Some(hidden()))?;
             slot_root.add_child(&overflow)?;
 
-            // Collider and listener ride the slot root, which stays at unit
-            // scale — the body's scale animates with attention and would
-            // scale a collider with it.
-            let input = register_input_listener(&slot_root)?;
+            // A label rides the slot, not the body: the body scales with
+            // attention and a name that grew with it would be the loudest
+            // thing on the dial.
+            let label = doc.create_prim()?;
+            label.set_xform(Some(hidden()))?;
+            slot_root.add_child(&label)?;
 
             slots.push(SlotPrims {
                 root: slot_root,
-                input,
-                hit: Cell::new(0.0),
                 body,
                 nested,
                 plain,
                 overflow,
+                label,
                 style: Cell::new(None),
                 shape: Cell::new(None),
+                written: RefCell::new(None),
             });
         }
 
-        Ok(Self { root, slots })
+        let placard = Placard::new(doc, &root)?;
+
+        Ok(Self {
+            root,
+            field,
+            surface,
+            input,
+            slots,
+            placard,
+        })
     }
 
     pub fn place(&self, transform: &Transform) -> anyhow::Result<()> {
@@ -141,28 +202,40 @@ impl Bodies {
         Ok(())
     }
 
-    /// Grabs the host reported against a mote's own collider, as
-    /// `(slot, pressed)`.
-    pub fn poll_grabs(&self) -> Vec<(usize, bool)> {
+    /// Presses and releases the host reported against the dial's surface.
+    pub fn poll_grabs(&self) -> Vec<bool> {
         let mut grabs = Vec::new();
-        for (index, slot) in self.slots.iter().enumerate() {
-            while let Some(event) = slot.input.poll() {
-                match event.action {
-                    InputAction::GrabDown => grabs.push((index, true)),
-                    InputAction::GrabUp => grabs.push((index, false)),
-                    _ => {}
-                }
+        while let Some(event) = self.input.poll() {
+            match event.action {
+                InputAction::GrabDown => grabs.push(true),
+                InputAction::GrabUp => grabs.push(false),
+                _ => {}
             }
         }
         grabs
     }
 
-    /// Hands a mote to the engine's grab, which is watching for a body to
-    /// appear for a moment after the squeeze.
-    pub fn make_dynamic(&self, slot: usize) -> anyhow::Result<()> {
+    /// Turns a mote into a real body of `radius`, which is what the engine's
+    /// waiting grab is looking for. It gains a collider here and nowhere else:
+    /// a resting mote is a drawing, and giving it one would put an invisible
+    /// surface in front of everything it is drawn on.
+    ///
+    /// That surface stands between the pointer and the mote that has just
+    /// left it, and would take the ray the engine is about to cast, so it
+    /// stands down for as long as something is in hand. Which is also the
+    /// truth of it: nothing on a dial is a target while you are holding one
+    /// of its motes.
+    pub fn make_dynamic(&self, slot: usize, radius: f32) -> anyhow::Result<()> {
         let Some(prims) = self.slots.get(slot) else {
             return Ok(());
         };
+        prims.root.set_collider(Some(Collider::Sphere(radius)))?;
+        // Weightless from the moment it is a body. The engine zeroes gravity
+        // itself once it has the mote, but between promoting one and the grab
+        // finding it there is nothing holding it up — and a mote that dropped
+        // out of the air in that gap would be the loudest possible symptom of
+        // the quietest possible failure.
+        prims.root.set_gravity_scale(0.0)?;
         prims.root.set_rigid_body(Some(RigidBody {
             kind:            RigidBodyKind::Dynamic,
             angular_damping: None,
@@ -171,15 +244,21 @@ impl Bodies {
             mass:            None,
             restitution:     None,
         }))?;
+        self.field.set_collider(None)?;
         Ok(())
     }
 
     pub fn clear_dynamic(&self, slot: usize) -> anyhow::Result<()> {
         if let Some(prims) = self.slots.get(slot) {
             prims.root.set_rigid_body(None)?;
-            // Re-issue the collider next frame.
-            prims.hit.set(0.0);
+            prims.root.set_collider(None)?;
+            // Put back so the next promotion is a real change to the
+            // attribute: the engine strips its own weightlessness off the prim
+            // when it lets go, and an unchanged value would never re-apply
+            // ours.
+            prims.root.set_gravity_scale(1.0)?;
         }
+        self.field.set_collider(Some(self.surface))?;
         Ok(())
     }
 
@@ -198,17 +277,27 @@ impl Bodies {
 
     /// `held` is the slot the engine is carrying, whose transform belongs to
     /// the solver rather than to us.
-    pub fn apply(&self, views: &[SlotView], held: Option<usize>) -> anyhow::Result<()> {
+    pub fn apply(
+        &self,
+        views: &[SlotView],
+        specs: &[MoteSpec],
+        placard: Option<&PlacardView>,
+        palette: &Palette,
+        held: Option<usize>,
+    ) -> anyhow::Result<()> {
+        match placard {
+            Some(view) => self.placard.apply(view, palette)?,
+            None => self.placard.hide()?,
+        }
+
         for (index, (slot, view)) in self.slots.iter().zip(views).enumerate() {
             if held != Some(index) {
                 slot.root.set_xform(Some(placed(view.position, 1.0)))?;
             }
             slot.body.set_xform(Some(placed(Vec3::ZERO, view.radius)))?;
 
-            if (slot.hit.get() - view.hit_radius).abs() > f32::EPSILON {
-                slot.hit.set(view.hit_radius);
-                slot.root
-                    .set_collider(Some(Collider::Sphere(view.hit_radius)))?;
+            if let Some(spec) = specs.get(index) {
+                Self::apply_label(slot, view, spec, palette)?;
             }
 
             if slot.style.get() != Some(view.style) {
@@ -231,13 +320,55 @@ impl Bodies {
         Ok(())
     }
 
+    /// Drawn always, so a menu can be learned rather than hovered. Only the
+    /// attended mote's name brightens, which is the same rule the bodies
+    /// follow: attention lifts toward white, it does not repaint.
+    fn apply_label(
+        slot: &SlotPrims,
+        view: &SlotView,
+        spec: &MoteSpec,
+        palette: &Palette,
+    ) -> anyhow::Result<()> {
+        slot.label.set_xform(Some(placed(view.label_offset, 1.0)))?;
+
+        let key = (spec.label.clone(), view.attention);
+        let mut written = slot.written.borrow_mut();
+        if written.as_ref() == Some(&key) {
+            return Ok(());
+        }
+        let color = palette.tint(view.attention);
+        *written = Some(key);
+
+        slot.label.set_text(Some(&Text {
+            value:         spec.label.to_string(),
+            size:          Some(view.label_size),
+            align:         Some(TextAlign::Center),
+            anchor:        Some(TextAnchor::Top),
+            wrap:          None,
+            line_height:   None,
+            color:         Some(color),
+            // A dial hangs in a room it does not control, so its own names
+            // carry their contrast with them.
+            outline:       Some(Color {
+                r: 0.0,
+                g: 0.0,
+                b: 0.0,
+                a: 0.85,
+            }),
+            outline_width: Some(0.22),
+            emissive:      Some(if view.attention.is_active() { 0.5 } else { 0.1 }),
+            billboard:     None,
+        }))?;
+        Ok(())
+    }
+
     /// Drawn unconditionally, not on attention: how much a container holds is
     /// structural.
     fn apply_pips(slot: &SlotPrims, view: &SlotView) -> anyhow::Result<()> {
-        let branches = view.pips.branches();
+        let groups = view.pips.groups();
         let shape = PipShape {
             count: view.pips.count,
-            branches,
+            groups,
             overflow: view.pips.overflow,
             placement: view.pips.placement,
         };
@@ -249,14 +380,14 @@ impl Bodies {
                 PipPlacement::Around => (AROUND_ORBIT, MARK_RADIUS),
             };
             let total = view.pips.count;
-            apply_run(&slot.nested, 0, branches, total, ring, radius)?;
-            apply_run(&slot.plain, branches, total - branches, total, ring, radius)?;
+            apply_run(&slot.nested, 0, groups, total, ring, radius)?;
+            apply_run(&slot.plain, groups, total - groups, total, ring, radius)?;
         }
 
         let visible = placed(Vec3::ZERO, view.radius);
         for (prim, shown) in [
-            (&slot.nested, branches > 0),
-            (&slot.plain, view.pips.count > branches),
+            (&slot.nested, groups > 0),
+            (&slot.plain, view.pips.count > groups),
             (&slot.overflow, view.pips.overflow),
         ] {
             prim.set_xform(Some(if shown { visible } else { hidden() }))?;
@@ -317,7 +448,7 @@ const fn scaled(color: Color, factor: f32) -> Color {
 }
 
 const fn shell(style: Style, role: Role) -> Material {
-    let opaque = matches!(role, Role::Leaf | Role::Cast | Role::Parent { .. });
+    let opaque = matches!(role, Role::Action | Role::Cast | Role::Parent { .. });
     Material {
         alpha_cutoff: None,
         alpha_mode:   Some(if opaque {

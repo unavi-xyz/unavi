@@ -184,6 +184,51 @@ interface types {
     radius: f32,
   }
 
+  enum text-align {
+    left,
+    center,
+    right,
+  }
+
+  /// Where the text block sits relative to the prim's origin. `align`
+  /// answers the horizontal, so this only answers the vertical.
+  enum text-anchor {
+    baseline,
+    top,
+    middle,
+    bottom,
+  }
+
+  enum text-billboard {
+    none,
+    /// Yaw only: the label stays upright and does not tilt as you crouch.
+    yaw,
+    full,
+  }
+
+  /// A string drawn in the world.
+  ///
+  /// One string, one style. No markup, no rich text, no embedded control
+  /// characters — a label that needs more than this is the wrong tool.
+  record text {
+    value:         string,
+    /// Em height in metres. 0.02 is body text read at arm's length.
+    size:          option<f32>,
+    align:         option<text-align>,
+    anchor:        option<text-anchor>,
+    /// Wrap width in metres. None breaks only on newlines.
+    wrap:          option<f32>,
+    /// Multiple of the font's own baseline-to-baseline distance.
+    line-height:   option<f32>,
+    color:         option<color>,
+    /// Drawn behind the glyph. Text in a space you did not author has no say
+    /// in what is behind it, so contrast is worth having.
+    outline:       option<color>,
+    outline-width: option<f32>,
+    emissive:      option<f32>,
+    billboard:     option<text-billboard>,
+  }
+
   resource document {
     id:    func() -> document-id;
     clone: func() -> document;
@@ -268,6 +313,9 @@ interface types {
 
     spawn:     func() -> option<spawn>;
     set-spawn: func(value: option<spawn>) -> result<_, error>;
+
+    text:     func() -> option<text>;
+    set-text: func(value: option<text>) -> result<_, error>;
 
     relationships:    func() -> list<tuple<string, prim-id>>;
     get-relationship: func(key: string) -> option<prim-id>;

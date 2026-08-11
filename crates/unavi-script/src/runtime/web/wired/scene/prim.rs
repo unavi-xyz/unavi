@@ -39,6 +39,10 @@ use crate::runtime::shared::{
         PrimRigidBody,
         PrimRigidBodyKind,
         PrimSpawn,
+        PrimText,
+        PrimTextAlign,
+        PrimTextAnchor,
+        PrimTextBillboard,
         PrimTopology,
     },
 };
@@ -314,6 +318,21 @@ impl PrimHandle {
             .map_err(|e| e.to_string())
     }
 
+    pub async fn text(&self) -> JsValue {
+        match shared::wired::scene::prim::text(&self.api, self.rep).await {
+            Ok(Some(t)) => text_to_js(&t),
+            _ => JsValue::UNDEFINED,
+        }
+    }
+
+    #[wasm_bindgen(js_name = "setText")]
+    pub async fn set_text(&self, value: JsValue) -> Result<(), String> {
+        let value = js_to_text(&value);
+        shared::wired::scene::prim::set_text(&self.api, self.rep, value)
+            .await
+            .map_err(|e| e.to_string())
+    }
+
     pub async fn relationships(&self) -> js_sys::Array {
         let Ok(items) = shared::wired::scene::prim::relationships(&self.api, self.rep).await else {
             return js_sys::Array::new();
@@ -488,6 +507,102 @@ fn js_to_color(v: &JsValue) -> Option<PrimColor> {
         g: obj_get_f32(v, "g").unwrap_or(1.0),
         b: obj_get_f32(v, "b").unwrap_or(1.0),
         a: obj_get_f32(v, "a").unwrap_or(1.0),
+    })
+}
+
+fn text_to_js(t: &PrimText) -> JsValue {
+    let obj = js_sys::Object::new();
+    obj_set(&obj, "value", &JsValue::from_str(&t.value));
+    if let Some(v) = t.size {
+        obj_set(&obj, "size", &v.into());
+    }
+    if let Some(v) = t.align {
+        obj_set(
+            &obj,
+            "align",
+            &JsValue::from_str(match v {
+                PrimTextAlign::Left => "left",
+                PrimTextAlign::Center => "center",
+                PrimTextAlign::Right => "right",
+            }),
+        );
+    }
+    if let Some(v) = t.anchor {
+        obj_set(
+            &obj,
+            "anchor",
+            &JsValue::from_str(match v {
+                PrimTextAnchor::Baseline => "baseline",
+                PrimTextAnchor::Top => "top",
+                PrimTextAnchor::Middle => "middle",
+                PrimTextAnchor::Bottom => "bottom",
+            }),
+        );
+    }
+    if let Some(v) = t.wrap {
+        obj_set(&obj, "wrap", &v.into());
+    }
+    if let Some(v) = t.line_height {
+        obj_set(&obj, "line-height", &v.into());
+    }
+    if let Some(v) = &t.color {
+        obj_set(&obj, "color", &color_to_js(v));
+    }
+    if let Some(v) = &t.outline {
+        obj_set(&obj, "outline", &color_to_js(v));
+    }
+    if let Some(v) = t.outline_width {
+        obj_set(&obj, "outline-width", &v.into());
+    }
+    if let Some(v) = t.emissive {
+        obj_set(&obj, "emissive", &v.into());
+    }
+    if let Some(v) = t.billboard {
+        obj_set(
+            &obj,
+            "billboard",
+            &JsValue::from_str(match v {
+                PrimTextBillboard::None => "none",
+                PrimTextBillboard::Yaw => "yaw",
+                PrimTextBillboard::Full => "full",
+            }),
+        );
+    }
+    obj.into()
+}
+
+fn js_to_text(v: &JsValue) -> Option<PrimText> {
+    if v.is_null() || v.is_undefined() {
+        return None;
+    }
+    Some(PrimText {
+        value:         obj_get_string(v, "value").unwrap_or_default(),
+        size:          obj_get_f32(v, "size"),
+        align:         obj_get_string(v, "align").and_then(|s| match s.as_str() {
+            "left" => Some(PrimTextAlign::Left),
+            "center" => Some(PrimTextAlign::Center),
+            "right" => Some(PrimTextAlign::Right),
+            _ => None,
+        }),
+        anchor:        obj_get_string(v, "anchor").and_then(|s| match s.as_str() {
+            "baseline" => Some(PrimTextAnchor::Baseline),
+            "top" => Some(PrimTextAnchor::Top),
+            "middle" => Some(PrimTextAnchor::Middle),
+            "bottom" => Some(PrimTextAnchor::Bottom),
+            _ => None,
+        }),
+        wrap:          obj_get_f32(v, "wrap"),
+        line_height:   obj_get_f32(v, "line-height"),
+        color:         js_to_color(&obj_get(v, "color")),
+        outline:       js_to_color(&obj_get(v, "outline")),
+        outline_width: obj_get_f32(v, "outline-width"),
+        emissive:      obj_get_f32(v, "emissive"),
+        billboard:     obj_get_string(v, "billboard").and_then(|s| match s.as_str() {
+            "none" => Some(PrimTextBillboard::None),
+            "yaw" => Some(PrimTextBillboard::Yaw),
+            "full" => Some(PrimTextBillboard::Full),
+            _ => None,
+        }),
     })
 }
 

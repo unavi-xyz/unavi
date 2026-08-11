@@ -1,10 +1,10 @@
 //! The VUI gallery.
 //!
 //! Walk up to the orbit with the real player controller, aim with the mouse,
-//! grab with left click, cycle the orbit's form with Tab, and scroll to resize
-//! it live. Everything drawn comes from `unavi-vui`'s pure functions, so this
-//! is where its numbers get judged by feel — walking toward and away from the
-//! orbit is what exercises the distance-driven detail and lean falloff.
+//! and click to open a mote or drag one out. Everything drawn comes from
+//! `unavi-vui`'s pure functions, so this is where its numbers get judged by
+//! feel — walking toward and away from the orbit is what exercises the
+//! distance-driven detail and lean falloff.
 
 use std::{
     path::PathBuf,

@@ -49,6 +49,14 @@ pub const MAX_EVENT_PAYLOAD_BYTES: usize = 64 * KB;
 /// Largest string written into a synced document (names, relationship keys).
 pub const MAX_NAME_BYTES: usize = KB;
 
+/// Largest string a single text prim may carry.
+///
+/// The renderer bounds a string again at layout time, which is the backstop
+/// for a document that arrived over the network rather than through a script.
+/// This bound is the cheaper one: it stops the bytes being stored and synced
+/// at all.
+pub const MAX_TEXT_BYTES: usize = 4 * KB;
+
 /// Largest vertex/index stream a single mesh write may upload.
 pub const MAX_MESH_ELEMENTS: usize = 4 * MB;
 

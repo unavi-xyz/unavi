@@ -1,5 +1,3 @@
-use crate::tuning::Tuning;
-
 /// Graded approach. Nothing commits on attention: approach reveals, contact
 /// commits.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
@@ -59,13 +57,6 @@ impl Tracker {
         self.dwell
     }
 
-    /// Whether the attended slot has held attention long enough to earn its
-    /// placard.
-    #[must_use]
-    pub fn placard_visible(&self, tuning: &Tuning) -> bool {
-        self.current.is_some() && self.dwell >= tuning.placard_delay
-    }
-
     #[must_use]
     pub fn state(&self, slot: usize, engaged: bool, near: bool) -> Attention {
         if self.current == Some(slot) {
@@ -85,10 +76,6 @@ impl Tracker {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn tuning() -> Tuning {
-        Tuning::DEFAULT
-    }
 
     #[test]
     fn dwell_starts_at_zero_when_attention_is_acquired() {
@@ -115,25 +102,14 @@ mod tests {
         assert!(tracker.dwell().abs() < 1.0e-5);
     }
 
+    /// The dwell this accumulates is what a placard fades in against
+    /// (`placard::opacity`); the mote's own reaction never waits on it.
     #[test]
-    fn the_placard_waits_but_the_mote_does_not() {
+    fn a_mote_reacts_before_it_has_dwelt_at_all() {
         let mut tracker = Tracker::new();
         tracker.update(Some(1), 0.1);
         assert_eq!(tracker.state(1, false, false), Attention::Attended);
-        assert!(!tracker.placard_visible(&tuning()));
-
-        tracker.update(Some(1), tuning().placard_delay);
-        assert!(tracker.placard_visible(&tuning()));
-    }
-
-    #[test]
-    fn losing_attention_hides_the_placard() {
-        let mut tracker = Tracker::new();
-        tracker.update(Some(1), 1.0);
-        tracker.update(Some(1), 1.0);
-        assert!(tracker.placard_visible(&tuning()));
-        tracker.update(None, 1.0);
-        assert!(!tracker.placard_visible(&tuning()));
+        assert!(tracker.dwell().abs() < 1.0e-5);
     }
 
     #[test]

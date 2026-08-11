@@ -18,13 +18,16 @@ use crate::{
     layout::Layout,
     mote::{
         self,
-        Grab,
-        MoteKind,
         MoteSpec,
         Pips,
         Role,
     },
     palette::Palette,
+    placard::{
+        self,
+        Placard,
+        PlacardView,
+    },
     tuning::Tuning,
 };
 
@@ -41,25 +44,27 @@ pub struct Style {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SlotView {
     /// Orbit-local, lean already applied.
-    pub position:   Vec3,
-    pub radius:     f32,
-    /// Collider radius: steady across a hover animation, so a binding writes
-    /// it only when the mote's role changes.
-    pub hit_radius: f32,
-    pub style:      Style,
-    pub role:       Role,
-    pub grab:       Grab,
-    pub attention:  Attention,
-    pub pips:       Pips,
-    pub detail:     f32,
+    pub position:     Vec3,
+    pub radius:       f32,
+    pub style:        Style,
+    pub role:         Role,
+    pub attention:    Attention,
+    pub pips:         Pips,
     /// Taken: the body has left its slot and is following the hand. A merely
     /// pressed mote is not this — see [`Attention::Engaged`].
-    pub seized:     bool,
+    pub seized:       bool,
+    /// Where this mote's name goes, slot-local. Labels are drawn always
+    /// rather than on attention: a menu you have to hover to read is a menu
+    /// you cannot learn. The text itself comes from the spec — it is passed
+    /// through, not computed, and keeping it out of here keeps a `SlotView`
+    /// `Copy`.
+    pub label_offset: Vec3,
+    pub label_size:   f32,
 }
 
-/// Where the pointer is, in the orbit plane's own coordinates and in the
-/// world. Producing it is the binding's job, since only it knows how the
-/// platform aims.
+/// Where the pointer is, in the orbit's own coordinates and in the world.
+/// [`crate::pointer::aim`] produces it from a ray; a platform that aims some
+/// other way supplies its own.
 #[derive(Debug, Clone, Copy)]
 pub struct Aim {
     pub local: Vec2,
@@ -70,7 +75,8 @@ pub struct Aim {
 pub struct Frame {
     pub eye:    Vec3,
     pub anchor: Transform,
-    /// Resolves which slot is targeted, and nothing else.
+    /// Resolves which slot is targeted, and what the attended one leans
+    /// toward. Never where a held mote goes — that is [`Frame::hand`].
     pub aim:    Option<Aim>,
     /// Free world-space grab point. A held mote follows this rather than
     /// [`Frame::aim`], so a pickup is not confined to the orbit's plane.
@@ -87,6 +93,7 @@ pub struct Orbit {
     grasp:       Grasp,
     lean:        Vec<Vec3>,
     views:       Vec<SlotView>,
+    placard:     Option<PlacardView>,
 }
 
 impl Orbit {
@@ -99,6 +106,7 @@ impl Orbit {
             grasp: Grasp::new(),
             lean: vec![Vec3::ZERO; capacity],
             views: Vec::with_capacity(capacity),
+            placard: None,
         }
     }
 
@@ -124,6 +132,16 @@ impl Orbit {
         self.tracker.current()
     }
 
+    /// How far from the anchor an orbit still answers for.
+    ///
+    /// A binding's hit surface is this size, and that is not a coincidence:
+    /// what lights up and what a press lands on have to be the same region or
+    /// the interface promises motes it will not give you.
+    #[must_use]
+    pub fn reach(&self) -> f32 {
+        self.tuning.orbit_radius * self.tuning.reach_frac
+    }
+
     #[must_use]
     pub const fn is_seized(&self) -> bool {
         self.grasp.is_seized()
@@ -140,9 +158,11 @@ impl Orbit {
             .map(|held| held.slot)
     }
 
+    /// The attended mote's placard, or `None` while nothing has held
+    /// attention long enough to have earned one.
     #[must_use]
-    pub fn placard_visible(&self) -> bool {
-        self.tracker.placard_visible(&self.tuning)
+    pub const fn placard(&self) -> Option<&PlacardView> {
+        self.placard.as_ref()
     }
 
     #[must_use]
@@ -154,22 +174,19 @@ impl Orbit {
     /// world should wear — it is no longer the one you are pointing at.
     #[must_use]
     pub const fn resting_style(&self, spec: &MoteSpec) -> Style {
-        self.style(spec.role, spec.kind, Attention::Idle)
+        self.style(spec.role, Attention::Idle)
     }
 
+    /// Presses whatever currently holds attention, which is the only thing a
+    /// press can mean: the lit mote is the one being pointed at.
     pub fn press(&mut self, at: Vec3) {
-        if let Some(slot) = self.tracker.current() {
-            self.press_slot(slot, at);
-        }
-    }
-
-    /// Presses a slot the host reported directly, rather than one inferred
-    /// from aim.
-    pub fn press_slot(&mut self, slot: usize, at: Vec3) {
+        let Some(slot) = self.tracker.current() else {
+            return;
+        };
         let takeable = self
             .views
             .get(slot)
-            .is_some_and(|view| matches!(view.grab, Grab::Takeable));
+            .is_some_and(|view| view.role.is_takeable());
         self.grasp.press(slot, at, takeable);
     }
 
@@ -201,7 +218,7 @@ impl Orbit {
         }
 
         if let (Some(hand), true) = (frame.hand, self.grasp.is_seized()) {
-            self.grasp.track(hand, frame.delta, &self.tuning);
+            self.grasp.track(hand, &self.tuning);
         }
 
         let seized = self.grasp.seized().map(|held| held.slot);
@@ -238,29 +255,52 @@ impl Orbit {
                 _ => local + self.lean[index],
             };
 
-            let distance = (world - frame.eye).length();
-            let presentation = mote::present(spec, distance, attention, &self.tuning);
+            let presentation = mote::present(spec, attention, &self.tuning);
 
             self.views.push(SlotView {
                 position,
                 radius: presentation.radius,
-                hit_radius: presentation.hit_radius,
-                style: self.style(spec.role, spec.kind, attention),
+                style: self.style(spec.role, attention),
                 role: spec.role,
-                grab: spec.grab,
                 attention,
                 pips: presentation.pips,
-                detail: presentation.detail,
                 seized: is_seized && dragging,
+                label_offset: Vec3::new(
+                    0.0,
+                    -(presentation.radius + self.tuning.label_gap),
+                    self.tuning.label_lift,
+                ),
+                label_size: self.tuning.label_size,
             });
         }
+
+        self.placard = self.build_placard(specs);
     }
 
-    const fn style(&self, role: Role, kind: MoteKind, attention: Attention) -> Style {
+    /// The attended mote's placard, mounted on wherever its body currently is
+    /// — including the hand, when it is being carried.
+    fn build_placard(&self, specs: &[MoteSpec]) -> Option<PlacardView> {
+        // Nothing explains itself while it is being handled. A card riding a
+        // mote through the air is unreadable anyway, and by the time you have
+        // grabbed something you are past wanting to be told what it is.
+        if self.grasp.is_seized() {
+            return None;
+        }
+        let slot = self.tracker.current()?;
+        let spec = specs.get(slot)?;
+        let view = self.views.get(slot)?;
+        let opacity = placard::opacity(self.tracker.dwell(), &self.tuning);
+        (opacity > 0.0).then(|| {
+            let placard = Placard::describing(spec);
+            placard::view(&placard, view.position, view.radius, opacity, &self.tuning)
+        })
+    }
+
+    const fn style(&self, role: Role, attention: Attention) -> Style {
         let color = if matches!(role, Role::Parent { .. }) && !attention.is_active() {
             self.palette.dim
         } else {
-            self.palette.tint(kind, attention)
+            self.palette.tint(attention)
         };
         Style {
             color,
@@ -269,8 +309,10 @@ impl Orbit {
             // This is the branch/leaf distinction at any distance, before
             // attention and without hovering.
             alpha: match role {
-                Role::Branch { .. } => self.palette.glass(attention),
-                Role::Leaf | Role::Cast | Role::Parent { .. } => self.palette.solid_alpha,
+                Role::Group { .. } => self.palette.glass(attention),
+                Role::Action | Role::Item | Role::Cast | Role::Parent { .. } => {
+                    self.palette.solid_alpha
+                }
             },
             emissive: self.palette.emissive(attention),
         }
@@ -289,23 +331,28 @@ mod tests {
 
     fn spec(role: Role) -> MoteSpec {
         MoteSpec {
-            kind: MoteKind::Folder,
             role,
-            label: SmolStr::new_static("x"),
-            grab: Grab::Fixed,
-            embodied: false,
+            label: SmolStr::new_static("Citrus"),
+            description: None,
         }
     }
 
-    fn takeable(role: Role) -> MoteSpec {
-        MoteSpec {
-            grab: Grab::Takeable,
-            ..spec(role)
-        }
+    /// Holds attention past the placard delay.
+    fn dwell(orbit: &mut Orbit, specs: &[MoteSpec], aim: Aim) {
+        let frame = Frame {
+            delta: Tuning::DEFAULT.placard_delay + Tuning::DEFAULT.placard_fade,
+            ..frame(Some(aim))
+        };
+        orbit.update(specs, false, &frame);
+        orbit.update(specs, false, &frame);
     }
 
-    fn branch(children: usize, folders: usize) -> MoteSpec {
-        spec(Role::Branch { children, folders })
+    fn takeable() -> MoteSpec {
+        spec(Role::Item)
+    }
+
+    fn group(children: usize, groups: usize) -> MoteSpec {
+        spec(Role::Group { children, groups })
     }
 
     fn anchor() -> Transform {
@@ -359,7 +406,7 @@ mod tests {
     #[test]
     fn pips_report_the_real_child_count() {
         let mut orbit = orbit();
-        orbit.update(&[branch(3, 0)], false, &frame(None));
+        orbit.update(&[group(3, 0)], false, &frame(None));
         assert_eq!(orbit.views()[0].pips.count, 3);
         assert!(!orbit.views()[0].pips.overflow);
     }
@@ -367,15 +414,15 @@ mod tests {
     #[test]
     fn container_children_are_marked_for_see_through_drawing() {
         let mut orbit = orbit();
-        orbit.update(&[branch(5, 2)], false, &frame(None));
-        assert_eq!(orbit.views()[0].pips.branches(), 2);
+        orbit.update(&[group(5, 2)], false, &frame(None));
+        assert_eq!(orbit.views()[0].pips.groups(), 2);
     }
 
     #[test]
     fn an_oversized_branch_reports_overflow_rather_than_lying() {
         let mut orbit = orbit();
         orbit.update(
-            &[branch(Tuning::DEFAULT.pip_cap + 5, 0)],
+            &[group(Tuning::DEFAULT.pip_cap + 5, 0)],
             false,
             &frame(None),
         );
@@ -386,14 +433,14 @@ mod tests {
     #[test]
     fn leaves_carry_no_pips() {
         let mut orbit = orbit();
-        orbit.update(&[spec(Role::Leaf), spec(Role::Cast)], false, &frame(None));
+        orbit.update(&[spec(Role::Action), spec(Role::Cast)], false, &frame(None));
         assert!(orbit.views().iter().all(|view| view.pips.count == 0));
     }
 
     #[test]
     fn a_branch_reads_bigger_and_more_transparent_than_a_leaf() {
         let mut orbit = orbit();
-        orbit.update(&[branch(2, 0), spec(Role::Leaf)], false, &frame(None));
+        orbit.update(&[group(2, 0), spec(Role::Action)], false, &frame(None));
         let (branch, leaf) = (orbit.views()[0], orbit.views()[1]);
         assert!(branch.radius > leaf.radius, "containers read as containers");
         assert!(branch.style.alpha < leaf.style.alpha);
@@ -403,7 +450,7 @@ mod tests {
     fn the_parent_mote_is_small_dim_and_marked_around_itself() {
         let mut orbit = orbit();
         orbit.update(
-            &[spec(Role::Parent { depth: 2 }), spec(Role::Leaf)],
+            &[spec(Role::Parent { depth: 2 }), spec(Role::Action)],
             true,
             &frame(None),
         );
@@ -417,7 +464,7 @@ mod tests {
     #[test]
     fn aiming_at_a_slot_attends_it_and_only_it() {
         let mut orbit = orbit();
-        let specs = [spec(Role::Leaf), spec(Role::Leaf), spec(Role::Leaf)];
+        let specs = [spec(Role::Action), spec(Role::Action), spec(Role::Action)];
         orbit.update(&specs, false, &frame(Some(aim_at(Vec2::new(0.0, R)))));
         assert_eq!(orbit.attended(), Some(0));
         let active = orbit
@@ -429,9 +476,27 @@ mod tests {
     }
 
     #[test]
+    fn reach_bounds_exactly_what_resolves() {
+        let orbit = orbit();
+        let layout = orbit.layout(4, false);
+        assert!(
+            layout
+                .resolve(Vec2::new(0.0, orbit.reach() * 0.99), None, &orbit.tuning)
+                .is_some()
+        );
+        assert!(
+            layout
+                .resolve(Vec2::new(0.0, orbit.reach() * 1.01), None, &orbit.tuning)
+                .is_none(),
+            "a binding sizes its hit surface from reach(); anything attended \
+             past it is a mote that lights up and cannot be pressed"
+        );
+    }
+
+    #[test]
     fn a_tap_reports_the_slot_it_started_on() {
         let mut orbit = orbit();
-        let specs = [spec(Role::Leaf), spec(Role::Leaf)];
+        let specs = [spec(Role::Action), spec(Role::Action)];
         let aim = aim_at(Vec2::new(0.0, R));
         orbit.update(&specs, false, &frame(Some(aim)));
         orbit.press(aim.world);
@@ -442,7 +507,7 @@ mod tests {
     #[test]
     fn a_held_mote_leaves_its_slot_and_follows_the_hand_in_three_dimensions() {
         let mut orbit = orbit();
-        let specs = [takeable(Role::Leaf), spec(Role::Leaf)];
+        let specs = [takeable(), spec(Role::Action)];
         let start = aim_at(Vec2::new(0.0, R));
         orbit.update(&specs, false, &frame(Some(start)));
         let resting = orbit.views()[0].position;
@@ -464,7 +529,7 @@ mod tests {
     #[test]
     fn a_fixed_mote_never_leaves_its_slot() {
         let mut orbit = orbit();
-        let specs = [spec(Role::Leaf), spec(Role::Leaf)];
+        let specs = [spec(Role::Action), spec(Role::Action)];
         let start = aim_at(Vec2::new(0.0, R));
         orbit.update(&specs, false, &frame(Some(start)));
         let resting = orbit.views()[0].position;
@@ -482,7 +547,7 @@ mod tests {
     #[test]
     fn dragging_does_not_light_up_whatever_it_passes_over() {
         let mut orbit = orbit();
-        let specs = [takeable(Role::Leaf), spec(Role::Leaf), spec(Role::Leaf)];
+        let specs = [takeable(), spec(Role::Action), spec(Role::Action)];
         let start = aim_at(Vec2::new(0.0, R));
         orbit.update(&specs, false, &frame(Some(start)));
         orbit.press(start.world);
@@ -503,7 +568,7 @@ mod tests {
     #[test]
     fn a_fixed_mote_still_tracks_attention_and_cancels_if_you_slide_off() {
         let mut orbit = orbit();
-        let specs = [spec(Role::Leaf), spec(Role::Leaf), spec(Role::Leaf)];
+        let specs = [spec(Role::Action), spec(Role::Action), spec(Role::Action)];
         let start = aim_at(Vec2::new(0.0, R));
         orbit.update(&specs, false, &frame(Some(start)));
         orbit.press(start.world);
@@ -524,7 +589,7 @@ mod tests {
     #[test]
     fn unheld_motes_stay_in_their_slots_while_another_is_dragged() {
         let mut orbit = orbit();
-        let specs = [takeable(Role::Leaf), spec(Role::Leaf)];
+        let specs = [takeable(), spec(Role::Action)];
         let start = aim_at(Vec2::new(0.0, R));
         orbit.update(&specs, false, &frame(Some(start)));
         let other = orbit.views()[1].position;
@@ -540,9 +605,100 @@ mod tests {
     }
 
     #[test]
+    fn every_mote_says_where_its_name_goes() {
+        let mut orbit = orbit();
+        orbit.update(&[spec(Role::Action)], false, &frame(None));
+        let view = orbit.views()[0];
+        assert!(
+            view.label_offset.y < -view.radius,
+            "the label clears the body rather than sitting inside it"
+        );
+        assert!(view.label_size > 0.0);
+    }
+
+    #[test]
+    fn only_a_mote_that_has_held_attention_earns_a_placard() {
+        let mut orbit = orbit();
+        let specs = [spec(Role::Action), spec(Role::Action)];
+        let aim = aim_at(Vec2::new(0.0, R));
+
+        orbit.update(&specs, false, &frame(None));
+        assert!(orbit.placard().is_none(), "nothing is attended");
+
+        orbit.update(&specs, false, &frame(Some(aim)));
+        assert!(orbit.placard().is_none(), "the delay has not passed");
+
+        dwell(&mut orbit, &specs, aim);
+        let placard = orbit.placard().expect("attended long enough");
+        assert!(placard.opacity > 0.0);
+        assert_eq!(placard.lines[0].text, "Citrus", "titled with its own name");
+    }
+
+    /// Every mote explains itself, so a consumer cannot ship one that stays
+    /// silent when you hold your aim on it.
+    #[test]
+    fn a_mote_told_nothing_still_says_how_to_use_it() {
+        let mut orbit = orbit();
+        let specs = [spec(Role::Action)];
+        dwell(&mut orbit, &specs, aim_at(Vec2::new(0.0, R)));
+
+        let placard = orbit.placard().expect("placard");
+        let texts = placard
+            .lines
+            .iter()
+            .map(|line| line.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, vec!["Citrus", "Grab to activate"]);
+    }
+
+    #[test]
+    fn grabbing_a_mote_puts_its_placard_away() {
+        let mut orbit = orbit();
+        let specs = [takeable(), spec(Role::Action)];
+        let aim = aim_at(Vec2::new(0.0, R));
+        dwell(&mut orbit, &specs, aim);
+        assert!(orbit.placard().is_some());
+
+        orbit.press(aim.world);
+        orbit.update(&specs, false, &frame(Some(aim)));
+        assert!(
+            orbit.placard().is_none(),
+            "a card riding a mote through the air is unreadable, and by then \
+             you are past wanting to be told what it is"
+        );
+    }
+
+    #[test]
+    fn looking_away_takes_the_placard_with_it() {
+        let mut orbit = orbit();
+        let specs = [spec(Role::Action), spec(Role::Action)];
+        dwell(&mut orbit, &specs, aim_at(Vec2::new(0.0, R)));
+        assert!(orbit.placard().is_some());
+
+        orbit.update(&specs, false, &frame(None));
+        assert!(orbit.placard().is_none());
+    }
+
+    #[test]
+    fn the_placard_rides_the_body_it_describes() {
+        let mut orbit = orbit();
+        let specs = [spec(Role::Action), spec(Role::Action)];
+        let aim = aim_at(Vec2::new(0.0, R));
+        dwell(&mut orbit, &specs, aim);
+
+        let view = orbit.views()[0];
+        let placard = orbit.placard().expect("placard");
+        assert!((placard.position.x - view.position.x).abs() < 1.0e-5);
+        assert!(
+            placard.position.y > view.position.y,
+            "mounted above, so it never covers the mote it is about"
+        );
+    }
+
+    #[test]
     fn views_never_exceed_capacity() {
         let mut orbit = Orbit::new(3, Tuning::DEFAULT, Palette::DEFAULT);
-        let specs = vec![spec(Role::Leaf); 10];
+        let specs = vec![spec(Role::Action); 10];
         orbit.update(&specs, false, &frame(None));
         assert_eq!(orbit.views().len(), 3);
     }
@@ -554,11 +710,11 @@ mod tests {
             4,
             Tuning::DEFAULT,
             Palette {
-                kinds: [custom; MoteKind::COUNT],
+                base: custom,
                 ..Palette::DEFAULT
             },
         );
-        let specs = [spec(Role::Leaf)];
+        let specs = [spec(Role::Action)];
         orbit.update(&specs, false, &frame(None));
         assert_eq!(orbit.views()[0].style.color, custom);
     }
@@ -566,7 +722,7 @@ mod tests {
     #[test]
     fn hovering_brightens_a_mote_without_repainting_it() {
         let mut orbit = orbit();
-        let specs = [spec(Role::Leaf), spec(Role::Leaf)];
+        let specs = [spec(Role::Action), spec(Role::Action)];
         orbit.update(&specs, false, &frame(None));
         let resting = orbit.views()[0].style;
 

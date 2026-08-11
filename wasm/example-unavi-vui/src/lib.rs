@@ -14,8 +14,8 @@ use std::{
 
 use unavi_vui::{
     grasp::Outcome,
-    mote::MoteKind,
     palette::Palette,
+    pointer,
     tree::{
         Navigation,
         Node,
@@ -23,7 +23,6 @@ use unavi_vui::{
     },
     tuning::Tuning,
     view::{
-        Aim,
         Frame,
         Orbit,
     },
@@ -35,13 +34,6 @@ use crate::{
     planted::Planted,
     wired::{
         agent::api::local_camera,
-        input::{
-            context::register_global_input_listener,
-            types::{
-                InputAction,
-                InputListener,
-            },
-        },
         scene::{
             api::self_document,
             types::Prim,
@@ -50,10 +42,12 @@ use crate::{
 };
 
 mod bodies;
+mod placard;
 mod planted;
 
 wired_prelude::generate_script!(Script);
 
+const TUNING: Tuning = Tuning::DEFAULT;
 const CAPACITY: usize = 16;
 const PLANTED_CAPACITY: usize = 12;
 const PLANT_DISTANCE: f32 = 1.1;
@@ -64,16 +58,15 @@ struct Script {
     orbit:       Orbit,
     bodies:      Bodies,
     planted:     Planted,
-    input:       InputListener,
     camera:      RefCell<Option<Prim>>,
     anchor:      Cell<Option<Transform>>,
-    aim:         Cell<Option<Aim>>,
     /// The slot the engine's grab is carrying. Its transform belongs to the
     /// solver until it comes back.
     held:        Cell<Option<usize>>,
-    /// Whether the current press came from the host's own hit-test. Only
-    /// those can be handed over: nothing is waiting on a mote the ray missed.
-    hit_press:   Cell<bool>,
+    /// How far along the view ray the pressed mote was, held for as long as
+    /// the press lasts. Desktop has no tracked hand, so this is what turns
+    /// aim into one.
+    depth:       Cell<Option<f32>>,
     update_time: SystemTime,
 }
 
@@ -84,30 +77,6 @@ impl Script {
             *camera = local_camera().ok();
         }
         camera.as_ref().map(Prim::global_xform)
-    }
-
-    /// Where the view ray crosses the orbit plane, in the plane's own
-    /// coordinates and in world space.
-    fn look(camera: &Transform, anchor: &Transform) -> Option<Aim> {
-        let normal = anchor.rotation * Vec3::Z;
-        let forward = camera.rotation * Vec3::new(0.0, 0.0, -1.0);
-        let denominator = forward.dot(normal);
-        if denominator.abs() < 1.0e-6 {
-            return None;
-        }
-        let distance = (anchor.translation - camera.translation).dot(normal) / denominator;
-        if distance < 0.0 {
-            return None;
-        }
-        let world = camera.translation + forward * distance;
-        let relative = world - anchor.translation;
-        Some(Aim {
-            local: Vec2::new(
-                relative.dot(anchor.rotation * Vec3::X),
-                relative.dot(anchor.rotation * Vec3::Y),
-            ),
-            world,
-        })
     }
 
     fn report(&self, navigation: &Navigation) {
@@ -124,37 +93,82 @@ impl Script {
         }
     }
 
-    /// Once a hold has travelled far enough to be a take, the mote gains a
-    /// body and the engine's grab — which is still watching — picks it up.
+    /// Once a hold has travelled far enough to be a take, the mote becomes a
+    /// body and the engine's grab — which is still watching the pointer —
+    /// picks it up.
     fn hand_over(&self) {
-        if self.held.get().is_some() || !self.hit_press.get() {
+        if self.held.get().is_some() {
             return;
         }
         let Some(slot) = self.orbit.displaced() else {
             return;
         };
-        match self.bodies.make_dynamic(slot) {
-            Ok(()) => self.held.set(Some(slot)),
-            Err(err) => eprintln!("could not hand mote to the engine: {err:?}"),
+        let Some(view) = self.orbit.views().get(slot) else {
+            return;
+        };
+        if let Err(err) = self.bodies.make_dynamic(slot, view.radius) {
+            eprintln!("could not hand mote to the engine: {err:?}");
         }
+        // Tracked even when that failed: a half-promoted mote still has to be
+        // stripped back on release, or it stays a loose body forever.
+        self.held.set(Some(slot));
     }
 
-    /// The engine let go. Leave a planted duplicate where it ended up and
-    /// give the mote back to its orbit.
-    fn take_back(&self, slot: usize) {
-        let pose = self.bodies.pose(slot);
-        let velocity = self.bodies.velocity(slot);
-        if let Err(err) = self.bodies.clear_dynamic(slot) {
+    /// Grabs the lit mote at the depth it is drawn, so it arrives under the
+    /// pointer rather than waiting to be aimed at exactly.
+    fn press(&mut self, camera: &Transform) {
+        let (Some(slot), Some(anchor)) = (self.orbit.attended(), self.anchor.get()) else {
+            return;
+        };
+        let Some(view) = self.orbit.views().get(slot) else {
+            return;
+        };
+        let world = anchor.translation + anchor.rotation * view.position;
+        let depth = (world - camera.translation).length();
+        self.depth.set(Some(depth));
+        self.orbit.press(pointer::hand(camera, depth));
+    }
+
+    /// The engine let go. Whatever it was carrying comes back to its orbit,
+    /// leaving a planted duplicate behind only if the release was a place.
+    fn release(&mut self) {
+        self.depth.set(None);
+        let outcome = self.orbit.release();
+        let carried = self.held.take();
+        let landed = carried.and_then(|slot| {
+            let at = self.bodies.pose(slot)?.translation;
+            Some((at, self.bodies.velocity(slot)))
+        });
+        if let Some(slot) = carried
+            && let Err(err) = self.bodies.clear_dynamic(slot)
+        {
             eprintln!("could not return mote to its orbit: {err:?}");
         }
 
+        match outcome {
+            Some(Outcome::Tap(slot)) => {
+                let navigation = self.tree.select(slot);
+                self.report(&navigation);
+            }
+            // A place with nothing carried is a mote the engine never took;
+            // it springs home and that is the whole of it.
+            Some(Outcome::Place(slot)) => {
+                if let Some((at, velocity)) = landed {
+                    self.plant(slot, at, velocity);
+                }
+            }
+            None => {}
+        }
+    }
+
+    fn plant(&self, slot: usize, at: Vec3, velocity: Vec3) {
         let level = self.tree.level();
-        let (Some(pose), Some(spec)) = (pose, level.get(slot)) else {
+        let Some(spec) = level.get(slot) else {
             return;
         };
         match self
             .planted
-            .plant(pose.translation, velocity, self.orbit.resting_style(spec))
+            .plant(at, velocity, self.orbit.resting_style(spec))
         {
             Ok(recycled) => {
                 println!("planted '{}' in the room", spec.label);
@@ -166,105 +180,76 @@ impl Script {
         }
     }
 
-    fn handle_input(&mut self) {
-        for (slot, pressed) in self.bodies.poll_grabs() {
-            if !pressed {
-                continue;
-            }
-            let Some(at) = self.aim.get().map(|aim| aim.world) else {
-                continue;
-            };
-            self.hit_press.set(true);
-            self.orbit.press_slot(slot, at);
-        }
-
-        while let Some(event) = self.input.poll() {
-            match event.action {
-                InputAction::GrabUp => {
-                    let outcome = self.orbit.release();
-                    self.hit_press.set(false);
-                    if let Some(slot) = self.held.take() {
-                        self.take_back(slot);
-                    } else if let Some(Outcome::Tap(slot)) = outcome {
-                        let navigation = self.tree.select(slot);
-                        self.report(&navigation);
-                    }
-                }
-                // Attention is more forgiving than the ray, so a near miss
-                // still taps what lights up.
-                InputAction::GrabDown => {
-                    if !self.orbit.is_seized()
-                        && let (Some(slot), Some(aim)) = (self.orbit.attended(), self.aim.get())
-                    {
-                        self.orbit.press_slot(slot, aim.world);
-                    }
-                }
-                InputAction::MenuDown
-                | InputAction::MenuUp
-                | InputAction::ScrollUp
-                | InputAction::ScrollDown => {}
+    fn handle_input(&mut self, camera: &Transform) {
+        for pressed in self.bodies.poll_grabs() {
+            match (pressed, self.orbit.is_seized()) {
+                (true, false) => self.press(camera),
+                (false, _) => self.release(),
+                (true, true) => {}
             }
         }
     }
 }
 
-/// Uneven on purpose: branch sizes differ so a layout has to cope with
-/// whatever count a level happens to have, one branch overflows the pip cap,
-/// and it nests deep enough to show that depth is unbounded.
+/// Arbitrary data, deliberately.
 ///
-/// Only the leaves that stand for *things* — items and spawnables — are
-/// takeable. Commands, spaces and tools are fixed, because pulling a command
-/// out of a menu means nothing.
+/// VUI arranges whatever a consumer hands it, so the gallery stands for a
+/// catalogue rather than for this shell's own menus — naming the levels after
+/// the halo's own furniture made the library look like it knew about them.
+///
+/// Uneven on purpose: group sizes differ so a layout has to cope with whatever
+/// count a level happens to have, one group overflows the pip cap, and it
+/// nests deep enough to show that depth is unbounded. Only motes standing for
+/// *things* are takeable — dragging a category nowhere means nothing.
 fn demo_tree() -> Node {
-    Node::branch(
-        MoteKind::Folder,
-        "Root",
+    Node::group(
+        "Produce",
         vec![
-            Node::cast(MoteKind::Command, "Home"),
-            Node::branch(
-                MoteKind::Space,
-                "Places",
+            Node::cast("Empty the crate").describe("Removes every item at once. There is no undo."),
+            Node::group(
+                "Citrus",
                 vec![
-                    Node::leaf(MoteKind::Space, "Atrium"),
-                    Node::leaf(MoteKind::Space, "Workshop"),
-                    Node::leaf(MoteKind::Space, "Club"),
-                    Node::leaf(MoteKind::Space, "Garden"),
+                    Node::item("Lemon").describe("Sharp and thin-skinned."),
+                    Node::item("Lime").describe("Smaller, and greener."),
+                    Node::item("Orange").describe("The one everybody pictures."),
+                    Node::item("Grapefruit").describe("Bitter enough to divide a room."),
                 ],
-            ),
-            Node::branch(
-                MoteKind::Item,
-                "Pocket",
+            )
+            .describe("Sharp fruit with a thick rind."),
+            Node::group(
+                "Berries",
                 vec![
-                    Node::takeable(MoteKind::Item, "Lantern"),
-                    Node::takeable(MoteKind::Item, "Crate"),
-                    Node::takeable(MoteKind::Document, "Notes"),
+                    Node::item("Strawberry").describe("Not botanically a berry."),
+                    Node::item("Blueberry").describe("Actually a berry."),
+                    Node::item("Raspberry").describe("A cluster of tiny fruits."),
                 ],
-            ),
-            Node::branch(
-                MoteKind::Tool,
-                "Hand",
+            )
+            .describe("Small, soft, and quick to spoil."),
+            Node::group(
+                "Orchard",
                 vec![
-                    Node::branch(
-                        MoteKind::Tool,
-                        "Spawner",
+                    Node::group(
+                        "Apples",
                         vec![
-                            Node::takeable(MoteKind::Item, "Cube"),
-                            Node::takeable(MoteKind::Item, "Sphere"),
-                            Node::takeable(MoteKind::Item, "Ramp"),
-                            Node::takeable(MoteKind::Item, "Plank"),
-                            Node::takeable(MoteKind::Item, "Sign"),
-                            Node::takeable(MoteKind::Item, "Lamp"),
-                            Node::takeable(MoteKind::Item, "Door"),
-                            Node::takeable(MoteKind::Item, "Window"),
-                            Node::takeable(MoteKind::Item, "Pillar"),
-                            Node::takeable(MoteKind::Item, "Arch"),
+                            Node::item("Gala"),
+                            Node::item("Fuji"),
+                            Node::item("Bramley"),
+                            Node::item("Pink Lady"),
+                            Node::item("Granny Smith"),
+                            Node::item("Braeburn"),
+                            Node::item("Cox"),
+                            Node::item("Discovery"),
+                            Node::item("Egremont"),
+                            Node::item("Worcester"),
                         ],
-                    ),
-                    Node::leaf(MoteKind::Tool, "Physgun"),
-                    Node::leaf(MoteKind::Tool, "Lens"),
+                    )
+                    .describe("More kinds than the ring can show at once."),
+                    Node::item("Pear").describe("Ripe for about an hour."),
+                    Node::item("Quince").describe("Inedible raw, excellent cooked."),
                 ],
-            ),
-            Node::leaf(MoteKind::Person, "Self"),
+            )
+            .describe("Tree fruit, and the deepest level here."),
+            Node::action("Sort by name").describe("Reorders this level. Reversible."),
         ],
     )
 }
@@ -290,15 +275,13 @@ impl ScriptBehavior for Script {
 
         Ok(Self {
             tree:        Tree::new(demo_tree()),
-            orbit:       Orbit::new(CAPACITY, Tuning::DEFAULT, Palette::DEFAULT),
-            bodies:      Bodies::new(&doc, CAPACITY)?,
+            orbit:       Orbit::new(CAPACITY, TUNING, Palette::DEFAULT),
+            bodies:      Bodies::new(&doc, CAPACITY, &TUNING)?,
             planted:     Planted::new(&doc, PLANTED_CAPACITY)?,
-            input:       register_global_input_listener()?,
             camera:      RefCell::new(None),
             anchor:      Cell::new(None),
-            aim:         Cell::new(None),
             held:        Cell::new(None),
-            hit_press:   Cell::new(false),
+            depth:       Cell::new(None),
             update_time: SystemTime::now(),
         })
     }
@@ -323,7 +306,7 @@ impl ScriptBehavior for Script {
             println!("[0] '{}' — walk up to it", self.tree.here());
         }
 
-        self.handle_input();
+        self.handle_input(&camera);
         Ok(())
     }
 
@@ -335,10 +318,8 @@ impl ScriptBehavior for Script {
             return Ok(());
         };
 
-        let aim = Self::look(&camera, &anchor);
-        self.aim.set(aim);
-
-        let hand = aim.map(|aim| aim.world);
+        let aim = pointer::aim(&camera, &anchor, TUNING.field_lift);
+        let hand = self.depth.get().map(|depth| pointer::hand(&camera, depth));
         let specs = self.tree.level();
         self.orbit.update(
             &specs,
@@ -352,8 +333,19 @@ impl ScriptBehavior for Script {
             },
         );
 
+        // Drawn before handing over, never after: promoting a mote stops us
+        // writing its transform, so doing it first freezes the mote a frame
+        // behind the pointer and the engine goes looking for it where it no
+        // longer is.
+        self.bodies.apply(
+            self.orbit.views(),
+            &specs,
+            self.orbit.placard(),
+            &self.orbit.palette,
+            self.held.get(),
+        )?;
         self.hand_over();
-        self.bodies.apply(self.orbit.views(), self.held.get())
+        Ok(())
     }
 }
 

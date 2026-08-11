@@ -12,7 +12,6 @@ pub struct Seized {
     /// Set once the pointer has left the tap threshold, and never cleared —
     /// a release back at the origin is a cancelled place, not a tap.
     pub displaced: bool,
-    pub velocity:  Vec3,
     /// A fixed mote never displaces however far the pointer travels, so it
     /// cannot be dragged out of its orbit.
     pub takeable:  bool,
@@ -20,17 +19,14 @@ pub struct Seized {
 
 /// What a release meant. Displacement decides, not a timer: a timer has to be
 /// learned, and this is the same rule as click-versus-drag.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Outcome {
     /// Released without meaningful travel — fire the mote's primary action.
     Tap(usize),
-    /// Released after travel. Where it landed decides what that means, which
-    /// is the caller's to resolve against the world.
-    Place {
-        slot:     usize,
-        at:       Vec3,
-        velocity: Vec3,
-    },
+    /// Released after travel. By then the mote is a body the engine is
+    /// carrying, so where it ended up and how fast is the world's answer, not
+    /// this one's.
+    Place(usize),
 }
 
 #[derive(Debug, Default)]
@@ -50,21 +46,14 @@ impl Grasp {
             origin: at,
             at,
             displaced: false,
-            velocity: Vec3::ZERO,
             takeable,
         });
     }
 
-    /// Advances the held mote's tracking by `delta` seconds.
-    pub fn track(&mut self, at: Vec3, delta: f32, tuning: &Tuning) {
+    pub fn track(&mut self, at: Vec3, tuning: &Tuning) {
         let Some(seized) = &mut self.seized else {
             return;
         };
-        if delta > f32::EPSILON {
-            let instant = (at - seized.at) / delta;
-            let blend = (delta * tuning.lean_speed).clamp(0.0, 1.0);
-            seized.velocity = seized.velocity.lerp(instant, blend);
-        }
         seized.at = at;
         if seized.takeable && (at - seized.origin).length() > tuning.seize_threshold {
             seized.displaced = true;
@@ -73,15 +62,11 @@ impl Grasp {
 
     pub fn release(&mut self) -> Option<Outcome> {
         let seized = self.seized.take()?;
-        if seized.displaced {
-            Some(Outcome::Place {
-                slot:     seized.slot,
-                at:       seized.at,
-                velocity: seized.velocity,
-            })
+        Some(if seized.displaced {
+            Outcome::Place(seized.slot)
         } else {
-            Some(Outcome::Tap(seized.slot))
-        }
+            Outcome::Tap(seized.slot)
+        })
     }
 
     #[must_use]
@@ -111,7 +96,7 @@ mod tests {
     fn a_release_without_travel_is_a_tap() {
         let mut grasp = Grasp::new();
         grasp.press(3, Vec3::ZERO, true);
-        grasp.track(Vec3::new(0.001, 0.0, 0.0), 0.016, &tuning());
+        grasp.track(Vec3::new(0.001, 0.0, 0.0), &tuning());
         assert_eq!(grasp.release(), Some(Outcome::Tap(3)));
     }
 
@@ -119,23 +104,23 @@ mod tests {
     fn a_release_after_travel_is_a_place() {
         let mut grasp = Grasp::new();
         grasp.press(1, Vec3::ZERO, true);
-        grasp.track(beyond_threshold(), 0.016, &tuning());
-        let outcome = grasp.release().expect("outcome");
-        assert!(matches!(outcome, Outcome::Place { slot: 1, .. }));
+        grasp.track(beyond_threshold(), &tuning());
+        assert_eq!(grasp.release(), Some(Outcome::Place(1)));
     }
 
     #[test]
     fn returning_to_the_origin_cancels_rather_than_taps() {
         let mut grasp = Grasp::new();
         grasp.press(2, Vec3::ZERO, true);
-        grasp.track(beyond_threshold(), 0.016, &tuning());
-        grasp.track(Vec3::ZERO, 0.016, &tuning());
+        grasp.track(beyond_threshold(), &tuning());
+        grasp.track(Vec3::ZERO, &tuning());
 
-        let outcome = grasp.release().expect("outcome");
-        assert!(
-            matches!(outcome, Outcome::Place { at, .. } if at == Vec3::ZERO),
-            "a mote dragged out and back is a place at the origin, which the \
-             caller cancels — not a tap that fires the action"
+        assert_eq!(
+            grasp.release(),
+            Some(Outcome::Place(2)),
+            "a mote dragged out and back is a place, which the caller cancels \
+             against where it actually ended up — not a tap that fires the \
+             action"
         );
     }
 
@@ -143,7 +128,7 @@ mod tests {
     fn a_fixed_mote_never_displaces_however_far_the_pointer_goes() {
         let mut grasp = Grasp::new();
         grasp.press(1, Vec3::ZERO, false);
-        grasp.track(Vec3::new(5.0, 5.0, 5.0), 0.016, &tuning());
+        grasp.track(Vec3::new(5.0, 5.0, 5.0), &tuning());
         assert!(!grasp.seized().expect("held").displaced);
         assert_eq!(
             grasp.release(),
@@ -161,21 +146,8 @@ mod tests {
     #[test]
     fn tracking_without_a_press_does_nothing() {
         let mut grasp = Grasp::new();
-        grasp.track(beyond_threshold(), 0.016, &tuning());
+        grasp.track(beyond_threshold(), &tuning());
         assert!(!grasp.is_seized());
-    }
-
-    #[test]
-    fn a_throw_carries_velocity() {
-        let mut grasp = Grasp::new();
-        grasp.press(0, Vec3::ZERO, true);
-        for step in 1..=8 {
-            grasp.track(Vec3::new(step as f32 * 0.05, 0.0, 0.0), 0.016, &tuning());
-        }
-        let Some(Outcome::Place { velocity, .. }) = grasp.release() else {
-            panic!("expected a place");
-        };
-        assert!(velocity.x > 0.0, "velocity points along the throw");
     }
 
     #[test]

@@ -9,6 +9,8 @@ pub mod layout;
 pub mod mesh;
 pub mod mote;
 pub mod palette;
+pub mod placard;
+pub mod pointer;
 pub mod tree;
 pub mod tuning;
 pub mod view;

@@ -49,6 +49,7 @@ use hsd::{
         },
         slots,
         spawn::SpawnAttr,
+        text::TextAttr,
         xform::XformAttr,
     },
     id::{
@@ -66,6 +67,7 @@ use unavi_quota::{
     limits::{
         MAX_MESH_ELEMENTS,
         MAX_NAME_BYTES,
+        MAX_TEXT_BYTES,
     },
 };
 
@@ -185,6 +187,46 @@ pub enum PrimRigidBodyKind {
     Dynamic,
     Kinematic,
     Static,
+}
+
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+pub enum PrimTextAlign {
+    #[default]
+    Left,
+    Center,
+    Right,
+}
+
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+pub enum PrimTextAnchor {
+    #[default]
+    Baseline,
+    Top,
+    Middle,
+    Bottom,
+}
+
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+pub enum PrimTextBillboard {
+    #[default]
+    None,
+    Yaw,
+    Full,
+}
+
+#[derive(Default)]
+pub struct PrimText {
+    pub value:         String,
+    pub size:          Option<f32>,
+    pub align:         Option<PrimTextAlign>,
+    pub anchor:        Option<PrimTextAnchor>,
+    pub wrap:          Option<f32>,
+    pub line_height:   Option<f32>,
+    pub color:         Option<PrimColor>,
+    pub outline:       Option<PrimColor>,
+    pub outline_width: Option<f32>,
+    pub emissive:      Option<f32>,
+    pub billboard:     Option<PrimTextBillboard>,
 }
 
 pub struct PrimPortalReceptor {
@@ -765,6 +807,97 @@ fn prim_to_material_attr(m: PrimMaterial) -> MaterialAttr {
         emissive:     m.emissive.map(prim_color_to_vec),
         metallic:     m.metallic.map(f64::from),
         roughness:    m.roughness.map(f64::from),
+    }
+}
+
+pub async fn text(api: &Api, rep: u32) -> anyhow::Result<Option<PrimText>> {
+    let prim = get_prim(api, rep).await?;
+    if prim.is_proxy {
+        return Ok(None);
+    }
+    Ok(prim.read_attr::<TextAttr>()?.map(text_attr_to_prim))
+}
+
+pub async fn set_text(api: &Api, rep: u32, value: Option<PrimText>) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
+    ensure_writable(api, &prim)?;
+    if let Some(value) = &value {
+        anyhow::ensure!(
+            value.value.len() <= MAX_TEXT_BYTES,
+            "text too long: {} bytes exceeds {MAX_TEXT_BYTES}",
+            value.value.len()
+        );
+    }
+    prim.write_or_clear(value.map(prim_to_text_attr))
+}
+
+fn text_attr_to_prim(attr: TextAttr) -> PrimText {
+    PrimText {
+        value:         attr.value,
+        size:          attr.size.map(|v| v as f32),
+        align:         attr.align.and_then(|s| match s.as_str() {
+            "left" => Some(PrimTextAlign::Left),
+            "center" => Some(PrimTextAlign::Center),
+            "right" => Some(PrimTextAlign::Right),
+            _ => None,
+        }),
+        anchor:        attr.anchor.and_then(|s| match s.as_str() {
+            "baseline" => Some(PrimTextAnchor::Baseline),
+            "top" => Some(PrimTextAnchor::Top),
+            "middle" => Some(PrimTextAnchor::Middle),
+            "bottom" => Some(PrimTextAnchor::Bottom),
+            _ => None,
+        }),
+        wrap:          attr.wrap.map(|v| v as f32),
+        line_height:   attr.line_height.map(|v| v as f32),
+        color:         attr.color.map(color_vec_to_prim),
+        outline:       attr.outline.map(color_vec_to_prim),
+        outline_width: attr.outline_width.map(|v| v as f32),
+        emissive:      attr.emissive.map(|v| v as f32),
+        billboard:     attr.billboard.and_then(|s| match s.as_str() {
+            "none" => Some(PrimTextBillboard::None),
+            "yaw" => Some(PrimTextBillboard::Yaw),
+            "full" => Some(PrimTextBillboard::Full),
+            _ => None,
+        }),
+    }
+}
+
+fn prim_to_text_attr(t: PrimText) -> TextAttr {
+    TextAttr {
+        value:         t.value,
+        size:          t.size.map(f64::from),
+        align:         t.align.map(|align| {
+            match align {
+                PrimTextAlign::Left => "left",
+                PrimTextAlign::Center => "center",
+                PrimTextAlign::Right => "right",
+            }
+            .to_string()
+        }),
+        anchor:        t.anchor.map(|anchor| {
+            match anchor {
+                PrimTextAnchor::Baseline => "baseline",
+                PrimTextAnchor::Top => "top",
+                PrimTextAnchor::Middle => "middle",
+                PrimTextAnchor::Bottom => "bottom",
+            }
+            .to_string()
+        }),
+        wrap:          t.wrap.map(f64::from),
+        line_height:   t.line_height.map(f64::from),
+        color:         t.color.map(prim_color_to_vec),
+        outline:       t.outline.map(prim_color_to_vec),
+        outline_width: t.outline_width.map(f64::from),
+        emissive:      t.emissive.map(f64::from),
+        billboard:     t.billboard.map(|billboard| {
+            match billboard {
+                PrimTextBillboard::None => "none",
+                PrimTextBillboard::Yaw => "yaw",
+                PrimTextBillboard::Full => "full",
+            }
+            .to_string()
+        }),
     }
 }
 

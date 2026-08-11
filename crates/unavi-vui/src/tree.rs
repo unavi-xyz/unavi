@@ -1,8 +1,6 @@
 use smol_str::SmolStr;
 
 use crate::mote::{
-    Grab,
-    MoteKind,
     MoteSpec,
     Role,
 };
@@ -13,63 +11,57 @@ pub struct Node {
 }
 
 impl Node {
-    /// A command: activating it does something, and it cannot be taken out.
-    #[must_use]
-    pub fn leaf(kind: MoteKind, label: &str) -> Self {
+    fn new(role: Role, label: &str, children: Vec<Self>) -> Self {
         Self {
-            spec:     MoteSpec {
-                kind,
-                role: Role::Leaf,
+            spec: MoteSpec {
+                role,
                 label: SmolStr::new(label),
-                grab: Grab::Fixed,
-                embodied: false,
+                description: None,
             },
-            children: Vec::new(),
+            children,
         }
+    }
+
+    /// Activating it does something, and it cannot be taken out.
+    #[must_use]
+    pub fn action(label: &str) -> Self {
+        Self::new(Role::Action, label, Vec::new())
     }
 
     /// A thing rather than a command: it can be pulled out of the orbit and
     /// put somewhere, which is what makes a drag mean anything.
     #[must_use]
-    pub fn takeable(kind: MoteKind, label: &str) -> Self {
-        let mut node = Self::leaf(kind, label);
-        node.spec.grab = Grab::Takeable;
-        node
+    pub fn item(label: &str) -> Self {
+        Self::new(Role::Item, label, Vec::new())
+    }
+
+    /// Consequential: it opens a cast site rather than firing on release.
+    #[must_use]
+    pub fn cast(label: &str) -> Self {
+        Self::new(Role::Cast, label, Vec::new())
     }
 
     #[must_use]
-    pub fn cast(kind: MoteKind, label: &str) -> Self {
-        Self {
-            spec:     MoteSpec {
-                kind,
-                role: Role::Cast,
-                label: SmolStr::new(label),
-                grab: Grab::Fixed,
-                embodied: false,
-            },
-            children: Vec::new(),
-        }
-    }
-
-    #[must_use]
-    pub fn branch(kind: MoteKind, label: &str, children: Vec<Self>) -> Self {
-        let folders = children
+    pub fn group(label: &str, children: Vec<Self>) -> Self {
+        let groups = children
             .iter()
-            .filter(|child| matches!(child.spec.role, Role::Branch { .. }))
+            .filter(|child| matches!(child.spec.role, Role::Group { .. }))
             .count();
-        Self {
-            spec: MoteSpec {
-                kind,
-                role: Role::Branch {
-                    children: children.len(),
-                    folders,
-                },
-                label: SmolStr::new(label),
-                grab: Grab::Fixed,
-                embodied: false,
+        Self::new(
+            Role::Group {
+                children: children.len(),
+                groups,
             },
+            label,
             children,
-        }
+        )
+    }
+
+    /// What this one does, shown on its placard once attention has been held.
+    #[must_use]
+    pub fn describe(mut self, description: &str) -> Self {
+        self.spec.description = Some(SmolStr::new(description));
+        self
     }
 }
 
@@ -142,13 +134,11 @@ impl Tree {
         let mut specs = Vec::with_capacity(node.children.len() + 1);
         if self.is_nested() {
             specs.push(MoteSpec {
-                kind:     MoteKind::Folder,
-                role:     Role::Parent {
+                role:        Role::Parent {
                     depth: self.depth(),
                 },
-                label:    self.here(),
-                grab:     Grab::Fixed,
-                embodied: false,
+                label:       self.here(),
+                description: Some(SmolStr::new_static("The level you are inside.")),
             });
         }
         specs.extend(node.children.iter().map(|child| child.spec.clone()));
@@ -166,24 +156,13 @@ impl Tree {
         };
         let label = child.spec.label.clone();
         match child.spec.role {
-            Role::Branch { .. } => {
+            Role::Group { .. } => {
                 self.path.push(index);
                 Navigation::Bloomed(label)
             }
             Role::Cast => Navigation::Cast(label),
-            Role::Leaf | Role::Parent { .. } => Navigation::Activated(label),
+            Role::Action | Role::Item | Role::Parent { .. } => Navigation::Activated(label),
         }
-    }
-
-    /// Collapses every level at once. Reached by pulling the parent mote out
-    /// of the orbit rather than tapping it, so one body means both "up one"
-    /// and "all the way out" without a second control.
-    pub fn reset(&mut self) -> Navigation {
-        if self.path.is_empty() {
-            return Navigation::None;
-        }
-        self.path.clear();
-        Navigation::Collapsed
     }
 }
 
@@ -192,20 +171,12 @@ mod tests {
     use super::*;
 
     fn tree() -> Tree {
-        Tree::new(Node::branch(
-            MoteKind::Folder,
+        Tree::new(Node::group(
             "Root",
             vec![
-                Node::cast(MoteKind::Command, "Home"),
-                Node::branch(
-                    MoteKind::Space,
-                    "Places",
-                    vec![
-                        Node::leaf(MoteKind::Space, "Atrium"),
-                        Node::leaf(MoteKind::Space, "Club"),
-                    ],
-                ),
-                Node::leaf(MoteKind::Tool, "Lens"),
+                Node::cast("Home"),
+                Node::group("Places", vec![Node::action("Atrium"), Node::action("Club")]),
+                Node::action("Lens"),
             ],
         ))
     }
@@ -264,23 +235,6 @@ mod tests {
     }
 
     #[test]
-    fn reset_collapses_every_level_at_once() {
-        let mut tree = tree();
-        tree.select(1);
-        assert_eq!(tree.depth(), 1);
-        assert_eq!(tree.reset(), Navigation::Collapsed);
-        assert_eq!(tree.depth(), 0);
-        assert_eq!(labels(&tree), vec!["Home", "Places", "Lens"]);
-    }
-
-    #[test]
-    fn reset_at_the_root_is_a_no_op() {
-        let mut tree = tree();
-        assert_eq!(tree.reset(), Navigation::None);
-        assert_eq!(tree.depth(), 0);
-    }
-
-    #[test]
     fn the_parent_mote_carries_the_current_depth() {
         let mut tree = tree();
         tree.select(1);
@@ -289,20 +243,19 @@ mod tests {
 
     #[test]
     fn a_branch_counts_how_many_children_are_themselves_containers() {
-        let node = Node::branch(
-            MoteKind::Folder,
+        let node = Node::group(
             "mixed",
             vec![
-                Node::branch(MoteKind::Folder, "a", vec![Node::leaf(MoteKind::Item, "x")]),
-                Node::leaf(MoteKind::Item, "y"),
-                Node::branch(MoteKind::Folder, "b", vec![]),
+                Node::group("a", vec![Node::action("x")]),
+                Node::action("y"),
+                Node::group("b", vec![]),
             ],
         );
         assert_eq!(
             node.spec.role,
-            Role::Branch {
+            Role::Group {
                 children: 3,
-                folders:  2,
+                groups:   2,
             }
         );
     }
@@ -316,9 +269,9 @@ mod tests {
 
     #[test]
     fn depth_is_unbounded() {
-        let mut node = Node::leaf(MoteKind::Item, "bottom");
+        let mut node = Node::action("bottom");
         for level in 0..32 {
-            node = Node::branch(MoteKind::Folder, &format!("level{level}"), vec![node]);
+            node = Node::group(&format!("level{level}"), vec![node]);
         }
         let mut tree = Tree::new(node);
         let mut bloomed = 0;

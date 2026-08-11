@@ -59,6 +59,23 @@ pub fn overflow_marker(radius: f32) -> MeshData {
     sphere(radius, 6, 8)
 }
 
+/// A unit quad facing +Z, its top edge on the origin and descending — the
+/// frame a placard's own layout is expressed in, so a binding scales this
+/// rather than doing the arithmetic twice.
+#[must_use]
+pub fn panel() -> MeshData {
+    MeshData {
+        positions: vec![
+            -0.5, 0.0, 0.0, //
+            0.5, 0.0, 0.0, //
+            -0.5, -1.0, 0.0, //
+            0.5, -1.0, 0.0,
+        ],
+        normals:   [0.0, 0.0, 1.0].repeat(4),
+        indices:   vec![0, 2, 1, 1, 2, 3],
+    }
+}
+
 fn push_sphere(mesh: &mut MeshData, centre: [f32; 3], radius: f32, rings: usize, segments: usize) {
     let rings = rings.max(2);
     let segments = segments.max(3);
@@ -126,6 +143,18 @@ mod tests {
 
     fn vertex_count(mesh: &MeshData) -> usize {
         mesh.positions.len() / 3
+    }
+
+    #[test]
+    fn a_panel_hangs_from_its_top_edge() {
+        let panel = panel();
+        assert_well_formed(&panel);
+        let ys = panel.positions.chunks(3).map(|p| p[1]).collect::<Vec<_>>();
+        assert!(
+            ys.iter().all(|y| *y <= 0.0),
+            "a placard's layout descends from its top, so the mesh must too"
+        );
+        assert!(ys.iter().any(|y| (*y + 1.0).abs() < 1.0e-6));
     }
 
     fn assert_well_formed(mesh: &MeshData) {

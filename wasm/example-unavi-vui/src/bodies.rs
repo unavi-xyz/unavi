@@ -16,12 +16,25 @@ use unavi_vui::{
 };
 use wired_prelude::prelude::*;
 
-use crate::wired::scene::types::{
-    AlphaMode,
-    Document,
-    Material,
-    Prim,
-    Xform,
+use crate::wired::{
+    input::{
+        api::register_input_listener,
+        types::{
+            InputAction,
+            InputListener,
+        },
+    },
+    physics::api::get_linear_velocity,
+    scene::types::{
+        AlphaMode,
+        Collider,
+        Document,
+        Material,
+        Prim,
+        RigidBody,
+        RigidBodyKind,
+        Xform,
+    },
 };
 
 /// Contents sit within the body; depth marks ride outside it. That placement
@@ -48,6 +61,10 @@ struct PipShape {
 struct SlotPrims {
     root:     Prim,
     body:     Prim,
+    /// Grabs on this mote, reported by the host's own hit-test against the
+    /// body's collider.
+    input:    InputListener,
+    hit:      Cell<f32>,
     /// Container children, drawn see-through — the same rule their own motes
     /// follow one level down.
     nested:   Prim,
@@ -94,8 +111,15 @@ impl Bodies {
             overflow.set_xform(Some(hidden()))?;
             slot_root.add_child(&overflow)?;
 
+            // Collider and listener ride the slot root, which stays at unit
+            // scale — the body's scale animates with attention and would
+            // scale a collider with it.
+            let input = register_input_listener(&slot_root)?;
+
             slots.push(SlotPrims {
                 root: slot_root,
+                input,
+                hit: Cell::new(0.0),
                 body,
                 nested,
                 plain,
@@ -117,16 +141,83 @@ impl Bodies {
         Ok(())
     }
 
-    pub fn apply(&self, views: &[SlotView]) -> anyhow::Result<()> {
-        for (slot, view) in self.slots.iter().zip(views) {
-            slot.root.set_xform(Some(placed(view.position, 1.0)))?;
+    /// Grabs the host reported against a mote's own collider, as
+    /// `(slot, pressed)`.
+    pub fn poll_grabs(&self) -> Vec<(usize, bool)> {
+        let mut grabs = Vec::new();
+        for (index, slot) in self.slots.iter().enumerate() {
+            while let Some(event) = slot.input.poll() {
+                match event.action {
+                    InputAction::GrabDown => grabs.push((index, true)),
+                    InputAction::GrabUp => grabs.push((index, false)),
+                    _ => {}
+                }
+            }
+        }
+        grabs
+    }
+
+    /// Hands a mote to the engine's grab, which is watching for a body to
+    /// appear for a moment after the squeeze.
+    pub fn make_dynamic(&self, slot: usize) -> anyhow::Result<()> {
+        let Some(prims) = self.slots.get(slot) else {
+            return Ok(());
+        };
+        prims.root.set_rigid_body(Some(RigidBody {
+            kind:            RigidBodyKind::Dynamic,
+            angular_damping: None,
+            friction:        None,
+            linear_damping:  None,
+            mass:            None,
+            restitution:     None,
+        }))?;
+        Ok(())
+    }
+
+    pub fn clear_dynamic(&self, slot: usize) -> anyhow::Result<()> {
+        if let Some(prims) = self.slots.get(slot) {
+            prims.root.set_rigid_body(None)?;
+            // Re-issue the collider next frame.
+            prims.hit.set(0.0);
+        }
+        Ok(())
+    }
+
+    #[must_use]
+    pub fn pose(&self, slot: usize) -> Option<Transform> {
+        self.slots.get(slot).map(|prims| prims.root.global_xform())
+    }
+
+    #[must_use]
+    pub fn velocity(&self, slot: usize) -> Vec3 {
+        self.slots
+            .get(slot)
+            .and_then(|prims| get_linear_velocity(&prims.root).ok())
+            .unwrap_or(Vec3::ZERO)
+    }
+
+    /// `held` is the slot the engine is carrying, whose transform belongs to
+    /// the solver rather than to us.
+    pub fn apply(&self, views: &[SlotView], held: Option<usize>) -> anyhow::Result<()> {
+        for (index, (slot, view)) in self.slots.iter().zip(views).enumerate() {
+            if held != Some(index) {
+                slot.root.set_xform(Some(placed(view.position, 1.0)))?;
+            }
             slot.body.set_xform(Some(placed(Vec3::ZERO, view.radius)))?;
+
+            if (slot.hit.get() - view.hit_radius).abs() > f32::EPSILON {
+                slot.hit.set(view.hit_radius);
+                slot.root
+                    .set_collider(Some(Collider::Sphere(view.hit_radius)))?;
+            }
 
             if slot.style.get() != Some(view.style) {
                 slot.style.set(Some(view.style));
                 slot.body.set_material(Some(shell(view.style, view.role)))?;
-                slot.nested.set_material(Some(pip_material(view.style, true)))?;
-                slot.plain.set_material(Some(pip_material(view.style, false)))?;
+                slot.nested
+                    .set_material(Some(pip_material(view.style, true)))?;
+                slot.plain
+                    .set_material(Some(pip_material(view.style, false)))?;
                 slot.overflow
                     .set_material(Some(pip_material(view.style, false)))?;
             }
@@ -140,15 +231,14 @@ impl Bodies {
         Ok(())
     }
 
-    /// Pips are drawn unconditionally, not on attention: how many things a
-    /// container holds is structural, and hiding it until hover is what made
-    /// branches and leaves indistinguishable.
+    /// Drawn unconditionally, not on attention: how much a container holds is
+    /// structural.
     fn apply_pips(slot: &SlotPrims, view: &SlotView) -> anyhow::Result<()> {
         let branches = view.pips.branches();
         let shape = PipShape {
-            count:     view.pips.count,
+            count: view.pips.count,
             branches,
-            overflow:  view.pips.overflow,
+            overflow: view.pips.overflow,
             placement: view.pips.placement,
         };
 
@@ -160,14 +250,7 @@ impl Bodies {
             };
             let total = view.pips.count;
             apply_run(&slot.nested, 0, branches, total, ring, radius)?;
-            apply_run(
-                &slot.plain,
-                branches,
-                total - branches,
-                total,
-                ring,
-                radius,
-            )?;
+            apply_run(&slot.plain, branches, total - branches, total, ring, radius)?;
         }
 
         let visible = placed(Vec3::ZERO, view.radius);
@@ -250,8 +333,7 @@ const fn shell(style: Style, role: Role) -> Material {
     }
 }
 
-/// A pip standing for a container is see-through, exactly as that container's
-/// own mote will be once opened — the preview and the thing agree.
+/// A container pip is see-through, like the mote it stands for.
 const fn pip_material(style: Style, nested: bool) -> Material {
     Material {
         alpha_cutoff: None,

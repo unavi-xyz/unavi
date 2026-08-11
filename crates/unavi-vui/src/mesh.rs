@@ -23,26 +23,14 @@ pub fn sphere(radius: f32, rings: usize, segments: usize) -> MeshData {
     mesh
 }
 
-/// A run of pips as a **single** mesh: `len` bodies at ring positions
-/// `start..start + len` of `total`.
+/// `len` pips at ring positions `start..start + len` of `total`, in unit
+/// space, as one mesh.
 ///
-/// One mesh rather than one prim per body, because each vertex-stream write
-/// is charged against the blob-upload budget regardless of size — a prim per
-/// pip turns a modest orbit into hundreds of uploads at once and trips the
-/// quota.
-///
-/// A run rather than the whole ring, because a branch draws its container
-/// children see-through and its leaf children solid, which is two materials
-/// and therefore two meshes. Pips are ordered containers first, so each is a
-/// contiguous run. Generated in unit space, for the caller to scale by the
-/// mote's own radius.
-/// A cluster always carries [`MAX_PIPS`] bodies, collapsing the ones it is
-/// not currently showing to zero radius.
-///
-/// A mesh's vertex streams are separate entries, so a rebuild that changes
-/// the vertex count is briefly inconsistent — the host sees `NORMAL` and
-/// `POSITION` disagree and rejects the mesh for that frame. Holding the count
-/// fixed removes the window entirely rather than tolerating a warning.
+/// One mesh because each vertex-stream write costs a blob upload regardless
+/// of size; a run rather than the whole ring because container and leaf pips
+/// take different materials. Always [`MAX_PIPS`] bodies, unused ones at zero
+/// radius: vertex streams are separate entries, so a rebuild that changed the
+/// count would be briefly inconsistent and rejected.
 #[must_use]
 pub fn cluster(start: usize, len: usize, total: usize, ring: f32, radius: f32) -> MeshData {
     const RINGS: usize = 6;
@@ -71,13 +59,7 @@ pub fn overflow_marker(radius: f32) -> MeshData {
     sphere(radius, 6, 8)
 }
 
-fn push_sphere(
-    mesh: &mut MeshData,
-    centre: [f32; 3],
-    radius: f32,
-    rings: usize,
-    segments: usize,
-) {
+fn push_sphere(mesh: &mut MeshData, centre: [f32; 3], radius: f32, rings: usize, segments: usize) {
     let rings = rings.max(2);
     let segments = segments.max(3);
     let base = (mesh.positions.len() / 3) as u32;
@@ -170,7 +152,7 @@ mod tests {
         let mesh = sphere(radius, 8, 12);
         for point in mesh.positions.chunks_exact(3) {
             let length = point[0].hypot(point[1]).hypot(point[2]);
-            assert!((length - radius).abs() < 1e-4, "got {length}");
+            assert!((length - radius).abs() < 1.0e-4, "got {length}");
         }
     }
 
@@ -179,7 +161,7 @@ mod tests {
         let mesh = sphere(0.05, 8, 12);
         for normal in mesh.normals.chunks_exact(3) {
             let length = normal[0].hypot(normal[1]).hypot(normal[2]);
-            assert!((length - 1.0).abs() < 1e-4, "got {length}");
+            assert!((length - 1.0).abs() < 1.0e-4, "got {length}");
         }
     }
 
@@ -195,7 +177,7 @@ mod tests {
     fn visible_bodies(mesh: &MeshData) -> usize {
         mesh.positions
             .chunks_exact(3)
-            .filter(|point| point[0].hypot(point[1]).hypot(point[2]) > 1e-6)
+            .filter(|point| point[0].hypot(point[1]).hypot(point[2]) > 1.0e-6)
             .count()
             / 63
     }
@@ -274,8 +256,8 @@ mod tests {
         let mesh = annulus(inner, outer, 16);
         for point in mesh.positions.chunks_exact(3) {
             let radius = point[0].hypot(point[1]);
-            assert!(radius >= inner - 1e-4 && radius <= outer + 1e-4);
-            assert!((point[2]).abs() < 1e-6, "the annulus is flat");
+            assert!(radius >= inner - 1.0e-4 && radius <= outer + 1.0e-4);
+            assert!((point[2]).abs() < 1.0e-6, "the annulus is flat");
         }
     }
 }

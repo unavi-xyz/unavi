@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use avian3d::prelude::*;
 use bevy::{
     ecs::system::entity_command,
@@ -29,11 +31,39 @@ pub struct GrabPlugin;
 
 impl Plugin for GrabPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(on_squeeze_down)
+        app.init_resource::<PendingGrabs>()
+            .add_observer(on_squeeze_down)
             .add_observer(on_squeeze_up)
-            .add_systems(Update, move_grabbed_objects)
+            .add_systems(
+                Update,
+                (
+                    start_pending_grabs,
+                    reach_grabbed_objects,
+                    move_grabbed_objects,
+                )
+                    .chain(),
+            )
             .add_systems(FixedUpdate, set_crosshair_mode);
     }
+}
+
+/// How long a squeeze onto something not yet grabbable keeps waiting for it
+/// to become grabbable.
+const PENDING_GRAB_WINDOW: Duration = Duration::from_millis(500);
+
+/// Squeezes that landed on a collider with no dynamic body.
+///
+/// A script only learns of a grab after the observer has run, so it cannot
+/// make something grabbable in time. Holding the squeeze briefly lets it
+/// answer by adding a rigid body, and the grab starts then. Nothing here
+/// knows why a body might appear, which is the point.
+#[derive(Resource, Default)]
+struct PendingGrabs(Vec<PendingGrab>);
+
+struct PendingGrab {
+    entity:  Entity,
+    pointer: Entity,
+    since:   Duration,
 }
 
 #[derive(Component)]
@@ -43,33 +73,27 @@ struct Grabbed {
     offset_rot: Quat,
 }
 
-fn on_squeeze_down(
-    trigger: On<SqueezeDown>,
-    transforms: Query<&GlobalTransform>,
-    rigid_bodies: Query<&RigidBody>,
-    hsd_children: Query<&HsdChild>,
-    docs: Query<&HsdNamespace, With<Hsd>>,
-    spaces: Query<&Space>,
-    parents: Query<&ChildOf>,
-    active_space: Res<ActiveSpace>,
-    mut commands: Commands,
+type Docs<'w, 's> = Query<'w, 's, &'static HsdNamespace, With<Hsd>>;
+
+fn begin_grab(
+    entity: Entity,
+    pointer: Entity,
+    transforms: &Query<&GlobalTransform>,
+    hsd_children: &Query<&HsdChild>,
+    docs: &Docs,
+    spaces: &Query<&Space>,
+    parents: &Query<&ChildOf>,
+    active_space: Option<Entity>,
+    commands: &mut Commands,
 ) {
-    let Some(entity) = trigger.entity else {
-        return;
-    };
-
-    if !matches!(rigid_bodies.get(entity), Ok(RigidBody::Dynamic)) {
-        return;
-    }
-
     let Ok(obj_tr) = transforms.get(entity) else {
         warn!(obj = %entity, "object transform not found");
         return;
     };
     let obj_tr = obj_tr.compute_transform();
 
-    let Ok(pointer_tr) = transforms.get(trigger.pointer) else {
-        warn!(pointer = %trigger.pointer, "pointer transform not found");
+    let Ok(pointer_tr) = transforms.get(pointer) else {
+        warn!(%pointer, "pointer transform not found");
         return;
     };
     let pointer_tr = pointer_tr.compute_transform();
@@ -77,18 +101,11 @@ fn on_squeeze_down(
     let offset_tra = pointer_tr.rotation.inverse() * (obj_tr.translation - pointer_tr.translation);
     let offset_rot = pointer_tr.rotation.inverse() * obj_tr.rotation;
 
-    claim_doc_authority(
-        entity,
-        &hsd_children,
-        &docs,
-        &spaces,
-        &parents,
-        active_space.0,
-    );
+    claim_doc_authority(entity, hsd_children, docs, spaces, parents, active_space);
 
     commands.entity(entity).insert((
         Grabbed {
-            pointer: trigger.pointer,
+            pointer,
             offset_tra,
             offset_rot,
         },
@@ -96,10 +113,100 @@ fn on_squeeze_down(
     ));
 }
 
+fn on_squeeze_down(
+    trigger: On<SqueezeDown>,
+    transforms: Query<&GlobalTransform>,
+    rigid_bodies: Query<&RigidBody>,
+    hsd_children: Query<&HsdChild>,
+    docs: Docs,
+    spaces: Query<&Space>,
+    parents: Query<&ChildOf>,
+    // Absent in a scene with no space at all, which is a supported way to use
+    // grab: authority is a space concern, and the claim below already skips
+    // when there is nothing to claim against.
+    active_space: Option<Res<ActiveSpace>>,
+    time: Res<Time>,
+    mut pending: ResMut<PendingGrabs>,
+    mut commands: Commands,
+) {
+    let Some(entity) = trigger.entity else {
+        return;
+    };
+
+    if !matches!(rigid_bodies.get(entity), Ok(RigidBody::Dynamic)) {
+        pending.0.push(PendingGrab {
+            entity,
+            pointer: trigger.pointer,
+            since: time.elapsed(),
+        });
+        return;
+    }
+
+    begin_grab(
+        entity,
+        trigger.pointer,
+        &transforms,
+        &hsd_children,
+        &docs,
+        &spaces,
+        &parents,
+        active_space.and_then(|active| active.0),
+        &mut commands,
+    );
+}
+
+/// Starts any pending grab whose target has since become dynamic, and drops
+/// the ones that ran out of time or went away.
+fn start_pending_grabs(
+    transforms: Query<&GlobalTransform>,
+    rigid_bodies: Query<&RigidBody>,
+    hsd_children: Query<&HsdChild>,
+    docs: Docs,
+    spaces: Query<&Space>,
+    parents: Query<&ChildOf>,
+    active_space: Option<Res<ActiveSpace>>,
+    time: Res<Time>,
+    mut pending: ResMut<PendingGrabs>,
+    mut commands: Commands,
+) {
+    if pending.0.is_empty() {
+        return;
+    }
+
+    let active_space = active_space.and_then(|active| active.0);
+    let now = time.elapsed();
+    let waiting = std::mem::take(&mut pending.0);
+
+    pending.0 = waiting
+        .into_iter()
+        .filter(|grab| {
+            match rigid_bodies.get(grab.entity) {
+                Ok(RigidBody::Dynamic) => {
+                    begin_grab(
+                        grab.entity,
+                        grab.pointer,
+                        &transforms,
+                        &hsd_children,
+                        &docs,
+                        &spaces,
+                        &parents,
+                        active_space,
+                        &mut commands,
+                    );
+                    false
+                }
+                // Gone, or still not grabbable: keep waiting until the window
+                // closes.
+                _ => now.saturating_sub(grab.since) <= PENDING_GRAB_WINDOW,
+            }
+        })
+        .collect();
+}
+
 fn claim_doc_authority(
     entity: Entity,
     hsd_children: &Query<&HsdChild>,
-    docs: &Query<&HsdNamespace, With<Hsd>>,
+    docs: &Docs,
     spaces: &Query<&Space>,
     parents: &Query<&ChildOf>,
     active_space_entity: Option<Entity>,
@@ -145,7 +252,7 @@ fn claim_doc_authority(
 fn resolve_doc(
     entity: Entity,
     hsd_children: &Query<&HsdChild>,
-    docs: &Query<&HsdNamespace, With<Hsd>>,
+    docs: &Docs,
 ) -> Option<(Entity, NamespaceId)> {
     if let Ok(record) = docs.get(entity) {
         return Some((entity, record.0));
@@ -173,9 +280,12 @@ fn resolve_space(
 fn on_squeeze_up(
     trigger: On<SqueezeUp>,
     hsd_children: Query<&HsdChild>,
-    docs: Query<&HsdNamespace, With<Hsd>>,
+    docs: Docs,
+    mut pending: ResMut<PendingGrabs>,
     mut commands: Commands,
 ) {
+    pending.0.retain(|grab| grab.pointer != trigger.pointer);
+
     let Some(entity) = trigger.entity else {
         return;
     };
@@ -185,6 +295,39 @@ fn on_squeeze_up(
     commands
         .entity(entity)
         .queue_silenced(entity_command::remove::<(Grabbed, GravityScale)>());
+}
+
+const REACH_STEP: f32 = 0.1;
+const MIN_REACH: f32 = 0.3;
+
+/// Scrolling pushes a held object out or pulls it in, by lengthening the
+/// offset it is held at.
+///
+/// Capped at the pointer's own reach, read from its raycaster rather than
+/// guessed: you should not be able to scroll something to a distance you
+/// could not have grabbed it from.
+fn reach_grabbed_objects(
+    mut wheel: MessageReader<bevy::input::mouse::MouseWheel>,
+    pointers: Query<&RayCaster>,
+    objects: Query<&mut Grabbed>,
+) {
+    let notches: f32 = wheel.read().map(|event| event.y.signum()).sum();
+    if notches == 0.0 {
+        return;
+    }
+
+    for mut grabbed in objects {
+        let Ok(pointer) = pointers.get(grabbed.pointer) else {
+            continue;
+        };
+        let reach = grabbed.offset_tra.length();
+        if reach <= f32::EPSILON {
+            continue;
+        }
+        let max = pointer.max_distance.max(MIN_REACH);
+        let wanted = notches.mul_add(REACH_STEP, reach).clamp(MIN_REACH, max);
+        grabbed.offset_tra *= wanted / reach;
+    }
 }
 
 const GRAB_DEAD_ZONE: f32 = 0.001;

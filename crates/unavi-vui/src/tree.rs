@@ -236,7 +236,11 @@ mod tests {
     fn slot_zero_collapses_only_when_nested() {
         let mut tree = tree();
         assert_eq!(tree.select(0), Navigation::Cast("Home".into()));
-        assert_eq!(tree.depth(), 0, "slot 0 at the root is a child, not a way back");
+        assert_eq!(
+            tree.depth(),
+            0,
+            "slot 0 at the root is a child, not a way back"
+        );
 
         tree.select(1);
         assert_eq!(tree.select(0), Navigation::Collapsed);
@@ -298,7 +302,7 @@ mod tests {
             node.spec.role,
             Role::Branch {
                 children: 3,
-                folders: 2
+                folders:  2,
             }
         );
     }

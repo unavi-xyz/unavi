@@ -1,7 +1,7 @@
 [package]
 edition.workspace    = true
 license.workspace    = true
-name                 = "unavi-manifold"
+name                 = "unavi-grab"
 publish              = false
 repository.workspace = true
 version.workspace    = true
@@ -13,11 +13,9 @@ workspace = true
 avian3d.workspace   = true
 bevy.workspace      = true
 bevy-hsd.path       = "../bevy-hsd"
-bevy_vrm.workspace  = true
-blake3.workspace    = true
-hsd.path            = "../hsd"
 iroh-docs.workspace = true
+unavi-input.path    = "../unavi-input"
+unavi-space.path    = "../unavi-space"
 
 [dev-dependencies]
-bevy_panorbit_camera.workspace = true
-unavi-physics                  = { path = "../unavi-physics" }
+unavi-physics = { path = "../unavi-physics" }

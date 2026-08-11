@@ -9,10 +9,7 @@ use avian3d::prelude::{
     Rotation,
 };
 use bevy::prelude::*;
-use bevy_hsd::{
-    Hsd,
-    attributes::collider::DisabledCollider,
-};
+use bevy_hsd::Hsd;
 use hsd::{
     attributes::{
         collider::ColliderAttr,
@@ -26,6 +23,7 @@ use hsd::{
 };
 use rstest::rstest;
 use tracing_test::traced_test;
+use unavi_physics::body::DisabledCollider;
 
 use crate::common::*;
 
@@ -83,7 +81,6 @@ fn collider_plus_rigid_body_plus_zero_scale_does_not_panic(
     ctx_physics.app.update();
     ctx_physics.app.update();
 
-    // scale=0 → watch_collider_scale parks the collider as DisabledCollider.
     let world = ctx_physics.app.world_mut();
     let mut parked = world.query::<&DisabledCollider>();
     assert!(

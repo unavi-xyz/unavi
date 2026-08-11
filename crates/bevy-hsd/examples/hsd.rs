@@ -60,12 +60,7 @@ const CUBE_SIZE: f32 = 1.0;
 
 fn main() {
     App::new()
-        .add_plugins((
-            DefaultPlugins,
-            PanOrbitCameraPlugin,
-            WdsPlugin,
-            HsdPlugin,
-        ))
+        .add_plugins((DefaultPlugins, PanOrbitCameraPlugin, WdsPlugin, HsdPlugin))
         .insert_resource(ClearColor(Color::srgb(0.08, 0.09, 0.13)))
         .add_systems(Startup, (setup_scene, load_hsd))
         .run();

@@ -51,9 +51,11 @@ unavi-agent.path        = "../unavi-agent"
 unavi-assets.path       = "../unavi-assets"
 unavi-avatar.path       = "../unavi-avatar"
 unavi-devtools          = { optional = true, path = "../unavi-devtools" }
+unavi-grab.path         = "../unavi-grab"
 unavi-identity.path     = "../unavi-identity"
 unavi-input.path        = "../unavi-input"
 unavi-manifold.path     = "../unavi-manifold"
+unavi-physics           = { path = "../unavi-physics", version = "0.0.16" }
 unavi-script.path       = "../unavi-script"
 unavi-space.path        = "../unavi-space"
 unavi-util.path         = "../unavi-util"

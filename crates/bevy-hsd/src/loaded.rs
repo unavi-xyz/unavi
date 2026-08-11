@@ -1,14 +1,12 @@
 use avian3d::prelude::Collider;
 use bevy::prelude::*;
+use unavi_physics::body::DisabledCollider;
 
 use crate::{
     Hsd,
     HsdChild,
     attributes::{
-        collider::{
-            DisabledCollider,
-            HsdCollider,
-        },
+        collider::HsdCollider,
         image::HsdImage,
         prefab::HsdPrefab,
     },

@@ -9,6 +9,7 @@ use unavi_avatar::{
     Avatar,
     bones::AvatarBones,
 };
+use unavi_physics::shape;
 
 use crate::{
     AgentRig,
@@ -121,17 +122,13 @@ pub fn setup_vrm_eye_offset(
         let capsule_height = 2.0f32.mul_add(-vrm_radius, vrm_height);
         let total_height = vrm_height;
 
-        if let Ok(mut collider) = colliders.get_mut(rig_entity) {
-            *collider = Collider::capsule(vrm_radius, capsule_height);
-        } else {
-            warn!("Failed to update rig collider for {:?}", rig_entity);
-        }
-
-        if let Ok(mut sensor) = sensor_shapes.get_mut(rig_entity) {
-            sensor.0 = Collider::cylinder(vrm_radius - 0.01, 0.0);
-        } else {
-            warn!("Failed to update sensor shape for {:?}", rig_entity);
-        }
+        swap_rig_shapes(
+            rig_entity,
+            vrm_radius,
+            capsule_height,
+            &mut colliders,
+            &mut sensor_shapes,
+        );
 
         if let Ok(mut rig_transform) = transforms.get_mut(rig_entity) {
             rig_transform.translation.y = total_height / 2.0;
@@ -146,5 +143,38 @@ pub fn setup_vrm_eye_offset(
                 render_layers: None,
             })
             .insert(EyeOffsetProcessed);
+    }
+}
+
+/// A VRM whose eye, head or shoulder bones are missing or coincident yields a
+/// NaN or zero capsule, which reaches the solver as a NaN pose. The rig keeps
+/// whichever collider it already had rather than take one.
+fn swap_rig_shapes(
+    rig: Entity,
+    radius: f32,
+    height: f32,
+    colliders: &mut Query<&mut Collider, With<AgentRig>>,
+    sensor_shapes: &mut Query<&mut TnuaAvian3dSensorShape, With<AgentRig>>,
+) {
+    let Some((capsule, sensor_shape)) =
+        shape::capsule(radius, height).zip(shape::cylinder(radius - 0.01, 0.0))
+    else {
+        warn!(
+            radius,
+            height, "Avatar geometry gives no usable rig collider, keeping the current one"
+        );
+        return;
+    };
+
+    if let Ok(mut collider) = colliders.get_mut(rig) {
+        *collider = capsule;
+    } else {
+        warn!("Failed to update rig collider for {rig:?}");
+    }
+
+    if let Ok(mut sensor) = sensor_shapes.get_mut(rig) {
+        sensor.0 = sensor_shape;
+    } else {
+        warn!("Failed to update sensor shape for {rig:?}");
     }
 }

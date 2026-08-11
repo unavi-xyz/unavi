@@ -7,7 +7,6 @@ use avian3d::prelude::{
     RigidBody,
 };
 use bevy::prelude::*;
-use bevy_hsd::attributes::collider::DisabledRigidBody;
 use hsd::attributes::rigid_body::{
     RigidBodyAttr,
     RigidBodyKind,
@@ -154,59 +153,4 @@ fn test_rigid_body_invalid_mass(mut ctx: TestContext) {
 
         assert!(logs_contain("mass must be finite and > 0"));
     }
-}
-
-#[traced_test]
-#[rstest]
-fn test_rigid_body_invalid_transform_does_not_panic(mut ctx: TestContext) {
-    let root = ctx.create_prim();
-    ctx.set_attr(
-        root,
-        &RigidBodyAttr {
-            kind: Some(RigidBodyKind::Dynamic),
-            ..Default::default()
-        },
-    );
-
-    ctx.app.update();
-
-    let world = ctx.app.world_mut();
-    let prim_ent = world
-        .query::<(Entity, &RigidBody)>()
-        .iter(world)
-        .map(|(e, _)| e)
-        .next()
-        .expect("rigid body entity");
-
-    // Set a NaN translation — simulates what eye_offset can produce.
-    world
-        .entity_mut(prim_ent)
-        .insert(Transform::from_xyz(f32::NAN, 0.0, 0.0));
-
-    // Should not panic.
-    ctx.app.update();
-
-    let world = ctx.app.world_mut();
-    assert!(
-        world.entity(prim_ent).get::<RigidBody>().is_none(),
-        "RigidBody should be removed when transform is invalid"
-    );
-    assert!(
-        world.entity(prim_ent).get::<DisabledRigidBody>().is_some(),
-        "DisabledRigidBody should hold the stashed rigid body"
-    );
-
-    world.entity_mut(prim_ent).insert(Transform::IDENTITY);
-
-    ctx.app.update();
-
-    let world = ctx.app.world_mut();
-    assert!(
-        world.entity(prim_ent).get::<RigidBody>().is_some(),
-        "RigidBody should be restored when transform becomes valid"
-    );
-    assert!(
-        world.entity(prim_ent).get::<DisabledRigidBody>().is_none(),
-        "DisabledRigidBody should be removed after restore"
-    );
 }

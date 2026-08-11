@@ -6,9 +6,9 @@ use crate::tuning::Tuning;
 /// and releasing is always an abort.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Seized {
-    pub slot:   usize,
-    pub origin: Vec3,
-    pub at:     Vec3,
+    pub slot:      usize,
+    pub origin:    Vec3,
+    pub at:        Vec3,
     /// Set once the pointer has left the tap threshold, and never cleared —
     /// a release back at the origin is a cancelled place, not a tap.
     pub displaced: bool,

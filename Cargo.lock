@@ -944,6 +944,7 @@ dependencies = [
  "thiserror 2.0.19",
  "tracing",
  "tracing-test",
+ "unavi-physics",
  "unavi-quota",
  "unavi-util",
  "wds",
@@ -13806,6 +13807,7 @@ dependencies = [
  "unavi-avatar",
  "unavi-input",
  "unavi-manifold",
+ "unavi-physics",
  "web-sys",
  "xdid",
 ]
@@ -13869,9 +13871,11 @@ dependencies = [
  "unavi-assets",
  "unavi-avatar",
  "unavi-devtools",
+ "unavi-grab",
  "unavi-identity",
  "unavi-input",
  "unavi-manifold",
+ "unavi-physics",
  "unavi-script",
  "unavi-space",
  "unavi-util",
@@ -13942,6 +13946,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-grab"
+version = "0.0.16"
+dependencies = [
+ "avian3d",
+ "bevy",
+ "bevy-hsd",
+ "iroh-docs",
+ "unavi-input",
+ "unavi-physics",
+ "unavi-space",
+]
+
+[[package]]
 name = "unavi-identity"
 version = "0.0.16"
 dependencies = [
@@ -14006,6 +14023,7 @@ dependencies = [
  "blake3",
  "hsd",
  "iroh-docs",
+ "unavi-physics",
 ]
 
 [[package]]
@@ -14015,6 +14033,15 @@ dependencies = [
  "anyhow",
  "wired-prelude",
  "wit-bindgen 0.55.0",
+]
+
+[[package]]
+name = "unavi-physics"
+version = "0.0.16"
+dependencies = [
+ "avian3d",
+ "bevy",
+ "obvhs",
 ]
 
 [[package]]
@@ -14089,8 +14116,10 @@ dependencies = [
  "tracing-subscriber",
  "unavi-agent",
  "unavi-avatar",
+ "unavi-grab",
  "unavi-input",
  "unavi-manifold",
+ "unavi-physics",
  "unavi-portal-protocol",
  "unavi-quota",
  "unavi-space",

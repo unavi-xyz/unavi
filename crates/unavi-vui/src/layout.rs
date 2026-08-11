@@ -104,7 +104,12 @@ impl Layout {
         }
     }
 
-    fn resolve_radial(&self, local: Vec2, current: Option<usize>, tuning: &Tuning) -> Option<usize> {
+    fn resolve_radial(
+        &self,
+        local: Vec2,
+        current: Option<usize>,
+        tuning: &Tuning,
+    ) -> Option<usize> {
         let distance = local.length();
         if self.has_centre() && distance <= self.radius * tuning.centre_frac {
             return Some(0);
@@ -173,8 +178,8 @@ mod tests {
     fn star_slot_zero_is_up() {
         let layout = Layout::star(5, R);
         let slot = layout.slot(0).expect("slot 0");
-        assert!((slot.x - 0.0).abs() < 1e-5);
-        assert!((slot.y - R).abs() < 1e-5);
+        assert!((slot.x - 0.0).abs() < 1.0e-5);
+        assert!((slot.y - R).abs() < 1.0e-5);
     }
 
     #[test]
@@ -209,7 +214,10 @@ mod tests {
     fn centre_wins_inside_its_radius() {
         let layout = Layout::centred(4, R);
         let inside = R * tuning().centre_frac * 0.5;
-        assert_eq!(layout.resolve(Vec2::new(inside, 0.0), None, &tuning()), Some(0));
+        assert_eq!(
+            layout.resolve(Vec2::new(inside, 0.0), None, &tuning()),
+            Some(0)
+        );
     }
 
     #[test]
@@ -259,9 +267,18 @@ mod tests {
             radius: R,
         };
         assert_eq!(layout.slot(1), Some(Vec2::ZERO));
-        assert_eq!(layout.resolve(Vec2::new(0.0, 0.1), None, &tuning()), Some(0));
-        assert_eq!(layout.resolve(Vec2::new(0.0, 0.0), None, &tuning()), Some(1));
-        assert_eq!(layout.resolve(Vec2::new(0.0, -0.1), None, &tuning()), Some(2));
+        assert_eq!(
+            layout.resolve(Vec2::new(0.0, 0.1), None, &tuning()),
+            Some(0)
+        );
+        assert_eq!(
+            layout.resolve(Vec2::new(0.0, 0.0), None, &tuning()),
+            Some(1)
+        );
+        assert_eq!(
+            layout.resolve(Vec2::new(0.0, -0.1), None, &tuning()),
+            Some(2)
+        );
         assert_eq!(layout.resolve(Vec2::new(0.0, 0.4), None, &tuning()), None);
     }
 

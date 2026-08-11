@@ -76,7 +76,7 @@ fn main() -> anyhow::Result<()> {
                 ..Default::default()
             }),
         PanOrbitCameraPlugin,
-        avian3d::PhysicsPlugins::default(),
+        unavi_physics::PhysicsPlugin,
         bevy_inspector_egui::bevy_egui::EguiPlugin::default(),
         bevy_inspector_egui::quick::WorldInspectorPlugin::default(),
         bevy_hsd::HsdPlugin,

@@ -21,8 +21,8 @@ pub struct Tuning {
     /// sweep does not flicker between neighbours.
     pub stick:        f32,
 
-    pub attend_scale: f32,
-    pub seize_scale:  f32,
+    pub attend_scale:  f32,
+    pub seize_scale:   f32,
     /// Seconds of unbroken attention before a placard appears. The mote
     /// itself reacts immediately; only the text waits.
     pub placard_delay: f32,
@@ -49,6 +49,11 @@ pub struct Tuning {
     /// Most interior bodies a branch draws. Beyond this the shell reports
     /// overflow rather than showing a count that does not match reality.
     pub pip_cap:      usize,
+    /// Collider size relative to the resting body. Generous on purpose: it
+    /// covers the mote at its grown size and gives the pointer something
+    /// forgiving to land on. Steady across a hover, so it is written only
+    /// when a mote's role changes.
+    pub hit_scale:    f32,
 
     /// Child count at which a branch's shell reads as completely full.
     pub fill_saturation: f32,
@@ -86,6 +91,7 @@ impl Tuning {
         leaf_scale:   1.0,
         parent_scale: 0.8,
         pip_cap:      7,
+        hit_scale:    1.6,
 
         fill_saturation: 12.0,
         detail_min:      0.035,

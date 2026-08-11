@@ -10,7 +10,6 @@ use std::{
     time::Duration,
 };
 
-use avian3d::PhysicsPlugins;
 use bevy::{
     asset::AssetPlugin,
     ecs::schedule::{
@@ -98,7 +97,7 @@ impl Default for TestContext {
 }
 
 impl TestContext {
-    /// Same as `default()` but with avian's [`PhysicsPlugins`] enabled.
+    /// Same as `default()` but with physics enabled.
     /// Use this for any test that exercises colliders or rigid bodies —
     /// avian's `On<Add, Collider>` observer reads `Position` / `Rotation`
     /// and will panic on the placeholder MAX values if the collider path
@@ -110,7 +109,7 @@ impl TestContext {
             AssetPlugin::default(),
             TransformPlugin,
             bevy::scene::ScenePlugin,
-            PhysicsPlugins::default(),
+            unavi_physics::PhysicsPlugin,
             bevy_hsd::HsdPlugin,
         ))
         .init_asset::<Image>()

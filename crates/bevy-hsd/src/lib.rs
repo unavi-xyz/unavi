@@ -13,7 +13,6 @@ use std::{
 use bevy::{
     platform::collections::HashMap,
     prelude::*,
-    transform::TransformSystems,
 };
 use hsd::{
     id::{
@@ -42,7 +41,9 @@ pub struct HsdPlugin;
 
 impl Plugin for HsdPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(MaterialPlugin::<attributes::material_graph::ShaderGraphMaterial>::default())
+        app.add_plugins(MaterialPlugin::<
+            attributes::material_graph::ShaderGraphMaterial,
+        >::default())
             .init_asset::<load::HsdAsset>()
             .init_resource::<attributes::material_graph::ShaderGraphCache>()
             .register_asset_loader(load::HsdLoader)
@@ -92,11 +93,7 @@ impl Plugin for HsdPlugin {
             )
             .add_systems(
                 PostUpdate,
-                (
-                    loaded::evaluate_hsd_loaded,
-                    anchor::apply_anchors,
-                    attributes::collider::watch_collider_scale.after(TransformSystems::Propagate),
-                ),
+                (loaded::evaluate_hsd_loaded, anchor::apply_anchors),
             );
     }
 }

@@ -1,8 +1,5 @@
-//! Where dragged motes end up.
-//!
-//! This is the point of the grasp verb: a mote pulled out of the orbit and
-//! released becomes a body in the room, with a location you can walk around
-//! and come back to. Orbits are the delivery mechanism, not the destination.
+//! Where dragged motes end up: ordinary dynamic bodies, grabbable like
+//! anything else in the room.
 
 use std::cell::Cell;
 
@@ -59,9 +56,7 @@ impl Planted {
         })
     }
 
-    /// Drops a body at `at`, carrying the throw's momentum. Physics takes it
-    /// from there, so a mote let go gently settles where you put it and one
-    /// thrown hard sails off and rolls.
+    /// Drops a body at `at`, carrying the throw's momentum.
     pub fn plant(&self, at: Vec3, velocity: Vec3, style: Style) -> anyhow::Result<bool> {
         let Some(prim) = self.bodies.get(self.next.get()) else {
             return Ok(false);

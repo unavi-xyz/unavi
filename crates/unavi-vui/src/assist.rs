@@ -45,7 +45,10 @@ mod tests {
         let pointer = Vec3::new(0.1, 0.0, 0.0);
         assert_eq!(lean(slot, pointer, Attention::Idle, &tuning()), Vec3::ZERO);
         assert_eq!(lean(slot, pointer, Attention::Near, &tuning()), Vec3::ZERO);
-        assert_ne!(lean(slot, pointer, Attention::Attended, &tuning()), Vec3::ZERO);
+        assert_ne!(
+            lean(slot, pointer, Attention::Attended, &tuning()),
+            Vec3::ZERO
+        );
     }
 
     #[test]
@@ -57,13 +60,23 @@ mod tests {
             &tuning(),
         );
         assert!(offset.x > 0.0);
-        assert!(offset.length() <= tuning().lean_dist + 1e-5);
+        assert!(offset.length() <= tuning().lean_dist + 1.0e-5);
     }
 
     #[test]
     fn lean_falls_off_with_distance() {
-        let near = lean(Vec3::ZERO, Vec3::new(0.05, 0.0, 0.0), Attention::Attended, &tuning());
-        let far = lean(Vec3::ZERO, Vec3::new(0.3, 0.0, 0.0), Attention::Attended, &tuning());
+        let near = lean(
+            Vec3::ZERO,
+            Vec3::new(0.05, 0.0, 0.0),
+            Attention::Attended,
+            &tuning(),
+        );
+        let far = lean(
+            Vec3::ZERO,
+            Vec3::new(0.3, 0.0, 0.0),
+            Attention::Attended,
+            &tuning(),
+        );
         assert!(near.length() > far.length());
     }
 
@@ -88,9 +101,9 @@ mod tests {
         let mut current = Vec3::ZERO;
         for _ in 0..200 {
             current = approach(current, target, 12.0, 0.016);
-            assert!(current.x <= target.x + 1e-5, "never overshoots");
+            assert!(current.x <= target.x + 1.0e-5, "never overshoots");
         }
-        assert!((current - target).length() < 1e-3);
+        assert!((current - target).length() < 1.0e-3);
     }
 
     #[test]

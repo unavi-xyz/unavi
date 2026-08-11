@@ -58,29 +58,23 @@ pub enum Role {
     Parent { depth: usize },
 }
 
-/// Whether a mote can be taken out of its orbit, and so whether dragging it
-/// means anything at all.
-///
-/// [`Grab::Fixed`] is the default and the common case: most motes are
-/// commands or navigation, and pulling one out has no meaning. A drag verb
-/// with nothing to drop onto reads as broken, so a mote must opt in.
+/// Whether a mote can be pulled out of its orbit. Opt-in: most motes are
+/// commands, and dragging one nowhere means nothing.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Grab {
     /// Behaves like a button: never leaves its slot, and a release that has
     /// wandered off it cancels instead of activating.
     #[default]
     Fixed,
-    /// Stands for a thing rather than a command, so it can be pulled out and
-    /// put somewhere. What that means is the consumer's to decide.
     Takeable,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MoteSpec {
-    pub kind:  MoteKind,
-    pub role:  Role,
-    pub label: SmolStr,
-    pub grab:  Grab,
+    pub kind:     MoteKind,
+    pub role:     Role,
+    pub label:    SmolStr,
+    pub grab:     Grab,
     /// Whether the mote carries a body of its own — a tool's model — to draw
     /// instead of a kind silhouette.
     pub embodied: bool,
@@ -151,12 +145,16 @@ pub enum Shell {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Presentation {
-    pub shell:  Shell,
-    pub radius: f32,
+    pub shell:      Shell,
+    pub radius:     f32,
+    /// Collider radius. Independent of attention so it is not rewritten every
+    /// frame of a hover, and larger than the resting body so it covers the
+    /// grown one and forgives a near miss.
+    pub hit_radius: f32,
     /// 0 draws a silhouette only; 1 resolves the contents. A function of
     /// angular size and attention, so detail arrives on approach.
-    pub detail: f32,
-    pub pips:   Pips,
+    pub detail:     f32,
+    pub pips:       Pips,
 }
 
 /// Apparent angular size of a body of `radius` seen from `distance`.
@@ -187,9 +185,9 @@ fn contents(children: usize, folders: usize, tuning: &Tuning) -> Pips {
 fn depth_marks(depth: usize, tuning: &Tuning) -> Pips {
     let cap = tuning.pip_cap.min(MAX_PIPS);
     Pips {
-        kinds: [PipKind::Leaf; MAX_PIPS],
-        count: depth.min(cap),
-        overflow: depth > cap,
+        kinds:     [PipKind::Leaf; MAX_PIPS],
+        count:     depth.min(cap),
+        overflow:  depth > cap,
         placement: PipPlacement::Around,
     }
 }
@@ -213,7 +211,9 @@ pub fn present(
         Role::Leaf | Role::Cast => tuning.leaf_scale,
         Role::Parent { .. } => tuning.parent_scale,
     };
-    let radius = tuning.mote_radius * role_scale * attention_scale;
+    let resting = tuning.mote_radius * role_scale;
+    let hit_radius = resting * tuning.hit_scale;
+    let radius = resting * attention_scale;
 
     let (shell, pips) = match spec.role {
         Role::Branch { children, folders } => (
@@ -241,6 +241,7 @@ pub fn present(
     Presentation {
         shell,
         radius,
+        hit_radius,
         detail: (base + boost).clamp(0.0, 1.0),
         pips,
     }
@@ -273,13 +274,16 @@ mod tests {
         let branch = present_at(
             Role::Branch {
                 children: 3,
-                folders: 0,
+                folders:  0,
             },
             1.0,
             Attention::Idle,
         );
         assert!(matches!(branch.shell, Shell::Bubble { .. }));
-        assert_eq!(present_at(Role::Leaf, 1.0, Attention::Idle).shell, Shell::Bare);
+        assert_eq!(
+            present_at(Role::Leaf, 1.0, Attention::Idle).shell,
+            Shell::Bare
+        );
     }
 
     #[test]
@@ -287,7 +291,7 @@ mod tests {
         let pips = present_at(
             Role::Branch {
                 children: 3,
-                folders: 0,
+                folders:  0,
             },
             1.0,
             Attention::Idle,
@@ -303,7 +307,7 @@ mod tests {
         let pips = present_at(
             Role::Branch {
                 children: 5,
-                folders: 2,
+                folders:  2,
             },
             1.0,
             Attention::Idle,
@@ -320,7 +324,7 @@ mod tests {
         let pips = present_at(
             Role::Branch {
                 children: cap + 5,
-                folders: 0,
+                folders:  0,
             },
             1.0,
             Attention::Idle,
@@ -335,7 +339,7 @@ mod tests {
         let pips = present_at(
             Role::Branch {
                 children: 40,
-                folders: 40,
+                folders:  40,
             },
             1.0,
             Attention::Idle,
@@ -368,7 +372,10 @@ mod tests {
         let far = present_at(Role::Leaf, 6.0, Attention::Idle);
         let near = present_at(Role::Leaf, 0.3, Attention::Idle);
         assert!(far.detail < near.detail);
-        assert!(far.detail.abs() < 1e-5, "a distant mote is a silhouette only");
+        assert!(
+            far.detail.abs() < 1.0e-5,
+            "a distant mote is a silhouette only"
+        );
     }
 
     #[test]
@@ -377,6 +384,37 @@ mod tests {
             present_at(Role::Leaf, 6.0, Attention::Attended).detail
                 > present_at(Role::Leaf, 6.0, Attention::Idle).detail
         );
+    }
+
+    #[test]
+    fn the_collider_covers_the_body_at_its_largest_and_never_moves() {
+        let idle = present_at(Role::Leaf, 1.0, Attention::Idle);
+        let attended = present_at(Role::Leaf, 1.0, Attention::Attended);
+        let engaged = present_at(Role::Leaf, 1.0, Attention::Engaged);
+
+        assert!(
+            idle.hit_radius >= attended.radius,
+            "a hover must stay hittable"
+        );
+        assert!(idle.hit_radius >= engaged.radius);
+        assert!(
+            (idle.hit_radius - attended.hit_radius).abs() < 1.0e-6,
+            "a collider that changed with attention would be rewritten every frame"
+        );
+        assert!((idle.hit_radius - engaged.hit_radius).abs() < 1.0e-6);
+    }
+
+    #[test]
+    fn a_branch_is_easier_to_hit_than_a_leaf() {
+        let branch = present_at(
+            Role::Branch {
+                children: 2,
+                folders:  0,
+            },
+            1.0,
+            Attention::Idle,
+        );
+        assert!(branch.hit_radius > present_at(Role::Leaf, 1.0, Attention::Idle).hit_radius);
     }
 
     #[test]
@@ -390,6 +428,10 @@ mod tests {
 
     #[test]
     fn a_degenerate_distance_does_not_divide_by_zero() {
-        assert!(present_at(Role::Leaf, 0.0, Attention::Idle).detail.is_finite());
+        assert!(
+            present_at(Role::Leaf, 0.0, Attention::Idle)
+                .detail
+                .is_finite()
+        );
     }
 }

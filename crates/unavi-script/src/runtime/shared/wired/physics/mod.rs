@@ -20,12 +20,29 @@ use hsd::id::{
     DocId,
     PrimId,
 };
+use unavi_physics::finite;
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     error::ScriptError,
     runtime::shared::Api,
 };
+
+/// A guest may pass any bit pattern it likes. Every value crossing into avian
+/// is checked here, before it can reach a component the solver reads.
+fn checked_vec3(what: &str, v: [f32; 3]) -> Result<Vec3, ScriptError> {
+    finite::vec3(v).ok_or_else(|| ScriptError::other(format!("{what} must be finite, got {v:?}")))
+}
+
+fn checked_distance(what: &str, v: f32) -> Result<f32, ScriptError> {
+    if finite::nonneg(v) {
+        Ok(v)
+    } else {
+        Err(ScriptError::other(format!(
+            "{what} must be finite and >= 0, got {v}"
+        )))
+    }
+}
 
 pub struct RayHit {
     pub document: Vec<u8>,
@@ -63,6 +80,10 @@ pub async fn raycast(
     dir: [f32; 3],
     max_dist: f32,
 ) -> Result<Option<RayHit>, ScriptError> {
+    let origin_v = checked_vec3("raycast origin", origin)?;
+    let dir_v = checked_vec3("raycast direction", dir)?;
+    let max_dist = checked_distance("raycast distance", max_dist)?;
+
     let (tx, rx) = async_channel::bounded::<Option<RayHit>>(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
@@ -74,8 +95,7 @@ pub async fn raycast(
                           docs: Query<&HsdDocId>,
                           parents: Query<&ChildOf>|
                           -> Option<RayHit> {
-                        let origin_v = Vec3::from_array(origin);
-                        let direction = Dir3::new(Vec3::from_array(dir)).ok()?;
+                        let direction = Dir3::new(dir_v).ok()?;
                         let hit = spatial.cast_ray(
                             origin_v,
                             direction,
@@ -134,6 +154,14 @@ async fn set_velocity(
     v: [f32; 3],
     angular: bool,
 ) -> Result<(), ScriptError> {
+    let vel = checked_vec3(
+        if angular {
+            "angular velocity"
+        } else {
+            "linear velocity"
+        },
+        v,
+    )?;
     let (doc, prim_id) = prim_ident(api, prim_rep).await?;
     AsyncCommands::default()
         .push(move |world: &mut World| {
@@ -143,7 +171,6 @@ async fn set_velocity(
             if !matches!(world.get::<RigidBody>(entity), Some(RigidBody::Dynamic)) {
                 return;
             }
-            let vel = Vec3::from_array(v);
             let mut ent = world.entity_mut(entity);
             if angular {
                 ent.insert(AngularVelocity(vel));
@@ -191,6 +218,7 @@ pub async fn get_linear_velocity(api: &Api, prim_rep: u32) -> Result<[f32; 3], S
 /// reads it every step until changed. A zero vector removes it, so a hold that
 /// stops refreshing must pass zero to stop pushing.
 pub async fn apply_force(api: &Api, prim_rep: u32, v: [f32; 3]) -> Result<(), ScriptError> {
+    let value = checked_vec3("force", v)?;
     let (doc, prim_id) = prim_ident(api, prim_rep).await?;
     AsyncCommands::default()
         .push(move |world: &mut World| {
@@ -200,7 +228,6 @@ pub async fn apply_force(api: &Api, prim_rep: u32, v: [f32; 3]) -> Result<(), Sc
             if !matches!(world.get::<RigidBody>(entity), Some(RigidBody::Dynamic)) {
                 return;
             }
-            let value = Vec3::from_array(v);
             let mut ent = world.entity_mut(entity);
             if value == Vec3::ZERO {
                 ent.remove::<ConstantForce>();
@@ -232,4 +259,43 @@ pub fn release_authority(_api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError>
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
     unavi_space::state::entities::release_authority(iroh_docs::NamespaceId::from(&bytes));
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use bevy::prelude::Vec3;
+
+    use super::{
+        checked_distance,
+        checked_vec3,
+    };
+
+    #[test]
+    fn a_finite_vector_is_accepted() {
+        assert_eq!(
+            checked_vec3("force", [1.0, -2.0, 3.0]).expect("finite vector rejected"),
+            Vec3::new(1.0, -2.0, 3.0)
+        );
+    }
+
+    #[test]
+    fn a_non_finite_vector_is_refused_and_names_the_parameter() {
+        for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            let err = checked_vec3("linear velocity", [0.0, bad, 0.0])
+                .expect_err(&format!("{bad} was accepted"));
+            assert!(
+                err.to_string().contains("linear velocity"),
+                "error does not say which parameter was bad: {err}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_negative_or_non_finite_distance_is_refused() {
+        assert!(checked_distance("raycast distance", 0.0).is_ok());
+        assert!(checked_distance("raycast distance", 10.0).is_ok());
+        assert!(checked_distance("raycast distance", -1.0).is_err());
+        assert!(checked_distance("raycast distance", f32::NAN).is_err());
+        assert!(checked_distance("raycast distance", f32::INFINITY).is_err());
+    }
 }

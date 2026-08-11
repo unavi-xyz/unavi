@@ -94,7 +94,7 @@ mod tests {
     fn dwell_starts_at_zero_when_attention_is_acquired() {
         let mut tracker = Tracker::new();
         tracker.update(Some(2), 0.1);
-        assert!(tracker.dwell().abs() < 1e-5);
+        assert!(tracker.dwell().abs() < 1.0e-5);
     }
 
     #[test]
@@ -103,7 +103,7 @@ mod tests {
         tracker.update(Some(2), 0.1);
         tracker.update(Some(2), 0.1);
         tracker.update(Some(2), 0.1);
-        assert!((tracker.dwell() - 0.2).abs() < 1e-5);
+        assert!((tracker.dwell() - 0.2).abs() < 1.0e-5);
     }
 
     #[test]
@@ -112,7 +112,7 @@ mod tests {
         tracker.update(Some(2), 0.3);
         tracker.update(Some(3), 0.1);
         assert_eq!(tracker.current(), Some(3));
-        assert!(tracker.dwell().abs() < 1e-5);
+        assert!(tracker.dwell().abs() < 1.0e-5);
     }
 
     #[test]

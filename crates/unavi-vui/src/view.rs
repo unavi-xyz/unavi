@@ -41,17 +41,20 @@ pub struct Style {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SlotView {
     /// Orbit-local, lean already applied.
-    pub position:  Vec3,
-    pub radius:    f32,
-    pub style:     Style,
-    pub role:      Role,
-    pub grab:      Grab,
-    pub attention: Attention,
-    pub pips:      Pips,
-    pub detail:    f32,
+    pub position:   Vec3,
+    pub radius:     f32,
+    /// Collider radius: steady across a hover animation, so a binding writes
+    /// it only when the mote's role changes.
+    pub hit_radius: f32,
+    pub style:      Style,
+    pub role:       Role,
+    pub grab:       Grab,
+    pub attention:  Attention,
+    pub pips:       Pips,
+    pub detail:     f32,
     /// Taken: the body has left its slot and is following the hand. A merely
     /// pressed mote is not this — see [`Attention::Engaged`].
-    pub seized:    bool,
+    pub seized:     bool,
 }
 
 /// Where the pointer is, in the orbit plane's own coordinates and in the
@@ -67,13 +70,10 @@ pub struct Aim {
 pub struct Frame {
     pub eye:    Vec3,
     pub anchor: Transform,
-    /// Where the pointer meets the orbit plane. Resolves which slot is
-    /// targeted, and nothing else.
+    /// Resolves which slot is targeted, and nothing else.
     pub aim:    Option<Aim>,
-    /// The free world-space grab point — a tracked hand, or a desktop ray at
-    /// the distance the mote was grabbed from. A held mote follows *this*,
-    /// not [`Frame::aim`]: taking something out of an orbit is picking it up,
-    /// and a pickup constrained to the orbit's plane is not a pickup.
+    /// Free world-space grab point. A held mote follows this rather than
+    /// [`Frame::aim`], so a pickup is not confined to the orbit's plane.
     pub hand:   Option<Vec3>,
     pub delta:  f32,
 }
@@ -129,6 +129,17 @@ impl Orbit {
         self.grasp.is_seized()
     }
 
+    /// The held slot, once the pointer has travelled far enough that the hold
+    /// is a take rather than a tap. The moment a binding can hand the mote to
+    /// whatever moves real objects.
+    #[must_use]
+    pub fn displaced(&self) -> Option<usize> {
+        self.grasp
+            .seized()
+            .filter(|held| held.displaced)
+            .map(|held| held.slot)
+    }
+
     #[must_use]
     pub fn placard_visible(&self) -> bool {
         self.tracker.placard_visible(&self.tuning)
@@ -139,21 +150,31 @@ impl Orbit {
         &self.views
     }
 
+    /// A mote's style with no attention on it. What a body handed to the
+    /// world should wear — it is no longer the one you are pointing at.
+    #[must_use]
+    pub const fn resting_style(&self, spec: &MoteSpec) -> Style {
+        self.style(spec.role, spec.kind, Attention::Idle)
+    }
+
     pub fn press(&mut self, at: Vec3) {
         if let Some(slot) = self.tracker.current() {
-            let takeable = self
-                .views
-                .get(slot)
-                .is_some_and(|view| matches!(view.grab, Grab::Takeable));
-            self.grasp.press(slot, at, takeable);
+            self.press_slot(slot, at);
         }
     }
 
-    /// Resolves the release.
-    ///
+    /// Presses a slot the host reported directly, rather than one inferred
+    /// from aim.
+    pub fn press_slot(&mut self, slot: usize, at: Vec3) {
+        let takeable = self
+            .views
+            .get(slot)
+            .is_some_and(|view| matches!(view.grab, Grab::Takeable));
+        self.grasp.press(slot, at, takeable);
+    }
+
     /// A fixed mote behaves like a button: releasing after the pointer has
-    /// wandered off it cancels rather than activating, which is what every
-    /// button anyone has ever used does.
+    /// wandered off it cancels rather than activating.
     pub fn release(&mut self) -> Option<Outcome> {
         let wandered = self
             .grasp
@@ -167,9 +188,7 @@ impl Orbit {
         let count = specs.len().min(self.capacity());
         let layout = self.layout(count, nested);
 
-        // A mote in hand holds attention: letting the pointer keep lighting
-        // up whatever it sweeps over says those are targets, and while
-        // something is held they are not.
+        // A mote in hand holds attention; nothing else is a drop target.
         let dragging = self.grasp.seized().is_some_and(|held| held.takeable);
         if dragging {
             self.tracker
@@ -197,11 +216,9 @@ impl Orbit {
             let world = frame.anchor.translation + frame.anchor.rotation * local;
             let is_seized = seized == Some(index);
 
-            let attention = self.tracker.state(
-                index,
-                is_seized,
-                attended.is_some_and(|slot| slot != index),
-            );
+            let attention =
+                self.tracker
+                    .state(index, is_seized, attended.is_some_and(|slot| slot != index));
 
             let target = frame.aim.map_or(Vec3::ZERO, |aim| {
                 frame.anchor.rotation.inverse()
@@ -214,9 +231,6 @@ impl Orbit {
                 frame.delta,
             );
 
-            // A held mote leaves its slot and follows the hand freely in
-            // three dimensions. Without this a drag is invisible; constrained
-            // to the orbit plane it is a slider, not a pickup.
             let position = match (is_seized && dragging, frame.hand) {
                 (true, Some(hand)) => {
                     frame.anchor.rotation.inverse() * (hand - frame.anchor.translation)
@@ -230,14 +244,13 @@ impl Orbit {
             self.views.push(SlotView {
                 position,
                 radius: presentation.radius,
+                hit_radius: presentation.hit_radius,
                 style: self.style(spec.role, spec.kind, attention),
                 role: spec.role,
                 grab: spec.grab,
                 attention,
                 pips: presentation.pips,
                 detail: presentation.detail,
-                // Grasped is not the same as taken: a fixed mote is pressed
-                // in place, which `Attention::Engaged` already says.
                 seized: is_seized && dragging,
             });
         }
@@ -263,7 +276,6 @@ impl Orbit {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -337,7 +349,11 @@ mod tests {
         let orbit = orbit();
         assert!(!orbit.layout(4, false).has_centre());
         assert!(orbit.layout(5, true).has_centre());
-        assert_eq!(orbit.layout(5, true).len(), 5, "parent mote plus 4 children");
+        assert_eq!(
+            orbit.layout(5, true).len(),
+            5,
+            "parent mote plus 4 children"
+        );
     }
 
     #[test]
@@ -358,7 +374,11 @@ mod tests {
     #[test]
     fn an_oversized_branch_reports_overflow_rather_than_lying() {
         let mut orbit = orbit();
-        orbit.update(&[branch(Tuning::DEFAULT.pip_cap + 5, 0)], false, &frame(None));
+        orbit.update(
+            &[branch(Tuning::DEFAULT.pip_cap + 5, 0)],
+            false,
+            &frame(None),
+        );
         assert_eq!(orbit.views()[0].pips.count, Tuning::DEFAULT.pip_cap);
         assert!(orbit.views()[0].pips.overflow);
     }
@@ -435,7 +455,7 @@ mod tests {
         let held = orbit.views()[0];
         assert!(held.seized);
         assert!(
-            (held.position - hand).length() < 1e-4,
+            (held.position - hand).length() < 1.0e-4,
             "the body follows the hand freely, off-plane included"
         );
         assert!((held.position - resting).length() > 0.01);
@@ -489,7 +509,11 @@ mod tests {
         orbit.press(start.world);
 
         orbit.update(&specs, false, &frame(Some(aim_at(Vec2::new(0.0, -R)))));
-        assert_ne!(orbit.attended(), Some(0), "a button is not holding anything");
+        assert_ne!(
+            orbit.attended(),
+            Some(0),
+            "a button is not holding anything"
+        );
         assert_eq!(
             orbit.release(),
             None,
@@ -525,16 +549,32 @@ mod tests {
 
     #[test]
     fn a_custom_palette_reaches_every_mote() {
+        let custom = crate::palette::rgb(0.0, 0.4, 0.2);
         let mut orbit = Orbit::new(
             4,
             Tuning::DEFAULT,
             Palette {
-                accent: crate::palette::rgb(0.0, 1.0, 0.5),
+                kinds: [custom; MoteKind::COUNT],
                 ..Palette::DEFAULT
             },
         );
         let specs = [spec(Role::Leaf)];
+        orbit.update(&specs, false, &frame(None));
+        assert_eq!(orbit.views()[0].style.color, custom);
+    }
+
+    #[test]
+    fn hovering_brightens_a_mote_without_repainting_it() {
+        let mut orbit = orbit();
+        let specs = [spec(Role::Leaf), spec(Role::Leaf)];
+        orbit.update(&specs, false, &frame(None));
+        let resting = orbit.views()[0].style;
+
         orbit.update(&specs, false, &frame(Some(aim_at(Vec2::new(0.0, R)))));
-        assert_eq!(orbit.views()[0].style.color, crate::palette::rgb(0.0, 1.0, 0.5));
+        let hovered = orbit.views()[0].style;
+
+        assert_ne!(hovered.color, Palette::DEFAULT.accent, "hover stays quiet");
+        assert!(hovered.color.r > resting.color.r);
+        assert!(hovered.emissive > resting.emissive);
     }
 }

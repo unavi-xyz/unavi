@@ -55,7 +55,7 @@ fn main() {
                     ..default()
                 }),
             PanOrbitCameraPlugin,
-            PhysicsPlugins::default(),
+            unavi_physics::PhysicsPlugin,
             ManifoldPlugin,
         ))
         .insert_resource(ClearColor(Color::srgb(0.52, 0.62, 0.74)))

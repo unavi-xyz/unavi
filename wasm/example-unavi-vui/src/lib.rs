@@ -14,10 +14,7 @@ use std::{
 
 use unavi_vui::{
     grasp::Outcome,
-    mote::{
-        MoteKind,
-        Role,
-    },
+    mote::MoteKind,
     palette::Palette,
     tree::{
         Navigation,
@@ -71,11 +68,12 @@ struct Script {
     camera:      RefCell<Option<Prim>>,
     anchor:      Cell<Option<Transform>>,
     aim:         Cell<Option<Aim>>,
-    eye:         Cell<Option<Vec3>>,
-    /// Distance from the eye at which a mote was taken, held constant while
-    /// it is carried. Desktop's stand-in for a tracked hand: the body stays
-    /// the depth you grabbed it at and sweeps freely as you look around.
-    hold:        Cell<Option<f32>>,
+    /// The slot the engine's grab is carrying. Its transform belongs to the
+    /// solver until it comes back.
+    held:        Cell<Option<usize>>,
+    /// Whether the current press came from the host's own hit-test. Only
+    /// those can be handed over: nothing is waiting on a mote the ray missed.
+    hit_press:   Cell<bool>,
     update_time: SystemTime,
 }
 
@@ -117,36 +115,47 @@ impl Script {
             Navigation::Bloomed(label) => {
                 println!("[{}] opened '{label}'", self.tree.depth());
             }
-            Navigation::Collapsed => println!("[{}] back to '{}'", self.tree.depth(), self.tree.here()),
+            Navigation::Collapsed => {
+                println!("[{}] back to '{}'", self.tree.depth(), self.tree.here());
+            }
             Navigation::Activated(label) => println!("activated '{label}'"),
             Navigation::Cast(label) => println!("'{label}' wants a cast circle"),
             Navigation::None => {}
         }
     }
 
-    /// Pulling a mote out of the ring and letting go.
-    ///
-    /// This is what the grasp verb is for: the mote becomes a body in the
-    /// room with a location of its own, which is the whole "orbits deliver
-    /// objects, they are not the destination" premise made concrete. The
-    /// parent mote is navigation rather than a thing, so it resets instead.
-    fn place(&mut self, slot: usize, at: Vec3, velocity: Vec3) {
-        let level = self.tree.level();
-        let Some(spec) = level.get(slot) else {
-            return;
-        };
-
-        if matches!(spec.role, Role::Parent { .. }) {
-            let navigation = self.tree.reset();
-            self.report(&navigation);
+    /// Once a hold has travelled far enough to be a take, the mote gains a
+    /// body and the engine's grab — which is still watching — picks it up.
+    fn hand_over(&self) {
+        if self.held.get().is_some() || !self.hit_press.get() {
             return;
         }
-
-        let Some(view) = self.orbit.views().get(slot) else {
+        let Some(slot) = self.orbit.displaced() else {
             return;
         };
+        match self.bodies.make_dynamic(slot) {
+            Ok(()) => self.held.set(Some(slot)),
+            Err(err) => eprintln!("could not hand mote to the engine: {err:?}"),
+        }
+    }
 
-        match self.planted.plant(at, velocity, view.style) {
+    /// The engine let go. Leave a planted duplicate where it ended up and
+    /// give the mote back to its orbit.
+    fn take_back(&self, slot: usize) {
+        let pose = self.bodies.pose(slot);
+        let velocity = self.bodies.velocity(slot);
+        if let Err(err) = self.bodies.clear_dynamic(slot) {
+            eprintln!("could not return mote to its orbit: {err:?}");
+        }
+
+        let level = self.tree.level();
+        let (Some(pose), Some(spec)) = (pose, level.get(slot)) else {
+            return;
+        };
+        match self
+            .planted
+            .plant(pose.translation, velocity, self.orbit.resting_style(spec))
+        {
             Ok(recycled) => {
                 println!("planted '{}' in the room", spec.label);
                 if recycled {
@@ -158,31 +167,38 @@ impl Script {
     }
 
     fn handle_input(&mut self) {
+        for (slot, pressed) in self.bodies.poll_grabs() {
+            if !pressed {
+                continue;
+            }
+            let Some(at) = self.aim.get().map(|aim| aim.world) else {
+                continue;
+            };
+            self.hit_press.set(true);
+            self.orbit.press_slot(slot, at);
+        }
+
         while let Some(event) = self.input.poll() {
             match event.action {
-                InputAction::GrabDown => {
-                    if let (Some(aim), Some(eye)) = (self.aim.get(), self.eye.get()) {
-                        self.hold.set(Some((aim.world - eye).length()));
-                        self.orbit.press(aim.world);
-                    }
-                }
                 InputAction::GrabUp => {
                     let outcome = self.orbit.release();
-                    self.hold.set(None);
-                    match outcome {
-                        Some(Outcome::Tap(slot)) => {
-                            let navigation = self.tree.select(slot);
-                            self.report(&navigation);
-                        }
-                        Some(Outcome::Place { slot, at, velocity }) => {
-                            self.place(slot, at, velocity);
-                        }
-                        None => {}
+                    self.hit_press.set(false);
+                    if let Some(slot) = self.held.take() {
+                        self.take_back(slot);
+                    } else if let Some(Outcome::Tap(slot)) = outcome {
+                        let navigation = self.tree.select(slot);
+                        self.report(&navigation);
                     }
                 }
-                // Going up is the parent mote's job, not a keybinding: an
-                // orbit is a general-purpose primitive and a menu button
-                // belongs to whatever shell owns it.
+                // Attention is more forgiving than the ray, so a near miss
+                // still taps what lights up.
+                InputAction::GrabDown => {
+                    if !self.orbit.is_seized()
+                        && let (Some(slot), Some(aim)) = (self.orbit.attended(), self.aim.get())
+                    {
+                        self.orbit.press_slot(slot, aim.world);
+                    }
+                }
                 InputAction::MenuDown
                 | InputAction::MenuUp
                 | InputAction::ScrollUp
@@ -260,9 +276,9 @@ impl ScriptBehavior for Script {
         println!("vui gallery");
         println!("  look          aim; the lit mote leans toward you");
         println!("  click         open a container, or activate a leaf");
-        println!("  drag out      only items can be taken; they drop where you let go");
+        println!("  drag out      only items can be taken; the engine carries them");
+        println!("  scroll        while carrying, push it out or pull it in");
         println!("  click centre  go up a level");
-        println!("  drag centre   collapse all the way to the root");
         println!("reading a mote:");
         println!("  big + see-through   container");
         println!("  small + solid       leaf");
@@ -270,6 +286,7 @@ impl ScriptBehavior for Script {
         println!("  pips inside         what it holds; see-through pips are containers");
         println!("  pips around         how deep you are");
         println!("items are under Pocket, and under Hand > Spawner");
+        println!("planted items are ordinary bodies — grab them like anything else");
 
         Ok(Self {
             tree:        Tree::new(demo_tree()),
@@ -280,8 +297,8 @@ impl ScriptBehavior for Script {
             camera:      RefCell::new(None),
             anchor:      Cell::new(None),
             aim:         Cell::new(None),
-            eye:         Cell::new(None),
-            hold:        Cell::new(None),
+            held:        Cell::new(None),
+            hit_press:   Cell::new(false),
             update_time: SystemTime::now(),
         })
     }
@@ -320,17 +337,8 @@ impl ScriptBehavior for Script {
 
         let aim = Self::look(&camera, &anchor);
         self.aim.set(aim);
-        self.eye.set(Some(camera.translation));
 
-        // A carried mote hangs off the view ray at the depth it was taken
-        // from, rather than sliding around the orbit's plane.
-        let hand = self.hold.get().map_or_else(
-            || aim.map(|aim| aim.world),
-            |distance| {
-                Some(camera.translation + camera.rotation * Vec3::new(0.0, 0.0, -1.0) * distance)
-            },
-        );
-
+        let hand = aim.map(|aim| aim.world);
         let specs = self.tree.level();
         self.orbit.update(
             &specs,
@@ -344,7 +352,8 @@ impl ScriptBehavior for Script {
             },
         );
 
-        self.bodies.apply(self.orbit.views())
+        self.hand_over();
+        self.bodies.apply(self.orbit.views(), self.held.get())
     }
 }
 

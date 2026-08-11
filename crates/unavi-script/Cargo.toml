@@ -35,6 +35,7 @@ unavi-agent.path           = "../unavi-agent"
 unavi-avatar.path          = "../unavi-avatar"
 unavi-input.path           = "../unavi-input"
 unavi-manifold             = { path = "../unavi-manifold", version = "0.0.16" }
+unavi-physics.path         = "../unavi-physics"
 unavi-portal-protocol.path = "../unavi-portal-protocol"
 unavi-quota.path           = "../unavi-quota"
 unavi-space.path           = "../unavi-space"
@@ -59,3 +60,4 @@ directories.workspace          = true
 iroh.workspace                 = true
 iroh-blobs.workspace           = true
 tracing-subscriber.workspace   = true
+unavi-grab.path                = "../unavi-grab"

@@ -10,7 +10,6 @@ use tracing::Level;
 
 mod camera;
 mod fade;
-mod grab;
 mod icon;
 mod scene;
 
@@ -91,7 +90,7 @@ impl Plugin for UnaviPlugin {
         app.add_plugins(dev_tools::ClientDevToolsPlugin);
 
         app.add_plugins((
-            avian3d::PhysicsPlugins::default(),
+            unavi_physics::PhysicsPlugin,
             bevy_hsd::HsdPlugin,
             bevy_iroh::IrohPlugin,
             bevy_wds::WdsPlugin,
@@ -107,7 +106,7 @@ impl Plugin for UnaviPlugin {
         .add_plugins((
             camera::CameraPlugin,
             fade::FadePlugin,
-            grab::GrabPlugin,
+            unavi_grab::GrabPlugin,
             scene::ScenePlugin,
         ))
         .insert_resource(scene::home::JoinSpace(self.join.clone()))

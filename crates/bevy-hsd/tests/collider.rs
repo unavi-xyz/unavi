@@ -1,11 +1,6 @@
-use std::time::Duration;
-
 use avian3d::prelude::Collider;
 use bevy::prelude::*;
-use bevy_hsd::attributes::collider::{
-    DisabledCollider,
-    HsdCollider,
-};
+use bevy_hsd::attributes::collider::HsdCollider;
 use bytemuck::cast_slice;
 use hsd::attributes::{
     collider::ColliderAttr,
@@ -116,64 +111,4 @@ fn test_collider_trimesh(#[from(ctx)] mut ctx: TestContext) {
     ctx.set_slot(root, slots::COLLIDER_INDICES, indices);
 
     ctx.tick_until(|world| world.query::<&Collider>().iter(world).next().is_some());
-}
-
-#[traced_test]
-#[rstest]
-fn test_collider_scale_zero_does_not_panic(mut ctx: TestContext) {
-    let root = ctx.create_prim();
-    ctx.set_attr(
-        root,
-        &ColliderAttr::Cuboid {
-            x: 1.0,
-            y: 1.0,
-            z: 1.0,
-        },
-    );
-
-    ctx.app.update();
-
-    // Collider should be present with valid default scale.
-    let world = ctx.app.world_mut();
-    let prim_ent = world
-        .query::<(Entity, &Collider)>()
-        .iter(world)
-        .map(|(e, _)| e)
-        .next()
-        .expect("collider entity");
-
-    world
-        .entity_mut(prim_ent)
-        .insert(Transform::from_scale(Vec3::ZERO));
-
-    ctx.app.update();
-
-    // watch_collider_scale should have removed Collider and stashed it.
-    let world = ctx.app.world_mut();
-    assert!(
-        world.entity(prim_ent).get::<Collider>().is_none(),
-        "Collider should be removed when scale is zero"
-    );
-    assert!(
-        world.entity(prim_ent).get::<DisabledCollider>().is_some(),
-        "DisabledCollider should hold the stashed collider"
-    );
-
-    world
-        .entity_mut(prim_ent)
-        .insert(Transform::from_scale(Vec3::ONE));
-
-    ctx.app.update();
-    std::thread::sleep(Duration::from_millis(100));
-    ctx.app.update();
-
-    let world = ctx.app.world_mut();
-    assert!(
-        world.entity(prim_ent).get::<Collider>().is_some(),
-        "Collider should be restored when scale becomes valid"
-    );
-    assert!(
-        world.entity(prim_ent).get::<DisabledCollider>().is_none(),
-        "DisabledCollider should be removed after restore"
-    );
 }

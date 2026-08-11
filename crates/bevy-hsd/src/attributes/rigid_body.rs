@@ -3,8 +3,10 @@ use avian3d::prelude::{
     Friction,
     LinearDamping,
     Mass,
+    Position,
     Restitution,
     RigidBody,
+    Rotation,
 };
 use bevy::prelude::*;
 use hsd::attributes::{
@@ -14,15 +16,17 @@ use hsd::attributes::{
         RigidBodyKind,
     },
 };
+use unavi_physics::{
+    body::DisabledRigidBody,
+    finite::{
+        nonneg,
+        positive,
+    },
+};
 
 use crate::attributes::{
     AttributeParser,
     ParseError,
-    collider::DisabledRigidBody,
-    util::{
-        valid_nonneg,
-        valid_positive,
-    },
 };
 
 #[derive(Component, Debug, Clone, Copy)]
@@ -52,6 +56,8 @@ impl AttributeParser for RigidBodyParser {
                     .entity(prim)
                     .remove::<RigidBodyData>()
                     .remove::<RigidBody>()
+                    .remove::<Position>()
+                    .remove::<Rotation>()
                     .remove::<DisabledRigidBody>()
                     .remove::<Friction>()
                     .remove::<Restitution>()
@@ -88,7 +94,7 @@ pub fn apply_rigid_body(
             &mut commands,
             ent,
             attr.friction,
-            valid_nonneg,
+            nonneg,
             Friction::new,
             "friction",
             ">= 0",
@@ -97,25 +103,17 @@ pub fn apply_rigid_body(
             &mut commands,
             ent,
             attr.restitution,
-            valid_nonneg,
+            nonneg,
             Restitution::new,
             "restitution",
             ">= 0",
         );
-        apply_scalar(
-            &mut commands,
-            ent,
-            attr.mass,
-            valid_positive,
-            Mass,
-            "mass",
-            "> 0",
-        );
+        apply_scalar(&mut commands, ent, attr.mass, positive, Mass, "mass", "> 0");
         apply_scalar(
             &mut commands,
             ent,
             attr.linear_damping,
-            valid_nonneg,
+            nonneg,
             LinearDamping,
             "linear_damping",
             ">= 0",
@@ -124,7 +122,7 @@ pub fn apply_rigid_body(
             &mut commands,
             ent,
             attr.angular_damping,
-            valid_nonneg,
+            nonneg,
             AngularDamping,
             "angular_damping",
             ">= 0",
@@ -136,14 +134,15 @@ fn apply_scalar<C: Component>(
     commands: &mut Commands,
     ent: Entity,
     value: Option<f64>,
-    valid: fn(f64) -> bool,
+    valid: fn(f32) -> bool,
     ctor: fn(f32) -> C,
     name: &str,
     constraint: &str,
 ) {
     let Some(v) = value else { return };
-    if valid(v) {
-        commands.entity(ent).insert(ctor(v as f32));
+    let narrowed = v as f32;
+    if valid(narrowed) {
+        commands.entity(ent).insert(ctor(narrowed));
     } else {
         warn!("rigid_body: {name} must be finite and {constraint} (got {v})");
     }

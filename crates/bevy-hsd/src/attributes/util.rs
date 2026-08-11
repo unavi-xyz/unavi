@@ -36,13 +36,3 @@ pub fn compute_global_transform(
     }
     global
 }
-
-#[must_use]
-pub fn valid_positive(v: f64) -> bool {
-    v.is_finite() && v > 0.0
-}
-
-#[must_use]
-pub fn valid_nonneg(v: f64) -> bool {
-    v.is_finite() && v >= 0.0
-}

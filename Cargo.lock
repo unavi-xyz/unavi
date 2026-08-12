@@ -1094,6 +1094,7 @@ dependencies = [
  "iroh-docs",
  "iroh-gossip",
  "n0-future",
+ "thiserror 2.0.19",
  "tokio",
  "unavi-registry",
  "unavi-util",

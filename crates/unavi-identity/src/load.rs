@@ -14,8 +14,10 @@ use bevy_iroh::{
 };
 use bevy_wds::{
     LocalActor,
+    LocalBlobStore,
     LocalBlobs,
     LocalDocs,
+    LocalDownloader,
     LocalGossip,
     SyncTargets,
     set_local_actor,
@@ -88,10 +90,14 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
     let did = signing_key.public().to_did();
     let identity = Arc::new(Identity::new(did, signing_key));
 
-    let (store, f) = DataStore::builder(endpoint.clone())
-        .gc_timer(Duration::from_mins(15))
-        .build()
-        .await?;
+    let builder = DataStore::builder(endpoint.clone()).gc_timer(Duration::from_mins(15));
+
+    // Wasm has no filesystem to back a store with, so it stays in memory and
+    // refetches content each session.
+    #[cfg(not(target_family = "wasm"))]
+    let builder = builder.storage_path(unavi_util::dirs::data_local_dir().join("wds"));
+
+    let (store, f) = builder.build().await?;
     let store = Arc::new(store);
 
     store.set_user_identity(Arc::clone(&identity));
@@ -109,7 +115,9 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
         .spawn((RouterBuilderFnTarget(entity), RouterBuilderFn(Some(f))))
         .send_spawn((
             LocalActor(actor),
+            LocalBlobStore(store.blobs().clone()),
             LocalBlobs(store.blobs().blobs().clone()),
+            LocalDownloader(store.blobs().downloader(&endpoint)),
             LocalDocs(store.docs().clone()),
             LocalGossip(store.gossip().clone()),
             SyncTargets(sync_targets.clone()),

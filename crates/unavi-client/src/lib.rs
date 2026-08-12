@@ -15,7 +15,6 @@ mod scene;
 
 #[cfg(feature = "devtools")] mod dev_tools;
 
-#[cfg(not(target_family = "wasm"))] mod assets;
 #[cfg(not(target_family = "wasm"))] mod xr;
 
 pub struct UnaviPlugin {
@@ -33,12 +32,6 @@ const DISABLED_LOGS: &[&str] = &[
 
 impl Plugin for UnaviPlugin {
     fn build(&self, app: &mut App) {
-        #[cfg(not(target_family = "wasm"))]
-        {
-            assets::copy::copy_assets_to_dirs().expect("failed to copy assets");
-            assets::download::download_web_assets().expect("failed to download web assets");
-        }
-
         let mut filter = DISABLED_LOGS
             .iter()
             .map(|s| format!("{s}=off"))
@@ -61,6 +54,10 @@ impl Plugin for UnaviPlugin {
                 ..default()
             });
 
+        // Registers the `iroh://` asset source, which must exist before
+        // `AssetPlugin` builds the sources it knows about.
+        app.add_plugins(unavi_assets_fetch::UnaviAssetsFetchPlugin);
+
         cfg_select! {
             target_family = "wasm" => {
                 let default_plugins = default_plugins.set(AssetPlugin {
@@ -70,11 +67,8 @@ impl Plugin for UnaviPlugin {
                 app.add_plugins(default_plugins);
             }
             _ => {
-                let default_plugins = default_plugins.set(AssetPlugin {
-                    file_path: assets::assets_dir().to_string_lossy().to_string(),
-                    ..default()
-                })
-                .disable::<bevy::asset::io::web::WebAssetPlugin>();
+                let default_plugins =
+                    default_plugins.disable::<bevy::asset::io::web::WebAssetPlugin>();
                 if self.xr {
                     app.add_plugins((
                         bevy_mod_openxr::add_xr_plugins(default_plugins),

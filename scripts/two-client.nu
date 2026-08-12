@@ -10,6 +10,9 @@ def main [
   --seconds: int = 45
 ] {
   $env.UNAVI_SYNC_TARGETS = $"did:web:localhost%3A($port)"
+  # Launching the binary directly leaves Bevy resolving assets next to the
+  # executable, rather than from the client crate as `cargo run` does.
+  $env.BEVY_ASSET_ROOT = "crates/unavi-client"
 
   cargo build -p unavi-server -p unavi-client
 

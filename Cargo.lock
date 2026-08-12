@@ -11640,7 +11640,6 @@ dependencies = [
  "base64",
  "bytes 1.12.1",
  "encoding_rs",
- "futures-channel",
  "futures-core",
  "futures-util",
  "h2",
@@ -14068,6 +14067,23 @@ name = "unavi-assets"
 version = "0.0.16"
 
 [[package]]
+name = "unavi-assets-fetch"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "bevy",
+ "bevy-wds",
+ "blake3",
+ "bytes 1.12.1",
+ "iroh-blobs",
+ "n0-future",
+ "tokio",
+ "unavi-assets",
+ "unavi-util",
+]
+
+[[package]]
 name = "unavi-avatar"
 version = "0.0.16"
 dependencies = [
@@ -14108,7 +14124,6 @@ dependencies = [
  "bevy_xr_utils",
  "blake3",
  "clap",
- "directories",
  "embed-resource",
  "image",
  "iroh",
@@ -14116,10 +14131,10 @@ dependencies = [
  "log",
  "n0-future",
  "parking_lot",
- "reqwest",
  "tracing",
  "unavi-agent",
  "unavi-assets",
+ "unavi-assets-fetch",
  "unavi-avatar",
  "unavi-devtools",
  "unavi-grab",
@@ -14366,6 +14381,8 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "unavi-agent",
+ "unavi-assets",
+ "unavi-assets-fetch",
  "unavi-avatar",
  "unavi-grab",
  "unavi-input",
@@ -14402,7 +14419,9 @@ dependencies = [
  "console-subscriber",
  "directories",
  "iroh",
+ "iroh-blobs",
  "iroh-docs",
+ "serde",
  "serde_json",
  "tokio",
  "tower-http",
@@ -14478,6 +14497,7 @@ version = "0.0.16"
 dependencies = [
  "async-channel",
  "bevy",
+ "directories",
  "n0-future",
  "unavi-wasm-compat",
 ]

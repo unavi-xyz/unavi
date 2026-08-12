@@ -1,19 +1,18 @@
 use std::{
-    path::PathBuf,
+    path::Path,
     sync::LazyLock,
 };
 
 use directories::ProjectDirs;
 
-pub mod copy;
-pub mod download;
-
-pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
+static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs");
     std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
     dirs
 });
 
-pub fn assets_dir() -> PathBuf {
-    DIRS.data_local_dir().join("assets")
+/// The app's data directory, shared by every client-side crate.
+#[must_use]
+pub fn data_local_dir() -> &'static Path {
+    DIRS.data_local_dir()
 }

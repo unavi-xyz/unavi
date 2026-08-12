@@ -20,7 +20,9 @@ clap.workspace        = true
 console-subscriber    = { optional = true, version = "0.5.0" }
 directories.workspace = true
 iroh                  = { default-features = true, workspace = true }
+iroh-blobs.workspace  = true
 iroh-docs.workspace   = true
+serde.workspace       = true
 serde_json            = "1.0.151"
 tokio                 = { features = ["full"], workspace = true }
 tower-http            = { features = ["cors"], version = "0.6.8" }

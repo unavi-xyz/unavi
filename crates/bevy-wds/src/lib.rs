@@ -1,7 +1,10 @@
 use std::sync::RwLock;
 
 use bevy::prelude::*;
-use iroh_blobs::api::blobs::Blobs;
+use iroh_blobs::api::{
+    blobs::Blobs,
+    downloader::Downloader,
+};
 use iroh_docs::{
     NamespaceId,
     protocol::Docs,
@@ -94,6 +97,16 @@ impl Plugin for WdsPlugin {
 
 #[derive(Component)]
 pub struct LocalBlobs(pub Blobs);
+
+/// The store backing [`LocalBlobs`], for tag management the blobs client does
+/// not expose, such as pinning content against garbage collection.
+#[derive(Component)]
+pub struct LocalBlobStore(pub iroh_blobs::api::Store);
+
+/// Pulls blobs from named providers. Holds internal state, so it is built once
+/// with the store rather than per fetch.
+#[derive(Component)]
+pub struct LocalDownloader(pub Downloader);
 
 #[derive(Component)]
 pub struct LocalDocs(pub Docs);

@@ -60,4 +60,6 @@ directories.workspace          = true
 iroh.workspace                 = true
 iroh-blobs.workspace           = true
 tracing-subscriber.workspace   = true
+unavi-assets.path              = "../unavi-assets"
+unavi-assets-fetch.path        = "../unavi-assets-fetch"
 unavi-grab.path                = "../unavi-grab"

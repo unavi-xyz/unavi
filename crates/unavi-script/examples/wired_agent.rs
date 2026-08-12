@@ -23,6 +23,7 @@ use bevy_vrm::first_person::{
 };
 use bevy_wds::{
     LocalActor,
+    LocalBlobStore,
     LocalBlobs,
     LocalDocs,
 };
@@ -61,9 +62,12 @@ fn main() -> anyhow::Result<()> {
         std::fs::copy(src, dst)?;
     }
 
-    let (actor, docs, blobs) = create_test_wds();
+    let wds = create_test_wds();
 
     let mut app = App::new();
+    // Registers the `iroh://` asset source, which must exist before
+    // `AssetPlugin` builds the sources it knows about.
+    app.add_plugins(unavi_assets_fetch::UnaviAssetsFetchPlugin);
     app.add_plugins((
         DefaultPlugins
             .set(AssetPlugin {
@@ -90,7 +94,12 @@ fn main() -> anyhow::Result<()> {
     .add_systems(Startup, init_scene);
 
     app.world_mut()
-        .spawn((LocalActor(actor), LocalDocs(docs), LocalBlobs(blobs)));
+        .spawn((
+            LocalActor(wds.actor),
+            LocalBlobStore(wds.store),
+            LocalBlobs(wds.blobs),
+            LocalDocs(wds.docs),
+        ));
 
     app.run();
 

@@ -20,7 +20,10 @@ use iroh::{
     endpoint::presets::N0,
 };
 use tower_http::cors::CorsLayer;
-use tracing::info;
+use tracing::{
+    info,
+    warn,
+};
 use unavi_registry::{
     Registry,
     config::Config as RegistryConfig,
@@ -53,6 +56,7 @@ use xdid::{
     },
 };
 
+mod files;
 mod key_pair;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
@@ -66,7 +70,8 @@ pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
 /// One DID, one endpoint, one storage directory; the roles are toggles rather
 /// than separate processes, so a registry-only deployment still has a
 /// resolvable identity and a storage node still shares its endpoint with
-/// discovery.
+/// discovery. File hosting is always on: the files directory is cheap and
+/// inert when empty.
 pub struct Features {
     pub registry: bool,
     pub wds:      bool,
@@ -103,6 +108,14 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
         .build()
         .await?;
     let store = Arc::new(store);
+
+    if let Err(err) = files::init_files_dir() {
+        warn!(?err, "failed to init files dir");
+    }
+    match files::host_files(&store).await {
+        Ok(hosted) => files::log_manifest(&hosted),
+        Err(err) => warn!(?err, "failed to host files"),
+    }
 
     let mut rb = iroh::protocol::Router::builder(endpoint);
     if opts.features.wds {

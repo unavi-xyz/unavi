@@ -7,12 +7,20 @@ use bevy::{
 };
 use blake3::Hash;
 use bytes::Bytes;
-use iroh_blobs::api::blobs::Blobs;
+use iroh::EndpointId;
+use iroh_blobs::api::{
+    blobs::Blobs,
+    downloader::Downloader,
+};
 use thiserror::Error;
 use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
 
-use crate::LocalBlobs;
+use crate::{
+    LocalBlobs,
+    LocalDownloader,
+    SyncTargets,
+};
 
 const MB: u64 = 1024 * 1024;
 /// Every read here lands the whole blob in memory at once, so this bounds a
@@ -65,11 +73,22 @@ pub struct GetBlob {
     pub tx:     Sender<Result<Bytes, BlobError>>,
 }
 
-pub(crate) fn on_get_blob(mut req: On<GetBlob>, blobs: Query<&LocalBlobs>) {
+pub(crate) fn on_get_blob(
+    mut req: On<GetBlob>,
+    blobs: Query<&LocalBlobs>,
+    downloaders: Query<&LocalDownloader>,
+    targets: Query<&SyncTargets>,
+) {
     let Ok(blobs) = blobs.single().map(|x| x.0.clone()) else {
         warn!("Unable to get blob: no LocalBlobs");
         return;
     };
+
+    let downloader = downloaders.single().ok().map(|x| x.0.clone());
+    let providers = targets
+        .iter()
+        .flat_map(|x| x.0.iter().map(|actor| actor.host().id))
+        .collect::<Vec<_>>();
 
     let event = req.event_mut();
     let hash = event.hash;
@@ -77,7 +96,7 @@ pub(crate) fn on_get_blob(mut req: On<GetBlob>, blobs: Query<&LocalBlobs>) {
     let tx = event.tx.clone();
 
     spawn_async_task(async move {
-        if let Err(err) = inner(hash, cancel, tx, blobs).await {
+        if let Err(err) = inner(hash, cancel, tx, blobs, downloader, providers).await {
             error!(?err, "Failed to get blob");
         }
     });
@@ -88,6 +107,8 @@ async fn inner(
     cancel: Option<oneshot::Receiver<()>>,
     tx: Sender<Result<Bytes, BlobError>>,
     blobs: Blobs,
+    downloader: Option<Downloader>,
+    providers: Vec<EndpointId>,
 ) -> anyhow::Result<()> {
     let mut cancel = Box::pin(async move {
         match cancel {
@@ -101,7 +122,10 @@ async fn inner(
     for attempt in 0..MAX_ATTEMPTS {
         let res = tokio::select! {
             () = &mut cancel => return Ok(()),
-            res = tokio::time::timeout(ATTEMPT_TIMEOUT, get_blob(hash, &blobs)) => res,
+            res = tokio::time::timeout(
+                ATTEMPT_TIMEOUT,
+                get_blob(hash, &blobs, downloader.as_ref(), &providers),
+            ) => res,
         };
         match res {
             Ok(Ok(bytes)) => {
@@ -131,11 +155,44 @@ async fn inner(
 
 /// Bounds reads of both a fetch and a cached blob: the cached copy may have
 /// been written by a path that did not bound it.
-async fn get_blob(hash: Hash, blobs: &Blobs) -> Result<Bytes, BlobError> {
+async fn get_blob(
+    hash: Hash,
+    blobs: &Blobs,
+    downloader: Option<&Downloader>,
+    providers: &[EndpointId],
+) -> Result<Bytes, BlobError> {
     if blobs.has(hash).await.map_err(BlobError::from_std)? {
         return read_bounded(hash, blobs).await;
     }
 
+    match downloader {
+        Some(downloader) if !providers.is_empty() => {
+            // Watching alongside the download keeps the size bound enforced
+            // mid-transfer, and cancels a download that outgrows it.
+            tokio::select! {
+                res = pull(downloader, hash, providers) => res?,
+                res = watch_until_complete(hash, blobs) => res?,
+            }
+        }
+        // Content the doc engine pulls arrives without a provider list.
+        _ => watch_until_complete(hash, blobs).await?,
+    }
+
+    read_bounded(hash, blobs).await
+}
+
+async fn pull(
+    downloader: &Downloader,
+    hash: Hash,
+    providers: &[EndpointId],
+) -> Result<(), BlobError> {
+    downloader
+        .download(iroh_blobs::Hash::from(hash), providers.to_vec())
+        .await
+        .map_err(|err| BlobError::Io(anyhow::Error::from(err)))
+}
+
+async fn watch_until_complete(hash: Hash, blobs: &Blobs) -> Result<(), BlobError> {
     let mut stream = blobs
         .observe(hash)
         .stream()
@@ -150,7 +207,7 @@ async fn get_blob(hash: Hash, blobs: &Blobs) -> Result<Bytes, BlobError> {
         }
 
         if field.state().complete {
-            break;
+            return Ok(());
         }
 
         if size > 0 {
@@ -160,7 +217,7 @@ async fn get_blob(hash: Hash, blobs: &Blobs) -> Result<Bytes, BlobError> {
         }
     }
 
-    read_bounded(hash, blobs).await
+    Ok(())
 }
 
 async fn read_bounded(hash: Hash, blobs: &Blobs) -> Result<Bytes, BlobError> {

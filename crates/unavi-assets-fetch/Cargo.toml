@@ -1,0 +1,23 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-assets-fetch"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace        = true
+async-channel.workspace = true
+bevy.workspace          = true
+bevy-wds.path           = "../bevy-wds"
+blake3.workspace        = true
+bytes.workspace         = true
+iroh-blobs.workspace    = true
+n0-future.workspace     = true
+tokio.workspace         = true
+unavi-assets.path       = "../unavi-assets"
+unavi-util.path         = "../unavi-util"

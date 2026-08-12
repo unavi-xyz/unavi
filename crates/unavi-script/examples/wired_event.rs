@@ -12,6 +12,7 @@ use bevy_panorbit_camera::{
 };
 use bevy_wds::{
     LocalActor,
+    LocalBlobStore,
     LocalBlobs,
     LocalDocs,
 };
@@ -24,7 +25,7 @@ mod util;
 const SCRIPT_PATH: &str = "hsd/example_wired_event.hsdz";
 
 fn main() {
-    let (actor, docs, blobs) = create_test_wds();
+    let wds = create_test_wds();
 
     let mut app = App::new();
     app.add_plugins((
@@ -49,7 +50,12 @@ fn main() {
     .add_systems(Startup, init_scene);
 
     app.world_mut()
-        .spawn((LocalActor(actor), LocalDocs(docs), LocalBlobs(blobs)));
+        .spawn((
+            LocalActor(wds.actor),
+            LocalBlobStore(wds.store),
+            LocalBlobs(wds.blobs),
+            LocalDocs(wds.docs),
+        ));
 
     app.run();
 }

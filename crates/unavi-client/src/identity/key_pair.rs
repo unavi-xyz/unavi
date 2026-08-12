@@ -1,15 +1,14 @@
+use unavi_util::dirs::data_local_dir;
 use xdid::methods::key::keys::{
     DidKeyPair,
     p256::P256KeyPair,
 };
 use zeroize::Zeroizing;
 
-use crate::assets::DIRS;
-
 const KEY_FILE: &str = "key.pem";
 
 pub fn get_or_create_key() -> anyhow::Result<P256KeyPair> {
-    let dir = DIRS.data_local_dir();
+    let dir = data_local_dir();
 
     let key_path = {
         let mut path = dir.to_path_buf();

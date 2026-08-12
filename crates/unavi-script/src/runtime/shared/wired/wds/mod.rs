@@ -236,7 +236,7 @@ async fn fetch_blob(hash: Hash) -> anyhow::Result<Bytes> {
         })
         .send()
         .await?;
-    Ok(rx.recv().await?)
+    Ok(rx.recv().await??)
 }
 
 pub async fn blob_future_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Result<Vec<u8>, ()>>> {

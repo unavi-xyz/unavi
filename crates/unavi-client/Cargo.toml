@@ -49,6 +49,7 @@ parking_lot.workspace   = true
 tracing                 = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
 unavi-agent.path        = "../unavi-agent"
 unavi-assets.path       = "../unavi-assets"
+unavi-assets-fetch.path = "../unavi-assets-fetch"
 unavi-avatar.path       = "../unavi-avatar"
 unavi-devtools          = { optional = true, path = "../unavi-devtools" }
 unavi-grab.path         = "../unavi-grab"
@@ -66,12 +67,9 @@ xdid.workspace          = true
 zeroize.workspace       = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-reqwest.workspace = true
-web-sys           = { features = ["Location", "UrlSearchParams"], workspace = true }
+web-sys = { features = ["Location", "UrlSearchParams"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 bevy_mod_openxr         = "0.6.0"
 bevy_mod_xr.workspace   = true
 bevy_xr_utils.workspace = true
-directories.workspace   = true
-reqwest                 = { features = ["blocking"], workspace = true }

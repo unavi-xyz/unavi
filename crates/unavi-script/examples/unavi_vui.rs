@@ -19,6 +19,7 @@ use bevy::{
 use bevy_hsd::load::LoadHsd;
 use bevy_wds::{
     LocalActor,
+    LocalBlobStore,
     LocalBlobs,
     LocalDocs,
 };
@@ -58,9 +59,12 @@ fn copy_runtime_assets() -> anyhow::Result<()> {
 fn main() -> anyhow::Result<()> {
     copy_runtime_assets()?;
 
-    let (actor, docs, blobs) = create_test_wds();
+    let wds = create_test_wds();
 
     let mut app = App::new();
+    // Registers the `iroh://` asset source, which must exist before
+    // `AssetPlugin` builds the sources it knows about.
+    app.add_plugins(unavi_assets_fetch::UnaviAssetsFetchPlugin);
     app.add_plugins((
         DefaultPlugins
             .set(AssetPlugin {
@@ -86,7 +90,12 @@ fn main() -> anyhow::Result<()> {
     .add_systems(Startup, init_scene);
 
     app.world_mut()
-        .spawn((LocalActor(actor), LocalDocs(docs), LocalBlobs(blobs)));
+        .spawn((
+            LocalActor(wds.actor),
+            LocalBlobStore(wds.store),
+            LocalBlobs(wds.blobs),
+            LocalDocs(wds.docs),
+        ));
 
     app.run();
 

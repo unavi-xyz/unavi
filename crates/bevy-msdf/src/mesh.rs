@@ -43,19 +43,23 @@ pub fn build(laid: &Laid, anchor: Anchor) -> Mesh {
     build_quads(&laid.quads, anchor.offset(laid))
 }
 
-/// One mesh per page, so each page is drawn with the image that holds it.
-/// Quads from different pages share a plane but sample different textures, so
-/// they cannot share a mesh.
+/// One mesh per font and page, so each page is drawn with the image that holds
+/// it.
+///
+/// Quads from different pages — or different fonts in a fallback stack — share
+/// a plane but sample different textures, so they cannot share a mesh. The key
+/// is `(font, page)`.
 #[must_use]
-pub fn page_meshes(laid: &Laid, anchor: Anchor) -> Vec<(u32, Mesh)> {
+pub fn page_meshes(laid: &Laid, anchor: Anchor) -> Vec<((u32, u32), Mesh)> {
     let raise = anchor.offset(laid);
-    let mut grouped: std::collections::BTreeMap<u32, Vec<Quad>> = std::collections::BTreeMap::new();
+    let mut grouped: std::collections::BTreeMap<(u32, u32), Vec<Quad>> =
+        std::collections::BTreeMap::new();
     for quad in &laid.quads {
-        grouped.entry(quad.page).or_default().push(*quad);
+        grouped.entry((quad.font, quad.page)).or_default().push(*quad);
     }
     grouped
         .into_iter()
-        .map(|(page, quads)| (page, build_quads(&quads, raise)))
+        .map(|(key, quads)| (key, build_quads(&quads, raise)))
         .collect()
 }
 
@@ -130,6 +134,7 @@ mod tests {
             },
             advance: 1.0,
             page:    0,
+            font:    0,
         };
         Atlas {
             width:    64,
@@ -172,7 +177,7 @@ mod tests {
 
     #[test]
     fn quads_split_into_one_mesh_per_page() {
-        let quad = |page| Quad {
+        let quad = |font, page| Quad {
             plane:   Rect {
                 min: [0.0, 0.0],
                 max: [1.0, 0.5],
@@ -182,21 +187,22 @@ mod tests {
                 max: [0.1, 0.1],
             },
             page,
+            font,
         };
         let laid = Laid {
-            quads:   vec![quad(0), quad(1), quad(1), quad(0)],
+            quads:   vec![quad(0, 0), quad(0, 1), quad(1, 0), quad(0, 1)],
             bounds:  Rect::ZERO,
             ink:     Rect::ZERO,
             lines:   1,
             missing: Vec::new(),
         };
         let meshes = page_meshes(&laid, Anchor::Baseline);
-        assert_eq!(meshes.len(), 2, "two pages, two meshes");
-        let (first, second) = (&meshes[0], &meshes[1]);
-        assert_eq!(first.0, 0);
-        assert_eq!(second.0, 1);
-        assert_eq!(positions(&first.1).len(), 8, "page 0 holds two quads");
-        assert_eq!(positions(&second.1).len(), 8, "page 1 holds two quads");
+        assert_eq!(meshes.len(), 3, "font and page both split meshes");
+        let keys = meshes.iter().map(|(key, _)| *key).collect::<Vec<_>>();
+        assert_eq!(keys, vec![(0, 0), (0, 1), (1, 0)]);
+        assert_eq!(positions(&meshes[0].1).len(), 4, "(0,0) holds one quad");
+        assert_eq!(positions(&meshes[1].1).len(), 8, "(0,1) holds two quads");
+        assert_eq!(positions(&meshes[2].1).len(), 4, "(1,0) holds one quad");
     }
 
     #[test]

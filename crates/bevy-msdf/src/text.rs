@@ -46,7 +46,8 @@ use smol_str::SmolStr;
 
 use crate::{
     font::{
-        DefaultFont,
+        DefaultFontStack,
+        FontStack,
         MsdfFont,
         page_image,
         render_glyph,
@@ -74,7 +75,7 @@ pub struct MsdfText {
     /// Wrap width in metres. `None` breaks only on newlines.
     pub wrap:        Option<f32>,
     pub line_height: f32,
-    /// `None` draws with [`DefaultFont`].
+    /// `None` draws with [`DefaultFontStack`].
     pub font:        Option<Arc<MsdfFont>>,
 }
 
@@ -97,7 +98,9 @@ impl Default for MsdfText {
 /// runtime means the text was just added.
 #[derive(Component, Debug)]
 pub(crate) struct TextRuntime {
-    font:       Arc<MsdfFont>,
+    /// The fallback chain the text was laid out against, so a change to it
+    /// (e.g. a newly registered font) invalidates the layout.
+    stack:      Vec<Arc<MsdfFont>>,
     /// True while some of the text's glyphs are still pending.
     pending:    bool,
     /// The characters that were missing at the last layout.
@@ -108,6 +111,11 @@ pub(crate) struct TextRuntime {
     /// One child mesh per page the text draws.
     pages:      Vec<Entity>,
 }
+
+/// The distance range baked into a child's page, captured at build time so a
+/// restyle never re-reads the font's atlas.
+#[derive(Component, Debug, Clone, Copy)]
+pub(crate) struct MsdfUnitRange(Vec2);
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Outline {
@@ -162,7 +170,7 @@ pub(crate) struct QueuedUploads(pub(crate) Vec<QueuedUpload>);
 /// for the render world.
 pub(crate) fn update_pages(
     texts: Query<&MsdfText>,
-    default: Option<Res<DefaultFont>>,
+    default: Option<Res<DefaultFontStack>>,
     mut images: ResMut<Assets<Image>>,
     mut queue: ResMut<QueuedUploads>,
 ) {
@@ -236,27 +244,38 @@ fn settings(style: &MsdfStyle, unit_range: Vec2) -> MsdfSettings {
     }
 }
 
-/// The font a text draws with, if any. `None` means [`DefaultFont`] has not
-/// been registered yet and the text has to wait.
-fn resolve_font(text: &MsdfText, default: Option<&DefaultFont>) -> Option<Arc<MsdfFont>> {
-    text.font.clone().or_else(|| default.map(|default| Arc::clone(&default.0)))
+/// The fallback chain a text draws with, if any. `None` means no font has been
+/// registered yet and the text has to wait.
+fn resolve_stack(
+    text: &MsdfText,
+    default: Option<&DefaultFontStack>,
+) -> Option<Vec<Arc<MsdfFont>>> {
+    text.font.clone().map_or_else(
+        || default.map(|default| default.0.clone()),
+        |font| Some(vec![font]),
+    )
 }
 
-/// The union of characters the live texts ask for, grouped by font.
+/// The characters the live texts ask for, distributed to the font in each
+/// text's stack that can render them.
 fn wanted(
     texts: &Query<&MsdfText>,
-    default: Option<&DefaultFont>,
+    default: Option<&DefaultFontStack>,
 ) -> Vec<(Arc<MsdfFont>, Vec<char>)> {
-    let default_font = default.map(|default| Arc::clone(&default.0));
     let mut map: Vec<(Arc<MsdfFont>, Vec<char>)> = Vec::new();
     for text in texts {
-        let Some(font) = text.font.clone().or_else(|| default_font.clone()) else {
+        let Some(stack) = resolve_stack(text, default) else {
             continue;
         };
-        if let Some((_, chars)) = map.iter_mut().find(|(other, _)| Arc::ptr_eq(other, &font)) {
-            chars.extend(text.value.chars());
-        } else {
-            map.push((font, text.value.chars().collect()));
+        for ch in text.value.chars() {
+            let Some(font) = stack.iter().find(|font| font.state().atlas.can_render(ch)) else {
+                continue;
+            };
+            if let Some((_, chars)) = map.iter_mut().find(|(other, _)| Arc::ptr_eq(other, font)) {
+                chars.push(ch);
+            } else {
+                map.push((Arc::clone(font), vec![ch]));
+            }
         }
     }
     map
@@ -264,7 +283,10 @@ fn wanted(
 
 /// Queues glyphs the live texts lack and pins every resident glyph a mesh is
 /// drawing against eviction.
-pub(crate) fn sync_fonts(texts: Query<&MsdfText>, default: Option<Res<DefaultFont>>) {
+pub(crate) fn sync_fonts(
+    texts: Query<&MsdfText>,
+    default: Option<Res<DefaultFontStack>>,
+) {
     for (font, chars) in wanted(&texts, default.as_deref()) {
         font.sync(&chars);
     }
@@ -272,7 +294,10 @@ pub(crate) fn sync_fonts(texts: Query<&MsdfText>, default: Option<Res<DefaultFon
 
 /// Generates glyphs whose requests were queued, so text lands a frame after it
 /// first asks.
-pub(crate) fn generate_glyphs(texts: Query<&MsdfText>, default: Option<Res<DefaultFont>>) {
+pub(crate) fn generate_glyphs(
+    texts: Query<&MsdfText>,
+    default: Option<Res<DefaultFontStack>>,
+) {
     for (font, _) in wanted(&texts, default.as_deref()) {
         let mut state = font.state();
         while let Some(job) = state.atlas.next_job() {
@@ -287,13 +312,13 @@ pub(crate) fn generate_glyphs(texts: Query<&MsdfText>, default: Option<Res<Defau
 /// and swaps its page children.
 pub(crate) fn rebuild_text(
     mut texts: Query<(Entity, &MsdfText, &MsdfStyle, Option<&mut TextRuntime>)>,
-    default: Option<Res<DefaultFont>>,
+    default: Option<Res<DefaultFontStack>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<MsdfMaterial>>,
     mut commands: Commands,
 ) {
     for (entity, text, style, runtime) in &mut texts {
-        let Some(font) = resolve_font(text, default.as_deref()) else {
+        let Some(stack) = resolve_stack(text, default.as_deref()) else {
             continue;
         };
 
@@ -301,7 +326,7 @@ pub(crate) fn rebuild_text(
             || (true, false, Vec::new(), Vec::new()),
             |runtime| {
                 (
-                    layout_key(text, &runtime.font) != runtime.layout_key,
+                    layout_key(text, &runtime.stack) != runtime.layout_key,
                     runtime.pending,
                     runtime.missing.clone(),
                     runtime.pages.clone(),
@@ -309,16 +334,16 @@ pub(crate) fn rebuild_text(
             },
         );
         let landed = pending
-            && missing
-                .iter()
-                .any(|ch| font.state().atlas.resident(*ch));
+            && missing.iter().any(|ch| {
+                stack.iter().any(|font| font.state().atlas.resident(*ch))
+            });
         if !changed && !landed {
             continue;
         }
 
         let value = layout(
             &text.value,
-            &font.state().atlas,
+            &FontStack::new(stack.clone()),
             &LayoutOpts {
                 size: text.size,
                 wrap: text.wrap,
@@ -336,39 +361,42 @@ pub(crate) fn rebuild_text(
         };
 
         let mut children = Vec::new();
-        {
+        for ((font_index, page), mesh) in page_meshes(&laid, text.anchor) {
+            let Some(font) = stack.get(font_index as usize) else {
+                continue;
+            };
             let state = font.state();
-            for (page, mesh) in page_meshes(&laid, text.anchor) {
-                let Some(handle) = state.pages.get(page as usize) else {
-                    continue;
-                };
-                let material = materials.add(MsdfMaterial {
-                    settings: settings(style, state.unit_range),
-                    field:    handle.clone(),
-                });
-                children.push(
-                    commands
-                        .spawn((
-                            Mesh3d(meshes.add(mesh)),
-                            MeshMaterial3d(material),
-                            NotShadowCaster,
-                            Transform::default(),
-                            Visibility::default(),
-                        ))
-                        .id(),
-                );
-            }
+            let Some(handle) = state.pages.get(page as usize).cloned() else {
+                continue;
+            };
+            let unit_range = state.unit_range;
             drop(state);
+            let material = materials.add(MsdfMaterial {
+                settings: settings(style, unit_range),
+                field:    handle,
+            });
+            children.push(
+                commands
+                    .spawn((
+                        Mesh3d(meshes.add(mesh)),
+                        MeshMaterial3d(material),
+                        MsdfUnitRange(unit_range),
+                        NotShadowCaster,
+                        Transform::default(),
+                        Visibility::default(),
+                    ))
+                    .id(),
+            );
         }
 
         for child in &pages {
             commands.entity(*child).despawn();
         }
         let new_runtime = TextRuntime {
-            font:       Arc::clone(&font),
+            stack:      stack.clone(),
             pending:    !laid.missing.is_empty(),
             missing:    laid.missing.clone(),
-            layout_key: layout_key(text, &font),
+            layout_key: layout_key(text, &stack),
             pages:      children.clone(),
         };
         match runtime {
@@ -386,7 +414,7 @@ pub(crate) fn rebuild_text(
 
 /// What a layout depends on, so identical inputs skip a rebuild even while
 /// change detection still reports the component.
-fn layout_key(text: &MsdfText, font: &MsdfFont) -> u64 {
+fn layout_key(text: &MsdfText, stack: &[Arc<MsdfFont>]) -> u64 {
     let mut hasher = DefaultHasher::new();
     text.value.hash(&mut hasher);
     text.size.to_bits().hash(&mut hasher);
@@ -394,7 +422,9 @@ fn layout_key(text: &MsdfText, font: &MsdfFont) -> u64 {
     text.anchor.hash(&mut hasher);
     text.wrap.map(f32::to_bits).hash(&mut hasher);
     text.line_height.to_bits().hash(&mut hasher);
-    (std::ptr::addr_of!(*font) as usize).hash(&mut hasher);
+    for font in stack {
+        (std::ptr::addr_of!(**font) as usize).hash(&mut hasher);
+    }
     hasher.finish()
 }
 
@@ -402,18 +432,16 @@ fn layout_key(text: &MsdfText, font: &MsdfFont) -> u64 {
 /// cheap.
 pub(crate) fn restyle_text(
     changed: Query<(&TextRuntime, &MsdfStyle), Changed<MsdfStyle>>,
-    page_materials: Query<&MeshMaterial3d<MsdfMaterial>>,
+    page_materials: Query<(&MeshMaterial3d<MsdfMaterial>, &MsdfUnitRange)>,
     mut materials: ResMut<Assets<MsdfMaterial>>,
 ) {
     for (runtime, style) in &changed {
-        let unit_range = runtime.font.state().unit_range;
-        let settings = settings(style, unit_range);
         for child in &runtime.pages {
-            let Ok(handle) = page_materials.get(*child) else {
+            let Ok((handle, unit_range)) = page_materials.get(*child) else {
                 continue;
             };
             if let Some(mut material) = materials.get_mut(handle) {
-                material.settings = settings;
+                material.settings = settings(style, unit_range.0);
             }
         }
     }
@@ -425,7 +453,7 @@ pub(crate) fn report_missing_glyphs(
     for (entity, text, missing) in &changed {
         if missing.0 > 0 {
             error!(
-                "{entity}: {} of {:?} have no glyph in this font and were dropped",
+                "{entity}: {} of {:?} have no glyph in any font and were dropped",
                 missing.0, text.value,
             );
         }

@@ -41,14 +41,18 @@ impl Default for LayoutOpts {
     }
 }
 
-/// One glyph to draw. `uv.min` is the top-left texel of `plane`'s top-left
-/// corner; the plane is y-up and the atlas is y-down. `page` names the atlas
-/// page the uv is relative to.
+/// One glyph to draw.
+///
+/// `uv.min` is the top-left texel of `plane`'s top-left corner; the plane is
+/// y-up and the atlas is y-down. `page` names the atlas page the uv is
+/// relative to; `font` names the font in the source's fallback stack that
+/// supplied the glyph.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Quad {
     pub plane: Rect,
     pub uv:    Rect,
     pub page:  u32,
+    pub font:  u32,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -134,13 +138,13 @@ pub fn layout(
             continue;
         };
 
-        let pen = line.pen + line.last().map_or(0.0, |prev| source.kern(prev, ch));
-        if let Some(wrap) = wrap_em
-            && !line.placed.is_empty()
-            && pen + glyph.advance > wrap
-        {
-            line = wrap_line(&mut lines, line, source);
-        }
+            let pen = line.pen + line.last().map_or(0.0, |prev| source.kern(prev, ch));
+            if let Some(wrap) = wrap_em
+                && !line.placed.is_empty()
+                && pen + glyph.advance > wrap
+            {
+                line = wrap_line(&mut lines, line, source, ch);
+            }
 
         let pen = line.pen + line.last().map_or(0.0, |prev| source.kern(prev, ch));
         line.placed.push(Placed { ch, pen });
@@ -152,13 +156,29 @@ pub fn layout(
 }
 
 /// Splits a word wider than the wrap box mid-word rather than letting it
-/// overflow the box the caller asked for.
-fn wrap_line(lines: &mut Vec<Line>, line: Line, source: &impl GlyphSource) -> Line {
+/// overflow the box the caller asked for. Latin breaks at a space; a run of
+/// East-Asian text has none, so any CJK character is a break opportunity,
+/// except right before closing punctuation the script keeps glued to the
+/// previous glyph (`next` is the character about to start the new line).
+fn wrap_line(
+    lines: &mut Vec<Line>,
+    line: Line,
+    source: &impl GlyphSource,
+    next: char,
+) -> Line {
     let break_at = line
         .placed
         .iter()
-        .rposition(|placed| placed.ch.is_whitespace())
-        .map_or(line.placed.len(), |space| space + 1);
+        .enumerate()
+        .rev()
+        .find(|(index, placed)| {
+            if !(placed.ch.is_whitespace() || is_cjk(placed.ch)) {
+                return false;
+            }
+            let boundary = line.placed.get(index + 1).map_or(next, |placed| placed.ch);
+            !is_closing(boundary)
+        })
+        .map_or(line.placed.len(), |(index, _)| index + 1);
 
     let mut head = line;
     let tail = head.placed.split_off(break_at);
@@ -173,6 +193,31 @@ fn wrap_line(lines: &mut Vec<Line>, line: Line, source: &impl GlyphSource) -> Li
         next.placed.push(Placed { pen, ..placed });
     }
     next
+}
+
+/// Han, kana, and Hangul: scripts whose lines break between any two
+/// characters because they do not separate words with spaces.
+const fn is_cjk(ch: char) -> bool {
+    matches!(
+        ch,
+        '\u{3040}'..='\u{30FF}'
+            | '\u{31F0}'..='\u{31FF}'
+            | '\u{3400}'..='\u{4DBF}'
+            | '\u{4E00}'..='\u{9FFF}'
+            | '\u{AC00}'..='\u{D7AF}'
+            | '\u{F900}'..='\u{FAFF}'
+            | '\u{FF00}'..='\u{FFEF}'
+    )
+}
+
+/// Closing punctuation a break must not land before.
+const fn is_closing(ch: char) -> bool {
+    matches!(
+        ch,
+        '\u{3001}' | '\u{3002}' | '\u{3009}' | '\u{300B}' | '\u{300D}' | '\u{300F}'
+            | '\u{3011}' | '\u{3015}' | '\u{FF01}' | '\u{FF09}' | '\u{FF0C}' | '\u{FF0E}'
+            | '\u{FF1A}' | '\u{FF1B}' | '\u{FF1F}'
+    )
 }
 
 fn assemble(
@@ -218,6 +263,7 @@ fn assemble(
                 plane,
                 uv: glyph.uv,
                 page: glyph.page,
+                font: glyph.font,
             });
         }
     }
@@ -252,24 +298,12 @@ mod tests {
     /// Every glyph one em wide and half an em tall, so a width is a character
     /// count.
     fn atlas() -> Atlas {
-        let square = Glyph {
-            plane:   Rect {
-                min: [0.0, 0.0],
-                max: [1.0, 0.5],
-            },
-            uv:      Rect {
-                min: [0.0, 0.0],
-                max: [0.1, 0.1],
-            },
-            advance: 1.0,
-            page:    0,
-        };
+        let square = square();
         let blank = Glyph {
             plane: Rect::ZERO,
             uv: Rect::ZERO,
             ..square
         };
-
         let mut glyphs = BTreeMap::new();
         for ch in 'a'..='z' {
             glyphs.insert(ch, square);
@@ -290,6 +324,22 @@ mod tests {
             },
             glyphs,
             kerning: BTreeMap::from([(('A', 'V'), -0.5)]),
+        }
+    }
+
+    fn square() -> Glyph {
+        Glyph {
+            plane:   Rect {
+                min: [0.0, 0.0],
+                max: [1.0, 0.5],
+            },
+            uv:      Rect {
+                min: [0.0, 0.0],
+                max: [0.1, 0.1],
+            },
+            advance: 1.0,
+            page:    0,
+            font:    0,
         }
     }
 
@@ -508,5 +558,56 @@ mod tests {
             },
         );
         assert_eq!(laid.quads.len(), 3, "a zero box wraps nothing");
+    }
+
+    /// The default atlas lacks CJK, so the script tests seed their own glyphs.
+    fn cjk_atlas() -> Atlas {
+        let mut atlas = atlas();
+        for ch in ['あ', 'ん', '漢', '字', '。'] {
+            atlas.glyphs.insert(ch, square());
+        }
+        atlas
+    }
+
+    #[test]
+    fn cjk_wraps_between_any_characters() {
+        let laid = layout(
+            "あんあんあんあん",
+            &cjk_atlas(),
+            &LayoutOpts {
+                wrap: Some(5.0),
+                ..opts()
+            },
+        )
+        .expect("layout");
+        assert!(laid.lines > 1, "a space-less run still wraps");
+        assert!(
+            laid.ink.max[0] <= 5.0 + 1.0e-4,
+            "nothing escapes the box"
+        );
+    }
+
+    #[test]
+    fn cjk_keeps_closing_punctuation_on_its_line() {
+        let laid = layout(
+            "あんあん。",
+            &cjk_atlas(),
+            &LayoutOpts {
+                wrap: Some(4.0),
+                ..opts()
+            },
+        )
+        .expect("layout");
+        let last = laid.quads.len() - 1;
+        assert!(
+            (laid.quads[last - 1].plane.min[1] - laid.quads[last].plane.min[1]).abs() < 1.0e-4,
+            "the full stop stays on the glyph before it"
+        );
+    }
+
+    #[test]
+    fn a_quad_remembers_its_font() {
+        let laid = laid("a", &opts());
+        assert_eq!(laid.quads[0].font, 0);
     }
 }

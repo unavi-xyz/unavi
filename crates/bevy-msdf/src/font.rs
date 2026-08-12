@@ -31,9 +31,17 @@ use bevy::{
     },
 };
 use msdf::{
-    atlas::LATIN,
+    atlas::{
+        Glyph,
+        GlyphSource,
+        LATIN,
+        VerticalMetrics,
+    },
     bake::DEFAULT_FONT,
-    font::Font,
+    font::{
+        Font,
+        FontError,
+    },
     generate::{
         Rendered,
         render,
@@ -142,9 +150,73 @@ impl Debug for MsdfFont {
     }
 }
 
-/// What a [`crate::text::MsdfText`] draws with when it names no font.
-#[derive(Resource, Debug, Clone)]
-pub struct DefaultFont(pub Arc<MsdfFont>);
+/// What a [`crate::text::MsdfText`] draws with when it names no font: an
+/// ordered fallback chain, primary first. Text resolves each character to the
+/// first font in the stack that can render it.
+#[derive(Resource, Debug, Clone, Default)]
+pub struct DefaultFontStack(pub Vec<Arc<MsdfFont>>);
+
+/// A fallback chain, used as the layout's [`GlyphSource`].
+///
+/// Each character resolves to the first font that has a resident glyph for it;
+/// characters no font has drawn yet draw the primary font's placeholder and
+/// report as missing until a generated glyph lands.
+pub struct FontStack {
+    fonts: Vec<Arc<MsdfFont>>,
+}
+
+impl FontStack {
+    #[must_use]
+    pub const fn new(fonts: Vec<Arc<MsdfFont>>) -> Self {
+        Self { fonts }
+    }
+
+    /// The first font whose face has a glyph for `ch`, if any.
+    fn serving(&self, ch: char) -> Option<usize> {
+        self.fonts
+            .iter()
+            .position(|font| font.state().atlas.can_render(ch))
+    }
+}
+
+impl GlyphSource for FontStack {
+    fn vertical(&self) -> VerticalMetrics {
+        self.fonts[0].state().atlas.vertical()
+    }
+
+    fn glyph(&self, ch: char) -> Option<Glyph> {
+        for (index, font) in self.fonts.iter().enumerate() {
+            let state = font.state();
+            if state.atlas.resident(ch) {
+                let mut glyph = state.atlas.glyph(ch).expect("resident glyph");
+                glyph.font = index as u32;
+                drop(state);
+                return Some(glyph);
+            }
+            drop(state);
+        }
+        let mut glyph = self.fonts[0].state().atlas.glyph(ch).expect("fallback");
+        glyph.font = 0;
+        Some(glyph)
+    }
+
+    fn kern(&self, left: char, right: char) -> f32 {
+        let Some(index) = self.serving(left) else {
+            return 0.0;
+        };
+        if self.serving(right) == Some(index) {
+            self.fonts[index].state().atlas.kern(left, right)
+        } else {
+            0.0
+        }
+    }
+
+    fn missing(&self, ch: char) -> bool {
+        self.fonts
+            .iter()
+            .all(|font| !font.state().atlas.resident(ch))
+    }
+}
 
 pub fn register_default_font(
     mut commands: Commands,
@@ -158,7 +230,24 @@ pub fn register_default_font(
         }
     };
     let font = MsdfFont::new(Arc::new(font), RuntimeOpts::default(), &mut images);
-    commands.insert_resource(DefaultFont(Arc::new(font)));
+    commands.insert_resource(DefaultFontStack(vec![Arc::new(font)]));
+}
+
+/// Builds a font from raw bytes and registers it as the next fallback in the
+/// [`DefaultFontStack`], so the caller must insert or amend that resource.
+///
+/// The parsed face is kept alive by the returned `Arc`; holding it only in the
+/// stack is enough, since the stack owns the only strong reference.
+pub fn register_font(
+    bytes: Arc<[u8]>,
+    images: &mut Assets<Image>,
+) -> Result<Arc<MsdfFont>, FontError> {
+    let font = Font::parse(bytes)?;
+    Ok(Arc::new(MsdfFont::new(
+        Arc::new(font),
+        RuntimeOpts::default(),
+        images,
+    )))
 }
 
 /// The pool-side half of a job: turns a queued character into a field.
@@ -288,5 +377,38 @@ mod tests {
             assert!(!glyph.plane.is_empty());
             drop(state);
         }
+    }
+
+    #[test]
+    fn register_font_parses_raw_bytes() {
+        let mut images = Assets::<Image>::default();
+        let font = register_font(Arc::<[u8]>::from(DEFAULT_FONT), &mut images).expect("font");
+        assert!(
+            font.state().atlas.can_render('a'),
+            "the registered face serves its glyphs"
+        );
+    }
+
+    #[test]
+    fn a_stack_resolves_characters_to_the_first_resident_font() {
+        let first = font();
+        let second = font();
+        let stack = FontStack::new(vec![Arc::clone(&first), second]);
+
+        let glyph = stack.glyph('a').expect("glyph");
+        assert_eq!(glyph.font, 0, "both fonts cover 'a', the primary wins");
+        assert!(!stack.missing('a'));
+        assert!(stack.glyph('漢').is_some(), "the primary placeholder still draws");
+        assert!(stack.missing('漢'), "no face in the stack covers CJK");
+    }
+
+    #[test]
+    fn a_stack_does_not_kern_across_fonts() {
+        let stack = FontStack::new(vec![font(), font()]);
+        let direct = stack.fonts[0].state().atlas.kern('A', 'V');
+        assert!(
+            (stack.kern('A', 'V') - direct).abs() < 1.0e-6,
+            "a pair in the same font kerns as that font kerns"
+        );
     }
 }

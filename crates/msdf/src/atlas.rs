@@ -61,6 +61,10 @@ pub struct Glyph {
     /// Which page of a multi-page atlas the field lives in; a baked single
     /// image is always page 0.
     pub page:    u32,
+    /// Which font in a fallback stack the glyph came from; a single-font
+    /// source always stamps 0.
+    #[serde(default)]
+    pub font:    u32,
 }
 
 /// Line spacing in em units.
@@ -179,6 +183,7 @@ mod tests {
                     },
                     advance: 0.6,
                     page:    0,
+                    font:    0,
                 },
             )]),
             kerning:  BTreeMap::from([(('A', 'V'), -0.08)]),

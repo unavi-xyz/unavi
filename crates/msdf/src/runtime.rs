@@ -229,6 +229,13 @@ impl Atlas {
         self.entries.contains_key(&ch)
     }
 
+    /// Whether the face actually has a glyph for `ch`, regardless of residency.
+    /// A fallback stack uses this to decide which font should serve a char.
+    #[must_use]
+    pub fn can_render(&self, ch: char) -> bool {
+        self.font.glyph_index(ch).is_some()
+    }
+
     #[must_use]
     pub fn budget(&self) -> Budget {
         Budget {
@@ -394,6 +401,7 @@ impl Atlas {
                     uv:      Rect::ZERO,
                     advance: rendered.advance,
                     page:    0,
+                    font:    0,
                 },
                 None,
             ));
@@ -440,6 +448,7 @@ impl Atlas {
             },
             advance: rendered.advance,
             page,
+            font: 0,
         }
     }
 
@@ -460,12 +469,14 @@ impl Atlas {
                 uv:      self.notdef.uv,
                 advance,
                 page:    self.notdef.page,
+                font:    0,
             },
             Fallback::Skip => Glyph {
                 plane:   Rect::ZERO,
                 uv:      Rect::ZERO,
                 advance,
                 page:    0,
+                font:    0,
             },
             Fallback::Box => Glyph {
                 plane:   Rect {
@@ -475,6 +486,7 @@ impl Atlas {
                 uv:      Rect::ZERO,
                 advance,
                 page:    0,
+                font:    0,
             },
         }
     }

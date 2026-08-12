@@ -115,6 +115,7 @@ pub fn bake(font: &[u8], opts: &BakeOpts) -> Result<Baked, BakeError> {
                     uv,
                     advance: glyph.advance,
                     page: 0,
+                    font: 0,
                 },
             )
         })

@@ -6,11 +6,14 @@ use bevy::{
     },
     prelude::*,
 };
-use msdf::layout::Laid;
+use msdf::layout::{
+    Laid,
+    Quad,
+};
 
 /// Where the text block sits relative to its transform. Horizontal placement
 /// is [`msdf::layout::Align`]'s job, so this only answers the vertical.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Anchor {
     /// The origin is the first baseline — where a caller positioning text
     /// against other text wants it.
@@ -37,14 +40,33 @@ impl Anchor {
 /// Builds one quad per glyph in the XY plane, facing +Z.
 #[must_use]
 pub fn build(laid: &Laid, anchor: Anchor) -> Mesh {
+    build_quads(&laid.quads, anchor.offset(laid))
+}
+
+/// One mesh per page, so each page is drawn with the image that holds it.
+/// Quads from different pages share a plane but sample different textures, so
+/// they cannot share a mesh.
+#[must_use]
+pub fn page_meshes(laid: &Laid, anchor: Anchor) -> Vec<(u32, Mesh)> {
     let raise = anchor.offset(laid);
-    let count = laid.quads.len();
+    let mut grouped: std::collections::BTreeMap<u32, Vec<Quad>> = std::collections::BTreeMap::new();
+    for quad in &laid.quads {
+        grouped.entry(quad.page).or_default().push(*quad);
+    }
+    grouped
+        .into_iter()
+        .map(|(page, quads)| (page, build_quads(&quads, raise)))
+        .collect()
+}
+
+fn build_quads(quads: &[Quad], raise: f32) -> Mesh {
+    let count = quads.len();
 
     let mut positions = Vec::with_capacity(count * 4);
     let mut uvs = Vec::with_capacity(count * 4);
     let mut indices = Vec::with_capacity(count * 6);
 
-    for (index, quad) in laid.quads.iter().enumerate() {
+    for (index, quad) in quads.iter().enumerate() {
         let (left, right) = (quad.plane.min[0], quad.plane.max[0]);
         let (bottom, top) = (quad.plane.min[1] + raise, quad.plane.max[1] + raise);
         positions.extend([
@@ -146,6 +168,35 @@ mod tests {
         let mesh = mesh("abc", Anchor::Baseline);
         assert_eq!(positions(&mesh).len(), 12);
         assert_eq!(mesh.indices().expect("indices").len(), 18);
+    }
+
+    #[test]
+    fn quads_split_into_one_mesh_per_page() {
+        let quad = |page| Quad {
+            plane:   Rect {
+                min: [0.0, 0.0],
+                max: [1.0, 0.5],
+            },
+            uv:      Rect {
+                min: [0.0, 0.0],
+                max: [0.1, 0.1],
+            },
+            page,
+        };
+        let laid = Laid {
+            quads:   vec![quad(0), quad(1), quad(1), quad(0)],
+            bounds:  Rect::ZERO,
+            ink:     Rect::ZERO,
+            lines:   1,
+            missing: Vec::new(),
+        };
+        let meshes = page_meshes(&laid, Anchor::Baseline);
+        assert_eq!(meshes.len(), 2, "two pages, two meshes");
+        let (first, second) = (&meshes[0], &meshes[1]);
+        assert_eq!(first.0, 0);
+        assert_eq!(second.0, 1);
+        assert_eq!(positions(&first.1).len(), 8, "page 0 holds two quads");
+        assert_eq!(positions(&second.1).len(), 8, "page 1 holds two quads");
     }
 
     #[test]

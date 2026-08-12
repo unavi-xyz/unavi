@@ -23,7 +23,8 @@ use msdf::layout::Align;
 use smol_str::SmolStr;
 
 const BODY: f32 = 0.06;
-const SPECIMEN: &str = "Handgloves — AVATAR 0123";
+const SPECIMEN: &str = "Once upon a midnight dreary, while I pondered, weak and weary";
+const JP_SPECIMEN: &str = "第1章　吾輩は猫である。名前はまだ無い。";
 
 fn main() {
     App::new()
@@ -132,5 +133,15 @@ fn setup(
         },
         Billboard::Yaw,
         Transform::from_xyz(1.8, 1.2, 0.0),
+    ));
+
+    commands.spawn((
+        text(JP_SPECIMEN, BODY),
+        MsdfStyle {
+            color: Color::WHITE,
+            ..Default::default()
+        },
+        Transform::from_xyz(0.0, -0.5, 0.0),
+        Name::new("jp specimen"),
     ));
 }

@@ -26,18 +26,11 @@ impl ProcessTracker {
     pub fn is_running(&self) -> bool {
         let mut guard = self.child.lock();
         if let Some(ref mut child) = *guard {
-            match child.try_wait() {
-                Ok(Some(_)) => {
-                    *guard = None;
-                    false
-                }
-                Ok(None) => {
-                    true
-                }
-                Err(_) => {
-                    *guard = None;
-                    false
-                }
+            if child.try_wait().ok() == Some(None) {
+                true
+            } else {
+                *guard = None;
+                false
             }
         } else {
             false

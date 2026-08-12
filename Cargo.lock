@@ -1023,7 +1023,6 @@ dependencies = [
 name = "bevy-msdf"
 version = "0.0.16"
 dependencies = [
- "anyhow",
  "bevy",
  "bevy_panorbit_camera",
  "image",

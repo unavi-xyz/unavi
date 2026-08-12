@@ -102,6 +102,17 @@ pub enum RuntimeOp {
     Refused,
 }
 
+/// A page region that changed since the last [`Atlas::take_dirty`], in
+/// texels. An upload can copy just this rect instead of the whole page.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct DirtyRect {
+    pub page: u32,
+    pub x:    u32,
+    pub y:    u32,
+    pub w:    u32,
+    pub h:    u32,
+}
+
 /// A read-only view of the caps and their current use, for the dev tools and
 /// a future per-document quota.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -151,6 +162,7 @@ pub struct Atlas {
     refusals:   u64,
     generation: u64,
     notdef:     Glyph,
+    dirty:      Vec<DirtyRect>,
 }
 
 impl Atlas {
@@ -170,6 +182,7 @@ impl Atlas {
             refusals: 0,
             generation: 0,
             notdef: Glyph::default(),
+            dirty: Vec::new(),
         };
         let rendered = atlas.render(GlyphId(0), '\u{0}');
         if let Some((glyph, _)) = atlas.place(&rendered) {
@@ -203,6 +216,12 @@ impl Atlas {
     #[must_use]
     pub const fn generation(&self) -> u64 {
         self.generation
+    }
+
+    /// Page regions changed since the last call, for an incremental upload.
+    #[must_use]
+    pub fn take_dirty(&mut self) -> Vec<DirtyRect> {
+        std::mem::take(&mut self.dirty)
     }
 
     #[must_use]
@@ -390,6 +409,13 @@ impl Atlas {
                     let flipped = field.height() - 1 - row;
                     page.image.put_pixel(x + column, y + flipped, *pixel);
                 }
+                self.dirty.push(DirtyRect {
+                    page: index as u32,
+                    x,
+                    y,
+                    w: request.width as u32,
+                    h: request.height as u32,
+                });
                 return Some((self.slot_glyph(rendered, field, &slot, index as u32), Some(slot.id)));
             }
         }
@@ -549,11 +575,27 @@ mod tests {
     }
 
     #[test]
+    fn commit_reports_the_changed_rect_for_upload() {
+        let mut atlas = atlas(opts());
+        let notdef = atlas.take_dirty();
+        assert_eq!(notdef.len(), 1, "notdef lands at construction");
+        assert_eq!(serve(&mut atlas, 'A'), RuntimeOp::Ok);
+        let dirty = atlas.take_dirty();
+        assert_eq!(dirty.len(), 1, "one glyph, one rect");
+        let rect = dirty[0];
+        assert!(rect.w >= 4 && rect.h >= 4, "the rect covers the field plus gutter");
+        assert!(
+            atlas.take_dirty().is_empty(),
+            "a second take finds nothing new"
+        );
+    }
+
+    #[test]
     fn request_dedupes_residents_and_the_queued() {
         let mut atlas = atlas(opts());
         serve(&mut atlas, 'A');
         assert_eq!(atlas.request(&['A', 'B']), vec!['B']);
-        atlas.request(&['B']);
+        let _ = atlas.request(&['B']);
         assert!(
             atlas.request(&['B']).is_empty(),
             "a queued character is not queued twice"
@@ -583,7 +625,7 @@ mod tests {
             max_in_flight: 1,
             ..opts()
         });
-        atlas.request(&['a', 'b']);
+        let _ = atlas.request(&['a', 'b']);
         assert!(atlas.next_job().is_some());
         assert!(
             atlas.next_job().is_none(),
@@ -695,7 +737,7 @@ mod tests {
 
     #[test]
     fn a_missing_character_still_advances() {
-        let mut atlas = atlas(opts());
+        let atlas = atlas(opts());
         let glyph = atlas.glyph('Z').expect("fallback");
         assert!(glyph.advance > 0.0, "the face knows Z's width");
         assert!(!glyph.plane.is_empty(), "the notdef box draws");
@@ -704,7 +746,7 @@ mod tests {
 
     #[test]
     fn skip_fallback_advances_without_ink() {
-        let mut atlas = atlas(RuntimeOpts {
+        let atlas = atlas(RuntimeOpts {
             fallback: Fallback::Skip,
             ..opts()
         });
@@ -715,19 +757,22 @@ mod tests {
 
     #[test]
     fn box_fallback_traces_the_advance() {
-        let mut atlas = atlas(RuntimeOpts {
+        let atlas = atlas(RuntimeOpts {
             fallback: Fallback::Box,
             ..opts()
         });
         let glyph = atlas.glyph('Z').expect("fallback");
         assert!(glyph.advance > 0.0);
-        assert_eq!(glyph.plane.max[0], glyph.advance);
+        assert!(
+            (glyph.plane.max[0] - glyph.advance).abs() < 1.0e-6,
+            "the box is as wide as the advance"
+        );
         assert!(glyph.plane.min[1] < 0.0 && glyph.plane.max[1] > 0.0);
     }
 
     #[test]
     fn layout_reports_missing_and_draws_the_fallback() {
-        let mut atlas = atlas(opts());
+        let atlas = atlas(opts());
         let laid = crate::layout::layout("ab", &atlas, &LayoutOpts::default()).expect("layout");
         assert_eq!(laid.missing, vec!['a', 'b']);
         assert_eq!(

@@ -5,26 +5,23 @@ use bevy::{
         ShaderType,
     },
 };
-use msdf::atlas::Atlas;
 
 const SHADER: &str = "embedded://bevy_msdf/msdf.wgsl";
 
-/// The baked distance range as a fraction of the field's dimensions, which is
-/// the one number tying a shader to the atlas it samples.
+/// The baked distance range as a fraction of a page's dimensions, which is the
+/// one number tying a shader to the atlas it samples.
 #[must_use]
-pub fn unit_range(atlas: &Atlas) -> Vec2 {
-    Vec2::new(
-        atlas.range / atlas.width.max(1) as f32,
-        atlas.range / atlas.height.max(1) as f32,
-    )
+pub fn unit_range(range: f32, page_size: u32) -> Vec2 {
+    let size = page_size.max(1) as f32;
+    Vec2::new(range / size, range / size)
 }
 
 #[derive(Clone, Copy, ShaderType, Debug, Default, PartialEq)]
 pub struct MsdfSettings {
     pub color:         Vec4,
     pub outline_color: Vec4,
-    /// The baked distance range over the field's dimensions; the shader needs
-    /// it to convert a distance into screen pixels.
+    /// The baked distance range over the page dimensions; the shader needs it
+    /// to convert a distance into screen pixels.
     pub unit_range:    Vec2,
     /// How far past the glyph edge the outline reaches, as a fraction of the
     /// distance range. Zero draws none.
@@ -61,26 +58,18 @@ impl Material for MsdfMaterial {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
-
-    use msdf::atlas::{
-        Atlas,
-        VerticalMetrics,
-    };
-
     use super::unit_range;
 
     #[test]
-    fn the_unit_range_comes_from_the_field_it_was_baked_against() {
-        let unit = unit_range(&Atlas {
-            width:    512,
-            height:   256,
-            range:    8.0,
-            vertical: VerticalMetrics::default(),
-            glyphs:   BTreeMap::new(),
-            kerning:  BTreeMap::new(),
-        });
+    fn the_unit_range_comes_from_the_page_it_was_baked_against() {
+        let unit = unit_range(8.0, 512);
         assert!((unit.x - 8.0 / 512.0).abs() < 1.0e-6);
-        assert!((unit.y - 8.0 / 256.0).abs() < 1.0e-6);
+        assert!((unit.y - 8.0 / 512.0).abs() < 1.0e-6);
+    }
+
+    #[test]
+    fn a_degenerate_page_never_skips_the_division() {
+        let unit = unit_range(4.0, 0);
+        assert!(unit.x.is_finite() && unit.y.is_finite());
     }
 }

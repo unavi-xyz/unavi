@@ -66,19 +66,28 @@ fn test_text_becomes_a_mesh(mut ctx: TestContext) {
     ctx.app.update();
 
     let world = ctx.app.world_mut();
-    let mut query = world.query::<(&Mesh3d, &MissingGlyphs)>();
+    let mut query = world.query::<&MissingGlyphs>();
     let found = query.query(world).into_iter().collect::<Vec<_>>();
-    assert_eq!(found.len(), 1, "a text prim carries a mesh");
-    assert_eq!(found[0].1.0, 0, "the shipped font covers plain Latin");
+    assert_eq!(found.len(), 1, "a text prim reports its missing glyphs");
+    assert_eq!(found[0].0, 0, "the shipped font covers plain Latin");
+    drop(query);
 
-    let handle = found[0].0.0.clone();
-    let meshes = ctx.app.world().resource::<Assets<Mesh>>();
-    let mesh = meshes.get(&handle).expect("mesh");
-    assert_eq!(
-        mesh.count_vertices(),
-        "Hello".len() * 4,
-        "one quad per glyph"
-    );
+    let mut parents = world.query::<(&MsdfText, &Children)>();
+    let children = parents
+        .query(world)
+        .into_iter()
+        .next()
+        .map(|(_, children)| children.iter().collect::<Vec<_>>())
+        .expect("text");
+    drop(parents);
+    assert!(!children.is_empty(), "each page becomes a child mesh");
+    let meshes = world.resource::<Assets<Mesh>>();
+    let vertices = children
+        .iter()
+        .filter_map(|child| world.get::<Mesh3d>(*child))
+        .map(|mesh| meshes.get(&mesh.0).expect("mesh").count_vertices())
+        .sum::<usize>();
+    assert_eq!(vertices, "Hello".len() * 4, "one quad per glyph");
 }
 
 #[traced_test]

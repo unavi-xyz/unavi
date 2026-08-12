@@ -9,7 +9,7 @@ pub const MAX_GLYPHS: usize = 4096;
 
 /// Where the origin sits on a line, against the line's own width rather than
 /// the wrap box.
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Align {
     #[default]
     Left,

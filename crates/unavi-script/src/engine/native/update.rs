@@ -72,11 +72,15 @@ pub fn update_scripts(
                     let mut store = store.lock().await;
                     store.set_epoch_deadline(1);
 
-                    if let Err(err) = guest
+                    let api = Arc::clone(&store.data().api);
+                    let tick = api.open_tick().await;
+                    let result = guest
                         .wired_script_guest_api()
                         .call_update(store.as_context_mut())
-                        .await
-                    {
+                        .await;
+                    drop(tick);
+
+                    if let Err(err) = result {
                         warn!(?err, "Failed to update script");
                     }
                     drop(store);

@@ -98,6 +98,11 @@ pub struct SceneState {
     /// Realized prims and their effective parent, `None` for a document root.
     realized: HashMap<PrimId, Option<PrimId>>,
     events:   Vec<SceneEvent>,
+    /// Write boundaries currently open. A script tick can be suspended between
+    /// any two host calls, so its events are withheld until it closes.
+    ticks:      usize,
+    /// Where the oldest open boundary started writing.
+    tick_start: usize,
 }
 
 impl Default for SceneState {
@@ -115,6 +120,8 @@ impl SceneState {
             children: HashMap::new(),
             realized: HashMap::new(),
             events:   Vec::new(),
+            ticks:      0,
+            tick_start: 0,
         }
     }
 
@@ -176,8 +183,41 @@ impl SceneState {
         out
     }
 
+    /// Opens a write boundary. Everything written until the matching
+    /// [`Self::close_tick`] is withheld from [`Self::drain_events`].
+    ///
+    /// Boundaries nest by count rather than replacing one another, so two
+    /// writers on one document hold their events until both are done.
+    pub const fn open_tick(&mut self) {
+        if self.ticks == 0 {
+            self.tick_start = self.events.len();
+        }
+        self.ticks += 1;
+    }
+
+    /// Saturates rather than underflowing: an unmatched close is a bug in the
+    /// caller, not a reason to release a boundary someone else is holding.
+    pub const fn close_tick(&mut self) {
+        self.ticks = self.ticks.saturating_sub(1);
+    }
+
+    #[must_use]
+    pub const fn is_ticking(&self) -> bool {
+        self.ticks > 0
+    }
+
+    /// Events belonging to finished writes.
+    ///
+    /// A tick still in flight keeps its tail: a prim whose creating tick has
+    /// not set its transform yet would otherwise be drawn at the origin until
+    /// the tick resumes.
     pub fn drain_events(&mut self) -> Vec<SceneEvent> {
-        std::mem::take(&mut self.events)
+        if self.ticks == 0 {
+            return std::mem::take(&mut self.events);
+        }
+        let complete = self.events.drain(..self.tick_start).collect();
+        self.tick_start = 0;
+        complete
     }
 
     /// Replaces pending events with a full description of the realized scene,
@@ -198,6 +238,10 @@ impl SceneState {
             children.reverse();
             stack.extend(children);
         }
+
+        // A consumer attaching mid-tick needs the scene as it stands now, so
+        // the description itself drains; only writes after it are withheld.
+        self.tick_start = self.events.len();
     }
 
     #[must_use]

@@ -35,11 +35,15 @@ pub fn init_scripts(
                 let mut store = store.lock().await;
                 store.set_epoch_deadline(1);
 
-                match guest
+                let api = Arc::clone(&store.data().api);
+                let tick = api.open_tick().await;
+                let result = guest
                     .wired_script_guest_api()
                     .call_init(store.as_context_mut())
-                    .await
-                {
+                    .await;
+                drop(tick);
+
+                match result {
                     Ok(()) => {
                         drop(store);
                         let _ = tx.send(());

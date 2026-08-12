@@ -516,3 +516,132 @@ fn nesting_past_the_depth_cap_is_not_realized() {
         "prims past the cap are held"
     );
 }
+
+#[test]
+fn an_open_tick_withholds_its_own_writes() {
+    let mut state = SceneState::new();
+    state.open_tick();
+    apply(&mut state, &[root_entry(prim(1), 1)]);
+
+    assert!(
+        state.drain_events().is_empty(),
+        "a prim whose creating tick has not positioned it yet must not be \
+         drawn at the origin"
+    );
+
+    state.close_tick();
+    assert!(
+        state
+            .drain_events()
+            .contains(&SceneEvent::Realized {
+                prim:   prim(1),
+                parent: None,
+            }),
+        "closing the tick releases it"
+    );
+}
+
+#[test]
+fn writes_made_before_a_tick_opened_still_drain() {
+    let mut state = SceneState::new();
+    apply(&mut state, &[root_entry(prim(1), 1)]);
+    state.open_tick();
+    apply(&mut state, &[root_entry(prim(2), 2)]);
+
+    let events = state.drain_events();
+    assert!(events.contains(&SceneEvent::Realized {
+        prim:   prim(1),
+        parent: None,
+    }));
+    assert!(
+        !events.contains(&SceneEvent::Realized {
+            prim:   prim(2),
+            parent: None,
+        }),
+        "only the open tick's tail is held back"
+    );
+    state.close_tick();
+}
+
+#[test]
+fn a_prim_and_its_properties_leave_together() {
+    let mut state = SceneState::new();
+    state.open_tick();
+    apply(
+        &mut state,
+        &[
+            root_entry(prim(1), 1),
+            attr_entry(prim(1), &XformAttr::default(), 2),
+        ],
+    );
+    assert!(state.drain_events().is_empty());
+    state.close_tick();
+
+    let events = state.drain_events();
+    assert!(events.contains(&SceneEvent::Realized {
+        prim:   prim(1),
+        parent: None,
+    }));
+    assert!(
+        events.iter().any(|e| matches!(
+            e,
+            SceneEvent::Property { prim: p, name, .. }
+                if *p == prim(1) && name == XformAttr::KEY
+        )),
+        "the transform arrives in the same drain as the prim it belongs to"
+    );
+}
+
+#[test]
+fn boundaries_nest_so_two_writers_both_have_to_finish() {
+    let mut state = SceneState::new();
+    state.open_tick();
+    state.open_tick();
+    apply(&mut state, &[root_entry(prim(1), 1)]);
+
+    state.close_tick();
+    assert!(
+        state.drain_events().is_empty(),
+        "one writer finishing does not release another's partial work"
+    );
+    assert!(state.is_ticking());
+
+    state.close_tick();
+    assert!(!state.is_ticking());
+    assert!(!state.drain_events().is_empty());
+}
+
+#[test]
+fn an_unmatched_close_does_not_underflow() {
+    let mut state = SceneState::new();
+    state.close_tick();
+    assert!(!state.is_ticking());
+    state.open_tick();
+    apply(&mut state, &[root_entry(prim(1), 1)]);
+    assert!(state.drain_events().is_empty(), "the boundary still holds");
+    state.close_tick();
+}
+
+#[test]
+fn a_consumer_attaching_mid_tick_gets_the_scene_as_it_stands() {
+    let mut state = SceneState::new();
+    apply(&mut state, &[root_entry(prim(1), 1)]);
+    state.drain_events();
+
+    state.open_tick();
+    state.resync();
+    assert!(
+        state.drain_events().contains(&SceneEvent::Realized {
+            prim:   prim(1),
+            parent: None,
+        }),
+        "a resync is a description of now, not part of anyone's tick"
+    );
+
+    apply(&mut state, &[root_entry(prim(2), 2)]);
+    assert!(
+        state.drain_events().is_empty(),
+        "writes after the resync are still the open tick's"
+    );
+    state.close_tick();
+}

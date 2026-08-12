@@ -19,6 +19,10 @@ pub struct Tuning {
     pub field_lift:   f32,
     /// Extra angular half-width granted to the slot already attended.
     pub stick:        f32,
+    /// The same hysteresis for a rack, as a fraction of a cell.
+    pub grid_stick:   f32,
+    /// Centre-to-centre spacing of a rack's cells.
+    pub rack_pitch:   f32,
 
     pub attend_scale:     f32,
     pub seize_scale:      f32,
@@ -48,6 +52,15 @@ pub struct Tuning {
     /// How far in front of its mote a label sits.
     pub label_lift: f32,
 
+    /// Spacing between trail beads, out of the plane toward the viewer.
+    pub trail_pitch: f32,
+    /// How much each further bead shrinks and fades, so the stack recedes
+    /// rather than competing with the level.
+    pub trail_taper: f32,
+
+    /// Seconds a consequential action fills for before it fires.
+    pub cast_duration: f32,
+
     /// Metres the attended mote reaches toward the pointer.
     pub lean_dist:  f32,
     /// Distance at which lean has fallen off to nothing.
@@ -73,6 +86,8 @@ impl Tuning {
         reach_frac:   1.9,
         field_lift:   0.09,
         stick:        0.18,
+        grid_stick:   0.18,
+        rack_pitch:   0.085,
 
         attend_scale:     1.18,
         seize_scale:      1.30,
@@ -90,6 +105,11 @@ impl Tuning {
         label_size: 0.011,
         label_gap:  0.007,
         label_lift: 0.004,
+
+        trail_pitch: 0.055,
+        trail_taper: 0.82,
+
+        cast_duration: 0.9,
 
         lean_dist:  0.022,
         lean_range: 0.35,

@@ -54,6 +54,45 @@ impl Api {
             Err(ScriptError::permission(format!("{name:?}")))
         }
     }
+
+    /// Holds every document this script can write open for the duration of one
+    /// tick, so a tick suspended between two host calls never has half of its
+    /// writes drawn.
+    ///
+    /// Documents opened *during* the tick are not covered by it — they were
+    /// created by a tick already in flight, and the guard closes only what it
+    /// opened.
+    pub async fn open_tick(&self) -> TickGuard {
+        let mut held = vec![Arc::clone(&self.state)];
+        held.extend(
+            self.wired_scene
+                .lock()
+                .await
+                .docs
+                .iter()
+                .map(|(_, doc)| Arc::clone(&doc.state)),
+        );
+        for state in &held {
+            if let Ok(mut state) = state.lock() {
+                state.open_tick();
+            }
+        }
+        TickGuard(held)
+    }
+}
+
+/// Closes the write boundaries [`Api::open_tick`] opened, including when the
+/// tick trapped or was interrupted rather than returning.
+pub struct TickGuard(Vec<Arc<std::sync::Mutex<SceneState>>>);
+
+impl Drop for TickGuard {
+    fn drop(&mut self) {
+        for state in &self.0 {
+            if let Ok(mut state) = state.lock() {
+                state.close_tick();
+            }
+        }
+    }
 }
 
 pub struct SharedRuntimePlugin;

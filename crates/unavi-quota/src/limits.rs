@@ -240,6 +240,27 @@ mod tests {
         }
     }
 
+    /// A UI surface pays three blobs per drawn body (`POSITION`, `NORMAL`,
+    /// indices). This is the budget that decides whether a surface may build
+    /// its bodies up front or has to build them as it draws them.
+    #[test]
+    fn one_document_cannot_afford_a_body_per_slot_up_front() {
+        const BLOBS_PER_BODY: f64 = 3.0;
+        let capacity = Limits::document()
+            .flow
+            .get(&Flow::BlobUpload)
+            .expect("documents rate-limit blob uploads")
+            .capacity;
+
+        let bodies = capacity / BLOBS_PER_BODY;
+        assert!(
+            bodies < 100.0,
+            "a document affords only {bodies} bodies in one burst, so a \
+             surface that allocates every slot it might ever draw runs out \
+             before it has drawn anything — build them as they are needed"
+        );
+    }
+
     #[test]
     fn global_caps_wasm_memory_at_a_fraction_of_host_ram() {
         let total = host_total_memory();

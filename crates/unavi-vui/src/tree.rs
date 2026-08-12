@@ -1,10 +1,14 @@
 use smol_str::SmolStr;
 
-use crate::mote::{
-    MoteSpec,
-    Role,
+use crate::{
+    model::Model,
+    mote::{
+        MoteSpec,
+        Role,
+    },
 };
 
+/// A static tree of motes, and the simplest thing that is a [`Model`].
 pub struct Node {
     pub spec:     MoteSpec,
     pub children: Vec<Self>,
@@ -59,6 +63,28 @@ impl Node {
         self.spec.description = Some(SmolStr::new(description));
         self
     }
+
+    fn at(&self, path: &[usize]) -> Option<&Self> {
+        let mut node = self;
+        for &index in path {
+            node = node.children.get(index)?;
+        }
+        Some(node)
+    }
+}
+
+impl Model for Node {
+    fn root(&self) -> MoteSpec {
+        self.spec.clone()
+    }
+
+    fn children(&self, path: &[usize]) -> Vec<MoteSpec> {
+        self.at(path).map_or_else(Vec::new, |node| {
+            node.children.iter().map(|child| child.spec.clone()).collect()
+        })
+    }
+
+    fn activate(&mut self, _path: &[usize]) {}
 }
 
 /// What a selection did, for the caller to report or react to.
@@ -71,20 +97,31 @@ pub enum Navigation {
     None,
 }
 
-/// A tree and the path currently bloomed within it. Slot 0 is the parent
-/// whenever the path is non-empty; nothing else is ever placed there.
-pub struct Tree {
-    root: Node,
-    path: Vec<usize>,
+/// A path through a [`Model`], and the level currently open.
+///
+/// Slot 0 is the way back whenever the path is non-empty; nothing else is ever
+/// placed there.
+pub struct Tree<M> {
+    model: M,
+    path:  Vec<usize>,
 }
 
-impl Tree {
+impl<M: Model> Tree<M> {
     #[must_use]
-    pub const fn new(root: Node) -> Self {
+    pub const fn new(model: M) -> Self {
         Self {
-            root,
+            model,
             path: Vec::new(),
         }
+    }
+
+    #[must_use]
+    pub const fn model(&self) -> &M {
+        &self.model
+    }
+
+    pub const fn model_mut(&mut self) -> &mut M {
+        &mut self.model
     }
 
     #[must_use]
@@ -102,39 +139,54 @@ impl Tree {
         &self.path
     }
 
-    fn node(&self) -> Option<&Node> {
-        let mut node = &self.root;
-        for &index in &self.path {
-            node = node.children.get(index)?;
-        }
-        Some(node)
-    }
-
-    /// The label of the level currently open.
+    /// The mote standing for the level currently open.
     #[must_use]
-    pub fn here(&self) -> SmolStr {
-        self.node()
-            .map_or_else(|| SmolStr::new_static("?"), |node| node.spec.label.clone())
+    pub fn here(&self) -> MoteSpec {
+        self.spec_at(self.depth())
+            .unwrap_or_else(|| self.model.root())
     }
 
-    /// Motes at the current level, parent bead first when nested.
+    /// The mote for the level `depth` levels down from the root.
+    fn spec_at(&self, depth: usize) -> Option<MoteSpec> {
+        let (&index, parent) = self.path.get(..depth)?.split_last()?;
+        self.model.children(parent).into_iter().nth(index)
+    }
+
+    /// Motes at the current level, the way back first when nested.
     #[must_use]
     pub fn level(&self) -> Vec<MoteSpec> {
-        let Some(node) = self.node() else {
-            return Vec::new();
-        };
-        let mut specs = Vec::with_capacity(node.children.len() + 1);
-        if self.is_nested() {
-            specs.push(MoteSpec {
-                role:        Role::Parent {
-                    depth: self.depth(),
-                },
-                label:       self.here(),
-                description: Some(SmolStr::new_static("The level you are inside.")),
-            });
+        let children = self.model.children(&self.path);
+        if !self.is_nested() {
+            return children;
         }
-        specs.extend(node.children.iter().map(|child| child.spec.clone()));
+        let mut specs = Vec::with_capacity(children.len() + 1);
+        specs.push(MoteSpec {
+            role:        Role::Parent {
+                depth: self.depth(),
+            },
+            label:       self.here().label,
+            description: Some(SmolStr::new_static("The level you are inside.")),
+        });
+        specs.extend(children);
         specs
+    }
+
+    /// The levels above the one the parent mote already stands for, nearest
+    /// first. This is the breadcrumb; there is no separate widget.
+    #[must_use]
+    pub fn trail(&self) -> Vec<MoteSpec> {
+        (0..self.depth().saturating_sub(1))
+            .rev()
+            .map(|depth| {
+                let spec = self
+                    .spec_at(depth)
+                    .unwrap_or_else(|| self.model.root());
+                MoteSpec {
+                    role: Role::Parent { depth },
+                    ..spec
+                }
+            })
+            .collect()
     }
 
     pub fn select(&mut self, slot: usize) -> Navigation {
@@ -143,18 +195,32 @@ impl Tree {
             return Navigation::Collapsed;
         }
         let index = slot - usize::from(self.is_nested());
-        let Some(child) = self.node().and_then(|node| node.children.get(index)) else {
+        let Some(child) = self.model.children(&self.path).into_iter().nth(index) else {
             return Navigation::None;
         };
-        let label = child.spec.label.clone();
-        match child.spec.role {
+        let label = child.label;
+        match child.role {
             Role::Group { .. } => {
                 self.path.push(index);
                 Navigation::Bloomed(label)
             }
             Role::Cast => Navigation::Cast(label),
-            Role::Action | Role::Item | Role::Parent { .. } => Navigation::Activated(label),
+            Role::Action | Role::Item | Role::Parent { .. } => {
+                self.path.push(index);
+                self.model.activate(&self.path);
+                self.path.pop();
+                Navigation::Activated(label)
+            }
         }
+    }
+
+    /// Climbs to `depth`, which a trail mote does when it is selected.
+    pub fn ascend_to(&mut self, depth: usize) {
+        self.path.truncate(depth);
+    }
+
+    pub fn reset(&mut self) {
+        self.path.clear();
     }
 }
 
@@ -162,18 +228,22 @@ impl Tree {
 mod tests {
     use super::*;
 
-    fn tree() -> Tree {
-        Tree::new(Node::group(
+    fn node() -> Node {
+        Node::group(
             "Root",
             vec![
                 Node::cast("Home"),
                 Node::group("Places", vec![Node::action("Atrium"), Node::action("Club")]),
                 Node::action("Lens"),
             ],
-        ))
+        )
     }
 
-    fn labels(tree: &Tree) -> Vec<String> {
+    fn tree() -> Tree<Node> {
+        Tree::new(node())
+    }
+
+    fn labels(tree: &Tree<Node>) -> Vec<String> {
         tree.level()
             .into_iter()
             .map(|spec| spec.label.to_string())
@@ -222,15 +292,8 @@ mod tests {
     fn the_parent_bead_is_named_for_the_level_it_leaves() {
         let mut tree = tree();
         tree.select(1);
-        assert_eq!(tree.here(), "Places");
+        assert_eq!(tree.here().label, "Places");
         assert_eq!(tree.level()[0].label, "Places");
-    }
-
-    #[test]
-    fn the_parent_mote_carries_the_current_depth() {
-        let mut tree = tree();
-        tree.select(1);
-        assert_eq!(tree.level()[0].role, Role::Parent { depth: 1 });
     }
 
     #[test]
@@ -277,5 +340,151 @@ mod tests {
         // leaf at the bottom activates instead.
         assert_eq!(bloomed, 31);
         assert_eq!(tree.depth(), 31);
+    }
+
+    #[test]
+    fn the_root_level_has_no_trail() {
+        assert!(tree().trail().is_empty());
+    }
+
+    #[test]
+    fn the_trail_holds_the_levels_the_parent_mote_does_not() {
+        let mut tree = Tree::new(Node::group(
+            "Root",
+            vec![Node::group(
+                "Orchard",
+                vec![Node::group(
+                    "Apples",
+                    vec![Node::group("Baskets", vec![Node::item("Gala")])],
+                )],
+            )],
+        ));
+        tree.select(0);
+        assert_eq!(
+            tree.trail().len(),
+            0,
+            "one level down, the parent mote is the whole breadcrumb"
+        );
+
+        tree.select(1);
+        let trail = tree.trail();
+        assert_eq!(
+            trail.iter().map(|spec| spec.label.as_str()).collect::<Vec<_>>(),
+            vec!["Root"],
+            "the level above the parent mote, and no deeper"
+        );
+
+        tree.select(1);
+        let trail = tree.trail();
+        assert_eq!(
+            trail.iter().map(|spec| spec.label.as_str()).collect::<Vec<_>>(),
+            vec!["Orchard", "Root"],
+            "nearest first, so the stack recedes toward the root"
+        );
+        assert_eq!(trail[0].role, Role::Parent { depth: 1 });
+        assert_eq!(trail[1].role, Role::Parent { depth: 0 });
+    }
+
+    #[test]
+    fn a_trail_mote_climbs_to_its_own_level() {
+        let mut tree = tree();
+        tree.select(1);
+        assert_eq!(tree.depth(), 1);
+        tree.ascend_to(0);
+        assert_eq!(tree.depth(), 0);
+        assert_eq!(labels(&tree), vec!["Home", "Places", "Lens"]);
+    }
+
+    #[test]
+    fn a_model_hears_about_the_leaf_that_fired() {
+        #[derive(Default)]
+        struct Recorder {
+            fired: Vec<Vec<usize>>,
+        }
+
+        impl Model for Recorder {
+            fn root(&self) -> MoteSpec {
+                MoteSpec {
+                    role:        Role::Group {
+                        children: 1,
+                        groups:   0,
+                    },
+                    label:       SmolStr::new_static("Root"),
+                    description: None,
+                }
+            }
+
+            fn children(&self, path: &[usize]) -> Vec<MoteSpec> {
+                if path.is_empty() {
+                    vec![MoteSpec {
+                        role:        Role::Action,
+                        label:       SmolStr::new_static("Fire"),
+                        description: None,
+                    }]
+                } else {
+                    Vec::new()
+                }
+            }
+
+            fn activate(&mut self, path: &[usize]) {
+                self.fired.push(path.to_vec());
+            }
+        }
+
+        let mut tree = Tree::new(Recorder::default());
+        assert_eq!(tree.select(0), Navigation::Activated("Fire".into()));
+        assert_eq!(tree.model().fired, vec![vec![0]]);
+        assert_eq!(tree.depth(), 0, "activating does not move");
+    }
+
+    #[test]
+    fn a_lazy_model_is_only_asked_for_the_level_that_is_open() {
+        use std::cell::RefCell;
+
+        struct Lazy {
+            asked: RefCell<Vec<Vec<usize>>>,
+        }
+
+        impl Model for Lazy {
+            fn root(&self) -> MoteSpec {
+                MoteSpec {
+                    role:        Role::Group {
+                        children: 2,
+                        groups:   2,
+                    },
+                    label:       SmolStr::new_static("Root"),
+                    description: None,
+                }
+            }
+
+            fn children(&self, path: &[usize]) -> Vec<MoteSpec> {
+                self.asked.borrow_mut().push(path.to_vec());
+                if path.len() > 2 {
+                    return Vec::new();
+                }
+                (0..2)
+                    .map(|index| MoteSpec {
+                        role:        Role::Group {
+                            children: 2,
+                            groups:   2,
+                        },
+                        label:       SmolStr::new(format!("{}-{index}", path.len())),
+                        description: None,
+                    })
+                    .collect()
+            }
+
+            fn activate(&mut self, _path: &[usize]) {}
+        }
+
+        let tree = Tree::new(Lazy {
+            asked: RefCell::new(Vec::new()),
+        });
+        drop(tree.level());
+        assert_eq!(
+            tree.model().asked.borrow().as_slice(),
+            [Vec::new()],
+            "an unbounded library costs nothing until it is opened"
+        );
     }
 }

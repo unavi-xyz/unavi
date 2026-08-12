@@ -36,10 +36,8 @@ interface types {
     poll: func() -> option<result<list<u8>>>;
   }
 
-  /// Generic personal data store: arbitrary key/value entries in docs
-  /// (iroh-docs namespaces), plus content-addressed blobs. Everything is a
-  /// doc: discovery is `list(registries()[i], "")` over a registry's curated
-  /// views, a DID's collections are `list(root-doc(), "...")`.
+  /// Generic personal data store: key/value entries in docs (iroh-docs
+  /// namespaces) plus content-addressed blobs.
   resource wds {
     /// Creates a new writable doc, returning its namespace.
     create-doc:  func() -> namespace;
@@ -56,12 +54,8 @@ interface types {
     /// This DID's root doc namespace, if one is set.
     root-doc:    func() -> option<namespace>;
     /// The view docs of the registries this client follows, kept synced
-    /// locally. `list` them to read what each registry publishes; entry keys
-    /// are rank-ordered, so key order is the registry's intended order.
-    ///
-    /// Each registry contributes several views, distinguished by key prefix.
-    /// `live/<space>` names a space that currently has occupants, which is how
-    /// populated spaces are discovered.
+    /// locally; entry keys are rank-ordered. Views are distinguished by key
+    /// prefix; `live/<space>` names a space with current occupants.
     registries:  func() -> list<namespace>;
   }
 }

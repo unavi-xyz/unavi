@@ -9,8 +9,7 @@ interface api {
   use wired:math/types.{transform};
   use wired:scene/types.{color, prim, prim-id};
 
-  // Visual state the gauntlet pushes onto a tool so its artifact and effects
-  // reflect the active theme and whether the tool is currently in use.
+  // Visual state the gauntlet pushes onto a tool.
   record tool-state {
     color:  color,
     in-use: bool,
@@ -20,17 +19,15 @@ interface api {
     activate(transform),
     deactivate,
     set-state(tool-state),
-    // Primary action forwarded by the gauntlet while the menu is closed. The
-    // gauntlet is the sole global input consumer, so tools react to this
-    // instead of listening for grab themselves.
+    // Primary action forwarded by the gauntlet while the menu is closed.
     trigger(bool),
-    // Signed scroll notches (+ in, - out), forwarded like `trigger`.
+    // Signed scroll notches (+ in, - out).
     scroll(f32),
   }
 
   resource tool {
-    // `icon` should be a prim carrying a `mesh` attribute rendered as the
-    // tool's wheel icon.
+    // `icon` is a prim carrying a `mesh` attribute, rendered as the tool's
+    // wheel icon.
     constructor(name: string, icon: borrow<prim>);
     poll: func() -> option<tool-event>;
   }

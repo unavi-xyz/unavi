@@ -77,8 +77,8 @@ pub fn apply_rigid_body(
     for (ent, data) in &changed {
         let attr = &data.0;
 
-        // Wait for kind to be committed; never fabricate one (a default Dynamic
-        // would let static meshes fall for a frame).
+        // Wait for kind to be committed; fabricating a default Dynamic would
+        // let static meshes fall for a frame.
         let Some(kind) = attr.kind else {
             continue;
         };

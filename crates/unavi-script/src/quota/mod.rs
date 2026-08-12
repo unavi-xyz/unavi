@@ -7,6 +7,6 @@ use unavi_quota::StockGuard;
 pub struct QuotaGuards(pub Vec<StockGuard>);
 
 /// Marks a document whose scripts bypass quota enforcement, for trusted system
-/// scripts that must keep running even when shared budgets are exhausted.
+/// scripts.
 #[derive(Component)]
 pub struct QuotaExempt;

@@ -98,11 +98,6 @@ pub fn grant_space_permissions(trigger: On<Add, Space>, mut commands: Commands) 
 
 /// A prefab instance runs with the permissions of the document that composed
 /// it in.
-///
-/// The blob is part of that document's compiled content, reached only through
-/// a prim it authored, so it is the same grant an imperatively spawned child
-/// document already inherits — and without it the gauntlet's own nav beacons
-/// come up with less authority than the gauntlet.
 pub fn inherit_host_permissions(
     trigger: On<Insert, HsdDocId>,
     instances: Query<&ChildOf, (With<Hsd>, Without<ApiPermissions>)>,

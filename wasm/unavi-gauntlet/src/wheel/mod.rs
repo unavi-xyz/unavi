@@ -58,9 +58,8 @@ const fn placed(translation: Vec3) -> Xform {
     }
 }
 
-/// A persistent sector slot. Prims are created once and reconfigured on
-/// rebuild, so nothing is ever spawned mid-session (avoids the one-frame origin
-/// flash of freshly created prims).
+/// Reconfigured on rebuild, never re-created mid-session, so a fresh prim
+/// never flashes at the origin for a frame.
 struct SlotPrims {
     root:      Prim,
     bg:        Prim,
@@ -71,8 +70,7 @@ struct SlotPrims {
     hovered:   Cell<bool>,
     raise_t:   Cell<f32>,
     /// (index, count, icon, active) last applied; skips the async mesh
-    /// re-upload when a slot's content is unchanged (e.g. reopening the
-    /// same menu).
+    /// re-upload when unchanged.
     key:       Cell<Option<(usize, usize, Icon, bool)>>,
 }
 
@@ -270,8 +268,6 @@ fn icon_mesh(icon: Icon) -> MeshData {
     }
 }
 
-/// Projects the `forward` ray from `origin` onto the wheel plane and returns
-/// the index of the sector the cursor falls in, if any.
 #[must_use]
 pub fn hovered_sector(
     origin: Vec3,

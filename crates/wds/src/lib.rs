@@ -91,9 +91,8 @@ struct ConnectionState {
     /// The authenticated DID of the connection.
     /// Set by the `wds/auth` protocol.
     did:     Did,
-    /// Unix timestamp past which the token no longer authenticates. Without
-    /// one a leaked token is valid for the life of the process, and the table
-    /// only ever grows.
+    /// Unix timestamp past which the token no longer authenticates; prevents
+    /// the session table growing without bound.
     expires: i64,
 }
 

@@ -53,10 +53,9 @@ use crate::{
     },
 };
 
-/// A shader without `#import`s to fall back on before any graph has loaded —
-/// unlit black, so an unresolved material is visibly wrong rather than
-/// silently reusing whatever the pipeline's own default happens to be.
-/// [`ShaderGraphMaterial::specialize`] always overrides it once a graph
+/// Fallback before any graph has loaded: unlit black, so an unresolved
+/// material is visibly wrong rather than silently reusing the pipeline's
+/// default. [`ShaderGraphMaterial::specialize`] overrides it once a graph
 /// loads.
 const FALLBACK_SHADER_HANDLE: Handle<Shader> = uuid_handle!("2f9e6f0a-7b1e-4d3a-9c0a-2f6b1a8e4d70");
 const FALLBACK_SHADER_SOURCE: &str = "\
@@ -102,11 +101,9 @@ impl AttributeParser for ShaderGraphOverridesParser {
 
 /// A prim's compiled-graph slot.
 ///
-/// Unlike `image`/`mesh`, there is no always-present attribute a script must
-/// set to mark "this prim has a shader graph" — [`GraphOverridesAttr`] is
-/// optional, present only when a prim overrides a public input. Tracking
-/// `HsdSlots` directly, the way `prefab` does, is the only trigger that does
-/// not miss the common no-overrides case.
+/// `GraphOverridesAttr` is optional, present only when a prim overrides a
+/// public input, so tracking `HsdSlots` directly is the only trigger that
+/// catches the common no-overrides case.
 #[derive(Component, Debug, Clone)]
 pub struct HsdMaterialGraphSlot(pub Vec<u8>);
 
@@ -134,8 +131,7 @@ pub struct HsdShaderGraphMaterial(pub Handle<ShaderGraphMaterial>);
 /// The graph's own public-input defaults, kept so an override change can be
 /// applied without decoding and re-validating the graph again.
 ///
-/// Overrides are a per-frame channel — the physgun writes one every frame it
-/// drags a prop — while the graph behind them changes almost never, so the
+/// Overrides change per-frame while the graph behind them rarely does, so the
 /// two must not share a rebuild path.
 #[derive(Component, Debug, Clone)]
 pub struct GraphInputDefaults(pub Vec<GraphValue>);
@@ -161,8 +157,8 @@ pub fn apply_graph_overrides(
         let Some(mut asset) = materials.get_mut(&material.0) else {
             continue;
         };
-        // Guarded because `get_mut` marks the asset changed regardless, and a
-        // changed material re-uploads its whole bind group.
+        // Guarded: `get_mut` marks the asset changed regardless, and a changed
+        // material re-uploads its whole bind group.
         if asset.params != params {
             asset.params = params;
         }
@@ -190,9 +186,8 @@ pub fn rebuild_material_graph(
     mut commands: Commands,
 ) {
     for prim in &changed {
-        // The graph may live on another prim: `material:binding` names a
-        // prim, and a prim bound to one carrying a graph renders that graph
-        // with its own overrides.
+        // The graph may live on another prim: `material:binding` names a prim,
+        // and a bound prim renders the target's graph with its own overrides.
         let Ok(&MaterialSource::Graph(source)) = sources.get(prim) else {
             continue;
         };
@@ -307,10 +302,9 @@ pub struct TextureCtx<'w, 's> {
     images:        Query<'w, 's, &'static HsdImage>,
 }
 
-/// Resolves up to [`MAX_TEXTURE_SAMPLES`] fixed texture slots by
-/// relationship, mirroring `MaterialTextureRefs` — no blob fetch of its own,
-/// since a referenced image prim's own `ImageParser`/`rebuild_image`
-/// pipeline already loads it; this just reads the resulting handle.
+/// Resolves up to [`MAX_TEXTURE_SAMPLES`] fixed texture slots by relationship.
+/// The referenced image prim's own pipeline already loads the image; this
+/// reads the resulting handle.
 fn resolve_textures(
     prim: Entity,
     ctx: &TextureCtx,
@@ -369,10 +363,8 @@ fn build_params_from(
     GraphParams { inputs }
 }
 
-/// A graph's compiled shaders. Every prim referencing the same graph reuses
-/// these — the fragment/vertex `Handle<Shader>`s are cached keyed by the
-/// slot's own content hash, free since that hash already uniquely
-/// identifies the compiled graph bytes.
+/// A graph's compiled shaders, cached per document keyed by the slot's content
+/// hash, so every prim referencing the same graph reuses them.
 #[derive(Clone)]
 struct CachedShaders {
     fragment: Handle<Shader>,
@@ -385,7 +377,7 @@ struct CachedShaders {
 /// Distinct compiled graphs one document may hold at once.
 ///
 /// Each is a shader asset and a specialized render pipeline that lives until
-/// the document does, and a graph's hash changes with any edit — so without a
+/// the document does; a graph's hash changes with any edit, so without a
 /// ceiling a document that varies one constant mints them without bound.
 pub const MAX_SHADER_PROGRAMS: usize = 32;
 
@@ -407,9 +399,8 @@ const fn alpha_mode(blend: BlendMode) -> AlphaMode {
     }
 }
 
-/// `None` is wgpu's "cull nothing", which is why this cannot just be
-/// `Option<Face>`'s `None` by accident — [`CullMode::Back`] is the default a
-/// graph gets, and only an explicit [`CullMode::None`] disables culling.
+/// `None` is wgpu's "cull nothing"; [`CullMode::Back`] is the default a graph
+/// gets, and only an explicit [`CullMode::None`] disables culling.
 const fn cull_mode(cull: CullMode) -> Option<Face> {
     match cull {
         CullMode::Back => Some(Face::Back),
@@ -423,11 +414,9 @@ pub struct GraphParams {
     pub inputs: [Vec4; MAX_PUBLIC_INPUTS],
 }
 
-/// Fixed-budget `AsBindGroup`.
-///
-/// One static Rust type with a generous uniform buffer and a fixed
-/// texture-slot array, so a graph cannot express more live state than the
-/// format's own caps already allow.
+/// Fixed-budget `AsBindGroup`: one static Rust type with a generous uniform
+/// buffer and a fixed texture-slot array, so a graph cannot express more live
+/// state than the format's own caps allow.
 #[derive(Asset, AsBindGroup, Clone, TypePath)]
 #[bind_group_data(ShaderGraphMaterialKey)]
 pub struct ShaderGraphMaterial {
@@ -479,20 +468,18 @@ impl Material for ShaderGraphMaterial {
         self.alpha_mode
     }
 
-    /// Every graph shares one `Material` type; what makes each look
-    /// different is which generated `Handle<Shader>`s get bound here, keyed
-    /// off [`ShaderGraphMaterialKey`] so distinct graphs specialize into
-    /// distinct pipelines.
+    /// Every graph shares one `Material` type; what makes each look different
+    /// is which generated `Handle<Shader>`s get bound here, keyed off
+    /// [`ShaderGraphMaterialKey`] so distinct graphs specialize into distinct
+    /// pipelines.
     ///
-    /// The vertex swap is nested inside the fragment guard, not independent
-    /// of it: a depth-only prepass/shadow pass has no fragment stage, and
-    /// also specializes its `Vertex` input without the `normal`/`uv` fields
-    /// our generated vertex shader unconditionally reads (those shader defs
-    /// are only set when something in the pass actually needs them, which a
-    /// depth-only pass doesn't). Swapping the vertex shader there produces
-    /// an invalid-field-accessor shader-compile error, not a silent
-    /// fallback — so displacement is main-pass-only for v1; shadows are
-    /// cast from the undisplaced mesh.
+    /// The vertex swap stays inside the fragment guard: a depth-only prepass
+    /// or shadow pass has no fragment stage and specializes its `Vertex`
+    /// input without the `normal`/`uv` fields the generated vertex shader
+    /// unconditionally reads. Swapping the vertex shader there yields an
+    /// invalid-field-accessor compile error, not a silent fallback, so
+    /// displacement is main-pass-only and shadows cast from the undisplaced
+    /// mesh.
     fn specialize(
         _pipeline: &bevy::pbr::MaterialPipeline,
         descriptor: &mut bevy::render::render_resource::RenderPipelineDescriptor,

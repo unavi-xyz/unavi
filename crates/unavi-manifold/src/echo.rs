@@ -502,8 +502,6 @@ mod tests {
             "echo at {}",
             echoes[0].1
         );
-        // The body's material was swapped for a clipped variant while it
-        // straddled the entry seam; the echo must still get a material.
         assert_eq!(
             echo_material_count(&mut app),
             1,
@@ -558,7 +556,6 @@ mod tests {
         app.update();
         app.update();
 
-        // The straddling body's mtoon node is swapped for a clipped variant.
         assert!(
             app.world()
                 .get::<MeshMaterial3d<ClippedMtoonMaterial>>(child)
@@ -571,7 +568,6 @@ mod tests {
                 .is_none()
         );
 
-        // Its echo clone carries a clipped mtoon material too.
         let cloned = app
             .world_mut()
             .query_filtered::<&EchoNode, With<MeshMaterial3d<ClippedMtoonMaterial>>>()
@@ -596,8 +592,7 @@ mod tests {
             .world_mut()
             .resource_mut::<Assets<StandardMaterial>>()
             .add(StandardMaterial::default());
-        // World pose (0, 0, 0.2) straddles seam A; the local transform under the
-        // offset anchor is the mirror image the buggy path used to echo from.
+        // World pose (0, 0, 0.2) straddles seam A.
         let world = Vec3::new(0.0, 0.0, 0.2);
         let body = app
             .world_mut()
@@ -621,8 +616,7 @@ mod tests {
             .find(|(_, node, _)| node.source == body)
             .map(|(_, _, t)| t.translation())
             .expect("offset body cast no echo");
-        // transfer through seam A lands the echo at world (10, 0, 0.2); the buggy
-        // local-space path would place it near the anchor cell instead.
+        // Transfer through seam A lands the echo at world (10, 0, 0.2).
         assert!(
             echo.distance(Vec3::new(10.0, 0.0, 0.2)) < 1.0e-4,
             "echo at {echo}, expected world-space destination"

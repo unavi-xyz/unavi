@@ -20,12 +20,10 @@ pub struct Limits {
 }
 
 impl Limits {
-    /// Builds a scope's caps by asking for every variant in turn.
-    ///
-    /// The scopes below answer with an exhaustive `match` and no wildcard, so
-    /// a new [`Stock`] or [`Flow`] fails to compile until each scope has said
-    /// what it costs there — an absent entry means unbounded, which is not
-    /// something to arrive at by forgetting.
+    /// Builds a scope's caps by asking for every variant in turn. Callers must
+    /// answer with an exhaustive `match` and no wildcard, so a new [`Stock`] or
+    /// [`Flow`] fails to compile until each scope has said what it costs there;
+    /// an absent entry means unbounded.
     fn new(stock: impl Fn(Stock) -> Option<u64>, flow: impl Fn(Flow) -> Option<FlowLimit>) -> Self {
         Self {
             stock: Stock::ALL

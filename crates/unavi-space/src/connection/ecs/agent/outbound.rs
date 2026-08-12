@@ -82,10 +82,9 @@ pub fn send_agent_pose(
         return;
     };
 
-    // The active space is the agent's space and sits at the world origin, so the
-    // avatar's world transform is also its pose in that space's local frame.
-    // Movement is driven by the body rigid-body rather than the `LocalAgent`
-    // entity, hence reading the avatar's global transform.
+    // The active space sits at the world origin, so the avatar's world transform
+    // is its pose in the space's local frame. The body rigid-body, not the
+    // `LocalAgent`, drives movement, hence the avatar's global transform.
     let Some(root) = globals
         .get(avatar.0)
         .ok()
@@ -173,7 +172,6 @@ pub fn set_agent_tickrates(
         return;
     };
 
-    // Measure distance to each peer.
     for (target, mut tickrate) in streams {
         let Some((_, transform)) = peers.iter().find(|(p, _)| p.0.id == target.0) else {
             continue;

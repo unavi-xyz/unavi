@@ -56,13 +56,11 @@ fn expand_ifdefs(source: &str, defined: bool) -> String {
     out
 }
 
-/// Wraps a generated surface body in a bare WGSL module that declares
-/// everything the body can reference without any Bevy preprocessor syntax,
-/// so plain `naga` can parse it — a codegen bug that emits malformed WGSL
-/// fails a `cargo test`, not a manual visual check. Parses both branches of
-/// every `#ifdef`: a mesh carrying every optional attribute and one carrying
-/// none, since `VertexOutput.uv`/`.color` do not exist without their shader
-/// defs and an HSD prim supplies mesh attributes individually.
+/// Wraps a generated surface body in a bare WGSL module with no Bevy
+/// preprocessor syntax, so plain `naga` can parse it and malformed WGSL fails
+/// `cargo test`. Parses both branches of every `#ifdef`: `VertexOutput.uv` /
+/// `.color` do not exist without their shader defs, and an HSD prim supplies
+/// mesh attributes individually.
 fn assert_surface_valid(body: &str, out_expr: &str) {
     for defined in [true, false] {
         let module = include_str!("harness/surface.wgsl")
@@ -83,10 +81,9 @@ fn assert_displacement_valid(body: &str) {
     for defined in [true, false] {
         let module = include_str!("harness/displacement.wgsl")
             .replace("//#BODY", &expand_ifdefs(body, defined));
-        // `vertex.position`/`vertex.normal` in the generated body assume a
-        // struct, not the placeholder `vec3<f32>` above; rewrite the two
-        // field accesses codegen can emit into the placeholder itself so
-        // this harness stays a single flat local instead of a full `Vertex`
+        // The generated body reads `vertex.position`/`vertex.normal` fields,
+        // but the placeholder is a bare `vec3<f32>`; rewrite those accesses so
+        // the harness stays a single flat local instead of a full `Vertex`
         // redeclaration.
         let module = module
             .replace("vertex.position", "vertex")
@@ -189,8 +186,7 @@ fn every_surface_node_kind_generates_valid_wgsl() {
 }
 
 /// `VertexOutput.uv` only exists under `VERTEX_UVS_A`, and an HSD prim need
-/// not supply `UV_0` — so a `Uv` node must degrade rather than fail to
-/// compile. [`assert_surface_valid`] parses both branches.
+/// not supply `UV_0`, so a `Uv` node must degrade rather than fail to compile.
 #[test]
 fn optional_mesh_attributes_are_guarded_by_their_shader_defs() {
     let graph = graph_with_output(vec![Node::Uv, Node::VertexColor], unlit(node(1)));
@@ -271,8 +267,6 @@ fn displacement_body_generates_valid_wgsl() {
     assert_displacement_valid(&body);
 }
 
-/// The oscillator a pulsing/swaying displacement effect needs — see the
-/// `bevy-hsd` example, which uses exactly this shape to animate a sphere.
 #[test]
 fn a_sin_driven_displacement_body_generates_valid_wgsl() {
     let graph = displaced(
@@ -349,8 +343,8 @@ fn a_world_space_sag_body_generates_valid_wgsl() {
     assert_displacement_valid(&body);
 }
 
-/// World and local offsets compose rather than exclude each other: the beam
-/// sags in world space while wavering in its own local space.
+/// World and local offsets compose: the beam sags in world space while
+/// wavering in its own local space.
 #[test]
 fn vertex_shader_applies_the_world_offset_after_the_mesh_transform() {
     let graph = ShaderGraph {

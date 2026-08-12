@@ -1,14 +1,12 @@
 //! Entry-level document access.
 //!
-//! Every key is its own entry rather than a whole document under one key, so
-//! iroh-docs' per-key last-writer-wins merge resolves concurrent writes
-//! between peers — a whole-document snapshot under one key would instead
-//! have one peer's checkpoint overwrite the other's scene outright.
+//! Every key is its own entry, so iroh-docs' per-key last-writer-wins merge
+//! resolves concurrent writes between peers; a whole-document snapshot under
+//! one key would let one peer's checkpoint overwrite another's.
 //!
-//! Nothing here interprets a payload, and nothing tracks dependencies: an
-//! entry's value *is* a blob hash, so a replicating host fetches, tags and
-//! meters every byte without reading any of it. There is no `deps/`-style
-//! dependency-tracking convention.
+//! An entry's value is always a blob hash, so a replicating host fetches, tags
+//! and meters every byte without reading any of it. No `deps/`-style
+//! dependency-tracking convention exists.
 
 use std::time::Duration;
 
@@ -49,11 +47,10 @@ pub enum Write {
     Hash { key: String, hash: Hash, size: u64 },
     /// Writes an empty value at the key.
     ///
-    /// This is the only removal that crosses authors: `del` sweeps the
-    /// caller's own entries and nobody else's, but the empty entry it leaves
-    /// wins by timestamp and is filtered by `get_many`, so every peer reads
-    /// absence. Passing a bare prefix instead of a full key is the same
-    /// operation, and is how one write sweeps a whole prim.
+    /// The only removal that crosses authors: `del` sweeps the caller's own
+    /// entries only, while the empty entry wins by timestamp and is filtered
+    /// by `get_many`, so every peer reads absence. A bare prefix is the same
+    /// operation, sweeping a whole prim.
     Remove { key: String },
 }
 
@@ -66,8 +63,7 @@ pub enum DocChange {
     SyncFinished,
 }
 
-/// Creates a namespace, returning its id. The document starts empty; the
-/// caller writes `meta/` and its prims.
+/// Creates a namespace, returning its id. The document starts empty.
 pub async fn create(docs: &Docs) -> anyhow::Result<NamespaceId> {
     Ok(docs.api().create().await?.id())
 }
@@ -103,8 +99,8 @@ pub async fn value(blobs: &Blobs, entry: &DocEntry) -> Option<Bytes> {
     blobs.get_bytes(entry.hash).await.ok()
 }
 
-/// Applies writes in order. Order is load-bearing for deletion: a `Sweep` at
-/// `p/<prim>/` would eat a tombstone written at `p/<prim>/parent/` before it.
+/// Applies writes in order. Order is load-bearing for deletion: a prefix
+/// `Remove` eats a tombstone written beneath it first.
 pub async fn apply(
     doc: &Doc,
     blobs: &Blobs,
@@ -129,9 +125,8 @@ pub async fn apply(
     Ok(())
 }
 
-/// Streams live edits. Entries arrive unordered — a child may be seen before
-/// its parent — which is why the consumer holds orphans rather than reparenting
-/// them.
+/// Streams live edits. Entries arrive unordered: a child may be seen before
+/// its parent.
 pub async fn subscribe(
     doc: &Doc,
 ) -> anyhow::Result<impl Stream<Item = DocChange> + Send + Unpin + 'static> {

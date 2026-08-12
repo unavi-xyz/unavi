@@ -10,14 +10,12 @@ use crate::attributes::{
 
 /// A string drawn in the world.
 ///
-/// A property rather than a slot: the value is a short string in the postcard
-/// payload, so a label costs a handful of bytes to sync instead of a mesh
-/// upload. That is the whole reason text is rendered host-side rather than
-/// baked into glyph meshes by the guest.
+/// A property rather than a slot: a label costs a handful of bytes to sync
+/// instead of a mesh upload.
 ///
-/// The variants below are strings, following [`super::material::MaterialAttr`]:
-/// an alignment a newer client understands and this one does not still stores,
-/// syncs and re-serves rather than failing to decode.
+/// The string fields follow [`super::material::MaterialAttr`]: a value a
+/// newer client understands and this one does not still stores, syncs and
+/// re-serves rather than failing to decode.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct TextAttr {
     pub value:         String,
@@ -38,7 +36,7 @@ pub struct TextAttr {
     /// to. Past roughly 0.4 the field runs out of gradient.
     pub outline_width: Option<f64>,
     pub emissive:      Option<f64>,
-    /// `none` | `yaw` | `full`. A label that must stay legible wants `yaw`.
+    /// `none` | `yaw` | `full`.
     pub billboard:     Option<String>,
 }
 

@@ -1,8 +1,7 @@
 //! `.hsdz`: a compiled document as one self-contained blob.
 //!
-//! Every entry's value is its raw bytes; there is no bloom as a separate
-//! store to reconcile and no published set to preserve during replication. A
-//! package holds only what a document's entries hold.
+//! A package is only the document's entries — no bloom store to reconcile
+//! during replication, no published set to preserve.
 
 use std::collections::BTreeMap;
 

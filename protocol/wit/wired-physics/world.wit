@@ -33,9 +33,8 @@ interface api {
   set-linear-velocity:  func(prim: borrow<prim>, v: vec3) -> result<_, error>;
   set-angular-velocity: func(prim: borrow<prim>, v: vec3) -> result<_, error>;
 
-  // Sets a persistent world-space force the solver applies every step until
-  // changed; a zero vector clears it. Respects the body's real mass (heavier
-  // bodies accelerate less). Authority-gated like the velocity writes.
+  // Persistent world-space force the solver applies every step until changed;
+  // a zero vector clears it. Authority-gated like the velocity writes.
   apply-force: func(prim: borrow<prim>, force: vec3) -> result<_, error>;
 
   claim-authority:   func(doc: document-id) -> result<_, error>;

@@ -95,7 +95,7 @@ pub struct PrimRes {
     pub state:    Arc<Mutex<SceneState>>,
     pub doc_id:   DocId,
     pub id:       PrimId,
-    /// Proxy prims (e.g. agent bone nodes) are read-only from scripts.
+    /// Proxy prims are read-only from scripts.
     pub is_proxy: bool,
 }
 
@@ -107,8 +107,7 @@ pub struct PrimColor {
     pub a: f32,
 }
 
-/// Runtime mirror of the graph format's `GraphValue`, kept separate so the
-/// two WIT backends share one conversion rather than each writing their own.
+/// Runtime mirror of the graph format's `GraphValue`.
 #[derive(Clone, Copy)]
 pub enum PrimGraphValue {
     Float(f32),
@@ -260,9 +259,8 @@ async fn get_prim(api: &Api, rep: u32) -> anyhow::Result<PrimRes> {
 }
 
 impl PrimRes {
-    /// Writes are synchronous and land in state only. Nothing here touches
-    /// storage, which is what makes a spawn/despawn loop free and keeps the
-    /// host off `AsyncCommands` on the hot path.
+    /// Writes are synchronous and land in in-memory state only; nothing here
+    /// touches storage.
     fn with<T>(&self, f: impl FnOnce(&mut SceneState) -> T) -> anyhow::Result<T> {
         let mut state = self
             .state
@@ -577,8 +575,8 @@ pub async fn set_mesh(api: &Api, rep: u32, value: Option<PrimMesh>) -> anyhow::R
     }))
 }
 
-/// Writes a buffer to the prim's slot entry. Attribute and buffers are
-/// separate entries, so writing one never rewrites the other.
+/// Writes a buffer to the prim's slot entry; attribute and buffers are
+/// separate entries.
 fn set_buffer(api: &Api, prim: &PrimRes, slot: &str, bytes: Option<Vec<u8>>) -> anyhow::Result<()> {
     if bytes.is_some() {
         api.quota.spend(Flow::BlobUpload, 1.0)?;
@@ -586,9 +584,8 @@ fn set_buffer(api: &Api, prim: &PrimRes, slot: &str, bytes: Option<Vec<u8>>) -> 
     prim.set_slot(slot, bytes)
 }
 
-/// The attribute and its buffers are separate entries, and a prim renders only
-/// when it has both. Writing a buffer implies the attribute, so a caller that
-/// wants the default topology never has to call `set-mesh` first.
+/// A prim renders only with both its attribute and buffers; writing a buffer
+/// implies the attribute with default topology.
 fn ensure_mesh_attr(prim: &PrimRes) -> anyhow::Result<()> {
     if prim.read_attr::<MeshAttr>()?.is_some() {
         return Ok(());
@@ -721,11 +718,8 @@ pub async fn graph_overrides(api: &Api, rep: u32) -> anyhow::Result<Vec<(u16, Pr
         .unwrap_or_default())
 }
 
-/// Clearing every override removes the attribute rather than writing an
-/// empty map.
-///
-/// A prim using the graph's own defaults then carries no property at all,
-/// which is the same shape `hsd-cli` compiles to.
+/// Clearing every override removes the attribute rather than writing an empty
+/// map.
 pub async fn set_graph_overrides(
     api: &Api,
     rep: u32,

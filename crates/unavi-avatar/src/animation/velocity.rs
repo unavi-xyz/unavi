@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-/// Calculates the moving average of the velocity, via changes in [`Transform`].
+/// Moving average of velocity, derived from changes in [`Transform`].
 #[derive(Component)]
 pub struct AverageVelocity {
     pub alpha:            f32,

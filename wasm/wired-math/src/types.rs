@@ -49,8 +49,7 @@ impl Quat {
         Self::from(glam::Quat::from(self).normalize())
     }
 
-    /// Decomposes into a rotation axis and angle in radians, the inverse of
-    /// the axis-angle construction used elsewhere to build rotations by hand.
+    /// Decomposes into a rotation axis and angle in radians.
     #[must_use]
     pub fn to_axis_angle(self) -> (Vec3, f32) {
         glam::Quat::from(self).to_axis_angle()

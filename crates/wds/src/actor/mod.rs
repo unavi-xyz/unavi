@@ -35,10 +35,9 @@ mod auth;
 
 /// Authenticated actor for WDS control-plane operations.
 ///
-/// An actor targets a specific WDS host and performs authenticated operations.
-/// The same [`Identity`] can be shared across multiple actors targeting
-/// different hosts. Document reads/writes happen directly over iroh-docs; the
-/// actor only carries the control plane (hosting, pinning, uploads, quota).
+/// The same [`Identity`] can back multiple actors targeting different hosts.
+/// Document reads/writes happen directly over iroh-docs; the actor only
+/// carries the control plane (hosting, pinning, uploads, quota).
 #[derive(Clone)]
 pub struct Actor {
     identity:       Arc<Identity>,

@@ -5,8 +5,8 @@ use serde::{
     Serialize,
 };
 
-/// An axis-aligned box. Two of these describe a glyph: one in em units on the
-/// baseline, one in texture coordinates.
+/// An axis-aligned box; a glyph is a pair, one in em units and one in texture
+/// coordinates.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Rect {
     pub min: [f32; 2],
@@ -51,8 +51,8 @@ impl Rect {
 /// One glyph's placement, in em units so a caller picks the size.
 ///
 /// `plane` sits on the baseline with the pen at the origin, y up. `uv.min` is
-/// the *top-left* texel, since the atlas is stored in image order while the
-/// plane is in font order — the mesh builder is where the two meet.
+/// the top-left texel, since the atlas is stored in image order while the
+/// plane is in font order.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Glyph {
     pub plane:   Rect,
@@ -82,9 +82,8 @@ impl VerticalMetrics {
 pub struct Atlas {
     pub width:    u32,
     pub height:   u32,
-    /// Texels the signed distance spans. The shader divides it by the texture
-    /// dimensions to size its screen-space antialiasing, so a field baked at
-    /// one range and drawn at another is soft or aliased.
+    /// Texels the signed distance spans. Baked and drawn ranges must match, or
+    /// the edge is soft or aliased.
     pub range:    f32,
     pub vertical: VerticalMetrics,
     pub glyphs:   BTreeMap<char, Glyph>,
@@ -117,12 +116,10 @@ impl Atlas {
     }
 }
 
-/// What the shipped Latin atlas covers: printable ASCII, the Latin-1 letters,
-/// and the punctuation a UI actually reaches for.
+/// Printable ASCII, the Latin-1 letters, and the punctuation a UI reaches for.
 ///
-/// Wider coverage is a *separate* atlas rather than a bigger one — a field
-/// that holds CJK at a legible texel density is far too large to embed, and
-/// nothing here forecloses loading a second one beside this.
+/// Wider coverage is a separate atlas: CJK at a legible texel density is too
+/// large to embed.
 pub const LATIN: &str = concat!(
     " !\"#$%&'()*+,-./0123456789:;<=>?@",
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`",

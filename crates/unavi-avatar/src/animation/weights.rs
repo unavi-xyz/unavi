@@ -30,18 +30,15 @@ const WALK_START: f32 = DEFAULT_WALK_SPEED / 4.0;
 const SPRINT_START: f32 = DEFAULT_WALK_SPEED * ((DEFAULT_SPRINT_MULTI - 1.0) * 0.5 + 1.0);
 const SPRINT_END: f32 = DEFAULT_WALK_SPEED * DEFAULT_SPRINT_MULTI;
 
-/// Analyzed motion state from velocity.
 #[derive(Debug, Clone, Copy, Default)]
 struct MotionState {
     /// Signed forward velocity (positive = forward, negative = backward).
     forward_speed: f32,
     /// Signed strafe velocity (positive = left, negative = right).
     strafe_speed:  f32,
-    /// Whether agent is grounded.
     is_grounded:   bool,
 }
 
-/// Calculated animation weights for locomotion.
 #[derive(Debug, Clone, Copy, Default)]
 struct LocomotionWeights {
     idle:       f32,
@@ -52,7 +49,6 @@ struct LocomotionWeights {
     falling:    f32,
 }
 
-/// Analyzes velocity and transform to produce motion state.
 fn analyze_motion(velocity: Vec3, transform: &Transform) -> MotionState {
     let dir_forward = transform.rotation.mul_vec3(Vec3::NEG_Z);
     let dir_left = transform.rotation.mul_vec3(Vec3::NEG_X);
@@ -68,12 +64,10 @@ fn inverse_lerp(a: f32, b: f32, v: f32) -> f32 {
     ((v - a) / (b - a)).clamp(0.0, 1.0)
 }
 
-/// Calculates locomotion animation weights from motion state.
-/// Weights are normalized to sum to 1.0.
+/// Locomotion weights are normalized to sum to 1.0.
 fn calculate_locomotion_weights(motion: &MotionState) -> LocomotionWeights {
     let mut weights = LocomotionWeights::default();
 
-    // Falling overrides locomotion.
     if !motion.is_grounded {
         weights.falling = 1.0;
         return weights;
@@ -83,13 +77,11 @@ fn calculate_locomotion_weights(motion: &MotionState) -> LocomotionWeights {
     let strafe = motion.strafe_speed;
     let speed = forward.hypot(strafe);
 
-    // Below threshold = idle.
     if speed < WALK_START {
         weights.idle = 1.0;
         return weights;
     }
 
-    // Directional blend - bias toward forward, strafe is subtle accent.
     let forward_abs = forward.abs();
     let strafe_abs = strafe.abs();
     let total = forward_abs + strafe_abs;
@@ -98,11 +90,9 @@ fn calculate_locomotion_weights(motion: &MotionState) -> LocomotionWeights {
     let strafe_ratio = raw_strafe * raw_strafe; // Square to reduce influence.
     let forward_ratio = 1.0 - strafe_ratio;
 
-    // Speed determines walk vs sprint blend.
     let sprint_blend = inverse_lerp(SPRINT_START, SPRINT_END, speed);
     let walk_blend = 1.0 - sprint_blend;
 
-    // Apply directional ratios.
     weights.walk = forward_ratio * walk_blend;
     weights.sprint = forward_ratio * sprint_blend;
 
@@ -201,7 +191,6 @@ pub fn play_avatar_animations(
     avatars: Query<(&AvatarAnimationNodes, &AverageVelocity), With<Avatar>>,
     mut animation_players: Query<(&mut AnimationWeights, &mut AnimationPlayer, &ChildOf)>,
 ) {
-    // Exponential blend for snappy transitions.
     let alpha = 1.0 - (-time.delta_secs() / BLEND_HALFLIFE_SECS).exp();
 
     for (mut weights, mut player, parent) in &mut animation_players {

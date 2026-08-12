@@ -5,10 +5,8 @@ use std::path::{
 
 use anyhow::Context;
 
-/// Copy bundled assets from the relative asset directory to state location.
-///
-/// In dev: copies from `CARGO_MANIFEST_DIR/assets`
-/// In release: copies from `exe_dir/assets`
+/// Copies bundled assets to the state location. In dev the source is
+/// `CARGO_MANIFEST_DIR/assets`; in release, `exe_dir/assets`.
 pub fn copy_assets_to_dirs() -> anyhow::Result<()> {
     let source_dir = get_relative_assets_dir()?;
 
@@ -38,7 +36,6 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> anyhow::Result<()> {
         if path.is_dir() {
             copy_dir_recursive(&path, &dest_path)?;
         } else {
-            // only copy if dest doesn't exist or source is newer
             let should_copy = if dest_path.exists() {
                 let src_modified = std::fs::metadata(&path)
                     .context("get source metadata")?
@@ -63,12 +60,10 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> anyhow::Result<()> {
 }
 
 fn get_relative_assets_dir() -> anyhow::Result<PathBuf> {
-    // Development: use cargo manifest dir if available
     if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
         return Ok(PathBuf::from(manifest_dir).join("assets"));
     }
 
-    // Release: use exe directory
     let exe = std::env::current_exe().context("get current exe")?;
     let exe_dir = exe
         .parent()

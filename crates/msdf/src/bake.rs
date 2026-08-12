@@ -29,11 +29,8 @@ use crate::atlas::{
     VerticalMetrics,
 };
 
-/// Noto Sans Regular, under the SIL Open Font License 1.1.
-///
-/// The licence text travels with the `notosans` crate. Chosen so the
-/// wider-coverage atlases the shell will eventually want — Noto Sans JP, SC,
-/// KR — stay one visual family.
+/// Noto Sans Regular, SIL Open Font License 1.1; the licence text travels with
+/// the `notosans` crate.
 pub const DEFAULT_FONT: &[u8] = notosans::REGULAR_TTF;
 
 /// Untouched texels between neighbours, so a bilinear fetch at the edge of one
@@ -79,12 +76,11 @@ pub enum BakeError {
 pub struct Baked {
     pub atlas:   Atlas,
     pub image:   RgbaImage,
-    /// Characters the face has no glyph for. Named rather than counted, since
-    /// the answer to a missing one is to change the charset or the font.
+    /// Characters the face has no glyph for; the answer to a missing one is to
+    /// change the charset or the font.
     pub missing: Vec<char>,
 }
 
-/// One glyph's field, still in its own bitmap and not yet placed.
 struct Rendered {
     ch:      char,
     plane:   Rect,
@@ -275,14 +271,8 @@ fn pack(rendered: &[Rendered]) -> Result<(RgbaImage, Vec<Rect>), BakeError> {
     }
 }
 
-/// Pair adjustments, measured by shaping each pair and comparing it against
-/// the two glyphs set apart.
-///
-/// Reading a table directly would find only the legacy `kern` one, which most
-/// modern faces — Noto Sans among them — no longer ship; their pair
-/// positioning lives in GPOS, behind coverage and class tables. Asking a
-/// shaper what a pair actually measures gets both, and gets class-based
-/// kerning without reimplementing it.
+/// Pair adjustments, measured by shaping each pair. A shaper, not the legacy
+/// `kern` table: modern faces keep pair positioning in GPOS.
 fn kerning(font: &[u8], charset: &[char], upem: f32) -> BTreeMap<(char, char), f32> {
     let Some(face) = rustybuzz::Face::from_slice(font, 0) else {
         return BTreeMap::new();

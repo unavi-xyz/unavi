@@ -33,12 +33,12 @@ use crate::{
 /// before the handshake lapses and the portal stays merely space-aimed.
 const WATCH_TTL_SECS: f32 = 60.0;
 
-/// Cap on buffered notifications per document, so a target whose script never
-/// listens on the portal channels cannot accumulate payloads without bound.
+/// Cap on buffered notifications per document; prevents unbounded
+/// accumulation when the target never listens on the portal channels.
 const PENDING_CAP: usize = 64;
 
-/// A live handshake armed by `open`: transient by design, so a lapsed attempt
-/// despawns without leaving any trace in the synced document state.
+/// A live handshake armed by `open`; a lapsed attempt despawns without leaving
+/// trace in the synced document state.
 #[derive(Component)]
 pub struct PortalWatch {
     source_space: DocId,
@@ -121,8 +121,6 @@ fn flush_backlink(
     }
 }
 
-/// Drives every armed watch each frame: expiring the stale, confirming the
-/// answered, and announcing the rest into their target space.
 pub fn service_portal_watches(
     time: Res<Time>,
     mut watches: Query<(Entity, &mut PortalWatch)>,

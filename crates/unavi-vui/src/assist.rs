@@ -6,10 +6,6 @@ use crate::{
 };
 
 /// The offset an attended mote takes toward the pointer.
-///
-/// Assistance and feedback at once: it closes part of the aiming gap, and
-/// because only the single attended mote leans, leaning is what says "this is
-/// the one you will get" — no cursor, no highlight, no chrome.
 #[must_use]
 pub fn lean(slot: Vec3, pointer: Vec3, attention: Attention, tuning: &Tuning) -> Vec3 {
     if !attention.is_active() || tuning.lean_range <= f32::EPSILON {
@@ -25,7 +21,7 @@ pub fn lean(slot: Vec3, pointer: Vec3, attention: Attention, tuning: &Tuning) ->
 }
 
 /// Eases `current` toward `target` at `speed` per second, framerate
-/// independent so the feel does not change with load.
+/// independent.
 #[must_use]
 pub fn approach(current: Vec3, target: Vec3, speed: f32, delta: f32) -> Vec3 {
     current.lerp(target, (speed * delta).clamp(0.0, 1.0))

@@ -45,9 +45,8 @@ fn test_xform_lifecycle(mut ctx: TestContext) {
     ctx.remove_attr::<XformAttr>(root);
     ctx.app.update();
 
-    // `Prim` requires `Transform`, so removing the xform attr resets the prim to
-    // identity rather than stripping the component (which would break transform
-    // propagation to any children).
+    // `Prim` requires `Transform`, so removal resets to identity rather than
+    // stripping the component, which would break propagation to any children.
     let world = ctx.app.world_mut();
     let res = query.query(world).into_iter().collect::<Vec<_>>();
     assert_eq!(res.len(), 1);

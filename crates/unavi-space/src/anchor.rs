@@ -202,7 +202,6 @@ pub fn recenter_active_space(
     }
     active.0 = Some(space);
 
-    // Shift everything so the newly active space lands at the origin.
     let delta = -offset;
 
     let rides_ancestor_shift = |mut entity: Entity| {
@@ -568,7 +567,6 @@ mod tests {
 
         assert_eq!(app.world().resource::<ActiveSpace>().0, Some(b));
         let read = |e| app.world().get::<Position>(e).expect("position").0;
-        // Parent body shifts its local; nested body rides it (local unchanged).
         assert!((translation(&app, parent_body) - (parent_local - b_pos)).length() < 1.0e-4);
         assert!((translation(&app, nested) - nested_local).length() < 1.0e-4);
         // Positions are global, so both shift uniformly.

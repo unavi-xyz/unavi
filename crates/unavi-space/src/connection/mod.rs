@@ -103,8 +103,8 @@ pub fn connect_to_peer(
         .map(|p| p.0.clone())
         .expect("peer");
 
-    // Always dial; [`claim_connection`] resolves simultaneous opens. Dialing one
-    // side only would break one-directional discovery.
+    // Dialing one side only would break one-directional discovery;
+    // [`claim_connection`] resolves simultaneous opens.
     spawn_async_task(async move {
         outbound::try_open_connection(endpoint, peer).await;
     });

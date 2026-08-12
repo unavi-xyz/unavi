@@ -33,8 +33,8 @@ mod inbound;
 mod outbound;
 mod thread;
 
-/// The space we currently occupy, mirrored from [`crate::anchor::ActiveSpace`]
-/// for the async gossip tasks. Presence broadcasts only to this space.
+/// The occupied space, mirrored from [`crate::anchor::ActiveSpace`] for the
+/// async gossip tasks. Presence broadcasts only to this space.
 static ACTIVE_SPACE: RwLock<Option<NamespaceId>> = RwLock::new(None);
 
 /// Woken when the active space changes, so the entered space broadcasts
@@ -99,10 +99,8 @@ pub fn spawn_gossip(trigger: On<Add, IrohEndpoint>, mut commands: Commands) {
 /// Adopts the data store's gossip rather than spawning one.
 ///
 /// `iroh_gossip::ALPN` can be accepted once per router. A second instance
-/// registering it wins every inbound connection, so the loser dials out
-/// normally, has its messages delivered to the winner, and never learns a
-/// topic it was not told about — space presence is sent and silently dropped,
-/// while iroh-docs, sharing the winner, works throughout.
+/// would capture inbound connections, silently dropping the loser's presence
+/// broadcasts while iroh-docs keeps working on the winner.
 pub fn adopt_gossip(
     endpoints: Query<Entity, (With<IrohEndpoint>, Without<IrohGossip>)>,
     stores: Query<&LocalGossip>,
@@ -120,10 +118,8 @@ pub fn adopt_gossip(
 /// Subscribes every space that is not subscribed yet.
 ///
 /// A pass rather than an observer: gossip is built asynchronously, so a space
-/// entered before it is ready — anything spawned at startup — finds no sender
-/// and would be dropped by a hook that fires once. An unsubscribed space
-/// broadcasts nothing and hears nothing, which looks from the outside exactly
-/// like a space with no one in it.
+/// entered before it is ready would be dropped by a hook that fires once. An
+/// unsubscribed space broadcasts nothing and hears nothing.
 pub fn join_space_topics(
     spaces: Query<(Entity, &Space), Without<SpaceGossipCancel>>,
     sender: Query<&GossipSender>,

@@ -4,15 +4,12 @@ use wired_math::types::Vec2;
 
 use crate::tuning::Tuning;
 
-/// How an orbit's sibling slots are arranged. Counts are plain `usize` and
-/// meant to be configured per orbit; the doctrine's preferred counts
-/// (3/4/5/7/12) live in defaults, not in the type.
+/// How an orbit's sibling slots are arranged.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LayoutKind {
     /// `points` slots evenly spaced, slot 0 at the top, advancing clockwise.
     Star { points: usize },
-    /// [`LayoutKind::Star`] plus a centre slot at index 0, selected by a null
-    /// deflection and so the most reliable target in an orbit.
+    /// [`LayoutKind::Star`] plus a centre slot at index 0.
     Centred { points: usize },
     /// A vertical run, centred on the anchor.
     Column { count: usize, pitch: f32 },
@@ -90,7 +87,7 @@ impl Layout {
     /// The slot a local-plane point falls in.
     ///
     /// `current` is the slot already holding attention; its wedge is widened
-    /// by [`Tuning::stick`] so a sweep does not flicker between neighbours.
+    /// by [`Tuning::stick`].
     #[must_use]
     pub fn resolve(&self, local: Vec2, current: Option<usize>, tuning: &Tuning) -> Option<usize> {
         if self.is_empty() {

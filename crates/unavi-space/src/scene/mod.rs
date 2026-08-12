@@ -58,11 +58,9 @@ pub fn spawn_space_scene(
         return;
     };
 
-    // A space built locally, such as the home document, is already realized on
-    // this entity. Reading it back would replace its live state with a second
-    // copy, duplicating every prim and re-running every script. It still has to
-    // be served: presence is announced for it, so peers arrive expecting an
-    // answer.
+    // A locally built space is already realized on this entity; reading it back
+    // would duplicate every prim and re-run every script. It still has to be
+    // served: presence is announced for it, so peers arrive expecting an answer.
     if instanced == Some(ns) {
         let docs = docs.0.clone();
         spawn_async_task(async move {

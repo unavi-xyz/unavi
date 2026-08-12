@@ -38,10 +38,10 @@ pub async fn handle_gossip_inbound(
             Event::NeighborUp(n) => {
                 info!("+neighbor: {n}");
                 neighbors.fetch_add(1, Ordering::Relaxed);
-                // Prompt an immediate presence broadcast so the new neighbor
-                // discovers us without waiting a full interval. `notify_one`
-                // stores a permit so the wake isn't lost if the outbound task
-                // is momentarily not parked.
+                // Prompt an immediate presence broadcast so the new neighbor is
+                // discovered without waiting a full interval. `notify_one`
+                // stores a permit, so the wake is not lost while the outbound
+                // task is parked.
                 wake.notify_one();
             }
             Event::NeighborDown(n) => {
@@ -71,7 +71,6 @@ pub async fn handle_gossip_inbound(
                     }
                 };
 
-                // Verify signature.
                 let Ok(sig_bytes) = signed_bytes.signature().try_into() else {
                     warn!(
                         "Invalid signature length: {}",
@@ -88,7 +87,6 @@ pub async fn handle_gossip_inbound(
 
                 // TODO create a "disconnect" message variant to clear presence
 
-                // Handle message.
                 match broadcast.msg {
                     SpaceMessage::Presence(peer) => {
                         if peer.id != broadcast.sender {

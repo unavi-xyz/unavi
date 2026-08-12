@@ -23,15 +23,14 @@ pub fn unit_range(atlas: &Atlas) -> Vec2 {
 pub struct MsdfSettings {
     pub color:         Vec4,
     pub outline_color: Vec4,
-    /// The baked distance range over the field's dimensions. The shader needs
-    /// it to convert a distance into screen pixels, which is the whole of how
-    /// one field stays sharp at 0.4 m and at 20 m.
+    /// The baked distance range over the field's dimensions; the shader needs
+    /// it to convert a distance into screen pixels.
     pub unit_range:    Vec2,
     /// How far past the glyph edge the outline reaches, as a fraction of the
     /// distance range. Zero draws none.
     pub outline_width: f32,
-    /// Scales the colour past 1.0 so bloom picks the text up. Text is drawn
-    /// unlit — a placard is not a surface in the room's lighting.
+    /// Scales the colour past 1.0 so bloom picks the text up; text is drawn
+    /// unlit.
     pub emissive:      f32,
 }
 
@@ -53,8 +52,7 @@ impl Material for MsdfMaterial {
         AlphaMode::Blend
     }
 
-    /// Text mounted flush against the surface it labels is exactly the case
-    /// z-fighting is worst in, and the surface always loses rather than
+    /// Flush text is where z-fighting is worst; the surface loses rather than
     /// flickering.
     fn depth_bias(&self) -> f32 {
         1.0

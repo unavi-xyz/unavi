@@ -18,8 +18,6 @@ use crate::{
 pub const FAST_GC_THRESHOLD: Duration = Duration::from_mins(5);
 
 impl StoreContext {
-    /// Runs garbage collection on the data store.
-    ///
     /// Content referenced by hosted docs is protected by iroh-docs' own store
     /// tags; this pass only reclaims explicit blob pins that have expired.
     pub async fn run_gc(&self) -> anyhow::Result<()> {

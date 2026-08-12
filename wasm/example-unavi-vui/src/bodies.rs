@@ -1,5 +1,4 @@
-//! Prim pool. The only thing this file decides is how a [`SlotView`] becomes
-//! prims; every value it reads was computed by `unavi-vui`.
+//! Transcribes [`SlotView`]s computed by `unavi-vui` into prims.
 
 use std::cell::{
     Cell,
@@ -53,9 +52,7 @@ use crate::{
     },
 };
 
-/// Contents sit within the body; depth marks ride outside it. That placement
-/// is the whole of the down-versus-up distinction, so the two radii must stay
-/// clearly apart.
+/// Contents sit within the body; depth marks ride outside it.
 const INSIDE_ORBIT: f32 = 0.52;
 const AROUND_ORBIT: f32 = 1.35;
 const PIP_RADIUS: f32 = 0.13;
@@ -63,12 +60,12 @@ const MARK_RADIUS: f32 = 0.09;
 const OVERFLOW_RADIUS: f32 = 0.11;
 const SPHERE_RINGS: usize = 10;
 const SPHERE_SEGMENTS: usize = 16;
-/// Thin enough that the reticle resting on the field's face reads as being at
-/// the dial's own depth, thick enough to be a solid raycast target.
+/// Thin enough to read as the dial's own face, thick enough to be a solid
+/// raycast target.
 const FIELD_THICKNESS: f32 = 0.01;
 
-/// What a slot's pip meshes were last built for. Rebuilding costs blob
-/// uploads, so nothing is re-uploaded while this is unchanged.
+/// Last pip-mesh inputs. Rebuilding costs blob uploads, so nothing is
+/// re-uploaded while this is unchanged.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct PipShape {
     count:     usize,
@@ -80,8 +77,7 @@ struct PipShape {
 struct SlotPrims {
     root:     Prim,
     body:     Prim,
-    /// Container children, drawn see-through — the same rule their own motes
-    /// follow one level down.
+    /// Container children, drawn see-through.
     nested:   Prim,
     /// Leaf children, or depth marks, drawn solid.
     plain:    Prim,
@@ -90,26 +86,19 @@ struct SlotPrims {
     label:    Prim,
     style:    Cell<Option<Style>>,
     shape:    Cell<Option<PipShape>>,
-    /// What the label was last written for. A `set_text` write costs a sync
-    /// whether or not the string changed, and a slot's name only changes when
-    /// the orbit navigates.
-    ///
-    /// Keyed on the inputs rather than the resulting colour: the tint is a
-    /// pure function of these two, and comparing the floats it produces would
-    /// be asking whether two identical computations agree.
+    /// Last `(label, attention)` written; a `set_text` write costs a sync
+    /// whether or not the string changed.
     written:  RefCell<Option<(SmolStr, Attention)>>,
 }
 
 pub struct Bodies {
     root:    Prim,
-    /// The dial's surface, and the orbit's only resting collider. A mote is a
-    /// drawing until it is taken; the thing a pointer can actually touch is
-    /// the face of the dial it sits on, which is why what lights up and what a
-    /// press lands on cannot come apart.
+    /// The dial's surface and the orbit's only resting collider. A mote is a
+    /// drawing until it is taken, so only this can be hit.
     field:   Prim,
     surface: Collider,
-    /// Grabs on that surface, reported by the host's own hit-test. Anything
-    /// that lands elsewhere belongs to whatever it hit, not to the orbit.
+    /// Grabs against the dial's surface; anything landing elsewhere belongs
+    /// to whatever it hit.
     input:   InputListener,
     slots:   Vec<SlotPrims>,
     placard: Placard,
@@ -161,9 +150,8 @@ impl Bodies {
             overflow.set_xform(Some(hidden()))?;
             slot_root.add_child(&overflow)?;
 
-            // A label rides the slot, not the body: the body scales with
-            // attention and a name that grew with it would be the loudest
-            // thing on the dial.
+            // A label rides the slot, not the body, which scales with
+            // attention.
             let label = doc.create_prim()?;
             label.set_xform(Some(hidden()))?;
             slot_root.add_child(&label)?;
@@ -202,7 +190,6 @@ impl Bodies {
         Ok(())
     }
 
-    /// Presses and releases the host reported against the dial's surface.
     pub fn poll_grabs(&self) -> Vec<bool> {
         let mut grabs = Vec::new();
         while let Some(event) = self.input.poll() {
@@ -215,26 +202,16 @@ impl Bodies {
         grabs
     }
 
-    /// Turns a mote into a real body of `radius`, which is what the engine's
-    /// waiting grab is looking for. It gains a collider here and nowhere else:
-    /// a resting mote is a drawing, and giving it one would put an invisible
-    /// surface in front of everything it is drawn on.
-    ///
-    /// That surface stands between the pointer and the mote that has just
-    /// left it, and would take the ray the engine is about to cast, so it
-    /// stands down for as long as something is in hand. Which is also the
-    /// truth of it: nothing on a dial is a target while you are holding one
-    /// of its motes.
+    /// Turns a mote into a dynamic body the engine's grab can take. The
+    /// field's collider stands down while anything is held, so it cannot
+    /// intercept the grab's ray.
     pub fn make_dynamic(&self, slot: usize, radius: f32) -> anyhow::Result<()> {
         let Some(prims) = self.slots.get(slot) else {
             return Ok(());
         };
         prims.root.set_collider(Some(Collider::Sphere(radius)))?;
-        // Weightless from the moment it is a body. The engine zeroes gravity
-        // itself once it has the mote, but between promoting one and the grab
-        // finding it there is nothing holding it up — and a mote that dropped
-        // out of the air in that gap would be the loudest possible symptom of
-        // the quietest possible failure.
+        // Weightless from promotion: the engine zeroes gravity only once its
+        // grab takes the mote, and nothing else holds it up in the gap.
         prims.root.set_gravity_scale(0.0)?;
         prims.root.set_rigid_body(Some(RigidBody {
             kind:            RigidBodyKind::Dynamic,
@@ -252,10 +229,9 @@ impl Bodies {
         if let Some(prims) = self.slots.get(slot) {
             prims.root.set_rigid_body(None)?;
             prims.root.set_collider(None)?;
-            // Put back so the next promotion is a real change to the
-            // attribute: the engine strips its own weightlessness off the prim
-            // when it lets go, and an unchanged value would never re-apply
-            // ours.
+            // Restored so the next promotion is a real attribute change: the
+            // engine resets gravity when it lets go, and an unchanged value
+            // would never re-apply ours.
             prims.root.set_gravity_scale(1.0)?;
         }
         self.field.set_collider(Some(self.surface))?;
@@ -320,9 +296,8 @@ impl Bodies {
         Ok(())
     }
 
-    /// Drawn always, so a menu can be learned rather than hovered. Only the
-    /// attended mote's name brightens, which is the same rule the bodies
-    /// follow: attention lifts toward white, it does not repaint.
+    /// Drawn always; only the attended name's brightness changes with
+    /// attention.
     fn apply_label(
         slot: &SlotPrims,
         view: &SlotView,
@@ -347,8 +322,8 @@ impl Bodies {
             wrap:          None,
             line_height:   None,
             color:         Some(color),
-            // A dial hangs in a room it does not control, so its own names
-            // carry their contrast with them.
+            // A dial does not control its surroundings, so its names carry
+            // their own contrast.
             outline:       Some(Color {
                 r: 0.0,
                 g: 0.0,
@@ -362,8 +337,7 @@ impl Bodies {
         Ok(())
     }
 
-    /// Drawn unconditionally, not on attention: how much a container holds is
-    /// structural.
+    /// Drawn unconditionally: how much a container holds is structural.
     fn apply_pips(slot: &SlotPrims, view: &SlotView) -> anyhow::Result<()> {
         let groups = view.pips.groups();
         let shape = PipShape {

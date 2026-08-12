@@ -1,9 +1,5 @@
-//! ## Auth Protocol
-//!
-//! Challenge-response DID authentication.
-//!
-//! Explicitly for WDS operations. Should not be used as general purpose
-//! connection-level auth.
+//! Challenge-response DID authentication, scoped to WDS operations rather
+//! than general connection-level auth.
 
 use std::{
     fmt::Debug,
@@ -63,9 +59,8 @@ pub enum AuthService {
     #[rpc(tx=oneshot::Sender<Issued>)]
     #[wrap(RequestChallenge)]
     RequestChallenge(Did),
-    /// Answer a challenge, signing the nonce with either an:
-    /// - Authentiaction VC
-    /// - WDS service endpoint key
+    /// Answer a challenge, signing the nonce with an authentication VC or a
+    /// WDS service endpoint key.
     #[rpc(tx=oneshot::Sender<Option<SessionToken>>)]
     #[wrap(AnswerChallenge)]
     AnswerChallenge(SignedBytes<Challenge>),
@@ -82,14 +77,13 @@ pub struct Issued {
 pub struct Challenge {
     /// Key must verify they are authenticating as DID.
     pub did:     Did,
-    /// Key must verify they are authenticating to us.
-    /// Prevents impersonation by forwarding signed challenge to another node.
+    /// Key must verify they are authenticating to this node.
+    /// Prevents impersonation by forwarding a signed challenge to another node.
     pub host:    EndpointId,
-    /// Key must sign our given nonce.
+    /// Key must sign the given nonce.
     pub nonce:   Nonce,
-    /// Unix timestamp echoed from [`Issued`], binding the signature to the
-    /// window the server issued it for. Cross-checked against the server's own
-    /// record, so a client cannot widen it.
+    /// Unix timestamp echoed from [`Issued`]; cross-checked against the
+    /// server's record so a client cannot widen the window.
     pub expires: i64,
 }
 

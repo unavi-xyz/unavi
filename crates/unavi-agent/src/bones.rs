@@ -11,7 +11,6 @@ use crate::{
     },
 };
 
-/// Applies tracked head pose to the avatar's head bone.
 pub fn apply_head_tracking(
     agents: Query<(&AgentAvatar, &LocalAgentEntities)>,
     tracked_heads: Query<&TrackedPose, With<TrackedHead>>,

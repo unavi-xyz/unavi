@@ -38,8 +38,7 @@ use crate::{
 
 /// Client handle for one registry.
 ///
-/// Authentication rides on the node's existing WDS session, so talking to a
-/// co-deployed registry costs no extra handshake.
+/// Authentication rides on the node's existing WDS session.
 #[derive(Clone)]
 pub struct RegistryClient {
     actor:    Actor,
@@ -143,10 +142,7 @@ impl RegistryClient {
     }
 
     /// Imports this registry's view docs read-only and starts syncing them,
-    /// returning their namespaces.
-    ///
-    /// Views are the only thing a client syncs from a registry; the catalog
-    /// behind them is the registry's own working state.
+    /// returning their namespaces. Views are the only thing a client syncs.
     pub async fn sync_views(&self, docs: &Docs) -> anyhow::Result<Vec<NamespaceId>> {
         let ids = self.views().await?;
         let host = self.actor.host().clone();

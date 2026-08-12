@@ -225,7 +225,6 @@ fn a_same_frame_drop_and_regrab_never_panics_the_physics_step() {
     }
 }
 
-/// The guard must not disturb a scene that never breaks the invariant.
 #[test]
 fn ordinary_physics_is_untouched() {
     let mut app = app();

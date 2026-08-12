@@ -17,7 +17,7 @@ pub fn generate_color(hash: Hash) -> Color {
     Color::hsv(h, s, v)
 }
 
-/// Mixes `color` toward its luminance gray by `amount` in `[0.0, 1.0]`.
+/// Mixes `color` toward its own luminance gray.
 #[must_use]
 pub fn desaturate(color: Color, amount: f32) -> Color {
     let luma = 0.114f32.mul_add(color.b, 0.299f32.mul_add(color.r, 0.587 * color.g));

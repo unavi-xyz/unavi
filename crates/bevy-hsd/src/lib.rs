@@ -57,10 +57,9 @@ impl Plugin for HsdPlugin {
             .add_systems(
                 Update,
                 (
-                    // Bevy's tuple `IntoSystemConfigs` impl tops out below
-                    // one flat chain's worth of attribute systems; nesting
-                    // splits it without giving up ordering, since `.chain()`
-                    // on the outer tuple still orders the two inner groups.
+                    // Bevy's tuple `IntoSystemConfigs` impl has a fixed
+                    // arity; nesting splits the systems, and `.chain()` on
+                    // the outer tuple still orders the two inner groups.
                     (
                         diff::drain_scene_events,
                         attributes::script::track_script,
@@ -93,8 +92,8 @@ impl Plugin for HsdPlugin {
                     .chain()
                     .in_set(HsdCommitSet),
             )
-            // A text prim's attribute lands in `HsdCommitSet`; the renderer
-            // has to see it after, or every label is a frame stale.
+            // Text's attribute lands in `HsdCommitSet`; the renderer must
+            // run after it or every label is a frame stale.
             .configure_sets(Update, bevy_msdf::MsdfSet.after(HsdCommitSet))
             .add_systems(
                 PostUpdate,
@@ -105,9 +104,9 @@ impl Plugin for HsdPlugin {
 
 /// A live document.
 ///
-/// Script writes land here synchronously and reach the ECS immediately; whether
-/// they reach other peers or the document's entries is decided elsewhere, by
-/// the space protocol and by an explicit save.
+/// Script writes land here synchronously and reach the ECS immediately;
+/// whether they reach peers or the document's entries is decided by the space
+/// protocol and by an explicit save.
 #[derive(Component, Clone)]
 #[require(HsdChildren, Transform, Visibility)]
 pub struct Hsd(pub Arc<Mutex<SceneState>>);
@@ -119,14 +118,13 @@ impl Hsd {
     }
 }
 
-/// Every document has an id from birth, so a portal receptor or a `wired:kv`
-/// key never has to be remapped. A namespace-backed document's id *is* its
-/// namespace; a prefab instance derives one.
+/// A namespace-backed document's id is its namespace; a prefab instance
+/// derives one.
 #[derive(Component, Debug, Clone, Copy)]
 pub struct HsdDocId(pub DocId);
 
-/// Present only on documents that have a namespace, which is to say those that
-/// can be written to storage and shared.
+/// Present only on namespace-backed documents, which can be written to storage
+/// and shared.
 #[derive(Component, Debug, Clone, Copy)]
 pub struct HsdNamespace(pub NamespaceId);
 
@@ -151,14 +149,13 @@ pub struct HsdPrimIndex(pub HashMap<PrimId, Entity>);
 #[derive(Component, Default, Debug)]
 pub struct HsdRelationships(pub BTreeMap<SmolStr, PrimId>);
 
-/// A prim's slots, held inline as bytes. Since a document must be loaded
-/// in full before it realizes, no slot value is a deferred reference.
+/// A prim's slots, held inline as bytes. A document loads in full before it
+/// realizes, so no slot value is a deferred reference.
 #[derive(Component, Default, Debug)]
 pub struct HsdSlots(pub BTreeMap<SmolStr, Vec<u8>>);
 
-/// Pauses event draining while a batched writer (a mid-flight script fixed
-/// update) holds it, so its writes reach the world atomically instead of
-/// tearing across frames.
+/// Pauses event draining while a batched writer holds it, so the batch's
+/// writes reach the world atomically instead of tearing across frames.
 #[derive(Component, Clone)]
 pub struct HsdCommitGate(pub Arc<AtomicBool>);
 

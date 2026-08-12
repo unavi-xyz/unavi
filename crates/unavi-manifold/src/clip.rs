@@ -21,8 +21,8 @@ pub const SEAM_CLIP_MTOON_SHADER_HANDLE: Handle<Shader> =
 
 /// Base material that can be clipped at a world-space seam plane.
 pub trait Clippable: Material {
-    /// Fragment shader reproducing this material's shading with the seam clip,
-    /// binding the clip plane at `@binding(100)` (see `assets/seam_clip.wgsl`).
+    /// Fragment shader reproducing this material's shading with the seam clip;
+    /// clip plane bound at `@binding(100)`.
     const CLIP_SHADER: Handle<Shader>;
 
     /// Render both faces, so the cap exposed at the cut is drawn.

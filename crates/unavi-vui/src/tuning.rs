@@ -4,10 +4,6 @@ use serde::{
 };
 
 /// Every feel constant in one place.
-///
-/// A running example can edit them and the tuned result ships back as
-/// [`Tuning::DEFAULT`]. Answering "does 4 cm feel right?" should be a slider
-/// in the headset, not a rebuild.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Tuning {
@@ -16,37 +12,25 @@ pub struct Tuning {
     /// Centre-slot target radius, as a fraction of the orbit radius.
     pub centre_frac:  f32,
     /// Nothing is attended past this multiple of the orbit radius. Also sizes
-    /// the orbit's hit surface, which must cover exactly the region attention
-    /// answers for — a mote that lights up and cannot be pressed is worse
-    /// than one that never lit up.
+    /// the orbit's hit surface.
     pub reach_frac:   f32,
-    /// How far in front of the orbit that hit surface stands, so the host's
-    /// reticle rides across the dial's face rather than disappearing into
-    /// whatever it is on. Must clear
-    /// `mote_radius * group_scale * seize_scale + lean_dist` — the largest a
-    /// mote gets plus how far it reaches out — or the one mote being pointed
-    /// at is precisely the one that swallows the reticle.
+    /// How far the hit surface stands in front of the orbit. Must clear
+    /// `mote_radius * group_scale * seize_scale + lean_dist`.
     pub field_lift:   f32,
-    /// Extra angular half-width granted to the slot already attended, so a
-    /// sweep does not flicker between neighbours.
+    /// Extra angular half-width granted to the slot already attended.
     pub stick:        f32,
 
     pub attend_scale:     f32,
     pub seize_scale:      f32,
-    /// Seconds of unbroken attention before a placard appears. The mote
-    /// itself reacts immediately; only the text waits.
+    /// Seconds of unbroken attention before a placard appears.
     pub placard_delay:    f32,
     /// Seconds the placard takes to reach full opacity once the delay has
-    /// passed. It fades rather than toggling — text that pops is text that
-    /// flickers during a sweep.
+    /// passed.
     pub placard_fade:     f32,
     /// Clearance between the attended mote's surface and the placard's lower
-    /// edge. Mounted above, so it never covers the body it describes.
+    /// edge.
     pub placard_gap:      f32,
-    /// How far in front of its mote the placard stands — enough to clear the
-    /// body, and no more. The dial's own hit surface is invisible, so there
-    /// is nothing to rise above; a placard pushed out to meet it reads as
-    /// hanging in the room rather than belonging to the mote.
+    /// How far in front of its mote the placard stands.
     pub placard_lift:     f32,
     pub placard_title:    f32,
     pub placard_row:      f32,
@@ -54,21 +38,14 @@ pub struct Tuning {
     pub placard_line:     f32,
     pub placard_pad:      f32,
     pub placard_width:    f32,
-    /// Average glyph width, in ems, that placard wrapping assumes. Only the
-    /// renderer knows what a string really measures, so this is a guess — and
-    /// a deliberately wide one, because breaking a line early costs a roomy
-    /// card while breaking late costs text hanging off the backdrop.
+    /// Average glyph width, in ems, that placard wrapping assumes.
     pub advance_estimate: f32,
 
-    /// Em height of the name drawn under every mote. Labels are drawn always,
-    /// not on attention: a menu you have to hover to read is a menu you
-    /// cannot learn.
+    /// Em height of the name drawn under every mote.
     pub label_size: f32,
     /// Clearance between a mote's surface and its label.
     pub label_gap:  f32,
-    /// How far in front of its mote a label sits. Just enough to not be
-    /// buried in the body — a label out at the dial's own depth detaches from
-    /// the thing it names.
+    /// How far in front of its mote a label sits.
     pub label_lift: f32,
 
     /// Metres the attended mote reaches toward the pointer.
@@ -80,13 +57,11 @@ pub struct Tuning {
     /// Pointer travel past which a release places rather than taps.
     pub seize_threshold: f32,
 
-    /// Role-driven body sizes, applied before any attention scaling so a
-    /// container reads as a container without being pointed at.
+    /// Role-driven body sizes, applied before attention scaling.
     pub group_scale:  f32,
     pub action_scale: f32,
     pub parent_scale: f32,
-    /// Most interior bodies a group draws. Beyond this it reports overflow
-    /// rather than showing a count that does not match reality.
+    /// Most interior bodies a group draws; beyond this it reports overflow.
     pub pip_cap:      usize,
 }
 
@@ -154,8 +129,6 @@ mod tests {
         );
     }
 
-    /// The dial's hit surface is a collider with no mesh, so text has nothing
-    /// to rise above and every reason to stay on the mote it belongs to.
     #[test]
     fn text_sits_on_its_mote_rather_than_out_at_the_hit_surface() {
         let tuning = Tuning::DEFAULT;

@@ -60,9 +60,9 @@ pub mod slots {
         (name != "indices").then_some(name)
     }
 
-    /// Whether `name` is a known raw-data slot rather than a property. The
-    /// distinction survives the collapse of `b/` into `p/`: a slot's value is
-    /// opaque bytes, a property's value is a postcard `Property`.
+    /// Whether `name` is a known raw-data slot rather than a property. A
+    /// slot's value is opaque bytes; a property's value is a postcard
+    /// `Property`.
     #[must_use]
     pub fn is_slot_name(name: &str) -> bool {
         const STATIC: &[&str] = &[

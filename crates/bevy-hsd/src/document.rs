@@ -23,7 +23,6 @@ use wds::entries::{
 
 const PREFIXES: [&str; 2] = [key::META, key::PRIM_PREFIX];
 
-/// Reads a whole document into fresh state.
 pub async fn read_state(doc: &Doc, blobs: &Blobs) -> anyhow::Result<SceneState> {
     let mut state = SceneState::new();
     for entry in entries::list(doc, &PREFIXES).await? {
@@ -34,7 +33,7 @@ pub async fn read_state(doc: &Doc, blobs: &Blobs) -> anyhow::Result<SceneState> 
     Ok(state)
 }
 
-/// Converts a stored entry into one state can apply, fetching its content.
+/// Fetches a stored entry's content so a `SceneState` can apply it.
 ///
 /// Returns `None` when a value has not been downloaded yet; the
 /// `ContentReady` event brings it back later.
@@ -52,8 +51,8 @@ pub async fn to_entry(blobs: &Blobs, entry: &DocEntry) -> Option<Entry> {
     })
 }
 
-/// Unpacks a compiled `.hsdz` into a fresh document's writes. A package's
-/// entries carry inline bytes, so this is a straight walk with no fetching.
+/// Unpacks a compiled `.hsdz` into a fresh document's writes. Package entries
+/// carry inline bytes, so there is no fetching.
 pub fn unpack(package: Package, _blobs: &Blobs) -> anyhow::Result<Vec<Write>> {
     Ok(package
         .entries

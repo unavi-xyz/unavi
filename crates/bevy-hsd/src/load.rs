@@ -41,9 +41,7 @@ use crate::{
     document,
 };
 
-/// A compiled document. One file, bytes inlined, arriving complete — so there
-/// is no dependency list, no blob loader, and no wait-for-every-dependency
-/// loop behind it.
+/// A compiled document: one file with bytes inlined, arriving complete.
 #[derive(Asset, TypePath)]
 pub struct HsdAsset(pub Package);
 
@@ -158,17 +156,16 @@ async fn build_and_instance(
     Ok(())
 }
 
-/// Records which prefab a prim currently has instanced, so a changed prefab
-/// re-instances and a removed one tears down.
+/// Records which prefab a prim has instanced, so a change re-instances and a
+/// removal tears down.
 #[derive(Component)]
 pub struct PrefabLoaded(pub blake3::Hash);
 
 /// Instancing is declarative: the instance exists because the prim carries the
 /// slot.
 ///
-/// Its id is derived rather than minted, so every peer computes the same one —
-/// which is what makes a prefab's `wired:kv` state and portal receptors
-/// converge.
+/// The instance's id is derived rather than minted, so every peer computes the
+/// same one and the prefab's `wired:kv` state and portal receptors converge.
 pub fn instance_prefabs(
     prefabs: Query<(
         Entity,

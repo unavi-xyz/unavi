@@ -39,8 +39,7 @@ pub(crate) fn load_animation_nodes(
         let mut graph = AnimationGraph::default();
         let mut animation_nodes = HashMap::default();
 
-        // Setup mask groups for all VRM bones.
-        // This allows us to selectively disable animation for tracked bones.
+        // Mask groups let tracked bones opt out of animation.
         for (bone_name, &target_id) in VRM_ANIMATION_TARGETS.iter() {
             let mask_group = bone_mask_group(*bone_name);
             graph.add_target_to_mask_group(target_id, mask_group);
@@ -68,7 +67,6 @@ pub(crate) fn load_animation_nodes(
                     continue;
                 }
 
-                // Retarget the animation.
                 let vrm_target = VRM_ANIMATION_TARGETS[bone_name];
 
                 let Some(mixamo_node) = raw.nodes.get(&channel.target) else {

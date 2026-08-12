@@ -164,9 +164,6 @@ impl Quota {
     }
 
     /// Whether `other` is this quota or anything it rolls up into.
-    ///
-    /// Every charge, refund and adoption walks the owner chain, so a cycle in
-    /// it is unbounded recursion rather than a wrong number.
     fn rolls_up_into(&self, other: &Arc<Self>) -> bool {
         let mut current = self.owner();
         while let Some(quota) = current {
@@ -270,7 +267,7 @@ impl Quota {
 
     /// Charges `n` units of `stock`, returning a resizable [`StockHold`] that
     /// refunds whatever it holds on drop. Use for data whose footprint changes
-    /// over its lifetime, like a KV cell.
+    /// over its lifetime.
     pub fn hold(self: &Arc<Self>, stock: Stock, n: u64) -> Result<StockHold, QuotaError> {
         self.charge_inner(stock, n)?;
         Ok(StockHold {

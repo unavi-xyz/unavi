@@ -26,9 +26,9 @@ const fn hidden() -> Xform {
     }
 }
 
-/// A small spinning cube floating above the tool artifact, previewing the
-/// prefab the spawner will place. A camera-anchored `root` carries orientation
-/// so the cube's local spin needs no quaternion composition.
+/// A spinning cube above the artifact previewing the prefab; the
+/// camera-anchored `root` carries orientation so the local spin needs no
+/// composition.
 pub struct Preview {
     root:  Prim,
     cube:  Prim,

@@ -24,8 +24,7 @@ use crate::{
 };
 
 /// Re-emits the whole realized scene when a document enters the world, so a
-/// document built before its entity existed still reaches the ECS. Replaces
-/// the export-then-reimport trick that forced Loro to replay its own state.
+/// document built before its entity existed still reaches the ECS.
 pub fn resync_on_spawn(trigger: On<Add, Hsd>, docs: Query<&Hsd>, mut commands: Commands) {
     if let Ok(doc) = docs.get(trigger.entity)
         && let Ok(mut state) = doc.0.lock()
@@ -39,10 +38,9 @@ pub fn resync_on_spawn(trigger: On<Add, Hsd>, docs: Query<&Hsd>, mut commands: C
 
 /// Per-prim maps accumulated across a whole batch.
 ///
-/// Component writes go through `Commands` and are not visible until the next
-/// sync point, so two slots written in one batch would otherwise clobber each
-/// other. Each map is seeded from the live component the first time its prim
-/// is touched.
+/// Writes go through `Commands`, invisible until the next sync point, so two
+/// slots written in one batch would otherwise clobber each other. Each map
+/// seeds from the live component the first time its prim is touched.
 #[derive(Default)]
 struct Staged {
     rels:  HashMap<Entity, BTreeMap<SmolStr, PrimId>>,
@@ -111,8 +109,7 @@ pub fn drain_scene_events(
             );
         }
 
-        // Writing an identical map would still trip `Changed`, and the mesh
-        // and collider rebuilds it drives would rebuild anyway.
+        // Writing an identical map would still trip `Changed` and its rebuilds.
         for (prim_ent, rels) in staged.rels {
             if rels_now.get(prim_ent).is_ok_and(|live| live.0 == rels) {
                 continue;
@@ -195,8 +192,8 @@ fn parent_entity(index: &HsdPrimIndex, doc_ent: Entity, parent: Option<PrimId>) 
         .unwrap_or(doc_ent)
 }
 
-/// A property key holds either an attribute or a relationship, so removal
-/// clears both — the key is gone and the reader cannot know which it was.
+/// A property key holds either an attribute or a relationship; removal clears
+/// both because the key cannot tell which it was.
 fn apply_property(
     commands: &mut Commands,
     staged: &mut Staged,

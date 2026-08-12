@@ -15,7 +15,7 @@ use unavi_util::async_commands::AsyncCommands;
 /// A namespace to enter instead of the local home, from `--join`.
 ///
 /// Reaching another peer's space otherwise requires walking a portal, which no
-/// automated run can do — so a multiplayer bug can only be reproduced by hand.
+/// automated run can do.
 #[derive(Resource, Default)]
 pub struct JoinSpace(pub Option<String>);
 

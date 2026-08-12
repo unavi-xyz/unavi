@@ -25,9 +25,7 @@ pub enum PropertyError {
 
 /// Either typed data or a reference to another prim, as in USD.
 ///
-/// Both live in one namespace on the prim, distinguished by a leading tag byte
-/// rather than a naming convention, so a reader can classify a property a
-/// script invented without decoding it.
+/// Both share one namespace on the prim, told apart by a leading tag byte.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Property {
     Attribute(Vec<u8>),
@@ -84,9 +82,8 @@ impl Property {
     }
 }
 
-/// A prim's place in the tree. Never encodes to an empty value: an empty entry
-/// reads as absence on every peer, which is how deletion is spelled, so a root
-/// encoded as empty would delete itself.
+/// A prim's place in the tree. Never encodes empty: an empty entry reads as
+/// absence on every peer, which is how deletion is spelled.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Parent {
     Root,

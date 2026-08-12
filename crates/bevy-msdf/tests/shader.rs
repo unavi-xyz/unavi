@@ -2,8 +2,7 @@
 //! `cargo test` rather than a run in a headset.
 //!
 //! Bevy's preprocessor is not WGSL: it resolves `#import` and substitutes
-//! `#{...}` before wgpu ever sees the source. Both are stood in for here, the
-//! same way `bevy-hsd`'s codegen test does.
+//! `#{...}` before wgpu sees the source, so both are stood in for here.
 
 use naga::front::wgsl;
 

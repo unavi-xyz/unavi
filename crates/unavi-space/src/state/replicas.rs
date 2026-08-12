@@ -44,7 +44,7 @@ pub type PeerId = [u8; 32];
 
 pub const KV_KEY_MAX_BYTES: usize = 256;
 
-/// Rejects peer-supplied timestamps more than this far past local time, so a
+/// Caps peer-supplied timestamps to within the clock skew of local time, so a
 /// forged future `at` cannot pin ownership/authority or win KV merges forever.
 const MAX_CLOCK_SKEW_MILLIS: u64 = 5 * 60 * 1000;
 
@@ -562,7 +562,6 @@ pub fn unregister_stream(token: u64) {
     PEER_STATE.lock().senders.remove(&token);
 }
 
-/// Broadcasts a delta to every connected peer's state stream.
 pub fn broadcast(msg: &StateMsg) {
     PEER_STATE.lock().broadcast(msg);
 }
@@ -708,7 +707,7 @@ pub fn doc_kv_total_bytes(space: NamespaceId, doc: NamespaceId) -> usize {
     total
 }
 
-/// Remote peers that hold `doc`, i.e. those we can sync the record from.
+/// Remote peers that hold `doc`, those this client can sync the record from.
 /// Excludes the local peer; the owner is listed first as the freshest source.
 #[must_use]
 pub fn doc_holders(doc: NamespaceId) -> Vec<PeerId> {
@@ -943,7 +942,6 @@ mod tests {
         let space = h(b"kv-space");
         let alice = [2u8; 32];
 
-        // Space base doc is always neutral.
         assert_eq!(
             add_kv(
                 alice,
@@ -960,7 +958,6 @@ mod tests {
             Some(&b"dest"[..])
         );
 
-        // Removing the writer's other state leaves neutral kv intact.
         remove_kv(alice, space, "missing", KvPlacement::Owned);
         assert_eq!(
             doc_kv_get(space, space, "link").as_deref(),

@@ -84,9 +84,8 @@ fn set_translation(prim: &Prim, translation: Vec3) {
     .ok();
 }
 
-/// Column index centers around the table's midline; row index zigzags
-/// outward from the center row (0, 1, -1, 2, -2, ...) so the grid stays
-/// balanced on the table rather than growing off to one side.
+/// Columns center on the table's midline; rows zigzag outward from the
+/// center row so the grid stays balanced.
 fn grid_offset(index: usize) -> Vec3 {
     let col = (index % COLUMNS) as f32;
     let row = i32::try_from(index / COLUMNS).unwrap_or(i32::MAX);
@@ -109,14 +108,12 @@ fn add_slab(parent: &Prim, size: Vec3, translation: Vec3, color: Color) {
     parent.add_child(&slab).ok();
 }
 
-/// Prefix of a registry's active-spaces view. Only that view uses it, so
-/// listing it across every registry namespace picks out activity and ignores
-/// the rest.
+/// Prefix of a registry's active-spaces view; listing it picks out activity
+/// and ignores the rest.
 const ACTIVE_PREFIX: &str = "active/";
 
-/// Parses the space namespace out of an active-view entry key of the form
-/// `active/<rank>/<space-hex>`, returning its 64-char hex identity. Keys arrive
-/// in rank order, so the registry's ordering is preserved by iterating them.
+/// Extracts the space hex from an `active/<rank>/<space-hex>` key; keys
+/// arrive in rank order, preserving the registry's ordering.
 fn active_space_hex(key: &str) -> Option<&str> {
     key.strip_prefix(ACTIVE_PREFIX)?
         .split('/')
@@ -124,13 +121,12 @@ fn active_space_hex(key: &str) -> Option<&str> {
         .filter(|s| !s.is_empty())
 }
 
-/// The gauntlet's nav table: on open, lists the spaces currently occupied
-/// according to the registries this client follows, and lays them out in a grid
-/// on a small table placed in front of the player.
-/// The authored prim whose `prefab` slot every beacon copies. It is kept at
-/// zero scale so the template itself never shows.
+/// The authored prim whose `prefab` slot every beacon copies, kept at zero
+/// scale so the template itself never shows.
 const TEMPLATE_PRIM_NAME: &str = "beacon_template";
 
+/// Lists the spaces currently occupied per the registries this client
+/// follows, laid out on a table in front of the player.
 pub struct Nav {
     root:         Prim,
     beacon_lists: Vec<ListFuture>,
@@ -245,9 +241,8 @@ impl Nav {
             }
             self.seen.push(space.clone());
 
-            // A beacon is grabbed and published, so it needs a namespace of its
-            // own rather than an instance under one of our prims: syncing is
-            // per document, and an instance has no document to sync.
+            // Beacons sync per document, and an instance under one of our
+            // prims has no document to sync.
             let beacon = create_document_from_prefab(&template)?;
             let prim = beacon.create_prim()?;
             prim.set_name(Some(&space))?;

@@ -1,10 +1,8 @@
 //! Judges the distance field by eye.
 //!
-//! Dolly the camera in and out: the point of the whole approach is that the
-//! near label and the far sign are the same asset, so the thing to watch is
-//! whether either goes soft or starts to shimmer. The busy panel behind the
-//! middle row is there to judge the outline, which is what makes text legible
-//! over scenery nobody chose.
+//! Dolly the camera in and out: the near label and the far sign are the same
+//! asset, so watch whether either goes soft or starts to shimmer. The busy
+//! panel behind the middle row is there to judge the outline.
 
 use bevy::prelude::*;
 use bevy_msdf::{

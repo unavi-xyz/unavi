@@ -59,7 +59,6 @@ async fn test_upload_increases_quota(#[future] ctx: DataStoreCtx) {
 async fn test_quota_exceeded_rejects_upload(#[future] ctx: DataStoreCtx) {
     let did = ctx.alice.identity().did().to_string();
 
-    // Seed a tiny quota so the upload cannot fit.
     ctx.store
         .db()
         .call({
@@ -98,7 +97,6 @@ async fn test_quota_released_on_gc(#[future] ctx: DataStoreCtx) {
         .expect("upload blob");
     assert_eq!(bytes_used(&ctx.store, &did).await, 2048);
 
-    // Expire the blob pin, then GC.
     let past = OffsetDateTime::now_utc().unix_timestamp() - 1;
     ctx.store
         .db()

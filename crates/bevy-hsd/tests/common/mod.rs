@@ -58,10 +58,9 @@ pub struct TestContext {
     blobs:     Option<Blobs>,
 }
 
-/// `#[traced_test]` installs a thread-local subscriber, so a warning emitted
-/// from a system running on a worker thread is invisible to `logs_contain`.
-/// Running the schedules on the calling thread keeps validation warnings
-/// assertable.
+/// `#[traced_test]` installs a thread-local subscriber, so a warning from a
+/// worker-thread system is invisible to `logs_contain`. Running schedules on
+/// the calling thread keeps validation warnings assertable.
 fn run_on_test_thread(app: &mut App) {
     app.edit_schedule(Update.intern(), |schedule| {
         schedule.set_executor(SingleThreadedExecutor::default());
@@ -97,11 +96,10 @@ impl Default for TestContext {
 }
 
 impl TestContext {
-    /// Same as `default()` but with physics enabled.
-    /// Use this for any test that exercises colliders or rigid bodies —
-    /// avian's `On<Add, Collider>` observer reads `Position` / `Rotation`
-    /// and will panic on the placeholder MAX values if the collider path
-    /// ever inserts a `Collider` without seeding them.
+    /// Same as `default()` with physics enabled. Needed by any test that
+    /// exercises colliders or rigid bodies: avian's `On<Add, Collider>`
+    /// observer reads `Position`/`Rotation` and panics on the placeholder MAX
+    /// values if a `Collider` is inserted without seeding them.
     pub fn with_physics() -> Self {
         let mut app = App::new();
         app.add_plugins((
@@ -213,8 +211,7 @@ impl TestContext {
         self.with_state(|state| state.remove_slot(prim, slot));
     }
 
-    /// Tick the app until `cond` returns true.
-    /// Panics if the condition is not met within the timeout.
+    /// Tick the app until `cond` returns true; panics within the timeout.
     pub fn tick_until<F: FnMut(&mut World) -> bool>(&mut self, mut cond: F) {
         for _ in 0..200 {
             self.app.update();
@@ -248,7 +245,7 @@ fn setup_blobs() -> Blobs {
         let store = MemStore::default();
         let blobs = store.blobs().clone();
         tx.send(blobs).await.expect("send");
-        // Keep MemStore alive — its background task drives blob queries.
+        // Keep MemStore alive: its background task drives blob queries.
         let _store = store;
         std::future::pending::<()>().await;
     });
@@ -307,7 +304,6 @@ pub fn graph(nodes: Vec<Node>) -> ShaderGraph {
     }
 }
 
-/// A graph whose surface network holds `nodes` and the given output.
 #[must_use]
 pub fn graph_with_output(nodes: Vec<Node>, output: SurfaceOutput) -> ShaderGraph {
     ShaderGraph {
@@ -320,7 +316,6 @@ pub fn graph_with_output(nodes: Vec<Node>, output: SurfaceOutput) -> ShaderGraph
     }
 }
 
-/// A graph with a default surface and a displacement network holding `nodes`.
 #[must_use]
 pub fn displaced(nodes: Vec<Node>, position_offset: Option<Port>) -> ShaderGraph {
     ShaderGraph {

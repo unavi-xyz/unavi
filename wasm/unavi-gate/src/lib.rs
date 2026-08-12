@@ -70,9 +70,8 @@ impl ScriptBehavior for Script {
         let doc = self_document()?;
         let root = doc.roots().into_iter().next().expect("root");
 
-        // Authored in asset.hsda, so their ids are baked at build time and are
-        // identical on every peer. Anything referenced across peers has to be
-        // authored: a prim minted at runtime gets a per-peer id.
+        // Authored prims have ids baked at build time, identical on every
+        // peer; a prim minted at runtime gets a per-peer id.
         let portal_prim = named_prim(&doc, PORTAL_PRIM_NAME)?;
         let receptor_prim = named_prim(&doc, RECEPTOR_PRIM_NAME)?;
         portal_prim.set_portal(Some(&portal_from_link(None)))?;

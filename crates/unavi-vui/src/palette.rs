@@ -4,24 +4,22 @@ use crate::attention::Attention;
 
 /// Every colour and surface value VUI draws with.
 ///
-/// Primitives never hold colours of their own — they read this — so a
-/// consumer restyles the whole system by passing a different one, and no
-/// widget can quietly diverge from the theme.
+/// Primitives read this rather than holding colours of their own.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Palette {
-    /// Near-white default. Most of the field is this.
+    /// Near-white default.
     pub base:    Color,
-    /// The one saturated hue, spent only on what has attention.
+    /// The saturated hue, used only when engaged.
     pub accent:  Color,
-    /// Receded: the way back, and anything inactive.
+    /// Receded: inactive motes and the way back.
     pub dim:     Color,
     /// Backing surfaces — racks, tables, cast circles, placards.
     pub surface: Color,
 
-    /// A container is see-through because you are meant to see into it.
+    /// A container is see-through.
     pub glass_alpha:          f32,
     pub glass_alpha_attended: f32,
-    /// A leaf holds nothing, so it is solid.
+    /// A leaf is solid.
     pub solid_alpha:          f32,
 
     pub emissive_base:     f32,
@@ -31,8 +29,7 @@ pub struct Palette {
 }
 
 impl Palette {
-    /// One cool near-white family. Colour says only what state a mote is in;
-    /// what it *is* comes from its label and its silhouette.
+    /// A cool near-white family; colour only signals state.
     pub const DEFAULT: Self = Self {
         base:    shade(0.92),
         accent:  rgb(0.60, 0.84, 1.00),
@@ -50,8 +47,7 @@ impl Palette {
     };
 
     #[must_use]
-    /// Attention lifts toward white rather than repainting, so the accent
-    /// stays free for the rarer state of being in hand.
+    /// Attention lifts toward white rather than repainting.
     pub const fn tint(&self, attention: Attention) -> Color {
         match attention {
             Attention::Engaged => self.accent,

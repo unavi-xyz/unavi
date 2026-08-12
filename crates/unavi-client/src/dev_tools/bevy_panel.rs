@@ -27,7 +27,6 @@ impl DevToggles {
     }
 }
 
-/// Builds a run condition that fires while the given toggle is on.
 pub(super) fn toggled(toggle: Toggle) -> impl Fn(Res<DevToggles>) -> bool + Clone {
     move |toggles: Res<DevToggles>| toggles.get(toggle)
 }

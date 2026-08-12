@@ -23,8 +23,8 @@ use crate::wired::{
     },
 };
 
-/// One size for every planted body, so the mesh and collider are built once
-/// at load and a plant costs no uploads at all.
+/// One size for every planted body, so mesh and collider are built once at
+/// load and planting costs no uploads.
 const RADIUS: f32 = 0.05;
 const SPHERE_RINGS: usize = 10;
 const SPHERE_SEGMENTS: usize = 16;

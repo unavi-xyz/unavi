@@ -43,7 +43,7 @@ impl<T> SlotMap<T> {
         while self.items.contains_key(&self.next) {
             self.next = self.next.wrapping_add(1);
 
-            // We use `u32::MAX` as an invalid rep value
+            // `u32::MAX` is an invalid rep value.
             if self.next == u32::MAX {
                 self.next = self.next.wrapping_add(1);
             }
@@ -60,7 +60,7 @@ impl<T> SlotMap<T> {
     }
 
     /// Inserts at a caller-chosen key (for externally-assigned ids). Charges a
-    /// slot like [`Self::insert`]; any displaced entry refunds its own.
+    /// slot like [`Self::insert`]; the displaced entry's guard refunds on drop.
     pub fn insert_at(&mut self, key: u32, value: T, quota: &Arc<Quota>) -> Result<(), QuotaError> {
         let guard = quota.charge(Stock::Slots, 1)?;
         self.items.insert(
@@ -82,7 +82,6 @@ impl<T> SlotMap<T>
 where
     T: Clone,
 {
-    /// Clone the given key into a new entry.
     pub fn insert_clone(
         &mut self,
         key: u32,

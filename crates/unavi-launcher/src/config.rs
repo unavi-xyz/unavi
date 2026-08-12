@@ -68,7 +68,6 @@ impl Config {
         }
     }
 
-    /// Save the configuration to disk.
     pub fn save(&self) -> anyhow::Result<()> {
         let path = Self::config_path();
         let contents = toml::to_string_pretty(self).context("serialize config")?;
@@ -96,7 +95,7 @@ impl ConfigStore {
         self.config.lock().clone()
     }
 
-    /// Update the configuration using the provided function and save to disk.
+    /// Updates the configuration via `f`, saving it to disk.
     pub fn update<F>(&self, f: F) -> anyhow::Result<()>
     where
         F: FnOnce(&mut Config),

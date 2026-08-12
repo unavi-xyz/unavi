@@ -15,8 +15,8 @@ use crate::{
     },
 };
 
-/// Beam radius. Thin enough to read as a line; the glow comes from the
-/// graph's additive core, not from the tube being fat.
+/// Beam radius; thin enough to read as a line, since the glow comes from the
+/// graph's additive core.
 const WIDTH: f32 = 0.004;
 /// Rings along the beam. The rope drag is vertex displacement, so a
 /// two-vertex cuboid could not bend at all.
@@ -28,19 +28,16 @@ const RESOLUTION: u32 = 6;
 const DRAG: f32 = 0.18;
 /// Per-frame decay back to straight once movement stops.
 const RECOVER: f32 = 0.5;
-/// Metres of bow the drag may reach, so a fast flick bends the rope rather
-/// than throwing the midpoint away. Most of the visible trailing now comes
-/// from the prop lagging (`hold::FOLLOW`), not from bowing the rope.
+/// Max bow in metres, so a fast flick bends the rope rather than throwing
+/// the midpoint away.
 const MAX_DRAG: f32 = 0.16;
 
-/// The authored prim carrying the compiled beam graph. It has no mesh and
-/// renders nothing; it exists so a runtime-created prim can bind to a graph
-/// the package already carries, since a script cannot author one.
+/// The authored prim carrying the compiled beam graph; a script cannot
+/// author a graph, so runtime prims bind to it.
 const TEMPLATE_PRIM_NAME: &str = "beam_template";
-/// `beam.hss` public input 0.
+/// Tint input index.
 const TINT_INPUT: u16 = 0;
-/// `beam.hss` public input 4: rope drag, a world-space offset applied at the
-/// beam's midpoint.
+/// Rope-drag input: a world-space offset applied at the beam's midpoint.
 const DRAG_INPUT: u16 = 4;
 
 const fn hidden() -> Xform {
@@ -51,8 +48,8 @@ const fn hidden() -> Xform {
     }
 }
 
-/// The rotation mapping +Y onto `dir`, built by hand since the script `Quat`
-/// only exposes construction (no axis-angle helpers).
+/// Rotation mapping +Y onto `dir`, built by hand since the script `Quat` has
+/// no axis-angle helpers.
 fn align_y_to(dir: Vec3) -> Quat {
     let d = dir.normalize_or_zero();
     let dot = Vec3::Y.dot(d).clamp(-1.0, 1.0);
@@ -73,11 +70,8 @@ fn clamp_length(v: Vec3, max: f32) -> Vec3 {
     if len > max { v * (max / len) } else { v }
 }
 
-/// A segmented cylinder stretched between the muzzle and the grab point,
-/// bowed by `beam.hss` while it is being dragged around.
-///
-/// Only the endpoints and the drag offset move per frame; the glow and the
-/// travelling energy are fragment work driven by the view's own clock.
+/// A segmented cylinder between the muzzle and the grab point, bowed while
+/// dragged. Only the endpoints and the drag offset move per frame.
 pub struct Laser {
     prim:   Prim,
     color:  Cell<Option<Color>>,
@@ -144,9 +138,8 @@ impl Laser {
         self.update_drag((from + to) * 0.5);
     }
 
-    /// Rope drag: the midpoint lags behind where a rigid beam would put it,
-    /// then eases back to straight. Sampled from actual movement rather than
-    /// animated, so a stationary beam is perfectly straight.
+    /// The midpoint lags actual movement, so a stationary beam is perfectly
+    /// straight.
     fn update_drag(&self, midpoint: Vec3) {
         let previous = self.anchor.replace(Some(midpoint));
         let moved = previous.map_or(Vec3::ZERO, |p| p - midpoint);
@@ -163,12 +156,8 @@ impl Laser {
         }
     }
 
-    /// Writes every override at once: the host call replaces the whole map,
-    /// so sending one input alone would clear the others.
-    ///
-    /// The graph itself is shared with every other physgun beam — only these
-    /// values differ, so this re-uploads two `vec4`s rather than recompiling
-    /// anything.
+    /// Writes both overrides at once: the host call replaces the whole map,
+    /// and the shared graph re-uploads only these values.
     fn push_overrides(&self) {
         let tint = palette::beam_tint(self.color.get().unwrap_or(palette::DEFAULT));
         let drag = self.drag.get();

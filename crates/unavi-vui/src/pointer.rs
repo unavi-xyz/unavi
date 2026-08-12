@@ -12,12 +12,8 @@ pub fn forward(eye: &Transform) -> Vec3 {
 }
 
 /// Where a pointer's ray crosses an orbit's aim plane, in the plane's own
-/// coordinates and in the world.
-///
-/// The plane stands `lift` in front of the orbit rather than through it. That
-/// is also where the orbit's hit surface goes, so the host's reticle — which
-/// rides on whatever the ray struck — glides across the face of the dial
-/// instead of sinking into whichever mote it is on.
+/// coordinates and in the world. The plane stands `lift` in front of the
+/// orbit.
 #[must_use]
 pub fn aim(eye: &Transform, anchor: &Transform, lift: f32) -> Option<Aim> {
     let normal = anchor.rotation * Vec3::Z;
@@ -45,11 +41,8 @@ pub fn aim(eye: &Transform, anchor: &Transform, lift: f32) -> Option<Aim> {
     })
 }
 
-/// A free grab point `depth` along the pointer's ray.
-///
-/// A held mote follows this rather than the aim plane, so a pickup keeps the
-/// depth it was grabbed at and travels in three dimensions instead of sliding
-/// around a pane of glass.
+/// A free grab point `depth` along the pointer's ray. A held mote follows
+/// this rather than the aim plane.
 #[must_use]
 pub fn hand(eye: &Transform, depth: f32) -> Vec3 {
     eye.translation + forward(eye) * depth

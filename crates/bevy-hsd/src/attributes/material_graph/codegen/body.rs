@@ -27,9 +27,9 @@ use super::expr::{
 /// it is absent.
 ///
 /// `VertexOutput`/`Vertex` declare `uv`, `color`, `normal` and `position`
-/// behind `#ifdef`s (see `bevy_pbr::forward_io`), and an HSD prim supplies
-/// mesh attributes individually — so a graph reading `Uv` on a mesh with no
-/// `UV_0` would otherwise fail to compile rather than degrade.
+/// behind `#ifdef`s, and an HSD prim supplies mesh attributes individually,
+/// so a graph reading `Uv` on a mesh with no `UV_0` degrades instead of
+/// failing to compile.
 const fn guarded_leaf(node: &Node) -> Option<(&'static str, &'static str, &'static str)> {
     match node {
         Node::Uv => Some(("VERTEX_UVS_A", "in.uv", "vec2<f32>(0.0, 0.0)")),
@@ -78,12 +78,9 @@ fn emit_alpha_clip(
     }
 }
 
-/// The fragment-stage body.
-///
-/// Node `let`s from `SurfaceGraph::nodes`, then either the six `out_*`
-/// PBR locals a caller assembles into a `PbrInput` (`Lit`) or a single
-/// `out_color` written straight to the fragment output (`Unlit`) — see
-/// `SurfaceOutput`'s docs for why there are two shapes rather than one.
+/// The fragment-stage body: node `let`s, then either the six `out_*` PBR
+/// locals a caller assembles into a `PbrInput` (`Lit`) or a single `out_color`
+/// (`Unlit`).
 #[must_use]
 pub fn generate_surface_body(graph: &ShaderGraph, validated: &Validated) -> String {
     let mut out = String::new();
@@ -141,12 +138,9 @@ pub fn generate_surface_body(graph: &ShaderGraph, validated: &Validated) -> Stri
     out
 }
 
-/// The vertex-stage body.
+/// The vertex-stage body: node `let`s, then `out_position_offset` /
+/// `out_normal_override` locals the caller applies before the mesh transform.
 ///
-/// Node `let`s from `DisplacementGraph::nodes`, then
-/// `out_position_offset`/`out_normal_override` locals a caller adds to
-/// `vertex.position`/replaces `vertex.normal` with, before the standard
-/// mesh transform runs.
 /// `None` for a graph with no displacement network.
 #[must_use]
 pub fn generate_displacement_body(graph: &ShaderGraph, validated: &Validated) -> Option<String> {

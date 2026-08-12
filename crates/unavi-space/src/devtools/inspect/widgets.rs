@@ -89,8 +89,7 @@ pub fn chip(parent: &mut RelatedSpawnerCommands<ChildOf>, bytes: &[u8], page: Pa
         });
 }
 
-/// Spawns a compact labeled button carrying `marker` (e.g. back or view
-/// toggles).
+/// Spawns a compact labeled button carrying `marker` (back or view toggles).
 #[expect(
     deprecated,
     reason = "feathers button() BSN requires scene spawning; button_bundle is the transitional API"

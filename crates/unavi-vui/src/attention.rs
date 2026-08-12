@@ -1,5 +1,3 @@
-/// Graded approach. Nothing commits on attention: approach reveals, contact
-/// commits.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Attention {
     #[default]
@@ -19,8 +17,7 @@ impl Attention {
     }
 }
 
-/// Holds which slot has attention and how long it has held it, so a placard
-/// can wait without the mote's own reaction waiting with it.
+/// Holds which slot has attention and how long it has held it.
 #[derive(Debug, Default)]
 pub struct Tracker {
     current: Option<usize>,
@@ -103,7 +100,7 @@ mod tests {
     }
 
     /// The dwell this accumulates is what a placard fades in against
-    /// (`placard::opacity`); the mote's own reaction never waits on it.
+    /// (`placard::opacity`).
     #[test]
     fn a_mote_reacts_before_it_has_dwelt_at_all() {
         let mut tracker = Tracker::new();

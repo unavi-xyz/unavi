@@ -87,7 +87,6 @@ fn build(radius: f32, half_h: f32, res: u32, segs: u32) -> RawMesh {
     let mut uvs = Vec::new();
     let mut indices = Vec::new();
 
-    // Top cap
     let top_center = positions.len() as u32;
     positions.push([0.0, half_h, 0.0]);
     normals.push([0.0, 1.0, 0.0]);
@@ -110,7 +109,6 @@ fn build(radius: f32, half_h: f32, res: u32, segs: u32) -> RawMesh {
         ]);
     }
 
-    // Bottom cap
     let bot_center = positions.len() as u32;
     positions.push([0.0, -half_h, 0.0]);
     normals.push([0.0, -1.0, 0.0]);
@@ -133,7 +131,6 @@ fn build(radius: f32, half_h: f32, res: u32, segs: u32) -> RawMesh {
         ]);
     }
 
-    // Side rings: segs+1 rings from bottom to top
     let side_start = positions.len() as u32;
     for seg in 0..=segs {
         let y = -half_h + 2.0 * half_h * seg as f32 / segs as f32;

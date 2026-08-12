@@ -1,9 +1,7 @@
 //! A prefab is a compiled `.hsdz` in the prim's `p/<prim>/prefab/` entry.
 //!
 //! Instancing is declarative: an instance exists because the prim carries the
-//! slot, and disappears when the prim or the slot does. There is no imperative
-//! spawn path and no namespace minted per loader, which is what made two peers
-//! disagree on a nested document's id.
+//! slot, and disappears when the prim or the slot does.
 
 use bevy::prelude::*;
 use hsd::attributes::slots;

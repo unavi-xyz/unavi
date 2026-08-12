@@ -272,8 +272,8 @@ impl ScriptBehavior for Script {
             pressed: Cell::new(false),
             update_time: SystemTime::now(),
         };
-        // Warm the root menu's meshes during load so the first open animates
-        // instead of popping in once the async mesh upload lands.
+        // Warms the menu's meshes during load so the first open does not wait
+        // on the async mesh upload.
         script.wheel.rebuild(&script.menu.slots());
         Ok(script)
     }
@@ -409,8 +409,8 @@ fn approach(current: f32, toward_one: bool, step: f32) -> f32 {
     }
 }
 
-/// The level (yaw-only) rotation facing `forward`, so a placed object stays
-/// flat regardless of the camera's pitch or roll.
+/// Yaw-only rotation facing `forward`, so the object stays flat regardless of
+/// camera pitch or roll.
 fn flat_yaw(forward: Vec3) -> Quat {
     let theta = (-forward.x).atan2(-forward.z);
     Quat::new(0.0, (theta * 0.5).sin(), 0.0, (theta * 0.5).cos())

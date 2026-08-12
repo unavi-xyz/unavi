@@ -13,8 +13,7 @@ use crate::{
 };
 
 pub fn update_scripts(to_update: Query<(&FixedUpdating, &ScriptGuest), With<InitializedScript>>) {
-    // Use [`FixedUpdating`] to ensure only one call at a time; native relies on
-    // a lock for sequential execution instead.
+    // Ensures only one update call at a time; native relies on a lock instead.
     for (updating, guest) in to_update {
         if updating.0.swap(true, Ordering::SeqCst) {
             continue;

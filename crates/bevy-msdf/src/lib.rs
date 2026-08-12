@@ -1,9 +1,7 @@
 //! World-space text from a multi-channel distance field.
 //!
-//! Bevy's own text is 2D: it extracts into the sprite pipeline and needs a 2D
-//! camera, and its glyphs are rasterized per font size. Neither survives a
-//! placard read at 0.4 m and a sign read at 20 m from the same asset, which is
-//! what a headset asks for.
+//! Bevy's own text is 2D, needs a 2D camera, and rasterizes per font size; a
+//! field keeps one asset sharp at any distance.
 //!
 //! The field is baked from Noto Sans (SIL Open Font License 1.1) by this
 //! crate's build script.

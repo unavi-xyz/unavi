@@ -40,9 +40,8 @@ use crate::{
 
 const DEFAULT_BLOB_TTL: Duration = Duration::from_hours(1);
 
-/// Ceiling on a single upload, independent of quota. Nothing this store serves
-/// is legitimately larger, and without it one request can outrun the quota
-/// check by however much disk is left.
+/// Ceiling on a single upload, independent of quota: without it one request
+/// can outrun the quota check by however much disk is left.
 const MAX_UPLOAD_BYTES: i64 = 256 * 1024 * 1024;
 
 pub async fn upload_blob(
@@ -134,7 +133,7 @@ pub async fn upload_blob(
         return Ok(());
     }
 
-    // Only persist the blob tag after tracking the blob in the DB.
+    // Pin only after a successful charge, so a failed one leaves no orphaned tag.
     let tag_name = BlobTag::new(did.clone(), hash).to_string();
     ctx.blob_store().tags().set(tag_name, temp_tag).await?;
 
@@ -142,8 +141,6 @@ pub async fn upload_blob(
     Ok(())
 }
 
-/// Records the owner's pin of a freshly uploaded blob, charging its size.
-///
 /// Returns `false` when the charge would exceed the owner's quota.
 async fn record_pin(
     ctx: &StoreContext,

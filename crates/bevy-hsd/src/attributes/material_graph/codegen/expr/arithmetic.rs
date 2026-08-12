@@ -10,9 +10,8 @@ use hsd::attributes::material_graph::{
 
 use super::port_expr;
 
-/// `Add`/`Sub`/`Mul`/`Div`: WGSL's own `+ - * /` broadcast a `Float` across a
-/// vector's components, so this family costs codegen nothing beyond the
-/// parenthesized infix pair.
+/// WGSL's own `+ - * /` broadcast a `Float` across a vector's components, so
+/// this family costs codegen nothing beyond a parenthesized infix pair.
 pub(super) fn emit(out: &mut String, public_inputs: &[GraphValue], node: &Node) {
     match *node {
         Node::Add { a, b } => binary(out, public_inputs, "+", a, b),

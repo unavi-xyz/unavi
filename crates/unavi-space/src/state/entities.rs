@@ -44,8 +44,8 @@ pub struct RemotePeer(pub PeerId);
 
 /// Generation of the state stream feeding a [`RemotePeer`] entity.
 ///
-/// A newer stream (e.g. a canonical connection replacing a racing duplicate)
-/// takes the entity over, so the superseded stream's teardown leaves it intact.
+/// A newer stream (a canonical connection replacing a racing duplicate) takes
+/// the entity over, so the superseded stream's teardown leaves it intact.
 #[derive(Component)]
 pub struct StreamGen(u64);
 
@@ -644,7 +644,6 @@ mod tests {
         .expect("kv set");
         assert_eq!(replicas::doc_kv_get(space, space, "k"), Some(b"v".to_vec()));
 
-        // Disconnecting the writer must not erase space-owned state.
         world.despawn(peer_ent);
         assert_eq!(
             replicas::doc_kv_get(space, space, "k"),
@@ -674,8 +673,6 @@ mod tests {
         world.spawn((pin, StateDoc(doc_ent), StatePeer(peer_ent)));
         assert_eq!(replicas::owner(space, doc), Some(me));
 
-        // Despawning the document cascades its state entities, whose Drop clears
-        // the store.
         world.despawn(doc_ent);
         assert_eq!(replicas::owner(space, doc), None);
         assert!(!replicas::has_doc(space, doc));
@@ -697,8 +694,6 @@ mod tests {
         world.spawn((pin, StateDoc(doc_ent), StatePeer(peer_ent)));
         assert_eq!(replicas::owner(space, doc), Some(peer));
 
-        // Disconnecting (despawning the peer) cascades its state, replacing the
-        // old imperative remove_peer.
         world.despawn(peer_ent);
         assert_eq!(replicas::owner(space, doc), None);
         assert!(!replicas::has_doc(space, doc));
@@ -742,11 +737,9 @@ mod tests {
         assert!(spawn_pin(&mut world, e0, peer, doc, space, 1, false));
         assert_eq!(replicas::owner(space, doc), Some(peer));
 
-        // A racing connection's stream claims the same peer entity.
         let e1 = claim_remote_peer(&mut world, peer, 1);
         assert_eq!(e0, e1);
 
-        // The superseded stream's teardown must not erase the peer's state.
         release_remote_peer(&mut world, e0, 0);
         assert_eq!(replicas::owner(space, doc), Some(peer));
 

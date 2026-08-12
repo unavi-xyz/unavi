@@ -41,7 +41,7 @@ const UNPIN_TTL: Duration = Duration::from_mins(3);
 const READ_RETRIES: usize = 4;
 
 /// The publish path makes a record public and uploads it before announcing the
-/// pin, so a holder almost always has it the moment we learn of it. Retries
+/// pin, so a holder almost always has it when the pin is learned of. Retries
 /// with a short backoff only cover transient connectivity to the holder.
 const READ_BACKOFF_SECS: u64 = 1;
 
@@ -79,9 +79,10 @@ pub fn adopt_tracked_docs(
     }
 }
 
-/// Syncs and instances tracked documents that some peer pins but we lack,
-/// once a holder is reachable. Only parented trackers fetch: an unparented one
-/// belongs to a space we have not entered, whose content should not instance.
+/// Syncs and instances tracked documents that some peer pins but this client
+/// lacks, once a holder is reachable. Only parented trackers fetch: an
+/// unparented one belongs to a space that has not been entered, whose content
+/// should not instance.
 pub fn fetch_tracked_docs(
     time: Res<Time>,
     tracked: Query<

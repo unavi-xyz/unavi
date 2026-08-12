@@ -19,9 +19,8 @@ use crate::{
 const SIZE: f32 = 0.3;
 const DIST: f32 = 1.5;
 
-/// Instantiates the selected prefab (a dynamic cube for now) as its own
-/// published document ahead of the camera. A future prefab picker can swap the
-/// cube build for `load_hsd` behind this same entry point.
+/// Instantiates the selected prefab as its own published document ahead of
+/// the camera.
 pub fn spawn(color: Color, cam: &Transform) -> anyhow::Result<()> {
     let doc = create_document()?;
     let id = doc.id();

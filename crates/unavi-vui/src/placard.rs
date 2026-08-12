@@ -13,21 +13,14 @@ use crate::{
     tuning::Tuning,
 };
 
-/// Lines a placard may draw, title included. A placard that needs more is the
-/// wrong tool, and the content belongs in a planted station instead.
+/// Lines a placard may draw, title included.
 pub const MAX_LINES: usize = 8;
 
-/// Mounted text: what this mote is, and how to use it.
-///
-/// Deliberately only that. It first carried a kind readout, child counts,
-/// meters and dividers, and every one was noise — the pips already say how
-/// much a group holds, the hint already implies what sort of thing it is, and
-/// the bars read as two stray lines under everything. What is left is what a
-/// reader wanted: a name, an explanation, and the gesture.
+/// Mounted text: what this mote is and how to use it.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Placard {
     pub title: SmolStr,
-    /// Prose. Written plainly, without line breaks — [`view`] wraps it.
+    /// Prose, without line breaks; [`view`] wraps it.
     pub body:  ArrayVec<SmolStr, MAX_LINES>,
 }
 
@@ -40,20 +33,15 @@ impl Placard {
         }
     }
 
-    /// Paragraphs past [`MAX_LINES`] are dropped rather than panicking: a
-    /// placard is chrome, and chrome must not be able to take a script down.
+    /// Paragraphs past [`MAX_LINES`] are dropped rather than panicking.
     #[must_use]
     pub fn line(mut self, line: impl Into<SmolStr>) -> Self {
         let _ = self.body.try_push(line.into());
         self
     }
 
-    /// The standard placard for a mote: its name, what it does, and the
-    /// gesture that does it.
-    ///
-    /// Derived rather than authored so every mote in a tree explains itself
-    /// consistently, and a consumer supplies only the one line it alone knows
-    /// — [`MoteSpec::description`].
+    /// The standard placard for a mote: its name, its description, and the
+    /// gesture that operates it.
     #[must_use]
     pub fn describing(spec: &MoteSpec) -> Self {
         let mut placard = Self::new(spec.label.clone());
@@ -64,9 +52,7 @@ impl Placard {
     }
 }
 
-/// How to operate this mote, named for the gesture that does it rather than
-/// the abstraction behind it — desktop and VR both grab, and nothing in this
-/// interface taps.
+/// The gesture that operates a mote.
 const fn hint(role: Role) -> &'static str {
     match role {
         Role::Group { .. } => "Grab to open",
@@ -77,13 +63,12 @@ const fn hint(role: Role) -> &'static str {
     }
 }
 
-/// How loudly a line is set. The binding maps these onto the palette, so a
-/// placard holds no colours of its own.
+/// How strongly a line is set.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Emphasis {
     Title,
     Body,
-    /// The operating hint: present, but not the point.
+    /// The operating hint.
     Dim,
 }
 
@@ -96,23 +81,20 @@ pub struct PlacardLine {
     pub emphasis: Emphasis,
 }
 
-/// Everything a renderer needs to draw one placard, in concrete values.
+/// Everything a renderer needs to draw one placard.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PlacardView {
     /// Orbit-local, at the placard's top centre.
     pub position: Vec3,
-    /// 0 draws nothing. Fades rather than toggling.
+    /// 0 draws nothing.
     pub opacity:  f32,
-    /// Backing panel extents, sized to the lines actually laid out.
+    /// Backing panel extents, sized to the laid-out lines.
     pub size:     Vec2,
     pub lines:    ArrayVec<PlacardLine, MAX_LINES>,
 }
 
-/// Graded reveal.
-///
-/// Zero until the dwell delay has passed, then in over
-/// [`Tuning::placard_fade`] — the surface itself reacts instantly, so nothing
-/// feels laggy while the text still never flickers during a sweep.
+/// Zero until the dwell delay has passed, then ramps in over
+/// [`Tuning::placard_fade`].
 #[must_use]
 pub fn opacity(dwell: f32, tuning: &Tuning) -> f32 {
     if tuning.placard_fade <= f32::EPSILON {
@@ -121,12 +103,8 @@ pub fn opacity(dwell: f32, tuning: &Tuning) -> f32 {
     ((dwell - tuning.placard_delay) / tuning.placard_fade).clamp(0.0, 1.0)
 }
 
-/// Mounts a placard on the body at `mote`.
-///
-/// Above rather than beside: a side offset has to pick a side, and whichever
-/// it picks covers a sibling on half the orbit. It sits only just clear of the
-/// body — a placard floating well in front of the dial reads as belonging to
-/// the room rather than to the mote.
+/// Mounts a placard on the body at `mote`, above it and just clear of its
+/// surface.
 fn mount(mote: Vec3, radius: f32, tuning: &Tuning) -> Vec3 {
     Vec3::new(
         mote.x,
@@ -135,13 +113,9 @@ fn mount(mote: Vec3, radius: f32, tuning: &Tuning) -> Vec3 {
     )
 }
 
-/// Longest line, in characters, that fits `width` at `size`.
-///
-/// An estimate, because only the renderer knows what a string measures. It is
-/// deliberately a *pessimistic* one: breaking a line early costs a card that
-/// is wider than its text, while breaking late costs text hanging off the
-/// backdrop. [`Tuning::advance_estimate`] is the average glyph width the guess
-/// assumes.
+/// Longest line, in characters, that fits `width` at `size`, estimated from
+/// [`Tuning::advance_estimate`]. Only the renderer knows what a string
+/// measures.
 fn budget(width: f32, size: f32, tuning: &Tuning) -> usize {
     let glyph = size * tuning.advance_estimate;
     if glyph <= f32::EPSILON {
@@ -150,11 +124,9 @@ fn budget(width: f32, size: f32, tuning: &Tuning) -> usize {
     ((width / glyph) as usize).max(1)
 }
 
-/// Greedy wrap at `budget` characters, breaking on spaces.
+/// Greedy wrap at `budget` characters, breaking on spaces and newlines.
 ///
-/// A word longer than the whole budget is split where it ran out of room,
-/// which is the only alternative to letting it overhang. Newlines in the
-/// source break too, so an author who *wants* a break can still have one.
+/// A word longer than the budget is split where it runs out of room.
 fn wrap(text: &str, budget: usize, out: &mut ArrayVec<SmolStr, MAX_LINES>) {
     for paragraph in text.split('\n') {
         let mut line = String::new();
@@ -196,13 +168,8 @@ fn split_at_chars(text: &str, count: usize) -> (&str, &str) {
     text.split_at(at)
 }
 
-/// Lays a placard out, top-centre origin, y descending.
-///
-/// Wrapping happens **here**, not in the renderer. The renderer is the only
-/// thing that knows what a string measures, so letting it wrap would add lines
-/// this never sized the panel for — which is exactly how the first cut spilled
-/// text off its own backdrop. Wrapping to an estimate instead keeps the height
-/// exact and keeps line breaks out of the author's hands.
+/// Lays a placard out, top-centre origin, y descending. Wrapping happens
+/// here, not in the renderer.
 #[must_use]
 pub fn view(
     placard: &Placard,
@@ -248,8 +215,6 @@ pub fn view(
                 text,
                 offset: Vec2::new(-inner / 2.0, y),
                 size: tuning.placard_row,
-                // The hint is always last, and is the one line a reader who
-                // already knows the gesture should be able to skip.
                 emphasis: if index == last {
                     Emphasis::Dim
                 } else {

@@ -10,9 +10,9 @@ pub(super) fn emit(out: &mut String, node: &Node) {
         Node::VertexColor => out.push_str("in.color"),
         Node::LocalPosition => out.push_str("vertex.position"),
         Node::LocalNormal => out.push_str("vertex.normal"),
-        // Bevy's own view-wide `globals` uniform, not a slot in this
-        // material's bind group: a per-material `time` would have to be
-        // re-uploaded every frame to say what the view already knows.
+        // Bevy's view-wide `globals` uniform, not a slot in this material's
+        // bind group: a per-material `time` would need re-uploading every
+        // frame.
         Node::Time => out.push_str("globals.time"),
         _ => unreachable!("only the dispatch match in expr/mod.rs reaches here"),
     }

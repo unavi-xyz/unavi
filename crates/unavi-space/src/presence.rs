@@ -18,17 +18,14 @@ use crate::Space;
 
 const PRESENCE_TTL: Duration = Duration::from_mins(2);
 
-/// Republishing on the TTL itself lets every entry lapse before its
-/// replacement lands, and a registry filters expired presence — so a peer that
-/// never left reads as absent for the width of that gap, and whoever queries
-/// inside it finds nobody to bootstrap against.
+/// Kept under `PRESENCE_TTL` so an entry never lapses into absent presence
+/// before its replacement lands.
 const PRESENCE_REFRESH: Duration = PRESENCE_TTL.checked_div(3).expect("nonzero divisor");
 
-/// Heartbeats this peer's occupancy of each active space to every registry it
-/// follows, so others can find peers to bootstrap gossip against.
-/// Tracked per space, not per process: entering a space is exactly when the
-/// peers already in it need to hear about us, and a shared timer would hold the
-/// announcement back until whenever the last one happened to fall due.
+/// Heartbeats occupancy of each active space to every followed registry, so
+/// others can find peers to bootstrap gossip against. Tracked per space, not
+/// per process: a shared timer delays a new space's announcement until the last
+/// space's timer falls due.
 pub fn publish_presence(
     time: Res<Time>,
     spaces: Query<&Space>,
@@ -60,10 +57,9 @@ pub fn publish_presence(
         return;
     };
 
-    // Registries load asynchronously at startup, so the first spaces usually
-    // exist before there is anywhere to announce to. The interval is stamped
-    // only once an announcement actually goes out; stamping it earlier would
-    // silently defer the first real publish by a full TTL.
+    // Registries load asynchronously at startup, so spaces usually precede
+    // them. The interval is stamped only when an announcement actually goes
+    // out; stamping earlier would defer the first real publish by a full TTL.
     let registries = registry_clients();
     if registries.is_empty() {
         return;

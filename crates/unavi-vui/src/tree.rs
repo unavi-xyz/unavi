@@ -22,20 +22,16 @@ impl Node {
         }
     }
 
-    /// Activating it does something, and it cannot be taken out.
     #[must_use]
     pub fn action(label: &str) -> Self {
         Self::new(Role::Action, label, Vec::new())
     }
 
-    /// A thing rather than a command: it can be pulled out of the orbit and
-    /// put somewhere, which is what makes a drag mean anything.
     #[must_use]
     pub fn item(label: &str) -> Self {
         Self::new(Role::Item, label, Vec::new())
     }
 
-    /// Consequential: it opens a cast site rather than firing on release.
     #[must_use]
     pub fn cast(label: &str) -> Self {
         Self::new(Role::Cast, label, Vec::new())
@@ -75,12 +71,8 @@ pub enum Navigation {
     None,
 }
 
-/// A tree and the path currently bloomed within it.
-///
-/// Depth is unbounded. The one structural rule is that **slot 0 is the parent
-/// bead whenever the path is non-empty, and nothing else is ever placed
-/// there** — the way back is in the same position at every level, which is
-/// what makes it learnable.
+/// A tree and the path currently bloomed within it. Slot 0 is the parent
+/// whenever the path is non-empty; nothing else is ever placed there.
 pub struct Tree {
     root: Node,
     path: Vec<usize>,

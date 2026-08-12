@@ -32,11 +32,9 @@ pub struct GossipCtx {
 
 /// Separates this crate's per-space gossip from iroh-docs'.
 ///
-/// iroh-docs subscribes to a namespace's own bytes as its sync topic, so
-/// deriving ours the same way put two protocols on one topic: each received the
-/// other's frames, and iroh-docs drops a namespace's gossip sync permanently on
-/// the first frame it cannot decode. Live document updates would stop arriving
-/// the moment a space broadcast anything.
+/// iroh-docs subscribes to a namespace's own bytes as its sync topic; sharing
+/// that topic would deliver each protocol the other's frames, and iroh-docs
+/// permanently drops a namespace's sync on the first frame it cannot decode.
 const TOPIC_CONTEXT: &str = "unavi/space/gossip";
 
 fn space_topic(space: NamespaceId) -> TopicId {
@@ -86,11 +84,10 @@ const SHUFFLE_SAMPLE: usize = 4;
 
 /// Keeps looking for someone to gossip with until the topic has a neighbor.
 ///
-/// Presence is discovered asynchronously and announced on a heartbeat, so the
-/// peer already in a space routinely publishes *after* the peer joining it has
-/// resolved bootstrap. Resolving once at join leaves whoever arrived first
-/// broadcasting into an empty topic for the life of the process — no neighbor,
-/// no presence, no peer, however healthy the document sync looks.
+/// Presence is discovered asynchronously, so a peer already in a space
+/// routinely announces after the joining peer has resolved bootstrap. Resolving
+/// once at join would leave the first arrival broadcasting into an empty topic
+/// for the life of the process — no neighbor, no presence, no peer.
 async fn handle_gossip_bootstrap(
     ctx: &GossipCtx,
     tx: &GossipSender,
@@ -103,11 +100,9 @@ async fn handle_gossip_bootstrap(
         n0_future::time::sleep(BOOTSTRAP_RETRY).await;
         waited += BOOTSTRAP_RETRY;
 
-        // Having a neighbor is not the same as being in the one overlay: two
-        // sets of peers that never dialed each other form separate clusters,
-        // each internally healthy and mutually invisible, and gossip cannot
-        // merge them because neither knows the other exists. Re-sampling the
-        // registry on a slow interval is what a partitioned overlay heals by.
+        // Separate clusters of peers are mutually invisible and gossip cannot
+        // merge them; re-sampling the registry on a slow interval is what a
+        // partitioned overlay heals by.
         let connected = neighbors.load(Ordering::Relaxed) > 0;
         if connected {
             if waited < BOOTSTRAP_SHUFFLE {
@@ -129,9 +124,8 @@ async fn handle_gossip_bootstrap(
 
         let mut peers = peers.into_iter().collect::<Vec<_>>();
 
-        // Dialing every occupant would make each arrival a fan-out to the whole
-        // space. A random handful is enough to stitch clusters together, and is
-        // the sample size that keeps doing so as a space grows.
+        // Dialing every occupant would fan each arrival out to the whole space;
+        // a random handful is enough to stitch clusters together.
         if connected && peers.len() > SHUFFLE_SAMPLE {
             peers.shuffle(&mut rand::rng());
             peers.truncate(SHUFFLE_SAMPLE);

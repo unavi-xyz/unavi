@@ -32,7 +32,6 @@ impl Default for AgentConfig {
     }
 }
 
-/// Whether the client is running in XR mode.
 #[derive(Resource, Default, Deref)]
 pub struct XrMode(pub bool);
 
@@ -55,10 +54,6 @@ impl AgentConfig {
 
 const EXTRA_FLOAT_HEIGHT: f32 = 0.02;
 
-/// | Group            | Height        |
-/// | ---------------- | ------------- |
-/// | Adult Male       | 1.70 – 1.78 m |
-/// | Adult Female     | 1.60 – 1.67 m |
 const DEFAULT_HEIGHT: f32 = 1.7;
 const DEFAULT_RADIUS: f32 = 0.4;
 const DEFAULT_JUMP: f32 = 1.0;
@@ -66,8 +61,7 @@ const DEFAULT_JUMP: f32 = 1.0;
 pub const DEFAULT_SPRINT_MULTI: f32 = 1.75;
 pub const DEFAULT_WALK_SPEED: f32 = 4.0;
 
-/// World scale factor resource.
-/// This scales world objects to match agent perception.
+/// Scales world objects to match the agent's perception.
 #[derive(Resource, Default)]
 pub struct WorldScale(pub f32);
 

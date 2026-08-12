@@ -18,7 +18,6 @@ pub async fn generate_actor(store: &DataStore) -> Actor {
     let identity = Arc::new(Identity::new(did.clone(), key));
     let actor = store.local_actor(identity);
 
-    // Set up default quota for the actor.
     let did_str = did.to_string();
     store
         .db()

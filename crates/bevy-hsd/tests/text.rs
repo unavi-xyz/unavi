@@ -57,7 +57,6 @@ fn test_text_lifecycle(mut ctx: TestContext) {
     );
 }
 
-/// The point of the whole chain: a string set by a guest becomes geometry.
 #[traced_test]
 #[rstest]
 fn test_text_becomes_a_mesh(mut ctx: TestContext) {
@@ -150,7 +149,7 @@ fn test_an_unknown_variant_still_draws(mut ctx: TestContext) {
 }
 
 /// Characters the shipped font has no glyph for are reported rather than
-/// silently dropped — the whole reason `MissingGlyphs` is a component.
+/// silently dropped.
 #[traced_test]
 #[rstest]
 fn test_uncovered_characters_are_reported(mut ctx: TestContext) {

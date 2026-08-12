@@ -77,7 +77,6 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
 
     let (pose_tx, pose_rx) = async_channel::bounded::<OutgoingPose>(1);
 
-    // Send channel to ECS.
     AsyncCommands::default()
         .spawn((PeerStream(connection.remote_id()), AgentSender(pose_tx)))
         .send()
@@ -116,7 +115,6 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
             }
         };
 
-        // Serialize and send.
         let out = postcard::to_slice(&msg, &mut buf)?;
         let len = out.len();
         tx.write_u8(u8::try_from(len).expect("max size")).await?;

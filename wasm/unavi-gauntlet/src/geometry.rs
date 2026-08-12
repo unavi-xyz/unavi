@@ -13,7 +13,7 @@ pub const OUTLINE_WIDTH: f32 = 0.006;
 pub const OUTLINE_Z: f32 = 0.001;
 pub const ICON_R: f32 = (SECTOR_INNER_R + RING_RADIUS) * 0.5;
 
-/// (positions, normals, indices) for a flat mesh in the wheel plane.
+/// (positions, normals, indices).
 pub type MeshData = (Vec<f32>, Vec<f32>, Vec<u32>);
 
 pub fn apply_mesh(prim: &Prim, mesh: &MeshData) {
@@ -87,7 +87,7 @@ fn annulus(i: usize, n: usize, r_inner: f32, r_outer: f32, depth: f32) -> MeshDa
 
 const GLYPH: f32 = 0.018;
 
-/// A house silhouette (roof triangle over a wall block).
+/// A house silhouette.
 #[must_use]
 pub fn home_mesh() -> MeshData {
     let w = GLYPH * 0.85;
@@ -190,9 +190,7 @@ pub fn diamond_mesh() -> MeshData {
     tris(&verts, &idx, 0.0)
 }
 
-/// A checkmark: a short arm and a long arm meeting at the crux with a miter
-/// join so the tip is sharp with no overhang. Arms share the chevron's opening
-/// angle.
+/// A checkmark; the miter join keeps the tip sharp with no overhang.
 #[must_use]
 pub fn check_mesh() -> MeshData {
     let t = GLYPH * 0.36;

@@ -45,9 +45,8 @@ fn literal(out: &mut String, value: GraphValue) {
     }
 }
 
-/// A public input is stored as a full `vec4` slot; only the components its
-/// declared kind actually uses are meaningful, so a lower-kind reference
-/// swizzles down to them.
+/// A public input is stored as a full `vec4` slot; a reference swizzles down
+/// to the components its declared kind uses.
 pub(super) fn port_expr(out: &mut String, public_inputs: &[GraphValue], port: Port) {
     match port {
         Port::Const(value) => literal(out, value),
@@ -67,9 +66,9 @@ pub(super) fn port_expr(out: &mut String, public_inputs: &[GraphValue], port: Po
     }
 }
 
-/// The kind a port carries, for the nodes whose generated expression depends
-/// on it. Total rather than fallible: only a validated graph reaches codegen,
-/// and validation already rejected every out-of-range reference.
+/// The kind a port carries, for nodes whose generated expression depends on
+/// it. Total: only a validated graph reaches codegen, and validation already
+/// rejected every out-of-range reference.
 fn port_kind(public_inputs: &[GraphValue], kinds: &[ValueKind], port: Port) -> ValueKind {
     match port {
         Port::Const(value) => value.kind(),
@@ -87,9 +86,9 @@ fn zero_literal(out: &mut String, kind: ValueKind) {
     }
 }
 
-/// The per-node WGSL expression: a single exhaustive match that only
-/// dispatches to the family owning each variant, so adding a node makes the
-/// compiler name this file.
+/// The per-node WGSL expression: one exhaustive match dispatching each
+/// variant to the family that owns it, so adding a node makes the compiler
+/// name this file.
 pub(super) fn node_expr(
     out: &mut String,
     public_inputs: &[GraphValue],

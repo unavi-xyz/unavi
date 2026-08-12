@@ -21,13 +21,12 @@ use obvhs::aabb::Aabb;
 /// live collider's [`ColliderTreeProxyKey`] names a proxy that tree holds and
 /// that proxy belongs to that collider.
 ///
-/// Avian indexes its proxy arrays unchecked from these keys, so a key left
-/// naming a freed slot panics the physics step, and a key left naming a slot
-/// since reused aliases another collider's proxy — which the next tree move
-/// evicts, producing the freed slot. Both are reachable from a scene alone:
+/// Avian indexes its proxy arrays unchecked from these keys, so a stale key
+/// panics the physics step or, when the slot has been reused, aliases another
+/// collider's proxy until the next tree move evicts it. Reachable from a scene:
 /// clearing a prim's `rigid_body` attribute while it keeps its collider drops
-/// `ColliderOf`, and avian's handler for that moves the proxy to the
-/// standalone tree without writing the new key back.
+/// `ColliderOf`, and avian's handler moves the proxy to the standalone tree
+/// without writing the new key back.
 pub struct ColliderTreeIntegrityPlugin;
 
 impl Plugin for ColliderTreeIntegrityPlugin {
@@ -88,7 +87,7 @@ fn repair_collider_tree_keys(
 
     // A stale key can outlive more than one tree move, so a collider may own
     // several proxies by now. Drop every one and mint a single replacement,
-    // rather than adopting one and leaking the rest as phantom colliders.
+    // rather than adopt one and leak the rest as phantom colliders.
     doomed.clear();
     for tree_type in ColliderTreeType::ALL {
         let tree = trees.tree_for_type(tree_type);

@@ -32,8 +32,7 @@ pub enum IdError {
 /// A ULID: 48 bits of millisecond timestamp followed by 80 random bits,
 /// rendered as 26 characters of Crockford base32.
 ///
-/// Fixed-length rendering is load-bearing: no id may be a prefix of another,
-/// or a prim key would prefix-delete a sibling's entries.
+/// Fixed length, so no id is a prefix of another.
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct PrimId(pub [u8; PRIM_ID_BYTES]);

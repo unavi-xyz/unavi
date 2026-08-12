@@ -45,7 +45,6 @@ impl GuestCuboid for CuboidWrapped {
 }
 
 fn build(h: Vec3) -> RawMesh {
-    // 6 faces × 4 verts = 24 verts, 6 faces × 6 indices = 36 indices
     let faces: [([f32; 3], [[f32; 3]; 4], [[f32; 2]; 4]); 6] = [
         (
             [1.0, 0.0, 0.0],

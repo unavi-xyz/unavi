@@ -102,10 +102,8 @@ mod tests {
         assert!(missing.is_empty(), "no glyph for {missing:?}");
     }
 
-    /// Centring works on advance widths, which include each glyph's side
-    /// bearings. What a reader judges is the ink, so the two must not drift
-    /// far apart — this measures the real font rather than trusting the
-    /// arithmetic.
+    /// Centring uses advance widths including side bearings, but the reader
+    /// judges the ink, so the two must not drift apart.
     #[test]
     fn centred_text_looks_centred() {
         let atlas = atlas();

@@ -32,7 +32,7 @@ pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<(),
         ids
     };
 
-    // Opening a portal writes a handshake on behalf of the source prim, so the
+    // Opening a portal writes a handshake on behalf of the source prim; the
     // caller must hold scene-write on that prim's document.
     validate_firewall(&api.doc_id, &doc, Channel::SceneWrite)
         .map_err(|_| ScriptError::firewall("portal open requires scene-write on source prim"))?;

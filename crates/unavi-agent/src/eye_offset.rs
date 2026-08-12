@@ -72,7 +72,6 @@ pub fn setup_vrm_eye_offset(
             continue;
         };
 
-        // Calculate VRM eye height (avatar's visual eye level).
         let eye_y = if let Some((_, left_pos)) = left_eye
             && let Some((_, right_pos)) = right_eye
         {
@@ -84,7 +83,6 @@ pub fn setup_vrm_eye_offset(
             config.real_height / 2.0
         };
 
-        // Calculate VRM shoulder width for capsule radius.
         let shoulder_width = if let Some(left_pos) = left_shoulder
             && let Some(right_pos) = right_shoulder
         {

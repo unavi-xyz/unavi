@@ -60,12 +60,10 @@ pub fn js_to_u32s(value: JsValue) -> Option<Vec<u32>> {
     Some(js_sys::Uint32Array::new(&value).to_vec())
 }
 
-/// Convert a 32-byte hash to a JS `Uint8Array`.
 pub fn bytes32_to_js(b: &[u8; 32]) -> JsValue {
     js_sys::Uint8Array::from(b.as_slice()).into()
 }
 
-/// Decode a JS `Uint8Array` (or array-like) into a 32-byte blob id.
 pub fn js_to_bytes32(value: &JsValue) -> Option<[u8; 32]> {
     if value.is_null() || value.is_undefined() {
         return None;
@@ -74,8 +72,8 @@ pub fn js_to_bytes32(value: &JsValue) -> Option<[u8; 32]> {
     arr.as_slice().try_into().ok()
 }
 
-/// Extract our `SlotMap` index from a resource handle.
-/// Each handle exposes it via a `__rep` wasm-bindgen getter.
+/// Extracts the `SlotMap` index from a resource handle, exposed via its
+/// `__rep` getter.
 pub fn opt_rep(value: &JsValue) -> Option<u32> {
     if value.is_null() || value.is_undefined() {
         return None;

@@ -103,9 +103,6 @@ const fn material(color: Color, emissive_scale: f32) -> Material {
     }
 }
 
-/// A cube shell with its 8 corners as small dark cubes, sized so only a thin
-/// gap separates neighbors. A single recessed core cube sits behind that
-/// gap, its color showing through as a 2D inset cross on every face.
 fn build_shell(doc: &Document, parent: &Prim, id: Hash) -> Prim {
     let shape = Cuboid::new(Vec3::splat(SIZE));
     let group = doc.create_prim().expect("create_prim");
@@ -143,10 +140,8 @@ fn build_shell(doc: &Document, parent: &Prim, id: Hash) -> Prim {
     group
 }
 
-/// A beacon with no space-named prim is the authored template, instanced
-/// because a prim carries the `prefab` slot the compiled blob lives in. It
-/// stands for nothing and does nothing; a real beacon is minted as a document
-/// of its own and named by whoever minted it.
+/// No space-named prim means the authored template, which does nothing; a
+/// real beacon is minted as a document of its own.
 struct Script(Option<Beacon>);
 
 struct Beacon {

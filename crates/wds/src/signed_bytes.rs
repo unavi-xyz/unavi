@@ -74,11 +74,9 @@ where
 {
     /// Binds a signature to the protocol that asked for it.
     ///
-    /// Distinct payload types routinely encode to identical bytes —
-    /// `Challenge` and `Presence` are both a DID, two 32-byte ids and a
-    /// timestamp — so without this a signature collected from one protocol
-    /// would verify as another. Give every type its own string; never reuse
-    /// one.
+    /// Distinct payload types can encode to identical bytes, so without this a
+    /// signature collected from one protocol would verify as another. Give
+    /// every type its own string; never reuse one.
     const SIGNING_CONTEXT: &'static str;
 
     fn sign(&self, key: &impl Signer) -> anyhow::Result<SignedBytes<Self>> {

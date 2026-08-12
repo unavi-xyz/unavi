@@ -20,8 +20,7 @@ pub trait ScriptBehavior: Sized {
     }
 }
 
-/// Helper around [`wit_bindgen::generate!`], using better, manually-defined
-/// types rather than relying purely on codegen.
+/// [`wit_bindgen::generate!`] with manually-defined types in place of codegen.
 #[macro_export]
 macro_rules! generate {
     () => {
@@ -67,22 +66,6 @@ macro_rules! generate {
     };
 }
 
-/// Calls [`wired_prelude::generate!`], then wires up the script exports to a
-/// provided type.
-///
-/// ## Example
-///
-/// ```
-/// struct Script;
-///
-/// wired_prelude::generate_script!(Script);
-///
-/// impl ScriptBehavior for Script {
-///     fn init() -> anyhow::Result<Self> {
-///         Ok(Self)
-///     }
-/// }
-/// ```
 #[macro_export]
 macro_rules! generate_script {
     ($script:ident) => {

@@ -39,9 +39,9 @@ use crate::common::*;
 
 mod common;
 
-/// Unlit rim glow: no lighting pass, so it needs no `PbrInput` at all — the
-/// shape a beam/hologram/sky effect needs, unreachable through a fixed PBR
-/// terminal set.
+/// Unlit rim glow: no lighting pass, so no `PbrInput` at all — the shape a
+/// beam/hologram/sky effect needs, unreachable through a fixed PBR terminal
+/// set.
 fn glow_graph() -> ShaderGraph {
     ShaderGraph {
         public_inputs: vec![GraphValue::Color([0.1, 0.6, 1.0, 1.0])],
@@ -67,9 +67,8 @@ fn glow_graph() -> ShaderGraph {
     }
 }
 
-/// No `GraphOverridesAttr` set: `HsdSlots` alone must be enough to trigger the
-/// pipeline, since that attribute is optional and this is the common case —
-/// see `HsdMaterialGraphSlot`'s docs.
+/// No `GraphOverridesAttr` set: `HsdSlots` alone must trigger the pipeline,
+/// since that attribute is optional and this is the common case.
 #[traced_test]
 #[rstest]
 fn test_shader_graph_without_overrides(#[from(ctx_wds)] mut ctx: TestContext) {
@@ -139,9 +138,8 @@ fn test_shader_graph_with_overrides(#[from(ctx_wds)] mut ctx: TestContext) {
     handle.expect("overridden shader graph material");
 }
 
-/// Two prims referencing byte-identical compiled graphs must end up sharing
-/// one generated `Handle<Shader>` — the free dedup this format depends on,
-/// now verified at the runtime cache rather than just at compile time.
+/// Two prims referencing byte-identical compiled graphs share one generated
+/// `Handle<Shader>`.
 #[traced_test]
 #[rstest]
 fn test_shader_graph_shares_compiled_shader_across_prims(#[from(ctx_wds)] mut ctx: TestContext) {
@@ -170,8 +168,8 @@ fn test_shader_graph_shares_compiled_shader_across_prims(#[from(ctx_wds)] mut ct
     );
 }
 
-/// Removing the slot removes the built material, mirroring how
-/// `ImageAttr`/`MaterialAttr` removal already works.
+/// Removing the slot removes the built material, as `ImageAttr`/`MaterialAttr`
+/// removal does.
 #[traced_test]
 #[rstest]
 fn test_shader_graph_removed_when_slot_removed(#[from(ctx_wds)] mut ctx: TestContext) {
@@ -197,8 +195,7 @@ fn test_shader_graph_removed_when_slot_removed(#[from(ctx_wds)] mut ctx: TestCon
 }
 
 /// A graph with a displacement network compiles and caches a vertex shader
-/// too, not just a fragment one — the part a PBR-terminal-only design could
-/// never express (physgun's curved beam needs exactly this).
+/// too, not just a fragment one.
 #[traced_test]
 #[rstest]
 fn test_shader_graph_with_displacement_compiles_a_vertex_shader(
@@ -246,8 +243,7 @@ fn test_shader_graph_with_displacement_compiles_a_vertex_shader(
 }
 
 /// Blend and cull are declared by the graph, not inferred from which
-/// terminals happen to be connected — an inferred mode put every unlit graph
-/// in the transparent queue and left `Add` (what a beam needs) unreachable.
+/// terminals happen to be connected.
 #[traced_test]
 #[rstest]
 fn blend_and_cull_reach_the_material(#[from(ctx_wds)] mut ctx: TestContext) {
@@ -281,11 +277,9 @@ fn blend_and_cull_reach_the_material(#[from(ctx_wds)] mut ctx: TestContext) {
     assert_eq!(material.cull_mode, Some(Face::Front));
 }
 
-/// One binding, two backends: `material:binding` names a prim, not a
-/// backend, so a prim bound to one carrying a graph renders that graph —
-/// and must not also carry a competing `StandardMaterial`. This is the path
-/// the physgun uses to reach a graph its package authored, since a script
-/// cannot author one.
+/// One binding, two backends: `material:binding` names a prim, not a backend,
+/// so a prim bound to one carrying a graph renders that graph and must not
+/// also carry a competing `StandardMaterial`.
 #[traced_test]
 #[rstest]
 fn binding_to_a_graph_prim_renders_that_graph(#[from(ctx_wds)] mut ctx: TestContext) {

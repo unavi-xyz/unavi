@@ -50,9 +50,8 @@ fn displacement_rhs(node: Node) -> String {
     rhs_of(&body, 0)
 }
 
-/// The exact RHS each surface node kind emits — the per-node granularity the
-/// old one-big-graph naga-parse test lacked (a node emitting the wrong but
-/// well-formed builtin used to pass).
+/// The exact RHS each surface node kind emits, at per-node granularity: a
+/// wrong but well-formed builtin would otherwise pass.
 #[rstest]
 #[case(&[Node::Uv], "in.uv")]
 #[case(&[Node::WorldNormal], "pbr_input.world_normal")]
@@ -164,7 +163,6 @@ fn convert_emits(#[case] nodes: &[Node], #[case] expected: &str) {
     assert_eq!(surface_rhs(nodes, 0), expected);
 }
 
-/// The displacement-only leaves.
 #[rstest]
 #[case(Node::LocalPosition, "vertex.position")]
 #[case(Node::LocalNormal, "vertex.normal")]
@@ -226,8 +224,7 @@ fn node_ports_reference_earlier_lets() {
     );
 }
 
-/// WGSL's own `*` broadcasts, so a scaled vector needs no matching vector —
-/// this is the case the graph format previously could not express at all.
+/// WGSL's own `*` broadcasts, so a scaled vector needs no matching vector.
 #[test]
 fn a_float_scales_a_vector_without_a_matching_vector() {
     assert_eq!(

@@ -168,9 +168,8 @@ fn cast_to_vec3(bytes: &[u8]) -> Result<Vec<Vec3>, PodCastError> {
     Ok(raw.iter().map(|&[x, y, z]| Vec3::new(x, y, z)).collect())
 }
 
-/// Collider buffers arrive over document sync, so hull and trimesh
-/// construction — both superlinear in point count — are only handed input
-/// this side has bounded first.
+/// Collider buffers arrive over document sync; hull and trimesh construction
+/// are superlinear in point count, so input is bounded before use.
 fn within_cap(name: &str, bytes: &[u8]) -> bool {
     if bytes.len() > MAX_MESH_ELEMENTS {
         warn!(

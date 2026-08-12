@@ -3,14 +3,12 @@ use crate::atlas::{
     Rect,
 };
 
-/// Cap on the glyphs one string may lay out. A document that renders a novel
-/// is a denial of service on the text pipeline, so the bound is a typed error
-/// rather than a slow frame.
+/// Cap on the glyphs one string may lay out; past it the pipeline errors
+/// rather than running long.
 pub const MAX_GLYPHS: usize = 4096;
 
-/// Where the origin sits on a line. Measured against the origin rather than
-/// against the wrap box, so a centred label is centred on the thing it labels
-/// whether or not it wraps.
+/// Where the origin sits on a line, against the line's own width rather than
+/// the wrap box.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Align {
     #[default]
@@ -54,16 +52,11 @@ pub struct Quad {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Laid {
     pub quads:   Vec<Quad>,
-    /// The metric box: line widths by ascender and descender. What a backing
-    /// surface should be sized to, since ink alone jumps around as the text
-    /// changes.
+    /// The metric box a backing surface should be sized to.
     pub bounds:  Rect,
-    /// The union of the drawn quads. Empty when nothing was drawn.
     pub ink:     Rect,
     pub lines:   usize,
-    /// Characters the atlas has no glyph for. Dropped from the output and
-    /// counted here, so a caller can say the text is incomplete rather than
-    /// quietly showing less than it was given.
+    /// Glyphs the atlas lacks, dropped from the output and counted here.
     pub missing: usize,
 }
 
@@ -73,7 +66,7 @@ pub enum LayoutError {
     TooManyGlyphs { count: usize, cap: usize },
 }
 
-/// A glyph placed on a line, at `pen` em units from the line's start.
+/// A glyph at `pen` em units from the line's start.
 #[derive(Debug, Clone, Copy)]
 struct Placed {
     ch:  char,
@@ -91,9 +84,8 @@ impl Line {
         self.placed.last().map(|placed| placed.ch)
     }
 
-    /// Advance past the last glyph that leaves ink. Trailing spaces are not
-    /// part of a line's width, or a wrapped centred paragraph drifts left by
-    /// however many spaces happened to fall at each break.
+    /// Ink width, ignoring trailing spaces so a wrapped centred line does not
+    /// drift by the spaces at each break.
     fn width(&self, atlas: &Atlas) -> f32 {
         self.placed
             .iter()
@@ -150,10 +142,8 @@ pub fn layout(text: &str, atlas: &Atlas, opts: &LayoutOpts) -> Result<Laid, Layo
     Ok(assemble(&lines, atlas, opts, missing))
 }
 
-/// Moves the last word of `line` onto a fresh line, pushing the remainder onto
-/// `lines`. A word wider than the whole wrap box has no break opportunity and
-/// is split where it ran out of room, which is the only alternative to
-/// overflowing the box the caller asked for.
+/// Splits a word wider than the wrap box mid-word rather than letting it
+/// overflow the box the caller asked for.
 fn wrap_line(lines: &mut Vec<Line>, line: Line, atlas: &Atlas) -> Line {
     let break_at = line
         .placed
@@ -243,8 +233,8 @@ mod tests {
         VerticalMetrics,
     };
 
-    /// Every glyph one em wide and half an em tall, so an expected width is
-    /// just a character count and a failure is legible.
+    /// Every glyph one em wide and half an em tall, so a width is a character
+    /// count.
     fn atlas() -> Atlas {
         let square = Glyph {
             plane:   Rect {
@@ -297,7 +287,7 @@ mod tests {
         layout(text, &atlas(), opts).expect("layout")
     }
 
-    /// The x each line starts at, top line first.
+    /// Line starts, top line first.
     fn line_starts(laid: &Laid) -> Vec<f32> {
         let mut starts = Vec::new();
         let mut current: Option<(f32, f32)> = None;

@@ -40,7 +40,6 @@ mod tests {
         assert_eq!(vec3([0.0; 3]), Some(Vec3::ZERO));
     }
 
-    /// Any one component poisons the whole vector, so the check is per-axis.
     #[test]
     fn a_single_non_finite_component_rejects_the_vector() {
         for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {

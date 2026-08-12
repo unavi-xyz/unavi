@@ -84,7 +84,6 @@ fn build(r: f32, big_r: f32, minor_res: usize, major_res: usize) -> RawMesh {
     for i in 0..major_res {
         let theta = TAU * i as f32 / major_res as f32;
         let (st, ct) = theta.sin_cos();
-        // Center of the minor circle at this theta
         let center = Vec3::new(big_r * ct, 0.0, big_r * st);
 
         for j in 0..minor_res {

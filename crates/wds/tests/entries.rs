@@ -100,9 +100,8 @@ async fn test_empty_value_reads_as_absence(#[future] ctx: DataStoreCtx) {
     assert!(entries::list(&doc, &["p/"]).await.expect("list").is_empty());
 }
 
-/// A prefix wipe removes rather than marks, so the entries it sweeps stop
-/// costing storage — but it would also eat a tombstone written beneath it,
-/// which is why deletion tombstones the parent last.
+/// A prefix wipe removes rather than marks, so swept entries stop costing
+/// storage; it would also eat a tombstone written beneath it.
 #[rstest]
 #[timeout(Duration::from_secs(5))]
 #[awt]

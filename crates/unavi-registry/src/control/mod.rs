@@ -70,7 +70,6 @@ pub enum RegistryService {
         s:          SessionToken,
         submission: SignedBytes<Submission>,
     },
-    /// Withdraw one.
     #[rpc(tx=oneshot::Sender<Result<(), RegistryError>>)]
     #[wrap(Retract)]
     Retract { s: SessionToken, ns: NamespaceId },

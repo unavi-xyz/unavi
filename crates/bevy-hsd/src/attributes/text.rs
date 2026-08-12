@@ -68,8 +68,8 @@ fn color(value: Option<&ColorVec>, fallback: Color) -> Color {
 }
 
 /// An unrecognized variant falls back to the default rather than refusing the
-/// prim: the payload is stored and re-served untouched either way, so a
-/// document authored against a newer build still draws its text.
+/// prim: the payload is stored and re-served untouched, so a document authored
+/// against a newer build still draws its text.
 fn align(value: Option<&str>) -> Align {
     match value {
         Some("center") => Align::Center,

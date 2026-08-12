@@ -14,8 +14,7 @@ pub struct MeshData {
     pub indices:   Vec<u32>,
 }
 
-/// A UV sphere. The bubble shell every branch mote draws, and the fallback
-/// body for a leaf with nothing of its own.
+/// A UV sphere.
 #[must_use]
 pub fn sphere(radius: f32, rings: usize, segments: usize) -> MeshData {
     let mut mesh = MeshData::default();
@@ -26,11 +25,8 @@ pub fn sphere(radius: f32, rings: usize, segments: usize) -> MeshData {
 /// `len` pips at ring positions `start..start + len` of `total`, in unit
 /// space, as one mesh.
 ///
-/// One mesh because each vertex-stream write costs a blob upload regardless
-/// of size; a run rather than the whole ring because container and leaf pips
-/// take different materials. Always [`MAX_PIPS`] bodies, unused ones at zero
-/// radius: vertex streams are separate entries, so a rebuild that changed the
-/// count would be briefly inconsistent and rejected.
+/// Always [`MAX_PIPS`] bodies; unused ones sit at zero radius so the vertex
+/// count never changes.
 #[must_use]
 pub fn cluster(start: usize, len: usize, total: usize, ring: f32, radius: f32) -> MeshData {
     const RINGS: usize = 6;
@@ -59,9 +55,7 @@ pub fn overflow_marker(radius: f32) -> MeshData {
     sphere(radius, 6, 8)
 }
 
-/// A unit quad facing +Z, its top edge on the origin and descending — the
-/// frame a placard's own layout is expressed in, so a binding scales this
-/// rather than doing the arithmetic twice.
+/// A unit quad facing +Z, its top edge on the origin, descending.
 #[must_use]
 pub fn panel() -> MeshData {
     MeshData {
@@ -201,8 +195,8 @@ mod tests {
         assert!(!mesh.indices.is_empty());
     }
 
-    /// Bodies drawn away from the origin, which is what "shown" means once
-    /// hidden pips collapse to zero radius there.
+    /// Bodies drawn away from the origin, once hidden pips collapse to zero
+    /// radius there.
     fn visible_bodies(mesh: &MeshData) -> usize {
         mesh.positions
             .chunks_exact(3)

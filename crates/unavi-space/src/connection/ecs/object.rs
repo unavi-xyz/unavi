@@ -200,7 +200,8 @@ pub fn apply_remote_objects(
     let updates = std::mem::take(&mut *OBJECT_INBOX.lock().expect("object inbox"));
 
     for ((peer, doc, prim), (recv, resolved)) in updates {
-        // Only the document's current authority may move it, and never ourselves.
+        // Only the document's current authority may move it, and never the
+        // local peer.
         if replicas::authority(ns(resolved.space), ns(doc)) != Some(*peer.as_bytes())
             || replicas::is_self_authority(ns(resolved.space), ns(doc))
         {
@@ -279,9 +280,9 @@ pub fn advance_object_interp(
 #[derive(Component)]
 pub struct ReplicaObject;
 
-/// Parks remotely-controlled prims as kinematic replicas and runs
-/// ours/unclaimed ones as dynamic. `replicas::authority` resolves the latest
-/// claim, so only the accepted controller drives a prim.
+/// Parks remotely-controlled prims as kinematic replicas and runs local or
+/// unclaimed ones as dynamic. `replicas::authority` resolves the latest claim,
+/// so only the accepted controller drives a prim.
 pub fn reconcile_object_authority(
     roots: Query<&HsdDocId>,
     prims: Query<(Entity, &HsdChild, &RigidBody, Has<ReplicaObject>), With<Prim>>,

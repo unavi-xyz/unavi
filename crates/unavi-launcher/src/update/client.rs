@@ -57,7 +57,6 @@ fn client_exe_path(version: &Version) -> PathBuf {
 }
 
 pub fn launch_client() -> anyhow::Result<()> {
-    // Try versioned client first
     if let Some(version) = get_installed_version() {
         let exe_path = client_exe_path(&version);
         if exe_path.exists() {
@@ -75,7 +74,6 @@ pub fn launch_client() -> anyhow::Result<()> {
         }
     }
 
-    // Fall back to sibling executable
     let exe_path = std::env::current_exe()?
         .parent()
         .ok_or_else(|| anyhow::anyhow!("failed to get executable directory"))?
@@ -173,7 +171,6 @@ where
         tmp_archive_path.to_string_lossy()
     );
 
-    // Download with progress tracking
     download_with_progress(&asset.browser_download_url, &tmp_archive_path, |progress| {
         on_status(UpdateStatus::Downloading {
             version:  latest_version.to_string(),
@@ -196,7 +193,7 @@ where
     info!("Extracting to: {}", extract_path.display());
     extract_archive(&tmp_tar_path, &extract_path)?;
 
-    // Set executable permissions on unix
+    // Set executable permissions on unix.
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;
@@ -211,7 +208,6 @@ where
     set_installed_version(&latest_version)?;
     info!("Client updated to {latest_version}");
 
-    // Clean up old versions (keep last 2)
     clean_old_versions(&latest_version, 2)?;
 
     on_status(UpdateStatus::UpToDate);
@@ -230,10 +226,8 @@ fn clean_old_versions(current: &Version, keep_count: usize) -> anyhow::Result<()
         })
         .collect();
 
-    // Sort versions in descending order (newest first)
     versions.sort_by(|a, b| b.cmp(a));
 
-    // Keep current version plus keep_count-1 older versions
     for version in versions.iter().skip(keep_count) {
         if version != current {
             let dir_to_remove = client_dir(version);

@@ -45,7 +45,6 @@ pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
 fn main() -> anyhow::Result<()> {
     let assets_path = "../unavi-client/assets/".to_string();
 
-    // Copy runtime assets (VRM and glb animations) to assets dir.
     let src = DIRS.data_local_dir().join("assets");
     let dst = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join(&assets_path)

@@ -32,8 +32,8 @@ pub async fn submit(
         return Ok(());
     };
 
-    // The session holder must be the announcer: a registry relays claims, it
-    // does not let one identity speak for another.
+    // The session holder must be the announcer; a registry does not let one
+    // identity speak for another.
     if submission.did != did {
         tx.send(Err(RegistryError::NotPermitted)).await?;
         return Ok(());
@@ -50,9 +50,8 @@ pub async fn submit(
         return Ok(());
     }
 
-    // Refreshing an existing entry is always allowed; only a new namespace can
-    // push a DID over its cap, so a submitter can never be locked out of
-    // keeping what it already listed alive.
+    // Refreshing an existing entry is always allowed; only a new namespace
+    // counts against the cap.
     let live = ctx.catalog.live(&ctx.docs, &ctx.blobs).await?;
     let held = live
         .iter()

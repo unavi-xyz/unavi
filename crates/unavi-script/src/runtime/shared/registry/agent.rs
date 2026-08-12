@@ -109,8 +109,8 @@ pub fn spawn_proxy_nodes(
 }
 
 fn gen_proxy_id() -> AbsoluteNodeId {
-    // A proxy is per-peer by nature and never referenced across peers, so a
-    // freshly minted id under a blank document is exactly right.
+    // Proxies are never referenced across peers; a fresh id under a blank
+    // document is safe.
     AbsoluteNodeId {
         doc:  DocId([0; 32]),
         node: PrimId::new(),

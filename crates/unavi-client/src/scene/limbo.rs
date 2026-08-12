@@ -109,8 +109,8 @@ pub fn offset_agent_to_limbo(
     tr.translation += LIMBO_OFFSET;
 }
 
-/// Sets an already-spawned agent body onto the limbo floor on limbo re-entry
-/// (e.g. travel), where [`offset_agent_to_limbo`]'s spawn trigger never fires.
+/// Sets an already-spawned agent body onto the limbo floor on limbo re-entry,
+/// where [`offset_agent_to_limbo`]'s spawn trigger never fires.
 pub fn park_agent_in_limbo(
     agents: Query<&LocalAgentEntities, With<LocalAgent>>,
     mut bodies: Query<(&mut Transform, &mut LinearVelocity, &mut AngularVelocity)>,

@@ -27,9 +27,9 @@ pub struct KvRes {
     pub doc:   DocId,
 }
 
-/// Replicas key by 32 opaque bytes, which a document id equally is. Keying kv
-/// by document id is what lets a prefab instance — which has an id but no
-/// namespace — hold shared state at all.
+/// Replicas key by 32 opaque bytes; a document id is one. Keying by document id
+/// is what lets a prefab instance — which has an id but no namespace — hold
+/// shared state at all.
 fn ns(id: DocId) -> NamespaceId {
     NamespaceId::from(&id.0)
 }

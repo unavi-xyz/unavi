@@ -1,11 +1,4 @@
-//! Discovery and curation, deliberately separate from [`wds`].
-//!
-//! WDS is agnostic by design: a host stores bytes it never interprets. A
-//! registry is the opposite kind of service — ranking, categorising and
-//! searching all require reading what was submitted. The two cannot share a
-//! crate without one losing its defining property, so they share a node
-//! instead: a registry reuses the store's endpoint, docs, blobs and
-//! authenticated sessions while keeping its own protocol and its own opinions.
+//! Discovery and curation, separate from [`wds`].
 
 use std::{
     sync::{
@@ -41,11 +34,7 @@ pub mod error;
 pub mod presence;
 pub mod views;
 
-/// How often views are rebuilt when submissions have changed, and expired
-/// presence is swept.
-///
-/// Bounds how long a newly occupied space stays invisible to clients, so it is
-/// kept short; the work is skipped entirely when nothing changed.
+/// Bounds how long a newly occupied space stays invisible to clients.
 const MAINTENANCE_INTERVAL: Duration = Duration::from_secs(5);
 
 pub struct RegistryContext {
@@ -60,8 +49,6 @@ pub struct RegistryContext {
 }
 
 impl RegistryContext {
-    /// Marks views stale. The maintenance loop coalesces bursts of submissions
-    /// into one rebuild rather than rewriting every view per write.
     pub(crate) fn request_rebuild(&self) {
         self.dirty.store(true, Ordering::Release);
     }
@@ -80,8 +67,6 @@ pub struct Registry {
 }
 
 impl Registry {
-    /// Builds a registry sharing `store`'s endpoint, docs, blobs and sessions.
-    ///
     /// Returns the registry and its iroh protocol handler, to be registered on
     /// the same router as the store's.
     pub async fn create(
@@ -133,8 +118,6 @@ async fn maintenance(ctx: Arc<RegistryContext>) {
 
         ctx.presence.sweep(window).await;
 
-        // Rewritten only when the ordered set of active spaces changes, so a
-        // steady room costs no doc writes however often its peers heartbeat.
         let active = ctx.presence.active(window).await;
         let ordering = active.iter().map(|s| s.ns).collect::<Vec<_>>();
         if ordering != published {

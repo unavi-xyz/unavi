@@ -1,11 +1,10 @@
-//! Decides which backend renders a prim, so that exactly one does.
+//! Decides which backend renders a prim, so exactly one does.
 //!
 //! The format has one binding concept — USD's `material:binding`, naming
-//! another prim rather than a backend — and this crate has two
-//! implementations of it. Without a single decision point a prim can end up
-//! carrying both `MeshMaterial3d<StandardMaterial>` and
-//! `MeshMaterial3d<ShaderGraphMaterial>`, which renders it twice rather than
-//! failing.
+//! another prim rather than a backend — and this crate has two backends for
+//! it. Without a single decision point a prim can carry both
+//! `MeshMaterial3d<StandardMaterial>` and
+//! `MeshMaterial3d<ShaderGraphMaterial>`, which renders it twice.
 
 use bevy::{
     ecs::system::SystemParam,
@@ -34,17 +33,15 @@ use crate::{
 /// Which backend renders a prim, and whose definition it uses.
 ///
 /// The inner entity is the prim the definition comes from — itself, or the
-/// target of its `material:binding`. A bound prim follows whatever its
-/// target resolved to, so a graph and a PBR material are interchangeable
-/// from the binder's point of view.
+/// target of its `material:binding`. A bound prim follows whatever its target
+/// resolved to, so a graph and a PBR material are interchangeable.
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MaterialSource {
-    /// Renders the source prim's compiled graph, parameterized by *this*
-    /// prim's own overrides — a graph binding shares a program, not a
-    /// finished look, which is what per-instance public inputs are for.
+    /// Renders the source prim's compiled graph, parameterized by this prim's
+    /// own overrides; a graph binding shares a program, not a finished look.
     Graph(Entity),
-    /// Shares the source prim's built `StandardMaterial` outright, since a
-    /// `MaterialAttr` has no per-instance parameters to keep local.
+    /// Shares the source prim's built `StandardMaterial` outright;
+    /// `MaterialAttr` has no per-instance parameters.
     Pbr(Entity),
 }
 
@@ -109,8 +106,8 @@ pub fn resolve_material_source(
         return;
     }
 
-    // A prim bound to one that changed re-resolves too: its material is
-    // whatever its target just became.
+    // A prim bound to a changed one re-resolves too: its material is whatever
+    // its target just became.
     let sources = dirty.clone();
     for ent in &binders {
         if !sources.contains(&ent)

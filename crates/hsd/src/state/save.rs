@@ -1,9 +1,8 @@
 //! Saving is a per-key diff.
 //!
-//! Because state and the entry set have the same shape, a save writes only the
-//! keys that changed. No snapshot, no checkpoint cadence, and no "who
-//! checkpoints and when" — two peers editing different prims no longer
-//! overwrite each other, which was the defect of a single `snapshot` key.
+//! State and the entry set have the same shape, so a save writes only the
+//! keys that changed. Two peers editing different prims never overwrite each
+//! other.
 
 use std::collections::BTreeMap;
 

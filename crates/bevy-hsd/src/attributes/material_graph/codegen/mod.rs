@@ -1,12 +1,10 @@
 //! Compiles a validated [`ShaderGraph`] to WGSL, client-side, at load time.
 //!
-//! Never ships pre-generated WGSL over the network: the graph is the only
-//! thing that travels; every peer that loads it generates its own source
-//! text from the same validated data. A graph compiles to up to two shader
-//! stages — a fragment body from `SurfaceGraph` (in a `Lit` or `Unlit`
-//! shape) and, if present, a vertex body from `DisplacementGraph` — never
-//! one fixed PBR-only body, which is what makes this a genuine WGSL
-//! replacement rather than a parameter tinter.
+//! Only the graph travels over the network; every peer that loads it
+//! generates its own source text from the same validated data. A graph
+//! compiles to up to two stages — a fragment body from `SurfaceGraph` (in a
+//! `Lit` or `Unlit` shape) and, if present, a vertex body from
+//! `DisplacementGraph`.
 
 pub mod body;
 
@@ -50,8 +48,7 @@ fn uniform_block() -> String {
 }
 
 /// Splices a generated body and uniform preamble into a `.wgsl` template at
-/// its `//#PREAMBLE`/`//#BODY` line-comment markers, keeping the templates
-/// readable and diffable.
+/// its `//#PREAMBLE`/`//#BODY` line-comment markers.
 fn splice(template: &str, body: &str, preamble: &str) -> String {
     template
         .replace("//#PREAMBLE", preamble)
@@ -60,14 +57,11 @@ fn splice(template: &str, body: &str, preamble: &str) -> String {
 
 /// The full fragment shader.
 ///
-/// Bevy's own `PbrInput` construction and lighting
-/// (`pbr_input_from_vertex_output`/`apply_pbr_lighting`) wrap the generated
-/// body for `Lit`; `Unlit` skips both and writes `out_color` straight to
-/// the fragment output — mirroring Unreal's Unlit shading model ("only
-/// outputs Emissive Color") and Unity's Unlit Master Stack target. Not
-/// naga-tested standalone — the `#import`s are Bevy's shader-preprocessor
-/// syntax, not plain WGSL; the crate's integration tests wrap the bodies in
-/// a bare harness instead.
+/// Bevy's own `PbrInput` construction and lighting wrap the generated body
+/// for `Lit`; `Unlit` skips both and writes `out_color` straight to the
+/// fragment output. Not naga-testable standalone: the `#import`s are Bevy's
+/// shader-preprocessor syntax, so the integration tests wrap the bodies in a
+/// bare harness.
 #[must_use]
 pub fn generate_fragment_shader(graph: &ShaderGraph, validated: &Validated) -> String {
     let body = generate_surface_body(graph, validated);
@@ -95,12 +89,9 @@ pub fn generate_fragment_shader(graph: &ShaderGraph, validated: &Validated) -> S
 /// The full vertex shader, generated only when a graph has a
 /// `DisplacementGraph`.
 ///
-/// Modeled directly on `bevy_pbr`'s own default `mesh.wgsl` vertex function
-/// — fetch `vertex.position`/`vertex.normal`, splice the displacement body
-/// in, then run the same `mesh_functions::mesh_position_local_to_world` /
-/// `view_transformations::position_world_to_clip` calls it already does —
-/// rather than reimplementing mesh-transform logic. Skinning/morph targets
-/// are out of scope for v1; this targets the static-mesh path only.
+/// Modeled on `bevy_pbr`'s default `mesh.wgsl` vertex function rather than
+/// reimplementing mesh-transform logic. Skinning and morph targets are out of
+/// scope; this targets the static-mesh path only.
 ///
 /// `None` for a graph with no displacement network, where the mesh pipeline's
 /// own vertex shader runs unmodified.

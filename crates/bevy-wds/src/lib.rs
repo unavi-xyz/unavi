@@ -18,8 +18,7 @@ static ROOT_DOC: RwLock<Option<NamespaceId>> = RwLock::new(None);
 static REGISTRIES: RwLock<Vec<NamespaceId>> = RwLock::new(Vec::new());
 static REGISTRY_CLIENTS: RwLock<Vec<RegistryClient>> = RwLock::new(Vec::new());
 
-/// Publishes the process's root doc namespace for off-world access (e.g. the
-/// script runtime's `root-doc` call).
+/// Publishes the process's root doc namespace for off-world access.
 pub fn set_root_doc(ns: NamespaceId) {
     *ROOT_DOC.write().expect("root doc lock poisoned") = Some(ns);
 }
@@ -32,8 +31,7 @@ pub fn root_doc() -> Option<NamespaceId> {
 /// Publishes the view docs of the registries this client follows, for
 /// off-world access.
 ///
-/// Views are the curated docs a registry publishes; the client keeps them
-/// synced locally, and the script runtime's `registries` call `list`s them.
+/// Views are the curated docs a registry publishes.
 pub fn set_registries(namespaces: Vec<NamespaceId>) {
     *REGISTRIES.write().expect("registries lock poisoned") = namespaces;
 }

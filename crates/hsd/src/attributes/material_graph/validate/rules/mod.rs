@@ -16,7 +16,6 @@ use crate::attributes::material_graph::{
     value::ValueKind,
 };
 
-/// The per-network leaf-stage rule; see `leaf::check_network_leaf`.
 pub(super) const fn check_network_leaf(
     network: Network,
     index: usize,

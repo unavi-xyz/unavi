@@ -6,12 +6,10 @@ use bevy::{
 /// Turns a body to face the viewer.
 #[derive(Component, Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub enum Billboard {
-    /// Spins about the world's up axis only. What a label wants: it stays
-    /// upright and readable, and it does not tilt as you crouch.
+    /// Spins about the world's up axis only, so a label stays upright.
     #[default]
     Yaw,
-    /// Faces the viewer squarely from any angle. Correct for something read
-    /// from above or below, wrong for anything standing in the world.
+    /// Faces the viewer from any angle, including overhead.
     Full,
 }
 

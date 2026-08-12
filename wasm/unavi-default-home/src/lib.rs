@@ -75,9 +75,8 @@ impl ScriptBehavior for Script {
             });
         mat.base_color = Some(base_color);
 
-        // The authored prim owns the texture relationships, and a material
-        // payload cannot carry them, so the mesh binds to it instead of
-        // copying it.
+        // Material payloads cannot carry texture relationships, so the mesh
+        // binds to the authored prim instead.
         match &ground_root {
             Some(ground) => {
                 ground.set_material(Some(mat))?;

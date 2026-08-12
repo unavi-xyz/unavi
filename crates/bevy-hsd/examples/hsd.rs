@@ -138,9 +138,8 @@ fn populate(state: &mut SceneState) {
         }
     }
 
-    // Two effects a fixed `MaterialAttr` cannot express: an unlit fresnel
-    // glow and a sine-driven vertex displacement. Both use a smooth sphere —
-    // a cube's per-face normals split apart when displaced along them.
+    // Two effects a fixed `MaterialAttr` cannot express, on smooth spheres: a
+    // cube's per-face normals split apart when displaced along them.
     let graph_buffers = sphere_buffers();
 
     shader_graph_cube(
@@ -178,9 +177,6 @@ fn material_prim(
     prim
 }
 
-/// A prim carrying a compiled shader graph as a `material:graph_data` slot
-/// rather than a bound PBR `MaterialAttr` — a compiled graph is exactly the
-/// kind of content that belongs inline in a slot.
 fn shader_graph_cube(
     state: &mut SceneState,
     buffers: &[(String, Vec<u8>)],
@@ -285,7 +281,7 @@ fn cube_buffers() -> Vec<(String, Vec<u8>)> {
 }
 
 /// Smoothly-normalled sphere, so a displacement graph breathes the whole
-/// shell rather than splitting a cube's per-face vertices apart.
+/// shell rather than splitting per-face vertices apart.
 fn sphere_buffers() -> Vec<(String, Vec<u8>)> {
     mesh_buffers(Sphere::new(CUBE_SIZE / 2.0).mesh().build())
 }

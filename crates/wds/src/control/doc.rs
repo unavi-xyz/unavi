@@ -77,9 +77,8 @@ pub async fn host_doc(
         return Ok(());
     }
 
-    // Agreeing to host means agreeing to replicate. Importing alone leaves the
-    // namespace out of the sync set, where the host rejects every incoming
-    // request with `NotFound` — availability being the entire point of hosting.
+    // Hosting means replicating: a namespace out of the sync set rejects
+    // every incoming request with `NotFound`.
     doc.start_sync(Vec::new()).await?;
 
     let meter = AbortOnDropHandle::new(n0_future::task::spawn(meter_doc(
@@ -87,10 +86,9 @@ pub async fn host_doc(
         inner.ns,
         doc.clone(),
     )));
-    // One meter per namespace, not per owner. Losing this race means the
-    // namespace is already hosted: dropping the loser aborts its meter, and
-    // its doc handle is closed so the replica's open count stays at the one
-    // handle hosting actually holds.
+    // One meter per namespace, not per owner: a lost race means the namespace
+    // is already hosted, so the loser's meter is aborted and its doc handle
+    // closed.
     if let Err((_, loser)) = ctx
         .hosted
         .insert_async(inner.ns, HostedDoc { doc, _meter: meter })
@@ -162,9 +160,7 @@ pub async fn unhost_doc(
 
 /// Ends replication of `ns` and releases this node's own handle on it.
 ///
-/// The replica is only deleted if nothing else still holds it open; another
-/// holder is a legitimate in-process user, not something to tear out from
-/// under.
+/// The replica is dropped only when nothing else still holds it open.
 async fn stop_hosting(ctx: &StoreContext, ns: NamespaceId) {
     let Some((_, hosted)) = ctx.hosted.remove_async(&ns).await else {
         return;

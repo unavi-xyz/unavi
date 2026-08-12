@@ -65,9 +65,8 @@ const MB: u64 = 1024 * 1024;
 /// single allocation rather than a transfer.
 const MAX_SIZE: u64 = 64 * MB;
 
-/// Checks the size for a blob already held as well as one being fetched: a
-/// cached blob is no smaller for having arrived earlier, and may have been
-/// written by a path that did not bound it.
+/// Bounds reads of both a fetch and a cached blob: the cached copy may have
+/// been written by a path that did not bound it.
 async fn get_blob(hash: Hash, blobs: Blobs) -> anyhow::Result<Bytes> {
     if blobs.has(hash).await? {
         return read_bounded(hash, &blobs).await;

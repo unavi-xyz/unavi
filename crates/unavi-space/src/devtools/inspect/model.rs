@@ -199,7 +199,6 @@ impl InspectData<'_, '_> {
         }
         docs.sort_unstable_by_key(|d| *d.as_bytes());
         docs.dedup();
-        // The base document leads the list.
         if let Some(pos) = docs.iter().position(|d| *d == space) {
             let base = docs.remove(pos);
             docs.insert(0, base);

@@ -13,9 +13,9 @@ pub(super) fn emit(out: &mut String, public_inputs: &[GraphValue], node: &Node) 
     match *node {
         Node::Fresnel { power } => {
             // `N`/`V` are plain locals declared by both fragment templates,
-            // not `pbr_input.N`/`.V` — `Unlit` never constructs a `PbrInput`
-            // at all, so Fresnel needs a normal/view pair that exists
-            // independent of the PBR lighting path.
+            // not `pbr_input` fields: `Unlit` never constructs a `PbrInput`,
+            // so Fresnel needs a normal/view pair independent of the PBR
+            // lighting path.
             out.push_str("pow(clamp(1.0 - dot(N, V), 0.0, 1.0), ");
             port_expr(out, public_inputs, power);
             out.push(')');

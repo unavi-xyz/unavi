@@ -133,8 +133,8 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
 /// Builds a client per followed registry, syncs each one's view docs locally,
 /// and publishes both for off-world access.
 ///
-/// A registry is a service the client consults, never one it runs; with no sync
-/// targets configured there is simply nothing to follow.
+/// A registry is a service the client consults, never one it runs; with no
+/// sync targets configured there is nothing to follow.
 async fn sync_registries(store: &DataStore, endpoint: &Endpoint, targets: &[Actor]) {
     let mut clients = Vec::new();
     let mut namespaces = Vec::new();
@@ -160,11 +160,8 @@ async fn sync_registries(store: &DataStore, endpoint: &Endpoint, targets: &[Acto
 /// Resolves every configured sync target, returning the ones that answered
 /// alongside the DIDs that did not.
 ///
-/// A target that does not resolve is almost always a server that has not
-/// finished starting, so it is handed to [`retry_sync_targets`] rather than
-/// failing the load: a client with no reachable server still runs peer to peer,
-/// and holding the whole data store hostage to a home server would take that
-/// away.
+/// An unresolved target is handed to [`retry_sync_targets`] rather than failing
+/// the load: a client with no reachable server still runs peer to peer.
 async fn resolve_sync_targets(
     store: &DataStore,
     identity: &Arc<Identity>,

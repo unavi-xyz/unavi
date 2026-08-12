@@ -28,8 +28,8 @@ use crate::{
     runtime::shared::Api,
 };
 
-/// A guest may pass any bit pattern it likes. Every value crossing into avian
-/// is checked here, before it can reach a component the solver reads.
+/// A guest may pass any bit pattern. Every value crossing into avian is checked
+/// here, before it can reach a component the solver reads.
 fn checked_vec3(what: &str, v: [f32; 3]) -> Result<Vec3, ScriptError> {
     finite::vec3(v).ok_or_else(|| ScriptError::other(format!("{what} must be finite, got {v:?}")))
 }
@@ -215,8 +215,7 @@ pub async fn get_linear_velocity(api: &Api, prim_rep: u32) -> Result<[f32; 3], S
 }
 
 /// Sets a persistent world-space force (avian `ConstantForce`); the solver
-/// reads it every step until changed. A zero vector removes it, so a hold that
-/// stops refreshing must pass zero to stop pushing.
+/// reads it every step until changed. A zero vector removes it.
 pub async fn apply_force(api: &Api, prim_rep: u32, v: [f32; 3]) -> Result<(), ScriptError> {
     let value = checked_vec3("force", v)?;
     let (doc, prim_id) = prim_ident(api, prim_rep).await?;

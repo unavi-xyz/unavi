@@ -130,7 +130,7 @@ impl Default for SeamSize {
 }
 
 /// Depth of the latch slab around the seam plane; suppresses an immediate
-/// re-crossing after a body lands near the destination plane.
+/// re-crossing after landing.
 pub const SEAM_DEPTH: f32 = 0.05;
 
 #[derive(Component, Clone, Copy)]
@@ -159,7 +159,7 @@ pub struct GluedFrom(Vec<Entity>);
 pub struct GluedTo(pub Entity);
 
 /// Mirrored stand-in on the far side of a seam, spawned while its body
-/// straddles the plane so a half-inserted object protrudes from both faces.
+/// straddles the plane.
 #[derive(Component, Clone, Copy)]
 pub struct SeamEcho {
     pub body: Entity,
@@ -212,14 +212,13 @@ impl Default for DevelopmentHorizon {
 #[require(SeamLatch, PrevTranslation, EchoBody)]
 pub struct ManifoldBody;
 
-/// Casts seam echoes but is never locally teleported across a seam. Every
-/// [`ManifoldBody`] is one; bodies whose crossings are driven externally, such
-/// as network-replicated avatars, carry it alone.
+/// Casts seam echoes but is never locally teleported across a seam. Bodies
+/// whose crossings are driven externally, such as network-replicated avatars,
+/// carry it alone.
 #[derive(Component, Default)]
 pub struct EchoBody;
 
-/// Set after a crossing, cleared once the body leaves every slab; stops it
-/// teleporting straight back out of the slab it lands in.
+/// Set after a crossing, cleared once the body leaves every slab.
 #[derive(Component, Default)]
 pub struct SeamLatch(pub bool);
 

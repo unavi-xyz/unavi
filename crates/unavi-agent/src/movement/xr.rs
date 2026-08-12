@@ -63,8 +63,6 @@ pub fn spawn_hmd_tracker(mut commands: Commands) {
     commands.spawn((HmdTracker, XrTrackedView, Transform::default()));
 }
 
-/// Reads HMD root-local transform + [`XrTrackingRoot`] global
-/// transform to compute world-space HMD pose.
 pub fn update_hmd_world_pose(
     hmd: Query<&Transform, With<HmdTracker>>,
     root: Query<&GlobalTransform, With<XrTrackingRoot>>,
@@ -102,7 +100,6 @@ pub fn sync_stage_to_body(
     }
 }
 
-/// Applies snap or smooth turning from right stick input.
 pub fn apply_xr_turn(
     look_action: Query<
         &unavi_input::schminput::Vec2ActionValue,
@@ -142,13 +139,11 @@ pub fn apply_xr_turn(
     }
 }
 
-/// Sets [`MovementYaw`] from HMD yaw for thumbstick-relative movement.
+/// HMD yaw, the reference direction for thumbstick-relative movement.
 pub fn update_movement_yaw(pose: Res<HmdWorldPose>, mut yaw: ResMut<MovementYaw>) {
     yaw.0 = pose.yaw;
 }
 
-/// Syncs tracked head rotation to HMD world rotation so the
-/// avatar's head bone follows the headset.
 pub fn update_xr_head_tracking(
     agents: Query<&LocalAgentEntities>,
     mut tracked_heads: Query<&mut TrackedPose, With<TrackedHead>>,

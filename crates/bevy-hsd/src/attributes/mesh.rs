@@ -83,10 +83,10 @@ pub fn rebuild_mesh(
 
 /// Why a document's mesh buffers were refused.
 ///
-/// These arrive over document sync from a peer, so none of the invariants the
-/// GPU relies on can be assumed: an index past the vertex count is an
+/// Buffers arrive over document sync from a peer, so none of the GPU's
+/// invariants can be assumed: an index past the vertex count is an
 /// out-of-bounds read at draw time, and attributes of differing lengths fail
-/// in Bevy's vertex-buffer assembly.
+/// Bevy's vertex-buffer assembly.
 #[derive(Debug, Error)]
 enum MeshRejected {
     #[error("no POSITION attribute")]
@@ -161,7 +161,6 @@ fn build_mesh(topology: Topology, slots: &HsdSlots) -> Result<Mesh, MeshRejected
     Ok(mesh)
 }
 
-/// Casts a slot's bytes, refusing anything past the per-stream element cap.
 fn checked<T: Pod>(name: &str, bytes: &[u8]) -> Result<Vec<T>, MeshRejected> {
     if bytes.len() > MAX_MESH_ELEMENTS {
         return Err(MeshRejected::TooLarge {

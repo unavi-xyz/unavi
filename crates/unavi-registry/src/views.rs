@@ -16,8 +16,7 @@ use crate::{
     presence::ActiveSpace,
 };
 
-/// Prefix of the active-spaces view, so a client listing every view namespace
-/// picks out activity entries without needing to know which doc is which.
+/// Prefix of the active-spaces view; clients filter for activity by it.
 pub const ACTIVE_PREFIX: &str = "active/";
 
 /// Namespaces of the docs a registry publishes for clients to sync.
@@ -33,8 +32,8 @@ pub struct Views {
     ids: ViewIds,
 }
 
-/// Rank is zero-padded into the key so a doc's natural key order is the
-/// registry's intended order, and a client needs no sorting pass.
+/// Zero-padded so key order is the registry's intended order; clients need no
+/// sorting pass.
 fn ranked_key(rank: usize, ns: NamespaceId) -> String {
     format!("{rank:08}/{ns}")
 }
@@ -47,13 +46,8 @@ fn active_key(rank: usize, ns: NamespaceId) -> String {
     format!("{ACTIVE_PREFIX}{rank:08}/{ns}")
 }
 
-/// Creates a view doc and enrols it in this node's sync set.
-///
-/// Creating a doc opens it but does not make it syncable: a namespace absent
-/// from the sync set rejects every incoming request with `NotFound`, so a
-/// published view would be unreadable by the clients it exists for. An empty
-/// peer list enrols without dialing anyone, which is what a publisher wants —
-/// readers come to it.
+/// Creates a view doc and enrols it in this node's sync set; a namespace
+/// outside the set rejects reads with `NotFound`.
 async fn create_view(docs: &Docs) -> anyhow::Result<NamespaceId> {
     let doc = docs.api().create().await?;
     doc.start_sync(Vec::new()).await?;
@@ -77,13 +71,6 @@ impl Views {
         })
     }
 
-    /// Publishes which spaces have recent activity, most recent first.
-    ///
-    /// Individual heartbeats stay in memory — one entry per peer per space,
-    /// rewritten every couple of minutes, is exactly what should not be in a
-    /// synced doc. What clients need to *discover* a space is one entry per
-    /// space, bounded by how many are active and ordered so a reader can take
-    /// the first N.
     pub async fn write_active(
         &self,
         docs: &Docs,
@@ -109,11 +96,6 @@ impl Views {
         self.ids
     }
 
-    /// Recomputes every view from the catalog.
-    ///
-    /// Views are rewritten wholesale rather than patched: they are small and
-    /// bounded by construction, and a full rebuild cannot drift from the
-    /// catalog the way incremental edits can.
     pub async fn rebuild(
         &self,
         docs: &Docs,

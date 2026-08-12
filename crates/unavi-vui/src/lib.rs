@@ -1,6 +1,5 @@
 //! Spatial UI primitives for UNAVI, free of host bindings so the layout,
-//! targeting and interaction logic is unit-testable on the host target. Guest
-//! scripts drive prims from the values these modules compute.
+//! targeting and interaction logic is unit-testable on the host target.
 
 pub mod assist;
 pub mod attention;

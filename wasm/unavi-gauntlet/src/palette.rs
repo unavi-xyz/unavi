@@ -68,7 +68,7 @@ pub const fn glass(color: Color, fill_alpha: f32, emissive: f32) -> Material {
     }
 }
 
-/// Bright unlit-ish edge / glyph material.
+/// Bright, emissive edge / glyph material.
 pub const fn solid(color: Color, emissive: f32) -> Material {
     Material {
         alpha_cutoff: None,

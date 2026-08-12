@@ -38,9 +38,7 @@ pub struct Style {
     pub emissive: f32,
 }
 
-/// Everything a renderer needs for one slot. Deliberately concrete values
-/// rather than state to interpret, so a binding is a transcription and two
-/// bindings cannot drift apart.
+/// Everything a renderer needs for one slot, in concrete values.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SlotView {
     /// Orbit-local, lean already applied.
@@ -50,21 +48,16 @@ pub struct SlotView {
     pub role:         Role,
     pub attention:    Attention,
     pub pips:         Pips,
-    /// Taken: the body has left its slot and is following the hand. A merely
-    /// pressed mote is not this — see [`Attention::Engaged`].
+    /// The body has left its slot and is following the hand. A merely pressed
+    /// mote is not this — see [`Attention::Engaged`].
     pub seized:       bool,
-    /// Where this mote's name goes, slot-local. Labels are drawn always
-    /// rather than on attention: a menu you have to hover to read is a menu
-    /// you cannot learn. The text itself comes from the spec — it is passed
-    /// through, not computed, and keeping it out of here keeps a `SlotView`
-    /// `Copy`.
+    /// Where this mote's name goes, slot-local. The text itself comes from
+    /// the spec, not from this view.
     pub label_offset: Vec3,
     pub label_size:   f32,
 }
 
 /// Where the pointer is, in the orbit's own coordinates and in the world.
-/// [`crate::pointer::aim`] produces it from a ray; a platform that aims some
-/// other way supplies its own.
 #[derive(Debug, Clone, Copy)]
 pub struct Aim {
     pub local: Vec2,
@@ -75,11 +68,11 @@ pub struct Aim {
 pub struct Frame {
     pub eye:    Vec3,
     pub anchor: Transform,
-    /// Resolves which slot is targeted, and what the attended one leans
-    /// toward. Never where a held mote goes — that is [`Frame::hand`].
+    /// Resolves which slot is targeted. A held mote follows [`Frame::hand`]
+    /// instead.
     pub aim:    Option<Aim>,
-    /// Free world-space grab point. A held mote follows this rather than
-    /// [`Frame::aim`], so a pickup is not confined to the orbit's plane.
+    /// Free world-space grab point; a held mote follows this rather than
+    /// [`Frame::aim`].
     pub hand:   Option<Vec3>,
     pub delta:  f32,
 }
@@ -115,9 +108,8 @@ impl Orbit {
         self.lean.len()
     }
 
-    /// A ring of `count` slots, gaining a centre only when nested — where the
-    /// parent mote goes. The centre is never a child, so the way back is the
-    /// one position that means the same thing at every level.
+    /// A ring of `count` slots, gaining a centre for the parent mote when
+    /// nested.
     #[must_use]
     pub const fn layout(&self, count: usize, nested: bool) -> Layout {
         if nested {
@@ -132,11 +124,8 @@ impl Orbit {
         self.tracker.current()
     }
 
-    /// How far from the anchor an orbit still answers for.
-    ///
-    /// A binding's hit surface is this size, and that is not a coincidence:
-    /// what lights up and what a press lands on have to be the same region or
-    /// the interface promises motes it will not give you.
+    /// How far from the anchor an orbit still answers for. A binding's hit
+    /// surface is this size.
     #[must_use]
     pub fn reach(&self) -> f32 {
         self.tuning.orbit_radius * self.tuning.reach_frac
@@ -147,9 +136,7 @@ impl Orbit {
         self.grasp.is_seized()
     }
 
-    /// The held slot, once the pointer has travelled far enough that the hold
-    /// is a take rather than a tap. The moment a binding can hand the mote to
-    /// whatever moves real objects.
+    /// The held slot once the hold is a take rather than a tap.
     #[must_use]
     pub fn displaced(&self) -> Option<usize> {
         self.grasp
@@ -158,8 +145,8 @@ impl Orbit {
             .map(|held| held.slot)
     }
 
-    /// The attended mote's placard, or `None` while nothing has held
-    /// attention long enough to have earned one.
+    /// The attended mote's placard, or `None` until attention has been held
+    /// long enough.
     #[must_use]
     pub const fn placard(&self) -> Option<&PlacardView> {
         self.placard.as_ref()
@@ -170,15 +157,13 @@ impl Orbit {
         &self.views
     }
 
-    /// A mote's style with no attention on it. What a body handed to the
-    /// world should wear — it is no longer the one you are pointing at.
+    /// A mote's style with no attention on it.
     #[must_use]
     pub const fn resting_style(&self, spec: &MoteSpec) -> Style {
         self.style(spec.role, Attention::Idle)
     }
 
-    /// Presses whatever currently holds attention, which is the only thing a
-    /// press can mean: the lit mote is the one being pointed at.
+    /// Presses the slot currently holding attention.
     pub fn press(&mut self, at: Vec3) {
         let Some(slot) = self.tracker.current() else {
             return;
@@ -190,8 +175,8 @@ impl Orbit {
         self.grasp.press(slot, at, takeable);
     }
 
-    /// A fixed mote behaves like a button: releasing after the pointer has
-    /// wandered off it cancels rather than activating.
+    /// Releasing after the pointer has wandered off a fixed mote cancels
+    /// rather than activating.
     pub fn release(&mut self) -> Option<Outcome> {
         let wandered = self
             .grasp
@@ -277,12 +262,9 @@ impl Orbit {
         self.placard = self.build_placard(specs);
     }
 
-    /// The attended mote's placard, mounted on wherever its body currently is
-    /// — including the hand, when it is being carried.
+    /// The attended mote's placard, mounted on wherever its body currently
+    /// is.
     fn build_placard(&self, specs: &[MoteSpec]) -> Option<PlacardView> {
-        // Nothing explains itself while it is being handled. A card riding a
-        // mote through the air is unreadable anyway, and by the time you have
-        // grabbed something you are past wanting to be told what it is.
         if self.grasp.is_seized() {
             return None;
         }
@@ -304,10 +286,6 @@ impl Orbit {
         };
         Style {
             color,
-            // A container is see-through because you are meant to see into
-            // it; a leaf is solid because there is nothing inside to look at.
-            // This is the branch/leaf distinction at any distance, before
-            // attention and without hovering.
             alpha: match role {
                 Role::Group { .. } => self.palette.glass(attention),
                 Role::Action | Role::Item | Role::Cast | Role::Parent { .. } => {
@@ -634,8 +612,6 @@ mod tests {
         assert_eq!(placard.lines[0].text, "Citrus", "titled with its own name");
     }
 
-    /// Every mote explains itself, so a consumer cannot ship one that stays
-    /// silent when you hold your aim on it.
     #[test]
     fn a_mote_told_nothing_still_says_how_to_use_it() {
         let mut orbit = orbit();

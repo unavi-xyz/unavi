@@ -3,10 +3,8 @@ use xdid::{
     methods::key::keys::p256::P256KeyPair,
 };
 
-/// User identity for WDS operations.
-///
-/// Contains the DID and signing key used to authenticate with WDS hosts.
-/// Shared across multiple [`Actor`](crate::actor::Actor) instances via `Arc`.
+/// User identity for WDS operations: the DID and signing key used to
+/// authenticate with WDS hosts.
 #[derive(Clone)]
 pub struct Identity {
     did:         Did,

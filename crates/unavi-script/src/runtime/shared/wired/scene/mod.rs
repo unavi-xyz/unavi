@@ -99,16 +99,9 @@ async fn create_namespace() -> anyhow::Result<NamespaceId> {
     rx.recv().await?
 }
 
-/// Writes a document's live state into its entries.
-///
-/// A per-key diff against what the namespace already holds: only the keys that
-/// changed are written, so two peers editing different prims no longer
-/// overwrite each other.
 /// The namespace backing a document.
 ///
-/// A prefab instance derives its id and has no namespace at all, so a write to
-/// storage has to refuse it rather than address a namespace nobody created —
-/// which `Docs` would happily import as a read capability and then reject.
+/// A prefab instance derives its id and has no namespace at all.
 async fn namespace_of(id: DocId) -> anyhow::Result<NamespaceId> {
     let (tx, rx) = async_channel::bounded(1);
     AsyncCommands::default()
@@ -127,6 +120,11 @@ async fn namespace_of(id: DocId) -> anyhow::Result<NamespaceId> {
         .ok_or_else(|| anyhow::anyhow!("document has no namespace: {id}"))
 }
 
+/// Writes a document's live state into its entries.
+///
+/// Per-key diff against what the namespace already holds: only changed keys
+/// are written, so two peers editing different prims do not overwrite each
+/// other.
 async fn save_namespace(ns: NamespaceId, state: Arc<Mutex<SceneState>>) -> anyhow::Result<()> {
     let current = state
         .lock()
@@ -180,7 +178,7 @@ async fn spawn_child_doc(
 
     let firewall = Firewall::for_child_doc(api.doc_id);
     FIREWALL_REGISTRY.write().insert(id, firewall.clone());
-    // Seed the child's space now; the spawn command applies later.
+    // Seed the child's space before the spawn command applies.
     if let Some(parent_space) = unavi_space::membership::doc_space(api.doc_id) {
         unavi_space::membership::DOC_SPACE_REGISTRY
             .write()
@@ -295,8 +293,8 @@ pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
         .send()
         .await?;
 
-    // Minting a namespace at creation buys a stable id; the obligation it
-    // carries is dropping the replica, or scratch documents leak redb state.
+    // Minting a namespace at creation obligates dropping the replica;
+    // otherwise scratch documents leak redb state.
     drop_replica(NamespaceId::from(&id.0)).await;
 
     Ok(())
@@ -340,7 +338,6 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let space = if let Some(s) = unavi_space::membership::doc_space(id) {
         s
     } else {
-        // If document doesn't belong to a space, add it to the active space.
         let (tx, rx) = async_channel::bounded::<Option<DocId>>(1);
         AsyncCommands::default()
             .push(move |world: &mut World| {
@@ -359,8 +356,6 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
             .ok_or_else(|| anyhow::anyhow!("doc has no space and no active space"))?
     };
 
-    // Write the script's live edits into the namespace so hosts and peers
-    // serve the current state, then ask the home server to host it.
     let state = {
         let scene = api.wired_scene.lock().await;
         scene
@@ -376,8 +371,8 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let actor = bevy_wds::local_actor().ok_or_else(|| anyhow::anyhow!("no local actor"))?;
     actor.host_doc(ns).await?;
 
-    // Pin the document locally; ownership follows from the pin, and the pin's
-    // quota is charged to the resulting owner.
+    // Ownership follows from the local pin; its quota is charged to the
+    // resulting owner.
     if !unavi_space::state::entities::self_pin(NamespaceId::from(&space.0), ns).await {
         anyhow::bail!("space state not tracked locally or pin over quota");
     }
@@ -407,10 +402,6 @@ pub async fn create_document(api: &Api) -> Result<u32, ScriptError> {
 }
 
 /// Unpacks a prefab into a document with a namespace of its own.
-///
-/// The same bytes set on a prim's `prefab` slot instance *under* that prim and
-/// stays local forever. Content that is meant to be grabbed, published and
-/// owned needs a namespace, which is to say a document.
 pub async fn create_document_from_prefab(api: &Api, prefab: Vec<u8>) -> Result<u32, ScriptError> {
     let state = unpack_prefab(&prefab).map_err(|err| ScriptError::other(err.to_string()))?;
 

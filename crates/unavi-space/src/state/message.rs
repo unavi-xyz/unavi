@@ -16,8 +16,8 @@ pub enum StateMsg {
     Unpin {
         doc: NamespaceId,
     },
-    /// Transient transform authority over a document's rigid bodies (e.g. on
-    /// grab); the latest claim wins, independent of ownership.
+    /// Transient transform authority over a document's rigid bodies (on grab);
+    /// the latest claim wins, independent of ownership.
     Authority {
         doc:   NamespaceId,
         space: NamespaceId,

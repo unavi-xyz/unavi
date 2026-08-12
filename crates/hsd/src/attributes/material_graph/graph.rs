@@ -21,9 +21,7 @@ pub struct SurfaceGraph {
     pub blend:        BlendMode,
     pub cull:         CullMode,
     /// Whether this surface occludes light. Declared rather than inferred
-    /// from [`BlendMode`], for the same reason blending itself is: an
-    /// additive hologram usually should not cast a shadow, but an additive
-    /// beam thick enough to matter might, and only the author knows which.
+    /// from [`BlendMode`]: blending does not decide shadowing.
     pub cast_shadows: bool,
 }
 

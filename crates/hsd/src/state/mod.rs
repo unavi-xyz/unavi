@@ -180,12 +180,9 @@ impl SceneState {
         std::mem::take(&mut self.events)
     }
 
-    /// Replaces pending events with a full description of the realized scene.
-    ///
-    /// A consumer attaching to a state that was built before it existed gets
-    /// the whole scene this way, rather than needing a separate initial-state
-    /// path. Parents are emitted before their children so a consumer building
-    /// a hierarchy never has to defer.
+    /// Replaces pending events with a full description of the realized scene,
+    /// so a consumer attaching to an already-built state gets everything.
+    /// Parents are emitted before their children.
     pub fn resync(&mut self) {
         self.events.clear();
 
@@ -558,9 +555,8 @@ impl SceneState {
         }
     }
 
-    /// LWW parent pointers do not guarantee acyclicity the way Loro's movable
-    /// tree did, so a cycle breaks at its greatest-stamped member, which every
-    /// peer computes identically from the same entries.
+    /// LWW parent pointers can form cycles; the cycle breaks at its
+    /// greatest-stamped member, which every peer computes identically.
     fn placement(&self, prim: PrimId) -> Placement {
         let Some(state) = self.prims.get(&prim) else {
             return Placement::Unrealized;

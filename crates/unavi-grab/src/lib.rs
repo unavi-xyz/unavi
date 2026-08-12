@@ -48,9 +48,7 @@ impl Plugin for GrabPlugin {
     }
 }
 
-/// Backstop for a squeeze whose release never arrives. A pending grab
-/// ordinarily ends at [`on_squeeze_up`], so this is long enough that the
-/// tap-versus-take decision is never on a clock.
+/// Backstop for a squeeze whose release never arrives.
 const PENDING_GRAB_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// How long a body stays an answer to a squeeze after becoming grabbable.
@@ -59,17 +57,15 @@ const PROMOTION_WINDOW: Duration = Duration::from_millis(500);
 /// Squeezes that found nothing to carry.
 ///
 /// A script only learns of a grab after the observer has run, so it cannot
-/// make something grabbable in time. Holding the squeeze lets it answer by
-/// adding a rigid body, and the grab starts then. Nothing here knows why a
-/// body might appear, which is the point.
+/// make something grabbable in time; the squeeze stays pending until a body
+/// appears.
 #[derive(Resource, Default)]
 struct PendingGrabs {
     grabs:    Vec<PendingGrab>,
     /// Bodies that recently became grabbable. A waiting squeeze may latch onto
-    /// one of these that is under its pointer even though its own ray hit
-    /// something else — which is how a squeeze that slipped past its target
-    /// still catches the body the script promoted in answer. Bounded to recent
-    /// promotions so a held squeeze cannot claim a body it merely swept over.
+    /// one under its pointer even when its own ray hit something else. Bounded
+    /// to recent promotions so a held squeeze cannot claim a body it merely
+    /// swept over.
     promoted: Vec<(Entity, Duration)>,
 }
 
@@ -135,9 +131,8 @@ fn on_squeeze_down(
     docs: Docs,
     spaces: Query<&Space>,
     parents: Query<&ChildOf>,
-    // Absent in a scene with no space at all, which is a supported way to use
-    // grab: authority is a space concern, and the claim below already skips
-    // when there is nothing to claim against.
+    // Absent in a scene with no space; the authority claim below already
+    // skips when there is nothing to claim against.
     active_space: Option<Res<ActiveSpace>>,
     time: Res<Time>,
     mut pending: ResMut<PendingGrabs>,
@@ -169,8 +164,6 @@ fn on_squeeze_down(
     );
 }
 
-/// Records bodies that just became grabbable, so a waiting squeeze has
-/// something to recognize them by.
 fn note_promoted_bodies(
     promoted: Query<(Entity, &RigidBody), Changed<RigidBody>>,
     time: Res<Time>,
@@ -188,8 +181,6 @@ fn note_promoted_bodies(
     }
 }
 
-/// Starts any pending grab that has found something to carry, and drops the
-/// ones that ran out of time.
 fn start_pending_grabs(
     transforms: Query<&GlobalTransform>,
     rigid_bodies: Query<&RigidBody>,
@@ -232,29 +223,17 @@ fn start_pending_grabs(
                 &mut commands,
             );
         } else if now.saturating_sub(grab.since) <= PENDING_GRAB_TIMEOUT {
-            // Nothing to carry yet: keep waiting for the release, or for the
-            // backstop.
             remaining.push(grab);
         }
     }
     pending.grabs = remaining;
 }
 
-/// How far off a pointer's line a promoted body may be and still count as the
-/// answer to its squeeze, as a tangent — an angle rather than a distance,
-/// because what this tolerates is pointer *motion*, which is angular.
-///
-/// Generous on purpose. A body promoted mid-squeeze sits where the pointer was
-/// when the script answered, and by the time the promotion has crossed into
-/// the ECS the pointer has moved on — fastest during a drag, which is the case
-/// this exists for. An exact hit-test here asks a script to have predicted the
-/// aim several frames ahead; when it inevitably misses, the body it minted is
-/// left loose in the world. Becoming grabbable during a waiting squeeze is
-/// already a strong enough signal to carry the rest.
+/// Maximum off-axis tangent at which a promoted body still answers a waiting
+/// squeeze. Generous because the pointer moves on while the promotion crosses
+/// into the ECS.
 const GRAB_CATCH_TANGENT: f32 = 0.2;
 
-/// What a waiting squeeze should carry: the thing it landed on once that
-/// becomes grabbable, or failing that a body promoted in front of its pointer.
 fn target_for(
     grab: &PendingGrab,
     rigid_bodies: &Query<&RigidBody>,
@@ -329,9 +308,9 @@ fn claim_doc_authority(
         return;
     };
 
-    // Only claim authority over a doc already tracked in state. An untracked doc
-    // (e.g. a beacon not yet published) gets established by the publish path;
-    // claiming here would create presence ahead of that upload.
+    // Only claim authority over a doc already tracked in state. An untracked
+    // doc is established by the publish path; claiming here would create
+    // presence ahead of that upload.
     if !replicas::has_doc(space_hash, doc_hash) {
         debug!(doc = %doc_hash, "grab: doc not tracked in state, skipping authority claim");
         return;
@@ -392,12 +371,9 @@ fn on_squeeze_up(
 const REACH_STEP: f32 = 0.1;
 const MIN_REACH: f32 = 0.3;
 
-/// Scrolling pushes a held object out or pulls it in, by lengthening the
-/// offset it is held at.
-///
-/// Capped at the pointer's own reach, read from its raycaster rather than
-/// guessed: you should not be able to scroll something to a distance you
-/// could not have grabbed it from.
+/// Scrolls a held object in or out by scaling its hold offset. Capped at the
+/// pointer's own reach, read from its raycaster, so an object can only be
+/// scrolled as far as it could have been grabbed.
 fn reach_grabbed_objects(
     mut wheel: MessageReader<bevy::input::mouse::MouseWheel>,
     pointers: Query<&RayCaster>,

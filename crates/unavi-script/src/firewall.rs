@@ -48,9 +48,6 @@ impl Access {
 
 impl Firewall {
     /// Every channel open.
-    ///
-    /// Deliberately not a `Default` impl: openness is a policy a caller has to
-    /// ask for by name, and `Access`'s own default is the opposite.
     #[must_use]
     pub fn open() -> Self {
         let mut map = HashMap::new();
@@ -63,8 +60,8 @@ impl Firewall {
         Self(Arc::new(RwLock::new(map)))
     }
 
-    /// A document minted by another: its creator alone may write it, while
-    /// reads stay open so the rest of the scene can still observe it.
+    /// A document minted by another: its creator alone may write it; reads
+    /// stay open.
     #[must_use]
     pub fn for_child_doc(creator_id: DocId) -> Self {
         let firewall = Self::open();

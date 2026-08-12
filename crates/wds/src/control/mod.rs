@@ -1,9 +1,5 @@
-//! ## Control plane
-//!
-//! [`irpc`] control-plane API for hosting, pinning, uploads and quota. Data
-//! itself moves over iroh-docs set reconciliation and iroh-blobs; this plane
-//! only carries the small authenticated requests that ask a host to replicate
-//! a doc, pin a blob, or report usage.
+//! [`irpc`] control-plane API for hosting, pinning, uploads and quota; data
+//! moves over iroh-docs reconciliation and iroh-blobs.
 
 use std::{
     sync::Arc,

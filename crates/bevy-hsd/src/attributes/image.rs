@@ -112,9 +112,9 @@ pub fn rebuild_image(
 
 /// Decodes with the dimensions bounded up front.
 ///
-/// A decompression bomb declares enormous dimensions in a few bytes of header,
-/// so the limit has to reach the decoder itself: checking `dimensions()` after
-/// a plain `load_from_memory` is checking an allocation that already happened.
+/// A decompression bomb declares its dimensions in a few header bytes; the
+/// limit must reach the decoder, since checking `dimensions()` after a plain
+/// load checks an allocation that already happened.
 fn decode(bytes: &[u8]) -> Result<image::DynamicImage, image::ImageError> {
     let mut limits = image::Limits::default();
     limits.max_image_width = Some(MAX_TEXTURE_DIMS);

@@ -19,9 +19,8 @@ const fn xform(t: [f32; 3]) -> XformAttr {
     }
 }
 
-/// A parent prim carrying no xform — as the gate's root prim, which only has a
-/// name and a script — must keep its `require`d `Transform`, or transform
-/// propagation collapses its children onto the parent's origin.
+/// A parent prim with no xform must keep its `require`d `Transform`, or
+/// transform propagation collapses its children onto the parent's origin.
 #[traced_test]
 #[rstest]
 fn test_root_without_xform_keeps_child_transforms(mut ctx: TestContext) {
@@ -36,7 +35,7 @@ fn test_root_without_xform_keeps_child_transforms(mut ctx: TestContext) {
         children.push((child, t));
     }
 
-    // Removing the attribute must reset the transform, never remove it.
+    // Removing the attribute resets the transform, never removes it.
     ctx.remove_attr::<XformAttr>(root);
 
     ctx.app.update();

@@ -102,8 +102,8 @@ fn convert(
             let _ = write!(out, ").{}", swizzle(to_count));
         }
     } else {
-        // A widened color's alpha is 1.0, not the zero every other padded
-        // component gets: a zero-padded color would be fully transparent.
+        // A widened color's alpha is 1.0 rather than zero: a zero-padded color
+        // would be fully transparent.
         let _ = write!(out, "{}(", wgsl_type(to));
         port_expr(out, public_inputs, v);
         for pad in 0..to_count - from {

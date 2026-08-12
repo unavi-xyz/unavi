@@ -7,8 +7,8 @@ pub const DEFAULT: Color = Color {
     a: 1.0,
 };
 
-/// The tint `beam.hss` multiplies its whole output by. Brightness lives in
-/// the graph's own intensity input, so this stays a plain colour.
+/// The tint the beam graph multiplies its output by; brightness lives in the
+/// graph's own intensity input.
 pub const fn beam_tint(color: Color) -> Color {
     Color {
         r: color.r,

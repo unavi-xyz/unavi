@@ -24,7 +24,6 @@ pub fn Home() -> Element {
             launch_error.set(None);
             client_running.set(true);
 
-            // Close launcher after a brief delay.
             spawn(async move {
                 tokio::time::sleep(std::time::Duration::from_millis(500)).await;
                 std::process::exit(0);

@@ -1,10 +1,7 @@
 //! The VUI gallery.
 //!
 //! Walk up to the orbit with the real player controller, aim with the mouse,
-//! and click to open a mote or drag one out. Everything drawn comes from
-//! `unavi-vui`'s pure functions, so this is where its numbers get judged by
-//! feel — walking toward and away from the orbit is what exercises the
-//! distance-driven detail and lean falloff.
+//! and click to open a mote or drag one out.
 
 use std::{
     path::PathBuf,
@@ -134,9 +131,8 @@ fn init_scene(
             handle,
             on_load: None,
         },
-        // Scene writes are refused for a document that is in no space, so a
-        // standalone harness needs the shell's own permissions rather than
-        // the default space-script set.
+        // Scene writes are refused for a document in no space; a standalone
+        // harness needs the shell's own permissions.
         ApiPermissions::system(),
     ));
 }

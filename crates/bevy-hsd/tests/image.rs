@@ -103,7 +103,7 @@ fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
 }
 
 /// The dimension cap has to reach the decoder: a header declaring more pixels
-/// than we will ever upload must be refused before it is allocated, not after.
+/// than the cap admits must be refused before it is allocated, not after.
 #[traced_test]
 #[rstest]
 fn test_oversized_image_is_refused(mut ctx: TestContext) {
@@ -132,7 +132,6 @@ fn test_oversized_image_is_refused(mut ctx: TestContext) {
     );
 }
 
-/// Control for the cap: the same encoder output within bounds does load.
 #[traced_test]
 #[rstest]
 fn test_image_within_the_cap_loads(mut ctx: TestContext) {

@@ -1,5 +1,4 @@
-//! The placard's prim pool. Like `bodies`, this decides nothing: every offset
-//! and every opacity was computed by `unavi-vui`.
+//! Transcribes [`PlacardView`]s computed by `unavi-vui` into prims.
 
 use std::cell::Cell;
 
@@ -25,19 +24,16 @@ use crate::wired::scene::types::{
     Xform,
 };
 
-/// How far in front of the panel the text sits, so the card reads as a
-/// surface with writing on it rather than writing with a card behind it.
 const TEXT_LIFT: f32 = 0.0015;
-/// Opacity the backdrop reaches when the placard is fully in. Dark and mostly
-/// opaque: a card you can read the room through is a card you cannot read.
+/// Backdrop opacity when the placard is fully in; dark enough that the text
+/// stays readable.
 const PANEL_ALPHA: f32 = 0.88;
 
 pub struct Placard {
     root:    Prim,
     panel:   Prim,
     lines:   Vec<Prim>,
-    /// Last opacity drawn. Text re-uploads nothing when it changes, but the
-    /// attribute write still costs a sync, so an unchanged fade is skipped.
+    /// Last opacity drawn; an unchanged fade skips the attribute write's sync.
     opacity: Cell<Option<f32>>,
 }
 
@@ -116,8 +112,7 @@ impl Placard {
                 line_height:   None,
                 color:         Some(with_alpha(tint(palette, line.emphasis), view.opacity)),
                 // No outline: the card behind it already supplies the
-                // contrast, and an outline on top of a backdrop only thickens
-                // the strokes.
+                // contrast.
                 outline:       None,
                 outline_width: None,
                 emissive:      Some(match line.emphasis {

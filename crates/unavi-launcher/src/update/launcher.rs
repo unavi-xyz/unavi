@@ -98,7 +98,6 @@ where
     let tmp_archive_path = tmp_dir.path().join(&asset.name);
     info!("Downloading to: {}", tmp_archive_path.to_string_lossy());
 
-    // Download with progress tracking
     download_with_progress(&asset.browser_download_url, &tmp_archive_path, |progress| {
         on_status(UpdateStatus::Downloading {
             version:  latest_version.to_string(),

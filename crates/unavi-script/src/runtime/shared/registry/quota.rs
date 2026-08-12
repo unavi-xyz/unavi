@@ -31,14 +31,12 @@ pub fn reassign_doc_quota(
     reassign_document_in_space(record.0, unavi_space::membership::space_doc_id(space));
 }
 
-/// Sheds a departed space's quota so the table does not retain dead scopes.
 pub fn forget_space_quota(trigger: On<Remove, Space>, spaces: Query<&Space>) {
     if let Ok(space) = spaces.get(trigger.entity) {
         forget_space(space.0);
     }
 }
 
-/// Sheds a disconnected peer's quota the same way [`forget_space_quota`] does.
 pub fn forget_peer_quota(trigger: On<Remove, Peer>, peers: Query<&Peer>) {
     if let Ok(peer) = peers.get(trigger.entity) {
         forget_peer(NamespaceId::from(peer.0.id.as_bytes()));

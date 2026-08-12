@@ -1,7 +1,6 @@
 use crate::error::ScriptError;
 
-/// Canonical generation of `wired:error/types`; every other binding `with`-maps
-/// onto it, so the runtime lowers [`ScriptError`] through one `Error` type.
+/// Canonical generation of `wired:error/types`; other bindings map onto it.
 pub mod bindings {
     wasmtime::component::bindgen!({
         path: "../../protocol/wit/wired-error",

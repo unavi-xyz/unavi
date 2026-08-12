@@ -18,9 +18,7 @@ fn entry_key(ns: NamespaceId) -> String {
 }
 
 /// Durable record of every live submission, written only by this registry.
-///
-/// Clients are not expected to sync this — it is the input to ranking, not a
-/// product of it. They sync [views](crate::views) instead.
+/// Clients sync [views](crate::views) instead, not this doc.
 pub struct Catalog {
     ns: NamespaceId,
 }
@@ -66,8 +64,7 @@ impl Catalog {
 
     /// Every unexpired submission whose signature still verifies.
     ///
-    /// Verification is repeated on read rather than trusted from write time, so
-    /// a corrupted or tampered store cannot promote an entry into a view.
+    /// Verification is repeated on read rather than trusted from write time.
     pub async fn live(&self, docs: &Docs, blobs: &Blobs) -> anyhow::Result<Vec<Submission>> {
         let doc = self.doc(docs).await?;
         let query = Query::single_latest_per_key().key_prefix(ENTRIES_PREFIX);

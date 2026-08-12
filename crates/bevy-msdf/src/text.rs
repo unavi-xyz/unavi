@@ -28,11 +28,8 @@ use crate::{
     },
 };
 
-/// A string drawn in the world.
-///
-/// Split from [`MsdfStyle`] so a placard fading in re-uploads nothing: the
-/// content decides the mesh, the style decides the material, and a colour that
-/// changes every frame never re-tessellates.
+/// A string drawn in the world. Split from [`MsdfStyle`] so a style change
+/// never re-tessellates the mesh.
 #[derive(Component, Debug, Clone)]
 #[require(Transform, Visibility, MsdfStyle)]
 pub struct MsdfText {
@@ -74,8 +71,7 @@ pub struct Outline {
 #[derive(Component, Debug, Clone, Copy, PartialEq)]
 pub struct MsdfStyle {
     pub color:    Color,
-    /// Contrast against scenery nobody chose. A label in a space you did not
-    /// author has no say in what is behind it.
+    /// Keeps text legible over backgrounds the text did not choose.
     pub outline:  Option<Outline>,
     pub emissive: f32,
 }
@@ -90,10 +86,8 @@ impl Default for MsdfStyle {
     }
 }
 
-/// Characters the font had no glyph for, per entity.
-///
-/// Text that silently comes out shorter than it was given is the failure this
-/// exists to make visible; [`report_missing_glyphs`] logs each new one.
+/// Characters the font had no glyph for, per entity; [`report_missing_glyphs`]
+/// logs each new one.
 #[derive(Component, Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct MissingGlyphs(pub usize);
 
@@ -163,8 +157,8 @@ pub fn rebuild_text(
     }
 }
 
-/// Restyles without rebuilding. The mesh is untouched, so a placard can fade
-/// its colour every frame for nothing.
+/// Restyles without rebuilding the mesh, so a colour fading every frame is
+/// cheap.
 pub fn restyle_text(
     changed: Query<
         (&MsdfText, &MsdfStyle, &MeshMaterial3d<MsdfMaterial>),

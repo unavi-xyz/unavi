@@ -8,15 +8,11 @@ use xdid::core::did::Did;
 use crate::entry::Presence;
 
 /// Live occupancy, held in memory and expired by clock.
-///
-/// Keyed by namespace so the common query — who is in this space — is a single
-/// lookup rather than a scan.
 #[derive(Default)]
 pub struct PresenceTable {
     spaces: scc::HashMap<NamespaceId, Vec<Occupant>>,
 }
 
-/// A space with recent activity.
 pub struct ActiveSpace {
     pub ns:        NamespaceId,
     pub occupants: usize,
@@ -60,7 +56,7 @@ impl PresenceTable {
     }
 
     /// Returns the unexpired occupants of a namespace, still individually
-    /// signed so the caller verifies rather than trusting this registry.
+    /// signed.
     pub async fn occupants(&self, ns: NamespaceId) -> Vec<SignedBytes<Presence>> {
         let now = OffsetDateTime::now_utc().unix_timestamp();
         self.spaces
@@ -76,14 +72,6 @@ impl PresenceTable {
     }
 
     /// Spaces active within `window`, most recently active first.
-    ///
-    /// Lookup by namespace answers "who is here"; this answers "where is
-    /// anyone", which is what discovery needs and cannot be derived from the
-    /// former without already knowing every namespace.
-    ///
-    /// Reporting over a window rather than instantaneous occupancy is what
-    /// keeps the answer stable: heartbeats arrive minutes apart, so an exact
-    /// snapshot would flicker as peers lapse and renew.
     pub async fn active(&self, window: Duration) -> Vec<ActiveSpace> {
         let now = OffsetDateTime::now_utc().unix_timestamp();
         let cutoff = now - i64::try_from(window.as_secs()).unwrap_or(i64::MAX);
@@ -108,7 +96,6 @@ impl PresenceTable {
         out
     }
 
-    /// Drops occupants that have not been heard from within `window`.
     pub async fn sweep(&self, window: Duration) {
         let cutoff = OffsetDateTime::now_utc().unix_timestamp()
             - i64::try_from(window.as_secs()).unwrap_or(i64::MAX);

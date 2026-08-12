@@ -30,12 +30,11 @@ pub async fn handle_gossip_outbound(
     let signer = IrohSigner(ctx.endpoint.secret_key());
     let mut watcher = ctx.endpoint.watch_addr();
 
-    // Wait for endpoint to be online.
     let _ = n0_future::time::timeout(Duration::from_secs(15), ctx.endpoint.online()).await;
 
     loop {
-        // Only advertise the space we actually occupy; peers in other loaded
-        // spaces still discover us via their own broadcasts (we receive all).
+        // Only advertise the occupied space; peers in other loaded spaces are
+        // still reached via their own broadcasts, which are all received.
         if active_space() == Some(space) {
             let addr = watcher.get();
 
@@ -49,9 +48,9 @@ pub async fn handle_gossip_outbound(
             tx.broadcast(bytes.into()).await?;
         }
 
-        // Re-broadcast on the interval, immediately when a new neighbor joins
-        // the topic, or as soon as we become active in this space — so neither
-        // entering a space nor a peer arriving waits out a full interval.
+        // Re-broadcast on the interval, immediately when a neighbor joins the
+        // topic, or as soon as this space becomes active, so neither entering
+        // a space nor a peer arriving waits out a full interval.
         tokio::select! {
             () = n0_future::time::sleep(PRESENCE_INTERVAL) => {}
             () = wake.notified() => {}

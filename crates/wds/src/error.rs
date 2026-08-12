@@ -6,11 +6,8 @@ use serde::{
 };
 use thiserror::Error;
 
-/// External error type for the WDS API.
-///
-/// Safe to send across the client/server boundary.
-/// Internal details should be logged server-side before converting to these
-/// variants.
+/// External error type for the WDS API, safe to send across the client/server
+/// boundary.
 #[derive(Debug, Clone, Serialize, Deserialize, Error)]
 pub enum ApiError {
     #[error("unauthenticated")]

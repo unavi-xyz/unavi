@@ -16,7 +16,8 @@ impl Actor {
     pub(crate) async fn authenticate(&self) -> anyhow::Result<SessionToken> {
         let session = self.session.lock().await;
 
-        // If not authed, hold the lock while we authenticate.
+        // Hold the lock while authenticating so concurrent calls share one
+        // handshake.
         if let Some(s) = session.get().copied() {
             return Ok(s);
         }

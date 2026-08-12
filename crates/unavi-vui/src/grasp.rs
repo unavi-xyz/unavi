@@ -2,30 +2,23 @@ use wired_math::types::Vec3;
 
 use crate::tuning::Tuning;
 
-/// A mote currently in hand. Nothing has committed: returning to `origin`
-/// and releasing is always an abort.
+/// A mote currently in hand.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Seized {
     pub slot:      usize,
     pub origin:    Vec3,
     pub at:        Vec3,
-    /// Set once the pointer has left the tap threshold, and never cleared —
-    /// a release back at the origin is a cancelled place, not a tap.
+    /// Set once the pointer leaves the tap threshold, and never cleared.
     pub displaced: bool,
-    /// A fixed mote never displaces however far the pointer travels, so it
-    /// cannot be dragged out of its orbit.
+    /// A fixed mote never displaces, however far the pointer travels.
     pub takeable:  bool,
 }
 
-/// What a release meant. Displacement decides, not a timer: a timer has to be
-/// learned, and this is the same rule as click-versus-drag.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Outcome {
-    /// Released without meaningful travel — fire the mote's primary action.
+    /// Released without meaningful travel; fires the mote's primary action.
     Tap(usize),
-    /// Released after travel. By then the mote is a body the engine is
-    /// carrying, so where it ended up and how fast is the world's answer, not
-    /// this one's.
+    /// Released after travel; the mote is already in the engine's hands.
     Place(usize),
 }
 

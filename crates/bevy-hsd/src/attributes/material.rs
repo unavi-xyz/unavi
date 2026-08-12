@@ -105,9 +105,8 @@ pub struct MaterialCtx<'w, 's> {
 
 /// Rebuilds on the definition, the relationships, or the resolved source.
 ///
-/// [`MaterialSource`] is in that list because a binding only becomes ours
-/// once the resolver has decided the target is a PBR material rather than a
-/// shader graph.
+/// [`MaterialSource`] is in that list because a binding only becomes a PBR
+/// material once the resolver has decided the target is not a shader graph.
 pub fn rebuild_material(
     changed: Query<
         (Entity, Option<&MaterialData>),
@@ -144,9 +143,8 @@ pub fn propagate_image_to_material(
 
 /// A prim bound to one whose `StandardMaterial` just changed picks it up.
 ///
-/// Keyed off the resolved [`MaterialSource`] rather than the raw
-/// relationship, so a binding that resolved to a shader graph is skipped
-/// here rather than building a second material for the same prim.
+/// Keyed off the resolved [`MaterialSource`], so a binding that resolved to a
+/// shader graph is skipped rather than built twice.
 pub fn propagate_material_to_dependents(
     changed: Query<Entity, Changed<HsdMaterial>>,
     dependents: Query<(Entity, &MaterialSource, Option<&MaterialData>)>,
@@ -185,9 +183,8 @@ fn build(
         return;
     };
 
-    // Which backend owns this prim is `MaterialSource`'s call, not this
-    // system's: a prim whose binding resolved to a shader graph is not ours
-    // to build, and must not get a competing `MeshMaterial3d`.
+    // `MaterialSource` decides the backend; a prim resolved to a shader graph
+    // is not built here and must not get a competing `MeshMaterial3d`.
     let Ok(&MaterialSource::Pbr(source)) = ctx.sources.get(ent) else {
         return;
     };

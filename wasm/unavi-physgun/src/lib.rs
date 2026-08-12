@@ -140,10 +140,8 @@ impl ScriptBehavior for Script {
         let Some(cam) = self.camera() else {
             return Ok(());
         };
-        // Re-read the grab point here rather than reusing the one
-        // `fixed_update` cached: the muzzle end follows the camera at render
-        // rate, and pinning the far end to the fixed rate as well made the
-        // beam visibly step while the near end swept smoothly.
+        // Re-read at render rate: reusing the fixed-rate grab point made the
+        // beam step while the muzzle end swept smoothly.
         match self.held.borrow().as_ref() {
             Some(held) => {
                 let muzzle = cam.translation + cam.rotation * ARTIFACT_OFFSET;

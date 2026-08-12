@@ -14,8 +14,7 @@ pub enum Submitters {
     Allowlist(Vec<Did>),
 }
 
-/// Operator policy. None of this is protocol — it is where one registry
-/// differs from another, which is the point of running your own.
+/// Operator policy; none of this is protocol.
 #[derive(Debug, Clone)]
 pub struct Config {
     pub submitters:              Submitters,
@@ -25,9 +24,8 @@ pub struct Config {
     pub categories:              Vec<SmolStr>,
     /// Maximum entries per view, bounding what a client must sync.
     pub view_capacity:           usize,
-    /// How long after its last heartbeat a space still counts as active. Wider
-    /// than the heartbeat interval, so a space does not drop out of discovery
-    /// between one peer's announcements.
+    /// How long after its last heartbeat a space still counts as active.
+    /// Wider than the heartbeat interval.
     pub activity_window:         Duration,
     /// Ceiling on how far ahead a submission may set its expiry.
     pub max_retention:           Duration,

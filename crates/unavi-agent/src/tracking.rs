@@ -51,7 +51,6 @@ pub struct TrackedHand {
     pub is_left: bool,
 }
 
-/// Syncs [`TrackedPose`] to [`Transform`] for all tracked entities.
 pub(crate) fn sync_tracked_pose_to_transform(
     mut tracked: Query<(&TrackedPose, &mut Transform), Changed<TrackedPose>>,
 ) {

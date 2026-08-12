@@ -1,8 +1,4 @@
 //! The VUI gallery: a showcase consumer of `unavi-vui`.
-//!
-//! All state and every drawn value lives in the library — this file only
-//! aims the pointer, forwards input, and transcribes the resulting views onto
-//! prims.
 
 use std::{
     cell::{
@@ -63,9 +59,8 @@ struct Script {
     /// The slot the engine's grab is carrying. Its transform belongs to the
     /// solver until it comes back.
     held:        Cell<Option<usize>>,
-    /// How far along the view ray the pressed mote was, held for as long as
-    /// the press lasts. Desktop has no tracked hand, so this is what turns
-    /// aim into one.
+    /// The pressed mote's depth along the view ray, standing in for a tracked
+    /// hand on desktop.
     depth:       Cell<Option<f32>>,
     update_time: SystemTime,
 }
@@ -93,9 +88,6 @@ impl Script {
         }
     }
 
-    /// Once a hold has travelled far enough to be a take, the mote becomes a
-    /// body and the engine's grab — which is still watching the pointer —
-    /// picks it up.
     fn hand_over(&self) {
         if self.held.get().is_some() {
             return;
@@ -109,13 +101,12 @@ impl Script {
         if let Err(err) = self.bodies.make_dynamic(slot, view.radius) {
             eprintln!("could not hand mote to the engine: {err:?}");
         }
-        // Tracked even when that failed: a half-promoted mote still has to be
-        // stripped back on release, or it stays a loose body forever.
+        // Tracked even when the promotion failed, so a half-promoted mote is
+        // still stripped back on release.
         self.held.set(Some(slot));
     }
 
-    /// Grabs the lit mote at the depth it is drawn, so it arrives under the
-    /// pointer rather than waiting to be aimed at exactly.
+    /// Grabs the lit mote at its drawn depth, so it arrives under the pointer.
     fn press(&mut self, camera: &Transform) {
         let (Some(slot), Some(anchor)) = (self.orbit.attended(), self.anchor.get()) else {
             return;
@@ -129,8 +120,8 @@ impl Script {
         self.orbit.press(pointer::hand(camera, depth));
     }
 
-    /// The engine let go. Whatever it was carrying comes back to its orbit,
-    /// leaving a planted duplicate behind only if the release was a place.
+    /// Returns the carried mote to its orbit, planting a duplicate when the
+    /// release was a place.
     fn release(&mut self) {
         self.depth.set(None);
         let outcome = self.orbit.release();
@@ -151,7 +142,7 @@ impl Script {
                 self.report(&navigation);
             }
             // A place with nothing carried is a mote the engine never took;
-            // it springs home and that is the whole of it.
+            // it springs home.
             Some(Outcome::Place(slot)) => {
                 if let Some((at, velocity)) = landed {
                     self.plant(slot, at, velocity);
@@ -191,16 +182,8 @@ impl Script {
     }
 }
 
-/// Arbitrary data, deliberately.
-///
-/// VUI arranges whatever a consumer hands it, so the gallery stands for a
-/// catalogue rather than for this shell's own menus — naming the levels after
-/// the halo's own furniture made the library look like it knew about them.
-///
-/// Uneven on purpose: group sizes differ so a layout has to cope with whatever
-/// count a level happens to have, one group overflows the pip cap, and it
-/// nests deep enough to show that depth is unbounded. Only motes standing for
-/// *things* are takeable — dragging a category nowhere means nothing.
+/// Deliberately uneven: group sizes differ, one group overflows the pip cap,
+/// and the depth is unbounded, so the layout has to cope with all of it.
 fn demo_tree() -> Node {
     Node::group(
         "Produce",
@@ -333,10 +316,9 @@ impl ScriptBehavior for Script {
             },
         );
 
-        // Drawn before handing over, never after: promoting a mote stops us
-        // writing its transform, so doing it first freezes the mote a frame
-        // behind the pointer and the engine goes looking for it where it no
-        // longer is.
+        // Drawn before handing over: once promoted, the engine owns the
+        // mote's transform, so drawing after would freeze it a frame behind
+        // the pointer.
         self.bodies.apply(
             self.orbit.views(),
             &specs,
@@ -349,8 +331,8 @@ impl ScriptBehavior for Script {
     }
 }
 
-/// Level rotation facing `forward`, so the ring stands upright regardless of
-/// where the player was looking when it was planted.
+/// Yaw-only rotation facing `forward`, so the ring stays upright regardless
+/// of camera pitch or roll.
 fn yaw_only(forward: Vec3) -> Quat {
     let theta = (-forward.x).atan2(-forward.z);
     Quat::new(0.0, (theta * 0.5).sin(), 0.0, (theta * 0.5).cos())

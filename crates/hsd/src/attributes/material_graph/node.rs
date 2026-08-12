@@ -83,8 +83,7 @@ pub enum Node {
         uv: Port,
     },
     /// `slot` selects one of a fixed `MAX_TEXTURE_SAMPLES` texture bindings,
-    /// never an open-ended name — consistent with every other fixed-arity
-    /// choice in this format. Surface-only for v1; see
+    /// never an open-ended name. Surface-only; see
     /// [`super::validate::error::GraphError::TextureSampleInDisplacement`].
     TextureSample {
         uv:   Port,

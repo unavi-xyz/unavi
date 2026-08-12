@@ -1,8 +1,7 @@
 //! Anchoring: where a document sits, as per-peer runtime state.
 //!
-//! Deliberately not persisted. Anchoring is per-peer by nature — everyone's
-//! gauntlet attaches to *their own* camera — and a document pinned into a
-//! space already carries its placement in its root prim's transform.
+//! Per-peer and not persisted: a document pinned into a space already carries
+//! its placement in its root prim's transform.
 
 use bevy::prelude::*;
 
@@ -26,8 +25,6 @@ impl DocAnchor {
     }
 }
 
-/// Reparents an anchored document's root entity under its target, so placement
-/// rides Bevy's ordinary transform propagation rather than a bespoke path.
 pub fn apply_anchors(
     changed: Query<(Entity, &DocAnchor), (With<Hsd>, Changed<DocAnchor>)>,
     mut transforms: Query<&mut Transform>,

@@ -63,7 +63,6 @@ fn build(radius: f32, height: f32, res: u32) -> RawMesh {
 
     let half_h = height / 2.0;
 
-    // Base cap (y = -half_h, normal = -Y)
     let base_center = positions.len() as u32;
     positions.push([0.0, -half_h, 0.0]);
     normals.push([0.0, -1.0, 0.0]);
@@ -82,13 +81,12 @@ fn build(radius: f32, height: f32, res: u32) -> RawMesh {
         indices.extend_from_slice(&[base_center, base_ring + i as u32, base_ring + next as u32]);
     }
 
-    // Side: slanted normals
     let slope_len = radius.hypot(height);
     let ny = radius / slope_len;
     let nxz = height / slope_len;
 
     let side_base = positions.len() as u32;
-    // Base ring verts for the side (duplicated for different normals)
+    // Base ring verts, duplicated so the side keeps its own normals.
     for i in 0..=res {
         let a = TAU * i as f32 / res as f32;
         let (s, c) = a.sin_cos();
@@ -96,7 +94,7 @@ fn build(radius: f32, height: f32, res: u32) -> RawMesh {
         normals.push([nxz * c, ny, nxz * s]);
         uvs.push([i as f32 / res as f32, 1.0]);
     }
-    // Apex — duplicated per segment for sharp tip normals
+    // Apex, duplicated per segment so each face keeps a sharp normal.
     let apex_base = positions.len() as u32;
     for i in 0..=res {
         let a = TAU * (i as f32 + 0.5) / res as f32;

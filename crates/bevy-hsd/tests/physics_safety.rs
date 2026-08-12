@@ -77,7 +77,8 @@ fn collider_plus_rigid_body_plus_zero_scale_does_not_panic(
         }),
     );
 
-    // The original panic fired during this update's command apply.
+    // The panic fires during command apply, so a second update applies any
+    // deferred commands.
     ctx_physics.app.update();
     ctx_physics.app.update();
 
@@ -271,11 +272,10 @@ fn child_of_translated_parent_has_global_position(mut ctx_physics: TestContext) 
     assert!(found, "child entity not found");
 }
 
-/// A child prim that has no xform attr of its own under a parent that's
-/// scaled to zero: must end up parked, not with NaN `Transform` (which
-/// `init_physics_transform`'s `reparented_to` on a degenerate parent
-/// would produce, leaving the mesh invisible forever once the parent
-/// scales back up).
+/// A child with no xform of its own under a zero-scale parent must end up
+/// parked, not with NaN `Transform`: `init_physics_transform`'s `reparented_to`
+/// on a degenerate parent would otherwise leave the mesh invisible once the
+/// parent scales back up.
 #[traced_test]
 #[rstest]
 fn no_xform_child_of_zero_scale_parent_has_finite_transform(mut ctx_physics: TestContext) {

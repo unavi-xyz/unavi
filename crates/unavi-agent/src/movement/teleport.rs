@@ -9,11 +9,11 @@ use crate::{
     },
 };
 
-/// Reorient the local agent's look and input intent across a chart transition.
-///
-/// Physical momentum is carried by `unavi_portal`'s `carry_momentum`; this only
-/// rotates the camera/look target and the world-space input direction so they
-/// stay consistent with the agent's new heading after the seam.
+/// Reorients the local agent's look and input intent across a chart
+/// transition. Physical momentum is carried by `unavi_portal`'s
+/// `carry_momentum`; this only rotates the camera/look target and the
+/// world-space input direction to match the agent's new heading after the
+/// seam.
 pub fn handle_agent_teleport(
     event: On<CrossedSeam>,
     mut target_body: ResMut<TargetBodyInput>,

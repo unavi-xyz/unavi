@@ -27,7 +27,7 @@ pub struct PeerNetStats {
 }
 
 /// Tracks a connection for the dev tools network panel, untracking it when the
-/// returned guard drops (i.e. when the connection task ends).
+/// returned guard drops with the connection task.
 pub fn track(peer: EndpointId, conn: Arc<Connection>) -> ConnGuard {
     CONNS
         .lock()
@@ -44,8 +44,8 @@ pub struct ConnGuard {
 impl Drop for ConnGuard {
     fn drop(&mut self) {
         let mut conns = CONNS.lock().expect("stats lock");
-        // Only clear our own entry: a superseded duplicate must not evict the
-        // live connection that replaced it under the same peer id.
+        // Clear only the tracked connection: a superseded duplicate must not
+        // evict the live connection that replaced it under the same peer id.
         if conns
             .get(&self.peer)
             .is_some_and(|c| Arc::ptr_eq(c, &self.conn))
@@ -55,7 +55,6 @@ impl Drop for ConnGuard {
     }
 }
 
-/// Current stats for every live connection.
 pub fn snapshot() -> Vec<PeerNetStats> {
     CONNS
         .lock()

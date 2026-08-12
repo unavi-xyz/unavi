@@ -21,15 +21,14 @@ use crate::{
     },
 };
 
-/// Metres the shell stands off the prop's surface. A fixed distance rather
-/// than a scale factor, so a crate and a barrel get the same rim thickness
-/// instead of it growing with the prop.
+/// Shell offset from the prop's surface, fixed so the rim does not grow with
+/// the prop.
 const MARGIN: f32 = 0.01;
 /// A shell grows by [`MARGIN`] on each side, so an extent grows by twice it.
 const EXTENT_MARGIN: f32 = MARGIN * 2.0;
 
 const TEMPLATE_PRIM_NAME: &str = "glow_template";
-/// `glow.hss` public input 0.
+/// Tint input index.
 const TINT_INPUT: u16 = 0;
 
 const fn hidden() -> Xform {
@@ -40,13 +39,9 @@ const fn hidden() -> Xform {
     }
 }
 
-/// Builds a mesh matching `collider`, grown by [`MARGIN`].
-///
-/// Only the primitive colliders are reachable: `ConvexHull` and `Trimesh`
-/// keep their geometry in the prim's `collider:vertices` slot, and
-/// `wired:scene` has setters but no getters for mesh or collider streams, so
-/// a script genuinely cannot see those shapes. Those props get no highlight
-/// rather than a wrong one.
+/// Builds a mesh matching `collider`, grown by [`MARGIN`]. `ConvexHull` and
+/// `Trimesh` keep their geometry where a script cannot read it, so those
+/// props get no highlight.
 fn shell_mesh(collider: &Collider) -> Option<Prim> {
     let doc = self_document().ok()?;
     match collider {
@@ -79,11 +74,9 @@ fn shell_mesh(collider: &Collider) -> Option<Prim> {
     }
 }
 
-/// An additive rim shell tracking the held prop.
-///
-/// The prop's own material is never touched — it belongs to whoever placed
-/// the object — so the highlight is a separate prim this script owns and
-/// positions, minted per grab because its mesh depends on the prop's shape.
+/// An additive rim shell tracking the held prop, owned by this script so the
+/// prop's own material is never touched; minted per grab because its mesh
+/// depends on the prop's shape.
 #[derive(Default)]
 pub struct Outline(RefCell<Option<Prim>>);
 
@@ -121,9 +114,8 @@ impl Outline {
         *self.0.borrow_mut() = Some(prim);
     }
 
-    /// Matches the prop's pose. Read at render rate for the same reason the
-    /// beam is: the prop's own transform only steps at the fixed rate, and
-    /// a shell lagging a frame behind reads as a halo sliding off the object.
+    /// Matches the prop's pose at render rate; a shell lagging a frame behind
+    /// reads as sliding off the object.
     pub fn track(&self, body: &Transform) {
         if let Some(prim) = self.0.borrow().as_ref() {
             prim.set_xform(Some(Xform {

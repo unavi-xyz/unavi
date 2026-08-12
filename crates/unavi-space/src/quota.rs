@@ -23,7 +23,7 @@ fn key(doc: DocId) -> NamespaceId {
     NamespaceId::from(&doc.0)
 }
 
-/// Quota for a document, attributed to its owning peer or space.
+/// Quota attributed to the document's owning peer or space.
 #[must_use]
 pub fn document_quota(doc: DocId) -> Arc<Quota> {
     unavi_quota::registry::document_quota(key(doc), || document_owner(doc))

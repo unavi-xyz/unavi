@@ -37,8 +37,8 @@ const fn hidden() -> Xform {
     }
 }
 
-/// A small floating artifact: a glowing core with cubes orbiting it. Only shown
-/// while a tool is active. Materials are set once; only transforms animate.
+/// A glowing core with orbiting cubes, shown only while a tool is active.
+/// Materials are set once; only transforms animate.
 pub struct Artifact {
     core:     Prim,
     orbiters: Vec<Prim>,

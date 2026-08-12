@@ -15,10 +15,8 @@ use parking_lot::RwLock;
 
 use crate::Space;
 
-/// Maps document -> space it belongs to.
-///
-/// Keyed by document id, not namespace: a prefab instance belongs to a space
-/// and has an id, but has no namespace of its own.
+/// Maps document -> space it belongs to. Keyed by document id, not namespace:
+/// a prefab instance has an id but no namespace of its own.
 pub static DOC_SPACE_REGISTRY: LazyLock<RwLock<HashMap<DocId, DocId>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
@@ -45,11 +43,8 @@ pub fn self_own_space(trigger: On<Add, Space>, spaces: Query<&Space>) {
 
 /// Assigns every unowned document to the space it hangs under.
 ///
-/// A pass rather than an observer: a document is routinely instanced before the
-/// document hosting it belongs to a space — a prefab under a document that is
-/// only made a space once its entries are read — and an insertion hook fires
-/// once, too early, and never again. Retrying each frame also walks nested
-/// instances down, one level per pass.
+/// A pass rather than an observer: a document is routinely instanced before its
+/// host becomes a space, and an insertion hook fires too early.
 pub fn parent_docs_under_space(
     docs: Query<
         (Entity, &HsdDocId, Option<&ChildOf>),
@@ -120,12 +115,11 @@ pub fn deregister_space_docs(trigger: On<Remove, Space>, spaces: Query<&Space>) 
     }
 }
 
-/// The space a doc belongs to.
 #[must_use]
 pub fn doc_space(doc: DocId) -> Option<DocId> {
     DOC_SPACE_REGISTRY.read().get(&doc).copied().or_else(|| {
-        // Replicas track pinned documents, which are namespace-backed by
-        // definition — you pin a namespace into a space.
+        // Pinned documents are namespace-backed: a namespace is pinned into a
+        // space.
         crate::state::replicas::space_of(NamespaceId::from(&doc.0)).map(|ns| DocId(*ns.as_bytes()))
     })
 }

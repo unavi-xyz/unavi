@@ -22,31 +22,24 @@ pub fn is_beta() -> bool {
     crate::CONFIG.get().update_channel.is_beta()
 }
 
-/// Check if an update is needed, considering both version and channel.
-/// Returns true if update is needed, false if already up to date.
 pub fn needs_update(current: &Version, latest: &Version) -> bool {
     let want_beta = is_beta();
     let latest_is_beta = latest.pre.as_str().contains("beta");
 
-    // If we're on the same version, no update needed regardless of channel.
     if current == latest {
         return false;
     }
 
-    // If latest version matches our desired channel, update if it's newer.
     if latest_is_beta == want_beta {
         return current < latest;
     }
 
-    // Latest doesn't match our channel. If we want beta but latest is stable,
-    // only update if we're on an older stable version.
-    // If we want stable but latest is beta, don't update.
+    // Channel mismatch: a beta channel adopts older stables; a stable channel
+    // never adopts beta.
     if want_beta && !latest_is_beta {
-        // Want beta, but latest is stable. Update if our version is older.
         return current < latest;
     }
 
-    // Want stable, but latest is beta. Don't update.
     false
 }
 

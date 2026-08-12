@@ -15,6 +15,7 @@ use crate::{
     Hsd,
     HsdChild,
     HsdCommitGate,
+    HsdHeld,
     HsdPrimIndex,
     HsdRelationships,
     HsdSlots,
@@ -66,6 +67,19 @@ impl Staged {
         self.slots
             .entry(prim_ent)
             .or_insert_with(|| live.get(prim_ent).map(|s| s.0.clone()).unwrap_or_default())
+    }
+}
+
+/// Drops what a held document's writes emitted. Nothing is listening, and
+/// placing it re-emits the scene in full, so keeping them would only grow a
+/// buffer for as long as the document stays out of the world.
+pub fn discard_held_events(held: Query<&HsdHeld>) {
+    for doc in &held {
+        let Ok(mut state) = doc.0.lock() else {
+            warn!("scene state poisoned");
+            continue;
+        };
+        state.drain_events();
     }
 }
 

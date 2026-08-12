@@ -231,6 +231,13 @@ interface types {
 
     /// Attaches this document's root to a prim, or the space root when `none`.
     /// Per-peer runtime state, never persisted.
+    ///
+    /// A document a script mints is held until one of these is called: it has
+    /// an id and prims, and can be built up in full, but nothing of it is
+    /// drawn or simulated. Placing it puts the whole document in at once,
+    /// where it was put, so what a first placement shows is a document
+    /// appearing rather than one arriving at the origin and moving. Fails if
+    /// the anchor target is not itself in the scene.
     set-anchor: func(target: option<borrow<prim>>) -> result<_, error>;
     set-offset: func(value: xform) -> result<_, error>;
   }

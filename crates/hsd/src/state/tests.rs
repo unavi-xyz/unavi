@@ -531,12 +531,10 @@ fn an_open_tick_withholds_its_own_writes() {
 
     state.close_tick();
     assert!(
-        state
-            .drain_events()
-            .contains(&SceneEvent::Realized {
-                prim:   prim(1),
-                parent: None,
-            }),
+        state.drain_events().contains(&SceneEvent::Realized {
+            prim:   prim(1),
+            parent: None,
+        }),
         "closing the tick releases it"
     );
 }

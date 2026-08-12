@@ -19,10 +19,13 @@ pub struct Tuning {
     pub field_lift:   f32,
     /// Extra angular half-width granted to the slot already attended.
     pub stick:        f32,
-    /// The same hysteresis for a rack, as a fraction of a cell.
+    /// The same hysteresis for a grid, as a fraction of a cell.
     pub grid_stick:   f32,
-    /// Centre-to-centre spacing of a rack's cells.
-    pub rack_pitch:   f32,
+    /// Centre-to-centre spacing of a grid's cells.
+    pub grid_pitch:   f32,
+    /// A grid level: columns by rows cells on one page.
+    pub grid_columns: usize,
+    pub grid_rows:    usize,
 
     pub attend_scale:     f32,
     pub seize_scale:      f32,
@@ -87,7 +90,9 @@ impl Tuning {
         field_lift:   0.09,
         stick:        0.18,
         grid_stick:   0.18,
-        rack_pitch:   0.085,
+        grid_pitch:   0.085,
+        grid_columns: 4,
+        grid_rows:    3,
 
         attend_scale:     1.18,
         seize_scale:      1.30,
@@ -120,7 +125,7 @@ impl Tuning {
         group_scale:  1.45,
         action_scale: 1.0,
         parent_scale: 0.8,
-        pip_cap:      7,
+        pip_cap:      9,
     };
 }
 

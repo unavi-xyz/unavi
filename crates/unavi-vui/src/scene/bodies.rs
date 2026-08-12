@@ -1,4 +1,4 @@
-//! Transcribes [`SlotView`]s computed by `unavi-vui` into prims.
+//! Transcribes the [`SlotView`]s a surface computes into prims.
 
 use std::cell::{
     Cell,
@@ -6,26 +6,28 @@ use std::cell::{
 };
 
 use smol_str::SmolStr;
-use unavi_vui::{
+use wired_prelude::prelude::*;
+
+use crate::{
     attention::Attention,
     mesh,
     mote::{
+        Arrange,
         MoteSpec,
         PipPlacement,
-        Role,
     },
     palette::Palette,
     placard::PlacardView,
+    scene::{
+        draw,
+        placard::Placard,
+    },
+    tree::Mote,
     tuning::Tuning,
     view::{
         SlotView,
         Style,
     },
-};
-use wired_prelude::prelude::*;
-
-use crate::{
-    placard::Placard,
     wired::{
         input::{
             api::register_input_listener,
@@ -35,13 +37,10 @@ use crate::{
             },
         },
         physics::api::get_linear_velocity,
-        scene::api::self_document,
         scene::types::{
-            AlphaMode,
             Collider,
             ColliderCylinder,
             Document,
-            Material,
             Prim,
             RigidBody,
             RigidBodyKind,
@@ -53,7 +52,7 @@ use crate::{
     },
 };
 
-/// What the surface's own listener heard.
+/// What a surface's own listener heard.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Signal {
     Grab(bool),
@@ -67,7 +66,7 @@ pub enum Signal {
 pub enum Hit {
     /// An orbit's dial face.
     Disc { radius: f32 },
-    /// A rack's shelf front.
+    /// A grid's front.
     Slab { extents: Vec2 },
 }
 
@@ -78,11 +77,9 @@ impl Hit {
                 height: FIELD_THICKNESS,
                 radius,
             }),
-            Self::Slab { extents } => Collider::Cuboid(Vec3::new(
-                extents.x * 2.0,
-                extents.y * 2.0,
-                FIELD_THICKNESS,
-            )),
+            Self::Slab { extents } => {
+                Collider::Cuboid(Vec3::new(extents.x * 2.0, extents.y * 2.0, FIELD_THICKNESS))
+            }
         }
     }
 
@@ -103,7 +100,7 @@ const MARK_RADIUS: f32 = 0.09;
 const OVERFLOW_RADIUS: f32 = 0.11;
 const SPHERE_RINGS: usize = 10;
 const SPHERE_SEGMENTS: usize = 16;
-/// Thin enough to read as the dial's own face, thick enough to be a solid
+/// Thin enough to read as the surface's own face, thick enough to be a solid
 /// raycast target.
 const FIELD_THICKNESS: f32 = 0.01;
 
@@ -115,6 +112,7 @@ struct PipShape {
     groups:    usize,
     overflow:  bool,
     placement: PipPlacement,
+    arrange:   Arrange,
 }
 
 struct SlotPrims {
@@ -129,25 +127,37 @@ struct SlotPrims {
     marked:   Cell<bool>,
     /// The mote's name, drawn always rather than on attention.
     label:    Prim,
-    style:    Cell<Option<Style>>,
+    /// The mote whose icon is parented here, so a slot reused by another mote
+    /// hands the old one back rather than keeping it.
+    icon:     RefCell<Option<Mote>>,
+    /// Keyed by icon as well as style: an item wears glass only when there is
+    /// something inside it to see.
+    style:    Cell<Option<(Style, bool)>>,
     shape:    Cell<Option<PipShape>>,
     /// Last `(label, attention)` written; a `set_text` write costs a sync
     /// whether or not the string changed.
     written:  RefCell<Option<(SmolStr, Attention)>>,
 }
 
+/// The prims one surface draws with: a hit surface, a pool of slot bodies
+/// grown to what is actually shown, and the placard riding whichever of them
+/// holds attention.
 pub struct Bodies {
     doc:      Document,
     root:     Prim,
-    /// The dial's surface and the orbit's only resting collider. A mote is a
-    /// drawing until it is taken, so only this can be hit.
+    /// The surface's face and its only resting collider. A mote is a drawing
+    /// until it is taken, so only this can be hit.
     field:    Prim,
     surface:  Collider,
-    /// Grabs against the dial's surface; anything landing elsewhere belongs
-    /// to whatever it hit.
+    /// Grabs against this surface; anything landing elsewhere belongs to
+    /// whatever it hit.
     input:    InputListener,
+    /// Where an icon waits while the mote holding it is not drawn. Scale zero
+    /// rather than unparented: `wired:scene` has no detached prim, and a
+    /// removed child would reappear at the document root.
+    park:     Prim,
     /// Grown to what the surface is actually drawing, never past `capacity`.
-    /// A rack nobody has put anything in costs nothing.
+    /// A grid nobody has put anything in costs nothing.
     slots:    RefCell<Vec<SlotPrims>>,
     capacity: usize,
     unit:     mesh::MeshData,
@@ -157,7 +167,7 @@ pub struct Bodies {
 impl Bodies {
     pub fn new(doc: &Document, capacity: usize, tuning: &Tuning, hit: Hit) -> anyhow::Result<Self> {
         let root = doc.create_prim()?;
-        root.set_xform(Some(placed(Vec3::ZERO, 1.0)))?;
+        root.set_xform(Some(draw::placed(Vec3::ZERO, 1.0)))?;
 
         let field = doc.create_prim()?;
         field.set_xform(Some(Xform {
@@ -172,12 +182,17 @@ impl Bodies {
 
         let placard = Placard::new(doc, &root)?;
 
+        let park = doc.create_prim()?;
+        park.set_xform(Some(draw::hidden()))?;
+        root.add_child(&park)?;
+
         Ok(Self {
-            doc: self_document()?,
+            doc: doc.clone(),
             root,
             field,
             surface,
             input,
+            park,
             slots: RefCell::new(Vec::with_capacity(capacity)),
             capacity,
             unit: mesh::sphere(1.0, SPHERE_RINGS, SPHERE_SEGMENTS),
@@ -192,32 +207,32 @@ impl Bodies {
         let mut slots = self.slots.borrow_mut();
         for _ in slots.len()..count.min(self.capacity) {
             let slot_root = self.doc.create_prim()?;
-            slot_root.set_xform(Some(hidden()))?;
+            slot_root.set_xform(Some(draw::hidden()))?;
             self.root.add_child(&slot_root)?;
 
             let body = self.doc.create_prim()?;
-            apply_mesh(&body, &self.unit)?;
-            body.set_xform(Some(placed(Vec3::ZERO, 1.0)))?;
+            draw::mesh(&body, &self.unit)?;
+            body.set_xform(Some(draw::placed(Vec3::ZERO, 1.0)))?;
             slot_root.add_child(&body)?;
 
             let nested = self.doc.create_prim()?;
-            nested.set_xform(Some(hidden()))?;
+            nested.set_xform(Some(draw::hidden()))?;
             slot_root.add_child(&nested)?;
 
             let plain = self.doc.create_prim()?;
-            plain.set_xform(Some(hidden()))?;
+            plain.set_xform(Some(draw::hidden()))?;
             slot_root.add_child(&plain)?;
 
             // An overflow marker is the exception rather than the rule, so it
             // waits for a slot that has one.
             let overflow = self.doc.create_prim()?;
-            overflow.set_xform(Some(hidden()))?;
+            overflow.set_xform(Some(draw::hidden()))?;
             slot_root.add_child(&overflow)?;
 
             // A label rides the slot, not the body, which scales with
             // attention.
             let label = self.doc.create_prim()?;
-            label.set_xform(Some(hidden()))?;
+            label.set_xform(Some(draw::hidden()))?;
             slot_root.add_child(&label)?;
 
             slots.push(SlotPrims {
@@ -228,6 +243,7 @@ impl Bodies {
                 overflow,
                 marked: Cell::new(false),
                 label,
+                icon: RefCell::new(None),
                 style: Cell::new(None),
                 shape: Cell::new(None),
                 written: RefCell::new(None),
@@ -265,7 +281,7 @@ impl Bodies {
     }
 
     /// Turns a mote into a dynamic body the engine's grab can take. The
-    /// field's collider stands down while anything is held, so it cannot
+    /// surface's collider stands down while anything is held, so it cannot
     /// intercept the grab's ray.
     pub fn make_dynamic(&self, slot: usize, radius: f32) -> anyhow::Result<()> {
         let slots = self.slots.borrow();
@@ -318,6 +334,59 @@ impl Bodies {
             .unwrap_or(Vec3::ZERO)
     }
 
+    /// Puts each drawn mote's icon inside its shell and parks the rest.
+    ///
+    /// Runs before [`Bodies::apply`], which reads back what a slot ended up
+    /// holding to decide whether its shell is glass.
+    pub fn icons(&self, motes: &[Mote], views: &[SlotView], drawn: &[usize]) -> anyhow::Result<()> {
+        self.ensure(views.len())?;
+        let slots = self.slots.borrow();
+
+        let wanted = |slot: usize| {
+            drawn
+                .get(slot)
+                .and_then(|index| motes.get(*index))
+                .filter(|mote| slot < views.len() && mote.has_icon())
+        };
+
+        // Handing every stale icon back first, so a mote that moved between
+        // slots is not parked by the slot it left after arriving.
+        for (index, slot) in slots.iter().enumerate() {
+            let held = slot.icon.borrow();
+            let keep = wanted(index).is_some_and(|mote| held.as_ref().is_some_and(|h| h.is(mote)));
+            if keep || held.is_none() {
+                continue;
+            }
+            if let Some(result) = held
+                .as_ref()
+                .and_then(|h| h.with_icon(|p| self.park.add_child(p)))
+            {
+                result?;
+            }
+            drop(held);
+            *slot.icon.borrow_mut() = None;
+        }
+
+        for (index, slot) in slots.iter().enumerate() {
+            let Some(mote) = wanted(index) else {
+                continue;
+            };
+            let radius = views.get(index).map_or(0.0, |view| view.radius);
+            if slot.icon.borrow().is_none() {
+                if let Some(result) = mote.with_icon(|prim| slot.root.add_child(prim)) {
+                    result?;
+                }
+                *slot.icon.borrow_mut() = Some(mote.clone());
+            }
+            if let Some(result) =
+                mote.with_icon(|prim| prim.set_xform(Some(draw::placed(Vec3::ZERO, radius))))
+            {
+                result?;
+            }
+        }
+        Ok(())
+    }
+
     /// `drawn` maps each view back to its spec, which pagination makes a real
     /// translation rather than an identity. `held` is the slot the engine is
     /// carrying, whose transform belongs to the solver rather than to us.
@@ -340,30 +409,34 @@ impl Bodies {
 
         for (index, (slot, view)) in slots.iter().zip(views).enumerate() {
             if held != Some(index) {
-                slot.root.set_xform(Some(placed(view.position, 1.0)))?;
+                slot.root
+                    .set_xform(Some(draw::placed(view.position, 1.0)))?;
             }
-            slot.body.set_xform(Some(placed(Vec3::ZERO, view.radius)))?;
+            slot.body
+                .set_xform(Some(draw::placed(Vec3::ZERO, view.radius)))?;
 
             if let Some(spec) = drawn.get(index).and_then(|index| specs.get(*index)) {
                 Self::apply_label(slot, view, spec, palette)?;
             }
 
-            if slot.style.get() != Some(view.style) {
-                slot.style.set(Some(view.style));
-                slot.body.set_material(Some(shell(view.style, view.role)))?;
+            let icon = slot.icon.borrow().is_some();
+            if slot.style.get() != Some((view.style, icon)) {
+                slot.style.set(Some((view.style, icon)));
+                slot.body
+                    .set_material(Some(draw::body(view.style, view.role, icon)))?;
                 slot.nested
-                    .set_material(Some(pip_material(view.style, true)))?;
+                    .set_material(Some(draw::pip(view.style, true)))?;
                 slot.plain
-                    .set_material(Some(pip_material(view.style, false)))?;
+                    .set_material(Some(draw::pip(view.style, false)))?;
                 slot.overflow
-                    .set_material(Some(pip_material(view.style, false)))?;
+                    .set_material(Some(draw::pip(view.style, false)))?;
             }
 
             Self::apply_pips(slot, view)?;
         }
 
         for slot in slots.iter().skip(views.len()) {
-            slot.root.set_xform(Some(hidden()))?;
+            slot.root.set_xform(Some(draw::hidden()))?;
         }
         Ok(())
     }
@@ -376,7 +449,8 @@ impl Bodies {
         spec: &MoteSpec,
         palette: &Palette,
     ) -> anyhow::Result<()> {
-        slot.label.set_xform(Some(placed(view.label_offset, 1.0)))?;
+        slot.label
+            .set_xform(Some(draw::placed(view.label_offset, 1.0)))?;
 
         let key = (spec.label.clone(), view.attention);
         let mut written = slot.written.borrow_mut();
@@ -394,7 +468,7 @@ impl Bodies {
             wrap:          None,
             line_height:   None,
             color:         Some(color),
-            // A dial does not control its surroundings, so its names carry
+            // A surface does not control its surroundings, so its names carry
             // their own contrast.
             outline:       Some(Color {
                 r: 0.0,
@@ -417,31 +491,47 @@ impl Bodies {
             groups,
             overflow: view.pips.overflow,
             placement: view.pips.placement,
+            arrange: view.pips.arrange,
+        };
+
+        let arrange = view.pips.arrange;
+        let total = view.pips.count;
+        let (spread, radius) = match view.pips.placement {
+            PipPlacement::Inside => (INSIDE_ORBIT, PIP_RADIUS),
+            PipPlacement::Around => (AROUND_ORBIT, MARK_RADIUS),
         };
 
         if slot.shape.get() != Some(shape) {
             slot.shape.set(Some(shape));
-            let (ring, radius) = match view.pips.placement {
-                PipPlacement::Inside => (INSIDE_ORBIT, PIP_RADIUS),
-                PipPlacement::Around => (AROUND_ORBIT, MARK_RADIUS),
-            };
-            let total = view.pips.count;
-            apply_run(&slot.nested, 0, groups, total, ring, radius)?;
-            apply_run(&slot.plain, groups, total - groups, total, ring, radius)?;
+            apply_run(&slot.nested, 0, groups, total, arrange, spread, radius)?;
+            apply_run(
+                &slot.plain,
+                groups,
+                total - groups,
+                total,
+                arrange,
+                spread,
+                radius,
+            )?;
         }
 
         if view.pips.overflow && !slot.marked.get() {
             slot.marked.set(true);
-            apply_mesh(&slot.overflow, &mesh::overflow_marker(OVERFLOW_RADIUS))?;
+            draw::mesh(&slot.overflow, &mesh::overflow_marker(OVERFLOW_RADIUS))?;
         }
 
-        let visible = placed(Vec3::ZERO, view.radius);
-        for (prim, shown) in [
-            (&slot.nested, groups > 0),
-            (&slot.plain, view.pips.count > groups),
-            (&slot.overflow, view.pips.overflow),
+        let visible = draw::placed(Vec3::ZERO, view.radius);
+        // The pips are unit-space and scaled by the body; the marker's mesh is
+        // centred, so its own offset is scaled the same way by hand.
+        let at = Vec3::from_array(mesh::overflow_at(arrange, total, spread));
+        let marker = draw::placed(at * view.radius, view.radius);
+
+        for (prim, shown, placed) in [
+            (&slot.nested, groups > 0, visible),
+            (&slot.plain, view.pips.count > groups, visible),
+            (&slot.overflow, view.pips.overflow, marker),
         ] {
-            prim.set_xform(Some(if shown { visible } else { hidden() }))?;
+            prim.set_xform(Some(if shown { placed } else { draw::hidden() }))?;
         }
         Ok(())
     }
@@ -452,82 +542,15 @@ fn apply_run(
     start: usize,
     len: usize,
     total: usize,
-    ring: f32,
+    arrange: Arrange,
+    spread: f32,
     radius: f32,
 ) -> anyhow::Result<()> {
     if len == 0 {
         return Ok(());
     }
-    apply_mesh(prim, &mesh::cluster(start, len, total, ring, radius))
-}
-
-fn apply_mesh(prim: &Prim, data: &mesh::MeshData) -> anyhow::Result<()> {
-    prim.set_mesh_stream("POSITION", Some(&data.positions))?;
-    prim.set_mesh_stream("NORMAL", Some(&data.normals))?;
-    prim.set_mesh_indices_u32(Some(&data.indices))?;
-    Ok(())
-}
-
-const fn placed(translation: Vec3, scale: f32) -> Xform {
-    Xform {
-        translation,
-        rotation: Quat::IDENTITY,
-        scale: Vec3::splat(scale),
-    }
-}
-
-const fn hidden() -> Xform {
-    placed(Vec3::ZERO, 0.0)
-}
-
-const fn with_alpha(color: Color, a: f32) -> Color {
-    Color {
-        r: color.r,
-        g: color.g,
-        b: color.b,
-        a,
-    }
-}
-
-const fn scaled(color: Color, factor: f32) -> Color {
-    Color {
-        r: color.r * factor,
-        g: color.g * factor,
-        b: color.b * factor,
-        a: 1.0,
-    }
-}
-
-const fn shell(style: Style, role: Role) -> Material {
-    let opaque = matches!(role, Role::Action | Role::Cast | Role::Parent { .. });
-    Material {
-        alpha_cutoff: None,
-        alpha_mode:   Some(if opaque {
-            AlphaMode::Opaque
-        } else {
-            AlphaMode::Blend
-        }),
-        base_color:   Some(with_alpha(style.color, style.alpha)),
-        double_sided: Some(!opaque),
-        emissive:     Some(scaled(style.color, style.emissive)),
-        metallic:     None,
-        roughness:    None,
-    }
-}
-
-/// A container pip is see-through, like the mote it stands for.
-const fn pip_material(style: Style, nested: bool) -> Material {
-    Material {
-        alpha_cutoff: None,
-        alpha_mode:   Some(if nested {
-            AlphaMode::Blend
-        } else {
-            AlphaMode::Opaque
-        }),
-        base_color:   Some(with_alpha(style.color, if nested { 0.35 } else { 1.0 })),
-        double_sided: Some(nested),
-        emissive:     Some(scaled(style.color, style.emissive * 1.6)),
-        metallic:     None,
-        roughness:    None,
-    }
+    draw::mesh(
+        prim,
+        &mesh::cluster(start, len, total, arrange, spread, radius),
+    )
 }

@@ -608,7 +608,13 @@ mod tests {
             .init_resource::<QueuedUploads>()
             .add_systems(
                 Update,
-                (sync_fonts, update_pages, rebuild_text, report_missing_glyphs).chain(),
+                (
+                    sync_fonts,
+                    update_pages,
+                    rebuild_text,
+                    report_missing_glyphs,
+                )
+                    .chain(),
             );
 
         let font = Font::parse(Arc::<[u8]>::from(notosans::REGULAR_TTF)).expect("parse");
@@ -688,7 +694,10 @@ mod tests {
 
         app.update();
         assert_eq!(
-            app.world().get::<TextRuntime>(entity).expect("runtime").layout_key,
+            app.world()
+                .get::<TextRuntime>(entity)
+                .expect("runtime")
+                .layout_key,
             key,
             "the failed layout is recorded rather than rebuilt every frame"
         );
@@ -712,7 +721,13 @@ mod tests {
     #[test]
     fn a_rect_outside_its_page_is_dropped_rather_than_sliced() {
         let page = RgbaImage::new(8, 8);
-        let rect = |x, y, w, h| DirtyRect { page: 0, x, y, w, h };
+        let rect = |x, y, w, h| DirtyRect {
+            page: 0,
+            x,
+            y,
+            w,
+            h,
+        };
         assert!(rows(&page, rect(0, 0, 8, 8)).is_some());
         assert!(rows(&page, rect(4, 4, 8, 8)).is_none());
         assert!(rows(&page, rect(0, 0, 9, 1)).is_none());
@@ -722,13 +737,18 @@ mod tests {
     fn a_blit_into_a_smaller_target_stops_at_its_end() {
         let mut target = vec![0u8; 4 * 4 * 4];
         let data = vec![7u8; 4 * 4];
-        blit_region(&mut target, 4, &data, DirtyRect {
-            page: 0,
-            x:    2,
-            y:    3,
-            w:    4,
-            h:    4,
-        });
+        blit_region(
+            &mut target,
+            4,
+            &data,
+            DirtyRect {
+                page: 0,
+                x:    2,
+                y:    3,
+                w:    4,
+                h:    4,
+            },
+        );
         assert!(target.iter().all(|byte| *byte == 0), "nothing overran");
     }
 }

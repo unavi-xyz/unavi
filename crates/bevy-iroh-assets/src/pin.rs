@@ -4,7 +4,8 @@ use iroh_blobs::{
     api::Store,
 };
 use n0_future::StreamExt;
-use unavi_assets::MANIFEST;
+
+use crate::AssetSpec;
 
 /// Namespace for the pins this crate owns. Deletions are confined to it, so a
 /// sweep can never unpin blobs another subsystem holds.
@@ -32,9 +33,9 @@ fn is_ours(name: &str) -> bool {
 }
 
 /// Drops pins under [`PREFIX`] that no longer name a manifest asset, letting
-/// the store's GC reclaim content the client stopped shipping.
-pub async fn sweep(store: &Store) -> anyhow::Result<()> {
-    let live = MANIFEST
+/// the store's GC reclaim content the consumer stopped shipping.
+pub async fn sweep(store: &Store, manifest: &[AssetSpec]) -> anyhow::Result<()> {
+    let live = manifest
         .iter()
         .map(|asset| tag(asset.rel_path))
         .collect::<Vec<_>>();
@@ -60,6 +61,11 @@ pub async fn sweep(store: &Store) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const MANIFEST: &[AssetSpec] = &[AssetSpec {
+        rel_path: "model/default.vrm",
+        hash:     "a2f1a48db6cdf369ab510f6a6fb869d107897231b70c4920ad0357e4930c6281",
+    }];
 
     #[test]
     fn tags_are_namespaced() {

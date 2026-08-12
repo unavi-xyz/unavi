@@ -39,14 +39,14 @@ pub struct SlotView {
     pub label_size:   f32,
 }
 
-/// Which window of an oversized collection is currently drawn.
+/// Which window of an oversized level is currently drawn.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct PageView {
-    pub index: usize,
-    pub count: usize,
+    pub index:   usize,
+    pub count:   usize,
     /// Specs before the window, which the leading pinned slots do not cover.
     pub skipped: usize,
-    pub total: usize,
+    pub total:   usize,
 }
 
 impl PageView {

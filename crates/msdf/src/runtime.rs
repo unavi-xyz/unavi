@@ -487,7 +487,8 @@ impl Atlas {
             // ink out of this glyph's edge samples.
             for row in 0..h {
                 for column in 0..w {
-                    page.image.put_pixel(x + column, y + row, image::Rgba([0; 4]));
+                    page.image
+                        .put_pixel(x + column, y + row, image::Rgba([0; 4]));
                 }
             }
             for (column, row, pixel) in field.enumerate_pixels() {
@@ -699,12 +700,7 @@ mod tests {
         let rect = *atlas.take_dirty().first().expect("rect");
         let image = atlas.page_image(glyph.page as usize).expect("page");
         let size = image.width() as f32;
-        let texel = |uv: [f32; 2]| {
-            [
-                (uv[0] * size).round() as u32,
-                (uv[1] * size).round() as u32,
-            ]
-        };
+        let texel = |uv: [f32; 2]| [(uv[0] * size).round() as u32, (uv[1] * size).round() as u32];
         let ([x0, y0], [x1, y1]) = (texel(glyph.uv.min), texel(glyph.uv.max));
         for row in rect.y..rect.y + rect.h {
             for column in rect.x..rect.x + rect.w {
@@ -941,7 +937,10 @@ mod tests {
         });
         serve(&mut atlas, 'a');
         atlas.advance(0.001);
-        assert!(atlas.resident('a'), "a sweep per frame would be a scan per frame");
+        assert!(
+            atlas.resident('a'),
+            "a sweep per frame would be a scan per frame"
+        );
         atlas.advance(SWEEP_INTERVAL as f32);
         assert!(!atlas.resident('a'));
     }
@@ -977,7 +976,10 @@ mod tests {
         let _ = atlas.request(&['Z']);
         let glyph = atlas.glyph('Z').expect("fallback");
         assert!(glyph.advance > 0.0, "the face knows Z's width");
-        assert!(glyph.plane.is_empty(), "and nothing is drawn in the meantime");
+        assert!(
+            glyph.plane.is_empty(),
+            "and nothing is drawn in the meantime"
+        );
     }
 
     #[test]
@@ -985,7 +987,10 @@ mod tests {
         let atlas = atlas(opts());
         let laid = crate::layout::layout("ab", &atlas, &LayoutOpts::default()).expect("layout");
         assert_eq!(laid.missing, vec!['a', 'b']);
-        assert!(laid.bounds.max[0] > 0.0, "the line is as wide as it will be");
+        assert!(
+            laid.bounds.max[0] > 0.0,
+            "the line is as wide as it will be"
+        );
     }
 
     #[test]

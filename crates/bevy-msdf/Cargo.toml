@@ -13,10 +13,10 @@ workspace = true
 bevy.workspace      = true
 image               = { features = ["png"], workspace = true }
 msdf                = { path = "../msdf" }
-thiserror.workspace = true
 smol_str.workspace  = true
+thiserror.workspace = true
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
-notosans                       = { version = "0.1.0" }
 naga                           = { default-features = false, features = ["wgsl-in"], version = "29.0.4" }
+notosans                       = { version = "0.1.0" }

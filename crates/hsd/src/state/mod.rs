@@ -90,14 +90,14 @@ enum Placement {
 /// set, so saving is a per-key diff rather than a whole-document snapshot.
 #[derive(Debug)]
 pub struct SceneState {
-    meta:     DocMeta,
-    prims:    HashMap<PrimId, PrimState>,
+    meta:       DocMeta,
+    prims:      HashMap<PrimId, PrimState>,
     /// Parent id to children, including parents that do not exist yet, which
     /// is what lets an orphan be picked up when its parent arrives.
-    children: HashMap<PrimId, BTreeSet<PrimId>>,
+    children:   HashMap<PrimId, BTreeSet<PrimId>>,
     /// Realized prims and their effective parent, `None` for a document root.
-    realized: HashMap<PrimId, Option<PrimId>>,
-    events:   Vec<SceneEvent>,
+    realized:   HashMap<PrimId, Option<PrimId>>,
+    events:     Vec<SceneEvent>,
     /// Write boundaries currently open. A script tick can be suspended between
     /// any two host calls, so its events are withheld until it closes.
     ticks:      usize,
@@ -115,11 +115,11 @@ impl SceneState {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            meta:     DocMeta::default(),
-            prims:    HashMap::new(),
-            children: HashMap::new(),
-            realized: HashMap::new(),
-            events:   Vec::new(),
+            meta:       DocMeta::default(),
+            prims:      HashMap::new(),
+            children:   HashMap::new(),
+            realized:   HashMap::new(),
+            events:     Vec::new(),
             ticks:      0,
             tick_start: 0,
         }

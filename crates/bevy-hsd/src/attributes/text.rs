@@ -196,15 +196,17 @@ mod tests {
     #[test]
     fn a_non_finite_length_falls_back_rather_than_reaching_the_mesh() {
         for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-            assert!((scalar(Some(value), DEFAULT_SIZE, 0.0..=MAX_SIZE) - DEFAULT_SIZE).abs() < 1e-9);
+            assert!(
+                (scalar(Some(value), DEFAULT_SIZE, 0.0..=MAX_SIZE) - DEFAULT_SIZE).abs() < 1.0e-9
+            );
         }
     }
 
     #[test]
     fn an_absurd_length_is_held_to_the_range() {
-        assert!((scalar(Some(1.0e30), DEFAULT_SIZE, 0.0..=MAX_SIZE) - MAX_SIZE).abs() < 1e-6);
-        assert!(scalar(Some(-4.0), DEFAULT_SIZE, 0.0..=MAX_SIZE).abs() < 1e-9);
-        assert!((scalar(None, DEFAULT_SIZE, 0.0..=MAX_SIZE) - DEFAULT_SIZE).abs() < 1e-9);
+        assert!((scalar(Some(1.0e30), DEFAULT_SIZE, 0.0..=MAX_SIZE) - MAX_SIZE).abs() < 1.0e-6);
+        assert!(scalar(Some(-4.0), DEFAULT_SIZE, 0.0..=MAX_SIZE).abs() < 1.0e-9);
+        assert!((scalar(None, DEFAULT_SIZE, 0.0..=MAX_SIZE) - DEFAULT_SIZE).abs() < 1.0e-9);
     }
 
     #[test]

@@ -4,6 +4,17 @@ use wired_math::types::Vec2;
 
 use crate::tuning::Tuning;
 
+/// What, if anything, holds the middle of an orbit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Centre {
+    /// Every mote takes a direction; a null deflection selects nothing.
+    Open,
+    /// The first mote sits in the middle and stays there on every page. The
+    /// way back and a level's own subject are both this; which one it is
+    /// belongs to whoever supplies the specs.
+    Held,
+}
+
 /// How a surface's slots are arranged in its own plane.
 ///
 /// Composition is spatial rather than hierarchical: a layout never contains
@@ -17,7 +28,7 @@ pub enum Layout {
     /// [`Layout::Star`] plus a centre slot at index 0.
     Centred { points: usize, radius: f32 },
     /// `points` slots spread over `sweep` radians about `bearing`. The ends do
-    /// not wrap, so an arc has an outside that a full ring does not.
+    /// not wrap, so an arc has an outside that a full orbit does not.
     Arc {
         points:  usize,
         radius:  f32,
@@ -62,6 +73,28 @@ impl Layout {
         }
     }
 
+    /// The orbit `count` motes take under `centre`, shrunk to `capacity` and
+    /// leaving no gaps; anything past it paginates. Returns the layout and the
+    /// number of leading slots pinned on every page.
+    #[must_use]
+    pub fn orbit(count: usize, centre: Centre, capacity: usize, radius: f32) -> (Self, usize) {
+        let held = usize::from(centre == Centre::Held).min(count);
+        let points = (count - held).min(capacity.saturating_sub(held));
+        let layout = match centre {
+            Centre::Open => Self::star(points, radius),
+            Centre::Held => Self::centred(points, radius),
+        };
+        (layout, held)
+    }
+
+    /// Whether a release at `local` — in this layout's own plane — lands
+    /// inside the region it answers for.
+    #[must_use]
+    pub fn accepts(&self, local: Vec2, tuning: &Tuning) -> bool {
+        let extents = self.extents(tuning);
+        local.x.abs() <= extents.x && local.y.abs() <= extents.y
+    }
+
     #[must_use]
     pub const fn len(&self) -> usize {
         match *self {
@@ -83,7 +116,7 @@ impl Layout {
 
     /// Slots arranged radially, excluding any centre slot.
     #[must_use]
-    pub const fn ring_len(&self) -> usize {
+    pub const fn orbit_len(&self) -> usize {
         match *self {
             Self::Star { points, .. } | Self::Centred { points, .. } | Self::Arc { points, .. } => {
                 points
@@ -114,10 +147,10 @@ impl Layout {
             return None;
         }
         match *self {
-            Self::Star { points, radius } => Some(ring_position(index, points, radius)),
+            Self::Star { points, radius } => Some(orbit_position(index, points, radius)),
             Self::Centred { points, radius } => match index {
                 0 => Some(Vec2::ZERO),
-                _ => Some(ring_position(index - 1, points, radius)),
+                _ => Some(orbit_position(index - 1, points, radius)),
             },
             Self::Arc {
                 points,
@@ -179,7 +212,7 @@ impl Layout {
             return None;
         }
 
-        let points = self.ring_len();
+        let points = self.orbit_len();
         if points == 0 {
             return None;
         }
@@ -209,12 +242,12 @@ impl Layout {
     }
 }
 
-/// Angle 0 is up, advancing clockwise, matching slot 0 of a ring.
+/// Angle 0 is up, advancing clockwise, matching slot 0 of an orbit.
 fn polar(angle: f32, radius: f32) -> Vec2 {
     Vec2::new(radius * angle.sin(), radius * angle.cos())
 }
 
-fn ring_position(index: usize, points: usize, radius: f32) -> Vec2 {
+fn orbit_position(index: usize, points: usize, radius: f32) -> Vec2 {
     polar(index as f32 * TAU / points as f32, radius)
 }
 
@@ -502,7 +535,10 @@ mod tests {
         let first = layout.slot(0).expect("first");
         let last = layout.slot(5).expect("last");
         assert!(first.x < 0.0 && first.y > 0.0, "slot 0 is the top left");
-        assert!(last.x > 0.0 && last.y < 0.0, "the last slot is bottom right");
+        assert!(
+            last.x > 0.0 && last.y < 0.0,
+            "the last slot is bottom right"
+        );
         assert!(
             (layout.slot(1).expect("slot 1").x - 0.0).abs() < 1.0e-5,
             "an odd column count centres its middle column"
@@ -572,5 +608,60 @@ mod tests {
         let grid = Layout::grid(4, 2, PITCH).extents(&tuning());
         assert!(close(grid.x, PITCH.x * 2.0));
         assert!(close(grid.y, PITCH.y));
+    }
+
+    #[test]
+    fn a_ring_is_centred_or_not_and_reports_its_pin() {
+        let (open, pinned) = Layout::orbit(4, Centre::Open, 12, R);
+        assert!(!open.has_centre());
+        assert_eq!(pinned, 0);
+
+        let (held, pinned) = Layout::orbit(5, Centre::Held, 12, R);
+        assert!(held.has_centre());
+        assert_eq!(held.len(), 5, "the held centre plus 4 around it");
+        assert_eq!(pinned, 1);
+    }
+
+    #[test]
+    fn a_ring_shrinks_to_capacity_without_leaving_gaps() {
+        let (layout, pinned) = Layout::orbit(20, Centre::Open, 4, R);
+        assert_eq!(layout.len(), 4);
+        assert_eq!(pinned, 0);
+
+        let (layout, pinned) = Layout::orbit(20, Centre::Held, 4, R);
+        assert_eq!(layout.len(), 4, "the held centre takes a slot of its own");
+        assert_eq!(pinned, 1);
+    }
+
+    #[test]
+    fn a_row_is_one_high_and_a_column_is_one_wide() {
+        let row = Layout::grid(4, 1, PITCH);
+        let column = Layout::grid(1, 4, PITCH);
+        assert_eq!(row.len(), 4);
+        assert_eq!(column.len(), 4);
+
+        let across = (0..4)
+            .map(|i| row.slot(i).expect("cell"))
+            .collect::<Vec<_>>();
+        assert!(across[0].x < across[3].x, "a row lays sideways");
+        assert!((across[0].y - across[3].y).abs() < 1.0e-5);
+
+        let down = (0..4)
+            .map(|i| column.slot(i).expect("cell"))
+            .collect::<Vec<_>>();
+        assert!(down[0].y > down[3].y, "a column lays downward");
+        assert!((down[0].x - down[3].x).abs() < 1.0e-5);
+    }
+
+    #[test]
+    fn a_grid_answers_for_exactly_its_extents() {
+        let grid = Layout::grid(4, 2, PITCH);
+        assert!(grid.accepts(Vec2::ZERO, &tuning()));
+        assert!(grid.accepts(Vec2::new(PITCH.x * 1.9, 0.0), &tuning()));
+        assert!(
+            !grid.accepts(Vec2::new(PITCH.x * 2.5, 0.0), &tuning()),
+            "a grid is a destination with a size, not the whole room"
+        );
+        assert!(!grid.accepts(Vec2::new(0.0, PITCH.y * 1.5), &tuning()));
     }
 }

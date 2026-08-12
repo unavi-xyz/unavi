@@ -36,7 +36,6 @@ bevy                    = { default-features = true, features = ["https", "jpeg"
 bevy-hsd.path           = "../bevy-hsd"
 bevy-inspector-egui     = { optional = true, workspace = true }
 bevy-iroh.path          = "../bevy-iroh"
-bevy-msdf.path          = "../bevy-msdf"
 bevy-wds.path           = "../bevy-wds"
 bevy_vrm.workspace      = true
 blake3.workspace        = true
@@ -49,7 +48,6 @@ n0-future.workspace     = true
 parking_lot.workspace   = true
 tracing                 = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
 unavi-agent.path        = "../unavi-agent"
-unavi-assets.path       = "../unavi-assets"
 unavi-assets-fetch.path = "../unavi-assets-fetch"
 unavi-avatar.path       = "../unavi-avatar"
 unavi-devtools          = { optional = true, path = "../unavi-devtools" }

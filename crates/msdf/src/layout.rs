@@ -278,7 +278,11 @@ fn assemble(
 ) -> Laid {
     // A size or spacing a document supplied may be anything a float can hold;
     // a non-finite one would put NaN in every vertex of the mesh.
-    let size = if opts.size.is_finite() { opts.size.max(0.0) } else { 0.0 };
+    let size = if opts.size.is_finite() {
+        opts.size.max(0.0)
+    } else {
+        0.0
+    };
     let line_height = if opts.line_height.is_finite() {
         opts.line_height
     } else {
@@ -384,7 +388,9 @@ mod tests {
             uv: Rect::ZERO,
             ..square
         };
-        let mut glyphs = ('a'..='z').map(|ch| (ch, square)).collect::<BTreeMap<_, _>>();
+        let mut glyphs = ('a'..='z')
+            .map(|ch| (ch, square))
+            .collect::<BTreeMap<_, _>>();
         for ch in ['A', 'V'] {
             glyphs.insert(ch, square);
         }
@@ -702,7 +708,10 @@ mod tests {
         };
         assert_eq!(
             layout("\t\t\t", &atlas(), &opts),
-            Err(LayoutError::TooManyGlyphs { count: 12, cap: 8 })
+            Err(LayoutError::TooManyGlyphs {
+                count: 12,
+                cap:   8,
+            })
         );
     }
 

@@ -1,21 +1,21 @@
-//! Draws a cast site: a ring on the mote that is filling, and an abort the
-//! moment attention leaves it.
+//! Draws a cast site: a ring on the mote that is filling.
 
 use std::cell::Cell;
 
-use unavi_vui::{
+use wired_prelude::prelude::*;
+
+use crate::{
     circle::Cast,
     mesh,
     palette::Palette,
-};
-use wired_prelude::prelude::*;
-
-use crate::wired::scene::types::{
-    AlphaMode,
-    Document,
-    Material,
-    Prim,
-    Xform,
+    scene::draw,
+    wired::scene::types::{
+        AlphaMode,
+        Document,
+        Material,
+        Prim,
+        Xform,
+    },
 };
 
 const SEGMENTS: usize = 40;
@@ -24,22 +24,19 @@ const OUTER: f32 = 0.034;
 /// Stands clear of the mote it rings without reaching the hit surface.
 const LIFT: f32 = 0.006;
 
-/// A ring whose drawn arc is the fill. The mesh is a full annulus and the
+/// A ring whose drawn size is the fill. The mesh is a full annulus and the
 /// progress is carried by scale, so filling re-uploads nothing.
-pub struct Circle {
+pub struct Site {
     prim:    Prim,
     lit:     Cell<Option<bool>>,
     palette: Palette,
 }
 
-impl Circle {
+impl Site {
     pub fn new(doc: &Document, parent: &Prim, palette: Palette) -> anyhow::Result<Self> {
         let prim = doc.create_prim()?;
-        let ring = mesh::annulus(INNER, OUTER, SEGMENTS);
-        prim.set_mesh_stream("POSITION", Some(&ring.positions))?;
-        prim.set_mesh_stream("NORMAL", Some(&ring.normals))?;
-        prim.set_mesh_indices_u32(Some(&ring.indices))?;
-        prim.set_xform(Some(hidden()))?;
+        draw::mesh(&prim, &mesh::annulus(INNER, OUTER, SEGMENTS))?;
+        prim.set_xform(Some(draw::hidden()))?;
         parent.add_child(&prim)?;
 
         Ok(Self {
@@ -50,7 +47,7 @@ impl Circle {
     }
 
     pub fn hide(&self) -> anyhow::Result<()> {
-        self.prim.set_xform(Some(hidden()))?;
+        self.prim.set_xform(Some(draw::hidden()))?;
         Ok(())
     }
 
@@ -79,33 +76,15 @@ impl Circle {
     }
 }
 
-fn material(palette: &Palette, lit: bool) -> Material {
+const fn material(palette: &Palette, lit: bool) -> Material {
     let color = if lit { palette.accent } else { palette.base };
     Material {
         alpha_cutoff: None,
         alpha_mode:   Some(AlphaMode::Blend),
-        base_color:   Some(Color {
-            r: color.r,
-            g: color.g,
-            b: color.b,
-            a: 0.9,
-        }),
+        base_color:   Some(draw::with_alpha(color, 0.9)),
         double_sided: Some(true),
-        emissive:     Some(Color {
-            r: color.r * 1.4,
-            g: color.g * 1.4,
-            b: color.b * 1.4,
-            a: 1.0,
-        }),
+        emissive:     Some(draw::scaled(color, 1.4)),
         metallic:     None,
         roughness:    None,
-    }
-}
-
-const fn hidden() -> Xform {
-    Xform {
-        translation: Vec3::ZERO,
-        rotation:    Quat::IDENTITY,
-        scale:       Vec3::ZERO,
     }
 }

@@ -83,10 +83,7 @@ impl MsdfFont {
     /// pre-rendered.
     pub fn new(font: Arc<Font>, opts: RuntimeOpts, images: &mut Assets<Image>) -> Self {
         let atlas = Atlas::new(font, opts);
-        let unit_range = unit_range(
-            atlas.generate_opts().range as f32,
-            atlas.budget().page_size,
-        );
+        let unit_range = unit_range(atlas.generate_opts().range as f32, atlas.budget().page_size);
 
         let pages = (0..atlas.page_count())
             .map(|index| images.add(page_image(&atlas, index as u32)))
@@ -169,9 +166,7 @@ pub fn generate(atlas: &mut Atlas) -> bool {
         let opts = atlas.generate_opts();
         ComputeTaskPool::get_or_init(TaskPool::default).scope(|scope| {
             for job in &jobs {
-                scope.spawn(async move {
-                    (job.ch, render(face, job.id, job.ch, job.upem, opts))
-                });
+                scope.spawn(async move { (job.ch, render(face, job.id, job.ch, job.upem, opts)) });
             }
         })
     };
@@ -429,7 +424,10 @@ mod tests {
         assert!(generate(&mut state.atlas));
         assert!(state.atlas.resident('α'));
         assert!(!state.atlas.glyph('α').expect("glyph").plane.is_empty());
-        assert!(!generate(&mut state.atlas), "an empty queue generates nothing");
+        assert!(
+            !generate(&mut state.atlas),
+            "an empty queue generates nothing"
+        );
         drop(state);
     }
 
@@ -517,7 +515,10 @@ mod tests {
                 .trigger(RegisterFont(Arc::<[u8]>::from(notosans::REGULAR_TTF)));
         }
 
-        assert_eq!(app.world().resource::<DefaultFontStack>().0.len(), MAX_FONTS);
+        assert_eq!(
+            app.world().resource::<DefaultFontStack>().0.len(),
+            MAX_FONTS
+        );
     }
 
     #[test]
@@ -530,7 +531,10 @@ mod tests {
             drop(state);
         }
         font.sync(&['a']);
-        assert!(font.state().live.contains(&'a'), "a live character is pinned");
+        assert!(
+            font.state().live.contains(&'a'),
+            "a live character is pinned"
+        );
 
         font.sync(&[]);
         assert!(

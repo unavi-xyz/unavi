@@ -1,8 +1,3 @@
-use std::{
-    path::PathBuf,
-    sync::LazyLock,
-};
-
 use avian3d::prelude::*;
 use bevy::{
     camera::visibility::RenderLayers,
@@ -27,47 +22,24 @@ use bevy_wds::{
     LocalBlobs,
     LocalDocs,
 };
-use directories::ProjectDirs;
 use unavi_agent::LocalAgent;
 use unavi_script::permissions::ApiPermissions;
 
-use crate::util::create_test_wds;
+use crate::util::create_client_wds;
 
 mod util;
 
 const SCRIPT_PATH: &str = "hsd/example_wired_agent.hsdz";
 
-pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
-    let dirs = ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs");
-    std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
-    dirs
-});
-
-fn main() -> anyhow::Result<()> {
+fn main() {
     let assets_path = "../unavi-client/assets/".to_string();
 
-    let src = DIRS.data_local_dir().join("assets");
-    let dst = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join(&assets_path)
-        .canonicalize()?;
-    std::fs::create_dir_all(dst.join("model"))?;
-    for path in ["model/animations.glb", "model/default.vrm"] {
-        let src = src.join(path);
-        let dst = dst.join(path);
-        println!(
-            "Copying {} -> {}",
-            src.to_string_lossy(),
-            dst.to_string_lossy()
-        );
-        std::fs::copy(src, dst)?;
-    }
-
-    let wds = create_test_wds();
+    let wds = create_client_wds();
 
     let mut app = App::new();
     // Registers the `iroh://` asset source, which must exist before
     // `AssetPlugin` builds the sources it knows about.
-    app.add_plugins(unavi_assets_fetch::UnaviAssetsFetchPlugin);
+    app.add_plugins(unavi_assets_fetch::UnaviAssetsPlugin);
     app.add_plugins((
         DefaultPlugins
             .set(AssetPlugin {
@@ -101,8 +73,6 @@ fn main() -> anyhow::Result<()> {
     ));
 
     app.run();
-
-    Ok(())
 }
 
 fn init_scene(mut commands: Commands) {

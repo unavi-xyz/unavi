@@ -40,7 +40,7 @@ struct Tables<'a> {
 
 self_cell!(
     struct Parsed {
-        owner: Arc<[u8]>,
+        owner:     Arc<[u8]>,
         #[covariant]
         dependent: Tables,
     }
@@ -50,7 +50,7 @@ struct Shaping<'a>(harfrust::Shaper<'a>);
 
 self_cell!(
     struct Shaper {
-        owner: Parsed,
+        owner:     Parsed,
         #[not_covariant]
         dependent: Shaping,
     }
@@ -251,7 +251,10 @@ mod tests {
     #[test]
     fn an_advance_comes_back_without_an_outline() {
         let font = font();
-        assert!(font.advance(' ').unwrap_or_default() > 0.0, "a space is wide");
+        assert!(
+            font.advance(' ').unwrap_or_default() > 0.0,
+            "a space is wide"
+        );
         assert!(font.advance('漢').is_none(), "the face has no such glyph");
     }
 

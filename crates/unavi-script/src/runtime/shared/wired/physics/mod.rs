@@ -163,24 +163,46 @@ async fn set_velocity(
         v,
     )?;
     let (doc, prim_id) = prim_ident(api, prim_rep).await?;
+    let (tx, rx) = async_channel::bounded(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
-            let Some(entity) = entity_for(world, doc, prim_id) else {
-                return;
-            };
-            if !matches!(world.get::<RigidBody>(entity), Some(RigidBody::Dynamic)) {
-                return;
-            }
-            let mut ent = world.entity_mut(entity);
-            if angular {
-                ent.insert(AngularVelocity(vel));
-            } else {
-                ent.insert(LinearVelocity(vel));
-            }
+            tx.try_send(apply_velocity(world, doc, prim_id, vel, angular))
+                .ok();
         })
         .send()
         .await
         .map_err(|err| ScriptError::other(err.to_string()))?;
+    rx.recv()
+        .await
+        .map_err(|err| ScriptError::other(err.to_string()))?
+}
+
+/// A body only carries velocity once it is realized, which a document placed
+/// this tick is not; reported rather than dropped, so a caller can try again
+/// instead of quietly landing a thrown thing on the spot.
+fn apply_velocity(
+    world: &mut World,
+    doc: DocId,
+    prim: PrimId,
+    vel: Vec3,
+    angular: bool,
+) -> Result<(), ScriptError> {
+    let Some(entity) = entity_for(world, doc, prim) else {
+        return Err(ScriptError::other(format!(
+            "prim {prim} of {doc} has no body in the world"
+        )));
+    };
+    if !matches!(world.get::<RigidBody>(entity), Some(RigidBody::Dynamic)) {
+        return Err(ScriptError::other(format!(
+            "prim {prim} of {doc} is not a dynamic body"
+        )));
+    }
+    let mut ent = world.entity_mut(entity);
+    if angular {
+        ent.insert(AngularVelocity(vel));
+    } else {
+        ent.insert(LinearVelocity(vel));
+    }
     Ok(())
 }
 

@@ -13,6 +13,7 @@ use std::{
 use bevy::{
     platform::collections::HashMap,
     prelude::*,
+    transform::TransformSystems,
 };
 use hsd::{
     id::{
@@ -61,6 +62,7 @@ impl Plugin for HsdPlugin {
                     // arity; nesting splits the systems, and `.chain()` on
                     // the outer tuple still orders the two inner groups.
                     (
+                        diff::discard_held_events,
                         diff::drain_scene_events,
                         attributes::script::track_script,
                         attributes::prefab::track_prefab,
@@ -95,9 +97,14 @@ impl Plugin for HsdPlugin {
             // Text's attribute lands in `HsdCommitSet`; the renderer must
             // run after it or every label is a frame stale.
             .configure_sets(Update, bevy_msdf::MsdfSet.after(HsdCommitSet))
+            // A document's own transform has to be current before its prims
+            // are realized: `apply_xform` seeds a body's physics position from
+            // the transform chain, and reading a stale document frame parks
+            // the body where the document used to be.
+            .add_systems(Update, anchor::apply_anchors.before(HsdCommitSet))
             .add_systems(
                 PostUpdate,
-                (loaded::evaluate_hsd_loaded, anchor::apply_anchors),
+                loaded::evaluate_hsd_loaded.before(TransformSystems::Propagate),
             );
     }
 }
@@ -117,6 +124,16 @@ impl Hsd {
         Self(Arc::new(Mutex::new(state)))
     }
 }
+
+/// A document that is not in the scene.
+///
+/// It has an id, a namespace and prims, and a script writes to it exactly as
+/// it would to a live one; nothing of it is drawn, simulated or reachable by
+/// position. [`anchor::place`] puts it in, whole and where it was put, so a
+/// document that has just been built appears rather than arriving at the
+/// origin and moving.
+#[derive(Component, Clone)]
+pub struct HsdHeld(pub Arc<Mutex<SceneState>>);
 
 /// A namespace-backed document's id is its namespace; a prefab instance
 /// derives one.

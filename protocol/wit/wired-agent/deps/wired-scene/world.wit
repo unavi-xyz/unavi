@@ -16,26 +16,17 @@ interface api {
   create-document: func() -> result<document, error>;
   remove-document: func(id: document-id) -> result<_, error>;
 
-  /// Unpacks a compiled document blob into a document of its own, with a
-  /// namespace and an id that can be synced, saved and owned.
-  ///
-  /// A prim's `prefab` slot instances the same blob *under that prim*, which is
-  /// local forever and has no namespace to share. Use this instead when the
-  /// content is meant to become a shared, owned object.
+  /// Instances a compiled blob as an owned, shared document, unlike a prim's
+  /// `prefab` slot which stays local.
   create-document-from-prefab: func(prefab: blob-id) -> result<document, error>;
 
-  /// Shares a document with the other peers in the space.
-  ///
-  /// Documents start local: only this peer sees them. Syncing hands the
-  /// document to the space, after which its contents replicate to everyone
-  /// present and the calling script gives up exclusive write access to it.
+  /// Hands the document to the space, after which it replicates to everyone
+  /// present and the script loses exclusive write access.
   sync-document: func(id: document-id) -> result<_, error>;
 
   /// Writes a document's live state into its entries.
   ///
-  /// Writes never reach storage on their own: they reach this peer's world
-  /// immediately, other peers through the space protocol, and the document
-  /// only here. Prims a script created are transient and are not written.
+  /// Prims a script created are transient and are not written.
   save-document: func(id: document-id) -> result<_, error>;
 }
 
@@ -64,9 +55,8 @@ interface types {
     triangle-strip,
   }
 
-  /// Vertex buffers are not named here. Each is its own `mesh:<NAME>` entry,
-  /// set with `set-mesh-stream`, so nothing in this payload has to be kept
-  /// consistent with the blob store.
+  /// Vertex buffers live in their own `mesh:<NAME>` entries set with
+  /// `set-mesh-stream`.
   record mesh {
     topology: topology,
   }
@@ -87,9 +77,8 @@ interface types {
     pre-multiplied,
   }
 
-  /// Texture slots are relationships, not fields: as in USD, a cross-prim
-  /// reference lives in the prim's property namespace, under
-  /// `material:base-color-texture` and friends. Use `set-relationship`.
+  /// Texture slots are relationships set with `set-relationship`, under
+  /// `material:base-color-texture` and friends.
   record material {
     alpha-cutoff: option<f32>,
     alpha-mode:   option<alpha-mode>,
@@ -102,9 +91,8 @@ interface types {
 
   /// A value a shader graph's public input can be overridden with.
   ///
-  /// Mirrors the graph format's own value kinds exactly. A script may
-  /// override the inputs of a graph its package already carries; it may not
-  /// author one, so no shader content of any kind appears in this API.
+  /// Scripts override inputs of graphs their package carries; they cannot
+  /// author one, so no shader content appears in this API.
   variant graph-value {
     float(f32),
     vec2(vec2),
@@ -177,8 +165,7 @@ interface types {
     size-y:      f32,
   }
 
-  // Marks a prim as a spawn area. Players entering the space (or arriving via
-  // a portal with no receptor) are placed at a random point within a
+  // Marks a prim as a spawn area: players spawn at a random point in a
   // horizontal circle of `radius` around the prim's origin.
   record spawn {
     radius: f32,
@@ -201,18 +188,17 @@ interface types {
 
   enum text-billboard {
     none,
-    /// Yaw only: the label stays upright and does not tilt as you crouch.
+    /// Yaw only: the label stays upright.
     yaw,
     full,
   }
 
   /// A string drawn in the world.
   ///
-  /// One string, one style. No markup, no rich text, no embedded control
-  /// characters — a label that needs more than this is the wrong tool.
+  /// One string, one style; no markup or rich text.
   record text {
     value:         string,
-    /// Em height in metres. 0.02 is body text read at arm's length.
+    /// Em height in metres.
     size:          option<f32>,
     align:         option<text-align>,
     anchor:        option<text-anchor>,
@@ -221,8 +207,7 @@ interface types {
     /// Multiple of the font's own baseline-to-baseline distance.
     line-height:   option<f32>,
     color:         option<color>,
-    /// Drawn behind the glyph. Text in a space you did not author has no say
-    /// in what is behind it, so contrast is worth having.
+    /// Drawn behind the glyph.
     outline:       option<color>,
     outline-width: option<f32>,
     emissive:      option<f32>,
@@ -244,9 +229,15 @@ interface types {
     // or if scene-read is denied.
     offset-to: func(other: borrow<document>) -> option<transform>;
 
-    /// Attaches this document's root to a prim, or to the space root when
-    /// `none`. Per-peer runtime state, never persisted: everyone's gauntlet
-    /// attaches to their own camera.
+    /// Attaches this document's root to a prim, or the space root when `none`.
+    /// Per-peer runtime state, never persisted.
+    ///
+    /// A document a script mints is held until one of these is called: it has
+    /// an id and prims, and can be built up in full, but nothing of it is
+    /// drawn or simulated. Placing it puts the whole document in at once,
+    /// where it was put, so what a first placement shows is a document
+    /// appearing rather than one arriving at the origin and moving. Fails if
+    /// the anchor target is not itself in the scene.
     set-anchor: func(target: option<borrow<prim>>) -> result<_, error>;
     set-offset: func(value: xform) -> result<_, error>;
   }
@@ -263,9 +254,8 @@ interface types {
     name:     func() -> option<string>;
     set-name: func(value: option<string>) -> result<_, error>;
 
-    /// The compiled document instanced as a child of this prim. Setting it is
-    /// what spawns the instance; clearing it, or deleting the prim, is what
-    /// tears the instance down.
+    /// The compiled document instanced as a child of this prim. Setting it
+    /// spawns the instance; clearing it or deleting the prim tears it down.
     prefab:     func() -> option<blob-id>;
     set-prefab: func(value: option<blob-id>) -> result<_, error>;
 
@@ -288,11 +278,9 @@ interface types {
     material:     func() -> option<material>;
     set-material: func(value: option<material>) -> result<_, error>;
 
-    /// Per-instance overrides of the shader graph this prim renders, keyed
-    /// by public-input index. The graph itself is package content, reached
-    /// through the `material:binding` relationship — the same one a PBR
-    /// material uses, since a prim has one material whichever backend
-    /// draws it.
+    /// Per-instance overrides of the shader graph this prim renders, keyed by
+    /// public-input index. The graph itself is package content reached through
+    /// the `material:binding` relationship.
     graph-overrides:     func() -> list<tuple<u16, graph-value>>;
     set-graph-overrides: func(values: list<tuple<u16, graph-value>>) -> result<_, error>;
 

@@ -14,7 +14,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 anyhow.workspace      = true
-smol_str.workspace    = true
-unavi-vui.path        = "../../crates/unavi-vui"
 wired-prelude.path    = "../wired-prelude"
 wit-bindgen.workspace = true

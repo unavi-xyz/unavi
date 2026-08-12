@@ -7,7 +7,10 @@ use bevy::prelude::*;
 use bevy_hsd::{
     HsdDocId,
     HsdPrimIndex,
-    anchor::DocAnchor,
+    anchor::{
+        self,
+        DocAnchor,
+    },
 };
 use hsd::{
     id::{
@@ -236,8 +239,57 @@ pub async fn remove_prim(api: &Api, prim_rep: u32) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Which half of a document's anchor a call sets. The other half is whatever
+/// the document already had, so anchoring never disturbs an offset and
+/// offsetting never disturbs an anchor.
+pub enum Placement {
+    Target(Option<(DocId, PrimId)>),
+    Offset(Transform),
+    /// Neither: enough to put a held document into the scene where its
+    /// existing anchor already says it goes.
+    Unchanged,
+}
+
+/// Puts a document into the scene, or moves one already in it.
+///
 /// Anchoring is per-peer runtime state, so it is applied to the world and
 /// never written to the document.
+pub fn place_document(world: &mut World, id: DocId, placement: Placement) -> anyhow::Result<()> {
+    let doc_ent =
+        find_doc(world, id).ok_or_else(|| anyhow::anyhow!("document {id} is not in the world"))?;
+    let current = world.get::<DocAnchor>(doc_ent).copied();
+    let offset = current.map_or_else(Transform::default, |anchor| anchor.offset);
+
+    let anchor = match placement {
+        Placement::Target(Some((target_doc, prim))) => DocAnchor {
+            target: Some(find_prim(world, target_doc, prim).ok_or_else(|| {
+                anyhow::anyhow!("anchor target prim {prim} of {target_doc} is not in the world")
+            })?),
+            offset,
+        },
+        Placement::Target(None) => DocAnchor::root(offset),
+        Placement::Offset(offset) => DocAnchor {
+            target: current.and_then(|anchor| anchor.target),
+            offset,
+        },
+        Placement::Unchanged => current.unwrap_or_else(|| DocAnchor::root(offset)),
+    };
+
+    anchor::place(&mut world.entity_mut(doc_ent), anchor);
+    Ok(())
+}
+
+async fn place(id: DocId, placement: Placement) -> anyhow::Result<()> {
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            tx.try_send(place_document(world, id, placement)).ok();
+        })
+        .send()
+        .await?;
+    rx.recv().await?
+}
+
 pub async fn set_anchor(api: &Api, rep: u32, target: Option<u32>) -> anyhow::Result<()> {
     let doc = get_doc(api, rep).await?;
     validate_firewall(&api.doc_id, &doc.id, Channel::SceneWrite)?;
@@ -257,52 +309,22 @@ pub async fn set_anchor(api: &Api, rep: u32, target: Option<u32>) -> anyhow::Res
         None => None,
     };
 
-    let id = doc.id;
-    AsyncCommands::default()
-        .push(move |world: &mut World| {
-            let Some(doc_ent) = find_doc(world, id) else {
-                return;
-            };
-            let target_ent = target.and_then(|(doc, prim)| find_prim(world, doc, prim));
-            if target.is_some() && target_ent.is_none() {
-                return;
-            }
-            let offset = world
-                .get::<DocAnchor>(doc_ent)
-                .map_or_else(Transform::default, |a| a.offset);
-            world.entity_mut(doc_ent).insert(DocAnchor {
-                target: target_ent,
-                offset,
-            });
-        })
-        .send()
-        .await?;
-    Ok(())
+    place(doc.id, Placement::Target(target)).await
 }
 
 pub async fn set_offset(api: &Api, rep: u32, value: XformValue) -> anyhow::Result<()> {
     let doc = get_doc(api, rep).await?;
     validate_firewall(&api.doc_id, &doc.id, Channel::SceneWrite)?;
 
-    let id = doc.id;
-    let offset = Transform {
-        translation: Vec3::from_array(value.translation),
-        rotation:    Quat::from_array(value.rotation),
-        scale:       Vec3::from_array(value.scale),
-    };
-    AsyncCommands::default()
-        .push(move |world: &mut World| {
-            let Some(doc_ent) = find_doc(world, id) else {
-                return;
-            };
-            let target = world.get::<DocAnchor>(doc_ent).and_then(|a| a.target);
-            world
-                .entity_mut(doc_ent)
-                .insert(DocAnchor { target, offset });
-        })
-        .send()
-        .await?;
-    Ok(())
+    place(
+        doc.id,
+        Placement::Offset(Transform {
+            translation: Vec3::from_array(value.translation),
+            rotation:    Quat::from_array(value.rotation),
+            scale:       Vec3::from_array(value.scale),
+        }),
+    )
+    .await
 }
 
 fn find_doc(world: &mut World, id: DocId) -> Option<Entity> {

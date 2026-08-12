@@ -1,22 +1,29 @@
-//! Spatial UI primitives for UNAVI, free of host bindings so the layout,
-//! targeting and interaction logic is unit-testable on the host target.
+//! Spatial UI for UNAVI, exported as `unavi:vui` so any script can put up a
+//! surface and drive it.
+//!
+//! Layout, targeting and interaction are host-testable modules of their own;
+//! [`scene`] draws them into the calling script's document, and [`api`] is the
+//! only thing a consumer sees.
 
+pub mod api;
 pub mod assist;
 pub mod attention;
 pub mod circle;
 pub mod grasp;
 pub mod layout;
 pub mod mesh;
-pub mod model;
 pub mod mote;
-pub mod orbit;
 pub mod palette;
 pub mod placard;
 pub mod pointer;
-pub mod rack;
-pub mod sigil;
+pub mod scene;
 pub mod surface;
-pub mod trail;
 pub mod tree;
 pub mod tuning;
 pub mod view;
+
+wired_prelude::generate!();
+
+struct World;
+
+export!(World);

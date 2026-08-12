@@ -1021,6 +1021,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy-iroh-assets"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "async-channel",
+ "bevy",
+ "bevy-wds",
+ "blake3",
+ "bytes 1.12.1",
+ "iroh-blobs",
+ "n0-future",
+ "tokio",
+ "unavi-util",
+]
+
+[[package]]
 name = "bevy-msdf"
 version = "0.0.16"
 dependencies = [
@@ -5342,8 +5358,6 @@ name = "example-unavi-vui"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "smol_str 0.3.6",
- "unavi-vui",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]
@@ -14056,17 +14070,10 @@ version = "0.0.16"
 name = "unavi-assets-fetch"
 version = "0.0.16"
 dependencies = [
- "anyhow",
- "async-channel",
  "bevy",
- "bevy-wds",
- "blake3",
- "bytes 1.12.1",
- "iroh-blobs",
- "n0-future",
- "tokio",
+ "bevy-iroh-assets",
+ "bevy-msdf",
  "unavi-assets",
- "unavi-util",
 ]
 
 [[package]]
@@ -14103,7 +14110,6 @@ dependencies = [
  "bevy-hsd",
  "bevy-inspector-egui",
  "bevy-iroh",
- "bevy-msdf",
  "bevy-wds",
  "bevy_mod_openxr",
  "bevy_mod_xr",
@@ -14120,7 +14126,6 @@ dependencies = [
  "parking_lot",
  "tracing",
  "unavi-agent",
- "unavi-assets",
  "unavi-assets-fetch",
  "unavi-avatar",
  "unavi-devtools",
@@ -14354,7 +14359,6 @@ dependencies = [
  "bevy_vrm",
  "blake3",
  "bytes 1.12.1",
- "directories",
  "hsd",
  "iroh",
  "iroh-blobs",
@@ -14368,7 +14372,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "unavi-agent",
- "unavi-assets",
  "unavi-assets-fetch",
  "unavi-avatar",
  "unavi-grab",
@@ -14493,11 +14496,14 @@ dependencies = [
 name = "unavi-vui"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "arrayvec",
  "serde",
  "smol_str 0.3.6",
  "wired-math",
+ "wired-prelude",
  "wired-scene",
+ "wit-bindgen 0.55.0",
 ]
 
 [[package]]

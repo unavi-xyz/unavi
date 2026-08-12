@@ -5,7 +5,10 @@
 
 use bevy::prelude::*;
 
-use crate::Hsd;
+use crate::{
+    Hsd,
+    HsdHeld,
+};
 
 #[derive(Component, Debug, Clone, Copy)]
 #[require(Transform)]
@@ -23,6 +26,17 @@ impl DocAnchor {
             offset,
         }
     }
+}
+
+/// Puts a document into the scene at `anchor`, or moves one already in it.
+///
+/// A held document enters whole: the anchor lands with the [`Hsd`] that
+/// realizes it, so there is no frame in which it stands anywhere else.
+pub fn place(doc: &mut EntityWorldMut, anchor: DocAnchor) {
+    match doc.take::<HsdHeld>() {
+        Some(held) => doc.insert((anchor, Hsd(held.0))),
+        None => doc.insert(anchor),
+    };
 }
 
 pub fn apply_anchors(

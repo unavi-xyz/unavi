@@ -10,14 +10,7 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace        = true
-async-channel.workspace = true
-bevy.workspace          = true
-bevy-wds.path           = "../bevy-wds"
-blake3.workspace        = true
-bytes.workspace         = true
-iroh-blobs.workspace    = true
-n0-future.workspace     = true
-tokio.workspace         = true
-unavi-assets.path       = "../unavi-assets"
-unavi-util.path         = "../unavi-util"
+bevy.workspace        = true
+bevy-iroh-assets.path = "../bevy-iroh-assets"
+bevy-msdf.path        = "../bevy-msdf"
+unavi-assets.path     = "../unavi-assets"

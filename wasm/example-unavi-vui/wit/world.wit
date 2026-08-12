@@ -1,6 +1,8 @@
 package example:unavi-vui;
 
 world guest {
+  import unavi:shapes/api;
+  import unavi:vui/api;
   import wired:input/context;
   include wired:prelude/script-secure;
 }

@@ -1,5 +1,5 @@
 const protocol_src = "protocol/wit"
-const wasm_src = "wasm"
+const component_srcs = ["crates", "wasm"]
 
 print "Updating protocol deps"
 
@@ -16,17 +16,19 @@ for dir in (ls $protocol_src | where type == "dir") {
   cd ../../..;
 }
 
-print "Updating WASM deps"
+print "Updating component deps"
 
-for dir in (ls $wasm_src | where type == "dir") {
-  cd $dir.name;
+for src in $component_srcs {
+  for dir in (ls $src | where type == "dir") {
+    cd $dir.name;
 
-  if ("wit/deps.toml" | path exists) {
-    print $"→ Updating (basename $dir.name)"
-    try { rm -r "wit/deps" };
-    try { rm "wit/deps.lock" };
-    wit-deps update;
+    if ("wit/deps.toml" | path exists) {
+      print $"→ Updating (basename $dir.name)"
+      try { rm -r "wit/deps" };
+      try { rm "wit/deps.lock" };
+      wit-deps update;
+    }
+
+    cd ../..;
   }
-
-  cd ../..;
 }

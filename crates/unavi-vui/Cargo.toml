@@ -9,9 +9,15 @@ version.workspace    = true
 [lints]
 workspace = true
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
-arrayvec           = { features = ["serde"], version = "0.7.8" }
-serde.workspace    = true
-smol_str.workspace = true
-wired-math.path    = "../../wasm/wired-math"
-wired-scene.path   = "../../wasm/wired-scene"
+anyhow.workspace      = true
+arrayvec              = { features = ["serde"], version = "0.7.8" }
+serde.workspace       = true
+smol_str.workspace    = true
+wired-math.path       = "../../wasm/wired-math"
+wired-prelude.path    = "../../wasm/wired-prelude"
+wired-scene.path      = "../../wasm/wired-scene"
+wit-bindgen.workspace = true

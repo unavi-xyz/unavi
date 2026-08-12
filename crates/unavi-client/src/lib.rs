@@ -10,7 +10,6 @@ use tracing::Level;
 
 mod camera;
 mod fade;
-mod font;
 mod icon;
 mod scene;
 
@@ -57,7 +56,7 @@ impl Plugin for UnaviPlugin {
 
         // Registers the `iroh://` asset source, which must exist before
         // `AssetPlugin` builds the sources it knows about.
-        app.add_plugins(unavi_assets_fetch::UnaviAssetsFetchPlugin);
+        app.add_plugins(unavi_assets_fetch::UnaviAssetsPlugin);
 
         cfg_select! {
             target_family = "wasm" => {
@@ -113,7 +112,7 @@ impl Plugin for UnaviPlugin {
             Update,
             unavi_script::ScriptSnapshotSet.after(unavi_agent::AgentMovementSet),
         )
-        .add_systems(Startup, (icon::set_window_icon, font::load_font_stack));
+        .add_systems(Startup, icon::set_window_icon);
 
         app.world_mut().trigger(LoadEndpoint {
             filter: AddrFilter::default(),

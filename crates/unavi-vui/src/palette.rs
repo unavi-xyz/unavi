@@ -8,13 +8,18 @@ use crate::attention::Attention;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Palette {
     /// Near-white default.
-    pub base:    Color,
+    pub base:         Color,
     /// The saturated hue, used only when engaged.
-    pub accent:  Color,
+    pub accent:       Color,
     /// Receded: inactive motes and the way back.
-    pub dim:     Color,
-    /// Backing surfaces — racks, tables, cast circles, placards.
-    pub surface: Color,
+    pub dim:          Color,
+    /// Backing surfaces — grids, tables, cast circles, placards.
+    pub surface:      Color,
+    /// Warmth mixed into an item that is a source of its thing, so a mote you
+    /// can take another of reads apart from the one of it.
+    pub source:       Color,
+    /// How much of [`Palette::source`] a source carries.
+    pub source_shift: f32,
 
     /// A container is see-through.
     pub glass_alpha:          f32,
@@ -31,10 +36,12 @@ pub struct Palette {
 impl Palette {
     /// A cool near-white family; colour only signals state.
     pub const DEFAULT: Self = Self {
-        base:    shade(0.92),
-        accent:  rgb(0.60, 0.84, 1.00),
-        dim:     shade(0.42),
-        surface: rgb(0.12, 0.13, 0.16),
+        base:         shade(0.92),
+        accent:       rgb(0.60, 0.84, 1.00),
+        dim:          shade(0.42),
+        surface:      rgb(0.12, 0.13, 0.16),
+        source:       rgb(1.00, 0.86, 0.62),
+        source_shift: 0.30,
 
         glass_alpha:          0.16,
         glass_alpha_attended: 0.34,
@@ -64,6 +71,21 @@ impl Palette {
             Attention::Attended => self.emissive_attended,
             Attention::Near => self.emissive_near,
             Attention::Idle => self.emissive_base,
+        }
+    }
+
+    /// The tint an item wears. A source carries a little of
+    /// [`Palette::source`]; the one of a thing wears the neutral family.
+    ///
+    /// Grasping overrides it: the accent means what is in hand and nothing
+    /// else, and warming it would say two things with one colour.
+    #[must_use]
+    pub const fn item(&self, attention: Attention, source: bool) -> Color {
+        let tint = self.tint(attention);
+        if source && !matches!(attention, Attention::Engaged) {
+            blend(tint, self.source, self.source_shift)
+        } else {
+            tint
         }
     }
 
@@ -105,6 +127,17 @@ pub const fn lift(color: Color, amount: f32) -> Color {
         r: color.r + (1.0 - color.r) * amount,
         g: color.g + (1.0 - color.g) * amount,
         b: color.b + (1.0 - color.b) * amount,
+        a: color.a,
+    }
+}
+
+/// Moves `color` `amount` of the way toward `toward`, keeping its alpha.
+#[must_use]
+pub const fn blend(color: Color, toward: Color, amount: f32) -> Color {
+    Color {
+        r: color.r + (toward.r - color.r) * amount,
+        g: color.g + (toward.g - color.g) * amount,
+        b: color.b + (toward.b - color.b) * amount,
         a: color.a,
     }
 }
@@ -186,6 +219,36 @@ mod tests {
             assert!(
                 spread(quiet) < spread(palette.accent),
                 "a resting colour must not compete with the accent"
+            );
+        }
+    }
+
+    #[test]
+    fn a_source_shifts_off_the_neutral_family_without_leaving_it() {
+        let palette = Palette::DEFAULT;
+        for attention in [Attention::Idle, Attention::Near, Attention::Attended] {
+            let one = palette.item(attention, false);
+            let source = palette.item(attention, true);
+            assert_eq!(one, palette.tint(attention), "the one of a thing is plain");
+            assert!(
+                spread(source) > spread(one),
+                "the shift is a warmth, not a lightness"
+            );
+            assert!(
+                spread(source) < spread(palette.accent),
+                "and never loud enough to read as engagement"
+            );
+        }
+    }
+
+    #[test]
+    fn what_is_in_hand_wears_the_accent_whatever_it_is() {
+        let palette = Palette::DEFAULT;
+        for source in [true, false] {
+            assert_eq!(
+                palette.item(Attention::Engaged, source),
+                palette.accent,
+                "a grasped mote says it is grasped, not what it stocks"
             );
         }
     }

@@ -10,6 +10,7 @@ use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
     HsdDocId,
+    HsdHeld,
     HsdNamespace,
     document as hsd_document,
 };
@@ -187,7 +188,7 @@ async fn spawn_child_doc(
     unavi_quota::registry::child_document_quota(ns, NamespaceId::from(&api.doc_id.0));
     AsyncCommands::default()
         .spawn((
-            Hsd(state),
+            HsdHeld(state),
             HsdDocId(id),
             HsdNamespace(ns),
             firewall,
@@ -249,10 +250,14 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
     AsyncCommands::default()
         .push(move |world: &mut World| {
             let state = world
-                .query::<(&HsdDocId, &Hsd)>()
+                .query::<(&HsdDocId, AnyOf<(&Hsd, &HsdHeld)>)>()
                 .iter(world)
                 .find(|(rid, _)| rid.0 == id)
-                .map(|(_, d)| Arc::clone(&d.0));
+                .and_then(|(_, (live, held))| match (live, held) {
+                    (Some(live), _) => Some(Arc::clone(&live.0)),
+                    (None, Some(held)) => Some(Arc::clone(&held.0)),
+                    (None, None) => None,
+                });
             tx.try_send(state).ok();
         })
         .send()
@@ -367,6 +372,22 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
         anyhow::bail!("published doc not held by script");
     };
     save_namespace(ns, state).await?;
+
+    // A document the space is asked to carry has to be in the space; one still
+    // held goes in where its anchor already says it does.
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            tx.try_send(document::place_document(
+                world,
+                id,
+                document::Placement::Unchanged,
+            ))
+            .ok();
+        })
+        .send()
+        .await?;
+    rx.recv().await??;
 
     let actor = bevy_wds::local_actor().ok_or_else(|| anyhow::anyhow!("no local actor"))?;
     actor.host_doc(ns).await?;

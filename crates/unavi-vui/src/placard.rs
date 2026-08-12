@@ -40,26 +40,31 @@ impl Placard {
         self
     }
 
-    /// The standard placard for a mote: its name, its description, and the
-    /// gesture that operates it.
+    /// The standard placard for a mote: its name, its description, and what
+    /// kind of thing it is.
     #[must_use]
     pub fn describing(spec: &MoteSpec) -> Self {
         let mut placard = Self::new(spec.label.clone());
         if let Some(description) = &spec.description {
             placard = placard.line(description.clone());
         }
-        placard.line(hint(spec.role))
+        placard.line(kind(spec.role))
     }
 }
 
-/// The gesture that operates a mote.
-const fn hint(role: Role) -> &'static str {
+/// What a mote is, in one word. The gestures are the same everywhere and are
+/// learned once; what changes between motes is what they are, which is the
+/// thing a placard can say and a body cannot.
+const fn kind(role: Role) -> &'static str {
     match role {
-        Role::Group { .. } => "Grab to open",
-        Role::Parent { .. } => "Grab to go back up a level",
-        Role::Cast => "Hold to confirm",
-        Role::Item => "Grab and drag to take",
-        Role::Action => "Grab to activate",
+        // How it opens is the group's own setting; a grid and an orbit are the
+        // same kind of thing and read as one.
+        Role::Group { .. } => "group",
+        Role::Parent { .. } => "back",
+        Role::Cast => "cast",
+        Role::Item { unique: true } => "item",
+        Role::Item { unique: false } => "source",
+        Role::Action => "action",
     }
 }
 
@@ -103,12 +108,17 @@ pub fn opacity(dwell: f32, tuning: &Tuning) -> f32 {
     ((dwell - tuning.placard_delay) / tuning.placard_fade).clamp(0.0, 1.0)
 }
 
-/// Mounts a placard on the body at `mote`, above it and just clear of its
-/// surface.
-fn mount(mote: Vec3, radius: f32, tuning: &Tuning) -> Vec3 {
+/// Mounts a placard clear of the body at `mote`.
+///
+/// The panel hangs down from its own top edge, so the mount is a whole
+/// `height` above the mote rather than resting on it — the two would otherwise
+/// overlap for every placard that is more than a line long. Above rather than
+/// beside, because the mote's own name is already below it and a placard that
+/// picked a side would leave the surface at the edge slots.
+fn mount(mote: Vec3, radius: f32, height: f32, tuning: &Tuning) -> Vec3 {
     Vec3::new(
         mote.x,
-        mote.y + radius + tuning.placard_gap,
+        mote.y + radius + tuning.placard_gap + height,
         mote.z + tuning.placard_lift,
     )
 }
@@ -224,10 +234,11 @@ pub fn view(
         }
     }
 
+    let size = Vec2::new(tuning.placard_width, -y + tuning.placard_pad);
     PlacardView {
-        position: mount(mote, radius, tuning),
+        position: mount(mote, radius, size.y, tuning),
         opacity,
-        size: Vec2::new(tuning.placard_width, -y + tuning.placard_pad),
+        size,
         lines,
     }
 }
@@ -235,6 +246,7 @@ pub fn view(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::mote::Arrange;
 
     fn tuning() -> Tuning {
         Tuning::DEFAULT
@@ -252,6 +264,7 @@ mod tests {
         spec(Role::Group {
             children: 4,
             groups:   1,
+            arrange:  Arrange::Orbit,
         })
     }
 
@@ -281,13 +294,23 @@ mod tests {
     }
 
     #[test]
-    fn it_mounts_just_above_the_body_not_out_in_the_room() {
+    fn it_mounts_clear_of_the_body_not_out_in_the_room() {
         let tuning = tuning();
-        let mounted = mount(Vec3::new(0.1, 0.2, 0.0), 0.03, &tuning);
-        assert!((mounted.x - 0.1).abs() < 1.0e-5, "centred on the mote");
-        assert!(mounted.y > 0.2 + 0.03, "clear of the body's surface");
+        let radius = 0.03;
+        let mote = Vec3::new(0.1, 0.2, 0.0);
+        let view = view(&Placard::describing(&group()), mote, radius, 1.0, &tuning);
+
         assert!(
-            mounted.z < tuning.mote_radius,
+            (view.position.x - mote.x).abs() < 1.0e-5,
+            "centred on the mote"
+        );
+        assert!(
+            view.position.y - view.size.y >= mote.y + radius,
+            "the panel hangs down from its mount, so its whole height has to \
+             clear the body or it is drawn across it"
+        );
+        assert!(
+            view.position.z < tuning.mote_radius,
             "a placard further out than the mote is wide stops reading as its"
         );
     }
@@ -298,7 +321,7 @@ mod tests {
         assert_eq!(view.lines[0].text, "Citrus");
         assert_eq!(view.lines[0].emphasis, Emphasis::Title);
         assert!(texts(&view).contains(&"Sharp and bright"));
-        assert!(texts(&view).contains(&"Grab to open"));
+        assert!(texts(&view).contains(&"group"));
     }
 
     /// The counts and the kind readout were removed on purpose: the pips
@@ -312,32 +335,49 @@ mod tests {
     }
 
     #[test]
-    fn the_hint_names_the_gesture_that_actually_works() {
-        assert_eq!(hint(Role::Action), "Grab to activate");
-        assert_eq!(hint(Role::Item), "Grab and drag to take");
+    fn the_last_line_names_what_the_mote_is_rather_than_a_gesture() {
+        assert_eq!(kind(Role::Action), "action");
+        assert_eq!(kind(Role::Item { unique: true }), "item");
+        assert_eq!(kind(Role::Item { unique: false }), "source");
         assert_eq!(
-            hint(Role::Parent { depth: 1 }),
-            "Grab to go back up a level",
-            "the way back is the one control nobody is told about"
+            kind(Role::Group {
+                children: 2,
+                groups:   0,
+                arrange:  Arrange::Grid,
+            }),
+            "group",
+            "a grid is a group that opens as one, not another kind of mote"
         );
+        for role in [
+            Role::Action,
+            Role::Cast,
+            Role::Item { unique: true },
+            Role::Parent { depth: 1 },
+        ] {
+            let word = kind(role);
+            assert!(
+                !word.contains(' ') && word.chars().all(char::is_lowercase),
+                "{word:?} is an instruction, not a name"
+            );
+        }
     }
 
     #[test]
-    fn the_hint_is_the_quietest_line() {
+    fn what_a_mote_is_reads_quieter_than_what_it_says() {
         let view = view_of(&Placard::describing(&group()));
         let last = view.lines.last().expect("lines");
-        assert_eq!(last.text, "Grab to open");
+        assert_eq!(last.text, "group");
         assert_eq!(last.emphasis, Emphasis::Dim);
         assert_eq!(view.lines[1].emphasis, Emphasis::Body);
     }
 
     #[test]
-    fn a_mote_with_nothing_to_add_still_explains_how_to_use_it() {
+    fn a_mote_with_nothing_to_add_still_says_what_it_is() {
         let view = view_of(&Placard::describing(&MoteSpec {
             description: None,
             ..spec(Role::Action)
         }));
-        assert!(texts(&view).contains(&"Grab to activate"));
+        assert!(texts(&view).contains(&"action"));
     }
 
     #[test]

@@ -3,7 +3,10 @@ use std::f32::consts::{
     TAU,
 };
 
-use crate::mote::MAX_PIPS;
+use crate::mote::{
+    Arrange,
+    MAX_PIPS,
+};
 
 /// Positions, normals and indices, in the shape the scene API's mesh streams
 /// take.
@@ -22,13 +25,20 @@ pub fn sphere(radius: f32, rings: usize, segments: usize) -> MeshData {
     mesh
 }
 
-/// `len` pips at ring positions `start..start + len` of `total`, in unit
-/// space, as one mesh.
+/// `len` pips at positions `start..start + len` of `total`, in unit space, as
+/// one mesh.
 ///
 /// Always [`MAX_PIPS`] bodies; unused ones sit at zero radius so the vertex
 /// count never changes.
 #[must_use]
-pub fn cluster(start: usize, len: usize, total: usize, ring: f32, radius: f32) -> MeshData {
+pub fn cluster(
+    start: usize,
+    len: usize,
+    total: usize,
+    arrange: Arrange,
+    spread: f32,
+    radius: f32,
+) -> MeshData {
     const RINGS: usize = 6;
     const SEGMENTS: usize = 8;
 
@@ -37,9 +47,7 @@ pub fn cluster(start: usize, len: usize, total: usize, ring: f32, radius: f32) -
     for index in 0..MAX_PIPS {
         let shown = total > 0 && index >= start && index < end;
         let (centre, radius) = if shown {
-            let angle = TAU * index as f32 / total as f32;
-            let (sin, cos) = angle.sin_cos();
-            ([ring * sin, ring * cos, 0.0], radius)
+            (pip_position(index, total, arrange, spread), radius)
         } else {
             ([0.0; 3], 0.0)
         };
@@ -48,11 +56,53 @@ pub fn cluster(start: usize, len: usize, total: usize, ring: f32, radius: f32) -
     mesh
 }
 
-/// The marker drawn at a container's centre when it holds more than its pips
-/// can show.
+/// Where pip `index` of `total` sits, in the shape the level it previews will
+/// open into.
+fn pip_position(index: usize, total: usize, arrange: Arrange, spread: f32) -> [f32; 3] {
+    match arrange {
+        Arrange::Orbit => {
+            let angle = TAU * index as f32 / total as f32;
+            let (sin, cos) = angle.sin_cos();
+            [spread * sin, spread * cos, 0.0]
+        }
+        Arrange::Grid => {
+            let columns = grid_columns(total);
+            let rows = total.div_ceil(columns);
+            // The longer side spans the spread, so a grid of any shape sits
+            // inside the same body a ring would.
+            let pitch = 2.0 * spread / columns.max(rows) as f32;
+            let (column, row) = (index % columns, index / columns);
+            [
+                ((columns - 1) as f32).mul_add(-0.5, column as f32) * pitch,
+                ((rows - 1) as f32).mul_add(0.5, -(row as f32)) * pitch,
+                0.0,
+            ]
+        }
+    }
+}
+
+/// Squarest grid that holds `total`, widthways first.
+fn grid_columns(total: usize) -> usize {
+    (total as f32).sqrt().ceil() as usize
+}
+
+/// The marker saying a container holds more than its pips can show.
 #[must_use]
 pub fn overflow_marker(radius: f32) -> MeshData {
     sphere(radius, 6, 8)
+}
+
+/// Where that marker sits, in the same unit space as the pips.
+///
+/// A ring leaves its middle empty, so the marker goes there. A grid has no
+/// spare middle, so it takes the cell after the last pip — which is why a
+/// grid draws one pip fewer once it overflows.
+#[must_use]
+pub fn overflow_at(arrange: Arrange, total: usize, spread: f32) -> [f32; 3] {
+    match arrange {
+        Arrange::Orbit => [0.0; 3],
+        Arrange::Grid => pip_position(total, total, arrange, spread),
+    }
 }
 
 /// A unit quad facing +Z, its top edge on the origin, descending.
@@ -135,6 +185,13 @@ pub fn annulus(inner: f32, outer: f32, segments: usize) -> MeshData {
 mod tests {
     use super::*;
 
+    const SPREAD: f32 = 0.5;
+    const RADIUS: f32 = 0.2;
+
+    fn ring(start: usize, len: usize, total: usize) -> MeshData {
+        cluster(start, len, total, Arrange::Orbit, SPREAD, RADIUS)
+    }
+
     fn vertex_count(mesh: &MeshData) -> usize {
         mesh.positions.len() / 3
     }
@@ -207,19 +264,19 @@ mod tests {
 
     #[test]
     fn a_cluster_shows_one_body_per_pip() {
-        assert_eq!(visible_bodies(&cluster(0, 1, 3, 0.5, 0.2)), 1);
-        assert_eq!(visible_bodies(&cluster(0, 3, 3, 0.5, 0.2)), 3);
-        assert_well_formed(&cluster(0, 3, 3, 0.5, 0.2));
+        assert_eq!(visible_bodies(&ring(0, 1, 3)), 1);
+        assert_eq!(visible_bodies(&ring(0, 3, 3)), 3);
+        assert_well_formed(&ring(0, 3, 3));
     }
 
     #[test]
     fn every_cluster_has_the_same_vertex_count() {
         // Vertex streams are separate entries, so a rebuild that changes the
         // count is briefly inconsistent and the host rejects the mesh.
-        let baseline = vertex_count(&cluster(0, 0, 0, 0.5, 0.2));
+        let baseline = vertex_count(&ring(0, 0, 0));
         for (start, len, total) in [(0, 1, 1), (0, 7, 7), (2, 3, 5), (3, 1, 4)] {
             assert_eq!(
-                vertex_count(&cluster(start, len, total, 0.5, 0.2)),
+                vertex_count(&ring(start, len, total)),
                 baseline,
                 "{start}..{len} of {total} changed the vertex count"
             );
@@ -230,7 +287,7 @@ mod tests {
     fn cluster_indices_address_their_own_body() {
         // A merged mesh whose later spheres still index the first one draws
         // garbage; this is the whole risk of merging.
-        let mesh = cluster(0, 4, 4, 0.5, 0.2);
+        let mesh = ring(0, 4, 4);
         assert_well_formed(&mesh);
         let highest = mesh.indices.iter().copied().max().expect("indices");
         assert_eq!(
@@ -244,28 +301,84 @@ mod tests {
     fn two_runs_tile_the_ring_without_overlapping() {
         // How a branch draws container children see-through and leaf children
         // solid: two meshes, same ring.
-        let leading = cluster(0, 2, 5, 0.5, 0.2);
-        let trailing = cluster(2, 3, 5, 0.5, 0.2);
+        let leading = ring(0, 2, 5);
+        let trailing = ring(2, 3, 5);
         assert_eq!(visible_bodies(&leading), 2);
         assert_eq!(visible_bodies(&trailing), 3);
         assert_eq!(
             visible_bodies(&leading) + visible_bodies(&trailing),
-            visible_bodies(&cluster(0, 5, 5, 0.5, 0.2))
+            visible_bodies(&ring(0, 5, 5))
         );
         assert_well_formed(&trailing);
     }
 
     #[test]
     fn a_run_past_the_ring_is_clamped_rather_than_wrapping() {
-        assert_eq!(visible_bodies(&cluster(3, 9, 4, 0.5, 0.2)), 1);
+        assert_eq!(visible_bodies(&ring(3, 9, 4)), 1);
     }
 
     #[test]
     fn an_empty_cluster_draws_nothing() {
-        for mesh in [cluster(0, 0, 0, 0.5, 0.2), cluster(0, 3, 0, 0.5, 0.2)] {
+        for mesh in [ring(0, 0, 0), ring(0, 3, 0)] {
             assert_eq!(visible_bodies(&mesh), 0);
             assert_well_formed(&mesh);
         }
+    }
+
+    /// Pip centres, in the order they were laid out.
+    fn centres(mesh: &MeshData, count: usize) -> Vec<[f32; 3]> {
+        // Every body is 63 vertices; its first is enough to place it, since a
+        // sphere's vertices straddle its centre in x and z.
+        mesh.positions
+            .chunks_exact(63 * 3)
+            .take(count)
+            .map(|body| {
+                let (mut low, mut high) = ([f32::MAX; 3], [f32::MIN; 3]);
+                for point in body.chunks_exact(3) {
+                    for axis in 0..3 {
+                        low[axis] = low[axis].min(point[axis]);
+                        high[axis] = high[axis].max(point[axis]);
+                    }
+                }
+                [
+                    f32::midpoint(low[0], high[0]),
+                    f32::midpoint(low[1], high[1]),
+                    f32::midpoint(low[2], high[2]),
+                ]
+            })
+            .collect()
+    }
+
+    #[test]
+    fn a_grid_cluster_lays_its_pips_out_in_rows() {
+        let mesh = cluster(0, 4, 4, Arrange::Grid, SPREAD, RADIUS);
+        assert_well_formed(&mesh);
+
+        let centres = centres(&mesh, 4);
+        assert!(
+            centres[0][1] > centres[2][1],
+            "the first row sits above the second"
+        );
+        assert!(
+            centres[0][0] < centres[1][0],
+            "and reads left to right within a row"
+        );
+        assert!(
+            centres
+                .iter()
+                .all(|c| c[0].abs() <= SPREAD + 1.0e-5 && c[1].abs() <= SPREAD + 1.0e-5),
+            "a grid stays inside the body a ring would fill"
+        );
+    }
+
+    #[test]
+    fn a_ring_and_a_grid_of_the_same_contents_place_them_differently() {
+        let ringed = centres(&ring(0, 5, 5), 5);
+        let gridded = centres(&cluster(0, 5, 5, Arrange::Grid, SPREAD, RADIUS), 5);
+        assert_ne!(
+            ringed, gridded,
+            "the preview is the promise of how the level opens"
+        );
     }
 
     #[test]

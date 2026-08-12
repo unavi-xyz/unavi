@@ -1,124 +1,89 @@
-//! Serves [`unavi_assets::MANIFEST`] assets to Bevy out of the iroh blob
-//! store, under the `iroh://` asset source.
+//! The UNAVI manifest over iroh, and the fonts every app draws text with.
 //!
-//! Nothing is written to the asset directory: the blob store holds the only
-//! copy, pinned against its garbage collector. Fetch, retry and error policy
-//! live in bevy-wds.
+//! One plugin, [`UnaviAssetsPlugin`], both registers the `iroh://` asset source
+//! for the manifest and requests the fallback font stack, so a client or an
+//! example adds it and gets every content-addressed asset plus working text.
 
-use async_channel::Receiver;
-use bevy::{
-    asset::io::AssetSourceBuilder,
-    prelude::*,
+use bevy::prelude::*;
+use bevy_iroh_assets::IrohAssetsPlugin;
+use bevy_msdf::font::asset::{
+    FontBytes,
+    FontFace,
 };
-use bevy_wds::{
-    LocalBlobStore,
-    blob::request::{
-        BlobRequest,
-        BlobResponse,
+use unavi_assets::{
+    FONT_STACK,
+    asset_path,
+};
+
+/// The assets the client pulls over iroh. Every entry must be hosted by a
+/// reachable unavi-server (or other provider).
+pub const MANIFEST: &[bevy_iroh_assets::AssetSpec] = &[
+    bevy_iroh_assets::AssetSpec {
+        rel_path: unavi_assets::DEFAULT_AVATAR,
+        hash:     "a2f1a48db6cdf369ab510f6a6fb869d107897231b70c4920ad0357e4930c6281",
     },
-};
-use bytes::Bytes;
-use tokio::sync::oneshot;
-use unavi_util::async_task::spawn_async_task;
+    bevy_iroh_assets::AssetSpec {
+        rel_path: unavi_assets::DEFAULT_CHARACTER_ANIMATIONS,
+        hash:     "9fbda809b00ab14e58356721e0c0a92fe88b9234c486a43b9417c4f27555c0c6",
+    },
+    bevy_iroh_assets::AssetSpec {
+        rel_path: unavi_assets::DEFAULT_FONT,
+        hash:     "3a21ac778bcc91b57dc32576c6baffbcb493b78b4b6ad46b05c3d33bb5da7315",
+    },
+    bevy_iroh_assets::AssetSpec {
+        rel_path: unavi_assets::CJK_FONT,
+        hash:     "1580ba0d54c84191041a55ec8d442d5a7d3668e5af8c9fee5456c776c30ff16a",
+    },
+];
 
-use crate::reader::{
-    FetchRequest,
-    IrohAssetReader,
-};
+pub struct UnaviAssetsPlugin;
 
-pub mod pin;
-pub mod reader;
-
-/// The asset source manifest assets load from. Paired with the scheme
-/// [`unavi_assets::asset_path`] emits.
-const SOURCE: &str = "iroh";
-
-pub struct UnaviAssetsFetchPlugin;
-
-impl Plugin for UnaviAssetsFetchPlugin {
+impl Plugin for UnaviAssetsPlugin {
     fn build(&self, app: &mut App) {
-        let (tx, rx) = async_channel::unbounded();
-
-        app.register_asset_source(
-            SOURCE,
-            AssetSourceBuilder::new(move || Box::new(IrohAssetReader(tx.clone()))),
-        )
-        .insert_resource(Fetches(rx))
-        .add_systems(Update, (start_fetches, deliver_fetches, sweep_pins));
+        // Registers the `iroh://` asset source, which must exist before
+        // `AssetPlugin` builds the sources it knows about.
+        app.add_plugins(IrohAssetsPlugin::new(MANIFEST))
+            .add_systems(Startup, load_font_stack);
     }
 }
 
-/// Fetches the asset reader has handed off, awaiting a world with a store.
-#[derive(Resource)]
-struct Fetches(Receiver<FetchRequest>);
-
-#[derive(Component)]
-struct PendingFetch(Option<oneshot::Sender<Result<Bytes, String>>>);
-
-fn start_fetches(mut commands: Commands, fetches: Res<Fetches>, stores: Query<&LocalBlobStore>) {
-    let Ok(store) = stores.single() else {
-        return;
-    };
-
-    while let Ok(fetch) = fetches.0.try_recv() {
-        let store = store.0.clone();
-        spawn_async_task(async move {
-            if let Err(err) = pin::hold(&store, fetch.rel_path, fetch.hash).await {
-                error!(path = fetch.rel_path, ?err, "failed to pin asset");
-            }
-        });
-
-        commands.spawn((BlobRequest(fetch.hash), PendingFetch(Some(fetch.tx))));
+/// Requests the fallback chain over iroh. No face is embedded, so text draws
+/// nothing until the primary arrives.
+fn load_font_stack(mut commands: Commands, assets: Res<AssetServer>) {
+    for (order, path) in FONT_STACK.iter().enumerate() {
+        commands.spawn((
+            Name::new(format!("font {path}")),
+            FontFace::new(assets.load::<FontBytes>(asset_path(path)), order as u32),
+        ));
     }
-}
-
-fn deliver_fetches(
-    mut commands: Commands,
-    mut pending: Query<(Entity, &mut PendingFetch, &BlobResponse)>,
-) {
-    for (entity, mut fetch, response) in &mut pending {
-        let Some(tx) = fetch.0.take() else {
-            continue;
-        };
-
-        let delivered = match &response.0 {
-            Ok(bytes) => Ok(bytes.clone()),
-            Err(err) => Err(err.to_string()),
-        };
-
-        let _ = tx.send(delivered);
-        commands.entity(entity).despawn();
-    }
-}
-
-fn sweep_pins(stores: Query<&LocalBlobStore, Added<LocalBlobStore>>) {
-    let Ok(store) = stores.single() else {
-        return;
-    };
-
-    let store = store.0.clone();
-    spawn_async_task(async move {
-        if let Err(err) = pin::sweep(&store).await {
-            error!(?err, "failed to sweep asset pins");
-        }
-    });
 }
 
 #[cfg(test)]
 mod tests {
-    use unavi_assets::{
-        DEFAULT_AVATAR,
-        asset_path,
-    };
-
     use super::*;
 
     #[test]
-    fn manifest_paths_name_this_source() {
-        assert_eq!(
-            asset_path(DEFAULT_AVATAR),
-            format!("{SOURCE}://{DEFAULT_AVATAR}"),
-            "the path assets load by resolves to the source this plugin registers"
-        );
+    fn every_named_asset_is_hosted() {
+        for rel_path in FONT_STACK.iter().copied().chain([
+            unavi_assets::DEFAULT_AVATAR,
+            unavi_assets::DEFAULT_CHARACTER_ANIMATIONS,
+        ]) {
+            assert!(
+                MANIFEST.iter().any(|asset| asset.rel_path == rel_path),
+                "{rel_path} names no manifest entry, so nothing can serve it"
+            );
+        }
+    }
+
+    #[test]
+    fn a_hash_is_a_blake3_digest() {
+        for asset in MANIFEST {
+            assert_eq!(asset.hash.len(), 64, "{} is not 32 bytes", asset.rel_path);
+            assert!(
+                asset.hash.chars().all(|ch| ch.is_ascii_hexdigit()),
+                "{} is not hex",
+                asset.rel_path
+            );
+        }
     }
 }

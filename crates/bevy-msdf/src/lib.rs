@@ -3,9 +3,10 @@
 //! Bevy's own text is 2D, needs a 2D camera, and rasterizes per font size; a
 //! field keeps one asset sharp at any distance.
 //!
-//! The field is grown at runtime from Noto Sans (SIL Open Font License 1.1) by
-//! a closed-budget atlas, so any script the bundled face covers renders
-//! without a per-charset bake step.
+//! No face is embedded. A consumer spawns [`font::asset::FontFace`] for each
+//! face of its fallback chain and a closed-budget atlas grows a field from
+//! whatever arrives, so coverage is a matter of which files are fetched rather
+//! than a per-charset bake step.
 
 use bevy::{
     asset::embedded_asset,
@@ -41,13 +42,17 @@ impl Plugin for MsdfPlugin {
             billboard::plugin,
             ExtractResourcePlugin::<text::QueuedUploads>::default(),
         ))
+        .init_asset::<font::asset::FontBytes>()
+        .init_asset_loader::<font::asset::FontBytesLoader>()
         .init_resource::<text::QueuedUploads>()
-        .add_systems(Startup, font::register_default_font)
+        .init_resource::<font::DefaultFontStack>()
+        .add_observer(font::on_register_font)
         .add_systems(
             Update,
             (
+                font::asset::register_loaded_faces
+                    .run_if(any_with_component::<font::asset::FontFace>),
                 text::sync_fonts,
-                text::generate_glyphs,
                 text::update_pages,
                 text::rebuild_text,
                 text::restyle_text,
@@ -58,11 +63,7 @@ impl Plugin for MsdfPlugin {
         );
 
         if let Some(render_app) = app.get_sub_app_mut(RenderApp) {
-            render_app.add_systems(
-                Render,
-                text::upload_pages
-                    .after(prepare_assets::<GpuImage>),
-            );
+            render_app.add_systems(Render, text::upload_pages.after(prepare_assets::<GpuImage>));
         }
     }
 }

@@ -9,37 +9,16 @@ version.workspace    = true
 [lints]
 workspace = true
 
-[features]
-bake = [
-  "dep:anyhow",
-  "dep:clap",
-  "dep:etagere",
-  "dep:fdsm",
-  "dep:fdsm-ttf-parser",
-  "dep:harfrust",
-  "dep:image",
-  "dep:nalgebra",
-  "dep:notosans",
-  "dep:ttf-parser",
-]
-
 [dependencies]
-postcard.workspace  = true
-serde.workspace     = true
 thiserror.workspace = true
 
-anyhow          = { optional = true, workspace = true }
-clap            = { optional = true, workspace = true }
-etagere         = { optional = true, version = "0.3.0" }
-fdsm            = { optional = true, version = "0.8.0" }
-fdsm-ttf-parser = { optional = true, version = "0.2.0" }
-harfrust        = { optional = true, version = "0.7.0" }
-image           = { features = ["png"], optional = true, workspace = true }
-nalgebra        = { optional = true, version = "0.34.2" }
-notosans        = { optional = true, version = "0.1.0" }
-ttf-parser      = { optional = true, version = "0.25.1" }
+etagere    = { version = "0.3.0" }
+fdsm       = { version = "0.8.0" }
+harfrust   = { version = "0.7.0" }
+image      = { features = ["png"], workspace = true }
+nalgebra   = { version = "0.34.2" }
+self_cell  = { version = "1.3.0" }
+ttf-parser = { version = "0.25.1" }
 
-[[bin]]
-name              = "msdf-bake"
-path              = "src/bin/bake.rs"
-required-features = ["bake"]
+[dev-dependencies]
+notosans = { version = "0.1.0" }

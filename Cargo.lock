@@ -943,6 +943,7 @@ dependencies = [
  "iroh-docs",
  "msdf",
  "naga",
+ "notosans",
  "postcard",
  "rstest",
  "smol_str 0.3.6",
@@ -1028,6 +1029,7 @@ dependencies = [
  "image",
  "msdf",
  "naga",
+ "notosans",
  "smol_str 0.3.6",
  "thiserror 2.0.19",
 ]
@@ -5468,18 +5470,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fdsm-ttf-parser"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "803b1b40e898def21bc6f97335da11dffdca865f2c603b41d71ab81d310808df"
-dependencies = [
- "fdsm",
- "image",
- "nalgebra",
- "ttf-parser",
-]
-
-[[package]]
 name = "fearless_simd"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8734,17 +8724,13 @@ dependencies = [
 name = "msdf"
 version = "0.0.16"
 dependencies = [
- "anyhow",
- "clap",
  "etagere",
  "fdsm",
- "fdsm-ttf-parser",
  "harfrust 0.7.0",
  "image",
  "nalgebra",
  "notosans",
- "postcard",
- "serde",
+ "self_cell",
  "thiserror 2.0.19",
  "ttf-parser",
 ]
@@ -14117,6 +14103,7 @@ dependencies = [
  "bevy-hsd",
  "bevy-inspector-egui",
  "bevy-iroh",
+ "bevy-msdf",
  "bevy-wds",
  "bevy_mod_openxr",
  "bevy_mod_xr",

@@ -1,6 +1,11 @@
 //! The dynamic atlas: a closed budget of pages that generates glyphs on
 //! demand. Text is untrusted, so every allocation and every request goes
 //! through a hard cap; nothing here grows without bound.
+//!
+//! Residency is a cache. A glyph a mesh draws is pinned; once nothing draws it
+//! it cools for [`RuntimeOpts::residency`] seconds, after which pressure may
+//! evict the least recently used, and [`RuntimeOpts::idle_timeout`] seconds
+//! after that the sweep takes it whether or not anything else needs the room.
 
 use std::{
     collections::{
@@ -12,8 +17,8 @@ use std::{
 };
 
 use etagere::{
-    Allocation,
     AllocId,
+    Allocation,
     AtlasAllocator,
     size2,
 };
@@ -29,56 +34,57 @@ use crate::{
     },
     font::Font,
     generate::{
-        GenerateOpts,
         GUTTER,
+        GenerateOpts,
         Rendered,
     },
 };
 
-/// What a character draws when the atlas cannot serve it a real glyph. The
-/// character still advances under every policy.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum Fallback {
-    /// Glyph 0 (`.notdef`), reserved in page 0 at font creation.
-    #[default]
-    Notdef,
-    /// Advance without a quad.
-    Skip,
-    /// A rectangle of the advance width.
-    Box,
-}
+/// Dirty rects held before they collapse into whole pages. A consumer that
+/// uploads every frame never reaches this; one that stalls pays a full page
+/// copy instead of an unbounded list.
+const MAX_DIRTY: usize = 256;
 
-#[derive(Debug, Clone)]
+/// Characters remembered as ungeneratable. Small: a face with more broken
+/// glyphs than this is one no fallback stack should be consulting.
+const MAX_DENIED: usize = 1024;
+
+/// How often the idle sweep walks the resident set, in seconds.
+const SWEEP_INTERVAL: f64 = 1.0;
+
+#[derive(Debug, Clone, Copy)]
 pub struct RuntimeOpts {
     /// Edge length of one page, in texels. One size per font keeps
     /// `unit_range` uniform across pages.
-    pub page_size:        u32,
+    pub page_size:     u32,
     /// Hard cap on pages per font; page count bounds texels.
-    pub max_pages:        usize,
+    pub max_pages:     usize,
     /// Hard cap on distinct resident glyphs per font.
-    pub max_glyphs:       usize,
+    pub max_glyphs:    usize,
     /// Hard cap on requests queued but not yet handed to a pool.
-    pub max_pending:      usize,
+    pub max_pending:   usize,
     /// Hard cap on glyph generations in flight.
-    pub max_in_flight:    usize,
-    /// Ticks a released glyph stays resident before eviction may take it, so
+    pub max_in_flight: usize,
+    /// Seconds a released glyph stays resident before eviction may take it, so
     /// a pointer flicker cannot churn the pool.
-    pub residency_window: u64,
-    pub fallback:         Fallback,
-    pub generate:         GenerateOpts,
+    pub residency:     f32,
+    /// Seconds an unreferenced glyph survives without use before the sweep
+    /// takes it, whether or not anything is waiting for the room.
+    pub idle_timeout:  f32,
+    pub generate:      GenerateOpts,
 }
 
 impl Default for RuntimeOpts {
     fn default() -> Self {
         Self {
-            page_size:        1024,
-            max_pages:        4,
-            max_glyphs:       1500,
-            max_pending:      256,
-            max_in_flight:    32,
-            residency_window: 60,
-            fallback:         Fallback::Notdef,
-            generate:         GenerateOpts::default(),
+            page_size:     1024,
+            max_pages:     4,
+            max_glyphs:    1500,
+            max_pending:   256,
+            max_in_flight: 32,
+            residency:     1.0,
+            idle_timeout:  60.0,
+            generate:      GenerateOpts::default(),
         }
     }
 }
@@ -126,14 +132,23 @@ pub struct Budget {
     pub glyphs:        usize,
     pub pending:       usize,
     pub in_flight:     usize,
+    /// Glyphs the budget turned away; a climbing count means the caps are too
+    /// tight for what the world is drawing.
     pub refusals:      u64,
+    /// Glyphs the face could not render within the generator's caps. Non-zero
+    /// means a malformed or hostile face.
+    pub denied:        u64,
 }
 
 struct Entry {
-    glyph:     Glyph,
-    refs:      u32,
-    last_used: u64,
-    slot:      Option<AllocId>,
+    glyph: Glyph,
+    refs:  u32,
+    /// When the glyph was last drawn, against the residency and idle windows.
+    used:  f64,
+    /// Draw order, which is what least-recently-used means when a frame
+    /// commits and releases several glyphs at the same instant.
+    seq:   u64,
+    slot:  Option<AllocId>,
 }
 
 struct Page {
@@ -151,36 +166,58 @@ impl Page {
 }
 
 pub struct Atlas {
-    font:       Arc<Font>,
-    opts:       RuntimeOpts,
-    pages:      Vec<Page>,
-    entries:    HashMap<char, Entry>,
-    queued:     HashSet<char>,
-    pending:    VecDeque<char>,
-    in_flight:  usize,
-    tick:       u64,
-    refusals:   u64,
-    generation: u64,
-    notdef:     Glyph,
-    dirty:      Vec<DirtyRect>,
+    font:      Arc<Font>,
+    opts:      RuntimeOpts,
+    pages:     Vec<Page>,
+    entries:   HashMap<char, Entry>,
+    queued:    HashSet<char>,
+    pending:   VecDeque<char>,
+    /// Characters this face has an outline for that the generator refused.
+    /// Never requested again, and reported as unrenderable so a fallback stack
+    /// moves on to the next face.
+    denied:    HashSet<char>,
+    in_flight: usize,
+    clock:     f64,
+    swept:     f64,
+    seq:       u64,
+    refusals:  u64,
+    denials:   u64,
+    notdef:    Glyph,
+    dirty:     Vec<DirtyRect>,
 }
 
 impl Atlas {
     /// Reserves `.notdef` (glyph 0) in page 0, permanently.
     #[must_use]
     pub fn new(font: Arc<Font>, opts: RuntimeOpts) -> Self {
-        let page_size = opts.page_size;
+        let page_size = opts.page_size.max(1);
         let mut atlas = Self {
             font,
-            opts,
+            opts: RuntimeOpts {
+                page_size,
+                max_pages: opts.max_pages.max(1),
+                // A field the gutter pushes past a page is one no page could
+                // ever take, so it is refused before it is generated.
+                generate: GenerateOpts {
+                    max_field: opts
+                        .generate
+                        .max_field
+                        .min(page_size.saturating_sub(GUTTER.unsigned_abs())),
+                    ..opts.generate
+                },
+                ..opts
+            },
             pages: vec![Page::new(page_size)],
             entries: HashMap::new(),
             queued: HashSet::new(),
             pending: VecDeque::new(),
+            denied: HashSet::new(),
             in_flight: 0,
-            tick: 0,
+            clock: 0.0,
+            swept: 0.0,
+            seq: 0,
             refusals: 0,
-            generation: 0,
+            denials: 0,
             notdef: Glyph::default(),
             dirty: Vec::new(),
         };
@@ -211,11 +248,25 @@ impl Atlas {
         self.pages.get(index).map(|page| &page.image)
     }
 
-    /// Bumped every time a glyph becomes resident or is evicted, so a caller
-    /// can notice that meshes referencing the atlas want rebuilding.
-    #[must_use]
-    pub const fn generation(&self) -> u64 {
-        self.generation
+    /// Advances the residency clock and, once a sweep interval has passed,
+    /// drops glyphs nothing has drawn for [`RuntimeOpts::idle_timeout`]. A
+    /// caller that never advances the clock keeps its cache forever.
+    pub fn advance(&mut self, delta: f32) {
+        self.clock += f64::from(delta.max(0.0));
+        if self.clock - self.swept < SWEEP_INTERVAL {
+            return;
+        }
+        self.swept = self.clock;
+        let cutoff = self.clock - f64::from(self.opts.idle_timeout.max(0.0));
+        let stale = self
+            .entries
+            .iter()
+            .filter(|(_, entry)| entry.refs == 0 && entry.used <= cutoff)
+            .map(|(ch, _)| *ch)
+            .collect::<Vec<_>>();
+        for ch in stale {
+            self.evict(ch);
+        }
     }
 
     /// Page regions changed since the last call, for an incremental upload.
@@ -229,11 +280,12 @@ impl Atlas {
         self.entries.contains_key(&ch)
     }
 
-    /// Whether the face actually has a glyph for `ch`, regardless of residency.
-    /// A fallback stack uses this to decide which font should serve a char.
+    /// Whether this face can serve `ch` at all: it has an outline the
+    /// generator has not already refused. A fallback stack uses this to decide
+    /// which font should serve a character.
     #[must_use]
     pub fn can_render(&self, ch: char) -> bool {
-        self.font.glyph_index(ch).is_some()
+        !self.denied.contains(&ch) && self.font.glyph_index(ch).is_some()
     }
 
     #[must_use]
@@ -249,12 +301,14 @@ impl Atlas {
             pending:       self.pending.len(),
             in_flight:     self.in_flight,
             refusals:      self.refusals,
+            denied:        self.denials,
         }
     }
 
     /// Queues characters for generation. Returns the ones newly accepted;
-    /// residents, already-queued characters and characters the face lacks are
-    /// skipped, and once the request queue is full the rest are refused.
+    /// residents, already-queued characters and characters this face cannot
+    /// serve are skipped, and once the request queue is full the rest are
+    /// refused.
     #[must_use]
     pub fn request(&mut self, chars: &[char]) -> Vec<char> {
         let mut accepted = Vec::new();
@@ -266,7 +320,7 @@ impl Atlas {
                 self.refusals += 1;
                 continue;
             }
-            if self.font.glyph_index(ch).is_none() {
+            if !self.can_render(ch) {
                 continue;
             }
             self.queued.insert(ch);
@@ -297,8 +351,9 @@ impl Atlas {
         }
     }
 
-    /// Places a generated glyph. Returns [`RuntimeOp::Refused`] when no page
-    /// fits it or the glyph budget cannot be made room for it.
+    /// Places a generated glyph. Returns [`RuntimeOp::Refused`] when the
+    /// generator turned the outline down, when no page fits it, or when the
+    /// glyph budget cannot be made room for it.
     pub fn commit(&mut self, ch: char, rendered: &Rendered) -> RuntimeOp {
         if !self.queued.remove(&ch) {
             return RuntimeOp::Refused;
@@ -306,6 +361,10 @@ impl Atlas {
         self.in_flight = self.in_flight.saturating_sub(1);
         if self.entries.contains_key(&ch) {
             return RuntimeOp::Ok;
+        }
+        if rendered.refused {
+            self.deny(ch);
+            return RuntimeOp::Refused;
         }
         while self.entries.len() >= self.opts.max_glyphs {
             if self.evict_one().is_none() {
@@ -317,26 +376,18 @@ impl Atlas {
             self.refusals += 1;
             return RuntimeOp::Refused;
         };
-        self.tick += 1;
-        self.generation += 1;
+        self.seq += 1;
         self.entries.insert(
             ch,
             Entry {
                 glyph,
                 refs: 0,
-                last_used: self.tick,
+                used: self.clock,
+                seq: self.seq,
                 slot,
             },
         );
         RuntimeOp::Ok
-    }
-
-    /// Marks a taken job failed; the character stays on the fallback path.
-    pub fn refuse(&mut self, ch: char) {
-        if self.queued.remove(&ch) {
-            self.in_flight = self.in_flight.saturating_sub(1);
-            self.refusals += 1;
-        }
     }
 
     /// Marks characters as referenced by a live mesh; a referenced glyph is
@@ -352,10 +403,11 @@ impl Atlas {
     }
 
     fn touch(&mut self, chars: &[char], delta: i32) {
-        self.tick += 1;
         for &ch in chars {
+            self.seq += 1;
             if let Some(entry) = self.entries.get_mut(&ch) {
-                entry.last_used = self.tick;
+                entry.used = self.clock;
+                entry.seq = self.seq;
                 if delta < 0 {
                     entry.refs = entry.refs.saturating_sub(1);
                 } else {
@@ -365,28 +417,42 @@ impl Atlas {
         }
     }
 
-    /// The oldest unreferenced, cooled-down glyph, if one exists.
+    fn deny(&mut self, ch: char) {
+        self.denials += 1;
+        if self.denied.len() >= MAX_DENIED {
+            self.denied.clear();
+        }
+        self.denied.insert(ch);
+    }
+
+    /// Evicts the least recently used glyph that is unreferenced and has
+    /// cooled past the residency window.
     fn evict_one(&mut self) -> Option<char> {
-        let cutoff = self.tick.saturating_sub(self.opts.residency_window);
+        let cutoff = self.clock - f64::from(self.opts.residency.max(0.0));
         let victim = self
             .entries
             .iter()
-            .filter(|(_, entry)| entry.refs == 0 && entry.last_used < cutoff)
-            .min_by_key(|(_, entry)| entry.last_used)
+            .filter(|(_, entry)| entry.refs == 0 && entry.used <= cutoff)
+            .min_by_key(|(_, entry)| entry.seq)
             .map(|(ch, _)| *ch)?;
-        let entry = self.entries.remove(&victim)?;
-        if let Some(slot) = entry.slot {
-            self.pages[entry.glyph.page as usize].allocator.deallocate(slot);
-        }
-        self.generation += 1;
+        self.evict(victim);
         Some(victim)
+    }
+
+    fn evict(&mut self, ch: char) {
+        let Some(entry) = self.entries.remove(&ch) else {
+            return;
+        };
+        if let Some(slot) = entry.slot
+            && let Some(page) = self.pages.get_mut(entry.glyph.page as usize)
+        {
+            page.allocator.deallocate(slot);
+        }
     }
 
     fn render(&self, id: GlyphId, ch: char) -> Rendered {
         let upem = f64::from(self.font.units_per_em());
-        self.font
-            .with_face(|face| crate::generate::render(face, id, ch, upem, &self.opts.generate))
-            .expect("a face that parsed once parses again")
+        crate::generate::render(self.font.face(), id, ch, upem, &self.opts.generate)
     }
 
     /// Fits a field into a page, adding one if every existing page is full.
@@ -411,21 +477,33 @@ impl Atlas {
             field.height().cast_signed() + GUTTER,
         );
         for (index, page) in self.pages.iter_mut().enumerate() {
-            if let Some(slot) = page.allocator.allocate(request) {
-                let (x, y) = (slot.rectangle.min.x as u32, slot.rectangle.min.y as u32);
-                for (column, row, pixel) in field.enumerate_pixels() {
-                    let flipped = field.height() - 1 - row;
-                    page.image.put_pixel(x + column, y + flipped, *pixel);
+            let Some(slot) = page.allocator.allocate(request) else {
+                continue;
+            };
+            let (x, y) = (slot.rectangle.min.x as u32, slot.rectangle.min.y as u32);
+            let (w, h) = (request.width as u32, request.height as u32);
+            // The slot may hold an evicted glyph's texels, and the gutter is
+            // never written by the blit; clearing first keeps a neighbour's
+            // ink out of this glyph's edge samples.
+            for row in 0..h {
+                for column in 0..w {
+                    page.image.put_pixel(x + column, y + row, image::Rgba([0; 4]));
                 }
-                self.dirty.push(DirtyRect {
-                    page: index as u32,
-                    x,
-                    y,
-                    w: request.width as u32,
-                    h: request.height as u32,
-                });
-                return Some((self.slot_glyph(rendered, field, &slot, index as u32), Some(slot.id)));
             }
+            for (column, row, pixel) in field.enumerate_pixels() {
+                let flipped = field.height() - 1 - row;
+                page.image.put_pixel(x + column, y + flipped, *pixel);
+            }
+            let dirty = DirtyRect {
+                page: index as u32,
+                x,
+                y,
+                w,
+                h,
+            };
+            let glyph = self.slot_glyph(rendered, field, &slot, index as u32);
+            self.push_dirty(dirty);
+            return Some((glyph, Some(slot.id)));
         }
         if self.pages.len() < self.opts.max_pages {
             self.pages.push(Page::new(self.opts.page_size));
@@ -434,12 +512,41 @@ impl Atlas {
         None
     }
 
-    fn slot_glyph(&self, rendered: &Rendered, field: &RgbaImage, slot: &Allocation, page: u32) -> Glyph {
+    /// Collapses the list to whole pages once it is long enough that copying
+    /// them outright is cheaper than tracking every rect.
+    fn push_dirty(&mut self, rect: DirtyRect) {
+        self.dirty.push(rect);
+        if self.dirty.len() <= MAX_DIRTY {
+            return;
+        }
+        let mut pages = self.dirty.iter().map(|rect| rect.page).collect::<Vec<_>>();
+        pages.sort_unstable();
+        pages.dedup();
+        let size = self.opts.page_size;
+        self.dirty = pages
+            .into_iter()
+            .map(|page| DirtyRect {
+                page,
+                x: 0,
+                y: 0,
+                w: size,
+                h: size,
+            })
+            .collect();
+    }
+
+    fn slot_glyph(
+        &self,
+        rendered: &Rendered,
+        field: &RgbaImage,
+        slot: &Allocation,
+        page: u32,
+    ) -> Glyph {
         let size = self.opts.page_size as f32;
         let min = slot.rectangle.min;
         Glyph {
-            plane:   rendered.plane,
-            uv:      Rect {
+            plane: rendered.plane,
+            uv: Rect {
                 min: [min.x as f32 / size, min.y as f32 / size],
                 max: [
                     (min.x + field.width().cast_signed()) as f32 / size,
@@ -452,41 +559,22 @@ impl Atlas {
         }
     }
 
+    /// What a character draws while it has no field of its own. One the face
+    /// can serve is waiting on generation, so it advances without ink rather
+    /// than flashing a placeholder a landing glyph replaces; one the face
+    /// cannot serve draws `.notdef`, the conventional tofu.
     fn fallback(&self, ch: char) -> Glyph {
-        let advance = self
-            .font
-            .with_face(|face| {
-                face.glyph_index(ch)
-                    .and_then(|id| face.glyph_hor_advance(id))
-                    .map_or(self.notdef.advance, |units| {
-                        f32::from(units) / self.font.units_per_em()
-                    })
-            })
-            .unwrap_or(self.notdef.advance);
-        match self.opts.fallback {
-            Fallback::Notdef => Glyph {
-                plane:   self.notdef.plane,
-                uv:      self.notdef.uv,
+        match self.font.advance(ch) {
+            Some(advance) if !self.denied.contains(&ch) => Glyph {
+                plane: Rect::ZERO,
+                uv: Rect::ZERO,
                 advance,
-                page:    self.notdef.page,
-                font:    0,
+                page: 0,
+                font: 0,
             },
-            Fallback::Skip => Glyph {
-                plane:   Rect::ZERO,
-                uv:      Rect::ZERO,
-                advance,
-                page:    0,
-                font:    0,
-            },
-            Fallback::Box => Glyph {
-                plane:   Rect {
-                    min: [0.0, self.font.vertical.descender],
-                    max: [advance, self.font.vertical.ascender],
-                },
-                uv:      Rect::ZERO,
-                advance,
-                page:    0,
-                font:    0,
+            advance => Glyph {
+                advance: advance.unwrap_or(self.notdef.advance),
+                ..self.notdef
             },
         }
     }
@@ -517,7 +605,11 @@ impl GlyphSource for Atlas {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::layout::LayoutOpts;
+    use crate::{
+        generate::render,
+        layout::LayoutOpts,
+        outline::Limits,
+    };
 
     fn atlas(opts: RuntimeOpts) -> Atlas {
         let font = Arc::new(Font::parse(Arc::<[u8]>::from(notosans::REGULAR_TTF)).expect("parse"));
@@ -526,12 +618,12 @@ mod tests {
 
     fn opts() -> RuntimeOpts {
         RuntimeOpts {
-            page_size:        256,
-            max_pages:        2,
-            max_glyphs:       8,
-            max_pending:      4,
-            max_in_flight:    2,
-            residency_window: 3,
+            page_size: 256,
+            max_pages: 2,
+            max_glyphs: 8,
+            max_pending: 4,
+            max_in_flight: 2,
+            residency: 1.0,
             ..Default::default()
         }
     }
@@ -542,13 +634,19 @@ mod tests {
         assert!(atlas.request(&[ch]).contains(&ch), "{ch} queued");
         let job = atlas.next_job().expect("job");
         assert_eq!(job.ch, ch);
-        let rendered = atlas
-            .font()
-            .with_face(|face| {
-                crate::generate::render(face, job.id, job.ch, job.upem, atlas.generate_opts())
-            })
-            .expect("render");
+        let rendered = render(
+            atlas.font().face(),
+            job.id,
+            job.ch,
+            job.upem,
+            atlas.generate_opts(),
+        );
         atlas.commit(ch, &rendered)
+    }
+
+    /// Runs the clock past the residency window without tripping the sweep.
+    fn cool(atlas: &mut Atlas) {
+        atlas.clock += f64::from(atlas.opts.residency) + 0.001;
     }
 
     #[test]
@@ -586,6 +684,42 @@ mod tests {
         );
     }
 
+    /// The page is scribbled over first, standing in for the texels an evicted
+    /// glyph leaves in the slot the next one is handed.
+    #[test]
+    fn a_reused_slot_keeps_none_of_the_evicted_glyph() {
+        let mut atlas = atlas(opts());
+        for pixel in atlas.pages[0].image.pixels_mut() {
+            *pixel = image::Rgba([255; 4]);
+        }
+        let _ = atlas.take_dirty();
+        assert_eq!(serve(&mut atlas, '.'), RuntimeOp::Ok);
+
+        let glyph = atlas.glyph('.').expect("glyph");
+        let rect = *atlas.take_dirty().first().expect("rect");
+        let image = atlas.page_image(glyph.page as usize).expect("page");
+        let size = image.width() as f32;
+        let texel = |uv: [f32; 2]| {
+            [
+                (uv[0] * size).round() as u32,
+                (uv[1] * size).round() as u32,
+            ]
+        };
+        let ([x0, y0], [x1, y1]) = (texel(glyph.uv.min), texel(glyph.uv.max));
+        for row in rect.y..rect.y + rect.h {
+            for column in rect.x..rect.x + rect.w {
+                if (x0..x1).contains(&column) && (y0..y1).contains(&row) {
+                    continue;
+                }
+                assert_eq!(
+                    image.get_pixel(column, row).0,
+                    [0; 4],
+                    "what was in the slot survives beside the new field at {column},{row}"
+                );
+            }
+        }
+    }
+
     #[test]
     fn commit_reports_the_changed_rect_for_upload() {
         let mut atlas = atlas(opts());
@@ -595,10 +729,43 @@ mod tests {
         let dirty = atlas.take_dirty();
         assert_eq!(dirty.len(), 1, "one glyph, one rect");
         let rect = dirty[0];
-        assert!(rect.w >= 4 && rect.h >= 4, "the rect covers the field plus gutter");
+        assert!(
+            rect.w >= 4 && rect.h >= 4,
+            "the rect covers the field plus gutter"
+        );
         assert!(
             atlas.take_dirty().is_empty(),
             "a second take finds nothing new"
+        );
+    }
+
+    #[test]
+    fn a_consumer_that_never_uploads_does_not_grow_the_rect_list() {
+        let mut atlas = atlas(RuntimeOpts {
+            max_glyphs: 1,
+            residency: 0.0,
+            page_size: 64,
+            generate: GenerateOpts {
+                px_per_em: 8,
+                ..Default::default()
+            },
+            ..opts()
+        });
+        let commits = MAX_DIRTY + 8;
+        for index in 0..commits {
+            atlas.clock += 1.0;
+            let ch = if index % 2 == 0 { 'a' } else { 'b' };
+            assert_eq!(serve(&mut atlas, ch), RuntimeOp::Ok, "{ch} lands");
+        }
+        let dirty = atlas.take_dirty();
+        assert!(
+            dirty.len() < commits,
+            "{commits} commits left {} rects to replay",
+            dirty.len()
+        );
+        assert!(
+            dirty.iter().any(|rect| rect.w == 64 && rect.h == 64),
+            "the list collapsed to whole pages"
         );
     }
 
@@ -646,6 +813,28 @@ mod tests {
     }
 
     #[test]
+    fn a_glyph_the_generator_refuses_is_never_asked_for_twice() {
+        let mut atlas = atlas(RuntimeOpts {
+            generate: GenerateOpts {
+                outline: Limits { segments: 1 },
+                ..Default::default()
+            },
+            ..opts()
+        });
+        assert_eq!(serve(&mut atlas, 'A'), RuntimeOp::Refused);
+        assert_eq!(atlas.budget().denied, 1);
+        assert!(
+            !atlas.can_render('A'),
+            "a stack falls through to the next face"
+        );
+        assert!(atlas.request(&['A']).is_empty());
+        assert!(
+            atlas.glyph('A').expect("fallback").advance > 0.0,
+            "and the line still leaves room for it"
+        );
+    }
+
+    #[test]
     fn a_full_page_overflows_into_the_next() {
         let mut atlas = atlas(RuntimeOpts {
             page_size: 64,
@@ -681,7 +870,7 @@ mod tests {
     fn a_referenced_glyph_survives_pressure() {
         let mut atlas = atlas(RuntimeOpts {
             max_glyphs: 3,
-            residency_window: 0,
+            residency: 0.0,
             ..opts()
         });
         serve(&mut atlas, 'a');
@@ -716,18 +905,45 @@ mod tests {
     fn a_released_glyph_evicts_once_cool() {
         let mut atlas = atlas(RuntimeOpts {
             max_glyphs: 2,
-            residency_window: 0,
+            ..opts()
+        });
+        serve(&mut atlas, 'a');
+        atlas.acquire(&['a']);
+        serve(&mut atlas, 'b');
+        cool(&mut atlas);
+        assert_eq!(serve(&mut atlas, 'c'), RuntimeOp::Ok);
+        assert!(!atlas.resident('b'), "b cooled and made room");
+        assert!(atlas.resident('a'), "a is still drawn");
+    }
+
+    #[test]
+    fn an_idle_glyph_is_swept_without_anything_asking_for_the_room() {
+        let mut atlas = atlas(RuntimeOpts {
+            idle_timeout: 5.0,
             ..opts()
         });
         serve(&mut atlas, 'a');
         serve(&mut atlas, 'b');
-        atlas.release(&['a']);
-        assert_eq!(serve(&mut atlas, 'c'), RuntimeOp::Ok);
-        assert!(
-            !atlas.resident('b'),
-            "b cooled and made room before a's window closed"
-        );
-        assert!(atlas.resident('a'));
+        atlas.acquire(&['b']);
+        atlas.advance(2.0);
+        assert!(atlas.resident('a'), "still inside the idle window");
+        atlas.advance(4.0);
+        assert!(!atlas.resident('a'), "nothing drew a for five seconds");
+        assert!(atlas.resident('b'), "b is still drawn");
+        assert_eq!(atlas.budget().glyphs, 2, "the slot came back");
+    }
+
+    #[test]
+    fn the_sweep_runs_at_most_once_an_interval() {
+        let mut atlas = atlas(RuntimeOpts {
+            idle_timeout: 0.0,
+            ..opts()
+        });
+        serve(&mut atlas, 'a');
+        atlas.advance(0.001);
+        assert!(atlas.resident('a'), "a sweep per frame would be a scan per frame");
+        atlas.advance(SWEEP_INTERVAL as f32);
+        assert!(!atlas.resident('a'));
     }
 
     #[test]
@@ -743,56 +959,33 @@ mod tests {
             "a is warm, so nothing evicts to admit b"
         );
         assert!(atlas.resident('a'));
-        let glyph = atlas.glyph('b').expect("fallback");
-        assert_eq!(glyph.page, atlas.notdef.page);
+        assert_eq!(atlas.glyph('b').expect("fallback").page, atlas.notdef.page);
     }
 
     #[test]
-    fn a_missing_character_still_advances() {
+    fn a_character_the_face_lacks_draws_tofu_and_still_advances() {
         let atlas = atlas(opts());
+        let glyph = atlas.glyph('漢').expect("fallback");
+        assert!(glyph.advance > 0.0, "notdef's own width carries the line");
+        assert!(!glyph.plane.is_empty(), "the notdef box draws");
+        assert!(atlas.missing('漢'));
+    }
+
+    #[test]
+    fn a_character_waiting_on_generation_advances_without_flashing_tofu() {
+        let mut atlas = atlas(opts());
+        let _ = atlas.request(&['Z']);
         let glyph = atlas.glyph('Z').expect("fallback");
         assert!(glyph.advance > 0.0, "the face knows Z's width");
-        assert!(!glyph.plane.is_empty(), "the notdef box draws");
-        assert!(atlas.missing('Z'));
+        assert!(glyph.plane.is_empty(), "and nothing is drawn in the meantime");
     }
 
     #[test]
-    fn skip_fallback_advances_without_ink() {
-        let atlas = atlas(RuntimeOpts {
-            fallback: Fallback::Skip,
-            ..opts()
-        });
-        let glyph = atlas.glyph('Z').expect("fallback");
-        assert!(glyph.advance > 0.0);
-        assert!(glyph.plane.is_empty(), "Skip draws nothing");
-    }
-
-    #[test]
-    fn box_fallback_traces_the_advance() {
-        let atlas = atlas(RuntimeOpts {
-            fallback: Fallback::Box,
-            ..opts()
-        });
-        let glyph = atlas.glyph('Z').expect("fallback");
-        assert!(glyph.advance > 0.0);
-        assert!(
-            (glyph.plane.max[0] - glyph.advance).abs() < 1.0e-6,
-            "the box is as wide as the advance"
-        );
-        assert!(glyph.plane.min[1] < 0.0 && glyph.plane.max[1] > 0.0);
-    }
-
-    #[test]
-    fn layout_reports_missing_and_draws_the_fallback() {
+    fn layout_reports_missing_and_leaves_room_for_it() {
         let atlas = atlas(opts());
         let laid = crate::layout::layout("ab", &atlas, &LayoutOpts::default()).expect("layout");
         assert_eq!(laid.missing, vec!['a', 'b']);
-        assert_eq!(
-            laid.quads.len(),
-            2,
-            "notdef placeholders draw one quad per character"
-        );
-        assert!(laid.quads[1].plane.min[0] > laid.quads[0].plane.min[0]);
+        assert!(laid.bounds.max[0] > 0.0, "the line is as wide as it will be");
     }
 
     #[test]
@@ -803,5 +996,6 @@ mod tests {
         assert_eq!(budget.glyphs, 1, "notdef is the only resident glyph");
         assert_eq!(budget.pending, 0);
         assert_eq!(budget.in_flight, 0);
+        assert_eq!(budget.denied, 0);
     }
 }

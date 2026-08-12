@@ -93,13 +93,12 @@ fn main() -> anyhow::Result<()> {
     .add_observer(on_agent_load)
     .add_systems(Startup, init_scene);
 
-    app.world_mut()
-        .spawn((
-            LocalActor(wds.actor),
-            LocalBlobStore(wds.store),
-            LocalBlobs(wds.blobs),
-            LocalDocs(wds.docs),
-        ));
+    app.world_mut().spawn((
+        LocalActor(wds.actor),
+        LocalBlobStore(wds.store),
+        LocalBlobs(wds.blobs),
+        LocalDocs(wds.docs),
+    ));
 
     app.run();
 

@@ -10,6 +10,7 @@ use tracing::Level;
 
 mod camera;
 mod fade;
+mod font;
 mod icon;
 mod scene;
 
@@ -112,7 +113,7 @@ impl Plugin for UnaviPlugin {
             Update,
             unavi_script::ScriptSnapshotSet.after(unavi_agent::AgentMovementSet),
         )
-        .add_systems(Startup, icon::set_window_icon);
+        .add_systems(Startup, (icon::set_window_icon, font::load_font_stack));
 
         app.world_mut().trigger(LoadEndpoint {
             filter: AddrFilter::default(),

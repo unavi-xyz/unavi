@@ -32,6 +32,13 @@ const ATTEMPT_TIMEOUT: Duration = Duration::from_mins(5);
 const INITIAL_RETRY_DELAY: Duration = Duration::from_secs(1);
 const MAX_RETRY_DELAY: Duration = Duration::from_mins(1);
 const MAX_ATTEMPTS: u32 = 10;
+/// Progress is logged once per step, so a large transfer emits a handful of
+/// lines rather than one per chunk.
+const PROGRESS_STEP: f64 = 0.1;
+
+fn progress_step(progress: f64) -> u32 {
+    (progress / PROGRESS_STEP) as u32
+}
 
 /// The backoff before attempt `attempt` (0-indexed), doubling to a cap.
 fn retry_delay(attempt: u32) -> Duration {
@@ -199,6 +206,8 @@ async fn watch_until_complete(hash: Hash, blobs: &Blobs) -> Result<(), BlobError
         .await
         .map_err(BlobError::from_std)?;
 
+    let mut logged = 0;
+
     while let Some(field) = stream.next().await {
         let size = field.size();
 
@@ -206,14 +215,19 @@ async fn watch_until_complete(hash: Hash, blobs: &Blobs) -> Result<(), BlobError
             return Err(BlobError::TooLarge { size });
         }
 
-        if field.state().complete {
+        if field.is_complete() {
             return Ok(());
         }
 
         if size > 0 {
-            let val = field.state().validated_size.unwrap_or_default();
-            let progress = val as f64 / size as f64;
-            info!(hash = %hash, "Downloading: {:.2}%", progress * 100.0);
+            // `validated_size` only resolves once the final chunk lands, so
+            // received bytes are what a transfer's progress reads from.
+            let progress = field.total_bytes() as f64 / size as f64;
+            let step = progress_step(progress);
+            if step > logged {
+                logged = step;
+                info!(hash = %hash, "Downloading: {:.0}%", progress * 100.0);
+            }
         }
     }
 
@@ -242,6 +256,15 @@ mod tests {
         assert_eq!(retry_delay(1), Duration::from_secs(2));
         assert_eq!(retry_delay(2), Duration::from_secs(4));
         assert_eq!(retry_delay(30), MAX_RETRY_DELAY);
+    }
+
+    #[test]
+    fn progress_only_steps_forward_in_tenths() {
+        assert_eq!(progress_step(0.0), 0);
+        assert_eq!(progress_step(0.0999), 0, "a chunk-sized delta logs nothing");
+        assert_eq!(progress_step(0.1), 1);
+        assert_eq!(progress_step(0.55), 5);
+        assert_eq!(progress_step(1.0), 10);
     }
 
     #[test]

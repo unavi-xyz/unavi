@@ -55,11 +55,7 @@ struct Fetches(Receiver<FetchRequest>);
 #[derive(Component)]
 struct PendingFetch(Option<oneshot::Sender<Result<Bytes, String>>>);
 
-fn start_fetches(
-    mut commands: Commands,
-    fetches: Res<Fetches>,
-    stores: Query<&LocalBlobStore>,
-) {
+fn start_fetches(mut commands: Commands, fetches: Res<Fetches>, stores: Query<&LocalBlobStore>) {
     let Ok(store) = stores.single() else {
         return;
     };

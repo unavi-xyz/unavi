@@ -69,7 +69,7 @@ fn test_text_becomes_a_mesh(mut ctx: TestContext) {
     let mut query = world.query::<&MissingGlyphs>();
     let found = query.query(world).into_iter().collect::<Vec<_>>();
     assert_eq!(found.len(), 1, "a text prim reports its missing glyphs");
-    assert_eq!(found[0].0, 0, "the shipped font covers plain Latin");
+    assert_eq!(found[0].0, 0, "the registered face covers plain Latin");
     drop(query);
 
     let mut parents = world.query::<(&MsdfText, &Children)>();
@@ -157,7 +157,7 @@ fn test_an_unknown_variant_still_draws(mut ctx: TestContext) {
     assert!(found[0].1.is_none());
 }
 
-/// Characters the shipped font has no glyph for are reported rather than
+/// Characters no registered face has a glyph for are reported rather than
 /// silently dropped.
 #[traced_test]
 #[rstest]

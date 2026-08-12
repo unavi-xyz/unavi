@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::atlas::{
     GlyphSource,
     Rect,
@@ -6,6 +8,10 @@ use crate::atlas::{
 /// Cap on the glyphs one string may lay out; past it the pipeline errors
 /// rather than running long.
 pub const MAX_GLYPHS: usize = 4096;
+
+/// Spaces a tab stands in for. Tabs are rare in world text and a real tab stop
+/// needs a grid this layout does not have.
+const TAB: usize = 4;
 
 /// Where the origin sits on a line, against the line's own width rather than
 /// the wrap box.
@@ -109,44 +115,50 @@ pub fn layout(
     source: &impl GlyphSource,
     opts: &LayoutOpts,
 ) -> Result<Laid, LayoutError> {
-    let count = text.chars().count();
-    if count > opts.max_glyphs {
-        return Err(LayoutError::TooManyGlyphs {
-            count,
-            cap: opts.max_glyphs,
-        });
+    let cap = opts.max_glyphs.min(MAX_GLYPHS);
+    let too_long = |count: usize| LayoutError::TooManyGlyphs { count, cap };
+    let raw = text.chars().count();
+    if raw > cap {
+        return Err(too_long(raw));
+    }
+    let count = expanded(text).count();
+    if count > cap {
+        return Err(too_long(count));
     }
 
+    let size = opts.size.max(0.0);
     let wrap_em = opts
         .wrap
-        .filter(|wrap| *wrap > 0.0 && opts.size > 0.0)
-        .map(|wrap| wrap / opts.size);
+        .filter(|wrap| wrap.is_finite() && *wrap > 0.0 && size > 0.0)
+        .map(|wrap| wrap / size);
 
     let mut lines = Vec::new();
     let mut line = Line::default();
     let mut missing = Vec::new();
+    let mut reported = HashSet::new();
 
-    for ch in text.chars() {
+    for ch in expanded(text) {
         if ch == '\n' {
             lines.push(std::mem::take(&mut line));
             continue;
         }
-        if source.missing(ch) && !missing.contains(&ch) {
+        if source.missing(ch) && reported.insert(ch) {
             missing.push(ch);
         }
         let Some(glyph) = source.glyph(ch) else {
             continue;
         };
 
-            let pen = line.pen + line.last().map_or(0.0, |prev| source.kern(prev, ch));
-            if let Some(wrap) = wrap_em
-                && !line.placed.is_empty()
-                && pen + glyph.advance > wrap
-            {
-                line = wrap_line(&mut lines, line, source, ch);
-            }
+        let mut kern = line.last().map_or(0.0, |prev| source.kern(prev, ch));
+        if let Some(wrap) = wrap_em
+            && !line.placed.is_empty()
+            && line.pen + kern + glyph.advance > wrap
+        {
+            line = wrap_line(&mut lines, line, source, ch);
+            kern = line.last().map_or(0.0, |prev| source.kern(prev, ch));
+        }
 
-        let pen = line.pen + line.last().map_or(0.0, |prev| source.kern(prev, ch));
+        let pen = line.pen + kern;
         line.placed.push(Placed { ch, pen });
         line.pen = pen + glyph.advance;
     }
@@ -155,17 +167,43 @@ pub fn layout(
     Ok(assemble(&lines, source, opts, missing))
 }
 
+/// The characters a line is actually made of. Text is untrusted: a tab stands
+/// in for spaces, and the control and format characters that carry no width
+/// are dropped rather than drawn as tofu.
+fn expanded(text: &str) -> impl Iterator<Item = char> {
+    text.chars().flat_map(|ch| {
+        let (ch, count) = match ch {
+            '\n' => ('\n', 1),
+            '\t' => (' ', TAB),
+            ch if is_ignorable(ch) => (ch, 0),
+            ch => (ch, 1),
+        };
+        std::iter::repeat_n(ch, count)
+    })
+}
+
+/// Characters that mark up text rather than set it: the C0 and C1 controls,
+/// the bidi and joining format characters, and the byte order mark.
+const fn is_ignorable(ch: char) -> bool {
+    ch.is_control()
+        || matches!(
+            ch,
+            '\u{00AD}'
+                | '\u{200B}'..='\u{200F}'
+                | '\u{202A}'..='\u{202E}'
+                | '\u{2060}'..='\u{2064}'
+                | '\u{2066}'..='\u{206F}'
+                | '\u{FEFF}'
+                | '\u{FFF9}'..='\u{FFFB}'
+        )
+}
+
 /// Splits a word wider than the wrap box mid-word rather than letting it
 /// overflow the box the caller asked for. Latin breaks at a space; a run of
 /// East-Asian text has none, so any CJK character is a break opportunity,
 /// except right before closing punctuation the script keeps glued to the
 /// previous glyph (`next` is the character about to start the new line).
-fn wrap_line(
-    lines: &mut Vec<Line>,
-    line: Line,
-    source: &impl GlyphSource,
-    next: char,
-) -> Line {
+fn wrap_line(lines: &mut Vec<Line>, line: Line, source: &impl GlyphSource, next: char) -> Line {
     let break_at = line
         .placed
         .iter()
@@ -214,9 +252,21 @@ const fn is_cjk(ch: char) -> bool {
 const fn is_closing(ch: char) -> bool {
     matches!(
         ch,
-        '\u{3001}' | '\u{3002}' | '\u{3009}' | '\u{300B}' | '\u{300D}' | '\u{300F}'
-            | '\u{3011}' | '\u{3015}' | '\u{FF01}' | '\u{FF09}' | '\u{FF0C}' | '\u{FF0E}'
-            | '\u{FF1A}' | '\u{FF1B}' | '\u{FF1F}'
+        '\u{3001}'
+            | '\u{3002}'
+            | '\u{3009}'
+            | '\u{300B}'
+            | '\u{300D}'
+            | '\u{300F}'
+            | '\u{3011}'
+            | '\u{3015}'
+            | '\u{FF01}'
+            | '\u{FF09}'
+            | '\u{FF0C}'
+            | '\u{FF0E}'
+            | '\u{FF1A}'
+            | '\u{FF1B}'
+            | '\u{FF1F}'
     )
 }
 
@@ -226,7 +276,15 @@ fn assemble(
     opts: &LayoutOpts,
     missing: Vec<char>,
 ) -> Laid {
-    let step = source.vertical().line_height() * opts.line_height;
+    // A size or spacing a document supplied may be anything a float can hold;
+    // a non-finite one would put NaN in every vertex of the mesh.
+    let size = if opts.size.is_finite() { opts.size.max(0.0) } else { 0.0 };
+    let line_height = if opts.line_height.is_finite() {
+        opts.line_height
+    } else {
+        1.0
+    };
+    let step = source.vertical().line_height() * line_height;
     let mut quads = Vec::new();
     let mut ink = None;
     let mut bounds = None;
@@ -244,7 +302,7 @@ fn assemble(
             min: [offset, baseline + source.vertical().descender],
             max: [offset + width, baseline + source.vertical().ascender],
         }
-        .scaled(opts.size);
+        .scaled(size);
         merge(&mut bounds, metric);
 
         for placed in &line.placed {
@@ -257,7 +315,7 @@ fn assemble(
             let plane = glyph
                 .plane
                 .translated(placed.pen + offset, baseline)
-                .scaled(opts.size);
+                .scaled(size);
             merge(&mut ink, plane);
             quads.push(Quad {
                 plane,
@@ -290,38 +348,49 @@ mod tests {
 
     use super::*;
     use crate::atlas::{
-        Atlas,
         Glyph,
         VerticalMetrics,
     };
 
+    struct Stub {
+        glyphs:  BTreeMap<char, Glyph>,
+        kerning: BTreeMap<(char, char), f32>,
+    }
+
+    impl GlyphSource for Stub {
+        fn vertical(&self) -> VerticalMetrics {
+            VerticalMetrics {
+                ascender:  0.75,
+                descender: -0.25,
+                line_gap:  0.0,
+            }
+        }
+
+        fn glyph(&self, ch: char) -> Option<Glyph> {
+            self.glyphs.get(&ch).copied()
+        }
+
+        fn kern(&self, left: char, right: char) -> f32 {
+            self.kerning.get(&(left, right)).copied().unwrap_or(0.0)
+        }
+    }
+
     /// Every glyph one em wide and half an em tall, so a width is a character
     /// count.
-    fn atlas() -> Atlas {
+    fn atlas() -> Stub {
         let square = square();
         let blank = Glyph {
             plane: Rect::ZERO,
             uv: Rect::ZERO,
             ..square
         };
-        let mut glyphs = BTreeMap::new();
-        for ch in 'a'..='z' {
-            glyphs.insert(ch, square);
-        }
+        let mut glyphs = ('a'..='z').map(|ch| (ch, square)).collect::<BTreeMap<_, _>>();
         for ch in ['A', 'V'] {
             glyphs.insert(ch, square);
         }
         glyphs.insert(' ', blank);
 
-        Atlas {
-            width: 128,
-            height: 128,
-            range: 4.0,
-            vertical: VerticalMetrics {
-                ascender:  0.75,
-                descender: -0.25,
-                line_gap:  0.0,
-            },
+        Stub {
             glyphs,
             kerning: BTreeMap::from([(('A', 'V'), -0.5)]),
         }
@@ -561,7 +630,7 @@ mod tests {
     }
 
     /// The default atlas lacks CJK, so the script tests seed their own glyphs.
-    fn cjk_atlas() -> Atlas {
+    fn cjk_atlas() -> Stub {
         let mut atlas = atlas();
         for ch in ['あ', 'ん', '漢', '字', '。'] {
             atlas.glyphs.insert(ch, square());
@@ -581,10 +650,7 @@ mod tests {
         )
         .expect("layout");
         assert!(laid.lines > 1, "a space-less run still wraps");
-        assert!(
-            laid.ink.max[0] <= 5.0 + 1.0e-4,
-            "nothing escapes the box"
-        );
+        assert!(laid.ink.max[0] <= 5.0 + 1.0e-4, "nothing escapes the box");
     }
 
     #[test]
@@ -603,6 +669,54 @@ mod tests {
             (laid.quads[last - 1].plane.min[1] - laid.quads[last].plane.min[1]).abs() < 1.0e-4,
             "the full stop stays on the glyph before it"
         );
+    }
+
+    #[test]
+    fn a_tab_sets_as_spaces_rather_than_tofu() {
+        let tabbed = laid("a\tb", &opts());
+        assert_eq!(tabbed.quads.len(), 2, "the tab itself leaves no ink");
+        assert!(
+            (tabbed.quads[1].plane.min[0] - 5.0).abs() < 1.0e-4,
+            "four spaces wide"
+        );
+    }
+
+    #[test]
+    fn control_and_format_characters_are_dropped() {
+        for noise in ["a\u{0}b", "a\rb", "a\u{200B}b", "a\u{FEFF}b", "a\u{202E}b"] {
+            let laid = laid(noise, &opts());
+            assert_eq!(laid.quads.len(), 2, "{noise:?} sets as two glyphs");
+            assert!(
+                laid.missing.is_empty(),
+                "{noise:?} asks the atlas for nothing"
+            );
+            assert!((laid.quads[1].plane.min[0] - 1.0).abs() < 1.0e-4);
+        }
+    }
+
+    #[test]
+    fn a_run_of_tabs_cannot_expand_past_the_cap() {
+        let opts = LayoutOpts {
+            max_glyphs: 8,
+            ..opts()
+        };
+        assert_eq!(
+            layout("\t\t\t", &atlas(), &opts),
+            Err(LayoutError::TooManyGlyphs { count: 12, cap: 8 })
+        );
+    }
+
+    #[test]
+    fn a_non_finite_size_lays_out_to_nothing_rather_than_nan() {
+        for size in [f32::NAN, f32::INFINITY] {
+            let laid = laid("ab", &LayoutOpts { size, ..opts() });
+            assert!(
+                laid.quads
+                    .iter()
+                    .all(|quad| quad.plane.min[0].is_finite() && quad.plane.max[1].is_finite()),
+                "no vertex of the mesh is a NaN"
+            );
+        }
     }
 
     #[test]

@@ -82,7 +82,10 @@ pub(crate) fn recv_blob_responses(mut commands: Commands, loading: Query<(Entity
 mod tests {
     use super::*;
 
-    fn spawn_pending(world: &mut World, rx: async_channel::Receiver<Result<Bytes, BlobError>>) -> Entity {
+    fn spawn_pending(
+        world: &mut World,
+        rx: async_channel::Receiver<Result<Bytes, BlobError>>,
+    ) -> Entity {
         world
             .spawn(BlobPending {
                 rx,

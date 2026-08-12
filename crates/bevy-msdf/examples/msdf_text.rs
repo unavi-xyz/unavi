@@ -4,10 +4,13 @@
 //! asset, so watch whether either goes soft or starts to shimmer. The busy
 //! panel behind the middle row is there to judge the outline.
 
+use std::sync::Arc;
+
 use bevy::prelude::*;
 use bevy_msdf::{
     MsdfPlugin,
     billboard::Billboard,
+    font::RegisterFont,
     mesh::Anchor,
     text::{
         MsdfStyle,
@@ -30,8 +33,26 @@ fn main() {
     App::new()
         .add_plugins((DefaultPlugins, PanOrbitCameraPlugin, MsdfPlugin))
         .insert_resource(ClearColor(Color::srgb(0.05, 0.06, 0.09)))
-        .add_systems(Startup, setup)
+        .add_systems(Startup, (setup, register_fonts))
         .run();
+}
+
+/// The client fetches its faces over iroh; this example has no network, so it
+/// registers Noto Sans from the `notosans` crate as the primary.
+///
+/// That face has no CJK, so the Japanese specimen draws tofu until one that
+/// covers it joins the chain:
+/// `MSDF_FALLBACK_FONT=/path/to/NotoSansCJK.otf cargo run --example msdf_text`.
+fn register_fonts(mut commands: Commands) {
+    commands.trigger(RegisterFont(Arc::<[u8]>::from(notosans::REGULAR_TTF)));
+
+    let Ok(path) = std::env::var("MSDF_FALLBACK_FONT") else {
+        return;
+    };
+    match std::fs::read(&path) {
+        Ok(bytes) => commands.trigger(RegisterFont(Arc::<[u8]>::from(bytes))),
+        Err(err) => error!("read {path}: {err}"),
+    }
 }
 
 fn text(value: &str, size: f32) -> MsdfText {

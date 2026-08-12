@@ -36,6 +36,7 @@ bevy                    = { default-features = true, features = ["https", "jpeg"
 bevy-hsd.path           = "../bevy-hsd"
 bevy-inspector-egui     = { optional = true, workspace = true }
 bevy-iroh.path          = "../bevy-iroh"
+bevy-msdf.path          = "../bevy-msdf"
 bevy-wds.path           = "../bevy-wds"
 bevy_vrm.workspace      = true
 blake3.workspace        = true

@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use bevy::{
     asset::RenderAssetUsages,
     mesh::{
@@ -52,10 +54,12 @@ pub fn build(laid: &Laid, anchor: Anchor) -> Mesh {
 #[must_use]
 pub fn page_meshes(laid: &Laid, anchor: Anchor) -> Vec<((u32, u32), Mesh)> {
     let raise = anchor.offset(laid);
-    let mut grouped: std::collections::BTreeMap<(u32, u32), Vec<Quad>> =
-        std::collections::BTreeMap::new();
+    let mut grouped: BTreeMap<(u32, u32), Vec<Quad>> = BTreeMap::new();
     for quad in &laid.quads {
-        grouped.entry((quad.font, quad.page)).or_default().push(*quad);
+        grouped
+            .entry((quad.font, quad.page))
+            .or_default()
+            .push(*quad);
     }
     grouped
         .into_iter()
@@ -109,8 +113,8 @@ mod tests {
     use bevy::mesh::VertexAttributeValues;
     use msdf::{
         atlas::{
-            Atlas,
             Glyph,
+            GlyphSource,
             Rect,
             VerticalMetrics,
         },
@@ -122,7 +126,29 @@ mod tests {
 
     use super::*;
 
-    fn atlas() -> Atlas {
+    /// Every glyph one em wide and half an em tall, so a width is a character
+    /// count.
+    struct Stub(BTreeMap<char, Glyph>);
+
+    impl GlyphSource for Stub {
+        fn vertical(&self) -> VerticalMetrics {
+            VerticalMetrics {
+                ascender:  0.75,
+                descender: -0.25,
+                line_gap:  0.0,
+            }
+        }
+
+        fn glyph(&self, ch: char) -> Option<Glyph> {
+            self.0.get(&ch).copied()
+        }
+
+        fn kern(&self, _left: char, _right: char) -> f32 {
+            0.0
+        }
+    }
+
+    fn atlas() -> Stub {
         let glyph = Glyph {
             plane:   Rect {
                 min: [0.0, 0.0],
@@ -136,18 +162,7 @@ mod tests {
             page:    0,
             font:    0,
         };
-        Atlas {
-            width:    64,
-            height:   64,
-            range:    4.0,
-            vertical: VerticalMetrics {
-                ascender:  0.75,
-                descender: -0.25,
-                line_gap:  0.0,
-            },
-            glyphs:   ('a'..='z').map(|ch| (ch, glyph)).collect(),
-            kerning:  std::collections::BTreeMap::new(),
-        }
+        Stub(('a'..='z').map(|ch| (ch, glyph)).collect())
     }
 
     fn opts() -> LayoutOpts {
@@ -178,11 +193,11 @@ mod tests {
     #[test]
     fn quads_split_into_one_mesh_per_page() {
         let quad = |font, page| Quad {
-            plane:   Rect {
+            plane: Rect {
                 min: [0.0, 0.0],
                 max: [1.0, 0.5],
             },
-            uv:      Rect {
+            uv: Rect {
                 min: [0.0, 0.0],
                 max: [0.1, 0.1],
             },

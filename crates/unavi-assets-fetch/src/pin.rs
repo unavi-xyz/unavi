@@ -1,7 +1,7 @@
 use blake3::Hash;
 use iroh_blobs::{
-    api::Store,
     HashAndFormat,
+    api::Store,
 };
 use n0_future::StreamExt;
 use unavi_assets::MANIFEST;

@@ -35,7 +35,7 @@ pub const TAG_PREFIX: &str = "files/";
 /// Top-level entries describing the hosting itself rather than content to host.
 const EXCLUDED: &[&str] = &["README.md", "files.json"];
 
-const README: &str = "Drop files here to host them over iroh blobs.\n\
+const README: &str = "Drop files here to host them over iroh-blobs.\n\
                       Everything in this directory is pinned and served, \
                       recursively.\n\
                       A file is hosted under its path relative to this \
@@ -71,7 +71,11 @@ fn hosted_files(dir: &Path) -> anyhow::Result<Vec<(String, PathBuf)>> {
     Ok(found)
 }
 
-fn collect_files(root: &Path, dir: &Path, found: &mut Vec<(String, PathBuf)>) -> anyhow::Result<()> {
+fn collect_files(
+    root: &Path,
+    dir: &Path,
+    found: &mut Vec<(String, PathBuf)>,
+) -> anyhow::Result<()> {
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let file_type = entry.file_type()?;
@@ -124,10 +128,7 @@ pub async fn host_files(store: &DataStore) -> anyhow::Result<Vec<HostedFile>> {
     for (name, path) in hosted_files(&files_dir())? {
         let size = fs::metadata(&path)?.len();
 
-        let haf = blobs
-            .add_path(&path)
-            .with_named_tag(tag(&name))
-            .await?;
+        let haf = blobs.add_path(&path).with_named_tag(tag(&name)).await?;
         info!(name, hash = %haf.hash, size, "hosting file over iroh");
         hosted.push(HostedFile {
             name,
@@ -226,7 +227,8 @@ mod tests {
             .collect::<Vec<_>>();
 
         assert_eq!(
-            names, ["model/README.md"],
+            names,
+            ["model/README.md"],
             "only the top-level README and index are excluded"
         );
 

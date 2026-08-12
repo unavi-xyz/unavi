@@ -20,6 +20,7 @@ use bevy::{
     transform::TransformPlugin,
 };
 use bevy_hsd::attributes::material_graph::ShaderGraphMaterial;
+use bevy_msdf::font::RegisterFont;
 use bevy_wds::{
     LocalBlobs,
     WdsPlugin,
@@ -67,6 +68,13 @@ fn run_on_test_thread(app: &mut App) {
     });
 }
 
+/// The client fetches its faces over iroh; a test app has no network, so text
+/// would lay out against an empty chain and draw nothing.
+fn register_font(app: &mut App) {
+    app.world_mut()
+        .trigger(RegisterFont(Arc::<[u8]>::from(notosans::REGULAR_TTF)));
+}
+
 impl Default for TestContext {
     fn default() -> Self {
         let mut app = App::new();
@@ -82,6 +90,7 @@ impl Default for TestContext {
         .init_asset::<Shader>()
         .init_asset::<ShaderGraphMaterial>();
         run_on_test_thread(&mut app);
+        register_font(&mut app);
 
         let mut ctx = Self {
             app,
@@ -119,6 +128,7 @@ impl TestContext {
             Duration::from_secs_f32(1.0 / 60.0),
         ));
         run_on_test_thread(&mut app);
+        register_font(&mut app);
         app.finish();
         app.cleanup();
 
@@ -151,6 +161,7 @@ impl TestContext {
         .init_asset::<ShaderGraphMaterial>()
         .insert_resource(Time::<Fixed>::from_duration(Duration::from_millis(10)));
         run_on_test_thread(&mut app);
+        register_font(&mut app);
 
         app.world_mut().spawn(LocalBlobs(blobs.clone()));
 

@@ -1,5 +1,5 @@
 use crate::atlas::{
-    Atlas,
+    GlyphSource,
     Rect,
 };
 
@@ -42,11 +42,13 @@ impl Default for LayoutOpts {
 }
 
 /// One glyph to draw. `uv.min` is the top-left texel of `plane`'s top-left
-/// corner; the plane is y-up and the atlas is y-down.
+/// corner; the plane is y-up and the atlas is y-down. `page` names the atlas
+/// page the uv is relative to.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Quad {
     pub plane: Rect,
     pub uv:    Rect,
+    pub page:  u32,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -56,8 +58,9 @@ pub struct Laid {
     pub bounds:  Rect,
     pub ink:     Rect,
     pub lines:   usize,
-    /// Glyphs the atlas lacks, dropped from the output and counted here.
-    pub missing: usize,
+    /// Characters the source fell back on rather than drawing a real glyph.
+    /// The caller decides what to do with them; a runtime atlas requests them.
+    pub missing: Vec<char>,
 }
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
@@ -86,18 +89,22 @@ impl Line {
 
     /// Ink width, ignoring trailing spaces so a wrapped centred line does not
     /// drift by the spaces at each break.
-    fn width(&self, atlas: &Atlas) -> f32 {
+    fn width(&self, source: &impl GlyphSource) -> f32 {
         self.placed
             .iter()
             .rev()
             .find(|placed| !placed.ch.is_whitespace())
             .map_or(0.0, |placed| {
-                placed.pen + atlas.glyph(placed.ch).map_or(0.0, |glyph| glyph.advance)
+                placed.pen + source.glyph(placed.ch).map_or(0.0, |glyph| glyph.advance)
             })
     }
 }
 
-pub fn layout(text: &str, atlas: &Atlas, opts: &LayoutOpts) -> Result<Laid, LayoutError> {
+pub fn layout(
+    text: &str,
+    source: &impl GlyphSource,
+    opts: &LayoutOpts,
+) -> Result<Laid, LayoutError> {
     let count = text.chars().count();
     if count > opts.max_glyphs {
         return Err(LayoutError::TooManyGlyphs {
@@ -113,38 +120,40 @@ pub fn layout(text: &str, atlas: &Atlas, opts: &LayoutOpts) -> Result<Laid, Layo
 
     let mut lines = Vec::new();
     let mut line = Line::default();
-    let mut missing = 0;
+    let mut missing = Vec::new();
 
     for ch in text.chars() {
         if ch == '\n' {
             lines.push(std::mem::take(&mut line));
             continue;
         }
-        let Some(glyph) = atlas.glyph(ch) else {
-            missing += 1;
+        if source.missing(ch) && !missing.contains(&ch) {
+            missing.push(ch);
+        }
+        let Some(glyph) = source.glyph(ch) else {
             continue;
         };
 
-        let pen = line.pen + line.last().map_or(0.0, |prev| atlas.kern(prev, ch));
+        let pen = line.pen + line.last().map_or(0.0, |prev| source.kern(prev, ch));
         if let Some(wrap) = wrap_em
             && !line.placed.is_empty()
             && pen + glyph.advance > wrap
         {
-            line = wrap_line(&mut lines, line, atlas);
+            line = wrap_line(&mut lines, line, source);
         }
 
-        let pen = line.pen + line.last().map_or(0.0, |prev| atlas.kern(prev, ch));
+        let pen = line.pen + line.last().map_or(0.0, |prev| source.kern(prev, ch));
         line.placed.push(Placed { ch, pen });
         line.pen = pen + glyph.advance;
     }
     lines.push(line);
 
-    Ok(assemble(&lines, atlas, opts, missing))
+    Ok(assemble(&lines, source, opts, missing))
 }
 
 /// Splits a word wider than the wrap box mid-word rather than letting it
 /// overflow the box the caller asked for.
-fn wrap_line(lines: &mut Vec<Line>, line: Line, atlas: &Atlas) -> Line {
+fn wrap_line(lines: &mut Vec<Line>, line: Line, source: &impl GlyphSource) -> Line {
     let break_at = line
         .placed
         .iter()
@@ -153,27 +162,32 @@ fn wrap_line(lines: &mut Vec<Line>, line: Line, atlas: &Atlas) -> Line {
 
     let mut head = line;
     let tail = head.placed.split_off(break_at);
-    head.pen = head.width(atlas);
+    head.pen = head.width(source);
     lines.push(head);
 
     let mut next = Line::default();
     let origin = tail.first().map_or(0.0, |placed| placed.pen);
     for placed in tail {
         let pen = placed.pen - origin;
-        next.pen = pen + atlas.glyph(placed.ch).map_or(0.0, |glyph| glyph.advance);
+        next.pen = pen + source.glyph(placed.ch).map_or(0.0, |glyph| glyph.advance);
         next.placed.push(Placed { pen, ..placed });
     }
     next
 }
 
-fn assemble(lines: &[Line], atlas: &Atlas, opts: &LayoutOpts, missing: usize) -> Laid {
-    let step = atlas.vertical.line_height() * opts.line_height;
+fn assemble(
+    lines: &[Line],
+    source: &impl GlyphSource,
+    opts: &LayoutOpts,
+    missing: Vec<char>,
+) -> Laid {
+    let step = source.vertical().line_height() * opts.line_height;
     let mut quads = Vec::new();
     let mut ink = None;
     let mut bounds = None;
 
     for (index, line) in lines.iter().enumerate() {
-        let width = line.width(atlas);
+        let width = line.width(source);
         let offset = match opts.align {
             Align::Left => 0.0,
             Align::Center => -width / 2.0,
@@ -182,14 +196,14 @@ fn assemble(lines: &[Line], atlas: &Atlas, opts: &LayoutOpts, missing: usize) ->
         let baseline = -(index as f32) * step;
 
         let metric = Rect {
-            min: [offset, baseline + atlas.vertical.descender],
-            max: [offset + width, baseline + atlas.vertical.ascender],
+            min: [offset, baseline + source.vertical().descender],
+            max: [offset + width, baseline + source.vertical().ascender],
         }
         .scaled(opts.size);
         merge(&mut bounds, metric);
 
         for placed in &line.placed {
-            let Some(glyph) = atlas.glyph(placed.ch) else {
+            let Some(glyph) = source.glyph(placed.ch) else {
                 continue;
             };
             if glyph.plane.is_empty() {
@@ -203,6 +217,7 @@ fn assemble(lines: &[Line], atlas: &Atlas, opts: &LayoutOpts, missing: usize) ->
             quads.push(Quad {
                 plane,
                 uv: glyph.uv,
+                page: glyph.page,
             });
         }
     }
@@ -229,6 +244,7 @@ mod tests {
 
     use super::*;
     use crate::atlas::{
+        Atlas,
         Glyph,
         VerticalMetrics,
     };
@@ -246,6 +262,7 @@ mod tests {
                 max: [0.1, 0.1],
             },
             advance: 1.0,
+            page:    0,
         };
         let blank = Glyph {
             plane: Rect::ZERO,
@@ -444,9 +461,9 @@ mod tests {
     }
 
     #[test]
-    fn a_character_the_atlas_lacks_is_counted_not_swallowed() {
-        let laid = laid("a漢b", &opts());
-        assert_eq!(laid.missing, 1);
+    fn a_character_the_source_lacks_is_reported_not_swallowed() {
+        let laid = laid("a漢b漢", &opts());
+        assert_eq!(laid.missing, vec!['漢']);
         assert_eq!(laid.quads.len(), 2);
     }
 

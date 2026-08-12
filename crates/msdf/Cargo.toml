@@ -16,10 +16,10 @@ bake = [
   "dep:etagere",
   "dep:fdsm",
   "dep:fdsm-ttf-parser",
+  "dep:harfrust",
   "dep:image",
   "dep:nalgebra",
   "dep:notosans",
-  "dep:rustybuzz",
   "dep:ttf-parser",
 ]
 
@@ -33,10 +33,10 @@ clap            = { optional = true, workspace = true }
 etagere         = { optional = true, version = "0.3.0" }
 fdsm            = { optional = true, version = "0.8.0" }
 fdsm-ttf-parser = { optional = true, version = "0.2.0" }
+harfrust        = { optional = true, version = "0.7.0" }
 image           = { features = ["png"], optional = true, workspace = true }
 nalgebra        = { optional = true, version = "0.34.2" }
 notosans        = { optional = true, version = "0.1.0" }
-rustybuzz       = { optional = true, version = "0.20.1" }
 ttf-parser      = { optional = true, version = "0.25.1" }
 
 [[bin]]

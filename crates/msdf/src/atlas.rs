@@ -58,6 +58,9 @@ pub struct Glyph {
     pub plane:   Rect,
     pub uv:      Rect,
     pub advance: f32,
+    /// Which page of a multi-page atlas the field lives in; a baked single
+    /// image is always page 0.
+    pub page:    u32,
 }
 
 /// Line spacing in em units.
@@ -104,14 +107,33 @@ impl Atlas {
     pub fn encode(&self) -> Result<Vec<u8>, postcard::Error> {
         postcard::to_stdvec(self)
     }
+}
 
-    #[must_use]
-    pub fn glyph(&self, ch: char) -> Option<&Glyph> {
-        self.glyphs.get(&ch)
+/// What laying text out needs from a glyph store: vertical metrics, per-char
+/// placement, and pair adjustments. The baked [`Atlas`] and the runtime atlas
+/// both satisfy it.
+pub trait GlyphSource {
+    fn vertical(&self) -> VerticalMetrics;
+    fn glyph(&self, ch: char) -> Option<Glyph>;
+    fn kern(&self, left: char, right: char) -> f32;
+    /// Whether `glyph(ch)` fell back to a placeholder instead of the font's
+    /// real glyph. Layout reports these characters so a caller can ask the
+    /// source for them.
+    fn missing(&self, ch: char) -> bool {
+        self.glyph(ch).is_none()
+    }
+}
+
+impl GlyphSource for Atlas {
+    fn vertical(&self) -> VerticalMetrics {
+        self.vertical
     }
 
-    #[must_use]
-    pub fn kern(&self, left: char, right: char) -> f32 {
+    fn glyph(&self, ch: char) -> Option<Glyph> {
+        self.glyphs.get(&ch).copied()
+    }
+
+    fn kern(&self, left: char, right: char) -> f32 {
         self.kerning.get(&(left, right)).copied().unwrap_or(0.0)
     }
 }
@@ -156,6 +178,7 @@ mod tests {
                         max: [0.25, 0.25],
                     },
                     advance: 0.6,
+                    page:    0,
                 },
             )]),
             kerning:  BTreeMap::from([(('A', 'V'), -0.08)]),

@@ -6,4 +6,7 @@
 
 pub mod atlas;
 #[cfg(feature = "bake")] pub mod bake;
+#[cfg(feature = "bake")] pub mod font;
+#[cfg(feature = "bake")] pub mod generate;
 pub mod layout;
+#[cfg(feature = "bake")] pub mod runtime;

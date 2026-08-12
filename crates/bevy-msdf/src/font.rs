@@ -94,6 +94,7 @@ mod tests {
 
     #[test]
     fn the_shipped_font_covers_the_latin_charset() {
+        use msdf::atlas::GlyphSource;
         let atlas = atlas();
         let missing = msdf::atlas::LATIN
             .chars()
@@ -130,6 +131,7 @@ mod tests {
 
     #[test]
     fn the_shipped_font_kerns() {
+        use msdf::atlas::GlyphSource;
         assert!(
             atlas().kern('A', 'V') < 0.0,
             "a font that bakes no pair adjustments sets text loose"

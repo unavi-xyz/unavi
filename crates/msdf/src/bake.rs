@@ -4,23 +4,8 @@ use etagere::{
     AtlasAllocator,
     size2,
 };
-use fdsm::{
-    bezier::scanline::FillRule,
-    generate::generate_mtsdf,
-    render::correct_sign_mtsdf,
-    shape::Shape,
-    transform::Transform,
-};
 use image::RgbaImage;
-use nalgebra::{
-    Affine2,
-    Similarity2,
-    Vector2,
-};
-use ttf_parser::{
-    Face,
-    GlyphId,
-};
+use ttf_parser::Face;
 
 use crate::atlas::{
     Atlas,
@@ -28,14 +13,16 @@ use crate::atlas::{
     Rect,
     VerticalMetrics,
 };
+use crate::generate::{
+    GenerateOpts,
+    GUTTER,
+    Rendered,
+};
 
 /// Noto Sans Regular, SIL Open Font License 1.1; the licence text travels with
 /// the `notosans` crate.
 pub const DEFAULT_FONT: &[u8] = notosans::REGULAR_TTF;
 
-/// Untouched texels between neighbours, so a bilinear fetch at the edge of one
-/// glyph never picks up the distance field of the next.
-const GUTTER: i32 = 2;
 const FIRST_SIZE: u32 = 256;
 const MAX_SIZE: u32 = 4096;
 
@@ -63,6 +50,16 @@ impl Default for BakeOpts {
     }
 }
 
+impl From<&BakeOpts> for GenerateOpts {
+    fn from(opts: &BakeOpts) -> Self {
+        Self {
+            px_per_em:       opts.px_per_em,
+            range:           opts.range,
+            angle_threshold: opts.angle_threshold,
+        }
+    }
+}
+
 #[derive(Debug, thiserror::Error)]
 pub enum BakeError {
     #[error("parse font: {0}")]
@@ -81,25 +78,18 @@ pub struct Baked {
     pub missing: Vec<char>,
 }
 
-struct Rendered {
-    ch:      char,
-    plane:   Rect,
-    advance: f32,
-    field:   Option<RgbaImage>,
-}
-
 pub fn bake(font: &[u8], opts: &BakeOpts) -> Result<Baked, BakeError> {
     let face = Face::parse(font, 0)?;
     let upem = f64::from(face.units_per_em());
     if upem <= 0.0 {
         return Err(BakeError::NoUnitsPerEm);
     }
-    let shrinkage = upem / f64::from(opts.px_per_em);
 
     let mut charset = opts.charset.chars().collect::<Vec<_>>();
     charset.sort_unstable();
     charset.dedup();
 
+    let generate = GenerateOpts::from(opts);
     let mut rendered = Vec::with_capacity(charset.len());
     let mut missing = Vec::new();
 
@@ -108,7 +98,7 @@ pub fn bake(font: &[u8], opts: &BakeOpts) -> Result<Baked, BakeError> {
             missing.push(*ch);
             continue;
         };
-        rendered.push(render(&face, id, *ch, upem, shrinkage, opts));
+        rendered.push(crate::generate::render(&face, id, *ch, upem, &generate));
     }
 
     let (image, placed) = pack(&rendered)?;
@@ -124,6 +114,7 @@ pub fn bake(font: &[u8], opts: &BakeOpts) -> Result<Baked, BakeError> {
                     plane: glyph.plane,
                     uv,
                     advance: glyph.advance,
+                    page: 0,
                 },
             )
         })
@@ -145,77 +136,6 @@ pub fn bake(font: &[u8], opts: &BakeOpts) -> Result<Baked, BakeError> {
         image,
         missing,
     })
-}
-
-fn render(
-    face: &Face,
-    id: GlyphId,
-    ch: char,
-    upem: f64,
-    shrinkage: f64,
-    opts: &BakeOpts,
-) -> Rendered {
-    let advance = f64::from(face.glyph_hor_advance(id).unwrap_or_default()) / upem;
-    let blank = Rendered {
-        ch,
-        plane: Rect::ZERO,
-        advance: advance as f32,
-        field: None,
-    };
-
-    // A space has an advance and no outline; so does any glyph whose contours
-    // the face declines to give us.
-    let (Some(bounds), Some(mut shape)) = (
-        face.glyph_bounding_box(id),
-        fdsm_ttf_parser::load_shape_from_face(face, id),
-    ) else {
-        return blank;
-    };
-
-    let (x_min, y_min) = (f64::from(bounds.x_min), f64::from(bounds.y_min));
-    let span = |min: i16, max: i16| {
-        2.0f64.mul_add(opts.range, (f64::from(max) - f64::from(min)) / shrinkage)
-    };
-    let width = span(bounds.x_min, bounds.x_max).ceil() as u32;
-    let height = span(bounds.y_min, bounds.y_max).ceil() as u32;
-    if width == 0 || height == 0 {
-        return blank;
-    }
-
-    let transformation = nalgebra::convert::<_, Affine2<f64>>(Similarity2::new(
-        Vector2::new(
-            opts.range - x_min / shrinkage,
-            opts.range - y_min / shrinkage,
-        ),
-        0.0,
-        1.0 / shrinkage,
-    ));
-    shape.transform(&transformation);
-    let shape = Shape::edge_coloring_simple(shape, opts.angle_threshold, 0).prepare();
-
-    let mut field = RgbaImage::new(width, height);
-    generate_mtsdf(&shape, opts.range, &mut field);
-    correct_sign_mtsdf(&mut field, &shape, FillRule::Nonzero);
-
-    // The field covers whole texels, so its extent comes back from the pixel
-    // count rather than from the bounding box the ceil rounded up from.
-    let edge = |min: f64, texels: u32| {
-        [
-            opts.range.mul_add(-shrinkage, min) / upem,
-            (f64::from(texels) - opts.range).mul_add(shrinkage, min) / upem,
-        ]
-    };
-    let [left, right] = edge(x_min, width);
-    let [bottom, top] = edge(y_min, height);
-
-    Rendered {
-        plane: Rect {
-            min: [left as f32, bottom as f32],
-            max: [right as f32, top as f32],
-        },
-        field: Some(field),
-        ..blank
-    }
 }
 
 /// Places every field in one image, growing until they fit. Fields are blitted
@@ -274,25 +194,27 @@ fn pack(rendered: &[Rendered]) -> Result<(RgbaImage, Vec<Rect>), BakeError> {
 /// Pair adjustments, measured by shaping each pair. A shaper, not the legacy
 /// `kern` table: modern faces keep pair positioning in GPOS.
 fn kerning(font: &[u8], charset: &[char], upem: f32) -> BTreeMap<(char, char), f32> {
-    let Some(face) = rustybuzz::Face::from_slice(font, 0) else {
+    let Ok(face) = harfrust::FontRef::new(font) else {
         return BTreeMap::new();
     };
+    let data = harfrust::ShaperData::new(&face);
+    let shaper = data.shaper(&face).build();
 
-    let mut buffer = Some(rustybuzz::UnicodeBuffer::new());
+    let mut buffer = Some(harfrust::UnicodeBuffer::new());
     let mut advance = |text: &str, glyphs: usize| {
         let mut unicode = buffer.take().unwrap_or_default();
         unicode.push_str(text);
         unicode.guess_segment_properties();
-        let shaped = rustybuzz::shape(&face, &[], unicode);
+        let result = shaper.shape(unicode, &[]);
         // A pair that shaped into one glyph is a ligature, not a kern.
-        let total = (shaped.len() == glyphs).then(|| {
-            shaped
+        let total = (result.len() == glyphs).then(|| {
+            result
                 .glyph_positions()
                 .iter()
                 .map(|pos| pos.x_advance)
                 .sum()
         });
-        buffer = Some(shaped.clear());
+        buffer = Some(result.clear());
         total
     };
 
@@ -311,10 +233,10 @@ fn kerning(font: &[u8], charset: &[char], upem: f32) -> BTreeMap<(char, char), f
             text.clear();
             text.push(*left);
             text.push(*right);
-            let Some(shaped) = advance(&text, 2) else {
+            let Some(result) = advance(&text, 2) else {
                 continue;
             };
-            let adjustment = shaped - left_width - right_width;
+            let adjustment = result - left_width - right_width;
             if adjustment != 0 {
                 pairs.insert((*left, *right), adjustment as f32 / upem);
             }
@@ -326,6 +248,7 @@ fn kerning(font: &[u8], charset: &[char], upem: f32) -> BTreeMap<(char, char), f
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::atlas::GlyphSource;
 
     fn baked(charset: &str) -> Baked {
         bake(

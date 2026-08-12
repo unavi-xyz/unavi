@@ -149,7 +149,7 @@ pub fn rebuild_text(
                 settings: settings(style, &font.atlas),
                 field:    font.field.clone(),
             })),
-            MissingGlyphs(laid.missing),
+            MissingGlyphs(laid.missing.len()),
             // A glyph quad casting a shadow is a rectangle of shade with no
             // letter in it.
             NotShadowCaster,

@@ -107,6 +107,7 @@ mod tests {
                 max: [0.5, 0.5],
             },
             advance: 1.0,
+            page:    0,
         };
         Atlas {
             width:    64,

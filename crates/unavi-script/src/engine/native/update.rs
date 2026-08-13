@@ -15,6 +15,7 @@ use unavi_util::async_task::spawn_async_task;
 use wasmtime::AsContextMut;
 
 use crate::{
+    Trapped,
     Updating,
     engine::{
         InitializedScript,
@@ -37,6 +38,7 @@ type UpdateQuery<'w, 's> = Query<
     's,
     (
         &'static Updating,
+        &'static Trapped,
         &'static ScriptGuest,
         &'static ScriptStore,
         &'static ScriptSpan,
@@ -56,12 +58,16 @@ pub fn update_scripts(
         };
         let budget = script_budget(&time);
 
-        for (updating, guest, store, span) in to_update {
+        for (updating, trapped, guest, store, span) in to_update {
+            if trapped.get() {
+                continue;
+            }
             if updating.0.swap(true, Ordering::SeqCst) {
                 continue;
             }
 
             let updating = Arc::clone(&updating.0);
+            let trapped = Trapped(Arc::clone(&trapped.0));
             let guest = Arc::clone(&guest.0);
             let store = Arc::clone(&store.0);
             let outstanding = Arc::clone(&outstanding);
@@ -80,8 +86,10 @@ pub fn update_scripts(
                         .await;
                     drop(tick);
 
-                    if let Err(err) = result {
-                        warn!(?err, "Failed to update script");
+                    if let Err(err) = result
+                        && trapped.set()
+                    {
+                        error!(?err, "Script trapped while updating; it is finished");
                     }
                     drop(store);
 

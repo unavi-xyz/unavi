@@ -37,6 +37,7 @@ use crate::{
     },
     surface::Surface,
     tree::{
+        Kind,
         Mote,
         Navigation,
         Tree,
@@ -104,6 +105,10 @@ impl Mounted for Orbit {
 
     fn field_lift(&self) -> f32 {
         self.surface.tuning().field_lift
+    }
+
+    fn show(&mut self, shown: bool) -> anyhow::Result<()> {
+        self.bodies.show(shown)
     }
 
     fn update(
@@ -177,7 +182,7 @@ impl Mounted for Orbit {
         let mut released = None;
         for signal in self.bodies.poll() {
             match (signal, self.surface.is_seized()) {
-                (Signal::Grab(true), false) => self.press(eye, anchor),
+                (Signal::Grab(true), false) => self.press(eye, anchor, &mut events),
                 (Signal::Grab(false), _) => released = self.release(&mut events)?,
                 (Signal::Turn(delta), false) => self.surface.turn_by(delta),
                 (Signal::Grab(true) | Signal::Turn(_), true) => {}
@@ -189,7 +194,11 @@ impl Mounted for Orbit {
 
 impl Orbit {
     /// Grabs the lit mote at its drawn depth, so it arrives under the pointer.
-    fn press(&mut self, eye: &Transform, anchor: Transform) {
+    ///
+    /// A consequential mote opens its cast site here rather than on release:
+    /// the hold *is* the confirmation, so the ring starts filling the moment
+    /// the mote is taken hold of and letting go early abandons it.
+    fn press(&mut self, eye: &Transform, anchor: Transform, events: &mut Vec<Event>) {
         let Some(slot) = self.surface.attended() else {
             return;
         };
@@ -200,6 +209,19 @@ impl Orbit {
         let depth = (world - eye.translation).length();
         self.depth = Some(depth);
         self.surface.press(pointer::hand(eye, depth));
+
+        if let Some(mote) = self.consequential(slot) {
+            open_cast(&mut self.casting, slot, mote.clone(), &self.surface);
+            events.push(Event::Casting(mote));
+        }
+    }
+
+    /// The mote drawn in `slot`, if holding it is what fires it.
+    fn consequential(&mut self, slot: usize) -> Option<Mote> {
+        let index = self.surface.spec_index(slot)?;
+        self.tree
+            .at_level(index)
+            .filter(|mote| mote.kind() == Kind::Cast)
     }
 
     /// Returns the carried mote to its surface, reporting what a tap did and
@@ -234,19 +256,18 @@ impl Orbit {
         Ok(released)
     }
 
-    /// Selects whatever holds attention in `slot`, navigating the tree and
-    /// opening a cast site on a consequential action.
+    /// Selects whatever holds attention in `slot`, navigating the tree.
+    ///
+    /// A consequential mote is not selected on release: its site opened when
+    /// it was pressed, and by the time the grasp lets go the cast has either
+    /// fired or been abandoned.
     fn select(&mut self, slot: usize) -> Option<Event> {
         let index = self.surface.spec_index(slot)?;
         match self.tree.select(index) {
             Navigation::Bloomed(mote) => Some(Event::Opened(mote)),
             Navigation::Collapsed(mote) => Some(Event::Closed(mote)),
             Navigation::Activated(mote) => Some(Event::Activated(mote)),
-            Navigation::Cast(mote) => {
-                open_cast(&mut self.casting, slot, mote.clone(), &self.surface);
-                Some(Event::Casting(mote))
-            }
-            Navigation::None => None,
+            Navigation::Cast(_) | Navigation::None => None,
         }
     }
 

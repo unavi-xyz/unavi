@@ -19,6 +19,7 @@ use wasmtime::AsContextMut;
 
 use crate::{
     FixedUpdating,
+    Trapped,
     engine::{
         InitializedScript,
         native::{
@@ -45,6 +46,7 @@ type FixedUpdateQuery<'w, 's> = Query<
     's,
     (
         &'static FixedUpdating,
+        &'static Trapped,
         &'static ScriptGuest,
         &'static ScriptStore,
         &'static ScriptSpan,
@@ -66,7 +68,10 @@ pub fn fixed_update_scripts(
         let budget = script_budget(&time);
         let now = time.elapsed();
 
-        for (updating, guest, store, span, mut last) in &mut to_update {
+        for (updating, trapped, guest, store, span, mut last) in &mut to_update {
+            if trapped.get() {
+                continue;
+            }
             let delta = now.checked_sub(last.0).unwrap_or_default();
             if delta < FIXED_UPDATE_INTERVAL {
                 continue;
@@ -82,6 +87,7 @@ pub fn fixed_update_scripts(
             last.0 = now.checked_sub(margin).unwrap_or_default();
 
             let updating = Arc::clone(&updating.0);
+            let trapped = Trapped(Arc::clone(&trapped.0));
             let guest = Arc::clone(&guest.0);
             let store = Arc::clone(&store.0);
             let outstanding = Arc::clone(&outstanding);
@@ -100,8 +106,10 @@ pub fn fixed_update_scripts(
                         .await;
                     drop(tick);
 
-                    if let Err(err) = result {
-                        warn!(?err, "Failed to fixed-update script");
+                    if let Err(err) = result
+                        && trapped.set()
+                    {
+                        error!(?err, "Script trapped while fixed-updating; it is finished");
                     }
                     drop(store);
 

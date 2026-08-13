@@ -31,6 +31,9 @@ pub struct Palette {
     pub emissive_near:     f32,
     pub emissive_attended: f32,
     pub emissive_engaged:  f32,
+    /// The floor a mote that is on burns at. Between attended and engaged:
+    /// unmistakable at rest, still outshone by what is in hand.
+    pub emissive_active:   f32,
 }
 
 impl Palette {
@@ -51,6 +54,7 @@ impl Palette {
         emissive_near:     0.18,
         emissive_attended: 0.42,
         emissive_engaged:  0.70,
+        emissive_active:   0.55,
     };
 
     #[must_use]
@@ -86,6 +90,20 @@ impl Palette {
             blend(tint, self.source, self.source_shift)
         } else {
             tint
+        }
+    }
+
+    /// How brightly a mote burns, raised to a floor while it is on.
+    ///
+    /// Brightness rather than a hue: the accent means what is in hand and
+    /// nothing else, so spending it here would say two things with one colour.
+    #[must_use]
+    pub const fn emissive_lit(&self, attention: Attention, active: bool) -> f32 {
+        let resting = self.emissive(attention);
+        if active && resting < self.emissive_active {
+            self.emissive_active
+        } else {
+            resting
         }
     }
 

@@ -60,7 +60,7 @@ pub const fn body(style: Style, role: Role, icon: bool) -> Material {
     let opaque = match role {
         Role::Group { .. } => false,
         Role::Item { .. } => !icon,
-        Role::Action | Role::Cast | Role::Parent { .. } => true,
+        Role::Action | Role::Toggle | Role::Cast | Role::Parent { .. } => true,
     };
     Material {
         alpha_cutoff: None,

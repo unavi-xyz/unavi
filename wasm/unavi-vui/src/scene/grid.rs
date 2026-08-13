@@ -111,6 +111,10 @@ impl Mounted for Grid {
         self.surface.tuning().field_lift
     }
 
+    fn show(&mut self, shown: bool) -> anyhow::Result<()> {
+        self.bodies.show(shown)
+    }
+
     fn update(
         &mut self,
         eye: &Transform,
@@ -160,8 +164,8 @@ impl Mounted for Grid {
         let mut released = None;
         for signal in self.bodies.poll() {
             match (signal, self.surface.is_seized()) {
-                (Signal::Grab(true), false) => self.press(eye, anchor),
-                (Signal::Grab(false), _) => released = self.release(&mut events)?,
+                (Signal::Grab(true), false) => self.press(eye, anchor, &mut events),
+                (Signal::Grab(false), _) => released = self.release()?,
                 (Signal::Turn(delta), false) => self.surface.turn_by(delta),
                 (Signal::Grab(true) | Signal::Turn(_), true) => {}
             }
@@ -184,7 +188,9 @@ impl Grid {
         self.root.children()
     }
 
-    fn press(&mut self, eye: &Transform, anchor: Transform) {
+    /// A consequential mote opens its cast site here rather than on release:
+    /// the hold *is* the confirmation, exactly as it is in an orbit.
+    fn press(&mut self, eye: &Transform, anchor: Transform, events: &mut Vec<Event>) {
         let Some(slot) = self.surface.attended() else {
             return;
         };
@@ -195,9 +201,23 @@ impl Grid {
         let depth = (world - eye.translation).length();
         self.depth = Some(depth);
         self.surface.press(pointer::hand(eye, depth));
+
+        if let Some(mote) = self.consequential(slot) {
+            open_cast(&mut self.casting, slot, mote.clone(), &self.surface);
+            events.push(Event::Casting(mote));
+        }
     }
 
-    fn release(&mut self, events: &mut Vec<Event>) -> anyhow::Result<Option<Released>> {
+    /// The mote drawn in `slot`, if holding it is what fires it.
+    fn consequential(&self, slot: usize) -> Option<Mote> {
+        let index = self.surface.spec_index(slot)?;
+        self.contents()
+            .get(index)
+            .filter(|mote| mote.kind() == Kind::Cast)
+            .cloned()
+    }
+
+    fn release(&mut self) -> anyhow::Result<Option<Released>> {
         self.depth = None;
         let outcome = self.surface.release();
 
@@ -210,32 +230,15 @@ impl Grid {
             self.bodies.clear_dynamic(slot)?;
         }
 
-        match outcome {
-            Some(Outcome::Tap(slot)) => {
-                if let Some(event) = self.select(slot) {
-                    events.push(event);
-                }
-            }
-            Some(Outcome::Place(slot)) => {
-                if let Some((at, velocity)) = landed {
-                    return Ok(self.build_released(slot, at, velocity));
-                }
-            }
-            None => {}
+        // A grid holds no tree to navigate, so a release that never travelled
+        // has nothing left to do: a cast opened at the press and settled on
+        // its own, and anything else here is carried away instead.
+        if let Some(Outcome::Place(slot)) = outcome
+            && let Some((at, velocity)) = landed
+        {
+            return Ok(self.build_released(slot, at, velocity));
         }
         Ok(None)
-    }
-
-    /// A tap on a cast mote opens a cast site, exactly as it does in an orbit;
-    /// any other mote here is carried away instead.
-    fn select(&mut self, slot: usize) -> Option<Event> {
-        let index = self.surface.spec_index(slot)?;
-        let mote = self.contents().get(index)?.clone();
-        if mote.kind() != Kind::Cast {
-            return None;
-        }
-        open_cast(&mut self.casting, slot, mote.clone(), &self.surface);
-        Some(Event::Casting(mote))
     }
 
     fn report_page(&mut self, events: &mut Vec<Event>) {

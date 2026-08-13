@@ -14124,6 +14124,7 @@ dependencies = [
  "log",
  "n0-future",
  "parking_lot",
+ "postcard",
  "tracing",
  "unavi-agent",
  "unavi-assets-fetch",
@@ -14176,34 +14177,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "unavi-gauntlet"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "blake3",
- "postcard",
- "unavi-gauntlet-menu",
- "wired-prelude",
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
-name = "unavi-gauntlet-menu"
-version = "0.0.16"
-
-[[package]]
-name = "unavi-gauntlet-tool"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "blake3",
- "postcard",
- "serde",
- "wired-prelude",
- "wit-bindgen 0.55.0",
-]
-
-[[package]]
 name = "unavi-grab"
 version = "0.0.16"
 dependencies = [
@@ -14214,6 +14187,16 @@ dependencies = [
  "unavi-input",
  "unavi-physics",
  "unavi-space",
+]
+
+[[package]]
+name = "unavi-halo"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "postcard",
+ "wired-prelude",
+ "wit-bindgen 0.55.0",
 ]
 
 [[package]]
@@ -14477,6 +14460,18 @@ name = "unavi-spawner"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "wired-prelude",
+ "wit-bindgen 0.55.0",
+]
+
+[[package]]
+name = "unavi-tool"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "blake3",
+ "postcard",
+ "serde",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]

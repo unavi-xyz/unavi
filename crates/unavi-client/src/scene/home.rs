@@ -8,6 +8,7 @@ use bevy_hsd::load::{
     LoadHsd,
     OnLoadCtx,
 };
+use bevy_wds::doc::DocSet;
 use iroh_docs::NamespaceId;
 use unavi_space::Space;
 use unavi_util::async_commands::AsyncCommands;
@@ -59,6 +60,53 @@ pub fn on_load_spawn_space(ctx: OnLoadCtx) -> BoxedFuture<'static, anyhow::Resul
             })
             .send()
             .await?;
+        record_home(ctx.namespace).await;
         Ok(())
     })
+}
+
+/// Key under a DID's root doc naming the space it comes home to.
+const HOME_KEY: &str = "home";
+
+/// Version prefix on the entry, so a reader can tell an old layout from a new
+/// one rather than misreading its bytes as a namespace.
+const HOME_VERSION: u32 = 0;
+
+/// Writes down which space is home, so a shell can offer to travel back to it.
+///
+/// The client is the only thing that knows, and a script has no other way to
+/// find out: without this the entry is absent and a shell can only report that
+/// no home is set.
+async fn record_home(ns: NamespaceId) {
+    let Some(root) = bevy_wds::root_doc() else {
+        return;
+    };
+    let mut value = match postcard::to_stdvec(&HOME_VERSION) {
+        Ok(value) => value,
+        Err(err) => {
+            warn!(?err, "could not encode the home space ref");
+            return;
+        }
+    };
+    value.extend_from_slice(ns.as_bytes());
+
+    let (tx, rx) = async_channel::bounded(1);
+    if AsyncCommands::default()
+        .trigger(DocSet {
+            ns: root,
+            key: HOME_KEY.to_string(),
+            value: value.into(),
+            tx,
+        })
+        .send()
+        .await
+        .is_err()
+    {
+        return;
+    }
+    if rx.recv().await == Ok(true) {
+        info!(%ns, "Recorded home space");
+    } else {
+        warn!("could not record the home space");
+    }
 }

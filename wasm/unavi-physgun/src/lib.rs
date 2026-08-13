@@ -10,11 +10,11 @@ use crate::{
     laser::Laser,
     outline::Outline,
     unavi::{
-        gauntlet_tool::api::{
+        shapes::api::Cuboid,
+        tool::api::{
             Tool,
             ToolEvent,
         },
-        shapes::api::Cuboid,
     },
     wired::{
         agent::api::local_camera,

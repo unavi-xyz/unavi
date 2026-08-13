@@ -11,6 +11,7 @@
 use unavi::vui::api::{
     self,
     Arrange,
+    Bearing,
     Event,
     Kind,
     Landing,
@@ -38,6 +39,7 @@ const MOUNT: Mount = Mount {
     distance: 1.1,
     height:   -0.15,
     offset:   Vec2::ZERO,
+    bearing:  Bearing::Level,
 };
 
 struct Script {

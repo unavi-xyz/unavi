@@ -127,6 +127,12 @@ impl Surface {
             .map(|held| held.slot)
     }
 
+    /// The slot the grasp is down on, whether or not it has travelled.
+    #[must_use]
+    pub fn seized_slot(&self) -> Option<usize> {
+        self.grasp.seized().map(|held| held.slot)
+    }
+
     /// The attended mote's placard, or `None` until attention has been held
     /// long enough.
     #[must_use]
@@ -137,7 +143,7 @@ impl Surface {
     /// A mote's style with no attention on it.
     #[must_use]
     pub const fn resting_style(&self, spec: &MoteSpec) -> Style {
-        self.style(spec.role, Attention::Idle)
+        self.style(spec.role, Attention::Idle, spec.active)
     }
 
     /// Turns to `page`, settled against what the collection actually has by
@@ -241,7 +247,7 @@ impl Surface {
             self.views.push(SlotView {
                 position,
                 radius: presentation.radius,
-                style: self.style(spec.role, attention),
+                style: self.style(spec.role, attention, spec.active),
                 role: spec.role,
                 attention,
                 pips: presentation.pips,
@@ -307,7 +313,7 @@ impl Surface {
         })
     }
 
-    const fn style(&self, role: Role, attention: Attention) -> Style {
+    const fn style(&self, role: Role, attention: Attention, active: bool) -> Style {
         let color = match role {
             Role::Parent { .. } if !attention.is_active() => self.palette.dim,
             Role::Item { .. } => self.palette.item(attention, role.is_source()),
@@ -317,11 +323,13 @@ impl Surface {
             color,
             alpha: match role {
                 Role::Group { .. } => self.palette.glass(attention),
-                Role::Action | Role::Item { .. } | Role::Cast | Role::Parent { .. } => {
-                    self.palette.solid_alpha
-                }
+                Role::Action
+                | Role::Toggle
+                | Role::Item { .. }
+                | Role::Cast
+                | Role::Parent { .. } => self.palette.solid_alpha,
             },
-            emissive: self.palette.emissive(attention),
+            emissive: self.palette.emissive_lit(attention, active),
         }
     }
 }
@@ -357,6 +365,8 @@ mod tests {
             role,
             label: SmolStr::new_static("Citrus"),
             description: None,
+            active: false,
+            icon: false,
         }
     }
 
@@ -365,6 +375,8 @@ mod tests {
             role:        Role::Action,
             label:       SmolStr::new(label),
             description: None,
+            active:      false,
+            icon:        false,
         }
     }
 

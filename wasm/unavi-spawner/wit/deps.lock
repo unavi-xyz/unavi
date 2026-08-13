@@ -1,13 +1,13 @@
-[unavi-gauntlet-tool]
-path = "../../unavi-gauntlet-tool/wit"
-sha256 = "4a2041d9cd37869ec20d0183b57af49455738864a85dc434e6d7af864d5aaa36"
-sha512 = "fb7c4b47325c4fa0ac68484e9927555172bf4ad4ac9dbbcb87a794dec6882e3207f93d6f25fb9e7ebad18e2208cbeed38974b516dbf11a28d3d1ece868477649"
-deps = ["wired-error"]
-
 [unavi-shapes]
 path = "../../unavi-shapes/wit"
 sha256 = "1ed7f1a7952c8cdb22ef1d311cda0c887566d55b0322175e75773d32a5977e0e"
 sha512 = "aacf2aad8e90734fa82cd1093ee2c594608c7cc6da2418699fc6428be3350caf9f8485b47697badfff9b38f01d0dcb12e3a1f4c1bfc450887f016763308f39e9"
+deps = ["wired-error"]
+
+[unavi-tool]
+path = "../../unavi-tool/wit"
+sha256 = "4ad1c2fd7f69269e827f410caae4939f43bc5fc6d1f2c08e486ccd931294ee4c"
+sha512 = "91804f9f367cb8609cb96ddc437bf665ea7a7d4a3dd83511caa551a0e35d43ea0eece4d0693b7106a35330998b439d887aff297dd2b40a1f5f0a183e14f69d04"
 deps = ["wired-error"]
 
 [wired-agent]

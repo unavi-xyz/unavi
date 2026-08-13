@@ -75,6 +75,14 @@ impl GuestMote for Mote {
         });
     }
 
+    fn active(&self) -> bool {
+        self.0.is_active()
+    }
+
+    fn set_active(&self, value: bool) {
+        self.0.set_active(value);
+    }
+
     fn parent(&self) -> Option<Handle> {
         self.0.parent().map(handle)
     }
@@ -105,6 +113,7 @@ pub fn handle(mote: tree::Mote) -> Handle {
 const fn held(kind: Kind) -> tree::Kind {
     match kind {
         Kind::Action => tree::Kind::Action,
+        Kind::Toggle => tree::Kind::Toggle,
         Kind::Item => tree::Kind::Item,
         Kind::Cast => tree::Kind::Cast,
         Kind::Group => tree::Kind::Group,

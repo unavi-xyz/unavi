@@ -23,8 +23,11 @@ pub enum Arrange {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Role {
-    /// Fires when activated.
+    /// Fires and is done — a pulse.
     Action,
+    /// Turns on, and off again when it is next chosen. Whether it *is* on is
+    /// [`MoteSpec::active`], since that outlives any one activation.
+    Toggle,
     /// Can be pulled out of the orbit and placed. `unique` marks the one of
     /// its thing rather than a source of them.
     Item { unique: bool },
@@ -63,6 +66,12 @@ pub struct MoteSpec {
     pub label:       SmolStr,
     /// What it does, shown on the placard once attention has been held.
     pub description: Option<SmolStr>,
+    /// Whether the mote is on: a toggle, held until something clears it,
+    /// rather than the pulse an activation is.
+    pub active:      bool,
+    /// Whether the mote wears a body of its own, which is drawn where a
+    /// group's contents would otherwise be previewed.
+    pub icon:        bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -164,20 +173,25 @@ pub fn present(spec: &MoteSpec, attention: Attention, tuning: &Tuning) -> Presen
     };
     let role_scale = match spec.role {
         Role::Group { .. } => tuning.group_scale,
-        Role::Action | Role::Item { .. } | Role::Cast => tuning.action_scale,
+        Role::Action | Role::Toggle | Role::Item { .. } | Role::Cast => tuning.action_scale,
         Role::Parent { .. } => tuning.parent_scale,
     };
 
     Presentation {
         radius: tuning.mote_radius * role_scale * attention_scale,
         pips:   match spec.role {
+            // A shell holds one thing inside it. An icon says what the mote
+            // *is*, contents say what it holds, and drawn together in the same
+            // small volume they land on top of each other and neither reads —
+            // so the icon wins, being the more specific of the two.
+            Role::Group { .. } if spec.icon => Pips::NONE,
             Role::Group {
                 children,
                 groups,
                 arrange,
             } => contents(children, groups, arrange, tuning),
             Role::Parent { depth } => depth_marks(depth, tuning),
-            Role::Action | Role::Item { .. } | Role::Cast => Pips::NONE,
+            Role::Action | Role::Toggle | Role::Item { .. } | Role::Cast => Pips::NONE,
         },
     }
 }
@@ -195,6 +209,8 @@ mod tests {
             role,
             label: SmolStr::new_static("test"),
             description: None,
+            active: false,
+            icon: false,
         }
     }
 

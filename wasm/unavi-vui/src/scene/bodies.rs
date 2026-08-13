@@ -162,6 +162,10 @@ pub struct Bodies {
     capacity: usize,
     unit:     mesh::MeshData,
     placard:  Placard,
+    /// Whether the surface is up. A dismissed one keeps every prim — the
+    /// meshes are paid for once, and a summon that re-uploaded them would
+    /// spend a `Flow::BlobUpload` per body every time.
+    shown:    Cell<bool>,
 }
 
 impl Bodies {
@@ -197,6 +201,7 @@ impl Bodies {
             capacity,
             unit: mesh::sphere(1.0, SPHERE_RINGS, SPHERE_SEGMENTS),
             placard,
+            shown: Cell::new(true),
         })
     }
 
@@ -266,6 +271,19 @@ impl Bodies {
         &self.root
     }
 
+    /// Puts the surface up or takes it down. A surface that is down is not a
+    /// wall you cannot see: its collider goes with it.
+    pub fn show(&self, shown: bool) -> anyhow::Result<()> {
+        if self.shown.replace(shown) == shown {
+            return Ok(());
+        }
+        self.field.set_collider(shown.then_some(self.surface))?;
+        if !shown {
+            self.root.set_xform(Some(draw::hidden()))?;
+        }
+        Ok(())
+    }
+
     pub fn poll(&self) -> Vec<Signal> {
         let mut signals = Vec::new();
         while let Some(event) = self.input.poll() {
@@ -313,7 +331,8 @@ impl Bodies {
             // would never re-apply ours.
             prims.root.set_gravity_scale(1.0)?;
         }
-        self.field.set_collider(Some(self.surface))?;
+        self.field
+            .set_collider(self.shown.get().then_some(self.surface))?;
         Ok(())
     }
 
@@ -522,16 +541,20 @@ impl Bodies {
 
         let visible = draw::placed(Vec3::ZERO, view.radius);
         // The pips are unit-space and scaled by the body; the marker's mesh is
-        // centred, so its own offset is scaled the same way by hand.
-        let at = Vec3::from_array(mesh::overflow_at(arrange, total, spread));
-        let marker = draw::placed(at * view.radius, view.radius);
+        // centred, so its own offset is scaled the same way by hand. Asked for
+        // only when there is a marker: an empty level has no cell after its
+        // last pip.
+        let marker = view.pips.overflow.then(|| {
+            let at = Vec3::from_array(mesh::overflow_at(arrange, total, spread));
+            draw::placed(at * view.radius, view.radius)
+        });
 
-        for (prim, shown, placed) in [
-            (&slot.nested, groups > 0, visible),
-            (&slot.plain, view.pips.count > groups, visible),
-            (&slot.overflow, view.pips.overflow, marker),
+        for (prim, placed) in [
+            (&slot.nested, (groups > 0).then_some(visible)),
+            (&slot.plain, (view.pips.count > groups).then_some(visible)),
+            (&slot.overflow, marker),
         ] {
-            prim.set_xform(Some(if shown { placed } else { draw::hidden() }))?;
+            prim.set_xform(Some(placed.unwrap_or_else(draw::hidden)))?;
         }
         Ok(())
     }

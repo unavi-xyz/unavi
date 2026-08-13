@@ -61,6 +61,18 @@ fn drain(surface: SurfaceId) -> Vec<Event> {
     })
 }
 
+fn summon(surface: SurfaceId) -> Result<(), Error> {
+    drive(|vui| vui.summon(surface))
+}
+
+fn dismiss(surface: SurfaceId) -> Result<(), Error> {
+    drive(|vui| vui.dismiss(surface))
+}
+
+fn shown(surface: SurfaceId) -> bool {
+    VUI.with_borrow(|vui| vui.as_ref().is_some_and(|vui| vui.is_shown(surface)))
+}
+
 /// Driving before anything is put up is not an error: there is nothing drawn
 /// to step.
 fn drive(step: impl FnOnce(&mut Vui) -> anyhow::Result<()>) -> Result<(), Error> {

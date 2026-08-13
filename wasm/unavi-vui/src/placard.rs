@@ -65,6 +65,7 @@ const fn kind(role: Role) -> &'static str {
         Role::Item { unique: true } => "item",
         Role::Item { unique: false } => "source",
         Role::Action => "action",
+        Role::Toggle => "toggle",
     }
 }
 
@@ -257,6 +258,8 @@ mod tests {
             role,
             label: SmolStr::new_static("Citrus"),
             description: Some(SmolStr::new_static("Sharp and bright")),
+            active: false,
+            icon: false,
         }
     }
 

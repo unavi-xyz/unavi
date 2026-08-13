@@ -6,7 +6,7 @@ use wired_prelude::{
 };
 
 use crate::{
-    exports::unavi::gauntlet_tool::api::{
+    exports::unavi::tool::api::{
         GuestToolRegistry,
         RegisteredTool,
         ToolState,

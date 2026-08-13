@@ -14,11 +14,14 @@ interface api {
 
   /// What a mote is: how it draws, and what selecting it does.
   enum kind {
-    /// Fires when activated.
+    /// Fires and is done — a pulse.
     action,
+    /// Turns on, and off again when it is next chosen. Selecting one flips
+    /// `active`, which it then holds and draws lit until something clears it.
+    toggle,
     /// Can be pulled out and left in the room, or filed into a grid.
     item,
-    /// Opens a cast site, which fills while attention is held on it.
+    /// Opens a cast site, which fills while it is held.
     cast,
     /// Opens into its children.
     group,
@@ -74,6 +77,14 @@ interface api {
     arrange: func() -> arrange;
     set-arrange: func(value: arrange);
 
+    /// Whether a toggle is on. Anything else ignores it.
+    ///
+    /// Selecting a toggle flips this and reports `activated`, so a consumer
+    /// reads it to find the new state. Writing it sets the mote up, or turns
+    /// one off because another went on.
+    active: func() -> bool;
+    set-active: func(value: bool);
+
     parent: func() -> option<mote>;
     children: func() -> list<mote>;
 
@@ -86,17 +97,29 @@ interface api {
     clear: func();
   }
 
+  /// Which way a surface is measured off the viewer when it is placed.
+  enum bearing {
+    /// Ahead on the ground plane, standing upright however the viewer was
+    /// looking. A surface you walk up to, and one that never ends up
+    /// underfoot or overhead.
+    level,
+    /// Along the line of sight, turned to face the viewer. A surface summoned
+    /// to where the eye already is, rather than one the eye has to find.
+    sight,
+  }
+
   /// Where a surface stands, measured from the viewer at the moment it first
   /// draws. It stays there afterwards: a menu that follows you around is a
   /// menu you cannot walk up to.
   record mount {
-    /// Metres ahead of the viewer, along their facing flattened to the ground.
+    /// Metres ahead of the viewer, along whichever direction `bearing` names.
     distance: f32,
     /// Metres above the eye, usually negative so a surface sits below it.
     height: f32,
     /// Sideways and vertical shift in the mounted frame, so surfaces sharing
     /// one facing do not sit on top of each other.
     offset: vec2,
+    bearing: bearing,
   }
 
   /// Where a carried mote was let go, in the frame a document's offset is
@@ -148,6 +171,16 @@ interface api {
 
     /// Everything this orbit did since the last call.
     events: func() -> list<event>;
+
+    /// Puts it up where the viewer is standing now. A surface measures its
+    /// place once and keeps it, so this is how one comes to be somewhere
+    /// else. Everything it draws is kept, so summoning again is cheap.
+    summon: func() -> result<_, error>;
+    /// Takes it down. Nothing it drew is thrown away, and its hit surface
+    /// goes with it rather than staying as a wall you cannot see.
+    dismiss: func() -> result<_, error>;
+    /// Whether it is up.
+    shown: func() -> bool;
   }
 
   /// A bounded grid of `root`'s motes, and a destination a release over it
@@ -162,6 +195,10 @@ interface api {
     ) -> result<grid, error>;
 
     events: func() -> list<event>;
+
+    summon: func() -> result<_, error>;
+    dismiss: func() -> result<_, error>;
+    shown: func() -> bool;
   }
 
   /// Reads input and resolves what it did, for every surface at once. Call

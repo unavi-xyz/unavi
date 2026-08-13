@@ -1,5 +1,5 @@
 use crate::{
-    exports::unavi::gauntlet_tool::api::{
+    exports::unavi::tool::api::{
         GuestTool,
         ToolEvent,
         ToolState,

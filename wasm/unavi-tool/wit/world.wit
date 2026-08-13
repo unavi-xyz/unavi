@@ -1,4 +1,4 @@
-package unavi:gauntlet-tool;
+package unavi:tool;
 
 world guest {
   include wired:prelude/lib;
@@ -9,7 +9,7 @@ interface api {
   use wired:math/types.{transform};
   use wired:scene/types.{color, prim, prim-id};
 
-  // Visual state the gauntlet pushes onto a tool.
+  // Visual state the shell pushes onto a tool.
   record tool-state {
     color:  color,
     in-use: bool,
@@ -19,7 +19,7 @@ interface api {
     activate(transform),
     deactivate,
     set-state(tool-state),
-    // Primary action forwarded by the gauntlet while the menu is closed.
+    // Primary action forwarded by the shell while its menu is down.
     trigger(bool),
     // Signed scroll notches (+ in, - out).
     scroll(f32),

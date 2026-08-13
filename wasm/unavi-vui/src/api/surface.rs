@@ -1,9 +1,12 @@
 use crate::{
     api::{
         convert,
+        dismiss,
         drain,
         mote::Mote,
         put_up,
+        shown,
+        summon,
     },
     exports::unavi::vui::api::{
         Event,
@@ -30,6 +33,18 @@ impl GuestOrbit for Orbit {
     fn events(&self) -> Vec<Event> {
         drain(self.0)
     }
+
+    fn summon(&self) -> Result<(), Error> {
+        summon(self.0)
+    }
+
+    fn dismiss(&self) -> Result<(), Error> {
+        dismiss(self.0)
+    }
+
+    fn shown(&self) -> bool {
+        shown(self.0)
+    }
 }
 
 pub struct Grid(SurfaceId);
@@ -49,5 +64,17 @@ impl GuestGrid for Grid {
 
     fn events(&self) -> Vec<Event> {
         drain(self.0)
+    }
+
+    fn summon(&self) -> Result<(), Error> {
+        summon(self.0)
+    }
+
+    fn dismiss(&self) -> Result<(), Error> {
+        dismiss(self.0)
+    }
+
+    fn shown(&self) -> bool {
+        shown(self.0)
     }
 }

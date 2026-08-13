@@ -20,11 +20,13 @@ use crate::{
 /// What a mote is: how it draws, and what selecting it does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {
-    /// Fires when activated.
+    /// Fires and is done — a pulse.
     Action,
+    /// Turns on, and off again when it is next chosen.
+    Toggle,
     /// Can be pulled out and left in the room, or filed into a grid.
     Item,
-    /// Opens a cast site, which fills while attention is held on it.
+    /// Opens a cast site, which fills while it is held.
     Cast,
     /// Opens into its children, in whatever shape it is set to arrange them.
     Group,
@@ -58,6 +60,8 @@ struct Data {
     /// The shape this mote's own level takes. Meaningless on anything that
     /// holds no children.
     arrange:     Arrange,
+    /// Whether the mote is on: a toggle, not a pulse.
+    active:      bool,
     parent:      Weak<RefCell<Self>>,
     children:    Vec<Mote>,
 }
@@ -72,6 +76,7 @@ impl Mote {
             icon: None,
             unique: false,
             arrange: Arrange::Orbit,
+            active: false,
             parent: Weak::new(),
             children: Vec::new(),
         })))
@@ -191,12 +196,23 @@ impl Mote {
         self.0.borrow_mut().arrange = arrange;
     }
 
+    /// Whether the mote is on: a toggle, not a pulse.
+    #[must_use]
+    pub fn is_active(&self) -> bool {
+        self.0.borrow().active
+    }
+
+    pub fn set_active(&self, active: bool) {
+        self.0.borrow_mut().active = active;
+    }
+
     #[must_use]
     pub fn spec(&self) -> MoteSpec {
         let data = self.0.borrow();
         MoteSpec {
             role:        match data.kind {
                 Kind::Action => Role::Action,
+                Kind::Toggle => Role::Toggle,
                 Kind::Item => Role::Item {
                     unique: data.unique,
                 },
@@ -213,6 +229,8 @@ impl Mote {
             },
             label:       data.label.clone(),
             description: data.description.clone(),
+            active:      data.active,
+            icon:        data.icon.is_some(),
         }
     }
 
@@ -320,6 +338,9 @@ impl Tree {
                     return MoteSpec {
                         role: Role::Parent { depth },
                         description: Some(SmolStr::new_static("The level you are inside.")),
+                        // The way back is not a switch, whatever the mote it
+                        // stands for happens to be.
+                        active: false,
                         ..spec
                     };
                 }
@@ -356,6 +377,14 @@ impl Tree {
                 Navigation::Bloomed(child)
             }
             Kind::Cast => Navigation::Cast(child),
+            // A toggle carries its own state, so choosing it flips it before
+            // anyone is told: a consumer reads back the state it is in now
+            // rather than being handed an edge to keep track of.
+            Kind::Toggle => {
+                let on = child.is_active();
+                child.set_active(!on);
+                Navigation::Activated(child)
+            }
             Kind::Action | Kind::Item => Navigation::Activated(child),
         }
     }

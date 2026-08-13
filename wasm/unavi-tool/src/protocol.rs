@@ -7,13 +7,13 @@ use wired_prelude::{
     wired_scene::types::Color,
 };
 
-pub const CH_DISCOVER: &str = "unavi::gauntlet-tool::discover";
-pub const CH_REGISTER: &str = "unavi::gauntlet-tool::register";
-pub const CH_ACTIVATE: &str = "unavi::gauntlet-tool::activate";
-pub const CH_DEACTIVATE: &str = "unavi::gauntlet-tool::deactivate";
-pub const CH_SET_STATE: &str = "unavi::gauntlet-tool::set-state";
-pub const CH_TRIGGER: &str = "unavi::gauntlet-tool::trigger";
-pub const CH_SCROLL: &str = "unavi::gauntlet-tool::scroll";
+pub const CH_DISCOVER: &str = "unavi::tool::discover";
+pub const CH_REGISTER: &str = "unavi::tool::register";
+pub const CH_ACTIVATE: &str = "unavi::tool::activate";
+pub const CH_DEACTIVATE: &str = "unavi::tool::deactivate";
+pub const CH_SET_STATE: &str = "unavi::tool::set-state";
+pub const CH_TRIGGER: &str = "unavi::tool::trigger";
+pub const CH_SCROLL: &str = "unavi::tool::scroll";
 
 #[derive(Serialize, Deserialize)]
 pub struct RegisterPayload {

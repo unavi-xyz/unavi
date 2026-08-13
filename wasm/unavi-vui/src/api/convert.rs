@@ -1,6 +1,7 @@
 use crate::{
     api::mote::handle,
     exports::unavi::vui::api::{
+        Bearing,
         Event,
         Landing,
         Mount,
@@ -13,7 +14,13 @@ use crate::{
 };
 
 pub const fn mount(mount: Mount) -> mount::Mount {
-    mount::Mount::ahead(mount.distance, mount.height).beside(mount.offset)
+    mount::Mount {
+        bearing: match mount.bearing {
+            Bearing::Level => mount::Bearing::Level,
+            Bearing::Sight => mount::Bearing::Sight,
+        },
+        ..mount::Mount::ahead(mount.distance, mount.height).beside(mount.offset)
+    }
 }
 
 pub fn event(event: scene::Event) -> Event {

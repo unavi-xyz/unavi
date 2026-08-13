@@ -1,7 +1,7 @@
 [package]
 edition.workspace    = true
 license.workspace    = true
-name                 = "unavi-gauntlet-tool"
+name                 = "unavi-halo"
 publish              = false
 repository.workspace = true
 version.workspace    = true
@@ -14,8 +14,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 anyhow.workspace      = true
-blake3.workspace      = true
 postcard.workspace    = true
-serde                 = { features = ["derive"], workspace = true }
 wired-prelude.path    = "../wired-prelude"
 wit-bindgen.workspace = true

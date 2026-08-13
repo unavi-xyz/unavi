@@ -1,6 +1,9 @@
 use std::sync::{
     Arc,
-    atomic::AtomicBool,
+    atomic::{
+        AtomicBool,
+        Ordering,
+    },
 };
 
 use bevy::prelude::*;
@@ -55,7 +58,7 @@ impl Plugin for ScriptPlugin {
 }
 
 #[derive(Component)]
-#[require(ApiPermissions, FixedUpdating, Updating)]
+#[require(ApiPermissions, FixedUpdating, Trapped, Updating)]
 pub struct Script(pub Handle<Wasm>);
 
 #[derive(Component, Default)]
@@ -63,3 +66,26 @@ pub struct FixedUpdating(pub Arc<AtomicBool>);
 
 #[derive(Component, Default)]
 pub struct Updating(pub Arc<AtomicBool>);
+
+/// Whether this script's instance has trapped, and is therefore finished.
+///
+/// A trap leaves a component instance permanently un-enterable — every call
+/// after it fails with "cannot enter component instance" — so a trapped script
+/// is driven no further. Shared rather than a plain flag because the tick that
+/// discovers the trap runs off the world.
+#[derive(Component, Default)]
+pub struct Trapped(pub Arc<AtomicBool>);
+
+impl Trapped {
+    /// Records the trap, answering whether this was the one that found it —
+    /// so the failure is reported once rather than every frame forever.
+    #[must_use]
+    pub fn set(&self) -> bool {
+        !self.0.swap(true, Ordering::SeqCst)
+    }
+
+    #[must_use]
+    pub fn get(&self) -> bool {
+        self.0.load(Ordering::SeqCst)
+    }
+}

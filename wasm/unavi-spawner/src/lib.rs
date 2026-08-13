@@ -11,11 +11,11 @@ use wired_prelude::prelude::*;
 use crate::{
     preview::Preview,
     unavi::{
-        gauntlet_tool::api::{
+        shapes::api::Cuboid,
+        tool::api::{
             Tool,
             ToolEvent,
         },
-        shapes::api::Cuboid,
     },
     wired::{
         agent::api::local_camera,

@@ -16,7 +16,7 @@ use unavi_script::{
     quota::QuotaExempt,
 };
 
-const GAUNTLET_HSD: &str = "hsd/unavi_gauntlet.hsdz";
+const SHELL_HSD: &str = "hsd/unavi_halo.hsdz";
 const TOOL_HSDS: &[&str] = &["hsd/unavi_spawner.hsdz", "hsd/unavi_physgun.hsdz"];
 
 /// Updates the firewall with the record IDs of provided entities, once they
@@ -42,12 +42,12 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
         tool_ents.push(ent);
     }
 
-    let gauntlet_ent = {
+    let shell_ent = {
         let mut fw = HashMap::new();
         for ent in &tool_ents {
             fw.insert(*ent, vec![Channel::EventRead, Channel::EventWrite]);
         }
-        let handle = asset_server.load(GAUNTLET_HSD);
+        let handle = asset_server.load(SHELL_HSD);
         commands
             .spawn((
                 LoadHsd {
@@ -64,7 +64,7 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
     for tool_ent in tool_ents {
         let mut fw = HashMap::new();
         fw.insert(
-            gauntlet_ent,
+            shell_ent,
             vec![
                 Channel::EventRead,
                 Channel::EventWrite,

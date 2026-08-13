@@ -58,7 +58,13 @@ pub fn cluster(
 
 /// Where pip `index` of `total` sits, in the shape the level it previews will
 /// open into.
+///
+/// An empty level is asked where its first cell would be — a group that opens
+/// as a grid holds nothing until a registry listing or a tool's library
+/// answers, and it is drawn every frame until then. One is the smallest
+/// arrangement that has a position at all.
 fn pip_position(index: usize, total: usize, arrange: Arrange, spread: f32) -> [f32; 3] {
+    let total = total.max(1);
     match arrange {
         Arrange::Orbit => {
             let angle = TAU * index as f32 / total as f32;
@@ -194,6 +200,32 @@ mod tests {
 
     fn vertex_count(mesh: &MeshData) -> usize {
         mesh.positions.len() / 3
+    }
+
+    #[test]
+    fn an_empty_grid_still_answers_where_its_first_cell_is() {
+        // A group that opens as a grid is empty until whatever fills it
+        // answers — a registry listing, a tool's library — and it is drawn
+        // every frame in the meantime.
+        for arrange in [Arrange::Grid, Arrange::Orbit] {
+            assert!(
+                overflow_at(arrange, 0, SPREAD)
+                    .iter()
+                    .all(|axis| axis.is_finite()),
+                "an empty level must answer with a place, not a panic or a NaN"
+            );
+        }
+    }
+
+    #[test]
+    fn an_empty_level_draws_no_pips() {
+        let mesh = cluster(0, 0, 0, Arrange::Grid, SPREAD, RADIUS);
+        assert_well_formed(&mesh);
+        assert_eq!(
+            mesh.positions.iter().filter(|p| **p != 0.0).count(),
+            0,
+            "every body collapses to the origin at zero radius"
+        );
     }
 
     #[test]

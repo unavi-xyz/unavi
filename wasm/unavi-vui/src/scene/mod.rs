@@ -58,6 +58,9 @@ pub(crate) trait Mounted {
     fn place(&mut self, anchor: &Transform) -> anyhow::Result<()>;
     fn field_lift(&self) -> f32;
 
+    /// Puts the surface up or takes it down, keeping its prims either way.
+    fn show(&mut self, shown: bool) -> anyhow::Result<()>;
+
     /// Steps and draws. Call from the script's `update`, where animation
     /// belongs — pinning it to the fixed rate makes motion step.
     fn update(
@@ -96,6 +99,9 @@ pub struct Vui {
     palette:  Palette,
     shapes:   Vec<Box<dyn Mounted>>,
     anchors:  Vec<Option<Transform>>,
+    /// Whether each surface is up. A summon clears the anchor beside it, so
+    /// the surface re-measures from where the viewer is standing now.
+    shown:    Vec<bool>,
     events:   Vec<Vec<Event>>,
     drawn_at: SystemTime,
 }
@@ -109,6 +115,7 @@ impl Vui {
             palette,
             shapes: Vec::new(),
             anchors: Vec::new(),
+            shown: Vec::new(),
             events: Vec::new(),
             drawn_at: SystemTime::now(),
         })
@@ -151,8 +158,39 @@ impl Vui {
     fn push(&mut self, shape: Box<dyn Mounted>) -> SurfaceId {
         self.shapes.push(shape);
         self.anchors.push(None);
+        self.shown.push(true);
         self.events.push(Vec::new());
         SurfaceId(self.shapes.len() - 1)
+    }
+
+    /// Puts a surface up where the viewer is standing now.
+    ///
+    /// Re-anchoring rather than taking the surface down and putting a new one
+    /// up: every body it draws is already uploaded, and a mesh write costs a
+    /// `Flow::BlobUpload` whatever its size.
+    pub fn summon(&mut self, surface: SurfaceId) -> anyhow::Result<()> {
+        let Some(shape) = self.shapes.get_mut(surface.0) else {
+            return Ok(());
+        };
+        shape.show(true)?;
+        self.anchors[surface.0] = None;
+        self.shown[surface.0] = true;
+        Ok(())
+    }
+
+    /// Takes a surface down, keeping its prims.
+    pub fn dismiss(&mut self, surface: SurfaceId) -> anyhow::Result<()> {
+        let Some(shape) = self.shapes.get_mut(surface.0) else {
+            return Ok(());
+        };
+        shape.show(false)?;
+        self.shown[surface.0] = false;
+        Ok(())
+    }
+
+    #[must_use]
+    pub fn is_shown(&self, surface: SurfaceId) -> bool {
+        self.shown.get(surface.0).copied().unwrap_or(false)
     }
 
     /// Everything a surface did since the last call.
@@ -180,6 +218,9 @@ impl Vui {
         };
 
         for index in 0..self.shapes.len() {
+            if !self.shown[index] {
+                continue;
+            }
             let anchor = self.anchor(index, &eye)?;
             let result = self.shapes[index].fixed_update(&eye, anchor)?;
             self.report(index, result.events);
@@ -201,6 +242,9 @@ impl Vui {
         };
 
         for index in 0..self.shapes.len() {
+            if !self.shown[index] {
+                continue;
+            }
             let anchor = self.anchor(index, &eye)?;
             let events = self.shapes[index].update(&eye, anchor, delta)?;
             self.report(index, events);
@@ -236,7 +280,7 @@ impl Vui {
     /// The grid the pointer is over, which files rather than plants.
     fn filed_into(&self, eye: &Transform) -> Option<usize> {
         self.shapes.iter().enumerate().find_map(|(index, shape)| {
-            let anchor = self.anchors[index]?;
+            let anchor = self.shown[index].then(|| self.anchors[index])??;
             pointer::aim(eye, &anchor, shape.field_lift())
                 .filter(|aim| shape.accepts(aim.local))
                 .map(|_| index)
@@ -253,8 +297,13 @@ pub(crate) fn open_cast(casting: &mut Option<Casting>, slot: usize, mote: Mote, 
     });
 }
 
-/// Fills the open cast site while attention stays on the mote that opened it,
-/// and aborts the moment it leaves.
+/// Fills the open cast site while the grasp stays down on the mote that opened
+/// it, and aborts the moment it lets go.
+///
+/// The hold is the confirmation, so it is the grasp that fills the ring rather
+/// than attention. Filling on attention made a cast fire from a single click:
+/// the pointer is still on the mote it just pressed, so the ring filled with
+/// no further input and the hold was decorative.
 pub(crate) fn drive_cast(
     casting: &mut Option<Casting>,
     surface: &Surface,
@@ -266,7 +315,7 @@ pub(crate) fn drive_cast(
         return Ok(());
     };
 
-    let held = surface.attended() == Some(active.slot);
+    let held = surface.seized_slot() == Some(active.slot);
     let cast = active.circle.update(held, delta);
     let at = surface
         .views()

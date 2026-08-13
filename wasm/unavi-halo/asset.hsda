@@ -1,7 +1,7 @@
 [
     (
         attributes: (
-            name: "gauntlet",
+            name: "halo",
             script: "./Cargo.toml",
         ),
         relationships: {},

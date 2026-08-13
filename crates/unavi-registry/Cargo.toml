@@ -13,11 +13,11 @@ workspace = true
 anyhow.workspace    = true
 futures.workspace   = true
 iroh.workspace      = true
-irpc                = { default-features = false, version = "0.17.0" }
-irpc-iroh           = "0.17.0"
+irpc.workspace      = true
+irpc-iroh.workspace = true
 n0-future.workspace = true
 postcard.workspace  = true
-scc                 = "3.6.12"
+scc.workspace       = true
 serde.workspace     = true
 smol_str.workspace  = true
 thiserror.workspace = true

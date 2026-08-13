@@ -8,13 +8,12 @@ use tracing::Level;
 
 #[derive(Parser, Debug)]
 #[command(version)]
-#[allow(clippy::struct_excessive_bools)]
 struct Args {
     /// Enable debug logging.
     #[arg(long, default_value_t = false)]
     debug_log: bool,
 
-    /// Runs certain functions, like the local WDS, in-memory.
+    /// Keeps the identity key and WDS store in-memory.
     /// Useful for running multiple clients on the same machine.
     #[arg(long, default_value_t = false)]
     in_memory: bool,

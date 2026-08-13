@@ -18,5 +18,5 @@ thiserror.workspace = true
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
-naga                           = { default-features = false, features = ["wgsl-in"], version = "29.0.4" }
-notosans                       = { version = "0.1.0" }
+naga.workspace                 = true
+notosans.workspace             = true

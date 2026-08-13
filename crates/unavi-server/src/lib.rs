@@ -101,12 +101,14 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let endpoint = Endpoint::builder(N0).bind().await?;
 
-    let path = DIRS.data_local_dir().join("wds");
-    let (store, f) = DataStore::builder(endpoint.clone())
-        .storage_path(path)
-        .gc_timer(Duration::from_mins(15))
-        .build()
-        .await?;
+    let builder = DataStore::builder(endpoint.clone()).gc_timer(Duration::from_mins(15));
+    let builder = if opts.in_memory {
+        builder
+    } else {
+        builder.storage_path(DIRS.data_local_dir().join("wds"))
+    };
+
+    let (store, f) = builder.build().await?;
     let store = Arc::new(store);
 
     if let Err(err) = files::init_files_dir() {

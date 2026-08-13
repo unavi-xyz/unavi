@@ -17,8 +17,8 @@ derive_more           = { features = ["debug"], version = "2.1.1" }
 futures.workspace     = true
 iroh.workspace        = true
 iroh-gossip           = { features = ["net"], workspace = true }
-irpc                  = { default-features = false, version = "0.17.0" }
-irpc-iroh             = "0.17.0"
+irpc.workspace        = true
+irpc-iroh.workspace   = true
 jose-jwk              = "0.1.2"
 n0-future.workspace   = true
 p256                  = { default-features = false, features = ["ecdsa"], version = "0.13.2" }
@@ -27,7 +27,7 @@ parking_lot.workspace = true
 postcard.workspace    = true
 rand.workspace        = true
 rusqlite              = { features = ["bundled"], version = "0.39.0" }
-scc                   = "3.6.12"
+scc.workspace         = true
 serde.workspace       = true
 signature             = "2.2.0"
 thiserror.workspace   = true
@@ -51,4 +51,4 @@ tokio            = { features = ["macros", "rt-multi-thread"], workspace = true 
 tracing-test     = { features = ["no-env-filter"], workspace = true }
 
 [dev-dependencies]
-serde_json = "1.0.151"
+serde_json.workspace = true

@@ -54,10 +54,16 @@ use xdid::{
     },
 };
 
+use crate::InMemory;
+
 const RETRY_DELAY: Duration = Duration::from_secs(4);
 const MAX_RETRY_DELAY: Duration = Duration::from_mins(1);
 
-pub fn spawn_actors(trigger: On<Add, IrohEndpoint>, endpoints: Query<&IrohEndpoint>) {
+pub fn spawn_actors(
+    trigger: On<Add, IrohEndpoint>,
+    endpoints: Query<&IrohEndpoint>,
+    in_memory: Res<InMemory>,
+) {
     let entity = trigger.entity;
 
     let endpoint = endpoints
@@ -65,11 +71,13 @@ pub fn spawn_actors(trigger: On<Add, IrohEndpoint>, endpoints: Query<&IrohEndpoi
         .map(|e| e.0.clone())
         .expect("endpoint");
 
+    let in_memory = *in_memory;
+
     spawn_async_task(async move {
         let mut delay_secs = 4;
 
         loop {
-            if let Err(err) = load_store(endpoint.clone(), entity).await {
+            if let Err(err) = load_store(endpoint.clone(), entity, in_memory).await {
                 error!(?err, "Failed to load data store");
                 n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
                 delay_secs = delay_secs.wrapping_mul(2);
@@ -84,9 +92,12 @@ pub fn spawn_actors(trigger: On<Add, IrohEndpoint>, endpoints: Query<&IrohEndpoi
     });
 }
 
-async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
-    // TODO load identity from disk / browser storage
-    let signing_key = P256KeyPair::generate();
+async fn load_store(
+    endpoint: Endpoint,
+    entity: Entity,
+    InMemory(in_memory): InMemory,
+) -> anyhow::Result<()> {
+    let signing_key = signing_key(in_memory);
     let did = signing_key.public().to_did();
     let identity = Arc::new(Identity::new(did, signing_key));
 
@@ -95,7 +106,11 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
     // Wasm has no filesystem to back a store with, so it stays in memory and
     // refetches content each session.
     #[cfg(not(target_family = "wasm"))]
-    let builder = builder.storage_path(unavi_util::dirs::data_local_dir().join("wds"));
+    let builder = if in_memory {
+        builder
+    } else {
+        builder.storage_path(unavi_util::dirs::data_local_dir().join("wds"))
+    };
 
     let (store, f) = builder.build().await?;
     let store = Arc::new(store);
@@ -136,6 +151,29 @@ async fn load_store(endpoint: Endpoint, entity: Entity) -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(target_family = "wasm")]
+fn signing_key(_in_memory: bool) -> P256KeyPair {
+    P256KeyPair::generate()
+}
+
+/// An unreadable key file is left in place and the session runs under a
+/// generated identity, since retrying a load that fails deterministically would
+/// leave the client with no store at all.
+#[cfg(not(target_family = "wasm"))]
+fn signing_key(in_memory: bool) -> P256KeyPair {
+    if in_memory {
+        return P256KeyPair::generate();
+    }
+
+    match crate::key_pair::get_or_create_key(unavi_util::dirs::data_local_dir()) {
+        Ok(pair) => pair,
+        Err(err) => {
+            error!(?err, "failed to load identity key; using an ephemeral one");
+            P256KeyPair::generate()
+        }
+    }
 }
 
 /// Builds a client per followed registry, syncs each one's view docs locally,

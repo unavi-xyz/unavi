@@ -14209,10 +14209,12 @@ dependencies = [
  "bevy-wds",
  "iroh",
  "n0-future",
+ "tempfile",
  "unavi-registry",
  "unavi-util",
  "wds",
  "xdid",
+ "zeroize",
 ]
 
 [[package]]

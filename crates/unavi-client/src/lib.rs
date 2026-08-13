@@ -90,7 +90,9 @@ impl Plugin for UnaviPlugin {
             bevy_wds::WdsPlugin,
             unavi_agent::AgentPlugin,
             unavi_avatar::AvatarPlugin,
-            unavi_identity::IdentityPlugin,
+            unavi_identity::IdentityPlugin {
+                in_memory: self.in_memory,
+            },
             unavi_input::InputPlugin,
             unavi_manifold::ManifoldPlugin,
             unavi_script::ScriptPlugin,

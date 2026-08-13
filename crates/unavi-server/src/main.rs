@@ -16,10 +16,15 @@ use unavi_server::{
 
 #[derive(Parser, Debug)]
 #[command(version)]
+#[expect(clippy::struct_excessive_bools, reason = "one field per CLI flag")]
 struct Args {
     /// Enable debug logging.
     #[arg(long, default_value_t = false)]
     debug:       bool,
+    /// Keeps the identity key and WDS store in-memory.
+    /// Useful for running multiple servers on the same machine.
+    #[arg(long, default_value_t = false)]
+    in_memory:   bool,
     #[arg(short, long, default_value_t = 5000)]
     port:        u16,
     /// Do not serve discovery: catalog, curated views, and live presence.
@@ -59,7 +64,7 @@ async fn main() {
             registry: !args.no_registry,
             wds:      !args.no_wds,
         },
-        in_memory: false,
+        in_memory: args.in_memory,
         port:      args.port,
     })
     .await

@@ -35,8 +35,8 @@ wds.path                = "../wds"
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
 iroh-blobs.workspace           = true
-naga                           = { default-features = false, features = ["wgsl-in"], version = "29.0.4" }
-notosans                       = { version = "0.1.0" }
+naga.workspace                 = true
+notosans.workspace             = true
 rstest.workspace               = true
 tracing.workspace              = true
 tracing-test                   = { features = ["no-env-filter"], workspace = true }

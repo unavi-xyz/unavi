@@ -6,6 +6,7 @@ use crate::{
         Attention,
         Tracker,
     },
+    bloom::Bloom,
     grasp::{
         Grasp,
         Outcome,
@@ -40,6 +41,7 @@ use crate::{
 pub struct Surface {
     tuning:   Tuning,
     palette:  Palette,
+    bloom:    Bloom,
     tracker:  Tracker,
     grasp:    Grasp,
     lean:     Vec<Vec3>,
@@ -59,6 +61,7 @@ impl Surface {
         Self {
             tuning,
             palette,
+            bloom: Bloom::ARRIVING,
             tracker: Tracker::new(),
             grasp: Grasp::new(),
             lean: vec![Vec3::ZERO; capacity],
@@ -133,6 +136,18 @@ impl Surface {
         self.grasp.seized().map(|held| held.slot)
     }
 
+    /// Starts the surface arriving, or sends it away.
+    pub const fn set_open(&mut self, open: bool) {
+        self.bloom.set_open(open);
+    }
+
+    /// Whether anything is still drawn. A surface that has finished going away
+    /// needs no more frames.
+    #[must_use]
+    pub fn is_visible(&self) -> bool {
+        self.bloom.is_visible()
+    }
+
     /// The attended mote's placard, or `None` until attention has been held
     /// long enough.
     #[must_use]
@@ -192,12 +207,19 @@ impl Surface {
     ///
     /// Anything past one page's worth paginates rather than being dropped.
     pub fn update(&mut self, specs: &[MoteSpec], layout: Layout, pinned: usize, frame: &Frame) {
+        self.bloom.update(frame.delta, &self.tuning);
         self.repage(specs.len(), layout, pinned);
         self.collect(specs);
 
         // A mote in hand holds attention; nothing else is a drop target.
         let dragging = self.grasp.seized().is_some_and(|held| held.takeable);
-        if dragging {
+        if !self.bloom.is_open() {
+            // Nothing on its way out is attending anything. Its slots collapse
+            // to the anchor but the placard hangs off the surface rather than
+            // off a slot, so it would otherwise be left full-size over the
+            // point the surface vanished into.
+            self.tracker.update(None, frame.delta);
+        } else if dragging {
             self.tracker
                 .update(self.grasp.seized().map(|held| held.slot), frame.delta);
         } else {
@@ -235,11 +257,13 @@ impl Surface {
             self.lean[slot] =
                 assist::approach(self.lean[slot], target, self.tuning.lean_speed, frame.delta);
 
+            // A carried mote is where the hand is, and nothing about the form
+            // arriving or leaving should drag it off the pointer.
             let position = match (is_seized && dragging, frame.hand) {
                 (true, Some(hand)) => {
                     frame.anchor.rotation.inverse() * (hand - frame.anchor.translation)
                 }
-                _ => local + self.lean[slot],
+                _ => (local + self.lean[slot]) * self.bloom.form(),
             };
 
             let presentation = mote::present(spec, attention, &self.tuning);
@@ -258,6 +282,11 @@ impl Surface {
                     self.tuning.label_lift,
                 ),
                 label_size: self.tuning.label_size,
+                bloom: if is_seized && dragging {
+                    1.0
+                } else {
+                    self.bloom.slot(slot, self.drawn.len(), &self.tuning)
+                },
             });
         }
 

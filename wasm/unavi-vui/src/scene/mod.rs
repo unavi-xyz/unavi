@@ -61,6 +61,10 @@ pub(crate) trait Mounted {
     /// Puts the surface up or takes it down, keeping its prims either way.
     fn show(&mut self, shown: bool) -> anyhow::Result<()>;
 
+    /// Whether anything of it is still drawn. A surface sent away keeps being
+    /// stepped until it has finished leaving.
+    fn is_visible(&self) -> bool;
+
     /// Steps and draws. Call from the script's `update`, where animation
     /// belongs — pinning it to the fixed rate makes motion step.
     fn update(
@@ -218,7 +222,8 @@ impl Vui {
         };
 
         for index in 0..self.shapes.len() {
-            if !self.shown[index] {
+            // A surface sent away is stepped until it has finished leaving.
+            if !self.shown[index] && !self.shapes[index].is_visible() {
                 continue;
             }
             let anchor = self.anchor(index, &eye)?;
@@ -242,7 +247,8 @@ impl Vui {
         };
 
         for index in 0..self.shapes.len() {
-            if !self.shown[index] {
+            // A surface sent away is stepped until it has finished leaving.
+            if !self.shown[index] && !self.shapes[index].is_visible() {
                 continue;
             }
             let anchor = self.anchor(index, &eye)?;

@@ -26,15 +26,18 @@ interface api {
   }
 
   resource tool {
+    // `description` says what the tool does, in one line, for the shell to
+    // show beside its name; the shell explains how to hold one itself.
     // `icon` is a prim carrying a `mesh` attribute, rendered as the tool's
-    // wheel icon.
-    constructor(name: string, icon: borrow<prim>);
+    // icon.
+    constructor(name: string, description: string, icon: borrow<prim>);
     poll: func() -> option<tool-event>;
   }
 
   record registered-tool {
     doc-id:       list<u8>,
     name:         string,
+    description:  string,
     icon-prim-id: prim-id,
   }
 

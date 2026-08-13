@@ -8,7 +8,7 @@
 use wired_prelude::prelude::*;
 
 pub const HOME: Color = rgb(0.96, 0.20, 0.16);
-pub const PLACES: Color = rgb(0.42, 0.90, 0.44);
+pub const NAV: Color = rgb(0.42, 0.90, 0.44);
 pub const TOOLS: Color = rgb(0.24, 0.72, 1.0);
 
 /// A colour per tool, so two tools are told apart before either is read.

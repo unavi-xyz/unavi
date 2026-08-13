@@ -112,7 +112,12 @@ impl Mounted for Grid {
     }
 
     fn show(&mut self, shown: bool) -> anyhow::Result<()> {
+        self.surface.set_open(shown);
         self.bodies.show(shown)
+    }
+
+    fn is_visible(&self) -> bool {
+        self.surface.is_visible()
     }
 
     fn update(

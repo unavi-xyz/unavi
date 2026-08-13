@@ -337,7 +337,7 @@ impl Tree {
                 if depth > 0 && slot == 0 {
                     return MoteSpec {
                         role: Role::Parent { depth },
-                        description: Some(SmolStr::new_static("The level you are inside.")),
+                        description: Some(SmolStr::new_static("Go back out.")),
                         // The way back is not a switch, whatever the mote it
                         // stands for happens to be.
                         active: false,

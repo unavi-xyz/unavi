@@ -37,6 +37,9 @@ pub struct SlotView {
     /// the spec, not from this view.
     pub label_offset: Vec3,
     pub label_size:   f32,
+    /// How far this mote has arrived, scaling everything drawn for it. The
+    /// form's own drawing-in is already in [`SlotView::position`].
+    pub bloom:        f32,
 }
 
 /// Which window of an oversized level is currently drawn.

@@ -18,6 +18,7 @@ pub const CH_SCROLL: &str = "unavi::tool::scroll";
 #[derive(Serialize, Deserialize)]
 pub struct RegisterPayload {
     pub name:         String,
+    pub description:  String,
     pub icon_prim_id: String,
 }
 

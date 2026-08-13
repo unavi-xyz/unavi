@@ -90,6 +90,7 @@ impl GuestToolRegistry for ToolRegistry {
                 results.push(RegisteredTool {
                     doc_id:       event.sender().document,
                     name:         p.name,
+                    description:  p.description,
                     icon_prim_id: p.icon_prim_id,
                 });
             } else {

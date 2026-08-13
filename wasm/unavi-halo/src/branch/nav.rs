@@ -1,4 +1,4 @@
-//! Places: outward, the world.
+//! Nav: the spaces you can go to.
 //!
 //! A level that opens as a grid, so the listing gets pagination, attention and
 //! placards for free.
@@ -52,13 +52,13 @@ struct Space {
 
 /// Lists the spaces currently occupied per the registries this client follows.
 #[derive(Default)]
-pub struct Places {
+pub struct Nav {
     lists:   Vec<ListFuture>,
     spaces:  Vec<Space>,
     beacons: Vec<Document>,
 }
 
-impl Places {
+impl Nav {
     /// Asks every registry what is live. Called when the branch opens, so a
     /// halo that is never opened costs nothing.
     pub fn refresh(&mut self) {
@@ -174,10 +174,10 @@ fn build(listing: &Listing) -> Option<Space> {
     group.describe(&describe(listing));
 
     let travel = Mote::new(Kind::Cast, "Travel");
-    travel.describe("Go there. Hold to confirm.");
+    travel.describe("Go to this space.");
 
     let beacon = Mote::new(Kind::Item, "Beacon");
-    beacon.describe("Put a marker for this space down in the room.");
+    beacon.describe("A marker you can drop here.");
 
     group.add_child(&travel);
     group.add_child(&beacon);

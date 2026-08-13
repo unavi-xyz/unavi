@@ -72,7 +72,11 @@ impl ScriptBehavior for Script {
         }))?;
 
         Ok(Self {
-            tool:    Tool::new("Spawner", &icon),
+            tool:    Tool::new(
+                "Spawner",
+                "Puts a cube down on whatever you point at.",
+                &icon,
+            ),
             preview: Preview::new(),
             camera:  RefCell::new(None),
             active:  Cell::new(false),

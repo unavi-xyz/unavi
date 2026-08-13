@@ -80,7 +80,11 @@ impl ScriptBehavior for Script {
         }))?;
 
         Ok(Self {
-            tool:    Tool::new("Physgun", &icon),
+            tool:    Tool::new(
+                "Physgun",
+                "Grabs a prop at a distance and drags it around.",
+                &icon,
+            ),
             laser:   Laser::new(),
             camera:  RefCell::new(None),
             active:  Cell::new(false),

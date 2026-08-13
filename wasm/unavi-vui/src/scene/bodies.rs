@@ -271,16 +271,17 @@ impl Bodies {
         &self.root
     }
 
-    /// Puts the surface up or takes it down. A surface that is down is not a
-    /// wall you cannot see: its collider goes with it.
+    /// Puts the surface up or takes it down.
+    ///
+    /// The collider goes the moment it is sent away rather than when it
+    /// finishes leaving: a surface on its way out is not a wall you cannot
+    /// see, and a press landing on one that is already going is a press
+    /// nobody meant. The bodies keep animating out on their own.
     pub fn show(&self, shown: bool) -> anyhow::Result<()> {
         if self.shown.replace(shown) == shown {
             return Ok(());
         }
         self.field.set_collider(shown.then_some(self.surface))?;
-        if !shown {
-            self.root.set_xform(Some(draw::hidden()))?;
-        }
         Ok(())
     }
 
@@ -429,7 +430,7 @@ impl Bodies {
         for (index, (slot, view)) in slots.iter().zip(views).enumerate() {
             if held != Some(index) {
                 slot.root
-                    .set_xform(Some(draw::placed(view.position, 1.0)))?;
+                    .set_xform(Some(draw::placed(view.position, view.bloom)))?;
             }
             slot.body
                 .set_xform(Some(draw::placed(Vec3::ZERO, view.radius)))?;

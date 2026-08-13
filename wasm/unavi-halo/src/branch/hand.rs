@@ -83,8 +83,10 @@ impl Hand {
             // tracked hand to put a tool in, one that left its slot would be a
             // mode with nowhere visible to live. Holding a tool is a switch
             // until there is a hand to hold it in.
+            // The tool says what it does; how to hold one is the same for all
+            // of them, and the mote's own kind already says it is a switch.
             let mote = Mote::new(Kind::Toggle, &tool.name);
-            mote.describe("Turn it on. Choose it again to put it away.");
+            mote.describe(&tool.description);
 
             self.tools.push(Tool {
                 doc: tool.doc_id,

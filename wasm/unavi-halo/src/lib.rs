@@ -1,7 +1,7 @@
 //! Halo: the personal shell.
 //!
 //! A tree of motes, summoned from anywhere, that reaches what is yours — your
-//! tools, and the places you can go — and nothing belonging to the space you
+//! tools, and the spaces you can go to — and nothing belonging to the one you
 //! happen to be standing in.
 //!
 //! Everything in the halo itself is `unavi:vui`'s: halo builds motes, mounts an
@@ -19,7 +19,7 @@ use crate::{
     branch::{
         hand::Hand,
         home::Home,
-        places::Places,
+        nav::Nav,
     },
     root::Root,
     summon::{
@@ -57,7 +57,7 @@ struct Script {
     root:     Root,
     hand:     Hand,
     home:     Home,
-    places:   Places,
+    nav:      Nav,
     summon:   Summon,
     /// The body of whatever is in hand, and the physgun's muzzle.
     artifact: Artifact,
@@ -77,12 +77,13 @@ impl Script {
         self.camera.as_ref().map(Prim::global_xform)
     }
 
-    fn apply(&mut self, command: Command) -> anyhow::Result<()> {
+    fn apply(&self, command: Command) -> anyhow::Result<()> {
         match command {
-            Command::Summon => {
-                self.root.orbit.summon()?;
-                self.hand.unequip();
-            }
+            // Whatever is in hand stays in hand: a tool is put away by
+            // choosing it again or choosing another, never by looking at the
+            // halo. Opening a menu is not a decision about what you are
+            // holding.
+            Command::Summon => self.root.orbit.summon()?,
             Command::Dismiss => self.root.orbit.dismiss()?,
             Command::None => {}
         }
@@ -99,7 +100,7 @@ impl Script {
             Event::Planted((mote, landing)) => {
                 // Planting from the halo puts it away: attention has moved to
                 // the thing that was just placed.
-                if self.places.plant(mote, *landing) {
+                if self.nav.plant(mote, *landing) {
                     let dismiss = self.summon.taken();
                     self.apply(dismiss)?;
                 }
@@ -115,8 +116,8 @@ impl Script {
     /// A branch is filled when it opens rather than up front, so a halo nobody
     /// opens costs nothing and an unbounded level is never walked.
     fn opened(&mut self, mote: &Mote) {
-        if mote.is(&self.root.places) {
-            self.places.refresh();
+        if mote.is(&self.root.nav) {
+            self.nav.refresh();
         }
     }
 
@@ -124,7 +125,7 @@ impl Script {
         if mote.is(&self.root.home) {
             self.home.request();
         } else {
-            self.places.cast(mote);
+            self.nav.cast(mote);
         }
     }
 
@@ -173,7 +174,7 @@ impl ScriptBehavior for Script {
             root:     Root::new()?,
             hand:     Hand::new(),
             home:     Home::default(),
-            places:   Places::default(),
+            nav:      Nav::default(),
             summon:   Summon::default(),
             artifact: Artifact::new()?,
             input:    register_global_input_listener()?,
@@ -186,7 +187,7 @@ impl ScriptBehavior for Script {
         api::fixed_update()?;
         self.home.fixed_update();
         self.hand.fixed_update(&self.root.tools);
-        self.places.fixed_update(&self.root.places);
+        self.nav.fixed_update(&self.root.nav);
 
         let Some(eye) = self.eye() else {
             return Ok(());

@@ -1,3 +1,3 @@
 pub mod hand;
 pub mod home;
-pub mod places;
+pub mod nav;

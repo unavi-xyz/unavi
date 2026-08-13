@@ -79,9 +79,9 @@ pub fn home() -> MeshData {
     )
 }
 
-/// A map pin: outward, the world.
+/// A map pin: where you can go.
 #[must_use]
-pub fn places() -> MeshData {
+pub fn nav() -> MeshData {
     let head_r = R * 0.62;
     let head_cy = R * 0.32;
     let segments = 10;

@@ -45,12 +45,12 @@ const CAPACITY: u32 = 3;
 
 pub struct Root {
     /// Return, the fixed point.
-    pub home:   Mote,
-    /// Outward: the world.
-    pub places: Mote,
+    pub home:  Mote,
+    /// Outward: where you can go.
+    pub nav:   Mote,
     /// What can be at hand.
-    pub tools:  Mote,
-    pub orbit:  Orbit,
+    pub tools: Mote,
+    pub orbit: Orbit,
 }
 
 impl Root {
@@ -58,19 +58,19 @@ impl Root {
         let level = Mote::new(Kind::Group, "Halo");
 
         let home = Mote::new(Kind::Cast, "Home");
-        home.describe("Travel to your own space. Hold to confirm.");
+        home.describe("Travel to your home space.");
         home.set_icon(Some(&icon::build(&icon::home(), palette::HOME)?));
 
-        let places = Mote::new(Kind::Group, "Places");
-        places.describe("Spaces with people in them.");
-        places.set_arrange(Arrange::Grid);
-        places.set_icon(Some(&icon::build(&icon::places(), palette::PLACES)?));
+        let nav = Mote::new(Kind::Group, "Nav");
+        nav.describe("Spaces with people in them.");
+        nav.set_arrange(Arrange::Grid);
+        nav.set_icon(Some(&icon::build(&icon::nav(), palette::NAV)?));
 
         let tools = Mote::new(Kind::Group, "Tools");
-        tools.describe("Take one to hold it. Let it go to put it away.");
+        tools.describe("Things you can use.");
         tools.set_icon(Some(&icon::build(&icon::tools(), palette::TOOLS)?));
 
-        for slot in [&home, &places, &tools] {
+        for slot in [&home, &nav, &tools] {
             level.add_child(slot);
         }
 
@@ -81,7 +81,7 @@ impl Root {
         // slot beneath it is reached through the three handles above.
         Ok(Self {
             home,
-            places,
+            nav,
             tools,
             orbit,
         })

@@ -8,6 +8,7 @@
 pub mod api;
 pub mod assist;
 pub mod attention;
+pub mod bloom;
 pub mod circle;
 pub mod grasp;
 pub mod layout;

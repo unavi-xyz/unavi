@@ -64,6 +64,15 @@ pub struct Tuning {
     /// Seconds a consequential action fills for before it fires.
     pub cast_duration: f32,
 
+    /// How fast a surface opens and closes, in full blooms per second.
+    pub bloom_speed:     f32,
+    /// How far each slot lags the one before it, as a fraction of one slot's
+    /// own ramp. Zero makes a level arrive all at once, which reads as a panel
+    /// rather than as objects.
+    pub bloom_stagger:   f32,
+    /// How far past its size a mote lands before settling back onto it.
+    pub bloom_overshoot: f32,
+
     /// Metres the attended mote reaches toward the pointer.
     pub lean_dist:  f32,
     /// Distance at which lean has fallen off to nothing.
@@ -83,7 +92,7 @@ pub struct Tuning {
 
 impl Tuning {
     pub const DEFAULT: Self = Self {
-        orbit_radius: 0.18,
+        orbit_radius: 0.155,
         mote_radius:  0.032,
         centre_frac:  0.34,
         reach_frac:   1.9,
@@ -115,6 +124,10 @@ impl Tuning {
         trail_taper: 0.82,
 
         cast_duration: 0.9,
+
+        bloom_speed:     6.5,
+        bloom_stagger:   0.22,
+        bloom_overshoot: 1.5,
 
         lean_dist:  0.022,
         lean_range: 0.35,

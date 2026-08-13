@@ -36,13 +36,14 @@ use crate::{
 
 pub struct Tool {
     name:              String,
+    description:       String,
     icon_prim_id:      String,
     request_receptor:  EventReceptor,
     activate_receptor: EventReceptor,
 }
 
 impl GuestTool for Tool {
-    fn new(name: String, icon: &Prim) -> Self {
+    fn new(name: String, description: String, icon: &Prim) -> Self {
         let icon_prim_id = icon.id();
         let request_receptor = listen(
             &[CH_DISCOVER.to_string()],
@@ -68,6 +69,7 @@ impl GuestTool for Tool {
         .expect("listen");
         Self {
             name,
+            description,
             icon_prim_id,
             request_receptor,
             activate_receptor,
@@ -78,6 +80,7 @@ impl GuestTool for Tool {
         while let Some(event) = self.request_receptor.poll() {
             let payload = postcard::to_allocvec(&RegisterPayload {
                 name:         self.name.clone(),
+                description:  self.description.clone(),
                 icon_prim_id: self.icon_prim_id.clone(),
             })
             .expect("encode register");

@@ -1,7 +1,10 @@
 use smol_str::SmolStr;
 
 use crate::{
-    attention::Attention,
+    attention::{
+        self,
+        Attention,
+    },
     tuning::Tuning,
 };
 
@@ -164,12 +167,27 @@ fn depth_marks(depth: usize, tuning: &Tuning) -> Pips {
     }
 }
 
-#[must_use]
-pub fn present(spec: &MoteSpec, attention: Attention, tuning: &Tuning) -> Presentation {
-    let attention_scale = match attention {
+const fn scale_at(attention: Attention, tuning: &Tuning) -> f32 {
+    match attention {
         Attention::Engaged => tuning.seize_scale,
         Attention::Attended => tuning.attend_scale,
         Attention::Idle | Attention::Near => 1.0,
+    }
+}
+
+/// How a mote is drawn at `heat`.
+///
+/// A heat rather than a state, so a body grows into its attended size instead
+/// of stepping to it. Pips take no part: what a container holds does not
+/// change because a pointer is near it.
+#[must_use]
+pub fn present(spec: &MoteSpec, heat: f32, tuning: &Tuning) -> Presentation {
+    let (low, high, t) = attention::bracket(heat);
+    let (from, to) = (scale_at(low, tuning), scale_at(high, tuning));
+    let attention_scale = if t >= 1.0 {
+        to
+    } else {
+        (to - from).mul_add(t, from)
     };
     let role_scale = match spec.role {
         Role::Group { .. } => tuning.group_scale,
@@ -223,7 +241,7 @@ mod tests {
     }
 
     fn present_at(role: Role, attention: Attention) -> Presentation {
-        present(&spec(role), attention, &tuning())
+        present(&spec(role), attention.heat(), &tuning())
     }
 
     #[test]

@@ -73,6 +73,12 @@ pub struct Tuning {
     /// How far past its size a mote lands before settling back onto it.
     pub bloom_overshoot: f32,
 
+    /// How fast a mote's look catches up to the attention it is under.
+    pub heat_speed:  f32,
+    /// How close to its target a mote's heat lands on exactly, so a settled
+    /// surface stops redrawing itself.
+    pub heat_settle: f32,
+
     /// Metres the attended mote reaches toward the pointer.
     pub lean_dist:  f32,
     /// Distance at which lean has fallen off to nothing.
@@ -99,7 +105,7 @@ impl Tuning {
         field_lift:   0.09,
         stick:        0.18,
         grid_stick:   0.18,
-        grid_pitch:   0.085,
+        grid_pitch:   0.11,
         grid_columns: 4,
         grid_rows:    3,
 
@@ -128,6 +134,9 @@ impl Tuning {
         bloom_speed:     6.5,
         bloom_stagger:   0.22,
         bloom_overshoot: 1.5,
+
+        heat_speed:  14.0,
+        heat_settle: 0.004,
 
         lean_dist:  0.022,
         lean_range: 0.35,

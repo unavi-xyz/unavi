@@ -27,6 +27,17 @@ pub fn approach(current: Vec3, target: Vec3, speed: f32, delta: f32) -> Vec3 {
     current.lerp(target, (speed * delta).clamp(0.0, 1.0))
 }
 
+/// [`approach`] for a scalar, settling exactly rather than approaching
+/// forever: an ease that only ever gets closer leaves every mote a hair off
+/// its resting look, and redraws them all to say so.
+#[must_use]
+pub fn approach_scalar(current: f32, target: f32, speed: f32, delta: f32, settle: f32) -> f32 {
+    if (target - current).abs() <= settle {
+        return target;
+    }
+    (target - current).mul_add((speed * delta).clamp(0.0, 1.0), current)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -107,5 +118,39 @@ mod tests {
         let target = Vec3::new(1.0, 0.0, 0.0);
         let stepped = approach(Vec3::ZERO, target, 12.0, 1.0);
         assert_eq!(stepped, target);
+    }
+
+    #[test]
+    fn a_scalar_takes_more_than_one_frame_to_arrive() {
+        let part_way = approach_scalar(0.0, 1.0, 14.0, 1.0 / 60.0, 0.004);
+        assert!(
+            part_way > 0.0 && part_way < 1.0,
+            "arriving in one frame is the snap this replaces; got {part_way}"
+        );
+    }
+
+    /// Exactly, not nearly: a style is only rewritten when it differs, so a
+    /// mote that merely approaches its resting look never stops redrawing.
+    #[test]
+    #[expect(clippy::float_cmp, reason = "landing exactly is the invariant")]
+    fn a_scalar_settles_on_its_target_exactly() {
+        let mut current = 0.0;
+        for _ in 0..200 {
+            current = approach_scalar(current, 1.0, 14.0, 1.0 / 60.0, 0.004);
+        }
+        assert_eq!(current, 1.0);
+
+        let settled = approach_scalar(1.0, 1.0, 14.0, 1.0 / 60.0, 0.004);
+        assert_eq!(settled, 1.0, "and stays there");
+    }
+
+    #[test]
+    #[expect(clippy::float_cmp, reason = "landing exactly is the invariant")]
+    fn a_scalar_settles_going_down_as_well_as_up() {
+        let mut current = 1.0;
+        for _ in 0..200 {
+            current = approach_scalar(current, 0.0, 14.0, 1.0 / 60.0, 0.004);
+        }
+        assert_eq!(current, 0.0);
     }
 }

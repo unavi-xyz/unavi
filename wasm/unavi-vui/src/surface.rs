@@ -3,6 +3,7 @@ use wired_math::types::Vec3;
 use crate::{
     assist,
     attention::{
+        self,
         Attention,
         Tracker,
     },
@@ -17,7 +18,10 @@ use crate::{
         MoteSpec,
         Role,
     },
-    palette::Palette,
+    palette::{
+        self,
+        Palette,
+    },
     placard::{
         self,
         Placard,
@@ -45,6 +49,10 @@ pub struct Surface {
     tracker:  Tracker,
     grasp:    Grasp,
     lean:     Vec<Vec3>,
+    /// How far each slot has come toward the attention it is under, eased
+    /// rather than switched. Parallel to [`Surface::lean`], and indexed by
+    /// draw slot like everything else here.
+    heat:     Vec<f32>,
     views:    Vec<SlotView>,
     drawn:    Vec<usize>,
     placard:  Option<PlacardView>,
@@ -65,6 +73,7 @@ impl Surface {
             tracker: Tracker::new(),
             grasp: Grasp::new(),
             lean: vec![Vec3::ZERO; capacity],
+            heat: vec![0.0; capacity],
             views: Vec::with_capacity(capacity),
             drawn: Vec::with_capacity(capacity),
             placard: None,
@@ -250,6 +259,15 @@ impl Surface {
                 self.tracker
                     .state(slot, is_seized, attended.is_some_and(|held| held != slot));
 
+            self.heat[slot] = assist::approach_scalar(
+                self.heat[slot],
+                attention.heat(),
+                self.tuning.heat_speed,
+                frame.delta,
+                self.tuning.heat_settle,
+            );
+            let heat = self.heat[slot];
+
             let target = frame.aim.map_or(Vec3::ZERO, |aim| {
                 frame.anchor.rotation.inverse()
                     * assist::lean(world, aim.world, attention, &self.tuning)
@@ -266,12 +284,12 @@ impl Surface {
                 _ => (local + self.lean[slot]) * self.bloom.form(),
             };
 
-            let presentation = mote::present(spec, attention, &self.tuning);
+            let presentation = mote::present(spec, heat, &self.tuning);
 
             self.views.push(SlotView {
                 position,
                 radius: presentation.radius,
-                style: self.style(spec.role, attention, spec.active),
+                style: self.style_at(spec.role, heat, spec.active),
                 role: spec.role,
                 attention,
                 pips: presentation.pips,
@@ -340,6 +358,35 @@ impl Surface {
             let placard = Placard::describing(spec);
             placard::view(&placard, view.position, view.radius, opacity, &self.tuning)
         })
+    }
+
+    /// A role's style sampled at `heat`, by blending the two attention states
+    /// it falls between.
+    ///
+    /// Blending the finished styles rather than each palette value keeps every
+    /// rule in [`Surface::style`] — a parent mote receding, a container's
+    /// glass, an item's warmth — exactly what it was at each state, and none
+    /// of them has to know heat exists.
+    fn style_at(&self, role: Role, heat: f32, active: bool) -> Style {
+        let (low, high, t) = attention::bracket(heat);
+        // Landing on an endpoint exactly, rather than blending to it: a style
+        // is only rewritten when it differs, and `a + (b - a) * 1.0` is not
+        // `b` in floating point — so a settled mote would redraw forever.
+        if t <= 0.0 {
+            return self.style(role, low, active);
+        }
+        if t >= 1.0 {
+            return self.style(role, high, active);
+        }
+        let (from, to) = (
+            self.style(role, low, active),
+            self.style(role, high, active),
+        );
+        Style {
+            color:    palette::blend(from.color, to.color, t),
+            alpha:    (to.alpha - from.alpha).mul_add(t, from.alpha),
+            emissive: (to.emissive - from.emissive).mul_add(t, from.emissive),
+        }
     }
 
     const fn style(&self, role: Role, attention: Attention, active: bool) -> Style {
@@ -983,6 +1030,108 @@ mod tests {
         assert_ne!(hovered.color, Palette::DEFAULT.accent, "hover stays quiet");
         assert!(hovered.color.r > resting.color.r);
         assert!(hovered.emissive > resting.emissive);
+    }
+
+    /// Holds `aim` on slot 0 for `frames` and reports it.
+    fn hold(surface: &mut Surface, specs: &[MoteSpec], frames: usize) -> SlotView {
+        let aim = aim_at(Vec2::new(0.0, R));
+        for _ in 0..frames {
+            ring_update(surface, specs, Centre::Open, &frame(Some(aim)));
+        }
+        surface.views()[0]
+    }
+
+    /// Only the size lags at first: nothing grows between `Idle` and `Near`,
+    /// which are the same size by design, so a mote brightens for a frame or
+    /// two before it starts to swell. That reads as noticing, and the point
+    /// here is only that it never arrives in one step.
+    #[test]
+    fn a_mote_grows_into_being_attended_rather_than_stepping_to_it() {
+        let mut surface = surface();
+        let specs = [spec(Role::Action), spec(Role::Action)];
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        let resting = surface.views()[0].radius;
+
+        let early = hold(&mut surface, &specs, 3).radius;
+        let later = hold(&mut surface, &specs, 3).radius;
+        let settled = hold(&mut surface, &specs, 60).radius;
+
+        assert!(
+            resting < early && early < later && later < settled,
+            "a body that reaches its attended size in one step reads as a \
+             widget lighting up: {resting} -> {early} -> {later} -> {settled}"
+        );
+    }
+
+    #[test]
+    fn a_mote_brightens_from_the_very_first_frame() {
+        let mut surface = surface();
+        let specs = [spec(Role::Action), spec(Role::Action)];
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        let resting = surface.views()[0].style;
+
+        let first = hold(&mut surface, &specs, 1).style;
+        let settled = hold(&mut surface, &specs, 60).style;
+
+        assert!(first.emissive > resting.emissive, "light leads the size");
+        assert!(
+            first.emissive < settled.emissive,
+            "and still has somewhere to go"
+        );
+    }
+
+    /// Easing changes how a mote gets to a state, never what the state is.
+    #[test]
+    #[expect(clippy::float_cmp, reason = "landing exactly is the invariant")]
+    fn a_settled_mote_looks_exactly_as_its_state_says() {
+        let mut surface = surface();
+        let specs = [spec(Role::Action), spec(Role::Action)];
+        let settled = hold(&mut surface, &specs, 60);
+
+        assert_eq!(settled.attention, Attention::Attended);
+        assert_eq!(
+            settled.radius,
+            mote::present(&specs[0], Attention::Attended.heat(), surface.tuning()).radius
+        );
+        assert_eq!(
+            settled.style,
+            surface.style(specs[0].role, Attention::Attended, specs[0].active)
+        );
+    }
+
+    /// A style is written to the scene only when it differs, so one that never
+    /// quite arrives redraws every mote every frame forever.
+    #[test]
+    #[expect(clippy::float_cmp, reason = "landing exactly is the invariant")]
+    fn a_settled_mote_stops_changing() {
+        let mut surface = surface();
+        let specs = [spec(Role::Action), spec(Role::Action)];
+        let settled = hold(&mut surface, &specs, 60);
+        let still = hold(&mut surface, &specs, 1);
+
+        assert_eq!(settled.style, still.style);
+        assert_eq!(settled.radius, still.radius);
+    }
+
+    #[test]
+    #[expect(clippy::float_cmp, reason = "landing exactly is the invariant")]
+    fn attention_leaving_eases_back_down_and_settles() {
+        let mut surface = surface();
+        let specs = [spec(Role::Action), spec(Role::Action)];
+        let hot = hold(&mut surface, &specs, 60).style.emissive;
+
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        let cooling = surface.views()[0].style.emissive;
+        let resting = Palette::DEFAULT.emissive(Attention::Idle);
+        assert!(
+            cooling < hot && cooling > resting,
+            "attention leaving is a settle too, not a snap; {hot} -> {cooling}"
+        );
+
+        for _ in 0..60 {
+            ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        }
+        assert_eq!(surface.views()[0].style.emissive, resting);
     }
 
     #[test]

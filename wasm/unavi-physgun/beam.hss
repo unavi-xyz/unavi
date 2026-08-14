@@ -45,16 +45,17 @@
             Mul(a: Node(15), b: Input(1)),
             Mul(a: Input(0), b: Node(16)),
 
-            // Alpha is pinned to 1 rather than carried along by the tint
-            // multiply. `AlphaMode::Add` blends `src.rgb * src.a + dst`, so
-            // letting brightness reach alpha too would square it — raising
-            // intensity would blow straight to white instead of getting
-            // brighter. Fading happens in RGB, which under additive blending
-            // is what "invisible" already means.
+            // Alpha is pinned to 0, which is what "additive" means here:
+            // `AlphaMode::Add` is premultiplied, blending
+            // `src.rgb + dst * (1 - src.a)`. At alpha 1 the beam would erase
+            // everything behind it and show only its own colour — so the
+            // faded ends would read as black rather than as nothing. At 0 the
+            // destination survives untouched and brightness lives entirely in
+            // RGB, where fading to zero is genuinely invisible.
             Extract(v: Node(17), channel: 0),
             Extract(v: Node(17), channel: 1),
             Extract(v: Node(17), channel: 2),
-            Combine4(x: Node(18), y: Node(19), z: Node(20), w: Const(Float(1.0))),
+            Combine4(x: Node(18), y: Node(19), z: Node(20), w: Const(Float(0.0))),
         ],
         output: Unlit((color: Node(21))),
         blend: Add,

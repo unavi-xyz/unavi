@@ -26,12 +26,13 @@
             Mul(a: Node(1), b: Input(2)),
             Mul(a: Input(0), b: Node(2)),
 
-            // Alpha pinned to 1, as in `beam.hss`: `AlphaMode::Add` scales
-            // rgb by alpha, so carrying brightness into alpha would square it.
+            // Alpha pinned to 0, as in `beam.hss`: `AlphaMode::Add` is
+            // premultiplied, so an alpha of 1 would erase the prop this is
+            // meant to outline rather than adding a stroke around it.
             Extract(v: Node(3), channel: 0),
             Extract(v: Node(3), channel: 1),
             Extract(v: Node(3), channel: 2),
-            Combine4(x: Node(4), y: Node(5), z: Node(6), w: Const(Float(1.0))),
+            Combine4(x: Node(4), y: Node(5), z: Node(6), w: Const(Float(0.0))),
         ],
         output: Unlit((color: Node(7))),
         blend: Add,

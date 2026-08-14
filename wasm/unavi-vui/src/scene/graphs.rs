@@ -15,7 +15,9 @@ use crate::wired::scene::{
     api::self_document,
     types::{
         BlendMode,
+        Combine3Op,
         Combine4Op,
+        ConvertOp,
         CullMode,
         Document,
         ExtractOp,
@@ -23,11 +25,15 @@ use crate::wired::scene::{
         LerpOp,
         Node,
         Port,
+        PowOp,
         Prim,
+        RemapOp,
         ShaderGraph,
+        SmoothstepOp,
         SurfaceGraph,
         SurfaceOutput,
         UnlitOutput,
+        ValueKind,
         Xform,
     },
 };
@@ -37,9 +43,12 @@ pub const SHELL_TINT: u16 = 0;
 pub const SHELL_EMISSIVE: u16 = 1;
 /// How far the mote has come toward the attention it is under.
 pub const SHELL_HEAT: u16 = 2;
-/// Radians of offset into the idle breath, so a form does not pulse as one
-/// body.
+/// Radians of offset into the idle breath and the film's banding, so a form
+/// does not pulse or shimmer as one body.
 pub const SHELL_PHASE: u16 = 3;
+/// How much interference colour the film carries. Colour is meant to signal
+/// state, so this stays low enough that an accent still wins.
+pub const SHELL_FILM: u16 = 4;
 
 pub const RING_TINT: u16 = 0;
 pub const RING_PROGRESS: u16 = 1;
@@ -65,6 +74,133 @@ impl Net {
         let scaled = self.push(Node::Mul(binary(time, cf(rate))));
         let offset = self.push(Node::Add(binary(scaled, phase)));
         self.push(Node::Sin(offset))
+    }
+
+    fn time_scaled(&mut self, rate: f32) -> Port {
+        let time = self.push(Node::Time);
+        self.push(Node::Mul(binary(time, cf(rate))))
+    }
+
+    /// Three sinusoids a third of a turn apart, which is a hue sweep without a
+    /// colour ramp to sample: as `t` advances the triple walks the spectrum.
+    fn spectrum(&mut self, t: Port) -> Port {
+        let channel = |net: &mut Self, turn: f32| {
+            let shifted = net.push(Node::Add(binary(t, cf(turn))));
+            let wave = net.push(Node::Sin(shifted));
+            net.push(Node::Remap(RemapOp {
+                x:         wave,
+                from_low:  cf(-1.0),
+                from_high: cf(1.0),
+                to_low:    cf(0.0),
+                to_high:   cf(1.0),
+            }))
+        };
+        let r = channel(self, 0.0);
+        let g = channel(self, 2.094_395);
+        let b = channel(self, 4.188_79);
+        self.push(Node::Combine3(Combine3Op { x: r, y: g, z: b }))
+    }
+
+    /// How squarely the surface faces the viewer, `0` at the silhouette and
+    /// `1` head-on. The complement of the term the rim is built from, and
+    /// what everything view-dependent here is driven by.
+    fn facing(&mut self) -> Port {
+        let grazing = self.push(Node::Fresnel(cf(1.0)));
+        self.push(Node::OneMinus(grazing))
+    }
+
+    /// Where a mirrored ray would leave the surface, so the shell can pick up
+    /// something standing in for its surroundings.
+    ///
+    /// `reflect(V, N)` by hand, since the format has no node for it: there is
+    /// no environment to sample either, so only the vertical component is
+    /// used, ramped from a dark floor to a bright sky.
+    fn sky_reflection(&mut self, facing: Port) -> Port {
+        let normal = self.push(Node::WorldNormal);
+        let view = self.push(Node::ViewDirection);
+        let twice = self.push(Node::Mul(binary(facing, cf(2.0))));
+        let along = self.push(Node::Mul(binary(normal, twice)));
+        let bounced = self.push(Node::Sub(binary(along, view)));
+        let height = self.push(Node::Extract(ExtractOp {
+            v:       bounced,
+            channel: 1,
+        }));
+        self.push(Node::Remap(RemapOp {
+            x:         height,
+            from_low:  cf(-1.0),
+            from_high: cf(1.0),
+            to_low:    cf(0.05),
+            to_high:   cf(1.0),
+        }))
+    }
+
+    /// Thin-film colour, as a bubble wears it.
+    ///
+    /// Red bends least and blue most, so the three rims sit at slightly
+    /// different widths and the silhouette separates into colour the way a
+    /// curved film does. The film reads thicker toward the edge, and the
+    /// banding drifts, so the colours crawl rather than sitting still; `phase`
+    /// keeps two motes from wearing the same pattern.
+    fn interference(
+        &mut self,
+        power: Port,
+        rim: Port,
+        facing: Port,
+        phase: Port,
+        amount: Port,
+    ) -> Port {
+        let red_power = self.push(Node::Mul(binary(power, cf(0.78))));
+        let blue_power = self.push(Node::Mul(binary(power, cf(1.34))));
+        let red_rim = self.push(Node::Fresnel(red_power));
+        let red_rim = self.push(Node::Saturate(red_rim));
+        let blue_rim = self.push(Node::Fresnel(blue_power));
+        let blue_rim = self.push(Node::Saturate(blue_rim));
+        let split = self.push(Node::Combine3(Combine3Op {
+            x: red_rim,
+            y: rim,
+            z: blue_rim,
+        }));
+
+        let grazing = self.push(Node::OneMinus(facing));
+        let bands = self.push(Node::Mul(binary(grazing, cf(7.0))));
+        let crawl = self.time_scaled(0.32);
+        let bands = self.push(Node::Add(binary(bands, crawl)));
+        let bands = self.push(Node::Add(binary(bands, phase)));
+        let hues = self.spectrum(bands);
+        let colored = self.push(Node::Mul(binary(hues, split)));
+        self.push(Node::Mul(binary(colored, amount)))
+    }
+
+    /// Thin lines travelling up the body: the one frankly synthetic note, and
+    /// what says this is a rendered thing rather than a soap bubble.
+    fn scanlines(&mut self) -> Port {
+        let uv = self.push(Node::Uv);
+        let up = self.push(Node::Extract(ExtractOp { v: uv, channel: 1 }));
+        let stack = self.push(Node::Mul(binary(up, cf(24.0))));
+        let scroll = self.time_scaled(0.4);
+        let stack = self.push(Node::Sub(binary(stack, scroll)));
+        let line = self.push(Node::TriangleWave(stack));
+        let line = self.push(Node::Pow(PowOp {
+            x: line,
+            y: cf(5.0),
+        }));
+        self.push(Node::Mul(binary(line, cf(0.5))))
+    }
+
+    /// A tight highlight from a fixed direction. A mote does not turn, so this
+    /// slides across it as the viewer moves — which is what makes a surface
+    /// read as curved and glassy rather than as a flat disc.
+    fn streak(&mut self, sharpness: f32) -> Port {
+        let normal = self.push(Node::WorldNormal);
+        let toward = self.push(Node::Dot(binary(
+            normal,
+            Port::Const(GraphValue::Vec3(Vec3::new(0.32, 0.79, 0.52))),
+        )));
+        let lit = self.push(Node::Saturate(toward));
+        self.push(Node::Pow(PowOp {
+            x: lit,
+            y: cf(sharpness),
+        }))
     }
 }
 
@@ -109,6 +245,10 @@ fn shell() -> ShaderGraph {
     let mut net = Net::default();
     let tint = Port::Input(SHELL_TINT);
     let heat = Port::Input(SHELL_HEAT);
+    let film = Port::Input(SHELL_FILM);
+    let phase = Port::Input(SHELL_PHASE);
+
+    let facing = net.facing();
 
     // The rim narrows as heat rises, so an attended mote does not merely
     // brighten — its edge thickens, which still reads at a distance where a
@@ -121,19 +261,38 @@ fn shell() -> ShaderGraph {
     let rim = net.push(Node::Fresnel(power));
     let rim = net.push(Node::Saturate(rim));
 
-    let wave = net.breath(Port::Input(SHELL_PHASE), 1.6);
+    let iridescence = net.interference(power, rim, facing, phase, film);
+    let line = net.scanlines();
+    let sky = net.sky_reflection(facing);
+    let sky = net.push(Node::Mul(binary(sky, cf(0.35))));
+    let streak = net.streak(46.0);
+
+    let wave = net.breath(phase, 1.6);
     let swing = net.push(Node::Mul(binary(wave, cf(0.07))));
     let breath = net.push(Node::Add(binary(swing, cf(1.0))));
 
     let edge = net.push(Node::Mul(binary(rim, cf(2.4))));
     let lit = net.push(Node::Add(binary(edge, cf(0.35))));
+    let lit = net.push(Node::Add(binary(lit, sky)));
+    let lit = net.push(Node::Add(binary(lit, line)));
     let lit = net.push(Node::Mul(binary(lit, breath)));
     let brightness = net.push(Node::Mul(binary(Port::Input(SHELL_EMISSIVE), lit)));
     // Past 1.0 on purpose, so the camera's bloom catches an attended mote.
-    let rgb = net.push(Node::Mul(binary(tint, brightness)));
+    let body = net.push(Node::Mul(binary(tint, brightness)));
+
+    // The film and the highlight are light the mote is *carrying*, not light
+    // it is tinted by, so they are added rather than multiplied through.
+    let glints = net.push(Node::Add(binary(iridescence, streak)));
+    let glints = net.push(Node::Convert(ConvertOp {
+        v:  glints,
+        to: ValueKind::Color,
+    }));
+    let rgb = net.push(Node::Add(binary(body, glints)));
 
     // The face is nearly clear and the edge nearly solid, so the silhouette
-    // carries the mote and its contents show through the middle.
+    // carries the mote and its contents show through the middle. Anything
+    // bright enough to be seen brings its own opacity with it, or a scanline
+    // on a clear face would be there in principle and invisible in practice.
     let base = net.push(Node::Extract(ExtractOp {
         v:       tint,
         channel: 3,
@@ -143,6 +302,10 @@ fn shell() -> ShaderGraph {
         b: cf(0.92),
         t: rim,
     }));
+    let carried = net.push(Node::Luminance(glints));
+    let carried = net.push(Node::Add(binary(carried, line)));
+    let alpha = net.push(Node::Add(binary(alpha, carried)));
+    let alpha = net.push(Node::Saturate(alpha));
     let color = with_alpha(&mut net, rgb, alpha);
 
     ShaderGraph {
@@ -156,6 +319,7 @@ fn shell() -> ShaderGraph {
             GraphValue::Float(0.08),
             GraphValue::Float(0.0),
             GraphValue::Float(0.0),
+            GraphValue::Float(0.55),
         ],
         surface:       SurfaceGraph {
             nodes:        net.nodes,
@@ -183,49 +347,53 @@ fn ring() -> ShaderGraph {
     let angle = net.push(Node::Extract(ExtractOp { v: uv, channel: 0 }));
     let across = net.push(Node::Extract(ExtractOp { v: uv, channel: 1 }));
 
-    let filled = net.push(Node::Step(crate::wired::scene::types::StepOp {
-        edge: angle,
+    // The fill's leading edge is eased over a slice of the turn rather than
+    // stepped, so the boundary is a boundary and not a cut.
+    let lead = net.push(Node::Add(binary(angle, cf(0.035))));
+    let filled = net.push(Node::Smoothstep(SmoothstepOp {
+        low:  angle,
+        high: lead,
         x:    progress,
     }));
 
-    // A short bright tail behind the head, which is what makes a fill read as
+    // A short tail behind the head, which is what makes a fill read as
     // travelling rather than as a bar growing.
     let behind = net.push(Node::Sub(binary(progress, angle)));
     let behind = net.push(Node::Saturate(behind));
     let behind = net.push(Node::OneMinus(behind));
-    let head = net.push(Node::Pow(crate::wired::scene::types::PowOp {
+    let head = net.push(Node::Pow(PowOp {
         x: behind,
-        y: cf(24.0),
+        y: cf(18.0),
     }));
     let head = net.push(Node::Mul(binary(head, filled)));
+    let head = net.push(Node::Mul(binary(head, cf(0.8))));
 
     // The unfilled arc stays faintly drawn: a cast shows how far it has to go,
     // not only how far it has come.
-    let body = net.push(Node::Mul(binary(filled, cf(0.85))));
-    let body = net.push(Node::Add(binary(body, cf(0.15))));
+    let body = net.push(Node::Mul(binary(filled, cf(0.7))));
+    let body = net.push(Node::Add(binary(body, cf(0.12))));
     let total = net.push(Node::Add(binary(body, head)));
 
-    // Softened at both edges of the band, so the ring is a ring and not a
-    // washer.
-    let inner = net.push(Node::Smoothstep(crate::wired::scene::types::SmoothstepOp {
-        low:  cf(0.0),
-        high: cf(0.35),
-        x:    across,
+    // A soft falloff across the whole band rather than a flat core with eased
+    // sides: the ring has no hard edge anywhere, which is what stops a thin
+    // bright annulus reading as a cut-out.
+    let centred = net.push(Node::Sub(binary(across, cf(0.5))));
+    let centred = net.push(Node::Abs(centred));
+    let falloff = net.push(Node::Smoothstep(SmoothstepOp {
+        low:  cf(0.5),
+        high: cf(0.0),
+        x:    centred,
     }));
-    let flipped = net.push(Node::OneMinus(across));
-    let outer = net.push(Node::Smoothstep(crate::wired::scene::types::SmoothstepOp {
-        low:  cf(0.0),
-        high: cf(0.35),
-        x:    flipped,
-    }));
-    let band = net.push(Node::Mul(binary(inner, outer)));
+    let band = net.push(Node::Mul(binary(falloff, falloff)));
     let total = net.push(Node::Mul(binary(total, band)));
-    let total = net.push(Node::Mul(binary(total, cf(3.0))));
+    let total = net.push(Node::Mul(binary(total, cf(2.2))));
 
     let rgb = net.push(Node::Mul(binary(Port::Input(RING_TINT), total)));
-    // Alpha pinned: an additive blend scales rgb by alpha, so carrying
-    // brightness into alpha as well would square it.
-    let color = with_alpha(&mut net, rgb, cf(1.0));
+    // Alpha 0, which is what additive means here: `AlphaMode::Add` blends
+    // `src.rgb + dst * (1 - src.a)`, so an alpha of 1 would erase whatever the
+    // ring is drawn over and leave its faded edges reading as black rather
+    // than as nothing.
+    let color = with_alpha(&mut net, rgb, cf(0.0));
 
     ShaderGraph {
         public_inputs: vec![
@@ -262,7 +430,7 @@ thread_local! {
     static TEMPLATES: RefCell<Option<Templates>> = const { RefCell::new(None) };
 }
 
-fn template(doc: &Document, graph: &ShaderGraph) -> anyhow::Result<Prim> {
+fn template(doc: &Document, name: &str, graph: &ShaderGraph) -> anyhow::Result<Prim> {
     let prim = doc.create_prim()?;
     // Carries a graph and nothing else: with no mesh there is nothing to draw,
     // and the hidden xform keeps it from being mistaken for content.
@@ -271,7 +439,12 @@ fn template(doc: &Document, graph: &ShaderGraph) -> anyhow::Result<Prim> {
         rotation:    Quat::IDENTITY,
         scale:       Vec3::ZERO,
     }))?;
-    prim.set_material_graph(Some(graph))?;
+    // Reported rather than propagated: the host names the node it rejected,
+    // and a surface that comes up unshaded with that on the log is far easier
+    // to place than one that refuses to come up at all.
+    if let Err(err) = prim.set_material_graph(Some(graph)) {
+        eprintln!("vui: the {name} graph was rejected, so it draws unshaded: {err}");
+    }
     Ok(prim)
 }
 
@@ -281,8 +454,8 @@ fn with_templates<T>(f: impl FnOnce(&Templates) -> T) -> anyhow::Result<T> {
         if slot.is_none() {
             let doc = self_document()?;
             *slot = Some(Templates {
-                shell: template(&doc, &shell())?,
-                ring:  template(&doc, &ring())?,
+                shell: template(&doc, "shell", &shell())?,
+                ring:  template(&doc, "ring", &ring())?,
             });
         }
         let templates = slot.as_ref().expect("just filled");
@@ -302,4 +475,137 @@ pub fn bind_ring(prim: &Prim) -> anyhow::Result<()> {
     let id = with_templates(|t| t.ring.id())?;
     prim.set_relationship("material:binding", Some(&id))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// `hsd::attributes::material_graph::MAX_NODES`, restated because a guest
+    /// cannot see it: exceeding it is refused at the setter, so the whole
+    /// surface would come up unshaded.
+    const MAX_NODES: usize = 128;
+    const MAX_PUBLIC_INPUTS: usize = 16;
+
+    fn ports(node: &Node) -> Vec<Port> {
+        match node {
+            Node::Uv
+            | Node::WorldNormal
+            | Node::WorldPosition
+            | Node::VertexColor
+            | Node::LocalPosition
+            | Node::LocalNormal
+            | Node::Time
+            | Node::InstanceRandom
+            | Node::ObjectPosition
+            | Node::ObjectScale
+            | Node::ViewDirection => Vec::new(),
+            Node::Sin(p)
+            | Node::Cos(p)
+            | Node::OneMinus(p)
+            | Node::Abs(p)
+            | Node::Floor(p)
+            | Node::Fract(p)
+            | Node::Saturate(p)
+            | Node::Sqrt(p)
+            | Node::Length(p)
+            | Node::Normalize(p)
+            | Node::TriangleWave(p)
+            | Node::Luminance(p)
+            | Node::Fresnel(p)
+            | Node::Noise(p) => vec![*p],
+            Node::Add(op)
+            | Node::Sub(op)
+            | Node::Mul(op)
+            | Node::Div(op)
+            | Node::Modulo(op)
+            | Node::Min(op)
+            | Node::Max(op)
+            | Node::Dot(op)
+            | Node::Cross(op)
+            | Node::Distance(op) => vec![op.a, op.b],
+            Node::Pow(op) => vec![op.x, op.y],
+            Node::Atan2(op) => vec![op.y, op.x],
+            Node::Lerp(op) => vec![op.a, op.b, op.t],
+            Node::Clamp(op) => vec![op.x, op.low, op.high],
+            Node::Step(op) => vec![op.edge, op.x],
+            Node::Smoothstep(op) => vec![op.low, op.high, op.x],
+            Node::Remap(op) => vec![op.x, op.from_low, op.from_high, op.to_low, op.to_high],
+            Node::Select(op) => vec![op.cond, op.a, op.b],
+            Node::TextureSample(op) => vec![op.uv],
+            Node::Extract(op) => vec![op.v],
+            Node::Combine2(op) => vec![op.x, op.y],
+            Node::Combine3(op) => vec![op.x, op.y, op.z],
+            Node::Combine4(op) => vec![op.x, op.y, op.z, op.w],
+            Node::Convert(op) => vec![op.v],
+            Node::PolarCoords(op) => vec![op.uv, op.center],
+            Node::RotateUv(op) => vec![op.uv, op.center, op.radians],
+        }
+    }
+
+    /// The two rules a graph is refused for that a guest can check on its own.
+    /// Kind agreement it cannot: only the host holds the type rules, and a
+    /// mismatch shows up as the rejection message `template` prints.
+    fn assert_well_formed(graph: &ShaderGraph, name: &str) {
+        assert!(
+            graph.public_inputs.len() <= MAX_PUBLIC_INPUTS,
+            "{name} declares {} inputs",
+            graph.public_inputs.len()
+        );
+        assert!(
+            graph.surface.nodes.len() <= MAX_NODES,
+            "{name} has {} surface nodes",
+            graph.surface.nodes.len()
+        );
+
+        for (index, node) in graph.surface.nodes.iter().enumerate() {
+            for port in ports(node) {
+                match port {
+                    Port::Node(target) => assert!(
+                        usize::from(target) < index,
+                        "{name} node {index} reaches forward to {target}"
+                    ),
+                    Port::Input(input) => assert!(
+                        usize::from(input) < graph.public_inputs.len(),
+                        "{name} node {index} names input {input}, which is not declared"
+                    ),
+                    Port::Const(_) => {}
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn the_shell_is_well_formed() {
+        assert_well_formed(&shell(), "shell");
+    }
+
+    #[test]
+    fn the_ring_is_well_formed() {
+        assert_well_formed(&ring(), "ring");
+    }
+
+    /// Every input the shell is handed at draw time has to exist, or the
+    /// override is refused and the mote keeps the graph's own defaults.
+    #[test]
+    fn every_shell_input_the_binding_writes_is_declared() {
+        let count = shell().public_inputs.len();
+        for input in [
+            SHELL_TINT,
+            SHELL_EMISSIVE,
+            SHELL_HEAT,
+            SHELL_PHASE,
+            SHELL_FILM,
+        ] {
+            assert!(usize::from(input) < count, "input {input} is not declared");
+        }
+    }
+
+    #[test]
+    fn every_ring_input_the_binding_writes_is_declared() {
+        let count = ring().public_inputs.len();
+        for input in [RING_TINT, RING_PROGRESS] {
+            assert!(usize::from(input) < count, "input {input} is not declared");
+        }
+    }
 }

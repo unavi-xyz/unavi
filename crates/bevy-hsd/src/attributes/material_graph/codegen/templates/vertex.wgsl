@@ -10,7 +10,8 @@
 fn vertex(vertex_in: Vertex) -> VertexOutput {
     var vertex = vertex_in;
     var out: VertexOutput;
-    let world_from_local = mesh_functions::get_world_from_local(vertex_in.instance_index);
+    let graph_instance_index = vertex_in.instance_index;
+    let world_from_local = mesh_functions::get_world_from_local(graph_instance_index);
 
 //#BODY
 #ifdef VERTEX_NORMALS
@@ -34,6 +35,12 @@ fn vertex(vertex_in: Vertex) -> VertexOutput {
 #endif
 #ifdef VERTEX_COLORS
     out.color = vertex.color;
+#endif
+// The mesh pipeline sets this def unconditionally, so `VertexOutput` always
+// declares the field and a fragment reading `InstanceRandom` gets whatever
+// was left in it if the vertex stage does not write it.
+#ifdef VERTEX_OUTPUT_INSTANCE_INDEX
+    out.instance_index = graph_instance_index;
 #endif
 
     return out;

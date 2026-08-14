@@ -30,9 +30,14 @@ pub enum Port {
 /// context; each is legal in exactly one network (enforced by
 /// [`super::validate::validate`], not by the type — see
 /// [`super::validate::error::GraphError::WrongNetwork`]): `Uv`/`WorldNormal`/
-/// `WorldPosition`/`VertexColor` are surface-only (fragment-stage
-/// varyings), `LocalPosition`/`LocalNormal` are displacement-only
-/// (vertex-stage attributes), `Time` is legal in both.
+/// `WorldPosition`/`VertexColor`/`ViewDirection` are surface-only
+/// (fragment-stage varyings), `LocalPosition`/`LocalNormal` are
+/// displacement-only (vertex-stage attributes), and `Time`/`InstanceRandom`/
+/// `ObjectPosition`/`ObjectScale` are legal in both.
+///
+/// Variants are appended, never reordered or removed: postcard encodes a
+/// variant by its index, and a compiled graph's bytes are its content hash
+/// and therefore its cache key.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Node {
     Uv,
@@ -188,6 +193,70 @@ pub enum Node {
     Convert {
         v:  Port,
         to: ValueKind,
+    },
+    /// A pseudo-random scalar in `0..1`, one value per draw instance.
+    ///
+    /// The only way instances sharing a graph can differ without a
+    /// per-instance write. Noise cannot stand in: every instance of one mesh
+    /// samples it at the same coordinates and so gets the same value, and the
+    /// coordinates that do differ per instance are positions, which move.
+    /// Unreal's `PerInstanceRandom` and Godot's `INSTANCE_CUSTOM` are the
+    /// same node.
+    InstanceRandom,
+    /// The prim's world-space origin.
+    ObjectPosition,
+    /// The prim's world-space scale, one component per local axis. What a
+    /// term measured in world units divides by to stay a fixed size while
+    /// the prim it is drawn on is scaled.
+    ObjectScale,
+    /// The unit vector from the surface toward the camera. Surface-only, and
+    /// the general form of the view term [`Node::Fresnel`] hardcodes.
+    ViewDirection,
+    Atan2 {
+        y: Port,
+        x: Port,
+    },
+    /// WGSL's `%`, whose sign follows `a` — a remainder rather than a
+    /// Euclidean modulo.
+    Modulo {
+        a: Port,
+        b: Port,
+    },
+    Distance {
+        a: Port,
+        b: Port,
+    },
+    /// Rescales `x` from one range onto another. Unbounded on both sides:
+    /// clamping is [`Node::Saturate`]'s job, and a remap that clamped could
+    /// not extrapolate.
+    Remap {
+        x:         Port,
+        from_low:  Port,
+        from_high: Port,
+        to_low:    Port,
+        to_high:   Port,
+    },
+    /// Rises from 0 to 1 and falls back over each unit of `x`. The
+    /// non-sinusoidal oscillator, for a scan or sweep that should travel at
+    /// an even rate rather than easing at its extremes.
+    TriangleWave {
+        x: Port,
+    },
+    /// Perceptual brightness, by the Rec. 709 weights. Alpha is ignored.
+    Luminance {
+        color: Port,
+    },
+    /// `uv` about `center`, as `(radius, angle)` with the angle normalised to
+    /// `0..1` counterclockwise from +x. What a radial sweep or a swirl reads
+    /// instead of building `atan2` by hand.
+    PolarCoords {
+        uv:     Port,
+        center: Port,
+    },
+    RotateUv {
+        uv:      Port,
+        center:  Port,
+        radians: Port,
     },
 }
 

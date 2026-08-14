@@ -1,6 +1,7 @@
 mod arithmetic;
 mod builtin;
 mod channel;
+mod derived;
 mod leaf;
 mod sample;
 
@@ -50,7 +51,15 @@ pub(super) fn node_output_kind(ctx: &Ctx, node: &Node) -> Result<ValueKind, Grap
         | Node::Smoothstep { .. }
         | Node::Length { .. }
         | Node::Normalize { .. }
+        | Node::Atan2 { .. }
+        | Node::Modulo { .. }
+        | Node::Distance { .. }
         | Node::Cross { .. } => builtin::kind(ctx, node),
+        Node::Remap { .. }
+        | Node::TriangleWave { .. }
+        | Node::Luminance { .. }
+        | Node::PolarCoords { .. }
+        | Node::RotateUv { .. } => derived::kind(ctx, node),
         Node::Combine2 { .. }
         | Node::Combine3 { .. }
         | Node::Combine4 { .. }
@@ -62,6 +71,10 @@ pub(super) fn node_output_kind(ctx: &Ctx, node: &Node) -> Result<ValueKind, Grap
         | Node::VertexColor
         | Node::LocalPosition
         | Node::LocalNormal
+        | Node::InstanceRandom
+        | Node::ObjectPosition
+        | Node::ObjectScale
+        | Node::ViewDirection
         | Node::Time => Ok(leaf::kind(ctx, node)),
         Node::Fresnel { .. }
         | Node::Noise { .. }

@@ -2,6 +2,8 @@ mod common;
 
 use common::{
     const_f,
+    const_v2,
+    const_v3,
     graph,
     input,
     node,
@@ -221,4 +223,121 @@ fn non_finite_floats_are_rejected() {
             "terminal constant {bad}"
         );
     }
+}
+
+#[test]
+fn a_remap_takes_one_kind_across_all_five_of_its_ports() {
+    let matching = graph(vec![Node::Remap {
+        x:         const_f(0.5),
+        from_low:  const_f(0.0),
+        from_high: const_f(1.0),
+        to_low:    const_f(-1.0),
+        to_high:   const_f(1.0),
+    }]);
+    assert_eq!(
+        validate(&matching).expect("valid").surface(),
+        [ValueKind::Float].as_slice()
+    );
+
+    let mixed = graph(vec![Node::Remap {
+        x:         const_f(0.5),
+        from_low:  const_v3([0.0, 0.0, 0.0]),
+        from_high: const_f(1.0),
+        to_low:    const_f(0.0),
+        to_high:   const_f(1.0),
+    }]);
+    assert_eq!(
+        validate(&mixed),
+        Err(GraphError::NodeTypeMismatch {
+            network:  Network::Surface,
+            node:     0,
+            port:     "from-low",
+            expected: ValueKind::Float,
+            found:    ValueKind::Vec3,
+        }),
+        "a remap has no broadcast rule; only the arithmetic nodes do"
+    );
+}
+
+#[test]
+fn luminance_needs_three_colour_channels() {
+    for good in [
+        const_v3([1.0, 1.0, 1.0]),
+        Port::Const(GraphValue::Color([1.0, 1.0, 1.0, 1.0])),
+    ] {
+        assert!(validate(&graph(vec![Node::Luminance { color: good }])).is_ok());
+    }
+    assert_eq!(
+        validate(&graph(vec![Node::Luminance {
+            color: const_v2([1.0, 1.0]),
+        }])),
+        Err(GraphError::NodeTypeMismatch {
+            network:  Network::Surface,
+            node:     0,
+            port:     "color",
+            expected: ValueKind::Vec3,
+            found:    ValueKind::Vec2,
+        })
+    );
+}
+
+#[test]
+fn the_uv_nodes_take_and_return_a_vec2() {
+    let polar = graph(vec![
+        Node::Uv,
+        Node::PolarCoords {
+            uv:     node(0),
+            center: const_v2([0.5, 0.5]),
+        },
+        Node::RotateUv {
+            uv:      node(1),
+            center:  const_v2([0.5, 0.5]),
+            radians: const_f(1.0),
+        },
+    ]);
+    assert_eq!(
+        validate(&polar).expect("valid").surface(),
+        [ValueKind::Vec2, ValueKind::Vec2, ValueKind::Vec2].as_slice()
+    );
+
+    assert_eq!(
+        validate(&graph(vec![Node::RotateUv {
+            uv:      const_v2([0.0, 0.0]),
+            center:  const_v2([0.0, 0.0]),
+            radians: const_v2([0.0, 0.0]),
+        }])),
+        Err(GraphError::NodeTypeMismatch {
+            network:  Network::Surface,
+            node:     0,
+            port:     "radians",
+            expected: ValueKind::Float,
+            found:    ValueKind::Vec2,
+        })
+    );
+}
+
+#[test]
+fn distance_takes_two_matching_vectors_and_returns_a_scalar() {
+    let good = graph(vec![Node::Distance {
+        a: const_v3([0.0, 0.0, 0.0]),
+        b: const_v3([1.0, 1.0, 1.0]),
+    }]);
+    assert_eq!(
+        validate(&good).expect("valid").surface(),
+        [ValueKind::Float].as_slice()
+    );
+
+    assert_eq!(
+        validate(&graph(vec![Node::Distance {
+            a: const_f(0.0),
+            b: const_f(1.0),
+        }])),
+        Err(GraphError::NotAVector {
+            network: Network::Surface,
+            node:    0,
+            port:    "a",
+            found:   ValueKind::Float,
+        }),
+        "the distance between two scalars is Sub then Abs, not this"
+    );
 }

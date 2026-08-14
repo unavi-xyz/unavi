@@ -11,6 +11,7 @@ use bevy_hsd::attributes::material_graph::codegen::{
 use common::{
     const_color,
     const_f,
+    const_v2,
     const_v3,
     displaced,
     displaced_world,
@@ -56,6 +57,14 @@ fn expand_ifdefs(source: &str, defined: bool) -> String {
     out
 }
 
+/// The helper functions a generated body calls, spliced in from the shipped
+/// templates rather than restated here: a copy in the harness would let the
+/// real ones drift out from under the tests that are supposed to cover them.
+const HELPERS: &str = concat!(
+    include_str!("../src/attributes/material_graph/codegen/templates/noise.wgsl"),
+    include_str!("../src/attributes/material_graph/codegen/templates/context.wgsl"),
+);
+
 /// Wraps a generated surface body in a bare WGSL module with no Bevy
 /// preprocessor syntax, so plain `naga` can parse it and malformed WGSL fails
 /// `cargo test`. Parses both branches of every `#ifdef`: `VertexOutput.uv` /
@@ -64,6 +73,7 @@ fn expand_ifdefs(source: &str, defined: bool) -> String {
 fn assert_surface_valid(body: &str, out_expr: &str) {
     for defined in [true, false] {
         let module = include_str!("harness/surface.wgsl")
+            .replace("//#HELPERS", HELPERS)
             .replace("//#BODY", &expand_ifdefs(body, defined))
             .replace("{OUT_EXPR}", out_expr);
 
@@ -80,6 +90,7 @@ fn assert_surface_valid(body: &str, out_expr: &str) {
 fn assert_displacement_valid(body: &str) {
     for defined in [true, false] {
         let module = include_str!("harness/displacement.wgsl")
+            .replace("//#HELPERS", HELPERS)
             .replace("//#BODY", &expand_ifdefs(body, defined));
         // The generated body reads `vertex.position`/`vertex.normal` fields,
         // but the placeholder is a bare `vec3<f32>`; rewrite those accesses so
@@ -183,6 +194,107 @@ fn every_surface_node_kind_generates_valid_wgsl() {
     let validated = validate(&graph).expect("valid");
     let body = generate_surface_body(&graph, &validated);
     assert_surface_valid(&body, "out_color");
+}
+
+#[test]
+fn the_instance_object_and_view_leaves_generate_valid_wgsl() {
+    let graph = graph_with_output(
+        vec![
+            Node::InstanceRandom,
+            Node::ObjectPosition,
+            Node::ObjectScale,
+            Node::ViewDirection,
+            Node::Div {
+                a: node(3),
+                b: node(2),
+            },
+            Node::Combine4 {
+                x: node(0),
+                y: const_f(1.0),
+                z: const_f(1.0),
+                w: const_f(1.0),
+            },
+        ],
+        unlit(node(5)),
+    );
+    let validated = validate(&graph).expect("valid");
+    let body = generate_surface_body(&graph, &validated);
+    assert_surface_valid(&body, "out_color");
+}
+
+#[test]
+fn every_derived_node_kind_generates_valid_wgsl() {
+    let graph = graph_with_output(
+        vec![
+            Node::Uv,
+            Node::Time,
+            Node::Atan2 {
+                y: const_f(1.0),
+                x: node(1),
+            },
+            Node::Modulo {
+                a: node(1),
+                b: const_f(2.0),
+            },
+            Node::Distance {
+                a: node(0),
+                b: const_v2([0.5, 0.5]),
+            },
+            Node::Remap {
+                x:         node(1),
+                from_low:  const_f(0.0),
+                from_high: const_f(1.0),
+                to_low:    const_f(-1.0),
+                to_high:   const_f(1.0),
+            },
+            Node::TriangleWave { x: node(1) },
+            Node::Luminance {
+                color: const_color([1.0, 0.5, 0.25, 1.0]),
+            },
+            Node::PolarCoords {
+                uv:     node(0),
+                center: const_v2([0.5, 0.5]),
+            },
+            Node::RotateUv {
+                uv:      node(8),
+                center:  const_v2([0.5, 0.5]),
+                radians: node(1),
+            },
+            Node::Combine4 {
+                x: node(2),
+                y: node(3),
+                z: node(4),
+                w: node(6),
+            },
+        ],
+        unlit(node(10)),
+    );
+    let validated = validate(&graph).expect("valid");
+    let body = generate_surface_body(&graph, &validated);
+    assert_surface_valid(&body, "out_color");
+}
+
+/// The leaves legal in both networks have to read the same in the vertex
+/// stage, where the template binds them from `Vertex` rather than from
+/// `VertexOutput`.
+#[test]
+fn the_shared_leaves_generate_valid_wgsl_in_displacement_too() {
+    let graph = displaced(
+        vec![
+            Node::InstanceRandom,
+            Node::ObjectScale,
+            Node::ObjectPosition,
+            Node::LocalNormal,
+            Node::Mul {
+                a: node(3),
+                b: node(0),
+            },
+        ],
+        Some(node(4)),
+    );
+    let validated = validate(&graph).expect("valid");
+    let body = generate_displacement_body(&graph, &validated).expect("a displacement network");
+    assert_displacement_valid(&body);
 }
 
 /// `VertexOutput.uv` only exists under `VERTEX_UVS_A`, and an HSD prim need

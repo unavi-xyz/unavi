@@ -31,10 +31,22 @@ pub(super) fn kind(ctx: &Ctx, node: &Node) -> Result<ValueKind, GraphError> {
         | Node::Saturate { x }
         | Node::Sqrt { x } => ctx.port_kind(x),
         Node::Pow { x, y } => ctx.matching(x, "y", y),
-        Node::Min { a, b } | Node::Max { a, b } => ctx.matching(a, "b", b),
+        Node::Min { a, b } | Node::Max { a, b } | Node::Modulo { a, b } => {
+            ctx.matching(a, "b", b)
+        }
         Node::Clamp { x, low, high } => ctx.all_matching(x, &[("low", low), ("high", high)]),
         Node::Step { edge, x } => ctx.matching(edge, "x", x),
         Node::Smoothstep { low, high, x } => ctx.all_matching(low, &[("high", high), ("x", x)]),
+        Node::Atan2 { y, x } => {
+            ctx.require("y", y, ValueKind::Float)?;
+            ctx.require("x", x, ValueKind::Float)?;
+            Ok(ValueKind::Float)
+        }
+        Node::Distance { a, b } => {
+            let kind = ctx.vector_port("a", a)?;
+            ctx.require("b", b, kind)?;
+            Ok(ValueKind::Float)
+        }
         Node::Length { v } => {
             ctx.vector_port("v", v)?;
             Ok(ValueKind::Float)

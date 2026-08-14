@@ -182,8 +182,24 @@ impl TestContext {
             .spawn(bevy_hsd::Hsd(Arc::clone(&self.state)));
     }
 
+    /// A second document in the same app, for anything asserting about what
+    /// two documents share or hold separately.
+    pub fn spawn_document(&mut self) -> TestDocument {
+        let state = Arc::<Mutex<SceneState>>::default();
+        let entity = self
+            .app
+            .world_mut()
+            .spawn(bevy_hsd::Hsd(Arc::clone(&state)))
+            .id();
+        TestDocument { entity, state }
+    }
+
     fn with_state<T>(&self, f: impl FnOnce(&mut SceneState) -> T) -> T {
         f(&mut self.state.lock().expect("lock state"))
+    }
+
+    pub fn despawn_document(&mut self, doc: &TestDocument) {
+        self.app.world_mut().despawn(doc.entity);
     }
 
     pub fn create_prim(&self) -> PrimId {
@@ -232,6 +248,26 @@ impl TestContext {
             std::thread::sleep(Duration::from_millis(20));
         }
         panic!("tick_until condition not met within timeout");
+    }
+}
+
+/// A document beside [`TestContext`]'s own, ticked by the same app.
+pub struct TestDocument {
+    pub entity: Entity,
+    state:      Arc<Mutex<SceneState>>,
+}
+
+impl TestDocument {
+    fn with_state<T>(&self, f: impl FnOnce(&mut SceneState) -> T) -> T {
+        f(&mut self.state.lock().expect("lock state"))
+    }
+
+    pub fn create_prim(&self) -> PrimId {
+        self.with_state(|state| state.create_prim(None))
+    }
+
+    pub fn set_slot(&self, prim: PrimId, slot: &str, bytes: Vec<u8>) {
+        self.with_state(|state| state.set_slot(prim, slot, bytes).expect("set slot"));
     }
 }
 

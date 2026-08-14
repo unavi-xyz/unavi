@@ -8,6 +8,7 @@ use bevy::{
 use bevy_hsd::attributes::material_graph::{
     HsdMaterialGraphSlot,
     HsdShaderGraphMaterial,
+    MAX_SHADER_PROGRAMS,
     ShaderGraphMaterial,
     ShaderGraphOverridesData,
 };
@@ -65,6 +66,22 @@ fn glow_graph() -> ShaderGraph {
         },
         displacement:  None,
     }
+}
+
+/// A graph whose bytes, and so whose content hash and cache key, differ per
+/// `step`.
+fn distinct_graph(step: usize) -> ShaderGraph {
+    let mut graph = glow_graph();
+    graph.public_inputs = vec![GraphValue::Float(step as f32)];
+    graph.surface.nodes = vec![Node::Mul {
+        a: Port::Input(0),
+        b: Port::Const(GraphValue::Color([1.0, 1.0, 1.0, 1.0])),
+    }];
+    graph.surface.output = SurfaceOutput::Unlit(UnlitOutput {
+        color:                Port::Node(0),
+        alpha_clip_threshold: None,
+    });
+    graph
 }
 
 /// No `GraphOverridesAttr` set: `HsdSlots` alone must trigger the pipeline,
@@ -166,6 +183,121 @@ fn test_shader_graph_shares_compiled_shader_across_prims(#[from(ctx_wds)] mut ct
         shaders[0], shaders[1],
         "identical graphs must share one compiled shader"
     );
+}
+
+/// A compiled program is a pure function of the graph's bytes, so it is not
+/// the document's to own: keying the cache by document would compile identical
+/// WGSL once per document and specialize a second pipeline for it.
+#[traced_test]
+#[rstest]
+fn a_graph_compiles_once_across_documents(#[from(ctx_wds)] mut ctx: TestContext) {
+    let bytes = glow_graph().encode().expect("encode graph");
+
+    let here = ctx.create_prim();
+    ctx.set_slot(here, slots::MATERIAL_GRAPH_DATA, bytes.clone());
+
+    let elsewhere = ctx.spawn_document();
+    let there = elsewhere.create_prim();
+    elsewhere.set_slot(there, slots::MATERIAL_GRAPH_DATA, bytes);
+
+    let mut handles: Vec<Handle<ShaderGraphMaterial>> = Vec::new();
+    ctx.tick_until(|world| {
+        let mut q = world.query::<&HsdShaderGraphMaterial>();
+        handles = q.iter(world).map(|m| m.0.clone()).collect();
+        handles.len() == 2
+    });
+
+    let assets = ctx.app.world().resource::<Assets<ShaderGraphMaterial>>();
+    let shaders: Vec<_> = handles
+        .iter()
+        .map(|h| assets.get(h).expect("material").fragment_shader.clone())
+        .collect();
+    assert_eq!(shaders[0], shaders[1]);
+}
+
+/// The cap is a per-document resource ceiling, so one document exhausting it
+/// must not spend another's budget.
+#[traced_test]
+#[rstest]
+fn the_program_cap_is_charged_per_document(#[from(ctx_wds)] mut ctx: TestContext) {
+    for step in 0..MAX_SHADER_PROGRAMS {
+        let prim = ctx.create_prim();
+        ctx.set_slot(
+            prim,
+            slots::MATERIAL_GRAPH_DATA,
+            distinct_graph(step).encode().expect("encode graph"),
+        );
+    }
+    ctx.tick_until(|world| {
+        world.query::<&HsdShaderGraphMaterial>().iter(world).count() == MAX_SHADER_PROGRAMS
+    });
+
+    let elsewhere = ctx.spawn_document();
+    let there = elsewhere.create_prim();
+    elsewhere.set_slot(
+        there,
+        slots::MATERIAL_GRAPH_DATA,
+        distinct_graph(MAX_SHADER_PROGRAMS)
+            .encode()
+            .expect("encode graph"),
+    );
+
+    ctx.tick_until(|world| {
+        world.query::<&HsdShaderGraphMaterial>().iter(world).count() == MAX_SHADER_PROGRAMS + 1
+    });
+}
+
+/// Now that a program is shared, dropping one document must not evict a graph
+/// another still holds — the next prim to ask for it would otherwise compile a
+/// second copy and specialize a second pipeline for identical WGSL.
+///
+/// Asserted by asking for it again rather than by reading the cache: a
+/// material holds its own strong `Handle<Shader>`, so the asset stays alive
+/// whether or not the cache still has it and its liveness proves nothing.
+#[traced_test]
+#[rstest]
+fn dropping_one_document_keeps_a_graph_another_still_holds(
+    #[from(ctx_wds)] mut ctx: TestContext,
+) {
+    let bytes = glow_graph().encode().expect("encode graph");
+
+    let kept = ctx.create_prim();
+    ctx.set_slot(kept, slots::MATERIAL_GRAPH_DATA, bytes.clone());
+
+    let leaving = ctx.spawn_document();
+    let doomed = leaving.create_prim();
+    leaving.set_slot(doomed, slots::MATERIAL_GRAPH_DATA, bytes.clone());
+
+    ctx.tick_until(|world| world.query::<&HsdShaderGraphMaterial>().iter(world).count() == 2);
+    let before = fragment_shaders(&mut ctx).pop().expect("a compiled shader");
+
+    ctx.despawn_document(&leaving);
+    ctx.app.update();
+
+    let again = ctx.create_prim();
+    ctx.set_slot(again, slots::MATERIAL_GRAPH_DATA, bytes);
+    ctx.tick_until(|world| world.query::<&HsdShaderGraphMaterial>().iter(world).count() == 2);
+
+    let after = fragment_shaders(&mut ctx);
+    assert_eq!(after.len(), 2);
+    assert!(
+        after.iter().all(|shader| *shader == before),
+        "the graph was evicted with the other document and recompiled"
+    );
+}
+
+fn fragment_shaders(ctx: &mut TestContext) -> Vec<Handle<Shader>> {
+    let world = ctx.app.world_mut();
+    let handles: Vec<_> = world
+        .query::<&HsdShaderGraphMaterial>()
+        .iter(world)
+        .map(|m| m.0.clone())
+        .collect();
+    let materials = world.resource::<Assets<ShaderGraphMaterial>>();
+    handles
+        .iter()
+        .map(|h| materials.get(h).expect("material").fragment_shader.clone())
+        .collect()
 }
 
 /// Removing the slot removes the built material, as `ImageAttr`/`MaterialAttr`

@@ -83,6 +83,15 @@ pub(super) fn emit(
             port_expr(out, public_inputs, x);
             out.push(')');
         }
+        Node::Atan2 { y, x } => binary(out, public_inputs, "atan2", y, x),
+        Node::Modulo { a, b } => {
+            out.push('(');
+            port_expr(out, public_inputs, a);
+            out.push_str(" % ");
+            port_expr(out, public_inputs, b);
+            out.push(')');
+        }
+        Node::Distance { a, b } => binary(out, public_inputs, "distance", a, b),
         Node::Length { v } => unary(out, public_inputs, "length", v),
         Node::Normalize { v } => unary(out, public_inputs, "normalize", v),
         Node::Cross { a, b } => binary(out, public_inputs, "cross", a, b),

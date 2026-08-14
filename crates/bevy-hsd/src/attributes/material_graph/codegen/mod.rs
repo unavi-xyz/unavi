@@ -28,6 +28,12 @@ use hsd::attributes::material_graph::{
 /// shader rather than inlined per `Noise` node.
 const NOISE_FUNCTIONS: &str = include_str!("templates/noise.wgsl");
 
+/// Instance, object and UV helpers, on the same terms as [`NOISE_FUNCTIONS`].
+/// Emitted whether or not a graph calls them: naga strips a function nothing
+/// reaches, and a conditional preamble would key the shader cache on
+/// something other than the graph's own hash.
+const CONTEXT_FUNCTIONS: &str = include_str!("templates/context.wgsl");
+
 fn texture_bindings() -> String {
     let mut out = String::new();
     for slot in 0..MAX_TEXTURE_SAMPLES {
@@ -66,10 +72,11 @@ fn splice(template: &str, body: &str, preamble: &str) -> String {
 pub fn generate_fragment_shader(graph: &ShaderGraph, validated: &Validated) -> String {
     let body = generate_surface_body(graph, validated);
     let preamble = format!(
-        "{uniform}\n{textures}\n{noise}",
+        "{uniform}\n{textures}\n{noise}\n{context}",
         uniform = uniform_block(),
         textures = texture_bindings(),
         noise = NOISE_FUNCTIONS,
+        context = CONTEXT_FUNCTIONS,
     );
 
     match &graph.surface.output {
@@ -99,9 +106,10 @@ pub fn generate_fragment_shader(graph: &ShaderGraph, validated: &Validated) -> S
 pub fn generate_vertex_shader(graph: &ShaderGraph, validated: &Validated) -> Option<String> {
     let body = generate_displacement_body(graph, validated)?;
     let preamble = format!(
-        "{uniform}\n{noise}",
+        "{uniform}\n{noise}\n{context}",
         uniform = uniform_block(),
         noise = NOISE_FUNCTIONS,
+        context = CONTEXT_FUNCTIONS,
     );
     Some(splice(
         include_str!("templates/vertex.wgsl"),

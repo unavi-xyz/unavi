@@ -8,7 +8,10 @@ use bevy::{
     ecs::system::SystemParam,
     light::NotShadowCaster,
     pbr::MeshMaterial3d,
-    platform::collections::HashMap,
+    platform::collections::{
+        HashMap,
+        HashSet,
+    },
     prelude::*,
     render::render_resource::{
         AsBindGroup,
@@ -227,15 +230,7 @@ pub fn rebuild_material_graph(
         });
 
         let hash = BlobId(*blake3::hash(&slot.0).as_bytes());
-        let programs = cache.0.entry(doc).or_default();
-        if !programs.contains_key(&hash) {
-            if programs.len() >= MAX_SHADER_PROGRAMS {
-                warn!(
-                    "document is at its cap of {MAX_SHADER_PROGRAMS} shader programs; ignoring \
-                     another"
-                );
-                continue;
-            }
+        let compile = || {
             let fragment_source = codegen::generate_fragment_shader(&graph, &validated);
             let fragment = shaders.add(Shader::from_wgsl(
                 fragment_source,
@@ -247,9 +242,12 @@ pub fn rebuild_material_graph(
                     format!("generated://material_graph/{hash}/vertex"),
                 ))
             });
-            programs.insert(hash, CachedShaders { fragment, vertex });
-        }
-        let Some(cached) = programs.get(&hash) else {
+            CachedShaders { fragment, vertex }
+        };
+        let Some(cached) = cache.charge(doc, hash, compile) else {
+            warn!(
+                "document is at its cap of {MAX_SHADER_PROGRAMS} shader programs; ignoring another"
+            );
             continue;
         };
 
@@ -363,8 +361,8 @@ fn build_params_from(
     GraphParams { inputs }
 }
 
-/// A graph's compiled shaders, cached per document keyed by the slot's content
-/// hash, so every prim referencing the same graph reuses them.
+/// A graph's compiled shaders, keyed by the slot's content hash, so every prim
+/// referencing the same graph reuses them.
 #[derive(Clone)]
 struct CachedShaders {
     fragment: Handle<Shader>,
@@ -381,13 +379,59 @@ struct CachedShaders {
 /// ceiling a document that varies one constant mints them without bound.
 pub const MAX_SHADER_PROGRAMS: usize = 32;
 
-/// Compiled shaders, grouped by the document whose prims asked for them, so
-/// that dropping a document drops its shaders with it.
+/// Compiled shaders, and which documents asked for them.
+///
+/// The two are separate because they answer different questions. A program is
+/// a pure function of the graph's bytes, so two documents carrying the same
+/// graph should compile it **once** — keying the programs by document would
+/// compile it per document and specialize a second pipeline for an identical
+/// shader. The cap, meanwhile, is a per-document resource ceiling and has to
+/// stay one: a global count would let one document exhaust the budget for
+/// every other.
 #[derive(Resource, Default)]
-pub struct ShaderGraphCache(HashMap<Entity, HashMap<BlobId, CachedShaders>>);
+pub struct ShaderGraphCache {
+    programs: HashMap<BlobId, CachedShaders>,
+    /// The graphs each document has charged against its cap. Also what keeps
+    /// a program alive: one is dropped when the last document holding it
+    /// goes.
+    ///
+    /// A document never gives a graph back, even once no prim renders it —
+    /// the cap exists to bound edit churn, and re-charging on every hash
+    /// change would leave it bounding nothing.
+    charged:  HashMap<Entity, HashSet<BlobId>>,
+}
+
+impl ShaderGraphCache {
+    /// The shaders for `hash`, compiled by `compile` if this is the first
+    /// document to ask for them, and charged against `doc`'s cap.
+    ///
+    /// `None` once `doc` is at [`MAX_SHADER_PROGRAMS`] distinct graphs and
+    /// `hash` is not already one of them.
+    fn charge(
+        &mut self,
+        doc: Entity,
+        hash: BlobId,
+        compile: impl FnOnce() -> CachedShaders,
+    ) -> Option<&CachedShaders> {
+        let charged = self.charged.entry(doc).or_default();
+        if !charged.contains(&hash) {
+            if charged.len() >= MAX_SHADER_PROGRAMS {
+                return None;
+            }
+            charged.insert(hash);
+        }
+        Some(self.programs.entry(hash).or_insert_with(compile))
+    }
+}
 
 pub fn evict_document_shaders(trigger: On<Remove, Hsd>, mut cache: ResMut<ShaderGraphCache>) {
-    cache.0.remove(&trigger.entity);
+    let Some(dropped) = cache.charged.remove(&trigger.entity) else {
+        return;
+    };
+    let ShaderGraphCache { programs, charged } = &mut *cache;
+    programs.retain(|hash, _| {
+        !dropped.contains(hash) || charged.values().any(|held| held.contains(hash))
+    });
 }
 
 const fn alpha_mode(blend: BlendMode) -> AlphaMode {

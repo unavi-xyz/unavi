@@ -54,6 +54,21 @@ impl Ctx<'_> {
         }
     }
 
+    pub(super) const fn mismatch(
+        &self,
+        name: &'static str,
+        expected: ValueKind,
+        found: ValueKind,
+    ) -> GraphError {
+        GraphError::NodeTypeMismatch {
+            network: self.network,
+            node: self.at,
+            port: name,
+            expected,
+            found,
+        }
+    }
+
     pub(super) fn require(
         &self,
         name: &'static str,
@@ -64,13 +79,7 @@ impl Ctx<'_> {
         if found == expected {
             Ok(())
         } else {
-            Err(GraphError::NodeTypeMismatch {
-                network: self.network,
-                node: self.at,
-                port: name,
-                expected,
-                found,
-            })
+            Err(self.mismatch(name, expected, found))
         }
     }
 
@@ -110,13 +119,7 @@ impl Ctx<'_> {
         match (a_kind, b_kind) {
             (a, b) if a == b => Ok(a),
             (ValueKind::Float, vector) | (vector, ValueKind::Float) => Ok(vector),
-            _ => Err(GraphError::NodeTypeMismatch {
-                network:  self.network,
-                node:     self.at,
-                port:     "b",
-                expected: a_kind,
-                found:    b_kind,
-            }),
+            _ => Err(self.mismatch("b", a_kind, b_kind)),
         }
     }
 

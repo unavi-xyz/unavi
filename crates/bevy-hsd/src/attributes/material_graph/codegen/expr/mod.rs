@@ -1,6 +1,7 @@
 mod arithmetic;
 mod builtin;
 mod channel;
+mod derived;
 mod leaf;
 mod sample;
 
@@ -117,7 +118,15 @@ pub(super) fn node_expr(
         | Node::Smoothstep { .. }
         | Node::Length { .. }
         | Node::Normalize { .. }
+        | Node::Atan2 { .. }
+        | Node::Modulo { .. }
+        | Node::Distance { .. }
         | Node::Cross { .. } => builtin::emit(out, public_inputs, kinds, node),
+        Node::Remap { .. }
+        | Node::TriangleWave { .. }
+        | Node::Luminance { .. }
+        | Node::PolarCoords { .. }
+        | Node::RotateUv { .. } => derived::emit(out, public_inputs, node),
         Node::Combine2 { .. }
         | Node::Combine3 { .. }
         | Node::Combine4 { .. }
@@ -129,6 +138,10 @@ pub(super) fn node_expr(
         | Node::VertexColor
         | Node::LocalPosition
         | Node::LocalNormal
+        | Node::InstanceRandom
+        | Node::ObjectPosition
+        | Node::ObjectScale
+        | Node::ViewDirection
         | Node::Time => leaf::emit(out, node),
         Node::Fresnel { .. }
         | Node::Noise { .. }

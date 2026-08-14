@@ -14,21 +14,25 @@ use crate::attributes::material_graph::{
 pub(super) fn kind(_ctx: &Ctx, node: &Node) -> ValueKind {
     match *node {
         Node::Uv => ValueKind::Vec2,
-        Node::WorldNormal | Node::WorldPosition | Node::LocalPosition | Node::LocalNormal => {
-            ValueKind::Vec3
-        }
+        Node::WorldNormal
+        | Node::WorldPosition
+        | Node::LocalPosition
+        | Node::LocalNormal
+        | Node::ObjectPosition
+        | Node::ObjectScale
+        | Node::ViewDirection => ValueKind::Vec3,
         Node::VertexColor => ValueKind::Color,
-        Node::Time => ValueKind::Float,
+        Node::Time | Node::InstanceRandom => ValueKind::Float,
         _ => unreachable!("only the dispatch match in rules/mod.rs reaches here"),
     }
 }
 
 /// Rejects a leaf built-in used outside the one network it is defined in —
-/// `Uv`/`WorldNormal`/`WorldPosition`/`VertexColor`/`Fresnel` are
-/// fragment-stage varyings that do not exist in the vertex stage,
+/// `Uv`/`WorldNormal`/`WorldPosition`/`VertexColor`/`ViewDirection`/`Fresnel`
+/// are fragment-stage varyings that do not exist in the vertex stage,
 /// `LocalPosition`/`LocalNormal` are vertex-stage attributes that have no
-/// meaning post-rasterization. `Time` and every non-leaf node kind are
-/// legal in both.
+/// meaning post-rasterization. `Time`/`InstanceRandom`/`ObjectPosition`/
+/// `ObjectScale` and every non-leaf node kind are legal in both.
 pub(super) const fn check_network_leaf(
     network: Network,
     index: usize,
@@ -36,7 +40,11 @@ pub(super) const fn check_network_leaf(
 ) -> Result<(), GraphError> {
     let surface_only = matches!(
         node,
-        Node::Uv | Node::WorldNormal | Node::WorldPosition | Node::VertexColor
+        Node::Uv
+            | Node::WorldNormal
+            | Node::WorldPosition
+            | Node::VertexColor
+            | Node::ViewDirection
     ) || matches!(node, Node::Fresnel { .. });
     let displacement_only = matches!(node, Node::LocalPosition | Node::LocalNormal);
 

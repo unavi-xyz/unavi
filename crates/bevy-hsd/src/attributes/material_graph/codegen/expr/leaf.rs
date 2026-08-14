@@ -14,6 +14,12 @@ pub(super) fn emit(out: &mut String, node: &Node) {
         // bind group: a per-material `time` would need re-uploading every
         // frame.
         Node::Time => out.push_str("globals.time"),
+        // `graph_instance_index` and `world_from_local` are bound by both
+        // templates before the body, so these read the same in either stage.
+        Node::InstanceRandom => out.push_str("graph_instance_random(graph_instance_index)"),
+        Node::ObjectPosition => out.push_str("world_from_local[3].xyz"),
+        Node::ObjectScale => out.push_str("graph_object_scale(world_from_local)"),
+        Node::ViewDirection => out.push('V'),
         _ => unreachable!("only the dispatch match in expr/mod.rs reaches here"),
     }
 }

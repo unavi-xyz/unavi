@@ -8,12 +8,18 @@ use crate::mote::{
     MAX_PIPS,
 };
 
-/// Positions, normals and indices, in the shape the scene API's mesh streams
-/// take.
+/// Positions, normals, texture coordinates and indices, in the shape the scene
+/// API's mesh streams take.
+///
+/// The coordinates are what any effect written across a body reads — a sweep
+/// around a ring, a dissolve up a mote — and every generator here supplies
+/// them, since a shader graph reading `Uv` on a mesh without them silently
+/// falls back to zero and the whole body shades alike.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct MeshData {
     pub positions: Vec<f32>,
     pub normals:   Vec<f32>,
+    pub uvs:       Vec<f32>,
     pub indices:   Vec<u32>,
 }
 
@@ -122,6 +128,12 @@ pub fn panel() -> MeshData {
             0.5, -1.0, 0.0,
         ],
         normals:   [0.0, 0.0, 1.0].repeat(4),
+        uvs:       vec![
+            0.0, 1.0, //
+            1.0, 1.0, //
+            0.0, 0.0, //
+            1.0, 0.0,
+        ],
         indices:   vec![0, 2, 1, 1, 2, 3],
     }
 }
@@ -132,10 +144,12 @@ fn push_sphere(mesh: &mut MeshData, centre: [f32; 3], radius: f32, rings: usize,
     let base = (mesh.positions.len() / 3) as u32;
 
     for ring in 0..=rings {
-        let phi = PI * ring as f32 / rings as f32;
+        let ring_t = ring as f32 / rings as f32;
+        let phi = PI * ring_t;
         let (sin_phi, cos_phi) = phi.sin_cos();
         for segment in 0..=segments {
-            let theta = TAU * segment as f32 / segments as f32;
+            let segment_t = segment as f32 / segments as f32;
+            let theta = TAU * segment_t;
             let (sin_theta, cos_theta) = theta.sin_cos();
             let normal = [sin_phi * cos_theta, cos_phi, sin_phi * sin_theta];
             mesh.normals.extend_from_slice(&normal);
@@ -144,6 +158,9 @@ fn push_sphere(mesh: &mut MeshData, centre: [f32; 3], radius: f32, rings: usize,
                 normal[1].mul_add(radius, centre[1]),
                 normal[2].mul_add(radius, centre[2]),
             ]);
+            // v runs 0 at the bottom, so anything written up a body — a
+            // dissolve, a fill — travels the way a thing fills up.
+            mesh.uvs.extend_from_slice(&[segment_t, 1.0 - ring_t]);
         }
     }
 
@@ -159,22 +176,29 @@ fn push_sphere(mesh: &mut MeshData, centre: [f32; 3], radius: f32, rings: usize,
 }
 
 /// A flat annulus in the XY plane, for orbit guides and cast circles.
+///
+/// u is the angle and v crosses the band, so a fill sweeps round on u and an
+/// edge softens on v — the coordinates a ring is actually shaded in, which no
+/// amount of world position would give.
 #[must_use]
 pub fn annulus(inner: f32, outer: f32, segments: usize) -> MeshData {
     let segments = segments.max(3);
     let mut mesh = MeshData {
         positions: Vec::with_capacity((segments + 1) * 6),
         normals:   Vec::with_capacity((segments + 1) * 6),
+        uvs:       Vec::with_capacity((segments + 1) * 4),
         indices:   Vec::with_capacity(segments * 6),
     };
 
     for segment in 0..=segments {
-        let theta = TAU * segment as f32 / segments as f32;
+        let angle = segment as f32 / segments as f32;
+        let theta = TAU * angle;
         let (sin, cos) = theta.sin_cos();
-        for radius in [inner, outer] {
+        for (edge, radius) in [inner, outer].into_iter().enumerate() {
             mesh.positions
                 .extend_from_slice(&[radius * cos, radius * sin, 0.0]);
             mesh.normals.extend_from_slice(&[0.0, 0.0, 1.0]);
+            mesh.uvs.extend_from_slice(&[angle, edge as f32]);
         }
     }
 
@@ -244,12 +268,76 @@ mod tests {
         assert_eq!(mesh.positions.len(), mesh.normals.len());
         assert_eq!(mesh.positions.len() % 3, 0);
         assert_eq!(mesh.indices.len() % 3, 0);
-        let vertices = vertex_count(mesh) as u32;
+        let vertices = vertex_count(mesh);
+        // A stream whose vertex count disagrees with POSITION is refused
+        // outright, so a body short of coordinates is not drawn at all.
+        assert_eq!(
+            mesh.uvs.len(),
+            vertices * 2,
+            "every vertex carries a texture coordinate"
+        );
         for &index in &mesh.indices {
-            assert!(index < vertices, "index {index} out of range");
+            assert!(index < vertices as u32, "index {index} out of range");
         }
         for value in mesh.positions.iter().chain(&mesh.normals) {
             assert!(value.is_finite());
+        }
+        for value in &mesh.uvs {
+            assert!(
+                value.is_finite() && (0.0..=1.0).contains(value),
+                "a coordinate outside the unit square wraps or clamps rather \
+                 than shading what it was written for: {value}"
+            );
+        }
+    }
+
+    #[test]
+    fn a_panel_is_well_formed() {
+        assert_well_formed(&panel());
+    }
+
+    #[test]
+    fn an_overflow_marker_is_well_formed() {
+        assert_well_formed(&overflow_marker(0.11));
+    }
+
+    /// The convention anything written up a body depends on: a mote fills from
+    /// the bottom, so its lowest vertex is where a dissolve or a fill starts.
+    #[test]
+    fn a_spheres_coordinates_run_up_from_its_bottom() {
+        let mesh = sphere(1.0, 8, 12);
+        let (lowest, highest) = mesh.positions.chunks_exact(3).zip(mesh.uvs.chunks_exact(2)).fold(
+            ((f32::MAX, 0.0_f32), (f32::MIN, 0.0_f32)),
+            |(low, high), (point, uv)| {
+                let low = if point[1] < low.0 { (point[1], uv[1]) } else { low };
+                let high = if point[1] > high.0 { (point[1], uv[1]) } else { high };
+                (low, high)
+            },
+        );
+        assert!(lowest.1 < 0.01, "the bottom is v = 0, got {}", lowest.1);
+        assert!(highest.1 > 0.99, "the top is v = 1, got {}", highest.1);
+    }
+
+    /// A sweep reads u and an edge softens on v, so the two must not be the
+    /// same thing measured twice.
+    #[test]
+    fn an_annulus_carries_the_angle_on_u_and_the_band_on_v() {
+        let (inner, outer) = (0.04_f32, 0.06_f32);
+        let mesh = annulus(inner, outer, 16);
+        for (point, uv) in mesh.positions.chunks_exact(3).zip(mesh.uvs.chunks_exact(2)) {
+            let radius = point[0].hypot(point[1]);
+            let expected = f32::from(radius > inner.midpoint(outer));
+            assert!(
+                (uv[1] - expected).abs() < 1.0e-6,
+                "v names which edge a vertex is on"
+            );
+            let angle = point[1].atan2(point[0]).rem_euclid(TAU) / TAU;
+            let apart = (uv[0] - angle).abs();
+            assert!(
+                apart < 1.0e-4 || (apart - 1.0).abs() < 1.0e-4,
+                "u is the angle round the ring; {} vs {angle}",
+                uv[0]
+            );
         }
     }
 

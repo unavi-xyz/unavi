@@ -28,9 +28,12 @@ pub const fn hidden() -> Xform {
     placed(Vec3::ZERO, 0.0)
 }
 
+/// Every stream costs a blob upload whatever its size, so this is four per
+/// body, paid once when a slot is first built.
 pub fn mesh(prim: &Prim, data: &MeshData) -> anyhow::Result<()> {
     prim.set_mesh_stream("POSITION", Some(&data.positions))?;
     prim.set_mesh_stream("NORMAL", Some(&data.normals))?;
+    prim.set_mesh_stream("UV_0", Some(&data.uvs))?;
     prim.set_mesh_indices_u32(Some(&data.indices))?;
     Ok(())
 }

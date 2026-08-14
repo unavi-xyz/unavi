@@ -10,14 +10,13 @@ use std::time::SystemTime;
 use wired_prelude::prelude::*;
 
 use crate::{
-    circle::{
+    cast::{
         Cast,
-        Circle,
+        State,
     },
     palette::Palette,
     pointer,
     scene::{
-        cast::Site,
         event::{
             Casting,
             Event,
@@ -27,6 +26,7 @@ use crate::{
         grid::Grid,
         mount::Mount,
         orbit::Orbit,
+        site::Site,
     },
     surface::Surface,
     tree::Mote,
@@ -38,7 +38,6 @@ use crate::{
 };
 
 mod bodies;
-mod cast;
 pub(crate) mod draw;
 pub mod event;
 mod graphs;
@@ -46,6 +45,7 @@ mod grid;
 pub mod mount;
 mod orbit;
 mod placard;
+mod site;
 mod viewer;
 
 /// Events a surface holds for a consumer that has not asked. Past this the
@@ -300,7 +300,7 @@ pub(crate) fn open_cast(casting: &mut Option<Casting>, slot: usize, mote: Mote, 
     *casting = Some(Casting {
         slot,
         mote,
-        circle: Circle::standard(surface.tuning()),
+        cast: Cast::standard(surface.tuning()),
     });
 }
 
@@ -323,21 +323,21 @@ pub(crate) fn drive_cast(
     };
 
     let held = surface.seized_slot() == Some(active.slot);
-    let cast = active.circle.update(held, delta);
+    let state = active.cast.update(held, delta);
     let at = surface
         .views()
         .get(active.slot)
         .map_or(Vec3::ZERO, |view| view.position);
-    site.apply(at, cast)?;
+    site.apply(at, state)?;
 
-    if !cast.is_settled() {
+    if !state.is_settled() {
         return Ok(());
     }
     let mote = active.mote.clone();
     *casting = None;
-    events.push(match cast {
-        Cast::Committed => Event::Cast(mote),
-        Cast::Filling(_) | Cast::Aborted => Event::Aborted(mote),
+    events.push(match state {
+        State::Committed => Event::Cast(mote),
+        State::Filling(_) | State::Aborted => Event::Aborted(mote),
     });
     Ok(())
 }

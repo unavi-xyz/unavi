@@ -45,6 +45,10 @@ use crate::{
 
 /// The icon fills half its mote, so the shell still reads as a shell.
 const ICON: f32 = 0.5;
+/// The glyph every icon wears: monochrome, because the shell carries the
+/// hue. The delivered thing keeps `variety.color` — only the mote's icon is
+/// neutral, or the two would read as clashing rather than as one form.
+const ICON_GLASS: Color = rgb(0.92, 0.94, 0.96);
 
 #[derive(Clone, Copy)]
 pub enum Shape {
@@ -85,7 +89,8 @@ impl Fruit {
             mote.describe(variety.description);
         }
         mote.set_unique(variety.unique);
-        mote.set_icon(Some(&dressed(icon(variety.shape), variety.color)));
+        mote.set_tint(Some(variety.color));
+        mote.set_icon(Some(&dressed(icon(variety.shape), ICON_GLASS)));
 
         Self {
             mote,

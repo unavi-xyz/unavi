@@ -1,4 +1,5 @@
 use wired_math::types::Vec3;
+use wired_scene::types::Color;
 
 use crate::{
     assist,
@@ -167,7 +168,7 @@ impl Surface {
     /// A mote's style with no attention on it.
     #[must_use]
     pub const fn resting_style(&self, spec: &MoteSpec) -> Style {
-        self.style(spec.role, Attention::Idle, spec.active)
+        self.style(spec.role, Attention::Idle, spec.active, spec.tint)
     }
 
     /// Turns to `page`, settled against what the collection actually has by
@@ -289,7 +290,7 @@ impl Surface {
             self.views.push(SlotView {
                 position,
                 radius: presentation.radius,
-                style: self.style_at(spec.role, heat, spec.active),
+                style: self.style_at(spec.role, heat, spec.active, spec.tint),
                 role: spec.role,
                 attention,
                 heat,
@@ -368,20 +369,20 @@ impl Surface {
     /// rule in [`Surface::style`] — a parent mote receding, a container's
     /// glass, an item's warmth — exactly what it was at each state, and none
     /// of them has to know heat exists.
-    fn style_at(&self, role: Role, heat: f32, active: bool) -> Style {
+    fn style_at(&self, role: Role, heat: f32, active: bool, tint: Option<Color>) -> Style {
         let (low, high, t) = attention::bracket(heat);
         // Landing on an endpoint exactly, rather than blending to it: a style
         // is only rewritten when it differs, and `a + (b - a) * 1.0` is not
         // `b` in floating point — so a settled mote would redraw forever.
         if t <= 0.0 {
-            return self.style(role, low, active);
+            return self.style(role, low, active, tint);
         }
         if t >= 1.0 {
-            return self.style(role, high, active);
+            return self.style(role, high, active, tint);
         }
         let (from, to) = (
-            self.style(role, low, active),
-            self.style(role, high, active),
+            self.style(role, low, active, tint),
+            self.style(role, high, active, tint),
         );
         Style {
             color:    palette::blend(from.color, to.color, t),
@@ -390,21 +391,38 @@ impl Surface {
         }
     }
 
-    const fn style(&self, role: Role, attention: Attention, active: bool) -> Style {
-        let color = match role {
-            Role::Parent { .. } if !attention.is_active() => self.palette.dim,
-            Role::Item { .. } => self.palette.item(attention, role.is_source()),
-            _ => self.palette.tint(attention),
+    const fn style(
+        &self,
+        role: Role,
+        attention: Attention,
+        active: bool,
+        tint: Option<Color>,
+    ) -> Style {
+        // A mote's own hue is what it *is*, so it beats every resting rule —
+        // the source's warmth and the parent's dim both belong to the neutral
+        // family. Only what is in hand outranks it, because the accent says
+        // what is happening and nothing else.
+        let color = match (role, attention, tint) {
+            (_, Attention::Engaged, _) => self.palette.tint(attention),
+            // An off toggle is a clear outline: it wears the neutral family,
+            // not its hue, so the fill is the one thing that says it is on.
+            (Role::Toggle, ..) if !active => self.palette.dim,
+            (_, _, Some(tint)) => self.palette.tinted(tint, attention),
+            (Role::Parent { .. }, ..) if !attention.is_active() => self.palette.dim,
+            (Role::Item { .. }, ..) => self.palette.item(attention, role.is_source()),
+            (_, _, None) => self.palette.tint(attention),
         };
         Style {
             color,
             alpha: match role {
                 Role::Group { .. } => self.palette.glass(attention),
-                Role::Action
-                | Role::Toggle
-                | Role::Item { .. }
-                | Role::Cast
-                | Role::Parent { .. } => self.palette.solid_alpha,
+                // A toggle's fill *is* the signal: off is a clear outline,
+                // on is the mote wearing its hue.
+                Role::Toggle if active => self.palette.toggle_active_alpha,
+                Role::Toggle => self.palette.toggle_idle_alpha,
+                Role::Action | Role::Item { .. } | Role::Cast | Role::Parent { .. } => {
+                    self.palette.solid_alpha
+                }
             },
             emissive: self.palette.emissive_lit(attention, active),
         }
@@ -444,6 +462,9 @@ mod tests {
             description: None,
             active: false,
             icon: false,
+            tint: None,
+            film: crate::palette::FILM,
+            frost: 0.0,
         }
     }
 
@@ -454,6 +475,9 @@ mod tests {
             description: None,
             active:      false,
             icon:        false,
+            tint:        None,
+            film:        crate::palette::FILM,
+            frost:       0.0,
         }
     }
 
@@ -1014,6 +1038,44 @@ mod tests {
     }
 
     #[test]
+    fn a_consumer_s_hue_takes_over_identity_from_the_palette() {
+        let tint = crate::palette::rgb(0.8, 0.2, 0.3);
+        let mut surface = surface();
+        let specs = [MoteSpec {
+            tint: Some(tint),
+            ..spec(Role::Item { unique: false })
+        }];
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        assert_eq!(
+            surface.views()[0].style.color,
+            tint,
+            "the hue replaces the source's warmth: one colour per form"
+        );
+    }
+
+    #[test]
+    fn attention_lifts_a_consumer_s_hue_rather_than_repainting_it() {
+        let tint = crate::palette::rgb(0.8, 0.2, 0.3);
+        let mut surface = surface();
+        let specs = [MoteSpec {
+            tint: Some(tint),
+            ..spec(Role::Action)
+        }];
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        let idle = surface.views()[0].style.color;
+
+        let attended = hold(&mut surface, &specs, 60).style.color;
+
+        assert_ne!(attended, Palette::DEFAULT.accent, "hover is not in hand");
+        assert!(
+            attended.r > idle.r,
+            "a lift is a brightening, not a repaint"
+        );
+        assert!(attended.g > idle.g);
+        assert!(attended.b > idle.b);
+    }
+
+    #[test]
     fn hovering_brightens_a_mote_without_repainting_it() {
         let mut surface = surface();
         let specs = [spec(Role::Action), spec(Role::Action)];
@@ -1096,7 +1158,12 @@ mod tests {
         );
         assert_eq!(
             settled.style,
-            surface.style(specs[0].role, Attention::Attended, specs[0].active)
+            surface.style(
+                specs[0].role,
+                Attention::Attended,
+                specs[0].active,
+                specs[0].tint
+            )
         );
     }
 
@@ -1112,6 +1179,30 @@ mod tests {
 
         assert_eq!(settled.style, still.style);
         assert_eq!(settled.radius, still.radius);
+    }
+
+    /// A toggle's fill is its signal: off is a clear, colorless outline, on is
+    /// the mote wearing its hue. Attention never trades the one for the other.
+    #[test]
+    fn a_toggle_s_fill_is_its_signal() {
+        let surface = surface();
+        let palette = Palette::DEFAULT;
+        let hue = crate::palette::rgb(0.8, 0.2, 0.3);
+        let off = surface.style(Role::Toggle, Attention::Attended, false, Some(hue));
+        let on = surface.style(Role::Toggle, Attention::Attended, true, Some(hue));
+
+        assert!(
+            off.alpha < on.alpha,
+            "off is the outline and on is the fill: {} < {}",
+            off.alpha,
+            on.alpha
+        );
+        assert_eq!(off.color, palette.dim, "an off toggle is colorless");
+        assert_eq!(
+            on.color,
+            palette.tinted(hue, Attention::Attended),
+            "an on toggle wears its hue"
+        );
     }
 
     #[test]

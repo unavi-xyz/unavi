@@ -258,6 +258,19 @@ pub enum Node {
         center:  Port,
         radians: Port,
     },
+    /// Where this fragment sits on screen, `0..1` from the top left.
+    /// Surface-only: there is no screen before rasterization.
+    ScreenUv,
+    /// What was already drawn behind this surface, sampled at `uv`.
+    ///
+    /// The one node that reads the frame rather than the mesh, and what makes
+    /// refraction expressible: offsetting `uv` by a surface's own curvature
+    /// bends whatever is behind it. Surface-only, and only ever what was drawn
+    /// *before* this surface — so two graphs reading it do not see each other,
+    /// and neither sees anything that comes after.
+    SceneColor {
+        uv: Port,
+    },
 }
 
 /// Which shader stage a network compiles to. Carried in errors so a

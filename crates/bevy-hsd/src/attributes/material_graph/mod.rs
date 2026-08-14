@@ -264,6 +264,8 @@ pub fn rebuild_material_graph(
             vertex_shader: cached.vertex.clone(),
             alpha_mode: alpha_mode(graph.surface.blend),
             cull_mode: cull_mode(graph.surface.cull),
+            reads_scene: reads_scene(&graph),
+            transmissive: transmissive(&graph),
         };
 
         commands
@@ -484,6 +486,34 @@ pub struct ShaderGraphMaterial {
     pub vertex_shader:   Option<Handle<Shader>>,
     pub alpha_mode:      AlphaMode,
     pub cull_mode:       Option<Face>,
+    /// Whether the graph reads what was drawn behind it, which is what a
+    /// refraction needs and the only reason to pay for the transmissive pass.
+    pub reads_scene:     bool,
+    /// Whether the surface asks Bevy's PBR for transmissive glass: refraction
+    /// through `thickness`/`ior` with depth rejection, and a Frosted blur
+    /// driven by roughness. Also what opts the material into the depth
+    /// prepass.
+    pub transmissive:    bool,
+}
+
+/// Whether the graph samples `SceneColor` itself — a hand-rolled screen-space
+/// refraction rather than Bevy's transmissive material.
+fn reads_scene(graph: &ShaderGraph) -> bool {
+    graph.surface.nodes.iter().any(|node| {
+        matches!(
+            node,
+            hsd::attributes::material_graph::node::Node::SceneColor { .. }
+        )
+    })
+}
+
+/// Whether the lit surface asks for Bevy's PBR transmissive glass.
+const fn transmissive(graph: &ShaderGraph) -> bool {
+    let hsd::attributes::material_graph::graph::SurfaceOutput::Lit(lit) = &graph.surface.output
+    else {
+        return false;
+    };
+    lit.specular_transmission.is_some() || lit.diffuse_transmission.is_some()
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -491,6 +521,7 @@ pub struct ShaderGraphMaterialKey {
     fragment_shader: Handle<Shader>,
     vertex_shader:   Option<Handle<Shader>>,
     cull_mode:       Option<Face>,
+    transmissive:    bool,
 }
 
 impl From<&ShaderGraphMaterial> for ShaderGraphMaterialKey {
@@ -499,6 +530,7 @@ impl From<&ShaderGraphMaterial> for ShaderGraphMaterialKey {
             fragment_shader: material.fragment_shader.clone(),
             vertex_shader:   material.vertex_shader.clone(),
             cull_mode:       material.cull_mode,
+            transmissive:    material.transmissive,
         }
     }
 }
@@ -510,6 +542,24 @@ impl Material for ShaderGraphMaterial {
 
     fn alpha_mode(&self) -> AlphaMode {
         self.alpha_mode
+    }
+
+    /// Moves the material into the transmissive phase, which is drawn after
+    /// the opaque one into a texture the fragment stage can then sample. Only
+    /// when the graph actually needs it: the phase costs a full-screen copy,
+    /// and a graph that never looks behind itself should not pay for one.
+    fn reads_view_transmission_texture(&self) -> bool {
+        self.reads_scene || self.transmissive
+    }
+
+    /// Stays out of the depth prepass: the transmissive depth rejection in
+    /// `transmission.wgsl` compares the refracted sample's prepass depth
+    /// against the fragment's, and for a thin front-only shell that sample
+    /// lands on the shell's *own* depth — so it reads as "in front" and the
+    /// glass renders opaque. Excluded, the prepass at those pixels holds the
+    /// background behind the shell, which is farther and never rejected.
+    fn enable_prepass() -> bool {
+        false
     }
 
     /// Every graph shares one `Material` type; what makes each look different
@@ -535,6 +585,15 @@ impl Material for ShaderGraphMaterial {
             fragment.shader = key.bind_group_data.fragment_shader;
             if let Some(vertex_shader) = key.bind_group_data.vertex_shader {
                 descriptor.vertex.shader = vertex_shader;
+            }
+            // `apply_pbr_lighting` only compiles the transmissive path under
+            // this def, and it is what routes the glass through Bevy's own
+            // refraction (Snell's law + depth rejection) rather than a
+            // hand-rolled screen-space sample.
+            if key.bind_group_data.transmissive {
+                fragment
+                    .shader_defs
+                    .push("STANDARD_MATERIAL_SPECULAR_TRANSMISSION".into());
             }
         }
         Ok(())

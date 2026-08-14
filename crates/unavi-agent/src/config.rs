@@ -52,7 +52,7 @@ impl AgentConfig {
     }
 }
 
-const EXTRA_FLOAT_HEIGHT: f32 = 0.02;
+pub const EXTRA_FLOAT_HEIGHT: f32 = 0.02;
 
 const DEFAULT_HEIGHT: f32 = 1.7;
 const DEFAULT_RADIUS: f32 = 0.4;

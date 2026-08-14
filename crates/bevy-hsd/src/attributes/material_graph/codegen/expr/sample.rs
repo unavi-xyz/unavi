@@ -30,6 +30,18 @@ pub(super) fn emit(out: &mut String, public_inputs: &[GraphValue], node: &Node) 
             port_expr(out, public_inputs, uv);
             out.push(')');
         }
+        Node::SceneColor { uv } => {
+            // The view-wide texture holding what was drawn before this
+            // surface. Bound unconditionally by `mesh_view_bindings`, but only
+            // filled for a material that asked to be drawn in the transmissive
+            // phase — which `ShaderGraphMaterial` does exactly when a graph
+            // contains this node.
+            out.push_str(
+                "textureSampleLevel(view_transmission_texture, view_transmission_sampler, ",
+            );
+            port_expr(out, public_inputs, uv);
+            out.push_str(", 0.0)");
+        }
         Node::Select { cond, a, b } => {
             out.push_str("select(");
             port_expr(out, public_inputs, b);

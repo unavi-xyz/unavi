@@ -256,9 +256,7 @@ fn the_program_cap_is_charged_per_document(#[from(ctx_wds)] mut ctx: TestContext
 /// whether or not the cache still has it and its liveness proves nothing.
 #[traced_test]
 #[rstest]
-fn dropping_one_document_keeps_a_graph_another_still_holds(
-    #[from(ctx_wds)] mut ctx: TestContext,
-) {
+fn dropping_one_document_keeps_a_graph_another_still_holds(#[from(ctx_wds)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
 
     let kept = ctx.create_prim();

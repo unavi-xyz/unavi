@@ -5,7 +5,7 @@ use std::cell::Cell;
 use wired_prelude::prelude::*;
 
 use crate::{
-    circle::Cast,
+    cast::State,
     mesh,
     palette::Palette,
     scene::{
@@ -58,8 +58,8 @@ impl Site {
     }
 
     /// `at` is the mote being cast on, in the surface's own coordinates.
-    pub fn apply(&self, at: Vec3, cast: Cast) -> anyhow::Result<()> {
-        if cast.is_settled() {
+    pub fn apply(&self, at: Vec3, state: State) -> anyhow::Result<()> {
+        if state.is_settled() {
             return self.hide();
         }
         self.prim.set_xform(Some(Xform {
@@ -68,7 +68,7 @@ impl Site {
             scale:       Vec3::ONE,
         }))?;
 
-        let progress = cast.progress();
+        let progress = state.progress();
         if self.progress.get() != Some(progress) {
             self.progress.set(Some(progress));
             // The accent is spent here rather than on hover: a cast is rare,

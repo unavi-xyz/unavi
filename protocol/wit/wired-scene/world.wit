@@ -171,6 +171,8 @@ interface types {
     object-position,
     object-scale,
     view-direction,
+    /// Where this fragment sits on screen, `0..1` from the top left.
+    screen-uv,
 
     add(binary-op),
     sub(binary-op),
@@ -209,6 +211,15 @@ interface types {
     fresnel(port),
     noise(port),
     texture-sample(texture-sample-op),
+    /// What was already drawn behind this surface, sampled at a screen
+    /// position. Offsetting that position by the surface's own curvature is
+    /// what bends the scene behind it, so this is how a graph refracts.
+    ///
+    /// Only ever what was drawn *before* this surface: two surfaces reading
+    /// it do not see each other, and neither sees anything drawn after. A
+    /// graph using it is drawn in a later pass, which costs a full-screen
+    /// copy — so reach for it when the distortion is the point.
+    scene-color(port),
 
     extract(extract-op),
     combine2(combine2-op),
@@ -231,6 +242,20 @@ interface types {
     alpha:                option<port>,
     /// Below this, the fragment is discarded outright.
     alpha-clip-threshold: option<port>,
+    /// How much of what is behind this surface comes through tinted by
+    /// `base-color`, `0..1`. Above zero the surface is drawn in the
+    /// transmissive phase, where the host refracts the already-drawn scene
+    /// behind it by `thickness`/`ior` — with depth rejection, the way real
+    /// glass bends rather than smears.
+    specular-transmission: option<port>,
+    /// The Lambertian transmitted lobe, lit from behind. Clear glass that
+    /// only refracts leaves this at zero.
+    diffuse-transmission:  option<port>,
+    /// Metres the refracted ray travels inside the surface before exiting;
+    /// how far the scene behind appears displaced.
+    thickness:             option<port>,
+    /// Refractive index. `1.0` is air; water is `1.33`, glass `1.5`.
+    ior:                   option<port>,
   }
 
   /// Written straight out, with no lighting pass — what a beam, a hologram or

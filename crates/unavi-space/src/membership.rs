@@ -29,8 +29,11 @@ pub fn space_doc_id(space: &Space) -> DocId {
 #[relationship(relationship_target = SpaceMembers)]
 pub struct SpaceOwner(pub Entity);
 
+/// `linked_spawn` so unloading a space takes its documents with it. A member is
+/// only sometimes a descendant of the space, and one that outlives it keeps
+/// simulating with nothing left to stand on.
 #[derive(Component, Default)]
-#[relationship_target(relationship = SpaceOwner)]
+#[relationship_target(relationship = SpaceOwner, linked_spawn)]
 pub struct SpaceMembers(Vec<Entity>);
 
 pub fn self_own_space(trigger: On<Add, Space>, spaces: Query<&Space>) {
@@ -185,5 +188,26 @@ mod tests {
             Some(host)
         );
         assert_eq!(doc_space(instance_id), Some(host_id));
+    }
+
+    #[test]
+    fn unloading_a_space_takes_its_documents() {
+        let mut app = app();
+
+        let ns = NamespaceId::from(blake3::hash(b"space-doc").as_bytes());
+        let space = app
+            .world_mut()
+            .spawn((Hsd::new(SceneState::new()), HsdDocId(DocId(*ns.as_bytes()))))
+            .id();
+        app.world_mut().entity_mut(space).insert(Space(ns));
+
+        // Owned but not a descendant, which is what outlives the space and keeps
+        // falling once its ground is gone.
+        let doc = app.world_mut().spawn(SpaceOwner(space)).id();
+
+        app.world_mut().entity_mut(space).despawn();
+        app.update();
+
+        assert!(app.world().get_entity(doc).is_err());
     }
 }

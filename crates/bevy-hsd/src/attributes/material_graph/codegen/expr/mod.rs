@@ -142,10 +142,12 @@ pub(super) fn node_expr(
         | Node::ObjectPosition
         | Node::ObjectScale
         | Node::ViewDirection
+        | Node::ScreenUv
         | Node::Time => leaf::emit(out, node),
         Node::Fresnel { .. }
         | Node::Noise { .. }
         | Node::TextureSample { .. }
+        | Node::SceneColor { .. }
         | Node::Select { .. } => {
             sample::emit(out, public_inputs, node);
         }

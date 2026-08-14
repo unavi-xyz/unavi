@@ -13,7 +13,7 @@ use crate::attributes::material_graph::{
 /// The zero-arity leaves, each legal in exactly one network.
 pub(super) fn kind(_ctx: &Ctx, node: &Node) -> ValueKind {
     match *node {
-        Node::Uv => ValueKind::Vec2,
+        Node::Uv | Node::ScreenUv => ValueKind::Vec2,
         Node::WorldNormal
         | Node::WorldPosition
         | Node::LocalPosition
@@ -45,7 +45,8 @@ pub(super) const fn check_network_leaf(
             | Node::WorldPosition
             | Node::VertexColor
             | Node::ViewDirection
-    ) || matches!(node, Node::Fresnel { .. });
+            | Node::ScreenUv
+    ) || matches!(node, Node::Fresnel { .. } | Node::SceneColor { .. });
     let displacement_only = matches!(node, Node::LocalPosition | Node::LocalNormal);
 
     match network {

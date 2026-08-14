@@ -81,16 +81,31 @@ pub enum SurfaceOutput {
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct LitOutput {
-    pub base_color:           Option<Port>,
-    pub emissive:             Option<Port>,
-    pub metallic:             Option<Port>,
-    pub roughness:            Option<Port>,
-    pub normal:               Option<Port>,
-    pub alpha:                Option<Port>,
+    pub base_color:            Option<Port>,
+    pub emissive:              Option<Port>,
+    pub metallic:              Option<Port>,
+    pub roughness:             Option<Port>,
+    pub normal:                Option<Port>,
+    pub alpha:                 Option<Port>,
     /// Unity's Alpha Clip Threshold / Unreal's Opacity Mask: when set,
     /// codegen emits a `discard` below this threshold — still a single
     /// bounded statement, not a loop or general branch.
-    pub alpha_clip_threshold: Option<Port>,
+    pub alpha_clip_threshold:  Option<Port>,
+    /// How much of the light passing through is transmitted and tinted by
+    /// [`LitOutput::base_color`], `0..1`. Above zero routes the material into
+    /// the transmissive phase, where Bevy refracts the already-drawn scene
+    /// behind the surface by `thickness`/`ior` — the real glass path, with
+    /// depth rejection, rather than a hand-rolled screen-space sample.
+    pub specular_transmission: Option<Port>,
+    /// The Lambertian transmitted lobe, lit from behind. A clear glass that
+    /// only refracts leaves this at zero.
+    pub diffuse_transmission:  Option<Port>,
+    /// Metres the refracted ray travels inside the surface before exiting;
+    /// how far the scene behind appears displaced.
+    pub thickness:             Option<Port>,
+    /// Refractive index, `1.0` (air) being no refraction. Water is `1.33`,
+    /// glass `1.5`.
+    pub ior:                   Option<Port>,
 }
 
 /// Written straight to the fragment output; no `PbrInput`, no lighting pass.

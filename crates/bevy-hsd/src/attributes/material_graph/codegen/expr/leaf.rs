@@ -23,6 +23,7 @@ pub(super) fn emit(out: &mut String, node: &Node) {
         Node::ObjectPosition => out.push_str("world_from_local[3].xyz"),
         Node::ObjectScale => out.push_str("graph_object_scale(world_from_local)"),
         Node::ViewDirection => out.push('V'),
+        Node::ScreenUv => out.push_str("graph_screen_uv"),
         _ => unreachable!("only the dispatch match in expr/mod.rs reaches here"),
     }
 }

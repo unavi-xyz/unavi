@@ -1,4 +1,5 @@
 use smol_str::SmolStr;
+use wired_scene::types::Color;
 
 use crate::{
     attention::{
@@ -62,7 +63,7 @@ impl Role {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct MoteSpec {
     pub role:        Role,
     /// The name, drawn under the body at all times.
@@ -75,6 +76,14 @@ pub struct MoteSpec {
     /// Whether the mote wears a body of its own, which is drawn where a
     /// group's contents would otherwise be previewed.
     pub icon:        bool,
+    /// The hue its glass carries, or none for the neutral one. Identity,
+    /// where every other colour here is state.
+    pub tint:        Option<Color>,
+    /// How much iridescent film the shell wears, `0` none to `1` the full
+    /// bubble. Subtle by default so the identity hue stays legible.
+    pub film:        f32,
+    /// How much the shell's rim is frosted, `0` for clear glass.
+    pub frost:       f32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -229,6 +238,9 @@ mod tests {
             description: None,
             active: false,
             icon: false,
+            tint: None,
+            film: crate::palette::FILM,
+            frost: 0.0,
         }
     }
 

@@ -50,8 +50,10 @@ pub fn sync_portal_config(
     }
 }
 
+/// `try_remove` because the config is also removed by despawning the portal,
+/// which leaves nothing to strip by the time the command runs.
 pub fn clear_portal_config(trigger: On<Remove, PortalConfig>, mut commands: Commands) {
     commands
         .entity(trigger.entity)
-        .remove::<(Seam, SeamSize, SeamTargetDoc, SeamTargetReceptor, GluedTo)>();
+        .try_remove::<(Seam, SeamSize, SeamTargetDoc, SeamTargetReceptor, GluedTo)>();
 }

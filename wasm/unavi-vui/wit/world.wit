@@ -10,7 +10,7 @@ world guest {
 interface api {
   use wired:error/types.{error};
   use wired:math/types.{vec2, vec3};
-  use wired:scene/types.{prim};
+  use wired:scene/types.{color, prim};
 
   /// What a mote is: how it draws, and what selecting it does.
   enum kind {
@@ -60,6 +60,31 @@ interface api {
     /// shell around it. An item holding an icon draws see-through so the icon
     /// reads; an item without one is solid.
     set-icon: func(value: option<borrow<prim>>);
+
+    /// The hue this mote's glass carries, or none for the neutral one.
+    ///
+    /// Identity, not state: what a mote *is*, where brightness and the accent
+    /// still say what is happening to it. The shell tints what shows through
+    /// it rather than painting itself, so this reads as coloured glass rather
+    /// than as a coloured ball — which is why it is worth spending colour on
+    /// here and keeping it off whatever the mote holds. Colouring both is what
+    /// makes a form look busy.
+    set-tint: func(value: option<color>);
+
+    /// How much of the iridescent film the shell wears, `0` none to `1` the
+    /// full bubble.
+    ///
+    /// Subtle by default so a mote keeps its identity hue while still reading
+    /// as glass; a consumer raises it for the moving hues of the bubble, or
+    /// drops it to zero for a flat coloured glass.
+    set-film: func(value: f32);
+
+    /// How much the shell's rim is frosted, `0` for clear glass.
+    ///
+    /// A frosted shell diffuses what shows through its edge — the room, and
+    /// anything inside it — while the face stays a clear window, so the icon
+    /// stays readable behind a rim that reads soft rather than crisp.
+    set-frost: func(value: f32);
 
     /// Whether this item stands for the one of its thing or for a source of
     /// them. Only an item is either; anything else ignores it.

@@ -7,21 +7,26 @@
 
 use wired_prelude::prelude::*;
 
-pub const HOME: Color = rgb(0.96, 0.20, 0.16);
-pub const NAV: Color = rgb(0.42, 0.90, 0.44);
-pub const TOOLS: Color = rgb(0.24, 0.72, 1.0);
+pub const HOME: Color = rgb(0.86, 0.10, 0.08);
+pub const NAV: Color = rgb(0.06, 0.50, 0.22);
+pub const TOOLS: Color = rgb(0.04, 0.30, 0.75);
+
+/// What every glyph wears. A cool off-white reads as a glyph against the bold
+/// shell and against the bright room alike, the way a light accent sits on a
+/// coloured wall in Mirror's Edge — bold surface, light mark.
+pub const GLYPH: Color = rgb(0.88, 0.90, 0.94);
 
 /// A colour per tool, so two tools are told apart before either is read.
 ///
 /// Indexed by the tool's place in a stably sorted list, so a tool keeps its
 /// colour across sessions as long as the set does.
 const TOOLS_WHEEL: [Color; 6] = [
-    rgb(0.98, 0.76, 0.24),
-    rgb(0.62, 0.55, 0.98),
-    rgb(0.34, 0.86, 0.78),
-    rgb(0.96, 0.52, 0.36),
-    rgb(0.80, 0.86, 0.40),
-    rgb(0.94, 0.46, 0.72),
+    rgb(0.90, 0.55, 0.05),
+    rgb(0.45, 0.30, 0.95),
+    rgb(0.05, 0.65, 0.55),
+    rgb(0.85, 0.25, 0.10),
+    rgb(0.60, 0.65, 0.10),
+    rgb(0.80, 0.15, 0.45),
 ];
 
 #[must_use]

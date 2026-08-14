@@ -59,16 +59,19 @@ impl Root {
 
         let home = Mote::new(Kind::Cast, "Home");
         home.describe("Travel to your home space.");
-        home.set_icon(Some(&icon::build(&icon::home(), palette::HOME)?));
+        home.set_tint(Some(palette::HOME));
+        home.set_icon(Some(&icon::home(palette::GLYPH)?));
 
         let nav = Mote::new(Kind::Group, "Nav");
         nav.describe("Spaces with people in them.");
         nav.set_arrange(Arrange::Grid);
-        nav.set_icon(Some(&icon::build(&icon::nav(), palette::NAV)?));
+        nav.set_tint(Some(palette::NAV));
+        nav.set_icon(Some(&icon::cube(palette::GLYPH)?));
 
         let tools = Mote::new(Kind::Group, "Tools");
         tools.describe("Things you can use.");
-        tools.set_icon(Some(&icon::build(&icon::tools(), palette::TOOLS)?));
+        tools.set_tint(Some(palette::TOOLS));
+        tools.set_icon(Some(&icon::tools(palette::GLYPH)?));
 
         for slot in [&home, &nav, &tools] {
             level.add_child(slot);

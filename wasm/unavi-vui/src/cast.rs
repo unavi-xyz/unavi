@@ -1,8 +1,8 @@
 use crate::tuning::Tuning;
 
-/// How far a cast has got.
+/// Where a cast is.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Cast {
+pub enum State {
     /// Filling; `0.0..1.0`.
     Filling(f32),
     /// Held to the end. The action fires exactly once, on the frame this is
@@ -12,7 +12,7 @@ pub enum Cast {
     Aborted,
 }
 
-impl Cast {
+impl State {
     #[must_use]
     pub const fn is_settled(self) -> bool {
         matches!(self, Self::Committed | Self::Aborted)
@@ -28,25 +28,25 @@ impl Cast {
     }
 }
 
-/// The cast site for a consequential action: somewhere to draw, a duration to
-/// fill, and an abort by pulling away.
+/// The hold-to-confirm FSM for a consequential action: somewhere to draw, a
+/// duration to fill, and an abort by pulling away.
 ///
 /// Not for anything reversible — a cast on a cheap action is a nuisance, and
 /// its overuse destroys the signal.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Circle {
+pub struct Cast {
     duration: f32,
     elapsed:  f32,
-    cast:     Cast,
+    state:    State,
 }
 
-impl Circle {
+impl Cast {
     #[must_use]
     pub const fn new(duration: f32) -> Self {
         Self {
             duration,
             elapsed: 0.0,
-            cast: Cast::Filling(0.0),
+            state: State::Filling(0.0),
         }
     }
 
@@ -56,30 +56,30 @@ impl Circle {
     }
 
     #[must_use]
-    pub const fn cast(&self) -> Cast {
-        self.cast
+    pub const fn state(&self) -> State {
+        self.state
     }
 
     /// Advances the fill. `held` is whether attention is still on the site;
     /// losing it aborts immediately, with no grace period to learn.
     ///
     /// Settled casts stay settled, so a caller may keep polling until it
-    /// takes the circle away.
-    pub fn update(&mut self, held: bool, delta: f32) -> Cast {
-        if self.cast.is_settled() {
-            return self.cast;
+    /// takes the cast away.
+    pub fn update(&mut self, held: bool, delta: f32) -> State {
+        if self.state.is_settled() {
+            return self.state;
         }
         if !held {
-            self.cast = Cast::Aborted;
-            return self.cast;
+            self.state = State::Aborted;
+            return self.state;
         }
         self.elapsed += delta;
-        self.cast = if self.duration <= f32::EPSILON || self.elapsed >= self.duration {
-            Cast::Committed
+        self.state = if self.duration <= f32::EPSILON || self.elapsed >= self.duration {
+            State::Committed
         } else {
-            Cast::Filling((self.elapsed / self.duration).clamp(0.0, 1.0))
+            State::Filling((self.elapsed / self.duration).clamp(0.0, 1.0))
         };
-        self.cast
+        self.state
     }
 }
 
@@ -89,70 +89,70 @@ mod tests {
 
     const DURATION: f32 = 1.0;
 
-    fn circle() -> Circle {
-        Circle::new(DURATION)
+    fn cast() -> Cast {
+        Cast::new(DURATION)
     }
 
     #[test]
-    fn a_fresh_circle_has_not_started() {
-        assert_eq!(circle().cast(), Cast::Filling(0.0));
+    fn a_fresh_cast_has_not_started() {
+        assert_eq!(cast().state(), State::Filling(0.0));
     }
 
     #[test]
     fn holding_fills_it() {
-        let mut circle = circle();
-        assert_eq!(circle.update(true, 0.25), Cast::Filling(0.25));
-        assert_eq!(circle.update(true, 0.25), Cast::Filling(0.5));
+        let mut cast = cast();
+        assert_eq!(cast.update(true, 0.25), State::Filling(0.25));
+        assert_eq!(cast.update(true, 0.25), State::Filling(0.5));
     }
 
     #[test]
     fn holding_to_the_end_commits_once() {
-        let mut circle = circle();
-        circle.update(true, 0.5);
-        assert_eq!(circle.update(true, 0.6), Cast::Committed);
+        let mut cast = cast();
+        cast.update(true, 0.5);
+        assert_eq!(cast.update(true, 0.6), State::Committed);
         assert_eq!(
-            circle.update(true, 0.6),
-            Cast::Committed,
+            cast.update(true, 0.6),
+            State::Committed,
             "a settled cast stays settled rather than firing again"
         );
     }
 
     #[test]
     fn pulling_away_aborts_it() {
-        let mut circle = circle();
-        circle.update(true, 0.9);
-        assert_eq!(circle.update(false, 0.016), Cast::Aborted);
+        let mut cast = cast();
+        cast.update(true, 0.9);
+        assert_eq!(cast.update(false, 0.016), State::Aborted);
     }
 
     #[test]
     fn an_abort_is_final_even_if_attention_comes_back() {
-        let mut circle = circle();
-        circle.update(true, 0.5);
-        circle.update(false, 0.016);
+        let mut cast = cast();
+        cast.update(true, 0.5);
+        cast.update(false, 0.016);
         assert_eq!(
-            circle.update(true, 0.6),
-            Cast::Aborted,
+            cast.update(true, 0.6),
+            State::Aborted,
             "a cast you walked out of is not one you can walk back into"
         );
     }
 
     #[test]
     fn a_committed_cast_is_not_undone_by_letting_go() {
-        let mut circle = circle();
-        circle.update(true, DURATION);
-        assert_eq!(circle.update(false, 0.016), Cast::Committed);
+        let mut cast = cast();
+        cast.update(true, DURATION);
+        assert_eq!(cast.update(false, 0.016), State::Committed);
     }
 
     #[test]
     fn a_zero_duration_cast_commits_on_its_first_frame() {
-        let mut circle = Circle::new(0.0);
-        assert_eq!(circle.update(true, 0.016), Cast::Committed);
+        let mut cast = Cast::new(0.0);
+        assert_eq!(cast.update(true, 0.016), State::Committed);
     }
 
     #[test]
     fn progress_reads_the_same_off_any_state() {
-        assert!((Cast::Filling(0.4).progress() - 0.4).abs() < 1.0e-6);
-        assert!((Cast::Committed.progress() - 1.0).abs() < 1.0e-6);
-        assert!(Cast::Aborted.progress().abs() < 1.0e-6);
+        assert!((State::Filling(0.4).progress() - 0.4).abs() < 1.0e-6);
+        assert!((State::Committed.progress() - 1.0).abs() < 1.0e-6);
+        assert!(State::Aborted.progress().abs() < 1.0e-6);
     }
 }

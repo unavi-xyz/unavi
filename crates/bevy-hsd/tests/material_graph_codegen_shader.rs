@@ -125,19 +125,25 @@ fn lit_output_with_every_terminal_generates_valid_wgsl() {
     let graph = graph_with_output(
         vec![Node::Uv, Node::WorldNormal],
         SurfaceOutput::Lit(LitOutput {
-            base_color:           Some(const_color([1.0, 1.0, 1.0, 1.0])),
-            emissive:             Some(node(1)),
-            metallic:             Some(const_f(0.5)),
-            roughness:            Some(const_f(0.5)),
-            normal:               Some(node(1)),
-            alpha:                Some(const_f(1.0)),
-            alpha_clip_threshold: Some(const_f(0.1)),
+            base_color:            Some(const_color([1.0, 1.0, 1.0, 1.0])),
+            emissive:              Some(node(1)),
+            metallic:              Some(const_f(0.5)),
+            roughness:             Some(const_f(0.5)),
+            normal:                Some(node(1)),
+            alpha:                 Some(const_f(1.0)),
+            alpha_clip_threshold:  Some(const_f(0.1)),
+            specular_transmission: Some(const_f(1.0)),
+            diffuse_transmission:  Some(const_f(0.0)),
+            thickness:             Some(const_f(0.05)),
+            ior:                   Some(const_f(1.33)),
         }),
     );
     let validated = validate(&graph).expect("valid");
     let body = generate_surface_body(&graph, &validated);
     assert!(body.contains("discard"), "{body}");
     assert_surface_valid(&body, "out_base_color");
+    assert!(body.contains("out_specular_transmission = 1.0"), "{body}");
+    assert!(body.contains("out_ior = 1.33"), "{body}");
 }
 
 /// Every surface node kind in one graph: a bad emission shows up as a naga
@@ -199,6 +205,35 @@ fn every_surface_node_kind_generates_valid_wgsl() {
     assert_surface_valid(&body, "out_color");
 }
 
+/// Refraction, in the shape a surface actually uses it: offset the screen
+/// position by the surface's own curvature, then read what was drawn there.
+#[test]
+fn a_graph_can_bend_what_is_drawn_behind_it() {
+    let graph = graph_with_output(
+        vec![
+            Node::ScreenUv,
+            Node::WorldNormal,
+            Node::Convert {
+                v:  node(1),
+                to: ValueKind::Vec2,
+            },
+            Node::Mul {
+                a: node(2),
+                b: const_f(0.05),
+            },
+            Node::Add {
+                a: node(0),
+                b: node(3),
+            },
+            Node::SceneColor { uv: node(4) },
+        ],
+        unlit(node(5)),
+    );
+    let validated = validate(&graph).expect("valid");
+    let body = generate_surface_body(&graph, &validated);
+    assert_surface_valid(&body, "out_color");
+}
+
 /// `WorldNormal` used to emit `pbr_input.world_normal`, which only the lit
 /// template defines — so every unlit graph reading a normal compiled fine in
 /// tests and failed on the device. Both templates now bind it under one name.
@@ -232,10 +267,13 @@ fn an_unlit_graph_may_read_the_world_normal() {
 /// the same rule, since the harness no longer declares `pbr_input` either.
 #[test]
 fn a_lit_body_names_no_lit_only_identifier() {
-    let graph = graph_with_output(vec![Node::WorldNormal], SurfaceOutput::Lit(LitOutput {
-        base_color: Some(const_color([1.0, 1.0, 1.0, 1.0])),
-        ..Default::default()
-    }));
+    let graph = graph_with_output(
+        vec![Node::WorldNormal],
+        SurfaceOutput::Lit(LitOutput {
+            base_color: Some(const_color([1.0, 1.0, 1.0, 1.0])),
+            ..Default::default()
+        }),
+    );
     let validated = validate(&graph).expect("valid");
     let body = generate_surface_body(&graph, &validated);
     assert!(!body.contains("pbr_input"), "{body}");

@@ -9,7 +9,7 @@ pub mod api;
 pub mod assist;
 pub mod attention;
 pub mod bloom;
-pub mod circle;
+pub mod cast;
 pub mod grasp;
 pub mod layout;
 pub mod mesh;

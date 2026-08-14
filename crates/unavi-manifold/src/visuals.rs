@@ -54,7 +54,6 @@ use crate::{
 
 pub const SEAM_RENDER_LAYER: usize = 5;
 
-const CLOSED_COLOR: Color = Color::srgb(0.1, 0.1, 0.1);
 const LOADING_COLOR: Color = Color::srgb(0.7, 0.7, 0.7);
 const OPEN_FALLBACK_COLOR: Color = Color::srgb(0.9, 0.9, 0.9);
 
@@ -130,12 +129,23 @@ pub fn apply_active_material(
             continue;
         }
 
+        // A closed seam is nothing to look at: no target, no portal plane.
+        if *state == SeamState::Closed {
+            commands
+                .entity(entity)
+                .insert((Visibility::Hidden, next_key))
+                .remove::<MeshMaterial3d<SeamMaterial>>();
+            commands.queue(move |world: &mut World| despawn_seam_cameras(world, entity));
+            continue;
+        }
+        commands.entity(entity).insert(Visibility::Visible);
+
         let want_shader = active && *state == SeamState::Open;
         if want_shader {
             commands.queue(move |world: &mut World| install_shader_visual(world, entity, next_key));
         } else {
             let color = match state {
-                SeamState::Closed => CLOSED_COLOR,
+                SeamState::Closed => unreachable!("closed handled above"),
                 SeamState::Loading => LOADING_COLOR,
                 SeamState::Open => OPEN_FALLBACK_COLOR,
             };
@@ -377,5 +387,55 @@ pub fn update_develop_camera_layers(
         if *layers != next {
             *layers = next;
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn setup() -> App {
+        let mut app = App::new();
+        app.add_plugins((
+            bevy::app::TaskPoolPlugin::default(),
+            bevy::asset::AssetPlugin::default(),
+            TransformPlugin,
+        ))
+        .init_asset::<StandardMaterial>()
+        .add_systems(Update, apply_active_material);
+        app
+    }
+
+    fn spawn_seam(app: &mut App, state: SeamState) -> Entity {
+        app.world_mut().spawn((Seam, state)).id()
+    }
+
+    #[test]
+    fn closed_seam_is_hidden() {
+        let mut app = setup();
+        let seam = spawn_seam(&mut app, SeamState::Closed);
+        app.update();
+        assert_eq!(
+            app.world().get::<Visibility>(seam),
+            Some(&Visibility::Hidden)
+        );
+    }
+
+    #[test]
+    fn opening_a_seam_makes_it_visible() {
+        let mut app = setup();
+        let seam = spawn_seam(&mut app, SeamState::Closed);
+        app.update();
+        assert_eq!(
+            app.world().get::<Visibility>(seam),
+            Some(&Visibility::Hidden)
+        );
+
+        app.world_mut().entity_mut(seam).insert(SeamState::Loading);
+        app.update();
+        assert_eq!(
+            app.world().get::<Visibility>(seam),
+            Some(&Visibility::Visible)
+        );
     }
 }

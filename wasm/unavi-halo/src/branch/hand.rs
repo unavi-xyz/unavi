@@ -104,7 +104,8 @@ impl Hand {
         // Re-coloured after every sort rather than at construction: a tool's
         // colour is its place in the set, and the set is what just changed.
         for (index, tool) in self.tools.iter().enumerate() {
-            match icon::build(&icon::tool(), palette::tool(index)) {
+            tool.mote.set_tint(Some(palette::tool(index)));
+            match icon::tool(palette::GLYPH) {
                 Ok(glyph) => tool.mote.set_icon(Some(&glyph)),
                 Err(err) => eprintln!("halo: no glyph for '{}': {err:?}", tool.name),
             }

@@ -43,7 +43,7 @@ def main [
   --debug-log
   --port: int = 5000
   --clients: int = 2
-  --seconds: int = 45
+  --seconds: int = 9999
   --join
   --logs: string
 ] {

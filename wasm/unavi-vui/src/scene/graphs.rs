@@ -46,9 +46,12 @@ pub const SHELL_HEAT: u16 = 2;
 /// Radians of offset into the idle breath and the film's banding, so a form
 /// does not pulse or shimmer as one body.
 pub const SHELL_PHASE: u16 = 3;
-/// How much interference colour the film carries. Colour is meant to signal
-/// state, so this stays low enough that an accent still wins.
+/// How much of the iridescent film the shell wears, 0 for none. A mote that
+/// opts in trades a stable colour for the moving hues of the bubble.
 pub const SHELL_FILM: u16 = 4;
+/// How much the shell's rim is frosted, 0 for clear glass. A mote that opts
+/// in diffuses what shows through its edge rather than refracting it.
+pub const SHELL_FROST: u16 = 5;
 
 pub const RING_TINT: u16 = 0;
 pub const RING_PROGRESS: u16 = 1;
@@ -109,44 +112,22 @@ impl Net {
         self.push(Node::OneMinus(grazing))
     }
 
-    /// Where a mirrored ray would leave the surface, so the shell can pick up
-    /// something standing in for its surroundings.
-    ///
-    /// `reflect(V, N)` by hand, since the format has no node for it: there is
-    /// no environment to sample either, so only the vertical component is
-    /// used, ramped from a dark floor to a bright sky.
-    fn sky_reflection(&mut self, facing: Port) -> Port {
-        let normal = self.push(Node::WorldNormal);
-        let view = self.push(Node::ViewDirection);
-        let twice = self.push(Node::Mul(binary(facing, cf(2.0))));
-        let along = self.push(Node::Mul(binary(normal, twice)));
-        let bounced = self.push(Node::Sub(binary(along, view)));
-        let height = self.push(Node::Extract(ExtractOp {
-            v:       bounced,
-            channel: 1,
-        }));
-        self.push(Node::Remap(RemapOp {
-            x:         height,
-            from_low:  cf(-1.0),
-            from_high: cf(1.0),
-            to_low:    cf(0.05),
-            to_high:   cf(1.0),
-        }))
-    }
-
     /// Thin-film colour, as a bubble wears it.
     ///
-    /// Red bends least and blue most, so the three rims sit at slightly
-    /// different widths and the silhouette separates into colour the way a
-    /// curved film does. The film reads thicker toward the edge, and the
-    /// banding drifts, so the colours crawl rather than sitting still; `phase`
-    /// keeps two motes from wearing the same pattern.
+    /// The hue stays near the mote's own colour rather than walking the whole
+    /// wheel: the spectrum is pulled in only slightly, so the film reads as
+    /// the same hue shimmering rather than as a different colour crawling
+    /// across it. Red bends least and blue most, so the three rims sit at
+    /// slightly different widths and the silhouette still separates into
+    /// colour the way a curved film does. The banding drifts; `phase` keeps
+    /// two motes from wearing the same pattern.
     fn interference(
         &mut self,
         power: Port,
         rim: Port,
         facing: Port,
         phase: Port,
+        tint: Port,
         amount: Port,
     ) -> Port {
         let red_power = self.push(Node::Mul(binary(power, cf(0.78))));
@@ -161,30 +142,39 @@ impl Net {
             z: blue_rim,
         }));
 
+        let tint_r = self.push(Node::Extract(ExtractOp {
+            v:       tint,
+            channel: 0,
+        }));
+        let tint_g = self.push(Node::Extract(ExtractOp {
+            v:       tint,
+            channel: 1,
+        }));
+        let tint_b = self.push(Node::Extract(ExtractOp {
+            v:       tint,
+            channel: 2,
+        }));
+        let tint_rgb = self.push(Node::Combine3(Combine3Op {
+            x: tint_r,
+            y: tint_g,
+            z: tint_b,
+        }));
+
         let grazing = self.push(Node::OneMinus(facing));
         let bands = self.push(Node::Mul(binary(grazing, cf(7.0))));
-        let crawl = self.time_scaled(0.32);
+        let crawl = self.time_scaled(0.25);
         let bands = self.push(Node::Add(binary(bands, crawl)));
         let bands = self.push(Node::Add(binary(bands, phase)));
         let hues = self.spectrum(bands);
-        let colored = self.push(Node::Mul(binary(hues, split)));
-        self.push(Node::Mul(binary(colored, amount)))
-    }
-
-    /// Thin lines travelling up the body: the one frankly synthetic note, and
-    /// what says this is a rendered thing rather than a soap bubble.
-    fn scanlines(&mut self) -> Port {
-        let uv = self.push(Node::Uv);
-        let up = self.push(Node::Extract(ExtractOp { v: uv, channel: 1 }));
-        let stack = self.push(Node::Mul(binary(up, cf(24.0))));
-        let scroll = self.time_scaled(0.4);
-        let stack = self.push(Node::Sub(binary(stack, scroll)));
-        let line = self.push(Node::TriangleWave(stack));
-        let line = self.push(Node::Pow(PowOp {
-            x: line,
-            y: cf(5.0),
+        // Mostly the tint, a little of the walk: the hue stays in a nearby
+        // range rather than sweeping the wheel.
+        let local = self.push(Node::Lerp(LerpOp {
+            a: tint_rgb,
+            b: hues,
+            t: cf(0.2),
         }));
-        self.push(Node::Mul(binary(line, cf(0.5))))
+        let colored = self.push(Node::Mul(binary(local, split)));
+        self.push(Node::Mul(binary(colored, amount)))
     }
 
     /// A tight highlight from a fixed direction. A mote does not turn, so this
@@ -200,6 +190,90 @@ impl Net {
         self.push(Node::Pow(PowOp {
             x: lit,
             y: cf(sharpness),
+        }))
+    }
+
+    /// Light the shell carries on top of the tinted room: the rim outline
+    /// always, and the opt-in bubble — thin-film film, two highlights, and a
+    /// caustic ring — gated by `SHELL_FILM`, all breathing softly.
+    ///
+    /// Added rather than multiplied through, the way a highlight sits on top
+    /// of the glass it is reflected in. Gating the bubble keeps a mote that
+    /// did not ask for it on a stable colour.
+    fn carried(
+        &mut self,
+        power: Port,
+        rim: Port,
+        phase: Port,
+        gate: Port,
+        behind: Port,
+        tint: Port,
+        heat: Port,
+    ) -> Port {
+        // A rim that is always drawn, and lights up with attention so a
+        // selected mote glows at its silhouette rather than washing its
+        // colour grey.
+        let rest = self.push(Node::Mul(binary(rim, cf(0.05))));
+        let lit = self.push(Node::Mul(binary(rim, heat)));
+        let lit = self.push(Node::Mul(binary(lit, cf(0.18))));
+        let outline = self.push(Node::Add(binary(rest, lit)));
+
+        let facing = self.facing();
+        let film = self.interference(power, rim, facing, phase, tint, cf(0.4));
+        let film = self.push(Node::Mul(binary(film, Port::Input(SHELL_FILM))));
+        let streak = self.streak(46.0);
+        let streak = self.push(Node::Mul(binary(streak, Port::Input(SHELL_FILM))));
+        let streak2 = self.streak(18.0);
+        let streak2 = self.push(Node::Mul(binary(streak2, Port::Input(SHELL_FILM))));
+
+        let glints = self.push(Node::Add(binary(outline, film)));
+        let glints = self.push(Node::Add(binary(glints, streak)));
+        let glints = self.push(Node::Add(binary(glints, streak2)));
+        let glints = self.push(Node::Convert(ConvertOp {
+            v:  glints,
+            to: ValueKind::Color,
+        }));
+
+        // The caustic ring: light squeezed into a ring just inside the
+        // silhouette, where the room behind is bent most. Gated with the
+        // film, so a clear shell bends the room without adding a band of its
+        // own.
+        let caustic = self.push(Node::Mul(binary(gate, cf(0.15))));
+        let caustic = self.push(Node::Mul(binary(caustic, Port::Input(SHELL_FILM))));
+        let caustic = self.push(Node::Mul(binary(caustic, behind)));
+        let glints = self.push(Node::Add(binary(glints, caustic)));
+
+        // A soft idle breath in the carried light, not the room: the shell
+        // shimmers as a form would, while what is behind it stays still.
+        let wave = self.breath(phase, 1.6);
+        let swing = self.push(Node::Mul(binary(wave, cf(0.1))));
+        let breath = self.push(Node::Add(binary(swing, cf(1.0))));
+        self.push(Node::Mul(binary(glints, breath)))
+    }
+
+    /// A rim-weighted multi-tap blur of the room behind, so a frosted shell
+    /// diffuses its edge while the face stays a clear window.
+    ///
+    /// The blur follows the bent sample and is gated by the rim and by
+    /// `SHELL_FROST`, so a shell that did not ask for frost keeps its clear
+    /// refraction.
+    fn frost(&mut self, at: Port, center: Port, rim: Port) -> Port {
+        let spread = 0.005;
+        let mut sum = center;
+        for (dx, dy) in [(1.0, 0.0), (-1.0, 0.0), (0.0, 1.0), (0.0, -1.0)] {
+            let tap_at = self.push(Node::Add(binary(
+                at,
+                Port::Const(GraphValue::Vec2(Vec2::new(dx * spread, dy * spread))),
+            )));
+            let tap = self.push(Node::SceneColor(tap_at));
+            sum = self.push(Node::Add(binary(sum, tap)));
+        }
+        let blurred = self.push(Node::Mul(binary(sum, cf(0.2))));
+        let amount = self.push(Node::Mul(binary(rim, Port::Input(SHELL_FROST))));
+        self.push(Node::Lerp(LerpOp {
+            a: center,
+            b: blurred,
+            t: amount,
         }))
     }
 }
@@ -235,24 +309,53 @@ fn with_alpha(net: &mut Net, color: Port, alpha: Port) -> Port {
     }))
 }
 
-/// A mote's shell: a thin bubble whose edge carries it and whose face lets its
-/// contents show through.
+/// A mote's shell: a bubble whose transmission shows the room behind it and
+/// whose edge carries it.
 ///
-/// Front faces only. A convex shell drawn front-face-only needs no sorting
-/// against itself, and the view term folds every back-facing normal to the
-/// same value — so the far wall would be a flat wash rather than a second rim.
+/// Step 1 proved the transmission pipeline — the motes show the room behind
+/// them. Step 2 makes that refraction follow the mote's own curvature: the
+/// sample offset is the surface normal's screen projection, scaled by the
+/// squared rim, so the face is a window (normal ≈ straight ahead) and the
+/// world behind bends hardest from halfway out to the silhouette — a lens,
+/// not a flat pane. Step 3 tints the sampled room with the mote's hue, the
+/// strength following the glass alpha, so an idle mote's glass is nearly
+/// clear and an attended one wears its colour. Step 4 adds light the shell
+/// carries — a rim outline always, and on top of it the opt-in film:
+/// rim-weighted thin-film interference, two highlights, and a caustic ring,
+/// gated by `SHELL_FILM` so a mote wears a stable colour unless it asks for
+/// the bubble. Step 5 makes the rim optional frost: a rim-weighted multi-tap
+/// blur of the room, gated by `SHELL_FROST` so a shell that did not ask for
+/// it keeps its clear refraction.
 fn shell() -> ShaderGraph {
     let mut net = Net::default();
-    let tint = Port::Input(SHELL_TINT);
+    let screen = net.push(Node::ScreenUv);
+    let normal = net.push(Node::WorldNormal);
+    let across = net.push(Node::Convert(ConvertOp {
+        v:  normal,
+        to: ValueKind::Vec2,
+    }));
+    // The projected distance from the mote's own centre: exactly 0 at the
+    // face, exactly 1 at the silhouette. Refraction is confined to the outer
+    // ring of that radius, so the face — where the mote's icon and contents
+    // live — is a perfect window and only the silhouette bends the room.
+    let radius = net.push(Node::Length(across));
+    let gate = net.push(Node::Smoothstep(SmoothstepOp {
+        low:  cf(0.75),
+        high: cf(0.98),
+        x:    radius,
+    }));
+    let amount = net.push(Node::Mul(binary(gate, cf(0.04))));
+    let bend = net.push(Node::Mul(binary(across, amount)));
+    let at = net.push(Node::Add(binary(screen, bend)));
+    let behind = net.push(Node::SceneColor(at));
+
+    // The edge is what carries a mote, and it narrows as heat rises so an
+    // attended mote does not merely brighten — its edge thickens, which still
+    // reads at a distance where a brightness change does not. The rim is
+    // always on: it is the outline that keeps a shell readable even when its
+    // glass is clear.
     let heat = Port::Input(SHELL_HEAT);
-    let film = Port::Input(SHELL_FILM);
     let phase = Port::Input(SHELL_PHASE);
-
-    let facing = net.facing();
-
-    // The rim narrows as heat rises, so an attended mote does not merely
-    // brighten — its edge thickens, which still reads at a distance where a
-    // brightness change does not.
     let power = net.push(Node::Lerp(LerpOp {
         a: cf(3.0),
         b: cf(1.2),
@@ -261,52 +364,53 @@ fn shell() -> ShaderGraph {
     let rim = net.push(Node::Fresnel(power));
     let rim = net.push(Node::Saturate(rim));
 
-    let iridescence = net.interference(power, rim, facing, phase, film);
-    let line = net.scanlines();
-    let sky = net.sky_reflection(facing);
-    let sky = net.push(Node::Mul(binary(sky, cf(0.35))));
-    let streak = net.streak(46.0);
+    // A frosted shell diffuses what shows through its rim: the room is
+    // blurred where the silhouette bends it, and the face stays a clear
+    // window so the icon is never lost behind the frost.
+    let behind = net.frost(at, behind, rim);
 
-    let wave = net.breath(phase, 1.6);
-    let swing = net.push(Node::Mul(binary(wave, cf(0.07))));
-    let breath = net.push(Node::Add(binary(swing, cf(1.0))));
-
-    let edge = net.push(Node::Mul(binary(rim, cf(2.4))));
-    let lit = net.push(Node::Add(binary(edge, cf(0.35))));
-    let lit = net.push(Node::Add(binary(lit, sky)));
-    let lit = net.push(Node::Add(binary(lit, line)));
-    let lit = net.push(Node::Mul(binary(lit, breath)));
-    let brightness = net.push(Node::Mul(binary(Port::Input(SHELL_EMISSIVE), lit)));
-    // Past 1.0 on purpose, so the camera's bloom catches an attended mote.
-    let body = net.push(Node::Mul(binary(tint, brightness)));
-
-    // The film and the highlight are light the mote is *carrying*, not light
-    // it is tinted by, so they are added rather than multiplied through.
-    let glints = net.push(Node::Add(binary(iridescence, streak)));
-    let glints = net.push(Node::Convert(ConvertOp {
-        v:  glints,
-        to: ValueKind::Color,
-    }));
-    let rgb = net.push(Node::Add(binary(body, glints)));
-
-    // The face is nearly clear and the edge nearly solid, so the silhouette
-    // carries the mote and its contents show through the middle. Anything
-    // bright enough to be seen brings its own opacity with it, or a scanline
-    // on a clear face would be there in principle and invisible in practice.
-    let base = net.push(Node::Extract(ExtractOp {
-        v:       tint,
+    // Coloured glass mixes the room behind with the mote's own hue. The tint's
+    // alpha is the glass strength, and the hue is mixed in as light the shell
+    // carries rather than as a filter over the room — so a bright room does
+    // not wash a saturated tint out, and the shell reads as lit from within.
+    let strength = net.push(Node::Extract(ExtractOp {
+        v:       Port::Input(SHELL_TINT),
         channel: 3,
     }));
-    let alpha = net.push(Node::Lerp(LerpOp {
-        a: base,
-        b: cf(0.92),
-        t: rim,
+    let r = net.push(Node::Extract(ExtractOp {
+        v:       Port::Input(SHELL_TINT),
+        channel: 0,
     }));
-    let carried = net.push(Node::Luminance(glints));
-    let carried = net.push(Node::Add(binary(carried, line)));
-    let alpha = net.push(Node::Add(binary(alpha, carried)));
-    let alpha = net.push(Node::Saturate(alpha));
-    let color = with_alpha(&mut net, rgb, alpha);
+    let g = net.push(Node::Extract(ExtractOp {
+        v:       Port::Input(SHELL_TINT),
+        channel: 1,
+    }));
+    let b = net.push(Node::Extract(ExtractOp {
+        v:       Port::Input(SHELL_TINT),
+        channel: 2,
+    }));
+    let hue = net.push(Node::Combine4(Combine4Op {
+        x: r,
+        y: g,
+        z: b,
+        w: cf(1.0),
+    }));
+    let glass = net.push(Node::Lerp(LerpOp {
+        a: behind,
+        b: hue,
+        t: strength,
+    }));
+
+    let carried = net.carried(
+        power,
+        rim,
+        phase,
+        gate,
+        behind,
+        Port::Input(SHELL_TINT),
+        heat,
+    );
+    let color = net.push(Node::Add(binary(glass, carried)));
 
     ShaderGraph {
         public_inputs: vec![
@@ -319,7 +423,8 @@ fn shell() -> ShaderGraph {
             GraphValue::Float(0.08),
             GraphValue::Float(0.0),
             GraphValue::Float(0.0),
-            GraphValue::Float(0.55),
+            GraphValue::Float(crate::palette::FILM),
+            GraphValue::Float(0.0),
         ],
         surface:       SurfaceGraph {
             nodes:        net.nodes,
@@ -327,7 +432,7 @@ fn shell() -> ShaderGraph {
                 color,
                 alpha_clip_threshold: None,
             }),
-            blend:        BlendMode::Blend,
+            blend:        BlendMode::Opaque,
             cull:         CullMode::Back,
             cast_shadows: false,
         },
@@ -344,8 +449,14 @@ fn ring() -> ShaderGraph {
     let progress = Port::Input(RING_PROGRESS);
 
     let uv = net.push(Node::Uv);
-    let angle = net.push(Node::Extract(ExtractOp { v: uv, channel: 0 }));
-    let across = net.push(Node::Extract(ExtractOp { v: uv, channel: 1 }));
+    let angle = net.push(Node::Extract(ExtractOp {
+        v:       uv,
+        channel: 0,
+    }));
+    let across = net.push(Node::Extract(ExtractOp {
+        v:       uv,
+        channel: 1,
+    }));
 
     // The fill's leading edge is eased over a slice of the turn rather than
     // stepped, so the boundary is a boundary and not a cut.
@@ -490,6 +601,7 @@ mod tests {
     fn ports(node: &Node) -> Vec<Port> {
         match node {
             Node::Uv
+            | Node::ScreenUv
             | Node::WorldNormal
             | Node::WorldPosition
             | Node::VertexColor
@@ -533,6 +645,7 @@ mod tests {
             Node::Remap(op) => vec![op.x, op.from_low, op.from_high, op.to_low, op.to_high],
             Node::Select(op) => vec![op.cond, op.a, op.b],
             Node::TextureSample(op) => vec![op.uv],
+            Node::SceneColor(uv) => vec![*uv],
             Node::Extract(op) => vec![op.v],
             Node::Combine2(op) => vec![op.x, op.y],
             Node::Combine3(op) => vec![op.x, op.y, op.z],
@@ -554,7 +667,7 @@ mod tests {
         );
         assert!(
             graph.surface.nodes.len() <= MAX_NODES,
-            "{name} has {} surface nodes",
+            "{name} has {} surface nodes, over the cap of {MAX_NODES}",
             graph.surface.nodes.len()
         );
 
@@ -596,6 +709,7 @@ mod tests {
             SHELL_HEAT,
             SHELL_PHASE,
             SHELL_FILM,
+            SHELL_FROST,
         ] {
             assert!(usize::from(input) < count, "input {input} is not declared");
         }

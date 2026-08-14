@@ -19,7 +19,7 @@ pub(super) fn kind(ctx: &Ctx, node: &Node) -> Result<ValueKind, GraphError> {
             ctx.require("uv", uv, ValueKind::Vec2)?;
             Ok(ValueKind::Float)
         }
-        Node::TextureSample { uv, .. } => {
+        Node::TextureSample { uv, .. } | Node::SceneColor { uv } => {
             ctx.require("uv", uv, ValueKind::Vec2)?;
             Ok(ValueKind::Color)
         }

@@ -14,11 +14,14 @@ use unavi_space::{
     spawn::pick_spawn,
 };
 
-#[derive(Event)]
-pub struct Respawn;
+#[derive(Event, Default)]
+pub struct Respawn {
+    /// Space to spawn into; `None` uses the active space.
+    pub space: Option<Entity>,
+}
 
 pub fn respawn(
-    _: On<Respawn>,
+    trigger: On<Respawn>,
     local_agent: Query<&LocalAgentEntities, With<LocalAgent>>,
     active: Res<ActiveSpace>,
     spaces: Query<&GlobalTransform, With<Space>>,
@@ -37,9 +40,15 @@ pub fn respawn(
     *vel = LinearVelocity::default();
     *ang_vel = AngularVelocity::default();
 
-    tr.translation = active.0.map_or_else(Vec3::default, |space| {
-        pick_spawn(space, &spawn_points, &parents, &spaces).unwrap_or_default()
-    });
+    tr.translation = trigger
+        .event()
+        .space
+        .or(active.0)
+        .map_or_else(Vec3::default, |space| {
+            pick_spawn(space, &spawn_points, &parents)
+                .or_else(|| spaces.get(space).ok().map(GlobalTransform::translation))
+                .unwrap_or_default()
+        });
 
     info!("Respawning at {}", tr.translation);
 }
@@ -63,6 +72,6 @@ pub fn teleport_from_void(
             y = tr.translation.y,
             "Local agent fell into void, respawning"
         );
-        commands.trigger(Respawn);
+        commands.trigger(Respawn::default());
     }
 }

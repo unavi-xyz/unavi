@@ -2,6 +2,11 @@ use wired_scene::types::Color;
 
 use crate::attention::Attention;
 
+/// How much iridescent film a mote wears unless it says otherwise. Subtle
+/// enough that the identity hue still reads; a consumer raises it for the
+/// full bubble or drops it for flat glass.
+pub const FILM: f32 = 0.2;
+
 /// Every colour and surface value VUI draws with.
 ///
 /// Primitives read this rather than holding colours of their own.
@@ -21,19 +26,23 @@ pub struct Palette {
     /// How much of [`Palette::source`] a source carries.
     pub source_shift: f32,
 
-    /// A container is see-through.
+    /// How strongly a container's glass wears its hue.
     pub glass_alpha:          f32,
     pub glass_alpha_attended: f32,
-    /// A leaf is solid.
+    /// How strongly a leaf's glass wears its hue.
     pub solid_alpha:          f32,
-
-    pub emissive_base:     f32,
-    pub emissive_near:     f32,
-    pub emissive_attended: f32,
-    pub emissive_engaged:  f32,
+    /// A toggle that is off reads as a clear outline: the glass barely wears
+    /// its hue, so only the rim carries the silhouette.
+    pub toggle_idle_alpha:    f32,
+    /// A toggle that is on fills with its hue.
+    pub toggle_active_alpha:  f32,
+    pub emissive_base:        f32,
+    pub emissive_near:        f32,
+    pub emissive_attended:    f32,
+    pub emissive_engaged:     f32,
     /// The floor a mote that is on burns at. Between attended and engaged:
     /// unmistakable at rest, still outshone by what is in hand.
-    pub emissive_active:   f32,
+    pub emissive_active:      f32,
 }
 
 impl Palette {
@@ -46,9 +55,11 @@ impl Palette {
         source:       rgb(1.00, 0.86, 0.62),
         source_shift: 0.30,
 
-        glass_alpha:          0.16,
-        glass_alpha_attended: 0.34,
-        solid_alpha:          0.94,
+        glass_alpha:          0.25,
+        glass_alpha_attended: 0.35,
+        solid_alpha:          0.70,
+        toggle_idle_alpha:    0.03,
+        toggle_active_alpha:  0.70,
 
         emissive_base:     0.08,
         emissive_near:     0.18,
@@ -90,6 +101,21 @@ impl Palette {
             blend(tint, self.source, self.source_shift)
         } else {
             tint
+        }
+    }
+
+    /// A mote's own identity hue, kept as it is when attention lights it up —
+    /// brighter along its own hue rather than washed toward white, which is
+    /// what makes a selected mote read as *glowing* rather than grey. What is
+    /// in hand still wears the accent, which says what is happening and
+    /// nothing else.
+    #[must_use]
+    pub const fn tinted(&self, tint: Color, attention: Attention) -> Color {
+        match attention {
+            Attention::Engaged => self.accent,
+            Attention::Attended => glow(tint, 0.5),
+            Attention::Near => glow(tint, 0.18),
+            Attention::Idle => tint,
         }
     }
 
@@ -180,6 +206,28 @@ pub const fn scale(color: Color, factor: f32) -> Color {
     }
 }
 
+/// Brightens a colour along its own hue rather than toward white, so a mote
+/// lights up without washing grey. When a channel would clip, the whole
+/// colour is renormalized so the hue is kept exactly.
+#[must_use]
+pub const fn glow(color: Color, amount: f32) -> Color {
+    let k = 1.0 + amount;
+    let r = color.r * k;
+    let g = color.g * k;
+    let b = color.b * k;
+    let top = r.max(g).max(b);
+    if top > 1.0 {
+        Color {
+            r: r / top,
+            g: g / top,
+            b: b / top,
+            a: 1.0,
+        }
+    } else {
+        Color { r, g, b, a: 1.0 }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -228,6 +276,37 @@ mod tests {
         assert!(palette.emissive(Attention::Idle) < palette.emissive(Attention::Near));
         assert!(palette.emissive(Attention::Near) < palette.emissive(Attention::Attended));
         assert!(palette.emissive(Attention::Attended) < palette.emissive(Attention::Engaged));
+    }
+
+    /// Whether `a` and `b` are the same hue: a boost keeps the channel ratios
+    /// exactly, where a wash toward white would pull them toward each other.
+    fn same_hue(a: Color, b: Color) -> bool {
+        let k = [b.r / a.r, b.g / a.g, b.b / a.b];
+        k[0].is_finite() && k.iter().all(|&ratio| (ratio - k[0]).abs() < 1.0e-4)
+    }
+
+    #[test]
+    fn a_consumer_s_hue_lifts_with_attention_without_becoming_the_accent() {
+        let palette = Palette::DEFAULT;
+        let hue = rgb(0.8, 0.2, 0.3);
+        assert_eq!(palette.tinted(hue, Attention::Idle), hue);
+
+        let near = palette.tinted(hue, Attention::Near);
+        let attended = palette.tinted(hue, Attention::Attended);
+        assert!(lightness(near) > lightness(hue));
+        assert!(lightness(attended) > lightness(near));
+        for lifted in [near, attended] {
+            assert!(
+                same_hue(hue, lifted),
+                "attention must keep the hue, not wash it grey"
+            );
+        }
+
+        assert_eq!(
+            palette.tinted(hue, Attention::Engaged),
+            palette.accent,
+            "what is in hand says it is in hand, not what it stocks"
+        );
     }
 
     #[test]

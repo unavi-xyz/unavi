@@ -26,17 +26,15 @@ pub struct ScenePlugin;
 impl Plugin for ScenePlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<SceneState>()
-            .add_observer(limbo::offset_agent_to_limbo)
-            .add_observer(limbo::track_space_load)
-            .add_observer(limbo::exit_limbo_on_space_loaded)
+            .init_resource::<limbo::LimboArrival>()
             .add_observer(limbo::enter_space)
             .add_observer(respawn::respawn)
             .add_systems(
                 OnEnter(SceneState::Limbo),
                 (
+                    limbo::arm_limbo_arrival,
                     limbo::spawn_limbo,
                     spawn_local_agent,
-                    limbo::park_agent_in_limbo,
                 ),
             )
             .add_systems(
@@ -52,10 +50,14 @@ impl Plugin for ScenePlugin {
                 ),
             )
             .add_systems(
+                Update,
+                (limbo::fall_back_to_limbo, limbo::drive_limbo_exit).chain(),
+            )
+            .add_systems(
                 FixedUpdate,
                 (
                     travel::drive_travel,
-                    limbo::exit_limbo_on_load_timeout,
+                    limbo::hold_agent_in_limbo.run_if(in_state(SceneState::Limbo)),
                     respawn::teleport_from_void,
                     system_scripts::populate_firewall_entities,
                 ),

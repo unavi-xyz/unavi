@@ -7,6 +7,7 @@ use std::{
 };
 
 use smol_str::SmolStr;
+use wired_scene::types::Color;
 
 use crate::{
     mote::{
@@ -60,6 +61,14 @@ struct Data {
     /// The shape this mote's own level takes. Meaningless on anything that
     /// holds no children.
     arrange:     Arrange,
+    /// The hue its glass carries. Identity, where every other colour a
+    /// surface uses is state.
+    tint:        Option<Color>,
+    /// How much iridescent film the shell wears, `0` none to `1` the full
+    /// bubble. Subtle by default so the hue stays legible.
+    film:        f32,
+    /// How much the shell's rim is frosted, `0` for clear glass.
+    frost:       f32,
     /// Whether the mote is on: a toggle, not a pulse.
     active:      bool,
     parent:      Weak<RefCell<Self>>,
@@ -76,6 +85,9 @@ impl Mote {
             icon: None,
             unique: false,
             arrange: Arrange::Orbit,
+            tint: None,
+            film: crate::palette::FILM,
+            frost: 0.0,
             active: false,
             parent: Weak::new(),
             children: Vec::new(),
@@ -196,7 +208,33 @@ impl Mote {
         self.0.borrow_mut().arrange = arrange;
     }
 
-    /// Whether the mote is on: a toggle, not a pulse.
+    #[must_use]
+    pub fn tint(&self) -> Option<Color> {
+        self.0.borrow().tint
+    }
+
+    pub fn set_tint(&self, tint: Option<Color>) {
+        self.0.borrow_mut().tint = tint;
+    }
+
+    #[must_use]
+    pub fn film(&self) -> f32 {
+        self.0.borrow().film
+    }
+
+    pub fn set_film(&self, film: f32) {
+        self.0.borrow_mut().film = film;
+    }
+
+    #[must_use]
+    pub fn frost(&self) -> f32 {
+        self.0.borrow().frost
+    }
+
+    pub fn set_frost(&self, frost: f32) {
+        self.0.borrow_mut().frost = frost;
+    }
+
     #[must_use]
     pub fn is_active(&self) -> bool {
         self.0.borrow().active
@@ -231,6 +269,9 @@ impl Mote {
             description: data.description.clone(),
             active:      data.active,
             icon:        data.icon.is_some(),
+            tint:        data.tint,
+            film:        data.film,
+            frost:       data.frost,
         }
     }
 

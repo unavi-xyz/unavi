@@ -101,8 +101,11 @@ const AROUND_ORBIT: f32 = 1.35;
 const PIP_RADIUS: f32 = 0.13;
 const MARK_RADIUS: f32 = 0.09;
 const OVERFLOW_RADIUS: f32 = 0.11;
-const SPHERE_RINGS: usize = 10;
-const SPHERE_SEGMENTS: usize = 16;
+/// A mote is a bubble, and a bubble's silhouette is the thing being read, so
+/// it is worth the vertices to have no visible facets on it. Paid once per
+/// slot, at one blob upload per stream whatever the size.
+const SPHERE_RINGS: usize = 28;
+const SPHERE_SEGMENTS: usize = 40;
 /// Thin enough to read as the surface's own face, thick enough to be a solid
 /// raycast target.
 const FIELD_THICKNESS: f32 = 0.01;
@@ -133,9 +136,9 @@ struct SlotPrims {
     /// The mote whose icon is parented here, so a slot reused by another mote
     /// hands the old one back rather than keeping it.
     icon:     RefCell<Option<Mote>>,
-    /// Keyed by icon as well as style: an item wears glass only when there is
-    /// something inside it to see.
-    style:    Cell<Option<(Style, bool)>>,
+    /// Keyed by icon and film as well as style: an item wears glass only when
+    /// there is something inside it to see, and the film is a per-mote choice.
+    style:    Cell<Option<(Style, bool, f32)>>,
     shape:    Cell<Option<PipShape>>,
     /// Last `(label, attention)` written; a `set_text` write costs a sync
     /// whether or not the string changed.
@@ -444,9 +447,17 @@ impl Bodies {
             }
 
             let icon = slot.icon.borrow().is_some();
-            if slot.style.get() != Some((view.style, icon)) {
-                slot.style.set(Some((view.style, icon)));
-                Self::apply_shell(slot, view, index, icon, palette)?;
+            let film = drawn
+                .get(index)
+                .and_then(|index| specs.get(*index))
+                .map_or(0.0, |spec| spec.film);
+            let frost = drawn
+                .get(index)
+                .and_then(|index| specs.get(*index))
+                .map_or(0.0, |spec| spec.frost);
+            if slot.style.get() != Some((view.style, icon, film)) {
+                slot.style.set(Some((view.style, icon, film)));
+                Self::apply_shell(slot, view, index, icon, film, frost, palette)?;
                 slot.nested
                     .set_material(Some(draw::pip(view.style, true)))?;
                 slot.plain
@@ -476,6 +487,8 @@ impl Bodies {
         view: &SlotView,
         index: usize,
         icon: bool,
+        film: f32,
+        frost: f32,
         palette: &Palette,
     ) -> anyhow::Result<()> {
         // An item wears glass exactly when there is something inside it to
@@ -498,6 +511,8 @@ impl Bodies {
             ),
             (graphs::SHELL_HEAT, GraphValue::Float(view.heat)),
             (graphs::SHELL_PHASE, GraphValue::Float(phase(index))),
+            (graphs::SHELL_FILM, GraphValue::Float(film)),
+            (graphs::SHELL_FROST, GraphValue::Float(frost)),
         ])?;
         Ok(())
     }

@@ -3,9 +3,15 @@
 //! A level that opens as a grid, so the listing gets pagination, attention and
 //! placards for free.
 
+use std::str::FromStr;
+
+use blake3::Hash;
+use unavi_script_util::color::generate_color;
 use wired_prelude::prelude::*;
 
 use crate::{
+    icon,
+    palette,
     unavi::vui::api::{
         Kind,
         Landing,
@@ -169,15 +175,32 @@ fn entry(entry: &crate::wired::wds::types::Entry) -> Option<Listing> {
 /// Two motes rather than one because the roles say different things: travel is
 /// consequential and gets a fill ring, and only an item leaves its slot to be
 /// thrown. A mote cannot be both.
+///
+/// Every space wears the colour its beacon will: the beacon's hue is derived
+/// from the space's own id, so the mote you pick out of the halo and the beacon
+/// you put down in the world are the same colour, and a grid of spaces
+/// separates at a glance rather than reading as one green sheet.
 fn build(listing: &Listing) -> Option<Space> {
+    let color = generate_color(Hash::from_str(&listing.hex).ok()?);
+
     let group = Mote::new(Kind::Group, listing.hex.get(..8)?);
     group.describe(&describe(listing));
+    group.set_tint(Some(color));
+    // The space wears its beacon's form: in the grid it reads as the marker
+    // it is, and opening it still shows the travel and beacon motes beneath.
+    group.set_icon(icon::beacon(palette::GLYPH).ok().as_ref());
 
     let travel = Mote::new(Kind::Cast, "Travel");
     travel.describe("Go to this space.");
+    travel.set_tint(Some(color));
 
     let beacon = Mote::new(Kind::Item, "Beacon");
     beacon.describe("A marker you can drop here.");
+    beacon.set_tint(Some(color));
+    // The beacon itself is a cube of corners around a pulsing core, so its
+    // glyph is the same form. A missing glyph is not a reason to lose the
+    // whole space.
+    beacon.set_icon(icon::beacon(palette::GLYPH).ok().as_ref());
 
     group.add_child(&travel);
     group.add_child(&beacon);

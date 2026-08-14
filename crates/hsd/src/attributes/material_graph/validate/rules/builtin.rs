@@ -31,9 +31,7 @@ pub(super) fn kind(ctx: &Ctx, node: &Node) -> Result<ValueKind, GraphError> {
         | Node::Saturate { x }
         | Node::Sqrt { x } => ctx.port_kind(x),
         Node::Pow { x, y } => ctx.matching(x, "y", y),
-        Node::Min { a, b } | Node::Max { a, b } | Node::Modulo { a, b } => {
-            ctx.matching(a, "b", b)
-        }
+        Node::Min { a, b } | Node::Max { a, b } | Node::Modulo { a, b } => ctx.matching(a, "b", b),
         Node::Clamp { x, low, high } => ctx.all_matching(x, &[("low", low), ("high", high)]),
         Node::Step { edge, x } => ctx.matching(edge, "x", x),
         Node::Smoothstep { low, high, x } => ctx.all_matching(low, &[("high", high), ("x", x)]),

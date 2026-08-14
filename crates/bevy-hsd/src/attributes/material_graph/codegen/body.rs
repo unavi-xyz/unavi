@@ -99,6 +99,10 @@ pub fn generate_surface_body(graph: &ShaderGraph, validated: &Validated) -> Stri
             out.push_str("    var out_roughness: f32 = 0.5;\n");
             out.push_str("    var out_normal: vec3<f32> = graph_world_normal;\n");
             out.push_str("    var out_alpha: f32 = 1.0;\n");
+            out.push_str("    var out_specular_transmission: f32 = 0.0;\n");
+            out.push_str("    var out_diffuse_transmission: f32 = 0.0;\n");
+            out.push_str("    var out_thickness: f32 = 0.0;\n");
+            out.push_str("    var out_ior: f32 = 1.5;\n");
 
             for (name, port) in [
                 ("out_base_color", lit.base_color),
@@ -107,6 +111,10 @@ pub fn generate_surface_body(graph: &ShaderGraph, validated: &Validated) -> Stri
                 ("out_roughness", lit.roughness),
                 ("out_normal", lit.normal),
                 ("out_alpha", lit.alpha),
+                ("out_specular_transmission", lit.specular_transmission),
+                ("out_diffuse_transmission", lit.diffuse_transmission),
+                ("out_thickness", lit.thickness),
+                ("out_ior", lit.ior),
             ] {
                 if let Some(port) = port {
                     let _ = write!(out, "    {name} = ");

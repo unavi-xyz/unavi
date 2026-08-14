@@ -174,8 +174,9 @@ pub struct SpaceGossipCancel {
 
 pub fn leave_space_topic(trigger: On<Remove, Space>, mut commands: Commands) {
     // Removing SpaceGossipCancel drops the oneshot::Sender, signalling the task to
-    // cancel.
+    // cancel. Despawning the space drops it just as well, so a missing entity is
+    // not an error.
     commands
         .entity(trigger.entity)
-        .remove::<SpaceGossipCancel>();
+        .try_remove::<SpaceGossipCancel>();
 }

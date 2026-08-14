@@ -2,20 +2,18 @@ use bevy::prelude::*;
 use bevy_hsd::attributes::spawn::SpawnPoint;
 use rand::Rng;
 
-use crate::Space;
-
+/// A world position to spawn at inside `space`, which only sits at the origin
+/// while it is the active one.
 #[must_use]
 pub fn pick_spawn(
     space: Entity,
     spawn_points: &Query<(&SpawnPoint, &GlobalTransform, &ChildOf)>,
     parents: &Query<&ChildOf>,
-    spaces: &Query<&GlobalTransform, With<Space>>,
 ) -> Option<Vec3> {
-    let space_inv = spaces.get(space).ok()?.affine().inverse();
     let candidates: Vec<(Vec3, f32)> = spawn_points
         .iter()
         .filter(|(_, _, child_of)| belongs_to_space(child_of.parent(), space, parents))
-        .map(|(s, gt, _)| (space_inv.transform_point3(gt.translation()), s.radius))
+        .map(|(s, gt, _)| (gt.translation(), s.radius))
         .collect();
     if candidates.is_empty() {
         return None;

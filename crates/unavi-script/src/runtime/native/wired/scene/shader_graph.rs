@@ -42,13 +42,17 @@ fn surface(value: wit::SurfaceGraph) -> SurfaceGraph {
         nodes:        value.nodes.into_iter().map(node).collect(),
         output:       match value.output {
             wit::SurfaceOutput::Lit(out) => SurfaceOutput::Lit(LitOutput {
-                base_color:           out.base_color.map(port),
-                emissive:             out.emissive.map(port),
-                metallic:             out.metallic.map(port),
-                roughness:            out.roughness.map(port),
-                normal:               out.normal.map(port),
-                alpha:                out.alpha.map(port),
-                alpha_clip_threshold: out.alpha_clip_threshold.map(port),
+                base_color:            out.base_color.map(port),
+                emissive:              out.emissive.map(port),
+                metallic:              out.metallic.map(port),
+                roughness:             out.roughness.map(port),
+                normal:                out.normal.map(port),
+                alpha:                 out.alpha.map(port),
+                alpha_clip_threshold:  out.alpha_clip_threshold.map(port),
+                specular_transmission: out.specular_transmission.map(port),
+                diffuse_transmission:  out.diffuse_transmission.map(port),
+                thickness:             out.thickness.map(port),
+                ior:                   out.ior.map(port),
             }),
             wit::SurfaceOutput::Unlit(out) => SurfaceOutput::Unlit(UnlitOutput {
                 color:                port(out.color),
@@ -123,6 +127,7 @@ const fn node(value: wit::Node) -> Node {
         wit::Node::ObjectPosition => Node::ObjectPosition,
         wit::Node::ObjectScale => Node::ObjectScale,
         wit::Node::ViewDirection => Node::ViewDirection,
+        wit::Node::ScreenUv => Node::ScreenUv,
 
         wit::Node::Add(op) => Node::Add {
             a: port(op.a),
@@ -218,6 +223,7 @@ const fn node(value: wit::Node) -> Node {
         wit::Node::Luminance(color) => Node::Luminance { color: port(color) },
         wit::Node::Fresnel(power) => Node::Fresnel { power: port(power) },
         wit::Node::Noise(uv) => Node::Noise { uv: port(uv) },
+        wit::Node::SceneColor(uv) => Node::SceneColor { uv: port(uv) },
         wit::Node::TextureSample(op) => Node::TextureSample {
             uv:   port(op.uv),
             slot: op.slot,
@@ -351,9 +357,19 @@ mod tests {
             wit::Node::ObjectPosition,
             wit::Node::ObjectScale,
             wit::Node::ViewDirection,
+            wit::Node::ScreenUv,
         ] {
             net.push(leaf);
         }
+        assert_surface_converts(net);
+    }
+
+    #[test]
+    fn the_screen_leaves_convert() {
+        let mut net = Net::default();
+        let screen = net.push(wit::Node::ScreenUv);
+        let bend = net.push(wit::Node::Mul(binary(screen, f(0.05))));
+        net.push(wit::Node::SceneColor(bend));
         assert_surface_converts(net);
     }
 
@@ -492,13 +508,17 @@ mod tests {
             surface:       wit::SurfaceGraph {
                 nodes:        Vec::new(),
                 output:       wit::SurfaceOutput::Lit(wit::LitOutput {
-                    base_color:           None,
-                    emissive:             None,
-                    metallic:             None,
-                    roughness:            None,
-                    normal:               None,
-                    alpha:                None,
-                    alpha_clip_threshold: None,
+                    base_color:            None,
+                    emissive:              None,
+                    metallic:              None,
+                    roughness:             None,
+                    normal:                None,
+                    alpha:                 None,
+                    alpha_clip_threshold:  None,
+                    specular_transmission: None,
+                    diffuse_transmission:  None,
+                    thickness:             None,
+                    ior:                   None,
                 }),
                 blend:        wit::BlendMode::Opaque,
                 cull:         wit::CullMode::Back,
@@ -543,7 +563,10 @@ mod tests {
         })) else {
             panic!("expected a smoothstep")
         };
-        assert_eq!((float_of(low), float_of(high), float_of(x)), (1.0, 2.0, 3.0));
+        assert_eq!(
+            (float_of(low), float_of(high), float_of(x)),
+            (1.0, 2.0, 3.0)
+        );
 
         let Node::Remap {
             x,

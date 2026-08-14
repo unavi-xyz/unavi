@@ -35,6 +35,18 @@ pub(super) fn lit_terminals(
             "alpha_clip_threshold",
             ValueKind::Float,
         ),
+        (
+            lit.specular_transmission,
+            "specular_transmission",
+            ValueKind::Float,
+        ),
+        (
+            lit.diffuse_transmission,
+            "diffuse_transmission",
+            ValueKind::Float,
+        ),
+        (lit.thickness, "thickness", ValueKind::Float),
+        (lit.ior, "ior", ValueKind::Float),
     ]
     .into_iter()
     .filter_map(|(port, name, expected)| port.map(|port| (name, port, expected)))

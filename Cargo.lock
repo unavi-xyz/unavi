@@ -14122,7 +14122,6 @@ dependencies = [
  "iroh",
  "iroh-docs",
  "log",
- "n0-future",
  "parking_lot",
  "postcard",
  "tracing",
@@ -14194,7 +14193,9 @@ name = "unavi-halo"
 version = "0.0.16"
 dependencies = [
  "anyhow",
+ "blake3",
  "postcard",
+ "unavi-script-util",
  "wired-prelude",
  "wit-bindgen 0.55.0",
 ]

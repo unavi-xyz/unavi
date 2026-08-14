@@ -168,8 +168,9 @@ pub fn instantiate_pending_scenes(
 
 pub fn despawn_space_scene(trigger: On<Remove, Space>, mut commands: Commands) {
     // Removing PendingScene drops the oneshot::Sender, signalling the task to
-    // cancel.
+    // cancel. Despawning the space drops it just as well, so a missing entity is
+    // not an error.
     commands
         .entity(trigger.entity)
-        .remove::<(PendingScene, Hsd)>();
+        .try_remove::<(PendingScene, Hsd)>();
 }

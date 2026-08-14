@@ -80,7 +80,11 @@ fn the_view_vector_is_rejected_in_displacement() {
 /// not drive both halves from one value.
 #[test]
 fn the_instance_and_object_leaves_are_legal_in_both_networks() {
-    for node_kind in [Node::InstanceRandom, Node::ObjectPosition, Node::ObjectScale] {
+    for node_kind in [
+        Node::InstanceRandom,
+        Node::ObjectPosition,
+        Node::ObjectScale,
+    ] {
         assert!(
             validate(&graph(vec![node_kind.clone()])).is_ok(),
             "{node_kind:?} in surface"

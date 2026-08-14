@@ -1,7 +1,7 @@
 use wired_math::types::Vec3;
 
 use crate::{
-    circle::Circle,
+    cast::Cast,
     tree::Mote,
 };
 
@@ -55,7 +55,7 @@ pub struct FixedUpdate {
 
 /// A consequential action, mid-cast. Shared by every shape that can show one.
 pub(crate) struct Casting {
-    pub slot:   usize,
-    pub mote:   Mote,
-    pub circle: Circle,
+    pub slot: usize,
+    pub mote: Mote,
+    pub cast: Cast,
 }

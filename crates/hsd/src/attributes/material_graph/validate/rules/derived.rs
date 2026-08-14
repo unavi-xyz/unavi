@@ -20,12 +20,15 @@ pub(super) fn kind(ctx: &Ctx, node: &Node) -> Result<ValueKind, GraphError> {
             from_high,
             to_low,
             to_high,
-        } => ctx.all_matching(x, &[
-            ("from-low", from_low),
-            ("from-high", from_high),
-            ("to-low", to_low),
-            ("to-high", to_high),
-        ]),
+        } => ctx.all_matching(
+            x,
+            &[
+                ("from-low", from_low),
+                ("from-high", from_high),
+                ("to-low", to_low),
+                ("to-high", to_high),
+            ],
+        ),
         Node::TriangleWave { x } => {
             ctx.require("x", x, ValueKind::Float)?;
             Ok(ValueKind::Float)

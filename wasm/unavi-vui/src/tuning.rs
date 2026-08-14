@@ -144,7 +144,7 @@ impl Tuning {
 
         seize_threshold: 0.04,
 
-        group_scale:  1.45,
+        group_scale:  1.25,
         action_scale: 1.0,
         parent_scale: 0.8,
         pip_cap:      9,

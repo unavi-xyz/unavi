@@ -306,14 +306,26 @@ mod tests {
     #[test]
     fn a_spheres_coordinates_run_up_from_its_bottom() {
         let mesh = sphere(1.0, 8, 12);
-        let (lowest, highest) = mesh.positions.chunks_exact(3).zip(mesh.uvs.chunks_exact(2)).fold(
-            ((f32::MAX, 0.0_f32), (f32::MIN, 0.0_f32)),
-            |(low, high), (point, uv)| {
-                let low = if point[1] < low.0 { (point[1], uv[1]) } else { low };
-                let high = if point[1] > high.0 { (point[1], uv[1]) } else { high };
-                (low, high)
-            },
-        );
+        let (lowest, highest) = mesh
+            .positions
+            .chunks_exact(3)
+            .zip(mesh.uvs.chunks_exact(2))
+            .fold(
+                ((f32::MAX, 0.0_f32), (f32::MIN, 0.0_f32)),
+                |(low, high), (point, uv)| {
+                    let low = if point[1] < low.0 {
+                        (point[1], uv[1])
+                    } else {
+                        low
+                    };
+                    let high = if point[1] > high.0 {
+                        (point[1], uv[1])
+                    } else {
+                        high
+                    };
+                    (low, high)
+                },
+            );
         assert!(lowest.1 < 0.01, "the bottom is v = 0, got {}", lowest.1);
         assert!(highest.1 > 0.99, "the top is v = 1, got {}", highest.1);
     }

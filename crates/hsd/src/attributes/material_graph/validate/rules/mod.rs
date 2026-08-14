@@ -75,10 +75,12 @@ pub(super) fn node_output_kind(ctx: &Ctx, node: &Node) -> Result<ValueKind, Grap
         | Node::ObjectPosition
         | Node::ObjectScale
         | Node::ViewDirection
+        | Node::ScreenUv
         | Node::Time => Ok(leaf::kind(ctx, node)),
         Node::Fresnel { .. }
         | Node::Noise { .. }
         | Node::TextureSample { .. }
+        | Node::SceneColor { .. }
         | Node::Select { .. } => sample::kind(ctx, node),
     }
 }

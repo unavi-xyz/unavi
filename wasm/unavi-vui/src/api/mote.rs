@@ -1,6 +1,7 @@
 use crate::{
     exports::unavi::vui::api::{
         Arrange,
+        Color,
         GuestMote,
         Kind,
         Mote as Handle,
@@ -59,6 +60,18 @@ impl GuestMote for Mote {
 
     fn set_unique(&self, value: bool) {
         self.0.set_unique(value);
+    }
+
+    fn set_tint(&self, value: Option<Color>) {
+        self.0.set_tint(value);
+    }
+
+    fn set_film(&self, value: f32) {
+        self.0.set_film(value);
+    }
+
+    fn set_frost(&self, value: f32) {
+        self.0.set_frost(value);
     }
 
     fn arrange(&self) -> Arrange {

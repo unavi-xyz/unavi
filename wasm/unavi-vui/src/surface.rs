@@ -292,6 +292,7 @@ impl Surface {
                 style: self.style_at(spec.role, heat, spec.active),
                 role: spec.role,
                 attention,
+                heat,
                 pips: presentation.pips,
                 seized: is_seized && dragging,
                 label_offset: Vec3::new(

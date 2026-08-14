@@ -29,6 +29,10 @@ pub struct SlotView {
     pub style:        Style,
     pub role:         Role,
     pub attention:    Attention,
+    /// How far this mote has come toward [`SlotView::attention`]. The state
+    /// says which mote is attended; this says how far along saying so it is,
+    /// and it is what the shell's rim widens on.
+    pub heat:         f32,
     pub pips:         Pips,
     /// The body has left its slot and is following the hand. A merely pressed
     /// mote is not this — see [`Attention::Engaged`].

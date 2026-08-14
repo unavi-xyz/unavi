@@ -4,7 +4,6 @@ use wired_prelude::prelude::*;
 
 use crate::{
     mesh::MeshData,
-    mote::Role,
     view::Style,
     wired::scene::types::{
         AlphaMode,
@@ -53,30 +52,6 @@ pub const fn scaled(color: Color, factor: f32) -> Color {
         g: color.g * factor,
         b: color.b * factor,
         a: 1.0,
-    }
-}
-
-/// A mote's shell. Containers are see-through and commands are solid, which is
-/// the difference read before any label is; an item is glass exactly when it
-/// holds an icon, so what it is shows through.
-pub const fn body(style: Style, role: Role, icon: bool) -> Material {
-    let opaque = match role {
-        Role::Group { .. } => false,
-        Role::Item { .. } => !icon,
-        Role::Action | Role::Toggle | Role::Cast | Role::Parent { .. } => true,
-    };
-    Material {
-        alpha_cutoff: None,
-        alpha_mode:   Some(if opaque {
-            AlphaMode::Opaque
-        } else {
-            AlphaMode::Blend
-        }),
-        base_color:   Some(with_alpha(style.color, style.alpha)),
-        double_sided: Some(!opaque),
-        emissive:     Some(scaled(style.color, style.emissive)),
-        metallic:     None,
-        roughness:    None,
     }
 }
 

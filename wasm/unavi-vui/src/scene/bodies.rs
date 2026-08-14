@@ -15,11 +15,13 @@ use crate::{
         Arrange,
         MoteSpec,
         PipPlacement,
+        Role,
     },
     palette::Palette,
     placard::PlacardView,
     scene::{
         draw,
+        graphs,
         placard::Placard,
     },
     tree::Mote,
@@ -41,6 +43,7 @@ use crate::{
             Collider,
             ColliderCylinder,
             Document,
+            GraphValue,
             Prim,
             RigidBody,
             RigidBodyKind,
@@ -218,6 +221,7 @@ impl Bodies {
             let body = self.doc.create_prim()?;
             draw::mesh(&body, &self.unit)?;
             body.set_xform(Some(draw::placed(Vec3::ZERO, 1.0)))?;
+            graphs::bind_shell(&body)?;
             slot_root.add_child(&body)?;
 
             let nested = self.doc.create_prim()?;
@@ -442,8 +446,7 @@ impl Bodies {
             let icon = slot.icon.borrow().is_some();
             if slot.style.get() != Some((view.style, icon)) {
                 slot.style.set(Some((view.style, icon)));
-                slot.body
-                    .set_material(Some(draw::body(view.style, view.role, icon)))?;
+                Self::apply_shell(slot, view, index, icon, palette)?;
                 slot.nested
                     .set_material(Some(draw::pip(view.style, true)))?;
                 slot.plain
@@ -458,6 +461,44 @@ impl Bodies {
         for slot in slots.iter().skip(views.len()) {
             slot.root.set_xform(Some(draw::hidden()))?;
         }
+        Ok(())
+    }
+
+    /// Hands the shell graph what differs between one mote and the next.
+    ///
+    /// The palette still decides colour and the graph decides light: it is
+    /// given a finished tint rather than a heat to interpret, so every rule
+    /// about what a mote's colour means stays where it is written and tested.
+    /// Heat goes over only because a rim is per-fragment and cannot be
+    /// computed here.
+    fn apply_shell(
+        slot: &SlotPrims,
+        view: &SlotView,
+        index: usize,
+        icon: bool,
+        palette: &Palette,
+    ) -> anyhow::Result<()> {
+        // An item wears glass exactly when there is something inside it to
+        // see, which is the one thing about a mote's alpha that depends on
+        // what it ended up holding rather than on what it is.
+        let alpha = if icon && matches!(view.role, Role::Item { .. }) {
+            palette.glass(view.attention)
+        } else {
+            view.style.alpha
+        };
+
+        slot.body.set_graph_overrides(&[
+            (
+                graphs::SHELL_TINT,
+                GraphValue::Color(draw::with_alpha(view.style.color, alpha)),
+            ),
+            (
+                graphs::SHELL_EMISSIVE,
+                GraphValue::Float(view.style.emissive),
+            ),
+            (graphs::SHELL_HEAT, GraphValue::Float(view.heat)),
+            (graphs::SHELL_PHASE, GraphValue::Float(phase(index))),
+        ])?;
         Ok(())
     }
 
@@ -559,6 +600,12 @@ impl Bodies {
         }
         Ok(())
     }
+}
+
+/// A slot's offset into the idle breath. The golden angle, so neighbours never
+/// land near each other and a form reads as several bodies rather than one.
+fn phase(slot: usize) -> f32 {
+    slot as f32 * 2.399_963
 }
 
 fn apply_run(

@@ -41,6 +41,7 @@ mod bodies;
 mod cast;
 pub(crate) mod draw;
 pub mod event;
+mod graphs;
 mod grid;
 pub mod mount;
 mod orbit;

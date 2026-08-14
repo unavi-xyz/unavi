@@ -5,7 +5,10 @@ use hsd::attributes::material_graph::node::Node;
 pub(super) fn emit(out: &mut String, node: &Node) {
     match *node {
         Node::Uv => out.push_str("in.uv"),
-        Node::WorldNormal => out.push_str("pbr_input.world_normal"),
+        // Bound by both fragment templates, not read off `pbr_input`: that
+        // only exists on the lit path, so reaching for it made every unlit
+        // graph using a normal fail to compile.
+        Node::WorldNormal => out.push_str("graph_world_normal"),
         Node::WorldPosition => out.push_str("in.world_position.xyz"),
         Node::VertexColor => out.push_str("in.color"),
         Node::LocalPosition => out.push_str("vertex.position"),

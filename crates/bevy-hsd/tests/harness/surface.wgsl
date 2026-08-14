@@ -1,5 +1,9 @@
+// Deliberately no `pbr_input`: it exists only on the lit path, so declaring it
+// here would let a generated body reach for something half the real templates
+// do not have — which is exactly how an unlit graph reading `WorldNormal`
+// shipped broken. Everything a body may name is bound below, under the name
+// both templates bind it under.
 struct In { uv: vec2<f32>, world_position: vec4<f32>, world_normal: vec3<f32>, color: vec4<f32>, instance_index: u32 }
-struct PbrInput { world_normal: vec3<f32> }
 struct Params { inputs: array<vec4<f32>, 16> }
 struct Globals { time: f32 }
 
@@ -18,9 +22,9 @@ struct Globals { time: f32 }
 
 @fragment
 fn fragment(in: In) -> @location(0) vec4<f32> {
-    var pbr_input: PbrInput;
     let N = in.world_normal;
     let V = in.world_normal;
+    let graph_world_normal = in.world_normal;
     let graph_instance_index = in.instance_index;
     let world_from_local = mat4x4<f32>(
         vec4<f32>(1.0, 0.0, 0.0, 0.0),

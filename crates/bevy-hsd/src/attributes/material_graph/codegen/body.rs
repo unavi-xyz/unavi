@@ -97,7 +97,7 @@ pub fn generate_surface_body(graph: &ShaderGraph, validated: &Validated) -> Stri
             out.push_str("    var out_emissive: vec3<f32> = vec3<f32>(0.0, 0.0, 0.0);\n");
             out.push_str("    var out_metallic: f32 = 0.0;\n");
             out.push_str("    var out_roughness: f32 = 0.5;\n");
-            out.push_str("    var out_normal: vec3<f32> = pbr_input.world_normal;\n");
+            out.push_str("    var out_normal: vec3<f32> = graph_world_normal;\n");
             out.push_str("    var out_alpha: f32 = 1.0;\n");
 
             for (name, port) in [

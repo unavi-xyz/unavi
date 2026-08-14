@@ -12,6 +12,7 @@ fn fragment(in: VertexOutput, @builtin(front_facing) is_front: bool) -> Fragment
     var pbr_input = pbr_input_from_vertex_output(in, is_front, false);
     let N = pbr_input.N;
     let V = pbr_input.V;
+    let graph_world_normal = pbr_input.world_normal;
     let graph_instance_index = in.instance_index;
     let world_from_local = mesh_functions::get_world_from_local(graph_instance_index);
 

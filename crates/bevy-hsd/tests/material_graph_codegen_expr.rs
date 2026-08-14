@@ -54,7 +54,7 @@ fn displacement_rhs(node: Node) -> String {
 /// wrong but well-formed builtin would otherwise pass.
 #[rstest]
 #[case(&[Node::Uv], "in.uv")]
-#[case(&[Node::WorldNormal], "pbr_input.world_normal")]
+#[case(&[Node::WorldNormal], "graph_world_normal")]
 #[case(&[Node::WorldPosition], "in.world_position.xyz")]
 #[case(&[Node::VertexColor], "in.color")]
 #[case(&[Node::Time], "globals.time")]

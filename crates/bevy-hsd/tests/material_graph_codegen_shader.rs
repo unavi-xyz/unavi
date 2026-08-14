@@ -31,7 +31,10 @@ use hsd::attributes::material_graph::{
     },
     node::Node,
     validate::validate,
-    value::GraphValue,
+    value::{
+        GraphValue,
+        ValueKind,
+    },
 };
 use naga::front::wgsl;
 
@@ -194,6 +197,48 @@ fn every_surface_node_kind_generates_valid_wgsl() {
     let validated = validate(&graph).expect("valid");
     let body = generate_surface_body(&graph, &validated);
     assert_surface_valid(&body, "out_color");
+}
+
+/// `WorldNormal` used to emit `pbr_input.world_normal`, which only the lit
+/// template defines — so every unlit graph reading a normal compiled fine in
+/// tests and failed on the device. Both templates now bind it under one name.
+#[test]
+fn an_unlit_graph_may_read_the_world_normal() {
+    let graph = graph_with_output(
+        vec![
+            Node::WorldNormal,
+            Node::ViewDirection,
+            Node::Dot {
+                a: node(0),
+                b: node(1),
+            },
+            Node::Convert {
+                v:  node(0),
+                to: ValueKind::Color,
+            },
+        ],
+        unlit(node(3)),
+    );
+    let validated = validate(&graph).expect("valid");
+    let body = generate_surface_body(&graph, &validated);
+    assert!(
+        !body.contains("pbr_input"),
+        "an unlit body cannot name anything only the lit path defines:\n{body}"
+    );
+    assert_surface_valid(&body, "out_color");
+}
+
+/// The lit path's own default for an unconnected normal terminal is subject to
+/// the same rule, since the harness no longer declares `pbr_input` either.
+#[test]
+fn a_lit_body_names_no_lit_only_identifier() {
+    let graph = graph_with_output(vec![Node::WorldNormal], SurfaceOutput::Lit(LitOutput {
+        base_color: Some(const_color([1.0, 1.0, 1.0, 1.0])),
+        ..Default::default()
+    }));
+    let validated = validate(&graph).expect("valid");
+    let body = generate_surface_body(&graph, &validated);
+    assert!(!body.contains("pbr_input"), "{body}");
 }
 
 #[test]

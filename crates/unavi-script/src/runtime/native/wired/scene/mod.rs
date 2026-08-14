@@ -18,6 +18,7 @@ use crate::{
 
 pub mod document;
 pub mod prim;
+mod shader_graph;
 mod types;
 
 pub mod bindings {

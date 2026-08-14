@@ -7,36 +7,40 @@ use crate::{
         Runtime,
         native::wired::{
             error::Error,
-            scene::bindings::wired::{
-                math::types::{
-                    Transform,
-                    Vec2,
-                    Vec3,
+            scene::{
+                bindings::wired::{
+                    math::types::{
+                        Transform,
+                        Vec2,
+                        Vec3,
+                    },
+                    scene::types::{
+                        AlphaMode,
+                        Collider,
+                        ColliderCapsule,
+                        ColliderCylinder,
+                        Color,
+                        GraphValue,
+                        HostPrim,
+                        Image,
+                        Material,
+                        Mesh,
+                        Portal,
+                        PortalDestination,
+                        PortalReceptor,
+                        RigidBody,
+                        RigidBodyKind,
+                        ShaderGraph,
+                        Spawn,
+                        Text,
+                        TextAlign,
+                        TextAnchor,
+                        TextBillboard,
+                        Topology,
+                        Xform,
+                    },
                 },
-                scene::types::{
-                    AlphaMode,
-                    Collider,
-                    ColliderCapsule,
-                    ColliderCylinder,
-                    Color,
-                    GraphValue,
-                    HostPrim,
-                    Image,
-                    Material,
-                    Mesh,
-                    Portal,
-                    PortalDestination,
-                    PortalReceptor,
-                    RigidBody,
-                    RigidBodyKind,
-                    Spawn,
-                    Text,
-                    TextAlign,
-                    TextAnchor,
-                    TextBillboard,
-                    Topology,
-                    Xform,
-                },
+                shader_graph,
             },
         },
         shared::{
@@ -656,6 +660,21 @@ impl HostPrim for Runtime {
                 .map(|(index, value)| (index, graph_value_wit(value)))
                 .collect(),
         )
+    }
+
+    async fn set_material_graph(
+        &mut self,
+        self_: Resource<PrimRes>,
+        value: Option<ShaderGraph>,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        Ok(lower(
+            shared::wired::scene::prim::set_material_graph(
+                &self.api,
+                self_.rep(),
+                value.map(shader_graph::graph),
+            )
+            .await,
+        ))
     }
 
     async fn set_graph_overrides(

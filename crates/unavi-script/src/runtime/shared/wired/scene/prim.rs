@@ -27,7 +27,9 @@ use hsd::{
         },
         material_graph::{
             MAX_PUBLIC_INPUTS,
+            ShaderGraph,
             overrides::GraphOverridesAttr,
+            validate::validate,
             value::{
                 GraphValue,
                 is_finite,
@@ -703,6 +705,31 @@ pub async fn set_material(api: &Api, rep: u32, value: Option<PrimMaterial>) -> a
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
     prim.write_or_clear(value.map(prim_to_material_attr))
+}
+
+/// Validates a script-built graph and stores it as the prim's own shading.
+///
+/// Taking the graph rather than shader text is the whole safety argument: a
+/// graph is bounded by its shape — fixed arity, no loop, no branch, no way to
+/// name anything at runtime — so building one is no more dangerous than
+/// building a mesh, and validation here is the same pass a graph authored in a
+/// package goes through.
+pub async fn set_material_graph(
+    api: &Api,
+    rep: u32,
+    value: Option<ShaderGraph>,
+) -> anyhow::Result<()> {
+    let prim = get_prim(api, rep).await?;
+    ensure_writable(api, &prim)?;
+
+    let bytes = match value {
+        Some(graph) => {
+            validate(&graph)?;
+            Some(graph.encode()?)
+        }
+        None => None,
+    };
+    set_buffer(api, &prim, slots::MATERIAL_GRAPH_DATA, bytes)
 }
 
 pub async fn graph_overrides(api: &Api, rep: u32) -> anyhow::Result<Vec<(u16, PrimGraphValue)>> {

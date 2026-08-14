@@ -6,8 +6,8 @@ deps = ["wired-error"]
 
 [unavi-vui]
 path = "../../unavi-vui/wit"
-sha256 = "09b993ec597a93a4606cdad908911694d2ada66d3b89d16b777afaadbefa6dce"
-sha512 = "7167c6b07d3ed43fbcc355126e99994d14aec4293782640e25ece338ec2935a53d0653ae12ff40d6e14fa8c0bd332b1a243db6641962be10503d075f91d2d95d"
+sha256 = "2fd14ee3ec5e31f75968066575f15fb7aba5b29e3d92c878e2115be547fb4a4a"
+sha512 = "b843aee89c83c336dbc1ce7e8d623f7b1eeb3e54552b77ec6782544cfbf84e002b6032086509d34dcf4ae391d4861d50b477fb0c9c9e13dc1bc48bc5e29d715c"
 deps = ["wired-error"]
 
 [wired-agent]
@@ -69,8 +69,8 @@ deps = ["wired-error"]
 
 [wired-scene]
 path = "../../../protocol/wit/wired-scene"
-sha256 = "de7f97293df1e15a442eb6bb99e1ab4b1a87bcbae238403eec667edf70db5e63"
-sha512 = "22c093ae8860b7c274f1291bbb64f0583e2f8459274bb69b1caa19aec076d548cc3b65ff5ca9c0c415501431ab9cf6bb23f5f168c810ab694b3af47fa40f71df"
+sha256 = "e1550e27ac0fc6942a1333412a25d95839c209dc414c253aa1ea5c72f5809a8f"
+sha512 = "74828ec709e92becb65024a4f07262b6f28208c92e3116fb001f7f8f815a69427d4c23cd510859634cb09499b1e3b3d70f6e86c844fcd0a2981816e01bad53b5"
 deps = ["wired-error"]
 
 [wired-script]

@@ -90,14 +90,210 @@ interface types {
   }
 
   /// A value a shader graph's public input can be overridden with.
-  ///
-  /// Scripts override inputs of graphs their package carries; they cannot
-  /// author one, so no shader content appears in this API.
   variant graph-value {
     float(f32),
     vec2(vec2),
     vec3(vec3),
     color(color),
+  }
+
+  enum value-kind {
+    float,
+    vec2,
+    vec3,
+    color,
+  }
+
+  /// A node input: a constant, one of the graph's public inputs, or an
+  /// earlier node in the same network.
+  variant port {
+    const(graph-value),
+    /// Index into the graph's `public-inputs`.
+    input(u16),
+    /// Index into the enclosing network's node list. Must be strictly lower
+    /// than the node holding this port, which is the whole of why a graph
+    /// cannot describe a cycle. Never reaches across networks: the two run as
+    /// different shader stages and share no per-invocation value.
+    node(u16),
+  }
+
+  record binary-op { a: port, b: port }
+  record lerp-op { a: port, b: port, t: port }
+  record pow-op { x: port, y: port }
+  record atan2-op { y: port, x: port }
+  record select-op { cond: port, a: port, b: port }
+  record clamp-op { x: port, low: port, high: port }
+  record step-op { edge: port, x: port }
+  record smoothstep-op { low: port, high: port, x: port }
+  record texture-sample-op {
+    uv: port,
+    /// One of a fixed set of texture bindings, never an open-ended name.
+    slot: u8,
+  }
+  record extract-op { v: port, channel: u8 }
+  record combine2-op { x: port, y: port }
+  record combine3-op { x: port, y: port, z: port }
+  record combine4-op { x: port, y: port, z: port, w: port }
+  record convert-op { v: port, to: value-kind }
+  record remap-op {
+    x: port,
+    from-low: port,
+    from-high: port,
+    to-low: port,
+    to-high: port,
+  }
+  record polar-coords-op { uv: port, center: port }
+  record rotate-uv-op { uv: port, center: port, radians: port }
+
+  /// One operation in a shading network.
+  ///
+  /// Every kind has a fixed arity and one output, so a graph's cost is a
+  /// function of how many nodes it has. There is no loop, no general branch,
+  /// and no way to carry source text — a graph is safe because of its shape,
+  /// which is why a script may build one at all.
+  ///
+  /// The zero-arity kinds read shader-stage context and are each legal in one
+  /// network or both: `uv`/`world-normal`/`world-position`/`vertex-color`/
+  /// `view-direction` are surface-only, `local-position`/`local-normal` are
+  /// displacement-only, and `time`/`instance-random`/`object-position`/
+  /// `object-scale` are legal in either.
+  variant node {
+    uv,
+    world-normal,
+    world-position,
+    vertex-color,
+    local-position,
+    local-normal,
+    time,
+    /// A pseudo-random scalar per draw instance, the only way instances
+    /// sharing a graph differ without a write to each of them.
+    instance-random,
+    object-position,
+    object-scale,
+    view-direction,
+
+    add(binary-op),
+    sub(binary-op),
+    mul(binary-op),
+    div(binary-op),
+    modulo(binary-op),
+    min(binary-op),
+    max(binary-op),
+    dot(binary-op),
+    cross(binary-op),
+    distance(binary-op),
+    pow(pow-op),
+    atan2(atan2-op),
+    lerp(lerp-op),
+    clamp(clamp-op),
+    step(step-op),
+    smoothstep(smoothstep-op),
+    remap(remap-op),
+    select(select-op),
+
+    sin(port),
+    cos(port),
+    one-minus(port),
+    abs(port),
+    floor(port),
+    fract(port),
+    saturate(port),
+    sqrt(port),
+    length(port),
+    normalize(port),
+    triangle-wave(port),
+    luminance(port),
+
+    /// Power exponent on the host's own view term; a graph parameterizes it
+    /// rather than building one.
+    fresnel(port),
+    noise(port),
+    texture-sample(texture-sample-op),
+
+    extract(extract-op),
+    combine2(combine2-op),
+    combine3(combine3-op),
+    combine4(combine4-op),
+    convert(convert-op),
+
+    polar-coords(polar-coords-op),
+    rotate-uv(rotate-uv-op),
+  }
+
+  /// Fed through the lighting pass. Every terminal is optional and falls back
+  /// to the renderer's own default.
+  record lit-output {
+    base-color:           option<port>,
+    emissive:             option<port>,
+    metallic:             option<port>,
+    roughness:            option<port>,
+    normal:               option<port>,
+    alpha:                option<port>,
+    /// Below this, the fragment is discarded outright.
+    alpha-clip-threshold: option<port>,
+  }
+
+  /// Written straight out, with no lighting pass — what a beam, a hologram or
+  /// any energy effect needs.
+  record unlit-output {
+    color:                port,
+    alpha-clip-threshold: option<port>,
+  }
+
+  variant surface-output {
+    lit(lit-output),
+    unlit(unlit-output),
+  }
+
+  /// How a surface composites against what is already drawn. Declared rather
+  /// than inferred from which terminals are connected.
+  enum blend-mode {
+    opaque,
+    blend,
+    add,
+    multiply,
+  }
+
+  enum cull-mode {
+    back,
+    front,
+    none,
+  }
+
+  /// The fragment-stage network.
+  record surface-graph {
+    nodes:        list<node>,
+    output:       surface-output,
+    blend:        blend-mode,
+    cull:         cull-mode,
+    /// Whether this surface occludes light. Declared, because blending does
+    /// not decide shadowing.
+    cast-shadows: bool,
+  }
+
+  /// The vertex-stage network.
+  ///
+  /// `position-offset` moves a vertex in the prim's own frame, before it is
+  /// placed in the world. `world-position-offset` moves it afterward, and is
+  /// the only way to displace along a direction that does not rotate and
+  /// scale with the prim.
+  record displacement-graph {
+    nodes:                 list<node>,
+    position-offset:       option<port>,
+    normal-override:       option<port>,
+    world-position-offset: option<port>,
+  }
+
+  /// A whole shading description: shared inputs, a fragment network, and
+  /// optionally a vertex one.
+  ///
+  /// `public-inputs` are the defaults; a prim rendering this graph overrides
+  /// them per-instance with `set-graph-overrides`, which costs nothing like
+  /// submitting a graph does.
+  record shader-graph {
+    public-inputs: list<graph-value>,
+    surface:       surface-graph,
+    displacement:  option<displacement-graph>,
   }
 
   /// The encoded bytes are the prim's `image:data` entry, set with
@@ -278,9 +474,20 @@ interface types {
     material:     func() -> option<material>;
     set-material: func(value: option<material>) -> result<_, error>;
 
+    /// The shading this prim is drawn with, in place of `material`.
+    ///
+    /// Validated and compiled by the host: a graph is bounded by its shape,
+    /// so building one carries no risk that shader text would. Costs one of
+    /// the document's shader programs, and the compiled result is shared by
+    /// content — every prim submitting the same graph draws with one program.
+    ///
+    /// A prim may instead reach a graph its package authored, through the
+    /// `material:binding` relationship, which costs nothing to point at.
+    set-material-graph: func(value: option<shader-graph>) -> result<_, error>;
+
     /// Per-instance overrides of the shader graph this prim renders, keyed by
-    /// public-input index. The graph itself is package content reached through
-    /// the `material:binding` relationship.
+    /// public-input index. Cheap: the graph is untouched, so prims sharing one
+    /// still share its compiled program.
     graph-overrides:     func() -> list<tuple<u16, graph-value>>;
     set-graph-overrides: func(values: list<tuple<u16, graph-value>>) -> result<_, error>;
 

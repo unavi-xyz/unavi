@@ -79,6 +79,14 @@ pub struct Tuning {
     /// surface stops redrawing itself.
     pub heat_settle: f32,
 
+    /// Radians per second an icon turns inside its shell. Gentle by default;
+    /// zero holds every icon still.
+    pub icon_spin: f32,
+    /// An icon's diagonal, as a fraction of its shell's diameter. Every icon
+    /// is measured and fit to this, so a ring of motes reads as one size
+    /// whatever the content.
+    pub icon_fill: f32,
+
     /// Metres the attended mote reaches toward the pointer.
     pub lean_dist:  f32,
     /// Distance at which lean has fallen off to nothing.
@@ -137,6 +145,9 @@ impl Tuning {
 
         heat_speed:  14.0,
         heat_settle: 0.004,
+
+        icon_spin: 0.15,
+        icon_fill: 0.5,
 
         lean_dist:  0.022,
         lean_range: 0.35,

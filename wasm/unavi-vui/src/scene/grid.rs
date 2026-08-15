@@ -141,7 +141,7 @@ impl Mounted for Grid {
         self.surface.update(&specs, layout, 0, &frame);
 
         self.bodies
-            .icons(&motes, self.surface.views(), self.surface.drawn())?;
+            .icons(&motes, self.surface.views(), self.surface.drawn(), delta)?;
         self.bodies.apply(
             self.surface.views(),
             &specs,

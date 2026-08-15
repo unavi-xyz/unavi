@@ -160,7 +160,7 @@ impl Mounted for Orbit {
         self.surface.update(&specs, layout, pinned, &frame);
 
         self.bodies
-            .icons(&motes, self.surface.views(), self.surface.drawn())?;
+            .icons(&motes, self.surface.views(), self.surface.drawn(), delta)?;
         self.bodies.apply(
             self.surface.views(),
             &specs,

@@ -63,8 +63,8 @@ deps = ["wired-error"]
 
 [wired-scene]
 path = "../../../protocol/wit/wired-scene"
-sha256 = "63960ffa6343668f6c820a4cbc6c95cdaf83882a55503deb06abe6ba4b537f37"
-sha512 = "1c34ab5b3a263a8108c5e37a039c616cf11f82f95abe6ccf68471840ba5372e7a6496b0790dbcd1bcaa6d599835f4652eb86fbd6c439bb161ba29c9ccc24081e"
+sha256 = "1881c2b52d765d8c01b4dd184ab0d50690f03b4fe5f0086dc8105d729d5bb90c"
+sha512 = "db1236939d028919d3938aceae5b95ae3c4ddc894a4fdf4d5278a814c6d225ff34f49e67a45f3bee9eb435bb31f6c4c1eccd941434b5bc5481e0ce15c09ccb14"
 deps = ["wired-error"]
 
 [wired-script]

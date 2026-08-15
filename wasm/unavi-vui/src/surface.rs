@@ -400,9 +400,11 @@ impl Surface {
     ) -> Style {
         // A mote's own hue is what it *is*, so it beats every resting rule —
         // the source's warmth and the parent's dim both belong to the neutral
-        // family. Only what is in hand outranks it, because the accent says
-        // what is happening and nothing else.
+        // family. What is in hand keeps the hue too, lit up by the grip
+        // rather than recoloured: the accent's grey reads as a mote going
+        // dead when it is selected, where a glow keeps it alive.
         let color = match (role, attention, tint) {
+            (_, Attention::Engaged, Some(tint)) => self.palette.tinted(tint, attention),
             (_, Attention::Engaged, _) => self.palette.tint(attention),
             // An off toggle is a clear outline: it wears the neutral family,
             // not its hue, so the fill is the one thing that says it is on.

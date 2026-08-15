@@ -227,6 +227,14 @@ impl PrimHandle {
             .map_err(|e| e.to_string())
     }
 
+    #[wasm_bindgen(js_name = "meshStream")]
+    pub async fn mesh_stream(&self, key: String) -> JsValue {
+        match shared::wired::scene::prim::mesh_stream(&self.api, self.rep, key).await {
+            Ok(Some(v)) => js_sys::Float32Array::from(v.as_slice()).into(),
+            _ => JsValue::UNDEFINED,
+        }
+    }
+
     pub async fn material(&self) -> JsValue {
         match shared::wired::scene::prim::material(&self.api, self.rep).await {
             Ok(Some(m)) => material_to_js(&m),

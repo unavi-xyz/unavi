@@ -21,6 +21,17 @@ pub const fn placed(translation: Vec3, scale: f32) -> Xform {
     }
 }
 
+/// Like [`placed`], but shifted so a fitted icon's measured centre sits on the
+/// origin before the turn: what a spinning, shell-fit icon wears.
+pub fn fitted(center: Vec3, scale: f32, rotation: Quat) -> Xform {
+    let shifted = rotation * (center * scale);
+    Xform {
+        translation: -shifted,
+        rotation,
+        scale: Vec3::splat(scale),
+    }
+}
+
 /// Scale zero rather than a visibility flag: nothing in `wired:scene` hides a
 /// prim, and a body drawn at no size costs no draw call.
 pub const fn hidden() -> Xform {

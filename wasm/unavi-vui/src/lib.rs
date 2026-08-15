@@ -10,6 +10,7 @@ pub mod assist;
 pub mod attention;
 pub mod bloom;
 pub mod cast;
+pub mod fit;
 pub mod grasp;
 pub mod layout;
 pub mod mesh;

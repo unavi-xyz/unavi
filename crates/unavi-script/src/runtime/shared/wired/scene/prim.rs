@@ -86,6 +86,7 @@ use crate::{
             },
         },
         wired::scene::util::{
+            bytes_to_f32s,
             f32s_to_bytes,
             u32s_to_bytes,
         },
@@ -631,6 +632,19 @@ pub async fn set_mesh_indices_u32(
         None => None,
     };
     set_buffer(api, &prim, slots::MESH_INDICES, bytes)
+}
+
+/// Reads a vertex stream back out of the prim's slot entry. A proxy's streams
+/// are not present locally, so it reads as having none.
+pub async fn mesh_stream(api: &Api, rep: u32, key: String) -> anyhow::Result<Option<Vec<f32>>> {
+    let prim = get_prim(api, rep).await?;
+    if prim.is_proxy {
+        return Ok(None);
+    }
+    anyhow::ensure!(key.len() <= MAX_NAME_BYTES, "mesh attribute key too long");
+    Ok(prim
+        .slot(&slots::mesh_attribute(&key))?
+        .map(|bytes| bytes_to_f32s(&bytes)))
 }
 
 pub async fn set_collider_vertices(

@@ -1,8 +1,11 @@
 //! Transcribes the [`SlotView`]s a surface computes into prims.
 
-use std::cell::{
-    Cell,
-    RefCell,
+use std::{
+    cell::{
+        Cell,
+        RefCell,
+    },
+    collections::HashMap,
 };
 
 use smol_str::SmolStr;
@@ -10,6 +13,10 @@ use wired_prelude::prelude::*;
 
 use crate::{
     attention::Attention,
+    fit::{
+        self,
+        Fit,
+    },
     mesh,
     mote::{
         Arrange,
@@ -149,29 +156,37 @@ struct SlotPrims {
 /// grown to what is actually shown, and the placard riding whichever of them
 /// holds attention.
 pub struct Bodies {
-    doc:      Document,
-    root:     Prim,
+    doc:       Document,
+    root:      Prim,
     /// The surface's face and its only resting collider. A mote is a drawing
     /// until it is taken, so only this can be hit.
-    field:    Prim,
-    surface:  Collider,
+    field:     Prim,
+    surface:   Collider,
     /// Grabs against this surface; anything landing elsewhere belongs to
     /// whatever it hit.
-    input:    InputListener,
+    input:     InputListener,
     /// Where an icon waits while the mote holding it is not drawn. Scale zero
     /// rather than unparented: `wired:scene` has no detached prim, and a
     /// removed child would reappear at the document root.
-    park:     Prim,
+    park:      Prim,
     /// Grown to what the surface is actually drawing, never past `capacity`.
     /// A grid nobody has put anything in costs nothing.
-    slots:    RefCell<Vec<SlotPrims>>,
-    capacity: usize,
-    unit:     mesh::MeshData,
-    placard:  Placard,
+    slots:     RefCell<Vec<SlotPrims>>,
+    capacity:  usize,
+    unit:      mesh::MeshData,
+    placard:   Placard,
+    tuning:    Tuning,
+    /// Radians the drawn icons have turned, accumulated per frame so the
+    /// spin is smooth however fast the tick.
+    spin:      Cell<f32>,
+    /// An icon's measured fit, keyed by its prim, so a mote that moves between
+    /// slots is not measured again. Measuring reads every piece's stream back
+    /// over the interface, which is cheap once and not something to repeat.
+    icon_fits: RefCell<HashMap<String, Fit>>,
     /// Whether the surface is up. A dismissed one keeps every prim — the
     /// meshes are paid for once, and a summon that re-uploaded them would
     /// spend a `Flow::BlobUpload` per body every time.
-    shown:    Cell<bool>,
+    shown:     Cell<bool>,
 }
 
 impl Bodies {
@@ -207,6 +222,9 @@ impl Bodies {
             capacity,
             unit: mesh::sphere(1.0, SPHERE_RINGS, SPHERE_SEGMENTS),
             placard,
+            tuning: *tuning,
+            spin: Cell::new(0.0),
+            icon_fits: RefCell::new(HashMap::new()),
             shown: Cell::new(true),
         })
     }
@@ -365,8 +383,24 @@ impl Bodies {
     ///
     /// Runs before [`Bodies::apply`], which reads back what a slot ended up
     /// holding to decide whether its shell is glass.
-    pub fn icons(&self, motes: &[Mote], views: &[SlotView], drawn: &[usize]) -> anyhow::Result<()> {
+    pub fn icons(
+        &self,
+        motes: &[Mote],
+        views: &[SlotView],
+        drawn: &[usize],
+        delta: f32,
+    ) -> anyhow::Result<()> {
         self.ensure(views.len())?;
+        // A gentle turn so the icons read as things rather than pictures;
+        // zero keeps every icon still.
+        self.spin
+            .set(delta.mul_add(self.tuning.icon_spin, self.spin.get()));
+        let spin = Quat::new(
+            0.0,
+            (self.spin.get() * 0.5).sin(),
+            0.0,
+            (self.spin.get() * 0.5).cos(),
+        );
         let slots = self.slots.borrow();
 
         let wanted = |slot: usize| {
@@ -399,19 +433,37 @@ impl Bodies {
                 continue;
             };
             let radius = views.get(index).map_or(0.0, |view| view.radius);
+            let fit = self.icon_fit(mote)?;
             if slot.icon.borrow().is_none() {
                 if let Some(result) = mote.with_icon(|prim| slot.root.add_child(prim)) {
                     result?;
                 }
                 *slot.icon.borrow_mut() = Some(mote.clone());
             }
-            if let Some(result) =
-                mote.with_icon(|prim| prim.set_xform(Some(draw::placed(Vec3::ZERO, radius))))
-            {
+            if let Some(result) = mote.with_icon(|prim| {
+                prim.set_xform(Some(draw::fitted(fit.center, radius * fit.scale, spin)))
+            }) {
                 result?;
             }
         }
         Ok(())
+    }
+
+    /// The fit a mote's icon wears, measured once and remembered for as long
+    /// as the icon does.
+    fn icon_fit(&self, mote: &Mote) -> anyhow::Result<Fit> {
+        let key = mote
+            .with_icon(Prim::id)
+            .ok_or_else(|| anyhow::anyhow!("mote has no icon"))?;
+        if let Some(fit) = self.icon_fits.borrow().get(&key) {
+            return Ok(*fit);
+        }
+        let (min, max) = mote
+            .with_icon(icon_box)
+            .ok_or_else(|| anyhow::anyhow!("mote has no icon"))??;
+        let fit = fit::fit(min, max, self.tuning.icon_fill);
+        self.icon_fits.borrow_mut().insert(key, fit);
+        Ok(fit)
     }
 
     /// `drawn` maps each view back to its spec, which pagination makes a real
@@ -639,4 +691,41 @@ fn apply_run(
         prim,
         &mesh::cluster(start, len, total, arrange, spread, radius),
     )
+}
+
+/// The box an icon's whole tree fills, in its root's own frame. The root's
+/// xform is skipped, because the surface replaces it when it places the icon;
+/// every piece beneath it is walked and posed in turn.
+fn icon_box(root: &Prim) -> anyhow::Result<(Vec3, Vec3)> {
+    let identity = Xform {
+        translation: Vec3::ZERO,
+        rotation:    Quat::IDENTITY,
+        scale:       Vec3::ONE,
+    };
+    let mut min = Vec3::splat(f32::MAX);
+    let mut max = Vec3::splat(f32::MIN);
+    gather(root, &identity, &mut min, &mut max)?;
+    if min.x > max.x {
+        return Ok((Vec3::ZERO, Vec3::ZERO));
+    }
+    Ok((min, max))
+}
+
+fn gather(prim: &Prim, parent: &Xform, min: &mut Vec3, max: &mut Vec3) -> anyhow::Result<()> {
+    if let Some(positions) = prim.mesh_stream("POSITION") {
+        for vertex in positions.chunks_exact(3) {
+            let point = fit::apply(parent, Vec3::new(vertex[0], vertex[1], vertex[2]));
+            *min = min.min(point);
+            *max = max.max(point);
+        }
+    }
+    for child in prim.children() {
+        let local = child.xform().unwrap_or(Xform {
+            translation: Vec3::ZERO,
+            rotation:    Quat::IDENTITY,
+            scale:       Vec3::ONE,
+        });
+        gather(&child, &fit::chain(parent, &local), min, max)?;
+    }
+    Ok(())
 }

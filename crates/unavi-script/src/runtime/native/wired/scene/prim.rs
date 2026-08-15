@@ -596,6 +596,16 @@ impl HostPrim for Runtime {
         ))
     }
 
+    async fn mesh_stream(
+        &mut self,
+        self_: Resource<PrimRes>,
+        key: String,
+    ) -> wasmtime::Result<Option<Vec<f32>>> {
+        shared::wired::scene::prim::mesh_stream(&self.api, self_.rep(), key)
+            .await
+            .map_err(wasmtime::Error::from_anyhow)
+    }
+
     async fn set_collider_vertices(
         &mut self,
         self_: Resource<PrimRes>,

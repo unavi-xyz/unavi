@@ -105,14 +105,13 @@ impl Palette {
     }
 
     /// A mote's own identity hue, kept as it is when attention lights it up —
-    /// brighter along its own hue rather than washed toward white, which is
-    /// what makes a selected mote read as *glowing* rather than grey. What is
-    /// in hand still wears the accent, which says what is happening and
-    /// nothing else.
+    /// brighter along its own hue rather than washed toward white or toward
+    /// the accent, which is what makes a selected mote read as *glowing*
+    /// rather than grey.
     #[must_use]
     pub const fn tinted(&self, tint: Color, attention: Attention) -> Color {
         match attention {
-            Attention::Engaged => self.accent,
+            Attention::Engaged => glow(tint, 0.9),
             Attention::Attended => glow(tint, 0.5),
             Attention::Near => glow(tint, 0.18),
             Attention::Idle => tint,
@@ -288,25 +287,26 @@ mod tests {
     #[test]
     fn a_consumer_s_hue_lifts_with_attention_without_becoming_the_accent() {
         let palette = Palette::DEFAULT;
-        let hue = rgb(0.8, 0.2, 0.3);
+        // Dark enough that the glow's renormalization does not clip the
+        // attended and engaged levels onto the same colour.
+        let hue = rgb(0.55, 0.15, 0.2);
         assert_eq!(palette.tinted(hue, Attention::Idle), hue);
 
         let near = palette.tinted(hue, Attention::Near);
         let attended = palette.tinted(hue, Attention::Attended);
+        let engaged = palette.tinted(hue, Attention::Engaged);
         assert!(lightness(near) > lightness(hue));
         assert!(lightness(attended) > lightness(near));
-        for lifted in [near, attended] {
+        assert!(
+            lightness(engaged) > lightness(attended),
+            "the grip burns brightest"
+        );
+        for lifted in [near, attended, engaged] {
             assert!(
                 same_hue(hue, lifted),
                 "attention must keep the hue, not wash it grey"
             );
         }
-
-        assert_eq!(
-            palette.tinted(hue, Attention::Engaged),
-            palette.accent,
-            "what is in hand says it is in hand, not what it stocks"
-        );
     }
 
     #[test]

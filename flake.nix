@@ -173,7 +173,6 @@
                   "*.html"
                   "*.js"
                   "*.json"
-                  "*.json5"
                   "*.jsx"
                   "*.mjs"
                   "*.scss"

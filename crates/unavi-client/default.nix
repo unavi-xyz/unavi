@@ -22,12 +22,28 @@
           ../../LICENSE
           ../../Trunk.toml
           ../../scripts
+          ../../wasm
+          ../unavi-script/package.json
+          ../unavi-script/package-lock.json
           ../wds/migrations
           ./assets
           ./index.html
           ./loader.html
           ./public
         ];
+      };
+
+      npmSrc = lib.fileset.toSource {
+        root = ../unavi-script;
+        fileset = lib.fileset.unions [
+          ../unavi-script/package.json
+          ../unavi-script/package-lock.json
+        ];
+      };
+
+      npmDeps = pkgs.fetchNpmDeps {
+        inherit npmSrc;
+        hash = "sha256-Lx+Ze5J0rlX5PQt60/zHQNcbXE1K6aDMdPioYc5gve8=";
       };
 
       cargoArgs = rec {
@@ -82,7 +98,16 @@
       nativeArgs = cargoArgs // {
         inherit cargoArtifacts;
 
+        npmRoot = "crates/unavi-script";
+        inherit npmDeps;
+
+        nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [
+          pkgs.nodejs
+          pkgs.npmHooks.npmConfigHook
+        ];
+
         preBuild = ''
+          ${pkgs.nushell}/bin/nu scripts/update-wasm.nu
           ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
         '';
 
@@ -97,11 +122,19 @@
       webArgs = cargoArgs // {
         cargoArtifacts = cargoArtifactsWeb;
 
-        nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [ pkgs.trunk ];
+        npmRoot = "crates/unavi-script";
+        inherit npmDeps;
+
+        nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [
+          pkgs.nodejs
+          pkgs.npmHooks.npmConfigHook
+          pkgs.trunk
+        ];
         wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_114;
 
         preBuild = ''
           ls -l
+          ${pkgs.nushell}/bin/nu scripts/update-wasm.nu
           ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
         '';
 

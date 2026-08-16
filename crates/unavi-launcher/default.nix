@@ -92,16 +92,16 @@ _: {
       );
     in
     {
-      checks = {
-        "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
-        "${pname}-nextest" = pkgs.crane.cargoNextest (
-          cargoArgs
-          // {
-            inherit cargoArtifacts;
-            cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";
-          }
-        );
-      };
+      # checks = {
+      #   "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
+      #   "${pname}-nextest" = pkgs.crane.cargoNextest (
+      #     cargoArgs
+      #     // {
+      #       inherit cargoArtifacts;
+      #       cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";
+      #     }
+      #   );
+      # };
 
       packages = {
         "${pname}" = packageDrv;

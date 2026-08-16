@@ -33,6 +33,7 @@ _: {
             clang
             dioxus-cli
             lld
+            makeWrapper
             pkg-config
             python3
           ]
@@ -87,6 +88,9 @@ _: {
 
           postInstall = ''
             cp LICENSE $out
+            wrapProgram $out/bin/${pname} \
+              --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath cargoArgs.linkedInputs}" \
+              --set WEBKIT_DISABLE_DMABUF_RENDERER 1
           '';
         }
       );

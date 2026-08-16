@@ -103,6 +103,7 @@
         inherit npmDeps;
 
         nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [
+          pkgs.makeWrapper
           pkgs.nodejs
           pkgs.npmHooks.npmConfigHook
         ];
@@ -117,6 +118,8 @@
           cp -r crates/${pname}/assets/* $out/bin/assets/
           rm -rf $out/bin/assets/wasm/test $out/bin/assets/wasm/example
           cp LICENSE $out
+          wrapProgram $out/bin/${pname} \
+            --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath cargoArgs.linkedInputs}"
         '';
       };
 

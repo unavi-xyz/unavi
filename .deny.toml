@@ -15,7 +15,9 @@ allow = [
   "MIT",
   "MIT-0",
   "MPL-2.0",
+  "OFL-1.1",
   "OpenSSL",
+  "Ubuntu-font-1.0",
   "Unicode-3.0",
   "Unlicense",
   "Zlib",
@@ -27,19 +29,21 @@ version = 2
 ignore = [
   "RUSTSEC-2023-0071", # rsa sidechannel
   "RUSTSEC-2024-0370", # proc-macro-error no longer maintained
-  "RUSTSEC-2024-0384", # instant unmaintained
-  "RUSTSEC-2024-0429", # glib unsoundness
   "RUSTSEC-2024-0436", # paste unmaintained
 
   # gtk-rs no longer maintained
   "RUSTSEC-2024-0411",
   "RUSTSEC-2024-0412",
   "RUSTSEC-2024-0413",
+  "RUSTSEC-2024-0414",
   "RUSTSEC-2024-0415",
   "RUSTSEC-2024-0416",
   "RUSTSEC-2024-0418",
   "RUSTSEC-2024-0419",
   "RUSTSEC-2024-0420",
+
+  # ttf-parser unmaintained, no maintained successor with a compatible API
+  "RUSTSEC-2026-0192",
 ]
 version = 2
 

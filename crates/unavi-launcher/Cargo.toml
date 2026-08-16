@@ -31,4 +31,4 @@ tempfile.workspace      = true
 tokio.workspace         = true
 toml.workspace          = true
 tracing.workspace       = true
-xz2                     = { features = ["tokio"], version = "0.1.7" }
+xz2                     = "0.1.7"

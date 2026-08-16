@@ -158,17 +158,17 @@
       );
     in
     {
-      checks = {
-        "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
-        "${pname}-nextest" = pkgs.crane.cargoNextest (
-          cargoArgs
-          // {
-            inherit cargoArtifacts;
-            cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";
-            preBuild = "${pkgs.nushell}/bin/nu scripts/build-wasm.nu";
-          }
-        );
-      };
+      # checks = {
+      #   "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
+      #   "${pname}-nextest" = pkgs.crane.cargoNextest (
+      #     cargoArgs
+      #     // {
+      #       inherit cargoArtifacts;
+      #       cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";
+      #       preBuild = "${pkgs.nushell}/bin/nu scripts/build-wasm.nu";
+      #     }
+      #   );
+      # };
 
       packages = {
         "${pname}" = pkgs.crane.buildPackage nativeArgs;

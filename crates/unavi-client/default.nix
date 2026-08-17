@@ -43,7 +43,7 @@
       };
 
       npmDeps = pkgs.fetchNpmDeps {
-        inherit npmSrc;
+        src = npmSrc;
         hash = "sha256-Lx+Ze5J0rlX5PQt60/zHQNcbXE1K6aDMdPioYc5gve8=";
       };
 

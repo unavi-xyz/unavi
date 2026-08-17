@@ -496,6 +496,10 @@ interface types {
     set-mesh-stream:      func(key: string, values: option<list<f32>>) -> result<_, error>;
     set-mesh-indices-u32: func(values: option<list<u32>>) -> result<_, error>;
 
+    /// Reads back a vertex stream written with `set-mesh-stream`, in the
+    /// prim's own frame.
+    mesh-stream: func(key: string) -> option<list<f32>>;
+
     material:     func() -> option<material>;
     set-material: func(value: option<material>) -> result<_, error>;
 

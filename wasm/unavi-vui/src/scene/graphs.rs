@@ -40,6 +40,9 @@ use crate::wired::scene::{
 
 /// Tint, with the body's alpha in its own alpha channel.
 pub const SHELL_TINT: u16 = 0;
+/// How brightly the shell burns from within, as a multiple of its own hue.
+/// Carries what heat cannot: a toggle that is on holds a floor here whatever
+/// attention it is under.
 pub const SHELL_EMISSIVE: u16 = 1;
 /// How far the mote has come toward the attention it is under.
 pub const SHELL_HEAT: u16 = 2;
@@ -312,20 +315,16 @@ fn with_alpha(net: &mut Net, color: Port, alpha: Port) -> Port {
 /// A mote's shell: a bubble whose transmission shows the room behind it and
 /// whose edge carries it.
 ///
-/// Step 1 proved the transmission pipeline — the motes show the room behind
-/// them. Step 2 makes that refraction follow the mote's own curvature: the
-/// sample offset is the surface normal's screen projection, scaled by the
-/// squared rim, so the face is a window (normal ≈ straight ahead) and the
-/// world behind bends hardest from halfway out to the silhouette — a lens,
-/// not a flat pane. Step 3 tints the sampled room with the mote's hue, the
-/// strength following the glass alpha, so an idle mote's glass is nearly
-/// clear and an attended one wears its colour. Step 4 adds light the shell
-/// carries — a rim outline always, and on top of it the opt-in film:
-/// rim-weighted thin-film interference, two highlights, and a caustic ring,
-/// gated by `SHELL_FILM` so a mote wears a stable colour unless it asks for
-/// the bubble. Step 5 makes the rim optional frost: a rim-weighted multi-tap
-/// blur of the room, gated by `SHELL_FROST` so a shell that did not ask for
-/// it keeps its clear refraction.
+/// The refraction follows the mote's own curvature — the sample offset is the
+/// surface normal's screen projection — so the face is a window and the room
+/// bends only at the silhouette: a lens, not a flat pane. Over that comes the
+/// hue, at the strength the glass alpha asks for; the interior lamp; and last
+/// the light the shell carries, which is the rim always and the opt-in bubble
+/// of film, highlights and caustic on top of it.
+///
+/// The material is opaque because that is what reaches the transmissive
+/// phase: a blended one lands in the transparent phase, where the texture
+/// `SceneColor` samples is never filled.
 fn shell() -> ShaderGraph {
     let mut net = Net::default();
     let screen = net.push(Node::ScreenUv);
@@ -401,6 +400,13 @@ fn shell() -> ShaderGraph {
         t: strength,
     }));
 
+    // The interior lamp: the shell's own hue, at the brightness the palette
+    // asked for. Separate from the carried light because it is the volume
+    // burning rather than the surface catching something, and because it says
+    // what heat cannot — a toggle that is on burns whether or not anything is
+    // looking at it.
+    let lit = net.push(Node::Mul(binary(hue, Port::Input(SHELL_EMISSIVE))));
+
     let carried = net.carried(
         power,
         rim,
@@ -411,6 +417,7 @@ fn shell() -> ShaderGraph {
         heat,
     );
     let color = net.push(Node::Add(binary(glass, carried)));
+    let color = net.push(Node::Add(binary(color, lit)));
 
     ShaderGraph {
         public_inputs: vec![
@@ -590,6 +597,8 @@ pub fn bind_ring(prim: &Prim) -> anyhow::Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::*;
 
     /// `hsd::attributes::material_graph::MAX_NODES`, restated because a guest
@@ -696,6 +705,31 @@ mod tests {
     #[test]
     fn the_ring_is_well_formed() {
         assert_well_formed(&ring(), "ring");
+    }
+
+    /// The other direction: an input no node reads is an override pushed for
+    /// nothing, and the side pushing it cannot see that it is dead.
+    #[test]
+    fn every_declared_input_is_read() {
+        for (graph, name) in [(shell(), "shell"), (ring(), "ring")] {
+            let networks = graph.surface.nodes.iter().chain(
+                graph
+                    .displacement
+                    .iter()
+                    .flat_map(|network| network.nodes.iter()),
+            );
+            let read = networks
+                .flat_map(ports)
+                .filter_map(|port| match port {
+                    Port::Input(input) => Some(usize::from(input)),
+                    Port::Node(_) | Port::Const(_) => None,
+                })
+                .collect::<HashSet<_>>();
+
+            for input in 0..graph.public_inputs.len() {
+                assert!(read.contains(&input), "{name} declares input {input}, and nothing reads it");
+            }
+        }
     }
 
     /// Every input the shell is handed at draw time has to exist, or the

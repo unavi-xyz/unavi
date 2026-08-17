@@ -318,6 +318,10 @@ pub(crate) fn drive_cast(
     delta: f32,
     events: &mut Vec<Event>,
 ) -> anyhow::Result<()> {
+    // Before the guard: an abandoned ring is unwinding precisely when there is
+    // no cast left to drive.
+    site.step(delta)?;
+
     let Some(active) = casting else {
         return Ok(());
     };

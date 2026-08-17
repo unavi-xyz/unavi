@@ -83,6 +83,18 @@ impl Cast {
     }
 }
 
+/// How much of an abandoned ring is left after `delta`, or none once it has
+/// unwound.
+///
+/// An abort runs the fill backwards rather than hiding the ring where it
+/// stood: letting go is a decision, and a decision that draws nothing reads
+/// as the interface having missed it.
+#[must_use]
+pub fn recoil(left: f32, delta: f32, speed: f32) -> Option<f32> {
+    let left = delta.mul_add(-speed, left);
+    (left > 0.0).then_some(left)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -154,5 +166,33 @@ mod tests {
         assert!((State::Filling(0.4).progress() - 0.4).abs() < 1.0e-6);
         assert!((State::Committed.progress() - 1.0).abs() < 1.0e-6);
         assert!(State::Aborted.progress().abs() < 1.0e-6);
+    }
+
+    #[test]
+    fn a_recoil_unwinds_toward_empty() {
+        let left = recoil(0.8, 0.1, 2.0).expect("still unwinding");
+        assert!((left - 0.6).abs() < 1.0e-6);
+    }
+
+    #[test]
+    fn a_recoil_ends_rather_than_going_negative() {
+        assert_eq!(recoil(0.1, 0.1, 2.0), None);
+        assert_eq!(recoil(0.0, 0.016, 4.0), None);
+    }
+
+    #[test]
+    fn a_full_ring_unwinds_faster_than_it_filled() {
+        let tuning = Tuning::DEFAULT;
+        let mut left = 1.0;
+        let mut elapsed = 0.0;
+        while let Some(next) = recoil(left, 1.0 / 90.0, tuning.cast_recoil) {
+            left = next;
+            elapsed += 1.0 / 90.0;
+        }
+        assert!(
+            elapsed < tuning.cast_duration,
+            "an abort that takes as long as the cast did reads as a rewind \
+             rather than as a snap back"
+        );
     }
 }

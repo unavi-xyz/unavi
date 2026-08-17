@@ -63,7 +63,7 @@ mod tests {
         let min = Vec3::ZERO;
         let max = Vec3::new(1.0, 1.0, 1.0);
         let fit = fit(min, max, 0.5);
-        assert!((fit.scale * (max - min).length() - 1.0).abs() < 1.0e-6);
+        assert!(fit.scale.mul_add((max - min).length(), -1.0).abs() < 1.0e-6);
         let corner = (max - fit.center) * fit.scale;
         assert!((corner.length() - 0.5).abs() < 1.0e-6);
     }
@@ -72,7 +72,7 @@ mod tests {
     fn an_empty_box_is_left_alone() {
         let fit = fit(Vec3::ZERO, Vec3::ZERO, 0.5);
         assert_eq!(fit.center, Vec3::ZERO);
-        assert_eq!(fit.scale, 1.0);
+        assert!((fit.scale - 1.0).abs() < 1.0e-6);
     }
 
     #[test]

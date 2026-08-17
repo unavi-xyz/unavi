@@ -128,6 +128,17 @@ struct PipShape {
     arrange:   Arrange,
 }
 
+/// Everything the shell graph is handed. Not derivable from the style alone:
+/// an item wears glass only when there is something inside it to see, and the
+/// film and frost are per-mote choices.
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct Shell {
+    style: Style,
+    icon:  bool,
+    film:  f32,
+    frost: f32,
+}
+
 struct SlotPrims {
     root:     Prim,
     body:     Prim,
@@ -143,9 +154,9 @@ struct SlotPrims {
     /// The mote whose icon is parented here, so a slot reused by another mote
     /// hands the old one back rather than keeping it.
     icon:     RefCell<Option<Mote>>,
-    /// Keyed by icon and film as well as style: an item wears glass only when
-    /// there is something inside it to see, and the film is a per-mote choice.
-    style:    Cell<Option<(Style, bool, f32)>>,
+    /// What the shell graph was last handed, so a settled mote is not written
+    /// every frame.
+    shell:    Cell<Option<Shell>>,
     shape:    Cell<Option<PipShape>>,
     /// Last `(label, attention)` written; a `set_text` write costs a sync
     /// whether or not the string changed.
@@ -274,7 +285,7 @@ impl Bodies {
                 marked: Cell::new(false),
                 label,
                 icon: RefCell::new(None),
-                style: Cell::new(None),
+                shell: Cell::new(None),
                 shape: Cell::new(None),
                 written: RefCell::new(None),
             });
@@ -494,22 +505,20 @@ impl Bodies {
             slot.body
                 .set_xform(Some(draw::placed(Vec3::ZERO, view.radius)))?;
 
-            if let Some(spec) = drawn.get(index).and_then(|index| specs.get(*index)) {
+            let spec = drawn.get(index).and_then(|index| specs.get(*index));
+            if let Some(spec) = spec {
                 Self::apply_label(slot, view, spec, palette)?;
             }
 
-            let icon = slot.icon.borrow().is_some();
-            let film = drawn
-                .get(index)
-                .and_then(|index| specs.get(*index))
-                .map_or(0.0, |spec| spec.film);
-            let frost = drawn
-                .get(index)
-                .and_then(|index| specs.get(*index))
-                .map_or(0.0, |spec| spec.frost);
-            if slot.style.get() != Some((view.style, icon, film)) {
-                slot.style.set(Some((view.style, icon, film)));
-                Self::apply_shell(slot, view, index, icon, film, frost, palette)?;
+            let shell = Shell {
+                style: view.style,
+                icon:  slot.icon.borrow().is_some(),
+                film:  spec.map_or(0.0, |spec| spec.film),
+                frost: spec.map_or(0.0, |spec| spec.frost),
+            };
+            if slot.shell.get() != Some(shell) {
+                slot.shell.set(Some(shell));
+                Self::apply_shell(slot, view, index, shell, palette)?;
                 slot.nested
                     .set_material(Some(draw::pip(view.style, true)))?;
                 slot.plain
@@ -538,33 +547,31 @@ impl Bodies {
         slot: &SlotPrims,
         view: &SlotView,
         index: usize,
-        icon: bool,
-        film: f32,
-        frost: f32,
+        shell: Shell,
         palette: &Palette,
     ) -> anyhow::Result<()> {
         // An item wears glass exactly when there is something inside it to
         // see, which is the one thing about a mote's alpha that depends on
         // what it ended up holding rather than on what it is.
-        let alpha = if icon && matches!(view.role, Role::Item { .. }) {
+        let alpha = if shell.icon && matches!(view.role, Role::Item { .. }) {
             palette.glass(view.attention)
         } else {
-            view.style.alpha
+            shell.style.alpha
         };
 
         slot.body.set_graph_overrides(&[
             (
                 graphs::SHELL_TINT,
-                GraphValue::Color(draw::with_alpha(view.style.color, alpha)),
+                GraphValue::Color(draw::with_alpha(shell.style.color, alpha)),
             ),
             (
                 graphs::SHELL_EMISSIVE,
-                GraphValue::Float(view.style.emissive),
+                GraphValue::Float(shell.style.emissive),
             ),
             (graphs::SHELL_HEAT, GraphValue::Float(view.heat)),
             (graphs::SHELL_PHASE, GraphValue::Float(phase(index))),
-            (graphs::SHELL_FILM, GraphValue::Float(film)),
-            (graphs::SHELL_FROST, GraphValue::Float(frost)),
+            (graphs::SHELL_FILM, GraphValue::Float(shell.film)),
+            (graphs::SHELL_FROST, GraphValue::Float(shell.frost)),
         ])?;
         Ok(())
     }

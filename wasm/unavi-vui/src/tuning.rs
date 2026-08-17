@@ -63,6 +63,9 @@ pub struct Tuning {
 
     /// Seconds a consequential action fills for before it fires.
     pub cast_duration: f32,
+    /// Full rings per second an abandoned cast unwinds, which is faster than
+    /// it filled: letting go is a snap back, not a rewind.
+    pub cast_recoil:   f32,
 
     /// How fast a surface opens and closes, in full blooms per second.
     pub bloom_speed:     f32,
@@ -138,6 +141,7 @@ impl Tuning {
         trail_taper: 0.82,
 
         cast_duration: 0.9,
+        cast_recoil:   4.0,
 
         bloom_speed:     6.5,
         bloom_stagger:   0.22,

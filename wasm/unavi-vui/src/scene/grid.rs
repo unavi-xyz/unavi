@@ -79,7 +79,7 @@ impl Grid {
         let surface = Surface::new(capacity, *tuning, palette);
         let extents = Layout::grid(columns, rows, pitch).extents(tuning);
         let bodies = Bodies::new(doc, capacity, tuning, Hit::Slab { extents })?;
-        let site = Site::new(doc, bodies.root(), palette)?;
+        let site = Site::new(doc, bodies.root(), tuning, palette)?;
 
         Ok(Self {
             root,

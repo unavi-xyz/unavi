@@ -78,7 +78,7 @@ impl Orbit {
         let surface = Surface::new(capacity, *tuning, palette);
         let reach = tuning.orbit_radius * tuning.reach_frac;
         let bodies = Bodies::new(doc, capacity, tuning, Hit::Disc { radius: reach })?;
-        let site = Site::new(doc, bodies.root(), palette)?;
+        let site = Site::new(doc, bodies.root(), tuning, palette)?;
 
         Ok(Self {
             tree: Tree::new(root),

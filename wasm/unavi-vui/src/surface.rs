@@ -246,6 +246,10 @@ impl Surface {
 
         let seized = self.grasp.seized().map(|held| held.slot);
         let attended = self.tracker.current();
+        // Nothing warms to an approach while something is in hand: a mote
+        // lighting up under a carried item claims to be a drop target, and
+        // it is not.
+        let approaching = frame.aim.filter(|_| !dragging);
 
         self.views.clear();
         for slot in 0..self.drawn.len() {
@@ -256,18 +260,37 @@ impl Surface {
             let world = frame.anchor.translation + frame.anchor.rotation * local;
             let is_seized = seized == Some(slot);
 
-            let attention =
-                self.tracker
-                    .state(slot, is_seized, attended.is_some_and(|held| held != slot));
+            let attention = self.tracker.state(slot, is_seized);
 
+            // A mote that has not been chosen warms by how near the pointer
+            // has come, topping out at `Near`. A flat lift for every sibling
+            // says only that the surface is in use, and says it as loudly on
+            // the mote furthest from the hand as on the one beside it.
+            let want = match attention {
+                Attention::Attended | Attention::Engaged => attention.heat(),
+                Attention::Idle | Attention::Near => {
+                    let near = approaching
+                        .map_or(0.0, |aim| assist::proximity(world, aim.world, &self.tuning));
+                    Attention::Near.heat() * near
+                }
+            };
             self.heat[slot] = assist::approach_scalar(
                 self.heat[slot],
-                attention.heat(),
+                want,
                 self.tuning.heat_speed,
                 frame.delta,
                 self.tuning.heat_settle,
             );
             let heat = self.heat[slot];
+
+            // The field recedes around whatever is chosen, so the attended
+            // mote stands out by everything else giving way rather than by
+            // burning brighter still.
+            let crowd = if attended.is_some_and(|held| held != slot) {
+                self.tuning.sibling_dim
+            } else {
+                1.0
+            };
 
             let target = frame.aim.map_or(Vec3::ZERO, |aim| {
                 frame.anchor.rotation.inverse()
@@ -290,7 +313,7 @@ impl Surface {
             self.views.push(SlotView {
                 position,
                 radius: presentation.radius,
-                style: self.style_at(spec.role, heat, spec.active, spec.tint),
+                style: self.style_at(spec.role, heat, spec.active, spec.tint, crowd),
                 role: spec.role,
                 attention,
                 heat,
@@ -369,25 +392,38 @@ impl Surface {
     /// rule in [`Surface::style`] — a parent mote receding, a container's
     /// glass, an item's warmth — exactly what it was at each state, and none
     /// of them has to know heat exists.
-    fn style_at(&self, role: Role, heat: f32, active: bool, tint: Option<Color>) -> Style {
+    /// `crowd` is how much of its brightness the mote keeps while something
+    /// else holds attention; exactly 1 leaves the sampled style untouched.
+    fn style_at(
+        &self,
+        role: Role,
+        heat: f32,
+        active: bool,
+        tint: Option<Color>,
+        crowd: f32,
+    ) -> Style {
         let (low, high, t) = attention::bracket(heat);
         // Landing on an endpoint exactly, rather than blending to it: a style
         // is only rewritten when it differs, and `a + (b - a) * 1.0` is not
         // `b` in floating point — so a settled mote would redraw forever.
-        if t <= 0.0 {
-            return self.style(role, low, active, tint);
-        }
-        if t >= 1.0 {
-            return self.style(role, high, active, tint);
-        }
-        let (from, to) = (
-            self.style(role, low, active, tint),
-            self.style(role, high, active, tint),
-        );
+        let sampled = if t <= 0.0 {
+            self.style(role, low, active, tint)
+        } else if t >= 1.0 {
+            self.style(role, high, active, tint)
+        } else {
+            let (from, to) = (
+                self.style(role, low, active, tint),
+                self.style(role, high, active, tint),
+            );
+            Style {
+                color:    palette::blend(from.color, to.color, t),
+                alpha:    (to.alpha - from.alpha).mul_add(t, from.alpha),
+                emissive: (to.emissive - from.emissive).mul_add(t, from.emissive),
+            }
+        };
         Style {
-            color:    palette::blend(from.color, to.color, t),
-            alpha:    (to.alpha - from.alpha).mul_add(t, from.alpha),
-            emissive: (to.emissive - from.emissive).mul_add(t, from.emissive),
+            emissive: sampled.emissive * crowd,
+            ..sampled
         }
     }
 
@@ -1095,6 +1131,65 @@ mod tests {
         assert_ne!(hovered.color, Palette::DEFAULT.accent, "hover stays quiet");
         assert!(hovered.color.r > resting.color.r);
         assert!(hovered.emissive > resting.emissive);
+    }
+
+    /// Holds `aim` until every slot has settled, and reports the sibling in
+    /// slot 1.
+    fn settle_beside(specs: &[MoteSpec], aim: Aim) -> SlotView {
+        let mut surface = surface();
+        for _ in 0..60 {
+            ring_update(&mut surface, specs, Centre::Open, &frame(Some(aim)));
+        }
+        surface.views()[1]
+    }
+
+    /// The whole of "approach reveals": a mote nobody has chosen still knows
+    /// the pointer is coming, and knows it by degree.
+    #[test]
+    fn a_mote_warms_as_the_pointer_comes_toward_it() {
+        let specs = [spec(Role::Action), spec(Role::Action)];
+        let across = settle_beside(&specs, aim_at(Vec2::new(0.0, R)));
+        let closer = settle_beside(&specs, aim_at(Vec2::new(0.0, R * 0.3)));
+
+        assert!(
+            closer.heat > across.heat,
+            "the same sibling, under the same attended mote, is warmer for \
+             the pointer having come nearer: {} against {}",
+            closer.heat,
+            across.heat
+        );
+        assert!(
+            closer.heat < Attention::Attended.heat(),
+            "warming is not being chosen"
+        );
+    }
+
+    /// And the other half: the field gives way around what is chosen, rather
+    /// than every sibling lighting up because the surface is in use.
+    #[test]
+    fn attending_one_mote_dims_the_rest_rather_than_lifting_them() {
+        let mut surface = surface();
+        let specs = [spec(Role::Action), spec(Role::Action)];
+        ring_update(&mut surface, &specs, Centre::Open, &frame(None));
+        let resting = surface.views()[1].style.emissive;
+
+        let sibling = settle_beside(&specs, aim_at(Vec2::new(0.0, R)));
+        assert!(
+            sibling.style.emissive < resting,
+            "a sibling receded to {} from a resting {resting}",
+            sibling.style.emissive
+        );
+    }
+
+    #[test]
+    fn receding_is_a_dimming_and_never_a_repaint() {
+        let surface = surface();
+        let alone = surface.style_at(Role::Action, 0.3, false, None, 1.0);
+        let beside = surface.style_at(Role::Action, 0.3, false, None, Tuning::DEFAULT.sibling_dim);
+
+        assert!(beside.emissive < alone.emissive);
+        assert_eq!(beside.color, alone.color);
+        assert!((beside.alpha - alone.alpha).abs() < 1.0e-6);
     }
 
     /// Holds `aim` on slot 0 for `frames` and reports it.

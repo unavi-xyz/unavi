@@ -5,10 +5,24 @@ use crate::{
     tuning::Tuning,
 };
 
+/// How near `pointer` has come to `slot`: 1 on top of it, 0 at the edge of
+/// reach.
+///
+/// What a mote notices an approach with, and the same falloff [`lean`] leans
+/// by — so coming closer and being reached for share one sense of range
+/// rather than two that can drift apart.
+#[must_use]
+pub fn proximity(slot: Vec3, pointer: Vec3, tuning: &Tuning) -> f32 {
+    if tuning.lean_range <= f32::EPSILON {
+        return 0.0;
+    }
+    1.0 - ((pointer - slot).length() / tuning.lean_range).clamp(0.0, 1.0)
+}
+
 /// The offset an attended mote takes toward the pointer.
 #[must_use]
 pub fn lean(slot: Vec3, pointer: Vec3, attention: Attention, tuning: &Tuning) -> Vec3 {
-    if !attention.is_active() || tuning.lean_range <= f32::EPSILON {
+    if !attention.is_active() {
         return Vec3::ZERO;
     }
     let toward = pointer - slot;
@@ -16,8 +30,7 @@ pub fn lean(slot: Vec3, pointer: Vec3, attention: Attention, tuning: &Tuning) ->
     if distance <= f32::EPSILON {
         return Vec3::ZERO;
     }
-    let falloff = 1.0 - (distance / tuning.lean_range).clamp(0.0, 1.0);
-    toward / distance * (tuning.lean_dist * falloff)
+    toward / distance * (tuning.lean_dist * proximity(slot, pointer, tuning))
 }
 
 /// Eases `current` toward `target` at `speed` per second, framerate
@@ -94,6 +107,28 @@ mod tests {
             lean(Vec3::ZERO, beyond, Attention::Attended, &tuning()),
             Vec3::ZERO
         );
+    }
+
+    #[test]
+    fn proximity_is_one_on_the_mote_and_nothing_at_the_edge_of_reach() {
+        let slot = Vec3::ZERO;
+        assert!((proximity(slot, slot, &tuning()) - 1.0).abs() < 1.0e-6);
+
+        let edge = Vec3::new(tuning().lean_range, 0.0, 0.0);
+        assert!(proximity(slot, edge, &tuning()).abs() < 1.0e-6);
+        assert!(
+            proximity(slot, edge * 2.0, &tuning()).abs() < 1.0e-6,
+            "and no further"
+        );
+    }
+
+    #[test]
+    fn proximity_rises_as_the_pointer_closes() {
+        let slot = Vec3::ZERO;
+        let far = proximity(slot, Vec3::new(0.3, 0.0, 0.0), &tuning());
+        let near = proximity(slot, Vec3::new(0.1, 0.0, 0.0), &tuning());
+        assert!(near > far);
+        assert!(far >= 0.0);
     }
 
     #[test]

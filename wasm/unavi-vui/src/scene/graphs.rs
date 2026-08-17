@@ -55,6 +55,10 @@ pub const SHELL_FILM: u16 = 4;
 /// How much the shell's rim is frosted, 0 for clear glass. A mote that opts
 /// in diffuses what shows through its edge rather than refracting it.
 pub const SHELL_FROST: u16 = 5;
+/// How far the mote has arrived, 0 for not yet and 1 for whole. Drawn as a
+/// front sweeping up the body rather than as a fade, so a mote materializes
+/// where it stands.
+pub const SHELL_BLOOM: u16 = 6;
 
 pub const RING_TINT: u16 = 0;
 pub const RING_PROGRESS: u16 = 1;
@@ -279,6 +283,20 @@ impl Net {
             t: amount,
         }))
     }
+
+    /// Puts the body's own latitude in the alpha, which the terminal's
+    /// threshold then cuts against — a front sweeping up the mote as it
+    /// arrives, so it materializes where it stands rather than inflating or
+    /// fading in.
+    fn latitude_clipped(&mut self, color: Port) -> Port {
+        let uv = self.push(Node::Uv);
+        let up = self.push(Node::Extract(ExtractOp {
+            v:       uv,
+            channel: 1,
+        }));
+        let below = self.push(Node::OneMinus(up));
+        with_alpha(self, color, below)
+    }
 }
 
 const fn cf(v: f32) -> Port {
@@ -419,6 +437,12 @@ fn shell() -> ShaderGraph {
     let color = net.push(Node::Add(binary(glass, carried)));
     let color = net.push(Node::Add(binary(color, lit)));
 
+    // Clipping is the only way to reach `discard` from a graph, and it
+    // composes with the opaque blend rather than replacing it — so a mote can
+    // arrive without the shell leaving the phase its transmission is drawn in.
+    let front = net.push(Node::OneMinus(Port::Input(SHELL_BLOOM)));
+    let color = net.latitude_clipped(color);
+
     ShaderGraph {
         public_inputs: vec![
             GraphValue::Color(Color {
@@ -432,12 +456,13 @@ fn shell() -> ShaderGraph {
             GraphValue::Float(0.0),
             GraphValue::Float(crate::palette::FILM),
             GraphValue::Float(0.0),
+            GraphValue::Float(1.0),
         ],
         surface:       SurfaceGraph {
             nodes:        net.nodes,
             output:       SurfaceOutput::Unlit(UnlitOutput {
                 color,
-                alpha_clip_threshold: None,
+                alpha_clip_threshold: Some(front),
             }),
             blend:        BlendMode::Opaque,
             cull:         CullMode::Back,
@@ -707,8 +732,27 @@ mod tests {
         assert_well_formed(&ring(), "ring");
     }
 
+    /// Arriving is a clip, not a fade: a shell that faded would have to
+    /// blend, and a blended shell never reaches the phase its transmission
+    /// is filled in.
+    #[test]
+    fn the_shell_clips_as_it_arrives_and_stays_opaque() {
+        let shell = shell();
+        assert!(matches!(shell.surface.blend, BlendMode::Opaque));
+
+        let SurfaceOutput::Unlit(unlit) = shell.surface.output else {
+            panic!("the shell is unlit");
+        };
+        assert!(
+            unlit.alpha_clip_threshold.is_some(),
+            "without a threshold the bloom input is carried and never drawn"
+        );
+    }
+
     /// The other direction: an input no node reads is an override pushed for
-    /// nothing, and the side pushing it cannot see that it is dead.
+    /// nothing, and the side pushing it cannot see that it is dead. Terminals
+    /// are not scanned — an input worth declaring is one something computes
+    /// with.
     #[test]
     fn every_declared_input_is_read() {
         for (graph, name) in [(shell(), "shell"), (ring(), "ring")] {
@@ -727,7 +771,10 @@ mod tests {
                 .collect::<HashSet<_>>();
 
             for input in 0..graph.public_inputs.len() {
-                assert!(read.contains(&input), "{name} declares input {input}, and nothing reads it");
+                assert!(
+                    read.contains(&input),
+                    "{name} declares input {input}, and nothing reads it"
+                );
             }
         }
     }
@@ -744,6 +791,7 @@ mod tests {
             SHELL_PHASE,
             SHELL_FILM,
             SHELL_FROST,
+            SHELL_BLOOM,
         ] {
             assert!(usize::from(input) < count, "input {input} is not declared");
         }

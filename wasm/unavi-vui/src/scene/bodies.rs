@@ -137,6 +137,7 @@ struct Shell {
     icon:  bool,
     film:  f32,
     frost: f32,
+    bloom: f32,
 }
 
 struct SlotPrims {
@@ -515,6 +516,7 @@ impl Bodies {
                 icon:  slot.icon.borrow().is_some(),
                 film:  spec.map_or(0.0, |spec| spec.film),
                 frost: spec.map_or(0.0, |spec| spec.frost),
+                bloom: view.bloom,
             };
             if slot.shell.get() != Some(shell) {
                 slot.shell.set(Some(shell));
@@ -572,6 +574,7 @@ impl Bodies {
             (graphs::SHELL_PHASE, GraphValue::Float(phase(index))),
             (graphs::SHELL_FILM, GraphValue::Float(shell.film)),
             (graphs::SHELL_FROST, GraphValue::Float(shell.frost)),
+            (graphs::SHELL_BLOOM, GraphValue::Float(shell.bloom)),
         ])?;
         Ok(())
     }

@@ -76,6 +76,11 @@ pub struct Tuning {
     /// How far past its size a mote lands before settling back onto it.
     pub bloom_overshoot: f32,
 
+    /// How much of its brightness a mote keeps while another holds
+    /// attention. The field receding is what makes the chosen one stand out;
+    /// brightening it further only adds light to a form that is already lit.
+    pub sibling_dim: f32,
+
     /// How fast a mote's look catches up to the attention it is under.
     pub heat_speed:  f32,
     /// How close to its target a mote's heat lands on exactly, so a settled
@@ -146,6 +151,8 @@ impl Tuning {
         bloom_speed:     6.5,
         bloom_stagger:   0.22,
         bloom_overshoot: 1.5,
+
+        sibling_dim: 0.8,
 
         heat_speed:  14.0,
         heat_settle: 0.004,

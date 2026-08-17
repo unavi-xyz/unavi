@@ -2,7 +2,10 @@
 pub enum Attention {
     #[default]
     Idle,
-    /// A pointer is within influence, but this is not the best candidate.
+    /// As warm as a mote gets without being chosen. Heat climbs toward this
+    /// by how near the pointer has come; the tracker never reports it,
+    /// because being approached is a matter of degree and this is only where
+    /// it tops out.
     Near,
     /// The best candidate for a pointer.
     Attended,
@@ -103,16 +106,18 @@ impl Tracker {
         self.dwell
     }
 
+    /// Only the attended slot has a state of its own. Everything else rests,
+    /// and warms by proximity rather than by anything the tracker knows —
+    /// which is what keeps a sibling from being told it is half-selected
+    /// merely because something else was.
     #[must_use]
-    pub fn state(&self, slot: usize, engaged: bool, near: bool) -> Attention {
+    pub fn state(&self, slot: usize, engaged: bool) -> Attention {
         if self.current == Some(slot) {
             if engaged {
                 Attention::Engaged
             } else {
                 Attention::Attended
             }
-        } else if near {
-            Attention::Near
         } else {
             Attention::Idle
         }
@@ -154,7 +159,7 @@ mod tests {
     fn a_mote_reacts_before_it_has_dwelt_at_all() {
         let mut tracker = Tracker::new();
         tracker.update(Some(1), 0.1);
-        assert_eq!(tracker.state(1, false, false), Attention::Attended);
+        assert_eq!(tracker.state(1, false), Attention::Attended);
         assert!(tracker.dwell().abs() < 1.0e-5);
     }
 
@@ -162,18 +167,27 @@ mod tests {
     fn only_the_attended_slot_is_active() {
         let mut tracker = Tracker::new();
         tracker.update(Some(1), 0.5);
-        assert!(tracker.state(1, false, false).is_active());
-        assert!(!tracker.state(2, false, true).is_active());
-        assert_eq!(tracker.state(2, false, true), Attention::Near);
-        assert_eq!(tracker.state(2, false, false), Attention::Idle);
+        assert!(tracker.state(1, false).is_active());
+        assert!(!tracker.state(2, false).is_active());
+    }
+
+    /// A sibling rests. It is warmed by how near the pointer is, which the
+    /// tracker knows nothing about — being next to the chosen one is not
+    /// itself a kind of attention.
+    #[test]
+    fn a_slot_that_is_not_attended_is_idle_whatever_else_is_going_on() {
+        let mut tracker = Tracker::new();
+        tracker.update(Some(1), 0.5);
+        assert_eq!(tracker.state(2, false), Attention::Idle);
+        assert_eq!(tracker.state(2, true), Attention::Idle);
     }
 
     #[test]
     fn engagement_only_applies_to_the_attended_slot() {
         let mut tracker = Tracker::new();
         tracker.update(Some(1), 0.5);
-        assert_eq!(tracker.state(1, true, false), Attention::Engaged);
-        assert_eq!(tracker.state(2, true, false), Attention::Idle);
+        assert_eq!(tracker.state(1, true), Attention::Engaged);
+        assert_eq!(tracker.state(2, true), Attention::Idle);
     }
 
     const STATES: [Attention; 4] = [

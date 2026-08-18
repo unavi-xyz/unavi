@@ -17,7 +17,8 @@ impl From<ScriptError> for Error {
     fn from(err: ScriptError) -> Self {
         match err {
             ScriptError::Other(s) => Self::Other(s),
-            ScriptError::Quota(_) => Self::Quota,
+            ScriptError::QuotaFlow(_) => Self::QuotaFlow,
+            ScriptError::QuotaStock(_) => Self::QuotaStock,
             ScriptError::Permission(_) => Self::Permission,
             ScriptError::Reach(_) => Self::Reach,
         }

@@ -1,7 +1,10 @@
 use std::{
     collections::HashMap,
     sync::Arc,
-    time::Instant,
+    time::{
+        Duration,
+        Instant,
+    },
 };
 
 use parking_lot::Mutex;
@@ -68,6 +71,19 @@ pub enum QuotaError {
 struct Bucket {
     tokens: f64,
     last:   Instant,
+}
+
+/// What the chain can do about a flow request right now.
+///
+/// Ordered worst-last so combining levels is a `max`: the slowest bucket
+/// decides, and an unsatisfiable level beats any finite wait.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Reservation {
+    Ready,
+    After(Duration),
+    /// Larger than some level's whole capacity, so no wait ever satisfies it.
+    /// Worth answering on sight rather than after a ceiling elapses.
+    Never,
 }
 
 /// Resource limits plus an optional owner to rolls up into.
@@ -220,6 +236,83 @@ impl Quota {
     /// first.
     pub fn spend(&self, flow: Flow, n: f64) -> Result<(), QuotaError> {
         self.spend_inner(flow, n, Instant::now())
+    }
+
+    /// Reads the whole owner chain without taking anything.
+    ///
+    /// Peek-then-commit rather than take-then-refund: under waiting, a partial
+    /// take that refunds on failure is a livelock, with each waiter burning the
+    /// others' tokens and none making progress.
+    #[must_use]
+    pub fn reserve(&self, flow: Flow, n: f64) -> Reservation {
+        self.reserve_inner(flow, n, Instant::now())
+    }
+
+    fn reserve_inner(&self, flow: Flow, n: f64, now: Instant) -> Reservation {
+        let here = self.reserve_local(flow, n, now);
+        let Some(owner) = self.owner() else {
+            return here;
+        };
+        // The slowest bucket in the chain governs.
+        here.max(owner.reserve_inner(flow, n, now))
+    }
+
+    fn reserve_local(&self, flow: Flow, n: f64, now: Instant) -> Reservation {
+        let Some(limit) = self.limits.flow.get(&flow).copied() else {
+            return Reservation::Ready;
+        };
+        if n > limit.capacity {
+            // No amount of waiting fills a bucket past its capacity.
+            return Reservation::Never;
+        }
+
+        let mut buckets = self.buckets.lock();
+        let bucket = buckets.entry(flow).or_insert(Bucket {
+            tokens: limit.capacity,
+            last:   now,
+        });
+        // Materialising elapsed time is not a take: it is what the bucket
+        // already holds, so doing it under a peek is safe.
+        let elapsed = now.saturating_duration_since(bucket.last).as_secs_f64();
+        bucket.tokens = elapsed
+            .mul_add(limit.refill_per_sec, bucket.tokens)
+            .min(limit.capacity);
+        bucket.last = now;
+        let tokens = bucket.tokens;
+        drop(buckets);
+
+        if tokens >= n {
+            Reservation::Ready
+        } else if limit.refill_per_sec <= 0.0 {
+            Reservation::Never
+        } else {
+            Reservation::After(Duration::from_secs_f64(
+                (n - tokens) / limit.refill_per_sec,
+            ))
+        }
+    }
+
+    /// Takes `n` at every level that caps `flow`.
+    ///
+    /// Only sound immediately after a [`Reservation::Ready`]; anything else may
+    /// drive a bucket negative.
+    pub fn commit(&self, flow: Flow, n: f64) {
+        if let Some(limit) = self.limits.flow.get(&flow).copied() {
+            // Materialised here as well as in `reserve`: a bucket that does not
+            // exist yet is a full one, and skipping the charge because the map
+            // had no entry would let the first spend at every level go free.
+            let mut buckets = self.buckets.lock();
+            buckets
+                .entry(flow)
+                .or_insert_with(|| Bucket {
+                    tokens: limit.capacity,
+                    last:   Instant::now(),
+                })
+                .tokens -= n;
+        }
+        if let Some(owner) = self.owner() {
+            owner.commit(flow, n);
+        }
     }
 
     fn spend_inner(&self, flow: Flow, n: f64, now: Instant) -> Result<(), QuotaError> {
@@ -517,5 +610,72 @@ mod tests {
             doc.buckets.lock().get(&Flow::Emit).map(|b| b.tokens),
             Some(9.0),
         );
+    }
+
+    #[test]
+    fn a_reservation_takes_nothing_until_it_commits() {
+        let q = Quota::root(limits_flow(Flow::Emit, 10.0, 1.0));
+
+        assert_eq!(q.reserve(Flow::Emit, 4.0), Reservation::Ready);
+        assert_eq!(q.reserve(Flow::Emit, 4.0), Reservation::Ready);
+        assert_eq!(
+            q.reserve(Flow::Emit, 10.0),
+            Reservation::Ready,
+            "peeking twice must not have drained the bucket"
+        );
+
+        q.commit(Flow::Emit, 10.0);
+        assert!(matches!(q.reserve(Flow::Emit, 10.0), Reservation::After(_)));
+    }
+
+    #[test]
+    fn an_ask_past_capacity_is_refused_rather_than_waited_on() {
+        let q = Quota::root(limits_flow(Flow::Emit, 10.0, 1.0));
+        assert_eq!(
+            q.reserve(Flow::Emit, 11.0),
+            Reservation::Never,
+            "no wait fills a bucket past its own capacity"
+        );
+    }
+
+    #[test]
+    fn the_wait_is_what_the_bucket_needs_to_refill() {
+        let q = Quota::root(limits_flow(Flow::Emit, 10.0, 2.0));
+        q.commit(Flow::Emit, 10.0);
+
+        let Reservation::After(wait) = q.reserve(Flow::Emit, 4.0) else {
+            panic!("a drained bucket must answer with a wait")
+        };
+        assert!(
+            (wait.as_secs_f64() - 2.0).abs() < 0.05,
+            "four tokens at two per second is two seconds, got {wait:?}"
+        );
+    }
+
+    #[test]
+    fn the_slowest_level_of_the_chain_governs() {
+        let peer = Quota::root(limits_flow(Flow::Emit, 10.0, 1.0));
+        let doc = Quota::new(limits_flow(Flow::Emit, 10.0, 10.0), Some(Arc::clone(&peer)));
+        peer.commit(Flow::Emit, 10.0);
+        doc.commit(Flow::Emit, 10.0);
+
+        let Reservation::After(wait) = doc.reserve(Flow::Emit, 5.0) else {
+            panic!("a drained chain must answer with a wait")
+        };
+        assert!(
+            wait.as_secs_f64() > 4.0,
+            "the slow peer bucket governs, not the fast document one"
+        );
+    }
+
+    #[test]
+    fn committing_charges_every_level() {
+        let peer = Quota::root(limits_flow(Flow::Emit, 10.0, 1.0));
+        let doc = Quota::new(limits_flow(Flow::Emit, 10.0, 1.0), Some(Arc::clone(&peer)));
+
+        assert_eq!(doc.reserve(Flow::Emit, 6.0), Reservation::Ready);
+        doc.commit(Flow::Emit, 6.0);
+
+        assert!(matches!(peer.reserve(Flow::Emit, 6.0), Reservation::After(_)));
     }
 }

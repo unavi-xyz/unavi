@@ -4,6 +4,7 @@ use bevy_hsd::HsdCommitSet;
 pub mod document;
 pub mod error;
 pub mod identity;
+pub mod limits;
 pub mod membership;
 pub mod reach;
 pub mod space;

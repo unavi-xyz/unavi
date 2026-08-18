@@ -320,7 +320,7 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
     let ns = namespace_of(id).await?;
     check_write(api.doc_id, api.policy.tier, id)?;
-    api.quota.spend(Flow::SyncDoc, 1.0)?;
+    crate::quota::acquire(&api.quota, Flow::SyncDoc, 1.0).await?;
 
     let space = if let Some(s) = unavi_space::membership::doc_space(id) {
         s
@@ -408,7 +408,7 @@ pub async fn create_document_from_prefab(api: &Api, prefab: Vec<u8>) -> Result<u
 }
 
 async fn mint_document(api: &Api, state: SceneState) -> Result<u32, ScriptError> {
-    api.quota.spend(Flow::CreateDocument, 1.0)?;
+    crate::quota::acquire(&api.quota, Flow::CreateDocument, 1.0).await?;
 
     let ns = create_namespace()
         .await

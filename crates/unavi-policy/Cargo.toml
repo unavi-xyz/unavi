@@ -22,4 +22,5 @@ serde                 = { features = ["derive"], workspace = true }
 thiserror.workspace   = true
 toml.workspace        = true
 tracing.workspace     = true
+unavi-quota.path      = "../unavi-quota"
 xdid.workspace        = true

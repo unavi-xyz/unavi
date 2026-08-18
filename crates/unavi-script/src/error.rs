@@ -5,7 +5,11 @@ use unavi_quota::QuotaError;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScriptError {
     Other(String),
-    Quota(String),
+    /// A rate limit, which refills on its own: a retry may succeed.
+    QuotaFlow(String),
+    /// A ceiling on a held resource, which frees only when something else
+    /// releases: a retry without freeing will not.
+    QuotaStock(String),
     Permission(String),
     Reach(String),
 }
@@ -28,7 +32,8 @@ impl std::fmt::Display for ScriptError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Other(s) => write!(f, "{s}"),
-            Self::Quota(s) => write!(f, "quota exceeded: {s}"),
+            Self::QuotaFlow(s) => write!(f, "rate limit exceeded: {s}"),
+            Self::QuotaStock(s) => write!(f, "resource ceiling reached: {s}"),
             Self::Permission(s) => write!(f, "permission denied: {s}"),
             Self::Reach(s) => write!(f, "out of reach: {s}"),
         }
@@ -39,11 +44,10 @@ impl std::error::Error for ScriptError {}
 
 impl From<QuotaError> for ScriptError {
     fn from(err: QuotaError) -> Self {
-        let detail = match err {
-            QuotaError::Stock(s) => format!("{s:?}"),
-            QuotaError::Flow(f) => format!("{f:?}"),
-        };
-        Self::Quota(detail)
+        match err {
+            QuotaError::Stock(s) => Self::QuotaStock(format!("{s:?}")),
+            QuotaError::Flow(f) => Self::QuotaFlow(format!("{f:?}")),
+        }
     }
 }
 

@@ -568,9 +568,14 @@ pub async fn set_mesh(api: &Api, rep: u32, value: Option<PrimMesh>) -> anyhow::R
 
 /// Writes a buffer to the prim's slot entry; attribute and buffers are
 /// separate entries.
-fn set_buffer(api: &Api, prim: &PrimRes, slot: &str, bytes: Option<Vec<u8>>) -> anyhow::Result<()> {
+async fn set_buffer(
+    api: &Api,
+    prim: &PrimRes,
+    slot: &str,
+    bytes: Option<Vec<u8>>,
+) -> anyhow::Result<()> {
     if bytes.is_some() {
-        api.quota.spend(Flow::BlobUpload, 1.0)?;
+        crate::quota::acquire(&api.quota, Flow::BlobUpload, 1.0).await?;
     }
     prim.set_slot(slot, bytes)
 }
@@ -601,7 +606,7 @@ pub async fn set_mesh_stream(
         }
         None => None,
     };
-    set_buffer(api, &prim, &slots::mesh_attribute(&key), bytes)
+    set_buffer(api, &prim, &slots::mesh_attribute(&key), bytes).await
 }
 
 pub async fn set_mesh_indices_u32(
@@ -619,7 +624,7 @@ pub async fn set_mesh_indices_u32(
         }
         None => None,
     };
-    set_buffer(api, &prim, slots::MESH_INDICES, bytes)
+    set_buffer(api, &prim, slots::MESH_INDICES, bytes).await
 }
 
 /// Reads a vertex stream back out of the prim's slot entry. A proxy's streams
@@ -649,7 +654,7 @@ pub async fn set_collider_vertices(
         }
         None => None,
     };
-    set_buffer(api, &prim, slots::COLLIDER_VERTICES, bytes)
+    set_buffer(api, &prim, slots::COLLIDER_VERTICES, bytes).await
 }
 
 pub async fn set_collider_indices(
@@ -666,13 +671,13 @@ pub async fn set_collider_indices(
         }
         None => None,
     };
-    set_buffer(api, &prim, slots::COLLIDER_INDICES, bytes)
+    set_buffer(api, &prim, slots::COLLIDER_INDICES, bytes).await
 }
 
 pub async fn set_image_data(api: &Api, rep: u32, bytes: Option<Vec<u8>>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
-    set_buffer(api, &prim, slots::IMAGE_DATA, bytes)
+    set_buffer(api, &prim, slots::IMAGE_DATA, bytes).await
 }
 
 const fn topology_to_prim(t: Topology) -> PrimTopology {
@@ -731,7 +736,7 @@ pub async fn set_material_graph(
         }
         None => None,
     };
-    set_buffer(api, &prim, slots::MATERIAL_GRAPH_DATA, bytes)
+    set_buffer(api, &prim, slots::MATERIAL_GRAPH_DATA, bytes).await
 }
 
 pub async fn graph_overrides(api: &Api, rep: u32) -> anyhow::Result<Vec<(u16, PrimGraphValue)>> {

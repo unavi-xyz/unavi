@@ -14133,6 +14133,7 @@ dependencies = [
  "thiserror 2.0.19",
  "toml 1.1.4+spec-1.1.0",
  "tracing",
+ "unavi-quota",
  "xdid",
 ]
 
@@ -14198,6 +14199,7 @@ dependencies = [
  "iroh-blobs",
  "iroh-docs",
  "js-sys",
+ "n0-future",
  "parking_lot",
  "postcard",
  "rand 0.9.5",

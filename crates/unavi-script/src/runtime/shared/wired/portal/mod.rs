@@ -18,7 +18,7 @@ use crate::{
 };
 
 pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<(), ScriptError> {
-    api.quota.spend(Flow::PortalOpen, 1.0)?;
+    crate::quota::acquire(&api.quota, Flow::PortalOpen, 1.0).await?;
 
     let (doc, tree_id) = {
         let scene = api.wired_scene.lock().await;
@@ -55,7 +55,7 @@ pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<(),
 }
 
 pub async fn travel(api: &Api, target_space: Vec<u8>) -> Result<(), ScriptError> {
-    api.quota.spend(Flow::PortalOpen, 1.0)?;
+    crate::quota::acquire(&api.quota, Flow::PortalOpen, 1.0).await?;
 
     let target = <[u8; 32]>::try_from(target_space.as_slice())
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;

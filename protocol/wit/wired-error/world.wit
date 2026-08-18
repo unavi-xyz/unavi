@@ -9,9 +9,12 @@ interface types {
   variant error {
     // Catch-all for failures that do not fit the structured variants below.
     other(string),
-    // A per-document, per-space, or per-user resource cap was hit. Often
-    // transient for rate-limited actions: retrying may succeed later.
-    quota,
+    // A rate limit was hit and waiting did not clear it in time. The bucket
+    // refills on its own, so retrying later may succeed.
+    quota-flow,
+    // A ceiling on a resource held while live was hit. It frees only when
+    // something else releases, so retrying without freeing will not help.
+    quota-stock,
     // The script's document lacks the API permission for this call.
     permission,
     // The target document does not accept writes from the caller's owner, or

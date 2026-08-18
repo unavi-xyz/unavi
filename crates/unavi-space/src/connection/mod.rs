@@ -73,6 +73,19 @@ fn release_connection(peer: EndpointId, token: u64) -> bool {
     }
 }
 
+/// Drops the live connection to `peer`, if there is one.
+pub fn disconnect(peer: EndpointId) {
+    // Dropping the cancel sender is what the connection task waits on; the
+    // recv stream ending despawns the peer's `RemotePeer` entity.
+    CONNECTIONS.lock().expect("connections lock").remove(&peer);
+    identity::unbind(*peer.as_bytes());
+}
+
+/// Whether a peer is blocked, and so must not be connected to at all.
+pub fn is_blocked(peer: EndpointId) -> bool {
+    unavi_policy::trust::of_peer(*peer.as_bytes()) == unavi_policy::trust::Trust::Blocked
+}
+
 pub const ALPN: &[u8] = b"wired/space/1";
 
 pub fn register_protocol(

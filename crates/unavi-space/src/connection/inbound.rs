@@ -25,6 +25,13 @@ impl ProtocolHandler for SpaceProtocol {
     async fn accept(&self, connection: Connection) -> Result<(), AcceptError> {
         let peer = connection.remote_id();
 
+        // A block is retroactive, so it has to refuse the next connection as
+        // well as undo the last one.
+        if super::is_blocked(peer) {
+            connection.close(VarInt::from_u32(2), b"blocked");
+            return Ok(());
+        }
+
         // The remote dialed, so this connection is canonical only if their id is
         // greater than ours.
         let canonical = self_peer_id().is_none_or(|s| *peer.as_bytes() > s);

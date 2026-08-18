@@ -28,6 +28,10 @@ pub async fn try_open_connection(endpoint: Endpoint, peer: EndpointAddr) {
 }
 
 async fn open_connection(endpoint: Endpoint, peer: EndpointAddr) -> anyhow::Result<()> {
+    if super::is_blocked(peer.id) {
+        return Ok(());
+    }
+
     // The dialer is canonical only if its id is greater.
     let canonical = self_peer_id().is_none_or(|s| s > *peer.id.as_bytes());
     let Some((token, cancel_rx)) = claim_connection(peer.id, canonical) else {

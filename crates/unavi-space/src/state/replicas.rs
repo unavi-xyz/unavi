@@ -67,6 +67,11 @@ struct NeutralCell {
     peer:  PeerId,
     value: Option<Vec<u8>>,
     hold:  StockHold,
+    /// Exactly one prior version, which is what makes "revert everything peer
+    /// X wrote" a scan of the neutral map rather than a general undo log.
+    /// Neutral cells outlive their writer's disconnect, so without this they
+    /// are the one live surface a block cannot reach.
+    prev:  Option<Box<Self>>,
 }
 
 fn cell_bytes(key: &str, value: Option<&[u8]>) -> u64 {
@@ -283,14 +288,25 @@ impl ReplicatedPeerState {
                     Entry::Occupied(mut o) => {
                         if at < o.get().at {
                             Ok(false)
-                        } else if o.get_mut().hold.resize(new_bytes).is_err() {
-                            Err(KvError::QuotaExceeded)
-                        } else {
+                        } else if let Ok(hold) = quota.hold(Stock::KvMemory, new_bytes) {
                             let cell = o.get_mut();
+                            // The outgoing version keeps its own hold and
+                            // becomes the fallback; whatever it replaces is
+                            // dropped, releasing that hold. Depth stays one.
+                            let displaced = NeutralCell {
+                                at:    cell.at,
+                                peer:  cell.peer,
+                                value: cell.value.take(),
+                                hold:  std::mem::replace(&mut cell.hold, hold),
+                                prev:  None,
+                            };
                             cell.at = at;
                             cell.peer = peer;
                             cell.value = value;
+                            cell.prev = Some(Box::new(displaced));
                             Ok(false)
+                        } else {
+                            Err(KvError::QuotaExceeded)
                         }
                     }
                     Entry::Vacant(v) => quota.hold(Stock::KvMemory, new_bytes).map_or(
@@ -301,6 +317,7 @@ impl ReplicatedPeerState {
                                 peer,
                                 value,
                                 hold,
+                                prev: None,
                             });
                             Ok(true)
                         },
@@ -357,6 +374,45 @@ impl ReplicatedPeerState {
             }
         }
         Ok(KvPlacement::Owned)
+    }
+
+    /// Restores each neutral cell `peer` last wrote to its prior version, or
+    /// drops it when the prior version was also theirs — a peer cannot leave
+    /// its own earlier write behind as the fallback.
+    fn revert_neutral_writes(&mut self, peer: PeerId) -> usize {
+        let mut emptied = Vec::new();
+        let mut reverted = 0;
+
+        for (&doc, presence) in &mut self.docs {
+            let mut dropped = 0;
+            presence.neutral_kv.retain(|_, cell| {
+                if cell.peer != peer {
+                    return true;
+                }
+                reverted += 1;
+                // Depth is one, so at most one fallback needs examining.
+                match cell.prev.take() {
+                    Some(prev) if prev.peer != peer => {
+                        *cell = *prev;
+                        true
+                    }
+                    _ => {
+                        dropped += 1;
+                        false
+                    }
+                }
+            });
+            if dropped > 0 {
+                emptied.push((doc, dropped));
+            }
+        }
+
+        for (doc, dropped) in emptied {
+            for _ in 0..dropped {
+                self.dec_ref(doc);
+            }
+        }
+        reverted
     }
 
     fn remove_kv(&mut self, peer: PeerId, doc: NamespaceId, key: &str, placement: KvPlacement) {
@@ -634,6 +690,17 @@ pub fn remove_kv(peer: PeerId, doc: NamespaceId, key: &str, placement: KvPlaceme
     let mut state = PEER_STATE.lock();
     state.remove_kv(peer, doc, key, placement);
     drop(state);
+}
+
+/// Rolls back every neutral cell whose current value came from `peer`.
+///
+/// Returns how many cells changed. Owner-authored KV, pins and authority claims
+/// need no equivalent: they hang off the peer's `RemotePeer` entity and cascade
+/// away when it despawns. Neutral cells deliberately outlive a disconnect, so
+/// they are the one surface that has to be undone by hand.
+pub fn revert_neutral_writes(peer: PeerId) -> usize {
+    let mut state = PEER_STATE.lock();
+    state.revert_neutral_writes(peer)
 }
 
 #[must_use]
@@ -967,6 +1034,92 @@ mod tests {
         remove_kv(alice, space, "link", KvPlacement::Neutral);
         assert_eq!(doc_kv_get(space, space, "link"), None);
         assert!(!has_doc(space, space));
+        reset();
+    }
+
+    #[test]
+    fn reverting_a_peer_restores_the_value_it_overwrote() {
+        let _g = TEST_LOCK.lock();
+        reset();
+        let space = h(b"revert-space");
+        let (alice, mallory) = ([2u8; 32], [3u8; 32]);
+
+        add_kv(alice, space, space, "sign".into(), Some(b"welcome".to_vec()), 1)
+            .expect("alice writes the sign");
+        add_kv(mallory, space, space, "sign".into(), Some(b"defaced".to_vec()), 2)
+            .expect("mallory defaces it");
+        assert_eq!(
+            doc_kv_get(space, space, "sign").as_deref(),
+            Some(&b"defaced"[..])
+        );
+
+        assert_eq!(revert_neutral_writes(mallory), 1);
+        assert_eq!(
+            doc_kv_get(space, space, "sign").as_deref(),
+            Some(&b"welcome"[..]),
+            "blocking must put back what the blocked peer wrote over"
+        );
+        reset();
+    }
+
+    #[test]
+    fn reverting_drops_a_cell_the_peer_created() {
+        let _g = TEST_LOCK.lock();
+        reset();
+        let space = h(b"revert-new-space");
+        let mallory = [3u8; 32];
+
+        add_kv(mallory, space, space, "spam".into(), Some(b"x".to_vec()), 1)
+            .expect("mallory writes a new cell");
+
+        assert_eq!(revert_neutral_writes(mallory), 1);
+        assert_eq!(
+            doc_kv_get(space, space, "spam"),
+            None,
+            "a cell with no prior version has nothing to fall back to"
+        );
+        assert!(
+            !has_doc(space, space),
+            "dropping the last cell must release the document presence"
+        );
+        reset();
+    }
+
+    #[test]
+    fn a_peer_cannot_leave_its_own_earlier_write_as_the_fallback() {
+        let _g = TEST_LOCK.lock();
+        reset();
+        let space = h(b"revert-own-space");
+        let mallory = [3u8; 32];
+
+        add_kv(mallory, space, space, "sign".into(), Some(b"first".to_vec()), 1)
+            .expect("first");
+        add_kv(mallory, space, space, "sign".into(), Some(b"second".to_vec()), 2)
+            .expect("second");
+
+        revert_neutral_writes(mallory);
+        assert_eq!(
+            doc_kv_get(space, space, "sign"),
+            None,
+            "falling back to the blocked peer's own earlier write undoes nothing"
+        );
+        reset();
+    }
+
+    #[test]
+    fn reverting_leaves_another_peers_cells_alone() {
+        let _g = TEST_LOCK.lock();
+        reset();
+        let space = h(b"revert-other-space");
+        let (alice, mallory) = ([2u8; 32], [3u8; 32]);
+
+        add_kv(alice, space, space, "keep".into(), Some(b"mine".to_vec()), 1).expect("alice");
+
+        assert_eq!(revert_neutral_writes(mallory), 0);
+        assert_eq!(
+            doc_kv_get(space, space, "keep").as_deref(),
+            Some(&b"mine"[..])
+        );
         reset();
     }
 

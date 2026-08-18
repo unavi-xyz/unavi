@@ -4,15 +4,25 @@ use bevy_wds::{
     root_doc,
 };
 use bytes::Bytes;
+use iroh::EndpointId;
 use time::OffsetDateTime;
-use unavi_policy::trust::{
-    self,
-    vouch::{
-        Vouch,
-        subject_hash,
+use unavi_policy::{
+    identity,
+    trust::{
+        self,
+        Trust,
+        vouch::{
+            Vouch,
+            subject_hash,
+        },
     },
 };
 use unavi_util::async_task::spawn_async_task;
+
+use crate::{
+    connection::disconnect,
+    state::replicas,
+};
 
 /// Where a vouch lives in the voucher's root doc.
 const VOUCH_PREFIX: &str = "vouches/";
@@ -58,6 +68,39 @@ pub fn publish_vouches(docs: Query<&LocalDocs>) {
         }
     });
 }
+
+/// Blocks `peer` and undoes what they contributed, in one call.
+///
+/// Retroactive by construction. Their pins, authority claims and owner-authored
+/// KV hang off the `RemotePeer` entity and cascade away when the connection
+/// drops; their neutral cells are rolled back explicitly, since those
+/// deliberately outlive a disconnect. The rung is set first so a reconnect
+/// while the rest is still unwinding does not arrive as a guest.
+///
+/// A peer that proved no DID can still be disconnected but not durably blocked:
+/// there is no stable identity to record the decision against, and an endpoint
+/// id is not one.
+pub fn eject(peer: [u8; 32]) -> Result<(), NoIdentity> {
+    let did = identity::did_of(peer).ok_or(NoIdentity)?;
+    trust::set_override(did, Trust::Blocked);
+
+    let reverted = replicas::revert_neutral_writes(peer);
+    info!(reverted, "Ejected peer");
+
+    if let Err(err) = trust::save(unavi_util::dirs::data_local_dir()) {
+        warn!(?err, "failed to persist the block");
+    }
+
+    if let Ok(endpoint) = EndpointId::from_bytes(&peer) {
+        disconnect(endpoint);
+    }
+    Ok(())
+}
+
+/// A peer that proved no DID, and so has nothing durable to block.
+#[derive(Debug, thiserror::Error)]
+#[error("peer proved no identity to block")]
+pub struct NoIdentity;
 
 fn hex(bytes: &[u8]) -> String {
     bytes.iter().fold(String::new(), |mut out, b| {

@@ -326,10 +326,11 @@ impl Bodies {
         let mut signals = Vec::new();
         while let Some(event) = self.input.poll() {
             match event.action {
-                InputAction::GrabDown => signals.push(Signal::Grab(true)),
-                InputAction::GrabUp => signals.push(Signal::Grab(false)),
-                InputAction::ScrollUp => signals.push(Signal::Turn(-1)),
-                InputAction::ScrollDown => signals.push(Signal::Turn(1)),
+                InputAction::Press => signals.push(Signal::Grab(true)),
+                InputAction::Release => signals.push(Signal::Grab(false)),
+                InputAction::Scroll(delta) if delta.y != 0.0 => {
+                    signals.push(Signal::Turn(if delta.y > 0.0 { -1 } else { 1 }));
+                }
                 _ => {}
             }
         }

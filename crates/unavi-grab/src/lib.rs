@@ -3,6 +3,7 @@ use std::time::Duration;
 use avian3d::prelude::*;
 use bevy::{
     ecs::system::entity_command,
+    picking::pointer::PointerInteraction,
     prelude::*,
 };
 use bevy_hsd::{
@@ -12,10 +13,15 @@ use bevy_hsd::{
 };
 use iroh_docs::NamespaceId;
 use unavi_input::{
-    SqueezeDown,
-    SqueezeUp,
     crosshair::CrosshairMode,
-    raycast::PrimaryRaycastInput,
+    pointer::{
+        PointerAnchor,
+        PointerKind,
+        PointerPressed,
+        PointerReleased,
+        claims,
+        nearest_hit,
+    },
 };
 use unavi_space::{
     Space,
@@ -32,11 +38,11 @@ pub struct GrabPlugin;
 impl Plugin for GrabPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PendingGrabs>()
-            .add_observer(on_squeeze_down)
-            .add_observer(on_squeeze_up)
             .add_systems(
                 Update,
                 (
+                    on_press,
+                    on_release,
                     note_promoted_bodies,
                     start_pending_grabs,
                     reach_grabbed_objects,
@@ -73,12 +79,15 @@ struct PendingGrab {
     /// None when the squeeze landed on nothing at all.
     entity:  Option<Entity>,
     pointer: Entity,
+    ray:     Ray3d,
+    reach:   f32,
     since:   Duration,
 }
 
 #[derive(Component)]
 struct Grabbed {
     pointer:    Entity,
+    reach:      f32,
     offset_tra: Vec3,
     offset_rot: Quat,
 }
@@ -88,6 +97,7 @@ type Docs<'w, 's> = Query<'w, 's, &'static HsdNamespace, With<Hsd>>;
 fn begin_grab(
     entity: Entity,
     pointer: Entity,
+    reach: f32,
     transforms: &Query<&GlobalTransform>,
     hsd_children: &Query<&HsdChild>,
     docs: &Docs,
@@ -116,6 +126,7 @@ fn begin_grab(
     commands.entity(entity).insert((
         Grabbed {
             pointer,
+            reach,
             offset_tra,
             offset_rot,
         },
@@ -123,8 +134,8 @@ fn begin_grab(
     ));
 }
 
-fn on_squeeze_down(
-    trigger: On<SqueezeDown>,
+fn on_press(
+    mut presses: MessageReader<PointerPressed>,
     transforms: Query<&GlobalTransform>,
     rigid_bodies: Query<&RigidBody>,
     hsd_children: Query<&HsdChild>,
@@ -138,30 +149,43 @@ fn on_squeeze_down(
     mut pending: ResMut<PendingGrabs>,
     mut commands: Commands,
 ) {
-    let grabbable = trigger
-        .entity
-        .filter(|entity| matches!(rigid_bodies.get(*entity), Ok(RigidBody::Dynamic)));
+    let active_space = active_space.and_then(|active| active.0);
 
-    let Some(entity) = grabbable else {
-        pending.grabs.push(PendingGrab {
-            entity:  trigger.entity,
-            pointer: trigger.pointer,
-            since:   time.elapsed(),
-        });
-        return;
-    };
+    for press in presses.read() {
+        // A claimed pointer belongs to the script holding it; the host's own
+        // grab standing down is what keeps one press from acting twice.
+        if claims::is_claimed(press.kind) {
+            continue;
+        }
 
-    begin_grab(
-        entity,
-        trigger.pointer,
-        &transforms,
-        &hsd_children,
-        &docs,
-        &spaces,
-        &parents,
-        active_space.and_then(|active| active.0),
-        &mut commands,
-    );
+        let target = press.hit.map(|hit| hit.entity);
+        let grabbable =
+            target.filter(|entity| matches!(rigid_bodies.get(*entity), Ok(RigidBody::Dynamic)));
+
+        let Some(entity) = grabbable else {
+            pending.grabs.push(PendingGrab {
+                entity:  target,
+                pointer: press.pointer,
+                ray:     press.ray,
+                reach:   press.reach,
+                since:   time.elapsed(),
+            });
+            continue;
+        };
+
+        begin_grab(
+            entity,
+            press.pointer,
+            press.reach,
+            &transforms,
+            &hsd_children,
+            &docs,
+            &spaces,
+            &parents,
+            active_space,
+            &mut commands,
+        );
+    }
 }
 
 fn note_promoted_bodies(
@@ -184,7 +208,6 @@ fn note_promoted_bodies(
 fn start_pending_grabs(
     transforms: Query<&GlobalTransform>,
     rigid_bodies: Query<&RigidBody>,
-    pointers: Query<&RayCaster>,
     hsd_children: Query<&HsdChild>,
     docs: Docs,
     spaces: Query<&Space>,
@@ -204,16 +227,11 @@ fn start_pending_grabs(
 
     let mut remaining = Vec::with_capacity(waiting.len());
     for grab in waiting {
-        if let Some(entity) = target_for(
-            &grab,
-            &rigid_bodies,
-            &pointers,
-            &transforms,
-            &pending.promoted,
-        ) {
+        if let Some(entity) = target_for(&grab, &rigid_bodies, &transforms, &pending.promoted) {
             begin_grab(
                 entity,
                 grab.pointer,
+                grab.reach,
                 &transforms,
                 &hsd_children,
                 &docs,
@@ -237,7 +255,6 @@ const GRAB_CATCH_TANGENT: f32 = 0.2;
 fn target_for(
     grab: &PendingGrab,
     rigid_bodies: &Query<&RigidBody>,
-    pointers: &Query<&RayCaster>,
     transforms: &Query<&GlobalTransform>,
     promoted: &[(Entity, Duration)],
 ) -> Option<Entity> {
@@ -246,25 +263,23 @@ fn target_for(
     {
         return Some(entity);
     }
-    nearest_promoted(grab.pointer, pointers, transforms, promoted)
+    nearest_promoted(grab, transforms, promoted)
 }
 
 fn nearest_promoted(
-    pointer: Entity,
-    pointers: &Query<&RayCaster>,
+    grab: &PendingGrab,
     transforms: &Query<&GlobalTransform>,
     promoted: &[(Entity, Duration)],
 ) -> Option<Entity> {
-    let ray = pointers.get(pointer).ok()?;
-    let origin = ray.global_origin();
-    let direction = *ray.global_direction();
+    let origin = grab.ray.origin;
+    let direction = *grab.ray.direction;
 
     promoted
         .iter()
         .filter_map(|(entity, _)| {
             let offset = transforms.get(*entity).ok()?.translation() - origin;
             let along = offset.dot(direction);
-            if along <= 0.0 || along > ray.max_distance {
+            if along <= 0.0 || along > grab.reach {
                 return None;
             }
             let off_axis = (offset - direction * along).length();
@@ -348,35 +363,38 @@ fn resolve_space(
     None
 }
 
-fn on_squeeze_up(
-    trigger: On<SqueezeUp>,
+fn on_release(
+    mut releases: MessageReader<PointerReleased>,
     hsd_children: Query<&HsdChild>,
     docs: Docs,
+    held: Query<(Entity, &Grabbed)>,
     mut pending: ResMut<PendingGrabs>,
     mut commands: Commands,
 ) {
-    pending.grabs.retain(|grab| grab.pointer != trigger.pointer);
+    for release in releases.read() {
+        pending.grabs.retain(|grab| grab.pointer != release.pointer);
 
-    let Some(entity) = trigger.entity else {
-        return;
-    };
-    if let Some((_, doc_hash)) = resolve_doc(entity, &hsd_children, &docs) {
-        entities::release_authority(doc_hash);
+        // Whatever this pointer carries, not whatever it happens to be over —
+        // a held object can be dragged clear of its own collider.
+        for (entity, _) in held.iter().filter(|(_, g)| g.pointer == release.pointer) {
+            if let Some((_, doc_hash)) = resolve_doc(entity, &hsd_children, &docs) {
+                entities::release_authority(doc_hash);
+            }
+            commands
+                .entity(entity)
+                .queue_silenced(entity_command::remove::<(Grabbed, GravityScale)>());
+        }
     }
-    commands
-        .entity(entity)
-        .queue_silenced(entity_command::remove::<(Grabbed, GravityScale)>());
 }
 
 const REACH_STEP: f32 = 0.1;
 const MIN_REACH: f32 = 0.3;
 
 /// Scrolls a held object in or out by scaling its hold offset. Capped at the
-/// pointer's own reach, read from its raycaster, so an object can only be
-/// scrolled as far as it could have been grabbed.
+/// pointer's own reach, so an object can only be scrolled as far as it could
+/// have been grabbed.
 fn reach_grabbed_objects(
     mut wheel: MessageReader<bevy::input::mouse::MouseWheel>,
-    pointers: Query<&RayCaster>,
     objects: Query<&mut Grabbed>,
 ) {
     let notches: f32 = wheel.read().map(|event| event.y.signum()).sum();
@@ -385,16 +403,13 @@ fn reach_grabbed_objects(
     }
 
     for mut grabbed in objects {
-        let Ok(pointer) = pointers.get(grabbed.pointer) else {
-            continue;
-        };
-        let reach = grabbed.offset_tra.length();
-        if reach <= f32::EPSILON {
+        let held_at = grabbed.offset_tra.length();
+        if held_at <= f32::EPSILON {
             continue;
         }
-        let max = pointer.max_distance.max(MIN_REACH);
-        let wanted = notches.mul_add(REACH_STEP, reach).clamp(MIN_REACH, max);
-        grabbed.offset_tra *= wanted / reach;
+        let max = grabbed.reach.max(MIN_REACH);
+        let wanted = notches.mul_add(REACH_STEP, held_at).clamp(MIN_REACH, max);
+        grabbed.offset_tra *= wanted / held_at;
     }
 }
 
@@ -451,20 +466,22 @@ fn move_grabbed_objects(
 
 pub fn set_crosshair_mode(
     mut crosshair: Query<&mut CrosshairMode>,
-    ray: Query<&RayHits, With<PrimaryRaycastInput>>,
+    pointers: Query<(&PointerAnchor, &PointerInteraction)>,
     rigid_bodies: Query<&RigidBody>,
 ) {
-    let Ok(hits) = ray.single() else { return };
-
     let Ok(mut mode) = crosshair.single_mut() else {
         return;
     };
 
-    if let Some(hit) = hits.iter().next()
-        && matches!(rigid_bodies.get(hit.entity), Ok(RigidBody::Dynamic))
-    {
-        *mode = CrosshairMode::Active;
+    let over_grabbable = pointers
+        .iter()
+        .find(|(anchor, _)| anchor.0 == PointerKind::Screen)
+        .and_then(|(_, interaction)| nearest_hit(interaction))
+        .is_some_and(|hit| matches!(rigid_bodies.get(hit.entity), Ok(RigidBody::Dynamic)));
+
+    *mode = if over_grabbable {
+        CrosshairMode::Active
     } else {
-        *mode = CrosshairMode::Inactive;
-    }
+        CrosshairMode::Inactive
+    };
 }

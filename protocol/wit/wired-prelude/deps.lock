@@ -16,8 +16,8 @@ deps = ["wired-error"]
 
 [wired-input]
 path = "../wired-input"
-sha256 = "967d7ad9b253b8d7af1ef1cddd8de0a6a466822f17686020a39c8a32168a19c5"
-sha512 = "acaa8622641fdf94c9d885b6b4d58946f3823febb1af2b0fd50bb0c3bc2d2504b69ec42a5bad6b0fc2e69c8c95403abbe94f6b8d4151c67b7ba9fe4bde9d136b"
+sha256 = "735f21ca62deeced8ad8052a366146273985a02f99fa103f04e0088f3ce56907"
+sha512 = "e65debb5bbc756677dc6840210621b046d8fa66ed474d9d093359ac0f8906ab0ed3422e7a6e1fd73307fc2febc3f71e554c3b31cad637333119219970cd3f7dd"
 deps = ["wired-error"]
 
 [wired-kv]

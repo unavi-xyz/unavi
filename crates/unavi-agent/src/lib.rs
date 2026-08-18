@@ -46,7 +46,6 @@ impl Plugin for AgentPlugin {
             use crate::config::XrMode;
 
             app.init_resource::<movement::xr::HmdWorldPose>()
-                .init_resource::<movement::xr::TurnMode>()
                 .init_resource::<movement::xr::SnapTurnReady>();
 
             let xr_active = |xr: Res<XrMode>| xr.0;
@@ -65,7 +64,11 @@ impl Plugin for AgentPlugin {
                     )
                         .chain()
                         .run_if(xr_active),
-                    movement::apply_head_input.run_if(in_state(CursorGrabState::Locked)),
+                    // A headset turns the view by its own snap or smooth turn,
+                    // off the same look stick, so the desktop look would turn
+                    // the rig a second time.
+                    movement::apply_head_input
+                        .run_if(in_state(CursorGrabState::Locked).and_then(not(xr_active))),
                     movement::apply_body_input,
                     movement::xr::update_xr_head_tracking.run_if(xr_active),
                     tracking::sync_tracked_pose_to_transform,

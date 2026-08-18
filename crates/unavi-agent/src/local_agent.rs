@@ -23,7 +23,11 @@ use unavi_avatar::{
         velocity::AverageVelocity,
     },
 };
-use unavi_input::raycast::PrimaryRaycastInput;
+use unavi_input::pointer::{
+    PointerAnchor,
+    PointerKind,
+    backend::PointerFilter,
+};
 use unavi_manifold::{
     ManifoldBody,
     ManifoldViewer,
@@ -50,7 +54,6 @@ use crate::{
     },
 };
 
-const RAYCAST_GRAB_DISTANCE: f32 = 2.5;
 const CAMERA_NEAR_PLANE: f32 = 0.01;
 
 pub fn spawn_local_agent(
@@ -107,16 +110,18 @@ pub fn spawn_local_agent(
         .add_child(camera)
         .id();
 
-    if !xr_mode.0 {
-        // Desktop mode: raycast input from the head.
-        commands.entity(tracked_head).insert((
-            PrimaryRaycastInput,
-            RayCaster::new(Vec3::ZERO, Dir3::NEG_Z)
-                .with_max_hits(1)
-                .with_solidness(false)
-                .with_max_distance(RAYCAST_GRAB_DISTANCE)
-                .with_query_filter(SpatialQueryFilter::default().with_excluded_entities([body])),
-        ));
+    // The agent's own body sits around the ray's origin, so every pointer
+    // would hit it first.
+    commands.insert_resource(PointerFilter(
+        SpatialQueryFilter::default().with_excluded_entities([body]),
+    ));
+
+    if xr_mode.0 {
+        spawn_hand_pointers(&mut commands);
+    } else {
+        commands
+            .entity(tracked_head)
+            .insert(PointerAnchor(PointerKind::Screen));
     }
 
     let mut avatar_cmd = commands.spawn(Avatar);
@@ -145,6 +150,31 @@ pub fn spawn_local_agent(
         ))
         .add_child(body);
 }
+
+/// `XrTracker` parents each hand under the tracking root, so its transform is
+/// the world pose the pointer's ray is cast from.
+#[cfg(not(target_family = "wasm"))]
+fn spawn_hand_pointers(commands: &mut Commands) {
+    use bevy_mod_xr::session::XrTracker;
+    use bevy_xr_utils::tracking_utils::{
+        XrTrackedLeftGrip,
+        XrTrackedRightGrip,
+    };
+
+    commands.spawn((
+        PointerAnchor(PointerKind::LeftHand),
+        XrTrackedLeftGrip,
+        XrTracker,
+    ));
+    commands.spawn((
+        PointerAnchor(PointerKind::RightHand),
+        XrTrackedRightGrip,
+        XrTracker,
+    ));
+}
+
+#[cfg(target_family = "wasm")]
+const fn spawn_hand_pointers(_commands: &mut Commands) {}
 
 fn spawn_camera(commands: &mut Commands, is_xr: bool) -> Entity {
     let camera = if is_xr {

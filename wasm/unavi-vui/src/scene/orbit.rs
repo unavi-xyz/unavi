@@ -15,7 +15,10 @@ use crate::{
     },
     mote::Arrange,
     palette::Palette,
-    pointer,
+    pointer::{
+        self,
+        Gaze,
+    },
     scene::{
         Mounted,
         bodies::{
@@ -116,17 +119,12 @@ impl Mounted for Orbit {
         self.surface.is_visible()
     }
 
-    fn update(
-        &mut self,
-        eye: &Transform,
-        anchor: Transform,
-        delta: f32,
-    ) -> anyhow::Result<Vec<Event>> {
-        let hand = self.depth.map(|depth| pointer::hand(eye, depth));
+    fn update(&mut self, gaze: &Gaze, anchor: Transform, delta: f32) -> anyhow::Result<Vec<Event>> {
+        let hand = self.depth.map(|depth| pointer::hand(&gaze.ray, depth));
         let frame = Frame {
-            eye: eye.translation,
+            eye: gaze.eye.translation,
             anchor,
-            aim: pointer::aim(eye, &anchor, self.surface.tuning().field_lift),
+            aim: pointer::aim(&gaze.ray, &anchor, self.surface.tuning().field_lift),
             hand,
             delta,
         };
@@ -182,12 +180,12 @@ impl Mounted for Orbit {
         Ok(events)
     }
 
-    fn fixed_update(&mut self, eye: &Transform, anchor: Transform) -> anyhow::Result<FixedUpdate> {
+    fn fixed_update(&mut self, gaze: &Gaze, anchor: Transform) -> anyhow::Result<FixedUpdate> {
         let mut events = Vec::new();
         let mut released = None;
         for signal in self.bodies.poll() {
             match (signal, self.surface.is_seized()) {
-                (Signal::Grab(true), false) => self.press(eye, anchor, &mut events),
+                (Signal::Grab(true), false) => self.press(gaze, anchor, &mut events),
                 (Signal::Grab(false), _) => released = self.release(&mut events)?,
                 (Signal::Turn(delta), false) => self.surface.turn_by(delta),
                 (Signal::Grab(true) | Signal::Turn(_), true) => {}
@@ -203,7 +201,7 @@ impl Orbit {
     /// A consequential mote opens its cast site here rather than on release:
     /// the hold *is* the confirmation, so the ring starts filling the moment
     /// the mote is taken hold of and letting go early abandons it.
-    fn press(&mut self, eye: &Transform, anchor: Transform, events: &mut Vec<Event>) {
+    fn press(&mut self, gaze: &Gaze, anchor: Transform, events: &mut Vec<Event>) {
         let Some(slot) = self.surface.attended() else {
             return;
         };
@@ -211,9 +209,9 @@ impl Orbit {
             return;
         };
         let world = anchor.translation + anchor.rotation * view.position;
-        let depth = (world - eye.translation).length();
+        let depth = (world - gaze.ray.origin).length();
         self.depth = Some(depth);
-        self.surface.press(pointer::hand(eye, depth));
+        self.surface.press(pointer::hand(&gaze.ray, depth));
 
         if let Some(mote) = self.consequential(slot) {
             open_cast(&mut self.casting, slot, mote.clone(), &self.surface);

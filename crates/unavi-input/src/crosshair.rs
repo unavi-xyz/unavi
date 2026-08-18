@@ -1,10 +1,17 @@
 use bevy::{
     light::NotShadowCaster,
+    picking::pointer::PointerInteraction,
     prelude::*,
 };
 
+use crate::pointer::{
+    PointerAnchor,
+    PointerKind,
+    claims,
+    nearest_hit,
+};
+
 const CROSSHAIR_RADIUS: f32 = 0.004;
-// pub(crate) const MIN_SCALE_DISTANCE: f32 = 0.01;
 
 #[derive(Component)]
 #[require(Visibility, Transform, CrosshairMode)]
@@ -57,6 +64,36 @@ pub(crate) fn spawn_crosshair(
     ));
 }
 
+/// Lays the reticle on whatever the screen pointer is over. A claimed pointer
+/// belongs to the script holding it, which draws its own aim.
+pub(crate) fn place_crosshair(
+    pointers: Query<(&PointerAnchor, &PointerInteraction)>,
+    mut crosshair: Query<(&mut Visibility, &mut Transform), With<Crosshair>>,
+) {
+    let Ok((mut visibility, mut transform)) = crosshair.single_mut() else {
+        return;
+    };
+
+    let hit = (!claims::is_claimed(PointerKind::Screen))
+        .then(|| {
+            pointers
+                .iter()
+                .find(|(anchor, _)| anchor.0 == PointerKind::Screen)
+                .and_then(|(_, interaction)| nearest_hit(interaction))
+        })
+        .flatten();
+
+    let Some(hit) = hit else {
+        *visibility = Visibility::Hidden;
+        transform.scale = Vec3::ONE;
+        return;
+    };
+
+    *visibility = Visibility::Visible;
+    transform.translation = hit.position;
+    *transform = transform.looking_to(arbitrary_up(hit.normal), hit.normal);
+}
+
 pub(crate) fn set_crosshair_mesh(
     mut crosshair: Query<(&mut Mesh3d, &CrosshairMeshes, &CrosshairMode)>,
     mut prev: Local<CrosshairMode>,
@@ -76,4 +113,19 @@ pub(crate) fn set_crosshair_mesh(
     } else {
         mesh.0 = meshes.inactive.clone();
     }
+}
+
+fn arbitrary_up(normal: Vec3) -> Vec3 {
+    let n = normal.normalize();
+
+    // Pick axis with smallest component magnitude.
+    let reference = if n.x.abs() < n.y.abs() && n.x.abs() < n.z.abs() {
+        Vec3::X
+    } else if n.y.abs() < n.z.abs() {
+        Vec3::Y
+    } else {
+        Vec3::Z
+    };
+
+    n.cross(reference).normalize()
 }

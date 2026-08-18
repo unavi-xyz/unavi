@@ -128,9 +128,12 @@ function buildImports(wasi: WASIShim, rt: any) {
     "wired:input/context": {
       registerGlobalInputListener:
         rt.wiredInputRegisterGlobalInputListener.bind(rt),
+      pointers: rt.wiredInputPointers.bind(rt),
+      claimPointer: rt.wiredInputClaimPointer.bind(rt),
     },
     "wired:input/types": {
       InputListener: rt.wiredInputListenerClass(),
+      PointerClaim: rt.wiredInputPointerClaimClass(),
     },
     "wired:kv/api": {
       selfKv: rt.wiredKvSelfKv.bind(rt),

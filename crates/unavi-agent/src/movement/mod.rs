@@ -7,16 +7,11 @@ use bevy_tnua::prelude::{
     TnuaController,
 };
 use unavi_input::{
-    actions::{
-        JumpAction,
-        LookAction,
-        MoveAction,
-        SprintAction,
+    action::{
+        Action,
+        ActionState,
     },
-    schminput::{
-        BoolActionValue,
-        Vec2ActionValue,
-    },
+    config::InputConfig,
 };
 
 use crate::{
@@ -34,7 +29,6 @@ use crate::{
 };
 
 pub mod grounded;
-mod sensitivity;
 pub mod teleport;
 #[cfg(not(target_family = "wasm"))] pub mod xr;
 
@@ -48,10 +42,10 @@ pub struct TargetBodyInput(Vec3);
 pub struct TargetHeadInput(Vec2);
 
 const PITCH_BOUND: f32 = FRAC_PI_2 - 1.0E-3;
-const MOVE_THRESHOLD: f32 = 0.6; // TODO configurable for stick drift (same for look)
 
 pub fn apply_head_input(
-    look_action: Query<&Vec2ActionValue, With<LookAction>>,
+    input: Res<ActionState>,
+    config: Res<InputConfig>,
     agents: Query<&LocalAgentEntities>,
     mut rigs: Query<&mut Transform, With<AgentRig>>,
     mut tracked_heads: Query<&mut TrackedPose, With<TrackedHead>>,
@@ -60,12 +54,12 @@ pub fn apply_head_input(
 ) {
     const S: f32 = 0.4;
 
-    let Ok(action) = look_action.single() else {
-        return;
-    };
+    let tuning = &config.tuning;
+    let stick =
+        input.axis(Action::Look) * tuning.look_degrees_per_second.to_radians() * time.delta_secs();
+    let mouse = input.delta(Action::Look) * tuning.look_sensitivity;
 
-    let delta = time.delta_secs();
-    target.0 += action.any * delta * sensitivity::sensitivity();
+    target.0 += stick + mouse;
     target.y = target.y.clamp(-PITCH_BOUND, PITCH_BOUND);
 
     for entities in agents.iter() {
@@ -83,9 +77,8 @@ pub fn apply_head_input(
 
 pub fn apply_body_input(
     agents: Query<(&LocalAgentEntities, &AgentConfig)>,
-    jump_action: Query<&BoolActionValue, With<JumpAction>>,
-    move_action: Query<&Vec2ActionValue, With<MoveAction>>,
-    sprint_action: Query<&BoolActionValue, With<SprintAction>>,
+    input: Res<ActionState>,
+    input_config: Res<InputConfig>,
     rigs: Query<&Transform, With<AgentRig>>,
     mut controllers: Query<&mut TnuaController<ControlScheme>, With<AgentRig>>,
     mut target: ResMut<TargetBodyInput>,
@@ -93,6 +86,13 @@ pub fn apply_body_input(
     movement_yaw: Res<MovementYaw>,
 ) {
     const S: f32 = 0.2;
+
+    let raw = input.axis(Action::Move);
+    let walk = if raw.length() < input_config.tuning.move_threshold {
+        Vec2::ZERO
+    } else {
+        raw
+    };
 
     for (entities, config) in agents.iter() {
         let Ok(rig_transform) = rigs.get(entities.body) else {
@@ -105,32 +105,21 @@ pub fn apply_body_input(
 
         controller.initiate_action_feeding();
 
-        if let Ok(action) = move_action.single() {
-            let raw = action.any;
-            let input = if raw.length() < MOVE_THRESHOLD {
-                Vec2::ZERO
-            } else {
-                raw.normalize_or_zero()
-            };
+        let forward = if xr.0 {
+            Quat::from_rotation_y(movement_yaw.0)
+        } else {
+            rig_transform.rotation
+        };
+        let dir_f = forward * Vec3::NEG_Z;
+        let dir_l = forward * Vec3::X;
 
-            let forward = if xr.0 {
-                Quat::from_rotation_y(movement_yaw.0)
-            } else {
-                rig_transform.rotation
-            };
-            let dir_f = forward * Vec3::NEG_Z;
-            let dir_l = forward * Vec3::X;
+        let mut dir = Vec3::ZERO;
+        dir += dir_f * walk.y;
+        dir += dir_l * walk.x;
 
-            let mut dir = Vec3::ZERO;
-            dir += dir_f * input.y;
-            dir += dir_l * input.x;
+        target.0 = target.lerp(dir, S);
 
-            target.0 = target.lerp(dir, S);
-        }
-
-        let is_sprinting = sprint_action.single().is_ok_and(|action| action.any);
-
-        let multi = if is_sprinting {
+        let multi = if input.pressed(Action::Sprint) {
             config.sprint_multi
         } else {
             1.0
@@ -141,9 +130,7 @@ pub fn apply_body_input(
             ..Default::default()
         };
 
-        if let Ok(action) = jump_action.single()
-            && action.any
-        {
+        if input.pressed(Action::Jump) {
             controller.action(ControlScheme::Jump(TnuaBuiltinJump::default()));
         }
     }

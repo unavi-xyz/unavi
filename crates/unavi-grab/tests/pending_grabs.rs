@@ -6,9 +6,11 @@ use std::time::Duration;
 
 use avian3d::prelude::*;
 use bevy::prelude::*;
-use unavi_input::{
-    SqueezeDown,
-    SqueezeUp,
+use unavi_input::pointer::{
+    PointerHit,
+    PointerKind,
+    PointerPressed,
+    PointerReleased,
 };
 
 /// Matches `unavi_grab`'s own safety timeout.
@@ -30,6 +32,10 @@ fn app() -> App {
         unavi_grab::GrabPlugin,
     ))
     .init_asset::<Mesh>()
+    // The pointer layer is what the test drives by hand, so what it would
+    // have registered is registered here instead.
+    .add_message::<PointerPressed>()
+    .add_message::<PointerReleased>()
     // Bodies here are placed to be aimed at, not dropped, and a grab is
     // recognized by the `GravityScale` the grab itself adds — which a falling
     // body would need one of its own.
@@ -51,20 +57,50 @@ fn spawn_pointer(app: &mut App) -> Entity {
     app.world_mut().spawn(Transform::default()).id()
 }
 
-/// A pointer that raycasts, as the desktop player's head does.
-fn spawn_aiming_pointer(app: &mut App) -> Entity {
-    app.world_mut()
-        .spawn((
-            Transform::default(),
-            RayCaster::new(Vec3::ZERO, Dir3::NEG_Z)
-                .with_max_hits(1)
-                .with_max_distance(10.0),
-        ))
-        .id()
+/// Aimed down -Z from the origin, as the desktop player's head is.
+const REACH: f32 = 10.0;
+
+const fn aim() -> Ray3d {
+    Ray3d::new(Vec3::ZERO, Dir3::NEG_Z)
+}
+
+/// Stands in for the hit-test, which the pointer layer has already done by the
+/// time a press is reported.
+fn hit_on(app: &App, entity: Option<Entity>) -> Option<PointerHit> {
+    let entity = entity?;
+    let position = app
+        .world()
+        .entity(entity)
+        .get::<Transform>()
+        .map_or(Vec3::ZERO, |transform| transform.translation);
+    Some(PointerHit {
+        entity,
+        position,
+        normal: Vec3::Z,
+        distance: position.length(),
+    })
 }
 
 fn squeeze_down(app: &mut App, entity: Option<Entity>, pointer: Entity) {
-    app.world_mut().trigger(SqueezeDown { entity, pointer });
+    let hit = hit_on(app, entity);
+    app.world_mut().write_message(PointerPressed {
+        kind: PointerKind::Screen,
+        pointer,
+        ray: aim(),
+        reach: REACH,
+        hit,
+    });
+}
+
+fn squeeze_up(app: &mut App, entity: Option<Entity>, pointer: Entity) {
+    let hit = hit_on(app, entity);
+    app.world_mut().write_message(PointerReleased {
+        kind: PointerKind::Screen,
+        pointer,
+        ray: aim(),
+        reach: REACH,
+        hit,
+    });
 }
 
 const fn steps_over(duration: Duration) -> usize {
@@ -152,10 +188,7 @@ fn releasing_cancels_a_pending_grab() {
     squeeze_down(&mut app, Some(target), pointer);
     step(&mut app, 1);
 
-    app.world_mut().trigger(SqueezeUp {
-        entity: Some(target),
-        pointer,
-    });
+    squeeze_up(&mut app, Some(target), pointer);
     app.world_mut()
         .entity_mut(target)
         .insert(RigidBody::Dynamic);
@@ -189,7 +222,7 @@ fn an_already_dynamic_body_is_grabbed_at_once() {
 #[test]
 fn a_squeeze_that_hit_nothing_catches_a_body_that_arrives_under_the_pointer() {
     let mut app = app();
-    let pointer = spawn_aiming_pointer(&mut app);
+    let pointer = spawn_pointer(&mut app);
 
     squeeze_down(&mut app, None, pointer);
     step(&mut app, 1);
@@ -221,7 +254,7 @@ fn a_squeeze_that_hit_nothing_catches_a_body_that_arrives_under_the_pointer() {
 #[test]
 fn a_body_that_appears_beside_the_pointer_is_still_caught() {
     let mut app = app();
-    let pointer = spawn_aiming_pointer(&mut app);
+    let pointer = spawn_pointer(&mut app);
 
     squeeze_down(&mut app, None, pointer);
     step(&mut app, 1);
@@ -245,7 +278,7 @@ fn a_body_that_appears_beside_the_pointer_is_still_caught() {
 #[test]
 fn a_body_promoted_well_off_the_pointer_is_left_alone() {
     let mut app = app();
-    let pointer = spawn_aiming_pointer(&mut app);
+    let pointer = spawn_pointer(&mut app);
 
     squeeze_down(&mut app, None, pointer);
     step(&mut app, 1);
@@ -269,7 +302,7 @@ fn a_body_promoted_well_off_the_pointer_is_left_alone() {
 #[test]
 fn a_body_promoted_behind_the_pointer_is_left_alone() {
     let mut app = app();
-    let pointer = spawn_aiming_pointer(&mut app);
+    let pointer = spawn_pointer(&mut app);
 
     squeeze_down(&mut app, None, pointer);
     step(&mut app, 1);
@@ -292,7 +325,7 @@ fn a_body_promoted_behind_the_pointer_is_left_alone() {
 #[test]
 fn a_pending_grab_does_not_steal_a_body_it_merely_swept_over() {
     let mut app = app();
-    let pointer = spawn_aiming_pointer(&mut app);
+    let pointer = spawn_pointer(&mut app);
 
     let bystander = app
         .world_mut()

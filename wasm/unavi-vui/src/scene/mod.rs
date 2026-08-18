@@ -15,7 +15,10 @@ use crate::{
         State,
     },
     palette::Palette,
-    pointer,
+    pointer::{
+        self,
+        Gaze,
+    },
     scene::{
         event::{
             Casting,
@@ -68,16 +71,11 @@ pub(crate) trait Mounted {
 
     /// Steps and draws. Call from the script's `update`, where animation
     /// belongs — pinning it to the fixed rate makes motion step.
-    fn update(
-        &mut self,
-        eye: &Transform,
-        anchor: Transform,
-        delta: f32,
-    ) -> anyhow::Result<Vec<Event>>;
+    fn update(&mut self, gaze: &Gaze, anchor: Transform, delta: f32) -> anyhow::Result<Vec<Event>>;
 
     /// Reads input and resolves what it did. Call from the script's
     /// `fixed_update`, where state belongs.
-    fn fixed_update(&mut self, eye: &Transform, anchor: Transform) -> anyhow::Result<FixedUpdate>;
+    fn fixed_update(&mut self, gaze: &Gaze, anchor: Transform) -> anyhow::Result<FixedUpdate>;
 
     /// Whether a release at `local` — in this surface's own plane — files into
     /// it. Only a grid is a destination; an orbit has no extents to land in.
@@ -221,17 +219,18 @@ impl Vui {
         let Some(eye) = self.viewer.pose() else {
             return Ok(());
         };
+        let gaze = Gaze::read(&eye);
 
         for index in 0..self.shapes.len() {
             // A surface sent away is stepped until it has finished leaving.
             if !self.shown[index] && !self.shapes[index].is_visible() {
                 continue;
             }
-            let anchor = self.anchor(index, &eye)?;
-            let result = self.shapes[index].fixed_update(&eye, anchor)?;
+            let anchor = self.anchor(index, &gaze)?;
+            let result = self.shapes[index].fixed_update(&gaze, anchor)?;
             self.report(index, result.events);
             if let Some(released) = result.released {
-                self.place(index, released, &eye);
+                self.place(index, released, &gaze);
             }
         }
         Ok(())
@@ -246,14 +245,15 @@ impl Vui {
         let Some(eye) = self.viewer.pose() else {
             return Ok(());
         };
+        let gaze = Gaze::read(&eye);
 
         for index in 0..self.shapes.len() {
             // A surface sent away is stepped until it has finished leaving.
             if !self.shown[index] && !self.shapes[index].is_visible() {
                 continue;
             }
-            let anchor = self.anchor(index, &eye)?;
-            let events = self.shapes[index].update(&eye, anchor, delta)?;
+            let anchor = self.anchor(index, &gaze)?;
+            let events = self.shapes[index].update(&gaze, anchor, delta)?;
             self.report(index, events);
         }
         Ok(())
@@ -261,11 +261,11 @@ impl Vui {
 
     /// Places a surface the first time it is drawn, and reports where it
     /// stands from then on.
-    fn anchor(&mut self, index: usize, eye: &Transform) -> anyhow::Result<Transform> {
+    fn anchor(&mut self, index: usize, gaze: &Gaze) -> anyhow::Result<Transform> {
         if let Some(anchor) = self.anchors[index] {
             return Ok(anchor);
         }
-        let anchor = self.shapes[index].mount().anchor(eye);
+        let anchor = self.shapes[index].mount().anchor(&gaze.eye);
         self.shapes[index].place(&anchor)?;
         self.anchors[index] = Some(anchor);
         Ok(anchor)
@@ -276,8 +276,8 @@ impl Vui {
     /// Nothing of the consumer's is drawn either way: the mote goes back where
     /// it came from, and a landing says where it was let go so the consumer
     /// can put its own thing there.
-    fn place(&mut self, index: usize, released: Released, eye: &Transform) {
-        let event = match self.filed_into(eye) {
+    fn place(&mut self, index: usize, released: Released, gaze: &Gaze) {
+        let event = match self.filed_into(gaze) {
             Some(target) if self.shapes[target].stow(&released.mote) => Event::Filed(released.mote),
             _ => Event::Planted(released.mote, released.landing),
         };
@@ -285,10 +285,10 @@ impl Vui {
     }
 
     /// The grid the pointer is over, which files rather than plants.
-    fn filed_into(&self, eye: &Transform) -> Option<usize> {
+    fn filed_into(&self, gaze: &Gaze) -> Option<usize> {
         self.shapes.iter().enumerate().find_map(|(index, shape)| {
             let anchor = self.shown[index].then(|| self.anchors[index])??;
-            pointer::aim(eye, &anchor, shape.field_lift())
+            pointer::aim(&gaze.ray, &anchor, shape.field_lift())
                 .filter(|aim| shape.accepts(aim.local))
                 .map(|_| index)
         })

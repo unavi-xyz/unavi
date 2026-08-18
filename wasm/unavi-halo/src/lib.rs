@@ -144,18 +144,19 @@ impl Script {
     fn read_input(&mut self, eye: &Transform) -> anyhow::Result<()> {
         while let Some(event) = self.input.poll() {
             match event.action {
-                InputAction::MenuDown => {
+                InputAction::MenuPress => {
                     let command = self.summon.press(eye);
                     self.apply(command)?;
                 }
-                InputAction::MenuUp => self.summon.release(),
+                InputAction::MenuRelease => self.summon.release(),
                 // Forwarded only while the halo is down. With it up, a press
                 // belongs to whichever surface was pressed, and VUI's own
                 // listener is what hears it.
-                InputAction::GrabDown => self.forward(|hand| hand.trigger(true)),
-                InputAction::GrabUp => self.forward(|hand| hand.trigger(false)),
-                InputAction::ScrollUp => self.forward(|hand| hand.scroll(1.0)),
-                InputAction::ScrollDown => self.forward(|hand| hand.scroll(-1.0)),
+                InputAction::Press => self.forward(|hand| hand.trigger(true)),
+                InputAction::Release => self.forward(|hand| hand.trigger(false)),
+                InputAction::Scroll(delta) => self.forward(|hand| hand.scroll(delta.y)),
+                // Hover is per-prim, so a global listener never sees it.
+                InputAction::Enter | InputAction::Leave => {}
             }
         }
         Ok(())

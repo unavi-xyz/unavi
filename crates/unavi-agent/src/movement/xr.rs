@@ -1,5 +1,3 @@
-use std::f32::consts::FRAC_PI_6;
-
 use bevy::{
     ecs::message::MessageWriter,
     prelude::*,
@@ -11,6 +9,13 @@ use bevy_xr_utils::{
         SnapToPosition,
         SnapToRotation,
     },
+};
+use unavi_input::{
+    action::{
+        Action,
+        ActionState,
+    },
+    config::InputConfig,
 };
 
 use crate::{
@@ -28,28 +33,6 @@ pub struct HmdWorldPose {
     pub translation: Vec3,
     pub rotation:    Quat,
     pub yaw:         f32,
-}
-
-#[derive(Resource)]
-pub enum TurnMode {
-    Snap {
-        angle:     f32,
-        threshold: f32,
-    },
-    #[expect(unused, reason = "need config option")]
-    Smooth {
-        speed:     f32,
-        threshold: f32,
-    },
-}
-
-impl Default for TurnMode {
-    fn default() -> Self {
-        Self::Snap {
-            angle:     FRAC_PI_6,
-            threshold: 0.7,
-        }
-    }
 }
 
 /// Latch: stick must return to center before next snap.
@@ -100,42 +83,38 @@ pub fn sync_stage_to_body(
     }
 }
 
+/// Stick travel below this re-arms the snap latch.
+const SNAP_RECENTRE: f32 = 0.2;
+
 pub fn apply_xr_turn(
-    look_action: Query<
-        &unavi_input::schminput::Vec2ActionValue,
-        With<unavi_input::actions::LookAction>,
-    >,
-    turn_mode: Res<TurnMode>,
+    input: Res<ActionState>,
+    config: Res<InputConfig>,
     mut snap_ready: ResMut<SnapTurnReady>,
     pose: Res<HmdWorldPose>,
     time: Res<Time>,
     mut rot_writer: MessageWriter<SnapToRotation>,
 ) {
-    let Ok(action) = look_action.single() else {
+    let tuning = &config.tuning;
+    let x = input.axis(Action::Look).x;
+
+    if tuning.smooth_turn {
+        if x.abs() > tuning.turn_threshold {
+            let speed = tuning.smooth_turn_degrees_per_second.to_radians();
+            let target_yaw = (x * speed).mul_add(time.delta_secs(), pose.yaw);
+            rot_writer.write(SnapToRotation(Quat::from_rotation_y(target_yaw)));
+        }
         return;
-    };
+    }
 
-    let x = action.any.x;
+    if x.abs() < SNAP_RECENTRE {
+        snap_ready.0 = true;
+    }
 
-    match *turn_mode {
-        TurnMode::Snap { angle, threshold } => {
-            if x.abs() < 0.2 {
-                snap_ready.0 = true;
-            }
-
-            if snap_ready.0 && x.abs() > threshold {
-                let sign = -x.signum();
-                let target_yaw = sign.mul_add(angle, pose.yaw);
-                rot_writer.write(SnapToRotation(Quat::from_rotation_y(target_yaw)));
-                snap_ready.0 = false;
-            }
-        }
-        TurnMode::Smooth { speed, threshold } => {
-            if x.abs() > threshold {
-                let target_yaw = (x * speed).mul_add(time.delta_secs(), pose.yaw);
-                rot_writer.write(SnapToRotation(Quat::from_rotation_y(target_yaw)));
-            }
-        }
+    if snap_ready.0 && x.abs() > tuning.turn_threshold {
+        let sign = -x.signum();
+        let target_yaw = sign.mul_add(tuning.snap_turn_degrees.to_radians(), pose.yaw);
+        rot_writer.write(SnapToRotation(Quat::from_rotation_y(target_yaw)));
+        snap_ready.0 = false;
     }
 }
 

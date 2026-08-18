@@ -11,41 +11,86 @@ interface api {
   use wired:scene/types.{prim};
   use wired:error/types.{error};
 
-  // Captures input events for a given prim.
+  // Captures input aimed at a prim or anything under it.
   // Requires a collider to function.
   register-input-listener: func(target: borrow<prim>) -> result<input-listener, error>;
 }
 
 interface context {
-  use types.{input-listener};
+  use types.{input-listener, pointer, pointer-claim, pointer-id};
   use wired:error/types.{error};
 
   // Captures all input events from the local agent.
   register-global-input-listener: func() -> result<input-listener, error>;
+
+  // Where the local agent is pointing, this frame.
+  pointers: func() -> result<list<pointer>, error>;
+
+  // Takes a pointer for this script's exclusive use. While the claim is
+  // alive the host performs none of its own interactions with that pointer:
+  // no grab, no reticle. Dropping the claim gives it back.
+  claim-pointer: func(id: pointer-id) -> result<pointer-claim, error>;
 }
 
 interface types {
-  enum input-action {
-    grab-down,
-    grab-up,
-    menu-down,
-    menu-up,
-    scroll-up,
-    scroll-down,
-  }
+  use wired:math/types.{vec2, vec3};
 
-  enum input-device {
-    keyboard,
+  enum pointer-id {
+    // The desktop pointer, aimed by the head.
+    screen,
     left-hand,
     right-hand,
   }
 
+  record ray {
+    origin: vec3,
+    dir:    vec3,
+  }
+
+  // Where a pointer's ray met the world.
+  record hit {
+    position: vec3,
+    normal:   vec3,
+    distance: f32,
+  }
+
+  record pointer {
+    id: pointer-id,
+    // Whether the pointer is tracked and usable this frame.
+    active: bool,
+    ray:    ray,
+    // How hard the grab is held, 0 to 1. Analogue where the binding is.
+    grasp: f32,
+    // Thumbstick travel; zero for a pointer with no stick.
+    axis: vec2,
+    hit:  option<hit>,
+  }
+
+  variant input-action {
+    press,
+    release,
+    // Notches turned, so ten is not one.
+    scroll(vec2),
+    // Per-prim only: a global listener has no bounds to cross.
+    enter,
+    leave,
+    // Global only, and carrying the pointer whose hand pressed it.
+    menu-press,
+    menu-release,
+  }
+
   record input-event {
-    action: input-action,
-    device: input-device,
+    pointer: pointer-id,
+    action:  input-action,
+    ray:     ray,
+    hit:     option<hit>,
   }
 
   resource input-listener {
     poll: func() -> option<input-event>;
+  }
+
+  resource pointer-claim {
+    id: func() -> pointer-id;
   }
 }

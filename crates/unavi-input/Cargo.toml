@@ -15,16 +15,22 @@ devtools    = ["dep:unavi-devtools"]
 egui-filter = ["dep:bevy_egui"]
 
 [dependencies]
-avian3d.workspace = true
-bevy              = { default-features = true, workspace = true }
-bevy_egui         = { optional = true, version = "0.40.1" }
-schminput         = { branch = "upgrade-bevy-0.19", git = "https://github.com/stevesloan/Schminput" }
-unavi-devtools    = { optional = true, path = "../unavi-devtools" }
+avian3d.workspace     = true
+bevy                  = { default-features = true, features = ["serialize"], workspace = true }
+bevy_egui             = { optional = true, version = "0.40.1" }
+parking_lot.workspace = true
+ron.workspace         = true
+serde.workspace       = true
+unavi-devtools        = { optional = true, path = "../unavi-devtools" }
+uuid                  = "1.24.0"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-schminput_rebinding = { branch = "upgrade-bevy-0.19", default-features = false, git = "https://github.com/stevesloan/Schminput" }
+web-sys = { features = ["Navigator", "Window"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-schminput_rebinding = { branch = "upgrade-bevy-0.19", default-features = false, features = [
-  "xr",
-], git = "https://github.com/stevesloan/Schminput" }
+bevy_mod_xr.workspace   = true
+bevy_xr_utils.workspace = true
+unavi-util.path         = "../unavi-util"
+
+[dev-dependencies]
+rstest.workspace = true

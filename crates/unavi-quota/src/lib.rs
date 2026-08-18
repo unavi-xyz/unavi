@@ -286,9 +286,7 @@ impl Quota {
         } else if limit.refill_per_sec <= 0.0 {
             Reservation::Never
         } else {
-            Reservation::After(Duration::from_secs_f64(
-                (n - tokens) / limit.refill_per_sec,
-            ))
+            Reservation::After(Duration::from_secs_f64((n - tokens) / limit.refill_per_sec))
         }
     }
 
@@ -676,6 +674,9 @@ mod tests {
         assert_eq!(doc.reserve(Flow::Emit, 6.0), Reservation::Ready);
         doc.commit(Flow::Emit, 6.0);
 
-        assert!(matches!(peer.reserve(Flow::Emit, 6.0), Reservation::After(_)));
+        assert!(matches!(
+            peer.reserve(Flow::Emit, 6.0),
+            Reservation::After(_)
+        ));
     }
 }

@@ -12,7 +12,6 @@ use std::{
 
 use async_channel::Receiver;
 use hsd::id::DocId;
-use unavi_space::reach::check_write;
 use unavi_quota::{
     Flow,
     QuotaError,
@@ -20,6 +19,7 @@ use unavi_quota::{
     StockGuard,
     limits::MAX_EVENT_PAYLOAD_BYTES,
 };
+use unavi_space::reach::check_write;
 
 use crate::runtime::shared::{
     Api,

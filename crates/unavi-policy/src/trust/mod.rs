@@ -24,7 +24,9 @@ pub mod vouch;
 /// The opinion is the local viewer's and is never gossiped as authoritative,
 /// so there is nothing here for a peer or a space to spoof. Ranks *peers*, not
 /// documents — [`crate::tier::Tier`] is the document side.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
+)]
 pub enum Trust {
     /// Ejected. Below the floor every capability sits at, so naming it as a
     /// minimum anywhere would be a mistake.
@@ -98,11 +100,6 @@ pub fn clear_override(did: &Did) {
     OVERRIDES.write().remove(did);
 }
 
-#[must_use]
-pub fn overrides() -> HashMap<Did, Trust> {
-    OVERRIDES.read().clone()
-}
-
 /// Weights the local user has vouched at, keyed by DID.
 ///
 /// The plaintext side of what gets published as salted hashes: a voucher knows
@@ -156,7 +153,7 @@ pub fn recompute(foreign: &[(Did, [u8; 16], Vec<vouch::Vouch>)]) {
     let candidates = mine
         .keys()
         .cloned()
-        .chain(foreign.iter().map(|(did, _, _)| did.clone()))
+        .chain(foreign.iter().map(|(did, ..)| did.clone()))
         .collect::<Vec<_>>();
     for (voucher, salt, published) in foreign {
         graph.add_published(voucher.clone(), salt, published, &candidates);

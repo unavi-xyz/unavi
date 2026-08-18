@@ -122,7 +122,7 @@ impl Graph {
             let value = if next == to {
                 edge * DECAY.powi(i32::try_from(hops).unwrap_or(i32::MAX))
             } else if visited.contains(next) {
-                continue
+                continue;
             } else {
                 visited.push(next.clone());
                 let onward = edge * self.walk(next, to, visited, hops + 1);
@@ -182,7 +182,12 @@ mod tests {
         }];
 
         let mut graph = Graph::default();
-        graph.add_published(alice.clone(), salt, &published, std::slice::from_ref(&carol));
+        graph.add_published(
+            alice.clone(),
+            salt,
+            &published,
+            std::slice::from_ref(&carol),
+        );
         assert!(
             graph.score(&alice, &bob) <= f32::EPSILON,
             "a subject the viewer cannot name stays unresolved"
@@ -232,7 +237,9 @@ mod tests {
     #[test]
     fn minting_identities_that_vouch_for_each_other_achieves_nothing() {
         let (me, mule, target) = (did("me"), did("mule"), did("target"));
-        let sybils = (0..500).map(|i| did(&format!("sybil{i}"))).collect::<Vec<_>>();
+        let sybils = (0..500)
+            .map(|i| did(&format!("sybil{i}")))
+            .collect::<Vec<_>>();
 
         let mut graph = Graph::default();
         graph.add(me.clone(), mule.clone(), 30);

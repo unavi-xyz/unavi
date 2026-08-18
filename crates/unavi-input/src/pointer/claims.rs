@@ -94,7 +94,11 @@ mod tests {
     fn a_departing_owner_gets_every_pointer_it_held_taken_back() {
         assert!(claim(PointerKind::Screen, ALICE));
 
-        assert_eq!(release_all_of(BOB), 0, "another owner's claim is not theirs");
+        assert_eq!(
+            release_all_of(BOB),
+            0,
+            "another owner's claim is not theirs"
+        );
         assert!(is_claimed(PointerKind::Screen));
 
         assert_eq!(release_all_of(ALICE), 1);

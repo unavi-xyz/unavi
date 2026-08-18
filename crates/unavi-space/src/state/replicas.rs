@@ -1044,10 +1044,24 @@ mod tests {
         let space = h(b"revert-space");
         let (alice, mallory) = ([2u8; 32], [3u8; 32]);
 
-        add_kv(alice, space, space, "sign".into(), Some(b"welcome".to_vec()), 1)
-            .expect("alice writes the sign");
-        add_kv(mallory, space, space, "sign".into(), Some(b"defaced".to_vec()), 2)
-            .expect("mallory defaces it");
+        add_kv(
+            alice,
+            space,
+            space,
+            "sign".into(),
+            Some(b"welcome".to_vec()),
+            1,
+        )
+        .expect("alice writes the sign");
+        add_kv(
+            mallory,
+            space,
+            space,
+            "sign".into(),
+            Some(b"defaced".to_vec()),
+            2,
+        )
+        .expect("mallory defaces it");
         assert_eq!(
             doc_kv_get(space, space, "sign").as_deref(),
             Some(&b"defaced"[..])
@@ -1092,10 +1106,24 @@ mod tests {
         let space = h(b"revert-own-space");
         let mallory = [3u8; 32];
 
-        add_kv(mallory, space, space, "sign".into(), Some(b"first".to_vec()), 1)
-            .expect("first");
-        add_kv(mallory, space, space, "sign".into(), Some(b"second".to_vec()), 2)
-            .expect("second");
+        add_kv(
+            mallory,
+            space,
+            space,
+            "sign".into(),
+            Some(b"first".to_vec()),
+            1,
+        )
+        .expect("first");
+        add_kv(
+            mallory,
+            space,
+            space,
+            "sign".into(),
+            Some(b"second".to_vec()),
+            2,
+        )
+        .expect("second");
 
         revert_neutral_writes(mallory);
         assert_eq!(
@@ -1113,7 +1141,15 @@ mod tests {
         let space = h(b"revert-other-space");
         let (alice, mallory) = ([2u8; 32], [3u8; 32]);
 
-        add_kv(alice, space, space, "keep".into(), Some(b"mine".to_vec()), 1).expect("alice");
+        add_kv(
+            alice,
+            space,
+            space,
+            "keep".into(),
+            Some(b"mine".to_vec()),
+            1,
+        )
+        .expect("alice");
 
         assert_eq!(revert_neutral_writes(mallory), 0);
         assert_eq!(

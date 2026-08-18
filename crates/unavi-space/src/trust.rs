@@ -5,6 +5,7 @@ use bevy_wds::{
 };
 use bytes::Bytes;
 use iroh::EndpointId;
+use iroh_docs::NamespaceId;
 use time::OffsetDateTime;
 use unavi_policy::{
     identity,
@@ -85,6 +86,9 @@ pub fn eject(peer: [u8; 32]) -> Result<(), NoIdentity> {
     trust::set_override(did, Trust::Blocked);
 
     let reverted = replicas::revert_neutral_writes(peer);
+    // Peer quotas memoize their caps on first sight, so the blocked tier's
+    // zero budget only applies once the old entry is gone.
+    unavi_quota::registry::forget_peer(NamespaceId::from(&peer));
     info!(reverted, "Ejected peer");
 
     if let Err(err) = trust::save(unavi_util::dirs::data_local_dir()) {
@@ -116,7 +120,7 @@ mod tests {
 
     #[test]
     fn a_published_key_names_the_hash_not_the_did() {
-        let key = format!("{VOUCH_PREFIX}{}", hex(&[0xab; 32]));
+        let key = format!("{VOUCH_PREFIX}{}", hex(&[0xAB; 32]));
         assert_eq!(key, format!("{VOUCH_PREFIX}{}", "ab".repeat(32)));
         assert!(
             !key.contains("did:"),

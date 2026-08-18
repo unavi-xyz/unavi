@@ -144,7 +144,9 @@ async fn send_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
     let task_identity = {
         let connection = Arc::clone(&connection);
         let handle =
-            n0_future::task::spawn(async move { identity::verify_peer_identity(&connection).await });
+            n0_future::task::spawn(
+                async move { identity::verify_peer_identity(&connection).await },
+            );
         AbortOnDropHandle::new(handle)
     };
 

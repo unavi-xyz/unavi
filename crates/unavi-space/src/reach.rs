@@ -63,7 +63,9 @@ fn owner_of(doc: DocId) -> Option<[u8; 32]> {
         .or_else(self_peer_id)
 }
 
-fn trust_of(owner: Option<[u8; 32]>) -> Trust {
+/// The rung to judge a document by, given the peer that owns it.
+#[must_use]
+pub fn trust_of(owner: Option<[u8; 32]>) -> Trust {
     match owner {
         None => Trust::Myself,
         Some(peer) if Some(peer) == self_peer_id() => Trust::Myself,

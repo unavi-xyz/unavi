@@ -33,10 +33,22 @@ pub fn space_quota(space: NamespaceId) -> Arc<Quota> {
 
 #[must_use]
 pub fn peer_quota(peer: NamespaceId) -> Arc<Quota> {
+    peer_quota_with(peer, Limits::peer)
+}
+
+/// A peer's quota under caps the caller chooses, resolved only on first sight.
+///
+/// Memoized like every other scope, so a peer whose rung changes keeps the caps
+/// it was first seen at until [`forget_peer`] drops the entry.
+pub fn peer_quota_with(peer: NamespaceId, limits: impl FnOnce() -> Limits) -> Arc<Quota> {
+    if let Some(quota) = PEER_QUOTAS.read().get(&peer) {
+        return Arc::clone(quota);
+    }
+    let limits = limits();
     let mut map = PEER_QUOTAS.write();
     Arc::clone(
         map.entry(peer)
-            .or_insert_with(|| Quota::new(Limits::peer(), Some(Arc::clone(&GLOBAL_QUOTA)))),
+            .or_insert_with(|| Quota::new(limits, Some(Arc::clone(&GLOBAL_QUOTA)))),
     )
 }
 

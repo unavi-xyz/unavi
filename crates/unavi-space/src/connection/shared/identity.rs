@@ -167,7 +167,10 @@ async fn verified_did(
         bail!("proof was made by {}, not {prover}", binding.prover)
     }
     if binding.verifier != verifier {
-        bail!("proof was addressed to {}, not {verifier}", binding.verifier)
+        bail!(
+            "proof was addressed to {}, not {verifier}",
+            binding.verifier
+        )
     }
     if binding.nonce != nonce {
         bail!("proof answers a different challenge")
@@ -235,7 +238,9 @@ mod tests {
         let proof = signed(&key, key.public().to_did(), prover, verifier, nonce);
 
         assert!(
-            verified_did(&proof, prover, endpoint(), nonce).await.is_err(),
+            verified_did(&proof, prover, endpoint(), nonce)
+                .await
+                .is_err(),
             "a proof addressed to one endpoint must not verify at another"
         );
     }

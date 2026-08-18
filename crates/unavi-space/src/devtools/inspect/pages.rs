@@ -53,6 +53,7 @@ fn header(b: &mut RelatedSpawnerCommands<ChildOf>, model: &PageModel, can_back: 
                     Some(did) => r.spawn(widgets::value_text(did.clone())),
                     None => r.spawn(widgets::dim_text("(no proven did)")),
                 };
+                r.spawn(widgets::value_text(format!("{:?}", m.trust)));
             }
             PageModel::Space(m) => {
                 r.spawn(widgets::value_text("Space".into()));

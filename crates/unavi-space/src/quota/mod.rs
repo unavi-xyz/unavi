@@ -8,6 +8,7 @@ use unavi_quota::{
     Quota,
     registry::{
         peer_quota,
+        peer_quota_with,
         reassign_document,
         space_quota,
     },
@@ -16,6 +17,7 @@ use unavi_quota::{
 use crate::{
     membership::doc_space,
     peer::self_peer_id,
+    reach::trust_of,
     state::replicas::owner,
 };
 
@@ -50,6 +52,13 @@ fn space_document_owner(doc: DocId, space: DocId) -> Arc<Quota> {
     }
     owner(key(space), key(doc)).map_or_else(
         || space_quota(key(space)),
-        |peer| peer_quota(NamespaceId::from(&peer)),
+        |peer| {
+            // A peer's budget is scaled by how far they are trusted, so a
+            // griefer hits a ceiling before anything visible happens and a
+            // friend never notices the system exists.
+            peer_quota_with(NamespaceId::from(&peer), || {
+                unavi_policy::limits::for_trust(trust_of(Some(peer)))
+            })
+        },
     )
 }

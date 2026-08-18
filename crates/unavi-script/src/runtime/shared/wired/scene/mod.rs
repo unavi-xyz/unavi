@@ -25,15 +25,17 @@ use hsd::{
 };
 use iroh_docs::NamespaceId;
 use unavi_policy::space::Space;
-use unavi_space::reach::{
-    check_read,
-    check_write,
-};
 use unavi_quota::{
     Flow,
     Stock,
 };
-use unavi_space::anchor::ActiveSpace;
+use unavi_space::{
+    anchor::ActiveSpace,
+    reach::{
+        check_read,
+        check_write,
+    },
+};
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,

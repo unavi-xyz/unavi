@@ -25,6 +25,7 @@ use iroh_docs::NamespaceId;
 use unavi_policy::{
     identity,
     space::Space,
+    trust::Trust,
 };
 
 use crate::{
@@ -80,6 +81,9 @@ pub struct PeerModel {
     /// The DID this peer proved over its own connection, absent while it has
     /// proved none.
     pub did:       Option<String>,
+    /// The rung the peer sits at, which is what every cross-owner write is
+    /// judged against.
+    pub trust:     Trust,
     /// Pinned docs as (doc, space, pinned-at).
     pub pins:      Vec<(NamespaceId, NamespaceId, u64)>,
     pub claims:    Vec<(NamespaceId, u64)>,
@@ -172,6 +176,7 @@ fn peer_model(id: [u8; 32], snap: &debug::DebugSnapshot) -> PeerModel {
         } else {
             identity::did_of(id).map(|d| d.to_string())
         },
+        trust: crate::reach::trust_of(Some(id)),
         pins: docs
             .iter()
             .filter_map(|d| d.pin.map(|at| (d.doc, d.space, at)))

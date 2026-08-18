@@ -92,11 +92,7 @@ static REACH_REGISTRY: LazyLock<RwLock<HashMap<DocId, Reach>>> =
 /// harder to write than open, so silence and openness are the same statement.
 #[must_use]
 pub fn required(doc: DocId) -> Reach {
-    REACH_REGISTRY
-        .read()
-        .get(&doc)
-        .copied()
-        .unwrap_or_default()
+    REACH_REGISTRY.read().get(&doc).copied().unwrap_or_default()
 }
 
 pub fn set_required(doc: DocId, reach: Reach) {

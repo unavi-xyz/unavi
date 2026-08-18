@@ -5,13 +5,10 @@ use crate::{
     runtime::{
         Runtime,
         native::wired::{
-            error::Error,
+            error::bindings::wired::error::types::Error,
             scene::bindings::wired::{
                 math::types::Transform as WitTransform,
-                scene::types::{
-                    HostDocument,
-                    Xform as WitXform,
-                },
+                scene::types::HostDocument,
             },
         },
         shared::{
@@ -91,17 +88,19 @@ impl HostDocument for Runtime {
         &mut self,
         self_: Resource<DocRes>,
         other: Resource<DocRes>,
-    ) -> wasmtime::Result<Option<WitTransform>> {
-        shared::wired::scene::document::offset_to(&self.api, self_.rep(), other.rep())
-            .await
-            .map(|opt| {
-                opt.map(|x| WitTransform {
-                    translation: bevy::math::Vec3::from_array(x.translation).into(),
-                    rotation:    bevy::math::Quat::from_array(x.rotation).into(),
-                    scale:       bevy::math::Vec3::from_array(x.scale).into(),
+    ) -> wasmtime::Result<Result<Option<WitTransform>, Error>> {
+        Ok(
+            shared::wired::scene::document::offset_to(&self.api, self_.rep(), other.rep())
+                .await
+                .map(|opt| {
+                    opt.map(|x| WitTransform {
+                        translation: bevy::math::Vec3::from_array(x.translation).into(),
+                        rotation:    bevy::math::Quat::from_array(x.rotation).into(),
+                        scale:       bevy::math::Vec3::from_array(x.scale).into(),
+                    })
                 })
-            })
-            .map_err(wasmtime::Error::from_anyhow)
+                .map_err(|err| ScriptError::from(err).into()),
+        )
     }
 
     async fn set_anchor(
@@ -120,7 +119,7 @@ impl HostDocument for Runtime {
     async fn set_offset(
         &mut self,
         self_: Resource<DocRes>,
-        value: WitXform,
+        value: WitTransform,
     ) -> wasmtime::Result<Result<(), Error>> {
         let value = shared::wired::scene::document::XformValue {
             translation: [

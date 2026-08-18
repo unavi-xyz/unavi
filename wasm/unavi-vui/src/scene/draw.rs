@@ -9,12 +9,11 @@ use crate::{
         AlphaMode,
         Material,
         Prim,
-        Xform,
     },
 };
 
-pub const fn placed(translation: Vec3, scale: f32) -> Xform {
-    Xform {
+pub const fn placed(translation: Vec3, scale: f32) -> Transform {
+    Transform {
         translation,
         rotation: Quat::IDENTITY,
         scale: Vec3::splat(scale),
@@ -23,9 +22,9 @@ pub const fn placed(translation: Vec3, scale: f32) -> Xform {
 
 /// Like [`placed`], but shifted so a fitted icon's measured centre sits on the
 /// origin before the turn: what a spinning, shell-fit icon wears.
-pub fn fitted(center: Vec3, scale: f32, rotation: Quat) -> Xform {
+pub fn fitted(center: Vec3, scale: f32, rotation: Quat) -> Transform {
     let shifted = rotation * (center * scale);
-    Xform {
+    Transform {
         translation: -shifted,
         rotation,
         scale: Vec3::splat(scale),
@@ -34,7 +33,7 @@ pub fn fitted(center: Vec3, scale: f32, rotation: Quat) -> Xform {
 
 /// Scale zero rather than a visibility flag: nothing in `wired:scene` hides a
 /// prim, and a body drawn at no size costs no draw call.
-pub const fn hidden() -> Xform {
+pub const fn hidden() -> Transform {
     placed(Vec3::ZERO, 0.0)
 }
 

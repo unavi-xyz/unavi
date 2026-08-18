@@ -34,7 +34,6 @@ use crate::wired::scene::{
         SurfaceOutput,
         UnlitOutput,
         ValueKind,
-        Xform,
     },
 };
 
@@ -577,7 +576,7 @@ fn template(doc: &Document, name: &str, graph: &ShaderGraph) -> anyhow::Result<P
     let prim = doc.create_prim()?;
     // Carries a graph and nothing else: with no mesh there is nothing to draw,
     // and the hidden xform keeps it from being mistaken for content.
-    prim.set_xform(Some(Xform {
+    prim.set_xform(Some(Transform {
         translation: Vec3::ZERO,
         rotation:    Quat::IDENTITY,
         scale:       Vec3::ZERO,

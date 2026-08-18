@@ -4,42 +4,31 @@ use serde::{
 };
 use thiserror::Error;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum KvErrorKind {
-    KeyTooLong,
-    QuotaExceeded,
-    Other,
-}
-
+/// Serialisation on top of the store, plus whatever the host refused, in the
+/// terms `wired:error` uses.
 #[derive(Debug, Error)]
 pub enum TypedKvError {
     #[error("decode failed: {0}")]
     Decode(postcard::Error),
     #[error("encode failed: {0}")]
     Encode(postcard::Error),
-    #[error("quota exceeded")]
-    QuotaExceeded,
-    #[error("key too long")]
-    KeyTooLong,
-    #[error("other")]
-    Other,
-}
-
-impl From<KvErrorKind> for TypedKvError {
-    fn from(e: KvErrorKind) -> Self {
-        match e {
-            KvErrorKind::KeyTooLong => Self::KeyTooLong,
-            KvErrorKind::QuotaExceeded => Self::QuotaExceeded,
-            KvErrorKind::Other => Self::Other,
-        }
-    }
+    #[error("rate limited; retrying later may succeed")]
+    QuotaFlow,
+    #[error("out of room; retrying without freeing will not help")]
+    QuotaStock,
+    #[error("permission denied")]
+    Permission,
+    #[error("out of reach")]
+    Reach,
+    #[error("{0}")]
+    Other(String),
 }
 
 pub trait WiredKv: Sized {
     fn self_kv() -> Self;
     fn get_kv(doc_id: &[u8]) -> Option<Self>;
     fn kv_get(&self, key: &str) -> Option<Vec<u8>>;
-    fn kv_set(&self, key: &str, value: &[u8]) -> Result<(), KvErrorKind>;
+    fn kv_set(&self, key: &str, value: &[u8]) -> Result<(), TypedKvError>;
     fn kv_delete(&self, key: &str);
     fn kv_keys(&self) -> Vec<String>;
 }
@@ -73,7 +62,7 @@ impl<K: WiredKv> TypedKv<K> {
 
     pub fn set<T: Serialize>(&self, key: &str, value: &T) -> Result<(), TypedKvError> {
         let bytes = postcard::to_allocvec(value).map_err(TypedKvError::Encode)?;
-        self.inner.kv_set(key, &bytes).map_err(TypedKvError::from)
+        self.inner.kv_set(key, &bytes)
     }
 
     pub fn delete(&self, key: &str) {

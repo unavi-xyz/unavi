@@ -7,7 +7,7 @@ use crate::{
     error::ScriptError,
     runtime::{
         Runtime,
-        native::wired::error::Error,
+        native::wired::error::bindings::wired::error::types::Error,
         shared::{
             self,
             registry::{
@@ -42,7 +42,7 @@ pub mod bindings {
             "wired:event/types.event": EventRes,
             "wired:event/types.event-receptor": EventReceptorRes,
             "wired:scene/types.prim": PrimRes,
-            "wired:error/types": crate::runtime::native::wired::error::types,
+            "wired:error/types": crate::runtime::native::wired::error::bindings::wired::error::types,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },

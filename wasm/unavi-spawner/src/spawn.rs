@@ -13,7 +13,6 @@ use crate::{
             types::{
                 RigidBody,
                 RigidBodyKind,
-                Xform,
             },
         },
     },
@@ -51,7 +50,7 @@ pub fn spawn(color: Color, cam: &Transform) -> anyhow::Result<()> {
     }))?;
     cube.set_material(Some(palette::cube(color)))?;
 
-    cube.set_xform(Some(Xform {
+    cube.set_xform(Some(Transform {
         translation: landing(cam),
         rotation:    cam.rotation,
         scale:       Vec3::ONE,

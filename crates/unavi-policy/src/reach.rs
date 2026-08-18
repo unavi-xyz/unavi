@@ -36,10 +36,14 @@ impl Default for Reach {
 }
 
 impl Reach {
-    /// Refuses every peer, including the local user, so nothing script-side
-    /// can write the document.
+    /// Admits only the local user's own documents.
+    ///
+    /// Same-owner writes answer before the rung is consulted, so this is not a
+    /// seal against yourself: it refuses every *other* peer, which is what the
+    /// shell needs so a stranger cannot write its scene or speak on its
+    /// channels.
     #[must_use]
-    pub const fn sealed() -> Self {
+    pub const fn own_only() -> Self {
         Self {
             writes_from: Trust::Myself,
         }
@@ -123,11 +127,11 @@ mod tests {
     }
 
     #[test]
-    fn a_sealed_document_refuses_everyone_below_the_local_user() {
-        let sealed = Reach::sealed();
-        assert!(!sealed.admits(Trust::Guest));
-        assert!(!sealed.admits(Trust::Trusted));
-        assert!(sealed.admits(Trust::Myself));
+    fn an_own_only_document_refuses_everyone_below_the_local_user() {
+        let own_only = Reach::own_only();
+        assert!(!own_only.admits(Trust::Guest));
+        assert!(!own_only.admits(Trust::Trusted));
+        assert!(own_only.admits(Trust::Myself));
     }
 
     #[test]
@@ -138,8 +142,8 @@ mod tests {
     #[test]
     fn one_peers_own_documents_reach_each_other_regardless() {
         for (target, co_present) in [
-            (Reach::sealed(), false),
-            (Reach::sealed(), true),
+            (Reach::own_only(), false),
+            (Reach::own_only(), true),
             (Reach::default(), false),
         ] {
             assert!(

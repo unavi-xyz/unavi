@@ -4,33 +4,6 @@ use unavi_input::pointer::{
     PointerKind,
 };
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum PointerId {
-    Screen,
-    LeftHand,
-    RightHand,
-}
-
-impl From<PointerKind> for PointerId {
-    fn from(kind: PointerKind) -> Self {
-        match kind {
-            PointerKind::Screen => Self::Screen,
-            PointerKind::LeftHand => Self::LeftHand,
-            PointerKind::RightHand => Self::RightHand,
-        }
-    }
-}
-
-impl From<PointerId> for PointerKind {
-    fn from(id: PointerId) -> Self {
-        match id {
-            PointerId::Screen => Self::Screen,
-            PointerId::LeftHand => Self::LeftHand,
-            PointerId::RightHand => Self::RightHand,
-        }
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Ray {
     pub origin: Vec3,
@@ -65,7 +38,7 @@ impl From<PointerHit> for Hit {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Pointer {
-    pub id:     PointerId,
+    pub kind:   PointerKind,
     pub active: bool,
     pub ray:    Ray,
     pub grasp:  f32,
@@ -77,17 +50,17 @@ impl Pointer {
     /// A pointer the rig never spawned: no hands on desktop, no screen
     /// pointer in VR. Still listed, so a script can see it is not there.
     #[must_use]
-    pub fn inactive(kind: PointerKind) -> Self {
+    pub const fn inactive(kind: PointerKind) -> Self {
         Self {
-            id:     kind.into(),
+            kind,
             active: false,
-            ray:    Ray {
+            ray: Ray {
                 origin: Vec3::ZERO,
                 dir:    Vec3::NEG_Z,
             },
-            grasp:  0.0,
-            axis:   Vec2::ZERO,
-            hit:    None,
+            grasp: 0.0,
+            axis: Vec2::ZERO,
+            hit: None,
         }
     }
 }
@@ -105,7 +78,7 @@ pub enum InputAction {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct InputEvent {
-    pub pointer: PointerId,
+    pub pointer: PointerKind,
     pub action:  InputAction,
     pub ray:     Ray,
     pub hit:     Option<Hit>,

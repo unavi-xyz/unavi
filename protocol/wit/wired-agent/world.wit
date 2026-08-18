@@ -76,8 +76,8 @@ interface types {
   }
 
   resource agent {
-    // Virtual prim tracking the named bone; none if the bone is absent from
-    // the VRM model.
+    /// Virtual prim tracking the named bone; none if the bone is absent from
+    /// the VRM model.
     bone: func(name: bone-name) -> option<prim>;
   }
 }

@@ -40,7 +40,7 @@ impl ScriptBehavior for Script {
 
         for (i, prim) in prims.into_iter().enumerate() {
             prim.set_material(Some(material))?;
-            prim.set_xform(Some(wired::scene::types::Xform {
+            prim.set_xform(Some(Transform {
                 translation: Vec3::new((i as f32).mul_add(spacing, start), 0.0, 0.0),
                 rotation:    Quat {
                     x: 0.0,

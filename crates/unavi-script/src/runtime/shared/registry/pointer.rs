@@ -38,12 +38,12 @@ pub fn snapshot_pointers(
     for (anchor, transform, interaction) in pointers {
         let kind = anchor.0;
         snapshot[kind.index()] = Some(Pointer {
-            id:     kind.into(),
+            kind,
             active: true,
-            ray:    ray_of(transform).into(),
-            grasp:  state.value(Action::Grab(kind)),
-            axis:   axis_of(kind, &state),
-            hit:    nearest_hit(interaction).map(Into::into),
+            ray: ray_of(transform).into(),
+            grasp: state.value(Action::Grab(kind)),
+            axis: axis_of(kind, &state),
+            hit: nearest_hit(interaction).map(Into::into),
         });
     }
 

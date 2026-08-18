@@ -27,7 +27,7 @@ pub mod bindings {
         with: {
             "wired:agent/types.agent": AgentRes,
             "wired:scene/types.prim": PrimRes,
-            "wired:error/types": crate::runtime::native::wired::error::types,
+            "wired:error/types": crate::runtime::native::wired::error::bindings::wired::error::types,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
@@ -39,7 +39,7 @@ use bindings::wired::agent::types::{
     HostAgent,
 };
 
-use crate::runtime::native::wired::error::Error;
+use crate::runtime::native::wired::error::bindings::wired::error::types::Error;
 
 impl From<WitBoneName> for BoneName {
     fn from(b: WitBoneName) -> Self {

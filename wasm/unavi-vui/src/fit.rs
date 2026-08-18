@@ -2,18 +2,10 @@
 
 use wired_prelude::prelude::*;
 
-use crate::wired::scene::types::Xform;
-
-/// Moves a point under an xform.
-#[must_use]
-pub fn apply(xform: &Xform, point: Vec3) -> Vec3 {
-    xform.translation + xform.rotation * (xform.scale * point)
-}
-
 /// Two xforms in a chain: `local` posed beneath `parent`.
 #[must_use]
-pub fn chain(parent: &Xform, local: &Xform) -> Xform {
-    Xform {
+pub fn chain(parent: &Transform, local: &Transform) -> Transform {
+    Transform {
         translation: parent.translation + parent.rotation * (parent.scale * local.translation),
         rotation:    parent.rotation * local.rotation,
         scale:       parent.scale * local.scale,
@@ -77,18 +69,21 @@ mod tests {
 
     #[test]
     fn chain_applies_a_child_beneath_its_parent() {
-        let parent = Xform {
+        let parent = Transform {
             translation: Vec3::new(0.0, 1.0, 0.0),
             rotation:    Quat::IDENTITY,
             scale:       Vec3::splat(2.0),
         };
-        let local = Xform {
+        let local = Transform {
             translation: Vec3::new(1.0, 0.0, 0.0),
             rotation:    Quat::IDENTITY,
             scale:       Vec3::splat(1.0),
         };
         let chained = chain(&parent, &local);
         assert_eq!(chained.translation, Vec3::new(2.0, 1.0, 0.0));
-        assert_eq!(apply(&chained, Vec3::ZERO), Vec3::new(2.0, 1.0, 0.0));
+        assert_eq!(
+            chained.transform_point(Vec3::ZERO),
+            Vec3::new(2.0, 1.0, 0.0)
+        );
     }
 }

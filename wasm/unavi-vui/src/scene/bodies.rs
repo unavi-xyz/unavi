@@ -57,7 +57,6 @@ use crate::{
             Text,
             TextAlign,
             TextAnchor,
-            Xform,
         },
     },
 };
@@ -207,7 +206,7 @@ impl Bodies {
         root.set_xform(Some(draw::placed(Vec3::ZERO, 1.0)))?;
 
         let field = doc.create_prim()?;
-        field.set_xform(Some(Xform {
+        field.set_xform(Some(Transform {
             translation: Vec3::new(0.0, 0.0, FIELD_THICKNESS.mul_add(-0.5, tuning.field_lift)),
             rotation:    hit.rotation(),
             scale:       Vec3::ONE,
@@ -295,7 +294,7 @@ impl Bodies {
     }
 
     pub fn place(&self, transform: &Transform) -> anyhow::Result<()> {
-        self.root.set_xform(Some(Xform {
+        self.root.set_xform(Some(Transform {
             translation: transform.translation,
             rotation:    transform.rotation,
             scale:       transform.scale,
@@ -708,7 +707,7 @@ fn apply_run(
 /// xform is skipped, because the surface replaces it when it places the icon;
 /// every piece beneath it is walked and posed in turn.
 fn icon_box(root: &Prim) -> anyhow::Result<(Vec3, Vec3)> {
-    let identity = Xform {
+    let identity = Transform {
         translation: Vec3::ZERO,
         rotation:    Quat::IDENTITY,
         scale:       Vec3::ONE,
@@ -722,16 +721,16 @@ fn icon_box(root: &Prim) -> anyhow::Result<(Vec3, Vec3)> {
     Ok((min, max))
 }
 
-fn gather(prim: &Prim, parent: &Xform, min: &mut Vec3, max: &mut Vec3) -> anyhow::Result<()> {
+fn gather(prim: &Prim, parent: &Transform, min: &mut Vec3, max: &mut Vec3) -> anyhow::Result<()> {
     if let Some(positions) = prim.mesh_stream("POSITION") {
         for vertex in positions.chunks_exact(3) {
-            let point = fit::apply(parent, Vec3::new(vertex[0], vertex[1], vertex[2]));
+            let point = parent.transform_point(Vec3::new(vertex[0], vertex[1], vertex[2]));
             *min = min.min(point);
             *max = max.max(point);
         }
     }
     for child in prim.children() {
-        let local = child.xform().unwrap_or(Xform {
+        let local = child.xform().unwrap_or(Transform {
             translation: Vec3::ZERO,
             rotation:    Quat::IDENTITY,
             scale:       Vec3::ONE,

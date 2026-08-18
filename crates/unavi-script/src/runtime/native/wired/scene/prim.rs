@@ -1,4 +1,11 @@
-use hsd::attributes::xform::XformAttr;
+use hsd::attributes::{
+    image::{
+        AddressMode,
+        FilterMode,
+        ImageAttr,
+    },
+    xform::XformAttr,
+};
 use wasmtime::component::Resource;
 
 use crate::{
@@ -6,7 +13,7 @@ use crate::{
     runtime::{
         Runtime,
         native::wired::{
-            error::Error,
+            error::bindings::wired::error::types::Error,
             scene::{
                 bindings::wired::{
                     math::types::{
@@ -15,11 +22,13 @@ use crate::{
                         Vec3,
                     },
                     scene::types::{
+                        AddressMode as WitAddressMode,
                         AlphaMode,
                         Collider,
                         ColliderCapsule,
                         ColliderCylinder,
                         Color,
+                        FilterMode as WitFilterMode,
                         GraphValue,
                         HostPrim,
                         Image,
@@ -37,7 +46,6 @@ use crate::{
                         TextAnchor,
                         TextBillboard,
                         Topology,
-                        Xform,
                     },
                 },
                 shader_graph,
@@ -50,7 +58,6 @@ use crate::{
                 PrimCollider,
                 PrimColor,
                 PrimGraphValue,
-                PrimImage,
                 PrimMaterial,
                 PrimMesh,
                 PrimPortal,
@@ -217,12 +224,12 @@ const fn color_shared(c: Color) -> PrimColor {
     }
 }
 
-const fn xform_wit(x: XformAttr) -> Xform {
+const fn xform_wit(x: XformAttr) -> Transform {
     use crate::runtime::native::wired::scene::bindings::wired::math::types::{
         Quat,
         Vec3,
     };
-    Xform {
+    Transform {
         translation: Vec3 {
             x: x.translation[0],
             y: x.translation[1],
@@ -242,7 +249,7 @@ const fn xform_wit(x: XformAttr) -> Xform {
     }
 }
 
-const fn xform_shared(x: Xform) -> XformAttr {
+const fn xform_shared(x: Transform) -> XformAttr {
     XformAttr {
         translation: [x.translation.x, x.translation.y, x.translation.z],
         rotation:    [x.rotation.x, x.rotation.y, x.rotation.z, x.rotation.w],
@@ -304,26 +311,56 @@ fn material_shared(m: Material) -> PrimMaterial {
     }
 }
 
-const fn image_wit(img: PrimImage) -> Image {
+const fn address_mode_wit(mode: AddressMode) -> WitAddressMode {
+    match mode {
+        AddressMode::Repeat => WitAddressMode::Repeat,
+        AddressMode::MirrorRepeat => WitAddressMode::MirrorRepeat,
+        AddressMode::ClampToEdge => WitAddressMode::ClampToEdge,
+    }
+}
+
+const fn address_mode_shared(mode: WitAddressMode) -> AddressMode {
+    match mode {
+        WitAddressMode::Repeat => AddressMode::Repeat,
+        WitAddressMode::MirrorRepeat => AddressMode::MirrorRepeat,
+        WitAddressMode::ClampToEdge => AddressMode::ClampToEdge,
+    }
+}
+
+const fn filter_mode_wit(mode: FilterMode) -> WitFilterMode {
+    match mode {
+        FilterMode::Linear => WitFilterMode::Linear,
+        FilterMode::Nearest => WitFilterMode::Nearest,
+    }
+}
+
+const fn filter_mode_shared(mode: WitFilterMode) -> FilterMode {
+    match mode {
+        WitFilterMode::Linear => FilterMode::Linear,
+        WitFilterMode::Nearest => FilterMode::Nearest,
+    }
+}
+
+fn image_wit(img: ImageAttr) -> Image {
     Image {
-        address_mode_u: img.address_mode_u,
-        address_mode_v: img.address_mode_v,
-        address_mode_w: img.address_mode_w,
-        mag_filter:     img.mag_filter,
-        min_filter:     img.min_filter,
-        mipmap_filter:  img.mipmap_filter,
+        address_mode_u: img.address_mode_u.map(address_mode_wit),
+        address_mode_v: img.address_mode_v.map(address_mode_wit),
+        address_mode_w: img.address_mode_w.map(address_mode_wit),
+        mag_filter:     img.mag_filter.map(filter_mode_wit),
+        min_filter:     img.min_filter.map(filter_mode_wit),
+        mipmap_filter:  img.mipmap_filter.map(filter_mode_wit),
         srgb:           img.srgb,
     }
 }
 
-const fn image_shared(img: Image) -> PrimImage {
-    PrimImage {
-        address_mode_u: img.address_mode_u,
-        address_mode_v: img.address_mode_v,
-        address_mode_w: img.address_mode_w,
-        mag_filter:     img.mag_filter,
-        min_filter:     img.min_filter,
-        mipmap_filter:  img.mipmap_filter,
+fn image_shared(img: Image) -> ImageAttr {
+    ImageAttr {
+        address_mode_u: img.address_mode_u.map(address_mode_shared),
+        address_mode_v: img.address_mode_v.map(address_mode_shared),
+        address_mode_w: img.address_mode_w.map(address_mode_shared),
+        mag_filter:     img.mag_filter.map(filter_mode_shared),
+        min_filter:     img.min_filter.map(filter_mode_shared),
+        mipmap_filter:  img.mipmap_filter.map(filter_mode_shared),
         srgb:           img.srgb,
     }
 }
@@ -507,7 +544,7 @@ impl HostPrim for Runtime {
         ))
     }
 
-    async fn xform(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Xform>> {
+    async fn xform(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Option<Transform>> {
         Ok(shared::wired::scene::prim::xform(&self.api, self_.rep())
             .await
             .map_err(wasmtime::Error::from_anyhow)?
@@ -517,7 +554,7 @@ impl HostPrim for Runtime {
     async fn set_xform(
         &mut self,
         self_: Resource<PrimRes>,
-        value: Option<Xform>,
+        value: Option<Transform>,
     ) -> wasmtime::Result<Result<(), Error>> {
         Ok(lower(
             shared::wired::scene::prim::set_xform(&self.api, self_.rep(), value.map(xform_shared))
@@ -526,19 +563,10 @@ impl HostPrim for Runtime {
     }
 
     async fn global_xform(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<Transform> {
-        let x = shared::wired::scene::prim::global_xform(&self.api, self_.rep())
+        shared::wired::scene::prim::global_xform(&self.api, self_.rep())
             .await
-            .map_err(wasmtime::Error::from_anyhow)?;
-        let Xform {
-            translation,
-            rotation,
-            scale,
-        } = xform_wit(x);
-        Ok(Transform {
-            translation,
-            rotation,
-            scale,
-        })
+            .map(xform_wit)
+            .map_err(wasmtime::Error::from_anyhow)
     }
 
     async fn gravity_scale(&mut self, self_: Resource<PrimRes>) -> wasmtime::Result<f32> {

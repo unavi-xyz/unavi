@@ -19,7 +19,6 @@ use crate::{
         types::{
             Material,
             Prim,
-            Xform,
         },
     },
 };
@@ -93,7 +92,7 @@ impl Artifact {
             (self.out - step).max(0.0)
         };
 
-        self.root.set_xform(Some(Xform {
+        self.root.set_xform(Some(Transform {
             translation: eye.translation + eye.rotation * OFFSET,
             rotation:    eye.rotation,
             scale:       Vec3::splat(self.out),
@@ -106,7 +105,7 @@ impl Artifact {
             self.out.mul_add(SPIN_ACTIVE - SPIN_IDLE, SPIN_IDLE),
             self.spin,
         );
-        self.core.set_xform(Some(Xform {
+        self.core.set_xform(Some(Transform {
             translation: Vec3::ZERO,
             rotation:    spun(self.spin),
             scale:       Vec3::ONE,
@@ -114,7 +113,7 @@ impl Artifact {
 
         for (index, orbiter) in self.orbiters.iter().enumerate() {
             let phase = self.spin + index as f32 * std::f32::consts::TAU / ORBITERS as f32;
-            orbiter.set_xform(Some(Xform {
+            orbiter.set_xform(Some(Transform {
                 translation: Vec3::new(
                     ORBIT_RADIUS * phase.cos(),
                     ORBIT_RADIUS * TILT * (phase * 2.0).sin(),
@@ -128,8 +127,8 @@ impl Artifact {
     }
 }
 
-const fn hidden() -> Xform {
-    Xform {
+const fn hidden() -> Transform {
+    Transform {
         translation: Vec3::ZERO,
         rotation:    Quat::IDENTITY,
         scale:       Vec3::ZERO,

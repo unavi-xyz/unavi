@@ -1,15 +1,21 @@
 use std::sync::Arc;
 
 use unavi_policy::document::ApiName;
-use unavi_space::state::replicas::KvError;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
-use crate::runtime::{
-    Runtime,
-    shared::{
-        self,
-        Api,
+use crate::{
+    error::ScriptError,
+    runtime::{
+        Runtime,
+        shared::{
+            self,
+            Api,
+        },
+        web::wired::{
+            error_obj,
+            variant_obj,
+        },
     },
 };
 
@@ -37,21 +43,6 @@ impl Drop for KvHandle {
     }
 }
 
-fn variant_obj(tag: &str, val: JsValue) -> JsValue {
-    let obj = js_sys::Object::new();
-    js_sys::Reflect::set(&obj, &"tag".into(), &tag.into()).ok();
-    js_sys::Reflect::set(&obj, &"val".into(), &val).ok();
-    obj.into()
-}
-
-const fn kv_error_tag(e: KvError) -> &'static str {
-    match e {
-        KvError::QuotaExceeded => "quota-exceeded",
-        KvError::KeyTooLong => "key-too-long",
-        KvError::NotOwner | KvError::Other => "other",
-    }
-}
-
 #[wasm_bindgen]
 impl KvHandle {
     pub async fn get(&self, key: String) -> JsValue {
@@ -64,16 +55,16 @@ impl KvHandle {
     pub async fn set(&self, key: String, value: Vec<u8>) -> JsValue {
         match shared::wired::kv::kv_set(&self.api, self.rep, key, value).await {
             Ok(Ok(())) => variant_obj("ok", JsValue::UNDEFINED),
-            Ok(Err(e)) => variant_obj("err", variant_obj(kv_error_tag(e), JsValue::UNDEFINED)),
-            Err(_) => variant_obj("err", variant_obj("other", JsValue::UNDEFINED)),
+            Ok(Err(err)) => variant_obj("err", error_obj(&err)),
+            Err(err) => variant_obj("err", error_obj(&ScriptError::from(err))),
         }
     }
 
     pub async fn delete(&self, key: String) -> JsValue {
         match shared::wired::kv::kv_delete(&self.api, self.rep, key).await {
             Ok(Ok(())) => variant_obj("ok", JsValue::UNDEFINED),
-            Ok(Err(e)) => variant_obj("err", variant_obj(kv_error_tag(e), JsValue::UNDEFINED)),
-            Err(_) => variant_obj("err", variant_obj("other", JsValue::UNDEFINED)),
+            Ok(Err(err)) => variant_obj("err", error_obj(&err)),
+            Err(err) => variant_obj("err", error_obj(&ScriptError::from(err))),
         }
     }
 

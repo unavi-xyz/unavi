@@ -21,7 +21,6 @@ use crate::{
         Text,
         TextAlign,
         TextAnchor,
-        Xform,
     },
 };
 
@@ -74,13 +73,13 @@ impl Placard {
     }
 
     pub fn apply(&self, view: &PlacardView, palette: &Palette) -> anyhow::Result<()> {
-        self.root.set_xform(Some(Xform {
+        self.root.set_xform(Some(Transform {
             translation: view.position,
             rotation:    Quat::IDENTITY,
             scale:       Vec3::ONE,
         }))?;
 
-        self.panel.set_xform(Some(Xform {
+        self.panel.set_xform(Some(Transform {
             translation: Vec3::ZERO,
             rotation:    Quat::IDENTITY,
             scale:       Vec3::new(view.size.x, view.size.y, 1.0),
@@ -99,7 +98,7 @@ impl Placard {
         }))?;
 
         for (prim, line) in self.lines.iter().zip(&view.lines) {
-            prim.set_xform(Some(Xform {
+            prim.set_xform(Some(Transform {
                 translation: Vec3::new(line.offset.x, line.offset.y, TEXT_LIFT),
                 rotation:    Quat::IDENTITY,
                 scale:       Vec3::ONE,

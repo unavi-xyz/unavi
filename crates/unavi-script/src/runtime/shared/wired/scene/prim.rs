@@ -149,16 +149,6 @@ pub struct PrimMaterial {
     pub roughness:    Option<f32>,
 }
 
-pub struct PrimImage {
-    pub address_mode_u: Option<i32>,
-    pub address_mode_v: Option<i32>,
-    pub address_mode_w: Option<i32>,
-    pub mag_filter:     Option<i32>,
-    pub min_filter:     Option<i32>,
-    pub mipmap_filter:  Option<i32>,
-    pub srgb:           Option<bool>,
-}
-
 pub enum PrimCollider {
     Capsule { height: f32, radius: f32 },
     ConvexHull,
@@ -948,34 +938,18 @@ fn prim_color_to_vec(c: PrimColor) -> ColorVec {
     ])
 }
 
-pub async fn image(api: &Api, rep: u32) -> anyhow::Result<Option<PrimImage>> {
+pub async fn image(api: &Api, rep: u32) -> anyhow::Result<Option<ImageAttr>> {
     let prim = get_prim(api, rep).await?;
     if prim.is_proxy {
         return Ok(None);
     }
-    Ok(prim.read_attr::<ImageAttr>()?.map(|attr| PrimImage {
-        address_mode_u: attr.address_mode_u.map(|v| v as i32),
-        address_mode_v: attr.address_mode_v.map(|v| v as i32),
-        address_mode_w: attr.address_mode_w.map(|v| v as i32),
-        mag_filter:     attr.mag_filter.map(|v| v as i32),
-        min_filter:     attr.min_filter.map(|v| v as i32),
-        mipmap_filter:  attr.mipmap_filter.map(|v| v as i32),
-        srgb:           attr.srgb,
-    }))
+    prim.read_attr::<ImageAttr>()
 }
 
-pub async fn set_image(api: &Api, rep: u32, value: Option<PrimImage>) -> anyhow::Result<()> {
+pub async fn set_image(api: &Api, rep: u32, value: Option<ImageAttr>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
     ensure_writable(api, &prim)?;
-    prim.write_or_clear(value.map(|img| ImageAttr {
-        address_mode_u: img.address_mode_u.map(i64::from),
-        address_mode_v: img.address_mode_v.map(i64::from),
-        address_mode_w: img.address_mode_w.map(i64::from),
-        mag_filter:     img.mag_filter.map(i64::from),
-        min_filter:     img.min_filter.map(i64::from),
-        mipmap_filter:  img.mipmap_filter.map(i64::from),
-        srgb:           img.srgb,
-    }))
+    prim.write_or_clear(value)
 }
 
 pub async fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<PrimCollider>> {

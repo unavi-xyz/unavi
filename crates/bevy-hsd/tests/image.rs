@@ -7,7 +7,11 @@ use bevy::{
 };
 use bevy_hsd::attributes::image::HsdImage;
 use hsd::attributes::{
-    image::ImageAttr,
+    image::{
+        AddressMode,
+        FilterMode,
+        ImageAttr,
+    },
     slots,
 };
 use image::{
@@ -62,8 +66,8 @@ fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
     ctx.set_attr(
         root,
         &ImageAttr {
-            address_mode_u: Some(1),
-            mag_filter: Some(1),
+            address_mode_u: Some(AddressMode::MirrorRepeat),
+            mag_filter: Some(FilterMode::Nearest),
             srgb: Some(true),
             ..Default::default()
         },

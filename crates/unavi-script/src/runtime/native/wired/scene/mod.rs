@@ -5,7 +5,7 @@ use crate::{
     error::ScriptError,
     runtime::{
         Runtime,
-        native::wired::error::Error,
+        native::wired::error::bindings::wired::error::types::Error,
         shared::{
             self,
             wired::scene::{
@@ -32,7 +32,7 @@ pub mod bindings {
         with: {
             "wired:scene/types.document": DocRes,
             "wired:scene/types.prim":     PrimRes,
-            "wired:error/types": crate::runtime::native::wired::error::types,
+            "wired:error/types": crate::runtime::native::wired::error::bindings::wired::error::types,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },

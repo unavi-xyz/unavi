@@ -1,5 +1,6 @@
 use unavi_policy::error::PolicyError;
 use unavi_quota::QuotaError;
+use unavi_space::state::replicas::KvError;
 
 /// Host-side canonical error, mirroring `wired:error/types.error`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -47,6 +48,16 @@ impl From<QuotaError> for ScriptError {
         match err {
             QuotaError::Stock(s) => Self::QuotaStock(format!("{s:?}")),
             QuotaError::Flow(f) => Self::QuotaFlow(format!("{f:?}")),
+        }
+    }
+}
+
+impl From<KvError> for ScriptError {
+    fn from(err: KvError) -> Self {
+        match err {
+            KvError::QuotaExceeded => Self::QuotaStock(err.to_string()),
+            KvError::NotOwner => Self::Reach(err.to_string()),
+            KvError::KeyTooLong | KvError::Other => Self::Other(err.to_string()),
         }
     }
 }

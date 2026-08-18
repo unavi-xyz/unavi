@@ -1,12 +1,11 @@
 use unavi_policy::document::ApiName;
-use unavi_space::state::replicas::KvError;
 use wasmtime::component::Resource;
 
 use crate::{
     error::ScriptError,
     runtime::{
         Runtime,
-        native::wired::error::Error,
+        native::wired::error::bindings::wired::error::types::Error,
         shared::{
             self,
             wired::kv::KvRes,
@@ -21,7 +20,7 @@ pub mod bindings {
         path: "../../protocol/wit/wired-kv",
         with: {
             "wired:kv/types.kv": KvRes,
-            "wired:error/types": crate::runtime::native::wired::error::types,
+            "wired:error/types": crate::runtime::native::wired::error::bindings::wired::error::types,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
@@ -31,18 +30,7 @@ pub mod bindings {
 use bindings::wired::kv::types::{
     HostKv,
     Kv,
-    KvError as WitKvError,
 };
-
-impl From<KvError> for WitKvError {
-    fn from(e: KvError) -> Self {
-        match e {
-            KvError::KeyTooLong => Self::KeyTooLong,
-            KvError::QuotaExceeded => Self::QuotaExceeded,
-            KvError::NotOwner | KvError::Other => Self::Other,
-        }
-    }
-}
 
 impl bindings::wired::kv::types::Host for Runtime {}
 
@@ -62,10 +50,10 @@ impl HostKv for Runtime {
         self_: Resource<KvRes>,
         key: String,
         value: Vec<u8>,
-    ) -> wasmtime::Result<Result<(), WitKvError>> {
+    ) -> wasmtime::Result<Result<(), Error>> {
         shared::wired::kv::kv_set(&self.api, self_.rep(), key, value)
             .await
-            .map(|r| r.map_err(WitKvError::from))
+            .map(|r| r.map_err(Into::into))
             .map_err(wasmtime::Error::from_anyhow)
     }
 
@@ -73,10 +61,10 @@ impl HostKv for Runtime {
         &mut self,
         self_: Resource<KvRes>,
         key: String,
-    ) -> wasmtime::Result<Result<(), WitKvError>> {
+    ) -> wasmtime::Result<Result<(), Error>> {
         shared::wired::kv::kv_delete(&self.api, self_.rep(), key)
             .await
-            .map(|r| r.map_err(WitKvError::from))
+            .map(|r| r.map_err(Into::into))
             .map_err(wasmtime::Error::from_anyhow)
     }
 

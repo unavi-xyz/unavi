@@ -62,17 +62,17 @@ pub async fn drop(backend: &Api, listener: u32) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use bevy::prelude::*;
+    use unavi_input::pointer::PointerKind;
 
     use super::*;
     use crate::runtime::shared::wired::input::types::{
         InputAction,
-        PointerId,
         Ray,
     };
 
     fn event(action: InputAction) -> InputEvent {
         InputEvent {
-            pointer: PointerId::Screen,
+            pointer: PointerKind::Screen,
             action,
             ray: Ray {
                 origin: Vec3::ZERO,

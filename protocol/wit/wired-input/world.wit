@@ -1,6 +1,6 @@
 package wired:input;
 
-world prelude {
+world all {
   import api;
   import context;
   import types;
@@ -11,32 +11,32 @@ interface api {
   use wired:scene/types.{prim};
   use wired:error/types.{error};
 
-  // Captures input aimed at a prim or anything under it.
-  // Requires a collider to function.
+  /// Captures input aimed at a prim or anything under it.
+  /// Requires a collider to function.
   register-input-listener: func(target: borrow<prim>) -> result<input-listener, error>;
 }
 
 interface context {
-  use types.{input-listener, pointer, pointer-claim, pointer-id};
+  use types.{input-listener, pointer, pointer-claim, pointer-kind};
   use wired:error/types.{error};
 
-  // Captures all input events from the local agent.
+  /// Captures all input events from the local agent.
   register-global-input-listener: func() -> result<input-listener, error>;
 
-  // Where the local agent is pointing, this frame.
+  /// Where the local agent is pointing, this frame.
   pointers: func() -> result<list<pointer>, error>;
 
-  // Takes a pointer for this script's exclusive use. While the claim is
-  // alive the host performs none of its own interactions with that pointer:
-  // no grab, no reticle. Dropping the claim gives it back.
-  claim-pointer: func(id: pointer-id) -> result<pointer-claim, error>;
+  /// Takes a pointer for this script's exclusive use. While the claim is
+  /// alive the host performs none of its own interactions with that pointer:
+  /// no grab, no reticle. Dropping the claim gives it back.
+  claim-pointer: func(kind: pointer-kind) -> result<pointer-claim, error>;
 }
 
 interface types {
   use wired:math/types.{vec2, vec3};
 
-  enum pointer-id {
-    // The desktop pointer, aimed by the head.
+  enum pointer-kind {
+    /// The desktop pointer, aimed by the head.
     screen,
     left-hand,
     right-hand,
@@ -47,7 +47,7 @@ interface types {
     dir:    vec3,
   }
 
-  // Where a pointer's ray met the world.
+  /// Where a pointer's ray met the world.
   record hit {
     position: vec3,
     normal:   vec3,
@@ -55,13 +55,13 @@ interface types {
   }
 
   record pointer {
-    id: pointer-id,
-    // Whether the pointer is tracked and usable this frame.
+    kind: pointer-kind,
+    /// Whether the pointer is tracked and usable this frame.
     active: bool,
     ray:    ray,
-    // How hard the grab is held, 0 to 1. Analogue where the binding is.
+    /// How hard the grab is held, 0 to 1. Analogue where the binding is.
     grasp: f32,
-    // Thumbstick travel; zero for a pointer with no stick.
+    /// Thumbstick travel; zero for a pointer with no stick.
     axis: vec2,
     hit:  option<hit>,
   }
@@ -69,18 +69,20 @@ interface types {
   variant input-action {
     press,
     release,
-    // Notches turned, so ten is not one.
+    /// Notches turned, so ten is not one.
     scroll(vec2),
-    // Per-prim only: a global listener has no bounds to cross.
+    /// Per-prim only: a global listener has no bounds to cross.
     enter,
+    /// Per-prim only: a global listener has no bounds to cross.
     leave,
-    // Global only, and carrying the pointer whose hand pressed it.
+    /// Global only, and carrying the pointer whose hand pressed it.
     menu-press,
+    /// Global only, and carrying the pointer whose hand pressed it.
     menu-release,
   }
 
   record input-event {
-    pointer: pointer-id,
+    pointer: pointer-kind,
     action:  input-action,
     ray:     ray,
     hit:     option<hit>,
@@ -91,6 +93,6 @@ interface types {
   }
 
   resource pointer-claim {
-    id: func() -> pointer-id;
+    kind: func() -> pointer-kind;
   }
 }

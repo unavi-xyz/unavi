@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use unavi_input::pointer::PointerKind;
 
 use crate::runtime::{
     native::wired::input::bindings::wired::{
@@ -7,7 +8,7 @@ use crate::runtime::{
             InputAction,
             InputEvent,
             Pointer,
-            PointerId,
+            PointerKind as WitPointerKind,
             Ray,
         },
         math::types::{
@@ -34,22 +35,22 @@ impl From<Vec3> for WitVec3 {
     }
 }
 
-impl From<shared_types::PointerId> for PointerId {
-    fn from(id: shared_types::PointerId) -> Self {
-        match id {
-            shared_types::PointerId::Screen => Self::Screen,
-            shared_types::PointerId::LeftHand => Self::LeftHand,
-            shared_types::PointerId::RightHand => Self::RightHand,
+impl From<PointerKind> for WitPointerKind {
+    fn from(kind: PointerKind) -> Self {
+        match kind {
+            PointerKind::Screen => Self::Screen,
+            PointerKind::LeftHand => Self::LeftHand,
+            PointerKind::RightHand => Self::RightHand,
         }
     }
 }
 
-impl From<PointerId> for shared_types::PointerId {
-    fn from(id: PointerId) -> Self {
-        match id {
-            PointerId::Screen => Self::Screen,
-            PointerId::LeftHand => Self::LeftHand,
-            PointerId::RightHand => Self::RightHand,
+impl From<WitPointerKind> for PointerKind {
+    fn from(kind: WitPointerKind) -> Self {
+        match kind {
+            WitPointerKind::Screen => Self::Screen,
+            WitPointerKind::LeftHand => Self::LeftHand,
+            WitPointerKind::RightHand => Self::RightHand,
         }
     }
 }
@@ -101,7 +102,7 @@ impl From<shared_types::InputEvent> for InputEvent {
 impl From<shared_types::Pointer> for Pointer {
     fn from(pointer: shared_types::Pointer) -> Self {
         Self {
-            id:     pointer.id.into(),
+            kind:   pointer.kind.into(),
             active: pointer.active,
             ray:    pointer.ray.into(),
             grasp:  pointer.grasp,

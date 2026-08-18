@@ -1,4 +1,5 @@
 wired-agent   = "../wired-agent"
+wired-error   = "../wired-error"
 wired-event   = "../wired-event"
 wired-input   = "../wired-input"
 wired-kv      = "../wired-kv"

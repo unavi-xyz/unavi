@@ -13,7 +13,13 @@ use serde::{
 };
 use serde_with::skip_serializing_none;
 
-use crate::attributes::material_graph::value::GraphValue;
+use crate::attributes::{
+    image::{
+        AddressMode,
+        FilterMode,
+    },
+    material_graph::value::GraphValue,
+};
 
 pub const EXTENSION: &str = "hsda";
 
@@ -83,12 +89,12 @@ pub enum SourceCollider {
 #[serde(default)]
 pub struct SourceImage {
     pub data:           String,
-    pub address_mode_u: Option<i64>,
-    pub address_mode_v: Option<i64>,
-    pub address_mode_w: Option<i64>,
-    pub mag_filter:     Option<i64>,
-    pub min_filter:     Option<i64>,
-    pub mipmap_filter:  Option<i64>,
+    pub address_mode_u: Option<AddressMode>,
+    pub address_mode_v: Option<AddressMode>,
+    pub address_mode_w: Option<AddressMode>,
+    pub mag_filter:     Option<FilterMode>,
+    pub min_filter:     Option<FilterMode>,
+    pub mipmap_filter:  Option<FilterMode>,
     pub srgb:           Option<bool>,
 }
 

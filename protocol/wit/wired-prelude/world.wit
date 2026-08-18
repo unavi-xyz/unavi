@@ -11,6 +11,7 @@ world types {
   import wired:wds/types;
 }
 
+/// What any document in a space may reach.
 world api {
   import wired:event/api;
   import wired:input/api;
@@ -20,9 +21,12 @@ world api {
   import wired:scene/api;
 }
 
-world api-secure {
+/// What only the shell and the tools it ships with may reach: the local
+/// agent's body, device-level input, physics authority, and the personal data
+/// store. Strictly more authority than `api`, never less.
+world api-privileged {
   import wired:agent/api;
-  import wired:input/api;
+  import wired:input/context;
   import wired:physics/api;
   import wired:wds/api;
 }
@@ -32,8 +36,8 @@ world lib {
   include types;
 }
 
-world lib-secure {
-  include api-secure;
+world lib-privileged {
+  include api-privileged;
   include lib;
 }
 
@@ -42,7 +46,7 @@ world script {
   include wired:script/guest;
 }
 
-world script-secure {
-  include lib-secure;
+world script-privileged {
+  include lib-privileged;
   include wired:script/guest;
 }

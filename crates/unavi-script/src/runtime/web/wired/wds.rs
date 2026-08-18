@@ -10,6 +10,7 @@ use crate::runtime::{
         self,
         Api,
     },
+    web::wired::variant_obj,
 };
 
 #[wasm_bindgen]
@@ -106,13 +107,6 @@ impl Drop for BlobFutureHandle {
             });
         }
     }
-}
-
-fn variant_obj(tag: &str, val: JsValue) -> JsValue {
-    let obj = js_sys::Object::new();
-    js_sys::Reflect::set(&obj, &"tag".into(), &tag.into()).ok();
-    js_sys::Reflect::set(&obj, &"val".into(), &val).ok();
-    obj.into()
 }
 
 #[wasm_bindgen]

@@ -10,6 +10,6 @@ interface api {
 
   open: func(prim: prim, target-space: document-id) -> result<_, error>;
 
-  // Teleport the local agent into `target-space`, loading it if needed.
+  /// Teleport the local agent into `target-space`, loading it if needed.
   travel: func(target-space: document-id) -> result<_, error>;
 }

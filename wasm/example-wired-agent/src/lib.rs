@@ -12,7 +12,6 @@ use crate::{
         scene::types::{
             Material,
             Prim,
-            Xform,
         },
     },
 };
@@ -59,7 +58,7 @@ impl ScriptBehavior for Script {
         tr.x += offset.x;
         tr.y += offset.y;
         tr.z += offset.z;
-        self.prim.set_xform(Some(Xform {
+        self.prim.set_xform(Some(Transform {
             translation: tr,
             rotation:    global.rotation,
             scale:       global.scale,

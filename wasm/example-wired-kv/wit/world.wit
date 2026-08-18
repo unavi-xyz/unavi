@@ -1,5 +1,5 @@
 package example:wired-kv;
 
 world guest {
-  include wired:prelude/script-secure;
+  include wired:prelude/script-privileged;
 }

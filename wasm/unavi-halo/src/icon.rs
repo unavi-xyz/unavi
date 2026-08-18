@@ -24,7 +24,6 @@ use crate::{
         types::{
             Material,
             Prim,
-            Xform,
         },
     },
 };
@@ -71,7 +70,7 @@ fn form(pieces: &[Piece], color: Color) -> anyhow::Result<Prim> {
             Shape::Cylinder { radius, height } => Cylinder::new(radius, height).mesh(),
         };
         dress(&shape, color)?;
-        shape.set_xform(Some(Xform {
+        shape.set_xform(Some(Transform {
             translation: piece.at,
             rotation:    piece.turn,
             scale:       Vec3::ONE,
@@ -243,7 +242,7 @@ fn dress(prim: &Prim, color: Color) -> anyhow::Result<()> {
 }
 
 fn hide(prim: &Prim) -> anyhow::Result<()> {
-    prim.set_xform(Some(Xform {
+    prim.set_xform(Some(Transform {
         translation: Vec3::ZERO,
         rotation:    Quat::IDENTITY,
         scale:       Vec3::ZERO,

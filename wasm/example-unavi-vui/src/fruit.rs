@@ -37,7 +37,6 @@ use crate::{
                 Prim,
                 RigidBody,
                 RigidBodyKind,
-                Xform,
             },
         },
     },
@@ -209,8 +208,8 @@ impl Throw {
     }
 }
 
-const fn at(translation: Vec3) -> Xform {
-    Xform {
+const fn at(translation: Vec3) -> Transform {
+    Transform {
         translation,
         rotation: Quat::IDENTITY,
         scale: Vec3::ONE,

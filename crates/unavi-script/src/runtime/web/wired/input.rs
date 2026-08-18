@@ -17,7 +17,6 @@ use crate::runtime::{
             InputAction,
             InputEvent,
             Pointer,
-            PointerId,
             Ray,
         },
     },
@@ -57,10 +56,9 @@ pub struct PointerClaimHandle {
 #[wasm_bindgen]
 impl PointerClaimHandle {
     #[must_use]
-    pub fn id(&self) -> JsValue {
-        shared::wired::input::claimed_kind(self.rep).map_or(JsValue::UNDEFINED, |kind| {
-            pointer_id_name(kind.into()).into()
-        })
+    pub fn kind(&self) -> JsValue {
+        shared::wired::input::claimed_kind(self.rep)
+            .map_or(JsValue::UNDEFINED, |kind| pointer_kind_name(kind).into())
     }
 }
 
@@ -70,11 +68,11 @@ impl Drop for PointerClaimHandle {
     }
 }
 
-const fn pointer_id_name(id: PointerId) -> &'static str {
-    match id {
-        PointerId::Screen => "screen",
-        PointerId::LeftHand => "left-hand",
-        PointerId::RightHand => "right-hand",
+const fn pointer_kind_name(kind: PointerKind) -> &'static str {
+    match kind {
+        PointerKind::Screen => "screen",
+        PointerKind::LeftHand => "left-hand",
+        PointerKind::RightHand => "right-hand",
     }
 }
 
@@ -137,7 +135,7 @@ fn action(action: InputAction) -> JsValue {
 
 fn event(event: InputEvent) -> JsValue {
     let object = js_sys::Object::new();
-    set(&object, "pointer", &pointer_id_name(event.pointer).into());
+    set(&object, "pointer", &pointer_kind_name(event.pointer).into());
     set(&object, "action", &action(event.action));
     set(&object, "ray", &ray(event.ray));
     set(&object, "hit", &hit(event.hit));
@@ -146,7 +144,7 @@ fn event(event: InputEvent) -> JsValue {
 
 fn pointer(pointer: Pointer) -> JsValue {
     let object = js_sys::Object::new();
-    set(&object, "id", &pointer_id_name(pointer.id).into());
+    set(&object, "kind", &pointer_kind_name(pointer.kind).into());
     set(&object, "active", &pointer.active.into());
     set(&object, "ray", &ray(pointer.ray));
     set(&object, "grasp", &pointer.grasp.into());
@@ -224,11 +222,11 @@ impl Runtime {
 
     #[wasm_bindgen(js_name = "wiredInputClaimPointer")]
     #[must_use]
-    pub fn wired_input_claim_pointer(&self, id: &str) -> Option<PointerClaimHandle> {
+    pub fn wired_input_claim_pointer(&self, kind: &str) -> Option<PointerClaimHandle> {
         if self.api.require(ApiName::InputContext).is_err() {
             return None;
         }
-        let kind = match id {
+        let kind = match kind {
             "screen" => PointerKind::Screen,
             "left-hand" => PointerKind::LeftHand,
             "right-hand" => PointerKind::RightHand,

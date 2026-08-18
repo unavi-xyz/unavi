@@ -24,10 +24,7 @@ use crate::{
                 create_document_from_prefab,
                 self_document,
             },
-            types::{
-                Document,
-                Xform,
-            },
+            types::Document,
         },
         wds::{
             api::get_wds,
@@ -249,8 +246,8 @@ fn mint(hex: &str, at: Vec3) -> anyhow::Result<Document> {
     Ok(beacon)
 }
 
-const fn placed(translation: Vec3) -> Xform {
-    Xform {
+const fn placed(translation: Vec3) -> Transform {
+    Transform {
         translation,
         rotation: Quat::IDENTITY,
         scale: Vec3::ONE,

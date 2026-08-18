@@ -1,3 +1,4 @@
+use self::bindings::wired::error::types::Error;
 use crate::error::ScriptError;
 
 /// Canonical generation of `wired:error/types`; other bindings map onto it.
@@ -7,11 +8,6 @@ pub mod bindings {
         imports: { default: async | trappable },
     });
 }
-
-pub use bindings::wired::error::types::{
-    self,
-    Error,
-};
 
 impl From<ScriptError> for Error {
     fn from(err: ScriptError) -> Self {

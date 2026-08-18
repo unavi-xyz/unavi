@@ -10,7 +10,7 @@ use crate::{
         context::pointers,
         types::{
             Pointer,
-            PointerId,
+            PointerKind,
             Ray,
         },
     },
@@ -50,9 +50,13 @@ fn leading(pointers: &[Pointer]) -> Option<Ray> {
 
     grasping
         .or_else(|| {
-            [PointerId::Screen, PointerId::RightHand, PointerId::LeftHand]
-                .into_iter()
-                .find_map(|id| active.clone().find(|pointer| pointer.id == id))
+            [
+                PointerKind::Screen,
+                PointerKind::RightHand,
+                PointerKind::LeftHand,
+            ]
+            .into_iter()
+            .find_map(|kind| active.clone().find(|pointer| pointer.kind == kind))
         })
         .map(|pointer| pointer.ray)
 }
@@ -200,8 +204,8 @@ mod tests {
 
     #[test]
     fn a_pointer_pulling_hardest_is_the_one_attention_follows() {
-        let pointer = |id, grasp, x: f32| Pointer {
-            id,
+        let pointer = |kind, grasp, x: f32| Pointer {
+            kind,
             active: true,
             ray: Ray {
                 origin: Vec3::new(x, 0.0, 0.0),
@@ -213,8 +217,8 @@ mod tests {
         };
 
         let leading = leading(&[
-            pointer(PointerId::LeftHand, 0.2, -1.0),
-            pointer(PointerId::RightHand, 0.9, 1.0),
+            pointer(PointerKind::LeftHand, 0.2, -1.0),
+            pointer(PointerKind::RightHand, 0.9, 1.0),
         ])
         .expect("a pointer");
         assert!((leading.origin.x - 1.0).abs() < f32::EPSILON);
@@ -223,7 +227,7 @@ mod tests {
     #[test]
     fn an_untracked_pointer_is_never_the_one_followed() {
         let mut screen = Pointer {
-            id:     PointerId::Screen,
+            kind:   PointerKind::Screen,
             active: false,
             ray:    ray(),
             grasp:  1.0,

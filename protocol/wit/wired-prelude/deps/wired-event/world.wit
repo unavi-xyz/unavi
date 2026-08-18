@@ -51,8 +51,8 @@ interface types {
     payload: func() -> list<u8>;
     sender:  func() -> event-sender;
     time:    func() -> u64;
-    // Atomically claims this delivered event exactly once across all
-    // receptors.
+    /// Atomically claims this delivered event exactly once across all
+    /// receptors.
     consume: func() -> bool;
   }
 

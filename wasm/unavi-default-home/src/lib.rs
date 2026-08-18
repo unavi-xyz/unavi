@@ -10,7 +10,6 @@ use crate::{
             Prim,
             RigidBody,
             RigidBodyKind,
-            Xform,
         },
     },
 };
@@ -25,7 +24,7 @@ const MATERIAL_BINDING: &str = "material:binding";
 const IDENTITY_QUAT: Quat = Quat::IDENTITY;
 
 fn set_translation(prim: &Prim, translation: Vec3) {
-    prim.set_xform(Some(Xform {
+    prim.set_xform(Some(Transform {
         translation,
         rotation: IDENTITY_QUAT,
         scale: Vec3::ONE,

@@ -15,7 +15,11 @@ use bevy::{
 };
 use hsd::attributes::{
     Attribute,
-    image::ImageAttr,
+    image::{
+        AddressMode,
+        FilterMode,
+        ImageAttr,
+    },
     slots,
 };
 use image::GenericImageView;
@@ -161,17 +165,17 @@ fn build_img(
     img
 }
 
-const fn address_mode(v: i64) -> ImageAddressMode {
-    match v {
-        1 => ImageAddressMode::MirrorRepeat,
-        2 => ImageAddressMode::ClampToEdge,
-        _ => ImageAddressMode::Repeat,
+const fn address_mode(mode: AddressMode) -> ImageAddressMode {
+    match mode {
+        AddressMode::Repeat => ImageAddressMode::Repeat,
+        AddressMode::MirrorRepeat => ImageAddressMode::MirrorRepeat,
+        AddressMode::ClampToEdge => ImageAddressMode::ClampToEdge,
     }
 }
 
-const fn filter_mode(v: i64) -> ImageFilterMode {
-    match v {
-        1 => ImageFilterMode::Nearest,
-        _ => ImageFilterMode::Linear,
+const fn filter_mode(mode: FilterMode) -> ImageFilterMode {
+    match mode {
+        FilterMode::Linear => ImageFilterMode::Linear,
+        FilterMode::Nearest => ImageFilterMode::Nearest,
     }
 }

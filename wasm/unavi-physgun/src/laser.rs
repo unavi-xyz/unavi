@@ -10,7 +10,6 @@ use crate::{
         types::{
             GraphValue,
             Prim,
-            Xform,
         },
     },
 };
@@ -40,8 +39,8 @@ const TINT_INPUT: u16 = 0;
 /// Rope-drag input: a world-space offset applied at the beam's midpoint.
 const DRAG_INPUT: u16 = 4;
 
-const fn hidden() -> Xform {
-    Xform {
+const fn hidden() -> Transform {
+    Transform {
         translation: Vec3::ZERO,
         rotation:    Quat::IDENTITY,
         scale:       Vec3::ZERO,
@@ -128,7 +127,7 @@ impl Laser {
         }
 
         self.prim
-            .set_xform(Some(Xform {
+            .set_xform(Some(Transform {
                 translation: (from + to) * 0.5,
                 rotation:    align_y_to(delta),
                 scale:       Vec3::new(WIDTH, len, WIDTH),

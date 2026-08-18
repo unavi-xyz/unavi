@@ -1,6 +1,5 @@
 package example:wired-input;
 
 world guest {
-  import wired:input/context;
-  include wired:prelude/script-secure;
+  include wired:prelude/script-privileged;
 }

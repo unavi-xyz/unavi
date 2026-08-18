@@ -9,16 +9,16 @@ use unavi_space::{
     },
     state::{
         entities,
-        replicas::{
-            self,
-            KvError,
-        },
+        replicas,
     },
 };
 
-use crate::runtime::shared::{
-    Api,
-    slot_map::SlotMap,
+use crate::{
+    error::ScriptError,
+    runtime::shared::{
+        Api,
+        slot_map::SlotMap,
+    },
 };
 
 #[derive(Clone, Copy)]
@@ -93,28 +93,36 @@ pub async fn kv_set(
     rep: u32,
     key: String,
     value: Vec<u8>,
-) -> anyhow::Result<Result<(), KvError>> {
+) -> anyhow::Result<Result<(), ScriptError>> {
     let slots = api.wired_kv.lock().await;
     let Some(res) = slots.kv_slots.get(rep).copied() else {
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if check_write(api.doc_id, api.policy.tier, res.doc).is_err() {
-        return Ok(Err(KvError::Other));
+    if let Err(err) = check_write(api.doc_id, api.policy.tier, res.doc) {
+        return Ok(Err(err.into()));
     }
-    Ok(entities::doc_kv_set(ns(res.space), ns(res.doc), key, value).await)
+    Ok(entities::doc_kv_set(ns(res.space), ns(res.doc), key, value)
+        .await
+        .map_err(Into::into))
 }
 
-pub async fn kv_delete(api: &Api, rep: u32, key: String) -> anyhow::Result<Result<(), KvError>> {
+pub async fn kv_delete(
+    api: &Api,
+    rep: u32,
+    key: String,
+) -> anyhow::Result<Result<(), ScriptError>> {
     let slots = api.wired_kv.lock().await;
     let Some(res) = slots.kv_slots.get(rep).copied() else {
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if check_write(api.doc_id, api.policy.tier, res.doc).is_err() {
-        return Ok(Err(KvError::Other));
+    if let Err(err) = check_write(api.doc_id, api.policy.tier, res.doc) {
+        return Ok(Err(err.into()));
     }
-    Ok(entities::doc_kv_delete(ns(res.space), ns(res.doc), key).await)
+    Ok(entities::doc_kv_delete(ns(res.space), ns(res.doc), key)
+        .await
+        .map_err(Into::into))
 }
 
 pub async fn kv_keys(api: &Api, rep: u32) -> anyhow::Result<Vec<String>> {

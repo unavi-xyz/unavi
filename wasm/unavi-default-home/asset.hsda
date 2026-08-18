@@ -18,11 +18,11 @@
         attributes: (
             image: (
                 data: "../../crates/unavi-client/assets/image/dev-white.png",
-                address_mode_u: 0,
-                address_mode_v: 0,
-                address_mode_w: 0,
-                mag_filter: 1,
-                min_filter: 1,
+                address_mode_u: Repeat,
+                address_mode_v: Repeat,
+                address_mode_w: Repeat,
+                mag_filter: Nearest,
+                min_filter: Nearest,
                 srgb: true,
             ),
             name: "ground_tex",

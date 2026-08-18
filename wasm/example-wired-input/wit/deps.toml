@@ -1,4 +1,5 @@
 wired-agent   = "../../../protocol/wit/wired-agent"
+wired-error   = "../../../protocol/wit/wired-error"
 wired-event   = "../../../protocol/wit/wired-event"
 wired-input   = "../../../protocol/wit/wired-input"
 wired-kv      = "../../../protocol/wit/wired-kv"

@@ -5,12 +5,12 @@ world guest {
 }
 
 interface guest-api {
-  // Called once on instantiation.
+  /// Called once on instantiation.
   init: func();
 
-  // Called every frame, before rendering.
+  /// Called every frame, before rendering.
   update: func();
 
-  // Called on a fixed interval.
+  /// Called on a fixed interval.
   fixed-update: func();
 }

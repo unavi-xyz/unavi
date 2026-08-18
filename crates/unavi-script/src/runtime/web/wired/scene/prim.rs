@@ -1,6 +1,13 @@
 use std::sync::Arc;
 
-use hsd::attributes::xform::XformAttr;
+use hsd::attributes::{
+    image::{
+        AddressMode,
+        FilterMode,
+        ImageAttr,
+    },
+    xform::XformAttr,
+};
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::{
     JsValue,
@@ -30,7 +37,6 @@ use crate::runtime::shared::{
         PrimAlphaMode,
         PrimCollider,
         PrimColor,
-        PrimImage,
         PrimMaterial,
         PrimMesh,
         PrimPortal,
@@ -675,26 +681,57 @@ fn js_to_material(v: &JsValue) -> Option<PrimMaterial> {
     })
 }
 
-fn image_to_js(img: &PrimImage) -> JsValue {
+fn address_mode_to_js(mode: AddressMode) -> JsValue {
+    JsValue::from_str(match mode {
+        AddressMode::Repeat => "repeat",
+        AddressMode::MirrorRepeat => "mirror-repeat",
+        AddressMode::ClampToEdge => "clamp-to-edge",
+    })
+}
+
+fn js_to_address_mode(v: &JsValue) -> Option<AddressMode> {
+    Some(match v.as_string()?.as_str() {
+        "repeat" => AddressMode::Repeat,
+        "mirror-repeat" => AddressMode::MirrorRepeat,
+        "clamp-to-edge" => AddressMode::ClampToEdge,
+        _ => return None,
+    })
+}
+
+fn filter_mode_to_js(mode: FilterMode) -> JsValue {
+    JsValue::from_str(match mode {
+        FilterMode::Linear => "linear",
+        FilterMode::Nearest => "nearest",
+    })
+}
+
+fn js_to_filter_mode(v: &JsValue) -> Option<FilterMode> {
+    Some(match v.as_string()?.as_str() {
+        "linear" => FilterMode::Linear,
+        "nearest" => FilterMode::Nearest,
+        _ => return None,
+    })
+}
+
+fn image_to_js(img: &ImageAttr) -> JsValue {
     let obj = js_sys::Object::new();
-    obj_set(&obj, "data", &bytes32_to_js(&img.data));
-    if let Some(v) = img.address_mode_u {
-        obj_set(&obj, "address-mode-u", &v.into());
+    for (key, mode) in [
+        ("address-mode-u", img.address_mode_u),
+        ("address-mode-v", img.address_mode_v),
+        ("address-mode-w", img.address_mode_w),
+    ] {
+        if let Some(mode) = mode {
+            obj_set(&obj, key, &address_mode_to_js(mode));
+        }
     }
-    if let Some(v) = img.address_mode_v {
-        obj_set(&obj, "address-mode-v", &v.into());
-    }
-    if let Some(v) = img.address_mode_w {
-        obj_set(&obj, "address-mode-w", &v.into());
-    }
-    if let Some(v) = img.mag_filter {
-        obj_set(&obj, "mag-filter", &v.into());
-    }
-    if let Some(v) = img.min_filter {
-        obj_set(&obj, "min-filter", &v.into());
-    }
-    if let Some(v) = img.mipmap_filter {
-        obj_set(&obj, "mipmap-filter", &v.into());
+    for (key, mode) in [
+        ("mag-filter", img.mag_filter),
+        ("min-filter", img.min_filter),
+        ("mipmap-filter", img.mipmap_filter),
+    ] {
+        if let Some(mode) = mode {
+            obj_set(&obj, key, &filter_mode_to_js(mode));
+        }
     }
     if let Some(v) = img.srgb {
         obj_set(&obj, "srgb", &v.into());
@@ -702,18 +739,17 @@ fn image_to_js(img: &PrimImage) -> JsValue {
     obj.into()
 }
 
-fn js_to_image(v: &JsValue) -> Option<PrimImage> {
+fn js_to_image(v: &JsValue) -> Option<ImageAttr> {
     if v.is_null() || v.is_undefined() {
         return None;
     }
-    Some(PrimImage {
-        data:           js_to_bytes32(&obj_get(v, "data"))?,
-        address_mode_u: obj_get_i32(v, "address-mode-u"),
-        address_mode_v: obj_get_i32(v, "address-mode-v"),
-        address_mode_w: obj_get_i32(v, "address-mode-w"),
-        mag_filter:     obj_get_i32(v, "mag-filter"),
-        min_filter:     obj_get_i32(v, "min-filter"),
-        mipmap_filter:  obj_get_i32(v, "mipmap-filter"),
+    Some(ImageAttr {
+        address_mode_u: js_to_address_mode(&obj_get(v, "address-mode-u")),
+        address_mode_v: js_to_address_mode(&obj_get(v, "address-mode-v")),
+        address_mode_w: js_to_address_mode(&obj_get(v, "address-mode-w")),
+        mag_filter:     js_to_filter_mode(&obj_get(v, "mag-filter")),
+        min_filter:     js_to_filter_mode(&obj_get(v, "min-filter")),
+        mipmap_filter:  js_to_filter_mode(&obj_get(v, "mipmap-filter")),
         srgb:           obj_get_bool(v, "srgb"),
     })
 }

@@ -31,21 +31,15 @@ interface api {
 }
 
 interface types {
-  use wired:math/types.{vec2, vec3, quat, transform};
+  use wired:math/types.{vec2, vec3, transform};
   use wired:error/types.{error};
 
-  // A ULID rendered as 26 characters of Crockford base32. Fixed-length, so no
-  // id is a prefix of another.
+  /// A ULID rendered as 26 characters of Crockford base32. Fixed-length, so no
+  /// id is a prefix of another.
   type prim-id     = string;
   type record-id   = list<u8>;
   type document-id = record-id;
   type blob-id     = list<u8>;
-
-  record xform {
-    translation: vec3,
-    rotation:    quat,
-    scale:       vec3,
-  }
 
   enum topology {
     point-list,
@@ -321,15 +315,28 @@ interface types {
     displacement:  option<displacement-graph>,
   }
 
+  /// How a sampler treats coordinates outside `[0, 1]`.
+  enum address-mode {
+    repeat,
+    mirror-repeat,
+    clamp-to-edge,
+  }
+
+  /// How a sampler picks between texels.
+  enum filter-mode {
+    linear,
+    nearest,
+  }
+
   /// The encoded bytes are the prim's `image:data` entry, set with
   /// `set-image-data`; this record is sampler settings only.
   record image {
-    address-mode-u: option<s32>,
-    address-mode-v: option<s32>,
-    address-mode-w: option<s32>,
-    mag-filter:     option<s32>,
-    min-filter:     option<s32>,
-    mipmap-filter:  option<s32>,
+    address-mode-u: option<address-mode>,
+    address-mode-v: option<address-mode>,
+    address-mode-w: option<address-mode>,
+    mag-filter:     option<filter-mode>,
+    min-filter:     option<filter-mode>,
+    mipmap-filter:  option<filter-mode>,
     srgb:           option<bool>,
   }
 
@@ -386,8 +393,8 @@ interface types {
     size-y:      f32,
   }
 
-  // Marks a prim as a spawn area: players spawn at a random point in a
-  // horizontal circle of `radius` around the prim's origin.
+  /// Marks a prim as a spawn area: players spawn at a random point in a
+  /// horizontal circle of `radius` around the prim's origin.
   record spawn {
     radius: f32,
   }
@@ -445,10 +452,9 @@ interface types {
     create-prim: func() -> result<prim, error>;
     remove-prim: func(value: borrow<prim>) -> result<_, error>;
 
-    // Rigid transform from this document's root frame to `other`'s root
-    // frame. Returns none if the two documents are not in the same space
-    // or if scene-read is denied.
-    offset-to: func(other: borrow<document>) -> option<transform>;
+    /// Rigid transform from this document's root frame to `other`'s root
+    /// frame, or none when the two documents are not in the same space.
+    offset-to: func(other: borrow<document>) -> result<option<transform>, error>;
 
     /// Attaches this document's root to a prim, or the space root when `none`.
     /// Per-peer runtime state, never persisted.
@@ -460,7 +466,7 @@ interface types {
     /// appearing rather than one arriving at the origin and moving. Fails if
     /// the anchor target is not itself in the scene.
     set-anchor: func(target: option<borrow<prim>>) -> result<_, error>;
-    set-offset: func(value: xform) -> result<_, error>;
+    set-offset: func(value: transform) -> result<_, error>;
   }
 
   resource prim {
@@ -480,10 +486,10 @@ interface types {
     prefab:     func() -> option<blob-id>;
     set-prefab: func(value: option<blob-id>) -> result<_, error>;
 
-    xform:     func() -> option<xform>;
-    set-xform: func(value: option<xform>) -> result<_, error>;
+    xform:     func() -> option<transform>;
+    set-xform: func(value: option<transform>) -> result<_, error>;
 
-    // Live world-space transform, recomputed each call.
+    /// Live world-space transform, recomputed each call.
     global-xform: func() -> transform;
 
     gravity-scale:     func() -> f32;
@@ -492,7 +498,7 @@ interface types {
     mesh:     func() -> option<mesh>;
     set-mesh: func(value: option<mesh>) -> result<_, error>;
 
-    // Host stores the values inline in the prim's slot entry.
+    /// Host stores the values inline in the prim's slot entry.
     set-mesh-stream:      func(key: string, values: option<list<f32>>) -> result<_, error>;
     set-mesh-indices-u32: func(values: option<list<u32>>) -> result<_, error>;
 

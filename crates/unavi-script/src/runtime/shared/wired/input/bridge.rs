@@ -44,7 +44,6 @@ use crate::runtime::shared::wired::input::{
         Hit,
         InputAction,
         InputEvent,
-        PointerId,
         Ray,
     },
 };
@@ -88,7 +87,7 @@ impl PrimDelivery<'_, '_> {
         };
 
         let event = InputEvent {
-            pointer: kind.into(),
+            pointer: kind,
             action,
             ray: self.ray(kind),
             hit: hit_of(hit),
@@ -190,7 +189,7 @@ pub fn bridge_global_presses(
     for press in pressed.read() {
         to_global(
             InputEvent {
-                pointer: press.kind.into(),
+                pointer: press.kind,
                 action:  InputAction::Press,
                 ray:     press.ray.into(),
                 hit:     press.hit.map(Into::into),
@@ -202,7 +201,7 @@ pub fn bridge_global_presses(
     for release in released.read() {
         to_global(
             InputEvent {
-                pointer: release.kind.into(),
+                pointer: release.kind,
                 action:  InputAction::Release,
                 ray:     release.ray.into(),
                 hit:     release.hit.map(Into::into),
@@ -225,7 +224,7 @@ pub fn bridge_global_scroll(
 
     to_global(
         InputEvent {
-            pointer: PointerId::Screen,
+            pointer: PointerKind::Screen,
             action:  InputAction::Scroll(scroll.delta),
             ray:     ray_of_kind(PointerKind::Screen, &pointers),
             hit:     None,
@@ -252,7 +251,7 @@ pub fn bridge_menu(
 
         to_global(
             InputEvent {
-                pointer: kind.into(),
+                pointer: kind,
                 action,
                 ray: ray_of_kind(kind, &pointers),
                 hit: None,

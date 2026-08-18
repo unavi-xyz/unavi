@@ -46,14 +46,18 @@ macro_rules! generate {
                 &self,
                 key: &str,
                 value: &[u8],
-            ) -> ::core::result::Result<(), ::wired_prelude::wired_kv::KvErrorKind> {
+            ) -> ::core::result::Result<(), ::wired_prelude::wired_kv::TypedKvError> {
                 self.set(key, value).map_err(|e| match e {
-                    wired::kv::types::KvError::KeyTooLong =>
-                        ::wired_prelude::wired_kv::KvErrorKind::KeyTooLong,
-                    wired::kv::types::KvError::QuotaExceeded =>
-                        ::wired_prelude::wired_kv::KvErrorKind::QuotaExceeded,
-                    wired::kv::types::KvError::Other =>
-                        ::wired_prelude::wired_kv::KvErrorKind::Other,
+                    wired::error::types::Error::QuotaFlow =>
+                        ::wired_prelude::wired_kv::TypedKvError::QuotaFlow,
+                    wired::error::types::Error::QuotaStock =>
+                        ::wired_prelude::wired_kv::TypedKvError::QuotaStock,
+                    wired::error::types::Error::Permission =>
+                        ::wired_prelude::wired_kv::TypedKvError::Permission,
+                    wired::error::types::Error::Reach =>
+                        ::wired_prelude::wired_kv::TypedKvError::Reach,
+                    wired::error::types::Error::Other(detail) =>
+                        ::wired_prelude::wired_kv::TypedKvError::Other(detail),
                 })
             }
             fn kv_delete(&self, key: &str) {

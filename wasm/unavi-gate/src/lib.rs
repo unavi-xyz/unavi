@@ -34,7 +34,6 @@ use crate::{
                 Prim,
                 RigidBody,
                 RigidBodyKind,
-                Xform,
             },
         },
     },
@@ -268,7 +267,7 @@ const fn static_body() -> RigidBody {
 }
 
 fn set_translation(prim: &Prim, translation: Vec3) {
-    prim.set_xform(Some(Xform {
+    prim.set_xform(Some(Transform {
         translation,
         rotation: Quat::IDENTITY,
         scale: Vec3::ONE,

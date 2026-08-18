@@ -16,7 +16,6 @@ use crate::{
             Collider,
             GraphValue,
             Prim,
-            Xform,
         },
     },
 };
@@ -31,8 +30,8 @@ const TEMPLATE_PRIM_NAME: &str = "glow_template";
 /// Tint input index.
 const TINT_INPUT: u16 = 0;
 
-const fn hidden() -> Xform {
-    Xform {
+const fn hidden() -> Transform {
+    Transform {
         translation: Vec3::ZERO,
         rotation:    Quat::IDENTITY,
         scale:       Vec3::ZERO,
@@ -118,7 +117,7 @@ impl Outline {
     /// reads as sliding off the object.
     pub fn track(&self, body: &Transform) {
         if let Some(prim) = self.0.borrow().as_ref() {
-            prim.set_xform(Some(Xform {
+            prim.set_xform(Some(Transform {
                 translation: body.translation,
                 rotation:    body.rotation,
                 scale:       Vec3::ONE,

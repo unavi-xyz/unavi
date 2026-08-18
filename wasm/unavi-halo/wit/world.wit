@@ -4,6 +4,5 @@ world guest {
   import unavi:tool/api;
   import unavi:shapes/api;
   import unavi:vui/api;
-  import wired:input/context;
-  include wired:prelude/script-secure;
+  include wired:prelude/script-privileged;
 }

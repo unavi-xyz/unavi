@@ -16,7 +16,7 @@ pub mod bindings {
         path: "../../protocol/wit/wired-physics",
         with: {
             "wired:scene/types.prim": PrimRes,
-            "wired:error/types": crate::runtime::native::wired::error::types,
+            "wired:error/types": crate::runtime::native::wired::error::bindings::wired::error::types,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
@@ -25,7 +25,7 @@ pub mod bindings {
 
 use bindings::wired::physics::types::RayHit;
 
-use crate::runtime::native::wired::error::Error;
+use crate::runtime::native::wired::error::bindings::wired::error::types::Error;
 
 impl bindings::wired::physics::types::Host for Runtime {}
 

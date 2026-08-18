@@ -21,10 +21,7 @@ use crate::{
         agent::api::local_camera,
         scene::{
             api::self_document,
-            types::{
-                Prim,
-                Xform,
-            },
+            types::Prim,
         },
     },
 };
@@ -65,7 +62,7 @@ impl ScriptBehavior for Script {
         let cuboid = Cuboid::new(Vec3::splat(ICON_SIZE));
         cuboid.set_doc(self_document()?);
         let icon = cuboid.mesh();
-        icon.set_xform(Some(Xform {
+        icon.set_xform(Some(Transform {
             translation: Vec3::ZERO,
             rotation:    Quat::IDENTITY,
             scale:       Vec3::ZERO,

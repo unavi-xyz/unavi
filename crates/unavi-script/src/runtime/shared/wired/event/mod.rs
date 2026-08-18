@@ -129,7 +129,10 @@ pub async fn emit(
 
     let payload = Arc::new(payload);
     let sender_doc = api.doc_id.0.to_vec();
-    let claimed = Arc::new(AtomicBool::new(false));
+    let audience_claim = filter
+        .documents
+        .as_ref()
+        .map(|_| Arc::new(AtomicBool::new(false)));
 
     let registry = EVENT_RECEPTOR_REGISTRY.read();
     for entry in registry.values() {
@@ -166,7 +169,7 @@ pub async fn emit(
             sender_document: sender_doc.clone(),
             sender_scope,
             time,
-            claimed: Arc::clone(&claimed),
+            claimed: delivery_claim(audience_claim.as_ref()),
         });
     }
     drop(registry);
@@ -199,6 +202,21 @@ pub fn emit_from_host(target_doc: DocId, channel: &str, payload: Vec<u8>) {
             claimed: Arc::clone(&claimed),
         });
     }
+}
+
+/// One claim shared across the audience an emitter named, or a claim of its own
+/// per recipient when it named none.
+///
+/// Exclusion is only meaningful within an addressed set. Sharing one claim
+/// across every receptor that guessed the channel string would let any listener
+/// consume a broadcast out from under all the others.
+fn delivery_claim(audience: Option<&Arc<AtomicBool>>) -> Arc<AtomicBool> {
+    audience.map_or_else(|| Arc::new(AtomicBool::new(false)), Arc::clone)
+}
+
+fn claim(flag: &AtomicBool) -> bool {
+    flag.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
+        .is_ok()
 }
 
 fn resolve_sender_scope(
@@ -330,9 +348,7 @@ pub async fn event_consume(api: &Api, rep: u32) -> anyhow::Result<bool> {
             .map(|res| Arc::clone(&res.inner.claimed))
             .ok_or_else(|| anyhow::anyhow!("event not found: {rep}"))?
     };
-    Ok(claimed
-        .compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-        .is_ok())
+    Ok(claim(&claimed))
 }
 
 pub async fn event_clone_inner(api: &Api, rep: u32) -> anyhow::Result<InboundEvent> {
@@ -349,4 +365,35 @@ pub async fn event_clone_inner(api: &Api, rep: u32) -> anyhow::Result<InboundEve
 pub async fn event_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
     api.wired_event.lock().await.events.remove(rep);
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_addressed_emit_is_claimed_once_across_its_audience() {
+        let audience = Arc::new(AtomicBool::new(false));
+        let first = delivery_claim(Some(&audience));
+        let second = delivery_claim(Some(&audience));
+
+        assert!(claim(&first));
+        assert!(
+            !claim(&second),
+            "an emitter that named an audience asked for exactly one of them to take it"
+        );
+    }
+
+    #[test]
+    fn a_broadcast_recipient_cannot_deny_the_others() {
+        let first = delivery_claim(None);
+        let second = delivery_claim(None);
+
+        assert!(claim(&first));
+        assert!(
+            claim(&second),
+            "a listener that guessed the channel string must not consume a broadcast \
+             out from under everyone it was not addressed to"
+        );
+    }
 }

@@ -1,8 +1,7 @@
 package unavi:vui;
 
 world guest {
-  import wired:input/context;
-  include wired:prelude/lib-secure;
+  include wired:prelude/lib-privileged;
   export api;
 }
 

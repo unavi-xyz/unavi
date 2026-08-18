@@ -20,7 +20,6 @@ use crate::{
         Document,
         GraphValue,
         Prim,
-        Xform,
     },
 };
 
@@ -89,7 +88,7 @@ impl Site {
             State::Filling(_) => self.recoil.set(None),
         }
 
-        self.prim.set_xform(Some(Xform {
+        self.prim.set_xform(Some(Transform {
             translation: Vec3::new(at.x, at.y, at.z + LIFT),
             rotation:    Quat::IDENTITY,
             scale:       Vec3::ONE,

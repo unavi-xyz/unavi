@@ -11,7 +11,7 @@ use crate::{
             wired::input::types::{
                 HostPointerClaim,
                 Pointer,
-                PointerId,
+                PointerKind as WitPointerKind,
             },
         },
         shared::{
@@ -39,22 +39,22 @@ pub mod bindings {
             "wired:scene/types.prim": PrimRes,
             "wired:input/types.input-listener": InputListenerRes,
             "wired:input/types.pointer-claim": PointerClaimRes,
-            "wired:error/types": crate::runtime::native::wired::error::types,
+            "wired:error/types": crate::runtime::native::wired::error::bindings::wired::error::types,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
     });
 }
 
-use crate::runtime::native::wired::error::Error;
+use crate::runtime::native::wired::error::bindings::wired::error::types::Error;
 
 impl bindings::wired::input::types::Host for Runtime {}
 
 impl HostPointerClaim for Runtime {
-    async fn id(&mut self, self_: Resource<PointerClaimRes>) -> wasmtime::Result<PointerId> {
+    async fn kind(&mut self, self_: Resource<PointerClaimRes>) -> wasmtime::Result<WitPointerKind> {
         let kind = shared::wired::input::claimed_kind(self_.rep())
             .ok_or_else(|| wasmtime::Error::msg("claim does not name a pointer"))?;
-        Ok(shared::wired::input::types::PointerId::from(kind).into())
+        Ok(kind.into())
     }
 
     async fn drop(&mut self, rep: Resource<PointerClaimRes>) -> wasmtime::Result<()> {
@@ -107,14 +107,15 @@ impl bindings::wired::input::context::Host for Runtime {
 
     async fn claim_pointer(
         &mut self,
-        id: PointerId,
+        kind: WitPointerKind,
     ) -> wasmtime::Result<Result<Resource<PointerClaimRes>, Error>> {
         if let Err(err) = self.api.require(ApiName::InputContext) {
             return Ok(Err(err.into()));
         }
-        let kind = shared::wired::input::types::PointerId::from(id).into();
-        Ok(shared::wired::input::claim_pointer(self.api.doc_id, kind)
-            .map(Resource::new_own)
-            .map_err(|err| ScriptError::from(err).into()))
+        Ok(
+            shared::wired::input::claim_pointer(self.api.doc_id, kind.into())
+                .map(Resource::new_own)
+                .map_err(|err| ScriptError::from(err).into()),
+        )
     }
 }

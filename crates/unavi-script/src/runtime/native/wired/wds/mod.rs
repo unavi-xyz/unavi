@@ -32,7 +32,7 @@ pub mod bindings {
             "wired:wds/types.get-future":  GetFutureRes,
             "wired:wds/types.list-future": ListFutureRes,
             "wired:wds/types.blob-future": BlobFutureRes,
-            "wired:error/types": crate::runtime::native::wired::error::types,
+            "wired:error/types": crate::runtime::native::wired::error::bindings::wired::error::types,
         },
         imports: { default: async | trappable },
         exports: { default: async | trappable },
@@ -48,7 +48,7 @@ use bindings::wired::wds::types::{
     Wds,
 };
 
-use crate::runtime::native::wired::error::Error;
+use crate::runtime::native::wired::error::bindings::wired::error::types::Error;
 
 impl bindings::wired::wds::types::Host for Runtime {}
 

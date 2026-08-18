@@ -7,10 +7,7 @@ use crate::{
     unavi::shapes::api::Cuboid,
     wired::scene::{
         api::self_document,
-        types::{
-            Prim,
-            Xform,
-        },
+        types::Prim,
     },
 };
 
@@ -18,8 +15,8 @@ const PREVIEW_SIZE: f32 = 0.07;
 const ABOVE: f32 = 0.13;
 const SPIN: f32 = 1.4;
 
-const fn hidden() -> Xform {
-    Xform {
+const fn hidden() -> Transform {
+    Transform {
         translation: Vec3::ZERO,
         rotation:    Quat::IDENTITY,
         scale:       Vec3::ZERO,
@@ -65,7 +62,7 @@ impl Preview {
         }
 
         self.root
-            .set_xform(Some(Xform {
+            .set_xform(Some(Transform {
                 translation: cam.translation + cam.rotation * offset,
                 rotation:    cam.rotation,
                 scale:       Vec3::splat(t),
@@ -75,7 +72,7 @@ impl Preview {
         let spin = delta.mul_add(SPIN, self.spin.get());
         self.spin.set(spin);
         self.cube
-            .set_xform(Some(Xform {
+            .set_xform(Some(Transform {
                 translation: Vec3::new(0.0, ABOVE, 0.0),
                 rotation:    Quat::new(0.0, (spin * 0.5).sin(), 0.0, (spin * 0.5).cos()),
                 scale:       Vec3::ONE,

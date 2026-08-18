@@ -13,6 +13,19 @@ use xdid::core::did::Did;
 /// anyone, so an unbound peer is indistinguishable from an anonymous one.
 static BINDINGS: LazyLock<RwLock<HashMap<[u8; 32], Did>>> = LazyLock::new(RwLock::default);
 
+/// The local user's own DID, which is the ego node every trust score is
+/// measured from.
+static SELF: RwLock<Option<Did>> = RwLock::new(None);
+
+pub fn set_self(did: Did) {
+    *SELF.write() = Some(did);
+}
+
+#[must_use]
+pub fn self_did() -> Option<Did> {
+    SELF.read().clone()
+}
+
 pub fn bind(peer: [u8; 32], did: Did) {
     BINDINGS.write().insert(peer, did);
 }

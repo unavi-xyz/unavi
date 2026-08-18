@@ -14121,13 +14121,18 @@ dependencies = [
 name = "unavi-policy"
 version = "0.0.16"
 dependencies = [
+ "anyhow",
  "bevy",
  "bevy-hsd",
  "blake3",
  "hsd",
  "iroh-docs",
  "parking_lot",
+ "rand 0.9.5",
+ "serde",
  "thiserror 2.0.19",
+ "toml 1.1.4+spec-1.1.0",
+ "tracing",
  "xdid",
 ]
 
@@ -14275,6 +14280,7 @@ dependencies = [
  "bevy-iroh",
  "bevy-wds",
  "blake3",
+ "bytes",
  "half",
  "hsd",
  "iroh",

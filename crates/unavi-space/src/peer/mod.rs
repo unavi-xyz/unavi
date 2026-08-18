@@ -56,8 +56,12 @@ pub fn self_did() -> Option<String> {
 
 pub fn capture_self_identity(trigger: On<Add, LocalActor>, actors: Query<&LocalActor>) {
     if let Ok(actor) = actors.get(trigger.entity) {
-        *SELF_IDENTITY.write().expect("SELF_IDENTITY poisoned") =
-            Some(Arc::clone(actor.0.identity()));
+        let identity = actor.0.identity();
+        unavi_policy::identity::set_self(identity.did().clone());
+        *SELF_IDENTITY.write().expect("SELF_IDENTITY poisoned") = Some(Arc::clone(identity));
+        // Scores are measured from the local DID, so nothing could be computed
+        // until it existed.
+        unavi_policy::trust::recompute(&[]);
     }
 }
 

@@ -25,10 +25,12 @@ mod scene;
 pub mod spawn;
 pub mod state;
 pub mod travel;
+pub mod trust;
 
 pub struct SpacePlugin;
 
 const TICKRATE_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
+const VOUCH_PUBLISH_INTERVAL: Duration = Duration::from_mins(5);
 
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
@@ -38,6 +40,8 @@ impl Plugin for SpacePlugin {
         if !app.is_plugin_added::<unavi_policy::PolicyPlugin>() {
             app.add_plugins(unavi_policy::PolicyPlugin);
         }
+
+        trust::load_trust_table();
 
         app.init_resource::<anchor::SpaceGridAllocator>()
             .init_resource::<anchor::ActiveSpace>()
@@ -81,6 +85,7 @@ impl Plugin for SpacePlugin {
                 FixedUpdate,
                 (
                     presence::publish_presence,
+                    trust::publish_vouches.run_if(on_timer(VOUCH_PUBLISH_INTERVAL)),
                     connection::ecs::agent::outbound::send_agent_pose,
                     connection::ecs::object::send_object_poses,
                     connection::ecs::object::reconcile_object_authority,

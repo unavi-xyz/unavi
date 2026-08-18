@@ -21,6 +21,7 @@ bevy-hsd.path              = "../bevy-hsd"
 bevy-iroh.path             = "../bevy-iroh"
 bevy-wds.path              = "../bevy-wds"
 blake3.workspace           = true
+bytes.workspace            = true
 half                       = { features = ["serde"], version = "2.7.1" }
 hsd.path                   = "../hsd"
 iroh.workspace             = true

@@ -10,13 +10,16 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
+anyhow.workspace      = true
 bevy                  = { default-features = true, workspace = true }
 bevy-hsd.path         = "../bevy-hsd"
 hsd.path              = "../hsd"
+blake3.workspace      = true
 iroh-docs.workspace   = true
 parking_lot.workspace = true
+rand.workspace        = true
+serde                 = { features = ["derive"], workspace = true }
 thiserror.workspace   = true
+toml.workspace        = true
+tracing.workspace     = true
 xdid.workspace        = true
-
-[dev-dependencies]
-blake3.workspace = true

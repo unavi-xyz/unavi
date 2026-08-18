@@ -1,3 +1,9 @@
+use bevy::prelude::*;
+use bevy_hsd::{
+    Hsd,
+    HsdDocId,
+};
+use hsd::id::DocId;
 use unavi_input::pointer::{
     PointerKind,
     claims,
@@ -102,8 +108,8 @@ pub fn claimed_kind(rep: u32) -> Option<PointerKind> {
         .find(|kind| kind.index() as u32 == rep)
 }
 
-pub fn claim_pointer(kind: PointerKind) -> anyhow::Result<u32> {
-    if claims::claim(kind) {
+pub fn claim_pointer(owner: DocId, kind: PointerKind) -> anyhow::Result<u32> {
+    if claims::claim(kind, owner.0) {
         Ok(kind.index() as u32)
     } else {
         Err(anyhow::anyhow!(
@@ -116,5 +122,19 @@ pub fn claim_pointer(kind: PointerKind) -> anyhow::Result<u32> {
 pub fn release_pointer(rep: u32) {
     if let Some(kind) = claimed_kind(rep) {
         claims::release(kind);
+    }
+}
+
+/// Takes back every pointer a departing document held.
+///
+/// A claim is a lease, and a lease the holder has to return itself is not one:
+/// a script that traps or is unloaded while holding a pointer would keep one of
+/// the user's hands until the process exited.
+pub fn release_claims_of_departed(trigger: On<Remove, Hsd>, docs: Query<&HsdDocId>) {
+    if let Ok(doc) = docs.get(trigger.entity) {
+        let released = claims::release_all_of(doc.0.0);
+        if released > 0 {
+            info!(released, "reclaimed pointers from a departed document");
+        }
     }
 }

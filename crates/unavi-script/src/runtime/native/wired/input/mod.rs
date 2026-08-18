@@ -113,7 +113,7 @@ impl bindings::wired::input::context::Host for Runtime {
             return Ok(Err(err.into()));
         }
         let kind = shared::wired::input::types::PointerId::from(id).into();
-        Ok(shared::wired::input::claim_pointer(kind)
+        Ok(shared::wired::input::claim_pointer(self.api.doc_id, kind)
             .map(Resource::new_own)
             .map_err(|err| ScriptError::from(err).into()))
     }

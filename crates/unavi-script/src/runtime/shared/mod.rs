@@ -110,6 +110,7 @@ impl Plugin for SharedRuntimePlugin {
             .add_observer(registry::transform::register_nodes)
             .add_observer(registry::transform::deregister_transforms)
             .add_observer(registry::transform::deregister_doc_root)
+            .add_observer(wired::input::release_claims_of_departed)
             .add_systems(
                 Update,
                 (

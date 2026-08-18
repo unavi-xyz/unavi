@@ -234,7 +234,7 @@ impl Runtime {
             "right-hand" => PointerKind::RightHand,
             _ => return None,
         };
-        shared::wired::input::claim_pointer(kind)
+        shared::wired::input::claim_pointer(self.api.doc_id, kind)
             .ok()
             .map(|rep| PointerClaimHandle { rep })
     }

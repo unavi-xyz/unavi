@@ -16,7 +16,7 @@ use bevy_wds::{
     LocalBlobs,
     LocalDocs,
 };
-use unavi_script::permissions::ApiPermissions;
+use unavi_policy::document::DocumentPolicy;
 
 use crate::util::create_test_wds;
 
@@ -76,6 +76,6 @@ fn init_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
             handle,
             on_load: None,
         },
-        ApiPermissions::system(),
+        DocumentPolicy::system(),
     ));
 }

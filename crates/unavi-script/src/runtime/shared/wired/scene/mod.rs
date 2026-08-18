@@ -1,9 +1,6 @@
-use std::{
-    collections::HashSet,
-    sync::{
-        Arc,
-        Mutex,
-    },
+use std::sync::{
+    Arc,
+    Mutex,
 };
 
 use bevy::prelude::*;
@@ -27,6 +24,17 @@ use hsd::{
     },
 };
 use iroh_docs::NamespaceId;
+use unavi_policy::{
+    firewall::{
+        Channel,
+        registry::{
+            reserve_child_firewall,
+            seal_scene_writes,
+            validate_firewall,
+        },
+    },
+    space::Space,
+};
 use unavi_quota::{
     Flow,
     Stock,
@@ -39,18 +47,9 @@ use unavi_util::{
 
 use crate::{
     error::ScriptError,
-    firewall::{
-        Access,
-        Channel,
-        Firewall,
-    },
     quota::QuotaGuards,
     runtime::shared::{
         Api,
-        registry::firewall::{
-            FIREWALL_REGISTRY,
-            validate_firewall,
-        },
         slot_map::SlotMap,
         wired::scene::{
             document::DocRes,
@@ -177,11 +176,10 @@ async fn spawn_child_doc(
     let doc_guard = api.quota.charge(Stock::Documents, 1)?;
     let id = DocId(*ns.as_bytes());
 
-    let firewall = Firewall::for_child_doc(api.doc_id);
-    FIREWALL_REGISTRY.write().insert(id, firewall.clone());
+    let firewall = reserve_child_firewall(id, api.doc_id);
     // Seed the child's space before the spawn command applies.
     if let Some(parent_space) = unavi_space::membership::doc_space(api.doc_id) {
-        unavi_space::membership::DOC_SPACE_REGISTRY
+        unavi_policy::membership::DOC_SPACE_REGISTRY
             .write()
             .insert(id, parent_space);
     }
@@ -192,7 +190,7 @@ async fn spawn_child_doc(
             HsdDocId(id),
             HsdNamespace(ns),
             firewall,
-            api.permissions.clone(),
+            api.policy.clone(),
             QuotaGuards(vec![doc_guard]),
         ))
         .send()
@@ -332,13 +330,7 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     validate_firewall(&api.doc_id, &id, Channel::SceneWrite)?;
     api.quota.spend(Flow::SyncDoc, 1.0)?;
 
-    let firewall = FIREWALL_REGISTRY.read().get(&id).cloned();
-    if let Some(firewall) = firewall {
-        firewall
-            .0
-            .write()
-            .insert(Channel::SceneWrite, Access::Restricted(HashSet::new()));
-    }
+    seal_scene_writes(id);
 
     let space = if let Some(s) = unavi_space::membership::doc_space(id) {
         s
@@ -347,11 +339,7 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
         AsyncCommands::default()
             .push(move |world: &mut World| {
                 let active = world.get_resource::<ActiveSpace>().and_then(|a| a.0);
-                let id = active.and_then(|e| {
-                    world
-                        .get::<unavi_space::Space>(e)
-                        .map(unavi_space::membership::space_doc_id)
-                });
+                let id = active.and_then(|e| world.get::<Space>(e).map(Space::doc_id));
                 tx.try_send(id).ok();
             })
             .send()

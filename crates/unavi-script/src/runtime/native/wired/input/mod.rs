@@ -1,8 +1,8 @@
+use unavi_policy::document::ApiName;
 use wasmtime::component::Resource;
 
 use crate::{
     error::ScriptError,
-    permissions::ApiName,
     runtime::{
         Runtime,
         native::wired::input::bindings::{

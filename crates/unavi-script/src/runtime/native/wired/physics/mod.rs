@@ -1,13 +1,11 @@
+use unavi_policy::document::ApiName;
 use wasmtime::component::Resource;
 
-use crate::{
-    permissions::ApiName,
-    runtime::{
-        Runtime,
-        shared::{
-            self,
-            wired::scene::prim::PrimRes,
-        },
+use crate::runtime::{
+    Runtime,
+    shared::{
+        self,
+        wired::scene::prim::PrimRes,
     },
 };
 

@@ -13954,6 +13954,7 @@ dependencies = [
  "unavi-input",
  "unavi-manifold",
  "unavi-physics",
+ "unavi-policy",
  "unavi-script",
  "unavi-space",
  "unavi-util",
@@ -14005,6 +14006,7 @@ dependencies = [
  "iroh-docs",
  "unavi-input",
  "unavi-physics",
+ "unavi-policy",
  "unavi-space",
 ]
 
@@ -14116,6 +14118,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "unavi-policy"
+version = "0.0.16"
+dependencies = [
+ "bevy",
+ "bevy-hsd",
+ "blake3",
+ "hsd",
+ "iroh-docs",
+ "parking_lot",
+ "thiserror 2.0.19",
+ "xdid",
+]
+
+[[package]]
 name = "unavi-portal-protocol"
 version = "0.0.16"
 dependencies = [
@@ -14191,6 +14207,7 @@ dependencies = [
  "unavi-input",
  "unavi-manifold",
  "unavi-physics",
+ "unavi-policy",
  "unavi-portal-protocol",
  "unavi-quota",
  "unavi-space",
@@ -14278,11 +14295,13 @@ dependencies = [
  "unavi-avatar",
  "unavi-devtools",
  "unavi-manifold",
+ "unavi-policy",
  "unavi-portal-protocol",
  "unavi-quota",
  "unavi-registry",
  "unavi-util",
  "wds",
+ "xdid",
 ]
 
 [[package]]

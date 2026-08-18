@@ -34,9 +34,9 @@ use hsd::id::{
 };
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
+use unavi_policy::space::Space;
 
 use crate::{
-    Space,
     membership::{
         self,
     },
@@ -93,7 +93,7 @@ pub fn send_object_poses(
 
     let space_origins = spaces
         .iter()
-        .map(|(space, gt)| (crate::membership::space_doc_id(space), gt.translation()))
+        .map(|(space, gt)| (space.doc_id(), gt.translation()))
         .collect::<HashMap<_, _>>();
 
     let outgoing = prims
@@ -214,10 +214,7 @@ pub fn apply_remote_objects(
         else {
             continue;
         };
-        let Some((space, _)) = spaces
-            .iter()
-            .find(|(_, s)| crate::membership::space_doc_id(s) == resolved.space)
-        else {
+        let Some((space, _)) = spaces.iter().find(|(_, s)| s.doc_id() == resolved.space) else {
             continue;
         };
 

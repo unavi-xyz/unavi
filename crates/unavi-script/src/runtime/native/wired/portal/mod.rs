@@ -1,13 +1,11 @@
+use unavi_policy::document::ApiName;
 use wasmtime::component::Resource;
 
-use crate::{
-    permissions::ApiName,
-    runtime::{
-        Runtime,
-        shared::{
-            self,
-            wired::scene::prim::PrimRes,
-        },
+use crate::runtime::{
+    Runtime,
+    shared::{
+        self,
+        wired::scene::prim::PrimRes,
     },
 };
 
@@ -41,7 +39,7 @@ impl bindings::wired::portal::api::Host for Runtime {
     }
 
     async fn travel(&mut self, target_space: Vec<u8>) -> wasmtime::Result<Result<(), Error>> {
-        let result = match self.api.require(ApiName::System) {
+        let result = match self.api.require(ApiName::Travel) {
             Ok(()) => shared::wired::portal::travel(&self.api, target_space).await,
             Err(err) => Err(err),
         };

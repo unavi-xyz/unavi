@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+pub mod registry;
+
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
 use unavi_quota::{

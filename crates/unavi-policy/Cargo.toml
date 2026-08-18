@@ -1,0 +1,22 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-policy"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+bevy                  = { default-features = true, workspace = true }
+bevy-hsd.path         = "../bevy-hsd"
+hsd.path              = "../hsd"
+iroh-docs.workspace   = true
+parking_lot.workspace = true
+thiserror.workspace   = true
+xdid.workspace        = true
+
+[dev-dependencies]
+blake3.workspace = true

@@ -15,6 +15,7 @@ bevy.workspace      = true
 bevy-hsd.path       = "../bevy-hsd"
 iroh-docs.workspace = true
 unavi-input.path    = "../unavi-input"
+unavi-policy.path   = "../unavi-policy"
 unavi-space.path    = "../unavi-space"
 
 [dev-dependencies]

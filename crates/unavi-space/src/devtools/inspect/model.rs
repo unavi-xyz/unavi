@@ -22,16 +22,22 @@ use hsd::{
     state::SceneState,
 };
 use iroh_docs::NamespaceId;
+use unavi_policy::{
+    identity,
+    space::Space,
+};
 
 use crate::{
-    Space,
     anchor::ActiveSpace,
     devtools::{
         conn,
         inspect::Page,
     },
     membership,
-    peer::self_peer_id,
+    peer::{
+        self_did,
+        self_peer_id,
+    },
     state::replicas::{
         self,
         debug,
@@ -71,6 +77,9 @@ pub struct PeerModel {
     pub id:        [u8; 32],
     pub is_self:   bool,
     pub connected: bool,
+    /// The DID this peer proved over its own connection, absent while it has
+    /// proved none.
+    pub did:       Option<String>,
     /// Pinned docs as (doc, space, pinned-at).
     pub pins:      Vec<(NamespaceId, NamespaceId, u64)>,
     pub claims:    Vec<(NamespaceId, u64)>,
@@ -153,10 +162,16 @@ fn peer_model(id: [u8; 32], snap: &debug::DebugSnapshot) -> PeerModel {
         .find(|p| p.peer == id)
         .map(|p| p.docs.as_slice())
         .unwrap_or_default();
+    let is_self = self_peer_id() == Some(id);
     PeerModel {
         id,
-        is_self: self_peer_id() == Some(id),
+        is_self,
         connected: conn::snapshot().iter().any(|s| s.peer == id),
+        did: if is_self {
+            self_did()
+        } else {
+            identity::did_of(id).map(|d| d.to_string())
+        },
         pins: docs
             .iter()
             .filter_map(|d| d.pin.map(|at| (d.doc, d.space, at)))
@@ -181,7 +196,7 @@ fn peer_model(id: [u8; 32], snap: &debug::DebugSnapshot) -> PeerModel {
 
 impl InspectData<'_, '_> {
     fn space_model(&self, space: NamespaceId, snap: &debug::DebugSnapshot) -> SpaceModel {
-        let mut docs = membership::DOC_SPACE_REGISTRY
+        let mut docs = unavi_policy::membership::DOC_SPACE_REGISTRY
             .read()
             .iter()
             .filter(|(_, s)| s.0 == *space.as_bytes())

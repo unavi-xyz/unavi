@@ -23,8 +23,8 @@ use unavi_input::{
         nearest_hit,
     },
 };
+use unavi_policy::space::Space;
 use unavi_space::{
-    Space,
     anchor::ActiveSpace,
     peer::self_peer_id,
     state::{

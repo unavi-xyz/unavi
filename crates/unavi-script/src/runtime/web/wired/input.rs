@@ -2,25 +2,23 @@ use std::sync::Arc;
 
 use bevy::math::Vec3;
 use unavi_input::pointer::PointerKind;
+use unavi_policy::document::ApiName;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
 use super::scene::prim::PrimHandle;
-use crate::{
-    permissions::ApiName,
-    runtime::{
-        Runtime,
-        shared::{
-            self,
-            Api,
-            wired::input::types::{
-                Hit,
-                InputAction,
-                InputEvent,
-                Pointer,
-                PointerId,
-                Ray,
-            },
+use crate::runtime::{
+    Runtime,
+    shared::{
+        self,
+        Api,
+        wired::input::types::{
+            Hit,
+            InputAction,
+            InputEvent,
+            Pointer,
+            PointerId,
+            Ray,
         },
     },
 };

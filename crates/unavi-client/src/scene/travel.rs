@@ -1,6 +1,6 @@
 use bevy::prelude::*;
+use unavi_policy::space::Space;
 use unavi_space::{
-    Space,
     anchor::ActiveSpace,
     travel::PendingTravel,
 };

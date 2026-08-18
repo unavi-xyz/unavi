@@ -1,12 +1,10 @@
+use unavi_policy::document::ApiName;
 use wasm_bindgen::prelude::*;
 
 use super::scene::util::opt_rep;
-use crate::{
-    permissions::ApiName,
-    runtime::{
-        Runtime,
-        shared,
-    },
+use crate::runtime::{
+    Runtime,
+    shared,
 };
 
 #[wasm_bindgen]
@@ -29,7 +27,7 @@ impl Runtime {
     #[wasm_bindgen(js_name = "wiredPortalTravel")]
     pub async fn wired_portal_travel(&self, target_space: Vec<u8>) -> Result<(), String> {
         self.api
-            .require(ApiName::System)
+            .require(ApiName::Travel)
             .map_err(|e| e.to_string())?;
         shared::wired::portal::travel(&self.api, target_space)
             .await

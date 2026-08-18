@@ -41,8 +41,10 @@ unavi-agent.path           = "../unavi-agent"
 unavi-avatar               = { path = "../unavi-avatar", version = "0.0.16" }
 unavi-devtools             = { optional = true, path = "../unavi-devtools" }
 unavi-manifold             = { path = "../unavi-manifold", version = "0.0.16" }
+unavi-policy.path          = "../unavi-policy"
 unavi-portal-protocol.path = "../unavi-portal-protocol"
 unavi-quota.path           = "../unavi-quota"
 unavi-registry.path        = "../unavi-registry"
 unavi-util.path            = "../unavi-util"
 wds.path                   = "../wds"
+xdid.workspace             = true

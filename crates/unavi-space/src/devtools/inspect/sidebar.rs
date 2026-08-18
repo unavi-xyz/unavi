@@ -10,9 +10,9 @@ use bevy::{
     prelude::*,
 };
 use iroh_docs::NamespaceId;
+use unavi_policy::space::Space;
 
 use crate::{
-    Space,
     anchor::ActiveSpace,
     devtools::{
         conn,

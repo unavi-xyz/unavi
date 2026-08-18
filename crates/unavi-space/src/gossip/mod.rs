@@ -17,15 +17,13 @@ use serde::{
     Serialize,
 };
 use tokio::sync::oneshot;
+use unavi_policy::space::Space;
 use unavi_util::async_task::spawn_async_task;
 use wds::signed_bytes::Signable;
 
-use crate::{
-    Space,
-    gossip::thread::{
-        GossipCommand,
-        GossipCtx,
-    },
+use crate::gossip::thread::{
+    GossipCommand,
+    GossipCtx,
 };
 
 mod bootstrap;

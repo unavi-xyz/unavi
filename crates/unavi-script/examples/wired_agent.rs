@@ -23,7 +23,7 @@ use bevy_wds::{
     LocalDocs,
 };
 use unavi_agent::LocalAgent;
-use unavi_script::permissions::ApiPermissions;
+use unavi_policy::document::DocumentPolicy;
 
 use crate::util::create_client_wds;
 
@@ -119,6 +119,6 @@ fn on_agent_load(
             handle,
             on_load: None,
         },
-        ApiPermissions::system(),
+        DocumentPolicy::system(),
     ));
 }

@@ -1,18 +1,16 @@
 use bevy::prelude::*;
 use bevy_hsd::HsdNamespace;
 use iroh_docs::NamespaceId;
+use unavi_policy::space::Space;
 use unavi_util::async_commands::AsyncCommands;
 
-use crate::{
-    Space,
-    state::{
-        message::StateMsg,
-        replicas::{
-            self,
-            KvError,
-            KvPlacement,
-            PeerId,
-        },
+use crate::state::{
+    message::StateMsg,
+    replicas::{
+        self,
+        KvError,
+        KvPlacement,
+        PeerId,
     },
 };
 

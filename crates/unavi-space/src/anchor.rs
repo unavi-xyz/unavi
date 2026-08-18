@@ -12,10 +12,9 @@ use unavi_manifold::{
     PrevTranslation,
     transition::CrossedSeam,
 };
-
-use crate::{
-    Space,
+use unavi_policy::{
     membership::SpaceOwner,
+    space::Space,
 };
 
 #[derive(Component, Default)]

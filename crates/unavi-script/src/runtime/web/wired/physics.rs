@@ -1,16 +1,14 @@
+use unavi_policy::document::ApiName;
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    permissions::ApiName,
-    runtime::{
-        Runtime,
-        shared,
-        web::wired::scene::{
-            prim::PrimHandle,
-            util::{
-                js_to_vec3,
-                vec3_to_js,
-            },
+use crate::runtime::{
+    Runtime,
+    shared,
+    web::wired::scene::{
+        prim::PrimHandle,
+        util::{
+            js_to_vec3,
+            vec3_to_js,
         },
     },
 };

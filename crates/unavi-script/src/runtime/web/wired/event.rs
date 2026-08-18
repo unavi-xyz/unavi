@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use unavi_policy::document::ApiName;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::{
     JsValue,
@@ -10,21 +11,18 @@ use super::scene::{
     prim::PrimHandle,
     util::opt_rep,
 };
-use crate::{
-    permissions::ApiName,
-    runtime::{
-        Runtime,
-        shared::{
-            self,
-            Api,
-            registry::event::SenderScope,
-            wired::{
-                event::{
-                    EventFilter,
-                    EventScope,
-                },
-                scene::prim::PrimRes,
+use crate::runtime::{
+    Runtime,
+    shared::{
+        self,
+        Api,
+        registry::event::SenderScope,
+        wired::{
+            event::{
+                EventFilter,
+                EventScope,
             },
+            scene::prim::PrimRes,
         },
     },
 };

@@ -9,14 +9,14 @@ use hsd::{
     state::SceneState,
 };
 use tokio::sync::Mutex;
+use unavi_policy::document::{
+    ApiName,
+    DocumentPolicy,
+};
 use unavi_quota::Quota;
 
 use crate::{
     error::ScriptError,
-    permissions::{
-        ApiName,
-        ApiPermissions,
-    },
     runtime::shared::wired::{
         agent::WiredAgentApi,
         event::WiredEventApi,
@@ -35,7 +35,7 @@ pub struct Api {
     pub state:       Arc<std::sync::Mutex<SceneState>>,
     pub doc_id:      DocId,
     pub prim:        PrimId,
-    pub permissions: ApiPermissions,
+    pub policy:      DocumentPolicy,
     pub quota:       Arc<Quota>,
     pub wired_agent: Mutex<WiredAgentApi>,
     pub wired_event: Mutex<WiredEventApi>,
@@ -48,7 +48,7 @@ pub struct Api {
 impl Api {
     /// Gates a call on the document holding the named permission.
     pub fn require(&self, name: ApiName) -> Result<(), ScriptError> {
-        if self.permissions.contains(&name) {
+        if self.policy.allows(name) {
             Ok(())
         } else {
             Err(ScriptError::permission(format!("{name:?}")))
@@ -107,12 +107,6 @@ impl Plugin for SharedRuntimePlugin {
             .add_observer(registry::agent::register_peers)
             .add_observer(registry::agent::register_local_agent)
             .add_observer(registry::agent::deregister_agents)
-            .add_observer(registry::firewall::register_docs)
-            .add_observer(registry::firewall::register_instance_firewall)
-            .add_observer(registry::firewall::deregister_firewalls)
-            .add_observer(registry::quota::reassign_doc_quota)
-            .add_observer(registry::quota::forget_space_quota)
-            .add_observer(registry::quota::forget_peer_quota)
             .add_observer(registry::transform::register_nodes)
             .add_observer(registry::transform::deregister_transforms)
             .add_observer(registry::transform::deregister_doc_root)

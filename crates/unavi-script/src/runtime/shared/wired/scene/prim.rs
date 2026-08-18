@@ -64,6 +64,10 @@ use hsd::{
     },
     state::SceneState,
 };
+use unavi_policy::firewall::{
+    Channel,
+    registry::validate_firewall,
+};
 use unavi_quota::{
     Flow,
     limits::{
@@ -73,23 +77,17 @@ use unavi_quota::{
     },
 };
 
-use crate::{
-    firewall::Channel,
-    runtime::shared::{
-        Api,
-        registry::{
-            firewall::validate_firewall,
-            transform::{
-                AbsoluteNodeId,
-                DOC_ROOT_TRANSFORM_REGISTRY,
-                NODE_TRANSFORM_REGISTRY,
-            },
-        },
-        wired::scene::util::{
-            bytes_to_f32s,
-            f32s_to_bytes,
-            u32s_to_bytes,
-        },
+use crate::runtime::shared::{
+    Api,
+    registry::transform::{
+        AbsoluteNodeId,
+        DOC_ROOT_TRANSFORM_REGISTRY,
+        NODE_TRANSFORM_REGISTRY,
+    },
+    wired::scene::util::{
+        bytes_to_f32s,
+        f32s_to_bytes,
+        u32s_to_bytes,
     },
 };
 
@@ -314,9 +312,7 @@ fn ensure_writable(api: &Api, prim: &PrimRes) -> anyhow::Result<()> {
     if prim.is_proxy {
         bail!("cannot write proxy prim")
     }
-    let caller_is_system = api
-        .permissions
-        .contains(&crate::permissions::ApiName::System);
+    let caller_is_system = api.policy.trust.crosses_space_boundaries();
     if !caller_is_system && unavi_space::membership::doc_space(api.doc_id).is_none() {
         bail!("caller document is not placed in a space")
     }
@@ -326,7 +322,11 @@ fn ensure_writable(api: &Api, prim: &PrimRes) -> anyhow::Result<()> {
     {
         bail!("cross-document write requires both documents in the same space")
     }
-    validate_firewall(&api.doc_id, &prim.doc_id, Channel::SceneWrite)
+    Ok(validate_firewall(
+        &api.doc_id,
+        &prim.doc_id,
+        Channel::SceneWrite,
+    )?)
 }
 
 pub async fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {

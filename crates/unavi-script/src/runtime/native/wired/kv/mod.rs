@@ -1,9 +1,9 @@
+use unavi_policy::document::ApiName;
 use unavi_space::state::replicas::KvError;
 use wasmtime::component::Resource;
 
 use crate::{
     error::ScriptError,
-    permissions::ApiName,
     runtime::{
         Runtime,
         native::wired::error::Error,

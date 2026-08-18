@@ -26,9 +26,8 @@ use iroh::{
 };
 use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
+use unavi_policy::space::Space;
 use unavi_util::async_task::spawn_async_task;
-
-use crate::Space;
 
 pub mod pinned_docs;
 

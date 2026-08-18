@@ -5,8 +5,6 @@ use bevy::{
     prelude::*,
     time::common_conditions::on_timer,
 };
-use bevy_hsd::HsdCommitSet;
-use iroh_docs::NamespaceId;
 use unavi_manifold::{
     echo::maintain_seam_echoes,
     transition::apply_seam_crossings,
@@ -36,22 +34,26 @@ impl Plugin for SpacePlugin {
         #[cfg(feature = "devtools")]
         app.add_plugins(devtools::SpaceDevToolsPlugin);
 
+        if !app.is_plugin_added::<unavi_policy::PolicyPlugin>() {
+            app.add_plugins(unavi_policy::PolicyPlugin);
+        }
+
         app.init_resource::<anchor::SpaceGridAllocator>()
             .init_resource::<anchor::ActiveSpace>()
             .init_resource::<travel::PendingTravel>()
             .add_observer(anchor::assign_anchor)
+            .add_observer(quota::registry::reassign_doc_quota)
+            .add_observer(quota::registry::forget_document_quota)
+            .add_observer(quota::registry::forget_space_quota)
+            .add_observer(quota::registry::forget_peer_quota)
             .add_observer(anchor::reparent_doc_traveler)
-            .add_observer(membership::self_own_space)
-            .add_observer(membership::register_on_owner_change)
-            .add_observer(membership::deregister_doc_membership)
-            .add_observer(membership::deregister_space_docs)
             .add_observer(anchor::promote_first_space)
             .add_observer(anchor::release_anchor)
             .add_observer(connection::connect_to_peer)
             .add_observer(connection::disconnect_peer)
             .add_observer(connection::ecs::agent::inbound::despawn_remote_agent)
             .add_observer(connection::register_protocol)
-            .add_observer(peer::capture_self_did)
+            .add_observer(peer::capture_self_identity)
             .add_observer(gossip::leave_space_topic)
             .add_observer(gossip::spawn_gossip)
             .add_observer(portal::spawn_portal_space)
@@ -99,10 +101,6 @@ impl Plugin for SpacePlugin {
             )
             .add_systems(
                 Update,
-                membership::parent_docs_under_space.before(HsdCommitSet),
-            )
-            .add_systems(
-                Update,
                 (
                     gossip::publish_active_space,
                     connection::ecs::agent::inbound::apply_remote_poses,
@@ -112,7 +110,3 @@ impl Plugin for SpacePlugin {
             );
     }
 }
-
-#[derive(Component)]
-#[require(Transform, Visibility)]
-pub struct Space(pub NamespaceId);

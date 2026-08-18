@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 use bevy_hsd::attributes::portal::PortalConfig;
 use iroh_docs::NamespaceId;
-
-use crate::Space;
+use unavi_policy::space::Space;
 
 // TODO ensure singularity of spaces (if multiple opens on same frame)
 pub fn spawn_portal_space(

@@ -11,10 +11,9 @@ use bevy_wds::{
 };
 use iroh_docs::NamespaceId;
 use time::OffsetDateTime;
+use unavi_policy::space::Space;
 use unavi_registry::entry::Presence;
 use unavi_util::async_task::spawn_async_task;
-
-use crate::Space;
 
 const PRESENCE_TTL: Duration = Duration::from_mins(2);
 

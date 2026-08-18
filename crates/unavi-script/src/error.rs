@@ -1,7 +1,8 @@
+use unavi_policy::error::PolicyError;
 use unavi_quota::QuotaError;
 
 /// Host-side canonical error, mirroring `wired:error/types.error`.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScriptError {
     Other(String),
     Quota(String),
@@ -46,15 +47,57 @@ impl From<QuotaError> for ScriptError {
     }
 }
 
+impl From<PolicyError> for ScriptError {
+    fn from(err: PolicyError) -> Self {
+        match err {
+            PolicyError::Permission(detail) => Self::Permission(detail),
+            PolicyError::Firewall(detail) => Self::Firewall(detail),
+        }
+    }
+}
+
 impl From<anyhow::Error> for ScriptError {
     fn from(err: anyhow::Error) -> Self {
         let err = match err.downcast::<QuotaError>() {
             Ok(quota) => return quota.into(),
             Err(err) => err,
         };
+        // Before the `Self` arm: a policy denial boxed into `anyhow` and
+        // re-raised by a caller must keep its variant, not fall through to
+        // `Other` and change the error a guest sees.
+        let err = match err.downcast::<PolicyError>() {
+            Ok(policy) => return policy.into(),
+            Err(err) => err,
+        };
         match err.downcast::<Self>() {
             Ok(script) => script,
             Err(err) => Self::Other(err.to_string()),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_policy_denial_boxed_into_anyhow_keeps_its_variant() {
+        for (policy, expected) in [
+            (
+                PolicyError::Firewall("SceneWrite".into()),
+                ScriptError::Firewall("SceneWrite".into()),
+            ),
+            (
+                PolicyError::Permission("Physics".into()),
+                ScriptError::Permission("Physics".into()),
+            ),
+        ] {
+            let script = ScriptError::from(anyhow::Error::new(policy));
+            assert_eq!(
+                script, expected,
+                "a denial that reaches a guest as `other` is a different WIT \
+                 error than the one raised"
+            );
         }
     }
 }

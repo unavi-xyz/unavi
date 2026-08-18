@@ -6,15 +6,15 @@ use bevy_hsd::{
     HsdDocId,
     load::LoadHsd,
 };
-use unavi_script::{
+use unavi_policy::{
+    document::DocumentPolicy,
     firewall::{
         Access,
         Channel,
         Firewall,
     },
-    permissions::ApiPermissions,
-    quota::QuotaExempt,
 };
+use unavi_script::quota::QuotaExempt;
 
 const SHELL_HSD: &str = "hsd/unavi_halo.hsdz";
 const TOOL_HSDS: &[&str] = &["hsd/unavi_spawner.hsdz", "hsd/unavi_physgun.hsdz"];
@@ -35,7 +35,7 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
                     handle,
                     on_load: None,
                 },
-                ApiPermissions::system(),
+                DocumentPolicy::system(),
                 QuotaExempt,
             ))
             .id();
@@ -54,7 +54,7 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
                     handle,
                     on_load: None,
                 },
-                ApiPermissions::system(),
+                DocumentPolicy::system(),
                 QuotaExempt,
                 FirewallEntities(fw),
             ))

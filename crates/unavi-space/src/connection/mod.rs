@@ -20,6 +20,7 @@ use bevy_iroh::{
 };
 use iroh::EndpointId;
 use tokio::sync::oneshot;
+use unavi_policy::identity;
 use unavi_util::async_task::spawn_async_task;
 
 use crate::{
@@ -64,6 +65,8 @@ fn release_connection(peer: EndpointId, token: u64) -> bool {
     let mut conns = CONNECTIONS.lock().expect("connections lock");
     if conns.get(&peer).is_some_and(|(t, _)| *t == token) {
         conns.remove(&peer);
+        drop(conns);
+        identity::unbind(*peer.as_bytes());
         true
     } else {
         false
@@ -123,6 +126,7 @@ pub fn disconnect_peer(
     let mut conns = CONNECTIONS.lock().expect("connections lock");
     conns.remove(&peer.0.id);
     drop(conns);
+    identity::unbind(*peer.0.id.as_bytes());
 
     for (entity, p) in streams {
         if p.0 != peer.0.id {

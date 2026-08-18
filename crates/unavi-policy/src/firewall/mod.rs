@@ -10,6 +10,8 @@ use bevy::prelude::*;
 use hsd::id::DocId;
 use parking_lot::RwLock;
 
+pub mod registry;
+
 /// Firewall controls how a document may communicate with other documents.
 #[derive(Component, Clone, Deref)]
 pub struct Firewall(pub Arc<RwLock<HashMap<Channel, Access>>>);

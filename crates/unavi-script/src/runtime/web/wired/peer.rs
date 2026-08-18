@@ -1,11 +1,9 @@
+use unavi_policy::document::ApiName;
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    permissions::ApiName,
-    runtime::{
-        Runtime,
-        shared,
-    },
+use crate::runtime::{
+    Runtime,
+    shared,
 };
 
 #[wasm_bindgen]

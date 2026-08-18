@@ -19,7 +19,7 @@ use bevy_wds::{
     LocalDocs,
 };
 use unavi_agent::LocalAgent;
-use unavi_script::permissions::ApiPermissions;
+use unavi_policy::document::DocumentPolicy;
 
 use crate::util::create_client_wds;
 
@@ -111,6 +111,6 @@ fn init_scene(
         },
         // Scene writes are refused for a document in no space; a standalone
         // harness needs the shell's own permissions.
-        ApiPermissions::system(),
+        DocumentPolicy::system(),
     ));
 }

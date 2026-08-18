@@ -1,5 +1,9 @@
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
+use unavi_policy::firewall::{
+    Channel,
+    registry::validate_firewall,
+};
 use unavi_quota::{
     Flow,
     Stock,
@@ -9,13 +13,9 @@ use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
     error::ScriptError,
-    firewall::Channel,
     portal_host::PortalWatch,
     quota::QuotaGuards,
-    runtime::shared::{
-        Api,
-        registry::firewall::validate_firewall,
-    },
+    runtime::shared::Api,
 };
 
 pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<(), ScriptError> {

@@ -1,6 +1,10 @@
 use bevy::prelude::*;
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
+use unavi_policy::firewall::{
+    Channel,
+    registry::validate_firewall,
+};
 use unavi_space::{
     membership::doc_space,
     state::{
@@ -12,13 +16,9 @@ use unavi_space::{
     },
 };
 
-use crate::{
-    firewall::Channel,
-    runtime::shared::{
-        Api,
-        registry::firewall::validate_firewall,
-        slot_map::SlotMap,
-    },
+use crate::runtime::shared::{
+    Api,
+    slot_map::SlotMap,
 };
 
 #[derive(Clone, Copy)]

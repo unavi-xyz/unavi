@@ -7,22 +7,17 @@ use std::sync::{
 };
 
 use bevy::prelude::*;
-
-use crate::{
-    load::asset::Wasm,
-    permissions::{
-        ApiPermissions,
-        grant_space_permissions,
-        inherit_host_permissions,
-    },
+use unavi_policy::{
+    PolicyPlugin,
+    document::DocumentPolicy,
 };
+
+use crate::load::asset::Wasm;
 
 #[cfg(feature = "debug")] pub mod debug;
 mod engine;
 pub mod error;
-pub mod firewall;
 pub mod load;
-pub mod permissions;
 mod portal_host;
 pub mod quota;
 pub mod runtime;
@@ -39,13 +34,15 @@ pub struct ScriptPlugin;
 
 impl Plugin for ScriptPlugin {
     fn build(&self, app: &mut App) {
+        if !app.is_plugin_added::<PolicyPlugin>() {
+            app.add_plugins(PolicyPlugin);
+        }
+
         app.add_plugins((
             engine::EnginePlugin,
             load::LoadPlugin,
             runtime::shared::SharedRuntimePlugin,
         ))
-        .add_observer(grant_space_permissions)
-        .add_observer(inherit_host_permissions)
         .add_systems(
             FixedUpdate,
             (
@@ -58,7 +55,7 @@ impl Plugin for ScriptPlugin {
 }
 
 #[derive(Component)]
-#[require(ApiPermissions, FixedUpdating, Trapped, Updating)]
+#[require(DocumentPolicy, FixedUpdating, Trapped, Updating)]
 pub struct Script(pub Handle<Wasm>);
 
 #[derive(Component, Default)]

@@ -1,9 +1,8 @@
-use crate::{
-    permissions::ApiName,
-    runtime::{
-        Runtime,
-        shared,
-    },
+use unavi_policy::document::ApiName;
+
+use crate::runtime::{
+    Runtime,
+    shared,
 };
 
 pub mod bindings {

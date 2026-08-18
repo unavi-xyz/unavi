@@ -10,7 +10,7 @@ use bevy_hsd::load::{
 };
 use bevy_wds::doc::DocSet;
 use iroh_docs::NamespaceId;
-use unavi_space::Space;
+use unavi_policy::space::Space;
 use unavi_util::async_commands::AsyncCommands;
 
 /// A namespace to enter instead of the local home, from `--join`.

@@ -20,6 +20,10 @@ use hsd::{
     state::SceneState,
 };
 use tokio::sync::MutexGuard;
+use unavi_policy::firewall::{
+    Channel,
+    registry::validate_firewall,
+};
 use unavi_quota::{
     Flow,
     Quota,
@@ -29,18 +33,12 @@ use unavi_quota::{
 use unavi_space::quota::document_quota;
 use unavi_util::async_commands::AsyncCommands;
 
-use crate::{
-    firewall::Channel,
-    runtime::shared::{
-        Api,
-        registry::{
-            firewall::validate_firewall,
-            transform::DOC_ROOT_TRANSFORM_REGISTRY,
-        },
-        wired::scene::{
-            WiredSceneApi,
-            prim::PrimRes,
-        },
+use crate::runtime::shared::{
+    Api,
+    registry::transform::DOC_ROOT_TRANSFORM_REGISTRY,
+    wired::scene::{
+        WiredSceneApi,
+        prim::PrimRes,
     },
 };
 

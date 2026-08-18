@@ -1,9 +1,9 @@
 use bevy_vrm::BoneName;
+use unavi_policy::document::ApiName;
 use wasmtime::component::Resource;
 
 use crate::{
     error::ScriptError,
-    permissions::ApiName,
     runtime::{
         Runtime,
         shared::{

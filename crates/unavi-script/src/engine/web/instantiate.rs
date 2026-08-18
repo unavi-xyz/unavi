@@ -8,6 +8,7 @@ use bevy_hsd::{
     Prim,
 };
 use tokio::sync::Mutex;
+use unavi_policy::document::DocumentPolicy;
 use unavi_quota::Quota;
 use unavi_util::async_task::spawn_async_task;
 
@@ -15,7 +16,6 @@ use crate::{
     Script,
     engine::web::fixed_update::LastFixedUpdate,
     load::asset::Wasm,
-    permissions::ApiPermissions,
     quota::QuotaExempt,
     runtime::{
         Runtime,
@@ -40,7 +40,7 @@ pub fn instantiate_scripts(
         (
             Entity,
             &Script,
-            &ApiPermissions,
+            &DocumentPolicy,
             NameOrEntity,
             &Prim,
             &HsdChild,
@@ -71,7 +71,7 @@ pub fn instantiate_scripts(
                 state: Arc::clone(&doc.0),
                 doc_id: doc_id.0,
                 prim: prim.0,
-                permissions: perms.clone(),
+                policy: perms.clone(),
                 quota,
                 wired_agent: Mutex::default(),
                 wired_event: Mutex::default(),

@@ -1,13 +1,11 @@
 use std::sync::Arc;
 
+use unavi_policy::document::ApiName;
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    permissions::ApiName,
-    runtime::{
-        Runtime,
-        shared,
-    },
+use crate::runtime::{
+    Runtime,
+    shared,
 };
 
 pub mod document;

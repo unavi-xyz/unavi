@@ -26,13 +26,11 @@ use unavi_avatar::{
     bones::AvatarBones,
 };
 use unavi_manifold::EchoBody;
+use unavi_policy::space::Space;
 
-use crate::{
-    Space,
-    peer::{
-        ActiveSpaces,
-        Peer,
-    },
+use crate::peer::{
+    ActiveSpaces,
+    Peer,
 };
 
 const MIN_LERP: Duration = Duration::from_millis(50);

@@ -12,10 +12,7 @@ use std::{
 
 use async_channel::Receiver;
 use hsd::id::DocId;
-use unavi_policy::firewall::{
-    Channel,
-    registry::validate_firewall,
-};
+use unavi_space::reach::check_write;
 use unavi_quota::{
     Flow,
     QuotaError,
@@ -154,7 +151,7 @@ pub async fn emit(
             continue;
         }
 
-        if validate_firewall(&api.doc_id, &entry.doc_id, Channel::EventWrite).is_err() {
+        if check_write(api.doc_id, api.policy.tier, entry.doc_id).is_err() {
             continue;
         }
 
@@ -224,7 +221,7 @@ fn resolve_sender_scope(
             },
         ) => {
             let e_pos = (*emitter_pos)?;
-            let emitter_is_system = api.policy.trust.crosses_space_boundaries();
+            let emitter_is_system = api.policy.tier.crosses_space_boundaries();
             if !emitter_is_system
                 && !unavi_space::membership::same_space(emitter_abs.doc, receptor_node.doc)
             {

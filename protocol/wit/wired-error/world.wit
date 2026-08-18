@@ -14,7 +14,8 @@ interface types {
     quota,
     // The script's document lacks the API permission for this call.
     permission,
-    // The target document's firewall forbids this cross-document access.
-    firewall,
+    // The target document does not accept writes from the caller's owner, or
+    // the two documents are not in the same space.
+    reach,
   }
 }

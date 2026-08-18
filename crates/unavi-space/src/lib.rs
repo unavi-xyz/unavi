@@ -20,6 +20,7 @@ mod portal;
 mod portal_bridge;
 mod presence;
 pub mod quota;
+pub mod reach;
 mod scene;
 pub mod spawn;
 pub mod state;

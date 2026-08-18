@@ -77,7 +77,7 @@ fn to_blob_array(bytes: Vec<u8>) -> wasmtime::Result<[u8; 32]> {
         .map_err(|_| wasmtime::Error::msg("blob id must be 32 bytes"))
 }
 
-/// Lowers a fallible host call into a WIT `result`, so firewall/quota/space
+/// Lowers a fallible host call into a WIT `result`, so reach/quota/space
 /// errors reach the guest instead of trapping.
 fn lower<T>(result: anyhow::Result<T>) -> Result<T, Error> {
     result.map_err(|e| ScriptError::from(e).into())

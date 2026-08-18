@@ -3,10 +3,11 @@ use bevy_hsd::HsdCommitSet;
 
 pub mod document;
 pub mod error;
-pub mod firewall;
 pub mod identity;
 pub mod membership;
+pub mod reach;
 pub mod space;
+pub mod tier;
 pub mod trust;
 
 /// Registers the document-policy lifecycle: who a document may talk to, and
@@ -18,9 +19,8 @@ pub struct PolicyPlugin;
 
 impl Plugin for PolicyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(firewall::registry::register_docs)
-            .add_observer(firewall::registry::register_instance_firewall)
-            .add_observer(firewall::registry::deregister_firewalls)
+        app.add_observer(reach::register_reach)
+            .add_observer(reach::deregister_reach)
             .add_observer(document::grant_space_permissions)
             .add_observer(document::inherit_host_permissions)
             .add_observer(membership::self_own_space)

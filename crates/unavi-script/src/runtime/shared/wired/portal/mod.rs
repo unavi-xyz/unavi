@@ -1,14 +1,13 @@
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
-use unavi_policy::firewall::{
-    Channel,
-    registry::validate_firewall,
-};
 use unavi_quota::{
     Flow,
     Stock,
 };
-use unavi_space::membership::doc_space;
+use unavi_space::{
+    membership::doc_space,
+    reach::check_write,
+};
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
@@ -34,8 +33,8 @@ pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<(),
 
     // Opening a portal writes a handshake on behalf of the source prim; the
     // caller must hold scene-write on that prim's document.
-    validate_firewall(&api.doc_id, &doc, Channel::SceneWrite)
-        .map_err(|_| ScriptError::firewall("portal open requires scene-write on source prim"))?;
+    check_write(api.doc_id, api.policy.tier, doc)
+        .map_err(|_| ScriptError::reach("portal open requires write reach on the source prim"))?;
 
     let source_space =
         doc_space(doc).ok_or_else(|| ScriptError::other("prim doc is not in a tracked space"))?;

@@ -20,9 +20,9 @@ use hsd::{
     state::SceneState,
 };
 use tokio::sync::MutexGuard;
-use unavi_policy::firewall::{
-    Channel,
-    registry::validate_firewall,
+use unavi_space::reach::{
+    check_read,
+    check_write,
 };
 use unavi_quota::{
     Flow,
@@ -151,7 +151,7 @@ pub async fn get_prim(api: &Api, rep: u32, prim_id: String) -> anyhow::Result<Op
 
 pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let doc = get_doc(api, rep).await?;
-    validate_firewall(&api.doc_id, &doc.id, Channel::SceneWrite)?;
+    check_write(api.doc_id, api.policy.tier, doc.id)?;
     api.quota.spend(Flow::CreatePrim, 1.0)?;
     let quota = document_quota(doc.id);
     quota.try_charge(Stock::Prims, 1)?;
@@ -186,10 +186,7 @@ pub async fn offset_to(
     let self_doc = get_doc(api, self_rep).await?;
     let other_doc = get_doc(api, other_rep).await?;
 
-    if !unavi_space::membership::same_space(self_doc.id, other_doc.id) {
-        return Ok(None);
-    }
-    if validate_firewall(&api.doc_id, &other_doc.id, Channel::SceneRead).is_err() {
+    if check_read(self_doc.id, api.policy.tier, other_doc.id).is_err() {
         return Ok(None);
     }
 
@@ -222,7 +219,7 @@ pub async fn remove_prim(api: &Api, prim_rep: u32) -> anyhow::Result<()> {
     if prim.is_proxy {
         return Ok(());
     }
-    validate_firewall(&api.doc_id, &prim.doc_id, Channel::SceneWrite)?;
+    check_write(api.doc_id, api.policy.tier, prim.doc_id)?;
 
     let mut state = prim
         .state
@@ -290,7 +287,7 @@ async fn place(id: DocId, placement: Placement) -> anyhow::Result<()> {
 
 pub async fn set_anchor(api: &Api, rep: u32, target: Option<u32>) -> anyhow::Result<()> {
     let doc = get_doc(api, rep).await?;
-    validate_firewall(&api.doc_id, &doc.id, Channel::SceneWrite)?;
+    check_write(api.doc_id, api.policy.tier, doc.id)?;
 
     let target = match target {
         Some(target_rep) => {
@@ -312,7 +309,7 @@ pub async fn set_anchor(api: &Api, rep: u32, target: Option<u32>) -> anyhow::Res
 
 pub async fn set_offset(api: &Api, rep: u32, value: XformValue) -> anyhow::Result<()> {
     let doc = get_doc(api, rep).await?;
-    validate_firewall(&api.doc_id, &doc.id, Channel::SceneWrite)?;
+    check_write(api.doc_id, api.policy.tier, doc.id)?;
 
     place(
         doc.id,

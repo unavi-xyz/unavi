@@ -24,16 +24,10 @@ use hsd::{
     },
 };
 use iroh_docs::NamespaceId;
-use unavi_policy::{
-    firewall::{
-        Channel,
-        registry::{
-            reserve_child_firewall,
-            seal_scene_writes,
-            validate_firewall,
-        },
-    },
-    space::Space,
+use unavi_policy::space::Space;
+use unavi_space::reach::{
+    check_read,
+    check_write,
 };
 use unavi_quota::{
     Flow,
@@ -176,7 +170,6 @@ async fn spawn_child_doc(
     let doc_guard = api.quota.charge(Stock::Documents, 1)?;
     let id = DocId(*ns.as_bytes());
 
-    let firewall = reserve_child_firewall(id, api.doc_id);
     // Seed the child's space before the spawn command applies.
     if let Some(parent_space) = unavi_space::membership::doc_space(api.doc_id) {
         unavi_policy::membership::DOC_SPACE_REGISTRY
@@ -189,7 +182,6 @@ async fn spawn_child_doc(
             HsdHeld(state),
             HsdDocId(id),
             HsdNamespace(ns),
-            firewall,
             api.policy.clone(),
             QuotaGuards(vec![doc_guard]),
         ))
@@ -225,7 +217,7 @@ pub async fn self_document(api: &Api) -> anyhow::Result<u32> {
 
 pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
     let id = doc_id(&id)?;
-    validate_firewall(&api.doc_id, &id, Channel::SceneRead)?;
+    check_read(api.doc_id, api.policy.tier, id)?;
 
     let mut scene = api.wired_scene.lock().await;
 
@@ -269,8 +261,8 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
 
 pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
-    if let Err(err) = validate_firewall(&api.doc_id, &id, Channel::SceneWrite) {
-        debug!(?err, "remove_document denied by firewall, skipping");
+    if let Err(err) = check_write(api.doc_id, api.policy.tier, id) {
+        debug!(?err, "remove_document out of reach, skipping");
         return Ok(());
     }
 
@@ -327,10 +319,8 @@ async fn drop_replica(ns: NamespaceId) {
 pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
     let ns = namespace_of(id).await?;
-    validate_firewall(&api.doc_id, &id, Channel::SceneWrite)?;
+    check_write(api.doc_id, api.policy.tier, id)?;
     api.quota.spend(Flow::SyncDoc, 1.0)?;
-
-    seal_scene_writes(id);
 
     let space = if let Some(s) = unavi_space::membership::doc_space(id) {
         s
@@ -391,7 +381,7 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
 
 pub async fn save_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
-    validate_firewall(&api.doc_id, &id, Channel::SceneWrite)?;
+    check_write(api.doc_id, api.policy.tier, id)?;
 
     let state = {
         let scene = api.wired_scene.lock().await;

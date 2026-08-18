@@ -5,7 +5,6 @@ use bevy_hsd::{
 };
 use iroh_docs::NamespaceId;
 use unavi_policy::{
-    firewall::registry::RegisteredFirewall,
     membership::SpaceOwner,
     space::Space,
 };
@@ -36,12 +35,9 @@ pub fn reassign_doc_quota(
     reassign_document_in_space(record.0, space.doc_id());
 }
 
-/// Keyed off the firewall registration marker, which is what records a
-/// document as registered at all.
-pub fn forget_document_quota(
-    trigger: On<Remove, RegisteredFirewall>,
-    docs: Query<&RegisteredFirewall>,
-) {
+/// Keyed off the document id itself: every document has one, so none can
+/// leave its quota entry behind by never having acquired some other marker.
+pub fn forget_document_quota(trigger: On<Remove, HsdDocId>, docs: Query<&HsdDocId>) {
     if let Ok(doc) = docs.get(trigger.entity) {
         forget_document(NamespaceId::from(&doc.0.0));
     }

@@ -64,10 +64,7 @@ use hsd::{
     },
     state::SceneState,
 };
-use unavi_policy::firewall::{
-    Channel,
-    registry::validate_firewall,
-};
+use unavi_space::reach::check_write;
 use unavi_quota::{
     Flow,
     limits::{
@@ -312,21 +309,12 @@ fn ensure_writable(api: &Api, prim: &PrimRes) -> anyhow::Result<()> {
     if prim.is_proxy {
         bail!("cannot write proxy prim")
     }
-    let caller_is_system = api.policy.trust.crosses_space_boundaries();
-    if !caller_is_system && unavi_space::membership::doc_space(api.doc_id).is_none() {
+    if !api.policy.tier.crosses_space_boundaries()
+        && unavi_space::membership::doc_space(api.doc_id).is_none()
+    {
         bail!("caller document is not placed in a space")
     }
-    if api.doc_id != prim.doc_id
-        && !caller_is_system
-        && !unavi_space::membership::same_space(api.doc_id, prim.doc_id)
-    {
-        bail!("cross-document write requires both documents in the same space")
-    }
-    Ok(validate_firewall(
-        &api.doc_id,
-        &prim.doc_id,
-        Channel::SceneWrite,
-    )?)
+    Ok(check_write(api.doc_id, api.policy.tier, prim.doc_id)?)
 }
 
 pub async fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {

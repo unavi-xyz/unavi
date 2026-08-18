@@ -19,7 +19,7 @@ impl From<ScriptError> for Error {
             ScriptError::Other(s) => Self::Other(s),
             ScriptError::Quota(_) => Self::Quota,
             ScriptError::Permission(_) => Self::Permission,
-            ScriptError::Firewall(_) => Self::Firewall,
+            ScriptError::Reach(_) => Self::Reach,
         }
     }
 }

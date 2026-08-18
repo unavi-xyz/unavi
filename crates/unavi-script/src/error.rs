@@ -7,7 +7,7 @@ pub enum ScriptError {
     Other(String),
     Quota(String),
     Permission(String),
-    Firewall(String),
+    Reach(String),
 }
 
 impl ScriptError {
@@ -15,8 +15,8 @@ impl ScriptError {
         Self::Permission(detail.into())
     }
 
-    pub fn firewall(detail: impl Into<String>) -> Self {
-        Self::Firewall(detail.into())
+    pub fn reach(detail: impl Into<String>) -> Self {
+        Self::Reach(detail.into())
     }
 
     pub fn other(detail: impl Into<String>) -> Self {
@@ -30,7 +30,7 @@ impl std::fmt::Display for ScriptError {
             Self::Other(s) => write!(f, "{s}"),
             Self::Quota(s) => write!(f, "quota exceeded: {s}"),
             Self::Permission(s) => write!(f, "permission denied: {s}"),
-            Self::Firewall(s) => write!(f, "firewall blocked: {s}"),
+            Self::Reach(s) => write!(f, "out of reach: {s}"),
         }
     }
 }
@@ -51,7 +51,7 @@ impl From<PolicyError> for ScriptError {
     fn from(err: PolicyError) -> Self {
         match err {
             PolicyError::Permission(detail) => Self::Permission(detail),
-            PolicyError::Firewall(detail) => Self::Firewall(detail),
+            PolicyError::Reach(detail) => Self::Reach(detail),
         }
     }
 }
@@ -84,8 +84,8 @@ mod tests {
     fn a_policy_denial_boxed_into_anyhow_keeps_its_variant() {
         for (policy, expected) in [
             (
-                PolicyError::Firewall("SceneWrite".into()),
-                ScriptError::Firewall("SceneWrite".into()),
+                PolicyError::Reach("writes need Trusted".into()),
+                ScriptError::Reach("writes need Trusted".into()),
             ),
             (
                 PolicyError::Permission("Physics".into()),

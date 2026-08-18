@@ -59,7 +59,6 @@ impl Plugin for ScenePlugin {
                     travel::drive_travel,
                     limbo::hold_agent_in_limbo.run_if(in_state(SceneState::Limbo)),
                     respawn::teleport_from_void,
-                    system_scripts::populate_firewall_entities,
                 ),
             );
     }

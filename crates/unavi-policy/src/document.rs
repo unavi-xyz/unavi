@@ -12,7 +12,7 @@ use bevy_hsd::{
 
 use crate::{
     space::Space,
-    trust::Trust,
+    tier::Tier,
 };
 
 /// A host API surface a document may be granted.
@@ -36,11 +36,11 @@ pub enum ApiName {
     Wds,
 }
 
-/// Everything the host decides about one document: how far it is trusted, and
+/// Everything the host decides about one document: which tier it came from, and
 /// which APIs it may reach.
 #[derive(Component, Clone, Debug)]
 pub struct DocumentPolicy {
-    pub trust:   Trust,
+    pub tier:    Tier,
     permissions: Arc<HashSet<ApiName>>,
 }
 
@@ -51,9 +51,9 @@ impl Default for DocumentPolicy {
 }
 
 impl DocumentPolicy {
-    fn new(trust: Trust, names: impl IntoIterator<Item = ApiName>) -> Self {
+    fn new(tier: Tier, names: impl IntoIterator<Item = ApiName>) -> Self {
         Self {
-            trust,
+            tier,
             permissions: Arc::new(names.into_iter().collect()),
         }
     }
@@ -61,7 +61,7 @@ impl DocumentPolicy {
     #[must_use]
     pub fn untrusted() -> Self {
         Self::new(
-            Trust::Untrusted,
+            Tier::Untrusted,
             [
                 ApiName::Event,
                 ApiName::Input,
@@ -76,7 +76,7 @@ impl DocumentPolicy {
     #[must_use]
     pub fn space() -> Self {
         Self::new(
-            Trust::Space,
+            Tier::Space,
             [
                 ApiName::CreateDocument,
                 ApiName::Event,
@@ -93,7 +93,7 @@ impl DocumentPolicy {
     #[must_use]
     pub fn system() -> Self {
         Self::new(
-            Trust::System,
+            Tier::System,
             [
                 ApiName::CreateDocument,
                 ApiName::Event,
@@ -121,7 +121,7 @@ impl DocumentPolicy {
         let mut set = (*self.permissions).clone();
         set.insert(name);
         Self {
-            trust:       self.trust,
+            tier:        self.tier,
             permissions: Arc::new(set),
         }
     }
@@ -159,9 +159,9 @@ mod tests {
 
     #[test]
     fn only_the_system_tier_crosses_space_boundaries() {
-        assert!(DocumentPolicy::system().trust.crosses_space_boundaries());
-        assert!(!DocumentPolicy::space().trust.crosses_space_boundaries());
-        assert!(!DocumentPolicy::untrusted().trust.crosses_space_boundaries());
+        assert!(DocumentPolicy::system().tier.crosses_space_boundaries());
+        assert!(!DocumentPolicy::space().tier.crosses_space_boundaries());
+        assert!(!DocumentPolicy::untrusted().tier.crosses_space_boundaries());
     }
 
     #[test]

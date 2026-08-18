@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
-use unavi_policy::firewall::{
-    Channel,
-    registry::validate_firewall,
-};
 use unavi_space::{
     membership::doc_space,
+    reach::{
+        check_read,
+        check_write,
+    },
     state::{
         entities,
         replicas::{
@@ -66,7 +66,7 @@ pub async fn get_kv(api: &Api, doc_id: Vec<u8>) -> anyhow::Result<Option<u32>> {
         return Ok(None);
     }
 
-    if validate_firewall(&api.doc_id, &doc, Channel::KvRead).is_err() {
+    if check_read(api.doc_id, api.policy.tier, doc).is_err() {
         return Ok(None);
     }
 
@@ -82,7 +82,7 @@ pub async fn kv_get(api: &Api, rep: u32, key: String) -> anyhow::Result<Option<V
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if validate_firewall(&api.doc_id, &res.doc, Channel::KvRead).is_err() {
+    if check_read(api.doc_id, api.policy.tier, res.doc).is_err() {
         return Ok(None);
     }
     Ok(replicas::doc_kv_get(ns(res.space), ns(res.doc), &key))
@@ -99,7 +99,7 @@ pub async fn kv_set(
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if validate_firewall(&api.doc_id, &res.doc, Channel::KvWrite).is_err() {
+    if check_write(api.doc_id, api.policy.tier, res.doc).is_err() {
         return Ok(Err(KvError::Other));
     }
     Ok(entities::doc_kv_set(ns(res.space), ns(res.doc), key, value).await)
@@ -111,7 +111,7 @@ pub async fn kv_delete(api: &Api, rep: u32, key: String) -> anyhow::Result<Resul
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if validate_firewall(&api.doc_id, &res.doc, Channel::KvWrite).is_err() {
+    if check_write(api.doc_id, api.policy.tier, res.doc).is_err() {
         return Ok(Err(KvError::Other));
     }
     Ok(entities::doc_kv_delete(ns(res.space), ns(res.doc), key).await)
@@ -123,7 +123,7 @@ pub async fn kv_keys(api: &Api, rep: u32) -> anyhow::Result<Vec<String>> {
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if validate_firewall(&api.doc_id, &res.doc, Channel::KvRead).is_err() {
+    if check_read(api.doc_id, api.policy.tier, res.doc).is_err() {
         return Ok(Vec::new());
     }
     Ok(replicas::doc_kv_keys(ns(res.space), ns(res.doc)))

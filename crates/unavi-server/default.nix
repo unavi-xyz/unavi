@@ -11,6 +11,7 @@ _: {
           (lib.fileset.fileFilter (file: lib.any file.hasExt [ "ron" ]) root)
           ../../LICENSE
           ../wds/migrations
+          ./secretspec.toml
         ];
       };
 

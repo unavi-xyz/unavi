@@ -168,17 +168,10 @@
               prettier = {
                 enable = true;
                 includes = [
-                  "*.cjs"
                   "*.css"
                   "*.html"
                   "*.js"
                   "*.json"
-                  "*.jsx"
-                  "*.mjs"
-                  "*.scss"
-                  "*.ts"
-                  "*.tsx"
-                  "*.vue"
                 ];
               };
               yamlfmt.enable = true;
@@ -222,6 +215,7 @@
                       nodejs
                       nushell
                       rustup
+                      secretspec
                       sops
                       terraform
                       tokio-console
@@ -237,6 +231,10 @@
                   inherit LD_LIBRARY_PATH;
 
                   WEBKIT_DISABLE_DMABUF_RENDERER = 1; # Nvida + Wayland launcher bug
+
+                  # The profile whose values every locally built binary
+                  # compiles in, naming a locally run server.
+                  SECRETSPEC_PROFILE = "development";
 
                   NIX_LD = "${pkgs.glibc.out}/lib/ld-linux-x86-64.so.2";
                   LIBRARY_PATH = "${pkgs.gcc.cc.lib}/lib:${pkgs.glibc.out}/lib";

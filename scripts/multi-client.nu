@@ -47,12 +47,17 @@ def main [
   --join
   --logs: string
 ] {
-  $env.UNAVI_SYNC_TARGETS = $"did:web:localhost%3A($port)"
+  $env.SECRETSPEC_PROFILE = "development"
   # Launching the binary directly leaves Bevy resolving assets next to the
   # executable, rather than from the client crate as `cargo run` does.
   $env.BEVY_ASSET_ROOT = "crates/unavi-client"
 
   cargo build -p unavi-server -p unavi-client
+
+  # Set after building, since the build compiles in whichever values the
+  # environment names and `--port` would otherwise rebuild the client.
+  $env.UNAVI_SYNC_TARGETS = $"did:web:localhost%3A($port)"
+  $env.UNAVI_DOMAIN = $"localhost:($port)"
 
   let dir = if $logs != null {
     mkdir $logs

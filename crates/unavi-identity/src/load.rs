@@ -54,7 +54,10 @@ use xdid::{
     },
 };
 
-use crate::InMemory;
+use crate::{
+    InMemory,
+    SyncConfig,
+};
 
 const RETRY_DELAY: Duration = Duration::from_secs(4);
 const MAX_RETRY_DELAY: Duration = Duration::from_mins(1);
@@ -63,6 +66,7 @@ pub fn spawn_actors(
     trigger: On<Add, IrohEndpoint>,
     endpoints: Query<&IrohEndpoint>,
     in_memory: Res<InMemory>,
+    sync: Res<SyncConfig>,
 ) {
     let entity = trigger.entity;
 
@@ -72,12 +76,13 @@ pub fn spawn_actors(
         .expect("endpoint");
 
     let in_memory = *in_memory;
+    let sync = sync.clone();
 
     spawn_async_task(async move {
         let mut delay_secs = 4;
 
         loop {
-            if let Err(err) = load_store(endpoint.clone(), entity, in_memory).await {
+            if let Err(err) = load_store(endpoint.clone(), entity, in_memory, sync.clone()).await {
                 error!(?err, "Failed to load data store");
                 n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
                 delay_secs = delay_secs.wrapping_mul(2);
@@ -96,6 +101,7 @@ async fn load_store(
     endpoint: Endpoint,
     entity: Entity,
     InMemory(in_memory): InMemory,
+    sync: SyncConfig,
 ) -> anyhow::Result<()> {
     let signing_key = signing_key(in_memory);
     let did = signing_key.public().to_did();
@@ -123,7 +129,13 @@ async fn load_store(
         set_root_doc(root);
     }
 
-    let (sync_targets, unresolved) = resolve_sync_targets(&store, &identity).await;
+    let SyncConfig {
+        allow_loopback,
+        targets,
+    } = sync;
+
+    let (sync_targets, unresolved) =
+        resolve_batch(&store, &identity, targets, allow_loopback).await;
     sync_registries(&store, &endpoint, &sync_targets).await;
 
     let store_entity = AsyncCommands::default()
@@ -147,6 +159,7 @@ async fn load_store(
             sync_targets,
             unresolved,
             store_entity,
+            allow_loopback,
         ));
     }
 
@@ -203,43 +216,22 @@ async fn sync_registries(store: &DataStore, endpoint: &Endpoint, targets: &[Acto
     set_registry_clients(clients);
 }
 
-/// Resolves every configured sync target, returning the ones that answered
-/// alongside the DIDs that did not.
+/// Resolves every target, returning the ones that answered alongside the DIDs
+/// that did not.
 ///
 /// An unresolved target is handed to [`retry_sync_targets`] rather than failing
 /// the load: a client with no reachable server still runs peer to peer.
-async fn resolve_sync_targets(
-    store: &DataStore,
-    identity: &Arc<Identity>,
-) -> (Vec<Actor>, Vec<String>) {
-    let Ok(raw) = std::env::var("UNAVI_SYNC_TARGETS") else {
-        return (Vec::new(), Vec::new());
-    };
-
-    let dids = raw
-        .split(',')
-        .map(str::trim)
-        .filter(|s| !s.is_empty())
-        .map(str::to_owned)
-        .collect::<Vec<_>>();
-
-    if dids.is_empty() {
-        return (Vec::new(), Vec::new());
-    }
-
-    resolve_batch(store, identity, dids).await
-}
-
 async fn resolve_batch(
     store: &DataStore,
     identity: &Arc<Identity>,
     dids: Vec<String>,
+    allow_loopback: bool,
 ) -> (Vec<Actor>, Vec<String>) {
     let mut actors = Vec::new();
     let mut unresolved = Vec::new();
 
     for did_str in dids {
-        match resolve_sync_target(&did_str).await {
+        match resolve_sync_target(&did_str, allow_loopback).await {
             Ok(addr) => {
                 info!(target = did_str, "registering WDS sync target");
                 actors.push(store.remote_actor(Arc::clone(identity), addr));
@@ -263,6 +255,7 @@ async fn retry_sync_targets(
     mut targets: Vec<Actor>,
     mut unresolved: Vec<String>,
     store_entity: Entity,
+    allow_loopback: bool,
 ) {
     let mut delay = RETRY_DELAY;
 
@@ -270,7 +263,7 @@ async fn retry_sync_targets(
         n0_future::time::sleep(delay).await;
         delay = (delay * 2).min(MAX_RETRY_DELAY);
 
-        let (actors, pending) = resolve_batch(&store, &identity, unresolved).await;
+        let (actors, pending) = resolve_batch(&store, &identity, unresolved, allow_loopback).await;
         unresolved = pending;
 
         if actors.is_empty() {
@@ -297,16 +290,10 @@ async fn retry_sync_targets(
     }
 }
 
-/// Sync targets are named by the operator rather than by a peer, so a loopback
-/// `did:web` is a local server they chose to run, not an SSRF probe.
-fn loopback_targets_allowed() -> bool {
-    std::env::var_os("UNAVI_ALLOW_LOOPBACK_SYNC_TARGETS").is_some()
-}
-
-async fn resolve_sync_target(did_str: &str) -> anyhow::Result<EndpointAddr> {
+async fn resolve_sync_target(did_str: &str, allow_loopback: bool) -> anyhow::Result<EndpointAddr> {
     let did = Did::from_str(did_str)?;
 
-    let doc = if loopback_targets_allowed() {
+    let doc = if allow_loopback {
         resolve_allowing_loopback(&did).await
     } else {
         resolve(&did).await

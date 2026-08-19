@@ -5,7 +5,9 @@
     let
       pname = "unavi-client";
 
-      remoteWds = channel: "did:web:${deployInfo.${channel}.services.unavi_server.domain}";
+      # Overrides the default the manifest declares, which the build script
+      # compiles in.
+      channelSyncTargets = channel: "did:web:${deployInfo.${channel}.services.unavi_server.domain}";
 
       src = lib.fileset.toSource rec {
         root = ../..;
@@ -31,6 +33,7 @@
           ./index.html
           ./loader.html
           ./public
+          ./secretspec.toml
         ];
       };
 
@@ -167,7 +170,7 @@
           nativeArgs
           // {
             pname = "${pname}-${channel}";
-            UNAVI_REMOTE_WDS = remoteWds channel;
+            UNAVI_SYNC_TARGETS = channelSyncTargets channel;
           }
         );
 
@@ -177,7 +180,7 @@
           webArgs
           // {
             pname = "${pname}-web-${channel}";
-            UNAVI_REMOTE_WDS = remoteWds channel;
+            UNAVI_SYNC_TARGETS = channelSyncTargets channel;
           }
         );
 

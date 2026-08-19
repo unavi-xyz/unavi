@@ -58,6 +58,7 @@ use xdid::{
 
 mod files;
 mod key_pair;
+pub mod secrets;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi-server").expect("project dirs");
@@ -95,7 +96,7 @@ pub struct ServerOptions {
 pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     let port = opts.port;
 
-    let (did, _domain) = create_did(port)?;
+    let did = create_did(&secrets::Secrets::load().unavi_domain)?;
     let vc = key_pair::get_or_create_key(opts.in_memory)?;
     info!("Running server as {did}");
 
@@ -152,11 +153,9 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn create_did(port: u16) -> anyhow::Result<(Did, String)> {
-    let domain = std::env::var("UNAVI_DOMAIN").unwrap_or_else(|_| format!("localhost:{port}"));
+fn create_did(domain: &str) -> anyhow::Result<Did> {
     let domain_encoded = domain.replace(':', "%3A");
-    let did = Did::from_str(&format!("did:web:{domain_encoded}"))?;
-    Ok((did, domain))
+    Did::from_str(&format!("did:web:{domain_encoded}"))
 }
 
 const KEY_FRAGMENT: &str = "key";

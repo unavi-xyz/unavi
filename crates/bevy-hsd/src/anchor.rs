@@ -52,7 +52,11 @@ pub fn apply_anchors(
             // would close the hierarchy into a ring that transform propagation
             // walks forever.
             Some(target) if descends_from(target, doc_ent, &parents) => {
-                warn!(?doc_ent, ?target, "anchor target stands under its own document");
+                warn!(
+                    ?doc_ent,
+                    ?target,
+                    "anchor target stands under its own document"
+                );
                 continue;
             }
             Some(target) => {

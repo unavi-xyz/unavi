@@ -29,6 +29,7 @@ tower-http            = { features = ["cors"], version = "0.6.8" }
 tracing.workspace     = true
 tracing-subscriber    = { features = ["env-filter"], workspace = true }
 unavi-registry.path   = "../unavi-registry"
+unavi-secrets.path    = "../unavi-secrets"
 wds.path              = "../wds"
 xdid.workspace        = true
 zeroize.workspace     = true

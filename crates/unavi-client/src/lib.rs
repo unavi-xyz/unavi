@@ -12,6 +12,7 @@ mod camera;
 mod fade;
 mod icon;
 mod scene;
+mod secrets;
 
 #[cfg(feature = "devtools")] mod dev_tools;
 
@@ -92,6 +93,7 @@ impl Plugin for UnaviPlugin {
             unavi_avatar::AvatarPlugin,
             unavi_identity::IdentityPlugin {
                 in_memory: self.in_memory,
+                sync:      secrets::sync_config(),
             },
             unavi_input::InputPlugin,
             unavi_manifold::ManifoldPlugin,

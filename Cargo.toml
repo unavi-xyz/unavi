@@ -90,6 +90,9 @@ wit-bindgen          = "0.55.0"
 xdid                 = { git = "https://github.com/unavi-xyz/xdid" }
 zeroize              = "1.8.2"
 
+[patch.crates-io]
+iroh-blobs = { git = "https://github.com/m11m/iroh-blobs" }
+
 [profile.release]
 codegen-units = 1
 lto           = true

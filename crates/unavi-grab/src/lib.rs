@@ -15,11 +15,10 @@ use iroh_docs::NamespaceId;
 use unavi_input::{
     crosshair::CrosshairMode,
     pointer::{
+        GripPressed,
+        GripReleased,
         PointerAnchor,
         PointerKind,
-        PointerPressed,
-        PointerReleased,
-        claims,
         nearest_hit,
     },
 };
@@ -45,7 +44,7 @@ impl Plugin for GrabPlugin {
                     on_release,
                     note_promoted_bodies,
                     start_pending_grabs,
-                    reach_grabbed_objects,
+                    reach_grabbed_objects.run_if(unavi_input::capture::scene_has_input),
                     move_grabbed_objects,
                 )
                     .chain(),
@@ -135,7 +134,7 @@ fn begin_grab(
 }
 
 fn on_press(
-    mut presses: MessageReader<PointerPressed>,
+    mut presses: MessageReader<GripPressed>,
     transforms: Query<&GlobalTransform>,
     rigid_bodies: Query<&RigidBody>,
     hsd_children: Query<&HsdChild>,
@@ -152,12 +151,6 @@ fn on_press(
     let active_space = active_space.and_then(|active| active.0);
 
     for press in presses.read() {
-        // A claimed pointer belongs to the script holding it; the host's own
-        // grab standing down is what keeps one press from acting twice.
-        if claims::is_claimed(press.kind) {
-            continue;
-        }
-
         let target = press.hit.map(|hit| hit.entity);
         let grabbable =
             target.filter(|entity| matches!(rigid_bodies.get(*entity), Ok(RigidBody::Dynamic)));
@@ -364,7 +357,7 @@ fn resolve_space(
 }
 
 fn on_release(
-    mut releases: MessageReader<PointerReleased>,
+    mut releases: MessageReader<GripReleased>,
     hsd_children: Query<&HsdChild>,
     docs: Docs,
     held: Query<(Entity, &Grabbed)>,

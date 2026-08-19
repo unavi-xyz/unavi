@@ -41,7 +41,8 @@ pub fn snapshot_pointers(
             kind,
             active: true,
             ray: ray_of(transform).into(),
-            grasp: state.value(Action::Grab(kind)),
+            trigger: state.value(Action::Trigger(kind)),
+            grip: state.value(Action::Grip(kind)),
             axis: axis_of(kind, &state),
             hit: nearest_hit(interaction).map(Into::into),
         });

@@ -9,7 +9,11 @@ interface api {
   use types.{event-filter, event-receptor};
   use wired:error/types.{error};
 
+  /// Sends on `channel`. The filter names whom this reaches; delivery is
+  /// still subject to the target document accepting writes from the caller.
   emit:   func(channel: string, payload: list<u8>, filter: event-filter) -> result<_, error>;
+
+  /// Receives on `channels`. The filter names whom this accepts from.
   listen: func(channels: list<string>, filter: event-filter) -> result<event-receptor, error>;
 }
 
@@ -26,7 +30,13 @@ interface types {
     spatial(spatial-scope),
   }
 
+  /// Which documents an emit reaches, or which a receptor accepts from —
+  /// the same record read in opposite directions by `emit` and `listen`.
   record event-filter {
+    /// On `emit`, the audience. On `listen`, the accepted senders. `none` is
+    /// every document in the space either way; channel names are a flat global
+    /// namespace, so a receptor that names no sender will hear from anything
+    /// co-present that guessed the string.
     documents: option<list<document-id>>,
     scope:     event-scope,
   }
@@ -51,8 +61,13 @@ interface types {
     payload: func() -> list<u8>;
     sender:  func() -> event-sender;
     time:    func() -> u64;
-    /// Atomically claims this delivered event exactly once across all
-    /// receptors.
+    /// Atomically claims this delivery, exactly once across the audience the
+    /// emitter named.
+    ///
+    /// An emit that named no audience has none to be exclusive within, so
+    /// every recipient of a broadcast claims its own copy and all of them
+    /// succeed. Exclusion is something the emitter opts into by addressing a
+    /// set; without that, one listener could deny every other.
     consume: func() -> bool;
   }
 

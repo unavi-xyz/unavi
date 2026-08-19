@@ -102,7 +102,8 @@ fn name_of(action: Action) -> String {
         Action::Look => "look".to_owned(),
         Action::Jump => "jump".to_owned(),
         Action::Sprint => "sprint".to_owned(),
-        Action::Grab(kind) => format!("grab_{}", kind.name()),
+        Action::Trigger(kind) => format!("trigger_{}", kind.name()),
+        Action::Grip(kind) => format!("grip_{}", kind.name()),
         Action::Menu(kind) => format!("menu_{}", kind.name()),
     }
 }
@@ -164,8 +165,8 @@ mod tests {
     #[test]
     fn the_hands_are_told_apart_in_the_name() {
         assert_ne!(
-            name_of(Action::Grab(PointerKind::LeftHand)),
-            name_of(Action::Grab(PointerKind::RightHand))
+            name_of(Action::Grip(PointerKind::LeftHand)),
+            name_of(Action::Grip(PointerKind::RightHand))
         );
     }
 }

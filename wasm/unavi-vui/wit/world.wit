@@ -23,7 +23,9 @@ interface api {
     item,
     /// Opens a cast site, which fills while it is held.
     cast,
-    /// Opens into its children.
+    /// Opens into its children, where it stands. Carried out and let go, it
+    /// opens around where it landed instead, at a height the viewer can
+    /// read — the surface stays there until it is summoned back.
     group,
   }
 
@@ -165,7 +167,9 @@ interface api {
 
   /// What a surface did, in the terms a consumer thinks in.
   variant event {
-    /// A container opened; the level inside it is drawn now.
+    /// A container opened; the level inside it is drawn now. A container
+    /// carried out and let go opens the same way, and the surface stands
+    /// where it landed rather than where it was.
     opened(mote),
     /// The way back was taken, to the level now open.
     closed(mote),
@@ -178,9 +182,10 @@ interface api {
     cast(mote),
     /// A cast was abandoned before it filled.
     aborted(mote),
-    /// Carried out and let go in the room. The mote stays where it was and
-    /// the surface draws nothing there: what lands, if anything, is the
-    /// consumer's to place at the landing.
+    /// Carried out and let go in the room, by a mote with nowhere of its own
+    /// to go. The mote stays where it was and the surface draws nothing
+    /// there: what lands, if anything, is the consumer's to place at the
+    /// landing.
     planted(tuple<mote, landing>),
     /// Carried out and filed into a grid.
     filed(mote),

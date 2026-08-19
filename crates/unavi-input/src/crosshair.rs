@@ -1,21 +1,30 @@
 use bevy::{
-    light::NotShadowCaster,
-    picking::pointer::PointerInteraction,
     prelude::*,
+    ui::Val,
 };
 
-use crate::pointer::{
-    PointerAnchor,
-    PointerKind,
-    claims,
-    nearest_hit,
+use crate::{
+    capture::Captured,
+    pointer::{
+        PointerAnchor,
+        PointerKind,
+    },
 };
 
-const CROSSHAIR_RADIUS: f32 = 0.004;
+const SIZE: f32 = 5.0;
+/// The ring drawn around the dot when something is worth taking hold of.
+const RING_SIZE: f32 = 16.0;
+const RING_WIDTH: f32 = 1.5;
+
+const RESTING: Color = Color::srgba(1.0, 1.0, 1.0, 0.55);
+const OVER_GRABBABLE: Color = Color::srgba(1.0, 1.0, 1.0, 0.9);
 
 #[derive(Component)]
-#[require(Visibility, Transform, CrosshairMode)]
+#[require(CrosshairMode)]
 pub struct Crosshair;
+
+#[derive(Component)]
+pub(crate) struct CrosshairRing;
 
 #[derive(Component, Default, PartialEq, Eq, Clone, Copy)]
 pub enum CrosshairMode {
@@ -24,108 +33,101 @@ pub enum CrosshairMode {
     Inactive,
 }
 
-#[derive(Component)]
-pub struct CrosshairMeshes {
-    active:   Handle<Mesh>,
-    inactive: Handle<Mesh>,
+/// A fixed mark at the centre of the screen rather than a reticle laid on the
+/// surface underfoot: the screen pointer always aims at the middle of the
+/// window, so the mark belongs there too and needs no world position to be
+/// read correctly.
+pub(crate) fn spawn_crosshair(mut commands: Commands) {
+    commands
+        .spawn((
+            Crosshair,
+            Node {
+                position_type: PositionType::Absolute,
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            // The mark is not a thing to press, and a full-screen node over
+            // everything would otherwise swallow whatever is behind it.
+            Pickable::IGNORE,
+            GlobalZIndex(i32::MAX),
+            Visibility::Hidden,
+        ))
+        .with_children(|screen| {
+            screen.spawn((
+                CrosshairRing,
+                Node {
+                    position_type: PositionType::Absolute,
+                    width: Val::Px(RING_SIZE),
+                    height: Val::Px(RING_SIZE),
+                    border: UiRect::all(Val::Px(RING_WIDTH)),
+                    border_radius: BorderRadius::MAX,
+                    ..default()
+                },
+                BorderColor::all(OVER_GRABBABLE),
+                Pickable::IGNORE,
+                Visibility::Hidden,
+            ));
+            screen.spawn((
+                Node {
+                    width: Val::Px(SIZE),
+                    height: Val::Px(SIZE),
+                    border_radius: BorderRadius::MAX,
+                    ..default()
+                },
+                BackgroundColor(RESTING),
+                Pickable::IGNORE,
+            ));
+        });
 }
 
-pub(crate) fn spawn_crosshair(
-    mut commands: Commands,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
+/// Shows the mark whenever there is a screen pointer to mark, which is every
+/// frame on desktop and none in VR, where the hands do their own aiming.
+///
+/// Something drawn over the world takes it with the rest of the input: a mark
+/// aiming at what is behind an overlay is a mark aiming at nothing.
+pub(crate) fn show_crosshair(
+    pointers: Query<&PointerAnchor>,
+    captured: Res<Captured>,
+    mut crosshair: Query<&mut Visibility, With<Crosshair>>,
 ) {
-    let mat = materials.add(StandardMaterial {
-        base_color: Color::BLACK,
-        unlit: true,
-        ..default()
-    });
-
-    let torus_radius = CROSSHAIR_RADIUS * 0.75;
-    let torus = Torus::new(torus_radius, 2.0 * torus_radius)
-        .mesh()
-        .minor_resolution(24)
-        .major_resolution(32);
-    let active = meshes.add(torus);
-
-    let sphere = Sphere::new(CROSSHAIR_RADIUS)
-        .mesh()
-        .ico(5)
-        .expect("build ico sphere");
-    let inactive = meshes.add(sphere);
-
-    commands.spawn((
-        Crosshair,
-        Visibility::Hidden,
-        NotShadowCaster,
-        MeshMaterial3d(mat),
-        Mesh3d(inactive.clone()),
-        CrosshairMeshes { active, inactive },
-    ));
-}
-
-/// Lays the reticle on whatever the screen pointer is over. A claimed pointer
-/// belongs to the script holding it, which draws its own aim.
-pub(crate) fn place_crosshair(
-    pointers: Query<(&PointerAnchor, &PointerInteraction)>,
-    mut crosshair: Query<(&mut Visibility, &mut Transform), With<Crosshair>>,
-) {
-    let Ok((mut visibility, mut transform)) = crosshair.single_mut() else {
+    let Ok(mut visibility) = crosshair.single_mut() else {
         return;
     };
+    let on_screen = !captured.0
+        && pointers
+            .iter()
+            .any(|anchor| anchor.0 == PointerKind::Screen);
 
-    let hit = (!claims::is_claimed(PointerKind::Screen))
-        .then(|| {
-            pointers
-                .iter()
-                .find(|(anchor, _)| anchor.0 == PointerKind::Screen)
-                .and_then(|(_, interaction)| nearest_hit(interaction))
-        })
-        .flatten();
-
-    let Some(hit) = hit else {
-        *visibility = Visibility::Hidden;
-        transform.scale = Vec3::ONE;
-        return;
-    };
-
-    *visibility = Visibility::Visible;
-    transform.translation = hit.position;
-    *transform = transform.looking_to(arbitrary_up(hit.normal), hit.normal);
-}
-
-pub(crate) fn set_crosshair_mesh(
-    mut crosshair: Query<(&mut Mesh3d, &CrosshairMeshes, &CrosshairMode)>,
-    mut prev: Local<CrosshairMode>,
-) {
-    let Ok((mut mesh, meshes, mode)) = crosshair.single_mut() else {
-        return;
-    };
-
-    if *mode == *prev {
-        return;
-    }
-
-    *prev = *mode;
-
-    if *mode == CrosshairMode::Active {
-        mesh.0 = meshes.active.clone();
+    let wanted = if on_screen {
+        Visibility::Inherited
     } else {
-        mesh.0 = meshes.inactive.clone();
+        Visibility::Hidden
+    };
+    if *visibility != wanted {
+        *visibility = wanted;
     }
 }
 
-fn arbitrary_up(normal: Vec3) -> Vec3 {
-    let n = normal.normalize();
-
-    // Pick axis with smallest component magnitude.
-    let reference = if n.x.abs() < n.y.abs() && n.x.abs() < n.z.abs() {
-        Vec3::X
-    } else if n.y.abs() < n.z.abs() {
-        Vec3::Y
-    } else {
-        Vec3::Z
+/// The ring is the whole of the active state: a mark that changed shape would
+/// move the eye, and what it is reporting is only that the grip has something
+/// to take.
+pub(crate) fn apply_crosshair_mode(
+    crosshair: Query<&CrosshairMode, With<Crosshair>>,
+    mut ring: Query<&mut Visibility, With<CrosshairRing>>,
+) {
+    let (Ok(mode), Ok(mut visibility)) = (crosshair.single(), ring.single_mut()) else {
+        return;
     };
 
-    n.cross(reference).normalize()
+    let wanted = if *mode == CrosshairMode::Active {
+        Visibility::Inherited
+    } else {
+        Visibility::Hidden
+    };
+    if *visibility != wanted {
+        *visibility = wanted;
+    }
 }

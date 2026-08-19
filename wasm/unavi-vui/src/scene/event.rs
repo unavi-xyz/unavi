@@ -15,7 +15,8 @@ pub struct Landing {
 
 /// What a surface did, in the terms a consumer thinks in.
 pub enum Event {
-    /// A container opened; the level inside it is drawn now.
+    /// A container opened; the level inside it is drawn now. A container
+    /// carried out and let go opens the same way, standing where it landed.
     Opened(Mote),
     /// The way back was taken, to the level now open.
     Closed(Mote),
@@ -51,6 +52,10 @@ pub struct Released {
 pub struct FixedUpdate {
     pub events:   Vec<Event>,
     pub released: Option<Released>,
+    /// Where the released mote would open, for one that is a level rather
+    /// than a thing. Only an offer: a grid under the release takes it first,
+    /// and the host is what can see the grids and the viewer.
+    pub opens_at: Option<Vec3>,
 }
 
 /// A consequential action, mid-cast. Shared by every shape that can show one.

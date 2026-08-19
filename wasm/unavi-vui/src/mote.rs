@@ -49,10 +49,11 @@ pub enum Role {
 }
 
 impl Role {
-    /// Whether this mote leaves its slot when dragged.
+    /// Whether this mote leaves its slot when dragged. What letting go of it
+    /// then means is the role's too: an item lands, a group opens.
     #[must_use]
     pub const fn is_takeable(self) -> bool {
-        matches!(self, Self::Item { .. })
+        matches!(self, Self::Item { .. } | Self::Group { .. })
     }
 
     /// Whether placing this mote yields another of its thing rather than
@@ -318,15 +319,15 @@ mod tests {
     }
 
     #[test]
-    fn only_an_item_leaves_its_slot_when_dragged() {
-        assert!(Role::Item { unique: true }.is_takeable());
-        assert!(Role::Item { unique: false }.is_takeable());
-        for button in [
-            Role::Action,
-            Role::Cast,
-            Role::Parent { depth: 1 },
+    fn what_can_be_carried_is_what_has_somewhere_to_go() {
+        for carried in [
+            Role::Item { unique: true },
+            Role::Item { unique: false },
             group(0, 0),
         ] {
+            assert!(carried.is_takeable(), "{carried:?} has a landing");
+        }
+        for button in [Role::Action, Role::Cast, Role::Parent { depth: 1 }] {
             assert!(!button.is_takeable(), "{button:?} behaves like a button");
         }
     }

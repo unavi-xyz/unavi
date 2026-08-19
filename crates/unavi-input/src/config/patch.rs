@@ -32,7 +32,7 @@ impl ConfigPatch {
     pub fn resolve(self) -> InputConfig {
         InputConfig {
             bindings: self.bindings.apply(Bindings::default()),
-            tuning:   self.tuning,
+            tuning:   self.tuning.sanitized(),
         }
     }
 }
@@ -54,7 +54,8 @@ pub struct BindingsPatch {
     pub look:     AxisPatch,
     pub jump:     ButtonPatch,
     pub sprint:   ButtonPatch,
-    pub grab:     PerPointer<ButtonPatch>,
+    pub trigger:  PerPointer<ButtonPatch>,
+    pub grip:     PerPointer<ButtonPatch>,
     pub menu:     PerPointer<ButtonPatch>,
 }
 
@@ -65,7 +66,8 @@ impl BindingsPatch {
             look:     self.look.apply(base.look),
             jump:     self.jump.apply(base.jump),
             sprint:   self.sprint.apply(base.sprint),
-            grab:     apply_per_pointer(self.grab, base.grab),
+            trigger:  apply_per_pointer(self.trigger, base.trigger),
+            grip:     apply_per_pointer(self.grip, base.grip),
             menu:     apply_per_pointer(self.menu, base.menu),
         }
     }
@@ -78,7 +80,8 @@ impl From<&Bindings> for BindingsPatch {
             look:     (&bindings.look).into(),
             jump:     (&bindings.jump).into(),
             sprint:   (&bindings.sprint).into(),
-            grab:     per_pointer_patch(&bindings.grab),
+            trigger:  per_pointer_patch(&bindings.trigger),
+            grip:     per_pointer_patch(&bindings.grip),
             menu:     per_pointer_patch(&bindings.menu),
         }
     }
@@ -235,8 +238,8 @@ mod tests {
             config.bindings.movement.xr.len()
         );
         assert_eq!(
-            parsed.bindings.grab.screen.mouse,
-            config.bindings.grab.screen.mouse
+            parsed.bindings.trigger.screen.mouse,
+            config.bindings.trigger.screen.mouse
         );
         assert!(
             !text.contains("Some("),

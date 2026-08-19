@@ -7,10 +7,13 @@ use bevy::{
     prelude::*,
 };
 
-use crate::pointer::{
-    PointerAnchor,
-    PointerReach,
-    ray_of,
+use crate::{
+    capture::Captured,
+    pointer::{
+        PointerAnchor,
+        PointerReach,
+        ray_of,
+    },
 };
 
 /// Colliders a pointer's ray passes through rather than lands on. The agent's
@@ -26,12 +29,32 @@ pub struct PointerFilter(pub SpatialQueryFilter);
 /// cast is ours.
 pub fn update_hits(
     pointers: Query<(&PointerAnchor, &PointerReach, &GlobalTransform)>,
-    cameras: Query<Entity, With<Camera3d>>,
+    cameras: Query<(Entity, &Camera), With<Camera3d>>,
     filter: Res<PointerFilter>,
+    captured: Res<Captured>,
     query: SpatialQuery,
     mut hits: MessageWriter<PointerHits>,
 ) {
-    let camera = cameras.iter().next().unwrap_or(Entity::PLACEHOLDER);
+    // Reported as misses rather than skipped, so a prim hovered when something
+    // else took the input hears that it was left.
+    if captured.0 {
+        for (anchor, ..) in pointers {
+            hits.write(PointerHits::new(anchor.0.id(), Vec::new(), 0.0));
+        }
+        return;
+    }
+
+    // A hit names the camera it was seen through, and picking sorts by that
+    // camera's order. Which of a headset's two eyes reported it is arbitrary,
+    // so the ray is cast once against the one drawn last.
+    let Some(camera) = cameras
+        .iter()
+        .filter(|(_, camera)| camera.is_active)
+        .max_by_key(|(_, camera)| camera.order)
+        .map(|(entity, _)| entity)
+    else {
+        return;
+    };
 
     for (anchor, reach, transform) in pointers {
         let ray = ray_of(transform);

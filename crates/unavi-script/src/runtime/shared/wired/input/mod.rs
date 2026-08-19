@@ -1,13 +1,4 @@
-use bevy::prelude::*;
-use bevy_hsd::{
-    Hsd,
-    HsdDocId,
-};
-use hsd::id::DocId;
-use unavi_input::pointer::{
-    PointerKind,
-    claims,
-};
+use unavi_input::pointer::PointerKind;
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::runtime::shared::{
@@ -94,47 +85,4 @@ pub fn pointers() -> Vec<Pointer> {
         .into_iter()
         .map(|kind| snapshot[kind.index()].unwrap_or_else(|| Pointer::inactive(kind)))
         .collect()
-}
-
-/// A live claim on one pointer. Its handle *is* the pointer it holds, so
-/// giving it back needs no table: claims are exclusive, so there is never
-/// more than one of these per pointer.
-pub struct PointerClaimRes;
-
-#[must_use]
-pub fn claimed_kind(rep: u32) -> Option<PointerKind> {
-    PointerKind::ALL
-        .into_iter()
-        .find(|kind| kind.index() as u32 == rep)
-}
-
-pub fn claim_pointer(owner: DocId, kind: PointerKind) -> anyhow::Result<u32> {
-    if claims::claim(kind, owner.0) {
-        Ok(kind.index() as u32)
-    } else {
-        Err(anyhow::anyhow!(
-            "pointer {} is already claimed",
-            kind.name()
-        ))
-    }
-}
-
-pub fn release_pointer(rep: u32) {
-    if let Some(kind) = claimed_kind(rep) {
-        claims::release(kind);
-    }
-}
-
-/// Takes back every pointer a departing document held.
-///
-/// A claim is a lease, and a lease the holder has to return itself is not one:
-/// a script that traps or is unloaded while holding a pointer would keep one of
-/// the user's hands until the process exited.
-pub fn release_claims_of_departed(trigger: On<Remove, Hsd>, docs: Query<&HsdDocId>) {
-    if let Ok(doc) = docs.get(trigger.entity) {
-        let released = claims::release_all_of(doc.0.0);
-        if released > 0 {
-            info!(released, "reclaimed pointers from a departed document");
-        }
-    }
 }

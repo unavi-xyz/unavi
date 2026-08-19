@@ -64,7 +64,11 @@ use crate::{
 /// What a surface's own listener heard.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Signal {
-    Grab(bool),
+    /// The trigger: acting on the lit mote where it is.
+    Act(bool),
+    /// The grip: taking hold of the lit mote, so travelling with it before
+    /// letting go puts it down somewhere new rather than firing it.
+    Take(bool),
     /// Pages, in the direction of the scroll.
     Turn(isize),
 }
@@ -325,8 +329,10 @@ impl Bodies {
         let mut signals = Vec::new();
         while let Some(event) = self.input.poll() {
             match event.action {
-                InputAction::Press => signals.push(Signal::Grab(true)),
-                InputAction::Release => signals.push(Signal::Grab(false)),
+                InputAction::Press => signals.push(Signal::Act(true)),
+                InputAction::Release => signals.push(Signal::Act(false)),
+                InputAction::GripPress => signals.push(Signal::Take(true)),
+                InputAction::GripRelease => signals.push(Signal::Take(false)),
                 InputAction::Scroll(delta) if delta.y != 0.0 => {
                     signals.push(Signal::Turn(if delta.y > 0.0 { -1 } else { 1 }));
                 }

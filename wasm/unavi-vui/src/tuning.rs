@@ -104,6 +104,13 @@ pub struct Tuning {
     /// Pointer travel past which a release places rather than taps.
     pub seize_threshold: f32,
 
+    /// The band a carried level opens in, in metres off the eye. It opens
+    /// where it was let go, save for a height held between these two: a level
+    /// dropped at the floor is one nobody can read, and one dropped overhead
+    /// is one nobody can reach.
+    pub land_low:  f32,
+    pub land_high: f32,
+
     /// Role-driven body sizes, applied before attention scaling.
     pub group_scale:  f32,
     pub action_scale: f32,
@@ -165,6 +172,9 @@ impl Tuning {
         lean_speed: 12.0,
 
         seize_threshold: 0.04,
+
+        land_low:  -0.85,
+        land_high: 0.10,
 
         group_scale:  1.25,
         action_scale: 1.0,

@@ -38,12 +38,13 @@ impl From<PointerHit> for Hit {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Pointer {
-    pub kind:   PointerKind,
-    pub active: bool,
-    pub ray:    Ray,
-    pub grasp:  f32,
-    pub axis:   Vec2,
-    pub hit:    Option<Hit>,
+    pub kind:    PointerKind,
+    pub active:  bool,
+    pub ray:     Ray,
+    pub trigger: f32,
+    pub grip:    f32,
+    pub axis:    Vec2,
+    pub hit:     Option<Hit>,
 }
 
 impl Pointer {
@@ -58,7 +59,8 @@ impl Pointer {
                 origin: Vec3::ZERO,
                 dir:    Vec3::NEG_Z,
             },
-            grasp: 0.0,
+            trigger: 0.0,
+            grip: 0.0,
             axis: Vec2::ZERO,
             hit: None,
         }
@@ -69,6 +71,8 @@ impl Pointer {
 pub enum InputAction {
     Press,
     Release,
+    GripPress,
+    GripRelease,
     Scroll(Vec2),
     Enter,
     Leave,

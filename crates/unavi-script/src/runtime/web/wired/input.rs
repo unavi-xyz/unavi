@@ -46,28 +46,6 @@ impl Drop for InputListenerHandle {
     }
 }
 
-/// Holds the claim for as long as the script holds this. Dropping it in JS
-/// gives the pointer back, the same as dropping the resource does natively.
-#[wasm_bindgen]
-pub struct PointerClaimHandle {
-    rep: u32,
-}
-
-#[wasm_bindgen]
-impl PointerClaimHandle {
-    #[must_use]
-    pub fn kind(&self) -> JsValue {
-        shared::wired::input::claimed_kind(self.rep)
-            .map_or(JsValue::UNDEFINED, |kind| pointer_kind_name(kind).into())
-    }
-}
-
-impl Drop for PointerClaimHandle {
-    fn drop(&mut self) {
-        shared::wired::input::release_pointer(self.rep);
-    }
-}
-
 const fn pointer_kind_name(kind: PointerKind) -> &'static str {
     match kind {
         PointerKind::Screen => "screen",
@@ -120,6 +98,8 @@ fn action(action: InputAction) -> JsValue {
     let tag = match action {
         InputAction::Press => "press",
         InputAction::Release => "release",
+        InputAction::GripPress => "grip-press",
+        InputAction::GripRelease => "grip-release",
         InputAction::Scroll(delta) => {
             set(&object, "val", &vec2(delta.x, delta.y));
             "scroll"
@@ -147,7 +127,8 @@ fn pointer(pointer: Pointer) -> JsValue {
     set(&object, "kind", &pointer_kind_name(pointer.kind).into());
     set(&object, "active", &pointer.active.into());
     set(&object, "ray", &ray(pointer.ray));
-    set(&object, "grasp", &pointer.grasp.into());
+    set(&object, "trigger", &pointer.trigger.into());
+    set(&object, "grip", &pointer.grip.into());
     set(&object, "axis", &vec2(pointer.axis.x, pointer.axis.y));
     set(&object, "hit", &hit(pointer.hit));
     object.into()
@@ -170,14 +151,6 @@ impl Runtime {
     #[must_use]
     pub fn wired_input_listener_class(&self) -> JsValue {
         let handle = InputListenerHandle::new(u32::MAX, Arc::clone(&self.api));
-        let js = JsValue::from(handle);
-        js_sys::Reflect::get(&js, &"constructor".into()).expect("reflect")
-    }
-
-    #[wasm_bindgen(js_name = "wiredInputPointerClaimClass")]
-    #[must_use]
-    pub fn wired_input_pointer_claim_class(&self) -> JsValue {
-        let handle = PointerClaimHandle { rep: u32::MAX };
         let js = JsValue::from(handle);
         js_sys::Reflect::get(&js, &"constructor".into()).expect("reflect")
     }
@@ -218,22 +191,5 @@ impl Runtime {
             .map(pointer)
             .collect::<js_sys::Array>()
             .into()
-    }
-
-    #[wasm_bindgen(js_name = "wiredInputClaimPointer")]
-    #[must_use]
-    pub fn wired_input_claim_pointer(&self, kind: &str) -> Option<PointerClaimHandle> {
-        if self.api.require(ApiName::InputContext).is_err() {
-            return None;
-        }
-        let kind = match kind {
-            "screen" => PointerKind::Screen,
-            "left-hand" => PointerKind::LeftHand,
-            "right-hand" => PointerKind::RightHand,
-            _ => return None,
-        };
-        shared::wired::input::claim_pointer(self.api.doc_id, kind)
-            .ok()
-            .map(|rep| PointerClaimHandle { rep })
     }
 }

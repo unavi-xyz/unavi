@@ -180,18 +180,33 @@ impl Mounted for Orbit {
         Ok(events)
     }
 
+    /// A level let go in the room opens the same way a tapped one does, so
+    /// the way back and everything else about it reads identically.
+    fn open(&mut self, mote: &Mote) -> Option<Event> {
+        let index = self
+            .tree
+            .level_motes()
+            .iter()
+            .position(|drawn| drawn.is(mote))?;
+        self.select_at(index)
+    }
+
     fn fixed_update(&mut self, gaze: &Gaze, anchor: Transform) -> anyhow::Result<FixedUpdate> {
-        let mut events = Vec::new();
-        let mut released = None;
+        let mut done = FixedUpdate {
+            events:   Vec::new(),
+            released: None,
+            opens_at: None,
+        };
         for signal in self.bodies.poll() {
             match (signal, self.surface.is_seized()) {
-                (Signal::Grab(true), false) => self.press(gaze, anchor, &mut events),
-                (Signal::Grab(false), _) => released = self.release(&mut events)?,
+                (Signal::Act(true), false) => self.press(gaze, anchor, false, &mut done.events),
+                (Signal::Take(true), false) => self.press(gaze, anchor, true, &mut done.events),
+                (Signal::Act(false) | Signal::Take(false), _) => self.release(&mut done)?,
                 (Signal::Turn(delta), false) => self.surface.turn_by(delta),
-                (Signal::Grab(true) | Signal::Turn(_), true) => {}
+                (Signal::Act(true) | Signal::Take(true) | Signal::Turn(_), true) => {}
             }
         }
-        Ok(FixedUpdate { events, released })
+        Ok(done)
     }
 }
 
@@ -201,7 +216,7 @@ impl Orbit {
     /// A consequential mote opens its cast site here rather than on release:
     /// the hold *is* the confirmation, so the ring starts filling the moment
     /// the mote is taken hold of and letting go early abandons it.
-    fn press(&mut self, gaze: &Gaze, anchor: Transform, events: &mut Vec<Event>) {
+    fn press(&mut self, gaze: &Gaze, anchor: Transform, carrying: bool, events: &mut Vec<Event>) {
         let Some(slot) = self.surface.attended() else {
             return;
         };
@@ -211,7 +226,8 @@ impl Orbit {
         let world = anchor.translation + anchor.rotation * view.position;
         let depth = (world - gaze.ray.origin).length();
         self.depth = Some(depth);
-        self.surface.press(pointer::hand(&gaze.ray, depth));
+        self.surface
+            .press(pointer::hand(&gaze.ray, depth), carrying);
 
         if let Some(mote) = self.consequential(slot) {
             open_cast(&mut self.casting, slot, mote.clone(), &self.surface);
@@ -229,7 +245,10 @@ impl Orbit {
 
     /// Returns the carried mote to its surface, reporting what a tap did and
     /// handing the host anything that was placed.
-    fn release(&mut self, events: &mut Vec<Event>) -> anyhow::Result<Option<Released>> {
+    ///
+    /// What a landing means belongs to the mote that landed: a level opens
+    /// where it was let go, and anything else is the consumer's to place.
+    fn release(&mut self, done: &mut FixedUpdate) -> anyhow::Result<()> {
         self.depth = None;
         let outcome = self.surface.release();
 
@@ -242,21 +261,29 @@ impl Orbit {
             self.bodies.clear_dynamic(slot)?;
         }
 
-        let mut released = None;
         match outcome {
             Some(Outcome::Tap(slot)) => {
                 if let Some(event) = self.select(slot) {
-                    events.push(event);
+                    done.events.push(event);
                 }
             }
             Some(Outcome::Place(slot)) => {
                 if let Some((at, velocity)) = landed {
-                    released = self.build_released(slot, at, velocity);
+                    done.released = self.build_released(slot, at, velocity);
+                    done.opens_at = self.opens(slot).then_some(at);
                 }
             }
             None => {}
         }
-        Ok(released)
+        Ok(())
+    }
+
+    /// Whether the mote drawn in `slot` is a level rather than a thing.
+    fn opens(&mut self, slot: usize) -> bool {
+        self.surface
+            .spec_index(slot)
+            .and_then(|index| self.tree.at_level(index))
+            .is_some_and(|mote| mote.kind().holds_children())
     }
 
     /// Selects whatever holds attention in `slot`, navigating the tree.
@@ -266,6 +293,10 @@ impl Orbit {
     /// fired or been abandoned.
     fn select(&mut self, slot: usize) -> Option<Event> {
         let index = self.surface.spec_index(slot)?;
+        self.select_at(index)
+    }
+
+    fn select_at(&mut self, index: usize) -> Option<Event> {
         match self.tree.select(index) {
             Navigation::Bloomed(mote) => Some(Event::Opened(mote)),
             Navigation::Collapsed(mote) => Some(Event::Closed(mote)),

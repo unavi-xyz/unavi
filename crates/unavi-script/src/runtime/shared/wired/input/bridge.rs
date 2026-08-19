@@ -11,7 +11,10 @@ use bevy::{
             Release,
             Scroll,
         },
-        pointer::PointerId as BevyPointerId,
+        pointer::{
+            PointerButton as BevyPointerButton,
+            PointerId as BevyPointerId,
+        },
     },
     prelude::*,
 };
@@ -30,6 +33,9 @@ use unavi_input::{
         ActionState,
     },
     pointer::{
+        GripPressed,
+        GripReleased,
+        PointerAim,
         PointerAnchor,
         PointerKind,
         PointerPressed,
@@ -127,22 +133,28 @@ fn hit_of(hit: &HitData) -> Option<Hit> {
     })
 }
 
+/// The trigger presses as primary and the grip as secondary, so both reach a
+/// prim's listener through the picking the trigger already used.
+const fn pressing(button: BevyPointerButton) -> Option<(InputAction, InputAction)> {
+    match button {
+        BevyPointerButton::Primary => Some((InputAction::Press, InputAction::Release)),
+        BevyPointerButton::Secondary => Some((InputAction::GripPress, InputAction::GripRelease)),
+        BevyPointerButton::Middle => None,
+    }
+}
+
 pub fn bridge_press(trigger: On<Pointer<Press>>, delivery: PrimDelivery) {
-    delivery.send(
-        trigger.entity,
-        trigger.pointer_id,
-        InputAction::Press,
-        &trigger.event.hit,
-    );
+    let Some((down, _)) = pressing(trigger.event.button) else {
+        return;
+    };
+    delivery.send(trigger.entity, trigger.pointer_id, down, &trigger.event.hit);
 }
 
 pub fn bridge_release(trigger: On<Pointer<Release>>, delivery: PrimDelivery) {
-    delivery.send(
-        trigger.entity,
-        trigger.pointer_id,
-        InputAction::Release,
-        &trigger.event.hit,
-    );
+    let Some((_, up)) = pressing(trigger.event.button) else {
+        return;
+    };
+    delivery.send(trigger.entity, trigger.pointer_id, up, &trigger.event.hit);
 }
 
 pub fn bridge_enter(trigger: On<Pointer<Enter>>, delivery: PrimDelivery) {
@@ -179,35 +191,35 @@ fn to_global(event: InputEvent, listeners: &Query<&GlobalInputListener>) {
     }
 }
 
-/// The global half of press and release. A press that hit nothing has no
-/// entity event to ride, and a global listener wants it either way.
+fn aimed(aim: &PointerAim, action: InputAction) -> InputEvent {
+    InputEvent {
+        pointer: aim.kind,
+        action,
+        ray: aim.ray.into(),
+        hit: aim.hit.map(Into::into),
+    }
+}
+
+/// The global half of both buttons. A press that hit nothing has no entity
+/// event to ride, and a global listener wants it either way.
 pub fn bridge_global_presses(
     mut pressed: MessageReader<PointerPressed>,
     mut released: MessageReader<PointerReleased>,
+    mut gripped: MessageReader<GripPressed>,
+    mut let_go: MessageReader<GripReleased>,
     listeners: Query<&GlobalInputListener>,
 ) {
     for press in pressed.read() {
-        to_global(
-            InputEvent {
-                pointer: press.kind,
-                action:  InputAction::Press,
-                ray:     press.ray.into(),
-                hit:     press.hit.map(Into::into),
-            },
-            &listeners,
-        );
+        to_global(aimed(press, InputAction::Press), &listeners);
     }
-
     for release in released.read() {
-        to_global(
-            InputEvent {
-                pointer: release.kind,
-                action:  InputAction::Release,
-                ray:     release.ray.into(),
-                hit:     release.hit.map(Into::into),
-            },
-            &listeners,
-        );
+        to_global(aimed(release, InputAction::Release), &listeners);
+    }
+    for press in gripped.read() {
+        to_global(aimed(press, InputAction::GripPress), &listeners);
+    }
+    for release in let_go.read() {
+        to_global(aimed(release, InputAction::GripRelease), &listeners);
     }
 }
 

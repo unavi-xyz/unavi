@@ -23,13 +23,16 @@ use crate::{
         Action,
         ActionState,
     },
+    capture::Captured,
     config::InputConfig,
 };
 
 pub mod backend;
-pub mod claims;
 
 const POINTER_NAMESPACE: u128 = 0x554E_4156_495F_504F_494E_5445_5200_0000;
+
+/// Short of the window on both axes, so no node and no camera claims it.
+const OFF_SCREEN: Vec2 = Vec2::splat(-1.0);
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum PointerKind {
@@ -87,11 +90,13 @@ pub struct PointerHit {
     pub distance: f32,
 }
 
-/// A bound grab went down. Unlike Bevy's `Pointer<Press>` this fires even when
-/// the ray hit nothing, which is what lets a script answer a grab by making
-/// something grabbable after the fact.
-#[derive(Message, Clone, Copy)]
-pub struct PointerPressed {
+/// What a pointer was aimed at when one of its buttons moved.
+///
+/// Unlike Bevy's `Pointer<Press>` these fire even when the ray hit nothing,
+/// which is what lets a listener hear a press aimed at empty space, and what
+/// lets a script answer a grip by making something grabbable after the fact.
+#[derive(Clone, Copy)]
+pub struct PointerAim {
     pub kind:    PointerKind,
     pub pointer: Entity,
     pub ray:     Ray3d,
@@ -99,14 +104,19 @@ pub struct PointerPressed {
     pub hit:     Option<PointerHit>,
 }
 
-#[derive(Message, Clone, Copy)]
-pub struct PointerReleased {
-    pub kind:    PointerKind,
-    pub pointer: Entity,
-    pub ray:     Ray3d,
-    pub reach:   f32,
-    pub hit:     Option<PointerHit>,
-}
+/// The trigger went down: acting on whatever is pointed at.
+#[derive(Message, Clone, Copy, Deref)]
+pub struct PointerPressed(pub PointerAim);
+
+#[derive(Message, Clone, Copy, Deref)]
+pub struct PointerReleased(pub PointerAim);
+
+/// The grip closed: taking hold of whatever is pointed at.
+#[derive(Message, Clone, Copy, Deref)]
+pub struct GripPressed(pub PointerAim);
+
+#[derive(Message, Clone, Copy, Deref)]
+pub struct GripReleased(pub PointerAim);
 
 pub fn attach_pointers(
     trigger: On<Add, PointerAnchor>,
@@ -126,10 +136,13 @@ pub fn attach_pointers(
 ///
 /// A ray aimed by a tracked hand has no place on a render target, so every
 /// pointer is simply parked at the window's centre and aimed by its transform
-/// instead.
+/// instead. While something else holds the input they are parked outside the
+/// window instead of nowhere: a located pointer that covers no node hovers
+/// nothing and still carries the release that unwinds whatever it was on.
 pub fn locate_pointers(
     windows: Query<(Entity, &Window), With<PrimaryWindow>>,
     pointers: Query<&mut PointerLocation, With<PointerAnchor>>,
+    captured: Res<Captured>,
 ) {
     let Ok((entity, window)) = windows.single() else {
         return;
@@ -139,7 +152,11 @@ pub fn locate_pointers(
     };
     let location = Location {
         target:   NormalizedRenderTarget::Window(target),
-        position: window.size() / 2.0,
+        position: if captured.0 {
+            OFF_SCREEN
+        } else {
+            window.size() / 2.0
+        },
     };
 
     for mut pointer in pointers {
@@ -149,12 +166,17 @@ pub fn locate_pointers(
     }
 }
 
-/// Turns bound grabs into pointer presses. Bevy's own mouse and touch readers
-/// are off, so what the config calls a grab is the only thing that can press.
+/// Turns the two bound buttons into pointer presses. Bevy's own mouse pointer
+/// reaches nothing but the UI, so these are the only things that press on the
+/// world.
+///
+/// The trigger presses as primary and the grip as secondary, which is how a
+/// script listening on a prim hears both through the picking it already uses.
 pub fn emit_pointer_input(
     state: Res<ActionState>,
     pointers: Query<(&PointerAnchor, &PointerLocation)>,
     scroll: Res<AccumulatedMouseScroll>,
+    captured: Res<Captured>,
     mut input: MessageWriter<PointerInput>,
 ) {
     for (anchor, location) in pointers {
@@ -163,23 +185,29 @@ pub fn emit_pointer_input(
         };
         let kind = anchor.0;
 
-        if state.just_pressed(Action::Grab(kind)) {
-            input.write(PointerInput::new(
-                kind.id(),
-                location.clone(),
-                PointerAction::Press(PointerButton::Primary),
-            ));
+        for (action, button) in [
+            (Action::Trigger(kind), PointerButton::Primary),
+            (Action::Grip(kind), PointerButton::Secondary),
+        ] {
+            if state.just_pressed(action) {
+                input.write(PointerInput::new(
+                    kind.id(),
+                    location.clone(),
+                    PointerAction::Press(button),
+                ));
+            }
+            if state.just_released(action) {
+                input.write(PointerInput::new(
+                    kind.id(),
+                    location.clone(),
+                    PointerAction::Release(button),
+                ));
+            }
         }
 
-        if state.just_released(Action::Grab(kind)) {
-            input.write(PointerInput::new(
-                kind.id(),
-                location.clone(),
-                PointerAction::Release(PointerButton::Primary),
-            ));
-        }
-
-        if kind == PointerKind::Screen && scroll.delta != Vec2::ZERO {
+        // The wheel is the one input with no press to silence: it is read
+        // straight off the frame rather than out of an action.
+        if kind == PointerKind::Screen && !captured.0 && scroll.delta != Vec2::ZERO {
             input.write(PointerInput::new(
                 kind.id(),
                 location,
@@ -194,8 +222,8 @@ pub fn emit_pointer_input(
     }
 }
 
-/// Reports the same presses again once hit-testing has caught up, so anything
-/// needing the *missed* press has one place to read it.
+/// Reports the same button moves again once hit-testing has caught up, so
+/// anything needing the *missed* press has one place to read it.
 pub fn relay_presses(
     state: Res<ActionState>,
     pointers: Query<(
@@ -207,35 +235,39 @@ pub fn relay_presses(
     )>,
     mut pressed: MessageWriter<PointerPressed>,
     mut released: MessageWriter<PointerReleased>,
+    mut gripped: MessageWriter<GripPressed>,
+    mut let_go: MessageWriter<GripReleased>,
 ) {
     for (entity, anchor, reach, transform, interaction) in pointers {
         let kind = anchor.0;
-        let down = state.just_pressed(Action::Grab(kind));
-        let up = state.just_released(Action::Grab(kind));
-        if !down && !up {
+        let trigger = Action::Trigger(kind);
+        let grip = Action::Grip(kind);
+        if ![trigger, grip]
+            .into_iter()
+            .any(|action| state.just_pressed(action) || state.just_released(action))
+        {
             continue;
         }
 
-        let ray = ray_of(transform);
-        let hit = nearest_hit(interaction);
+        let aim = PointerAim {
+            kind,
+            pointer: entity,
+            ray: ray_of(transform),
+            reach: reach.0,
+            hit: nearest_hit(interaction),
+        };
 
-        if down {
-            pressed.write(PointerPressed {
-                kind,
-                pointer: entity,
-                ray,
-                reach: reach.0,
-                hit,
-            });
+        if state.just_pressed(trigger) {
+            pressed.write(PointerPressed(aim));
         }
-        if up {
-            released.write(PointerReleased {
-                kind,
-                pointer: entity,
-                ray,
-                reach: reach.0,
-                hit,
-            });
+        if state.just_released(trigger) {
+            released.write(PointerReleased(aim));
+        }
+        if state.just_pressed(grip) {
+            gripped.write(GripPressed(aim));
+        }
+        if state.just_released(grip) {
+            let_go.write(GripReleased(aim));
         }
     }
 }
@@ -249,14 +281,21 @@ pub fn ray_of(transform: &GlobalTransform) -> Ray3d {
     )
 }
 
+/// The nearest place a pointer's ray meets a surface in the world.
+///
+/// A hit carrying no normal is not one of those. `bevy_ui`'s backend picks
+/// whatever node covers the point every pointer is parked at, and reports an
+/// offset within that node — a number that would read as a position in space
+/// and put the reticle, a grab, and a script's aim somewhere nothing is.
 #[must_use]
 pub fn nearest_hit(interaction: &PointerInteraction) -> Option<PointerHit> {
-    let (entity, data) = interaction.get_nearest_hit()?;
-    Some(PointerHit {
-        entity:   *entity,
-        position: data.position?,
-        normal:   data.normal.unwrap_or(Vec3::Y),
-        distance: data.depth,
+    interaction.iter().find_map(|(entity, data)| {
+        Some(PointerHit {
+            entity:   *entity,
+            position: data.position?,
+            normal:   data.normal?,
+            distance: data.depth,
+        })
     })
 }
 

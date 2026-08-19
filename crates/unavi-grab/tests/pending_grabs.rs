@@ -7,10 +7,12 @@ use std::time::Duration;
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use unavi_input::pointer::{
+    GripPressed,
+    GripReleased,
+    PointerAim,
     PointerHit,
     PointerKind,
     PointerPressed,
-    PointerReleased,
 };
 
 /// Matches `unavi_grab`'s own safety timeout.
@@ -34,8 +36,9 @@ fn app() -> App {
     .init_asset::<Mesh>()
     // The pointer layer is what the test drives by hand, so what it would
     // have registered is registered here instead.
+    .add_message::<GripPressed>()
+    .add_message::<GripReleased>()
     .add_message::<PointerPressed>()
-    .add_message::<PointerReleased>()
     // Bodies here are placed to be aimed at, not dropped, and a grab is
     // recognized by the `GravityScale` the grab itself adds — which a falling
     // body would need one of its own.
@@ -83,24 +86,24 @@ fn hit_on(app: &App, entity: Option<Entity>) -> Option<PointerHit> {
 
 fn squeeze_down(app: &mut App, entity: Option<Entity>, pointer: Entity) {
     let hit = hit_on(app, entity);
-    app.world_mut().write_message(PointerPressed {
+    app.world_mut().write_message(GripPressed(PointerAim {
         kind: PointerKind::Screen,
         pointer,
         ray: aim(),
         reach: REACH,
         hit,
-    });
+    }));
 }
 
 fn squeeze_up(app: &mut App, entity: Option<Entity>, pointer: Entity) {
     let hit = hit_on(app, entity);
-    app.world_mut().write_message(PointerReleased {
+    app.world_mut().write_message(GripReleased(PointerAim {
         kind: PointerKind::Screen,
         pointer,
         ray: aim(),
         reach: REACH,
         hit,
-    });
+    }));
 }
 
 const fn steps_over(duration: Duration) -> usize {
@@ -214,6 +217,32 @@ fn an_already_dynamic_body_is_grabbed_at_once() {
     step(&mut app, 1);
 
     assert!(is_grabbed(&app, target));
+}
+
+/// The whole reason the grip is its own button: a tool is worked with the
+/// trigger, and the host must not answer that press by carrying off whatever
+/// the tool just put down.
+#[test]
+fn a_trigger_press_takes_hold_of_nothing() {
+    let mut app = app();
+    let pointer = spawn_pointer(&mut app);
+    let target = spawn_target(&mut app);
+    app.world_mut()
+        .entity_mut(target)
+        .insert(RigidBody::Dynamic);
+    step(&mut app, 1);
+
+    let hit = hit_on(&app, Some(target));
+    app.world_mut().write_message(PointerPressed(PointerAim {
+        kind: PointerKind::Screen,
+        pointer,
+        ray: aim(),
+        reach: REACH,
+        hit,
+    }));
+    step(&mut app, 1);
+
+    assert!(!is_grabbed(&app, target));
 }
 
 /// The near miss: the ray slipped past whatever the user was plainly aiming

@@ -88,6 +88,12 @@ pub(crate) trait Mounted {
     fn stow(&mut self, _mote: &Mote) -> bool {
         false
     }
+
+    /// Opens `mote` as this surface's level, reporting what that did. Only a
+    /// surface holding a tree can navigate one.
+    fn open(&mut self, _mote: &Mote) -> Option<Event> {
+        None
+    }
 }
 
 /// A surface [`Vui`] is drawing.
@@ -230,7 +236,7 @@ impl Vui {
             let result = self.shapes[index].fixed_update(&gaze, anchor)?;
             self.report(index, result.events);
             if let Some(released) = result.released {
-                self.place(index, released, &gaze);
+                self.place(index, released, result.opens_at, &gaze)?;
             }
         }
         Ok(())
@@ -271,17 +277,48 @@ impl Vui {
         Ok(anchor)
     }
 
-    /// A carried mote lands in the grid it was released over, or in the room.
+    /// Stands a surface where the level it just opened was let go.
     ///
-    /// Nothing of the consumer's is drawn either way: the mote goes back where
-    /// it came from, and a landing says where it was let go so the consumer
-    /// can put its own thing there.
-    fn place(&mut self, index: usize, released: Released, gaze: &Gaze) {
-        let event = match self.filed_into(gaze) {
-            Some(target) if self.shapes[target].stow(&released.mote) => Event::Filed(released.mote),
-            _ => Event::Planted(released.mote, released.landing),
-        };
-        self.report(index, [event]);
+    /// A surface measures its place once and keeps it, so this is the same
+    /// move a summon makes: the level opens around the drop rather than back
+    /// where the surface happened to be standing.
+    fn settle(&mut self, index: usize, at: Vec3, gaze: &Gaze) -> anyhow::Result<()> {
+        let anchor = mount::landed(at, &gaze.eye, &self.tuning);
+        self.shapes[index].place(&anchor)?;
+        self.anchors[index] = Some(anchor);
+        Ok(())
+    }
+
+    /// Answers a landing, in the order a release means things: a grid under
+    /// it takes it, else a level opens there, else the room has it.
+    ///
+    /// Nothing of the consumer's is drawn in that last case: the mote goes
+    /// back where it came from, and a landing says where it was let go so the
+    /// consumer can put its own thing there.
+    fn place(
+        &mut self,
+        index: usize,
+        released: Released,
+        opens_at: Option<Vec3>,
+        gaze: &Gaze,
+    ) -> anyhow::Result<()> {
+        if let Some(target) = self.filed_into(gaze)
+            && self.shapes[target].stow(&released.mote)
+        {
+            self.report(index, [Event::Filed(released.mote)]);
+            return Ok(());
+        }
+
+        if let Some(at) = opens_at
+            && let Some(event) = self.shapes[index].open(&released.mote)
+        {
+            self.settle(index, at, gaze)?;
+            self.report(index, [event]);
+            return Ok(());
+        }
+
+        self.report(index, [Event::Planted(released.mote, released.landing)]);
+        Ok(())
     }
 
     /// The grid the pointer is over, which files rather than plants.

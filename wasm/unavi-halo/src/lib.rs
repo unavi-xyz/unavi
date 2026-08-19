@@ -155,8 +155,14 @@ impl Script {
                 InputAction::Press => self.forward(|hand| hand.trigger(true)),
                 InputAction::Release => self.forward(|hand| hand.trigger(false)),
                 InputAction::Scroll(delta) => self.forward(|hand| hand.scroll(delta.y)),
-                // Hover is per-prim, so a global listener never sees it.
-                InputAction::Enter | InputAction::Leave => {}
+                // The grip is the host's, for carrying things about: a tool is
+                // worked with its trigger, so an equipped one hears nothing of
+                // it and the two never answer the same press. Hover is
+                // per-prim, so a global listener never sees that either.
+                InputAction::GripPress
+                | InputAction::GripRelease
+                | InputAction::Enter
+                | InputAction::Leave => {}
             }
         }
         Ok(())

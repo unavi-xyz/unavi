@@ -167,13 +167,20 @@ impl Mounted for Grid {
         let mut released = None;
         for signal in self.bodies.poll() {
             match (signal, self.surface.is_seized()) {
-                (Signal::Grab(true), false) => self.press(gaze, anchor, &mut events),
-                (Signal::Grab(false), _) => released = self.release()?,
+                (Signal::Act(true), false) => self.press(gaze, anchor, false, &mut events),
+                (Signal::Take(true), false) => self.press(gaze, anchor, true, &mut events),
+                (Signal::Act(false) | Signal::Take(false), _) => released = self.release()?,
                 (Signal::Turn(delta), false) => self.surface.turn_by(delta),
-                (Signal::Grab(true) | Signal::Turn(_), true) => {}
+                (Signal::Act(true) | Signal::Take(true) | Signal::Turn(_), true) => {}
             }
         }
-        Ok(FixedUpdate { events, released })
+        // A grid holds no tree, so a level carried out of one has nowhere here
+        // to open: it lands like anything else and the consumer places it.
+        Ok(FixedUpdate {
+            events,
+            released,
+            opens_at: None,
+        })
     }
 
     /// A grid is a destination: a release over its housing files into it.
@@ -193,7 +200,7 @@ impl Grid {
 
     /// A consequential mote opens its cast site here rather than on release:
     /// the hold *is* the confirmation, exactly as it is in an orbit.
-    fn press(&mut self, gaze: &Gaze, anchor: Transform, events: &mut Vec<Event>) {
+    fn press(&mut self, gaze: &Gaze, anchor: Transform, carrying: bool, events: &mut Vec<Event>) {
         let Some(slot) = self.surface.attended() else {
             return;
         };
@@ -203,7 +210,8 @@ impl Grid {
         let world = anchor.translation + anchor.rotation * view.position;
         let depth = (world - gaze.ray.origin).length();
         self.depth = Some(depth);
-        self.surface.press(pointer::hand(&gaze.ray, depth));
+        self.surface
+            .press(pointer::hand(&gaze.ray, depth), carrying);
 
         if let Some(mote) = self.consequential(slot) {
             open_cast(&mut self.casting, slot, mote.clone(), &self.surface);

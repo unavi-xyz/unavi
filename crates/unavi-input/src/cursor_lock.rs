@@ -7,6 +7,8 @@ use bevy::{
     },
 };
 
+use crate::capture::Captured;
+
 #[derive(Debug, Clone, Copy, Default, Eq, PartialEq, Hash, States)]
 pub enum CursorGrabState {
     #[default]
@@ -17,16 +19,15 @@ pub enum CursorGrabState {
 pub(crate) fn cursor_grab(
     key: Res<ButtonInput<KeyCode>>,
     mouse: Res<ButtonInput<MouseButton>>,
+    captured: Res<Captured>,
+    state: Res<State<CursorGrabState>>,
     mut next_state: ResMut<NextState<CursorGrabState>>,
     mut windows: Query<&mut CursorOptions, With<PrimaryWindow>>,
-    #[cfg(feature = "egui-filter")] wants_input: Option<Res<bevy_egui::input::EguiWantsInput>>,
-    #[cfg(feature = "devtools")] state: Res<State<CursorGrabState>>,
-    #[cfg(feature = "devtools")] dev_tools: Option<Res<unavi_devtools::overlay::DevToolsActive>>,
 ) {
-    // While the dev tools overlay is open, free the cursor for it and hold the
-    // unlocked state so gameplay look/move (gated on `Locked`) stays suppressed.
-    #[cfg(feature = "devtools")]
-    if dev_tools.is_some_and(|d| d.0) {
+    // Whatever holds the input needs the cursor to point with, and holding
+    // the unlocked state is what keeps the look and move that are gated on
+    // `Locked` from running under it.
+    if captured.0 {
         if *state.get() == CursorGrabState::Locked {
             for mut cursor in &mut windows {
                 cursor.visible = true;
@@ -39,14 +40,6 @@ pub(crate) fn cursor_grab(
 
     for mut cursor in &mut windows {
         if mouse.just_pressed(MouseButton::Left) {
-            // Filter out input if egui wants the cursor.
-            #[cfg(feature = "egui-filter")]
-            if let Some(w) = &wants_input
-                && w.wants_pointer_input()
-            {
-                continue;
-            }
-
             cursor.visible = false;
             cursor.grab_mode = CursorGrabMode::Locked;
             next_state.set(CursorGrabState::Locked);

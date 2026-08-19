@@ -190,14 +190,19 @@ impl Surface {
     }
 
     /// Presses the slot currently holding attention.
-    pub fn press(&mut self, at: Vec3) {
+    ///
+    /// Only a grip carries: a mote acted on with the trigger fires where it
+    /// sits however far the hand then travels, which is what makes the two
+    /// buttons mean different things on the same mote.
+    pub fn press(&mut self, at: Vec3, carrying: bool) {
         let Some(slot) = self.tracker.current() else {
             return;
         };
-        let takeable = self
-            .views
-            .get(slot)
-            .is_some_and(|view| view.role.is_takeable());
+        let takeable = carrying
+            && self
+                .views
+                .get(slot)
+                .is_some_and(|view| view.role.is_takeable());
         self.grasp.press(slot, at, takeable);
     }
 
@@ -733,7 +738,7 @@ mod tests {
         let specs = [spec(Role::Action), spec(Role::Action)];
         let aim = aim_at(Vec2::new(0.0, R));
         ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
-        surface.press(aim.world);
+        surface.press(aim.world, false);
         ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
         assert_eq!(surface.release(), Some(Outcome::Tap(0)));
     }
@@ -746,7 +751,7 @@ mod tests {
         ring_update(&mut surface, &specs, Centre::Open, &frame(Some(start)));
         let resting = surface.views()[0].position;
 
-        surface.press(start.world);
+        surface.press(start.world, true);
         // Off the orbit plane entirely: a pickup is not a slider.
         let hand = Vec3::new(R * 2.0, -R, 0.6);
         ring_update(
@@ -773,7 +778,7 @@ mod tests {
         ring_update(&mut surface, &specs, Centre::Open, &frame(Some(start)));
         let resting = surface.views()[0].position;
 
-        surface.press(start.world);
+        surface.press(start.world, true);
         ring_update(
             &mut surface,
             &specs,
@@ -790,7 +795,7 @@ mod tests {
         let specs = [takeable(), spec(Role::Action), spec(Role::Action)];
         let start = aim_at(Vec2::new(0.0, R));
         ring_update(&mut surface, &specs, Centre::Open, &frame(Some(start)));
-        surface.press(start.world);
+        surface.press(start.world, true);
 
         // Sweep the aim onto a different slot while holding the first.
         let over_another = aim_at(Vec2::new(0.0, -R));
@@ -816,7 +821,7 @@ mod tests {
         let specs = [spec(Role::Action), spec(Role::Action), spec(Role::Action)];
         let start = aim_at(Vec2::new(0.0, R));
         ring_update(&mut surface, &specs, Centre::Open, &frame(Some(start)));
-        surface.press(start.world);
+        surface.press(start.world, true);
 
         ring_update(
             &mut surface,
@@ -844,7 +849,7 @@ mod tests {
         ring_update(&mut surface, &specs, Centre::Open, &frame(Some(start)));
         let other = surface.views()[1].position;
 
-        surface.press(start.world);
+        surface.press(start.world, true);
         ring_update(
             &mut surface,
             &specs,
@@ -913,7 +918,7 @@ mod tests {
         dwell(&mut surface, &specs, aim);
         assert!(surface.placard().is_some());
 
-        surface.press(aim.world);
+        surface.press(aim.world, true);
         ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
         assert!(
             surface.placard().is_none(),
@@ -1038,7 +1043,7 @@ mod tests {
 
         surface.turn_by(2);
         ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
-        surface.press(aim.world);
+        surface.press(aim.world, false);
         ring_update(&mut surface, &specs, Centre::Open, &frame(Some(aim)));
 
         let Some(Outcome::Tap(slot)) = surface.release() else {
@@ -1371,7 +1376,7 @@ mod tests {
 
         surface.turn_to(1);
         surface.update(&specs, layout, 0, &frame(Some(aim)));
-        surface.press(aim.world);
+        surface.press(aim.world, true);
         surface.update(&specs, layout, 0, &frame(Some(aim)));
 
         let Some(Outcome::Tap(slot)) = surface.release() else {

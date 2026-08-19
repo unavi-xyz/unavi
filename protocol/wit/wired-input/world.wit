@@ -17,7 +17,7 @@ interface api {
 }
 
 interface context {
-  use types.{input-listener, pointer, pointer-claim, pointer-kind};
+  use types.{input-listener, pointer};
   use wired:error/types.{error};
 
   /// Captures all input events from the local agent.
@@ -25,11 +25,6 @@ interface context {
 
   /// Where the local agent is pointing, this frame.
   pointers: func() -> result<list<pointer>, error>;
-
-  /// Takes a pointer for this script's exclusive use. While the claim is
-  /// alive the host performs none of its own interactions with that pointer:
-  /// no grab, no reticle. Dropping the claim gives it back.
-  claim-pointer: func(kind: pointer-kind) -> result<pointer-claim, error>;
 }
 
 interface types {
@@ -59,16 +54,24 @@ interface types {
     /// Whether the pointer is tracked and usable this frame.
     active: bool,
     ray:    ray,
-    /// How hard the grab is held, 0 to 1. Analogue where the binding is.
-    grasp: f32,
+    /// How hard the trigger is pulled, 0 to 1. Analogue where the binding
+    /// is. Acting on whatever the ray is aimed at.
+    trigger: f32,
+    /// How hard the hand is closed, 0 to 1. Taking hold of whatever the ray
+    /// is aimed at, which is never the same input as the trigger.
+    grip: f32,
     /// Thumbstick travel; zero for a pointer with no stick.
     axis: vec2,
     hit:  option<hit>,
   }
 
   variant input-action {
+    /// The trigger, the button everything picks with.
     press,
     release,
+    /// The grip closing on this prim.
+    grip-press,
+    grip-release,
     /// Notches turned, so ten is not one.
     scroll(vec2),
     /// Per-prim only: a global listener has no bounds to cross.
@@ -90,9 +93,5 @@ interface types {
 
   resource input-listener {
     poll: func() -> option<input-event>;
-  }
-
-  resource pointer-claim {
-    kind: func() -> pointer-kind;
   }
 }

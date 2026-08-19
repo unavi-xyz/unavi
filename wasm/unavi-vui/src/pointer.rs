@@ -38,17 +38,22 @@ impl Gaze {
     }
 }
 
-/// The pointer attention follows: whichever is pulling hardest, and failing
+/// How busy a hand is, whichever way it is acting.
+const fn effort(pointer: &Pointer) -> f32 {
+    pointer.trigger.max(pointer.grip)
+}
+
+/// The pointer attention follows: whichever is acting hardest, and failing
 /// that the one a platform actually has.
 fn leading(pointers: &[Pointer]) -> Option<Ray> {
     let active = pointers.iter().filter(|pointer| pointer.active);
 
-    let grasping = active
+    let acting = active
         .clone()
-        .filter(|pointer| pointer.grasp > 0.0)
-        .max_by(|a, b| a.grasp.total_cmp(&b.grasp));
+        .filter(|pointer| effort(pointer) > 0.0)
+        .max_by(|a, b| effort(a).total_cmp(&effort(b)));
 
-    grasping
+    acting
         .or_else(|| {
             [
                 PointerKind::Screen,
@@ -204,14 +209,15 @@ mod tests {
 
     #[test]
     fn a_pointer_pulling_hardest_is_the_one_attention_follows() {
-        let pointer = |kind, grasp, x: f32| Pointer {
+        let pointer = |kind, grip, x: f32| Pointer {
             kind,
             active: true,
             ray: Ray {
                 origin: Vec3::new(x, 0.0, 0.0),
                 dir:    Vec3::new(0.0, 0.0, -1.0),
             },
-            grasp,
+            trigger: 0.0,
+            grip,
             axis: Vec2::ZERO,
             hit: None,
         };
@@ -227,12 +233,13 @@ mod tests {
     #[test]
     fn an_untracked_pointer_is_never_the_one_followed() {
         let mut screen = Pointer {
-            kind:   PointerKind::Screen,
-            active: false,
-            ray:    ray(),
-            grasp:  1.0,
-            axis:   Vec2::ZERO,
-            hit:    None,
+            kind:    PointerKind::Screen,
+            active:  false,
+            ray:     ray(),
+            trigger: 0.0,
+            grip:    1.0,
+            axis:    Vec2::ZERO,
+            hit:     None,
         };
         assert!(leading(&[screen]).is_none());
 

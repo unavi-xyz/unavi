@@ -23,7 +23,8 @@ pub struct Bindings {
     pub look:     AxisBinding,
     pub jump:     ButtonBinding,
     pub sprint:   ButtonBinding,
-    pub grab:     PerPointer<ButtonBinding>,
+    pub trigger:  PerPointer<ButtonBinding>,
+    pub grip:     PerPointer<ButtonBinding>,
     pub menu:     PerPointer<ButtonBinding>,
 }
 
@@ -38,7 +39,12 @@ impl Bindings {
             .chain(
                 PointerKind::ALL
                     .into_iter()
-                    .map(|kind| (Action::Grab(kind), self.grab.get(kind))),
+                    .map(|kind| (Action::Trigger(kind), self.trigger.get(kind))),
+            )
+            .chain(
+                PointerKind::ALL
+                    .into_iter()
+                    .map(|kind| (Action::Grip(kind), self.grip.get(kind))),
             )
             .chain(
                 PointerKind::ALL
@@ -143,26 +149,39 @@ const STICK: [(&str, &str); 4] = [
     (VIVE_PROFILE, "input/trackpad"),
 ];
 
-const JUMP: [(&str, &str); 4] = [
-    (TOUCH_PROFILE, "input/a/click"),
-    (INDEX_PROFILE, "input/a/click"),
-    (WMR_PROFILE, "input/trigger/value"),
-    (VIVE_PROFILE, "input/trigger/click"),
-];
-
-const SPRINT: [(&str, &str); 4] = [
-    (TOUCH_PROFILE, "input/thumbstick/click"),
-    (INDEX_PROFILE, "input/thumbstick/click"),
-    (WMR_PROFILE, "input/thumbstick/click"),
-    (VIVE_PROFILE, "input/trigger/click"),
-];
-
-const SQUEEZE: [(&str, &str); 5] = [
+/// The one input every headset has under the index finger. Analogue where the
+/// runtime reports a pull, so a light touch reads as one.
+const TRIGGER: [(&str, &str); 5] = [
     (SIMPLE_PROFILE, "input/select/click"),
+    (TOUCH_PROFILE, "input/trigger/value"),
+    (INDEX_PROFILE, "input/trigger/value"),
+    (WMR_PROFILE, "input/trigger/value"),
+    (VIVE_PROFILE, "input/trigger/value"),
+];
+
+/// Closing the hand. The simple profile has no second button to spare, so a
+/// controller UNAVI ships no bindings for can act but not carry.
+const GRIP: [(&str, &str); 4] = [
     (TOUCH_PROFILE, "input/squeeze/value"),
     (INDEX_PROFILE, "input/squeeze/value"),
     (WMR_PROFILE, "input/squeeze/click"),
     (VIVE_PROFILE, "input/squeeze/click"),
+];
+
+const JUMP: [(&str, &str); 4] = [
+    (TOUCH_PROFILE, "input/a/click"),
+    (INDEX_PROFILE, "input/a/click"),
+    (WMR_PROFILE, "input/trackpad/click"),
+    (VIVE_PROFILE, "input/trackpad/click"),
+];
+
+/// A wand has a trigger, a grip, a menu and a trackpad and nothing else, so
+/// once the first three are spoken for and the fourth is walking there is no
+/// button left to sprint with.
+const SPRINT: [(&str, &str); 3] = [
+    (TOUCH_PROFILE, "input/thumbstick/click"),
+    (INDEX_PROFILE, "input/thumbstick/click"),
+    (WMR_PROFILE, "input/thumbstick/click"),
 ];
 
 fn movement() -> AxisBinding {
@@ -206,7 +225,8 @@ fn sprint() -> ButtonBinding {
     }
 }
 
-fn grab() -> PerPointer<ButtonBinding> {
+/// Acting on what is pointed at: the button everything picks with.
+fn trigger() -> PerPointer<ButtonBinding> {
     PerPointer {
         screen:     ButtonBinding {
             mouse: vec![MouseButton::Left],
@@ -214,11 +234,32 @@ fn grab() -> PerPointer<ButtonBinding> {
             ..default()
         },
         left_hand:  ButtonBinding {
-            xr: xr(LEFT, &SQUEEZE),
+            xr: xr(LEFT, &TRIGGER),
             ..default()
         },
         right_hand: ButtonBinding {
-            xr: xr(RIGHT, &SQUEEZE),
+            xr: xr(RIGHT, &TRIGGER),
+            ..default()
+        },
+    }
+}
+
+/// Taking hold of what is pointed at. Never bound to the same input as
+/// [`trigger`], because the whole point of the two is that a press means one
+/// thing or the other and never both.
+fn grip() -> PerPointer<ButtonBinding> {
+    PerPointer {
+        screen:     ButtonBinding {
+            mouse: vec![MouseButton::Right],
+            pad: vec![GamepadButton::LeftTrigger2],
+            ..default()
+        },
+        left_hand:  ButtonBinding {
+            xr: xr(LEFT, &GRIP),
+            ..default()
+        },
+        right_hand: ButtonBinding {
+            xr: xr(RIGHT, &GRIP),
             ..default()
         },
     }
@@ -261,7 +302,8 @@ impl Default for Bindings {
             look:     look(),
             jump:     jump(),
             sprint:   sprint(),
-            grab:     grab(),
+            trigger:  trigger(),
+            grip:     grip(),
             menu:     menu(),
         }
     }
@@ -316,13 +358,13 @@ mod tests {
     }
 
     #[test]
-    fn every_shipped_profile_can_grab_and_open_the_menu() {
+    fn every_shipped_profile_can_act_and_open_the_menu() {
         let bindings = Bindings::default();
 
         for profile in PROFILES {
             for kind in [PointerKind::LeftHand, PointerKind::RightHand] {
                 for (name, binding) in [
-                    ("grab", bindings.grab.get(kind)),
+                    ("trigger", bindings.trigger.get(kind)),
                     ("menu", bindings.menu.get(kind)),
                 ] {
                     assert!(
@@ -336,12 +378,66 @@ mod tests {
     }
 
     #[test]
-    fn every_profile_with_a_stick_can_walk_look_jump_and_sprint() {
+    fn no_profile_binds_one_input_to_both_the_trigger_and_the_grip() {
+        let bindings = Bindings::default();
+
+        for kind in PointerKind::ALL {
+            for pulled in &bindings.trigger.get(kind).xr {
+                assert!(
+                    !bindings
+                        .grip
+                        .get(kind)
+                        .xr
+                        .iter()
+                        .any(|held| held.path == pulled.path),
+                    "{} would act and take hold at once",
+                    pulled.path
+                );
+            }
+        }
+    }
+
+    /// The trigger is the input everything picks with, so anything else on it
+    /// would fire whenever a mote is pressed.
+    #[test]
+    fn nothing_else_is_bound_to_a_trigger() {
+        let bindings = Bindings::default();
+        let triggers = PointerKind::ALL
+            .into_iter()
+            .flat_map(|kind| bindings.trigger.get(kind).xr.iter())
+            .map(|binding| binding.path.as_str())
+            .collect::<Vec<_>>();
+
+        for (action, binding) in bindings.buttons() {
+            if matches!(action, Action::Trigger(_)) {
+                continue;
+            }
+            for bound in &binding.xr {
+                assert!(
+                    !triggers.contains(&bound.path.as_str()),
+                    "{action:?} shares {} with a trigger",
+                    bound.path
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn every_profile_with_a_stick_can_walk_look_jump_and_take_hold() {
         let bindings = Bindings::default();
 
         for profile in PROFILES.into_iter().filter(|p| *p != SIMPLE_PROFILE) {
             for (action, binding) in bindings.buttons() {
-                if matches!(action, Action::Grab(_) | Action::Menu(_)) {
+                let skip = match action {
+                    // Covered by its own test, and the desktop pointer has no
+                    // headset binding to find.
+                    Action::Menu(_) | Action::Trigger(_) => true,
+                    Action::Grip(kind) => kind == PointerKind::Screen,
+                    // Sprint is the one thing a wand has no button left for.
+                    Action::Sprint => profile == VIVE_PROFILE,
+                    _ => false,
+                };
+                if skip {
                     continue;
                 }
                 assert!(

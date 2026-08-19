@@ -79,6 +79,8 @@ impl From<shared_types::InputAction> for InputAction {
         match action {
             shared_types::InputAction::Press => Self::Press,
             shared_types::InputAction::Release => Self::Release,
+            shared_types::InputAction::GripPress => Self::GripPress,
+            shared_types::InputAction::GripRelease => Self::GripRelease,
             shared_types::InputAction::Scroll(delta) => Self::Scroll(delta.into()),
             shared_types::InputAction::Enter => Self::Enter,
             shared_types::InputAction::Leave => Self::Leave,
@@ -102,12 +104,13 @@ impl From<shared_types::InputEvent> for InputEvent {
 impl From<shared_types::Pointer> for Pointer {
     fn from(pointer: shared_types::Pointer) -> Self {
         Self {
-            kind:   pointer.kind.into(),
-            active: pointer.active,
-            ray:    pointer.ray.into(),
-            grasp:  pointer.grasp,
-            axis:   pointer.axis.into(),
-            hit:    pointer.hit.map(Into::into),
+            kind:    pointer.kind.into(),
+            active:  pointer.active,
+            ray:     pointer.ray.into(),
+            trigger: pointer.trigger,
+            grip:    pointer.grip,
+            axis:    pointer.axis.into(),
+            hit:     pointer.hit.map(Into::into),
         }
     }
 }

@@ -1,10 +1,15 @@
 use std::{
     collections::HashMap,
     sync::LazyLock,
+    time::Duration,
 };
 
 use hsd::id::DocId;
-use parking_lot::RwLock;
+use parking_lot::{
+    RwLock,
+    RwLockReadGuard,
+    RwLockWriteGuard,
+};
 
 use crate::{
     document::DocumentPolicy,
@@ -38,6 +43,26 @@ pub struct Record {
 
 static DOCUMENTS: LazyLock<RwLock<HashMap<DocId, Record>>> = LazyLock::new(RwLock::default);
 
+/// Longest any caller may wait for the registry.
+///
+/// Every critical section here is a map lookup, so a wait this long means the
+/// lock will never be granted: [`RwLock`] is not reentrant, and a read taken
+/// inside a write on the same thread would otherwise hang the process with no
+/// panic and no log.
+const LOCK_TIMEOUT: Duration = Duration::from_secs(5);
+
+fn documents() -> RwLockReadGuard<'static, HashMap<DocId, Record>> {
+    DOCUMENTS
+        .try_read_for(LOCK_TIMEOUT)
+        .expect("policy registry read timed out; a write is held on this thread")
+}
+
+fn documents_mut() -> RwLockWriteGuard<'static, HashMap<DocId, Record>> {
+    DOCUMENTS
+        .try_write_for(LOCK_TIMEOUT)
+        .expect("policy registry write timed out; a lock is held on this thread")
+}
+
 /// What the host decided about `doc`.
 ///
 /// An unregistered document answers [`Record::default`]. That is the stated
@@ -46,15 +71,15 @@ static DOCUMENTS: LazyLock<RwLock<HashMap<DocId, Record>>> = LazyLock::new(RwLoc
 /// the weakest answer are the same statement.
 #[must_use]
 pub fn get(doc: DocId) -> Record {
-    DOCUMENTS.read().get(&doc).copied().unwrap_or_default()
+    documents().get(&doc).copied().unwrap_or_default()
 }
 
 pub fn update(doc: DocId, f: impl FnOnce(&mut Record)) {
-    f(DOCUMENTS.write().entry(doc).or_default());
+    f(documents_mut().entry(doc).or_default());
 }
 
 pub fn forget(doc: DocId) {
-    DOCUMENTS.write().remove(&doc);
+    documents_mut().remove(&doc);
 }
 
 /// Drops the space's own record and unregisters its members from it.
@@ -63,7 +88,7 @@ pub fn forget(doc: DocId) {
 /// goes, and a member that outlives the space must not silently regain the
 /// open defaults in the meantime.
 pub fn forget_space(space: DocId) {
-    let mut docs = DOCUMENTS.write();
+    let mut docs = documents_mut();
     docs.remove(&space);
     for record in docs.values_mut() {
         if record.space == Some(space) {
@@ -75,8 +100,7 @@ pub fn forget_space(space: DocId) {
 /// Every document registered into `space`.
 #[must_use]
 pub fn documents_in(space: DocId) -> Vec<DocId> {
-    DOCUMENTS
-        .read()
+    documents()
         .iter()
         .filter(|(_, record)| record.space == Some(space))
         .map(|(doc, _)| *doc)
@@ -90,7 +114,7 @@ pub fn documents_in(space: DocId) -> Vec<DocId> {
 /// is what stops a peer's instanced content reading as locally authored.
 #[must_use]
 pub fn root(doc: DocId) -> DocId {
-    let docs = DOCUMENTS.read();
+    let docs = documents();
     let mut at = doc;
     for _ in 0..MAX_HOST_DEPTH {
         match docs.get(&at).and_then(|record| record.host) {
@@ -105,7 +129,7 @@ pub fn root(doc: DocId) -> DocId {
 #[must_use]
 pub fn registered_space(doc: DocId) -> Option<DocId> {
     let root = root(doc);
-    let docs = DOCUMENTS.read();
+    let docs = documents();
     docs.get(&doc)
         .and_then(|record| record.space)
         .or_else(|| docs.get(&root).and_then(|record| record.space))

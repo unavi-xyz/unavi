@@ -177,9 +177,10 @@ async fn spawn_child_doc(
     // Seeded before the spawn command applies, so the child is never briefly
     // an unplaced document that policy would have to attribute by guessing.
     let parent = registry::get(api.doc_id);
+    let space = registry::registered_space(api.doc_id);
     registry::update(id, |record| {
         record.policy = parent.policy;
-        record.space = registry::registered_space(api.doc_id);
+        record.space = space;
     });
 
     unavi_quota::registry::child_document_quota(ns, NamespaceId::from(&api.doc_id.0));

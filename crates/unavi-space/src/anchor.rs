@@ -16,6 +16,7 @@ use unavi_policy::{
     membership::SpaceOwner,
     space::Space,
 };
+use unavi_util::hierarchy::ancestors;
 
 #[derive(Component, Default)]
 pub struct DocTraveler;
@@ -133,17 +134,7 @@ pub fn reparent_doc_traveler(
         return;
     }
 
-    let mut current = event.destination;
-    let dest_space = loop {
-        if spaces.contains(current) {
-            break Some(current);
-        }
-        match parents.get(current) {
-            Ok(child_of) => current = child_of.parent(),
-            Err(_) => break None,
-        }
-    };
-    let Some(space) = dest_space else {
+    let Some(space) = ancestors(event.destination, &parents).find(|at| spaces.contains(*at)) else {
         return;
     };
 

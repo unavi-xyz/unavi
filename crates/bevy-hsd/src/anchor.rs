@@ -4,6 +4,7 @@
 //! its placement in its root prim's transform.
 
 use bevy::prelude::*;
+use unavi_util::hierarchy::descends_from;
 
 use crate::{
     Hsd,
@@ -41,11 +42,19 @@ pub fn place(doc: &mut EntityWorldMut, anchor: DocAnchor) {
 
 pub fn apply_anchors(
     changed: Query<(Entity, &DocAnchor), (With<Hsd>, Changed<DocAnchor>)>,
+    parents: Query<&ChildOf>,
     mut transforms: Query<&mut Transform>,
     mut commands: Commands,
 ) {
     for (doc_ent, anchor) in &changed {
         match anchor.target {
+            // A guest picks the target, and one standing under this document
+            // would close the hierarchy into a ring that transform propagation
+            // walks forever.
+            Some(target) if descends_from(target, doc_ent, &parents) => {
+                warn!(?doc_ent, ?target, "anchor target stands under its own document");
+                continue;
+            }
             Some(target) => {
                 commands.entity(doc_ent).insert(ChildOf(target));
             }

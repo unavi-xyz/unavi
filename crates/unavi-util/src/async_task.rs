@@ -7,10 +7,13 @@ use async_channel::Sender;
 
 type Fut = Pin<Box<dyn Future<Output = ()> + Send>>;
 
-const SIZE: usize = 32;
-
+/// Handoff to the executor, unbounded.
+///
+/// Bevy systems spawn tasks from the main thread, so a bound here is a bound
+/// on how long the frame loop may be parked. Nothing accumulates: the receiver
+/// only hands each future on, and backpressure belongs on what the tasks do.
 pub static ASYNC_TASK: LazyLock<Sender<Fut>> = LazyLock::new(|| {
-    let (tx, rx) = async_channel::bounded(SIZE);
+    let (tx, rx) = async_channel::unbounded();
 
     unavi_wasm_compat::spawn_thread(async move {
         while let Ok(fut) = rx.recv().await {
@@ -26,7 +29,7 @@ pub static ASYNC_TASK: LazyLock<Sender<Fut>> = LazyLock::new(|| {
 #[cfg(not(target_family = "wasm"))]
 pub fn spawn_async_task(future: impl Future<Output = ()> + Send + 'static) {
     ASYNC_TASK
-        .send_blocking(Box::pin(future))
+        .try_send(Box::pin(future))
         .expect("send async task");
 }
 

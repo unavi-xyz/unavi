@@ -14008,6 +14008,7 @@ dependencies = [
  "unavi-physics",
  "unavi-policy",
  "unavi-space",
+ "unavi-util",
 ]
 
 [[package]]

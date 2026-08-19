@@ -45,13 +45,13 @@ pub fn wait_for_scripts(world: &mut World, outstanding: &Arc<AtomicUsize>, budge
     }
     let deadline = Instant::now() + budget;
     while outstanding.load(Ordering::Acquire) > 0 {
-        pump_async_commands(world);
+        pump_async_commands(world, deadline);
         if outstanding.load(Ordering::Acquire) == 0 || Instant::now() >= deadline {
             break;
         }
         std::thread::yield_now();
     }
-    pump_async_commands(world);
+    pump_async_commands(world, deadline);
 }
 
 #[cfg(test)]

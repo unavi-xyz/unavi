@@ -17,6 +17,7 @@ iroh-docs.workspace = true
 unavi-input.path    = "../unavi-input"
 unavi-policy.path   = "../unavi-policy"
 unavi-space.path    = "../unavi-space"
+unavi-util = { version = "0.0.16", path = "../unavi-util" }
 
 [dev-dependencies]
 unavi-physics = { path = "../unavi-physics" }

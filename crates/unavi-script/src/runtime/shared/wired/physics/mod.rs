@@ -21,7 +21,10 @@ use hsd::id::{
     PrimId,
 };
 use unavi_physics::finite;
-use unavi_util::async_commands::AsyncCommands;
+use unavi_util::{
+    async_commands::AsyncCommands,
+    hierarchy::ancestors,
+};
 
 use crate::{
     error::ScriptError,
@@ -53,25 +56,19 @@ pub struct RayHit {
 }
 
 fn resolve_doc(
-    mut entity: Entity,
+    entity: Entity,
     children: &Query<&HsdChild>,
     docs: &Query<&HsdDocId>,
     parents: &Query<&ChildOf>,
 ) -> Option<DocId> {
-    loop {
-        if let Ok(child) = children.get(entity)
-            && let Ok(rec) = docs.get(child.0)
-        {
-            return Some(rec.0);
-        }
-        if let Ok(rec) = docs.get(entity) {
-            return Some(rec.0);
-        }
-        match parents.get(entity) {
-            Ok(parent) => entity = parent.parent(),
-            Err(_) => return None,
-        }
-    }
+    ancestors(entity, parents).find_map(|at| {
+        children
+            .get(at)
+            .ok()
+            .and_then(|child| docs.get(child.0).ok())
+            .or_else(|| docs.get(at).ok())
+            .map(|rec| rec.0)
+    })
 }
 
 pub async fn raycast(

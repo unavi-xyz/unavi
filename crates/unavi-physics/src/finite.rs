@@ -2,7 +2,10 @@
 //! spreads to every body sharing an island. Anything derived from a scene, a
 //! script, or avatar geometry passes through here first.
 
-use bevy::prelude::Vec3;
+use bevy::prelude::{
+    Quat,
+    Vec3,
+};
 
 #[must_use]
 pub fn positive(v: f32) -> bool {
@@ -24,13 +27,28 @@ pub fn vec3(v: [f32; 3]) -> Option<Vec3> {
     v.is_finite().then_some(v)
 }
 
+/// A rotation, returned normalized, and only if it names one.
+///
+/// The zero quaternion is the case worth naming: it is the default a guest
+/// gets from zeroed memory, it is not a rotation, and normalizing it is what
+/// turns it into the NaN the solver spreads.
+#[must_use]
+pub fn quat(v: [f32; 4]) -> Option<Quat> {
+    let q = Quat::from_array(v).normalize();
+    q.is_finite().then_some(q)
+}
+
 #[cfg(test)]
 mod tests {
-    use bevy::prelude::Vec3;
+    use bevy::prelude::{
+        Quat,
+        Vec3,
+    };
 
     use super::{
         nonneg,
         positive,
+        quat,
         vec3,
     };
 
@@ -46,6 +64,21 @@ mod tests {
             assert_eq!(vec3([bad, 0.0, 0.0]), None, "x = {bad} was accepted");
             assert_eq!(vec3([0.0, bad, 0.0]), None, "y = {bad} was accepted");
             assert_eq!(vec3([0.0, 0.0, bad]), None, "z = {bad} was accepted");
+        }
+    }
+
+    #[test]
+    fn a_rotation_comes_back_normalized() {
+        let q = quat([0.0, 0.0, 0.0, 2.0]).expect("finite");
+        assert!((q.length() - 1.0).abs() < 1.0e-6);
+        assert!(q.abs_diff_eq(Quat::IDENTITY, 1.0e-6));
+    }
+
+    #[test]
+    fn a_rotation_without_a_direction_is_rejected() {
+        assert_eq!(quat([0.0; 4]), None, "the zero quaternion was accepted");
+        for bad in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            assert_eq!(quat([bad, 0.0, 0.0, 1.0]), None, "{bad} was accepted");
         }
     }
 

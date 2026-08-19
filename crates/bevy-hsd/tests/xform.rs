@@ -31,7 +31,8 @@ fn test_xform_lifecycle(mut ctx: TestContext) {
     let out = res[0];
     assert!(
         out.rotation
-            .abs_diff_eq(Quat::from_array(attr.rotation), f32::EPSILON)
+            .abs_diff_eq(Quat::from_array(attr.rotation).normalize(), f32::EPSILON),
+        "a rotation reaches Transform normalized, whatever the document stores"
     );
     assert!(
         out.scale

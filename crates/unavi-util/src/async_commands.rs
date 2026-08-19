@@ -1,4 +1,7 @@
-use std::sync::LazyLock;
+use std::{
+    sync::LazyLock,
+    time::Instant,
+};
 
 use async_channel::{
     Receiver,
@@ -33,14 +36,22 @@ pub(crate) fn apply_async_commands(mut commands: Commands) {
     }
 }
 
-/// Drains and applies every queued command directly against the world.
+/// Drains and applies queued commands directly against the world until the
+/// queue empties or `deadline` passes.
 ///
 /// Unlike [`apply_async_commands`], this takes effect immediately rather than
 /// at the next system boundary, letting a system that blocks the main thread
 /// keep draining the queue so awaiting async commands can make progress.
-pub fn pump_async_commands(world: &mut World) {
+///
+/// The deadline is what makes that safe: a command wakes the task that sent
+/// it, which is free to send the next one before this loop looks again, so an
+/// unbounded drain is a frame the producers decide the length of.
+pub fn pump_async_commands(world: &mut World, deadline: Instant) {
     while let Ok(mut queue) = ASYNC_COMMAND_QUEUE.1.try_recv() {
         queue.apply(world);
+        if Instant::now() >= deadline {
+            return;
+        }
     }
 }
 
@@ -119,19 +130,66 @@ impl AsyncCommands {
 
 #[cfg(test)]
 mod tests {
-    use std::task::{
-        Context,
-        Poll,
-        Waker,
+    use std::{
+        sync::{
+            Mutex,
+            atomic::{
+                AtomicBool,
+                Ordering,
+            },
+        },
+        task::{
+            Context,
+            Poll,
+            Waker,
+        },
+        time::Duration,
     };
 
     use super::*;
+
+    /// The queue is process-global, so two tests draining it at once would
+    /// take each other's commands.
+    static EXCLUSIVE: Mutex<()> = Mutex::new(());
 
     #[derive(Component)]
     struct Marker;
 
     #[test]
+    fn the_pump_stops_at_its_deadline() {
+        static REFILLING: AtomicBool = AtomicBool::new(true);
+
+        fn enqueue() {
+            let _ = AsyncCommands::default()
+                .push(|world: &mut World| {
+                    world.spawn(Marker);
+                    if REFILLING.load(Ordering::Relaxed) {
+                        enqueue();
+                    }
+                })
+                .try_send();
+        }
+
+        let _guard = EXCLUSIVE.lock().expect("exclusive");
+        enqueue();
+
+        let mut world = World::new();
+        let started = Instant::now();
+        pump_async_commands(&mut world, started + Duration::from_millis(5));
+        let elapsed = started.elapsed();
+
+        REFILLING.store(false, Ordering::Relaxed);
+        pump_async_commands(&mut world, Instant::now() + Duration::from_secs(5));
+
+        assert!(
+            elapsed < Duration::from_secs(1),
+            "a command that re-enqueues itself held the pump for {elapsed:?}"
+        );
+    }
+
+    #[test]
     fn send_spawn_submits_queue() {
+        let _guard = EXCLUSIVE.lock().expect("exclusive");
         let mut fut = Box::pin(AsyncCommands::default().send_spawn(Marker));
         let mut cx = Context::from_waker(Waker::noop());
         assert!(fut.as_mut().poll(&mut cx).is_pending());

@@ -64,6 +64,7 @@ use hsd::{
     },
     state::SceneState,
 };
+use unavi_physics::finite;
 use unavi_policy::check::{
     placed,
     write as check_write,
@@ -467,6 +468,12 @@ pub async fn set_xform(api: &Api, rep: u32, value: Option<XformAttr>) -> anyhow:
     ensure_writable(api, &prim)?;
     match value {
         Some(x) => {
+            if finite::vec3(x.translation).is_none()
+                || finite::quat(x.rotation).is_none()
+                || finite::vec3(x.scale).is_none()
+            {
+                bail!("xform is not a transform: {x:?}");
+            }
             prim.write_attr(&x)?;
             if let Some(v) = NODE_TRANSFORM_REGISTRY.write().get_mut(&AbsoluteNodeId {
                 doc:  prim.doc_id,

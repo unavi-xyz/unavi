@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_hsd::attributes::spawn::SpawnPoint;
 use rand::Rng;
+use unavi_util::hierarchy::descends_from;
 
 /// A world position to spawn at inside `space`, which only sits at the origin
 /// while it is the active one.
@@ -12,7 +13,7 @@ pub fn pick_spawn(
 ) -> Option<Vec3> {
     let candidates: Vec<(Vec3, f32)> = spawn_points
         .iter()
-        .filter(|(_, _, child_of)| belongs_to_space(child_of.parent(), space, parents))
+        .filter(|(_, _, child_of)| descends_from(child_of.parent(), space, parents))
         .map(|(s, gt, _)| (gt.translation(), s.radius))
         .collect();
     if candidates.is_empty() {
@@ -32,16 +33,4 @@ pub fn pick_spawn(
         center.y,
         r.mul_add(theta.sin(), center.z),
     ))
-}
-
-fn belongs_to_space(mut current: Entity, space: Entity, parents: &Query<&ChildOf>) -> bool {
-    loop {
-        if current == space {
-            return true;
-        }
-        match parents.get(current) {
-            Ok(child_of) => current = child_of.parent(),
-            Err(_) => return false,
-        }
-    }
 }

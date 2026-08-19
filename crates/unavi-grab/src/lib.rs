@@ -31,6 +31,7 @@ use unavi_space::{
         replicas,
     },
 };
+use unavi_util::hierarchy::ancestors;
 
 pub struct GrabPlugin;
 
@@ -346,14 +347,7 @@ fn resolve_space(
     spaces: &Query<&Space>,
     parents: &Query<&ChildOf>,
 ) -> Option<NamespaceId> {
-    let mut cursor = Some(doc_entity);
-    while let Some(current) = cursor {
-        if let Ok(space) = spaces.get(current) {
-            return Some(space.0);
-        }
-        cursor = parents.get(current).ok().map(|p| p.0);
-    }
-    None
+    ancestors(doc_entity, parents).find_map(|at| spaces.get(at).ok().map(|space| space.0))
 }
 
 fn on_release(

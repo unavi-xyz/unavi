@@ -87,7 +87,12 @@ pub async fn verify_peer_identity(connection: &Connection) {
         match proof {
             Ok(did) => {
                 info!("Peer identified as {did}");
-                identity::bind(*peer.as_bytes(), did);
+                // Bound before the block is judged, so a refusal has a DID to
+                // key its teardown to.
+                identity::bind(*peer.as_bytes(), did.clone());
+                if crate::trust::enforce_block(peer, &did) {
+                    identity::unbind(*peer.as_bytes());
+                }
                 return;
             }
             Err(err) if attempt == PROOF_ATTEMPTS => warn!(?err, "Peer proved no identity"),

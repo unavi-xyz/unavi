@@ -13,13 +13,13 @@ use bevy_hsd::{
 };
 use hsd::id::DocId;
 use unavi_manifold::Seam;
+use unavi_policy::check::space_of;
 use unavi_portal_protocol::{
     BACKLINK_CHANNEL,
     BacklinkPayload,
     INCOMING_CHANNEL,
     IncomingPayload,
 };
-use unavi_space::membership::doc_space;
 
 use crate::{
     engine::InitializedScript,
@@ -146,7 +146,7 @@ pub fn service_portal_watches(
                 return None;
             }
             let (_, recp_record) = docs.get(hsd_child.0).ok()?;
-            (doc_space(recp_record.0) == Some(watch.target_space))
+            (space_of(recp_record.0) == Some(watch.target_space))
                 .then(|| (recp_record.0, prim.0.to_string()))
         });
         if let Some((receptor_doc, receptor_prim)) = found_receptor {
@@ -174,7 +174,7 @@ pub fn service_portal_watches(
             if record.0 == watch.source_doc {
                 continue;
             }
-            if doc_space(record.0) != Some(watch.target_space) {
+            if space_of(record.0) != Some(watch.target_space) {
                 continue;
             }
             if !watch.emitted.insert(record.0) {

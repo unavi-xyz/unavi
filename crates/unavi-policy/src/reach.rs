@@ -1,12 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::LazyLock,
-};
-
 use bevy::prelude::*;
-use bevy_hsd::HsdDocId;
-use hsd::id::DocId;
-use parking_lot::RwLock;
 
 use crate::{
     error::PolicyError,
@@ -62,7 +54,7 @@ impl Reach {
 /// unconditionally, because it is one peer's content on both sides and a
 /// boundary there protects nobody. Everything after it is the cross-owner case,
 /// where co-presence is a precondition and the rung is the decision.
-pub fn permits(
+pub const fn permits(
     trust: Trust,
     target: Reach,
     same_owner: bool,
@@ -72,49 +64,41 @@ pub fn permits(
         return Ok(());
     }
     if !co_present {
-        return Err(PolicyError::Reach(
-            "documents are not in the same space".into(),
-        ));
+        return Err(PolicyError::NotCoPresent);
     }
     if target.admits(trust) {
         Ok(())
     } else {
-        Err(PolicyError::Reach(format!(
-            "writes need {:?}, caller is {trust:?}",
-            target.writes_from
-        )))
+        Err(PolicyError::Rung {
+            required: target.writes_from,
+            actual:   trust,
+        })
     }
 }
 
-static REACH_REGISTRY: LazyLock<RwLock<HashMap<DocId, Reach>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
-
-/// What `doc` demands of its writers.
+/// Whether two documents are owned by the same peer.
 ///
-/// An unregistered document answers [`Reach::default`]. That is the stated
-/// default rather than a fallback: a document says nothing until it wants to be
-/// harder to write than open, so silence and openness are the same statement.
+/// An unknown owner on either side is never the same owner. Answering "yes"
+/// for a pair the host cannot attribute is what let a peer's prefab instance —
+/// which is never pinned and so has no owner of its own — read as locally
+/// authored and write anything the local user owns.
 #[must_use]
-pub fn required(doc: DocId) -> Reach {
-    REACH_REGISTRY.read().get(&doc).copied().unwrap_or_default()
+pub const fn same_owner(a: Option<[u8; 32]>, b: Option<[u8; 32]>) -> bool {
+    match (a, b) {
+        (Some(a), Some(b)) => const_eq(&a, &b),
+        _ => false,
+    }
 }
 
-pub fn set_required(doc: DocId, reach: Reach) {
-    REACH_REGISTRY.write().insert(doc, reach);
-}
-
-pub fn register_reach(trigger: On<Add, Reach>, docs: Query<(&HsdDocId, &Reach)>) {
-    let Ok((doc, reach)) = docs.get(trigger.entity) else {
-        return;
-    };
-    set_required(doc.0, *reach);
-}
-
-pub fn deregister_reach(trigger: On<Remove, HsdDocId>, docs: Query<&HsdDocId>) {
-    let Ok(doc) = docs.get(trigger.entity) else {
-        return;
-    };
-    REACH_REGISTRY.write().remove(&doc.0);
+const fn const_eq(a: &[u8; 32], b: &[u8; 32]) -> bool {
+    let mut i = 0;
+    while i < 32 {
+        if a[i] != b[i] {
+            return false;
+        }
+        i += 1;
+    }
+    true
 }
 
 #[cfg(test)]
@@ -123,7 +107,7 @@ mod tests {
 
     #[test]
     fn an_unstated_reach_admits_a_guest() {
-        assert!(required(DocId([9; 32])).admits(Trust::Guest));
+        assert!(Reach::default().admits(Trust::Guest));
     }
 
     #[test]
@@ -182,5 +166,14 @@ mod tests {
     #[test]
     fn a_blocked_peer_is_refused_content_it_does_not_own() {
         assert!(permits(Trust::Blocked, Reach::default(), false, true).is_err());
+    }
+
+    #[test]
+    fn an_unattributable_document_is_nobodys_own() {
+        assert!(!same_owner(None, None), "two unknowns are not one peer");
+        assert!(!same_owner(Some([1; 32]), None));
+        assert!(!same_owner(None, Some([1; 32])));
+        assert!(same_owner(Some([1; 32]), Some([1; 32])));
+        assert!(!same_owner(Some([1; 32]), Some([2; 32])));
     }
 }

@@ -14204,6 +14204,7 @@ dependencies = [
  "postcard",
  "rand 0.9.5",
  "smol_str 0.3.6",
+ "thiserror 2.0.19",
  "tokio",
  "tracing",
  "tracing-subscriber",

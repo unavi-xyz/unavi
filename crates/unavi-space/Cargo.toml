@@ -11,6 +11,7 @@ workspace = true
 
 [features]
 devtools = ["dep:unavi-devtools"]
+vouch    = ["unavi-policy/vouch"]
 
 [dependencies]
 anyhow.workspace           = true

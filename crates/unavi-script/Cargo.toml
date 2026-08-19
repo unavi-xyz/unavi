@@ -30,6 +30,7 @@ parking_lot.workspace      = true
 postcard.workspace         = true
 rand.workspace             = true
 smol_str.workspace         = true
+thiserror.workspace        = true
 tokio.workspace            = true
 tracing.workspace          = true
 unavi-agent.path           = "../unavi-agent"

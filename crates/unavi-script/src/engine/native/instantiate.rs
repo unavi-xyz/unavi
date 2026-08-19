@@ -13,7 +13,6 @@ use tracing::{
     Instrument,
     Span,
 };
-use unavi_policy::document::DocumentPolicy;
 use unavi_quota::Quota;
 use unavi_util::async_task::spawn_async_task;
 use wasmtime::{
@@ -82,14 +81,14 @@ pub fn instantiate_scripts(
         ),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
-    docs: Query<(&HsdDocId, &Hsd, Option<&DocumentPolicy>, Has<QuotaExempt>)>,
+    docs: Query<(&HsdDocId, &Hsd, Has<QuotaExempt>)>,
     mut commands: Commands,
 ) {
     for (entity, script, engine_ent, name, prim, doc_ent, fixed_updating) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };
-        let Ok((doc_id, doc, perms, exempt)) = docs.get(doc_ent.0) else {
+        let Ok((doc_id, doc, exempt)) = docs.get(doc_ent.0) else {
             continue;
         };
         commands
@@ -114,7 +113,6 @@ pub fn instantiate_scripts(
             .allow_udp(false)
             .build();
 
-        let perms = perms.cloned().unwrap_or_default();
         let quota = if exempt {
             Quota::unlimited()
         } else {
@@ -126,7 +124,6 @@ pub fn instantiate_scripts(
                 state:       Arc::clone(&doc.0),
                 doc_id:      doc_id.0,
                 prim:        prim.0,
-                policy:      perms.clone(),
                 quota:       Arc::clone(&quota),
                 wired_agent: Mutex::default(),
                 wired_event: Mutex::default(),

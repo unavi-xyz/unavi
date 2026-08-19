@@ -9,9 +9,9 @@ use hsd::{
     state::SceneState,
 };
 use tokio::sync::Mutex;
-use unavi_policy::document::{
-    ApiName,
-    DocumentPolicy,
+use unavi_policy::{
+    document::ApiName,
+    registry as policy_registry,
 };
 use unavi_quota::Quota;
 
@@ -35,7 +35,6 @@ pub struct Api {
     pub state:       Arc<std::sync::Mutex<SceneState>>,
     pub doc_id:      DocId,
     pub prim:        PrimId,
-    pub policy:      DocumentPolicy,
     pub quota:       Arc<Quota>,
     pub wired_agent: Mutex<WiredAgentApi>,
     pub wired_event: Mutex<WiredEventApi>,
@@ -47,12 +46,13 @@ pub struct Api {
 
 impl Api {
     /// Gates a call on the document holding the named permission.
+    ///
+    /// Read per call rather than captured at instantiation. A snapshot taken
+    /// when the script started would miss a document that becomes a space
+    /// after its scene realized, and would hold a grant the user has since
+    /// withdrawn.
     pub fn require(&self, name: ApiName) -> Result<(), ScriptError> {
-        if self.policy.allows(name) {
-            Ok(())
-        } else {
-            Err(ScriptError::permission(format!("{name:?}")))
-        }
+        Ok(policy_registry::get(self.doc_id).policy.require(name)?)
     }
 
     /// Holds every document this script can write open for the duration of one

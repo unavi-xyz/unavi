@@ -4,6 +4,10 @@ pub mod registry;
 
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
+use unavi_policy::check::{
+    space_of,
+    trust_of,
+};
 use unavi_quota::{
     Quota,
     registry::{
@@ -15,9 +19,7 @@ use unavi_quota::{
 };
 
 use crate::{
-    membership::doc_space,
     peer::self_peer_id,
-    reach::trust_of,
     state::replicas::owner,
 };
 
@@ -40,7 +42,7 @@ pub fn reassign_document_in_space(doc: DocId, space: DocId) {
 }
 
 fn document_owner(doc: DocId) -> Option<Arc<Quota>> {
-    match doc_space(doc) {
+    match space_of(doc) {
         Some(space) => Some(space_document_owner(doc, space)),
         None => Some(peer_quota(NamespaceId::from(&self_peer_id()?))),
     }

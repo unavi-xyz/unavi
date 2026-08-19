@@ -11,7 +11,7 @@ impl Runtime {
     #[wasm_bindgen(js_name = "wiredPeerSelfPeer")]
     #[must_use]
     pub fn wired_peer_self_peer(&self) -> JsValue {
-        if self.api.require(ApiName::Peer).is_err() {
+        if self.api.require(ApiName::Identity).is_err() {
             return JsValue::UNDEFINED;
         }
         shared::wired::peer::self_peer(&self.api).map_or(JsValue::UNDEFINED, |bytes| {
@@ -22,7 +22,7 @@ impl Runtime {
     #[wasm_bindgen(js_name = "wiredPeerSelfDid")]
     #[must_use]
     pub fn wired_peer_self_did(&self) -> JsValue {
-        if self.api.require(ApiName::Peer).is_err() {
+        if self.api.require(ApiName::Identity).is_err() {
             return JsValue::UNDEFINED;
         }
         shared::wired::peer::self_did(&self.api)

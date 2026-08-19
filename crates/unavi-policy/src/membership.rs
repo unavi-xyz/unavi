@@ -1,23 +1,14 @@
-use std::{
-    collections::HashMap,
-    sync::LazyLock,
-};
-
 use bevy::prelude::*;
 use bevy_hsd::{
     Hsd,
     HsdChild,
     HsdDocId,
 };
-use hsd::id::DocId;
-use parking_lot::RwLock;
 
-use crate::space::Space;
-
-/// Maps document -> space it belongs to. Keyed by document id, not namespace:
-/// a prefab instance has an id but no namespace of its own.
-pub static DOC_SPACE_REGISTRY: LazyLock<RwLock<HashMap<DocId, DocId>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
+use crate::{
+    registry,
+    space::Space,
+};
 
 #[derive(Component)]
 #[relationship(relationship_target = SpaceMembers)]
@@ -35,7 +26,7 @@ pub fn self_own_space(trigger: On<Add, Space>, spaces: Query<&Space>) {
         return;
     };
     let id = space.doc_id();
-    DOC_SPACE_REGISTRY.write().insert(id, id);
+    registry::update(id, |record| record.space = Some(id));
 }
 
 /// Assigns every unowned document to the space it hangs under.
@@ -68,7 +59,7 @@ pub fn parent_docs_under_space(
             continue;
         }
 
-        let Some(space_id) = DOC_SPACE_REGISTRY.read().get(&doc_record.0).copied() else {
+        let Some(space_id) = registry::get(doc_record.0).space else {
             continue;
         };
         let Some(space_entity) = spaces
@@ -94,46 +85,44 @@ pub fn register_on_owner_change(
     let Ok(space) = spaces.get(owner.0) else {
         return;
     };
-    DOC_SPACE_REGISTRY
-        .write()
-        .insert(doc_record.0, space.doc_id());
+    registry::update(doc_record.0, |record| record.space = Some(space.doc_id()));
 }
 
 pub fn deregister_doc_membership(trigger: On<Remove, SpaceOwner>, docs: Query<&HsdDocId>) {
     if let Ok(record) = docs.get(trigger.entity) {
-        DOC_SPACE_REGISTRY.write().remove(&record.0);
+        registry::update(record.0, |record| record.space = None);
     }
 }
 
 pub fn deregister_space_docs(trigger: On<Remove, Space>, spaces: Query<&Space>) {
     if let Ok(space) = spaces.get(trigger.entity) {
-        let id = space.doc_id();
-        DOC_SPACE_REGISTRY.write().retain(|_, v| *v != id);
+        registry::forget_space(space.doc_id());
     }
-}
-
-/// The space a document was registered into, ignoring any that only a peer's
-/// pin places. `unavi_space::membership::doc_space` is the composed answer.
-#[must_use]
-pub fn registered_space(doc: DocId) -> Option<DocId> {
-    DOC_SPACE_REGISTRY.read().get(&doc).copied()
 }
 
 #[cfg(test)]
 mod tests {
     use bevy_hsd::Prim;
     use hsd::{
-        id::PrimId,
+        id::{
+            DocId,
+            PrimId,
+        },
         state::SceneState,
     };
     use iroh_docs::NamespaceId;
 
     use super::*;
+    use crate::sync;
 
     fn app() -> App {
         let mut app = App::new();
         app.add_observer(self_own_space)
             .add_observer(register_on_owner_change)
+            .add_observer(deregister_doc_membership)
+            .add_observer(deregister_space_docs)
+            .add_observer(sync::sync_on_doc_id)
+            .add_observer(sync::forget_document)
             .add_systems(Update, parent_docs_under_space);
         app
     }
@@ -172,7 +161,9 @@ mod tests {
             app.world().get::<SpaceOwner>(instance).map(|o| o.0),
             Some(host)
         );
-        assert_eq!(registered_space(instance_id), Some(host_id));
+        assert_eq!(registry::get(instance_id).space, Some(host_id));
+
+        app.world_mut().entity_mut(host).despawn();
     }
 
     #[test]
@@ -194,5 +185,23 @@ mod tests {
         app.update();
 
         assert!(app.world().get_entity(doc).is_err());
+    }
+
+    /// A script's scratch documents are spawned with an id and never given a
+    /// `SpaceOwner`, so a registry keyed to that relation alone grows forever.
+    #[test]
+    fn a_document_that_never_joined_a_space_still_drops_its_record() {
+        let mut app = app();
+        let id = DocId([31; 32]);
+
+        let doc = app
+            .world_mut()
+            .spawn((Hsd::new(SceneState::new()), HsdDocId(id)))
+            .id();
+        registry::update(id, |record| record.space = Some(DocId([32; 32])));
+
+        app.world_mut().entity_mut(doc).despawn();
+
+        assert_eq!(registry::get(id), registry::Record::default());
     }
 }

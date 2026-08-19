@@ -33,7 +33,6 @@ pub struct Vouch {
     pub subject: [u8; 32],
     /// `0..=100`.
     pub weight:  u8,
-    pub at:      u64,
 }
 
 #[must_use]
@@ -68,6 +67,10 @@ impl Graph {
 
     /// Resolves `published` against `candidates`, keeping the edges whose
     /// subject the viewer can name.
+    ///
+    /// The candidates are hashed once per salt rather than once per published
+    /// vouch: a voucher's salt is fixed, so re-deriving every candidate's hash
+    /// for every statement is the same work repeated.
     pub fn add_published(
         &mut self,
         voucher: Did,
@@ -75,12 +78,14 @@ impl Graph {
         published: &[Vouch],
         candidates: &[Did],
     ) {
+        let by_hash = candidates
+            .iter()
+            .map(|did| (subject_hash(salt, did), did))
+            .collect::<HashMap<_, _>>();
+
         for vouch in published {
-            if let Some(subject) = candidates
-                .iter()
-                .find(|did| subject_hash(salt, did) == vouch.subject)
-            {
-                self.add(voucher.clone(), subject.clone(), vouch.weight);
+            if let Some(subject) = by_hash.get(&vouch.subject) {
+                self.add(voucher.clone(), (*subject).clone(), vouch.weight);
             }
         }
     }
@@ -178,7 +183,6 @@ mod tests {
         let published = [Vouch {
             subject: subject_hash(salt, &bob),
             weight:  90,
-            at:      0,
         }];
 
         let mut graph = Graph::default();

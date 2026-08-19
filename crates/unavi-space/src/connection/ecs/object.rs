@@ -34,14 +34,12 @@ use hsd::id::{
 };
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
-use unavi_policy::space::Space;
-
-use crate::{
-    membership::{
-        self,
-    },
-    state::replicas,
+use unavi_policy::{
+    check::space_of,
+    space::Space,
 };
+
+use crate::state::replicas;
 
 /// Replicas key by 32 opaque bytes, which a document id equally is.
 fn ns(id: DocId) -> NamespaceId {
@@ -103,7 +101,7 @@ pub fn send_object_poses(
                 return None;
             }
             let doc = roots.get(child_of.0).ok()?.0;
-            let space = membership::doc_space(doc)?;
+            let space = space_of(doc)?;
             if !replicas::is_self_authority(ns(space), ns(doc)) {
                 return None;
             }
@@ -289,7 +287,7 @@ pub fn reconcile_object_authority(
         let Some(doc) = roots.get(child_of.0).ok().map(|r| r.0) else {
             continue;
         };
-        let remote_controlled = membership::doc_space(doc).is_some_and(|space| {
+        let remote_controlled = space_of(doc).is_some_and(|space| {
             replicas::authority(ns(space), ns(doc)).is_some()
                 && !replicas::is_self_authority(ns(space), ns(doc))
         });

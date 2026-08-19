@@ -8,7 +8,6 @@ use bevy_hsd::{
     Prim,
 };
 use tokio::sync::Mutex;
-use unavi_policy::document::DocumentPolicy;
 use unavi_quota::Quota;
 use unavi_util::async_task::spawn_async_task;
 
@@ -37,20 +36,13 @@ pub struct ScriptGuest(pub Arc<ScriptInstance>);
 pub fn instantiate_scripts(
     wasms: Res<Assets<Wasm>>,
     to_instantiate: Query<
-        (
-            Entity,
-            &Script,
-            &DocumentPolicy,
-            NameOrEntity,
-            &Prim,
-            &HsdChild,
-        ),
+        (Entity, &Script, NameOrEntity, &Prim, &HsdChild),
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
     docs: Query<(&HsdDocId, &Hsd, Has<QuotaExempt>)>,
     mut commands: Commands,
 ) {
-    for (entity, script, perms, name, prim, doc_ent) in to_instantiate {
+    for (entity, script, name, prim, doc_ent) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
         };
@@ -71,7 +63,6 @@ pub fn instantiate_scripts(
                 state: Arc::clone(&doc.0),
                 doc_id: doc_id.0,
                 prim: prim.0,
-                policy: perms.clone(),
                 quota,
                 wired_agent: Mutex::default(),
                 wired_event: Mutex::default(),

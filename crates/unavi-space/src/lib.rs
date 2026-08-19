@@ -14,13 +14,11 @@ pub mod anchor;
 mod connection;
 #[cfg(feature = "devtools")] mod devtools;
 mod gossip;
-pub mod membership;
 pub mod peer;
 mod portal;
 mod portal_bridge;
 mod presence;
 pub mod quota;
-pub mod reach;
 mod scene;
 pub mod spawn;
 pub mod state;
@@ -30,6 +28,7 @@ pub mod trust;
 pub struct SpacePlugin;
 
 const TICKRATE_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
+#[cfg(feature = "vouch")]
 const VOUCH_PUBLISH_INTERVAL: Duration = Duration::from_mins(5);
 
 impl Plugin for SpacePlugin {
@@ -41,7 +40,14 @@ impl Plugin for SpacePlugin {
             app.add_plugins(unavi_policy::PolicyPlugin);
         }
 
+        trust::install_resolver();
         trust::load_trust_table();
+
+        #[cfg(feature = "vouch")]
+        app.add_systems(
+            FixedUpdate,
+            trust::publish_vouches.run_if(on_timer(VOUCH_PUBLISH_INTERVAL)),
+        );
 
         app.init_resource::<anchor::SpaceGridAllocator>()
             .init_resource::<anchor::ActiveSpace>()
@@ -85,7 +91,6 @@ impl Plugin for SpacePlugin {
                 FixedUpdate,
                 (
                     presence::publish_presence,
-                    trust::publish_vouches.run_if(on_timer(VOUCH_PUBLISH_INTERVAL)),
                     connection::ecs::agent::outbound::send_agent_pose,
                     connection::ecs::object::send_object_poses,
                     connection::ecs::object::reconcile_object_authority,

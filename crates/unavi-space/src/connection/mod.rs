@@ -81,7 +81,12 @@ pub fn disconnect(peer: EndpointId) {
     identity::unbind(*peer.as_bytes());
 }
 
-/// Whether a peer is blocked, and so must not be connected to at all.
+/// Whether a peer is already known to be blocked before a word is exchanged.
+///
+/// Only answers for a peer whose DID is still bound from an earlier connection;
+/// a block is keyed to a DID and a fresh endpoint has proved nothing yet, so
+/// this is an early-out and never the enforcement. That happens in
+/// `trust::enforce_block`, once the peer has actually proved who it is.
 pub fn is_blocked(peer: EndpointId) -> bool {
     unavi_policy::trust::of_peer(*peer.as_bytes()) == unavi_policy::trust::Trust::Blocked
 }

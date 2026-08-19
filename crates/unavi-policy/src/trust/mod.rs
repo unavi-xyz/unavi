@@ -1,9 +1,11 @@
 use std::{
     collections::HashMap,
+    fmt::Write,
     path::PathBuf,
     sync::LazyLock,
 };
 
+use anyhow::Context;
 use parking_lot::RwLock;
 use serde::{
     Deserialize,
@@ -13,6 +15,14 @@ use xdid::core::did::Did;
 
 use crate::identity;
 
+/// Transitive trust, off by default.
+///
+/// The metric walks whatever edges it is given, but only the local root doc is
+/// discoverable today, so no foreign vouch can ever be fetched and the graph
+/// can conclude nothing a direct override could not. Compiling it into the
+/// shipping build means a periodic publish of an empty list and a rung nothing
+/// can reach. It turns on with the root-doc lookup, not before.
+#[cfg(feature = "vouch")]
 pub mod vouch;
 
 /// How much a peer is trusted, as one ordinal rung.
@@ -64,6 +74,7 @@ static OVERRIDES: LazyLock<RwLock<HashMap<Did, Trust>>> =
 
 /// Rungs the vouch graph concluded. Recomputed, never edited, and always lost
 /// to an override.
+#[cfg(feature = "vouch")]
 static COMPUTED: LazyLock<RwLock<HashMap<Did, Trust>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
@@ -88,8 +99,12 @@ pub fn of_did(did: &Did) -> Trust {
     if let Some(trust) = manual {
         return trust;
     }
-    let computed = COMPUTED.read().get(did).copied();
-    computed.unwrap_or_default()
+    #[cfg(feature = "vouch")]
+    {
+        return COMPUTED.read().get(did).copied().unwrap_or_default();
+    }
+    #[cfg(not(feature = "vouch"))]
+    Trust::default()
 }
 
 pub fn set_override(did: Did, trust: Trust) {
@@ -111,22 +126,26 @@ static MY_VOUCHES: LazyLock<RwLock<HashMap<Did, u8>>> =
 /// orphan every hash already published under it.
 static SALT: LazyLock<RwLock<[u8; 16]>> = LazyLock::new(|| RwLock::new(rand::random()));
 
+#[cfg(feature = "vouch")]
 #[must_use]
 pub fn salt() -> [u8; 16] {
     *SALT.read()
 }
 
+#[cfg(feature = "vouch")]
 #[must_use]
 pub fn my_vouches() -> HashMap<Did, u8> {
     MY_VOUCHES.read().clone()
 }
 
 /// Vouches for `did` at `weight`, then re-derives every computed rung.
+#[cfg(feature = "vouch")]
 pub fn add_vouch(did: Did, weight: u8) {
     MY_VOUCHES.write().insert(did, weight.min(100));
     recompute(&[]);
 }
 
+#[cfg(feature = "vouch")]
 pub fn remove_vouch(did: &Did) {
     MY_VOUCHES.write().remove(did);
     recompute(&[]);
@@ -134,10 +153,7 @@ pub fn remove_vouch(did: &Did) {
 
 /// Rebuilds every computed rung from the local vouches plus `foreign`, the
 /// vouches other peers published.
-///
-/// `foreign` is empty until a peer's root doc can be found from its DID, so
-/// today only direct vouches produce a rung. The metric is the same either
-/// way — it simply has one hop of graph to walk.
+#[cfg(feature = "vouch")]
 pub fn recompute(foreign: &[(Did, [u8; 16], Vec<vouch::Vouch>)]) {
     let Some(me) = identity::self_did() else {
         COMPUTED.write().clear();
@@ -159,12 +175,16 @@ pub fn recompute(foreign: &[(Did, [u8; 16], Vec<vouch::Vouch>)]) {
         graph.add_published(voucher.clone(), salt, published, &candidates);
     }
 
-    let mut computed = COMPUTED.write();
-    computed.clear();
-    for did in candidates {
-        let score = graph.score(&me, &did);
-        computed.insert(did, vouch::rung(score));
-    }
+    // Scored before the table is taken, so a walk over a large graph does not
+    // hold every reader of a rung waiting on it.
+    let scored = candidates
+        .into_iter()
+        .map(|did| {
+            let rung = vouch::rung(graph.score(&me, &did));
+            (did, rung)
+        })
+        .collect::<HashMap<_, _>>();
+    *COMPUTED.write() = scored;
 }
 
 #[derive(Default, Serialize, Deserialize)]
@@ -179,21 +199,35 @@ struct Stored {
 
 /// Loads the manual rungs from `dir`, discarding entries that no longer parse
 /// as DIDs rather than refusing the whole file.
-pub fn load(dir: &std::path::Path) {
-    let path = table_path(dir);
-    let Ok(contents) = std::fs::read_to_string(&path) else {
-        return;
-    };
-    let stored = match toml::from_str::<Stored>(&contents) {
+///
+/// A table that cannot be read at all is an error rather than an empty start:
+/// coming up clean would silently un-block every peer the user ejected, which
+/// is the one direction this file must never fail in. The previous good copy
+/// is tried first so a truncated write is survivable without a prompt.
+pub fn load(dir: &std::path::Path) -> anyhow::Result<()> {
+    let stored = match read_table(&table_path(dir)) {
         Ok(stored) => stored,
         Err(err) => {
-            tracing::warn!(?err, "failed to parse trust table, starting empty");
-            return;
+            tracing::warn!(?err, "trust table unreadable, falling back to the backup");
+            // An absent backup is fatal here, not a clean first run: the table
+            // itself exists and could not be read, and coming up empty is the
+            // failure this whole path is guarding against.
+            Some(
+                read_table(&backup_path(dir))
+                    .ok()
+                    .flatten()
+                    .ok_or(err)
+                    .context("the trust table is unreadable and has no usable backup")?,
+            )
         }
     };
+    let Some(stored) = stored else {
+        return Ok(());
+    };
 
-    if let Ok(bytes) = hex_to_salt(&stored.salt) {
-        *SALT.write() = bytes;
+    match hex_to_salt(&stored.salt) {
+        Ok(bytes) => *SALT.write() = bytes,
+        Err(err) => tracing::warn!(?err, "keeping the session salt"),
     }
 
     let mut table = OVERRIDES.write();
@@ -218,16 +252,28 @@ pub fn load(dir: &std::path::Path) {
     }
     drop(vouches);
 
+    #[cfg(feature = "vouch")]
     recompute(&[]);
+    Ok(())
 }
 
+/// `Ok(None)` when there is no file yet, which is a first run rather than a
+/// failure.
+fn read_table(path: &std::path::Path) -> anyhow::Result<Option<Stored>> {
+    match std::fs::read_to_string(path) {
+        Ok(contents) => Ok(Some(toml::from_str::<Stored>(&contents)?)),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(err) => Err(err.into()),
+    }
+}
+
+/// Writes through a temporary file and renames over the table.
+///
+/// The previous copy is kept: a trust table half-written by a crash reads as no
+/// blocks at all, so the write has to be atomic and the last good copy survive.
 pub fn save(dir: &std::path::Path) -> anyhow::Result<()> {
     let stored = Stored {
-        salt:    salt().iter().fold(String::new(), |mut out, b| {
-            use std::fmt::Write;
-            let _ = write!(out, "{b:02x}");
-            out
-        }),
+        salt:    hex(&*SALT.read()),
         peers:   OVERRIDES
             .read()
             .iter()
@@ -239,23 +285,46 @@ pub fn save(dir: &std::path::Path) -> anyhow::Result<()> {
             .map(|(did, weight)| (did.to_string(), *weight))
             .collect(),
     };
-    std::fs::write(table_path(dir), toml::to_string_pretty(&stored)?)?;
+
+    let path = table_path(dir);
+    let temp = dir.join("trust.toml.tmp");
+    std::fs::write(&temp, toml::to_string_pretty(&stored)?)?;
+    if path.exists() {
+        std::fs::rename(&path, backup_path(dir))?;
+    }
+    std::fs::rename(&temp, &path)?;
     Ok(())
 }
 
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().fold(String::new(), |mut out, b| {
+        let _ = write!(out, "{b:02x}");
+        out
+    })
+}
+
+/// Operates on bytes: `hex.len()` is a byte count, and slicing a `&str` at a
+/// byte offset that is not a character boundary panics — on a file the user
+/// can edit.
 fn hex_to_salt(hex: &str) -> anyhow::Result<[u8; 16]> {
-    if hex.len() != 32 {
+    let bytes = hex.as_bytes();
+    if bytes.len() != 32 {
         anyhow::bail!("salt must be 16 bytes")
     }
     let mut out = [0u8; 16];
-    for (i, byte) in out.iter_mut().enumerate() {
-        *byte = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16)?;
+    for (byte, pair) in out.iter_mut().zip(bytes.chunks_exact(2)) {
+        let pair = std::str::from_utf8(pair).context("salt is not hex")?;
+        *byte = u8::from_str_radix(pair, 16)?;
     }
     Ok(out)
 }
 
 fn table_path(dir: &std::path::Path) -> PathBuf {
     dir.join("trust.toml")
+}
+
+fn backup_path(dir: &std::path::Path) -> PathBuf {
+    dir.join("trust.toml.bak")
 }
 
 #[cfg(test)]
@@ -293,6 +362,7 @@ mod tests {
         identity::unbind([2; 32]);
     }
 
+    #[cfg(feature = "vouch")]
     #[test]
     fn a_users_own_decision_beats_what_the_graph_worked_out() {
         let _guard = TEST_LOCK.lock().expect("test lock");
@@ -321,28 +391,85 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("temp dir");
 
         let blocked = Did::from_str("did:web:blocked.example").expect("did");
-        let vouched = Did::from_str("did:web:vouched.example").expect("did");
         identity::set_self(Did::from_str("did:web:me.example").expect("did"));
         set_override(blocked.clone(), Trust::Blocked);
-        add_vouch(vouched.clone(), 90);
-        let before = salt();
+        MY_VOUCHES
+            .write()
+            .insert(Did::from_str("did:web:vouched.example").expect("did"), 90);
+        let before = *SALT.read();
         save(&dir).expect("save");
 
         OVERRIDES.write().clear();
         MY_VOUCHES.write().clear();
         *SALT.write() = [0; 16];
-        load(&dir);
+        load(&dir).expect("load");
 
         assert_eq!(of_did(&blocked), Trust::Blocked);
-        assert_eq!(my_vouches().get(&vouched).copied(), Some(90));
         assert_eq!(
-            salt(),
+            MY_VOUCHES.read().values().copied().next(),
+            Some(90),
+            "a vouch list round-trips whether or not the graph reads it"
+        );
+        assert_eq!(
+            *SALT.read(),
             before,
             "rotating the salt would orphan every hash already published"
         );
 
         clear_override(&blocked);
-        remove_vouch(&vouched);
+        MY_VOUCHES.write().clear();
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn a_salt_that_is_not_hex_is_refused_rather_than_panicking() {
+        for salt in ["", "aa", "€€€€€€€€€€€", &"z".repeat(32)] {
+            assert!(
+                hex_to_salt(salt).is_err(),
+                "a hand-editable file must not reach a slicing panic"
+            );
+        }
+        assert_eq!(hex_to_salt(&"ab".repeat(16)).expect("hex"), [0xAB; 16]);
+    }
+
+    #[test]
+    fn a_corrupt_table_is_an_error_not_an_empty_start() {
+        let _guard = TEST_LOCK.lock().expect("test lock");
+        let dir = std::env::temp_dir().join(format!("unavi-trust-corrupt-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("temp dir");
+
+        assert!(
+            load(&dir).is_ok(),
+            "a first run has no table and that is not a failure"
+        );
+
+        std::fs::write(dir.join("trust.toml"), "peers = [[[").expect("write");
+        assert!(
+            load(&dir).is_err(),
+            "coming up clean would silently unblock every ejected peer"
+        );
+
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn a_truncated_write_leaves_the_previous_table_readable() {
+        let _guard = TEST_LOCK.lock().expect("test lock");
+        let dir = std::env::temp_dir().join(format!("unavi-trust-backup-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("temp dir");
+
+        let blocked = Did::from_str("did:web:kept.example").expect("did");
+        set_override(blocked.clone(), Trust::Blocked);
+        save(&dir).expect("save");
+        save(&dir).expect("save again, rotating the table into the backup");
+
+        std::fs::write(dir.join("trust.toml"), "peers = [[[").expect("truncate");
+        OVERRIDES.write().clear();
+        load(&dir).expect("the backup carries the table");
+
+        assert_eq!(of_did(&blocked), Trust::Blocked);
+
+        clear_override(&blocked);
         std::fs::remove_dir_all(&dir).ok();
     }
 

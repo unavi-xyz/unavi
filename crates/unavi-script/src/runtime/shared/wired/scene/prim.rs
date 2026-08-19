@@ -64,6 +64,10 @@ use hsd::{
     },
     state::SceneState,
 };
+use unavi_policy::check::{
+    placed,
+    write as check_write,
+};
 use unavi_quota::{
     Flow,
     limits::{
@@ -72,7 +76,6 @@ use unavi_quota::{
         MAX_TEXT_BYTES,
     },
 };
-use unavi_space::reach::check_write;
 
 use crate::runtime::shared::{
     Api,
@@ -299,12 +302,8 @@ fn ensure_writable(api: &Api, prim: &PrimRes) -> anyhow::Result<()> {
     if prim.is_proxy {
         bail!("cannot write proxy prim")
     }
-    if !api.policy.tier.crosses_space_boundaries()
-        && unavi_space::membership::doc_space(api.doc_id).is_none()
-    {
-        bail!("caller document is not placed in a space")
-    }
-    Ok(check_write(api.doc_id, api.policy.tier, prim.doc_id)?)
+    placed(api.doc_id)?;
+    Ok(check_write(api.doc_id, prim.doc_id)?)
 }
 
 pub async fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {

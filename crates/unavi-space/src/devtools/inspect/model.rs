@@ -23,7 +23,9 @@ use hsd::{
 };
 use iroh_docs::NamespaceId;
 use unavi_policy::{
+    check,
     identity,
+    registry,
     space::Space,
     trust::Trust,
 };
@@ -34,7 +36,6 @@ use crate::{
         conn,
         inspect::Page,
     },
-    membership,
     peer::{
         self_did,
         self_peer_id,
@@ -176,7 +177,7 @@ fn peer_model(id: [u8; 32], snap: &debug::DebugSnapshot) -> PeerModel {
         } else {
             identity::did_of(id).map(|d| d.to_string())
         },
-        trust: crate::reach::trust_of(Some(id)),
+        trust: check::trust_of(Some(id)),
         pins: docs
             .iter()
             .filter_map(|d| d.pin.map(|at| (d.doc, d.space, at)))
@@ -201,11 +202,9 @@ fn peer_model(id: [u8; 32], snap: &debug::DebugSnapshot) -> PeerModel {
 
 impl InspectData<'_, '_> {
     fn space_model(&self, space: NamespaceId, snap: &debug::DebugSnapshot) -> SpaceModel {
-        let mut docs = unavi_policy::membership::DOC_SPACE_REGISTRY
-            .read()
-            .iter()
-            .filter(|(_, s)| s.0 == *space.as_bytes())
-            .map(|(d, _)| NamespaceId::from(&d.0))
+        let mut docs = registry::documents_in(DocId(*space.as_bytes()))
+            .into_iter()
+            .map(|d| NamespaceId::from(&d.0))
             .collect::<Vec<_>>();
         for d in snap
             .peers
@@ -256,7 +255,7 @@ impl InspectData<'_, '_> {
     }
 
     fn doc_model(&self, doc: NamespaceId, snap: &debug::DebugSnapshot) -> DocModel {
-        let space = membership::doc_space(DocId(*doc.as_bytes())).map(|s| NamespaceId::from(&s.0));
+        let space = check::space_of(DocId(*doc.as_bytes())).map(|s| NamespaceId::from(&s.0));
         let mut pinned_by = snap
             .peers
             .iter()

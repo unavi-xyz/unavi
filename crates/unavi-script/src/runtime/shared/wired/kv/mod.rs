@@ -1,16 +1,14 @@
 use bevy::prelude::*;
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
-use unavi_space::{
-    membership::doc_space,
-    reach::{
-        check_read,
-        check_write,
-    },
-    state::{
-        entities,
-        replicas,
-    },
+use unavi_policy::check::{
+    read as check_read,
+    space_of,
+    write as check_write,
+};
+use unavi_space::state::{
+    entities,
+    replicas,
 };
 
 use crate::{
@@ -40,7 +38,7 @@ pub struct WiredKvApi {
 }
 
 pub async fn self_kv(api: &Api) -> anyhow::Result<u32> {
-    let Some(space) = doc_space(api.doc_id) else {
+    let Some(space) = space_of(api.doc_id) else {
         anyhow::bail!("script's host document is not in a tracked space");
     };
     let mut slots = api.wired_kv.lock().await;
@@ -54,7 +52,7 @@ pub async fn self_kv(api: &Api) -> anyhow::Result<u32> {
 }
 
 pub async fn get_kv(api: &Api, doc_id: Vec<u8>) -> anyhow::Result<Option<u32>> {
-    let Some(space) = doc_space(api.doc_id) else {
+    let Some(space) = space_of(api.doc_id) else {
         return Ok(None);
     };
     let Ok(bytes) = <[u8; 32]>::try_from(doc_id.as_slice()) else {
@@ -66,7 +64,7 @@ pub async fn get_kv(api: &Api, doc_id: Vec<u8>) -> anyhow::Result<Option<u32>> {
         return Ok(None);
     }
 
-    if check_read(api.doc_id, api.policy.tier, doc).is_err() {
+    if check_read(api.doc_id, doc).is_err() {
         return Ok(None);
     }
 
@@ -82,7 +80,7 @@ pub async fn kv_get(api: &Api, rep: u32, key: String) -> anyhow::Result<Option<V
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if check_read(api.doc_id, api.policy.tier, res.doc).is_err() {
+    if check_read(api.doc_id, res.doc).is_err() {
         return Ok(None);
     }
     Ok(replicas::doc_kv_get(ns(res.space), ns(res.doc), &key))
@@ -99,7 +97,7 @@ pub async fn kv_set(
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if let Err(err) = check_write(api.doc_id, api.policy.tier, res.doc) {
+    if let Err(err) = check_write(api.doc_id, res.doc) {
         return Ok(Err(err.into()));
     }
     Ok(entities::doc_kv_set(ns(res.space), ns(res.doc), key, value)
@@ -117,7 +115,7 @@ pub async fn kv_delete(
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if let Err(err) = check_write(api.doc_id, api.policy.tier, res.doc) {
+    if let Err(err) = check_write(api.doc_id, res.doc) {
         return Ok(Err(err.into()));
     }
     Ok(entities::doc_kv_delete(ns(res.space), ns(res.doc), key)
@@ -131,7 +129,7 @@ pub async fn kv_keys(api: &Api, rep: u32) -> anyhow::Result<Vec<String>> {
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if check_read(api.doc_id, api.policy.tier, res.doc).is_err() {
+    if check_read(api.doc_id, res.doc).is_err() {
         return Ok(Vec::new());
     }
     Ok(replicas::doc_kv_keys(ns(res.space), ns(res.doc)))

@@ -24,7 +24,7 @@ impl bindings::wired::peer::api::Host for Runtime {
     async fn self_peer(&mut self) -> wasmtime::Result<Result<Option<Vec<u8>>, Error>> {
         Ok(self
             .api
-            .require(ApiName::Peer)
+            .require(ApiName::Identity)
             .map(|()| shared::wired::peer::self_peer(&self.api))
             .map_err(Into::into))
     }
@@ -32,7 +32,7 @@ impl bindings::wired::peer::api::Host for Runtime {
     async fn self_did(&mut self) -> wasmtime::Result<Result<Option<String>, Error>> {
         Ok(self
             .api
-            .require(ApiName::Peer)
+            .require(ApiName::Identity)
             .map(|()| shared::wired::peer::self_did(&self.api))
             .map_err(Into::into))
     }

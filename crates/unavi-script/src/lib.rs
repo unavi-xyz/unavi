@@ -7,10 +7,7 @@ use std::sync::{
 };
 
 use bevy::prelude::*;
-use unavi_policy::{
-    PolicyPlugin,
-    document::DocumentPolicy,
-};
+use unavi_policy::PolicyPlugin;
 
 use crate::load::asset::Wasm;
 
@@ -55,7 +52,7 @@ impl Plugin for ScriptPlugin {
 }
 
 #[derive(Component)]
-#[require(DocumentPolicy, FixedUpdating, Trapped, Updating)]
+#[require(FixedUpdating, Trapped, Updating)]
 pub struct Script(pub Handle<Wasm>);
 
 #[derive(Component, Default)]

@@ -53,6 +53,13 @@ pub struct LinkTo(pub Page);
 #[derive(Component)]
 pub struct BackButton;
 
+/// Ejects a peer, or lifts the block on one already ejected.
+#[derive(Component)]
+pub struct BlockButton {
+    peer:    [u8; 32],
+    blocked: bool,
+}
+
 /// Toggles a KV cell's value view open or closed.
 #[derive(Component)]
 pub struct ExpandButton {
@@ -161,6 +168,24 @@ pub fn handle_back(
     }
     if let Some(page) = history.0.pop() {
         current.0 = Some(page);
+    }
+}
+
+/// Blocks or unblocks the peer whose page is open.
+///
+/// The only path in the tree that reaches the trust table. Without one, a
+/// block is a function nothing calls and the whole rung is theoretical.
+pub fn handle_block(activate: On<Activate>, buttons: Query<&BlockButton>) {
+    let Ok(button) = buttons.get(activate.entity) else {
+        return;
+    };
+    let result = if button.blocked {
+        crate::trust::unblock(button.peer)
+    } else {
+        crate::trust::eject(button.peer)
+    };
+    if let Err(err) = result {
+        warn!(?err, "cannot change a peer's rung");
     }
 }
 

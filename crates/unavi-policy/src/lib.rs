@@ -1,13 +1,16 @@
 use bevy::prelude::*;
 use bevy_hsd::HsdCommitSet;
 
+pub mod check;
 pub mod document;
 pub mod error;
 pub mod identity;
 pub mod limits;
 pub mod membership;
 pub mod reach;
+pub mod registry;
 pub mod space;
+pub mod sync;
 pub mod tier;
 pub mod trust;
 
@@ -20,10 +23,11 @@ pub struct PolicyPlugin;
 
 impl Plugin for PolicyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(reach::register_reach)
-            .add_observer(reach::deregister_reach)
-            .add_observer(document::grant_space_permissions)
-            .add_observer(document::inherit_host_permissions)
+        app.add_observer(sync::sync_on_doc_id)
+            .add_observer(sync::sync_on_policy)
+            .add_observer(sync::sync_on_reach)
+            .add_observer(sync::forget_document)
+            .add_observer(space::grant_space_permissions)
             .add_observer(membership::self_own_space)
             .add_observer(membership::register_on_owner_change)
             .add_observer(membership::deregister_doc_membership)

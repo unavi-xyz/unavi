@@ -3,9 +3,11 @@ use bevy::{
     prelude::*,
 };
 use iroh_docs::NamespaceId;
+use unavi_policy::trust::Trust;
 
 use crate::devtools::inspect::{
     BackButton,
+    BlockButton,
     ExpandButton,
     Expanded,
     Page,
@@ -54,6 +56,17 @@ fn header(b: &mut RelatedSpawnerCommands<ChildOf>, model: &PageModel, can_back: 
                     None => r.spawn(widgets::dim_text("(no proven did)")),
                 };
                 r.spawn(widgets::value_text(format!("{:?}", m.trust)));
+                if !m.is_self && m.did.is_some() {
+                    let blocked = m.trust == Trust::Blocked;
+                    widgets::small_button(
+                        r,
+                        if blocked { "unblock" } else { "block" },
+                        BlockButton {
+                            peer: m.id,
+                            blocked,
+                        },
+                    );
+                }
             }
             PageModel::Space(m) => {
                 r.spawn(widgets::value_text("Space".into()));

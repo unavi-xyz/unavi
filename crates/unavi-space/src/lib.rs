@@ -28,7 +28,6 @@ pub mod trust;
 pub struct SpacePlugin;
 
 const TICKRATE_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
-#[cfg(feature = "vouch")]
 const VOUCH_PUBLISH_INTERVAL: Duration = Duration::from_mins(5);
 
 impl Plugin for SpacePlugin {
@@ -43,7 +42,6 @@ impl Plugin for SpacePlugin {
         trust::install_resolver();
         trust::load_trust_table();
 
-        #[cfg(feature = "vouch")]
         app.add_systems(
             FixedUpdate,
             trust::publish_vouches.run_if(on_timer(VOUCH_PUBLISH_INTERVAL)),

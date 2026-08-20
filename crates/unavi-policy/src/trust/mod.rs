@@ -15,14 +15,12 @@ use xdid::core::did::Did;
 
 use crate::identity;
 
-/// Transitive trust, off by default.
+/// Transitive trust through the vouch graph.
 ///
 /// The metric walks whatever edges it is given, but only the local root doc is
 /// discoverable today, so no foreign vouch can ever be fetched and the graph
-/// can conclude nothing a direct override could not. Compiling it into the
-/// shipping build means a periodic publish of an empty list and a rung nothing
-/// can reach. It turns on with the root-doc lookup, not before.
-#[cfg(feature = "vouch")]
+/// can conclude nothing a direct override could not. It gains real effect once
+/// a peer's root doc can be found from its DID.
 pub mod vouch;
 
 /// How much a peer is trusted, as one ordinal rung.
@@ -74,7 +72,6 @@ static OVERRIDES: LazyLock<RwLock<HashMap<Did, Trust>>> =
 
 /// Rungs the vouch graph concluded. Recomputed, never edited, and always lost
 /// to an override.
-#[cfg(feature = "vouch")]
 static COMPUTED: LazyLock<RwLock<HashMap<Did, Trust>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
@@ -99,12 +96,7 @@ pub fn of_did(did: &Did) -> Trust {
     if let Some(trust) = manual {
         return trust;
     }
-    #[cfg(feature = "vouch")]
-    {
-        return COMPUTED.read().get(did).copied().unwrap_or_default();
-    }
-    #[cfg(not(feature = "vouch"))]
-    Trust::default()
+    COMPUTED.read().get(did).copied().unwrap_or_default()
 }
 
 pub fn set_override(did: Did, trust: Trust) {
@@ -126,26 +118,22 @@ static MY_VOUCHES: LazyLock<RwLock<HashMap<Did, u8>>> =
 /// orphan every hash already published under it.
 static SALT: LazyLock<RwLock<[u8; 16]>> = LazyLock::new(|| RwLock::new(rand::random()));
 
-#[cfg(feature = "vouch")]
 #[must_use]
 pub fn salt() -> [u8; 16] {
     *SALT.read()
 }
 
-#[cfg(feature = "vouch")]
 #[must_use]
 pub fn my_vouches() -> HashMap<Did, u8> {
     MY_VOUCHES.read().clone()
 }
 
 /// Vouches for `did` at `weight`, then re-derives every computed rung.
-#[cfg(feature = "vouch")]
 pub fn add_vouch(did: Did, weight: u8) {
     MY_VOUCHES.write().insert(did, weight.min(100));
     recompute(&[]);
 }
 
-#[cfg(feature = "vouch")]
 pub fn remove_vouch(did: &Did) {
     MY_VOUCHES.write().remove(did);
     recompute(&[]);
@@ -153,7 +141,6 @@ pub fn remove_vouch(did: &Did) {
 
 /// Rebuilds every computed rung from the local vouches plus `foreign`, the
 /// vouches other peers published.
-#[cfg(feature = "vouch")]
 pub fn recompute(foreign: &[(Did, [u8; 16], Vec<vouch::Vouch>)]) {
     let Some(me) = identity::self_did() else {
         COMPUTED.write().clear();
@@ -252,7 +239,6 @@ pub fn load(dir: &std::path::Path) -> anyhow::Result<()> {
     }
     drop(vouches);
 
-    #[cfg(feature = "vouch")]
     recompute(&[]);
     Ok(())
 }
@@ -362,7 +348,6 @@ mod tests {
         identity::unbind([2; 32]);
     }
 
-    #[cfg(feature = "vouch")]
     #[test]
     fn a_users_own_decision_beats_what_the_graph_worked_out() {
         let _guard = TEST_LOCK.lock().expect("test lock");

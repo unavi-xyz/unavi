@@ -15,7 +15,6 @@ use unavi_policy::{
         Trust,
     },
 };
-#[cfg(feature = "vouch")]
 use unavi_util::async_task::spawn_async_task;
 use xdid::core::did::Did;
 
@@ -136,12 +135,10 @@ pub fn enforce_block(peer: EndpointId, did: &Did) -> bool {
 pub struct NoIdentity;
 
 /// Where a vouch lives in the voucher's root doc.
-#[cfg(feature = "vouch")]
 const VOUCH_PREFIX: &str = "vouches/";
 
 /// Subjects the last publish put on the wire, so a retracted vouch can be
 /// tombstoned rather than left readable forever.
-#[cfg(feature = "vouch")]
 static PUBLISHED: parking_lot::Mutex<Option<std::collections::HashSet<[u8; 32]>>> =
     parking_lot::Mutex::new(None);
 
@@ -150,7 +147,6 @@ static PUBLISHED: parking_lot::Mutex<Option<std::collections::HashSet<[u8; 32]>>
 ///
 /// Only the hashes go out: anyone may test whether a peer they can already
 /// name is vouched for, and nobody can enumerate the list.
-#[cfg(feature = "vouch")]
 pub fn publish_vouches(docs: Query<&bevy_wds::LocalDocs>) {
     use std::collections::HashSet;
 
@@ -206,7 +202,6 @@ pub fn publish_vouches(docs: Query<&bevy_wds::LocalDocs>) {
     });
 }
 
-#[cfg(feature = "vouch")]
 fn hex(bytes: &[u8]) -> String {
     use std::fmt::Write;
     bytes.iter().fold(String::new(), |mut out, b| {

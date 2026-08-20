@@ -9,11 +9,6 @@ version.workspace    = true
 [lints]
 workspace = true
 
-[features]
-# Transitive trust through the vouch graph. Off until a peer's root doc can be
-# found from its DID, without which no foreign vouch is fetchable.
-vouch = []
-
 [dependencies]
 anyhow.workspace      = true
 bevy                  = { default-features = true, workspace = true }

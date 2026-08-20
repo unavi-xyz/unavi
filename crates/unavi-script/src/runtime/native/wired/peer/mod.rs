@@ -33,7 +33,9 @@ impl bindings::wired::peer::api::Host for Runtime {
             .map_err(Into::into)))
     }
 
-    fn self_did(&mut self) -> impl Future<Output = wasmtime::Result<Result<Option<String>, Error>>> {
+    fn self_did(
+        &mut self,
+    ) -> impl Future<Output = wasmtime::Result<Result<Option<String>, Error>>> {
         std::future::ready(Ok(self
             .api
             .require(ApiName::Identity)

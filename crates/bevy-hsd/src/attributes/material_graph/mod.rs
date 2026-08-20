@@ -567,13 +567,13 @@ impl Material for ShaderGraphMaterial {
     /// [`ShaderGraphMaterialKey`] so distinct graphs specialize into distinct
     /// pipelines.
     ///
-    /// The vertex swap stays inside the fragment guard: a depth-only prepass
-    /// or shadow pass has no fragment stage and specializes its `Vertex`
-    /// input without the `normal`/`uv` fields the generated vertex shader
-    /// unconditionally reads. Swapping the vertex shader there yields an
-    /// invalid-field-accessor compile error, not a silent fallback, so
-    /// displacement is main-pass-only and shadows cast from the undisplaced
-    /// mesh.
+    /// The generated shaders are written against `forward_io`, whose vertex
+    /// attribute and interpolant locations differ from the `prepass_io` layout
+    /// a prepass or shadow pipeline is built with, so they belong to the main
+    /// pass alone: displacement is main-pass-only and shadows cast from the
+    /// undisplaced mesh. A fragment stage is not the discriminator — a shadow
+    /// pipeline grows one wherever unclipped depth has to be emulated in the
+    /// fragment shader, as it does on WebGL.
     fn specialize(
         _pipeline: &bevy::pbr::MaterialPipeline,
         descriptor: &mut bevy::render::render_resource::RenderPipelineDescriptor,
@@ -581,6 +581,13 @@ impl Material for ShaderGraphMaterial {
         key: bevy::pbr::MaterialPipelineKey<Self>,
     ) -> Result<(), SpecializedMeshPipelineError> {
         descriptor.primitive.cull_mode = key.bind_group_data.cull_mode;
+        if descriptor
+            .vertex
+            .shader_defs
+            .contains(&"PREPASS_PIPELINE".into())
+        {
+            return Ok(());
+        }
         if let Some(fragment) = descriptor.fragment.as_mut() {
             fragment.shader = key.bind_group_data.fragment_shader;
             if let Some(vertex_shader) = key.bind_group_data.vertex_shader {

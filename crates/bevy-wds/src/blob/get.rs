@@ -129,7 +129,7 @@ async fn inner(
     for attempt in 0..MAX_ATTEMPTS {
         let res = tokio::select! {
             () = &mut cancel => return Ok(()),
-            res = tokio::time::timeout(
+            res = n0_future::time::timeout(
                 ATTEMPT_TIMEOUT,
                 get_blob(hash, &blobs, downloader.as_ref(), &providers),
             ) => res,

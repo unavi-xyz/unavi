@@ -139,7 +139,11 @@ fn home_pieces() -> Vec<Piece> {
                 radius: roof_radius,
                 height: roof_height,
             },
-            at:    Vec3::new(0.0, body_height * 0.5 + roof_height * 0.5 + float, 0.0),
+            at:    Vec3::new(
+                0.0,
+                roof_height.mul_add(0.5, body_height * 0.5) + float,
+                0.0,
+            ),
             turn:  Quat::IDENTITY,
         },
     ]
@@ -200,7 +204,7 @@ fn tool_pieces() -> Vec<Piece> {
 fn beacon_pieces() -> Vec<Piece> {
     let size = R * 1.7;
     let corner = size * 0.44;
-    let offset = size * 0.5 - corner * 0.5;
+    let offset = corner.mul_add(-0.5, size * 0.5);
     let core = size * 0.84;
     let mut pieces = vec![Piece {
         shape: Shape::Cube(Vec3::splat(core)),

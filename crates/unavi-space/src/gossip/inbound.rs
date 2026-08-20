@@ -47,7 +47,7 @@ pub async fn handle_gossip_inbound(
             Event::NeighborDown(n) => {
                 info!("-neighbor: {n}");
                 neighbors
-                    .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
+                    .try_update(Ordering::Relaxed, Ordering::Relaxed, |n| {
                         Some(n.saturating_sub(1))
                     })
                     .ok();

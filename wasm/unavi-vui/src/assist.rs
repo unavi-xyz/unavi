@@ -167,7 +167,6 @@ mod tests {
     /// Exactly, not nearly: a style is only rewritten when it differs, so a
     /// mote that merely approaches its resting look never stops redrawing.
     #[test]
-    #[expect(clippy::float_cmp, reason = "landing exactly is the invariant")]
     fn a_scalar_settles_on_its_target_exactly() {
         let mut current = 0.0;
         for _ in 0..200 {
@@ -180,7 +179,6 @@ mod tests {
     }
 
     #[test]
-    #[expect(clippy::float_cmp, reason = "landing exactly is the invariant")]
     fn a_scalar_settles_going_down_as_well_as_up() {
         let mut current = 1.0;
         for _ in 0..200 {

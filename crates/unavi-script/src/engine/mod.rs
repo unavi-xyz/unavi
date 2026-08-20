@@ -12,7 +12,7 @@ impl Plugin for EnginePlugin {
         cfg_select! {
             target_family = "wasm" => {
                 app.add_plugins(web::WebEnginePlugin);
-            },
+            }
             _ => {
                 app.add_plugins(native::NativeEnginePlugin);
             }

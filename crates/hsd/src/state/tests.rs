@@ -108,7 +108,7 @@ fn an_orphan_is_held_not_reparented_to_the_root() {
 
     assert!(state.exists(prim(2)));
     assert!(!state.is_realized(prim(2)));
-    assert!(state.roots().is_empty());
+    assert_eq!(state.roots().len(), 0);
 }
 
 #[test]
@@ -121,7 +121,7 @@ fn an_orphan_realizes_with_its_properties_when_its_parent_arrives() {
             attr_entry(prim(2), &XformAttr::default(), 3),
         ],
     );
-    assert!(state.drain_events().is_empty());
+    assert_eq!(state.drain_events().len(), 0);
 
     apply(&mut state, &[root_entry(prim(1), 1)]);
     let events = state.drain_events();
@@ -143,7 +143,7 @@ fn a_property_on_an_unrealized_prim_emits_nothing() {
         &mut state,
         &[attr_entry(prim(9), &NameAttr("held".into()), 1)],
     );
-    assert!(state.drain_events().is_empty());
+    assert_eq!(state.drain_events().len(), 0);
 }
 
 #[test]
@@ -572,7 +572,7 @@ fn a_prim_and_its_properties_leave_together() {
             attr_entry(prim(1), &XformAttr::default(), 2),
         ],
     );
-    assert!(state.drain_events().is_empty());
+    assert_eq!(state.drain_events().len(), 0);
     state.close_tick();
 
     let events = state.drain_events();
@@ -606,7 +606,7 @@ fn boundaries_nest_so_two_writers_both_have_to_finish() {
 
     state.close_tick();
     assert!(!state.is_ticking());
-    assert!(!state.drain_events().is_empty());
+    assert_ne!(state.drain_events().len(), 0);
 }
 
 #[test]

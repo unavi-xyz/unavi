@@ -1,3 +1,5 @@
+use std::future::Future;
+
 use unavi_policy::document::ApiName;
 use wasmtime::component::Resource;
 
@@ -117,14 +119,24 @@ impl HostWds for Runtime {
             .map_err(wasmtime::Error::from_anyhow)
     }
 
-    async fn root_doc(&mut self, self_: Resource<WdsRes>) -> wasmtime::Result<Option<Vec<u8>>> {
-        shared::wired::wds::root_doc_ns(&self.api, self_.rep())
-            .map_err(wasmtime::Error::from_anyhow)
+    fn root_doc(
+        &mut self,
+        self_: Resource<WdsRes>,
+    ) -> impl Future<Output = wasmtime::Result<Option<Vec<u8>>>> {
+        std::future::ready(
+            shared::wired::wds::root_doc_ns(&self.api, self_.rep())
+                .map_err(wasmtime::Error::from_anyhow),
+        )
     }
 
-    async fn registries(&mut self, self_: Resource<WdsRes>) -> wasmtime::Result<Vec<Vec<u8>>> {
-        shared::wired::wds::registry_namespaces(&self.api, self_.rep())
-            .map_err(wasmtime::Error::from_anyhow)
+    fn registries(
+        &mut self,
+        self_: Resource<WdsRes>,
+    ) -> impl Future<Output = wasmtime::Result<Vec<Vec<u8>>>> {
+        std::future::ready(
+            shared::wired::wds::registry_namespaces(&self.api, self_.rep())
+                .map_err(wasmtime::Error::from_anyhow),
+        )
     }
 
     async fn drop(&mut self, rep: Resource<WdsRes>) -> wasmtime::Result<()> {

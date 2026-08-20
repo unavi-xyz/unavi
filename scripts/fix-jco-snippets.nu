@@ -8,10 +8,18 @@ let base = (
   }
 )
 
+const vendor = "crates/unavi-script/node_modules/@bytecodealliance/jco-transpile/vendor"
+
 let wasm_files = [
-  "crates/unavi-script/node_modules/@bytecodealliance/jco/obj/js-component-bindgen-component.core.wasm",
-  "crates/unavi-script/node_modules/@bytecodealliance/jco/obj/js-component-bindgen-component.core2.wasm"
+  $"($vendor)/js-component-bindgen-component.core.wasm",
+  $"($vendor)/js-component-bindgen-component.core2.wasm"
 ]
+
+for wasm in $wasm_files {
+  if not ($wasm | path exists) {
+    error make { msg: $"jco obj not found: ($wasm)" }
+  }
+}
 
 let snippet_dirs = (ls $"($base)/snippets" | where type == dir | get name)
 
@@ -24,10 +32,6 @@ for dir in $snippet_dirs {
   }
 
   for wasm in $wasm_files {
-    if not ($wasm | path exists) {
-      continue
-    }
-
     let dest = $"($target)/($wasm | path basename)"
     cp $wasm $dest
   }

@@ -10,6 +10,7 @@ use crate::runtime::{
 
 pub mod document;
 pub mod prim;
+pub mod shader_graph;
 pub mod util;
 
 use document::DocHandle;
@@ -99,12 +100,22 @@ impl Runtime {
         Ok(DocHandle::new(rep, Arc::clone(&self.api)))
     }
 
-    #[wasm_bindgen(js_name = "wiredScenePublishDocument")]
+    #[wasm_bindgen(js_name = "wiredSceneSyncDocument")]
     pub async fn wired_scene_sync_document(&self, id: Vec<u8>) -> Result<(), String> {
         self.api
             .require(ApiName::CreateDocument)
             .map_err(|e| e.to_string())?;
         shared::wired::scene::sync_document(&self.api, id)
+            .await
+            .map_err(|e| e.to_string())
+    }
+
+    #[wasm_bindgen(js_name = "wiredSceneSaveDocument")]
+    pub async fn wired_scene_save_document(&self, id: Vec<u8>) -> Result<(), String> {
+        self.api
+            .require(ApiName::Scene)
+            .map_err(|e| e.to_string())?;
+        shared::wired::scene::save_document(&self.api, id)
             .await
             .map_err(|e| e.to_string())
     }

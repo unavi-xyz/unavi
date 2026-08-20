@@ -1,3 +1,4 @@
+use hsd::attributes::xform::XformAttr;
 use wasm_bindgen::JsValue;
 
 pub fn vec3_to_js(x: f32, y: f32, z: f32) -> JsValue {
@@ -116,4 +117,35 @@ pub fn obj_get_string(obj: &JsValue, key: &str) -> Option<String> {
     js_sys::Reflect::get(obj, &key.into())
         .ok()
         .and_then(|v| v.as_string())
+}
+
+pub fn xform_to_js(x: &XformAttr) -> JsValue {
+    let obj = js_sys::Object::new();
+    obj_set(
+        &obj,
+        "translation",
+        &vec3_to_js(x.translation[0], x.translation[1], x.translation[2]),
+    );
+    obj_set(
+        &obj,
+        "rotation",
+        &quat_to_js(x.rotation[0], x.rotation[1], x.rotation[2], x.rotation[3]),
+    );
+    obj_set(
+        &obj,
+        "scale",
+        &vec3_to_js(x.scale[0], x.scale[1], x.scale[2]),
+    );
+    obj.into()
+}
+
+pub fn js_to_xform(v: &JsValue) -> Option<XformAttr> {
+    if v.is_null() || v.is_undefined() {
+        return None;
+    }
+    Some(XformAttr {
+        translation: js_to_vec3(&obj_get(v, "translation"), [0.0; 3]),
+        rotation:    js_to_quat(&obj_get(v, "rotation"), [0.0, 0.0, 0.0, 1.0]),
+        scale:       js_to_vec3(&obj_get(v, "scale"), [1.0; 3]),
+    })
 }

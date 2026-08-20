@@ -97,7 +97,10 @@ async fn test_empty_value_reads_as_absence(#[future] ctx: DataStoreCtx) {
     .await
     .expect("apply");
 
-    assert!(entries::list(&doc, &["p/"]).await.expect("list").is_empty());
+    assert_eq!(
+        entries::list(&doc, &["p/"]).await.expect("list"),
+        [] as [wds::entries::DocEntry; 0]
+    );
 }
 
 /// A prefix wipe removes rather than marks, so swept entries stop costing
@@ -136,7 +139,10 @@ async fn test_sweep_then_tombstone_leaves_the_tombstone(#[future] ctx: DataStore
     .await
     .expect("apply");
 
-    assert!(entries::list(&doc, &["p/"]).await.expect("list").is_empty());
+    assert_eq!(
+        entries::list(&doc, &["p/"]).await.expect("list"),
+        [] as [wds::entries::DocEntry; 0]
+    );
 }
 
 /// Hash entries reference a blob the caller already holds, so the same bytes
@@ -170,5 +176,8 @@ async fn test_hash_entries_share_one_blob(#[future] ctx: DataStoreCtx) {
     let listed = entries::list(&doc, &["h/"]).await.expect("list");
     assert_eq!(listed.len(), 2);
     assert!(listed.iter().all(|entry| entry.hash == info.hash));
-    assert!(entries::list(&doc, &["p/"]).await.expect("list").is_empty());
+    assert_eq!(
+        entries::list(&doc, &["p/"]).await.expect("list"),
+        [] as [wds::entries::DocEntry; 0]
+    );
 }

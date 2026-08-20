@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn an_unchanged_key_is_not_written() {
-        assert!(diff(&base(), &base()).is_empty());
+        assert_eq!(diff(&base(), &base()).len(), 0);
     }
 
     #[test]

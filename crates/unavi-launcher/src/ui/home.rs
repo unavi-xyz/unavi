@@ -31,7 +31,7 @@ pub fn Home() -> Element {
         }
         Err(e) => {
             error!("Failed to launch client: {e:?}");
-            launch_error.set(Some(format!("{e}")));
+            launch_error.set(Some(e.to_string()));
         }
     };
 
@@ -58,7 +58,7 @@ pub fn Home() -> Element {
 
         div { style: "min-height: 40px;",
             if let Some(ref err) = *launch_error.read() {
-                div { class: "error", "{err}" }
+                div { class: "error", {err.as_str()} }
             }
         }
 

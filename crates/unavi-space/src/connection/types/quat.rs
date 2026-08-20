@@ -44,7 +44,7 @@ impl From<Quat> for PackedQuat {
 
         // Quantize to 10 bits each. Range [-0.707, 0.707] -> [0, 1023].
         let quantize = |v: f32| -> u32 {
-            let normalized = (v / FRAC_1_SQRT_2 + 1.0) * 0.5;
+            let normalized = f32::midpoint(v / FRAC_1_SQRT_2, 1.0);
             (normalized.clamp(0.0, 1.0) * 1023.0) as u32
         };
 

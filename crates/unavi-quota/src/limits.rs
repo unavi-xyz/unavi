@@ -68,12 +68,11 @@ fn host_total_memory() -> u64 {
     cfg_select! {
         // Not currently tracked on wasm, so this value isn't used.
         target_family = "wasm" => 2 * 1024 * MB as u64,
-        _ => {
-            sysinfo::System::new_with_specifics(
-                sysinfo::RefreshKind::nothing().with_memory(sysinfo::MemoryRefreshKind::nothing().with_ram()),
-            )
-            .total_memory()
-        }
+        _ => sysinfo::System::new_with_specifics(
+            sysinfo::RefreshKind::nothing()
+                .with_memory(sysinfo::MemoryRefreshKind::nothing().with_ram()),
+        )
+        .total_memory(),
     }
 }
 

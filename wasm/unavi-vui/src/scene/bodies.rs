@@ -729,7 +729,7 @@ fn icon_box(root: &Prim) -> anyhow::Result<(Vec3, Vec3)> {
 
 fn gather(prim: &Prim, parent: &Transform, min: &mut Vec3, max: &mut Vec3) -> anyhow::Result<()> {
     if let Some(positions) = prim.mesh_stream("POSITION") {
-        for vertex in positions.chunks_exact(3) {
+        for vertex in positions.as_chunks::<3>().0 {
             let point = parent.transform_point(Vec3::new(vertex[0], vertex[1], vertex[2]));
             *min = min.min(point);
             *max = max.max(point);

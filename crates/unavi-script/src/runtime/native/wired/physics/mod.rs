@@ -1,3 +1,5 @@
+use std::future::Future;
+
 use unavi_policy::document::ApiName;
 use wasmtime::component::Resource;
 
@@ -109,20 +111,20 @@ impl bindings::wired::physics::api::Host for Runtime {
         Ok(result.map_err(Into::into))
     }
 
-    async fn claim_authority(&mut self, doc: Vec<u8>) -> wasmtime::Result<Result<(), Error>> {
+    fn claim_authority(&mut self, doc: Vec<u8>) -> impl Future<Output = wasmtime::Result<Result<(), Error>>> {
         let result = match self.api.require(ApiName::Physics) {
             Ok(()) => shared::wired::physics::claim_authority(&self.api, doc),
             Err(err) => Err(err),
         };
-        Ok(result.map_err(Into::into))
+        std::future::ready(Ok(result.map_err(Into::into)))
     }
 
-    async fn release_authority(&mut self, doc: Vec<u8>) -> wasmtime::Result<Result<(), Error>> {
+    fn release_authority(&mut self, doc: Vec<u8>) -> impl Future<Output = wasmtime::Result<Result<(), Error>>> {
         let result = match self.api.require(ApiName::Physics) {
             Ok(()) => shared::wired::physics::release_authority(&self.api, doc),
             Err(err) => Err(err),
         };
-        Ok(result.map_err(Into::into))
+        std::future::ready(Ok(result.map_err(Into::into)))
     }
 }
 

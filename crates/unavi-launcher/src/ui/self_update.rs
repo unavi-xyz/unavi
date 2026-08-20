@@ -73,7 +73,7 @@ pub fn SelfUpdate() -> Element {
         }
         UpdateStatus::Error(ref e) => {
             return rsx! {
-                div { class: "error", "{e}" }
+                div { class: "error", {e.as_str()} }
                 button {
                     class: "nav-button",
                     onclick: move |_| {
@@ -88,7 +88,7 @@ pub fn SelfUpdate() -> Element {
     rsx! {
         div { class: "status",
             span { class: "loading" }
-            "{status_text}"
+            {status_text}
         }
     }
 }

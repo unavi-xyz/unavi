@@ -29,5 +29,5 @@ fn test_name_lifecycle(mut ctx: TestContext) {
 
     let world = ctx.app.world_mut();
     let res = query.query(world).into_iter().collect::<Vec<_>>();
-    assert!(res.is_empty());
+    assert_eq!(res.len(), 0);
 }

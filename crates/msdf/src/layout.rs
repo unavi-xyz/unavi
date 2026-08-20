@@ -606,7 +606,7 @@ mod tests {
     #[test]
     fn an_empty_string_lays_out_to_nothing() {
         let laid = laid("", &opts());
-        assert!(laid.quads.is_empty());
+        assert_eq!(laid.quads.len(), 0);
         assert_eq!(laid.ink, Rect::ZERO);
         assert_eq!(laid.lines, 1);
     }

@@ -44,7 +44,7 @@ fn test_mesh_lifecycle(mut ctx: TestContext) {
 
     let world = ctx.app.world_mut();
     let res = query.query(world).into_iter().collect::<Vec<_>>();
-    assert!(res.is_empty());
+    assert_eq!(res.len(), 0);
 }
 
 const POSITIONS: [[f32; 3]; 3] = [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]];

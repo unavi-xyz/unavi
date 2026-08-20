@@ -312,7 +312,7 @@ fn hex_to_salt(hex: &str) -> anyhow::Result<[u8; 16]> {
         anyhow::bail!("salt must be 16 bytes")
     }
     let mut out = [0u8; 16];
-    for (byte, pair) in out.iter_mut().zip(bytes.chunks_exact(2)) {
+    for (byte, pair) in out.iter_mut().zip(bytes.as_chunks::<2>().0) {
         let pair = std::str::from_utf8(pair).context("salt is not hex")?;
         *byte = u8::from_str_radix(pair, 16)?;
     }

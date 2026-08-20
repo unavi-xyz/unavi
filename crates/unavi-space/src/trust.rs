@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use bevy::prelude::*;
 use hsd::id::DocId;
 use iroh::EndpointId;
@@ -39,10 +41,29 @@ pub fn install_resolver() {
     });
 }
 
+/// Where the trust table is kept, or `None` on wasm, which has no filesystem
+/// and so holds a block only for the life of the tab.
+#[cfg(target_family = "wasm")]
+const fn table_dir() -> Option<&'static Path> {
+    None
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[expect(
+    clippy::unnecessary_wraps,
+    reason = "mirrors the wasm variant, which returns None"
+)]
+fn table_dir() -> Option<&'static Path> {
+    Some(unavi_util::dirs::data_local_dir())
+}
+
 /// Loads the local trust table, which is the user's own opinion and so has to
 /// outlive the session.
 pub fn load_trust_table() {
-    if let Err(err) = trust::load(unavi_util::dirs::data_local_dir()) {
+    let Some(dir) = table_dir() else {
+        return;
+    };
+    if let Err(err) = trust::load(dir) {
         error!(
             ?err,
             "Trust table could not be read; every block is inactive this session"
@@ -69,7 +90,9 @@ pub fn eject(peer: [u8; 32]) -> Result<(), NoIdentity> {
     unavi_quota::registry::forget_peer(NamespaceId::from(&peer));
     info!(reverted, "Ejected peer");
 
-    if let Err(err) = trust::save(unavi_util::dirs::data_local_dir()) {
+    if let Some(dir) = table_dir()
+        && let Err(err) = trust::save(dir)
+    {
         warn!(?err, "failed to persist the block");
     }
 
@@ -84,7 +107,9 @@ pub fn unblock(peer: [u8; 32]) -> Result<(), NoIdentity> {
     let did = identity::did_of(peer).ok_or(NoIdentity)?;
     trust::clear_override(&did);
     unavi_quota::registry::forget_peer(NamespaceId::from(&peer));
-    if let Err(err) = trust::save(unavi_util::dirs::data_local_dir()) {
+    if let Some(dir) = table_dir()
+        && let Err(err) = trust::save(dir)
+    {
         warn!(?err, "failed to persist the unblock");
     }
     Ok(())

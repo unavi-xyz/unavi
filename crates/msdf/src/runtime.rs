@@ -780,7 +780,7 @@ mod tests {
     #[test]
     fn a_character_the_face_lacks_is_never_queued() {
         let mut atlas = atlas(opts());
-        assert!(atlas.request(&['漢']).is_empty());
+        assert_eq!(atlas.request(&['漢']).len(), 0);
         assert_eq!(atlas.budget().pending, 0);
     }
 
@@ -823,7 +823,7 @@ mod tests {
             !atlas.can_render('A'),
             "a stack falls through to the next face"
         );
-        assert!(atlas.request(&['A']).is_empty());
+        assert_eq!(atlas.request(&['A']).len(), 0);
         assert!(
             atlas.glyph('A').expect("fallback").advance > 0.0,
             "and the line still leaves room for it"

@@ -1,5 +1,4 @@
-{ inputs, deployInfo, ... }:
-{
+{ inputs, deployInfo, ... }: {
   perSystem =
     { pkgs, lib, ... }:
     let
@@ -8,6 +7,21 @@
       # Overrides the default the manifest declares, which the build script
       # compiles in.
       channelSyncTargets = channel: "did:web:${deployInfo.${channel}.services.unavi_server.domain}";
+
+      # `wasm-bindgen` refuses a module whose schema came from a different
+      # version, and the sandbox cannot fetch the matching CLI the way Trunk
+      # would, so the tool is picked from the lockfile rather than pinned by
+      # hand where it would drift on the next `cargo update`.
+      wasmBindgenVersion =
+        (builtins.fromTOML (builtins.readFile ../../Cargo.lock)).package
+        |> lib.findFirst (p: p.name == "wasm-bindgen") (throw "Cargo.lock has no wasm-bindgen")
+        |> (p: p.version);
+
+      wasmBindgenAttr = "wasm-bindgen-cli_${builtins.replaceStrings [ "." ] [ "_" ] wasmBindgenVersion}";
+
+      wasm-bindgen-cli =
+        pkgs.${wasmBindgenAttr}
+          or (throw "nixpkgs has no `${wasmBindgenAttr}`, which Cargo.lock's wasm-bindgen ${wasmBindgenVersion} requires");
 
       src = lib.fileset.toSource rec {
         root = ../..;
@@ -94,10 +108,13 @@
       };
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
-      cargoArtifactsWeb = pkgs.crane.buildDepsOnly cargoArgs // {
-        CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
-        doCheck = false;
-      };
+      cargoArtifactsWeb = pkgs.crane.buildDepsOnly (
+        cargoArgs
+        // {
+          pname = "${pname}-web";
+          CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
+        }
+      );
 
       nativeArgs = cargoArgs // {
         inherit cargoArtifacts;
@@ -109,11 +126,12 @@
           pkgs.makeWrapper
           pkgs.nodejs
           pkgs.npmHooks.npmConfigHook
+          pkgs.nushell
         ];
 
         preBuild = ''
-          ${pkgs.nushell}/bin/nu scripts/update-wasm.nu
-          ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+          nu scripts/update-wasm.nu
+          nu scripts/build-wasm.nu
         '';
 
         postInstall = ''
@@ -132,21 +150,22 @@
         npmRoot = "crates/unavi-script";
         inherit npmDeps;
 
+        # Trunk's own `post_build` hook shells out to `nu`, so nushell has to be
+        # on PATH rather than only reachable by store path.
         nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [
           pkgs.nodejs
           pkgs.npmHooks.npmConfigHook
-          pkgs.trunk
+          pkgs.nushell
         ];
-        wasm-bindgen-cli = pkgs.wasm-bindgen-cli_0_2_114;
+        inherit wasm-bindgen-cli;
 
         preBuild = ''
-          ls -l
-          ${pkgs.nushell}/bin/nu scripts/update-wasm.nu
-          ${pkgs.nushell}/bin/nu scripts/build-wasm.nu
+          nu scripts/update-wasm.nu
+          nu scripts/build-wasm.nu
         '';
 
         buildPhaseCargoCommand = ''
-          ${pkgs.nushell}/bin/nu scripts/build-web.nu --release
+          nu scripts/build-web.nu --release
         '';
 
         installPhaseCommand = ''

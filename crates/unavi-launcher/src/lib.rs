@@ -39,7 +39,7 @@ pub fn run_launcher() {
     let icon = load_icon();
 
     let width = 380;
-    let phi = 1.61803;
+    let phi = std::f32::consts::GOLDEN_RATIO;
 
     let size = LogicalSize::new(width, (width as f32 * phi).round() as i32);
 

@@ -1247,7 +1247,6 @@ mod tests {
 
     /// Easing changes how a mote gets to a state, never what the state is.
     #[test]
-    #[expect(clippy::float_cmp, reason = "landing exactly is the invariant")]
     fn a_settled_mote_looks_exactly_as_its_state_says() {
         let mut surface = surface();
         let specs = [spec(Role::Action), spec(Role::Action)];
@@ -1272,7 +1271,6 @@ mod tests {
     /// A style is written to the scene only when it differs, so one that never
     /// quite arrives redraws every mote every frame forever.
     #[test]
-    #[expect(clippy::float_cmp, reason = "landing exactly is the invariant")]
     fn a_settled_mote_stops_changing() {
         let mut surface = surface();
         let specs = [spec(Role::Action), spec(Role::Action)];
@@ -1308,7 +1306,6 @@ mod tests {
     }
 
     #[test]
-    #[expect(clippy::float_cmp, reason = "landing exactly is the invariant")]
     fn attention_leaving_eases_back_down_and_settles() {
         let mut surface = surface();
         let specs = [spec(Role::Action), spec(Role::Action)];
@@ -1357,7 +1354,7 @@ mod tests {
     fn an_empty_grid_is_one_empty_page() {
         let mut surface = Surface::new(4, Tuning::DEFAULT, Palette::DEFAULT);
         grid_update(&mut surface, &[], 2, 2);
-        assert!(surface.views().is_empty());
+        assert_eq!(surface.views(), []);
         assert_eq!(surface.page().count, 1);
         assert_eq!(surface.page().total, 0);
         assert!(!surface.page().is_paged());

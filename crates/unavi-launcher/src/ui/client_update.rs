@@ -72,7 +72,7 @@ pub fn ClientUpdate() -> Element {
         }
         Some(UpdateStatus::Error(e)) => {
             return rsx! {
-                div { class: "error", "{e}" }
+                div { class: "error", {e.as_str()} }
                 button {
                     class: "nav-button",
                     onclick: move |_| {
@@ -87,7 +87,7 @@ pub fn ClientUpdate() -> Element {
     rsx! {
         div { class: "status",
             span { class: "loading" }
-            "{status_text}"
+            {status_text}
         }
     }
 }

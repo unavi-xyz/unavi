@@ -13,7 +13,10 @@ use iroh_blobs::{
     api::Store as BlobStore,
     store::mem::MemStore,
 };
-use iroh_docs::protocol::Docs;
+use iroh_docs::protocol::{
+    Builder as DocsBuilder,
+    Docs,
+};
 use iroh_gossip::net::Gossip;
 use n0_future::task::AbortOnDropHandle;
 use parking_lot::RwLock;
@@ -69,17 +72,14 @@ impl DataStoreBuilder {
 
     /// Build the [`DataStore`].
     pub async fn build(self) -> anyhow::Result<(DataStore, BoxedRouterBuilder)> {
-        let (blobs, db) = init_storage(&self.storage).await?;
+        let (blobs, db, docs_builder) = init_storage(&self.storage).await?;
         let blob_store = blobs.as_ref().as_ref().clone();
 
         let gossip = Gossip::builder().spawn(self.endpoint.clone());
 
-        let docs = match &self.storage {
-            Storage::Path(path) => Docs::persistent(path.join("docs")),
-            Storage::InMemory => Docs::memory(),
-        }
-        .spawn(self.endpoint.clone(), blob_store.clone(), gossip.clone())
-        .await?;
+        let docs = docs_builder
+            .spawn(self.endpoint.clone(), blob_store.clone(), gossip.clone())
+            .await?;
 
         let blob_protocol = BlobsProtocol::new(&blob_store, None);
 
@@ -136,24 +136,25 @@ impl DataStoreBuilder {
 // `.await` works uniformly across targets.
 #[cfg(target_family = "wasm")]
 #[expect(clippy::unused_async)]
-async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database)> {
+async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database, DocsBuilder)> {
     anyhow::ensure!(
         matches!(storage, Storage::InMemory),
         "file storage is not supported on wasm; use Storage::InMemory"
     );
     let blobs: BoxedBlobs = Box::new(MemStore::new());
     let db = Database::new_in_memory()?;
-    Ok((blobs, db))
+    Ok((blobs, db, Docs::memory()))
 }
 
 #[cfg(not(target_family = "wasm"))]
-async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database)> {
+async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database, DocsBuilder)> {
     if let Storage::Path(path) = storage {
         let blob_path = path.join("blob");
+        let docs_path = path.join("docs");
         tokio::fs::create_dir_all(&blob_path).await?;
         // `Docs::persistent` opens its directory rather than creating it, so
         // the whole layout is laid out here before any store is loaded.
-        tokio::fs::create_dir_all(path.join("docs")).await?;
+        tokio::fs::create_dir_all(&docs_path).await?;
 
         let blobs = iroh_blobs::store::fs::FsStore::load_with_opts(
             blob_path.join("blobs.db"),
@@ -164,10 +165,10 @@ async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database
 
         let db = Database::new(&path.join("index.db"))?;
 
-        Ok((blobs, db))
+        Ok((blobs, db, Docs::persistent(docs_path)))
     } else {
         let blobs: BoxedBlobs = Box::new(MemStore::new());
         let db = Database::new_in_memory()?;
-        Ok((blobs, db))
+        Ok((blobs, db, Docs::memory()))
     }
 }

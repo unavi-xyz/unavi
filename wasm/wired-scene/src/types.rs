@@ -35,7 +35,7 @@ impl Color {
         let i = (h * 6.0).floor() as u32 % 6;
         let f = h.mul_add(6.0, -(h * 6.0).floor());
         let p = v * (1.0 - s);
-        let q = v * (1.0 - f * s);
+        let q = v * f.mul_add(-s, 1.0);
         let t = v * (1.0 - f).mul_add(-s, 1.0);
         let (r, g, b) = match i {
             0 => (v, t, p),

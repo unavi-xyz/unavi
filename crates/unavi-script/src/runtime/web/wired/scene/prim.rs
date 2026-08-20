@@ -1,12 +1,9 @@
 use std::sync::Arc;
 
-use hsd::attributes::{
-    image::{
-        AddressMode,
-        FilterMode,
-        ImageAttr,
-    },
-    xform::XformAttr,
+use hsd::attributes::image::{
+    AddressMode,
+    FilterMode,
+    ImageAttr,
 };
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::{
@@ -14,21 +11,23 @@ use wasm_bindgen::{
     prelude::*,
 };
 
-use super::util::{
-    bytes32_to_js,
-    js_to_bytes32,
-    js_to_f32s,
-    js_to_quat,
-    js_to_u32s,
-    js_to_vec3,
-    obj_get,
-    obj_get_bool,
-    obj_get_f32,
-    obj_get_i32,
-    obj_get_string,
-    obj_set,
-    quat_to_js,
-    vec3_to_js,
+use super::{
+    shader_graph,
+    util::{
+        bytes32_to_js,
+        js_to_bytes32,
+        js_to_f32s,
+        js_to_u32s,
+        js_to_vec3,
+        js_to_xform,
+        obj_get,
+        obj_get_bool,
+        obj_get_f32,
+        obj_get_string,
+        obj_set,
+        vec3_to_js,
+        xform_to_js,
+    },
 };
 use crate::runtime::shared::{
     self,
@@ -37,6 +36,7 @@ use crate::runtime::shared::{
         PrimAlphaMode,
         PrimCollider,
         PrimColor,
+        PrimGraphValue,
         PrimMaterial,
         PrimMesh,
         PrimPortal,
@@ -148,21 +148,16 @@ impl PrimHandle {
             .map_err(|e| e.to_string())
     }
 
-    pub async fn asset(&self) -> JsValue {
-        match shared::wired::scene::prim::asset(&self.api, self.rep).await {
+    pub async fn prefab(&self) -> JsValue {
+        match shared::wired::scene::prim::prefab(&self.api, self.rep).await {
             Ok(Some(b)) => js_sys::Uint8Array::from(b.as_slice()).into(),
             _ => JsValue::UNDEFINED,
         }
     }
 
-    #[wasm_bindgen(js_name = "setAsset")]
-    pub async fn set_asset(&self, value: JsValue) -> Result<(), String> {
-        let bytes = if value.is_null() || value.is_undefined() {
-            None
-        } else {
-            Some(js_sys::Uint8Array::new(&value).to_vec())
-        };
-        shared::wired::scene::prim::set_asset(&self.api, self.rep, bytes)
+    #[wasm_bindgen(js_name = "setPrefab")]
+    pub async fn set_prefab(&self, value: JsValue) -> Result<(), String> {
+        shared::wired::scene::prim::set_prefab(&self.api, self.rep, js_to_bytes(&value))
             .await
             .map_err(|e| e.to_string())
     }
@@ -256,6 +251,41 @@ impl PrimHandle {
             .map_err(|e| e.to_string())
     }
 
+    #[wasm_bindgen(js_name = "setMaterialGraph")]
+    pub async fn set_material_graph(&self, value: JsValue) -> Result<(), String> {
+        let graph = shader_graph::js_to_graph(&value)?;
+        shared::wired::scene::prim::set_material_graph(&self.api, self.rep, graph)
+            .await
+            .map_err(|e| e.to_string())
+    }
+
+    #[wasm_bindgen(js_name = "graphOverrides")]
+    pub async fn graph_overrides(&self) -> js_sys::Array {
+        let Ok(items) = shared::wired::scene::prim::graph_overrides(&self.api, self.rep).await
+        else {
+            return js_sys::Array::new();
+        };
+        items
+            .into_iter()
+            .map(|(index, value)| {
+                let tup = js_sys::Array::new();
+                tup.push(&JsValue::from(index));
+                tup.push(&shader_graph::graph_value_to_js(shader_graph::graph_value(
+                    value,
+                )));
+                JsValue::from(tup)
+            })
+            .collect()
+    }
+
+    #[wasm_bindgen(js_name = "setGraphOverrides")]
+    pub async fn set_graph_overrides(&self, values: JsValue) -> Result<(), String> {
+        let values = js_to_graph_overrides(&values)?;
+        shared::wired::scene::prim::set_graph_overrides(&self.api, self.rep, values)
+            .await
+            .map_err(|e| e.to_string())
+    }
+
     pub async fn image(&self) -> JsValue {
         match shared::wired::scene::prim::image(&self.api, self.rep).await {
             Ok(Some(img)) => image_to_js(&img),
@@ -271,6 +301,13 @@ impl PrimHandle {
             .map_err(|e| e.to_string())
     }
 
+    #[wasm_bindgen(js_name = "setImageData")]
+    pub async fn set_image_data(&self, bytes: JsValue) -> Result<(), String> {
+        shared::wired::scene::prim::set_image_data(&self.api, self.rep, js_to_bytes(&bytes))
+            .await
+            .map_err(|e| e.to_string())
+    }
+
     pub async fn collider(&self) -> JsValue {
         match shared::wired::scene::prim::collider(&self.api, self.rep).await {
             Ok(Some(c)) => collider_to_js(c),
@@ -282,6 +319,20 @@ impl PrimHandle {
     pub async fn set_collider(&self, value: JsValue) -> Result<(), String> {
         let c = js_to_collider(&value);
         shared::wired::scene::prim::set_collider(&self.api, self.rep, c)
+            .await
+            .map_err(|e| e.to_string())
+    }
+
+    #[wasm_bindgen(js_name = "setColliderVertices")]
+    pub async fn set_collider_vertices(&self, values: JsValue) -> Result<(), String> {
+        shared::wired::scene::prim::set_collider_vertices(&self.api, self.rep, js_to_f32s(values))
+            .await
+            .map_err(|e| e.to_string())
+    }
+
+    #[wasm_bindgen(js_name = "setColliderIndices")]
+    pub async fn set_collider_indices(&self, values: JsValue) -> Result<(), String> {
+        shared::wired::scene::prim::set_collider_indices(&self.api, self.rep, js_to_u32s(values))
             .await
             .map_err(|e| e.to_string())
     }
@@ -382,37 +433,6 @@ impl PrimHandle {
     }
 }
 
-fn xform_to_js(x: &XformAttr) -> JsValue {
-    let obj = js_sys::Object::new();
-    obj_set(
-        &obj,
-        "translation",
-        &vec3_to_js(x.translation[0], x.translation[1], x.translation[2]),
-    );
-    obj_set(
-        &obj,
-        "rotation",
-        &quat_to_js(x.rotation[0], x.rotation[1], x.rotation[2], x.rotation[3]),
-    );
-    obj_set(
-        &obj,
-        "scale",
-        &vec3_to_js(x.scale[0], x.scale[1], x.scale[2]),
-    );
-    obj.into()
-}
-
-fn js_to_xform(v: &JsValue) -> Option<XformAttr> {
-    if v.is_null() || v.is_undefined() {
-        return None;
-    }
-    Some(XformAttr {
-        translation: js_to_vec3(&obj_get(v, "translation"), [0.0; 3]),
-        rotation:    js_to_quat(&obj_get(v, "rotation"), [0.0, 0.0, 0.0, 1.0]),
-        scale:       js_to_vec3(&obj_get(v, "scale"), [1.0; 3]),
-    })
-}
-
 fn topology_to_js(t: PrimTopology) -> JsValue {
     JsValue::from_str(match t {
         PrimTopology::PointList => "point-list",
@@ -436,19 +456,6 @@ fn js_to_topology(v: &JsValue) -> PrimTopology {
 fn mesh_to_js(m: PrimMesh) -> JsValue {
     let obj = js_sys::Object::new();
     obj_set(&obj, "topology", &topology_to_js(m.topology));
-    let attrs = js_sys::Array::new();
-    for (k, v) in m.attributes {
-        let tup = js_sys::Array::new();
-        tup.push(&JsValue::from_str(&k));
-        tup.push(&bytes32_to_js(&v));
-        attrs.push(&tup);
-    }
-    obj_set(&obj, "attributes", &attrs.into());
-    obj_set(
-        &obj,
-        "indices",
-        &m.indices.map_or(JsValue::UNDEFINED, |b| bytes32_to_js(&b)),
-    );
     obj.into()
 }
 
@@ -456,27 +463,8 @@ fn js_to_mesh(v: &JsValue) -> Option<PrimMesh> {
     if v.is_null() || v.is_undefined() {
         return None;
     }
-    let topology = js_to_topology(&obj_get(v, "topology"));
-    let attrs_val = obj_get(v, "attributes");
-    let mut attributes = Vec::new();
-    if attrs_val.is_object() {
-        let arr = js_sys::Array::from(&attrs_val);
-        for entry in arr.iter() {
-            let tup = js_sys::Array::from(&entry);
-            let Some(k) = tup.get(0).as_string() else {
-                continue;
-            };
-            let Some(b) = js_to_bytes32(&tup.get(1)) else {
-                continue;
-            };
-            attributes.push((k, b));
-        }
-    }
-    let indices = js_to_bytes32(&obj_get(v, "indices"));
     Some(PrimMesh {
-        topology,
-        attributes,
-        indices,
+        topology: js_to_topology(&obj_get(v, "topology")),
     })
 }
 
@@ -557,7 +545,7 @@ fn text_to_js(t: &PrimText) -> JsValue {
         obj_set(&obj, "wrap", &v.into());
     }
     if let Some(v) = t.line_height {
-        obj_set(&obj, "line-height", &v.into());
+        obj_set(&obj, "lineHeight", &v.into());
     }
     if let Some(v) = &t.color {
         obj_set(&obj, "color", &color_to_js(v));
@@ -566,7 +554,7 @@ fn text_to_js(t: &PrimText) -> JsValue {
         obj_set(&obj, "outline", &color_to_js(v));
     }
     if let Some(v) = t.outline_width {
-        obj_set(&obj, "outline-width", &v.into());
+        obj_set(&obj, "outlineWidth", &v.into());
     }
     if let Some(v) = t.emissive {
         obj_set(&obj, "emissive", &v.into());
@@ -606,10 +594,10 @@ fn js_to_text(v: &JsValue) -> Option<PrimText> {
             _ => None,
         }),
         wrap:          obj_get_f32(v, "wrap"),
-        line_height:   obj_get_f32(v, "line-height"),
+        line_height:   obj_get_f32(v, "lineHeight"),
         color:         js_to_color(&obj_get(v, "color")),
         outline:       js_to_color(&obj_get(v, "outline")),
-        outline_width: obj_get_f32(v, "outline-width"),
+        outline_width: obj_get_f32(v, "outlineWidth"),
         emissive:      obj_get_f32(v, "emissive"),
         billboard:     obj_get_string(v, "billboard").and_then(|s| match s.as_str() {
             "none" => Some(PrimTextBillboard::None),
@@ -623,37 +611,22 @@ fn js_to_text(v: &JsValue) -> Option<PrimText> {
 fn material_to_js(m: &PrimMaterial) -> JsValue {
     let obj = js_sys::Object::new();
     if let Some(v) = m.alpha_cutoff {
-        obj_set(&obj, "alpha-cutoff", &v.into());
+        obj_set(&obj, "alphaCutoff", &v.into());
     }
     if let Some(v) = m.alpha_mode {
-        obj_set(&obj, "alpha-mode", &alpha_mode_to_js(v));
+        obj_set(&obj, "alphaMode", &alpha_mode_to_js(v));
     }
     if let Some(v) = &m.base_color {
-        obj_set(&obj, "base-color", &color_to_js(v));
-    }
-    if let Some(v) = &m.base_color_texture {
-        obj_set(&obj, "base-color-texture", &JsValue::from_str(v));
+        obj_set(&obj, "baseColor", &color_to_js(v));
     }
     if let Some(v) = m.double_sided {
-        obj_set(&obj, "double-sided", &v.into());
+        obj_set(&obj, "doubleSided", &v.into());
     }
     if let Some(v) = &m.emissive {
         obj_set(&obj, "emissive", &color_to_js(v));
     }
-    if let Some(v) = &m.emissive_texture {
-        obj_set(&obj, "emissive-texture", &JsValue::from_str(v));
-    }
     if let Some(v) = m.metallic {
         obj_set(&obj, "metallic", &v.into());
-    }
-    if let Some(v) = &m.metallic_roughness_texture {
-        obj_set(&obj, "metallic-roughness-texture", &JsValue::from_str(v));
-    }
-    if let Some(v) = &m.normal_texture {
-        obj_set(&obj, "normal-texture", &JsValue::from_str(v));
-    }
-    if let Some(v) = &m.occlusion_texture {
-        obj_set(&obj, "occlusion-texture", &JsValue::from_str(v));
     }
     if let Some(v) = m.roughness {
         obj_set(&obj, "roughness", &v.into());
@@ -666,18 +639,13 @@ fn js_to_material(v: &JsValue) -> Option<PrimMaterial> {
         return None;
     }
     Some(PrimMaterial {
-        alpha_cutoff:               obj_get_f32(v, "alpha-cutoff"),
-        alpha_mode:                 js_to_alpha_mode(&obj_get(v, "alpha-mode")),
-        base_color:                 js_to_color(&obj_get(v, "base-color")),
-        base_color_texture:         obj_get_string(v, "base-color-texture"),
-        double_sided:               obj_get_bool(v, "double-sided"),
-        emissive:                   js_to_color(&obj_get(v, "emissive")),
-        emissive_texture:           obj_get_string(v, "emissive-texture"),
-        metallic:                   obj_get_f32(v, "metallic"),
-        metallic_roughness_texture: obj_get_string(v, "metallic-roughness-texture"),
-        normal_texture:             obj_get_string(v, "normal-texture"),
-        occlusion_texture:          obj_get_string(v, "occlusion-texture"),
-        roughness:                  obj_get_f32(v, "roughness"),
+        alpha_cutoff: obj_get_f32(v, "alphaCutoff"),
+        alpha_mode:   js_to_alpha_mode(&obj_get(v, "alphaMode")),
+        base_color:   js_to_color(&obj_get(v, "baseColor")),
+        double_sided: obj_get_bool(v, "doubleSided"),
+        emissive:     js_to_color(&obj_get(v, "emissive")),
+        metallic:     obj_get_f32(v, "metallic"),
+        roughness:    obj_get_f32(v, "roughness"),
     })
 }
 
@@ -716,18 +684,18 @@ fn js_to_filter_mode(v: &JsValue) -> Option<FilterMode> {
 fn image_to_js(img: &ImageAttr) -> JsValue {
     let obj = js_sys::Object::new();
     for (key, mode) in [
-        ("address-mode-u", img.address_mode_u),
-        ("address-mode-v", img.address_mode_v),
-        ("address-mode-w", img.address_mode_w),
+        ("addressModeU", img.address_mode_u),
+        ("addressModeV", img.address_mode_v),
+        ("addressModeW", img.address_mode_w),
     ] {
         if let Some(mode) = mode {
             obj_set(&obj, key, &address_mode_to_js(mode));
         }
     }
     for (key, mode) in [
-        ("mag-filter", img.mag_filter),
-        ("min-filter", img.min_filter),
-        ("mipmap-filter", img.mipmap_filter),
+        ("magFilter", img.mag_filter),
+        ("minFilter", img.min_filter),
+        ("mipmapFilter", img.mipmap_filter),
     ] {
         if let Some(mode) = mode {
             obj_set(&obj, key, &filter_mode_to_js(mode));
@@ -744,12 +712,12 @@ fn js_to_image(v: &JsValue) -> Option<ImageAttr> {
         return None;
     }
     Some(ImageAttr {
-        address_mode_u: js_to_address_mode(&obj_get(v, "address-mode-u")),
-        address_mode_v: js_to_address_mode(&obj_get(v, "address-mode-v")),
-        address_mode_w: js_to_address_mode(&obj_get(v, "address-mode-w")),
-        mag_filter:     js_to_filter_mode(&obj_get(v, "mag-filter")),
-        min_filter:     js_to_filter_mode(&obj_get(v, "min-filter")),
-        mipmap_filter:  js_to_filter_mode(&obj_get(v, "mipmap-filter")),
+        address_mode_u: js_to_address_mode(&obj_get(v, "addressModeU")),
+        address_mode_v: js_to_address_mode(&obj_get(v, "addressModeV")),
+        address_mode_w: js_to_address_mode(&obj_get(v, "addressModeW")),
+        mag_filter:     js_to_filter_mode(&obj_get(v, "magFilter")),
+        min_filter:     js_to_filter_mode(&obj_get(v, "minFilter")),
+        mipmap_filter:  js_to_filter_mode(&obj_get(v, "mipmapFilter")),
         srgb:           obj_get_bool(v, "srgb"),
     })
 }
@@ -758,6 +726,14 @@ fn variant(tag: &str, val: JsValue) -> JsValue {
     let obj = js_sys::Object::new();
     obj_set(&obj, "tag", &tag.into());
     obj_set(&obj, "val", &val);
+    obj.into()
+}
+
+/// A variant case carrying nothing has no `val` at all, rather than an
+/// undefined one.
+fn unit_variant(tag: &str) -> JsValue {
+    let obj = js_sys::Object::new();
+    obj_set(&obj, "tag", &tag.into());
     obj.into()
 }
 
@@ -772,18 +748,13 @@ fn collider_to_js(c: PrimCollider) -> JsValue {
         PrimCollider::Capsule { height, radius } => {
             variant("capsule", record2("height", height, "radius", radius))
         }
-        PrimCollider::ConvexHull(hash) => variant("convex-hull", bytes32_to_js(&hash)),
+        PrimCollider::ConvexHull => unit_variant("convex-hull"),
         PrimCollider::Cuboid([x, y, z]) => variant("cuboid", vec3_to_js(x, y, z)),
         PrimCollider::Cylinder { height, radius } => {
             variant("cylinder", record2("height", height, "radius", radius))
         }
         PrimCollider::Sphere(r) => variant("sphere", r.into()),
-        PrimCollider::Trimesh { indices, vertices } => {
-            let val = js_sys::Object::new();
-            obj_set(&val, "indices", &bytes32_to_js(&indices));
-            obj_set(&val, "vertices", &bytes32_to_js(&vertices));
-            variant("trimesh", val.into())
-        }
+        PrimCollider::Trimesh => unit_variant("trimesh"),
     }
 }
 
@@ -798,17 +769,14 @@ fn js_to_collider(value: &JsValue) -> Option<PrimCollider> {
             height: obj_get_f32(&val, "height").unwrap_or(0.0),
             radius: obj_get_f32(&val, "radius").unwrap_or(0.0),
         },
-        "convex-hull" => PrimCollider::ConvexHull(js_to_bytes32(&val)?),
+        "convex-hull" => PrimCollider::ConvexHull,
         "cuboid" => PrimCollider::Cuboid(js_to_vec3(&val, [0.0; 3])),
         "cylinder" => PrimCollider::Cylinder {
             height: obj_get_f32(&val, "height").unwrap_or(0.0),
             radius: obj_get_f32(&val, "radius").unwrap_or(0.0),
         },
         "sphere" => PrimCollider::Sphere(val.as_f64().unwrap_or(0.0) as f32),
-        "trimesh" => PrimCollider::Trimesh {
-            indices:  js_to_bytes32(&obj_get(&val, "indices"))?,
-            vertices: js_to_bytes32(&obj_get(&val, "vertices"))?,
-        },
+        "trimesh" => PrimCollider::Trimesh,
         _ => return None,
     })
 }
@@ -833,13 +801,13 @@ fn rigid_body_to_js(rb: &PrimRigidBody) -> JsValue {
     let obj = js_sys::Object::new();
     obj_set(&obj, "kind", &rigid_kind_to_js(rb.kind));
     if let Some(v) = rb.angular_damping {
-        obj_set(&obj, "angular-damping", &v.into());
+        obj_set(&obj, "angularDamping", &v.into());
     }
     if let Some(v) = rb.friction {
         obj_set(&obj, "friction", &v.into());
     }
     if let Some(v) = rb.linear_damping {
-        obj_set(&obj, "linear-damping", &v.into());
+        obj_set(&obj, "linearDamping", &v.into());
     }
     if let Some(v) = rb.mass {
         obj_set(&obj, "mass", &v.into());
@@ -856,9 +824,9 @@ fn js_to_rigid_body(v: &JsValue) -> Option<PrimRigidBody> {
     }
     Some(PrimRigidBody {
         kind:            js_to_rigid_kind(&obj_get(v, "kind")),
-        angular_damping: obj_get_f32(v, "angular-damping"),
+        angular_damping: obj_get_f32(v, "angularDamping"),
         friction:        obj_get_f32(v, "friction"),
-        linear_damping:  obj_get_f32(v, "linear-damping"),
+        linear_damping:  obj_get_f32(v, "linearDamping"),
         mass:            obj_get_f32(v, "mass"),
         restitution:     obj_get_f32(v, "restitution"),
     })
@@ -877,8 +845,8 @@ fn portal_to_js(p: &PrimPortal) -> JsValue {
         obj_set(&dest, "space", &bytes32_to_js(&d.space));
         obj_set(&obj, "destination", &dest.into());
     }
-    obj_set(&obj, "size-x", &p.size_x.into());
-    obj_set(&obj, "size-y", &p.size_y.into());
+    obj_set(&obj, "sizeX", &p.size_x.into());
+    obj_set(&obj, "sizeY", &p.size_y.into());
     obj.into()
 }
 
@@ -924,7 +892,33 @@ fn js_to_portal(v: &JsValue) -> Result<Option<PrimPortal>, String> {
     };
     Ok(Some(PrimPortal {
         destination,
-        size_x: obj_get_f32(v, "size-x").unwrap_or(0.0),
-        size_y: obj_get_f32(v, "size-y").unwrap_or(0.0),
+        size_x: obj_get_f32(v, "sizeX").unwrap_or(0.0),
+        size_y: obj_get_f32(v, "sizeY").unwrap_or(0.0),
     }))
+}
+
+fn js_to_bytes(v: &JsValue) -> Option<Vec<u8>> {
+    if v.is_null() || v.is_undefined() {
+        return None;
+    }
+    Some(js_sys::Uint8Array::new(v).to_vec())
+}
+
+fn js_to_graph_overrides(v: &JsValue) -> Result<Vec<(u16, PrimGraphValue)>, String> {
+    if v.is_null() || v.is_undefined() {
+        return Ok(Vec::new());
+    }
+    js_sys::Array::from(v)
+        .iter()
+        .map(|entry| {
+            let tup = js_sys::Array::from(&entry);
+            let index = tup
+                .get(0)
+                .as_f64()
+                .and_then(|i| u16::try_from(i as i64).ok())
+                .ok_or_else(|| "a graph override index is a u16".to_string())?;
+            let value = shader_graph::js_to_graph_value(&tup.get(1))?;
+            Ok((index, shader_graph::prim_value(value)))
+        })
+        .collect()
 }

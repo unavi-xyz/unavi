@@ -163,8 +163,8 @@ mod tests {
 
     #[test]
     fn parent_never_encodes_empty() {
-        assert!(!Parent::Root.encode().is_empty());
-        assert!(!Parent::Prim(PrimId([2; PRIM_ID_BYTES])).encode().is_empty());
+        assert_ne!(Parent::Root.encode().len(), 0);
+        assert_ne!(Parent::Prim(PrimId([2; PRIM_ID_BYTES])).encode().len(), 0);
     }
 
     #[test]

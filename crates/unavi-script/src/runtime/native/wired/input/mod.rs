@@ -1,3 +1,5 @@
+use std::future::Future;
+
 use unavi_policy::document::ApiName;
 use wasmtime::component::Resource;
 
@@ -73,13 +75,14 @@ impl bindings::wired::input::context::Host for Runtime {
         )
     }
 
-    async fn pointers(&mut self) -> wasmtime::Result<Result<Vec<Pointer>, Error>> {
-        if let Err(err) = self.api.require(ApiName::InputContext) {
-            return Ok(Err(err.into()));
-        }
-        Ok(Ok(shared::wired::input::pointers()
-            .into_iter()
-            .map(Into::into)
-            .collect()))
+    fn pointers(&mut self) -> impl Future<Output = wasmtime::Result<Result<Vec<Pointer>, Error>>> {
+        std::future::ready(if let Err(err) = self.api.require(ApiName::InputContext) {
+            Ok(Err(err.into()))
+        } else {
+            Ok(Ok(shared::wired::input::pointers()
+                .into_iter()
+                .map(Into::into)
+                .collect()))
+        })
     }
 }

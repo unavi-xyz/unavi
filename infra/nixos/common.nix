@@ -1,5 +1,4 @@
-{ pkgs, deployInfo, ... }:
-{
+{ pkgs, deployInfo, ... }: {
   boot.tmp.cleanOnBoot = true;
 
   environment = {

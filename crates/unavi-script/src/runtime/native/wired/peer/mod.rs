@@ -1,3 +1,5 @@
+use std::future::Future;
+
 use unavi_policy::document::ApiName;
 
 use crate::runtime::{
@@ -21,38 +23,40 @@ use crate::runtime::native::wired::error::bindings::wired::error::types::Error;
 impl bindings::wired::peer::types::Host for Runtime {}
 
 impl bindings::wired::peer::api::Host for Runtime {
-    async fn self_peer(&mut self) -> wasmtime::Result<Result<Option<Vec<u8>>, Error>> {
-        Ok(self
+    fn self_peer(
+        &mut self,
+    ) -> impl Future<Output = wasmtime::Result<Result<Option<Vec<u8>>, Error>>> {
+        std::future::ready(Ok(self
             .api
             .require(ApiName::Identity)
             .map(|()| shared::wired::peer::self_peer(&self.api))
-            .map_err(Into::into))
+            .map_err(Into::into)))
     }
 
-    async fn self_did(&mut self) -> wasmtime::Result<Result<Option<String>, Error>> {
-        Ok(self
+    fn self_did(&mut self) -> impl Future<Output = wasmtime::Result<Result<Option<String>, Error>>> {
+        std::future::ready(Ok(self
             .api
             .require(ApiName::Identity)
             .map(|()| shared::wired::peer::self_did(&self.api))
-            .map_err(Into::into))
+            .map_err(Into::into)))
     }
 
-    async fn doc_owner(
+    fn doc_owner(
         &mut self,
         doc: Vec<u8>,
-    ) -> wasmtime::Result<Result<Option<Vec<u8>>, Error>> {
-        Ok(self
+    ) -> impl Future<Output = wasmtime::Result<Result<Option<Vec<u8>>, Error>>> {
+        std::future::ready(Ok(self
             .api
             .require(ApiName::Peer)
             .map(|()| shared::wired::peer::doc_owner(&self.api, doc))
-            .map_err(Into::into))
+            .map_err(Into::into)))
     }
 
-    async fn is_self_owner(&mut self) -> wasmtime::Result<Result<bool, Error>> {
-        Ok(self
+    fn is_self_owner(&mut self) -> impl Future<Output = wasmtime::Result<Result<bool, Error>>> {
+        std::future::ready(Ok(self
             .api
             .require(ApiName::Peer)
             .map(|()| shared::wired::peer::is_self_owner(&self.api))
-            .map_err(Into::into))
+            .map_err(Into::into)))
     }
 }

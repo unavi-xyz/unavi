@@ -308,8 +308,10 @@ mod tests {
         let mesh = sphere(1.0, 8, 12);
         let (lowest, highest) = mesh
             .positions
-            .chunks_exact(3)
-            .zip(mesh.uvs.chunks_exact(2))
+            .as_chunks::<3>()
+            .0
+            .iter()
+            .zip(mesh.uvs.as_chunks::<2>().0)
             .fold(
                 ((f32::MAX, 0.0_f32), (f32::MIN, 0.0_f32)),
                 |(low, high), (point, uv)| {
@@ -336,7 +338,13 @@ mod tests {
     fn an_annulus_carries_the_angle_on_u_and_the_band_on_v() {
         let (inner, outer) = (0.04_f32, 0.06_f32);
         let mesh = annulus(inner, outer, 16);
-        for (point, uv) in mesh.positions.chunks_exact(3).zip(mesh.uvs.chunks_exact(2)) {
+        for (point, uv) in mesh
+            .positions
+            .as_chunks::<3>()
+            .0
+            .iter()
+            .zip(mesh.uvs.as_chunks::<2>().0)
+        {
             let radius = point[0].hypot(point[1]);
             let expected = f32::from(radius > inner.midpoint(outer));
             assert!(
@@ -362,7 +370,7 @@ mod tests {
     fn sphere_vertices_sit_on_the_radius() {
         let radius = 0.07;
         let mesh = sphere(radius, 8, 12);
-        for point in mesh.positions.chunks_exact(3) {
+        for point in mesh.positions.as_chunks::<3>().0 {
             let length = point[0].hypot(point[1]).hypot(point[2]);
             assert!((length - radius).abs() < 1.0e-4, "got {length}");
         }
@@ -371,7 +379,7 @@ mod tests {
     #[test]
     fn sphere_normals_are_unit_length() {
         let mesh = sphere(0.05, 8, 12);
-        for normal in mesh.normals.chunks_exact(3) {
+        for normal in mesh.normals.as_chunks::<3>().0 {
             let length = normal[0].hypot(normal[1]).hypot(normal[2]);
             assert!((length - 1.0).abs() < 1.0e-4, "got {length}");
         }
@@ -381,14 +389,16 @@ mod tests {
     fn degenerate_sphere_parameters_are_clamped_not_panicked() {
         let mesh = sphere(0.05, 0, 0);
         assert_well_formed(&mesh);
-        assert!(!mesh.indices.is_empty());
+        assert_ne!(mesh.indices, [] as [u32; 0]);
     }
 
     /// Bodies drawn away from the origin, once hidden pips collapse to zero
     /// radius there.
     fn visible_bodies(mesh: &MeshData) -> usize {
         mesh.positions
-            .chunks_exact(3)
+            .as_chunks::<3>()
+            .0
+            .iter()
             .filter(|point| point[0].hypot(point[1]).hypot(point[2]) > 1.0e-6)
             .count()
             / 63
@@ -462,11 +472,13 @@ mod tests {
         // Every body is 63 vertices; its first is enough to place it, since a
         // sphere's vertices straddle its centre in x and z.
         mesh.positions
-            .chunks_exact(63 * 3)
+            .as_chunks::<{ 63 * 3 }>()
+            .0
+            .iter()
             .take(count)
             .map(|body| {
                 let (mut low, mut high) = ([f32::MAX; 3], [f32::MIN; 3]);
-                for point in body.chunks_exact(3) {
+                for point in body.as_chunks::<3>().0 {
                     for axis in 0..3 {
                         low[axis] = low[axis].min(point[axis]);
                         high[axis] = high[axis].max(point[axis]);
@@ -522,7 +534,7 @@ mod tests {
     fn annulus_vertices_sit_between_its_radii() {
         let (inner, outer) = (0.04_f32, 0.06_f32);
         let mesh = annulus(inner, outer, 16);
-        for point in mesh.positions.chunks_exact(3) {
+        for point in mesh.positions.as_chunks::<3>().0 {
             let radius = point[0].hypot(point[1]);
             assert!(radius >= inner - 1.0e-4 && radius <= outer + 1.0e-4);
             assert!((point[2]).abs() < 1.0e-6, "the annulus is flat");

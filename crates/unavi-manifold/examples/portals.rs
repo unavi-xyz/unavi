@@ -315,7 +315,11 @@ fn spawn_seam_frame(
             .with_translation(seam_transform.translation + seam_transform.rotation.mul_vec3(offset))
     };
 
-    let top_bar = meshes.add(Cuboid::new(width + thickness * 2.0, thickness, depth));
+    let top_bar = meshes.add(Cuboid::new(
+        f32::mul_add(thickness, 2.0, width),
+        thickness,
+        depth,
+    ));
     commands.spawn((
         Mesh3d(top_bar),
         MeshMaterial3d(frame_material.clone()),

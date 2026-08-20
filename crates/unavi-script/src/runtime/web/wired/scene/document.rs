@@ -1,12 +1,21 @@
 use std::sync::Arc;
 
+use hsd::attributes::xform::XformAttr;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
-use super::prim::PrimHandle;
+use super::{
+    prim::PrimHandle,
+    util::{
+        js_to_xform,
+        opt_rep,
+        xform_to_js,
+    },
+};
 use crate::runtime::shared::{
     self,
     Api,
+    wired::scene::document::XformValue,
 };
 
 #[wasm_bindgen]
@@ -92,27 +101,36 @@ impl DocHandle {
 
     #[wasm_bindgen(js_name = "offsetTo")]
     pub async fn offset_to(&self, other: &Self) -> JsValue {
-        let Ok(Some(x)) =
-            shared::wired::scene::document::offset_to(&self.api, self.rep, other.rep).await
-        else {
-            return JsValue::NULL;
-        };
-        let obj = js_sys::Object::new();
-        let _ = js_sys::Reflect::set(
-            &obj,
-            &JsValue::from_str("translation"),
-            &js_sys::Float32Array::from(&x.translation[..]),
-        );
-        let _ = js_sys::Reflect::set(
-            &obj,
-            &JsValue::from_str("rotation"),
-            &js_sys::Float32Array::from(&x.rotation[..]),
-        );
-        let _ = js_sys::Reflect::set(
-            &obj,
-            &JsValue::from_str("scale"),
-            &js_sys::Float32Array::from(&x.scale[..]),
-        );
-        obj.into()
+        match shared::wired::scene::document::offset_to(&self.api, self.rep, other.rep).await {
+            Ok(Some(x)) => xform_to_js(&XformAttr {
+                translation: x.translation,
+                rotation:    x.rotation,
+                scale:       x.scale,
+            }),
+            _ => JsValue::UNDEFINED,
+        }
+    }
+
+    #[wasm_bindgen(js_name = "setAnchor")]
+    pub async fn set_anchor(&self, target: JsValue) -> Result<(), String> {
+        shared::wired::scene::document::set_anchor(&self.api, self.rep, opt_rep(&target))
+            .await
+            .map_err(|e| e.to_string())
+    }
+
+    #[wasm_bindgen(js_name = "setOffset")]
+    pub async fn set_offset(&self, value: JsValue) -> Result<(), String> {
+        let x = js_to_xform(&value).unwrap_or_default();
+        shared::wired::scene::document::set_offset(
+            &self.api,
+            self.rep,
+            XformValue {
+                translation: x.translation,
+                rotation:    x.rotation,
+                scale:       x.scale,
+            },
+        )
+        .await
+        .map_err(|e| e.to_string())
     }
 }

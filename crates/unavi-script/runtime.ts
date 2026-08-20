@@ -120,6 +120,7 @@ function buildImports(wasi: WASIShim, rt: any) {
       listen: rt.wiredEventListen.bind(rt),
     },
     "wired:event/types": {
+      Event: rt.wiredEventClass(),
       EventReceptor: rt.wiredEventReceptorClass(),
     },
     "wired:input/api": {
@@ -129,11 +130,9 @@ function buildImports(wasi: WASIShim, rt: any) {
       registerGlobalInputListener:
         rt.wiredInputRegisterGlobalInputListener.bind(rt),
       pointers: rt.wiredInputPointers.bind(rt),
-      claimPointer: rt.wiredInputClaimPointer.bind(rt),
     },
     "wired:input/types": {
       InputListener: rt.wiredInputListenerClass(),
-      PointerClaim: rt.wiredInputPointerClaimClass(),
     },
     "wired:kv/api": {
       selfKv: rt.wiredKvSelfKv.bind(rt),
@@ -144,6 +143,7 @@ function buildImports(wasi: WASIShim, rt: any) {
     },
     "wired:peer/api": {
       selfPeer: rt.wiredPeerSelfPeer.bind(rt),
+      selfDid: rt.wiredPeerSelfDid.bind(rt),
       docOwner: rt.wiredPeerDocOwner.bind(rt),
       isSelfOwner: rt.wiredPeerIsSelfOwner.bind(rt),
     },
@@ -159,15 +159,17 @@ function buildImports(wasi: WASIShim, rt: any) {
     },
     "wired:portal/api": {
       open: rt.wiredPortalOpen.bind(rt),
+      travel: rt.wiredPortalTravel.bind(rt),
     },
     "wired:scene/api": {
       createDocument: rt.wiredSceneCreateDocument.bind(rt),
+      createDocumentFromPrefab: rt.wiredSceneCreateDocumentFromPrefab.bind(rt),
       getDocument: rt.wiredSceneGetDocument.bind(rt),
-      loadHsd: rt.wiredSceneLoadHsd.bind(rt),
-      publishDocument: rt.wiredScenePublishDocument.bind(rt),
       removeDocument: rt.wiredSceneRemoveDocument.bind(rt),
+      saveDocument: rt.wiredSceneSaveDocument.bind(rt),
       selfDocument: rt.wiredSceneSelfDocument.bind(rt),
       selfPrim: rt.wiredSceneSelfPrim.bind(rt),
+      syncDocument: rt.wiredSceneSyncDocument.bind(rt),
     },
     "wired:scene/types": {
       Document: rt.wiredSceneDocClass(),
@@ -178,8 +180,8 @@ function buildImports(wasi: WASIShim, rt: any) {
     },
     "wired:wds/types": {
       BlobFuture: rt.wiredBlobFutureClass(),
-      QueryFuture: rt.wiredQueryFutureClass(),
-      ReadFuture: rt.wiredReadFutureClass(),
+      GetFuture: rt.wiredGetFutureClass(),
+      ListFuture: rt.wiredListFutureClass(),
       Wds: rt.wiredWdsClass(),
     },
   };

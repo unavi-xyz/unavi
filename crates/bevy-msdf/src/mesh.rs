@@ -223,7 +223,7 @@ mod tests {
     #[test]
     fn an_empty_string_builds_an_empty_mesh() {
         let mesh = mesh("", Anchor::Baseline);
-        assert!(positions(&mesh).is_empty());
+        assert_eq!(positions(&mesh), [] as [[f32; 3]; 0]);
         assert_eq!(mesh.indices().expect("indices").len(), 0);
     }
 

@@ -1,4 +1,7 @@
-use std::path::Path;
+use std::{
+    future::Future,
+    path::Path,
+};
 
 use async_channel::Sender;
 use bevy::asset::io::{
@@ -71,19 +74,27 @@ impl AssetReader for IrohAssetReader {
 
     /// Content-addressed assets carry no meta, so the loader falls back to its
     /// defaults.
-    async fn read_meta<'a>(&'a self, path: &'a Path) -> Result<impl Reader + 'a, AssetReaderError> {
-        Err::<VecReader, _>(AssetReaderError::NotFound(path.to_path_buf()))
-    }
-
-    async fn read_directory<'a>(
+    fn read_meta<'a>(
         &'a self,
         path: &'a Path,
-    ) -> Result<Box<PathStream>, AssetReaderError> {
-        Err(AssetReaderError::NotFound(path.to_path_buf()))
+    ) -> impl Future<Output = Result<impl Reader + 'a, AssetReaderError>> {
+        std::future::ready(Err::<VecReader, _>(AssetReaderError::NotFound(
+            path.to_path_buf(),
+        )))
     }
 
-    async fn is_directory<'a>(&'a self, _path: &'a Path) -> Result<bool, AssetReaderError> {
-        Ok(false)
+    fn read_directory<'a>(
+        &'a self,
+        path: &'a Path,
+    ) -> impl Future<Output = Result<Box<PathStream>, AssetReaderError>> {
+        std::future::ready(Err(AssetReaderError::NotFound(path.to_path_buf())))
+    }
+
+    fn is_directory<'a>(
+        &'a self,
+        _path: &'a Path,
+    ) -> impl Future<Output = Result<bool, AssetReaderError>> {
+        std::future::ready(Ok(false))
     }
 }
 

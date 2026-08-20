@@ -8,6 +8,7 @@ use bevy_hsd::{
     HsdDocId,
     Prim,
 };
+use smol_str::SmolStr;
 use tokio::sync::Mutex;
 use tracing::{
     Instrument,
@@ -103,8 +104,8 @@ pub fn instantiate_scripts(
 
         let (stdout, stdout_stream) = ScriptStdout::new();
         let (stderr, stderr_stream) = ScriptStderr::new();
-        stdout.drain(span.clone());
-        stderr.drain(span.clone());
+        stdout.drain(SmolStr::new(name.to_string()));
+        stderr.drain(SmolStr::new(name.to_string()));
 
         let wasi_ctx = WasiCtxBuilder::new()
             .stdout(stdout_stream)

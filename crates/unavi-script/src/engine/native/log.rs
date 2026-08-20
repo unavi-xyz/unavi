@@ -1,21 +1,24 @@
+use smol_str::SmolStr;
 use tokio::io::{
-    AsyncBufReadExt,
     AsyncRead,
+    AsyncReadExt,
     BufReader,
     DuplexStream,
-};
-use tracing::{
-    Instrument,
-    Span,
-    info,
-    warn,
 };
 use unavi_util::async_task::spawn_async_task;
 use wasmtime_wasi::cli::AsyncStdoutStream;
 
+use crate::engine::log::{
+    Level,
+    emit,
+};
+
 const KB: usize = 1024;
 const STDERR_LEN: usize = KB;
 const STDOUT_LEN: usize = 4 * KB;
+/// How much of a run with no newline in it is held before it goes out
+/// unfinished.
+const BATCH_LEN: usize = 4 * KB;
 
 pub struct ScriptStderr(DuplexStream);
 
@@ -26,8 +29,8 @@ impl ScriptStderr {
         (Self(reader), AsyncStdoutStream::new(STDERR_LEN, writer))
     }
 
-    pub fn drain(self, span: Span) {
-        spawn_async_task(drain_stream(self.0, Level::Warn).instrument(span));
+    pub fn drain(self, script: SmolStr) {
+        spawn_async_task(drain_stream(self.0, script, Level::Warn));
     }
 }
 
@@ -40,22 +43,30 @@ impl ScriptStdout {
         (Self(reader), AsyncStdoutStream::new(STDOUT_LEN, writer))
     }
 
-    pub fn drain(self, span: Span) {
-        spawn_async_task(drain_stream(self.0, Level::Info).instrument(span));
+    pub fn drain(self, script: SmolStr) {
+        spawn_async_task(drain_stream(self.0, script, Level::Info));
     }
 }
 
-enum Level {
-    Info,
-    Warn,
-}
+/// A run is everything readable at once, cut at the last newline in it, so a
+/// line still being written is held back for the next read.
+async fn drain_stream(stream: impl AsyncRead + Unpin, script: SmolStr, level: Level) {
+    let mut reader = BufReader::new(stream);
+    let mut held = Vec::<u8>::with_capacity(BATCH_LEN);
+    let mut chunk = [0_u8; BATCH_LEN];
 
-async fn drain_stream(stream: impl AsyncRead + Unpin, level: Level) {
-    let mut lines = BufReader::new(stream).lines();
-    while let Ok(Some(line)) = lines.next_line().await {
-        match level {
-            Level::Info => info!("{line}"),
-            Level::Warn => warn!("{line}"),
+    while let Ok(read) = reader.read(&mut chunk).await {
+        if read == 0 {
+            break;
         }
+        held.extend_from_slice(&chunk[..read]);
+
+        let run = match held.iter().rposition(|byte| *byte == b'\n') {
+            Some(end) => held.drain(..=end).collect::<Vec<_>>(),
+            None if held.len() >= BATCH_LEN => std::mem::take(&mut held),
+            None => continue,
+        };
+
+        emit(&script, level, &String::from_utf8_lossy(&run));
     }
 }

@@ -10,7 +10,10 @@ use crate::runtime::{
         self,
         Api,
     },
-    web::wired::variant_obj,
+    web::wired::{
+        raise,
+        variant_obj,
+    },
 };
 
 #[wasm_bindgen]
@@ -261,13 +264,11 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredWdsGetWds")]
-    pub async fn wired_wds_get_wds(&self) -> WdsHandle {
-        let rep = match self.api.require(ApiName::Wds) {
-            Ok(()) => shared::wired::wds::get_wds(&self.api)
-                .await
-                .unwrap_or(u32::MAX),
-            Err(_) => u32::MAX,
-        };
-        WdsHandle::new(rep, Arc::clone(&self.api))
+    pub async fn wired_wds_get_wds(&self) -> Result<WdsHandle, JsValue> {
+        self.api.require(ApiName::Wds).map_err(raise)?;
+        let rep = shared::wired::wds::get_wds(&self.api)
+            .await
+            .map_err(raise)?;
+        Ok(WdsHandle::new(rep, Arc::clone(&self.api)))
     }
 }

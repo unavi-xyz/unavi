@@ -2,6 +2,8 @@ use bevy::prelude::*;
 
 use crate::Script;
 
+mod log;
+
 #[cfg(not(target_family = "wasm"))] mod native;
 #[cfg(target_family = "wasm")] mod web;
 

@@ -1,6 +1,7 @@
 use unavi_policy::document::ApiName;
 use wasm_bindgen::prelude::*;
 
+use super::raise;
 use crate::runtime::{
     Runtime,
     shared,
@@ -9,40 +10,35 @@ use crate::runtime::{
 #[wasm_bindgen]
 impl Runtime {
     #[wasm_bindgen(js_name = "wiredPeerSelfPeer")]
-    #[must_use]
-    pub fn wired_peer_self_peer(&self) -> JsValue {
-        if self.api.require(ApiName::Identity).is_err() {
-            return JsValue::UNDEFINED;
-        }
-        shared::wired::peer::self_peer(&self.api).map_or(JsValue::UNDEFINED, |bytes| {
-            js_sys::Uint8Array::from(bytes.as_slice()).into()
-        })
+    pub fn wired_peer_self_peer(&self) -> Result<JsValue, JsValue> {
+        self.api.require(ApiName::Identity).map_err(raise)?;
+        Ok(
+            shared::wired::peer::self_peer(&self.api).map_or(JsValue::UNDEFINED, |bytes| {
+                js_sys::Uint8Array::from(bytes.as_slice()).into()
+            }),
+        )
     }
 
     #[wasm_bindgen(js_name = "wiredPeerSelfDid")]
-    #[must_use]
-    pub fn wired_peer_self_did(&self) -> JsValue {
-        if self.api.require(ApiName::Identity).is_err() {
-            return JsValue::UNDEFINED;
-        }
-        shared::wired::peer::self_did(&self.api)
-            .map_or(JsValue::UNDEFINED, |did| JsValue::from_str(&did))
+    pub fn wired_peer_self_did(&self) -> Result<JsValue, JsValue> {
+        self.api.require(ApiName::Identity).map_err(raise)?;
+        Ok(shared::wired::peer::self_did(&self.api)
+            .map_or(JsValue::UNDEFINED, |did| JsValue::from_str(&did)))
     }
 
     #[wasm_bindgen(js_name = "wiredPeerDocOwner")]
-    #[must_use]
-    pub fn wired_peer_doc_owner(&self, doc: Vec<u8>) -> JsValue {
-        if self.api.require(ApiName::Peer).is_err() {
-            return JsValue::UNDEFINED;
-        }
-        shared::wired::peer::doc_owner(&self.api, doc).map_or(JsValue::UNDEFINED, |bytes| {
-            js_sys::Uint8Array::from(bytes.as_slice()).into()
-        })
+    pub fn wired_peer_doc_owner(&self, doc: Vec<u8>) -> Result<JsValue, JsValue> {
+        self.api.require(ApiName::Peer).map_err(raise)?;
+        Ok(
+            shared::wired::peer::doc_owner(&self.api, doc).map_or(JsValue::UNDEFINED, |bytes| {
+                js_sys::Uint8Array::from(bytes.as_slice()).into()
+            }),
+        )
     }
 
     #[wasm_bindgen(js_name = "wiredPeerIsSelfOwner")]
-    #[must_use]
-    pub fn wired_peer_is_self_owner(&self) -> bool {
-        self.api.require(ApiName::Peer).is_ok() && shared::wired::peer::is_self_owner(&self.api)
+    pub fn wired_peer_is_self_owner(&self) -> Result<bool, JsValue> {
+        self.api.require(ApiName::Peer).map_err(raise)?;
+        Ok(shared::wired::peer::is_self_owner(&self.api))
     }
 }

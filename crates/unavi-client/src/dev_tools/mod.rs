@@ -49,6 +49,7 @@ impl Plugin for ClientDevToolsPlugin {
             Update,
             (
                 bevy_panel::apply_toggles,
+                bevy_panel::apply_fps_display,
                 (
                     event_gizmos::update_event_pings,
                     event_gizmos::draw_receptors,

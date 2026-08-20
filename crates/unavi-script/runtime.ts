@@ -27,6 +27,7 @@ export async function instantiateScript(
     },
   });
   const imports = buildImports(wasi, rt);
+  batchOutput(imports, name, rt);
 
   const options: GenerateOptions = {
     asyncMode: {
@@ -103,6 +104,53 @@ export async function scriptFixedUpdate(instance: any): Promise<void> {
     instance.ticks += 1;
   }
   await instance.guestApi.fixedUpdate();
+}
+
+/**
+ * Replaces the shim's stdout and stderr, which write straight to the console,
+ * one call per write and outside the client's log filter.
+ *
+ * Gathering a run is this side's job because only this side knows when one
+ * ends: writes are held until the microtask queue drains, which under JSPI is
+ * the end of the guest's synchronous stretch. `blockingFlush` deliberately
+ * does not force it — Rust flushes per line, and honouring that would be the
+ * behaviour this replaces. The run then goes to `scriptLog`, which is where
+ * native output lands too.
+ */
+function batchOutput(imports: Record<string, any>, name: string, rt: any) {
+  for (const [iface, getter, isError] of [
+    ["wasi:cli/stdout", "getStdout", false],
+    ["wasi:cli/stderr", "getStderr", true],
+  ] as const) {
+    const entry = imports[iface];
+    if (entry == undefined) continue;
+
+    const decoder = new TextDecoder();
+    let held = "";
+    let scheduled = false;
+
+    const flush = () => {
+      scheduled = false;
+      const run = held;
+      held = "";
+      if (run !== "") rt.scriptLog(name, isError, run);
+    };
+
+    const stream = new entry.OutputStream({
+      write(contents: Uint8Array) {
+        held += decoder.decode(contents, { stream: true });
+        if (scheduled) return;
+        scheduled = true;
+        queueMicrotask(flush);
+      },
+      blockingFlush() {},
+      [Symbol.dispose ?? Symbol.for("dispose")]() {
+        flush();
+      },
+    });
+
+    imports[iface] = { ...entry, [getter]: () => stream };
+  }
 }
 
 function buildImports(wasi: WASIShim, rt: any) {

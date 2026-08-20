@@ -4,19 +4,13 @@ use unavi_policy::document::ApiName;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
-use crate::{
-    error::ScriptError,
-    runtime::{
-        Runtime,
-        shared::{
-            self,
-            Api,
-        },
-        web::wired::{
-            error_obj,
-            variant_obj,
-        },
+use crate::runtime::{
+    Runtime,
+    shared::{
+        self,
+        Api,
     },
+    web::wired::raise,
 };
 
 #[wasm_bindgen]
@@ -52,20 +46,18 @@ impl KvHandle {
         }
     }
 
-    pub async fn set(&self, key: String, value: Vec<u8>) -> JsValue {
-        match shared::wired::kv::kv_set(&self.api, self.rep, key, value).await {
-            Ok(Ok(())) => variant_obj("ok", JsValue::UNDEFINED),
-            Ok(Err(err)) => variant_obj("err", error_obj(&err)),
-            Err(err) => variant_obj("err", error_obj(&ScriptError::from(err))),
-        }
+    pub async fn set(&self, key: String, value: Vec<u8>) -> Result<(), JsValue> {
+        shared::wired::kv::kv_set(&self.api, self.rep, key, value)
+            .await
+            .map_err(raise)?
+            .map_err(raise)
     }
 
-    pub async fn delete(&self, key: String) -> JsValue {
-        match shared::wired::kv::kv_delete(&self.api, self.rep, key).await {
-            Ok(Ok(())) => variant_obj("ok", JsValue::UNDEFINED),
-            Ok(Err(err)) => variant_obj("err", error_obj(&err)),
-            Err(err) => variant_obj("err", error_obj(&ScriptError::from(err))),
-        }
+    pub async fn delete(&self, key: String) -> Result<(), JsValue> {
+        shared::wired::kv::kv_delete(&self.api, self.rep, key)
+            .await
+            .map_err(raise)?
+            .map_err(raise)
     }
 
     pub async fn keys(&self) -> JsValue {
@@ -90,24 +82,18 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredKvSelfKv")]
-    pub async fn wired_kv_self_kv(&self) -> KvHandle {
-        let rep = match self.api.require(ApiName::Kv) {
-            Ok(()) => shared::wired::kv::self_kv(&self.api)
-                .await
-                .unwrap_or(u32::MAX),
-            Err(_) => u32::MAX,
-        };
-        KvHandle::new(rep, Arc::clone(&self.api))
+    pub async fn wired_kv_self_kv(&self) -> Result<KvHandle, JsValue> {
+        self.api.require(ApiName::Kv).map_err(raise)?;
+        let rep = shared::wired::kv::self_kv(&self.api).await.map_err(raise)?;
+        Ok(KvHandle::new(rep, Arc::clone(&self.api)))
     }
 
     #[wasm_bindgen(js_name = "wiredKvGetKv")]
-    pub async fn wired_kv_get_kv(&self, id: Vec<u8>) -> JsValue {
-        if self.api.require(ApiName::Kv).is_err() {
-            return JsValue::UNDEFINED;
-        }
-        match shared::wired::kv::get_kv(&self.api, id).await {
-            Ok(Some(rep)) => JsValue::from(KvHandle::new(rep, Arc::clone(&self.api))),
-            _ => JsValue::UNDEFINED,
-        }
+    pub async fn wired_kv_get_kv(&self, id: Vec<u8>) -> Result<Option<KvHandle>, JsValue> {
+        self.api.require(ApiName::Kv).map_err(raise)?;
+        let rep = shared::wired::kv::get_kv(&self.api, id)
+            .await
+            .map_err(raise)?;
+        Ok(rep.map(|rep| KvHandle::new(rep, Arc::clone(&self.api))))
     }
 }

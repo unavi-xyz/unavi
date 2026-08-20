@@ -7,9 +7,12 @@ use wasm_bindgen::{
     prelude::*,
 };
 
-use super::scene::{
-    prim::PrimHandle,
-    util::opt_rep,
+use super::{
+    raise,
+    scene::{
+        prim::PrimHandle,
+        util::opt_rep,
+    },
 };
 use crate::runtime::{
     Runtime,
@@ -51,7 +54,7 @@ async fn scope_to_js(scope: SenderScope, api: &Arc<Api>) -> JsValue {
             js_sys::Reflect::set(&val, &"distance".into(), &distance.into()).ok();
             js_sys::Reflect::set(
                 &val,
-                &"node".into(),
+                &"prim".into(),
                 &JsValue::from(PrimHandle::new(node_rep, Arc::clone(api))),
             )
             .ok();
@@ -175,7 +178,7 @@ fn js_to_event_filter(value: &JsValue) -> EventFilter {
                         .ok()
                         .and_then(|r| r.as_f64())
                         .unwrap_or(0.0) as f32;
-                    let node = js_sys::Reflect::get(&val, &"node".into())
+                    let node = js_sys::Reflect::get(&val, &"prim".into())
                         .ok()
                         .and_then(|n| opt_rep(&n))
                         .unwrap_or(u32::MAX);
@@ -235,13 +238,11 @@ impl Runtime {
         channel: String,
         payload: Vec<u8>,
         filter: JsValue,
-    ) -> Result<(), String> {
-        self.api
-            .require(ApiName::Event)
-            .map_err(|e| e.to_string())?;
+    ) -> Result<(), JsValue> {
+        self.api.require(ApiName::Event).map_err(raise)?;
         shared::wired::event::emit(&self.api, channel, payload, js_to_event_filter(&filter))
             .await
-            .map_err(|e| e.to_string())
+            .map_err(raise)
     }
 
     #[wasm_bindgen(js_name = "wiredEventListen")]
@@ -249,18 +250,15 @@ impl Runtime {
         &self,
         channels: JsValue,
         filter: JsValue,
-    ) -> EventReceptorHandle {
-        let rep = if self.api.require(ApiName::Event).is_ok() {
-            let channels = js_sys::Array::from(&channels)
-                .iter()
-                .filter_map(|v| v.as_string())
-                .collect();
-            shared::wired::event::listen(&self.api, channels, js_to_event_filter(&filter))
-                .await
-                .unwrap_or(u32::MAX)
-        } else {
-            u32::MAX
-        };
-        EventReceptorHandle::new(rep, Arc::clone(&self.api))
+    ) -> Result<EventReceptorHandle, JsValue> {
+        self.api.require(ApiName::Event).map_err(raise)?;
+        let channels = js_sys::Array::from(&channels)
+            .iter()
+            .filter_map(|v| v.as_string())
+            .collect();
+        let rep = shared::wired::event::listen(&self.api, channels, js_to_event_filter(&filter))
+            .await
+            .map_err(raise)?;
+        Ok(EventReceptorHandle::new(rep, Arc::clone(&self.api)))
     }
 }

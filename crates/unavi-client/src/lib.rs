@@ -50,6 +50,10 @@ impl Plugin for UnaviPlugin {
                     name: Some("unavi".to_string()),
                     title: "UNAVI".to_string(),
                     window_theme: Some(WindowTheme::Dark),
+                    // On the web this is every browser shortcut at once,
+                    // reload and dev tools included. `unavi_input` holds back
+                    // the few keys the app actually binds instead.
+                    prevent_default_event_handling: false,
                     ..default()
                 }),
                 ..default()

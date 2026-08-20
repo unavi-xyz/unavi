@@ -12,10 +12,13 @@ use super::{
         xform_to_js,
     },
 };
-use crate::runtime::shared::{
-    self,
-    Api,
-    wired::scene::document::XformValue,
+use crate::runtime::{
+    shared::{
+        self,
+        Api,
+        wired::scene::document::XformValue,
+    },
+    web::wired::raise,
 };
 
 #[wasm_bindgen]
@@ -85,18 +88,18 @@ impl DocHandle {
     }
 
     #[wasm_bindgen(js_name = "createPrim")]
-    pub async fn create_prim(&self) -> Result<PrimHandle, String> {
+    pub async fn create_prim(&self) -> Result<PrimHandle, JsValue> {
         let rep = shared::wired::scene::document::create_prim(&self.api, self.rep)
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(raise)?;
         Ok(PrimHandle::new(rep, Arc::clone(&self.api)))
     }
 
     #[wasm_bindgen(js_name = "removePrim")]
-    pub async fn remove_prim(&self, value: &PrimHandle) -> Result<(), String> {
+    pub async fn remove_prim(&self, value: &PrimHandle) -> Result<(), JsValue> {
         shared::wired::scene::document::remove_prim(&self.api, value.rep())
             .await
-            .map_err(|e| e.to_string())
+            .map_err(raise)
     }
 
     #[wasm_bindgen(js_name = "offsetTo")]
@@ -112,14 +115,14 @@ impl DocHandle {
     }
 
     #[wasm_bindgen(js_name = "setAnchor")]
-    pub async fn set_anchor(&self, target: JsValue) -> Result<(), String> {
+    pub async fn set_anchor(&self, target: JsValue) -> Result<(), JsValue> {
         shared::wired::scene::document::set_anchor(&self.api, self.rep, opt_rep(&target))
             .await
-            .map_err(|e| e.to_string())
+            .map_err(raise)
     }
 
     #[wasm_bindgen(js_name = "setOffset")]
-    pub async fn set_offset(&self, value: JsValue) -> Result<(), String> {
+    pub async fn set_offset(&self, value: JsValue) -> Result<(), JsValue> {
         let x = js_to_xform(&value).unwrap_or_default();
         shared::wired::scene::document::set_offset(
             &self.api,
@@ -131,6 +134,6 @@ impl DocHandle {
             },
         )
         .await
-        .map_err(|e| e.to_string())
+        .map_err(raise)
     }
 }

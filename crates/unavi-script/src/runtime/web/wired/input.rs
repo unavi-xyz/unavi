@@ -6,7 +6,10 @@ use unavi_policy::document::ApiName;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
-use super::scene::prim::PrimHandle;
+use super::{
+    raise,
+    scene::prim::PrimHandle,
+};
 use crate::runtime::{
     Runtime,
     shared::{
@@ -159,37 +162,31 @@ impl Runtime {
     pub async fn wired_input_register_input_listener(
         &self,
         target: &PrimHandle,
-    ) -> InputListenerHandle {
-        let rep = match self.api.require(ApiName::Input) {
-            Ok(()) => shared::wired::input::register_input_listener(&self.api, target.rep())
-                .await
-                .unwrap_or(u32::MAX),
-            Err(_) => u32::MAX,
-        };
-        InputListenerHandle::new(rep, Arc::clone(&self.api))
+    ) -> Result<InputListenerHandle, JsValue> {
+        self.api.require(ApiName::Input).map_err(raise)?;
+        let rep = shared::wired::input::register_input_listener(&self.api, target.rep())
+            .await
+            .map_err(raise)?;
+        Ok(InputListenerHandle::new(rep, Arc::clone(&self.api)))
     }
 
     #[wasm_bindgen(js_name = "wiredInputRegisterGlobalInputListener")]
-    pub async fn wired_input_register_global_input_listener(&self) -> InputListenerHandle {
-        let rep = match self.api.require(ApiName::InputContext) {
-            Ok(()) => shared::wired::input::register_global_input_listener(&self.api)
-                .await
-                .unwrap_or(u32::MAX),
-            Err(_) => u32::MAX,
-        };
-        InputListenerHandle::new(rep, Arc::clone(&self.api))
+    pub async fn wired_input_register_global_input_listener(
+        &self,
+    ) -> Result<InputListenerHandle, JsValue> {
+        self.api.require(ApiName::InputContext).map_err(raise)?;
+        let rep = shared::wired::input::register_global_input_listener(&self.api)
+            .await
+            .map_err(raise)?;
+        Ok(InputListenerHandle::new(rep, Arc::clone(&self.api)))
     }
 
     #[wasm_bindgen(js_name = "wiredInputPointers")]
-    #[must_use]
-    pub fn wired_input_pointers(&self) -> JsValue {
-        if self.api.require(ApiName::InputContext).is_err() {
-            return js_sys::Array::new().into();
-        }
-        shared::wired::input::pointers()
+    pub fn wired_input_pointers(&self) -> Result<js_sys::Array, JsValue> {
+        self.api.require(ApiName::InputContext).map_err(raise)?;
+        Ok(shared::wired::input::pointers()
             .into_iter()
             .map(pointer)
-            .collect::<js_sys::Array>()
-            .into()
+            .collect())
     }
 }

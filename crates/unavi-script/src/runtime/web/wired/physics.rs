@@ -4,11 +4,14 @@ use wasm_bindgen::prelude::*;
 use crate::runtime::{
     Runtime,
     shared,
-    web::wired::scene::{
-        prim::PrimHandle,
-        util::{
-            js_to_vec3,
-            vec3_to_js,
+    web::wired::{
+        raise,
+        scene::{
+            prim::PrimHandle,
+            util::{
+                js_to_vec3,
+                vec3_to_js,
+            },
         },
     },
 };
@@ -46,15 +49,13 @@ impl Runtime {
         origin: JsValue,
         dir: JsValue,
         max_dist: f32,
-    ) -> Result<JsValue, String> {
-        self.api
-            .require(ApiName::Physics)
-            .map_err(|e| e.to_string())?;
+    ) -> Result<JsValue, JsValue> {
+        self.api.require(ApiName::Physics).map_err(raise)?;
         let origin = js_to_vec3(&origin, [0.0; 3]);
         let dir = js_to_vec3(&dir, [0.0; 3]);
         let hit = shared::wired::physics::raycast(&self.api, origin, dir, max_dist)
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(raise)?;
         Ok(hit.map_or(JsValue::UNDEFINED, |h| ray_hit_to_js(&h)))
     }
 
@@ -62,13 +63,11 @@ impl Runtime {
     pub async fn wired_physics_get_linear_velocity(
         &self,
         prim: &PrimHandle,
-    ) -> Result<JsValue, String> {
-        self.api
-            .require(ApiName::Physics)
-            .map_err(|e| e.to_string())?;
+    ) -> Result<JsValue, JsValue> {
+        self.api.require(ApiName::Physics).map_err(raise)?;
         let v = shared::wired::physics::get_linear_velocity(&self.api, prim.rep())
             .await
-            .map_err(|e| e.to_string())?;
+            .map_err(raise)?;
         Ok(vec3_to_js(v[0], v[1], v[2]))
     }
 
@@ -77,14 +76,12 @@ impl Runtime {
         &self,
         prim: &PrimHandle,
         force: JsValue,
-    ) -> Result<(), String> {
-        self.api
-            .require(ApiName::Physics)
-            .map_err(|e| e.to_string())?;
+    ) -> Result<(), JsValue> {
+        self.api.require(ApiName::Physics).map_err(raise)?;
         let f = js_to_vec3(&force, [0.0; 3]);
         shared::wired::physics::apply_force(&self.api, prim.rep(), f)
             .await
-            .map_err(|e| e.to_string())
+            .map_err(raise)
     }
 
     #[wasm_bindgen(js_name = "wiredPhysicsSetLinearVelocity")]
@@ -92,14 +89,12 @@ impl Runtime {
         &self,
         prim: &PrimHandle,
         v: JsValue,
-    ) -> Result<(), String> {
-        self.api
-            .require(ApiName::Physics)
-            .map_err(|e| e.to_string())?;
+    ) -> Result<(), JsValue> {
+        self.api.require(ApiName::Physics).map_err(raise)?;
         let v = js_to_vec3(&v, [0.0; 3]);
         shared::wired::physics::set_linear_velocity(&self.api, prim.rep(), v)
             .await
-            .map_err(|e| e.to_string())
+            .map_err(raise)
     }
 
     #[wasm_bindgen(js_name = "wiredPhysicsSetAngularVelocity")]
@@ -107,29 +102,23 @@ impl Runtime {
         &self,
         prim: &PrimHandle,
         v: JsValue,
-    ) -> Result<(), String> {
-        self.api
-            .require(ApiName::Physics)
-            .map_err(|e| e.to_string())?;
+    ) -> Result<(), JsValue> {
+        self.api.require(ApiName::Physics).map_err(raise)?;
         let v = js_to_vec3(&v, [0.0; 3]);
         shared::wired::physics::set_angular_velocity(&self.api, prim.rep(), v)
             .await
-            .map_err(|e| e.to_string())
+            .map_err(raise)
     }
 
     #[wasm_bindgen(js_name = "wiredPhysicsClaimAuthority")]
-    pub fn wired_physics_claim_authority(&self, doc: Vec<u8>) -> Result<(), String> {
-        self.api
-            .require(ApiName::Physics)
-            .map_err(|e| e.to_string())?;
-        shared::wired::physics::claim_authority(&self.api, doc).map_err(|e| e.to_string())
+    pub fn wired_physics_claim_authority(&self, doc: Vec<u8>) -> Result<(), JsValue> {
+        self.api.require(ApiName::Physics).map_err(raise)?;
+        shared::wired::physics::claim_authority(&self.api, doc).map_err(raise)
     }
 
     #[wasm_bindgen(js_name = "wiredPhysicsReleaseAuthority")]
-    pub fn wired_physics_release_authority(&self, doc: Vec<u8>) -> Result<(), String> {
-        self.api
-            .require(ApiName::Physics)
-            .map_err(|e| e.to_string())?;
-        shared::wired::physics::release_authority(&self.api, doc).map_err(|e| e.to_string())
+    pub fn wired_physics_release_authority(&self, doc: Vec<u8>) -> Result<(), JsValue> {
+        self.api.require(ApiName::Physics).map_err(raise)?;
+        shared::wired::physics::release_authority(&self.api, doc).map_err(raise)
     }
 }

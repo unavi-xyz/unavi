@@ -9,6 +9,7 @@ use bevy::{
 };
 
 pub mod action;
+#[cfg(target_family = "wasm")] mod browser_keys;
 pub mod capture;
 pub mod config;
 pub mod crosshair;
@@ -96,6 +97,15 @@ impl Plugin for InputPlugin {
                     cursor_lock::cursor_grab,
                 ),
             );
+
+        // Before `cursor_grab`, so a click that re-locks in the same frame is
+        // not undone by the reading taken before the browser granted it.
+        #[cfg(target_family = "wasm")]
+        app.add_systems(
+            Update,
+            cursor_lock::follow_browser_lock.before(cursor_lock::cursor_grab),
+        )
+        .add_systems(Startup, browser_keys::hold_back_bound_defaults);
 
         #[cfg(not(target_family = "wasm"))]
         app.add_systems(

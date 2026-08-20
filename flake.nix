@@ -172,6 +172,7 @@
                   "*.html"
                   "*.js"
                   "*.json"
+                  "*.ts"
                 ];
               };
               yamlfmt.enable = true;

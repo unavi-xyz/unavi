@@ -52,3 +52,33 @@ pub(crate) fn cursor_grab(
         }
     }
 }
+
+/// Follows the browser out of a pointer lock it dropped on its own.
+///
+/// Escape exits the lock without the page ever seeing the key, so a state held
+/// from the last request reads `Locked` over a free cursor until a second press
+/// it does hear. Only a lock the document was seen holding counts as lost,
+/// since the grant lands frames after the request.
+#[cfg(target_family = "wasm")]
+pub(crate) fn follow_browser_lock(
+    mut held: Local<bool>,
+    state: Res<State<CursorGrabState>>,
+    mut next_state: ResMut<NextState<CursorGrabState>>,
+    mut windows: Query<&mut CursorOptions, With<PrimaryWindow>>,
+) {
+    let locked = web_sys::window()
+        .and_then(|window| window.document())
+        .is_some_and(|document| document.pointer_lock_element().is_some());
+    let lost = *held && !locked;
+    *held = locked;
+
+    if !lost || *state.get() != CursorGrabState::Locked {
+        return;
+    }
+
+    for mut cursor in &mut windows {
+        cursor.visible = true;
+        cursor.grab_mode = CursorGrabMode::None;
+    }
+    next_state.set(CursorGrabState::Unlocked);
+}

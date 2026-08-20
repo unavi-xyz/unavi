@@ -21,6 +21,21 @@ pub fn variant_obj(tag: &str, val: JsValue) -> JsValue {
     obj.into()
 }
 
+/// How a host function fails a WIT `result<_, error>`.
+///
+/// `jco`'s import shim catches whatever the function throws and lowers the
+/// payload as the error, so the thrown value has to be the lowered variant
+/// itself. A bare string traps the component where it is lowered, and a
+/// sentinel handle returned in place of a throw reaches the guest as success.
+pub fn raise(err: impl Into<ScriptError>) -> JsValue {
+    error_obj(&err.into())
+}
+
+/// The same, for a guest value that did not parse into what the WIT declares.
+pub fn malformed(detail: String) -> JsValue {
+    error_obj(&ScriptError::Other(detail))
+}
+
 /// `wired:error/types.error`, lowered. Only `other` carries a payload, so the
 /// detail on the structured variants stays host-side.
 pub fn error_obj(err: &ScriptError) -> JsValue {

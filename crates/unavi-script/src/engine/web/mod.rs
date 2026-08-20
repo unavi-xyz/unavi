@@ -3,6 +3,7 @@ use bevy::prelude::*;
 mod fixed_update;
 mod init;
 mod instantiate;
+mod log;
 mod update;
 
 pub struct WebEnginePlugin;

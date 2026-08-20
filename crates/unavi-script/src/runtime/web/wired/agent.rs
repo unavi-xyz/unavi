@@ -5,7 +5,10 @@ use unavi_policy::document::ApiName;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 
-use super::scene::prim::PrimHandle;
+use super::{
+    raise,
+    scene::prim::PrimHandle,
+};
 use crate::runtime::{
     Runtime,
     shared::{
@@ -122,24 +125,23 @@ impl Runtime {
     }
 
     #[wasm_bindgen(js_name = "wiredAgentLocalAgent")]
-    pub async fn wired_agent_local_agent(&self) -> AgentHandle {
-        let rep = match self.api.require(ApiName::LocalAgent) {
-            Ok(()) => shared::wired::agent::local_agent(&self.api)
-                .await
-                .unwrap_or(u32::MAX),
-            Err(_) => u32::MAX,
-        };
-        AgentHandle::new(rep, Arc::clone(&self.api))
+    pub async fn wired_agent_local_agent(&self) -> Result<AgentHandle, JsValue> {
+        self.api.require(ApiName::LocalAgent).map_err(raise)?;
+        let rep = shared::wired::agent::local_agent(&self.api)
+            .await
+            .map_err(raise)?;
+        Ok(AgentHandle::new(rep, Arc::clone(&self.api)))
     }
 
+    /// The camera proxy appears only once the local agent's avatar has loaded,
+    /// so a guest is expected to retry. Answering a miss with a handle instead
+    /// of the error leaves it holding a dead prim forever.
     #[wasm_bindgen(js_name = "wiredAgentLocalCamera")]
-    pub async fn wired_agent_local_camera(&self) -> PrimHandle {
-        let rep = match self.api.require(ApiName::LocalAgent) {
-            Ok(()) => shared::wired::agent::local_camera(&self.api)
-                .await
-                .unwrap_or(u32::MAX),
-            Err(_) => u32::MAX,
-        };
-        PrimHandle::new(rep, Arc::clone(&self.api))
+    pub async fn wired_agent_local_camera(&self) -> Result<PrimHandle, JsValue> {
+        self.api.require(ApiName::LocalAgent).map_err(raise)?;
+        let rep = shared::wired::agent::local_camera(&self.api)
+            .await
+            .map_err(raise)?;
+        Ok(PrimHandle::new(rep, Arc::clone(&self.api)))
     }
 }

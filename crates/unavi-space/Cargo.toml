@@ -48,4 +48,9 @@ unavi-quota.path           = "../unavi-quota"
 unavi-registry.path        = "../unavi-registry"
 unavi-util.path            = "../unavi-util"
 wds.path                   = "../wds"
+web-time.workspace         = true
 xdid.workspace             = true
+
+# Without this `OffsetDateTime::now_utc` reads the unimplemented wasm clock.
+[target.'cfg(target_family = "wasm")'.dependencies]
+time = { features = ["wasm-bindgen"], workspace = true }

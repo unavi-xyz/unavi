@@ -14,7 +14,6 @@ use iroh::{
     },
 };
 use iroh_docs::NamespaceId;
-use n0_future::time::Instant;
 use postcard::experimental::max_size::MaxSize;
 use serde::{
     Deserialize,
@@ -26,6 +25,7 @@ use tokio::io::{
     AsyncWriteExt,
 };
 use unavi_util::async_commands::AsyncCommands;
+use web_time::Instant;
 
 use crate::connection::{
     ecs::{
@@ -84,7 +84,7 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
 
     let mut iframe_id = 0;
     let mut last_iframe = Pose::default();
-    let mut last_iframe_time = Instant::now() - IFRAME_FREQ;
+    let mut last_iframe_time: Option<Instant> = None;
     let mut last_space = NamespaceId::from(&[0; 32]);
 
     let mut buf = [0; AgentMsg::POSTCARD_MAX_SIZE];
@@ -95,12 +95,14 @@ pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
 
         // A p-frame delta is only valid against an i-frame in the same space, so
         // a space change forces a fresh i-frame.
-        let new_iframe = now.duration_since(last_iframe_time) >= IFRAME_FREQ || space != last_space;
+        let new_iframe = last_iframe_time
+            .is_none_or(|last| now.duration_since(last) >= IFRAME_FREQ)
+            || space != last_space;
 
         let msg = if new_iframe {
             iframe_id += 1;
             last_iframe = pose.clone();
-            last_iframe_time = now;
+            last_iframe_time = Some(now);
             last_space = space;
             AgentMsg::IFrame {
                 id: iframe_id,

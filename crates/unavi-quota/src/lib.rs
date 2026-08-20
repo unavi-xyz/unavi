@@ -1,13 +1,11 @@
 use std::{
     collections::HashMap,
     sync::Arc,
-    time::{
-        Duration,
-        Instant,
-    },
+    time::Duration,
 };
 
 use parking_lot::Mutex;
+use web_time::Instant;
 
 pub mod limits;
 pub mod registry;

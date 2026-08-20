@@ -21,7 +21,6 @@ use iroh::{
         SendStream,
     },
 };
-use n0_future::time::Instant;
 use postcard::experimental::max_size::MaxSize;
 use serde::{
     Deserialize,
@@ -32,6 +31,7 @@ use tokio::io::{
     AsyncWriteExt,
 };
 use unavi_util::async_commands::AsyncCommands;
+use web_time::Instant;
 
 use crate::connection::{
     ecs::{
@@ -82,7 +82,7 @@ const IFRAME_FREQ: Duration = Duration::from_secs(5);
 struct SendState {
     iframe_id:        u32,
     last_iframe_root: RigidTransform<F32Vec3>,
-    last_iframe_time: Instant,
+    last_iframe_time: Option<Instant>,
     last_space:       DocId,
 }
 
@@ -182,19 +182,21 @@ fn build_msg(
     let state = prims.entry(obj.prim).or_insert_with(|| SendState {
         iframe_id:        0,
         last_iframe_root: root.clone(),
-        last_iframe_time: now - IFRAME_FREQ,
+        last_iframe_time: None,
         last_space:       DocId([0; 32]),
     });
 
     // A p-frame delta is only valid against an i-frame in the same space, so a
     // space change forces a fresh i-frame.
-    let new_iframe =
-        now.duration_since(state.last_iframe_time) >= IFRAME_FREQ || state.last_space != obj.space;
+    let new_iframe = state
+        .last_iframe_time
+        .is_none_or(|last| now.duration_since(last) >= IFRAME_FREQ)
+        || state.last_space != obj.space;
 
     if new_iframe {
         state.iframe_id += 1;
         state.last_iframe_root = root.clone();
-        state.last_iframe_time = now;
+        state.last_iframe_time = Some(now);
         state.last_space = obj.space;
         ObjectMsg::IFrame {
             id: state.iframe_id,

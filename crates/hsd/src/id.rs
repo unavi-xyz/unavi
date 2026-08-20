@@ -1,10 +1,6 @@
 use std::{
     fmt,
     str::FromStr,
-    time::{
-        SystemTime,
-        UNIX_EPOCH,
-    },
 };
 
 use rand::Rng;
@@ -13,6 +9,10 @@ use serde::{
     Serialize,
 };
 use thiserror::Error;
+use web_time::{
+    SystemTime,
+    UNIX_EPOCH,
+};
 
 pub const PRIM_ID_BYTES: usize = 16;
 pub const PRIM_ID_CHARS: usize = 26;

@@ -1,18 +1,16 @@
-use std::{
-    collections::{
-        BTreeMap,
-        BTreeSet,
-        HashMap,
-        HashSet,
-    },
-    time::{
-        SystemTime,
-        UNIX_EPOCH,
-    },
+use std::collections::{
+    BTreeMap,
+    BTreeSet,
+    HashMap,
+    HashSet,
 };
 
 use smol_str::SmolStr;
 use thiserror::Error;
+use web_time::{
+    SystemTime,
+    UNIX_EPOCH,
+};
 
 use crate::{
     attributes::{

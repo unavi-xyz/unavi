@@ -62,7 +62,6 @@ unavi-secrets.path      = "../unavi-secrets"
 unavi-space.path        = "../unavi-space"
 unavi-util.path         = "../unavi-util"
 unavi-wasm-compat.path  = "../unavi-wasm-compat"
-web-time                = "1.1.0"
 winit                   = { default-features = false, version = "0.30.13" }
 xdid.workspace          = true
 zeroize.workspace       = true

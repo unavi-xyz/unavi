@@ -12,10 +12,6 @@ use std::{
             Ordering,
         },
     },
-    time::{
-        SystemTime,
-        UNIX_EPOCH,
-    },
 };
 
 use hsd::id::DocId;
@@ -25,6 +21,10 @@ use unavi_quota::{
     Quota,
     Stock,
     StockHold,
+};
+use web_time::{
+    SystemTime,
+    UNIX_EPOCH,
 };
 
 use crate::{

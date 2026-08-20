@@ -6986,6 +6986,7 @@ dependencies = [
  "serde_with",
  "smol_str 0.3.6",
  "thiserror 2.0.19",
+ "web-time",
 ]
 
 [[package]]
@@ -14330,7 +14331,6 @@ dependencies = [
  "unavi-util",
  "unavi-wasm-compat",
  "web-sys",
- "web-time",
  "winit",
  "xdid",
  "zeroize",
@@ -14524,6 +14524,7 @@ dependencies = [
  "parking_lot",
  "sysinfo 0.37.2",
  "thiserror 2.0.19",
+ "web-time",
 ]
 
 [[package]]
@@ -14596,6 +14597,7 @@ dependencies = [
  "wasmtime",
  "wasmtime-wasi",
  "wds",
+ "web-time",
  "xdid",
 ]
 
@@ -14694,6 +14696,7 @@ dependencies = [
  "unavi-registry",
  "unavi-util",
  "wds",
+ "web-time",
  "xdid",
 ]
 
@@ -14727,6 +14730,7 @@ dependencies = [
  "directories",
  "n0-future",
  "unavi-wasm-compat",
+ "web-time",
 ]
 
 [[package]]

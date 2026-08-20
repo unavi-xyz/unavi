@@ -1,13 +1,10 @@
-use std::{
-    sync::{
-        Arc,
-        atomic::{
-            AtomicBool,
-            AtomicU32,
-            Ordering,
-        },
+use std::sync::{
+    Arc,
+    atomic::{
+        AtomicBool,
+        AtomicU32,
+        Ordering,
     },
-    time::UNIX_EPOCH,
 };
 
 use async_channel::Receiver;
@@ -24,6 +21,10 @@ use unavi_quota::{
     Stock,
     StockGuard,
     limits::MAX_EVENT_PAYLOAD_BYTES,
+};
+use web_time::{
+    SystemTime,
+    UNIX_EPOCH,
 };
 
 use crate::runtime::shared::{
@@ -105,9 +106,7 @@ pub async fn emit(
     placed(api.doc_id)?;
     crate::quota::acquire(&api.quota, Flow::Emit, 1.0).await?;
 
-    let time = std::time::SystemTime::now()
-        .duration_since(UNIX_EPOCH)?
-        .as_secs();
+    let time = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
 
     let emitter_spatial: Option<(AbsoluteNodeId, Option<bevy::math::Vec3>, f32)> =
         match &filter.scope {
@@ -189,7 +188,7 @@ pub async fn emit(
 pub fn emit_from_host(target_doc: DocId, channel: &str, payload: Vec<u8>) {
     let payload = Arc::new(payload);
     let claimed = Arc::new(AtomicBool::new(false));
-    let time = std::time::SystemTime::now()
+    let time = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.as_secs())
         .unwrap_or_default();

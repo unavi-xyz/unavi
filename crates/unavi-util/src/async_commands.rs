@@ -1,7 +1,4 @@
-use std::{
-    sync::LazyLock,
-    time::Instant,
-};
+use std::sync::LazyLock;
 
 use async_channel::{
     Receiver,
@@ -16,6 +13,7 @@ use bevy::{
     },
     prelude::*,
 };
+use web_time::Instant;
 
 const SIZE: usize = 1024;
 

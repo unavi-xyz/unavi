@@ -3,10 +3,7 @@ use std::{
         LazyLock,
         Mutex,
     },
-    time::{
-        Duration,
-        Instant,
-    },
+    time::Duration,
 };
 
 use bevy::{
@@ -27,6 +24,7 @@ use unavi_avatar::{
 };
 use unavi_manifold::EchoBody;
 use unavi_policy::space::Space;
+use web_time::Instant;
 
 use crate::peer::{
     ActiveSpaces,

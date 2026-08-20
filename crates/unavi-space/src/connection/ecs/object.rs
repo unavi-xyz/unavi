@@ -3,10 +3,7 @@ use std::{
         LazyLock,
         Mutex,
     },
-    time::{
-        Duration,
-        Instant,
-    },
+    time::Duration,
 };
 
 use async_channel::TrySendError;
@@ -38,6 +35,7 @@ use unavi_policy::{
     check::space_of,
     space::Space,
 };
+use web_time::Instant;
 
 use crate::state::replicas;
 

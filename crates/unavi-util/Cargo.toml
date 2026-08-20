@@ -14,6 +14,7 @@ async-channel.workspace = true
 bevy.workspace          = true
 n0-future.workspace     = true
 unavi-wasm-compat.path  = "../unavi-wasm-compat"
+web-time.workspace      = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 directories.workspace = true

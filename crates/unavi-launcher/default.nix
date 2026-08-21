@@ -50,6 +50,7 @@ _: {
           pango
           webkitgtk_4_1
           xdotool
+          xz
         ];
 
         buildInputs =

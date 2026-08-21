@@ -24,9 +24,10 @@ pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
 pub static CONFIG: LazyLock<ConfigStore> = LazyLock::new(ConfigStore::new);
 pub static CLIENT_PROCESS: LazyLock<ProcessTracker> = LazyLock::new(ProcessTracker::new);
 
+const ICON_BYTES: &[u8] = include_bytes!("../../../assets/icon-rounded.png");
+
 fn load_icon() -> Icon {
-    let icon_bytes = include_bytes!("../assets/unavi-rounded.png");
-    let image = image::load_from_memory(icon_bytes)
+    let image = image::load_from_memory(ICON_BYTES)
         .expect("failed to load icon")
         .into_rgba8();
     let (width, height) = image.dimensions();

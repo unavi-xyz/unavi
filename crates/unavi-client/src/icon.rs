@@ -5,7 +5,7 @@ use bevy::{
 };
 use winit::window::Icon;
 
-const ICON_BYTES: &[u8] = include_bytes!("../assets/image/unavi-rounded.png");
+const ICON_BYTES: &[u8] = include_bytes!("../../../assets/icon-rounded.png");
 
 /// World param forces system to run on main thread, which is needed for
 /// `WINIT_WINDOWS` static.

@@ -30,7 +30,7 @@ xdid.workspace      = true
 iroh-blobs          = { features = ["hide-proto-docs"], workspace = true }
 iroh-docs.workspace = true
 # Without this `OffsetDateTime::now_utc` reads the unimplemented wasm clock.
-time                = { features = ["wasm-bindgen"], workspace = true }
+time = { features = ["wasm-bindgen"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 iroh-blobs = { default-features = true, workspace = true }

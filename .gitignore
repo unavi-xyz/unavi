@@ -22,6 +22,9 @@ node_modules/
 # Generated web script assets
 crates/unavi-client/assets/unavi-script/
 
+# Icon copied from ./assets for the dioxus asset! macro (build.rs)
+crates/unavi-launcher/assets/icon-nobg.png
+
 # WIT
 deps/
 

@@ -42,29 +42,66 @@ jobs:
           VERSION=$(grep '^version' Cargo.toml | sed -E 's/^version[[:space:]]*=[[:space:]]*"//; s/"$//')
           echo "version=$VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-      - name: Commit and tag
+      - name: Commit to a release branch
         run: |
           VERSION=${{ steps.version.outputs.version }}
+          BRANCH="release/v$VERSION"
+
+          # Left over from a previous failed attempt at this same version.
+          if git show-ref --quiet "refs/remotes/origin/$BRANCH"; then
+            git push origin --delete "$BRANCH"
+          fi
+
+          git checkout -b "$BRANCH"
           git add -A
           git commit -m "chore: bump version to $VERSION"
-          git tag "v$VERSION"
-          git push origin main "v$VERSION"
+          git push origin "$BRANCH"
   build-nix:
     needs: version
     uses: ./.github/workflows/build-nix.yml
     with:
-      ref: v${{ needs.version.outputs.version }}
+      ref: release/v${{ needs.version.outputs.version }}
   build-windows:
     needs: version
     uses: ./.github/workflows/build-windows.yml
     secrets: inherit
     with:
-      ref: v${{ needs.version.outputs.version }}
-  deploy:
+      ref: release/v${{ needs.version.outputs.version }}
+  # Only past this point has the release actually succeeded — nothing before
+  # here has touched `main`, so a build failure just abandons the release
+  # branch rather than leaving a broken version bump behind.
+  finalize:
     needs:
       - version
       - build-nix
       - build-windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Git config
+        run: |
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git config user.name github-actions
+      - name: Fast-forward main and tag
+        run: |
+          VERSION=${{ needs.version.outputs.version }}
+          git fetch origin "release/v$VERSION"
+          # Fails outright (rather than merge-committing) if main moved since
+          # the release branch was cut, instead of silently reconciling.
+          git merge --ff-only "origin/release/v$VERSION"
+          git tag "v$VERSION"
+          git push origin main "v$VERSION"
+      - name: Delete release branch
+        run: git push origin --delete "release/v${{ needs.version.outputs.version }}"
+  deploy:
+    needs:
+      - version
+      - finalize
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
     with:
@@ -72,6 +109,7 @@ jobs:
   release:
     needs:
       - version
+      - finalize
       - build-nix
       - build-windows
     runs-on: ubuntu-latest

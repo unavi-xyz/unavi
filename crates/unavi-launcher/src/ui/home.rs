@@ -1,8 +1,10 @@
 use dioxus::prelude::*;
 use tracing::error;
 
-use super::app::Route;
-use crate::update::client;
+use crate::{
+    CONFIG,
+    update::client,
+};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -10,6 +12,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn Home() -> Element {
     let mut launch_error = use_signal(|| None::<String>);
     let mut client_running = use_signal(|| crate::CLIENT_PROCESS.is_running());
+    let mut xr_mode = use_signal(|| CONFIG.get().xr_mode);
 
     use_coroutine(move |_: UnboundedReceiver<()>| async move {
         loop {
@@ -35,7 +38,15 @@ pub fn Home() -> Element {
         }
     };
 
-    let nav = navigator();
+    let toggle_xr = move |_| {
+        if let Err(e) = CONFIG.update(|c| {
+            c.xr_mode = !c.xr_mode;
+        }) {
+            error!("Failed to save config: {e}");
+        } else {
+            xr_mode.set(!xr_mode());
+        }
+    };
 
     rsx! {
         button {
@@ -50,10 +61,8 @@ pub fn Home() -> Element {
 
         button {
             class: "nav-button",
-            onclick: move |_| {
-                nav.push(Route::Settings);
-            },
-            "Settings"
+            onclick: toggle_xr,
+            {if xr_mode() { "XR Mode: On" } else { "XR Mode: Off" }}
         }
 
         div { style: "min-height: 40px;",

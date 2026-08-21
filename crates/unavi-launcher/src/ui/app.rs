@@ -24,6 +24,7 @@ pub enum Route {
     ClientUpdate,
     #[route("/home")]
     Home,
+    // Kept for future use; no button in the UI currently links here.
     #[route("/settings")]
     Settings,
 }

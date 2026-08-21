@@ -80,14 +80,13 @@ jobs:
         env:
           PKG_CONFIG_PATH: C:\vcpkg\installed\x64-windows-static\lib\pkgconfig
           PKG_CONFIG_ALL_STATIC: 1
-          RUSTFLAGS: -C target-feature=+crt-static
         run: |
           if [ "${{ matrix.package }}" == "unavi-launcher" ]; then
             dx build -p ${{ matrix.package }} --release
           else
             cargo build -p ${{ matrix.package }} --release
           fi
-      - name: Verify no DLL dependencies
+      - name: Check DLL dependencies
         if: ${{ matrix.package == 'unavi-client' }}
         shell: powershell
         run: |
@@ -96,6 +95,24 @@ jobs:
           if ($dumpbin) {
             & $dumpbin /dependents target\release\unavi-client.exe
           }
+      - name: Bundle VC++ runtime DLLs
+        if: ${{ matrix.package == 'unavi-client' }}
+        shell: powershell
+        run: |
+          # The exe links the MSVC CRT dynamically, so these must ship
+          # alongside it — a bare Windows install doesn't have them.
+          $dll = Get-ChildItem -Path "C:\Program Files\Microsoft Visual Studio" -Filter "vcruntime140.dll" -Recurse -ErrorAction SilentlyContinue |
+            Where-Object { $_.FullName -match "\\Redist\\MSVC\\.*\\x64\\" } |
+            Select-Object -First 1
+          if (-not $dll) {
+            Write-Error "Could not find VC++ redistributable directory"
+            exit 1
+          }
+          $redist = $dll.DirectoryName
+          Write-Host "Using redistributable: $redist"
+          Copy-Item "$redist\vcruntime140.dll" -Destination target\release
+          Copy-Item "$redist\vcruntime140_1.dll" -Destination target\release
+          Copy-Item "$redist\msvcp140.dll" -Destination target\release
       - name: Debug dx build output
         if: ${{ matrix.package == 'unavi-launcher' }}
         shell: bash
@@ -138,6 +155,7 @@ jobs:
             cp -r target/dx/${{ matrix.package }}/release/*/app/* result/
           else
             mv target/release/*.exe result
+            mv target/release/vcruntime140.dll target/release/vcruntime140_1.dll target/release/msvcp140.dll result/
             cp -r crates/${{ matrix.package }}/assets result/
           fi
           cp LICENSE result

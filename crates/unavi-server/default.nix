@@ -45,8 +45,6 @@ _: {
           doCheck = false;
 
           postInstall = ''
-            mv $out/bin/* $out
-            rm -r $out/bin
             cp LICENSE $out
           '';
         }

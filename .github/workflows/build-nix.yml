@@ -52,15 +52,19 @@ jobs:
       - uses: DeterminateSystems/determinate-nix-action@v3
         with:
           extra-conf: extra-experimental-features = pipe-operators
-      - run: nix profile add nixpkgs#gnutar nixpkgs#xz
+      - run: nix profile add nixpkgs#xz
       - name: Build package
         run: |
-          nix build -L .#${{ matrix.package }}
-          # --x86: BCJ filter, improves compression of the x86-64 binaries.
-          tar -cf - -C result . | xz --x86 -9e > ${{ matrix.name }}.tar.xz
+          # `nix bundle` wraps the whole closure into a single portable
+          # executable that runs without Nix installed, unlike a raw
+          # `nix build` output whose ELF interpreter and RPATH point into
+          # /nix/store paths that only exist on the build machine.
+          nix bundle -L -o bundle .#${{ matrix.package }}
+          # --x86: BCJ filter, improves compression of the x86-64 binary.
+          xz --x86 -9e -c bundle > ${{ matrix.name }}.xz
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: build-${{ matrix.name }}
-          path: ${{ matrix.name }}.tar.xz
+          path: ${{ matrix.name }}.xz
           retention-days: 1

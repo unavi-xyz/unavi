@@ -31,10 +31,7 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git config user.name github-actions
       - uses: DeterminateSystems/determinate-nix-action@v3
-      - run: |
-          nix profile add nixpkgs#rustup
-          rustup default nightly
-          nix profile add nixpkgs#cargo-release
+      - run: nix profile add nixpkgs#cargo-release
       - name: Bump version
         run: cargo release version ${{ inputs.increment }} -x --no-confirm
       - id: version
@@ -47,7 +44,6 @@ jobs:
           VERSION=${{ steps.version.outputs.version }}
           BRANCH="release/v$VERSION"
 
-          # Left over from a previous failed attempt at this same version.
           if git show-ref --quiet "refs/remotes/origin/$BRANCH"; then
             git push origin --delete "$BRANCH"
           fi
@@ -67,9 +63,6 @@ jobs:
     secrets: inherit
     with:
       ref: release/v${{ needs.version.outputs.version }}
-  # Only past this point has the release actually succeeded — nothing before
-  # here has touched `main`, so a build failure just abandons the release
-  # branch rather than leaving a broken version bump behind.
   finalize:
     needs:
       - version
@@ -91,8 +84,6 @@ jobs:
         run: |
           VERSION=${{ needs.version.outputs.version }}
           git fetch origin "release/v$VERSION"
-          # Fails outright (rather than merge-committing) if main moved since
-          # the release branch was cut, instead of silently reconciling.
           git merge --ff-only "origin/release/v$VERSION"
           git tag "v$VERSION"
           git push origin main "v$VERSION"
@@ -102,6 +93,8 @@ jobs:
     needs:
       - version
       - finalize
+      - build-nix
+      - build-windows
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
     with:
@@ -128,10 +121,13 @@ jobs:
             [ -d "$dir" ] || continue
             cd "$dir" || exit
             for file in *; do
-              # Split at the last dot
-              base="${file%%.*}"
-              ext="${file#*.}"
-              mv "$file" "../${base}-${{ needs.version.outputs.version }}.${ext}"
+              if [[ "$file" == *.* ]]; then
+                base="${file%.*}"
+                ext="${file##*.}"
+                mv "$file" "../${base}-${{ needs.version.outputs.version }}.${ext}"
+              else
+                mv "$file" "../${file}-${{ needs.version.outputs.version }}"
+              fi
             done
             cd ..
             rm -rf "$dir"

@@ -48,6 +48,5 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan ${{ steps.deploy_info.outputs.server_ip }} >> ~/.ssh/known_hosts
       - name: Deploy
-        # LD_LIBRARY_PATH (set for cargo-built binaries) leaks into deploy-rs's
-        # nested nix eval and breaks system git's glibc when fetching inputs.
+        # deploy-rs's nested nix eval breaks under LD_LIBRARY_PATH.
         run: nix develop --command env -u LD_LIBRARY_PATH deploy .#unavi-stable

@@ -4,6 +4,21 @@ _: {
     let
       pname = "unavi-launcher";
 
+      # dx must match the `dioxus` crate version in Cargo.lock or codegen
+      # diverges from the compiled app.
+      dioxusCli =
+        let
+          expected =
+            (builtins.fromTOML (builtins.readFile ../../Cargo.lock)).package
+            |> lib.findFirst (p: p.name == "dioxus") (throw "Cargo.lock has no dioxus")
+            |> (p: p.version);
+          actual = pkgs.dioxus-cli.version;
+        in
+        if actual == expected then
+          pkgs.dioxus-cli
+        else
+          throw "nixpkgs dioxus-cli ${actual} != Cargo.lock dioxus ${expected}";
+
       src = lib.fileset.toSource rec {
         root = ../..;
         fileset = lib.fileset.unions [
@@ -31,7 +46,7 @@ _: {
           with pkgs;
           [
             clang
-            dioxus-cli
+            dioxusCli
             lld
             makeWrapper
             pkg-config

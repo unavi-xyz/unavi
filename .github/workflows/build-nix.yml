@@ -20,7 +20,6 @@ jobs:
 
           declare -A OS_MAP
           OS_MAP["x86_64-linux"]="ubuntu-latest"
-          OS_MAP["x86_64-darwin"]="macos-latest"
 
           MATRIX="["
           for SYS in "${SYSTEMS[@]}"; do
@@ -55,12 +54,8 @@ jobs:
       - run: nix profile add nixpkgs#xz
       - name: Build package
         run: |
-          # `nix bundle` wraps the whole closure into a single portable
-          # executable that runs without Nix installed, unlike a raw
-          # `nix build` output whose ELF interpreter and RPATH point into
-          # /nix/store paths that only exist on the build machine.
+          # Bundles the full closure so the artifact runs without Nix installed.
           nix bundle -L -o bundle .#${{ matrix.package }}
-          # --x86: BCJ filter, improves compression of the x86-64 binary.
           xz --x86 -9e -c bundle > ${{ matrix.name }}.xz
       - name: Upload artifact
         uses: actions/upload-artifact@v7

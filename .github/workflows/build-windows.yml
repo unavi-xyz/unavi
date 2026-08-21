@@ -65,7 +65,7 @@ jobs:
         run: vcpkg install dav1d:x64-windows-static
       - run: cargo install cargo-wix
       - run: cargo install cargo-binstall
-      - run: cargo binstall dioxus-cli --version 0.6.3 --locked --no-confirm
+      - run: cargo binstall dioxus-cli --version 0.7.5 --locked --no-confirm
       - name: Build package
         shell: bash
         env:

@@ -21,7 +21,8 @@ jobs:
         with:
           extra-conf: extra-experimental-features = pipe-operators
       - uses: DeterminateSystems/magic-nix-cache-action@main
-      - run: nix profile add nixpkgs#nushell
+      - name: Generate missing WIT
+        run: nix develop .#minimal -c nu scripts/update-wasm.nu
       - name: Build WASM assets
         run: nix develop .#minimal -c nu scripts/build-wasm.nu
       - name: Upload artifact
@@ -164,7 +165,7 @@ jobs:
         shell: bash
         run: |
           cd result
-          tar -cJf ../${{ matrix.package }}-x86_64-windows.tar.xz .
+          tar -cf - . | xz -9e --x86 > ../${{ matrix.package }}-x86_64-windows.tar.xz
       - uses: actions/upload-artifact@v7
         if: ${{ matrix.package != 'unavi-launcher' }}
         with:

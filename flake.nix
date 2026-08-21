@@ -161,10 +161,13 @@
             devShells =
               let
                 packages =
-                  config.packages
-                  |> lib.attrValues
-                  |> lib.flip pkgs.lib.forEach (x: x.buildInputs ++ x.nativeBuildInputs)
-                  |> lib.concatLists;
+                  (
+                    config.packages
+                    |> lib.attrValues
+                    |> lib.flip pkgs.lib.forEach (x: x.buildInputs ++ x.nativeBuildInputs)
+                    |> lib.concatLists
+                  )
+                  ++ (with pkgs; [ nushell ]);
 
                 LD_LIBRARY_PATH =
                   config.packages
@@ -194,7 +197,6 @@
                       doctl
                       esbuild
                       nodejs
-                      nushell
                       rustup
                       secretspec
                       sops

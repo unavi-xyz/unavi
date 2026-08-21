@@ -56,7 +56,8 @@ jobs:
       - name: Build package
         run: |
           nix build -L .#${{ matrix.package }}
-          tar -cJf ${{ matrix.name }}.tar.xz -C result .
+          # --x86: BCJ filter, improves compression of the x86-64 binaries.
+          tar -cf - -C result . | xz -9e --x86 > ${{ matrix.name }}.tar.xz
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:

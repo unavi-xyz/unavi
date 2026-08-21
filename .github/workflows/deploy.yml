@@ -2,20 +2,12 @@ name: Deploy
 on:
   workflow_dispatch:
     inputs:
-      channel:
-        description: deployment channel
-        required: true
-        type: choice
-        options:
-          - beta
-          - stable
-        default: beta
+      ref:
+        description: git ref to deploy
+        required: false
+        type: string
   workflow_call:
     inputs:
-      channel:
-        description: deployment channel
-        required: true
-        type: string
       ref:
         description: git ref to deploy
         required: false
@@ -47,7 +39,7 @@ jobs:
       - name: Get deploy info
         id: deploy_info
         run: |
-          SERVER_IP=$(jq -r '.${{ inputs.channel }}.server_ipv4' infra/terraform/deploy.json)
+          SERVER_IP=$(jq -r '.stable.server_ipv4' infra/terraform/deploy.json)
           echo "server_ip=$SERVER_IP" >> "$GITHUB_OUTPUT"
       - name: Setup ssh
         run: |
@@ -56,4 +48,4 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan ${{ steps.deploy_info.outputs.server_ip }} >> ~/.ssh/known_hosts
       - name: Deploy
-        run: nix develop --command deploy .#unavi-${{ inputs.channel }}
+        run: nix develop --command deploy .#unavi-stable

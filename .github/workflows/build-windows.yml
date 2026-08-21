@@ -2,10 +2,6 @@ name: Build Windows
 on:
   workflow_call:
     inputs:
-      channel:
-        description: channel to build
-        required: true
-        type: string
       ref:
         description: ref to build
         type: string
@@ -67,13 +63,6 @@ jobs:
       - run: cargo install cargo-wix
       - run: cargo install cargo-binstall
       - run: cargo binstall dioxus-cli --version 0.6.3 --locked --no-confirm
-      - name: Set build environment from deploy.json
-        shell: bash
-        run: |
-          DWN_DOMAIN=$(jq -r '.${{ inputs.channel }}.services.dwn_server.domain' infra/terraform/deploy.json)
-          WORLD_DOMAIN=$(jq -r '.${{ inputs.channel }}.services.unavi_server.domain' infra/terraform/deploy.json)
-          echo "DWN_URL=https://$DWN_DOMAIN" >> "$GITHUB_ENV"
-          echo "WORLD_DID=did:web:$WORLD_DOMAIN" >> "$GITHUB_ENV"
       - name: Build package
         shell: bash
         env:

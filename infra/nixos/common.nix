@@ -52,13 +52,9 @@
     };
   };
 
-  system = {
-    autoUpgrade = {
-      allowReboot = false;
-      enable = true;
-    };
-    stateVersion = "23.11";
-  };
+  # deploy-rs pushes are the only update path; a second, independently-timed
+  # autoUpgrade would race it and make "deployed" drift from "what CI last pushed."
+  system.stateVersion = "23.11";
 
   time.timeZone = "America/New_York";
 

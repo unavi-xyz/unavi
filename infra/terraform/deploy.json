@@ -1,11 +1,10 @@
 {
-  "beta": null,
   "ssh_public_keys": {
     "gh_unavi": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN5GYGW+HwhFR0oUafANn2mmvf6OzT/1LswSaUf/9AbS github-actions-deploy",
-    "kayh": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/Fq6xrATrHb1Bsv8UH4eJ4orHDBerB5DsYFfi382Zb kayh"
+    "kayh": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHHzIQjRh5cyl+WYLA0h4XUWRnuUsADtSursp0nFZK+T"
   },
   "stable": {
-    "server_ipv4": "167.71.181.219",
+    "server_ipv4": "161.35.135.143",
     "services": {
       "unavi_server": {
         "domain": "wds.unavi.xyz",

@@ -13,33 +13,10 @@ use tracing::info;
 
 use crate::DIRS;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum UpdateChannel {
-    Stable,
-    Beta,
-}
-
-impl UpdateChannel {
-    #[must_use]
-    pub const fn is_beta(self) -> bool {
-        matches!(self, Self::Beta)
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Config {
-    pub update_channel: UpdateChannel,
     #[serde(default)]
-    pub xr_mode:        bool,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            update_channel: UpdateChannel::Beta,
-            xr_mode:        false,
-        }
-    }
+    pub xr_mode: bool,
 }
 
 impl Config {

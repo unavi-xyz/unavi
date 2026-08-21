@@ -18,29 +18,8 @@ use serde::Deserialize;
 pub const REPO_OWNER: &str = "unavi-xyz";
 pub const REPO_NAME: &str = "unavi";
 
-pub fn is_beta() -> bool {
-    crate::CONFIG.get().update_channel.is_beta()
-}
-
 pub fn needs_update(current: &Version, latest: &Version) -> bool {
-    let want_beta = is_beta();
-    let latest_is_beta = latest.pre.as_str().contains("beta");
-
-    if current == latest {
-        return false;
-    }
-
-    if latest_is_beta == want_beta {
-        return current < latest;
-    }
-
-    // Channel mismatch: a beta channel adopts older stables; a stable channel
-    // never adopts beta.
-    if want_beta && !latest_is_beta {
-        return current < latest;
-    }
-
-    false
+    current < latest
 }
 
 #[derive(Debug, Clone, Copy)]

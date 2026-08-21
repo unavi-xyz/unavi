@@ -1,13 +1,3 @@
-output "beta_ipv4_address" {
-  description = "public ipv4 address of the beta server"
-  value       = var.create_beta ? digitalocean_droplet.beta[0].ipv4_address : null
-}
-
-output "beta_id" {
-  description = "beta droplet id"
-  value       = var.create_beta ? digitalocean_droplet.beta[0].id : null
-}
-
 output "stable_ipv4_address" {
   description = "public ipv4 address of the stable server"
   value       = digitalocean_droplet.stable.ipv4_address
@@ -20,10 +10,6 @@ output "stable_id" {
 
 resource "local_file" "deploy_info" {
   content = jsonencode({
-    beta = var.create_beta ? {
-      server_ipv4 = digitalocean_droplet.beta[0].ipv4_address
-      services    = local.beta_services
-    } : null
     stable = {
       server_ipv4 = digitalocean_droplet.stable.ipv4_address
       services    = local.stable_services

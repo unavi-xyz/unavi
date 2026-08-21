@@ -59,11 +59,28 @@ pub fn Home() -> Element {
             {if client_running() { "⟨  connected  ⟩" } else { "Enter" }}
         }
 
+        div { class: "settings",
+            label {
+                input {
+                    r#type: "checkbox",
+                    checked: xr_mode,
+                    onchange: toggle_xr,
+                }
+                " XR mode"
+            }
+        }
+
+        // Unreachable from the UI; no button currently links here.
+        /*
+        let nav = navigator();
         button {
             class: "nav-button",
-            onclick: toggle_xr,
-            {if xr_mode() { "XR Mode: On" } else { "XR Mode: Off" }}
+            onclick: move |_| {
+                nav.push(Route::Settings);
+            },
+            "Settings"
         }
+        */
 
         div { style: "min-height: 40px;",
             if let Some(ref err) = *launch_error.read() {

@@ -2,31 +2,12 @@ use dioxus::prelude::*;
 use tracing::error;
 
 use super::app::Route;
-use crate::{
-    CONFIG,
-    config::UpdateChannel,
-};
+use crate::CONFIG;
 
 #[component]
 pub fn Settings() -> Element {
     let nav = navigator();
-    let mut current_beta = use_signal(|| crate::CONFIG.get().update_channel.is_beta());
-    let initial_beta = use_hook(|| current_beta);
-    let mut xr_mode = use_signal(|| crate::CONFIG.get().xr_mode);
-
-    let toggle_beta = move |_| {
-        if let Err(e) = CONFIG.update(|c| {
-            c.update_channel = if c.update_channel.is_beta() {
-                UpdateChannel::Stable
-            } else {
-                UpdateChannel::Beta
-            }
-        }) {
-            error!("Failed to save config: {e}");
-        } else {
-            current_beta.set(!current_beta());
-        }
-    };
+    let mut xr_mode = use_signal(|| CONFIG.get().xr_mode);
 
     let toggle_xr = move |_| {
         if let Err(e) = CONFIG.update(|c| {
@@ -38,24 +19,8 @@ pub fn Settings() -> Element {
         }
     };
 
-    let handle_back = move |_| {
-        if current_beta == initial_beta {
-            nav.push(Route::Home);
-        } else {
-            nav.push(Route::SelfUpdate);
-        }
-    };
-
     rsx! {
         div { class: "settings",
-            label {
-                input {
-                    r#type: "checkbox",
-                    checked: current_beta,
-                    onchange: toggle_beta,
-                }
-                " Beta releases"
-            }
             label {
                 input {
                     r#type: "checkbox",
@@ -68,7 +33,7 @@ pub fn Settings() -> Element {
 
         button {
             class: "nav-button",
-            onclick: handle_back,
+            onclick: move |_| { nav.push(Route::Home); },
             style: "margin-top: 40px;",
             "Back"
         }

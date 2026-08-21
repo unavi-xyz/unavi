@@ -15,7 +15,6 @@ use super::{
         extract_archive,
         fetch_github_releases,
         get_platform_target,
-        is_beta,
         is_network_error,
         needs_update,
     },
@@ -122,13 +121,7 @@ where
 
     let latest_release = releases
         .into_iter()
-        .find(|r| {
-            if is_beta() {
-                true
-            } else {
-                !r.tag_name.contains("beta")
-            }
-        })
+        .find(|r| !r.tag_name.contains("beta"))
         .ok_or_else(|| anyhow::anyhow!("no valid release found"))?;
 
     let latest_version = Version::parse(

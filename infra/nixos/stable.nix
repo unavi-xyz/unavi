@@ -10,7 +10,6 @@
 
   services = {
     unavi-server = {
-      channel = "stable";
       enable = true;
       package = inputs.self.packages.${pkgs.system}.unavi-server;
     };

@@ -19,41 +19,33 @@ in
       description = "unavi-server package to use";
     };
 
-    channel = mkOption {
-      type = types.enum [
-        "beta"
-        "stable"
-      ];
-      description = "deployment channel";
-    };
-
     domain = mkOption {
       type = types.str;
-      default = deployInfo.${cfg.channel}.services.unavi_server.domain;
+      default = deployInfo.stable.services.unavi_server.domain;
       description = "Server domain for DID generation";
     };
 
     port = mkOption {
       type = types.port;
-      default = deployInfo.${cfg.channel}.services.unavi_server.port;
+      default = deployInfo.stable.services.unavi_server.port;
       description = "port for unavi-server";
     };
 
     dataDir = mkOption {
       type = types.str;
-      default = "/var/lib/unavi-${cfg.channel}";
+      default = "/var/lib/unavi-server";
       description = "data directory for server state";
     };
 
     user = mkOption {
       type = types.str;
-      default = "unavi-${cfg.channel}";
+      default = "unavi-server";
       description = "user account for the service";
     };
 
     group = mkOption {
       type = types.str;
-      default = "unavi-${cfg.channel}";
+      default = "unavi-server";
       description = "group for the service";
     };
   };
@@ -68,8 +60,8 @@ in
 
     users.groups.${cfg.group} = { };
 
-    systemd.services."unavi-server-${cfg.channel}" = {
-      description = "unavi server (${cfg.channel})";
+    systemd.services.unavi-server = {
+      description = "unavi server";
       after = [ "network.target" ];
       wantedBy = [ "multi-user.target" ];
 

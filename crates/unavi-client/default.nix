@@ -1,12 +1,8 @@
-{ inputs, deployInfo, ... }: {
+{ inputs, ... }: {
   perSystem =
     { pkgs, lib, ... }:
     let
       pname = "unavi-client";
-
-      # Overrides the default the manifest declares, which the build script
-      # compiles in.
-      channelSyncTargets = channel: "did:web:${deployInfo.${channel}.services.unavi_server.domain}";
 
       # `wasm-bindgen` refuses a module whose schema came from a different
       # version, and the sandbox cannot fetch the matching CLI the way Trunk
@@ -180,41 +176,6 @@
         AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
         CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
       };
-
-      channels = lib.filter (c: deployInfo.${c} ? services) (builtins.attrNames deployInfo);
-
-      mkNativePackage =
-        channel:
-        pkgs.crane.buildPackage (
-          nativeArgs
-          // {
-            pname = "${pname}-${channel}";
-            UNAVI_SYNC_TARGETS = channelSyncTargets channel;
-          }
-        );
-
-      mkWebPackage =
-        channel:
-        pkgs.crane.buildTrunkPackage (
-          webArgs
-          // {
-            pname = "${pname}-web-${channel}";
-            UNAVI_SYNC_TARGETS = channelSyncTargets channel;
-          }
-        );
-
-      channelPackages = lib.listToAttrs (
-        lib.concatMap (c: [
-          {
-            name = "${pname}-${c}";
-            value = mkNativePackage c;
-          }
-          {
-            name = "${pname}-web-${c}";
-            value = mkWebPackage c;
-          }
-        ]) channels
-      );
     in
     {
       # checks = {
@@ -232,7 +193,6 @@
       packages = {
         "${pname}" = pkgs.crane.buildPackage nativeArgs;
         "${pname}-web" = pkgs.crane.buildTrunkPackage (webArgs // { pname = "${pname}-web"; });
-      }
-      // channelPackages;
+      };
     };
 }

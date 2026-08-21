@@ -1,5 +1,4 @@
 {
-  config,
   lib,
   deployInfo,
   pkgs,
@@ -7,13 +6,12 @@
   ...
 }:
 let
-  inherit (config.services.unavi-server) channel;
-  inherit (deployInfo.${channel}) services;
+  inherit (deployInfo.stable) services;
 
   proxyServices = lib.filterAttrs (_: c: c ? port) services;
   staticServices = lib.filterAttrs (_: c: c ? static && c.static) services;
 
-  webClientPkg = self.packages.${pkgs.system}."unavi-client-web-${channel}";
+  webClientPkg = self.packages.${pkgs.system}.unavi-client-web;
 
   proxyHosts = lib.mapAttrs (_: cfg: {
     enableACME = true;

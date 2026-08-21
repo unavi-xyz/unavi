@@ -28,7 +28,7 @@ jobs:
       - run: nix develop .#minimal --command cargo check --examples --tests --all-features --workspace
       - run: nix develop .#minimal --command npm install --prefix crates/unavi-script
       - run: nix develop .#minimal --command nu scripts/build-wasm.nu
-      - run: nix develop .#minimal --command cargo nextest run --all-features
+      - run: nix develop .#minimal --command cargo test --all-features
       - run: nix develop .#minimal --command cargo clippy --fix --allow-staged --allow-dirty --no-deps --examples --tests --all-features --workspace
       - run: nix fmt
       - uses: EndBug/add-and-commit@v10

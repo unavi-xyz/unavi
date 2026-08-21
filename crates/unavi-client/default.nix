@@ -33,6 +33,7 @@
           ) root)
           ../../LICENSE
           ../../Trunk.toml
+          ../../assets
           ../../scripts
           ../../wasm
           ../unavi-script/package.json

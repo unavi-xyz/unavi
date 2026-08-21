@@ -23,6 +23,8 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Generate missing WIT
         run: nix develop .#minimal -c nu scripts/update-wasm.nu
+      - name: Install npm dependencies
+        run: nix develop .#minimal -c npm install --prefix crates/unavi-script
       - name: Build WASM assets
         run: nix develop .#minimal -c nu scripts/build-wasm.nu
       - name: Upload artifact
@@ -165,7 +167,7 @@ jobs:
         shell: bash
         run: |
           cd result
-          tar -cf - . | xz -9e --x86 > ../${{ matrix.package }}-x86_64-windows.tar.xz
+          tar -cf - . | xz --x86 -9e > ../${{ matrix.package }}-x86_64-windows.tar.xz
       - uses: actions/upload-artifact@v7
         if: ${{ matrix.package != 'unavi-launcher' }}
         with:

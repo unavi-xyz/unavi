@@ -127,14 +127,14 @@
         ];
 
         preBuild = ''
-          nu scripts/update-wasm.nu
+          nu scripts/update-wasm.nu --locked
           nu scripts/build-wasm.nu
         '';
 
         postInstall = ''
           mkdir -p $out/bin/assets
           cp -r crates/${pname}/assets/* $out/bin/assets/
-          rm -rf $out/bin/assets/wasm/test $out/bin/assets/wasm/example
+          rm -f $out/bin/assets/hsd/example_*.hsdz
           cp LICENSE $out
           wrapProgram $out/bin/${pname} \
             --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath cargoArgs.linkedInputs}"
@@ -157,7 +157,7 @@
         inherit wasm-bindgen-cli;
 
         preBuild = ''
-          nu scripts/update-wasm.nu
+          nu scripts/update-wasm.nu --locked
           nu scripts/build-wasm.nu
         '';
 

@@ -24,7 +24,7 @@ jobs:
           extra-conf: extra-experimental-features = pipe-operators
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: Swatinem/rust-cache@v2
-      - run: nix develop .#minimal --command nu scripts/update-wasm.nu
+      - run: nix develop .#minimal --command nu scripts/update-wasm.nu --locked
       - run: nix develop .#minimal --command cargo check --examples --tests --all-features --workspace
       - run: nix develop .#minimal --command npm install --prefix crates/unavi-script
       - run: nix develop .#minimal --command nu scripts/build-wasm.nu

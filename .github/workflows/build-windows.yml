@@ -22,7 +22,7 @@ jobs:
           extra-conf: extra-experimental-features = pipe-operators
       - uses: DeterminateSystems/magic-nix-cache-action@main
       - name: Generate missing WIT
-        run: nix develop .#minimal -c nu scripts/update-wasm.nu
+        run: nix develop .#minimal -c nu scripts/update-wasm.nu --locked
       - name: Install npm dependencies
         run: nix develop .#minimal -c npm install --prefix crates/unavi-script
       - name: Build WASM assets
@@ -30,8 +30,14 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: wasm-assets
-          path: crates/unavi-client/assets/wasm
+          name: assets
+          path: crates/unavi-client/assets/hsd
+          retention-days: 1
+      - name: Upload WIT deps
+        uses: actions/upload-artifact@v7
+        with:
+          name: protocol-wit-deps
+          path: protocol/wit
           retention-days: 1
   build-windows:
     needs: build-wasm
@@ -48,13 +54,16 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
       - uses: actions/download-artifact@v8
         with:
-          pattern: wasm-assets
-          path: crates/unavi-client/assets/wasm
-      - name: Remove test and example WASM
+          pattern: assets
+          path: crates/unavi-client/assets/hsd
+      - name: Download WIT deps
+        uses: actions/download-artifact@v8
+        with:
+          name: protocol-wit-deps
+          path: protocol/wit
+      - name: Remove example HSD assets
         shell: bash
-        run: |
-          rm -rf crates/unavi-client/assets/wasm/test
-          rm -rf crates/unavi-client/assets/wasm/example
+        run: rm -f crates/unavi-client/assets/hsd/example_*.hsdz
       - uses: crazy-max/ghaction-chocolatey@v4
         with:
           args: install pkgconfiglite wixtoolset

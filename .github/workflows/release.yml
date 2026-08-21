@@ -63,11 +63,21 @@ jobs:
     secrets: inherit
     with:
       ref: release/v${{ needs.version.outputs.version }}
+  deploy:
+    needs:
+      - version
+      - build-nix
+      - build-windows
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    with:
+      ref: release/v${{ needs.version.outputs.version }}
   finalize:
     needs:
       - version
       - build-nix
       - build-windows
+      - deploy
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -89,16 +99,6 @@ jobs:
           git push origin main "v$VERSION"
       - name: Delete release branch
         run: git push origin --delete "release/v${{ needs.version.outputs.version }}"
-  deploy:
-    needs:
-      - version
-      - finalize
-      - build-nix
-      - build-windows
-    uses: ./.github/workflows/deploy.yml
-    secrets: inherit
-    with:
-      ref: v${{ needs.version.outputs.version }}
   release:
     needs:
       - version

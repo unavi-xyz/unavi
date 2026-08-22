@@ -1,0 +1,5 @@
+[application]
+name = "unavi-launcher"
+
+[bundle]
+icon = ["../../assets/icon-rounded.ico"]

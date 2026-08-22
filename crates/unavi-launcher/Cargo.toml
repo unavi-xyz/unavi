@@ -7,21 +7,22 @@ publish              = false
 repository.workspace = true
 version.workspace    = true
 
+[features]
+default  = []
+devtools = ["dioxus/devtools"]
+
 [lints]
 workspace = true
-
-[build-dependencies]
-embed-resource.workspace = true
 
 [dependencies]
 anyhow.workspace        = true
 async-channel.workspace = true
-dioxus                  = { features = ["desktop", "router"], version = "0.7.5" }
+dioxus                  = { default-features = false, features = ["desktop", "launch", "lib", "logger", "router"], version = "0.7.5" }
 directories.workspace   = true
 futures.workspace       = true
 image                   = { features = ["png"], workspace = true }
 parking_lot.workspace   = true
-reqwest                 = { features = ["json", "stream"], workspace = true }
+reqwest                 = { default-features = false, features = ["json", "native-tls", "stream", "system-proxy"], workspace = true }
 runas                   = "1.2.0"
 self-replace            = "1.5.0"
 semver                  = "1.0.28"

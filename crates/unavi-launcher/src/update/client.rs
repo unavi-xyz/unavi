@@ -1,25 +1,30 @@
-use std::{
-    path::PathBuf,
-    process::Command,
-};
+use std::path::PathBuf;
 
 use anyhow::Context;
 use semver::Version;
-use tracing::info;
+use tracing::{
+    info,
+    warn,
+};
 
 use super::{
     UpdateStatus,
     common::{
-        decompress_xz,
         download_with_progress,
-        extract_archive,
-        fetch_github_releases,
-        get_platform_target,
+        fetch_latest_release,
+        find_asset,
         is_network_error,
         needs_update,
     },
+    platform,
 };
 use crate::DIRS;
+
+const KEEP_VERSIONS: usize = 2;
+
+fn clients_dir() -> PathBuf {
+    DIRS.data_local_dir().join("clients")
+}
 
 fn current_version_file() -> PathBuf {
     DIRS.data_local_dir().join("current_client_version.txt")
@@ -41,53 +46,25 @@ fn set_installed_version(version: &Version) -> anyhow::Result<()> {
 }
 
 fn client_dir(version: &Version) -> PathBuf {
-    DIRS.data_local_dir()
-        .join("clients")
-        .join(version.to_string())
+    clients_dir().join(version.to_string())
 }
 
 fn client_exe_path(version: &Version) -> PathBuf {
-    let exe_name = if cfg!(windows) {
-        "unavi-client.exe"
-    } else {
-        "unavi-client"
-    };
-    client_dir(version).join(exe_name)
+    client_dir(version).join(platform::CLIENT_EXE)
 }
 
 pub fn launch_client() -> anyhow::Result<()> {
-    if let Some(version) = get_installed_version() {
-        let exe_path = client_exe_path(&version);
-        if exe_path.exists() {
-            info!(
-                "Launching client version {version} from {}",
-                exe_path.display()
-            );
-            let mut cmd = Command::new(exe_path);
-            if crate::CONFIG.get().xr_mode {
-                cmd.arg("--xr");
-            }
-            let child = cmd.spawn().context("failed to launch client")?;
-            crate::CLIENT_PROCESS.set(child);
-            return Ok(());
-        }
-    }
-
-    let exe_path = std::env::current_exe()?
-        .parent()
-        .ok_or_else(|| anyhow::anyhow!("failed to get executable directory"))?
-        .join(if cfg!(windows) {
-            "unavi-client.exe"
-        } else {
-            "unavi-client"
-        });
-
+    let version = get_installed_version().ok_or_else(|| anyhow::anyhow!("no client installed"))?;
+    let exe_path = client_exe_path(&version);
     if !exe_path.exists() {
         anyhow::bail!("client executable not found at {}", exe_path.display());
     }
 
-    info!("Launching client from {}", exe_path.display());
-    let mut cmd = Command::new(exe_path);
+    info!(
+        "Launching client version {version} from {}",
+        exe_path.display()
+    );
+    let mut cmd = platform::client_command(&exe_path);
     if crate::CONFIG.get().xr_mode {
         cmd.arg("--xr");
     }
@@ -103,14 +80,14 @@ where
 {
     on_status(UpdateStatus::Checking);
 
-    let simple_target = get_platform_target()?;
-
-    let releases_result = fetch_github_releases().await;
-
-    let releases = match releases_result {
+    let latest = match fetch_latest_release().await {
         Ok(r) => r,
         Err(e) => {
-            if is_network_error(&e) {
+            // Skipping the check is only safe once a client is already
+            // installed; otherwise there is nothing to launch, so a network
+            // failure has to surface as an error rather than silently
+            // proceeding to a broken home screen.
+            if is_network_error(&e) && get_installed_version().is_some() {
                 info!("Network unavailable, skipping update check");
                 on_status(UpdateStatus::Offline);
                 return Ok(());
@@ -119,39 +96,25 @@ where
         }
     };
 
-    let latest_release = releases
-        .into_iter()
-        .find(|r| !r.tag_name.contains("beta"))
-        .ok_or_else(|| anyhow::anyhow!("no valid release found"))?;
-
-    let latest_version = Version::parse(
-        latest_release
-            .tag_name
-            .strip_prefix('v')
-            .unwrap_or(&latest_release.tag_name),
-    )?;
-    info!("Latest client release: {latest_version}");
+    info!("Latest client release: {}", latest.version);
 
     let installed_version = get_installed_version();
     info!("Installed client version: {installed_version:?}");
 
     if let Some(current) = &installed_version
-        && !needs_update(current, &latest_version)
+        && !needs_update(current, &latest.version)
     {
         info!("Client is up to date");
         on_status(UpdateStatus::UpToDate);
         return Ok(());
     }
 
-    info!("Updating client to {latest_version}");
-    let asset = latest_release
-        .assets
-        .into_iter()
-        .find(|a| a.name.contains("unavi-client") && a.name.contains(simple_target.release_str()))
-        .ok_or_else(|| anyhow::anyhow!("client asset not found in release"))?;
+    info!("Updating client to {}", latest.version);
+    let asset = find_asset(latest.assets, "unavi-client", platform::CLIENT_EXT)
+        .context("client asset not found in release")?;
 
     on_status(UpdateStatus::Downloading {
-        version:  latest_version.to_string(),
+        version:  latest.version.to_string(),
         progress: None,
     });
 
@@ -159,65 +122,34 @@ where
         .prefix("unavi-client-update")
         .tempdir()?;
     let tmp_archive_path = tmp_dir.path().join(&asset.name);
-    info!(
-        "Downloading client to: {}",
-        tmp_archive_path.to_string_lossy()
-    );
+    info!("Downloading client to: {}", tmp_archive_path.display());
 
     download_with_progress(&asset.browser_download_url, &tmp_archive_path, |progress| {
         on_status(UpdateStatus::Downloading {
-            version:  latest_version.to_string(),
+            version:  latest.version.to_string(),
             progress: Some(progress),
         });
     })
     .await?;
 
-    let extract_path = client_dir(&latest_version);
-    std::fs::create_dir_all(&extract_path)?;
+    let dest_dir = client_dir(&latest.version);
+    std::fs::create_dir_all(&dest_dir)?;
+    platform::install_client(&tmp_archive_path, &dest_dir)?;
 
-    let tmp_tar_path = tmp_dir.path().join(
-        asset
-            .name
-            .strip_suffix(".xz")
-            .ok_or_else(|| anyhow::anyhow!("invalid asset name (.xz not found)"))?,
-    );
+    set_installed_version(&latest.version)?;
+    info!("Client updated to {}", latest.version);
 
-    decompress_xz(&tmp_archive_path, &tmp_tar_path)?;
-    info!("Extracting to: {}", extract_path.display());
-    extract_archive(&tmp_tar_path, &extract_path)?;
-
-    // Set executable permissions on unix.
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let exe_path = client_exe_path(&latest_version);
-        if exe_path.exists() {
-            let mut perms = std::fs::metadata(&exe_path)?.permissions();
-            perms.set_mode(0o755);
-            std::fs::set_permissions(&exe_path, perms)?;
-        }
-    }
-
-    set_installed_version(&latest_version)?;
-    info!("Client updated to {latest_version}");
-
-    clean_old_versions(&latest_version, 2)?;
+    clean_old_versions(&latest.version, KEEP_VERSIONS)?;
 
     on_status(UpdateStatus::UpToDate);
     Ok(())
 }
 
 fn clean_old_versions(current: &Version, keep_count: usize) -> anyhow::Result<()> {
-    let clients_dir = DIRS.data_local_dir().join("clients");
-
-    let mut versions: Vec<Version> = std::fs::read_dir(&clients_dir)?
-        .filter_map(std::result::Result::ok)
-        .filter_map(|entry| {
-            let name = entry.file_name();
-            let name_str = name.to_string_lossy();
-            Version::parse(&name_str).ok()
-        })
-        .collect();
+    let mut versions = std::fs::read_dir(clients_dir())?
+        .filter_map(Result::ok)
+        .filter_map(|entry| Version::parse(&entry.file_name().to_string_lossy()).ok())
+        .collect::<Vec<_>>();
 
     versions.sort_by(|a, b| b.cmp(a));
 
@@ -226,7 +158,7 @@ fn clean_old_versions(current: &Version, keep_count: usize) -> anyhow::Result<()
             let dir_to_remove = client_dir(version);
             info!("Removing old client version: {version}");
             if let Err(e) = std::fs::remove_dir_all(&dir_to_remove) {
-                tracing::warn!("Failed to remove old version {version}: {e}");
+                warn!("Failed to remove old version {version}: {e}");
             }
         }
     }

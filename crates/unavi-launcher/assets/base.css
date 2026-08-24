@@ -21,9 +21,6 @@
   --border-subtle-active: rgba(255, 255, 255, 0.45);
   --border-error: #500;
 
-  --glow-cyan: #00f0ff;
-  --glow-purple: #a000ff;
-
   --glass-bg-light: linear-gradient(
     135deg,
     rgba(255, 255, 255, 0.85) 0%,
@@ -39,8 +36,6 @@
     rgba(255, 50, 50, 0.08) 0%,
     rgba(255, 20, 20, 0.05) 100%
   );
-  --glass-blur-strong: blur(20px) saturate(180%);
-  --glass-blur-medium: blur(12px) saturate(150%);
   --glass-blur-light: blur(4px);
   --glass-radius: 16px;
   --glass-radius-large: 30px;
@@ -58,9 +53,7 @@
 }
 
 body {
-  font-family:
-    "SF Mono", "Monaco", "Inconsolata", "Fira Code", "Fira Mono", "Roboto Mono",
-    "Consolas", "Courier New", monospace;
+  font-family: monospace;
   background: var(--bg-primary);
   margin: 0;
   padding: 0;

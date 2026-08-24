@@ -1,19 +1,16 @@
-use std::{
-    process::Child,
-    sync::Arc,
-};
+use std::process::Child;
 
 use parking_lot::Mutex;
 
 pub struct ProcessTracker {
-    child: Arc<Mutex<Option<Child>>>,
+    child: Mutex<Option<Child>>,
 }
 
 impl ProcessTracker {
     #[must_use]
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
-            child: Arc::new(Mutex::new(None)),
+            child: Mutex::new(None),
         }
     }
 
@@ -25,25 +22,27 @@ impl ProcessTracker {
     #[must_use]
     pub fn is_running(&self) -> bool {
         let mut guard = self.child.lock();
-        if let Some(ref mut child) = *guard {
-            if child.try_wait().ok() == Some(None) {
-                true
-            } else {
-                *guard = None;
-                false
-            }
-        } else {
-            false
+
+        let running = guard
+            .as_mut()
+            .is_some_and(|child| matches!(child.try_wait(), Ok(None)));
+
+        if !running {
+            *guard = None;
         }
+
+        running
     }
 
     pub fn kill(&self) -> anyhow::Result<()> {
-        let mut guard = self.child.lock();
-        if let Some(ref mut child) = *guard {
+        let child = self.child.lock().take();
+
+        if let Some(mut child) = child {
             child.kill()?;
-            *guard = None;
+            // Reaps the process; dropping a `Child` deliberately does not.
+            child.wait()?;
         }
-        drop(guard);
+
         Ok(())
     }
 }

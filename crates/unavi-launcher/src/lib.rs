@@ -1,10 +1,17 @@
 use std::sync::LazyLock;
 
 use config::ConfigStore;
-use dioxus::desktop::{
+use dioxus::native::{
+    Config,
     LogicalSize,
-    WindowBuilder,
-    tao::window::Icon,
+    WindowAttributes,
+    winit::{
+        icon::{
+            Icon,
+            RgbaIcon,
+        },
+        window::WindowButtons,
+    },
 };
 use directories::ProjectDirs;
 use process::ProcessTracker;
@@ -32,35 +39,31 @@ fn load_icon() -> Icon {
         .into_rgba8();
     let (width, height) = image.dimensions();
     let rgba = image.into_raw();
-    Icon::from_rgba(rgba, width, height).expect("failed to create icon")
+    RgbaIcon::new(rgba, width, height)
+        .expect("failed to create icon")
+        .into()
 }
 
 pub fn run_launcher() {
-    let bg = (0, 0, 0, 255);
-    let icon = load_icon();
+    // launch_cfg bypasses dioxus::launch, which is what would otherwise
+    // install this.
+    dioxus::logger::initialize_default();
 
     let width = 380;
     let phi = std::f32::consts::GOLDEN_RATIO;
 
     let size = LogicalSize::new(width, (width as f32 * phi).round() as i32);
 
-    dioxus::LaunchBuilder::new()
-        .with_cfg(
-            dioxus::desktop::Config::new()
-                .with_menu(None)
-                .with_background_color(bg)
-                .with_data_directory(DIRS.data_local_dir())
-                .with_icon(icon.clone())
-                .with_window(
-                    WindowBuilder::new()
-                        .with_title("UNAVI Launcher")
-                        .with_maximizable(false)
-                        .with_resizable(false)
-                        .with_background_color(bg)
-                        .with_window_icon(Some(icon))
-                        .with_inner_size(size)
-                        .with_min_inner_size(size),
-                ),
-        )
-        .launch(ui::app::App);
+    let config = Config::new().with_window_attributes(
+        WindowAttributes::default()
+            .with_title("UNAVI Launcher")
+            .with_enabled_buttons(WindowButtons::CLOSE | WindowButtons::MINIMIZE)
+            .with_resizable(false)
+            .with_window_icon(Some(load_icon()))
+            .with_surface_size(size)
+            .with_min_surface_size(size)
+            .with_max_surface_size(size),
+    );
+
+    dioxus::native::launch_cfg(ui::app::App, vec![], vec![Box::new(config)]);
 }

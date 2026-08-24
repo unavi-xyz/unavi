@@ -1,9 +1,26 @@
+/* The glass sheen is a second background layer (confined to the top half via
+   background-size/position) rather than a `::after` pseudo-element, so there
+   is only one paint object for `transform: scale()` to apply to - Blitz does
+   not reliably scale a pseudo-element's own paint together with its parent's.
+   backdrop-filter is dropped throughout this file: unsupported on Blitz's
+   Vello backend, so it was already a no-op. */
 .home-button {
   position: relative;
   width: 240px;
   height: 60px;
   margin: 0 auto 20px;
-  background: var(--glass-bg-light);
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.001) 100%
+    ),
+    var(--glass-bg-light);
+  background-size:
+    100% 50%,
+    100% 100%;
+  background-position: top, center;
+  background-repeat: no-repeat, no-repeat;
   color: rgba(0, 0, 0, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: var(--glass-radius-large);
@@ -11,8 +28,6 @@
   font-size: 20px;
   font-weight: 600;
   cursor: pointer;
-  backdrop-filter: var(--glass-blur-strong);
-  -webkit-backdrop-filter: var(--glass-blur-strong);
   transition:
     transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
     background 0.3s ease,
@@ -29,64 +44,38 @@
   justify-content: center;
 }
 
-.home-button::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 50%;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.5) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  border-radius: var(--glass-radius-large) var(--glass-radius-large) 0 0;
-  pointer-events: none;
-}
-
-.home-button:hover {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.95) 0%,
-    rgba(255, 255, 255, 0.85) 100%
-  );
+.home-button:hover,
+.home-button:active {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.6) 0%,
+      rgba(255, 255, 255, 0.001) 100%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(255, 255, 255, 0.85) 100%
+    );
   border-color: rgba(255, 255, 255, 0.7);
-  transform: scale(1.05);
-  backdrop-filter: blur(24px) saturate(200%);
-  -webkit-backdrop-filter: blur(24px) saturate(200%);
   box-shadow: var(--glass-shadow), var(--glass-inset-highlight-bright);
 }
 
-.home-button:hover::after {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.6) 0%,
-    rgba(255, 255, 255, 0) 100%
-  );
+.home-button:hover {
+  transform: scale(1.05);
 }
 
 .home-button:active {
   transform: scale(0.97);
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.75) 0%,
-    rgba(255, 255, 255, 0.65) 100%
-  );
-  border-color: rgba(255, 255, 255, 0.55);
-  box-shadow:
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    inset 0 2px 8px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .home-button.running {
   cursor: default;
-  background: transparent;
+  /* vello_hybrid treats exactly-zero alpha as a clip-mask sentinel and
+     panics on it, so avoid `transparent`/alpha 0 anywhere in this file. */
+  background: rgba(0, 0, 0, 0.001);
   border: none;
   box-shadow: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
   color: rgba(255, 255, 255, 0.35);
   font-weight: 400;
   font-size: 14px;
@@ -94,10 +83,6 @@
   text-shadow: none;
   transform: none;
   pointer-events: none;
-}
-
-.home-button.running::after {
-  display: none;
 }
 
 .nav-button {
@@ -110,8 +95,6 @@
   font-weight: 400;
   padding: 10px 20px;
   cursor: pointer;
-  backdrop-filter: var(--glass-blur-medium);
-  -webkit-backdrop-filter: var(--glass-blur-medium);
   transition: all 0.2s ease;
   margin: 0 auto;
   display: block;
@@ -128,8 +111,6 @@
     rgba(255, 255, 255, 0.08) 0%,
     rgba(255, 255, 255, 0.04) 100%
   );
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
   box-shadow:
     0 6px 20px rgba(0, 0, 0, 0.15),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);

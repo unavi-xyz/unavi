@@ -1,10 +1,12 @@
 use std::{
     fs,
     io::{
-        Read,
+        BufWriter,
         Write,
     },
     path::Path,
+    sync::LazyLock,
+    time::Duration,
 };
 
 use anyhow::{
@@ -15,43 +17,28 @@ use futures::StreamExt;
 use semver::Version;
 use serde::Deserialize;
 
-pub const REPO_OWNER: &str = "unavi-xyz";
-pub const REPO_NAME: &str = "unavi";
+use super::platform::RELEASE_TARGET;
+
+const REPO_OWNER: &str = "unavi-xyz";
+const REPO_NAME: &str = "unavi";
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
+
+static HTTP: LazyLock<reqwest::Client> = LazyLock::new(|| {
+    reqwest::Client::builder()
+        .user_agent(concat!("unavi-launcher/", env!("CARGO_PKG_VERSION")))
+        .connect_timeout(CONNECT_TIMEOUT)
+        .build()
+        .expect("reqwest client built from static settings")
+});
 
 pub fn needs_update(current: &Version, latest: &Version) -> bool {
     current < latest
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum SimpleTarget {
-    Apple,
-    Linux,
-    Windows,
-}
-
-impl SimpleTarget {
-    pub const fn release_str(self) -> &'static str {
-        match self {
-            Self::Apple => "macos",
-            Self::Linux => "linux",
-            Self::Windows => "windows",
-        }
-    }
-}
-
-pub fn get_platform_target() -> anyhow::Result<SimpleTarget> {
-    match std::env::consts::OS {
-        "linux" => Ok(SimpleTarget::Linux),
-        "windows" => Ok(SimpleTarget::Windows),
-        "macos" => Ok(SimpleTarget::Apple),
-        os => bail!("unsupported platform: {os}"),
-    }
-}
-
 #[derive(Debug, Deserialize)]
-pub struct GitHubRelease {
-    pub tag_name: String,
-    pub assets:   Vec<GitHubAsset>,
+struct GitHubRelease {
+    tag_name: String,
+    assets:   Vec<GitHubAsset>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -60,13 +47,17 @@ pub struct GitHubAsset {
     pub browser_download_url: String,
 }
 
-pub async fn fetch_github_releases() -> anyhow::Result<Vec<GitHubRelease>> {
+#[derive(Debug)]
+pub struct Release {
+    pub version: Version,
+    pub assets:  Vec<GitHubAsset>,
+}
+
+pub async fn fetch_latest_release() -> anyhow::Result<Release> {
     let url = format!("https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/releases");
 
-    let client = reqwest::Client::new();
-    let response = client
+    let response = HTTP
         .get(&url)
-        .header(reqwest::header::USER_AGENT, "unavi-launcher")
         .send()
         .await
         .context("failed to fetch releases")?;
@@ -80,34 +71,35 @@ pub async fn fetch_github_releases() -> anyhow::Result<Vec<GitHubRelease>> {
         .await
         .context("failed to parse releases JSON")?;
 
-    Ok(releases)
+    let release = releases
+        .into_iter()
+        .find(|r| !r.tag_name.contains("beta"))
+        .context("no valid release found")?;
+
+    let version = Version::parse(
+        release
+            .tag_name
+            .strip_prefix('v')
+            .unwrap_or(&release.tag_name),
+    )
+    .with_context(|| format!("release tag is not a version: {}", release.tag_name))?;
+
+    Ok(Release {
+        version,
+        assets: release.assets,
+    })
 }
 
-pub fn decompress_xz(xz_path: &std::path::Path, tar_path: &std::path::Path) -> anyhow::Result<()> {
-    let xz_file = std::fs::File::open(xz_path).context("open xz file")?;
-
-    let mut tar_file = std::fs::File::create(tar_path).context("create tar file")?;
-    let mut decoder = xz2::read::XzDecoder::new(xz_file);
-    let mut buf = [0u8; 1024];
-
-    loop {
-        let n = decoder.read(&mut buf).context("read xz archive")?;
-        if n == 0 {
-            break;
-        }
-        tar_file.write_all(&buf[0..n]).context("write tar file")?;
-    }
-
-    Ok(())
-}
-
-pub fn extract_archive(archive_path: &Path, dest: &Path) -> anyhow::Result<()> {
-    let tar_file = fs::File::open(archive_path).context("failed to open tar file")?;
-    let mut archive = tar::Archive::new(tar_file);
-    archive
-        .unpack(dest)
-        .context("failed to extract tar archive")?;
-    Ok(())
+/// Assets for every platform share a release, so both the binary name and the
+/// packaging this platform can actually install have to match.
+pub fn find_asset(assets: Vec<GitHubAsset>, binary: &str, ext: &str) -> Option<GitHubAsset> {
+    assets.into_iter().find(|asset| {
+        asset.name.contains(binary)
+            && asset.name.contains(RELEASE_TARGET)
+            && Path::new(&asset.name)
+                .extension()
+                .is_some_and(|found| found.eq_ignore_ascii_case(ext))
+    })
 }
 
 pub async fn download_with_progress<F>(
@@ -118,16 +110,13 @@ pub async fn download_with_progress<F>(
 where
     F: Fn(f32),
 {
-    let client = reqwest::Client::new();
-    let response = client
+    let response = HTTP
         .get(url)
         .header(reqwest::header::ACCEPT, "application/octet-stream")
-        .header(reqwest::header::USER_AGENT, "unavi-launcher")
         .send()
         .await
         .context("failed to start download")?;
 
-    // Check if the request was successful
     if !response.status().is_success() {
         bail!(
             "download failed with status {}: {}",
@@ -138,8 +127,9 @@ where
 
     let total_size = response.content_length().unwrap_or(0);
     let mut downloaded: u64 = 0;
-    let mut file = fs::File::create(dest_path).context("failed to create file")?;
+    let mut reported = 0;
 
+    let mut file = BufWriter::new(fs::File::create(dest_path).context("failed to create file")?);
     let mut stream = response.bytes_stream();
 
     while let Some(chunk) = stream.next().await {
@@ -148,20 +138,26 @@ where
 
         downloaded += chunk.len() as u64;
 
-        if total_size > 0 {
-            let progress = (downloaded as f32 / total_size as f32) * 100.0;
-            on_progress(progress);
+        if total_size == 0 {
+            continue;
+        }
+
+        // Every chunk would redraw the UI hundreds of times a second for a
+        // bar that only has a hundred distinct positions.
+        let percent = (downloaded * 100 / total_size).min(100);
+        if percent > reported {
+            reported = percent;
+            on_progress(percent as f32);
         }
     }
+
+    file.flush().context("failed to flush download")?;
 
     Ok(())
 }
 
 pub fn is_network_error(err: &anyhow::Error) -> bool {
-    let err_str = format!("{err:?}").to_lowercase();
-    err_str.contains("dns")
-        || err_str.contains("connection")
-        || err_str.contains("timeout")
-        || err_str.contains("network")
-        || err_str.contains("unreachable")
+    err.chain()
+        .filter_map(|cause| cause.downcast_ref::<reqwest::Error>())
+        .any(|cause| cause.is_connect() || cause.is_timeout() || cause.is_request())
 }

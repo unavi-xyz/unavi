@@ -7,7 +7,7 @@
 
 <?define AppName = "UNAVI" ?>
 <?define Manufacturer = "UNAVI" ?>
-<?define DxBuildDir = "target\dx\unavi-launcher\release\windows\app" ?>
+<?define CargoBuildDir = "target\release" ?>
 
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
     <Product
@@ -46,7 +46,43 @@
                         <File
                             Id="LauncherExe"
                             Name="unavi-launcher.exe"
-                            Source="$(var.DxBuildDir)\unavi-launcher.exe"
+                            Source="$(var.CargoBuildDir)\unavi-launcher.exe"
+                            KeyPath="yes"
+                            />
+                    </Component>
+
+                    <!-- The exe links the MSVC CRT dynamically. CI copies these
+                         into $(var.CargoBuildDir) before linking the installer. -->
+                    <Component Id="VcRuntime" Guid="*">
+                        <File
+                            Id="VcRuntime140Dll"
+                            Name="vcruntime140.dll"
+                            Source="$(var.CargoBuildDir)\vcruntime140.dll"
+                            KeyPath="yes"
+                            />
+                    </Component>
+                    <Component Id="VcRuntime1" Guid="*">
+                        <File
+                            Id="VcRuntime140_1Dll"
+                            Name="vcruntime140_1.dll"
+                            Source="$(var.CargoBuildDir)\vcruntime140_1.dll"
+                            KeyPath="yes"
+                            />
+                    </Component>
+                    <Component Id="Msvcp" Guid="*">
+                        <File
+                            Id="Msvcp140Dll"
+                            Name="msvcp140.dll"
+                            Source="$(var.CargoBuildDir)\msvcp140.dll"
+                            KeyPath="yes"
+                            />
+                    </Component>
+
+                    <Component Id="License" Guid="*">
+                        <File
+                            Id="LicenseFile"
+                            Name="LICENSE"
+                            Source="LICENSE"
                             KeyPath="yes"
                             />
                     </Component>
@@ -107,7 +143,10 @@
             ConfigurableDirectory="APPLICATIONFOLDER"
             AllowAdvertise="no">
             <ComponentRef Id="MainExecutable"/>
-            <ComponentGroupRef Id="AssetsGroup"/>
+            <ComponentRef Id="VcRuntime"/>
+            <ComponentRef Id="VcRuntime1"/>
+            <ComponentRef Id="Msvcp"/>
+            <ComponentRef Id="License"/>
             <ComponentRef Id="StartMenuShortcut"/>
             <ComponentRef Id="DesktopShortcut"/>
         </Feature>

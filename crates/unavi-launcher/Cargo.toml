@@ -17,19 +17,29 @@ workspace = true
 [dependencies]
 anyhow.workspace        = true
 async-channel.workspace = true
-dioxus                  = { default-features = false, features = ["desktop", "launch", "lib", "logger", "router"], version = "0.7.5" }
+dioxus                  = { default-features = false, features = ["lib", "logger", "native", "router"], version = "0.8.0-alpha.1" }
 directories.workspace   = true
 futures.workspace       = true
 image                   = { features = ["png"], workspace = true }
 parking_lot.workspace   = true
 reqwest                 = { default-features = false, features = ["json", "native-tls", "stream", "system-proxy"], workspace = true }
-runas                   = "1.2.0"
-self-replace            = "1.5.0"
 semver                  = "1.0.28"
 serde.workspace         = true
-tar                     = "0.4.46"
 tempfile.workspace      = true
 tokio.workspace         = true
 toml.workspace          = true
 tracing.workspace       = true
-xz2                     = "0.1.7"
+
+# Linux ships an AppImage, which needs no unpacking.
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+tar = "0.4.46"
+xz2 = "0.1.7"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+self-replace = "1.5.0"
+
+[target.'cfg(windows)'.dependencies]
+runas = "1.2.0"
+
+[build-dependencies]
+base64 = "0.22.1"

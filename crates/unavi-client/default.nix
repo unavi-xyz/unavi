@@ -1,13 +1,14 @@
 { inputs, ... }: {
   perSystem =
-    { pkgs, lib, ... }:
+    {
+      pkgs,
+      lib,
+      system,
+      ...
+    }:
     let
       pname = "unavi-client";
 
-      # `wasm-bindgen` refuses a module whose schema came from a different
-      # version, and the sandbox cannot fetch the matching CLI the way Trunk
-      # would, so the tool is picked from the lockfile rather than pinned by
-      # hand where it would drift on the next `cargo update`.
       wasmBindgenVersion =
         (fromTOML (builtins.readFile ../../Cargo.lock)).package
         |> lib.findFirst (p: p.name == "wasm-bindgen") (throw "Cargo.lock has no wasm-bindgen")
@@ -83,7 +84,7 @@
               wasm-tools
             ]
           )
-          ++ [ inputs.wit-deps.packages.${pkgs.system}.wit-deps ];
+          ++ [ inputs.wit-deps.packages.${system}.wit-deps ];
 
         linkedInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
           with pkgs;
@@ -104,8 +105,6 @@
         buildInputs = linkedInputs;
       };
 
-      # WASM toolchain - clang-unwrapped avoids hardening flags,
-      # libclang headers provide stddef.h etc. for SQLite.
       wasmCC = {
         CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";
         AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
@@ -141,10 +140,6 @@
           nu scripts/build-wasm.nu
         '';
 
-        # udev/alsa are direct link-time deps, so RPATH resolves them. The
-        # rest (vulkan-loader, wayland, X11, xkbcommon, openxr-loader) are
-        # dlopen'd at runtime by winit/ash rather than linked, so RPATH
-        # doesn't reach them - only LD_LIBRARY_PATH does.
         postInstall = ''
           mkdir -p $out/bin/assets
           cp -r crates/${pname}/assets/* $out/bin/assets/
@@ -165,8 +160,6 @@
           npmRoot = "crates/unavi-script";
           inherit npmDeps;
 
-          # Trunk's own `post_build` hook shells out to `nu`, so nushell has to be
-          # on PATH rather than only reachable by store path.
           nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [
             pkgs.nodejs
             pkgs.npmHooks.npmConfigHook
@@ -191,23 +184,18 @@
             cp LICENSE $out
           '';
         };
+
+      packageDrv = pkgs.crane.buildPackage nativeArgs;
     in
     {
-      # checks = {
-      #   "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
-      #   "${pname}-nextest" = pkgs.crane.cargoNextest (
-      #     cargoArgs
-      #     // {
-      #       inherit cargoArtifacts;
-      #       cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";
-      #       preBuild = "${pkgs.nushell}/bin/nu scripts/build-wasm.nu";
-      #     }
-      #   );
-      # };
-
       packages = {
-        "${pname}" = pkgs.crane.buildPackage nativeArgs;
+        "${pname}" = packageDrv;
         "${pname}-web" = pkgs.crane.buildTrunkPackage (webArgs // { pname = "${pname}-web"; });
+      }
+      // lib.optionalAttrs pkgs.stdenv.isLinux {
+        "${pname}-appimage" = inputs.nix-appimage.lib.${system}.mkAppImage {
+          program = "${packageDrv}/bin/${pname}";
+        };
       };
     };
 }

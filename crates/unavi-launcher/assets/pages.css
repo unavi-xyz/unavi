@@ -17,6 +17,10 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.3);
+  /* blitz-paint fills the checked box with the checkbox's own computed
+     `color` as a stand-in for the unimplemented `accent-color`, then draws
+     a solid white tick on top - a light color here is invisible against it. */
+  color: var(--bg-disabled);
   transition: all 0.2s ease;
   position: relative;
   flex-shrink: 0;

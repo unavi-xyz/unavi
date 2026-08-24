@@ -14,7 +14,9 @@ jobs:
       - name: Generate build matrix
         id: generate
         run: |
-          PACKAGES=("unavi-client" "unavi-launcher" "unavi-server")
+          # Graphical packages ship as AppImages; headless ones as plain bundles.
+          APPIMAGE_PACKAGES=("unavi-client" "unavi-launcher")
+          BUNDLE_PACKAGES=("unavi-server")
           # SYSTEMS=("x86_64-linux" "x86_64-darwin")
           SYSTEMS=("x86_64-linux")
 
@@ -23,10 +25,14 @@ jobs:
 
           MATRIX="["
           for SYS in "${SYSTEMS[@]}"; do
-            for PKG in "${PACKAGES[@]}"; do
+            OS="${OS_MAP[$SYS]}"
+            for PKG in "${APPIMAGE_PACKAGES[@]}"; do
               [ "$MATRIX" != "[" ] && MATRIX+=","
-              OS="${OS_MAP[$SYS]}"
-              MATRIX+="{\"package\":\"$PKG\",\"os\":\"$OS\",\"name\":\"$PKG-$SYS\"}"
+              MATRIX+="{\"package\":\"$PKG\",\"os\":\"$OS\",\"name\":\"$PKG-$SYS\",\"format\":\"appimage\"}"
+            done
+            for PKG in "${BUNDLE_PACKAGES[@]}"; do
+              [ "$MATRIX" != "[" ] && MATRIX+=","
+              MATRIX+="{\"package\":\"$PKG\",\"os\":\"$OS\",\"name\":\"$PKG-$SYS\",\"format\":\"bundle\"}"
             done
           done
           MATRIX+="]"
@@ -52,7 +58,20 @@ jobs:
         with:
           extra-conf: extra-experimental-features = pipe-operators
       - run: nix profile add nixpkgs#xz
-      - name: Build package
+      - name: Build AppImage
+        if: ${{ matrix.format == 'appimage' }}
+        run: |
+          # The AppImage carries the full closure and a static runtime, so it
+          # needs neither Nix nor an FHS host to start. Its squashfs payload is
+          # already compressed, so no outer archive is worth the size; a manual
+          # download costs a chmod +x, and the launcher sets that bit itself
+          # when it installs an update.
+          nix build -L -o result .#${{ matrix.package }}-appimage
+          cp --dereference result ${{ matrix.name }}.AppImage
+          chmod +x ${{ matrix.name }}.AppImage
+          echo "ARTIFACT=${{ matrix.name }}.AppImage" >> "$GITHUB_ENV"
+      - name: Build bundle
+        if: ${{ matrix.format == 'bundle' }}
         run: |
           # Bundles the full closure so the artifact runs without Nix installed.
           nix bundle -L -o bundle .#${{ matrix.package }}
@@ -62,9 +81,10 @@ jobs:
           # xz stream of the binary does not, since Unix permissions aren't
           # part of a compressed byte stream or an HTTP download.
           tar -cf - ${{ matrix.name }} | xz --x86 -9e -c > ${{ matrix.name }}.tar.xz
+          echo "ARTIFACT=${{ matrix.name }}.tar.xz" >> "$GITHUB_ENV"
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: build-${{ matrix.name }}
-          path: ${{ matrix.name }}.tar.xz
+          path: ${{ env.ARTIFACT }}
           retention-days: 1

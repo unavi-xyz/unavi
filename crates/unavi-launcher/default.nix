@@ -1,42 +1,13 @@
-_: {
+{ inputs, ... }: {
   perSystem =
-    { pkgs, lib, ... }:
+    {
+      pkgs,
+      lib,
+      system,
+      ...
+    }:
     let
       pname = "unavi-launcher";
-
-      libCheck = pkgs.writeShellScript "unavi-launcher-libcheck" ''
-        missing=$(${pkgs.glibc.bin}/bin/ldd "$1" 2>&1 | ${pkgs.gnugrep}/bin/grep "not found") || true
-        if [ -n "$missing" ]; then
-          echo "unavi-launcher: missing system libraries, this host needs WebKitGTK 4.1 + GTK3 installed:" >&2
-          echo "$missing" >&2
-          exit 1
-        fi
-      '';
-
-      # webkitgtk/gtk3/glib/cairo/... resolve against the host's own install
-      # (bundling webkitgtk's own closure balloons this from ~50MB to ~850MB),
-      # but these are unavi-launcher's own small direct deps, cheap to bundle
-      # and not something every host is guaranteed to already have.
-      rpath = lib.makeLibraryPath [
-        pkgs.openssl
-        pkgs.xdotool
-        pkgs.xz
-      ];
-
-      # dx must match the `dioxus` crate version in Cargo.lock or codegen
-      # diverges from the compiled app.
-      dioxusCli =
-        let
-          expected =
-            (fromTOML (builtins.readFile ../../Cargo.lock)).package
-            |> lib.findFirst (p: p.name == "dioxus") (throw "Cargo.lock has no dioxus")
-            |> (p: p.version);
-          actual = pkgs.dioxus-cli.version;
-        in
-        if actual == expected then
-          pkgs.dioxus-cli
-        else
-          throw "nixpkgs dioxus-cli ${actual} != Cargo.lock dioxus ${expected}";
 
       src = lib.fileset.toSource rec {
         root = ../..;
@@ -58,93 +29,99 @@ _: {
         inherit pname;
         inherit src;
 
+        doCheck = false;
+
         cargoExtraArgs = "-p ${pname}";
         strictDeps = true;
 
-        nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
+        nativeBuildInputs = lib.optionals pkgs.stdenv.hostPlatform.isLinux (
           with pkgs;
           [
             clang
-            dioxusCli
             lld
-            makeWrapper
-            patchelf
             pkg-config
             python3
           ]
         );
 
-        # Compile-time only. postInstall strips RPATH so the binary
-        # resolves these against whatever the host system has installed,
-        # instead of shipping WebKitGTK's own multi-GB runtime closure
-        # in the release artifact.
-        buildInputs = with pkgs; [
-          at-spi2-atk
-          atkmm
-          bzip2
-          cairo
-          gdk-pixbuf
-          glib
-          gtk3
-          harfbuzz
-          libiconv
-          librsvg
-          libsoup_3
-          openssl
-          pango
-          webkitgtk_4_1
-          xdotool
-          xz
-        ];
+        linkedInputs = lib.optionals pkgs.stdenv.hostPlatform.isLinux (
+          with pkgs;
+          [
+            fontconfig
+            libGL
+            libX11
+            libXcursor
+            libXi
+            libXrandr
+            libxcb
+            libxkbcommon
+            openssl
+            vulkan-loader
+            wayland
+          ]
+        );
+
+        buildInputs = linkedInputs;
       };
+
+      libraryPath = lib.makeLibraryPath cargoArgs.linkedInputs;
+
+      # nix-appimage reads this out of the package to give the AppImage a name
+      # and a .DirIcon, which is all a desktop has to identify it by.
+      desktopItem = pkgs.makeDesktopItem {
+        name = pname;
+        desktopName = "UNAVI";
+        comment = "Launcher for the UNAVI client";
+        exec = pname;
+        icon = pname;
+        categories = [ "Network" ];
+      };
+
+      iconSizes = [
+        256
+        128
+        64
+      ];
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
 
       packageDrv = pkgs.crane.buildPackage (
         cargoArgs
-        // rec {
+        // {
           inherit cargoArtifacts;
-          doCheck = false;
 
-          cargoBuildCommand = ''
-            dx build -p ${pname} --release
-          '';
-
-          buildPhaseCargoCommand = ''
-            ${cargoBuildCommand}
-          '';
-
-          doNotPostBuildInstallCargoBinaries = true;
-
-          installPhaseCommand = ''
-            mkdir -p $out/bin
-            cp -r target/dx/${pname}/release/*/app/* $out/bin
-          '';
+          nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [
+            pkgs.imagemagick
+            pkgs.makeWrapper
+            pkgs.patchelf
+          ];
 
           postInstall = ''
             cp LICENSE $out
-            patchelf --set-rpath "${rpath}" $out/bin/${pname}
+            patchelf --set-rpath "${libraryPath}" $out/bin/${pname}
             wrapProgram $out/bin/${pname} \
-              --set WEBKIT_DISABLE_DMABUF_RENDERER 1 \
-              --run "${libCheck} $out/bin/.${pname}-wrapped"
+              --prefix LD_LIBRARY_PATH : "${libraryPath}"
+
+            install -Dm444 -t $out/share/applications \
+              ${desktopItem}/share/applications/${pname}.desktop
+
+            ${lib.concatMapStringsSep "\n" (size: ''
+              install -dm755 $out/share/icons/hicolor/${toString size}x${toString size}/apps
+              magick assets/icon-nobg.png -resize ${toString size}x${toString size} \
+                $out/share/icons/hicolor/${toString size}x${toString size}/apps/${pname}.png
+            '') iconSizes}
           '';
         }
       );
     in
     {
-      # checks = {
-      #   "${pname}-doc" = pkgs.crane.cargoDoc (cargoArgs // { inherit cargoArtifacts; });
-      #   "${pname}-nextest" = pkgs.crane.cargoNextest (
-      #     cargoArgs
-      #     // {
-      #       inherit cargoArtifacts;
-      #       cargoExtraArgs = cargoArgs.cargoExtraArgs + " --no-tests pass";
-      #     }
-      #   );
-      # };
-
       packages = {
         "${pname}" = packageDrv;
+      }
+      // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+        "${pname}-appimage" = inputs.nix-appimage.lib.${system}.mkAppImage {
+          program = "${packageDrv}/bin/${pname}";
+        };
       };
     };
 }

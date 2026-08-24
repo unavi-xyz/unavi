@@ -5,6 +5,10 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
       url = "github:hercules-ci/flake-parts";
     };
+    nix-appimage = {
+      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:ralismark/nix-appimage";
+    };
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     systems.url = "github:nix-systems/default";
     treefmt-nix.url = "github:numtide/treefmt-nix";
@@ -212,8 +216,6 @@
                     ]);
 
                   inherit LD_LIBRARY_PATH;
-
-                  WEBKIT_DISABLE_DMABUF_RENDERER = 1; # Nvida + Wayland launcher bug
 
                   # The profile whose values every locally built binary
                   # compiles in, naming a locally run server.

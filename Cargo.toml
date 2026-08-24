@@ -55,7 +55,8 @@ directories          = "6.0.0"
 embed-resource       = "3.0.8"
 futures              = "0.3.32"
 glam                 = "0.32.1"
-image                = { default-features = false, version = "0.25.10" }
+# Held back by blitz-dom, which pins `image = "=0.25.6"`.
+image                = { default-features = false, version = "0.25.6" }
 iroh                 = { default-features = false, features = ["tls-ring"], version = "1.0.3" }
 iroh-blobs           = { default-features = false, version = "0.103.0" }
 iroh-docs            = { default-features = false, version = "0.101.0" }

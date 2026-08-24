@@ -124,13 +124,20 @@ jobs:
             [ -d "$dir" ] || continue
             cd "$dir" || exit
             for file in *; do
-              if [[ "$file" == *.* ]]; then
-                base="${file%.*}"
-                ext="${file##*.}"
-                mv "$file" "../${base}-${{ needs.version.outputs.version }}.${ext}"
-              else
-                mv "$file" "../${file}-${{ needs.version.outputs.version }}"
-              fi
+              case "$file" in
+                *.tar.xz)
+                  base="${file%.tar.xz}"
+                  mv "$file" "../${base}-${{ needs.version.outputs.version }}.tar.xz"
+                  ;;
+                *.*)
+                  base="${file%.*}"
+                  ext="${file##*.}"
+                  mv "$file" "../${base}-${{ needs.version.outputs.version }}.${ext}"
+                  ;;
+                *)
+                  mv "$file" "../${file}-${{ needs.version.outputs.version }}"
+                  ;;
+              esac
             done
             cd ..
             rm -rf "$dir"

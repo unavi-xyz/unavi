@@ -129,6 +129,7 @@
         inherit npmDeps;
 
         nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [
+          pkgs.makeWrapper
           pkgs.nodejs
           pkgs.npmHooks.npmConfigHook
           pkgs.nushell
@@ -140,15 +141,18 @@
           nu scripts/build-wasm.nu
         '';
 
-        # RPATH is stripped so the released binary resolves alsa/X11/
-        # Wayland/Vulkan against whatever the host system has installed,
-        # instead of shipping nixpkgs' own runtime closure for them.
+        # udev/alsa are direct link-time deps, so RPATH resolves them. The
+        # rest (vulkan-loader, wayland, X11, xkbcommon, openxr-loader) are
+        # dlopen'd at runtime by winit/ash rather than linked, so RPATH
+        # doesn't reach them - only LD_LIBRARY_PATH does.
         postInstall = ''
           mkdir -p $out/bin/assets
           cp -r crates/${pname}/assets/* $out/bin/assets/
           rm -f $out/bin/assets/hsd/example_*.hsdz
           cp LICENSE $out
-          patchelf --remove-rpath $out/bin/${pname}
+          patchelf --set-rpath "${lib.makeLibraryPath cargoArgs.linkedInputs}" $out/bin/${pname}
+          wrapProgram $out/bin/${pname} \
+            --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath cargoArgs.linkedInputs}"
         '';
       };
 

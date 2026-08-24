@@ -4,6 +4,25 @@ _: {
     let
       pname = "unavi-launcher";
 
+      libCheck = pkgs.writeShellScript "unavi-launcher-libcheck" ''
+        missing=$(${pkgs.glibc.bin}/bin/ldd "$1" 2>&1 | ${pkgs.gnugrep}/bin/grep "not found") || true
+        if [ -n "$missing" ]; then
+          echo "unavi-launcher: missing system libraries, this host needs WebKitGTK 4.1 + GTK3 installed:" >&2
+          echo "$missing" >&2
+          exit 1
+        fi
+      '';
+
+      # webkitgtk/gtk3/glib/cairo/... resolve against the host's own install
+      # (bundling webkitgtk's own closure balloons this from ~50MB to ~850MB),
+      # but these are unavi-launcher's own small direct deps, cheap to bundle
+      # and not something every host is guaranteed to already have.
+      rpath = lib.makeLibraryPath [
+        pkgs.openssl
+        pkgs.xdotool
+        pkgs.xz
+      ];
+
       # dx must match the `dioxus` crate version in Cargo.lock or codegen
       # diverges from the compiled app.
       dioxusCli =
@@ -104,9 +123,10 @@ _: {
 
           postInstall = ''
             cp LICENSE $out
-            patchelf --remove-rpath $out/bin/${pname}
+            patchelf --set-rpath "${rpath}" $out/bin/${pname}
             wrapProgram $out/bin/${pname} \
-              --set WEBKIT_DISABLE_DMABUF_RENDERER 1
+              --set WEBKIT_DISABLE_DMABUF_RENDERER 1 \
+              --run "${libCheck} $out/bin/.${pname}-wrapped"
           '';
         }
       );

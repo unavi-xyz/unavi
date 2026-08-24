@@ -56,10 +56,15 @@ jobs:
         run: |
           # Bundles the full closure so the artifact runs without Nix installed.
           nix bundle -L -o bundle .#${{ matrix.package }}
-          xz --x86 -9e -c bundle > ${{ matrix.name }}.xz
+          cp --dereference bundle ${{ matrix.name }}
+          chmod +x ${{ matrix.name }}
+          # tar preserves the executable bit through download+extract; a bare
+          # xz stream of the binary does not, since Unix permissions aren't
+          # part of a compressed byte stream or an HTTP download.
+          tar -cf - ${{ matrix.name }} | xz --x86 -9e -c > ${{ matrix.name }}.tar.xz
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: build-${{ matrix.name }}
-          path: ${{ matrix.name }}.xz
+          path: ${{ matrix.name }}.tar.xz
           retention-days: 1

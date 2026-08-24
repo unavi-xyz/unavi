@@ -9,7 +9,7 @@ _: {
       dioxusCli =
         let
           expected =
-            (builtins.fromTOML (builtins.readFile ../../Cargo.lock)).package
+            (fromTOML (builtins.readFile ../../Cargo.lock)).package
             |> lib.findFirst (p: p.name == "dioxus") (throw "Cargo.lock has no dioxus")
             |> (p: p.version);
           actual = pkgs.dioxus-cli.version;
@@ -49,17 +49,27 @@ _: {
             dioxusCli
             lld
             makeWrapper
+            patchelf
             pkg-config
             python3
           ]
         );
 
-        linkedInputs = with pkgs; [
+        # Compile-time only. postInstall strips RPATH so the binary
+        # resolves these against whatever the host system has installed,
+        # instead of shipping WebKitGTK's own multi-GB runtime closure
+        # in the release artifact.
+        buildInputs = with pkgs; [
+          at-spi2-atk
+          atkmm
           bzip2
           cairo
           gdk-pixbuf
           glib
           gtk3
+          harfbuzz
+          libiconv
+          librsvg
           libsoup_3
           openssl
           pango
@@ -67,16 +77,6 @@ _: {
           xdotool
           xz
         ];
-
-        buildInputs =
-          (with pkgs; [
-            at-spi2-atk
-            atkmm
-            harfbuzz
-            libiconv
-            librsvg
-          ])
-          ++ linkedInputs;
       };
 
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
@@ -104,8 +104,8 @@ _: {
 
           postInstall = ''
             cp LICENSE $out
+            patchelf --remove-rpath $out/bin/${pname}
             wrapProgram $out/bin/${pname} \
-              --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath cargoArgs.linkedInputs}" \
               --set WEBKIT_DISABLE_DMABUF_RENDERER 1
           '';
         }

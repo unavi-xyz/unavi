@@ -9,7 +9,7 @@
       # would, so the tool is picked from the lockfile rather than pinned by
       # hand where it would drift on the next `cargo update`.
       wasmBindgenVersion =
-        (builtins.fromTOML (builtins.readFile ../../Cargo.lock)).package
+        (fromTOML (builtins.readFile ../../Cargo.lock)).package
         |> lib.findFirst (p: p.name == "wasm-bindgen") (throw "Cargo.lock has no wasm-bindgen")
         |> (p: p.version);
 
@@ -104,9 +104,18 @@
         buildInputs = linkedInputs;
       };
 
+      # WASM toolchain - clang-unwrapped avoids hardening flags,
+      # libclang headers provide stddef.h etc. for SQLite.
+      wasmCC = {
+        CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";
+        AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
+        CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
+      };
+
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
       cargoArtifactsWeb = pkgs.crane.buildDepsOnly (
         cargoArgs
+        // wasmCC
         // {
           pname = "${pname}-web";
           CARGO_BUILD_TARGET = "wasm32-unknown-unknown";
@@ -120,10 +129,10 @@
         inherit npmDeps;
 
         nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [
-          pkgs.makeWrapper
           pkgs.nodejs
           pkgs.npmHooks.npmConfigHook
           pkgs.nushell
+          pkgs.patchelf
         ];
 
         preBuild = ''
@@ -131,52 +140,53 @@
           nu scripts/build-wasm.nu
         '';
 
+        # RPATH is stripped so the released binary resolves alsa/X11/
+        # Wayland/Vulkan against whatever the host system has installed,
+        # instead of shipping nixpkgs' own runtime closure for them.
         postInstall = ''
           mkdir -p $out/bin/assets
           cp -r crates/${pname}/assets/* $out/bin/assets/
           rm -f $out/bin/assets/hsd/example_*.hsdz
           cp LICENSE $out
-          wrapProgram $out/bin/${pname} \
-            --prefix LD_LIBRARY_PATH : "${pkgs.lib.makeLibraryPath cargoArgs.linkedInputs}"
+          patchelf --remove-rpath $out/bin/${pname}
         '';
       };
 
-      webArgs = cargoArgs // {
-        cargoArtifacts = cargoArtifactsWeb;
+      webArgs =
+        cargoArgs
+        // wasmCC
+        // {
+          cargoArtifacts = cargoArtifactsWeb;
 
-        npmRoot = "crates/unavi-script";
-        inherit npmDeps;
+          npmRoot = "crates/unavi-script";
+          inherit npmDeps;
 
-        # Trunk's own `post_build` hook shells out to `nu`, so nushell has to be
-        # on PATH rather than only reachable by store path.
-        nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [
-          pkgs.nodejs
-          pkgs.npmHooks.npmConfigHook
-          pkgs.nushell
-        ];
-        inherit wasm-bindgen-cli;
+          # Trunk's own `post_build` hook shells out to `nu`, so nushell has to be
+          # on PATH rather than only reachable by store path.
+          nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [
+            pkgs.nodejs
+            pkgs.npmHooks.npmConfigHook
+            pkgs.nushell
+          ];
+          inherit wasm-bindgen-cli;
 
-        preBuild = ''
-          nu scripts/update-wasm.nu --locked
-          nu scripts/build-wasm.nu
-        '';
+          preBuild = ''
+            nu scripts/update-wasm.nu --locked
+            nu scripts/build-wasm.nu
+          '';
 
-        buildPhaseCargoCommand = ''
-          nu scripts/build-web.nu --release
-        '';
+          buildPhaseCargoCommand = ''
+            nu scripts/build-web.nu --release
+          '';
 
-        installPhaseCommand = ''
-          cp -r dist $out
-        '';
+          installPhaseCommand = ''
+            cp -r dist $out
+          '';
 
-        postInstall = ''
-          cp LICENSE $out
-        '';
-
-        CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.clang-unwrapped}/bin/clang";
-        AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_21.llvm}/bin/llvm-ar";
-        CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
-      };
+          postInstall = ''
+            cp LICENSE $out
+          '';
+        };
     in
     {
       # checks = {

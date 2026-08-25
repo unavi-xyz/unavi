@@ -66,8 +66,6 @@ _: {
 
       libraryPath = lib.makeLibraryPath cargoArgs.linkedInputs;
 
-      # nix-appimage reads this out of the package to give the AppImage a name
-      # and a .DirIcon, which is all a desktop has to identify it by.
       desktopItem = pkgs.makeDesktopItem {
         name = pname;
         desktopName = "UNAVI";

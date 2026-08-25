@@ -28,6 +28,11 @@ const APPIMAGE_RUN: &str = "appimage-run";
 // inheriting these points it at libraries that only exist in our mount.
 const BUNDLE_ENV: &[&str] = &["APPDIR", "APPIMAGE", "ARGV0", "LD_LIBRARY_PATH", "OWD"];
 
+// AppImageLauncher hooks every exec of an AppImage through binfmt_misc and
+// offers to install it. The versions under this launcher's control are not
+// the user's to keep, so the prompt would fire on each downloaded release.
+const INTEGRATION_ENV: (&str, &str) = ("APPIMAGELAUNCHER_DISABLE", "1");
+
 pub fn client_command(exe: &Path) -> Command {
     launch_command(exe)
 }
@@ -111,6 +116,8 @@ fn build_command(appimage: &Path, appimage_run: Option<&Path>) -> Command {
         cmd.env_remove(key);
     }
 
+    cmd.env(INTEGRATION_ENV.0, INTEGRATION_ENV.1);
+
     cmd
 }
 
@@ -160,5 +167,17 @@ mod tests {
                 "{key} is still inherited"
             );
         }
+    }
+
+    #[test]
+    fn disables_appimage_integration() {
+        let cmd = build_command(Path::new(APPIMAGE), None);
+        let (key, value) = INTEGRATION_ENV;
+
+        assert!(
+            cmd.get_envs()
+                .any(|(k, v)| k == OsStr::new(key) && v == Some(OsStr::new(value))),
+            "{key} is not set"
+        );
     }
 }

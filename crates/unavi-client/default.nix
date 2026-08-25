@@ -112,6 +112,31 @@
         CFLAGS_wasm32_unknown_unknown = "--target=wasm32 -O3 -isystem ${pkgs.llvmPackages_21.libclang.lib}/lib/clang/21/include";
       };
 
+      version = (fromTOML (builtins.readFile ../../Cargo.toml)).workspace.package.version;
+
+      desktopItem = pkgs.makeDesktopItem {
+        name = pname;
+        desktopName = "UNAVI Client";
+        comment = "Peer-to-peer 3D social platform for VR and desktop";
+        exec = pname;
+        icon = pname;
+        categories = [ "Network" ];
+
+        # Matches the primary window's `name`, which is the app_id a compositor
+        # has to tie the running window back to this entry.
+        startupWMClass = "unavi";
+
+        # Names the entry an integration tool installs, so two versions
+        # installed side by side stay distinguishable.
+        extraConfig."X-AppImage-Version" = version;
+      };
+
+      iconSizes = [
+        256
+        128
+        64
+      ];
+
       cargoArtifacts = pkgs.crane.buildDepsOnly cargoArgs;
       cargoArtifactsWeb = pkgs.crane.buildDepsOnly (
         cargoArgs
@@ -129,6 +154,7 @@
         inherit npmDeps;
 
         nativeBuildInputs = cargoArgs.nativeBuildInputs ++ [
+          pkgs.imagemagick
           pkgs.makeWrapper
           pkgs.nodejs
           pkgs.npmHooks.npmConfigHook
@@ -149,6 +175,15 @@
           patchelf --set-rpath "${lib.makeLibraryPath cargoArgs.linkedInputs}" $out/bin/${pname}
           wrapProgram $out/bin/${pname} \
             --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath cargoArgs.linkedInputs}"
+
+          install -Dm444 -t $out/share/applications \
+            ${desktopItem}/share/applications/${pname}.desktop
+
+          ${lib.concatMapStringsSep "\n" (size: ''
+            install -dm755 $out/share/icons/hicolor/${toString size}x${toString size}/apps
+            magick assets/icon-nobg.png -resize ${toString size}x${toString size} \
+              $out/share/icons/hicolor/${toString size}x${toString size}/apps/${pname}.png
+          '') iconSizes}
         '';
       };
 

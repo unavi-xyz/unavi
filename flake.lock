@@ -247,6 +247,7 @@
       "original": {
         "owner": "ralismark",
         "repo": "nix-appimage",
+        "rev": "7946addbc0d97e358a6d7aefe5e82310f0fe6b18",
         "type": "github"
       }
     },

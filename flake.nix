@@ -5,9 +5,11 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
       url = "github:hercules-ci/flake-parts";
     };
+    # Pinned by revision because nix/appimage patches this AppRun source by
+    # context, which a newer revision can silently invalidate.
     nix-appimage = {
       inputs.nixpkgs.follows = "nixpkgs";
-      url = "github:ralismark/nix-appimage";
+      url = "github:ralismark/nix-appimage/7946addbc0d97e358a6d7aefe5e82310f0fe6b18";
     };
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     systems.url = "github:nix-systems/default";

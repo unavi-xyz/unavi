@@ -1,0 +1,36 @@
+@@ -180,7 +180,34 @@
+ 	const char* nix_to = strprintf("%s/nix", mountroot);
+ 
+ 	die_if(mkdir(nix_to, 0777) < 0, "mkdir %s", nix_to);
+-	die_if(mount(nix_from, nix_to, "none", MS_BIND | MS_REC, 0) < 0, "mount %s -> %s", nix_from, nix_to);
++
++	// A host store is layered underneath the bundled one rather than hidden by
++	// it. On NixOS the GPU drivers and system config the app reaches through
++	// /run and /etc are symlinks into the host store, so shadowing it leaves
++	// the app with no driver to open and no fontconfig to read.
++	bool merged = false;
++	struct stat storebuf;
++	if (stat("/nix/store", &storebuf) == 0 && S_ISDIR(storebuf.st_mode)) {
++		const char* store_to = strprintf("%s/store", nix_to);
++		const char* opts = strprintf("lowerdir=%s/store:/nix/store", nix_from);
++
++		if (mkdir(store_to, 0777) < 0) {
++			fprintf(stderr, "%s: mkdir %s: %s\n", argv0, store_to, strerror(errno));
++		} else {
++			merged = mount("overlay", store_to, "overlay", MS_RDONLY, opts) == 0;
++			if (!merged) {
++				fprintf(stderr, "%s: mount overlay [%s] -> %s: %s\n", argv0, opts, store_to, strerror(errno));
++				rmdir(store_to);
++			}
++		}
++
++		free((void*) store_to);
++		free((void*) opts);
++	}
++
++	if (!merged) {
++		die_if(mount(nix_from, nix_to, "none", MS_BIND | MS_REC, 0) < 0, "mount %s -> %s", nix_from, nix_to);
++	}
+ 
+ 	free((void*) nix_from);
+ 	free((void*) nix_to);

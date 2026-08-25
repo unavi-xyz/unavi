@@ -1,6 +1,7 @@
 { inputs, ... }: {
   perSystem =
     {
+      mkAppImage,
       pkgs,
       lib,
       system,
@@ -193,9 +194,7 @@
         "${pname}-web" = pkgs.crane.buildTrunkPackage (webArgs // { pname = "${pname}-web"; });
       }
       // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-        "${pname}-appimage" = inputs.nix-appimage.lib.${system}.mkAppImage {
-          program = "${packageDrv}/bin/${pname}";
-        };
+        "${pname}-appimage" = mkAppImage { program = "${packageDrv}/bin/${pname}"; };
       };
     };
 }

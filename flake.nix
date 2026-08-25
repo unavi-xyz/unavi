@@ -58,6 +58,7 @@
           ./crates/unavi-client
           ./crates/unavi-launcher
           ./crates/unavi-server
+          ./nix/appimage
         ];
 
         flake = {

@@ -1,9 +1,9 @@
-{ inputs, ... }: {
+_: {
   perSystem =
     {
+      mkAppImage,
       pkgs,
       lib,
-      system,
       ...
     }:
     let
@@ -119,9 +119,7 @@
         "${pname}" = packageDrv;
       }
       // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
-        "${pname}-appimage" = inputs.nix-appimage.lib.${system}.mkAppImage {
-          program = "${packageDrv}/bin/${pname}";
-        };
+        "${pname}-appimage" = mkAppImage { program = "${packageDrv}/bin/${pname}"; };
       };
     };
 }

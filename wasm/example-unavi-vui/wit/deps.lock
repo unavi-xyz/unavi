@@ -5,8 +5,8 @@ sha512 = "aacf2aad8e90734fa82cd1093ee2c594608c7cc6da2418699fc6428be3350caf9f8485
 
 [unavi-vui]
 path = "../../unavi-vui/wit"
-sha256 = "fc0b363ec13037b4fcd5a2c0ee552e232ba16a78284b381dbe194106ee67aa67"
-sha512 = "b7dd325b12ca2a102b19cfa31aea5f3b569e365a3b80f3e6efe89aee17e077f18ce408b060360783d67f48a8cdc106484608da4e18bbbfd977eda7177acb0e34"
+sha256 = "47f85ea26c1dbb94e53f5c007c8ecbc0ca35f3767c6bde1d502f23f78a92b443"
+sha512 = "cf5708bc9d775dc8789d898bbade3d44bcfb7c75fc61c907461cc94d2a4df2db464fd6fb0deb2cbd86401f05f243d778c60fdf290b730fbc42c2097e3a2d275a"
 
 [wired-agent]
 path = "../../../protocol/wit/wired-agent"
@@ -25,8 +25,8 @@ sha512 = "5b16bad2e6d77a0dfd28c4a8dd7e478d5f597c617eb064228008425ed9283e1fc36a4e
 
 [wired-input]
 path = "../../../protocol/wit/wired-input"
-sha256 = "8186823071ae8e09b3218d9c17ae56d192062bd036fba829c891736d2a10062f"
-sha512 = "536f3cec81ccbc8908c3c10efe4334b5a3aca83c0d7008edfb3d3ce07289108cc60fade1dcfa7ffd645c35e2f8aa2f63db3b24383e12d8ccbcb0c796651c810c"
+sha256 = "9f64a73807cdf1e8d05471ce07d2ab2897be6569cf3f9e242c6f777a1db9c590"
+sha512 = "e0bdd741b6b051d1d6c3aa022add00f18ea6320b5a99a750eb40e3e287ff7ccf2b50bf3d2b86b7398fba7ef6c35b20a3b94ac390d7e0d03fe83bdd4f8e49c0e6"
 
 [wired-kv]
 path = "../../../protocol/wit/wired-kv"

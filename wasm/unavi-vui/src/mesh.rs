@@ -117,6 +117,93 @@ pub fn overflow_at(arrange: Arrange, total: usize, spread: f32) -> [f32; 3] {
     }
 }
 
+/// The way back's mark: a chevron pointing up, in the same unit space a
+/// mote's pips are drawn in.
+#[must_use]
+pub fn chevron() -> MeshData {
+    const HALF_WIDTH: f32 = 0.42;
+    const APEX: f32 = 0.29;
+    const BAR: f32 = 0.16;
+    const HALF_DEPTH: f32 = 0.06;
+
+    let arms = APEX - HALF_WIDTH;
+    let outline = [
+        [-HALF_WIDTH, arms - BAR],
+        [0.0, APEX - BAR],
+        [HALF_WIDTH, arms - BAR],
+        [HALF_WIDTH, arms],
+        [0.0, APEX],
+        [-HALF_WIDTH, arms],
+    ];
+    prism(
+        &outline,
+        &[[1, 2, 3], [1, 3, 4], [0, 1, 4], [0, 4, 5]],
+        HALF_DEPTH,
+    )
+}
+
+/// Extrudes a counter-clockwise `outline` along Z into a solid, `triangles`
+/// indexing the outline to fill its face.
+fn prism(outline: &[[f32; 2]], triangles: &[[usize; 3]], half_depth: f32) -> MeshData {
+    let (min, max) = bounds(outline);
+    let span = [
+        (max[0] - min[0]).max(f32::EPSILON),
+        (max[1] - min[1]).max(f32::EPSILON),
+    ];
+    let uv = |point: [f32; 2]| [(point[0] - min[0]) / span[0], (point[1] - min[1]) / span[1]];
+
+    let mut mesh = MeshData::default();
+    for facing in [1.0_f32, -1.0] {
+        let base = (mesh.positions.len() / 3) as u32;
+        for point in outline {
+            mesh.positions
+                .extend_from_slice(&[point[0], point[1], facing * half_depth]);
+            mesh.normals.extend_from_slice(&[0.0, 0.0, facing]);
+            mesh.uvs.extend_from_slice(&uv(*point));
+        }
+        for face in triangles {
+            let [a, b, c] = face.map(|index| base + index as u32);
+            let wound = if facing > 0.0 { [a, b, c] } else { [a, c, b] };
+            mesh.indices.extend_from_slice(&wound);
+        }
+    }
+
+    for (index, from) in outline.iter().enumerate() {
+        let to = outline[(index + 1) % outline.len()];
+        let edge = [to[0] - from[0], to[1] - from[1]];
+        let length = edge[0].hypot(edge[1]).max(f32::EPSILON);
+        let normal = [edge[1] / length, -edge[0] / length, 0.0];
+
+        let base = (mesh.positions.len() / 3) as u32;
+        for (point, depth) in [
+            (from, half_depth),
+            (&to, half_depth),
+            (&to, -half_depth),
+            (from, -half_depth),
+        ] {
+            mesh.positions
+                .extend_from_slice(&[point[0], point[1], depth]);
+            mesh.normals.extend_from_slice(&normal);
+            mesh.uvs.extend_from_slice(&uv(*point));
+        }
+        mesh.indices
+            .extend_from_slice(&[base, base + 2, base + 1, base, base + 3, base + 2]);
+    }
+
+    mesh
+}
+
+fn bounds(outline: &[[f32; 2]]) -> ([f32; 2], [f32; 2]) {
+    outline
+        .iter()
+        .fold(([f32::MAX; 2], [f32::MIN; 2]), |(min, max), point| {
+            (
+                [min[0].min(point[0]), min[1].min(point[1])],
+                [max[0].max(point[0]), max[1].max(point[1])],
+            )
+        })
+}
+
 /// A unit quad facing +Z, its top edge on the origin, descending.
 #[must_use]
 pub fn panel() -> MeshData {
@@ -523,6 +610,57 @@ mod tests {
             ringed, gridded,
             "the preview is the promise of how the level opens"
         );
+    }
+
+    #[test]
+    fn a_chevron_is_well_formed() {
+        assert_well_formed(&chevron());
+    }
+
+    #[test]
+    fn a_chevron_points_up_and_fits_the_body_it_sits_in() {
+        let mesh = chevron();
+        let apex = mesh
+            .positions
+            .as_chunks::<3>()
+            .0
+            .iter()
+            .max_by(|a, b| a[1].total_cmp(&b[1]))
+            .expect("vertices");
+        assert!(
+            apex[0].abs() < 1.0e-6,
+            "the point of the mark is on its centre line, or it reads as a lean"
+        );
+        assert!(
+            mesh.positions
+                .as_chunks::<3>()
+                .0
+                .iter()
+                .all(|point| point[0].hypot(point[1]).hypot(point[2]) < 1.0),
+            "a glyph is drawn in the same unit space as the body around it"
+        );
+    }
+
+    #[test]
+    fn a_chevron_is_solid_from_both_sides() {
+        let mesh = chevron();
+        for axis in 0..3 {
+            assert!(
+                mesh.normals
+                    .as_chunks::<3>()
+                    .0
+                    .iter()
+                    .any(|normal| normal[axis] > 0.5),
+                "a mark seen from behind the level it leaves is still a mark"
+            );
+            assert!(
+                mesh.normals
+                    .as_chunks::<3>()
+                    .0
+                    .iter()
+                    .any(|normal| normal[axis] < -0.5)
+            );
+        }
     }
 
     #[test]

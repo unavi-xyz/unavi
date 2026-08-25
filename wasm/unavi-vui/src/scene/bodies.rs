@@ -153,6 +153,10 @@ struct SlotPrims {
     overflow: Prim,
     /// Whether `overflow` has had its mesh written yet.
     marked:   Cell<bool>,
+    /// The way back's own mark, which no other role wears.
+    back:     Prim,
+    /// Whether `back` has had its mesh written yet.
+    carved:   Cell<bool>,
     /// The mote's name, drawn always rather than on attention.
     label:    Prim,
     /// The mote whose icon is parented here, so a slot reused by another mote
@@ -274,6 +278,11 @@ impl Bodies {
             overflow.set_xform(Some(draw::hidden()))?;
             slot_root.add_child(&overflow)?;
 
+            // Likewise the way back, which at most one slot of a level is.
+            let back = self.doc.create_prim()?;
+            back.set_xform(Some(draw::hidden()))?;
+            slot_root.add_child(&back)?;
+
             // A label rides the slot, not the body, which scales with
             // attention.
             let label = self.doc.create_prim()?;
@@ -287,6 +296,8 @@ impl Bodies {
                 plain,
                 overflow,
                 marked: Cell::new(false),
+                back,
+                carved: Cell::new(false),
                 label,
                 icon: RefCell::new(None),
                 shell: Cell::new(None),
@@ -325,6 +336,8 @@ impl Bodies {
         Ok(())
     }
 
+    /// What this surface's listener heard. A release reaches it wherever the
+    /// pointer ends up, because the host sends one to whoever heard the press.
     pub fn poll(&self) -> Vec<Signal> {
         let mut signals = Vec::new();
         while let Some(event) = self.input.poll() {
@@ -404,6 +417,7 @@ impl Bodies {
     pub fn icons(
         &self,
         motes: &[Mote],
+        specs: &[MoteSpec],
         views: &[SlotView],
         drawn: &[usize],
         delta: f32,
@@ -421,11 +435,14 @@ impl Bodies {
         );
         let slots = self.slots.borrow();
 
+        // The spec decides, not the mote: a slot standing for a level rather
+        // than showing it wears none of that level's glyph.
         let wanted = |slot: usize| {
-            drawn
-                .get(slot)
-                .and_then(|index| motes.get(*index))
-                .filter(|mote| slot < views.len() && mote.has_icon())
+            let index = *drawn.get(slot)?;
+            let worn = specs.get(index).is_some_and(|spec| spec.icon);
+            motes
+                .get(index)
+                .filter(|mote| worn && slot < views.len() && mote.has_icon())
         };
 
         // Handing every stale icon back first, so a mote that moved between
@@ -533,9 +550,11 @@ impl Bodies {
                     .set_material(Some(draw::pip(view.style, false)))?;
                 slot.overflow
                     .set_material(Some(draw::pip(view.style, false)))?;
+                slot.back.set_material(Some(draw::pip(view.style, false)))?;
             }
 
             Self::apply_pips(slot, view)?;
+            Self::apply_back(slot, view)?;
         }
 
         for slot in slots.iter().skip(views.len()) {
@@ -623,6 +642,22 @@ impl Bodies {
             outline_width: Some(0.22),
             emissive:      Some(if view.attention.is_active() { 0.5 } else { 0.1 }),
             billboard:     None,
+        }))?;
+        Ok(())
+    }
+
+    /// The way back wears a mark of its own, so a glance tells it from the
+    /// level it climbs out of.
+    fn apply_back(slot: &SlotPrims, view: &SlotView) -> anyhow::Result<()> {
+        let leaving = matches!(view.role, Role::Parent { .. });
+        if leaving && !slot.carved.get() {
+            slot.carved.set(true);
+            draw::mesh(&slot.back, &mesh::chevron())?;
+        }
+        slot.back.set_xform(Some(if leaving {
+            draw::placed(Vec3::ZERO, view.radius)
+        } else {
+            draw::hidden()
         }))?;
         Ok(())
     }

@@ -13,6 +13,11 @@ interface api {
 
   /// Captures input aimed at a prim or anything under it.
   /// Requires a collider to function.
+  ///
+  /// A press is aimed and its release is not: whatever heard a button go
+  /// down hears it come up, however far the pointer has travelled since and
+  /// whatever it is over — including nothing, and including the case where
+  /// the prim gave up its own collider in the meantime.
   register-input-listener: func(target: borrow<prim>) -> result<input-listener, error>;
 }
 
@@ -68,9 +73,11 @@ interface types {
   variant input-action {
     /// The trigger, the button everything picks with.
     press,
+    /// Per-prim, this ends a `press` this prim heard and nothing else.
     release,
     /// The grip closing on this prim.
     grip-press,
+    /// Per-prim, this ends a `grip-press` this prim heard and nothing else.
     grip-release,
     /// Notches turned, so ten is not one.
     scroll(vec2),

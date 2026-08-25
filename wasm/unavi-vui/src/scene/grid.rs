@@ -138,8 +138,13 @@ impl Mounted for Grid {
         let layout = Layout::grid(self.columns, self.rows, self.pitch);
         self.surface.update(&specs, layout, 0, &frame);
 
-        self.bodies
-            .icons(&motes, self.surface.views(), self.surface.drawn(), delta)?;
+        self.bodies.icons(
+            &motes,
+            &specs,
+            self.surface.views(),
+            self.surface.drawn(),
+            delta,
+        )?;
         self.bodies.apply(
             self.surface.views(),
             &specs,
@@ -241,15 +246,34 @@ impl Grid {
             self.bodies.clear_dynamic(slot)?;
         }
 
-        // A grid holds no tree to navigate, so a release that never travelled
-        // has nothing left to do: a cast opened at the press and settled on
-        // its own, and anything else here is carried away instead.
-        if let Some(Outcome::Place(slot)) = outcome
-            && let Some((at, velocity)) = landed
-        {
-            return Ok(self.build_released(slot, at, velocity));
+        // A grid holds no tree to navigate, so the only thing a release still
+        // means here is a landing: a cast opened at the press and settled on
+        // its own, and every other role is a level's business.
+        match outcome {
+            Some(Outcome::Place(slot)) => {
+                Ok(landed.and_then(|(at, velocity)| self.build_released(slot, at, velocity)))
+            }
+            Some(Outcome::Tap(slot)) => Ok(self.delivered(slot)),
+            None => Ok(None),
         }
-        Ok(None)
+    }
+
+    /// The item drawn in `slot`, landing where it stands. An item fired where
+    /// it sits lands too; the grip only chooses where.
+    fn delivered(&self, slot: usize) -> Option<Released> {
+        let index = self.surface.spec_index(slot)?;
+        let mote = self
+            .contents()
+            .get(index)
+            .filter(|mote| mote.kind().delivers())?
+            .clone();
+        Some(Released {
+            mote,
+            landing: Landing {
+                at:       self.bodies.pose(slot)?.translation,
+                velocity: Vec3::ZERO,
+            },
+        })
     }
 
     fn report_page(&mut self, events: &mut Vec<Event>) {

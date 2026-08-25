@@ -271,7 +271,7 @@ impl Script {
 
 impl ScriptBehavior for Script {
     fn init() -> anyhow::Result<Self> {
-        println!("vui gallery — click to open, drag an item out to drop a fruit");
+        println!("vui gallery — click to open a branch or drop a fruit, drag to aim the drop");
         println!("  warm motes are sources: every drop is another of that fruit");
         println!("  cool ones there is only one of, and dropping one moves it");
 

@@ -20,8 +20,8 @@ sha512 = "5b16bad2e6d77a0dfd28c4a8dd7e478d5f597c617eb064228008425ed9283e1fc36a4e
 
 [wired-input]
 path = "../../../protocol/wit/wired-input"
-sha256 = "8186823071ae8e09b3218d9c17ae56d192062bd036fba829c891736d2a10062f"
-sha512 = "536f3cec81ccbc8908c3c10efe4334b5a3aca83c0d7008edfb3d3ce07289108cc60fade1dcfa7ffd645c35e2f8aa2f63db3b24383e12d8ccbcb0c796651c810c"
+sha256 = "9f64a73807cdf1e8d05471ce07d2ab2897be6569cf3f9e242c6f777a1db9c590"
+sha512 = "e0bdd741b6b051d1d6c3aa022add00f18ea6320b5a99a750eb40e3e287ff7ccf2b50bf3d2b86b7398fba7ef6c35b20a3b94ac390d7e0d03fe83bdd4f8e49c0e6"
 
 [wired-kv]
 path = "../../../protocol/wit/wired-kv"

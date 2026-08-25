@@ -38,6 +38,13 @@ impl Kind {
     pub const fn holds_children(self) -> bool {
         matches!(self, Self::Group)
     }
+
+    /// Whether choosing this leaves a thing behind rather than doing
+    /// something. Both buttons deliver it; the grip only chooses where.
+    #[must_use]
+    pub const fn delivers(self) -> bool {
+        matches!(self, Self::Item)
+    }
 }
 
 /// A mote, and whatever it holds.
@@ -365,29 +372,45 @@ impl Tree {
         std::iter::once(open).chain(children).collect()
     }
 
-    /// What [`Tree::level_motes`] draws as, slot for slot. The way back wears
-    /// the level's own name under a role of its own.
+    /// What [`Tree::level_motes`] draws as, slot for slot.
     pub fn level(&mut self) -> Vec<MoteSpec> {
         let depth = self.depth();
-        let motes = self.level_motes();
-        motes
+        let back = (depth > 0).then(|| self.back(depth));
+        self.level_motes()
             .iter()
             .enumerate()
-            .map(|(slot, mote)| {
-                let spec = mote.spec();
-                if depth > 0 && slot == 0 {
-                    return MoteSpec {
-                        role: Role::Parent { depth },
-                        description: Some(SmolStr::new_static("Go back out.")),
-                        // The way back is not a switch, whatever the mote it
-                        // stands for happens to be.
-                        active: false,
-                        ..spec
-                    };
-                }
-                spec
+            .map(|(slot, mote)| match (&back, slot) {
+                (Some(back), 0) => back.clone(),
+                _ => mote.spec(),
             })
             .collect()
+    }
+
+    /// The way back, which is VUI's own mote rather than the level's: it
+    /// wears none of the group's identity, so it cannot be read as another
+    /// way in to it.
+    fn back(&mut self, depth: usize) -> MoteSpec {
+        MoteSpec {
+            role:        Role::Parent { depth },
+            label:       SmolStr::new_static("Back"),
+            description: Some(SmolStr::new(format!("Back to {}.", self.outer().label()))),
+            active:      false,
+            icon:        false,
+            tint:        None,
+            film:        crate::palette::FILM,
+            frost:       0.0,
+        }
+    }
+
+    /// The level the way back returns to, which is the one above the open one.
+    fn outer(&mut self) -> Mote {
+        self.prune();
+        self.path
+            .len()
+            .checked_sub(2)
+            .and_then(|index| self.path.get(index))
+            .unwrap_or(&self.root)
+            .clone()
     }
 
     /// The mote drawn at `index` of [`Tree::level`], which is the way back
@@ -479,8 +502,47 @@ mod tests {
     fn blooming_puts_the_parent_at_slot_zero() {
         let mut tree = tree();
         assert!(matches!(tree.select(1), Navigation::Bloomed(mote) if mote.label() == "Places"));
-        assert_eq!(labels(&mut tree), vec!["Places", "Atrium", "Club"]);
+        assert_eq!(labels(&mut tree), vec!["Back", "Atrium", "Club"]);
         assert_eq!(tree.level()[0].role, Role::Parent { depth: 1 });
+    }
+
+    #[test]
+    fn the_way_back_wears_none_of_the_level_it_leaves() {
+        let mut tree = tree();
+        tree.select(1);
+
+        let back = &tree.level()[0];
+        assert_eq!(back.label, "Back", "a name, not the group's");
+        assert!(!back.icon, "and not the group's glyph either");
+        assert_eq!(back.tint, None);
+    }
+
+    #[test]
+    fn the_way_back_names_where_it_goes() {
+        let citrus = holding("Citrus", vec![mote(Kind::Item, "Lemon")]);
+        let mut tree = Tree::new(holding("Produce", vec![citrus]));
+        tree.select(0);
+
+        assert_eq!(
+            tree.level()[0].description.as_deref(),
+            Some("Back to Produce."),
+            "the level it leaves is named where it can be read, not worn"
+        );
+    }
+
+    #[test]
+    fn a_tinted_level_does_not_colour_the_way_out_of_it() {
+        let inner = holding("Inner", Vec::new());
+        inner.set_tint(Some(Color {
+            r: 1.0,
+            g: 0.0,
+            b: 0.0,
+            a: 1.0,
+        }));
+        let mut tree = Tree::new(holding("Outer", vec![inner]));
+        tree.select(0);
+
+        assert_eq!(tree.level()[0].tint, None);
     }
 
     #[test]
@@ -497,6 +559,14 @@ mod tests {
         assert!(matches!(tree.select(0), Navigation::Collapsed(_)));
         assert_eq!(tree.depth(), 0);
         assert_eq!(labels(&mut tree), vec!["Home", "Places", "Lens"]);
+    }
+
+    #[test]
+    fn an_item_is_the_one_kind_that_leaves_something_behind() {
+        assert!(Kind::Item.delivers());
+        for doing in [Kind::Action, Kind::Toggle, Kind::Cast, Kind::Group] {
+            assert!(!doing.delivers(), "{doing:?} does something instead");
+        }
     }
 
     #[test]

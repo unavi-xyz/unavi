@@ -99,8 +99,8 @@ pub struct SharedRuntimePlugin;
 
 impl Plugin for SharedRuntimePlugin {
     fn build(&self, app: &mut App) {
-        app.add_observer(wired::input::bridge::bridge_press)
-            .add_observer(wired::input::bridge::bridge_release)
+        app.init_resource::<wired::input::bridge::Pressing>()
+            .add_observer(wired::input::bridge::bridge_press)
             .add_observer(wired::input::bridge::bridge_enter)
             .add_observer(wired::input::bridge::bridge_leave)
             .add_observer(wired::input::bridge::bridge_scroll)
@@ -115,6 +115,7 @@ impl Plugin for SharedRuntimePlugin {
                 (
                     registry::agent::spawn_proxy_nodes,
                     registry::pointer::snapshot_pointers,
+                    wired::input::bridge::bridge_releases,
                     wired::input::bridge::bridge_global_presses,
                     wired::input::bridge::bridge_global_scroll
                         .run_if(unavi_input::capture::scene_has_input),

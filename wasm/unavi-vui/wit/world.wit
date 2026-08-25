@@ -20,6 +20,8 @@ interface api {
     /// `active`, which it then holds and draws lit until something clears it.
     toggle,
     /// Can be pulled out and left in the room, or filed into a grid.
+    /// Acting on one where it sits lands it there instead, so both buttons
+    /// deliver the item and only the grip chooses where.
     item,
     /// Opens a cast site, which fills while it is held.
     cast,
@@ -173,7 +175,8 @@ interface api {
     opened(mote),
     /// The way back was taken, to the level now open.
     closed(mote),
-    /// A leaf fired.
+    /// A leaf fired. An item is not one: what it does is land, so it
+    /// reports `planted` whichever button delivered it.
     activated(mote),
     /// A cast site opened. Nothing has fired: holding attention on it fills
     /// it, and looking away aborts.
@@ -182,10 +185,11 @@ interface api {
     cast(mote),
     /// A cast was abandoned before it filled.
     aborted(mote),
-    /// Carried out and let go in the room, by a mote with nowhere of its own
-    /// to go. The mote stays where it was and the surface draws nothing
-    /// there: what lands, if anything, is the consumer's to place at the
-    /// landing.
+    /// Let go in the room by a mote with nowhere of its own to go: carried
+    /// out and dropped, or acted on where it sits, which lands it at the
+    /// slot it was drawn in with no throw on it. The mote stays where it was
+    /// and the surface draws nothing there: what lands, if anything, is the
+    /// consumer's to place at the landing.
     planted(tuple<mote, landing>),
     /// Carried out and filed into a grid.
     filed(mote),

@@ -157,8 +157,13 @@ impl Mounted for Orbit {
         };
         self.surface.update(&specs, layout, pinned, &frame);
 
-        self.bodies
-            .icons(&motes, self.surface.views(), self.surface.drawn(), delta)?;
+        self.bodies.icons(
+            &motes,
+            &specs,
+            self.surface.views(),
+            self.surface.drawn(),
+            delta,
+        )?;
         self.bodies.apply(
             self.surface.views(),
             &specs,
@@ -248,6 +253,9 @@ impl Orbit {
     ///
     /// What a landing means belongs to the mote that landed: a level opens
     /// where it was let go, and anything else is the consumer's to place.
+    ///
+    /// An item fired where it sits lands too, at the slot it was drawn in.
+    /// Both buttons deliver the item; the grip only chooses where.
     fn release(&mut self, done: &mut FixedUpdate) -> anyhow::Result<()> {
         self.depth = None;
         let outcome = self.surface.release();
@@ -263,7 +271,9 @@ impl Orbit {
 
         match outcome {
             Some(Outcome::Tap(slot)) => {
-                if let Some(event) = self.select(slot) {
+                if let Some(released) = self.delivered(slot) {
+                    done.released = Some(released);
+                } else if let Some(event) = self.select(slot) {
                     done.events.push(event);
                 }
             }
@@ -276,6 +286,22 @@ impl Orbit {
             None => {}
         }
         Ok(())
+    }
+
+    /// The item drawn in `slot`, landing where it stands.
+    fn delivered(&mut self, slot: usize) -> Option<Released> {
+        let index = self.surface.spec_index(slot)?;
+        let mote = self
+            .tree
+            .at_level(index)
+            .filter(|mote| mote.kind().delivers())?;
+        Some(Released {
+            mote,
+            landing: Landing {
+                at:       self.bodies.pose(slot)?.translation,
+                velocity: Vec3::ZERO,
+            },
+        })
     }
 
     /// Whether the mote drawn in `slot` is a level rather than a thing.

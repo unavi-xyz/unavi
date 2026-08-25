@@ -75,7 +75,7 @@ jobs:
     secrets: inherit
     with:
       ref: release/v${{ needs.version.outputs.version }}
-  finalize:
+  publish:
     needs:
       - version
       - build-nix
@@ -105,7 +105,7 @@ jobs:
   release:
     needs:
       - version
-      - finalize
+      - publish
       - build-nix
       - build-windows
     runs-on: ubuntu-latest

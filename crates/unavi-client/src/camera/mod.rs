@@ -1,8 +1,10 @@
 use bevy::{
+    anti_alias::taa::TemporalAntiAliasing,
     camera::{
         Exposure,
         Hdr,
     },
+    light::ShadowFilteringMethod,
     post_process::bloom::Bloom,
     prelude::*,
 };
@@ -31,9 +33,11 @@ pub fn apply_camera_effects(
     for entity in new_cameras {
         commands.entity(entity).insert((
             Hdr,
-            Exposure::SUNLIGHT,
             Bloom::OLD_SCHOOL,
-            Msaa::Sample4,
+            Exposure::SUNLIGHT,
+            Msaa::Off,
+            ShadowFilteringMethod::Temporal,
+            TemporalAntiAliasing::default(),
             DistanceFog {
                 color: FOG_COLOR,
                 falloff: FogFalloff::Linear {

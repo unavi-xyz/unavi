@@ -82,7 +82,7 @@ in
       };
 
       script = ''
-        exec ${cfg.package}/unavi-server \
+        exec ${cfg.package}/bin/unavi-server \
           --port ${toString cfg.port}
       '';
     };

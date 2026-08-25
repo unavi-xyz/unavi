@@ -1,8 +1,8 @@
-//! Every well-known namespace a node derives from its identity.
+//! Every well-known document a node mints for itself.
 //!
 //! One list, because a label *is* the document's name: two callers passing the
-//! same label to [`crate::identity::RootIdentity::namespace`] address the same
-//! document, and a label that changes abandons whatever was written under it.
+//! same label to [`crate::docs::well_known`] address the same document, and a
+//! label that changes abandons whatever was written under it.
 
 /// A DID's own document, holding the entries only its owner writes.
 pub const ROOT_DOC: &str = "root-doc/v1";

@@ -12,6 +12,7 @@ use iroh::{
     Endpoint,
     endpoint::presets::N0DisableRelay,
 };
+use n0_future::StreamExt;
 use rstest::rstest;
 use tracing_test::traced_test;
 use wds::{
@@ -100,5 +101,60 @@ async fn gc_keeps_document_content_and_drops_the_rest() {
     assert!(
         !blobs.has(dropped).await.expect("has dropped"),
         "content nothing references must be reclaimed"
+    );
+}
+
+/// A bare `add_bytes(..).await` mints an `auto-<rfc3339>` tag that nothing ever
+/// sweeps, so every value ever written stays rooted and every superseded value
+/// stays stranded.
+#[rstest]
+#[timeout(Duration::from_secs(30))]
+#[traced_test]
+#[tokio::test]
+async fn writing_an_entry_leaves_no_named_tag() {
+    let store = store_with_gc().await;
+    let blobs = store.blobs().blobs();
+
+    let ns = wds::entries::create(store.docs()).await.expect("namespace");
+    let doc = wds::docs::ensure_open(store.docs(), ns).await.expect("doc");
+    let author = wds::entries::author(store.docs()).await.expect("author");
+
+    wds::entries::apply(
+        &doc,
+        blobs,
+        author,
+        [
+            Write::Bytes {
+                key:   "slot".to_string(),
+                value: Bytes::from_static(DROPPED),
+            },
+            Write::Bytes {
+                key:   "slot".to_string(),
+                value: Bytes::from_static(KEPT),
+            },
+        ],
+    )
+    .await
+    .expect("write entries");
+
+    let mut stream = store.blobs().tags().list().await.expect("list tags");
+    let mut names = Vec::new();
+    while let Some(tag) = stream.next().await {
+        names.push(tag.expect("tag info").name);
+    }
+    assert!(
+        names.is_empty(),
+        "an entry write must mint no tag: {names:?}"
+    );
+
+    n0_future::time::sleep(SETTLE).await;
+
+    assert!(
+        blobs.has(blake3::hash(KEPT)).await.expect("has kept"),
+        "the surviving entry's content must outlive its batch"
+    );
+    assert!(
+        !blobs.has(blake3::hash(DROPPED)).await.expect("has dropped"),
+        "an overwritten entry's content must be reclaimed"
     );
 }

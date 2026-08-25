@@ -107,12 +107,14 @@ pub async fn apply(
     author: AuthorId,
     writes: impl IntoIterator<Item = Write>,
 ) -> anyhow::Result<()> {
+    let batch = blobs.batch().await?;
+
     for write in writes {
         match write {
             Write::Bytes { key, value } => {
                 let size = value.len() as u64;
-                let info = blobs.add_bytes(value).await?;
-                doc.set_hash(author, key, info.hash, size).await?;
+                let tag = batch.add_bytes(value).await?;
+                doc.set_hash(author, key, tag.hash(), size).await?;
             }
             Write::Hash { key, hash, size } => {
                 doc.set_hash(author, key, hash, size).await?;

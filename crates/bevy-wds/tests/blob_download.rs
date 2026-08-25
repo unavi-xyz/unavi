@@ -8,6 +8,7 @@ use std::{
 
 use bevy::prelude::*;
 use bevy_wds::{
+    LocalBlobStore,
     LocalBlobs,
     LocalDownloader,
     SyncTargets,
@@ -45,6 +46,7 @@ const ATTEMPTS: usize = 200;
 
 struct Fixture {
     blobs:    Blobs,
+    store:    iroh_blobs::api::Store,
     hash:     Hash,
     provider: Actor,
     download: Downloader,
@@ -99,6 +101,7 @@ fn fixture() -> Fixture {
 
         tx.send(Fixture {
             blobs: store.blobs().blobs().clone(),
+            store: store.blobs().clone(),
             hash: hash.into(),
             provider,
             download: store.blobs().downloader(&endpoint),
@@ -122,6 +125,7 @@ fn a_missing_blob_is_pulled_from_a_sync_target() {
     app.add_plugins((MinimalPlugins, WdsPlugin));
     app.world_mut().spawn((
         LocalBlobs(fixture.blobs.clone()),
+        LocalBlobStore(fixture.store.clone()),
         LocalDownloader(fixture.download.clone()),
         SyncTargets(vec![fixture.provider.clone()]),
     ));

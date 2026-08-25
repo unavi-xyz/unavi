@@ -14043,6 +14043,7 @@ dependencies = [
  "iroh",
  "iroh-blobs",
  "iroh-docs",
+ "n0-future",
  "serde",
  "serde_json",
  "tokio",

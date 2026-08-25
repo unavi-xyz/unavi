@@ -28,11 +28,10 @@ pub struct Catalog {
 }
 
 impl Catalog {
-    /// Derived from the host's identity, so a restart reopens the catalog it
-    /// already published rather than abandoning it under a new namespace.
-    pub async fn create(docs: &Docs, store: &DataStore) -> anyhow::Result<Self> {
-        let doc =
-            wds::docs::ensure_writable(docs, store.namespace(labels::REGISTRY_CATALOG)).await?;
+    /// Minted once and remembered, so a restart reopens the catalog it already
+    /// published rather than abandoning it under a new namespace.
+    pub async fn create(store: &DataStore) -> anyhow::Result<Self> {
+        let doc = store.well_known(labels::REGISTRY_CATALOG).await?;
         Ok(Self { ns: doc.id() })
     }
 

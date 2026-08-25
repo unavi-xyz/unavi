@@ -7,7 +7,10 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use bevy_wds::LocalActor;
+use bevy_wds::{
+    BlobProviders,
+    LocalActor,
+};
 use iroh::{
     EndpointAddr,
     EndpointId,
@@ -62,6 +65,21 @@ pub fn capture_self_identity(trigger: On<Add, LocalActor>, actors: Query<&LocalA
         // Scores are measured from the local DID, so nothing could be computed
         // until it existed.
         unavi_policy::trust::recompute(&[]);
+    }
+}
+
+/// Offers the connected peers to the blob downloader.
+///
+/// A space's document syncs from its occupants, so its content lives with them
+/// too; a fetch knowing only the configured sync targets asks a server that may
+/// never have seen the space.
+pub fn publish_blob_providers(peers: Query<&Peer>, mut providers: Query<&mut BlobProviders>) {
+    let Ok(mut providers) = providers.single_mut() else {
+        return;
+    };
+    let connected = peers.iter().map(|p| p.0.id).collect::<Vec<_>>();
+    if providers.0 != connected {
+        providers.0 = connected;
     }
 }
 

@@ -12,7 +12,7 @@ use iroh::{
 };
 use iroh_blobs::api::Store as BlobStore;
 use iroh_docs::{
-    NamespaceSecret,
+    api::Doc,
     protocol::Docs,
 };
 use iroh_gossip::Gossip;
@@ -31,6 +31,7 @@ pub const WDS_SERVICE_TYPE: &str = "WDSEndpoint";
 pub mod actor;
 mod auth;
 pub mod builder;
+pub mod cache;
 pub mod control;
 pub mod db;
 pub mod docs;
@@ -185,12 +186,12 @@ impl DataStore {
         &self.ctx.endpoint
     }
 
-    /// The write capability for one of this node's well-known namespaces.
+    /// Opens the document this node keeps under `label`, minting it on first
+    /// use.
     ///
     /// `label` must come from [`identity::labels`].
-    #[must_use]
-    pub fn namespace(&self, label: &str) -> NamespaceSecret {
-        self.ctx.identity.namespace(label)
+    pub async fn well_known(&self, label: &str) -> anyhow::Result<Doc> {
+        docs::well_known(&self.ctx.docs, self.ctx.identity.storage(), label).await
     }
 
     /// Runs garbage collection on the data store.

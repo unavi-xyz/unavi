@@ -2,6 +2,8 @@
 //!
 //! Every file in [`files_dir`] is added to the blob store, pinned under a
 //! `files/` tag so the store's GC keeps it, and served over `iroh_blobs::ALPN`.
+//! The tag is structural: it lives exactly as long as the file does, and a
+//! sweep on each host pass drops the ones the directory no longer backs.
 //! A `files.json` index lists name -> hash so an operator can wire the client's
 //! manifest to what this node hosts.
 
@@ -14,6 +16,7 @@ use std::{
 };
 
 use iroh_blobs::api::blobs::Blobs;
+use n0_future::StreamExt;
 use serde::Serialize;
 use tracing::{
     info,
@@ -137,9 +140,40 @@ pub async fn host_files(store: &DataStore) -> anyhow::Result<Vec<HostedFile>> {
         });
     }
 
+    sweep(store, &hosted).await?;
+
     let index = files_dir().join("files.json");
     fs::write(index, serde_json::to_string_pretty(&hosted)?)?;
     Ok(hosted)
+}
+
+/// Whether a tag is one this module owns, and so may be deleted by a sweep.
+fn is_ours(name: &str) -> bool {
+    name.starts_with(TAG_PREFIX)
+}
+
+/// Drops `files/` tags naming content the directory no longer holds, so a file
+/// removed by the operator stops being served and its blob is reclaimed.
+async fn sweep(store: &DataStore, hosted: &[HostedFile]) -> anyhow::Result<()> {
+    let live = hosted.iter().map(|f| tag(&f.name)).collect::<Vec<_>>();
+
+    let tags = store.blobs().tags();
+    let mut stale = Vec::new();
+    let mut listed = tags.list_prefix(TAG_PREFIX).await?;
+
+    while let Some(info) = listed.next().await {
+        let name = String::from_utf8_lossy(&info?.name.0).into_owned();
+        if is_ours(&name) && !live.contains(&name) {
+            stale.push(name);
+        }
+    }
+
+    for name in stale {
+        info!(name, "unhosting file removed from the files dir");
+        tags.delete(&name).await?;
+    }
+
+    Ok(())
 }
 
 /// Prints the hosted hashes in the manifest shape the client consumes, so an
@@ -276,5 +310,18 @@ mod tests {
     #[test]
     fn tag_namespace_pins() {
         assert_eq!(tag("model/default.vrm"), "files/model/default.vrm");
+    }
+
+    #[test]
+    fn a_sweep_only_owns_its_own_namespace() {
+        assert!(is_ours(&tag("model/default.vrm")));
+        assert!(
+            !is_ours("assets/model/default.vrm"),
+            "a client manifest pin is another subsystem's"
+        );
+        assert!(
+            !is_ours("cache/00000000000001700000000/abc"),
+            "a dated cache root is another subsystem's"
+        );
     }
 }

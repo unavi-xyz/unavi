@@ -111,7 +111,8 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
         .await?;
 
     let builder = DataStore::builder(endpoint.clone(), Arc::clone(&identity))
-        .gc_timer(Duration::from_mins(15));
+        .gc_timer(Duration::from_mins(15))
+        .serve_control();
     let builder = if opts.in_memory {
         builder
     } else {

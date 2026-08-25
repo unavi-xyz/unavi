@@ -34,10 +34,11 @@ use crate::{
 };
 
 pub struct DataStoreBuilder {
-    endpoint: Endpoint,
-    gc_timer: Option<Duration>,
-    identity: Arc<RootIdentity>,
-    storage:  Storage,
+    endpoint:      Endpoint,
+    gc_timer:      Option<Duration>,
+    identity:      Arc<RootIdentity>,
+    serve_control: bool,
+    storage:       Storage,
 }
 
 pub enum Storage {
@@ -55,8 +56,25 @@ impl DataStoreBuilder {
             endpoint,
             gc_timer: None,
             identity,
+            serve_control: false,
             storage: Storage::InMemory,
         }
+    }
+
+    /// Answers `wds/control`, so other peers can ask this node to host their
+    /// documents and pin their blobs. Disabled by default.
+    ///
+    /// The control plane performs authentication but no authorization, so a
+    /// node that serves it replicates documents and holds blobs for any peer
+    /// presenting a resolvable DID, up to a default quota it mints on demand.
+    /// Only a node that intends to be a storage host should turn it on.
+    ///
+    /// The data path is unaffected: peer sync runs over `iroh_docs::ALPN` and
+    /// hosting is `docs::serve` plus the downloader, which every peer runs.
+    #[must_use]
+    pub const fn serve_control(mut self) -> Self {
+        self.serve_control = true;
+        self
     }
 
     /// Spawns a task to run garbage collection at a set frequency, for both the
@@ -93,6 +111,8 @@ impl DataStoreBuilder {
         let (blobs, db, docs_builder) = init_storage(&self.storage, gc).await?;
         let blob_store = blobs.as_ref().as_ref().clone();
 
+        sweep_auto_tags(&blob_store).await?;
+
         let gossip = Gossip::builder().spawn(self.endpoint.clone());
 
         let docs = docs_builder
@@ -123,13 +143,20 @@ impl DataStoreBuilder {
         let (control_client, control_protocol) = crate::control::protocol(Arc::clone(&ctx));
         let (auth_client, auth_protocol) = crate::auth::protocol(Arc::clone(&ctx));
 
+        // Auth is served regardless: it mints the session tokens the registry's
+        // own control plane validates, and grants nothing on its own.
+        let serve_control = self.serve_control;
         let router_builder_fn = Box::new(move |builder: RouterBuilder| {
-            builder
+            let builder = builder
                 .accept(iroh_blobs::ALPN, blob_protocol)
                 .accept(iroh_gossip::ALPN, gossip)
                 .accept(iroh_docs::ALPN, docs)
-                .accept(crate::control::ALPN, control_protocol)
-                .accept(crate::auth::ALPN, auth_protocol)
+                .accept(crate::auth::ALPN, auth_protocol);
+            if serve_control {
+                builder.accept(crate::control::ALPN, control_protocol)
+            } else {
+                builder
+            }
         });
 
         let gc_handle = self.gc_timer.map(|duration| {
@@ -206,6 +233,17 @@ async fn init_storage(
         let db = Database::new_in_memory()?;
         Ok((blobs, db, Docs::memory()))
     }
+}
+
+/// Clears the `auto-<rfc3339>` tags a bare `add_bytes(..).await` used to mint,
+/// which nothing ever swept. Content a document still references survives
+/// through the protect callback; the rest is precisely what should go.
+async fn sweep_auto_tags(blobs: &BlobStore) -> anyhow::Result<()> {
+    let deleted = blobs.tags().delete_prefix("auto-").await?;
+    if deleted > 0 {
+        tracing::info!(deleted, "swept orphaned auto tags");
+    }
+    Ok(())
 }
 
 fn mem_store(gc: Option<GcConfig>) -> MemStore {

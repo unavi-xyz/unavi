@@ -1,4 +1,3 @@
-use iroh_blobs::Hash;
 use iroh_docs::NamespaceId;
 use serde::{
     Deserialize,
@@ -20,6 +19,11 @@ pub enum Kind {
 ///
 /// Every field except `ns` and `did` is self-declared by the submitter and is
 /// therefore a trust input, not a fact.
+///
+/// A blob hash may never become a field here. This struct is serialized into an
+/// entry's *content*, and blob GC roots only entry *values*, so a hash carried
+/// inside would name content nothing protects. A preview image belongs under
+/// its own key, whose value is the hash.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Submission {
     pub did:         Did,
@@ -28,7 +32,6 @@ pub struct Submission {
     pub title:       SmolStr,
     pub description: Option<SmolStr>,
     pub tags:        Vec<SmolStr>,
-    pub preview:     Option<Hash>,
     /// Unix timestamp after which the registry may drop this entry;
     /// resubmitting refreshes it.
     pub expires:     i64,

@@ -18,11 +18,21 @@ use crate::{
 pub const FAST_GC_THRESHOLD: Duration = Duration::from_mins(5);
 
 impl StoreContext {
-    /// Content referenced by hosted docs is protected by iroh-docs' own store
-    /// tags; this pass only reclaims explicit blob pins that have expired.
+    /// Drops the roots that have aged out. Content itself is reclaimed by the
+    /// blob store's own sweep, which runs on its own interval and reads the
+    /// tags this pass leaves behind.
     pub async fn run_gc(&self) -> anyhow::Result<()> {
         self.gc_sessions().await;
+        self.gc_cache_tags().await;
         self.gc_blob_pins().await
+    }
+
+    async fn gc_cache_tags(&self) {
+        match crate::cache::sweep(self.blob_store()).await {
+            Ok(deleted) if deleted > 0 => tracing::debug!(deleted, "expired cache tags"),
+            Ok(_) => {}
+            Err(err) => tracing::warn!(?err, "failed to sweep cache tags"),
+        }
     }
 
     /// Drops sessions past their expiry, so the table tracks live sessions

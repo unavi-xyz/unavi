@@ -53,20 +53,20 @@ fn active_key(rank: usize, ns: NamespaceId) -> String {
 /// Opens a view doc and enrols it in this node's sync set; a namespace
 /// outside the set rejects reads with `NotFound`.
 ///
-/// The namespace derives from the host's identity, so the ids a client synced
-/// last week still name these docs after a redeploy.
-async fn open_view(docs: &Docs, store: &DataStore, label: &str) -> anyhow::Result<NamespaceId> {
-    let doc = wds::docs::ensure_writable(docs, store.namespace(label)).await?;
+/// The namespace is minted once and remembered, so the ids a client synced last
+/// week still name these docs after a redeploy.
+async fn open_view(store: &DataStore, label: &str) -> anyhow::Result<NamespaceId> {
+    let doc = store.well_known(label).await?;
     doc.start_sync(Vec::new()).await?;
     Ok(doc.id())
 }
 
 impl Views {
-    pub async fn create(docs: &Docs, store: &DataStore) -> anyhow::Result<Self> {
-        let recent = open_view(docs, store, labels::REGISTRY_VIEW_RECENT).await?;
-        let featured = open_view(docs, store, labels::REGISTRY_VIEW_FEATURED).await?;
-        let categories = open_view(docs, store, labels::REGISTRY_VIEW_CATEGORIES).await?;
-        let active = open_view(docs, store, labels::REGISTRY_VIEW_ACTIVE).await?;
+    pub async fn create(store: &DataStore) -> anyhow::Result<Self> {
+        let recent = open_view(store, labels::REGISTRY_VIEW_RECENT).await?;
+        let featured = open_view(store, labels::REGISTRY_VIEW_FEATURED).await?;
+        let categories = open_view(store, labels::REGISTRY_VIEW_CATEGORIES).await?;
+        let active = open_view(store, labels::REGISTRY_VIEW_ACTIVE).await?;
 
         Ok(Self {
             ids: ViewIds {

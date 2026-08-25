@@ -118,8 +118,16 @@ pub struct LocalDocs(pub Docs);
 pub struct LocalGossip(pub Gossip);
 
 #[derive(Component)]
-#[require(SyncTargets)]
+#[require(SyncTargets, BlobProviders)]
 pub struct LocalActor(pub Actor);
 
 #[derive(Component, Default)]
 pub struct SyncTargets(pub Vec<Actor>);
+
+/// Endpoints that hold content beyond the configured sync targets.
+///
+/// A space's document syncs from its occupants, so its content lives with them
+/// too. A fetch offered only the sync targets asks a server that may never have
+/// seen the space, which is the whole difference between needing one and not.
+#[derive(Component, Default)]
+pub struct BlobProviders(pub Vec<iroh::EndpointId>);

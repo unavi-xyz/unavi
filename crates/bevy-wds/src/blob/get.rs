@@ -9,6 +9,7 @@ use blake3::Hash;
 use bytes::Bytes;
 use iroh::EndpointId;
 use iroh_blobs::api::{
+    Store as BlobStore,
     blobs::Blobs,
     downloader::Downloader,
 };
@@ -17,6 +18,8 @@ use tokio::sync::oneshot;
 use unavi_util::async_task::spawn_async_task;
 
 use crate::{
+    BlobProviders,
+    LocalBlobStore,
     LocalBlobs,
     LocalDownloader,
     SyncTargets,
@@ -83,19 +86,34 @@ pub struct GetBlob {
 pub(crate) fn on_get_blob(
     mut req: On<GetBlob>,
     blobs: Query<&LocalBlobs>,
+    stores: Query<&LocalBlobStore>,
     downloaders: Query<&LocalDownloader>,
     targets: Query<&SyncTargets>,
+    peers: Query<&BlobProviders>,
 ) {
     let Ok(blobs) = blobs.single().map(|x| x.0.clone()) else {
         warn!("Unable to get blob: no LocalBlobs");
         return;
     };
 
+    // The tags a fetch roots itself with live on the store, not on the blobs
+    // client, so a fetch cannot run without it.
+    let Ok(store) = stores.single().map(|x| x.0.clone()) else {
+        warn!("Unable to get blob: no LocalBlobStore");
+        return;
+    };
+
     let downloader = downloaders.single().ok().map(|x| x.0.clone());
-    let providers = targets
+    let mut providers = targets
         .iter()
         .flat_map(|x| x.0.iter().map(|actor| actor.host().id))
         .collect::<Vec<_>>();
+    // Appended rather than merged, so a configured server is still tried first.
+    for id in peers.iter().flat_map(|x| x.0.iter().copied()) {
+        if !providers.contains(&id) {
+            providers.push(id);
+        }
+    }
 
     let event = req.event_mut();
     let hash = event.hash;
@@ -103,7 +121,7 @@ pub(crate) fn on_get_blob(
     let tx = event.tx.clone();
 
     spawn_async_task(async move {
-        if let Err(err) = inner(hash, cancel, tx, blobs, downloader, providers).await {
+        if let Err(err) = inner(hash, cancel, tx, blobs, store, downloader, providers).await {
             error!(?err, "Failed to get blob");
         }
     });
@@ -114,6 +132,7 @@ async fn inner(
     cancel: Option<oneshot::Receiver<()>>,
     tx: Sender<Result<Bytes, BlobError>>,
     blobs: Blobs,
+    store: BlobStore,
     downloader: Option<Downloader>,
     providers: Vec<EndpointId>,
 ) -> anyhow::Result<()> {
@@ -131,7 +150,7 @@ async fn inner(
             () = &mut cancel => return Ok(()),
             res = n0_future::time::timeout(
                 ATTEMPT_TIMEOUT,
-                get_blob(hash, &blobs, downloader.as_ref(), &providers),
+                get_blob(hash, &blobs, &store, downloader.as_ref(), &providers),
             ) => res,
         };
         match res {
@@ -162,12 +181,21 @@ async fn inner(
 
 /// Bounds reads of both a fetch and a cached blob: the cached copy may have
 /// been written by a path that did not bound it.
+///
+/// The cache tag roots the hash for the whole fetch-and-read, and keeps it warm
+/// afterwards so a second read of content no document references does not
+/// re-download it. Nothing else roots it: `Downloader::download` takes no tag
+/// and the GC sweep lists partially written blobs, so a pass landing
+/// mid-download deletes the content out from under the fetch.
 async fn get_blob(
     hash: Hash,
     blobs: &Blobs,
+    store: &BlobStore,
     downloader: Option<&Downloader>,
     providers: &[EndpointId],
 ) -> Result<Bytes, BlobError> {
+    wds::cache::touch(store, hash, wds::cache::DEFAULT_TTL).await?;
+
     if blobs.has(hash).await.map_err(BlobError::from_std)? {
         return read_bounded(hash, blobs).await;
     }

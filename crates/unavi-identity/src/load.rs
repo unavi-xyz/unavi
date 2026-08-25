@@ -119,9 +119,9 @@ async fn load_store(
     let actor = store.local_actor();
     set_local_actor(actor.clone());
 
-    // Derived from the identity rather than minted, so the entries written here
-    // last session are the entries read this one.
-    let root = wds::docs::ensure_writable(store.docs(), store.namespace(labels::ROOT_DOC)).await?;
+    // Minted once and remembered, so the entries written here last session are
+    // the entries read this one.
+    let root = store.well_known(labels::ROOT_DOC).await?;
     set_root_doc(root.id());
 
     let SyncConfig {

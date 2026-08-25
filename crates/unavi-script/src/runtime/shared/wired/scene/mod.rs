@@ -97,6 +97,29 @@ async fn create_namespace() -> anyhow::Result<NamespaceId> {
     rx.recv().await?
 }
 
+/// Enrols a namespace in the local sync set, so peers asking for it are
+/// answered rather than told `NotFound`.
+async fn serve_namespace(ns: NamespaceId) -> anyhow::Result<()> {
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let Some(docs) = world
+                .query::<&LocalDocs>()
+                .single(world)
+                .ok()
+                .map(|d| d.0.clone())
+            else {
+                return;
+            };
+            spawn_async_task(async move {
+                tx.try_send(wds::docs::serve(&docs, ns).await).ok();
+            });
+        })
+        .send()
+        .await?;
+    rx.recv().await?
+}
+
 /// The namespace backing a document.
 ///
 /// A prefab instance derives its id and has no namespace at all.
@@ -374,8 +397,7 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
         .await?;
     rx.recv().await??;
 
-    let actor = bevy_wds::local_actor().ok_or_else(|| anyhow::anyhow!("no local actor"))?;
-    actor.host_doc(ns).await?;
+    serve_namespace(ns).await?;
 
     // Ownership follows from the local pin; its quota is charged to the
     // resulting owner.

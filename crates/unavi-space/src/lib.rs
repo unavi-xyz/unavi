@@ -102,6 +102,7 @@ impl Plugin for SpacePlugin {
                     connection::ecs::agent::outbound::set_agent_tickrates
                         .run_if(on_timer(TICKRATE_UPDATE_INTERVAL)),
                     peer::presence::manage_peers,
+                    peer::publish_blob_providers,
                     scene::instantiate_pending_scenes,
                     scene::pinned_docs::fetch_tracked_docs,
                     scene::pinned_docs::instantiate_tracked_docs,

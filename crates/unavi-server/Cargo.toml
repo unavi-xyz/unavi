@@ -22,6 +22,7 @@ directories.workspace = true
 iroh                  = { default-features = true, workspace = true }
 iroh-blobs.workspace  = true
 iroh-docs.workspace   = true
+n0-future.workspace   = true
 serde.workspace       = true
 serde_json.workspace  = true
 tokio                 = { features = ["full"], workspace = true }

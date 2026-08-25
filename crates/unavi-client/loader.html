@@ -54,6 +54,13 @@
         }
         console.log("Loading variant:", variant);
 
+        // Bevy's wasm asset reader fetches "assets/..." relative to
+        // `document.baseURI`, which without this stays "/" since this
+        // document never navigates into the variant's own directory.
+        const base = document.createElement("base");
+        base.href = "/" + variant + "/";
+        document.head.appendChild(base);
+
         // Fetch variant's index.html (paths already absolute from --public-url).
         const res = await fetch("/" + variant + "/index.html");
         const html = await res.text();

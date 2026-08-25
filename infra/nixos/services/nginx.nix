@@ -27,7 +27,7 @@ let
     forceSSL = true;
     root = webClientPkg;
     locations."/" = {
-      tryFiles = "$uri $uri/ /index.html";
+      tryFiles = "$uri $uri/ =404";
     };
   }) (lib.mapAttrs' (_: c: lib.nameValuePair c.domain c) staticServices);
 in

@@ -22,7 +22,6 @@ unsafe extern "C" {
 
 pub struct ScriptInstance {
     instance: JsValue,
-    runtime:  Runtime,
 }
 
 // Safe: wasm is single-threaded
@@ -31,8 +30,8 @@ unsafe impl Sync for ScriptInstance {}
 
 impl ScriptInstance {
     pub async fn instantiate(bytes: &[u8], name: &str, runtime: Runtime) -> Self {
-        let instance = js_instantiate_script(bytes, name, runtime.clone()).await;
-        Self { instance, runtime }
+        let instance = js_instantiate_script(bytes, name, runtime).await;
+        Self { instance }
     }
 
     pub async fn init(&self) {

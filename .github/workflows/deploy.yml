@@ -35,7 +35,18 @@ jobs:
           ref: ${{ inputs.ref || github.ref }}
       - uses: DeterminateSystems/determinate-nix-action@v3
         with:
-          extra-conf: extra-experimental-features = pipe-operators
+          extra-conf: |
+            extra-experimental-features = pipe-operators
+            extra-substituters = file://${{ github.workspace }}/nix-cache
+            require-sigs = false
+      - name: Fetch build-nix deploy cache
+        run: mkdir -p nix-cache
+      - uses: actions/download-artifact@v8
+        continue-on-error: true
+        with:
+          pattern: nix-cache-*
+          path: nix-cache
+          merge-multiple: true
       - name: Get deploy info
         id: deploy_info
         run: |
@@ -48,5 +59,4 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan ${{ steps.deploy_info.outputs.server_ip }} >> ~/.ssh/known_hosts
       - name: Deploy
-        # deploy-rs's nested nix eval breaks under LD_LIBRARY_PATH.
         run: nix develop --command env -u LD_LIBRARY_PATH deploy .#unavi-stable

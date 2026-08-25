@@ -185,12 +185,6 @@ impl DataStore {
         &self.ctx.endpoint
     }
 
-    /// The node's root identity, from which every key it holds derives.
-    #[must_use]
-    pub fn identity(&self) -> &Arc<RootIdentity> {
-        &self.ctx.identity
-    }
-
     /// The write capability for one of this node's well-known namespaces.
     ///
     /// `label` must come from [`identity::labels`].

@@ -14,10 +14,9 @@ jobs:
       - name: Generate build matrix
         id: generate
         run: |
-          # Graphical packages ship as AppImages; headless ones as plain bundles.
           APPIMAGE_PACKAGES=("unavi-client" "unavi-launcher")
           BUNDLE_PACKAGES=("unavi-server")
-          # SYSTEMS=("x86_64-linux" "x86_64-darwin")
+          WEB_PACKAGES=("unavi-client-web")
           SYSTEMS=("x86_64-linux")
 
           declare -A OS_MAP
@@ -33,6 +32,10 @@ jobs:
             for PKG in "${BUNDLE_PACKAGES[@]}"; do
               [ "$MATRIX" != "[" ] && MATRIX+=","
               MATRIX+="{\"package\":\"$PKG\",\"os\":\"$OS\",\"name\":\"$PKG-$SYS\",\"format\":\"bundle\"}"
+            done
+            for PKG in "${WEB_PACKAGES[@]}"; do
+              [ "$MATRIX" != "[" ] && MATRIX+=","
+              MATRIX+="{\"package\":\"$PKG\",\"os\":\"$OS\",\"name\":\"$PKG-$SYS\",\"format\":\"web\"}"
             done
           done
           MATRIX+="]"
@@ -61,11 +64,6 @@ jobs:
       - name: Build AppImage
         if: ${{ matrix.format == 'appimage' }}
         run: |
-          # The AppImage carries the full closure and a static runtime, so it
-          # needs neither Nix nor an FHS host to start. Its squashfs payload is
-          # already compressed, so no outer archive is worth the size; a manual
-          # download costs a chmod +x, and the launcher sets that bit itself
-          # when it installs an update.
           nix build -L -o result .#${{ matrix.package }}-appimage
           cp --dereference result ${{ matrix.name }}.AppImage
           chmod +x ${{ matrix.name }}.AppImage
@@ -73,18 +71,32 @@ jobs:
       - name: Build bundle
         if: ${{ matrix.format == 'bundle' }}
         run: |
-          # Bundles the full closure so the artifact runs without Nix installed.
           nix bundle -L -o bundle .#${{ matrix.package }}
           cp --dereference bundle ${{ matrix.name }}
           chmod +x ${{ matrix.name }}
-          # tar preserves the executable bit through download+extract; a bare
-          # xz stream of the binary does not, since Unix permissions aren't
-          # part of a compressed byte stream or an HTTP download.
           tar -cf - ${{ matrix.name }} | xz --x86 -9e -c > ${{ matrix.name }}.tar.xz
           echo "ARTIFACT=${{ matrix.name }}.tar.xz" >> "$GITHUB_ENV"
+      - name: Build web
+        if: ${{ matrix.format == 'web' }}
+        run: nix build -L -o result .#${{ matrix.package }}
       - name: Upload artifact
+        if: ${{ matrix.format != 'web' }}
         uses: actions/upload-artifact@v7
         with:
           name: build-${{ matrix.name }}
           path: ${{ env.ARTIFACT }}
+          retention-days: 1
+      - name: Export deploy cache
+        # unavi-server and unavi-client-web are the two packages deploy.yml
+        # needs; exporting their closures here lets it skip rebuilding them.
+        if: ${{ matrix.package == 'unavi-server' || matrix.package == 'unavi-client-web' }}
+        run: |
+          mkdir nix-cache
+          nix copy --to "file://$PWD/nix-cache" .#${{ matrix.package }}
+      - name: Upload deploy cache artifact
+        if: ${{ matrix.package == 'unavi-server' || matrix.package == 'unavi-client-web' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: nix-cache-${{ matrix.name }}
+          path: nix-cache
           retention-days: 1

@@ -28,13 +28,6 @@ pub fn load_or_create() -> anyhow::Result<P256KeyPair> {
     Ok(pair)
 }
 
-/// Drops the stored key. The next load generates a new identity.
-pub fn forget() -> anyhow::Result<()> {
-    local_storage()?
-        .remove_item(KEY_ITEM)
-        .map_err(|_| anyhow::anyhow!("could not clear the identity key"))
-}
-
 fn local_storage() -> anyhow::Result<web_sys::Storage> {
     web_sys::window()
         .ok_or_else(|| anyhow::anyhow!("no window"))?

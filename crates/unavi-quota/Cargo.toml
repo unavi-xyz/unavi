@@ -17,4 +17,4 @@ thiserror.workspace   = true
 web-time.workspace    = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-sysinfo = { default-features = false, features = ["system"], version = "0.37.2" }
+sysinfo = { default-features = false, features = ["system"], version = "0.38.4" }

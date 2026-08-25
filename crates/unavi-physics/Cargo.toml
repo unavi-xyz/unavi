@@ -12,4 +12,4 @@ workspace = true
 [dependencies]
 avian3d.workspace = true
 bevy.workspace    = true
-obvhs             = "0.3.2"
+obvhs             = "0.3.3"

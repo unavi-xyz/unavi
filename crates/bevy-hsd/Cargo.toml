@@ -17,8 +17,7 @@ bevy.workspace          = true
 bevy-msdf.path          = "../bevy-msdf"
 bevy-wds.path           = "../bevy-wds"
 blake3.workspace        = true
-bytemuck                = "1.25.0"
-bytes.workspace         = true
+bytemuck                = "1.25.2"
 hsd.path                = "../hsd"
 image                   = { features = ["jpeg", "png"], workspace = true }
 iroh-blobs              = { features = ["hide-proto-docs"], workspace = true }

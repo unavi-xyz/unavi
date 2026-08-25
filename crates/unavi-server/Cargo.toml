@@ -21,12 +21,11 @@ console-subscriber    = { optional = true, version = "0.5.0" }
 directories.workspace = true
 iroh                  = { default-features = true, workspace = true }
 iroh-blobs.workspace  = true
-iroh-docs.workspace   = true
 n0-future.workspace   = true
 serde.workspace       = true
 serde_json.workspace  = true
 tokio                 = { features = ["full"], workspace = true }
-tower-http            = { features = ["cors"], version = "0.6.8" }
+tower-http            = { features = ["cors"], version = "0.6.11" }
 tracing.workspace     = true
 tracing-subscriber    = { features = ["env-filter"], workspace = true }
 unavi-registry.path   = "../unavi-registry"

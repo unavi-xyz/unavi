@@ -117,6 +117,7 @@ fn spawn_sun(mut commands: Commands) {
         DirectionalLight {
             illuminance: lux::DIRECT_SUNLIGHT,
             shadow_maps_enabled: true,
+            // soft_shadow_size: Some(0.2),
             ..Default::default()
         },
         Transform::from_xyz(-0.9, 10.0, 3.8).looking_at(Vec3::ZERO, Vec3::Y),

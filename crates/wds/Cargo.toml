@@ -19,11 +19,10 @@ iroh.workspace        = true
 iroh-gossip           = { features = ["net"], workspace = true }
 irpc.workspace        = true
 irpc-iroh.workspace   = true
-jose-jwk              = "0.1.2"
+jose-jwk              = { default-features = false, features = ["p256", "p384"], version = "0.1.2" }
 n0-future.workspace   = true
 p256                  = { default-features = false, features = ["ecdsa", "pem"], version = "0.13.2" }
 p384                  = { default-features = false, features = ["ecdsa"], version = "0.13.1" }
-parking_lot.workspace = true
 postcard.workspace    = true
 rand.workspace        = true
 rusqlite              = { features = ["bundled"], version = "0.39.0" }

@@ -25,4 +25,3 @@ tokio.workspace         = true
 unavi-registry.path     = "../unavi-registry"
 unavi-util.path         = "../unavi-util"
 wds.path                = "../wds"
-xdid.workspace          = true

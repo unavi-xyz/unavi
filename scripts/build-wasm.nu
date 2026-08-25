@@ -3,9 +3,16 @@ const wasm_src = "wasm"
 
 def main [
   --crate: string  # Build only this wasm crate
+  --release        # Skip the example crates, which only the cargo examples load
 ] {
   let crates = ls $wasm_src | where type == "dir" | where {|d|
     ($"($d.name)/asset.hsda" | path exists)
+  }
+
+  let crates = if $release {
+    $crates | where {|d| not ($d.name | path basename | str starts-with "example-") }
+  } else {
+    $crates
   }
 
   let crates = if $crate != null {

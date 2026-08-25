@@ -164,13 +164,12 @@
 
         preBuild = ''
           nu scripts/update-wasm.nu --locked
-          nu scripts/build-wasm.nu
+          nu scripts/build-wasm.nu --release
         '';
 
         postInstall = ''
           mkdir -p $out/bin/assets
           cp -r crates/${pname}/assets/* $out/bin/assets/
-          rm -f $out/bin/assets/hsd/example_*.hsdz
           cp LICENSE $out
           patchelf --set-rpath "${lib.makeLibraryPath cargoArgs.linkedInputs}" $out/bin/${pname}
           wrapProgram $out/bin/${pname} \
@@ -205,7 +204,7 @@
 
           preBuild = ''
             nu scripts/update-wasm.nu --locked
-            nu scripts/build-wasm.nu
+            nu scripts/build-wasm.nu --release
           '';
 
           buildPhaseCargoCommand = ''

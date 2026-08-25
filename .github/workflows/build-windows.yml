@@ -64,22 +64,14 @@ jobs:
       - name: Remove example HSD assets
         shell: bash
         run: rm -f crates/unavi-client/assets/hsd/example_*.hsdz
-      - uses: crazy-max/ghaction-chocolatey@v4
-        with:
-          args: install pkgconfiglite
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2026-08-14
           targets: x86_64-pc-windows-msvc
-      - name: Install dav1d
-        run: vcpkg install dav1d:x64-windows-static
       - run: cargo install cargo-binstall --locked
       - run: cargo binstall cargo-wix --locked --no-confirm
       - name: Build package
         shell: bash
-        env:
-          PKG_CONFIG_PATH: C:\vcpkg\installed\x64-windows-static\lib\pkgconfig
-          PKG_CONFIG_ALL_STATIC: 1
         run: cargo build -p ${{ matrix.package }} --release
       - name: Check DLL dependencies
         if: ${{ matrix.package == 'unavi-client' }}

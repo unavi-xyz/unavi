@@ -72,7 +72,7 @@
         strictDeps = true;
 
         nativeBuildInputs =
-          pkgs.lib.optionals pkgs.stdenv.isLinux (
+          pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (
             with pkgs;
             [
               binaryen
@@ -86,7 +86,7 @@
           )
           ++ [ inputs.wit-deps.packages.${system}.wit-deps ];
 
-        linkedInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
+        linkedInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (
           with pkgs;
           [
             alsa-lib
@@ -192,7 +192,7 @@
         "${pname}" = packageDrv;
         "${pname}-web" = pkgs.crane.buildTrunkPackage (webArgs // { pname = "${pname}-web"; });
       }
-      // lib.optionalAttrs pkgs.stdenv.isLinux {
+      // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
         "${pname}-appimage" = inputs.nix-appimage.lib.${system}.mkAppImage {
           program = "${packageDrv}/bin/${pname}";
         };

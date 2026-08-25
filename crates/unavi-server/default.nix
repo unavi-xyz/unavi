@@ -22,7 +22,7 @@ _: {
         cargoExtraArgs = "-p ${pname}";
         strictDeps = true;
 
-        nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.isLinux (
+        nativeBuildInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (
           with pkgs;
           [
             clang

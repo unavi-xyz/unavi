@@ -39,9 +39,9 @@ time.workspace             = true
 tokio.workspace            = true
 tracing.workspace          = true
 unavi-agent.path           = "../unavi-agent"
-unavi-avatar               = { path = "../unavi-avatar", version = "0.0.16" }
+unavi-avatar               = { path = "../unavi-avatar", version = "0.0.17" }
 unavi-devtools             = { optional = true, path = "../unavi-devtools" }
-unavi-manifold             = { path = "../unavi-manifold", version = "0.0.16" }
+unavi-manifold             = { path = "../unavi-manifold", version = "0.0.17" }
 unavi-policy.path          = "../unavi-policy"
 unavi-portal-protocol.path = "../unavi-portal-protocol"
 unavi-quota.path           = "../unavi-quota"

@@ -953,7 +953,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-hsd"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1037,7 +1037,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-iroh"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1050,7 +1050,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-iroh-assets"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -1066,7 +1066,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-msdf"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "bevy",
  "bevy_panorbit_camera",
@@ -1128,7 +1128,7 @@ dependencies = [
 
 [[package]]
 name = "bevy-wds"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -5357,7 +5357,7 @@ dependencies = [
 
 [[package]]
 name = "example-unavi-shapes"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-prelude",
@@ -5366,7 +5366,7 @@ dependencies = [
 
 [[package]]
 name = "example-unavi-vui"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-prelude",
@@ -5375,7 +5375,7 @@ dependencies = [
 
 [[package]]
 name = "example-wired-agent"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-prelude",
@@ -5384,7 +5384,7 @@ dependencies = [
 
 [[package]]
 name = "example-wired-event"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-prelude",
@@ -5393,7 +5393,7 @@ dependencies = [
 
 [[package]]
 name = "example-wired-input"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-prelude",
@@ -5402,7 +5402,7 @@ dependencies = [
 
 [[package]]
 name = "example-wired-kv"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "serde",
@@ -6711,7 +6711,7 @@ dependencies = [
 
 [[package]]
 name = "hsd"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "blake3",
  "postcard",
@@ -6727,7 +6727,7 @@ dependencies = [
 
 [[package]]
 name = "hsd-cli"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "blake3",
@@ -8486,7 +8486,7 @@ dependencies = [
 
 [[package]]
 name = "msdf"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "etagere",
  "fdsm",
@@ -13645,7 +13645,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-agent"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "avian3d",
  "bevy",
@@ -13664,11 +13664,11 @@ dependencies = [
 
 [[package]]
 name = "unavi-assets"
-version = "0.0.16"
+version = "0.0.17"
 
 [[package]]
 name = "unavi-assets-fetch"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "bevy",
  "bevy-iroh-assets",
@@ -13678,7 +13678,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-avatar"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "bevy",
  "bevy_vrm",
@@ -13690,7 +13690,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-beacon"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "blake3",
@@ -13701,7 +13701,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-client"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -13748,7 +13748,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-default-home"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "blake3",
@@ -13759,7 +13759,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-devtools"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "async-channel",
  "bevy",
@@ -13767,7 +13767,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-gate"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "postcard",
@@ -13778,7 +13778,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-grab"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "avian3d",
  "bevy",
@@ -13793,7 +13793,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-halo"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "blake3",
@@ -13805,7 +13805,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-identity"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "bevy",
@@ -13823,7 +13823,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-input"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "avian3d",
  "bevy",
@@ -13843,7 +13843,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-launcher"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -13868,7 +13868,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-manifold"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "avian3d",
  "bevy",
@@ -13883,7 +13883,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-physgun"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-prelude",
@@ -13892,7 +13892,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-physics"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "avian3d",
  "bevy",
@@ -13901,7 +13901,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-policy"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "bevy",
@@ -13921,14 +13921,14 @@ dependencies = [
 
 [[package]]
 name = "unavi-portal-protocol"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "unavi-quota"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "blake3",
  "iroh-docs",
@@ -13940,7 +13940,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-registry"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "futures",
@@ -13963,7 +13963,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-script"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -14014,7 +14014,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-script-util"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "blake3",
  "wired-prelude",
@@ -14022,7 +14022,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-secrets"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "prettyplease 0.3.0",
@@ -14034,7 +14034,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-server"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "axum",
@@ -14060,7 +14060,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-shapes"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "glam 0.32.1",
@@ -14070,7 +14070,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-space"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "async-channel",
@@ -14113,7 +14113,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-spawner"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-prelude",
@@ -14122,7 +14122,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-tool"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "blake3",
@@ -14134,7 +14134,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-util"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "async-channel",
  "bevy",
@@ -14146,7 +14146,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-vui"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "arrayvec",
@@ -14160,7 +14160,7 @@ dependencies = [
 
 [[package]]
 name = "unavi-wasm-compat"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "n0-future",
  "tokio",
@@ -15196,7 +15196,7 @@ dependencies = [
 
 [[package]]
 name = "wds"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "axum",
@@ -16434,7 +16434,7 @@ dependencies = [
 
 [[package]]
 name = "wired-kv"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "postcard",
  "serde",
@@ -16443,7 +16443,7 @@ dependencies = [
 
 [[package]]
 name = "wired-math"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "glam 0.32.1",
  "serde",
@@ -16451,7 +16451,7 @@ dependencies = [
 
 [[package]]
 name = "wired-prelude"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "anyhow",
  "wired-kv",
@@ -16461,7 +16461,7 @@ dependencies = [
 
 [[package]]
 name = "wired-scene"
-version = "0.0.16"
+version = "0.0.17"
 dependencies = [
  "serde",
 ]

@@ -13,8 +13,7 @@ use zeroize::Zeroizing;
 
 const KEY_FILE: &str = "key.pem";
 
-/// Loads the identity key from `dir`, generating and persisting one if absent.
-pub fn get_or_create_key(dir: &Path) -> anyhow::Result<P256KeyPair> {
+pub fn load_or_create(dir: &Path) -> anyhow::Result<P256KeyPair> {
     let path = dir.join(KEY_FILE);
 
     if path.exists() {
@@ -22,6 +21,7 @@ pub fn get_or_create_key(dir: &Path) -> anyhow::Result<P256KeyPair> {
         return P256KeyPair::from_pkcs8_pem(pem.as_str());
     }
 
+    std::fs::create_dir_all(dir)?;
     let pair = P256KeyPair::generate();
     write_key(&path, &pair.to_pkcs8_pem()?)?;
     Ok(pair)
@@ -51,8 +51,8 @@ mod tests {
     fn reloads_the_same_identity() {
         let dir = tempdir().expect("temp dir");
 
-        let created = get_or_create_key(dir.path()).expect("create key");
-        let loaded = get_or_create_key(dir.path()).expect("load key");
+        let created = load_or_create(dir.path()).expect("create key");
+        let loaded = load_or_create(dir.path()).expect("load key");
 
         assert_eq!(
             created.public().to_did(),
@@ -66,8 +66,8 @@ mod tests {
         let a = tempdir().expect("temp dir");
         let b = tempdir().expect("temp dir");
 
-        let a = get_or_create_key(a.path()).expect("create key");
-        let b = get_or_create_key(b.path()).expect("create key");
+        let a = load_or_create(a.path()).expect("create key");
+        let b = load_or_create(b.path()).expect("create key");
 
         assert_ne!(a.public().to_did(), b.public().to_did());
     }
@@ -76,10 +76,20 @@ mod tests {
     #[test]
     fn key_file_is_owner_only() {
         let dir = tempdir().expect("temp dir");
-        get_or_create_key(dir.path()).expect("create key");
+        load_or_create(dir.path()).expect("create key");
 
         let meta = std::fs::metadata(dir.path().join(KEY_FILE)).expect("metadata");
 
         assert_eq!(meta.permissions().mode() & 0o777, 0o600);
+    }
+
+    #[test]
+    fn a_missing_directory_is_created() {
+        let dir = tempdir().expect("temp dir");
+        let nested = dir.path().join("wds").join("identity");
+
+        load_or_create(&nested).expect("create key");
+
+        assert!(nested.join(KEY_FILE).exists());
     }
 }

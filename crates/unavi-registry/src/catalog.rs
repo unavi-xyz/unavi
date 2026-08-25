@@ -7,7 +7,11 @@ use iroh_docs::{
     store::Query,
 };
 use time::OffsetDateTime;
-use wds::signed_bytes::SignedBytes;
+use wds::{
+    DataStore,
+    identity::labels,
+    signed_bytes::SignedBytes,
+};
 
 use crate::entry::Submission;
 
@@ -24,8 +28,11 @@ pub struct Catalog {
 }
 
 impl Catalog {
-    pub async fn create(docs: &Docs) -> anyhow::Result<Self> {
-        let doc = docs.api().create().await?;
+    /// Derived from the host's identity, so a restart reopens the catalog it
+    /// already published rather than abandoning it under a new namespace.
+    pub async fn create(docs: &Docs, store: &DataStore) -> anyhow::Result<Self> {
+        let doc =
+            wds::docs::ensure_writable(docs, store.namespace(labels::REGISTRY_CATALOG)).await?;
         Ok(Self { ns: doc.id() })
     }
 

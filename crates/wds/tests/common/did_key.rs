@@ -16,7 +16,7 @@ pub async fn generate_actor(store: &DataStore) -> Actor {
     let key = P256KeyPair::generate();
     let did = key.public().to_did();
     let identity = Arc::new(Identity::new(did.clone(), key));
-    let actor = store.local_actor(identity);
+    let actor = store.local_actor_as(identity);
 
     let did_str = did.to_string();
     store

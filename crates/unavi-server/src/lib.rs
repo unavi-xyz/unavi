@@ -32,6 +32,10 @@ use unavi_registry::{
 use wds::{
     DataStore,
     WDS_SERVICE_TYPE,
+    identity::{
+        RootIdentity,
+        store::KeyStorage,
+    },
 };
 use xdid::{
     core::{
@@ -57,7 +61,6 @@ use xdid::{
 };
 
 mod files;
-mod key_pair;
 pub mod secrets;
 
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
@@ -97,12 +100,18 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     let port = opts.port;
 
     let did = create_did(&secrets::Secrets::load().unavi_domain)?;
-    let vc = key_pair::get_or_create_key(opts.in_memory)?;
+    let identity = Arc::new(RootIdentity::load(&key_storage(opts.in_memory))?);
     info!("Running server as {did}");
 
-    let endpoint = Endpoint::builder(N0).bind().await?;
+    // Fixes the endpoint id across restarts. The served DID document names it,
+    // and `signed_by_wds_service` has peers verify a challenge against it.
+    let endpoint = Endpoint::builder(N0)
+        .secret_key(identity.endpoint_key())
+        .bind()
+        .await?;
 
-    let builder = DataStore::builder(endpoint.clone()).gc_timer(Duration::from_mins(15));
+    let builder = DataStore::builder(endpoint.clone(), Arc::clone(&identity))
+        .gc_timer(Duration::from_mins(15));
     let builder = if opts.in_memory {
         builder
     } else {
@@ -139,7 +148,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let router = rb.spawn();
 
-    let app = create_did_document_route(did, &vc, store.endpoint_id(), views)?;
+    let app = create_did_document_route(did, identity.signing_key(), store.endpoint_id(), views)?;
 
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port));
     info!("HTTP listening on port {port}");
@@ -151,6 +160,14 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     router.shutdown().await?;
 
     Ok(())
+}
+
+fn key_storage(in_memory: bool) -> KeyStorage {
+    if in_memory {
+        KeyStorage::Ephemeral
+    } else {
+        KeyStorage::Path(DIRS.data_local_dir().to_path_buf())
+    }
 }
 
 fn create_did(domain: &str) -> anyhow::Result<Did> {

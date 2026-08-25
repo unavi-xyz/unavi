@@ -13813,12 +13813,10 @@ dependencies = [
  "bevy-wds",
  "iroh",
  "n0-future",
- "tempfile",
  "unavi-registry",
  "unavi-util",
  "wds",
  "xdid",
- "zeroize",
 ]
 
 [[package]]
@@ -14055,7 +14053,6 @@ dependencies = [
  "unavi-secrets",
  "wds",
  "xdid",
- "zeroize",
 ]
 
 [[package]]
@@ -15223,12 +15220,15 @@ dependencies = [
  "serde",
  "serde_json",
  "signature 2.2.0",
+ "tempfile",
  "thiserror 2.0.19",
  "time",
  "tokio",
  "tracing",
  "tracing-test",
+ "web-sys",
  "xdid",
+ "zeroize",
 ]
 
 [[package]]

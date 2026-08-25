@@ -32,4 +32,3 @@ unavi-registry.path   = "../unavi-registry"
 unavi-secrets.path    = "../unavi-secrets"
 wds.path              = "../wds"
 xdid.workspace        = true
-zeroize.workspace     = true

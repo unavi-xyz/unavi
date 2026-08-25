@@ -15,6 +15,10 @@ use rstest::fixture;
 use wds::{
     DataStore,
     actor::Actor,
+    identity::{
+        RootIdentity,
+        store::KeyStorage,
+    },
 };
 
 pub struct DataStoreCtx {
@@ -31,7 +35,11 @@ pub async fn ctx() -> DataStoreCtx {
         .await
         .expect("bind endpoint");
 
-    let (store, f) = DataStore::builder(endpoint.clone())
+    let identity = std::sync::Arc::new(
+        RootIdentity::load(&KeyStorage::Ephemeral).expect("generate host identity"),
+    );
+
+    let (store, f) = DataStore::builder(endpoint.clone(), identity)
         .build()
         .await
         .expect("construct data store");

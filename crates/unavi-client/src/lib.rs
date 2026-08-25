@@ -122,8 +122,17 @@ impl Plugin for UnaviPlugin {
         )
         .add_systems(Startup, icon::set_window_icon);
 
+        // The endpoint key derives from the identity, so the identity plugin
+        // has to have built before this runs.
+        let secret_key = app
+            .world()
+            .resource::<unavi_identity::LocalIdentity>()
+            .0
+            .endpoint_key();
+
         app.world_mut().trigger(LoadEndpoint {
             filter: AddrFilter::default(),
+            secret_key,
         });
     }
 }

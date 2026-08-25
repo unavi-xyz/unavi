@@ -24,12 +24,10 @@ use unavi_util::{
 use wds::{
     DataStore,
     actor::Actor,
-    identity::Identity,
-};
-use xdid::methods::key::keys::{
-    DidKeyPair,
-    PublicKey,
-    p256::P256KeyPair,
+    identity::{
+        RootIdentity,
+        store::KeyStorage,
+    },
 };
 
 pub struct TestWds {
@@ -61,7 +59,16 @@ fn build_wds(storage: Option<PathBuf>) -> TestWds {
             .await
             .expect("iroh endpoint");
 
-        let builder = DataStore::builder(endpoint.clone());
+        // The persistent store's documents were authored under the client's
+        // identity, so an example reading them back has to load the same key.
+        let key_storage = if storage.is_some() {
+            KeyStorage::Path(data_local_dir().to_path_buf())
+        } else {
+            KeyStorage::Ephemeral
+        };
+        let identity = Arc::new(RootIdentity::load(&key_storage).expect("identity"));
+
+        let builder = DataStore::builder(endpoint.clone(), identity);
         let persistent = storage.is_some();
         let builder = match storage {
             Some(path) => builder.storage_path(path),
@@ -80,10 +87,7 @@ fn build_wds(storage: Option<PathBuf>) -> TestWds {
             warn_missing_manifest_assets(&blobs).await;
         }
 
-        let signing_key = P256KeyPair::generate();
-        let did = signing_key.public().to_did();
-        let identity = Arc::new(Identity::new(did, signing_key));
-        let actor = store.local_actor(identity);
+        let actor = store.local_actor();
 
         tx.send(TestWds {
             actor,

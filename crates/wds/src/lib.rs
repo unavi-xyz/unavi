@@ -1,18 +1,23 @@
 use std::sync::Arc;
 
 use derive_more::Debug;
-use identity::Identity;
+use identity::{
+    Identity,
+    RootIdentity,
+};
 use iroh::{
     Endpoint,
     EndpointAddr,
     EndpointId,
 };
 use iroh_blobs::api::Store as BlobStore;
-use iroh_docs::protocol::Docs;
+use iroh_docs::{
+    NamespaceSecret,
+    protocol::Docs,
+};
 use iroh_gossip::Gossip;
 use irpc::Client;
 use n0_future::task::AbortOnDropHandle;
-use parking_lot::RwLock;
 use xdid::core::did::Did;
 
 use crate::builder::{
@@ -57,23 +62,23 @@ pub const SESSION_TTL: std::time::Duration = std::time::Duration::from_hours(12)
 #[derive(Debug)]
 struct StoreContext {
     #[debug("BlobStore")]
-    blobs:         BoxedBlobs,
+    blobs:       BoxedBlobs,
     #[debug("HashMap({})", connections.len())]
-    connections:   scc::HashMap<SessionToken, ConnectionState>,
+    connections: scc::HashMap<SessionToken, ConnectionState>,
     #[debug("Database")]
-    db:            db::Database,
+    db:          db::Database,
     #[debug("Docs")]
-    docs:          Docs,
+    docs:        Docs,
     #[debug("Endpoint")]
-    endpoint:      Endpoint,
+    endpoint:    Endpoint,
     #[debug("Gossip")]
-    gossip:        Gossip,
+    gossip:      Gossip,
     /// Namespaces this node replicates on someone's behalf, each holding the
     /// doc handle and metering task that hosting it entails.
     #[debug("HashMap({})", hosted.len())]
-    hosted:        scc::HashMap<iroh_docs::NamespaceId, HostedDoc>,
-    #[debug("Option<Identity>")]
-    user_identity: RwLock<Option<Arc<Identity>>>,
+    hosted:      scc::HashMap<iroh_docs::NamespaceId, HostedDoc>,
+    #[debug("RootIdentity")]
+    identity:    Arc<RootIdentity>,
 }
 
 struct HostedDoc {
@@ -99,8 +104,8 @@ struct ConnectionState {
 impl DataStore {
     /// Create a new [`DataStoreBuilder`].
     #[must_use]
-    pub const fn builder(endpoint: Endpoint) -> DataStoreBuilder {
-        DataStoreBuilder::new(endpoint)
+    pub const fn builder(endpoint: Endpoint, identity: Arc<RootIdentity>) -> DataStoreBuilder {
+        DataStoreBuilder::new(endpoint, identity)
     }
 
     #[must_use]
@@ -108,9 +113,19 @@ impl DataStore {
         self.ctx.endpoint.id()
     }
 
-    /// Create an actor targeting the local WDS.
+    /// Create an actor targeting the local WDS, acting as this node.
     #[must_use]
-    pub fn local_actor(&self, identity: Arc<Identity>) -> actor::Actor {
+    pub fn local_actor(&self) -> actor::Actor {
+        self.local_actor_as(Arc::new(self.ctx.identity.identity()))
+    }
+
+    /// Create an actor targeting the local WDS on behalf of some other
+    /// identity.
+    ///
+    /// A host serves many DIDs, so its own identity is not the only one that
+    /// can act against it.
+    #[must_use]
+    pub fn local_actor_as(&self, identity: Arc<Identity>) -> actor::Actor {
         actor::Actor::new(
             identity,
             self.endpoint.addr(),
@@ -119,11 +134,12 @@ impl DataStore {
         )
     }
 
-    /// Create an actor targeting a remote WDS.
+    /// Create an actor targeting a remote WDS, acting as this node.
     #[must_use]
-    pub fn remote_actor(&self, identity: Arc<Identity>, host: EndpointAddr) -> actor::Actor {
+    pub fn remote_actor(&self, host: EndpointAddr) -> actor::Actor {
         let control_client = irpc_iroh::client(self.endpoint.clone(), host.clone(), control::ALPN);
         let auth_client = irpc_iroh::client(self.endpoint.clone(), host.clone(), auth::ALPN);
+        let identity = Arc::new(self.ctx.identity.identity());
         actor::Actor::new(identity, host, control_client, auth_client)
     }
 
@@ -169,9 +185,18 @@ impl DataStore {
         &self.ctx.endpoint
     }
 
-    /// Sets the user identity for WDS-to-WDS authentication.
-    pub fn set_user_identity(&self, identity: Arc<Identity>) {
-        *self.ctx.user_identity.write() = Some(identity);
+    /// The node's root identity, from which every key it holds derives.
+    #[must_use]
+    pub fn identity(&self) -> &Arc<RootIdentity> {
+        &self.ctx.identity
+    }
+
+    /// The write capability for one of this node's well-known namespaces.
+    ///
+    /// `label` must come from [`identity::labels`].
+    #[must_use]
+    pub fn namespace(&self, label: &str) -> NamespaceSecret {
+        self.ctx.identity.namespace(label)
     }
 
     /// Runs garbage collection on the data store.

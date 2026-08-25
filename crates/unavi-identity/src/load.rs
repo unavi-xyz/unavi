@@ -1,5 +1,5 @@
 use std::{
-    str::FromStr,
+    path::PathBuf,
     sync::Arc,
     time::Duration,
 };
@@ -21,50 +21,32 @@ use bevy_wds::{
     LocalGossip,
     SyncTargets,
     set_local_actor,
-    set_registries,
-    set_registry_clients,
     set_root_doc,
 };
-use iroh::{
-    Endpoint,
-    EndpointAddr,
-    EndpointId,
-};
-use unavi_registry::client::RegistryClient;
+use iroh::Endpoint;
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
 };
 use wds::{
     DataStore,
-    WDS_SERVICE_TYPE,
-    actor::Actor,
-    identity::Identity,
-    resolve::{
-        resolve,
-        resolve_allowing_loopback,
-    },
-};
-use xdid::{
-    core::did::Did,
-    methods::key::keys::{
-        DidKeyPair,
-        PublicKey,
-        p256::P256KeyPair,
+    identity::{
+        RootIdentity,
+        labels,
     },
 };
 
 use crate::{
     InMemory,
+    LocalIdentity,
     SyncConfig,
+    registry,
 };
-
-const RETRY_DELAY: Duration = Duration::from_secs(4);
-const MAX_RETRY_DELAY: Duration = Duration::from_mins(1);
 
 pub fn spawn_actors(
     trigger: On<Add, IrohEndpoint>,
     endpoints: Query<&IrohEndpoint>,
+    identity: Res<LocalIdentity>,
     in_memory: Res<InMemory>,
     sync: Res<SyncConfig>,
 ) {
@@ -75,14 +57,23 @@ pub fn spawn_actors(
         .map(|e| e.0.clone())
         .expect("endpoint");
 
-    let in_memory = *in_memory;
+    let identity = Arc::clone(&identity.0);
+    let storage = store_path(in_memory.0);
     let sync = sync.clone();
 
     spawn_async_task(async move {
         let mut delay_secs = 4;
 
         loop {
-            if let Err(err) = load_store(endpoint.clone(), entity, in_memory, sync.clone()).await {
+            if let Err(err) = load_store(
+                endpoint.clone(),
+                Arc::clone(&identity),
+                entity,
+                storage.clone(),
+                sync.clone(),
+            )
+            .await
+            {
                 error!(?err, "Failed to load data store");
                 n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
                 delay_secs = delay_secs.wrapping_mul(2);
@@ -97,46 +88,49 @@ pub fn spawn_actors(
     });
 }
 
+/// Wasm has no filesystem to back a store with, so it stays in memory and
+/// refetches content each session.
+#[cfg(target_family = "wasm")]
+const fn store_path(_in_memory: bool) -> Option<PathBuf> {
+    None
+}
+
+#[cfg(not(target_family = "wasm"))]
+fn store_path(in_memory: bool) -> Option<PathBuf> {
+    (!in_memory).then(|| unavi_util::dirs::data_local_dir().join("wds"))
+}
+
 async fn load_store(
     endpoint: Endpoint,
+    identity: Arc<RootIdentity>,
     entity: Entity,
-    InMemory(in_memory): InMemory,
+    storage: Option<PathBuf>,
     sync: SyncConfig,
 ) -> anyhow::Result<()> {
-    let signing_key = signing_key(in_memory);
-    let did = signing_key.public().to_did();
-    let identity = Arc::new(Identity::new(did, signing_key));
-
-    let builder = DataStore::builder(endpoint.clone()).gc_timer(Duration::from_mins(15));
-
-    // Wasm has no filesystem to back a store with, so it stays in memory and
-    // refetches content each session.
-    #[cfg(not(target_family = "wasm"))]
-    let builder = if in_memory {
-        builder
-    } else {
-        builder.storage_path(unavi_util::dirs::data_local_dir().join("wds"))
+    let builder = DataStore::builder(endpoint.clone(), identity).gc_timer(Duration::from_mins(15));
+    let builder = match storage {
+        Some(path) => builder.storage_path(path),
+        None => builder,
     };
 
     let (store, f) = builder.build().await?;
     let store = Arc::new(store);
 
-    store.set_user_identity(Arc::clone(&identity));
-    let actor = store.local_actor(Arc::clone(&identity));
+    let actor = store.local_actor();
     set_local_actor(actor.clone());
 
-    if let Ok(root) = wds::kv::create(store.docs()).await {
-        set_root_doc(root);
-    }
+    // Derived from the identity rather than minted, so the entries written here
+    // last session are the entries read this one.
+    let root = wds::docs::ensure_writable(store.docs(), store.namespace(labels::ROOT_DOC)).await?;
+    set_root_doc(root.id());
 
     let SyncConfig {
         allow_loopback,
         targets,
     } = sync;
 
-    let (sync_targets, unresolved) =
-        resolve_batch(&store, &identity, targets, allow_loopback).await;
-    sync_registries(&store, &endpoint, &sync_targets).await;
+    let (sync_targets, unresolved) = registry::resolve_batch(&store, targets, allow_loopback).await;
+    registry::sync(&store, &endpoint, &sync_targets).await;
 
     let store_entity = AsyncCommands::default()
         .spawn((RouterBuilderFnTarget(entity), RouterBuilderFn(Some(f))))
@@ -152,10 +146,9 @@ async fn load_store(
         .await;
 
     if !unresolved.is_empty() {
-        spawn_async_task(retry_sync_targets(
+        spawn_async_task(registry::retry(
             store,
             endpoint,
-            identity,
             sync_targets,
             unresolved,
             store_entity,
@@ -164,153 +157,4 @@ async fn load_store(
     }
 
     Ok(())
-}
-
-#[cfg(target_family = "wasm")]
-fn signing_key(_in_memory: bool) -> P256KeyPair {
-    P256KeyPair::generate()
-}
-
-/// An unreadable key file is left in place and the session runs under a
-/// generated identity, since retrying a load that fails deterministically would
-/// leave the client with no store at all.
-#[cfg(not(target_family = "wasm"))]
-fn signing_key(in_memory: bool) -> P256KeyPair {
-    if in_memory {
-        return P256KeyPair::generate();
-    }
-
-    match crate::key_pair::get_or_create_key(unavi_util::dirs::data_local_dir()) {
-        Ok(pair) => pair,
-        Err(err) => {
-            error!(?err, "failed to load identity key; using an ephemeral one");
-            P256KeyPair::generate()
-        }
-    }
-}
-
-/// Builds a client per followed registry, syncs each one's view docs locally,
-/// and publishes both for off-world access.
-///
-/// A registry is a service the client consults, never one it runs; with no
-/// sync targets configured there is nothing to follow.
-async fn sync_registries(store: &DataStore, endpoint: &Endpoint, targets: &[Actor]) {
-    let mut clients = Vec::new();
-    let mut namespaces = Vec::new();
-
-    for actor in targets {
-        let client = RegistryClient::new(endpoint, actor.host().clone(), actor.clone());
-
-        match client.sync_views(store.docs()).await {
-            Ok(mut views) => namespaces.append(&mut views),
-            Err(err) => {
-                warn!(?err, "failed syncing registry views");
-                continue;
-            }
-        }
-
-        clients.push(client);
-    }
-
-    set_registries(namespaces);
-    set_registry_clients(clients);
-}
-
-/// Resolves every target, returning the ones that answered alongside the DIDs
-/// that did not.
-///
-/// An unresolved target is handed to [`retry_sync_targets`] rather than failing
-/// the load: a client with no reachable server still runs peer to peer.
-async fn resolve_batch(
-    store: &DataStore,
-    identity: &Arc<Identity>,
-    dids: Vec<String>,
-    allow_loopback: bool,
-) -> (Vec<Actor>, Vec<String>) {
-    let mut actors = Vec::new();
-    let mut unresolved = Vec::new();
-
-    for did_str in dids {
-        match resolve_sync_target(&did_str, allow_loopback).await {
-            Ok(addr) => {
-                info!(target = did_str, "registering WDS sync target");
-                actors.push(store.remote_actor(Arc::clone(identity), addr));
-            }
-            Err(err) => {
-                warn!(target = did_str, ?err, "failed to resolve WDS sync target");
-                unresolved.push(did_str);
-            }
-        }
-    }
-
-    (actors, unresolved)
-}
-
-/// Keeps resolving the targets that were unreachable at startup, so a server
-/// brought up after the client is still followed without a restart.
-async fn retry_sync_targets(
-    store: Arc<DataStore>,
-    endpoint: Endpoint,
-    identity: Arc<Identity>,
-    mut targets: Vec<Actor>,
-    mut unresolved: Vec<String>,
-    store_entity: Entity,
-    allow_loopback: bool,
-) {
-    let mut delay = RETRY_DELAY;
-
-    while !unresolved.is_empty() {
-        n0_future::time::sleep(delay).await;
-        delay = (delay * 2).min(MAX_RETRY_DELAY);
-
-        let (actors, pending) = resolve_batch(&store, &identity, unresolved, allow_loopback).await;
-        unresolved = pending;
-
-        if actors.is_empty() {
-            continue;
-        }
-        targets.extend(actors);
-
-        sync_registries(&store, &endpoint, &targets).await;
-
-        let published = targets.clone();
-        let sent = AsyncCommands::default()
-            .push(move |world: &mut World| {
-                if let Some(mut existing) = world.get_mut::<SyncTargets>(store_entity) {
-                    existing.0 = published;
-                }
-            })
-            .send()
-            .await;
-
-        if let Err(err) = sent {
-            error!(?err, "failed to publish resolved sync targets");
-            return;
-        }
-    }
-}
-
-async fn resolve_sync_target(did_str: &str, allow_loopback: bool) -> anyhow::Result<EndpointAddr> {
-    let did = Did::from_str(did_str)?;
-
-    let doc = if allow_loopback {
-        resolve_allowing_loopback(&did).await
-    } else {
-        resolve(&did).await
-    }
-    .ok_or_else(|| anyhow::anyhow!("could not resolve {did}"))?;
-
-    let services = doc.service.unwrap_or_default();
-    let wds = services
-        .iter()
-        .find(|s| s.id == "wds" && s.typ.iter().any(|t| t == WDS_SERVICE_TYPE))
-        .ok_or_else(|| anyhow::anyhow!("no `wds` service in DID document"))?;
-
-    let endpoint_str = wds
-        .service_endpoint
-        .first()
-        .ok_or_else(|| anyhow::anyhow!("`wds` service has no serviceEndpoint"))?;
-
-    let endpoint_id = EndpointId::from_str(endpoint_str)?;
-    Ok(EndpointAddr::from(endpoint_id))
 }

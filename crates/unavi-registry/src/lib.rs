@@ -76,8 +76,8 @@ impl Registry {
         let docs = store.docs().clone();
         let blobs = store.blobs().blobs().clone();
 
-        let catalog = Catalog::create(&docs).await?;
-        let views = Views::create(&docs).await?;
+        let catalog = Catalog::create(&docs, &store).await?;
+        let views = Views::create(&docs, &store).await?;
 
         let ctx = Arc::new(RegistryContext {
             blobs,

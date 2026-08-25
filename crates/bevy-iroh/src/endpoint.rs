@@ -3,6 +3,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 use iroh::{
     Endpoint,
+    SecretKey,
     endpoint::presets::N0,
     endpoint_info::AddrFilter,
 };
@@ -18,9 +19,12 @@ use crate::router::RouterBuilderFns;
 #[require(RouterBuilderFns)]
 pub struct IrohEndpoint(pub Endpoint);
 
-#[derive(Event, Clone, Default)]
+#[derive(Event, Clone)]
 pub struct LoadEndpoint {
-    pub filter: AddrFilter,
+    pub filter:     AddrFilter,
+    /// Fixes the endpoint id across restarts, so a peer that recorded this
+    /// node's address can still reach it.
+    pub secret_key: SecretKey,
 }
 
 pub(crate) fn on_load_endpoint(trigger: On<LoadEndpoint>, mut commands: Commands) {
@@ -64,7 +68,9 @@ pub(crate) fn receive_endpoint(mut commands: Commands, loading: Query<(Entity, &
 }
 
 async fn init_endpoint(opts: &LoadEndpoint) -> anyhow::Result<Endpoint> {
-    let endpoint = Endpoint::builder(N0).addr_filter(opts.filter.clone());
+    let endpoint = Endpoint::builder(N0)
+        .addr_filter(opts.filter.clone())
+        .secret_key(opts.secret_key.clone());
 
     let endpoint = endpoint.bind().await?;
     info!("Spawned endpoint: {}", endpoint.id());

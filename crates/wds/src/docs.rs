@@ -1,6 +1,7 @@
 use iroh_docs::{
     Capability,
     NamespaceId,
+    NamespaceSecret,
     api::Doc,
     protocol::Docs,
 };
@@ -14,6 +15,19 @@ use iroh_docs::{
 /// than a downgrade.
 pub async fn ensure_open(docs: &Docs, ns: NamespaceId) -> anyhow::Result<Doc> {
     let doc = docs.api().import_namespace(Capability::Read(ns)).await?;
+    Ok(doc)
+}
+
+/// Opens a namespace this node holds the secret for, importing it if absent.
+///
+/// Takes the place of minting a namespace: a secret derived from the node's
+/// identity names the same document every session, where
+/// `DocsApi::create` names a new one and abandons the last.
+pub async fn ensure_writable(docs: &Docs, secret: NamespaceSecret) -> anyhow::Result<Doc> {
+    let doc = docs
+        .api()
+        .import_namespace(Capability::Write(secret))
+        .await?;
     Ok(doc)
 }
 

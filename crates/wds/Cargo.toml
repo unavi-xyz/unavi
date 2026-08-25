@@ -21,7 +21,7 @@ irpc.workspace        = true
 irpc-iroh.workspace   = true
 jose-jwk              = "0.1.2"
 n0-future.workspace   = true
-p256                  = { default-features = false, features = ["ecdsa"], version = "0.13.2" }
+p256                  = { default-features = false, features = ["ecdsa", "pem"], version = "0.13.2" }
 p384                  = { default-features = false, features = ["ecdsa"], version = "0.13.1" }
 parking_lot.workspace = true
 postcard.workspace    = true
@@ -35,10 +35,12 @@ time.workspace        = true
 tokio.workspace       = true
 tracing.workspace     = true
 xdid.workspace        = true
+zeroize.workspace     = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 iroh-blobs          = { features = ["hide-proto-docs"], workspace = true }
 iroh-docs.workspace = true
+web-sys             = { features = ["Storage", "Window"], workspace = true }
 # Without this `OffsetDateTime::now_utc` reads the unimplemented wasm clock.
 time = { features = ["wasm-bindgen"], workspace = true }
 
@@ -54,3 +56,4 @@ tracing-test     = { features = ["no-env-filter"], workspace = true }
 
 [dev-dependencies]
 serde_json.workspace = true
+tempfile.workspace   = true

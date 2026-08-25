@@ -11,25 +11,32 @@ use iroh::{
 use iroh_blobs::{
     BlobsProtocol,
     api::Store as BlobStore,
-    store::mem::MemStore,
+    store::{
+        GcConfig,
+        mem::MemStore,
+    },
 };
-use iroh_docs::protocol::{
-    Builder as DocsBuilder,
-    Docs,
+use iroh_docs::{
+    engine::ProtectCallbackHandler,
+    protocol::{
+        Builder as DocsBuilder,
+        Docs,
+    },
 };
 use iroh_gossip::net::Gossip;
 use n0_future::task::AbortOnDropHandle;
-use parking_lot::RwLock;
 
 use crate::{
     DataStore,
     StoreContext,
     db::Database,
+    identity::RootIdentity,
 };
 
 pub struct DataStoreBuilder {
     endpoint: Endpoint,
     gc_timer: Option<Duration>,
+    identity: Arc<RootIdentity>,
     storage:  Storage,
 }
 
@@ -43,16 +50,17 @@ pub type BoxedBlobs = Box<dyn AsRef<BlobStore> + Send + Sync>;
 
 impl DataStoreBuilder {
     #[must_use]
-    pub const fn new(endpoint: Endpoint) -> Self {
+    pub const fn new(endpoint: Endpoint, identity: Arc<RootIdentity>) -> Self {
         Self {
             endpoint,
             gc_timer: None,
+            identity,
             storage: Storage::InMemory,
         }
     }
 
-    /// Spawns a task to run garbage collection at a set frequency.
-    /// Disabled by default.
+    /// Spawns a task to run garbage collection at a set frequency, for both the
+    /// quota ledger and the blob store. Disabled by default.
     #[must_use]
     pub const fn gc_timer(mut self, frequency: Duration) -> Self {
         self.gc_timer = Some(frequency);
@@ -72,14 +80,32 @@ impl DataStoreBuilder {
 
     /// Build the [`DataStore`].
     pub async fn build(self) -> anyhow::Result<(DataStore, BoxedRouterBuilder)> {
-        let (blobs, db, docs_builder) = init_storage(&self.storage).await?;
+        // Blob GC deletes anything no tag covers, and document content carries
+        // no tag of its own; the docs engine reports it through this callback
+        // instead. Both halves are wired or neither is, since a GC run without
+        // the callback would reclaim every open document's content.
+        let (protect_handler, protect_cb) = ProtectCallbackHandler::new();
+        let gc = self.gc_timer.map(|interval| GcConfig {
+            interval,
+            add_protected: Some(protect_cb),
+        });
+
+        let (blobs, db, docs_builder) = init_storage(&self.storage, gc).await?;
         let blob_store = blobs.as_ref().as_ref().clone();
 
         let gossip = Gossip::builder().spawn(self.endpoint.clone());
 
         let docs = docs_builder
+            .protect_handler(protect_handler)
             .spawn(self.endpoint.clone(), blob_store.clone(), gossip.clone())
             .await?;
+
+        // Derived rather than minted, so this node writes under the same author
+        // every session, and that author names its endpoint.
+        let author = self.identity.author();
+        let author_id = author.id();
+        docs.api().author_import(author).await?;
+        docs.api().author_set_default(author_id).await?;
 
         let blob_protocol = BlobsProtocol::new(&blob_store, None);
 
@@ -91,7 +117,7 @@ impl DataStoreBuilder {
             endpoint: self.endpoint.clone(),
             gossip: gossip.clone(),
             hosted: scc::HashMap::default(),
-            user_identity: RwLock::new(None),
+            identity: self.identity,
         });
 
         let (control_client, control_protocol) = crate::control::protocol(Arc::clone(&ctx));
@@ -136,18 +162,24 @@ impl DataStoreBuilder {
 // `.await` works uniformly across targets.
 #[cfg(target_family = "wasm")]
 #[expect(clippy::unused_async)]
-async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database, DocsBuilder)> {
+async fn init_storage(
+    storage: &Storage,
+    gc: Option<GcConfig>,
+) -> anyhow::Result<(BoxedBlobs, Database, DocsBuilder)> {
     anyhow::ensure!(
         matches!(storage, Storage::InMemory),
         "file storage is not supported on wasm; use Storage::InMemory"
     );
-    let blobs: BoxedBlobs = Box::new(MemStore::new());
+    let blobs: BoxedBlobs = Box::new(mem_store(gc));
     let db = Database::new_in_memory()?;
     Ok((blobs, db, Docs::memory()))
 }
 
 #[cfg(not(target_family = "wasm"))]
-async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database, DocsBuilder)> {
+async fn init_storage(
+    storage: &Storage,
+    gc: Option<GcConfig>,
+) -> anyhow::Result<(BoxedBlobs, Database, DocsBuilder)> {
     if let Storage::Path(path) = storage {
         let blob_path = path.join("blob");
         let docs_path = path.join("docs");
@@ -158,7 +190,10 @@ async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database
 
         let blobs = iroh_blobs::store::fs::FsStore::load_with_opts(
             blob_path.join("blobs.db"),
-            iroh_blobs::store::fs::options::Options::new(&blob_path),
+            iroh_blobs::store::fs::options::Options {
+                gc,
+                ..iroh_blobs::store::fs::options::Options::new(&blob_path)
+            },
         )
         .await?;
         let blobs: BoxedBlobs = Box::new(blobs);
@@ -167,8 +202,12 @@ async fn init_storage(storage: &Storage) -> anyhow::Result<(BoxedBlobs, Database
 
         Ok((blobs, db, Docs::persistent(docs_path)))
     } else {
-        let blobs: BoxedBlobs = Box::new(MemStore::new());
+        let blobs: BoxedBlobs = Box::new(mem_store(gc));
         let db = Database::new_in_memory()?;
         Ok((blobs, db, Docs::memory()))
     }
+}
+
+fn mem_store(gc: Option<GcConfig>) -> MemStore {
+    MemStore::new_with_opts(iroh_blobs::store::mem::Options { gc_config: gc })
 }

@@ -33,12 +33,10 @@ use unavi_util::async_task::spawn_async_task;
 use wds::{
     DataStore,
     actor::Actor,
-    identity::Identity,
-};
-use xdid::methods::key::keys::{
-    DidKeyPair,
-    PublicKey,
-    p256::P256KeyPair,
+    identity::{
+        RootIdentity,
+        store::KeyStorage,
+    },
 };
 
 const CONTENT: &[u8] = b"content only the provider holds";
@@ -53,6 +51,10 @@ struct Fixture {
     _routers: Vec<Router>,
 }
 
+fn ephemeral_identity() -> Arc<RootIdentity> {
+    Arc::new(RootIdentity::load(&KeyStorage::Ephemeral).expect("generate identity"))
+}
+
 /// Builds both stores on the shared async runtime, which is the one the fetch
 /// task runs on: a quinn endpoint bound to another runtime's IO driver is not
 /// usable from this one.
@@ -64,10 +66,11 @@ fn fixture() -> Fixture {
             .bind()
             .await
             .expect("bind host");
-        let (host, host_router_fn) = DataStore::builder(host_endpoint.clone())
-            .build()
-            .await
-            .expect("host store");
+        let (host, host_router_fn) =
+            DataStore::builder(host_endpoint.clone(), ephemeral_identity())
+                .build()
+                .await
+                .expect("host store");
         let host_router = host_router_fn(Router::builder(host_endpoint.clone())).spawn();
 
         let hash = host
@@ -86,16 +89,13 @@ fn fixture() -> Fixture {
             .bind()
             .await
             .expect("bind client");
-        let (store, router_fn) = DataStore::builder(endpoint.clone())
+        let (store, router_fn) = DataStore::builder(endpoint.clone(), ephemeral_identity())
             .build()
             .await
             .expect("client store");
         let router = router_fn(Router::builder(endpoint.clone())).spawn();
 
-        let signing_key = P256KeyPair::generate();
-        let did = signing_key.public().to_did();
-        let identity = Arc::new(Identity::new(did, signing_key));
-        let provider = store.remote_actor(identity, host_endpoint.addr());
+        let provider = store.remote_actor(host_endpoint.addr());
 
         tx.send(Fixture {
             blobs: store.blobs().blobs().clone(),

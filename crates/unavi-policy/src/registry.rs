@@ -16,18 +16,15 @@ use crate::{
     reach::Reach,
 };
 
-/// Longest host chain a lookup will follow before giving up.
-///
-/// A prefab instancing a prefab is ordinary; a cycle is not reachable through
-/// the derived-id scheme, so the cap is a guard against a corrupted registry
-/// rather than an expected case.
+/// Longest host chain a lookup will follow before giving up. A cycle is not
+/// reachable through the derived-id scheme, so the cap guards a corrupted
+/// registry rather than an expected case.
 const MAX_HOST_DEPTH: usize = 16;
 
 /// Everything the host has decided about one document.
 ///
-/// One record rather than a registry per field: every one of these is keyed by
-/// the same document id and read together on the write path, and separate maps
-/// meant separate registration paths, three of which could silently miss.
+/// One record rather than a registry per field: all of it is keyed by the same
+/// document id and read together on the write path.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Record {
     pub policy: DocumentPolicy,
@@ -65,10 +62,8 @@ fn documents_mut() -> RwLockWriteGuard<'static, HashMap<DocId, Record>> {
 
 /// What the host decided about `doc`.
 ///
-/// An unregistered document answers [`Record::default`]. That is the stated
-/// default rather than a fallback: a document says nothing until it wants to be
-/// harder to reach than open or more trusted than a stranger, so silence and
-/// the weakest answer are the same statement.
+/// An unregistered document answers [`Record::default`]: silence and the
+/// weakest answer are the same statement.
 #[must_use]
 pub fn get(doc: DocId) -> Record {
     documents().get(&doc).copied().unwrap_or_default()
@@ -110,8 +105,8 @@ pub fn documents_in(space: DocId) -> Vec<DocId> {
 /// The document at the top of `doc`'s host chain.
 ///
 /// A prefab instance is never pinned and has no namespace, so it is its host
-/// that owns it and its host's space it stands in. Resolving through the root
-/// is what stops a peer's instanced content reading as locally authored.
+/// that owns it; resolving through the root is what stops a peer's instanced
+/// content reading as locally authored.
 #[must_use]
 pub fn root(doc: DocId) -> DocId {
     let docs = documents();

@@ -18,7 +18,6 @@ use crate::{
     seam_transfer,
 };
 
-/// Resize seam image sizes when the tracked camera changes.
 pub fn update_develop_image_sizes(
     mut seam_cameras: Query<(&DevelopCamera, &TrackedCamera, &mut Projection)>,
     seams: Query<&MeshMaterial3d<SeamMaterial>, With<Seam>>,
@@ -102,7 +101,6 @@ pub fn update_develop_image_sizes(
     }
 }
 
-/// Transform seam camera to match tracked camera.
 pub fn update_develop_camera_transforms(
     mut seam_cameras: Query<(
         &TrackedCamera,

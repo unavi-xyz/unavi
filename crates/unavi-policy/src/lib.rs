@@ -17,8 +17,8 @@ pub mod trust;
 /// Registers the document-policy lifecycle: who a document may talk to, and
 /// what it is allowed to call.
 ///
-/// Both `ScriptPlugin` and `SpacePlugin` add this if it is absent, since either
-/// can be the root of an app — the script examples run without a space.
+/// Both `ScriptPlugin` and `SpacePlugin` add this if it is absent, since
+/// either can be the root of an app.
 pub struct PolicyPlugin;
 
 impl Plugin for PolicyPlugin {

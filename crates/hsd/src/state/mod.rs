@@ -69,8 +69,8 @@ pub const MAX_PRIM_DEPTH: usize = 512;
 ///
 /// Enforced here rather than at any one consumer: entries arrive from peers
 /// over document sync, which never passes through the authoring API where the
-/// per-document `Stock::Prims` quota is charged. Prims past the cap stay held,
-/// exactly as an orphan does, and realize if room frees up.
+/// per-document quota is charged. Prims past the cap stay held, exactly as an
+/// orphan does, and realize if room frees up.
 pub const MAX_REALIZED_PRIMS: usize = 100_000;
 
 /// Where a prim sits once the tree's integrity rules have been applied.

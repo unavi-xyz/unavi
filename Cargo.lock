@@ -13822,10 +13822,12 @@ dependencies = [
  "bevy-iroh",
  "bevy-wds",
  "iroh",
+ "iroh-docs",
  "n0-future",
  "unavi-registry",
  "unavi-util",
  "wds",
+ "web-sys",
  "xdid",
 ]
 

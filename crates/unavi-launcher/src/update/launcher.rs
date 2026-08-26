@@ -71,8 +71,7 @@ where
 
     let mut relaunch = platform::install_launcher(&tmp_archive_path)?;
 
-    // `exit` below runs no destructors, so the download has to be cleaned up
-    // by hand once the installed copy no longer reads from it.
+    // The `exit` below runs no destructors, so the temp dir is dropped by hand.
     drop(tmp_dir);
 
     relaunch

@@ -1,11 +1,8 @@
 //! Declares the configuration a crate's `secretspec.toml` describes, as a type
 //! carrying the values its profile named.
 //!
-//! secretspec's own runtime resolves a manifest found by walking up from the
-//! working directory, which a released binary cannot rely on and a browser
-//! cannot do at all. Reading the manifest during expansion instead leaves one
-//! code path for every target, and keeps `secretspec` a host dependency of this
-//! macro that never reaches the binary.
+//! Reading the manifest during expansion keeps `secretspec` a host dependency
+//! of this macro that never reaches the binary.
 
 mod emit;
 mod merge;

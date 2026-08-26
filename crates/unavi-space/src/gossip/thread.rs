@@ -83,11 +83,9 @@ const BOOTSTRAP_SHUFFLE: Duration = Duration::from_mins(1);
 const SHUFFLE_SAMPLE: usize = 4;
 
 /// Keeps looking for someone to gossip with until the topic has a neighbor.
-///
-/// Presence is discovered asynchronously, so a peer already in a space
-/// routinely announces after the joining peer has resolved bootstrap. Resolving
-/// once at join would leave the first arrival broadcasting into an empty topic
-/// for the life of the process — no neighbor, no presence, no peer.
+/// Presence is discovered asynchronously, so resolving only at join would
+/// leave the first arrival broadcasting into an empty topic for the life of
+/// the process.
 async fn handle_gossip_bootstrap(
     ctx: &GossipCtx,
     tx: &GossipSender,
@@ -124,8 +122,8 @@ async fn handle_gossip_bootstrap(
 
         let mut peers = peers.into_iter().collect::<Vec<_>>();
 
-        // Dialing every occupant would fan each arrival out to the whole space;
-        // a random handful is enough to stitch clusters together.
+        // Dialing every occupant fans each arrival out to the whole space; a
+        // random handful stitches clusters together.
         if connected && peers.len() > SHUFFLE_SAMPLE {
             peers.shuffle(&mut rand::rng());
             peers.truncate(SHUFFLE_SAMPLE);

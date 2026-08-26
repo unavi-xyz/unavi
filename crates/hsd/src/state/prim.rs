@@ -10,10 +10,8 @@ use crate::{
     state::entry::Stamp,
 };
 
-/// Where a prim came from, which is what decides whether saving writes it.
-///
-/// The gate spawning its frame geometry every session must not accumulate in
-/// the home document; content loaded from a document or a prefab must.
+/// Where a prim came from, which decides whether saving writes it:
+/// session-spawned geometry must not accumulate in the home document.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Origin {
     Document,

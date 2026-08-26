@@ -41,57 +41,55 @@ impl Plugin for AgentPlugin {
         .add_observer(movement::teleport::handle_agent_teleport)
         .add_observer(local_agent::spawn_local_agent);
 
-        #[cfg(not(target_family = "wasm"))]
-        {
-            use crate::config::XrMode;
-
-            app.init_resource::<movement::xr::HmdWorldPose>()
-                .init_resource::<movement::xr::SnapTurnReady>();
-
-            let xr_active = |xr: Res<XrMode>| xr.0;
-
-            app.add_systems(Startup, movement::xr::spawn_hmd_tracker.run_if(xr_active));
-
-            app.add_systems(
-                Update,
-                (
-                    eye_offset::setup_vrm_eye_offset,
+        cfg_select! {
+            target_family = "wasm" => {
+                app.add_systems(
+                    Update,
                     (
-                        movement::xr::update_hmd_world_pose,
-                        movement::xr::sync_stage_to_body,
-                        movement::xr::apply_xr_turn,
-                        movement::xr::update_movement_yaw,
+                        eye_offset::setup_vrm_eye_offset,
+                        movement::apply_head_input.run_if(in_state(CursorGrabState::Locked)),
+                        movement::apply_body_input,
+                        tracking::sync_tracked_pose_to_transform,
+                        bones::apply_head_tracking,
                     )
                         .chain()
-                        .run_if(xr_active),
-                    // A headset turns the view by its own snap or smooth turn,
-                    // off the same look stick, so the desktop look would turn
-                    // the rig a second time.
-                    movement::apply_head_input
-                        .run_if(in_state(CursorGrabState::Locked).and_then(not(xr_active))),
-                    movement::apply_body_input,
-                    movement::xr::update_xr_head_tracking.run_if(xr_active),
-                    tracking::sync_tracked_pose_to_transform,
-                    bones::apply_head_tracking,
-                )
-                    .chain()
-                    .in_set(AgentMovementSet),
-            );
-        }
+                        .in_set(AgentMovementSet),
+                );
+            }
+            _ => {
+                app.init_resource::<movement::xr::HmdWorldPose>()
+                    .init_resource::<movement::xr::SnapTurnReady>();
 
-        #[cfg(target_family = "wasm")]
-        app.add_systems(
-            Update,
-            (
-                eye_offset::setup_vrm_eye_offset,
-                movement::apply_head_input.run_if(in_state(CursorGrabState::Locked)),
-                movement::apply_body_input,
-                tracking::sync_tracked_pose_to_transform,
-                bones::apply_head_tracking,
-            )
-                .chain()
-                .in_set(AgentMovementSet),
-        );
+                let xr_active = |xr: Res<config::XrMode>| xr.0;
+
+                app.add_systems(Startup, movement::xr::spawn_hmd_tracker.run_if(xr_active));
+
+                app.add_systems(
+                    Update,
+                    (
+                        eye_offset::setup_vrm_eye_offset,
+                        (
+                            movement::xr::update_hmd_world_pose,
+                            movement::xr::sync_stage_to_body,
+                            movement::xr::apply_xr_turn,
+                            movement::xr::update_movement_yaw,
+                        )
+                            .chain()
+                            .run_if(xr_active),
+                        // The XR turn already consumes the same look stick;
+                        // desktop look would turn the rig a second time.
+                        movement::apply_head_input
+                            .run_if(in_state(CursorGrabState::Locked).and_then(not(xr_active))),
+                        movement::apply_body_input,
+                        movement::xr::update_xr_head_tracking.run_if(xr_active),
+                        tracking::sync_tracked_pose_to_transform,
+                        bones::apply_head_tracking,
+                    )
+                        .chain()
+                        .in_set(AgentMovementSet),
+                );
+            }
+        }
 
         app.add_systems(
             FixedUpdate,

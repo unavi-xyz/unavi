@@ -38,12 +38,10 @@ pub(crate) fn apply_async_commands(mut commands: Commands) {
 /// queue empties or `deadline` passes.
 ///
 /// Unlike [`apply_async_commands`], this takes effect immediately rather than
-/// at the next system boundary, letting a system that blocks the main thread
-/// keep draining the queue so awaiting async commands can make progress.
-///
-/// The deadline is what makes that safe: a command wakes the task that sent
-/// it, which is free to send the next one before this loop looks again, so an
-/// unbounded drain is a frame the producers decide the length of.
+/// at the next system boundary. The deadline bounds that: a drained command
+/// may wake its producer, which refills the queue before the loop looks
+/// again, so an unbounded drain is a frame the producers decide the length
+/// of.
 pub fn pump_async_commands(world: &mut World, deadline: Instant) {
     while let Ok(mut queue) = ASYNC_COMMAND_QUEUE.1.try_recv() {
         queue.apply(world);

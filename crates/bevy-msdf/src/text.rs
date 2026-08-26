@@ -102,8 +102,8 @@ impl Default for MsdfText {
 /// runtime means the text was just added.
 #[derive(Component, Debug)]
 pub(crate) struct TextRuntime {
-    /// The fallback chain the text was laid out against, so a change to it
-    /// (e.g. a newly registered font) invalidates the layout.
+    /// The fallback chain the text was laid out against; any change to it
+    /// invalidates the layout.
     stack:      Vec<Arc<MsdfFont>>,
     /// True while some of the text's glyphs are still pending.
     pending:    bool,

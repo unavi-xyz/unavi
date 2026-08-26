@@ -26,15 +26,6 @@ pub enum Port {
 
 /// A graph node.
 ///
-/// The zero-arity leaves are the only way a graph reaches shader-stage
-/// context; each is legal in exactly one network (enforced by
-/// [`super::validate::validate`], not by the type — see
-/// [`super::validate::error::GraphError::WrongNetwork`]): `Uv`/`WorldNormal`/
-/// `WorldPosition`/`VertexColor`/`ViewDirection` are surface-only
-/// (fragment-stage varyings), `LocalPosition`/`LocalNormal` are
-/// displacement-only (vertex-stage attributes), and `Time`/`InstanceRandom`/
-/// `ObjectPosition`/`ObjectScale` are legal in both.
-///
 /// Variants are appended, never reordered or removed: postcard encodes a
 /// variant by its index, and a compiled graph's bytes are its content hash
 /// and therefore its cache key.
@@ -47,11 +38,8 @@ pub enum Node {
     LocalPosition,
     LocalNormal,
     Time,
-    /// Pairs either two operands of one kind, or a vector and a `Float`,
-    /// which broadcasts across the vector's components. WGSL's own `+ - * /`
-    /// already accept mixed scalar/vector operands, so this costs codegen
-    /// nothing; the builtin-backed nodes ([`Node::Min`], [`Node::Step`], …)
-    /// have no such rule and require matching kinds.
+    /// Either two operands of one kind, or a vector and a `Float`, which
+    /// broadcasts across the vector's components.
     Add {
         a: Port,
         b: Port,
@@ -69,18 +57,15 @@ pub enum Node {
         a: Port,
         b: Port,
     },
-    /// Legal in both networks — the basic oscillator a `Time`-driven pulse,
-    /// wave or sway effect needs, in either the fragment or vertex stage.
     Sin {
         x: Port,
     },
     Cos {
         x: Port,
     },
-    /// Power exponent on `1 - dot(N, V)`. `N`/`V` are the fragment's own
-    /// normal/view vectors, not graph inputs — a graph cannot construct an
-    /// arbitrary Fresnel term, only parameterize the host-provided one.
-    /// Surface-only: `N`/`V` are not defined in the vertex stage.
+    /// Power exponent on `1 - dot(N, V)`; `N`/`V` are host-provided fragment
+    /// vectors, not graph inputs. Surface-only: they are not defined in the
+    /// vertex stage.
     Fresnel {
         power: Port,
     },
@@ -95,7 +80,7 @@ pub enum Node {
         slot: u8,
     },
     /// The only branching this format allows: a hard switch on `cond`, no
-    /// general control flow. Matches how GPUs actually execute (SIMT).
+    /// general control flow.
     Select {
         cond: Port,
         a:    Port,
@@ -124,8 +109,7 @@ pub enum Node {
     Saturate {
         x: Port,
     },
-    /// Negative inputs are clamped away rather than left to produce `NaN`,
-    /// following [`Node::Fresnel`]'s existing clamp.
+    /// Negative inputs are clamped away rather than left to produce `NaN`.
     Sqrt {
         x: Port,
     },
@@ -188,29 +172,19 @@ pub enum Node {
         w: Port,
     },
     /// Widens or narrows between vector kinds. Widening pads with zero,
-    /// except that a widened [`ValueKind::Color`]'s alpha is 1.0 — a
-    /// zero-padded color would be fully transparent, which no caller wants.
+    /// except that a widened [`ValueKind::Color`]'s alpha is 1.0.
     Convert {
         v:  Port,
         to: ValueKind,
     },
-    /// A pseudo-random scalar in `0..1`, one value per draw instance.
-    ///
-    /// The only way instances sharing a graph can differ without a
-    /// per-instance write. Noise cannot stand in: every instance of one mesh
-    /// samples it at the same coordinates and so gets the same value, and the
-    /// coordinates that do differ per instance are positions, which move.
-    /// Unreal's `PerInstanceRandom` and Godot's `INSTANCE_CUSTOM` are the
-    /// same node.
+    /// A pseudo-random scalar in `0..1`, one value per draw instance: how
+    /// instances sharing a graph can differ without a per-instance write.
     InstanceRandom,
     /// The prim's world-space origin.
     ObjectPosition,
-    /// The prim's world-space scale, one component per local axis. What a
-    /// term measured in world units divides by to stay a fixed size while
-    /// the prim it is drawn on is scaled.
+    /// The prim's world-space scale, one component per local axis.
     ObjectScale,
-    /// The unit vector from the surface toward the camera. Surface-only, and
-    /// the general form of the view term [`Node::Fresnel`] hardcodes.
+    /// Unit vector from the surface toward the camera. Surface-only.
     ViewDirection,
     Atan2 {
         y: Port,
@@ -226,9 +200,8 @@ pub enum Node {
         a: Port,
         b: Port,
     },
-    /// Rescales `x` from one range onto another. Unbounded on both sides:
-    /// clamping is [`Node::Saturate`]'s job, and a remap that clamped could
-    /// not extrapolate.
+    /// Rescales `x` from one range onto another, unbounded on both sides:
+    /// clamping is [`Node::Saturate`]'s job.
     Remap {
         x:         Port,
         from_low:  Port,
@@ -236,9 +209,7 @@ pub enum Node {
         to_low:    Port,
         to_high:   Port,
     },
-    /// Rises from 0 to 1 and falls back over each unit of `x`. The
-    /// non-sinusoidal oscillator, for a scan or sweep that should travel at
-    /// an even rate rather than easing at its extremes.
+    /// Rises from 0 to 1 and falls back over each unit of `x`.
     TriangleWave {
         x: Port,
     },
@@ -247,8 +218,7 @@ pub enum Node {
         color: Port,
     },
     /// `uv` about `center`, as `(radius, angle)` with the angle normalised to
-    /// `0..1` counterclockwise from +x. What a radial sweep or a swirl reads
-    /// instead of building `atan2` by hand.
+    /// `0..1` counterclockwise from +x.
     PolarCoords {
         uv:     Port,
         center: Port,
@@ -263,19 +233,15 @@ pub enum Node {
     ScreenUv,
     /// What was already drawn behind this surface, sampled at `uv`.
     ///
-    /// The one node that reads the frame rather than the mesh, and what makes
-    /// refraction expressible: offsetting `uv` by a surface's own curvature
-    /// bends whatever is behind it. Surface-only, and only ever what was drawn
-    /// *before* this surface — so two graphs reading it do not see each other,
-    /// and neither sees anything that comes after.
+    /// Surface-only, and only what was drawn *before* this surface: two
+    /// graphs reading it do not see each other, and neither sees anything
+    /// that comes after.
     SceneColor {
         uv: Port,
     },
 }
 
-/// Which shader stage a network compiles to. Carried in errors so a
-/// validation failure names the network it came from; also what
-/// [`super::validate::validate`] checks each leaf [`Node`] against.
+/// Which shader stage a network compiles to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Network {
     Surface,

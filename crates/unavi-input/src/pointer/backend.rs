@@ -16,17 +16,13 @@ use crate::{
     },
 };
 
-/// Colliders a pointer's ray passes through rather than lands on. The agent's
-/// own body is the reason this exists — a ray cast from inside the head would
-/// otherwise hit it every frame.
+/// Colliders a pointer's ray passes through rather than lands on: a ray cast
+/// from inside the agent's head would otherwise hit its body every frame.
 #[derive(Resource, Default)]
 pub struct PointerFilter(pub SpatialQueryFilter);
 
-/// Casts each pointer's ray at the physics world.
-///
-/// Avian ships a picking backend of its own, and it casts without limit.
-/// Reach is what stops a press landing on something across the map, so the
-/// cast is ours.
+/// Casts each pointer's ray at the physics world, limited by the pointer's
+/// reach; Avian's own backend casts without limit.
 pub fn update_hits(
     pointers: Query<(&PointerAnchor, &PointerReach, &GlobalTransform)>,
     cameras: Query<(Entity, &Camera), With<Camera3d>>,

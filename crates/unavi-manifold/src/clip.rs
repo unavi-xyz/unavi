@@ -133,7 +133,6 @@ fn clip_node<M: Clippable>(world: &mut World, node: Entity, plane: Vec4) {
         .remove::<MeshMaterial3d<M>>();
 }
 
-/// Restore a node's stashed `M` material.
 fn unclip_node<M: Clippable>(world: &mut World, node: Entity) {
     let Some(original) = world.get::<UnclippedMaterial<M>>(node).map(|m| m.0.clone()) else {
         return;
@@ -144,7 +143,6 @@ fn unclip_node<M: Clippable>(world: &mut World, node: Entity) {
         .remove::<(MeshMaterial3d<Clipped<M>>, UnclippedMaterial<M>)>();
 }
 
-/// Repoint a node's clipped `M` material at a new plane.
 fn update_node<M: Clippable>(world: &mut World, node: Entity, plane: Vec4) {
     let Some(id) = world
         .get::<MeshMaterial3d<Clipped<M>>>(node)

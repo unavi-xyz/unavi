@@ -83,10 +83,8 @@ where
     let latest = match fetch_latest_release().await {
         Ok(r) => r,
         Err(e) => {
-            // Skipping the check is only safe once a client is already
-            // installed; otherwise there is nothing to launch, so a network
-            // failure has to surface as an error rather than silently
-            // proceeding to a broken home screen.
+            // Offline is survivable only with a client already installed;
+            // otherwise there is nothing to launch.
             if is_network_error(&e) && get_installed_version().is_some() {
                 info!("Network unavailable, skipping update check");
                 on_status(UpdateStatus::Offline);

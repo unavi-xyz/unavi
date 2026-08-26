@@ -1,11 +1,10 @@
 //! Hosts files from a local directory over iroh blobs.
 //!
-//! Every file in [`files_dir`] is added to the blob store, pinned under a
-//! `files/` tag so the store's GC keeps it, and served over `iroh_blobs::ALPN`.
-//! The tag is structural: it lives exactly as long as the file does, and a
-//! sweep on each host pass drops the ones the directory no longer backs.
-//! A `files.json` index lists name -> hash so an operator can wire the client's
-//! manifest to what this node hosts.
+//! Every file in [`files_dir`] is pinned under a `files/` tag so the store's
+//! GC keeps it, and served over `iroh_blobs::ALPN`; a sweep on each host pass
+//! drops tags the directory no longer backs. A `files.json` index lists
+//! name -> hash so an operator can wire the client's manifest to what this
+//! node hosts.
 
 use std::{
     fs,

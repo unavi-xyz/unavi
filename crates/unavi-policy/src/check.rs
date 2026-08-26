@@ -18,13 +18,10 @@ use crate::{
 };
 
 /// What policy needs from the networking layer, installed rather than
-/// depended upon.
-///
-/// A document's owner lives in the replica store and a space's membership is
-/// partly a peer's pin, both of which `unavi-space` owns. Taking them as
-/// function pointers is what keeps every "may X do Y to Z" in this crate while
-/// leaving the data where it is; a crate dependency would have to point the
-/// other way and drag the whole networking stack into the script sandbox.
+/// depended upon: a document's owner lives in the replica store and a space's
+/// membership is partly a peer's pin, both owned by `unavi-space`. Function
+/// pointers keep every "may X do Y to Z" here without dragging the networking
+/// stack into the script sandbox.
 #[derive(Clone, Copy)]
 pub struct Resolver {
     /// The peer whose pin owns `doc` within `space`.
@@ -46,11 +43,8 @@ fn resolver() -> Option<Resolver> {
 }
 
 /// Where a document stands: what it demands of writers, which space it is in,
-/// and who authored it.
-///
-/// Resolved once per document per check. The write path runs on every prim
-/// write, and computing these piecemeal took a double-figure count of global
-/// locks for one transform.
+/// and who authored it. Resolved once per check; the write path runs on every
+/// prim write.
 struct Standing {
     reach: Reach,
     space: Option<DocId>,
@@ -129,13 +123,10 @@ pub fn tier_of(doc: DocId) -> Tier {
 
 /// Whether `caller` may write `target`.
 ///
-/// The document-to-document question is answered by looking at the owners: a
-/// document's authority is a function of the trust its owning peer has, so
-/// there is no per-document matrix to populate.
-///
-/// The caller's tier is read here rather than passed in: a caller that hands
-/// over its own tier is a caller that can hand over the wrong one, and every
-/// site had to remember to thread it through.
+/// Judged through the owners: a document's authority is a function of the
+/// trust its owning peer has, so there is no per-document matrix. The caller's
+/// tier is read here rather than passed in — a caller handing over its own
+/// tier could hand over the wrong one.
 pub fn write(caller: DocId, target: DocId) -> Result<(), PolicyError> {
     if caller == target {
         return Ok(());
@@ -156,9 +147,9 @@ pub fn write(caller: DocId, target: DocId) -> Result<(), PolicyError> {
 
 /// Whether `caller` may read `target`.
 ///
-/// Reads are open within a space, so membership is the whole gate. A document
-/// that wants to be unreadable has to be in a namespace the reader has no id
-/// for, which is the only place reading can actually be prevented.
+/// Reads are open within a space, so membership is the whole gate; a document
+/// that wants to be unreadable has to live in a namespace the reader has no id
+/// for.
 pub fn read(caller: DocId, target: DocId) -> Result<(), PolicyError> {
     if caller == target || tier_of(caller).crosses_space_boundaries() || same_space(caller, target)
     {
@@ -171,8 +162,8 @@ pub fn read(caller: DocId, target: DocId) -> Result<(), PolicyError> {
 /// Whether a document is placed well enough to reach anything outside itself.
 ///
 /// A document outside every space has no co-presence to appeal to, so its only
-/// possible reach is same-owner. Refusing up front is what stops content that
-/// cannot be attributed from riding an ownership answer it did not earn.
+/// possible reach is same-owner; refusing up front stops unattributable
+/// content riding an ownership answer it did not earn.
 pub fn placed(caller: DocId) -> Result<(), PolicyError> {
     if tier_of(caller).crosses_space_boundaries() || space_of(caller).is_some() {
         Ok(())

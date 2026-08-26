@@ -30,10 +30,7 @@ use unavi_util::{
 };
 use wds::{
     DataStore,
-    identity::{
-        RootIdentity,
-        labels,
-    },
+    identity::WdsIdentity,
 };
 
 use crate::{
@@ -41,6 +38,7 @@ use crate::{
     LocalIdentity,
     SyncConfig,
     registry,
+    root_doc,
 };
 
 pub fn spawn_actors(
@@ -88,26 +86,22 @@ pub fn spawn_actors(
     });
 }
 
-/// Wasm has no filesystem to back a store with, so it stays in memory and
-/// refetches content each session.
-#[cfg(target_family = "wasm")]
-const fn store_path(_in_memory: bool) -> Option<PathBuf> {
-    None
-}
-
-#[cfg(not(target_family = "wasm"))]
-fn store_path(in_memory: bool) -> Option<PathBuf> {
-    (!in_memory).then(|| unavi_util::dirs::data_local_dir().join("wds"))
+fn store_path(_in_memory: bool) -> Option<PathBuf> {
+    cfg_select! {
+        target_family = "wasm" => None,
+        _ => (!_in_memory).then(|| unavi_util::dirs::data_local_dir().join("wds")),
+    }
 }
 
 async fn load_store(
     endpoint: Endpoint,
-    identity: Arc<RootIdentity>,
+    identity: Arc<WdsIdentity>,
     entity: Entity,
     storage: Option<PathBuf>,
     sync: SyncConfig,
 ) -> anyhow::Result<()> {
     let builder = DataStore::builder(endpoint.clone(), identity).gc_timer(Duration::from_mins(15));
+    let persistent = storage.is_some();
     let builder = match storage {
         Some(path) => builder.storage_path(path),
         None => builder,
@@ -119,10 +113,8 @@ async fn load_store(
     let actor = store.local_actor();
     set_local_actor(actor.clone());
 
-    // Minted once and remembered, so the entries written here last session are
-    // the entries read this one.
-    let root = store.well_known(labels::ROOT_DOC).await?;
-    set_root_doc(root.id());
+    let root = root_doc::open_or_mint(&store, persistent).await?;
+    set_root_doc(root);
 
     let SyncConfig {
         allow_loopback,

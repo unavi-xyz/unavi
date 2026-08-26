@@ -19,7 +19,7 @@ use wds::{
     DataStore,
     entries::Write,
     identity::{
-        RootIdentity,
+        WdsIdentity,
         store::KeyStorage,
     },
 };
@@ -36,7 +36,7 @@ async fn store_with_gc() -> DataStore {
         .bind()
         .await
         .expect("bind endpoint");
-    let identity = Arc::new(RootIdentity::load(&KeyStorage::Ephemeral).expect("generate identity"));
+    let identity = Arc::new(WdsIdentity::load(&KeyStorage::Ephemeral).expect("generate identity"));
 
     let (store, _) = DataStore::builder(endpoint, identity)
         .gc_timer(GC_INTERVAL)

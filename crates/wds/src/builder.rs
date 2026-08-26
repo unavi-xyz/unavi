@@ -30,13 +30,13 @@ use crate::{
     DataStore,
     StoreContext,
     db::Database,
-    identity::RootIdentity,
+    identity::WdsIdentity,
 };
 
 pub struct DataStoreBuilder {
     endpoint:      Endpoint,
     gc_timer:      Option<Duration>,
-    identity:      Arc<RootIdentity>,
+    identity:      Arc<WdsIdentity>,
     serve_control: bool,
     storage:       Storage,
 }
@@ -51,7 +51,7 @@ pub type BoxedBlobs = Box<dyn AsRef<BlobStore> + Send + Sync>;
 
 impl DataStoreBuilder {
     #[must_use]
-    pub const fn new(endpoint: Endpoint, identity: Arc<RootIdentity>) -> Self {
+    pub const fn new(endpoint: Endpoint, identity: Arc<WdsIdentity>) -> Self {
         Self {
             endpoint,
             gc_timer: None,
@@ -61,16 +61,13 @@ impl DataStoreBuilder {
         }
     }
 
-    /// Answers `wds/control`, so other peers can ask this node to host their
+    /// Answers `wds/control`, letting other peers ask this node to host their
     /// documents and pin their blobs. Disabled by default.
     ///
-    /// The control plane performs authentication but no authorization, so a
-    /// node that serves it replicates documents and holds blobs for any peer
-    /// presenting a resolvable DID, up to a default quota it mints on demand.
-    /// Only a node that intends to be a storage host should turn it on.
-    ///
-    /// The data path is unaffected: peer sync runs over `iroh_docs::ALPN` and
-    /// hosting is `docs::serve` plus the downloader, which every peer runs.
+    /// Performs authentication but no authorization: any peer with a resolvable
+    /// DID gets service up to a default quota minted on demand. Only intended
+    /// storage hosts should enable it. Peer sync is unaffected, running over
+    /// `iroh_docs::ALPN` regardless.
     #[must_use]
     pub const fn serve_control(mut self) -> Self {
         self.serve_control = true;
@@ -98,10 +95,10 @@ impl DataStoreBuilder {
 
     /// Build the [`DataStore`].
     pub async fn build(self) -> anyhow::Result<(DataStore, BoxedRouterBuilder)> {
-        // Blob GC deletes anything no tag covers, and document content carries
-        // no tag of its own; the docs engine reports it through this callback
-        // instead. Both halves are wired or neither is, since a GC run without
-        // the callback would reclaim every open document's content.
+        // Blob GC reclaims anything no tag covers; document content carries no
+        // tag of its own and is reported through this callback instead. Both
+        // halves are wired or neither — a GC run without the callback would
+        // reclaim every open document's content.
         let (protect_handler, protect_cb) = ProtectCallbackHandler::new();
         let gc = self.gc_timer.map(|interval| GcConfig {
             interval,
@@ -235,9 +232,9 @@ async fn init_storage(
     }
 }
 
-/// Clears the `auto-<rfc3339>` tags a bare `add_bytes(..).await` used to mint,
-/// which nothing ever swept. Content a document still references survives
-/// through the protect callback; the rest is precisely what should go.
+/// Deletes leftover `auto-<rfc3339>` tags minted by bare `add_bytes(..)` calls,
+/// which nothing else sweeps; content still referenced by a document survives
+/// through the protect callback.
 async fn sweep_auto_tags(blobs: &BlobStore) -> anyhow::Result<()> {
     let deleted = blobs.tags().delete_prefix("auto-").await?;
     if deleted > 0 {

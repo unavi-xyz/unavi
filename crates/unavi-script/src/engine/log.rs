@@ -11,9 +11,6 @@ pub enum Level {
 
 /// One entry per run of script output rather than one per line.
 ///
-/// A tick that prints five lines reads as five lines under one heading,
-/// instead of five entries interleaved with whatever else logged in between.
-///
 /// What counts as a run belongs to the transport — a read off wasmtime's
 /// stream, a microtask's worth of `jco` writes — so a caller hands one over
 /// already gathered. Both then land in `tracing`, and so obey the same filter

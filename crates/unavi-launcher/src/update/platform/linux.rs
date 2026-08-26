@@ -23,14 +23,13 @@ pub const LAUNCHER_EXT: &str = "AppImage";
 const NIXOS_MARKER: &str = "/etc/NIXOS";
 const APPIMAGE_RUN: &str = "appimage-run";
 
-// Set for this process by the AppImage runtime and the Nix wrapper. A nested
-// AppImage brings its own closure and sets its own runtime variables, so
-// inheriting these points it at libraries that only exist in our mount.
+// Set for this process by the outer AppImage runtime or Nix wrapper; inherited
+// by a nested AppImage, they would point it at libraries that only exist in our
+// mount.
 const BUNDLE_ENV: &[&str] = &["APPDIR", "APPIMAGE", "ARGV0", "LD_LIBRARY_PATH", "OWD"];
 
-// AppImageLauncher hooks every exec of an AppImage through binfmt_misc and
-// offers to install it. The versions under this launcher's control are not
-// the user's to keep, so the prompt would fire on each downloaded release.
+// AppImageLauncher offers to install every downloaded release exec'd through
+// binfmt_misc; these copies are not the user's to keep.
 const INTEGRATION_ENV: (&str, &str) = ("APPIMAGELAUNCHER_DISABLE", "1");
 
 pub fn client_command(exe: &Path) -> Command {

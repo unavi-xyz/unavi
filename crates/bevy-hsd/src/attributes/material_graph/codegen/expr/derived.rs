@@ -5,9 +5,8 @@ use hsd::attributes::material_graph::{
 
 use super::port_expr;
 
-/// The nodes that compile to a small fixed expression rather than to one WGSL
-/// builtin. Each is a handful of bounded ALU ops, so the cost argument is
-/// unchanged: no loop, no branch, no unbounded work.
+/// The nodes that compile to a fixed expression rather than to one WGSL
+/// builtin: a handful of bounded ALU ops, no loop or branch.
 pub(super) fn emit(out: &mut String, public_inputs: &[GraphValue], node: &Node) {
     match *node {
         Node::Remap {

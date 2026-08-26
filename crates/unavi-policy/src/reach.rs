@@ -7,9 +7,7 @@ use crate::{
 
 /// What a document demands of whoever writes to it.
 ///
-/// One rung, not a per-channel allow-list over documents: an N×N matrix over
-/// documents is something nothing can populate sensibly, which is why the
-/// firewall it replaces had exactly two states in practice. Reads carry no
+/// One rung, not a per-channel allow-list over documents. Reads carry no
 /// setting at all — within a space they are open, and space membership is the
 /// gate.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
@@ -18,8 +16,7 @@ pub struct Reach {
 }
 
 impl Default for Reach {
-    /// Open. A shared world where a stranger's ball cannot be kicked is the
-    /// wrong default; content that wants to be tamper-proof raises the rung.
+    /// Open; content that wants to be tamper-proof raises the rung.
     fn default() -> Self {
         Self {
             writes_from: Trust::Guest,
@@ -28,12 +25,9 @@ impl Default for Reach {
 }
 
 impl Reach {
-    /// Admits only the local user's own documents.
-    ///
-    /// Same-owner writes answer before the rung is consulted, so this is not a
-    /// seal against yourself: it refuses every *other* peer, which is what the
-    /// shell needs so a stranger cannot write its scene or speak on its
-    /// channels.
+    /// Admits only the local user's own documents. Not a seal against
+    /// yourself — same-owner writes answer before the rung is consulted — it
+    /// refuses every *other* peer.
     #[must_use]
     pub const fn own_only() -> Self {
         Self {
@@ -50,10 +44,8 @@ impl Reach {
 /// Whether a write is in reach, given who is asking and where both documents
 /// stand.
 ///
-/// The ordering is the whole policy. Same-owner comes first and answers
-/// unconditionally, because it is one peer's content on both sides and a
-/// boundary there protects nobody. Everything after it is the cross-owner case,
-/// where co-presence is a precondition and the rung is the decision.
+/// The ordering is the whole policy: same-owner answers unconditionally,
+/// co-presence is then a precondition, and the rung is the decision.
 pub const fn permits(
     trust: Trust,
     target: Reach,

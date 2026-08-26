@@ -22,17 +22,16 @@ impl From<Quat> for PackedQuat {
     fn from(quat: Quat) -> Self {
         let components = [quat.x, quat.y, quat.z, quat.w];
 
-        // Find largest component by absolute value.
         let (largest_idx, &largest_val) = components
             .iter()
             .enumerate()
             .max_by(|(_, a), (_, b)| a.abs().partial_cmp(&b.abs()).expect("never fails"))
             .expect("never fails");
 
-        // Ensure largest component is positive (flip entire quaternion if needed).
+        // Sign-normalized so reconstruction can assume a positive largest
+        // component (q and -q are the same rotation).
         let sign = largest_val.signum();
 
-        // Get the three smaller components.
         let mut smaller = [0.0f32; 3];
         let mut j = 0;
         for (i, &c) in components.iter().enumerate() {
@@ -42,7 +41,7 @@ impl From<Quat> for PackedQuat {
             }
         }
 
-        // Quantize to 10 bits each. Range [-0.707, 0.707] -> [0, 1023].
+        // Map [-0.707, 0.707] to [0, 1023].
         let quantize = |v: f32| -> u32 {
             let normalized = f32::midpoint(v / FRAC_1_SQRT_2, 1.0);
             (normalized.clamp(0.0, 1.0) * 1023.0) as u32
@@ -73,11 +72,9 @@ impl From<PackedQuat> for Quat {
 
         let smaller = [dequantize(a), dequantize(b), dequantize(c)];
 
-        // Reconstruct largest component.
         let sum_sq: f32 = smaller.iter().map(|x| x * x).sum();
         let largest = (1.0 - sum_sq).max(0.0).sqrt();
 
-        // Rebuild quaternion.
         let mut components = [0.0f32; 4];
         let mut j = 0;
         for (i, c) in components.iter_mut().enumerate() {
@@ -132,7 +129,6 @@ mod tests {
 
     #[test]
     fn test_packed_quat_negative_w() {
-        // Test quaternion with negative largest component.
         let original = Quat::from_xyzw(0.1, 0.2, 0.3, -0.927).normalize();
         let packed: PackedQuat = original.into();
         let restored: Quat = packed.into();

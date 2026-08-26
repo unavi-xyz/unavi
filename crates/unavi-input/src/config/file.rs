@@ -45,9 +45,8 @@ pub fn path() -> PathBuf {
 }
 
 /// Reads the config, writing the defaults out first if there is nothing there.
-///
 /// A file that fails to parse is left alone — overwriting it would throw away
-/// the edit that broke it, which is the one thing the author wants back.
+/// the edit that broke it.
 #[cfg(not(target_family = "wasm"))]
 #[must_use]
 pub fn load() -> InputConfig {

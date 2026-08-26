@@ -49,10 +49,9 @@ pub const MAX_NAME_BYTES: usize = KB;
 
 /// Largest string a single text prim may carry.
 ///
-/// The renderer bounds a string again at layout time, which is the backstop
-/// for a document that arrived over the network rather than through a script.
-/// This bound is the cheaper one: it stops the bytes being stored and synced
-/// at all.
+/// The renderer bounds a string again at layout time as a backstop for
+/// documents that arrived over the network; this bound is the cheaper one,
+/// stopping the bytes being stored and synced at all.
 pub const MAX_TEXT_BYTES: usize = 4 * KB;
 
 /// Largest vertex/index stream a single mesh write may upload.
@@ -240,8 +239,7 @@ mod tests {
     }
 
     /// A UI surface pays three blobs per drawn body (`POSITION`, `NORMAL`,
-    /// indices). This is the budget that decides whether a surface may build
-    /// its bodies up front or has to build them as it draws them.
+    /// indices).
     #[test]
     fn one_document_cannot_afford_a_body_per_slot_up_front() {
         const BLOBS_PER_BODY: f64 = 3.0;

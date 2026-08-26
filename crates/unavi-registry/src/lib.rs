@@ -20,7 +20,10 @@ use wds::DataStore;
 
 use crate::{
     catalog::Catalog,
-    config::Config,
+    config::{
+        Config,
+        RegistryDocs,
+    },
     presence::PresenceTable,
     views::Views,
 };
@@ -71,13 +74,14 @@ impl Registry {
     /// the same router as the store's.
     pub async fn create(
         store: Arc<DataStore>,
-        config: Config,
+        mut config: Config,
     ) -> anyhow::Result<(Self, IrohProtocol<control::RegistryService>)> {
         let docs = store.docs().clone();
         let blobs = store.blobs().blobs().clone();
 
-        let catalog = Catalog::create(&store).await?;
-        let views = Views::create(&store).await?;
+        let existing = config.docs.take();
+        let catalog = Catalog::create(&store, existing.as_ref().map(|d| d.catalog)).await?;
+        let views = Views::create(&store, existing.map(|d| d.views)).await?;
 
         let ctx = Arc::new(RegistryContext {
             blobs,
@@ -101,6 +105,15 @@ impl Registry {
     #[must_use]
     pub fn views(&self) -> views::ViewIds {
         self.ctx.views.ids()
+    }
+
+    /// The docs backing this registry, for the operator to persist.
+    #[must_use]
+    pub fn docs(&self) -> RegistryDocs {
+        RegistryDocs {
+            catalog: self.ctx.catalog.namespace(),
+            views:   self.ctx.views.ids(),
+        }
     }
 
     #[must_use]

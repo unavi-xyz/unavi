@@ -712,11 +712,8 @@ pub async fn set_material(api: &Api, rep: u32, value: Option<PrimMaterial>) -> a
 
 /// Validates a script-built graph and stores it as the prim's own shading.
 ///
-/// Taking the graph rather than shader text is the whole safety argument: a
-/// graph is bounded by its shape — fixed arity, no loop, no branch, no way to
-/// name anything at runtime — so building one is no more dangerous than
-/// building a mesh, and validation here is the same pass a graph authored in a
-/// package goes through.
+/// A graph is bounded by its shape — fixed arity, no loop, no branch — so
+/// building one is no more dangerous than building a mesh.
 pub async fn set_material_graph(
     api: &Api,
     rep: u32,

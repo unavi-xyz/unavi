@@ -1,6 +1,5 @@
 //! A distance field grown at runtime: a closed budget of pages that generates
-//! glyphs on demand, so any script a loaded face covers stays crisp without a
-//! bake step per charset.
+//! glyphs on demand.
 
 use std::{
     collections::HashSet,
@@ -56,9 +55,8 @@ use crate::material::unit_range;
 
 pub mod asset;
 
-/// Faces one stack may hold. Each one costs its own atlas pages, and every
-/// character a text draws walks the stack, so a peer feeding fonts in cannot
-/// be allowed to grow it without end.
+/// Faces one stack may hold. Each costs its own atlas pages, and every
+/// character a text draws walks the stack.
 pub const MAX_FONTS: usize = 8;
 
 /// A shared dynamic atlas and the GPU pages it has been copied into.
@@ -149,9 +147,8 @@ impl Debug for MsdfFont {
 /// results. Returns whether anything was generated, so a caller draining a
 /// queue knows when to stop.
 ///
-/// Generation is the expensive half of the pipeline — a field is sampled per
-/// texel against every segment of the outline — so a round runs across the
-/// compute pool rather than one glyph at a time on the caller's thread.
+/// Runs across the compute pool; a field is sampled per texel against every
+/// segment of the outline.
 pub fn generate(atlas: &mut Atlas) -> bool {
     let mut jobs = Vec::new();
     while let Some(job) = atlas.next_job() {

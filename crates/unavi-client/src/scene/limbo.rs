@@ -86,11 +86,8 @@ pub fn spawn_limbo(
 
 /// Pins the agent body to the limbo floor for as long as limbo lasts.
 ///
-/// Held every tick rather than placed once on entry: the floor is a body like
-/// any other, so a space becoming active shifts it out from under an agent
-/// parked at a fixed point, and a load long enough to notice is long enough to
-/// fall out of. Tracking the floor's own translation keeps the two together
-/// through any shift.
+/// Held every tick rather than placed once on entry: a space becoming active
+/// shifts the floor out from under an agent parked at a fixed point.
 pub fn hold_agent_in_limbo(
     agents: Query<&LocalAgentEntities, With<LocalAgent>>,
     floor: Query<&Transform, With<Limbo>>,
@@ -304,7 +301,6 @@ mod tests {
         app.world_mut().resource_mut::<PendingTravel>().0 = Some(target);
     }
 
-    /// Enters a space so travel has somewhere to leave from.
     fn enter(app: &mut App, ns: NamespaceId) -> Entity {
         let space = app.world_mut().spawn((Space(ns), HsdLoaded)).id();
         app.world_mut().resource_mut::<ActiveSpace>().0 = Some(space);
@@ -321,8 +317,7 @@ mod tests {
         let mut app = setup();
         let start = enter(&mut app, namespace(1));
 
-        // Opened earlier through a portal, so it is loaded before travel begins
-        // and no `HsdLoaded` insertion is coming to notice.
+        // Loaded before travel begins, as if opened earlier through a portal.
         let target_ns = namespace(2);
         let target = app.world_mut().spawn((Space(target_ns), HsdLoaded)).id();
 

@@ -33,9 +33,8 @@ impl ApiName {
 
 /// The set of APIs a document holds, as one word.
 ///
-/// [`DocumentPolicy::allows`] answers every host call, so the set is a
-/// bitfield rather than a hashed collection: the check is an `and`, and the
-/// whole policy stays `Copy`.
+/// [`DocumentPolicy::allows`] answers every host call, so the check is an
+/// `and` on a bitfield and the whole policy stays `Copy`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct ApiSet(u16);
 

@@ -127,7 +127,7 @@ pub struct SyncTargets(pub Vec<Actor>);
 /// Endpoints that hold content beyond the configured sync targets.
 ///
 /// A space's document syncs from its occupants, so its content lives with them
-/// too. A fetch offered only the sync targets asks a server that may never have
-/// seen the space, which is the whole difference between needing one and not.
+/// too; a fetch offered only the sync targets asks a server that may never
+/// have seen the space.
 #[derive(Component, Default)]
 pub struct BlobProviders(pub Vec<iroh::EndpointId>);

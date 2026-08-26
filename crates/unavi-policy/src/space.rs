@@ -16,10 +16,8 @@ impl Space {
     }
 }
 
-/// Entering a space grants its own document the space tier.
-///
-/// This is the one place authority is handed to something the local user did
-/// not author, and it is what walking through a portal consents to.
+/// Entering a space grants its own document the space tier: the one place
+/// authority is handed to something the local user did not author.
 pub fn grant_space_permissions(trigger: On<Add, Space>, mut commands: Commands) {
     commands
         .entity(trigger.entity)

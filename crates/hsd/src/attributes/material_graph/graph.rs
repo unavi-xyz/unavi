@@ -8,11 +8,8 @@ use super::{
     value::GraphValue,
 };
 
-/// The fragment-stage network.
-///
-/// Two closed shapes, chosen at authoring time, not a fully generic
-/// multi-output graph — mirrors Unity Shader Graph's Lit/Unlit Master Stack
-/// targets and Unreal's Shading Model.
+/// The fragment-stage network: two closed output shapes chosen at authoring
+/// time, not a fully generic multi-output graph.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SurfaceGraph {
@@ -21,7 +18,7 @@ pub struct SurfaceGraph {
     pub blend:        BlendMode,
     pub cull:         CullMode,
     /// Whether this surface occludes light. Declared rather than inferred
-    /// from [`BlendMode`]: blending does not decide shadowing.
+    /// from [`BlendMode`].
     pub cast_shadows: bool,
 }
 
@@ -39,9 +36,7 @@ impl Default for SurfaceGraph {
 
 /// How the fragment output composites against what is already there.
 ///
-/// Declared, never inferred from which terminals happen to be connected:
-/// USD's `opacityMode` is explicit for the same reason, and an inferred
-/// mode silently puts every unlit graph in the transparent queue.
+/// Declared, never inferred from which terminals happen to be connected.
 /// Alpha *testing* is not a mode here — it is [`LitOutput::
 /// alpha_clip_threshold`]/[`UnlitOutput::alpha_clip_threshold`], which
 /// codegen emits as a `discard` and which composes with any blend mode.
@@ -50,17 +45,12 @@ pub enum BlendMode {
     #[default]
     Opaque,
     Blend,
-    /// What makes a beam, hologram or any energy effect read as light
-    /// rather than as tinted glass.
     Add,
     Multiply,
 }
 
-/// Which faces are discarded before rasterization.
-///
-/// `Front` is what an inverted-hull outline is: draw an outward-extruded
-/// copy of a mesh with its front faces gone, so only the shell peeking past
-/// the original silhouette survives the depth test.
+/// Which faces are discarded before rasterization. `Front` is what an
+/// inverted-hull outline draws its extruded shell with.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum CullMode {
     #[default]
@@ -75,9 +65,8 @@ pub enum SurfaceOutput {
     Unlit(UnlitOutput),
 }
 
-/// Fed into a `PbrInput` before `apply_pbr_lighting`, mirroring glTF/PBR's
-/// small standard surface-output vocabulary — codegen always targets this
-/// one known shape when `Lit` is selected.
+/// Fed into a `PbrInput` before `apply_pbr_lighting`; codegen always targets
+/// this one known shape when `Lit` is selected.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct LitOutput {
@@ -87,21 +76,16 @@ pub struct LitOutput {
     pub roughness:             Option<Port>,
     pub normal:                Option<Port>,
     pub alpha:                 Option<Port>,
-    /// Unity's Alpha Clip Threshold / Unreal's Opacity Mask: when set,
-    /// codegen emits a `discard` below this threshold — still a single
-    /// bounded statement, not a loop or general branch.
+    /// When set, codegen emits a `discard` below this threshold.
     pub alpha_clip_threshold:  Option<Port>,
-    /// How much of the light passing through is transmitted and tinted by
+    /// Fraction of light transmitted and tinted by
     /// [`LitOutput::base_color`], `0..1`. Above zero routes the material into
     /// the transmissive phase, where Bevy refracts the already-drawn scene
-    /// behind the surface by `thickness`/`ior` — the real glass path, with
-    /// depth rejection, rather than a hand-rolled screen-space sample.
+    /// behind the surface by `thickness`/`ior`.
     pub specular_transmission: Option<Port>,
-    /// The Lambertian transmitted lobe, lit from behind. A clear glass that
-    /// only refracts leaves this at zero.
+    /// The Lambertian transmitted lobe, lit from behind.
     pub diffuse_transmission:  Option<Port>,
-    /// Metres the refracted ray travels inside the surface before exiting;
-    /// how far the scene behind appears displaced.
+    /// Metres the refracted ray travels inside the surface before exiting.
     pub thickness:             Option<Port>,
     /// Refractive index, `1.0` (air) being no refraction. Water is `1.33`,
     /// glass `1.5`.
@@ -109,8 +93,6 @@ pub struct LitOutput {
 }
 
 /// Written straight to the fragment output; no `PbrInput`, no lighting pass.
-/// What `SkyMaterial`, a beam, a hologram, or any additive/emissive VFX
-/// needs, and what a `Lit`-only terminal set cannot express.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct UnlitOutput {
@@ -130,19 +112,13 @@ impl Default for UnlitOutput {
 /// The vertex-stage network.
 ///
 /// `position_offset` is added to the mesh's local-space vertex position
-/// before the standard local→world→clip transform runs; `normal_override`,
-/// if set, replaces the local-space normal before it is transformed to
-/// world space. Covers displacement, billboarding, and simple vertex
-/// animation; the Bevy-side vertex shader splices this in right after
-/// fetching the mesh's local-space position/normal, before the standard
-/// mesh transform runs (see `bevy_pbr`'s own vertex shader for that part).
+/// before the standard local→world→clip transform; `normal_override`, if set,
+/// replaces the local-space normal before it is transformed to world space.
 ///
-/// `world_position_offset` (Unreal's World Position Offset) is added after
-/// that transform instead, and composes with `position_offset` rather than
-/// replacing it. It is the only way to displace along a direction that does
-/// not rotate and scale with the prim: a prim stretched between two points
-/// has no local-space vector that stays world-down, and the displacement
-/// network has no world-space leaf to build one from.
+/// `world_position_offset` is added after that transform instead, and
+/// composes with `position_offset` rather than replacing it. It is the only
+/// way to displace along a direction that does not rotate and scale with the
+/// prim: the displacement network has no world-space leaf to build one from.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct DisplacementGraph {

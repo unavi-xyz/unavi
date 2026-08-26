@@ -86,9 +86,9 @@ fn source_identity(input_abs: &Path) -> Result<String> {
     Ok(format!("{crate_name}/{stem}"))
 }
 
-/// A build-time id is derived, not minted: every peer instancing the prefab
-/// gets byte-identical prim ids, which is what makes a cross-peer reference to
-/// an authored prim — a portal receptor, a `wired:kv` key — resolve at all.
+/// A build-time id is derived rather than minted, so every peer instancing
+/// the prefab computes byte-identical prim ids and a cross-peer reference to
+/// an authored prim resolves.
 fn derive_prim_id(source: &str, path: &[usize]) -> PrimId {
     let mut hasher = blake3::Hasher::new();
     hasher.update(b"hsd:prim");

@@ -48,10 +48,8 @@ pub const KV_KEY_MAX_BYTES: usize = 256;
 /// forged future `at` cannot pin ownership/authority or win KV merges forever.
 const MAX_CLOCK_SKEW_MILLIS: u64 = 5 * 60 * 1000;
 
-/// A KV cell merged last-write-wins. `value: None` is a tombstone retained so a
-/// delete keeps winning over an older live write on another peer. `_hold`
-/// charges the cell's bytes to the document's quota for exactly its lifetime,
-/// so dropping the cell refunds with no separate bookkeeping.
+/// A KV cell merged last-write-wins. `value: None` is a retained tombstone, so
+/// a delete keeps winning over an older live write on another peer.
 struct OwnedCell {
     at:    u64,
     value: Option<Vec<u8>>,
@@ -59,18 +57,17 @@ struct OwnedCell {
 }
 
 /// A space-owned (neutral) KV cell. Stored on the document rather than under
-/// any peer, so it persists once written until explicitly deleted or the
-/// document is forgotten by everyone; `peer` is retained only as the merge
-/// tiebreak.
+/// any peer, so it persists once written until explicitly deleted or every
+/// peer forgets the document; `peer` is only the merge tiebreak.
 struct NeutralCell {
     at:    u64,
     peer:  PeerId,
     value: Option<Vec<u8>>,
     hold:  StockHold,
-    /// Exactly one prior version, which is what makes "revert everything peer
-    /// X wrote" a scan of the neutral map rather than a general undo log.
-    /// Neutral cells outlive their writer's disconnect, so without this they
-    /// are the one live surface a block cannot reach.
+    /// Exactly one prior version, making "revert everything peer X wrote" a
+    /// scan of the neutral map rather than a general undo log. Neutral cells
+    /// outlive their writer's disconnect, so they are otherwise unreachable by
+    /// a block.
     prev:  Option<Box<Self>>,
 }
 
@@ -99,10 +96,9 @@ struct PeerReplica {
     docs: HashMap<NamespaceId, PeerDocEntry>,
 }
 
-/// Per-document state shared across peers: its space, its quota (charged to the
-/// owner, migrated on handoff), a `Documents` hold held while the doc is known
-/// locally, its space-owned KV, and a reference count of the live state data
-/// (pins, authority claims, and KV cells) keeping the presence alive.
+/// Per-document state shared across peers. `refs` counts the live pins,
+/// authority claims and KV cells keeping the presence alive; `_doc_hold`
+/// charges one `Documents` unit while the doc is known locally.
 struct DocPresence {
     space:      NamespaceId,
     _doc_hold:  StockHold,
@@ -110,10 +106,9 @@ struct DocPresence {
     refs:       u32,
 }
 
-/// Holds every peer's replicated state (self included), per-document presence,
-/// and the live delta senders. State is mutated only by the RAII guards in
-/// [`crate::state::entities`]; everything here is a read index plus the
-/// low-level add/remove those guards drive.
+/// Every peer's replicated state (self included), per-document presence, and
+/// the live delta senders. Mutated only by the RAII guards in
+/// [`crate::state::entities`].
 #[derive(Default)]
 struct ReplicatedPeerState {
     peers:   HashMap<PeerId, PeerReplica>,
@@ -692,12 +687,9 @@ pub fn remove_kv(peer: PeerId, doc: NamespaceId, key: &str, placement: KvPlaceme
     drop(state);
 }
 
-/// Rolls back every neutral cell whose current value came from `peer`.
-///
-/// Returns how many cells changed. Owner-authored KV, pins and authority claims
-/// need no equivalent: they hang off the peer's `RemotePeer` entity and cascade
-/// away when it despawns. Neutral cells deliberately outlive a disconnect, so
-/// they are the one surface that has to be undone by hand.
+/// Rolls back every neutral cell whose current value came from `peer`,
+/// returning how many cells changed. The only undo needed by hand: pins,
+/// authority claims and owner-authored KV cascade away with the peer's entity.
 pub fn revert_neutral_writes(peer: PeerId) -> usize {
     let mut state = PEER_STATE.lock();
     state.revert_neutral_writes(peer)

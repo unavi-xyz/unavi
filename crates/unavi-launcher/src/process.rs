@@ -39,7 +39,7 @@ impl ProcessTracker {
 
         if let Some(mut child) = child {
             child.kill()?;
-            // Reaps the process; dropping a `Child` deliberately does not.
+            // Reaps the process; dropping a `Child` does not.
             child.wait()?;
         }
 

@@ -14,9 +14,6 @@ use unavi_policy::space::Space;
 use unavi_util::async_commands::AsyncCommands;
 
 /// A namespace to enter instead of the local home, from `--join`.
-///
-/// Reaching another peer's space otherwise requires walking a portal, which no
-/// automated run can do.
 #[derive(Resource, Default)]
 pub struct JoinSpace(pub Option<String>);
 
@@ -68,15 +65,12 @@ pub fn on_load_spawn_space(ctx: OnLoadCtx) -> BoxedFuture<'static, anyhow::Resul
 /// Key under a DID's root doc naming the space it comes home to.
 const HOME_KEY: &str = "home";
 
-/// Version prefix on the entry, so a reader can tell an old layout from a new
-/// one rather than misreading its bytes as a namespace.
+/// Version prefix on the entry, so a reader cannot misread its bytes as a
+/// namespace.
 const HOME_VERSION: u32 = 0;
 
-/// Writes down which space is home, so a shell can offer to travel back to it.
-///
-/// The client is the only thing that knows, and a script has no other way to
-/// find out: without this the entry is absent and a shell can only report that
-/// no home is set.
+/// Writes down which space is home, so a shell can offer to travel back to it;
+/// without this entry a script has no way to learn it.
 async fn record_home(ns: NamespaceId) {
     let Some(root) = bevy_wds::root_doc() else {
         return;

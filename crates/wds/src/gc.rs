@@ -35,8 +35,6 @@ impl StoreContext {
         }
     }
 
-    /// Drops sessions past their expiry, so the table tracks live sessions
-    /// rather than every session the process has ever issued.
     async fn gc_sessions(&self) {
         let now = OffsetDateTime::now_utc().unix_timestamp();
         self.connections.retain_async(|_, c| c.expires > now).await;

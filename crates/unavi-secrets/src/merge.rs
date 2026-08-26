@@ -9,13 +9,12 @@ use secretspec::{
     Profile,
 };
 
-/// Every value `profile` declares, applying the two manifest rules that decide
-/// one: a profile inherits `default_profile` unless it opts out, and a
-/// profile's own `defaults.default` stands in for the secrets that declare no
-/// value of their own.
+/// Every value `profile` declares: inherits `default_profile` unless it opts
+/// out, and its own `defaults.default` stands in for secrets declaring no
+/// value.
 ///
-/// A secret with no value at all is absent, and reaches the binary as an
-/// environment lookup rather than as a compiled-in value.
+/// A secret with no value at all is absent, reaching the binary as an
+/// environment lookup rather than a compiled-in value.
 pub fn defaults(
     config: &Config,
     profile: &str,

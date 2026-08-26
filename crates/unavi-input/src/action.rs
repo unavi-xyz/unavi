@@ -11,10 +11,10 @@ use crate::{
 
 /// What a hand does, as opposed to what is bound to it.
 ///
-/// [`Self::Trigger`] and [`Self::Grip`] are the two halves of acting on the
-/// world and are deliberately separate: a trigger points and picks, a grip
-/// closes around what is already there. One button doing both is what forces
-/// the host and an equipped tool to arbitrate over a single press.
+/// [`Self::Trigger`] and [`Self::Grip`] are separate actions: a trigger points
+/// and picks, a grip closes around what is already there. One button doing
+/// both would force the host and an equipped tool to arbitrate over a single
+/// press.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Action {
     Move,
@@ -143,11 +143,9 @@ impl ActionState {
     }
 
     /// Drops everything read this frame, leaving every action to end it
-    /// released.
-    ///
-    /// What was held reaches its readers as the release it would have got
-    /// anyway, rather than sticking down behind whatever took the input: a
-    /// grab lets go, a tool stops firing, and the agent stands still.
+    /// released: what was held reaches its readers as the release it would
+    /// have got anyway, rather than sticking down behind whatever took the
+    /// input.
     pub fn silence(&mut self) {
         for value in &mut self.values {
             value.axis = Vec2::ZERO;

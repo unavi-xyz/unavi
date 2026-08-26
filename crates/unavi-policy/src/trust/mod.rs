@@ -17,21 +17,15 @@ use crate::identity;
 
 /// Transitive trust through the vouch graph.
 ///
-/// The metric walks whatever edges it is given, but only the local root doc is
-/// discoverable today, so no foreign vouch can ever be fetched and the graph
-/// can conclude nothing a direct override could not. It gains real effect once
-/// a peer's root doc can be found from its DID.
+/// Only the local root doc is discoverable today, so no foreign vouch can ever
+/// be fetched; this gains real effect once a peer's root doc can be found from
+/// its DID.
 pub mod vouch;
 
 /// How much a peer is trusted, as one ordinal rung.
 ///
-/// Ordinal rather than a capability matrix because the granularity users
-/// actually manage is per-rung: every capability names the minimum rung it
-/// needs, and a user moves peers between rungs instead of editing a grid.
-///
-/// The opinion is the local viewer's and is never gossiped as authoritative,
-/// so there is nothing here for a peer or a space to spoof. Ranks *peers*, not
-/// documents — [`crate::tier::Tier`] is the document side.
+/// The opinion is the local viewer's and is never gossiped as authoritative.
+/// Ranks *peers*, not documents — [`crate::tier::Tier`] is the document side.
 #[derive(
     Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
@@ -85,11 +79,9 @@ pub fn of_peer(peer: [u8; 32]) -> Trust {
     identity::did_of(peer).map_or(Trust::Guest, |did| of_did(&did))
 }
 
-/// What the user said, else what the graph worked out, else the default.
-///
-/// The user's own decision wins outright, which is what makes demotion
-/// instant: a block takes effect the moment it is set, and no rising score can
-/// undo it.
+/// What the user said, else what the graph worked out, else the default: an
+/// override wins outright, so a block takes effect the moment it is set and no
+/// rising score can undo it.
 #[must_use]
 pub fn of_did(did: &Did) -> Trust {
     let manual = OVERRIDES.read().get(did).copied();
@@ -188,17 +180,13 @@ struct Stored {
 /// as DIDs rather than refusing the whole file.
 ///
 /// A table that cannot be read at all is an error rather than an empty start:
-/// coming up clean would silently un-block every peer the user ejected, which
-/// is the one direction this file must never fail in. The previous good copy
-/// is tried first so a truncated write is survivable without a prompt.
+/// coming up clean would silently un-block every peer the user ejected. The
+/// previous good copy is tried first so a truncated write is survivable.
 pub fn load(dir: &std::path::Path) -> anyhow::Result<()> {
     let stored = match read_table(&table_path(dir)) {
         Ok(stored) => stored,
         Err(err) => {
             tracing::warn!(?err, "trust table unreadable, falling back to the backup");
-            // An absent backup is fatal here, not a clean first run: the table
-            // itself exists and could not be read, and coming up empty is the
-            // failure this whole path is guarding against.
             Some(
                 read_table(&backup_path(dir))
                     .ok()
@@ -253,10 +241,9 @@ fn read_table(path: &std::path::Path) -> anyhow::Result<Option<Stored>> {
     }
 }
 
-/// Writes through a temporary file and renames over the table.
-///
-/// The previous copy is kept: a trust table half-written by a crash reads as no
-/// blocks at all, so the write has to be atomic and the last good copy survive.
+/// Writes through a temporary file and renames over the table, keeping the
+/// previous copy: a trust table half-written by a crash reads as no blocks at
+/// all.
 pub fn save(dir: &std::path::Path) -> anyhow::Result<()> {
     let stored = Stored {
         salt:    hex(&*SALT.read()),

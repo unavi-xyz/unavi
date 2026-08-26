@@ -17,8 +17,8 @@ pub mod cursor_lock;
 pub mod pointer;
 pub mod source;
 
-/// Reading every bound source into [`action::ActionState`], and turning what
-/// that says into pointer presses. Runs before anything picks with them.
+/// Reads every bound source into [`action::ActionState`] and turns what that
+/// says into pointer presses, before anything picks with them.
 #[derive(SystemSet, Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct InputReadSet;
 
@@ -26,20 +26,18 @@ pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        #[cfg(not(target_family = "wasm"))]
-        app.insert_resource(config::file::load());
-        #[cfg(target_family = "wasm")]
-        app.init_resource::<config::InputConfig>();
+        cfg_select! {
+            target_family = "wasm" => app.init_resource::<config::InputConfig>(),
+            _ => app.insert_resource(config::file::load()),
+        };
 
         app.init_resource::<action::ActionState>()
             .init_resource::<capture::Captured>()
             .init_resource::<pointer::backend::PointerFilter>()
-            // Bevy's mouse pointer is what a person clicks an overlay with:
-            // it follows the cursor, where ours is aimed by a head or a hand
-            // and only ever parked on the render target. Nothing of ours
-            // reports a hit for it, so the world it can reach is only the UI.
-            // Window picking would make the window itself a hover target,
-            // which it is not.
+            // Bevy's mouse pointer is what a person clicks an overlay with;
+            // ours is aimed by a head or a hand and reports no hits for it,
+            // so the world it can reach is only the UI. Window picking would
+            // make the window itself a hover target, which it is not.
             .insert_resource(PointerInputSettings {
                 is_mouse_enabled: true,
                 is_touch_enabled: false,
@@ -100,25 +98,29 @@ impl Plugin for InputPlugin {
 
         // Before `cursor_grab`, so a click that re-locks in the same frame is
         // not undone by the reading taken before the browser granted it.
-        #[cfg(target_family = "wasm")]
-        app.add_systems(
-            Update,
-            cursor_lock::follow_browser_lock.before(cursor_lock::cursor_grab),
-        )
-        .add_systems(Startup, browser_keys::hold_back_bound_defaults);
-
-        #[cfg(not(target_family = "wasm"))]
-        app.add_systems(
-            Startup,
-            source::xr::setup.before(bevy_xr_utils::actions::XRUtilsActionSystems::CreateEvents),
-        )
-        .add_systems(
-            PreUpdate,
-            source::xr::read
-                .in_set(InputReadSet)
-                .after(action::begin_frame)
-                .before(action::end_frame)
-                .after(bevy_xr_utils::actions::XRUtilsActionSystems::SyncActionStates),
-        );
+        cfg_select! {
+            target_family = "wasm" => {
+                app.add_systems(
+                    Update,
+                    cursor_lock::follow_browser_lock.before(cursor_lock::cursor_grab),
+                )
+                .add_systems(Startup, browser_keys::hold_back_bound_defaults);
+            }
+            _ => {
+                app.add_systems(
+                    Startup,
+                    source::xr::setup
+                        .before(bevy_xr_utils::actions::XRUtilsActionSystems::CreateEvents),
+                )
+                .add_systems(
+                    PreUpdate,
+                    source::xr::read
+                        .in_set(InputReadSet)
+                        .after(action::begin_frame)
+                        .before(action::end_frame)
+                        .after(bevy_xr_utils::actions::XRUtilsActionSystems::SyncActionStates),
+                );
+            }
+        }
     }
 }

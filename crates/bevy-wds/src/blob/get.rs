@@ -179,14 +179,8 @@ async fn inner(
     Ok(())
 }
 
-/// Bounds reads of both a fetch and a cached blob: the cached copy may have
-/// been written by a path that did not bound it.
-///
-/// The cache tag roots the hash for the whole fetch-and-read, and keeps it warm
-/// afterwards so a second read of content no document references does not
-/// re-download it. Nothing else roots it: `Downloader::download` takes no tag
-/// and the GC sweep lists partially written blobs, so a pass landing
-/// mid-download deletes the content out from under the fetch.
+/// Bounds the read of a fetched blob and of an already cached copy, which may
+/// have been written by a path that did not bound it.
 async fn get_blob(
     hash: Hash,
     blobs: &Blobs,

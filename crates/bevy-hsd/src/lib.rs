@@ -127,10 +127,9 @@ impl Hsd {
 
 /// A document that is not in the scene.
 ///
-/// It has an id, a namespace and prims, and a script writes to it exactly as
-/// it would to a live one; nothing of it is drawn, simulated or reachable by
-/// position. [`anchor::place`] puts it in, whole and where it was put, so a
-/// document that has just been built appears rather than arriving at the
+/// A script writes to it exactly as to a live one; nothing of it is drawn,
+/// simulated or reachable by position. [`anchor::place`] inserts it whole, so
+/// a just-built document appears where it was put rather than arriving at the
 /// origin and moving.
 #[derive(Component, Clone)]
 pub struct HsdHeld(pub Arc<Mutex<SceneState>>);

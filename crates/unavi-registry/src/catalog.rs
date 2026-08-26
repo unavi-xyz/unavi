@@ -9,7 +9,6 @@ use iroh_docs::{
 use time::OffsetDateTime;
 use wds::{
     DataStore,
-    identity::labels,
     signed_bytes::SignedBytes,
 };
 
@@ -28,11 +27,15 @@ pub struct Catalog {
 }
 
 impl Catalog {
-    /// Minted once and remembered, so a restart reopens the catalog it already
-    /// published rather than abandoning it under a new namespace.
-    pub async fn create(store: &DataStore) -> anyhow::Result<Self> {
-        let doc = store.well_known(labels::REGISTRY_CATALOG).await?;
-        Ok(Self { ns: doc.id() })
+    /// Reopens the catalog named by `existing`, minting a fresh one if it is
+    /// absent or its capability no longer held, and reports the namespace back
+    /// to the operator for persistence.
+    pub async fn create(store: &DataStore, existing: Option<NamespaceId>) -> anyhow::Result<Self> {
+        let ns = match existing {
+            Some(ns) if store.docs().api().open(ns).await?.is_some() => ns,
+            _ => store.docs().api().create().await?.id(),
+        };
+        Ok(Self { ns })
     }
 
     #[must_use]

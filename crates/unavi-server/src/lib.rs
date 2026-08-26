@@ -26,14 +26,17 @@ use tracing::{
 };
 use unavi_registry::{
     Registry,
-    config::Config as RegistryConfig,
+    config::{
+        Config as RegistryConfig,
+        RegistryDocs,
+    },
     views::ViewIds,
 };
 use wds::{
     DataStore,
     WDS_SERVICE_TYPE,
     identity::{
-        RootIdentity,
+        WdsIdentity,
         store::KeyStorage,
     },
 };
@@ -63,19 +66,36 @@ use xdid::{
 mod files;
 pub mod secrets;
 
+const REGISTRY_DOCS_FILE: &str = "registry-docs.json";
+
+/// The registry docs this node minted before, if any. An unreadable record is
+/// reported and replaced: minting fresh abandons the old namespaces, but a
+/// registry that cannot start at all serves no one.
+fn load_registry_docs() -> Option<RegistryDocs> {
+    let text = std::fs::read_to_string(DIRS.data_local_dir().join(REGISTRY_DOCS_FILE)).ok()?;
+    match serde_json::from_str(&text) {
+        Ok(docs) => Some(docs),
+        Err(err) => {
+            warn!(?err, "unreadable registry docs record; minting fresh");
+            None
+        }
+    }
+}
+
+fn save_registry_docs(docs: &RegistryDocs) -> anyhow::Result<()> {
+    let json = serde_json::to_string_pretty(docs)?;
+    std::fs::write(DIRS.data_local_dir().join(REGISTRY_DOCS_FILE), json)?;
+    Ok(())
+}
+
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi-server").expect("project dirs");
     std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
     dirs
 });
 
-/// Which services this node runs.
-///
-/// One DID, one endpoint, one storage directory; the roles are toggles rather
-/// than separate processes, so a registry-only deployment still has a
-/// resolvable identity and a storage node still shares its endpoint with
-/// discovery. File hosting is always on: the files directory is cheap and
-/// inert when empty.
+/// Which services this node runs. One DID, endpoint, and storage directory
+/// serve both roles; file hosting is always on.
 pub struct Features {
     pub registry: bool,
     pub wds:      bool,
@@ -100,13 +120,13 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     let port = opts.port;
 
     let did = create_did(&secrets::Secrets::load().unavi_domain)?;
-    let identity = Arc::new(RootIdentity::load(&key_storage(opts.in_memory))?);
+    let identity = Arc::new(WdsIdentity::load(&key_storage(opts.in_memory))?);
     info!("Running server as {did}");
 
     // Fixes the endpoint id across restarts. The served DID document names it,
     // and `signed_by_wds_service` has peers verify a challenge against it.
     let endpoint = Endpoint::builder(N0)
-        .secret_key(identity.endpoint_key())
+        .secret_key(identity.endpoint().clone())
         .bind()
         .await?;
 
@@ -137,8 +157,14 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     }
 
     let (_registry, views) = if opts.features.registry {
-        let (registry, protocol) =
-            Registry::create(Arc::clone(&store), RegistryConfig::default()).await?;
+        let mut config = RegistryConfig::default();
+        config.docs = load_registry_docs();
+
+        let (registry, protocol) = Registry::create(Arc::clone(&store), config).await?;
+        if let Err(err) = save_registry_docs(&registry.docs()) {
+            warn!(?err, "could not persist registry doc ids");
+        }
+
         let views = registry.views();
         info!(recent = %views.recent, "Serving registry");
         rb = rb.accept(unavi_registry::control::ALPN, protocol);
@@ -149,7 +175,12 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let router = rb.spawn();
 
-    let app = create_did_document_route(did, identity.signing_key(), store.endpoint_id(), views)?;
+    let app = create_did_document_route(
+        did,
+        identity.user().signing_key(),
+        store.endpoint_id(),
+        views,
+    )?;
 
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port));
     info!("HTTP listening on port {port}");

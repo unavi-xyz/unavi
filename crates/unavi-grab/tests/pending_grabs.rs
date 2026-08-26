@@ -1,6 +1,5 @@
 //! A squeeze onto something not yet grabbable waits, so a script can answer a
-//! grab by making the thing grabbable — either the thing the ray hit, or one
-//! that arrives under the pointer afterwards.
+//! grab by making the thing grabbable.
 
 use std::time::Duration;
 
@@ -34,14 +33,12 @@ fn app() -> App {
         unavi_grab::GrabPlugin,
     ))
     .init_asset::<Mesh>()
-    // The pointer layer is what the test drives by hand, so what it would
-    // have registered is registered here instead.
+    // The pointer layer is what the test drives by hand.
     .add_message::<GripPressed>()
     .add_message::<GripReleased>()
     .add_message::<PointerPressed>()
-    // Bodies here are placed to be aimed at, not dropped, and a grab is
-    // recognized by the `GravityScale` the grab itself adds — which a falling
-    // body would need one of its own.
+    // A grab is recognized by the `GravityScale` the grab itself adds, which
+    // would fight real gravity on a falling body.
     .insert_resource(Gravity(Vec3::ZERO))
     .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(STEP));
     app.finish();
@@ -67,8 +64,8 @@ const fn aim() -> Ray3d {
     Ray3d::new(Vec3::ZERO, Dir3::NEG_Z)
 }
 
-/// Stands in for the hit-test, which the pointer layer has already done by the
-/// time a press is reported.
+/// Stands in for the hit-test the pointer layer has already done by the time
+/// a press is reported.
 fn hit_on(app: &App, entity: Option<Entity>) -> Option<PointerHit> {
     let entity = entity?;
     let position = app
@@ -219,9 +216,6 @@ fn an_already_dynamic_body_is_grabbed_at_once() {
     assert!(is_grabbed(&app, target));
 }
 
-/// The whole reason the grip is its own button: a tool is worked with the
-/// trigger, and the host must not answer that press by carrying off whatever
-/// the tool just put down.
 #[test]
 fn a_trigger_press_takes_hold_of_nothing() {
     let mut app = app();
@@ -245,9 +239,8 @@ fn a_trigger_press_takes_hold_of_nothing() {
     assert!(!is_grabbed(&app, target));
 }
 
-/// The near miss: the ray slipped past whatever the user was plainly aiming
-/// at, so there is no entity to wait on. Holding the squeeze still catches the
-/// body that arrives under the pointer.
+/// The near miss: no entity to wait on, so only a promoted body under the
+/// pointer can answer.
 #[test]
 fn a_squeeze_that_hit_nothing_catches_a_body_that_arrives_under_the_pointer() {
     let mut app = app();
@@ -276,10 +269,8 @@ fn a_squeeze_that_hit_nothing_catches_a_body_that_arrives_under_the_pointer() {
     );
 }
 
-/// The body a script promotes sits where the pointer *was* when it answered,
-/// and the pointer has kept moving — during a drag, which is exactly when
-/// this path runs, it moves fast. Demanding the answer be dead under the
-/// crosshair some frames later asks the script to have predicted the aim.
+/// During a drag — exactly when this path runs — the pointer moves fast, so
+/// the answer need not still be dead under the crosshair.
 #[test]
 fn a_body_that_appears_beside_the_pointer_is_still_caught() {
     let mut app = app();
@@ -349,8 +340,6 @@ fn a_body_promoted_behind_the_pointer_is_left_alone() {
     assert!(!is_grabbed(&app, behind), "a squeeze reached backwards");
 }
 
-/// The other half of that rule: a squeeze must not quietly steal whatever
-/// grabbable thing the pointer happens to sweep across while it is held.
 #[test]
 fn a_pending_grab_does_not_steal_a_body_it_merely_swept_over() {
     let mut app = app();

@@ -1,5 +1,3 @@
-//! Avatar animation loading and retargeting.
-
 use bevy::prelude::*;
 use bevy_vrm::BoneName;
 

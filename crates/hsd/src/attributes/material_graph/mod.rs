@@ -1,23 +1,21 @@
-//! HSS (Hyper-Space Shader), HSD's shader graph format: a closed-by-
-//! construction node graph, compiled host-side into WGSL.
+//! HSS (Hyper-Space Shader), HSD's shader graph format: a closed node graph,
+//! compiled host-side into WGSL. Never accepts shader text as data.
 //!
-//! Never accepts shader text as data: nodes are a flat, ordered list where a
-//! node's inputs may reference only nodes at a strictly lower index, so a
-//! cycle cannot be constructed and no graph-traversal cycle check is needed.
-//! Fixed arity per node kind bounds total shader cost to a static function of
-//! node count.
+//! Nodes are a flat, ordered list where a node's inputs may reference only
+//! nodes at a strictly lower index, so a cycle cannot be constructed and no
+//! graph-traversal cycle check is needed. Fixed arity per node kind bounds
+//! total shader cost to a static function of node count.
 //!
 //! A graph has two independent networks, mirroring USD's `Material` prim
 //! terminals (`surface`, `displacement`): [`graph::SurfaceGraph`] computes the
-//! fragment-stage look, in either a lit (PBR) or unlit shape, and the
-//! optional [`graph::DisplacementGraph`] computes a vertex-stage
-//! position/normal offset — both unreachable through a single fixed terminal
-//! set.
+//! fragment-stage look, in either a lit (PBR) or unlit shape, and the optional
+//! [`graph::DisplacementGraph`] computes a vertex-stage position/normal
+//! offset.
 //!
-//! The compiled graph is slot content (`material:graph_data`), never a hash
-//! inside an attribute payload; [`overrides::GraphOverridesAttr`] is the
-//! small attribute that names the same prim's per-instance tint of the
-//! graph's public inputs.
+//! The compiled graph is slot content (`material:graph_data`), never an
+//! attribute payload; [`overrides::GraphOverridesAttr`] is the small
+//! attribute that names the same prim's per-instance tint of the graph's
+//! public inputs.
 
 use serde::{
     Deserialize,
@@ -31,12 +29,9 @@ pub mod parse;
 pub mod validate;
 pub mod value;
 
-/// File extension for a hand-written shader graph source: Hyper-Space
-/// Shader, HSD's shader format for The Wired.
 pub const EXTENSION: &str = "hss";
-/// Per-network node cap: shader cost is a static function of node count
-/// alone, and surface/displacement run as different shader stages with
-/// independent budgets.
+/// Per-network node cap; surface and displacement run as different stages
+/// with independent budgets.
 pub const MAX_NODES: usize = 128;
 /// Texture-sample node cap. Surface only — see
 /// [`validate::error::GraphError::TextureSampleInDisplacement`].

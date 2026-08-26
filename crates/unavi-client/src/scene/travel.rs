@@ -11,12 +11,12 @@ use crate::scene::{
 };
 
 /// Emergency travel: unloads the current space and re-enters limbo targeting
-/// `target`, so arrival runs through the same load-gated respawn (and thus
-/// spawn-point) path as initial space entry. Other spaces are left untouched.
+/// `target`, so arrival runs the same load-gated respawn path as initial
+/// space entry.
 ///
-/// Travelling to the space already stood in reloads it: the old entity is
-/// dropped and read back fresh, which is the only way to ask for a space again
-/// after a script or a peer has left it in a state worth abandoning.
+/// Travelling to the space already stood in drops and re-reads its entity,
+/// which is the only way to ask for a space again after a script or peer has
+/// left it in a state worth abandoning.
 pub fn drive_travel(
     mut pending: ResMut<PendingTravel>,
     state: Res<State<SceneState>>,

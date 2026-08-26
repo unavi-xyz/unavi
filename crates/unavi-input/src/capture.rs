@@ -6,18 +6,15 @@ use crate::cursor_lock::CursorGrabState;
 /// Whether something drawn over the world holds the input.
 ///
 /// While it does, every action reads as released and no pointer of ours aims
-/// at anything: what was mid-press unwinds through the release it would have
-/// got anyway, and nothing new reaches the scene. The overlay itself is left
-/// to Bevy's own mouse pointer, which no backend of ours ever answers.
+/// at anything; the overlay itself is left to Bevy's own mouse pointer, which
+/// no backend of ours ever answers.
 #[derive(Resource, Default)]
 pub struct Captured(pub bool);
 
-/// Run condition for anything reading a raw input the scene acts on, which is
-/// the wheel and nothing else: every other source arrives as an action, and
-/// those are silenced at their own end.
-///
-/// An app without [`InputPlugin`](crate::InputPlugin) has nothing that could
-/// take the input, so the scene has it.
+/// Run condition for anything reading raw input the scene acts on, which is
+/// the wheel: every other source arrives as an action, silenced at its own
+/// end. An app without [`InputPlugin`](crate::InputPlugin) has nothing that
+/// could take the input, so the scene has it.
 #[must_use]
 pub fn scene_has_input(captured: Option<Res<Captured>>) -> bool {
     captured.is_none_or(|held| !held.0)
@@ -25,9 +22,8 @@ pub fn scene_has_input(captured: Option<Res<Captured>>) -> bool {
 
 /// An overlay that covers the world holds the input outright.
 ///
-/// An `egui` window only holds it once the cursor is free, since a locked
-/// cursor is parked at the middle of the screen and may be sitting over one
-/// without anybody pointing at it.
+/// An `egui` window only holds it once the cursor is free: a locked cursor is
+/// parked mid-screen and may sit over a window without anybody pointing at it.
 pub fn read(
     #[cfg(feature = "devtools")] overlay: Option<Res<unavi_devtools::overlay::DevToolsActive>>,
     #[cfg(feature = "egui-filter")] egui: Option<Res<bevy_egui::input::EguiWantsInput>>,

@@ -108,8 +108,6 @@ pub fn setup_vrm_eye_offset(
         let _world_scale = WorldScale::new(config.real_height, vrm_height);
         // TODO: Properly calculate and apply world scale.
 
-        // Root the avatar's feet at the floor beneath the body, which floats at
-        // `float_height`, and hang the camera at eye height above the floor.
         let float_height = config.float_height();
         let avatar_y_in_rig = -float_height - lowest_y;
         let head_y_in_rig = vrm_height - float_height;
@@ -155,8 +153,7 @@ pub fn setup_vrm_eye_offset(
 }
 
 /// A VRM whose eye, head or shoulder bones are missing or coincident yields a
-/// NaN or zero capsule, which reaches the solver as a NaN pose. The rig keeps
-/// whichever collider it already had rather than take one.
+/// NaN or zero capsule, which reaches the solver as a NaN pose.
 fn swap_rig_shapes(
     rig: Entity,
     radius: f32,
@@ -213,8 +210,6 @@ mod tests {
         },
     };
 
-    /// Builds the agent rig with the avatar's root at world height `avatar_y`,
-    /// and returns the agent and avatar entities.
     fn spawn_rig(app: &mut App, avatar_y: f32) -> (Entity, Entity) {
         let agent = app
             .world_mut()
@@ -281,8 +276,6 @@ mod tests {
         (agent, avatar)
     }
 
-    /// Runs the eye offset once and returns the resolved eye height and the
-    /// avatar's offset within the rig.
     fn run_offset(app: &mut App, agent: Entity, avatar: Entity) -> (f32, f32) {
         app.update();
         app.world_mut()
@@ -301,8 +294,6 @@ mod tests {
 
     #[test]
     fn eye_offset_is_independent_of_world_position() {
-        // The rig loads while the agent is parked in limbo or already standing
-        // in a space; the offsets must not change between the two.
         let limbo = {
             let mut app = App::new();
             app.add_plugins((TransformPlugin, StatesPlugin));
@@ -328,8 +319,6 @@ mod tests {
         let (agent, avatar) = spawn_rig(&mut app, 0.0);
         let (vrm_height, avatar_y_in_rig) = run_offset(&mut app, agent, avatar);
 
-        // The avatar's feet are at the avatar root; with the body resting at
-        // `float_height`, the feet must land on the floor.
         let config = app.world().get::<AgentConfig>(agent).expect("config");
         let float_height = config.float_height();
         let feet_y = float_height + avatar_y_in_rig;
@@ -338,7 +327,6 @@ mod tests {
             "feet at {feet_y} should touch the floor"
         );
 
-        // The camera hangs at eye height above the floor.
         let head_y_in_rig = vrm_height - float_height;
         let camera_y = float_height + head_y_in_rig;
         assert!((camera_y - vrm_height).abs() < 1.0e-4);

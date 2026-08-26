@@ -128,7 +128,8 @@ impl Plugin for UnaviPlugin {
             .world()
             .resource::<unavi_identity::LocalIdentity>()
             .0
-            .endpoint_key();
+            .endpoint()
+            .clone();
 
         app.world_mut().trigger(LoadEndpoint {
             filter: AddrFilter::default(),

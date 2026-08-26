@@ -9,9 +9,8 @@ type Fut = Pin<Box<dyn Future<Output = ()> + Send>>;
 
 /// Handoff to the executor, unbounded.
 ///
-/// Bevy systems spawn tasks from the main thread, so a bound here is a bound
-/// on how long the frame loop may be parked. Nothing accumulates: the receiver
-/// only hands each future on, and backpressure belongs on what the tasks do.
+/// A bound here is a bound on how long the frame loop may be parked;
+/// backpressure belongs on what the tasks do.
 pub static ASYNC_TASK: LazyLock<Sender<Fut>> = LazyLock::new(|| {
     let (tx, rx) = async_channel::unbounded();
 

@@ -25,13 +25,9 @@ const HELD_BACK: [&str; 6] = [
 
 /// Takes the browser's defaults away one at a time.
 ///
-/// Winit's own is all of them or none, and all of them is a page that cannot
-/// be reloaded or inspected, so `prevent_default_event_handling` is off and
-/// what the app binds is held back here: the keys above, the right-click menu
-/// the grip is bound to, and the wheel that reaches scripts as an action.
-///
-/// Focus comes with it. Winit takes it in the same breath as suppressing the
-/// press, and a canvas nobody focused hears no keyboard at all.
+/// Winit's own is all of them or none, and `prevent_default_event_handling`
+/// is left off, so what the app binds is held back here. Focus comes with it:
+/// a canvas nobody focused hears no keyboard at all.
 pub fn hold_back_bound_defaults() {
     let Some(canvas) = web_sys::window()
         .and_then(|window| window.document())

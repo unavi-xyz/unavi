@@ -1,13 +1,9 @@
-//! Tags that name an expiry rather than an owner.
+//! Tags naming an expiry rather than an owner: the one dated GC root.
 //!
-//! Every other root is structural: derived from something that owns the content
-//! and swept when that owner is gone. Content read through the blob API has no
-//! such owner — nothing references it, so it is collectible the moment the read
-//! returns and re-reading it re-downloads it. These tags are the one dated
-//! root, and they cover both that window and the warm period after it.
-//!
-//! The deadline is fixed-width and leads the name, so lexicographic tag order
-//! is chronological and the sweep is a single range delete.
+//! Content read through the blob API has no owning root — it would be
+//! collectible the moment the read returns. The deadline is fixed-width and
+//! leads the name, so lexicographic tag order is chronological and the sweep
+//! is a single range delete.
 
 use std::time::Duration;
 
@@ -19,9 +15,9 @@ pub const DEFAULT_TTL: Duration = Duration::from_mins(10);
 
 const PREFIX: &str = "cache/";
 
-/// Deadlines round up to this, so re-reading a blob rewrites the name it
-/// already wrote rather than having to find and delete the one it replaces.
-/// Live tags per hash are bounded by the ttl divided by this.
+/// Deadlines round up to this granularity, so re-reads within a bucket rewrite
+/// the same tag instead of finding and deleting its predecessor. Live tags per
+/// hash are bounded by ttl divided by this.
 const BUCKET: i64 = 600;
 
 /// Wide enough for any `i64` second count, so every deadline pads to the same
@@ -39,9 +35,9 @@ fn deadline(ttl: Duration, now: i64) -> i64 {
 
 /// Roots `hash` for at least `ttl`.
 ///
-/// Called before a fetch rather than after it: `Downloader::download` takes no
-/// tag of its own and the GC sweep lists partially written blobs, so a pass
-/// landing mid-download deletes the content out from under the fetch.
+/// Called before a fetch, not after: `Downloader::download` takes no tag of its
+/// own and the sweep lists partially written blobs, so a pass landing
+/// mid-download would delete the content out from under the fetch.
 pub async fn touch(blobs: &BlobStore, hash: Hash, ttl: Duration) -> anyhow::Result<()> {
     let deadline = deadline(ttl, OffsetDateTime::now_utc().unix_timestamp());
     blobs

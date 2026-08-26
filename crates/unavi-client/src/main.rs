@@ -28,43 +28,9 @@ struct Args {
 }
 
 fn main() {
-    #[cfg(not(target_family = "wasm"))]
-    let args = Args::parse();
-
-    #[cfg(target_family = "wasm")]
-    let args = {
-        let window = web_sys::window().expect("get window");
-        let search = window.location().search().expect("get search");
-        let params = web_sys::UrlSearchParams::new_with_str(&search).expect("parse search params");
-
-        let mut argv = vec!["app".to_string()];
-
-        for key in params.keys() {
-            let Ok(key) = key else {
-                continue;
-            };
-            let Some(key) = key.as_string() else {
-                continue;
-            };
-            let Some(value) = params.get(&key) else {
-                continue;
-            };
-            argv.push(format!("--{key}"));
-
-            if !value.is_empty() {
-                argv.push(value);
-            }
-        }
-
-        web_sys::console::log_1(&format!("URL params: {:?}", &argv[1..]).into());
-
-        match Args::try_parse_from(argv) {
-            Ok(a) => a,
-            Err(err) => {
-                web_sys::console::warn_1(&format!("Error parsing params: {err}").into());
-                Args::parse()
-            }
-        }
+    let args = cfg_select! {
+        target_family = "wasm" => parse_args_wasm(),
+        _ => Args::parse(),
     };
 
     let log_level = if args.debug_log {
@@ -86,4 +52,40 @@ fn main() {
     unavi_wasm_compat::sleep_thread(Duration::from_millis(200));
 
     info!("Graceful exit");
+}
+
+#[cfg(target_family = "wasm")]
+fn parse_args_wasm() -> Args {
+    let window = web_sys::window().expect("get window");
+    let search = window.location().search().expect("get search");
+    let params = web_sys::UrlSearchParams::new_with_str(&search).expect("parse search params");
+
+    let mut argv = vec!["app".to_string()];
+
+    for key in params.keys() {
+        let Ok(key) = key else {
+            continue;
+        };
+        let Some(key) = key.as_string() else {
+            continue;
+        };
+        let Some(value) = params.get(&key) else {
+            continue;
+        };
+        argv.push(format!("--{key}"));
+
+        if !value.is_empty() {
+            argv.push(value);
+        }
+    }
+
+    web_sys::console::log_1(&format!("URL params: {:?}", &argv[1..]).into());
+
+    match Args::try_parse_from(argv) {
+        Ok(a) => a,
+        Err(err) => {
+            web_sys::console::warn_1(&format!("Error parsing params: {err}").into());
+            Args::parse()
+        }
+    }
 }

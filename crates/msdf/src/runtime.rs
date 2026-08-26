@@ -1,6 +1,6 @@
 //! The dynamic atlas: a closed budget of pages that generates glyphs on
-//! demand. Text is untrusted, so every allocation and every request goes
-//! through a hard cap; nothing here grows without bound.
+//! demand. Every allocation and every request goes through a hard cap;
+//! nothing here grows without bound.
 //!
 //! Residency is a cache. A glyph a mesh draws is pinned; once nothing draws it
 //! it cools for [`RuntimeOpts::residency`] seconds, after which pressure may
@@ -119,8 +119,7 @@ pub struct DirtyRect {
     pub h:    u32,
 }
 
-/// A read-only view of the caps and their current use, for the dev tools and
-/// a future per-document quota.
+/// A read-only view of the caps and their current use.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Budget {
     pub max_pages:     usize,

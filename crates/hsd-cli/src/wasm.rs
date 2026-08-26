@@ -21,8 +21,7 @@ use crate::cargo::{
 /// Builds a wasm component, returning its bytes.
 ///
 /// Bytes rather than a hash: a script is the value of its own
-/// `p/<prim>/script/` entry, so nothing addresses it by hash on disk and the
-/// build directory holds no loose blob files.
+/// `p/<prim>/script/` entry, so nothing addresses it by hash on disk.
 ///
 /// Assumes the process's current directory is the workspace root: both the
 /// `target/` build output and the jco adapter path below are workspace-root

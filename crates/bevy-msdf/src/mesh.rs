@@ -45,12 +45,8 @@ pub fn build(laid: &Laid, anchor: Anchor) -> Mesh {
     build_quads(&laid.quads, anchor.offset(laid))
 }
 
-/// One mesh per font and page, so each page is drawn with the image that holds
-/// it.
-///
-/// Quads from different pages — or different fonts in a fallback stack — share
-/// a plane but sample different textures, so they cannot share a mesh. The key
-/// is `(font, page)`.
+/// One mesh per `(font, page)`, since quads sharing a plane may sample
+/// different textures.
 #[must_use]
 pub fn page_meshes(laid: &Laid, anchor: Anchor) -> Vec<((u32, u32), Mesh)> {
     let raise = anchor.offset(laid);

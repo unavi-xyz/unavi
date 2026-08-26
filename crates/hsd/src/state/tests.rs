@@ -483,9 +483,6 @@ fn the_save_set_round_trips_through_a_fresh_state() {
     assert_eq!(original.entries(), restored.entries());
 }
 
-/// A chain deeper than the cap holds its tail rather than realizing it, so a
-/// hostile document cannot force an unbounded walk or an unbounded ECS
-/// hierarchy.
 #[test]
 fn nesting_past_the_depth_cap_is_not_realized() {
     let mut state = SceneState::new();

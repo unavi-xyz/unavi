@@ -94,11 +94,9 @@ pub fn spawn_gossip(trigger: On<Add, IrohEndpoint>, mut commands: Commands) {
     commands.entity(trigger.entity).insert(GossipSender(tx));
 }
 
-/// Adopts the data store's gossip rather than spawning one.
-///
-/// `iroh_gossip::ALPN` can be accepted once per router. A second instance
-/// would capture inbound connections, silently dropping the loser's presence
-/// broadcasts while iroh-docs keeps working on the winner.
+/// Adopts the data store's gossip rather than spawning one: `iroh_gossip::ALPN`
+/// can be accepted once per router, and the loser of that race silently drops
+/// its presence broadcasts.
 pub fn adopt_gossip(
     endpoints: Query<Entity, (With<IrohEndpoint>, Without<IrohGossip>)>,
     stores: Query<&LocalGossip>,
@@ -113,11 +111,9 @@ pub fn adopt_gossip(
     }
 }
 
-/// Subscribes every space that is not subscribed yet.
-///
-/// A pass rather than an observer: gossip is built asynchronously, so a space
-/// entered before it is ready would be dropped by a hook that fires once. An
-/// unsubscribed space broadcasts nothing and hears nothing.
+/// Subscribes every space that is not subscribed yet. A pass rather than an
+/// observer, since gossip is built asynchronously; an unsubscribed space
+/// broadcasts nothing and hears nothing.
 pub fn join_space_topics(
     spaces: Query<(Entity, &Space), Without<SpaceGossipCancel>>,
     sender: Query<&GossipSender>,

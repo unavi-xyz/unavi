@@ -62,16 +62,13 @@ const PROMOTION_WINDOW: Duration = Duration::from_millis(500);
 
 /// Squeezes that found nothing to carry.
 ///
-/// A script only learns of a grab after the observer has run, so it cannot
-/// make something grabbable in time; the squeeze stays pending until a body
-/// appears.
+/// A script only learns of a grab after the observer has run, so the squeeze
+/// stays pending until a grabbable body appears under its pointer.
 #[derive(Resource, Default)]
 struct PendingGrabs {
     grabs:    Vec<PendingGrab>,
-    /// Bodies that recently became grabbable. A waiting squeeze may latch onto
-    /// one under its pointer even when its own ray hit something else. Bounded
-    /// to recent promotions so a held squeeze cannot claim a body it merely
-    /// swept over.
+    /// Bodies that recently became grabbable. Bounded to recent promotions so
+    /// a held squeeze cannot claim a body it merely swept over.
     promoted: Vec<(Entity, Duration)>,
 }
 
@@ -377,9 +374,8 @@ fn on_release(
 const REACH_STEP: f32 = 0.1;
 const MIN_REACH: f32 = 0.3;
 
-/// Scrolls a held object in or out by scaling its hold offset. Capped at the
-/// pointer's own reach, so an object can only be scrolled as far as it could
-/// have been grabbed.
+/// Scrolls a held object in or out by scaling its hold offset, capped at the
+/// pointer's own reach.
 fn reach_grabbed_objects(
     mut wheel: MessageReader<bevy::input::mouse::MouseWheel>,
     objects: Query<&mut Grabbed>,

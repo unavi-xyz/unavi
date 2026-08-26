@@ -25,7 +25,7 @@ use wds::{
     DataStore,
     actor::Actor,
     identity::{
-        RootIdentity,
+        WdsIdentity,
         store::KeyStorage,
     },
 };
@@ -66,7 +66,7 @@ fn build_wds(storage: Option<PathBuf>) -> TestWds {
         } else {
             KeyStorage::Ephemeral
         };
-        let identity = Arc::new(RootIdentity::load(&key_storage).expect("identity"));
+        let identity = Arc::new(WdsIdentity::load(&key_storage).expect("identity"));
 
         let builder = DataStore::builder(endpoint.clone(), identity);
         let persistent = storage.is_some();

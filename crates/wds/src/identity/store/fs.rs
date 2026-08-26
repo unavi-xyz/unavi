@@ -2,25 +2,18 @@
 use std::{
     fs::OpenOptions,
     io::Write,
-    path::{
-        Path,
-        PathBuf,
-    },
-    str::FromStr,
+    path::Path,
 };
 
-use iroh_docs::NamespaceId;
+use iroh::SecretKey;
 use xdid::methods::key::keys::{
     DidKeyPair,
     p256::P256KeyPair,
 };
 use zeroize::Zeroizing;
 
-use crate::identity::store::DeviceSeed;
-
 const KEY_FILE: &str = "key.pem";
-const SEED_FILE: &str = "device.seed";
-const NAMESPACE_DIR: &str = "namespaces";
+const ENDPOINT_FILE: &str = "endpoint.key";
 
 pub fn load_or_create(dir: &Path) -> anyhow::Result<P256KeyPair> {
     let path = dir.join(KEY_FILE);
@@ -36,48 +29,24 @@ pub fn load_or_create(dir: &Path) -> anyhow::Result<P256KeyPair> {
     Ok(pair)
 }
 
-/// Deleting [`SEED_FILE`] is how a device rotates: the next load writes a new
-/// seed, and with it a new endpoint id and author id.
-pub fn load_or_create_seed(dir: &Path) -> anyhow::Result<DeviceSeed> {
-    let path = dir.join(SEED_FILE);
+/// Deleting [`ENDPOINT_FILE`] is how a device rotates: the next load writes a
+/// new key, and with it a new `EndpointId` and author id.
+pub fn load_or_create_endpoint(dir: &Path) -> anyhow::Result<SecretKey> {
+    let path = dir.join(ENDPOINT_FILE);
 
     if let Ok(bytes) = std::fs::read(&path)
         && let Ok(bytes) = <[u8; 32]>::try_from(bytes.as_slice())
     {
-        return Ok(DeviceSeed::from_bytes(bytes));
+        return Ok(SecretKey::from_bytes(&bytes));
     }
 
     std::fs::create_dir_all(dir)?;
-    let seed = DeviceSeed::generate();
-    // Truncating rather than `create_new`: a seed too short to parse is a
+    let key = SecretKey::generate();
+    // Remove-then-write rather than `create_new`: an unparsable key is a
     // partial write, and rewriting it costs only a new endpoint id.
     let _ = std::fs::remove_file(&path);
-    write_secret(&path, seed.as_bytes())?;
-    Ok(seed)
-}
-
-/// A label is a document's name, so it is also its file's name. Labels come
-/// from [`crate::identity::labels`] and never from a peer, so the only
-/// separator to fold away is the one they use themselves.
-fn namespace_path(dir: &Path, label: &str) -> PathBuf {
-    dir.join(NAMESPACE_DIR).join(label.replace('/', "_"))
-}
-
-pub fn load_namespace(dir: &Path, label: &str) -> anyhow::Result<Option<NamespaceId>> {
-    let Ok(text) = std::fs::read_to_string(namespace_path(dir, label)) else {
-        return Ok(None);
-    };
-    Ok(NamespaceId::from_str(text.trim()).ok())
-}
-
-pub fn save_namespace(dir: &Path, label: &str, ns: NamespaceId) -> anyhow::Result<()> {
-    let path = namespace_path(dir, label);
-    std::fs::create_dir_all(
-        path.parent()
-            .ok_or_else(|| anyhow::anyhow!("namespace path has no parent"))?,
-    )?;
-    std::fs::write(path, ns.to_string())?;
-    Ok(())
+    write_secret(&path, &key.to_bytes())?;
+    Ok(key)
 }
 
 fn write_secret(path: &Path, bytes: &[u8]) -> anyhow::Result<()> {
@@ -137,20 +106,20 @@ mod tests {
     }
 
     #[test]
-    fn a_seed_survives_a_reload_and_rotates_when_deleted() {
+    fn an_endpoint_key_survives_a_reload_and_rotates_when_deleted() {
         let dir = tempdir().expect("temp dir");
 
-        let created = load_or_create_seed(dir.path()).expect("create seed");
-        let reloaded = load_or_create_seed(dir.path()).expect("load seed");
-        assert_eq!(created.as_bytes(), reloaded.as_bytes());
+        let created = load_or_create_endpoint(dir.path()).expect("create key");
+        let reloaded = load_or_create_endpoint(dir.path()).expect("load key");
+        assert_eq!(created.to_bytes(), reloaded.to_bytes());
 
-        std::fs::remove_file(dir.path().join(SEED_FILE)).expect("rotate");
-        let rotated = load_or_create_seed(dir.path()).expect("create seed");
+        std::fs::remove_file(dir.path().join(ENDPOINT_FILE)).expect("rotate");
+        let rotated = load_or_create_endpoint(dir.path()).expect("create key");
 
         assert_ne!(
-            created.as_bytes(),
-            rotated.as_bytes(),
-            "deleting the seed is how a device takes a new endpoint id"
+            created.to_bytes(),
+            rotated.to_bytes(),
+            "deleting the endpoint key is how a device takes a new endpoint id"
         );
         assert_eq!(
             load_or_create(dir.path())
@@ -167,28 +136,28 @@ mod tests {
 
     #[cfg(unix)]
     #[test]
-    fn seed_file_is_owner_only() {
+    fn endpoint_key_file_is_owner_only() {
         let dir = tempdir().expect("temp dir");
-        load_or_create_seed(dir.path()).expect("create seed");
+        load_or_create_endpoint(dir.path()).expect("create key");
 
-        let meta = std::fs::metadata(dir.path().join(SEED_FILE)).expect("metadata");
+        let meta = std::fs::metadata(dir.path().join(ENDPOINT_FILE)).expect("metadata");
 
         assert_eq!(meta.permissions().mode() & 0o777, 0o600);
     }
 
     #[test]
-    fn a_truncated_seed_is_replaced() {
+    fn a_truncated_endpoint_key_is_replaced() {
         let dir = tempdir().expect("temp dir");
         std::fs::create_dir_all(dir.path()).expect("mkdir");
-        std::fs::write(dir.path().join(SEED_FILE), b"short").expect("write");
+        std::fs::write(dir.path().join(ENDPOINT_FILE), b"short").expect("write");
 
-        let seed = load_or_create_seed(dir.path()).expect("create seed");
+        let key = load_or_create_endpoint(dir.path()).expect("create key");
 
         assert_eq!(
-            seed.as_bytes(),
-            load_or_create_seed(dir.path())
-                .expect("load seed")
-                .as_bytes(),
+            key.to_bytes(),
+            load_or_create_endpoint(dir.path())
+                .expect("load key")
+                .to_bytes(),
             "a partial write is rewritten rather than failing every later load"
         );
     }

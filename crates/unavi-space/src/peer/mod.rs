@@ -62,8 +62,7 @@ pub fn capture_self_identity(trigger: On<Add, LocalActor>, actors: Query<&LocalA
         let identity = actor.0.identity();
         unavi_policy::identity::set_self(identity.did().clone());
         *SELF_IDENTITY.write().expect("SELF_IDENTITY poisoned") = Some(Arc::clone(identity));
-        // Scores are measured from the local DID, so nothing could be computed
-        // until it existed.
+        // Trust scores key off the local DID, which did not exist until now.
         unavi_policy::trust::recompute(&[]);
     }
 }

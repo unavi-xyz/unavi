@@ -70,9 +70,8 @@ impl Staged {
     }
 }
 
-/// Drops what a held document's writes emitted. Nothing is listening, and
-/// placing it re-emits the scene in full, so keeping them would only grow a
-/// buffer for as long as the document stays out of the world.
+/// Drops what a held document's writes emitted: nothing listens while it is
+/// out of the world, and placing it re-emits the scene in full.
 pub fn discard_held_events(held: Query<&HsdHeld>) {
     for doc in &held {
         let Ok(mut state) = doc.0.lock() else {

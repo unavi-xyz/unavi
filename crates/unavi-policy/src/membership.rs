@@ -177,8 +177,6 @@ mod tests {
             .id();
         app.world_mut().entity_mut(space).insert(Space(ns));
 
-        // Owned but not a descendant, which is what outlives the space and keeps
-        // falling once its ground is gone.
         let doc = app.world_mut().spawn(SpaceOwner(space)).id();
 
         app.world_mut().entity_mut(space).despawn();
@@ -187,8 +185,8 @@ mod tests {
         assert!(app.world().get_entity(doc).is_err());
     }
 
-    /// A script's scratch documents are spawned with an id and never given a
-    /// `SpaceOwner`, so a registry keyed to that relation alone grows forever.
+    /// Scratch documents are spawned with an id and never given a
+    /// `SpaceOwner`; the record must still drop on despawn.
     #[test]
     fn a_document_that_never_joined_a_space_still_drops_its_record() {
         let mut app = app();

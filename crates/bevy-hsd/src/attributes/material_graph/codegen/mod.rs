@@ -96,9 +96,8 @@ pub fn generate_fragment_shader(graph: &ShaderGraph, validated: &Validated) -> S
 /// The full vertex shader, generated only when a graph has a
 /// `DisplacementGraph`.
 ///
-/// Modeled on `bevy_pbr`'s default `mesh.wgsl` vertex function rather than
-/// reimplementing mesh-transform logic. Skinning and morph targets are out of
-/// scope; this targets the static-mesh path only.
+/// Targets the static-mesh path only; skinning and morph targets are out of
+/// scope.
 ///
 /// `None` for a graph with no displacement network, where the mesh pipeline's
 /// own vertex shader runs unmodified.

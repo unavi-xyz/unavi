@@ -1,6 +1,4 @@
-//! Pins the avian behaviour the collision-layer design rests on: whether a
-//! collider with no rigid body blocks a dynamic body, and whether it is still
-//! found by raycasts.
+//! Pins the avian behaviour the collision-layer design rests on.
 
 use avian3d::prelude::*;
 use bevy::prelude::*;
@@ -30,9 +28,8 @@ fn step(app: &mut App, times: usize) {
     }
 }
 
-/// A collider with no rigid body is **not** static geometry — it takes part
-/// in no collision response at all. UI bodies therefore need no sensor flag
-/// to avoid shoving the player; a bare collider is already query-only.
+/// A collider with no rigid body takes part in no collision response at all,
+/// so UI bodies need no sensor flag to avoid shoving the player.
 #[test]
 fn a_collider_without_a_rigid_body_blocks_nothing() {
     let mut app = app();

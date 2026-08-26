@@ -8,10 +8,7 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use wds::{
-    DataStore,
-    identity::labels,
-};
+use wds::DataStore;
 
 use crate::{
     catalog::Catalog,
@@ -50,23 +47,33 @@ fn active_key(rank: usize, ns: NamespaceId) -> String {
     format!("{ACTIVE_PREFIX}{rank:08}/{ns}")
 }
 
-/// Opens a view doc and enrols it in this node's sync set; a namespace
-/// outside the set rejects reads with `NotFound`.
-///
-/// The namespace is minted once and remembered, so the ids a client synced last
-/// week still name these docs after a redeploy.
-async fn open_view(store: &DataStore, label: &str) -> anyhow::Result<NamespaceId> {
-    let doc = store.well_known(label).await?;
+/// Reopens the view named by `existing` and enrols it in this node's sync
+/// set, so incoming requests for it are answered; a namespace outside the set
+/// rejects reads with `NotFound`. A missing or unheld id mints a fresh view,
+/// and the new ids are reported back to the operator for persistence.
+async fn open_view(
+    store: &DataStore,
+    existing: Option<NamespaceId>,
+) -> anyhow::Result<NamespaceId> {
+    let held = match existing {
+        Some(ns) => store.docs().api().open(ns).await?,
+        None => None,
+    };
+
+    let doc = match held {
+        Some(doc) => doc,
+        None => store.docs().api().create().await?,
+    };
     doc.start_sync(Vec::new()).await?;
     Ok(doc.id())
 }
 
 impl Views {
-    pub async fn create(store: &DataStore) -> anyhow::Result<Self> {
-        let recent = open_view(store, labels::REGISTRY_VIEW_RECENT).await?;
-        let featured = open_view(store, labels::REGISTRY_VIEW_FEATURED).await?;
-        let categories = open_view(store, labels::REGISTRY_VIEW_CATEGORIES).await?;
-        let active = open_view(store, labels::REGISTRY_VIEW_ACTIVE).await?;
+    pub async fn create(store: &DataStore, existing: Option<ViewIds>) -> anyhow::Result<Self> {
+        let recent = open_view(store, existing.map(|v| v.recent)).await?;
+        let featured = open_view(store, existing.map(|v| v.featured)).await?;
+        let categories = open_view(store, existing.map(|v| v.categories)).await?;
+        let active = open_view(store, existing.map(|v| v.active)).await?;
 
         Ok(Self {
             ids: ViewIds {

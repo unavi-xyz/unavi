@@ -13,41 +13,41 @@ workspace = true
 devtools = ["dep:unavi-devtools"]
 
 [dependencies]
-anyhow.workspace           = true
-async-channel.workspace    = true
-avian3d.workspace          = true
-bevy.workspace             = true
-bevy-hsd.path              = "../bevy-hsd"
-bevy-iroh.path             = "../bevy-iroh"
-bevy-wds.path              = "../bevy-wds"
-blake3.workspace           = true
-bytes.workspace            = true
-half                       = { features = ["serde"], version = "2.7.1" }
-hsd.path                   = "../hsd"
-iroh.workspace             = true
-iroh-docs.workspace        = true
-iroh-gossip                = { features = ["net"], workspace = true }
-n0-future.workspace        = true
-parking_lot.workspace      = true
-postcard.workspace         = true
-rand.workspace             = true
-serde.workspace            = true
-serde_vrm                  = "0.4.0"
-thiserror.workspace        = true
-time.workspace             = true
-tokio.workspace            = true
-tracing.workspace          = true
-unavi-agent.path           = "../unavi-agent"
-unavi-avatar               = { path = "../unavi-avatar", version = "0.0.16" }
-unavi-devtools             = { optional = true, path = "../unavi-devtools" }
-unavi-manifold             = { path = "../unavi-manifold", version = "0.0.16" }
-unavi-policy.path          = "../unavi-policy"
-unavi-quota.path           = "../unavi-quota"
-unavi-registry.path        = "../unavi-registry"
-unavi-util.path            = "../unavi-util"
-wds.path                   = "../wds"
-web-time.workspace         = true
-xdid.workspace             = true
+anyhow.workspace        = true
+async-channel.workspace = true
+avian3d.workspace       = true
+bevy.workspace          = true
+bevy-hsd.path           = "../bevy-hsd"
+bevy-iroh.path          = "../bevy-iroh"
+bevy-wds.path           = "../bevy-wds"
+blake3.workspace        = true
+bytes.workspace         = true
+half                    = { features = ["serde"], version = "2.7.1" }
+hsd.path                = "../hsd"
+iroh.workspace          = true
+iroh-docs.workspace     = true
+iroh-gossip             = { features = ["net"], workspace = true }
+n0-future.workspace     = true
+parking_lot.workspace   = true
+postcard.workspace      = true
+rand.workspace          = true
+serde.workspace         = true
+serde_vrm               = "0.4.0"
+thiserror.workspace     = true
+time.workspace          = true
+tokio.workspace         = true
+tracing.workspace       = true
+unavi-agent.path        = "../unavi-agent"
+unavi-avatar            = { path = "../unavi-avatar", version = "0.0.16" }
+unavi-devtools          = { optional = true, path = "../unavi-devtools" }
+unavi-manifold          = { path = "../unavi-manifold", version = "0.0.16" }
+unavi-policy.path       = "../unavi-policy"
+unavi-quota.path        = "../unavi-quota"
+unavi-registry.path     = "../unavi-registry"
+unavi-util.path         = "../unavi-util"
+wds.path                = "../wds"
+web-time.workspace      = true
+xdid.workspace          = true
 
 # Without this `OffsetDateTime::now_utc` reads the unimplemented wasm clock.
 [target.'cfg(target_family = "wasm")'.dependencies]

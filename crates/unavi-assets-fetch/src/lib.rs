@@ -1,8 +1,7 @@
 //! The UNAVI manifest over iroh, and the fonts every app draws text with.
 //!
-//! One plugin, [`UnaviAssetsPlugin`], both registers the `iroh://` asset source
-//! for the manifest and requests the fallback font stack, so a client or an
-//! example adds it and gets every content-addressed asset plus working text.
+//! [`UnaviAssetsPlugin`] registers the `iroh://` asset source and requests the
+//! fallback font stack.
 
 use bevy::prelude::*;
 use bevy_iroh_assets::IrohAssetsPlugin;
@@ -40,8 +39,7 @@ pub struct UnaviAssetsPlugin;
 
 impl Plugin for UnaviAssetsPlugin {
     fn build(&self, app: &mut App) {
-        // Registers the `iroh://` asset source, which must exist before
-        // `AssetPlugin` builds the sources it knows about.
+        // Must exist before `AssetPlugin` builds the sources it knows about.
         app.add_plugins(IrohAssetsPlugin::new(MANIFEST))
             .add_systems(Startup, load_font_stack);
     }

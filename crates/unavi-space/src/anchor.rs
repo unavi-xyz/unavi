@@ -97,8 +97,8 @@ pub fn release_anchor(
     }
 }
 
-/// Positions every space on a rigid grid lattice, translated so the active
-/// space sits at the origin. [`recenter_active_space`] shifts bodies to match.
+/// Positions every space on the grid lattice relative to the active space,
+/// which sits at the origin; [`recenter_active_space`] shifts bodies to match.
 pub fn apply_anchor_offsets(
     active: Res<ActiveSpace>,
     mut spaces: Query<(Entity, &SpaceAnchor, &mut Transform), With<Space>>,
@@ -220,7 +220,7 @@ pub fn recenter_active_space(
         }
     }
 
-    // The agent body's `Position` is stale after a seam teleport; resync it from
+    // The agent body's `Position` is stale after a seam teleport; resync from
     // the shifted `Transform`.
     if let Ok((_, mut position, transform, prev)) = bodies.get_mut(body) {
         if let Some(mut transform) = transform {
@@ -334,8 +334,6 @@ mod tests {
         let b_pos = translation(&app, b);
         assert_eq!(app.world().resource::<ActiveSpace>().0, Some(a));
 
-        // Agent body in b's cell plus an unrelated body; the body's `Position` is
-        // deliberately stale to prove it resyncs from the transform.
         let local = Vec3::new(2.0, 0.0, -1.0);
         let stale = Vec3::new(7.0, 0.0, 7.0);
         let body = app
@@ -388,7 +386,7 @@ mod tests {
             ))
             .id();
 
-        // A root body must have its `Transform` shifted this frame, before any
+        // A root body's `Transform` must shift this frame, before any
         // fixed-tick writeback.
         let world = Vec3::new(50.0, 0.0, -10.0);
         let root = app
@@ -432,7 +430,7 @@ mod tests {
             .id();
 
         // A body parented to a space rides its transform, so only `Position`
-        // shifts; the local `Transform` stays put.
+        // shifts.
         let child_local = Vec3::new(3.0, 0.0, 4.0);
         let child = app
             .world_mut()
@@ -475,8 +473,8 @@ mod tests {
             ))
             .id();
 
-        // A prim under a plain (non-physics) container rides nothing, so its local
-        // `Transform` must be shifted directly this frame.
+        // A prim under a plain (non-physics) container rides nothing; its local
+        // `Transform` must shift directly this frame.
         let root = app
             .world_mut()
             .spawn((Transform::default(), GlobalTransform::default()))
@@ -538,7 +536,7 @@ mod tests {
             ))
             .id();
         // Nested under another physics body: the parent's shift propagates, so
-        // this body's local Transform must stay put to avoid double-shifting.
+        // the local `Transform` stays put to avoid double-shifting.
         let nested_local = Vec3::new(0.5, 0.0, 0.5);
         let nested = app
             .world_mut()

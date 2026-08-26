@@ -20,10 +20,9 @@ pub enum Kind {
 /// Every field except `ns` and `did` is self-declared by the submitter and is
 /// therefore a trust input, not a fact.
 ///
-/// A blob hash may never become a field here. This struct is serialized into an
-/// entry's *content*, and blob GC roots only entry *values*, so a hash carried
-/// inside would name content nothing protects. A preview image belongs under
-/// its own key, whose value is the hash.
+/// A blob hash may never become a field here: blob GC roots are entry *values*
+/// only, not this struct's serialized content, so a hash carried inside would
+/// name content nothing protects. Previews live under their own key.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Submission {
     pub did:         Did,

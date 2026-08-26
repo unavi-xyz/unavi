@@ -18,11 +18,10 @@ use crate::attributes::{
     },
 };
 
-/// The small attribute pairing a graph's per-instance public-input tint.
+/// A prim's per-instance public-input override for its compiled graph.
 ///
-/// Follows `MaterialX`'s "bind a nodegraph, override its public inputs"
-/// pattern. Never carries the graph itself — that is `material:graph_data`,
-/// slot content, since a hash may not appear inside an attribute payload.
+/// Never carries the graph itself — that lives in the `material:graph_data`
+/// slot, since a hash may not appear inside an attribute payload.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct GraphOverridesAttr {
     /// Public-input index -> override value. Empty if the graph's own
@@ -50,9 +49,9 @@ pub enum OverridesError {
 
 /// Cross-checks overrides against the graph they apply to.
 ///
-/// The two are separate entries (an attribute and a slot) that can
-/// arrive out of order or go stale independently, so this is re-run whenever
-/// either changes, not folded into [`super::validate::validate`].
+/// The two are separate entries (an attribute and a slot) that can arrive out
+/// of order or go stale independently, so this runs whenever either changes,
+/// rather than folding into [`super::validate::validate`].
 pub fn validate_overrides(
     graph: &ShaderGraph,
     overrides: &GraphOverridesAttr,

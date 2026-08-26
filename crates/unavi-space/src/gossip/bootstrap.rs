@@ -14,11 +14,8 @@ use tracing::{
 use crate::gossip::GossipCtx;
 
 /// Discovers peers to bootstrap gossip against by asking each followed registry
-/// who is currently in `space`.
-///
-/// Presence is queried rather than synced: it is soft state with a short TTL,
-/// and every returned record is verified against its announcer's DID before it
-/// is trusted enough to dial.
+/// who is currently in `space`. Presence records are soft state with a short
+/// TTL, verified against the announcer's DID before dialing.
 pub async fn find_bootstrap_peers(
     ctx: &GossipCtx,
     space: NamespaceId,

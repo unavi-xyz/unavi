@@ -1,12 +1,9 @@
 //! Entry-level document access.
 //!
 //! Every key is its own entry, so iroh-docs' per-key last-writer-wins merge
-//! resolves concurrent writes between peers; a whole-document snapshot under
-//! one key would let one peer's checkpoint overwrite another's.
-//!
-//! An entry's value is always a blob hash, so a replicating host fetches, tags
-//! and meters every byte without reading any of it. No `deps/`-style
-//! dependency-tracking convention exists.
+//! resolves concurrent writes between peers. An entry's value is always a blob
+//! hash, so a replicating host fetches, tags and meters every byte without
+//! reading any of it; no dependency-tracking convention exists on top.
 
 use std::time::Duration;
 
@@ -47,10 +44,9 @@ pub enum Write {
     Hash { key: String, hash: Hash, size: u64 },
     /// Writes an empty value at the key.
     ///
-    /// The only removal that crosses authors: `del` sweeps the caller's own
-    /// entries only, while the empty entry wins by timestamp and is filtered
-    /// by `get_many`, so every peer reads absence. A bare prefix is the same
-    /// operation, sweeping a whole prim.
+    /// The only removal crossing authors: `del` sweeps the caller's own entries
+    /// only, while the empty entry wins by timestamp and is filtered by
+    /// `get_many`, so every peer reads absence.
     Remove { key: String },
 }
 

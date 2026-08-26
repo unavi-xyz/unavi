@@ -52,9 +52,8 @@ impl GraphValue {
 
 /// Whether every component is a real number.
 ///
-/// `NaN` and the infinities have no WGSL literal — `f32`'s own formatting
-/// renders them `NaN`/`inf`, which no shader compiler accepts — so they are
-/// refused here rather than in any one backend.
+/// `NaN` and the infinities have no WGSL literal, so they are refused here
+/// rather than in any one backend.
 #[must_use]
 pub const fn is_finite(value: GraphValue) -> bool {
     match value {

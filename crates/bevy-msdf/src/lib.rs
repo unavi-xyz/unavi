@@ -5,8 +5,7 @@
 //!
 //! No face is embedded. A consumer spawns [`font::asset::FontFace`] for each
 //! face of its fallback chain and a closed-budget atlas grows a field from
-//! whatever arrives, so coverage is a matter of which files are fetched rather
-//! than a per-charset bake step.
+//! whatever arrives; coverage follows from which files are fetched.
 
 use bevy::{
     asset::embedded_asset,

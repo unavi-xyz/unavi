@@ -16,7 +16,7 @@ use wds::{
     DataStore,
     actor::Actor,
     identity::{
-        RootIdentity,
+        WdsIdentity,
         store::KeyStorage,
     },
 };
@@ -36,7 +36,7 @@ pub async fn ctx() -> DataStoreCtx {
         .expect("bind endpoint");
 
     let identity = std::sync::Arc::new(
-        RootIdentity::load(&KeyStorage::Ephemeral).expect("generate host identity"),
+        WdsIdentity::load(&KeyStorage::Ephemeral).expect("generate host identity"),
     );
 
     let (store, f) = DataStore::builder(endpoint.clone(), identity)

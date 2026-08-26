@@ -35,7 +35,7 @@ use wds::{
     DataStore,
     actor::Actor,
     identity::{
-        RootIdentity,
+        WdsIdentity,
         store::KeyStorage,
     },
 };
@@ -53,8 +53,8 @@ struct Fixture {
     _routers: Vec<Router>,
 }
 
-fn ephemeral_identity() -> Arc<RootIdentity> {
-    Arc::new(RootIdentity::load(&KeyStorage::Ephemeral).expect("generate identity"))
+fn ephemeral_identity() -> Arc<WdsIdentity> {
+    Arc::new(WdsIdentity::load(&KeyStorage::Ephemeral).expect("generate identity"))
 }
 
 /// Builds both stores on the shared async runtime, which is the one the fetch

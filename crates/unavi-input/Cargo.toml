@@ -15,13 +15,13 @@ devtools    = ["dep:unavi-devtools"]
 egui-filter = ["dep:bevy_egui"]
 
 [dependencies]
-avian3d.workspace     = true
-bevy                  = { default-features = true, features = ["serialize"], workspace = true }
-bevy_egui             = { optional = true, version = "0.40.1" }
-ron.workspace         = true
-serde.workspace       = true
-unavi-devtools        = { optional = true, path = "../unavi-devtools" }
-uuid                  = "1.25.0"
+avian3d.workspace = true
+bevy              = { default-features = true, features = ["serialize"], workspace = true }
+bevy_egui         = { optional = true, version = "0.40.1" }
+ron.workspace     = true
+serde.workspace   = true
+unavi-devtools    = { optional = true, path = "../unavi-devtools" }
+uuid              = "1.25.0"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 wasm-bindgen.workspace = true

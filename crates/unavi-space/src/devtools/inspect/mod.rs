@@ -171,10 +171,8 @@ pub fn handle_back(
     }
 }
 
-/// Blocks or unblocks the peer whose page is open.
-///
-/// The only path in the tree that reaches the trust table. Without one, a
-/// block is a function nothing calls and the whole rung is theoretical.
+/// Blocks or unblocks the peer whose page is open — the only UI path that
+/// reaches the trust table.
 pub fn handle_block(activate: On<Activate>, buttons: Query<&BlockButton>) {
     let Ok(button) = buttons.get(activate.entity) else {
         return;

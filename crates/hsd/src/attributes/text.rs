@@ -8,14 +8,11 @@ use crate::attributes::{
     material::ColorVec,
 };
 
-/// A string drawn in the world.
+/// A string drawn in the world; a property rather than a slot.
 ///
-/// A property rather than a slot: a label costs a handful of bytes to sync
-/// instead of a mesh upload.
-///
-/// The string fields follow [`super::material::MaterialAttr`]: a value a
-/// newer client understands and this one does not still stores, syncs and
-/// re-serves rather than failing to decode.
+/// String fields hold free-form values, so a value a newer client
+/// understands and this one does not still stores, syncs and re-serves rather
+/// than failing to decode.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct TextAttr {
     pub value:         String,

@@ -2,7 +2,7 @@
 //! parsed face, and laying a string out against one.
 //!
 //! Nothing here draws; a renderer builds whatever its pipeline wants from
-//! [`layout::Laid`]'s quads, which keeps the layout testable without a GPU.
+//! [`layout::Laid`]'s quads.
 
 pub mod atlas;
 pub mod font;

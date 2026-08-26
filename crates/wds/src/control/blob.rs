@@ -70,12 +70,12 @@ pub async fn upload_blob(
     let total_bytes = Arc::new(AtomicI64::default());
     let aborted = Arc::new(AtomicBool::new(false));
 
-    // Enforced as the stream is consumed, not after: `add_stream` will happily
-    // write an unbounded body to disk before any post-hoc check could run.
+    // Enforced as the stream is consumed, not after: `add_stream` writes an
+    // unbounded body to disk before any post-hoc check could run.
     //
-    // Ending the stream rather than yielding an error is load-bearing —
-    // `add_stream` only sends its terminating `Done` when the input runs to
-    // completion, so an error item leaves the writer waiting forever.
+    // End the stream rather than yield an error item: `add_stream` only sends
+    // its terminating `Done` when the input runs to completion, so an error
+    // item leaves the writer waiting forever.
     let stream = {
         let total_bytes = Arc::clone(&total_bytes);
         let aborted = Arc::clone(&aborted);
@@ -240,9 +240,8 @@ pub async fn pin_blob(
 
 /// Whether the caller's *own* pin of this blob is present.
 ///
-/// Scoped to the caller rather than asking the blob store directly: content
-/// addressing makes an unscoped answer a membership oracle over everyone
-/// else's data.
+/// Scoped to the caller: content addressing would make an unscoped answer a
+/// membership oracle over everyone else's data.
 pub async fn blob_exists(
     ctx: Arc<StoreContext>,
     WithChannels { inner, tx, .. }: WithChannels<BlobExists, ControlService>,

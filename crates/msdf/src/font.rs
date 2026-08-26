@@ -1,9 +1,8 @@
 //! A face parsed once and kept: the font half of runtime generation. The
 //! glyph store half lives in `runtime`.
 //!
-//! Every lookup here is on a hot path — layout asks for a glyph index and a
-//! pair adjustment per character of every string, every frame it rebuilds — so
-//! the parsed tables and the shaper are built at construction and the pair
+//! Layout asks for a glyph index and a pair adjustment per character, so the
+//! parsed tables and the shaper are built at construction and the pair
 //! adjustments are memoized.
 
 use std::{
@@ -143,9 +142,8 @@ impl Font {
         Some(f32::from(face.glyph_hor_advance(id).unwrap_or_default()) / self.upem)
     }
 
-    /// Pair adjustment, shaped on demand and remembered. A pair that kerns is
-    /// the exception rather than the rule, so most of what this stores is
-    /// zeroes — cheaper than reshaping the same pair every frame.
+    /// Pair adjustment, shaped on demand and memoized. A pair that kerns is
+    /// the exception, so most entries are zeroes.
     #[must_use]
     pub fn kern(&self, left: char, right: char) -> f32 {
         if let Ok(kerns) = self.kerns.lock()

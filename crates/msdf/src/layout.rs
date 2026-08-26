@@ -167,9 +167,9 @@ pub fn layout(
     Ok(assemble(&lines, source, opts, missing))
 }
 
-/// The characters a line is actually made of. Text is untrusted: a tab stands
-/// in for spaces, and the control and format characters that carry no width
-/// are dropped rather than drawn as tofu.
+/// The characters a line is actually made of. A tab stands in for spaces, and
+/// control and format characters that carry no width are dropped rather than
+/// drawn as tofu.
 fn expanded(text: &str) -> impl Iterator<Item = char> {
     text.chars().flat_map(|ch| {
         let (ch, count) = match ch {
@@ -198,11 +198,11 @@ const fn is_ignorable(ch: char) -> bool {
         )
 }
 
-/// Splits a word wider than the wrap box mid-word rather than letting it
-/// overflow the box the caller asked for. Latin breaks at a space; a run of
-/// East-Asian text has none, so any CJK character is a break opportunity,
-/// except right before closing punctuation the script keeps glued to the
-/// previous glyph (`next` is the character about to start the new line).
+/// Splits a word wider than the wrap box mid-word. Latin breaks at a space;
+/// a run of East-Asian text has none, so any CJK character is a break
+/// opportunity, except right before closing punctuation the script keeps
+/// glued to the previous glyph (`next` is the character about to start the
+/// new line).
 fn wrap_line(lines: &mut Vec<Line>, line: Line, source: &impl GlyphSource, next: char) -> Line {
     let break_at = line
         .placed

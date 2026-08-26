@@ -24,9 +24,9 @@ pub(crate) fn cursor_grab(
     mut next_state: ResMut<NextState<CursorGrabState>>,
     mut windows: Query<&mut CursorOptions, With<PrimaryWindow>>,
 ) {
-    // Whatever holds the input needs the cursor to point with, and holding
-    // the unlocked state is what keeps the look and move that are gated on
-    // `Locked` from running under it.
+    // Whatever holds the input needs the cursor to point with; staying
+    // Unlocked also keeps look and move, gated on `Locked`, from running
+    // under it.
     if captured.0 {
         if *state.get() == CursorGrabState::Locked {
             for mut cursor in &mut windows {

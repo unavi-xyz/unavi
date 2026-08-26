@@ -1,6 +1,3 @@
-//! VRM avatar plugin.
-//! Handles loading avatars and applying animations.
-
 use bevy::prelude::*;
 use bevy_vrm::{
     VrmInstance,

@@ -4,10 +4,8 @@ use async_channel::{
 };
 use bevy::prelude::*;
 
-/// A typed bridge from off-world producers into the ECS.
-///
-/// Each crate registers its own message type, keeping the bus decentralized
-/// rather than funneling every variant through one shared enum.
+/// A typed bridge from off-world producers into the ECS. Each crate registers
+/// its own message type rather than sharing one enum.
 #[derive(Resource)]
 pub struct DevChannel<T: Message> {
     tx: Sender<T>,

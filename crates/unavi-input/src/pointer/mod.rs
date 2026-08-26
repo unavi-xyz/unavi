@@ -93,8 +93,8 @@ pub struct PointerHit {
 /// What a pointer was aimed at when one of its buttons moved.
 ///
 /// Unlike Bevy's `Pointer<Press>` these fire even when the ray hit nothing,
-/// which is what lets a listener hear a press aimed at empty space, and what
-/// lets a script answer a grip by making something grabbable after the fact.
+/// which lets a script answer a grip by making something grabbable after the
+/// fact.
 #[derive(Clone, Copy)]
 pub struct PointerAim {
     pub kind:    PointerKind,
@@ -135,10 +135,9 @@ pub fn attach_pointers(
 /// Bevy drops pointer events for a pointer with no location.
 ///
 /// A ray aimed by a tracked hand has no place on a render target, so every
-/// pointer is simply parked at the window's centre and aimed by its transform
-/// instead. While something else holds the input they are parked outside the
-/// window instead of nowhere: a located pointer that covers no node hovers
-/// nothing and still carries the release that unwinds whatever it was on.
+/// pointer is parked at the window's centre and aimed by its transform. While
+/// something else holds the input they are parked outside the window instead,
+/// so each still carries the release that unwinds whatever it was on.
 pub fn locate_pointers(
     windows: Query<(Entity, &Window), With<PrimaryWindow>>,
     pointers: Query<&mut PointerLocation, With<PointerAnchor>>,
@@ -166,12 +165,9 @@ pub fn locate_pointers(
     }
 }
 
-/// Turns the two bound buttons into pointer presses. Bevy's own mouse pointer
-/// reaches nothing but the UI, so these are the only things that press on the
-/// world.
-///
-/// The trigger presses as primary and the grip as secondary, which is how a
-/// script listening on a prim hears both through the picking it already uses.
+/// Turns the two bound buttons into pointer presses: the trigger as primary
+/// and the grip as secondary. Bevy's own mouse pointer reaches nothing but the
+/// UI, so these are the only things that press on the world.
 pub fn emit_pointer_input(
     state: Res<ActionState>,
     pointers: Query<(&PointerAnchor, &PointerLocation)>,
@@ -283,10 +279,9 @@ pub fn ray_of(transform: &GlobalTransform) -> Ray3d {
 
 /// The nearest place a pointer's ray meets a surface in the world.
 ///
-/// A hit carrying no normal is not one of those. `bevy_ui`'s backend picks
-/// whatever node covers the point every pointer is parked at, and reports an
-/// offset within that node — a number that would read as a position in space
-/// and put the reticle, a grab, and a script's aim somewhere nothing is.
+/// Skips hits carrying no position or normal: `bevy_ui`'s backend reports an
+/// offset within whatever node covers the point, which would read as a
+/// position in space.
 #[must_use]
 pub fn nearest_hit(interaction: &PointerInteraction) -> Option<PointerHit> {
     interaction.iter().find_map(|(entity, data)| {

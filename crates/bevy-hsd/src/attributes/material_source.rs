@@ -1,10 +1,8 @@
 //! Decides which backend renders a prim, so exactly one does.
 //!
-//! The format has one binding concept — USD's `material:binding`, naming
-//! another prim rather than a backend — and this crate has two backends for
-//! it. Without a single decision point a prim can carry both
-//! `MeshMaterial3d<StandardMaterial>` and
-//! `MeshMaterial3d<ShaderGraphMaterial>`, which renders it twice.
+//! The format's `material:binding` names another prim, not a backend, and this
+//! crate has two backends for it. Without a single decision point a prim can
+//! carry both material components and render twice.
 
 use bevy::{
     ecs::system::SystemParam,

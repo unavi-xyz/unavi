@@ -10,8 +10,7 @@ use crate::attributes::Attribute;
 pub struct ColorVec(pub Vec<f64>);
 
 /// Texture slots are relationship properties (`material:base_color_texture`
-/// and friends), following USD: a cross-prim reference has one home, and it is
-/// not inside an attribute payload.
+/// and friends), not fields of this payload.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct MaterialAttr {
     pub alpha_cutoff: Option<f64>,

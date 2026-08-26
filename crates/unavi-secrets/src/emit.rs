@@ -15,10 +15,9 @@ use syn::Ident;
 
 /// Renders the struct and constructor for `fields`.
 ///
-/// A secret the manifest gives a value becomes a [`String`] carrying it, which
-/// the build environment may override so a packaged build can name its own
-/// deployment. A secret with no declared value is never compiled in, only ever
-/// read from the environment the binary runs under.
+/// A secret the manifest gives a value becomes a [`String`] carrying it,
+/// overridable through the build environment; a secret with no declared value
+/// is never compiled in, only read at runtime.
 pub fn accessor(
     profile: &str,
     fields: &[IrField],
@@ -135,8 +134,6 @@ mod tests {
         assert!(rendered.contains(r#"unwrap_or_else(|| "remote".to_owned())"#));
     }
 
-    /// A secret the manifest never gave a value is one the build has no
-    /// business carrying, so no build-time lookup stands behind it.
     #[test]
     fn an_undeclared_value_is_read_only_at_runtime() {
         let rendered = render(&[field("TOKEN")], &BTreeMap::new());

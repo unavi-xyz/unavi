@@ -24,8 +24,8 @@ use crate::{
     state::replicas,
 };
 
-/// Teaches policy how to attribute a document, without policy depending on the
-/// networking crate to do it.
+/// Registers with policy how to resolve a document's owning space and peer,
+/// so attribution needs no dependency on this crate.
 pub fn install_resolver() {
     fn owner(space: DocId, doc: DocId) -> Option<[u8; 32]> {
         replicas::owner(NamespaceId::from(&space.0), NamespaceId::from(&doc.0))
@@ -40,24 +40,27 @@ pub fn install_resolver() {
     });
 }
 
-/// Where the trust table is kept, or `None` on wasm, which has no filesystem
-/// and so holds a block only for the life of the tab.
-#[cfg(target_family = "wasm")]
-const fn table_dir() -> Option<&'static Path> {
-    None
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[expect(
-    clippy::unnecessary_wraps,
-    reason = "mirrors the wasm variant, which returns None"
+/// Where the trust table persists, or `None` on wasm, which has no filesystem
+/// and holds blocks only for the life of the tab.
+#[cfg_attr(
+    target_family = "wasm",
+    expect(clippy::missing_const_for_fn, reason = "the wasm arm is a constant")
+)]
+#[cfg_attr(
+    not(target_family = "wasm"),
+    expect(
+        clippy::unnecessary_wraps,
+        reason = "mirrors the wasm arm, which returns None"
+    )
 )]
 fn table_dir() -> Option<&'static Path> {
-    Some(unavi_util::dirs::data_local_dir())
+    cfg_select! {
+        target_family = "wasm" => None,
+        _ => Some(unavi_util::dirs::data_local_dir()),
+    }
 }
 
-/// Loads the local trust table, which is the user's own opinion and so has to
-/// outlive the session.
+/// Loads the persisted local trust table.
 pub fn load_trust_table() {
     let Some(dir) = table_dir() else {
         return;
@@ -70,17 +73,12 @@ pub fn load_trust_table() {
     }
 }
 
-/// Blocks `peer` and undoes what they contributed, in one call.
+/// Blocks `peer` and undoes what they contributed.
 ///
-/// Retroactive by construction. Their pins, authority claims and owner-authored
-/// KV hang off the `RemotePeer` entity and cascade away when the connection
-/// drops; their neutral cells are rolled back explicitly, since those
-/// deliberately outlive a disconnect. The rung is set first so a reconnect
-/// while the rest is still unwinding does not arrive as a guest.
-///
-/// A peer that proved no DID can still be disconnected but not durably blocked:
-/// there is no stable identity to record the decision against, and an endpoint
-/// id is not one.
+/// The rung is written before anything unwinds, so a reconnect arriving mid-
+/// teardown is not readmitted as a guest. Pins, authority claims and
+/// owner-authored KV cascade away with the connection; only neutral cells need
+/// rolling back by hand, since they outlive a disconnect.
 pub fn eject(peer: [u8; 32]) -> Result<(), NoIdentity> {
     let did = identity::did_of(peer).ok_or(NoIdentity)?;
     trust::set_override(did, Trust::Blocked);
@@ -116,10 +114,9 @@ pub fn unblock(peer: [u8; 32]) -> Result<(), NoIdentity> {
 
 /// Drops the connection to a peer whose proven DID turns out to be blocked.
 ///
-/// The gate cannot sit at accept time: the binding is established over the
-/// connection itself, so at accept there is no DID to judge and every peer
-/// reads as an unproven guest. This is the first moment a block can be applied
-/// to an incoming peer at all.
+/// The earliest a block can hit an incoming peer: the DID binding is
+/// established over the connection itself, so at accept time there is nothing
+/// to judge.
 pub fn enforce_block(peer: EndpointId, did: &Did) -> bool {
     if trust::of_did(did) != Trust::Blocked {
         return false;
@@ -142,11 +139,9 @@ const VOUCH_PREFIX: &str = "vouches/";
 static PUBLISHED: parking_lot::Mutex<Option<std::collections::HashSet<[u8; 32]>>> =
     parking_lot::Mutex::new(None);
 
-/// Publishes the local vouch list under salted hashes, and empties the keys of
-/// any vouch since retracted.
-///
-/// Only the hashes go out: anyone may test whether a peer they can already
-/// name is vouched for, and nobody can enumerate the list.
+/// Publishes the local vouch list under salted subject hashes, emptying the
+/// keys of any vouch since retracted. Only hashes go out, so the list cannot
+/// be enumerated.
 pub fn publish_vouches(docs: Query<&bevy_wds::LocalDocs>) {
     use std::collections::HashSet;
 

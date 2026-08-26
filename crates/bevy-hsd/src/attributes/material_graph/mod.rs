@@ -133,9 +133,6 @@ pub struct HsdShaderGraphMaterial(pub Handle<ShaderGraphMaterial>);
 
 /// The graph's own public-input defaults, kept so an override change can be
 /// applied without decoding and re-validating the graph again.
-///
-/// Overrides change per-frame while the graph behind them rarely does, so the
-/// two must not share a rebuild path.
 #[derive(Component, Debug, Clone)]
 pub struct GraphInputDefaults(pub Vec<GraphValue>);
 
@@ -381,25 +378,16 @@ struct CachedShaders {
 /// ceiling a document that varies one constant mints them without bound.
 pub const MAX_SHADER_PROGRAMS: usize = 32;
 
-/// Compiled shaders, and which documents asked for them.
-///
-/// The two are separate because they answer different questions. A program is
-/// a pure function of the graph's bytes, so two documents carrying the same
-/// graph should compile it **once** — keying the programs by document would
-/// compile it per document and specialize a second pipeline for an identical
-/// shader. The cap, meanwhile, is a per-document resource ceiling and has to
-/// stay one: a global count would let one document exhaust the budget for
-/// every other.
+/// Compiled shaders, keyed by the graph bytes' hash, so identical graphs
+/// across documents compile once.
 #[derive(Resource, Default)]
 pub struct ShaderGraphCache {
     programs: HashMap<BlobId, CachedShaders>,
-    /// The graphs each document has charged against its cap. Also what keeps
+    /// The graphs each document has charged against its cap; also what keeps
     /// a program alive: one is dropped when the last document holding it
-    /// goes.
-    ///
-    /// A document never gives a graph back, even once no prim renders it —
-    /// the cap exists to bound edit churn, and re-charging on every hash
-    /// change would leave it bounding nothing.
+    /// goes. A document never gives a graph back, even once no prim renders
+    /// it — the cap bounds edit churn, and re-charging on every hash change
+    /// would leave it bounding nothing.
     charged:  HashMap<Entity, HashSet<BlobId>>,
 }
 
@@ -445,8 +433,7 @@ const fn alpha_mode(blend: BlendMode) -> AlphaMode {
     }
 }
 
-/// `None` is wgpu's "cull nothing"; [`CullMode::Back`] is the default a graph
-/// gets, and only an explicit [`CullMode::None`] disables culling.
+/// `None` is wgpu's "cull nothing".
 const fn cull_mode(cull: CullMode) -> Option<Face> {
     match cull {
         CullMode::Back => Some(Face::Back),
@@ -490,9 +477,8 @@ pub struct ShaderGraphMaterial {
     /// refraction needs and the only reason to pay for the transmissive pass.
     pub reads_scene:     bool,
     /// Whether the surface asks Bevy's PBR for transmissive glass: refraction
-    /// through `thickness`/`ior` with depth rejection, and a Frosted blur
-    /// driven by roughness. Also what opts the material into the depth
-    /// prepass.
+    /// through `thickness`/`ior` with depth rejection. Also what opts the
+    /// material into the depth prepass.
     pub transmissive:    bool,
 }
 
@@ -546,8 +532,7 @@ impl Material for ShaderGraphMaterial {
 
     /// Moves the material into the transmissive phase, which is drawn after
     /// the opaque one into a texture the fragment stage can then sample. Only
-    /// when the graph actually needs it: the phase costs a full-screen copy,
-    /// and a graph that never looks behind itself should not pay for one.
+    /// when the graph needs it: the phase costs a full-screen copy.
     fn reads_view_transmission_texture(&self) -> bool {
         self.reads_scene || self.transmissive
     }
@@ -562,8 +547,8 @@ impl Material for ShaderGraphMaterial {
         false
     }
 
-    /// Every graph shares one `Material` type; what makes each look different
-    /// is which generated `Handle<Shader>`s get bound here, keyed off
+    /// Every graph shares one `Material` type; the generated `Handle<Shader>`s
+    /// bound here are what makes each look different, keyed off
     /// [`ShaderGraphMaterialKey`] so distinct graphs specialize into distinct
     /// pipelines.
     ///
@@ -571,9 +556,7 @@ impl Material for ShaderGraphMaterial {
     /// attribute and interpolant locations differ from the `prepass_io` layout
     /// a prepass or shadow pipeline is built with, so they belong to the main
     /// pass alone: displacement is main-pass-only and shadows cast from the
-    /// undisplaced mesh. A fragment stage is not the discriminator — a shadow
-    /// pipeline grows one wherever unclipped depth has to be emulated in the
-    /// fragment shader, as it does on WebGL.
+    /// undisplaced mesh.
     fn specialize(
         _pipeline: &bevy::pbr::MaterialPipeline,
         descriptor: &mut bevy::render::render_resource::RenderPipelineDescriptor,
@@ -593,10 +576,8 @@ impl Material for ShaderGraphMaterial {
             if let Some(vertex_shader) = key.bind_group_data.vertex_shader {
                 descriptor.vertex.shader = vertex_shader;
             }
-            // `apply_pbr_lighting` only compiles the transmissive path under
-            // this def, and it is what routes the glass through Bevy's own
-            // refraction (Snell's law + depth rejection) rather than a
-            // hand-rolled screen-space sample.
+            // `apply_pbr_lighting` compiles the transmissive path only under
+            // this def.
             if key.bind_group_data.transmissive {
                 fragment
                     .shader_defs

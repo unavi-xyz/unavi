@@ -245,8 +245,7 @@ fn trigger() -> PerPointer<ButtonBinding> {
 }
 
 /// Taking hold of what is pointed at. Never bound to the same input as
-/// [`trigger`], because the whole point of the two is that a press means one
-/// thing or the other and never both.
+/// [`trigger`].
 fn grip() -> PerPointer<ButtonBinding> {
     PerPointer {
         screen:     ButtonBinding {

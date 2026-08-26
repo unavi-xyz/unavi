@@ -13,12 +13,9 @@ use crate::{
 
 /// Everything the world can say about one document, read off its entity.
 ///
-/// Every field arrives on its own schedule — a policy at spawn, a document id
-/// once a namespace is minted, a host once the prefab instances — so each
-/// trigger re-reads all of them rather than writing only the one that fired.
-/// A registration that only ran on one of those events is what left the
-/// shell's reach unregistered: the component was added before the document had
-/// an id to key it by.
+/// Every field arrives on its own schedule, so each trigger re-reads all of
+/// them; a registration that ran on only one event left components added
+/// before the document had an id unregistered.
 type DocumentQuery<'w, 's> = Query<
     'w,
     's,

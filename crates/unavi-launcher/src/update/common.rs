@@ -142,8 +142,7 @@ where
             continue;
         }
 
-        // Every chunk would redraw the UI hundreds of times a second for a
-        // bar that only has a hundred distinct positions.
+        // At most one progress callback per percent point.
         let percent = (downloaded * 100 / total_size).min(100);
         if percent > reported {
             reported = percent;

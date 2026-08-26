@@ -2,13 +2,8 @@ use unavi_quota::limits::Limits;
 
 use crate::trust::Trust;
 
-/// What a peer's content may consume, scaled by how much the peer is trusted.
-///
-/// The same mechanism that keeps a well-behaved script from thrashing keeps a
-/// hostile one from mattering, which is why griefing resistance needs no
-/// moderation UI to exist first. Scaled from the peer tier rather than written
-/// out per rung, so a new limit gets a sensible share at every rung the moment
-/// it is added.
+/// What a peer's content may consume: [`Limits::peer`] scaled by the peer
+/// tier's share.
 #[must_use]
 pub fn for_trust(trust: Trust) -> Limits {
     let mut limits = Limits::peer();

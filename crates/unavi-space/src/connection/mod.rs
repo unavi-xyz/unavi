@@ -41,11 +41,10 @@ static CONNECTIONS: LazyLock<Mutex<HashMap<EndpointId, (u64, oneshot::Sender<()>
 
 static CONN_TOKEN: AtomicU64 = AtomicU64::new(0);
 
-/// Claims the connection slot for `peer`, or `None` if rejected. Both peers
-/// dial on discovery; the canonical connection (dialed by the greater endpoint
-/// id) always wins, while a non-canonical one is kept only when no other
-/// exists, so one-directional discovery (peeking through a portal) still
-/// connects.
+/// Claims the connection slot for `peer`, or `None` if rejected. The canonical
+/// connection (dialed by the greater endpoint id) always wins; a non-canonical
+/// one is kept only when no connection exists, so one-directional discovery
+/// (peeking through a portal) still connects.
 fn claim_connection(peer: EndpointId, canonical: bool) -> Option<(u64, oneshot::Receiver<()>)> {
     let mut conns = CONNECTIONS.lock().expect("connections lock");
     if !canonical && conns.contains_key(&peer) {
@@ -59,8 +58,7 @@ fn claim_connection(peer: EndpointId, canonical: bool) -> Option<(u64, oneshot::
 }
 
 /// Clears the connection slot for `peer`, returning whether this token still
-/// held it. A newer connection may have taken it over, in which case this one
-/// was superseded and must not run per-peer teardown.
+/// held it; a superseded connection must not run per-peer teardown.
 fn release_connection(peer: EndpointId, token: u64) -> bool {
     let mut conns = CONNECTIONS.lock().expect("connections lock");
     if conns.get(&peer).is_some_and(|(t, _)| *t == token) {
@@ -81,12 +79,9 @@ pub fn disconnect(peer: EndpointId) {
     identity::unbind(*peer.as_bytes());
 }
 
-/// Whether a peer is already known to be blocked before a word is exchanged.
-///
-/// Only answers for a peer whose DID is still bound from an earlier connection;
-/// a block is keyed to a DID and a fresh endpoint has proved nothing yet, so
-/// this is an early-out and never the enforcement. That happens in
-/// `trust::enforce_block`, once the peer has actually proved who it is.
+/// Early-out block check against a DID bound by an earlier connection. Never
+/// the enforcement: an endpoint with no proven DID has nothing to judge, so
+/// that falls to `trust::enforce_block`.
 pub fn is_blocked(peer: EndpointId) -> bool {
     unavi_policy::trust::of_peer(*peer.as_bytes()) == unavi_policy::trust::Trust::Blocked
 }
@@ -124,8 +119,6 @@ pub fn connect_to_peer(
         .map(|p| p.0.clone())
         .expect("peer");
 
-    // Dialing one side only would break one-directional discovery;
-    // [`claim_connection`] resolves simultaneous opens.
     spawn_async_task(async move {
         outbound::try_open_connection(endpoint, peer).await;
     });
@@ -139,8 +132,8 @@ pub fn disconnect_peer(
 ) {
     let peer = peers.get(trigger.entity).expect("peer");
 
-    // Dropping the sender signals the connection task to exit; the recv stream
-    // ending despawns its `RemotePeer` entity, releasing the peer's state.
+    // Dropping the sender exits the connection task; the ending recv stream
+    // despawns the `RemotePeer`, releasing the peer's state.
     let mut conns = CONNECTIONS.lock().expect("connections lock");
     conns.remove(&peer.0.id);
     drop(conns);

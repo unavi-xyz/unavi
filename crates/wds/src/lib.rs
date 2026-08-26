@@ -1,9 +1,11 @@
-use std::sync::Arc;
+use std::{
+    sync::Arc,
+    time::Duration,
+};
 
-use derive_more::Debug;
 use identity::{
     Identity,
-    RootIdentity,
+    WdsIdentity,
 };
 use iroh::{
     Endpoint,
@@ -11,10 +13,7 @@ use iroh::{
     EndpointId,
 };
 use iroh_blobs::api::Store as BlobStore;
-use iroh_docs::{
-    api::Doc,
-    protocol::Docs,
-};
+use iroh_docs::protocol::Docs;
 use iroh_gossip::Gossip;
 use irpc::Client;
 use n0_future::task::AbortOnDropHandle;
@@ -24,9 +23,6 @@ use crate::builder::{
     BoxedBlobs,
     DataStoreBuilder,
 };
-
-/// DID document service `type` value identifying a WDS endpoint.
-pub const WDS_SERVICE_TYPE: &str = "WDSEndpoint";
 
 pub mod actor;
 mod auth;
@@ -45,6 +41,13 @@ pub mod resolve;
 pub mod signed_bytes;
 pub mod tag;
 
+// TODO: Replace session token auth with iroh hooks
+pub type SessionToken = [u8; 32];
+
+pub const SESSION_TTL: Duration = Duration::from_hours(12);
+/// DID document service `type` value identifying a WDS endpoint.
+pub const WDS_SERVICE_TYPE: &str = "WDSEndpoint";
+
 pub struct DataStore {
     control_client: Client<control::ControlService>,
     auth_client:    Client<auth::AuthService>,
@@ -53,33 +56,17 @@ pub struct DataStore {
     _gc_handle:     Option<AbortOnDropHandle<()>>,
 }
 
-// TODO: Replace session token auth with iroh hooks
-pub type SessionToken = [u8; 32];
-
-/// How long an authenticated session stays valid before the holder must
-/// answer a fresh challenge.
-pub const SESSION_TTL: std::time::Duration = std::time::Duration::from_hours(12);
-
-#[derive(Debug)]
 struct StoreContext {
-    #[debug("BlobStore")]
     blobs:       BoxedBlobs,
-    #[debug("HashMap({})", connections.len())]
     connections: scc::HashMap<SessionToken, ConnectionState>,
-    #[debug("Database")]
     db:          db::Database,
-    #[debug("Docs")]
     docs:        Docs,
-    #[debug("Endpoint")]
     endpoint:    Endpoint,
-    #[debug("Gossip")]
     gossip:      Gossip,
     /// Namespaces this node replicates on someone's behalf, each holding the
     /// doc handle and metering task that hosting it entails.
-    #[debug("HashMap({})", hosted.len())]
     hosted:      scc::HashMap<iroh_docs::NamespaceId, HostedDoc>,
-    #[debug("RootIdentity")]
-    identity:    Arc<RootIdentity>,
+    identity:    Arc<WdsIdentity>,
 }
 
 struct HostedDoc {
@@ -105,7 +92,7 @@ struct ConnectionState {
 impl DataStore {
     /// Create a new [`DataStoreBuilder`].
     #[must_use]
-    pub const fn builder(endpoint: Endpoint, identity: Arc<RootIdentity>) -> DataStoreBuilder {
+    pub const fn builder(endpoint: Endpoint, identity: Arc<WdsIdentity>) -> DataStoreBuilder {
         DataStoreBuilder::new(endpoint, identity)
     }
 
@@ -117,7 +104,7 @@ impl DataStore {
     /// Create an actor targeting the local WDS, acting as this node.
     #[must_use]
     pub fn local_actor(&self) -> actor::Actor {
-        self.local_actor_as(Arc::new(self.ctx.identity.identity()))
+        self.local_actor_as(Arc::clone(self.ctx.identity.user()))
     }
 
     /// Create an actor targeting the local WDS on behalf of some other
@@ -140,7 +127,7 @@ impl DataStore {
     pub fn remote_actor(&self, host: EndpointAddr) -> actor::Actor {
         let control_client = irpc_iroh::client(self.endpoint.clone(), host.clone(), control::ALPN);
         let auth_client = irpc_iroh::client(self.endpoint.clone(), host.clone(), auth::ALPN);
-        let identity = Arc::new(self.ctx.identity.identity());
+        let identity = Arc::clone(self.ctx.identity.user());
         actor::Actor::new(identity, host, control_client, auth_client)
     }
 
@@ -184,14 +171,6 @@ impl DataStore {
     #[must_use]
     pub fn endpoint(&self) -> &Endpoint {
         &self.ctx.endpoint
-    }
-
-    /// Opens the document this node keeps under `label`, minting it on first
-    /// use.
-    ///
-    /// `label` must come from [`identity::labels`].
-    pub async fn well_known(&self, label: &str) -> anyhow::Result<Doc> {
-        docs::well_known(&self.ctx.docs, self.ctx.identity.storage(), label).await
     }
 
     /// Runs garbage collection on the data store.

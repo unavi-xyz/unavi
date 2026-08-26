@@ -15,8 +15,12 @@ bevy.workspace      = true
 bevy-iroh.path      = "../bevy-iroh"
 bevy-wds.path       = "../bevy-wds"
 iroh.workspace      = true
+iroh-docs.workspace = true
 n0-future.workspace = true
 unavi-registry.path = "../unavi-registry"
 unavi-util.path     = "../unavi-util"
 wds.path            = "../wds"
 xdid.workspace      = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+web-sys = { features = ["Storage", "Window"], workspace = true }

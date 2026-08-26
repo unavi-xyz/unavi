@@ -70,7 +70,6 @@ enum SceneState {
     /// Acts as a loading screen or fallback on error.
     #[default]
     Limbo,
-    /// Main scene state.
     /// Actively within a space.
     Space,
 }

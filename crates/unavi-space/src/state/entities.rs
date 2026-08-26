@@ -71,11 +71,8 @@ pub fn release_remote_peer(world: &mut World, peer_ent: Entity, generation: u64)
 }
 
 /// A document tracked because some peer references it, anchoring its state
-/// entities.
-///
-/// Parented under the [`Space`] so leaving the space cascades it away, or
-/// unparented until the space is entered and adopts it. Coexists with
-/// [`HsdNamespace`] once the document is fetched and instanced.
+/// entities. Parented under the [`Space`] so leaving the space cascades it
+/// away; unparented until the space is entered and adopts it.
 #[derive(Component)]
 pub struct SpaceDoc {
     pub doc:   NamespaceId,
@@ -184,10 +181,9 @@ fn space_entity(world: &mut World, space: NamespaceId) -> Option<Entity> {
     entity_by::<Space, _>(world, |s| s.0 == space)
 }
 
-/// Resolves the entity anchoring `doc`: the [`Space`] for the base document, an
-/// instanced [`HsdNamespace`], or a [`SpaceDoc`] tracker; spawning a tracker
-/// when nothing exists yet. Trackers for spaces not yet entered stay
-/// unparented so their state is kept until the space is joined.
+/// Resolves the entity anchoring `doc`, spawning a [`SpaceDoc`] tracker when
+/// nothing exists yet. Trackers for spaces not yet entered stay unparented so
+/// their state is kept until the space is joined.
 fn doc_anchor(world: &mut World, doc: NamespaceId, space: NamespaceId) -> Entity {
     if let Some(e) = space_entity(world, doc) {
         return e;
@@ -340,8 +336,7 @@ fn set_kv(
                 world.despawn(stale);
             }
             // Neutral cells belong to the document, not the writer: the guard
-            // anchors to the doc alone so a peer disconnect leaves the cell
-            // intact, while doc teardown still clears it.
+            // anchors to the doc alone so a disconnect leaves the cell intact.
             if neutral.is_none() {
                 world.spawn((
                     KvState {
@@ -439,9 +434,8 @@ pub async fn doc_kv_delete(
         .unwrap_or(Err(KvError::Other))
 }
 
-/// Applies a remote peer's delta by spawning or despawning its state entities
-/// under `peer_ent`. Runs in the ECS via [`AsyncCommands`]; the network recv
-/// task calls this per message.
+/// Applies a remote peer's delta under `peer_ent`. Called per message from the
+/// network recv task; runs in the ECS via [`AsyncCommands`].
 pub fn apply_remote(peer_ent: Entity, peer: PeerId, msg: StateMsg) {
     if AsyncCommands::default()
         .push(move |world: &mut World| apply_in_world(world, peer_ent, peer, msg))
@@ -567,8 +561,8 @@ mod tests {
         .expect("kv set");
         assert!(matches!(rx.try_recv(), Ok(StateMsg::Kv { .. })));
 
-        // Tearing down the doc drops the neutral cell locally but broadcasts no
-        // retract, so it persists on peers that still hold it.
+        // Tearing down the doc drops the neutral cell locally but sends no
+        // retract, so peers still holding it keep theirs.
         world.despawn(space_ent);
         assert_eq!(replicas::doc_kv_get(space, space, "k"), None);
         assert!(rx.try_recv().is_err());
@@ -754,8 +748,7 @@ mod tests {
         let space = h(b"unentered-space");
         let doc = h(b"unentered-doc");
 
-        // No Space entity exists; the pin must still be tracked, anchored to an
-        // unparented tracker awaiting adoption.
+        // No `Space` entity exists yet.
         let mut world = World::new();
         let peer_ent = world.spawn(RemotePeer(peer)).id();
         assert!(spawn_pin(&mut world, peer_ent, peer, doc, space, 1, false));

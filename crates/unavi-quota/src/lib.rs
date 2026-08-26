@@ -79,8 +79,7 @@ struct Bucket {
 pub enum Reservation {
     Ready,
     After(Duration),
-    /// Larger than some level's whole capacity, so no wait ever satisfies it.
-    /// Worth answering on sight rather than after a ceiling elapses.
+    /// The ask exceeds some level's whole capacity, so no wait satisfies it.
     Never,
 }
 
@@ -190,10 +189,8 @@ impl Quota {
     }
 
     /// Repoints this quota at a new owner, moving its standing stock from the
-    /// old owner to the new so an ownership change leaks neither cap.
-    ///
-    /// Refuses an owner that already rolls up into this quota, which would
-    /// close the chain into a cycle.
+    /// old owner to the new. Refuses an owner that already rolls up into this
+    /// quota, which would close the chain into a cycle.
     pub fn set_owner(self: &Arc<Self>, new_owner: Option<Arc<Self>>) {
         if let Some(new) = new_owner.as_ref()
             && (Arc::ptr_eq(new, self) || new.rolls_up_into(self))
@@ -238,9 +235,9 @@ impl Quota {
 
     /// Reads the whole owner chain without taking anything.
     ///
-    /// Peek-then-commit rather than take-then-refund: under waiting, a partial
-    /// take that refunds on failure is a livelock, with each waiter burning the
-    /// others' tokens and none making progress.
+    /// Peek-then-commit, not take-then-refund: under contention a partial
+    /// take that refunds on failure is a livelock, each waiter burning the
+    /// others' tokens.
     #[must_use]
     pub fn reserve(&self, flow: Flow, n: f64) -> Reservation {
         self.reserve_inner(flow, n, Instant::now())
@@ -534,8 +531,6 @@ mod tests {
         assert_eq!(q.usage(Stock::KvMemory), 0, "drop refunds the full hold");
     }
 
-    /// A shrink must always succeed, even when the cap is otherwise exhausted —
-    /// the basis for overwriting a large KV value with a small one when full.
     #[test]
     fn hold_shrink_succeeds_at_full_cap() {
         let q = Quota::root(limits_stock(Stock::KvMemory, 50));

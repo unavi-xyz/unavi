@@ -1,8 +1,7 @@
 //! `hsd-cli dump`: an inspection view of a compiled `.hsdz`.
 //!
 //! `.hsda`-shaped, but not source. Compilation replaced relative paths with
-//! content, so this cannot be fed back to the compiler; it exists so a build
-//! artifact is auditable without a hex editor.
+//! content, so this cannot be fed back to the compiler.
 
 use std::{
     collections::BTreeMap,

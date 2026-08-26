@@ -10,31 +10,31 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace      = true
-blake3.workspace      = true
-bytes.workspace       = true
-derive_more           = { features = ["debug"], version = "2.1.1" }
-futures.workspace     = true
-iroh.workspace        = true
-iroh-gossip           = { features = ["net"], workspace = true }
-irpc.workspace        = true
-irpc-iroh.workspace   = true
-jose-jwk              = { default-features = false, features = ["p256", "p384"], version = "0.1.2" }
-n0-future.workspace   = true
-p256                  = { default-features = false, features = ["ecdsa", "pem"], version = "0.13.2" }
-p384                  = { default-features = false, features = ["ecdsa"], version = "0.13.1" }
-postcard.workspace    = true
-rand.workspace        = true
-rusqlite              = { features = ["bundled"], version = "0.39.0" }
-scc.workspace         = true
-serde.workspace       = true
-signature             = "2.2.0"
-thiserror.workspace   = true
-time.workspace        = true
-tokio.workspace       = true
-tracing.workspace     = true
-xdid.workspace        = true
-zeroize.workspace     = true
+anyhow.workspace    = true
+blake3.workspace    = true
+bytes.workspace     = true
+derive_more         = { features = ["debug"], version = "2.1.1" }
+futures.workspace   = true
+iroh.workspace      = true
+iroh-gossip         = { features = ["net"], workspace = true }
+irpc.workspace      = true
+irpc-iroh.workspace = true
+jose-jwk            = { default-features = false, features = ["p256", "p384"], version = "0.1.2" }
+n0-future.workspace = true
+p256                = { default-features = false, features = ["ecdsa", "pem"], version = "0.13.2" }
+p384                = { default-features = false, features = ["ecdsa"], version = "0.13.1" }
+postcard.workspace  = true
+rand.workspace      = true
+rusqlite            = { features = ["bundled"], version = "0.39.0" }
+scc.workspace       = true
+serde.workspace     = true
+signature           = "2.2.0"
+thiserror.workspace = true
+time.workspace      = true
+tokio.workspace     = true
+tracing.workspace   = true
+xdid.workspace      = true
+zeroize.workspace   = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 iroh-blobs          = { features = ["hide-proto-docs"], workspace = true }

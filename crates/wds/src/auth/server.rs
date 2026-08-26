@@ -69,8 +69,8 @@ async fn request_challenge(
 
     let expires = (OffsetDateTime::now_utc() + NONCE_TTL).unix_timestamp();
 
-    // Unanswered nonces need no reaper: the cache is capacity-bound, so it
-    // evicts on its own, and `redeem_nonce` refuses anything past `expires`.
+    // No reaper needed: the cache evicts on its own, and `redeem_nonce`
+    // refuses anything past `expires`.
     if let Err((_, pending)) = state
         .nonces
         .put_async(nonce, Pending { did, expires })
@@ -135,8 +135,8 @@ async fn redeem_nonce(
         return None;
     }
 
-    // Taken, not read: a nonce answers exactly one challenge, so a captured
-    // signature cannot be replayed for a second session.
+    // Removed, not read: a nonce answers exactly one challenge, so a captured
+    // signature cannot be replayed into a second session.
     let Some((_, pending)) = state.nonces.remove_async(&challenge.nonce).await else {
         debug!("invalid nonce");
         return None;
@@ -177,9 +177,9 @@ fn signed_by_authentication_method(doc: &Document, signed: &SignedBytes<Challeng
     })
 }
 
-/// Defined WDSes may authenticate on behalf of the DID, enabling cross-WDS
-/// operations like reading or syncing. Written data still must be signed and
-/// verified by an attestation method.
+/// A WDS named in the DID document may authenticate on behalf of the DID,
+/// enabling cross-WDS operations; writes still require an authentication-method
+/// signature.
 fn signed_by_wds_service(doc: &Document, signed: &SignedBytes<Challenge>) -> bool {
     let Some(services) = &doc.service else {
         return false;

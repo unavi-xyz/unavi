@@ -65,13 +65,12 @@ pub(crate) fn on_build_router(
         }
     }
 
-    // A router is spawned once and never rebuilt, so a handler registered after
-    // this point is silently absent: its protocol dials fine and accepts
-    // nothing.
+    // A router spawns once and never rebuilds; a handler registered later is
+    // silently absent.
     info!(handlers = collected.len(), "Building iroh router");
 
-    // `Router::spawn` calls `tokio::spawn` internally, so the build must run
-    // inside the async runtime rather than on the Bevy main thread.
+    // `Router::spawn` calls `tokio::spawn` internally, so this must run inside
+    // the async runtime.
     let (tx, rx) = async_channel::bounded(1);
     spawn_async_task(async move {
         let mut builder = RouterBuilder::new(endpoint);

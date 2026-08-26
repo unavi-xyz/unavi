@@ -63,8 +63,6 @@ pub fn update_hmd_world_pose(
     pose.yaw = yaw;
 }
 
-/// Snaps XR tracking root position to match the Tnua body,
-/// keeping the stage aligned with physics.
 pub fn sync_stage_to_body(
     agents: Query<&LocalAgentEntities>,
     rigs: Query<&Transform, With<AgentRig>>,

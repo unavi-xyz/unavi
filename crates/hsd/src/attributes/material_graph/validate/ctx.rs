@@ -110,10 +110,9 @@ impl Ctx<'_> {
     }
 
     /// The arithmetic nodes' rule: either two operands of one kind, or a
-    /// vector and a `Float`, which broadcasts across its components. WGSL's
-    /// `+ - * /` accept mixed scalar/vector operands natively, so this is
-    /// purely a validation rule with no codegen counterpart — the
-    /// builtin-backed nodes use [`Ctx::matching`] instead.
+    /// vector and a `Float`, which broadcasts across its components. Purely
+    /// a validation rule: WGSL's `+ - * /` accept mixed scalar/vector
+    /// operands natively, so codegen needs no counterpart.
     pub(super) fn arithmetic(&self, a: Port, b: Port) -> Result<ValueKind, GraphError> {
         let (a_kind, b_kind) = (self.port_kind(a)?, self.port_kind(b)?);
         match (a_kind, b_kind) {

@@ -50,12 +50,10 @@ const PROOF_TIMEOUT: Duration = Duration::from_secs(15);
 
 type Nonce = [u8; 32];
 
-/// A peer's claim to a DID, bound to the one connection it was made on.
-///
-/// Both endpoints are covered by the signature: `prover` so a proof collected
-/// from one peer cannot be presented as another peer's, and `verifier` so a
-/// proof cannot be relayed onward to a third party. The nonce is minted per
-/// stream and answered once, so nothing here is replayable.
+/// A peer's claim to a DID, bound to the one connection it was made on. The
+/// signature covers both endpoints, blocking proof theft (`prover`) and
+/// relaying (`verifier`); the nonce is answered once, so nothing is
+/// replayable.
 #[derive(Debug, Serialize, Deserialize)]
 struct PeerBinding {
     did:      Did,
@@ -69,11 +67,8 @@ impl Signable for PeerBinding {
 }
 
 /// Challenges the peer to prove which DID it speaks for, binding the result to
-/// this connection for as long as it lasts.
-///
-/// Retried a few times because a peer whose own identity is still loading has
-/// nothing to answer with yet. A peer that never answers keeps no DID, which is
-/// a state the trust model is required to handle anyway.
+/// this connection for as long as it lasts. Retried because a peer whose own
+/// identity is still loading cannot answer yet.
 pub async fn verify_peer_identity(connection: &Connection) {
     let peer = connection.remote_id();
 

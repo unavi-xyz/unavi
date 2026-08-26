@@ -33,10 +33,8 @@ pub enum CrosshairMode {
     Inactive,
 }
 
-/// A fixed mark at the centre of the screen rather than a reticle laid on the
-/// surface underfoot: the screen pointer always aims at the middle of the
-/// window, so the mark belongs there too and needs no world position to be
-/// read correctly.
+/// Fixed at the centre of the screen: the screen pointer always aims there,
+/// so the mark needs no world position to be read correctly.
 pub(crate) fn spawn_crosshair(mut commands: Commands) {
     commands
         .spawn((
@@ -49,8 +47,8 @@ pub(crate) fn spawn_crosshair(mut commands: Commands) {
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            // The mark is not a thing to press, and a full-screen node over
-            // everything would otherwise swallow whatever is behind it.
+            // A full-screen node over everything would otherwise swallow
+            // whatever is behind it.
             Pickable::IGNORE,
             GlobalZIndex(i32::MAX),
             Visibility::Hidden,
@@ -84,10 +82,8 @@ pub(crate) fn spawn_crosshair(mut commands: Commands) {
 }
 
 /// Shows the mark whenever there is a screen pointer to mark, which is every
-/// frame on desktop and none in VR, where the hands do their own aiming.
-///
-/// Something drawn over the world takes it with the rest of the input: a mark
-/// aiming at what is behind an overlay is a mark aiming at nothing.
+/// frame on desktop and none in VR; hidden while an overlay holds the input,
+/// since a mark aiming at what is behind it aims at nothing.
 pub(crate) fn show_crosshair(
     pointers: Query<&PointerAnchor>,
     captured: Res<Captured>,
@@ -111,9 +107,7 @@ pub(crate) fn show_crosshair(
     }
 }
 
-/// The ring is the whole of the active state: a mark that changed shape would
-/// move the eye, and what it is reporting is only that the grip has something
-/// to take.
+/// Active state is the ring alone: reshaping the mark would move the eye.
 pub(crate) fn apply_crosshair_mode(
     crosshair: Query<&CrosshairMode, With<Crosshair>>,
     mut ring: Query<&mut Visibility, With<CrosshairRing>>,

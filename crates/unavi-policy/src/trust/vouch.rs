@@ -24,10 +24,9 @@ pub const KNOWN_SCORE: f32 = 0.3;
 /// A signed statement that one DID trusts another, published under
 /// `vouches/<subject>` in the voucher's root doc.
 ///
-/// The subject is a salted hash rather than the DID, with the salt public.
-/// Anyone may *test* whether a specific peer is vouched for — you always know
-/// the DID of the person in front of you — but nobody can enumerate who you
-/// know, so publishing a vouch list does not leak a social graph.
+/// The subject is a salted hash rather than the DID, with the salt public:
+/// anyone may *test* whether a specific peer is vouched for, but nobody can
+/// enumerate who you know.
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 pub struct Vouch {
     pub subject: [u8; 32],
@@ -45,13 +44,9 @@ pub fn subject_hash(salt: &[u8], did: &Did) -> [u8; 32] {
 
 /// Resolved vouches, as edges between DIDs the viewer can actually name.
 ///
-/// Building this is where the salted hashes are undone, and it is only
-/// possible against a candidate set: a peer's published vouches are hashes,
-/// so an edge can be discovered but never enumerated. The candidates are the
-/// DIDs the viewer already knows — the ones it has vouched for itself, plus
-/// every peer currently present, each of which proved a DID over its own
-/// connection. That bound is what makes a horizon past two hops reachable at
-/// all.
+/// A peer's published vouches are hashes, so an edge can be discovered but
+/// never enumerated; resolution only works against a candidate set of DIDs the
+/// viewer already knows.
 #[derive(Debug, Default)]
 pub struct Graph {
     edges: HashMap<Did, HashMap<Did, f32>>,

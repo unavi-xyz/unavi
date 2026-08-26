@@ -5,17 +5,15 @@ use hsd::attributes::material_graph::node::Node;
 pub(super) fn emit(out: &mut String, node: &Node) {
     match *node {
         Node::Uv => out.push_str("in.uv"),
-        // Bound by both fragment templates, not read off `pbr_input`: that
-        // only exists on the lit path, so reaching for it made every unlit
-        // graph using a normal fail to compile.
+        // Bound by both fragment templates, not read off `pbr_input`, which
+        // only exists on the lit path.
         Node::WorldNormal => out.push_str("graph_world_normal"),
         Node::WorldPosition => out.push_str("in.world_position.xyz"),
         Node::VertexColor => out.push_str("in.color"),
         Node::LocalPosition => out.push_str("vertex.position"),
         Node::LocalNormal => out.push_str("vertex.normal"),
         // Bevy's view-wide `globals` uniform, not a slot in this material's
-        // bind group: a per-material `time` would need re-uploading every
-        // frame.
+        // bind group.
         Node::Time => out.push_str("globals.time"),
         // `graph_instance_index` and `world_from_local` are bound by both
         // templates before the body, so these read the same in either stage.

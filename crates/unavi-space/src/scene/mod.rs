@@ -118,11 +118,9 @@ pub fn spawn_space_scene(
     });
 }
 
-/// Endpoints currently in `ns`, per the registries this client follows.
-///
-/// A space's document lives with the peers who are in it. A home server holds a
-/// copy only if it was explicitly asked to host one, so syncing against sync
-/// targets alone finds nothing for a peer-hosted space.
+/// Endpoints currently in `ns`, per the registries this client follows. A
+/// space's content lives with its occupants; a home server holds none unless
+/// asked, so sync targets alone find nothing for a peer-hosted space.
 async fn occupant_peers(ns: NamespaceId, self_id: Option<EndpointId>) -> Vec<EndpointAddr> {
     let mut out = Vec::new();
 

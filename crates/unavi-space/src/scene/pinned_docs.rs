@@ -40,9 +40,8 @@ const UNPIN_TTL: Duration = Duration::from_mins(3);
 
 const READ_RETRIES: usize = 4;
 
-/// The publish path makes a record public and uploads it before announcing the
-/// pin, so a holder almost always has it when the pin is learned of. Retries
-/// with a short backoff only cover transient connectivity to the holder.
+/// The publish path uploads before announcing the pin, so a holder almost
+/// always has it by then; retries only cover transient connectivity.
 const READ_BACKOFF_SECS: u64 = 1;
 
 /// Delay before re-attempting a fetch whose retries were exhausted.

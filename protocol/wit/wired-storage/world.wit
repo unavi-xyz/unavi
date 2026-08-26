@@ -1,0 +1,48 @@
+package wired:storage;
+
+world all {
+  import api;
+  import types;
+}
+
+interface api {
+  use types.{storage};
+  use wired:error/types.{error};
+
+  get-storage: func() -> result<storage, error>;
+}
+
+interface types {
+  /// A doc identity: the 32-byte iroh-docs NamespaceId.
+  type namespace = list<u8>;
+
+  /// A single key -> value entry within a doc.
+  record entry {
+    key:   string,
+    value: list<u8>,
+  }
+
+  resource get-future {
+    poll: func() -> option<result<option<list<u8>>>>;
+  }
+
+  resource list-future {
+    poll: func() -> option<result<list<entry>>>;
+  }
+
+  /// Read access to the docs this node holds: its own root doc, and the view
+  /// docs of the registries it follows. Writing is `wired:kv`'s job, scoped to
+  /// a document the script owns.
+  resource storage {
+    /// This node's root doc namespace, if one is set.
+    root-doc:   func() -> option<namespace>;
+    /// Reads the value at a key.
+    get:        func(ns: namespace, key: string) -> get-future;
+    /// Lists the latest entries whose key starts with `prefix`.
+    %list:      func(ns: namespace, prefix: string) -> list-future;
+    /// The view docs of the registries this client follows, kept synced
+    /// locally; entry keys are rank-ordered. Views are distinguished by key
+    /// prefix; `live/<space>` names a space with current occupants.
+    registries: func() -> list<namespace>;
+  }
+}

@@ -122,16 +122,16 @@ pub fn instantiate_scripts(
 
         let state = Runtime {
             api:    Arc::new(Api {
-                state:       Arc::clone(&doc.0),
-                doc_id:      doc_id.0,
-                prim:        prim.0,
-                quota:       Arc::clone(&quota),
-                wired_agent: Mutex::default(),
-                wired_event: Mutex::default(),
-                wired_input: Mutex::default(),
-                wired_kv:    Mutex::default(),
-                wired_scene: Mutex::default(),
-                wired_wds:   Mutex::default(),
+                state:         Arc::clone(&doc.0),
+                doc_id:        doc_id.0,
+                prim:          prim.0,
+                quota:         Arc::clone(&quota),
+                wired_agent:   Mutex::default(),
+                wired_event:   Mutex::default(),
+                wired_input:   Mutex::default(),
+                wired_kv:      Mutex::default(),
+                wired_scene:   Mutex::default(),
+                wired_storage: Mutex::default(),
             }),
             native: NativeRuntime {
                 table: ResourceTable::default(),

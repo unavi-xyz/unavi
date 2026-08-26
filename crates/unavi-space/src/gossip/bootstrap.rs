@@ -1,6 +1,5 @@
 use std::collections::BTreeSet;
 
-use bevy_wds::registry_clients;
 use iroh::{
     EndpointId,
     PublicKey,
@@ -10,6 +9,7 @@ use tracing::{
     info,
     warn,
 };
+use unavi_registry::follow::registry_clients;
 
 use crate::gossip::GossipCtx;
 

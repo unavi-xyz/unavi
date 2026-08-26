@@ -1,0 +1,41 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-store"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace    = true
+blake3.workspace    = true
+bytes.workspace     = true
+futures.workspace   = true
+iroh.workspace      = true
+iroh-gossip         = { features = ["net"], workspace = true }
+n0-future.workspace = true
+serde.workspace     = true
+thiserror.workspace = true
+time.workspace      = true
+tracing.workspace   = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+iroh-blobs          = { features = ["hide-proto-docs"], workspace = true }
+iroh-docs.workspace = true
+web-sys             = { features = ["Storage", "Window"], workspace = true }
+# Without this `OffsetDateTime::now_utc` reads the unimplemented wasm clock.
+time = { features = ["wasm-bindgen"], workspace = true }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+iroh-blobs = { default-features = true, workspace = true }
+iroh-docs  = { features = ["fs-store", "rpc"], workspace = true }
+tokio      = { features = ["fs"], workspace = true }
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+rstest.workspace   = true
+tempfile.workspace = true
+tokio              = { features = ["macros", "rt-multi-thread"], workspace = true }
+tracing-test       = { features = ["no-env-filter"], workspace = true }

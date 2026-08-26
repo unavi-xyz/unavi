@@ -19,7 +19,6 @@ avian3d.workspace       = true
 bevy.workspace          = true
 bevy-hsd.path           = "../bevy-hsd"
 bevy-iroh.path          = "../bevy-iroh"
-bevy-wds.path           = "../bevy-wds"
 blake3.workspace        = true
 bytes.workspace         = true
 half                    = { features = ["serde"], version = "2.7.1" }
@@ -40,12 +39,13 @@ tracing.workspace       = true
 unavi-agent.path        = "../unavi-agent"
 unavi-avatar            = { path = "../unavi-avatar", version = "0.0.16" }
 unavi-devtools          = { optional = true, path = "../unavi-devtools" }
+unavi-identity.path     = "../unavi-identity"
 unavi-manifold          = { path = "../unavi-manifold", version = "0.0.16" }
 unavi-policy.path       = "../unavi-policy"
 unavi-quota.path        = "../unavi-quota"
 unavi-registry.path     = "../unavi-registry"
+unavi-store.path        = "../unavi-store"
 unavi-util.path         = "../unavi-util"
-wds.path                = "../wds"
 web-time.workspace      = true
 xdid.workspace          = true
 

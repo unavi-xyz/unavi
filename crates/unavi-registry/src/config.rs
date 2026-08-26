@@ -1,24 +1,8 @@
 use std::time::Duration;
 
 use iroh_docs::NamespaceId;
-use serde::{
-    Deserialize,
-    Serialize,
-};
 use smol_str::SmolStr;
 use xdid::core::did::Did;
-
-use crate::views::ViewIds;
-
-/// The namespaces backing one registry's durable documents.
-///
-/// Minted by the registry when absent and persisted by its operator, so ids
-/// clients already sync still name the same docs after a restart.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RegistryDocs {
-    pub catalog: NamespaceId,
-    pub views:   ViewIds,
-}
 
 /// Who may write to a registry.
 #[derive(Debug, Clone, Default)]
@@ -47,9 +31,6 @@ pub struct Config {
     pub max_retention:           Duration,
     /// Abuse bound on catalog growth.
     pub max_submissions_per_did: usize,
-    /// Docs this registry already minted, from operator state. Absent on a
-    /// fresh deployment; the registry mints then and reports the ids back.
-    pub docs:                    Option<RegistryDocs>,
 }
 
 impl Default for Config {
@@ -62,7 +43,6 @@ impl Default for Config {
             activity_window:         Duration::from_mins(5),
             max_retention:           Duration::from_hours(24 * 30),
             max_submissions_per_did: 64,
-            docs:                    None,
         }
     }
 }

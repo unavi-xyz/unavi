@@ -9,19 +9,15 @@ use tracing_subscriber::{
     layer::SubscriberExt,
     util::SubscriberInitExt,
 };
-use unavi_server::{
-    Features,
-    ServerOptions,
-};
+use unavi_server::ServerOptions;
 
 #[derive(Parser, Debug)]
 #[command(version)]
-#[expect(clippy::struct_excessive_bools, reason = "one field per CLI flag")]
 struct Args {
     /// Enable debug logging.
     #[arg(long, default_value_t = false)]
     debug:       bool,
-    /// Keeps the identity key and WDS store in-memory.
+    /// Keeps the identity key and document store in-memory.
     /// Useful for running multiple servers on the same machine.
     #[arg(long, default_value_t = false)]
     in_memory:   bool,
@@ -30,9 +26,6 @@ struct Args {
     /// Do not serve discovery: catalog, curated views, and live presence.
     #[arg(long, default_value_t = false)]
     no_registry: bool,
-    /// Do not serve storage: hosted docs, blob pins, and quotas.
-    #[arg(long, default_value_t = false)]
-    no_wds:      bool,
 }
 
 #[tokio::main]
@@ -60,12 +53,9 @@ async fn main() {
     registry.init();
 
     if let Err(err) = unavi_server::run_server(ServerOptions {
-        features:  Features {
-            registry: !args.no_registry,
-            wds:      !args.no_wds,
-        },
         in_memory: args.in_memory,
         port:      args.port,
+        registry:  !args.no_registry,
     })
     .await
     {

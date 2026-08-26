@@ -20,11 +20,8 @@ use bevy::{
     transform::TransformPlugin,
 };
 use bevy_hsd::attributes::material_graph::ShaderGraphMaterial;
+use bevy_iroh::store::LocalBlobs;
 use bevy_msdf::font::RegisterFont;
-use bevy_wds::{
-    LocalBlobs,
-    WdsPlugin,
-};
 use hsd::{
     attributes::{
         Attribute,
@@ -143,7 +140,7 @@ impl TestContext {
         ctx
     }
 
-    pub fn with_wds() -> Self {
+    pub fn with_blobs() -> Self {
         let blobs = setup_blobs();
 
         let mut app = App::new();
@@ -151,7 +148,7 @@ impl TestContext {
             MinimalPlugins,
             AssetPlugin::default(),
             TransformPlugin,
-            WdsPlugin,
+            bevy_iroh::IrohPlugin,
             bevy_hsd::HsdPlugin,
         ))
         .init_asset::<Image>()
@@ -282,8 +279,8 @@ pub fn ctx_physics() -> TestContext {
 }
 
 #[fixture]
-pub fn ctx_wds() -> TestContext {
-    TestContext::with_wds()
+pub fn ctx_blobs() -> TestContext {
+    TestContext::with_blobs()
 }
 
 fn setup_blobs() -> Blobs {

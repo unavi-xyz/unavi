@@ -11,9 +11,11 @@ use serde::{
     Deserialize,
     Serialize,
 };
+use unavi_identity::{
+    auth::binding,
+    identity,
+};
 use xdid::core::did::Did;
-
-use crate::identity;
 
 /// Transitive trust through the vouch graph.
 ///
@@ -76,7 +78,7 @@ static COMPUTED: LazyLock<RwLock<HashMap<Did, Trust>>> =
 /// about.
 #[must_use]
 pub fn of_peer(peer: [u8; 32]) -> Trust {
-    identity::did_of(peer).map_or(Trust::Guest, |did| of_did(&did))
+    binding::did_of(peer).map_or(Trust::Guest, |did| of_did(&did))
 }
 
 /// What the user said, else what the graph worked out, else the default: an
@@ -134,7 +136,7 @@ pub fn remove_vouch(did: &Did) {
 /// Rebuilds every computed rung from the local vouches plus `foreign`, the
 /// vouches other peers published.
 pub fn recompute(foreign: &[(Did, [u8; 16], Vec<vouch::Vouch>)]) {
-    let Some(me) = identity::self_did() else {
+    let Some(me) = identity::local_did() else {
         COMPUTED.write().clear();
         return;
     };
@@ -302,12 +304,28 @@ fn backup_path(dir: &std::path::Path) -> PathBuf {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    use std::{
+        str::FromStr,
+        sync::Arc,
+    };
+
+    use unavi_identity::identity::Identity;
+    use xdid::methods::key::keys::{
+        DidKeyPair,
+        p256::P256KeyPair,
+    };
 
     use super::*;
 
     /// Every test here shares the one table.
     static TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    /// The vouch graph reads only the ego node's DID, so the key beside it is
+    /// never exercised.
+    fn set_self(did: &str) {
+        let did = Did::from_str(did).expect("did");
+        identity::set_local(Arc::new(Identity::new(did, P256KeyPair::generate())));
+    }
 
     #[test]
     fn an_unproven_peer_is_a_guest() {
@@ -321,25 +339,25 @@ mod tests {
         let did = Did::from_str("did:web:example.com").expect("did");
         set_override(did.clone(), Trust::Trusted);
 
-        identity::bind([1; 32], did.clone());
+        binding::bind([1; 32], did.clone());
         assert_eq!(of_peer([1; 32]), Trust::Trusted);
 
-        identity::unbind([1; 32]);
-        identity::bind([2; 32], did);
+        binding::unbind([1; 32]);
+        binding::bind([2; 32], did);
         assert_eq!(
             of_peer([2; 32]),
             Trust::Trusted,
             "the same DID on a new endpoint keeps its rung"
         );
 
-        identity::unbind([2; 32]);
+        binding::unbind([2; 32]);
     }
 
     #[test]
     fn a_users_own_decision_beats_what_the_graph_worked_out() {
         let _guard = TEST_LOCK.lock().expect("test lock");
         let did = Did::from_str("did:web:demoted.example").expect("did");
-        identity::set_self(Did::from_str("did:web:me.example").expect("did"));
+        set_self("did:web:me.example");
 
         add_vouch(did.clone(), 100);
         assert_eq!(of_did(&did), Trust::Trusted);
@@ -363,7 +381,7 @@ mod tests {
         std::fs::create_dir_all(&dir).expect("temp dir");
 
         let blocked = Did::from_str("did:web:blocked.example").expect("did");
-        identity::set_self(Did::from_str("did:web:me.example").expect("did"));
+        set_self("did:web:me.example");
         set_override(blocked.clone(), Trust::Blocked);
         MY_VOUCHES
             .write()

@@ -15,7 +15,7 @@ use tracing::{
     info,
     warn,
 };
-use wds::signed_bytes::SignedBytes;
+use unavi_identity::signed_bytes::SignedBytes;
 
 use crate::{
     gossip::{

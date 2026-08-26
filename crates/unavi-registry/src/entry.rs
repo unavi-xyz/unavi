@@ -4,7 +4,7 @@ use serde::{
     Serialize,
 };
 use smol_str::SmolStr;
-use wds::signed_bytes::Signable;
+use unavi_identity::signed_bytes::Signable;
 use xdid::core::did::Did;
 
 /// What a submission points at; a view slices by it without parsing the target.

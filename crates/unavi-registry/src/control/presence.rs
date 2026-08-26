@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use irpc::WithChannels;
 use time::OffsetDateTime;
-use wds::signed_bytes::verify_did_signature;
+use unavi_identity::signed_bytes::verify_did_signature;
+use xdid::core::did::Did;
 
 use crate::{
     RegistryContext,
@@ -10,16 +11,17 @@ use crate::{
         Announce,
         Occupants,
         RegistryService,
-        authenticate,
+        caller,
     },
     error::RegistryError,
 };
 
 pub async fn announce(
     ctx: Arc<RegistryContext>,
+    caller: Option<Did>,
     WithChannels { inner, tx, .. }: WithChannels<Announce, RegistryService>,
 ) -> anyhow::Result<()> {
-    let did = authenticate!(ctx, inner, tx);
+    let did = caller!(caller, tx);
 
     let Ok(presence) = inner.presence.payload() else {
         tx.send(Err(RegistryError::Malformed)).await?;

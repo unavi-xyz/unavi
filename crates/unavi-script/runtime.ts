@@ -223,14 +223,13 @@ function buildImports(wasi: WASIShim, rt: any) {
       Document: rt.wiredSceneDocClass(),
       Prim: rt.wiredScenePrimClass(),
     },
-    "wired:wds/api": {
-      getWds: rt.wiredWdsGetWds.bind(rt),
+    "wired:storage/api": {
+      getStorage: rt.wiredStorageGetStorage.bind(rt),
     },
-    "wired:wds/types": {
-      BlobFuture: rt.wiredBlobFutureClass(),
+    "wired:storage/types": {
       GetFuture: rt.wiredGetFutureClass(),
       ListFuture: rt.wiredListFutureClass(),
-      Wds: rt.wiredWdsClass(),
+      Storage: rt.wiredStorageClass(),
     },
   };
 }

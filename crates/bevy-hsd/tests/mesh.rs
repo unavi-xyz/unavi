@@ -54,7 +54,7 @@ const INDICES: [u32; 3] = [0, 1, 2];
 
 #[traced_test]
 #[rstest]
-fn test_mesh_build(#[from(ctx_wds)] mut ctx: TestContext) {
+fn test_mesh_build(#[from(ctx_blobs)] mut ctx: TestContext) {
     let positions = bytemuck::cast_slice::<[f32; 3], u8>(&POSITIONS).to_vec();
     let normals = bytemuck::cast_slice::<[f32; 3], u8>(&NORMALS).to_vec();
     let uvs = bytemuck::cast_slice::<[f32; 2], u8>(&UVS).to_vec();

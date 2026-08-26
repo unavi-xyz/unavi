@@ -13,7 +13,7 @@ struct Args {
     #[arg(long, default_value_t = false)]
     debug_log: bool,
 
-    /// Keeps the identity key and WDS store in-memory.
+    /// Keeps the identity key and document store in-memory.
     /// Useful for running multiple clients on the same machine.
     #[arg(long, default_value_t = false)]
     in_memory: bool,

@@ -12,8 +12,7 @@ use bevy::{
     prelude::*,
 };
 use bevy_hsd::load::LoadHsd;
-use bevy_wds::{
-    LocalActor,
+use bevy_iroh::store::{
     LocalBlobStore,
     LocalBlobs,
     LocalDocs,
@@ -21,7 +20,7 @@ use bevy_wds::{
 use unavi_agent::LocalAgent;
 use unavi_policy::document::DocumentPolicy;
 
-use crate::util::create_client_wds;
+use crate::util::create_client_store;
 
 mod util;
 
@@ -31,7 +30,7 @@ const GROUND_SIZE: f32 = 24.0;
 const GROUND_THICKNESS: f32 = 0.5;
 
 fn main() {
-    let wds = create_client_wds();
+    let store = create_client_store();
 
     let mut app = App::new();
     // Registers the `iroh://` asset source, which must exist before
@@ -50,7 +49,6 @@ fn main() {
         unavi_physics::PhysicsPlugin,
         bevy_hsd::HsdPlugin,
         bevy_iroh::IrohPlugin,
-        bevy_wds::WdsPlugin,
         unavi_util::UtilPlugin,
         unavi_input::InputPlugin,
         unavi_grab::GrabPlugin,
@@ -62,10 +60,9 @@ fn main() {
     .add_systems(Startup, init_scene);
 
     app.world_mut().spawn((
-        LocalActor(wds.actor),
-        LocalBlobStore(wds.store),
-        LocalBlobs(wds.blobs),
-        LocalDocs(wds.docs),
+        LocalBlobStore(store.store),
+        LocalBlobs(store.blobs),
+        LocalDocs(store.docs),
     ));
 
     app.run();

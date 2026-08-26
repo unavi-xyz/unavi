@@ -14,14 +14,16 @@ use std::{
     },
 };
 
-use iroh_blobs::api::blobs::Blobs;
+use iroh_blobs::api::{
+    Store as BlobStore,
+    blobs::Blobs,
+};
 use n0_future::StreamExt;
 use serde::Serialize;
 use tracing::{
     info,
     warn,
 };
-use wds::DataStore;
 
 use crate::DIRS;
 
@@ -123,8 +125,8 @@ fn rel_name(root: &Path, path: &Path) -> Option<String> {
 /// Adds every file in [`files_dir`] to the blob store under a `files/` tag and
 /// writes `files.json`. Idempotent: re-hosting the same content refreshes the
 /// pin instead of duplicating the blob.
-pub async fn host_files(store: &DataStore) -> anyhow::Result<Vec<HostedFile>> {
-    let blobs: &Blobs = store.blobs().blobs();
+pub async fn host_files(store: &BlobStore) -> anyhow::Result<Vec<HostedFile>> {
+    let blobs: &Blobs = store.blobs();
     let mut hosted = Vec::new();
 
     for (name, path) in hosted_files(&files_dir())? {
@@ -153,10 +155,10 @@ fn is_ours(name: &str) -> bool {
 
 /// Drops `files/` tags naming content the directory no longer holds, so a file
 /// removed by the operator stops being served and its blob is reclaimed.
-async fn sweep(store: &DataStore, hosted: &[HostedFile]) -> anyhow::Result<()> {
+async fn sweep(store: &BlobStore, hosted: &[HostedFile]) -> anyhow::Result<()> {
     let live = hosted.iter().map(|f| tag(&f.name)).collect::<Vec<_>>();
 
-    let tags = store.blobs().tags();
+    let tags = store.tags();
     let mut stale = Vec::new();
     let mut listed = tags.list_prefix(TAG_PREFIX).await?;
 

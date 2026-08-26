@@ -4,8 +4,10 @@ use std::sync::{
 };
 
 use bevy::prelude::*;
-use bevy_iroh::endpoint::IrohEndpoint;
-use bevy_wds::LocalGossip;
+use bevy_iroh::{
+    endpoint::IrohEndpoint,
+    store::LocalGossip,
+};
 use iroh::{
     EndpointAddr,
     EndpointId,
@@ -17,9 +19,9 @@ use serde::{
     Serialize,
 };
 use tokio::sync::oneshot;
+use unavi_identity::signed_bytes::Signable;
 use unavi_policy::space::Space;
 use unavi_util::async_task::spawn_async_task;
-use wds::signed_bytes::Signable;
 
 use crate::gossip::thread::{
     GossipCommand,

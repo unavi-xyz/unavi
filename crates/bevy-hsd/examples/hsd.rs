@@ -9,13 +9,10 @@ use bevy_hsd::{
     Hsd,
     HsdPlugin,
 };
+use bevy_iroh::store::LocalBlobs;
 use bevy_panorbit_camera::{
     PanOrbitCamera,
     PanOrbitCameraPlugin,
-};
-use bevy_wds::{
-    LocalBlobs,
-    WdsPlugin,
 };
 use bytemuck::cast_slice;
 use hsd::{
@@ -60,7 +57,12 @@ const CUBE_SIZE: f32 = 1.0;
 
 fn main() {
     App::new()
-        .add_plugins((DefaultPlugins, PanOrbitCameraPlugin, WdsPlugin, HsdPlugin))
+        .add_plugins((
+            DefaultPlugins,
+            PanOrbitCameraPlugin,
+            bevy_iroh::IrohPlugin,
+            HsdPlugin,
+        ))
         .insert_resource(ClearColor(Color::srgb(0.08, 0.09, 0.13)))
         .add_systems(Startup, (setup_scene, load_hsd))
         .run();

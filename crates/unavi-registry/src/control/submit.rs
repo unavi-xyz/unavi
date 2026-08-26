@@ -3,7 +3,8 @@ use std::sync::Arc;
 use irpc::WithChannels;
 use time::OffsetDateTime;
 use tracing::warn;
-use wds::signed_bytes::verify_did_signature;
+use unavi_identity::signed_bytes::verify_did_signature;
+use xdid::core::did::Did;
 
 use crate::{
     RegistryContext,
@@ -11,16 +12,17 @@ use crate::{
         RegistryService,
         Retract,
         Submit,
-        authenticate,
+        caller,
     },
     error::RegistryError,
 };
 
 pub async fn submit(
     ctx: Arc<RegistryContext>,
+    caller: Option<Did>,
     WithChannels { inner, tx, .. }: WithChannels<Submit, RegistryService>,
 ) -> anyhow::Result<()> {
-    let did = authenticate!(ctx, inner, tx);
+    let did = caller!(caller, tx);
 
     if !ctx.config.permits(&did) {
         tx.send(Err(RegistryError::NotPermitted)).await?;
@@ -32,7 +34,7 @@ pub async fn submit(
         return Ok(());
     };
 
-    // The session holder must be the announcer; a registry does not let one
+    // The connection holder must be the announcer; a registry does not let one
     // identity speak for another.
     if submission.did != did {
         tx.send(Err(RegistryError::NotPermitted)).await?;
@@ -81,9 +83,10 @@ pub async fn submit(
 
 pub async fn retract(
     ctx: Arc<RegistryContext>,
+    caller: Option<Did>,
     WithChannels { inner, tx, .. }: WithChannels<Retract, RegistryService>,
 ) -> anyhow::Result<()> {
-    let did = authenticate!(ctx, inner, tx);
+    let did = caller!(caller, tx);
 
     let live = ctx.catalog.live(&ctx.docs, &ctx.blobs).await?;
     let owned = live.iter().any(|s| s.ns == inner.ns && s.did == did);

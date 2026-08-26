@@ -45,8 +45,8 @@ pub fn add_apis_to_linker(linker: &mut Linker<Runtime>) -> wasmtime::Result<()> 
     wired::scene::bindings::wired::scene::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
     wired::scene::bindings::wired::scene::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
 
-    wired::wds::bindings::wired::wds::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
-    wired::wds::bindings::wired::wds::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    wired::storage::bindings::wired::storage::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
+    wired::storage::bindings::wired::storage::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
 
     wired::kv::bindings::wired::kv::api::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;
     wired::kv::bindings::wired::kv::types::add_to_linker::<_, HasSelf<_>>(linker, |r| r)?;

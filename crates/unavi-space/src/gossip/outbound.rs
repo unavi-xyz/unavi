@@ -5,7 +5,7 @@ use iroh_docs::NamespaceId;
 use iroh_gossip::api::GossipSender;
 use tokio::sync::Notify;
 use tracing::info;
-use wds::signed_bytes::{
+use unavi_identity::signed_bytes::{
     IrohSigner,
     Signable,
 };

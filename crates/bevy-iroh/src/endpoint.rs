@@ -1,10 +1,16 @@
-use std::time::Duration;
+use std::{
+    sync::Arc,
+    time::Duration,
+};
 
 use bevy::prelude::*;
 use iroh::{
     Endpoint,
     SecretKey,
-    endpoint::presets::N0,
+    endpoint::{
+        Builder,
+        presets::N0,
+    },
     endpoint_info::AddrFilter,
 };
 use tracing::{
@@ -19,8 +25,15 @@ use crate::router::RouterBuilderFns;
 #[require(RouterBuilderFns)]
 pub struct IrohEndpoint(pub Endpoint);
 
+/// Applied to the endpoint builder before it binds, once per attempt.
+///
+/// Anything an endpoint needs that this crate has no business knowing about —
+/// connection hooks above all — arrives through here.
+pub type Configure = Arc<dyn Fn(Builder) -> Builder + Send + Sync>;
+
 #[derive(Event, Clone)]
 pub struct LoadEndpoint {
+    pub configure:  Option<Configure>,
     pub filter:     AddrFilter,
     /// Fixes the endpoint id across restarts, so a peer that recorded this
     /// node's address can still reach it.
@@ -68,11 +81,16 @@ pub(crate) fn receive_endpoint(mut commands: Commands, loading: Query<(Entity, &
 }
 
 async fn init_endpoint(opts: &LoadEndpoint) -> anyhow::Result<Endpoint> {
-    let endpoint = Endpoint::builder(N0)
+    let builder = Endpoint::builder(N0)
         .addr_filter(opts.filter.clone())
         .secret_key(opts.secret_key.clone());
 
-    let endpoint = endpoint.bind().await?;
+    let builder = match &opts.configure {
+        Some(configure) => configure(builder),
+        None => builder,
+    };
+
+    let endpoint = builder.bind().await?;
     info!("Spawned endpoint: {}", endpoint.id());
 
     Ok(endpoint)

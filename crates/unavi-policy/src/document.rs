@@ -20,9 +20,11 @@ pub enum ApiName {
     Physics,
     Portal,
     Scene,
+    /// Reading the docs this node holds: its own root doc and the registry
+    /// views it follows.
+    Storage,
     /// Teleporting the local agent into another space.
     Travel,
-    Wds,
 }
 
 impl ApiName {
@@ -122,7 +124,7 @@ impl DocumentPolicy {
                 .with(ApiName::Portal)
                 .with(ApiName::Scene)
                 .with(ApiName::Travel)
-                .with(ApiName::Wds),
+                .with(ApiName::Storage),
         )
     }
 
@@ -162,7 +164,7 @@ mod tests {
             ApiName::LocalAgent,
             ApiName::Physics,
             ApiName::Travel,
-            ApiName::Wds,
+            ApiName::Storage,
         ] {
             assert!(
                 !policy.allows(name),
@@ -198,7 +200,7 @@ mod tests {
             ApiName::Portal,
             ApiName::Scene,
             ApiName::Travel,
-            ApiName::Wds,
+            ApiName::Storage,
         ];
         let mut seen = ApiSet::none();
         for name in all {

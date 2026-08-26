@@ -8,7 +8,10 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use wds::DataStore;
+use unavi_store::{
+    local::Storage,
+    namespace,
+};
 
 use crate::{
     catalog::Catalog,
@@ -47,40 +50,23 @@ fn active_key(rank: usize, ns: NamespaceId) -> String {
     format!("{ACTIVE_PREFIX}{rank:08}/{ns}")
 }
 
-/// Reopens the view named by `existing` and enrols it in this node's sync
-/// set, so incoming requests for it are answered; a namespace outside the set
-/// rejects reads with `NotFound`. A missing or unheld id mints a fresh view,
-/// and the new ids are reported back to the operator for persistence.
-async fn open_view(
-    store: &DataStore,
-    existing: Option<NamespaceId>,
-) -> anyhow::Result<NamespaceId> {
-    let held = match existing {
-        Some(ns) => store.docs().api().open(ns).await?,
-        None => None,
-    };
-
-    let doc = match held {
-        Some(doc) => doc,
-        None => store.docs().api().create().await?,
-    };
-    doc.start_sync(Vec::new()).await?;
-    Ok(doc.id())
+/// Each view is recorded under its own key, so one lost view is reminted
+/// without disturbing the others.
+async fn open_view(docs: &Docs, storage: &Storage, name: &str) -> anyhow::Result<NamespaceId> {
+    namespace::serve_or_mint(docs, storage, &format!("registry/views/{name}")).await
 }
 
 impl Views {
-    pub async fn create(store: &DataStore, existing: Option<ViewIds>) -> anyhow::Result<Self> {
-        let recent = open_view(store, existing.map(|v| v.recent)).await?;
-        let featured = open_view(store, existing.map(|v| v.featured)).await?;
-        let categories = open_view(store, existing.map(|v| v.categories)).await?;
-        let active = open_view(store, existing.map(|v| v.active)).await?;
-
+    /// Reopens each view this node recorded, minting any that is absent or
+    /// whose capability is no longer held, and enrols every one in the sync
+    /// set: a namespace outside that set rejects reads with `NotFound`.
+    pub async fn create(docs: &Docs, storage: &Storage) -> anyhow::Result<Self> {
         Ok(Self {
             ids: ViewIds {
-                recent,
-                featured,
-                categories,
-                active,
+                recent:     open_view(docs, storage, "recent").await?,
+                featured:   open_view(docs, storage, "featured").await?,
+                categories: open_view(docs, storage, "categories").await?,
+                active:     open_view(docs, storage, "active").await?,
             },
         })
     }

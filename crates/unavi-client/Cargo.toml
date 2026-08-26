@@ -36,13 +36,13 @@ bevy                    = { default-features = true, features = ["experimental_p
 bevy-hsd.path           = "../bevy-hsd"
 bevy-inspector-egui     = { optional = true, workspace = true }
 bevy-iroh.path          = "../bevy-iroh"
-bevy-wds.path           = "../bevy-wds"
 bevy_vrm.workspace      = true
 clap.workspace          = true
 image                   = { default-features = false, features = ["png"], workspace = true }
 iroh.workspace          = true
 iroh-docs.workspace     = true
 log                     = { features = ["max_level_debug", "release_max_level_warn"], version = "0.4.34" }
+n0-future.workspace     = true
 parking_lot.workspace   = true
 postcard.workspace      = true
 tracing                 = { features = ["max_level_debug", "release_max_level_warn"], workspace = true }
@@ -56,9 +56,11 @@ unavi-input.path        = "../unavi-input"
 unavi-manifold.path     = "../unavi-manifold"
 unavi-physics           = { path = "../unavi-physics", version = "0.0.16" }
 unavi-policy.path       = "../unavi-policy"
+unavi-registry.path     = "../unavi-registry"
 unavi-script.path       = "../unavi-script"
 unavi-secrets.path      = "../unavi-secrets"
 unavi-space.path        = "../unavi-space"
+unavi-store.path        = "../unavi-store"
 unavi-util.path         = "../unavi-util"
 unavi-wasm-compat.path  = "../unavi-wasm-compat"
 winit                   = { default-features = false, version = "0.30.13" }

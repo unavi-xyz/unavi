@@ -62,7 +62,6 @@ impl Plugin for SpacePlugin {
             .add_observer(connection::disconnect_peer)
             .add_observer(connection::ecs::agent::inbound::despawn_remote_agent)
             .add_observer(connection::register_protocol)
-            .add_observer(peer::capture_self_identity)
             .add_observer(gossip::leave_space_topic)
             .add_observer(gossip::spawn_gossip)
             .add_observer(portal::spawn_portal_space)
@@ -103,6 +102,7 @@ impl Plugin for SpacePlugin {
                         .run_if(on_timer(TICKRATE_UPDATE_INTERVAL)),
                     peer::presence::manage_peers,
                     peer::publish_blob_providers,
+                    peer::score_once_identified,
                     scene::instantiate_pending_scenes,
                     scene::pinned_docs::fetch_tracked_docs,
                     scene::pinned_docs::instantiate_tracked_docs,

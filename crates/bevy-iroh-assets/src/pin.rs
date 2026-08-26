@@ -80,8 +80,8 @@ mod tests {
             "hosted content is another subsystem's pin"
         );
         assert!(
-            !is_ours("did:key:z123/abc"),
-            "a wds blob tag is another subsystem's pin"
+            !is_ours("cache/00000000000001700000000/abc"),
+            "a dated cache root is another subsystem's pin"
         );
     }
 

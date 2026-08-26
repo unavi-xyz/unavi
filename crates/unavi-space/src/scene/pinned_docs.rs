@@ -11,7 +11,7 @@ use bevy_hsd::{
     HsdNamespace,
     document,
 };
-use bevy_wds::{
+use bevy_iroh::store::{
     LocalBlobs,
     LocalDocs,
 };
@@ -120,7 +120,7 @@ pub fn fetch_tracked_docs(
         let (cancel_tx, cancel_rx) = oneshot::channel();
 
         spawn_async_task(async move {
-            let fetch = wds::entries::fetch(
+            let fetch = unavi_store::entries::fetch(
                 &docs,
                 ns,
                 sync_from,

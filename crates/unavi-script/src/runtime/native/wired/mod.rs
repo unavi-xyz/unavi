@@ -7,4 +7,4 @@ pub mod peer;
 pub mod physics;
 pub mod portal;
 pub mod scene;
-pub mod wds;
+pub mod storage;

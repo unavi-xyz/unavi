@@ -22,9 +22,9 @@ use hsd::{
     state::SceneState,
 };
 use iroh_docs::NamespaceId;
+use unavi_identity::auth::binding;
 use unavi_policy::{
     check,
-    identity,
     registry,
     space::Space,
     trust::Trust,
@@ -175,7 +175,7 @@ fn peer_model(id: [u8; 32], snap: &debug::DebugSnapshot) -> PeerModel {
         did: if is_self {
             self_did()
         } else {
-            identity::did_of(id).map(|d| d.to_string())
+            binding::did_of(id).map(|d| d.to_string())
         },
         trust: check::trust_of(Some(id)),
         pins: docs

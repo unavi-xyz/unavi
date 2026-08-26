@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use iroh_docs::NamespaceId;
 use time::OffsetDateTime;
-use wds::signed_bytes::SignedBytes;
+use unavi_identity::signed_bytes::SignedBytes;
 use xdid::core::did::Did;
 
 use crate::entry::Presence;

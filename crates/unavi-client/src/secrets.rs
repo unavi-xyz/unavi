@@ -1,4 +1,4 @@
-use unavi_identity::SyncConfig;
+use crate::identity::SyncConfig;
 
 unavi_secrets::declare!("secretspec.toml");
 

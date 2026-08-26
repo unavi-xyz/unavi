@@ -50,7 +50,7 @@ fn test_image_lifecycle(mut ctx: TestContext) {
 
 #[traced_test]
 #[rstest]
-fn test_image_blob_load(#[from(ctx_wds)] mut ctx: TestContext) {
+fn test_image_blob_load(#[from(ctx_blobs)] mut ctx: TestContext) {
     let mut rgba = RgbaImage::new(2, 2);
     rgba.put_pixel(0, 0, image::Rgba([255, 0, 0, 255]));
     rgba.put_pixel(1, 0, image::Rgba([0, 255, 0, 255]));

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use bevy::{
     light::light_consts::lux,
     log::LogPlugin,
@@ -11,6 +13,7 @@ use tracing::Level;
 mod camera;
 mod fade;
 mod icon;
+mod identity;
 mod scene;
 mod secrets;
 
@@ -92,10 +95,9 @@ impl Plugin for UnaviPlugin {
             unavi_physics::PhysicsPlugin,
             bevy_hsd::HsdPlugin,
             bevy_iroh::IrohPlugin,
-            bevy_wds::WdsPlugin,
             unavi_agent::AgentPlugin,
             unavi_avatar::AvatarPlugin,
-            unavi_identity::IdentityPlugin {
+            identity::IdentityPlugin {
                 in_memory: self.in_memory,
                 sync:      secrets::sync_config(),
             },
@@ -126,12 +128,14 @@ impl Plugin for UnaviPlugin {
         // has to have built before this runs.
         let secret_key = app
             .world()
-            .resource::<unavi_identity::LocalIdentity>()
+            .resource::<identity::LocalNode>()
             .0
             .endpoint()
             .clone();
+        let auth = Arc::clone(&app.world().resource::<identity::Auth>().0);
 
         app.world_mut().trigger(LoadEndpoint {
+            configure: Some(Arc::new(move |builder| auth.install(builder))),
             filter: AddrFilter::default(),
             secret_key,
         });

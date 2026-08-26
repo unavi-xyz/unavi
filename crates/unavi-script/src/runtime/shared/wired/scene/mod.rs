@@ -11,7 +11,7 @@ use bevy_hsd::{
     HsdNamespace,
     document as hsd_document,
 };
-use bevy_wds::{
+use bevy_iroh::store::{
     LocalBlobs,
     LocalDocs,
 };
@@ -89,7 +89,8 @@ async fn create_namespace() -> anyhow::Result<NamespaceId> {
                 return;
             };
             spawn_async_task(async move {
-                tx.try_send(wds::entries::create(&docs).await).ok();
+                tx.try_send(docs.api().create().await.map(|doc| doc.id()))
+                    .ok();
             });
         })
         .send()
@@ -112,7 +113,8 @@ async fn serve_namespace(ns: NamespaceId) -> anyhow::Result<()> {
                 return;
             };
             spawn_async_task(async move {
-                tx.try_send(wds::docs::serve(&docs, ns).await).ok();
+                tx.try_send(unavi_store::namespace::serve(&docs, ns).await)
+                    .ok();
             });
         })
         .send()
@@ -165,11 +167,13 @@ async fn save_namespace(ns: NamespaceId, state: Arc<Mutex<SceneState>>) -> anyho
             };
             spawn_async_task(async move {
                 let res = async {
-                    let doc = wds::docs::ensure_open(&docs, ns).await?;
-                    let author = wds::entries::author(&docs).await?;
+                    let doc = unavi_store::namespace::ensure_open(&docs, ns).await?;
+                    let author = docs.api().author_default().await?;
 
                     let mut base = std::collections::BTreeMap::new();
-                    for entry in wds::entries::list(&doc, &[key::META, key::PRIM_PREFIX]).await? {
+                    for entry in
+                        unavi_store::entries::list(&doc, &[key::META, key::PRIM_PREFIX]).await?
+                    {
                         if let Some(entry) = hsd_document::to_entry(&blobs, &entry).await {
                             base.insert(entry.key, entry.value);
                         }
@@ -178,7 +182,7 @@ async fn save_namespace(ns: NamespaceId, state: Arc<Mutex<SceneState>>) -> anyho
                     let writes = save::diff(&base, &current)
                         .into_iter()
                         .map(hsd_document::to_write);
-                    wds::entries::apply(&doc, &blobs, author, writes).await
+                    unavi_store::entries::apply(&doc, &blobs, author, writes).await
                 }
                 .await;
                 tx.try_send(res).ok();

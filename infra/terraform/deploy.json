@@ -7,7 +7,7 @@
     "server_ipv4": "161.35.135.143",
     "services": {
       "unavi_server": {
-        "domain": "wds.unavi.xyz",
+        "domain": "node.unavi.xyz",
         "port": 5000
       },
       "web_client": {

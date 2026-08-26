@@ -5,8 +5,8 @@
 
 use crate::wired::{
     portal::api::travel,
-    wds::{
-        api::get_wds,
+    storage::{
+        api::get_storage,
         types::GetFuture,
     },
 };
@@ -20,14 +20,14 @@ pub struct Home {
 
 impl Home {
     pub fn request(&mut self) {
-        let Ok(wds) = get_wds() else {
+        let Ok(storage) = get_storage() else {
             return;
         };
-        let Some(root) = wds.root_doc() else {
+        let Some(root) = storage.root_doc() else {
             eprintln!("halo: no root doc, cannot travel home");
             return;
         };
-        self.pending = Some(wds.get(&root, "home"));
+        self.pending = Some(storage.get(&root, "home"));
     }
 
     pub fn fixed_update(&mut self) {

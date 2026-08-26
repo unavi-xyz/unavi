@@ -88,7 +88,7 @@ fn distinct_graph(step: usize) -> ShaderGraph {
 /// since that attribute is optional and this is the common case.
 #[traced_test]
 #[rstest]
-fn test_shader_graph_without_overrides(#[from(ctx_wds)] mut ctx: TestContext) {
+fn test_shader_graph_without_overrides(#[from(ctx_blobs)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
 
     let prim = ctx.create_prim();
@@ -123,7 +123,7 @@ fn test_shader_graph_without_overrides(#[from(ctx_wds)] mut ctx: TestContext) {
 /// touching the compiled graph bytes.
 #[traced_test]
 #[rstest]
-fn test_shader_graph_with_overrides(#[from(ctx_wds)] mut ctx: TestContext) {
+fn test_shader_graph_with_overrides(#[from(ctx_blobs)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
 
     let prim = ctx.create_prim();
@@ -159,7 +159,7 @@ fn test_shader_graph_with_overrides(#[from(ctx_wds)] mut ctx: TestContext) {
 /// `Handle<Shader>`.
 #[traced_test]
 #[rstest]
-fn test_shader_graph_shares_compiled_shader_across_prims(#[from(ctx_wds)] mut ctx: TestContext) {
+fn test_shader_graph_shares_compiled_shader_across_prims(#[from(ctx_blobs)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
 
     let a = ctx.create_prim();
@@ -190,7 +190,7 @@ fn test_shader_graph_shares_compiled_shader_across_prims(#[from(ctx_wds)] mut ct
 /// WGSL once per document and specialize a second pipeline for it.
 #[traced_test]
 #[rstest]
-fn a_graph_compiles_once_across_documents(#[from(ctx_wds)] mut ctx: TestContext) {
+fn a_graph_compiles_once_across_documents(#[from(ctx_blobs)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
 
     let here = ctx.create_prim();
@@ -219,7 +219,7 @@ fn a_graph_compiles_once_across_documents(#[from(ctx_wds)] mut ctx: TestContext)
 /// must not spend another's budget.
 #[traced_test]
 #[rstest]
-fn the_program_cap_is_charged_per_document(#[from(ctx_wds)] mut ctx: TestContext) {
+fn the_program_cap_is_charged_per_document(#[from(ctx_blobs)] mut ctx: TestContext) {
     for step in 0..MAX_SHADER_PROGRAMS {
         let prim = ctx.create_prim();
         ctx.set_slot(
@@ -256,7 +256,9 @@ fn the_program_cap_is_charged_per_document(#[from(ctx_wds)] mut ctx: TestContext
 /// whether or not the cache still has it and its liveness proves nothing.
 #[traced_test]
 #[rstest]
-fn dropping_one_document_keeps_a_graph_another_still_holds(#[from(ctx_wds)] mut ctx: TestContext) {
+fn dropping_one_document_keeps_a_graph_another_still_holds(
+    #[from(ctx_blobs)] mut ctx: TestContext,
+) {
     let bytes = glow_graph().encode().expect("encode graph");
 
     let kept = ctx.create_prim();
@@ -302,7 +304,7 @@ fn fragment_shaders(ctx: &mut TestContext) -> Vec<Handle<Shader>> {
 /// removal does.
 #[traced_test]
 #[rstest]
-fn test_shader_graph_removed_when_slot_removed(#[from(ctx_wds)] mut ctx: TestContext) {
+fn test_shader_graph_removed_when_slot_removed(#[from(ctx_blobs)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
 
     let prim = ctx.create_prim();
@@ -329,7 +331,7 @@ fn test_shader_graph_removed_when_slot_removed(#[from(ctx_wds)] mut ctx: TestCon
 #[traced_test]
 #[rstest]
 fn test_shader_graph_with_displacement_compiles_a_vertex_shader(
-    #[from(ctx_wds)] mut ctx: TestContext,
+    #[from(ctx_blobs)] mut ctx: TestContext,
 ) {
     let graph = ShaderGraph {
         public_inputs: Vec::new(),
@@ -376,7 +378,7 @@ fn test_shader_graph_with_displacement_compiles_a_vertex_shader(
 /// terminals happen to be connected.
 #[traced_test]
 #[rstest]
-fn blend_and_cull_reach_the_material(#[from(ctx_wds)] mut ctx: TestContext) {
+fn blend_and_cull_reach_the_material(#[from(ctx_blobs)] mut ctx: TestContext) {
     let graph = ShaderGraph {
         surface: SurfaceGraph {
             blend: BlendMode::Add,
@@ -412,7 +414,7 @@ fn blend_and_cull_reach_the_material(#[from(ctx_wds)] mut ctx: TestContext) {
 /// also carry a competing `StandardMaterial`.
 #[traced_test]
 #[rstest]
-fn binding_to_a_graph_prim_renders_that_graph(#[from(ctx_wds)] mut ctx: TestContext) {
+fn binding_to_a_graph_prim_renders_that_graph(#[from(ctx_blobs)] mut ctx: TestContext) {
     let bytes = glow_graph().encode().expect("encode graph");
 
     let template = ctx.create_prim();

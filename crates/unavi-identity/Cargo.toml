@@ -10,17 +10,31 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace    = true
-bevy.workspace      = true
-bevy-iroh.path      = "../bevy-iroh"
-bevy-wds.path       = "../bevy-wds"
-iroh.workspace      = true
-iroh-docs.workspace = true
-n0-future.workspace = true
-unavi-registry.path = "../unavi-registry"
-unavi-util.path     = "../unavi-util"
-wds.path            = "../wds"
-xdid.workspace      = true
+anyhow.workspace      = true
+iroh.workspace        = true
+iroh-docs.workspace   = true
+jose-jwk              = { default-features = false, features = ["p256", "p384"], version = "0.1.2" }
+n0-future.workspace   = true
+p256                  = { default-features = false, features = ["ecdsa", "pem"], version = "0.13.2" }
+p384                  = { default-features = false, features = ["ecdsa"], version = "0.13.1" }
+parking_lot.workspace = true
+postcard.workspace    = true
+rand.workspace        = true
+serde.workspace       = true
+signature             = "2.2.0"
+thiserror.workspace   = true
+tokio                 = { features = ["io-util", "sync"], workspace = true }
+tracing.workspace     = true
+unavi-store.path      = "../unavi-store"
+xdid.workspace        = true
+zeroize.workspace     = true
 
-[target.'cfg(target_family = "wasm")'.dependencies]
-web-sys = { features = ["Storage", "Window"], workspace = true }
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+axum.workspace   = true
+rstest.workspace = true
+tokio            = { features = ["macros", "rt-multi-thread"], workspace = true }
+tracing-test     = { features = ["no-env-filter"], workspace = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+tempfile.workspace   = true

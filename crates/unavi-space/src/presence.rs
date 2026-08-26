@@ -5,14 +5,13 @@ use bevy::{
     prelude::*,
 };
 use bevy_iroh::endpoint::IrohEndpoint;
-use bevy_wds::{
-    LocalActor,
-    registry_clients,
-};
 use iroh_docs::NamespaceId;
 use time::OffsetDateTime;
 use unavi_policy::space::Space;
-use unavi_registry::entry::Presence;
+use unavi_registry::{
+    entry::Presence,
+    follow::registry_clients,
+};
 use unavi_util::async_task::spawn_async_task;
 
 const PRESENCE_TTL: Duration = Duration::from_mins(2);
@@ -28,7 +27,6 @@ const PRESENCE_REFRESH: Duration = PRESENCE_TTL.checked_div(3).expect("nonzero d
 pub fn publish_presence(
     time: Res<Time>,
     spaces: Query<&Space>,
-    actors: Query<&LocalActor>,
     endpoint: Query<&IrohEndpoint>,
     mut last: Local<HashMap<NamespaceId, Duration>>,
 ) {
@@ -49,9 +47,6 @@ pub fn publish_presence(
         return;
     }
 
-    let Ok(actor) = actors.single() else {
-        return;
-    };
     let Ok(endpoint) = endpoint.single() else {
         return;
     };
@@ -64,7 +59,9 @@ pub fn publish_presence(
         return;
     }
 
-    let did = actor.0.identity().did().clone();
+    let Some(did) = unavi_identity::identity::local_did() else {
+        return;
+    };
     let endpoint_id = *endpoint.0.id().as_bytes();
 
     for space in due {

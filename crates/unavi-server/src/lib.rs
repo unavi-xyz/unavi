@@ -24,21 +24,28 @@ use tracing::{
     info,
     warn,
 };
+use unavi_identity::{
+    ENDPOINT_SERVICE_ID,
+    ENDPOINT_SERVICE_TYPE,
+    auth::{
+        self,
+        EndpointAuth,
+    },
+    identity::{
+        self,
+        NodeIdentity,
+    },
+};
 use unavi_registry::{
     Registry,
-    config::{
-        Config as RegistryConfig,
-        RegistryDocs,
-    },
-    views::ViewIds,
+    config::Config as RegistryConfig,
 };
-use wds::{
-    DataStore,
-    WDS_SERVICE_TYPE,
-    identity::{
-        WdsIdentity,
-        store::KeyStorage,
+use unavi_store::{
+    builder::{
+        Builder as StoreBuilder,
+        Store,
     },
+    local::Storage,
 };
 use xdid::{
     core::{
@@ -66,121 +73,84 @@ use xdid::{
 mod files;
 pub mod secrets;
 
-const REGISTRY_DOCS_FILE: &str = "registry-docs.json";
-
-/// The registry docs this node minted before, if any. An unreadable record is
-/// reported and replaced: minting fresh abandons the old namespaces, but a
-/// registry that cannot start at all serves no one.
-fn load_registry_docs() -> Option<RegistryDocs> {
-    let text = std::fs::read_to_string(DIRS.data_local_dir().join(REGISTRY_DOCS_FILE)).ok()?;
-    match serde_json::from_str(&text) {
-        Ok(docs) => Some(docs),
-        Err(err) => {
-            warn!(?err, "unreadable registry docs record; minting fresh");
-            None
-        }
-    }
-}
-
-fn save_registry_docs(docs: &RegistryDocs) -> anyhow::Result<()> {
-    let json = serde_json::to_string_pretty(docs)?;
-    std::fs::write(DIRS.data_local_dir().join(REGISTRY_DOCS_FILE), json)?;
-    Ok(())
-}
-
 pub static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
     let dirs = ProjectDirs::from("", "UNAVI", "unavi-server").expect("project dirs");
     std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
     dirs
 });
 
-/// Which services this node runs. One DID, endpoint, and storage directory
-/// serve both roles; file hosting is always on.
-pub struct Features {
-    pub registry: bool,
-    pub wds:      bool,
-}
-
-impl Default for Features {
-    fn default() -> Self {
-        Self {
-            registry: true,
-            wds:      true,
-        }
-    }
-}
-
 pub struct ServerOptions {
-    pub features:  Features,
     pub in_memory: bool,
     pub port:      u16,
+    /// Whether this node serves discovery: catalog, curated views, and live
+    /// presence. One DID, endpoint, and storage directory serve every role it
+    /// takes on; document sync and file hosting are always on.
+    pub registry:  bool,
 }
 
 pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     let port = opts.port;
 
     let did = create_did(&secrets::Secrets::load().unavi_domain)?;
-    let identity = Arc::new(WdsIdentity::load(&key_storage(opts.in_memory))?);
+    let storage = key_storage(opts.in_memory);
+    let node = Arc::new(NodeIdentity::load(&storage)?);
     info!("Running server as {did}");
 
+    // Published before the endpoint binds: a peer can dial the instant it is
+    // listening, and answering its proof needs the key.
+    identity::set_local(Arc::clone(node.user()));
+
+    let auth = EndpointAuth::new();
+
     // Fixes the endpoint id across restarts. The served DID document names it,
-    // and `signed_by_wds_service` has peers verify a challenge against it.
-    let endpoint = Endpoint::builder(N0)
-        .secret_key(identity.endpoint().clone())
+    // so a client that resolved this DID can still reach the node.
+    let endpoint = auth
+        .install(Endpoint::builder(N0).secret_key(node.endpoint().clone()))
         .bind()
         .await?;
 
-    let builder = DataStore::builder(endpoint.clone(), Arc::clone(&identity))
-        .gc_timer(Duration::from_mins(15))
-        .serve_control();
-    let builder = if opts.in_memory {
-        builder
-    } else {
-        builder.storage_path(DIRS.data_local_dir().join("wds"))
-    };
+    let (auth_protocol, _auth_task) = auth
+        .serve(endpoint.clone())
+        .ok_or_else(|| anyhow::anyhow!("identity handshake already served"))?;
 
-    let (store, f) = builder.build().await?;
-    let store = Arc::new(store);
+    let endpoint_id = endpoint.id();
+    let builder = StoreBuilder::new(endpoint.clone(), node.author())
+        .gc_timer(Duration::from_mins(15))
+        .storage(storage.clone());
+
+    let Store {
+        blobs,
+        docs,
+        router,
+        guard: _guard,
+        ..
+    } = builder.build().await?;
 
     if let Err(err) = files::init_files_dir() {
         warn!(?err, "failed to init files dir");
     }
-    match files::host_files(&store).await {
+    match files::host_files(&blobs).await {
         Ok(hosted) => files::log_manifest(&hosted),
         Err(err) => warn!(?err, "failed to host files"),
     }
 
     let mut rb = iroh::protocol::Router::builder(endpoint);
-    if opts.features.wds {
-        info!("Serving WDS storage");
-        rb = f(rb);
-    }
+    rb = router(rb).accept(auth::ALPN, auth_protocol);
 
-    let (_registry, views) = if opts.features.registry {
-        let mut config = RegistryConfig::default();
-        config.docs = load_registry_docs();
+    let _registry = if opts.registry {
+        let config = RegistryConfig::default();
+        let (registry, protocol) = Registry::create(&docs, blobs.blobs(), config, &storage).await?;
 
-        let (registry, protocol) = Registry::create(Arc::clone(&store), config).await?;
-        if let Err(err) = save_registry_docs(&registry.docs()) {
-            warn!(?err, "could not persist registry doc ids");
-        }
-
-        let views = registry.views();
-        info!(recent = %views.recent, "Serving registry");
+        info!(recent = %registry.views().recent, "Serving registry");
         rb = rb.accept(unavi_registry::control::ALPN, protocol);
-        (Some(registry), Some(views))
+        Some(registry)
     } else {
-        (None, None)
+        None
     };
 
     let router = rb.spawn();
 
-    let app = create_did_document_route(
-        did,
-        identity.user().signing_key(),
-        store.endpoint_id(),
-        views,
-    )?;
+    let app = create_did_document_route(did, node.user().signing_key(), endpoint_id)?;
 
     let addr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port));
     info!("HTTP listening on port {port}");
@@ -194,11 +164,11 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn key_storage(in_memory: bool) -> KeyStorage {
+fn key_storage(in_memory: bool) -> Storage {
     if in_memory {
-        KeyStorage::Ephemeral
+        Storage::Ephemeral
     } else {
-        KeyStorage::Path(DIRS.data_local_dir().to_path_buf())
+        Storage::Path(DIRS.data_local_dir().to_path_buf())
     }
 }
 
@@ -213,15 +183,7 @@ fn create_did_document_route(
     did: Did,
     vc: &impl DidKeyPair,
     endpoint_id: EndpointId,
-    views: Option<ViewIds>,
 ) -> anyhow::Result<axum::Router> {
-    // Advertise the endpoint always, and the registry's entry view only when
-    // this node runs one, so resolvers learn which roles it serves.
-    let mut service_endpoint = vec![endpoint_id.to_string()];
-    if let Some(views) = views {
-        service_endpoint.push(format!("registry:{}", views.recent));
-    }
-
     let key_ref = VerificationMethod::RelativeUrl(RelativeDidUrl::new(
         RelativeDidUrlPath::Empty,
         None,
@@ -239,9 +201,9 @@ fn create_did_document_route(
         controller:            None,
         key_agreement:         None,
         service:               Some(vec![ServiceEndpoint {
-            id: "wds".into(),
-            typ: vec![WDS_SERVICE_TYPE.into()],
-            service_endpoint,
+            id:               ENDPOINT_SERVICE_ID.into(),
+            typ:              vec![ENDPOINT_SERVICE_TYPE.into()],
+            service_endpoint: vec![endpoint_id.to_string()],
         }]),
         verification_method:   Some(vec![VerificationMethodMap {
             id:                   DidUrl::new(did.clone(), None, None, Some(KEY_FRAGMENT.into()))?,

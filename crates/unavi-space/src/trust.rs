@@ -1,22 +1,29 @@
 use std::path::Path;
 
 use bevy::prelude::*;
+use bevy_iroh::store::{
+    LocalBlobs,
+    LocalDocs,
+};
 use hsd::id::DocId;
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
+use unavi_identity::auth::binding;
 use unavi_policy::{
     check::{
         self,
         Resolver,
     },
-    identity,
     trust::{
         self,
         Trust,
     },
 };
+use unavi_store::entries::{
+    self,
+    Write,
+};
 use unavi_util::async_task::spawn_async_task;
-use xdid::core::did::Did;
 
 use crate::{
     connection::disconnect,
@@ -80,7 +87,7 @@ pub fn load_trust_table() {
 /// owner-authored KV cascade away with the connection; only neutral cells need
 /// rolling back by hand, since they outlive a disconnect.
 pub fn eject(peer: [u8; 32]) -> Result<(), NoIdentity> {
-    let did = identity::did_of(peer).ok_or(NoIdentity)?;
+    let did = binding::did_of(peer).ok_or(NoIdentity)?;
     trust::set_override(did, Trust::Blocked);
 
     let reverted = replicas::revert_neutral_writes(peer);
@@ -101,7 +108,7 @@ pub fn eject(peer: [u8; 32]) -> Result<(), NoIdentity> {
 
 /// Lifts a block, so the peer is judged by the graph or the default again.
 pub fn unblock(peer: [u8; 32]) -> Result<(), NoIdentity> {
-    let did = identity::did_of(peer).ok_or(NoIdentity)?;
+    let did = binding::did_of(peer).ok_or(NoIdentity)?;
     trust::clear_override(&did);
     unavi_quota::registry::forget_peer(NamespaceId::from(&peer));
     if let Some(dir) = table_dir()
@@ -110,20 +117,6 @@ pub fn unblock(peer: [u8; 32]) -> Result<(), NoIdentity> {
         warn!(?err, "failed to persist the unblock");
     }
     Ok(())
-}
-
-/// Drops the connection to a peer whose proven DID turns out to be blocked.
-///
-/// The earliest a block can hit an incoming peer: the DID binding is
-/// established over the connection itself, so at accept time there is nothing
-/// to judge.
-pub fn enforce_block(peer: EndpointId, did: &Did) -> bool {
-    if trust::of_did(did) != Trust::Blocked {
-        return false;
-    }
-    info!(%did, "Refusing a blocked peer");
-    disconnect(peer);
-    true
 }
 
 /// A peer that proved no DID, and so has nothing durable to block.
@@ -142,7 +135,7 @@ static PUBLISHED: parking_lot::Mutex<Option<std::collections::HashSet<[u8; 32]>>
 /// Publishes the local vouch list under salted subject hashes, emptying the
 /// keys of any vouch since retracted. Only hashes go out, so the list cannot
 /// be enumerated.
-pub fn publish_vouches(docs: Query<&bevy_wds::LocalDocs>) {
+pub fn publish_vouches(stores: Query<(&LocalDocs, &LocalBlobs)>) {
     use std::collections::HashSet;
 
     use bytes::Bytes;
@@ -151,10 +144,10 @@ pub fn publish_vouches(docs: Query<&bevy_wds::LocalDocs>) {
         subject_hash,
     };
 
-    let Some(ns) = bevy_wds::root_doc() else {
+    let Some(ns) = unavi_identity::root_doc::root_doc() else {
         return;
     };
-    let Ok(docs) = docs.single().map(|d| d.0.clone()) else {
+    let Ok((docs, blobs)) = stores.single().map(|(d, b)| (d.0.clone(), b.0.clone())) else {
         return;
     };
 
@@ -178,21 +171,30 @@ pub fn publish_vouches(docs: Query<&bevy_wds::LocalDocs>) {
         return;
     }
 
+    let writes = vouches
+        .into_iter()
+        .filter_map(|vouch| {
+            let bytes = postcard::to_allocvec(&vouch).ok()?;
+            Some(Write::Bytes {
+                key:   format!("{VOUCH_PREFIX}{}", hex(&vouch.subject)),
+                value: Bytes::from(bytes),
+            })
+        })
+        .chain(retracted.into_iter().map(|subject| Write::Remove {
+            key: format!("{VOUCH_PREFIX}{}", hex(&subject)),
+        }))
+        .collect::<Vec<_>>();
+
     spawn_async_task(async move {
-        for vouch in vouches {
-            let Ok(bytes) = postcard::to_allocvec(&vouch) else {
-                continue;
-            };
-            let key = format!("{VOUCH_PREFIX}{}", hex(&vouch.subject));
-            if let Err(err) = wds::kv::set(&docs, ns, &key, Bytes::from(bytes)).await {
-                warn!(?err, "failed to publish vouch");
-            }
+        let published = async {
+            let doc = unavi_store::namespace::ensure_open(&docs, ns).await?;
+            let author = docs.api().author_default().await?;
+            entries::apply(&doc, &blobs, author, writes).await
         }
-        for subject in retracted {
-            let key = format!("{VOUCH_PREFIX}{}", hex(&subject));
-            if let Err(err) = wds::kv::set(&docs, ns, &key, Bytes::new()).await {
-                warn!(?err, "failed to retract vouch");
-            }
+        .await;
+
+        if let Err(err) = published {
+            warn!(?err, "failed to publish vouches");
         }
     });
 }

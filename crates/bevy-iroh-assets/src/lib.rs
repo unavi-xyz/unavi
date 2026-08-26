@@ -3,19 +3,19 @@
 //!
 //! Nothing is written to an asset directory: the blob store holds the only
 //! copy, pinned against its garbage collector. Fetch, retry and error policy
-//! live in bevy-wds.
+//! live in bevy-iroh.
 
 use async_channel::Receiver;
 use bevy::{
     asset::io::AssetSourceBuilder,
     prelude::*,
 };
-use bevy_wds::{
-    LocalBlobStore,
+use bevy_iroh::{
     blob::request::{
         BlobRequest,
         BlobResponse,
     },
+    store::LocalBlobStore,
 };
 use bytes::Bytes;
 use tokio::sync::oneshot;

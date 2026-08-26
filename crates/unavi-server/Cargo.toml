@@ -28,7 +28,8 @@ tokio                 = { features = ["full"], workspace = true }
 tower-http            = { features = ["cors"], version = "0.6.11" }
 tracing.workspace     = true
 tracing-subscriber    = { features = ["env-filter"], workspace = true }
+unavi-identity.path   = "../unavi-identity"
 unavi-registry.path   = "../unavi-registry"
 unavi-secrets.path    = "../unavi-secrets"
-wds.path              = "../wds"
+unavi-store.path      = "../unavi-store"
 xdid.workspace        = true

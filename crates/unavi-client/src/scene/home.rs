@@ -8,7 +8,7 @@ use bevy_hsd::load::{
     LoadHsd,
     OnLoadCtx,
 };
-use bevy_wds::doc::DocSet;
+use bevy_iroh::doc::DocSet;
 use iroh_docs::NamespaceId;
 use unavi_policy::space::Space;
 use unavi_util::async_commands::AsyncCommands;
@@ -72,7 +72,7 @@ const HOME_VERSION: u32 = 0;
 /// Writes down which space is home, so a shell can offer to travel back to it;
 /// without this entry a script has no way to learn it.
 async fn record_home(ns: NamespaceId) {
-    let Some(root) = bevy_wds::root_doc() else {
+    let Some(root) = unavi_identity::root_doc::root_doc() else {
         return;
     };
     let mut value = match postcard::to_stdvec(&HOME_VERSION) {

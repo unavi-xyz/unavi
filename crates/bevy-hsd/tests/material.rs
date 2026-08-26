@@ -80,7 +80,7 @@ fn test_material_lifecycle(mut ctx: TestContext) {
 /// one property namespace, one home for a cross-prim reference.
 #[traced_test]
 #[rstest]
-fn test_material_texture_ref(#[from(ctx_wds)] mut ctx: TestContext) {
+fn test_material_texture_ref(#[from(ctx_blobs)] mut ctx: TestContext) {
     let mut rgba = RgbaImage::new(2, 2);
     for (i, px) in rgba.pixels_mut().enumerate() {
         let v = (i * 60) as u8;

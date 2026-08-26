@@ -23,7 +23,7 @@ use crate::{
         input::WiredInputApi,
         kv::WiredKvApi,
         scene::WiredSceneApi,
-        wds::WiredWdsApi,
+        storage::WiredStorageApi,
     },
 };
 
@@ -32,16 +32,16 @@ mod slot_map;
 pub mod wired;
 
 pub struct Api {
-    pub state:       Arc<std::sync::Mutex<SceneState>>,
-    pub doc_id:      DocId,
-    pub prim:        PrimId,
-    pub quota:       Arc<Quota>,
-    pub wired_agent: Mutex<WiredAgentApi>,
-    pub wired_event: Mutex<WiredEventApi>,
-    pub wired_input: Mutex<WiredInputApi>,
-    pub wired_kv:    Mutex<WiredKvApi>,
-    pub wired_scene: Mutex<WiredSceneApi>,
-    pub wired_wds:   Mutex<WiredWdsApi>,
+    pub state:         Arc<std::sync::Mutex<SceneState>>,
+    pub doc_id:        DocId,
+    pub prim:          PrimId,
+    pub quota:         Arc<Quota>,
+    pub wired_agent:   Mutex<WiredAgentApi>,
+    pub wired_event:   Mutex<WiredEventApi>,
+    pub wired_input:   Mutex<WiredInputApi>,
+    pub wired_kv:      Mutex<WiredKvApi>,
+    pub wired_scene:   Mutex<WiredSceneApi>,
+    pub wired_storage: Mutex<WiredStorageApi>,
 }
 
 impl Api {

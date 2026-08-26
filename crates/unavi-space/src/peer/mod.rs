@@ -1,27 +1,19 @@
-use std::sync::{
-    Arc,
-    RwLock,
-};
+use std::sync::RwLock;
 
 use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
-use bevy_wds::{
-    BlobProviders,
-    LocalActor,
-};
+use bevy_iroh::store::BlobProviders;
 use iroh::{
     EndpointAddr,
     EndpointId,
 };
 use iroh_docs::NamespaceId;
-use wds::identity::Identity;
 
 pub mod presence;
 
 static SELF_PEER: RwLock<Option<[u8; 32]>> = RwLock::new(None);
-static SELF_IDENTITY: RwLock<Option<Arc<Identity>>> = RwLock::new(None);
 
 #[must_use]
 pub fn self_peer_id() -> Option<[u8; 32]> {
@@ -45,26 +37,18 @@ pub fn set_self_peer_id(peer: [u8; 32]) {
 }
 
 #[must_use]
-pub fn self_identity() -> Option<Arc<Identity>> {
-    SELF_IDENTITY
-        .read()
-        .expect("SELF_IDENTITY poisoned")
-        .clone()
-}
-
-#[must_use]
 pub fn self_did() -> Option<String> {
-    self_identity().map(|i| i.did().to_string())
+    unavi_identity::identity::local_did().map(|did| did.to_string())
 }
 
-pub fn capture_self_identity(trigger: On<Add, LocalActor>, actors: Query<&LocalActor>) {
-    if let Ok(actor) = actors.get(trigger.entity) {
-        let identity = actor.0.identity();
-        unavi_policy::identity::set_self(identity.did().clone());
-        *SELF_IDENTITY.write().expect("SELF_IDENTITY poisoned") = Some(Arc::clone(identity));
-        // Trust scores key off the local DID, which did not exist until now.
-        unavi_policy::trust::recompute(&[]);
+/// Trust scores key off the local DID, so the table loaded at startup is worth
+/// nothing until the identity this process runs as is known.
+pub fn score_once_identified(mut scored: Local<bool>) {
+    if *scored || unavi_identity::identity::local_did().is_none() {
+        return;
     }
+    *scored = true;
+    unavi_policy::trust::recompute(&[]);
 }
 
 /// Offers the connected peers to the blob downloader.

@@ -11,7 +11,7 @@ use bevy::{
         ConditionalSendFuture,
     },
 };
-use bevy_wds::{
+use bevy_iroh::store::{
     LocalBlobs,
     LocalDocs,
 };
@@ -127,12 +127,12 @@ async fn build_and_instance(
     entity: Entity,
     on_load: Option<OnLoadFn>,
 ) -> anyhow::Result<()> {
-    let namespace = wds::entries::create(&docs).await?;
-    let doc = wds::docs::ensure_open(&docs, namespace).await?;
-    let author = wds::entries::author(&docs).await?;
+    let namespace = docs.api().create().await?.id();
+    let doc = unavi_store::namespace::ensure_open(&docs, namespace).await?;
+    let author = docs.api().author_default().await?;
 
     let writes = document::unpack(package, &blobs)?;
-    wds::entries::apply(&doc, &blobs, author, writes).await?;
+    unavi_store::entries::apply(&doc, &blobs, author, writes).await?;
 
     let state = document::read_state(&doc, &blobs).await?;
 

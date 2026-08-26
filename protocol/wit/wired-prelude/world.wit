@@ -8,7 +8,7 @@ world types {
   import wired:math/types;
   import wired:peer/types;
   import wired:scene/types;
-  import wired:wds/types;
+  import wired:storage/types;
 }
 
 /// What any document in a space may reach.
@@ -22,13 +22,13 @@ world api {
 }
 
 /// What only the shell and the tools it ships with may reach: the local
-/// agent's body, device-level input, physics authority, and the personal data
-/// store. Strictly more authority than `api`, never less.
+/// agent's body, device-level input, physics authority, and the docs this
+/// node holds. Strictly more authority than `api`, never less.
 world api-privileged {
   import wired:agent/api;
   import wired:input/context;
   import wired:physics/api;
-  import wired:wds/api;
+  import wired:storage/api;
 }
 
 world lib {

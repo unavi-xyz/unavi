@@ -14,8 +14,8 @@ anyhow.workspace        = true
 async-channel.workspace = true
 avian3d.workspace       = true
 bevy.workspace          = true
+bevy-iroh.path          = "../bevy-iroh"
 bevy-msdf.path          = "../bevy-msdf"
-bevy-wds.path           = "../bevy-wds"
 blake3.workspace        = true
 bytemuck                = "1.25.2"
 hsd.path                = "../hsd"
@@ -28,8 +28,8 @@ smol_str.workspace      = true
 thiserror.workspace     = true
 unavi-physics.path      = "../unavi-physics"
 unavi-quota             = { path = "../unavi-quota", version = "0.0.16" }
+unavi-store.path        = "../unavi-store"
 unavi-util.path         = "../unavi-util"
-wds.path                = "../wds"
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
@@ -39,4 +39,4 @@ notosans.workspace             = true
 rstest.workspace               = true
 tracing.workspace              = true
 tracing-test                   = { features = ["no-env-filter"], workspace = true }
-wds.path                       = "../wds"
+unavi-store.path               = "../unavi-store"

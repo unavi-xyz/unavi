@@ -41,7 +41,6 @@
           ../unavi-script/package.json
           ../unavi-script/package-lock.json
           ../unavi-script/runtime.ts
-          ../wds/migrations
           ./assets
           ./index.html
           ./loader.html

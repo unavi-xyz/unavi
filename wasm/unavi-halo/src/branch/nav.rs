@@ -26,8 +26,8 @@ use crate::{
             },
             types::Document,
         },
-        wds::{
-            api::get_wds,
+        storage::{
+            api::get_storage,
             types::ListFuture,
         },
     },
@@ -65,13 +65,13 @@ impl Nav {
     /// Asks every registry what is live. Called when the branch opens, so a
     /// halo that is never opened costs nothing.
     pub fn refresh(&mut self) {
-        let Ok(wds) = get_wds() else {
+        let Ok(storage) = get_storage() else {
             return;
         };
-        self.lists = wds
+        self.lists = storage
             .registries()
             .iter()
-            .map(|registry| wds.list(registry, ACTIVE_PREFIX))
+            .map(|registry| storage.list(registry, ACTIVE_PREFIX))
             .collect();
     }
 
@@ -152,7 +152,7 @@ struct Listing {
 /// lives in the registry's other views behind a payload a guest cannot decode
 /// — so a space is named by the head of its namespace, and the placard says
 /// only what is actually known.
-fn entry(entry: &crate::wired::wds::types::Entry) -> Option<Listing> {
+fn entry(entry: &crate::wired::storage::types::Entry) -> Option<Listing> {
     let mut parts = entry.key.strip_prefix(ACTIVE_PREFIX)?.split('/');
     let rank = parts.next()?.parse().ok()?;
     let space = parts.next().filter(|space| !space.is_empty())?;

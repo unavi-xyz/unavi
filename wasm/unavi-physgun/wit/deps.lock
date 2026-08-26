@@ -55,8 +55,8 @@ sha512 = "86b90f057cc386fca27eabb784b5d8a9834a4c7c8f53a1cc92564d5247ca7e05fc743c
 
 [wired-prelude]
 path = "../../../protocol/wit/wired-prelude"
-sha256 = "d67447c876bd60a724d60d9c40a48012ba60ecbaa5a839dd3f5a96c030cffa81"
-sha512 = "55e46db15cf2fd31f89b22d5db926c1052dedcb7f362b189825d0a5e067a15a61fb0dcc6fbc28961a2401c35d95b85032c00cbe4bb5adcb56b42646bf8994440"
+sha256 = "d502033e19458a0be1a802f97dd261de996a87e3a05ae240e22cfdf6ab9f3b3e"
+sha512 = "32fc141d1d4e5866a7200db23a7ecddf528acbfaf083834a709d7acd1490c49f14a4e9329028400771d96c97bc941e1a6e7e98438e1a3a2c2ddde6a0e34a31aa"
 
 [wired-scene]
 path = "../../../protocol/wit/wired-scene"
@@ -68,7 +68,7 @@ path = "../../../protocol/wit/wired-script"
 sha256 = "4521fa92f13d31e60edcd04a931a53a0cfbabb4deed8ca5502bbf020536b7200"
 sha512 = "6d79865049129753f9f1fe512fdd53b6d2ac58170981a42219d1758038709fde9a59d96749bd2c505bef6cbbed95c8fc0a8b4eeface6ddcae1a4a509d045baed"
 
-[wired-wds]
-path = "../../../protocol/wit/wired-wds"
-sha256 = "84ebe5a5dc41f999ddb07e6caf5e780693b1451ad3097575fda6945ea3f71a32"
-sha512 = "8075f090f297e18e5562509f0edc65ca355e7cfd0036277b2cc4ca14aebbab7faef32c99c6a37b1b484d1083cc0b9ef9a727460cbfda987cd5c49ef960851b44"
+[wired-storage]
+path = "../../../protocol/wit/wired-storage"
+sha256 = "75a6cf65bd36b5ec79c7373db3106b3dca5d4508a41b1b6822f4bb365a208f41"
+sha512 = "c33df6a717fa02f16f258477bafd998f6e14e2a0b9c570b257ca99e8dbded664340f015a2a20f20ebef11475291dd351f7620b99b31e6197698886b77a2c2ee2"

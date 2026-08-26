@@ -7,14 +7,18 @@ use iroh_docs::{
     store::Query,
 };
 use time::OffsetDateTime;
-use wds::{
-    DataStore,
-    signed_bytes::SignedBytes,
+use unavi_identity::signed_bytes::SignedBytes;
+use unavi_store::{
+    local::Storage,
+    namespace,
 };
 
 use crate::entry::Submission;
 
 const ENTRIES_PREFIX: &str = "entries/";
+
+/// Where the catalog namespace is recorded across restarts.
+const KEY: &str = "registry/catalog";
 
 fn entry_key(ns: NamespaceId) -> String {
     format!("{ENTRIES_PREFIX}{ns}")
@@ -27,20 +31,9 @@ pub struct Catalog {
 }
 
 impl Catalog {
-    /// Reopens the catalog named by `existing`, minting a fresh one if it is
-    /// absent or its capability no longer held, and reports the namespace back
-    /// to the operator for persistence.
-    pub async fn create(store: &DataStore, existing: Option<NamespaceId>) -> anyhow::Result<Self> {
-        let ns = match existing {
-            Some(ns) if store.docs().api().open(ns).await?.is_some() => ns,
-            _ => store.docs().api().create().await?.id(),
-        };
+    pub async fn create(docs: &Docs, storage: &Storage) -> anyhow::Result<Self> {
+        let ns = namespace::open_or_mint(docs, storage, KEY).await?;
         Ok(Self { ns })
-    }
-
-    #[must_use]
-    pub const fn namespace(&self) -> NamespaceId {
-        self.ns
     }
 
     async fn doc(&self, docs: &Docs) -> anyhow::Result<Doc> {
@@ -96,7 +89,7 @@ impl Catalog {
             if submission.expires <= now {
                 continue;
             }
-            if !wds::signed_bytes::verify_did_signature(&signed, &submission.did).await {
+            if !unavi_identity::signed_bytes::verify_did_signature(&signed, &submission.did).await {
                 continue;
             }
             out.push(submission);

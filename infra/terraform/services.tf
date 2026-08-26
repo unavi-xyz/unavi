@@ -5,7 +5,7 @@ locals {
     stable = {
       unavi_server = {
         port      = 5000
-        subdomain = "wds"
+        subdomain = "node"
       }
       web_client = {
         subdomain = "app"

@@ -966,8 +966,8 @@ dependencies = [
  "async-channel",
  "avian3d",
  "bevy",
+ "bevy-iroh",
  "bevy-msdf",
- "bevy-wds",
  "bevy_panorbit_camera",
  "blake3",
  "bytemuck",
@@ -986,8 +986,8 @@ dependencies = [
  "tracing-test",
  "unavi-physics",
  "unavi-quota",
+ "unavi-store",
  "unavi-util",
- "wds",
 ]
 
 [[package]]
@@ -1048,9 +1048,17 @@ dependencies = [
  "anyhow",
  "async-channel",
  "bevy",
+ "blake3",
+ "bytes",
  "iroh",
+ "iroh-blobs",
+ "iroh-docs",
+ "iroh-gossip",
  "n0-future",
+ "thiserror 2.0.20",
+ "tokio",
  "tracing",
+ "unavi-store",
  "unavi-util",
 ]
 
@@ -1061,7 +1069,7 @@ dependencies = [
  "anyhow",
  "async-channel",
  "bevy",
- "bevy-wds",
+ "bevy-iroh",
  "blake3",
  "bytes",
  "iroh-blobs",
@@ -1130,27 +1138,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "385399ab103f61f9eab8ef3403e0a2947514d60657d36d22f73b6d9187a9e04d"
 dependencies = [
  "bevy",
-]
-
-[[package]]
-name = "bevy-wds"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "async-channel",
- "bevy",
- "blake3",
- "bytes",
- "iroh",
- "iroh-blobs",
- "iroh-docs",
- "iroh-gossip",
- "n0-future",
- "thiserror 2.0.20",
- "tokio",
- "unavi-registry",
- "unavi-util",
- "wds",
 ]
 
 [[package]]
@@ -5416,18 +5403,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fallible-iterator"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2acce4a10f12dc2fb14a218589d4f1f62ef011b2d0cc4b3cb1bba8e94da14649"
-
-[[package]]
-name = "fallible-streaming-iterator"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
-
-[[package]]
 name = "fastbloom"
 version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6516,15 +6491,6 @@ dependencies = [
  "foldhash 0.2.0",
  "serde",
  "serde_core",
-]
-
-[[package]]
-name = "hashlink"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "824e001ac4f3012dd16a264bec811403a67ca9deb6c102fc5049b32c4574b35f"
-dependencies = [
- "hashbrown 0.16.1",
 ]
 
 [[package]]
@@ -8096,17 +8062,6 @@ dependencies = [
  "libc",
  "plain",
  "redox_syscall 0.9.3",
-]
-
-[[package]]
-name = "libsqlite3-sys"
-version = "0.37.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1f111c8c41e7c61a49cd34e44c7619462967221a6443b0ec299e0ac30cfb9b1"
-dependencies = [
- "cc",
- "pkg-config",
- "vcpkg",
 ]
 
 [[package]]
@@ -11320,16 +11275,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rsqlite-vfs"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c51c9ae4df8a7fba42103df5c621fa3c37eccf3a3c650879e90fc48b11cc192c"
-dependencies = [
- "hashbrown 0.16.1",
- "thiserror 2.0.20",
-]
-
-[[package]]
 name = "rstar"
 version = "0.12.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11379,21 +11324,6 @@ dependencies = [
  "security-framework-sys",
  "which",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "rusqlite"
-version = "0.39.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0d2b0146dd9661bf67bb107c0bb2a55064d556eeb3fc314151b957f313bcd4e"
-dependencies = [
- "bitflags 2.13.1",
- "fallible-iterator",
- "fallible-streaming-iterator",
- "hashlink",
- "libsqlite3-sys",
- "smallvec",
- "sqlite-wasm-rs",
 ]
 
 [[package]]
@@ -12438,18 +12368,6 @@ checksum = "1d9efca8738c78ee9484207732f728b1ef517bbb1833d6fc0879ca898a522f6f"
 dependencies = [
  "base64ct",
  "der 0.8.1",
-]
-
-[[package]]
-name = "sqlite-wasm-rs"
-version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc3efc0da82635d7e1ced0053bbbfa8c7ab9645d0bf36ceb4f7127bb85315d75"
-dependencies = [
- "cc",
- "js-sys",
- "rsqlite-vfs",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -13723,7 +13641,6 @@ dependencies = [
  "bevy-hsd",
  "bevy-inspector-egui",
  "bevy-iroh",
- "bevy-wds",
  "bevy_mod_openxr",
  "bevy_mod_xr",
  "bevy_vrm",
@@ -13734,6 +13651,7 @@ dependencies = [
  "iroh",
  "iroh-docs",
  "log",
+ "n0-future",
  "parking_lot",
  "postcard",
  "tracing",
@@ -13747,9 +13665,11 @@ dependencies = [
  "unavi-manifold",
  "unavi-physics",
  "unavi-policy",
+ "unavi-registry",
  "unavi-script",
  "unavi-secrets",
  "unavi-space",
+ "unavi-store",
  "unavi-util",
  "unavi-wasm-compat",
  "web-sys",
@@ -13818,17 +13738,28 @@ name = "unavi-identity"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "bevy",
- "bevy-iroh",
- "bevy-wds",
+ "axum",
  "iroh",
  "iroh-docs",
+ "jose-jwk",
  "n0-future",
- "unavi-registry",
- "unavi-util",
- "wds",
- "web-sys",
+ "p256",
+ "p384",
+ "parking_lot",
+ "postcard",
+ "rand 0.9.5",
+ "rstest",
+ "serde",
+ "serde_json",
+ "signature 2.2.0",
+ "tempfile",
+ "thiserror 2.0.20",
+ "tokio",
+ "tracing",
+ "tracing-test",
+ "unavi-store",
  "xdid",
+ "zeroize",
 ]
 
 [[package]]
@@ -13922,6 +13853,7 @@ dependencies = [
  "thiserror 2.0.20",
  "toml 1.1.4+spec-1.1.0",
  "tracing",
+ "unavi-identity",
  "unavi-quota",
  "xdid",
 ]
@@ -13957,6 +13889,7 @@ dependencies = [
  "irpc",
  "irpc-iroh",
  "n0-future",
+ "parking_lot",
  "postcard",
  "scc",
  "serde",
@@ -13964,7 +13897,8 @@ dependencies = [
  "thiserror 2.0.20",
  "time",
  "tracing",
- "wds",
+ "unavi-identity",
+ "unavi-store",
  "xdid",
 ]
 
@@ -13979,7 +13913,6 @@ dependencies = [
  "bevy-hsd",
  "bevy-inspector-egui",
  "bevy-iroh",
- "bevy-wds",
  "bevy_panorbit_camera",
  "bevy_vrm",
  "blake3",
@@ -14001,19 +13934,21 @@ dependencies = [
  "unavi-assets-fetch",
  "unavi-avatar",
  "unavi-grab",
+ "unavi-identity",
  "unavi-input",
  "unavi-manifold",
  "unavi-physics",
  "unavi-policy",
  "unavi-portal-protocol",
  "unavi-quota",
+ "unavi-registry",
  "unavi-space",
+ "unavi-store",
  "unavi-util",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasmtime",
  "wasmtime-wasi",
- "wds",
  "web-time",
  "xdid",
 ]
@@ -14057,9 +13992,10 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "unavi-identity",
  "unavi-registry",
  "unavi-secrets",
- "wds",
+ "unavi-store",
  "xdid",
 ]
 
@@ -14082,7 +14018,6 @@ dependencies = [
  "bevy",
  "bevy-hsd",
  "bevy-iroh",
- "bevy-wds",
  "blake3",
  "bytes",
  "half",
@@ -14103,12 +14038,13 @@ dependencies = [
  "unavi-agent",
  "unavi-avatar",
  "unavi-devtools",
+ "unavi-identity",
  "unavi-manifold",
  "unavi-policy",
  "unavi-quota",
  "unavi-registry",
+ "unavi-store",
  "unavi-util",
- "wds",
  "web-time",
  "xdid",
 ]
@@ -14120,6 +14056,30 @@ dependencies = [
  "anyhow",
  "wired-prelude",
  "wit-bindgen 0.55.0",
+]
+
+[[package]]
+name = "unavi-store"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "blake3",
+ "bytes",
+ "futures",
+ "iroh",
+ "iroh-blobs",
+ "iroh-docs",
+ "iroh-gossip",
+ "n0-future",
+ "rstest",
+ "serde",
+ "tempfile",
+ "thiserror 2.0.20",
+ "time",
+ "tokio",
+ "tracing",
+ "tracing-test",
+ "web-sys",
 ]
 
 [[package]]
@@ -15192,45 +15152,6 @@ dependencies = [
  "log",
  "once_cell",
  "pkg-config",
-]
-
-[[package]]
-name = "wds"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "axum",
- "blake3",
- "bytes",
- "derive_more",
- "futures",
- "iroh",
- "iroh-blobs",
- "iroh-docs",
- "iroh-gossip",
- "irpc",
- "irpc-iroh",
- "jose-jwk",
- "n0-future",
- "p256",
- "p384",
- "postcard",
- "rand 0.9.5",
- "rstest",
- "rusqlite",
- "scc",
- "serde",
- "serde_json",
- "signature 2.2.0",
- "tempfile",
- "thiserror 2.0.20",
- "time",
- "tokio",
- "tracing",
- "tracing-test",
- "web-sys",
- "xdid",
- "zeroize",
 ]
 
 [[package]]

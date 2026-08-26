@@ -69,7 +69,7 @@ pub fn instantiate_scripts(
                 wired_input: Mutex::default(),
                 wired_kv: Mutex::default(),
                 wired_scene: Mutex::default(),
-                wired_wds: Mutex::default(),
+                wired_storage: Mutex::default(),
             }),
         };
 

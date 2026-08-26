@@ -1,5 +1,3 @@
-//! Discovery and curation, separate from [`wds`].
-
 use std::{
     sync::{
         Arc,
@@ -13,17 +11,12 @@ use std::{
 
 use iroh_blobs::api::blobs::Blobs;
 use iroh_docs::protocol::Docs;
-use irpc::Client;
-use irpc_iroh::IrohProtocol;
 use tracing::warn;
-use wds::DataStore;
+use unavi_store::local::Storage;
 
 use crate::{
     catalog::Catalog,
-    config::{
-        Config,
-        RegistryDocs,
-    },
+    config::Config,
     presence::PresenceTable,
     views::Views,
 };
@@ -34,6 +27,7 @@ pub mod config;
 pub mod control;
 pub mod entry;
 pub mod error;
+pub mod follow;
 pub mod presence;
 pub mod views;
 
@@ -46,7 +40,6 @@ pub struct RegistryContext {
     pub(crate) config:   Config,
     pub(crate) docs:     Docs,
     pub(crate) presence: PresenceTable,
-    pub(crate) store:    Arc<DataStore>,
     pub(crate) views:    Views,
     dirty:               AtomicBool,
 }
@@ -55,70 +48,45 @@ impl RegistryContext {
     pub(crate) fn request_rebuild(&self) {
         self.dirty.store(true, Ordering::Release);
     }
-
-    pub(crate) async fn session_did(
-        &self,
-        token: &wds::SessionToken,
-    ) -> Option<xdid::core::did::Did> {
-        self.store.session_did(token).await
-    }
 }
 
 pub struct Registry {
-    client: Client<control::RegistryService>,
-    ctx:    Arc<RegistryContext>,
+    ctx: Arc<RegistryContext>,
 }
 
 impl Registry {
     /// Returns the registry and its iroh protocol handler, to be registered on
     /// the same router as the store's.
     pub async fn create(
-        store: Arc<DataStore>,
-        mut config: Config,
-    ) -> anyhow::Result<(Self, IrohProtocol<control::RegistryService>)> {
-        let docs = store.docs().clone();
-        let blobs = store.blobs().blobs().clone();
-
-        let existing = config.docs.take();
-        let catalog = Catalog::create(&store, existing.as_ref().map(|d| d.catalog)).await?;
-        let views = Views::create(&store, existing.map(|d| d.views)).await?;
+        docs: &Docs,
+        blobs: &Blobs,
+        config: Config,
+        storage: &Storage,
+    ) -> anyhow::Result<(Self, control::protocol::RegistryProtocol)> {
+        let catalog = Catalog::create(docs, storage).await?;
+        let views = Views::create(docs, storage).await?;
 
         let ctx = Arc::new(RegistryContext {
-            blobs,
+            blobs: blobs.clone(),
             catalog,
             config,
             dirty: AtomicBool::new(false),
-            docs,
+            docs: docs.clone(),
             presence: PresenceTable::default(),
-            store,
             views,
         });
 
-        let (client, protocol) = control::protocol(Arc::clone(&ctx));
+        let protocol = control::protocol::RegistryProtocol::new(Arc::clone(&ctx));
 
         n0_future::task::spawn(maintenance(Arc::clone(&ctx)));
 
-        Ok((Self { client, ctx }, protocol))
+        Ok((Self { ctx }, protocol))
     }
 
     /// The namespaces clients sync to read this registry.
     #[must_use]
     pub fn views(&self) -> views::ViewIds {
         self.ctx.views.ids()
-    }
-
-    /// The docs backing this registry, for the operator to persist.
-    #[must_use]
-    pub fn docs(&self) -> RegistryDocs {
-        RegistryDocs {
-            catalog: self.ctx.catalog.namespace(),
-            views:   self.ctx.views.ids(),
-        }
-    }
-
-    #[must_use]
-    pub const fn client(&self) -> &Client<control::RegistryService> {
-        &self.client
     }
 }
 

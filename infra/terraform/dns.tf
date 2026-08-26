@@ -7,9 +7,9 @@ resource "cloudflare_record" "app_stable" {
   proxied = true
 }
 
-resource "cloudflare_record" "wds_stable" {
+resource "cloudflare_record" "node_stable" {
   zone_id = var.cloudflare_zone_id
-  name    = "wds"
+  name    = "node"
   content = digitalocean_droplet.stable.ipv4_address
   type    = "A"
   ttl     = 1

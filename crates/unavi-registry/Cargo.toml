@@ -10,21 +10,23 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace    = true
-futures.workspace   = true
-iroh.workspace      = true
-irpc.workspace      = true
-irpc-iroh.workspace = true
-n0-future.workspace = true
-postcard.workspace  = true
-scc.workspace       = true
-serde.workspace     = true
-smol_str.workspace  = true
-thiserror.workspace = true
-time.workspace      = true
-tracing.workspace   = true
-wds.path            = "../wds"
-xdid.workspace      = true
+anyhow.workspace      = true
+futures.workspace     = true
+iroh.workspace        = true
+irpc.workspace        = true
+irpc-iroh.workspace   = true
+n0-future.workspace   = true
+parking_lot.workspace = true
+postcard.workspace    = true
+scc.workspace         = true
+serde.workspace       = true
+smol_str.workspace    = true
+thiserror.workspace   = true
+time.workspace        = true
+tracing.workspace     = true
+unavi-identity.path   = "../unavi-identity"
+unavi-store.path      = "../unavi-store"
+xdid.workspace        = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 iroh-blobs          = { features = ["hide-proto-docs"], workspace = true }

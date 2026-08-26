@@ -37,7 +37,6 @@ use tracing::{
 };
 
 mod agent;
-mod identity;
 mod object;
 mod state;
 
@@ -46,6 +45,15 @@ pub async fn handle_connection(
     cancel: oneshot::Receiver<()>,
 ) -> anyhow::Result<()> {
     let peer = connection.remote_id();
+
+    // The DID is bound by `wired/auth` ahead of this connection, so a block is
+    // judged against a proven identity rather than a bare endpoint id.
+    if super::is_blocked(peer) {
+        info!(%peer, "Refusing a blocked peer");
+        connection.close(VarInt::from_u32(2), b"blocked");
+        return Ok(());
+    }
+
     let span = info_span!("connect", %peer);
     inner(connection, cancel).instrument(span).await
 }
@@ -128,7 +136,6 @@ async fn recv_stream(peer: EndpointId, tx: SendStream, mut rx: RecvStream) -> an
     info!("Stream ident: {ident:?}");
 
     match ident {
-        StreamIdent::Identity => identity::prove_self_identity(peer, tx, rx).await?,
         StreamIdent::Agent => agent::recv_agent_stream(peer, tx, rx).await?,
         StreamIdent::Object => object::recv_object_stream(peer, tx, rx).await?,
         StreamIdent::State => state::recv_state_stream(peer, tx, rx).await?,
@@ -141,15 +148,6 @@ async fn recv_stream(peer: EndpointId, tx: SendStream, mut rx: RecvStream) -> an
 const STREAM_LOOP_DELAY: Duration = Duration::from_secs(1);
 
 async fn send_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
-    let task_identity = {
-        let connection = Arc::clone(&connection);
-        let handle =
-            n0_future::task::spawn(
-                async move { identity::verify_peer_identity(&connection).await },
-            );
-        AbortOnDropHandle::new(handle)
-    };
-
     let task_agent = {
         let connection = Arc::clone(&connection);
         let handle = n0_future::task::spawn(async move {
@@ -189,7 +187,7 @@ async fn send_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
         AbortOnDropHandle::new(handle)
     };
 
-    n0_future::join_all([task_identity, task_agent, task_state, task_objects]).await;
+    n0_future::join_all([task_agent, task_state, task_objects]).await;
 
     Ok(())
 }
@@ -220,7 +218,6 @@ fn read_disconnected(err: &std::io::Error) -> bool {
 #[derive(Serialize, Deserialize, Debug)]
 #[non_exhaustive]
 enum StreamIdent {
-    Identity,
     Agent,
     Object,
     State,

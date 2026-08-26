@@ -8,12 +8,13 @@ use bevy_hsd::{
     HsdNamespace,
     document,
 };
-use bevy_iroh::endpoint::IrohEndpoint;
-use bevy_wds::{
-    LocalBlobs,
-    LocalDocs,
-    SyncTargets,
-    registry_clients,
+use bevy_iroh::{
+    endpoint::IrohEndpoint,
+    store::{
+        LocalBlobs,
+        LocalDocs,
+        SyncTargets,
+    },
 };
 use hsd::{
     id::DocId,
@@ -27,6 +28,7 @@ use iroh::{
 use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
 use unavi_policy::space::Space;
+use unavi_registry::follow::registry_clients;
 use unavi_util::async_task::spawn_async_task;
 
 pub mod pinned_docs;
@@ -63,7 +65,7 @@ pub fn spawn_space_scene(
     if instanced == Some(ns) {
         let docs = docs.0.clone();
         spawn_async_task(async move {
-            if let Err(err) = wds::docs::serve(&docs, ns).await {
+            if let Err(err) = unavi_store::namespace::serve(&docs, ns).await {
                 warn!(%ns, ?err, "Failed to serve local space");
             }
         });
@@ -74,11 +76,7 @@ pub fn spawn_space_scene(
     let docs = docs.0.clone();
     let blobs = blobs.0.clone();
     let self_id = endpoints.single().ok().map(|e| e.0.id());
-    let sync_targets = sync_targets
-        .0
-        .iter()
-        .map(|a| a.host().clone())
-        .collect::<Vec<_>>();
+    let sync_targets = sync_targets.0.clone();
 
     let (tx, rx) = async_channel::bounded(1);
     let (cancel_tx, cancel_rx) = oneshot::channel();
@@ -89,7 +87,7 @@ pub fn spawn_space_scene(
 
         // Waiting on the prim prefix rather than a single snapshot key: the
         // document is its entries now, and the first prim proves it arrived.
-        let fetch = wds::entries::fetch(
+        let fetch = unavi_store::entries::fetch(
             &docs,
             ns,
             peers,

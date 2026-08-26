@@ -10,7 +10,7 @@ pub mod peer;
 pub mod physics;
 pub mod portal;
 pub mod scene;
-pub mod wds;
+pub mod storage;
 
 /// A WIT variant crosses into JS as a tag and an optional value, which is how
 /// `jco` lowers one.

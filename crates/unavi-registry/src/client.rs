@@ -10,12 +10,12 @@ use iroh_docs::{
     protocol::Docs,
 };
 use irpc::Client;
-use wds::{
-    actor::Actor,
+use unavi_identity::{
     identity::Identity,
     signed_bytes::{
         Signable,
         SignedBytes,
+        verify_did_signature,
     },
 };
 
@@ -38,33 +38,22 @@ use crate::{
 
 /// Client handle for one registry.
 ///
-/// Authentication rides on the node's existing WDS session.
+/// The registry reads the caller's DID off the connection, proven once by
+/// `wired/auth`, so nothing here carries a credential.
 #[derive(Clone)]
 pub struct RegistryClient {
-    actor:    Actor,
     client:   Client<RegistryService>,
+    host:     EndpointAddr,
     identity: Arc<Identity>,
 }
 
 impl RegistryClient {
     #[must_use]
-    pub fn new(endpoint: &Endpoint, host: EndpointAddr, actor: Actor) -> Self {
-        let identity = Arc::clone(actor.identity());
-        let client = irpc_iroh::client(endpoint.clone(), host, ALPN);
+    pub fn new(endpoint: &Endpoint, host: EndpointAddr, identity: Arc<Identity>) -> Self {
+        let client = irpc_iroh::client(endpoint.clone(), host.clone(), ALPN);
         Self {
-            actor,
             client,
-            identity,
-        }
-    }
-
-    /// Wraps an in-process registry, skipping the network entirely.
-    #[must_use]
-    pub fn local(client: Client<RegistryService>, actor: Actor) -> Self {
-        let identity = Arc::clone(actor.identity());
-        Self {
-            actor,
-            client,
+            host,
             identity,
         }
     }
@@ -76,11 +65,10 @@ impl RegistryClient {
     }
 
     pub async fn submit(&self, submission: &Submission) -> anyhow::Result<()> {
-        let s = self.actor.session().await.context("auth")?;
         let submission = self.sign(submission)?;
 
         self.client
-            .rpc(Submit { s, submission })
+            .rpc(Submit { submission })
             .await?
             .map_err(|e| anyhow::anyhow!("submit failed: {e}"))?;
 
@@ -88,10 +76,8 @@ impl RegistryClient {
     }
 
     pub async fn retract(&self, ns: NamespaceId) -> anyhow::Result<()> {
-        let s = self.actor.session().await.context("auth")?;
-
         self.client
-            .rpc(Retract { s, ns })
+            .rpc(Retract { ns })
             .await?
             .map_err(|e| anyhow::anyhow!("retract failed: {e}"))?;
 
@@ -99,11 +85,10 @@ impl RegistryClient {
     }
 
     pub async fn announce(&self, presence: &Presence) -> anyhow::Result<()> {
-        let s = self.actor.session().await.context("auth")?;
         let presence = self.sign(presence)?;
 
         self.client
-            .rpc(Announce { s, presence })
+            .rpc(Announce { presence })
             .await?
             .map_err(|e| anyhow::anyhow!("announce failed: {e}"))?;
 
@@ -123,7 +108,7 @@ impl RegistryClient {
             let Ok(presence) = entry.payload() else {
                 continue;
             };
-            if wds::signed_bytes::verify_did_signature(&entry, &presence.did).await {
+            if verify_did_signature(&entry, &presence.did).await {
                 out.push(presence);
             }
         }
@@ -145,12 +130,11 @@ impl RegistryClient {
     /// returning their namespaces. Views are the only thing a client syncs.
     pub async fn sync_views(&self, docs: &Docs) -> anyhow::Result<Vec<NamespaceId>> {
         let ids = self.views().await?;
-        let host = self.actor.host().clone();
         let mut synced = Vec::new();
 
         for ns in [ids.recent, ids.featured, ids.categories, ids.active] {
-            let doc = wds::docs::ensure_open(docs, ns).await?;
-            doc.start_sync(vec![host.clone()]).await?;
+            let doc = unavi_store::namespace::ensure_open(docs, ns).await?;
+            doc.start_sync(vec![self.host.clone()]).await?;
             synced.push(ns);
         }
 

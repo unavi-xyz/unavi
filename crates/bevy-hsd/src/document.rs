@@ -15,7 +15,7 @@ use hsd::{
 };
 use iroh_blobs::api::blobs::Blobs;
 use iroh_docs::api::Doc;
-use wds::entries::{
+use unavi_store::entries::{
     self,
     DocEntry,
     Write,

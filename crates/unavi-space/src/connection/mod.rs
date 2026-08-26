@@ -20,11 +20,11 @@ use bevy_iroh::{
 };
 use iroh::EndpointId;
 use tokio::sync::oneshot;
-use unavi_identity::auth::binding;
 use unavi_util::async_task::spawn_async_task;
 
 use crate::{
     connection::ecs::PeerStream,
+    identity::bindings,
     peer::Peer,
 };
 
@@ -64,7 +64,9 @@ fn release_connection(peer: EndpointId, token: u64) -> bool {
     if conns.get(&peer).is_some_and(|(t, _)| *t == token) {
         conns.remove(&peer);
         drop(conns);
-        binding::unbind(*peer.as_bytes());
+        if let Some(bindings) = bindings() {
+            bindings.unbind(peer);
+        }
         true
     } else {
         false
@@ -76,13 +78,18 @@ pub fn disconnect(peer: EndpointId) {
     // Dropping the cancel sender is what the connection task waits on; the
     // recv stream ending despawns the peer's `RemotePeer` entity.
     CONNECTIONS.lock().expect("connections lock").remove(&peer);
-    binding::unbind(*peer.as_bytes());
+    if let Some(bindings) = bindings() {
+        bindings.unbind(peer);
+    }
 }
 
 /// Whether the DID `peer` proved over `wired/auth` is blocked. An endpoint
 /// that proved none is a guest, so this refuses nobody by default.
 pub fn is_blocked(peer: EndpointId) -> bool {
-    unavi_policy::trust::of_peer(*peer.as_bytes()) == unavi_policy::trust::Trust::Blocked
+    bindings().is_some_and(|bindings| {
+        unavi_policy::trust::of_peer(*peer.as_bytes(), &bindings)
+            == unavi_policy::trust::Trust::Blocked
+    })
 }
 
 pub const ALPN: &[u8] = b"wired/space/1";
@@ -136,7 +143,9 @@ pub fn disconnect_peer(
     let mut conns = CONNECTIONS.lock().expect("connections lock");
     conns.remove(&peer.0.id);
     drop(conns);
-    binding::unbind(*peer.0.id.as_bytes());
+    if let Some(bindings) = bindings() {
+        bindings.unbind(peer.0.id);
+    }
 
     for (entity, p) in streams {
         if p.0 != peer.0.id {

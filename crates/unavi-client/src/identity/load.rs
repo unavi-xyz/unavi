@@ -31,7 +31,7 @@ use unavi_identity::{
         Identity,
         NodeIdentity,
     },
-    root_doc,
+    resolve::Resolver,
 };
 use unavi_registry::follow;
 use unavi_store::{
@@ -41,6 +41,7 @@ use unavi_store::{
         Store,
     },
     local,
+    root_doc,
 };
 use unavi_util::{
     async_commands::AsyncCommands,
@@ -50,6 +51,7 @@ use unavi_util::{
 use crate::identity::{
     Auth,
     LocalNode,
+    Resolve,
     Storage,
     SyncConfig,
 };
@@ -94,6 +96,7 @@ pub fn load_store(
     node: Res<LocalNode>,
     storage: Res<Storage>,
     sync: Res<SyncConfig>,
+    resolve: Res<Resolve>,
 ) {
     let entity = trigger.entity;
 
@@ -105,6 +108,7 @@ pub fn load_store(
     let node = Arc::clone(&node.0);
     let storage = storage.0.clone();
     let sync = sync.clone();
+    let resolver = Arc::clone(&resolve.0);
 
     spawn_async_task(async move {
         let mut delay_secs = 4;
@@ -116,6 +120,7 @@ pub fn load_store(
                 entity,
                 storage.clone(),
                 sync.clone(),
+                Arc::clone(&resolver),
             )
             .await
             {
@@ -140,6 +145,7 @@ async fn load(
     entity: Entity,
     storage: local::Storage,
     sync: SyncConfig,
+    resolver: Arc<Resolver>,
 ) -> anyhow::Result<Guard> {
     let builder = StoreBuilder::new(endpoint.clone(), node.author())
         .gc_timer(Duration::from_mins(15))
@@ -161,8 +167,16 @@ async fn load(
     } = sync;
 
     let identity = Arc::clone(node.user());
-    let (sync_targets, unresolved) = follow::resolve_batch(targets, allow_loopback).await;
-    follow::sync(&docs, &endpoint, &sync_targets, Arc::clone(&identity)).await;
+    let (sync_targets, unresolved) =
+        follow::resolve_batch(targets, allow_loopback, &resolver).await;
+    follow::sync(
+        &docs,
+        &endpoint,
+        &sync_targets,
+        Arc::clone(&identity),
+        Arc::clone(&resolver),
+    )
+    .await;
 
     let store_entity = AsyncCommands::default()
         .spawn((RouterBuilderFnTarget(entity), RouterBuilderFn(Some(router))))
@@ -185,6 +199,7 @@ async fn load(
             store_entity,
             allow_loopback,
             identity,
+            resolver,
         ));
     }
 
@@ -201,6 +216,7 @@ async fn retry(
     store_entity: Entity,
     allow_loopback: bool,
     identity: Arc<Identity>,
+    resolver: Arc<Resolver>,
 ) {
     let mut delay = RETRY_DELAY;
 
@@ -208,7 +224,7 @@ async fn retry(
         n0_future::time::sleep(delay).await;
         delay = (delay * 2).min(MAX_RETRY_DELAY);
 
-        let (addrs, pending) = follow::resolve_batch(unresolved, allow_loopback).await;
+        let (addrs, pending) = follow::resolve_batch(unresolved, allow_loopback, &resolver).await;
         unresolved = pending;
 
         if addrs.is_empty() {
@@ -216,7 +232,14 @@ async fn retry(
         }
         targets.extend(addrs);
 
-        follow::sync(&docs, &endpoint, &targets, Arc::clone(&identity)).await;
+        follow::sync(
+            &docs,
+            &endpoint,
+            &targets,
+            Arc::clone(&identity),
+            Arc::clone(&resolver),
+        )
+        .await;
 
         let published = targets.clone();
         let sent = AsyncCommands::default()

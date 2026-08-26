@@ -2,7 +2,6 @@ pub mod auth;
 pub mod identity;
 pub mod jwk;
 pub mod resolve;
-pub mod root_doc;
 pub mod signed_bytes;
 
 /// DID document service `id` naming the iroh endpoint a DID answers on.

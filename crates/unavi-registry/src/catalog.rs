@@ -7,7 +7,10 @@ use iroh_docs::{
     store::Query,
 };
 use time::OffsetDateTime;
-use unavi_identity::signed_bytes::SignedBytes;
+use unavi_identity::{
+    resolve::Resolver,
+    signed_bytes::SignedBytes,
+};
 use unavi_store::{
     local::Storage,
     namespace,
@@ -67,7 +70,12 @@ impl Catalog {
     /// Every unexpired submission whose signature still verifies.
     ///
     /// Verification is repeated on read rather than trusted from write time.
-    pub async fn live(&self, docs: &Docs, blobs: &Blobs) -> anyhow::Result<Vec<Submission>> {
+    pub async fn live(
+        &self,
+        docs: &Docs,
+        blobs: &Blobs,
+        resolver: &Resolver,
+    ) -> anyhow::Result<Vec<Submission>> {
         let doc = self.doc(docs).await?;
         let query = Query::single_latest_per_key().key_prefix(ENTRIES_PREFIX);
         let entries = doc.get_many(query).await?;
@@ -89,7 +97,7 @@ impl Catalog {
             if submission.expires <= now {
                 continue;
             }
-            if !unavi_identity::signed_bytes::verify_did_signature(&signed, &submission.did).await {
+            if signed.verify(&submission.did, resolver).await.is_err() {
                 continue;
             }
             out.push(submission);

@@ -10,17 +10,18 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace    = true
-blake3.workspace    = true
-bytes.workspace     = true
-futures.workspace   = true
-iroh.workspace      = true
-iroh-gossip         = { features = ["net"], workspace = true }
-n0-future.workspace = true
-serde.workspace     = true
-thiserror.workspace = true
-time.workspace      = true
-tracing.workspace   = true
+anyhow.workspace      = true
+blake3.workspace      = true
+bytes.workspace       = true
+futures.workspace     = true
+iroh.workspace        = true
+iroh-gossip           = { features = ["net"], workspace = true }
+n0-future.workspace   = true
+parking_lot.workspace = true
+serde.workspace       = true
+thiserror.workspace   = true
+time.workspace        = true
+tracing.workspace     = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 iroh-blobs          = { features = ["hide-proto-docs"], workspace = true }

@@ -1,19 +1,16 @@
-//! Shared, time-bounded DID resolution.
-
-use std::{
-    sync::LazyLock,
-    time::Duration,
-};
+use std::time::Duration;
 
 use xdid::{
     core::{
         Method,
+        ResolutionError,
         did::Did,
         document::Document,
     },
     methods::{
         key::MethodDidKey,
         web::{
+            ClientError,
             Config,
             MethodDidWeb,
         },
@@ -21,61 +18,55 @@ use xdid::{
     resolver::DidResolver,
 };
 
-/// Bounds the whole resolution. The `did:web` client caps its own connect and
-/// request phases, but the target check ahead of them resolves DNS without a
-/// deadline of its own.
-const RESOLVE_TIMEOUT: Duration = Duration::from_secs(5);
+/// Which hosts a resolution may reach.
+#[derive(Clone, Copy)]
+pub enum Space {
+    Public,
+    /// Also loopback and private targets, over plaintext HTTP. Only for a DID
+    /// an operator configured; a peer-supplied one turns resolution into a
+    /// probe of this host.
+    Local,
+}
 
-/// Built once: each `DidResolver` carries its own HTTP connection pool, so
-/// rebuilding it per request would discard every kept-alive connection.
-static STRICT: LazyLock<Option<DidResolver>> = LazyLock::new(|| build(false));
+// TODO(xdid 0.8.1): the did:web client bounds its own target lookup, making
+// this redundant. Kept longer than the client's own budget so it cannot
+// preempt it.
+const RESOLVE_TIMEOUT: Duration = Duration::from_secs(20);
 
-static LOOPBACK: LazyLock<Option<DidResolver>> = LazyLock::new(|| build(true));
+pub struct Resolver {
+    public: DidResolver,
+    local:  DidResolver,
+}
 
-fn build(allow_local: bool) -> Option<DidResolver> {
-    let config = Config {
+impl Resolver {
+    pub fn new() -> Result<Self, ClientError> {
+        Ok(Self {
+            public: methods(false)?,
+            local:  methods(true)?,
+        })
+    }
+
+    pub async fn resolve(&self, did: &Did, space: Space) -> Result<Document, ResolutionError> {
+        let resolver = match space {
+            Space::Public => &self.public,
+            Space::Local => &self.local,
+        };
+
+        n0_future::time::timeout(RESOLVE_TIMEOUT, resolver.resolve(did))
+            .await
+            .map_err(|_| ResolutionError::ResolutionFailed("timed out".into()))?
+    }
+}
+
+fn methods(allow_local: bool) -> Result<DidResolver, ClientError> {
+    let web = MethodDidWeb::with_config(Config {
         allow_local,
         ..Config::default()
-    };
+    })?;
 
-    let methods: [Box<dyn Method>; 2] = [
-        Box::new(MethodDidKey),
-        Box::new(MethodDidWeb::with_config(config).ok()?),
-    ];
+    let methods: [Box<dyn Method>; 2] = [Box::new(MethodDidKey), Box::new(web)];
 
-    Some(DidResolver {
+    Ok(DidResolver {
         methods: methods.into_iter().collect(),
     })
-}
-
-/// Resolves `did`, or returns `None` if resolution timed out or failed.
-///
-/// Refuses `did:web` targets outside public unicast space. Every path reachable
-/// by a remote peer must resolve through this, since a DID chosen by that peer
-/// otherwise names the outbound request's destination.
-pub async fn resolve(did: &Did) -> Option<Document> {
-    run(STRICT.as_ref()?, did).await
-}
-
-/// Resolves `did`, additionally permitting loopback and private targets over
-/// plaintext HTTP.
-///
-/// Only for DIDs an operator configured, never for one carried in a request: it
-/// turns resolution into a probe of whatever the host can reach.
-pub async fn resolve_allowing_loopback(did: &Did) -> Option<Document> {
-    run(LOOPBACK.as_ref()?, did).await
-}
-
-async fn run(resolver: &DidResolver, did: &Did) -> Option<Document> {
-    match n0_future::time::timeout(RESOLVE_TIMEOUT, resolver.resolve(did)).await {
-        Ok(Ok(doc)) => Some(doc),
-        Ok(Err(err)) => {
-            tracing::debug!(%did, "did resolution failed: {err}");
-            None
-        }
-        Err(_) => {
-            tracing::warn!(%did, "did resolution timed out");
-            None
-        }
-    }
 }

@@ -25,3 +25,6 @@ tracing.workspace     = true
 unavi-identity.path   = "../unavi-identity"
 unavi-quota.path      = "../unavi-quota"
 xdid.workspace        = true
+
+[dev-dependencies]
+iroh.workspace = true

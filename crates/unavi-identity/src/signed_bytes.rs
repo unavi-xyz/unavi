@@ -5,14 +5,33 @@ use serde::{
     Serialize,
 };
 use xdid::{
-    core::did::Did,
+    core::{
+        ResolutionError,
+        did::Did,
+    },
     methods::key::keys::Signer,
 };
 
 use crate::{
-    jwk::verify_jwk_signature,
-    resolve::resolve,
+    jwk,
+    resolve::{
+        Resolver,
+        Space,
+    },
 };
+
+#[derive(Debug, thiserror::Error)]
+pub enum VerifyError {
+    #[error("could not resolve {did}: {source}")]
+    Unresolvable {
+        did:    Did,
+        source: ResolutionError,
+    },
+    #[error("{0} lists no authentication key")]
+    NoAuthenticationKey(Did),
+    #[error("not signed by any authentication key of {0}")]
+    NotSigned(Did),
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SignedBytes<T>
@@ -44,9 +63,8 @@ where
         &self.signature
     }
 
-    /// The exact bytes a signature covers: the payload under
-    /// [`Signable::SIGNING_CONTEXT`]. Verification must use this, never the
-    /// payload alone.
+    /// The exact bytes a signature covers. Verification must use this, never
+    /// the payload alone.
     #[must_use]
     pub fn signing_bytes(&self) -> Vec<u8> {
         signing_bytes(T::SIGNING_CONTEXT, &self.payload_bytes)
@@ -54,6 +72,38 @@ where
 
     pub fn payload(&self) -> postcard::Result<T> {
         postcard::from_bytes(&self.payload_bytes)
+    }
+
+    /// Checks the signature against `did`'s authentication keys.
+    pub async fn verify(&self, did: &Did, resolver: &Resolver) -> Result<(), VerifyError>
+    where
+        T: Sync,
+    {
+        let doc = resolver
+            .resolve(did, Space::Public)
+            .await
+            .map_err(|source| VerifyError::Unresolvable {
+                did: did.clone(),
+                source,
+            })?;
+
+        let methods = doc
+            .authentication
+            .as_ref()
+            .ok_or_else(|| VerifyError::NoAuthenticationKey(did.clone()))?;
+
+        let signing_bytes = self.signing_bytes();
+
+        for method in methods {
+            if let Some(map) = doc.resolve_verification_method(method)
+                && let Some(key) = &map.public_key_jwk
+                && jwk::verify(key, &self.signature, &signing_bytes).is_ok()
+            {
+                return Ok(());
+            }
+        }
+
+        Err(VerifyError::NotSigned(did.clone()))
     }
 }
 
@@ -72,11 +122,9 @@ pub trait Signable
 where
     for<'a> Self: Serialize + Deserialize<'a>,
 {
-    /// Binds a signature to the protocol that asked for it.
-    ///
     /// Distinct payload types can encode to identical bytes, so without this a
-    /// signature collected from one protocol would verify as another. Give
-    /// every type its own string; never reuse one.
+    /// signature collected from one protocol would verify as another. Never
+    /// reuse a context.
     const SIGNING_CONTEXT: &'static str;
 
     fn sign(&self, key: &impl Signer) -> anyhow::Result<SignedBytes<Self>> {
@@ -84,37 +132,11 @@ where
     }
 }
 
-/// Verifies that `signed` was produced by an authentication key of `did`, by
-/// resolving the DID document and checking the signature against its
-/// authentication verification methods.
-pub async fn verify_did_signature<T>(signed: &SignedBytes<T>, did: &Did) -> bool
-where
-    T: Signable + Sync,
-{
-    let Some(doc) = resolve(did).await else {
-        return false;
-    };
-    let Some(auth_methods) = &doc.authentication else {
-        return false;
-    };
-    let signing_bytes = signed.signing_bytes();
-    for method in auth_methods {
-        if let Some(map) = doc.resolve_verification_method(method)
-            && let Some(jwk) = &map.public_key_jwk
-            && verify_jwk_signature(jwk, signed.signature(), &signing_bytes)
-        {
-            return true;
-        }
-    }
-    false
-}
-
 pub struct IrohSigner<'a>(pub &'a iroh::SecretKey);
 
 impl Signer for IrohSigner<'_> {
     fn sign(&self, message: &[u8]) -> anyhow::Result<Vec<u8>> {
-        let sig = self.0.sign(message);
-        Ok(sig.to_bytes().to_vec())
+        Ok(self.0.sign(message).to_bytes().to_vec())
     }
 }
 
@@ -134,23 +156,6 @@ mod tests {
         const SIGNING_CONTEXT: &'static str = "test/b";
     }
 
-    #[test]
-    fn identical_payloads_sign_over_different_bytes() {
-        let a = SignedBytes::<A>::from_payload(postcard::to_stdvec(&A(7)).expect("encode a"));
-        let b = SignedBytes::<B>::from_payload(postcard::to_stdvec(&B(7)).expect("encode b"));
-
-        assert_eq!(a.payload_bytes, b.payload_bytes);
-        assert_ne!(a.signing_bytes(), b.signing_bytes());
-    }
-
-    #[test]
-    fn context_cannot_absorb_payload_prefix() {
-        let split = SignedBytes::<A>::from_payload(b"\0extra".to_vec());
-        let joined = SignedBytes::<A>::from_payload(b"extra".to_vec());
-
-        assert_ne!(split.signing_bytes(), joined.signing_bytes());
-    }
-
     impl<T: Signable> SignedBytes<T> {
         fn from_payload(payload_bytes: Vec<u8>) -> Self {
             Self {
@@ -159,5 +164,26 @@ mod tests {
                 _type: PhantomData,
             }
         }
+    }
+
+    #[test]
+    fn identical_payloads_sign_over_different_bytes() {
+        let a = SignedBytes::<A>::from_payload(postcard::to_stdvec(&A(7)).expect("encode a"));
+        let b = SignedBytes::<B>::from_payload(postcard::to_stdvec(&B(7)).expect("encode b"));
+
+        assert_eq!(a.payload_bytes, b.payload_bytes);
+        assert_ne!(
+            a.signing_bytes(),
+            b.signing_bytes(),
+            "a signature from one protocol must not verify as another"
+        );
+    }
+
+    #[test]
+    fn context_cannot_absorb_payload_prefix() {
+        let split = SignedBytes::<A>::from_payload(b"\0extra".to_vec());
+        let joined = SignedBytes::<A>::from_payload(b"extra".to_vec());
+
+        assert_ne!(split.signing_bytes(), joined.signing_bytes());
     }
 }

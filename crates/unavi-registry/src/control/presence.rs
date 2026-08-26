@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use irpc::WithChannels;
 use time::OffsetDateTime;
-use unavi_identity::signed_bytes::verify_did_signature;
 use xdid::core::did::Did;
 
 use crate::{
@@ -38,7 +37,12 @@ pub async fn announce(
         return Ok(());
     }
 
-    if !verify_did_signature(&inner.presence, &presence.did).await {
+    if inner
+        .presence
+        .verify(&presence.did, &ctx.resolver)
+        .await
+        .is_err()
+    {
         tx.send(Err(RegistryError::InvalidSignature)).await?;
         return Ok(());
     }

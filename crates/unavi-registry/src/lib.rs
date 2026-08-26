@@ -12,6 +12,10 @@ use std::{
 use iroh_blobs::api::blobs::Blobs;
 use iroh_docs::protocol::Docs;
 use tracing::warn;
+use unavi_identity::{
+    auth::bindings::Bindings,
+    resolve::Resolver,
+};
 use unavi_store::local::Storage;
 
 use crate::{
@@ -35,11 +39,13 @@ pub mod views;
 const MAINTENANCE_INTERVAL: Duration = Duration::from_secs(5);
 
 pub struct RegistryContext {
+    pub(crate) bindings: Arc<Bindings>,
     pub(crate) blobs:    Blobs,
     pub(crate) catalog:  Catalog,
     pub(crate) config:   Config,
     pub(crate) docs:     Docs,
     pub(crate) presence: PresenceTable,
+    pub(crate) resolver: Arc<Resolver>,
     pub(crate) views:    Views,
     dirty:               AtomicBool,
 }
@@ -62,17 +68,21 @@ impl Registry {
         blobs: &Blobs,
         config: Config,
         storage: &Storage,
+        bindings: Arc<Bindings>,
+        resolver: Arc<Resolver>,
     ) -> anyhow::Result<(Self, control::protocol::RegistryProtocol)> {
         let catalog = Catalog::create(docs, storage).await?;
         let views = Views::create(docs, storage).await?;
 
         let ctx = Arc::new(RegistryContext {
+            bindings,
             blobs: blobs.clone(),
             catalog,
             config,
             dirty: AtomicBool::new(false),
             docs: docs.clone(),
             presence: PresenceTable::default(),
+            resolver,
             views,
         });
 
@@ -115,7 +125,13 @@ async fn maintenance(ctx: Arc<RegistryContext>) {
         if ctx.dirty.swap(false, Ordering::AcqRel)
             && let Err(err) = ctx
                 .views
-                .rebuild(&ctx.docs, &ctx.catalog, &ctx.blobs, &ctx.config)
+                .rebuild(
+                    &ctx.docs,
+                    &ctx.catalog,
+                    &ctx.blobs,
+                    &ctx.config,
+                    &ctx.resolver,
+                )
                 .await
         {
             warn!(?err, "view rebuild failed");

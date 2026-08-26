@@ -1,4 +1,7 @@
-use std::path::Path;
+use std::{
+    path::Path,
+    sync::Arc,
+};
 
 use bevy::prelude::*;
 use bevy_iroh::store::{
@@ -8,7 +11,7 @@ use bevy_iroh::store::{
 use hsd::id::DocId;
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
-use unavi_identity::auth::binding;
+use unavi_identity::auth::bindings::Bindings;
 use unavi_policy::{
     check::{
         self,
@@ -33,7 +36,7 @@ use crate::{
 
 /// Registers with policy how to resolve a document's owning space and peer,
 /// so attribution needs no dependency on this crate.
-pub fn install_resolver() {
+pub fn install_resolver(bindings: Arc<Bindings>) {
     fn owner(space: DocId, doc: DocId) -> Option<[u8; 32]> {
         replicas::owner(NamespaceId::from(&space.0), NamespaceId::from(&doc.0))
     }
@@ -41,6 +44,7 @@ pub fn install_resolver() {
         replicas::space_of(NamespaceId::from(&doc.0)).map(|ns| DocId(*ns.as_bytes()))
     }
     check::set_resolver(Resolver {
+        bindings,
         owner,
         space_of,
         self_peer: self_peer_id,
@@ -87,7 +91,9 @@ pub fn load_trust_table() {
 /// owner-authored KV cascade away with the connection; only neutral cells need
 /// rolling back by hand, since they outlive a disconnect.
 pub fn eject(peer: [u8; 32]) -> Result<(), NoIdentity> {
-    let did = binding::did_of(peer).ok_or(NoIdentity)?;
+    let did = crate::identity::bindings()
+        .and_then(|b| b.did_of_bytes(&peer))
+        .ok_or(NoIdentity)?;
     trust::set_override(did, Trust::Blocked);
 
     let reverted = replicas::revert_neutral_writes(peer);
@@ -108,7 +114,9 @@ pub fn eject(peer: [u8; 32]) -> Result<(), NoIdentity> {
 
 /// Lifts a block, so the peer is judged by the graph or the default again.
 pub fn unblock(peer: [u8; 32]) -> Result<(), NoIdentity> {
-    let did = binding::did_of(peer).ok_or(NoIdentity)?;
+    let did = crate::identity::bindings()
+        .and_then(|b| b.did_of_bytes(&peer))
+        .ok_or(NoIdentity)?;
     trust::clear_override(&did);
     unavi_quota::registry::forget_peer(NamespaceId::from(&peer));
     if let Some(dir) = table_dir()
@@ -144,7 +152,7 @@ pub fn publish_vouches(stores: Query<(&LocalDocs, &LocalBlobs)>) {
         subject_hash,
     };
 
-    let Some(ns) = unavi_identity::root_doc::root_doc() else {
+    let Some(ns) = unavi_store::root_doc::root_doc() else {
         return;
     };
     let Ok((docs, blobs)) = stores.single().map(|(d, b)| (d.0.clone(), b.0.clone())) else {

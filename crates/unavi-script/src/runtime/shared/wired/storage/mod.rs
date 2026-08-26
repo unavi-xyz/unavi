@@ -9,8 +9,8 @@ use bevy_iroh::doc::{
 };
 use bytes::Bytes;
 use iroh_docs::NamespaceId;
-use unavi_identity::root_doc::root_doc;
 use unavi_registry::follow::registries;
+use unavi_store::root_doc::root_doc;
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::runtime::shared::{

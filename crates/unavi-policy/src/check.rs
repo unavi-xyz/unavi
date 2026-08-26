@@ -1,6 +1,10 @@
-use std::sync::RwLock;
+use std::sync::{
+    Arc,
+    RwLock,
+};
 
 use hsd::id::DocId;
+use unavi_identity::auth::bindings::Bindings;
 
 use crate::{
     error::PolicyError,
@@ -18,12 +22,14 @@ use crate::{
 };
 
 /// What policy needs from the networking layer, installed rather than
-/// depended upon: a document's owner lives in the replica store and a space's
-/// membership is partly a peer's pin, both owned by `unavi-space`. Function
-/// pointers keep every "may X do Y to Z" here without dragging the networking
-/// stack into the script sandbox.
-#[derive(Clone, Copy)]
+/// depended upon.
+///
+/// Keeps every "may X do Y to Z" here without dragging the networking stack
+/// into the script sandbox.
+#[derive(Clone)]
 pub struct Resolver {
+    /// The DIDs peers have proven over `wired/auth`.
+    pub bindings:  Arc<Bindings>,
     /// The peer whose pin owns `doc` within `space`.
     pub owner:     fn(space: DocId, doc: DocId) -> Option<[u8; 32]>,
     /// The space some peer's pin places `doc` in. `Some` means the document
@@ -39,7 +45,7 @@ pub fn set_resolver(resolver: Resolver) {
 }
 
 fn resolver() -> Option<Resolver> {
-    *RESOLVER.read().expect("resolver lock")
+    RESOLVER.read().expect("resolver lock").clone()
 }
 
 /// Where a document stands: what it demands of writers, which space it is in,
@@ -56,18 +62,18 @@ fn standing(doc: DocId) -> Standing {
     let record = registry::get(doc);
     let resolver = resolver();
 
-    let replicated = resolver.and_then(|r| (r.space_of)(root));
+    let replicated = resolver.as_ref().and_then(|r| (r.space_of)(root));
     let space = registry::registered_space(root).or(replicated);
 
     let owner = space
-        .zip(resolver)
+        .zip(resolver.as_ref())
         .and_then(|(space, r)| (r.owner)(space, root))
         .or_else(|| {
             // Nothing pins the root and it is absent from the replica index, so
             // it was minted here. A document that *is* in the index arrived
             // from a peer, and must never fall back to reading as local.
             (replicated.is_none())
-                .then(|| resolver.and_then(|r| (r.self_peer)()))
+                .then(|| resolver.as_ref().and_then(|r| (r.self_peer)()))
                 .flatten()
         });
 
@@ -108,10 +114,13 @@ pub fn trust_of(owner: Option<[u8; 32]>) -> Trust {
     let Some(peer) = owner else {
         return Trust::Guest;
     };
-    if resolver().and_then(|r| (r.self_peer)()) == Some(peer) {
+    let Some(resolver) = resolver() else {
+        return Trust::Guest;
+    };
+    if (resolver.self_peer)() == Some(peer) {
         Trust::Myself
     } else {
-        trust::of_peer(peer)
+        trust::of_peer(peer, &resolver.bindings)
     }
 }
 
@@ -220,6 +229,7 @@ mod tests {
     /// standing outside every space, and a prefab the peer's document composed.
     fn scene() {
         set_resolver(Resolver {
+            bindings: Arc::default(),
             owner,
             space_of,
             self_peer,

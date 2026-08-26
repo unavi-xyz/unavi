@@ -59,9 +59,10 @@ pub fn publish_presence(
         return;
     }
 
-    let Some(did) = unavi_identity::identity::local_did() else {
+    let Some(local) = crate::identity::local() else {
         return;
     };
+    let did = local.identity.did().clone();
     let endpoint_id = *endpoint.0.id().as_bytes();
 
     for space in due {

@@ -72,7 +72,7 @@ const HOME_VERSION: u32 = 0;
 /// Writes down which space is home, so a shell can offer to travel back to it;
 /// without this entry a script has no way to learn it.
 async fn record_home(ns: NamespaceId) {
-    let Some(root) = unavi_identity::root_doc::root_doc() else {
+    let Some(root) = unavi_store::root_doc::root_doc() else {
         return;
     };
     let mut value = match postcard::to_stdvec(&HOME_VERSION) {

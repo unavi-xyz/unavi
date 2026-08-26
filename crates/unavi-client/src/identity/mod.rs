@@ -3,11 +3,10 @@ use std::sync::Arc;
 use bevy::prelude::*;
 use unavi_identity::{
     auth::EndpointAuth,
-    identity::{
-        self,
-        NodeIdentity,
-    },
+    identity::NodeIdentity,
+    resolve::Resolver,
 };
+use unavi_space::identity::LocalIdentity;
 use unavi_store::local;
 
 mod load;
@@ -31,6 +30,11 @@ pub struct LocalNode(pub Arc<NodeIdentity>);
 /// endpoint builder and served once the endpoint binds.
 #[derive(Resource, Clone)]
 pub struct Auth(pub Arc<EndpointAuth>);
+
+/// Resolves the DIDs this node verifies against. One per process: each carries
+/// its own HTTP connection pool.
+#[derive(Resource, Clone)]
+pub struct Resolve(pub Arc<Resolver>);
 
 pub struct IdentityPlugin {
     pub in_memory: bool,
@@ -61,15 +65,33 @@ impl Plugin for IdentityPlugin {
         };
         info!(did = %node.user().did(), "Running as");
 
-        // Published before anything can dial: answering an identity proof runs
-        // on a background task with no path back to this world.
-        identity::set_local(Arc::clone(node.user()));
+        let resolver = match Resolver::new() {
+            Ok(resolver) => Arc::new(resolver),
+            Err(err) => {
+                error!(
+                    ?err,
+                    "failed to build the DID resolver; no peer can be verified"
+                );
+                return;
+            }
+        };
 
-        app.insert_resource(Storage(storage))
-            .insert_resource(self.sync.clone())
-            .insert_resource(LocalNode(Arc::new(node)))
-            .insert_resource(Auth(EndpointAuth::new()))
-            .add_observer(load::serve_auth)
-            .add_observer(load::load_store);
+        let auth = Arc::new(EndpointAuth::new(
+            Arc::clone(node.user()),
+            Arc::clone(&resolver),
+        ));
+
+        app.insert_resource(LocalIdentity {
+            identity: Arc::clone(node.user()),
+            bindings: Arc::clone(auth.bindings()),
+            resolver: Arc::clone(&resolver),
+        })
+        .insert_resource(Storage(storage))
+        .insert_resource(self.sync.clone())
+        .insert_resource(LocalNode(Arc::new(node)))
+        .insert_resource(Auth(auth))
+        .insert_resource(Resolve(resolver))
+        .add_observer(load::serve_auth)
+        .add_observer(load::load_store);
     }
 }

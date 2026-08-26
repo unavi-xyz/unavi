@@ -12,10 +12,10 @@ use iroh_docs::{
 use irpc::Client;
 use unavi_identity::{
     identity::Identity,
+    resolve::Resolver,
     signed_bytes::{
         Signable,
         SignedBytes,
-        verify_did_signature,
     },
 };
 
@@ -45,16 +45,23 @@ pub struct RegistryClient {
     client:   Client<RegistryService>,
     host:     EndpointAddr,
     identity: Arc<Identity>,
+    resolver: Arc<Resolver>,
 }
 
 impl RegistryClient {
     #[must_use]
-    pub fn new(endpoint: &Endpoint, host: EndpointAddr, identity: Arc<Identity>) -> Self {
+    pub fn new(
+        endpoint: &Endpoint,
+        host: EndpointAddr,
+        identity: Arc<Identity>,
+        resolver: Arc<Resolver>,
+    ) -> Self {
         let client = irpc_iroh::client(endpoint.clone(), host.clone(), ALPN);
         Self {
             client,
             host,
             identity,
+            resolver,
         }
     }
 
@@ -108,7 +115,7 @@ impl RegistryClient {
             let Ok(presence) = entry.payload() else {
                 continue;
             };
-            if verify_did_signature(&entry, &presence.did).await {
+            if entry.verify(&presence.did, &self.resolver).await.is_ok() {
                 out.push(presence);
             }
         }

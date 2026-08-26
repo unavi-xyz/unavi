@@ -15,7 +15,6 @@ use iroh_blobs::api::{
 use iroh_docs::protocol::Docs;
 use unavi_assets_fetch::MANIFEST;
 use unavi_identity::identity::{
-    self,
     Identity,
     NodeIdentity,
 };
@@ -63,7 +62,6 @@ fn build(persistent: bool) -> TestStore {
             Storage::Ephemeral
         };
         let node = NodeIdentity::load(&storage).expect("identity");
-        identity::set_local(Arc::clone(node.user()));
 
         let endpoint = iroh::Endpoint::builder(N0)
             .secret_key(node.endpoint().clone())

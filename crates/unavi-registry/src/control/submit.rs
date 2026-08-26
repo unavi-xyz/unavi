@@ -3,7 +3,6 @@ use std::sync::Arc;
 use irpc::WithChannels;
 use time::OffsetDateTime;
 use tracing::warn;
-use unavi_identity::signed_bytes::verify_did_signature;
 use xdid::core::did::Did;
 
 use crate::{
@@ -41,7 +40,12 @@ pub async fn submit(
         return Ok(());
     }
 
-    if !verify_did_signature(&inner.submission, &submission.did).await {
+    if inner
+        .submission
+        .verify(&submission.did, &ctx.resolver)
+        .await
+        .is_err()
+    {
         tx.send(Err(RegistryError::InvalidSignature)).await?;
         return Ok(());
     }
@@ -54,7 +58,10 @@ pub async fn submit(
 
     // Refreshing an existing entry is always allowed; only a new namespace
     // counts against the cap.
-    let live = ctx.catalog.live(&ctx.docs, &ctx.blobs).await?;
+    let live = ctx
+        .catalog
+        .live(&ctx.docs, &ctx.blobs, &ctx.resolver)
+        .await?;
     let held = live
         .iter()
         .filter(|s| s.did == did)
@@ -88,7 +95,10 @@ pub async fn retract(
 ) -> anyhow::Result<()> {
     let did = caller!(caller, tx);
 
-    let live = ctx.catalog.live(&ctx.docs, &ctx.blobs).await?;
+    let live = ctx
+        .catalog
+        .live(&ctx.docs, &ctx.blobs, &ctx.resolver)
+        .await?;
     let owned = live.iter().any(|s| s.ns == inner.ns && s.did == did);
 
     if !owned {

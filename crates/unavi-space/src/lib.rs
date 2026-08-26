@@ -14,6 +14,7 @@ pub mod anchor;
 mod connection;
 #[cfg(feature = "devtools")] mod devtools;
 mod gossip;
+pub mod identity;
 pub mod peer;
 mod portal;
 mod portal_bridge;
@@ -39,8 +40,9 @@ impl Plugin for SpacePlugin {
             app.add_plugins(unavi_policy::PolicyPlugin);
         }
 
-        trust::install_resolver();
         trust::load_trust_table();
+
+        app.add_systems(Startup, identity::install_local);
 
         app.add_systems(
             FixedUpdate,

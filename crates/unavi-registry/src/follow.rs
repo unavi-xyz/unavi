@@ -25,8 +25,8 @@ use unavi_identity::{
     ENDPOINT_SERVICE_TYPE,
     identity::Identity,
     resolve::{
-        resolve,
-        resolve_allowing_loopback,
+        Resolver,
+        Space,
     },
 };
 use xdid::core::did::Did;
@@ -59,12 +59,18 @@ pub async fn sync(
     endpoint: &Endpoint,
     targets: &[EndpointAddr],
     identity: Arc<Identity>,
+    resolver: Arc<Resolver>,
 ) {
     let mut clients = Vec::new();
     let mut namespaces = Vec::new();
 
     for host in targets {
-        let client = RegistryClient::new(endpoint, host.clone(), Arc::clone(&identity));
+        let client = RegistryClient::new(
+            endpoint,
+            host.clone(),
+            Arc::clone(&identity),
+            Arc::clone(&resolver),
+        );
 
         match client.sync_views(docs).await {
             Ok(mut views) => namespaces.append(&mut views),
@@ -89,12 +95,13 @@ pub async fn sync(
 pub async fn resolve_batch(
     dids: Vec<String>,
     allow_loopback: bool,
+    resolver: &Resolver,
 ) -> (Vec<EndpointAddr>, Vec<String>) {
     let mut addrs = Vec::new();
     let mut unresolved = Vec::new();
 
     for did_str in dids {
-        match resolve_target(&did_str, allow_loopback).await {
+        match resolve_target(&did_str, allow_loopback, resolver).await {
             Ok(addr) => {
                 info!(target = did_str, "following registry");
                 addrs.push(addr);
@@ -109,15 +116,19 @@ pub async fn resolve_batch(
     (addrs, unresolved)
 }
 
-async fn resolve_target(did_str: &str, allow_loopback: bool) -> anyhow::Result<EndpointAddr> {
+async fn resolve_target(
+    did_str: &str,
+    allow_loopback: bool,
+    resolver: &Resolver,
+) -> anyhow::Result<EndpointAddr> {
     let did = Did::from_str(did_str)?;
 
-    let doc = if allow_loopback {
-        resolve_allowing_loopback(&did).await
+    let space = if allow_loopback {
+        Space::Local
     } else {
-        resolve(&did).await
-    }
-    .ok_or_else(|| anyhow::anyhow!("could not resolve {did}"))?;
+        Space::Public
+    };
+    let doc = resolver.resolve(&did, space).await?;
 
     let services = doc.service.unwrap_or_default();
     let service = services

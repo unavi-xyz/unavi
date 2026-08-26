@@ -43,7 +43,7 @@ impl ProtocolHandler for RegistryProtocol {
     async fn accept(&self, connection: Connection) -> Result<(), AcceptError> {
         // Read once per connection: an endpoint id is fixed for a connection's
         // lifetime, and so is the DID bound to it.
-        let caller = unavi_identity::auth::binding::did_of_endpoint(connection.remote_id());
+        let caller = self.ctx.bindings.did_of(connection.remote_id());
 
         while let Some(msg) = irpc_iroh::read_request::<RegistryService>(&connection)
             .await

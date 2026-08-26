@@ -5,7 +5,8 @@ use iroh_docs::{
     protocol::Docs,
 };
 use parking_lot::RwLock;
-use unavi_store::{
+
+use crate::{
     local::Storage,
     namespace,
 };
@@ -13,8 +14,6 @@ use unavi_store::{
 /// Where the id is recorded, beside the identity that authored it.
 const KEY: &str = "root-doc";
 
-/// Readable from any task, so a background reader needs no path back to
-/// whatever opened it.
 static ROOT_DOC: RwLock<Option<NamespaceId>> = RwLock::new(None);
 
 pub fn set_root_doc(ns: NamespaceId) {

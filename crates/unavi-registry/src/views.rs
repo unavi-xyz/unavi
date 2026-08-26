@@ -8,6 +8,7 @@ use serde::{
     Deserialize,
     Serialize,
 };
+use unavi_identity::resolve::Resolver;
 use unavi_store::{
     local::Storage,
     namespace,
@@ -102,8 +103,9 @@ impl Views {
         catalog: &Catalog,
         blobs: &iroh_blobs::api::blobs::Blobs,
         config: &Config,
+        resolver: &Resolver,
     ) -> anyhow::Result<()> {
-        let mut live = catalog.live(docs, blobs).await?;
+        let mut live = catalog.live(docs, blobs, resolver).await?;
 
         live.sort_by_key(|s| std::cmp::Reverse(s.expires));
         let recent = live.iter().take(config.view_capacity).collect::<Vec<_>>();

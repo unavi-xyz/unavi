@@ -30,11 +30,7 @@ xdid.workspace        = true
 zeroize.workspace     = true
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
-axum.workspace   = true
-rstest.workspace = true
-tokio            = { features = ["macros", "rt-multi-thread"], workspace = true }
-tracing-test     = { features = ["no-env-filter"], workspace = true }
+tokio = { features = ["macros", "rt-multi-thread"], workspace = true }
 
 [dev-dependencies]
-serde_json.workspace = true
-tempfile.workspace   = true
+tempfile.workspace = true

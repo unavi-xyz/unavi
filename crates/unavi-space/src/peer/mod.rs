@@ -38,17 +38,20 @@ pub fn set_self_peer_id(peer: [u8; 32]) {
 
 #[must_use]
 pub fn self_did() -> Option<String> {
-    unavi_identity::identity::local_did().map(|did| did.to_string())
+    crate::identity::local().map(|l| l.identity.did().to_string())
 }
 
 /// Trust scores key off the local DID, so the table loaded at startup is worth
 /// nothing until the identity this process runs as is known.
 pub fn score_once_identified(mut scored: Local<bool>) {
-    if *scored || unavi_identity::identity::local_did().is_none() {
+    let Some(local) = crate::identity::local() else {
+        return;
+    };
+    if *scored {
         return;
     }
     *scored = true;
-    unavi_policy::trust::recompute(&[]);
+    unavi_policy::trust::recompute(local.identity.did(), &[]);
 }
 
 /// Offers the connected peers to the blob downloader.

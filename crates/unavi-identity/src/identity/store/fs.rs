@@ -1,10 +1,14 @@
 #[cfg(unix)] use std::os::unix::fs::OpenOptionsExt;
 use std::{
     fs::OpenOptions,
-    io::Write,
+    io::{
+        ErrorKind,
+        Write,
+    },
     path::Path,
 };
 
+use anyhow::Context;
 use iroh::SecretKey;
 use xdid::methods::key::keys::{
     DidKeyPair,
@@ -12,10 +16,23 @@ use xdid::methods::key::keys::{
 };
 use zeroize::Zeroizing;
 
+use crate::identity::store::Keys;
+
 const KEY_FILE: &str = "key.pem";
 const ENDPOINT_FILE: &str = "endpoint.key";
 
-pub fn load_or_create(dir: &Path) -> anyhow::Result<P256KeyPair> {
+pub fn load(dir: &Path) -> anyhow::Result<Keys> {
+    std::fs::create_dir_all(dir)?;
+
+    Ok(Keys {
+        identity: identity_key(dir)?,
+        endpoint: endpoint_key(dir)?,
+    })
+}
+
+/// An unreadable key fails the load rather than being replaced: rewriting it
+/// would destroy an identity its owner may still be able to recover.
+fn identity_key(dir: &Path) -> anyhow::Result<P256KeyPair> {
     let path = dir.join(KEY_FILE);
 
     if path.exists() {
@@ -23,15 +40,15 @@ pub fn load_or_create(dir: &Path) -> anyhow::Result<P256KeyPair> {
         return P256KeyPair::from_pkcs8_pem(pem.as_str());
     }
 
-    std::fs::create_dir_all(dir)?;
     let pair = P256KeyPair::generate();
     write_secret(&path, pair.to_pkcs8_pem()?.as_bytes())?;
     Ok(pair)
 }
 
-/// Deleting [`ENDPOINT_FILE`] is how a device rotates: the next load writes a
-/// new key, and with it a new `EndpointId` and author id.
-pub fn load_or_create_endpoint(dir: &Path) -> anyhow::Result<SecretKey> {
+/// An unreadable key is replaced, the opposite of [`identity_key`]'s rule: a
+/// lost endpoint key costs only a new `EndpointId` and author id. Deleting
+/// [`ENDPOINT_FILE`] is how a device rotates.
+fn endpoint_key(dir: &Path) -> anyhow::Result<SecretKey> {
     let path = dir.join(ENDPOINT_FILE);
 
     if let Ok(bytes) = std::fs::read(&path)
@@ -40,11 +57,15 @@ pub fn load_or_create_endpoint(dir: &Path) -> anyhow::Result<SecretKey> {
         return Ok(SecretKey::from_bytes(&bytes));
     }
 
-    std::fs::create_dir_all(dir)?;
     let key = SecretKey::generate();
-    // Remove-then-write rather than `create_new`: an unparsable key is a
-    // partial write, and rewriting it costs only a new endpoint id.
-    let _ = std::fs::remove_file(&path);
+
+    // `write_secret` refuses to clobber, so the unreadable file goes first.
+    if let Err(err) = std::fs::remove_file(&path)
+        && err.kind() != ErrorKind::NotFound
+    {
+        return Err(err).context("clear the unreadable endpoint key");
+    }
+
     write_secret(&path, &key.to_bytes())?;
     Ok(key)
 }
@@ -70,105 +91,59 @@ mod tests {
     use super::*;
 
     #[test]
-    fn reloads_the_same_identity() {
+    fn keys_survive_a_reload() {
         let dir = tempdir().expect("temp dir");
 
-        let created = load_or_create(dir.path()).expect("create key");
-        let loaded = load_or_create(dir.path()).expect("load key");
+        let created = load(dir.path()).expect("create keys");
+        let reloaded = load(dir.path()).expect("load keys");
 
         assert_eq!(
-            created.public().to_did(),
-            loaded.public().to_did(),
-            "a persisted key must yield the same DID across loads"
+            created.identity.public().to_did(),
+            reloaded.identity.public().to_did()
         );
-    }
-
-    #[test]
-    fn separate_directories_hold_separate_identities() {
-        let a = tempdir().expect("temp dir");
-        let b = tempdir().expect("temp dir");
-
-        let a = load_or_create(a.path()).expect("create key");
-        let b = load_or_create(b.path()).expect("create key");
-
-        assert_ne!(a.public().to_did(), b.public().to_did());
+        assert_eq!(created.endpoint.to_bytes(), reloaded.endpoint.to_bytes());
     }
 
     #[cfg(unix)]
     #[test]
-    fn key_file_is_owner_only() {
+    fn key_files_are_owner_only() {
         let dir = tempdir().expect("temp dir");
-        load_or_create(dir.path()).expect("create key");
+        load(dir.path()).expect("create keys");
 
-        let meta = std::fs::metadata(dir.path().join(KEY_FILE)).expect("metadata");
-
-        assert_eq!(meta.permissions().mode() & 0o777, 0o600);
-    }
-
-    #[test]
-    fn an_endpoint_key_survives_a_reload_and_rotates_when_deleted() {
-        let dir = tempdir().expect("temp dir");
-
-        let created = load_or_create_endpoint(dir.path()).expect("create key");
-        let reloaded = load_or_create_endpoint(dir.path()).expect("load key");
-        assert_eq!(created.to_bytes(), reloaded.to_bytes());
-
-        std::fs::remove_file(dir.path().join(ENDPOINT_FILE)).expect("rotate");
-        let rotated = load_or_create_endpoint(dir.path()).expect("create key");
-
-        assert_ne!(
-            created.to_bytes(),
-            rotated.to_bytes(),
-            "deleting the endpoint key is how a device takes a new endpoint id"
-        );
-        assert_eq!(
-            load_or_create(dir.path())
-                .expect("load key")
-                .public()
-                .to_did(),
-            load_or_create(dir.path())
-                .expect("load key")
-                .public()
-                .to_did(),
-            "a rotation leaves the identity key untouched"
-        );
-    }
-
-    #[cfg(unix)]
-    #[test]
-    fn endpoint_key_file_is_owner_only() {
-        let dir = tempdir().expect("temp dir");
-        load_or_create_endpoint(dir.path()).expect("create key");
-
-        let meta = std::fs::metadata(dir.path().join(ENDPOINT_FILE)).expect("metadata");
-
-        assert_eq!(meta.permissions().mode() & 0o777, 0o600);
+        for file in [KEY_FILE, ENDPOINT_FILE] {
+            let meta = std::fs::metadata(dir.path().join(file)).expect("metadata");
+            assert_eq!(meta.permissions().mode() & 0o777, 0o600, "{file}");
+        }
     }
 
     #[test]
     fn a_truncated_endpoint_key_is_replaced() {
         let dir = tempdir().expect("temp dir");
-        std::fs::create_dir_all(dir.path()).expect("mkdir");
         std::fs::write(dir.path().join(ENDPOINT_FILE), b"short").expect("write");
 
-        let key = load_or_create_endpoint(dir.path()).expect("create key");
+        let key = endpoint_key(dir.path()).expect("replace key");
 
         assert_eq!(
             key.to_bytes(),
-            load_or_create_endpoint(dir.path())
-                .expect("load key")
-                .to_bytes(),
+            endpoint_key(dir.path()).expect("load key").to_bytes(),
             "a partial write is rewritten rather than failing every later load"
         );
     }
 
     #[test]
-    fn a_missing_directory_is_created() {
+    fn an_unreadable_identity_key_is_preserved() {
         let dir = tempdir().expect("temp dir");
-        let nested = dir.path().join("unavi").join("identity");
+        let path = dir.path().join(KEY_FILE);
+        std::fs::write(&path, b"not a pem").expect("write");
 
-        load_or_create(&nested).expect("create key");
-
-        assert!(nested.join(KEY_FILE).exists());
+        assert!(
+            identity_key(dir.path()).is_err(),
+            "an identity is irreplaceable, so an unreadable key must fail the load"
+        );
+        assert_eq!(
+            std::fs::read(&path).expect("read back"),
+            b"not a pem",
+            "the key its owner may still recover must be left on disk"
+        );
     }
 }

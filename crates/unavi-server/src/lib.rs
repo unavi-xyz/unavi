@@ -31,10 +31,8 @@ use unavi_identity::{
         self,
         EndpointAuth,
     },
-    identity::{
-        self,
-        NodeIdentity,
-    },
+    identity::NodeIdentity,
+    resolve::Resolver,
 };
 use unavi_registry::{
     Registry,
@@ -96,11 +94,11 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     let node = Arc::new(NodeIdentity::load(&storage)?);
     info!("Running server as {did}");
 
-    // Published before the endpoint binds: a peer can dial the instant it is
-    // listening, and answering its proof needs the key.
-    identity::set_local(Arc::clone(node.user()));
-
-    let auth = EndpointAuth::new();
+    let resolver = Arc::new(Resolver::new()?);
+    let auth = Arc::new(EndpointAuth::new(
+        Arc::clone(node.user()),
+        Arc::clone(&resolver),
+    ));
 
     // Fixes the endpoint id across restarts. The served DID document names it,
     // so a client that resolved this DID can still reach the node.
@@ -139,7 +137,15 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
 
     let _registry = if opts.registry {
         let config = RegistryConfig::default();
-        let (registry, protocol) = Registry::create(&docs, blobs.blobs(), config, &storage).await?;
+        let (registry, protocol) = Registry::create(
+            &docs,
+            blobs.blobs(),
+            config,
+            &storage,
+            Arc::clone(auth.bindings()),
+            Arc::clone(&resolver),
+        )
+        .await?;
 
         info!(recent = %registry.views().recent, "Serving registry");
         rb = rb.accept(unavi_registry::control::ALPN, protocol);

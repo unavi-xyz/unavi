@@ -15,9 +15,8 @@ pub const DEFAULT_TTL: Duration = Duration::from_mins(10);
 
 const PREFIX: &str = "cache/";
 
-/// Deadlines round up to this granularity, so re-reads within a bucket rewrite
-/// the same tag instead of finding and deleting its predecessor. Live tags per
-/// hash are bounded by ttl divided by this.
+/// Deadlines round up to this granularity, so re-reads share a tag instead of
+/// leaving one per read. A hash holds at most `ttl / BUCKET + 1` live tags.
 const BUCKET: i64 = 600;
 
 /// Wide enough for any `i64` second count, so every deadline pads to the same
@@ -60,6 +59,8 @@ pub async fn sweep(blobs: &BlobStore) -> anyhow::Result<u64> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeSet;
+
     use super::*;
 
     const HASH: Hash = Hash::from_bytes([7; 32]);
@@ -91,18 +92,42 @@ mod tests {
         assert!(name(HASH, now + BUCKET) > cutoff);
     }
 
+    /// Spans of `now` are walked rather than sampled: whether two reads share a
+    /// tag depends on where they fall against the bucket grid, so a pair chosen
+    /// by hand proves nothing either way.
+    const TTLS: [u64; 4] = [60, 600, 700, 1200];
+
     #[test]
-    fn a_reread_inside_a_bucket_rewrites_one_name() {
-        let ttl = Duration::from_mins(10);
-        let first = deadline(ttl, 1_700_000_000);
-        assert_eq!(
-            first,
-            deadline(ttl, 1_700_000_000 + BUCKET - 1),
-            "reads within a bucket must land on the same tag"
-        );
-        assert!(
-            first >= 1_700_000_000 + ttl.as_secs().cast_signed(),
-            "a bucket never expires a blob before its ttl"
-        );
+    fn a_deadline_never_falls_before_the_ttl() {
+        for secs in TTLS {
+            let ttl = Duration::from_secs(secs);
+            let secs = secs.cast_signed();
+
+            for now in 1_700_000_000..=1_700_000_000 + secs {
+                assert!(
+                    deadline(ttl, now) >= now + secs,
+                    "rounding must never expire a blob early: ttl {secs}s at {now}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn re_reads_over_one_ttl_share_a_bounded_number_of_tags() {
+        for secs in TTLS {
+            let ttl = Duration::from_secs(secs);
+            let secs = secs.cast_signed();
+            let start = 1_700_000_000;
+
+            let tags = (start..=start + secs)
+                .map(|now| deadline(ttl, now))
+                .collect::<BTreeSet<_>>();
+
+            assert!(
+                i64::try_from(tags.len()).expect("tag count") <= secs / BUCKET + 1,
+                "a hash must not accumulate a tag per read: ttl {secs}s left {} tags",
+                tags.len()
+            );
+        }
     }
 }

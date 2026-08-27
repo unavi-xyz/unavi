@@ -5,10 +5,7 @@ use iroh::{
     Endpoint,
     EndpointAddr,
 };
-use iroh_docs::{
-    NamespaceId,
-    protocol::Docs,
-};
+use iroh_docs::NamespaceId;
 use irpc::Client;
 use unavi_identity::{
     identity::Identity,
@@ -18,6 +15,7 @@ use unavi_identity::{
         SignedBytes,
     },
 };
+use unavi_store::store::Store;
 
 use crate::{
     control::{
@@ -135,13 +133,16 @@ impl RegistryClient {
 
     /// Imports this registry's view docs read-only and starts syncing them,
     /// returning their namespaces. Views are the only thing a client syncs.
-    pub async fn sync_views(&self, docs: &Docs) -> anyhow::Result<Vec<NamespaceId>> {
+    pub async fn sync_views(&self, store: &Store) -> anyhow::Result<Vec<NamespaceId>> {
         let ids = self.views().await?;
         let mut synced = Vec::new();
 
         for ns in [ids.recent, ids.featured, ids.categories, ids.active] {
-            let doc = unavi_store::namespace::ensure_open(docs, ns).await?;
-            doc.start_sync(vec![self.host.clone()]).await?;
+            store
+                .open(ns)
+                .await?
+                .sync_from(vec![self.host.clone()])
+                .await?;
             synced.push(ns);
         }
 

@@ -13,9 +13,8 @@ use bevy_iroh::{
     store::{
         LocalBlobStore,
         LocalBlobs,
-        LocalDocs,
         LocalDownloader,
-        LocalGossip,
+        LocalStore,
         SyncTargets,
     },
 };
@@ -23,7 +22,6 @@ use iroh::{
     Endpoint,
     EndpointAddr,
 };
-use iroh_docs::protocol::Docs;
 use n0_future::task::AbortOnDropHandle;
 use unavi_identity::{
     auth,
@@ -35,13 +33,13 @@ use unavi_identity::{
 };
 use unavi_registry::follow;
 use unavi_store::{
-    builder::{
+    local,
+    store::{
         Builder as StoreBuilder,
         Guard,
+        Spawned,
         Store,
     },
-    local,
-    root_doc,
 };
 use unavi_util::{
     async_commands::AsyncCommands,
@@ -151,15 +149,11 @@ async fn load(
         .gc_timer(Duration::from_mins(15))
         .storage(storage.clone());
 
-    let Store {
-        blobs,
-        docs,
-        gossip,
+    let Spawned {
+        store,
         router,
         guard,
     } = builder.build().await?;
-
-    root_doc::set_root_doc(root_doc::open_or_mint(&docs, &storage).await?);
 
     let SyncConfig {
         allow_loopback,
@@ -170,7 +164,7 @@ async fn load(
     let (sync_targets, unresolved) =
         follow::resolve_batch(targets, allow_loopback, &resolver).await;
     follow::sync(
-        &docs,
+        &store,
         &endpoint,
         &sync_targets,
         Arc::clone(&identity),
@@ -181,18 +175,17 @@ async fn load(
     let store_entity = AsyncCommands::default()
         .spawn((RouterBuilderFnTarget(entity), RouterBuilderFn(Some(router))))
         .send_spawn((
-            LocalBlobStore(blobs.clone()),
-            LocalBlobs(blobs.blobs().clone()),
-            LocalDownloader(blobs.downloader(&endpoint)),
-            LocalDocs(docs.clone()),
-            LocalGossip(gossip),
+            LocalBlobStore(store.blob_store().clone()),
+            LocalBlobs(store.blobs().clone()),
+            LocalDownloader(store.blob_store().downloader(&endpoint)),
+            LocalStore(store.clone()),
             SyncTargets(sync_targets.clone()),
         ))
         .await;
 
     if !unresolved.is_empty() {
         spawn_async_task(retry(
-            docs,
+            store.clone(),
             endpoint,
             sync_targets,
             unresolved,
@@ -209,7 +202,7 @@ async fn load(
 /// Keeps resolving the registries that were unreachable at startup, so a server
 /// brought up after the client is still followed without a restart.
 async fn retry(
-    docs: Docs,
+    store: Store,
     endpoint: Endpoint,
     mut targets: Vec<EndpointAddr>,
     mut unresolved: Vec<String>,
@@ -233,7 +226,7 @@ async fn retry(
         targets.extend(addrs);
 
         follow::sync(
-            &docs,
+            &store,
             &endpoint,
             &targets,
             Arc::clone(&identity),

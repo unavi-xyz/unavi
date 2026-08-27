@@ -11,8 +11,7 @@ use bevy_hsd::{
 use bevy_iroh::{
     endpoint::IrohEndpoint,
     store::{
-        LocalBlobs,
-        LocalDocs,
+        LocalStore,
         SyncTargets,
     },
 };
@@ -45,7 +44,7 @@ pub struct PendingScene {
 pub fn spawn_space_scene(
     trigger: On<Add, Space>,
     spaces: Query<(&Space, Option<&HsdNamespace>)>,
-    stores: Query<(&LocalDocs, &LocalBlobs, &SyncTargets)>,
+    stores: Query<(&LocalStore, &SyncTargets)>,
     endpoints: Query<&IrohEndpoint>,
     mut commands: Commands,
 ) {
@@ -54,7 +53,7 @@ pub fn spawn_space_scene(
         .map(|(space, ns)| (space.0, ns.map(|v| v.0)))
         .expect("space");
 
-    let Ok((docs, blobs, sync_targets)) = stores.single() else {
+    let Ok((store, sync_targets)) = stores.single() else {
         warn!("Cannot read space: no local store");
         return;
     };
@@ -63,9 +62,10 @@ pub fn spawn_space_scene(
     // would duplicate every prim and re-run every script. It still has to be
     // served: presence is announced for it, so peers arrive expecting an answer.
     if instanced == Some(ns) {
-        let docs = docs.0.clone();
+        let store = store.0.clone();
         spawn_async_task(async move {
-            if let Err(err) = unavi_store::namespace::serve(&docs, ns).await {
+            let served = async { store.open(ns).await?.serve().await };
+            if let Err(err) = served.await {
                 warn!(%ns, ?err, "Failed to serve local space");
             }
         });
@@ -73,8 +73,7 @@ pub fn spawn_space_scene(
     }
     info!(%ns, "Reading space");
 
-    let docs = docs.0.clone();
-    let blobs = blobs.0.clone();
+    let store = store.0.clone();
     let self_id = endpoints.single().ok().map(|e| e.0.id());
     let sync_targets = sync_targets.0.clone();
 
@@ -87,24 +86,24 @@ pub fn spawn_space_scene(
 
         // Waiting on the prim prefix rather than a single snapshot key: the
         // document is its entries now, and the first prim proves it arrived.
-        let fetch = unavi_store::entries::fetch(
-            &docs,
-            ns,
-            peers,
-            key::PRIM_PREFIX,
-            READ_ATTEMPTS,
-            READ_DELAY,
-        );
+        let fetch = async {
+            let doc = store.open(ns).await?;
+            doc.sync_from(peers).await?;
+            let arrived = doc
+                .wait_for(key::PRIM_PREFIX, READ_ATTEMPTS, READ_DELAY)
+                .await?;
+            anyhow::Ok((doc, arrived))
+        };
         tokio::select! {
             () = async { cancel_rx.await.ok(); } => {}
             res = fetch => match res {
-                Ok(Some(doc)) => match document::read_state(&doc, &blobs).await {
+                Ok((doc, true)) => match document::read_state(&doc).await {
                     Ok(state) => {
                         tx.send(state).await.ok();
                     }
                     Err(err) => error!(?err, "failed reading space entries"),
                 },
-                Ok(None) => warn!(%ns, "space document never arrived"),
+                Ok((_, false)) => warn!(%ns, "space document never arrived"),
                 Err(err) => error!(?err, "failed syncing space document"),
             },
         }

@@ -6,7 +6,7 @@ use std::sync::{
 use bevy::prelude::*;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
-    store::LocalGossip,
+    store::LocalStore,
 };
 use iroh::{
     EndpointAddr,
@@ -101,15 +101,17 @@ pub fn spawn_gossip(trigger: On<Add, IrohEndpoint>, mut commands: Commands) {
 /// its presence broadcasts.
 pub fn adopt_gossip(
     endpoints: Query<Entity, (With<IrohEndpoint>, Without<IrohGossip>)>,
-    stores: Query<&LocalGossip>,
+    stores: Query<&LocalStore>,
     mut commands: Commands,
 ) {
-    let Ok(gossip) = stores.single() else {
+    let Ok(store) = stores.single() else {
         return;
     };
 
     for entity in &endpoints {
-        commands.entity(entity).insert(IrohGossip(gossip.0.clone()));
+        commands
+            .entity(entity)
+            .insert(IrohGossip(store.0.gossip().clone()));
     }
 }
 

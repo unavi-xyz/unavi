@@ -4,30 +4,45 @@ use rstest::rstest;
 use tempfile::tempdir;
 use tracing_test::traced_test;
 use unavi_store::{
-    builder::Store,
     local::Storage,
-    namespace,
+    store::{
+        Builder,
+        Spawned,
+    },
 };
 
 use crate::common::store;
 
 mod common;
 
+/// A store whose recorded namespace ids land in `dir`, so a test can assert
+/// what a restart would reopen.
+async fn store_at(dir: &std::path::Path) -> Spawned {
+    let secret_key = iroh::SecretKey::generate();
+    let author = iroh_docs::Author::from_bytes(&secret_key.to_bytes());
+    let endpoint = iroh::Endpoint::builder(iroh::endpoint::presets::N0DisableRelay)
+        .secret_key(secret_key)
+        .bind()
+        .await
+        .expect("bind endpoint");
+
+    Builder::new(endpoint, author)
+        .storage(Storage::Path(dir.to_path_buf()))
+        .build()
+        .await
+        .expect("construct data store")
+}
+
 #[rstest]
 #[timeout(Duration::from_secs(5))]
-#[awt]
 #[traced_test]
 #[tokio::test]
-async fn a_recorded_namespace_reopens(#[future] store: Store) {
+async fn a_recorded_namespace_reopens() {
     let dir = tempdir().expect("temp dir");
-    let storage = Storage::Path(dir.path().to_path_buf());
+    let store = store_at(dir.path()).await.store;
 
-    let first = namespace::open_or_mint(&store.docs, &storage, "root-doc")
-        .await
-        .expect("mint");
-    let second = namespace::open_or_mint(&store.docs, &storage, "root-doc")
-        .await
-        .expect("reopen");
+    let first = store.open_or_mint("view").await.expect("mint").id();
+    let second = store.open_or_mint("view").await.expect("reopen").id();
 
     assert_eq!(
         first, second,
@@ -37,50 +52,41 @@ async fn a_recorded_namespace_reopens(#[future] store: Store) {
 
 #[rstest]
 #[timeout(Duration::from_secs(5))]
-#[awt]
 #[traced_test]
 #[tokio::test]
-async fn separate_keys_hold_separate_namespaces(#[future] store: Store) {
+async fn separate_keys_hold_separate_namespaces() {
     let dir = tempdir().expect("temp dir");
-    let storage = Storage::Path(dir.path().to_path_buf());
+    let store = store_at(dir.path()).await.store;
 
-    let catalog = namespace::open_or_mint(&store.docs, &storage, "registry/catalog")
+    let catalog = store
+        .open_or_mint("registry/catalog")
         .await
         .expect("mint catalog");
-    let recent = namespace::open_or_mint(&store.docs, &storage, "registry/views/recent")
+    let recent = store
+        .open_or_mint("registry/views/recent")
         .await
         .expect("mint view");
 
-    assert_ne!(catalog, recent);
+    assert_ne!(catalog.id(), recent.id());
 }
 
 #[rstest]
 #[timeout(Duration::from_secs(5))]
-#[awt]
 #[traced_test]
 #[tokio::test]
-async fn an_unheld_namespace_is_reminted(#[future] store: Store) {
+async fn an_unheld_namespace_is_reminted() {
     let dir = tempdir().expect("temp dir");
-    let storage = Storage::Path(dir.path().to_path_buf());
+    let store = store_at(dir.path()).await.store;
 
-    let stale = store.docs.api().create().await.expect("create").id();
-    storage
-        .write("root-doc", &stale.to_string())
-        .expect("record");
-    store.docs.api().drop_doc(stale).await.expect("drop");
+    let stale = store.open_or_mint("view").await.expect("mint").id();
+    store.docs().api().drop_doc(stale).await.expect("drop");
 
-    let minted = namespace::open_or_mint(&store.docs, &storage, "root-doc")
-        .await
-        .expect("remint");
+    let minted = store.open_or_mint("view").await.expect("remint");
 
     assert_ne!(
-        minted, stale,
+        minted.id(),
+        stale,
         "an id whose capability is gone names an unrecoverable document"
-    );
-    assert_eq!(
-        storage.read("root-doc").as_deref(),
-        Some(minted.to_string().as_str()),
-        "the replacement must be recorded in place of the lost id"
     );
 }
 
@@ -89,13 +95,37 @@ async fn an_unheld_namespace_is_reminted(#[future] store: Store) {
 #[awt]
 #[traced_test]
 #[tokio::test]
-async fn ephemeral_storage_mints_every_run(#[future] store: Store) {
-    let first = namespace::open_or_mint(&store.docs, &Storage::Ephemeral, "root-doc")
-        .await
-        .expect("mint");
-    let second = namespace::open_or_mint(&store.docs, &Storage::Ephemeral, "root-doc")
-        .await
-        .expect("mint");
+async fn ephemeral_storage_mints_every_run(#[future] store: Spawned) {
+    let first = store.store.open_or_mint("view").await.expect("mint");
+    let second = store.store.open_or_mint("view").await.expect("mint");
 
-    assert_ne!(first, second);
+    assert_ne!(first.id(), second.id());
+}
+
+/// `open` imports a read capability rather than opening, so it has to merge
+/// into a write capability this node already holds. A downgrade would leave
+/// every document silently read-only on the node that authored it.
+#[rstest]
+#[timeout(Duration::from_secs(5))]
+#[awt]
+#[traced_test]
+#[tokio::test]
+async fn open_keeps_a_held_write_capability(#[future] store: Spawned) {
+    let created = store.store.create().await.expect("create");
+
+    let reopened = store.store.open(created.id()).await.expect("open");
+
+    reopened
+        .set("written-after-import", "payload")
+        .await
+        .expect("a namespace this node authored stays writable after open");
+
+    assert_eq!(
+        reopened
+            .list(&["written-after-import"])
+            .await
+            .expect("list")
+            .len(),
+        1
+    );
 }

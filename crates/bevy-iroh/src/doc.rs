@@ -1,22 +1,11 @@
-use anyhow::Context;
 use async_channel::Sender;
 use bevy::prelude::*;
 use bytes::Bytes;
-use iroh_blobs::api::blobs::Blobs;
-use iroh_docs::{
-    NamespaceId,
-    protocol::Docs,
-};
-use unavi_store::entries::{
-    self,
-    Write,
-};
+use iroh_docs::NamespaceId;
+use unavi_store::store::Store;
 use unavi_util::async_task::spawn_async_task;
 
-use crate::store::{
-    LocalBlobs,
-    LocalDocs,
-};
+use crate::store::LocalStore;
 
 /// Writes a `key -> value` entry into a doc.
 #[derive(Event)]
@@ -27,8 +16,8 @@ pub struct DocSet {
     pub tx:    Sender<bool>,
 }
 
-pub(crate) fn on_doc_set(trigger: On<DocSet>, stores: Query<(&LocalDocs, &LocalBlobs)>) {
-    let Ok((docs, blobs)) = stores.single() else {
+pub(crate) fn on_doc_set(trigger: On<DocSet>, stores: Query<&LocalStore>) {
+    let Ok(store) = stores.single().map(|s| s.0.clone()) else {
         return;
     };
     let event = trigger.event();
@@ -38,25 +27,10 @@ pub(crate) fn on_doc_set(trigger: On<DocSet>, stores: Query<(&LocalDocs, &LocalB
         event.value.clone(),
         event.tx.clone(),
     );
-    let docs = docs.0.clone();
-    let blobs = blobs.0.clone();
     spawn_async_task(async move {
-        tx.send(set(&docs, &blobs, ns, key, value).await.is_ok())
-            .await
-            .ok();
+        let wrote = async { store.open(ns).await?.set(key, value).await };
+        tx.send(wrote.await.is_ok()).await.ok();
     });
-}
-
-async fn set(
-    docs: &Docs,
-    blobs: &Blobs,
-    ns: NamespaceId,
-    key: String,
-    value: Bytes,
-) -> anyhow::Result<()> {
-    let doc = docs.api().open(ns).await?.context("doc not open")?;
-    let author = docs.api().author_default().await?;
-    entries::apply(&doc, blobs, author, [Write::Bytes { key, value }]).await
 }
 
 /// Reads the value at a key.
@@ -67,23 +41,21 @@ pub struct DocGet {
     pub tx:  Sender<Option<Bytes>>,
 }
 
-pub(crate) fn on_doc_get(trigger: On<DocGet>, stores: Query<(&LocalDocs, &LocalBlobs)>) {
-    let Ok((docs, blobs)) = stores.single() else {
+pub(crate) fn on_doc_get(trigger: On<DocGet>, stores: Query<&LocalStore>) {
+    let Ok(store) = stores.single().map(|s| s.0.clone()) else {
         return;
     };
     let event = trigger.event();
     let (ns, key, tx) = (event.ns, event.key.clone(), event.tx.clone());
-    let docs = docs.0.clone();
-    let blobs = blobs.0.clone();
     spawn_async_task(async move {
-        tx.send(get(&docs, &blobs, ns, &key).await).await.ok();
+        tx.send(get(&store, ns, &key).await).await.ok();
     });
 }
 
-async fn get(docs: &Docs, blobs: &Blobs, ns: NamespaceId, key: &str) -> Option<Bytes> {
-    let doc = docs.api().open(ns).await.ok()??;
-    let entry = entries::get(&doc, key).await.ok()??;
-    entries::value(blobs, &entry).await
+async fn get(store: &Store, ns: NamespaceId, key: &str) -> Option<Bytes> {
+    let doc = store.open(ns).await.ok()?;
+    let entry = doc.get(key).await.ok()??;
+    doc.value(&entry).await
 }
 
 /// Lists the latest entries under a key prefix.
@@ -94,31 +66,34 @@ pub struct DocList {
     pub tx:     Sender<Vec<(String, Bytes)>>,
 }
 
-pub(crate) fn on_doc_list(trigger: On<DocList>, stores: Query<(&LocalDocs, &LocalBlobs)>) {
-    let Ok((docs, blobs)) = stores.single() else {
+pub(crate) fn on_doc_list(trigger: On<DocList>, stores: Query<&LocalStore>) {
+    let Ok(store) = stores.single().map(|s| s.0.clone()) else {
         return;
     };
     let event = trigger.event();
     let (ns, prefix, tx) = (event.ns, event.prefix.clone(), event.tx.clone());
-    let docs = docs.0.clone();
-    let blobs = blobs.0.clone();
     spawn_async_task(async move {
-        tx.send(list(&docs, &blobs, ns, &prefix).await).await.ok();
+        tx.send(list(&store, ns, &prefix).await).await.ok();
     });
 }
 
-async fn list(docs: &Docs, blobs: &Blobs, ns: NamespaceId, prefix: &str) -> Vec<(String, Bytes)> {
-    let Ok(Some(doc)) = docs.api().open(ns).await else {
+async fn list(store: &Store, ns: NamespaceId, prefix: &str) -> Vec<(String, Bytes)> {
+    let Ok(doc) = store.open(ns).await else {
         return Vec::new();
     };
-    let Ok(found) = entries::list(&doc, &[prefix]).await else {
+    let Ok(found) = doc.list(&[prefix]).await else {
         return Vec::new();
     };
 
     let mut out = Vec::with_capacity(found.len());
     for entry in found {
-        if let Some(value) = entries::value(blobs, &entry).await {
-            out.push((entry.key, value));
+        // No key this workspace writes is anything but UTF-8, so one that does
+        // not decode names nothing a caller could have asked for.
+        let Ok(key) = String::from_utf8(entry.key().to_vec()) else {
+            continue;
+        };
+        if let Some(value) = doc.value(&entry).await {
+            out.push((key, value));
         }
     }
     out

@@ -8,6 +8,7 @@ use bevy_hsd::{
     HsdDocId,
     Prim,
 };
+use bevy_iroh::store::LocalStore;
 use smol_str::SmolStr;
 use tokio::sync::Mutex;
 use tracing::{
@@ -83,8 +84,11 @@ pub fn instantiate_scripts(
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
     docs: Query<(&HsdDocId, &Hsd, Has<QuotaExempt>)>,
+    stores: Query<&LocalStore>,
     mut commands: Commands,
 ) {
+    let root_doc = stores.single().ok().map(|store| store.0.root());
+
     for (entity, script, engine_ent, name, prim, doc_ent, fixed_updating) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
@@ -122,15 +126,16 @@ pub fn instantiate_scripts(
 
         let state = Runtime {
             api:    Arc::new(Api {
-                state:         Arc::clone(&doc.0),
-                doc_id:        doc_id.0,
-                prim:          prim.0,
-                quota:         Arc::clone(&quota),
-                wired_agent:   Mutex::default(),
-                wired_event:   Mutex::default(),
-                wired_input:   Mutex::default(),
-                wired_kv:      Mutex::default(),
-                wired_scene:   Mutex::default(),
+                state: Arc::clone(&doc.0),
+                doc_id: doc_id.0,
+                prim: prim.0,
+                quota: Arc::clone(&quota),
+                root_doc,
+                wired_agent: Mutex::default(),
+                wired_event: Mutex::default(),
+                wired_input: Mutex::default(),
+                wired_kv: Mutex::default(),
+                wired_scene: Mutex::default(),
                 wired_storage: Mutex::default(),
             }),
             native: NativeRuntime {

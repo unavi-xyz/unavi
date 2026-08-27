@@ -11,10 +11,7 @@ use bevy_hsd::{
     HsdNamespace,
     document,
 };
-use bevy_iroh::store::{
-    LocalBlobs,
-    LocalDocs,
-};
+use bevy_iroh::store::LocalStore;
 use hsd::{
     id::DocId,
     key,
@@ -89,10 +86,10 @@ pub fn fetch_tracked_docs(
         (Without<Hsd>, Without<PendingPinnedDoc>, With<ChildOf>),
     >,
     peers: Query<&Peer>,
-    stores: Query<(&LocalDocs, &LocalBlobs)>,
+    stores: Query<&LocalStore>,
     mut commands: Commands,
 ) {
-    let Ok((docs, blobs)) = stores.single() else {
+    let Ok(store) = stores.single() else {
         return;
     };
     let now = time.elapsed();
@@ -114,25 +111,28 @@ pub fn fetch_tracked_docs(
         }
 
         let ns = doc.doc;
-        let docs = docs.0.clone();
-        let blobs = blobs.0.clone();
+        let store = store.0.clone();
         let (tx, rx) = async_channel::bounded(1);
         let (cancel_tx, cancel_rx) = oneshot::channel();
 
         spawn_async_task(async move {
-            let fetch = unavi_store::entries::fetch(
-                &docs,
-                ns,
-                sync_from,
-                key::PRIM_PREFIX,
-                READ_RETRIES,
-                Duration::from_secs(READ_BACKOFF_SECS),
-            );
+            let fetch = async {
+                let doc = store.open(ns).await?;
+                doc.sync_from(sync_from).await?;
+                let arrived = doc
+                    .wait_for(
+                        key::PRIM_PREFIX,
+                        READ_RETRIES,
+                        Duration::from_secs(READ_BACKOFF_SECS),
+                    )
+                    .await?;
+                anyhow::Ok((doc, arrived))
+            };
             tokio::select! {
                 () = async { cancel_rx.await.ok(); } => {}
                 res = fetch => {
-                    if let Ok(Some(doc)) = res
-                        && let Ok(state) = document::read_state(&doc, &blobs).await
+                    if let Ok((doc, true)) = res
+                        && let Ok(state) = document::read_state(&doc).await
                     {
                         tx.send(state).await.ok();
                     }

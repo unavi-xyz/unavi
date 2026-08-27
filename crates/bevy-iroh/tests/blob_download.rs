@@ -32,7 +32,7 @@ use iroh_blobs::api::{
     downloader::Downloader,
 };
 use iroh_docs::Author;
-use unavi_store::builder::Builder as StoreBuilder;
+use unavi_store::store::Builder as StoreBuilder;
 use unavi_util::async_task::spawn_async_task;
 
 const CONTENT: &[u8] = b"content only the provider holds";
@@ -69,7 +69,7 @@ fn fixture() -> Fixture {
         let host_router = (host.router)(Router::builder(host_endpoint.clone())).spawn();
 
         let hash = host
-            .blobs
+            .store
             .blobs()
             .add_bytes(Bytes::from_static(CONTENT))
             .await
@@ -96,11 +96,11 @@ fn fixture() -> Fixture {
         let provider = host_endpoint.addr();
 
         tx.send(Fixture {
-            blobs: store.blobs.blobs().clone(),
-            store: store.blobs.clone(),
+            blobs: store.store.blobs().clone(),
+            store: store.store.blob_store().clone(),
             hash: hash.into(),
             provider,
-            download: store.blobs.downloader(&endpoint),
+            download: store.store.blob_store().downloader(&endpoint),
             _routers: vec![host_router, router],
         })
         .await

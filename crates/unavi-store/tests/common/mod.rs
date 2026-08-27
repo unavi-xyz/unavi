@@ -11,23 +11,23 @@ use iroh::{
 };
 use iroh_docs::Author;
 use rstest::fixture;
-use unavi_store::builder::{
+use unavi_store::store::{
     Builder,
-    Store,
+    Spawned,
 };
 
 #[fixture]
-pub async fn store() -> Store {
+pub async fn store() -> Spawned {
     build(None).await
 }
 
 /// A store sweeping on `interval`, for tests that assert what garbage
 /// collection reclaims.
-pub async fn store_with_gc(interval: Duration) -> Store {
+pub async fn store_with_gc(interval: Duration) -> Spawned {
     build(Some(interval)).await
 }
 
-async fn build(gc: Option<Duration>) -> Store {
+async fn build(gc: Option<Duration>) -> Spawned {
     let secret_key = SecretKey::generate();
     let author = Author::from_bytes(&secret_key.to_bytes());
 

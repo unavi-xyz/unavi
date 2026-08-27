@@ -39,11 +39,11 @@ use unavi_registry::{
     config::Config as RegistryConfig,
 };
 use unavi_store::{
-    builder::{
-        Builder as StoreBuilder,
-        Store,
-    },
     local::Storage,
+    store::{
+        Builder as StoreBuilder,
+        Spawned,
+    },
 };
 use xdid::{
     core::{
@@ -116,18 +116,16 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
         .gc_timer(Duration::from_mins(15))
         .storage(storage.clone());
 
-    let Store {
-        blobs,
-        docs,
+    let Spawned {
+        store,
         router,
         guard: _guard,
-        ..
     } = builder.build().await?;
 
     if let Err(err) = files::init_files_dir() {
         warn!(?err, "failed to init files dir");
     }
-    match files::host_files(&blobs).await {
+    match files::host_files(store.blob_store()).await {
         Ok(hosted) => files::log_manifest(&hosted),
         Err(err) => warn!(?err, "failed to host files"),
     }
@@ -138,10 +136,8 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     let _registry = if opts.registry {
         let config = RegistryConfig::default();
         let (registry, protocol) = Registry::create(
-            &docs,
-            blobs.blobs(),
+            &store,
             config,
-            &storage,
             Arc::clone(auth.bindings()),
             Arc::clone(&resolver),
         )

@@ -11,10 +11,7 @@ use bevy_hsd::{
     HsdNamespace,
     document as hsd_document,
 };
-use bevy_iroh::store::{
-    LocalBlobs,
-    LocalDocs,
-};
+use bevy_iroh::store::LocalStore;
 use hsd::{
     id::DocId,
     key,
@@ -80,17 +77,16 @@ async fn create_namespace() -> anyhow::Result<NamespaceId> {
     let (tx, rx) = async_channel::bounded(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
-            let Some(docs) = world
-                .query::<&LocalDocs>()
+            let Some(store) = world
+                .query::<&LocalStore>()
                 .single(world)
                 .ok()
-                .map(|d| d.0.clone())
+                .map(|s| s.0.clone())
             else {
                 return;
             };
             spawn_async_task(async move {
-                tx.try_send(docs.api().create().await.map(|doc| doc.id()))
-                    .ok();
+                tx.try_send(store.create().await.map(|doc| doc.id())).ok();
             });
         })
         .send()
@@ -104,17 +100,17 @@ async fn serve_namespace(ns: NamespaceId) -> anyhow::Result<()> {
     let (tx, rx) = async_channel::bounded(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
-            let Some(docs) = world
-                .query::<&LocalDocs>()
+            let Some(store) = world
+                .query::<&LocalStore>()
                 .single(world)
                 .ok()
-                .map(|d| d.0.clone())
+                .map(|s| s.0.clone())
             else {
                 return;
             };
             spawn_async_task(async move {
-                tx.try_send(unavi_store::namespace::serve(&docs, ns).await)
-                    .ok();
+                let served = async { store.open(ns).await?.serve().await };
+                tx.try_send(served.await).ok();
             });
         })
         .send()
@@ -157,32 +153,29 @@ async fn save_namespace(ns: NamespaceId, state: Arc<Mutex<SceneState>>) -> anyho
     let (tx, rx) = async_channel::bounded(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
-            let Some((docs, blobs)) = world
-                .query::<(&LocalDocs, &LocalBlobs)>()
+            let Some(store) = world
+                .query::<&LocalStore>()
                 .single(world)
                 .ok()
-                .map(|(d, b)| (d.0.clone(), b.0.clone()))
+                .map(|s| s.0.clone())
             else {
                 return;
             };
             spawn_async_task(async move {
                 let res = async {
-                    let doc = unavi_store::namespace::ensure_open(&docs, ns).await?;
-                    let author = docs.api().author_default().await?;
+                    let doc = store.open(ns).await?;
 
                     let mut base = std::collections::BTreeMap::new();
-                    for entry in
-                        unavi_store::entries::list(&doc, &[key::META, key::PRIM_PREFIX]).await?
-                    {
-                        if let Some(entry) = hsd_document::to_entry(&blobs, &entry).await {
+                    for entry in doc.list(&[key::META, key::PRIM_PREFIX]).await? {
+                        if let Some(entry) = hsd_document::to_entry(&doc, &entry).await {
                             base.insert(entry.key, entry.value);
                         }
                     }
 
-                    let writes = save::diff(&base, &current)
-                        .into_iter()
-                        .map(hsd_document::to_write);
-                    unavi_store::entries::apply(&doc, &blobs, author, writes).await
+                    for change in save::diff(&base, &current) {
+                        hsd_document::apply_change(&doc, change).await?;
+                    }
+                    anyhow::Ok(())
                 }
                 .await;
                 tx.try_send(res).ok();
@@ -332,16 +325,16 @@ pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
 async fn drop_replica(ns: NamespaceId) {
     let _ = AsyncCommands::default()
         .push(move |world: &mut World| {
-            let Some(docs) = world
-                .query::<&LocalDocs>()
+            let Some(store) = world
+                .query::<&LocalStore>()
                 .single(world)
                 .ok()
-                .map(|d| d.0.clone())
+                .map(|s| s.0.clone())
             else {
                 return;
             };
             spawn_async_task(async move {
-                if let Err(err) = docs.api().drop_doc(ns).await {
+                if let Err(err) = store.docs().api().drop_doc(ns).await {
                     debug!(%ns, ?err, "failed to drop document replica");
                 }
             });

@@ -15,7 +15,7 @@ use bevy_hsd::load::LoadHsd;
 use bevy_iroh::store::{
     LocalBlobStore,
     LocalBlobs,
-    LocalDocs,
+    LocalStore,
 };
 use unavi_agent::LocalAgent;
 use unavi_policy::document::DocumentPolicy;
@@ -60,9 +60,9 @@ fn main() {
     .add_systems(Startup, init_scene);
 
     app.world_mut().spawn((
-        LocalBlobStore(store.store),
-        LocalBlobs(store.blobs),
-        LocalDocs(store.docs),
+        LocalBlobStore(store.store.blob_store().clone()),
+        LocalBlobs(store.store.blobs().clone()),
+        LocalStore(store.store.clone()),
     ));
 
     app.run();

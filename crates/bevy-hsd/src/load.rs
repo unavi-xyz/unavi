@@ -11,10 +11,7 @@ use bevy::{
         ConditionalSendFuture,
     },
 };
-use bevy_iroh::store::{
-    LocalBlobs,
-    LocalDocs,
-};
+use bevy_iroh::store::LocalStore;
 use hsd::{
     id::DocId,
     package::{
@@ -22,11 +19,8 @@ use hsd::{
         Package,
     },
 };
-use iroh_blobs::api::blobs::Blobs;
-use iroh_docs::{
-    NamespaceId,
-    protocol::Docs,
-};
+use iroh_docs::NamespaceId;
+use unavi_store::store::Store;
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
@@ -90,10 +84,10 @@ pub struct LoadHsd {
 pub fn instance_hsd(
     hsds: Res<Assets<HsdAsset>>,
     loading: Query<(Entity, &mut LoadHsd)>,
-    stores: Query<(&LocalDocs, &LocalBlobs)>,
+    stores: Query<&LocalStore>,
     mut commands: Commands,
 ) {
-    let Ok((local_docs, local_blobs)) = stores.single() else {
+    let Ok(store) = stores.single() else {
         return;
     };
 
@@ -102,13 +96,12 @@ pub fn instance_hsd(
             continue;
         };
 
-        let docs = local_docs.0.clone();
-        let blobs = local_blobs.0.clone();
+        let store = store.0.clone();
         let package = asset.0.clone();
         let on_load = load.on_load.take();
 
         spawn_async_task(async move {
-            if let Err(err) = build_and_instance(docs, blobs, package, entity, on_load).await {
+            if let Err(err) = build_and_instance(store, package, entity, on_load).await {
                 error!(?err, "failed to instance hsd document");
             }
         });
@@ -121,20 +114,20 @@ pub fn instance_hsd(
 // Send needed there); Send-bounded elsewhere.
 #[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
 async fn build_and_instance(
-    docs: Docs,
-    blobs: Blobs,
+    store: Store,
     package: Package,
     entity: Entity,
     on_load: Option<OnLoadFn>,
 ) -> anyhow::Result<()> {
-    let namespace = docs.api().create().await?.id();
-    let doc = unavi_store::namespace::ensure_open(&docs, namespace).await?;
-    let author = docs.api().author_default().await?;
+    let doc = store.create().await?;
+    let namespace = doc.id();
 
-    let writes = document::unpack(package, &blobs)?;
-    unavi_store::entries::apply(&doc, &blobs, author, writes).await?;
+    // Package entries carry inline bytes, so there is nothing to fetch.
+    for (key, value) in package.entries {
+        doc.set(key, value).await?;
+    }
 
-    let state = document::read_state(&doc, &blobs).await?;
+    let state = document::read_state(&doc).await?;
 
     AsyncCommands::default()
         .push(move |world: &mut World| {

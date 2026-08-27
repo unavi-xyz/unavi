@@ -4,10 +4,7 @@ use std::{
 };
 
 use bevy::prelude::*;
-use bevy_iroh::store::{
-    LocalBlobs,
-    LocalDocs,
-};
+use bevy_iroh::store::LocalStore;
 use hsd::id::DocId;
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
@@ -21,10 +18,6 @@ use unavi_policy::{
         self,
         Trust,
     },
-};
-use unavi_store::entries::{
-    self,
-    Write,
 };
 use unavi_util::async_task::spawn_async_task;
 
@@ -143,19 +136,15 @@ static PUBLISHED: parking_lot::Mutex<Option<std::collections::HashSet<[u8; 32]>>
 /// Publishes the local vouch list under salted subject hashes, emptying the
 /// keys of any vouch since retracted. Only hashes go out, so the list cannot
 /// be enumerated.
-pub fn publish_vouches(stores: Query<(&LocalDocs, &LocalBlobs)>) {
+pub fn publish_vouches(stores: Query<&LocalStore>) {
     use std::collections::HashSet;
 
-    use bytes::Bytes;
     use unavi_policy::trust::vouch::{
         Vouch,
         subject_hash,
     };
 
-    let Some(ns) = unavi_store::root_doc::root_doc() else {
-        return;
-    };
-    let Ok((docs, blobs)) = stores.single().map(|(d, b)| (d.0.clone(), b.0.clone())) else {
+    let Ok(store) = stores.single().map(|s| s.0.clone()) else {
         return;
     };
 
@@ -179,25 +168,18 @@ pub fn publish_vouches(stores: Query<(&LocalDocs, &LocalBlobs)>) {
         return;
     }
 
-    let writes = vouches
-        .into_iter()
-        .filter_map(|vouch| {
-            let bytes = postcard::to_allocvec(&vouch).ok()?;
-            Some(Write::Bytes {
-                key:   format!("{VOUCH_PREFIX}{}", hex(&vouch.subject)),
-                value: Bytes::from(bytes),
-            })
-        })
-        .chain(retracted.into_iter().map(|subject| Write::Remove {
-            key: format!("{VOUCH_PREFIX}{}", hex(&subject)),
-        }))
-        .collect::<Vec<_>>();
-
     spawn_async_task(async move {
         let published = async {
-            let doc = unavi_store::namespace::ensure_open(&docs, ns).await?;
-            let author = docs.api().author_default().await?;
-            entries::apply(&doc, &blobs, author, writes).await
+            let root = store.open(store.root()).await?;
+            for vouch in vouches {
+                let key = format!("{VOUCH_PREFIX}{}", hex(&vouch.subject));
+                root.set(key, postcard::to_allocvec(&vouch)?).await?;
+            }
+            for subject in retracted {
+                root.remove(format!("{VOUCH_PREFIX}{}", hex(&subject)))
+                    .await?;
+            }
+            anyhow::Ok(())
         }
         .await;
 

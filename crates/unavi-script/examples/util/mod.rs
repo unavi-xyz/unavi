@@ -8,22 +8,19 @@ use iroh::{
     endpoint::presets::N0,
     protocol::Router,
 };
-use iroh_blobs::api::{
-    Store as BlobStore,
-    blobs::Blobs,
-};
-use iroh_docs::protocol::Docs;
+use iroh_blobs::api::blobs::Blobs;
 use unavi_assets_fetch::MANIFEST;
 use unavi_identity::identity::{
     Identity,
     NodeIdentity,
 };
 use unavi_store::{
-    builder::{
+    local::Storage,
+    store::{
         Builder as StoreBuilder,
+        Spawned,
         Store,
     },
-    local::Storage,
 };
 use unavi_util::{
     async_task::spawn_async_task,
@@ -31,10 +28,8 @@ use unavi_util::{
 };
 
 pub struct TestStore {
-    pub blobs:    Blobs,
-    pub docs:     Docs,
     pub identity: Arc<Identity>,
-    pub store:    BlobStore,
+    pub store:    Store,
 }
 
 /// An isolated in-memory store for examples that need no manifest assets.
@@ -70,29 +65,23 @@ fn build(persistent: bool) -> TestStore {
             .expect("iroh endpoint");
 
         let builder = StoreBuilder::new(endpoint.clone(), node.author()).storage(storage);
-        let Store {
-            blobs: blob_store,
-            docs,
+        let Spawned {
+            store,
             router,
             guard: _guard,
-            ..
         } = builder.build().await.expect("data store");
 
         let rb = Router::builder(endpoint);
         let rb = router(rb);
         let _router = rb.spawn();
 
-        let blobs = blob_store.blobs().clone();
-
         if persistent {
-            warn_missing_manifest_assets(&blobs).await;
+            warn_missing_manifest_assets(store.blobs()).await;
         }
 
         tx.send(TestStore {
-            blobs,
-            docs,
             identity: Arc::clone(node.user()),
-            store: blob_store,
+            store,
         })
         .await
         .expect("send");

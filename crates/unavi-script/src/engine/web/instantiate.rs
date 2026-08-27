@@ -7,6 +7,7 @@ use bevy_hsd::{
     HsdDocId,
     Prim,
 };
+use bevy_iroh::store::LocalStore;
 use tokio::sync::Mutex;
 use unavi_quota::Quota;
 use unavi_util::async_task::spawn_async_task;
@@ -40,8 +41,11 @@ pub fn instantiate_scripts(
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
     docs: Query<(&HsdDocId, &Hsd, Has<QuotaExempt>)>,
+    stores: Query<&LocalStore>,
     mut commands: Commands,
 ) {
+    let root_doc = stores.single().ok().map(|store| store.0.root());
+
     for (entity, script, name, prim, doc_ent) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {
             continue;
@@ -64,6 +68,7 @@ pub fn instantiate_scripts(
                 doc_id: doc_id.0,
                 prim: prim.0,
                 quota,
+                root_doc,
                 wired_agent: Mutex::default(),
                 wired_event: Mutex::default(),
                 wired_input: Mutex::default(),

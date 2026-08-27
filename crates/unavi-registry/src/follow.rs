@@ -11,10 +11,7 @@ use iroh::{
     EndpointAddr,
     EndpointId,
 };
-use iroh_docs::{
-    NamespaceId,
-    protocol::Docs,
-};
+use iroh_docs::NamespaceId;
 use parking_lot::RwLock;
 use tracing::{
     info,
@@ -29,6 +26,7 @@ use unavi_identity::{
         Space,
     },
 };
+use unavi_store::store::Store;
 use xdid::core::did::Did;
 
 use crate::client::RegistryClient;
@@ -55,7 +53,7 @@ pub fn registry_clients() -> Vec<RegistryClient> {
 /// A registry is a service the client consults, never one it runs; with no
 /// targets configured there is nothing to follow.
 pub async fn sync(
-    docs: &Docs,
+    store: &Store,
     endpoint: &Endpoint,
     targets: &[EndpointAddr],
     identity: Arc<Identity>,
@@ -72,7 +70,7 @@ pub async fn sync(
             Arc::clone(&resolver),
         );
 
-        match client.sync_views(docs).await {
+        match client.sync_views(store).await {
             Ok(mut views) => namespaces.append(&mut views),
             Err(err) => {
                 warn!(?err, "failed syncing registry views");

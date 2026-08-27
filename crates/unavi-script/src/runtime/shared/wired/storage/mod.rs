@@ -10,7 +10,6 @@ use bevy_iroh::doc::{
 use bytes::Bytes;
 use iroh_docs::NamespaceId;
 use unavi_registry::follow::registries;
-use unavi_store::root_doc::root_doc;
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::runtime::shared::{
@@ -79,8 +78,8 @@ pub async fn list(api: &Api, _rep: u32, ns: Vec<u8>, prefix: String) -> anyhow::
         .insert(ListFutureRes { rx }, &api.quota)?)
 }
 
-pub fn root_doc_ns(_api: &Api, _rep: u32) -> anyhow::Result<Option<Vec<u8>>> {
-    Ok(root_doc().map(|ns| ns.to_bytes().to_vec()))
+pub fn root_doc_ns(api: &Api, _rep: u32) -> anyhow::Result<Option<Vec<u8>>> {
+    Ok(api.root_doc.map(|ns| ns.to_bytes().to_vec()))
 }
 
 pub fn registry_namespaces(_api: &Api, _rep: u32) -> anyhow::Result<Vec<Vec<u8>>> {

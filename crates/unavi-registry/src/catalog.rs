@@ -11,10 +11,7 @@ use unavi_identity::{
     resolve::Resolver,
     signed_bytes::SignedBytes,
 };
-use unavi_store::{
-    local::Storage,
-    namespace,
-};
+use unavi_store::store::Store;
 
 use crate::entry::Submission;
 
@@ -34,8 +31,8 @@ pub struct Catalog {
 }
 
 impl Catalog {
-    pub async fn create(docs: &Docs, storage: &Storage) -> anyhow::Result<Self> {
-        let ns = namespace::open_or_mint(docs, storage, KEY).await?;
+    pub async fn create(store: &Store) -> anyhow::Result<Self> {
+        let ns = store.open_or_mint(KEY).await?.id();
         Ok(Self { ns })
     }
 

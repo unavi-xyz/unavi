@@ -7,8 +7,15 @@ use iroh_blobs::api::{
     blobs::Blobs,
     downloader::Downloader,
 };
-use iroh_docs::protocol::Docs;
-use iroh_gossip::Gossip;
+use unavi_store::store::Store;
+
+/// This node's data plane: documents, blobs, the author it writes under, and
+/// its root document.
+///
+/// The blob-only components below stay separate: the fetch path and the asset
+/// loader run without a document store.
+#[derive(Component)]
+pub struct LocalStore(pub Store);
 
 #[derive(Component)]
 #[require(SyncTargets, BlobProviders)]
@@ -23,15 +30,6 @@ pub struct LocalBlobStore(pub iroh_blobs::api::Store);
 /// with the store rather than per fetch.
 #[derive(Component)]
 pub struct LocalDownloader(pub Downloader);
-
-#[derive(Component)]
-pub struct LocalDocs(pub Docs);
-
-/// The store's gossip, which is the only one on this endpoint: the router
-/// accepts `iroh_gossip::ALPN` once, so a second instance would silently take
-/// every inbound connection from the first.
-#[derive(Component)]
-pub struct LocalGossip(pub Gossip);
 
 /// Endpoints this node syncs its documents with.
 #[derive(Component, Default)]

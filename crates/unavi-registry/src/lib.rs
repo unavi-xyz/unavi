@@ -16,7 +16,7 @@ use unavi_identity::{
     auth::bindings::Bindings,
     resolve::Resolver,
 };
-use unavi_store::local::Storage;
+use unavi_store::store::Store;
 
 use crate::{
     catalog::Catalog,
@@ -64,23 +64,21 @@ impl Registry {
     /// Returns the registry and its iroh protocol handler, to be registered on
     /// the same router as the store's.
     pub async fn create(
-        docs: &Docs,
-        blobs: &Blobs,
+        store: &Store,
         config: Config,
-        storage: &Storage,
         bindings: Arc<Bindings>,
         resolver: Arc<Resolver>,
     ) -> anyhow::Result<(Self, control::protocol::RegistryProtocol)> {
-        let catalog = Catalog::create(docs, storage).await?;
-        let views = Views::create(docs, storage).await?;
+        let catalog = Catalog::create(store).await?;
+        let views = Views::create(store).await?;
 
         let ctx = Arc::new(RegistryContext {
             bindings,
-            blobs: blobs.clone(),
+            blobs: store.blobs().clone(),
             catalog,
             config,
             dirty: AtomicBool::new(false),
-            docs: docs.clone(),
+            docs: store.docs().clone(),
             presence: PresenceTable::default(),
             resolver,
             views,

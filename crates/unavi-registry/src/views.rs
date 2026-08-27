@@ -9,10 +9,7 @@ use serde::{
     Serialize,
 };
 use unavi_identity::resolve::Resolver;
-use unavi_store::{
-    local::Storage,
-    namespace,
-};
+use unavi_store::store::Store;
 
 use crate::{
     catalog::Catalog,
@@ -53,21 +50,25 @@ fn active_key(rank: usize, ns: NamespaceId) -> String {
 
 /// Each view is recorded under its own key, so one lost view is reminted
 /// without disturbing the others.
-async fn open_view(docs: &Docs, storage: &Storage, name: &str) -> anyhow::Result<NamespaceId> {
-    namespace::serve_or_mint(docs, storage, &format!("registry/views/{name}")).await
+async fn open_view(store: &Store, name: &str) -> anyhow::Result<NamespaceId> {
+    let view = store
+        .open_or_mint(&format!("registry/views/{name}"))
+        .await?;
+    view.serve().await?;
+    Ok(view.id())
 }
 
 impl Views {
     /// Reopens each view this node recorded, minting any that is absent or
     /// whose capability is no longer held, and enrols every one in the sync
     /// set: a namespace outside that set rejects reads with `NotFound`.
-    pub async fn create(docs: &Docs, storage: &Storage) -> anyhow::Result<Self> {
+    pub async fn create(store: &Store) -> anyhow::Result<Self> {
         Ok(Self {
             ids: ViewIds {
-                recent:     open_view(docs, storage, "recent").await?,
-                featured:   open_view(docs, storage, "featured").await?,
-                categories: open_view(docs, storage, "categories").await?,
-                active:     open_view(docs, storage, "active").await?,
+                recent:     open_view(store, "recent").await?,
+                featured:   open_view(store, "featured").await?,
+                categories: open_view(store, "categories").await?,
+                active:     open_view(store, "active").await?,
             },
         })
     }

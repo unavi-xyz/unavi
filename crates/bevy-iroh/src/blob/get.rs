@@ -9,12 +9,15 @@ use blake3::Hash;
 use bytes::Bytes;
 use iroh::EndpointId;
 use iroh_blobs::api::{
-    Store as BlobStore,
     blobs::Blobs,
     downloader::Downloader,
 };
 use thiserror::Error;
 use tokio::sync::oneshot;
+use unavi_store::cache::{
+    Cache,
+    DEFAULT_TTL,
+};
 use unavi_util::async_task::spawn_async_task;
 
 use crate::store::{
@@ -98,7 +101,7 @@ pub(crate) fn on_get_blob(
 
     // The tags a fetch roots itself with live on the store, not on the blobs
     // client, so a fetch cannot run without it.
-    let Ok(store) = stores.single().map(|x| x.0.clone()) else {
+    let Ok(cache) = stores.single().map(|x| Cache::new(x.0.clone())) else {
         warn!("Unable to get blob: no LocalBlobStore");
         return;
     };
@@ -121,7 +124,7 @@ pub(crate) fn on_get_blob(
     let tx = event.tx.clone();
 
     spawn_async_task(async move {
-        if let Err(err) = inner(hash, cancel, tx, blobs, store, downloader, providers).await {
+        if let Err(err) = inner(hash, cancel, tx, blobs, cache, downloader, providers).await {
             error!(?err, "Failed to get blob");
         }
     });
@@ -132,7 +135,7 @@ async fn inner(
     cancel: Option<oneshot::Receiver<()>>,
     tx: Sender<Result<Bytes, BlobError>>,
     blobs: Blobs,
-    store: BlobStore,
+    cache: Cache,
     downloader: Option<Downloader>,
     providers: Vec<EndpointId>,
 ) -> anyhow::Result<()> {
@@ -150,7 +153,7 @@ async fn inner(
             () = &mut cancel => return Ok(()),
             res = n0_future::time::timeout(
                 ATTEMPT_TIMEOUT,
-                get_blob(hash, &blobs, &store, downloader.as_ref(), &providers),
+                get_blob(hash, &blobs, &cache, downloader.as_ref(), &providers),
             ) => res,
         };
         match res {
@@ -184,11 +187,11 @@ async fn inner(
 async fn get_blob(
     hash: Hash,
     blobs: &Blobs,
-    store: &BlobStore,
+    cache: &Cache,
     downloader: Option<&Downloader>,
     providers: &[EndpointId],
 ) -> Result<Bytes, BlobError> {
-    unavi_store::cache::touch(store, hash, unavi_store::cache::DEFAULT_TTL).await?;
+    cache.touch(hash, DEFAULT_TTL).await?;
 
     if blobs.has(hash).await.map_err(BlobError::from_std)? {
         return read_bounded(hash, blobs).await;

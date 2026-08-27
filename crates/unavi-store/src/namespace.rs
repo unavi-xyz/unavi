@@ -1,87 +1,123 @@
-//! Namespace management: opening, serving, and recording document ids.
+//! Every key is its own entry, so iroh-docs' per-key last-writer-wins merge
+//! resolves concurrent writes between peers. An entry's value is always a blob
+//! hash, so a replicating host fetches, tags and meters every byte without
+//! reading any of it; no dependency-tracking convention exists on top.
 
-use std::str::FromStr;
+use std::time::Duration;
 
+use bytes::Bytes;
+use iroh::EndpointAddr;
+use iroh_blobs::{
+    Hash,
+    api::blobs::Blobs,
+};
 use iroh_docs::{
-    Capability,
+    AuthorId,
+    Entry,
     NamespaceId,
     api::Doc,
-    protocol::Docs,
+    store::Query,
 };
+use n0_future::StreamExt;
 
-use crate::local::Storage;
-
-/// Makes a namespace available locally, importing it read-only if this node
-/// does not already hold it.
-///
-/// `Docs::open` errors on an unknown namespace rather than returning
-/// `Ok(None)`, so it cannot serve as the import path. Importing is idempotent:
-/// merging a read capability into a write capability already held is a no-op,
-/// not a downgrade.
-pub async fn ensure_open(docs: &Docs, ns: NamespaceId) -> anyhow::Result<Doc> {
-    let doc = docs.api().import_namespace(Capability::Read(ns)).await?;
-    Ok(doc)
+/// One document open on this node, with the blob store its values live in and
+/// the author this node writes under.
+#[derive(Clone, Debug)]
+pub struct Namespace {
+    doc:    Doc,
+    blobs:  Blobs,
+    author: AuthorId,
 }
 
-/// Enrols a namespace in the sync set, so incoming requests for it are
-/// answered.
-///
-/// A namespace absent from the sync set rejects every incoming request with
-/// `NotFound`; an empty peer list enrols without dialing anyone.
-pub async fn serve(docs: &Docs, ns: NamespaceId) -> anyhow::Result<()> {
-    ensure_open(docs, ns).await?.start_sync(Vec::new()).await?;
-    Ok(())
-}
-
-/// Opens the namespace `storage` records at `key`, minting and recording one
-/// on first use.
-///
-/// The id outlives the process, so a restart reopens the document peers already
-/// reference. A recorded id whose capability the docs store no longer holds
-/// means that store was lost; the document is unrecoverable either way, so a
-/// fresh one is minted and the record replaced.
-///
-/// [`Storage::Ephemeral`] mints fresh every run and leaves nothing behind.
-pub async fn open_or_mint(
-    docs: &Docs,
-    storage: &Storage,
-    key: &str,
-) -> anyhow::Result<NamespaceId> {
-    if let Some(ns) = recorded(storage, key)
-        && held(docs, ns).await
-    {
-        return Ok(ns);
+impl Namespace {
+    pub(crate) const fn new(doc: Doc, blobs: Blobs, author: AuthorId) -> Self {
+        Self { doc, blobs, author }
     }
 
-    let ns = docs.api().create().await?.id();
-    storage.write(key, &ns.to_string())?;
-    Ok(ns)
-}
+    #[must_use]
+    pub fn id(&self) -> NamespaceId {
+        self.doc.id()
+    }
 
-/// `Docs::open` errors on a namespace this node does not hold rather than
-/// returning `Ok(None)`, so both shapes of absence have to read alike; a
-/// propagated error would leave the node with no document at all.
-async fn held(docs: &Docs, ns: NamespaceId) -> bool {
-    match docs.api().open(ns).await {
-        Ok(doc) => doc.is_some(),
-        Err(err) => {
-            tracing::warn!(%ns, ?err, "recorded namespace is unreadable; minting a replacement");
-            false
+    /// The latest entry at exactly `key`, or `None` if the document holds none.
+    ///
+    /// An empty entry is filtered by `get_one`, so a tombstone reads as absence
+    /// here exactly as it does on every other peer.
+    pub async fn get(&self, key: &str) -> anyhow::Result<Option<Entry>> {
+        let query = Query::single_latest_per_key().key_exact(key);
+        self.doc.get_one(query).await
+    }
+
+    /// The latest entry per key under each prefix.
+    ///
+    /// Empty entries are filtered by `get_many`, so a cross-author tombstone
+    /// reads as absence here exactly as it does on every other peer.
+    pub async fn list(&self, prefixes: &[&str]) -> anyhow::Result<Vec<Entry>> {
+        let mut out = Vec::new();
+        for prefix in prefixes {
+            let query = Query::single_latest_per_key().key_prefix(*prefix);
+            let mut stream = Box::pin(self.doc.get_many(query).await?);
+            while let Some(entry) = stream.next().await {
+                out.push(entry?);
+            }
         }
+        Ok(out)
     }
-}
 
-/// [`open_or_mint`], plus enrolment in the sync set so peers can read it.
-pub async fn serve_or_mint(
-    docs: &Docs,
-    storage: &Storage,
-    key: &str,
-) -> anyhow::Result<NamespaceId> {
-    let ns = open_or_mint(docs, storage, key).await?;
-    serve(docs, ns).await?;
-    Ok(ns)
-}
+    /// An entry's content, or `None` if it has not been downloaded yet.
+    pub async fn value(&self, entry: &Entry) -> Option<Bytes> {
+        self.blobs.get_bytes(entry.content_hash()).await.ok()
+    }
 
-fn recorded(storage: &Storage, key: &str) -> Option<NamespaceId> {
-    NamespaceId::from_str(storage.read(key)?.trim()).ok()
+    pub async fn set(
+        &self,
+        key: impl Into<Bytes>,
+        value: impl Into<Bytes>,
+    ) -> anyhow::Result<Hash> {
+        self.doc.set_bytes(self.author, key, value).await
+    }
+
+    /// Removes every entry under `prefix` that this node authored, returning
+    /// how many went.
+    ///
+    /// Entries other peers authored are untouched: removing one of those has to
+    /// be written as an empty value, which wins by timestamp and reads as
+    /// absence everywhere.
+    pub async fn remove(&self, prefix: impl Into<Bytes>) -> anyhow::Result<usize> {
+        self.doc.del(self.author, prefix).await
+    }
+
+    /// Enrols in the sync set, so incoming requests for this namespace are
+    /// answered.
+    ///
+    /// A namespace absent from the sync set rejects every incoming request with
+    /// `NotFound`; an empty peer list enrols without dialing anyone.
+    pub async fn serve(&self) -> anyhow::Result<()> {
+        self.doc.start_sync(Vec::new()).await?;
+        Ok(())
+    }
+
+    /// Enrols in the sync set and reconciles with `peers`.
+    pub async fn sync_from(&self, peers: Vec<EndpointAddr>) -> anyhow::Result<()> {
+        self.doc.start_sync(peers).await?;
+        Ok(())
+    }
+
+    /// Polls until an entry exists under `prefix`, reporting whether one
+    /// arrived before the attempts ran out.
+    pub async fn wait_for(
+        &self,
+        prefix: &str,
+        attempts: usize,
+        delay: Duration,
+    ) -> anyhow::Result<bool> {
+        for _ in 0..attempts.max(1) {
+            let query = Query::single_latest_per_key().key_prefix(prefix);
+            if self.doc.get_one(query).await?.is_some() {
+                return Ok(true);
+            }
+            n0_future::time::sleep(delay).await;
+        }
+        Ok(false)
+    }
 }

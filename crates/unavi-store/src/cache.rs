@@ -23,38 +23,56 @@ const BUCKET: i64 = 600;
 /// length and the ordering holds.
 const WIDTH: usize = 20;
 
+/// Roots blobs against garbage collection for a bounded time.
+#[derive(Clone, Debug)]
+pub struct Cache(BlobStore);
+
+impl Cache {
+    #[must_use]
+    pub const fn new(blobs: BlobStore) -> Self {
+        Self(blobs)
+    }
+
+    /// Roots `hash` for at least `ttl`.
+    ///
+    /// Called before a fetch, not after: `Downloader::download` takes no tag of
+    /// its own and the sweep lists partially written blobs, so a pass landing
+    /// mid-download would delete the content out from under the fetch.
+    pub async fn touch(&self, hash: Hash, ttl: Duration) -> anyhow::Result<()> {
+        let deadline = deadline(ttl, now());
+        self.0
+            .tags()
+            .set(name(hash, deadline), iroh_blobs::Hash::from(hash))
+            .await?;
+        Ok(())
+    }
+
+    /// Drops every cache tag whose deadline has passed. Content no other root
+    /// covers is reclaimed by the next blob GC pass.
+    pub async fn sweep(&self) -> anyhow::Result<u64> {
+        let now = now();
+        let deleted = self
+            .0
+            .tags()
+            .delete_range(PREFIX.to_string()..format!("{PREFIX}{now:0WIDTH$}"))
+            .await?;
+        Ok(deleted)
+    }
+}
+
 fn name(hash: Hash, deadline: i64) -> String {
     format!("{PREFIX}{deadline:0WIDTH$}/{hash}")
+}
+
+/// On wasm this reads an unimplemented clock unless `time` is built with its
+/// `wasm-bindgen` feature, which the manifest enables for that target only.
+fn now() -> i64 {
+    OffsetDateTime::now_utc().unix_timestamp()
 }
 
 fn deadline(ttl: Duration, now: i64) -> i64 {
     let expires = now.saturating_add(i64::try_from(ttl.as_secs()).unwrap_or(i64::MAX));
     expires.saturating_add(BUCKET - 1) / BUCKET * BUCKET
-}
-
-/// Roots `hash` for at least `ttl`.
-///
-/// Called before a fetch, not after: `Downloader::download` takes no tag of its
-/// own and the sweep lists partially written blobs, so a pass landing
-/// mid-download would delete the content out from under the fetch.
-pub async fn touch(blobs: &BlobStore, hash: Hash, ttl: Duration) -> anyhow::Result<()> {
-    let deadline = deadline(ttl, OffsetDateTime::now_utc().unix_timestamp());
-    blobs
-        .tags()
-        .set(name(hash, deadline), iroh_blobs::Hash::from(hash))
-        .await?;
-    Ok(())
-}
-
-/// Drops every cache tag whose deadline has passed. Content no other root
-/// covers is reclaimed by the next blob GC pass.
-pub async fn sweep(blobs: &BlobStore) -> anyhow::Result<u64> {
-    let now = OffsetDateTime::now_utc().unix_timestamp();
-    let deleted = blobs
-        .tags()
-        .delete_range(PREFIX.to_string()..format!("{PREFIX}{now:0WIDTH$}"))
-        .await?;
-    Ok(deleted)
 }
 
 #[cfg(test)]

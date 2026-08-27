@@ -10,25 +10,20 @@ version.workspace    = true
 workspace = true
 
 [dependencies]
-anyhow.workspace      = true
-blake3.workspace      = true
-bytes.workspace       = true
-futures.workspace     = true
-iroh.workspace        = true
-iroh-gossip           = { features = ["net"], workspace = true }
-n0-future.workspace   = true
-parking_lot.workspace = true
-serde.workspace       = true
-thiserror.workspace   = true
-time.workspace        = true
-tracing.workspace     = true
+anyhow.workspace    = true
+blake3.workspace    = true
+bytes.workspace     = true
+iroh.workspace      = true
+iroh-gossip         = { features = ["net"], workspace = true }
+n0-future.workspace = true
+time.workspace      = true
+tracing.workspace   = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 iroh-blobs          = { features = ["hide-proto-docs"], workspace = true }
 iroh-docs.workspace = true
+time                = { features = ["wasm-bindgen"], workspace = true }
 web-sys             = { features = ["Storage", "Window"], workspace = true }
-# Without this `OffsetDateTime::now_utc` reads the unimplemented wasm clock.
-time = { features = ["wasm-bindgen"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 iroh-blobs = { default-features = true, workspace = true }

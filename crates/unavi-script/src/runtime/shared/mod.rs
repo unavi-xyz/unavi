@@ -8,6 +8,7 @@ use hsd::{
     },
     state::SceneState,
 };
+use iroh_docs::NamespaceId;
 use tokio::sync::Mutex;
 use unavi_policy::{
     document::ApiName,
@@ -36,6 +37,11 @@ pub struct Api {
     pub doc_id:        DocId,
     pub prim:          PrimId,
     pub quota:         Arc<Quota>,
+    /// This node's root document, or `None` when it runs without a store.
+    ///
+    /// Captured at instantiation rather than read per call: the id is minted
+    /// once per node and never changes, so a snapshot cannot go stale.
+    pub root_doc:      Option<NamespaceId>,
     pub wired_agent:   Mutex<WiredAgentApi>,
     pub wired_event:   Mutex<WiredEventApi>,
     pub wired_input:   Mutex<WiredInputApi>,

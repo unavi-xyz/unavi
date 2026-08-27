@@ -67,25 +67,38 @@ pub fn serve_auth(
     trigger: On<Add, IrohEndpoint>,
     endpoints: Query<&IrohEndpoint>,
     auth: Res<Auth>,
-    mut commands: Commands,
 ) {
     let entity = trigger.entity;
     let Ok(endpoint) = endpoints.get(entity).map(|e| e.0.clone()) else {
         return;
     };
+    let auth = Arc::clone(&auth.0);
 
-    let Some((protocol, task)) = auth.0.serve(endpoint) else {
-        warn!("a second endpoint cannot serve the same identity handshake");
-        return;
-    };
+    // `EndpointAuth::serve` spawns a background task with `tokio::spawn`,
+    // which needs to run inside the tokio runtime, not on this observer's
+    // calling thread.
+    spawn_async_task(async move {
+        let Some((protocol, task)) = auth.serve(endpoint) else {
+            warn!("a second endpoint cannot serve the same identity handshake");
+            return;
+        };
 
-    commands.entity(entity).insert(AuthTask(task));
-    commands.spawn((
-        RouterBuilderFnTarget(entity),
-        RouterBuilderFn(Some(Box::new(|builder| {
-            builder.accept(auth::ALPN, protocol)
-        }))),
-    ));
+        AsyncCommands::default()
+            .push(move |world: &mut World| {
+                if let Ok(mut entity) = world.get_entity_mut(entity) {
+                    entity.insert(AuthTask(task));
+                }
+            })
+            .spawn((
+                RouterBuilderFnTarget(entity),
+                RouterBuilderFn(Some(Box::new(|builder| {
+                    builder.accept(auth::ALPN, protocol)
+                }))),
+            ))
+            .send()
+            .await
+            .ok();
+    });
 }
 
 pub fn load_store(

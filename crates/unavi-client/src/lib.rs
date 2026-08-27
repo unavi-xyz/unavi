@@ -91,9 +91,12 @@ impl Plugin for UnaviPlugin {
         #[cfg(feature = "devtools")]
         app.add_plugins(dev_tools::ClientDevToolsPlugin);
 
-        // Built once, shared with every plugin that persists: the identity
-        // keys, the input config and the trust table all live here.
+        // Built once, shared with every plugin that persists opaque app
+        // state: the identity keys and the trust table live here.
         let storage = identity::key_storage(self.in_memory);
+        // Input config is hand-edited, so it gets the config directory
+        // instead of sharing `storage`'s data directory.
+        let config_storage = identity::config_storage();
 
         app.add_plugins((
             unavi_physics::PhysicsPlugin,
@@ -106,7 +109,7 @@ impl Plugin for UnaviPlugin {
                 sync:    secrets::sync_config(),
             },
             unavi_input::InputPlugin {
-                storage: Some(storage.clone()),
+                storage: Some(config_storage),
             },
             unavi_manifold::ManifoldPlugin,
             unavi_script::ScriptPlugin,

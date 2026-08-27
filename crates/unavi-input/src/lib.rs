@@ -37,6 +37,7 @@ impl Plugin for InputPlugin {
             .unwrap_or_default();
 
         app.insert_resource(config)
+            .init_resource::<action::ActionState>()
             .init_resource::<capture::Captured>()
             .init_resource::<pointer::backend::PointerFilter>()
             // Bevy's mouse pointer is what a person clicks an overlay with;

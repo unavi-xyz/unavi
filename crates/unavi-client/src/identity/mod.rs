@@ -53,6 +53,20 @@ pub fn key_storage(in_memory: bool) -> local::Storage {
     }
 }
 
+/// For settings meant to be hand-edited. Ignores `in_memory`, unlike
+/// [`key_storage`]: local test instances still want the same keybinds, and
+/// the atomic rename in [`Storage::write`](local::Storage::write) makes even
+/// simultaneous first-run writes to the one file benign.
+///
+/// On wasm this is the same `Browser` storage as [`key_storage`], since a
+/// browser keeps no separate config bucket.
+pub fn config_storage() -> local::Storage {
+    cfg_select! {
+        target_family = "wasm" => local::Storage::Browser,
+        _ => local::Storage::Path(unavi_util::dirs::config_dir().to_path_buf()),
+    }
+}
+
 impl Plugin for IdentityPlugin {
     fn build(&self, app: &mut App) {
         let storage = self.storage.clone();

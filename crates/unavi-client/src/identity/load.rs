@@ -155,14 +155,10 @@ async fn load(
         guard,
     } = builder.build().await?;
 
-    let SyncConfig {
-        allow_loopback,
-        targets,
-    } = sync;
+    let SyncConfig { targets } = sync;
 
     let identity = Arc::clone(node.user());
-    let (sync_targets, unresolved) =
-        follow::resolve_batch(targets, allow_loopback, &resolver).await;
+    let (sync_targets, unresolved) = follow::resolve_batch(targets, &resolver).await;
     follow::sync(
         &store,
         &endpoint,
@@ -190,7 +186,6 @@ async fn load(
             sync_targets,
             unresolved,
             store_entity,
-            allow_loopback,
             identity,
             resolver,
         ));
@@ -207,7 +202,6 @@ async fn retry(
     mut targets: Vec<EndpointAddr>,
     mut unresolved: Vec<String>,
     store_entity: Entity,
-    allow_loopback: bool,
     identity: Arc<Identity>,
     resolver: Arc<Resolver>,
 ) {
@@ -217,7 +211,7 @@ async fn retry(
         n0_future::time::sleep(delay).await;
         delay = (delay * 2).min(MAX_RETRY_DELAY);
 
-        let (addrs, pending) = follow::resolve_batch(unresolved, allow_loopback, &resolver).await;
+        let (addrs, pending) = follow::resolve_batch(unresolved, &resolver).await;
         unresolved = pending;
 
         if addrs.is_empty() {

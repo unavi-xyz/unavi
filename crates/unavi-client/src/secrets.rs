@@ -6,8 +6,7 @@ pub fn sync_config() -> SyncConfig {
     let secrets = Secrets::load();
 
     SyncConfig {
-        allow_loopback: secrets.unavi_allow_loopback_sync_targets.trim() == "true",
-        targets:        secrets
+        targets: secrets
             .unavi_sync_targets
             .split(',')
             .map(str::trim)

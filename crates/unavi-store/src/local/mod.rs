@@ -1,19 +1,19 @@
-//! Local state that must outlive the process, addressed by string key.
+//! Local state that outlives the process, addressed by string key.
 //!
-//! One key names the same value on every target: a file beneath a directory on
-//! native, an item in browser local storage on wasm. Keys may nest with `/`.
+//! A key names the same value on every target. On native that is a file
+//! beneath a directory, on wasm an item in browser local storage. Keys may
+//! nest with `/`.
 //!
-//! A read reports three states, not two: `Ok(Some(value))` when a value is
-//! there, `Ok(None)` when none has ever been written, and `Err` when a value
-//! sits there but cannot be read. Callers that must tell a first run from a
-//! broken value — an identity key that must not be replaced, a trust table
-//! whose loss unblocks every ejected peer — decide on the third state
-//! themselves rather than having it silently collapse into absence.
+//! A read has three outcomes rather than two. `Ok(Some(value))` when a value
+//! is there, `Ok(None)` when none was ever written, and `Err` when a value
+//! sits there but cannot be read. A caller that has to tell a first run from a
+//! damaged value decides what the third outcome means, rather than having it
+//! collapse into absence.
 //!
-//! Writes are atomic where the platform allows: `write` replaces a value by
-//! renaming a fully-written temporary over it, so a crash mid-write leaves
-//! whatever was there before; `create` refuses to clobber an existing value.
-//! Files on native are owner-only.
+//! Writes are atomic where the platform allows. `write` renames a
+//! fully-written temporary over the value, so a crash mid-write leaves
+//! whatever was there before. `create` refuses to replace a value that already
+//! exists. Files on native are owner-only.
 
 use std::path::{
     Path,
@@ -23,13 +23,11 @@ use std::path::{
 #[cfg(not(target_family = "wasm"))] pub mod fs;
 #[cfg(target_family = "wasm")] pub mod web;
 
-/// Where a node keeps its durable local state: keys, and the ids of the
-/// documents they authored.
+/// Where a node keeps its durable local state.
 #[derive(Clone, Debug)]
 pub enum Storage {
     /// Nothing is written and every read misses, so a process mints fresh
-    /// state and leaves nothing behind. Several nodes can then share a machine
-    /// without contending for one directory.
+    /// state and leaves nothing behind.
     Ephemeral,
     /// A directory on disk. Not available on wasm.
     Path(PathBuf),
@@ -77,8 +75,8 @@ impl Storage {
 
     /// Records `value` at `key` only if no value sits there yet.
     ///
-    /// A racing writer therefore gets an `Err` instead of a silent clobber, so
-    /// a caller can re-read instead of losing what the winner wrote.
+    /// A racing writer gets an `Err` rather than silently replacing what the
+    /// winner wrote.
     pub fn create(&self, key: &str, value: &str) -> anyhow::Result<()> {
         validate_key(key)?;
         cfg_select! {
@@ -157,8 +155,8 @@ pub fn encode_hex(bytes: &[u8]) -> String {
     out
 }
 
-/// Decodes hex, walking bytes rather than `&str` pairs so a non-ASCII
-/// character can never be sliced at a char boundary. Odd length or a
+/// Decodes hex, walking bytes rather than `&str` pairs so a multi-byte
+/// character can never be sliced at a char boundary. An odd length or a
 /// non-hex character is an `Err`, never a panic.
 pub fn decode_hex(text: &str) -> anyhow::Result<Vec<u8>> {
     const fn nibble(byte: u8) -> Option<u8> {

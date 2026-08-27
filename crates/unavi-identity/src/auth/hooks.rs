@@ -38,8 +38,8 @@ impl EndpointHooks for Hooks {
             return BeforeConnectOutcome::Accept;
         }
 
-        // Accepted whether or not the proof succeeds: reads are open to
-        // anyone, so a peer that answers nothing is anonymous rather than
+        // Accepted whether or not the proof succeeds. Reads are open to
+        // anyone, so a peer that proves nothing is anonymous rather than
         // refused. Awaited so the dial behind it sees the binding.
         let (tx, rx) = oneshot::channel();
         if self

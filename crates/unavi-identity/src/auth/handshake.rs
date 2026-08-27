@@ -34,11 +34,11 @@ const ACCEPTED: u8 = 1;
 
 pub type Nonce = [u8; 32];
 
-/// A peer's claim to a DID, bound to the one connection it was made on.
+/// A peer's claim to a DID, bound to the connection it was made on.
 ///
-/// The signature covers both endpoints, blocking proof theft (`prover`) and
-/// relaying (`verifier`); the nonce is answered once, so nothing is
-/// replayable.
+/// The signature covers `prover`, so a stolen proof cannot identify another
+/// endpoint, and `verifier`, so it cannot be relayed to a third party. A nonce
+/// is answered once, so a proof cannot be replayed.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IdentityProof {
     pub did:      Did,

@@ -1,9 +1,9 @@
-//! One mutual DID proof, run ahead of every other protocol.
+//! A mutual DID proof, run ahead of every other protocol.
 //!
-//! `wired/auth` is dialed by the endpoint's `before_connect` hook ahead of the
-//! connection the caller asked for, so protocols behind it need no support of
-//! their own: they read the peer's DID out of [`Bindings`]. The proof is
-//! mutual, so one handshake identifies both ends.
+//! The endpoint's `before_connect` hook dials `wired/auth` ahead of the
+//! connection the caller asked for. Protocols behind it need no support of
+//! their own, since they read the peer's DID out of [`Bindings`]. One exchange
+//! proves both ends.
 
 use std::{
     sync::Arc,
@@ -52,8 +52,9 @@ pub enum Message {
 
 /// The `wired/auth` wiring for one endpoint.
 ///
-/// One per endpoint, not one per process: a proof names the endpoint it was
-/// made to, so the handshake runs over the same endpoint that is about to dial.
+/// A proof names the endpoint it was made to, so the handshake has to run over
+/// the same endpoint that is about to dial. One of these per endpoint, not per
+/// process.
 pub struct EndpointAuth {
     tx:       mpsc::Sender<Message>,
     rx:       Mutex<Option<mpsc::Receiver<Message>>>,
@@ -84,8 +85,8 @@ impl EndpointAuth {
         &self.bindings
     }
 
-    /// Safe to call once per bind attempt; only the endpoint that binds ever
-    /// uses the hooks.
+    /// Installs the hooks that dial `wired/auth` ahead of an outgoing
+    /// connection. Only the endpoint that goes on to bind uses them.
     #[must_use]
     pub fn install(&self, builder: Builder) -> Builder {
         builder.hooks(Hooks {

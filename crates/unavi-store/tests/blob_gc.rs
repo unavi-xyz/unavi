@@ -30,7 +30,7 @@ async fn gc_keeps_document_content_and_drops_the_rest() {
     let ns = store.create().await.expect("namespace");
 
     // Added through a batch rather than `add_bytes`, whose default `with_tag`
-    // would pin the blob and leave nothing for gc to decide. The batch's temp
+    // would pin the blob and leave nothing for GC to decide. The batch's temp
     // tag releases when it drops, so nothing roots this afterwards.
     {
         let batch = store.blobs().batch().await.expect("batch");

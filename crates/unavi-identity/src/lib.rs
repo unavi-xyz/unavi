@@ -1,3 +1,5 @@
+//! Who a peer is, and how it proves that over an iroh endpoint.
+
 pub mod auth;
 pub mod identity;
 pub mod jwk;

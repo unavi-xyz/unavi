@@ -11,7 +11,7 @@ pub struct Keys {
     pub endpoint: SecretKey,
 }
 
-const KEY_ITEM: &str = "key.pem";
+const IDENTITY_ITEM: &str = "key.pem";
 const ENDPOINT_ITEM: &str = "endpoint.key";
 
 pub fn load(storage: &Storage) -> anyhow::Result<Keys> {
@@ -27,25 +27,20 @@ pub fn load(storage: &Storage) -> anyhow::Result<Keys> {
     }
 }
 
-/// An unreadable identity key fails the load rather than being replaced:
-/// rewriting it would destroy an identity its owner may still be able to
-/// recover.
+/// A stored key that cannot be read is an error. Replacing it would discard
+/// the identity, which nothing can recover.
 fn identity_key(storage: &Storage) -> anyhow::Result<P256KeyPair> {
-    if let Some(pem) = storage.read(KEY_ITEM)? {
+    if let Some(pem) = storage.read(IDENTITY_ITEM)? {
         return P256KeyPair::from_pkcs8_pem(Zeroizing::new(pem).as_str());
     }
 
     let pair = P256KeyPair::generate();
-    storage.create(KEY_ITEM, pair.to_pkcs8_pem()?.as_str())?;
+    storage.create(IDENTITY_ITEM, pair.to_pkcs8_pem()?.as_str())?;
     Ok(pair)
 }
 
-/// An unreadable endpoint key is replaced, the opposite of [`identity_key`]'s
-/// rule: a lost endpoint key costs only a new `EndpointId` and author id.
-/// Deleting [`ENDPOINT_ITEM`] is how a device rotates.
-///
-/// The replacement is an atomic write, so a crash between the read failing
-/// and the fresh key landing cannot leave the device with no key at all.
+/// A stored key that is missing, short, or unreadable is replaced with a fresh
+/// one. Losing it costs a new `EndpointId` and author id, nothing more.
 fn endpoint_key(storage: &Storage) -> anyhow::Result<SecretKey> {
     match storage.read_bytes(ENDPOINT_ITEM) {
         Ok(Some(bytes)) if bytes.len() == 32 => {
@@ -53,7 +48,6 @@ fn endpoint_key(storage: &Storage) -> anyhow::Result<SecretKey> {
             key.copy_from_slice(&bytes);
             Ok(SecretKey::from_bytes(&key))
         }
-        // Absent, short or unreadable all mint a fresh key.
         _ => {
             let key = SecretKey::generate();
             storage.write_bytes(ENDPOINT_ITEM, &key.to_bytes())?;
@@ -111,7 +105,7 @@ mod tests {
         let (dir, storage) = path_storage();
         load(&storage).expect("create keys");
 
-        for file in [KEY_ITEM, ENDPOINT_ITEM] {
+        for file in [IDENTITY_ITEM, ENDPOINT_ITEM] {
             let meta = std::fs::metadata(dir.path().join(file)).expect("metadata");
             assert_eq!(meta.permissions().mode() & 0o777, 0o600, "{file}");
         }
@@ -134,14 +128,14 @@ mod tests {
     #[test]
     fn an_unreadable_identity_key_is_preserved() {
         let (dir, storage) = path_storage();
-        std::fs::write(dir.path().join(KEY_ITEM), b"not a pem").expect("write");
+        std::fs::write(dir.path().join(IDENTITY_ITEM), b"not a pem").expect("write");
 
         assert!(
             load(&storage).is_err(),
             "an identity is irreplaceable, so an unreadable key must fail the load"
         );
         assert_eq!(
-            std::fs::read(dir.path().join(KEY_ITEM)).expect("read back"),
+            std::fs::read(dir.path().join(IDENTITY_ITEM)).expect("read back"),
             b"not a pem",
             "the key its owner may still recover must be left on disk"
         );

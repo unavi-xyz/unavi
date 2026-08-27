@@ -42,11 +42,11 @@ use crate::{
 pub type BoxedRouterBuilder = Box<dyn FnOnce(RouterBuilder) -> RouterBuilder + Send + Sync>;
 type BoxedBlobs = Box<dyn AsRef<BlobStore> + Send + Sync>;
 
-/// Where this node's root document id is recorded, beside the identity that
-/// authored it.
+/// Storage key recording this node's root document id.
 const ROOT_KEY: &str = "root-doc";
 
-/// Every handle this node's data plane runs on. Each is `Arc`-backed.
+/// The blob, document and gossip handles this node runs on. Each is
+/// `Arc`-backed.
 #[derive(Clone, Debug)]
 pub struct Store {
     blobs:   BlobStore,
@@ -61,8 +61,7 @@ pub struct Spawned {
     pub store:  Store,
     /// Registers the blob, gossip and docs protocols on a router.
     pub router: BoxedRouterBuilder,
-    /// Dropping this shuts the blob store down and stops garbage collection, so
-    /// it outlives every use of [`Self::store`].
+    /// Dropping this shuts the blob store down and stops garbage collection.
     pub guard:  Guard,
 }
 
@@ -75,10 +74,8 @@ impl Store {
     /// Makes `ns` available locally, importing it read-only if this node does
     /// not already hold it.
     ///
-    /// `Docs::open` errors on an unknown namespace rather than returning
-    /// `Ok(None)`, so it cannot serve as the import path. Merging a read
-    /// capability into a write capability already held is a no-op, not a
-    /// downgrade.
+    /// Merging a read capability into a write capability already held is a
+    /// no-op, not a downgrade.
     pub async fn open(&self, ns: NamespaceId) -> anyhow::Result<Namespace> {
         let doc = self
             .docs
@@ -99,7 +96,7 @@ impl Store {
         Ok(self.wrap(open_or_mint_doc(&self.docs, &self.storage, key).await?))
     }
 
-    /// This node's root document: the one namespace everything else hangs off.
+    /// This node's root document, which every namespace it holds hangs off.
     #[must_use]
     pub const fn root(&self) -> NamespaceId {
         self.root
@@ -130,11 +127,11 @@ impl Store {
         &self.docs
     }
 
-    /// The one gossip instance for this endpoint.
+    /// This endpoint's gossip instance.
     ///
-    /// `iroh_gossip::ALPN` can be accepted only once per router, so a second
+    /// `iroh_gossip::ALPN` can be accepted only once per router. A second
     /// instance registering it takes every inbound connection from the first,
-    /// leaving that one able to dial out and never to receive.
+    /// leaving that one able to dial out but never to receive.
     #[must_use]
     pub const fn gossip(&self) -> &Gossip {
         &self.gossip
@@ -183,10 +180,9 @@ impl Builder {
     }
 
     pub async fn build(self) -> anyhow::Result<Spawned> {
-        // Blob GC reclaims anything no tag covers; document content carries no
-        // tag of its own and is reported through this callback instead. Both
-        // halves are wired or neither — a GC run without the callback would
-        // reclaim every open document's content.
+        // Blob GC reclaims anything no tag covers. Document content carries no
+        // tag of its own, so without this callback a GC run reclaims every open
+        // document's content.
         let (protect_handler, protect_cb) = ProtectCallbackHandler::new();
         let gc = self.gc_timer.map(|interval| GcConfig {
             interval,
@@ -208,8 +204,8 @@ impl Builder {
             .spawn(self.endpoint, blobs.clone(), gossip.clone())
             .await?;
 
-        // Derived rather than minted, so this node writes under the same author
-        // every session, and that author names its endpoint.
+        // The author is derived from the endpoint key rather than minted, so
+        // this node writes under the same author every session.
         let author = self.author.id();
         docs.api().author_import(self.author).await?;
         docs.api().author_set_default(author).await?;
@@ -269,12 +265,12 @@ impl Builder {
 /// Opens the namespace `storage` records at `key`, minting and recording one on
 /// first use.
 ///
-/// The id outlives the process, so a restart reopens the document peers already
-/// reference. A recorded id whose capability the docs store no longer holds
-/// means that store was lost; the document is unrecoverable either way, so a
-/// fresh one is minted and the record replaced.
+/// The recorded id outlives the process, so a restart reopens the document
+/// peers already reference. A recorded id the docs store holds no capability
+/// for names an unrecoverable document, so a fresh one is minted and the record
+/// replaced.
 ///
-/// [`Storage::Ephemeral`] mints fresh every run and leaves nothing behind.
+/// [`Storage::Ephemeral`] records nothing, so it mints on every run.
 async fn open_or_mint_doc(docs: &Docs, storage: &Storage, key: &str) -> anyhow::Result<Doc> {
     if let Some(ns) = recorded(storage, key)
         && let Some(doc) = held(docs, ns).await
@@ -299,8 +295,8 @@ fn recorded(storage: &Storage, key: &str) -> Option<NamespaceId> {
 }
 
 /// `Docs::open` errors on a namespace this node does not hold rather than
-/// returning `Ok(None)`, so both shapes of absence have to read alike; a
-/// propagated error would leave the node with no document at all.
+/// returning `Ok(None)`. Both shapes of absence read as `None` here, since
+/// propagating the error would leave the node with no document at all.
 async fn held(docs: &Docs, ns: NamespaceId) -> Option<Doc> {
     match docs.api().open(ns).await {
         Ok(doc) => doc,
@@ -311,9 +307,9 @@ async fn held(docs: &Docs, ns: NamespaceId) -> Option<Doc> {
     }
 }
 
-/// Deletes leftover `auto-<rfc3339>` tags minted by bare `add_bytes(..)` calls,
-/// which nothing else sweeps; content still referenced by a document survives
-/// through the protect callback.
+/// Deletes the `auto-<rfc3339>` tags a bare `add_bytes` mints, which nothing
+/// else sweeps. Content a document still references survives through the
+/// protect callback.
 async fn sweep_auto_tags(blobs: &BlobStore) -> anyhow::Result<()> {
     let deleted = blobs.tags().delete_prefix("auto-").await?;
     if deleted > 0 {

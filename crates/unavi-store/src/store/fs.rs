@@ -32,8 +32,7 @@ pub async fn init(
     let blob_path = root.join("blob");
     let docs_path = root.join("docs");
     tokio::fs::create_dir_all(&blob_path).await?;
-    // `Docs::persistent` opens its directory rather than creating it, so the
-    // whole layout is laid out here before any store is loaded.
+    // `Docs::persistent` opens its directory rather than creating it.
     tokio::fs::create_dir_all(&docs_path).await?;
 
     let blobs: BoxedBlobs = Box::new(

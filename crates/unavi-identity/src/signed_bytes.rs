@@ -14,10 +14,7 @@ use xdid::{
 
 use crate::{
     jwk,
-    resolve::{
-        Resolver,
-        Space,
-    },
+    resolve::Resolver,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -63,8 +60,7 @@ where
         &self.signature
     }
 
-    /// The exact bytes a signature covers. Verification must use this, never
-    /// the payload alone.
+    /// The exact bytes a signature covers. The payload alone is not signed.
     #[must_use]
     pub fn signing_bytes(&self) -> Vec<u8> {
         signing_bytes(T::SIGNING_CONTEXT, &self.payload_bytes)
@@ -80,7 +76,7 @@ where
         T: Sync,
     {
         let doc = resolver
-            .resolve(did, Space::Public)
+            .resolve(did)
             .await
             .map_err(|source| VerifyError::Unresolvable {
                 did: did.clone(),

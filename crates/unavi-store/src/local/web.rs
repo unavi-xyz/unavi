@@ -3,7 +3,7 @@ use anyhow::Context;
 /// Namespaces every item against whatever else shares the origin.
 const PREFIX: &str = "unavi.";
 
-/// `Ok(None)` when no item exists; a blocked or missing storage is an `Err`,
+/// `Ok(None)` when no item exists. A blocked or missing storage is an `Err`,
 /// never an absence.
 pub fn read(key: &str) -> anyhow::Result<Option<String>> {
     storage()?
@@ -19,9 +19,9 @@ pub fn write(key: &str, value: &str) -> anyhow::Result<()> {
 
 /// Records `value` at `key` only if no value sits there yet.
 ///
-/// localStorage has no test-and-set, so this is a check followed by a write:
-/// two tabs racing the same key can both pass. The browser makes the write
-/// itself atomic, so a loser never tears a winner's value.
+/// localStorage has no test-and-set, so this is a check followed by a write,
+/// and two tabs racing the same key can both pass. The write itself is atomic,
+/// so a loser never tears a winner's value.
 pub fn create(key: &str, value: &str) -> anyhow::Result<()> {
     let storage = storage()?;
     if storage

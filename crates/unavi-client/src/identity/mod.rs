@@ -18,8 +18,7 @@ pub struct Storage(pub local::Storage);
 
 #[derive(Resource, Clone, Default)]
 pub struct SyncConfig {
-    pub allow_loopback: bool,
-    pub targets:        Vec<String>,
+    pub targets: Vec<String>,
 }
 
 /// This device: the user key and the endpoint key.

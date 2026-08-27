@@ -3,35 +3,14 @@ use std::time::Duration;
 use rstest::rstest;
 use tempfile::tempdir;
 use tracing_test::traced_test;
-use unavi_store::{
-    local::Storage,
-    store::{
-        Builder,
-        Spawned,
-    },
+use unavi_store::store::Spawned;
+
+use crate::common::{
+    store,
+    store_at,
 };
 
-use crate::common::store;
-
 mod common;
-
-/// A store whose recorded namespace ids land in `dir`, so a test can assert
-/// what a restart would reopen.
-async fn store_at(dir: &std::path::Path) -> Spawned {
-    let secret_key = iroh::SecretKey::generate();
-    let author = iroh_docs::Author::from_bytes(&secret_key.to_bytes());
-    let endpoint = iroh::Endpoint::builder(iroh::endpoint::presets::N0DisableRelay)
-        .secret_key(secret_key)
-        .bind()
-        .await
-        .expect("bind endpoint");
-
-    Builder::new(endpoint, author)
-        .storage(Storage::Path(dir.to_path_buf()))
-        .build()
-        .await
-        .expect("construct data store")
-}
 
 #[rstest]
 #[timeout(Duration::from_secs(5))]

@@ -21,10 +21,7 @@ use unavi_identity::{
     ENDPOINT_SERVICE_ID,
     ENDPOINT_SERVICE_TYPE,
     identity::Identity,
-    resolve::{
-        Resolver,
-        Space,
-    },
+    resolve::Resolver,
 };
 use unavi_store::store::Store;
 use xdid::core::did::Did;
@@ -88,18 +85,17 @@ pub async fn sync(
 /// Resolves every target, returning the ones that answered alongside the DIDs
 /// that did not.
 ///
-/// An unresolved target is worth retrying rather than failing the load over: a
+/// An unresolved target is worth retrying rather than failing the load over. A
 /// client with no reachable server still runs peer to peer.
 pub async fn resolve_batch(
     dids: Vec<String>,
-    allow_loopback: bool,
     resolver: &Resolver,
 ) -> (Vec<EndpointAddr>, Vec<String>) {
     let mut addrs = Vec::new();
     let mut unresolved = Vec::new();
 
     for did_str in dids {
-        match resolve_target(&did_str, allow_loopback, resolver).await {
+        match resolve_target(&did_str, resolver).await {
             Ok(addr) => {
                 info!(target = did_str, "following registry");
                 addrs.push(addr);
@@ -114,19 +110,9 @@ pub async fn resolve_batch(
     (addrs, unresolved)
 }
 
-async fn resolve_target(
-    did_str: &str,
-    allow_loopback: bool,
-    resolver: &Resolver,
-) -> anyhow::Result<EndpointAddr> {
+async fn resolve_target(did_str: &str, resolver: &Resolver) -> anyhow::Result<EndpointAddr> {
     let did = Did::from_str(did_str)?;
-
-    let space = if allow_loopback {
-        Space::Local
-    } else {
-        Space::Public
-    };
-    let doc = resolver.resolve(&did, space).await?;
+    let doc = resolver.resolve(&did).await?;
 
     let services = doc.service.unwrap_or_default();
     let service = services

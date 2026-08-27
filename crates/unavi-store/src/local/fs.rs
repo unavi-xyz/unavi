@@ -14,12 +14,12 @@ use std::{
 
 use anyhow::Context;
 
-/// The next temporary-file suffix within this process, so parallel writers —
-/// tests especially — never collide on one `.tmp` name.
+/// The next temporary-file suffix within this process, so parallel writers
+/// never collide on one `.tmp` name.
 static TEMP_COUNTER: AtomicU64 = AtomicU64::new(0);
 
-/// `Ok(None)` when the file does not exist; anything else that goes wrong —
-/// a value that is not UTF-8 included — is an `Err`, so a broken value is not
+/// `Ok(None)` when the file does not exist. Anything else that goes wrong,
+/// including a value that is not UTF-8, is an `Err`, so a damaged value is not
 /// mistaken for a first run.
 pub fn read(dir: &Path, key: &str) -> anyhow::Result<Option<String>> {
     match read_bytes(dir, key)? {
@@ -30,7 +30,7 @@ pub fn read(dir: &Path, key: &str) -> anyhow::Result<Option<String>> {
     }
 }
 
-/// `Ok(None)` when the file does not exist; any other read failure is an
+/// `Ok(None)` when the file does not exist. Any other read failure is an
 /// `Err`.
 pub fn read_bytes(dir: &Path, key: &str) -> anyhow::Result<Option<Vec<u8>>> {
     match std::fs::read(dir.join(key)) {
@@ -40,8 +40,9 @@ pub fn read_bytes(dir: &Path, key: &str) -> anyhow::Result<Option<Vec<u8>>> {
     }
 }
 
-/// Replaces the value at `key` by renaming a fully-written temporary over it:
-/// a crash mid-write leaves whatever was there before, never a truncation.
+/// Replaces the value at `key` by renaming a fully-written temporary over it,
+/// so a crash mid-write leaves whatever was there before rather than a
+/// truncated value.
 pub fn write_bytes(dir: &Path, key: &str, value: &[u8]) -> anyhow::Result<()> {
     let path = dir.join(key);
     if let Some(parent) = path.parent() {
@@ -73,7 +74,8 @@ pub fn write_bytes(dir: &Path, key: &str, value: &[u8]) -> anyhow::Result<()> {
 }
 
 /// Writes `value` at `key` only if no file is there yet, returning an error
-/// when one is — the only non-racy no-clobber a filesystem offers.
+/// when one is. `create_new` is the only check-and-write a filesystem offers
+/// that does not race.
 pub fn create(dir: &Path, key: &str, value: &[u8]) -> anyhow::Result<()> {
     let path = dir.join(key);
     if let Some(parent) = path.parent() {

@@ -1,8 +1,9 @@
-// Compiled into every integration-test binary in this crate, each of which
-// only uses a subset of these helpers.
-#![allow(dead_code, reason = "each test binary uses one fixture")]
+#![allow(dead_code, reason = "each test binary uses a subset of these")]
 
-use std::time::Duration;
+use std::{
+    path::Path,
+    time::Duration,
+};
 
 use iroh::{
     Endpoint,
@@ -11,23 +12,33 @@ use iroh::{
 };
 use iroh_docs::Author;
 use rstest::fixture;
-use unavi_store::store::{
-    Builder,
-    Spawned,
+use unavi_store::{
+    local::Storage,
+    store::{
+        Builder,
+        Spawned,
+    },
 };
 
 #[fixture]
 pub async fn store() -> Spawned {
-    build(None).await
+    build(|builder| builder).await
 }
 
 /// A store sweeping on `interval`, for tests that assert what garbage
 /// collection reclaims.
 pub async fn store_with_gc(interval: Duration) -> Spawned {
-    build(Some(interval)).await
+    build(move |builder| builder.gc_timer(interval)).await
 }
 
-async fn build(gc: Option<Duration>) -> Spawned {
+/// A store whose recorded namespace ids land in `dir`, so a test can assert
+/// what a restart would reopen.
+pub async fn store_at(dir: &Path) -> Spawned {
+    let dir = dir.to_path_buf();
+    build(move |builder| builder.storage(Storage::Path(dir))).await
+}
+
+async fn build(configure: impl FnOnce(Builder) -> Builder) -> Spawned {
     let secret_key = SecretKey::generate();
     let author = Author::from_bytes(&secret_key.to_bytes());
 
@@ -37,11 +48,8 @@ async fn build(gc: Option<Duration>) -> Spawned {
         .await
         .expect("bind endpoint");
 
-    let builder = Builder::new(endpoint, author);
-    let builder = match gc {
-        Some(interval) => builder.gc_timer(interval),
-        None => builder,
-    };
-
-    builder.build().await.expect("construct data store")
+    configure(Builder::new(endpoint, author))
+        .build()
+        .await
+        .expect("construct data store")
 }

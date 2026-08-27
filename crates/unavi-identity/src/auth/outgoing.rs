@@ -29,8 +29,10 @@ use crate::{
     resolve::Resolver,
 };
 
-/// Owns the endpoint the hooks may not hold, running one handshake per remote
-/// and fanning its result out to every dial waiting on it.
+/// Runs one handshake per remote, waking every dial waiting on it.
+///
+/// Hooks are installed on the endpoint builder, before the endpoint exists, so
+/// they cannot hold it themselves.
 pub struct Outgoing {
     pub endpoint: Endpoint,
     pub tx:       mpsc::Sender<Message>,

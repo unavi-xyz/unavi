@@ -32,8 +32,8 @@ pub struct Protocol {
     pub resolver: Arc<Resolver>,
 }
 
-/// Hand-written: a derived one would put the signing key in every log line
-/// that formats a handler.
+/// A derived `Debug` would put the signing key in every log line that formats
+/// a handler.
 impl std::fmt::Debug for Protocol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Protocol")

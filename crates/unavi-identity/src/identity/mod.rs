@@ -37,7 +37,7 @@ impl Identity {
     }
 }
 
-/// One node: a user identity plus the endpoint key of the device it runs on.
+/// A user identity paired with the endpoint key of the device it runs on.
 ///
 /// Every device a user owns shares their [`Identity`] but carries its own
 /// endpoint key, so discovery maps each device to its own address set.

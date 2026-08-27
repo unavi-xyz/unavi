@@ -1,9 +1,8 @@
-//! Every entry's value is the blob hash of its content.
+//! An entry's value is the blob hash of its content.
 //!
-//! Every key is its own entry, so iroh-docs' per-key last-writer-wins merge
-//! resolves concurrent writes between peers. A replicating host fetches, tags
-//! and meters every byte without reading any of it; no dependency-tracking
-//! convention exists on top.
+//! Every key is its own entry, so iroh-docs resolves concurrent writes between
+//! peers one key at a time, last writer wins. A replicating host fetches, tags
+//! and meters every byte without reading any of it.
 
 use std::time::Duration;
 
@@ -22,8 +21,7 @@ use iroh_docs::{
 };
 use n0_future::StreamExt;
 
-/// One document open on this node, with the blob store its values live in and
-/// the author this node writes under.
+/// One document open on this node.
 #[derive(Clone, Debug)]
 pub struct Namespace {
     doc:    Doc,
@@ -43,8 +41,8 @@ impl Namespace {
 
     /// The latest entry at exactly `key`, or `None` if the document holds none.
     ///
-    /// An empty entry is filtered by `get_one`, so a tombstone reads as absence
-    /// here exactly as it does on every other peer.
+    /// `get_one` filters out an empty value, so a tombstone reads as absence
+    /// here just as it does on every other peer.
     pub async fn get(&self, key: &str) -> anyhow::Result<Option<Entry>> {
         let query = Query::single_latest_per_key().key_exact(key);
         self.doc.get_one(query).await
@@ -52,8 +50,8 @@ impl Namespace {
 
     /// The latest entry per key under each prefix.
     ///
-    /// Empty entries are filtered by `get_many`, so a cross-author tombstone
-    /// reads as absence here exactly as it does on every other peer.
+    /// `get_many` filters out empty values, so a tombstone another peer wrote
+    /// reads as absence here just as it does everywhere else.
     pub async fn list(&self, prefixes: &[&str]) -> anyhow::Result<Vec<Entry>> {
         let mut out = Vec::new();
         for prefix in prefixes {
@@ -80,11 +78,11 @@ impl Namespace {
     }
 
     /// Removes every entry under `prefix` that this node authored, returning
-    /// how many went.
+    /// how many were removed.
     ///
-    /// Entries other peers authored are untouched: removing one of those has to
-    /// be written as an empty value, which wins by timestamp and reads as
-    /// absence everywhere.
+    /// Entries other peers authored are left alone. Removing one of those means
+    /// writing an empty value, which wins by timestamp and reads as absence on
+    /// every peer.
     pub async fn remove(&self, prefix: impl Into<Bytes>) -> anyhow::Result<usize> {
         self.doc.del(self.author, prefix).await
     }
@@ -92,8 +90,8 @@ impl Namespace {
     /// Enrols in the sync set, so incoming requests for this namespace are
     /// answered.
     ///
-    /// A namespace absent from the sync set rejects every incoming request with
-    /// `NotFound`; an empty peer list enrols without dialing anyone.
+    /// A namespace outside the sync set rejects every incoming request with
+    /// `NotFound`. The empty peer list enrols without dialing anyone.
     pub async fn serve(&self) -> anyhow::Result<()> {
         self.doc.start_sync(Vec::new()).await?;
         Ok(())

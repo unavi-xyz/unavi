@@ -1,9 +1,9 @@
-//! Tags naming an expiry rather than an owner: the one dated GC root.
+//! Blob tags that expire on a deadline rather than naming an owner.
 //!
-//! Content read through the blob API has no owning root — it would be
-//! collectible the moment the read returns. The deadline is fixed-width and
-//! leads the name, so lexicographic tag order is chronological and the sweep
-//! is a single range delete.
+//! Content read through the blob API has nothing rooting it, so it would be
+//! collectible the moment the read returns. A tag name leads with its deadline
+//! padded to a fixed width, so tags sort chronologically and a sweep is one
+//! range delete.
 
 use std::time::Duration;
 
@@ -35,9 +35,9 @@ impl Cache {
 
     /// Roots `hash` for at least `ttl`.
     ///
-    /// Called before a fetch, not after: `Downloader::download` takes no tag of
-    /// its own and the sweep lists partially written blobs, so a pass landing
-    /// mid-download would delete the content out from under the fetch.
+    /// A fetch has to be rooted before it starts. `Downloader::download` takes
+    /// no tag of its own, and a sweep lists partially written blobs, so an
+    /// unrooted download is deleted while it is still being written.
     pub async fn touch(&self, hash: Hash, ttl: Duration) -> anyhow::Result<()> {
         let deadline = deadline(ttl, now());
         self.0
@@ -110,9 +110,9 @@ mod tests {
         assert!(name(HASH, now + BUCKET) > cutoff);
     }
 
-    /// Spans of `now` are walked rather than sampled: whether two reads share a
-    /// tag depends on where they fall against the bucket grid, so a pair chosen
-    /// by hand proves nothing either way.
+    /// Each case walks a span of `now` rather than sampling one value. Whether
+    /// two reads share a tag depends on where they fall against the bucket
+    /// grid, so a hand-picked pair proves nothing.
     const TTLS: [u64; 4] = [60, 600, 700, 1200];
 
     #[test]

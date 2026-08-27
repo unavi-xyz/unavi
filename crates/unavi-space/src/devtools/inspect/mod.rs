@@ -11,10 +11,15 @@ use bevy::{
     prelude::*,
     ui_widgets::Activate,
 };
+use iroh::EndpointId;
 use iroh_docs::NamespaceId;
 use unavi_devtools::{
     scroll::Scrollable,
     tabs::DevPanel,
+};
+use unavi_policy::{
+    registry::Policy,
+    trust::Trust,
 };
 
 use crate::{
@@ -35,7 +40,7 @@ const HISTORY_MAX: usize = 32;
 /// pages.
 #[derive(Clone, Copy, PartialEq, Eq, std::hash::Hash)]
 pub enum Page {
-    Peer([u8; 32]),
+    Peer(EndpointId),
     Space(NamespaceId),
     Doc(NamespaceId),
 }
@@ -54,11 +59,39 @@ pub struct LinkTo(pub Page);
 #[derive(Component)]
 pub struct BackButton;
 
-/// Ejects a peer, or lifts the block on one already ejected.
+/// Moves a peer to `rung`, or back to the default when `rung` is `None`.
 #[derive(Component)]
-pub struct BlockButton {
-    peer:    [u8; 32],
-    blocked: bool,
+pub struct RungButton {
+    peer: EndpointId,
+    rung: Option<Trust>,
+}
+
+impl RungButton {
+    /// The label a button carries, given where the peer sits now. A rung the
+    /// peer already holds offers the way back to the default instead.
+    pub const fn new(peer: EndpointId, rung: Trust, current: Trust) -> (&'static str, Self) {
+        if matches!(
+            (rung, current),
+            (Trust::Blocked, Trust::Blocked) | (Trust::Trusted, Trust::Trusted)
+        ) {
+            let label = match rung {
+                Trust::Blocked => "unblock",
+                _ => "untrust",
+            };
+            return (label, Self { peer, rung: None });
+        }
+        let label = match rung {
+            Trust::Blocked => "block",
+            _ => "trust",
+        };
+        (
+            label,
+            Self {
+                peer,
+                rung: Some(rung),
+            },
+        )
+    }
 }
 
 /// Toggles a KV cell's value view open or closed.
@@ -172,12 +205,13 @@ pub fn handle_back(
     }
 }
 
-/// Blocks or unblocks the peer whose page is open — the only UI path that
-/// reaches the trust table.
-pub fn handle_block(
+/// Moves the peer whose page is open to a rung. The only UI path that reaches
+/// the trust table.
+pub fn handle_rung(
     activate: On<Activate>,
-    buttons: Query<&BlockButton>,
+    buttons: Query<&RungButton>,
     trust: Option<Res<TrustStorage>>,
+    policy: Res<Policy>,
 ) {
     let Ok(button) = buttons.get(activate.entity) else {
         return;
@@ -186,10 +220,10 @@ pub fn handle_block(
         warn!("no trust storage; cannot change a peer's rung");
         return;
     };
-    let result = if button.blocked {
-        crate::trust::unblock(button.peer, &trust.0)
-    } else {
-        crate::trust::eject(button.peer, &trust.0)
+    let result = match button.rung {
+        Some(Trust::Blocked) => crate::trust::eject(&policy, button.peer, &trust.0),
+        Some(_) => crate::trust::trust_peer(&policy, button.peer, &trust.0),
+        None => crate::trust::unblock(&policy, button.peer, &trust.0),
     };
     if let Err(err) = result {
         warn!(?err, "cannot change a peer's rung");

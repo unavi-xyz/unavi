@@ -22,19 +22,20 @@ use hsd::{
 };
 use iroh_docs::NamespaceId;
 use unavi_policy::{
+    quota::{
+        Flow,
+        Stock,
+    },
+    space::Space,
+};
+use unavi_space::{
+    anchor::ActiveSpace,
     check::{
         read as check_read,
         space_of,
         write as check_write,
     },
-    registry,
-    space::Space,
 };
-use unavi_quota::{
-    Flow,
-    Stock,
-};
-use unavi_space::anchor::ActiveSpace;
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
@@ -196,14 +197,14 @@ async fn spawn_child_doc(
 
     // Seeded before the spawn command applies, so the child is never briefly
     // an unplaced document that policy would have to attribute by guessing.
-    let parent = registry::get(api.doc_id);
-    let space = registry::registered_space(api.doc_id);
-    registry::update(id, |record| {
+    let parent = api.policy.get(api.doc_id);
+    let space = api.policy.registered_space(api.doc_id);
+    api.policy.update(id, |record| {
         record.policy = parent.policy;
         record.space = space;
     });
 
-    unavi_quota::registry::child_document_quota(ns, NamespaceId::from(&api.doc_id.0));
+    api.policy.attribute_child_document(id, api.doc_id);
     AsyncCommands::default()
         .spawn((
             HsdHeld(state),
@@ -244,7 +245,7 @@ pub async fn self_document(api: &Api) -> anyhow::Result<u32> {
 
 pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
     let id = doc_id(&id)?;
-    check_read(api.doc_id, id)?;
+    check_read(&api.policy, api.doc_id, id)?;
 
     let mut scene = api.wired_scene.lock().await;
 
@@ -288,7 +289,7 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
 
 pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
-    if let Err(err) = check_write(api.doc_id, id) {
+    if let Err(err) = check_write(&api.policy, api.doc_id, id) {
         debug!(?err, "remove_document out of reach, skipping");
         return Ok(());
     }
@@ -346,10 +347,10 @@ async fn drop_replica(ns: NamespaceId) {
 pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
     let ns = namespace_of(id).await?;
-    check_write(api.doc_id, id)?;
+    check_write(&api.policy, api.doc_id, id)?;
     crate::quota::acquire(&api.quota, Flow::SyncDoc, 1.0).await?;
 
-    let space = if let Some(s) = space_of(id) {
+    let space = if let Some(s) = space_of(&api.policy, id) {
         s
     } else {
         let (tx, rx) = async_channel::bounded::<Option<DocId>>(1);
@@ -407,7 +408,7 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
 
 pub async fn save_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
-    check_write(api.doc_id, id)?;
+    check_write(&api.policy, api.doc_id, id)?;
 
     let state = {
         let scene = api.wired_scene.lock().await;

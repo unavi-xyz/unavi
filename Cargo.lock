@@ -985,7 +985,6 @@ dependencies = [
  "tracing",
  "tracing-test",
  "unavi-physics",
- "unavi-quota",
  "unavi-store",
  "unavi-util",
 ]
@@ -13845,14 +13844,14 @@ dependencies = [
  "iroh",
  "iroh-docs",
  "parking_lot",
- "rand 0.9.5",
  "serde",
+ "sysinfo",
  "thiserror 2.0.20",
  "toml 1.1.4+spec-1.1.0",
  "tracing",
  "unavi-identity",
- "unavi-quota",
  "unavi-store",
+ "web-time",
  "xdid",
 ]
 
@@ -13861,18 +13860,6 @@ name = "unavi-portal-protocol"
 version = "0.0.16"
 dependencies = [
  "serde",
-]
-
-[[package]]
-name = "unavi-quota"
-version = "0.0.16"
-dependencies = [
- "blake3",
- "iroh-docs",
- "parking_lot",
- "sysinfo",
- "thiserror 2.0.20",
- "web-time",
 ]
 
 [[package]]
@@ -13938,7 +13925,6 @@ dependencies = [
  "unavi-physics",
  "unavi-policy",
  "unavi-portal-protocol",
- "unavi-quota",
  "unavi-registry",
  "unavi-space",
  "unavi-store",
@@ -14039,7 +14025,6 @@ dependencies = [
  "unavi-identity",
  "unavi-manifold",
  "unavi-policy",
- "unavi-quota",
  "unavi-registry",
  "unavi-store",
  "unavi-util",

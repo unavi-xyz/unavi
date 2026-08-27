@@ -57,8 +57,8 @@ fn rows(spaces: &Query<(Entity, &Space)>, active: Option<NamespaceId>) -> Vec<Si
         snap.peers
             .iter()
             .flat_map(|p| p.docs.iter())
-            .chain(snap.neutral.iter())
-            .map(|d| d.space),
+            .map(|d| d.space)
+            .chain(snap.docs.iter().map(|d| d.space)),
     );
     space_ids.sort_unstable_by_key(|s| *s.as_bytes());
     space_ids.dedup();
@@ -88,13 +88,13 @@ fn rows(spaces: &Query<(Entity, &Space)>, active: Option<NamespaceId>) -> Vec<Si
         peer_ids.retain(|p| *p != me);
         out.push(SidebarRow::Entry {
             page:  Page::Peer(me),
-            label: format!("{} (self)", short(&me)),
+            label: format!("{} (self)", short(me.as_bytes())),
         });
     }
     for peer in peer_ids {
         out.push(SidebarRow::Entry {
             page:  Page::Peer(peer),
-            label: short(&peer),
+            label: short(peer.as_bytes()),
         });
     }
     out
@@ -106,7 +106,7 @@ fn rows(spaces: &Query<(Entity, &Space)>, active: Option<NamespaceId>) -> Vec<Si
 )]
 fn entry_button(l: &mut RelatedSpawnerCommands<ChildOf>, page: Page, label: String) {
     let bytes = match page {
-        Page::Peer(id) => id,
+        Page::Peer(id) => *id.as_bytes(),
         Page::Space(hash) | Page::Doc(hash) => *hash.as_bytes(),
     };
     let color = widgets::hash_color(&bytes);

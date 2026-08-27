@@ -6,7 +6,7 @@ use bevy_hsd::{
 };
 
 use crate::{
-    registry,
+    registry::Policy,
     space::Space,
 };
 
@@ -21,12 +21,12 @@ pub struct SpaceOwner(pub Entity);
 #[relationship_target(relationship = SpaceOwner, linked_spawn)]
 pub struct SpaceMembers(Vec<Entity>);
 
-pub fn self_own_space(trigger: On<Add, Space>, spaces: Query<&Space>) {
+pub fn self_own_space(trigger: On<Add, Space>, spaces: Query<&Space>, policy: Res<Policy>) {
     let Ok(space) = spaces.get(trigger.entity) else {
         return;
     };
     let id = space.doc_id();
-    registry::update(id, |record| record.space = Some(id));
+    policy.update(id, |record| record.space = Some(id));
 }
 
 /// Assigns every unowned document to the space it hangs under.
@@ -42,6 +42,7 @@ pub fn parent_docs_under_space(
     spaces: Query<(Entity, &HsdDocId), With<Space>>,
     is_space: Query<(), With<Space>>,
     owners: Query<&SpaceOwner>,
+    policy: Res<Policy>,
     mut commands: Commands,
 ) {
     for (entity, doc_record, parent) in &docs {
@@ -59,7 +60,7 @@ pub fn parent_docs_under_space(
             continue;
         }
 
-        let Some(space_id) = registry::get(doc_record.0).space else {
+        let Some(space_id) = policy.get(doc_record.0).space else {
             continue;
         };
         let Some(space_entity) = spaces
@@ -78,6 +79,7 @@ pub fn register_on_owner_change(
     trigger: On<Insert, SpaceOwner>,
     owners: Query<(&HsdDocId, &SpaceOwner), With<Hsd>>,
     spaces: Query<&Space>,
+    policy: Res<Policy>,
 ) {
     let Ok((doc_record, owner)) = owners.get(trigger.entity) else {
         return;
@@ -85,18 +87,26 @@ pub fn register_on_owner_change(
     let Ok(space) = spaces.get(owner.0) else {
         return;
     };
-    registry::update(doc_record.0, |record| record.space = Some(space.doc_id()));
+    policy.update(doc_record.0, |record| record.space = Some(space.doc_id()));
 }
 
-pub fn deregister_doc_membership(trigger: On<Remove, SpaceOwner>, docs: Query<&HsdDocId>) {
+pub fn deregister_doc_membership(
+    trigger: On<Remove, SpaceOwner>,
+    docs: Query<&HsdDocId>,
+    policy: Res<Policy>,
+) {
     if let Ok(record) = docs.get(trigger.entity) {
-        registry::update(record.0, |record| record.space = None);
+        policy.update(record.0, |record| record.space = None);
     }
 }
 
-pub fn deregister_space_docs(trigger: On<Remove, Space>, spaces: Query<&Space>) {
+pub fn deregister_space_docs(
+    trigger: On<Remove, Space>,
+    spaces: Query<&Space>,
+    policy: Res<Policy>,
+) {
     if let Ok(space) = spaces.get(trigger.entity) {
-        registry::forget_space(space.doc_id());
+        policy.forget_space(space.doc_id());
     }
 }
 
@@ -113,23 +123,30 @@ mod tests {
     use iroh_docs::NamespaceId;
 
     use super::*;
-    use crate::sync;
+    use crate::{
+        registry::Record,
+        sync,
+    };
 
-    fn app() -> App {
+    /// An app with its own registry, so nothing here shares state with its
+    /// neighbours.
+    fn app() -> (App, Policy) {
         let mut app = App::new();
-        app.add_observer(self_own_space)
+        app.init_resource::<Policy>()
+            .add_observer(self_own_space)
             .add_observer(register_on_owner_change)
             .add_observer(deregister_doc_membership)
             .add_observer(deregister_space_docs)
             .add_observer(sync::sync_on_doc_id)
             .add_observer(sync::forget_document)
             .add_systems(Update, parent_docs_under_space);
-        app
+        let policy = app.world().resource::<Policy>().clone();
+        (app, policy)
     }
 
     #[test]
     fn instance_adopted_after_host_becomes_a_space() {
-        let mut app = app();
+        let (mut app, policy) = app();
 
         let ns = NamespaceId::from(blake3::hash(b"host-doc").as_bytes());
         let host_id = DocId(*ns.as_bytes());
@@ -161,14 +178,14 @@ mod tests {
             app.world().get::<SpaceOwner>(instance).map(|o| o.0),
             Some(host)
         );
-        assert_eq!(registry::get(instance_id).space, Some(host_id));
+        assert_eq!(policy.get(instance_id).space, Some(host_id));
 
         app.world_mut().entity_mut(host).despawn();
     }
 
     #[test]
     fn unloading_a_space_takes_its_documents() {
-        let mut app = app();
+        let (mut app, _policy) = app();
 
         let ns = NamespaceId::from(blake3::hash(b"space-doc").as_bytes());
         let space = app
@@ -189,17 +206,17 @@ mod tests {
     /// `SpaceOwner`; the record must still drop on despawn.
     #[test]
     fn a_document_that_never_joined_a_space_still_drops_its_record() {
-        let mut app = app();
+        let (mut app, policy) = app();
         let id = DocId([31; 32]);
 
         let doc = app
             .world_mut()
             .spawn((Hsd::new(SceneState::new()), HsdDocId(id)))
             .id();
-        registry::update(id, |record| record.space = Some(DocId([32; 32])));
+        policy.update(id, |record| record.space = Some(DocId([32; 32])));
 
         app.world_mut().entity_mut(doc).despawn();
 
-        assert_eq!(registry::get(id), registry::Record::default());
+        assert_eq!(policy.get(id), Record::default());
     }
 }

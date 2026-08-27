@@ -15,7 +15,10 @@ use tracing::{
     Instrument,
     Span,
 };
-use unavi_quota::Quota;
+use unavi_policy::{
+    quota::Quota,
+    registry::Policy,
+};
 use unavi_util::async_task::spawn_async_task;
 use wasmtime::{
     Store,
@@ -85,6 +88,7 @@ pub fn instantiate_scripts(
     >,
     docs: Query<(&HsdDocId, &Hsd, Has<QuotaExempt>)>,
     stores: Query<&LocalStore>,
+    policy: Res<Policy>,
     mut commands: Commands,
 ) {
     let root_doc = stores.single().ok().map(|store| store.0.root());
@@ -121,7 +125,7 @@ pub fn instantiate_scripts(
         let quota = if exempt {
             Quota::unlimited()
         } else {
-            unavi_space::quota::document_quota(doc_id.0)
+            unavi_space::quota::document_quota(&policy, doc_id.0)
         };
 
         let state = Runtime {
@@ -129,6 +133,7 @@ pub fn instantiate_scripts(
                 state: Arc::clone(&doc.0),
                 doc_id: doc_id.0,
                 prim: prim.0,
+                policy: policy.clone(),
                 quota: Arc::clone(&quota),
                 root_doc,
                 wired_agent: Mutex::default(),

@@ -259,11 +259,11 @@ pub async fn apply_force(api: &Api, prim_rep: u32, v: [f32; 3]) -> Result<(), Sc
     Ok(())
 }
 
-pub fn claim_authority(_api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
+pub fn claim_authority(api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
     let bytes = <[u8; 32]>::try_from(doc_id.as_slice())
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
     let doc = DocId(bytes);
-    let space = unavi_policy::check::space_of(doc)
+    let space = unavi_space::check::space_of(&api.policy, doc)
         .ok_or_else(|| ScriptError::other("document is not in a tracked space"))?;
     unavi_space::state::entities::claim_authority(
         iroh_docs::NamespaceId::from(&space.0),

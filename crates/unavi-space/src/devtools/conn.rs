@@ -20,7 +20,7 @@ static CONNS: LazyLock<Mutex<HashMap<EndpointId, Arc<Connection>>>> = LazyLock::
 /// them.
 #[derive(Clone, Copy)]
 pub struct PeerNetStats {
-    pub peer:     [u8; 32],
+    pub peer:     EndpointId,
     pub bytes_tx: u64,
     pub bytes_rx: u64,
     pub rtt_ms:   f32,
@@ -66,7 +66,7 @@ pub fn snapshot() -> Vec<PeerNetStats> {
                 .rtt(PathId::ZERO)
                 .map_or(0.0, |d| d.as_secs_f32() * 1000.0);
             PeerNetStats {
-                peer: *peer.as_bytes(),
+                peer: *peer,
                 bytes_tx: s.udp_tx.bytes,
                 bytes_rx: s.udp_rx.bytes,
                 rtt_ms,

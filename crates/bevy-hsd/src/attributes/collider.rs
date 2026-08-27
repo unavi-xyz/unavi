@@ -4,10 +4,13 @@ use bytemuck::{
     PodCastError,
     try_cast_slice,
 };
-use hsd::attributes::{
-    Attribute,
-    collider::ColliderAttr,
-    slots,
+use hsd::{
+    attributes::{
+        Attribute,
+        collider::ColliderAttr,
+        slots,
+    },
+    bounds::MAX_MESH_ELEMENTS,
 };
 use unavi_physics::{
     body::{
@@ -16,7 +19,6 @@ use unavi_physics::{
     },
     shape,
 };
-use unavi_quota::limits::MAX_MESH_ELEMENTS;
 
 use crate::{
     HsdSlots,

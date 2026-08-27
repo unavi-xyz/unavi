@@ -27,7 +27,6 @@ postcard.workspace      = true
 smol_str.workspace      = true
 thiserror.workspace     = true
 unavi-physics.path      = "../unavi-physics"
-unavi-quota             = { path = "../unavi-quota", version = "0.0.16" }
 unavi-store.path        = "../unavi-store"
 unavi-util.path         = "../unavi-util"
 

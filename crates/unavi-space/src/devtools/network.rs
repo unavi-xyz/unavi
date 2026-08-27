@@ -2,6 +2,7 @@ use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
+use iroh::EndpointId;
 use unavi_devtools::tabs::DevPanel;
 
 use crate::devtools::{
@@ -28,7 +29,7 @@ const SAMPLE_INTERVAL: f32 = 1.0;
 
 #[derive(Resource, Default)]
 pub(super) struct NetSampler {
-    prev: HashMap<[u8; 32], Prev>,
+    prev: HashMap<EndpointId, Prev>,
 }
 
 pub(super) fn spawn(mut commands: Commands) {
@@ -98,7 +99,7 @@ pub(super) fn update(
 
         lines.push(format!(
             "{} ↑{:>7.1} ↓{:>7.1} KB/s  rtt {:>4.0}ms",
-            short(&s.peer),
+            short(s.peer.as_bytes()),
             entry.up / 1024.0,
             entry.down / 1024.0,
             s.rtt_ms,

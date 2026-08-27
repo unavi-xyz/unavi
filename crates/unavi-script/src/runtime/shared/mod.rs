@@ -12,9 +12,9 @@ use iroh_docs::NamespaceId;
 use tokio::sync::Mutex;
 use unavi_policy::{
     document::ApiName,
-    registry as policy_registry,
+    quota::Quota,
+    registry::Policy,
 };
-use unavi_quota::Quota;
 
 use crate::{
     error::ScriptError,
@@ -36,6 +36,7 @@ pub struct Api {
     pub state:         Arc<std::sync::Mutex<SceneState>>,
     pub doc_id:        DocId,
     pub prim:          PrimId,
+    pub policy:        Policy,
     pub quota:         Arc<Quota>,
     /// This node's root document, or `None` when it runs without a store.
     ///
@@ -58,7 +59,7 @@ impl Api {
     /// after its scene realized, and would hold a grant the user has since
     /// withdrawn.
     pub fn require(&self, name: ApiName) -> Result<(), ScriptError> {
-        Ok(policy_registry::get(self.doc_id).policy.require(name)?)
+        Ok(self.policy.get(self.doc_id).policy.require(name)?)
     }
 
     /// Holds every document this script can write open for the duration of one

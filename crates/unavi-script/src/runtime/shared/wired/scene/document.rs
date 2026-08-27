@@ -20,17 +20,19 @@ use hsd::{
     state::SceneState,
 };
 use tokio::sync::MutexGuard;
-use unavi_policy::check::{
-    read as check_read,
-    write as check_write,
-};
-use unavi_quota::{
+use unavi_policy::quota::{
     Flow,
     Quota,
     QuotaError,
     Stock,
 };
-use unavi_space::quota::document_quota;
+use unavi_space::{
+    check::{
+        read as check_read,
+        write as check_write,
+    },
+    quota::document_quota,
+};
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::runtime::shared::{
@@ -151,9 +153,9 @@ pub async fn get_prim(api: &Api, rep: u32, prim_id: String) -> anyhow::Result<Op
 
 pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let doc = get_doc(api, rep).await?;
-    check_write(api.doc_id, doc.id)?;
+    check_write(&api.policy, api.doc_id, doc.id)?;
     crate::quota::acquire(&api.quota, Flow::CreatePrim, 1.0).await?;
-    let quota = document_quota(doc.id);
+    let quota = document_quota(&api.policy, doc.id);
     quota.try_charge(Stock::Prims, 1)?;
 
     let id = doc.with(|state| state.create_prim(None))?;
@@ -186,7 +188,7 @@ pub async fn offset_to(
     let self_doc = get_doc(api, self_rep).await?;
     let other_doc = get_doc(api, other_rep).await?;
 
-    if check_read(self_doc.id, other_doc.id).is_err() {
+    if check_read(&api.policy, self_doc.id, other_doc.id).is_err() {
         return Ok(None);
     }
 
@@ -219,7 +221,7 @@ pub async fn remove_prim(api: &Api, prim_rep: u32) -> anyhow::Result<()> {
     if prim.is_proxy {
         return Ok(());
     }
-    check_write(api.doc_id, prim.doc_id)?;
+    check_write(&api.policy, api.doc_id, prim.doc_id)?;
 
     let mut state = prim
         .state
@@ -230,7 +232,7 @@ pub async fn remove_prim(api: &Api, prim_rep: u32) -> anyhow::Result<()> {
     let removed = before.saturating_sub(state.prims().count()) as u64;
     drop(state);
 
-    document_quota(prim.doc_id).release(Stock::Prims, removed);
+    document_quota(&api.policy, prim.doc_id).release(Stock::Prims, removed);
     Ok(())
 }
 
@@ -287,7 +289,7 @@ async fn place(id: DocId, placement: Placement) -> anyhow::Result<()> {
 
 pub async fn set_anchor(api: &Api, rep: u32, target: Option<u32>) -> anyhow::Result<()> {
     let doc = get_doc(api, rep).await?;
-    check_write(api.doc_id, doc.id)?;
+    check_write(&api.policy, api.doc_id, doc.id)?;
 
     let target = match target {
         Some(target_rep) => {
@@ -309,7 +311,7 @@ pub async fn set_anchor(api: &Api, rep: u32, target: Option<u32>) -> anyhow::Res
 
 pub async fn set_offset(api: &Api, rep: u32, value: XformValue) -> anyhow::Result<()> {
     let doc = get_doc(api, rep).await?;
-    check_write(api.doc_id, doc.id)?;
+    check_write(&api.policy, api.doc_id, doc.id)?;
 
     place(
         doc.id,

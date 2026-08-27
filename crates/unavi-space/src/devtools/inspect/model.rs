@@ -21,10 +21,10 @@ use hsd::{
     },
     state::SceneState,
 };
+use iroh::EndpointId;
 use iroh_docs::NamespaceId;
 use unavi_policy::{
-    check,
-    registry,
+    registry::Policy,
     space::Space,
     trust::Trust,
 };
@@ -64,6 +64,7 @@ pub struct InspectData<'w, 's> {
     >,
     hsds:   Query<'w, 's, &'static Hsd>,
     prims:  Query<'w, 's, &'static HsdChild>,
+    policy: Res<'w, Policy>,
 }
 
 #[derive(std::hash::Hash)]
@@ -75,7 +76,7 @@ pub enum PageModel {
 
 #[derive(std::hash::Hash)]
 pub struct PeerModel {
-    pub id:        [u8; 32],
+    pub id:        EndpointId,
     pub is_self:   bool,
     pub connected: bool,
     /// The DID this peer proved over its own connection, absent while it has
@@ -87,15 +88,6 @@ pub struct PeerModel {
     /// Pinned docs as (doc, space, pinned-at).
     pub pins:      Vec<(NamespaceId, NamespaceId, u64)>,
     pub claims:    Vec<(NamespaceId, u64)>,
-    pub kv:        Vec<PeerKvRow>,
-}
-
-#[derive(std::hash::Hash)]
-pub struct PeerKvRow {
-    pub doc:   NamespaceId,
-    pub key:   String,
-    pub value: Option<Vec<u8>>,
-    pub at:    u64,
 }
 
 #[derive(std::hash::Hash)]
@@ -104,13 +96,13 @@ pub struct SpaceModel {
     pub joined: bool,
     pub active: bool,
     pub docs:   Vec<SpaceDocRow>,
-    pub peers:  Vec<[u8; 32]>,
+    pub peers:  Vec<EndpointId>,
 }
 
 #[derive(std::hash::Hash)]
 pub struct SpaceDocRow {
     pub doc:       NamespaceId,
-    pub owner:     Option<[u8; 32]>,
+    pub owner:     Option<EndpointId>,
     pub pins:      usize,
     pub instanced: bool,
 }
@@ -120,10 +112,10 @@ pub struct DocModel {
     pub doc:           NamespaceId,
     pub space:         Option<NamespaceId>,
     pub is_space_base: bool,
-    pub owner:         Option<[u8; 32]>,
-    pub authority:     Option<[u8; 32]>,
-    pub pinned_by:     Vec<([u8; 32], u64)>,
-    pub kv:            Vec<MergedKv>,
+    pub owner:         Option<EndpointId>,
+    pub authority:     Option<EndpointId>,
+    pub pinned_by:     Vec<(EndpointId, u64)>,
+    pub kv:            Vec<DocKv>,
     pub instanced:     bool,
     pub prims:         Option<usize>,
     pub parent:        Option<NamespaceId>,
@@ -134,12 +126,11 @@ pub struct DocModel {
 /// The canonical last-write-wins state of one key, merged across every peer's
 /// cells plus the neutral cell.
 #[derive(std::hash::Hash)]
-pub struct MergedKv {
-    pub key:     String,
-    pub value:   Option<Vec<u8>>,
-    pub at:      u64,
-    pub writer:  [u8; 32],
-    pub neutral: bool,
+pub struct DocKv {
+    pub key:    String,
+    pub value:  Option<Vec<u8>>,
+    pub at:     u64,
+    pub writer: EndpointId,
 }
 
 impl InspectData<'_, '_> {
@@ -159,7 +150,7 @@ pub fn active_space(
     active.and_then(|e| spaces.get(e).ok()).map(|(_, s)| s.0)
 }
 
-fn peer_model(id: [u8; 32], snap: &debug::DebugSnapshot) -> PeerModel {
+fn peer_model(id: EndpointId, snap: &debug::DebugSnapshot) -> PeerModel {
     let docs = snap
         .peers
         .iter()
@@ -175,10 +166,10 @@ fn peer_model(id: [u8; 32], snap: &debug::DebugSnapshot) -> PeerModel {
             self_did()
         } else {
             crate::identity::bindings()
-                .and_then(|b| b.did_of_bytes(&id))
+                .and_then(|b| b.did_of(id))
                 .map(|d| d.to_string())
         },
-        trust: check::trust_of(Some(id)),
+        trust: crate::check::trust_of(Some(id)),
         pins: docs
             .iter()
             .filter_map(|d| d.pin.map(|at| (d.doc, d.space, at)))
@@ -187,34 +178,26 @@ fn peer_model(id: [u8; 32], snap: &debug::DebugSnapshot) -> PeerModel {
             .iter()
             .filter_map(|d| d.authority.map(|at| (d.doc, at)))
             .collect(),
-        kv: docs
-            .iter()
-            .flat_map(|d| {
-                d.kv.iter().map(|kv| PeerKvRow {
-                    doc:   d.doc,
-                    key:   kv.key.clone(),
-                    value: kv.value.clone(),
-                    at:    kv.at,
-                })
-            })
-            .collect(),
     }
 }
 
 impl InspectData<'_, '_> {
     fn space_model(&self, space: NamespaceId, snap: &debug::DebugSnapshot) -> SpaceModel {
-        let mut docs = registry::documents_in(DocId(*space.as_bytes()))
+        let mut docs = self
+            .policy
+            .documents_in(DocId(*space.as_bytes()))
             .into_iter()
             .map(|d| NamespaceId::from(&d.0))
             .collect::<Vec<_>>();
-        for d in snap
+        for (doc, doc_space) in snap
             .peers
             .iter()
             .flat_map(|p| p.docs.iter())
-            .chain(snap.neutral.iter())
+            .map(|d| (d.doc, d.space))
+            .chain(snap.docs.iter().map(|d| (d.doc, d.space)))
         {
-            if d.space == space {
-                docs.push(d.doc);
+            if doc_space == space {
+                docs.push(doc);
             }
         }
         docs.sort_unstable_by_key(|d| *d.as_bytes());
@@ -256,7 +239,8 @@ impl InspectData<'_, '_> {
     }
 
     fn doc_model(&self, doc: NamespaceId, snap: &debug::DebugSnapshot) -> DocModel {
-        let space = check::space_of(DocId(*doc.as_bytes())).map(|s| NamespaceId::from(&s.0));
+        let space = crate::check::space_of(&self.policy, DocId(*doc.as_bytes()))
+            .map(|s| NamespaceId::from(&s.0));
         let mut pinned_by = snap
             .peers
             .iter()
@@ -286,7 +270,7 @@ impl InspectData<'_, '_> {
             owner: space.and_then(|s| replicas::owner(s, doc)),
             authority: space.and_then(|s| replicas::authority(s, doc)),
             pinned_by,
-            kv: merged_kv(doc, snap),
+            kv: doc_kv(doc, snap),
             instanced: entity.is_some_and(|(_, instanced, ..)| instanced),
             prims: entity.and_then(|(.., prims, _)| prims),
             parent: entity.and_then(|(e, ..)| self.parent_doc(e)),
@@ -327,40 +311,24 @@ impl InspectData<'_, '_> {
     }
 }
 
-fn merged_kv(doc: NamespaceId, snap: &debug::DebugSnapshot) -> Vec<MergedKv> {
-    let mut cells = Vec::new();
-    for p in &snap.peers {
-        if let Some(d) = p.docs.iter().find(|d| d.doc == doc) {
-            for kv in &d.kv {
-                cells.push(MergedKv {
-                    key:     kv.key.clone(),
-                    value:   kv.value.clone(),
-                    at:      kv.at,
-                    writer:  p.peer,
-                    neutral: false,
-                });
-            }
-        }
-    }
-    if let Some(d) = snap.neutral.iter().find(|d| d.doc == doc) {
-        for kv in &d.kv {
-            cells.push(MergedKv {
-                key:     kv.key.clone(),
-                value:   kv.value.clone(),
-                at:      kv.at,
-                writer:  kv.writer.unwrap_or_default(),
-                neutral: true,
-            });
-        }
-    }
-    // Last write wins per key, tying by writer id, mirroring the resolver.
-    cells.sort_unstable_by(|a, b| {
-        a.key
-            .cmp(&b.key)
-            .then_with(|| b.at.cmp(&a.at))
-            .then_with(|| b.writer.cmp(&a.writer))
-    });
-    cells.dedup_by(|next, winner| next.key == winner.key);
+/// `doc`'s cells, ordered by key.
+///
+/// One cell per key, so the last-write-wins merge already happened when the
+/// write landed and there is nothing to resolve here.
+fn doc_kv(doc: NamespaceId, snap: &debug::DebugSnapshot) -> Vec<DocKv> {
+    let Some(d) = snap.docs.iter().find(|d| d.doc == doc) else {
+        return Vec::new();
+    };
+    let mut cells =
+        d.kv.iter()
+            .map(|kv| DocKv {
+                key:    kv.key.clone(),
+                value:  kv.value.clone(),
+                at:     kv.at,
+                writer: kv.writer,
+            })
+            .collect::<Vec<_>>();
+    cells.sort_unstable_by(|a, b| a.key.cmp(&b.key));
     cells
 }
 
@@ -416,71 +384,50 @@ mod tests {
     use crate::state::replicas::debug::{
         DebugDoc,
         DebugKv,
-        DebugPeer,
         DebugSnapshot,
     };
 
-    fn doc_with_kv(doc: NamespaceId, kv: Vec<DebugKv>) -> DebugDoc {
-        DebugDoc {
-            doc,
-            space: doc,
-            pin: None,
-            authority: None,
-            kv,
-        }
+    /// A distinct, valid endpoint id per seed. Arbitrary bytes are not a curve
+    /// point, so a key has to be derived rather than written down.
+    fn peer(seed: u8) -> EndpointId {
+        iroh::SecretKey::from_bytes(&[seed; 32]).public()
     }
 
+    /// The page shows each document's cells, and only that document's.
     #[test]
-    fn merged_kv_latest_write_wins_across_peers_and_neutral() {
-        let doc = NamespaceId::from(blake3::hash(b"merged-kv-doc").as_bytes());
-        let early = [1u8; 32];
-        let late = [2u8; 32];
+    fn a_documents_cells_are_listed_by_key() {
+        let doc = NamespaceId::from(blake3::hash(b"kv-doc").as_bytes());
+        let other = NamespaceId::from(blake3::hash(b"other-doc").as_bytes());
+        let writer = peer(1);
+
+        let cell = |key: &str, at| DebugKv {
+            key: key.into(),
+            value: Some(b"value".to_vec()),
+            at,
+            writer,
+        };
         let snap = DebugSnapshot {
-            peers:   vec![
-                DebugPeer {
-                    peer: early,
-                    docs: vec![doc_with_kv(
-                        doc,
-                        vec![DebugKv {
-                            key:    "k".into(),
-                            value:  Some(b"old".to_vec()),
-                            at:     1,
-                            writer: None,
-                        }],
-                    )],
+            peers: Vec::new(),
+            docs:  vec![
+                DebugDoc {
+                    doc,
+                    space: doc,
+                    kv: vec![cell("b", 2), cell("a", 1)],
                 },
-                DebugPeer {
-                    peer: late,
-                    docs: vec![doc_with_kv(
-                        doc,
-                        vec![DebugKv {
-                            key:    "k".into(),
-                            value:  Some(b"new".to_vec()),
-                            at:     2,
-                            writer: None,
-                        }],
-                    )],
+                DebugDoc {
+                    doc:   other,
+                    space: other,
+                    kv:    vec![cell("elsewhere", 3)],
                 },
             ],
-            neutral: vec![doc_with_kv(
-                doc,
-                vec![DebugKv {
-                    key:    "n".into(),
-                    value:  Some(b"space".to_vec()),
-                    at:     3,
-                    writer: Some(early),
-                }],
-            )],
         };
 
-        let merged = merged_kv(doc, &snap);
-        assert_eq!(merged.len(), 2);
-        let k = merged.iter().find(|c| c.key == "k").expect("k merged");
-        assert_eq!(k.value.as_deref(), Some(&b"new"[..]));
-        assert_eq!(k.writer, late);
-        assert!(!k.neutral);
-        let n = merged.iter().find(|c| c.key == "n").expect("n merged");
-        assert_eq!(n.writer, early);
-        assert!(n.neutral);
+        let cells = doc_kv(doc, &snap);
+        assert_eq!(
+            cells.iter().map(|c| c.key.as_str()).collect::<Vec<_>>(),
+            ["a", "b"],
+            "another document's cells must not appear, and keys sort"
+        );
+        assert_eq!(cells[0].writer, writer);
     }
 }

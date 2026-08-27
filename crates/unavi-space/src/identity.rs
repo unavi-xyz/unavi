@@ -43,6 +43,5 @@ pub fn install_local(local: Option<Res<LocalIdentity>>) {
     let Some(local) = local else {
         return;
     };
-    crate::trust::install_resolver(Arc::clone(&local.bindings));
     install(local.clone());
 }

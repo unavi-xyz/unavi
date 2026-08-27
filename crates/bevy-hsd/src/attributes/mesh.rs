@@ -13,16 +13,18 @@ use bytemuck::{
     PodCastError,
     try_cast_slice,
 };
-use hsd::attributes::{
-    Attribute,
-    mesh::{
-        MeshAttr,
-        Topology,
+use hsd::{
+    attributes::{
+        Attribute,
+        mesh::{
+            MeshAttr,
+            Topology,
+        },
+        slots,
     },
-    slots,
+    bounds::MAX_MESH_ELEMENTS,
 };
 use thiserror::Error;
-use unavi_quota::limits::MAX_MESH_ELEMENTS;
 
 use crate::{
     HsdSlots,

@@ -27,10 +27,7 @@ use crate::{
     state::{
         entities,
         message::StateMsg,
-        replicas::{
-            self,
-            PeerId,
-        },
+        replicas,
     },
 };
 
@@ -70,7 +67,6 @@ pub async fn recv_state_stream(
     _tx: SendStream,
     mut rx: RecvStream,
 ) -> anyhow::Result<()> {
-    let peer_id = *peer.as_bytes();
     // Racing connections to the same peer share one state entity; the
     // generation lets only the latest stream tear it down, so a superseded
     // connection's exit cannot erase the peer's replicated state.
@@ -78,7 +74,7 @@ pub async fn recv_state_stream(
     let (ent_tx, ent_rx) = async_channel::bounded(1);
     if AsyncCommands::default()
         .push(move |world: &mut World| {
-            let ent = entities::claim_remote_peer(world, peer_id, generation);
+            let ent = entities::claim_remote_peer(world, peer, generation);
             let _ = ent_tx.try_send(ent);
         })
         .send()
@@ -88,7 +84,7 @@ pub async fn recv_state_stream(
         bail!("async command queue closed");
     }
     let peer_ent = ent_rx.recv().await.context("claim remote peer")?;
-    let res = recv_loop(peer_ent, peer_id, &mut rx).await;
+    let res = recv_loop(peer_ent, peer, &mut rx).await;
     let _ = AsyncCommands::default()
         .push(move |world: &mut World| {
             entities::release_remote_peer(world, peer_ent, generation);
@@ -100,7 +96,7 @@ pub async fn recv_state_stream(
 
 async fn recv_loop(
     peer_ent: bevy::prelude::Entity,
-    peer: PeerId,
+    peer: EndpointId,
     rx: &mut RecvStream,
 ) -> anyhow::Result<()> {
     loop {

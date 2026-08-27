@@ -13,20 +13,15 @@ use iroh_docs::NamespaceId;
 
 pub mod presence;
 
-static SELF_PEER: RwLock<Option<[u8; 32]>> = RwLock::new(None);
+static SELF_PEER: RwLock<Option<EndpointId>> = RwLock::new(None);
 
+/// The local endpoint id, once the iroh endpoint exists.
 #[must_use]
-pub fn self_peer_id() -> Option<[u8; 32]> {
+pub fn self_peer_id() -> Option<EndpointId> {
     *SELF_PEER.read().expect("SELF_PEER poisoned")
 }
 
-/// The local endpoint id, once the iroh endpoint exists.
-pub fn self_endpoint_id() -> anyhow::Result<EndpointId> {
-    let peer = self_peer_id().ok_or_else(|| anyhow::anyhow!("no local endpoint"))?;
-    Ok(EndpointId::from_bytes(&peer)?)
-}
-
-pub fn set_self_peer_id(peer: [u8; 32]) {
+pub fn set_self_peer_id(peer: EndpointId) {
     let mut current = SELF_PEER.write().expect("SELF_PEER poisoned");
     if let Some(existing) = *current
         && existing != peer
@@ -39,19 +34,6 @@ pub fn set_self_peer_id(peer: [u8; 32]) {
 #[must_use]
 pub fn self_did() -> Option<String> {
     crate::identity::local().map(|l| l.identity.did().to_string())
-}
-
-/// Trust scores key off the local DID, so the table loaded at startup is worth
-/// nothing until the identity this process runs as is known.
-pub fn score_once_identified(mut scored: Local<bool>) {
-    let Some(local) = crate::identity::local() else {
-        return;
-    };
-    if *scored {
-        return;
-    }
-    *scored = true;
-    unavi_policy::trust::recompute(local.identity.did(), &[]);
 }
 
 /// Offers the connected peers to the blob downloader.

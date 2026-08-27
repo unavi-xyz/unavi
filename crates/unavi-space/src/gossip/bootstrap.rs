@@ -1,9 +1,6 @@
 use std::collections::BTreeSet;
 
-use iroh::{
-    EndpointId,
-    PublicKey,
-};
+use iroh::PublicKey;
 use iroh_docs::NamespaceId;
 use tracing::{
     info,
@@ -33,9 +30,7 @@ pub async fn find_bootstrap_peers(
 
         let mut listed = Vec::new();
         for presence in occupants {
-            let Ok(endpoint) = EndpointId::from_bytes(&presence.endpoint) else {
-                continue;
-            };
+            let endpoint = presence.endpoint;
             listed.push(endpoint.fmt_short().to_string());
             if endpoint == ctx.endpoint.id() {
                 continue;

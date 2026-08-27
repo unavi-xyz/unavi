@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use bevy::ecs::component::Component;
-use unavi_quota::{
+use unavi_policy::quota::{
     Flow,
     Quota,
     QuotaError,
@@ -23,9 +23,9 @@ const MAX_SLEEP: Duration = Duration::from_millis(250);
 
 /// Spends `n` of `flow`, waiting for the bucket to refill rather than failing.
 ///
-/// Sound only for [`Flow`] — a [`unavi_quota::Stock`] is released by something
-/// else acting, so waiting on one is a deadlock, not backpressure, and those
-/// keep erroring.
+/// Sound only for [`Flow`] — a [`unavi_policy::quota::Stock`] is released by
+/// something else acting, so waiting on one is a deadlock, not backpressure,
+/// and those keep erroring.
 ///
 /// Nothing is taken until the reservation says `Ready`, so dropping this
 /// future leaves every bucket untouched.

@@ -34,7 +34,7 @@ impl ProtocolHandler for SpaceProtocol {
 
         // The remote dialed, so this connection is canonical only if their id is
         // greater than ours.
-        let canonical = self_peer_id().is_none_or(|s| *peer.as_bytes() > s);
+        let canonical = self_peer_id().is_none_or(|s| peer > s);
         let Some((token, cancel_rx)) = claim_connection(peer, canonical) else {
             connection.close(VarInt::from_u32(1), b"already connected");
             return Ok(());

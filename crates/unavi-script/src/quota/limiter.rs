@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use unavi_quota::{
+use unavi_policy::quota::{
     Quota,
     Stock,
 };

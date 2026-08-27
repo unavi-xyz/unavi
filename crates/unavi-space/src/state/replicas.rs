@@ -15,12 +15,16 @@ use std::{
 };
 
 use hsd::id::DocId;
+use iroh::EndpointId;
 use iroh_docs::NamespaceId;
 use parking_lot::Mutex;
-use unavi_quota::{
-    Quota,
-    Stock,
-    StockHold,
+use unavi_policy::{
+    quota::{
+        Quota,
+        Stock,
+        StockHold,
+    },
+    registry::Policy,
 };
 use web_time::{
     SystemTime,
@@ -40,34 +44,27 @@ use crate::{
     },
 };
 
-pub type PeerId = [u8; 32];
-
 pub const KV_KEY_MAX_BYTES: usize = 256;
 
 /// Caps peer-supplied timestamps to within the clock skew of local time, so a
 /// forged future `at` cannot pin ownership/authority or win KV merges forever.
 const MAX_CLOCK_SKEW_MILLIS: u64 = 5 * 60 * 1000;
 
-/// A KV cell merged last-write-wins. `value: None` is a retained tombstone, so
-/// a delete keeps winning over an older live write on another peer.
-struct OwnedCell {
+/// A KV cell, merged last-write-wins by `(at, peer)`. `value: None` is a
+/// retained tombstone, so a delete keeps winning over an older live write.
+///
+/// Cells live on the document, never under the peer that wrote one, so a cell
+/// survives exactly as long as the document does. Ownership of a document
+/// migrates to the next-oldest pinner when its owner leaves; keeping the cells
+/// under that peer's replica would drop the state while the content it belongs
+/// to carried on.
+struct Cell {
     at:    u64,
-    value: Option<Vec<u8>>,
-    hold:  StockHold,
-}
-
-/// A space-owned (neutral) KV cell. Stored on the document rather than under
-/// any peer, so it persists once written until explicitly deleted or every
-/// peer forgets the document; `peer` is only the merge tiebreak.
-struct NeutralCell {
-    at:    u64,
-    peer:  PeerId,
+    peer:  EndpointId,
     value: Option<Vec<u8>>,
     hold:  StockHold,
     /// Exactly one prior version, making "revert everything peer X wrote" a
-    /// scan of the neutral map rather than a general undo log. Neutral cells
-    /// outlive their writer's disconnect, so they are otherwise unreachable by
-    /// a block.
+    /// scan of the cell map rather than a general undo log.
     prev:  Option<Box<Self>>,
 }
 
@@ -76,18 +73,16 @@ fn cell_bytes(key: &str, value: Option<&[u8]>) -> u64 {
 }
 
 /// One peer's contribution to a document: its pin (timestamped, so the oldest
-/// pin owns the doc), its latest object-authority claim, and the owner-authored
-/// KV it wrote while owning the doc.
+/// pin owns the doc) and its latest object-authority claim.
 #[derive(Default)]
 struct PeerDocEntry {
     pin:       Option<u64>,
     authority: Option<u64>,
-    kv:        HashMap<String, OwnedCell>,
 }
 
 impl PeerDocEntry {
-    fn is_empty(&self) -> bool {
-        self.pin.is_none() && self.authority.is_none() && self.kv.is_empty()
+    const fn is_empty(&self) -> bool {
+        self.pin.is_none() && self.authority.is_none()
     }
 }
 
@@ -100,10 +95,10 @@ struct PeerReplica {
 /// authority claims and KV cells keeping the presence alive; `_doc_hold`
 /// charges one `Documents` unit while the doc is known locally.
 struct DocPresence {
-    space:      NamespaceId,
-    _doc_hold:  StockHold,
-    neutral_kv: HashMap<String, NeutralCell>,
-    refs:       u32,
+    space:     NamespaceId,
+    _doc_hold: StockHold,
+    kv:        HashMap<String, Cell>,
+    refs:      u32,
 }
 
 /// Every peer's replicated state (self included), per-document presence, and
@@ -111,7 +106,7 @@ struct DocPresence {
 /// [`crate::state::entities`].
 #[derive(Default)]
 struct ReplicatedPeerState {
-    peers:   HashMap<PeerId, PeerReplica>,
+    peers:   HashMap<EndpointId, PeerReplica>,
     docs:    HashMap<NamespaceId, DocPresence>,
     senders: HashMap<u64, async_channel::Sender<StateMsg>>,
 }
@@ -137,7 +132,7 @@ impl ReplicatedPeerState {
             v.insert(DocPresence {
                 space,
                 _doc_hold: hold,
-                neutral_kv: HashMap::new(),
+                kv: HashMap::new(),
                 refs: 0,
             });
         }
@@ -170,7 +165,7 @@ impl ReplicatedPeerState {
     }
 
     /// Removes a peer's entry for `doc` once it holds no data.
-    fn prune_entry(&mut self, peer: PeerId, doc: NamespaceId) {
+    fn prune_entry(&mut self, peer: EndpointId, doc: NamespaceId) {
         if let Some(replica) = self.peers.get_mut(&peer)
             && let Entry::Occupied(e) = replica.docs.entry(doc)
             && e.get().is_empty()
@@ -181,7 +176,7 @@ impl ReplicatedPeerState {
 
     fn add_pin(
         &mut self,
-        peer: PeerId,
+        peer: EndpointId,
         doc: NamespaceId,
         space: NamespaceId,
         at: u64,
@@ -208,7 +203,7 @@ impl ReplicatedPeerState {
 
     fn remove_pin(
         &mut self,
-        peer: PeerId,
+        peer: EndpointId,
         doc: NamespaceId,
         reassign: &mut Vec<(NamespaceId, NamespaceId)>,
     ) {
@@ -225,7 +220,7 @@ impl ReplicatedPeerState {
 
     fn add_authority(
         &mut self,
-        peer: PeerId,
+        peer: EndpointId,
         doc: NamespaceId,
         space: NamespaceId,
         at: u64,
@@ -249,7 +244,7 @@ impl ReplicatedPeerState {
         true
     }
 
-    fn remove_authority(&mut self, peer: PeerId, doc: NamespaceId) {
+    fn remove_authority(&mut self, peer: EndpointId, doc: NamespaceId) {
         if let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc))
             && entry.authority.take().is_some()
         {
@@ -258,129 +253,93 @@ impl ReplicatedPeerState {
         }
     }
 
+    /// Writes a cell on `doc`, or refuses when `peer` may not write it.
+    ///
+    /// Who may write is the whole difference between a space-owned document and
+    /// a peer-owned one. Where the cell is stored is not: both land on the
+    /// document.
     fn add_kv(
         &mut self,
-        peer: PeerId,
+        peer: EndpointId,
         doc: NamespaceId,
         space: NamespaceId,
         key: String,
         value: Option<Vec<u8>>,
         at: u64,
         quota: &Arc<Quota>,
-    ) -> Result<KvPlacement, KvError> {
-        let neutral = self.is_space_owned(space, doc);
-        if !neutral && self.owner(space, doc) != Some(peer) {
+    ) -> Result<(), KvError> {
+        if !self.is_space_owned(space, doc) && self.owner(space, doc) != Some(peer) {
             return Err(KvError::NotOwner);
         }
         if !self.ensure_presence(doc, space, quota) {
             return Err(KvError::QuotaExceeded);
         }
+
         let new_bytes = cell_bytes(&key, value.as_deref());
-        if neutral {
-            let inserted = {
-                let presence = self.docs.get_mut(&doc).expect("presence ensured");
-                match presence.neutral_kv.entry(key) {
-                    Entry::Occupied(mut o) => {
-                        if at < o.get().at {
-                            Ok(false)
-                        } else if let Ok(hold) = quota.hold(Stock::KvMemory, new_bytes) {
-                            let cell = o.get_mut();
-                            // The outgoing version keeps its own hold and
-                            // becomes the fallback; whatever it replaces is
-                            // dropped, releasing that hold. Depth stays one.
-                            let displaced = NeutralCell {
-                                at:    cell.at,
-                                peer:  cell.peer,
-                                value: cell.value.take(),
-                                hold:  std::mem::replace(&mut cell.hold, hold),
-                                prev:  None,
-                            };
-                            cell.at = at;
-                            cell.peer = peer;
-                            cell.value = value;
-                            cell.prev = Some(Box::new(displaced));
-                            Ok(false)
-                        } else {
-                            Err(KvError::QuotaExceeded)
-                        }
-                    }
-                    Entry::Vacant(v) => quota.hold(Stock::KvMemory, new_bytes).map_or(
-                        Err(KvError::QuotaExceeded),
-                        |hold| {
-                            v.insert(NeutralCell {
-                                at,
-                                peer,
-                                value,
-                                hold,
-                                prev: None,
-                            });
-                            Ok(true)
-                        },
-                    ),
-                }
-            };
-            match inserted {
-                Ok(true) => self.inc_ref(doc),
-                Ok(false) => {}
-                Err(err) => {
-                    self.prune_presence(doc);
-                    return Err(err);
-                }
-            }
-            return Ok(KvPlacement::Neutral);
-        }
         let inserted = {
-            let entry = self
-                .peers
-                .entry(peer)
-                .or_default()
-                .docs
-                .entry(doc)
-                .or_default();
-            match entry.kv.entry(key) {
+            let presence = self.docs.get_mut(&doc).expect("presence ensured");
+            match presence.kv.entry(key) {
                 Entry::Occupied(mut o) => {
                     if at < o.get().at {
                         Ok(false)
-                    } else if o.get_mut().hold.resize(new_bytes).is_err() {
-                        Err(KvError::QuotaExceeded)
-                    } else {
+                    } else if let Ok(hold) = quota.hold(Stock::KvMemory, new_bytes) {
                         let cell = o.get_mut();
+                        // The outgoing version keeps its own hold and becomes
+                        // the fallback; whatever it replaces is dropped,
+                        // releasing that hold. Depth stays one.
+                        let displaced = Cell {
+                            at:    cell.at,
+                            peer:  cell.peer,
+                            value: cell.value.take(),
+                            hold:  std::mem::replace(&mut cell.hold, hold),
+                            prev:  None,
+                        };
                         cell.at = at;
+                        cell.peer = peer;
                         cell.value = value;
+                        cell.prev = Some(Box::new(displaced));
                         Ok(false)
+                    } else {
+                        Err(KvError::QuotaExceeded)
                     }
                 }
                 Entry::Vacant(v) => quota.hold(Stock::KvMemory, new_bytes).map_or(
                     Err(KvError::QuotaExceeded),
                     |hold| {
-                        v.insert(OwnedCell { at, value, hold });
+                        v.insert(Cell {
+                            at,
+                            peer,
+                            value,
+                            hold,
+                            prev: None,
+                        });
                         Ok(true)
                     },
                 ),
             }
         };
+
         match inserted {
             Ok(true) => self.inc_ref(doc),
             Ok(false) => {}
             Err(err) => {
-                self.prune_entry(peer, doc);
                 self.prune_presence(doc);
                 return Err(err);
             }
         }
-        Ok(KvPlacement::Owned)
+        Ok(())
     }
 
     /// Restores each neutral cell `peer` last wrote to its prior version, or
     /// drops it when the prior version was also theirs — a peer cannot leave
     /// its own earlier write behind as the fallback.
-    fn revert_neutral_writes(&mut self, peer: PeerId) -> usize {
+    fn revert_writes(&mut self, peer: EndpointId) -> usize {
         let mut emptied = Vec::new();
         let mut reverted = 0;
 
         for (&doc, presence) in &mut self.docs {
             let mut dropped = 0;
-            presence.neutral_kv.retain(|_, cell| {
+            presence.kv.retain(|_, cell| {
                 if cell.peer != peer {
                     return true;
                 }
@@ -410,23 +369,11 @@ impl ReplicatedPeerState {
         reverted
     }
 
-    fn remove_kv(&mut self, peer: PeerId, doc: NamespaceId, key: &str, placement: KvPlacement) {
-        match placement {
-            KvPlacement::Neutral => {
-                if let Some(p) = self.docs.get_mut(&doc)
-                    && p.neutral_kv.remove(key).is_some()
-                {
-                    self.dec_ref(doc);
-                }
-            }
-            KvPlacement::Owned => {
-                if let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc))
-                    && entry.kv.remove(key).is_some()
-                {
-                    self.dec_ref(doc);
-                    self.prune_entry(peer, doc);
-                }
-            }
+    fn remove_kv(&mut self, doc: NamespaceId, key: &str) {
+        if let Some(presence) = self.docs.get_mut(&doc)
+            && presence.kv.remove(key).is_some()
+        {
+            self.dec_ref(doc);
         }
     }
 
@@ -439,7 +386,7 @@ impl ReplicatedPeerState {
         doc: NamespaceId,
         newest: bool,
         field: impl Fn(&PeerDocEntry) -> Option<u64>,
-    ) -> Option<PeerId> {
+    ) -> Option<EndpointId> {
         if self.docs.get(&doc).is_none_or(|p| p.space != space) {
             return None;
         }
@@ -447,8 +394,9 @@ impl ReplicatedPeerState {
             .peers
             .iter()
             .filter_map(|(pid, r)| Some((field(r.docs.get(&doc)?)?, *pid)));
-        let tiebreak =
-            |a: &(u64, PeerId), b: &(u64, PeerId)| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1));
+        let tiebreak = |a: &(u64, EndpointId), b: &(u64, EndpointId)| {
+            a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1))
+        };
         if newest {
             candidates.max_by(tiebreak)
         } else {
@@ -457,65 +405,47 @@ impl ReplicatedPeerState {
         .map(|(_, pid)| pid)
     }
 
-    fn owner(&self, space: NamespaceId, doc: NamespaceId) -> Option<PeerId> {
+    fn owner(&self, space: NamespaceId, doc: NamespaceId) -> Option<EndpointId> {
         self.resolve_peer(space, doc, false, |e| e.pin)
     }
 
     /// Transform authority for `doc`: the latest explicit claimer, or the
     /// document's owner when no one has claimed, so an owner drives its objects
     /// by default until a peer grabs them.
-    fn authority(&self, space: NamespaceId, doc: NamespaceId) -> Option<PeerId> {
+    fn authority(&self, space: NamespaceId, doc: NamespaceId) -> Option<EndpointId> {
         self.resolve_peer(space, doc, true, |e| e.authority)
             .or_else(|| self.owner(space, doc))
     }
 
-    fn merged_cell_ref(
-        &self,
-        space: NamespaceId,
-        doc: NamespaceId,
-        key: &str,
-    ) -> Option<&Option<Vec<u8>>> {
-        let presence = self.docs.get(&doc).filter(|p| p.space == space)?;
-        let owned = self.peers.iter().filter_map(|(pid, r)| {
-            let cell = r.docs.get(&doc)?.kv.get(key)?;
-            Some((cell.at, *pid, &cell.value))
-        });
-        let neutral = presence
-            .neutral_kv
-            .get(key)
-            .map(|c| (c.at, c.peer, &c.value));
-        owned
-            .chain(neutral)
-            .max_by(|a, b| a.0.cmp(&b.0).then_with(|| a.1.cmp(&b.1)))
-            .map(|(_, _, value)| value)
-    }
-
-    fn merged_cell(&self, space: NamespaceId, doc: NamespaceId, key: &str) -> Option<Vec<u8>> {
-        self.merged_cell_ref(space, doc, key).and_then(Clone::clone)
+    /// The value at `key`, or `None` for a tombstone or a key nothing wrote.
+    ///
+    /// One cell per key, so the last-write-wins merge already happened at write
+    /// time and there is nothing to resolve here.
+    fn cell(&self, space: NamespaceId, doc: NamespaceId, key: &str) -> Option<Vec<u8>> {
+        self.docs
+            .get(&doc)
+            .filter(|p| p.space == space)?
+            .kv
+            .get(key)?
+            .value
+            .clone()
     }
 
     /// Whether `doc` is space-owned: the space's base document, or a doc with
-    /// no pin-owner. Space-owned documents accept KV writes from any peer
-    /// and store them neutrally; peer-owned documents only from their
-    /// owner.
+    /// no pin-owner. Space-owned documents accept KV writes from any peer;
+    /// peer-owned documents only from their owner.
     fn is_space_owned(&self, space: NamespaceId, doc: NamespaceId) -> bool {
         doc == space || self.owner(space, doc).is_none()
     }
 
     fn key_set(&self, doc: NamespaceId) -> HashSet<String> {
-        let mut keys = HashSet::new();
-        for r in self.peers.values() {
-            if let Some(e) = r.docs.get(&doc) {
-                keys.extend(e.kv.keys().cloned());
-            }
-        }
-        if let Some(p) = self.docs.get(&doc) {
-            keys.extend(p.neutral_kv.keys().cloned());
-        }
-        keys
+        self.docs
+            .get(&doc)
+            .map(|p| p.kv.keys().cloned().collect())
+            .unwrap_or_default()
     }
 
-    fn self_snapshot(&self, me: PeerId) -> Vec<DocSnapshot> {
+    fn self_snapshot(&self, me: EndpointId) -> Vec<DocSnapshot> {
         let mut by_doc: HashMap<NamespaceId, DocSnapshot> = HashMap::new();
         if let Some(replica) = self.peers.get(&me) {
             for (doc, e) in &replica.docs {
@@ -529,21 +459,13 @@ impl ReplicatedPeerState {
                         space,
                         pin: e.pin,
                         authority: e.authority,
-                        kv: e
-                            .kv
-                            .iter()
-                            .map(|(k, c)| KvSnapshot {
-                                key:   k.clone(),
-                                value: c.value.clone(),
-                                at:    c.at,
-                            })
-                            .collect(),
+                        kv: Vec::new(),
                     },
                 );
             }
         }
         for (doc, p) in &self.docs {
-            for (key, c) in &p.neutral_kv {
+            for (key, c) in &p.kv {
                 if c.peer != me {
                     continue;
                 }
@@ -588,9 +510,9 @@ pub fn time_valid(at: u64) -> bool {
 
 /// Runs `reassign` against the document quotas after the state lock is
 /// released, since the owner resolver re-enters the store.
-fn settle_reassigns(reassign: Vec<(NamespaceId, NamespaceId)>) {
+fn settle_reassigns(policy: &Policy, reassign: Vec<(NamespaceId, NamespaceId)>) {
     for (doc, space) in reassign {
-        reassign_document_in_space(DocId(*doc.as_bytes()), DocId(*space.as_bytes()));
+        reassign_document_in_space(policy, DocId(*doc.as_bytes()), DocId(*space.as_bytes()));
     }
 }
 
@@ -617,87 +539,92 @@ pub fn broadcast(msg: &StateMsg) {
     PEER_STATE.lock().broadcast(msg);
 }
 
-/// Where a KV write landed, so the guard knows which store location to clear on
-/// drop.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum KvPlacement {
-    Owned,
-    Neutral,
-}
-
 /// Adds a peer's pin on `doc`. Returns `false` if the document quota refuses
 /// the presence. Idempotent: a repeat pin from the same peer is a no-op.
-pub fn add_pin(peer: PeerId, doc: NamespaceId, space: NamespaceId, at: u64) -> bool {
-    let quota = document_quota(DocId(*doc.as_bytes()));
+pub fn add_pin(
+    policy: &Policy,
+    peer: EndpointId,
+    doc: NamespaceId,
+    space: NamespaceId,
+    at: u64,
+) -> bool {
+    let quota = document_quota(policy, DocId(*doc.as_bytes()));
     let mut reassign = Vec::new();
     let mut state = PEER_STATE.lock();
     let ok = state.add_pin(peer, doc, space, at, &quota, &mut reassign);
     drop(state);
-    settle_reassigns(reassign);
+    settle_reassigns(policy, reassign);
     ok
 }
 
-pub fn remove_pin(peer: PeerId, doc: NamespaceId) {
+pub fn remove_pin(policy: &Policy, peer: EndpointId, doc: NamespaceId) {
     let mut reassign = Vec::new();
     let mut state = PEER_STATE.lock();
     state.remove_pin(peer, doc, &mut reassign);
     drop(state);
-    settle_reassigns(reassign);
+    settle_reassigns(policy, reassign);
 }
 
 /// Adds or refreshes a peer's authority claim on `doc`. Returns `false` if the
 /// document quota refuses the presence.
-pub fn add_authority(peer: PeerId, doc: NamespaceId, space: NamespaceId, at: u64) -> bool {
-    let quota = document_quota(DocId(*doc.as_bytes()));
+pub fn add_authority(
+    policy: &Policy,
+    peer: EndpointId,
+    doc: NamespaceId,
+    space: NamespaceId,
+    at: u64,
+) -> bool {
+    let quota = document_quota(policy, DocId(*doc.as_bytes()));
     let mut state = PEER_STATE.lock();
     let ok = state.add_authority(peer, doc, space, at, &quota);
     drop(state);
     ok
 }
 
-pub fn remove_authority(peer: PeerId, doc: NamespaceId) {
+pub fn remove_authority(peer: EndpointId, doc: NamespaceId) {
     let mut state = PEER_STATE.lock();
     state.remove_authority(peer, doc);
     drop(state);
 }
 
-/// Applies a KV write for `peer`, placing it neutrally for space-owned
-/// documents or under the peer for owner-authored ones.
+/// Applies a KV write for `peer`.
 ///
 /// Rejects writes to a peer-owned document by a non-owner, and drops writes
 /// that exceed quota.
 pub fn add_kv(
-    peer: PeerId,
+    policy: &Policy,
+    peer: EndpointId,
     doc: NamespaceId,
     space: NamespaceId,
     key: String,
     value: Option<Vec<u8>>,
     at: u64,
-) -> Result<KvPlacement, KvError> {
-    let quota = document_quota(DocId(*doc.as_bytes()));
+) -> Result<(), KvError> {
+    let quota = document_quota(policy, DocId(*doc.as_bytes()));
     let mut state = PEER_STATE.lock();
     let result = state.add_kv(peer, doc, space, key, value, at, &quota);
     drop(state);
     result
 }
 
-pub fn remove_kv(peer: PeerId, doc: NamespaceId, key: &str, placement: KvPlacement) {
+pub fn remove_kv(doc: NamespaceId, key: &str) {
     let mut state = PEER_STATE.lock();
-    state.remove_kv(peer, doc, key, placement);
+    state.remove_kv(doc, key);
     drop(state);
 }
 
-/// Rolls back every neutral cell whose current value came from `peer`.
+/// Rolls back every cell whose current value came from `peer`, returning how
+/// many changed.
 ///
-/// Returns how many cells changed. The only undo needed by hand: pins,
-/// authority claims and owner-authored KV cascade away with the peer's entity.
-pub fn revert_neutral_writes(peer: PeerId) -> usize {
+/// The undo that pins and authority claims get from the peer's entity cascade.
+/// Cells live on the document rather than the peer, so they need this instead.
+pub fn revert_writes(peer: EndpointId) -> usize {
     let mut state = PEER_STATE.lock();
-    state.revert_neutral_writes(peer)
+    state.revert_writes(peer)
 }
 
 #[must_use]
-pub fn owner(space: NamespaceId, doc: NamespaceId) -> Option<PeerId> {
+pub fn owner(space: NamespaceId, doc: NamespaceId) -> Option<EndpointId> {
     PEER_STATE.lock().owner(space, doc)
 }
 
@@ -707,7 +634,7 @@ pub fn is_self_owner(space: NamespaceId, doc: NamespaceId) -> bool {
 }
 
 #[must_use]
-pub fn authority(space: NamespaceId, doc: NamespaceId) -> Option<PeerId> {
+pub fn authority(space: NamespaceId, doc: NamespaceId) -> Option<EndpointId> {
     PEER_STATE.lock().authority(space, doc)
 }
 
@@ -727,9 +654,11 @@ pub fn has_doc(space: NamespaceId, doc: NamespaceId) -> bool {
 
 #[must_use]
 pub fn doc_kv_get(space: NamespaceId, doc: NamespaceId, key: &str) -> Option<Vec<u8>> {
-    PEER_STATE.lock().merged_cell(space, doc, key)
+    PEER_STATE.lock().cell(space, doc, key)
 }
 
+/// Every key holding a live value. A tombstone is stored but reads as absent,
+/// so it is not listed.
 #[must_use]
 pub fn doc_kv_keys(space: NamespaceId, doc: NamespaceId) -> Vec<String> {
     let state = PEER_STATE.lock();
@@ -739,11 +668,7 @@ pub fn doc_kv_keys(space: NamespaceId, doc: NamespaceId) -> Vec<String> {
     let out = state
         .key_set(doc)
         .into_iter()
-        .filter(|k| {
-            state
-                .merged_cell_ref(space, doc, k)
-                .is_some_and(Option::is_some)
-        })
+        .filter(|k| state.cell(space, doc, k).is_some())
         .collect();
     drop(state);
     out
@@ -759,7 +684,7 @@ pub fn doc_kv_total_bytes(space: NamespaceId, doc: NamespaceId) -> usize {
         .key_set(doc)
         .into_iter()
         .filter_map(|k| {
-            let len = state.merged_cell_ref(space, doc, &k)?.as_ref()?.len();
+            let len = state.cell(space, doc, &k)?.len();
             Some(k.len() + len)
         })
         .sum();
@@ -770,7 +695,7 @@ pub fn doc_kv_total_bytes(space: NamespaceId, doc: NamespaceId) -> usize {
 /// Remote peers that hold `doc`, those this client can sync the record from.
 /// Excludes the local peer; the owner is listed first as the freshest source.
 #[must_use]
-pub fn doc_holders(doc: NamespaceId) -> Vec<PeerId> {
+pub fn doc_holders(doc: NamespaceId) -> Vec<EndpointId> {
     let me = self_peer_id();
     let state = PEER_STATE.lock();
     let Some(space) = state.docs.get(&doc).map(|p| p.space) else {
@@ -828,11 +753,9 @@ pub enum KvError {
 #[cfg(feature = "devtools")]
 pub mod debug {
     use super::{
-        HashMap,
+        EndpointId,
         NamespaceId,
-        OwnedCell,
         PEER_STATE,
-        PeerId,
     };
 
     pub struct DebugKv {
@@ -840,42 +763,34 @@ pub mod debug {
         /// The cell's value bytes; `None` is a tombstone.
         pub value:  Option<Vec<u8>>,
         pub at:     u64,
-        /// The authoring peer for neutral cells; owned cells' writer is the
-        /// peer they sit under.
-        pub writer: Option<PeerId>,
+        pub writer: EndpointId,
     }
 
-    pub struct DebugDoc {
+    /// What one peer contributes to a document.
+    pub struct DebugPeerDoc {
         pub doc:       NamespaceId,
         pub space:     NamespaceId,
         pub pin:       Option<u64>,
         pub authority: Option<u64>,
-        pub kv:        Vec<DebugKv>,
+    }
+
+    /// What a document holds regardless of which peer wrote it.
+    pub struct DebugDoc {
+        pub doc:   NamespaceId,
+        pub space: NamespaceId,
+        pub kv:    Vec<DebugKv>,
     }
 
     pub struct DebugPeer {
-        pub peer: PeerId,
-        pub docs: Vec<DebugDoc>,
+        pub peer: EndpointId,
+        pub docs: Vec<DebugPeerDoc>,
     }
 
     pub struct DebugSnapshot {
-        pub peers:   Vec<DebugPeer>,
-        /// Space-owned (neutral) KV, held by documents rather than any peer.
-        pub neutral: Vec<DebugDoc>,
-    }
-
-    fn debug_kv(kv: &HashMap<String, OwnedCell>) -> Vec<DebugKv> {
-        let mut out = kv
-            .iter()
-            .map(|(k, c)| DebugKv {
-                key:    k.clone(),
-                value:  c.value.clone(),
-                at:     c.at,
-                writer: None,
-            })
-            .collect::<Vec<_>>();
-        out.sort_unstable_by(|a, b| a.key.cmp(&b.key));
-        out
+        /// Each peer's pins and authority claims.
+        pub peers: Vec<DebugPeer>,
+        /// KV, which is held by documents rather than by any peer.
+        pub docs:  Vec<DebugDoc>,
     }
 
     /// A deterministically ordered snapshot, so the panel can fingerprint it
@@ -890,12 +805,11 @@ pub mod debug {
                 let mut docs = r
                     .docs
                     .iter()
-                    .map(|(doc, e)| DebugDoc {
+                    .map(|(doc, e)| DebugPeerDoc {
                         doc:       *doc,
                         space:     state.docs.get(doc).map_or(*doc, |p| p.space),
                         pin:       e.pin,
                         authority: e.authority,
-                        kv:        debug_kv(&e.kv),
                     })
                     .collect::<Vec<_>>();
                 docs.sort_unstable_by_key(|d| *d.doc.as_bytes());
@@ -903,34 +817,32 @@ pub mod debug {
             })
             .collect::<Vec<_>>();
         peers.sort_unstable_by_key(|p| p.peer);
-        let mut neutral = state
+
+        let mut docs = state
             .docs
             .iter()
-            .filter(|(_, p)| !p.neutral_kv.is_empty())
+            .filter(|(_, p)| !p.kv.is_empty())
             .map(|(doc, p)| {
-                let mut kv = p
-                    .neutral_kv
-                    .iter()
-                    .map(|(k, c)| DebugKv {
-                        key:    k.clone(),
-                        value:  c.value.clone(),
-                        at:     c.at,
-                        writer: Some(c.peer),
-                    })
-                    .collect::<Vec<_>>();
+                let mut kv =
+                    p.kv.iter()
+                        .map(|(k, c)| DebugKv {
+                            key:    k.clone(),
+                            value:  c.value.clone(),
+                            at:     c.at,
+                            writer: c.peer,
+                        })
+                        .collect::<Vec<_>>();
                 kv.sort_unstable_by(|a, b| a.key.cmp(&b.key));
                 DebugDoc {
                     doc: *doc,
                     space: p.space,
-                    pin: None,
-                    authority: None,
                     kv,
                 }
             })
             .collect::<Vec<_>>();
-        neutral.sort_unstable_by_key(|d| *d.doc.as_bytes());
+        docs.sort_unstable_by_key(|d| *d.doc.as_bytes());
         drop(state);
-        DebugSnapshot { peers, neutral }
+        DebugSnapshot { peers, docs }
     }
 }
 
@@ -951,23 +863,30 @@ mod tests {
         NamespaceId::from(blake3::hash(seed).as_bytes())
     }
 
+    /// A distinct, valid endpoint id per seed. Arbitrary bytes are not a curve
+    /// point, so a key has to be derived rather than written down.
+    fn peer(seed: u8) -> EndpointId {
+        iroh::SecretKey::from_bytes(&[seed; 32]).public()
+    }
+
     #[test]
     fn pin_owner_is_oldest_and_releases() {
         let _g = TEST_LOCK.lock();
         reset();
+        let policy = Policy::new();
         let space = h(b"oldest-space");
         let doc = h(b"oldest-doc");
-        let early = [1u8; 32];
-        let late = [2u8; 32];
+        let early = peer(1);
+        let late = peer(2);
 
-        assert!(add_pin(late, doc, space, 20));
+        assert!(add_pin(&policy, late, doc, space, 20));
         assert_eq!(owner(space, doc), Some(late));
-        assert!(add_pin(early, doc, space, 10));
+        assert!(add_pin(&policy, early, doc, space, 10));
         assert_eq!(owner(space, doc), Some(early));
 
-        remove_pin(early, doc);
+        remove_pin(&policy, early, doc);
         assert_eq!(owner(space, doc), Some(late));
-        remove_pin(late, doc);
+        remove_pin(&policy, late, doc);
         assert_eq!(owner(space, doc), None);
         assert!(!has_doc(space, doc));
         reset();
@@ -977,16 +896,17 @@ mod tests {
     fn authority_latest_and_defaults_to_owner() {
         let _g = TEST_LOCK.lock();
         reset();
+        let policy = Policy::new();
         let space = h(b"auth-space");
         let doc = h(b"auth-doc");
-        let owner_peer = [1u8; 32];
-        let grabber = [2u8; 32];
+        let owner_peer = peer(1);
+        let grabber = peer(2);
 
-        assert!(add_pin(owner_peer, doc, space, 10));
-        assert!(add_pin(grabber, doc, space, 20));
+        assert!(add_pin(&policy, owner_peer, doc, space, 10));
+        assert!(add_pin(&policy, grabber, doc, space, 20));
         assert_eq!(authority(space, doc), Some(owner_peer));
 
-        assert!(add_authority(grabber, doc, space, 200));
+        assert!(add_authority(&policy, grabber, doc, space, 200));
         assert_eq!(authority(space, doc), Some(grabber));
         assert_eq!(owner(space, doc), Some(owner_peer));
 
@@ -995,15 +915,70 @@ mod tests {
         reset();
     }
 
+    /// The document outlives its first owner through the next-oldest pin, so
+    /// its state has to outlive them too. Cells kept under the owner's replica
+    /// went with them, leaving the content behind with an empty KV.
+    #[test]
+    fn kv_survives_the_owner_leaving() {
+        let _g = TEST_LOCK.lock();
+        reset();
+        let policy = Policy::new();
+        let space = h(b"handoff-space");
+        let doc = h(b"handoff-doc");
+        let (first, second) = (peer(1), peer(2));
+
+        assert!(add_pin(&policy, first, doc, space, 10));
+        assert!(add_pin(&policy, second, doc, space, 20));
+        assert_eq!(owner(space, doc), Some(first));
+
+        add_kv(
+            &policy,
+            first,
+            doc,
+            space,
+            "colour".into(),
+            Some(b"red".to_vec()),
+            1,
+        )
+        .expect("the owner may write");
+
+        remove_pin(&policy, first, doc);
+
+        assert_eq!(owner(space, doc), Some(second), "ownership hands off");
+        assert_eq!(
+            doc_kv_get(space, doc, "colour").as_deref(),
+            Some(&b"red"[..]),
+            "the new owner inherits the state, not an empty document"
+        );
+
+        add_kv(
+            &policy,
+            second,
+            doc,
+            space,
+            "colour".into(),
+            Some(b"blue".to_vec()),
+            2,
+        )
+        .expect("the new owner may write what it inherited");
+        assert_eq!(
+            doc_kv_get(space, doc, "colour").as_deref(),
+            Some(&b"blue"[..])
+        );
+        reset();
+    }
+
     #[test]
     fn neutral_kv_persists_across_owned_kv() {
         let _g = TEST_LOCK.lock();
         reset();
+        let policy = Policy::new();
         let space = h(b"kv-space");
-        let alice = [2u8; 32];
+        let alice = peer(2);
 
         assert_eq!(
             add_kv(
+                &policy,
                 alice,
                 space,
                 space,
@@ -1011,20 +986,20 @@ mod tests {
                 Some(b"dest".to_vec()),
                 1
             ),
-            Ok(KvPlacement::Neutral)
+            Ok(())
         );
         assert_eq!(
             doc_kv_get(space, space, "link").as_deref(),
             Some(&b"dest"[..])
         );
 
-        remove_kv(alice, space, "missing", KvPlacement::Owned);
+        remove_kv(space, "missing");
         assert_eq!(
             doc_kv_get(space, space, "link").as_deref(),
             Some(&b"dest"[..])
         );
 
-        remove_kv(alice, space, "link", KvPlacement::Neutral);
+        remove_kv(space, "link");
         assert_eq!(doc_kv_get(space, space, "link"), None);
         assert!(!has_doc(space, space));
         reset();
@@ -1034,10 +1009,12 @@ mod tests {
     fn reverting_a_peer_restores_the_value_it_overwrote() {
         let _g = TEST_LOCK.lock();
         reset();
+        let policy = Policy::new();
         let space = h(b"revert-space");
-        let (alice, mallory) = ([2u8; 32], [3u8; 32]);
+        let (alice, mallory) = (peer(2), peer(3));
 
         add_kv(
+            &policy,
             alice,
             space,
             space,
@@ -1047,6 +1024,7 @@ mod tests {
         )
         .expect("alice writes the sign");
         add_kv(
+            &policy,
             mallory,
             space,
             space,
@@ -1060,7 +1038,7 @@ mod tests {
             Some(&b"defaced"[..])
         );
 
-        assert_eq!(revert_neutral_writes(mallory), 1);
+        assert_eq!(revert_writes(mallory), 1);
         assert_eq!(
             doc_kv_get(space, space, "sign").as_deref(),
             Some(&b"welcome"[..]),
@@ -1073,13 +1051,22 @@ mod tests {
     fn reverting_drops_a_cell_the_peer_created() {
         let _g = TEST_LOCK.lock();
         reset();
+        let policy = Policy::new();
         let space = h(b"revert-new-space");
-        let mallory = [3u8; 32];
+        let mallory = peer(3);
 
-        add_kv(mallory, space, space, "spam".into(), Some(b"x".to_vec()), 1)
-            .expect("mallory writes a new cell");
+        add_kv(
+            &policy,
+            mallory,
+            space,
+            space,
+            "spam".into(),
+            Some(b"x".to_vec()),
+            1,
+        )
+        .expect("mallory writes a new cell");
 
-        assert_eq!(revert_neutral_writes(mallory), 1);
+        assert_eq!(revert_writes(mallory), 1);
         assert_eq!(
             doc_kv_get(space, space, "spam"),
             None,
@@ -1096,10 +1083,12 @@ mod tests {
     fn a_peer_cannot_leave_its_own_earlier_write_as_the_fallback() {
         let _g = TEST_LOCK.lock();
         reset();
+        let policy = Policy::new();
         let space = h(b"revert-own-space");
-        let mallory = [3u8; 32];
+        let mallory = peer(3);
 
         add_kv(
+            &policy,
             mallory,
             space,
             space,
@@ -1109,6 +1098,7 @@ mod tests {
         )
         .expect("first");
         add_kv(
+            &policy,
             mallory,
             space,
             space,
@@ -1118,7 +1108,7 @@ mod tests {
         )
         .expect("second");
 
-        revert_neutral_writes(mallory);
+        revert_writes(mallory);
         assert_eq!(
             doc_kv_get(space, space, "sign"),
             None,
@@ -1131,10 +1121,12 @@ mod tests {
     fn reverting_leaves_another_peers_cells_alone() {
         let _g = TEST_LOCK.lock();
         reset();
+        let policy = Policy::new();
         let space = h(b"revert-other-space");
-        let (alice, mallory) = ([2u8; 32], [3u8; 32]);
+        let (alice, mallory) = (peer(2), peer(3));
 
         add_kv(
+            &policy,
             alice,
             space,
             space,
@@ -1144,7 +1136,7 @@ mod tests {
         )
         .expect("alice");
 
-        assert_eq!(revert_neutral_writes(mallory), 0);
+        assert_eq!(revert_writes(mallory), 0);
         assert_eq!(
             doc_kv_get(space, space, "keep").as_deref(),
             Some(&b"mine"[..])
@@ -1156,18 +1148,35 @@ mod tests {
     fn owned_kv_gated_by_ownership() {
         let _g = TEST_LOCK.lock();
         reset();
+        let policy = Policy::new();
         let space = h(b"perm-space");
-        let owner_peer = [1u8; 32];
-        let other = [2u8; 32];
+        let owner_peer = peer(1);
+        let other = peer(2);
         let doc = h(b"perm-doc");
 
-        assert!(add_pin(owner_peer, doc, space, 1));
+        assert!(add_pin(&policy, owner_peer, doc, space, 1));
         assert_eq!(
-            add_kv(owner_peer, doc, space, "k".into(), Some(b"v".to_vec()), 2),
-            Ok(KvPlacement::Owned)
+            add_kv(
+                &policy,
+                owner_peer,
+                doc,
+                space,
+                "k".into(),
+                Some(b"v".to_vec()),
+                2
+            ),
+            Ok(())
         );
         assert!(matches!(
-            add_kv(other, doc, space, "k".into(), Some(b"v".to_vec()), 3),
+            add_kv(
+                &policy,
+                other,
+                doc,
+                space,
+                "k".into(),
+                Some(b"v".to_vec()),
+                3
+            ),
             Err(KvError::NotOwner)
         ));
         assert_eq!(doc_kv_get(space, doc, "k").as_deref(), Some(&b"v"[..]));
@@ -1178,21 +1187,30 @@ mod tests {
     fn refs_release_presence_and_quota() {
         let _g = TEST_LOCK.lock();
         reset();
+        let policy = Policy::new();
         let space = h(b"refund-space");
         let doc = h(b"refund-doc");
-        let peer = [11u8; 32];
+        let peer = peer(11);
 
-        assert!(add_pin(peer, doc, space, 1));
+        assert!(add_pin(&policy, peer, doc, space, 1));
         assert_eq!(
-            add_kv(peer, doc, space, "k".into(), Some(b"value".to_vec()), 2),
-            Ok(KvPlacement::Owned)
+            add_kv(
+                &policy,
+                peer,
+                doc,
+                space,
+                "k".into(),
+                Some(b"value".to_vec()),
+                2
+            ),
+            Ok(())
         );
-        let quota = document_quota(DocId(*doc.as_bytes()));
+        let quota = document_quota(&policy, DocId(*doc.as_bytes()));
         assert!(quota.usage(Stock::KvMemory) > 0);
         assert_eq!(quota.usage(Stock::Documents), 1);
 
-        remove_kv(peer, doc, "k", KvPlacement::Owned);
-        remove_pin(peer, doc);
+        remove_kv(doc, "k");
+        remove_pin(&policy, peer, doc);
         assert_eq!(quota.usage(Stock::KvMemory), 0);
         assert_eq!(quota.usage(Stock::Documents), 0);
         assert!(!has_doc(space, doc));

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bevy::platform::collections::HashMap;
-use unavi_quota::{
+use unavi_policy::quota::{
     Quota,
     QuotaError,
     Stock,
@@ -94,7 +94,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use unavi_quota::limits::Limits;
+    use unavi_policy::quota::limits::Limits;
 
     use super::*;
 

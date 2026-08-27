@@ -103,7 +103,7 @@ pub fn fetch_tracked_docs(
 
         let sync_from = replicas::doc_holders(doc.doc)
             .iter()
-            .filter_map(|h| peers.iter().find(|p| p.0.id.as_bytes() == h))
+            .filter_map(|h| peers.iter().find(|p| &p.0.id == h))
             .map(|p| p.0.clone())
             .collect::<Vec<_>>();
         if sync_from.is_empty() {

@@ -28,19 +28,15 @@ pub enum StateMsg {
     Unclaim {
         doc: NamespaceId,
     },
+    /// Writes `key` on `doc`. A `value` of `None` is a tombstone, which is how
+    /// a delete propagates — a cell belongs to the document, so a peer tearing
+    /// down locally never tells anyone else to drop theirs.
     Kv {
         doc:   NamespaceId,
         space: NamespaceId,
         key:   String,
         value: Option<Vec<u8>>,
         at:    u64,
-    },
-    /// Drops the peer's own cell for `key` on a peer-owned document, without
-    /// leaving a tombstone. Neutral (space-owned) cells are never forgotten
-    /// this way; they outlive any single peer.
-    KvForget {
-        doc: NamespaceId,
-        key: String,
     },
 }
 

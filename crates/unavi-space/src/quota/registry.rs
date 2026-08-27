@@ -3,15 +3,10 @@ use bevy_hsd::{
     Hsd,
     HsdDocId,
 };
-use iroh_docs::NamespaceId;
 use unavi_policy::{
     membership::SpaceOwner,
+    registry::Policy,
     space::Space,
-};
-use unavi_quota::registry::{
-    forget_document,
-    forget_peer,
-    forget_space,
 };
 
 use crate::{
@@ -25,6 +20,7 @@ pub fn reassign_doc_quota(
     trigger: On<Insert, SpaceOwner>,
     docs: Query<(&HsdDocId, &SpaceOwner), With<Hsd>>,
     spaces: Query<&Space>,
+    policy: Res<Policy>,
 ) {
     let Ok((record, owner)) = docs.get(trigger.entity) else {
         return;
@@ -32,25 +28,17 @@ pub fn reassign_doc_quota(
     let Ok(space) = spaces.get(owner.0) else {
         return;
     };
-    reassign_document_in_space(record.0, space.doc_id());
+    reassign_document_in_space(&policy, record.0, space.doc_id());
 }
 
-/// Keyed off the document id itself: every document has one, so none can
-/// leave its quota entry behind by never having acquired some other marker.
-pub fn forget_document_quota(trigger: On<Remove, HsdDocId>, docs: Query<&HsdDocId>) {
-    if let Ok(doc) = docs.get(trigger.entity) {
-        forget_document(NamespaceId::from(&doc.0.0));
-    }
-}
-
-pub fn forget_space_quota(trigger: On<Remove, Space>, spaces: Query<&Space>) {
+pub fn forget_space_quota(trigger: On<Remove, Space>, spaces: Query<&Space>, policy: Res<Policy>) {
     if let Ok(space) = spaces.get(trigger.entity) {
-        forget_space(space.0);
+        policy.forget_space(space.doc_id());
     }
 }
 
-pub fn forget_peer_quota(trigger: On<Remove, Peer>, peers: Query<&Peer>) {
+pub fn forget_peer_quota(trigger: On<Remove, Peer>, peers: Query<&Peer>, policy: Res<Policy>) {
     if let Ok(peer) = peers.get(trigger.entity) {
-        forget_peer(NamespaceId::from(peer.0.id.as_bytes()));
+        policy.forget_peer(peer.0.id);
     }
 }

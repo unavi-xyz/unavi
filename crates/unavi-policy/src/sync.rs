@@ -8,7 +8,7 @@ use hsd::id::DocId;
 use crate::{
     document::DocumentPolicy,
     reach::Reach,
-    registry,
+    registry::Policy,
 };
 
 /// Everything the world can say about one document, read off its entity.
@@ -27,18 +27,24 @@ type DocumentQuery<'w, 's> = Query<
     ),
 >;
 
-fn sync(entity: Entity, docs: &DocumentQuery, prims: &Query<&HsdChild>, ids: &Query<&HsdDocId>) {
-    let Ok((doc, policy, reach, parent)) = docs.get(entity) else {
+fn sync(
+    policy: &Policy,
+    entity: Entity,
+    docs: &DocumentQuery,
+    prims: &Query<&HsdChild>,
+    ids: &Query<&HsdDocId>,
+) {
+    let Ok((doc, document, reach, parent)) = docs.get(entity) else {
         return;
     };
     let host = host_of(parent, prims, ids);
-    let inherited = host.map(|host| registry::get(host).policy);
+    let inherited = host.map(|host| policy.get(host).policy);
 
-    registry::update(doc.0, |record| {
+    policy.update(doc.0, |record| {
         // A prefab instance runs with the policy of the document that composed
         // it in; anything else with a policy of its own states it directly.
-        if let Some(policy) = policy.copied().or(inherited) {
-            record.policy = policy;
+        if let Some(document) = document.copied().or(inherited) {
+            record.policy = document;
         }
         if let Some(reach) = reach {
             record.reach = *reach;
@@ -64,8 +70,9 @@ pub fn sync_on_doc_id(
     docs: DocumentQuery,
     prims: Query<&HsdChild>,
     ids: Query<&HsdDocId>,
+    policy: Res<Policy>,
 ) {
-    sync(trigger.entity, &docs, &prims, &ids);
+    sync(&policy, trigger.entity, &docs, &prims, &ids);
 }
 
 pub fn sync_on_policy(
@@ -73,8 +80,9 @@ pub fn sync_on_policy(
     docs: DocumentQuery,
     prims: Query<&HsdChild>,
     ids: Query<&HsdDocId>,
+    policy: Res<Policy>,
 ) {
-    sync(trigger.entity, &docs, &prims, &ids);
+    sync(&policy, trigger.entity, &docs, &prims, &ids);
 }
 
 pub fn sync_on_reach(
@@ -82,15 +90,16 @@ pub fn sync_on_reach(
     docs: DocumentQuery,
     prims: Query<&HsdChild>,
     ids: Query<&HsdDocId>,
+    policy: Res<Policy>,
 ) {
-    sync(trigger.entity, &docs, &prims, &ids);
+    sync(&policy, trigger.entity, &docs, &prims, &ids);
 }
 
 /// Keyed off the document id itself: every document has one, so none can leave
 /// its record behind by never having acquired some other marker.
-pub fn forget_document(trigger: On<Remove, HsdDocId>, docs: Query<&HsdDocId>) {
+pub fn forget_document(trigger: On<Remove, HsdDocId>, docs: Query<&HsdDocId>, policy: Res<Policy>) {
     if let Ok(doc) = docs.get(trigger.entity) {
-        registry::forget(doc.0);
+        policy.forget(doc.0);
     }
 }
 
@@ -111,20 +120,24 @@ mod tests {
         trust::Trust,
     };
 
-    fn app() -> App {
+    /// An app with its own registry, so nothing here shares state with its
+    /// neighbours.
+    fn app() -> (App, Policy) {
         let mut app = App::new();
-        app.add_observer(sync_on_doc_id)
+        app.init_resource::<Policy>()
+            .add_observer(sync_on_doc_id)
             .add_observer(sync_on_policy)
             .add_observer(sync_on_reach)
             .add_observer(forget_document);
-        app
+        let policy = app.world().resource::<Policy>().clone();
+        (app, policy)
     }
 
     /// The shell is spawned with its policy and its reach alongside `LoadHsd`,
     /// and only learns its document id once a namespace has been minted.
     #[test]
     fn a_document_stated_before_it_had_an_id_still_registers() {
-        let mut app = app();
+        let (mut app, policy) = app();
         let id = DocId([21; 32]);
 
         let entity = app
@@ -132,7 +145,7 @@ mod tests {
             .spawn((DocumentPolicy::system(), Reach::own_only()))
             .id();
         assert_eq!(
-            registry::get(id).reach,
+            policy.get(id).reach,
             Reach::default(),
             "nothing keys the record until the document has an id"
         );
@@ -141,39 +154,41 @@ mod tests {
             .entity_mut(entity)
             .insert((Hsd::new(SceneState::new()), HsdDocId(id)));
 
-        assert_eq!(registry::get(id).reach, Reach::own_only());
-        assert_eq!(registry::get(id).policy.tier, Tier::System);
+        assert_eq!(policy.get(id).reach, Reach::own_only());
+        assert_eq!(policy.get(id).policy.tier, Tier::System);
 
         app.world_mut().entity_mut(entity).despawn();
-        assert_eq!(registry::get(id).policy.tier, Tier::Untrusted);
+        assert_eq!(
+            policy.get(id).policy.tier,
+            Tier::Untrusted,
+            "a despawned document must not leave its grant behind"
+        );
     }
 
     #[test]
     fn raising_the_rung_after_registration_takes_effect() {
-        let mut app = app();
+        let (mut app, policy) = app();
         let id = DocId([22; 32]);
 
         let entity = app
             .world_mut()
             .spawn((Hsd::new(SceneState::new()), HsdDocId(id)))
             .id();
-        assert_eq!(registry::get(id).reach, Reach::default());
+        assert_eq!(policy.get(id).reach, Reach::default());
 
         app.world_mut().entity_mut(entity).insert(Reach {
             writes_from: Trust::Trusted,
         });
         assert_eq!(
-            registry::get(id).reach.writes_from,
+            policy.get(id).reach.writes_from,
             Trust::Trusted,
             "a document that changes its mind must not be ignored"
         );
-
-        app.world_mut().entity_mut(entity).despawn();
     }
 
     #[test]
     fn an_instance_records_its_host_and_inherits_its_policy() {
-        let mut app = app();
+        let (mut app, policy) = app();
         let host_id = DocId([23; 32]);
 
         let host = app
@@ -188,19 +203,13 @@ mod tests {
         let prim = app.world_mut().spawn((Prim(prim_id), HsdChild(host))).id();
 
         let instance_id = DocId::instance(host_id, prim_id);
-        let instance = app
-            .world_mut()
-            .spawn((
-                Hsd::new(SceneState::new()),
-                HsdDocId(instance_id),
-                ChildOf(prim),
-            ))
-            .id();
+        app.world_mut().spawn((
+            Hsd::new(SceneState::new()),
+            HsdDocId(instance_id),
+            ChildOf(prim),
+        ));
 
-        assert_eq!(registry::get(instance_id).host, Some(host_id));
-        assert_eq!(registry::get(instance_id).policy.tier, Tier::Space);
-
-        app.world_mut().entity_mut(instance).despawn();
-        app.world_mut().entity_mut(host).despawn();
+        assert_eq!(policy.get(instance_id).host, Some(host_id));
+        assert_eq!(policy.get(instance_id).policy.tier, Tier::Space);
     }
 }

@@ -26,39 +26,8 @@ impl Bindings {
         self.0.read().get(&peer).cloned()
     }
 
-    /// For callers holding a peer id that was never parsed into an
-    /// [`EndpointId`]. Parsing one decompresses a curve point, which this
-    /// avoids on paths that run per write.
-    #[must_use]
-    pub fn did_of_bytes(&self, peer: &[u8; 32]) -> Option<Did> {
-        self.0.read().get(peer).cloned()
-    }
-
     #[must_use]
     pub fn is_bound(&self, peer: EndpointId) -> bool {
         self.0.read().contains_key(&peer)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use iroh::SecretKey;
-
-    use super::*;
-
-    #[test]
-    fn a_raw_lookup_finds_a_typed_key() {
-        let peer = SecretKey::generate().public();
-        let did = "did:web:example.com".parse::<Did>().expect("did");
-
-        let bindings = Bindings::default();
-        bindings.bind(peer, did.clone());
-
-        assert_eq!(
-            bindings.did_of_bytes(peer.as_bytes()),
-            Some(did),
-            "`EndpointId` must hash identically to its bytes, or `did_of_bytes` \
-             silently finds nothing"
-        );
     }
 }

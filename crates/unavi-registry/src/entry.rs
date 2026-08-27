@@ -1,3 +1,4 @@
+use iroh::EndpointId;
 use iroh_docs::NamespaceId;
 use serde::{
     Deserialize,
@@ -46,7 +47,7 @@ impl Signable for Submission {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Presence {
     pub did:      Did,
-    pub endpoint: [u8; 32],
+    pub endpoint: EndpointId,
     pub ns:       NamespaceId,
     pub expires:  i64,
 }

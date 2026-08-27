@@ -13,19 +13,21 @@ workspace = true
 anyhow.workspace      = true
 bevy                  = { default-features = true, workspace = true }
 bevy-hsd.path         = "../bevy-hsd"
-blake3.workspace      = true
 hsd.path              = "../hsd"
+iroh.workspace        = true
 iroh-docs.workspace   = true
 parking_lot.workspace = true
-rand.workspace        = true
 serde                 = { features = ["derive"], workspace = true }
 thiserror.workspace   = true
 toml.workspace        = true
 tracing.workspace     = true
 unavi-identity.path   = "../unavi-identity"
-unavi-quota.path      = "../unavi-quota"
 unavi-store.path      = "../unavi-store"
+web-time.workspace    = true
 xdid.workspace        = true
 
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+sysinfo = { default-features = false, features = ["system"], version = "0.38.4" }
+
 [dev-dependencies]
-iroh.workspace = true
+blake3.workspace = true

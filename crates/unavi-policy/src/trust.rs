@@ -4,25 +4,15 @@ use std::{
 };
 
 use anyhow::Context;
+use iroh::EndpointId;
 use parking_lot::RwLock;
 use serde::{
     Deserialize,
     Serialize,
 };
 use unavi_identity::auth::bindings::Bindings;
-use unavi_store::local::{
-    Storage,
-    decode_hex,
-    encode_hex,
-};
+use unavi_store::local::Storage;
 use xdid::core::did::Did;
-
-/// Transitive trust through the vouch graph.
-///
-/// Only the local root doc is discoverable today, so no foreign vouch can ever
-/// be fetched; this gains real effect once a peer's root doc can be found from
-/// its DID.
-pub mod vouch;
 
 /// How much a peer is trusted, as one ordinal rung.
 ///
@@ -39,9 +29,7 @@ pub enum Trust {
     /// at with no configuration and no prompt.
     #[default]
     Guest,
-    /// Reachable through someone already trusted.
-    Known,
-    /// Explicitly trusted.
+    /// Marked by the local user.
     Trusted,
     /// The local user.
     Myself,
@@ -66,33 +54,23 @@ impl Trust {
 static OVERRIDES: LazyLock<RwLock<HashMap<Did, Trust>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
-/// Rungs the vouch graph concluded. Recomputed, never edited, and always lost
-/// to an override.
-static COMPUTED: LazyLock<RwLock<HashMap<Did, Trust>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
-
 /// The rung `peer` sits at.
 ///
 /// A peer that has proved no DID cannot rise above [`Trust::Guest`]: an
 /// unproven claim is not an identity, so there is nothing to have an opinion
 /// about.
 #[must_use]
-pub fn of_peer(peer: [u8; 32], bindings: &Bindings) -> Trust {
+pub fn of_peer(peer: EndpointId, bindings: &Bindings) -> Trust {
     bindings
-        .did_of_bytes(&peer)
+        .did_of(peer)
         .map_or(Trust::Guest, |did| of_did(&did))
 }
 
-/// What the user said, else what the graph worked out, else the default: an
-/// override wins outright, so a block takes effect the moment it is set and no
-/// rising score can undo it.
+/// What the user said about `did`, or [`Trust::Guest`] if they have said
+/// nothing.
 #[must_use]
 pub fn of_did(did: &Did) -> Trust {
-    let manual = OVERRIDES.read().get(did).copied();
-    if let Some(trust) = manual {
-        return trust;
-    }
-    COMPUTED.read().get(did).copied().unwrap_or_default()
+    OVERRIDES.read().get(did).copied().unwrap_or_default()
 }
 
 pub fn set_override(did: Did, trust: Trust) {
@@ -103,69 +81,6 @@ pub fn clear_override(did: &Did) {
     OVERRIDES.write().remove(did);
 }
 
-/// Weights the local user has vouched at, keyed by DID.
-///
-/// The plaintext side of what gets published as salted hashes: a voucher knows
-/// who it vouched for, and only the voucher does.
-static MY_VOUCHES: LazyLock<RwLock<HashMap<Did, u8>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
-
-/// Public, and stable for as long as the vouch list is: rotating it would
-/// orphan every hash already published under it.
-static SALT: LazyLock<RwLock<[u8; 16]>> = LazyLock::new(|| RwLock::new(rand::random()));
-
-#[must_use]
-pub fn salt() -> [u8; 16] {
-    *SALT.read()
-}
-
-#[must_use]
-pub fn my_vouches() -> HashMap<Did, u8> {
-    MY_VOUCHES.read().clone()
-}
-
-/// Vouches for `did` at `weight`, then re-derives every computed rung.
-pub fn add_vouch(me: &Did, did: Did, weight: u8) {
-    MY_VOUCHES.write().insert(did, weight.min(100));
-    recompute(me, &[]);
-}
-
-pub fn remove_vouch(me: &Did, did: &Did) {
-    MY_VOUCHES.write().remove(did);
-    recompute(me, &[]);
-}
-
-/// Rebuilds every computed rung from the local vouches plus `foreign`, the
-/// vouches other peers published.
-pub fn recompute(me: &Did, foreign: &[(Did, [u8; 16], Vec<vouch::Vouch>)]) {
-    let mine = MY_VOUCHES.read().clone();
-
-    let mut graph = vouch::Graph::default();
-    for (did, weight) in &mine {
-        graph.add(me.clone(), did.clone(), *weight);
-    }
-
-    let candidates = mine
-        .keys()
-        .cloned()
-        .chain(foreign.iter().map(|(did, ..)| did.clone()))
-        .collect::<Vec<_>>();
-    for (voucher, salt, published) in foreign {
-        graph.add_published(voucher.clone(), salt, published, &candidates);
-    }
-
-    // Scored before the table is taken, so a walk over a large graph does not
-    // hold every reader of a rung waiting on it.
-    let scored = candidates
-        .into_iter()
-        .map(|did| {
-            let rung = vouch::rung(graph.score(me, &did));
-            (did, rung)
-        })
-        .collect::<HashMap<_, _>>();
-    *COMPUTED.write() = scored;
-}
-
 /// The table's key in a [`Storage`], and the previous good copy kept beside it.
 const TABLE_KEY: &str = "trust.toml";
 const BACKUP_KEY: &str = "trust.toml.bak";
@@ -173,11 +88,7 @@ const BACKUP_KEY: &str = "trust.toml.bak";
 #[derive(Default, Serialize, Deserialize)]
 struct Stored {
     #[serde(default)]
-    salt:    String,
-    #[serde(default)]
-    peers:   HashMap<String, Trust>,
-    #[serde(default)]
-    vouches: HashMap<String, u8>,
+    peers: HashMap<String, Trust>,
 }
 
 /// Loads the manual rungs from `storage`, discarding entries that no longer
@@ -187,31 +98,15 @@ struct Stored {
 /// coming up clean would silently un-block every peer the user ejected. The
 /// previous good copy is tried first so a truncated write is survivable.
 pub fn load(storage: &Storage) -> anyhow::Result<()> {
-    let stored = match storage.read(TABLE_KEY) {
-        Ok(Some(text)) => Some(toml::from_str::<Stored>(&text).context("parse trust table")?),
-        Ok(None) => None,
+    let stored = match read_table(storage, TABLE_KEY) {
+        Ok(None) => return Ok(()),
+        Ok(Some(stored)) => stored,
         Err(err) => {
-            // The backup is only a rescue when it parses; missing or broken are
-            // both the same loss as the table itself.
             tracing::warn!(?err, "trust table unreadable, falling back to the backup");
-            Some(match storage.read(BACKUP_KEY)? {
-                Some(text) => {
-                    toml::from_str::<Stored>(&text).context("parse the backup trust table")?
-                }
-                None => {
-                    return Err(err).context("the trust table is unreadable and no backup exists");
-                }
-            })
+            read_table(storage, BACKUP_KEY)?
+                .ok_or_else(|| err.context("no backup trust table exists"))?
         }
     };
-    let Some(stored) = stored else {
-        return Ok(());
-    };
-
-    match hex_to_salt(&stored.salt) {
-        Ok(bytes) => *SALT.write() = bytes,
-        Err(err) => tracing::warn!(?err, "keeping the session salt"),
-    }
 
     let mut table = OVERRIDES.write();
     for (did, trust) in stored.peers {
@@ -224,35 +119,33 @@ pub fn load(storage: &Storage) -> anyhow::Result<()> {
     }
     drop(table);
 
-    let mut vouches = MY_VOUCHES.write();
-    for (did, weight) in stored.vouches {
-        match did.parse::<Did>() {
-            Ok(did) => {
-                vouches.insert(did, weight.min(100));
-            }
-            Err(err) => tracing::warn!(?err, %did, "dropping unparseable vouch"),
-        }
-    }
-    drop(vouches);
-
     Ok(())
 }
 
+/// `Ok(None)` when nothing is recorded at `key`.
+///
+/// A table that is present but will not parse is an `Err`, the same answer as
+/// one that cannot be read at all. A truncated write leaves valid UTF-8 that is
+/// not valid TOML, so treating the two alike is what makes the backup reachable
+/// in the case it exists for.
+fn read_table(storage: &Storage, key: &str) -> anyhow::Result<Option<Stored>> {
+    let Some(text) = storage.read(key)? else {
+        return Ok(None);
+    };
+    Ok(Some(
+        toml::from_str(&text).with_context(|| format!("parse {key}"))?,
+    ))
+}
+
 /// Writes the previous good copy aside, then replaces the table through the
-/// backend's atomic write: a trust table half-written by a crash reads as no
-/// blocks at all.
+/// backend's atomic write. A trust table half-written by a crash would read as
+/// no blocks at all.
 pub fn save(storage: &Storage) -> anyhow::Result<()> {
     let stored = Stored {
-        salt:    encode_hex(&*SALT.read()),
-        peers:   OVERRIDES
+        peers: OVERRIDES
             .read()
             .iter()
             .map(|(did, trust)| (did.to_string(), *trust))
-            .collect(),
-        vouches: MY_VOUCHES
-            .read()
-            .iter()
-            .map(|(did, weight)| (did.to_string(), *weight))
             .collect(),
     };
 
@@ -264,16 +157,6 @@ pub fn save(storage: &Storage) -> anyhow::Result<()> {
     }
 
     storage.write(TABLE_KEY, &text)
-}
-
-/// Operates on bytes: `text.len()` is a byte count, and slicing a `&str` at a
-/// byte offset that is not a character boundary panics — on a file the user
-/// can edit.
-fn hex_to_salt(text: &str) -> anyhow::Result<[u8; 16]> {
-    let bytes = decode_hex(text).context("salt is not hex")?;
-    bytes
-        .try_into()
-        .map_err(|_| anyhow::anyhow!("salt must be 16 bytes"))
 }
 
 #[cfg(test)]
@@ -294,10 +177,6 @@ mod tests {
         SecretKey::generate().public()
     }
 
-    fn me() -> Did {
-        Did::from_str("did:web:me.example").expect("did")
-    }
-
     /// A fresh table on disk, distinct per test so parallel runs never share a
     /// file, under the shared globals the lock serializes.
     fn storage() -> (std::path::PathBuf, Storage) {
@@ -313,7 +192,7 @@ mod tests {
 
     #[test]
     fn an_unproven_peer_is_a_guest() {
-        assert_eq!(of_peer([3; 32], &Bindings::default()), Trust::Guest);
+        assert_eq!(of_peer(peer(), &Bindings::default()), Trust::Guest);
     }
 
     #[test]
@@ -325,37 +204,17 @@ mod tests {
 
         let (first, second) = (peer(), peer());
         bindings.bind(first, did.clone());
-        assert_eq!(of_peer(*first.as_bytes(), &bindings), Trust::Trusted);
+        assert_eq!(of_peer(first, &bindings), Trust::Trusted);
 
         bindings.unbind(first);
         bindings.bind(second, did.clone());
         assert_eq!(
-            of_peer(*second.as_bytes(), &bindings),
+            of_peer(second, &bindings),
             Trust::Trusted,
             "the same DID on a new endpoint keeps its rung"
         );
 
         clear_override(&did);
-    }
-
-    #[test]
-    fn a_users_own_decision_beats_what_the_graph_worked_out() {
-        let _guard = TEST_LOCK.lock().expect("test lock");
-        let did = Did::from_str("did:web:demoted.example").expect("did");
-
-        add_vouch(&me(), did.clone(), 100);
-        assert_eq!(of_did(&did), Trust::Trusted);
-
-        set_override(did.clone(), Trust::Blocked);
-        assert_eq!(
-            of_did(&did),
-            Trust::Blocked,
-            "a block must take effect against a peer the graph rates highly"
-        );
-
-        clear_override(&did);
-        assert_eq!(of_did(&did), Trust::Trusted);
-        remove_vouch(&me(), &did);
     }
 
     #[test]
@@ -365,43 +224,15 @@ mod tests {
 
         let blocked = Did::from_str("did:web:blocked.example").expect("did");
         set_override(blocked.clone(), Trust::Blocked);
-        MY_VOUCHES
-            .write()
-            .insert(Did::from_str("did:web:vouched.example").expect("did"), 90);
-        let before = *SALT.read();
         save(&storage).expect("save");
 
         OVERRIDES.write().clear();
-        MY_VOUCHES.write().clear();
-        *SALT.write() = [0; 16];
         load(&storage).expect("load");
 
         assert_eq!(of_did(&blocked), Trust::Blocked);
-        assert_eq!(
-            MY_VOUCHES.read().values().copied().next(),
-            Some(90),
-            "a vouch list round-trips whether or not the graph reads it"
-        );
-        assert_eq!(
-            *SALT.read(),
-            before,
-            "rotating the salt would orphan every hash already published"
-        );
 
         clear_override(&blocked);
-        MY_VOUCHES.write().clear();
         std::fs::remove_dir_all(&dir).ok();
-    }
-
-    #[test]
-    fn a_salt_that_is_not_hex_is_refused_rather_than_panicking() {
-        for salt in ["", "aa", "€€€€€€€€€€€", &"z".repeat(32)] {
-            assert!(
-                hex_to_salt(salt).is_err(),
-                "a hand-editable file must not reach a slicing panic"
-            );
-        }
-        assert_eq!(hex_to_salt(&"ab".repeat(16)).expect("hex"), [0xAB; 16]);
     }
 
     #[test]
@@ -446,20 +277,13 @@ mod tests {
     #[test]
     fn the_ladder_is_ordered_from_blocked_up() {
         assert!(Trust::Blocked < Trust::Guest);
-        assert!(Trust::Guest < Trust::Known);
-        assert!(Trust::Known < Trust::Trusted);
+        assert!(Trust::Guest < Trust::Trusted);
         assert!(Trust::Trusted < Trust::Myself);
     }
 
     #[test]
     fn a_blocked_peer_clears_nothing() {
-        for required in [
-            Trust::Blocked,
-            Trust::Guest,
-            Trust::Known,
-            Trust::Trusted,
-            Trust::Myself,
-        ] {
+        for required in [Trust::Blocked, Trust::Guest, Trust::Trusted, Trust::Myself] {
             assert!(
                 !Trust::Blocked.clears(required),
                 "blocked must not clear {required:?}"
@@ -470,7 +294,7 @@ mod tests {
     #[test]
     fn the_default_rung_clears_the_open_default() {
         assert!(Trust::default().clears(Trust::Guest));
-        assert!(!Trust::Guest.clears(Trust::Known));
+        assert!(!Trust::Guest.clears(Trust::Trusted));
         assert!(Trust::Myself.clears(Trust::Trusted));
     }
 }

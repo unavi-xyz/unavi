@@ -87,8 +87,7 @@ pub fn disconnect(peer: EndpointId) {
 /// that proved none is a guest, so this refuses nobody by default.
 pub fn is_blocked(peer: EndpointId) -> bool {
     bindings().is_some_and(|bindings| {
-        unavi_policy::trust::of_peer(*peer.as_bytes(), &bindings)
-            == unavi_policy::trust::Trust::Blocked
+        unavi_policy::trust::of_peer(peer, &bindings) == unavi_policy::trust::Trust::Blocked
     })
 }
 
@@ -100,7 +99,7 @@ pub fn register_protocol(
     mut commands: Commands,
 ) {
     if let Ok(endpoint) = endpoints.get(trigger.entity) {
-        crate::peer::set_self_peer_id(*endpoint.0.id().as_bytes());
+        crate::peer::set_self_peer_id(endpoint.0.id());
     }
     commands.spawn((
         RouterBuilderFn(Some(Box::new(|builder| {

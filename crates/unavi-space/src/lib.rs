@@ -11,6 +11,7 @@ use unavi_manifold::{
 };
 
 pub mod anchor;
+pub mod check;
 mod connection;
 #[cfg(feature = "devtools")] mod devtools;
 mod gossip;
@@ -33,7 +34,6 @@ pub struct SpacePlugin {
 }
 
 const TICKRATE_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
-const VOUCH_PUBLISH_INTERVAL: Duration = Duration::from_mins(5);
 
 impl Plugin for SpacePlugin {
     fn build(&self, app: &mut App) {
@@ -51,17 +51,11 @@ impl Plugin for SpacePlugin {
 
         app.add_systems(Startup, identity::install_local);
 
-        app.add_systems(
-            FixedUpdate,
-            trust::publish_vouches.run_if(on_timer(VOUCH_PUBLISH_INTERVAL)),
-        );
-
         app.init_resource::<anchor::SpaceGridAllocator>()
             .init_resource::<anchor::ActiveSpace>()
             .init_resource::<travel::PendingTravel>()
             .add_observer(anchor::assign_anchor)
             .add_observer(quota::registry::reassign_doc_quota)
-            .add_observer(quota::registry::forget_document_quota)
             .add_observer(quota::registry::forget_space_quota)
             .add_observer(quota::registry::forget_peer_quota)
             .add_observer(anchor::reparent_doc_traveler)
@@ -111,7 +105,6 @@ impl Plugin for SpacePlugin {
                         .run_if(on_timer(TICKRATE_UPDATE_INTERVAL)),
                     peer::presence::manage_peers,
                     peer::publish_blob_providers,
-                    peer::score_once_identified,
                     scene::instantiate_pending_scenes,
                     scene::pinned_docs::fetch_tracked_docs,
                     scene::pinned_docs::instantiate_tracked_docs,

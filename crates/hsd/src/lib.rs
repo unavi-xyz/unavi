@@ -1,4 +1,5 @@
 pub mod attributes;
+pub mod bounds;
 pub mod id;
 pub mod key;
 pub mod meta;

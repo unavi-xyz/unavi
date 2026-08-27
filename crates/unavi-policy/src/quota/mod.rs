@@ -8,9 +8,8 @@ use parking_lot::Mutex;
 use web_time::Instant;
 
 pub mod limits;
-pub mod registry;
 
-use crate::limits::Limits;
+use crate::quota::limits::Limits;
 
 /// A countable, releasable resource: held while live, refunded when freed.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]

@@ -63,7 +63,7 @@ pub fn publish_presence(
         return;
     };
     let did = local.identity.did().clone();
-    let endpoint_id = *endpoint.0.id().as_bytes();
+    let endpoint_id = endpoint.0.id();
 
     for space in due {
         last.insert(space.0, now);

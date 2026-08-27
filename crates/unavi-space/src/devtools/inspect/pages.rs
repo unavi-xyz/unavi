@@ -7,10 +7,10 @@ use unavi_policy::trust::Trust;
 
 use crate::devtools::inspect::{
     BackButton,
-    BlockButton,
     ExpandButton,
     Expanded,
     Page,
+    RungButton,
     model::{
         DocModel,
         PageModel,
@@ -28,7 +28,7 @@ pub fn build(
 ) {
     header(b, model, can_back);
     match model {
-        PageModel::Peer(m) => peer_page(b, m, expanded),
+        PageModel::Peer(m) => peer_page(b, m),
         PageModel::Space(m) => space_page(b, m),
         PageModel::Doc(m) => doc_page(b, m, expanded),
     }
@@ -42,7 +42,7 @@ fn header(b: &mut RelatedSpawnerCommands<ChildOf>, model: &PageModel, can_back: 
         match model {
             PageModel::Peer(m) => {
                 r.spawn(widgets::value_text("Peer".into()));
-                widgets::chip(r, &m.id, Page::Peer(m.id));
+                widgets::chip(r, m.id.as_bytes(), Page::Peer(m.id));
                 if m.is_self {
                     r.spawn(widgets::dim_text("(self)"));
                 }
@@ -57,15 +57,10 @@ fn header(b: &mut RelatedSpawnerCommands<ChildOf>, model: &PageModel, can_back: 
                 };
                 r.spawn(widgets::value_text(format!("{:?}", m.trust)));
                 if !m.is_self && m.did.is_some() {
-                    let blocked = m.trust == Trust::Blocked;
-                    widgets::small_button(
-                        r,
-                        if blocked { "unblock" } else { "block" },
-                        BlockButton {
-                            peer: m.id,
-                            blocked,
-                        },
-                    );
+                    for rung in [Trust::Trusted, Trust::Blocked] {
+                        let (label, button) = RungButton::new(m.id, rung, m.trust);
+                        widgets::small_button(r, label, button);
+                    }
                 }
             }
             PageModel::Space(m) => {
@@ -89,8 +84,8 @@ fn header(b: &mut RelatedSpawnerCommands<ChildOf>, model: &PageModel, can_back: 
     });
 }
 
-fn peer_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &PeerModel, expanded: &Expanded) {
-    if m.pins.is_empty() && m.claims.is_empty() && m.kv.is_empty() {
+fn peer_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &PeerModel) {
+    if m.pins.is_empty() && m.claims.is_empty() {
         b.spawn(widgets::dim_text("(no state)"));
         return;
     }
@@ -127,28 +122,6 @@ fn peer_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &PeerModel, expanded: &
             }
         });
     }
-
-    if !m.kv.is_empty() {
-        b.spawn(widgets::section_title("Key-Value"));
-        b.spawn(widgets::grid_node(5)).with_children(|g| {
-            for h in ["doc", "key", "size", "written", ""] {
-                g.spawn(widgets::header_cell(h));
-            }
-            for row in &m.kv {
-                widgets::chip(g, row.doc.as_bytes(), Page::Doc(row.doc));
-                g.spawn(widgets::value_text(row.key.clone()));
-                kv_value_cells(
-                    g,
-                    row.doc,
-                    &row.key,
-                    row.at,
-                    row.value.as_deref(),
-                    expanded,
-                    5,
-                );
-            }
-        });
-    }
 }
 
 fn space_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &SpaceModel) {
@@ -163,7 +136,7 @@ fn space_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &SpaceModel) {
             for row in &m.docs {
                 widgets::chip(g, row.doc.as_bytes(), Page::Doc(row.doc));
                 match row.owner {
-                    Some(owner) => widgets::chip(g, &owner, Page::Peer(owner)),
+                    Some(owner) => widgets::chip(g, owner.as_bytes(), Page::Peer(owner)),
                     None => {
                         g.spawn(widgets::dim_text("space"));
                     }
@@ -180,7 +153,7 @@ fn space_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &SpaceModel) {
     } else {
         b.spawn(widgets::row_node()).with_children(|r| {
             for peer in &m.peers {
-                widgets::chip(r, peer, Page::Peer(*peer));
+                widgets::chip(r, peer.as_bytes(), Page::Peer(*peer));
             }
         });
     }
@@ -195,14 +168,14 @@ fn doc_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &DocModel, expanded: &Ex
         }
         g.spawn(widgets::header_cell("owner"));
         match m.owner {
-            Some(owner) => widgets::chip(g, &owner, Page::Peer(owner)),
+            Some(owner) => widgets::chip(g, owner.as_bytes(), Page::Peer(owner)),
             None => {
                 g.spawn(widgets::dim_text("space"));
             }
         }
         g.spawn(widgets::header_cell("authority"));
         match m.authority {
-            Some(authority) => widgets::chip(g, &authority, Page::Peer(authority)),
+            Some(authority) => widgets::chip(g, authority.as_bytes(), Page::Peer(authority)),
             None => {
                 g.spawn(widgets::dim_text("-"));
             }
@@ -228,7 +201,7 @@ fn doc_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &DocModel, expanded: &Ex
                 g.spawn(widgets::header_cell(h));
             }
             for (peer, at) in &m.pinned_by {
-                widgets::chip(g, peer, Page::Peer(*peer));
+                widgets::chip(g, peer.as_bytes(), Page::Peer(*peer));
                 g.spawn((
                     widgets::AgoText(*at),
                     widgets::value_text(widgets::fmt_ago(*at)),
@@ -255,10 +228,7 @@ fn doc_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &DocModel, expanded: &Ex
             for row in &m.kv {
                 g.spawn(widgets::value_text(row.key.clone()));
                 g.spawn(widgets::row_node()).with_children(|w| {
-                    widgets::chip(w, &row.writer, Page::Peer(row.writer));
-                    if row.neutral {
-                        w.spawn(widgets::dim_text("neutral"));
-                    }
+                    widgets::chip(w, row.writer.as_bytes(), Page::Peer(row.writer));
                 });
                 kv_value_cells(
                     g,

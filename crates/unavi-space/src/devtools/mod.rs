@@ -24,7 +24,7 @@ impl Plugin for SpaceDevToolsPlugin {
             .add_observer(inspect::handle_link)
             .add_observer(inspect::handle_back)
             .add_observer(inspect::handle_expand)
-            .add_observer(inspect::handle_block)
+            .add_observer(inspect::handle_rung)
             .add_systems(
                 Update,
                 (

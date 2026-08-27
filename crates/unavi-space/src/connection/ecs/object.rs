@@ -32,12 +32,15 @@ use hsd::id::{
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
 use unavi_policy::{
-    check::space_of,
+    registry::Policy,
     space::Space,
 };
 use web_time::Instant;
 
-use crate::state::replicas;
+use crate::{
+    check::space_of,
+    state::replicas,
+};
 
 /// Replicas key by 32 opaque bytes, which a document id equally is.
 fn ns(id: DocId) -> NamespaceId {
@@ -83,6 +86,7 @@ pub fn send_object_poses(
         Option<&AngularVelocity>,
     )>,
     mut streams: Query<(Entity, &ObjectSender, &mut LastObjectTick)>,
+    policy: Res<Policy>,
     commands: ParallelCommands,
 ) {
     let now = time.elapsed();
@@ -99,7 +103,7 @@ pub fn send_object_poses(
                 return None;
             }
             let doc = roots.get(child_of.0).ok()?.0;
-            let space = space_of(doc)?;
+            let space = space_of(&policy, doc)?;
             if !replicas::is_self_authority(ns(space), ns(doc)) {
                 return None;
             }
@@ -198,7 +202,7 @@ pub fn apply_remote_objects(
     for ((peer, doc, prim), (recv, resolved)) in updates {
         // Only the document's current authority may move it, and never the
         // local peer.
-        if replicas::authority(ns(resolved.space), ns(doc)) != Some(*peer.as_bytes())
+        if replicas::authority(ns(resolved.space), ns(doc)) != Some(peer)
             || replicas::is_self_authority(ns(resolved.space), ns(doc))
         {
             continue;
@@ -279,13 +283,14 @@ pub struct ReplicaObject;
 pub fn reconcile_object_authority(
     roots: Query<&HsdDocId>,
     prims: Query<(Entity, &HsdChild, &RigidBody, Has<ReplicaObject>), With<Prim>>,
+    policy: Res<Policy>,
     mut commands: Commands,
 ) {
     for (entity, child_of, body, is_replica) in &prims {
         let Some(doc) = roots.get(child_of.0).ok().map(|r| r.0) else {
             continue;
         };
-        let remote_controlled = space_of(doc).is_some_and(|space| {
+        let remote_controlled = space_of(&policy, doc).is_some_and(|space| {
             replicas::authority(ns(space), ns(doc)).is_some()
                 && !replicas::is_self_authority(ns(space), ns(doc))
         });

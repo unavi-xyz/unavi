@@ -1,8 +1,10 @@
-use unavi_policy::error::PolicyError;
-use unavi_quota::{
-    Flow,
-    QuotaError,
-    Stock,
+use unavi_policy::{
+    error::PolicyError,
+    quota::{
+        Flow,
+        QuotaError,
+        Stock,
+    },
 };
 use unavi_space::state::replicas::KvError;
 

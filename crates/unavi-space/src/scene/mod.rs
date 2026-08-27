@@ -126,9 +126,7 @@ async fn occupant_peers(ns: NamespaceId, self_id: Option<EndpointId>) -> Vec<End
             continue;
         };
         for presence in occupants {
-            let Ok(id) = EndpointId::from_bytes(&presence.endpoint) else {
-                continue;
-            };
+            let id = presence.endpoint;
             if Some(id) == self_id {
                 continue;
             }

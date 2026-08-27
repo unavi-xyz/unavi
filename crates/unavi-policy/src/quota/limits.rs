@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 
 use crate::{
-    Flow,
-    Stock,
+    quota::{
+        Flow,
+        Stock,
+    },
+    trust::Trust,
 };
 
 #[derive(Clone, Copy)]
@@ -38,24 +41,7 @@ impl Limits {
     }
 }
 
-const KB: usize = 1024;
-const MB: usize = 1024 * KB;
-
-/// Largest payload a single `emit` may carry, fanned out to every receptor.
-pub const MAX_EVENT_PAYLOAD_BYTES: usize = 64 * KB;
-
-/// Largest string written into a synced document (names, relationship keys).
-pub const MAX_NAME_BYTES: usize = KB;
-
-/// Largest string a single text prim may carry.
-///
-/// The renderer bounds a string again at layout time as a backstop for
-/// documents that arrived over the network; this bound is the cheaper one,
-/// stopping the bytes being stored and synced at all.
-pub const MAX_TEXT_BYTES: usize = 4 * KB;
-
-/// Largest vertex/index stream a single mesh write may upload.
-pub const MAX_MESH_ELEMENTS: usize = 4 * MB;
+const MB: usize = 1024 * 1024;
 
 /// Fraction of host RAM the combined wasm memory of every script may occupy.
 const GLOBAL_WASM_MEMORY_PERCENT: u64 = 30;
@@ -214,14 +200,38 @@ impl Limits {
             },
         )
     }
+
+    /// [`Self::peer`] scaled by the share a peer at `trust` may consume.
+    #[must_use]
+    pub fn for_trust(trust: Trust) -> Self {
+        let mut limits = Self::peer();
+        let share = match trust {
+            // A blocked peer's content gets nothing at all, rather than a
+            // small share: a zero-capacity bucket is refused on sight rather
+            // than waited on.
+            Trust::Blocked => 0.0,
+            Trust::Guest => 0.25,
+            Trust::Trusted | Trust::Myself => return limits,
+        };
+
+        for cap in limits.stock.values_mut() {
+            *cap = (*cap as f64 * share) as u64;
+        }
+        for limit in limits.flow.values_mut() {
+            limit.capacity *= share;
+            limit.refill_per_sec *= share;
+        }
+        limits
+    }
 }
 
 #[cfg(all(test, not(target_family = "wasm")))]
 mod tests {
     use super::*;
-    use crate::{
+    use crate::quota::{
         Flow,
         Quota,
+        Reservation,
     };
 
     /// A shape mesh uploads POSITION, NORMAL, `UV_0`, and its index buffer:
@@ -268,5 +278,41 @@ mod tests {
             .expect("global caps wasm memory");
         assert_eq!(budget, (total / 100) * GLOBAL_WASM_MEMORY_PERCENT);
         assert!(budget < total, "scripts never get the whole host");
+    }
+
+    #[test]
+    fn a_blocked_peer_gets_nothing_and_is_refused_immediately() {
+        let quota = Quota::root(Limits::for_trust(Trust::Blocked));
+
+        assert_eq!(
+            quota.reserve(Flow::CreatePrim, 1.0),
+            Reservation::Never,
+            "a zero bucket never fills, so waiting on it would be a lie"
+        );
+        assert!(quota.try_charge(Stock::Prims, 1).is_err());
+    }
+
+    #[test]
+    fn the_rungs_are_ordered_by_what_they_may_consume() {
+        let prims = |trust| {
+            *Limits::for_trust(trust)
+                .stock
+                .get(&Stock::Prims)
+                .expect("peer limits cap prims")
+        };
+
+        assert!(prims(Trust::Blocked) < prims(Trust::Guest));
+        assert!(prims(Trust::Guest) < prims(Trust::Trusted));
+        assert_eq!(prims(Trust::Trusted), prims(Trust::Myself));
+    }
+
+    #[test]
+    fn a_guest_still_gets_a_workable_budget() {
+        let quota = Quota::root(Limits::for_trust(Trust::Guest));
+        assert_eq!(
+            quota.reserve(Flow::CreatePrim, 100.0),
+            Reservation::Ready,
+            "a first-time visitor's prop must build without waiting"
+        );
     }
 }

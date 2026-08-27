@@ -24,6 +24,7 @@ toml.workspace        = true
 tracing.workspace     = true
 unavi-identity.path   = "../unavi-identity"
 unavi-quota.path      = "../unavi-quota"
+unavi-store.path      = "../unavi-store"
 xdid.workspace        = true
 
 [dev-dependencies]

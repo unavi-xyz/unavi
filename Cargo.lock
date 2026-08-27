@@ -13771,7 +13771,7 @@ dependencies = [
  "rstest",
  "serde",
  "unavi-devtools",
- "unavi-util",
+ "unavi-store",
  "uuid",
  "wasm-bindgen",
  "web-sys",
@@ -13852,6 +13852,7 @@ dependencies = [
  "tracing",
  "unavi-identity",
  "unavi-quota",
+ "unavi-store",
  "xdid",
 ]
 

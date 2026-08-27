@@ -687,8 +687,9 @@ pub fn remove_kv(peer: PeerId, doc: NamespaceId, key: &str, placement: KvPlaceme
     drop(state);
 }
 
-/// Rolls back every neutral cell whose current value came from `peer`,
-/// returning how many cells changed. The only undo needed by hand: pins,
+/// Rolls back every neutral cell whose current value came from `peer`.
+///
+/// Returns how many cells changed. The only undo needed by hand: pins,
 /// authority claims and owner-authored KV cascade away with the peer's entity.
 pub fn revert_neutral_writes(peer: PeerId) -> usize {
     let mut state = PEER_STATE.lock();

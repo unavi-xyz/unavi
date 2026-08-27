@@ -21,6 +21,7 @@ bevy_egui         = { optional = true, version = "0.40.1" }
 ron.workspace     = true
 serde.workspace   = true
 unavi-devtools    = { optional = true, path = "../unavi-devtools" }
+unavi-store.path  = "../unavi-store"
 uuid              = "1.25.0"
 
 [target.'cfg(target_family = "wasm")'.dependencies]
@@ -39,7 +40,6 @@ web-sys = { features = [
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 bevy_mod_xr.workspace   = true
 bevy_xr_utils.workspace = true
-unavi-util.path         = "../unavi-util"
 
 [dev-dependencies]
 rstest.workspace = true

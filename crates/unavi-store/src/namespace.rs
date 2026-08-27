@@ -1,7 +1,9 @@
+//! Every entry's value is the blob hash of its content.
+//!
 //! Every key is its own entry, so iroh-docs' per-key last-writer-wins merge
-//! resolves concurrent writes between peers. An entry's value is always a blob
-//! hash, so a replicating host fetches, tags and meters every byte without
-//! reading any of it; no dependency-tracking convention exists on top.
+//! resolves concurrent writes between peers. A replicating host fetches, tags
+//! and meters every byte without reading any of it; no dependency-tracking
+//! convention exists on top.
 
 use std::time::Duration;
 

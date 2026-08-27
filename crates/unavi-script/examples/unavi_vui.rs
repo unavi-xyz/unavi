@@ -50,7 +50,7 @@ fn main() {
         bevy_hsd::HsdPlugin,
         bevy_iroh::IrohPlugin,
         unavi_util::UtilPlugin,
-        unavi_input::InputPlugin,
+        unavi_input::InputPlugin { storage: None },
         unavi_grab::GrabPlugin,
         unavi_agent::AgentPlugin,
         unavi_avatar::AvatarPlugin,

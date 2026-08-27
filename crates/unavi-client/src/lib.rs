@@ -91,6 +91,10 @@ impl Plugin for UnaviPlugin {
         #[cfg(feature = "devtools")]
         app.add_plugins(dev_tools::ClientDevToolsPlugin);
 
+        // Built once, shared with every plugin that persists: the identity
+        // keys, the input config and the trust table all live here.
+        let storage = identity::key_storage(self.in_memory);
+
         app.add_plugins((
             unavi_physics::PhysicsPlugin,
             bevy_hsd::HsdPlugin,
@@ -98,13 +102,17 @@ impl Plugin for UnaviPlugin {
             unavi_agent::AgentPlugin,
             unavi_avatar::AvatarPlugin,
             identity::IdentityPlugin {
-                in_memory: self.in_memory,
-                sync:      secrets::sync_config(),
+                storage: storage.clone(),
+                sync:    secrets::sync_config(),
             },
-            unavi_input::InputPlugin,
+            unavi_input::InputPlugin {
+                storage: Some(storage.clone()),
+            },
             unavi_manifold::ManifoldPlugin,
             unavi_script::ScriptPlugin,
-            unavi_space::SpacePlugin,
+            unavi_space::SpacePlugin {
+                storage: Some(storage),
+            },
             unavi_util::UtilPlugin,
         ))
         .add_plugins((

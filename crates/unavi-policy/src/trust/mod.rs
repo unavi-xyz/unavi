@@ -1,7 +1,5 @@
 use std::{
     collections::HashMap,
-    fmt::Write,
-    path::PathBuf,
     sync::LazyLock,
 };
 
@@ -12,6 +10,11 @@ use serde::{
     Serialize,
 };
 use unavi_identity::auth::bindings::Bindings;
+use unavi_store::local::{
+    Storage,
+    decode_hex,
+    encode_hex,
+};
 use xdid::core::did::Did;
 
 /// Transitive trust through the vouch graph.
@@ -163,6 +166,10 @@ pub fn recompute(me: &Did, foreign: &[(Did, [u8; 16], Vec<vouch::Vouch>)]) {
     *COMPUTED.write() = scored;
 }
 
+/// The table's key in a [`Storage`], and the previous good copy kept beside it.
+const TABLE_KEY: &str = "trust.toml";
+const BACKUP_KEY: &str = "trust.toml.bak";
+
 #[derive(Default, Serialize, Deserialize)]
 struct Stored {
     #[serde(default)]
@@ -173,24 +180,28 @@ struct Stored {
     vouches: HashMap<String, u8>,
 }
 
-/// Loads the manual rungs from `dir`, discarding entries that no longer parse
-/// as DIDs rather than refusing the whole file.
+/// Loads the manual rungs from `storage`, discarding entries that no longer
+/// parse as DIDs rather than refusing the whole file.
 ///
 /// A table that cannot be read at all is an error rather than an empty start:
 /// coming up clean would silently un-block every peer the user ejected. The
 /// previous good copy is tried first so a truncated write is survivable.
-pub fn load(dir: &std::path::Path) -> anyhow::Result<()> {
-    let stored = match read_table(&table_path(dir)) {
-        Ok(stored) => stored,
+pub fn load(storage: &Storage) -> anyhow::Result<()> {
+    let stored = match storage.read(TABLE_KEY) {
+        Ok(Some(text)) => Some(toml::from_str::<Stored>(&text).context("parse trust table")?),
+        Ok(None) => None,
         Err(err) => {
+            // The backup is only a rescue when it parses; missing or broken are
+            // both the same loss as the table itself.
             tracing::warn!(?err, "trust table unreadable, falling back to the backup");
-            Some(
-                read_table(&backup_path(dir))
-                    .ok()
-                    .flatten()
-                    .ok_or(err)
-                    .context("the trust table is unreadable and has no usable backup")?,
-            )
+            Some(match storage.read(BACKUP_KEY)? {
+                Some(text) => {
+                    toml::from_str::<Stored>(&text).context("parse the backup trust table")?
+                }
+                None => {
+                    return Err(err).context("the trust table is unreadable and no backup exists");
+                }
+            })
         }
     };
     let Some(stored) = stored else {
@@ -227,22 +238,12 @@ pub fn load(dir: &std::path::Path) -> anyhow::Result<()> {
     Ok(())
 }
 
-/// `Ok(None)` when there is no file yet, which is a first run rather than a
-/// failure.
-fn read_table(path: &std::path::Path) -> anyhow::Result<Option<Stored>> {
-    match std::fs::read_to_string(path) {
-        Ok(contents) => Ok(Some(toml::from_str::<Stored>(&contents)?)),
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(err) => Err(err.into()),
-    }
-}
-
-/// Writes through a temporary file and renames over the table, keeping the
-/// previous copy: a trust table half-written by a crash reads as no blocks at
-/// all.
-pub fn save(dir: &std::path::Path) -> anyhow::Result<()> {
+/// Writes the previous good copy aside, then replaces the table through the
+/// backend's atomic write: a trust table half-written by a crash reads as no
+/// blocks at all.
+pub fn save(storage: &Storage) -> anyhow::Result<()> {
     let stored = Stored {
-        salt:    hex(&*SALT.read()),
+        salt:    encode_hex(&*SALT.read()),
         peers:   OVERRIDES
             .read()
             .iter()
@@ -255,45 +256,24 @@ pub fn save(dir: &std::path::Path) -> anyhow::Result<()> {
             .collect(),
     };
 
-    let path = table_path(dir);
-    let temp = dir.join("trust.toml.tmp");
-    std::fs::write(&temp, toml::to_string_pretty(&stored)?)?;
-    if path.exists() {
-        std::fs::rename(&path, backup_path(dir))?;
+    let text = toml::to_string_pretty(&stored)?;
+    // Whatever is current now becomes the fallback; an unreadable current is
+    // replaced rather than carried forward.
+    if let Ok(Some(previous)) = storage.read(TABLE_KEY) {
+        storage.write(BACKUP_KEY, &previous)?;
     }
-    std::fs::rename(&temp, &path)?;
-    Ok(())
+
+    storage.write(TABLE_KEY, &text)
 }
 
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().fold(String::new(), |mut out, b| {
-        let _ = write!(out, "{b:02x}");
-        out
-    })
-}
-
-/// Operates on bytes: `hex.len()` is a byte count, and slicing a `&str` at a
+/// Operates on bytes: `text.len()` is a byte count, and slicing a `&str` at a
 /// byte offset that is not a character boundary panics — on a file the user
 /// can edit.
-fn hex_to_salt(hex: &str) -> anyhow::Result<[u8; 16]> {
-    let bytes = hex.as_bytes();
-    if bytes.len() != 32 {
-        anyhow::bail!("salt must be 16 bytes")
-    }
-    let mut out = [0u8; 16];
-    for (byte, pair) in out.iter_mut().zip(bytes.as_chunks::<2>().0) {
-        let pair = std::str::from_utf8(pair).context("salt is not hex")?;
-        *byte = u8::from_str_radix(pair, 16)?;
-    }
-    Ok(out)
-}
-
-fn table_path(dir: &std::path::Path) -> PathBuf {
-    dir.join("trust.toml")
-}
-
-fn backup_path(dir: &std::path::Path) -> PathBuf {
-    dir.join("trust.toml.bak")
+fn hex_to_salt(text: &str) -> anyhow::Result<[u8; 16]> {
+    let bytes = decode_hex(text).context("salt is not hex")?;
+    bytes
+        .try_into()
+        .map_err(|_| anyhow::anyhow!("salt must be 16 bytes"))
 }
 
 #[cfg(test)]
@@ -316,6 +296,19 @@ mod tests {
 
     fn me() -> Did {
         Did::from_str("did:web:me.example").expect("did")
+    }
+
+    /// A fresh table on disk, distinct per test so parallel runs never share a
+    /// file, under the shared globals the lock serializes.
+    fn storage() -> (std::path::PathBuf, Storage) {
+        let dir = std::env::temp_dir().join(format!(
+            "unavi-trust-{}-{}",
+            std::process::id(),
+            std::thread::current().name().unwrap_or("unnamed")
+        ));
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        let storage = Storage::Path(dir.clone());
+        (dir, storage)
     }
 
     #[test]
@@ -368,8 +361,7 @@ mod tests {
     #[test]
     fn the_table_survives_a_round_trip_through_disk() {
         let _guard = TEST_LOCK.lock().expect("test lock");
-        let dir = std::env::temp_dir().join(format!("unavi-trust-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).expect("temp dir");
+        let (dir, storage) = storage();
 
         let blocked = Did::from_str("did:web:blocked.example").expect("did");
         set_override(blocked.clone(), Trust::Blocked);
@@ -377,12 +369,12 @@ mod tests {
             .write()
             .insert(Did::from_str("did:web:vouched.example").expect("did"), 90);
         let before = *SALT.read();
-        save(&dir).expect("save");
+        save(&storage).expect("save");
 
         OVERRIDES.write().clear();
         MY_VOUCHES.write().clear();
         *SALT.write() = [0; 16];
-        load(&dir).expect("load");
+        load(&storage).expect("load");
 
         assert_eq!(of_did(&blocked), Trust::Blocked);
         assert_eq!(
@@ -415,17 +407,16 @@ mod tests {
     #[test]
     fn a_corrupt_table_is_an_error_not_an_empty_start() {
         let _guard = TEST_LOCK.lock().expect("test lock");
-        let dir = std::env::temp_dir().join(format!("unavi-trust-corrupt-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).expect("temp dir");
+        let (dir, storage) = storage();
 
         assert!(
-            load(&dir).is_ok(),
+            load(&storage).is_ok(),
             "a first run has no table and that is not a failure"
         );
 
         std::fs::write(dir.join("trust.toml"), "peers = [[[").expect("write");
         assert!(
-            load(&dir).is_err(),
+            load(&storage).is_err(),
             "coming up clean would silently unblock every ejected peer"
         );
 
@@ -435,17 +426,16 @@ mod tests {
     #[test]
     fn a_truncated_write_leaves_the_previous_table_readable() {
         let _guard = TEST_LOCK.lock().expect("test lock");
-        let dir = std::env::temp_dir().join(format!("unavi-trust-backup-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).expect("temp dir");
+        let (dir, storage) = storage();
 
         let blocked = Did::from_str("did:web:kept.example").expect("did");
         set_override(blocked.clone(), Trust::Blocked);
-        save(&dir).expect("save");
-        save(&dir).expect("save again, rotating the table into the backup");
+        save(&storage).expect("save");
+        save(&storage).expect("save again, rotating the table into the backup");
 
         std::fs::write(dir.join("trust.toml"), "peers = [[[").expect("truncate");
         OVERRIDES.write().clear();
-        load(&dir).expect("the backup carries the table");
+        load(&storage).expect("the backup carries the table");
 
         assert_eq!(of_did(&blocked), Trust::Blocked);
 

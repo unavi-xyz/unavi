@@ -11,10 +11,11 @@ use crate::cursor_lock::CursorGrabState;
 #[derive(Resource, Default)]
 pub struct Captured(pub bool);
 
-/// Run condition for anything reading raw input the scene acts on, which is
-/// the wheel: every other source arrives as an action, silenced at its own
-/// end. An app without [`InputPlugin`](crate::InputPlugin) has nothing that
-/// could take the input, so the scene has it.
+/// Run condition for anything reading raw input the scene acts on.
+///
+/// That is the wheel: every other source arrives as an action, silenced at
+/// its own end. An app without [`InputPlugin`](crate::InputPlugin) has
+/// nothing that could take the input, so the scene has it.
 #[must_use]
 pub fn scene_has_input(captured: Option<Res<Captured>>) -> bool {
     captured.is_none_or(|held| !held.0)

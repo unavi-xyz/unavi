@@ -43,7 +43,7 @@ fn main() {
         bevy_hsd::HsdPlugin,
         bevy_iroh::IrohPlugin,
         unavi_util::UtilPlugin,
-        unavi_input::InputPlugin,
+        unavi_input::InputPlugin { storage: None },
         unavi_script::ScriptPlugin,
     ))
     .add_systems(Startup, init_scene);

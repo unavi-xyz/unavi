@@ -21,6 +21,7 @@ use crate::{
     devtools::inspect::model::InspectData,
     peer::self_peer_id,
     state::replicas::debug,
+    trust::TrustStorage,
 };
 
 pub mod model;
@@ -173,14 +174,22 @@ pub fn handle_back(
 
 /// Blocks or unblocks the peer whose page is open — the only UI path that
 /// reaches the trust table.
-pub fn handle_block(activate: On<Activate>, buttons: Query<&BlockButton>) {
+pub fn handle_block(
+    activate: On<Activate>,
+    buttons: Query<&BlockButton>,
+    trust: Option<Res<TrustStorage>>,
+) {
     let Ok(button) = buttons.get(activate.entity) else {
         return;
     };
+    let Some(trust) = &trust else {
+        warn!("no trust storage; cannot change a peer's rung");
+        return;
+    };
     let result = if button.blocked {
-        crate::trust::unblock(button.peer)
+        crate::trust::unblock(button.peer, &trust.0)
     } else {
-        crate::trust::eject(button.peer)
+        crate::trust::eject(button.peer, &trust.0)
     };
     if let Err(err) = result {
         warn!(?err, "cannot change a peer's rung");

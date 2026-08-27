@@ -26,7 +26,11 @@ pub mod state;
 pub mod travel;
 pub mod trust;
 
-pub struct SpacePlugin;
+pub struct SpacePlugin {
+    /// Where the trust table persists. `None` leaves blocks effective for the
+    /// session only.
+    pub storage: Option<unavi_store::local::Storage>,
+}
 
 const TICKRATE_UPDATE_INTERVAL: Duration = Duration::from_secs(5);
 const VOUCH_PUBLISH_INTERVAL: Duration = Duration::from_mins(5);
@@ -40,7 +44,10 @@ impl Plugin for SpacePlugin {
             app.add_plugins(unavi_policy::PolicyPlugin);
         }
 
-        trust::load_trust_table();
+        if let Some(storage) = &self.storage {
+            app.insert_resource(trust::TrustStorage(storage.clone()));
+            trust::load_trust_table(storage);
+        }
 
         app.add_systems(Startup, identity::install_local);
 

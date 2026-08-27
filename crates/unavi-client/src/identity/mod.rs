@@ -37,11 +37,13 @@ pub struct Auth(pub Arc<EndpointAuth>);
 pub struct Resolve(pub Arc<Resolver>);
 
 pub struct IdentityPlugin {
-    pub in_memory: bool,
-    pub sync:      SyncConfig,
+    pub storage: local::Storage,
+    pub sync:    SyncConfig,
 }
 
-fn key_storage(in_memory: bool) -> local::Storage {
+/// The storage every client-side plugin shares: nothing on `--in-memory`, the
+/// browser on wasm, the app's data directory elsewhere.
+pub fn key_storage(in_memory: bool) -> local::Storage {
     if in_memory {
         return local::Storage::Ephemeral;
     }
@@ -54,7 +56,7 @@ fn key_storage(in_memory: bool) -> local::Storage {
 
 impl Plugin for IdentityPlugin {
     fn build(&self, app: &mut App) {
-        let storage = key_storage(self.in_memory);
+        let storage = self.storage.clone();
 
         let node = match NodeIdentity::load(&storage) {
             Ok(node) => node,

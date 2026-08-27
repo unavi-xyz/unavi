@@ -229,7 +229,6 @@ pub fn instance_prefabs(
     }
 }
 
-#[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
 pub fn unpack_prefab(bytes: &[u8]) -> anyhow::Result<hsd::state::SceneState> {
     let package = Package::decode(bytes)?;
     document::unpack_into_state(package)

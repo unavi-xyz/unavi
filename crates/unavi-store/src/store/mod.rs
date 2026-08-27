@@ -288,7 +288,14 @@ async fn open_or_mint_doc(docs: &Docs, storage: &Storage, key: &str) -> anyhow::
 }
 
 fn recorded(storage: &Storage, key: &str) -> Option<NamespaceId> {
-    NamespaceId::from_str(storage.read(key)?.trim()).ok()
+    match storage.read(key) {
+        Ok(Some(text)) => NamespaceId::from_str(text.trim()).ok(),
+        Ok(None) => None,
+        Err(err) => {
+            tracing::warn!(%key, ?err, "recorded namespace is unreadable; minting a replacement");
+            None
+        }
+    }
 }
 
 /// `Docs::open` errors on a namespace this node does not hold rather than

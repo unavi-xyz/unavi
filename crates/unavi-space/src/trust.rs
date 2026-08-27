@@ -1,7 +1,4 @@
-use std::{
-    path::Path,
-    sync::Arc,
-};
+use std::sync::Arc;
 
 use bevy::prelude::*;
 use bevy_iroh::store::LocalStore;
@@ -19,6 +16,7 @@ use unavi_policy::{
         Trust,
     },
 };
+use unavi_store::local::Storage;
 use unavi_util::async_task::spawn_async_task;
 
 use crate::{
@@ -44,32 +42,14 @@ pub fn install_resolver(bindings: Arc<Bindings>) {
     });
 }
 
-/// Where the trust table persists, or `None` on wasm, which has no filesystem
-/// and holds blocks only for the life of the tab.
-#[cfg_attr(
-    target_family = "wasm",
-    expect(clippy::missing_const_for_fn, reason = "the wasm arm is a constant")
-)]
-#[cfg_attr(
-    not(target_family = "wasm"),
-    expect(
-        clippy::unnecessary_wraps,
-        reason = "mirrors the wasm arm, which returns None"
-    )
-)]
-fn table_dir() -> Option<&'static Path> {
-    cfg_select! {
-        target_family = "wasm" => None,
-        _ => Some(unavi_util::dirs::data_local_dir()),
-    }
-}
+/// Where the trust table persists, for the reads and writes that happen after
+/// the plugin has built.
+#[derive(Resource, Clone)]
+pub struct TrustStorage(pub Storage);
 
 /// Loads the persisted local trust table.
-pub fn load_trust_table() {
-    let Some(dir) = table_dir() else {
-        return;
-    };
-    if let Err(err) = trust::load(dir) {
+pub fn load_trust_table(storage: &Storage) {
+    if let Err(err) = trust::load(storage) {
         error!(
             ?err,
             "Trust table could not be read; every block is inactive this session"
@@ -83,7 +63,7 @@ pub fn load_trust_table() {
 /// teardown is not readmitted as a guest. Pins, authority claims and
 /// owner-authored KV cascade away with the connection; only neutral cells need
 /// rolling back by hand, since they outlive a disconnect.
-pub fn eject(peer: [u8; 32]) -> Result<(), NoIdentity> {
+pub fn eject(peer: [u8; 32], storage: &Storage) -> Result<(), NoIdentity> {
     let did = crate::identity::bindings()
         .and_then(|b| b.did_of_bytes(&peer))
         .ok_or(NoIdentity)?;
@@ -93,9 +73,7 @@ pub fn eject(peer: [u8; 32]) -> Result<(), NoIdentity> {
     unavi_quota::registry::forget_peer(NamespaceId::from(&peer));
     info!(reverted, "Ejected peer");
 
-    if let Some(dir) = table_dir()
-        && let Err(err) = trust::save(dir)
-    {
+    if let Err(err) = trust::save(storage) {
         warn!(?err, "failed to persist the block");
     }
 
@@ -106,15 +84,13 @@ pub fn eject(peer: [u8; 32]) -> Result<(), NoIdentity> {
 }
 
 /// Lifts a block, so the peer is judged by the graph or the default again.
-pub fn unblock(peer: [u8; 32]) -> Result<(), NoIdentity> {
+pub fn unblock(peer: [u8; 32], storage: &Storage) -> Result<(), NoIdentity> {
     let did = crate::identity::bindings()
         .and_then(|b| b.did_of_bytes(&peer))
         .ok_or(NoIdentity)?;
     trust::clear_override(&did);
     unavi_quota::registry::forget_peer(NamespaceId::from(&peer));
-    if let Some(dir) = table_dir()
-        && let Err(err) = trust::save(dir)
-    {
+    if let Err(err) = trust::save(storage) {
         warn!(?err, "failed to persist the unblock");
     }
     Ok(())
@@ -172,12 +148,18 @@ pub fn publish_vouches(stores: Query<&LocalStore>) {
         let published = async {
             let root = store.open(store.root()).await?;
             for vouch in vouches {
-                let key = format!("{VOUCH_PREFIX}{}", hex(&vouch.subject));
+                let key = format!(
+                    "{VOUCH_PREFIX}{}",
+                    unavi_store::local::encode_hex(&vouch.subject)
+                );
                 root.set(key, postcard::to_allocvec(&vouch)?).await?;
             }
             for subject in retracted {
-                root.remove(format!("{VOUCH_PREFIX}{}", hex(&subject)))
-                    .await?;
+                root.remove(format!(
+                    "{VOUCH_PREFIX}{}",
+                    unavi_store::local::encode_hex(&subject)
+                ))
+                .await?;
             }
             anyhow::Ok(())
         }
@@ -187,12 +169,4 @@ pub fn publish_vouches(stores: Query<&LocalStore>) {
             warn!(?err, "failed to publish vouches");
         }
     });
-}
-
-fn hex(bytes: &[u8]) -> String {
-    use std::fmt::Write;
-    bytes.iter().fold(String::new(), |mut out, b| {
-        let _ = write!(out, "{b:02x}");
-        out
-    })
 }

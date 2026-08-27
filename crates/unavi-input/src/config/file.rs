@@ -1,23 +1,17 @@
-#[cfg(not(target_family = "wasm"))]
-use std::{
-    fs,
-    path::PathBuf,
-};
-
 use bevy::prelude::*;
 use ron::{
     Options,
     extensions::Extensions,
     ser::PrettyConfig,
 };
+use unavi_store::local::Storage;
 
 use crate::config::{
     InputConfig,
     patch::ConfigPatch,
 };
 
-#[cfg(not(target_family = "wasm"))]
-const FILE_NAME: &str = "input.ron";
+const KEY: &str = "input.ron";
 
 /// `implicit_some` so an optional binding reads as the list it is rather than
 /// as `Some([...])`.
@@ -38,43 +32,35 @@ pub fn to_text(config: &InputConfig) -> Result<String, ron::Error> {
     )
 }
 
-#[cfg(not(target_family = "wasm"))]
+/// Reads the config, writing the defaults out first if there is nothing
+/// there. A value that fails to parse or to read is left alone — overwriting
+/// it would throw away the edit that broke it.
 #[must_use]
-pub fn path() -> PathBuf {
-    unavi_util::dirs::config_dir().join(FILE_NAME)
-}
-
-/// Reads the config, writing the defaults out first if there is nothing there.
-/// A file that fails to parse is left alone — overwriting it would throw away
-/// the edit that broke it.
-#[cfg(not(target_family = "wasm"))]
-#[must_use]
-pub fn load() -> InputConfig {
-    let path = path();
-
-    let text = match fs::read_to_string(&path) {
-        Ok(text) => text,
-        Err(err) => {
-            info!(?path, %err, "writing default input config");
+pub fn load(storage: &Storage) -> InputConfig {
+    match storage.read(KEY) {
+        Ok(Some(text)) => match parse(&text) {
+            Ok(config) => config,
+            Err(err) => {
+                error!(
+                    ?err,
+                    "input config failed to parse, falling back to defaults"
+                );
+                InputConfig::default()
+            }
+        },
+        Ok(None) => {
             let config = InputConfig::default();
-            save(&config);
-            return config;
+            save(storage, &config);
+            config
         }
-    };
-
-    match parse(&text) {
-        Ok(config) => config,
         Err(err) => {
-            error!(?path, %err, "input config failed to parse, falling back to defaults");
+            error!(?err, "input config is unreadable, falling back to defaults");
             InputConfig::default()
         }
     }
 }
 
-#[cfg(not(target_family = "wasm"))]
-pub fn save(config: &InputConfig) {
-    let path = path();
-
+pub fn save(storage: &Storage, config: &InputConfig) {
     let text = match to_text(config) {
         Ok(text) => text,
         Err(err) => {
@@ -83,7 +69,7 @@ pub fn save(config: &InputConfig) {
         }
     };
 
-    if let Err(err) = fs::write(&path, text) {
-        error!(?path, %err, "failed to write input config");
+    if let Err(err) = storage.write(KEY, &text) {
+        error!(?err, "failed to write input config");
     }
 }

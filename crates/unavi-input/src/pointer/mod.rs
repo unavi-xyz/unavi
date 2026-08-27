@@ -165,9 +165,10 @@ pub fn locate_pointers(
     }
 }
 
-/// Turns the two bound buttons into pointer presses: the trigger as primary
-/// and the grip as secondary. Bevy's own mouse pointer reaches nothing but the
-/// UI, so these are the only things that press on the world.
+/// Turns the two bound buttons into pointer presses: trigger and grip.
+///
+/// Bevy's own mouse pointer reaches nothing but the UI, so these are the
+/// only things that press on the world.
 pub fn emit_pointer_input(
     state: Res<ActionState>,
     pointers: Query<(&PointerAnchor, &PointerLocation)>,

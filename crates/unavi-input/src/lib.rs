@@ -22,16 +22,21 @@ pub mod source;
 #[derive(SystemSet, Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub struct InputReadSet;
 
-pub struct InputPlugin;
+pub struct InputPlugin {
+    /// Where the config persists. `None` falls back to the defaults every
+    /// session.
+    pub storage: Option<unavi_store::local::Storage>,
+}
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        cfg_select! {
-            target_family = "wasm" => app.init_resource::<config::InputConfig>(),
-            _ => app.insert_resource(config::file::load()),
-        };
+        let config = self
+            .storage
+            .as_ref()
+            .map(config::file::load)
+            .unwrap_or_default();
 
-        app.init_resource::<action::ActionState>()
+        app.insert_resource(config)
             .init_resource::<capture::Captured>()
             .init_resource::<pointer::backend::PointerFilter>()
             // Bevy's mouse pointer is what a person clicks an overlay with;

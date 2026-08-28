@@ -28,13 +28,11 @@ use unavi_util::async_commands::AsyncCommands;
 use web_time::Instant;
 
 use crate::connection::{
+    PeerLink,
     ecs::{
         PeerStream,
         agent::{
-            inbound::{
-                ResolvedPose,
-                submit_pose,
-            },
+            inbound::ResolvedPose,
             outbound::{
                 AgentSender,
                 OutgoingPose,
@@ -69,7 +67,7 @@ enum AgentMsg {
 
 const IFRAME_FREQ: Duration = Duration::from_secs(5);
 
-pub async fn send_agent_stream(connection: &Connection) -> anyhow::Result<()> {
+pub async fn send_agent_stream(_link: &PeerLink, connection: &Connection) -> anyhow::Result<()> {
     let (mut tx, _rx) = connection.open_bi().await?;
     StreamIdent::Agent.write(&mut tx).await?;
 
@@ -207,6 +205,7 @@ fn resolve_msg(msg: AgentMsg, baseline: &mut Option<Baseline>) -> Option<Resolve
 }
 
 pub async fn recv_agent_stream(
+    link: &PeerLink,
     peer: EndpointId,
     _tx: SendStream,
     mut rx: RecvStream,
@@ -228,7 +227,7 @@ pub async fn recv_agent_stream(
         let msg = postcard::from_bytes::<AgentMsg>(buf)?;
 
         if let Some(resolved) = resolve_msg(msg, &mut baseline) {
-            submit_pose(peer, resolved);
+            link.poses().submit(peer, (Instant::now(), resolved));
         }
     }
 }

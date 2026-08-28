@@ -28,14 +28,7 @@ use unavi_policy::{
     },
     space::Space,
 };
-use unavi_space::{
-    anchor::ActiveSpace,
-    check::{
-        read as check_read,
-        space_of,
-        write as check_write,
-    },
-};
+use unavi_space::anchor::ActiveSpace;
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
@@ -197,14 +190,14 @@ async fn spawn_child_doc(
 
     // Seeded before the spawn command applies, so the child is never briefly
     // an unplaced document that policy would have to attribute by guessing.
-    let parent = api.policy.get(api.doc_id);
-    let space = api.policy.registered_space(api.doc_id);
-    api.policy.update(id, |record| {
+    let parent = api.view.policy().get(api.doc_id);
+    let space = api.view.policy().registered_space(api.doc_id);
+    api.view.policy().update(id, |record| {
         record.policy = parent.policy;
         record.space = space;
     });
 
-    api.policy.attribute_child_document(id, api.doc_id);
+    api.view.policy().attribute_child_document(id, api.doc_id);
     AsyncCommands::default()
         .spawn((
             HsdHeld(state),
@@ -245,7 +238,7 @@ pub async fn self_document(api: &Api) -> anyhow::Result<u32> {
 
 pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
     let id = doc_id(&id)?;
-    check_read(&api.policy, api.doc_id, id)?;
+    api.view.read(api.doc_id, id)?;
 
     let mut scene = api.wired_scene.lock().await;
 
@@ -289,7 +282,7 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
 
 pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
-    if let Err(err) = check_write(&api.policy, api.doc_id, id) {
+    if let Err(err) = api.view.write(api.doc_id, id) {
         debug!(?err, "remove_document out of reach, skipping");
         return Ok(());
     }
@@ -347,10 +340,10 @@ async fn drop_replica(ns: NamespaceId) {
 pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
     let ns = namespace_of(id).await?;
-    check_write(&api.policy, api.doc_id, id)?;
+    api.view.write(api.doc_id, id)?;
     crate::quota::acquire(&api.quota, Flow::SyncDoc, 1.0).await?;
 
-    let space = if let Some(s) = space_of(&api.policy, id) {
+    let space = if let Some(s) = api.view.space_of(id) {
         s
     } else {
         let (tx, rx) = async_channel::bounded::<Option<DocId>>(1);
@@ -399,7 +392,7 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
 
     // Ownership follows from the local pin; its quota is charged to the
     // resulting owner.
-    if !unavi_space::state::entities::self_pin(NamespaceId::from(&space.0), ns).await {
+    if !unavi_space::state::entities::self_pin(api.view.me(), space, DocId(*ns.as_bytes())).await {
         anyhow::bail!("space state not tracked locally or pin over quota");
     }
 
@@ -408,7 +401,7 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
 
 pub async fn save_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
-    check_write(&api.policy, api.doc_id, id)?;
+    api.view.write(api.doc_id, id)?;
 
     let state = {
         let scene = api.wired_scene.lock().await;

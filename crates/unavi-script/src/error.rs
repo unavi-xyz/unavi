@@ -6,7 +6,7 @@ use unavi_policy::{
         Stock,
     },
 };
-use unavi_space::state::replicas::KvError;
+use unavi_space::state::cell::KvError;
 
 /// Host-side canonical error, mirroring `wired:error/types.error`.
 ///

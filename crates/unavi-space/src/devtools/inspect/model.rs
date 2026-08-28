@@ -24,25 +24,16 @@ use hsd::{
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
 use unavi_policy::{
-    registry::Policy,
     space::Space,
     trust::Trust,
 };
 
 use crate::{
     anchor::ActiveSpace,
-    devtools::{
-        conn,
-        inspect::Page,
-    },
-    peer::{
-        self_did,
-        self_peer_id,
-    },
-    state::replicas::{
-        self,
-        debug,
-    },
+    connection::PeerLink,
+    devtools::inspect::Page,
+    state::debug,
+    view::SpaceView,
 };
 
 const HSD_TREE_MAX_PRIMS: usize = 200;
@@ -64,7 +55,8 @@ pub struct InspectData<'w, 's> {
     >,
     hsds:   Query<'w, 's, &'static Hsd>,
     prims:  Query<'w, 's, &'static HsdChild>,
-    policy: Res<'w, Policy>,
+    view:   Option<Res<'w, SpaceView>>,
+    link:   Option<Res<'w, PeerLink>>,
 }
 
 #[derive(std::hash::Hash)]
@@ -134,12 +126,15 @@ pub struct DocKv {
 }
 
 impl InspectData<'_, '_> {
-    pub fn page_model(&self, page: Page, snap: &debug::DebugSnapshot) -> PageModel {
-        match page {
-            Page::Peer(id) => PageModel::Peer(peer_model(id, snap)),
-            Page::Space(space) => PageModel::Space(self.space_model(space, snap)),
-            Page::Doc(doc) => PageModel::Doc(self.doc_model(doc, snap)),
-        }
+    /// `None` until the endpoint and identity exist, since every page is
+    /// rendered relative to who the local node is.
+    pub fn page_model(&self, page: Page, snap: &debug::DebugSnapshot) -> Option<PageModel> {
+        let view = self.view.as_ref()?;
+        Some(match page {
+            Page::Peer(id) => PageModel::Peer(peer_model(view, self.link.as_deref(), id, snap)),
+            Page::Space(space) => PageModel::Space(self.space_model(view, space, snap)),
+            Page::Doc(doc) => PageModel::Doc(self.doc_model(view, doc, snap)),
+        })
     }
 }
 
@@ -150,42 +145,59 @@ pub fn active_space(
     active.and_then(|e| spaces.get(e).ok()).map(|(_, s)| s.0)
 }
 
-fn peer_model(id: EndpointId, snap: &debug::DebugSnapshot) -> PeerModel {
+fn peer_model(
+    view: &SpaceView,
+    link: Option<&PeerLink>,
+    id: EndpointId,
+    snap: &debug::DebugSnapshot,
+) -> PeerModel {
     let docs = snap
         .peers
         .iter()
         .find(|p| p.peer == id)
         .map(|p| p.docs.as_slice())
         .unwrap_or_default();
-    let is_self = self_peer_id() == Some(id);
+    let is_self = view.me() == id;
     PeerModel {
         id,
         is_self,
-        connected: conn::snapshot().iter().any(|s| s.peer == id),
+        connected: link.is_some_and(|l| l.net_stats().iter().any(|s| s.peer == id)),
         did: if is_self {
-            self_did()
+            Some(view.did())
         } else {
-            crate::identity::bindings()
-                .and_then(|b| b.did_of(id))
-                .map(|d| d.to_string())
+            view.identity().bindings.did_of(id).map(|d| d.to_string())
         },
-        trust: crate::check::trust_of(Some(id)),
+        trust: view.trust_of(Some(id)),
         pins: docs
             .iter()
-            .filter_map(|d| d.pin.map(|at| (d.doc, d.space, at)))
+            .filter_map(|d| {
+                d.pin.map(|at| {
+                    (
+                        NamespaceId::from(&d.doc.0),
+                        NamespaceId::from(&d.space.0),
+                        at,
+                    )
+                })
+            })
             .collect(),
         claims: docs
             .iter()
-            .filter_map(|d| d.authority.map(|at| (d.doc, at)))
+            .filter_map(|d| d.authority.map(|at| (NamespaceId::from(&d.doc.0), at)))
             .collect(),
     }
 }
 
 impl InspectData<'_, '_> {
-    fn space_model(&self, space: NamespaceId, snap: &debug::DebugSnapshot) -> SpaceModel {
-        let mut docs = self
-            .policy
-            .documents_in(DocId(*space.as_bytes()))
+    fn space_model(
+        &self,
+        view: &SpaceView,
+        space: NamespaceId,
+        snap: &debug::DebugSnapshot,
+    ) -> SpaceModel {
+        let space_id = DocId(*space.as_bytes());
+        let mut docs = view
+            .policy()
+            .documents_in(space_id)
             .into_iter()
             .map(|d| NamespaceId::from(&d.0))
             .collect::<Vec<_>>();
@@ -196,8 +208,8 @@ impl InspectData<'_, '_> {
             .map(|d| (d.doc, d.space))
             .chain(snap.docs.iter().map(|d| (d.doc, d.space)))
         {
-            if doc_space == space {
-                docs.push(doc);
+            if doc_space == space_id {
+                docs.push(NamespaceId::from(&doc.0));
             }
         }
         docs.sort_unstable_by_key(|d| *d.as_bytes());
@@ -210,7 +222,7 @@ impl InspectData<'_, '_> {
         let mut peers = snap
             .peers
             .iter()
-            .filter(|p| p.docs.iter().any(|d| d.space == space))
+            .filter(|p| p.docs.iter().any(|d| d.space == space_id))
             .map(|p| p.peer)
             .collect::<Vec<_>>();
         peers.sort_unstable();
@@ -221,33 +233,41 @@ impl InspectData<'_, '_> {
             active: active_space(&self.spaces, self.active.0) == Some(space),
             docs: docs
                 .into_iter()
-                .map(|doc| SpaceDocRow {
-                    doc,
-                    owner: replicas::owner(space, doc),
-                    pins: snap
-                        .peers
-                        .iter()
-                        .filter(|p| p.docs.iter().any(|d| d.doc == doc && d.pin.is_some()))
-                        .count(),
-                    instanced: self
-                        .doc_entity(doc)
-                        .is_some_and(|(_, instanced, ..)| instanced),
+                .map(|doc| {
+                    let doc_id = DocId(*doc.as_bytes());
+                    SpaceDocRow {
+                        doc,
+                        owner: view.replicas().owner(space_id, doc_id),
+                        pins: snap
+                            .peers
+                            .iter()
+                            .filter(|p| p.docs.iter().any(|d| d.doc == doc_id && d.pin.is_some()))
+                            .count(),
+                        instanced: self
+                            .doc_entity(doc)
+                            .is_some_and(|(_, instanced, ..)| instanced),
+                    }
                 })
                 .collect(),
             peers,
         }
     }
 
-    fn doc_model(&self, doc: NamespaceId, snap: &debug::DebugSnapshot) -> DocModel {
-        let space = crate::check::space_of(&self.policy, DocId(*doc.as_bytes()))
-            .map(|s| NamespaceId::from(&s.0));
+    fn doc_model(
+        &self,
+        view: &SpaceView,
+        doc: NamespaceId,
+        snap: &debug::DebugSnapshot,
+    ) -> DocModel {
+        let doc_id = DocId(*doc.as_bytes());
+        let space = view.space_of(doc_id).map(|s| NamespaceId::from(&s.0));
         let mut pinned_by = snap
             .peers
             .iter()
             .filter_map(|p| {
                 p.docs
                     .iter()
-                    .find(|d| d.doc == doc)
+                    .find(|d| d.doc == doc_id)
                     .and_then(|d| d.pin)
                     .map(|at| (p.peer, at))
             })
@@ -267,10 +287,10 @@ impl InspectData<'_, '_> {
             doc,
             space,
             is_space_base: space == Some(doc),
-            owner: space.and_then(|s| replicas::owner(s, doc)),
-            authority: space.and_then(|s| replicas::authority(s, doc)),
+            owner: space.and_then(|s| view.replicas().owner(DocId(*s.as_bytes()), doc_id)),
+            authority: space.and_then(|s| view.replicas().authority(DocId(*s.as_bytes()), doc_id)),
             pinned_by,
-            kv: doc_kv(doc, snap),
+            kv: doc_kv(doc_id, snap),
             instanced: entity.is_some_and(|(_, instanced, ..)| instanced),
             prims: entity.and_then(|(.., prims, _)| prims),
             parent: entity.and_then(|(e, ..)| self.parent_doc(e)),
@@ -315,7 +335,7 @@ impl InspectData<'_, '_> {
 ///
 /// One cell per key, so the last-write-wins merge already happened when the
 /// write landed and there is nothing to resolve here.
-fn doc_kv(doc: NamespaceId, snap: &debug::DebugSnapshot) -> Vec<DocKv> {
+fn doc_kv(doc: DocId, snap: &debug::DebugSnapshot) -> Vec<DocKv> {
     let Some(d) = snap.docs.iter().find(|d| d.doc == doc) else {
         return Vec::new();
     };
@@ -381,7 +401,7 @@ fn prim_summary(state: &SceneState, id: PrimId) -> (String, String) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::state::replicas::debug::{
+    use crate::state::debug::{
         DebugDoc,
         DebugKv,
         DebugSnapshot,
@@ -396,8 +416,8 @@ mod tests {
     /// The page shows each document's cells, and only that document's.
     #[test]
     fn a_documents_cells_are_listed_by_key() {
-        let doc = NamespaceId::from(blake3::hash(b"kv-doc").as_bytes());
-        let other = NamespaceId::from(blake3::hash(b"other-doc").as_bytes());
+        let doc = DocId(*blake3::hash(b"kv-doc").as_bytes());
+        let other = DocId(*blake3::hash(b"other-doc").as_bytes());
         let writer = peer(1);
 
         let cell = |key: &str, at| DebugKv {

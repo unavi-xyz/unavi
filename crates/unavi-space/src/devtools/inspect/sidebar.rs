@@ -9,13 +9,14 @@ use bevy::{
     },
     prelude::*,
 };
+use iroh::EndpointId;
 use iroh_docs::NamespaceId;
 use unavi_policy::space::Space;
 
 use crate::{
     anchor::ActiveSpace,
+    connection::PeerLink,
     devtools::{
-        conn,
         inspect::{
             CurrentPage,
             LinkTo,
@@ -26,8 +27,8 @@ use crate::{
         },
         short,
     },
-    peer::self_peer_id,
-    state::replicas::debug,
+    state::replicas::Replicas,
+    view::SpaceView,
 };
 
 /// The scrollable navigation list: spaces on top, then every known peer.
@@ -47,9 +48,14 @@ pub enum SidebarRow {
 #[derive(Resource, Default)]
 pub struct SidebarEntries(Vec<SidebarRow>);
 
-fn rows(spaces: &Query<(Entity, &Space)>, active: Option<NamespaceId>) -> Vec<SidebarRow> {
-    let snap = debug::snapshot();
-    let me = self_peer_id();
+fn rows(
+    spaces: &Query<(Entity, &Space)>,
+    replicas: &Replicas,
+    link: Option<&PeerLink>,
+    me: Option<EndpointId>,
+    active: Option<NamespaceId>,
+) -> Vec<SidebarRow> {
+    let snap = replicas.snapshot();
     let mut out = Vec::new();
 
     let mut space_ids = spaces.iter().map(|(_, s)| s.0).collect::<Vec<_>>();
@@ -57,8 +63,8 @@ fn rows(spaces: &Query<(Entity, &Space)>, active: Option<NamespaceId>) -> Vec<Si
         snap.peers
             .iter()
             .flat_map(|p| p.docs.iter())
-            .map(|d| d.space)
-            .chain(snap.docs.iter().map(|d| d.space)),
+            .map(|d| NamespaceId::from(&d.space.0))
+            .chain(snap.docs.iter().map(|d| NamespaceId::from(&d.space.0))),
     );
     space_ids.sort_unstable_by_key(|s| *s.as_bytes());
     space_ids.dedup();
@@ -79,7 +85,9 @@ fn rows(spaces: &Query<(Entity, &Space)>, active: Option<NamespaceId>) -> Vec<Si
         }
     }
 
-    let mut peer_ids = conn::snapshot().iter().map(|s| s.peer).collect::<Vec<_>>();
+    let mut peer_ids = link
+        .map(|l| l.net_stats().iter().map(|s| s.peer).collect::<Vec<_>>())
+        .unwrap_or_default();
     peer_ids.extend(snap.peers.iter().map(|p| p.peer));
     peer_ids.sort_unstable();
     peer_ids.dedup();
@@ -140,11 +148,20 @@ fn entry_button(l: &mut RelatedSpawnerCommands<ChildOf>, page: Page, label: Stri
 pub fn sync(
     spaces: Query<(Entity, &Space)>,
     active: Res<ActiveSpace>,
+    replicas: Res<Replicas>,
+    view: Option<Res<SpaceView>>,
+    link: Option<Res<PeerLink>>,
     mut stored: ResMut<SidebarEntries>,
     list: Query<Entity, With<SidebarList>>,
     mut commands: Commands,
 ) {
-    let rows = rows(&spaces, model::active_space(&spaces, active.0));
+    let rows = rows(
+        &spaces,
+        &replicas,
+        link.as_deref(),
+        view.as_deref().map(SpaceView::me),
+        model::active_space(&spaces, active.0),
+    );
     if rows == stored.0 {
         return;
     }
@@ -175,13 +192,14 @@ pub fn sync(
 /// Paints the entry matching the current page in the primary variant.
 pub fn highlight(
     current: Res<CurrentPage>,
+    view: Option<Res<SpaceView>>,
     added: Query<(), Added<SidebarButton>>,
     mut buttons: Query<(&SidebarButton, &mut ButtonVariant)>,
 ) {
     if !current.is_changed() && added.is_empty() {
         return;
     }
-    let chosen = effective_page(&current);
+    let chosen = effective_page(&current, view.as_deref().map(SpaceView::me));
     for (button, mut variant) in &mut buttons {
         *variant = if Some(button.0) == chosen {
             ButtonVariant::Primary

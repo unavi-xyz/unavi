@@ -1,8 +1,3 @@
-use std::sync::atomic::{
-    AtomicU64,
-    Ordering,
-};
-
 use anyhow::{
     Context,
     bail,
@@ -23,23 +18,27 @@ use tokio::io::{
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::{
-    connection::shared::StreamIdent,
+    connection::{
+        PeerLink,
+        shared::StreamIdent,
+    },
     state::{
         entities,
         message::StateMsg,
-        replicas,
     },
 };
 
 const MAX_MSG_LEN: usize = 8 * 1024 * 1024;
 
-pub async fn send_state_stream(connection: &Connection) -> anyhow::Result<()> {
+pub async fn send_state_stream(link: &PeerLink, connection: &Connection) -> anyhow::Result<()> {
     let (mut tx, _rx) = connection.open_bi().await?;
     StreamIdent::State.write(&mut tx).await?;
 
-    let (token, rx) = replicas::register_stream();
+    let me = link.view().me();
+    let replicas = link.view().replicas();
+    let (token, rx) = replicas.register_stream(me);
     let res = send_loop(&mut tx, &rx).await;
-    replicas::unregister_stream(token);
+    replicas.unregister_stream(token);
 
     res
 }
@@ -60,9 +59,8 @@ async fn send_loop(
     Ok(())
 }
 
-static STREAM_GEN: AtomicU64 = AtomicU64::new(0);
-
 pub async fn recv_state_stream(
+    link: &PeerLink,
     peer: EndpointId,
     _tx: SendStream,
     mut rx: RecvStream,
@@ -70,7 +68,7 @@ pub async fn recv_state_stream(
     // Racing connections to the same peer share one state entity; the
     // generation lets only the latest stream tear it down, so a superseded
     // connection's exit cannot erase the peer's replicated state.
-    let generation = STREAM_GEN.fetch_add(1, Ordering::Relaxed);
+    let generation = link.next_stream_gen();
     let (ent_tx, ent_rx) = async_channel::bounded(1);
     if AsyncCommands::default()
         .push(move |world: &mut World| {

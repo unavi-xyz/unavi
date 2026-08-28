@@ -13712,6 +13712,8 @@ dependencies = [
  "avian3d",
  "bevy",
  "bevy-hsd",
+ "hsd",
+ "iroh",
  "iroh-docs",
  "unavi-input",
  "unavi-physics",

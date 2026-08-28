@@ -15,9 +15,10 @@ use tracing::{
     Instrument,
     Span,
 };
-use unavi_policy::{
-    quota::Quota,
-    registry::Policy,
+use unavi_policy::quota::Quota;
+use unavi_space::{
+    quota::Viewer,
+    view::SpaceView,
 };
 use unavi_util::async_task::spawn_async_task;
 use wasmtime::{
@@ -88,9 +89,16 @@ pub fn instantiate_scripts(
     >,
     docs: Query<(&HsdDocId, &Hsd, Has<QuotaExempt>)>,
     stores: Query<&LocalStore>,
-    policy: Res<Policy>,
+    view: Option<Res<SpaceView>>,
     mut commands: Commands,
 ) {
+    let Some(view) = view else {
+        return;
+    };
+    let viewer = Viewer {
+        me:       view.me(),
+        bindings: &view.identity().bindings,
+    };
     let root_doc = stores.single().ok().map(|store| store.0.root());
 
     for (entity, script, engine_ent, name, prim, doc_ent, fixed_updating) in to_instantiate {
@@ -125,7 +133,12 @@ pub fn instantiate_scripts(
         let quota = if exempt {
             Quota::unlimited()
         } else {
-            unavi_space::quota::document_quota(&policy, doc_id.0)
+            unavi_space::quota::document_quota(
+                view.policy(),
+                view.replicas(),
+                Some(viewer),
+                doc_id.0,
+            )
         };
 
         let state = Runtime {
@@ -133,7 +146,7 @@ pub fn instantiate_scripts(
                 state: Arc::clone(&doc.0),
                 doc_id: doc_id.0,
                 prim: prim.0,
-                policy: policy.clone(),
+                view: (*view).clone(),
                 quota: Arc::clone(&quota),
                 root_doc,
                 wired_agent: Mutex::default(),

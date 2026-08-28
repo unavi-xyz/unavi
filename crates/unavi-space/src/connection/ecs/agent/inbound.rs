@@ -1,10 +1,4 @@
-use std::{
-    sync::{
-        LazyLock,
-        Mutex,
-    },
-    time::Duration,
-};
+use std::time::Duration;
 
 use bevy::{
     platform::collections::HashMap,
@@ -26,9 +20,12 @@ use unavi_manifold::EchoBody;
 use unavi_policy::space::Space;
 use web_time::Instant;
 
-use crate::peer::{
-    ActiveSpaces,
-    Peer,
+use crate::{
+    connection::PeerLink,
+    peer::{
+        ActiveSpaces,
+        Peer,
+    },
 };
 
 const MIN_LERP: Duration = Duration::from_millis(50);
@@ -38,16 +35,6 @@ pub struct ResolvedPose {
     pub space: NamespaceId,
     pub root:  Transform,
     pub bones: HashMap<BoneName, Transform>,
-}
-
-static POSE_INBOX: LazyLock<Mutex<HashMap<EndpointId, (Instant, ResolvedPose)>>> =
-    LazyLock::new(|| Mutex::new(HashMap::default()));
-
-pub fn submit_pose(peer: EndpointId, pose: ResolvedPose) {
-    POSE_INBOX
-        .lock()
-        .expect("pose inbox")
-        .insert(peer, (Instant::now(), pose));
 }
 
 #[derive(Component)]
@@ -139,9 +126,13 @@ pub fn apply_remote_poses(
     spaces: Query<(Entity, &Space)>,
     mut peers: Query<(&Peer, &mut ActiveSpaces)>,
     mut remotes: Query<(Entity, &RemoteAgent, &ChildOf, &mut PoseLerp)>,
+    link: Option<Res<PeerLink>>,
     mut commands: Commands,
 ) {
-    let updates = std::mem::take(&mut *POSE_INBOX.lock().expect("pose inbox"));
+    let Some(link) = link else {
+        return;
+    };
+    let updates = link.poses().drain();
     let now = time.elapsed_secs();
 
     for (peer, (recv, resolved)) in updates {

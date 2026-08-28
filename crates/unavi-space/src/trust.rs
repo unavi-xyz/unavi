@@ -1,17 +1,14 @@
 use bevy::prelude::*;
 use iroh::EndpointId;
-use unavi_policy::{
-    registry::Policy,
-    trust::{
-        self,
-        Trust,
-    },
+use unavi_policy::trust::{
+    self,
+    Trust,
 };
 use unavi_store::local::Storage;
 
 use crate::{
-    connection::disconnect,
-    state::replicas,
+    connection::PeerLink,
+    view::SpaceView,
 };
 
 /// Where the trust table persists, for the reads and writes that happen after
@@ -35,25 +32,30 @@ pub fn load_trust_table(storage: &Storage) {
 /// teardown is not readmitted as a guest. Pins, authority claims and
 /// owner-authored KV cascade away with the connection; only neutral cells need
 /// rolling back by hand, since they outlive a disconnect.
-pub fn eject(policy: &Policy, peer: EndpointId, storage: &Storage) -> Result<(), NoIdentity> {
-    set_rung(policy, peer, Some(Trust::Blocked), storage)?;
+pub fn eject(
+    view: &SpaceView,
+    link: &PeerLink,
+    peer: EndpointId,
+    storage: &Storage,
+) -> Result<(), NoIdentity> {
+    set_rung(view, peer, Some(Trust::Blocked), storage)?;
 
-    let reverted = replicas::revert_writes(peer);
+    let reverted = view.replicas().revert_writes(peer);
     info!(reverted, "Ejected peer");
 
-    disconnect(peer);
+    link.disconnect(peer);
     Ok(())
 }
 
 /// Lifts a block, so the peer is judged by the default again.
-pub fn unblock(policy: &Policy, peer: EndpointId, storage: &Storage) -> Result<(), NoIdentity> {
-    set_rung(policy, peer, None, storage)
+pub fn unblock(view: &SpaceView, peer: EndpointId, storage: &Storage) -> Result<(), NoIdentity> {
+    set_rung(view, peer, None, storage)
 }
 
 /// Marks `peer` as one the local user trusts, raising what its content may
 /// consume.
-pub fn trust_peer(policy: &Policy, peer: EndpointId, storage: &Storage) -> Result<(), NoIdentity> {
-    set_rung(policy, peer, Some(Trust::Trusted), storage)
+pub fn trust_peer(view: &SpaceView, peer: EndpointId, storage: &Storage) -> Result<(), NoIdentity> {
+    set_rung(view, peer, Some(Trust::Trusted), storage)
 }
 
 /// Records `rung` for `peer`, or clears it when `rung` is `None`.
@@ -62,20 +64,18 @@ pub fn trust_peer(policy: &Policy, peer: EndpointId, storage: &Storage) -> Resul
 /// owns derives its caps from the new rung. Adjusting in place would have to
 /// re-scale buckets that are partly spent.
 fn set_rung(
-    policy: &Policy,
+    view: &SpaceView,
     peer: EndpointId,
     rung: Option<Trust>,
     storage: &Storage,
 ) -> Result<(), NoIdentity> {
-    let did = crate::identity::bindings()
-        .and_then(|b| b.did_of(peer))
-        .ok_or(NoIdentity)?;
+    let did = view.identity().bindings.did_of(peer).ok_or(NoIdentity)?;
 
     match rung {
         Some(rung) => trust::set_override(did, rung),
         None => trust::clear_override(&did),
     }
-    policy.forget_peer(peer);
+    view.policy().forget_peer(peer);
 
     if let Err(err) = trust::save(storage) {
         warn!(?err, "failed to persist the trust table");

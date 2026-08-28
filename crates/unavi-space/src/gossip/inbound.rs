@@ -3,6 +3,7 @@ use std::sync::atomic::{
     Ordering,
 };
 
+use hsd::id::DocId;
 use iroh::Signature;
 use iroh_docs::NamespaceId;
 use iroh_gossip::api::{
@@ -17,17 +18,14 @@ use tracing::{
 };
 use unavi_identity::signed_bytes::SignedBytes;
 
-use crate::{
-    gossip::{
-        GossipCtx,
-        SpaceBroadcast,
-        SpaceMessage,
-    },
-    peer::presence::submit_presence,
+use crate::gossip::{
+    GossipCtx,
+    SpaceBroadcast,
+    SpaceMessage,
 };
 
 pub async fn handle_gossip_inbound(
-    _ctx: &GossipCtx,
+    ctx: &GossipCtx,
     rx: &mut GossipReceiver,
     space: NamespaceId,
     wake: &Notify,
@@ -94,7 +92,8 @@ pub async fn handle_gossip_inbound(
                             continue;
                         }
 
-                        submit_presence(peer, space);
+                        ctx.presence
+                            .submit((peer.id, DocId(*space.as_bytes())), peer);
                     }
                     SpaceMessage::Unknown(i) => {
                         warn!("Got unknown gossip variant: {i}");

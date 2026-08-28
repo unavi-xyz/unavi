@@ -15,8 +15,6 @@ use crate::{
         GossipCtx,
         SpaceBroadcast,
         SpaceMessage,
-        active_changed,
-        active_space,
     },
     peer::presence::PRESENCE_INTERVAL,
 };
@@ -27,6 +25,7 @@ pub async fn handle_gossip_outbound(
     space: NamespaceId,
     wake: &Notify,
 ) -> anyhow::Result<()> {
+    let mut active = ctx.active.clone();
     let signer = IrohSigner(ctx.endpoint.secret_key());
     let mut watcher = ctx.endpoint.watch_addr();
 
@@ -35,7 +34,7 @@ pub async fn handle_gossip_outbound(
     loop {
         // Only advertise the occupied space; peers in other loaded spaces are
         // still reached via their own broadcasts, which are all received.
-        if active_space() == Some(space) {
+        if *active.borrow_and_update() == Some(space) {
             let addr = watcher.get();
 
             info!("Broadcasting presence: {:?}", addr);
@@ -54,7 +53,9 @@ pub async fn handle_gossip_outbound(
         tokio::select! {
             () = n0_future::time::sleep(PRESENCE_INTERVAL) => {}
             () = wake.notified() => {}
-            () = active_changed().notified() => {}
+            // The sender outlives every topic task, so a closed channel is
+            // unreachable rather than a state to fall through on.
+            res = active.changed() => res?,
         }
     }
 }

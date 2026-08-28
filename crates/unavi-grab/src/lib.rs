@@ -11,6 +11,8 @@ use bevy_hsd::{
     HsdChild,
     HsdNamespace,
 };
+use hsd::id::DocId;
+use iroh::EndpointId;
 use iroh_docs::NamespaceId;
 use unavi_input::{
     crosshair::CrosshairMode,
@@ -25,11 +27,11 @@ use unavi_input::{
 use unavi_policy::space::Space;
 use unavi_space::{
     anchor::ActiveSpace,
-    peer::self_peer_id,
     state::{
         entities,
-        replicas,
+        replicas::Replicas,
     },
+    view::SpaceView,
 };
 use unavi_util::hierarchy::ancestors;
 
@@ -101,6 +103,8 @@ fn begin_grab(
     spaces: &Query<&Space>,
     parents: &Query<&ChildOf>,
     active_space: Option<Entity>,
+    replicas: &Replicas,
+    me: Option<EndpointId>,
     commands: &mut Commands,
 ) {
     let Ok(obj_tr) = transforms.get(entity) else {
@@ -118,7 +122,16 @@ fn begin_grab(
     let offset_tra = pointer_tr.rotation.inverse() * (obj_tr.translation - pointer_tr.translation);
     let offset_rot = pointer_tr.rotation.inverse() * obj_tr.rotation;
 
-    claim_doc_authority(entity, hsd_children, docs, spaces, parents, active_space);
+    claim_doc_authority(
+        entity,
+        hsd_children,
+        docs,
+        spaces,
+        parents,
+        active_space,
+        replicas,
+        me,
+    );
 
     commands.entity(entity).insert((
         Grabbed {
@@ -143,10 +156,13 @@ fn on_press(
     // skips when there is nothing to claim against.
     active_space: Option<Res<ActiveSpace>>,
     time: Res<Time>,
+    replicas: Res<Replicas>,
+    view: Option<Res<SpaceView>>,
     mut pending: ResMut<PendingGrabs>,
     mut commands: Commands,
 ) {
     let active_space = active_space.and_then(|active| active.0);
+    let me = view.as_deref().map(SpaceView::me);
 
     for press in presses.read() {
         let target = press.hit.map(|hit| hit.entity);
@@ -174,6 +190,8 @@ fn on_press(
             &spaces,
             &parents,
             active_space,
+            &replicas,
+            me,
             &mut commands,
         );
     }
@@ -205,6 +223,8 @@ fn start_pending_grabs(
     parents: Query<&ChildOf>,
     active_space: Option<Res<ActiveSpace>>,
     time: Res<Time>,
+    replicas: Res<Replicas>,
+    view: Option<Res<SpaceView>>,
     mut pending: ResMut<PendingGrabs>,
     mut commands: Commands,
 ) {
@@ -213,6 +233,7 @@ fn start_pending_grabs(
     }
 
     let active_space = active_space.and_then(|active| active.0);
+    let me = view.as_deref().map(SpaceView::me);
     let now = time.elapsed();
     let waiting = std::mem::take(&mut pending.grabs);
 
@@ -229,6 +250,8 @@ fn start_pending_grabs(
                 &spaces,
                 &parents,
                 active_space,
+                &replicas,
+                me,
                 &mut commands,
             );
         } else if now.saturating_sub(grab.since) <= PENDING_GRAB_TIMEOUT {
@@ -287,11 +310,13 @@ fn claim_doc_authority(
     spaces: &Query<&Space>,
     parents: &Query<&ChildOf>,
     active_space_entity: Option<Entity>,
+    replicas: &Replicas,
+    me: Option<EndpointId>,
 ) {
-    if self_peer_id().is_none() {
+    let Some(me) = me else {
         debug!("grab: local peer id not initialized yet, skipping authority claim");
         return;
-    }
+    };
 
     let Some((doc_entity, doc_hash)) = resolve_doc(entity, hsd_children, docs) else {
         debug!(
@@ -314,16 +339,18 @@ fn claim_doc_authority(
         return;
     };
 
+    let (space, doc) = (DocId(*space_hash.as_bytes()), DocId(*doc_hash.as_bytes()));
+
     // Only claim authority over a doc already tracked in state. An untracked
     // doc is established by the publish path; claiming here would create
     // presence ahead of that upload.
-    if !replicas::has_doc(space_hash, doc_hash) {
+    if !replicas.has_doc(space, doc) {
         debug!(doc = %doc_hash, "grab: doc not tracked in state, skipping authority claim");
         return;
     }
 
     info!(doc = %doc_hash, space = %space_hash, "grab: claiming object authority");
-    entities::claim_authority(space_hash, doc_hash);
+    entities::claim_authority(me, space, doc);
 }
 
 fn resolve_doc(
@@ -362,7 +389,7 @@ fn on_release(
         // a held object can be dragged clear of its own collider.
         for (entity, _) in held.iter().filter(|(_, g)| g.pointer == release.pointer) {
             if let Some((_, doc_hash)) = resolve_doc(entity, &hsd_children, &docs) {
-                entities::release_authority(doc_hash);
+                entities::release_authority(DocId(*doc_hash.as_bytes()));
             }
             commands
                 .entity(entity)

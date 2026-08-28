@@ -34,13 +34,13 @@ use unavi_util::async_commands::AsyncCommands;
 use web_time::Instant;
 
 use crate::connection::{
+    PeerLink,
     ecs::{
         PeerStream,
         object::{
             ObjectSender,
             OutgoingObject,
             ResolvedObject,
-            submit_object,
         },
     },
     shared::StreamIdent,
@@ -95,7 +95,7 @@ struct DocStream {
     prims:      HashMap<PrimId, SendState>,
 }
 
-pub async fn send_object_stream(connection: &Connection) -> anyhow::Result<()> {
+pub async fn send_object_stream(_link: &PeerLink, connection: &Connection) -> anyhow::Result<()> {
     let (obj_tx, obj_rx) = async_channel::bounded::<Vec<OutgoingObject>>(1);
 
     AsyncCommands::default()
@@ -282,6 +282,7 @@ fn resolve_msg(
 }
 
 pub async fn recv_object_stream(
+    link: &PeerLink,
     peer: EndpointId,
     _tx: SendStream,
     mut rx: RecvStream,
@@ -314,7 +315,10 @@ pub async fn recv_object_stream(
                     continue;
                 };
                 if let Some(resolved) = resolve_msg(frame, doc, space, &mut baselines) {
-                    submit_object(peer, resolved);
+                    link.objects().submit(
+                        (peer, resolved.doc, resolved.prim),
+                        (Instant::now(), resolved),
+                    );
                 }
             }
         }

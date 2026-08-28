@@ -201,7 +201,9 @@ impl ScriptBehavior for Script {
 impl Beacon {
     fn fixed_update(&mut self) -> anyhow::Result<()> {
         while let Some(event) = self.input.poll() {
-            if !self.published && matches!(event.action, InputAction::Press) {
+            if !self.published
+                && matches!(event.action, InputAction::Press | InputAction::GripPress)
+            {
                 let doc = self_document()?;
                 match sync_document(&doc.id()) {
                     Ok(()) => {

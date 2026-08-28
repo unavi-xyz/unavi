@@ -13,14 +13,13 @@ use bevy_hsd::{
 };
 use hsd::id::DocId;
 use unavi_manifold::Seam;
-use unavi_policy::registry::Policy;
 use unavi_portal_protocol::{
     BACKLINK_CHANNEL,
     BacklinkPayload,
     INCOMING_CHANNEL,
     IncomingPayload,
 };
-use unavi_space::check::space_of;
+use unavi_space::view::SpaceView;
 
 use crate::{
     engine::InitializedScript,
@@ -129,11 +128,14 @@ pub fn service_portal_watches(
     receptors: Query<(&PortalConfig, &HsdChild, &Prim), With<Seam>>,
     mut incoming: Query<&mut PendingIncoming>,
     mut backlink: Query<&mut PendingBacklink>,
-    policy: Res<Policy>,
+    view: Option<Res<SpaceView>>,
     mut commands: Commands,
     mut stage_incoming: Local<HashMap<Entity, Vec<IncomingPayload>>>,
     mut stage_backlink: Local<HashMap<Entity, Vec<BacklinkPayload>>>,
 ) {
+    let Some(view) = view else {
+        return;
+    };
     for (entity, mut watch) in &mut watches {
         if watch.timer.tick(time.delta()).is_finished() {
             commands.entity(entity).despawn();
@@ -148,7 +150,7 @@ pub fn service_portal_watches(
                 return None;
             }
             let (_, recp_record) = docs.get(hsd_child.0).ok()?;
-            (space_of(&policy, recp_record.0) == Some(watch.target_space))
+            (view.space_of(recp_record.0) == Some(watch.target_space))
                 .then(|| (recp_record.0, prim.0.to_string()))
         });
         if let Some((receptor_doc, receptor_prim)) = found_receptor {
@@ -176,7 +178,7 @@ pub fn service_portal_watches(
             if record.0 == watch.source_doc {
                 continue;
             }
-            if space_of(&policy, record.0) != Some(watch.target_space) {
+            if view.space_of(record.0) != Some(watch.target_space) {
                 continue;
             }
             if !watch.emitted.insert(record.0) {

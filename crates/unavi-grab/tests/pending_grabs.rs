@@ -40,7 +40,8 @@ fn app() -> App {
     // A grab is recognized by the `GravityScale` the grab itself adds, which
     // would fight real gravity on a falling body.
     .insert_resource(Gravity(Vec3::ZERO))
-    .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(STEP));
+    .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(STEP))
+    .init_resource::<unavi_space::state::replicas::Replicas>();
     app.finish();
     app.cleanup();
     app

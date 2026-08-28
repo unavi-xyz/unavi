@@ -1,51 +1,52 @@
-use std::{
-    mem,
-    sync::{
-        LazyLock,
-        Mutex,
-    },
-    time::Duration,
-};
+use std::time::Duration;
 
 use bevy::{
     platform::collections::HashMap,
     prelude::*,
 };
+use hsd::id::DocId;
 use iroh::{
     EndpointAddr,
     EndpointId,
 };
 use iroh_docs::NamespaceId;
 
-use crate::peer::{
-    ActiveSpaces,
-    Peer,
+use crate::{
+    inbox::Inbox,
+    peer::{
+        ActiveSpaces,
+        Peer,
+    },
 };
 
 pub const PRESENCE_INTERVAL: Duration = Duration::from_secs(20);
 const INACTIVE_SECS: f32 = PRESENCE_INTERVAL.as_secs_f32() * 4.0;
 
-type PresenceKey = (EndpointId, NamespaceId);
+/// Presence broadcasts heard over gossip, handed from each space's inbound
+/// task to the ECS.
+#[derive(Resource, Clone, Default)]
+pub struct PresenceInbox(Inbox<(EndpointId, DocId), EndpointAddr>);
 
-static PRESENCE_INBOX: LazyLock<Mutex<HashMap<PresenceKey, EndpointAddr>>> =
-    LazyLock::new(|| Mutex::new(HashMap::default()));
-
-pub fn submit_presence(peer: EndpointAddr, space: NamespaceId) {
-    let mut inbox = PRESENCE_INBOX.lock().expect("presence inbox");
-    inbox.insert((peer.id, space), peer);
+impl PresenceInbox {
+    #[must_use]
+    pub fn inbox(&self) -> Inbox<(EndpointId, DocId), EndpointAddr> {
+        self.0.clone()
+    }
 }
 
 pub fn manage_peers(
     time: Res<Time>,
+    presence: Res<PresenceInbox>,
     mut peers: Query<(Entity, &Peer, &mut ActiveSpaces)>,
     mut commands: Commands,
     mut to_remove: Local<Vec<NamespaceId>>,
 ) {
     let now = time.elapsed_secs();
 
-    let updates = mem::take(&mut *PRESENCE_INBOX.lock().expect("presence inbox"));
+    let updates = presence.0.drain();
 
     for ((_, space), peer) in updates {
+        let space = NamespaceId::from(&space.0);
         let Some((entity, _, mut spaces)) = peers.iter_mut().find(|(_, p, _)| p.0.id == peer.id)
         else {
             let mut spaces = HashMap::default();

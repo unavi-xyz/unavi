@@ -28,6 +28,7 @@ pub fn publish_presence(
     time: Res<Time>,
     spaces: Query<&Space>,
     endpoint: Query<&IrohEndpoint>,
+    identity: Option<Res<crate::identity::LocalIdentity>>,
     mut last: Local<HashMap<NamespaceId, Duration>>,
 ) {
     if spaces.is_empty() {
@@ -59,7 +60,7 @@ pub fn publish_presence(
         return;
     }
 
-    let Some(local) = crate::identity::local() else {
+    let Some(local) = identity else {
         return;
     };
     let did = local.identity.did().clone();

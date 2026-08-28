@@ -5,9 +5,9 @@ use bevy::{
 use iroh::EndpointId;
 use unavi_devtools::tabs::DevPanel;
 
-use crate::devtools::{
-    conn,
-    short,
+use crate::{
+    connection::PeerLink,
+    devtools::short,
 };
 
 #[derive(Component)]
@@ -61,10 +61,11 @@ pub(super) fn spawn(mut commands: Commands) {
 pub(super) fn update(
     time: Res<Time>,
     mut sampler: ResMut<NetSampler>,
+    link: Option<Res<PeerLink>>,
     mut text: Query<&mut Text, With<NetworkText>>,
 ) {
     let now = time.elapsed_secs();
-    let snap = conn::snapshot();
+    let snap = link.map(|l| l.net_stats()).unwrap_or_default();
 
     let mut next = HashMap::new();
     let mut lines = Vec::new();

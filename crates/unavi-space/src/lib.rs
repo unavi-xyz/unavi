@@ -11,11 +11,11 @@ use unavi_manifold::{
 };
 
 pub mod anchor;
-pub mod check;
 mod connection;
 #[cfg(feature = "devtools")] mod devtools;
 mod gossip;
 pub mod identity;
+pub mod inbox;
 pub mod peer;
 mod portal;
 mod portal_bridge;
@@ -26,6 +26,7 @@ pub mod spawn;
 pub mod state;
 pub mod travel;
 pub mod trust;
+pub mod view;
 
 pub struct SpacePlugin {
     /// Where the trust table persists. `None` leaves blocks effective for the
@@ -49,11 +50,12 @@ impl Plugin for SpacePlugin {
             trust::load_trust_table(storage);
         }
 
-        app.add_systems(Startup, identity::install_local);
-
         app.init_resource::<anchor::SpaceGridAllocator>()
             .init_resource::<anchor::ActiveSpace>()
             .init_resource::<travel::PendingTravel>()
+            .init_resource::<state::replicas::Replicas>()
+            .init_resource::<peer::presence::PresenceInbox>()
+            .init_resource::<gossip::ActiveSpaceSignal>()
             .add_observer(anchor::assign_anchor)
             .add_observer(quota::registry::reassign_doc_quota)
             .add_observer(quota::registry::forget_space_quota)
@@ -105,6 +107,7 @@ impl Plugin for SpacePlugin {
                         .run_if(on_timer(TICKRATE_UPDATE_INTERVAL)),
                     peer::presence::manage_peers,
                     peer::publish_blob_providers,
+                    scene::start_space_fetch,
                     scene::instantiate_pending_scenes,
                     scene::pinned_docs::fetch_tracked_docs,
                     scene::pinned_docs::instantiate_tracked_docs,

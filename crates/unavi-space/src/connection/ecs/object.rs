@@ -1,10 +1,4 @@
-use std::{
-    sync::{
-        LazyLock,
-        Mutex,
-    },
-    time::Duration,
-};
+use std::time::Duration;
 
 use async_channel::TrySendError;
 use avian3d::prelude::{
@@ -29,23 +23,13 @@ use hsd::id::{
     DocId,
     PrimId,
 };
-use iroh::EndpointId;
-use iroh_docs::NamespaceId;
-use unavi_policy::{
-    registry::Policy,
-    space::Space,
-};
+use unavi_policy::space::Space;
 use web_time::Instant;
 
 use crate::{
-    check::space_of,
-    state::replicas,
+    connection::PeerLink,
+    view::SpaceView,
 };
-
-/// Replicas key by 32 opaque bytes, which a document id equally is.
-fn ns(id: DocId) -> NamespaceId {
-    NamespaceId::from(&id.0)
-}
 
 /// One owned dynamic prim's space-relative pose, queued for broadcast. Captured
 /// once per tick and cloned to each [`ObjectSender`].
@@ -86,10 +70,14 @@ pub fn send_object_poses(
         Option<&AngularVelocity>,
     )>,
     mut streams: Query<(Entity, &ObjectSender, &mut LastObjectTick)>,
-    policy: Res<Policy>,
+    view: Option<Res<SpaceView>>,
     commands: ParallelCommands,
 ) {
+    let Some(view) = view else {
+        return;
+    };
     let now = time.elapsed();
+    let me = view.me();
 
     let space_origins = spaces
         .iter()
@@ -103,8 +91,8 @@ pub fn send_object_poses(
                 return None;
             }
             let doc = roots.get(child_of.0).ok()?.0;
-            let space = space_of(&policy, doc)?;
-            if !replicas::is_self_authority(ns(space), ns(doc)) {
+            let space = view.space_of(doc)?;
+            if !view.replicas().is_authority(space, doc, me) {
                 return None;
             }
             let origin = space_origins.get(&space)?;
@@ -160,19 +148,6 @@ pub struct ResolvedObject {
     pub ang:   Vec3,
 }
 
-/// Latest update received per `(peer, doc, prim)`, so a peer can drive every
-/// prim of every document it owns independently.
-static OBJECT_INBOX: LazyLock<
-    Mutex<HashMap<(EndpointId, DocId, PrimId), (Instant, ResolvedObject)>>,
-> = LazyLock::new(|| Mutex::new(HashMap::default()));
-
-pub fn submit_object(peer: EndpointId, resolved: ResolvedObject) {
-    OBJECT_INBOX.lock().expect("object inbox").insert(
-        (peer, resolved.doc, resolved.prim),
-        (Instant::now(), resolved),
-    );
-}
-
 /// Drives a remotely-owned prim from network updates. The replica is held
 /// [`RigidBody::Kinematic`] so local physics never fights the owner; its pose
 /// is smoothed toward the last received space-relative target each tick.
@@ -195,16 +170,20 @@ pub fn apply_remote_objects(
     roots: Query<(&HsdDocId, &HsdPrimIndex)>,
     spaces: Query<(Entity, &Space)>,
     mut interps: Query<&mut ObjectInterp>,
+    view: Option<Res<SpaceView>>,
+    link: Option<Res<PeerLink>>,
     mut commands: Commands,
 ) {
-    let updates = std::mem::take(&mut *OBJECT_INBOX.lock().expect("object inbox"));
+    let (Some(view), Some(link)) = (view, link) else {
+        return;
+    };
+    let updates = link.objects().drain();
 
     for ((peer, doc, prim), (recv, resolved)) in updates {
         // Only the document's current authority may move it, and never the
         // local peer.
-        if replicas::authority(ns(resolved.space), ns(doc)) != Some(peer)
-            || replicas::is_self_authority(ns(resolved.space), ns(doc))
-        {
+        let authority = view.replicas().authority(resolved.space, doc);
+        if authority != Some(peer) || authority == Some(view.me()) {
             continue;
         }
         let Some(prim_entity) = roots
@@ -283,16 +262,19 @@ pub struct ReplicaObject;
 pub fn reconcile_object_authority(
     roots: Query<&HsdDocId>,
     prims: Query<(Entity, &HsdChild, &RigidBody, Has<ReplicaObject>), With<Prim>>,
-    policy: Res<Policy>,
+    view: Option<Res<SpaceView>>,
     mut commands: Commands,
 ) {
+    let Some(view) = view else {
+        return;
+    };
     for (entity, child_of, body, is_replica) in &prims {
         let Some(doc) = roots.get(child_of.0).ok().map(|r| r.0) else {
             continue;
         };
-        let remote_controlled = space_of(&policy, doc).is_some_and(|space| {
-            replicas::authority(ns(space), ns(doc)).is_some()
-                && !replicas::is_self_authority(ns(space), ns(doc))
+        let remote_controlled = view.space_of(doc).is_some_and(|space| {
+            let authority = view.replicas().authority(space, doc);
+            authority.is_some() && authority != Some(view.me())
         });
 
         match (remote_controlled, is_replica) {

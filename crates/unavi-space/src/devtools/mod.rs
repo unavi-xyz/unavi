@@ -6,7 +6,6 @@ use bevy::{
 };
 use unavi_devtools::tabs::panel_active;
 
-pub mod conn;
 mod inspect;
 mod network;
 

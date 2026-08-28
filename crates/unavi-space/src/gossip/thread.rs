@@ -10,7 +10,12 @@ use std::{
 };
 
 use bevy::prelude::*;
-use iroh::Endpoint;
+use hsd::id::DocId;
+use iroh::{
+    Endpoint,
+    EndpointAddr,
+    EndpointId,
+};
 use iroh_docs::NamespaceId;
 use iroh_gossip::{
     Gossip,
@@ -21,13 +26,21 @@ use iroh_gossip::{
     },
 };
 use rand::seq::SliceRandom;
-use tokio::sync::oneshot;
+use tokio::sync::{
+    oneshot,
+    watch,
+};
 use tracing::Instrument;
+
+use crate::inbox::Inbox;
 
 #[derive(Clone)]
 pub struct GossipCtx {
     pub endpoint: Endpoint,
     pub gossip:   Gossip,
+    /// The occupied space. Only it broadcasts presence.
+    pub active:   watch::Receiver<Option<NamespaceId>>,
+    pub presence: Inbox<(EndpointId, DocId), EndpointAddr>,
 }
 
 /// Separates this crate's per-space gossip from iroh-docs'.

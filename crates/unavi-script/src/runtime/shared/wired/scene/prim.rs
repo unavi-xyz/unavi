@@ -71,10 +71,6 @@ use hsd::{
 };
 use unavi_physics::finite;
 use unavi_policy::quota::Flow;
-use unavi_space::check::{
-    placed,
-    write as check_write,
-};
 
 use crate::runtime::shared::{
     Api,
@@ -301,8 +297,8 @@ fn ensure_writable(api: &Api, prim: &PrimRes) -> anyhow::Result<()> {
     if prim.is_proxy {
         bail!("cannot write proxy prim")
     }
-    placed(&api.policy, api.doc_id)?;
-    Ok(check_write(&api.policy, api.doc_id, prim.doc_id)?)
+    api.view.placed(api.doc_id)?;
+    Ok(api.view.write(api.doc_id, prim.doc_id)?)
 }
 
 pub async fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {

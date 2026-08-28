@@ -36,11 +36,14 @@ use tracing::{
     info_span,
 };
 
+use crate::connection::PeerLink;
+
 mod agent;
 mod object;
 mod state;
 
 pub async fn handle_connection(
+    link: &PeerLink,
     connection: Connection,
     cancel: oneshot::Receiver<()>,
 ) -> anyhow::Result<()> {
@@ -48,36 +51,44 @@ pub async fn handle_connection(
 
     // The DID is bound by `wired/auth` ahead of this connection, so a block is
     // judged against a proven identity rather than a bare endpoint id.
-    if super::is_blocked(peer) {
+    if link.is_blocked(peer) {
         info!(%peer, "Refusing a blocked peer");
         connection.close(VarInt::from_u32(2), b"blocked");
         return Ok(());
     }
 
     let span = info_span!("connect", %peer);
-    inner(connection, cancel).instrument(span).await
+    inner(link, connection, cancel).instrument(span).await
 }
 
-async fn inner(connection: Connection, cancel: oneshot::Receiver<()>) -> anyhow::Result<()> {
+async fn inner(
+    link: &PeerLink,
+    connection: Connection,
+    cancel: oneshot::Receiver<()>,
+) -> anyhow::Result<()> {
     info!("Connected");
     let connection = Arc::new(connection);
 
     #[cfg(feature = "devtools")]
-    let _conn_guard = crate::devtools::conn::track(connection.remote_id(), Arc::clone(&connection));
+    let _conn_guard = link.track(connection.remote_id(), Arc::clone(&connection));
 
     let task_recv = {
         let span = info_span!("recv");
+        let link = link.clone();
         let connection = Arc::clone(&connection);
-        let handle =
-            n0_future::task::spawn(async move { recv_streams(connection).await }.instrument(span));
+        let handle = n0_future::task::spawn(
+            async move { recv_streams(&link, connection).await }.instrument(span),
+        );
         AbortOnDropHandle::new(handle)
     };
 
     let task_send = {
         let span = info_span!("send");
+        let link = link.clone();
         let connection = Arc::clone(&connection);
-        let handle =
-            n0_future::task::spawn(async move { send_streams(connection).await }.instrument(span));
+        let handle = n0_future::task::spawn(
+            async move { send_streams(&link, connection).await }.instrument(span),
+        );
         AbortOnDropHandle::new(handle)
     };
 
@@ -104,7 +115,7 @@ async fn inner(connection: Connection, cancel: oneshot::Receiver<()>) -> anyhow:
     Ok(())
 }
 
-async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
+async fn recv_streams(link: &PeerLink, connection: Arc<Connection>) -> anyhow::Result<()> {
     let peer = connection.remote_id();
     let mut i = 0;
     let mut streams = Vec::new();
@@ -120,9 +131,12 @@ async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
         };
 
         let handle = n0_future::task::spawn(
-            async move {
-                if let Err(err) = recv_stream(peer, tx, rx).await {
-                    error!(?err);
+            {
+                let link = link.clone();
+                async move {
+                    if let Err(err) = recv_stream(&link, peer, tx, rx).await {
+                        error!(?err);
+                    }
                 }
             }
             .instrument(span),
@@ -131,14 +145,19 @@ async fn recv_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
     }
 }
 
-async fn recv_stream(peer: EndpointId, tx: SendStream, mut rx: RecvStream) -> anyhow::Result<()> {
+async fn recv_stream(
+    link: &PeerLink,
+    peer: EndpointId,
+    tx: SendStream,
+    mut rx: RecvStream,
+) -> anyhow::Result<()> {
     let ident = StreamIdent::read(&mut rx).await.context("read ident")?;
     info!("Stream ident: {ident:?}");
 
     match ident {
-        StreamIdent::Agent => agent::recv_agent_stream(peer, tx, rx).await?,
-        StreamIdent::Object => object::recv_object_stream(peer, tx, rx).await?,
-        StreamIdent::State => state::recv_state_stream(peer, tx, rx).await?,
+        StreamIdent::Agent => agent::recv_agent_stream(link, peer, tx, rx).await?,
+        StreamIdent::Object => object::recv_object_stream(link, peer, tx, rx).await?,
+        StreamIdent::State => state::recv_state_stream(link, peer, tx, rx).await?,
         StreamIdent::Unknown(_) => {}
     }
 
@@ -147,12 +166,13 @@ async fn recv_stream(peer: EndpointId, tx: SendStream, mut rx: RecvStream) -> an
 
 const STREAM_LOOP_DELAY: Duration = Duration::from_secs(1);
 
-async fn send_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
+async fn send_streams(link: &PeerLink, connection: Arc<Connection>) -> anyhow::Result<()> {
     let task_agent = {
+        let link = link.clone();
         let connection = Arc::clone(&connection);
         let handle = n0_future::task::spawn(async move {
             loop {
-                if let Err(err) = agent::send_agent_stream(&connection).await {
+                if let Err(err) = agent::send_agent_stream(&link, &connection).await {
                     error!(?err, "Agent stream error");
                 }
                 n0_future::time::sleep(STREAM_LOOP_DELAY).await;
@@ -162,10 +182,11 @@ async fn send_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
     };
 
     let task_state = {
+        let link = link.clone();
         let connection = Arc::clone(&connection);
         let handle = n0_future::task::spawn(async move {
             loop {
-                if let Err(err) = state::send_state_stream(&connection).await {
+                if let Err(err) = state::send_state_stream(&link, &connection).await {
                     error!(?err, "State stream error");
                 }
                 n0_future::time::sleep(STREAM_LOOP_DELAY).await;
@@ -175,10 +196,11 @@ async fn send_streams(connection: Arc<Connection>) -> anyhow::Result<()> {
     };
 
     let task_objects = {
+        let link = link.clone();
         let connection = Arc::clone(&connection);
         let handle = n0_future::task::spawn(async move {
             loop {
-                if let Err(err) = object::send_object_stream(&connection).await {
+                if let Err(err) = object::send_object_stream(&link, &connection).await {
                     error!(?err, "Object stream error");
                 }
                 n0_future::time::sleep(STREAM_LOOP_DELAY).await;

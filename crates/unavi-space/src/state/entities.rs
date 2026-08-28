@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy_hsd::HsdNamespace;
+use hsd::id::DocId;
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
 use unavi_policy::{
@@ -8,13 +9,28 @@ use unavi_policy::{
 };
 use unavi_util::async_commands::AsyncCommands;
 
-use crate::state::{
-    message::StateMsg,
-    replicas::{
-        self,
-        KvError,
+use crate::{
+    quota::Viewer,
+    state::{
+        cell::KvError,
+        message::StateMsg,
+        replicas::{
+            self,
+            Replicas,
+        },
     },
+    view::SpaceView,
 };
+
+/// The requester's identity, if known yet, for sizing a newly-discovered
+/// peer's quota.
+fn current_view(world: &World) -> Option<SpaceView> {
+    world.get_resource::<SpaceView>().cloned()
+}
+
+fn as_viewer(view: Option<&SpaceView>) -> Option<Viewer<'_>> {
+    view.map(SpaceView::viewer)
+}
 
 #[derive(Component)]
 #[relationship(relationship_target = DocStates)]
@@ -77,93 +93,118 @@ pub fn release_remote_peer(world: &mut World, peer_ent: Entity, generation: u64)
 /// away; unparented until the space is entered and adopts it.
 #[derive(Component)]
 pub struct SpaceDoc {
-    pub doc:   NamespaceId,
-    pub space: NamespaceId,
+    pub doc:   DocId,
+    pub space: DocId,
 }
 
 #[derive(Component)]
 pub struct PinState {
-    peer:   EndpointId,
-    doc:    NamespaceId,
-    local:  bool,
+    peer:     EndpointId,
+    doc:      DocId,
+    local:    bool,
     /// Held because releasing a pin can hand ownership to another peer, which
     /// re-attributes the document quota, and a drop takes no arguments.
-    policy: Policy,
+    policy:   Policy,
+    replicas: Replicas,
+    /// Held for the same reason as `policy`/`replicas`: a released pin may
+    /// size a newly-discovered peer's quota, which needs the local identity.
+    view:     Option<SpaceView>,
 }
 
 impl PinState {
     fn register(
         policy: Policy,
+        replicas: Replicas,
+        view: Option<SpaceView>,
         peer: EndpointId,
-        doc: NamespaceId,
-        space: NamespaceId,
+        doc: DocId,
+        space: DocId,
         at: u64,
         local: bool,
     ) -> Option<Self> {
-        if !replicas::add_pin(&policy, peer, doc, space, at) {
+        if !replicas.add_pin(&policy, as_viewer(view.as_ref()), peer, doc, space, at) {
             return None;
         }
         if local {
-            replicas::broadcast(&StateMsg::Pin { doc, space, at });
+            replicas.broadcast(&StateMsg::Pin { doc, space, at });
         }
         Some(Self {
             peer,
             doc,
             local,
             policy,
+            replicas,
+            view,
         })
     }
 }
 
 impl Drop for PinState {
     fn drop(&mut self) {
-        replicas::remove_pin(&self.policy, self.peer, self.doc);
+        self.replicas.remove_pin(
+            &self.policy,
+            as_viewer(self.view.as_ref()),
+            self.peer,
+            self.doc,
+        );
         if self.local {
-            replicas::broadcast(&StateMsg::Unpin { doc: self.doc });
+            self.replicas.broadcast(&StateMsg::Unpin { doc: self.doc });
         }
     }
 }
 
 #[derive(Component)]
 pub struct AuthorityState {
-    peer:  EndpointId,
-    doc:   NamespaceId,
-    local: bool,
+    peer:     EndpointId,
+    doc:      DocId,
+    local:    bool,
+    /// Held because a drop takes no arguments.
+    replicas: Replicas,
 }
 
 impl AuthorityState {
     fn apply(
         policy: &Policy,
+        replicas: &Replicas,
+        viewer: Option<Viewer>,
         peer: EndpointId,
-        doc: NamespaceId,
-        space: NamespaceId,
+        doc: DocId,
+        space: DocId,
         at: u64,
         local: bool,
     ) -> bool {
-        let ok = replicas::add_authority(policy, peer, doc, space, at);
+        let ok = replicas.add_authority(policy, viewer, peer, doc, space, at);
         if ok && local {
-            replicas::broadcast(&StateMsg::Authority { doc, space, at });
+            replicas.broadcast(&StateMsg::Authority { doc, space, at });
         }
         ok
     }
 
     fn register(
         policy: &Policy,
+        replicas: &Replicas,
+        viewer: Option<Viewer>,
         peer: EndpointId,
-        doc: NamespaceId,
-        space: NamespaceId,
+        doc: DocId,
+        space: DocId,
         at: u64,
         local: bool,
     ) -> Option<Self> {
-        Self::apply(policy, peer, doc, space, at, local).then_some(Self { peer, doc, local })
+        Self::apply(policy, replicas, viewer, peer, doc, space, at, local).then_some(Self {
+            peer,
+            doc,
+            local,
+            replicas: replicas.clone(),
+        })
     }
 }
 
 impl Drop for AuthorityState {
     fn drop(&mut self) {
-        replicas::remove_authority(self.peer, self.doc);
+        self.replicas.remove_authority(self.peer, self.doc);
         if self.local {
-            replicas::broadcast(&StateMsg::Unclaim { doc: self.doc });
+            self.replicas
+                .broadcast(&StateMsg::Unclaim { doc: self.doc });
         }
     }
 }
@@ -171,8 +212,10 @@ impl Drop for AuthorityState {
 /// Holds one KV cell for as long as the document anchoring it lives.
 #[derive(Component)]
 pub struct KvState {
-    doc: NamespaceId,
-    key: String,
+    doc:      DocId,
+    key:      String,
+    /// Held because a drop takes no arguments.
+    replicas: Replicas,
 }
 
 impl Drop for KvState {
@@ -180,7 +223,7 @@ impl Drop for KvState {
         // No `KvForget` goes out. A cell belongs to the document, so it outlives
         // the peer that wrote it; an explicit delete propagates as a tombstone
         // at write time instead.
-        replicas::remove_kv(self.doc, &self.key);
+        self.replicas.remove_kv(self.doc, &self.key);
     }
 }
 
@@ -189,18 +232,18 @@ fn entity_by<C: Component, F: Fn(&C) -> bool>(world: &mut World, pred: F) -> Opt
     query.iter(world).find(|(_, c)| pred(c)).map(|(e, _)| e)
 }
 
-fn space_entity(world: &mut World, space: NamespaceId) -> Option<Entity> {
-    entity_by::<Space, _>(world, |s| s.0 == space)
+fn space_entity(world: &mut World, space: DocId) -> Option<Entity> {
+    entity_by::<Space, _>(world, |s| s.doc_id() == space)
 }
 
 /// Resolves the entity anchoring `doc`, spawning a [`SpaceDoc`] tracker when
 /// nothing exists yet. Trackers for spaces not yet entered stay unparented so
 /// their state is kept until the space is joined.
-fn doc_anchor(world: &mut World, doc: NamespaceId, space: NamespaceId) -> Entity {
+fn doc_anchor(world: &mut World, doc: DocId, space: DocId) -> Entity {
     if let Some(e) = space_entity(world, doc) {
         return e;
     }
-    if let Some(e) = entity_by::<HsdNamespace, _>(world, |r| r.0 == doc) {
+    if let Some(e) = entity_by::<HsdNamespace, _>(world, |r| r.0 == NamespaceId::from(&doc.0)) {
         return e;
     }
     if let Some(e) = entity_by::<SpaceDoc, _>(world, |d| d.doc == doc) {
@@ -234,7 +277,7 @@ fn find_state<C: Component, F: Fn(&C) -> bool>(
 }
 
 /// Finds the doc-anchored cell guard for `key`, if one exists.
-fn find_kv(world: &World, anchor: Entity, doc: NamespaceId, key: &str) -> Option<Entity> {
+fn find_kv(world: &World, anchor: Entity, doc: DocId, key: &str) -> Option<Entity> {
     world.get::<DocStates>(anchor)?.iter().find(|e| {
         world
             .get::<KvState>(*e)
@@ -246,8 +289,8 @@ fn spawn_pin(
     world: &mut World,
     peer_ent: Entity,
     peer: EndpointId,
-    doc: NamespaceId,
-    space: NamespaceId,
+    doc: DocId,
+    space: DocId,
     at: u64,
     local: bool,
 ) -> bool {
@@ -256,7 +299,10 @@ fn spawn_pin(
     }
     let anchor = doc_anchor(world, doc, space);
     let policy = world.resource::<Policy>().clone();
-    let Some(state) = PinState::register(policy, peer, doc, space, at, local) else {
+    let replicas = world.resource::<Replicas>().clone();
+    let view = current_view(world);
+    let Some(state) = PinState::register(policy, replicas, view, peer, doc, space, at, local)
+    else {
         warn!("pin on doc {doc} refused by quota");
         return false;
     };
@@ -268,37 +314,35 @@ fn spawn_authority(
     world: &mut World,
     peer_ent: Entity,
     peer: EndpointId,
-    doc: NamespaceId,
-    space: NamespaceId,
+    doc: DocId,
+    space: DocId,
     at: u64,
     local: bool,
 ) {
+    let policy = world.resource::<Policy>().clone();
+    let replicas = world.resource::<Replicas>().clone();
+    let view = current_view(world);
+    let viewer = as_viewer(view.as_ref());
     if find_state::<AuthorityState, _>(world, peer_ent, |a| a.doc == doc).is_some() {
-        AuthorityState::apply(
-            &world.resource::<Policy>().clone(),
-            peer,
-            doc,
-            space,
-            at,
-            local,
-        );
+        AuthorityState::apply(&policy, &replicas, viewer, peer, doc, space, at, local);
         return;
     }
     let anchor = doc_anchor(world, doc, space);
-    let policy = world.resource::<Policy>().clone();
-    let Some(state) = AuthorityState::register(&policy, peer, doc, space, at, local) else {
+    let Some(state) =
+        AuthorityState::register(&policy, &replicas, viewer, peer, doc, space, at, local)
+    else {
         return;
     };
     world.spawn((state, StateDoc(anchor), StatePeer(peer_ent)));
 }
 
-fn clear_authority(world: &mut World, peer_ent: Entity, doc: NamespaceId) {
+fn clear_authority(world: &mut World, peer_ent: Entity, doc: DocId) {
     if let Some(e) = find_state::<AuthorityState, _>(world, peer_ent, |a| a.doc == doc) {
         world.despawn(e);
     }
 }
 
-fn clear_pin(world: &mut World, peer_ent: Entity, doc: NamespaceId) {
+fn clear_pin(world: &mut World, peer_ent: Entity, doc: DocId) {
     if let Some(e) = find_state::<PinState, _>(world, peer_ent, |p| p.doc == doc) {
         world.despawn(e);
     }
@@ -307,8 +351,8 @@ fn clear_pin(world: &mut World, peer_ent: Entity, doc: NamespaceId) {
 fn set_kv(
     world: &mut World,
     peer: EndpointId,
-    doc: NamespaceId,
-    space: NamespaceId,
+    doc: DocId,
+    space: DocId,
     key: String,
     value: Option<Vec<u8>>,
     at: u64,
@@ -319,9 +363,20 @@ fn set_kv(
     }
     let anchor = doc_anchor(world, doc, space);
     let policy = world.resource::<Policy>().clone();
-    replicas::add_kv(&policy, peer, doc, space, key.clone(), value.clone(), at)?;
+    let replicas = world.resource::<Replicas>().clone();
+    let view = current_view(world);
+    replicas.add_kv(
+        &policy,
+        as_viewer(view.as_ref()),
+        peer,
+        doc,
+        space,
+        key.clone(),
+        value.clone(),
+        at,
+    )?;
     if local {
-        replicas::broadcast(&StateMsg::Kv {
+        replicas.broadcast(&StateMsg::Kv {
             doc,
             space,
             key: key.clone(),
@@ -334,15 +389,12 @@ fn set_kv(
     // and a change of owner does not move it. One guard per key, whoever wrote
     // it last.
     if find_kv(world, anchor, doc, &key).is_none() {
-        world.spawn((KvState { doc, key }, StateDoc(anchor)));
+        world.spawn((KvState { doc, key, replicas }, StateDoc(anchor)));
     }
     Ok(())
 }
 
-pub async fn self_pin(space: NamespaceId, doc: NamespaceId) -> bool {
-    let Some(me) = crate::peer::self_peer_id() else {
-        return false;
-    };
+pub async fn self_pin(me: EndpointId, space: DocId, doc: DocId) -> bool {
     let at = replicas::current_millis();
     AsyncCommands::default()
         .send_with(move |world: &mut World| {
@@ -353,10 +405,7 @@ pub async fn self_pin(space: NamespaceId, doc: NamespaceId) -> bool {
         .unwrap_or(false)
 }
 
-pub fn claim_authority(space: NamespaceId, doc: NamespaceId) {
-    let Some(me) = crate::peer::self_peer_id() else {
-        return;
-    };
+pub fn claim_authority(me: EndpointId, space: DocId, doc: DocId) {
     let at = replicas::current_millis();
     let _ = AsyncCommands::default()
         .push(move |world: &mut World| {
@@ -366,7 +415,7 @@ pub fn claim_authority(space: NamespaceId, doc: NamespaceId) {
         .try_send();
 }
 
-pub fn release_authority(doc: NamespaceId) {
+pub fn release_authority(doc: DocId) {
     let _ = AsyncCommands::default()
         .push(move |world: &mut World| {
             if let Some(peer_ent) = entity_by::<LocalPeer, _>(world, |_| true) {
@@ -377,14 +426,12 @@ pub fn release_authority(doc: NamespaceId) {
 }
 
 pub async fn doc_kv_set(
-    space: NamespaceId,
-    doc: NamespaceId,
+    me: EndpointId,
+    space: DocId,
+    doc: DocId,
     key: String,
     value: Vec<u8>,
 ) -> Result<(), KvError> {
-    let Some(me) = crate::peer::self_peer_id() else {
-        return Err(KvError::Other);
-    };
     let at = replicas::current_millis();
     AsyncCommands::default()
         .send_with(move |world: &mut World| {
@@ -395,13 +442,11 @@ pub async fn doc_kv_set(
 }
 
 pub async fn doc_kv_delete(
-    space: NamespaceId,
-    doc: NamespaceId,
+    me: EndpointId,
+    space: DocId,
+    doc: DocId,
     key: String,
 ) -> Result<(), KvError> {
-    let Some(me) = crate::peer::self_peer_id() else {
-        return Err(KvError::Other);
-    };
     let at = replicas::current_millis();
     AsyncCommands::default()
         .send_with(move |world: &mut World| set_kv(world, me, doc, space, key, None, at, true))
@@ -469,16 +514,9 @@ fn apply_in_world(world: &mut World, peer_ent: Entity, peer: EndpointId, msg: St
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        peer::set_self_peer_id,
-        state::replicas::{
-            TEST_LOCK,
-            reset,
-        },
-    };
 
-    fn h(seed: &[u8]) -> NamespaceId {
-        NamespaceId::from(blake3::hash(seed).as_bytes())
+    fn doc(seed: &[u8]) -> DocId {
+        DocId(*blake3::hash(seed).as_bytes())
     }
 
     /// A distinct, valid endpoint id per seed. Arbitrary bytes are not a curve
@@ -489,43 +527,40 @@ mod tests {
 
     #[test]
     fn pin_guard_broadcasts_and_releases() {
-        let _g = TEST_LOCK.lock();
-        reset();
+        let replicas = Replicas::new();
         let policy = Policy::new();
         let me = peer(1);
-        set_self_peer_id(me);
-        let space = h(b"pin-guard-space");
-        let doc = h(b"pin-guard-doc");
+        let space = doc(b"pin-guard-space");
+        let doc = doc(b"pin-guard-doc");
 
-        let (token, rx) = replicas::register_stream();
+        let (token, rx) = replicas.register_stream(me);
         assert!(matches!(rx.try_recv(), Ok(StateMsg::Snapshot(_))));
 
-        let pin = PinState::register(policy, me, doc, space, 1, true).expect("pin registers");
-        assert_eq!(replicas::owner(space, doc), Some(me));
+        let pin = PinState::register(policy, replicas.clone(), None, me, doc, space, 1, true)
+            .expect("pin registers");
+        assert_eq!(replicas.owner(space, doc), Some(me));
         assert!(matches!(rx.try_recv(), Ok(StateMsg::Pin { doc: d, .. }) if d == doc));
 
         drop(pin);
-        assert_eq!(replicas::owner(space, doc), None);
+        assert_eq!(replicas.owner(space, doc), None);
         assert!(matches!(rx.try_recv(), Ok(StateMsg::Unpin { doc: d }) if d == doc));
 
-        replicas::unregister_stream(token);
-        reset();
+        replicas.unregister_stream(token);
     }
 
     #[test]
     fn neutral_kv_guard_drop_does_not_forget() {
-        let _g = TEST_LOCK.lock();
-        reset();
+        let replicas = Replicas::new();
         let me = peer(1);
-        set_self_peer_id(me);
-        let space = h(b"neutral-guard-space");
+        let space = doc(b"neutral-guard-space");
 
-        let (token, rx) = replicas::register_stream();
+        let (token, rx) = replicas.register_stream(me);
         let _ = rx.try_recv();
 
         let mut world = World::new();
         world.init_resource::<Policy>();
-        let space_ent = world.spawn(Space(space)).id();
+        world.insert_resource(replicas.clone());
+        let space_ent = world.spawn(Space(NamespaceId::from(&space.0))).id();
         set_kv(
             &mut world,
             me,
@@ -542,25 +577,22 @@ mod tests {
         // Tearing down the doc drops the cell locally but sends no retract, so
         // peers still holding it keep theirs.
         world.despawn(space_ent);
-        assert_eq!(replicas::doc_kv_get(space, space, "k"), None);
+        assert_eq!(replicas.kv_get(space, space, "k"), None);
         assert!(rx.try_recv().is_err());
 
-        replicas::unregister_stream(token);
-        reset();
+        replicas.unregister_stream(token);
     }
 
     #[test]
     fn neutral_kv_survives_writer_disconnect() {
-        let _g = TEST_LOCK.lock();
-        reset();
-        let me = peer(1);
-        set_self_peer_id(me);
+        let replicas = Replicas::new();
         let remote = peer(3);
-        let space = h(b"neutral-survive-space");
+        let space = doc(b"neutral-survive-space");
 
         let mut world = World::new();
         world.init_resource::<Policy>();
-        let space_ent = world.spawn(Space(space)).id();
+        world.insert_resource(replicas.clone());
+        let space_ent = world.spawn(Space(NamespaceId::from(&space.0))).id();
         let peer_ent = world.spawn(RemotePeer(remote)).id();
         set_kv(
             &mut world,
@@ -573,137 +605,130 @@ mod tests {
             false,
         )
         .expect("kv set");
-        assert_eq!(replicas::doc_kv_get(space, space, "k"), Some(b"v".to_vec()));
+        assert_eq!(replicas.kv_get(space, space, "k"), Some(b"v".to_vec()));
 
         world.despawn(peer_ent);
         assert_eq!(
-            replicas::doc_kv_get(space, space, "k"),
+            replicas.kv_get(space, space, "k"),
             Some(b"v".to_vec()),
             "space-owned kv should persist after the writer disconnects"
         );
 
         // The doc anchor still owns the cell's lifetime.
         world.despawn(space_ent);
-        assert_eq!(replicas::doc_kv_get(space, space, "k"), None);
-        reset();
+        assert_eq!(replicas.kv_get(space, space, "k"), None);
     }
 
     #[test]
     fn despawning_doc_cascades_state_and_clears_store() {
-        let _g = TEST_LOCK.lock();
-        reset();
+        let replicas = Replicas::new();
         let policy = Policy::new();
         let me = peer(1);
-        set_self_peer_id(me);
-        let space = h(b"cascade-doc-space");
-        let doc = h(b"cascade-doc-doc");
+        let space = doc(b"cascade-doc-space");
+        let doc = doc(b"cascade-doc-doc");
 
         let mut world = World::new();
         world.init_resource::<Policy>();
+        world.insert_resource(replicas.clone());
         let peer_ent = world.spawn(LocalPeer).id();
         let doc_ent = world.spawn(SpaceDoc { doc, space }).id();
-        let pin = PinState::register(policy, me, doc, space, 1, false).expect("pin");
+        let pin = PinState::register(policy, replicas.clone(), None, me, doc, space, 1, false)
+            .expect("pin");
         world.spawn((pin, StateDoc(doc_ent), StatePeer(peer_ent)));
-        assert_eq!(replicas::owner(space, doc), Some(me));
+        assert_eq!(replicas.owner(space, doc), Some(me));
 
         world.despawn(doc_ent);
-        assert_eq!(replicas::owner(space, doc), None);
-        assert!(!replicas::has_doc(space, doc));
-        reset();
+        assert_eq!(replicas.owner(space, doc), None);
+        assert!(!replicas.has_doc(space, doc));
     }
 
     #[test]
     fn despawning_peer_cascades_state_and_clears_store() {
-        let _g = TEST_LOCK.lock();
-        reset();
+        let replicas = Replicas::new();
         let policy = Policy::new();
         let peer = peer(2);
-        let space = h(b"cascade-peer-space");
-        let doc = h(b"cascade-peer-doc");
+        let space = doc(b"cascade-peer-space");
+        let doc = doc(b"cascade-peer-doc");
 
         let mut world = World::new();
         world.init_resource::<Policy>();
+        world.insert_resource(replicas.clone());
         let peer_ent = world.spawn(RemotePeer(peer)).id();
         let doc_ent = world.spawn(SpaceDoc { doc, space }).id();
-        let pin = PinState::register(policy, peer, doc, space, 1, false).expect("pin");
+        let pin = PinState::register(policy, replicas.clone(), None, peer, doc, space, 1, false)
+            .expect("pin");
         world.spawn((pin, StateDoc(doc_ent), StatePeer(peer_ent)));
-        assert_eq!(replicas::owner(space, doc), Some(peer));
+        assert_eq!(replicas.owner(space, doc), Some(peer));
 
         world.despawn(peer_ent);
-        assert_eq!(replicas::owner(space, doc), None);
-        assert!(!replicas::has_doc(space, doc));
-        reset();
+        assert_eq!(replicas.owner(space, doc), None);
+        assert!(!replicas.has_doc(space, doc));
     }
 
     #[test]
     fn authority_guard_broadcasts_claim_and_unclaim() {
-        let _g = TEST_LOCK.lock();
-        reset();
+        let replicas = Replicas::new();
         let policy = Policy::new();
         let me = peer(1);
-        set_self_peer_id(me);
-        let space = h(b"auth-guard-space");
-        let doc = h(b"auth-guard-doc");
+        let space = doc(b"auth-guard-space");
+        let doc = doc(b"auth-guard-doc");
 
-        let (token, rx) = replicas::register_stream();
+        let (token, rx) = replicas.register_stream(me);
         let _ = rx.try_recv();
 
-        let claim = AuthorityState::register(&policy, me, doc, space, 5, true)
+        let claim = AuthorityState::register(&policy, &replicas, None, me, doc, space, 5, true)
             .expect("authority registers");
-        assert_eq!(replicas::authority(space, doc), Some(me));
+        assert_eq!(replicas.authority(space, doc), Some(me));
         assert!(matches!(rx.try_recv(), Ok(StateMsg::Authority { doc: d, .. }) if d == doc));
 
         drop(claim);
-        assert_eq!(replicas::authority(space, doc), None);
+        assert_eq!(replicas.authority(space, doc), None);
         assert!(matches!(rx.try_recv(), Ok(StateMsg::Unclaim { doc: d }) if d == doc));
 
-        replicas::unregister_stream(token);
-        reset();
+        replicas.unregister_stream(token);
     }
 
     #[test]
     fn superseded_stream_release_keeps_state() {
-        let _g = TEST_LOCK.lock();
-        reset();
+        let replicas = Replicas::new();
         let peer = peer(2);
-        let space = h(b"supersede-space");
-        let doc = h(b"supersede-doc");
+        let space = doc(b"supersede-space");
+        let doc = doc(b"supersede-doc");
 
         let mut world = World::new();
         world.init_resource::<Policy>();
+        world.insert_resource(replicas.clone());
         let e0 = claim_remote_peer(&mut world, peer, 0);
         assert!(spawn_pin(&mut world, e0, peer, doc, space, 1, false));
-        assert_eq!(replicas::owner(space, doc), Some(peer));
+        assert_eq!(replicas.owner(space, doc), Some(peer));
 
         let e1 = claim_remote_peer(&mut world, peer, 1);
         assert_eq!(e0, e1);
 
         release_remote_peer(&mut world, e0, 0);
-        assert_eq!(replicas::owner(space, doc), Some(peer));
+        assert_eq!(replicas.owner(space, doc), Some(peer));
 
         release_remote_peer(&mut world, e1, 1);
-        assert_eq!(replicas::owner(space, doc), None);
-        reset();
+        assert_eq!(replicas.owner(space, doc), None);
     }
 
     #[test]
     fn state_tracked_for_unentered_space() {
-        let _g = TEST_LOCK.lock();
-        reset();
+        let replicas = Replicas::new();
         let peer = peer(2);
-        let space = h(b"unentered-space");
-        let doc = h(b"unentered-doc");
+        let space = doc(b"unentered-space");
+        let doc = doc(b"unentered-doc");
 
         // No `Space` entity exists yet.
         let mut world = World::new();
         world.init_resource::<Policy>();
+        world.insert_resource(replicas.clone());
         let peer_ent = world.spawn(RemotePeer(peer)).id();
         assert!(spawn_pin(&mut world, peer_ent, peer, doc, space, 1, false));
-        assert_eq!(replicas::owner(space, doc), Some(peer));
+        assert_eq!(replicas.owner(space, doc), Some(peer));
 
         let tracker = entity_by::<SpaceDoc, _>(&mut world, |d| d.doc == doc).expect("tracker");
         assert!(world.get::<ChildOf>(tracker).is_none());
         assert_eq!(world.get::<SpaceDoc>(tracker).map(|d| d.space), Some(space));
-        reset();
     }
 }

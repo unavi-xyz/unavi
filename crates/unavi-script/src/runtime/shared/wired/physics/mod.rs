@@ -263,19 +263,18 @@ pub fn claim_authority(api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
     let bytes = <[u8; 32]>::try_from(doc_id.as_slice())
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
     let doc = DocId(bytes);
-    let space = unavi_space::check::space_of(&api.policy, doc)
+    let space = api
+        .view
+        .space_of(doc)
         .ok_or_else(|| ScriptError::other("document is not in a tracked space"))?;
-    unavi_space::state::entities::claim_authority(
-        iroh_docs::NamespaceId::from(&space.0),
-        iroh_docs::NamespaceId::from(&doc.0),
-    );
+    unavi_space::state::entities::claim_authority(api.view.me(), space, doc);
     Ok(())
 }
 
 pub fn release_authority(_api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
     let bytes = <[u8; 32]>::try_from(doc_id.as_slice())
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
-    unavi_space::state::entities::release_authority(iroh_docs::NamespaceId::from(&bytes));
+    unavi_space::state::entities::release_authority(DocId(bytes));
     Ok(())
 }
 

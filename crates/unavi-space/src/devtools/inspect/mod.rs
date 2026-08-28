@@ -17,16 +17,14 @@ use unavi_devtools::{
     scroll::Scrollable,
     tabs::DevPanel,
 };
-use unavi_policy::{
-    registry::Policy,
-    trust::Trust,
-};
+use unavi_policy::trust::Trust;
 
 use crate::{
+    connection::PeerLink,
     devtools::inspect::model::InspectData,
-    peer::self_peer_id,
-    state::replicas::debug,
+    state::replicas::Replicas,
     trust::TrustStorage,
+    view::SpaceView,
 };
 
 pub mod model;
@@ -117,8 +115,9 @@ pub struct Expanded(pub HashSet<(NamespaceId, String)>);
 #[derive(Resource, Default)]
 pub struct RenderedPage(u64);
 
-pub fn effective_page(current: &CurrentPage) -> Option<Page> {
-    current.0.or_else(|| self_peer_id().map(Page::Peer))
+/// The open page, defaulting to the local peer once one is known.
+pub fn effective_page(current: &CurrentPage, me: Option<EndpointId>) -> Option<Page> {
+    current.0.or_else(|| me.map(Page::Peer))
 }
 
 pub fn spawn(mut commands: Commands) {
@@ -172,13 +171,14 @@ pub fn spawn(mut commands: Commands) {
 pub fn handle_link(
     activate: On<Activate>,
     links: Query<&LinkTo>,
+    view: Option<Res<SpaceView>>,
     mut current: ResMut<CurrentPage>,
     mut history: ResMut<History>,
 ) {
     let Ok(link) = links.get(activate.entity) else {
         return;
     };
-    let from = effective_page(&current);
+    let from = effective_page(&current, view.as_deref().map(SpaceView::me));
     if from == Some(link.0) {
         return;
     }
@@ -211,7 +211,8 @@ pub fn handle_rung(
     activate: On<Activate>,
     buttons: Query<&RungButton>,
     trust: Option<Res<TrustStorage>>,
-    policy: Res<Policy>,
+    view: Option<Res<SpaceView>>,
+    link: Option<Res<PeerLink>>,
 ) {
     let Ok(button) = buttons.get(activate.entity) else {
         return;
@@ -220,10 +221,14 @@ pub fn handle_rung(
         warn!("no trust storage; cannot change a peer's rung");
         return;
     };
+    let (Some(view), Some(link)) = (view, link) else {
+        warn!("space link not installed; cannot change a peer's rung");
+        return;
+    };
     let result = match button.rung {
-        Some(Trust::Blocked) => crate::trust::eject(&policy, button.peer, &trust.0),
-        Some(_) => crate::trust::trust_peer(&policy, button.peer, &trust.0),
-        None => crate::trust::unblock(&policy, button.peer, &trust.0),
+        Some(Trust::Blocked) => crate::trust::eject(&view, &link, button.peer, &trust.0),
+        Some(_) => crate::trust::trust_peer(&view, button.peer, &trust.0),
+        None => crate::trust::unblock(&view, button.peer, &trust.0),
     };
     if let Err(err) = result {
         warn!(?err, "cannot change a peer's rung");
@@ -250,12 +255,14 @@ pub fn render(
     expanded: Res<Expanded>,
     mut rendered: ResMut<RenderedPage>,
     data: InspectData,
+    view: Option<Res<SpaceView>>,
+    replicas: Res<Replicas>,
     root: Query<Entity, With<PageRoot>>,
     mut commands: Commands,
 ) {
-    let snap = debug::snapshot();
-    let page = effective_page(&current);
-    let model = page.map(|p| data.page_model(p, &snap));
+    let snap = replicas.snapshot();
+    let page = effective_page(&current, view.as_deref().map(SpaceView::me));
+    let model = page.and_then(|p| data.page_model(p, &snap));
     let can_back = !history.0.is_empty();
 
     let fp = fingerprint(page, model.as_ref(), &expanded, can_back);

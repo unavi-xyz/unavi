@@ -18,12 +18,6 @@ use unavi_policy::quota::{
     Stock,
     StockGuard,
 };
-use unavi_space::check::{
-    placed,
-    same_space,
-    tier_of,
-    write as check_write,
-};
 use web_time::{
     SystemTime,
     UNIX_EPOCH,
@@ -105,7 +99,7 @@ pub async fn emit(
     // Speaking is a write, and an unplaced document has no co-presence to
     // appeal to. Without this a document that cannot be attributed reaches
     // every receptor its owner-check happens to pass.
-    placed(&api.policy, api.doc_id)?;
+    api.view.placed(api.doc_id)?;
     crate::quota::acquire(&api.quota, Flow::Emit, 1.0).await?;
 
     let time = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
@@ -164,7 +158,7 @@ pub async fn emit(
             continue;
         }
 
-        if check_write(&api.policy, api.doc_id, entry.doc_id).is_err() {
+        if api.view.write(api.doc_id, entry.doc_id).is_err() {
             continue;
         }
 
@@ -249,8 +243,8 @@ fn resolve_sender_scope(
             },
         ) => {
             let e_pos = (*emitter_pos)?;
-            let emitter_is_system = tier_of(&api.policy, api.doc_id).crosses_space_boundaries();
-            if !emitter_is_system && !same_space(&api.policy, emitter_abs.doc, receptor_node.doc) {
+            let emitter_is_system = api.view.tier_of(api.doc_id).crosses_space_boundaries();
+            if !emitter_is_system && !api.view.same_space(emitter_abs.doc, receptor_node.doc) {
                 return None;
             }
             let r_pos = NODE_TRANSFORM_REGISTRY

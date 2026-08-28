@@ -9,9 +9,10 @@ use bevy_hsd::{
 };
 use bevy_iroh::store::LocalStore;
 use tokio::sync::Mutex;
-use unavi_policy::{
-    quota::Quota,
-    registry::Policy,
+use unavi_policy::quota::Quota;
+use unavi_space::{
+    quota::Viewer,
+    view::SpaceView,
 };
 use unavi_util::async_task::spawn_async_task;
 
@@ -45,9 +46,16 @@ pub fn instantiate_scripts(
     >,
     docs: Query<(&HsdDocId, &Hsd, Has<QuotaExempt>)>,
     stores: Query<&LocalStore>,
-    policy: Res<Policy>,
+    view: Option<Res<SpaceView>>,
     mut commands: Commands,
 ) {
+    let Some(view) = view else {
+        return;
+    };
+    let viewer = Viewer {
+        me:       view.me(),
+        bindings: &view.identity().bindings,
+    };
     let root_doc = stores.single().ok().map(|store| store.0.root());
 
     for (entity, script, name, prim, doc_ent) in to_instantiate {
@@ -60,7 +68,12 @@ pub fn instantiate_scripts(
         let quota = if exempt {
             Quota::unlimited()
         } else {
-            unavi_space::quota::document_quota(&policy, doc_id.0)
+            unavi_space::quota::document_quota(
+                view.policy(),
+                view.replicas(),
+                Some(viewer),
+                doc_id.0,
+            )
         };
 
         let bytes = wasm.0.clone();
@@ -71,7 +84,7 @@ pub fn instantiate_scripts(
                 state: Arc::clone(&doc.0),
                 doc_id: doc_id.0,
                 prim: prim.0,
-                policy: policy.clone(),
+                view: (*view).clone(),
                 quota,
                 root_doc,
                 wired_agent: Mutex::default(),

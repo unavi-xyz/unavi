@@ -13,10 +13,10 @@ use bevy_hsd::{
 };
 use bevy_iroh::store::LocalStore;
 use hsd::{
-    id::DocId,
     key,
     state::SceneState,
 };
+use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
 use unavi_policy::space::Space;
 use unavi_util::async_task::spawn_async_task;
@@ -28,8 +28,9 @@ use crate::{
             DocStates,
             SpaceDoc,
         },
-        replicas,
+        replicas::Replicas,
     },
+    view::SpaceView,
 };
 
 /// How long an instanced, no-longer-pinned document lingers before despawn.
@@ -69,7 +70,7 @@ pub fn adopt_tracked_docs(
         return;
     };
     for (entity, doc) in &trackers {
-        if doc.space == space.0 {
+        if doc.space == space.doc_id() {
             commands.entity(entity).insert(ChildOf(trigger.entity));
         }
     }
@@ -87,9 +88,16 @@ pub fn fetch_tracked_docs(
     >,
     peers: Query<&Peer>,
     stores: Query<&LocalStore>,
+    replicas: Res<Replicas>,
+    view: Option<Res<SpaceView>>,
     mut commands: Commands,
 ) {
     let Ok(store) = stores.single() else {
+        return;
+    };
+    // A doc with no local identity yet has nothing to sync into; retried next
+    // tick once one exists.
+    let Some(me) = view.as_deref().map(SpaceView::me) else {
         return;
     };
     let now = time.elapsed();
@@ -97,11 +105,12 @@ pub fn fetch_tracked_docs(
         if backoff.is_some_and(|b| now < b.0) {
             continue;
         }
-        if !replicas::is_pinned(doc.doc) {
+        if !replicas.is_pinned(doc.doc) {
             continue;
         }
 
-        let sync_from = replicas::doc_holders(doc.doc)
+        let sync_from = replicas
+            .holders(doc.doc, me)
             .iter()
             .filter_map(|h| peers.iter().find(|p| &p.0.id == h))
             .map(|p| p.0.clone())
@@ -110,7 +119,7 @@ pub fn fetch_tracked_docs(
             continue;
         }
 
-        let ns = doc.doc;
+        let ns = NamespaceId::from(&doc.doc.0);
         let store = store.0.clone();
         let (tx, rx) = async_channel::bounded(1);
         let (cancel_tx, cancel_rx) = oneshot::channel();
@@ -162,8 +171,8 @@ pub fn instantiate_tracked_docs(
                     .entity(entity)
                     .insert((
                         Hsd::new(state),
-                        HsdDocId(DocId(*doc.doc.as_bytes())),
-                        HsdNamespace(doc.doc),
+                        HsdDocId(doc.doc),
+                        HsdNamespace(NamespaceId::from(&doc.doc.0)),
                     ))
                     .remove::<PendingPinnedDoc>();
             }
@@ -188,11 +197,12 @@ pub fn prune_tracked_docs(
     time: Res<Time>,
     instanced: Query<(Entity, &SpaceDoc, Option<&UnpinnedAt>), With<Hsd>>,
     trackers: Query<(Entity, Option<&DocStates>), (With<SpaceDoc>, Without<Hsd>)>,
+    replicas: Res<Replicas>,
     mut commands: Commands,
 ) {
     let now = time.elapsed();
     for (entity, doc, unpinned) in &instanced {
-        if replicas::is_pinned(doc.doc) {
+        if replicas.is_pinned(doc.doc) {
             if unpinned.is_some() {
                 commands.entity(entity).remove::<UnpinnedAt>();
             }

@@ -1,8 +1,3 @@
-use std::sync::{
-    LazyLock,
-    RwLock,
-};
-
 use bevy::prelude::*;
 use bevy_iroh::{
     endpoint::IrohEndpoint,
@@ -18,14 +13,20 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use tokio::sync::oneshot;
+use tokio::sync::{
+    oneshot,
+    watch,
+};
 use unavi_identity::signed_bytes::Signable;
 use unavi_policy::space::Space;
 use unavi_util::async_task::spawn_async_task;
 
-use crate::gossip::thread::{
-    GossipCommand,
-    GossipCtx,
+use crate::{
+    gossip::thread::{
+        GossipCommand,
+        GossipCtx,
+    },
+    peer::presence::PresenceInbox,
 };
 
 mod bootstrap;
@@ -35,32 +36,32 @@ mod thread;
 
 /// The occupied space, mirrored from [`crate::anchor::ActiveSpace`] for the
 /// async gossip tasks. Presence broadcasts only to this space.
-static ACTIVE_SPACE: RwLock<Option<NamespaceId>> = RwLock::new(None);
+///
+/// A send wakes the outbound task, so entering a space broadcasts immediately
+/// instead of waiting out the heartbeat.
+#[derive(Resource)]
+pub struct ActiveSpaceSignal(watch::Sender<Option<NamespaceId>>);
 
-/// Woken when the active space changes, so the entered space broadcasts
-/// presence immediately instead of waiting out the heartbeat.
-static ACTIVE_CHANGED: LazyLock<tokio::sync::Notify> = LazyLock::new(tokio::sync::Notify::new);
-
-fn active_space() -> Option<NamespaceId> {
-    *ACTIVE_SPACE.read().expect("active space poisoned")
+impl Default for ActiveSpaceSignal {
+    fn default() -> Self {
+        Self(watch::channel(None).0)
+    }
 }
 
-fn active_changed() -> &'static tokio::sync::Notify {
-    &ACTIVE_CHANGED
-}
-
-pub fn publish_active_space(active: Res<crate::anchor::ActiveSpace>, spaces: Query<&Space>) {
+pub fn publish_active_space(
+    active: Res<crate::anchor::ActiveSpace>,
+    spaces: Query<&Space>,
+    signal: Res<ActiveSpaceSignal>,
+) {
     if !active.is_changed() {
         return;
     }
     let hash = active.0.and_then(|e| spaces.get(e).ok()).map(|s| s.0);
-    let mut current = ACTIVE_SPACE.write().expect("active space poisoned");
-    if *current == hash {
-        return;
-    }
-    *current = hash;
-    drop(current);
-    ACTIVE_CHANGED.notify_waiters();
+    signal.0.send_if_modified(|current| {
+        let changed = *current != hash;
+        *current = hash;
+        changed
+    });
 }
 
 #[derive(Serialize, Deserialize)]
@@ -122,6 +123,8 @@ pub fn join_space_topics(
     spaces: Query<(Entity, &Space), Without<SpaceGossipCancel>>,
     sender: Query<&GossipSender>,
     endpoints: Query<(&IrohEndpoint, &IrohGossip)>,
+    signal: Res<ActiveSpaceSignal>,
+    presence: Res<PresenceInbox>,
     mut commands: Commands,
 ) {
     if spaces.is_empty() {
@@ -139,6 +142,8 @@ pub fn join_space_topics(
         let ctx = GossipCtx {
             endpoint: endpoint.0.clone(),
             gossip:   gossip.0.clone(),
+            active:   signal.0.subscribe(),
+            presence: presence.inbox(),
         };
 
         let (cancel_tx, cancel_rx) = oneshot::channel();

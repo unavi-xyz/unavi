@@ -1,3 +1,6 @@
+// Bevy`s `AsBindGroup` needs higher limit
+#![recursion_limit = "256"]
+
 use bevy::{
     app::AnimationSystems,
     asset::load_internal_asset,

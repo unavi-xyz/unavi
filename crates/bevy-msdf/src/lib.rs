@@ -7,6 +7,9 @@
 //! face of its fallback chain and a closed-budget atlas grows a field from
 //! whatever arrives; coverage follows from which files are fetched.
 
+// Bevy`s `AsBindGroup` needs higher limit
+#![recursion_limit = "256"]
+
 use bevy::{
     asset::embedded_asset,
     prelude::*,

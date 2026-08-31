@@ -1,5 +1,4 @@
 use bevy::{
-    anti_alias::taa::TemporalAntiAliasing,
     camera::{
         Exposure,
         Hdr,
@@ -37,7 +36,7 @@ pub fn apply_camera_effects(
             Exposure::SUNLIGHT,
             Msaa::Off,
             ShadowFilteringMethod::Temporal,
-            TemporalAntiAliasing::default(),
+            // TemporalAntiAliasing::default(),
             DistanceFog {
                 color: FOG_COLOR,
                 falloff: FogFalloff::Linear {

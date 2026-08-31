@@ -1,3 +1,6 @@
+// Bevy`s `AsBindGroup` needs higher limit
+#![recursion_limit = "256"]
+
 use std::{
     collections::BTreeMap,
     sync::{

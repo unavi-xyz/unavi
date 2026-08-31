@@ -55,7 +55,6 @@ directories          = "6.0.0"
 embed-resource       = "3.0.11"
 futures              = "0.3.34"
 glam                 = "0.32.1"
-# Held back by blitz-dom, which pins `image = "=0.25.6"`.
 image                = { default-features = false, version = "=0.25.6" }
 iroh                 = { default-features = false, features = ["tls-ring"], version = "1.1.0" }
 iroh-blobs           = { default-features = false, version = "=0.103.0" }
@@ -96,6 +95,7 @@ zeroize              = "1.9.0"
 
 [patch.crates-io]
 iroh-blobs = { git = "https://github.com/m11m/iroh-blobs" }
+xdid       = { git = "https://github.com/unavi-xyz/xdid" }
 
 [profile.release]
 codegen-units = 1

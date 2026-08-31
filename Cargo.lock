@@ -741,29 +741,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aws-lc-rs"
-version = "1.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce2b2dcc879c3bae0d371e77c99f2238400ef24ec001394befa67b6e543add9e"
-dependencies = [
- "aws-lc-sys",
- "zeroize",
-]
-
-[[package]]
-name = "aws-lc-sys"
-version = "0.44.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f09fae7be8bb3174e05c6afdb34199e6dc0c7c04ba9fa237b1967adfbde27483"
-dependencies = [
- "cc",
- "cmake",
- "dunce",
- "fs_extra",
- "pkg-config",
-]
-
-[[package]]
 name = "axum"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5682,12 +5659,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fs_extra"
-version = "1.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42703706b716c37f96a77aea830392ad231f44c9e9a67872fa5548707e11b11c"
-
-[[package]]
 name = "futures"
 version = "0.3.34"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9759,7 +9730,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d8fae84b431384b68627d0f9b3b1245fcf9f46f6c0e3dc902e9dce64edd1967"
 dependencies = [
  "libc",
- "windows-sys 0.61.2",
+ "windows-sys 0.45.0",
 ]
 
 [[package]]
@@ -10651,63 +10622,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "quinn"
-version = "0.11.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c1a41e437b6bbd489372cd4971de128e85c855f56c57f283d20ff016cf7c0a8"
-dependencies = [
- "bytes",
- "cfg_aliases",
- "pin-project-lite",
- "quinn-proto",
- "quinn-udp",
- "rustc-hash 2.1.3",
- "rustls",
- "socket2",
- "thiserror 2.0.20",
- "tokio",
- "tracing",
- "web-time",
-]
-
-[[package]]
-name = "quinn-proto"
-version = "0.11.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04759210543be93709136e28212294a659ef5001836ff4eab4d663e4529bba83"
-dependencies = [
- "aws-lc-rs",
- "bytes",
- "getrandom 0.4.3",
- "lru-slab",
- "rand 0.10.2",
- "rand_pcg",
- "ring",
- "rustc-hash 2.1.3",
- "rustls",
- "rustls-pki-types",
- "slab",
- "thiserror 2.0.20",
- "tinyvec",
- "tracing",
- "web-time",
-]
-
-[[package]]
-name = "quinn-udp"
-version = "0.5.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "35a133f956daabe89a61a685c2649f13d82d5aa4bd5d12d1277e1072a21c0694"
-dependencies = [
- "cfg_aliases",
- "libc",
- "once_cell",
- "socket2",
- "tracing",
- "windows-sys 0.61.2",
-]
-
-[[package]]
 name = "quote"
 version = "1.0.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -11127,7 +11041,6 @@ dependencies = [
  "native-tls",
  "percent-encoding",
  "pin-project-lite",
- "quinn",
  "rustls",
  "rustls-pki-types",
  "rustls-platform-verifier",
@@ -11403,7 +11316,6 @@ version = "0.23.43"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0283386ce02abc0151e1761d08802dfe86c173b0b494af5cbc086574e453da06"
 dependencies = [
- "aws-lc-rs",
  "log",
  "once_cell",
  "ring",
@@ -11468,7 +11380,6 @@ version = "0.103.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3c3cf1d8b1e7d4927e2d154c3fcb02979afb9939629c62cd9048d4f07b60ac2"
 dependencies = [
- "aws-lc-rs",
  "ring",
  "rustls-pki-types",
  "untrusted",
@@ -16549,8 +16460,7 @@ checksum = "163b33ed8786455e2fa5d72f554057ce3f3182425434f756cd39c99839d88e23"
 [[package]]
 name = "xdid"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07d5df15ea42c49067d200285aa1a75cb3525a382c78873cdc394a95571353c0"
+source = "git+https://github.com/unavi-xyz/xdid#8b5fd0ceb7a745c4166b93773a0ae6461c210172"
 dependencies = [
  "smallvec",
  "thiserror 2.0.20",
@@ -16562,8 +16472,7 @@ dependencies = [
 [[package]]
 name = "xdid-core"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6a6867b2df881664f5254311bb26305ceb66a3b722c85c0919e349413e83248"
+source = "git+https://github.com/unavi-xyz/xdid#8b5fd0ceb7a745c4166b93773a0ae6461c210172"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -16577,8 +16486,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-key"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e973a0e9f1aecb64642127e4cc8a301d58d3f6085542759f086ed92c491e5724"
+source = "git+https://github.com/unavi-xyz/xdid#8b5fd0ceb7a745c4166b93773a0ae6461c210172"
 dependencies = [
  "anyhow",
  "jose-jwk",
@@ -16595,11 +16503,12 @@ dependencies = [
 [[package]]
 name = "xdid-method-web"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "504f039b7f84a825e135d1ab8792412041469a2f8f9970f0d780f9e1394832b2"
+source = "git+https://github.com/unavi-xyz/xdid#8b5fd0ceb7a745c4166b93773a0ae6461c210172"
 dependencies = [
  "percent-encoding",
  "reqwest",
+ "rustls",
+ "rustls-platform-verifier",
  "send_wrapper",
  "serde_json",
  "thiserror 2.0.20",

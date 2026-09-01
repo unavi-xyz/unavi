@@ -73,7 +73,8 @@ pub fn spawn_space_scene(
 
     // A locally built space is already realized on this entity; reading it back
     // would duplicate every prim and re-run every script. It still has to be
-    // served: presence is announced for it, so peers arrive expecting an answer.
+    // served: presence is announced for it, so peers arrive expecting an
+    // answer.
     if instanced == Some(ns) {
         let store = store.0.clone();
         spawn_async_task(async move {
@@ -137,7 +138,8 @@ pub fn start_space_fetch(
 
         spawn_async_task(async move {
             // Waiting on the prim prefix rather than a single snapshot key: the
-            // document is its entries now, and the first prim proves it arrived.
+            // document is its entries now, and the first prim proves it
+            // arrived.
             let fetch = async {
                 let doc = store.open(ns).await?;
                 doc.sync_from(peers).await?;
@@ -194,8 +196,8 @@ pub fn instantiate_pending_scenes(
 
 pub fn despawn_space_scene(trigger: On<Remove, Space>, mut commands: Commands) {
     // Removing PendingScene drops the oneshot::Sender, signalling the task to
-    // cancel. Despawning the space drops it just as well, so a missing entity is
-    // not an error.
+    // cancel. Despawning the space drops it just as well, so a missing entity
+    // is not an error.
     commands
         .entity(trigger.entity)
         .try_remove::<(PendingScene, Hsd)>();

@@ -182,8 +182,9 @@ pub fn update_develop_camera_clip_planes(
 
         perspective.near_clip_plane = normal.extend(-normal.dot(plane_point));
 
-        // `camera_system` caches `clip_from_view` before propagation (last frame's
-        // pose); recompute from the fresh pose so the clip plane doesn't trail a frame.
+        // `camera_system` caches `clip_from_view` before propagation (last
+        // frame's pose); recompute from the fresh pose so the clip
+        // plane doesn't trail a frame.
         camera.computed.clip_from_view = projection.get_clip_from_view();
     }
 }

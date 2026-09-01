@@ -61,9 +61,10 @@ impl SpaceView {
         let owner = space
             .and_then(|space| self.replicas.owner(space, root))
             .or_else(|| {
-                // Nothing pins the root and it is absent from the replica index, so
-                // it was minted here. A document that *is* in the index arrived
-                // from a peer, and must never fall back to reading as local.
+                // Nothing pins the root and it is absent from the replica
+                // index, so it was minted here. A document that
+                // *is* in the index arrived from a peer, and
+                // must never fall back to reading as local.
                 replicated.is_none().then_some(self.me)
             });
 

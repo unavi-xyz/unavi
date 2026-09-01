@@ -143,8 +143,8 @@ pub fn apply_remote_poses(
         }
 
         let Some((space, _)) = spaces.iter().find(|(_, s)| s.0 == resolved.space) else {
-            // Space not instanced (may still be loading); drop any orphaned avatar
-            // and wait for it.
+            // Space not instanced (may still be loading); drop any orphaned
+            // avatar and wait for it.
             if let Some((entity, ..)) = remotes.iter().find(|(_, r, ..)| r.0 == peer) {
                 commands.entity(entity).despawn();
             }
@@ -176,7 +176,8 @@ pub fn apply_remote_poses(
         if child_of.parent() == space {
             lerp.retarget(&resolved, recv);
         } else {
-            // Space changed: reparent and snap rather than lerp across the grid jump.
+            // Space changed: reparent and snap rather than lerp across the grid
+            // jump.
             commands.entity(entity).insert(ChildOf(space));
             *lerp = PoseLerp::snapped(&resolved, recv);
         }

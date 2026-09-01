@@ -82,9 +82,10 @@ pub fn send_agent_pose(
         return;
     };
 
-    // The active space sits at the world origin, so the avatar's world transform
-    // is its pose in the space's local frame. The body rigid-body, not the
-    // `LocalAgent`, drives movement, hence the avatar's global transform.
+    // The active space sits at the world origin, so the avatar's world
+    // transform is its pose in the space's local frame. The body
+    // rigid-body, not the `LocalAgent`, drives movement, hence the avatar's
+    // global transform.
     let Some(root) = globals
         .get(avatar.0)
         .ok()

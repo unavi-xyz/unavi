@@ -114,8 +114,9 @@ pub async fn send_object_stream(_link: &PeerLink, connection: &Connection) -> an
             send_object(connection, &mut streams, &mut buf, obj, now).await?;
         }
 
-        // Documents no longer owned drop out of the batch; close their streams so
-        // the receiver stops driving the replica and stale baselines are freed.
+        // Documents no longer owned drop out of the batch; close their streams
+        // so the receiver stops driving the replica and stale baselines
+        // are freed.
         let stale = streams
             .keys()
             .filter(|doc| !owned.contains(*doc))

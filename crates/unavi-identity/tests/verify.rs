@@ -9,7 +9,7 @@ use unavi_identity::{
         VerifyError,
     },
 };
-use xdid::methods::key::keys::{
+use xdid::method::key::{
     DidKeyPair,
     PublicKey,
     p256::P256KeyPair,

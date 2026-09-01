@@ -1,6 +1,6 @@
 use iroh::SecretKey;
 use unavi_store::local::Storage;
-use xdid::methods::key::keys::{
+use xdid::method::key::{
     DidKeyPair,
     p256::P256KeyPair,
 };
@@ -31,7 +31,7 @@ pub fn load(storage: &Storage) -> anyhow::Result<Keys> {
 /// the identity, which nothing can recover.
 fn identity_key(storage: &Storage) -> anyhow::Result<P256KeyPair> {
     if let Some(pem) = storage.read(IDENTITY_ITEM)? {
-        return P256KeyPair::from_pkcs8_pem(Zeroizing::new(pem).as_str());
+        return Ok(P256KeyPair::from_pkcs8_pem(Zeroizing::new(pem).as_str())?);
     }
 
     let pair = P256KeyPair::generate();
@@ -59,7 +59,7 @@ fn endpoint_key(storage: &Storage) -> anyhow::Result<SecretKey> {
 #[cfg(test)]
 mod tests {
     use tempfile::tempdir;
-    use xdid::methods::key::keys::PublicKey;
+    use xdid::method::key::PublicKey;
 
     use super::*;
 

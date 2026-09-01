@@ -91,7 +91,8 @@ pub fn apply_seam_crossings(
 
         let prev_translation = prev.0;
 
-        // Stay latched until clear of all slabs, else the landing slab re-fires.
+        // Stay latched until clear of all slabs, else the landing slab
+        // re-fires.
         let inside_any_slab = seams.iter().any(|(t, size, _, state)| {
             *state == SeamState::Open && point_in_slab(curr_translation, t, *size)
         });

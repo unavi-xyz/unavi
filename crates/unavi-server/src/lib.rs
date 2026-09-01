@@ -49,11 +49,11 @@ use xdid::{
     core::{
         did::Did,
         did_url::{
+            DidUrl,
             relative::{
                 RelativeDidUrl,
                 RelativeDidUrlPath,
             },
-            url::DidUrl,
         },
         document::{
             Document,
@@ -62,7 +62,7 @@ use xdid::{
             VerificationMethodMap,
         },
     },
-    methods::key::keys::{
+    method::key::{
         DidKeyPair,
         PublicKey,
     },
@@ -176,7 +176,7 @@ fn key_storage(in_memory: bool) -> Storage {
 
 fn create_did(domain: &str) -> anyhow::Result<Did> {
     let domain_encoded = domain.replace(':', "%3A");
-    Did::from_str(&format!("did:web:{domain_encoded}"))
+    Ok(Did::from_str(&format!("did:web:{domain_encoded}"))?)
 }
 
 const KEY_FRAGMENT: &str = "key";

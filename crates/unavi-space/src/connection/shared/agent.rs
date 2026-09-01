@@ -91,8 +91,8 @@ pub async fn send_agent_stream(_link: &PeerLink, connection: &Connection) -> any
         let now = Instant::now();
         let space_bytes = *space.as_bytes();
 
-        // A p-frame delta is only valid against an i-frame in the same space, so
-        // a space change forces a fresh i-frame.
+        // A p-frame delta is only valid against an i-frame in the same space,
+        // so a space change forces a fresh i-frame.
         let new_iframe = last_iframe_time
             .is_none_or(|last| now.duration_since(last) >= IFRAME_FREQ)
             || space != last_space;

@@ -76,7 +76,8 @@ pub(super) fn spawn(mut commands: Commands) {
             ChildOf(row),
         ));
 
-        // FeathersToggleSwitch is a scene component and must be spawned as a scene.
+        // FeathersToggleSwitch is a scene component and must be spawned as a
+        // scene.
         commands
             .spawn_scene(FeathersToggleSwitch::scene(()))
             .insert((toggle, ChildOf(row)))

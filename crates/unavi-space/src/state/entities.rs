@@ -220,9 +220,9 @@ pub struct KvState {
 
 impl Drop for KvState {
     fn drop(&mut self) {
-        // No `KvForget` goes out. A cell belongs to the document, so it outlives
-        // the peer that wrote it; an explicit delete propagates as a tombstone
-        // at write time instead.
+        // No `KvForget` goes out. A cell belongs to the document, so it
+        // outlives the peer that wrote it; an explicit delete
+        // propagates as a tombstone at write time instead.
         self.replicas.remove_kv(self.doc, &self.key);
     }
 }

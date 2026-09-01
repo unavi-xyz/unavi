@@ -1,4 +1,7 @@
-use std::marker::PhantomData;
+use std::{
+    convert::Infallible,
+    marker::PhantomData,
+};
 
 use serde::{
     Deserialize,
@@ -9,7 +12,7 @@ use xdid::{
         ResolutionError,
         did::Did,
     },
-    methods::key::keys::Signer,
+    method::key::Signer,
 };
 
 use crate::{
@@ -131,7 +134,9 @@ where
 pub struct IrohSigner<'a>(pub &'a iroh::SecretKey);
 
 impl Signer for IrohSigner<'_> {
-    fn sign(&self, message: &[u8]) -> anyhow::Result<Vec<u8>> {
+    type Error = Infallible;
+
+    fn sign(&self, message: &[u8]) -> Result<Vec<u8>, Infallible> {
         Ok(self.0.sign(message).to_bytes().to_vec())
     }
 }

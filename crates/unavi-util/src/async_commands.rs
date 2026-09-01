@@ -83,8 +83,8 @@ impl AsyncCommands {
         self
     }
 
-    // TODO remove `send_spawn`, use `RemoteAllocator` once Bevy 0.19 releases to
-    // generate an entity id outside of the world
+    // TODO remove `send_spawn`, use `RemoteAllocator` once Bevy 0.19 releases
+    // to generate an entity id outside of the world
     #[must_use]
     pub async fn send_spawn<B>(mut self, bundle: B) -> Entity
     where

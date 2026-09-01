@@ -162,7 +162,7 @@ async fn read_proof(rx: &mut RecvStream) -> anyhow::Result<SignedBytes<IdentityP
 #[cfg(test)]
 mod tests {
     use iroh::SecretKey;
-    use xdid::methods::key::keys::{
+    use xdid::method::key::{
         DidKeyPair,
         PublicKey,
         p256::P256KeyPair,

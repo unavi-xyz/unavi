@@ -91,7 +91,8 @@ pub fn maintain_seam_echoes(
                 continue;
             };
             // Seams live in world space, so the body must too; a body parented
-            // under an offset space anchor would otherwise echo in the wrong cell.
+            // under an offset space anchor would otherwise echo in the wrong
+            // cell.
             let body_affine = world_affine(body, body_transform, &parents, &destinations);
             let local = seam_from_world.transform_point3(Vec3::from(body_affine.translation));
             if local.z.abs() > radius

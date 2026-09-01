@@ -16459,8 +16459,8 @@ checksum = "163b33ed8786455e2fa5d72f554057ce3f3182425434f756cd39c99839d88e23"
 
 [[package]]
 name = "xdid"
-version = "0.8.0"
-source = "git+https://github.com/unavi-xyz/xdid#48a0b29c8248fb2f385d2fc2fa20bbc5a9da4a69"
+version = "0.9.0"
+source = "git+https://github.com/unavi-xyz/xdid#8396c084fbed037fcad5909af4d00672a74b94b5"
 dependencies = [
  "smallvec",
  "thiserror 2.0.20",
@@ -16471,11 +16471,11 @@ dependencies = [
 
 [[package]]
 name = "xdid-core"
-version = "0.8.0"
-source = "git+https://github.com/unavi-xyz/xdid#48a0b29c8248fb2f385d2fc2fa20bbc5a9da4a69"
+version = "0.9.0"
+source = "git+https://github.com/unavi-xyz/xdid#8396c084fbed037fcad5909af4d00672a74b94b5"
 dependencies = [
- "anyhow",
  "jose-jwk",
+ "multibase",
  "serde",
  "serde_json",
  "serde_with",
@@ -16485,15 +16485,13 @@ dependencies = [
 
 [[package]]
 name = "xdid-method-key"
-version = "0.8.0"
-source = "git+https://github.com/unavi-xyz/xdid#48a0b29c8248fb2f385d2fc2fa20bbc5a9da4a69"
+version = "0.9.0"
+source = "git+https://github.com/unavi-xyz/xdid#8396c084fbed037fcad5909af4d00672a74b94b5"
 dependencies = [
- "anyhow",
  "jose-jwk",
  "multibase",
  "p256",
  "p384",
- "serde_json",
  "smallvec",
  "thiserror 2.0.20",
  "xdid-core",
@@ -16502,14 +16500,13 @@ dependencies = [
 
 [[package]]
 name = "xdid-method-web"
-version = "0.8.0"
-source = "git+https://github.com/unavi-xyz/xdid#48a0b29c8248fb2f385d2fc2fa20bbc5a9da4a69"
+version = "0.9.0"
+source = "git+https://github.com/unavi-xyz/xdid#8396c084fbed037fcad5909af4d00672a74b94b5"
 dependencies = [
  "percent-encoding",
  "reqwest",
  "rustls",
  "rustls-platform-verifier",
- "send_wrapper",
  "serde_json",
  "thiserror 2.0.20",
  "tokio",

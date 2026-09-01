@@ -5,7 +5,7 @@ use iroh_docs::Author;
 use unavi_store::local::Storage;
 use xdid::{
     core::did::Did,
-    methods::key::keys::{
+    method::key::{
         DidKeyPair,
         PublicKey,
         p256::P256KeyPair,

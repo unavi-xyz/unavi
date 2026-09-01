@@ -246,8 +246,9 @@ fn install_shader_visual(world: &mut World, seam: Entity, key: VisualKey) {
         .get::<Camera3d>(tracked_camera)
         .cloned()
         .unwrap_or_default();
-    // An HDR tracked camera tonemaps as a post-pass, so the RTT must stay linear
-    // to avoid double-darkening; an LDR one tonemaps in-shader, so tonemap here.
+    // An HDR tracked camera tonemaps as a post-pass, so the RTT must stay
+    // linear to avoid double-darkening; an LDR one tonemaps in-shader, so
+    // tonemap here.
     let tonemapping = if world.get::<Hdr>(tracked_camera).is_some() {
         Tonemapping::None
     } else {

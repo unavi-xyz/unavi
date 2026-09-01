@@ -1,9 +1,7 @@
-use unavi_input::pointer::PointerKind;
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::runtime::shared::{
     Api,
-    registry::pointer::POINTER_REGISTRY,
     slot_map::SlotMap,
     wired::input::{
         bridge::{
@@ -79,10 +77,6 @@ pub async fn register_global_input_listener(backend: &Api) -> anyhow::Result<u32
 }
 
 #[must_use]
-pub fn pointers() -> Vec<Pointer> {
-    let snapshot = POINTER_REGISTRY.read();
-    PointerKind::ALL
-        .into_iter()
-        .map(|kind| snapshot[kind.index()].unwrap_or_else(|| Pointer::inactive(kind)))
-        .collect()
+pub fn pointers(api: &Api) -> Vec<Pointer> {
+    api.pointers.all()
 }

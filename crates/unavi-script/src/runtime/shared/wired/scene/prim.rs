@@ -13,7 +13,7 @@ use bevy::{
         Quat,
         Vec3,
     },
-    transform::components::GlobalTransform,
+    transform::components::Transform,
 };
 use hsd::{
     attributes::{
@@ -74,11 +74,7 @@ use unavi_policy::quota::Flow;
 
 use crate::runtime::shared::{
     Api,
-    registry::transform::{
-        AbsoluteNodeId,
-        DOC_ROOT_TRANSFORM_REGISTRY,
-        NODE_TRANSFORM_REGISTRY,
-    },
+    registry::transform::AbsoluteNodeId,
     wired::scene::util::{
         bytes_to_f32s,
         f32s_to_bytes,
@@ -437,9 +433,9 @@ pub async fn set_prefab(api: &Api, rep: u32, value: Option<Vec<u8>>) -> anyhow::
 
 pub async fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<XformAttr>> {
     let prim = get_prim(api, rep).await?;
-    let local = NODE_TRANSFORM_REGISTRY
-        .read()
-        .get(&AbsoluteNodeId {
+    let local = api
+        .transforms
+        .node(&AbsoluteNodeId {
             doc:  prim.doc_id,
             node: prim.id,
         })
@@ -469,14 +465,17 @@ pub async fn set_xform(api: &Api, rep: u32, value: Option<XformAttr>) -> anyhow:
                 bail!("xform is not a transform: {x:?}");
             }
             prim.write_attr(&x)?;
-            if let Some(v) = NODE_TRANSFORM_REGISTRY.write().get_mut(&AbsoluteNodeId {
-                doc:  prim.doc_id,
-                node: prim.id,
-            }) {
-                v.local.translation = Vec3::from_array(x.translation);
-                v.local.rotation = Quat::from_array(x.rotation);
-                v.local.scale = Vec3::from_array(x.scale);
-            }
+            api.transforms.set_local(
+                &AbsoluteNodeId {
+                    doc:  prim.doc_id,
+                    node: prim.id,
+                },
+                Transform {
+                    translation: Vec3::from_array(x.translation),
+                    rotation:    Quat::from_array(x.rotation),
+                    scale:       Vec3::from_array(x.scale),
+                },
+            );
             Ok(())
         }
         None => prim.clear(XformAttr::KEY),
@@ -485,32 +484,17 @@ pub async fn set_xform(api: &Api, rep: u32, value: Option<XformAttr>) -> anyhow:
 
 pub async fn global_xform(api: &Api, rep: u32) -> anyhow::Result<XformAttr> {
     let prim = get_prim(api, rep).await?;
-    let node = |node| AbsoluteNodeId {
-        doc: prim.doc_id,
-        node,
-    };
     let world = if prim.is_proxy {
-        NODE_TRANSFORM_REGISTRY
-            .read()
-            .get(&node(prim.id))
+        api.transforms
+            .node(&AbsoluteNodeId {
+                doc:  prim.doc_id,
+                node: prim.id,
+            })
             .map_or(Affine3A::IDENTITY, |s| s.world.affine())
     } else {
-        let mut local = Affine3A::IDENTITY;
-        let mut cur = Some(prim.id);
-        while let Some(id) = cur {
-            let t = NODE_TRANSFORM_REGISTRY
-                .read()
-                .get(&node(id))
-                .map(|s| s.local)
-                .unwrap_or_default();
-            local = t.compute_affine() * local;
-            cur = prim.with(|state| state.parent(id))?;
-        }
-        let root = DOC_ROOT_TRANSFORM_REGISTRY
-            .read()
-            .get(&prim.doc_id)
-            .map_or(Affine3A::IDENTITY, GlobalTransform::affine);
-        root * local
+        api.transforms.world_of(prim.doc_id, prim.id, |id| {
+            prim.with(|state| state.parent(id))
+        })?
     };
     let (sc, ro, tr) = world.to_scale_rotation_translation();
     Ok(XformAttr {

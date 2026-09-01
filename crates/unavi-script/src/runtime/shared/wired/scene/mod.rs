@@ -392,7 +392,7 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
 
     // Ownership follows from the local pin; its quota is charged to the
     // resulting owner.
-    if !unavi_space::state::entities::self_pin(api.view.me(), space, DocId(*ns.as_bytes())).await {
+    if !api.view.self_pin(space, DocId(*ns.as_bytes())).await {
         anyhow::bail!("space state not tracked locally or pin over quota");
     }
 

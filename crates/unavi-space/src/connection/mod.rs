@@ -29,7 +29,10 @@ use iroh::endpoint::{
 };
 use parking_lot::Mutex;
 use tokio::sync::oneshot;
-use unavi_policy::trust::Trust;
+use unavi_policy::trust::{
+    Trust,
+    TrustTable,
+};
 use unavi_util::async_task::spawn_async_task;
 use web_time::Instant;
 
@@ -233,6 +236,7 @@ pub fn register_protocol(
     identity: Option<Res<LocalIdentity>>,
     policy: Res<unavi_policy::registry::Policy>,
     replicas: Res<Replicas>,
+    trust: Res<TrustTable>,
     mut commands: Commands,
 ) {
     let Ok(endpoint) = endpoints.get(trigger.entity) else {
@@ -244,7 +248,13 @@ pub fn register_protocol(
     };
 
     let me = endpoint.0.id();
-    let view = SpaceView::new(policy.clone(), replicas.clone(), identity.clone(), me);
+    let view = SpaceView::new(
+        policy.clone(),
+        replicas.clone(),
+        identity.clone(),
+        me,
+        trust.clone(),
+    );
     let link = PeerLink::new(view.clone());
     commands.insert_resource(view);
     commands.insert_resource(link.clone());

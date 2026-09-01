@@ -6,9 +6,12 @@ use bevy::{
     prelude::*,
 };
 use parking_lot::Mutex;
-use unavi_script::debug::{
-    EMIT_OBSERVER,
-    spatial_receptors,
+use unavi_script::{
+    debug::spatial_receptors,
+    runtime::shared::registry::{
+        event::EventBus,
+        transform::TransformSnapshots,
+    },
 };
 
 const EVENT_LIFETIME: f32 = 0.8;
@@ -22,8 +25,8 @@ struct EmittedSpatialEvent {
 static PENDING: LazyLock<Mutex<Vec<EmittedSpatialEvent>>> =
     LazyLock::new(|| Mutex::new(Vec::new()));
 
-pub fn install_emit_observer() {
-    *EMIT_OBSERVER.write() = Some(Box::new(|channel, position, radius| {
+pub fn install_emit_observer(bus: Res<EventBus>) {
+    bus.observe(Box::new(|channel, position, radius| {
         debug!("debug-event: emit {channel} @ {position:?} r={radius}");
         let mut q = PENDING.lock();
         if q.len() >= PENDING_CAP {
@@ -36,8 +39,8 @@ pub fn install_emit_observer() {
 #[derive(Resource, Default)]
 pub struct EventPings(Vec<(EmittedSpatialEvent, f32)>);
 
-pub fn draw_receptors(mut gizmos: Gizmos) {
-    for r in spatial_receptors() {
+pub fn draw_receptors(bus: Res<EventBus>, transforms: Res<TransformSnapshots>, mut gizmos: Gizmos) {
+    for r in spatial_receptors(&bus, &transforms) {
         gizmos
             .sphere(
                 Isometry3d::from_translation(r.position),

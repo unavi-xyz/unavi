@@ -4,10 +4,7 @@ use bevy_vrm::BoneName;
 
 use crate::runtime::shared::{
     Api,
-    registry::agent::{
-        AGENT_REGISTRY,
-        AgentKey,
-    },
+    registry::agent::AgentKey,
     slot_map::SlotMap,
     wired::scene::prim::PrimRes,
 };
@@ -31,19 +28,11 @@ pub async fn local_agent(api: &Api) -> anyhow::Result<u32> {
 }
 
 pub async fn local_camera(api: &Api) -> anyhow::Result<u32> {
-    let (doc_id, node_id) = {
-        let guard = AGENT_REGISTRY.read();
-        let entry = guard
-            .get(&AgentKey::Local)
-            .ok_or_else(|| anyhow::anyhow!("agent entry not found"))?;
-        let id = entry
-            .camera
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("camera proxy not found"))?;
-        let out = (id.doc, id.node);
-        drop(guard);
-        out
-    };
+    let id = api
+        .agents
+        .camera()
+        .ok_or_else(|| anyhow::anyhow!("camera proxy not found"))?;
+    let (doc_id, node_id) = (id.doc, id.node);
     let rep = api.wired_scene.lock().await.prims.insert(
         PrimRes {
             state: Arc::default(),
@@ -66,15 +55,7 @@ pub async fn bone(api: &Api, rep: u32, name: BoneName) -> anyhow::Result<Option<
             .key
             .clone()
     };
-    let absolute = {
-        let guard = AGENT_REGISTRY.read();
-        let entry = guard
-            .get(&key)
-            .ok_or_else(|| anyhow::anyhow!("agent entry not found"))?;
-        let out = entry.bones.get(&name).map(|id| (id.doc, id.node));
-        drop(guard);
-        out
-    };
+    let absolute = api.agents.bone(&key, name).map(|id| (id.doc, id.node));
     if let Some((doc_id, node_id)) = absolute {
         let rep = api.wired_scene.lock().await.prims.insert(
             PrimRes {

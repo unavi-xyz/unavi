@@ -11,16 +11,17 @@ use unavi_policy::{
 
 use crate::{
     peer::Peer,
-    quota::{
-        Viewer,
-        reassign_document_in_space,
-    },
+    quota::reassign_document_in_space,
     state::replicas::Replicas,
     view::SpaceView,
 };
 
 /// Repoints a document's quota at its owner when it joins or changes space,
 /// migrating standing usage off the previous owner.
+///
+/// Runs with `viewer: None` until the identity is ready, same as every other
+/// quota resolution site — the reassignment must not be skipped just because
+/// the view hasn't loaded yet.
 pub fn reassign_doc_quota(
     trigger: On<Insert, SpaceOwner>,
     docs: Query<(&HsdDocId, &SpaceOwner), With<Hsd>>,
@@ -35,12 +36,13 @@ pub fn reassign_doc_quota(
     let Ok(space) = spaces.get(owner.0) else {
         return;
     };
-    let identity = view.as_deref().map(SpaceView::identity);
-    let viewer = view.as_deref().zip(identity).map(|(v, i)| Viewer {
-        me:       v.me(),
-        bindings: &i.bindings,
-    });
-    reassign_document_in_space(&policy, &replicas, viewer, record.0, space.doc_id());
+    reassign_document_in_space(
+        &policy,
+        &replicas,
+        view.as_deref().map(SpaceView::viewer),
+        record.0,
+        space.doc_id(),
+    );
 }
 
 pub fn forget_space_quota(trigger: On<Remove, Space>, spaces: Query<&Space>, policy: Res<Policy>) {

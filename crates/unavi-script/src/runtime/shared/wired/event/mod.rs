@@ -2,16 +2,12 @@ use std::sync::{
     Arc,
     atomic::{
         AtomicBool,
-        AtomicU32,
         Ordering,
     },
 };
 
 use async_channel::Receiver;
-use hsd::{
-    bounds::MAX_EVENT_PAYLOAD_BYTES,
-    id::DocId,
-};
+use hsd::bounds::MAX_EVENT_PAYLOAD_BYTES;
 use unavi_policy::quota::{
     Flow,
     QuotaError,
@@ -27,31 +23,15 @@ use crate::runtime::shared::{
     Api,
     registry::{
         event::{
-            EVENT_RECEPTOR_REGISTRY,
             InboundEvent,
-            ReceptorEntry,
             ReceptorScope,
             SenderScope,
+            claim,
         },
-        transform::{
-            AbsoluteNodeId,
-            NODE_TRANSFORM_REGISTRY,
-        },
+        transform::AbsoluteNodeId,
     },
     slot_map::SlotMap,
 };
-
-static NEXT_RECEPTOR_ID: AtomicU32 = AtomicU32::new(0);
-
-pub const HOST_SENDER_DOC: [u8; 32] = [0u8; 32];
-
-#[must_use]
-pub fn doc_has_receptor(doc: DocId, channel: &str) -> bool {
-    EVENT_RECEPTOR_REGISTRY
-        .read()
-        .values()
-        .any(|e| e.doc_id == doc && e.channels.iter().any(|c| c == channel))
-}
 
 #[derive(Default)]
 pub struct EventFilter {
@@ -84,8 +64,6 @@ pub struct WiredEventApi {
     pub events:    SlotMap<EventRes>,
 }
 
-const RECEPTOR_CAPACITY: usize = 16;
-
 pub async fn emit(
     api: &Api,
     channel: String,
@@ -117,10 +95,7 @@ pub async fn emit(
                     })
                     .ok_or_else(|| anyhow::anyhow!("emit: node not found"))?;
                 drop(scene);
-                let pos = NODE_TRANSFORM_REGISTRY
-                    .read()
-                    .get(&abs)
-                    .map(|s| s.world.translation());
+                let pos = api.transforms.node(&abs).map(|s| s.world.translation());
                 Some((abs, pos, *radius))
             }
             EventScope::Global => None,
@@ -128,7 +103,7 @@ pub async fn emit(
 
     #[cfg(feature = "debug")]
     if let Some((_, Some(pos), radius)) = emitter_spatial.as_ref() {
-        crate::debug::record_emit(&channel, *pos, *radius);
+        api.event_bus.record_emit(&channel, *pos, *radius);
     }
 
     let payload = Arc::new(payload);
@@ -138,89 +113,22 @@ pub async fn emit(
         .as_ref()
         .map(|_| Arc::new(AtomicBool::new(false)));
 
-    let registry = EVENT_RECEPTOR_REGISTRY.read();
-    for entry in registry.values() {
-        if !entry.channels.iter().any(|c| c == &channel) {
-            continue;
-        }
-
-        if let Some(docs) = &filter.documents
-            && !docs
-                .iter()
-                .any(|d| d.as_slice() == entry.doc_id.0.as_slice())
-        {
-            continue;
-        }
-
-        if let Some(docs) = &entry.source_documents
-            && !docs.iter().any(|d| d.as_slice() == api.doc_id.0.as_slice())
-        {
-            continue;
-        }
-
-        if api.view.write(api.doc_id, entry.doc_id).is_err() {
-            continue;
-        }
-
-        let Some(sender_scope) = resolve_sender_scope(api, emitter_spatial.as_ref(), &entry.scope)
-        else {
-            continue;
-        };
-
-        let _ = entry.tx.try_send(InboundEvent {
-            channel: channel.clone(),
-            payload: Arc::clone(&payload),
-            sender_document: sender_doc.clone(),
-            sender_scope,
-            time,
-            claimed: delivery_claim(audience_claim.as_ref()),
-        });
-    }
-    drop(registry);
+    api.event_bus.deliver(
+        &channel,
+        &payload,
+        &sender_doc,
+        time,
+        filter.documents.as_deref(),
+        audience_claim.as_ref(),
+        |entry_doc, scope| {
+            if api.view.write(api.doc_id, entry_doc).is_err() {
+                return None;
+            }
+            resolve_sender_scope(api, emitter_spatial.as_ref(), scope)
+        },
+    );
 
     Ok(())
-}
-
-pub fn emit_from_host(target_doc: DocId, channel: &str, payload: Vec<u8>) {
-    let payload = Arc::new(payload);
-    let claimed = Arc::new(AtomicBool::new(false));
-    let time = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs())
-        .unwrap_or_default();
-
-    let registry = EVENT_RECEPTOR_REGISTRY.read();
-    for entry in registry.values() {
-        if entry.doc_id != target_doc {
-            continue;
-        }
-        if !entry.channels.iter().any(|c| c == channel) {
-            continue;
-        }
-        let _ = entry.tx.try_send(InboundEvent {
-            channel: channel.into(),
-            payload: Arc::clone(&payload),
-            sender_document: HOST_SENDER_DOC.to_vec(),
-            sender_scope: SenderScope::Global,
-            time,
-            claimed: Arc::clone(&claimed),
-        });
-    }
-}
-
-/// One claim shared across the audience an emitter named, or a claim of its own
-/// per recipient when it named none.
-///
-/// Exclusion is only meaningful within an addressed set. Sharing one claim
-/// across every receptor that guessed the channel string would let any listener
-/// consume a broadcast out from under all the others.
-fn delivery_claim(audience: Option<&Arc<AtomicBool>>) -> Arc<AtomicBool> {
-    audience.map_or_else(|| Arc::new(AtomicBool::new(false)), Arc::clone)
-}
-
-fn claim(flag: &AtomicBool) -> bool {
-    flag.compare_exchange(false, true, Ordering::AcqRel, Ordering::Acquire)
-        .is_ok()
 }
 
 fn resolve_sender_scope(
@@ -247,9 +155,9 @@ fn resolve_sender_scope(
             if !emitter_is_system && !api.view.same_space(emitter_abs.doc, receptor_node.doc) {
                 return None;
             }
-            let r_pos = NODE_TRANSFORM_REGISTRY
-                .read()
-                .get(receptor_node)
+            let r_pos = api
+                .transforms
+                .node(receptor_node)
                 .map(|s| s.world.translation())?;
             let dist = (e_pos - r_pos).length();
             if dist > *emitter_radius + *receptor_radius {
@@ -265,7 +173,6 @@ fn resolve_sender_scope(
 
 pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::Result<u32> {
     let guard = api.quota.charge(Stock::Receptors, 1)?;
-    let (tx, rx) = async_channel::bounded(RECEPTOR_CAPACITY);
 
     let scope = match filter.scope {
         EventScope::Global => ReceptorScope::Global,
@@ -284,23 +191,14 @@ pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> an
         }
     };
 
-    let id = NEXT_RECEPTOR_ID.fetch_add(1, Ordering::Relaxed);
+    let (id, rx) = api
+        .event_bus
+        .listen(api.doc_id, channels, scope, filter.documents);
     api.wired_event.lock().await.receptors.insert_at(
         id,
         EventReceptorRes { rx, _guard: guard },
         &api.quota,
     )?;
-
-    EVENT_RECEPTOR_REGISTRY.write().insert(
-        id,
-        ReceptorEntry {
-            channels,
-            doc_id: api.doc_id,
-            scope,
-            source_documents: filter.documents,
-            tx,
-        },
-    );
 
     Ok(id)
 }
@@ -328,7 +226,7 @@ pub async fn receptor_poll(api: &Api, rep: u32) -> anyhow::Result<Option<Inbound
 }
 
 pub async fn receptor_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
-    EVENT_RECEPTOR_REGISTRY.write().remove(&rep);
+    api.event_bus.drop_receptor(rep, api.doc_id);
     api.wired_event.lock().await.receptors.remove(rep);
     Ok(())
 }
@@ -367,35 +265,4 @@ pub async fn event_clone_inner(api: &Api, rep: u32) -> anyhow::Result<InboundEve
 pub async fn event_drop(api: &Api, rep: u32) -> anyhow::Result<()> {
     api.wired_event.lock().await.events.remove(rep);
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn an_addressed_emit_is_claimed_once_across_its_audience() {
-        let audience = Arc::new(AtomicBool::new(false));
-        let first = delivery_claim(Some(&audience));
-        let second = delivery_claim(Some(&audience));
-
-        assert!(claim(&first));
-        assert!(
-            !claim(&second),
-            "an emitter that named an audience asked for exactly one of them to take it"
-        );
-    }
-
-    #[test]
-    fn a_broadcast_recipient_cannot_deny_the_others() {
-        let first = delivery_claim(None);
-        let second = delivery_claim(None);
-
-        assert!(claim(&first));
-        assert!(
-            claim(&second),
-            "a listener that guessed the channel string must not consume a broadcast \
-             out from under everyone it was not addressed to"
-        );
-    }
 }

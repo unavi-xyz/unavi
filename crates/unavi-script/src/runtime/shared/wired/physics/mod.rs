@@ -267,7 +267,7 @@ pub fn claim_authority(api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
         .view
         .space_of(doc)
         .ok_or_else(|| ScriptError::other("document is not in a tracked space"))?;
-    unavi_space::state::entities::claim_authority(api.view.me(), space, doc);
+    api.view.claim_authority(space, doc);
     Ok(())
 }
 

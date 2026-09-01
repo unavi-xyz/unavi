@@ -1,7 +1,6 @@
 use std::{
     collections::{
         HashMap,
-        HashSet,
         hash_map::Entry,
     },
     sync::Arc,
@@ -18,10 +17,6 @@ use unavi_policy::{
         StockHold,
     },
     registry::Policy,
-};
-use web_time::{
-    SystemTime,
-    UNIX_EPOCH,
 };
 
 #[cfg(feature = "devtools")] use crate::state::debug;
@@ -46,10 +41,6 @@ use crate::{
 };
 
 pub const KV_KEY_MAX_BYTES: usize = 256;
-
-/// Caps peer-supplied timestamps to within the clock skew of local time, so a
-/// forged future `at` cannot pin ownership/authority or win KV merges forever.
-const MAX_CLOCK_SKEW_MILLIS: u64 = 5 * 60 * 1000;
 
 /// One peer's contribution to a document: its pin (timestamped, so the oldest
 /// pin owns the doc) and its latest object-authority claim.
@@ -412,13 +403,6 @@ impl Inner {
         doc == space || self.owner(space, doc).is_none()
     }
 
-    fn key_set(&self, doc: DocId) -> HashSet<String> {
-        self.docs
-            .get(&doc)
-            .map(|p| p.kv.keys().cloned().collect())
-            .unwrap_or_default()
-    }
-
     fn self_snapshot(&self, me: EndpointId) -> Vec<DocSnapshot> {
         let mut by_doc: HashMap<DocId, DocSnapshot> = HashMap::new();
         if let Some(replica) = self.peers.get(&me) {
@@ -462,20 +446,6 @@ impl Inner {
         }
         by_doc.into_values().collect()
     }
-}
-
-#[must_use]
-pub fn current_millis() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
-}
-
-/// Whether `at` is within the accepted clock skew of local time.
-#[must_use]
-pub fn time_valid(at: u64) -> bool {
-    // TODO lower bound check or use "recieved" time only
-    at <= current_millis().saturating_add(MAX_CLOCK_SKEW_MILLIS)
 }
 
 /// Runs `reassign` against the document quotas after the state lock is
@@ -667,29 +637,27 @@ impl Replicas {
     #[must_use]
     pub fn kv_keys(&self, space: DocId, doc: DocId) -> Vec<String> {
         let inner = self.0.lock();
-        if inner.docs.get(&doc).is_none_or(|p| p.space != space) {
+        let Some(presence) = inner.docs.get(&doc).filter(|p| p.space == space) else {
             return Vec::new();
-        }
-        inner
-            .key_set(doc)
-            .into_iter()
-            .filter(|k| inner.cell(space, doc, k).is_some())
+        };
+        presence
+            .kv
+            .iter()
+            .filter(|(_, cell)| cell.value.is_some())
+            .map(|(key, _)| key.clone())
             .collect()
     }
 
     #[must_use]
     pub fn kv_total_bytes(&self, space: DocId, doc: DocId) -> usize {
         let inner = self.0.lock();
-        if inner.docs.get(&doc).is_none_or(|p| p.space != space) {
+        let Some(presence) = inner.docs.get(&doc).filter(|p| p.space == space) else {
             return 0;
-        }
-        inner
-            .key_set(doc)
-            .into_iter()
-            .filter_map(|k| {
-                let len = inner.cell(space, doc, &k)?.len();
-                Some(k.len() + len)
-            })
+        };
+        presence
+            .kv
+            .iter()
+            .filter_map(|(key, cell)| cell.value.as_ref().map(|v| key.len() + v.len()))
             .sum()
     }
 

@@ -20,7 +20,7 @@ use crate::{
         },
         short,
     },
-    state::replicas,
+    state::clock,
 };
 
 const VALUE_PREVIEW_MAX: usize = 256;
@@ -259,7 +259,7 @@ pub fn value_detail(value: &[u8], cols: usize) -> impl Bundle {
 }
 
 pub fn fmt_ago(at: u64) -> String {
-    let now = replicas::current_millis();
+    let now = clock::current_millis();
     let (secs, suffix) = if now >= at {
         ((now - at) / 1000, "ago")
     } else {

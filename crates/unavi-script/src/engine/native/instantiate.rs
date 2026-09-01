@@ -16,10 +16,7 @@ use tracing::{
     Span,
 };
 use unavi_policy::quota::Quota;
-use unavi_space::{
-    quota::Viewer,
-    view::SpaceView,
-};
+use unavi_space::view::SpaceView;
 use unavi_util::async_task::spawn_async_task;
 use wasmtime::{
     Store,
@@ -55,7 +52,15 @@ use crate::{
             NativeRuntime,
             add_apis_to_linker,
         },
-        shared::Api,
+        shared::{
+            Api,
+            registry::{
+                agent::AgentProxyRegistry,
+                event::EventBus,
+                pointer::Pointers,
+                transform::TransformSnapshots,
+            },
+        },
     },
 };
 
@@ -90,15 +95,16 @@ pub fn instantiate_scripts(
     docs: Query<(&HsdDocId, &Hsd, Has<QuotaExempt>)>,
     stores: Query<&LocalStore>,
     view: Option<Res<SpaceView>>,
+    agents: Res<AgentProxyRegistry>,
+    pointers: Res<Pointers>,
+    transforms: Res<TransformSnapshots>,
+    event_bus: Res<EventBus>,
     mut commands: Commands,
 ) {
     let Some(view) = view else {
         return;
     };
-    let viewer = Viewer {
-        me:       view.me(),
-        bindings: &view.identity().bindings,
-    };
+    let viewer = view.viewer();
     let root_doc = stores.single().ok().map(|store| store.0.root());
 
     for (entity, script, engine_ent, name, prim, doc_ent, fixed_updating) in to_instantiate {
@@ -149,6 +155,10 @@ pub fn instantiate_scripts(
                 view: (*view).clone(),
                 quota: Arc::clone(&quota),
                 root_doc,
+                agents: agents.clone(),
+                pointers: pointers.clone(),
+                transforms: transforms.clone(),
+                event_bus: event_bus.clone(),
                 wired_agent: Mutex::default(),
                 wired_event: Mutex::default(),
                 wired_input: Mutex::default(),

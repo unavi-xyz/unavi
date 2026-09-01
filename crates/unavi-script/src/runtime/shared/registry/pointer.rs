@@ -1,4 +1,4 @@
-use std::sync::LazyLock;
+use std::sync::Arc;
 
 use bevy::{
     picking::pointer::PointerInteraction,
@@ -25,13 +25,30 @@ use crate::runtime::shared::wired::input::types::Pointer;
 /// it through a queue.
 ///
 /// A pointer with no entry is one the rig never spawned — no hand tracking on
-/// desktop, no screen pointer in VR — which is what `active` reports as false.
-pub static POINTER_REGISTRY: LazyLock<RwLock<[Option<Pointer>; PointerKind::COUNT]>> =
-    LazyLock::new(|| RwLock::new([None; PointerKind::COUNT]));
+/// desktop, no screen pointer in VR — which is what [`Pointers::all`] reports
+/// as inactive.
+#[derive(Resource, Clone, Default)]
+pub struct Pointers(Arc<RwLock<[Option<Pointer>; PointerKind::COUNT]>>);
+
+impl Pointers {
+    pub fn store(&self, snapshot: [Option<Pointer>; PointerKind::COUNT]) {
+        *self.0.write() = snapshot;
+    }
+
+    #[must_use]
+    pub fn all(&self) -> Vec<Pointer> {
+        let snapshot = self.0.read();
+        PointerKind::ALL
+            .into_iter()
+            .map(|kind| snapshot[kind.index()].unwrap_or_else(|| Pointer::inactive(kind)))
+            .collect()
+    }
+}
 
 pub fn snapshot_pointers(
     pointers: Query<(&PointerAnchor, &GlobalTransform, &PointerInteraction)>,
     state: Res<ActionState>,
+    registry: Res<Pointers>,
 ) {
     let mut snapshot = [None; PointerKind::COUNT];
 
@@ -48,7 +65,7 @@ pub fn snapshot_pointers(
         });
     }
 
-    *POINTER_REGISTRY.write() = snapshot;
+    registry.store(snapshot);
 }
 
 /// The stick that steers with this pointer's hand. A screen pointer has none:

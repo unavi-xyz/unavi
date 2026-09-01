@@ -16,8 +16,8 @@ use unavi_policy::{
     },
     registry::Policy,
     trust::{
-        self,
         Trust,
+        TrustTable,
     },
 };
 
@@ -34,6 +34,7 @@ use crate::state::replicas::Replicas;
 pub struct Viewer<'a> {
     pub me:       EndpointId,
     pub bindings: &'a Bindings,
+    pub trust:    &'a TrustTable,
 }
 
 pub(crate) fn trust_of(viewer: Option<Viewer>, peer: EndpointId) -> Trust {
@@ -43,7 +44,7 @@ pub(crate) fn trust_of(viewer: Option<Viewer>, peer: EndpointId) -> Trust {
     if viewer.me == peer {
         return Trust::Myself;
     }
-    trust::of_peer(peer, viewer.bindings)
+    viewer.trust.of_peer(peer, viewer.bindings)
 }
 
 pub(crate) fn space_of(policy: &Policy, replicas: &Replicas, doc: DocId) -> Option<DocId> {

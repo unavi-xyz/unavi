@@ -18,13 +18,21 @@ use unavi_space::view::SpaceView;
 
 use crate::{
     error::ScriptError,
-    runtime::shared::wired::{
-        agent::WiredAgentApi,
-        event::WiredEventApi,
-        input::WiredInputApi,
-        kv::WiredKvApi,
-        scene::WiredSceneApi,
-        storage::WiredStorageApi,
+    runtime::shared::{
+        registry::{
+            agent::AgentProxyRegistry,
+            event::EventBus,
+            pointer::Pointers,
+            transform::TransformSnapshots,
+        },
+        wired::{
+            agent::WiredAgentApi,
+            event::WiredEventApi,
+            input::WiredInputApi,
+            kv::WiredKvApi,
+            scene::WiredSceneApi,
+            storage::WiredStorageApi,
+        },
     },
 };
 
@@ -43,6 +51,10 @@ pub struct Api {
     /// Captured at instantiation rather than read per call: the id is minted
     /// once per node and never changes, so a snapshot cannot go stale.
     pub root_doc:      Option<NamespaceId>,
+    pub agents:        AgentProxyRegistry,
+    pub pointers:      Pointers,
+    pub transforms:    TransformSnapshots,
+    pub event_bus:     EventBus,
     pub wired_agent:   Mutex<WiredAgentApi>,
     pub wired_event:   Mutex<WiredEventApi>,
     pub wired_input:   Mutex<WiredInputApi>,
@@ -107,6 +119,10 @@ pub struct SharedRuntimePlugin;
 impl Plugin for SharedRuntimePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<wired::input::bridge::Pressing>()
+            .init_resource::<registry::agent::AgentProxyRegistry>()
+            .init_resource::<registry::event::EventBus>()
+            .init_resource::<registry::pointer::Pointers>()
+            .init_resource::<registry::transform::TransformSnapshots>()
             .add_observer(wired::input::bridge::bridge_press)
             .add_observer(wired::input::bridge::bridge_enter)
             .add_observer(wired::input::bridge::bridge_leave)

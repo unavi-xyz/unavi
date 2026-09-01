@@ -22,8 +22,6 @@ pub struct ClientDevToolsPlugin;
 
 impl Plugin for ClientDevToolsPlugin {
     fn build(&self, app: &mut App) {
-        event_gizmos::install_emit_observer();
-
         app.add_plugins((
             DevToolsPlugin,
             FpsOverlayPlugin {
@@ -43,7 +41,10 @@ impl Plugin for ClientDevToolsPlugin {
         ))
         .init_resource::<bevy_panel::DevToggles>()
         .init_resource::<event_gizmos::EventPings>()
-        .add_systems(Startup, bevy_panel::spawn)
+        .add_systems(
+            Startup,
+            (bevy_panel::spawn, event_gizmos::install_emit_observer),
+        )
         .add_observer(bevy_panel::on_toggle)
         .add_systems(
             Update,

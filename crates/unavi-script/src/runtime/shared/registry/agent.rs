@@ -1,14 +1,15 @@
-use std::sync::LazyLock;
-
-use bevy::{
-    platform::collections::HashMap,
-    prelude::*,
+use std::{
+    collections::HashMap,
+    sync::Arc,
 };
+
+use bevy::prelude::*;
 use bevy_vrm::BoneName;
 use hsd::id::{
     DocId,
     PrimId,
 };
+use parking_lot::RwLock;
 use unavi_agent::{
     Agent,
     AgentAvatar,
@@ -24,8 +25,34 @@ use crate::runtime::shared::registry::transform::{
     RegisterTransforms,
 };
 
-pub static AGENT_REGISTRY: LazyLock<parking_lot::RwLock<HashMap<AgentKey, AgentProxies>>> =
-    LazyLock::new(|| parking_lot::RwLock::new(HashMap::new()));
+#[derive(Resource, Clone, Default)]
+pub struct AgentProxyRegistry(Arc<RwLock<HashMap<AgentKey, AgentProxies>>>);
+
+impl AgentProxyRegistry {
+    #[must_use]
+    pub fn contains(&self, key: &AgentKey) -> bool {
+        self.0.read().contains_key(key)
+    }
+
+    pub fn insert(&self, key: AgentKey, proxies: AgentProxies) {
+        self.0.write().insert(key, proxies);
+    }
+
+    pub fn remove(&self, key: &AgentKey) {
+        self.0.write().remove(key);
+    }
+
+    /// The local agent's camera proxy, if it has registered one.
+    #[must_use]
+    pub fn camera(&self) -> Option<AbsoluteNodeId> {
+        self.0.read().get(&AgentKey::Local)?.camera
+    }
+
+    #[must_use]
+    pub fn bone(&self, key: &AgentKey, bone: BoneName) -> Option<AbsoluteNodeId> {
+        self.0.read().get(key)?.bones.get(&bone).copied()
+    }
+}
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum AgentKey {
@@ -64,10 +91,11 @@ pub fn register_local_agent(trigger: On<Add, LocalAgent>, mut commands: Commands
 pub fn spawn_proxy_nodes(
     agents: Query<(&RegisterAgent, &AgentAvatar, Option<&AgentCamera>)>,
     avatars: Query<&AvatarBones>,
+    registry: Res<AgentProxyRegistry>,
     mut commands: Commands,
 ) {
     for (key, avatar_ent, camera_ent) in agents {
-        if AGENT_REGISTRY.read().contains_key(&key.0) {
+        if registry.contains(&key.0) {
             continue;
         }
 
@@ -104,7 +132,7 @@ pub fn spawn_proxy_nodes(
         }
 
         info!("Registering agent: {:?}", key.0);
-        AGENT_REGISTRY.write().insert(key.0.clone(), proxies);
+        registry.insert(key.0.clone(), proxies);
     }
 }
 
@@ -117,8 +145,12 @@ fn gen_proxy_id() -> AbsoluteNodeId {
     }
 }
 
-pub fn deregister_agents(trigger: On<Remove, RegisterAgent>, ids: Query<&RegisterAgent>) {
+pub fn deregister_agents(
+    trigger: On<Remove, RegisterAgent>,
+    ids: Query<&RegisterAgent>,
+    registry: Res<AgentProxyRegistry>,
+) {
     let id = ids.get(trigger.entity).expect("id");
-    AGENT_REGISTRY.write().remove(&id.0);
+    registry.remove(&id.0);
     // Proxies will be cleaned up automatically on agent despawn.
 }

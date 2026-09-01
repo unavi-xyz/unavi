@@ -1,5 +1,4 @@
 use hsd::id::DocId;
-use unavi_space::state::entities;
 
 use crate::{
     error::ScriptError,
@@ -83,11 +82,11 @@ pub async fn kv_set(
     if let Err(err) = api.view.write(api.doc_id, res.doc) {
         return Ok(Err(err.into()));
     }
-    Ok(
-        entities::doc_kv_set(api.view.me(), res.space, res.doc, key, value)
-            .await
-            .map_err(Into::into),
-    )
+    Ok(api
+        .view
+        .doc_kv_set(res.space, res.doc, key, value)
+        .await
+        .map_err(Into::into))
 }
 
 pub async fn kv_delete(
@@ -103,11 +102,11 @@ pub async fn kv_delete(
     if let Err(err) = api.view.write(api.doc_id, res.doc) {
         return Ok(Err(err.into()));
     }
-    Ok(
-        entities::doc_kv_delete(api.view.me(), res.space, res.doc, key)
-            .await
-            .map_err(Into::into),
-    )
+    Ok(api
+        .view
+        .doc_kv_delete(res.space, res.doc, key)
+        .await
+        .map_err(Into::into))
 }
 
 pub async fn kv_keys(api: &Api, rep: u32) -> anyhow::Result<Vec<String>> {

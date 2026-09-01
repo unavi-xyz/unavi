@@ -13,6 +13,7 @@ use crate::{
     quota::Viewer,
     state::{
         cell::KvError,
+        clock,
         message::StateMsg,
         replicas::{
             self,
@@ -394,25 +395,60 @@ fn set_kv(
     Ok(())
 }
 
-pub async fn self_pin(me: EndpointId, space: DocId, doc: DocId) -> bool {
-    let at = replicas::current_millis();
-    AsyncCommands::default()
-        .send_with(move |world: &mut World| {
-            let peer_ent = local_peer_entity(world);
-            spawn_pin(world, peer_ent, me, doc, space, at, true)
-        })
-        .await
-        .unwrap_or(false)
-}
+impl SpaceView {
+    pub async fn self_pin(&self, space: DocId, doc: DocId) -> bool {
+        let me = self.me();
+        let at = clock::current_millis();
+        AsyncCommands::default()
+            .send_with(move |world: &mut World| {
+                let peer_ent = local_peer_entity(world);
+                spawn_pin(world, peer_ent, me, doc, space, at, true)
+            })
+            .await
+            .unwrap_or(false)
+    }
 
-pub fn claim_authority(me: EndpointId, space: DocId, doc: DocId) {
-    let at = replicas::current_millis();
-    let _ = AsyncCommands::default()
-        .push(move |world: &mut World| {
-            let peer_ent = local_peer_entity(world);
-            spawn_authority(world, peer_ent, me, doc, space, at, true);
-        })
-        .try_send();
+    pub fn claim_authority(&self, space: DocId, doc: DocId) {
+        let me = self.me();
+        let at = clock::current_millis();
+        let _ = AsyncCommands::default()
+            .push(move |world: &mut World| {
+                let peer_ent = local_peer_entity(world);
+                spawn_authority(world, peer_ent, me, doc, space, at, true);
+            })
+            .try_send();
+    }
+
+    pub async fn doc_kv_set(
+        &self,
+        space: DocId,
+        doc: DocId,
+        key: String,
+        value: Vec<u8>,
+    ) -> Result<(), KvError> {
+        let me = self.me();
+        let at = clock::current_millis();
+        AsyncCommands::default()
+            .send_with(move |world: &mut World| {
+                set_kv(world, me, doc, space, key, Some(value), at, true)
+            })
+            .await
+            .unwrap_or(Err(KvError::Other))
+    }
+
+    pub async fn doc_kv_delete(
+        &self,
+        space: DocId,
+        doc: DocId,
+        key: String,
+    ) -> Result<(), KvError> {
+        let me = self.me();
+        let at = clock::current_millis();
+        AsyncCommands::default()
+            .send_with(move |world: &mut World| set_kv(world, me, doc, space, key, None, at, true))
+            .await
+            .unwrap_or(Err(KvError::Other))
+    }
 }
 
 pub fn release_authority(doc: DocId) {
@@ -423,35 +459,6 @@ pub fn release_authority(doc: DocId) {
             }
         })
         .try_send();
-}
-
-pub async fn doc_kv_set(
-    me: EndpointId,
-    space: DocId,
-    doc: DocId,
-    key: String,
-    value: Vec<u8>,
-) -> Result<(), KvError> {
-    let at = replicas::current_millis();
-    AsyncCommands::default()
-        .send_with(move |world: &mut World| {
-            set_kv(world, me, doc, space, key, Some(value), at, true)
-        })
-        .await
-        .unwrap_or(Err(KvError::Other))
-}
-
-pub async fn doc_kv_delete(
-    me: EndpointId,
-    space: DocId,
-    doc: DocId,
-    key: String,
-) -> Result<(), KvError> {
-    let at = replicas::current_millis();
-    AsyncCommands::default()
-        .send_with(move |world: &mut World| set_kv(world, me, doc, space, key, None, at, true))
-        .await
-        .unwrap_or(Err(KvError::Other))
 }
 
 /// Applies a remote peer's delta under `peer_ent`. Called per message from the
@@ -477,24 +484,24 @@ fn apply_in_world(world: &mut World, peer_ent: Entity, peer: EndpointId, msg: St
                 world.despawn(e);
             }
             for s in snaps {
-                if let Some(at) = s.pin.filter(|at| replicas::time_valid(*at)) {
+                if let Some(at) = s.pin.filter(|at| clock::time_valid(*at)) {
                     spawn_pin(world, peer_ent, peer, s.doc, s.space, at, false);
                 }
-                if let Some(at) = s.authority.filter(|at| replicas::time_valid(*at)) {
+                if let Some(at) = s.authority.filter(|at| clock::time_valid(*at)) {
                     spawn_authority(world, peer_ent, peer, s.doc, s.space, at, false);
                 }
                 for kv in s.kv {
-                    if replicas::time_valid(kv.at) {
+                    if clock::time_valid(kv.at) {
                         let _ = set_kv(world, peer, s.doc, s.space, kv.key, kv.value, kv.at, false);
                     }
                 }
             }
         }
-        StateMsg::Pin { doc, space, at } if replicas::time_valid(at) => {
+        StateMsg::Pin { doc, space, at } if clock::time_valid(at) => {
             spawn_pin(world, peer_ent, peer, doc, space, at, false);
         }
         StateMsg::Unpin { doc } => clear_pin(world, peer_ent, doc),
-        StateMsg::Authority { doc, space, at } if replicas::time_valid(at) => {
+        StateMsg::Authority { doc, space, at } if clock::time_valid(at) => {
             spawn_authority(world, peer_ent, peer, doc, space, at, false);
         }
         StateMsg::Unclaim { doc } => clear_authority(world, peer_ent, doc),
@@ -504,7 +511,7 @@ fn apply_in_world(world: &mut World, peer_ent: Entity, peer: EndpointId, msg: St
             key,
             value,
             at,
-        } if replicas::time_valid(at) => {
+        } if clock::time_valid(at) => {
             let _ = set_kv(world, peer, doc, space, key, value, at, false);
         }
         _ => {}

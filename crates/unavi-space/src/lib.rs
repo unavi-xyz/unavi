@@ -9,6 +9,7 @@ use unavi_manifold::{
     echo::maintain_seam_echoes,
     transition::apply_seam_crossings,
 };
+use unavi_policy::trust::TrustTable;
 
 pub mod anchor;
 mod connection;
@@ -45,10 +46,18 @@ impl Plugin for SpacePlugin {
             app.add_plugins(unavi_policy::PolicyPlugin);
         }
 
-        if let Some(storage) = &self.storage {
-            app.insert_resource(trust::TrustStorage(storage.clone()));
-            trust::load_trust_table(storage);
-        }
+        let storage = self
+            .storage
+            .clone()
+            .unwrap_or(unavi_store::local::Storage::Ephemeral);
+        let trust = TrustTable::load(storage.clone()).unwrap_or_else(|err| {
+            error!(
+                ?err,
+                "Trust table could not be read; every block is inactive this session"
+            );
+            TrustTable::new(storage)
+        });
+        app.insert_resource(trust);
 
         app.init_resource::<anchor::SpaceGridAllocator>()
             .init_resource::<anchor::ActiveSpace>()

@@ -184,7 +184,7 @@ impl Runtime {
     #[wasm_bindgen(js_name = "wiredInputPointers")]
     pub fn wired_input_pointers(&self) -> Result<js_sys::Array, JsValue> {
         self.api.require(ApiName::InputContext).map_err(raise)?;
-        Ok(shared::wired::input::pointers()
+        Ok(shared::wired::input::pointers(&self.api)
             .into_iter()
             .map(pointer)
             .collect())

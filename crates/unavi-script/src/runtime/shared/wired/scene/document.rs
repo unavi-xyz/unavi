@@ -26,30 +26,16 @@ use unavi_policy::quota::{
     QuotaError,
     Stock,
 };
-use unavi_space::{
-    quota::{
-        Viewer,
-        document_quota,
-    },
-    view::SpaceView,
-};
+use unavi_space::quota::document_quota;
 use unavi_util::async_commands::AsyncCommands;
 
 use crate::runtime::shared::{
     Api,
-    registry::transform::DOC_ROOT_TRANSFORM_REGISTRY,
     wired::scene::{
         WiredSceneApi,
         prim::PrimRes,
     },
 };
-
-fn viewer(view: &SpaceView) -> Viewer<'_> {
-    Viewer {
-        me:       view.me(),
-        bindings: &view.identity().bindings,
-    }
-}
 
 #[derive(Clone, Copy, Default)]
 pub struct XformValue {
@@ -165,7 +151,7 @@ pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let quota = document_quota(
         api.view.policy(),
         api.view.replicas(),
-        Some(viewer(&api.view)),
+        Some(api.view.viewer()),
         doc.id,
     );
     quota.try_charge(Stock::Prims, 1)?;
@@ -204,16 +190,16 @@ pub async fn offset_to(
         return Ok(None);
     }
 
-    let reg = DOC_ROOT_TRANSFORM_REGISTRY.read();
-    let (Some(self_root), Some(other_root)) = (reg.get(&self_doc.id), reg.get(&other_doc.id))
-    else {
+    let (Some(self_root), Some(other_root)) = (
+        api.transforms.doc_root(&self_doc.id),
+        api.transforms.doc_root(&other_doc.id),
+    ) else {
         return Ok(None);
     };
 
     let relative = self_root.affine().inverse() * other_root.affine();
     let (scale, rotation, translation) =
         bevy::math::Mat4::from(relative).to_scale_rotation_translation();
-    drop(reg);
     Ok(Some(XformValue {
         translation: [translation.x, translation.y, translation.z],
         rotation:    [rotation.x, rotation.y, rotation.z, rotation.w],
@@ -247,7 +233,7 @@ pub async fn remove_prim(api: &Api, prim_rep: u32) -> anyhow::Result<()> {
     document_quota(
         api.view.policy(),
         api.view.replicas(),
-        Some(viewer(&api.view)),
+        Some(api.view.viewer()),
         prim.doc_id,
     )
     .release(Stock::Prims, removed);

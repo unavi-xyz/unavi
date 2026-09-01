@@ -12,7 +12,10 @@ use unavi_policy::{
     reach::Standing,
     registry::Policy,
     tier::Tier,
-    trust::Trust,
+    trust::{
+        Trust,
+        TrustTable,
+    },
 };
 
 use crate::{
@@ -32,6 +35,7 @@ pub struct SpaceView {
     replicas: Replicas,
     identity: LocalIdentity,
     me:       EndpointId,
+    trust:    TrustTable,
 }
 
 impl SpaceView {
@@ -41,12 +45,14 @@ impl SpaceView {
         replicas: Replicas,
         identity: LocalIdentity,
         me: EndpointId,
+        trust: TrustTable,
     ) -> Self {
         Self {
             policy,
             replicas,
             identity,
             me,
+            trust,
         }
     }
 
@@ -116,6 +122,7 @@ impl SpaceView {
         Viewer {
             me:       self.me,
             bindings: &self.identity.bindings,
+            trust:    &self.trust,
         }
     }
 
@@ -165,5 +172,10 @@ impl SpaceView {
     #[must_use]
     pub const fn identity(&self) -> &LocalIdentity {
         &self.identity
+    }
+
+    #[must_use]
+    pub const fn trust(&self) -> &TrustTable {
+        &self.trust
     }
 }

@@ -23,7 +23,6 @@ use crate::{
     connection::PeerLink,
     devtools::inspect::model::InspectData,
     state::replicas::Replicas,
-    trust::TrustStorage,
     view::SpaceView,
 };
 
@@ -210,15 +209,10 @@ pub fn handle_back(
 pub fn handle_rung(
     activate: On<Activate>,
     buttons: Query<&RungButton>,
-    trust: Option<Res<TrustStorage>>,
     view: Option<Res<SpaceView>>,
     link: Option<Res<PeerLink>>,
 ) {
     let Ok(button) = buttons.get(activate.entity) else {
-        return;
-    };
-    let Some(trust) = &trust else {
-        warn!("no trust storage; cannot change a peer's rung");
         return;
     };
     let (Some(view), Some(link)) = (view, link) else {
@@ -226,9 +220,9 @@ pub fn handle_rung(
         return;
     };
     let result = match button.rung {
-        Some(Trust::Blocked) => crate::trust::eject(&view, &link, button.peer, &trust.0),
-        Some(_) => crate::trust::trust_peer(&view, button.peer, &trust.0),
-        None => crate::trust::unblock(&view, button.peer, &trust.0),
+        Some(Trust::Blocked) => crate::trust::eject(&view, &link, button.peer),
+        Some(_) => crate::trust::trust_peer(&view, button.peer),
+        None => crate::trust::unblock(&view, button.peer),
     };
     if let Err(err) = result {
         warn!(?err, "cannot change a peer's rung");

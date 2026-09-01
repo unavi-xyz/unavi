@@ -12,7 +12,6 @@ use bevy_hsd::{
     HsdNamespace,
 };
 use hsd::id::DocId;
-use iroh::EndpointId;
 use iroh_docs::NamespaceId;
 use unavi_input::{
     crosshair::CrosshairMode,
@@ -104,7 +103,7 @@ fn begin_grab(
     parents: &Query<&ChildOf>,
     active_space: Option<Entity>,
     replicas: &Replicas,
-    me: Option<EndpointId>,
+    view: Option<&SpaceView>,
     commands: &mut Commands,
 ) {
     let Ok(obj_tr) = transforms.get(entity) else {
@@ -130,7 +129,7 @@ fn begin_grab(
         parents,
         active_space,
         replicas,
-        me,
+        view,
     );
 
     commands.entity(entity).insert((
@@ -162,7 +161,7 @@ fn on_press(
     mut commands: Commands,
 ) {
     let active_space = active_space.and_then(|active| active.0);
-    let me = view.as_deref().map(SpaceView::me);
+    let view = view.as_deref();
 
     for press in presses.read() {
         let target = press.hit.map(|hit| hit.entity);
@@ -191,7 +190,7 @@ fn on_press(
             &parents,
             active_space,
             &replicas,
-            me,
+            view,
             &mut commands,
         );
     }
@@ -233,7 +232,7 @@ fn start_pending_grabs(
     }
 
     let active_space = active_space.and_then(|active| active.0);
-    let me = view.as_deref().map(SpaceView::me);
+    let view = view.as_deref();
     let now = time.elapsed();
     let waiting = std::mem::take(&mut pending.grabs);
 
@@ -251,7 +250,7 @@ fn start_pending_grabs(
                 &parents,
                 active_space,
                 &replicas,
-                me,
+                view,
                 &mut commands,
             );
         } else if now.saturating_sub(grab.since) <= PENDING_GRAB_TIMEOUT {
@@ -311,9 +310,9 @@ fn claim_doc_authority(
     parents: &Query<&ChildOf>,
     active_space_entity: Option<Entity>,
     replicas: &Replicas,
-    me: Option<EndpointId>,
+    view: Option<&SpaceView>,
 ) {
-    let Some(me) = me else {
+    let Some(view) = view else {
         debug!("grab: local peer id not initialized yet, skipping authority claim");
         return;
     };
@@ -350,7 +349,7 @@ fn claim_doc_authority(
     }
 
     info!(doc = %doc_hash, space = %space_hash, "grab: claiming object authority");
-    entities::claim_authority(me, space, doc);
+    view.claim_authority(space, doc);
 }
 
 fn resolve_doc(

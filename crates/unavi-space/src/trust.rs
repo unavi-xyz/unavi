@@ -1,30 +1,11 @@
 use bevy::prelude::*;
 use iroh::EndpointId;
-use unavi_policy::trust::{
-    self,
-    Trust,
-};
-use unavi_store::local::Storage;
+use unavi_policy::trust::Trust;
 
 use crate::{
     connection::PeerLink,
     view::SpaceView,
 };
-
-/// Where the trust table persists, for the reads and writes that happen after
-/// the plugin has built.
-#[derive(Resource, Clone)]
-pub struct TrustStorage(pub Storage);
-
-/// Loads the persisted local trust table.
-pub fn load_trust_table(storage: &Storage) {
-    if let Err(err) = trust::load(storage) {
-        error!(
-            ?err,
-            "Trust table could not be read; every block is inactive this session"
-        );
-    }
-}
 
 /// Blocks `peer` and undoes what they contributed.
 ///
@@ -32,13 +13,8 @@ pub fn load_trust_table(storage: &Storage) {
 /// teardown is not readmitted as a guest. Pins, authority claims and
 /// owner-authored KV cascade away with the connection; only neutral cells need
 /// rolling back by hand, since they outlive a disconnect.
-pub fn eject(
-    view: &SpaceView,
-    link: &PeerLink,
-    peer: EndpointId,
-    storage: &Storage,
-) -> Result<(), NoIdentity> {
-    set_rung(view, peer, Some(Trust::Blocked), storage)?;
+pub fn eject(view: &SpaceView, link: &PeerLink, peer: EndpointId) -> Result<(), NoIdentity> {
+    set_rung(view, peer, Some(Trust::Blocked))?;
 
     let reverted = view.replicas().revert_writes(peer);
     info!(reverted, "Ejected peer");
@@ -48,14 +24,14 @@ pub fn eject(
 }
 
 /// Lifts a block, so the peer is judged by the default again.
-pub fn unblock(view: &SpaceView, peer: EndpointId, storage: &Storage) -> Result<(), NoIdentity> {
-    set_rung(view, peer, None, storage)
+pub fn unblock(view: &SpaceView, peer: EndpointId) -> Result<(), NoIdentity> {
+    set_rung(view, peer, None)
 }
 
 /// Marks `peer` as one the local user trusts, raising what its content may
 /// consume.
-pub fn trust_peer(view: &SpaceView, peer: EndpointId, storage: &Storage) -> Result<(), NoIdentity> {
-    set_rung(view, peer, Some(Trust::Trusted), storage)
+pub fn trust_peer(view: &SpaceView, peer: EndpointId) -> Result<(), NoIdentity> {
+    set_rung(view, peer, Some(Trust::Trusted))
 }
 
 /// Records `rung` for `peer`, or clears it when `rung` is `None`.
@@ -63,21 +39,16 @@ pub fn trust_peer(view: &SpaceView, peer: EndpointId, storage: &Storage) -> Resu
 /// The peer's quota is dropped rather than adjusted, so the next document it
 /// owns derives its caps from the new rung. Adjusting in place would have to
 /// re-scale buckets that are partly spent.
-fn set_rung(
-    view: &SpaceView,
-    peer: EndpointId,
-    rung: Option<Trust>,
-    storage: &Storage,
-) -> Result<(), NoIdentity> {
+fn set_rung(view: &SpaceView, peer: EndpointId, rung: Option<Trust>) -> Result<(), NoIdentity> {
     let did = view.identity().bindings.did_of(peer).ok_or(NoIdentity)?;
 
     match rung {
-        Some(rung) => trust::set_override(did, rung),
-        None => trust::clear_override(&did),
+        Some(rung) => view.trust().set(did, rung),
+        None => view.trust().clear(&did),
     }
     view.policy().forget_peer(peer);
 
-    if let Err(err) = trust::save(storage) {
+    if let Err(err) = view.trust().save() {
         warn!(?err, "failed to persist the trust table");
     }
     Ok(())

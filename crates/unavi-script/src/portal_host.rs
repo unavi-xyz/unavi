@@ -23,10 +23,7 @@ use unavi_space::view::SpaceView;
 
 use crate::{
     engine::InitializedScript,
-    runtime::shared::wired::event::{
-        doc_has_receptor,
-        emit_from_host,
-    },
+    runtime::shared::registry::event::EventBus,
 };
 
 /// Window during which `open` awaits a matching receptor in the target space
@@ -202,6 +199,7 @@ pub fn drain_pending(
     mut incoming: Query<(Entity, &mut PendingIncoming, &HsdDocId)>,
     mut backlink: Query<(Entity, &mut PendingBacklink, &HsdDocId)>,
     ready: Query<&HsdChild, With<InitializedScript>>,
+    event_bus: Res<EventBus>,
     mut commands: Commands,
 ) {
     let mut ready_docs = HashSet::<Entity>::new();
@@ -210,12 +208,13 @@ pub fn drain_pending(
     }
 
     for (entity, mut pending, record) in &mut incoming {
-        if !ready_docs.contains(&entity) || !doc_has_receptor(record.0, INCOMING_CHANNEL) {
+        if !ready_docs.contains(&entity) || !event_bus.doc_has_receptor(record.0, INCOMING_CHANNEL)
+        {
             continue;
         }
         for payload in pending.0.drain(..) {
             match postcard::to_allocvec(&payload) {
-                Ok(bytes) => emit_from_host(record.0, INCOMING_CHANNEL, bytes),
+                Ok(bytes) => event_bus.emit_from_host(record.0, INCOMING_CHANNEL, bytes),
                 Err(err) => warn!(?err, "encode incoming payload"),
             }
         }
@@ -223,12 +222,13 @@ pub fn drain_pending(
     }
 
     for (entity, mut pending, record) in &mut backlink {
-        if !ready_docs.contains(&entity) || !doc_has_receptor(record.0, BACKLINK_CHANNEL) {
+        if !ready_docs.contains(&entity) || !event_bus.doc_has_receptor(record.0, BACKLINK_CHANNEL)
+        {
             continue;
         }
         for payload in pending.0.drain(..) {
             match postcard::to_allocvec(&payload) {
-                Ok(bytes) => emit_from_host(record.0, BACKLINK_CHANNEL, bytes),
+                Ok(bytes) => event_bus.emit_from_host(record.0, BACKLINK_CHANNEL, bytes),
                 Err(err) => warn!(?err, "encode backlink payload"),
             }
         }

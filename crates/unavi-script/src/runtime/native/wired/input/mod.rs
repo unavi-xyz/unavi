@@ -83,7 +83,7 @@ impl bindings::wired::input::context::Host for Runtime {
         std::future::ready(if let Err(err) = self.api.require(ApiName::InputContext) {
             Ok(Err(err.into()))
         } else {
-            Ok(Ok(shared::wired::input::pointers()
+            Ok(Ok(shared::wired::input::pointers(&self.api)
                 .into_iter()
                 .map(Into::into)
                 .collect()))

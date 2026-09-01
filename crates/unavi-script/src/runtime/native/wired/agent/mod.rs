@@ -19,13 +19,17 @@ use crate::{
 pub mod bindings {
     pub use crate::runtime::shared::wired::{
         agent::AgentRes,
-        scene::prim::PrimRes,
+        scene::{
+            document::DocRes,
+            prim::PrimRes,
+        },
     };
 
     wasmtime::component::bindgen!({
         path: "../../protocol/wit/wired-agent",
         with: {
             "wired:agent/types.agent": AgentRes,
+            "wired:scene/types.document": DocRes,
             "wired:scene/types.prim": PrimRes,
             "wired:error/types": crate::runtime::native::wired::error::bindings::wired::error::types,
         },

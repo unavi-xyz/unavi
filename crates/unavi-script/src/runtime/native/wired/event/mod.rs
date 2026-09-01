@@ -33,7 +33,10 @@ pub mod bindings {
             EventReceptorRes,
             EventRes,
         },
-        scene::prim::PrimRes,
+        scene::{
+            document::DocRes,
+            prim::PrimRes,
+        },
     };
 
     wasmtime::component::bindgen!({
@@ -41,6 +44,7 @@ pub mod bindings {
         with: {
             "wired:event/types.event": EventRes,
             "wired:event/types.event-receptor": EventReceptorRes,
+            "wired:scene/types.document": DocRes,
             "wired:scene/types.prim": PrimRes,
             "wired:error/types": crate::runtime::native::wired::error::bindings::wired::error::types,
         },

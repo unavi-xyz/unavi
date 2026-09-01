@@ -10,11 +10,15 @@ use crate::runtime::{
 };
 
 pub mod bindings {
-    pub use crate::runtime::shared::wired::scene::prim::PrimRes;
+    pub use crate::runtime::shared::wired::scene::{
+        document::DocRes,
+        prim::PrimRes,
+    };
 
     wasmtime::component::bindgen!({
         path: "../../protocol/wit/wired-portal",
         with: {
+            "wired:scene/types.document": DocRes,
             "wired:scene/types.prim": PrimRes,
             "wired:error/types": crate::runtime::native::wired::error::bindings::wired::error::types,
         },

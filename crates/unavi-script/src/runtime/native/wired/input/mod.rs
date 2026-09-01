@@ -24,12 +24,16 @@ mod types;
 pub mod bindings {
     pub use crate::runtime::shared::wired::{
         input::listener::InputListenerRes,
-        scene::prim::PrimRes,
+        scene::{
+            document::DocRes,
+            prim::PrimRes,
+        },
     };
 
     wasmtime::component::bindgen!({
         path: "../../protocol/wit/wired-input",
         with: {
+            "wired:scene/types.document": DocRes,
             "wired:scene/types.prim": PrimRes,
             "wired:input/types.input-listener": InputListenerRes,
             "wired:error/types": crate::runtime::native::wired::error::bindings::wired::error::types,

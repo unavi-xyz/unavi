@@ -20,6 +20,14 @@ pub struct Identity {
     signing_key: P256KeyPair,
 }
 
+impl std::fmt::Debug for Identity {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Identity")
+            .field("did", &self.did)
+            .finish_non_exhaustive()
+    }
+}
+
 impl Identity {
     #[must_use]
     pub const fn new(did: Did, signing_key: P256KeyPair) -> Self {

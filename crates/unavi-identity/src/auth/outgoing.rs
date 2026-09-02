@@ -16,6 +16,7 @@ use tokio::sync::{
     oneshot,
 };
 use tracing::debug;
+use xdid::resolver::DidResolver;
 
 use crate::{
     auth::{
@@ -26,7 +27,6 @@ use crate::{
         handshake::Handshake,
     },
     identity::Identity,
-    resolve::Resolver,
 };
 
 /// Runs one handshake per remote, waking every dial waiting on it.
@@ -38,7 +38,7 @@ pub struct Outgoing {
     pub tx:       mpsc::Sender<Message>,
     pub bindings: Arc<Bindings>,
     pub identity: Arc<Identity>,
-    pub resolver: Arc<Resolver>,
+    pub resolver: Arc<DidResolver>,
 }
 
 impl Outgoing {
@@ -92,7 +92,7 @@ async fn exchange(
     remote: EndpointId,
     bindings: &Bindings,
     identity: &Identity,
-    resolver: &Resolver,
+    resolver: &DidResolver,
 ) -> anyhow::Result<()> {
     let connection = endpoint.connect(remote, ALPN).await?;
     let (mut tx, mut rx) = connection.open_bi().await?;

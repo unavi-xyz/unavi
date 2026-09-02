@@ -1,10 +1,5 @@
 use xdid::{
-    core::{
-        Method,
-        ResolutionError,
-        did::Did,
-        document::Document,
-    },
+    core::Method,
     method::{
         key::MethodDidKey,
         web::{
@@ -28,22 +23,14 @@ const TARGET: TargetPolicy = if cfg!(debug_assertions) {
 };
 
 /// Resolves the DIDs this node verifies against, over `did:key` and `did:web`.
-pub struct Resolver(DidResolver);
+pub fn new_did_resolver() -> Result<DidResolver, ClientError> {
+    let web = MethodDidWeb::with_config(Config {
+        target: TARGET,
+        ..Config::default()
+    })?;
 
-impl Resolver {
-    pub fn new() -> Result<Self, ClientError> {
-        let web = MethodDidWeb::with_config(Config {
-            target: TARGET,
-            ..Config::default()
-        })?;
-
-        Ok(Self(DidResolver::with_methods([
-            Box::new(MethodDidKey) as Box<dyn Method>,
-            Box::new(web),
-        ])))
-    }
-
-    pub async fn resolve(&self, did: &Did) -> Result<Document, ResolutionError> {
-        self.0.resolve(did).await
-    }
+    Ok(DidResolver::with_methods([
+        Box::new(MethodDidKey) as Box<dyn Method>,
+        Box::new(web),
+    ]))
 }

@@ -12,6 +12,7 @@ use iroh::{
     },
 };
 use tracing::debug;
+use xdid::resolver::DidResolver;
 
 use crate::{
     auth::{
@@ -20,7 +21,6 @@ use crate::{
         handshake::Handshake,
     },
     identity::Identity,
-    resolve::Resolver,
 };
 
 /// Answers `wired/auth`. Registered on the router under [`crate::auth::ALPN`].
@@ -29,15 +29,16 @@ pub struct Protocol {
     pub local:    EndpointId,
     pub bindings: Arc<Bindings>,
     pub identity: Arc<Identity>,
-    pub resolver: Arc<Resolver>,
+    pub resolver: Arc<DidResolver>,
 }
 
-/// A derived `Debug` would put the signing key in every log line that formats
-/// a handler.
+/// `DidResolver` holds trait objects, so a derived `Debug` cannot cover it.
 impl std::fmt::Debug for Protocol {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Protocol")
             .field("local", &self.local)
+            .field("bindings", &self.bindings)
+            .field("identity", &self.identity)
             .finish_non_exhaustive()
     }
 }

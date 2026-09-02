@@ -32,7 +32,7 @@ use unavi_identity::{
         EndpointAuth,
     },
     identity::NodeIdentity,
-    resolve::Resolver,
+    resolve::new_did_resolver,
 };
 use unavi_registry::{
     Registry,
@@ -94,7 +94,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     let node = Arc::new(NodeIdentity::load(&storage)?);
     info!("Running server as {did}");
 
-    let resolver = Arc::new(Resolver::new()?);
+    let resolver = Arc::new(new_did_resolver()?);
     let auth = Arc::new(EndpointAuth::new(
         Arc::clone(node.user()),
         Arc::clone(&resolver),

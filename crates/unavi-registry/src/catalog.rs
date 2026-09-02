@@ -7,11 +7,9 @@ use iroh_docs::{
     store::Query,
 };
 use time::OffsetDateTime;
-use unavi_identity::{
-    resolve::Resolver,
-    signed_bytes::SignedBytes,
-};
+use unavi_identity::signed_bytes::SignedBytes;
 use unavi_store::store::Store;
+use xdid::resolver::DidResolver;
 
 use crate::entry::Submission;
 
@@ -71,7 +69,7 @@ impl Catalog {
         &self,
         docs: &Docs,
         blobs: &Blobs,
-        resolver: &Resolver,
+        resolver: &DidResolver,
     ) -> anyhow::Result<Vec<Submission>> {
         let doc = self.doc(docs).await?;
         let query = Query::single_latest_per_key().key_prefix(ENTRIES_PREFIX);

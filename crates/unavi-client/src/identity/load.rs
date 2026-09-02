@@ -29,7 +29,6 @@ use unavi_identity::{
         Identity,
         NodeIdentity,
     },
-    resolve::Resolver,
 };
 use unavi_registry::follow;
 use unavi_store::{
@@ -45,6 +44,7 @@ use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
 };
+use xdid::resolver::DidResolver;
 
 use crate::identity::{
     Auth,
@@ -156,7 +156,7 @@ async fn load(
     entity: Entity,
     storage: local::Storage,
     sync: SyncConfig,
-    resolver: Arc<Resolver>,
+    resolver: Arc<DidResolver>,
 ) -> anyhow::Result<Guard> {
     let builder = StoreBuilder::new(endpoint.clone(), node.author())
         .gc_timer(Duration::from_mins(15))
@@ -216,7 +216,7 @@ async fn retry(
     mut unresolved: Vec<String>,
     store_entity: Entity,
     identity: Arc<Identity>,
-    resolver: Arc<Resolver>,
+    resolver: Arc<DidResolver>,
 ) {
     let mut delay = RETRY_DELAY;
 

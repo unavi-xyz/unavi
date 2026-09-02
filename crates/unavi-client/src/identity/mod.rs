@@ -4,10 +4,11 @@ use bevy::prelude::*;
 use unavi_identity::{
     auth::EndpointAuth,
     identity::NodeIdentity,
-    resolve::Resolver,
+    resolve::new_did_resolver,
 };
 use unavi_space::identity::LocalIdentity;
 use unavi_store::local;
+use xdid::resolver::DidResolver;
 
 mod load;
 
@@ -33,7 +34,7 @@ pub struct Auth(pub Arc<EndpointAuth>);
 /// Resolves the DIDs this node verifies against. One per process: each carries
 /// its own HTTP connection pool.
 #[derive(Resource, Clone)]
-pub struct Resolve(pub Arc<Resolver>);
+pub struct Resolve(pub Arc<DidResolver>);
 
 pub struct IdentityPlugin {
     pub storage: local::Storage,
@@ -80,7 +81,7 @@ impl Plugin for IdentityPlugin {
         };
         info!(did = %node.user().did(), "Running as");
 
-        let resolver = match Resolver::new() {
+        let resolver = match new_did_resolver() {
             Ok(resolver) => Arc::new(resolver),
             Err(err) => {
                 error!(

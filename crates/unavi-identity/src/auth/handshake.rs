@@ -18,11 +18,13 @@ use tokio::io::{
     AsyncReadExt,
     AsyncWriteExt,
 };
-use xdid::core::did::Did;
+use xdid::{
+    core::did::Did,
+    resolver::DidResolver,
+};
 
 use crate::{
     identity::Identity,
-    resolve::Resolver,
     signed_bytes::{
         Signable,
         SignedBytes,
@@ -53,7 +55,7 @@ impl Signable for IdentityProof {
 
 pub struct Handshake<'a> {
     pub identity: &'a Identity,
-    pub resolver: &'a Resolver,
+    pub resolver: &'a DidResolver,
     pub local:    EndpointId,
     pub remote:   EndpointId,
 }
@@ -169,6 +171,7 @@ mod tests {
     };
 
     use super::*;
+    use crate::resolve::new_did_resolver;
 
     fn endpoint() -> EndpointId {
         SecretKey::generate().public()
@@ -194,7 +197,7 @@ mod tests {
     /// The DID is `did:key`, so verification resolves without any network.
     fn handshake<'a>(
         identity: &'a Identity,
-        resolver: &'a Resolver,
+        resolver: &'a DidResolver,
         prover: EndpointId,
         verifier: EndpointId,
     ) -> Handshake<'a> {
@@ -217,7 +220,7 @@ mod tests {
         let key = P256KeyPair::generate();
         let did = key.public().to_did();
         let (prover, verifier, nonce) = (endpoint(), endpoint(), [7u8; 32]);
-        let (local, resolver) = (identity(), Resolver::new().expect("resolver"));
+        let (local, resolver) = (identity(), new_did_resolver().expect("resolver"));
 
         let proof = signed(&key, did.clone(), prover, verifier, nonce);
 
@@ -234,7 +237,7 @@ mod tests {
     async fn a_proof_cannot_be_relayed_to_another_verifier() {
         let key = P256KeyPair::generate();
         let (prover, verifier, nonce) = (endpoint(), endpoint(), [7u8; 32]);
-        let (local, resolver) = (identity(), Resolver::new().expect("resolver"));
+        let (local, resolver) = (identity(), new_did_resolver().expect("resolver"));
 
         let proof = signed(&key, key.public().to_did(), prover, verifier, nonce);
 
@@ -251,7 +254,7 @@ mod tests {
     async fn a_proof_cannot_be_presented_for_another_prover() {
         let key = P256KeyPair::generate();
         let (prover, verifier, nonce) = (endpoint(), endpoint(), [7u8; 32]);
-        let (local, resolver) = (identity(), Resolver::new().expect("resolver"));
+        let (local, resolver) = (identity(), new_did_resolver().expect("resolver"));
 
         let proof = signed(&key, key.public().to_did(), prover, verifier, nonce);
 
@@ -268,7 +271,7 @@ mod tests {
     async fn a_proof_answering_a_different_nonce_is_refused() {
         let key = P256KeyPair::generate();
         let (prover, verifier) = (endpoint(), endpoint());
-        let (local, resolver) = (identity(), Resolver::new().expect("resolver"));
+        let (local, resolver) = (identity(), new_did_resolver().expect("resolver"));
 
         let proof = signed(&key, key.public().to_did(), prover, verifier, [7u8; 32]);
 
@@ -285,7 +288,7 @@ mod tests {
     async fn a_did_the_signer_does_not_control_is_refused() {
         let (key, other) = (P256KeyPair::generate(), P256KeyPair::generate());
         let (prover, verifier, nonce) = (endpoint(), endpoint(), [7u8; 32]);
-        let (local, resolver) = (identity(), Resolver::new().expect("resolver"));
+        let (local, resolver) = (identity(), new_did_resolver().expect("resolver"));
 
         let proof = signed(&key, other.public().to_did(), prover, verifier, nonce);
 

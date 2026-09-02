@@ -13584,6 +13584,7 @@ dependencies = [
  "unavi-wasm-compat",
  "web-sys",
  "winit 0.30.13",
+ "xdid",
 ]
 
 [[package]]

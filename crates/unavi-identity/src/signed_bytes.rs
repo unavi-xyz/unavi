@@ -13,12 +13,10 @@ use xdid::{
         did::Did,
     },
     method::key::Signer,
+    resolver::DidResolver,
 };
 
-use crate::{
-    jwk,
-    resolve::Resolver,
-};
+use crate::jwk;
 
 #[derive(Debug, thiserror::Error)]
 pub enum VerifyError {
@@ -74,7 +72,7 @@ where
     }
 
     /// Checks the signature against `did`'s authentication keys.
-    pub async fn verify(&self, did: &Did, resolver: &Resolver) -> Result<(), VerifyError>
+    pub async fn verify(&self, did: &Did, resolver: &DidResolver) -> Result<(), VerifyError>
     where
         T: Sync,
     {

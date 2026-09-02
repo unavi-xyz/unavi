@@ -9,13 +9,13 @@ use iroh_docs::NamespaceId;
 use irpc::Client;
 use unavi_identity::{
     identity::Identity,
-    resolve::Resolver,
     signed_bytes::{
         Signable,
         SignedBytes,
     },
 };
 use unavi_store::store::Store;
+use xdid::resolver::DidResolver;
 
 use crate::{
     control::{
@@ -43,7 +43,7 @@ pub struct RegistryClient {
     client:   Client<RegistryService>,
     host:     EndpointAddr,
     identity: Arc<Identity>,
-    resolver: Arc<Resolver>,
+    resolver: Arc<DidResolver>,
 }
 
 impl RegistryClient {
@@ -52,7 +52,7 @@ impl RegistryClient {
         endpoint: &Endpoint,
         host: EndpointAddr,
         identity: Arc<Identity>,
-        resolver: Arc<Resolver>,
+        resolver: Arc<DidResolver>,
     ) -> Self {
         let client = irpc_iroh::client(endpoint.clone(), host.clone(), ALPN);
         Self {

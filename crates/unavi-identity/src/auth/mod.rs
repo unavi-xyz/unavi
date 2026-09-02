@@ -21,6 +21,7 @@ use tokio::sync::{
     mpsc,
     oneshot,
 };
+use xdid::resolver::DidResolver;
 
 use crate::{
     auth::{
@@ -30,7 +31,6 @@ use crate::{
         protocol::Protocol,
     },
     identity::Identity,
-    resolve::Resolver,
 };
 
 pub mod bindings;
@@ -53,19 +53,18 @@ pub enum Message {
 /// The `wired/auth` wiring for one endpoint.
 ///
 /// A proof names the endpoint it was made to, so the handshake has to run over
-/// the same endpoint that is about to dial. One of these per endpoint, not per
-/// process.
+/// the same endpoint that is about to dial.
 pub struct EndpointAuth {
     tx:       mpsc::Sender<Message>,
     rx:       Mutex<Option<mpsc::Receiver<Message>>>,
     bindings: Arc<Bindings>,
     identity: Arc<Identity>,
-    resolver: Arc<Resolver>,
+    resolver: Arc<DidResolver>,
 }
 
 impl EndpointAuth {
     #[must_use]
-    pub fn new(identity: Arc<Identity>, resolver: Arc<Resolver>) -> Self {
+    pub fn new(identity: Arc<Identity>, resolver: Arc<DidResolver>) -> Self {
         let (tx, rx) = mpsc::channel(16);
 
         Self {

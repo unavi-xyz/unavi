@@ -21,10 +21,12 @@ use unavi_identity::{
     ENDPOINT_SERVICE_ID,
     ENDPOINT_SERVICE_TYPE,
     identity::Identity,
-    resolve::Resolver,
 };
 use unavi_store::store::Store;
-use xdid::core::did::Did;
+use xdid::{
+    core::did::Did,
+    resolver::DidResolver,
+};
 
 use crate::client::RegistryClient;
 
@@ -54,7 +56,7 @@ pub async fn sync(
     endpoint: &Endpoint,
     targets: &[EndpointAddr],
     identity: Arc<Identity>,
-    resolver: Arc<Resolver>,
+    resolver: Arc<DidResolver>,
 ) {
     let mut clients = Vec::new();
     let mut namespaces = Vec::new();
@@ -89,7 +91,7 @@ pub async fn sync(
 /// client with no reachable server still runs peer to peer.
 pub async fn resolve_batch(
     dids: Vec<String>,
-    resolver: &Resolver,
+    resolver: &DidResolver,
 ) -> (Vec<EndpointAddr>, Vec<String>) {
     let mut addrs = Vec::new();
     let mut unresolved = Vec::new();
@@ -110,7 +112,7 @@ pub async fn resolve_batch(
     (addrs, unresolved)
 }
 
-async fn resolve_target(did_str: &str, resolver: &Resolver) -> anyhow::Result<EndpointAddr> {
+async fn resolve_target(did_str: &str, resolver: &DidResolver) -> anyhow::Result<EndpointAddr> {
     let did = Did::from_str(did_str)?;
     let doc = resolver.resolve(&did).await?;
 

@@ -12,11 +12,9 @@ use std::{
 use iroh_blobs::api::blobs::Blobs;
 use iroh_docs::protocol::Docs;
 use tracing::warn;
-use unavi_identity::{
-    auth::bindings::Bindings,
-    resolve::Resolver,
-};
+use unavi_identity::auth::bindings::Bindings;
 use unavi_store::store::Store;
+use xdid::resolver::DidResolver;
 
 use crate::{
     catalog::Catalog,
@@ -45,7 +43,7 @@ pub struct RegistryContext {
     pub(crate) config:   Config,
     pub(crate) docs:     Docs,
     pub(crate) presence: PresenceTable,
-    pub(crate) resolver: Arc<Resolver>,
+    pub(crate) resolver: Arc<DidResolver>,
     pub(crate) views:    Views,
     dirty:               AtomicBool,
 }
@@ -67,7 +65,7 @@ impl Registry {
         store: &Store,
         config: Config,
         bindings: Arc<Bindings>,
-        resolver: Arc<Resolver>,
+        resolver: Arc<DidResolver>,
     ) -> anyhow::Result<(Self, control::protocol::RegistryProtocol)> {
         let catalog = Catalog::create(store).await?;
         let views = Views::create(store).await?;

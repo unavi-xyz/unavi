@@ -64,6 +64,7 @@ unavi-store.path        = "../unavi-store"
 unavi-util.path         = "../unavi-util"
 unavi-wasm-compat.path  = "../unavi-wasm-compat"
 winit                   = { default-features = false, version = "0.30.13" }
+xdid.workspace          = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 web-sys = { features = ["Location", "UrlSearchParams"], workspace = true }

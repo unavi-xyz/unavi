@@ -4,8 +4,8 @@ use bevy::prelude::*;
 use unavi_identity::{
     auth::bindings::Bindings,
     identity::Identity,
-    resolve::Resolver,
 };
+use xdid::resolver::DidResolver;
 
 /// The node's identity handles, inserted once its keys are loaded.
 ///
@@ -15,5 +15,5 @@ use unavi_identity::{
 pub struct LocalIdentity {
     pub identity: Arc<Identity>,
     pub bindings: Arc<Bindings>,
-    pub resolver: Arc<Resolver>,
+    pub resolver: Arc<DidResolver>,
 }

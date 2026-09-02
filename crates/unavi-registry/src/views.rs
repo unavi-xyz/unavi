@@ -8,8 +8,8 @@ use serde::{
     Deserialize,
     Serialize,
 };
-use unavi_identity::resolve::Resolver;
 use unavi_store::store::Store;
+use xdid::resolver::DidResolver;
 
 use crate::{
     catalog::Catalog,
@@ -104,7 +104,7 @@ impl Views {
         catalog: &Catalog,
         blobs: &iroh_blobs::api::blobs::Blobs,
         config: &Config,
-        resolver: &Resolver,
+        resolver: &DidResolver,
     ) -> anyhow::Result<()> {
         let mut live = catalog.live(docs, blobs, resolver).await?;
 

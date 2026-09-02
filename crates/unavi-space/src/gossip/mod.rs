@@ -71,7 +71,7 @@ struct SpaceBroadcast {
 }
 
 impl Signable for SpaceBroadcast {
-    const SIGNING_CONTEXT: &'static str = "unavi/space/broadcast";
+    const SIGNING_CONTEXT: &'static str = "wired/space/broadcast";
 }
 
 #[derive(Serialize, Deserialize)]

@@ -636,29 +636,41 @@ impl Replicas {
     /// absent, so it is not listed.
     #[must_use]
     pub fn kv_keys(&self, space: DocId, doc: DocId) -> Vec<String> {
-        let inner = self.0.lock();
-        let Some(presence) = inner.docs.get(&doc).filter(|p| p.space == space) else {
-            return Vec::new();
+        let keys = {
+            let inner = self.0.lock();
+            inner
+                .docs
+                .get(&doc)
+                .filter(|p| p.space == space)
+                .map(|presence| {
+                    presence
+                        .kv
+                        .iter()
+                        .filter(|(_, cell)| cell.value.is_some())
+                        .map(|(key, _)| key.clone())
+                        .collect()
+                })
         };
-        presence
-            .kv
-            .iter()
-            .filter(|(_, cell)| cell.value.is_some())
-            .map(|(key, _)| key.clone())
-            .collect()
+        keys.unwrap_or_default()
     }
 
     #[must_use]
     pub fn kv_total_bytes(&self, space: DocId, doc: DocId) -> usize {
-        let inner = self.0.lock();
-        let Some(presence) = inner.docs.get(&doc).filter(|p| p.space == space) else {
-            return 0;
+        let bytes = {
+            let inner = self.0.lock();
+            inner
+                .docs
+                .get(&doc)
+                .filter(|p| p.space == space)
+                .map(|presence| {
+                    presence
+                        .kv
+                        .iter()
+                        .filter_map(|(key, cell)| cell.value.as_ref().map(|v| key.len() + v.len()))
+                        .sum()
+                })
         };
-        presence
-            .kv
-            .iter()
-            .filter_map(|(key, cell)| cell.value.as_ref().map(|v| key.len() + v.len()))
-            .sum()
+        bytes.unwrap_or_default()
     }
 
     /// Remote peers that hold `doc`, those `me` can sync the record from.

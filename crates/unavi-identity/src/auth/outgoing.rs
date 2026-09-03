@@ -43,7 +43,7 @@ pub struct Outgoing {
 
 impl Outgoing {
     pub async fn run(self, mut rx: mpsc::Receiver<Message>) {
-        let mut waiting: HashMap<EndpointId, Vec<oneshot::Sender<()>>> = HashMap::new();
+        let mut waiting = HashMap::<EndpointId, Vec<oneshot::Sender<()>>>::new();
 
         while let Some(message) = rx.recv().await {
             match message {

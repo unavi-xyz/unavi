@@ -24,23 +24,12 @@ use crate::{
 };
 
 /// Answers `wired/auth`. Registered on the router under [`crate::auth::ALPN`].
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Protocol {
     pub local:    EndpointId,
     pub bindings: Arc<Bindings>,
     pub identity: Arc<Identity>,
     pub resolver: Arc<DidResolver>,
-}
-
-/// `DidResolver` holds trait objects, so a derived `Debug` cannot cover it.
-impl std::fmt::Debug for Protocol {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Protocol")
-            .field("local", &self.local)
-            .field("bindings", &self.bindings)
-            .field("identity", &self.identity)
-            .finish_non_exhaustive()
-    }
 }
 
 impl ProtocolHandler for Protocol {

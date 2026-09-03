@@ -232,7 +232,7 @@ mod tests {
         assert_eq!(table.of_peer(first, &bindings), Trust::Trusted);
 
         bindings.unbind(first);
-        bindings.bind(second, did.clone());
+        bindings.bind(second, did);
         assert_eq!(
             table.of_peer(second, &bindings),
             Trust::Trusted,

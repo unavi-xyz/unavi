@@ -57,6 +57,7 @@ impl EventBus {
     /// Registers a new receptor for `doc_id`, minting its id from the shared
     /// counter, and returns the id together with the receiving half of its
     /// channel.
+    #[must_use]
     pub fn listen(
         &self,
         doc_id: DocId,

@@ -49,8 +49,8 @@ use xdid::resolver::DidResolver;
 use crate::identity::{
     Auth,
     LocalNode,
+    LocalStorage,
     Resolve,
-    Storage,
     SyncConfig,
 };
 
@@ -105,7 +105,7 @@ pub fn load_store(
     trigger: On<Add, IrohEndpoint>,
     endpoints: Query<&IrohEndpoint>,
     node: Res<LocalNode>,
-    storage: Res<Storage>,
+    storage: Res<LocalStorage>,
     sync: Res<SyncConfig>,
     resolve: Res<Resolve>,
 ) {
@@ -154,7 +154,7 @@ async fn load(
     endpoint: Endpoint,
     node: Arc<NodeIdentity>,
     entity: Entity,
-    storage: local::Storage,
+    storage: local::LocalStorage,
     sync: SyncConfig,
     resolver: Arc<DidResolver>,
 ) -> anyhow::Result<Guard> {

@@ -1,5 +1,5 @@
 use iroh::SecretKey;
-use unavi_store::local::Storage;
+use unavi_store::local::LocalStorage;
 use xdid::method::key::{
     DidKeyPair,
     p256::P256KeyPair,
@@ -14,22 +14,16 @@ pub struct Keys {
 const IDENTITY_ITEM: &str = "key.pem";
 const ENDPOINT_ITEM: &str = "endpoint.key";
 
-pub fn load(storage: &Storage) -> anyhow::Result<Keys> {
-    match storage {
-        Storage::Ephemeral => Ok(Keys {
-            identity: P256KeyPair::generate(),
-            endpoint: SecretKey::generate(),
-        }),
-        Storage::Path(_) | Storage::Browser => Ok(Keys {
-            identity: identity_key(storage)?,
-            endpoint: endpoint_key(storage)?,
-        }),
-    }
+pub fn load(storage: &LocalStorage) -> anyhow::Result<Keys> {
+    Ok(Keys {
+        identity: identity_key(storage)?,
+        endpoint: endpoint_key(storage)?,
+    })
 }
 
 /// A stored key that cannot be read is an error. Replacing it would discard
 /// the identity, which nothing can recover.
-fn identity_key(storage: &Storage) -> anyhow::Result<P256KeyPair> {
+fn identity_key(storage: &LocalStorage) -> anyhow::Result<P256KeyPair> {
     if let Some(pem) = storage.read(IDENTITY_ITEM)? {
         return Ok(P256KeyPair::from_pkcs8_pem(Zeroizing::new(pem).as_str())?);
     }
@@ -41,7 +35,7 @@ fn identity_key(storage: &Storage) -> anyhow::Result<P256KeyPair> {
 
 /// A stored key that is missing, short, or unreadable is replaced with a fresh
 /// one. Losing it costs a new `EndpointId` and author id, nothing more.
-fn endpoint_key(storage: &Storage) -> anyhow::Result<SecretKey> {
+fn endpoint_key(storage: &LocalStorage) -> anyhow::Result<SecretKey> {
     match storage.read_bytes(ENDPOINT_ITEM) {
         Ok(Some(bytes)) if bytes.len() == 32 => {
             let mut key = [0u8; 32];
@@ -63,9 +57,9 @@ mod tests {
 
     use super::*;
 
-    fn path_storage() -> (tempfile::TempDir, Storage) {
+    fn path_storage() -> (tempfile::TempDir, LocalStorage) {
         let dir = tempdir().expect("temp dir");
-        let storage = Storage::Path(dir.path().to_path_buf());
+        let storage = LocalStorage::Path(dir.path().to_path_buf());
         (dir, storage)
     }
 
@@ -84,17 +78,17 @@ mod tests {
     }
 
     #[test]
-    fn ephemeral_mints_fresh_keys_every_load() {
-        let storage = Storage::Ephemeral;
+    fn in_memory_keys_are_stable_within_a_process() {
+        let storage = LocalStorage::default();
 
         let first = load(&storage).expect("first load");
         let second = load(&storage).expect("second load");
 
-        assert_ne!(
+        assert_eq!(
             first.identity.public().to_did(),
             second.identity.public().to_did()
         );
-        assert_ne!(first.endpoint.to_bytes(), second.endpoint.to_bytes());
+        assert_eq!(first.endpoint.to_bytes(), second.endpoint.to_bytes());
     }
 
     #[cfg(unix)]

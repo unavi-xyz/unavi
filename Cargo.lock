@@ -13556,6 +13556,7 @@ dependencies = [
  "bevy_vrm",
  "bevy_xr_utils",
  "clap",
+ "directories",
  "embed-resource",
  "image",
  "iroh",
@@ -13816,6 +13817,7 @@ dependencies = [
  "bevy_vrm",
  "blake3",
  "bytes",
+ "directories",
  "hsd",
  "iroh",
  "iroh-blobs",
@@ -13962,6 +13964,7 @@ dependencies = [
  "anyhow",
  "blake3",
  "bytes",
+ "hex",
  "iroh",
  "iroh-blobs",
  "iroh-docs",
@@ -13992,7 +13995,6 @@ version = "0.0.16"
 dependencies = [
  "async-channel",
  "bevy",
- "directories",
  "n0-future",
  "unavi-wasm-compat",
  "web-time",
@@ -16461,7 +16463,7 @@ checksum = "163b33ed8786455e2fa5d72f554057ce3f3182425434f756cd39c99839d88e23"
 [[package]]
 name = "xdid"
 version = "0.9.0"
-source = "git+https://github.com/unavi-xyz/xdid#fc98f968d88dd84fa363b5c661acd4776ef3ddd9"
+source = "git+https://github.com/unavi-xyz/xdid#5915efd2c67d5bf38c744750be2268bae5753863"
 dependencies = [
  "smallvec",
  "thiserror 2.0.20",
@@ -16473,7 +16475,7 @@ dependencies = [
 [[package]]
 name = "xdid-core"
 version = "0.9.0"
-source = "git+https://github.com/unavi-xyz/xdid#fc98f968d88dd84fa363b5c661acd4776ef3ddd9"
+source = "git+https://github.com/unavi-xyz/xdid#5915efd2c67d5bf38c744750be2268bae5753863"
 dependencies = [
  "jose-jwk",
  "multibase",
@@ -16487,7 +16489,7 @@ dependencies = [
 [[package]]
 name = "xdid-method-key"
 version = "0.9.0"
-source = "git+https://github.com/unavi-xyz/xdid#fc98f968d88dd84fa363b5c661acd4776ef3ddd9"
+source = "git+https://github.com/unavi-xyz/xdid#5915efd2c67d5bf38c744750be2268bae5753863"
 dependencies = [
  "jose-jwk",
  "multibase",
@@ -16502,8 +16504,9 @@ dependencies = [
 [[package]]
 name = "xdid-method-web"
 version = "0.9.0"
-source = "git+https://github.com/unavi-xyz/xdid#fc98f968d88dd84fa363b5c661acd4776ef3ddd9"
+source = "git+https://github.com/unavi-xyz/xdid#5915efd2c67d5bf38c744750be2268bae5753863"
 dependencies = [
+ "futures",
  "percent-encoding",
  "reqwest",
  "rustls",
@@ -16511,6 +16514,7 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.20",
  "tokio",
+ "wasm-bindgen-futures",
  "xdid-core",
 ]
 

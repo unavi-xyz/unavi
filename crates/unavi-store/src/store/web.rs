@@ -8,13 +8,10 @@ use super::{
     BoxedBlobs,
     mem_store,
 };
-use crate::local::Storage;
 
-pub fn init(storage: &Storage, gc: Option<GcConfig>) -> anyhow::Result<(BoxedBlobs, DocsBuilder)> {
-    anyhow::ensure!(
-        storage.dir().is_none(),
-        "file storage is not supported on wasm"
-    );
+/// The blob and document stores are always in memory on wasm — the storage
+/// only persists recorded keys in browser local storage.
+pub fn init(gc: Option<GcConfig>) -> anyhow::Result<(BoxedBlobs, DocsBuilder)> {
     let blobs: BoxedBlobs = Box::new(mem_store(gc));
     Ok((blobs, Docs::memory()))
 }

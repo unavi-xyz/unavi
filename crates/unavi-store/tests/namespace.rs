@@ -74,11 +74,15 @@ async fn an_unheld_namespace_is_reminted() {
 #[awt]
 #[traced_test]
 #[tokio::test]
-async fn ephemeral_storage_mints_every_run(#[future] store: Spawned) {
+async fn in_memory_storage_reopens_within_a_process(#[future] store: Spawned) {
     let first = store.store.open_or_mint("view").await.expect("mint");
     let second = store.store.open_or_mint("view").await.expect("mint");
 
-    assert_ne!(first.id(), second.id());
+    assert_eq!(
+        first.id(),
+        second.id(),
+        "a recorded id must name the same document within one process"
+    );
 }
 
 /// `open` imports a read capability rather than opening, so it has to merge

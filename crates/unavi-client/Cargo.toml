@@ -73,3 +73,4 @@ web-sys = { features = ["Location", "UrlSearchParams"], workspace = true }
 bevy_mod_openxr         = "0.6.0"
 bevy_mod_xr.workspace   = true
 bevy_xr_utils.workspace = true
+directories.workspace   = true

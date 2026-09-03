@@ -12,7 +12,7 @@ use serde::{
     Serialize,
 };
 use unavi_identity::auth::bindings::Bindings;
-use unavi_store::local::Storage;
+use unavi_store::local::LocalStorage;
 use xdid::core::did::Did;
 
 /// How much a peer is trusted, as one ordinal rung.
@@ -58,10 +58,11 @@ pub struct TrustTable(Arc<Inner>);
 
 struct Inner {
     overrides: RwLock<HashMap<Did, Trust>>,
-    storage:   Storage,
+    storage:   LocalStorage,
 }
 
-/// The table's key in a [`Storage`], and the previous good copy kept beside it.
+/// The table's key in a [`LocalStorage`], and the previous good copy kept
+/// beside it.
 const TABLE_KEY: &str = "trust.toml";
 const BACKUP_KEY: &str = "trust.toml.bak";
 
@@ -73,7 +74,7 @@ struct Stored {
 
 impl TrustTable {
     #[must_use]
-    pub fn new(storage: Storage) -> Self {
+    pub fn new(storage: LocalStorage) -> Self {
         Self(Arc::new(Inner {
             overrides: RwLock::default(),
             storage,
@@ -87,7 +88,7 @@ impl TrustTable {
     /// start: coming up clean would silently un-block every peer the user
     /// ejected. The previous good copy is tried first so a truncated write is
     /// survivable.
-    pub fn load(storage: Storage) -> anyhow::Result<Self> {
+    pub fn load(storage: LocalStorage) -> anyhow::Result<Self> {
         let stored = match read_table(&storage, TABLE_KEY) {
             Ok(None) => Stored::default(),
             Ok(Some(stored)) => stored,
@@ -177,7 +178,7 @@ impl TrustTable {
 /// one that cannot be read at all. A truncated write leaves valid UTF-8 that is
 /// not valid TOML, so treating the two alike is what makes the backup reachable
 /// in the case it exists for.
-fn read_table(storage: &Storage, key: &str) -> anyhow::Result<Option<Stored>> {
+fn read_table(storage: &LocalStorage, key: &str) -> anyhow::Result<Option<Stored>> {
     let Some(text) = storage.read(key)? else {
         return Ok(None);
     };
@@ -203,26 +204,26 @@ mod tests {
 
     /// A fresh table on disk, distinct per test so parallel runs never share a
     /// file.
-    fn storage() -> (std::path::PathBuf, Storage) {
+    fn storage() -> (std::path::PathBuf, LocalStorage) {
         let dir = std::env::temp_dir().join(format!(
             "unavi-trust-{}-{}",
             std::process::id(),
             std::thread::current().name().unwrap_or("unnamed")
         ));
         std::fs::create_dir_all(&dir).expect("temp dir");
-        let storage = Storage::Path(dir.clone());
+        let storage = LocalStorage::Path(dir.clone());
         (dir, storage)
     }
 
     #[test]
     fn an_unproven_peer_is_a_guest() {
-        let table = TrustTable::new(Storage::Ephemeral);
+        let table = TrustTable::new(LocalStorage::default());
         assert_eq!(table.of_peer(peer(), &Bindings::default()), Trust::Guest);
     }
 
     #[test]
     fn a_rung_survives_the_endpoint_it_was_learned_on() {
-        let table = TrustTable::new(Storage::Ephemeral);
+        let table = TrustTable::new(LocalStorage::default());
         let did = Did::from_str("did:web:example.com").expect("did");
         let bindings = Bindings::default();
         table.set(did.clone(), Trust::Trusted);

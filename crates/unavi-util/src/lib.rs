@@ -2,7 +2,6 @@ use bevy::prelude::*;
 
 pub mod async_commands;
 pub mod async_task;
-#[cfg(not(target_family = "wasm"))] pub mod dirs;
 pub mod hierarchy;
 
 pub struct UtilPlugin;

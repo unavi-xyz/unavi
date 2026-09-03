@@ -2,8 +2,12 @@
 // is dead per-binary.
 #![expect(dead_code)]
 
-use std::sync::Arc;
+use std::sync::{
+    Arc,
+    LazyLock,
+};
 
+use directories::ProjectDirs;
 use iroh::{
     endpoint::presets::N0,
     protocol::Router,
@@ -15,17 +19,18 @@ use unavi_identity::identity::{
     NodeIdentity,
 };
 use unavi_store::{
-    local::Storage,
+    local::LocalStorage,
     store::{
         Builder as StoreBuilder,
         Spawned,
         Store,
     },
 };
-use unavi_util::{
-    async_task::spawn_async_task,
-    dirs::data_local_dir,
-};
+use unavi_util::async_task::spawn_async_task;
+
+/// The app's data directory, created on first use.
+static DIRS: LazyLock<ProjectDirs> =
+    LazyLock::new(|| ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs"));
 
 pub struct TestStore {
     pub identity: Arc<Identity>,
@@ -52,9 +57,9 @@ fn build(persistent: bool) -> TestStore {
         // The persistent store's documents were authored under the client's
         // identity, so an example reading them back has to load the same key.
         let storage = if persistent {
-            Storage::Path(data_local_dir().to_path_buf())
+            LocalStorage::Path(DIRS.data_local_dir().to_path_buf())
         } else {
-            Storage::Ephemeral
+            LocalStorage::default()
         };
         let node = NodeIdentity::load(&storage).expect("identity");
 

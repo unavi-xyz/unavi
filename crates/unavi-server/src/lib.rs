@@ -39,7 +39,7 @@ use unavi_registry::{
     config::Config as RegistryConfig,
 };
 use unavi_store::{
-    local::Storage,
+    local::LocalStorage,
     store::{
         Builder as StoreBuilder,
         Spawned,
@@ -166,11 +166,11 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn key_storage(in_memory: bool) -> Storage {
+fn key_storage(in_memory: bool) -> LocalStorage {
     if in_memory {
-        Storage::Ephemeral
+        LocalStorage::default()
     } else {
-        Storage::Path(DIRS.data_local_dir().to_path_buf())
+        LocalStorage::Path(DIRS.data_local_dir().to_path_buf())
     }
 }
 

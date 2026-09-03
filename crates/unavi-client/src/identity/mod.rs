@@ -1,6 +1,10 @@
+#[cfg(target_family = "wasm")] use std::path::PathBuf;
 use std::sync::Arc;
+#[cfg(not(target_family = "wasm"))] use std::sync::LazyLock;
 
 use bevy::prelude::*;
+#[cfg(not(target_family = "wasm"))]
+use directories::ProjectDirs;
 use unavi_identity::{
     auth::EndpointAuth,
     identity::NodeIdentity,
@@ -15,7 +19,7 @@ mod load;
 /// Where this device keeps the state that must outlive the process: its keys
 /// and the id of the root document they authored.
 #[derive(Resource, Clone)]
-pub struct Storage(pub local::Storage);
+pub struct LocalStorage(pub local::LocalStorage);
 
 #[derive(Resource, Clone, Default)]
 pub struct SyncConfig {
@@ -37,35 +41,45 @@ pub struct Auth(pub Arc<EndpointAuth>);
 pub struct Resolve(pub Arc<DidResolver>);
 
 pub struct IdentityPlugin {
-    pub storage: local::Storage,
+    pub storage: local::LocalStorage,
     pub sync:    SyncConfig,
 }
 
+/// The app's data and config directories, created on first use.
+#[cfg(not(target_family = "wasm"))]
+static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
+    let dirs = ProjectDirs::from("", "UNAVI", "unavi-client").expect("project dirs");
+    std::fs::create_dir_all(dirs.data_local_dir()).expect("data local dir");
+    std::fs::create_dir_all(dirs.config_dir()).expect("config dir");
+    dirs
+});
+
 /// The storage every client-side plugin shares: nothing on `--in-memory`, the
-/// browser on wasm, the app's data directory elsewhere.
-pub fn key_storage(in_memory: bool) -> local::Storage {
+/// app's data root elsewhere — a local-storage prefix on wasm.
+pub fn key_storage(in_memory: bool) -> local::LocalStorage {
     if in_memory {
-        return local::Storage::Ephemeral;
+        return local::LocalStorage::default();
     }
 
-    cfg_select! {
-        target_family = "wasm" => local::Storage::Browser,
-        _ => local::Storage::Path(unavi_util::dirs::data_local_dir().to_path_buf()),
-    }
+    local::LocalStorage::Path(cfg_select! {
+        target_family = "wasm" => PathBuf::from("data"),
+        _ => DIRS.data_local_dir().to_path_buf(),
+    })
 }
 
 /// For settings meant to be hand-edited. Ignores `in_memory`, unlike
 /// [`key_storage`]: local test instances still want the same keybinds, and
-/// the atomic rename in [`Storage::write`](local::Storage::write) makes even
-/// simultaneous first-run writes to the one file benign.
+/// the atomic rename in [`LocalStorage::write`](local::LocalStorage::write)
+/// makes even simultaneous first-run writes to the one file benign.
 ///
-/// On wasm this is the same `Browser` storage as [`key_storage`], since a
-/// browser keeps no separate config bucket.
-pub fn config_storage() -> local::Storage {
-    cfg_select! {
-        target_family = "wasm" => local::Storage::Browser,
-        _ => local::Storage::Path(unavi_util::dirs::config_dir().to_path_buf()),
-    }
+/// The root is the config directory on native, the `config` local-storage
+/// prefix on wasm — apart from [`key_storage`]'s `data` root, exactly as on
+/// native.
+pub fn config_storage() -> local::LocalStorage {
+    local::LocalStorage::Path(cfg_select! {
+        target_family = "wasm" => PathBuf::from("config"),
+        _ => DIRS.config_dir().to_path_buf(),
+    })
 }
 
 impl Plugin for IdentityPlugin {
@@ -76,7 +90,7 @@ impl Plugin for IdentityPlugin {
             Ok(node) => node,
             Err(err) => {
                 error!(?err, "failed to load identity key; using an ephemeral one");
-                NodeIdentity::load(&local::Storage::Ephemeral).expect("generate identity")
+                NodeIdentity::load(&local::LocalStorage::default()).expect("generate identity")
             }
         };
         info!(did = %node.user().did(), "Running as");
@@ -102,7 +116,7 @@ impl Plugin for IdentityPlugin {
             bindings: Arc::clone(auth.bindings()),
             resolver: Arc::clone(&resolver),
         })
-        .insert_resource(Storage(storage))
+        .insert_resource(LocalStorage(storage))
         .insert_resource(self.sync.clone())
         .insert_resource(LocalNode(Arc::new(node)))
         .insert_resource(Auth(auth))

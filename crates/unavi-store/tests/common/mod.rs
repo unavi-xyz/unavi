@@ -13,7 +13,7 @@ use iroh::{
 use iroh_docs::Author;
 use rstest::fixture;
 use unavi_store::{
-    local::Storage,
+    local::LocalStorage,
     store::{
         Builder,
         Spawned,
@@ -35,7 +35,7 @@ pub async fn store_with_gc(interval: Duration) -> Spawned {
 /// what a restart would reopen.
 pub async fn store_at(dir: &Path) -> Spawned {
     let dir = dir.to_path_buf();
-    build(move |builder| builder.storage(Storage::Path(dir))).await
+    build(move |builder| builder.storage(LocalStorage::Path(dir))).await
 }
 
 async fn build(configure: impl FnOnce(Builder) -> Builder) -> Spawned {

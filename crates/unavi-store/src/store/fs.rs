@@ -14,13 +14,13 @@ use super::{
     BoxedBlobs,
     mem_store,
 };
-use crate::local::Storage;
+use crate::local::LocalStorage;
 
 /// Subdirectory of a node's storage the blob and document stores live under.
 const STORE_DIR: &str = "store";
 
 pub async fn init(
-    storage: &Storage,
+    storage: &LocalStorage,
     gc: Option<GcConfig>,
 ) -> anyhow::Result<(BoxedBlobs, DocsBuilder)> {
     let Some(dir) = storage.dir() else {

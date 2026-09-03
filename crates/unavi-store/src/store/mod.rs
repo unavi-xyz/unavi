@@ -32,7 +32,7 @@ use n0_future::task::AbortOnDropHandle;
 
 use crate::{
     cache::Cache,
-    local::Storage,
+    local::LocalStorage,
     namespace::Namespace,
 };
 
@@ -43,7 +43,7 @@ pub type BoxedRouterBuilder = Box<dyn FnOnce(RouterBuilder) -> RouterBuilder + S
 type BoxedBlobs = Box<dyn AsRef<BlobStore> + Send + Sync>;
 
 /// Storage key recording this node's root document id.
-const ROOT_KEY: &str = "root-doc";
+const ROOT_KEY: &str = "root-doc.bin";
 
 /// The blob, document and gossip handles this node runs on. Each is
 /// `Arc`-backed.
@@ -53,7 +53,7 @@ pub struct Store {
     docs:    Docs,
     gossip:  Gossip,
     author:  AuthorId,
-    storage: Storage,
+    storage: LocalStorage,
     root:    NamespaceId,
 }
 
@@ -90,8 +90,8 @@ impl Store {
         Ok(self.wrap(self.docs.api().create().await?))
     }
 
-    /// Opens the namespace this store's [`Storage`] records at `key`, minting
-    /// and recording one on first use.
+    /// Opens the namespace this store's [`LocalStorage`] records at `key`,
+    /// minting and recording one on first use.
     pub async fn open_or_mint(&self, key: &str) -> anyhow::Result<Namespace> {
         Ok(self.wrap(open_or_mint_doc(&self.docs, &self.storage, key).await?))
     }
@@ -146,17 +146,17 @@ pub struct Builder {
     author:   Author,
     endpoint: Endpoint,
     gc_timer: Option<Duration>,
-    storage:  Storage,
+    storage:  LocalStorage,
 }
 
 impl Builder {
     #[must_use]
-    pub const fn new(endpoint: Endpoint, author: Author) -> Self {
+    pub fn new(endpoint: Endpoint, author: Author) -> Self {
         Self {
             author,
             endpoint,
             gc_timer: None,
-            storage: Storage::Ephemeral,
+            storage: LocalStorage::default(),
         }
     }
 
@@ -169,12 +169,12 @@ impl Builder {
     }
 
     /// Where blobs and documents are kept. Defaults to
-    /// [`Storage::Ephemeral`], which holds both in memory.
+    /// [`LocalStorage::InMemory`], which keeps everything in memory.
     ///
-    /// [`Storage::Path`] is not supported on wasm — [`Self::build`] errors if
-    /// it is set there, since there is no filesystem to fall back to.
+    /// [`LocalStorage::Path`] keeps blobs and documents in a redb store on
+    /// native, and persists recorded keys in browser local storage on wasm.
     #[must_use]
-    pub fn storage(mut self, storage: Storage) -> Self {
+    pub fn storage(mut self, storage: LocalStorage) -> Self {
         self.storage = storage;
         self
     }
@@ -190,7 +190,7 @@ impl Builder {
         });
 
         let (owned, docs_builder) = cfg_select! {
-            target_family = "wasm" => web::init(&self.storage, gc)?,
+            target_family = "wasm" => web::init(gc)?,
             _ => fs::init(&self.storage, gc).await?,
         };
         let blobs = owned.as_ref().as_ref().clone();
@@ -270,8 +270,9 @@ impl Builder {
 /// for names an unrecoverable document, so a fresh one is minted and the record
 /// replaced.
 ///
-/// [`Storage::Ephemeral`] records nothing, so it mints on every run.
-async fn open_or_mint_doc(docs: &Docs, storage: &Storage, key: &str) -> anyhow::Result<Doc> {
+/// An [`LocalStorage::InMemory`] record dies with the process, so a restart
+/// mints afresh; a [`LocalStorage::Path`] record reopens the same document.
+async fn open_or_mint_doc(docs: &Docs, storage: &LocalStorage, key: &str) -> anyhow::Result<Doc> {
     if let Some(ns) = recorded(storage, key)
         && let Some(doc) = held(docs, ns).await
     {
@@ -283,7 +284,7 @@ async fn open_or_mint_doc(docs: &Docs, storage: &Storage, key: &str) -> anyhow::
     Ok(doc)
 }
 
-fn recorded(storage: &Storage, key: &str) -> Option<NamespaceId> {
+fn recorded(storage: &LocalStorage, key: &str) -> Option<NamespaceId> {
     match storage.read(key) {
         Ok(Some(text)) => NamespaceId::from_str(text.trim()).ok(),
         Ok(None) => None,

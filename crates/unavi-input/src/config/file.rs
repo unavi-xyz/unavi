@@ -4,7 +4,7 @@ use ron::{
     extensions::Extensions,
     ser::PrettyConfig,
 };
-use unavi_store::local::Storage;
+use unavi_store::local::LocalStorage;
 
 use crate::config::{
     InputConfig,
@@ -36,7 +36,7 @@ pub fn to_text(config: &InputConfig) -> Result<String, ron::Error> {
 /// there. A value that fails to parse or to read is left alone — overwriting
 /// it would throw away the edit that broke it.
 #[must_use]
-pub fn load(storage: &Storage) -> InputConfig {
+pub fn load(storage: &LocalStorage) -> InputConfig {
     match storage.read(KEY) {
         Ok(Some(text)) => match parse(&text) {
             Ok(config) => config,
@@ -60,7 +60,7 @@ pub fn load(storage: &Storage) -> InputConfig {
     }
 }
 
-pub fn save(storage: &Storage, config: &InputConfig) {
+pub fn save(storage: &LocalStorage, config: &InputConfig) {
     let text = match to_text(config) {
         Ok(text) => text,
         Err(err) => {

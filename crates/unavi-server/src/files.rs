@@ -131,9 +131,7 @@ pub async fn host_files(store: &BlobStore) -> anyhow::Result<Vec<HostedFile>> {
 
     for (name, path) in hosted_files(&files_dir())? {
         let size = fs::metadata(&path)?.len();
-
         let haf = blobs.add_path(&path).with_named_tag(tag(&name)).await?;
-        info!(name, hash = %haf.hash, size, "hosting file over iroh");
         hosted.push(HostedFile {
             name,
             hash: haf.hash,

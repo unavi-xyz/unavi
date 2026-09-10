@@ -1,14 +1,12 @@
-use iroh_docs::{
-    NamespaceId,
-    api::Doc,
-    protocol::Docs,
-    store::Query,
-};
+use iroh_docs::NamespaceId;
 use serde::{
     Deserialize,
     Serialize,
 };
-use unavi_store::store::Store;
+use wds::{
+    Store,
+    document::Document,
+};
 use xdid::resolver::DidResolver;
 
 use crate::{
@@ -30,8 +28,13 @@ pub struct ViewIds {
     pub active:     NamespaceId,
 }
 
+/// The documents behind [`ViewIds`], held open for as long as this registry
+/// runs. Releasing one takes it back out of the sync set that answers clients.
 pub struct Views {
-    ids: ViewIds,
+    recent:     Document,
+    featured:   Document,
+    categories: Document,
+    active:     Document,
 }
 
 /// Zero-padded so key order is the registry's intended order; clients need no
@@ -50,12 +53,12 @@ fn active_key(rank: usize, ns: NamespaceId) -> String {
 
 /// Each view is recorded under its own key, so one lost view is reminted
 /// without disturbing the others.
-async fn open_view(store: &Store, name: &str) -> anyhow::Result<NamespaceId> {
+async fn open_view(store: &Store, name: &str) -> anyhow::Result<Document> {
     let view = store
-        .open_or_mint(&format!("registry/views/{name}"))
+        .open_named_doc(&format!("registry/views/{name}"))
         .await?;
     view.serve().await?;
-    Ok(view.id())
+    Ok(view)
 }
 
 impl Views {
@@ -64,106 +67,64 @@ impl Views {
     /// set: a namespace outside that set rejects reads with `NotFound`.
     pub async fn create(store: &Store) -> anyhow::Result<Self> {
         Ok(Self {
-            ids: ViewIds {
-                recent:     open_view(store, "recent").await?,
-                featured:   open_view(store, "featured").await?,
-                categories: open_view(store, "categories").await?,
-                active:     open_view(store, "active").await?,
-            },
+            recent:     open_view(store, "recent").await?,
+            featured:   open_view(store, "featured").await?,
+            categories: open_view(store, "categories").await?,
+            active:     open_view(store, "active").await?,
         })
     }
 
     pub async fn write_active(
         &self,
-        docs: &Docs,
         active: &[ActiveSpace],
         capacity: usize,
     ) -> anyhow::Result<()> {
-        let doc = self.open(docs, self.ids.active).await?;
-        let author = docs.api().author_default().await?;
-
-        doc.del(author, ACTIVE_PREFIX).await?;
+        self.active.remove(ACTIVE_PREFIX).await?;
 
         for (rank, space) in active.iter().take(capacity).enumerate() {
             let value = postcard::to_stdvec(&(space.occupants as u32, space.idle_secs))?;
-            doc.set_bytes(author, active_key(rank, space.ns), value)
-                .await?;
+            self.active.set(active_key(rank, space.ns), value).await?;
         }
 
         Ok(())
     }
 
     #[must_use]
-    pub const fn ids(&self) -> ViewIds {
-        self.ids
+    pub fn ids(&self) -> ViewIds {
+        ViewIds {
+            recent:     self.recent.id(),
+            featured:   self.featured.id(),
+            categories: self.categories.id(),
+            active:     self.active.id(),
+        }
     }
 
     pub async fn rebuild(
         &self,
-        docs: &Docs,
         catalog: &Catalog,
-        blobs: &iroh_blobs::api::blobs::Blobs,
         config: &Config,
         resolver: &DidResolver,
     ) -> anyhow::Result<()> {
-        let mut live = catalog.live(docs, blobs, resolver).await?;
+        let mut live = catalog.live(resolver).await?;
 
         live.sort_by_key(|s| std::cmp::Reverse(s.expires));
         let recent = live.iter().take(config.view_capacity).collect::<Vec<_>>();
-        self.write(docs, self.ids.recent, &recent, ranked_key)
-            .await?;
+        write(&self.recent, &recent, ranked_key).await?;
 
         let featured = live
             .iter()
             .filter(|s| config.featured.contains(&s.ns))
             .take(config.view_capacity)
             .collect::<Vec<_>>();
-        self.write(docs, self.ids.featured, &featured, ranked_key)
-            .await?;
+        write(&self.featured, &featured, ranked_key).await?;
 
-        self.write_categories(docs, &live, config).await?;
-
-        Ok(())
-    }
-
-    async fn open(&self, docs: &Docs, ns: NamespaceId) -> anyhow::Result<Doc> {
-        docs.api()
-            .open(ns)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("view doc {ns} not open"))
-    }
-
-    async fn write(
-        &self,
-        docs: &Docs,
-        ns: NamespaceId,
-        entries: &[&Submission],
-        key: impl Fn(usize, NamespaceId) -> String,
-    ) -> anyhow::Result<()> {
-        let doc = self.open(docs, ns).await?;
-        let author = docs.api().author_default().await?;
-
-        doc.del(author, String::new()).await?;
-
-        for (rank, submission) in entries.iter().enumerate() {
-            let value = postcard::to_stdvec(submission)?;
-            doc.set_bytes(author, key(rank, submission.ns), value)
-                .await?;
-        }
+        self.write_categories(&live, config).await?;
 
         Ok(())
     }
 
-    async fn write_categories(
-        &self,
-        docs: &Docs,
-        live: &[Submission],
-        config: &Config,
-    ) -> anyhow::Result<()> {
-        let doc = self.open(docs, self.ids.categories).await?;
-        let author = docs.api().author_default().await?;
-
-        doc.del(author, String::new()).await?;
+    async fn write_categories(&self, live: &[Submission], config: &Config) -> anyhow::Result<()> {
+        self.categories.remove(String::new()).await?;
 
         for category in &config.categories {
             let matching = live
@@ -173,7 +134,8 @@ impl Views {
 
             for (rank, submission) in matching.enumerate() {
                 let value = postcard::to_stdvec(submission)?;
-                doc.set_bytes(author, category_key(category, rank, submission.ns), value)
+                self.categories
+                    .set(category_key(category, rank, submission.ns), value)
                     .await?;
             }
         }
@@ -182,26 +144,32 @@ impl Views {
     }
 }
 
+async fn write(
+    view: &Document,
+    entries: &[&Submission],
+    key: impl Fn(usize, NamespaceId) -> String,
+) -> anyhow::Result<()> {
+    view.remove(String::new()).await?;
+
+    for (rank, submission) in entries.iter().enumerate() {
+        let value = postcard::to_stdvec(submission)?;
+        view.set(key(rank, submission.ns), value).await?;
+    }
+
+    Ok(())
+}
+
 /// Reads a view doc a client has synced, in the registry's intended order.
 pub async fn read_view(
-    docs: &Docs,
-    blobs: &iroh_blobs::api::blobs::Blobs,
+    store: &Store,
     ns: NamespaceId,
     prefix: &str,
 ) -> anyhow::Result<Vec<Submission>> {
-    use futures::StreamExt;
-
-    let Some(doc) = docs.api().open(ns).await? else {
-        return Ok(Vec::new());
-    };
-
-    let query = Query::single_latest_per_key().key_prefix(prefix);
-    let entries = doc.get_many(query).await?;
-    let mut entries = std::pin::pin!(entries);
+    let doc = store.open(ns).await?;
 
     let mut out = Vec::new();
-    while let Some(entry) = entries.next().await {
-        let Ok(bytes) = blobs.get_bytes(entry?.content_hash()).await else {
+    for entry in doc.list(&[prefix]).await? {
+        let Some(bytes) = doc.value(&entry).await else {
             continue;
         };
         if let Ok(submission) = postcard::from_bytes::<Submission>(&bytes) {

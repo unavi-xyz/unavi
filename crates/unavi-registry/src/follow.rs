@@ -22,7 +22,7 @@ use unavi_identity::{
     ENDPOINT_SERVICE_TYPE,
     identity::Identity,
 };
-use unavi_store::store::Store;
+use wds::Store;
 use xdid::{
     core::did::Did,
     resolver::DidResolver,

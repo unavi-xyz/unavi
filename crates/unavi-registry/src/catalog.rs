@@ -1,14 +1,10 @@
-use futures::StreamExt;
-use iroh_blobs::api::blobs::Blobs;
-use iroh_docs::{
-    NamespaceId,
-    api::Doc,
-    protocol::Docs,
-    store::Query,
-};
+use iroh_docs::NamespaceId;
 use time::OffsetDateTime;
 use unavi_identity::signed_bytes::SignedBytes;
-use unavi_store::store::Store;
+use wds::{
+    Store,
+    document::Document,
+};
 use xdid::resolver::DidResolver;
 
 use crate::entry::Submission;
@@ -25,62 +21,40 @@ fn entry_key(ns: NamespaceId) -> String {
 /// Durable record of every live submission, written only by this registry.
 /// Clients sync [views](crate::views) instead, not this doc.
 pub struct Catalog {
-    ns: NamespaceId,
+    doc: Document,
 }
 
 impl Catalog {
     pub async fn create(store: &Store) -> anyhow::Result<Self> {
-        let ns = store.open_or_mint(KEY).await?.id();
-        Ok(Self { ns })
-    }
-
-    async fn doc(&self, docs: &Docs) -> anyhow::Result<Doc> {
-        docs.api()
-            .open(self.ns)
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("catalog doc {} not open", self.ns))
+        Ok(Self {
+            doc: store.open_named_doc(KEY).await?,
+        })
     }
 
     pub async fn insert(
         &self,
-        docs: &Docs,
         submission: &Submission,
         signed: &SignedBytes<Submission>,
     ) -> anyhow::Result<()> {
-        let doc = self.doc(docs).await?;
-        let author = docs.api().author_default().await?;
         let value = postcard::to_stdvec(signed)?;
-        doc.set_bytes(author, entry_key(submission.ns), value)
-            .await?;
+        self.doc.set(entry_key(submission.ns), value).await?;
         Ok(())
     }
 
-    pub async fn remove(&self, docs: &Docs, ns: NamespaceId) -> anyhow::Result<()> {
-        let doc = self.doc(docs).await?;
-        let author = docs.api().author_default().await?;
-        doc.del(author, entry_key(ns)).await?;
+    pub async fn remove(&self, ns: NamespaceId) -> anyhow::Result<()> {
+        self.doc.remove(entry_key(ns)).await?;
         Ok(())
     }
 
     /// Every unexpired submission whose signature still verifies.
     ///
     /// Verification is repeated on read rather than trusted from write time.
-    pub async fn live(
-        &self,
-        docs: &Docs,
-        blobs: &Blobs,
-        resolver: &DidResolver,
-    ) -> anyhow::Result<Vec<Submission>> {
-        let doc = self.doc(docs).await?;
-        let query = Query::single_latest_per_key().key_prefix(ENTRIES_PREFIX);
-        let entries = doc.get_many(query).await?;
-        let mut entries = std::pin::pin!(entries);
-
+    pub async fn live(&self, resolver: &DidResolver) -> anyhow::Result<Vec<Submission>> {
         let now = OffsetDateTime::now_utc().unix_timestamp();
         let mut out = Vec::new();
 
-        while let Some(entry) = entries.next().await {
-            let Ok(bytes) = blobs.get_bytes(entry?.content_hash()).await else {
+        for entry in self.doc.list(&[ENTRIES_PREFIX]).await? {
+            let Some(bytes) = self.doc.value(&entry).await else {
                 continue;
             };
             let Ok(signed) = postcard::from_bytes::<SignedBytes<Submission>>(&bytes) else {

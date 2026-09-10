@@ -8,21 +8,19 @@ use bevy::{
 use blake3::Hash;
 use bytes::Bytes;
 use iroh::EndpointId;
-use iroh_blobs::api::{
-    blobs::Blobs,
-    downloader::Downloader,
+use iroh_blobs::{
+    HashAndFormat,
+    api::{
+        blobs::Blobs,
+        downloader::Downloader,
+    },
 };
 use thiserror::Error;
 use tokio::sync::oneshot;
-use unavi_store::cache::{
-    Cache,
-    DEFAULT_TTL,
-};
 use unavi_util::async_task::spawn_async_task;
 
 use crate::store::{
     BlobProviders,
-    LocalBlobStore,
     LocalBlobs,
     LocalDownloader,
     SyncTargets,
@@ -89,20 +87,12 @@ pub struct GetBlob {
 pub(crate) fn on_get_blob(
     mut req: On<GetBlob>,
     blobs: Query<&LocalBlobs>,
-    stores: Query<&LocalBlobStore>,
     downloaders: Query<&LocalDownloader>,
     targets: Query<&SyncTargets>,
     peers: Query<&BlobProviders>,
 ) {
     let Ok(blobs) = blobs.single().map(|x| x.0.clone()) else {
         warn!("Unable to get blob: no LocalBlobs");
-        return;
-    };
-
-    // The tags a fetch roots itself with live on the store, not on the blobs
-    // client, so a fetch cannot run without it.
-    let Ok(cache) = stores.single().map(|x| Cache::new(x.0.clone())) else {
-        warn!("Unable to get blob: no LocalBlobStore");
         return;
     };
 
@@ -124,7 +114,7 @@ pub(crate) fn on_get_blob(
     let tx = event.tx.clone();
 
     spawn_async_task(async move {
-        if let Err(err) = inner(hash, cancel, tx, blobs, cache, downloader, providers).await {
+        if let Err(err) = inner(hash, cancel, tx, blobs, downloader, providers).await {
             error!(?err, "Failed to get blob");
         }
     });
@@ -135,7 +125,6 @@ async fn inner(
     cancel: Option<oneshot::Receiver<()>>,
     tx: Sender<Result<Bytes, BlobError>>,
     blobs: Blobs,
-    cache: Cache,
     downloader: Option<Downloader>,
     providers: Vec<EndpointId>,
 ) -> anyhow::Result<()> {
@@ -153,7 +142,7 @@ async fn inner(
             () = &mut cancel => return Ok(()),
             res = n0_future::time::timeout(
                 ATTEMPT_TIMEOUT,
-                get_blob(hash, &blobs, &cache, downloader.as_ref(), &providers),
+                get_blob(hash, &blobs, downloader.as_ref(), &providers),
             ) => res,
         };
         match res {
@@ -187,11 +176,18 @@ async fn inner(
 async fn get_blob(
     hash: Hash,
     blobs: &Blobs,
-    cache: &Cache,
     downloader: Option<&Downloader>,
     providers: &[EndpointId],
 ) -> Result<Bytes, BlobError> {
-    cache.touch(hash, DEFAULT_TTL).await?;
+    // No document references a hash that arrived as a bare id, so a sweep is
+    // free to reclaim it, partial blob included, while the download is still
+    // writing. The tag is taken before the fetch and released once the bytes
+    // are in hand.
+    let batch = blobs.batch().await.map_err(BlobError::from_std)?;
+    let _guard = batch
+        .temp_tag(HashAndFormat::raw(hash.into()))
+        .await
+        .map_err(BlobError::from_std)?;
 
     if blobs.has(hash).await.map_err(BlobError::from_std)? {
         return read_bounded(hash, blobs).await;

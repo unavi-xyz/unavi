@@ -11,7 +11,6 @@ use bevy_iroh::{
         RouterBuilderFnTarget,
     },
     store::{
-        LocalBlobStore,
         LocalBlobs,
         LocalDownloader,
         LocalStore,
@@ -28,21 +27,21 @@ use unavi_identity::{
     identity::{
         Identity,
         NodeIdentity,
+        root,
     },
 };
 use unavi_registry::follow;
-use unavi_store::{
-    local,
-    store::{
-        Builder as StoreBuilder,
-        Guard,
-        Spawned,
-        Store,
-    },
-};
+use unavi_space::identity::RootDocument;
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
+};
+use wds::{
+    Store,
+    builder::{
+        Spawned,
+        StoreBuilder,
+    },
 };
 use xdid::resolver::DidResolver;
 
@@ -56,6 +55,19 @@ use crate::identity::{
 
 const RETRY_DELAY: Duration = Duration::from_secs(4);
 const MAX_RETRY_DELAY: Duration = Duration::from_mins(1);
+
+const GB: u64 = 1024 * 1024 * 1024;
+
+/// How many bytes of cached documents this device keeps before the
+/// oldest-visited ones are evicted.
+///
+/// Web holds everything in memory and loses it on reload anyway, so its number
+/// is a ceiling on one session rather than on a disk. Neither figure has been
+/// measured against a real cache hit rate.
+#[cfg(not(target_family = "wasm"))]
+const DOC_BUDGET: u64 = 8 * GB;
+#[cfg(target_family = "wasm")]
+const DOC_BUDGET: u64 = GB / 4;
 
 /// Holds the `wired/auth` outgoing-handshake task for as long as the endpoint
 /// entity lives.
@@ -124,29 +136,22 @@ pub fn load_store(
     spawn_async_task(async move {
         let mut delay_secs = 4;
 
-        let _guard = loop {
-            match load(
-                endpoint.clone(),
-                Arc::clone(&node),
-                entity,
-                storage.clone(),
-                sync.clone(),
-                Arc::clone(&resolver),
-            )
-            .await
-            {
-                Ok(guard) => break guard,
-                Err(err) => {
-                    error!(?err, "Failed to load data store");
-                    n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
-                    delay_secs = delay_secs.wrapping_mul(2);
-                }
-            }
-        };
-
-        // Dropping the guard shuts the blob store down, so it is held for as
-        // long as the process runs.
-        std::future::pending::<()>().await;
+        // The store shuts down with the last handle to it, which is the one
+        // this hands to the endpoint entity.
+        while let Err(err) = load(
+            endpoint.clone(),
+            Arc::clone(&node),
+            entity,
+            storage.clone(),
+            sync.clone(),
+            Arc::clone(&resolver),
+        )
+        .await
+        {
+            error!(?err, "Failed to load data store");
+            n0_future::time::sleep(Duration::from_secs(delay_secs)).await;
+            delay_secs = delay_secs.wrapping_mul(2);
+        }
     });
 }
 
@@ -154,19 +159,16 @@ async fn load(
     endpoint: Endpoint,
     node: Arc<NodeIdentity>,
     entity: Entity,
-    storage: local::LocalStorage,
+    storage: unavi_local::LocalStorage,
     sync: SyncConfig,
     resolver: Arc<DidResolver>,
-) -> anyhow::Result<Guard> {
+) -> anyhow::Result<()> {
     let builder = StoreBuilder::new(endpoint.clone(), node.author())
         .gc_timer(Duration::from_mins(15))
+        .doc_budget(DOC_BUDGET)
         .storage(storage.clone());
 
-    let Spawned {
-        store,
-        router,
-        guard,
-    } = builder.build().await?;
+    let Spawned { store, router } = builder.build().await?;
 
     let SyncConfig { targets } = sync;
 
@@ -181,10 +183,14 @@ async fn load(
     )
     .await;
 
+    let root = root::open(&store).await?.id();
+
     let store_entity = AsyncCommands::default()
         .spawn((RouterBuilderFnTarget(entity), RouterBuilderFn(Some(router))))
+        .push(move |world: &mut World| {
+            world.insert_resource(RootDocument(root));
+        })
         .send_spawn((
-            LocalBlobStore(store.blob_store().clone()),
             LocalBlobs(store.blobs().clone()),
             LocalDownloader(store.blob_store().downloader(&endpoint)),
             LocalStore(store.clone()),
@@ -204,7 +210,7 @@ async fn load(
         ));
     }
 
-    Ok(guard)
+    Ok(())
 }
 
 /// Keeps resolving the registries that were unreachable at startup, so a server

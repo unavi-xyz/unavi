@@ -1,0 +1,20 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "unavi-local"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace = true
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+hex.workspace = true
+web-sys       = { features = ["Storage", "Window"], workspace = true }
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+tempfile.workspace = true

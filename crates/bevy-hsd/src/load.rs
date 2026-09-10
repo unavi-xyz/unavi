@@ -20,11 +20,11 @@ use hsd::{
     },
 };
 use iroh_docs::NamespaceId;
-use unavi_store::store::Store;
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
 };
+use wds::Store;
 
 use crate::{
     Hsd,
@@ -135,7 +135,7 @@ async fn build_and_instance(
                 entity.insert((
                     Hsd::new(state),
                     HsdDocId(DocId(*namespace.as_bytes())),
-                    HsdNamespace(namespace),
+                    HsdNamespace(doc),
                 ));
             }
         })

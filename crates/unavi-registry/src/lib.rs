@@ -9,11 +9,9 @@ use std::{
     time::Duration,
 };
 
-use iroh_blobs::api::blobs::Blobs;
-use iroh_docs::protocol::Docs;
 use tracing::warn;
 use unavi_identity::auth::bindings::Bindings;
-use unavi_store::store::Store;
+use wds::Store;
 use xdid::resolver::DidResolver;
 
 use crate::{
@@ -38,10 +36,8 @@ const MAINTENANCE_INTERVAL: Duration = Duration::from_secs(5);
 
 pub struct RegistryContext {
     pub(crate) bindings: Arc<Bindings>,
-    pub(crate) blobs:    Blobs,
     pub(crate) catalog:  Catalog,
     pub(crate) config:   Config,
-    pub(crate) docs:     Docs,
     pub(crate) presence: PresenceTable,
     pub(crate) resolver: Arc<DidResolver>,
     pub(crate) views:    Views,
@@ -72,11 +68,9 @@ impl Registry {
 
         let ctx = Arc::new(RegistryContext {
             bindings,
-            blobs: store.blobs().clone(),
             catalog,
             config,
             dirty: AtomicBool::new(false),
-            docs: store.docs().clone(),
             presence: PresenceTable::default(),
             resolver,
             views,
@@ -110,7 +104,7 @@ async fn maintenance(ctx: Arc<RegistryContext>) {
         if ordering != published {
             match ctx
                 .views
-                .write_active(&ctx.docs, &active, ctx.config.view_capacity)
+                .write_active(&active, ctx.config.view_capacity)
                 .await
             {
                 Ok(()) => published = ordering,
@@ -121,13 +115,7 @@ async fn maintenance(ctx: Arc<RegistryContext>) {
         if ctx.dirty.swap(false, Ordering::AcqRel)
             && let Err(err) = ctx
                 .views
-                .rebuild(
-                    &ctx.docs,
-                    &ctx.catalog,
-                    &ctx.blobs,
-                    &ctx.config,
-                    &ctx.resolver,
-                )
+                .rebuild(&ctx.catalog, &ctx.config, &ctx.resolver)
                 .await
         {
             warn!(?err, "view rebuild failed");

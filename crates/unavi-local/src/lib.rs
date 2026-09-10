@@ -1,4 +1,4 @@
-//! Local state that outlives the process, addressed by string key.
+//! Local state that may outlive the process, addressed by string key.
 //!
 //! A key names the same value on every target. On native that is a file
 //! beneath a root directory, on wasm an item in browser local storage keyed
@@ -16,16 +16,17 @@ use std::{
     },
 };
 
-#[cfg(not(target_family = "wasm"))] pub mod fs;
-pub mod mem;
-#[cfg(target_family = "wasm")] pub mod web;
+#[cfg(not(target_family = "wasm"))] mod fs;
+mod mem;
+#[cfg(target_family = "wasm")] mod web;
 
-/// The in-memory store backing [`LocalStorage::InMemory`].
+/// The in-memory backing of [`LocalStorage::InMemory`].
 type Map = HashMap<String, Vec<u8>>;
 
 #[derive(Clone, Debug)]
 pub enum LocalStorage {
     InMemory(Arc<Mutex<Map>>),
+    /// Path to a file on native, or a localStorage key on wasm.
     Path(PathBuf),
 }
 

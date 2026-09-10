@@ -8,7 +8,6 @@ use bevy_hsd::{
     HsdDocId,
     Prim,
 };
-use bevy_iroh::store::LocalStore;
 use smol_str::SmolStr;
 use tokio::sync::Mutex;
 use tracing::{
@@ -16,7 +15,10 @@ use tracing::{
     Span,
 };
 use unavi_policy::quota::Quota;
-use unavi_space::view::SpaceView;
+use unavi_space::{
+    identity::RootDocument,
+    view::SpaceView,
+};
 use unavi_util::async_task::spawn_async_task;
 use wasmtime::{
     Store,
@@ -93,7 +95,7 @@ pub fn instantiate_scripts(
         (Without<InstantiatingScript>, Without<ScriptGuest>),
     >,
     docs: Query<(&HsdDocId, &Hsd, Has<QuotaExempt>)>,
-    stores: Query<&LocalStore>,
+    root: Option<Res<RootDocument>>,
     view: Option<Res<SpaceView>>,
     agents: Res<AgentProxyRegistry>,
     pointers: Res<Pointers>,
@@ -105,7 +107,7 @@ pub fn instantiate_scripts(
         return;
     };
     let viewer = view.viewer();
-    let root_doc = stores.single().ok().map(|store| store.0.root());
+    let root_doc = root.map(|root| root.0);
 
     for (entity, script, engine_ent, name, prim, doc_ent, fixed_updating) in to_instantiate {
         let Some(wasm) = wasms.get(&script.0) else {

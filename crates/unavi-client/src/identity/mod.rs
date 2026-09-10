@@ -11,7 +11,6 @@ use unavi_identity::{
     resolve::new_did_resolver,
 };
 use unavi_space::identity::LocalIdentity;
-use unavi_store::local;
 use xdid::resolver::DidResolver;
 
 mod load;
@@ -19,7 +18,7 @@ mod load;
 /// Where this device keeps the state that must outlive the process: its keys
 /// and the id of the root document they authored.
 #[derive(Resource, Clone)]
-pub struct LocalStorage(pub local::LocalStorage);
+pub struct LocalStorage(pub unavi_local::LocalStorage);
 
 #[derive(Resource, Clone, Default)]
 pub struct SyncConfig {
@@ -41,7 +40,7 @@ pub struct Auth(pub Arc<EndpointAuth>);
 pub struct Resolve(pub Arc<DidResolver>);
 
 pub struct IdentityPlugin {
-    pub storage: local::LocalStorage,
+    pub storage: unavi_local::LocalStorage,
     pub sync:    SyncConfig,
 }
 
@@ -56,12 +55,12 @@ static DIRS: LazyLock<ProjectDirs> = LazyLock::new(|| {
 
 /// The storage every client-side plugin shares: nothing on `--in-memory`, the
 /// app's data root elsewhere — a local-storage prefix on wasm.
-pub fn key_storage(in_memory: bool) -> local::LocalStorage {
+pub fn key_storage(in_memory: bool) -> unavi_local::LocalStorage {
     if in_memory {
-        return local::LocalStorage::default();
+        return unavi_local::LocalStorage::default();
     }
 
-    local::LocalStorage::Path(cfg_select! {
+    unavi_local::LocalStorage::Path(cfg_select! {
         target_family = "wasm" => PathBuf::from("data"),
         _ => DIRS.data_local_dir().to_path_buf(),
     })
@@ -69,14 +68,15 @@ pub fn key_storage(in_memory: bool) -> local::LocalStorage {
 
 /// For settings meant to be hand-edited. Ignores `in_memory`, unlike
 /// [`key_storage`]: local test instances still want the same keybinds, and
-/// the atomic rename in [`LocalStorage::write`](local::LocalStorage::write)
-/// makes even simultaneous first-run writes to the one file benign.
+/// the atomic rename in
+/// [`LocalStorage::write`](unavi_local::LocalStorage::write) makes even
+/// simultaneous first-run writes to the one file benign.
 ///
 /// The root is the config directory on native, the `config` local-storage
 /// prefix on wasm — apart from [`key_storage`]'s `data` root, exactly as on
 /// native.
-pub fn config_storage() -> local::LocalStorage {
-    local::LocalStorage::Path(cfg_select! {
+pub fn config_storage() -> unavi_local::LocalStorage {
+    unavi_local::LocalStorage::Path(cfg_select! {
         target_family = "wasm" => PathBuf::from("config"),
         _ => DIRS.config_dir().to_path_buf(),
     })
@@ -90,7 +90,8 @@ impl Plugin for IdentityPlugin {
             Ok(node) => node,
             Err(err) => {
                 error!(?err, "failed to load identity key; using an ephemeral one");
-                NodeIdentity::load(&local::LocalStorage::default()).expect("generate identity")
+                NodeIdentity::load(&unavi_local::LocalStorage::default())
+                    .expect("generate identity")
             }
         };
         info!(did = %node.user().did(), "Running as");

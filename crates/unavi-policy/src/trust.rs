@@ -12,7 +12,7 @@ use serde::{
     Serialize,
 };
 use unavi_identity::auth::bindings::Bindings;
-use unavi_store::local::LocalStorage;
+use unavi_local::LocalStorage;
 use xdid::core::did::Did;
 
 /// How much a peer is trusted, as one ordinal rung.

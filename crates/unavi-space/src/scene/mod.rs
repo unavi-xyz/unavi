@@ -22,6 +22,7 @@ use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
 use unavi_policy::space::Space;
 use unavi_util::async_task::spawn_async_task;
+use wds::document::Document;
 
 use crate::peer::{
     ActiveSpaces,
@@ -33,6 +34,27 @@ pub mod pinned_docs;
 const READ_ATTEMPTS: usize = 10;
 const READ_DELAY: Duration = Duration::from_secs(1);
 
+/// Polls `doc` until an entry exists under `prefix`, reporting whether one
+/// arrived before the attempts ran out.
+///
+/// A document syncs entry by entry, so the first entry of the expected shape is
+/// the only signal that it has started to arrive.
+async fn wait_for_prefix(
+    doc: &Document,
+    prefix: &str,
+    attempts: usize,
+    delay: Duration,
+) -> anyhow::Result<bool> {
+    for _ in 0..attempts.max(1) {
+        let query = iroh_docs::store::Query::single_latest_per_key().key_prefix(prefix);
+        if doc.get_one(query).await?.is_some() {
+            return Ok(true);
+        }
+        n0_future::time::sleep(delay).await;
+    }
+    Ok(false)
+}
+
 /// How long [`start_space_fetch`] gives gossip to confirm an occupant before
 /// reading the space with whatever it found. A registry-listed occupant
 /// gossip has not reached would only fail the exact dial iroh-docs' own sync
@@ -41,7 +63,9 @@ const PEER_WAIT_TIMEOUT: Duration = Duration::from_secs(5);
 
 #[derive(Component)]
 pub struct PendingScene {
-    rx:      Receiver<SceneState>,
+    /// Carries the document alongside its state, so the component that lands
+    /// on the entity holds the same handle the fetch opened.
+    rx:      Receiver<(Document, SceneState)>,
     _cancel: oneshot::Sender<()>,
 }
 
@@ -63,7 +87,7 @@ pub fn spawn_space_scene(
 ) {
     let (ns, instanced) = spaces
         .get(trigger.entity)
-        .map(|(space, ns)| (space.0, ns.map(|v| v.0)))
+        .map(|(space, ns)| (space.0, ns.map(|doc| doc.0.id())))
         .expect("space");
 
     let Ok((store, sync_targets)) = stores.single() else {
@@ -142,10 +166,12 @@ pub fn start_space_fetch(
             // arrived.
             let fetch = async {
                 let doc = store.open(ns).await?;
-                doc.sync_from(peers).await?;
-                let arrived = doc
-                    .wait_for(key::PRIM_PREFIX, READ_ATTEMPTS, READ_DELAY)
-                    .await?;
+                // Recorded before the content arrives. A space entered and
+                // never fully read is still one this node chose to keep.
+                store.record_visit(ns).await?;
+                doc.start_sync(peers).await?;
+                let arrived =
+                    wait_for_prefix(&doc, key::PRIM_PREFIX, READ_ATTEMPTS, READ_DELAY).await?;
                 anyhow::Ok((doc, arrived))
             };
             tokio::select! {
@@ -153,7 +179,7 @@ pub fn start_space_fetch(
                 res = fetch => match res {
                     Ok((doc, true)) => match document::read_state(&doc).await {
                         Ok(state) => {
-                            tx.send(state).await.ok();
+                            tx.send((doc, state)).await.ok();
                         }
                         Err(err) => error!(?err, "failed reading space entries"),
                     },
@@ -178,7 +204,7 @@ pub fn instantiate_pending_scenes(
     mut commands: Commands,
 ) {
     for (entity, space, pending) in &pending {
-        let Ok(state) = pending.rx.try_recv() else {
+        let Ok((doc, state)) = pending.rx.try_recv() else {
             continue;
         };
 
@@ -188,7 +214,7 @@ pub fn instantiate_pending_scenes(
             .insert((
                 Hsd::new(state),
                 HsdDocId(DocId(*space.0.as_bytes())),
-                HsdNamespace(space.0),
+                HsdNamespace(doc),
             ))
             .remove::<PendingScene>();
     }

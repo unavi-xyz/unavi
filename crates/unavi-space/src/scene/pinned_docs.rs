@@ -20,6 +20,7 @@ use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
 use unavi_policy::space::Space;
 use unavi_util::async_task::spawn_async_task;
+use wds::document::Document;
 
 use crate::{
     peer::Peer,
@@ -47,7 +48,9 @@ const REFETCH_DELAY: Duration = Duration::from_secs(10);
 
 #[derive(Component)]
 pub struct PendingPinnedDoc {
-    rx:      Receiver<SceneState>,
+    /// Carries the document alongside its state, so the component that lands
+    /// on the entity holds the same handle the fetch opened.
+    rx:      Receiver<(Document, SceneState)>,
     _cancel: oneshot::Sender<()>,
 }
 
@@ -127,14 +130,14 @@ pub fn fetch_tracked_docs(
         spawn_async_task(async move {
             let fetch = async {
                 let doc = store.open(ns).await?;
-                doc.sync_from(sync_from).await?;
-                let arrived = doc
-                    .wait_for(
-                        key::PRIM_PREFIX,
-                        READ_RETRIES,
-                        Duration::from_secs(READ_BACKOFF_SECS),
-                    )
-                    .await?;
+                doc.start_sync(sync_from).await?;
+                let arrived = super::wait_for_prefix(
+                    &doc,
+                    key::PRIM_PREFIX,
+                    READ_RETRIES,
+                    Duration::from_secs(READ_BACKOFF_SECS),
+                )
+                .await?;
                 anyhow::Ok((doc, arrived))
             };
             tokio::select! {
@@ -143,7 +146,7 @@ pub fn fetch_tracked_docs(
                     if let Ok((doc, true)) = res
                         && let Ok(state) = document::read_state(&doc).await
                     {
-                        tx.send(state).await.ok();
+                        tx.send((doc, state)).await.ok();
                     }
                 }
             }
@@ -166,14 +169,10 @@ pub fn instantiate_tracked_docs(
 ) {
     for (entity, doc, pending) in &pending {
         match pending.rx.try_recv() {
-            Ok(state) => {
+            Ok((namespace, state)) => {
                 commands
                     .entity(entity)
-                    .insert((
-                        Hsd::new(state),
-                        HsdDocId(doc.doc),
-                        HsdNamespace(NamespaceId::from(&doc.doc.0)),
-                    ))
+                    .insert((Hsd::new(state), HsdDocId(doc.doc), HsdNamespace(namespace)))
                     .remove::<PendingPinnedDoc>();
             }
             Err(TryRecvError::Empty) => {}

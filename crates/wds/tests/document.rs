@@ -3,7 +3,7 @@ use std::time::Duration;
 use rstest::rstest;
 use tempfile::tempdir;
 use tracing_test::traced_test;
-use unavi_store::store::Spawned;
+use wds::builder::Spawned;
 
 use crate::common::{
     store,
@@ -20,8 +20,8 @@ async fn a_recorded_namespace_reopens() {
     let dir = tempdir().expect("temp dir");
     let store = store_at(dir.path()).await.store;
 
-    let first = store.open_or_mint("view").await.expect("mint").id();
-    let second = store.open_or_mint("view").await.expect("reopen").id();
+    let first = store.open_named_doc("view").await.expect("mint").id();
+    let second = store.open_named_doc("view").await.expect("reopen").id();
 
     assert_eq!(
         first, second,
@@ -38,11 +38,11 @@ async fn separate_keys_hold_separate_namespaces() {
     let store = store_at(dir.path()).await.store;
 
     let catalog = store
-        .open_or_mint("registry/catalog")
+        .open_named_doc("registry/catalog")
         .await
         .expect("mint catalog");
     let recent = store
-        .open_or_mint("registry/views/recent")
+        .open_named_doc("registry/views/recent")
         .await
         .expect("mint view");
 
@@ -57,10 +57,10 @@ async fn an_unheld_namespace_is_reminted() {
     let dir = tempdir().expect("temp dir");
     let store = store_at(dir.path()).await.store;
 
-    let stale = store.open_or_mint("view").await.expect("mint").id();
-    store.docs().api().drop_doc(stale).await.expect("drop");
+    let stale = store.open_named_doc("view").await.expect("mint").id();
+    store.drop(stale).await.expect("drop");
 
-    let minted = store.open_or_mint("view").await.expect("remint");
+    let minted = store.open_named_doc("view").await.expect("remint");
 
     assert_ne!(
         minted.id(),
@@ -75,8 +75,8 @@ async fn an_unheld_namespace_is_reminted() {
 #[traced_test]
 #[tokio::test]
 async fn in_memory_storage_reopens_within_a_process(#[future] store: Spawned) {
-    let first = store.store.open_or_mint("view").await.expect("mint");
-    let second = store.store.open_or_mint("view").await.expect("mint");
+    let first = store.store.open_named_doc("view").await.expect("mint");
+    let second = store.store.open_named_doc("view").await.expect("mint");
 
     assert_eq!(
         first.id(),

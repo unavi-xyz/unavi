@@ -18,15 +18,15 @@ use unavi_identity::identity::{
     Identity,
     NodeIdentity,
 };
-use unavi_store::{
-    local::LocalStorage,
-    store::{
-        Builder as StoreBuilder,
+use unavi_local::LocalStorage;
+use unavi_util::async_task::spawn_async_task;
+use wds::{
+    Store,
+    builder::{
         Spawned,
-        Store,
+        StoreBuilder,
     },
 };
-use unavi_util::async_task::spawn_async_task;
 
 /// The app's data directory, created on first use.
 static DIRS: LazyLock<ProjectDirs> =
@@ -70,11 +70,7 @@ fn build(persistent: bool) -> TestStore {
             .expect("iroh endpoint");
 
         let builder = StoreBuilder::new(endpoint.clone(), node.author()).storage(storage);
-        let Spawned {
-            store,
-            router,
-            guard: _guard,
-        } = builder.build().await.expect("data store");
+        let Spawned { store, router } = builder.build().await.expect("data store");
 
         let rb = Router::builder(endpoint);
         let rb = router(rb);
@@ -91,8 +87,8 @@ fn build(persistent: bool) -> TestStore {
         .await
         .expect("send");
 
-        // `_guard` stays in scope: dropping it shuts the blob store down, so
-        // the example holds it for as long as it runs.
+        // `_router` stays in scope: dropping it stops answering the protocols
+        // the store syncs over, so the example holds it for as long as it runs.
         std::future::pending::<()>().await;
     });
 

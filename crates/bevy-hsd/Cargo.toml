@@ -27,8 +27,8 @@ postcard.workspace      = true
 smol_str.workspace      = true
 thiserror.workspace     = true
 unavi-physics.path      = "../unavi-physics"
-unavi-store.path        = "../unavi-store"
 unavi-util.path         = "../unavi-util"
+wds.path                = "../wds"
 
 [dev-dependencies]
 bevy_panorbit_camera.workspace = true
@@ -38,4 +38,4 @@ notosans.workspace             = true
 rstest.workspace               = true
 tracing.workspace              = true
 tracing-test                   = { features = ["no-env-filter"], workspace = true }
-unavi-store.path               = "../unavi-store"
+wds.path                       = "../wds"

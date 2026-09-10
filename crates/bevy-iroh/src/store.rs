@@ -7,7 +7,7 @@ use iroh_blobs::api::{
     blobs::Blobs,
     downloader::Downloader,
 };
-use unavi_store::store::Store;
+use wds::Store;
 
 /// This node's data plane: documents, blobs, the author it writes under, and
 /// its root document.
@@ -20,11 +20,6 @@ pub struct LocalStore(pub Store);
 #[derive(Component)]
 #[require(SyncTargets, BlobProviders)]
 pub struct LocalBlobs(pub Blobs);
-
-/// The store backing [`LocalBlobs`], for tag management the blobs client does
-/// not expose, such as pinning content against garbage collection.
-#[derive(Component)]
-pub struct LocalBlobStore(pub iroh_blobs::api::Store);
 
 /// Pulls blobs from named providers. Holds internal state, so it is built once
 /// with the store rather than per fetch.

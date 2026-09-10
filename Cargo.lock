@@ -962,8 +962,8 @@ dependencies = [
  "tracing",
  "tracing-test",
  "unavi-physics",
- "unavi-store",
  "unavi-util",
+ "wds",
 ]
 
 [[package]]
@@ -1034,8 +1034,8 @@ dependencies = [
  "thiserror 2.0.20",
  "tokio",
  "tracing",
- "unavi-store",
  "unavi-util",
+ "wds",
 ]
 
 [[package]]
@@ -1049,9 +1049,9 @@ dependencies = [
  "blake3",
  "bytes",
  "iroh-blobs",
- "n0-future",
  "tokio",
  "unavi-util",
+ "wds",
 ]
 
 [[package]]
@@ -13573,6 +13573,7 @@ dependencies = [
  "unavi-grab",
  "unavi-identity",
  "unavi-input",
+ "unavi-local",
  "unavi-manifold",
  "unavi-physics",
  "unavi-policy",
@@ -13580,9 +13581,9 @@ dependencies = [
  "unavi-script",
  "unavi-secrets",
  "unavi-space",
- "unavi-store",
  "unavi-util",
  "unavi-wasm-compat",
+ "wds",
  "web-sys",
  "winit 0.30.13",
  "xdid",
@@ -13667,7 +13668,8 @@ dependencies = [
  "thiserror 2.0.20",
  "tokio",
  "tracing",
- "unavi-store",
+ "unavi-local",
+ "wds",
  "xdid",
  "zeroize",
 ]
@@ -13685,7 +13687,7 @@ dependencies = [
  "rstest",
  "serde",
  "unavi-devtools",
- "unavi-store",
+ "unavi-local",
  "uuid",
  "wasm-bindgen",
  "web-sys",
@@ -13714,6 +13716,16 @@ dependencies = [
  "toml 1.1.4+spec-1.1.0",
  "tracing",
  "xz2",
+]
+
+[[package]]
+name = "unavi-local"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "hex",
+ "tempfile",
+ "web-sys",
 ]
 
 [[package]]
@@ -13765,7 +13777,7 @@ dependencies = [
  "toml 1.1.4+spec-1.1.0",
  "tracing",
  "unavi-identity",
- "unavi-store",
+ "unavi-local",
  "web-time",
  "xdid",
 ]
@@ -13782,9 +13794,7 @@ name = "unavi-registry"
 version = "0.0.16"
 dependencies = [
  "anyhow",
- "futures",
  "iroh",
- "iroh-blobs",
  "iroh-docs",
  "irpc",
  "irpc-iroh",
@@ -13798,7 +13808,7 @@ dependencies = [
  "time",
  "tracing",
  "unavi-identity",
- "unavi-store",
+ "wds",
  "xdid",
 ]
 
@@ -13837,18 +13847,19 @@ dependencies = [
  "unavi-grab",
  "unavi-identity",
  "unavi-input",
+ "unavi-local",
  "unavi-manifold",
  "unavi-physics",
  "unavi-policy",
  "unavi-portal-protocol",
  "unavi-registry",
  "unavi-space",
- "unavi-store",
  "unavi-util",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasmtime",
  "wasmtime-wasi",
+ "wds",
  "web-time",
  "xdid",
 ]
@@ -13893,9 +13904,10 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "unavi-identity",
+ "unavi-local",
  "unavi-registry",
  "unavi-secrets",
- "unavi-store",
+ "wds",
  "xdid",
 ]
 
@@ -13939,11 +13951,12 @@ dependencies = [
  "unavi-avatar",
  "unavi-devtools",
  "unavi-identity",
+ "unavi-local",
  "unavi-manifold",
  "unavi-policy",
  "unavi-registry",
- "unavi-store",
  "unavi-util",
+ "wds",
  "web-time",
  "xdid",
 ]
@@ -13955,28 +13968,6 @@ dependencies = [
  "anyhow",
  "wired-prelude",
  "wit-bindgen 0.55.0",
-]
-
-[[package]]
-name = "unavi-store"
-version = "0.0.16"
-dependencies = [
- "anyhow",
- "blake3",
- "bytes",
- "hex",
- "iroh",
- "iroh-blobs",
- "iroh-docs",
- "iroh-gossip",
- "n0-future",
- "rstest",
- "tempfile",
- "time",
- "tokio",
- "tracing",
- "tracing-test",
- "web-sys",
 ]
 
 [[package]]
@@ -15048,6 +15039,26 @@ dependencies = [
  "log",
  "once_cell",
  "pkg-config",
+]
+
+[[package]]
+name = "wds"
+version = "0.0.16"
+dependencies = [
+ "anyhow",
+ "blake3",
+ "bytes",
+ "iroh",
+ "iroh-blobs",
+ "iroh-docs",
+ "iroh-gossip",
+ "n0-future",
+ "rstest",
+ "tempfile",
+ "tokio",
+ "tracing",
+ "tracing-test",
+ "unavi-local",
 ]
 
 [[package]]

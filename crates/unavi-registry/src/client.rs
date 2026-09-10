@@ -14,7 +14,7 @@ use unavi_identity::{
         SignedBytes,
     },
 };
-use unavi_store::store::Store;
+use wds::Store;
 use xdid::resolver::DidResolver;
 
 use crate::{
@@ -141,8 +141,12 @@ impl RegistryClient {
             store
                 .open(ns)
                 .await?
-                .sync_from(vec![self.host.clone()])
+                .start_sync(vec![self.host.clone()])
                 .await?;
+            // A view is only a cached copy, so a registry that is still
+            // followed has to keep recording a visit or the retention sweep
+            // eventually takes it.
+            store.record_visit(ns).await?;
             synced.push(ns);
         }
 

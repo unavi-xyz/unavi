@@ -315,12 +315,12 @@ mod tests {
     fn a_sweep_only_owns_its_own_namespace() {
         assert!(is_ours(&tag("model/default.vrm")));
         assert!(
-            !is_ours("assets/model/default.vrm"),
-            "a client manifest pin is another subsystem's"
+            !is_ours("auto-2026-09-03T00:00:00Z"),
+            "the tag a bare add_bytes mints is iroh's, not ours"
         );
         assert!(
-            !is_ours("cache/00000000000001700000000/abc"),
-            "a dated cache root is another subsystem's"
+            !is_ours("model/default.vrm"),
+            "an unprefixed tag belongs to whoever set it"
         );
     }
 }

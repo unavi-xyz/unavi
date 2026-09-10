@@ -23,8 +23,8 @@ n0-future.workspace     = true
 thiserror.workspace     = true
 tokio.workspace         = true
 tracing.workspace       = true
-unavi-store.path        = "../unavi-store"
 unavi-util.path         = "../unavi-util"
+wds.path                = "../wds"
 
 [dev-dependencies]
 async-channel.workspace = true

@@ -12,12 +12,10 @@ use iroh::{
 };
 use iroh_docs::Author;
 use rstest::fixture;
-use unavi_store::{
-    local::LocalStorage,
-    store::{
-        Builder,
-        Spawned,
-    },
+use unavi_local::LocalStorage;
+use wds::builder::{
+    Spawned,
+    StoreBuilder,
 };
 
 #[fixture]
@@ -38,7 +36,7 @@ pub async fn store_at(dir: &Path) -> Spawned {
     build(move |builder| builder.storage(LocalStorage::Path(dir))).await
 }
 
-async fn build(configure: impl FnOnce(Builder) -> Builder) -> Spawned {
+async fn build(configure: impl FnOnce(StoreBuilder) -> StoreBuilder) -> Spawned {
     let secret_key = SecretKey::generate();
     let author = Author::from_bytes(&secret_key.to_bytes());
 
@@ -48,7 +46,7 @@ async fn build(configure: impl FnOnce(Builder) -> Builder) -> Spawned {
         .await
         .expect("bind endpoint");
 
-    configure(Builder::new(endpoint, author))
+    configure(StoreBuilder::new(endpoint, author))
         .build()
         .await
         .expect("construct data store")

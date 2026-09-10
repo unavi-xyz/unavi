@@ -22,7 +22,7 @@ thiserror.workspace   = true
 toml.workspace        = true
 tracing.workspace     = true
 unavi-identity.path   = "../unavi-identity"
-unavi-store.path      = "../unavi-store"
+unavi-local.path      = "../unavi-local"
 web-time.workspace    = true
 xdid.workspace        = true
 

@@ -25,8 +25,8 @@ use hsd::{
     },
     state::SceneState,
 };
-use iroh_docs::NamespaceId;
 use smol_str::SmolStr;
+use wds::document::Document;
 
 pub mod anchor;
 pub mod attributes;
@@ -144,8 +144,11 @@ pub struct HsdDocId(pub DocId);
 
 /// Present only on namespace-backed documents, which can be written to storage
 /// and shared.
-#[derive(Component, Debug, Clone, Copy)]
-pub struct HsdNamespace(pub NamespaceId);
+///
+/// Holds the document open rather than naming it, so retention cannot evict
+/// one the scene is still drawing.
+#[derive(Component, Debug, Clone)]
+pub struct HsdNamespace(pub Document);
 
 #[derive(Component, Default)]
 #[relationship_target(relationship=HsdChild, linked_spawn)]

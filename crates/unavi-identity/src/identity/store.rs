@@ -1,5 +1,5 @@
 use iroh::SecretKey;
-use unavi_store::local::LocalStorage;
+use unavi_local::LocalStorage;
 use xdid::method::key::{
     DidKeyPair,
     p256::P256KeyPair,

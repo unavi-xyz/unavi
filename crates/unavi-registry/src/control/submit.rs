@@ -58,10 +58,7 @@ pub async fn submit(
 
     // Refreshing an existing entry is always allowed; only a new namespace
     // counts against the cap.
-    let live = ctx
-        .catalog
-        .live(&ctx.docs, &ctx.blobs, &ctx.resolver)
-        .await?;
+    let live = ctx.catalog.live(&ctx.resolver).await?;
     let held = live
         .iter()
         .filter(|s| s.did == did)
@@ -72,11 +69,7 @@ pub async fn submit(
         return Ok(());
     }
 
-    if let Err(err) = ctx
-        .catalog
-        .insert(&ctx.docs, &submission, &inner.submission)
-        .await
-    {
+    if let Err(err) = ctx.catalog.insert(&submission, &inner.submission).await {
         warn!(?err, "failed writing submission");
         tx.send(Err(RegistryError::Internal)).await?;
         return Ok(());
@@ -95,10 +88,7 @@ pub async fn retract(
 ) -> anyhow::Result<()> {
     let did = caller!(caller, tx);
 
-    let live = ctx
-        .catalog
-        .live(&ctx.docs, &ctx.blobs, &ctx.resolver)
-        .await?;
+    let live = ctx.catalog.live(&ctx.resolver).await?;
     let owned = live.iter().any(|s| s.ns == inner.ns && s.did == did);
 
     if !owned {
@@ -106,7 +96,7 @@ pub async fn retract(
         return Ok(());
     }
 
-    if let Err(err) = ctx.catalog.remove(&ctx.docs, inner.ns).await {
+    if let Err(err) = ctx.catalog.remove(inner.ns).await {
         warn!(?err, "failed removing submission");
         tx.send(Err(RegistryError::Internal)).await?;
         return Ok(());

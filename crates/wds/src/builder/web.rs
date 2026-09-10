@@ -9,9 +9,8 @@ use super::{
     mem_store,
 };
 
-/// The blob and document stores are always in memory on wasm — the storage
-/// only persists recorded keys in browser local storage.
 pub fn init(gc: Option<GcConfig>) -> anyhow::Result<(BoxedBlobs, DocsBuilder)> {
+    // TODO replace in-memory storage with IndexDB backend
     let blobs: BoxedBlobs = Box::new(mem_store(gc));
     Ok((blobs, Docs::memory()))
 }

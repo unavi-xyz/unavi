@@ -11,7 +11,6 @@ use bevy_iroh::{
         BlobResponse,
     },
     store::{
-        LocalBlobStore,
         LocalBlobs,
         LocalDownloader,
         SyncTargets,
@@ -32,8 +31,8 @@ use iroh_blobs::api::{
     downloader::Downloader,
 };
 use iroh_docs::Author;
-use unavi_store::store::Builder as StoreBuilder;
 use unavi_util::async_task::spawn_async_task;
+use wds::builder::StoreBuilder;
 
 const CONTENT: &[u8] = b"content only the provider holds";
 const POLL: Duration = Duration::from_millis(50);
@@ -41,7 +40,6 @@ const ATTEMPTS: usize = 200;
 
 struct Fixture {
     blobs:    Blobs,
-    store:    iroh_blobs::api::Store,
     hash:     Hash,
     provider: EndpointAddr,
     download: Downloader,
@@ -97,7 +95,6 @@ fn fixture() -> Fixture {
 
         tx.send(Fixture {
             blobs: store.store.blobs().clone(),
-            store: store.store.blob_store().clone(),
             hash: hash.into(),
             provider,
             download: store.store.blob_store().downloader(&endpoint),
@@ -121,7 +118,6 @@ fn a_missing_blob_is_pulled_from_a_sync_target() {
     app.add_plugins((MinimalPlugins, IrohPlugin));
     app.world_mut().spawn((
         LocalBlobs(fixture.blobs.clone()),
-        LocalBlobStore(fixture.store.clone()),
         LocalDownloader(fixture.download.clone()),
         SyncTargets(vec![fixture.provider.clone()]),
     ));

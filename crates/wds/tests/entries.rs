@@ -3,7 +3,7 @@ use std::time::Duration;
 use bytes::Bytes;
 use rstest::rstest;
 use tracing_test::traced_test;
-use unavi_store::store::Spawned;
+use wds::builder::Spawned;
 
 use crate::common::store;
 

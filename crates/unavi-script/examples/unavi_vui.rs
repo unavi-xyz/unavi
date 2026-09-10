@@ -13,7 +13,6 @@ use bevy::{
 };
 use bevy_hsd::load::LoadHsd;
 use bevy_iroh::store::{
-    LocalBlobStore,
     LocalBlobs,
     LocalStore,
 };
@@ -60,7 +59,6 @@ fn main() {
     .add_systems(Startup, init_scene);
 
     app.world_mut().spawn((
-        LocalBlobStore(store.store.blob_store().clone()),
         LocalBlobs(store.store.blobs().clone()),
         LocalStore(store.store.clone()),
     ));

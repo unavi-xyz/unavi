@@ -53,6 +53,7 @@ unavi-devtools          = { optional = true, path = "../unavi-devtools" }
 unavi-grab.path         = "../unavi-grab"
 unavi-identity.path     = "../unavi-identity"
 unavi-input.path        = "../unavi-input"
+unavi-local.path        = "../unavi-local"
 unavi-manifold.path     = "../unavi-manifold"
 unavi-physics           = { path = "../unavi-physics", version = "0.0.16" }
 unavi-policy.path       = "../unavi-policy"
@@ -60,9 +61,9 @@ unavi-registry.path     = "../unavi-registry"
 unavi-script.path       = "../unavi-script"
 unavi-secrets.path      = "../unavi-secrets"
 unavi-space.path        = "../unavi-space"
-unavi-store.path        = "../unavi-store"
 unavi-util.path         = "../unavi-util"
 unavi-wasm-compat.path  = "../unavi-wasm-compat"
+wds.path                = "../wds"
 winit                   = { default-features = false, version = "0.30.13" }
 xdid.workspace          = true
 

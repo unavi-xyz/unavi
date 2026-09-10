@@ -41,8 +41,8 @@ unavi-policy.path          = "../unavi-policy"
 unavi-portal-protocol.path = "../unavi-portal-protocol"
 unavi-registry.path        = "../unavi-registry"
 unavi-space.path           = "../unavi-space"
-unavi-store.path           = "../unavi-store"
 unavi-util.path            = "../unavi-util"
+wds.path                   = "../wds"
 web-time.workspace         = true
 xdid.workspace             = true
 
@@ -65,3 +65,4 @@ iroh-blobs.workspace           = true
 tracing-subscriber.workspace   = true
 unavi-assets-fetch.path        = "../unavi-assets-fetch"
 unavi-grab.path                = "../unavi-grab"
+unavi-local.path               = "../unavi-local"

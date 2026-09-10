@@ -40,11 +40,12 @@ unavi-agent.path        = "../unavi-agent"
 unavi-avatar            = { path = "../unavi-avatar", version = "0.0.16" }
 unavi-devtools          = { optional = true, path = "../unavi-devtools" }
 unavi-identity.path     = "../unavi-identity"
+unavi-local.path        = "../unavi-local"
 unavi-manifold          = { path = "../unavi-manifold", version = "0.0.16" }
 unavi-policy.path       = "../unavi-policy"
 unavi-registry.path     = "../unavi-registry"
-unavi-store.path        = "../unavi-store"
 unavi-util.path         = "../unavi-util"
+wds.path                = "../wds"
 web-time.workspace      = true
 xdid.workspace          = true
 

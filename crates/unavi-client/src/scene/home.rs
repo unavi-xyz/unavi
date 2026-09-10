@@ -8,12 +8,10 @@ use bevy_hsd::load::{
     LoadHsd,
     OnLoadCtx,
 };
-use bevy_iroh::{
-    doc::DocSet,
-    store::LocalStore,
-};
+use bevy_iroh::doc::DocSet;
 use iroh_docs::NamespaceId;
 use unavi_policy::space::Space;
+use unavi_space::identity::RootDocument;
 use unavi_util::async_commands::AsyncCommands;
 
 /// A namespace to enter instead of the local home, from `--join`.
@@ -76,10 +74,7 @@ const HOME_VERSION: u32 = 0;
 /// without this entry a script has no way to learn it.
 async fn record_home(ns: NamespaceId) {
     let Some(Some(root)) = AsyncCommands::default()
-        .send_with(|world: &mut World| {
-            let mut query = world.query::<&LocalStore>();
-            query.single(world).ok().map(|store| store.0.root())
-        })
+        .send_with(|world: &mut World| world.get_resource::<RootDocument>().map(|root| root.0))
         .await
     else {
         return;

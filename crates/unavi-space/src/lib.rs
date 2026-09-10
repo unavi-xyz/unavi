@@ -32,7 +32,7 @@ pub mod view;
 pub struct SpacePlugin {
     /// Where the trust table persists. `None` leaves blocks effective for the
     /// session only.
-    pub storage: Option<unavi_store::local::LocalStorage>,
+    pub storage: Option<unavi_local::LocalStorage>,
 }
 
 const TICKRATE_UPDATE_INTERVAL: Duration = Duration::from_secs(5);

@@ -1,0 +1,35 @@
+[package]
+edition.workspace    = true
+license.workspace    = true
+name                 = "wds"
+publish              = false
+repository.workspace = true
+version.workspace    = true
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow.workspace    = true
+bytes.workspace     = true
+iroh.workspace      = true
+iroh-gossip         = { features = ["net"], workspace = true }
+n0-future.workspace = true
+tracing.workspace   = true
+unavi-local.path    = "../unavi-local"
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+iroh-blobs          = { features = ["hide-proto-docs"], workspace = true }
+iroh-docs.workspace = true
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+iroh-blobs = { default-features = true, workspace = true }
+iroh-docs  = { features = ["fs-store", "rpc"], workspace = true }
+tokio      = { features = ["fs", "rt"], workspace = true }
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+blake3.workspace   = true
+rstest.workspace   = true
+tempfile.workspace = true
+tokio              = { features = ["macros", "rt-multi-thread"], workspace = true }
+tracing-test       = { features = ["no-env-filter"], workspace = true }

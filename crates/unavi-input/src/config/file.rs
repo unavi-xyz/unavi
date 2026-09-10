@@ -4,7 +4,7 @@ use ron::{
     extensions::Extensions,
     ser::PrettyConfig,
 };
-use unavi_store::local::LocalStorage;
+use unavi_local::LocalStorage;
 
 use crate::config::{
     InputConfig,

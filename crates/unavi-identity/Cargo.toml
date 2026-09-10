@@ -25,7 +25,8 @@ signature             = "2.2.0"
 thiserror.workspace   = true
 tokio                 = { features = ["io-util", "sync"], workspace = true }
 tracing.workspace     = true
-unavi-store.path      = "../unavi-store"
+unavi-local.path      = "../unavi-local"
+wds.path              = "../wds"
 xdid.workspace        = true
 zeroize.workspace     = true
 

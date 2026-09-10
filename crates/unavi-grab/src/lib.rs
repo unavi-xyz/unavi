@@ -358,11 +358,11 @@ fn resolve_doc(
     docs: &Docs,
 ) -> Option<(Entity, NamespaceId)> {
     if let Ok(record) = docs.get(entity) {
-        return Some((entity, record.0));
+        return Some((entity, record.0.id()));
     }
     let child = hsd_children.get(entity).ok()?;
     let record = docs.get(child.0).ok()?;
-    Some((child.0, record.0))
+    Some((child.0, record.0.id()))
 }
 
 fn resolve_space(

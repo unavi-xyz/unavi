@@ -9,15 +9,12 @@ use iroh_docs::protocol::{
     Builder as DocsBuilder,
     Docs,
 };
+use unavi_local::LocalStorage;
 
 use super::{
     BoxedBlobs,
     mem_store,
 };
-use crate::local::LocalStorage;
-
-/// Subdirectory of a node's storage the blob and document stores live under.
-const STORE_DIR: &str = "store";
 
 pub async fn init(
     storage: &LocalStorage,
@@ -28,11 +25,10 @@ pub async fn init(
         return Ok((blobs, Docs::memory()));
     };
 
-    let root = dir.join(STORE_DIR);
+    let root = dir.join("store");
     let blob_path = root.join("blob");
     let docs_path = root.join("docs");
     tokio::fs::create_dir_all(&blob_path).await?;
-    // `Docs::persistent` opens its directory rather than creating it.
     tokio::fs::create_dir_all(&docs_path).await?;
 
     let blobs: BoxedBlobs = Box::new(

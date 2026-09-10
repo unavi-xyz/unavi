@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use bevy::prelude::*;
+use iroh_docs::NamespaceId;
 use unavi_identity::{
     auth::bindings::Bindings,
     identity::Identity,
@@ -17,3 +18,10 @@ pub struct LocalIdentity {
     pub bindings: Arc<Bindings>,
     pub resolver: Arc<DidResolver>,
 }
+
+/// The namespace of this node's root document.
+///
+/// Inserted once the store has opened it, which is later than
+/// [`LocalIdentity`]: the keys load before the store they name a document in.
+#[derive(Resource, Clone, Copy)]
+pub struct RootDocument(pub NamespaceId);

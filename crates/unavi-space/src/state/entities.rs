@@ -244,7 +244,8 @@ fn doc_anchor(world: &mut World, doc: DocId, space: DocId) -> Entity {
     if let Some(e) = space_entity(world, doc) {
         return e;
     }
-    if let Some(e) = entity_by::<HsdNamespace, _>(world, |r| r.0 == NamespaceId::from(&doc.0)) {
+    if let Some(e) = entity_by::<HsdNamespace, _>(world, |r| r.0.id() == NamespaceId::from(&doc.0))
+    {
         return e;
     }
     if let Some(e) = entity_by::<SpaceDoc, _>(world, |d| d.doc == doc) {

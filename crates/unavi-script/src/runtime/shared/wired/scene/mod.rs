@@ -33,6 +33,7 @@ use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
 };
+use wds::document::Document;
 
 use crate::{
     error::ScriptError,
@@ -67,7 +68,7 @@ fn doc_id(bytes: &[u8]) -> anyhow::Result<DocId> {
 /// Mints a namespace so a document has a stable id from birth. Portal
 /// receptors and `wired:kv` keys are keyed by that id, so it must never be
 /// remapped later — the cost is a `drop_doc` obligation on despawn.
-async fn create_namespace() -> anyhow::Result<NamespaceId> {
+async fn create_namespace() -> anyhow::Result<Document> {
     let (tx, rx) = async_channel::bounded(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
@@ -80,7 +81,7 @@ async fn create_namespace() -> anyhow::Result<NamespaceId> {
                 return;
             };
             spawn_async_task(async move {
-                tx.try_send(store.create().await.map(|doc| doc.id())).ok();
+                tx.try_send(store.create().await).ok();
             });
         })
         .send()
@@ -122,7 +123,7 @@ async fn namespace_of(id: DocId) -> anyhow::Result<NamespaceId> {
             let ns = world
                 .query::<(&HsdDocId, &HsdNamespace)>()
                 .iter(world)
-                .find_map(|(doc, ns)| (doc.0 == id).then_some(ns.0));
+                .find_map(|(doc, ns)| (doc.0 == id).then_some(ns.0.id()));
             tx.try_send(ns).ok();
         })
         .send()
@@ -183,10 +184,10 @@ async fn save_namespace(ns: NamespaceId, state: Arc<Mutex<SceneState>>) -> anyho
 async fn spawn_child_doc(
     api: &Api,
     state: Arc<Mutex<SceneState>>,
-    ns: NamespaceId,
+    doc: Document,
 ) -> Result<(), ScriptError> {
     let doc_guard = api.quota.charge(Stock::Documents, 1)?;
-    let id = DocId(*ns.as_bytes());
+    let id = DocId(*doc.id().as_bytes());
 
     // Seeded before the spawn command applies, so the child is never briefly
     // an unplaced document that policy would have to attribute by guessing.
@@ -202,7 +203,7 @@ async fn spawn_child_doc(
         .spawn((
             HsdHeld(state),
             HsdDocId(id),
-            HsdNamespace(ns),
+            HsdNamespace(doc),
             parent.policy,
             QuotaGuards(vec![doc_guard]),
         ))
@@ -328,7 +329,7 @@ async fn drop_replica(ns: NamespaceId) {
                 return;
             };
             spawn_async_task(async move {
-                if let Err(err) = store.docs().api().drop_doc(ns).await {
+                if let Err(err) = store.drop(ns).await {
                     debug!(%ns, ?err, "failed to drop document replica");
                 }
             });
@@ -430,12 +431,13 @@ pub async fn create_document_from_prefab(api: &Api, prefab: Vec<u8>) -> Result<u
 async fn mint_document(api: &Api, state: SceneState) -> Result<u32, ScriptError> {
     crate::quota::acquire(&api.quota, Flow::CreateDocument, 1.0).await?;
 
-    let ns = create_namespace()
+    let doc = create_namespace()
         .await
         .map_err(|err| ScriptError::other(err.to_string()))?;
+    let ns = doc.id();
     let state = Arc::new(Mutex::new(state));
 
-    spawn_child_doc(api, Arc::clone(&state), ns).await?;
+    spawn_child_doc(api, Arc::clone(&state), doc).await?;
 
     let mut scene = api.wired_scene.lock().await;
     Ok(scene.docs.insert(

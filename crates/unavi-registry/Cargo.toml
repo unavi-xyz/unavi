@@ -11,7 +11,6 @@ workspace = true
 
 [dependencies]
 anyhow.workspace      = true
-futures.workspace     = true
 iroh.workspace        = true
 irpc.workspace        = true
 irpc-iroh.workspace   = true
@@ -25,15 +24,13 @@ thiserror.workspace   = true
 time.workspace        = true
 tracing.workspace     = true
 unavi-identity.path   = "../unavi-identity"
-unavi-store.path      = "../unavi-store"
+wds.path              = "../wds"
 xdid.workspace        = true
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-iroh-blobs          = { features = ["hide-proto-docs"], workspace = true }
 iroh-docs.workspace = true
 # Without this `OffsetDateTime::now_utc` reads the unimplemented wasm clock.
 time = { features = ["wasm-bindgen"], workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-iroh-blobs = { default-features = true, workspace = true }
-iroh-docs  = { features = ["fs-store", "rpc"], workspace = true }
+iroh-docs = { features = ["fs-store", "rpc"], workspace = true }

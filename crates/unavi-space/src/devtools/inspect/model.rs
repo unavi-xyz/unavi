@@ -279,7 +279,7 @@ impl InspectData<'_, '_> {
             .docs
             .iter()
             .filter(|(e, ..)| self.parent_doc(*e) == Some(doc))
-            .map(|(_, record, ..)| record.0)
+            .map(|(_, record, ..)| record.0.id())
             .collect::<Vec<_>>();
         subdocs.sort_unstable_by_key(|d| *d.as_bytes());
 
@@ -310,7 +310,7 @@ impl InspectData<'_, '_> {
     ) -> Option<(Entity, bool, Option<usize>, Option<Entity>)> {
         self.docs
             .iter()
-            .find(|(_, record, ..)| record.0 == doc)
+            .find(|(_, record, ..)| record.0.id() == doc)
             .map(|(e, _, instanced, prims, parent)| {
                 (
                     e,
@@ -327,7 +327,10 @@ impl InspectData<'_, '_> {
         let (.., parent) = self.docs.get(entity).ok()?;
         let prim = parent.map(ChildOf::parent)?;
         let owner = self.prims.get(prim).ok()?.0;
-        self.docs.get(owner).ok().map(|(_, record, ..)| record.0)
+        self.docs
+            .get(owner)
+            .ok()
+            .map(|(_, record, ..)| record.0.id())
     }
 }
 

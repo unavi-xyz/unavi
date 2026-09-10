@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use iroh::SecretKey;
 use iroh_docs::Author;
-use unavi_store::local::LocalStorage;
+use unavi_local::LocalStorage;
 use xdid::{
     core::did::Did,
     method::key::{
@@ -12,6 +12,7 @@ use xdid::{
     },
 };
 
+pub mod root;
 pub mod store;
 
 #[derive(Clone)]

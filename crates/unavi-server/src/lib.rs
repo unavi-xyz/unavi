@@ -34,16 +34,14 @@ use unavi_identity::{
     identity::NodeIdentity,
     resolve::new_did_resolver,
 };
+use unavi_local::LocalStorage;
 use unavi_registry::{
     Registry,
     config::Config as RegistryConfig,
 };
-use unavi_store::{
-    local::LocalStorage,
-    store::{
-        Builder as StoreBuilder,
-        Spawned,
-    },
+use wds::builder::{
+    Spawned,
+    StoreBuilder,
 };
 use xdid::{
     core::{
@@ -116,11 +114,7 @@ pub async fn run_server(opts: ServerOptions) -> anyhow::Result<()> {
         .gc_timer(Duration::from_mins(15))
         .storage(storage.clone());
 
-    let Spawned {
-        store,
-        router,
-        guard: _guard,
-    } = builder.build().await?;
+    let Spawned { store, router } = builder.build().await?;
 
     if let Err(err) = files::init_files_dir() {
         warn!(?err, "failed to init files dir");

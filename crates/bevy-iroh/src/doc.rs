@@ -2,8 +2,8 @@ use async_channel::Sender;
 use bevy::prelude::*;
 use bytes::Bytes;
 use iroh_docs::NamespaceId;
-use unavi_store::store::Store;
 use unavi_util::async_task::spawn_async_task;
+use wds::Store;
 
 use crate::store::LocalStore;
 
@@ -53,9 +53,7 @@ pub(crate) fn on_doc_get(trigger: On<DocGet>, stores: Query<&LocalStore>) {
 }
 
 async fn get(store: &Store, ns: NamespaceId, key: &str) -> Option<Bytes> {
-    let doc = store.open(ns).await.ok()?;
-    let entry = doc.get(key).await.ok()??;
-    doc.value(&entry).await
+    store.open(ns).await.ok()?.get(key).await.ok()?
 }
 
 /// Lists the latest entries under a key prefix.

@@ -13,14 +13,14 @@ use hsd::{
         save::Change,
     },
 };
-use unavi_store::namespace::Namespace;
+use wds::document::Document;
 
 const PREFIXES: [&str; 2] = [key::META, key::PRIM_PREFIX];
 
-pub async fn read_state(ns: &Namespace) -> anyhow::Result<SceneState> {
+pub async fn read_state(doc: &Document) -> anyhow::Result<SceneState> {
     let mut state = SceneState::new();
-    for entry in ns.list(&PREFIXES).await? {
-        if let Some(entry) = to_entry(ns, &entry).await {
+    for entry in doc.list(&PREFIXES).await? {
+        if let Some(entry) = to_entry(doc, &entry).await {
             state.apply(&entry)?;
         }
     }
@@ -32,12 +32,12 @@ pub async fn read_state(ns: &Namespace) -> anyhow::Result<SceneState> {
 /// Returns `None` when a value has not been downloaded yet — the `ContentReady`
 /// event brings it back later — or when the key is not UTF-8, which no key this
 /// workspace writes ever is.
-pub async fn to_entry(ns: &Namespace, entry: &iroh_docs::Entry) -> Option<Entry> {
+pub async fn to_entry(doc: &Document, entry: &iroh_docs::Entry) -> Option<Entry> {
     let key = String::from_utf8(entry.key().to_vec()).ok()?;
     let value = if entry.content_len() == 0 {
         Vec::new()
     } else {
-        ns.value(entry).await?.to_vec()
+        doc.value(entry).await?.to_vec()
     };
 
     Some(Entry {
@@ -62,13 +62,13 @@ pub fn unpack_into_state(package: Package) -> anyhow::Result<SceneState> {
 }
 
 /// Applies one `SceneState` change to the document backing it.
-pub async fn apply_change(ns: &Namespace, change: Change) -> anyhow::Result<()> {
+pub async fn apply_change(doc: &Document, change: Change) -> anyhow::Result<()> {
     match change {
         Change::Set { key, value } => {
-            ns.set(key, value).await?;
+            doc.set(key, value).await?;
         }
         Change::Remove { key } => {
-            ns.remove(key).await?;
+            doc.remove(key).await?;
         }
     }
     Ok(())

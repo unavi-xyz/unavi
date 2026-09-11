@@ -54,7 +54,7 @@ impl Catalog {
         let mut out = Vec::new();
 
         for entry in self.doc.list(&[ENTRIES_PREFIX]).await? {
-            let Some(bytes) = self.doc.value(&entry).await else {
+            let Some(bytes) = self.doc.value(&entry).await? else {
                 continue;
             };
             let Ok(signed) = postcard::from_bytes::<SignedBytes<Submission>>(&bytes) else {

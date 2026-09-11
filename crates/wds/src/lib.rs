@@ -1,6 +1,19 @@
-//! # Wired Data Store (WDS)
+//! Documents and their blob storage, backed by iroh-docs and iroh-blobs.
+//!
+//! A [`Document`] is one namespace. Each key is a separately signed entry, so
+//! peers writing different keys merge and peers writing the same key resolve by
+//! timestamp. An entry stores the hash of its value, so values repeated across
+//! keys occupy one copy of the blob store.
+//!
+//! [`Store::create`] mints a writable namespace; [`Store::open`] imports a
+//! read-only namespace. Retention evicts only read-only documents, aged off the
+//! visits [`Store::record_visit`] records.
+//!
+//! Holding a namespace and serving it are separate: inbound sync requests are
+//! refused until [`Document::serve`] enrols it.
 
 use std::{
+    collections::HashMap,
     str::FromStr,
     sync::Arc,
     time::Duration,
@@ -33,32 +46,27 @@ pub mod builder;
 pub mod document;
 mod retention;
 
+/// Placeholder non-empty value for marking a document as visited.
 const VISITED: &[u8] = b"1";
 
-/// A released [`Document`] closes on a task spawned as it drops, so a replica
-/// nothing uses can still read as held for a moment. A drop waits that out
-/// rather than reporting a document as busy.
-///
-/// The wait covers one round trip to the docs actor, not a document in use —
-/// a sweep passing over held documents should give up on each of them quickly.
-const DROP_ATTEMPTS: usize = 10;
-const DROP_DELAY: Duration = Duration::from_millis(20);
+/// A released [`Document`] closes on a spawned task, so a replica nothing uses
+/// can still read as held for a moment.
+const REMOVE_ATTEMPTS: usize = 10;
+const REMOVE_DELAY: Duration = Duration::from_millis(20);
 
 pub type BoxedRouterBuilder = Box<dyn FnOnce(RouterBuilder) -> RouterBuilder + Send + Sync>;
 
-/// The concrete blob store the [`BlobStore`] client handles talk to. Boxed
-/// because which one it is depends on the target and the configured storage.
+/// The concrete blob store, chosen by target and configured storage.
 trait OwnedBlobs: AsRef<BlobStore> + std::fmt::Debug + Send + Sync {}
 impl<T: AsRef<BlobStore> + std::fmt::Debug + Send + Sync> OwnedBlobs for T {}
 type BoxedBlobs = Box<dyn OwnedBlobs>;
 
-/// This node's blobs and documents. Clones share one store; dropping the last
-/// of them shuts it down and stops its retention sweep.
+/// A cloneable handle to the store.
 #[derive(Clone, Debug)]
-pub struct Store(Arc<Inner>);
+pub struct Store(Arc<StoreInner>);
 
 #[derive(Debug)]
-struct Inner {
+struct StoreInner {
     blobs:      BoxedBlobs,
     docs:       Docs,
     gossip:     Gossip,
@@ -67,38 +75,11 @@ struct Inner {
     visits:     Document,
     doc_budget: Option<u64>,
     doc_ttl:    Duration,
-    /// The sweep holds this weakly, so it neither keeps the store alive nor
-    /// outlives it.
+    /// The retention task's handle; the task holds the store weakly.
     _sweep:     Option<AbortOnDropHandle<()>>,
 }
 
 impl Store {
-    /// Makes `ns` available locally, importing it read-only if this node does
-    /// not already hold it.
-    ///
-    /// Merging a read capability into a write capability already held is a
-    /// no-op, not a downgrade.
-    pub async fn open(&self, ns: NamespaceId) -> anyhow::Result<Document> {
-        let doc = self
-            .0
-            .docs
-            .api()
-            .import_namespace(Capability::Read(ns))
-            .await?;
-        self.wrap(doc)
-    }
-
-    /// Mints a namespace this node holds the write capability for.
-    pub async fn create(&self) -> anyhow::Result<Document> {
-        self.wrap(self.0.docs.api().create().await?)
-    }
-
-    /// Opens the namespace this store's [`LocalStorage`] records at `key`,
-    /// minting and recording one on first use.
-    pub async fn open_named_doc(&self, key: &str) -> anyhow::Result<Document> {
-        self.wrap(open_named_doc(&self.0.docs, &self.0.storage, key).await?)
-    }
-
     #[must_use]
     pub fn blob_store(&self) -> &BlobStore {
         self.0.blobs.as_ref().as_ref()
@@ -111,84 +92,48 @@ impl Store {
 
     /// This endpoint's gossip instance.
     ///
-    /// `iroh_gossip::ALPN` can be accepted only once per router. A second
-    /// instance registering it takes every inbound connection from the first,
-    /// leaving that one able to dial out but never to receive.
+    /// `iroh_gossip::ALPN` accepts once per router, so this is the only
+    /// instance to register.
     #[must_use]
     pub fn gossip(&self) -> &Gossip {
         &self.0.gossip
     }
 
-    /// How many bytes of held documents this device tolerates before the
-    /// oldest-visited read-only ones are evicted, or `None` for no budget.
-    #[must_use]
-    fn doc_budget(&self) -> Option<u64> {
-        self.0.doc_budget
+    /// Mints a namespace this store can write.
+    pub async fn create(&self) -> anyhow::Result<Document> {
+        self.wrap(self.0.docs.api().create().await?)
     }
 
-    /// How long a read-only document survives unvisited.
-    #[must_use]
-    fn doc_ttl(&self) -> Duration {
-        self.0.doc_ttl
-    }
-
-    /// Every namespace this node holds, and the capability it holds it under.
-    pub async fn list(&self) -> anyhow::Result<Vec<(NamespaceId, CapabilityKind)>> {
-        let mut stream = self.0.docs.api().list().await?;
-        let mut out = Vec::new();
-        while let Some(held) = stream.next().await {
-            out.push(held?);
-        }
-        Ok(out)
-    }
-
-    /// Records that `ns` was used now, so retention can tell a document this
-    /// node still wants from one it happens to be holding.
-    pub async fn record_visit(&self, ns: NamespaceId) -> anyhow::Result<()> {
-        self.0.visits.set(ns.to_string(), VISITED).await?;
-        Ok(())
-    }
-
-    /// How long ago each recorded document was visited.
+    /// Makes `ns` available locally, importing it read-only when it is not
+    /// already held.
     ///
-    /// A visit stamped in the future, by a clock that has since been corrected
-    /// backwards, reads as an age of zero rather than as a document overdue
-    /// for eviction.
-    pub async fn visits(&self) -> anyhow::Result<Vec<(NamespaceId, Duration)>> {
-        let now = n0_future::time::SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_micros() as u64;
+    /// A read capability merges into a write capability rather than replacing
+    /// it.
+    pub async fn open(&self, ns: NamespaceId) -> anyhow::Result<Document> {
+        let doc = self
+            .0
+            .docs
+            .api()
+            .import_namespace(Capability::Read(ns))
+            .await?;
+        self.wrap(doc)
+    }
 
-        let mut out = Vec::new();
-
-        for entry in self.0.visits.list(&[""]).await? {
-            let Some(ns) = std::str::from_utf8(entry.key())
-                .ok()
-                .and_then(|key| NamespaceId::from_str(key).ok())
-            else {
-                continue;
-            };
-            out.push((
-                ns,
-                Duration::from_micros(now.saturating_sub(entry.timestamp())),
-            ));
-        }
-
-        Ok(out)
+    /// Opens the namespace this store's [`LocalStorage`] records at `key`,
+    /// minting and recording one on first use.
+    pub async fn open_named_doc(&self, key: &str) -> anyhow::Result<Document> {
+        self.wrap(open_named_doc(&self.0.docs, &self.0.storage, key).await?)
     }
 
     /// Leaves the sync set and deletes the replica, its capability and every
-    /// entry it holds. Content no other document references falls out of every
-    /// garbage-collection root with it.
+    /// entry. Content no other document references is reclaimed with it.
     ///
-    /// Fails while anything else still holds a [`Document`] for `ns`, having
-    /// first waited out a handle already on its way closed.
-    pub async fn drop(&self, ns: NamespaceId) -> anyhow::Result<()> {
-        self.0.visits.remove(ns.to_string()).await?;
+    /// Fails while anything else holds a [`Document`] for `ns`, after waiting
+    /// out a handle already on its way closed.
+    pub async fn remove(&self, ns: NamespaceId) -> anyhow::Result<()> {
         let api = self.0.docs.api();
 
-        for _ in 0..DROP_ATTEMPTS {
+        for _ in 0..REMOVE_ATTEMPTS {
             let doc = api
                 .open(ns)
                 .await?
@@ -199,14 +144,62 @@ impl Store {
             // own, since it closes a handle before removing the replica — the
             // one taken here.
             if doc.status().await?.handles == 1 {
-                return api.drop_doc(ns).await;
+                api.drop_doc(ns).await?;
+                // Cleared only once the replica is gone, so a failed remove
+                // leaves the recorded age for the next sweep.
+                self.0.visits.remove(ns.to_string()).await?;
+                return Ok(());
             }
 
             doc.close().await?;
-            n0_future::time::sleep(DROP_DELAY).await;
+            n0_future::time::sleep(REMOVE_DELAY).await;
         }
 
         anyhow::bail!("document {ns} is still held")
+    }
+
+    /// Every namespace this store holds, with the capability it holds under.
+    pub async fn list(&self) -> anyhow::Result<Vec<(NamespaceId, CapabilityKind)>> {
+        let mut stream = self.0.docs.api().list().await?;
+        let mut out = Vec::new();
+        while let Some(held) = stream.next().await {
+            out.push(held?);
+        }
+        Ok(out)
+    }
+
+    /// How long ago each recorded namespace was visited.
+    ///
+    /// A visit stamped in the future, by a clock since corrected backwards,
+    /// reads as age zero rather than as overdue.
+    pub async fn visits(&self) -> anyhow::Result<HashMap<NamespaceId, Duration>> {
+        let now = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_micros() as u64;
+
+        let mut out = HashMap::new();
+
+        for entry in self.0.visits.list(&[""]).await? {
+            let Some(ns) = std::str::from_utf8(entry.key())
+                .ok()
+                .and_then(|key| NamespaceId::from_str(key).ok())
+            else {
+                continue;
+            };
+            out.insert(
+                ns,
+                Duration::from_micros(now.saturating_sub(entry.timestamp())),
+            );
+        }
+
+        Ok(out)
+    }
+
+    /// Stamps `ns` as used now, so retention treats it as still wanted.
+    pub async fn record_visit(&self, ns: NamespaceId) -> anyhow::Result<()> {
+        self.0.visits.set(ns.to_string(), VISITED).await?;
+        Ok(())
     }
 
     fn wrap(&self, doc: Doc) -> anyhow::Result<Document> {
@@ -214,34 +207,35 @@ impl Store {
     }
 }
 
-/// Opens a named document, persisting the [`NamespaceId`] in [`LocalStorage`]
-/// at the given `key`.
+/// Opens the namespace recorded under `key`, minting and recording one when
+/// absent.
 async fn open_named_doc(docs: &Docs, storage: &LocalStorage, key: &str) -> anyhow::Result<Doc> {
-    let ns = match storage.read(key) {
-        Ok(Some(text)) => NamespaceId::from_str(text.trim()).ok(),
-        Ok(None) => None,
-        Err(err) => {
-            tracing::warn!(%key, ?err, "recorded namespace is unreadable; minting a replacement");
-            None
-        }
-    };
-
-    if let Some(ns) = ns {
-        let doc = match docs.api().open(ns).await {
-            Ok(doc) => doc,
-            Err(err) => {
-                tracing::warn!(%ns, ?err, "recorded namespace is unreadable; minting a replacement");
-                None
-            }
-        };
-
-        if let Some(doc) = doc {
-            return Ok(doc);
-        }
+    if let Some(doc) = recorded_doc(docs, storage, key).await {
+        return Ok(doc);
     }
 
     let doc = docs.api().create().await?;
     storage.write(key, &doc.id().to_string())?;
 
     Ok(doc)
+}
+
+/// The document recorded at `key`, or `None` if the caller should mint one.
+async fn recorded_doc(docs: &Docs, storage: &LocalStorage, key: &str) -> Option<Doc> {
+    let ns = match storage.read(key) {
+        Ok(Some(text)) => NamespaceId::from_str(text.trim()).ok()?,
+        Ok(None) => return None,
+        Err(err) => {
+            tracing::warn!(%key, ?err, "recorded namespace is unreadable; minting a replacement");
+            return None;
+        }
+    };
+
+    match docs.api().open(ns).await {
+        Ok(doc) => doc,
+        Err(err) => {
+            tracing::warn!(%key, %ns, ?err, "recorded namespace would not open; minting a replacement");
+            None
+        }
+    }
 }

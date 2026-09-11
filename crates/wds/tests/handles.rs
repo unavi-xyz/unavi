@@ -26,7 +26,7 @@ async fn releasing_documents_frees_the_replica(#[future] store: Spawned) {
 
     store
         .store
-        .drop(ns)
+        .remove(ns)
         .await
         .expect("every released document must close the handle it took");
 
@@ -38,7 +38,7 @@ async fn releasing_documents_frees_the_replica(#[future] store: Spawned) {
             .expect("list")
             .iter()
             .any(|(held, _)| *held == ns),
-        "a dropped replica must be gone from what this node holds"
+        "a dropped replica must be gone from what this store holds"
     );
 }
 
@@ -49,16 +49,16 @@ async fn releasing_documents_frees_the_replica(#[future] store: Spawned) {
 #[awt]
 #[traced_test]
 #[tokio::test]
-async fn a_held_document_refuses_to_be_dropped(#[future] store: Spawned) {
+async fn a_held_document_refuses_to_be_removed(#[future] store: Spawned) {
     let held = store.store.create().await.expect("create");
 
     store
         .store
-        .drop(held.id())
+        .remove(held.id())
         .await
         .expect_err("a replica still held must not be deleted");
 
     held.set("key", "value")
         .await
-        .expect("the document that survived the drop is still usable");
+        .expect("the document that survived the remove is still usable");
 }

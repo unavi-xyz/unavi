@@ -1,6 +1,6 @@
-//! Blob GC deletes anything no tag covers. Document content carries no tag of
-//! its own, so without the docs protect callback a GC run reclaims every open
-//! document's content.
+//! Blob GC deletes anything no tag covers. Document content carries
+//! no tag of its own, so without the protect callback a GC run would
+//! reclaim every open document's content.
 
 use std::time::Duration;
 
@@ -29,9 +29,8 @@ async fn gc_keeps_document_content_and_drops_the_rest() {
     let store = &spawned.store;
     let ns = store.create().await.expect("namespace");
 
-    // Added through a batch rather than `add_bytes`, whose default `with_tag`
-    // would pin the blob and leave nothing for GC to decide. The batch's temp
-    // tag releases when it drops, so nothing roots this afterwards.
+    // A batch holds temp tags that release when dropped, so nothing
+    // roots these blobs afterwards.
     {
         let batch = store.blobs().batch().await.expect("batch");
         let _temp = batch

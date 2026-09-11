@@ -37,7 +37,10 @@ pub async fn to_entry(doc: &Document, entry: &iroh_docs::Entry) -> Option<Entry>
     let value = if entry.content_len() == 0 {
         Vec::new()
     } else {
-        doc.value(entry).await?.to_vec()
+        match doc.value(entry).await {
+            Ok(Some(bytes)) => bytes.to_vec(),
+            _ => return None,
+        }
     };
 
     Some(Entry {

@@ -58,7 +58,7 @@ async fn an_unheld_namespace_is_reminted() {
     let store = store_at(dir.path()).await.store;
 
     let stale = store.open_named_doc("view").await.expect("mint").id();
-    store.drop(stale).await.expect("drop");
+    store.remove(stale).await.expect("remove");
 
     let minted = store.open_named_doc("view").await.expect("remint");
 
@@ -85,9 +85,8 @@ async fn in_memory_storage_reopens_within_a_process(#[future] store: Spawned) {
     );
 }
 
-/// `open` imports a read capability rather than opening, so it has to merge
-/// into a write capability this node already holds. A downgrade would leave
-/// every document silently read-only on the node that authored it.
+/// `open` merges a read capability into a held write one; a
+/// downgrade would make an authored document read-only.
 #[rstest]
 #[timeout(Duration::from_secs(5))]
 #[awt]
@@ -101,7 +100,7 @@ async fn open_keeps_a_held_write_capability(#[future] store: Spawned) {
     reopened
         .set("written-after-import", "payload")
         .await
-        .expect("a namespace this node authored stays writable after open");
+        .expect("a namespace this store authored stays writable after open");
 
     assert_eq!(
         reopened

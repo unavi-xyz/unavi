@@ -24,16 +24,13 @@ async fn a_recorded_visit_reads_back_against_its_namespace(#[future] store: Spaw
 
     let visits = store.store.visits().await.expect("visits");
 
-    let (_, age) = visits
-        .iter()
-        .find(|(ns, _)| *ns == visited)
-        .expect("the visited namespace");
+    let age = visits.get(&visited).expect("the visited namespace");
     assert!(
         *age < Duration::from_secs(60),
         "a visit just recorded must not read as ancient: {age:?}"
     );
     assert!(
-        !visits.iter().any(|(ns, _)| *ns == ignored),
+        !visits.contains_key(&ignored),
         "a namespace no visit was recorded for must be absent, not aged"
     );
 }

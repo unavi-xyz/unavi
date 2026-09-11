@@ -90,7 +90,7 @@ async fn list(store: &Store, ns: NamespaceId, prefix: &str) -> Vec<(String, Byte
         let Ok(key) = String::from_utf8(entry.key().to_vec()) else {
             continue;
         };
-        if let Some(value) = doc.value(&entry).await {
+        if let Ok(Some(value)) = doc.value(&entry).await {
             out.push((key, value));
         }
     }

@@ -29,8 +29,8 @@ use unavi_local::LocalStorage;
 use crate::{
     BoxedBlobs,
     BoxedRouterBuilder,
-    Inner,
     Store,
+    StoreInner,
     document::Document,
     open_named_doc,
     retention,
@@ -41,9 +41,9 @@ use crate::{
 
 const VISITS_KEY: &str = "visits.bin";
 
-/// A store, and the one-shot registration of the protocols it answers on.
 pub struct Spawned {
     pub store:  Store,
+    /// Accepts the blobs, gossip and docs ALPNs on the caller's router.
     pub router: BoxedRouterBuilder,
 }
 
@@ -65,12 +65,12 @@ impl StoreBuilder {
             gc_timer: None,
             storage: LocalStorage::default(),
             doc_budget: None,
-            doc_ttl: Duration::from_hours(7 * 24),
+            doc_ttl: Duration::from_hours(24 * 7),
         }
     }
 
-    /// Sweeps at a set frequency: blobs no document or tag covers, and
-    /// documents past the retention this builder sets. Disabled by default.
+    /// Runs blob GC and the document retention sweep at `frequency`. No sweep
+    /// by default.
     #[must_use]
     pub const fn gc_timer(mut self, frequency: Duration) -> Self {
         self.gc_timer = Some(frequency);
@@ -84,8 +84,7 @@ impl StoreBuilder {
         self
     }
 
-    /// How many bytes of held documents this device tolerates. Unbounded by
-    /// default.
+    /// Byte budget for held documents; unbounded by default.
     #[must_use]
     pub const fn doc_budget(mut self, bytes: u64) -> Self {
         self.doc_budget = Some(bytes);
@@ -100,9 +99,8 @@ impl StoreBuilder {
     }
 
     pub async fn build(self) -> anyhow::Result<Spawned> {
-        // Blob GC reclaims anything no tag covers. Document content carries no
-        // tag of its own, so without this callback a GC run reclaims every open
-        // document's content.
+        // Document content carries no tag, so blob GC would reclaim it; the
+        // protect callback holds the content of every open document.
         let (protect_handler, protect_cb) = ProtectCallbackHandler::new();
         let gc = self.gc_timer.map(|interval| GcConfig {
             interval,
@@ -147,10 +145,8 @@ impl StoreBuilder {
             })
         };
 
-        // The sweep is handed a weak reference so that it can be spawned before
-        // the store it sweeps exists, and so that it never keeps that store
-        // alive past its last handle.
-        let store = Store(Arc::new_cyclic(|weak: &Weak<Inner>| {
+        // Weak, so the sweep can be spawned before the store it sweeps exists.
+        let store = Store(Arc::new_cyclic(|weak: &Weak<StoreInner>| {
             let sweep = self.gc_timer.map(|interval| {
                 AbortOnDropHandle::new(n0_future::task::spawn(retention::sweep_forever(
                     Weak::clone(weak),
@@ -158,7 +154,7 @@ impl StoreBuilder {
                 )))
             });
 
-            Inner {
+            StoreInner {
                 blobs: owned,
                 docs,
                 gossip,
@@ -175,9 +171,8 @@ impl StoreBuilder {
     }
 }
 
-/// Deletes the `auto-<rfc3339>` tags a bare `add_bytes` mints, which nothing
-/// else sweeps. Content a document still references survives through the
-/// protect callback.
+/// Deletes the `auto-<rfc3339>` tags a bare `add_bytes` mints; nothing else
+/// sweeps them. Document content survives through the protect callback.
 async fn sweep_auto_tags(blobs: &BlobStore) -> anyhow::Result<()> {
     let deleted = blobs.tags().delete_prefix("auto-").await?;
     if deleted > 0 {

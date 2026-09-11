@@ -310,14 +310,14 @@ pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
         .send()
         .await?;
 
-    // Minting a namespace at creation obligates dropping the replica;
+    // Minting a namespace obligates removing the replica;
     // otherwise scratch documents leak redb state.
-    drop_replica(NamespaceId::from(&id.0)).await;
+    remove_replica(NamespaceId::from(&id.0)).await;
 
     Ok(())
 }
 
-async fn drop_replica(ns: NamespaceId) {
+async fn remove_replica(ns: NamespaceId) {
     let _ = AsyncCommands::default()
         .push(move |world: &mut World| {
             let Some(store) = world
@@ -329,8 +329,8 @@ async fn drop_replica(ns: NamespaceId) {
                 return;
             };
             spawn_async_task(async move {
-                if let Err(err) = store.drop(ns).await {
-                    debug!(%ns, ?err, "failed to drop document replica");
+                if let Err(err) = store.remove(ns).await {
+                    debug!(%ns, ?err, "failed to remove document replica");
                 }
             });
         })

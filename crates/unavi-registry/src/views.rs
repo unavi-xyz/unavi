@@ -169,7 +169,7 @@ pub async fn read_view(
 
     let mut out = Vec::new();
     for entry in doc.list(&[prefix]).await? {
-        let Some(bytes) = doc.value(&entry).await else {
+        let Some(bytes) = doc.value(&entry).await? else {
             continue;
         };
         if let Ok(submission) = postcard::from_bytes::<Submission>(&bytes) {

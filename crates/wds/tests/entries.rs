@@ -28,7 +28,7 @@ async fn entries_round_trip_through_the_blob_store(#[future] store: Spawned) {
         .find(|e| e.key() == b"p/A/xform/")
         .expect("xform entry");
     assert_eq!(
-        ns.value(xform).await.expect("value"),
+        ns.value(xform).await.expect("value").expect("downloaded"),
         Bytes::from_static(b"xform-payload")
     );
 }
@@ -47,7 +47,7 @@ async fn an_empty_value_reads_as_absence(#[future] store: Spawned) {
     assert_eq!(ns.list(&["p/"]).await.expect("list"), []);
 }
 
-/// A prefix sweep deletes this node's entries rather than marking them, so
+/// A prefix sweep deletes this store's entries rather than marking them, so
 /// swept entries stop costing storage. A tombstone written afterwards is a
 /// fresh entry the sweep never saw.
 #[rstest]

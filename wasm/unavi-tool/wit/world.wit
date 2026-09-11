@@ -5,11 +5,12 @@ world guest {
   export api;
 }
 
+/// A shell-hosted tool, built by a tool crate.
 interface api {
   use wired:math/types.{transform};
   use wired:scene/types.{color, prim, prim-id};
 
-  // Visual state the shell pushes onto a tool.
+  /// Visual state the shell pushes onto a tool.
   record tool-state {
     color:  color,
     in-use: bool,
@@ -19,17 +20,15 @@ interface api {
     activate(transform),
     deactivate,
     set-state(tool-state),
-    // Primary action forwarded by the shell while its menu is down.
+    /// Primary action forwarded by the shell while its menu is down.
     trigger(bool),
-    // Signed scroll notches (+ in, - out).
+    /// Signed scroll notches (+ in, - out).
     scroll(f32),
   }
 
   resource tool {
-    // `description` says what the tool does, in one line, for the shell to
-    // show beside its name; the shell explains how to hold one itself.
-    // `icon` is a prim carrying a `mesh` attribute, rendered as the tool's
-    // icon.
+    /// `name` and `description` are shown by the shell; `icon` is a prim
+    /// carrying a mesh, rendered as the tool's icon.
     constructor(name: string, description: string, icon: borrow<prim>);
     poll: func() -> option<tool-event>;
   }
@@ -41,6 +40,7 @@ interface api {
     icon-prim-id: prim-id,
   }
 
+  /// Registry the shell pushes tools into, polled every frame.
   resource tool-registry {
     constructor();
     poll: func() -> list<registered-tool>;

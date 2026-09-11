@@ -7,6 +7,7 @@ use anyhow::Context;
 use bevy::prelude::Resource;
 use iroh::EndpointId;
 use parking_lot::RwLock;
+use ron::Options;
 use serde::{
     Deserialize,
     Serialize,
@@ -15,24 +16,15 @@ use unavi_identity::auth::bindings::Bindings;
 use unavi_local::LocalStorage;
 use xdid::core::did::Did;
 
-/// How much a peer is trusted, as one ordinal rung.
-///
-/// The opinion is the local viewer's and is never gossiped as authoritative.
-/// Ranks *peers*, not documents — [`crate::tier::Tier`] is the document side.
+/// Local opinion of a peer's trust, used to restrict capabilities.
 #[derive(
     Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
 pub enum Trust {
-    /// Ejected. Below the floor every capability sits at, so naming it as a
-    /// minimum anywhere would be a mistake.
     Blocked,
-    /// Anyone else present. The default, and the rung a normal item must work
-    /// at with no configuration and no prompt.
     #[default]
     Guest,
-    /// Marked by the local user.
     Trusted,
-    /// The local user.
     Myself,
 }
 
@@ -48,23 +40,15 @@ impl Trust {
     }
 }
 
-/// The rungs the local user set by hand, keyed by DID, and the storage they
-/// persist through.
-///
-/// Keyed to the DID rather than the endpoint because an `EndpointId` rotates,
-/// and a table keyed to one would forget every peer on their next device.
 #[derive(Resource, Clone)]
-pub struct TrustTable(Arc<Inner>);
+pub struct TrustTable(Arc<TrustTableInner>);
 
-struct Inner {
+struct TrustTableInner {
     overrides: RwLock<HashMap<Did, Trust>>,
     storage:   LocalStorage,
 }
 
-/// The table's key in a [`LocalStorage`], and the previous good copy kept
-/// beside it.
-const TABLE_KEY: &str = "trust.toml";
-const BACKUP_KEY: &str = "trust.toml.bak";
+const TABLE_KEY: &str = "trust.ron";
 
 #[derive(Default, Serialize, Deserialize)]
 struct Stored {
@@ -75,28 +59,19 @@ struct Stored {
 impl TrustTable {
     #[must_use]
     pub fn new(storage: LocalStorage) -> Self {
-        Self(Arc::new(Inner {
+        Self(Arc::new(TrustTableInner {
             overrides: RwLock::default(),
             storage,
         }))
     }
 
-    /// Loads the manual rungs from `storage`, discarding entries that no
+    /// Loads the table from `storage`, discarding entries that no
     /// longer parse as DIDs rather than refusing the whole file.
-    ///
-    /// A table that cannot be read at all is an error rather than an empty
-    /// start: coming up clean would silently un-block every peer the user
-    /// ejected. The previous good copy is tried first so a truncated write is
-    /// survivable.
     pub fn load(storage: LocalStorage) -> anyhow::Result<Self> {
         let stored = match read_table(&storage, TABLE_KEY) {
             Ok(None) => Stored::default(),
             Ok(Some(stored)) => stored,
-            Err(err) => {
-                tracing::warn!(?err, "trust table unreadable, falling back to the backup");
-                read_table(&storage, BACKUP_KEY)?
-                    .ok_or_else(|| err.context("no backup trust table exists"))?
-            }
+            Err(err) => return Err(err),
         };
 
         let mut overrides = HashMap::new();
@@ -109,26 +84,19 @@ impl TrustTable {
             }
         }
 
-        Ok(Self(Arc::new(Inner {
+        Ok(Self(Arc::new(TrustTableInner {
             overrides: RwLock::new(overrides),
             storage,
         })))
     }
 
-    /// The rung `peer` sits at.
-    ///
-    /// A peer that has proved no DID cannot rise above [`Trust::Guest`]: an
-    /// unproven claim is not an identity, so there is nothing to have an
-    /// opinion about.
     #[must_use]
     pub fn of_peer(&self, peer: EndpointId, bindings: &Bindings) -> Trust {
         bindings
             .did_of(peer)
-            .map_or(Trust::Guest, |did| self.of_did(&did))
+            .map_or_default(|did| self.of_did(&did))
     }
 
-    /// What the user said about `did`, or [`Trust::Guest`] if they have said
-    /// nothing.
     #[must_use]
     pub fn of_did(&self, did: &Did) -> Trust {
         self.0
@@ -147,9 +115,7 @@ impl TrustTable {
         self.0.overrides.write().remove(did);
     }
 
-    /// Writes the previous good copy aside, then replaces the table through
-    /// the backend's atomic write. A trust table half-written by a crash
-    /// would read as no blocks at all.
+    /// Writes the table to local storage.
     pub fn save(&self) -> anyhow::Result<()> {
         let stored = Stored {
             peers: self
@@ -161,29 +127,24 @@ impl TrustTable {
                 .collect(),
         };
 
-        let text = toml::to_string_pretty(&stored)?;
-        // Whatever is current now becomes the fallback; an unreadable
-        // current is replaced rather than carried forward.
-        if let Ok(Some(previous)) = self.0.storage.read(TABLE_KEY) {
-            self.0.storage.write(BACKUP_KEY, &previous)?;
-        }
-
+        let text =
+            Options::default().to_string_pretty(&stored, ron::ser::PrettyConfig::default())?;
         self.0.storage.write(TABLE_KEY, &text)
     }
 }
 
 /// `Ok(None)` when nothing is recorded at `key`.
 ///
-/// A table that is present but will not parse is an `Err`, the same answer as
-/// one that cannot be read at all. A truncated write leaves valid UTF-8 that is
-/// not valid TOML, so treating the two alike is what makes the backup reachable
-/// in the case it exists for.
+/// A table that is present but will not parse is an `Err`. A truncated write
+/// leaves valid UTF-8 that is not valid RON.
 fn read_table(storage: &LocalStorage, key: &str) -> anyhow::Result<Option<Stored>> {
     let Some(text) = storage.read(key)? else {
         return Ok(None);
     };
     Ok(Some(
-        toml::from_str(&text).with_context(|| format!("parse {key}"))?,
+        Options::default()
+            .from_str(&text)
+            .with_context(|| format!("parse {key}"))?,
     ))
 }
 
@@ -266,31 +227,11 @@ mod tests {
             "a first run has no table and that is not a failure"
         );
 
-        std::fs::write(dir.join("trust.toml"), "peers = [[[").expect("write");
+        std::fs::write(dir.join("trust.ron"), "(peers: [[[").expect("write");
         assert!(
             TrustTable::load(storage).is_err(),
             "coming up clean would silently unblock every ejected peer"
         );
-
-        std::fs::remove_dir_all(&dir).ok();
-    }
-
-    #[test]
-    fn a_truncated_write_leaves_the_previous_table_readable() {
-        let (dir, storage) = storage();
-
-        let blocked = Did::from_str("did:web:kept.example").expect("did");
-        let table = TrustTable::new(storage.clone());
-        table.set(blocked.clone(), Trust::Blocked);
-        table.save().expect("save");
-        table
-            .save()
-            .expect("save again, rotating the table into the backup");
-
-        std::fs::write(dir.join("trust.toml"), "peers = [[[").expect("truncate");
-        let table = TrustTable::load(storage).expect("the backup carries the table");
-
-        assert_eq!(table.of_did(&blocked), Trust::Blocked);
 
         std::fs::remove_dir_all(&dir).ok();
     }

@@ -23,11 +23,11 @@ futures.workspace       = true
 image                   = { features = ["png"], workspace = true }
 parking_lot.workspace   = true
 reqwest                 = { default-features = false, features = ["json", "native-tls", "stream", "system-proxy"], workspace = true }
+ron.workspace           = true
 semver                  = "1.0.28"
 serde.workspace         = true
 tempfile.workspace      = true
 tokio.workspace         = true
-toml.workspace          = true
 tracing.workspace       = true
 
 # Linux ships an AppImage, which needs no unpacking.

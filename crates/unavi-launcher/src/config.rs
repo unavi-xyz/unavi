@@ -5,6 +5,7 @@ use std::{
 
 use anyhow::Context;
 use parking_lot::Mutex;
+use ron::Options;
 use serde::{
     Deserialize,
     Serialize,
@@ -21,7 +22,7 @@ pub struct Config {
 
 impl Config {
     fn config_path() -> std::path::PathBuf {
-        DIRS.data_local_dir().join("config.toml")
+        DIRS.data_local_dir().join("config.ron")
     }
 
     pub fn load() -> Self {
@@ -31,7 +32,7 @@ impl Config {
         }
 
         match fs::read_to_string(&path) {
-            Ok(contents) => match toml::from_str(&contents) {
+            Ok(contents) => match Options::default().from_str(&contents) {
                 Ok(config) => config,
                 Err(e) => {
                     tracing::warn!("failed to parse config file: {e}, using defaults");
@@ -47,7 +48,9 @@ impl Config {
 
     pub fn save(&self) -> anyhow::Result<()> {
         let path = Self::config_path();
-        let contents = toml::to_string_pretty(self).context("serialize config")?;
+        let contents = Options::default()
+            .to_string_pretty(self, ron::ser::PrettyConfig::default())
+            .context("serialize config")?;
         info!("writing config to {}", path.to_string_lossy());
         fs::write(&path, contents).context("write config file")?;
         Ok(())

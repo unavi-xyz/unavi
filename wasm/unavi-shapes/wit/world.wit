@@ -15,7 +15,7 @@ interface api {
     collider: func() -> collider;
     mesh: func() -> prim;
 
-    set-doc: func(doc: document); 
+    set-doc: func(doc: document);
 
     rings: func() -> u32;
     set-rings: func(value: u32);
@@ -32,7 +32,7 @@ interface api {
 
     mesh: func() -> prim;
 
-    set-doc: func(doc: document); 
+    set-doc: func(doc: document);
 
     resolution: func() -> u32;
     set-resolution: func(value: u32);
@@ -44,7 +44,7 @@ interface api {
     collider: func() -> collider;
     mesh: func() -> prim;
 
-    set-doc: func(doc: document); 
+    set-doc: func(doc: document);
   }
 
   resource cylinder {
@@ -53,7 +53,7 @@ interface api {
     collider: func() -> collider;
     mesh: func() -> prim;
 
-    set-doc: func(doc: document); 
+    set-doc: func(doc: document);
 
     resolution: func() -> u32;
     set-resolution: func(value: u32);
@@ -68,7 +68,7 @@ interface api {
     collider: func() -> collider;
     mesh: func() -> prim;
 
-    set-doc: func(doc: document); 
+    set-doc: func(doc: document);
 
     subdivisions: func() -> u32;
     set-subdivisions: func(value: u32);
@@ -79,7 +79,7 @@ interface api {
 
     mesh: func() -> prim;
 
-    set-doc: func(doc: document); 
+    set-doc: func(doc: document);
 
     minor-resolution: func() -> u32;
     set-minor-resolution: func(value: u32);

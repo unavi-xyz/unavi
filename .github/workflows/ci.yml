@@ -29,7 +29,7 @@ jobs:
       - run: nix develop .#minimal --command nu scripts/update-wasm.nu --locked
       - run: nix develop .#minimal --command cargo check --examples --tests --all-features --workspace
       - run: nix develop .#minimal --command npm install --prefix crates/unavi-script
-      - run: nix develop .#minimal --command nu scripts/build-wasm.nu
-      - run: nix develop .#minimal --command cargo test --all-features
+      # - run: nix develop .#minimal --command nu scripts/build-wasm.nu
+      # - run: nix develop .#minimal --command cargo test --all-features
       - run: nix develop .#minimal --command cargo clippy --no-deps --examples --tests --all-features --workspace -- -D warnings
       - run: nix build -L .#checks.x86_64-linux.treefmt

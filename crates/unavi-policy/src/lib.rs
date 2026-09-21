@@ -6,8 +6,6 @@
 //! | --- | --- |
 //! | [`trust::Trust`] | how far a peer is trusted |
 //! | [`permissions::Permissions`] | the host APIs a document may call |
-//! | [`owner::Owner`] | who holds a document |
-//! | [`standing::Standing`] | the three above, for one document |
 //!
 //! # Registry
 //!
@@ -17,13 +15,9 @@
 //!
 //! # Checks
 //!
-//! [`standing::Standing::may_write`] and [`standing::Standing::may_read`] take
-//! two `Standing` values and answer with [`error::PolicyError`].
-//!
-//! # External Inputs
-//!
-//! [`owner::Owner::Peer`] comes from pin state held outside this crate. The
-//! caller resolves it and builds the `Standing`.
+//! [`permissions::Permissions::require`] is the gate, answering with
+//! [`error::PolicyError`]. Which peer authored a document is not decided here:
+//! authorship is replicated state, resolved by the caller.
 
 use bevy::prelude::*;
 use bevy_hsd::{
@@ -31,18 +25,13 @@ use bevy_hsd::{
     HsdDocId,
 };
 
-use crate::{
-    owner::Owner,
-    permissions::Permissions,
-};
+use crate::permissions::Permissions;
 
 pub mod error;
-pub mod owner;
 pub mod permissions;
 pub mod quota;
 pub mod registry;
 pub mod space;
-pub mod standing;
 pub mod sync;
 pub mod trust;
 
@@ -53,7 +42,6 @@ impl Plugin for PolicyPlugin {
         app.init_resource::<registry::Policy>()
             .add_observer(sync::sync_on::<HsdDocId>)
             .add_observer(sync::sync_on::<Permissions>)
-            .add_observer(sync::sync_on::<Owner>)
             .add_observer(sync::forget_document)
             .add_observer(space::register_space)
             .add_observer(space::register_membership)

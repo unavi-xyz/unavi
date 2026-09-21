@@ -9,7 +9,6 @@ use iroh::EndpointId;
 use parking_lot::RwLock;
 
 use crate::{
-    owner::Owner,
     permissions::Permissions,
     quota::{
         Quota,
@@ -24,8 +23,6 @@ const MAX_HOST_DEPTH: usize = 16;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Record {
     pub permissions: Permissions,
-    /// `None` until the host states one. The caller resolves it from pins.
-    pub owner:       Option<Owner>,
     /// The space this document was registered into locally.
     pub space:       Option<DocId>,
     /// The document that composed this one in, for a prefab instance.
@@ -245,7 +242,6 @@ mod tests {
     fn an_unregistered_document_answers_the_weakest_record() {
         let record = Policy::new().get(doc(b"never-registered"));
         assert_eq!(record.permissions, Permissions::untrusted());
-        assert!(record.owner.is_none());
         assert!(record.space.is_none());
     }
 

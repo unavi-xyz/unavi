@@ -134,10 +134,9 @@ impl EventBus {
 
     /// Fans a script-originated emit out to every receptor addressed by
     /// `channel` and the audience/source-document filters, using `resolve` to
-    /// settle the parts that only the caller's
-    /// [`Api`](crate::runtime::shared::Api) can answer: whether the emitter
-    /// may write to a given receptor's document, and what scope the
-    /// receptor sees the emitter at.
+    /// settle what only the caller's [`Api`](crate::runtime::shared::Api) can
+    /// answer: the scope the receptor sees the emitter at, and whether it is
+    /// in range at all.
     pub fn deliver(
         &self,
         channel: &str,
@@ -146,7 +145,7 @@ impl EventBus {
         time: u64,
         documents: Option<&[Vec<u8>]>,
         audience_claim: Option<&Arc<AtomicBool>>,
-        mut resolve: impl FnMut(DocId, &ReceptorScope) -> Option<SenderScope>,
+        mut resolve: impl FnMut(&ReceptorScope) -> Option<SenderScope>,
     ) {
         let receptors = self.0.receptors.read();
         for entry in receptors.values() {
@@ -168,7 +167,7 @@ impl EventBus {
                 continue;
             }
 
-            let Some(sender_scope) = resolve(entry.doc_id, &entry.scope) else {
+            let Some(sender_scope) = resolve(&entry.scope) else {
                 continue;
             };
 

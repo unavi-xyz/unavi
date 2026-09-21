@@ -146,7 +146,6 @@ pub async fn get_prim(api: &Api, rep: u32, prim_id: String) -> anyhow::Result<Op
 
 pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
     let doc = get_doc(api, rep).await?;
-    api.view.write(api.doc_id, doc.id)?;
     crate::quota::acquire(&api.quota, Flow::CreatePrim, 1.0).await?;
     let quota = document_quota(
         api.view.policy(),
@@ -186,10 +185,6 @@ pub async fn offset_to(
     let self_doc = get_doc(api, self_rep).await?;
     let other_doc = get_doc(api, other_rep).await?;
 
-    if api.view.read(self_doc.id, other_doc.id).is_err() {
-        return Ok(None);
-    }
-
     let (Some(self_root), Some(other_root)) = (
         api.transforms.doc_root(&self_doc.id),
         api.transforms.doc_root(&other_doc.id),
@@ -219,7 +214,6 @@ pub async fn remove_prim(api: &Api, prim_rep: u32) -> anyhow::Result<()> {
     if prim.is_proxy {
         return Ok(());
     }
-    api.view.write(api.doc_id, prim.doc_id)?;
 
     let mut state = prim
         .state
@@ -293,7 +287,6 @@ async fn place(id: DocId, placement: Placement) -> anyhow::Result<()> {
 
 pub async fn set_anchor(api: &Api, rep: u32, target: Option<u32>) -> anyhow::Result<()> {
     let doc = get_doc(api, rep).await?;
-    api.view.write(api.doc_id, doc.id)?;
 
     let target = match target {
         Some(target_rep) => {
@@ -315,7 +308,6 @@ pub async fn set_anchor(api: &Api, rep: u32, target: Option<u32>) -> anyhow::Res
 
 pub async fn set_offset(api: &Api, rep: u32, value: XformValue) -> anyhow::Result<()> {
     let doc = get_doc(api, rep).await?;
-    api.view.write(api.doc_id, doc.id)?;
 
     place(
         doc.id,

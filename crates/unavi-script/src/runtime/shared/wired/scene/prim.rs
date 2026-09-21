@@ -289,12 +289,11 @@ impl PrimRes {
     }
 }
 
-fn ensure_writable(api: &Api, prim: &PrimRes) -> anyhow::Result<()> {
+fn ensure_writable(prim: &PrimRes) -> anyhow::Result<()> {
     if prim.is_proxy {
         bail!("cannot write proxy prim")
     }
-    api.view.placed(api.doc_id)?;
-    Ok(api.view.write(api.doc_id, prim.doc_id)?)
+    Ok(())
 }
 
 pub async fn clone(api: &Api, rep: u32) -> anyhow::Result<u32> {
@@ -375,7 +374,7 @@ async fn pair(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<(PrimR
 
 pub async fn add_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<()> {
     let (parent, child) = pair(api, self_rep, child_rep).await?;
-    ensure_writable(api, &parent)?;
+    ensure_writable(&parent)?;
     if child.is_proxy {
         bail!("cannot add proxy prim as child")
     }
@@ -389,7 +388,7 @@ pub async fn add_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Resu
 
 pub async fn remove_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Result<()> {
     let (parent, child) = pair(api, self_rep, child_rep).await?;
-    ensure_writable(api, &parent)?;
+    ensure_writable(&parent)?;
     if child.is_proxy {
         bail!("cannot remove proxy prim as child")
     }
@@ -407,7 +406,7 @@ pub async fn name(api: &Api, rep: u32) -> anyhow::Result<Option<String>> {
 
 pub async fn set_name(api: &Api, rep: u32, value: Option<String>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     match value {
         Some(s) => {
             anyhow::ensure!(s.len() <= MAX_NAME_BYTES, "name too long");
@@ -427,7 +426,7 @@ pub async fn prefab(api: &Api, rep: u32) -> anyhow::Result<Option<Vec<u8>>> {
 
 pub async fn set_prefab(api: &Api, rep: u32, value: Option<Vec<u8>>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     prim.set_slot(slots::PREFAB, value)
 }
 
@@ -455,7 +454,7 @@ pub async fn xform(api: &Api, rep: u32) -> anyhow::Result<Option<XformAttr>> {
 
 pub async fn set_xform(api: &Api, rep: u32, value: Option<XformAttr>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     match value {
         Some(x) => {
             if finite::vec3(x.translation).is_none()
@@ -516,7 +515,7 @@ pub async fn gravity_scale(api: &Api, rep: u32) -> anyhow::Result<f32> {
 
 pub async fn set_gravity_scale(api: &Api, rep: u32, value: f32) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     prim.write_attr(&GravityScaleAttr {
         scale: f64::from(value),
     })
@@ -534,7 +533,7 @@ pub async fn mesh(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMesh>> {
 
 pub async fn set_mesh(api: &Api, rep: u32, value: Option<PrimMesh>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     prim.write_or_clear(value.map(|m| MeshAttr {
         topology: topology_from_prim(m.topology),
     }))
@@ -570,7 +569,7 @@ pub async fn set_mesh_stream(
     values: Option<Vec<f32>>,
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     anyhow::ensure!(key.len() <= MAX_NAME_BYTES, "mesh attribute key too long");
     let bytes = match values {
         Some(v) => {
@@ -589,7 +588,7 @@ pub async fn set_mesh_indices_u32(
     values: Option<Vec<u32>>,
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     let bytes = match values {
         Some(v) => {
             anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "mesh indices too large");
@@ -620,7 +619,7 @@ pub async fn set_collider_vertices(
     values: Option<Vec<f32>>,
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     let bytes = match values {
         Some(v) => {
             anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "collider vertices too large");
@@ -637,7 +636,7 @@ pub async fn set_collider_indices(
     values: Option<Vec<u32>>,
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     let bytes = match values {
         Some(v) => {
             anyhow::ensure!(v.len() <= MAX_MESH_ELEMENTS, "collider indices too large");
@@ -650,7 +649,7 @@ pub async fn set_collider_indices(
 
 pub async fn set_image_data(api: &Api, rep: u32, bytes: Option<Vec<u8>>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     set_buffer(api, &prim, slots::IMAGE_DATA, bytes).await
 }
 
@@ -684,7 +683,7 @@ pub async fn material(api: &Api, rep: u32) -> anyhow::Result<Option<PrimMaterial
 
 pub async fn set_material(api: &Api, rep: u32, value: Option<PrimMaterial>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     prim.write_or_clear(value.map(prim_to_material_attr))
 }
 
@@ -698,7 +697,7 @@ pub async fn set_material_graph(
     value: Option<ShaderGraph>,
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
 
     let bytes = match value {
         Some(graph) => {
@@ -731,7 +730,7 @@ pub async fn set_graph_overrides(
     values: Vec<(u16, PrimGraphValue)>,
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     anyhow::ensure!(
         values.len() <= MAX_PUBLIC_INPUTS,
         "a graph has at most {MAX_PUBLIC_INPUTS} public inputs"
@@ -819,7 +818,7 @@ pub async fn text(api: &Api, rep: u32) -> anyhow::Result<Option<PrimText>> {
 
 pub async fn set_text(api: &Api, rep: u32, value: Option<PrimText>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     if let Some(value) = &value {
         anyhow::ensure!(
             value.value.len() <= MAX_TEXT_BYTES,
@@ -929,7 +928,7 @@ pub async fn image(api: &Api, rep: u32) -> anyhow::Result<Option<ImageAttr>> {
 
 pub async fn set_image(api: &Api, rep: u32, value: Option<ImageAttr>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     prim.write_or_clear(value)
 }
 
@@ -956,7 +955,7 @@ pub async fn collider(api: &Api, rep: u32) -> anyhow::Result<Option<PrimCollider
 
 pub async fn set_collider(api: &Api, rep: u32, value: Option<PrimCollider>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     prim.write_or_clear(value.map(|c| match c {
         PrimCollider::Capsule { height, radius } => ColliderAttr::Capsule {
             height: f64::from(height),
@@ -993,7 +992,7 @@ pub async fn set_rigid_body(
     value: Option<PrimRigidBody>,
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     prim.write_or_clear(value.map(prim_to_rigid_body_attr))
 }
 
@@ -1037,7 +1036,7 @@ pub async fn portal(api: &Api, rep: u32) -> anyhow::Result<Option<PrimPortal>> {
 
 pub async fn set_portal(api: &Api, rep: u32, value: Option<PrimPortal>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     match value {
         Some(p) => prim.write_attr(&prim_portal_to_attr(p)?),
         None => prim.clear(PortalAttr::KEY),
@@ -1097,7 +1096,7 @@ pub async fn spawn(api: &Api, rep: u32) -> anyhow::Result<Option<PrimSpawn>> {
 
 pub async fn set_spawn(api: &Api, rep: u32, value: Option<PrimSpawn>) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     prim.write_or_clear(value.map(|s| SpawnAttr {
         radius: f64::from(s.radius),
     }))
@@ -1134,7 +1133,7 @@ pub async fn set_relationship(
     target: Option<String>,
 ) -> anyhow::Result<()> {
     let prim = get_prim(api, rep).await?;
-    ensure_writable(api, &prim)?;
+    ensure_writable(&prim)?;
     anyhow::ensure!(key.len() <= MAX_NAME_BYTES, "relationship key too long");
     match target {
         Some(target_id) => {

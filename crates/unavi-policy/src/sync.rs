@@ -6,7 +6,6 @@ use bevy_hsd::{
 use hsd::id::DocId;
 
 use crate::{
-    owner::Owner,
     permissions::Permissions,
     registry::Policy,
 };
@@ -19,7 +18,6 @@ type DocumentQuery<'w, 's> = Query<
     (
         &'static HsdDocId,
         Option<&'static Permissions>,
-        Option<&'static Owner>,
         Option<&'static ChildOf>,
     ),
 >;
@@ -32,7 +30,7 @@ pub fn sync_on<C: Component>(
     ids: Query<&HsdDocId>,
     policy: Res<Policy>,
 ) {
-    let Ok((doc, permissions, owner, parent)) = docs.get(trigger.entity) else {
+    let Ok((doc, permissions, parent)) = docs.get(trigger.entity) else {
         return;
     };
     let host = host_of(parent, &prims, &ids);
@@ -43,9 +41,6 @@ pub fn sync_on<C: Component>(
         // composed it in. Anything else states its own.
         if let Some(permissions) = permissions.copied().or(inherited) {
             record.permissions = permissions;
-        }
-        if let Some(owner) = owner {
-            record.owner = Some(*owner);
         }
         record.host = host;
     });
@@ -89,7 +84,6 @@ mod tests {
         app.init_resource::<Policy>()
             .add_observer(sync_on::<HsdDocId>)
             .add_observer(sync_on::<Permissions>)
-            .add_observer(sync_on::<Owner>)
             .add_observer(forget_document);
         let policy = app.world().resource::<Policy>().clone();
         (app, policy)
@@ -100,10 +94,7 @@ mod tests {
         let (mut app, policy) = app();
         let id = DocId([21; 32]);
 
-        let entity = app
-            .world_mut()
-            .spawn((Permissions::system(), Owner::System))
-            .id();
+        let entity = app.world_mut().spawn(Permissions::system()).id();
         assert_eq!(
             policy.get(id).permissions,
             Permissions::untrusted(),
@@ -115,7 +106,6 @@ mod tests {
             .insert((Hsd::new(SceneState::new()), HsdDocId(id)));
 
         assert_eq!(policy.get(id).permissions, Permissions::system());
-        assert_eq!(policy.get(id).owner, Some(Owner::System));
 
         app.world_mut().entity_mut(entity).despawn();
         assert_eq!(
@@ -177,11 +167,6 @@ mod tests {
                 .require(ApiName::Identity)
                 .is_ok(),
             "an instance runs with the space's permissions, not a peer's"
-        );
-        assert_eq!(
-            policy.get(instance_id).owner,
-            None,
-            "an instance states no owner of its own; the host chain answers"
         );
     }
 }

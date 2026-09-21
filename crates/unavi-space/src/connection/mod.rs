@@ -29,12 +29,9 @@ use iroh::endpoint::{
 };
 use parking_lot::Mutex;
 use tokio::sync::oneshot;
-use unavi_policy::{
-    owner::Owner,
-    trust::{
-        Trust,
-        TrustTable,
-    },
+use unavi_policy::trust::{
+    Trust,
+    TrustTable,
 };
 use unavi_util::async_task::spawn_async_task;
 use web_time::Instant;
@@ -192,7 +189,7 @@ impl PeerLink {
     /// that proved none is a guest, so this refuses nobody by default.
     #[must_use]
     pub fn is_blocked(&self, peer: EndpointId) -> bool {
-        self.0.view.trust_of(&Owner::Peer(peer)) == Trust::Blocked
+        self.0.view.trust_of(peer) == Trust::Blocked
     }
 
     /// Tracks a connection for the dev tools network panel, untracking it when

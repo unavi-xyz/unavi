@@ -8,14 +8,11 @@ use std::sync::{
 
 use async_channel::Receiver;
 use hsd::bounds::MAX_EVENT_PAYLOAD_BYTES;
-use unavi_policy::{
-    owner::Owner,
-    quota::{
-        Flow,
-        QuotaError,
-        Stock,
-        StockHold,
-    },
+use unavi_policy::quota::{
+    Flow,
+    QuotaError,
+    Stock,
+    StockHold,
 };
 use web_time::{
     SystemTime,
@@ -77,10 +74,6 @@ pub async fn emit(
         payload.len() <= MAX_EVENT_PAYLOAD_BYTES,
         "event payload too large"
     );
-    // Speaking is a write, and an unplaced document has no co-presence to
-    // appeal to. Without this a document that cannot be attributed reaches
-    // every receptor its owner-check happens to pass.
-    api.view.placed(api.doc_id)?;
     crate::quota::acquire(&api.quota, Flow::Emit, 1.0).await?;
 
     let time = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
@@ -123,12 +116,7 @@ pub async fn emit(
         time,
         filter.documents.as_deref(),
         audience_claim.as_ref(),
-        |entry_doc, scope| {
-            if api.view.write(api.doc_id, entry_doc).is_err() {
-                return None;
-            }
-            resolve_sender_scope(api, emitter_spatial.as_ref(), scope)
-        },
+        |scope| resolve_sender_scope(api, emitter_spatial.as_ref(), scope),
     );
 
     Ok(())
@@ -154,12 +142,6 @@ fn resolve_sender_scope(
             },
         ) => {
             let e_pos = (*emitter_pos)?;
-            // System content stands outside every space and still reaches into
-            // the one the user occupies.
-            let emitter_is_system = matches!(api.view.owner(api.doc_id), Owner::System);
-            if !emitter_is_system && !api.view.same_space(emitter_abs.doc, receptor_node.doc) {
-                return None;
-            }
             let r_pos = api
                 .transforms
                 .node(receptor_node)

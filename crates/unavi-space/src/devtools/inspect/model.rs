@@ -24,7 +24,6 @@ use hsd::{
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
 use unavi_policy::{
-    owner::Owner,
     space::Space,
     trust::Trust,
 };
@@ -168,7 +167,7 @@ fn peer_model(
         } else {
             view.identity().bindings.did_of(id).map(|d| d.to_string())
         },
-        trust: view.trust_of(&Owner::Peer(id)),
+        trust: view.trust_of(id),
         pins: docs
             .iter()
             .filter_map(|d| {

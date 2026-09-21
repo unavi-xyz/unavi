@@ -34,9 +34,9 @@ interface types {
   /// the same record read in opposite directions by `emit` and `listen`.
   record event-filter {
     /// On `emit`, the audience. On `listen`, the accepted senders. `none` is
-    /// every document in the space either way; channel names are a flat global
-    /// namespace, so a receptor that names no sender will hear from anything
-    /// co-present that guessed the string.
+    /// every document either way; channel names are a flat global namespace,
+    /// so a receptor that names no sender will hear from anything that guessed
+    /// the string. A spatial scope still bounds delivery by distance.
     documents: option<list<document-id>>,
     scope:     event-scope,
   }

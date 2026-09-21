@@ -89,9 +89,8 @@ mod tests {
     #[test]
     fn a_policy_denial_boxed_into_anyhow_keeps_its_variant() {
         for policy in [
-            PolicyError::NotCoPresent,
-            PolicyError::Blocked,
             PolicyError::Permission(ApiName::Physics),
+            PolicyError::NotOwner,
         ] {
             assert_eq!(
                 ScriptError::from(anyhow::Error::new(policy)),

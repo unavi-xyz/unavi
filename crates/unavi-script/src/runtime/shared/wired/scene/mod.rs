@@ -239,7 +239,6 @@ pub async fn self_document(api: &Api) -> anyhow::Result<u32> {
 
 pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>> {
     let id = doc_id(&id)?;
-    api.view.read(api.doc_id, id)?;
 
     let mut scene = api.wired_scene.lock().await;
 
@@ -283,10 +282,6 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
 
 pub async fn remove_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
-    if let Err(err) = api.view.write(api.doc_id, id) {
-        debug!(?err, "remove_document out of reach, skipping");
-        return Ok(());
-    }
 
     let mut scene = api.wired_scene.lock().await;
     let key = scene
@@ -341,7 +336,6 @@ async fn remove_replica(ns: NamespaceId) {
 pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
     let ns = namespace_of(id).await?;
-    api.view.write(api.doc_id, id)?;
     crate::quota::acquire(&api.quota, Flow::SyncDoc, 1.0).await?;
 
     let space = if let Some(s) = api.view.space_of(id) {
@@ -402,7 +396,6 @@ pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
 
 pub async fn save_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
     let id = doc_id(&id)?;
-    api.view.write(api.doc_id, id)?;
 
     let state = {
         let scene = api.wired_scene.lock().await;

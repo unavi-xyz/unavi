@@ -27,10 +27,6 @@ pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<(),
         ids
     };
 
-    // Opening a portal writes a handshake on behalf of the source prim; the
-    // caller must hold scene-write on that prim's document.
-    api.view.write(api.doc_id, doc)?;
-
     let source_space = api
         .view
         .space_of(doc)

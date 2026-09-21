@@ -21,10 +21,7 @@ use bevy_vrm::first_person::{
     FirstPersonFlag,
 };
 use unavi_agent::LocalAgent;
-use unavi_policy::{
-    owner::Owner,
-    permissions::Permissions,
-};
+use unavi_policy::permissions::Permissions;
 
 use crate::util::create_client_store;
 
@@ -118,6 +115,5 @@ fn on_agent_load(
             on_load: None,
         },
         Permissions::system(),
-        Owner::System,
     ));
 }

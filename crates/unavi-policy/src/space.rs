@@ -8,7 +8,6 @@ use hsd::id::DocId;
 use iroh_docs::NamespaceId;
 
 use crate::{
-    owner::Owner,
     permissions::Permissions,
     registry::Policy,
 };
@@ -35,8 +34,8 @@ pub struct SpaceOwner(pub Entity);
 pub struct SpaceMembers(Vec<Entity>);
 
 /// Grants a space's own document the space preset and registers it into
-/// itself. The only place authority is granted to content the local user did
-/// not author.
+/// itself. The only place a grant is given to content the local user did not
+/// author.
 pub fn register_space(
     trigger: On<Add, Space>,
     spaces: Query<&Space>,
@@ -47,9 +46,7 @@ pub fn register_space(
         return;
     };
     let id = space.doc_id();
-    commands
-        .entity(trigger.entity)
-        .insert((Permissions::space(), Owner::Space(id)));
+    commands.entity(trigger.entity).insert(Permissions::space());
     policy.update(id, |record| record.space = Some(id));
 }
 
@@ -154,7 +151,6 @@ mod tests {
             .add_observer(forget_space)
             .add_observer(sync::sync_on::<HsdDocId>)
             .add_observer(sync::sync_on::<Permissions>)
-            .add_observer(sync::sync_on::<Owner>)
             .add_observer(sync::forget_document)
             .add_systems(Update, parent_docs_under_space);
         let policy = app.world().resource::<Policy>().clone();
@@ -212,7 +208,6 @@ mod tests {
 
         let record = policy.get(id);
         assert_eq!(record.permissions, Permissions::space());
-        assert_eq!(record.owner, Some(Owner::Space(id)));
         assert_eq!(record.space, Some(id));
     }
 

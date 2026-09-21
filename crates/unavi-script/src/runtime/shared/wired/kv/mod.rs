@@ -46,10 +46,6 @@ pub async fn get_kv(api: &Api, doc_id: Vec<u8>) -> anyhow::Result<Option<u32>> {
         return Ok(None);
     }
 
-    if api.view.read(api.doc_id, doc).is_err() {
-        return Ok(None);
-    }
-
     let mut slots = api.wired_kv.lock().await;
     Ok(Some(
         slots.kv_slots.insert(KvRes { space, doc }, &api.quota)?,
@@ -62,9 +58,6 @@ pub async fn kv_get(api: &Api, rep: u32, key: String) -> anyhow::Result<Option<V
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if api.view.read(api.doc_id, res.doc).is_err() {
-        return Ok(None);
-    }
     Ok(api.view.replicas().kv_get(res.space, res.doc, &key))
 }
 
@@ -79,9 +72,6 @@ pub async fn kv_set(
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if let Err(err) = api.view.write(api.doc_id, res.doc) {
-        return Ok(Err(err.into()));
-    }
     Ok(api
         .view
         .doc_kv_set(res.space, res.doc, key, value)
@@ -99,9 +89,6 @@ pub async fn kv_delete(
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if let Err(err) = api.view.write(api.doc_id, res.doc) {
-        return Ok(Err(err.into()));
-    }
     Ok(api
         .view
         .doc_kv_delete(res.space, res.doc, key)
@@ -115,9 +102,6 @@ pub async fn kv_keys(api: &Api, rep: u32) -> anyhow::Result<Vec<String>> {
         anyhow::bail!("invalid kv resource");
     };
     drop(slots);
-    if api.view.read(api.doc_id, res.doc).is_err() {
-        return Ok(Vec::new());
-    }
     Ok(api.view.replicas().kv_keys(res.space, res.doc))
 }
 

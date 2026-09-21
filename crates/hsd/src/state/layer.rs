@@ -1,19 +1,54 @@
-use std::collections::{
-    BTreeSet,
-    HashMap,
-};
+use std::collections::HashMap;
 
 use crate::{
     id::PrimId,
-    state::prim::PrimState,
+    state::opinion::{
+        Origin,
+        PrimOpinions,
+    },
 };
 
-/// One layer's opinions about prims, shaped like the entry set so that saving
-/// a layer is a per-key diff rather than a snapshot.
+/// Strength order: a later variant's opinion wins over an earlier one's.
+///
+/// `Document` is what a keyholder wrote and what a save writes back.
+/// `Runtime` is what this peer's scripts said this session, and is replicated
+/// by nothing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub(super) enum LayerId {
+    Document,
+    Runtime,
+}
+
+impl LayerId {
+    pub(super) const ALL: [Self; 2] = [Self::Document, Self::Runtime];
+}
+
+/// One layer's opinions, keyed by prim.
 #[derive(Debug, Default)]
-pub(super) struct Layer {
-    pub(super) prims:    HashMap<PrimId, PrimState>,
-    /// Parent id to children, including parents that do not exist yet, which
-    /// is what lets an orphan be picked up when its parent arrives.
-    pub(super) children: HashMap<PrimId, BTreeSet<PrimId>>,
+pub(super) struct Layer(HashMap<PrimId, PrimOpinions>);
+
+impl Layer {
+    pub(super) fn get(&self, prim: PrimId) -> Option<&PrimOpinions> {
+        self.0.get(&prim)
+    }
+
+    pub(super) fn entry(&mut self, prim: PrimId, origin: Origin) -> &mut PrimOpinions {
+        self.0
+            .entry(prim)
+            .or_insert_with(|| PrimOpinions::new(origin))
+    }
+
+    pub(super) fn contains(&self, prim: PrimId) -> bool {
+        self.0.contains_key(&prim)
+    }
+
+    /// Drops everything this layer says about `prim`. A weaker layer's
+    /// opinions are untouched, so the prim may still resolve.
+    pub(super) fn remove(&mut self, prim: PrimId) {
+        self.0.remove(&prim);
+    }
+
+    pub(super) fn prims(&self) -> impl Iterator<Item = (PrimId, &PrimOpinions)> {
+        self.0.iter().map(|(prim, opinions)| (*prim, opinions))
+    }
 }

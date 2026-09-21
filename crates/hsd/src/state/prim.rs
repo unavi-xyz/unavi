@@ -10,100 +10,74 @@ use crate::{
     state::entry::Stamp,
 };
 
-/// Where a prim came from, which decides whether saving writes it:
-/// session-spawned geometry must not accumulate in the home document.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Origin {
-    Document,
-    Script,
-}
-
-#[derive(Debug, Clone)]
+/// One prim as every reader sees it: each key composed from the layer stack,
+/// strongest opinion winning.
+///
+/// A cache rather than a source — only `SceneState`'s resolve step writes it,
+/// and it holds nothing the layers do not already say.
+#[derive(Debug, Clone, Default)]
 pub struct PrimState {
-    /// `None` means no live `parent/` entry: the prim does not exist yet, or
-    /// was tombstoned. Either way it is held rather than realized.
+    /// `None` means no layer states a live parent: the prim has not been
+    /// written yet, was tombstoned, or a stronger layer blocked it. Either way
+    /// it is held rather than realized.
     pub parent:   Option<Parent>,
-    pub origin:   Origin,
     parent_stamp: Stamp,
-    props:        BTreeMap<SmolStr, (Property, Stamp)>,
-    slots:        BTreeMap<SmolStr, (Vec<u8>, Stamp)>,
+    props:        BTreeMap<SmolStr, Property>,
+    slots:        BTreeMap<SmolStr, Vec<u8>>,
 }
 
 impl PrimState {
-    pub(super) const fn new(origin: Origin) -> Self {
-        Self {
-            parent: None,
-            origin,
-            parent_stamp: Stamp {
-                timestamp: 0,
-                content:   [0; 32],
-            },
-            props: BTreeMap::new(),
-            slots: BTreeMap::new(),
-        }
-    }
-
     #[must_use]
     pub fn property(&self, name: &str) -> Option<&Property> {
-        self.props.get(name).map(|(value, _)| value)
+        self.props.get(name)
     }
 
     pub fn properties(&self) -> impl Iterator<Item = (&SmolStr, &Property)> {
-        self.props.iter().map(|(name, (value, _))| (name, value))
+        self.props.iter()
     }
 
     #[must_use]
     pub fn slot(&self, name: &str) -> Option<&[u8]> {
-        self.slots.get(name).map(|(value, _)| value.as_slice())
+        self.slots.get(name).map(Vec::as_slice)
     }
 
     pub fn slots(&self) -> impl Iterator<Item = (&SmolStr, &[u8])> {
         self.slots
             .iter()
-            .map(|(name, (value, _))| (name, value.as_slice()))
+            .map(|(name, value)| (name, value.as_slice()))
     }
 
+    /// The stamp of whichever layer won the parent key, which is what breaks a
+    /// cycle identically on every peer.
     #[must_use]
     pub const fn parent_stamp(&self) -> Stamp {
         self.parent_stamp
     }
 
-    pub(super) fn set_parent(&mut self, parent: Option<Parent>, stamp: Stamp) -> bool {
-        if stamp < self.parent_stamp {
-            return false;
-        }
+    pub(super) const fn set_parent(&mut self, parent: Option<Parent>, stamp: Stamp) {
         self.parent = parent;
         self.parent_stamp = stamp;
-        true
     }
 
-    pub(super) fn set_property(&mut self, name: &str, value: Property, stamp: Stamp) -> bool {
-        if self.props.get(name).is_some_and(|(_, old)| stamp < *old) {
-            return false;
+    pub(super) fn set_property(&mut self, name: &str, value: Option<Property>) {
+        match value {
+            Some(value) => {
+                self.props.insert(SmolStr::new(name), value);
+            }
+            None => {
+                self.props.remove(name);
+            }
         }
-        self.props.insert(SmolStr::new(name), (value, stamp));
-        true
     }
 
-    pub(super) fn remove_property(&mut self, name: &str, stamp: Stamp) -> bool {
-        if self.props.get(name).is_some_and(|(_, old)| stamp < *old) {
-            return false;
+    pub(super) fn set_slot(&mut self, name: &str, value: Option<Vec<u8>>) {
+        match value {
+            Some(value) => {
+                self.slots.insert(SmolStr::new(name), value);
+            }
+            None => {
+                self.slots.remove(name);
+            }
         }
-        self.props.remove(name).is_some()
-    }
-
-    pub(super) fn set_slot(&mut self, name: &str, value: Vec<u8>, stamp: Stamp) -> bool {
-        if self.slots.get(name).is_some_and(|(_, old)| stamp < *old) {
-            return false;
-        }
-        self.slots.insert(SmolStr::new(name), (value, stamp));
-        true
-    }
-
-    pub(super) fn remove_slot(&mut self, name: &str, stamp: Stamp) -> bool {
-        if self.slots.get(name).is_some_and(|(_, old)| stamp < *old) {
-            return false;
-        }
-        self.slots.remove(name).is_some()
     }
 }

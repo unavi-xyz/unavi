@@ -1,5 +1,6 @@
 use std::collections::{
     BTreeMap,
+    BTreeSet,
     HashMap,
     HashSet,
 };
@@ -30,17 +31,19 @@ use crate::{
             Stamp,
         },
         event::SceneEvent,
-        layer::Layer,
-        prim::{
-            Origin,
-            PrimState,
+        layer::{
+            Layer,
+            LayerId,
         },
+        opinion::Origin,
+        prim::PrimState,
     },
 };
 
 pub mod entry;
 pub mod event;
 mod layer;
+pub mod opinion;
 pub mod prim;
 pub mod save;
 
@@ -88,8 +91,16 @@ enum Placement {
 #[derive(Debug)]
 pub struct SceneState {
     meta:       DocMeta,
-    /// The opinions a keyholder wrote, which are what a save writes back.
-    document:   Layer,
+    /// Weakest first, so iterating forwards composes and iterating backwards
+    /// finds the strongest opinion on a key.
+    layers:     BTreeMap<LayerId, Layer>,
+    /// The composed view every reader sees, recomputed per written key. A
+    /// cache: only [`Self::resolve_parent`] and its siblings write it.
+    resolved:   HashMap<PrimId, PrimState>,
+    /// Parent id to children, indexed over *resolved* parents and including
+    /// parents that do not exist yet, which is what lets an orphan be picked
+    /// up when its parent arrives.
+    children:   HashMap<PrimId, BTreeSet<PrimId>>,
     /// Realized prims and their effective parent, `None` for a document root.
     realized:   HashMap<PrimId, Option<PrimId>>,
     events:     Vec<SceneEvent>,
@@ -111,7 +122,12 @@ impl SceneState {
     pub fn new() -> Self {
         Self {
             meta:       DocMeta::default(),
-            document:   Layer::default(),
+            layers:     LayerId::ALL
+                .into_iter()
+                .map(|id| (id, Layer::default()))
+                .collect(),
+            resolved:   HashMap::new(),
+            children:   HashMap::new(),
             realized:   HashMap::new(),
             events:     Vec::new(),
             ticks:      0,
@@ -126,17 +142,14 @@ impl SceneState {
 
     #[must_use]
     pub fn get(&self, prim: PrimId) -> Option<&PrimState> {
-        self.document.prims.get(&prim)
+        self.resolved.get(&prim)
     }
 
     /// Whether a prim exists: its `parent/` property resolves to a live entry.
     /// Existence is not realization — an existing prim may still be held.
     #[must_use]
     pub fn exists(&self, prim: PrimId) -> bool {
-        self.document
-            .prims
-            .get(&prim)
-            .is_some_and(|s| s.parent.is_some())
+        self.resolved.get(&prim).is_some_and(|s| s.parent.is_some())
     }
 
     #[must_use]
@@ -169,7 +182,6 @@ impl SceneState {
     #[must_use]
     pub fn children(&self, prim: PrimId) -> Vec<PrimId> {
         let mut out = self
-            .document
             .children
             .get(&prim)
             .into_iter()
@@ -261,6 +273,7 @@ impl SceneState {
     pub fn create_prim(&mut self, parent: Option<PrimId>) -> PrimId {
         let prim = PrimId::new();
         self.write_parent(
+            LayerId::Document,
             prim,
             Some(parent.map_or(Parent::Root, Parent::Prim)),
             Origin::Script,
@@ -272,22 +285,30 @@ impl SceneState {
     /// Inserts a prim whose id is fixed by the document or a compiled prefab,
     /// so it is byte-identical on every peer.
     pub fn insert_prim(&mut self, prim: PrimId, parent: Parent) {
-        self.write_parent(prim, Some(parent), Origin::Document, None);
+        self.write_parent(
+            LayerId::Document,
+            prim,
+            Some(parent),
+            Origin::Document,
+            None,
+        );
     }
 
     pub fn set_parent(&mut self, prim: PrimId, parent: Parent) -> Result<(), StateError> {
         if !self.exists(prim) {
             return Err(StateError::UnknownPrim(prim));
         }
-        self.write_parent(prim, Some(parent), Origin::Script, None);
+        self.write_parent(LayerId::Document, prim, Some(parent), Origin::Script, None);
         Ok(())
     }
 
     pub fn remove_prim(&mut self, prim: PrimId) {
-        if self.document.prims.contains_key(&prim) {
-            self.write_parent(prim, None, Origin::Script, None);
-            self.document.prims.remove(&prim);
+        if !self.layer(LayerId::Document).contains(prim) {
+            return;
         }
+        self.write_parent(LayerId::Document, prim, None, Origin::Script, None);
+        self.layer(LayerId::Document).remove(prim);
+        self.resolved.remove(&prim);
     }
 
     pub fn set_property(
@@ -300,7 +321,14 @@ impl SceneState {
             return Err(StateError::Name(name.to_owned()));
         }
         let stamp = Stamp::new(now_micros(), &value.encode());
-        self.write_property(prim, name, Some(value), Origin::Script, stamp);
+        self.write_property(
+            LayerId::Document,
+            prim,
+            name,
+            Some(value),
+            Origin::Script,
+            stamp,
+        );
         Ok(())
     }
 
@@ -323,7 +351,7 @@ impl SceneState {
 
     pub fn remove_property(&mut self, prim: PrimId, name: &str) {
         let stamp = Stamp::new(now_micros(), &[]);
-        self.write_property(prim, name, None, Origin::Script, stamp);
+        self.write_property(LayerId::Document, prim, name, None, Origin::Script, stamp);
     }
 
     pub fn set_slot(&mut self, prim: PrimId, name: &str, value: Vec<u8>) -> Result<(), StateError> {
@@ -331,13 +359,20 @@ impl SceneState {
             return Err(StateError::Name(name.to_owned()));
         }
         let stamp = Stamp::new(now_micros(), &value);
-        self.write_slot(prim, name, Some(value), Origin::Script, stamp);
+        self.write_slot(
+            LayerId::Document,
+            prim,
+            name,
+            Some(value),
+            Origin::Script,
+            stamp,
+        );
         Ok(())
     }
 
     pub fn remove_slot(&mut self, prim: PrimId, name: &str) {
         let stamp = Stamp::new(now_micros(), &[]);
-        self.write_slot(prim, name, None, Origin::Script, stamp);
+        self.write_slot(LayerId::Document, prim, name, None, Origin::Script, stamp);
     }
 }
 
@@ -361,7 +396,13 @@ impl SceneState {
                 } else {
                     Some(Parent::decode(&entry.value)?)
                 };
-                self.write_parent(prim, parent, Origin::Document, Some(stamp));
+                self.write_parent(
+                    LayerId::Document,
+                    prim,
+                    parent,
+                    Origin::Document,
+                    Some(stamp),
+                );
             }
             Some(key::Key::Prop { prim, name }) if is_slot_name(&name) => {
                 let value = if empty {
@@ -369,7 +410,14 @@ impl SceneState {
                 } else {
                     Some(entry.value.clone())
                 };
-                self.write_slot(prim, &name, value, Origin::Document, stamp);
+                self.write_slot(
+                    LayerId::Document,
+                    prim,
+                    &name,
+                    value,
+                    Origin::Document,
+                    stamp,
+                );
             }
             Some(key::Key::Prop { prim, name }) => {
                 let value = if empty {
@@ -377,7 +425,14 @@ impl SceneState {
                 } else {
                     Some(Property::decode(&entry.value)?)
                 };
-                self.write_property(prim, &name, value, Origin::Document, stamp);
+                self.write_property(
+                    LayerId::Document,
+                    prim,
+                    &name,
+                    value,
+                    Origin::Document,
+                    stamp,
+                );
             }
             None => {}
         }
@@ -405,19 +460,22 @@ impl SceneState {
             self.meta.encode().expect("DocMeta always encodes"),
         );
 
-        for (prim, state) in &self.document.prims {
-            if state.origin != Origin::Document {
+        let Some(document) = self.layers.get(&LayerId::Document) else {
+            return out;
+        };
+        for (prim, opinions) in document.prims() {
+            if opinions.origin != Origin::Document {
                 continue;
             }
-            let Some(parent) = state.parent else {
+            let Some(parent) = opinions.parent().and_then(|(o, _)| o.value()) else {
                 continue;
             };
-            out.insert(key::parent(*prim), parent.encode());
-            for (name, value) in state.properties() {
-                out.insert(key::prop(*prim, name), value.encode());
+            out.insert(key::parent(prim), parent.encode());
+            for (name, value) in opinions.set_properties() {
+                out.insert(key::prop(prim, name), value.encode());
             }
-            for (name, value) in state.slots() {
-                out.insert(key::prop(*prim, name), value.to_vec());
+            for (name, value) in opinions.set_slots() {
+                out.insert(key::prop(prim, name), value.to_vec());
             }
         }
         out
@@ -425,8 +483,43 @@ impl SceneState {
 }
 
 impl SceneState {
+    fn layer(&mut self, id: LayerId) -> &mut Layer {
+        self.layers.entry(id).or_default()
+    }
+
+    /// The strongest opinion on a key, or `None` where every layer is silent
+    /// and where the strongest opinion is `Blocked` — `Blocked` stops the walk
+    /// rather than falling through.
+    fn resolve_property(&self, prim: PrimId, name: &str) -> Option<Property> {
+        self.layers
+            .values()
+            .rev()
+            .find_map(|layer| layer.get(prim)?.property(name))
+            .and_then(|opinion| opinion.value().cloned())
+    }
+
+    fn resolve_slot(&self, prim: PrimId, name: &str) -> Option<Vec<u8>> {
+        self.layers
+            .values()
+            .rev()
+            .find_map(|layer| layer.get(prim)?.slot(name))
+            .and_then(|opinion| opinion.value().cloned())
+    }
+
+    fn resolve_parent(&self, prim: PrimId) -> (Option<Parent>, Stamp) {
+        self.layers
+            .values()
+            .rev()
+            .find_map(|layer| layer.get(prim)?.parent())
+            .map_or_else(
+                || (None, Stamp::default()),
+                |(opinion, stamp)| (opinion.value().copied(), *stamp),
+            )
+    }
+
     fn write_parent(
         &mut self,
+        layer: LayerId,
         prim: PrimId,
         parent: Option<Parent>,
         origin: Origin,
@@ -439,31 +532,32 @@ impl SceneState {
             )
         });
 
-        let state = self
-            .document
-            .prims
-            .entry(prim)
-            .or_insert_with(|| PrimState::new(origin));
-        let old = state.parent;
-        if !state.set_parent(parent, stamp) {
+        let opinions = self.layer(layer).entry(prim, origin);
+        if !opinions.set_parent(parent.into(), stamp) {
             return;
         }
         if origin == Origin::Document {
-            state.origin = Origin::Document;
+            opinions.origin = Origin::Document;
         }
+        self.settle_parent(prim);
+    }
+
+    /// Recomposes `prim`'s parent from the stack, reindexes its place among
+    /// its siblings, and re-realizes whatever that moved.
+    fn settle_parent(&mut self, prim: PrimId) {
+        let (parent, stamp) = self.resolve_parent(prim);
+        let view = self.resolved.entry(prim).or_default();
+        let old = view.parent;
+        view.set_parent(parent, stamp);
 
         if let Some(Parent::Prim(old_parent)) = old
             && old != parent
-            && let Some(siblings) = self.document.children.get_mut(&old_parent)
+            && let Some(siblings) = self.children.get_mut(&old_parent)
         {
             siblings.remove(&prim);
         }
         if let Some(Parent::Prim(new_parent)) = parent {
-            self.document
-                .children
-                .entry(new_parent)
-                .or_default()
-                .insert(prim);
+            self.children.entry(new_parent).or_default().insert(prim);
         }
 
         self.refresh(prim);
@@ -471,52 +565,69 @@ impl SceneState {
 
     fn write_property(
         &mut self,
+        layer: LayerId,
         prim: PrimId,
         name: &str,
         value: Option<Property>,
         origin: Origin,
         stamp: Stamp,
     ) {
-        let state = self
-            .document
-            .prims
-            .entry(prim)
-            .or_insert_with(|| PrimState::new(origin));
-        let changed = match value.clone() {
-            Some(value) => state.set_property(name, value, stamp),
-            None => state.remove_property(name, stamp),
-        };
-        if changed && self.realized.contains_key(&prim) {
+        if !self
+            .layer(layer)
+            .entry(prim, origin)
+            .set_property(name, value.into(), stamp)
+        {
+            return;
+        }
+
+        let resolved = self.resolve_property(prim, name);
+        let view = self.resolved.entry(prim).or_default();
+        // A weaker layer writing under a stronger one's opinion costs a
+        // resolve and nothing else: the composed value did not move, so there
+        // is nothing for a consumer to apply.
+        if view.property(name) == resolved.as_ref() {
+            return;
+        }
+        view.set_property(name, resolved.clone());
+
+        if self.realized.contains_key(&prim) {
             self.events.push(SceneEvent::Property {
                 prim,
                 name: SmolStr::new(name),
-                value,
+                value: resolved,
             });
         }
     }
 
     fn write_slot(
         &mut self,
+        layer: LayerId,
         prim: PrimId,
         name: &str,
         value: Option<Vec<u8>>,
         origin: Origin,
         stamp: Stamp,
     ) {
-        let state = self
-            .document
-            .prims
-            .entry(prim)
-            .or_insert_with(|| PrimState::new(origin));
-        let changed = match value.clone() {
-            Some(value) => state.set_slot(name, value, stamp),
-            None => state.remove_slot(name, stamp),
-        };
-        if changed && self.realized.contains_key(&prim) {
+        if !self
+            .layer(layer)
+            .entry(prim, origin)
+            .set_slot(name, value.into(), stamp)
+        {
+            return;
+        }
+
+        let resolved = self.resolve_slot(prim, name);
+        let view = self.resolved.entry(prim).or_default();
+        if view.slot(name) == resolved.as_deref() {
+            return;
+        }
+        view.set_slot(name, resolved.clone());
+
+        if self.realized.contains_key(&prim) {
             self.events.push(SceneEvent::Slot {
                 prim,
                 name: SmolStr::new(name),
-                value,
+                value: resolved,
             });
         }
     }
@@ -567,7 +678,7 @@ impl SceneState {
                 }
             };
 
-            if changed && let Some(children) = self.document.children.get(&prim) {
+            if changed && let Some(children) = self.children.get(&prim) {
                 stack.extend(children.iter().copied());
             }
         }
@@ -576,7 +687,7 @@ impl SceneState {
     /// Emits everything a newly realized prim already holds, so a consumer
     /// never has to read state directly to catch up.
     fn emit_contents(&mut self, prim: PrimId) {
-        let Some(state) = self.document.prims.get(&prim) else {
+        let Some(state) = self.resolved.get(&prim) else {
             return;
         };
         let props = state
@@ -607,7 +718,7 @@ impl SceneState {
     /// LWW parent pointers can form cycles; the cycle breaks at its
     /// greatest-stamped member, which every peer computes identically.
     fn placement(&self, prim: PrimId) -> Placement {
-        let Some(state) = self.document.prims.get(&prim) else {
+        let Some(state) = self.resolved.get(&prim) else {
             return Placement::Unrealized;
         };
         // Already-realized prims stay realized; only new ones are turned away,
@@ -643,7 +754,7 @@ impl SceneState {
             seen.insert(current, chain.len());
             chain.push(current);
 
-            match self.document.prims.get(&current).and_then(|s| s.parent) {
+            match self.resolved.get(&current).and_then(|s| s.parent) {
                 None => return Placement::Unrealized,
                 Some(Parent::Root) => return Placement::Child(parent),
                 Some(Parent::Prim(next)) => current = next,
@@ -652,8 +763,7 @@ impl SceneState {
     }
 
     fn parent_stamp(&self, prim: PrimId) -> Stamp {
-        self.document
-            .prims
+        self.resolved
             .get(&prim)
             .map(PrimState::parent_stamp)
             .unwrap_or_default()
@@ -1006,8 +1116,10 @@ mod tests {
             .expect("attribute");
 
         let entries = state.entries();
-        assert!(entries.contains_key(&key::prop(prim(1), NameAttr::KEY)));
-        assert_eq!(state.get(prim(1)).expect("prim").origin, Origin::Document);
+        assert!(
+            entries.contains_key(&key::prop(prim(1), NameAttr::KEY)),
+            "a script editing a document prim must not make it transient"
+        );
     }
 
     #[test]
@@ -1292,5 +1404,183 @@ mod tests {
             "writes after the resync are still the open tick's"
         );
         state.close_tick();
+    }
+
+    /// Scripts are not routed into the runtime layer yet, so these reach it
+    /// the way that routing will.
+    fn runtime_property(state: &mut SceneState, prim: PrimId, name: &str, value: Option<Property>) {
+        let stamp = Stamp::new(
+            now_micros(),
+            &value.as_ref().map(Property::encode).unwrap_or_default(),
+        );
+        state.write_property(LayerId::Runtime, prim, name, value, Origin::Script, stamp);
+    }
+
+    fn name_attr(value: &str) -> Property {
+        Property::Attribute(NameAttr(value.into()).encode().expect("encode"))
+    }
+
+    fn name_of(state: &SceneState, prim: PrimId) -> Option<String> {
+        Some(state.attribute::<NameAttr>(prim)?.expect("decodes").0)
+    }
+
+    #[test]
+    fn a_runtime_opinion_shadows_the_document_beneath_it() {
+        let mut state = SceneState::new();
+        apply(
+            &mut state,
+            &[
+                root_entry(prim(1), 1),
+                attr_entry(prim(1), &NameAttr("document".into()), 2),
+            ],
+        );
+        state.drain_events();
+
+        runtime_property(
+            &mut state,
+            prim(1),
+            NameAttr::KEY,
+            Some(name_attr("runtime")),
+        );
+
+        assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
+        assert_eq!(
+            state.drain_events(),
+            vec![SceneEvent::Property {
+                prim:  prim(1),
+                name:  SmolStr::new(NameAttr::KEY),
+                value: Some(name_attr("runtime")),
+            }]
+        );
+    }
+
+    #[test]
+    fn a_document_write_under_a_runtime_opinion_emits_nothing() {
+        let mut state = SceneState::new();
+        apply(
+            &mut state,
+            &[
+                root_entry(prim(1), 1),
+                attr_entry(prim(1), &NameAttr("document".into()), 2),
+            ],
+        );
+        runtime_property(
+            &mut state,
+            prim(1),
+            NameAttr::KEY,
+            Some(name_attr("runtime")),
+        );
+        state.drain_events();
+
+        apply(
+            &mut state,
+            &[attr_entry(prim(1), &NameAttr("later".into()), 3)],
+        );
+
+        assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
+        assert_eq!(
+            state.drain_events(),
+            Vec::new(),
+            "the composed value did not move, so there is nothing to apply; a \
+             regression here floods the ECS every frame"
+        );
+    }
+
+    #[test]
+    fn a_blocked_opinion_hides_the_document_value_without_dropping_it() {
+        let mut state = SceneState::new();
+        apply(
+            &mut state,
+            &[
+                root_entry(prim(1), 1),
+                attr_entry(prim(1), &NameAttr("document".into()), 2),
+            ],
+        );
+        let saved = state.entries();
+        state.drain_events();
+
+        runtime_property(&mut state, prim(1), NameAttr::KEY, None);
+
+        assert_eq!(
+            name_of(&state, prim(1)),
+            None,
+            "Blocked resolves to absent and stops; the weaker value must not \
+             show through"
+        );
+        assert_eq!(
+            state.drain_events(),
+            vec![SceneEvent::Property {
+                prim:  prim(1),
+                name:  SmolStr::new(NameAttr::KEY),
+                value: None,
+            }]
+        );
+        assert_eq!(
+            state.entries(),
+            saved,
+            "blocking is an opinion of a live layer, not an edit to the document"
+        );
+    }
+
+    #[test]
+    fn a_runtime_write_leaves_the_save_set_byte_identical() {
+        let mut state = SceneState::new();
+        apply(
+            &mut state,
+            &[
+                root_entry(prim(1), 1),
+                attr_entry(prim(1), &NameAttr("document".into()), 2),
+            ],
+        );
+        let saved = state.entries();
+
+        runtime_property(
+            &mut state,
+            prim(1),
+            NameAttr::KEY,
+            Some(name_attr("runtime")),
+        );
+        runtime_property(&mut state, prim(1), "scratch", Some(name_attr("new key")));
+
+        assert_eq!(
+            state.entries(),
+            saved,
+            "this is the guarantee sync_document could not make, and the whole \
+             reason it had to freeze a document"
+        );
+    }
+
+    #[test]
+    fn a_prim_the_runtime_layer_alone_states_exists_and_reparents() {
+        let mut state = SceneState::new();
+        apply(&mut state, &[root_entry(prim(1), 1)]);
+        state.drain_events();
+
+        state.write_parent(
+            LayerId::Runtime,
+            prim(9),
+            Some(Parent::Prim(prim(1))),
+            Origin::Script,
+            None,
+        );
+
+        assert!(state.exists(prim(9)));
+        assert!(state.is_realized(prim(9)));
+        assert_eq!(state.children(prim(1)), vec![prim(9)]);
+
+        state.write_parent(
+            LayerId::Runtime,
+            prim(9),
+            Some(Parent::Root),
+            Origin::Script,
+            None,
+        );
+
+        assert_eq!(state.parent(prim(9)), None);
+        assert_eq!(state.children(prim(1)), Vec::new());
+        assert!(
+            !state.entries().contains_key(&key::parent(prim(9))),
+            "a prim only a live layer states never reaches the save set"
+        );
     }
 }

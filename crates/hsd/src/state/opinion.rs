@@ -1,0 +1,126 @@
+use std::collections::BTreeMap;
+
+use smol_str::SmolStr;
+
+use crate::{
+    property::{
+        Parent,
+        Property,
+    },
+    state::entry::Stamp,
+};
+
+/// Where a prim came from, which decides whether saving writes it:
+/// session-spawned geometry must not accumulate in the home document.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Origin {
+    Document,
+    Script,
+}
+
+/// What one layer says about one key.
+///
+/// Absence from the layer's map is the third state — "no opinion" — and falls
+/// through to the layer below. `Blocked` does not fall through: it states the
+/// key is gone, so nothing weaker shows past it. Two states would leave "a
+/// stronger layer removes a property the document set" inexpressible, since
+/// absence already means "no opinion".
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(super) enum Opinion<T> {
+    Set(T),
+    Blocked,
+}
+
+impl<T> Opinion<T> {
+    pub(super) const fn value(&self) -> Option<&T> {
+        match self {
+            Self::Set(value) => Some(value),
+            Self::Blocked => None,
+        }
+    }
+}
+
+impl<T> From<Option<T>> for Opinion<T> {
+    fn from(value: Option<T>) -> Self {
+        value.map_or(Self::Blocked, Self::Set)
+    }
+}
+
+/// One layer's opinions about one prim, each stamped so a later write from any
+/// peer wins and an older one is refused.
+#[derive(Debug, Clone)]
+pub(super) struct PrimOpinions {
+    pub(super) origin: Origin,
+    parent:            Option<(Opinion<Parent>, Stamp)>,
+    props:             BTreeMap<SmolStr, (Opinion<Property>, Stamp)>,
+    slots:             BTreeMap<SmolStr, (Opinion<Vec<u8>>, Stamp)>,
+}
+
+impl PrimOpinions {
+    pub(super) const fn new(origin: Origin) -> Self {
+        Self {
+            origin,
+            parent: None,
+            props: BTreeMap::new(),
+            slots: BTreeMap::new(),
+        }
+    }
+
+    pub(super) const fn parent(&self) -> Option<&(Opinion<Parent>, Stamp)> {
+        self.parent.as_ref()
+    }
+
+    pub(super) fn property(&self, name: &str) -> Option<&Opinion<Property>> {
+        self.props.get(name).map(|(opinion, _)| opinion)
+    }
+
+    pub(super) fn slot(&self, name: &str) -> Option<&Opinion<Vec<u8>>> {
+        self.slots.get(name).map(|(opinion, _)| opinion)
+    }
+
+    /// The properties this layer states a value for. A `Blocked` key is an
+    /// opinion but not a value, so it is absent here and from the save set.
+    pub(super) fn set_properties(&self) -> impl Iterator<Item = (&SmolStr, &Property)> {
+        self.props
+            .iter()
+            .filter_map(|(name, (opinion, _))| opinion.value().map(|value| (name, value)))
+    }
+
+    pub(super) fn set_slots(&self) -> impl Iterator<Item = (&SmolStr, &[u8])> {
+        self.slots.iter().filter_map(|(name, (opinion, _))| {
+            opinion.value().map(|value| (name, value.as_slice()))
+        })
+    }
+
+    /// Records an opinion, answering whether the write was accepted. A stamp
+    /// older than the one already held is refused and changes nothing, which
+    /// is what makes entries arriving out of order converge.
+    pub(super) fn set_parent(&mut self, parent: Opinion<Parent>, stamp: Stamp) -> bool {
+        if self.parent.as_ref().is_some_and(|(_, old)| stamp < *old) {
+            return false;
+        }
+        self.parent = Some((parent, stamp));
+        true
+    }
+
+    pub(super) fn set_property(
+        &mut self,
+        name: &str,
+        value: Opinion<Property>,
+        stamp: Stamp,
+    ) -> bool {
+        if self.props.get(name).is_some_and(|(_, old)| stamp < *old) {
+            return false;
+        }
+        self.props.insert(SmolStr::new(name), (value, stamp));
+        true
+    }
+
+    pub(super) fn set_slot(&mut self, name: &str, value: Opinion<Vec<u8>>, stamp: Stamp) -> bool {
+        if self.slots.get(name).is_some_and(|(_, old)| stamp < *old) {
+            return false;
+        }
+        self.slots.insert(SmolStr::new(name), (value, stamp));
+        true
+    }
+}

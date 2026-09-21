@@ -7,10 +7,7 @@ use bevy_hsd::{
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
 
-use crate::{
-    permissions::Permissions,
-    registry::Policy,
-};
+use crate::registry::Policy;
 
 #[derive(Component)]
 #[require(Transform, Visibility)]
@@ -33,21 +30,13 @@ pub struct SpaceOwner(pub Entity);
 #[relationship_target(relationship = SpaceOwner, linked_spawn)]
 pub struct SpaceMembers(Vec<Entity>);
 
-/// Grants a space's own document the space preset and registers it into
-/// itself. The only place a grant is given to content the local user did not
-/// author.
-pub fn register_space(
-    trigger: On<Add, Space>,
-    spaces: Query<&Space>,
-    policy: Res<Policy>,
-    mut commands: Commands,
-) {
-    let Ok(space) = spaces.get(trigger.entity) else {
-        return;
-    };
-    let id = space.doc_id();
-    commands.entity(trigger.entity).insert(Permissions::space());
-    policy.update(id, |record| record.space = Some(id));
+/// Registers a space's own document into itself, so everything hanging under
+/// it resolves the same space.
+pub fn register_space(trigger: On<Add, Space>, spaces: Query<&Space>, policy: Res<Policy>) {
+    if let Ok(space) = spaces.get(trigger.entity) {
+        let id = space.doc_id();
+        policy.update(id, |record| record.space = Some(id));
+    }
 }
 
 /// Assigns every unowned document to the space it hangs under.
@@ -149,8 +138,7 @@ mod tests {
             .add_observer(register_membership)
             .add_observer(forget_membership)
             .add_observer(forget_space)
-            .add_observer(sync::sync_on::<HsdDocId>)
-            .add_observer(sync::sync_on::<Permissions>)
+            .add_observer(sync::register_document)
             .add_observer(sync::forget_document)
             .add_systems(Update, parent_docs_under_space);
         let policy = app.world().resource::<Policy>().clone();
@@ -197,7 +185,7 @@ mod tests {
     }
 
     #[test]
-    fn entering_a_space_grants_its_own_document_the_space_preset() {
+    fn entering_a_space_registers_its_own_document_into_itself() {
         let (mut app, policy) = app();
 
         let ns = NamespaceId::from(blake3::hash(b"granted").as_bytes());
@@ -206,9 +194,7 @@ mod tests {
             .spawn((Hsd::new(SceneState::new()), HsdDocId(id), Space(ns)));
         app.update();
 
-        let record = policy.get(id);
-        assert_eq!(record.permissions, Permissions::space());
-        assert_eq!(record.space, Some(id));
+        assert_eq!(policy.get(id).space, Some(id));
     }
 
     #[test]

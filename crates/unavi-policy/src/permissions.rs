@@ -1,6 +1,7 @@
-use bevy::prelude::*;
-
-use crate::error::PolicyError;
+use crate::{
+    error::PolicyError,
+    trust::Trust,
+};
 
 /// A host API surface a document may be granted. Every variant has an
 /// enforcement site.
@@ -31,15 +32,10 @@ impl ApiName {
     }
 }
 
-/// The host APIs one document may call.
-#[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
+/// The host APIs one document may call, derived from how far its author is
+/// trusted.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Permissions(u16);
-
-impl Default for Permissions {
-    fn default() -> Self {
-        Self::untrusted()
-    }
-}
 
 impl Permissions {
     const fn of(names: &[ApiName]) -> Self {
@@ -52,53 +48,49 @@ impl Permissions {
         Self(bits)
     }
 
-    /// The preset for content a peer brought.
+    /// The set a document authored by someone at `trust` may call.
+    ///
+    /// The rungs gate only what is uncommon and consequential, so a first-time
+    /// visitor's ball, door or whiteboard works with no configuration. Reading
+    /// the scene, speaking on channels, spawning documents and opening portals
+    /// are all quota-bounded rather than trust-gated, which is why they sit at
+    /// the floor.
     #[must_use]
-    pub const fn untrusted() -> Self {
-        Self::of(&[
-            ApiName::Event,
-            ApiName::Input,
-            ApiName::Kv,
-            ApiName::Peer,
-            ApiName::Portal,
-            ApiName::Scene,
-        ])
-    }
-
-    /// The preset for a space's own document.
-    #[must_use]
-    pub const fn space() -> Self {
-        Self::of(&[
-            ApiName::CreateDocument,
-            ApiName::Event,
-            ApiName::Identity,
-            ApiName::Input,
-            ApiName::Kv,
-            ApiName::LocalAgent,
-            ApiName::Peer,
-            ApiName::Portal,
-            ApiName::Scene,
-        ])
-    }
-
-    /// The preset for the shell and the tools it ships.
-    #[must_use]
-    pub const fn system() -> Self {
-        Self::of(&[
-            ApiName::CreateDocument,
-            ApiName::Event,
-            ApiName::Identity,
-            ApiName::Input,
-            ApiName::InputContext,
-            ApiName::Kv,
-            ApiName::LocalAgent,
-            ApiName::Peer,
-            ApiName::Physics,
-            ApiName::Portal,
-            ApiName::Scene,
-            ApiName::Storage,
-            ApiName::Travel,
-        ])
+    pub const fn for_trust(trust: Trust) -> Self {
+        match trust {
+            // A blocked author reaches nothing. The connection layer refuses
+            // the peer first; this is what remains if content of theirs is
+            // already resident.
+            Trust::Blocked => Self::of(&[]),
+            Trust::Guest => Self::of(&[
+                ApiName::CreateDocument,
+                ApiName::Event,
+                ApiName::Input,
+                ApiName::Kv,
+                ApiName::Peer,
+                ApiName::Portal,
+                ApiName::Scene,
+            ]),
+            // Identity is the durable handle the whole trust model is keyed
+            // to, and the agent pose is continuous motion capture of a real
+            // person. Neither is something a stranger's prop may read.
+            Trust::Trusted => Self(
+                Self::for_trust(Trust::Guest).0
+                    | Self::of(&[ApiName::Identity, ApiName::LocalAgent]).0,
+            ),
+            // Global input listening, the physics solver and cross-space
+            // reach. Nothing the local user did not author holds these.
+            Trust::Myself => Self(
+                Self::for_trust(Trust::Trusted).0
+                    | Self::of(&[
+                        ApiName::InputContext,
+                        ApiName::Physics,
+                        ApiName::Storage,
+                        ApiName::Travel,
+                    ])
+                    .0,
+            ),
+        }
     }
 
     /// Gates a call on this document holding `name`.
@@ -131,52 +123,78 @@ mod tests {
         ApiName::Travel,
     ];
 
-    const PRIVILEGED: [ApiName; 7] = [
-        ApiName::CreateDocument,
-        ApiName::Identity,
-        ApiName::InputContext,
-        ApiName::LocalAgent,
-        ApiName::Physics,
-        ApiName::Storage,
-        ApiName::Travel,
-    ];
+    const LADDER: [Trust; 4] = [Trust::Blocked, Trust::Guest, Trust::Trusted, Trust::Myself];
 
     #[test]
-    fn the_presets_are_nested_by_owner_class() {
-        for name in PRIVILEGED {
-            assert!(
-                Permissions::system().require(name).is_ok(),
-                "the system preset must hold {name:?}"
+    fn a_rung_holds_everything_the_rung_below_it_does() {
+        for pair in LADDER.windows(2) {
+            let lower = Permissions::for_trust(pair[0]);
+            let upper = Permissions::for_trust(pair[1]);
+            assert_eq!(
+                lower.0 & upper.0,
+                lower.0,
+                "{:?} must not drop anything {:?} holds",
+                pair[1],
+                pair[0]
             );
         }
+    }
+
+    #[test]
+    fn a_blocked_author_reaches_nothing() {
+        for name in ALL {
+            assert!(
+                Permissions::for_trust(Trust::Blocked)
+                    .require(name)
+                    .is_err()
+            );
+        }
+    }
+
+    #[test]
+    fn a_first_time_visitors_prop_works_with_no_configuration() {
+        let guest = Permissions::for_trust(Trust::Guest);
         for name in [
             ApiName::CreateDocument,
-            ApiName::Identity,
-            ApiName::LocalAgent,
+            ApiName::Event,
+            ApiName::Input,
+            ApiName::Kv,
+            ApiName::Peer,
+            ApiName::Portal,
+            ApiName::Scene,
         ] {
-            assert!(Permissions::space().require(name).is_ok());
-        }
-        assert!(Permissions::space().require(ApiName::Travel).is_err());
-        assert!(Permissions::space().require(ApiName::Storage).is_err());
-    }
-
-    #[test]
-    fn untrusted_content_reaches_no_privileged_api() {
-        for name in PRIVILEGED {
-            assert!(
-                Permissions::untrusted().require(name).is_err(),
-                "a stranger's document must not reach {name:?}"
-            );
+            assert!(guest.require(name).is_ok(), "a guest needs {name:?}");
         }
     }
 
     #[test]
-    fn a_strangers_document_cannot_read_the_local_users_identifiers() {
+    fn a_strangers_document_cannot_read_the_local_user() {
+        let guest = Permissions::for_trust(Trust::Guest);
         assert!(
-            Permissions::untrusted().require(ApiName::Identity).is_err(),
+            guest.require(ApiName::Identity).is_err(),
             "a DID is the durable handle the whole trust model is keyed to"
         );
-        assert!(Permissions::space().require(ApiName::Identity).is_ok());
+        assert!(
+            guest.require(ApiName::LocalAgent).is_err(),
+            "the agent pose is continuous motion capture of a real person"
+        );
+    }
+
+    #[test]
+    fn only_the_local_users_own_content_reaches_the_shell_apis() {
+        for name in [
+            ApiName::InputContext,
+            ApiName::Physics,
+            ApiName::Storage,
+            ApiName::Travel,
+        ] {
+            assert!(
+                Permissions::for_trust(Trust::Trusted)
+                    .require(name)
+                    .is_err()
+            );
+            assert!(Permissions::for_trust(Trust::Myself).require(name).is_ok());
+        }
     }
 
     /// Every name has to fit the bitfield, and no two may share a bit.

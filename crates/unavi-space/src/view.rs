@@ -8,6 +8,7 @@ use bevy::prelude::Resource;
 use hsd::id::DocId;
 use iroh::EndpointId;
 use unavi_policy::{
+    permissions::Permissions,
     registry::Policy,
     trust::{
         Trust,
@@ -79,6 +80,32 @@ impl SpaceView {
     #[must_use]
     pub fn trust_of(&self, peer: EndpointId) -> Trust {
         quota::trust_of(Some(self.viewer()), peer)
+    }
+
+    /// Who authored `doc`, resolved through the document that composed it: the
+    /// peer whose pin owns the root, or this node for something minted here.
+    ///
+    /// `None` where nothing answers — a document present in a space that no
+    /// peer's pin claims — and the caller reads that as the guest floor.
+    #[must_use]
+    pub fn author(&self, doc: DocId) -> Option<EndpointId> {
+        let root = self.policy.root(doc);
+        let Some(space) = self.space_of(root) else {
+            // Absent from every space and from the replica index, so it was
+            // minted here. A document that *is* in the index arrived from a
+            // peer, and must never fall back to reading as local.
+            return Some(self.me);
+        };
+        self.replicas.owner(space, root)
+    }
+
+    /// What `doc` may call, from how far its author is trusted.
+    #[must_use]
+    pub fn permissions(&self, doc: DocId) -> Permissions {
+        let trust = self
+            .author(doc)
+            .map_or(Trust::Guest, |peer| self.trust_of(peer));
+        Permissions::for_trust(trust)
     }
 
     #[must_use]

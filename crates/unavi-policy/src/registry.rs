@@ -8,12 +8,9 @@ use hsd::id::DocId;
 use iroh::EndpointId;
 use parking_lot::RwLock;
 
-use crate::{
-    permissions::Permissions,
-    quota::{
-        Quota,
-        limits::Limits,
-    },
+use crate::quota::{
+    Quota,
+    limits::Limits,
 };
 
 /// Longest host chain a lookup follows before giving up.
@@ -22,11 +19,12 @@ const MAX_HOST_DEPTH: usize = 16;
 /// What the host has decided about one document.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Record {
-    pub permissions: Permissions,
     /// The space this document was registered into locally.
-    pub space:       Option<DocId>,
-    /// The document that composed this one in, for a prefab instance.
-    pub host:        Option<DocId>,
+    pub space: Option<DocId>,
+    /// The document that composed this one in: the host of a prefab instance,
+    /// or the document whose script created it. Authorship and the space both
+    /// resolve through it.
+    pub host:  Option<DocId>,
 }
 
 /// What a quota is attributed to.
@@ -239,10 +237,11 @@ mod tests {
     }
 
     #[test]
-    fn an_unregistered_document_answers_the_weakest_record() {
-        let record = Policy::new().get(doc(b"never-registered"));
-        assert_eq!(record.permissions, Permissions::untrusted());
-        assert!(record.space.is_none());
+    fn an_unregistered_document_answers_the_empty_record() {
+        assert_eq!(
+            Policy::new().get(doc(b"never-registered")),
+            Record::default()
+        );
     }
 
     #[test]
@@ -251,14 +250,14 @@ mod tests {
         let (space, member, other) = (doc(b"space"), doc(b"member"), doc(b"other"));
         policy.update(space, |r| r.space = Some(space));
         policy.update(member, |r| r.space = Some(space));
-        policy.update(other, |r| r.permissions = Permissions::system());
+        policy.update(other, |r| r.host = Some(space));
 
         policy.forget_space(space);
 
         assert!(policy.get(member).space.is_none());
         assert_eq!(
-            policy.get(other).permissions,
-            Permissions::system(),
+            policy.get(other).host,
+            Some(space),
             "unloading one space must not clear an unrelated document"
         );
     }

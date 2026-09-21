@@ -64,19 +64,14 @@ pub struct Api {
 }
 
 impl Api {
-    /// Gates a call on the document holding the named permission.
+    /// Gates a call on the document's author being trusted far enough for
+    /// the named permission.
     ///
     /// Read per call rather than captured at instantiation. A snapshot taken
-    /// when the script started would miss a document that becomes a space
-    /// after its scene realized, and would hold a grant the user has since
-    /// withdrawn.
+    /// when the script started would miss a document whose author resolves
+    /// later, and would hold a grant the user has since withdrawn.
     pub fn require(&self, name: ApiName) -> Result<(), ScriptError> {
-        Ok(self
-            .view
-            .policy()
-            .get(self.doc_id)
-            .permissions
-            .require(name)?)
+        Ok(self.view.permissions(self.doc_id).require(name)?)
     }
 
     /// Holds every document this script can write open for the duration of one

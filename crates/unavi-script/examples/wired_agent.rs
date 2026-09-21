@@ -21,7 +21,6 @@ use bevy_vrm::first_person::{
     FirstPersonFlag,
 };
 use unavi_agent::LocalAgent;
-use unavi_policy::permissions::Permissions;
 
 use crate::util::create_client_store;
 
@@ -109,11 +108,8 @@ fn on_agent_load(
     ));
 
     let handle = asset_server.load(SCRIPT_PATH);
-    commands.spawn((
-        LoadHsd {
-            handle,
-            on_load: None,
-        },
-        Permissions::system(),
-    ));
+    commands.spawn((LoadHsd {
+        handle,
+        on_load: None,
+    },));
 }

@@ -5,7 +5,7 @@
 //! | Type | States |
 //! | --- | --- |
 //! | [`trust::Trust`] | how far a peer is trusted |
-//! | [`permissions::Permissions`] | the host APIs a document may call |
+//! | [`permissions::Permissions`] | the host APIs a document may call, derived from its author's trust |
 //!
 //! # Registry
 //!
@@ -15,17 +15,13 @@
 //!
 //! # Checks
 //!
-//! [`permissions::Permissions::require`] is the gate, answering with
+//! [`permissions::Permissions::for_trust`] is the whole grant, and
+//! [`permissions::Permissions::require`] the gate, answering with
 //! [`error::PolicyError`]. Which peer authored a document is not decided here:
 //! authorship is replicated state, resolved by the caller.
 
 use bevy::prelude::*;
-use bevy_hsd::{
-    HsdCommitSet,
-    HsdDocId,
-};
-
-use crate::permissions::Permissions;
+use bevy_hsd::HsdCommitSet;
 
 pub mod error;
 pub mod permissions;
@@ -40,8 +36,7 @@ pub struct PolicyPlugin;
 impl Plugin for PolicyPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<registry::Policy>()
-            .add_observer(sync::sync_on::<HsdDocId>)
-            .add_observer(sync::sync_on::<Permissions>)
+            .add_observer(sync::register_document)
             .add_observer(sync::forget_document)
             .add_observer(space::register_space)
             .add_observer(space::register_membership)

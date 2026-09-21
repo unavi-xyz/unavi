@@ -14,7 +14,6 @@ use bevy_panorbit_camera::{
     PanOrbitCamera,
     PanOrbitCameraPlugin,
 };
-use unavi_policy::permissions::Permissions;
 
 use crate::util::create_test_store;
 
@@ -66,11 +65,8 @@ fn init_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
     ));
 
     let handle = asset_server.load(SCRIPT_PATH);
-    commands.spawn((
-        LoadHsd {
-            handle,
-            on_load: None,
-        },
-        Permissions::system(),
-    ));
+    commands.spawn((LoadHsd {
+        handle,
+        on_load: None,
+    },));
 }

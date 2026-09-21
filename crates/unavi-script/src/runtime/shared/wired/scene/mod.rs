@@ -190,11 +190,13 @@ async fn spawn_child_doc(
     let id = DocId(*doc.id().as_bytes());
 
     // Seeded before the spawn command applies, so the child is never briefly
-    // an unplaced document that policy would have to attribute by guessing.
-    let parent = api.view.policy().get(api.doc_id);
+    // a document with no composer, which policy would have to attribute by
+    // guessing. The host is what its author and its permissions resolve
+    // through, so a script's child runs with the grant of whoever wrote the
+    // script.
     let space = api.view.policy().registered_space(api.doc_id);
     api.view.policy().update(id, |record| {
-        record.permissions = parent.permissions;
+        record.host = Some(api.doc_id);
         record.space = space;
     });
 
@@ -204,7 +206,6 @@ async fn spawn_child_doc(
             HsdHeld(state),
             HsdDocId(id),
             HsdNamespace(doc),
-            parent.permissions,
             QuotaLeases(vec![doc_lease]),
         ))
         .send()

@@ -82,10 +82,7 @@ impl From<anyhow::Error> for ScriptError {
 
 #[cfg(test)]
 mod tests {
-    use unavi_policy::{
-        permissions::ApiName,
-        trust::Trust,
-    };
+    use unavi_policy::permissions::ApiName;
 
     use super::*;
 
@@ -93,10 +90,7 @@ mod tests {
     fn a_policy_denial_boxed_into_anyhow_keeps_its_variant() {
         for policy in [
             PolicyError::NotCoPresent,
-            PolicyError::Threshold {
-                required: Trust::Trusted,
-                actual:   Trust::Guest,
-            },
+            PolicyError::Blocked,
             PolicyError::Permission(ApiName::Physics),
         ] {
             assert_eq!(

@@ -5,10 +5,9 @@
 //! | Type | States |
 //! | --- | --- |
 //! | [`trust::Trust`] | how far a peer is trusted |
-//! | [`trust::Threshold`] | the trust a document requires of its writers |
 //! | [`permissions::Permissions`] | the host APIs a document may call |
 //! | [`owner::Owner`] | who holds a document |
-//! | [`standing::Standing`] | the four above, for one document |
+//! | [`standing::Standing`] | the three above, for one document |
 //!
 //! # Registry
 //!
@@ -35,7 +34,6 @@ use bevy_hsd::{
 use crate::{
     owner::Owner,
     permissions::Permissions,
-    trust::Threshold,
 };
 
 pub mod error;
@@ -55,7 +53,6 @@ impl Plugin for PolicyPlugin {
         app.init_resource::<registry::Policy>()
             .add_observer(sync::sync_on::<HsdDocId>)
             .add_observer(sync::sync_on::<Permissions>)
-            .add_observer(sync::sync_on::<Threshold>)
             .add_observer(sync::sync_on::<Owner>)
             .add_observer(sync::forget_document)
             .add_observer(space::register_space)

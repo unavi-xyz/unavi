@@ -1,7 +1,4 @@
-use crate::{
-    permissions::ApiName,
-    trust::Trust,
-};
+use crate::permissions::ApiName;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum PolicyError {
@@ -9,8 +6,8 @@ pub enum PolicyError {
     Permission(ApiName),
     #[error("documents are not in the same space")]
     NotCoPresent,
-    #[error("writes need trust {required:?}, caller is {actual:?}")]
-    Threshold { required: Trust, actual: Trust },
+    #[error("the writer is blocked")]
+    Blocked,
     #[error("write to a peer-owned document by a non-owner")]
     NotOwner,
 }

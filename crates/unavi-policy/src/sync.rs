@@ -9,7 +9,6 @@ use crate::{
     owner::Owner,
     permissions::Permissions,
     registry::Policy,
-    trust::Threshold,
 };
 
 /// The components stating one document's policy. Each arrives on its own
@@ -20,7 +19,6 @@ type DocumentQuery<'w, 's> = Query<
     (
         &'static HsdDocId,
         Option<&'static Permissions>,
-        Option<&'static Threshold>,
         Option<&'static Owner>,
         Option<&'static ChildOf>,
     ),
@@ -34,7 +32,7 @@ pub fn sync_on<C: Component>(
     ids: Query<&HsdDocId>,
     policy: Res<Policy>,
 ) {
-    let Ok((doc, permissions, threshold, owner, parent)) = docs.get(trigger.entity) else {
+    let Ok((doc, permissions, owner, parent)) = docs.get(trigger.entity) else {
         return;
     };
     let host = host_of(parent, &prims, &ids);
@@ -45,9 +43,6 @@ pub fn sync_on<C: Component>(
         // composed it in. Anything else states its own.
         if let Some(permissions) = permissions.copied().or(inherited) {
             record.permissions = permissions;
-        }
-        if let Some(threshold) = threshold {
-            record.threshold = *threshold;
         }
         if let Some(owner) = owner {
             record.owner = Some(*owner);
@@ -86,10 +81,7 @@ mod tests {
     };
 
     use super::*;
-    use crate::{
-        permissions::ApiName,
-        trust::Trust,
-    };
+    use crate::permissions::ApiName;
 
     /// An app with its own registry.
     fn app() -> (App, Policy) {
@@ -97,7 +89,6 @@ mod tests {
         app.init_resource::<Policy>()
             .add_observer(sync_on::<HsdDocId>)
             .add_observer(sync_on::<Permissions>)
-            .add_observer(sync_on::<Threshold>)
             .add_observer(sync_on::<Owner>)
             .add_observer(forget_document);
         let policy = app.world().resource::<Policy>().clone();
@@ -111,15 +102,11 @@ mod tests {
 
         let entity = app
             .world_mut()
-            .spawn((
-                Permissions::system(),
-                Threshold(Trust::Myself),
-                Owner::System,
-            ))
+            .spawn((Permissions::system(), Owner::System))
             .id();
         assert_eq!(
-            policy.get(id).threshold,
-            Threshold::default(),
+            policy.get(id).permissions,
+            Permissions::untrusted(),
             "nothing keys the record until the document has an id"
         );
 
@@ -127,7 +114,7 @@ mod tests {
             .entity_mut(entity)
             .insert((Hsd::new(SceneState::new()), HsdDocId(id)));
 
-        assert_eq!(policy.get(id).threshold, Threshold(Trust::Myself));
+        assert_eq!(policy.get(id).permissions, Permissions::system());
         assert_eq!(policy.get(id).owner, Some(Owner::System));
 
         app.world_mut().entity_mut(entity).despawn();
@@ -139,7 +126,7 @@ mod tests {
     }
 
     #[test]
-    fn raising_the_threshold_after_registration_takes_effect() {
+    fn a_grant_stated_after_registration_takes_effect() {
         let (mut app, policy) = app();
         let id = DocId([22; 32]);
 
@@ -147,14 +134,14 @@ mod tests {
             .world_mut()
             .spawn((Hsd::new(SceneState::new()), HsdDocId(id)))
             .id();
-        assert_eq!(policy.get(id).threshold, Threshold::default());
+        assert_eq!(policy.get(id).permissions, Permissions::untrusted());
 
         app.world_mut()
             .entity_mut(entity)
-            .insert(Threshold(Trust::Trusted));
+            .insert(Permissions::space());
         assert_eq!(
-            policy.get(id).threshold,
-            Threshold(Trust::Trusted),
+            policy.get(id).permissions,
+            Permissions::space(),
             "a document that changes its mind must not be ignored"
         );
     }

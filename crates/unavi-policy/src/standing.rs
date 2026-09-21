@@ -3,20 +3,16 @@ use hsd::id::DocId;
 use crate::{
     error::PolicyError,
     owner::Owner,
-    trust::{
-        Threshold,
-        Trust,
-    },
+    trust::Trust,
 };
 
 /// One document's side of a read or write check.
 #[derive(Clone, Copy, Debug)]
 pub struct Standing {
-    pub owner:     Owner,
-    pub space:     Option<DocId>,
-    pub threshold: Threshold,
+    pub owner: Owner,
+    pub space: Option<DocId>,
     /// The trust of this document's owner.
-    pub trust:     Trust,
+    pub trust: Trust,
 }
 
 impl Standing {
@@ -28,14 +24,10 @@ impl Standing {
         if !self.co_present_with(target) {
             return Err(PolicyError::NotCoPresent);
         }
-        if self.trust.clears(target.threshold.0) {
-            Ok(())
-        } else {
-            Err(PolicyError::Threshold {
-                required: target.threshold.0,
-                actual:   self.trust,
-            })
+        if matches!(self.trust, Trust::Blocked) {
+            return Err(PolicyError::Blocked);
         }
+        Ok(())
     }
 
     /// Whether this document may read `target`.
@@ -89,12 +81,10 @@ mod tests {
         DocId([seed; 32])
     }
 
-    /// Content open to anyone.
     fn standing(owner: Owner, space: Option<DocId>, trust: Trust) -> Standing {
         Standing {
             owner,
             space,
-            threshold: Threshold::default(),
             trust,
         }
     }
@@ -102,19 +92,10 @@ mod tests {
     #[test]
     fn one_peers_own_documents_reach_each_other_regardless() {
         let mine = peer(1);
-        let here = standing(Owner::Peer(mine), Some(space(1)), Trust::Guest);
+        let here = standing(Owner::Peer(mine), Some(space(1)), Trust::Blocked);
 
-        let own_only = Threshold(Trust::Myself);
-
-        for (threshold, target_space) in [
-            (own_only, None),
-            (own_only, Some(space(1))),
-            (Threshold::default(), Some(space(2))),
-        ] {
-            let target = Standing {
-                threshold,
-                ..standing(Owner::Peer(mine), target_space, Trust::Guest)
-            };
+        for target_space in [None, Some(space(1)), Some(space(2))] {
+            let target = standing(Owner::Peer(mine), target_space, Trust::Guest);
             assert!(
                 here.may_write(&target).is_ok(),
                 "same-owner must answer before anything else can refuse"
@@ -144,15 +125,17 @@ mod tests {
     }
 
     #[test]
-    fn raising_the_threshold_shuts_out_the_levels_below_it() {
-        let guarded = Standing {
-            threshold: Threshold(Trust::Trusted),
-            ..standing(Owner::Peer(peer(2)), Some(space(1)), Trust::Guest)
-        };
+    fn every_trust_level_above_blocked_writes_open_content() {
+        let target = standing(Owner::Peer(peer(2)), Some(space(1)), Trust::Guest);
 
-        for (trust, allowed) in [(Trust::Guest, false), (Trust::Trusted, true)] {
+        for (trust, allowed) in [
+            (Trust::Blocked, false),
+            (Trust::Guest, true),
+            (Trust::Trusted, true),
+            (Trust::Myself, true),
+        ] {
             let caller = standing(Owner::Peer(peer(1)), Some(space(1)), trust);
-            assert_eq!(caller.may_write(&guarded).is_ok(), allowed, "{trust:?}");
+            assert_eq!(caller.may_write(&target).is_ok(), allowed, "{trust:?}");
         }
     }
 
@@ -160,30 +143,21 @@ mod tests {
     fn a_blocked_peer_is_refused_content_it_does_not_own() {
         let here = standing(Owner::Peer(peer(1)), Some(space(1)), Trust::Blocked);
         let target = standing(Owner::Peer(peer(2)), Some(space(1)), Trust::Guest);
-        assert!(
-            here.may_write(&target).is_err(),
-            "an open threshold still refuses a blocked peer"
-        );
+        assert_eq!(here.may_write(&target), Err(PolicyError::Blocked));
     }
 
     #[test]
     fn content_a_space_holds_is_not_one_owner() {
         let first = standing(Owner::Space(space(1)), Some(space(1)), Trust::Guest);
-        let guarded = Standing {
-            threshold: Threshold(Trust::Trusted),
-            ..standing(Owner::Space(space(1)), Some(space(1)), Trust::Guest)
-        };
+        let second = standing(Owner::Space(space(1)), Some(space(1)), Trust::Blocked);
         assert!(
-            !first.same_owner_as(&guarded),
-            "the space owning both must not waive the threshold for either"
+            !first.same_owner_as(&second),
+            "the space owning both must not waive the check for either"
         );
         assert_eq!(
-            first.may_write(&guarded),
-            Err(PolicyError::Threshold {
-                required: Trust::Trusted,
-                actual:   Trust::Guest,
-            }),
-            "space-owned content still faces co-presence and the threshold"
+            second.may_write(&first),
+            Err(PolicyError::Blocked),
+            "space-owned content still faces co-presence and the block list"
         );
     }
 

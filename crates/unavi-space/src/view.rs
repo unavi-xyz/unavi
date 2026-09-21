@@ -72,7 +72,6 @@ impl SpaceView {
         Standing {
             owner,
             space,
-            threshold: record.threshold,
             trust: self.trust_of(&owner),
         }
     }

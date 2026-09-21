@@ -28,19 +28,6 @@ pub enum Trust {
     Myself,
 }
 
-impl Trust {
-    /// Whether this level meets a requirement of `required`. `Blocked` meets
-    /// nothing, including `Blocked`.
-    #[must_use]
-    pub const fn clears(self, required: Self) -> bool {
-        !matches!(self, Self::Blocked) && (self as u8) >= (required as u8)
-    }
-}
-
-/// The trust a document requires of whoever writes it.
-#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct Threshold(pub Trust);
-
 const TABLE_KEY: &str = "trust.ron";
 
 /// Per-peer trust levels, keyed by DID.
@@ -227,30 +214,5 @@ mod tests {
         assert!(Trust::Blocked < Trust::Guest);
         assert!(Trust::Guest < Trust::Trusted);
         assert!(Trust::Trusted < Trust::Myself);
-    }
-
-    #[test]
-    fn a_blocked_peer_clears_nothing() {
-        for required in [Trust::Blocked, Trust::Guest, Trust::Trusted, Trust::Myself] {
-            assert!(
-                !Trust::Blocked.clears(required),
-                "blocked must not clear {required:?}"
-            );
-        }
-    }
-
-    #[test]
-    fn the_default_trust_level_clears_the_open_default() {
-        assert!(Trust::default().clears(Threshold::default().0));
-        assert!(!Trust::Guest.clears(Trust::Trusted));
-        assert!(Trust::Myself.clears(Trust::Trusted));
-    }
-
-    #[test]
-    fn an_own_only_threshold_refuses_everyone_below_the_local_user() {
-        let own_only = Threshold(Trust::Myself);
-        assert!(!Trust::Guest.clears(own_only.0));
-        assert!(!Trust::Trusted.clears(own_only.0));
-        assert!(Trust::Myself.clears(own_only.0));
     }
 }

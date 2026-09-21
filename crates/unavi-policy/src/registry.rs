@@ -15,7 +15,6 @@ use crate::{
         Quota,
         limits::Limits,
     },
-    trust::Threshold,
 };
 
 /// Longest host chain a lookup follows before giving up.
@@ -25,7 +24,6 @@ const MAX_HOST_DEPTH: usize = 16;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Record {
     pub permissions: Permissions,
-    pub threshold:   Threshold,
     /// `None` until the host states one. The caller resolves it from pins.
     pub owner:       Option<Owner>,
     /// The space this document was registered into locally.
@@ -229,12 +227,9 @@ mod tests {
     use iroh::SecretKey;
 
     use super::*;
-    use crate::{
-        quota::{
-            QuotaError,
-            Stock,
-        },
-        trust::Trust,
+    use crate::quota::{
+        QuotaError,
+        Stock,
     };
 
     fn doc(seed: &[u8]) -> DocId {
@@ -250,7 +245,6 @@ mod tests {
     fn an_unregistered_document_answers_the_weakest_record() {
         let record = Policy::new().get(doc(b"never-registered"));
         assert_eq!(record.permissions, Permissions::untrusted());
-        assert_eq!(record.threshold, Threshold::default());
         assert!(record.owner.is_none());
         assert!(record.space.is_none());
     }
@@ -261,14 +255,14 @@ mod tests {
         let (space, member, other) = (doc(b"space"), doc(b"member"), doc(b"other"));
         policy.update(space, |r| r.space = Some(space));
         policy.update(member, |r| r.space = Some(space));
-        policy.update(other, |r| r.threshold = Threshold(Trust::Myself));
+        policy.update(other, |r| r.permissions = Permissions::system());
 
         policy.forget_space(space);
 
         assert!(policy.get(member).space.is_none());
         assert_eq!(
-            policy.get(other).threshold,
-            Threshold(Trust::Myself),
+            policy.get(other).permissions,
+            Permissions::system(),
             "unloading one space must not clear an unrelated document"
         );
     }

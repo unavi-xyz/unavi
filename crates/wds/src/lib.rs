@@ -1,16 +1,10 @@
-//! Documents and their blob storage, backed by iroh-docs and iroh-blobs.
+//! Document and blob storage, backed by `iroh-docs` and `iroh-blobs`.
 //!
-//! A [`Document`] is one namespace. Each key is a separately signed entry, so
-//! peers writing different keys merge and peers writing the same key resolve by
-//! timestamp. An entry stores the hash of its value, so values repeated across
-//! keys occupy one copy of the blob store.
-//!
-//! [`Store::create`] mints a writable namespace; [`Store::open`] imports a
-//! read-only namespace. Retention evicts only read-only documents, aged off the
-//! visits [`Store::record_visit`] records.
-//!
-//! Holding a namespace and serving it are separate: inbound sync requests are
-//! refused until [`Document::serve`] enrols it.
+//! A [`Document`] is a key-value map, identified by a "namespace" ID. Each key
+//! is a separately signed entry, so peers writing different keys merge
+//! and peers writing the same key resolve by timestamp. An entry stores
+//! the hash of its value, so values repeated across keys occupy only one copy
+//! on disk, within the blob store.
 
 use std::{
     collections::HashMap,

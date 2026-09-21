@@ -293,7 +293,7 @@ mod tests {
     }
 
     #[test]
-    fn the_rungs_are_ordered_by_what_they_may_consume() {
+    fn the_trust_levels_are_ordered_by_what_they_may_consume() {
         let prims = |trust| {
             *Limits::for_trust(trust)
                 .stock

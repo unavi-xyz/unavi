@@ -74,8 +74,8 @@ pub struct PeerModel {
     /// The DID this peer proved over its own connection, absent while it has
     /// proved none.
     pub did:       Option<String>,
-    /// The rung the peer sits at, which is what every cross-owner write is
-    /// judged against.
+    /// The trust level the peer sits at, which is what every cross-owner
+    /// write is judged against.
     pub trust:     Trust,
     /// Pinned docs as (doc, space, pinned-at).
     pub pins:      Vec<(NamespaceId, NamespaceId, u64)>,

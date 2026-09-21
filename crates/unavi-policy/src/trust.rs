@@ -16,7 +16,7 @@ use unavi_identity::auth::bindings::Bindings;
 use unavi_local::LocalStorage;
 use xdid::core::did::Did;
 
-/// Local opinion of a peer's trust, used to restrict capabilities.
+/// Local opinion of a peer's trust. Used to restrict capabilities.
 #[derive(
     Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
@@ -29,11 +29,12 @@ pub enum Trust {
 }
 
 impl Trust {
-    /// Whether a peer at this rung clears a capability needing `required`.
+    /// Whether a peer at this trust level clears a capability needing
+    /// `required`.
     ///
     /// [`Trust::Blocked`] clears nothing, including a requirement of
     /// `Blocked`, so a floor of `Guest` cannot be undercut by naming the
-    /// bottom rung.
+    /// lowest trust level.
     #[must_use]
     pub const fn clears(self, required: Self) -> bool {
         !matches!(self, Self::Blocked) && (self as u8) >= (required as u8)
@@ -183,7 +184,7 @@ mod tests {
     }
 
     #[test]
-    fn a_rung_survives_the_endpoint_it_was_learned_on() {
+    fn a_trust_level_survives_the_endpoint_it_was_learned_on() {
         let table = TrustTable::new(LocalStorage::default());
         let did = Did::from_str("did:web:example.com").expect("did");
         let bindings = Bindings::default();
@@ -198,7 +199,7 @@ mod tests {
         assert_eq!(
             table.of_peer(second, &bindings),
             Trust::Trusted,
-            "the same DID on a new endpoint keeps its rung"
+            "the same DID on a new endpoint keeps its trust level"
         );
     }
 
@@ -254,7 +255,7 @@ mod tests {
     }
 
     #[test]
-    fn the_default_rung_clears_the_open_default() {
+    fn the_default_trust_level_clears_the_open_default() {
         assert!(Trust::default().clears(Trust::Guest));
         assert!(!Trust::Guest.clears(Trust::Trusted));
         assert!(Trust::Myself.clears(Trust::Trusted));

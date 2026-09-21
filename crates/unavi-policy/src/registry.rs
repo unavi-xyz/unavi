@@ -127,7 +127,7 @@ impl Policy {
     }
 
     /// Drops `peer`'s quota, so the next document it owns re-derives the caps
-    /// from its current rung.
+    /// from its current trust level.
     pub fn forget_peer(&self, peer: EndpointId) {
         self.0.quotas.write().remove(&Principal::Peer(peer));
     }
@@ -183,8 +183,9 @@ impl Policy {
         self.quota(Principal::Space(space), Limits::space)
     }
 
-    /// A peer's quota under the caps its rung earns, derived on first sight.
-    /// [`Self::forget_peer`] is what re-derives them after a rung change.
+    /// A peer's quota under the caps its trust level earns, derived on first
+    /// sight. [`Self::forget_peer`] is what re-derives them after a trust
+    /// level change.
     #[must_use]
     pub fn peer_quota(&self, peer: EndpointId, limits: impl FnOnce() -> Limits) -> Arc<Quota> {
         self.quota(Principal::Peer(peer), limits)

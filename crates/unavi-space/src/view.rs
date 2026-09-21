@@ -140,7 +140,7 @@ impl SpaceView {
         self.policy.get(doc).policy.tier
     }
 
-    /// The rung to judge a document by, given the peer that owns it.
+    /// The trust level to judge a document by, given the peer that owns it.
     #[must_use]
     pub fn trust_of(&self, owner: Option<EndpointId>) -> Trust {
         owner.map_or(Trust::Guest, |peer| {

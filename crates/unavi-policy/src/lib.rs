@@ -1,12 +1,8 @@
-//! What a document may reach, what it may call, and what it may consume.
+//! `unavi-policy` determines the capability and access levels of everything in
+//! the scene.
 //!
-//! Every question here is answered from two facts: the rung the local user puts
-//! a *peer* at ([`trust::Trust`]), and where a *document* was loaded from
-//! ([`tier::Tier`]). Reach between documents is derived rather than stored.
-//!
-//! The predicates are pure and the registry is a value. Resolving who owns a
-//! document needs the network state, which lives above this crate, so the
-//! composed checks live there too.
+//! Peers are restricted by their [`trust::Trust`].
+//! Documents are restricted by their [`tier::Tier`].
 
 use bevy::prelude::*;
 use bevy_hsd::HsdCommitSet;
@@ -22,11 +18,6 @@ pub mod sync;
 pub mod tier;
 pub mod trust;
 
-/// Registers the document-policy lifecycle: who a document may talk to, and
-/// what it is allowed to call.
-///
-/// Both `ScriptPlugin` and `SpacePlugin` add this if it is absent, since
-/// either can be the root of an app.
 pub struct PolicyPlugin;
 
 impl Plugin for PolicyPlugin {

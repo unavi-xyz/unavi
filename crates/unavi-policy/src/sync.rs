@@ -160,13 +160,13 @@ mod tests {
         app.world_mut().entity_mut(entity).despawn();
         assert_eq!(
             policy.get(id).policy.tier,
-            Tier::Untrusted,
+            Tier::Peer,
             "a despawned document must not leave its grant behind"
         );
     }
 
     #[test]
-    fn raising_the_rung_after_registration_takes_effect() {
+    fn raising_the_trust_level_after_registration_takes_effect() {
         let (mut app, policy) = app();
         let id = DocId([22; 32]);
 

@@ -3,11 +3,6 @@ use crate::{
     trust::Trust,
 };
 
-/// A denial by one of the policy layers.
-///
-/// Carries what was denied rather than a rendered sentence: the guest-facing
-/// variant has no payload, so a formatted message would be allocated on every
-/// refused call and then dropped at the boundary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum PolicyError {
     #[error("permission denied: {0:?}")]
@@ -15,7 +10,7 @@ pub enum PolicyError {
     #[error("documents are not in the same space")]
     NotCoPresent,
     #[error("writes need {required:?}, caller is {actual:?}")]
-    Rung { required: Trust, actual: Trust },
+    Trust { required: Trust, actual: Trust },
     #[error("write to a peer-owned document by a non-owner")]
     NotOwner,
 }

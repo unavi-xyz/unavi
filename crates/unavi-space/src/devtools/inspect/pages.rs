@@ -10,7 +10,7 @@ use crate::devtools::inspect::{
     ExpandButton,
     Expanded,
     Page,
-    RungButton,
+    TrustButton,
     model::{
         DocModel,
         PageModel,
@@ -57,8 +57,8 @@ fn header(b: &mut RelatedSpawnerCommands<ChildOf>, model: &PageModel, can_back: 
                 };
                 r.spawn(widgets::value_text(format!("{:?}", m.trust)));
                 if !m.is_self && m.did.is_some() {
-                    for rung in [Trust::Trusted, Trust::Blocked] {
-                        let (label, button) = RungButton::new(m.id, rung, m.trust);
+                    for trust in [Trust::Trusted, Trust::Blocked] {
+                        let (label, button) = TrustButton::new(m.id, trust, m.trust);
                         widgets::small_button(r, label, button);
                     }
                 }

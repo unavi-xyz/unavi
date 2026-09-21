@@ -79,7 +79,7 @@ impl DocumentPolicy {
     #[must_use]
     pub const fn untrusted() -> Self {
         Self::new(
-            Tier::Untrusted,
+            Tier::Peer,
             ApiSet::none()
                 .with(ApiName::Event)
                 .with(ApiName::Input)

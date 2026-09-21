@@ -56,28 +56,32 @@ pub struct LinkTo(pub Page);
 #[derive(Component)]
 pub struct BackButton;
 
-/// Moves a peer to `rung`, or back to the default when `rung` is `None`.
+/// Moves a peer to `trust`, or back to the default when `trust` is `None`.
 #[derive(Component)]
-pub struct RungButton {
-    peer: EndpointId,
-    rung: Option<Trust>,
+pub struct TrustButton {
+    peer:  EndpointId,
+    trust: Option<Trust>,
 }
 
-impl RungButton {
-    /// The label a button carries, given where the peer sits now. A rung the
-    /// peer already holds offers the way back to the default instead.
-    pub const fn new(peer: EndpointId, rung: Trust, current: Trust) -> (&'static str, Self) {
+impl TrustButton {
+    /// The label a button carries, given where the peer sits now. A trust
+    /// level the peer already holds offers the way back to the default
+    /// instead.
+    pub const fn new(peer: EndpointId, trust: Trust, current: Trust) -> (&'static str, Self) {
         if matches!(
-            (rung, current),
+            (trust, current),
             (Trust::Blocked, Trust::Blocked) | (Trust::Trusted, Trust::Trusted)
         ) {
-            let label = match rung {
+            let label = match trust {
                 Trust::Blocked => "unblock",
                 _ => "untrust",
             };
-            return (label, Self { peer, rung: None });
+            return (label, Self {
+                peer,
+                trust: None,
+            });
         }
-        let label = match rung {
+        let label = match trust {
             Trust::Blocked => "block",
             _ => "trust",
         };
@@ -85,7 +89,7 @@ impl RungButton {
             label,
             Self {
                 peer,
-                rung: Some(rung),
+                trust: Some(trust),
             },
         )
     }
@@ -204,11 +208,11 @@ pub fn handle_back(
     }
 }
 
-/// Moves the peer whose page is open to a rung. The only UI path that reaches
-/// the trust table.
-pub fn handle_rung(
+/// Moves the peer whose page is open to a new trust level. The only UI path
+/// that reaches the trust table.
+pub fn handle_trust(
     activate: On<Activate>,
-    buttons: Query<&RungButton>,
+    buttons: Query<&TrustButton>,
     view: Option<Res<SpaceView>>,
     link: Option<Res<PeerLink>>,
 ) {
@@ -216,16 +220,16 @@ pub fn handle_rung(
         return;
     };
     let (Some(view), Some(link)) = (view, link) else {
-        warn!("space link not installed; cannot change a peer's rung");
+        warn!("space link not installed; cannot change a peer's trust level");
         return;
     };
-    let result = match button.rung {
+    let result = match button.trust {
         Some(Trust::Blocked) => crate::trust::eject(&view, &link, button.peer),
         Some(_) => crate::trust::trust_peer(&view, button.peer),
         None => crate::trust::unblock(&view, button.peer),
     };
     if let Err(err) = result {
-        warn!(?err, "cannot change a peer's rung");
+        warn!(?err, "cannot change a peer's trust level");
     }
 }
 

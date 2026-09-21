@@ -2,10 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     id::PrimId,
-    state::opinion::{
-        Origin,
-        PrimOpinions,
-    },
+    state::opinion::PrimOpinions,
 };
 
 /// Strength order: a later variant's opinion wins over an earlier one's.
@@ -32,20 +29,8 @@ impl Layer {
         self.0.get(&prim)
     }
 
-    pub(super) fn entry(&mut self, prim: PrimId, origin: Origin) -> &mut PrimOpinions {
-        self.0
-            .entry(prim)
-            .or_insert_with(|| PrimOpinions::new(origin))
-    }
-
-    pub(super) fn contains(&self, prim: PrimId) -> bool {
-        self.0.contains_key(&prim)
-    }
-
-    /// Drops everything this layer says about `prim`. A weaker layer's
-    /// opinions are untouched, so the prim may still resolve.
-    pub(super) fn remove(&mut self, prim: PrimId) {
-        self.0.remove(&prim);
+    pub(super) fn entry(&mut self, prim: PrimId) -> &mut PrimOpinions {
+        self.0.entry(prim).or_insert_with(PrimOpinions::new)
     }
 
     pub(super) fn prims(&self) -> impl Iterator<Item = (PrimId, &PrimOpinions)> {

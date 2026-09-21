@@ -10,14 +10,6 @@ use crate::{
     state::entry::Stamp,
 };
 
-/// Where a prim came from, which decides whether saving writes it:
-/// session-spawned geometry must not accumulate in the home document.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Origin {
-    Document,
-    Script,
-}
-
 /// What one layer says about one key.
 ///
 /// Absence from the layer's map is the third state — "no opinion" — and falls
@@ -50,19 +42,17 @@ impl<T> From<Option<T>> for Opinion<T> {
 /// peer wins and an older one is refused.
 #[derive(Debug, Clone)]
 pub(super) struct PrimOpinions {
-    pub(super) origin: Origin,
-    parent:            Option<(Opinion<Parent>, Stamp)>,
-    props:             BTreeMap<SmolStr, (Opinion<Property>, Stamp)>,
-    slots:             BTreeMap<SmolStr, (Opinion<Vec<u8>>, Stamp)>,
+    parent: Option<(Opinion<Parent>, Stamp)>,
+    props:  BTreeMap<SmolStr, (Opinion<Property>, Stamp)>,
+    slots:  BTreeMap<SmolStr, (Opinion<Vec<u8>>, Stamp)>,
 }
 
 impl PrimOpinions {
-    pub(super) const fn new(origin: Origin) -> Self {
+    pub(super) const fn new() -> Self {
         Self {
-            origin,
             parent: None,
-            props: BTreeMap::new(),
-            slots: BTreeMap::new(),
+            props:  BTreeMap::new(),
+            slots:  BTreeMap::new(),
         }
     }
 

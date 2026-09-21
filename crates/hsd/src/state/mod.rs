@@ -35,7 +35,6 @@ use crate::{
             Layer,
             LayerId,
         },
-        opinion::Origin,
         prim::PrimState,
     },
 };
@@ -273,42 +272,29 @@ impl SceneState {
     pub fn create_prim(&mut self, parent: Option<PrimId>) -> PrimId {
         let prim = PrimId::new();
         self.write_parent(
-            LayerId::Document,
+            LayerId::Runtime,
             prim,
             Some(parent.map_or(Parent::Root, Parent::Prim)),
-            Origin::Script,
             None,
         );
         prim
-    }
-
-    /// Inserts a prim whose id is fixed by the document or a compiled prefab,
-    /// so it is byte-identical on every peer.
-    pub fn insert_prim(&mut self, prim: PrimId, parent: Parent) {
-        self.write_parent(
-            LayerId::Document,
-            prim,
-            Some(parent),
-            Origin::Document,
-            None,
-        );
     }
 
     pub fn set_parent(&mut self, prim: PrimId, parent: Parent) -> Result<(), StateError> {
         if !self.exists(prim) {
             return Err(StateError::UnknownPrim(prim));
         }
-        self.write_parent(LayerId::Document, prim, Some(parent), Origin::Script, None);
+        self.write_parent(LayerId::Runtime, prim, Some(parent), None);
         Ok(())
     }
 
+    /// Blocks the prim in the runtime layer rather than deleting it. A script
+    /// can hide a document prim for this session; only a commit can remove one
+    /// from the document.
     pub fn remove_prim(&mut self, prim: PrimId) {
-        if !self.layer(LayerId::Document).contains(prim) {
-            return;
+        if self.resolved.contains_key(&prim) {
+            self.write_parent(LayerId::Runtime, prim, None, None);
         }
-        self.write_parent(LayerId::Document, prim, None, Origin::Script, None);
-        self.layer(LayerId::Document).remove(prim);
-        self.resolved.remove(&prim);
     }
 
     pub fn set_property(
@@ -321,14 +307,7 @@ impl SceneState {
             return Err(StateError::Name(name.to_owned()));
         }
         let stamp = Stamp::new(now_micros(), &value.encode());
-        self.write_property(
-            LayerId::Document,
-            prim,
-            name,
-            Some(value),
-            Origin::Script,
-            stamp,
-        );
+        self.write_property(LayerId::Runtime, prim, name, Some(value), stamp);
         Ok(())
     }
 
@@ -351,7 +330,7 @@ impl SceneState {
 
     pub fn remove_property(&mut self, prim: PrimId, name: &str) {
         let stamp = Stamp::new(now_micros(), &[]);
-        self.write_property(LayerId::Document, prim, name, None, Origin::Script, stamp);
+        self.write_property(LayerId::Runtime, prim, name, None, stamp);
     }
 
     pub fn set_slot(&mut self, prim: PrimId, name: &str, value: Vec<u8>) -> Result<(), StateError> {
@@ -359,20 +338,13 @@ impl SceneState {
             return Err(StateError::Name(name.to_owned()));
         }
         let stamp = Stamp::new(now_micros(), &value);
-        self.write_slot(
-            LayerId::Document,
-            prim,
-            name,
-            Some(value),
-            Origin::Script,
-            stamp,
-        );
+        self.write_slot(LayerId::Runtime, prim, name, Some(value), stamp);
         Ok(())
     }
 
     pub fn remove_slot(&mut self, prim: PrimId, name: &str) {
         let stamp = Stamp::new(now_micros(), &[]);
-        self.write_slot(LayerId::Document, prim, name, None, Origin::Script, stamp);
+        self.write_slot(LayerId::Runtime, prim, name, None, stamp);
     }
 }
 
@@ -396,13 +368,7 @@ impl SceneState {
                 } else {
                     Some(Parent::decode(&entry.value)?)
                 };
-                self.write_parent(
-                    LayerId::Document,
-                    prim,
-                    parent,
-                    Origin::Document,
-                    Some(stamp),
-                );
+                self.write_parent(LayerId::Document, prim, parent, Some(stamp));
             }
             Some(key::Key::Prop { prim, name }) if is_slot_name(&name) => {
                 let value = if empty {
@@ -410,14 +376,7 @@ impl SceneState {
                 } else {
                     Some(entry.value.clone())
                 };
-                self.write_slot(
-                    LayerId::Document,
-                    prim,
-                    &name,
-                    value,
-                    Origin::Document,
-                    stamp,
-                );
+                self.write_slot(LayerId::Document, prim, &name, value, stamp);
             }
             Some(key::Key::Prop { prim, name }) => {
                 let value = if empty {
@@ -425,14 +384,7 @@ impl SceneState {
                 } else {
                     Some(Property::decode(&entry.value)?)
                 };
-                self.write_property(
-                    LayerId::Document,
-                    prim,
-                    &name,
-                    value,
-                    Origin::Document,
-                    stamp,
-                );
+                self.write_property(LayerId::Document, prim, &name, value, stamp);
             }
             None => {}
         }
@@ -464,9 +416,6 @@ impl SceneState {
             return out;
         };
         for (prim, opinions) in document.prims() {
-            if opinions.origin != Origin::Document {
-                continue;
-            }
             let Some(parent) = opinions.parent().and_then(|(o, _)| o.value()) else {
                 continue;
             };
@@ -522,7 +471,6 @@ impl SceneState {
         layer: LayerId,
         prim: PrimId,
         parent: Option<Parent>,
-        origin: Origin,
         stamp: Option<Stamp>,
     ) {
         let stamp = stamp.unwrap_or_else(|| {
@@ -532,12 +480,12 @@ impl SceneState {
             )
         });
 
-        let opinions = self.layer(layer).entry(prim, origin);
-        if !opinions.set_parent(parent.into(), stamp) {
+        if !self
+            .layer(layer)
+            .entry(prim)
+            .set_parent(parent.into(), stamp)
+        {
             return;
-        }
-        if origin == Origin::Document {
-            opinions.origin = Origin::Document;
         }
         self.settle_parent(prim);
     }
@@ -569,12 +517,11 @@ impl SceneState {
         prim: PrimId,
         name: &str,
         value: Option<Property>,
-        origin: Origin,
         stamp: Stamp,
     ) {
         if !self
             .layer(layer)
-            .entry(prim, origin)
+            .entry(prim)
             .set_property(name, value.into(), stamp)
         {
             return;
@@ -605,12 +552,11 @@ impl SceneState {
         prim: PrimId,
         name: &str,
         value: Option<Vec<u8>>,
-        origin: Origin,
         stamp: Stamp,
     ) {
         if !self
             .layer(layer)
-            .entry(prim, origin)
+            .entry(prim)
             .set_slot(name, value.into(), stamp)
         {
             return;
@@ -1108,17 +1054,32 @@ mod tests {
     }
 
     #[test]
-    fn a_document_prim_edited_by_a_script_stays_persistent() {
+    fn a_script_editing_a_document_prim_changes_what_is_drawn_not_what_is_kept() {
         let mut state = SceneState::new();
-        apply(&mut state, &[root_entry(prim(1), 1)]);
+        apply(
+            &mut state,
+            &[
+                root_entry(prim(1), 1),
+                attr_entry(prim(1), &NameAttr("document".into()), 2),
+            ],
+        );
+        let saved = state.entries();
+
         state
             .set_attribute(prim(1), &NameAttr("edited".into()))
             .expect("attribute");
 
-        let entries = state.entries();
-        assert!(
-            entries.contains_key(&key::prop(prim(1), NameAttr::KEY)),
-            "a script editing a document prim must not make it transient"
+        assert_eq!(
+            name_of(&state, prim(1)).as_deref(),
+            Some("edited"),
+            "the edit is what every reader sees this session"
+        );
+        assert_eq!(
+            state.entries(),
+            saved,
+            "and it reaches the document only through a commit, which is what \
+             lets a document stay open to its keyholder instead of being \
+             frozen to keep the two coherent"
         );
     }
 
@@ -1413,7 +1374,7 @@ mod tests {
             now_micros(),
             &value.as_ref().map(Property::encode).unwrap_or_default(),
         );
-        state.write_property(LayerId::Runtime, prim, name, value, Origin::Script, stamp);
+        state.write_property(LayerId::Runtime, prim, name, value, stamp);
     }
 
     fn name_attr(value: &str) -> Property {
@@ -1556,25 +1517,13 @@ mod tests {
         apply(&mut state, &[root_entry(prim(1), 1)]);
         state.drain_events();
 
-        state.write_parent(
-            LayerId::Runtime,
-            prim(9),
-            Some(Parent::Prim(prim(1))),
-            Origin::Script,
-            None,
-        );
+        state.write_parent(LayerId::Runtime, prim(9), Some(Parent::Prim(prim(1))), None);
 
         assert!(state.exists(prim(9)));
         assert!(state.is_realized(prim(9)));
         assert_eq!(state.children(prim(1)), vec![prim(9)]);
 
-        state.write_parent(
-            LayerId::Runtime,
-            prim(9),
-            Some(Parent::Root),
-            Origin::Script,
-            None,
-        );
+        state.write_parent(LayerId::Runtime, prim(9), Some(Parent::Root), None);
 
         assert_eq!(state.parent(prim(9)), None);
         assert_eq!(state.children(prim(1)), Vec::new());

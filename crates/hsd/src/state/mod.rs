@@ -1,6 +1,5 @@
 use std::collections::{
     BTreeMap,
-    BTreeSet,
     HashMap,
     HashSet,
 };
@@ -31,6 +30,7 @@ use crate::{
             Stamp,
         },
         event::SceneEvent,
+        layer::Layer,
         prim::{
             Origin,
             PrimState,
@@ -40,6 +40,7 @@ use crate::{
 
 pub mod entry;
 pub mod event;
+mod layer;
 pub mod prim;
 pub mod save;
 
@@ -87,10 +88,8 @@ enum Placement {
 #[derive(Debug)]
 pub struct SceneState {
     meta:       DocMeta,
-    prims:      HashMap<PrimId, PrimState>,
-    /// Parent id to children, including parents that do not exist yet, which
-    /// is what lets an orphan be picked up when its parent arrives.
-    children:   HashMap<PrimId, BTreeSet<PrimId>>,
+    /// The opinions a keyholder wrote, which are what a save writes back.
+    document:   Layer,
     /// Realized prims and their effective parent, `None` for a document root.
     realized:   HashMap<PrimId, Option<PrimId>>,
     events:     Vec<SceneEvent>,
@@ -112,8 +111,7 @@ impl SceneState {
     pub fn new() -> Self {
         Self {
             meta:       DocMeta::default(),
-            prims:      HashMap::new(),
-            children:   HashMap::new(),
+            document:   Layer::default(),
             realized:   HashMap::new(),
             events:     Vec::new(),
             ticks:      0,
@@ -128,14 +126,17 @@ impl SceneState {
 
     #[must_use]
     pub fn get(&self, prim: PrimId) -> Option<&PrimState> {
-        self.prims.get(&prim)
+        self.document.prims.get(&prim)
     }
 
     /// Whether a prim exists: its `parent/` property resolves to a live entry.
     /// Existence is not realization — an existing prim may still be held.
     #[must_use]
     pub fn exists(&self, prim: PrimId) -> bool {
-        self.prims.get(&prim).is_some_and(|s| s.parent.is_some())
+        self.document
+            .prims
+            .get(&prim)
+            .is_some_and(|s| s.parent.is_some())
     }
 
     #[must_use]
@@ -168,6 +169,7 @@ impl SceneState {
     #[must_use]
     pub fn children(&self, prim: PrimId) -> Vec<PrimId> {
         let mut out = self
+            .document
             .children
             .get(&prim)
             .into_iter()
@@ -282,9 +284,9 @@ impl SceneState {
     }
 
     pub fn remove_prim(&mut self, prim: PrimId) {
-        if self.prims.contains_key(&prim) {
+        if self.document.prims.contains_key(&prim) {
             self.write_parent(prim, None, Origin::Script, None);
-            self.prims.remove(&prim);
+            self.document.prims.remove(&prim);
         }
     }
 
@@ -403,7 +405,7 @@ impl SceneState {
             self.meta.encode().expect("DocMeta always encodes"),
         );
 
-        for (prim, state) in &self.prims {
+        for (prim, state) in &self.document.prims {
             if state.origin != Origin::Document {
                 continue;
             }
@@ -438,6 +440,7 @@ impl SceneState {
         });
 
         let state = self
+            .document
             .prims
             .entry(prim)
             .or_insert_with(|| PrimState::new(origin));
@@ -451,12 +454,16 @@ impl SceneState {
 
         if let Some(Parent::Prim(old_parent)) = old
             && old != parent
-            && let Some(siblings) = self.children.get_mut(&old_parent)
+            && let Some(siblings) = self.document.children.get_mut(&old_parent)
         {
             siblings.remove(&prim);
         }
         if let Some(Parent::Prim(new_parent)) = parent {
-            self.children.entry(new_parent).or_default().insert(prim);
+            self.document
+                .children
+                .entry(new_parent)
+                .or_default()
+                .insert(prim);
         }
 
         self.refresh(prim);
@@ -471,6 +478,7 @@ impl SceneState {
         stamp: Stamp,
     ) {
         let state = self
+            .document
             .prims
             .entry(prim)
             .or_insert_with(|| PrimState::new(origin));
@@ -496,6 +504,7 @@ impl SceneState {
         stamp: Stamp,
     ) {
         let state = self
+            .document
             .prims
             .entry(prim)
             .or_insert_with(|| PrimState::new(origin));
@@ -558,7 +567,7 @@ impl SceneState {
                 }
             };
 
-            if changed && let Some(children) = self.children.get(&prim) {
+            if changed && let Some(children) = self.document.children.get(&prim) {
                 stack.extend(children.iter().copied());
             }
         }
@@ -567,7 +576,7 @@ impl SceneState {
     /// Emits everything a newly realized prim already holds, so a consumer
     /// never has to read state directly to catch up.
     fn emit_contents(&mut self, prim: PrimId) {
-        let Some(state) = self.prims.get(&prim) else {
+        let Some(state) = self.document.prims.get(&prim) else {
             return;
         };
         let props = state
@@ -598,7 +607,7 @@ impl SceneState {
     /// LWW parent pointers can form cycles; the cycle breaks at its
     /// greatest-stamped member, which every peer computes identically.
     fn placement(&self, prim: PrimId) -> Placement {
-        let Some(state) = self.prims.get(&prim) else {
+        let Some(state) = self.document.prims.get(&prim) else {
             return Placement::Unrealized;
         };
         // Already-realized prims stay realized; only new ones are turned away,
@@ -634,7 +643,7 @@ impl SceneState {
             seen.insert(current, chain.len());
             chain.push(current);
 
-            match self.prims.get(&current).and_then(|s| s.parent) {
+            match self.document.prims.get(&current).and_then(|s| s.parent) {
                 None => return Placement::Unrealized,
                 Some(Parent::Root) => return Placement::Child(parent),
                 Some(Parent::Prim(next)) => current = next,
@@ -643,7 +652,8 @@ impl SceneState {
     }
 
     fn parent_stamp(&self, prim: PrimId) -> Stamp {
-        self.prims
+        self.document
+            .prims
             .get(&prim)
             .map(PrimState::parent_stamp)
             .unwrap_or_default()

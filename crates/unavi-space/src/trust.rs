@@ -10,7 +10,7 @@ use crate::{
 /// Blocks `peer` and undoes what they contributed.
 ///
 /// The trust level is written before anything unwinds, so a reconnect arriving
-/// mid-teardown is not readmitted as a guest. Pins, authority claims and
+/// mid-teardown is not readmitted as a guest. Pins, holds and
 /// owner-authored KV cascade away with the connection; only neutral cells need
 /// rolling back by hand, since they outlive a disconnect.
 pub fn eject(view: &SpaceView, link: &PeerLink, peer: EndpointId) -> Result<(), NoIdentity> {

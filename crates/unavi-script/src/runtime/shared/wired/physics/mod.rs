@@ -259,7 +259,7 @@ pub async fn apply_force(api: &Api, prim_rep: u32, v: [f32; 3]) -> Result<(), Sc
     Ok(())
 }
 
-pub fn claim_authority(api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
+pub fn take_hold(api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
     let bytes = <[u8; 32]>::try_from(doc_id.as_slice())
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
     let doc = DocId(bytes);
@@ -267,14 +267,14 @@ pub fn claim_authority(api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
         .view
         .space_of(doc)
         .ok_or_else(|| ScriptError::other("document is not in a tracked space"))?;
-    api.view.claim_authority(space, doc);
+    api.view.take_hold(space, doc);
     Ok(())
 }
 
-pub fn release_authority(_api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
+pub fn release_hold(_api: &Api, doc_id: Vec<u8>) -> Result<(), ScriptError> {
     let bytes = <[u8; 32]>::try_from(doc_id.as_slice())
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
-    unavi_space::state::entities::release_authority(DocId(bytes));
+    unavi_space::state::entities::release_hold(DocId(bytes));
     Ok(())
 }
 

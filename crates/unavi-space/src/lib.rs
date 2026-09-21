@@ -101,7 +101,7 @@ impl Plugin for SpacePlugin {
                     presence::publish_presence,
                     connection::ecs::agent::outbound::send_agent_pose,
                     connection::ecs::object::send_object_poses,
-                    connection::ecs::object::reconcile_object_authority,
+                    connection::ecs::object::reconcile_object_holds,
                     (
                         connection::ecs::object::apply_remote_objects,
                         connection::ecs::object::advance_object_interp,

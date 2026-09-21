@@ -6,7 +6,7 @@ use unavi_policy::quota::{
     Quota,
     QuotaError,
     Reservation,
-    StockHold,
+    StockLease,
 };
 
 #[cfg(not(target_family = "wasm"))] pub mod limiter;
@@ -53,7 +53,7 @@ pub async fn acquire(quota: &Quota, flow: Flow, n: f64) -> Result<(), QuotaError
 }
 
 #[derive(Component, Default)]
-pub struct QuotaHolds(pub Vec<StockHold>);
+pub struct QuotaLeases(pub Vec<StockLease>);
 
 /// Marks a document whose scripts bypass quota enforcement, for trusted system
 /// scripts.

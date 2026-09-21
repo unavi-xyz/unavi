@@ -105,7 +105,7 @@ pub struct DocModel {
     pub space:         Option<NamespaceId>,
     pub is_space_base: bool,
     pub owner:         Option<EndpointId>,
-    pub authority:     Option<EndpointId>,
+    pub holder:        Option<EndpointId>,
     pub pinned_by:     Vec<(EndpointId, u64)>,
     pub kv:            Vec<DocKv>,
     pub instanced:     bool,
@@ -182,7 +182,7 @@ fn peer_model(
             .collect(),
         claims: docs
             .iter()
-            .filter_map(|d| d.authority.map(|at| (NamespaceId::from(&d.doc.0), at)))
+            .filter_map(|d| d.hold.map(|at| (NamespaceId::from(&d.doc.0), at)))
             .collect(),
     }
 }
@@ -288,7 +288,7 @@ impl InspectData<'_, '_> {
             space,
             is_space_base: space == Some(doc),
             owner: space.and_then(|s| view.replicas().owner(DocId(*s.as_bytes()), doc_id)),
-            authority: space.and_then(|s| view.replicas().authority(DocId(*s.as_bytes()), doc_id)),
+            holder: space.and_then(|s| view.replicas().holder(DocId(*s.as_bytes()), doc_id)),
             pinned_by,
             kv: doc_kv(doc_id, snap),
             instanced: entity.is_some_and(|(_, instanced, ..)| instanced),

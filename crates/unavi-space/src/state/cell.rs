@@ -1,5 +1,5 @@
 use iroh::EndpointId;
-use unavi_policy::quota::StockHold;
+use unavi_policy::quota::StockLease;
 
 /// A KV cell, merged last-write-wins by `(at, peer)`. `value: None` is a
 /// retained tombstone, so a delete keeps winning over an older live write.
@@ -13,7 +13,7 @@ pub(crate) struct Cell {
     pub(crate) at:    u64,
     pub(crate) peer:  EndpointId,
     pub(crate) value: Option<Vec<u8>>,
-    pub(crate) hold:  StockHold,
+    pub(crate) lease: StockLease,
     /// Exactly one prior version, making "revert everything peer X wrote" a
     /// scan of the cell map rather than a general undo log.
     pub(crate) prev:  Option<Box<Self>>,

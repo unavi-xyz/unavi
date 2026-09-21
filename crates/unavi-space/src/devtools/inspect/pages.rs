@@ -108,7 +108,7 @@ fn peer_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &PeerModel) {
     }
 
     if !m.claims.is_empty() {
-        b.spawn(widgets::section_title("Authority"));
+        b.spawn(widgets::section_title("Holds"));
         b.spawn(widgets::grid_node(2)).with_children(|g| {
             for h in ["doc", "claimed"] {
                 g.spawn(widgets::header_cell(h));
@@ -173,9 +173,9 @@ fn doc_page(b: &mut RelatedSpawnerCommands<ChildOf>, m: &DocModel, expanded: &Ex
                 g.spawn(widgets::dim_text("space"));
             }
         }
-        g.spawn(widgets::header_cell("authority"));
-        match m.authority {
-            Some(authority) => widgets::chip(g, authority.as_bytes(), Page::Peer(authority)),
+        g.spawn(widgets::header_cell("holder"));
+        match m.holder {
+            Some(holder) => widgets::chip(g, holder.as_bytes(), Page::Peer(holder)),
             None => {
                 g.spawn(widgets::dim_text("-"));
             }

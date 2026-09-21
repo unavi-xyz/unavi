@@ -37,7 +37,7 @@ use wds::document::Document;
 
 use crate::{
     error::ScriptError,
-    quota::QuotaHolds,
+    quota::QuotaLeases,
     runtime::shared::{
         Api,
         slot_map::SlotMap,
@@ -186,7 +186,7 @@ async fn spawn_child_doc(
     state: Arc<Mutex<SceneState>>,
     doc: Document,
 ) -> Result<(), ScriptError> {
-    let doc_hold = api.quota.hold(Stock::Documents, 1)?;
+    let doc_lease = api.quota.lease(Stock::Documents, 1)?;
     let id = DocId(*doc.id().as_bytes());
 
     // Seeded before the spawn command applies, so the child is never briefly
@@ -205,7 +205,7 @@ async fn spawn_child_doc(
             HsdDocId(id),
             HsdNamespace(doc),
             parent.permissions,
-            QuotaHolds(vec![doc_hold]),
+            QuotaLeases(vec![doc_lease]),
         ))
         .send()
         .await

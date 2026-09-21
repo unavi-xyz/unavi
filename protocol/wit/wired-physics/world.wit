@@ -30,18 +30,18 @@ interface api {
   /// Live linear velocity of a dynamic body.
   get-linear-velocity: func(prim: borrow<prim>) -> result<vec3, error>;
 
-  /// Takes networked effect only while the caller holds authority over the
-  /// prim's document.
+  /// Takes networked effect only while the caller holds the prim's document.
   set-linear-velocity: func(prim: borrow<prim>, v: vec3) -> result<_, error>;
 
-  /// Takes networked effect only while the caller holds authority over the
-  /// prim's document.
+  /// Takes networked effect only while the caller holds the prim's document.
   set-angular-velocity: func(prim: borrow<prim>, v: vec3) -> result<_, error>;
 
   /// Persistent world-space force the solver applies every step until changed;
-  /// a zero vector clears it. Authority-gated like the velocity writes.
+  /// a zero vector clears it. Hold-gated like the velocity writes.
   apply-force: func(prim: borrow<prim>, force: vec3) -> result<_, error>;
 
-  claim-authority:   func(doc: document-id) -> result<_, error>;
-  release-authority: func(doc: document-id) -> result<_, error>;
+  /// Takes transform and simulation authority over `doc`, one holder at a
+  /// time. The latest claim wins; releasing falls hold back to whoever owns it.
+  take-hold:    func(doc: document-id) -> result<_, error>;
+  release-hold: func(doc: document-id) -> result<_, error>;
 }

@@ -16,16 +16,17 @@ pub enum StateMsg {
     Unpin {
         doc: DocId,
     },
-    /// Transient transform authority over a document's rigid bodies (on grab);
-    /// the latest claim wins, independent of ownership.
-    Authority {
+    /// Takes hold of a document: transform and simulation authority over its
+    /// rigid bodies (on grab). The latest claim wins, independent of who
+    /// authored it.
+    Hold {
         doc:   DocId,
         space: DocId,
         at:    u64,
     },
-    /// Releases the peer's authority claim over `doc`, falling authority back
-    /// to the document's owner.
-    Unclaim {
+    /// Releases the peer's hold on `doc`, falling hold back to whoever owns
+    /// it.
+    ReleaseHold {
         doc: DocId,
     },
     /// Writes `key` on `doc`. A `value` of `None` is a tombstone, which is how
@@ -42,13 +43,13 @@ pub enum StateMsg {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct DocSnapshot {
-    pub doc:       DocId,
-    pub space:     DocId,
+    pub doc:   DocId,
+    pub space: DocId,
     /// Time the source peer pinned the doc, if it does.
-    pub pin:       Option<u64>,
-    /// The source peer's latest transform-authority claim, if any.
-    pub authority: Option<u64>,
-    pub kv:        Vec<KvSnapshot>,
+    pub pin:   Option<u64>,
+    /// When the source peer last took hold of the doc, if it holds it.
+    pub hold:  Option<u64>,
+    pub kv:    Vec<KvSnapshot>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]

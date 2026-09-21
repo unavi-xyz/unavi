@@ -161,10 +161,10 @@ impl Quota {
         Ok(())
     }
 
-    /// Charges `n` units of `stock`, returning a hold that refunds on drop.
-    pub fn hold(self: &Arc<Self>, stock: Stock, n: u64) -> Result<StockHold, QuotaError> {
+    /// Charges `n` units of `stock`, returning a lease that refunds on drop.
+    pub fn lease(self: &Arc<Self>, stock: Stock, n: u64) -> Result<StockLease, QuotaError> {
         self.charge(stock, n)?;
-        Ok(StockHold {
+        Ok(StockLease {
             quota: Arc::clone(self),
             stock,
             n,
@@ -308,17 +308,17 @@ impl Quota {
     }
 }
 
-/// A stock charge that refunds what it holds on drop.
-#[must_use = "dropping the hold immediately refunds the held stock"]
-pub struct StockHold {
+/// A stock charge that refunds what it leases on drop.
+#[must_use = "dropping the lease immediately refunds the leased stock"]
+pub struct StockLease {
     quota: Arc<Quota>,
     stock: Stock,
     n:     u64,
 }
 
-impl StockHold {
-    /// Adjusts the held amount to `new_n`. Growing charges the delta and may
-    /// fail, leaving the hold unchanged. Shrinking always succeeds.
+impl StockLease {
+    /// Adjusts the leased amount to `new_n`. Growing charges the delta and may
+    /// fail, leaving the lease unchanged. Shrinking always succeeds.
     pub fn resize(&mut self, new_n: u64) -> Result<(), QuotaError> {
         if new_n > self.n {
             self.quota.charge(self.stock, new_n - self.n)?;
@@ -330,12 +330,12 @@ impl StockHold {
     }
 
     #[must_use]
-    pub const fn held(&self) -> u64 {
+    pub const fn leased(&self) -> u64 {
         self.n
     }
 }
 
-impl Drop for StockHold {
+impl Drop for StockLease {
     fn drop(&mut self) {
         self.quota.release(self.stock, self.n);
     }
@@ -366,23 +366,23 @@ mod tests {
     #[test]
     fn a_cap_is_enforced_and_freed_again() {
         let q = Quota::new(limits_stock(Stock::Prims, 2), None);
-        let first = q.hold(Stock::Prims, 1).expect("first");
-        let _second = q.hold(Stock::Prims, 1).expect("second");
+        let first = q.lease(Stock::Prims, 1).expect("first");
+        let _second = q.lease(Stock::Prims, 1).expect("second");
         assert_eq!(q.usage(Stock::Prims), 2);
         assert!(matches!(
-            q.hold(Stock::Prims, 1),
+            q.lease(Stock::Prims, 1),
             Err(QuotaError::Stock(Stock::Prims))
         ));
 
         drop(first);
         assert_eq!(q.usage(Stock::Prims), 1);
-        let _third = q.hold(Stock::Prims, 1).expect("after the refund");
+        let _third = q.lease(Stock::Prims, 1).expect("after the refund");
     }
 
     #[test]
     fn unset_stock_is_unbounded() {
         let q = Quota::new(Limits::default(), None);
-        let _hold = q.hold(Stock::Prims, u64::MAX).expect("unbounded");
+        let _lease = q.lease(Stock::Prims, u64::MAX).expect("unbounded");
     }
 
     #[test]
@@ -390,9 +390,11 @@ mod tests {
         let owner = Quota::new(limits_stock(Stock::Documents, 1), None);
         let doc = Quota::new(limits_stock(Stock::Documents, 5), Some(Arc::clone(&owner)));
 
-        let _hold = doc.hold(Stock::Documents, 1).expect("within the owner cap");
+        let _lease = doc
+            .lease(Stock::Documents, 1)
+            .expect("within the owner cap");
         assert!(
-            doc.hold(Stock::Documents, 1).is_err(),
+            doc.lease(Stock::Documents, 1).is_err(),
             "the owner cap governs even where the document has room"
         );
         assert_eq!(doc.usage(Stock::Documents), 1, "no phantom document charge");
@@ -404,59 +406,61 @@ mod tests {
         let old = Quota::new(limits_stock(Stock::Prims, 10), None);
         let new = Quota::new(limits_stock(Stock::Prims, 10), None);
         let doc = Quota::new(Limits::default(), Some(Arc::clone(&old)));
-        let hold = doc.hold(Stock::Prims, 3).expect("charge");
+        let lease = doc.lease(Stock::Prims, 3).expect("charge");
         assert_eq!(old.usage(Stock::Prims), 3);
 
         doc.set_owner(Some(Arc::clone(&new)));
         assert_eq!(old.usage(Stock::Prims), 0, "old owner released");
         assert_eq!(new.usage(Stock::Prims), 3, "new owner adopted");
 
-        drop(hold);
+        drop(lease);
         assert_eq!(new.usage(Stock::Prims), 0, "refund follows the new owner");
     }
 
     #[test]
-    fn a_hold_grows_shrinks_and_refunds_on_drop() {
+    fn a_lease_grows_shrinks_and_refunds_on_drop() {
         let q = Quota::new(limits_stock(Stock::KvMemory, 100), None);
-        let mut hold = q.hold(Stock::KvMemory, 40).expect("initial");
+        let mut lease = q.lease(Stock::KvMemory, 40).expect("initial");
         assert_eq!(q.usage(Stock::KvMemory), 40);
 
-        hold.resize(90).expect("grow within the cap");
+        lease.resize(90).expect("grow within the cap");
         assert_eq!(q.usage(Stock::KvMemory), 90);
 
         assert!(
-            hold.resize(120).is_err(),
-            "growth past the cap fails and leaves the hold unchanged"
+            lease.resize(120).is_err(),
+            "growth past the cap fails and leaves the lease unchanged"
         );
-        assert_eq!(hold.held(), 90);
+        assert_eq!(lease.leased(), 90);
         assert_eq!(q.usage(Stock::KvMemory), 90);
 
-        drop(hold);
-        assert_eq!(q.usage(Stock::KvMemory), 0, "drop refunds the full hold");
+        drop(lease);
+        assert_eq!(q.usage(Stock::KvMemory), 0, "drop refunds the full lease");
     }
 
     #[test]
-    fn a_hold_shrinks_at_a_full_cap() {
+    fn a_lease_shrinks_at_a_full_cap() {
         let q = Quota::new(limits_stock(Stock::KvMemory, 50), None);
-        let mut hold = q.hold(Stock::KvMemory, 50).expect("fill the cap");
-        assert!(q.hold(Stock::KvMemory, 1).is_err(), "cap is full");
+        let mut lease = q.lease(Stock::KvMemory, 50).expect("fill the cap");
+        assert!(q.lease(Stock::KvMemory, 1).is_err(), "cap is full");
 
-        hold.resize(10).expect("shrink frees stock");
+        lease.resize(10).expect("shrink frees stock");
         assert_eq!(q.usage(Stock::KvMemory), 10);
-        let _room = q.hold(Stock::KvMemory, 40).expect("freed room is reusable");
+        let _room = q
+            .lease(Stock::KvMemory, 40)
+            .expect("freed room is reusable");
     }
 
     #[test]
-    fn a_hold_rolls_up_and_refunds_to_its_owner() {
+    fn a_lease_rolls_up_and_refunds_to_its_owner() {
         let owner = Quota::new(limits_stock(Stock::KvMemory, 100), None);
         let doc = Quota::new(Limits::default(), Some(Arc::clone(&owner)));
-        let mut hold = doc.hold(Stock::KvMemory, 30).expect("charge");
+        let mut lease = doc.lease(Stock::KvMemory, 30).expect("charge");
         assert_eq!(owner.usage(Stock::KvMemory), 30);
 
-        hold.resize(10).expect("shrink");
+        lease.resize(10).expect("shrink");
         assert_eq!(owner.usage(Stock::KvMemory), 10);
 
-        drop(hold);
+        drop(lease);
         assert_eq!(owner.usage(Stock::KvMemory), 0);
     }
 

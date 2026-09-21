@@ -155,7 +155,7 @@ impl Drop for PinState {
 }
 
 #[derive(Component)]
-pub struct AuthorityState {
+pub struct HoldState {
     peer:     EndpointId,
     doc:      DocId,
     local:    bool,
@@ -163,7 +163,7 @@ pub struct AuthorityState {
     replicas: Replicas,
 }
 
-impl AuthorityState {
+impl HoldState {
     fn apply(
         policy: &Policy,
         replicas: &Replicas,
@@ -174,9 +174,9 @@ impl AuthorityState {
         at: u64,
         local: bool,
     ) -> bool {
-        let ok = replicas.add_authority(policy, viewer, peer, doc, space, at);
+        let ok = replicas.add_hold(policy, viewer, peer, doc, space, at);
         if ok && local {
-            replicas.broadcast(&StateMsg::Authority { doc, space, at });
+            replicas.broadcast(&StateMsg::Hold { doc, space, at });
         }
         ok
     }
@@ -200,12 +200,12 @@ impl AuthorityState {
     }
 }
 
-impl Drop for AuthorityState {
+impl Drop for HoldState {
     fn drop(&mut self) {
-        self.replicas.remove_authority(self.peer, self.doc);
+        self.replicas.remove_hold(self.peer, self.doc);
         if self.local {
             self.replicas
-                .broadcast(&StateMsg::Unclaim { doc: self.doc });
+                .broadcast(&StateMsg::ReleaseHold { doc: self.doc });
         }
     }
 }
@@ -312,7 +312,7 @@ fn spawn_pin(
     true
 }
 
-fn spawn_authority(
+fn spawn_hold(
     world: &mut World,
     peer_ent: Entity,
     peer: EndpointId,
@@ -325,21 +325,20 @@ fn spawn_authority(
     let replicas = world.resource::<Replicas>().clone();
     let view = current_view(world);
     let viewer = as_viewer(view.as_ref());
-    if find_state::<AuthorityState, _>(world, peer_ent, |a| a.doc == doc).is_some() {
-        AuthorityState::apply(&policy, &replicas, viewer, peer, doc, space, at, local);
+    if find_state::<HoldState, _>(world, peer_ent, |a| a.doc == doc).is_some() {
+        HoldState::apply(&policy, &replicas, viewer, peer, doc, space, at, local);
         return;
     }
     let anchor = doc_anchor(world, doc, space);
-    let Some(state) =
-        AuthorityState::register(&policy, &replicas, viewer, peer, doc, space, at, local)
+    let Some(state) = HoldState::register(&policy, &replicas, viewer, peer, doc, space, at, local)
     else {
         return;
     };
     world.spawn((state, StateDoc(anchor), StatePeer(peer_ent)));
 }
 
-fn clear_authority(world: &mut World, peer_ent: Entity, doc: DocId) {
-    if let Some(e) = find_state::<AuthorityState, _>(world, peer_ent, |a| a.doc == doc) {
+fn clear_hold(world: &mut World, peer_ent: Entity, doc: DocId) {
+    if let Some(e) = find_state::<HoldState, _>(world, peer_ent, |a| a.doc == doc) {
         world.despawn(e);
     }
 }
@@ -409,13 +408,13 @@ impl SpaceView {
             .unwrap_or(false)
     }
 
-    pub fn claim_authority(&self, space: DocId, doc: DocId) {
+    pub fn take_hold(&self, space: DocId, doc: DocId) {
         let me = self.me();
         let at = clock::current_millis();
         let _ = AsyncCommands::default()
             .push(move |world: &mut World| {
                 let peer_ent = local_peer_entity(world);
-                spawn_authority(world, peer_ent, me, doc, space, at, true);
+                spawn_hold(world, peer_ent, me, doc, space, at, true);
             })
             .try_send();
     }
@@ -452,11 +451,11 @@ impl SpaceView {
     }
 }
 
-pub fn release_authority(doc: DocId) {
+pub fn release_hold(doc: DocId) {
     let _ = AsyncCommands::default()
         .push(move |world: &mut World| {
             if let Some(peer_ent) = entity_by::<LocalPeer, _>(world, |_| true) {
-                clear_authority(world, peer_ent, doc);
+                clear_hold(world, peer_ent, doc);
             }
         })
         .try_send();
@@ -488,8 +487,8 @@ fn apply_in_world(world: &mut World, peer_ent: Entity, peer: EndpointId, msg: St
                 if let Some(at) = s.pin.filter(|at| clock::time_valid(*at)) {
                     spawn_pin(world, peer_ent, peer, s.doc, s.space, at, false);
                 }
-                if let Some(at) = s.authority.filter(|at| clock::time_valid(*at)) {
-                    spawn_authority(world, peer_ent, peer, s.doc, s.space, at, false);
+                if let Some(at) = s.hold.filter(|at| clock::time_valid(*at)) {
+                    spawn_hold(world, peer_ent, peer, s.doc, s.space, at, false);
                 }
                 for kv in s.kv {
                     if clock::time_valid(kv.at) {
@@ -502,10 +501,10 @@ fn apply_in_world(world: &mut World, peer_ent: Entity, peer: EndpointId, msg: St
             spawn_pin(world, peer_ent, peer, doc, space, at, false);
         }
         StateMsg::Unpin { doc } => clear_pin(world, peer_ent, doc),
-        StateMsg::Authority { doc, space, at } if clock::time_valid(at) => {
-            spawn_authority(world, peer_ent, peer, doc, space, at, false);
+        StateMsg::Hold { doc, space, at } if clock::time_valid(at) => {
+            spawn_hold(world, peer_ent, peer, doc, space, at, false);
         }
-        StateMsg::Unclaim { doc } => clear_authority(world, peer_ent, doc),
+        StateMsg::ReleaseHold { doc } => clear_hold(world, peer_ent, doc),
         StateMsg::Kv {
             doc,
             space,
@@ -674,7 +673,7 @@ mod tests {
     }
 
     #[test]
-    fn authority_guard_broadcasts_claim_and_unclaim() {
+    fn the_hold_guard_broadcasts_taking_and_releasing() {
         let replicas = Replicas::new();
         let policy = Policy::new();
         let me = peer(1);
@@ -684,14 +683,14 @@ mod tests {
         let (token, rx) = replicas.register_stream(me);
         let _ = rx.try_recv();
 
-        let claim = AuthorityState::register(&policy, &replicas, None, me, doc, space, 5, true)
-            .expect("authority registers");
-        assert_eq!(replicas.authority(space, doc), Some(me));
-        assert!(matches!(rx.try_recv(), Ok(StateMsg::Authority { doc: d, .. }) if d == doc));
+        let claim = HoldState::register(&policy, &replicas, None, me, doc, space, 5, true)
+            .expect("the hold registers");
+        assert_eq!(replicas.holder(space, doc), Some(me));
+        assert!(matches!(rx.try_recv(), Ok(StateMsg::Hold { doc: d, .. }) if d == doc));
 
         drop(claim);
-        assert_eq!(replicas.authority(space, doc), None);
-        assert!(matches!(rx.try_recv(), Ok(StateMsg::Unclaim { doc: d }) if d == doc));
+        assert_eq!(replicas.holder(space, doc), None);
+        assert!(matches!(rx.try_recv(), Ok(StateMsg::ReleaseHold { doc: d }) if d == doc));
 
         replicas.unregister_stream(token);
     }

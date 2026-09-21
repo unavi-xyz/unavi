@@ -13,10 +13,10 @@ pub struct DebugKv {
 
 /// What one peer contributes to a document.
 pub struct DebugPeerDoc {
-    pub doc:       DocId,
-    pub space:     DocId,
-    pub pin:       Option<u64>,
-    pub authority: Option<u64>,
+    pub doc:   DocId,
+    pub space: DocId,
+    pub pin:   Option<u64>,
+    pub hold:  Option<u64>,
 }
 
 /// What a document holds regardless of which peer wrote it.
@@ -32,7 +32,7 @@ pub struct DebugPeer {
 }
 
 pub struct DebugSnapshot {
-    /// Each peer's pins and authority claims.
+    /// Each peer's pins and holds.
     pub peers: Vec<DebugPeer>,
     /// KV, which is held by documents rather than by any peer.
     pub docs:  Vec<DebugDoc>,

@@ -2,11 +2,11 @@ use wired_prelude::prelude::*;
 
 use crate::wired::{
     physics::api::{
-        claim_authority,
         raycast,
-        release_authority,
+        release_hold,
         set_angular_velocity,
         set_linear_velocity,
+        take_hold,
     },
     scene::{
         api::get_document,
@@ -72,8 +72,8 @@ impl Held {
             return None;
         };
 
-        if let Err(err) = claim_authority(&hit.document) {
-            println!("physgun: claim_authority failed (holding anyway): {err:?}");
+        if let Err(err) = take_hold(&hit.document) {
+            println!("physgun: take_hold failed (holding anyway): {err:?}");
         }
 
         let gravity = prim.gravity_scale();
@@ -158,6 +158,6 @@ impl Held {
     /// sweep throws it.
     pub fn release(&self) {
         self.prim.set_gravity_scale(self.gravity).ok();
-        release_authority(&self.doc).ok();
+        release_hold(&self.doc).ok();
     }
 }

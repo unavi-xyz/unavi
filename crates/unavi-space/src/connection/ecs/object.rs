@@ -54,7 +54,7 @@ pub struct LastObjectTick(Duration);
 /// updates, so they tick far less often than agent poses.
 const OBJECT_TICKRATE: Duration = Duration::from_millis(200);
 
-/// Broadcasts every dynamic prim in documents the local peer has authority
+/// Broadcasts every dynamic prim in documents the local peer holds
 /// over. Poses are space-relative; velocities are space-invariant (spaces only
 /// translate).
 pub fn send_object_poses(
@@ -92,7 +92,7 @@ pub fn send_object_poses(
             }
             let doc = roots.get(child_of.0).ok()?.0;
             let space = view.space_of(doc)?;
-            if !view.replicas().is_authority(space, doc, me) {
+            if !view.replicas().is_holder(space, doc, me) {
                 return None;
             }
             let origin = space_origins.get(&space)?;
@@ -180,10 +180,10 @@ pub fn apply_remote_objects(
     let updates = link.objects().drain();
 
     for ((peer, doc, prim), (recv, resolved)) in updates {
-        // Only the document's current authority may move it, and never the
+        // Only the document's current holder may move it, and never the
         // local peer.
-        let authority = view.replicas().authority(resolved.space, doc);
-        if authority != Some(peer) || authority == Some(view.me()) {
+        let holder = view.replicas().holder(resolved.space, doc);
+        if holder != Some(peer) || holder == Some(view.me()) {
             continue;
         }
         let Some(prim_entity) = roots
@@ -250,16 +250,16 @@ pub fn advance_object_interp(
     }
 }
 
-/// A prim parked [`RigidBody::Kinematic`] because a remote peer has authority
+/// A prim parked [`RigidBody::Kinematic`] because a remote peer holds
 /// over its document, so a fresh replica never free-falls before its first
 /// update.
 #[derive(Component)]
 pub struct ReplicaObject;
 
 /// Parks remotely-controlled prims as kinematic replicas and runs local or
-/// unclaimed ones as dynamic. `replicas::authority` resolves the latest claim,
+/// unheld ones as dynamic. `replicas::holder` resolves the latest claim,
 /// so only the accepted controller drives a prim.
-pub fn reconcile_object_authority(
+pub fn reconcile_object_holds(
     roots: Query<&HsdDocId>,
     prims: Query<(Entity, &HsdChild, &RigidBody, Has<ReplicaObject>), With<Prim>>,
     view: Option<Res<SpaceView>>,
@@ -273,8 +273,8 @@ pub fn reconcile_object_authority(
             continue;
         };
         let remote_controlled = view.space_of(doc).is_some_and(|space| {
-            let authority = view.replicas().authority(space, doc);
-            authority.is_some() && authority != Some(view.me())
+            let holder = view.replicas().holder(space, doc);
+            holder.is_some() && holder != Some(view.me())
         });
 
         match (remote_controlled, is_replica) {

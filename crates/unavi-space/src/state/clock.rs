@@ -4,7 +4,7 @@ use web_time::{
 };
 
 /// Caps peer-supplied timestamps to within the clock skew of local time, so a
-/// forged future `at` cannot pin ownership/authority or win KV merges forever.
+/// forged future `at` cannot pin ownership or hold, or win KV merges forever.
 const MAX_CLOCK_SKEW_MILLIS: u64 = 5 * 60 * 1000;
 
 #[must_use]

@@ -50,8 +50,8 @@ sha512 = "86f1cda126348c12e654cdec89e1a3ea4e35c46c4c6d2188f1df75c6ce75ad73ecb2de
 
 [wired-physics]
 path = "../../../protocol/wit/wired-physics"
-sha256 = "a78edd9204c078f240aa7c2774b5915034202663f646a36e374621caf7a23d57"
-sha512 = "95a9d8dd5ac6c065fd3d51ad097ba8463e4226e055d4b20fe77b86c3fcdad57bd7cf17f7b781bd6ffa73db4c32ce4c793b2df4e2c277fa80c1ecb8e8e8c7d289"
+sha256 = "ac31a2dddbc7d4eb4a1e7be5b67609e7efd51321a817a894fae1b70e790af32b"
+sha512 = "c299d34125882209ce913940b7369711b0bf02e3fa2dbeb55871e3e782e6a1fbbb2d02457dbefe252eb246934b2c9bc131864dd0d28c2d1ed21d8b0634de4c4d"
 
 [wired-portal]
 path = "../../../protocol/wit/wired-portal"

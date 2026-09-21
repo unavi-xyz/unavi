@@ -12,7 +12,7 @@ use unavi_policy::quota::{
     Flow,
     QuotaError,
     Stock,
-    StockHold,
+    StockLease,
 };
 use web_time::{
     SystemTime,
@@ -50,8 +50,8 @@ pub enum EventScope {
 }
 
 pub struct EventReceptorRes {
-    rx:    Receiver<InboundEvent>,
-    _hold: StockHold,
+    rx:     Receiver<InboundEvent>,
+    _lease: StockLease,
 }
 
 pub struct EventRes {
@@ -159,7 +159,7 @@ fn resolve_sender_scope(
 }
 
 pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::Result<u32> {
-    let hold = api.quota.hold(Stock::Receptors, 1)?;
+    let lease = api.quota.lease(Stock::Receptors, 1)?;
 
     let scope = match filter.scope {
         EventScope::Global => ReceptorScope::Global,
@@ -183,7 +183,7 @@ pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> an
         .listen(api.doc_id, channels, scope, filter.documents);
     api.wired_event.lock().await.receptors.insert_at(
         id,
-        EventReceptorRes { rx, _hold: hold },
+        EventReceptorRes { rx, _lease: lease },
         &api.quota,
     )?;
 

@@ -115,23 +115,23 @@ impl bindings::wired::physics::api::Host for Runtime {
         Ok(result.map_err(Into::into))
     }
 
-    fn claim_authority(
+    fn take_hold(
         &mut self,
         doc: Vec<u8>,
     ) -> impl Future<Output = wasmtime::Result<Result<(), Error>>> {
         let result = match self.api.require(ApiName::Physics) {
-            Ok(()) => shared::wired::physics::claim_authority(&self.api, doc),
+            Ok(()) => shared::wired::physics::take_hold(&self.api, doc),
             Err(err) => Err(err),
         };
         std::future::ready(Ok(result.map_err(Into::into)))
     }
 
-    fn release_authority(
+    fn release_hold(
         &mut self,
         doc: Vec<u8>,
     ) -> impl Future<Output = wasmtime::Result<Result<(), Error>>> {
         let result = match self.api.require(ApiName::Physics) {
-            Ok(()) => shared::wired::physics::release_authority(&self.api, doc),
+            Ok(()) => shared::wired::physics::release_hold(&self.api, doc),
             Err(err) => Err(err),
         };
         std::future::ready(Ok(result.map_err(Into::into)))

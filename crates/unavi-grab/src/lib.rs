@@ -121,7 +121,7 @@ fn begin_grab(
     let offset_tra = pointer_tr.rotation.inverse() * (obj_tr.translation - pointer_tr.translation);
     let offset_rot = pointer_tr.rotation.inverse() * obj_tr.rotation;
 
-    claim_doc_authority(
+    take_doc_hold(
         entity,
         hsd_children,
         docs,
@@ -151,7 +151,7 @@ fn on_press(
     docs: Docs,
     spaces: Query<&Space>,
     parents: Query<&ChildOf>,
-    // Absent in a scene with no space; the authority claim below already
+    // Absent in a scene with no space; the hold taken below already
     // skips when there is nothing to claim against.
     active_space: Option<Res<ActiveSpace>>,
     time: Res<Time>,
@@ -302,7 +302,7 @@ fn nearest_promoted(
         .map(|(entity, _)| entity)
 }
 
-fn claim_doc_authority(
+fn take_doc_hold(
     entity: Entity,
     hsd_children: &Query<&HsdChild>,
     docs: &Docs,
@@ -313,14 +313,14 @@ fn claim_doc_authority(
     view: Option<&SpaceView>,
 ) {
     let Some(view) = view else {
-        debug!("grab: local peer id not initialized yet, skipping authority claim");
+        debug!("grab: local peer id not initialized yet, skipping the hold");
         return;
     };
 
     let Some((doc_entity, doc_hash)) = resolve_doc(entity, hsd_children, docs) else {
         debug!(
             ?entity,
-            "grab: grabbed entity has no HSD doc, skipping authority claim",
+            "grab: grabbed entity has no HSD doc, skipping the hold",
         );
         return;
     };
@@ -333,23 +333,23 @@ fn claim_doc_authority(
     let Some(space_hash) = space_hash else {
         warn!(
             doc = %doc_hash,
-            "grab: no enclosing space and no active space, skipping authority claim",
+            "grab: no enclosing space and no active space, skipping the hold",
         );
         return;
     };
 
     let (space, doc) = (DocId(*space_hash.as_bytes()), DocId(*doc_hash.as_bytes()));
 
-    // Only claim authority over a doc already tracked in state. An untracked
+    // Only take hold of a doc already tracked in state. An untracked
     // doc is established by the publish path; claiming here would create
     // presence ahead of that upload.
     if !replicas.has_doc(space, doc) {
-        debug!(doc = %doc_hash, "grab: doc not tracked in state, skipping authority claim");
+        debug!(doc = %doc_hash, "grab: doc not tracked in state, skipping the hold");
         return;
     }
 
-    info!(doc = %doc_hash, space = %space_hash, "grab: claiming object authority");
-    view.claim_authority(space, doc);
+    info!(doc = %doc_hash, space = %space_hash, "grab: taking hold of the object");
+    view.take_hold(space, doc);
 }
 
 fn resolve_doc(
@@ -388,7 +388,7 @@ fn on_release(
         // a held object can be dragged clear of its own collider.
         for (entity, _) in held.iter().filter(|(_, g)| g.pointer == release.pointer) {
             if let Some((_, doc_hash)) = resolve_doc(entity, &hsd_children, &docs) {
-                entities::release_authority(DocId(*doc_hash.as_bytes()));
+                entities::release_hold(DocId(*doc_hash.as_bytes()));
             }
             commands
                 .entity(entity)

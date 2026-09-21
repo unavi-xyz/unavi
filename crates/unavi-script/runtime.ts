@@ -202,8 +202,8 @@ function buildImports(wasi: WASIShim, rt: any) {
       setLinearVelocity: rt.wiredPhysicsSetLinearVelocity.bind(rt),
       setAngularVelocity: rt.wiredPhysicsSetAngularVelocity.bind(rt),
       applyForce: rt.wiredPhysicsApplyForce.bind(rt),
-      claimAuthority: rt.wiredPhysicsClaimAuthority.bind(rt),
-      releaseAuthority: rt.wiredPhysicsReleaseAuthority.bind(rt),
+      takeHold: rt.wiredPhysicsTakeHold.bind(rt),
+      releaseHold: rt.wiredPhysicsReleaseHold.bind(rt),
     },
     "wired:portal/api": {
       open: rt.wiredPortalOpen.bind(rt),

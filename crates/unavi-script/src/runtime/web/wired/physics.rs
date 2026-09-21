@@ -110,15 +110,15 @@ impl Runtime {
             .map_err(raise)
     }
 
-    #[wasm_bindgen(js_name = "wiredPhysicsClaimAuthority")]
-    pub fn wired_physics_claim_authority(&self, doc: Vec<u8>) -> Result<(), JsValue> {
+    #[wasm_bindgen(js_name = "wiredPhysicsTakeHold")]
+    pub fn wired_physics_take_hold(&self, doc: Vec<u8>) -> Result<(), JsValue> {
         self.api.require(ApiName::Physics).map_err(raise)?;
-        shared::wired::physics::claim_authority(&self.api, doc).map_err(raise)
+        shared::wired::physics::take_hold(&self.api, doc).map_err(raise)
     }
 
-    #[wasm_bindgen(js_name = "wiredPhysicsReleaseAuthority")]
-    pub fn wired_physics_release_authority(&self, doc: Vec<u8>) -> Result<(), JsValue> {
+    #[wasm_bindgen(js_name = "wiredPhysicsReleaseHold")]
+    pub fn wired_physics_release_hold(&self, doc: Vec<u8>) -> Result<(), JsValue> {
         self.api.require(ApiName::Physics).map_err(raise)?;
-        shared::wired::physics::release_authority(&self.api, doc).map_err(raise)
+        shared::wired::physics::release_hold(&self.api, doc).map_err(raise)
     }
 }

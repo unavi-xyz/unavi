@@ -14,7 +14,7 @@ use unavi_policy::{
     quota::{
         Quota,
         Stock,
-        StockHold,
+        StockLease,
     },
     registry::Policy,
 };
@@ -43,16 +43,16 @@ use crate::{
 pub const KV_KEY_MAX_BYTES: usize = 256;
 
 /// One peer's contribution to a document: its pin (timestamped, so the oldest
-/// pin owns the doc) and its latest object-authority claim.
+/// pin owns the doc) and when it last took hold.
 #[derive(Default)]
 struct PeerDocEntry {
-    pin:       Option<u64>,
-    authority: Option<u64>,
+    pin:  Option<u64>,
+    hold: Option<u64>,
 }
 
 impl PeerDocEntry {
     const fn is_empty(&self) -> bool {
-        self.pin.is_none() && self.authority.is_none()
+        self.pin.is_none() && self.hold.is_none()
     }
 }
 
@@ -62,13 +62,13 @@ struct PeerReplica {
 }
 
 /// Per-document state shared across peers. `refs` counts the live pins,
-/// authority claims and KV cells keeping the presence alive; `_doc_hold`
+/// holds and KV cells keeping the presence alive; `_doc_lease`
 /// charges one `Documents` unit while the doc is known locally.
 struct DocPresence {
-    space:     DocId,
-    _doc_hold: StockHold,
-    kv:        HashMap<String, Cell>,
-    refs:      u32,
+    space:      DocId,
+    _doc_lease: StockLease,
+    kv:         HashMap<String, Cell>,
+    refs:       u32,
 }
 
 /// A registered delta stream's cancel token.
@@ -96,12 +96,12 @@ impl Inner {
     /// first sight. Returns `false` when that charge is refused.
     fn ensure_presence(&mut self, doc: DocId, space: DocId, quota: &Arc<Quota>) -> bool {
         if let Entry::Vacant(v) = self.docs.entry(doc) {
-            let Ok(hold) = quota.hold(Stock::Documents, 1) else {
+            let Ok(lease) = quota.lease(Stock::Documents, 1) else {
                 return false;
             };
             v.insert(DocPresence {
                 space,
-                _doc_hold: hold,
+                _doc_lease: lease,
                 kv: HashMap::new(),
                 refs: 0,
             });
@@ -124,7 +124,7 @@ impl Inner {
     }
 
     /// Drops one reference to `doc`, releasing its presence (and the
-    /// `Documents` hold) once nothing references it.
+    /// `Documents` lease) once nothing references it.
     fn dec_ref(&mut self, doc: DocId) {
         if let Entry::Occupied(mut p) = self.docs.entry(doc) {
             p.get_mut().refs = p.get().refs.saturating_sub(1);
@@ -183,7 +183,7 @@ impl Inner {
         }
     }
 
-    fn add_authority(
+    fn add_hold(
         &mut self,
         peer: EndpointId,
         doc: DocId,
@@ -201,17 +201,17 @@ impl Inner {
             .docs
             .entry(doc)
             .or_default();
-        let was_set = entry.authority.is_some();
-        entry.authority = Some(at);
+        let was_set = entry.hold.is_some();
+        entry.hold = Some(at);
         if !was_set {
             self.inc_ref(doc);
         }
         true
     }
 
-    fn remove_authority(&mut self, peer: EndpointId, doc: DocId) {
+    fn remove_hold(&mut self, peer: EndpointId, doc: DocId) {
         if let Some(entry) = self.peers.get_mut(&peer).and_then(|r| r.docs.get_mut(&doc))
-            && entry.authority.take().is_some()
+            && entry.hold.take().is_some()
         {
             self.dec_ref(doc);
             self.prune_entry(peer, doc);
@@ -247,16 +247,16 @@ impl Inner {
                 Entry::Occupied(mut o) => {
                     if at < o.get().at {
                         Ok(false)
-                    } else if let Ok(hold) = quota.hold(Stock::KvMemory, new_bytes) {
+                    } else if let Ok(lease) = quota.lease(Stock::KvMemory, new_bytes) {
                         let cell = o.get_mut();
-                        // The outgoing version keeps its own hold and becomes
-                        // the fallback; whatever it replaces is dropped,
-                        // releasing that hold. Depth stays one.
+                        // The outgoing version keeps its own lease and
+                        // becomes the fallback; whatever it replaces is
+                        // dropped, releasing that lease. Depth stays one.
                         let displaced = Cell {
                             at:    cell.at,
                             peer:  cell.peer,
                             value: cell.value.take(),
-                            hold:  std::mem::replace(&mut cell.hold, hold),
+                            lease: std::mem::replace(&mut cell.lease, lease),
                             prev:  None,
                         };
                         cell.at = at;
@@ -268,14 +268,14 @@ impl Inner {
                         Err(KvError::QuotaExceeded)
                     }
                 }
-                Entry::Vacant(v) => quota.hold(Stock::KvMemory, new_bytes).map_or(
+                Entry::Vacant(v) => quota.lease(Stock::KvMemory, new_bytes).map_or(
                     Err(KvError::QuotaExceeded),
-                    |hold| {
+                    |lease| {
                         v.insert(Cell {
                             at,
                             peer,
                             value,
-                            hold,
+                            lease,
                             prev: None,
                         });
                         Ok(true)
@@ -374,11 +374,11 @@ impl Inner {
         self.resolve_peer(space, doc, false, |e| e.pin)
     }
 
-    /// Transform authority for `doc`: the latest explicit claimer, or the
+    /// Who holds `doc`: the latest explicit claimer, or the
     /// document's owner when no one has claimed, so an owner drives its objects
     /// by default until a peer grabs them.
-    fn authority(&self, space: DocId, doc: DocId) -> Option<EndpointId> {
-        self.resolve_peer(space, doc, true, |e| e.authority)
+    fn holder(&self, space: DocId, doc: DocId) -> Option<EndpointId> {
+        self.resolve_peer(space, doc, true, |e| e.hold)
             .or_else(|| self.owner(space, doc))
     }
 
@@ -416,7 +416,7 @@ impl Inner {
                         doc: *doc,
                         space,
                         pin: e.pin,
-                        authority: e.authority,
+                        hold: e.hold,
                         kv: Vec::new(),
                     },
                 );
@@ -430,11 +430,11 @@ impl Inner {
                 by_doc
                     .entry(*doc)
                     .or_insert_with(|| DocSnapshot {
-                        doc:       *doc,
-                        space:     p.space,
-                        pin:       None,
-                        authority: None,
-                        kv:        Vec::new(),
+                        doc:   *doc,
+                        space: p.space,
+                        pin:   None,
+                        hold:  None,
+                        kv:    Vec::new(),
                     })
                     .kv
                     .push(KvSnapshot {
@@ -462,7 +462,7 @@ fn settle_reassigns(
 }
 
 /// Every peer's replicated view of the documents in play: who pins what, who
-/// holds transform authority, and the KV cells the documents carry.
+/// holds each document, and the KV cells the documents carry.
 ///
 /// One value, constructed once per app.
 #[derive(Resource, Clone)]
@@ -542,10 +542,10 @@ impl Replicas {
         settle_reassigns(policy, self, viewer, reassign);
     }
 
-    /// Adds or refreshes a peer's authority claim on `doc`. Returns `false` if
+    /// Adds or refreshes a peer's hold on `doc`. Returns `false` if
     /// the document quota refuses the presence.
     #[must_use]
-    pub fn add_authority(
+    pub fn add_hold(
         &self,
         policy: &Policy,
         viewer: Option<Viewer>,
@@ -555,11 +555,11 @@ impl Replicas {
         at: u64,
     ) -> bool {
         let quota = document_quota(policy, self, viewer, doc);
-        self.0.lock().add_authority(peer, doc, space, at, &quota)
+        self.0.lock().add_hold(peer, doc, space, at, &quota)
     }
 
-    pub fn remove_authority(&self, peer: EndpointId, doc: DocId) {
-        self.0.lock().remove_authority(peer, doc);
+    pub fn remove_hold(&self, peer: EndpointId, doc: DocId) {
+        self.0.lock().remove_hold(peer, doc);
     }
 
     /// Applies a KV write for `peer`.
@@ -590,7 +590,7 @@ impl Replicas {
     /// Rolls back every cell whose current value came from `peer`, returning
     /// how many changed.
     ///
-    /// The undo that pins and authority claims get from the peer's entity
+    /// The undo that pins and holds get from the peer's entity
     /// cascade. Cells live on the document rather than the peer, so they need
     /// this instead.
     #[must_use]
@@ -604,8 +604,8 @@ impl Replicas {
     }
 
     #[must_use]
-    pub fn authority(&self, space: DocId, doc: DocId) -> Option<EndpointId> {
-        self.0.lock().authority(space, doc)
+    pub fn holder(&self, space: DocId, doc: DocId) -> Option<EndpointId> {
+        self.0.lock().holder(space, doc)
     }
 
     #[must_use]
@@ -614,8 +614,8 @@ impl Replicas {
     }
 
     #[must_use]
-    pub fn is_authority(&self, space: DocId, doc: DocId, me: EndpointId) -> bool {
-        self.authority(space, doc) == Some(me)
+    pub fn is_holder(&self, space: DocId, doc: DocId, me: EndpointId) -> bool {
+        self.holder(space, doc) == Some(me)
     }
 
     #[must_use]
@@ -731,10 +731,10 @@ impl Replicas {
                     .docs
                     .iter()
                     .map(|(doc, e)| debug::DebugPeerDoc {
-                        doc:       *doc,
-                        space:     inner.docs.get(doc).map_or(*doc, |p| p.space),
-                        pin:       e.pin,
-                        authority: e.authority,
+                        doc:   *doc,
+                        space: inner.docs.get(doc).map_or(*doc, |p| p.space),
+                        pin:   e.pin,
+                        hold:  e.hold,
                     })
                     .collect::<Vec<_>>();
                 docs.sort_unstable_by_key(|d| d.doc.0);
@@ -807,7 +807,7 @@ mod tests {
     }
 
     #[test]
-    fn authority_latest_and_defaults_to_owner() {
+    fn the_holder_is_the_latest_claimer_and_defaults_to_the_owner() {
         let replicas = Replicas::new();
         let policy = Policy::new();
         let space = doc(b"auth-space");
@@ -817,14 +817,14 @@ mod tests {
 
         assert!(replicas.add_pin(&policy, None, owner_peer, doc, space, 10));
         assert!(replicas.add_pin(&policy, None, grabber, doc, space, 20));
-        assert_eq!(replicas.authority(space, doc), Some(owner_peer));
+        assert_eq!(replicas.holder(space, doc), Some(owner_peer));
 
-        assert!(replicas.add_authority(&policy, None, grabber, doc, space, 200));
-        assert_eq!(replicas.authority(space, doc), Some(grabber));
+        assert!(replicas.add_hold(&policy, None, grabber, doc, space, 200));
+        assert_eq!(replicas.holder(space, doc), Some(grabber));
         assert_eq!(replicas.owner(space, doc), Some(owner_peer));
 
-        replicas.remove_authority(grabber, doc);
-        assert_eq!(replicas.authority(space, doc), Some(owner_peer));
+        replicas.remove_hold(grabber, doc);
+        assert_eq!(replicas.holder(space, doc), Some(owner_peer));
     }
 
     /// The document outlives its first owner through the next-oldest pin, so

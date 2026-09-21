@@ -317,7 +317,6 @@ mod tests {
         let mut app = setup();
         let start = enter(&mut app, namespace(1));
 
-        // Loaded before travel begins, as if opened earlier through a portal.
         let target_ns = namespace(2);
         let target = app.world_mut().spawn((Space(target_ns), HsdLoaded)).id();
 

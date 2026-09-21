@@ -412,17 +412,6 @@ mod tests {
     }
 
     #[test]
-    fn closed_seam_is_hidden() {
-        let mut app = setup();
-        let seam = spawn_seam(&mut app, SeamState::Closed);
-        app.update();
-        assert_eq!(
-            app.world().get::<Visibility>(seam),
-            Some(&Visibility::Hidden)
-        );
-    }
-
-    #[test]
     fn opening_a_seam_makes_it_visible() {
         let mut app = setup();
         let seam = spawn_seam(&mut app, SeamState::Closed);

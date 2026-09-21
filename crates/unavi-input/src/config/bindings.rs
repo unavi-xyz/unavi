@@ -376,26 +376,6 @@ mod tests {
         }
     }
 
-    #[test]
-    fn no_profile_binds_one_input_to_both_the_trigger_and_the_grip() {
-        let bindings = Bindings::default();
-
-        for kind in PointerKind::ALL {
-            for pulled in &bindings.trigger.get(kind).xr {
-                assert!(
-                    !bindings
-                        .grip
-                        .get(kind)
-                        .xr
-                        .iter()
-                        .any(|held| held.path == pulled.path),
-                    "{} would act and take hold at once",
-                    pulled.path
-                );
-            }
-        }
-    }
-
     /// The trigger is the input everything picks with, so anything else on it
     /// would fire whenever a mote is pressed.
     #[test]

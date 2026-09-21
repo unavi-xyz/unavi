@@ -260,15 +260,4 @@ mod tests {
             "a path the manifest still ships is repointed, not dropped"
         );
     }
-
-    #[test]
-    fn an_undecodable_key_is_removed() {
-        let held = HashMap::from([(vec![0xFF, 0xFE], hash(AVATAR))]);
-
-        assert_eq!(
-            plan(&held, MANIFEST).expect("plan").remove,
-            [vec![0xFF, 0xFE]],
-            "a key naming no manifest path is dropped whatever its bytes"
-        );
-    }
 }

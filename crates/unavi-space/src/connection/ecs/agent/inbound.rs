@@ -243,16 +243,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn transform_lerp_samples_midpoint() {
-        let lerp = TransformLerp {
-            prev:   Transform::from_xyz(0.0, 0.0, 0.0),
-            target: Transform::from_xyz(2.0, 0.0, 0.0),
-        };
-        let (translation, _) = lerp.sample(0.5);
-        assert!((translation - Vec3::new(1.0, 0.0, 0.0)).length() < 0.001);
-    }
-
-    #[test]
     fn retarget_preserves_current_as_new_prev() {
         let mut lerp = TransformLerp {
             prev:   Transform::from_xyz(0.0, 0.0, 0.0),

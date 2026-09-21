@@ -2,7 +2,13 @@ use bevy::prelude::*;
 use hsd::id::DocId;
 use iroh_docs::NamespaceId;
 
-use crate::document::DocumentPolicy;
+use crate::{
+    document::DocumentPolicy,
+    owner::{
+        Owner,
+        PolicyOwner,
+    },
+};
 
 #[derive(Component)]
 #[require(Transform, Visibility)]
@@ -16,11 +22,19 @@ impl Space {
     }
 }
 
-/// Entering a space grants its own document the space tier. This is where
-/// authority is handed to something the local user did not author, and the
-/// only place it is.
-pub fn grant_space_permissions(trigger: On<Add, Space>, mut commands: Commands) {
-    commands
-        .entity(trigger.entity)
-        .insert(DocumentPolicy::space());
+/// Entering a space grants its own document the space preset and states the
+/// space as its owner. This is where authority is handed to something the
+/// local user did not author, and the only place it is.
+pub fn grant_space_permissions(
+    trigger: On<Add, Space>,
+    spaces: Query<&Space>,
+    mut commands: Commands,
+) {
+    let Ok(space) = spaces.get(trigger.entity) else {
+        return;
+    };
+    commands.entity(trigger.entity).insert((
+        DocumentPolicy::space(),
+        PolicyOwner(Owner::Space(space.doc_id())),
+    ));
 }

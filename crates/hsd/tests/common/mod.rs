@@ -1,6 +1,9 @@
 // Compiled into every integration-test binary in this crate, each of which
 // only uses a subset of these helpers.
-#![expect(dead_code)]
+#![expect(
+    dead_code,
+    reason = "each integration-test binary only uses a subset of these builders"
+)]
 
 //! Typed graph builders. Tests construct [`ShaderGraph`] values structurally
 //! instead of parsing `.hss` authoring strings: a graph built from a string

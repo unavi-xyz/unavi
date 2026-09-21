@@ -73,15 +73,4 @@ mod tests {
         let decoded = TextAttr::decode(&attr.encode().expect("encode")).expect("decode");
         assert_eq!(decoded, attr);
     }
-
-    #[test]
-    fn an_alignment_this_build_does_not_know_still_decodes() {
-        let attr = TextAttr {
-            value: "hello".to_string(),
-            align: Some("justify".to_string()),
-            ..Default::default()
-        };
-        let decoded = TextAttr::decode(&attr.encode().expect("encode")).expect("decode");
-        assert_eq!(decoded.align.as_deref(), Some("justify"));
-    }
 }

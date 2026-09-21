@@ -54,8 +54,8 @@ macro_rules! generate {
                         ::wired_prelude::wired_kv::TypedKvError::QuotaStock,
                     wired::error::types::Error::Permission =>
                         ::wired_prelude::wired_kv::TypedKvError::Permission,
-                    wired::error::types::Error::Reach =>
-                        ::wired_prelude::wired_kv::TypedKvError::Reach,
+                    wired::error::types::Error::Forbidden =>
+                        ::wired_prelude::wired_kv::TypedKvError::Forbidden,
                     wired::error::types::Error::Other(detail) =>
                         ::wired_prelude::wired_kv::TypedKvError::Other(detail),
                 })

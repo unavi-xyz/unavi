@@ -1,25 +1,19 @@
-use std::{
-    collections::HashMap,
-    path::{
-        Path,
-        PathBuf,
-    },
+mod common;
+
+use std::path::{
+    Path,
+    PathBuf,
 };
 
-use hsd::{
-    attributes::{
-        material,
-        name::NameAttr,
-        slots,
-    },
-    id::PrimId,
-    package::Package,
-    state::{
-        SceneState,
-        entry::Entry,
-    },
+use common::{
+    compile,
+    prim_named,
+    realize,
 };
-use hsd_cli::compile;
+use hsd::attributes::{
+    material,
+    slots,
+};
 
 const SOURCE: &str = r#"[
     (
@@ -45,35 +39,6 @@ fn write_source(case: &str, hsda: &str) -> PathBuf {
     let input = dir.join("asset.hsda");
     std::fs::write(&input, hsda).expect("write source");
     input
-}
-
-fn compile(input: &Path) -> anyhow::Result<Package> {
-    compile::compile_file(input, &mut HashMap::new())
-}
-
-/// The package is bytes on disk before it is state, so the test goes through
-/// the encoding rather than around it.
-fn realize(package: &Package) -> SceneState {
-    let bytes = package.encode().expect("encode");
-    let package = Package::decode(&bytes).expect("decode");
-
-    let mut state = SceneState::new();
-    for (key, value) in package.entries {
-        state.apply(&Entry::new(key, value, 1)).expect("apply");
-    }
-    state
-}
-
-fn prim_named(state: &SceneState, name: &str) -> PrimId {
-    state
-        .prims()
-        .find(|prim| {
-            state
-                .attribute::<NameAttr>(*prim)
-                .and_then(Result::ok)
-                .is_some_and(|n| n.0 == name)
-        })
-        .unwrap_or_else(|| panic!("no prim named {name}"))
 }
 
 #[test]

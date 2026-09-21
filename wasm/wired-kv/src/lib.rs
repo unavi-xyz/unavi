@@ -18,8 +18,8 @@ pub enum TypedKvError {
     QuotaStock,
     #[error("permission denied")]
     Permission,
-    #[error("out of reach")]
-    Reach,
+    #[error("forbidden")]
+    Forbidden,
     #[error("{0}")]
     Other(String),
 }

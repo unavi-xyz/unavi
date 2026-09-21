@@ -32,11 +32,14 @@ impl From<F32Vec3> for Vec3 {
 mod tests {
     use super::*;
 
+    /// No quantization here, so a component mismatch (e.g. `y`/`z` swapped in
+    /// a refactor) is the only way this roundtrip can fail; exact equality
+    /// catches that.
     #[test]
-    fn test_f32_pos_roundtrip() {
+    fn roundtrip_is_exact() {
         let original = Vec3::new(100.5, -42.25, 0.001);
         let pos: F32Vec3 = original.into();
         let restored: Vec3 = pos.into();
-        assert!((original - restored).length() < 0.0001);
+        assert_eq!(original, restored);
     }
 }

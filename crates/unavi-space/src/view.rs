@@ -9,9 +9,9 @@ use hsd::id::DocId;
 use iroh::EndpointId;
 use unavi_policy::{
     error::PolicyError,
-    reach::Standing,
+    owner::Owner,
     registry::Policy,
-    tier::Tier,
+    standing::Standing,
     trust::{
         Trust,
         TrustTable,
@@ -64,23 +64,40 @@ impl SpaceView {
         let replicated = self.replicas.space_of(root);
         let space = self.policy.registered_space(root).or(replicated);
 
-        let owner = space
-            .and_then(|space| self.replicas.owner(space, root))
-            .or_else(|| {
-                // Nothing pins the root and it is absent from the replica
-                // index, so it was minted here. A document that
-                // *is* in the index arrived from a peer, and
-                // must never fall back to reading as local.
-                replicated.is_none().then_some(self.me)
-            });
-
         let record = self.policy.get(doc);
+        let owner = record
+            .owner
+            .unwrap_or_else(|| self.resolve_owner(root, space, replicated));
+
         Standing {
-            tier: record.policy.tier,
-            reach: record.reach,
-            space,
             owner,
-            trust: self.trust_of(owner),
+            space,
+            threshold: record.threshold,
+            trust: self.trust_of(&owner),
+        }
+    }
+
+    /// Owner for a document the host stated none for: the space's own
+    /// document, then the oldest pin, then the space itself, then — for
+    /// something minted here — this node.
+    fn resolve_owner(&self, root: DocId, space: Option<DocId>, replicated: Option<DocId>) -> Owner {
+        match space {
+            Some(space) if root == space => Owner::Space(space),
+            Some(space) => self.replicas.owner(space, root).map_or_else(
+                || {
+                    if replicated.is_none() {
+                        // Nothing pins it and it is absent from the replica
+                        // index, so it was minted here. A document that *is*
+                        // in the index arrived from a peer, and must never
+                        // fall back to reading as local.
+                        Owner::Peer(self.me)
+                    } else {
+                        Owner::Space(space)
+                    }
+                },
+                Owner::Peer,
+            ),
+            None => Owner::Peer(self.me),
         }
     }
 
@@ -134,18 +151,23 @@ impl SpaceView {
         }
     }
 
-    /// The tier `doc` was loaded at.
+    /// Whether `doc`'s owner may reach outside every space.
     #[must_use]
-    pub fn tier_of(&self, doc: DocId) -> Tier {
-        self.policy.get(doc).policy.tier
+    pub fn crosses_space_boundaries(&self, doc: DocId) -> bool {
+        self.standing(doc).owner.crosses_space_boundaries()
     }
 
-    /// The trust level to judge a document by, given the peer that owns it.
+    /// The trust to judge a document by, given its owner.
+    ///
+    /// A space's content is nobody's opinion, so it is judged at the guest
+    /// floor; the node's own content at the top, since it is the node's.
     #[must_use]
-    pub fn trust_of(&self, owner: Option<EndpointId>) -> Trust {
-        owner.map_or(Trust::Guest, |peer| {
-            quota::trust_of(Some(self.viewer()), peer)
-        })
+    pub fn trust_of(&self, owner: &Owner) -> Trust {
+        match owner {
+            Owner::System => Trust::Myself,
+            Owner::Space(_) => Trust::Guest,
+            Owner::Peer(peer) => quota::trust_of(Some(self.viewer()), *peer),
+        }
     }
 
     #[must_use]

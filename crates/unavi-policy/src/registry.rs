@@ -10,11 +10,12 @@ use parking_lot::RwLock;
 
 use crate::{
     document::DocumentPolicy,
+    owner::Owner,
     quota::{
         Quota,
         limits::Limits,
     },
-    reach::Reach,
+    threshold::Threshold,
 };
 
 /// Longest host chain a lookup will follow before giving up. A cycle is not
@@ -28,15 +29,19 @@ const MAX_HOST_DEPTH: usize = 16;
 /// document id and read together on the write path.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Record {
-    pub policy: DocumentPolicy,
-    pub reach:  Reach,
+    pub policy:    DocumentPolicy,
+    pub threshold: Threshold,
+    /// What the host stated this document to be, `None` while only a pin's
+    /// replication knows it. `None` is resolved against pins when the document
+    /// is judged.
+    pub owner:     Option<Owner>,
     /// The space this document was registered into, ignoring any that only a
     /// peer's pin places.
-    pub space:  Option<DocId>,
+    pub space:     Option<DocId>,
     /// The document that composed this one in, for a prefab instance. An
     /// instance has an id but no namespace, so its owner and its space are
     /// whatever its host's are.
-    pub host:   Option<DocId>,
+    pub host:      Option<DocId>,
 }
 
 /// What a quota is attributed to.
@@ -283,7 +288,8 @@ mod tests {
     fn an_unregistered_document_answers_the_weakest_record() {
         let record = Policy::new().get(doc(b"never-registered"));
         assert_eq!(record.policy, DocumentPolicy::untrusted());
-        assert_eq!(record.reach, Reach::default());
+        assert_eq!(record.threshold, Threshold::default());
+        assert!(record.owner.is_none());
         assert!(record.space.is_none());
     }
 
@@ -293,14 +299,14 @@ mod tests {
         let (space, member, other) = (doc(b"space"), doc(b"member"), doc(b"other"));
         policy.update(space, |r| r.space = Some(space));
         policy.update(member, |r| r.space = Some(space));
-        policy.update(other, |r| r.reach = Reach::own_only());
+        policy.update(other, |r| r.threshold = Threshold::own_only());
 
         policy.forget_space(space);
 
         assert!(policy.get(member).space.is_none());
         assert_eq!(
-            policy.get(other).reach,
-            Reach::own_only(),
+            policy.get(other).threshold,
+            Threshold::own_only(),
             "unloading one space must not clear an unrelated document"
         );
     }

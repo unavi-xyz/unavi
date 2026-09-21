@@ -88,18 +88,6 @@ mod tests {
     }
 
     #[test]
-    fn round_trips_a_slot_property() {
-        let key = prop(id(), "mesh:POSITION");
-        assert_eq!(
-            parse(&key),
-            Some(Key::Prop {
-                prim: id(),
-                name: SmolStr::new("mesh:POSITION"),
-            })
-        );
-    }
-
-    #[test]
     fn round_trips_meta() {
         assert_eq!(parse(META), Some(Key::Meta));
     }

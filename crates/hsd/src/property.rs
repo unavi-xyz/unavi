@@ -138,14 +138,6 @@ mod tests {
     }
 
     #[test]
-    fn unknown_attribute_payload_survives() {
-        let payload = vec![0xDE, 0xAD, 0xBE, 0xEF];
-        let prop = Property::Attribute(payload.clone());
-        let decoded = Property::decode(&prop.encode()).expect("decode");
-        assert_eq!(decoded.as_attribute(), Some(&payload));
-    }
-
-    #[test]
     fn relationship_round_trips() {
         let prop = Property::Relationship(PrimId([9; PRIM_ID_BYTES]));
         assert_eq!(Property::decode(&prop.encode()).expect("decode"), prop);

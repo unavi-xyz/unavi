@@ -455,14 +455,6 @@ fn lit_fragment_shader_uses_pbr_lighting() {
 }
 
 #[test]
-fn displacement_body_generates_valid_wgsl() {
-    let graph = displaced(vec![Node::LocalNormal, Node::Time], Some(node(0)));
-    let validated = validate(&graph).expect("valid");
-    let body = generate_displacement_body(&graph, &validated).expect("has displacement");
-    assert_displacement_valid(&body);
-}
-
-#[test]
 fn a_sin_driven_displacement_body_generates_valid_wgsl() {
     let graph = displaced(
         vec![

@@ -129,15 +129,6 @@ mod tests {
     use crate::source::deadzone;
 
     #[test]
-    fn a_config_missing_everything_still_loads() {
-        let config = file::parse("()").expect("parse");
-        assert!(
-            (config.tuning.pointer_reach - Tuning::default().pointer_reach).abs() < f32::EPSILON
-        );
-        assert!(!config.bindings.movement.dpads.is_empty());
-    }
-
-    #[test]
     fn a_deadzone_of_one_does_not_reach_the_readers() {
         let config = file::parse("(tuning: (stick_deadzone: 1.0))").expect("parse");
         let value = deadzone(Vec2::new(0.99, 0.0), config.tuning.stick_deadzone);

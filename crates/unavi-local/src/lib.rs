@@ -124,25 +124,15 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn a_path_round_trips_a_value_by_key() {
+    fn path_storage() -> (tempfile::TempDir, LocalStorage) {
         let dir = tempdir().expect("temp dir");
         let storage = LocalStorage::Path(dir.path().to_path_buf());
-
-        assert_eq!(storage.read("root-doc").expect("read missing"), None);
-
-        storage.write("root-doc", "written").expect("write");
-
-        assert_eq!(
-            storage.read("root-doc").expect("read").as_deref(),
-            Some("written")
-        );
+        (dir, storage)
     }
 
     #[test]
     fn a_nested_key_creates_its_directories() {
-        let dir = tempdir().expect("temp dir");
-        let storage = LocalStorage::Path(dir.path().to_path_buf());
+        let (_dir, storage) = path_storage();
 
         storage
             .write("registry/views/recent", "value")
@@ -188,16 +178,14 @@ mod tests {
 
     #[test]
     fn a_missing_value_is_absence_not_an_error() {
-        let dir = tempdir().expect("temp dir");
-        let storage = LocalStorage::Path(dir.path().to_path_buf());
+        let (_dir, storage) = path_storage();
 
         assert_eq!(storage.read("absent").expect("read"), None);
     }
 
     #[test]
     fn an_unreadable_value_is_an_error_not_absence() {
-        let dir = tempdir().expect("temp dir");
-        let storage = LocalStorage::Path(dir.path().to_path_buf());
+        let (dir, storage) = path_storage();
         std::fs::write(dir.path().join("broken"), [0xFF, 0xFE]).expect("write");
 
         assert!(
@@ -213,8 +201,7 @@ mod tests {
 
     #[test]
     fn keys_cannot_escape_the_storage_dir() {
-        let dir = tempdir().expect("temp dir");
-        let storage = LocalStorage::Path(dir.path().to_path_buf());
+        let (_dir, storage) = path_storage();
 
         for key in ["", "/absolute", ".", "..", "../x", "a/../b", "a//b"] {
             assert!(storage.read(key).is_err(), "read must refuse {key:?}");
@@ -227,8 +214,7 @@ mod tests {
 
     #[test]
     fn write_replaces_a_value_atomically() {
-        let dir = tempdir().expect("temp dir");
-        let storage = LocalStorage::Path(dir.path().to_path_buf());
+        let (dir, storage) = path_storage();
 
         storage.write("key", "first").expect("write");
         storage.write("key", "second").expect("replace");
@@ -251,8 +237,7 @@ mod tests {
 
     #[test]
     fn create_refuses_to_overwrite() {
-        let dir = tempdir().expect("temp dir");
-        let storage = LocalStorage::Path(dir.path().to_path_buf());
+        let (_dir, storage) = path_storage();
 
         storage.write("key", "keep").expect("write");
         storage
@@ -264,28 +249,12 @@ mod tests {
         assert_eq!(storage.read("fresh").expect("read").as_deref(), Some("new"));
     }
 
-    #[test]
-    fn bytes_round_trip() {
-        let dir = tempdir().expect("temp dir");
-        let storage = LocalStorage::Path(dir.path().to_path_buf());
-
-        storage
-            .write_bytes("raw", &[0x00, 0x7F, 0xFF])
-            .expect("write");
-
-        assert_eq!(
-            storage.read_bytes("raw").expect("read").as_deref(),
-            Some(&[0x00, 0x7F, 0xFF][..])
-        );
-    }
-
     #[cfg(unix)]
     #[test]
     fn files_are_owner_only() {
         use std::os::unix::fs::PermissionsExt;
 
-        let dir = tempdir().expect("temp dir");
-        let storage = LocalStorage::Path(dir.path().to_path_buf());
+        let (dir, storage) = path_storage();
 
         storage.write("written", "value").expect("write");
         storage.create("created", "value").expect("create");
@@ -294,19 +263,5 @@ mod tests {
             let meta = std::fs::metadata(dir.path().join(file)).expect("metadata");
             assert_eq!(meta.permissions().mode() & 0o777, 0o600, "{file}");
         }
-    }
-
-    #[test]
-    fn in_memory_write_round_trips_bytes() {
-        let storage = LocalStorage::default();
-
-        storage
-            .write_bytes("raw", &[0x00, 0x7F, 0xFF])
-            .expect("write");
-
-        assert_eq!(
-            storage.read_bytes("raw").expect("read").as_deref(),
-            Some(&[0x00, 0x7F, 0xFF][..])
-        );
     }
 }

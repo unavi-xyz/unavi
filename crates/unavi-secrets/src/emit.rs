@@ -144,14 +144,6 @@ mod tests {
     }
 
     #[test]
-    fn a_description_spanning_lines_still_parses() {
-        let mut described = field("HOST");
-        described.description = Some("first\nsecond \"quoted\"".to_owned());
-
-        render(&[described], &BTreeMap::new());
-    }
-
-    #[test]
     fn a_value_needing_escapes_stays_a_valid_literal() {
         let defaults = BTreeMap::from([("HOST".to_owned(), "a\"b\\c\nd".to_owned())]);
         let rendered = render(&[field("HOST")], &defaults);

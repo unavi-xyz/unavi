@@ -133,7 +133,7 @@ mod tests {
     }
 
     #[test]
-    fn rejected_insert_returns_the_value_and_holds_no_slot() {
+    fn a_rejected_insert_charges_no_slot_and_stores_nothing() {
         let q = quota(0);
         let mut map = SlotMap::<u32>::default();
         assert!(map.insert(1, &q).is_err());

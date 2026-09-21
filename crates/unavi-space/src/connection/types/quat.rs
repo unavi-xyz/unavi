@@ -98,24 +98,18 @@ mod tests {
 
     use super::*;
 
+    /// Walks identity, several rotations, and a case whose largest component
+    /// is a negative `w` (exercises the sign-normalization branch).
     #[test]
-    fn test_packed_quat_identity() {
-        let original = Quat::IDENTITY;
-        let packed: PackedQuat = original.into();
-        let restored: Quat = packed.into();
-
-        let angle = original.angle_between(restored);
-        assert!(angle < 0.01, "identity angle error: {angle}");
-    }
-
-    #[test]
-    fn test_packed_quat_rotations() {
+    fn packed_quat_roundtrip_preserves_rotation() {
         let test_cases = [
+            Quat::IDENTITY,
             Quat::from_rotation_x(PI / 4.0),
             Quat::from_rotation_y(PI / 3.0),
             Quat::from_rotation_z(PI / 6.0),
             Quat::from_rotation_x(PI / 2.0),
             Quat::from_euler(EulerRot::XYZ, 0.5, 1.2, -0.3),
+            Quat::from_xyzw(0.1, 0.2, 0.3, -0.927).normalize(),
         ];
 
         for original in test_cases {
@@ -123,17 +117,10 @@ mod tests {
             let restored: Quat = packed.into();
 
             let angle = original.angle_between(restored);
-            assert!(angle < 0.02, "rotation angle error: {angle}");
+            assert!(
+                angle < 0.02,
+                "roundtrip angle error for {original:?}: {angle}"
+            );
         }
-    }
-
-    #[test]
-    fn test_packed_quat_negative_w() {
-        let original = Quat::from_xyzw(0.1, 0.2, 0.3, -0.927).normalize();
-        let packed: PackedQuat = original.into();
-        let restored: Quat = packed.into();
-
-        let angle = original.angle_between(restored);
-        assert!(angle < 0.02, "negative w angle error: {angle}");
     }
 }

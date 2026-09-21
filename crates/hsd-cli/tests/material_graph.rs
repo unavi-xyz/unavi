@@ -1,11 +1,15 @@
-use std::{
-    collections::HashMap,
-    path::{
-        Path,
-        PathBuf,
-    },
+mod common;
+
+use std::path::{
+    Path,
+    PathBuf,
 };
 
+use common::{
+    compile,
+    prim_named,
+    realize,
+};
 use hsd::{
     attributes::{
         material_graph::{
@@ -20,51 +24,18 @@ use hsd::{
             validate::validate,
             value::GraphValue,
         },
-        name::NameAttr,
         slots::MATERIAL_GRAPH_DATA,
     },
     id::PrimId,
     key,
     package::Package,
-    state::{
-        SceneState,
-        entry::Entry,
-    },
 };
-use hsd_cli::compile;
 
 /// The checked-in example under `tests/fixtures/glow`: two prims sharing one
 /// compiled shader graph, one taking its defaults, one overriding the rim
 /// tint.
 fn glow_fixture() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/glow/asset.hsda")
-}
-
-fn compile(input: &Path) -> anyhow::Result<Package> {
-    compile::compile_file(input, &mut HashMap::new())
-}
-
-fn realize(package: &Package) -> SceneState {
-    let bytes = package.encode().expect("encode");
-    let package = Package::decode(&bytes).expect("decode");
-
-    let mut state = SceneState::new();
-    for (key, value) in package.entries {
-        state.apply(&Entry::new(key, value, 1)).expect("apply");
-    }
-    state
-}
-
-fn prim_named(state: &SceneState, name: &str) -> PrimId {
-    state
-        .prims()
-        .find(|prim| {
-            state
-                .attribute::<NameAttr>(*prim)
-                .and_then(Result::ok)
-                .is_some_and(|n| n.0 == name)
-        })
-        .unwrap_or_else(|| panic!("no prim named {name}"))
 }
 
 /// Looks a slot's raw bytes up straight from the package, since a realized
@@ -139,20 +110,6 @@ fn two_prims_sharing_a_graph_get_byte_identical_slot_entries() {
     );
 
     assert_eq!(a, b, "identical .hss source must compile byte-identically");
-}
-
-#[test]
-fn compilation_is_reproducible() {
-    assert_eq!(
-        compile(&glow_fixture())
-            .expect("compile")
-            .encode()
-            .expect("encode"),
-        compile(&glow_fixture())
-            .expect("compile")
-            .encode()
-            .expect("encode")
-    );
 }
 
 fn write_source(case: &str, shader: &str) -> PathBuf {

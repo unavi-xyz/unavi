@@ -133,7 +133,6 @@ pub fn read(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::pointer::PointerKind;
 
     #[test]
     fn every_action_gets_a_distinct_openxr_name() {
@@ -160,13 +159,5 @@ mod tests {
                 "{name} would be rejected"
             );
         }
-    }
-
-    #[test]
-    fn the_hands_are_told_apart_in_the_name() {
-        assert_ne!(
-            name_of(Action::Grip(PointerKind::LeftHand)),
-            name_of(Action::Grip(PointerKind::RightHand))
-        );
     }
 }

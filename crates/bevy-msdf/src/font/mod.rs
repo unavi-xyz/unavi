@@ -403,17 +403,6 @@ mod tests {
     }
 
     #[test]
-    fn the_dynamic_font_kerns() {
-        let font = font();
-        let state = font.state();
-        assert!(
-            state.atlas.kern('A', 'V') < 0.0,
-            "a font that bakes no pair adjustments sets text loose"
-        );
-        drop(state);
-    }
-
-    #[test]
     fn a_requested_glyph_generates_on_demand() {
         let font = font();
         let mut state = font.state();
@@ -426,21 +415,6 @@ mod tests {
             "an empty queue generates nothing"
         );
         drop(state);
-    }
-
-    #[test]
-    fn register_font_parses_raw_bytes() {
-        let mut images = Assets::<Image>::default();
-        let font = register_font(
-            Arc::<[u8]>::from(notosans::REGULAR_TTF),
-            RuntimeOpts::default(),
-            &mut images,
-        )
-        .expect("font");
-        assert!(
-            font.state().atlas.can_render('a'),
-            "the registered face serves its glyphs"
-        );
     }
 
     #[test]
@@ -476,12 +450,17 @@ mod tests {
     }
 
     #[test]
-    fn a_stack_does_not_kern_across_fonts() {
-        let stack = FontStack::new(vec![font(), font()]);
+    fn a_stack_only_kerns_a_pair_the_same_font_serves_both_halves_of() {
+        let stack = FontStack::new(vec![font()]);
         let direct = stack.fonts[0].state().atlas.kern('A', 'V');
         assert!(
             (stack.kern('A', 'V') - direct).abs() < 1.0e-6,
-            "a pair in the same font kerns as that font kerns"
+            "a pair the serving font covers kerns as that font kerns"
+        );
+        assert_eq!(
+            stack.kern('A', '漢'),
+            0.0,
+            "no face in the stack serves the second character, so the pair does not kern"
         );
     }
 

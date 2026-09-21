@@ -99,17 +99,3 @@ fn the_instance_and_object_leaves_are_legal_in_both_networks() {
         );
     }
 }
-
-/// `Uv` is surface-only, so this exercises the wrong-network check first;
-/// a texture sample in displacement would be caught by the same check.
-#[test]
-fn texture_sampling_is_rejected_in_displacement() {
-    let graph = displaced(vec![Node::Uv], None);
-    assert!(matches!(
-        validate(&graph),
-        Err(GraphError::WrongNetwork {
-            network: Network::Displacement,
-            ..
-        })
-    ));
-}

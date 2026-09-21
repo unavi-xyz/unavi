@@ -171,21 +171,15 @@ mod tests {
         }
     }
 
+    /// The millisecond prefix dominates ordering regardless of the random
+    /// tail, both as raw bytes and as the rendered string: a ULID must sort
+    /// by creation time even when two ids' random bits disagree.
     #[test]
-    fn prim_ids_are_time_ordered() {
-        let a = PrimId::new();
-        std::thread::sleep(std::time::Duration::from_millis(2));
-        let b = PrimId::new();
-        assert!(a < b);
-        assert!(a.to_string() < b.to_string());
-    }
-
-    #[test]
-    fn no_prim_id_prefixes_another() {
-        let a = PrimId::new().to_string();
-        let b = PrimId::from_digest(&[0xAB; 32]).to_string();
-        assert_eq!(a.len(), b.len());
-        assert!(!a.starts_with(&b) || a == b);
+    fn a_later_millisecond_prefix_always_sorts_higher() {
+        let earlier = PrimId(((1u128 << 80) | ((1u128 << 80) - 1)).to_be_bytes());
+        let later = PrimId((2u128 << 80).to_be_bytes());
+        assert!(earlier < later);
+        assert!(earlier.to_string() < later.to_string());
     }
 
     #[test]

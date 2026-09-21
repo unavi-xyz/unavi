@@ -445,6 +445,15 @@ mod tests {
         starts
     }
 
+    /// The default atlas lacks CJK, so the script tests seed their own glyphs.
+    fn cjk_atlas() -> Stub {
+        let mut atlas = atlas();
+        for ch in ['あ', 'ん', '漢', '字', '。'] {
+            atlas.glyphs.insert(ch, square());
+        }
+        atlas
+    }
+
     #[test]
     fn glyphs_advance_along_the_baseline() {
         let laid = laid("abc", &opts());
@@ -635,15 +644,6 @@ mod tests {
         assert_eq!(laid.quads.len(), 3, "a zero box wraps nothing");
     }
 
-    /// The default atlas lacks CJK, so the script tests seed their own glyphs.
-    fn cjk_atlas() -> Stub {
-        let mut atlas = atlas();
-        for ch in ['あ', 'ん', '漢', '字', '。'] {
-            atlas.glyphs.insert(ch, square());
-        }
-        atlas
-    }
-
     #[test]
     fn cjk_wraps_between_any_characters() {
         let laid = layout(
@@ -726,11 +726,5 @@ mod tests {
                 "no vertex of the mesh is a NaN"
             );
         }
-    }
-
-    #[test]
-    fn a_quad_remembers_its_font() {
-        let laid = laid("a", &opts());
-        assert_eq!(laid.quads[0].font, 0);
     }
 }

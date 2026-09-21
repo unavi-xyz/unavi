@@ -16,7 +16,7 @@ impl From<ScriptError> for Error {
             ScriptError::QuotaFlow(_) => Self::QuotaFlow,
             ScriptError::QuotaStock(_) => Self::QuotaStock,
             ScriptError::Policy(policy) if policy.is_permission() => Self::Permission,
-            ScriptError::Policy(_) => Self::Reach,
+            ScriptError::Policy(_) => Self::Forbidden,
         }
     }
 }

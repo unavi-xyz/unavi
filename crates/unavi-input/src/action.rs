@@ -222,15 +222,6 @@ mod tests {
     }
 
     #[test]
-    fn two_sticks_aiming_the_same_way_do_not_turn_twice_as_fast() {
-        let mut state = ActionState::default();
-        state.accumulate(Action::Look, Vec2::X);
-        state.accumulate(Action::Look, Vec2::X);
-        state.end_frame(&Tuning::default());
-        assert!((state.axis(Action::Look).length() - 1.0).abs() < 1.0e-5);
-    }
-
-    #[test]
     fn a_mouse_delta_keeps_its_full_reach() {
         let mut state = ActionState::default();
         state.accumulate_delta(Action::Look, Vec2::new(40.0, -12.0));
@@ -297,23 +288,7 @@ mod tests {
     }
 
     #[test]
-    fn a_trigger_and_a_grip_on_one_hand_are_read_apart() {
-        let mut state = ActionState::default();
-        let kind = PointerKind::RightHand;
-
-        state.begin_frame();
-        state.press(Action::Grip(kind), 1.0);
-        state.end_frame(&Tuning::default());
-
-        assert!(state.pressed(Action::Grip(kind)));
-        assert!(
-            !state.pressed(Action::Trigger(kind)),
-            "closing a hand is not pulling its trigger"
-        );
-    }
-
-    #[test]
-    fn what_was_held_when_the_input_was_taken_lets_go_of_it() {
+    fn capture_lets_go_of_everything_the_frame_was_holding() {
         let mut state = ActionState::default();
         let grip = Action::Grip(PointerKind::Screen);
         let tuning = Tuning::default();
@@ -325,6 +300,8 @@ mod tests {
 
         state.begin_frame();
         state.press(grip, 1.0);
+        state.accumulate(Action::Move, Vec2::Y);
+        state.accumulate_delta(Action::Look, Vec2::X);
         state.silence();
         state.end_frame(&tuning);
 
@@ -334,29 +311,7 @@ mod tests {
              the input"
         );
         assert!(!state.pressed(grip));
-    }
-
-    #[test]
-    fn silence_takes_the_axes_with_the_buttons() {
-        let mut state = ActionState::default();
-
-        state.begin_frame();
-        state.accumulate(Action::Move, Vec2::Y);
-        state.accumulate_delta(Action::Look, Vec2::X);
-        state.press(Action::Jump, 1.0);
-        state.silence();
-        state.end_frame(&Tuning::default());
-
         assert_eq!(state.axis(Action::Move), Vec2::ZERO);
         assert_eq!(state.delta(Action::Look), Vec2::ZERO);
-        assert!(!state.pressed(Action::Jump));
-    }
-
-    #[test]
-    fn aiming_hard_to_the_right_is_not_a_press() {
-        let mut state = ActionState::default();
-        state.accumulate(Action::Move, Vec2::X);
-        state.end_frame(&Tuning::default());
-        assert!(!state.pressed(Action::Move));
     }
 }

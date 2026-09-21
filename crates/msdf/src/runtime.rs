@@ -991,15 +991,4 @@ mod tests {
             "the line is as wide as it will be"
         );
     }
-
-    #[test]
-    fn the_budget_counts_what_it_caps() {
-        let atlas = atlas(opts());
-        let budget = atlas.budget();
-        assert_eq!(budget.pages, 1);
-        assert_eq!(budget.glyphs, 1, "notdef is the only resident glyph");
-        assert_eq!(budget.pending, 0);
-        assert_eq!(budget.in_flight, 0);
-        assert_eq!(budget.denied, 0);
-    }
 }

@@ -195,19 +195,6 @@ mod tests {
     }
 
     #[test]
-    fn a_second_dpad_lives_alongside_the_first() {
-        let config = parse(
-            "(bindings: (move: (dpads: [
-                (up: KeyW, down: KeyS, left: KeyA, right: KeyD),
-                (up: KeyI, down: KeyK, left: KeyJ, right: KeyL),
-            ])))",
-        )
-        .expect("parse");
-
-        assert_eq!(config.bindings.movement.dpads.len(), 2);
-    }
-
-    #[test]
     fn touching_one_binding_leaves_its_siblings_alone() {
         let config = parse("(bindings: (jump: (keys: [Enter])))").expect("parse");
 

@@ -1,7 +1,4 @@
 use bevy::prelude::*;
-
-use crate::tier::Tier;
-
 /// A host API surface a document may be granted.
 ///
 /// Every variant has at least one enforcement site; a name with none would be
@@ -39,7 +36,6 @@ impl ApiName {
 /// `and` on a bitfield and the whole policy stays `Copy`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct ApiSet(u16);
-
 impl ApiSet {
     #[must_use]
     pub const fn none() -> Self {
@@ -57,11 +53,13 @@ impl ApiSet {
     }
 }
 
-/// Everything the host decides about one document: which tier it came from, and
-/// which APIs it may reach.
+/// The APIs the host grants one document.
+///
+/// Which owner class a document belongs to is stated as an [`Owner`], so a
+/// policy here is only ever a permission set: the presets below are what each
+/// class ships with.
 #[derive(Component, Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DocumentPolicy {
-    pub tier:    Tier,
     permissions: ApiSet,
 }
 
@@ -72,14 +70,14 @@ impl Default for DocumentPolicy {
 }
 
 impl DocumentPolicy {
-    const fn new(tier: Tier, permissions: ApiSet) -> Self {
-        Self { tier, permissions }
+    const fn new(permissions: ApiSet) -> Self {
+        Self { permissions }
     }
 
+    /// The preset for content a peer brought.
     #[must_use]
     pub const fn untrusted() -> Self {
         Self::new(
-            Tier::Peer,
             ApiSet::none()
                 .with(ApiName::Event)
                 .with(ApiName::Input)
@@ -90,10 +88,10 @@ impl DocumentPolicy {
         )
     }
 
+    /// The preset for a space's own document.
     #[must_use]
     pub const fn space() -> Self {
         Self::new(
-            Tier::Space,
             ApiSet::none()
                 .with(ApiName::CreateDocument)
                 .with(ApiName::Event)
@@ -107,10 +105,10 @@ impl DocumentPolicy {
         )
     }
 
+    /// The preset for the shell and the tools it ships.
     #[must_use]
     pub const fn system() -> Self {
         Self::new(
-            Tier::System,
             ApiSet::none()
                 .with(ApiName::CreateDocument)
                 .with(ApiName::Event)
@@ -148,10 +146,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn only_the_system_tier_crosses_space_boundaries() {
-        assert!(DocumentPolicy::system().tier.crosses_space_boundaries());
-        assert!(!DocumentPolicy::space().tier.crosses_space_boundaries());
-        assert!(!DocumentPolicy::untrusted().tier.crosses_space_boundaries());
+    fn the_presets_are_nested_by_owner_class() {
+        for name in [
+            ApiName::CreateDocument,
+            ApiName::Identity,
+            ApiName::InputContext,
+            ApiName::LocalAgent,
+            ApiName::Physics,
+            ApiName::Travel,
+            ApiName::Storage,
+        ] {
+            assert!(
+                DocumentPolicy::system().allows(name),
+                "the system preset must hold {name:?}"
+            );
+        }
+        for name in [
+            ApiName::Identity,
+            ApiName::LocalAgent,
+            ApiName::CreateDocument,
+        ] {
+            assert!(DocumentPolicy::space().allows(name));
+        }
+        assert!(!DocumentPolicy::space().allows(ApiName::Travel));
+        assert!(!DocumentPolicy::space().allows(ApiName::Storage));
     }
 
     #[test]

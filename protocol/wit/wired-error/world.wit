@@ -19,6 +19,6 @@ interface types {
     permission,
     /// The target document does not accept writes from the caller's owner, or
     /// the two documents are not in the same space.
-    reach,
+    forbidden,
   }
 }

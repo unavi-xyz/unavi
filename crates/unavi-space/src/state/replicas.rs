@@ -886,8 +886,10 @@ mod tests {
         );
     }
 
+    /// Removing a key that was never written is a no-op; removing one that
+    /// was releases the document's presence once nothing else references it.
     #[test]
-    fn neutral_kv_persists_across_owned_kv() {
+    fn remove_kv_is_noop_for_missing_key_and_prunes_presence_when_last() {
         let replicas = Replicas::new();
         let policy = Policy::new();
         let space = doc(b"kv-space");

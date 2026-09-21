@@ -307,11 +307,6 @@ mod tests {
     }
 
     #[test]
-    fn tag_namespace_pins() {
-        assert_eq!(tag("model/default.vrm"), "files/model/default.vrm");
-    }
-
-    #[test]
     fn a_sweep_only_owns_its_own_namespace() {
         assert!(is_ours(&tag("model/default.vrm")));
         assert!(

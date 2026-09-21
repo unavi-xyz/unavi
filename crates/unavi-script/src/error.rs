@@ -93,7 +93,7 @@ mod tests {
     fn a_policy_denial_boxed_into_anyhow_keeps_its_variant() {
         for policy in [
             PolicyError::NotCoPresent,
-            PolicyError::Trust {
+            PolicyError::Threshold {
                 required: Trust::Trusted,
                 actual:   Trust::Guest,
             },

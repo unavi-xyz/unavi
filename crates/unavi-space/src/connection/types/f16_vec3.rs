@@ -66,38 +66,52 @@ mod tests {
         dz.mul_add(dz, dy.mul_add(dy, dx * dx)).sqrt()
     }
 
+    /// f16 has relative precision, so the acceptable roundtrip error grows
+    /// with delta magnitude; walk small/medium/large deltas against the error
+    /// bound each should stay under.
     #[test]
-    fn small_delta() {
+    fn delta_roundtrip_error_scales_with_magnitude() {
         let baseline = F32Vec3 {
             x: 10.0,
             y: 5.0,
             z: 3.0,
         };
-        let current = F32Vec3 {
-            x: 10.1,
-            y: 5.2,
-            z: 3.05,
-        };
+        let cases = [
+            (
+                F32Vec3 {
+                    x: 10.1,
+                    y: 5.2,
+                    z: 3.05,
+                },
+                0.001,
+            ),
+            (
+                F32Vec3 {
+                    x: 11.0,
+                    y: 4.5,
+                    z: 3.25,
+                },
+                0.01,
+            ),
+            (
+                F32Vec3 {
+                    x: 110.0,
+                    y: -45.0,
+                    z: 78.0,
+                },
+                0.2,
+            ),
+        ];
 
-        let pos = F16Vec3::from_delta(current, baseline);
-        let restored = pos.apply_to(baseline);
-
-        assert!(error(current, restored) < 0.001);
-    }
-
-    #[test]
-    fn medium_delta() {
-        let baseline = F32Vec3::default();
-        let current = F32Vec3 {
-            x: 1.0,
-            y: -0.5,
-            z: 0.25,
-        };
-
-        let pos = F16Vec3::from_delta(current, baseline);
-        let restored = pos.apply_to(baseline);
-
-        assert!(error(current, restored) < 0.01);
+        for (current, max_error) in cases {
+            let pos = F16Vec3::from_delta(current, baseline);
+            let restored = pos.apply_to(baseline);
+            let err = error(current, restored);
+            assert!(
+                err < max_error,
+                "delta {current:?}: error {err} >= {max_error}"
+            );
+        }
     }
 
     #[test]
@@ -106,20 +120,5 @@ mod tests {
         let packed = F16Vec3::from(original);
         let restored = Vec3::from(packed);
         assert!((original - restored).length() < 0.001);
-    }
-
-    #[test]
-    fn large_delta() {
-        let baseline = F32Vec3::default();
-        let current = F32Vec3 {
-            x: 100.0,
-            y: -50.0,
-            z: 75.0,
-        };
-
-        let pos = F16Vec3::from_delta(current, baseline);
-        let restored = pos.apply_to(baseline);
-
-        assert!(error(current, restored) < 0.2);
     }
 }

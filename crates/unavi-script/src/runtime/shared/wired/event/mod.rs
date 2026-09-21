@@ -151,7 +151,7 @@ fn resolve_sender_scope(
             },
         ) => {
             let e_pos = (*emitter_pos)?;
-            let emitter_is_system = api.view.tier_of(api.doc_id).crosses_space_boundaries();
+            let emitter_is_system = api.view.crosses_space_boundaries(api.doc_id);
             if !emitter_is_system && !api.view.same_space(emitter_abs.doc, receptor_node.doc) {
                 return None;
             }

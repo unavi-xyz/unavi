@@ -1,8 +1,6 @@
 //! A scene, a script, or an avatar rig may drive a transform to zero scale or
 //! to NaN. Physics has to survive it and recover when the transform does.
 
-use std::time::Duration;
-
 use avian3d::prelude::{
     Collider,
     Position,
@@ -10,39 +8,18 @@ use avian3d::prelude::{
     Rotation,
 };
 use bevy::prelude::*;
-use unavi_physics::{
-    PhysicsPlugin,
-    body::{
-        DisabledCollider,
-        DisabledRigidBody,
-        insert_collider,
-    },
+use unavi_physics::body::{
+    DisabledCollider,
+    DisabledRigidBody,
+    insert_collider,
 };
 
-fn app() -> App {
-    let mut app = App::new();
-    app.add_plugins((
-        MinimalPlugins,
-        AssetPlugin::default(),
-        TransformPlugin,
-        bevy::scene::ScenePlugin,
-        bevy::diagnostic::DiagnosticsPlugin,
-        PhysicsPlugin,
-    ))
-    .init_asset::<Mesh>()
-    .insert_resource(bevy::time::TimeUpdateStrategy::ManualDuration(
-        Duration::from_secs_f32(1.0 / 60.0),
-    ));
-    app.finish();
-    app.cleanup();
-    app
-}
+mod common;
 
-fn step(app: &mut App, times: usize) {
-    for _ in 0..times {
-        app.update();
-    }
-}
+use common::{
+    app,
+    step,
+};
 
 fn set_transform(app: &mut App, entity: Entity, transform: Transform) {
     app.world_mut().entity_mut(entity).insert(transform);

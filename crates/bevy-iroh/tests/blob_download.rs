@@ -3,7 +3,10 @@
 
 use std::time::Duration;
 
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    tasks::futures_lite::StreamExt,
+};
 use bevy_iroh::{
     IrohPlugin,
     blob::request::{
@@ -35,7 +38,11 @@ use unavi_util::async_task::spawn_async_task;
 use wds::builder::StoreBuilder;
 
 const CONTENT: &[u8] = b"content only the provider holds";
-const POLL: Duration = Duration::from_millis(50);
+/// Bounds the wait for the blob to land in the client's local store; a real
+/// network fetch has no fixed duration to guess at.
+const DOWNLOAD_TIMEOUT: Duration = Duration::from_secs(30);
+/// Bounds the catch-up loop that ticks the ECS until the already-landed blob
+/// surfaces as a [`BlobResponse`], which takes no real time of its own.
 const ATTEMPTS: usize = 200;
 
 struct Fixture {
@@ -110,6 +117,35 @@ fn fixture() -> Fixture {
     rx.recv_blocking().expect("fixture")
 }
 
+/// Blocks until `hash` is fully present in `blobs`, on the store's own
+/// completion signal rather than a guessed sleep duration.
+///
+/// Runs on the runtime the store's endpoint is bound to, same as [`fixture`]:
+/// a quinn endpoint's IO driver is not pollable from another runtime.
+fn wait_for_download(blobs: &Blobs, hash: Hash) {
+    let blobs = blobs.clone();
+    let (tx, rx) = async_channel::bounded(1);
+
+    spawn_async_task(async move {
+        let arrived = n0_future::time::timeout(DOWNLOAD_TIMEOUT, async {
+            let mut stream = blobs.observe(hash).stream().await.expect("observe");
+            while let Some(field) = stream.next().await {
+                if field.is_complete() {
+                    return;
+                }
+            }
+        })
+        .await
+        .is_ok();
+        tx.send(arrived).await.ok();
+    });
+
+    assert!(
+        rx.recv_blocking().expect("wait task"),
+        "the blob never arrived"
+    );
+}
+
 #[test]
 fn a_missing_blob_is_pulled_from_a_sync_target() {
     let fixture = fixture();
@@ -123,6 +159,9 @@ fn a_missing_blob_is_pulled_from_a_sync_target() {
     ));
 
     let entity = app.world_mut().spawn(BlobRequest(fixture.hash)).id();
+    app.update();
+
+    wait_for_download(&fixture.blobs, fixture.hash);
 
     for _ in 0..ATTEMPTS {
         app.update();
@@ -132,9 +171,7 @@ fn a_missing_blob_is_pulled_from_a_sync_target() {
             assert_eq!(bytes.as_ref(), CONTENT, "the provider's content arrives");
             return;
         }
-
-        std::thread::sleep(POLL);
     }
 
-    panic!("the blob never arrived");
+    panic!("the blob response never surfaced in the ECS");
 }

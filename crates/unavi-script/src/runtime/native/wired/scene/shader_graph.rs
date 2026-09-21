@@ -307,82 +307,30 @@ mod tests {
         wit::BinaryOp { a, b }
     }
 
-    fn float_of(port: Port) -> f32 {
-        match port {
-            Port::Const(GraphValue::Float(v)) => v,
-            other => panic!("expected a float constant, got {other:?}"),
-        }
+    /// The leaf and math-op ports the channel/texture ops build on.
+    struct Leaves {
+        uv:     wit::Port,
+        normal: wit::Port,
+        color:  wit::Port,
+        time:   wit::Port,
+        random: wit::Port,
     }
 
-    /// A whole graph rather than a kind at a time: conversion is only correct
-    /// if what comes out the other side is a graph the format accepts, and a
-    /// port lowered onto the wrong field shows up as a type error here.
-    ///
-    /// The terminal is a constant, because every node in a network is checked
-    /// whether or not a terminal reaches it — so the graph does not have to be
-    /// contorted into using each kind it covers.
-    fn assert_surface_converts(net: Net) {
-        let converted = graph(wit::ShaderGraph {
-            public_inputs: vec![wit::GraphValue::Float(0.0)],
-            surface:       wit::SurfaceGraph {
-                nodes:        net.nodes,
-                output:       wit::SurfaceOutput::Unlit(wit::UnlitOutput {
-                    color:                wit::Port::Const(wit::GraphValue::Color(wit::Color {
-                        r: 1.0,
-                        g: 1.0,
-                        b: 1.0,
-                        a: 1.0,
-                    })),
-                    alpha_clip_threshold: None,
-                }),
-                blend:        wit::BlendMode::Add,
-                cull:         wit::CullMode::None,
-                cast_shadows: false,
-            },
-            displacement:  None,
-        });
-        validate(&converted).expect("a converted graph is a valid graph");
-    }
-
-    #[test]
-    fn the_surface_context_leaves_convert() {
-        let mut net = Net::default();
-        for leaf in [
-            wit::Node::Uv,
-            wit::Node::WorldNormal,
-            wit::Node::WorldPosition,
-            wit::Node::VertexColor,
-            wit::Node::Time,
-            wit::Node::InstanceRandom,
-            wit::Node::ObjectPosition,
-            wit::Node::ObjectScale,
-            wit::Node::ViewDirection,
-            wit::Node::ScreenUv,
-        ] {
-            net.push(leaf);
-        }
-        assert_surface_converts(net);
-    }
-
-    #[test]
-    fn the_screen_leaves_convert() {
-        let mut net = Net::default();
-        let screen = net.push(wit::Node::ScreenUv);
-        let bend = net.push(wit::Node::Mul(binary(screen, f(0.05))));
-        net.push(wit::Node::SceneColor(bend));
-        assert_surface_converts(net);
-    }
-
-    #[test]
-    fn the_math_kinds_convert() {
-        let mut net = Net::default();
+    /// Leaves, the binary/struct math ops, and the unary ops.
+    fn push_math_and_leaf_nodes(net: &mut Net) -> Leaves {
+        let uv = net.push(wit::Node::Uv);
         let normal = net.push(wit::Node::WorldNormal);
         let position = net.push(wit::Node::WorldPosition);
+        let color = net.push(wit::Node::VertexColor);
         let time = net.push(wit::Node::Time);
         let random = net.push(wit::Node::InstanceRandom);
         let origin = net.push(wit::Node::ObjectPosition);
         let scale = net.push(wit::Node::ObjectScale);
         let view = net.push(wit::Node::ViewDirection);
+        let screen = net.push(wit::Node::ScreenUv);
+
+        let bend = net.push(wit::Node::Mul(binary(screen, f(0.05))));
+        net.push(wit::Node::SceneColor(bend));
 
         net.push(wit::Node::Add(binary(time, random)));
         net.push(wit::Node::Sub(binary(f(1.0), time)));
@@ -427,17 +375,6 @@ mod tests {
             a:    f(0.0),
             b:    f(1.0),
         }));
-        assert_surface_converts(net);
-    }
-
-    #[test]
-    fn the_unary_channel_and_uv_kinds_convert() {
-        let mut net = Net::default();
-        let uv = net.push(wit::Node::Uv);
-        let normal = net.push(wit::Node::WorldNormal);
-        let color = net.push(wit::Node::VertexColor);
-        let time = net.push(wit::Node::Time);
-        let random = net.push(wit::Node::InstanceRandom);
 
         for unary in [
             wit::Node::Sin as fn(wit::Port) -> wit::Node,
@@ -453,6 +390,27 @@ mod tests {
         ] {
             net.push(unary(time));
         }
+
+        Leaves {
+            uv,
+            normal,
+            color,
+            time,
+            random,
+        }
+    }
+
+    /// Length/normalize/luminance/noise/texture-sample, plus the channel and
+    /// uv-transform ops, each of which acts on a leaf or math-op port.
+    fn push_channel_and_texture_nodes(net: &mut Net, leaves: Leaves) {
+        let Leaves {
+            uv,
+            normal,
+            color,
+            time,
+            random,
+        } = leaves;
+
         net.push(wit::Node::Length(normal));
         net.push(wit::Node::Normalize(normal));
         net.push(wit::Node::Luminance(color));
@@ -491,7 +449,64 @@ mod tests {
             z: random,
             w: f(1.0),
         }));
-        assert_surface_converts(net);
+    }
+
+    /// A net touching every surface-context node kind: the leaves, the
+    /// binary/unary math ops, the channel/uv ops, and the screen-space pair
+    /// (`ScreenUv`/`SceneColor`) that only makes sense together.
+    fn every_surface_node_kind() -> Net {
+        let mut net = Net::default();
+        let leaves = push_math_and_leaf_nodes(&mut net);
+        push_channel_and_texture_nodes(&mut net, leaves);
+        net
+    }
+
+    fn float_of(port: Port) -> f32 {
+        match port {
+            Port::Const(GraphValue::Float(v)) => v,
+            other => panic!("expected a float constant, got {other:?}"),
+        }
+    }
+
+    /// A whole graph rather than a kind at a time: conversion is only correct
+    /// if what comes out the other side is a graph the format accepts, and a
+    /// port lowered onto the wrong field shows up as a type error here.
+    ///
+    /// The terminal is a constant, because every node in a network is checked
+    /// whether or not a terminal reaches it — so the graph does not have to be
+    /// contorted into using each kind it covers.
+    fn assert_surface_converts(net: Net) {
+        let converted = graph(wit::ShaderGraph {
+            public_inputs: vec![wit::GraphValue::Float(0.0)],
+            surface:       wit::SurfaceGraph {
+                nodes:        net.nodes,
+                output:       wit::SurfaceOutput::Unlit(wit::UnlitOutput {
+                    color:                wit::Port::Const(wit::GraphValue::Color(wit::Color {
+                        r: 1.0,
+                        g: 1.0,
+                        b: 1.0,
+                        a: 1.0,
+                    })),
+                    alpha_clip_threshold: None,
+                }),
+                blend:        wit::BlendMode::Add,
+                cull:         wit::CullMode::None,
+                cast_shadows: false,
+            },
+            displacement:  None,
+        });
+        validate(&converted).expect("a converted graph is a valid graph");
+    }
+
+    /// One net touching every surface-context node kind: the leaves, the
+    /// binary/unary math ops, the channel/uv ops, and the screen-space pair
+    /// (`ScreenUv`/`SceneColor`) that only makes sense together. Split
+    /// further than this, each half would only restate "the exhaustive match
+    /// doesn't panic", which the compiler already guarantees by refusing to
+    /// build until every kind is listed here.
+    #[test]
+    fn every_surface_node_kind_converts_and_validates() {
+        assert_surface_converts(every_surface_node_kind());
     }
 
     #[test]

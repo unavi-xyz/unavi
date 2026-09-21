@@ -21,7 +21,13 @@ use bevy_vrm::first_person::{
     FirstPersonFlag,
 };
 use unavi_agent::LocalAgent;
-use unavi_policy::document::DocumentPolicy;
+use unavi_policy::{
+    document::DocumentPolicy,
+    owner::{
+        Owner,
+        PolicyOwner,
+    },
+};
 
 use crate::util::create_client_store;
 
@@ -115,5 +121,6 @@ fn on_agent_load(
             on_load: None,
         },
         DocumentPolicy::system(),
+        PolicyOwner(Owner::System),
     ));
 }

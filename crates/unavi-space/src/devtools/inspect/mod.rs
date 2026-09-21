@@ -76,10 +76,7 @@ impl TrustButton {
                 Trust::Blocked => "unblock",
                 _ => "untrust",
             };
-            return (label, Self {
-                peer,
-                trust: None,
-            });
+            return (label, Self { peer, trust: None });
         }
         let label = match trust {
             Trust::Blocked => "block",

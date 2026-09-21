@@ -9,8 +9,8 @@ pub enum PolicyError {
     Permission(ApiName),
     #[error("documents are not in the same space")]
     NotCoPresent,
-    #[error("writes need {required:?}, caller is {actual:?}")]
-    Trust { required: Trust, actual: Trust },
+    #[error("writes need trust {required:?}, caller is {actual:?}")]
+    Threshold { required: Trust, actual: Trust },
     #[error("write to a peer-owned document by a non-owner")]
     NotOwner,
 }

@@ -14,7 +14,13 @@ use bevy_panorbit_camera::{
     PanOrbitCamera,
     PanOrbitCameraPlugin,
 };
-use unavi_policy::document::DocumentPolicy;
+use unavi_policy::{
+    document::DocumentPolicy,
+    owner::{
+        Owner,
+        PolicyOwner,
+    },
+};
 
 use crate::util::create_test_store;
 
@@ -73,5 +79,6 @@ fn init_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
             on_load: None,
         },
         DocumentPolicy::system(),
+        PolicyOwner(Owner::System),
     ));
 }

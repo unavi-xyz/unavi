@@ -56,26 +56,23 @@ mod tests {
         dz.mul_add(dz, dy.mul_add(dy, dx * dx)).sqrt()
     }
 
+    /// Walks zero, sub-millimeter, and centimeter-scale deltas, all within the
+    /// ±12.7cm clamp range, against the 1mm resolution the format promises.
     #[test]
-    fn small_delta() {
+    fn delta_roundtrip_within_1mm_resolution() {
         let baseline = f16v(1.0, 2.0, 3.0);
-        let current = f16v(1.001, 2.002, 3.003);
+        let cases = [
+            f16v(1.0, 2.0, 3.0),
+            f16v(1.001, 2.002, 3.003),
+            f16v(1.05, 1.97, 3.10),
+        ];
 
-        let pos = I8Vec3::from_delta(current, baseline);
-        let restored = pos.apply_to(baseline);
-
-        assert!(error(current, restored) < 0.002);
-    }
-
-    #[test]
-    fn medium_delta() {
-        let baseline = F16Vec3::default();
-        let current = f16v(0.05, -0.03, 0.10);
-
-        let pos = I8Vec3::from_delta(current, baseline);
-        let restored = pos.apply_to(baseline);
-
-        assert!(error(current, restored) < 0.002);
+        for current in cases {
+            let pos = I8Vec3::from_delta(current, baseline);
+            let restored = pos.apply_to(baseline);
+            let err = error(current, restored);
+            assert!(err < 0.002, "delta {current:?}: error {err} >= 0.002");
+        }
     }
 
     #[test]
@@ -89,15 +86,5 @@ mod tests {
         assert!((restored.x.to_f32() - 0.127).abs() < 0.002);
         assert!((restored.y.to_f32() - (-0.127)).abs() < 0.002);
         assert!((restored.z.to_f32() - 0.127).abs() < 0.002);
-    }
-
-    #[test]
-    fn zero_delta() {
-        let baseline = f16v(5.0, 10.0, 15.0);
-
-        let pos = I8Vec3::from_delta(baseline, baseline);
-        let restored = pos.apply_to(baseline);
-
-        assert!(error(baseline, restored) < 0.001);
     }
 }

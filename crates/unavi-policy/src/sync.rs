@@ -7,8 +7,9 @@ use hsd::id::DocId;
 
 use crate::{
     document::DocumentPolicy,
-    reach::Reach,
+    owner::PolicyOwner,
     registry::Policy,
+    threshold::Threshold,
 };
 
 /// Everything the world can say about one document, read off its entity.
@@ -22,7 +23,8 @@ type DocumentQuery<'w, 's> = Query<
     (
         &'static HsdDocId,
         Option<&'static DocumentPolicy>,
-        Option<&'static Reach>,
+        Option<&'static Threshold>,
+        Option<&'static PolicyOwner>,
         Option<&'static ChildOf>,
     ),
 >;
@@ -34,7 +36,7 @@ fn sync(
     prims: &Query<&HsdChild>,
     ids: &Query<&HsdDocId>,
 ) {
-    let Ok((doc, document, reach, parent)) = docs.get(entity) else {
+    let Ok((doc, document, threshold, owner, parent)) = docs.get(entity) else {
         return;
     };
     let host = host_of(parent, prims, ids);
@@ -46,8 +48,11 @@ fn sync(
         if let Some(document) = document.copied().or(inherited) {
             record.policy = document;
         }
-        if let Some(reach) = reach {
-            record.reach = *reach;
+        if let Some(threshold) = threshold {
+            record.threshold = *threshold;
+        }
+        if let Some(owner) = owner {
+            record.owner = Some(owner.0);
         }
         record.host = host;
     });
@@ -85,8 +90,18 @@ pub fn sync_on_policy(
     sync(&policy, trigger.entity, &docs, &prims, &ids);
 }
 
-pub fn sync_on_reach(
-    trigger: On<Insert, Reach>,
+pub fn sync_on_threshold(
+    trigger: On<Insert, Threshold>,
+    docs: DocumentQuery,
+    prims: Query<&HsdChild>,
+    ids: Query<&HsdDocId>,
+    policy: Res<Policy>,
+) {
+    sync(&policy, trigger.entity, &docs, &prims, &ids);
+}
+
+pub fn sync_on_owner(
+    trigger: On<Insert, PolicyOwner>,
     docs: DocumentQuery,
     prims: Query<&HsdChild>,
     ids: Query<&HsdDocId>,
@@ -116,7 +131,12 @@ mod tests {
 
     use super::*;
     use crate::{
-        tier::Tier,
+        document::ApiName,
+        owner::{
+            Owner,
+            PolicyOwner,
+        },
+        threshold::Threshold,
         trust::Trust,
     };
 
@@ -127,14 +147,16 @@ mod tests {
         app.init_resource::<Policy>()
             .add_observer(sync_on_doc_id)
             .add_observer(sync_on_policy)
-            .add_observer(sync_on_reach)
+            .add_observer(sync_on_threshold)
+            .add_observer(sync_on_owner)
             .add_observer(forget_document);
         let policy = app.world().resource::<Policy>().clone();
         (app, policy)
     }
 
-    /// The shell is spawned with its policy and its reach alongside `LoadHsd`,
-    /// and only learns its document id once a namespace has been minted.
+    /// The shell is spawned with its policy and its threshold alongside
+    /// `LoadHsd`, and only learns its document id once a namespace has been
+    /// minted.
     #[test]
     fn a_document_stated_before_it_had_an_id_still_registers() {
         let (mut app, policy) = app();
@@ -142,11 +164,15 @@ mod tests {
 
         let entity = app
             .world_mut()
-            .spawn((DocumentPolicy::system(), Reach::own_only()))
+            .spawn((
+                DocumentPolicy::system(),
+                Threshold::own_only(),
+                PolicyOwner(Owner::System),
+            ))
             .id();
         assert_eq!(
-            policy.get(id).reach,
-            Reach::default(),
+            policy.get(id).threshold,
+            Threshold::default(),
             "nothing keys the record until the document has an id"
         );
 
@@ -154,19 +180,19 @@ mod tests {
             .entity_mut(entity)
             .insert((Hsd::new(SceneState::new()), HsdDocId(id)));
 
-        assert_eq!(policy.get(id).reach, Reach::own_only());
-        assert_eq!(policy.get(id).policy.tier, Tier::System);
+        assert_eq!(policy.get(id).threshold, Threshold::own_only());
+        assert_eq!(policy.get(id).owner, Some(Owner::System));
 
         app.world_mut().entity_mut(entity).despawn();
         assert_eq!(
-            policy.get(id).policy.tier,
-            Tier::Peer,
+            policy.get(id).policy,
+            DocumentPolicy::untrusted(),
             "a despawned document must not leave its grant behind"
         );
     }
 
     #[test]
-    fn raising_the_trust_level_after_registration_takes_effect() {
+    fn raising_the_threshold_after_registration_takes_effect() {
         let (mut app, policy) = app();
         let id = DocId([22; 32]);
 
@@ -174,13 +200,13 @@ mod tests {
             .world_mut()
             .spawn((Hsd::new(SceneState::new()), HsdDocId(id)))
             .id();
-        assert_eq!(policy.get(id).reach, Reach::default());
+        assert_eq!(policy.get(id).threshold, Threshold::default());
 
-        app.world_mut().entity_mut(entity).insert(Reach {
-            writes_from: Trust::Trusted,
+        app.world_mut().entity_mut(entity).insert(Threshold {
+            min_trust: Trust::Trusted,
         });
         assert_eq!(
-            policy.get(id).reach.writes_from,
+            policy.get(id).threshold.min_trust,
             Trust::Trusted,
             "a document that changes its mind must not be ignored"
         );
@@ -210,6 +236,14 @@ mod tests {
         ));
 
         assert_eq!(policy.get(instance_id).host, Some(host_id));
-        assert_eq!(policy.get(instance_id).policy.tier, Tier::Space);
+        assert!(
+            policy.get(instance_id).policy.allows(ApiName::Identity),
+            "an instance runs with the space's permissions, not a peer's"
+        );
+        assert_eq!(
+            policy.get(instance_id).owner,
+            None,
+            "an instance states no owner of its own; the host chain answers"
+        );
     }
 }

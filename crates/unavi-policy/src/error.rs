@@ -1,5 +1,5 @@
 use crate::{
-    document::ApiName,
+    permissions::ApiName,
     trust::Trust,
 };
 
@@ -13,13 +13,4 @@ pub enum PolicyError {
     Threshold { required: Trust, actual: Trust },
     #[error("write to a peer-owned document by a non-owner")]
     NotOwner,
-}
-
-impl PolicyError {
-    /// Whether this is a missing permission rather than a write out of reach.
-    /// The two are separate variants in `wired:error`.
-    #[must_use]
-    pub const fn is_permission(self) -> bool {
-        matches!(self, Self::Permission(_))
-    }
 }

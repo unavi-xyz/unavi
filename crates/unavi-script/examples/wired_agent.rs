@@ -22,11 +22,8 @@ use bevy_vrm::first_person::{
 };
 use unavi_agent::LocalAgent;
 use unavi_policy::{
-    document::DocumentPolicy,
-    owner::{
-        Owner,
-        PolicyOwner,
-    },
+    owner::Owner,
+    permissions::Permissions,
 };
 
 use crate::util::create_client_store;
@@ -120,7 +117,7 @@ fn on_agent_load(
             handle,
             on_load: None,
         },
-        DocumentPolicy::system(),
-        PolicyOwner(Owner::System),
+        Permissions::system(),
+        Owner::System,
     ));
 }

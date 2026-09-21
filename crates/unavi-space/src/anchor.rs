@@ -12,9 +12,9 @@ use unavi_manifold::{
     PrevTranslation,
     transition::CrossedSeam,
 };
-use unavi_policy::{
-    membership::SpaceOwner,
-    space::Space,
+use unavi_policy::space::{
+    Space,
+    SpaceOwner,
 };
 use unavi_util::hierarchy::ancestors;
 

@@ -4,9 +4,11 @@ use bevy_hsd::{
     HsdDocId,
 };
 use unavi_policy::{
-    membership::SpaceOwner,
     registry::Policy,
-    space::Space,
+    space::{
+        Space,
+        SpaceOwner,
+    },
 };
 
 use crate::{

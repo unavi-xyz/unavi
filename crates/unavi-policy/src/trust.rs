@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Context;
-use bevy::prelude::Resource;
+use bevy::prelude::*;
 use iroh::EndpointId;
 use parking_lot::RwLock;
 use ron::Options;
@@ -16,7 +16,7 @@ use unavi_identity::auth::bindings::Bindings;
 use unavi_local::LocalStorage;
 use xdid::core::did::Did;
 
-/// Local opinion of a peer's trust. Used to restrict capabilities.
+/// How far a peer is trusted.
 #[derive(
     Clone, Copy, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
 )]
@@ -29,27 +29,28 @@ pub enum Trust {
 }
 
 impl Trust {
-    /// Whether a peer at this trust level clears a capability needing
-    /// `required`.
-    ///
-    /// [`Trust::Blocked`] clears nothing, including a requirement of
-    /// `Blocked`, so a floor of `Guest` cannot be undercut by naming the
-    /// lowest trust level.
+    /// Whether this level meets a requirement of `required`. `Blocked` meets
+    /// nothing, including `Blocked`.
     #[must_use]
     pub const fn clears(self, required: Self) -> bool {
         !matches!(self, Self::Blocked) && (self as u8) >= (required as u8)
     }
 }
 
-#[derive(Resource, Clone)]
-pub struct TrustTable(Arc<TrustTableInner>);
+/// The trust a document requires of whoever writes it.
+#[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Threshold(pub Trust);
 
-struct TrustTableInner {
+const TABLE_KEY: &str = "trust.ron";
+
+/// Per-peer trust levels, keyed by DID.
+#[derive(Resource, Clone)]
+pub struct TrustTable(Arc<Inner>);
+
+struct Inner {
     overrides: RwLock<HashMap<Did, Trust>>,
     storage:   LocalStorage,
 }
-
-const TABLE_KEY: &str = "trust.ron";
 
 #[derive(Default, Serialize, Deserialize)]
 struct Stored {
@@ -60,32 +61,32 @@ struct Stored {
 impl TrustTable {
     #[must_use]
     pub fn new(storage: LocalStorage) -> Self {
-        Self(Arc::new(TrustTableInner {
+        Self(Arc::new(Inner {
             overrides: RwLock::default(),
             storage,
         }))
     }
 
-    /// Loads the table from `storage`, discarding entries that no
-    /// longer parse as DIDs rather than refusing the whole file.
+    /// Reads the table from `storage`. Entries that do not parse as DIDs are
+    /// dropped. A file that does not parse is an error.
     pub fn load(storage: LocalStorage) -> anyhow::Result<Self> {
-        let stored = match read_table(&storage, TABLE_KEY) {
-            Ok(None) => Stored::default(),
-            Ok(Some(stored)) => stored,
-            Err(err) => return Err(err),
-        };
-
         let mut overrides = HashMap::new();
-        for (did, trust) in stored.peers {
-            match did.parse::<Did>() {
-                Ok(did) => {
-                    overrides.insert(did, trust);
+
+        if let Some(text) = storage.read(TABLE_KEY)? {
+            let stored: Stored = Options::default()
+                .from_str(&text)
+                .with_context(|| format!("parse {TABLE_KEY}"))?;
+            for (did, trust) in stored.peers {
+                match did.parse::<Did>() {
+                    Ok(did) => {
+                        overrides.insert(did, trust);
+                    }
+                    Err(err) => tracing::warn!(?err, %did, "dropping unparseable trust entry"),
                 }
-                Err(err) => tracing::warn!(?err, %did, "dropping unparseable trust entry"),
             }
         }
 
-        Ok(Self(Arc::new(TrustTableInner {
+        Ok(Self(Arc::new(Inner {
             overrides: RwLock::new(overrides),
             storage,
         })))
@@ -116,7 +117,6 @@ impl TrustTable {
         self.0.overrides.write().remove(did);
     }
 
-    /// Writes the table to local storage.
     pub fn save(&self) -> anyhow::Result<()> {
         let stored = Stored {
             peers: self
@@ -134,29 +134,14 @@ impl TrustTable {
     }
 }
 
-/// `Ok(None)` when nothing is recorded at `key`.
-///
-/// A table that is present but will not parse is an `Err`. A truncated write
-/// leaves valid UTF-8 that is not valid RON.
-fn read_table(storage: &LocalStorage, key: &str) -> anyhow::Result<Option<Stored>> {
-    let Some(text) = storage.read(key)? else {
-        return Ok(None);
-    };
-    Ok(Some(
-        Options::default()
-            .from_str(&text)
-            .with_context(|| format!("parse {key}"))?,
-    ))
-}
-
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use iroh::{
-        EndpointId,
-        SecretKey,
+    use std::{
+        path::PathBuf,
+        str::FromStr,
     };
+
+    use iroh::SecretKey;
 
     use super::*;
 
@@ -166,7 +151,7 @@ mod tests {
 
     /// A fresh table on disk, distinct per test so parallel runs never share a
     /// file.
-    fn storage() -> (std::path::PathBuf, LocalStorage) {
+    fn storage() -> (PathBuf, LocalStorage) {
         let dir = std::env::temp_dir().join(format!(
             "unavi-trust-{}-{}",
             std::process::id(),
@@ -228,7 +213,7 @@ mod tests {
             "a first run has no table and that is not a failure"
         );
 
-        std::fs::write(dir.join("trust.ron"), "(peers: [[[").expect("write");
+        std::fs::write(dir.join(TABLE_KEY), "(peers: [[[").expect("write");
         assert!(
             TrustTable::load(storage).is_err(),
             "coming up clean would silently unblock every ejected peer"
@@ -256,8 +241,16 @@ mod tests {
 
     #[test]
     fn the_default_trust_level_clears_the_open_default() {
-        assert!(Trust::default().clears(Trust::Guest));
+        assert!(Trust::default().clears(Threshold::default().0));
         assert!(!Trust::Guest.clears(Trust::Trusted));
         assert!(Trust::Myself.clears(Trust::Trusted));
+    }
+
+    #[test]
+    fn an_own_only_threshold_refuses_everyone_below_the_local_user() {
+        let own_only = Threshold(Trust::Myself);
+        assert!(!Trust::Guest.clears(own_only.0));
+        assert!(!Trust::Trusted.clears(own_only.0));
+        assert!(Trust::Myself.clears(own_only.0));
     }
 }

@@ -5,12 +5,12 @@ use unavi_policy::quota::{
     Quota,
     QuotaError,
     Stock,
-    StockGuard,
+    StockHold,
 };
 
 struct Slot<T> {
-    value:  T,
-    _guard: StockGuard,
+    value: T,
+    _hold: StockHold,
 }
 
 pub struct SlotMap<T> {
@@ -39,7 +39,7 @@ impl<T> SlotMap<T> {
     /// Charges one [`Stock::Slots`] for the new entry, refunded on removal or
     /// drop, so a guest cannot mint handles past its slot budget.
     pub fn insert(&mut self, value: T, quota: &Arc<Quota>) -> Result<u32, QuotaError> {
-        let guard = quota.charge(Stock::Slots, 1)?;
+        let hold = quota.hold(Stock::Slots, 1)?;
         while self.items.contains_key(&self.next) {
             self.next = self.next.wrapping_add(1);
 
@@ -49,27 +49,15 @@ impl<T> SlotMap<T> {
             }
         }
         let key = self.next;
-        self.items.insert(
-            key,
-            Slot {
-                value,
-                _guard: guard,
-            },
-        );
+        self.items.insert(key, Slot { value, _hold: hold });
         Ok(key)
     }
 
     /// Inserts at a caller-chosen key (for externally-assigned ids). Charges a
-    /// slot like [`Self::insert`]; the displaced entry's guard refunds on drop.
+    /// slot like [`Self::insert`]; the displaced entry's hold refunds on drop.
     pub fn insert_at(&mut self, key: u32, value: T, quota: &Arc<Quota>) -> Result<(), QuotaError> {
-        let guard = quota.charge(Stock::Slots, 1)?;
-        self.items.insert(
-            key,
-            Slot {
-                value,
-                _guard: guard,
-            },
-        );
+        let hold = quota.hold(Stock::Slots, 1)?;
+        self.items.insert(key, Slot { value, _hold: hold });
         Ok(())
     }
 
@@ -101,7 +89,7 @@ mod tests {
     fn quota(slots: u64) -> Arc<Quota> {
         let mut limits = Limits::default();
         limits.stock.insert(Stock::Slots, slots);
-        Quota::root(limits)
+        Quota::new(limits, None)
     }
 
     #[test]

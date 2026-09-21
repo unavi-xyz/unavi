@@ -1,4 +1,4 @@
-use unavi_policy::document::ApiName;
+use unavi_policy::permissions::ApiName;
 use wasm_bindgen::prelude::*;
 
 use crate::runtime::{

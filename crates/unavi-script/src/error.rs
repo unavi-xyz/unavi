@@ -83,7 +83,7 @@ impl From<anyhow::Error> for ScriptError {
 #[cfg(test)]
 mod tests {
     use unavi_policy::{
-        document::ApiName,
+        permissions::ApiName,
         trust::Trust,
     };
 

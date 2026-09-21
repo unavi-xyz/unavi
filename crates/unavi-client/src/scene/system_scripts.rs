@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 use bevy_hsd::load::LoadHsd;
 use unavi_policy::{
-    document::DocumentPolicy,
-    owner::{
-        Owner,
-        PolicyOwner,
+    owner::Owner,
+    permissions::Permissions,
+    trust::{
+        Threshold,
+        Trust,
     },
-    threshold::Threshold,
 };
 use unavi_script::quota::QuotaExempt;
 
@@ -15,9 +15,9 @@ const TOOL_HSDS: &[&str] = &["hsd/unavi_spawner.hsdz", "hsd/unavi_physgun.hsdz"]
 
 /// Loads the shell and the tools it ships with.
 ///
-/// [`Threshold::own_only`] refuses every other peer, so a document a peer
-/// brought can neither write the shell's scene nor speak on its channels;
-/// same-owner writes are not gated by it.
+/// A threshold of [`Trust::Myself`] refuses every other peer, so a document a
+/// peer brought can neither write the shell's scene nor speak on its channels.
+/// Same-owner writes are not gated by it.
 pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServer>) {
     for &path in TOOL_HSDS.iter().chain(std::iter::once(&SHELL_HSD)) {
         let handle = asset_server.load(path);
@@ -26,9 +26,9 @@ pub fn spawn_system_scripts(mut commands: Commands, asset_server: Res<AssetServe
                 handle,
                 on_load: None,
             },
-            DocumentPolicy::system(),
-            Threshold::own_only(),
-            PolicyOwner(Owner::System),
+            Permissions::system(),
+            Threshold(Trust::Myself),
+            Owner::System,
             QuotaExempt,
         ));
     }

@@ -9,57 +9,41 @@ use iroh::EndpointId;
 use parking_lot::RwLock;
 
 use crate::{
-    document::DocumentPolicy,
     owner::Owner,
+    permissions::Permissions,
     quota::{
         Quota,
         limits::Limits,
     },
-    threshold::Threshold,
+    trust::Threshold,
 };
 
-/// Longest host chain a lookup will follow before giving up. A cycle is not
-/// reachable through the derived-id scheme, so the cap guards a corrupted
-/// registry rather than an expected case.
+/// Longest host chain a lookup follows before giving up.
 const MAX_HOST_DEPTH: usize = 16;
 
-/// Everything the host has decided about one document.
-///
-/// One record rather than a registry per field: all of it is keyed by the same
-/// document id and read together on the write path.
+/// What the host has decided about one document.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Record {
-    pub policy:    DocumentPolicy,
-    pub threshold: Threshold,
-    /// What the host stated this document to be, `None` while only a pin's
-    /// replication knows it. `None` is resolved against pins when the document
-    /// is judged.
-    pub owner:     Option<Owner>,
-    /// The space this document was registered into, ignoring any that only a
-    /// peer's pin places.
-    pub space:     Option<DocId>,
-    /// The document that composed this one in, for a prefab instance. An
-    /// instance has an id but no namespace, so its owner and its space are
-    /// whatever its host's are.
-    pub host:      Option<DocId>,
+    pub permissions: Permissions,
+    pub threshold:   Threshold,
+    /// `None` until the host states one. The caller resolves it from pins.
+    pub owner:       Option<Owner>,
+    /// The space this document was registered into locally.
+    pub space:       Option<DocId>,
+    /// The document that composed this one in, for a prefab instance.
+    pub host:        Option<DocId>,
 }
 
 /// What a quota is attributed to.
-///
-/// A document's charges roll up into the peer that pinned it, or into the space
-/// when nobody has, and every scope rolls up into the node.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub enum Principal {
+enum Principal {
     Document(DocId),
     Peer(EndpointId),
     Space(DocId),
 }
 
-/// The host's decisions about every document it knows, and the quota each one
-/// spends against.
-///
-/// One value, constructed once per app. Both halves are keyed by document id
-/// and share a lifecycle, so a document dropped from one is dropped from both.
+/// Every document's record and quota, keyed by document id. One value per
+/// app.
 #[derive(Resource, Clone)]
 pub struct Policy(Arc<Inner>);
 
@@ -81,14 +65,12 @@ impl Policy {
         Self(Arc::new(Inner {
             documents: RwLock::default(),
             quotas:    RwLock::default(),
-            node:      Quota::root(Limits::global()),
+            node:      Quota::new(Limits::global(), None),
         }))
     }
 
-    /// What the host decided about `doc`.
-    ///
-    /// An unregistered document answers [`Record::default`]: silence and the
-    /// weakest answer are the same statement.
+    /// What the host decided about `doc`. An unregistered document answers
+    /// [`Record::default`].
     #[must_use]
     pub fn get(&self, doc: DocId) -> Record {
         self.0
@@ -103,8 +85,7 @@ impl Policy {
         f(self.0.documents.write().entry(doc).or_default());
     }
 
-    /// Drops `doc`'s record and its quota, releasing whatever the quota still
-    /// held from its owner.
+    /// Drops `doc`'s record and quota, releasing what the quota held.
     pub fn forget(&self, doc: DocId) {
         self.0.documents.write().remove(&doc);
         let quota = self.0.quotas.write().remove(&Principal::Document(doc));
@@ -113,12 +94,8 @@ impl Policy {
         }
     }
 
-    /// Drops the space's own record and quota, and unregisters its members
-    /// from it.
-    ///
-    /// The members keep their records: each drops its own when its document id
-    /// goes, and a member that outlives the space must not silently regain the
-    /// open defaults in the meantime.
+    /// Drops the space's record and quota, and clears it from its members'
+    /// records. The members keep their records.
     pub fn forget_space(&self, space: DocId) {
         let mut docs = self.0.documents.write();
         docs.remove(&space);
@@ -131,8 +108,7 @@ impl Policy {
         self.0.quotas.write().remove(&Principal::Space(space));
     }
 
-    /// Drops `peer`'s quota, so the next document it owns re-derives the caps
-    /// from its current trust level.
+    /// Drops `peer`'s quota. The next document it owns re-derives the caps.
     pub fn forget_peer(&self, peer: EndpointId) {
         self.0.quotas.write().remove(&Principal::Peer(peer));
     }
@@ -150,10 +126,6 @@ impl Policy {
     }
 
     /// The document at the top of `doc`'s host chain.
-    ///
-    /// A prefab instance is never pinned and has no namespace, so it is its
-    /// host that owns it; resolving through the root is what stops a peer's
-    /// instanced content reading as locally authored.
     #[must_use]
     pub fn root(&self, doc: DocId) -> DocId {
         let docs = self.0.documents.read();
@@ -177,28 +149,20 @@ impl Policy {
             .or_else(|| docs.get(&root).and_then(|record| record.space))
     }
 
-    /// The quota every other scope rolls up into.
-    #[must_use]
-    pub fn node_quota(&self) -> &Arc<Quota> {
-        &self.0.node
-    }
-
     #[must_use]
     pub fn space_quota(&self, space: DocId) -> Arc<Quota> {
         self.quota(Principal::Space(space), Limits::space)
     }
 
-    /// A peer's quota under the caps its trust level earns, derived on first
-    /// sight. [`Self::forget_peer`] is what re-derives them after a trust
-    /// level change.
+    /// A peer's quota, with `limits` applied on first sight. Re-derived by
+    /// [`Self::forget_peer`].
     #[must_use]
     pub fn peer_quota(&self, peer: EndpointId, limits: impl FnOnce() -> Limits) -> Arc<Quota> {
         self.quota(Principal::Peer(peer), limits)
     }
 
     /// `doc`'s quota, rolling its charges up into `owner`. An owner-less
-    /// document still gets one, so its charges accumulate; it simply does not
-    /// roll up past itself.
+    /// document gets one that does not roll up.
     pub fn document_quota(
         &self,
         doc: DocId,
@@ -208,7 +172,7 @@ impl Policy {
         if let Some(quota) = self.0.quotas.read().get(&principal) {
             return Arc::clone(quota);
         }
-        // Resolved before the write lock is taken: an owner resolver re-enters
+        // Resolved before the write lock is taken. An owner resolver re-enters
         // the caller's own state, so holding this lock across it would close a
         // cycle between the two.
         let owner = owner();
@@ -220,11 +184,8 @@ impl Policy {
         )
     }
 
-    /// Gives a document another document spawned a quota rolling up into
-    /// whatever the parent rolls up into.
-    ///
-    /// A parent this registry does not track yet has no owner to inherit, so
-    /// the child gets none rather than one resolved from somewhere else.
+    /// Gives `doc` a quota rolling up into whatever `parent` rolls up into.
+    /// An untracked `parent` leaves the child with no owner.
     pub fn attribute_child_document(&self, doc: DocId, parent: DocId) {
         let owner = self
             .0
@@ -235,9 +196,8 @@ impl Policy {
         self.document_quota(doc, || owner);
     }
 
-    /// Repoints a live document's quota at `owner`, migrating its standing
-    /// usage off the previous owner. `owner` is resolved only if the document
-    /// is still tracked.
+    /// Repoints `doc`'s quota at `owner`, migrating its standing usage.
+    /// `owner` is resolved only if `doc` is still tracked.
     pub fn reassign_document(&self, doc: DocId, owner: impl FnOnce() -> Option<Arc<Quota>>) {
         let quota = self
             .0
@@ -269,17 +229,19 @@ mod tests {
     use iroh::SecretKey;
 
     use super::*;
-    use crate::quota::{
-        QuotaError,
-        Stock,
+    use crate::{
+        quota::{
+            QuotaError,
+            Stock,
+        },
+        trust::Trust,
     };
 
     fn doc(seed: &[u8]) -> DocId {
         DocId(*blake3::hash(seed).as_bytes())
     }
 
-    /// A distinct, valid endpoint id per seed. Arbitrary bytes are not a curve
-    /// point, so a key has to be derived rather than written down.
+    /// Arbitrary bytes are not a curve point, so the key is derived.
     fn peer(seed: u8) -> EndpointId {
         SecretKey::from_bytes(&[seed; 32]).public()
     }
@@ -287,7 +249,7 @@ mod tests {
     #[test]
     fn an_unregistered_document_answers_the_weakest_record() {
         let record = Policy::new().get(doc(b"never-registered"));
-        assert_eq!(record.policy, DocumentPolicy::untrusted());
+        assert_eq!(record.permissions, Permissions::untrusted());
         assert_eq!(record.threshold, Threshold::default());
         assert!(record.owner.is_none());
         assert!(record.space.is_none());
@@ -299,14 +261,14 @@ mod tests {
         let (space, member, other) = (doc(b"space"), doc(b"member"), doc(b"other"));
         policy.update(space, |r| r.space = Some(space));
         policy.update(member, |r| r.space = Some(space));
-        policy.update(other, |r| r.threshold = Threshold::own_only());
+        policy.update(other, |r| r.threshold = Threshold(Trust::Myself));
 
         policy.forget_space(space);
 
         assert!(policy.get(member).space.is_none());
         assert_eq!(
             policy.get(other).threshold,
-            Threshold::own_only(),
+            Threshold(Trust::Myself),
             "unloading one space must not clear an unrelated document"
         );
     }
@@ -342,8 +304,7 @@ mod tests {
         let _ = policy.root(a);
     }
 
-    /// Each document is capped, but the owning peer caps the aggregate: enough
-    /// full documents exhaust the peer budget while each stays within its own.
+    /// The owning peer caps the aggregate, not just each document.
     #[test]
     fn kv_memory_rolls_up_to_peer_across_docs() {
         let policy = Policy::new();
@@ -354,13 +315,13 @@ mod tests {
         for i in 0..peer_cap / doc_cap {
             let quota = policy.document_quota(doc(&i.to_le_bytes()), || Some(Arc::clone(&peer)));
             quota
-                .try_charge(Stock::KvMemory, doc_cap)
+                .charge(Stock::KvMemory, doc_cap)
                 .expect("doc fits within the peer budget");
         }
 
         let overflow = policy.document_quota(doc(b"overflow"), || Some(Arc::clone(&peer)));
         assert!(matches!(
-            overflow.try_charge(Stock::KvMemory, doc_cap),
+            overflow.charge(Stock::KvMemory, doc_cap),
             Err(QuotaError::Stock(Stock::KvMemory))
         ));
     }
@@ -372,7 +333,7 @@ mod tests {
         let id = doc(b"released");
 
         let quota = policy.document_quota(id, || Some(Arc::clone(&peer)));
-        quota.try_charge(Stock::Prims, 100).expect("charge");
+        quota.charge(Stock::Prims, 100).expect("charge");
         assert_eq!(peer.usage(Stock::Prims), 100);
 
         policy.forget(id);

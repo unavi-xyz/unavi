@@ -14,8 +14,7 @@ pub struct FlowLimit {
     pub refill_per_sec: f64,
 }
 
-/// Per-scope caps. An absent entry means that resource is unbounded at this
-/// scope, deferring entirely to ancestor caps.
+/// Per-scope caps. An absent entry is unbounded at this scope.
 #[derive(Default, Clone)]
 pub struct Limits {
     pub stock: HashMap<Stock, u64>,
@@ -23,10 +22,9 @@ pub struct Limits {
 }
 
 impl Limits {
-    /// Builds a scope's caps by asking for every variant in turn. Callers must
-    /// answer with an exhaustive `match` and no wildcard, so a new [`Stock`] or
-    /// [`Flow`] fails to compile until each scope has said what it costs there;
-    /// an absent entry means unbounded.
+    /// Builds a scope's caps by asking for every variant. The callbacks must
+    /// match exhaustively, so a new [`Stock`] or [`Flow`] fails to compile
+    /// until every scope prices it. `None` means unbounded.
     fn new(stock: impl Fn(Stock) -> Option<u64>, flow: impl Fn(Flow) -> Option<FlowLimit>) -> Self {
         Self {
             stock: Stock::ALL
@@ -206,9 +204,8 @@ impl Limits {
     pub fn for_trust(trust: Trust) -> Self {
         let mut limits = Self::peer();
         let share = match trust {
-            // A blocked peer's content gets nothing at all, rather than a
-            // small share: a zero-capacity bucket is refused on sight rather
-            // than waited on.
+            // A zero-capacity bucket is refused on sight rather than waited
+            // on.
             Trust::Blocked => 0.0,
             Trust::Guest => 0.25,
             Trust::Trusted | Trust::Myself => return limits,
@@ -227,6 +224,8 @@ impl Limits {
 
 #[cfg(all(test, not(target_family = "wasm")))]
 mod tests {
+    use web_time::Instant;
+
     use super::*;
     use crate::quota::{
         Flow,
@@ -234,22 +233,26 @@ mod tests {
         Reservation,
     };
 
-    /// A shape mesh uploads POSITION, NORMAL, `UV_0`, and its index buffer:
-    /// four blobs per mesh, each charged against [`Flow::BlobUpload`].
+    /// POSITION, NORMAL, `UV_0` and the index buffer.
     const BLOBS_PER_MESH: usize = 4;
 
     #[test]
     fn document_blob_upload_sustains_an_init_burst() {
-        let peer = Quota::root(Limits::peer());
+        let peer = Quota::new(Limits::peer(), None);
         let doc = Quota::new(Limits::document(), Some(peer));
+        let now = Instant::now();
+
         for _ in 0..32 * BLOBS_PER_MESH {
-            doc.spend(Flow::BlobUpload, 1.0)
-                .expect("building init geometry must not exhaust the blob-upload quota");
+            assert_eq!(
+                doc.reserve_inner(Flow::BlobUpload, 1.0, now),
+                Reservation::Ready,
+                "building init geometry must not exhaust the blob-upload quota"
+            );
+            doc.commit_inner(Flow::BlobUpload, 1.0, now);
         }
     }
 
-    /// A UI surface pays three blobs per drawn body (`POSITION`, `NORMAL`,
-    /// indices).
+    /// `POSITION`, `NORMAL` and indices.
     #[test]
     fn one_document_cannot_afford_a_body_per_slot_up_front() {
         const BLOBS_PER_BODY: f64 = 3.0;
@@ -282,14 +285,14 @@ mod tests {
 
     #[test]
     fn a_blocked_peer_gets_nothing_and_is_refused_immediately() {
-        let quota = Quota::root(Limits::for_trust(Trust::Blocked));
+        let quota = Quota::new(Limits::for_trust(Trust::Blocked), None);
 
         assert_eq!(
             quota.reserve(Flow::CreatePrim, 1.0),
             Reservation::Never,
             "a zero bucket never fills, so waiting on it would be a lie"
         );
-        assert!(quota.try_charge(Stock::Prims, 1).is_err());
+        assert!(quota.charge(Stock::Prims, 1).is_err());
     }
 
     #[test]
@@ -308,7 +311,7 @@ mod tests {
 
     #[test]
     fn a_guest_still_gets_a_workable_budget() {
-        let quota = Quota::root(Limits::for_trust(Trust::Guest));
+        let quota = Quota::new(Limits::for_trust(Trust::Guest), None);
         assert_eq!(
             quota.reserve(Flow::CreatePrim, 100.0),
             Reservation::Ready,

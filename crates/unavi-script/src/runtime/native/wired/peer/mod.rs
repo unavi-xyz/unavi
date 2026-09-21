@@ -1,6 +1,6 @@
 use std::future::Future;
 
-use unavi_policy::document::ApiName;
+use unavi_policy::permissions::ApiName;
 
 use crate::runtime::{
     Runtime,

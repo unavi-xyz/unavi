@@ -1,4 +1,4 @@
-use unavi_policy::document::ApiName;
+use unavi_policy::permissions::ApiName;
 use wasmtime::component::Resource;
 
 use crate::{

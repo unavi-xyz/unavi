@@ -1,23 +1,51 @@
-//! `unavi-policy` determines the capability and access levels of everything in
-//! the scene.
+//! Access control for peers and documents.
 //!
-//! Peers are restricted by their [`trust::Trust`]. Documents are restricted by
-//! the [`threshold::Threshold`] their writers must clear and the
-//! [`owner::Owner`] the view resolves for them.
+//! # Types
+//!
+//! | Type | States |
+//! | --- | --- |
+//! | [`trust::Trust`] | how far a peer is trusted |
+//! | [`trust::Threshold`] | the trust a document requires of its writers |
+//! | [`permissions::Permissions`] | the host APIs a document may call |
+//! | [`owner::Owner`] | who holds a document |
+//! | [`standing::Standing`] | the four above, for one document |
+//!
+//! # Registry
+//!
+//! [`registry::Policy`] holds one [`registry::Record`] per document id and the
+//! quota each document spends against. An unregistered document reads as
+//! [`registry::Record::default`].
+//!
+//! # Checks
+//!
+//! [`standing::Standing::may_write`] and [`standing::Standing::may_read`] take
+//! two `Standing` values and answer with [`error::PolicyError`].
+//!
+//! # External Inputs
+//!
+//! [`owner::Owner::Peer`] comes from pin state held outside this crate. The
+//! caller resolves it and builds the `Standing`.
 
 use bevy::prelude::*;
-use bevy_hsd::HsdCommitSet;
+use bevy_hsd::{
+    HsdCommitSet,
+    HsdDocId,
+};
 
-pub mod document;
+use crate::{
+    owner::Owner,
+    permissions::Permissions,
+    trust::Threshold,
+};
+
 pub mod error;
-pub mod membership;
 pub mod owner;
+pub mod permissions;
 pub mod quota;
 pub mod registry;
 pub mod space;
 pub mod standing;
 pub mod sync;
-pub mod threshold;
 pub mod trust;
 
 pub struct PolicyPlugin;
@@ -25,19 +53,15 @@ pub struct PolicyPlugin;
 impl Plugin for PolicyPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<registry::Policy>()
-            .add_observer(sync::sync_on_doc_id)
-            .add_observer(sync::sync_on_policy)
-            .add_observer(sync::sync_on_threshold)
-            .add_observer(sync::sync_on_owner)
+            .add_observer(sync::sync_on::<HsdDocId>)
+            .add_observer(sync::sync_on::<Permissions>)
+            .add_observer(sync::sync_on::<Threshold>)
+            .add_observer(sync::sync_on::<Owner>)
             .add_observer(sync::forget_document)
-            .add_observer(space::grant_space_permissions)
-            .add_observer(membership::self_own_space)
-            .add_observer(membership::register_on_owner_change)
-            .add_observer(membership::deregister_doc_membership)
-            .add_observer(membership::deregister_space_docs)
-            .add_systems(
-                Update,
-                membership::parent_docs_under_space.before(HsdCommitSet),
-            );
+            .add_observer(space::register_space)
+            .add_observer(space::register_membership)
+            .add_observer(space::forget_membership)
+            .add_observer(space::forget_space)
+            .add_systems(Update, space::parent_docs_under_space.before(HsdCommitSet));
     }
 }

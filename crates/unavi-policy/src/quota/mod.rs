@@ -1,3 +1,9 @@
+//! Resource accounting.
+//!
+//! A [`Stock`] is charged and refunded. A [`Flow`] is spent from a token bucket
+//! that refills over time. A [`Quota`] may roll up into an owner, charging
+//! both.
+
 use std::{
     collections::HashMap,
     sync::Arc,
@@ -7,11 +13,13 @@ use std::{
 use parking_lot::Mutex;
 use web_time::Instant;
 
+use crate::quota::limits::{
+    FlowLimit,
+    Limits,
+};
+
 pub mod limits;
 
-use crate::quota::limits::Limits;
-
-/// A countable, releasable resource: held while live, refunded when freed.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Stock {
     Documents,
@@ -24,7 +32,7 @@ pub enum Stock {
 }
 
 impl Stock {
-    pub const ALL: [Self; 7] = [
+    const ALL: [Self; 7] = [
         Self::Documents,
         Self::KvMemory,
         Self::PortalWatches,
@@ -35,7 +43,6 @@ impl Stock {
     ];
 }
 
-/// A rate-limited action spent from a token bucket that refills over time.
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Flow {
     BlobUpload,
@@ -47,7 +54,7 @@ pub enum Flow {
 }
 
 impl Flow {
-    pub const ALL: [Self; 6] = [
+    const ALL: [Self; 6] = [
         Self::BlobUpload,
         Self::CreateDocument,
         Self::CreatePrim,
@@ -65,15 +72,8 @@ pub enum QuotaError {
     Stock(Stock),
 }
 
-struct Bucket {
-    tokens: f64,
-    last:   Instant,
-}
-
-/// What the chain can do about a flow request right now.
-///
-/// Ordered worst-last so combining levels is a `max`: the slowest bucket
-/// decides, and an unsatisfiable level beats any finite wait.
+/// What the chain can do about a flow request now. Ordered worst-last, so
+/// combining levels is a `max`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Reservation {
     Ready,
@@ -82,7 +82,30 @@ pub enum Reservation {
     Never,
 }
 
-/// Resource limits plus an optional owner to rolls up into.
+struct Bucket {
+    tokens: f64,
+    last:   Instant,
+}
+
+impl Bucket {
+    const fn full(limit: FlowLimit, now: Instant) -> Self {
+        Self {
+            tokens: limit.capacity,
+            last:   now,
+        }
+    }
+
+    /// Adds the tokens elapsed time has earned, stopping at capacity.
+    fn refill(&mut self, limit: FlowLimit, now: Instant) {
+        let elapsed = now.saturating_duration_since(self.last).as_secs_f64();
+        self.tokens = elapsed
+            .mul_add(limit.refill_per_sec, self.tokens)
+            .min(limit.capacity);
+        self.last = now;
+    }
+}
+
+/// One scope's caps, and the quota its charges roll up into.
 pub struct Quota {
     limits:  Limits,
     stock:   Mutex<HashMap<Stock, u64>>,
@@ -101,34 +124,24 @@ impl Quota {
         })
     }
 
-    #[must_use]
-    pub fn root(limits: Limits) -> Arc<Self> {
-        Self::new(limits, None)
-    }
-
-    /// An uncapped, owner-less quota for trusted scripts that must keep running
-    /// even when shared budgets are exhausted.
+    /// An uncapped, owner-less quota, for trusted scripts.
     #[must_use]
     pub fn unlimited() -> Arc<Self> {
         Self::new(Limits::default(), None)
     }
 
-    #[must_use]
-    pub fn owner(&self) -> Option<Arc<Self>> {
+    pub(crate) fn owner(&self) -> Option<Arc<Self>> {
         self.owner.lock().clone()
     }
 
-    /// Charges `n` units of `stock`, returning a guard that refunds on drop.
-    pub fn charge(self: &Arc<Self>, stock: Stock, n: u64) -> Result<StockGuard, QuotaError> {
-        self.charge_inner(stock, n)?;
-        Ok(StockGuard {
-            quota: Arc::clone(self),
-            stock,
-            n,
-        })
+    #[must_use]
+    pub fn usage(&self, stock: Stock) -> u64 {
+        self.stock.lock().get(&stock).copied().unwrap_or(0)
     }
 
-    fn charge_inner(&self, stock: Stock, n: u64) -> Result<(), QuotaError> {
+    /// Charges `n` units of `stock` at every level. Pair with
+    /// [`Self::release`].
+    pub fn charge(&self, stock: Stock, n: u64) -> Result<(), QuotaError> {
         let mut map = self.stock.lock();
         let cur = map.entry(stock).or_insert(0);
         let next = cur.saturating_add(n);
@@ -141,29 +154,38 @@ impl Quota {
         let Some(owner) = self.owner() else {
             return Ok(());
         };
-        if let Err(err) = owner.charge_inner(stock, n) {
-            self.refund_local(stock, n);
+        if let Err(err) = owner.charge(stock, n) {
+            self.release_local(stock, n);
             return Err(err);
         }
         Ok(())
     }
 
-    fn refund_local(&self, stock: Stock, n: u64) {
+    /// Charges `n` units of `stock`, returning a hold that refunds on drop.
+    pub fn hold(self: &Arc<Self>, stock: Stock, n: u64) -> Result<StockHold, QuotaError> {
+        self.charge(stock, n)?;
+        Ok(StockHold {
+            quota: Arc::clone(self),
+            stock,
+            n,
+        })
+    }
+
+    pub fn release(&self, stock: Stock, n: u64) {
+        self.release_local(stock, n);
+        if let Some(owner) = self.owner() {
+            owner.release(stock, n);
+        }
+    }
+
+    fn release_local(&self, stock: Stock, n: u64) {
         let mut map = self.stock.lock();
         if let Some(cur) = map.get_mut(&stock) {
             *cur = cur.saturating_sub(n);
         }
     }
 
-    fn refund(&self, stock: Stock, n: u64) {
-        self.refund_local(stock, n);
-        if let Some(owner) = self.owner() {
-            owner.refund(stock, n);
-        }
-    }
-
-    /// Adds standing stock without enforcing caps, for moving already-held
-    /// resources to a new owner during [`Self::set_owner`].
+    /// Adds standing stock without enforcing caps, for [`Self::set_owner`].
     fn adopt(&self, stock: Stock, n: u64) {
         let mut map = self.stock.lock();
         let cur = map.entry(stock).or_insert(0);
@@ -175,22 +197,69 @@ impl Quota {
         }
     }
 
-    /// Whether `other` is this quota or anything it rolls up into.
-    fn rolls_up_into(&self, other: &Arc<Self>) -> bool {
-        let mut current = self.owner();
-        while let Some(quota) = current {
-            if Arc::ptr_eq(&quota, other) {
-                return true;
-            }
-            current = quota.owner();
-        }
-        false
+    /// Reads the whole owner chain. Nothing is taken until [`Self::commit`].
+    #[must_use]
+    pub fn reserve(&self, flow: Flow, n: f64) -> Reservation {
+        self.reserve_inner(flow, n, Instant::now())
     }
 
-    /// Repoints this quota at a new owner, moving its standing stock from the
-    /// old owner to the new. Refuses an owner that already rolls up into this
-    /// quota, which would close the chain into a cycle.
-    pub fn set_owner(self: &Arc<Self>, new_owner: Option<Arc<Self>>) {
+    fn reserve_inner(&self, flow: Flow, n: f64, now: Instant) -> Reservation {
+        let here = self.reserve_local(flow, n, now);
+        let Some(owner) = self.owner() else {
+            return here;
+        };
+        here.max(owner.reserve_inner(flow, n, now))
+    }
+
+    fn reserve_local(&self, flow: Flow, n: f64, now: Instant) -> Reservation {
+        let Some(limit) = self.limits.flow.get(&flow).copied() else {
+            return Reservation::Ready;
+        };
+        if n > limit.capacity {
+            return Reservation::Never;
+        }
+
+        let mut buckets = self.buckets.lock();
+        let bucket = buckets
+            .entry(flow)
+            .or_insert_with(|| Bucket::full(limit, now));
+        // Refilling mutates the bucket but takes nothing.
+        bucket.refill(limit, now);
+        let tokens = bucket.tokens;
+        drop(buckets);
+
+        if tokens >= n {
+            Reservation::Ready
+        } else if limit.refill_per_sec <= 0.0 {
+            Reservation::Never
+        } else {
+            Reservation::After(Duration::from_secs_f64((n - tokens) / limit.refill_per_sec))
+        }
+    }
+
+    /// Takes `n` at every level that caps `flow`. Only sound immediately after
+    /// a [`Reservation::Ready`], which anything else may drive negative.
+    pub fn commit(&self, flow: Flow, n: f64) {
+        self.commit_inner(flow, n, Instant::now());
+    }
+
+    fn commit_inner(&self, flow: Flow, n: f64, now: Instant) {
+        if let Some(limit) = self.limits.flow.get(&flow).copied() {
+            // A bucket that does not exist yet is a full one, not a free one.
+            let mut buckets = self.buckets.lock();
+            buckets
+                .entry(flow)
+                .or_insert_with(|| Bucket::full(limit, now))
+                .tokens -= n;
+        }
+        if let Some(owner) = self.owner() {
+            owner.commit_inner(flow, n, now);
+        }
+    }
+
+    /// Repoints this quota at a new owner, moving its standing stock across.
+    /// Refuses an owner that already rolls up into this quota.
+    pub(crate) fn set_owner(self: &Arc<Self>, new_owner: Option<Arc<Self>>) {
         if let Some(new) = new_owner.as_ref()
             && (Arc::ptr_eq(new, self) || new.rolls_up_into(self))
         {
@@ -215,7 +284,7 @@ impl Quota {
             .collect::<Vec<_>>();
         if let Some(old) = slot.as_ref() {
             for &(stock, n) in &held {
-                old.refund(stock, n);
+                old.release(stock, n);
             }
         }
         if let Some(new) = new_owner.as_ref() {
@@ -226,171 +295,20 @@ impl Quota {
         *slot = new_owner;
     }
 
-    /// Spends `n` tokens of `flow`, refilling each bucket by elapsed time
-    /// first.
-    pub fn spend(&self, flow: Flow, n: f64) -> Result<(), QuotaError> {
-        self.spend_inner(flow, n, Instant::now())
-    }
-
-    /// Reads the whole owner chain without taking anything.
-    ///
-    /// Peek-then-commit, not take-then-refund: under contention a partial
-    /// take that refunds on failure is a livelock, each waiter burning the
-    /// others' tokens.
-    #[must_use]
-    pub fn reserve(&self, flow: Flow, n: f64) -> Reservation {
-        self.reserve_inner(flow, n, Instant::now())
-    }
-
-    fn reserve_inner(&self, flow: Flow, n: f64, now: Instant) -> Reservation {
-        let here = self.reserve_local(flow, n, now);
-        let Some(owner) = self.owner() else {
-            return here;
-        };
-        // The slowest bucket in the chain governs.
-        here.max(owner.reserve_inner(flow, n, now))
-    }
-
-    fn reserve_local(&self, flow: Flow, n: f64, now: Instant) -> Reservation {
-        let Some(limit) = self.limits.flow.get(&flow).copied() else {
-            return Reservation::Ready;
-        };
-        if n > limit.capacity {
-            // No amount of waiting fills a bucket past its capacity.
-            return Reservation::Never;
-        }
-
-        let mut buckets = self.buckets.lock();
-        let bucket = buckets.entry(flow).or_insert(Bucket {
-            tokens: limit.capacity,
-            last:   now,
-        });
-        // Materialising elapsed time is not a take: it is what the bucket
-        // already holds, so doing it under a peek is safe.
-        let elapsed = now.saturating_duration_since(bucket.last).as_secs_f64();
-        bucket.tokens = elapsed
-            .mul_add(limit.refill_per_sec, bucket.tokens)
-            .min(limit.capacity);
-        bucket.last = now;
-        let tokens = bucket.tokens;
-        drop(buckets);
-
-        if tokens >= n {
-            Reservation::Ready
-        } else if limit.refill_per_sec <= 0.0 {
-            Reservation::Never
-        } else {
-            Reservation::After(Duration::from_secs_f64((n - tokens) / limit.refill_per_sec))
-        }
-    }
-
-    /// Takes `n` at every level that caps `flow`.
-    ///
-    /// Only sound immediately after a [`Reservation::Ready`]; anything else may
-    /// drive a bucket negative.
-    pub fn commit(&self, flow: Flow, n: f64) {
-        if let Some(limit) = self.limits.flow.get(&flow).copied() {
-            // Materialised here as well as in `reserve`: a bucket that does not
-            // exist yet is a full one, and skipping the charge because the map
-            // had no entry would let the first spend at every level go free.
-            let mut buckets = self.buckets.lock();
-            buckets
-                .entry(flow)
-                .or_insert_with(|| Bucket {
-                    tokens: limit.capacity,
-                    last:   Instant::now(),
-                })
-                .tokens -= n;
-        }
-        if let Some(owner) = self.owner() {
-            owner.commit(flow, n);
-        }
-    }
-
-    fn spend_inner(&self, flow: Flow, n: f64, now: Instant) -> Result<(), QuotaError> {
-        if let Some(limit) = self.limits.flow.get(&flow).copied() {
-            let mut buckets = self.buckets.lock();
-            let bucket = buckets.entry(flow).or_insert(Bucket {
-                tokens: limit.capacity,
-                last:   now,
-            });
-            let elapsed = now.saturating_duration_since(bucket.last).as_secs_f64();
-            bucket.tokens = elapsed
-                .mul_add(limit.refill_per_sec, bucket.tokens)
-                .min(limit.capacity);
-            bucket.last = now;
-            if bucket.tokens < n {
-                return Err(QuotaError::Flow(flow));
+    /// Whether `other` is anything this quota rolls up into.
+    fn rolls_up_into(&self, other: &Arc<Self>) -> bool {
+        let mut current = self.owner();
+        while let Some(quota) = current {
+            if Arc::ptr_eq(&quota, other) {
+                return true;
             }
-            bucket.tokens -= n;
-            drop(buckets);
+            current = quota.owner();
         }
-        let Some(owner) = self.owner() else {
-            return Ok(());
-        };
-        if let Err(err) = owner.spend_inner(flow, n, now) {
-            self.refill_local(flow, n);
-            return Err(err);
-        }
-        Ok(())
-    }
-
-    fn refill_local(&self, flow: Flow, n: f64) {
-        if self.limits.flow.contains_key(&flow) {
-            let mut buckets = self.buckets.lock();
-            if let Some(bucket) = buckets.get_mut(&flow) {
-                bucket.tokens += n;
-            }
-        }
-    }
-
-    /// Charges without a guard; caller must pair it with a [`Self::release`].
-    /// For resources tracked elsewhere, like wasm memory growth or KV bytes.
-    pub fn try_charge(&self, stock: Stock, n: u64) -> Result<(), QuotaError> {
-        self.charge_inner(stock, n)
-    }
-
-    /// Charges `n` units of `stock`, returning a resizable [`StockHold`] that
-    /// refunds whatever it holds on drop. Use for data whose footprint changes
-    /// over its lifetime.
-    pub fn hold(self: &Arc<Self>, stock: Stock, n: u64) -> Result<StockHold, QuotaError> {
-        self.charge_inner(stock, n)?;
-        Ok(StockHold {
-            quota: Arc::clone(self),
-            stock,
-            n,
-        })
-    }
-
-    pub fn release(&self, stock: Stock, n: u64) {
-        self.refund(stock, n);
-    }
-
-    #[must_use]
-    pub fn usage(&self, stock: Stock) -> u64 {
-        self.stock.lock().get(&stock).copied().unwrap_or(0)
+        false
     }
 }
 
-/// Holds a stock charge for as long as the guarded resource lives.
-#[must_use = "dropping the guard immediately refunds the charge"]
-pub struct StockGuard {
-    quota: Arc<Quota>,
-    stock: Stock,
-    n:     u64,
-}
-
-impl Drop for StockGuard {
-    fn drop(&mut self) {
-        self.quota.refund(self.stock, self.n);
-    }
-}
-
-/// A resizable stock hold that refunds whatever it currently holds on drop.
-///
-/// [`Self::resize`] charges only the positive delta when growing and refunds
-/// when shrinking, so an overwrite that does not grow always succeeds even at a
-/// full cap.
+/// A stock charge that refunds what it holds on drop.
 #[must_use = "dropping the hold immediately refunds the held stock"]
 pub struct StockHold {
     quota: Arc<Quota>,
@@ -399,13 +317,13 @@ pub struct StockHold {
 }
 
 impl StockHold {
-    /// Adjusts the held amount to `new_n`. On growth the delta is charged and
-    /// may fail (leaving the hold unchanged); on shrink it always succeeds.
+    /// Adjusts the held amount to `new_n`. Growing charges the delta and may
+    /// fail, leaving the hold unchanged. Shrinking always succeeds.
     pub fn resize(&mut self, new_n: u64) -> Result<(), QuotaError> {
         if new_n > self.n {
-            self.quota.charge_inner(self.stock, new_n - self.n)?;
+            self.quota.charge(self.stock, new_n - self.n)?;
         } else {
-            self.quota.refund(self.stock, self.n - new_n);
+            self.quota.release(self.stock, self.n - new_n);
         }
         self.n = new_n;
         Ok(())
@@ -419,104 +337,91 @@ impl StockHold {
 
 impl Drop for StockHold {
     fn drop(&mut self) {
-        self.quota.refund(self.stock, self.n);
+        self.quota.release(self.stock, self.n);
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-
-    use super::{
-        limits::{
-            FlowLimit,
-            Limits,
-        },
-        *,
-    };
+    use super::*;
 
     fn limits_stock(stock: Stock, max: u64) -> Limits {
-        let mut l = Limits::default();
-        l.stock.insert(stock, max);
-        l
+        let mut limits = Limits::default();
+        limits.stock.insert(stock, max);
+        limits
+    }
+
+    fn limits_flow(flow: Flow, capacity: f64, refill_per_sec: f64) -> Limits {
+        let mut limits = Limits::default();
+        limits.flow.insert(
+            flow,
+            FlowLimit {
+                capacity,
+                refill_per_sec,
+            },
+        );
+        limits
     }
 
     #[test]
-    fn stock_charges_and_refunds() {
-        let q = Quota::root(limits_stock(Stock::Prims, 2));
-        let a = q.charge(Stock::Prims, 1).expect("first");
-        let _b = q.charge(Stock::Prims, 1).expect("second");
+    fn a_cap_is_enforced_and_freed_again() {
+        let q = Quota::new(limits_stock(Stock::Prims, 2), None);
+        let first = q.hold(Stock::Prims, 1).expect("first");
+        let _second = q.hold(Stock::Prims, 1).expect("second");
         assert_eq!(q.usage(Stock::Prims), 2);
         assert!(matches!(
-            q.charge(Stock::Prims, 1),
+            q.hold(Stock::Prims, 1),
             Err(QuotaError::Stock(Stock::Prims))
         ));
-        drop(a);
+
+        drop(first);
         assert_eq!(q.usage(Stock::Prims), 1);
-        let _g = q.charge(Stock::Prims, 1).expect("after refund");
+        let _third = q.hold(Stock::Prims, 1).expect("after the refund");
     }
 
     #[test]
     fn unset_stock_is_unbounded() {
-        let q = Quota::root(Limits::default());
-        let _g = q.charge(Stock::Prims, u64::MAX).expect("unbounded");
+        let q = Quota::new(Limits::default(), None);
+        let _hold = q.hold(Stock::Prims, u64::MAX).expect("unbounded");
     }
 
     #[test]
-    fn charge_rolls_up_to_owner() {
-        let owner = Quota::root(limits_stock(Stock::Documents, 1));
-        let doc = Quota::new(Limits::default(), Some(Arc::clone(&owner)));
-        let _g = doc.charge(Stock::Documents, 1).expect("within owner cap");
-        assert_eq!(owner.usage(Stock::Documents), 1);
-        assert!(matches!(
-            doc.charge(Stock::Documents, 1),
-            Err(QuotaError::Stock(Stock::Documents))
-        ));
-    }
-
-    #[test]
-    fn failed_owner_charge_does_not_leak_into_document() {
-        let owner = Quota::root(limits_stock(Stock::Documents, 1));
+    fn a_failed_owner_charge_leaves_nothing_behind() {
+        let owner = Quota::new(limits_stock(Stock::Documents, 1), None);
         let doc = Quota::new(limits_stock(Stock::Documents, 5), Some(Arc::clone(&owner)));
-        let _g = doc.charge(Stock::Documents, 1).expect("ok");
-        assert!(doc.charge(Stock::Documents, 1).is_err());
-        assert_eq!(doc.usage(Stock::Documents), 1, "no phantom doc charge");
-        assert_eq!(owner.usage(Stock::Documents), 1);
-    }
 
-    #[test]
-    fn owner_refund_rolls_up() {
-        let owner = Quota::root(limits_stock(Stock::Prims, 4));
-        let doc = Quota::new(Limits::default(), Some(Arc::clone(&owner)));
-        let g = doc.charge(Stock::Prims, 2).expect("ok");
-        assert_eq!(owner.usage(Stock::Prims), 2);
-        drop(g);
-        assert_eq!(owner.usage(Stock::Prims), 0);
+        let _hold = doc.hold(Stock::Documents, 1).expect("within the owner cap");
+        assert!(
+            doc.hold(Stock::Documents, 1).is_err(),
+            "the owner cap governs even where the document has room"
+        );
+        assert_eq!(doc.usage(Stock::Documents), 1, "no phantom document charge");
+        assert_eq!(owner.usage(Stock::Documents), 1);
     }
 
     #[test]
     fn set_owner_migrates_standing_stock() {
-        let old = Quota::root(limits_stock(Stock::Prims, 10));
-        let new = Quota::root(limits_stock(Stock::Prims, 10));
+        let old = Quota::new(limits_stock(Stock::Prims, 10), None);
+        let new = Quota::new(limits_stock(Stock::Prims, 10), None);
         let doc = Quota::new(Limits::default(), Some(Arc::clone(&old)));
-        let g = doc.charge(Stock::Prims, 3).expect("ok");
+        let hold = doc.hold(Stock::Prims, 3).expect("charge");
         assert_eq!(old.usage(Stock::Prims), 3);
 
         doc.set_owner(Some(Arc::clone(&new)));
         assert_eq!(old.usage(Stock::Prims), 0, "old owner released");
         assert_eq!(new.usage(Stock::Prims), 3, "new owner adopted");
 
-        drop(g);
+        drop(hold);
         assert_eq!(new.usage(Stock::Prims), 0, "refund follows the new owner");
     }
 
     #[test]
-    fn hold_grows_shrinks_and_refunds_on_drop() {
-        let q = Quota::root(limits_stock(Stock::KvMemory, 100));
+    fn a_hold_grows_shrinks_and_refunds_on_drop() {
+        let q = Quota::new(limits_stock(Stock::KvMemory, 100), None);
         let mut hold = q.hold(Stock::KvMemory, 40).expect("initial");
         assert_eq!(q.usage(Stock::KvMemory), 40);
 
-        hold.resize(90).expect("grow within cap");
+        hold.resize(90).expect("grow within the cap");
         assert_eq!(q.usage(Stock::KvMemory), 90);
 
         assert!(
@@ -531,8 +436,8 @@ mod tests {
     }
 
     #[test]
-    fn hold_shrink_succeeds_at_full_cap() {
-        let q = Quota::root(limits_stock(Stock::KvMemory, 50));
+    fn a_hold_shrinks_at_a_full_cap() {
+        let q = Quota::new(limits_stock(Stock::KvMemory, 50), None);
         let mut hold = q.hold(Stock::KvMemory, 50).expect("fill the cap");
         assert!(q.hold(Stock::KvMemory, 1).is_err(), "cap is full");
 
@@ -542,85 +447,82 @@ mod tests {
     }
 
     #[test]
-    fn hold_rolls_up_and_refunds_to_owner() {
-        let owner = Quota::root(limits_stock(Stock::KvMemory, 100));
+    fn a_hold_rolls_up_and_refunds_to_its_owner() {
+        let owner = Quota::new(limits_stock(Stock::KvMemory, 100), None);
         let doc = Quota::new(Limits::default(), Some(Arc::clone(&owner)));
-        let mut hold = doc.hold(Stock::KvMemory, 30).expect("ok");
+        let mut hold = doc.hold(Stock::KvMemory, 30).expect("charge");
         assert_eq!(owner.usage(Stock::KvMemory), 30);
+
         hold.resize(10).expect("shrink");
         assert_eq!(owner.usage(Stock::KvMemory), 10);
+
         drop(hold);
         assert_eq!(owner.usage(Stock::KvMemory), 0);
     }
 
-    fn limits_flow(flow: Flow, capacity: f64, refill_per_sec: f64) -> Limits {
-        let mut l = Limits::default();
-        l.flow.insert(
-            flow,
-            FlowLimit {
-                capacity,
-                refill_per_sec,
-            },
-        );
-        l
-    }
-
     #[test]
-    fn flow_drains_then_refills() {
-        let q = Quota::root(limits_flow(Flow::PortalOpen, 2.0, 1.0));
+    fn a_bucket_drains_then_refills() {
+        let q = Quota::new(limits_flow(Flow::PortalOpen, 2.0, 1.0), None);
         let t0 = Instant::now();
-        q.spend_inner(Flow::PortalOpen, 1.0, t0).expect("1");
-        q.spend_inner(Flow::PortalOpen, 1.0, t0).expect("2");
-        assert!(q.spend_inner(Flow::PortalOpen, 1.0, t0).is_err());
-        let t1 = t0 + Duration::from_secs(1);
-        q.spend_inner(Flow::PortalOpen, 1.0, t1).expect("refilled");
-    }
 
-    #[test]
-    fn flow_refill_caps_at_capacity() {
-        let q = Quota::root(limits_flow(Flow::Emit, 4.0, 1000.0));
-        let t0 = Instant::now();
-        q.spend_inner(Flow::Emit, 4.0, t0).expect("drain");
-        let t1 = t0 + Duration::from_secs(10);
-        q.spend_inner(Flow::Emit, 4.0, t1).expect("full again");
-        assert!(q.spend_inner(Flow::Emit, 1.0, t1).is_err());
-    }
-
-    #[test]
-    fn failed_owner_spend_refunds_self() {
-        let owner = Quota::root(limits_flow(Flow::Emit, 1.0, 0.0));
-        let doc = Quota::new(limits_flow(Flow::Emit, 10.0, 0.0), Some(Arc::clone(&owner)));
-        let t0 = Instant::now();
-        doc.spend_inner(Flow::Emit, 1.0, t0).expect("first ok");
-        assert!(
-            doc.spend_inner(Flow::Emit, 1.0, t0).is_err(),
-            "owner exhausted"
-        );
+        for _ in 0..2 {
+            assert_eq!(
+                q.reserve_inner(Flow::PortalOpen, 1.0, t0),
+                Reservation::Ready
+            );
+            q.commit_inner(Flow::PortalOpen, 1.0, t0);
+        }
+        assert!(matches!(
+            q.reserve_inner(Flow::PortalOpen, 1.0, t0),
+            Reservation::After(_)
+        ));
         assert_eq!(
-            doc.buckets.lock().get(&Flow::Emit).map(|b| b.tokens),
-            Some(9.0),
+            q.reserve_inner(Flow::PortalOpen, 1.0, t0 + Duration::from_secs(1)),
+            Reservation::Ready
+        );
+    }
+
+    #[test]
+    fn a_refill_stops_at_capacity() {
+        let q = Quota::new(limits_flow(Flow::Emit, 4.0, 1_000.0), None);
+        let t0 = Instant::now();
+        q.commit_inner(Flow::Emit, 4.0, t0);
+
+        let t1 = t0 + Duration::from_secs(10);
+        assert_eq!(q.reserve_inner(Flow::Emit, 4.0, t1), Reservation::Ready);
+        q.commit_inner(Flow::Emit, 4.0, t1);
+        assert!(
+            matches!(
+                q.reserve_inner(Flow::Emit, 1.0, t1),
+                Reservation::After(_) | Reservation::Never
+            ),
+            "ten seconds of refill must still leave only one bucketful"
         );
     }
 
     #[test]
     fn a_reservation_takes_nothing_until_it_commits() {
-        let q = Quota::root(limits_flow(Flow::Emit, 10.0, 1.0));
+        let q = Quota::new(limits_flow(Flow::Emit, 10.0, 1.0), None);
+        let t0 = Instant::now();
 
-        assert_eq!(q.reserve(Flow::Emit, 4.0), Reservation::Ready);
-        assert_eq!(q.reserve(Flow::Emit, 4.0), Reservation::Ready);
-        assert_eq!(
-            q.reserve(Flow::Emit, 10.0),
-            Reservation::Ready,
-            "peeking twice must not have drained the bucket"
-        );
+        for _ in 0..3 {
+            assert_eq!(
+                q.reserve_inner(Flow::Emit, 10.0, t0),
+                Reservation::Ready,
+                "peeking must not drain the bucket"
+            );
+        }
 
-        q.commit(Flow::Emit, 10.0);
-        assert!(matches!(q.reserve(Flow::Emit, 10.0), Reservation::After(_)));
+        q.commit_inner(Flow::Emit, 10.0, t0);
+        assert!(matches!(
+            q.reserve_inner(Flow::Emit, 10.0, t0),
+            Reservation::After(_)
+        ));
     }
 
     #[test]
     fn an_ask_past_capacity_is_refused_rather_than_waited_on() {
-        let q = Quota::root(limits_flow(Flow::Emit, 10.0, 1.0));
+        let q = Quota::new(limits_flow(Flow::Emit, 10.0, 1.0), None);
         assert_eq!(
             q.reserve(Flow::Emit, 11.0),
             Reservation::Never,
@@ -630,44 +532,42 @@ mod tests {
 
     #[test]
     fn the_wait_is_what_the_bucket_needs_to_refill() {
-        let q = Quota::root(limits_flow(Flow::Emit, 10.0, 2.0));
-        q.commit(Flow::Emit, 10.0);
+        let q = Quota::new(limits_flow(Flow::Emit, 10.0, 2.0), None);
+        let t0 = Instant::now();
+        q.commit_inner(Flow::Emit, 10.0, t0);
 
-        let Reservation::After(wait) = q.reserve(Flow::Emit, 4.0) else {
-            panic!("a drained bucket must answer with a wait")
-        };
-        assert!(
-            (wait.as_secs_f64() - 2.0).abs() < 0.05,
-            "four tokens at two per second is two seconds, got {wait:?}"
+        assert_eq!(
+            q.reserve_inner(Flow::Emit, 4.0, t0),
+            Reservation::After(Duration::from_secs(2)),
+            "four tokens at two per second is two seconds"
         );
     }
 
     #[test]
     fn the_slowest_level_of_the_chain_governs() {
-        let peer = Quota::root(limits_flow(Flow::Emit, 10.0, 1.0));
+        let peer = Quota::new(limits_flow(Flow::Emit, 10.0, 1.0), None);
         let doc = Quota::new(limits_flow(Flow::Emit, 10.0, 10.0), Some(Arc::clone(&peer)));
-        peer.commit(Flow::Emit, 10.0);
-        doc.commit(Flow::Emit, 10.0);
+        let t0 = Instant::now();
+        doc.commit_inner(Flow::Emit, 10.0, t0);
 
-        let Reservation::After(wait) = doc.reserve(Flow::Emit, 5.0) else {
-            panic!("a drained chain must answer with a wait")
-        };
-        assert!(
-            wait.as_secs_f64() > 4.0,
+        assert_eq!(
+            doc.reserve_inner(Flow::Emit, 5.0, t0),
+            Reservation::After(Duration::from_secs(5)),
             "the slow peer bucket governs, not the fast document one"
         );
     }
 
     #[test]
     fn committing_charges_every_level() {
-        let peer = Quota::root(limits_flow(Flow::Emit, 10.0, 1.0));
+        let peer = Quota::new(limits_flow(Flow::Emit, 10.0, 1.0), None);
         let doc = Quota::new(limits_flow(Flow::Emit, 10.0, 1.0), Some(Arc::clone(&peer)));
+        let t0 = Instant::now();
 
-        assert_eq!(doc.reserve(Flow::Emit, 6.0), Reservation::Ready);
-        doc.commit(Flow::Emit, 6.0);
+        assert_eq!(doc.reserve_inner(Flow::Emit, 6.0, t0), Reservation::Ready);
+        doc.commit_inner(Flow::Emit, 6.0, t0);
 
         assert!(matches!(
-            peer.reserve(Flow::Emit, 6.0),
+            peer.reserve_inner(Flow::Emit, 6.0, t0),
             Reservation::After(_)
         ));
     }

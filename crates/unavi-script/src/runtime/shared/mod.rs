@@ -11,7 +11,7 @@ use hsd::{
 use iroh_docs::NamespaceId;
 use tokio::sync::Mutex;
 use unavi_policy::{
-    document::ApiName,
+    permissions::ApiName,
     quota::Quota,
 };
 use unavi_space::view::SpaceView;
@@ -71,7 +71,12 @@ impl Api {
     /// after its scene realized, and would hold a grant the user has since
     /// withdrawn.
     pub fn require(&self, name: ApiName) -> Result<(), ScriptError> {
-        Ok(self.view.policy().get(self.doc_id).policy.require(name)?)
+        Ok(self
+            .view
+            .policy()
+            .get(self.doc_id)
+            .permissions
+            .require(name)?)
     }
 
     /// Holds every document this script can write open for the duration of one

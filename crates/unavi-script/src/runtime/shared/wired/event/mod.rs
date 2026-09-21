@@ -8,11 +8,14 @@ use std::sync::{
 
 use async_channel::Receiver;
 use hsd::bounds::MAX_EVENT_PAYLOAD_BYTES;
-use unavi_policy::quota::{
-    Flow,
-    QuotaError,
-    Stock,
-    StockGuard,
+use unavi_policy::{
+    owner::Owner,
+    quota::{
+        Flow,
+        QuotaError,
+        Stock,
+        StockHold,
+    },
 };
 use web_time::{
     SystemTime,
@@ -50,8 +53,8 @@ pub enum EventScope {
 }
 
 pub struct EventReceptorRes {
-    rx:     Receiver<InboundEvent>,
-    _guard: StockGuard,
+    rx:    Receiver<InboundEvent>,
+    _hold: StockHold,
 }
 
 pub struct EventRes {
@@ -151,7 +154,9 @@ fn resolve_sender_scope(
             },
         ) => {
             let e_pos = (*emitter_pos)?;
-            let emitter_is_system = api.view.crosses_space_boundaries(api.doc_id);
+            // System content stands outside every space and still reaches into
+            // the one the user occupies.
+            let emitter_is_system = matches!(api.view.owner(api.doc_id), Owner::System);
             if !emitter_is_system && !api.view.same_space(emitter_abs.doc, receptor_node.doc) {
                 return None;
             }
@@ -172,7 +177,7 @@ fn resolve_sender_scope(
 }
 
 pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> anyhow::Result<u32> {
-    let guard = api.quota.charge(Stock::Receptors, 1)?;
+    let hold = api.quota.hold(Stock::Receptors, 1)?;
 
     let scope = match filter.scope {
         EventScope::Global => ReceptorScope::Global,
@@ -196,7 +201,7 @@ pub async fn listen(api: &Api, channels: Vec<String>, filter: EventFilter) -> an
         .listen(api.doc_id, channels, scope, filter.documents);
     api.wired_event.lock().await.receptors.insert_at(
         id,
-        EventReceptorRes { rx, _guard: guard },
+        EventReceptorRes { rx, _hold: hold },
         &api.quota,
     )?;
 

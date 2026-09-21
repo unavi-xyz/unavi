@@ -6,60 +6,57 @@ use bevy_hsd::{
 use hsd::id::DocId;
 
 use crate::{
-    document::DocumentPolicy,
-    owner::PolicyOwner,
+    owner::Owner,
+    permissions::Permissions,
     registry::Policy,
-    threshold::Threshold,
+    trust::Threshold,
 };
 
-/// Everything the world can say about one document, read off its entity.
-///
-/// Every field arrives on its own schedule, so each trigger re-reads all of
-/// them; a registration that ran on only one event left components added
-/// before the document had an id unregistered.
+/// The components stating one document's policy. Each arrives on its own
+/// schedule, so every trigger re-reads all of them.
 type DocumentQuery<'w, 's> = Query<
     'w,
     's,
     (
         &'static HsdDocId,
-        Option<&'static DocumentPolicy>,
+        Option<&'static Permissions>,
         Option<&'static Threshold>,
-        Option<&'static PolicyOwner>,
+        Option<&'static Owner>,
         Option<&'static ChildOf>,
     ),
 >;
 
-fn sync(
-    policy: &Policy,
-    entity: Entity,
-    docs: &DocumentQuery,
-    prims: &Query<&HsdChild>,
-    ids: &Query<&HsdDocId>,
+/// Re-reads a document's entity into the registry.
+pub fn sync_on<C: Component>(
+    trigger: On<Insert, C>,
+    docs: DocumentQuery,
+    prims: Query<&HsdChild>,
+    ids: Query<&HsdDocId>,
+    policy: Res<Policy>,
 ) {
-    let Ok((doc, document, threshold, owner, parent)) = docs.get(entity) else {
+    let Ok((doc, permissions, threshold, owner, parent)) = docs.get(trigger.entity) else {
         return;
     };
-    let host = host_of(parent, prims, ids);
-    let inherited = host.map(|host| policy.get(host).policy);
+    let host = host_of(parent, &prims, &ids);
+    let inherited = host.map(|host| policy.get(host).permissions);
 
     policy.update(doc.0, |record| {
-        // A prefab instance runs with the policy of the document that composed
-        // it in; anything else with a policy of its own states it directly.
-        if let Some(document) = document.copied().or(inherited) {
-            record.policy = document;
+        // A prefab instance runs with the permissions of the document that
+        // composed it in. Anything else states its own.
+        if let Some(permissions) = permissions.copied().or(inherited) {
+            record.permissions = permissions;
         }
         if let Some(threshold) = threshold {
             record.threshold = *threshold;
         }
         if let Some(owner) = owner {
-            record.owner = Some(owner.0);
+            record.owner = Some(*owner);
         }
         record.host = host;
     });
 }
 
-/// The document that composed this one in, for a prefab instance: up to the
-/// prim carrying the slot, then to the document that prim belongs to.
+/// The document that composed this one in, for a prefab instance.
 fn host_of(
     parent: Option<&ChildOf>,
     prims: &Query<&HsdChild>,
@@ -70,48 +67,7 @@ fn host_of(
     ids.get(host).ok().map(|id| id.0)
 }
 
-pub fn sync_on_doc_id(
-    trigger: On<Insert, HsdDocId>,
-    docs: DocumentQuery,
-    prims: Query<&HsdChild>,
-    ids: Query<&HsdDocId>,
-    policy: Res<Policy>,
-) {
-    sync(&policy, trigger.entity, &docs, &prims, &ids);
-}
-
-pub fn sync_on_policy(
-    trigger: On<Insert, DocumentPolicy>,
-    docs: DocumentQuery,
-    prims: Query<&HsdChild>,
-    ids: Query<&HsdDocId>,
-    policy: Res<Policy>,
-) {
-    sync(&policy, trigger.entity, &docs, &prims, &ids);
-}
-
-pub fn sync_on_threshold(
-    trigger: On<Insert, Threshold>,
-    docs: DocumentQuery,
-    prims: Query<&HsdChild>,
-    ids: Query<&HsdDocId>,
-    policy: Res<Policy>,
-) {
-    sync(&policy, trigger.entity, &docs, &prims, &ids);
-}
-
-pub fn sync_on_owner(
-    trigger: On<Insert, PolicyOwner>,
-    docs: DocumentQuery,
-    prims: Query<&HsdChild>,
-    ids: Query<&HsdDocId>,
-    policy: Res<Policy>,
-) {
-    sync(&policy, trigger.entity, &docs, &prims, &ids);
-}
-
-/// Keyed off the document id itself: every document has one, so none can leave
-/// its record behind by never having acquired some other marker.
+/// Keyed off the document id, which every document has.
 pub fn forget_document(trigger: On<Remove, HsdDocId>, docs: Query<&HsdDocId>, policy: Res<Policy>) {
     if let Ok(doc) = docs.get(trigger.entity) {
         policy.forget(doc.0);
@@ -131,32 +87,23 @@ mod tests {
 
     use super::*;
     use crate::{
-        document::ApiName,
-        owner::{
-            Owner,
-            PolicyOwner,
-        },
-        threshold::Threshold,
+        permissions::ApiName,
         trust::Trust,
     };
 
-    /// An app with its own registry, so nothing here shares state with its
-    /// neighbours.
+    /// An app with its own registry.
     fn app() -> (App, Policy) {
         let mut app = App::new();
         app.init_resource::<Policy>()
-            .add_observer(sync_on_doc_id)
-            .add_observer(sync_on_policy)
-            .add_observer(sync_on_threshold)
-            .add_observer(sync_on_owner)
+            .add_observer(sync_on::<HsdDocId>)
+            .add_observer(sync_on::<Permissions>)
+            .add_observer(sync_on::<Threshold>)
+            .add_observer(sync_on::<Owner>)
             .add_observer(forget_document);
         let policy = app.world().resource::<Policy>().clone();
         (app, policy)
     }
 
-    /// The shell is spawned with its policy and its threshold alongside
-    /// `LoadHsd`, and only learns its document id once a namespace has been
-    /// minted.
     #[test]
     fn a_document_stated_before_it_had_an_id_still_registers() {
         let (mut app, policy) = app();
@@ -165,9 +112,9 @@ mod tests {
         let entity = app
             .world_mut()
             .spawn((
-                DocumentPolicy::system(),
-                Threshold::own_only(),
-                PolicyOwner(Owner::System),
+                Permissions::system(),
+                Threshold(Trust::Myself),
+                Owner::System,
             ))
             .id();
         assert_eq!(
@@ -180,13 +127,13 @@ mod tests {
             .entity_mut(entity)
             .insert((Hsd::new(SceneState::new()), HsdDocId(id)));
 
-        assert_eq!(policy.get(id).threshold, Threshold::own_only());
+        assert_eq!(policy.get(id).threshold, Threshold(Trust::Myself));
         assert_eq!(policy.get(id).owner, Some(Owner::System));
 
         app.world_mut().entity_mut(entity).despawn();
         assert_eq!(
-            policy.get(id).policy,
-            DocumentPolicy::untrusted(),
+            policy.get(id).permissions,
+            Permissions::untrusted(),
             "a despawned document must not leave its grant behind"
         );
     }
@@ -202,18 +149,18 @@ mod tests {
             .id();
         assert_eq!(policy.get(id).threshold, Threshold::default());
 
-        app.world_mut().entity_mut(entity).insert(Threshold {
-            min_trust: Trust::Trusted,
-        });
+        app.world_mut()
+            .entity_mut(entity)
+            .insert(Threshold(Trust::Trusted));
         assert_eq!(
-            policy.get(id).threshold.min_trust,
-            Trust::Trusted,
+            policy.get(id).threshold,
+            Threshold(Trust::Trusted),
             "a document that changes its mind must not be ignored"
         );
     }
 
     #[test]
-    fn an_instance_records_its_host_and_inherits_its_policy() {
+    fn an_instance_records_its_host_and_inherits_its_permissions() {
         let (mut app, policy) = app();
         let host_id = DocId([23; 32]);
 
@@ -222,7 +169,7 @@ mod tests {
             .spawn((
                 Hsd::new(SceneState::new()),
                 HsdDocId(host_id),
-                DocumentPolicy::space(),
+                Permissions::space(),
             ))
             .id();
         let prim_id = PrimId::new();
@@ -237,7 +184,11 @@ mod tests {
 
         assert_eq!(policy.get(instance_id).host, Some(host_id));
         assert!(
-            policy.get(instance_id).policy.allows(ApiName::Identity),
+            policy
+                .get(instance_id)
+                .permissions
+                .require(ApiName::Identity)
+                .is_ok(),
             "an instance runs with the space's permissions, not a peer's"
         );
         assert_eq!(

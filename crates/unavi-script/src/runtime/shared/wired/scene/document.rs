@@ -154,7 +154,7 @@ pub async fn create_prim(api: &Api, rep: u32) -> anyhow::Result<u32> {
         Some(api.view.viewer()),
         doc.id,
     );
-    quota.try_charge(Stock::Prims, 1)?;
+    quota.charge(Stock::Prims, 1)?;
 
     let id = doc.with(|state| state.create_prim(None))?;
 

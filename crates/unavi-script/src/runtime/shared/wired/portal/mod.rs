@@ -9,7 +9,7 @@ use unavi_util::async_commands::AsyncCommands;
 use crate::{
     error::ScriptError,
     portal_host::PortalWatch,
-    quota::QuotaGuards,
+    quota::QuotaHolds,
     runtime::shared::Api,
 };
 
@@ -38,12 +38,12 @@ pub async fn open(api: &Api, prim_rep: u32, target_space: Vec<u8>) -> Result<(),
     let target = <[u8; 32]>::try_from(target_space.as_slice())
         .map_err(|_| ScriptError::other("document id must be 32 bytes"))?;
 
-    let watch_guard = api.quota.charge(Stock::PortalWatches, 1)?;
+    let watch_hold = api.quota.hold(Stock::PortalWatches, 1)?;
 
     AsyncCommands::default()
         .spawn((
             PortalWatch::new(source_space, doc, tree_id, DocId(target)),
-            QuotaGuards(vec![watch_guard]),
+            QuotaHolds(vec![watch_hold]),
         ))
         .send()
         .await

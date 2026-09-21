@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bevy_vrm::BoneName;
-use unavi_policy::document::ApiName;
+use unavi_policy::permissions::ApiName;
 use unavi_util::async_task::spawn_async_task;
 use wasm_bindgen::prelude::*;
 

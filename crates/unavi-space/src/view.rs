@@ -151,10 +151,10 @@ impl SpaceView {
         }
     }
 
-    /// Whether `doc`'s owner may reach outside every space.
+    /// Who holds `doc`, resolving through pins where the host stated nobody.
     #[must_use]
-    pub fn crosses_space_boundaries(&self, doc: DocId) -> bool {
-        self.standing(doc).owner.crosses_space_boundaries()
+    pub fn owner(&self, doc: DocId) -> Owner {
+        self.standing(doc).owner
     }
 
     /// The trust to judge a document by, given its owner.

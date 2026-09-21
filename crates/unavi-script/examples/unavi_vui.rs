@@ -18,11 +18,8 @@ use bevy_iroh::store::{
 };
 use unavi_agent::LocalAgent;
 use unavi_policy::{
-    document::DocumentPolicy,
-    owner::{
-        Owner,
-        PolicyOwner,
-    },
+    owner::Owner,
+    permissions::Permissions,
 };
 
 use crate::util::create_client_store;
@@ -112,7 +109,7 @@ fn init_scene(
         },
         // Scene writes are refused for a document in no space; a standalone
         // harness needs the shell's own permissions.
-        DocumentPolicy::system(),
-        PolicyOwner(Owner::System),
+        Permissions::system(),
+        Owner::System,
     ));
 }

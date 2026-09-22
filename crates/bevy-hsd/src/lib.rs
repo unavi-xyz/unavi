@@ -65,6 +65,9 @@ impl Plugin for HsdPlugin {
                     // arity; nesting splits the systems, and `.chain()` on
                     // the outer tuple still orders the two inner groups.
                     (
+                        // Before the drain, so an override installed this
+                        // frame reaches the world in the same one.
+                        load::apply_ref_overrides,
                         diff::discard_held_events,
                         diff::drain_scene_events,
                         attributes::script::track_script,

@@ -144,7 +144,7 @@ async fn save_namespace(ns: NamespaceId, state: Arc<Mutex<SceneState>>) -> anyho
                     let doc = store.open(ns).await?;
 
                     let mut base = std::collections::BTreeMap::new();
-                    for entry in doc.list(&[key::META, key::PRIM_PREFIX]).await? {
+                    for entry in doc.list(&key::PREFIXES).await? {
                         if let Some(entry) = hsd_document::to_entry(&doc, &entry).await {
                             base.insert(entry.key, entry.value);
                         }

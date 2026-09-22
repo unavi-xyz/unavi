@@ -14,11 +14,9 @@ use hsd::{
 };
 use wds::document::Document;
 
-const PREFIXES: [&str; 2] = [key::META, key::PRIM_PREFIX];
-
 pub async fn read_state(doc: &Document) -> anyhow::Result<SceneState> {
     let mut state = SceneState::new();
-    for entry in doc.list(&PREFIXES).await? {
+    for entry in doc.list(&key::PREFIXES).await? {
         if let Some(entry) = to_entry(doc, &entry).await {
             state.apply(&entry)?;
         }

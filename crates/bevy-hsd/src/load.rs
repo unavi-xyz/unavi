@@ -20,6 +20,7 @@ use hsd::{
         self,
         Package,
     },
+    state::layer::Overrides,
 };
 use iroh_docs::NamespaceId;
 use unavi_util::{
@@ -30,6 +31,7 @@ use wds::Store;
 
 use crate::{
     Hsd,
+    HsdChild,
     HsdDocId,
     HsdNamespace,
     HsdSource,
@@ -173,10 +175,31 @@ async fn build_and_instance(
     Ok(())
 }
 
+/// Deepest chain of references a document may realize through.
+///
+/// A reference realizes a whole document, and a document may reference more
+/// than one, so the chain is a tree: a document that transitively references
+/// itself would realize `fan-out ^ depth` states. The cap is what stops it,
+/// which is why it is low — eight is deeper than authored content goes and
+/// cheap enough to hit by accident. Every peer computes the same cap, so
+/// every peer stops in the same place.
+pub const MAX_REF_DEPTH: usize = 8;
+
 /// The document a prim has realized, so a change re-realizes and a removal
 /// tears down.
 #[derive(Component)]
 pub struct RefLoaded(pub DocId);
+
+/// How many references deep a document sits. Absent on a document nothing
+/// references, which is depth zero.
+#[derive(Component, Debug, Clone, Copy)]
+pub struct RefDepth(pub usize);
+
+/// The version of the referencing document's overrides this child has
+/// installed, so a later edit to them re-installs and an untouched frame costs
+/// one comparison.
+#[derive(Component, Debug, Clone, Copy)]
+pub struct RefOverrides(pub u64);
 
 /// Realizes each referencing prim's target as a child document.
 ///
@@ -190,13 +213,13 @@ pub fn instance_refs(
         Entity,
         &Prim,
         &HsdRef,
-        &crate::HsdChild,
+        &HsdChild,
         Option<&RefLoaded>,
         Option<&Children>,
     )>,
     detached: Query<(Entity, Option<&Children>), (With<RefLoaded>, Without<HsdRef>)>,
     hsd_docs: Query<(), With<Hsd>>,
-    parent_ids: Query<&HsdDocId>,
+    parents: Query<(&HsdDocId, Option<&RefDepth>)>,
     stores: Query<&LocalStore>,
     mut commands: Commands,
 ) {
@@ -217,17 +240,24 @@ pub fn instance_refs(
             despawn_instances(&mut commands, &hsd_docs, children);
         }
 
-        let Ok(parent_id) = parent_ids.get(doc_child.0) else {
+        let Ok((parent_id, parent_depth)) = parents.get(doc_child.0) else {
             continue;
         };
         let site = DocId::instance(parent_id.0, prim.0);
         let target = target.0;
+        let depth = parent_depth.map_or(0, |d| d.0) + 1;
 
+        // Marked as handled either way: a refusal that left no mark would be
+        // retried every frame, and the answer cannot change at this depth.
         commands.entity(prim_ent).insert(RefLoaded(target));
+        if depth > MAX_REF_DEPTH {
+            debug!(%target, depth, "reference past the depth cap is not realized");
+            continue;
+        }
 
         let store = store.0.clone();
         spawn_async_task(async move {
-            if let Err(err) = realize_ref(store, target, site, prim_ent).await {
+            if let Err(err) = realize_ref(store, target, site, depth, prim_ent).await {
                 warn!(?err, %target, "failed to realize reference");
                 let _ = AsyncCommands::default()
                     .push(move |world: &mut World| {
@@ -249,13 +279,14 @@ async fn realize_ref(
     store: Store,
     target: DocId,
     site: DocId,
+    depth: usize,
     prim_ent: Entity,
 ) -> anyhow::Result<()> {
     // A target no peer has served yet opens empty and fills in as it syncs,
     // which is the dangling case a reference has and an embedded package does
     // not.
     let doc = store.open(NamespaceId::from(&target.0)).await?;
-    let state = document::read_state(&doc).await?;
+    let mut state = document::read_state(&doc).await?;
 
     AsyncCommands::default()
         .push(move |world: &mut World| {
@@ -263,20 +294,88 @@ async fn realize_ref(
                 .get_entity(prim_ent)
                 .ok()
                 .and_then(|e| e.get::<RefLoaded>().map(|l| l.0));
-            if current == Some(target) {
-                world.spawn((
-                    Hsd::new(state),
-                    HsdDocId(site),
-                    HsdSource(target),
-                    HsdNamespace(doc),
-                    ChildOf(prim_ent),
-                ));
+            if current != Some(target) {
+                return;
             }
+
+            // Installed before the spawn so the document is never briefly the
+            // target's own opinion: the observer that re-emits the scene runs
+            // on the spawn, and what it emits is what gets drawn.
+            let version = match site_overrides(world, prim_ent) {
+                Some((overrides, version)) => {
+                    state.install_overrides(&overrides);
+                    version
+                }
+                None => 0,
+            };
+
+            world.spawn((
+                Hsd::new(state),
+                HsdDocId(site),
+                HsdSource(target),
+                HsdNamespace(doc),
+                RefDepth(depth),
+                RefOverrides(version),
+                ChildOf(prim_ent),
+            ));
         })
         .send()
         .await?;
 
     Ok(())
+}
+
+/// What the document holding `prim_ent` says about the prims of the document
+/// that prim references, with the version it was read at.
+fn site_overrides(world: &World, prim_ent: Entity) -> Option<(Overrides, u64)> {
+    let site = world.get::<Prim>(prim_ent)?.0;
+    let host = world.get::<HsdChild>(prim_ent)?.0;
+    let state = world.get::<Hsd>(host)?.0.lock().ok()?;
+    Some((
+        state.overrides_for(site).cloned().unwrap_or_default(),
+        state.overrides_version(),
+    ))
+}
+
+/// Re-installs a referencing document's overrides into what it references.
+///
+/// An override is durable in the document that states it, so a commit or a
+/// sync writes it there; this is what carries it across to the document it
+/// speaks for, where it composes.
+pub fn apply_ref_overrides(
+    mut realized: Query<(&ChildOf, &Hsd, &mut RefOverrides)>,
+    sites: Query<(&Prim, &HsdChild)>,
+    hosts: Query<&Hsd>,
+) {
+    for (site_prim, doc, mut installed) in &mut realized {
+        let Ok((site, host)) = sites.get(site_prim.0) else {
+            continue;
+        };
+        let Ok(host) = hosts.get(host.0) else {
+            continue;
+        };
+
+        let stated = {
+            let Ok(host) = host.0.lock() else {
+                warn!("scene state poisoned");
+                continue;
+            };
+            if host.overrides_version() == installed.0 {
+                continue;
+            }
+            (
+                host.overrides_for(site.0).cloned().unwrap_or_default(),
+                host.overrides_version(),
+            )
+        };
+
+        let Ok(mut state) = doc.0.lock() else {
+            warn!("scene state poisoned");
+            continue;
+        };
+        state.install_overrides(&stated.0);
+        installed.0 = stated.1;
+    }
 }
 
 fn despawn_instances(

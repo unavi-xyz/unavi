@@ -41,7 +41,10 @@ use hsd::{
         },
     },
     id::PrimId,
-    state::SceneState,
+    state::{
+        SceneState,
+        entry::Entry,
+    },
 };
 use iroh_blobs::{
     api::blobs::Blobs,
@@ -53,6 +56,8 @@ use unavi_util::async_task::spawn_async_task;
 pub struct TestContext {
     pub app:   App,
     pub state: Arc<Mutex<SceneState>>,
+    /// The entity holding [`Self::state`].
+    pub doc:   Entity,
     blobs:     Option<Blobs>,
 }
 
@@ -92,6 +97,7 @@ impl Default for TestContext {
         let mut ctx = Self {
             app,
             state: Arc::default(),
+            doc: Entity::PLACEHOLDER,
             blobs: None,
         };
 
@@ -132,6 +138,7 @@ impl TestContext {
         let mut ctx = Self {
             app,
             state: Arc::default(),
+            doc: Entity::PLACEHOLDER,
             blobs: None,
         };
 
@@ -165,6 +172,7 @@ impl TestContext {
         let mut ctx = Self {
             app,
             state: Arc::default(),
+            doc: Entity::PLACEHOLDER,
             blobs: Some(blobs),
         };
 
@@ -174,9 +182,11 @@ impl TestContext {
     }
 
     pub fn spawn_hsd(&mut self) {
-        self.app
+        self.doc = self
+            .app
             .world_mut()
-            .spawn(bevy_hsd::Hsd(Arc::clone(&self.state)));
+            .spawn(bevy_hsd::Hsd(Arc::clone(&self.state)))
+            .id();
     }
 
     /// A second document in the same app, for anything asserting about what
@@ -205,6 +215,25 @@ impl TestContext {
 
     pub fn create_child(&self, parent: PrimId) -> PrimId {
         self.with_state(|state| state.create_prim(Some(parent)))
+    }
+
+    /// Writes a raw entry, which is the only way to reach the document layer:
+    /// the authoring calls all land in the runtime one.
+    pub fn apply(&self, entry: &Entry) {
+        self.with_state(|state| state.apply(entry).expect("apply entry"));
+    }
+
+    /// The entity realizing `prim`, which the diff spawns on the tick after
+    /// the write.
+    pub fn prim_entity(&self, doc: Entity, prim: PrimId) -> Entity {
+        *self
+            .app
+            .world()
+            .get::<bevy_hsd::HsdPrimIndex>(doc)
+            .expect("document has a prim index")
+            .0
+            .get(&prim)
+            .expect("prim is realized")
     }
 
     pub fn set_attr<A: Attribute>(&self, prim: PrimId, value: &A) {

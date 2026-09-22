@@ -15,6 +15,5 @@ crate-type = ["cdylib"]
 [dependencies]
 anyhow.workspace      = true
 postcard.workspace    = true
-serde                 = { features = ["derive"], workspace = true }
 wired-prelude.path    = "../wired-prelude"
 wit-bindgen.workspace = true

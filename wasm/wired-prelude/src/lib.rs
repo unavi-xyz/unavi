@@ -1,5 +1,6 @@
 pub use wired_math;
 pub use wired_scene;
+pub use wired_state_macro::state;
 
 pub mod prelude {
     pub use wired_math::types::*;

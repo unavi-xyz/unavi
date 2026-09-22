@@ -4,12 +4,12 @@
 use std::collections::HashSet;
 
 use crate::{
-    id::PrimId,
-    key,
-    property::{
-        Parent,
-        Property,
+    attributes::{
+        Attribute,
+        parent::ParentAttr,
     },
+    id::PrimId,
+    property::Property,
     state::{
         HsdState,
         StateError,
@@ -71,8 +71,11 @@ impl HsdState {
         let opinions = layer.entry(target);
 
         let accepted = match name {
-            key::PARENT => {
-                let parent = value.map(|bytes| Parent::decode(bytes)).transpose()?;
+            ParentAttr::KEY => {
+                let parent = value
+                    .map(|bytes| ParentAttr::from_wire(bytes))
+                    .transpose()?
+                    .flatten();
                 opinions.set_parent(parent.into(), stamp)
             }
             name => {

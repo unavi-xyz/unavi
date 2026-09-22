@@ -7,6 +7,10 @@
 use std::collections::BTreeMap;
 
 use crate::{
+    attributes::{
+        Attribute,
+        parent::ParentAttr,
+    },
     id::PrimId,
     key,
 };
@@ -62,7 +66,7 @@ pub fn delete_prim(prim: PrimId) -> [Change; 2] {
             key: key::prim_prefix(prim),
         },
         Change::Remove {
-            key: key::parent(prim),
+            key: key::prop(prim, ParentAttr::KEY),
         },
     ]
 }
@@ -132,21 +136,14 @@ mod tests {
     #[test]
     fn deleting_a_prim_tombstones_the_parent_last() {
         let prim = PrimId([1; 16]);
+        let parent = key::prop(prim, ParentAttr::KEY);
         let changes = delete_prim(prim);
         assert_eq!(
             changes[1],
             Change::Remove {
-                key: key::parent(prim),
+                key: parent.clone(),
             }
         );
-        assert!(key::parent(prim).starts_with(&key::prim_prefix(prim)));
-    }
-
-    #[test]
-    fn deleting_a_prim_sweeps_its_reference_data() {
-        let prim = PrimId([1; 16]);
-        let prefix = key::prim_prefix(prim);
-        assert!(key::ref_target(prim).starts_with(&prefix));
-        assert!(key::ref_layer_key(prim, PrimId([2; 16]), "xform").starts_with(&prefix));
+        assert!(parent.starts_with(&key::prim_prefix(prim)));
     }
 }

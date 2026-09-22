@@ -3,13 +3,13 @@
 //! whether they reach the document is an explicit save.
 
 use crate::{
-    attributes::Attribute,
+    attributes::{
+        Attribute,
+        parent::ParentAttr,
+    },
     id::PrimId,
     key,
-    property::{
-        Parent,
-        Property,
-    },
+    property::Property,
     state::{
         HsdState,
         StateError,
@@ -24,13 +24,13 @@ impl HsdState {
         self.write_parent(
             LayerId::Runtime,
             prim,
-            Some(parent.map_or(Parent::Root, Parent::Prim)),
+            Some(parent.map_or(ParentAttr::Root, ParentAttr::Prim)),
             None,
         );
         prim
     }
 
-    pub fn set_parent(&mut self, prim: PrimId, parent: Parent) -> Result<(), StateError> {
+    pub fn set_parent(&mut self, prim: PrimId, parent: ParentAttr) -> Result<(), StateError> {
         if !self.exists(prim) {
             return Err(StateError::UnknownPrim(prim));
         }
@@ -53,7 +53,10 @@ impl HsdState {
         name: &str,
         value: Property,
     ) -> Result<(), StateError> {
-        if !key::is_valid_name(name) {
+        // `parent` is structural, not a property: it decides realization, and
+        // writing it here would put a second value under the name that
+        // [`Self::set_parent`] already owns.
+        if !key::is_valid_name(name) || name == ParentAttr::KEY {
             return Err(StateError::Name(name.to_owned()));
         }
         let stamp = Stamp::now(&value.encode());
@@ -79,6 +82,9 @@ impl HsdState {
     }
 
     pub fn remove_property(&mut self, prim: PrimId, name: &str) {
+        if name == ParentAttr::KEY {
+            return;
+        }
         let stamp = Stamp::now(&[]);
         self.write_property(LayerId::Runtime, prim, name, None, stamp);
     }

@@ -8,13 +8,19 @@ use std::collections::{
 };
 
 use crate::{
+    attributes::{
+        Attribute,
+        parent::ParentAttr,
+        reference::{
+            self,
+            RefKey,
+            ReferenceAttr,
+        },
+    },
     id::PrimId,
     key,
     meta::DocMeta,
-    property::{
-        Parent,
-        Property,
-    },
+    property::Property,
     state::{
         HsdState,
         StateError,
@@ -53,14 +59,17 @@ impl HsdState {
                     self.meta = DocMeta::decode(&entry.value)?;
                 }
             }
-            Some(key::Key::Prop { prim, name }) if name == key::PARENT => {
+            Some(key::Key::Prop { prim, name }) if name == ParentAttr::KEY => {
                 let parent = if empty {
                     None
                 } else {
-                    Some(Parent::decode(&entry.value)?)
+                    ParentAttr::from_wire(&entry.value)?
                 };
                 self.write_parent(layer, prim, parent, Some(stamp));
             }
+            // `ref` owns the namespace below it, so its own key is a spine:
+            // data there would prefix-delete the target and the layer both.
+            Some(key::Key::Prop { name, .. }) if name == ReferenceAttr::KEY => {}
             Some(key::Key::Prop { prim, name }) => {
                 // The tag says whether the value is a property or a blob, so
                 // no name list classifies it and a value this build has never
@@ -72,25 +81,36 @@ impl HsdState {
                 };
                 self.write_property(layer, prim, &name, value, stamp);
             }
-            // The reference target is the ordinary `ref` property: it settles
-            // and emits like any other, and `p/<site>/ref/target/` is only its
-            // wire shape.
-            Some(key::Key::RefTarget { site }) => {
-                let value = if empty {
-                    None
-                } else {
-                    Some(Property::decode(&entry.value)?)
-                };
-                self.write_property(layer, site, key::REF, value, stamp);
+            Some(key::Key::PropSub { prim, name, tail }) if name == ReferenceAttr::KEY => {
+                match reference::parse_tail(&tail) {
+                    // The reference target is the ordinary `ref` property: it
+                    // settles and emits like any other, and
+                    // `p/<site>/ref/target/` is only its wire shape.
+                    Some(RefKey::Target) => {
+                        let value = if empty {
+                            None
+                        } else {
+                            Some(Property::decode(&entry.value)?)
+                        };
+                        self.write_property(layer, prim, ReferenceAttr::KEY, value, stamp);
+                    }
+                    // A reference-layer opinion is durable in the document
+                    // stating it, so it arrives by sync and never as a session
+                    // opinion. It does not compose here; the realizer installs
+                    // it into the referenced document.
+                    Some(RefKey::Layer { target, name }) if layer == LayerId::Document => {
+                        self.write_reference(
+                            prim,
+                            target,
+                            &name,
+                            (!empty).then_some(&entry.value),
+                            stamp,
+                        )?;
+                    }
+                    Some(RefKey::Layer { .. }) | None => {}
+                }
             }
-            // A reference-layer opinion is durable in the document stating it,
-            // so it arrives by sync and never as a session opinion. It does
-            // not compose here; the realizer installs it into the referenced
-            // document.
-            Some(key::Key::RefLayer { site, target, name }) if layer == LayerId::Document => {
-                self.write_reference(site, target, &name, (!empty).then_some(&entry.value), stamp)?;
-            }
-            Some(key::Key::RefLayer { .. }) | None => {}
+            Some(key::Key::PropSub { .. }) | None => {}
         }
         Ok(())
     }
@@ -102,7 +122,7 @@ impl HsdState {
     /// the absence of one. What a peer leaving takes with it.
     pub fn clear_session(&mut self, prim: PrimId, name: &str) {
         match name {
-            key::PARENT => {
+            ParentAttr::KEY => {
                 if self.layers[LayerId::Session.idx()]
                     .take_parent(prim)
                     .is_some()
@@ -151,10 +171,19 @@ impl HsdState {
                 continue;
             };
             sites.insert(prim);
-            out.insert(key::parent(prim), parent.encode());
+            out.insert(
+                key::prop(prim, ParentAttr::KEY),
+                ParentAttr::to_wire(Some(*parent)),
+            );
             for (name, value) in opinions.set_properties() {
-                // `key::prop` gives the `ref` property its structural key.
-                out.insert(key::prop(prim, name), value.encode());
+                // `ref` owns a namespace rather than its own key, so its value
+                // goes to the slot the attribute names.
+                let key = if name == ReferenceAttr::KEY {
+                    reference::target_key(prim)
+                } else {
+                    key::prop(prim, name)
+                };
+                out.insert(key, value.encode());
             }
         }
 
@@ -168,13 +197,13 @@ impl HsdState {
             for (target, opinions) in layer.prims() {
                 if let Some((opinion, _)) = opinions.parent() {
                     out.insert(
-                        key::ref_layer_key(*site, target, key::PARENT),
-                        opinion.value().map(Parent::encode).unwrap_or_default(),
+                        reference::layer_key(*site, target, ParentAttr::KEY),
+                        ParentAttr::to_wire(opinion.value().copied()),
                     );
                 }
                 for (name, opinion) in opinions.properties() {
                     out.insert(
-                        key::ref_layer_key(*site, target, name),
+                        reference::layer_key(*site, target, name),
                         opinion.value().map(Property::encode).unwrap_or_default(),
                     );
                 }

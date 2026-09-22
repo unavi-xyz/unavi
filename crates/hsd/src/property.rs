@@ -8,9 +8,6 @@ use crate::id::{
 const TAG_ATTRIBUTE: u8 = 0;
 const TAG_RELATIONSHIP: u8 = 1;
 
-const PARENT_ROOT: u8 = 0;
-const PARENT_PRIM: u8 = 1;
-
 #[derive(Error, Debug)]
 pub enum PropertyError {
     #[error("empty payload")]
@@ -19,6 +16,8 @@ pub enum PropertyError {
     Tag(u8),
     #[error("expected {PRIM_ID_BYTES} id bytes, got {0}")]
     IdLength(usize),
+    #[error("expected an attribute, got a relationship")]
+    NotAttribute,
     #[error("postcard {0}")]
     Postcard(#[from] postcard::Error),
 }
@@ -84,51 +83,6 @@ impl Property {
     }
 }
 
-/// A prim's place in the tree. Never encodes empty: an empty entry reads as
-/// absence on every peer, which is how deletion is spelled.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Parent {
-    Root,
-    Prim(PrimId),
-}
-
-impl Parent {
-    #[must_use]
-    pub fn encode(&self) -> Vec<u8> {
-        match self {
-            Self::Root => vec![PARENT_ROOT],
-            Self::Prim(id) => {
-                let mut out = Vec::with_capacity(PRIM_ID_BYTES + 1);
-                out.push(PARENT_PRIM);
-                out.extend_from_slice(&id.0);
-                out
-            }
-        }
-    }
-
-    pub fn decode(bytes: &[u8]) -> Result<Self, PropertyError> {
-        let (tag, rest) = bytes.split_first().ok_or(PropertyError::Empty)?;
-        match *tag {
-            PARENT_ROOT => Ok(Self::Root),
-            PARENT_PRIM => {
-                let bytes: [u8; PRIM_ID_BYTES] = rest
-                    .try_into()
-                    .map_err(|_| PropertyError::IdLength(rest.len()))?;
-                Ok(Self::Prim(PrimId(bytes)))
-            }
-            other => Err(PropertyError::Tag(other)),
-        }
-    }
-
-    #[must_use]
-    pub const fn prim(&self) -> Option<PrimId> {
-        match self {
-            Self::Root => None,
-            Self::Prim(id) => Some(*id),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -156,21 +110,7 @@ mod tests {
     }
 
     #[test]
-    fn parent_never_encodes_empty() {
-        assert_ne!(Parent::Root.encode().len(), 0);
-        assert_ne!(Parent::Prim(PrimId([2; PRIM_ID_BYTES])).encode().len(), 0);
-    }
-
-    #[test]
-    fn parent_round_trips() {
-        for parent in [Parent::Root, Parent::Prim(PrimId([4; PRIM_ID_BYTES]))] {
-            assert_eq!(Parent::decode(&parent.encode()).expect("decode"), parent);
-        }
-    }
-
-    #[test]
     fn decoding_empty_fails() {
         assert!(Property::decode(&[]).is_err());
-        assert!(Parent::decode(&[]).is_err());
     }
 }

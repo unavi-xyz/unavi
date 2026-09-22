@@ -44,7 +44,11 @@ use hsd::{
             validate::validate,
         },
         name::NameAttr,
-        reference::ReferenceAttr,
+        parent::ParentAttr,
+        reference::{
+            self,
+            ReferenceAttr,
+        },
         rigid_body::{
             RigidBodyAttr,
             RigidBodyKind,
@@ -60,10 +64,7 @@ use hsd::{
     key,
     meta::DocMeta,
     package::Package,
-    property::{
-        Parent,
-        Property,
-    },
+    property::Property,
     source::{
         Source,
         SourceAttributes,
@@ -150,7 +151,7 @@ pub fn compile_file<S: std::hash::BuildHasher>(
         key::META.to_owned(),
         DocMeta::default().encode().context("encoding meta")?,
     );
-    compiler.emit(&doc.0, Parent::Root, &mut Vec::new())?;
+    compiler.emit(&doc.0, ParentAttr::Root, &mut Vec::new())?;
 
     let mut package = Package::new(compiler.entries);
     package.documents = compiler.documents.into_iter().collect();
@@ -190,12 +191,20 @@ struct Compiler<'a, S: std::hash::BuildHasher> {
 }
 
 impl<S: std::hash::BuildHasher> Compiler<'_, S> {
-    fn emit(&mut self, prims: &[SourcePrim], parent: Parent, path: &mut Vec<usize>) -> Result<()> {
+    fn emit(
+        &mut self,
+        prims: &[SourcePrim],
+        parent: ParentAttr,
+        path: &mut Vec<usize>,
+    ) -> Result<()> {
         for (index, prim) in prims.iter().enumerate() {
             path.push(index);
             let id = derive_prim_id(&self.source, path);
 
-            self.entries.insert(key::parent(id), parent.encode());
+            self.entries.insert(
+                key::prop(id, ParentAttr::KEY),
+                ParentAttr::to_wire(Some(parent)),
+            );
             self.emit_attributes(id, &prim.attributes)?;
 
             for (name, target) in &prim.relationships {
@@ -203,7 +212,7 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
                 self.set_property(id, name, Property::Relationship(target));
             }
 
-            self.emit(&prim.children, Parent::Prim(id), path)?;
+            self.emit(&prim.children, ParentAttr::Prim(id), path)?;
             path.pop();
         }
         Ok(())
@@ -370,7 +379,13 @@ impl<S: std::hash::BuildHasher> Compiler<'_, S> {
     }
 
     fn set_property(&mut self, id: PrimId, name: &str, value: Property) {
-        self.entries.insert(key::prop(id, name), value.encode());
+        // `ref` owns the namespace below it rather than holding its own key.
+        let key = if name == ReferenceAttr::KEY {
+            reference::target_key(id)
+        } else {
+            key::prop(id, name)
+        };
+        self.entries.insert(key, value.encode());
     }
 }
 

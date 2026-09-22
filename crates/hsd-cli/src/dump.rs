@@ -25,8 +25,12 @@ use hsd::{
         },
         mesh::MeshAttr,
         name::NameAttr,
+        parent::ParentAttr,
         portal::PortalAttr,
-        reference::ReferenceAttr,
+        reference::{
+            self,
+            ReferenceAttr,
+        },
         rigid_body::RigidBodyAttr,
         script::ScriptAttr,
         spawn::SpawnAttr,
@@ -35,10 +39,7 @@ use hsd::{
     id::PrimId,
     key,
     package::Package,
-    property::{
-        Parent,
-        Property,
-    },
+    property::Property,
 };
 use ron::extensions::Extensions;
 use serde::Serialize;
@@ -63,7 +64,7 @@ struct DumpPrim {
 
 #[derive(Default)]
 struct Node {
-    parent:        Option<Parent>,
+    parent:        Option<ParentAttr>,
     reference:     Option<String>,
     attributes:    BTreeMap<String, String>,
     relationships: BTreeMap<String, String>,
@@ -78,8 +79,8 @@ pub fn dump_file(input: &Path) -> Result<String> {
     let mut nodes: BTreeMap<PrimId, Node> = BTreeMap::new();
     for (raw, value) in &package.entries {
         match key::parse(raw) {
-            Some(key::Key::Prop { prim, name }) if name == key::PARENT => {
-                nodes.entry(prim).or_default().parent = Some(Parent::decode(value)?);
+            Some(key::Key::Prop { prim, name }) if name == ParentAttr::KEY => {
+                nodes.entry(prim).or_default().parent = ParentAttr::from_wire(value)?;
             }
             Some(key::Key::Prop { prim, name }) => {
                 let node = nodes.entry(prim).or_default();
@@ -94,23 +95,28 @@ pub fn dump_file(input: &Path) -> Result<String> {
                     }
                 }
             }
-            Some(key::Key::RefTarget { site }) => {
-                let node = nodes.entry(site).or_default();
-                node.reference = Some(match Property::decode(value)? {
-                    Property::Attribute(payload) => render(key::REF, &payload),
-                    Property::Relationship(target) => target.to_string(),
-                });
+            Some(key::Key::PropSub { prim, name, tail }) if name == ReferenceAttr::KEY => {
+                match reference::parse_tail(&tail) {
+                    Some(reference::RefKey::Target) => {
+                        let node = nodes.entry(prim).or_default();
+                        node.reference = Some(match Property::decode(value)? {
+                            Property::Attribute(payload) => render(ReferenceAttr::KEY, &payload),
+                            Property::Relationship(target) => target.to_string(),
+                        });
+                    }
+                    Some(reference::RefKey::Layer { target, name }) => {
+                        nodes
+                            .entry(prim)
+                            .or_default()
+                            .overrides
+                            .entry(target.to_string())
+                            .or_default()
+                            .insert(name.to_string(), render_override(&name, value)?);
+                    }
+                    None => {}
+                }
             }
-            Some(key::Key::RefLayer { site, target, name }) => {
-                nodes
-                    .entry(site)
-                    .or_default()
-                    .overrides
-                    .entry(target.to_string())
-                    .or_default()
-                    .insert(name.to_string(), render_override(&name, value)?);
-            }
-            Some(key::Key::Meta) | None => {}
+            Some(key::Key::Meta | key::Key::PropSub { .. }) | None => {}
         }
     }
 
@@ -143,8 +149,8 @@ fn render_override(name: &str, value: &[u8]) -> Result<String> {
     if value.is_empty() {
         return Ok("<blocked>".to_owned());
     }
-    if name == key::PARENT {
-        return Ok(format!("{:?}", Parent::decode(value)?));
+    if name == ParentAttr::KEY {
+        return Ok(format!("{:?}", ParentAttr::from_wire(value)?));
     }
     Ok(match Property::decode(value)? {
         Property::Relationship(target) => target.to_string(),

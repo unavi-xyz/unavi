@@ -20,16 +20,15 @@ use hsd::{
     attributes::{
         Attribute,
         name::NameAttr,
+        parent::ParentAttr,
+        reference,
     },
     id::{
         DocId,
         PrimId,
     },
     key,
-    property::{
-        Parent,
-        Property,
-    },
+    property::Property,
     state::{
         HsdState,
         entry::Entry,
@@ -52,7 +51,11 @@ fn referenced() -> Arc<Mutex<HsdState>> {
     let mut state = HsdState::new();
     state
         .apply_all(&[
-            Entry::new(key::parent(TARGET), Parent::Root.encode(), 1),
+            Entry::new(
+                key::prop(TARGET, ParentAttr::KEY),
+                ParentAttr::to_wire(Some(ParentAttr::Root)),
+                1,
+            ),
             Entry::new(
                 key::prop(TARGET, NameAttr::KEY),
                 name_property("couch").encode(),
@@ -96,7 +99,7 @@ fn an_override_written_after_the_fact_reaches_what_it_speaks_for(mut ctx: TestCo
     assert_eq!(name_of(&ctx, child, TARGET).as_deref(), Some("couch"));
 
     ctx.apply(&Entry::new(
-        key::ref_layer_key(site, TARGET, NameAttr::KEY),
+        reference::layer_key(site, TARGET, NameAttr::KEY),
         name_property("recoloured").encode(),
         2,
     ));
@@ -119,7 +122,7 @@ fn a_blocked_override_hides_what_the_prim_says_about_itself(mut ctx: TestContext
     let state = referenced();
     let child = realize(&mut ctx, site_ent, &state);
     ctx.apply(&Entry::new(
-        key::ref_layer_key(site, TARGET, NameAttr::KEY),
+        reference::layer_key(site, TARGET, NameAttr::KEY),
         name_property("recoloured").encode(),
         2,
     ));
@@ -129,7 +132,7 @@ fn a_blocked_override_hides_what_the_prim_says_about_itself(mut ctx: TestContext
     // An empty value under the same key: the referencing document states that
     // the property is gone rather than stating one of its own.
     ctx.apply(&Entry::new(
-        key::ref_layer_key(site, TARGET, NameAttr::KEY),
+        reference::layer_key(site, TARGET, NameAttr::KEY),
         Vec::new(),
         3,
     ));

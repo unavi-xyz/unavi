@@ -9,11 +9,9 @@ use std::collections::{
 use smol_str::SmolStr;
 
 use crate::{
+    attributes::parent::ParentAttr,
     id::PrimId,
-    property::{
-        Parent,
-        Property,
-    },
+    property::Property,
     state::{
         HsdState,
         MAX_PRIM_DEPTH,
@@ -53,7 +51,7 @@ impl HsdState {
             .and_then(|opinion| opinion.value().cloned())
     }
 
-    fn resolve_parent(&self, prim: PrimId) -> (Option<Parent>, Stamp) {
+    fn resolve_parent(&self, prim: PrimId) -> (Option<ParentAttr>, Stamp) {
         self.layers
             .iter()
             .rev()
@@ -68,11 +66,10 @@ impl HsdState {
         &mut self,
         layer: LayerId,
         prim: PrimId,
-        parent: Option<Parent>,
+        parent: Option<ParentAttr>,
         stamp: Option<Stamp>,
     ) {
-        let stamp =
-            stamp.unwrap_or_else(|| Stamp::now(&parent.map(|p| p.encode()).unwrap_or_default()));
+        let stamp = stamp.unwrap_or_else(|| Stamp::now(&ParentAttr::to_wire(parent)));
 
         if !self
             .layer(layer)
@@ -92,13 +89,13 @@ impl HsdState {
         let old = view.parent;
         view.set_parent(parent, stamp);
 
-        if let Some(Parent::Prim(old_parent)) = old
+        if let Some(ParentAttr::Prim(old_parent)) = old
             && old != parent
             && let Some(siblings) = self.children.get_mut(&old_parent)
         {
             siblings.remove(&prim);
         }
-        if let Some(Parent::Prim(new_parent)) = parent {
+        if let Some(ParentAttr::Prim(new_parent)) = parent {
             self.children.entry(new_parent).or_default().insert(prim);
         }
 
@@ -231,8 +228,8 @@ impl HsdState {
         }
         let parent = match state.parent {
             None => return Placement::Unrealized,
-            Some(Parent::Root) => return Placement::Root,
-            Some(Parent::Prim(parent)) => parent,
+            Some(ParentAttr::Root) => return Placement::Root,
+            Some(ParentAttr::Prim(parent)) => parent,
         };
 
         let mut chain = vec![prim];
@@ -259,8 +256,8 @@ impl HsdState {
 
             match self.resolved.get(&current).and_then(|s| s.parent) {
                 None => return Placement::Unrealized,
-                Some(Parent::Root) => return Placement::Child(parent),
-                Some(Parent::Prim(next)) => current = next,
+                Some(ParentAttr::Root) => return Placement::Child(parent),
+                Some(ParentAttr::Prim(next)) => current = next,
             }
         }
     }

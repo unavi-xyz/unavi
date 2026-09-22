@@ -10,6 +10,7 @@ pub mod material;
 pub mod material_graph;
 pub mod mesh;
 pub mod name;
+pub mod parent;
 pub mod portal;
 pub mod reference;
 pub mod rigid_body;

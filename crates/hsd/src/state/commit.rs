@@ -3,12 +3,14 @@
 use smol_str::SmolStr;
 
 use crate::{
+    attributes::{
+        Attribute,
+        parent::ParentAttr,
+        reference,
+    },
     id::PrimId,
     key,
-    property::{
-        Parent,
-        Property,
-    },
+    property::Property,
     state::{
         CommitTarget,
         HsdState,
@@ -51,14 +53,14 @@ impl HsdState {
                 continue;
             }
             let promoted = match name.as_str() {
-                key::PARENT => self.commit_parent(layer, *prim),
+                ParentAttr::KEY => self.commit_parent(layer, *prim),
                 name => self.commit_property(layer, *prim, name),
             };
             if let Some(site) = site
                 && let Some((value, timestamp)) = promoted
             {
                 entries.push(Entry {
-                    key: key::ref_layer_key(site, *prim, name),
+                    key: reference::layer_key(site, *prim, name),
                     value,
                     timestamp,
                 });
@@ -93,7 +95,7 @@ impl HsdState {
     /// answer to where the key resolves.
     fn commit_parent(&mut self, target: LayerId, prim: PrimId) -> Option<(Vec<u8>, u64)> {
         let (opinion, stamp) = self.take_live_parent(prim)?;
-        let value = opinion.value().map(Parent::encode).unwrap_or_default();
+        let value = ParentAttr::to_wire(opinion.value().copied());
         self.layer(target).entry(prim).set_parent(opinion, stamp);
         self.settle_parent(prim);
         Some((value, stamp.timestamp))
@@ -110,7 +112,7 @@ impl HsdState {
         self.take_live(prim, |layer, id| layer.take_property(id, name))
     }
 
-    fn take_live_parent(&mut self, prim: PrimId) -> Option<(Opinion<Parent>, Stamp)> {
+    fn take_live_parent(&mut self, prim: PrimId) -> Option<(Opinion<ParentAttr>, Stamp)> {
         self.take_live(prim, Layer::take_parent)
     }
 

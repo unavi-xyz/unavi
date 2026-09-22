@@ -3,10 +3,8 @@ use std::collections::BTreeMap;
 use smol_str::SmolStr;
 
 use crate::{
-    property::{
-        Parent,
-        Property,
-    },
+    attributes::parent::ParentAttr,
+    property::Property,
     state::entry::Stamp,
 };
 
@@ -42,7 +40,7 @@ impl<T> From<Option<T>> for Opinion<T> {
 /// peer wins and an older one is refused.
 #[derive(Debug, Clone)]
 pub(super) struct PrimOpinions {
-    parent: Option<(Opinion<Parent>, Stamp)>,
+    parent: Option<(Opinion<ParentAttr>, Stamp)>,
     /// Attributes, relationships and blobs share one map: a value's tag says
     /// which it is, so a name has exactly one kind and no tombstone has to
     /// guess between two.
@@ -57,7 +55,7 @@ impl PrimOpinions {
         }
     }
 
-    pub(super) const fn parent(&self) -> Option<&(Opinion<Parent>, Stamp)> {
+    pub(super) const fn parent(&self) -> Option<&(Opinion<ParentAttr>, Stamp)> {
         self.parent.as_ref()
     }
 
@@ -89,7 +87,7 @@ impl PrimOpinions {
     /// none in this layer. An empty prim's entry is dropped by the layer's
     /// `take_*` wrappers, so a layer never lingers on prims it no longer
     /// says anything about.
-    pub(super) const fn take_parent(&mut self) -> Option<(Opinion<Parent>, Stamp)> {
+    pub(super) const fn take_parent(&mut self) -> Option<(Opinion<ParentAttr>, Stamp)> {
         self.parent.take()
     }
 
@@ -100,7 +98,7 @@ impl PrimOpinions {
     /// Records an opinion, answering whether the write was accepted. A stamp
     /// older than the one already held is refused and changes nothing, which
     /// is what makes entries arriving out of order converge.
-    pub(super) fn set_parent(&mut self, parent: Opinion<Parent>, stamp: Stamp) -> bool {
+    pub(super) fn set_parent(&mut self, parent: Opinion<ParentAttr>, stamp: Stamp) -> bool {
         if self.parent.as_ref().is_some_and(|(_, old)| stamp < *old) {
             return false;
         }

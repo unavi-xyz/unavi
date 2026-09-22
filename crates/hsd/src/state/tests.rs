@@ -11,7 +11,11 @@ use crate::{
             MaterialAttr,
         },
         name::NameAttr,
-        reference::ReferenceAttr,
+        parent::ParentAttr,
+        reference::{
+            self,
+            ReferenceAttr,
+        },
         script::ScriptAttr,
         xform::XformAttr,
     },
@@ -20,10 +24,7 @@ use crate::{
         PrimId,
     },
     key,
-    property::{
-        Parent,
-        Property,
-    },
+    property::Property,
     state::{
         entry::{
             Entry,
@@ -41,12 +42,24 @@ fn prim(n: u8) -> PrimId {
     PrimId([n; 16])
 }
 
+fn parent_key(prim: PrimId) -> String {
+    key::prop(prim, ParentAttr::KEY)
+}
+
 fn root_entry(id: PrimId, timestamp: u64) -> Entry {
-    Entry::new(key::parent(id), Parent::Root.encode(), timestamp)
+    Entry::new(
+        parent_key(id),
+        ParentAttr::to_wire(Some(ParentAttr::Root)),
+        timestamp,
+    )
 }
 
 fn child_entry(id: PrimId, parent: PrimId, timestamp: u64) -> Entry {
-    Entry::new(key::parent(id), Parent::Prim(parent).encode(), timestamp)
+    Entry::new(
+        parent_key(id),
+        ParentAttr::to_wire(Some(ParentAttr::Prim(parent))),
+        timestamp,
+    )
 }
 
 fn attr_entry<A: Attribute>(id: PrimId, value: &A, timestamp: u64) -> Entry {
@@ -210,7 +223,7 @@ fn a_cross_author_tombstone_removes_a_prim_written_by_someone_else() {
     );
     state.drain_events();
 
-    apply(&mut state, &[tombstone(key::parent(prim(2)), 10)]);
+    apply(&mut state, &[tombstone(parent_key(prim(2)), 10)]);
 
     assert!(!state.exists(prim(2)));
     assert!(!state.is_realized(prim(2)));
@@ -233,7 +246,7 @@ fn deleting_a_prim_holds_its_descendants_rather_than_dropping_them() {
         ],
     );
 
-    apply(&mut state, &[tombstone(key::parent(prim(2)), 10)]);
+    apply(&mut state, &[tombstone(parent_key(prim(2)), 10)]);
     assert!(!state.is_realized(prim(3)));
     assert!(state.exists(prim(3)));
 
@@ -352,8 +365,8 @@ fn script_created_prims_are_absent_from_the_save_set() {
 
     assert!(state.is_realized(scratch));
     let entries = state.entries();
-    assert!(entries.contains_key(&key::parent(prim(1))));
-    assert!(!entries.contains_key(&key::parent(scratch)));
+    assert!(entries.contains_key(&parent_key(prim(1))));
+    assert!(!entries.contains_key(&parent_key(scratch)));
 }
 
 #[test]
@@ -803,18 +816,23 @@ fn a_prim_the_runtime_layer_alone_states_exists_and_reparents() {
     apply(&mut state, &[root_entry(prim(1), 1)]);
     state.drain_events();
 
-    state.write_parent(LayerId::Runtime, prim(9), Some(Parent::Prim(prim(1))), None);
+    state.write_parent(
+        LayerId::Runtime,
+        prim(9),
+        Some(ParentAttr::Prim(prim(1))),
+        None,
+    );
 
     assert!(state.exists(prim(9)));
     assert!(state.is_realized(prim(9)));
     assert_eq!(state.children(prim(1)), vec![prim(9)]);
 
-    state.write_parent(LayerId::Runtime, prim(9), Some(Parent::Root), None);
+    state.write_parent(LayerId::Runtime, prim(9), Some(ParentAttr::Root), None);
 
     assert_eq!(state.parent(prim(9)), None);
     assert_eq!(state.children(prim(1)), Vec::new());
     assert!(
-        !state.entries().contains_key(&key::parent(prim(9))),
+        !state.entries().contains_key(&parent_key(prim(9))),
         "a prim only a live layer states never reaches the save set"
     );
 }
@@ -920,19 +938,19 @@ fn committing_a_script_created_prim_adds_it_to_the_save_set() {
     state
         .set_attribute(scratch, &NameAttr("kept".into()))
         .expect("attribute");
-    assert!(!state.entries().contains_key(&key::parent(scratch)));
+    assert!(!state.entries().contains_key(&parent_key(scratch)));
 
     state.commit(
         CommitTarget::Document,
         &[
-            (scratch, SmolStr::new(key::PARENT)),
+            (scratch, SmolStr::new(ParentAttr::KEY)),
             (scratch, SmolStr::new(NameAttr::KEY)),
         ],
     );
 
     let entries = state.entries();
     assert!(
-        entries.contains_key(&key::parent(scratch)),
+        entries.contains_key(&parent_key(scratch)),
         "committing the parent is what makes a spawned prim survive a save"
     );
     assert!(entries.contains_key(&key::prop(scratch, NameAttr::KEY)));
@@ -989,17 +1007,17 @@ fn committing_a_blocked_parent_removes_a_document_prim() {
         "a script can hide a document prim for this session"
     );
     assert!(
-        state.entries().contains_key(&key::parent(prim(2))),
+        state.entries().contains_key(&parent_key(prim(2))),
         "but hiding is a live opinion; the document still holds the prim"
     );
 
     state.commit(
         CommitTarget::Document,
-        &[(prim(2), SmolStr::new(key::PARENT))],
+        &[(prim(2), SmolStr::new(ParentAttr::KEY))],
     );
 
     assert!(
-        !state.entries().contains_key(&key::parent(prim(2))),
+        !state.entries().contains_key(&parent_key(prim(2))),
         "committing the block is what removes the prim from the document; \
              the key falls out of the save set and a diff deletes it"
     );
@@ -1028,7 +1046,7 @@ fn committing_a_key_with_no_live_opinion_changes_nothing() {
 }
 
 fn override_entry(site: PrimId, target: PrimId, name: &str, value: &Property) -> Entry {
-    Entry::new(key::ref_layer_key(site, target, name), value.encode(), 3)
+    Entry::new(reference::layer_key(site, target, name), value.encode(), 3)
 }
 
 /// A referenced document, holding one prim with a name of its own.
@@ -1153,7 +1171,7 @@ fn a_blocked_override_hides_a_prim_of_the_referenced_document() {
     state.install_reference_layer(&stated(
         prim(7),
         &[tombstone(
-            key::ref_layer_key(prim(7), prim(2), key::PARENT),
+            reference::layer_key(prim(7), prim(2), ParentAttr::KEY),
             4,
         )],
     ));
@@ -1164,7 +1182,7 @@ fn a_blocked_override_hides_a_prim_of_the_referenced_document() {
              its parent"
     );
     assert!(
-        state.entries().contains_key(&key::parent(prim(2))),
+        state.entries().contains_key(&parent_key(prim(2))),
         "hiding it does not remove it: the prim is still the target's"
     );
 }
@@ -1236,7 +1254,7 @@ fn committing_to_an_override_answers_what_the_referencing_document_must_hold() {
     assert_eq!(
         entries,
         vec![Entry::new(
-            key::ref_layer_key(site, prim(1), NameAttr::KEY),
+            reference::layer_key(site, prim(1), NameAttr::KEY),
             name_attr("recoloured").encode(),
             entries[0].timestamp,
         )],
@@ -1392,11 +1410,14 @@ fn the_reference_target_round_trips_through_the_entry_set() {
     state
         .set_attribute(site, &ReferenceAttr(target))
         .expect("reference");
-    state.commit(CommitTarget::Document, &[(site, SmolStr::new(key::REF))]);
+    state.commit(
+        CommitTarget::Document,
+        &[(site, SmolStr::new(ReferenceAttr::KEY))],
+    );
 
     let saved = state.entries();
     assert!(
-        saved.contains_key(&key::ref_target(site)),
+        saved.contains_key(&reference::target_key(site)),
         "the target is written at its structural key"
     );
     assert!(
@@ -1426,7 +1447,7 @@ fn the_reference_target_round_trips_through_the_entry_set() {
 fn a_reference_layer_entry_round_trips_at_its_structural_key() {
     let site = prim(7);
     let entry = override_entry(site, prim(1), NameAttr::KEY, &name_attr("recoloured"));
-    assert!(entry.key.starts_with(&key::ref_layer_prefix(site)));
+    assert!(entry.key.starts_with(&reference::layer_prefix(site)));
 
     let mut referencing = HsdState::new();
     apply(&mut referencing, &[root_entry(site, 1), entry.clone()]);

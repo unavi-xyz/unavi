@@ -3,10 +3,8 @@ use std::collections::BTreeMap;
 use smol_str::SmolStr;
 
 use crate::{
-    property::{
-        Parent,
-        Property,
-    },
+    attributes::parent::ParentAttr,
+    property::Property,
     state::entry::Stamp,
 };
 
@@ -20,7 +18,7 @@ pub struct PrimState {
     /// `None` means no layer states a live parent: the prim has not been
     /// written yet, was tombstoned, or a stronger layer blocked it. Either way
     /// it is held rather than realized.
-    pub parent:   Option<Parent>,
+    pub parent:   Option<ParentAttr>,
     parent_stamp: Stamp,
     /// Attributes and relationships share one map; the [`Property`] variant
     /// says which.
@@ -44,7 +42,7 @@ impl PrimState {
         self.parent_stamp
     }
 
-    pub(super) const fn set_parent(&mut self, parent: Option<Parent>, stamp: Stamp) {
+    pub(super) const fn set_parent(&mut self, parent: Option<ParentAttr>, stamp: Stamp) {
         self.parent = parent;
         self.parent_stamp = stamp;
     }

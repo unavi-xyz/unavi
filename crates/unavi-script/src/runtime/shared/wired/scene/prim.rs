@@ -43,6 +43,7 @@ use hsd::{
             Topology,
         },
         name::NameAttr,
+        parent::ParentAttr,
         portal::{
             PortalAttr,
             PortalDestination,
@@ -66,10 +67,7 @@ use hsd::{
         DocId,
         PrimId,
     },
-    property::{
-        Parent,
-        Property,
-    },
+    property::Property,
     state::HsdState,
 };
 use unavi_physics::finite;
@@ -417,7 +415,7 @@ pub async fn add_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::Resu
         Arc::ptr_eq(&parent.state, &child.state),
         "prims must belong to the same document"
     );
-    child.with(|state| state.set_parent(child.id, Parent::Prim(parent.id)))??;
+    child.with(|state| state.set_parent(child.id, ParentAttr::Prim(parent.id)))??;
     Ok(())
 }
 
@@ -427,7 +425,7 @@ pub async fn remove_child(api: &Api, self_rep: u32, child_rep: u32) -> anyhow::R
     if child.is_proxy {
         bail!("cannot remove proxy prim as child")
     }
-    child.with(|state| state.set_parent(child.id, Parent::Root))??;
+    child.with(|state| state.set_parent(child.id, ParentAttr::Root))??;
     Ok(())
 }
 

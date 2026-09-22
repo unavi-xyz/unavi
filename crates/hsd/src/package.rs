@@ -17,7 +17,10 @@ use thiserror::Error;
 use crate::{
     attributes::{
         Attribute,
-        reference::ReferenceAttr,
+        reference::{
+            self,
+            ReferenceAttr,
+        },
     },
     id::DocId,
     key,
@@ -85,9 +88,14 @@ impl Package {
         minted: &HashMap<DocId, DocId>,
     ) -> Result<(), PackageError> {
         for (raw, value) in entries {
-            let Some(key::Key::RefTarget { .. }) = key::parse(raw) else {
+            let Some(key::Key::PropSub { name, tail, .. }) = key::parse(raw) else {
                 continue;
             };
+            if name != ReferenceAttr::KEY
+                || reference::parse_tail(&tail) != Some(reference::RefKey::Target)
+            {
+                continue;
+            }
             let Property::Attribute(payload) = Property::decode(value)? else {
                 continue;
             };

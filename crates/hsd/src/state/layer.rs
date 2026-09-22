@@ -3,11 +3,9 @@ use std::collections::HashMap;
 use smol_str::SmolStr;
 
 use crate::{
+    attributes::parent::ParentAttr,
     id::PrimId,
-    property::{
-        Parent,
-        Property,
-    },
+    property::Property,
     state::{
         entry::Stamp,
         opinion::{
@@ -53,9 +51,9 @@ impl LayerId {
 
 /// Which key of a prim an opinion is about.
 ///
-/// Parent is not a property name here for the same reason it is a reserved key
-/// in the format: it decides realization, so it settles the prim rather than
-/// recomposing one value.
+/// Parent is not a property name here for the same reason it is a reserved
+/// key in the format: it decides realization, so it settles the prim rather
+/// than recomposing one value.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(super) enum OpinionKey {
     Parent,
@@ -103,7 +101,7 @@ impl Layer {
     /// Removes this layer's opinion on a key, answering what it was. Used by
     /// `commit`, which lifts a live opinion into its target and must then drop
     /// it from every live layer so the key resolves from the target alone.
-    pub(super) fn take_parent(&mut self, prim: PrimId) -> Option<(Opinion<Parent>, Stamp)> {
+    pub(super) fn take_parent(&mut self, prim: PrimId) -> Option<(Opinion<ParentAttr>, Stamp)> {
         let opinions = self.0.get_mut(&prim)?;
         let taken = opinions.take_parent();
         if opinions.is_empty() {

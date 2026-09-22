@@ -3,11 +3,10 @@
 //! `HsdState` composes opinions through a layer stack into the resolved view
 //! every consumer draws, realizes prims, and emits [`SceneEvent`]s. Split by
 //! concern: `compose` is the layer-to-view engine, `apply` ingests entries,
-//! `commit` promotes live opinions, `overrides` holds what referencing
+//! `commit` promotes live opinions, `reference` holds what referencing
 //! documents say, and `write` is the local authoring surface.
 
 use std::collections::{
-    BTreeMap,
     BTreeSet,
     HashMap,
 };
@@ -24,7 +23,6 @@ use crate::{
         layer::{
             Layer,
             LayerId,
-            Overrides,
         },
         prim::PrimState,
     },
@@ -33,7 +31,7 @@ use crate::{
 mod apply;
 mod commit;
 mod compose;
-mod overrides;
+mod reference;
 mod write;
 
 pub mod entry;
@@ -91,32 +89,34 @@ pub enum CommitTarget {
 
 #[derive(Debug)]
 pub struct HsdState {
-    meta:              DocMeta,
+    meta:               DocMeta,
     /// Weakest first, so iterating forwards composes and iterating backwards
-    /// finds the strongest opinion on a key.
-    layers:            BTreeMap<LayerId, Layer>,
+    /// finds the strongest opinion on a key. One `Layer` per `LayerId`,
+    /// indexed by its strength seat.
+    layers:             Vec<Layer>,
     /// What this document says about the prims of the documents its own prims
-    /// reference, keyed by reference site. Durable here and installed into the
-    /// referenced document, which is the only place it composes.
-    overrides:         HashMap<PrimId, Overrides>,
-    /// Bumped on every write to `overrides`, so a realizer can tell whether
+    /// reference, keyed by reference site. Durable here under
+    /// `p/<site>/ref/layer/…` and installed into the referenced document,
+    /// which is the only place it composes.
+    references:         HashMap<PrimId, Layer>,
+    /// Bumped on every write to `references`, so a realizer can tell whether
     /// what it installed into a child is still current.
-    overrides_version: u64,
+    references_version: u64,
     /// The composed view every reader sees, recomputed per written key. A
     /// cache: only [`Self::resolve_parent`] and its siblings write it.
-    resolved:          HashMap<PrimId, PrimState>,
+    resolved:           HashMap<PrimId, PrimState>,
     /// Parent id to children, indexed over *resolved* parents and including
     /// parents that do not exist yet, which is what lets an orphan be picked
     /// up when its parent arrives.
-    children:          HashMap<PrimId, BTreeSet<PrimId>>,
+    children:           HashMap<PrimId, BTreeSet<PrimId>>,
     /// Realized prims and their effective parent, `None` for a document root.
-    realized:          HashMap<PrimId, Option<PrimId>>,
-    events:            Vec<SceneEvent>,
+    realized:           HashMap<PrimId, Option<PrimId>>,
+    events:             Vec<SceneEvent>,
     /// Write boundaries currently open. A script tick can be suspended between
     /// any two host calls, so its events are withheld until it closes.
-    ticks:             usize,
+    ticks:              usize,
     /// Where the oldest open boundary started writing.
-    tick_start:        usize,
+    tick_start:         usize,
 }
 
 impl Default for HsdState {
@@ -129,19 +129,16 @@ impl HsdState {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            meta:              DocMeta::default(),
-            layers:            LayerId::ALL
-                .into_iter()
-                .map(|id| (id, Layer::default()))
-                .collect(),
-            overrides:         HashMap::new(),
-            overrides_version: 0,
-            resolved:          HashMap::new(),
-            children:          HashMap::new(),
-            realized:          HashMap::new(),
-            events:            Vec::new(),
-            ticks:             0,
-            tick_start:        0,
+            meta:               DocMeta::default(),
+            layers:             LayerId::ALL.map(|_| Layer::default()).to_vec(),
+            references:         HashMap::new(),
+            references_version: 0,
+            resolved:           HashMap::new(),
+            children:           HashMap::new(),
+            realized:           HashMap::new(),
+            events:             Vec::new(),
+            ticks:              0,
+            tick_start:         0,
         }
     }
 

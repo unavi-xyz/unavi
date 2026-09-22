@@ -26,6 +26,7 @@ use hsd::{
         mesh::MeshAttr,
         name::NameAttr,
         portal::PortalAttr,
+        reference::ReferenceAttr,
         rigid_body::RigidBodyAttr,
         script::ScriptAttr,
         spawn::SpawnAttr,
@@ -45,6 +46,9 @@ use serde::Serialize;
 #[derive(Serialize, Default)]
 struct DumpPrim {
     id:            String,
+    /// The document this prim references, when it has one.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reference:     Option<String>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     attributes:    BTreeMap<String, String>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
@@ -60,6 +64,7 @@ struct DumpPrim {
 #[derive(Default)]
 struct Node {
     parent:        Option<Parent>,
+    reference:     Option<String>,
     attributes:    BTreeMap<String, String>,
     relationships: BTreeMap<String, String>,
     overrides:     BTreeMap<String, BTreeMap<String, String>>,
@@ -89,7 +94,14 @@ pub fn dump_file(input: &Path) -> Result<String> {
                     }
                 }
             }
-            Some(key::Key::Override { site, target, name }) => {
+            Some(key::Key::RefTarget { site }) => {
+                let node = nodes.entry(site).or_default();
+                node.reference = Some(match Property::decode(value)? {
+                    Property::Attribute(payload) => render(key::REF, &payload),
+                    Property::Relationship(target) => target.to_string(),
+                });
+            }
+            Some(key::Key::RefLayer { site, target, name }) => {
                 nodes
                     .entry(site)
                     .or_default()
@@ -116,6 +128,7 @@ fn build(nodes: &BTreeMap<PrimId, Node>, parent: Option<PrimId>) -> Vec<DumpPrim
         .filter(|(_, node)| node.parent.is_some())
         .map(|(id, node)| DumpPrim {
             id:            id.to_string(),
+            reference:     node.reference.clone(),
             attributes:    node.attributes.clone(),
             relationships: node.relationships.clone(),
             overrides:     node.overrides.clone(),
@@ -156,6 +169,7 @@ fn render(name: &str, payload: &[u8]) -> String {
         MeshAttr::KEY => show::<MeshAttr>(payload),
         NameAttr::KEY => show::<NameAttr>(payload),
         PortalAttr::KEY => show::<PortalAttr>(payload),
+        ReferenceAttr::KEY => show::<ReferenceAttr>(payload),
         RigidBodyAttr::KEY => show::<RigidBodyAttr>(payload),
         ScriptAttr::KEY => show::<ScriptAttr>(payload),
         SpawnAttr::KEY => show::<SpawnAttr>(payload),

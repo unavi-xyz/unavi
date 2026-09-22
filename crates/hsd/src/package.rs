@@ -76,7 +76,7 @@ impl Package {
         DocId(*hasher.finalize().as_bytes())
     }
 
-    /// Rewrites every `ref` value in `entries` through `minted`.
+    /// Rewrites every reference target in `entries` through `minted`.
     ///
     /// A placeholder is meaningless outside the package that carries it, so a
     /// reference the map does not answer is an error.
@@ -85,12 +85,9 @@ impl Package {
         minted: &HashMap<DocId, DocId>,
     ) -> Result<(), PackageError> {
         for (raw, value) in entries {
-            let Some(key::Key::Prop { name, .. }) = key::parse(raw) else {
+            let Some(key::Key::RefTarget { .. }) = key::parse(raw) else {
                 continue;
             };
-            if name != ReferenceAttr::KEY {
-                continue;
-            }
             let Property::Attribute(payload) = Property::decode(value)? else {
                 continue;
             };

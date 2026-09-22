@@ -50,9 +50,11 @@ pub fn diff(base: &BTreeMap<String, Vec<u8>>, current: &BTreeMap<String, Vec<u8>
 
 /// The writes that delete a prim, in the order the format requires.
 ///
-/// The prefix wipe sweeps every entry this author wrote for the prim; the
-/// tombstone is what other peers read. Order matters — `p/<prim>/` prefixes
-/// `p/<prim>/parent/`, so wiping afterwards would eat the tombstone.
+/// The prefix wipe sweeps every entry this author wrote for the prim,
+/// including the reference target at `p/<prim>/ref/target/` and the whole
+/// reference layer at `p/<prim>/ref/layer/…`; the tombstone is what other
+/// peers read. Order matters — `p/<prim>/` prefixes `p/<prim>/parent/`, so
+/// wiping afterwards would eat the tombstone.
 #[must_use]
 pub fn delete_prim(prim: PrimId) -> [Change; 2] {
     [
@@ -138,5 +140,13 @@ mod tests {
             }
         );
         assert!(key::parent(prim).starts_with(&key::prim_prefix(prim)));
+    }
+
+    #[test]
+    fn deleting_a_prim_sweeps_its_reference_data() {
+        let prim = PrimId([1; 16]);
+        let prefix = key::prim_prefix(prim);
+        assert!(key::ref_target(prim).starts_with(&prefix));
+        assert!(key::ref_layer_key(prim, PrimId([2; 16]), "xform").starts_with(&prefix));
     }
 }

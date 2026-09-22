@@ -72,12 +72,25 @@ impl HsdState {
                 };
                 self.write_property(layer, prim, &name, value, stamp);
             }
-            // An override is durable in the document stating it, so it
-            // arrives by sync and never as a session opinion.
-            Some(key::Key::Override { site, target, name }) if layer == LayerId::Document => {
-                self.write_override(site, target, &name, (!empty).then_some(&entry.value), stamp)?;
+            // The reference target is the ordinary `ref` property: it settles
+            // and emits like any other, and `p/<site>/ref/target/` is only its
+            // wire shape.
+            Some(key::Key::RefTarget { site }) => {
+                let value = if empty {
+                    None
+                } else {
+                    Some(Property::decode(&entry.value)?)
+                };
+                self.write_property(layer, site, key::REF, value, stamp);
             }
-            Some(key::Key::Override { .. }) | None => {}
+            // A reference-layer opinion is durable in the document stating it,
+            // so it arrives by sync and never as a session opinion. It does
+            // not compose here; the realizer installs it into the referenced
+            // document.
+            Some(key::Key::RefLayer { site, target, name }) if layer == LayerId::Document => {
+                self.write_reference(site, target, &name, (!empty).then_some(&entry.value), stamp)?;
+            }
+            Some(key::Key::RefLayer { .. }) | None => {}
         }
         Ok(())
     }
@@ -88,17 +101,20 @@ impl HsdState {
     /// Not the same as blocking the key: a block is an opinion, and this is
     /// the absence of one. What a peer leaving takes with it.
     pub fn clear_session(&mut self, prim: PrimId, name: &str) {
-        let Some(layer) = self.layers.get_mut(&LayerId::Session) else {
-            return;
-        };
         match name {
             key::PARENT => {
-                if layer.take_parent(prim).is_some() {
+                if self.layers[LayerId::Session.idx()]
+                    .take_parent(prim)
+                    .is_some()
+                {
                     self.settle_parent(prim);
                 }
             }
             name => {
-                if layer.take_property(prim, name).is_some() {
+                if self.layers[LayerId::Session.idx()]
+                    .take_property(prim, name)
+                    .is_some()
+                {
                     self.settle_property(prim, name);
                 }
             }
@@ -126,7 +142,7 @@ impl HsdState {
             self.meta.encode().expect("DocMeta always encodes"),
         );
 
-        let Some(document) = self.layers.get(&LayerId::Document) else {
+        let Some(document) = self.layers.get(LayerId::Document.idx()) else {
             return out;
         };
         let mut sites = HashSet::new();
@@ -137,18 +153,32 @@ impl HsdState {
             sites.insert(prim);
             out.insert(key::parent(prim), parent.encode());
             for (name, value) in opinions.set_properties() {
+                // `key::prop` gives the `ref` property its structural key.
                 out.insert(key::prop(prim, name), value.encode());
             }
         }
 
-        // An override rides on the prim that references the document it speaks
-        // for, so one whose site the document layer does not state is absent
-        // for the same reason a script-created prim is.
-        for (site, overrides) in &self.overrides {
+        // A reference layer rides on the prim that references the document it
+        // speaks for, so one whose site the document layer does not state is
+        // absent for the same reason a script-created prim is.
+        for (site, layer) in &self.references {
             if !sites.contains(site) {
                 continue;
             }
-            out.extend(overrides.entries(*site));
+            for (target, opinions) in layer.prims() {
+                if let Some((opinion, _)) = opinions.parent() {
+                    out.insert(
+                        key::ref_layer_key(*site, target, key::PARENT),
+                        opinion.value().map(Parent::encode).unwrap_or_default(),
+                    );
+                }
+                for (name, opinion) in opinions.properties() {
+                    out.insert(
+                        key::ref_layer_key(*site, target, name),
+                        opinion.value().map(Property::encode).unwrap_or_default(),
+                    );
+                }
+            }
         }
         out
     }

@@ -20,7 +20,7 @@ use hsd::{
         self,
         Package,
     },
-    state::layer::Overrides,
+    state::layer::Layer,
 };
 use iroh_docs::NamespaceId;
 use unavi_util::{
@@ -203,12 +203,12 @@ pub struct RefOverrides(pub u64);
 
 /// Realizes each referencing prim's target as a child document.
 ///
-/// The child's own id stays derived — [`DocId::instance`] — rather than being
+/// The child's own id stays derived — [`DocId::site`] — rather than being
 /// the target's, because two prims may reference one document and everything
 /// keyed by document id (the policy record, session state) is per *site*. The
 /// target rides along as the namespace the child's content is read from and
 /// synced through.
-pub fn instance_refs(
+pub fn realize_refs(
     refs: Query<(
         Entity,
         &Prim,
@@ -243,7 +243,7 @@ pub fn instance_refs(
         let Ok((parent_id, parent_depth)) = parents.get(doc_child.0) else {
             continue;
         };
-        let site = DocId::instance(parent_id.0, prim.0);
+        let site = DocId::site(parent_id.0, prim.0);
         let target = target.0;
         let depth = parent_depth.map_or(0, |d| d.0) + 1;
 
@@ -302,8 +302,8 @@ async fn realize_ref(
             // target's own opinion: the observer that re-emits the scene runs
             // on the spawn, and what it emits is what gets drawn.
             let version = match site_overrides(world, prim_ent) {
-                Some((overrides, version)) => {
-                    state.install_overrides(&overrides);
+                Some((layer, version)) => {
+                    state.install_reference_layer(&layer);
                     version
                 }
                 None => 0,
@@ -327,13 +327,13 @@ async fn realize_ref(
 
 /// What the document holding `prim_ent` says about the prims of the document
 /// that prim references, with the version it was read at.
-fn site_overrides(world: &World, prim_ent: Entity) -> Option<(Overrides, u64)> {
+fn site_overrides(world: &World, prim_ent: Entity) -> Option<(Layer, u64)> {
     let site = world.get::<Prim>(prim_ent)?.0;
     let host = world.get::<HsdChild>(prim_ent)?.0;
     let state = world.get::<Hsd>(host)?.0.lock().ok()?;
     Some((
-        state.overrides_for(site).cloned().unwrap_or_default(),
-        state.overrides_version(),
+        state.reference_layer_for(site).cloned().unwrap_or_default(),
+        state.references_version(),
     ))
 }
 
@@ -360,12 +360,14 @@ pub fn apply_ref_overrides(
                 warn!("scene state poisoned");
                 continue;
             };
-            if host.overrides_version() == installed.0 {
+            if host.references_version() == installed.0 {
                 continue;
             }
             (
-                host.overrides_for(site.0).cloned().unwrap_or_default(),
-                host.overrides_version(),
+                host.reference_layer_for(site.0)
+                    .cloned()
+                    .unwrap_or_default(),
+                host.references_version(),
             )
         };
 
@@ -373,7 +375,7 @@ pub fn apply_ref_overrides(
             warn!("scene state poisoned");
             continue;
         };
-        state.install_overrides(&stated.0);
+        state.install_reference_layer(&stated.0);
         installed.0 = stated.1;
     }
 }

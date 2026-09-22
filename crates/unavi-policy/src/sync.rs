@@ -70,7 +70,7 @@ mod tests {
     }
 
     #[test]
-    fn an_instance_records_the_host_that_composed_it() {
+    fn a_realized_reference_records_the_host_that_composed_it() {
         let (mut app, policy) = app();
         let host_id = DocId([23; 32]);
 
@@ -81,16 +81,13 @@ mod tests {
         let prim_id = PrimId::new();
         let prim = app.world_mut().spawn((Prim(prim_id), HsdChild(host))).id();
 
-        let instance_id = DocId::instance(host_id, prim_id);
-        app.world_mut().spawn((
-            Hsd::new(HsdState::new()),
-            HsdDocId(instance_id),
-            ChildOf(prim),
-        ));
+        let site_id = DocId::site(host_id, prim_id);
+        app.world_mut()
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(site_id), ChildOf(prim)));
 
-        assert_eq!(policy.get(instance_id).host, Some(host_id));
+        assert_eq!(policy.get(site_id).host, Some(host_id));
         assert_eq!(
-            policy.root(instance_id),
+            policy.root(site_id),
             host_id,
             "an instance resolves its author through the document that \
              composed it"

@@ -19,6 +19,11 @@ use crate::{
 /// The referencing document's opinions override the target's, because the
 /// reference chain *is* the layer order. That is what makes recolouring a
 /// couch someone else authored expressible at all.
+///
+/// This is an ordinary property named `ref`, composed through the stack like
+/// any other, but its wire key is structural: the value is written at
+/// `p/<site>/ref/target/` and the referencing document's opinions at
+/// `p/<site>/ref/layer/<target>/<name>/`, so deleting the prim sweeps both.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct ReferenceAttr(pub DocId);

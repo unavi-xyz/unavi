@@ -90,7 +90,7 @@ impl Plugin for HsdPlugin {
                         attributes::material_graph::rebuild_material_graph,
                         attributes::material_graph::apply_graph_overrides,
                         load::instance_hsd,
-                        load::instance_refs,
+                        load::realize_refs,
                     )
                         .chain(),
                 )

@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use smol_str::SmolStr;
 
 use super::*;
@@ -9,10 +11,14 @@ use crate::{
             MaterialAttr,
         },
         name::NameAttr,
+        reference::ReferenceAttr,
         script::ScriptAttr,
         xform::XformAttr,
     },
-    id::PrimId,
+    id::{
+        DocId,
+        PrimId,
+    },
     key,
     property::{
         Parent,
@@ -25,8 +31,8 @@ use crate::{
         },
         event::SceneEvent,
         layer::{
+            Layer,
             LayerId,
-            Overrides,
         },
     },
 };
@@ -1022,7 +1028,7 @@ fn committing_a_key_with_no_live_opinion_changes_nothing() {
 }
 
 fn override_entry(site: PrimId, target: PrimId, name: &str, value: &Property) -> Entry {
-    Entry::new(key::override_key(site, target, name), value.encode(), 3)
+    Entry::new(key::ref_layer_key(site, target, name), value.encode(), 3)
 }
 
 /// A referenced document, holding one prim with a name of its own.
@@ -1041,16 +1047,19 @@ fn referenced() -> HsdState {
 
 /// What a referencing document says about `site`'s target, as the realizer
 /// reads it back out to install.
-fn stated(site: PrimId, entries: &[Entry]) -> Overrides {
+fn stated(site: PrimId, entries: &[Entry]) -> Layer {
     let mut referencing = HsdState::new();
     apply(&mut referencing, entries);
-    referencing.overrides_for(site).cloned().unwrap_or_default()
+    referencing
+        .reference_layer_for(site)
+        .cloned()
+        .unwrap_or_default()
 }
 
 #[test]
 fn an_override_beats_the_document_it_speaks_for() {
     let mut state = referenced();
-    state.install_overrides(&stated(
+    state.install_reference_layer(&stated(
         prim(7),
         &[override_entry(
             prim(7),
@@ -1080,7 +1089,7 @@ fn an_override_beats_the_document_it_speaks_for() {
 #[test]
 fn a_live_opinion_beats_an_override() {
     let mut state = referenced();
-    state.install_overrides(&stated(
+    state.install_reference_layer(&stated(
         prim(7),
         &[override_entry(
             prim(7),
@@ -1106,7 +1115,7 @@ fn a_live_opinion_beats_an_override() {
 #[test]
 fn an_override_the_referencing_document_dropped_stops_resolving() {
     let mut state = referenced();
-    state.install_overrides(&stated(
+    state.install_reference_layer(&stated(
         prim(7),
         &[override_entry(
             prim(7),
@@ -1117,7 +1126,7 @@ fn an_override_the_referencing_document_dropped_stops_resolving() {
     ));
     state.drain_events();
 
-    state.install_overrides(&Overrides::default());
+    state.install_reference_layer(&Layer::default());
 
     assert_eq!(
         name_of(&state, prim(1)).as_deref(),
@@ -1141,10 +1150,10 @@ fn a_blocked_override_hides_a_prim_of_the_referenced_document() {
     apply(&mut state, &[child_entry(prim(2), prim(1), 3)]);
     state.drain_events();
 
-    state.install_overrides(&stated(
+    state.install_reference_layer(&stated(
         prim(7),
         &[tombstone(
-            key::override_key(prim(7), prim(2), key::PARENT),
+            key::ref_layer_key(prim(7), prim(2), key::PARENT),
             4,
         )],
     ));
@@ -1184,7 +1193,7 @@ fn overrides_round_trip_through_the_entry_set() {
     );
 
     let mut target = referenced();
-    target.install_overrides(reread.overrides_for(site).expect("kept the override"));
+    target.install_reference_layer(reread.reference_layer_for(site).expect("kept the override"));
     assert_eq!(name_of(&target, prim(1)).as_deref(), Some("recoloured"));
 }
 
@@ -1200,7 +1209,7 @@ fn an_override_whose_site_the_document_does_not_state_is_not_saved() {
              no such prim in the document there is nothing for it to ride"
     );
     assert!(
-        referencing.overrides_for(prim(7)).is_some(),
+        referencing.reference_layer_for(prim(7)).is_some(),
         "it is still held, so it saves once the site prim is committed"
     );
 }
@@ -1227,7 +1236,7 @@ fn committing_to_an_override_answers_what_the_referencing_document_must_hold() {
     assert_eq!(
         entries,
         vec![Entry::new(
-            key::override_key(site, prim(1), NameAttr::KEY),
+            key::ref_layer_key(site, prim(1), NameAttr::KEY),
             name_attr("recoloured").encode(),
             entries[0].timestamp,
         )],
@@ -1255,7 +1264,7 @@ fn committing_to_an_override_answers_what_the_referencing_document_must_hold() {
         "which is what makes the edit survive the session"
     );
 
-    target.install_overrides(referencing.overrides_for(site).expect("holds it"));
+    target.install_reference_layer(referencing.reference_layer_for(site).expect("holds it"));
     assert_eq!(name_of(&target, prim(1)).as_deref(), Some("recoloured"));
     assert!(
         state_is_quiet(&mut target),
@@ -1370,5 +1379,61 @@ fn a_session_opinion_is_refused_when_an_older_one_arrives_late() {
         name_of(&state, prim(1)).as_deref(),
         Some("newer"),
         "session opinions converge by stamp like every other layer's"
+    );
+}
+
+#[test]
+fn the_reference_target_round_trips_through_the_entry_set() {
+    let site = prim(7);
+    let target = DocId([7; 32]);
+
+    let mut state = HsdState::new();
+    apply(&mut state, &[root_entry(site, 1)]);
+    state
+        .set_attribute(site, &ReferenceAttr(target))
+        .expect("reference");
+    state.commit(CommitTarget::Document, &[(site, SmolStr::new(key::REF))]);
+
+    let saved = state.entries();
+    assert!(
+        saved.contains_key(&key::ref_target(site)),
+        "the target is written at its structural key"
+    );
+    assert!(
+        !saved.contains_key(&format!("p/{site}/ref/")),
+        "nothing lives on the `ref/` spine"
+    );
+
+    let mut reread = HsdState::new();
+    apply(
+        &mut reread,
+        &saved
+            .into_iter()
+            .map(|(key, value)| Entry::new(key, value, 1))
+            .collect::<Vec<_>>(),
+    );
+    assert_eq!(
+        reread
+            .attribute::<ReferenceAttr>(site)
+            .expect("ref")
+            .expect("decode"),
+        ReferenceAttr(target),
+        "and reads back as the ordinary `ref` property"
+    );
+}
+
+#[test]
+fn a_reference_layer_entry_round_trips_at_its_structural_key() {
+    let site = prim(7);
+    let entry = override_entry(site, prim(1), NameAttr::KEY, &name_attr("recoloured"));
+    assert!(entry.key.starts_with(&key::ref_layer_prefix(site)));
+
+    let mut referencing = HsdState::new();
+    apply(&mut referencing, &[root_entry(site, 1), entry.clone()]);
+
+    assert_eq!(
+        referencing.entries().get(&entry.key),
+        Some(&entry.value),
+        "the entry set carries the reference layer under the site's prefix"
     );
 }

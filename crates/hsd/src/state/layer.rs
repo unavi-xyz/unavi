@@ -4,7 +4,6 @@ use smol_str::SmolStr;
 
 use crate::{
     id::PrimId,
-    key,
     property::{
         Parent,
         Property,
@@ -44,6 +43,12 @@ pub(super) enum LayerId {
 impl LayerId {
     pub(super) const ALL: [Self; 4] =
         [Self::Document, Self::Override, Self::Runtime, Self::Session];
+
+    /// This seat's index in [`HsdState::layers`](crate::state::HsdState),
+    /// which is what carries its strength: weakest first.
+    pub(super) const fn idx(self) -> usize {
+        self as usize
+    }
 }
 
 /// Which key of a prim an opinion is about.
@@ -58,8 +63,12 @@ pub(super) enum OpinionKey {
 }
 
 /// One layer's opinions, keyed by prim.
+///
+/// Public because a document's reference layers are plain `Layer`s: what it
+/// says about the prims of the documents it references, and what a document
+/// referencing it installs into the referenced document's `Override` seat.
 #[derive(Debug, Default, Clone)]
-pub(super) struct Layer(HashMap<PrimId, PrimOpinions>);
+pub struct Layer(HashMap<PrimId, PrimOpinions>);
 
 impl Layer {
     pub(super) fn get(&self, prim: PrimId) -> Option<&PrimOpinions> {
@@ -114,48 +123,5 @@ impl Layer {
             self.0.remove(&prim);
         }
         taken
-    }
-}
-
-/// What one document says about the prims of a document its `site` prim
-/// references.
-///
-/// Durable in the referencing document, where it lives under `o/<site>/`, and
-/// installed into the referenced document's state as its `LayerId::Override`
-/// layer, which is where it beats the target's own opinion.
-#[derive(Debug, Default, Clone)]
-pub struct Overrides(Layer);
-
-impl Overrides {
-    pub(super) const fn layer(&self) -> &Layer {
-        &self.0
-    }
-
-    pub(super) const fn layer_mut(&mut self) -> &mut Layer {
-        &mut self.0
-    }
-
-    /// Every opinion as the entry that carries it.
-    ///
-    /// A `Blocked` opinion is an explicit empty value rather than an absent
-    /// key: absence falls through to the target's own value, which is the
-    /// opposite of what blocking a key means.
-    pub(super) fn entries(&self, site: PrimId) -> Vec<(String, Vec<u8>)> {
-        let mut out = Vec::new();
-        for (target, opinions) in self.0.prims() {
-            if let Some((opinion, _)) = opinions.parent() {
-                out.push((
-                    key::override_key(site, target, key::PARENT),
-                    opinion.value().map(Parent::encode).unwrap_or_default(),
-                ));
-            }
-            for (name, opinion) in opinions.properties() {
-                out.push((
-                    key::override_key(site, target, name),
-                    opinion.value().map(Property::encode).unwrap_or_default(),
-                ));
-            }
-        }
-        out
     }
 }

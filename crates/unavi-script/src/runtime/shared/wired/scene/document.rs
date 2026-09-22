@@ -502,7 +502,7 @@ mod tests {
             .id();
         let site = PrimId::new();
         let prim_ent = world.spawn((Prim(site), HsdChild(host_ent))).id();
-        let child = DocId::instance(host, site);
+        let child = DocId::site(host, site);
         world.spawn((
             Hsd::new(HsdState::new()),
             HsdDocId(child),

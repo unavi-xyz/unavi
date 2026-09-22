@@ -58,7 +58,7 @@ impl HsdState {
                 && let Some((value, timestamp)) = promoted
             {
                 entries.push(Entry {
-                    key: key::override_key(site, *prim, name),
+                    key: key::ref_layer_key(site, *prim, name),
                     value,
                     timestamp,
                 });
@@ -124,7 +124,7 @@ impl HsdState {
     ) -> Option<(Opinion<T>, Stamp)> {
         let mut taken = None;
         for id in [LayerId::Session, LayerId::Runtime] {
-            if let Some(layer) = self.layers.get_mut(&id)
+            if let Some(layer) = self.layers.get_mut(id.idx())
                 && let Some(opinion) = take(layer, prim)
             {
                 taken = taken.or(Some(opinion));

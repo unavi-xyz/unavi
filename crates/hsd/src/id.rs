@@ -81,10 +81,14 @@ impl FromStr for PrimId {
 pub struct DocId(pub [u8; 32]);
 
 impl DocId {
-    /// Derived ID generation for instanced documents, so every peer computes
-    /// the same ID.
+    /// Derived ID for a realized reference site: the child document a prim
+    /// stands for, so every peer computes the same ID.
+    ///
+    /// Derived from the parent document and the site prim rather than being
+    /// the target's id, because two prims may reference one document and
+    /// everything keyed by document id is per site.
     #[must_use]
-    pub fn instance(parent: Self, prim: PrimId) -> Self {
+    pub fn site(parent: Self, prim: PrimId) -> Self {
         let mut hasher = blake3::Hasher::new();
         hasher.update(b"hsd:instance");
         hasher.update(&parent.0);
@@ -137,13 +141,10 @@ mod tests {
     }
 
     #[test]
-    fn instance_id_is_deterministic() {
+    fn site_id_is_deterministic() {
         let parent = DocId([7; 32]);
         let prim = PrimId([3; PRIM_ID_BYTES]);
-        assert_eq!(DocId::instance(parent, prim), DocId::instance(parent, prim));
-        assert_ne!(
-            DocId::instance(parent, prim),
-            DocId::instance(DocId([8; 32]), prim)
-        );
+        assert_eq!(DocId::site(parent, prim), DocId::site(parent, prim));
+        assert_ne!(DocId::site(parent, prim), DocId::site(DocId([8; 32]), prim));
     }
 }

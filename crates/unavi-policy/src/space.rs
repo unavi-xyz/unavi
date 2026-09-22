@@ -146,7 +146,7 @@ mod tests {
     }
 
     #[test]
-    fn instance_adopted_after_host_becomes_a_space() {
+    fn realized_reference_adopted_after_host_becomes_a_space() {
         let (mut app, policy) = app();
 
         let ns = NamespaceId::from(blake3::hash(b"host-doc").as_bytes());
@@ -159,27 +159,23 @@ mod tests {
         let prim_id = PrimId::new();
         let prim = app.world_mut().spawn((Prim(prim_id), HsdChild(host))).id();
 
-        let instance_id = DocId::instance(host_id, prim_id);
-        let instance = app
+        let site_id = DocId::site(host_id, prim_id);
+        let child = app
             .world_mut()
-            .spawn((
-                Hsd::new(HsdState::new()),
-                HsdDocId(instance_id),
-                ChildOf(prim),
-            ))
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(site_id), ChildOf(prim)))
             .id();
 
         app.update();
-        assert!(app.world().get::<SpaceOwner>(instance).is_none());
+        assert!(app.world().get::<SpaceOwner>(child).is_none());
 
         app.world_mut().entity_mut(host).insert(Space(ns));
         app.update();
 
         assert_eq!(
-            app.world().get::<SpaceOwner>(instance).map(|o| o.0),
+            app.world().get::<SpaceOwner>(child).map(|o| o.0),
             Some(host)
         );
-        assert_eq!(policy.get(instance_id).space, Some(host_id));
+        assert_eq!(policy.get(site_id).space, Some(host_id));
 
         app.world_mut().entity_mut(host).despawn();
     }

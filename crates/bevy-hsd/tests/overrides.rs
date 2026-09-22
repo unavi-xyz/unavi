@@ -96,7 +96,7 @@ fn an_override_written_after_the_fact_reaches_what_it_speaks_for(mut ctx: TestCo
     assert_eq!(name_of(&ctx, child, TARGET).as_deref(), Some("couch"));
 
     ctx.apply(&Entry::new(
-        key::override_key(site, TARGET, NameAttr::KEY),
+        key::ref_layer_key(site, TARGET, NameAttr::KEY),
         name_property("recoloured").encode(),
         2,
     ));
@@ -119,7 +119,7 @@ fn a_blocked_override_hides_what_the_prim_says_about_itself(mut ctx: TestContext
     let state = referenced();
     let child = realize(&mut ctx, site_ent, &state);
     ctx.apply(&Entry::new(
-        key::override_key(site, TARGET, NameAttr::KEY),
+        key::ref_layer_key(site, TARGET, NameAttr::KEY),
         name_property("recoloured").encode(),
         2,
     ));
@@ -129,7 +129,7 @@ fn a_blocked_override_hides_what_the_prim_says_about_itself(mut ctx: TestContext
     // An empty value under the same key: the referencing document states that
     // the property is gone rather than stating one of its own.
     ctx.apply(&Entry::new(
-        key::override_key(site, TARGET, NameAttr::KEY),
+        key::ref_layer_key(site, TARGET, NameAttr::KEY),
         Vec::new(),
         3,
     ));

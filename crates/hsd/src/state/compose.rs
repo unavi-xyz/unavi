@@ -39,7 +39,7 @@ enum Placement {
 
 impl HsdState {
     pub(super) fn layer(&mut self, id: LayerId) -> &mut Layer {
-        self.layers.entry(id).or_default()
+        &mut self.layers[id.idx()]
     }
 
     /// The strongest opinion on a key, or `None` where every layer is silent
@@ -47,7 +47,7 @@ impl HsdState {
     /// rather than falling through.
     fn resolve_property(&self, prim: PrimId, name: &str) -> Option<Property> {
         self.layers
-            .values()
+            .iter()
             .rev()
             .find_map(|layer| layer.get(prim)?.property(name))
             .and_then(|opinion| opinion.value().cloned())
@@ -55,7 +55,7 @@ impl HsdState {
 
     fn resolve_parent(&self, prim: PrimId) -> (Option<Parent>, Stamp) {
         self.layers
-            .values()
+            .iter()
             .rev()
             .find_map(|layer| layer.get(prim)?.parent())
             .map_or_else(

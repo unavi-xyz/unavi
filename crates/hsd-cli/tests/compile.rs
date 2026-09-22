@@ -171,7 +171,7 @@ fn a_reference_costs_an_id_rather_than_the_target() {
     let refs: Vec<_> = package
         .entries
         .iter()
-        .filter(|(key, _)| key.ends_with("/ref/"))
+        .filter(|(key, _)| key.ends_with("/ref/target/"))
         .collect();
     assert_eq!(refs.len(), 2, "one reference entry per referencing prim");
     for (_, value) in refs {

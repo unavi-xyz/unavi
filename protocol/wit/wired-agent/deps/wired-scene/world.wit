@@ -6,7 +6,7 @@ world all {
 }
 
 interface api {
-  use types.{blob-id, document, prim, document-id};
+  use types.{blob-id, document, prim, prim-id, document-id};
   use wired:error/types.{error};
 
   self-prim:     func() -> result<prim, error>;
@@ -21,13 +21,22 @@ interface api {
   /// the copy's prims, which is what a template is for.
   copy-document: func(id: document-id) -> result<document, error>;
 
-  /// Hands the document to the space, after which it replicates to everyone
-  /// present and the script loses exclusive write access.
-  sync-document: func(id: document-id) -> result<_, error>;
-
-  /// Writes a document's live state into its entries.
+  /// Promotes the named keys' live opinions into the strongest durable layer
+  /// this client can write, else the session layer.
   ///
-  /// Prims a script created are transient and are not written.
+  /// Writing and keeping are separate acts: `set-property` family calls land
+  /// in the runtime layer and evaporate with the session, and `commit` is the
+  /// only thing that makes one survive. On the client holding the calling
+  /// document, it writes the document itself; on any other client it is a
+  /// no-op, and a client holding no key for the document falls back to the
+  /// session layer. Granularity is per property, never per prim: committing a
+  /// prim would sweep up whatever a script is animating on it.
+  commit: func(props: list<tuple<prim-id, string>>) -> result<_, error>;
+
+  /// Writes a document's authored content into its namespace.
+  ///
+  /// Script writes are live-layer opinions and are not durable; promote what
+  /// should survive with `commit` first.
   save-document: func(id: document-id) -> result<_, error>;
 }
 

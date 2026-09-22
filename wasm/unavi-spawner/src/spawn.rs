@@ -8,7 +8,6 @@ use crate::{
         scene::{
             api::{
                 create_document,
-                sync_document,
             },
             types::{
                 RigidBody,
@@ -34,9 +33,13 @@ const RAY_START: f32 = 0.4;
 /// whatever is being pointed at.
 pub fn spawn(color: Color, cam: &Transform) -> anyhow::Result<()> {
     let doc = create_document()?;
-    let id = doc.id();
-
     let cuboid = Cuboid::new(Vec3::splat(SIZE));
+
+    // Placed rather than synced: the cube's content is a live opinion of this
+    // session until a commit promotes it, and sync-document no longer exists
+    // to hand a runtime-built document to the space.
+    doc.set_anchor(None)?;
+
     cuboid.set_doc(doc);
     let cube = cuboid.mesh();
     cube.set_collider(Some(cuboid.collider()))?;
@@ -56,7 +59,6 @@ pub fn spawn(color: Color, cam: &Transform) -> anyhow::Result<()> {
         scale:       Vec3::ONE,
     }))?;
 
-    sync_document(&id)?;
     Ok(())
 }
 

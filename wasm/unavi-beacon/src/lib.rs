@@ -28,8 +28,8 @@ use crate::{
         },
         scene::{
             api::{
+                save_document,
                 self_document,
-                sync_document,
             },
             types::{
                 Document,
@@ -205,7 +205,11 @@ impl Beacon {
                 && matches!(event.action, InputAction::Press | InputAction::GripPress)
             {
                 let doc = self_document()?;
-                match sync_document(&doc.id()) {
+                // Materializes the copied template's authored content into
+                // the beacon's namespace. sync-document left with the plan's
+                // C step; serving and pinning the document to the space is
+                // the session layer's work once it lands.
+                match save_document(&doc.id()) {
                     Ok(()) => {
                         self.published = true;
                         println!("Beacon published: space={}", self.id);

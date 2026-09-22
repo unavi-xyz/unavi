@@ -16,6 +16,7 @@ pub mod mesh;
 pub mod name;
 pub mod portal;
 pub mod prefab;
+pub mod reference;
 pub mod rigid_body;
 pub mod script;
 pub mod spawn;
@@ -34,6 +35,7 @@ pub static PARSERS: LazyLock<HashMap<&'static str, Box<dyn AttributeParser>>> =
             Box::new(mesh::MeshParser),
             Box::new(name::NameParser),
             Box::new(portal::PortalParser),
+            Box::new(reference::ReferenceParser),
             Box::new(rigid_body::RigidBodyParser),
             Box::new(spawn::SpawnParser),
             Box::new(text::TextParser),

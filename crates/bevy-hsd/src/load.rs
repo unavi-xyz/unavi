@@ -31,7 +31,10 @@ use crate::{
     HsdDocId,
     HsdNamespace,
     Prim,
-    attributes::prefab::HsdPrefab,
+    attributes::{
+        prefab::HsdPrefab,
+        reference::HsdRef,
+    },
     document,
 };
 
@@ -232,6 +235,111 @@ pub fn instance_prefabs(
 pub fn unpack_prefab(bytes: &[u8]) -> anyhow::Result<hsd::state::SceneState> {
     let package = Package::decode(bytes)?;
     document::unpack_into_state(package)
+}
+
+/// The document a prim has realized, so a change re-realizes and a removal
+/// tears down.
+#[derive(Component)]
+pub struct RefLoaded(pub DocId);
+
+/// Realizes each referencing prim's target as a child document.
+///
+/// The child's own id stays derived — [`DocId::instance`] — rather than being
+/// the target's, because two prims may reference one document and everything
+/// keyed by document id (the policy record, session state) is per *site*. The
+/// target rides along as the namespace the child's content is read from and
+/// synced through.
+pub fn instance_refs(
+    refs: Query<(
+        Entity,
+        &Prim,
+        &HsdRef,
+        &crate::HsdChild,
+        Option<&RefLoaded>,
+        Option<&Children>,
+    )>,
+    detached: Query<(Entity, Option<&Children>), (With<RefLoaded>, Without<HsdRef>)>,
+    hsd_docs: Query<(), With<Hsd>>,
+    parent_ids: Query<&HsdDocId>,
+    stores: Query<&LocalStore>,
+    mut commands: Commands,
+) {
+    for (prim_ent, children) in &detached {
+        despawn_instances(&mut commands, &hsd_docs, children);
+        commands.entity(prim_ent).remove::<RefLoaded>();
+    }
+
+    let Ok(store) = stores.single() else {
+        return;
+    };
+
+    for (prim_ent, prim, target, doc_child, loaded, children) in &refs {
+        if let Some(loaded) = loaded {
+            if loaded.0 == target.0 {
+                continue;
+            }
+            despawn_instances(&mut commands, &hsd_docs, children);
+        }
+
+        let Ok(parent_id) = parent_ids.get(doc_child.0) else {
+            continue;
+        };
+        let site = DocId::instance(parent_id.0, prim.0);
+        let target = target.0;
+
+        commands.entity(prim_ent).insert(RefLoaded(target));
+
+        let store = store.0.clone();
+        spawn_async_task(async move {
+            if let Err(err) = realize_ref(store, target, site, prim_ent).await {
+                warn!(?err, %target, "failed to realize reference");
+                let _ = AsyncCommands::default()
+                    .push(move |world: &mut World| {
+                        if let Ok(mut e) = world.get_entity_mut(prim_ent) {
+                            e.remove::<RefLoaded>();
+                        }
+                    })
+                    .send()
+                    .await;
+            }
+        });
+    }
+}
+
+// n0_future futures are intentionally !Send on wasm (single-threaded, no
+// Send needed there); Send-bounded elsewhere.
+#[cfg_attr(target_family = "wasm", expect(clippy::future_not_send))]
+async fn realize_ref(
+    store: Store,
+    target: DocId,
+    site: DocId,
+    prim_ent: Entity,
+) -> anyhow::Result<()> {
+    // A target no peer has served yet opens empty and fills in as it syncs,
+    // which is the dangling case a reference has and an embedded package does
+    // not.
+    let doc = store.open(NamespaceId::from(&target.0)).await?;
+    let state = document::read_state(&doc).await?;
+
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let current = world
+                .get_entity(prim_ent)
+                .ok()
+                .and_then(|e| e.get::<RefLoaded>().map(|l| l.0));
+            if current == Some(target) {
+                world.spawn((
+                    Hsd::new(state),
+                    HsdDocId(site),
+                    HsdNamespace(doc),
+                    ChildOf(prim_ent),
+                ));
+            }
+        })
+        .send()
+        .await?;
+
+    Ok(())
 }
 
 fn despawn_instances(

@@ -11,6 +11,7 @@ pub mod material_graph;
 pub mod mesh;
 pub mod name;
 pub mod portal;
+pub mod reference;
 pub mod rigid_body;
 pub mod spawn;
 pub mod text;

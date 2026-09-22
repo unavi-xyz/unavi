@@ -91,6 +91,7 @@ impl Plugin for HsdPlugin {
                         attributes::material_graph::apply_graph_overrides,
                         load::instance_hsd,
                         load::instance_prefabs,
+                        load::instance_refs,
                     )
                         .chain(),
                 )

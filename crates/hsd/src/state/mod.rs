@@ -35,6 +35,7 @@ use crate::{
             Layer,
             LayerId,
         },
+        opinion::Opinion,
         prim::PrimState,
     },
 };
@@ -81,6 +82,17 @@ enum Placement {
     Child(PrimId),
     /// Held: the parent chain reaches a prim that does not exist.
     Unrealized,
+}
+
+/// The layers a [`SceneState::commit`] may promote opinions into.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CommitTarget {
+    /// The document layer: what a save writes to the namespace, so a
+    /// promotion here is durable.
+    Document,
+    /// The session layer: this session only, replicated by nothing yet.
+    /// The fallback for a commit from a client holding no durable key.
+    Session,
 }
 
 /// The live scene.
@@ -345,6 +357,143 @@ impl SceneState {
     pub fn remove_slot(&mut self, prim: PrimId, name: &str) {
         let stamp = Stamp::new(now_micros(), &[]);
         self.write_slot(LayerId::Runtime, prim, name, None, stamp);
+    }
+}
+
+/// Promoting live opinions into a durable or session layer.
+impl SceneState {
+    /// Promotes each named key's strongest live opinion into `target` and
+    /// drops it from every live layer, so the key resolves from the target
+    /// alone.
+    ///
+    /// A name with no live opinion is skipped: nothing to keep, so nothing
+    /// changes. The composed value never moves — the opinion travels whole,
+    /// taking its stamp with it — so a promotion emits no event; what a later
+    /// save writes is what changes.
+    pub fn commit(&mut self, target: CommitTarget, props: &[(PrimId, SmolStr)]) {
+        let target = match target {
+            CommitTarget::Document => LayerId::Document,
+            CommitTarget::Session => LayerId::Session,
+        };
+        for (prim, name) in props {
+            if !key::is_valid_name(name) {
+                continue;
+            }
+            match name.as_str() {
+                key::PARENT => self.commit_parent(target, *prim),
+                name if is_slot_name(name) => self.commit_slot(target, *prim, name),
+                name => self.commit_property(target, *prim, name),
+            }
+        }
+    }
+
+    fn commit_property(&mut self, target: LayerId, prim: PrimId, name: &str) {
+        let Some((opinion, stamp)) = self.take_live_property(prim, name) else {
+            return;
+        };
+        self.layer(target)
+            .entry(prim)
+            .set_property(name, opinion, stamp);
+
+        // Recompute unconditionally: the refusal of an older stamp above can
+        // leave the cache stale, and a promotion must read as whatever the
+        // stack now says.
+        let resolved = self.resolve_property(prim, name);
+        let view = self.resolved.entry(prim).or_default();
+        if view.property(name) == resolved.as_ref() {
+            return;
+        }
+        view.set_property(name, resolved.clone());
+        if self.realized.contains_key(&prim) {
+            self.events.push(SceneEvent::Property {
+                prim,
+                name: SmolStr::new(name),
+                value: resolved,
+            });
+        }
+    }
+
+    fn commit_slot(&mut self, target: LayerId, prim: PrimId, name: &str) {
+        let Some((opinion, stamp)) = self.take_live_slot(prim, name) else {
+            return;
+        };
+        self.layer(target)
+            .entry(prim)
+            .set_slot(name, opinion, stamp);
+
+        let resolved = self.resolve_slot(prim, name);
+        let view = self.resolved.entry(prim).or_default();
+        if view.slot(name) == resolved.as_deref() {
+            return;
+        }
+        view.set_slot(name, resolved.clone());
+        if self.realized.contains_key(&prim) {
+            self.events.push(SceneEvent::Slot {
+                prim,
+                name: SmolStr::new(name),
+                value: resolved,
+            });
+        }
+    }
+
+    /// Promoting a parent opinion re-settles the prim, exactly as any parent
+    /// write would: realization, sibling index and the subtree beneath it all
+    /// answer to where the key resolves.
+    fn commit_parent(&mut self, target: LayerId, prim: PrimId) {
+        let Some((opinion, stamp)) = self.take_live_parent(prim) else {
+            return;
+        };
+        self.layer(target).entry(prim).set_parent(opinion, stamp);
+        self.settle_parent(prim);
+    }
+
+    /// The strongest live opinion on a property, removed from every live
+    /// layer. A stronger layer's take leaves a weaker one's shadowed opinion
+    /// behind, so both are cleared.
+    fn take_live_property(
+        &mut self,
+        prim: PrimId,
+        name: &str,
+    ) -> Option<(Opinion<Property>, Stamp)> {
+        self.take_live(prim, |layer, id| layer.take_property(id, name))
+    }
+
+    fn take_live_slot(&mut self, prim: PrimId, name: &str) -> Option<(Opinion<Vec<u8>>, Stamp)> {
+        self.take_live(prim, |layer, id| layer.take_slot(id, name))
+    }
+
+    fn take_live_parent(&mut self, prim: PrimId) -> Option<(Opinion<Parent>, Stamp)> {
+        self.take_live(prim, Layer::take_parent)
+    }
+
+    /// Takes the strongest live opinion on a key, then clears the other live
+    /// layers of whatever they hold on it.
+    fn take_live<T>(
+        &mut self,
+        prim: PrimId,
+        mut take: impl FnMut(&mut Layer, PrimId) -> Option<(Opinion<T>, Stamp)>,
+    ) -> Option<(Opinion<T>, Stamp)> {
+        let mut taken = None;
+        let mut source = None;
+        for id in [LayerId::Session, LayerId::Runtime] {
+            if let Some(layer) = self.layers.get_mut(&id)
+                && let Some(opinion) = take(layer, prim)
+            {
+                taken = Some(opinion);
+                source = Some(id);
+                break;
+            }
+        }
+        if let Some(source) = source
+            && let Some(layer) = self.layers.get_mut(&match source {
+                LayerId::Session => LayerId::Runtime,
+                LayerId::Runtime => LayerId::Session,
+                LayerId::Document => LayerId::Document,
+            })
+        {
+            let _ = take(layer, prim);
+        }
+        taken
     }
 }
 
@@ -1531,5 +1680,213 @@ mod tests {
             !state.entries().contains_key(&key::parent(prim(9))),
             "a prim only a live layer states never reaches the save set"
         );
+    }
+
+    #[test]
+    fn commit_promotes_a_live_opinion_into_the_document() {
+        let mut state = SceneState::new();
+        apply(
+            &mut state,
+            &[
+                root_entry(prim(1), 1),
+                attr_entry(prim(1), &NameAttr("document".into()), 2),
+            ],
+        );
+        state.drain_events();
+
+        runtime_property(
+            &mut state,
+            prim(1),
+            NameAttr::KEY,
+            Some(name_attr("runtime")),
+        );
+        state.drain_events();
+        state.commit(
+            CommitTarget::Document,
+            &[(prim(1), SmolStr::new(NameAttr::KEY))],
+        );
+
+        assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
+        assert!(
+            state.drain_events().is_empty(),
+            "the opinion travelled whole, so what every reader sees never moved; \
+             only the save set changed"
+        );
+        assert_eq!(
+            state.entries().get(&key::prop(prim(1), NameAttr::KEY)),
+            Some(&name_attr("runtime").encode()),
+            "the promoted opinion is exactly what a save now writes"
+        );
+
+        state.commit(
+            CommitTarget::Document,
+            &[(prim(1), SmolStr::new(NameAttr::KEY))],
+        );
+        assert_eq!(
+            name_of(&state, prim(1)).as_deref(),
+            Some("runtime"),
+            "a second commit is a no-op: the live opinion is gone, so there is \
+             nothing left to promote"
+        );
+    }
+
+    #[test]
+    fn commit_with_no_writable_key_writes_the_session_layer() {
+        let mut state = SceneState::new();
+        apply(
+            &mut state,
+            &[
+                root_entry(prim(1), 1),
+                attr_entry(prim(1), &NameAttr("document".into()), 2),
+            ],
+        );
+        let saved = state.entries();
+        state.drain_events();
+
+        runtime_property(
+            &mut state,
+            prim(1),
+            NameAttr::KEY,
+            Some(name_attr("runtime")),
+        );
+        state.commit(
+            CommitTarget::Session,
+            &[(prim(1), SmolStr::new(NameAttr::KEY))],
+        );
+
+        assert_eq!(name_of(&state, prim(1)).as_deref(), Some("runtime"));
+        assert_eq!(
+            state.entries(),
+            saved,
+            "the session fallback changes nothing a save writes — that is what \
+             makes a guest's commit visible without persisting it"
+        );
+        apply(
+            &mut state,
+            &[attr_entry(prim(1), &NameAttr("later".into()), 3)],
+        );
+        assert_eq!(
+            name_of(&state, prim(1)).as_deref(),
+            Some("runtime"),
+            "the session opinion still beats a document write, so it shadows \
+             until the owner adopts it with keep"
+        );
+    }
+
+    #[test]
+    fn committing_a_script_created_prim_adds_it_to_the_save_set() {
+        let mut state = SceneState::new();
+        apply(&mut state, &[root_entry(prim(1), 1)]);
+        state.drain_events();
+
+        let scratch = state.create_prim(Some(prim(1)));
+        state
+            .set_attribute(scratch, &NameAttr("kept".into()))
+            .expect("attribute");
+        assert!(!state.entries().contains_key(&key::parent(scratch)));
+
+        state.commit(
+            CommitTarget::Document,
+            &[
+                (scratch, SmolStr::new(key::PARENT)),
+                (scratch, SmolStr::new(NameAttr::KEY)),
+            ],
+        );
+
+        let entries = state.entries();
+        assert!(
+            entries.contains_key(&key::parent(scratch)),
+            "committing the parent is what makes a spawned prim survive a save"
+        );
+        assert!(entries.contains_key(&key::prop(scratch, NameAttr::KEY)));
+        assert!(state.is_realized(scratch));
+        assert_eq!(state.children(prim(1)), vec![scratch]);
+    }
+
+    #[test]
+    fn committing_a_blocked_opinion_removes_a_document_property() {
+        let mut state = SceneState::new();
+        apply(
+            &mut state,
+            &[
+                root_entry(prim(1), 1),
+                attr_entry(prim(1), &NameAttr("document".into()), 2),
+            ],
+        );
+        state.drain_events();
+
+        state.remove_property(prim(1), NameAttr::KEY);
+        state.commit(
+            CommitTarget::Document,
+            &[(prim(1), SmolStr::new(NameAttr::KEY))],
+        );
+
+        assert_eq!(name_of(&state, prim(1)), None);
+        assert!(
+            !state
+                .entries()
+                .contains_key(&key::prop(prim(1), NameAttr::KEY))
+        );
+        assert_eq!(
+            state.drain_events(),
+            vec![SceneEvent::Property {
+                prim:  prim(1),
+                name:  SmolStr::new(NameAttr::KEY),
+                value: None,
+            }]
+        );
+    }
+
+    #[test]
+    fn committing_a_blocked_parent_removes_a_document_prim() {
+        let mut state = SceneState::new();
+        apply(
+            &mut state,
+            &[root_entry(prim(1), 1), child_entry(prim(2), prim(1), 2)],
+        );
+        state.drain_events();
+
+        state.remove_prim(prim(2));
+        assert!(
+            !state.exists(prim(2)),
+            "a script can hide a document prim for this session"
+        );
+        assert!(
+            state.entries().contains_key(&key::parent(prim(2))),
+            "but hiding is a live opinion; the document still holds the prim"
+        );
+
+        state.commit(
+            CommitTarget::Document,
+            &[(prim(2), SmolStr::new(key::PARENT))],
+        );
+
+        assert!(
+            !state.entries().contains_key(&key::parent(prim(2))),
+            "committing the block is what removes the prim from the document; \
+             the key falls out of the save set and a diff deletes it"
+        );
+        assert!(!state.is_realized(prim(2)));
+    }
+
+    #[test]
+    fn committing_a_key_with_no_live_opinion_changes_nothing() {
+        let mut state = SceneState::new();
+        apply(
+            &mut state,
+            &[
+                root_entry(prim(1), 1),
+                attr_entry(prim(1), &NameAttr("document".into()), 2),
+            ],
+        );
+        let saved = state.entries();
+
+        state.commit(
+            CommitTarget::Document,
+            &[(prim(1), SmolStr::new(NameAttr::KEY))],
+        );
+
+        assert_eq!(name_of(&state, prim(1)).as_deref(), Some("document"));
+        assert_eq!(state.entries(), saved);
     }
 }

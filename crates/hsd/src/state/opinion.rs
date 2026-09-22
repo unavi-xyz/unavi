@@ -82,6 +82,26 @@ impl PrimOpinions {
         })
     }
 
+    pub(super) fn is_empty(&self) -> bool {
+        self.parent.is_none() && self.props.is_empty() && self.slots.is_empty()
+    }
+
+    /// Removes and answers the parent opinion, or `None` when this prim has
+    /// none in this layer. An empty prim's entry is dropped by the layer's
+    /// `take_*` wrappers, so a layer never lingers on prims it no longer
+    /// says anything about.
+    pub(super) const fn take_parent(&mut self) -> Option<(Opinion<Parent>, Stamp)> {
+        self.parent.take()
+    }
+
+    pub(super) fn take_property(&mut self, name: &str) -> Option<(Opinion<Property>, Stamp)> {
+        self.props.remove(name)
+    }
+
+    pub(super) fn take_slot(&mut self, name: &str) -> Option<(Opinion<Vec<u8>>, Stamp)> {
+        self.slots.remove(name)
+    }
+
     /// Records an opinion, answering whether the write was accepted. A stamp
     /// older than the one already held is refused and changes nothing, which
     /// is what makes entries arriving out of order converge.

@@ -497,7 +497,9 @@ mod tests {
     /// the way `load::realize_ref` spawns them.
     fn realized_reference(world: &mut World) -> (PrimId, DocId, DocId) {
         let host = doc(1);
-        let host_ent = world.spawn((Hsd::new(SceneState::new()), HsdDocId(host))).id();
+        let host_ent = world
+            .spawn((Hsd::new(SceneState::new()), HsdDocId(host)))
+            .id();
         let site = PrimId::new();
         let prim_ent = world.spawn((Prim(site), HsdChild(host_ent))).id();
         let child = DocId::instance(host, site);

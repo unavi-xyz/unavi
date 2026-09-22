@@ -507,12 +507,28 @@ impl SceneState {
 /// here has to be order-independent.
 impl SceneState {
     pub fn apply(&mut self, entry: &Entry) -> Result<(), StateError> {
+        self.apply_at(LayerId::Document, entry)
+    }
+
+    /// Applies an entry to the session layer: what a present peer says this
+    /// session.
+    ///
+    /// The same key space as a document entry and the same three-state
+    /// opinion — an empty value blocks the key — but a stronger layer,
+    /// replicated by state messages rather than by the document, and absent
+    /// from the save set until a [`Self::commit`] promotes it.
+    pub fn apply_session(&mut self, entry: &Entry) -> Result<(), StateError> {
+        self.apply_at(LayerId::Session, entry)
+    }
+
+    fn apply_at(&mut self, layer: LayerId, entry: &Entry) -> Result<(), StateError> {
         let stamp = Stamp::new(entry.timestamp, &entry.value);
         let empty = entry.value.is_empty();
 
         match key::parse(&entry.key) {
             Some(key::Key::Meta) => {
-                if !empty {
+                // The document's own metadata, never a peer's opinion.
+                if !empty && layer == LayerId::Document {
                     self.meta = DocMeta::decode(&entry.value)?;
                 }
             }
@@ -522,7 +538,7 @@ impl SceneState {
                 } else {
                     Some(Parent::decode(&entry.value)?)
                 };
-                self.write_parent(LayerId::Document, prim, parent, Some(stamp));
+                self.write_parent(layer, prim, parent, Some(stamp));
             }
             Some(key::Key::Prop { prim, name }) if is_slot_name(&name) => {
                 let value = if empty {
@@ -530,7 +546,7 @@ impl SceneState {
                 } else {
                     Some(entry.value.clone())
                 };
-                self.write_slot(LayerId::Document, prim, &name, value, stamp);
+                self.write_slot(layer, prim, &name, value, stamp);
             }
             Some(key::Key::Prop { prim, name }) => {
                 let value = if empty {
@@ -538,14 +554,44 @@ impl SceneState {
                 } else {
                     Some(Property::decode(&entry.value)?)
                 };
-                self.write_property(LayerId::Document, prim, &name, value, stamp);
+                self.write_property(layer, prim, &name, value, stamp);
             }
-            Some(key::Key::Override { site, target, name }) => {
+            // An override is durable in the document stating it, so it
+            // arrives by sync and never as a session opinion.
+            Some(key::Key::Override { site, target, name }) if layer == LayerId::Document => {
                 self.write_override(site, target, &name, (!empty).then_some(&entry.value), stamp)?;
             }
-            None => {}
+            Some(key::Key::Override { .. }) | None => {}
         }
         Ok(())
+    }
+
+    /// Drops the session opinion on a key, so whatever the layers beneath it
+    /// say composes again.
+    ///
+    /// Not the same as blocking the key: a block is an opinion, and this is
+    /// the absence of one. What a peer leaving takes with it.
+    pub fn clear_session(&mut self, prim: PrimId, name: &str) {
+        let Some(layer) = self.layers.get_mut(&LayerId::Session) else {
+            return;
+        };
+        match name {
+            key::PARENT => {
+                if layer.take_parent(prim).is_some() {
+                    self.settle_parent(prim);
+                }
+            }
+            name if is_slot_name(name) => {
+                if layer.take_slot(prim, name).is_some() {
+                    self.settle_slot(prim, name);
+                }
+            }
+            name => {
+                if layer.take_property(prim, name).is_some() {
+                    self.settle_property(prim, name);
+                }
+            }
+        }
     }
 
     pub fn apply_all<'a>(
@@ -2232,5 +2278,111 @@ mod tests {
 
     fn state_is_quiet(state: &mut SceneState) -> bool {
         state.drain_events().is_empty()
+    }
+
+    /// What a present peer says, arriving as a state message does.
+    fn session_property(state: &mut SceneState, prim: PrimId, value: &Property, at: u64) {
+        state
+            .apply_session(&Entry::bytes(
+                key::prop(prim, NameAttr::KEY),
+                value.encode(),
+                at,
+            ))
+            .expect("apply session");
+    }
+
+    #[test]
+    fn a_session_opinion_beats_a_script_computing_the_same_key() {
+        let mut state = referenced();
+        let saved = state.entries();
+        runtime_property(
+            &mut state,
+            prim(1),
+            NameAttr::KEY,
+            Some(name_attr("animated")),
+        );
+        session_property(&mut state, prim(1), &name_attr("what the peer said"), 5);
+
+        assert_eq!(
+            name_of(&state, prim(1)).as_deref(),
+            Some("what the peer said"),
+            "a holder's broadcast must beat a bystander's local animation of \
+             the same property, or the holder is not authoritative"
+        );
+        assert_eq!(
+            state.entries(),
+            saved,
+            "and never reaches the save set on its own; only a commit puts it \
+             there"
+        );
+    }
+
+    #[test]
+    fn clearing_a_session_opinion_composes_the_layers_beneath_it_again() {
+        let mut state = referenced();
+        session_property(&mut state, prim(1), &name_attr("what the peer said"), 5);
+        state.drain_events();
+
+        state.clear_session(prim(1), NameAttr::KEY);
+
+        assert_eq!(
+            name_of(&state, prim(1)).as_deref(),
+            Some("couch"),
+            "the absence of an opinion is not an opinion: what a peer leaving \
+             takes with it falls through"
+        );
+        assert_eq!(
+            state.drain_events(),
+            vec![SceneEvent::Property {
+                prim:  prim(1),
+                name:  SmolStr::new(NameAttr::KEY),
+                value: Some(name_attr("couch")),
+            }]
+        );
+    }
+
+    #[test]
+    fn clearing_a_key_no_peer_stated_changes_nothing() {
+        let mut state = referenced();
+        state.clear_session(prim(1), NameAttr::KEY);
+
+        assert_eq!(name_of(&state, prim(1)).as_deref(), Some("couch"));
+        assert!(state_is_quiet(&mut state));
+    }
+
+    #[test]
+    fn keeping_a_session_opinion_promotes_it_into_the_document() {
+        let mut state = referenced();
+        session_property(&mut state, prim(1), &name_attr("a guest recoloured it"), 5);
+
+        state.commit(
+            CommitTarget::Document,
+            &[(prim(1), SmolStr::new(NameAttr::KEY))],
+        );
+
+        assert_eq!(
+            state.entries().get(&key::prop(prim(1), NameAttr::KEY)),
+            Some(&name_attr("a guest recoloured it").encode()),
+            "keep is the owner's own commit over an opinion they did not \
+             author, and this is the mechanism it rides on"
+        );
+        assert_eq!(
+            name_of(&state, prim(1)).as_deref(),
+            Some("a guest recoloured it"),
+            "what everyone sees does not move; only where the value lives"
+        );
+    }
+
+    #[test]
+    fn a_session_opinion_is_refused_when_an_older_one_arrives_late() {
+        let mut state = referenced();
+        session_property(&mut state, prim(1), &name_attr("newer"), 9);
+        session_property(&mut state, prim(1), &name_attr("older"), 2);
+
+        assert_eq!(
+            name_of(&state, prim(1)).as_deref(),
+            Some("newer"),
+            "session opinions converge by stamp like every other layer's"
+        );
     }
 }

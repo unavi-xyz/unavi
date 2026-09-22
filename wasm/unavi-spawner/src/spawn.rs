@@ -6,9 +6,7 @@ use crate::{
     wired::{
         physics::api::raycast,
         scene::{
-            api::{
-                create_document,
-            },
+            api::create_document,
             types::{
                 RigidBody,
                 RigidBodyKind,

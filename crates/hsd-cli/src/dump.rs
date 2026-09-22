@@ -48,6 +48,10 @@ struct DumpPrim {
     relationships: BTreeMap<String, String>,
     #[serde(skip_serializing_if = "BTreeMap::is_empty")]
     slots:         BTreeMap<String, String>,
+    /// What this prim says about the prims of the document it references,
+    /// keyed by target prim.
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    overrides:     BTreeMap<String, BTreeMap<String, String>>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     children:      Vec<Self>,
 }
@@ -58,6 +62,7 @@ struct Node {
     attributes:    BTreeMap<String, String>,
     relationships: BTreeMap<String, String>,
     slots:         BTreeMap<String, String>,
+    overrides:     BTreeMap<String, BTreeMap<String, String>>,
 }
 
 pub fn dump_file(input: &Path) -> Result<String> {
@@ -91,6 +96,15 @@ pub fn dump_file(input: &Path) -> Result<String> {
                     }
                 }
             }
+            Some(key::Key::Override { site, target, name }) => {
+                nodes
+                    .entry(site)
+                    .or_default()
+                    .overrides
+                    .entry(target.to_string())
+                    .or_default()
+                    .insert(name.to_string(), render_override(&name, value)?);
+            }
             Some(key::Key::Meta) | None => {}
         }
     }
@@ -112,9 +126,28 @@ fn build(nodes: &BTreeMap<PrimId, Node>, parent: Option<PrimId>) -> Vec<DumpPrim
             attributes:    node.attributes.clone(),
             relationships: node.relationships.clone(),
             slots:         node.slots.clone(),
+            overrides:     node.overrides.clone(),
             children:      build(nodes, Some(*id)),
         })
         .collect()
+}
+
+/// Renders an override's value, which carries whichever kind of key it names.
+/// An empty value blocks the key rather than stating one.
+fn render_override(name: &str, value: &[u8]) -> Result<String> {
+    if value.is_empty() {
+        return Ok("<blocked>".to_owned());
+    }
+    if name == key::PARENT {
+        return Ok(format!("{:?}", Parent::decode(value)?));
+    }
+    if slots::is_slot_name(name) {
+        return Ok(format!("{} bytes", value.len()));
+    }
+    Ok(match Property::decode(value)? {
+        Property::Relationship(target) => target.to_string(),
+        Property::Attribute(payload) => render(name, &payload),
+    })
 }
 
 /// Renders a known attribute through the registry; an unknown one keeps its

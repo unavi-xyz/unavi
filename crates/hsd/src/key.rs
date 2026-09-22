@@ -14,7 +14,11 @@ use crate::id::PrimId;
 
 pub const META: &str = "meta/";
 pub const PRIM_PREFIX: &str = "p/";
+pub const OVERRIDE_PREFIX: &str = "o/";
 pub const PARENT: &str = "parent";
+
+/// Every top-level prefix a reader has to ask for to hold a whole document.
+pub const PREFIXES: [&str; 3] = [META, PRIM_PREFIX, OVERRIDE_PREFIX];
 
 #[must_use]
 pub fn prim_prefix(prim: PrimId) -> String {
@@ -31,10 +35,35 @@ pub fn parent(prim: PrimId) -> String {
     prop(prim, PARENT)
 }
 
+/// Everything this document says about the prims of the document its `site`
+/// prim references.
+#[must_use]
+pub fn override_prefix(site: PrimId) -> String {
+    format!("{OVERRIDE_PREFIX}{site}/")
+}
+
+/// Keyed by site rather than by target: two prims referencing one couch have
+/// to be recolourable separately.
+#[must_use]
+pub fn override_key(site: PrimId, target: PrimId, name: &str) -> String {
+    format!("{OVERRIDE_PREFIX}{site}/{target}/{name}/")
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Key {
     Meta,
-    Prop { prim: PrimId, name: SmolStr },
+    Prop {
+        prim: PrimId,
+        name: SmolStr,
+    },
+    /// An opinion about a referenced document's prim. `p/` keeps meaning "my
+    /// own prims", so a document never appears to contain prims it does not
+    /// have.
+    Override {
+        site:   PrimId,
+        target: PrimId,
+        name:   SmolStr,
+    },
 }
 
 /// Parses a document key, returning `None` for anything this format does not
@@ -44,6 +73,20 @@ pub enum Key {
 pub fn parse(key: &str) -> Option<Key> {
     if key == META {
         return Some(Key::Meta);
+    }
+
+    if let Some(rest) = key.strip_prefix(OVERRIDE_PREFIX) {
+        let rest = rest.strip_suffix('/')?;
+        let (site, rest) = rest.split_once('/')?;
+        let (target, name) = rest.split_once('/')?;
+        if !is_valid_name(name) {
+            return None;
+        }
+        return Some(Key::Override {
+            site:   site.parse().ok()?,
+            target: target.parse().ok()?,
+            name:   SmolStr::new(name),
+        });
     }
 
     let rest = key.strip_prefix(PRIM_PREFIX)?;
@@ -85,6 +128,32 @@ mod tests {
                 name: SmolStr::new("material:binding"),
             })
         );
+    }
+
+    #[test]
+    fn round_trips_an_override() {
+        let target = PrimId([2; 16]);
+        let key = override_key(id(), target, "material:base_color");
+        assert_eq!(
+            parse(&key),
+            Some(Key::Override {
+                site: id(),
+                target,
+                name: SmolStr::new("material:base_color"),
+            })
+        );
+    }
+
+    #[test]
+    fn an_override_is_not_read_as_a_prim_property() {
+        let key = override_key(id(), PrimId([2; 16]), "xform");
+        assert!(!key.starts_with(PRIM_PREFIX));
+    }
+
+    #[test]
+    fn a_bare_override_site_or_target_is_not_a_key() {
+        assert_eq!(parse(&override_prefix(id())), None);
+        assert_eq!(parse(&format!("o/{}/{}/", id(), PrimId([2; 16]))), None);
     }
 
     #[test]

@@ -34,6 +34,8 @@ use crate::{
         layer::{
             Layer,
             LayerId,
+            OpinionKey,
+            Overrides,
         },
         opinion::Opinion,
         prim::PrimState,
@@ -42,7 +44,7 @@ use crate::{
 
 pub mod entry;
 pub mod event;
-mod layer;
+pub mod layer;
 pub mod opinion;
 pub mod prim;
 pub mod save;
@@ -90,6 +92,11 @@ pub enum CommitTarget {
     /// The document layer: what a save writes to the namespace, so a
     /// promotion here is durable.
     Document,
+    /// The overrides the document referencing this one holds over it, named by
+    /// the reference site. Where an edit to content authored elsewhere lands,
+    /// and durable in the referencing document rather than this one — so a
+    /// commit here answers the entries that document has to hold.
+    Override { site: PrimId },
     /// The session layer: this session only, replicated by nothing yet.
     /// The fallback for a commit from a client holding no durable key.
     Session,
@@ -101,25 +108,32 @@ pub enum CommitTarget {
 /// set, so saving is a per-key diff rather than a whole-document snapshot.
 #[derive(Debug)]
 pub struct SceneState {
-    meta:       DocMeta,
+    meta:              DocMeta,
     /// Weakest first, so iterating forwards composes and iterating backwards
     /// finds the strongest opinion on a key.
-    layers:     BTreeMap<LayerId, Layer>,
+    layers:            BTreeMap<LayerId, Layer>,
+    /// What this document says about the prims of the documents its own prims
+    /// reference, keyed by reference site. Durable here and installed into the
+    /// referenced document, which is the only place it composes.
+    overrides:         HashMap<PrimId, Overrides>,
+    /// Bumped on every write to `overrides`, so a realizer can tell whether
+    /// what it installed into a child is still current.
+    overrides_version: u64,
     /// The composed view every reader sees, recomputed per written key. A
     /// cache: only [`Self::resolve_parent`] and its siblings write it.
-    resolved:   HashMap<PrimId, PrimState>,
+    resolved:          HashMap<PrimId, PrimState>,
     /// Parent id to children, indexed over *resolved* parents and including
     /// parents that do not exist yet, which is what lets an orphan be picked
     /// up when its parent arrives.
-    children:   HashMap<PrimId, BTreeSet<PrimId>>,
+    children:          HashMap<PrimId, BTreeSet<PrimId>>,
     /// Realized prims and their effective parent, `None` for a document root.
-    realized:   HashMap<PrimId, Option<PrimId>>,
-    events:     Vec<SceneEvent>,
+    realized:          HashMap<PrimId, Option<PrimId>>,
+    events:            Vec<SceneEvent>,
     /// Write boundaries currently open. A script tick can be suspended between
     /// any two host calls, so its events are withheld until it closes.
-    ticks:      usize,
+    ticks:             usize,
     /// Where the oldest open boundary started writing.
-    tick_start: usize,
+    tick_start:        usize,
 }
 
 impl Default for SceneState {
@@ -132,17 +146,19 @@ impl SceneState {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            meta:       DocMeta::default(),
-            layers:     LayerId::ALL
+            meta:              DocMeta::default(),
+            layers:            LayerId::ALL
                 .into_iter()
                 .map(|id| (id, Layer::default()))
                 .collect(),
-            resolved:   HashMap::new(),
-            children:   HashMap::new(),
-            realized:   HashMap::new(),
-            events:     Vec::new(),
-            ticks:      0,
-            tick_start: 0,
+            overrides:         HashMap::new(),
+            overrides_version: 0,
+            resolved:          HashMap::new(),
+            children:          HashMap::new(),
+            realized:          HashMap::new(),
+            events:            Vec::new(),
+            ticks:             0,
+            tick_start:        0,
         }
     }
 
@@ -370,81 +386,81 @@ impl SceneState {
     /// changes. The composed value never moves — the opinion travels whole,
     /// taking its stamp with it — so a promotion emits no event; what a later
     /// save writes is what changes.
-    pub fn commit(&mut self, target: CommitTarget, props: &[(PrimId, SmolStr)]) {
-        let target = match target {
-            CommitTarget::Document => LayerId::Document,
-            CommitTarget::Session => LayerId::Session,
+    ///
+    /// Answers the entries a *referencing* document has to hold for the
+    /// promotion to survive, which is empty for every target but
+    /// [`CommitTarget::Override`]: an override is durable in the document that
+    /// states it, not in this one.
+    pub fn commit(&mut self, target: CommitTarget, props: &[(PrimId, SmolStr)]) -> Vec<Entry> {
+        let (layer, site) = match target {
+            CommitTarget::Document => (LayerId::Document, None),
+            CommitTarget::Override { site } => (LayerId::Override, Some(site)),
+            CommitTarget::Session => (LayerId::Session, None),
         };
+
+        let mut entries = Vec::new();
         for (prim, name) in props {
             if !key::is_valid_name(name) {
                 continue;
             }
-            match name.as_str() {
-                key::PARENT => self.commit_parent(target, *prim),
-                name if is_slot_name(name) => self.commit_slot(target, *prim, name),
-                name => self.commit_property(target, *prim, name),
+            let promoted = match name.as_str() {
+                key::PARENT => self.commit_parent(layer, *prim),
+                name if is_slot_name(name) => self.commit_slot(layer, *prim, name),
+                name => self.commit_property(layer, *prim, name),
+            };
+            if let Some(site) = site
+                && let Some((value, timestamp)) = promoted
+            {
+                entries.push(Entry {
+                    key: key::override_key(site, *prim, name),
+                    value,
+                    timestamp,
+                });
             }
         }
+        entries
     }
 
-    fn commit_property(&mut self, target: LayerId, prim: PrimId, name: &str) {
-        let Some((opinion, stamp)) = self.take_live_property(prim, name) else {
-            return;
-        };
+    /// The bytes and timestamp a promotion carried, or `None` where there was
+    /// no live opinion to promote. A `Blocked` opinion carries no value, and
+    /// an empty one is how the format spells it.
+    fn commit_property(
+        &mut self,
+        target: LayerId,
+        prim: PrimId,
+        name: &str,
+    ) -> Option<(Vec<u8>, u64)> {
+        let (opinion, stamp) = self.take_live_property(prim, name)?;
+        let value = opinion.value().map(Property::encode).unwrap_or_default();
         self.layer(target)
             .entry(prim)
             .set_property(name, opinion, stamp);
-
         // Recompute unconditionally: the refusal of an older stamp above can
         // leave the cache stale, and a promotion must read as whatever the
         // stack now says.
-        let resolved = self.resolve_property(prim, name);
-        let view = self.resolved.entry(prim).or_default();
-        if view.property(name) == resolved.as_ref() {
-            return;
-        }
-        view.set_property(name, resolved.clone());
-        if self.realized.contains_key(&prim) {
-            self.events.push(SceneEvent::Property {
-                prim,
-                name: SmolStr::new(name),
-                value: resolved,
-            });
-        }
+        self.settle_property(prim, name);
+        Some((value, stamp.timestamp))
     }
 
-    fn commit_slot(&mut self, target: LayerId, prim: PrimId, name: &str) {
-        let Some((opinion, stamp)) = self.take_live_slot(prim, name) else {
-            return;
-        };
+    fn commit_slot(&mut self, target: LayerId, prim: PrimId, name: &str) -> Option<(Vec<u8>, u64)> {
+        let (opinion, stamp) = self.take_live_slot(prim, name)?;
+        let value = opinion.value().cloned().unwrap_or_default();
         self.layer(target)
             .entry(prim)
             .set_slot(name, opinion, stamp);
-
-        let resolved = self.resolve_slot(prim, name);
-        let view = self.resolved.entry(prim).or_default();
-        if view.slot(name) == resolved.as_deref() {
-            return;
-        }
-        view.set_slot(name, resolved.clone());
-        if self.realized.contains_key(&prim) {
-            self.events.push(SceneEvent::Slot {
-                prim,
-                name: SmolStr::new(name),
-                value: resolved,
-            });
-        }
+        self.settle_slot(prim, name);
+        Some((value, stamp.timestamp))
     }
 
     /// Promoting a parent opinion re-settles the prim, exactly as any parent
     /// write would: realization, sibling index and the subtree beneath it all
     /// answer to where the key resolves.
-    fn commit_parent(&mut self, target: LayerId, prim: PrimId) {
-        let Some((opinion, stamp)) = self.take_live_parent(prim) else {
-            return;
-        };
+    fn commit_parent(&mut self, target: LayerId, prim: PrimId) -> Option<(Vec<u8>, u64)> {
+        let (opinion, stamp) = self.take_live_parent(prim)?;
+        let value = opinion.value().map(Parent::encode).unwrap_or_default();
         self.layer(target).entry(prim).set_parent(opinion, stamp);
         self.settle_parent(prim);
+        Some((value, stamp.timestamp))
     }
 
     /// The strongest live opinion on a property, removed from every live
@@ -466,32 +482,21 @@ impl SceneState {
         self.take_live(prim, Layer::take_parent)
     }
 
-    /// Takes the strongest live opinion on a key, then clears the other live
-    /// layers of whatever they hold on it.
+    /// Takes the strongest live opinion on a key, clearing every live layer of
+    /// whatever it holds on it: a weaker layer's shadowed opinion would
+    /// otherwise resolve above the target the strongest one was promoted into.
     fn take_live<T>(
         &mut self,
         prim: PrimId,
         mut take: impl FnMut(&mut Layer, PrimId) -> Option<(Opinion<T>, Stamp)>,
     ) -> Option<(Opinion<T>, Stamp)> {
         let mut taken = None;
-        let mut source = None;
         for id in [LayerId::Session, LayerId::Runtime] {
             if let Some(layer) = self.layers.get_mut(&id)
                 && let Some(opinion) = take(layer, prim)
             {
-                taken = Some(opinion);
-                source = Some(id);
-                break;
+                taken = taken.or(Some(opinion));
             }
-        }
-        if let Some(source) = source
-            && let Some(layer) = self.layers.get_mut(&match source {
-                LayerId::Session => LayerId::Runtime,
-                LayerId::Runtime => LayerId::Session,
-                LayerId::Document => LayerId::Document,
-            })
-        {
-            let _ = take(layer, prim);
         }
         taken
     }
@@ -535,6 +540,9 @@ impl SceneState {
                 };
                 self.write_property(LayerId::Document, prim, &name, value, stamp);
             }
+            Some(key::Key::Override { site, target, name }) => {
+                self.write_override(site, target, &name, (!empty).then_some(&entry.value), stamp)?;
+            }
             None => {}
         }
         Ok(())
@@ -564,10 +572,12 @@ impl SceneState {
         let Some(document) = self.layers.get(&LayerId::Document) else {
             return out;
         };
+        let mut sites = HashSet::new();
         for (prim, opinions) in document.prims() {
             let Some(parent) = opinions.parent().and_then(|(o, _)| o.value()) else {
                 continue;
             };
+            sites.insert(prim);
             out.insert(key::parent(prim), parent.encode());
             for (name, value) in opinions.set_properties() {
                 out.insert(key::prop(prim, name), value.encode());
@@ -576,7 +586,86 @@ impl SceneState {
                 out.insert(key::prop(prim, name), value.to_vec());
             }
         }
+
+        // An override rides on the prim that references the document it speaks
+        // for, so one whose site the document layer does not state is absent
+        // for the same reason a script-created prim is.
+        for (site, overrides) in &self.overrides {
+            if !sites.contains(site) {
+                continue;
+            }
+            out.extend(overrides.entries(*site));
+        }
         out
+    }
+}
+
+/// Overrides: what this document says about the prims of the documents it
+/// references, and what a document referencing *this* one says about its.
+impl SceneState {
+    /// What this document says about the prims of the document `site`
+    /// references, for the realizer to install into it.
+    #[must_use]
+    pub fn overrides_for(&self, site: PrimId) -> Option<&Overrides> {
+        self.overrides.get(&site)
+    }
+
+    /// Changes once per write to any of this document's overrides, so a
+    /// realizer holding a version knows whether what it installed is current.
+    #[must_use]
+    pub const fn overrides_version(&self) -> u64 {
+        self.overrides_version
+    }
+
+    /// Installs what the document referencing this one says about its prims.
+    ///
+    /// Replaces the layer whole rather than merging: an opinion the referencing
+    /// document dropped has to stop resolving, and only that document knows
+    /// its own set. Every key either layer held is recomposed, so a dropped
+    /// opinion falls back to what this document itself says.
+    pub fn install_overrides(&mut self, overrides: &Overrides) {
+        let mut keys: HashSet<_> = self.layer(LayerId::Override).keys().into_iter().collect();
+        keys.extend(overrides.layer().keys());
+        *self.layer(LayerId::Override) = overrides.layer().clone();
+
+        for (prim, opinion) in keys {
+            match opinion {
+                OpinionKey::Parent => self.settle_parent(prim),
+                OpinionKey::Property(name) => self.settle_property(prim, &name),
+                OpinionKey::Slot(name) => self.settle_slot(prim, &name),
+            }
+        }
+    }
+
+    /// Records this document's opinion about a prim of the document `site`
+    /// references. An empty value is an opinion too: it blocks the key, which
+    /// is not the same as holding none.
+    fn write_override(
+        &mut self,
+        site: PrimId,
+        target: PrimId,
+        name: &str,
+        value: Option<&Vec<u8>>,
+        stamp: Stamp,
+    ) -> Result<(), StateError> {
+        let layer = self.overrides.entry(site).or_default().layer_mut();
+        let opinions = layer.entry(target);
+
+        let accepted = match name {
+            key::PARENT => {
+                let parent = value.map(|bytes| Parent::decode(bytes)).transpose()?;
+                opinions.set_parent(parent.into(), stamp)
+            }
+            name if is_slot_name(name) => opinions.set_slot(name, value.cloned().into(), stamp),
+            name => {
+                let property = value.map(|bytes| Property::decode(bytes)).transpose()?;
+                opinions.set_property(name, property.into(), stamp)
+            }
+        };
+        if accepted {
+            self.overrides_version = self.overrides_version.wrapping_add(1);
+        }
+        Ok(())
     }
 }
 
@@ -675,12 +764,18 @@ impl SceneState {
         {
             return;
         }
+        self.settle_property(prim, name);
+    }
 
+    /// Recomposes one property from the stack and emits it if what a consumer
+    /// would draw changed.
+    ///
+    /// A weaker layer writing under a stronger one's opinion costs a resolve
+    /// and nothing else: the composed value did not move, so there is nothing
+    /// to apply.
+    fn settle_property(&mut self, prim: PrimId, name: &str) {
         let resolved = self.resolve_property(prim, name);
         let view = self.resolved.entry(prim).or_default();
-        // A weaker layer writing under a stronger one's opinion costs a
-        // resolve and nothing else: the composed value did not move, so there
-        // is nothing for a consumer to apply.
         if view.property(name) == resolved.as_ref() {
             return;
         }
@@ -710,7 +805,10 @@ impl SceneState {
         {
             return;
         }
+        self.settle_slot(prim, name);
+    }
 
+    fn settle_slot(&mut self, prim: PrimId, name: &str) {
         let resolved = self.resolve_slot(prim, name);
         let view = self.resolved.entry(prim).or_default();
         if view.slot(name) == resolved.as_deref() {
@@ -1888,5 +1986,251 @@ mod tests {
 
         assert_eq!(name_of(&state, prim(1)).as_deref(), Some("document"));
         assert_eq!(state.entries(), saved);
+    }
+
+    fn override_entry(site: PrimId, target: PrimId, name: &str, value: &Property) -> Entry {
+        Entry::bytes(key::override_key(site, target, name), value.encode(), 3)
+    }
+
+    /// A referenced document, holding one prim with a name of its own.
+    fn referenced() -> SceneState {
+        let mut state = SceneState::new();
+        apply(
+            &mut state,
+            &[
+                root_entry(prim(1), 1),
+                attr_entry(prim(1), &NameAttr("couch".into()), 2),
+            ],
+        );
+        state.drain_events();
+        state
+    }
+
+    /// What a referencing document says about `site`'s target, as the realizer
+    /// reads it back out to install.
+    fn stated(site: PrimId, entries: &[Entry]) -> Overrides {
+        let mut referencing = SceneState::new();
+        apply(&mut referencing, entries);
+        referencing.overrides_for(site).cloned().unwrap_or_default()
+    }
+
+    #[test]
+    fn an_override_beats_the_document_it_speaks_for() {
+        let mut state = referenced();
+        state.install_overrides(&stated(
+            prim(7),
+            &[override_entry(
+                prim(7),
+                prim(1),
+                NameAttr::KEY,
+                &name_attr("recoloured"),
+            )],
+        ));
+
+        assert_eq!(name_of(&state, prim(1)).as_deref(), Some("recoloured"));
+        assert_eq!(
+            state.drain_events(),
+            vec![SceneEvent::Property {
+                prim:  prim(1),
+                name:  SmolStr::new(NameAttr::KEY),
+                value: Some(name_attr("recoloured")),
+            }],
+            "installing an override changes what is drawn, so it emits"
+        );
+        assert_eq!(
+            state.entries().get(&key::prop(prim(1), NameAttr::KEY)),
+            Some(&name_attr("couch").encode()),
+            "the opinion is durable in the referencing document, not in this one"
+        );
+    }
+
+    #[test]
+    fn a_live_opinion_beats_an_override() {
+        let mut state = referenced();
+        state.install_overrides(&stated(
+            prim(7),
+            &[override_entry(
+                prim(7),
+                prim(1),
+                NameAttr::KEY,
+                &name_attr("room says"),
+            )],
+        ));
+        runtime_property(
+            &mut state,
+            prim(1),
+            NameAttr::KEY,
+            Some(name_attr("script says")),
+        );
+
+        assert_eq!(
+            name_of(&state, prim(1)).as_deref(),
+            Some("script says"),
+            "an override is durable, and everything durable loses to a live opinion"
+        );
+    }
+
+    #[test]
+    fn an_override_the_referencing_document_dropped_stops_resolving() {
+        let mut state = referenced();
+        state.install_overrides(&stated(
+            prim(7),
+            &[override_entry(
+                prim(7),
+                prim(1),
+                NameAttr::KEY,
+                &name_attr("recoloured"),
+            )],
+        ));
+        state.drain_events();
+
+        state.install_overrides(&Overrides::default());
+
+        assert_eq!(
+            name_of(&state, prim(1)).as_deref(),
+            Some("couch"),
+            "a layer is installed whole, so a dropped opinion falls back to the \
+             document's own"
+        );
+        assert_eq!(
+            state.drain_events(),
+            vec![SceneEvent::Property {
+                prim:  prim(1),
+                name:  SmolStr::new(NameAttr::KEY),
+                value: Some(name_attr("couch")),
+            }]
+        );
+    }
+
+    #[test]
+    fn a_blocked_override_hides_a_prim_of_the_referenced_document() {
+        let mut state = referenced();
+        apply(&mut state, &[child_entry(prim(2), prim(1), 3)]);
+        state.drain_events();
+
+        state.install_overrides(&stated(
+            prim(7),
+            &[tombstone(
+                key::override_key(prim(7), prim(2), key::PARENT),
+                4,
+            )],
+        ));
+
+        assert!(
+            !state.is_realized(prim(2)),
+            "a referencing document hides a prim it did not author by blocking \
+             its parent"
+        );
+        assert!(
+            state.entries().contains_key(&key::parent(prim(2))),
+            "hiding it does not remove it: the prim is still the target's"
+        );
+    }
+
+    #[test]
+    fn overrides_round_trip_through_the_entry_set() {
+        let site = prim(7);
+        let entry = override_entry(site, prim(1), NameAttr::KEY, &name_attr("recoloured"));
+
+        let mut referencing = SceneState::new();
+        apply(&mut referencing, &[root_entry(site, 1), entry.clone()]);
+        let saved = referencing.entries();
+        assert_eq!(
+            saved.get(&entry.key),
+            Some(&entry.value),
+            "an override is authored content and is written back like any"
+        );
+
+        let mut reread = SceneState::new();
+        apply(
+            &mut reread,
+            &saved
+                .into_iter()
+                .map(|(key, value)| Entry::new(key, value, 1))
+                .collect::<Vec<_>>(),
+        );
+
+        let mut target = referenced();
+        target.install_overrides(reread.overrides_for(site).expect("kept the override"));
+        assert_eq!(name_of(&target, prim(1)).as_deref(), Some("recoloured"));
+    }
+
+    #[test]
+    fn an_override_whose_site_the_document_does_not_state_is_not_saved() {
+        let mut referencing = SceneState::new();
+        let entry = override_entry(prim(7), prim(1), NameAttr::KEY, &name_attr("recoloured"));
+        apply(&mut referencing, std::slice::from_ref(&entry));
+
+        assert!(
+            !referencing.entries().contains_key(&entry.key),
+            "an override rides on the prim that references its document; with \
+             no such prim in the document there is nothing for it to ride"
+        );
+        assert!(
+            referencing.overrides_for(prim(7)).is_some(),
+            "it is still held, so it saves once the site prim is committed"
+        );
+    }
+
+    #[test]
+    fn committing_to_an_override_answers_what_the_referencing_document_must_hold() {
+        let site = prim(7);
+        let mut target = referenced();
+        let saved = target.entries();
+
+        runtime_property(
+            &mut target,
+            prim(1),
+            NameAttr::KEY,
+            Some(name_attr("recoloured")),
+        );
+        target.drain_events();
+
+        let entries = target.commit(
+            CommitTarget::Override { site },
+            &[(prim(1), SmolStr::new(NameAttr::KEY))],
+        );
+
+        assert_eq!(
+            entries,
+            vec![Entry::bytes(
+                key::override_key(site, prim(1), NameAttr::KEY),
+                name_attr("recoloured").encode(),
+                entries[0].timestamp,
+            )],
+            "the promotion answers the entry the referencing document has to hold"
+        );
+        assert_eq!(
+            name_of(&target, prim(1)).as_deref(),
+            Some("recoloured"),
+            "and holds the same opinion locally, so nothing blinks while the \
+             referencing document is written"
+        );
+        assert!(state_is_quiet(&mut target));
+        assert_eq!(
+            target.entries(),
+            saved,
+            "the target document was authored elsewhere and is untouched"
+        );
+
+        let mut referencing = SceneState::new();
+        apply(&mut referencing, &[root_entry(site, 1)]);
+        apply(&mut referencing, &entries);
+        assert_eq!(
+            referencing.entries().get(&entries[0].key),
+            Some(&entries[0].value),
+            "which is what makes the edit survive the session"
+        );
+
+        target.install_overrides(referencing.overrides_for(site).expect("holds it"));
+        assert_eq!(name_of(&target, prim(1)).as_deref(), Some("recoloured"));
+        assert!(
+            state_is_quiet(&mut target),
+            "the loop closes on the same value, so re-installing emits nothing"
+        );
+    }
+
+    fn state_is_quiet(state: &mut SceneState) -> bool {
+        state.drain_events().is_empty()
     }
 }

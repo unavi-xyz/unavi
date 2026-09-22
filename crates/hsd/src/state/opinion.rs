@@ -68,6 +68,20 @@ impl PrimOpinions {
         self.slots.get(name).map(|(opinion, _)| opinion)
     }
 
+    /// Every property key this layer holds an opinion about, `Blocked` ones
+    /// included.
+    pub(super) fn properties(&self) -> impl Iterator<Item = (&SmolStr, &Opinion<Property>)> {
+        self.props
+            .iter()
+            .map(|(name, (opinion, _))| (name, opinion))
+    }
+
+    pub(super) fn slots(&self) -> impl Iterator<Item = (&SmolStr, &Opinion<Vec<u8>>)> {
+        self.slots
+            .iter()
+            .map(|(name, (opinion, _))| (name, opinion))
+    }
+
     /// The properties this layer states a value for. A `Blocked` key is an
     /// opinion but not a value, so it is absent here and from the save set.
     pub(super) fn set_properties(&self) -> impl Iterator<Item = (&SmolStr, &Property)> {

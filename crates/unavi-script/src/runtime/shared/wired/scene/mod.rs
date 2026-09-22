@@ -349,10 +349,7 @@ pub async fn commit(api: &Api, props: Vec<(String, String)>) -> anyhow::Result<(
             let prim = prim
                 .parse::<PrimId>()
                 .map_err(|err| anyhow::anyhow!("invalid prim id: {err}"))?;
-            anyhow::ensure!(
-                key::is_valid_name(&name),
-                "invalid property name {name:?}"
-            );
+            anyhow::ensure!(key::is_valid_name(&name), "invalid property name {name:?}");
             Ok((prim, SmolStr::new(name)))
         })
         .collect::<anyhow::Result<Vec<_>>>()?;
@@ -412,13 +409,9 @@ async fn holds_write_key(api: &Api) -> anyhow::Result<bool> {
             };
             spawn_async_task(async move {
                 let res = async {
-                    Ok(store
-                        .list()
-                        .await?
-                        .into_iter()
-                        .any(|(held, capability)| {
-                            held == ns && matches!(capability, CapabilityKind::Write)
-                        }))
+                    Ok(store.list().await?.into_iter().any(|(held, capability)| {
+                        held == ns && matches!(capability, CapabilityKind::Write)
+                    }))
                 }
                 .await;
                 tx.try_send(res).ok();

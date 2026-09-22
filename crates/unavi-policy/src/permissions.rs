@@ -82,12 +82,7 @@ impl Permissions {
             // tools it ships are authored at this rung; content is not.
             Trust::Trusted => Self(
                 Self::for_trust(Trust::Guest).0
-                    | Self::of(&[
-                        ApiName::Commit,
-                        ApiName::Identity,
-                        ApiName::LocalAgent,
-                    ])
-                    .0,
+                    | Self::of(&[ApiName::Commit, ApiName::Identity, ApiName::LocalAgent]).0,
             ),
             // Global input listening, the physics solver and cross-space
             // reach. Nothing the local user did not author holds these.

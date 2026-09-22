@@ -78,8 +78,7 @@ impl Limits {
                 | Flow::CreateDocument
                 | Flow::CreatePrim
                 | Flow::Emit
-                | Flow::PortalOpen
-                | Flow::SyncDoc => None,
+                | Flow::PortalOpen => None,
             },
         )
     }
@@ -112,7 +111,7 @@ impl Limits {
                     capacity:       256.0,
                     refill_per_sec: 32.0,
                 }),
-                Flow::PortalOpen | Flow::SyncDoc => None,
+                Flow::PortalOpen => None,
             },
         )
     }
@@ -145,10 +144,6 @@ impl Limits {
                 Flow::Emit => Some(FlowLimit {
                     capacity:       4_096.0,
                     refill_per_sec: 2_048.0,
-                }),
-                Flow::SyncDoc => Some(FlowLimit {
-                    capacity:       64.0,
-                    refill_per_sec: 4.0,
                 }),
                 Flow::BlobUpload => Some(FlowLimit {
                     capacity:       4_096.0,
@@ -186,10 +181,6 @@ impl Limits {
                 Flow::Emit => Some(FlowLimit {
                     capacity:       2_048.0,
                     refill_per_sec: 1_024.0,
-                }),
-                Flow::SyncDoc => Some(FlowLimit {
-                    capacity:       32.0,
-                    refill_per_sec: 2.0,
                 }),
                 Flow::BlobUpload => Some(FlowLimit {
                     capacity:       2_048.0,

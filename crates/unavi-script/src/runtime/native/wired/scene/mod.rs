@@ -105,11 +105,14 @@ impl bindings::wired::scene::api::Host for Runtime {
             .map_err(|err| ScriptError::from(err).into()))
     }
 
-    async fn sync_document(&mut self, id: Vec<u8>) -> wasmtime::Result<Result<(), Error>> {
-        if let Err(err) = self.api.require(ApiName::CreateDocument) {
+    async fn commit(
+        &mut self,
+        props: Vec<(String, String)>,
+    ) -> wasmtime::Result<Result<(), Error>> {
+        if let Err(err) = self.api.require(ApiName::Commit) {
             return Ok(Err(err.into()));
         }
-        Ok(shared::wired::scene::sync_document(&self.api, id)
+        Ok(shared::wired::scene::commit(&self.api, props)
             .await
             .map_err(|err| ScriptError::from(err).into()))
     }

@@ -50,17 +50,15 @@ pub enum Flow {
     CreatePrim,
     Emit,
     PortalOpen,
-    SyncDoc,
 }
 
 impl Flow {
-    const ALL: [Self; 6] = [
+    const ALL: [Self; 5] = [
         Self::BlobUpload,
         Self::CreateDocument,
         Self::CreatePrim,
         Self::Emit,
         Self::PortalOpen,
-        Self::SyncDoc,
     ];
 }
 

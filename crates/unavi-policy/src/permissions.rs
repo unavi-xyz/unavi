@@ -7,6 +7,7 @@ use crate::{
 /// enforcement site.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum ApiName {
+    Commit,
     CreateDocument,
     Event,
     /// Reading the local user's own durable identifiers.
@@ -74,9 +75,19 @@ impl Permissions {
             // Identity is the durable handle the whole trust model is keyed
             // to, and the agent pose is continuous motion capture of a real
             // person. Neither is something a stranger's prop may read.
+            // Commit is what makes an opinion durable, so a malicious prop
+            // standing in its owner's room must not hold it — possession
+            // already keeps it from another peer's document, and trust is
+            // what stops it writing the room it stands in. The shell and the
+            // tools it ships are authored at this rung; content is not.
             Trust::Trusted => Self(
                 Self::for_trust(Trust::Guest).0
-                    | Self::of(&[ApiName::Identity, ApiName::LocalAgent]).0,
+                    | Self::of(&[
+                        ApiName::Commit,
+                        ApiName::Identity,
+                        ApiName::LocalAgent,
+                    ])
+                    .0,
             ),
             // Global input listening, the physics solver and cross-space
             // reach. Nothing the local user did not author holds these.
@@ -107,7 +118,8 @@ impl Permissions {
 mod tests {
     use super::*;
 
-    const ALL: [ApiName; 13] = [
+    const ALL: [ApiName; 14] = [
+        ApiName::Commit,
         ApiName::CreateDocument,
         ApiName::Event,
         ApiName::Identity,

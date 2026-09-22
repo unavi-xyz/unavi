@@ -91,10 +91,10 @@ impl Runtime {
         Ok(DocHandle::new(rep, Arc::clone(&self.api)))
     }
 
-    #[wasm_bindgen(js_name = "wiredSceneSyncDocument")]
-    pub async fn wired_scene_sync_document(&self, id: Vec<u8>) -> Result<(), JsValue> {
-        self.api.require(ApiName::CreateDocument).map_err(raise)?;
-        shared::wired::scene::sync_document(&self.api, id)
+    #[wasm_bindgen(js_name = "wiredSceneCommit")]
+    pub async fn wired_scene_commit(&self, props: Vec<(String, String)>) -> Result<(), JsValue> {
+        self.api.require(ApiName::Commit).map_err(raise)?;
+        shared::wired::scene::commit(&self.api, props)
             .await
             .map_err(raise)
     }

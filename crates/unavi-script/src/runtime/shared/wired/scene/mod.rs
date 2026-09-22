@@ -14,23 +14,27 @@ use bevy_hsd::{
 };
 use bevy_iroh::store::LocalStore;
 use hsd::{
-    id::DocId,
+    id::{
+        DocId,
+        PrimId,
+    },
     key,
     state::{
+        CommitTarget,
         SceneState,
         entry::Entry,
         save,
     },
 };
-use iroh_docs::NamespaceId;
-use unavi_policy::{
-    quota::{
-        Flow,
-        Stock,
-    },
-    space::Space,
+use iroh_docs::{
+    CapabilityKind,
+    NamespaceId,
 };
-use unavi_space::anchor::ActiveSpace;
+use smol_str::SmolStr;
+use unavi_policy::quota::{
+    Flow,
+    Stock,
+};
 use unavi_util::{
     async_commands::AsyncCommands,
     async_task::spawn_async_task,
@@ -84,30 +88,6 @@ async fn create_namespace() -> anyhow::Result<Document> {
             };
             spawn_async_task(async move {
                 tx.try_send(store.create().await).ok();
-            });
-        })
-        .send()
-        .await?;
-    rx.recv().await?
-}
-
-/// Enrols a namespace in the local sync set, so peers asking for it are
-/// answered rather than told `NotFound`.
-async fn serve_namespace(ns: NamespaceId) -> anyhow::Result<()> {
-    let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
-        .push(move |world: &mut World| {
-            let Some(store) = world
-                .query::<&LocalStore>()
-                .single(world)
-                .ok()
-                .map(|s| s.0.clone())
-            else {
-                return;
-            };
-            spawn_async_task(async move {
-                let served = async { store.open(ns).await?.serve().await };
-                tx.try_send(served.await).ok();
             });
         })
         .send()
@@ -337,64 +317,59 @@ async fn remove_replica(ns: NamespaceId) {
         .await;
 }
 
-pub async fn sync_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
-    let id = doc_id(&id)?;
-    let ns = namespace_of(id).await?;
-    crate::quota::acquire(&api.quota, Flow::SyncDoc, 1.0).await?;
-
-    let space = if let Some(s) = api.view.space_of(id) {
-        s
-    } else {
-        let (tx, rx) = async_channel::bounded::<Option<DocId>>(1);
-        AsyncCommands::default()
-            .push(move |world: &mut World| {
-                let active = world.get_resource::<ActiveSpace>().and_then(|a| a.0);
-                let id = active.and_then(|e| world.get::<Space>(e).map(Space::doc_id));
-                tx.try_send(id).ok();
-            })
-            .send()
-            .await?;
-        rx.recv()
-            .await?
-            .ok_or_else(|| anyhow::anyhow!("doc has no space and no active space"))?
+pub async fn commit(api: &Api, props: Vec<(String, String)>) -> anyhow::Result<()> {
+    // The holder precondition. Scripts run on every peer, so a tool's script
+    // calls commit on every peer; only the holder's copy means anything. A
+    // guest's edit must not be committed by the room owner's copy of the same
+    // script, which is what this no-ops. `holder` is the latest claim else
+    // the document's author, so it is always defined where the document has a
+    // space at all; one with no space cannot be committed yet.
+    let me = api.view.me();
+    let Some(space) = api.view.space_of(api.doc_id) else {
+        return Ok(());
     };
-
-    let state = {
-        let scene = api.wired_scene.lock().await;
-        scene
-            .docs
-            .iter()
-            .find_map(|(_, d)| (d.id == id).then(|| Arc::clone(&d.state)))
-    };
-    let Some(state) = state else {
-        anyhow::bail!("published doc not held by script");
-    };
-    save_namespace(ns, state).await?;
-
-    // A document the space is asked to carry has to be in the space; one still
-    // held goes in where its anchor already says it does.
-    let (tx, rx) = async_channel::bounded(1);
-    AsyncCommands::default()
-        .push(move |world: &mut World| {
-            tx.try_send(document::place_document(
-                world,
-                id,
-                document::Placement::Unchanged,
-            ))
-            .ok();
-        })
-        .send()
-        .await?;
-    rx.recv().await??;
-
-    serve_namespace(ns).await?;
-
-    // Ownership follows from the local pin; its quota is charged to the
-    // resulting owner.
-    if !api.view.self_pin(space, DocId(*ns.as_bytes())).await {
-        anyhow::bail!("space state not tracked locally or pin over quota");
+    if !api.view.replicas().is_holder(space, api.doc_id, me) {
+        return Ok(());
     }
 
+    // The target. The named keys are the calling document's own until the
+    // override stack walks the reference chain: holding its write key writes
+    // the document, and a client holding no key falls back to the session
+    // layer, which is what keeps a guest's edit useful — visible, attributed,
+    // and gone when they leave.
+    let target = if holds_write_key(api).await? {
+        CommitTarget::Document
+    } else {
+        CommitTarget::Session
+    };
+
+    let props = props
+        .into_iter()
+        .map(|(prim, name)| {
+            let prim = prim
+                .parse::<PrimId>()
+                .map_err(|err| anyhow::anyhow!("invalid prim id: {err}"))?;
+            anyhow::ensure!(
+                key::is_valid_name(&name),
+                "invalid property name {name:?}"
+            );
+            Ok((prim, SmolStr::new(name)))
+        })
+        .collect::<anyhow::Result<Vec<_>>>()?;
+
+    {
+        let mut state = api
+            .state
+            .lock()
+            .map_err(|_| anyhow::anyhow!("scene state poisoned"))?;
+        state.commit(target, &props);
+    }
+
+    // Promotion only changed live state; the durable half is the namespace
+    // write, and only the document target gets one.
+    if target == CommitTarget::Document {
+        save_namespace(namespace_of(api.doc_id).await?, Arc::clone(&api.state)).await?;
+    }
     Ok(())
 }
 
@@ -412,6 +387,46 @@ pub async fn save_document(api: &Api, id: Vec<u8>) -> anyhow::Result<()> {
         anyhow::bail!("saved doc not held by script");
     };
     save_namespace(namespace_of(id).await?, state).await
+}
+
+/// Whether this node holds the calling document's namespace with its write
+/// key: the possession half of "does this client hold a key for a durable
+/// layer composing this prim". A namespace minted or imported here answers
+/// `true`; one fetched read-only — a document authored elsewhere and synced —
+/// answers `false`, and a commit from it falls back to the session layer.
+/// The capability half is `Require(Commit)`, checked before the call is
+/// reached.
+async fn holds_write_key(api: &Api) -> anyhow::Result<bool> {
+    let ns = namespace_of(api.doc_id).await?;
+    let (tx, rx) = async_channel::bounded(1);
+    AsyncCommands::default()
+        .push(move |world: &mut World| {
+            let Some(store) = world
+                .query::<&LocalStore>()
+                .single(world)
+                .ok()
+                .map(|s| s.0.clone())
+            else {
+                tx.try_send(Ok(false)).ok();
+                return;
+            };
+            spawn_async_task(async move {
+                let res = async {
+                    Ok(store
+                        .list()
+                        .await?
+                        .into_iter()
+                        .any(|(held, capability)| {
+                            held == ns && matches!(capability, CapabilityKind::Write)
+                        }))
+                }
+                .await;
+                tx.try_send(res).ok();
+            });
+        })
+        .send()
+        .await?;
+    rx.recv().await?
 }
 
 pub async fn create_document(api: &Api) -> Result<u32, ScriptError> {

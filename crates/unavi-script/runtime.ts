@@ -210,6 +210,7 @@ function buildImports(wasi: WASIShim, rt: any) {
       travel: rt.wiredPortalTravel.bind(rt),
     },
     "wired:scene/api": {
+      commit: rt.wiredSceneCommit.bind(rt),
       createDocument: rt.wiredSceneCreateDocument.bind(rt),
       copyDocument: rt.wiredSceneCopyDocument.bind(rt),
       getDocument: rt.wiredSceneGetDocument.bind(rt),
@@ -217,7 +218,6 @@ function buildImports(wasi: WASIShim, rt: any) {
       saveDocument: rt.wiredSceneSaveDocument.bind(rt),
       selfDocument: rt.wiredSceneSelfDocument.bind(rt),
       selfPrim: rt.wiredSceneSelfPrim.bind(rt),
-      syncDocument: rt.wiredSceneSyncDocument.bind(rt),
     },
     "wired:scene/types": {
       Document: rt.wiredSceneDocClass(),

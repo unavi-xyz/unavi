@@ -1,38 +1,34 @@
 use std::{
-    fmt,
+    fmt::{
+        Debug,
+        Display,
+        Formatter,
+    },
     str::FromStr,
 };
 
+use base64::{
+    Engine as _,
+    engine::general_purpose::URL_SAFE_NO_PAD,
+};
 use rand::Rng;
 use serde::{
     Deserialize,
     Serialize,
 };
 use thiserror::Error;
-use web_time::{
-    SystemTime,
-    UNIX_EPOCH,
-};
 
 pub const PRIM_ID_BYTES: usize = 16;
-pub const PRIM_ID_CHARS: usize = 26;
-
-const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+pub const PRIM_ID_CHARS: usize = 22;
 
 #[derive(Error, Debug)]
 pub enum IdError {
-    #[error("expected {PRIM_ID_CHARS} characters, got {0}")]
+    #[error("expected {PRIM_ID_CHARS} base64url characters, got {0}")]
     Length(usize),
-    #[error("invalid base32 character {0:?}")]
-    Character(char),
-    #[error("value overflows 128 bits")]
-    Overflow,
+    #[error(transparent)]
+    Parse(#[from] base64::DecodeError),
 }
 
-/// A ULID: 48 bits of millisecond timestamp followed by 80 random bits,
-/// rendered as 26 characters of Crockford base32.
-///
-/// Fixed length, so no id is a prefix of another.
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct PrimId(pub [u8; PRIM_ID_BYTES]);
@@ -40,16 +36,13 @@ pub struct PrimId(pub [u8; PRIM_ID_BYTES]);
 impl PrimId {
     #[must_use]
     pub fn new() -> Self {
-        let millis = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |d| d.as_millis() as u64)
-            & 0x0000_FFFF_FFFF_FFFF;
-        let random: u128 = rand::rng().random::<u128>() & ((1 << 80) - 1);
-        Self((u128::from(millis) << 80 | random).to_be_bytes())
+        let mut bytes = [0u8; PRIM_ID_BYTES];
+        rand::rng().fill(&mut bytes);
+        Self(bytes)
     }
 
     /// Truncates 32 derived bytes into an id, for build-time ids that must be
-    /// identical on every peer rather than time-ordered.
+    /// identical on every peer rather than random.
     #[must_use]
     pub fn from_digest(digest: &[u8; 32]) -> Self {
         let mut bytes = [0u8; PRIM_ID_BYTES];
@@ -58,20 +51,14 @@ impl PrimId {
     }
 }
 
-impl fmt::Display for PrimId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut value = u128::from_be_bytes(self.0);
-        let mut out = [0u8; PRIM_ID_CHARS];
-        for slot in out.iter_mut().rev() {
-            *slot = ALPHABET[(value & 0x1F) as usize];
-            value >>= 5;
-        }
-        f.write_str(std::str::from_utf8(&out).map_err(|_| fmt::Error)?)
+impl Display for PrimId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&URL_SAFE_NO_PAD.encode(self.0))
     }
 }
 
-impl fmt::Debug for PrimId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Debug for PrimId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "PrimId({self})")
     }
 }
@@ -83,41 +70,19 @@ impl FromStr for PrimId {
         if s.len() != PRIM_ID_CHARS {
             return Err(IdError::Length(s.len()));
         }
-        let mut value: u128 = 0;
-        for c in s.chars() {
-            let digit = decode_char(c)?;
-            value = value.checked_mul(32).ok_or(IdError::Overflow)?;
-            value = value
-                .checked_add(u128::from(digit))
-                .ok_or(IdError::Overflow)?;
-        }
-        Ok(Self(value.to_be_bytes()))
+        let bytes = URL_SAFE_NO_PAD.decode(s)?;
+        let bytes: [u8; PRIM_ID_BYTES] = bytes.try_into().map_err(|_| IdError::Length(s.len()))?;
+        Ok(Self(bytes))
     }
 }
 
-const fn decode_char(c: char) -> Result<u8, IdError> {
-    let upper = c.to_ascii_uppercase();
-    match upper {
-        '0' | 'O' => Ok(0),
-        '1' | 'I' | 'L' => Ok(1),
-        '2'..='9' => Ok(upper as u8 - b'0'),
-        'A'..='H' => Ok(upper as u8 - b'A' + 10),
-        'J' | 'K' => Ok(upper as u8 - b'J' + 18),
-        'M' | 'N' => Ok(upper as u8 - b'M' + 20),
-        'P'..='T' => Ok(upper as u8 - b'P' + 22),
-        'V'..='Z' => Ok(upper as u8 - b'V' + 27),
-        _ => Err(IdError::Character(c)),
-    }
-}
-
-/// Identifies an HSD document. For a shared document it is the
-/// [`NamespaceId`](iroh_docs::NamespaceId); for a reference site it is derived
-/// so every peer computes the same id for the same site.
 #[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct DocId(pub [u8; 32]);
 
 impl DocId {
+    /// Derived ID generation for instanced documents, so every peer computes
+    /// the same ID.
     #[must_use]
     pub fn instance(parent: Self, prim: PrimId) -> Self {
         let mut hasher = blake3::Hasher::new();
@@ -128,32 +93,15 @@ impl DocId {
     }
 }
 
-impl fmt::Display for DocId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for DocId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", blake3::Hash::from_bytes(self.0).to_hex())
     }
 }
 
-impl fmt::Debug for DocId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Debug for DocId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "DocId({self})")
-    }
-}
-
-/// A blake3 content hash, as carried by every entry value.
-#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct BlobId(pub [u8; 32]);
-
-impl fmt::Display for BlobId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", blake3::Hash::from_bytes(self.0).to_hex())
-    }
-}
-
-impl fmt::Debug for BlobId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "BlobId({self})")
     }
 }
 
@@ -171,17 +119,6 @@ mod tests {
         }
     }
 
-    /// The millisecond prefix dominates ordering regardless of the random
-    /// tail, both as raw bytes and as the rendered string: a ULID must sort
-    /// by creation time even when two ids' random bits disagree.
-    #[test]
-    fn a_later_millisecond_prefix_always_sorts_higher() {
-        let earlier = PrimId(((1u128 << 80) | ((1u128 << 80) - 1)).to_be_bytes());
-        let later = PrimId((2u128 << 80).to_be_bytes());
-        assert!(earlier < later);
-        assert!(earlier.to_string() < later.to_string());
-    }
-
     #[test]
     fn max_value_round_trips() {
         let id = PrimId([0xFF; PRIM_ID_BYTES]);
@@ -189,13 +126,9 @@ mod tests {
     }
 
     #[test]
-    fn crockford_ambiguities_decode() {
-        let canonical = PrimId([0; PRIM_ID_BYTES]).to_string();
-        assert_eq!(canonical, "0".repeat(PRIM_ID_CHARS));
-        assert_eq!(
-            "O".repeat(PRIM_ID_CHARS).parse::<PrimId>().expect("parse"),
-            PrimId([0; PRIM_ID_BYTES])
-        );
+    fn invalid_encoding_rejected() {
+        let junk = "!".repeat(PRIM_ID_CHARS);
+        assert!(junk.parse::<PrimId>().is_err());
     }
 
     #[test]

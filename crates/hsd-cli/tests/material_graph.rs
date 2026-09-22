@@ -39,7 +39,7 @@ fn glow_fixture() -> PathBuf {
 }
 
 /// Looks a slot's raw bytes up straight from the package, since a realized
-/// [`SceneState`] and the package agree on where a slot's data lives.
+/// [`HsdState`] and the package agree on where a slot's data lives.
 fn slot_bytes<'a>(package: &'a Package, prim: PrimId, slot: &str) -> &'a [u8] {
     let key = key::prop(prim, slot);
     package

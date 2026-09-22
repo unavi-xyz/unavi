@@ -42,7 +42,7 @@ use hsd::{
     },
     id::PrimId,
     state::{
-        SceneState,
+        HsdState,
         entry::Entry,
     },
 };
@@ -55,7 +55,7 @@ use unavi_util::async_task::spawn_async_task;
 
 pub struct TestContext {
     pub app:   App,
-    pub state: Arc<Mutex<SceneState>>,
+    pub state: Arc<Mutex<HsdState>>,
     /// The entity holding [`Self::state`].
     pub doc:   Entity,
     blobs:     Option<Blobs>,
@@ -192,7 +192,7 @@ impl TestContext {
     /// A second document in the same app, for anything asserting about what
     /// two documents share or hold separately.
     pub fn spawn_document(&mut self) -> TestDocument {
-        let state = Arc::<Mutex<SceneState>>::default();
+        let state = Arc::<Mutex<HsdState>>::default();
         let entity = self
             .app
             .world_mut()
@@ -201,7 +201,7 @@ impl TestContext {
         TestDocument { entity, state }
     }
 
-    fn with_state<T>(&self, f: impl FnOnce(&mut SceneState) -> T) -> T {
+    fn with_state<T>(&self, f: impl FnOnce(&mut HsdState) -> T) -> T {
         f(&mut self.state.lock().expect("lock state"))
     }
 
@@ -280,11 +280,11 @@ impl TestContext {
 /// A document beside [`TestContext`]'s own, ticked by the same app.
 pub struct TestDocument {
     pub entity: Entity,
-    state:      Arc<Mutex<SceneState>>,
+    state:      Arc<Mutex<HsdState>>,
 }
 
 impl TestDocument {
-    fn with_state<T>(&self, f: impl FnOnce(&mut SceneState) -> T) -> T {
+    fn with_state<T>(&self, f: impl FnOnce(&mut HsdState) -> T) -> T {
         f(&mut self.state.lock().expect("lock state"))
     }
 

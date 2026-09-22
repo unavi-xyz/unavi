@@ -22,7 +22,7 @@ use hsd::{
     id::DocId,
     package::Package,
     state::{
-        SceneState,
+        HsdState,
         entry::Entry,
     },
 };
@@ -212,7 +212,7 @@ fn rewriting_replaces_every_reference_with_its_minted_id() {
     let mut entries = package.entries;
     Package::rewrite_refs(&mut entries, &HashMap::from([(placeholder, minted)])).expect("rewrite");
 
-    let mut state = SceneState::new();
+    let mut state = HsdState::new();
     for (key, value) in entries {
         state.apply(&Entry::new(key, value, 1)).expect("apply");
     }

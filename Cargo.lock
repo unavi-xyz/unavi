@@ -6654,6 +6654,7 @@ dependencies = [
 name = "hsd"
 version = "0.0.16"
 dependencies = [
+ "base64 0.22.1",
  "blake3",
  "postcard",
  "rand 0.9.5",

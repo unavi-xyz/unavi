@@ -13,7 +13,7 @@ use hsd::{
     id::PrimId,
     package::Package,
     state::{
-        SceneState,
+        HsdState,
         entry::Entry,
     },
 };
@@ -25,18 +25,18 @@ pub fn compile(input: &Path) -> anyhow::Result<Package> {
 
 /// The package is bytes on disk before it is state, so the test goes through
 /// the encoding rather than around it.
-pub fn realize(package: &Package) -> SceneState {
+pub fn realize(package: &Package) -> HsdState {
     let bytes = package.encode().expect("encode");
     let package = Package::decode(&bytes).expect("decode");
 
-    let mut state = SceneState::new();
+    let mut state = HsdState::new();
     for (key, value) in package.entries {
         state.apply(&Entry::new(key, value, 1)).expect("apply");
     }
     state
 }
 
-pub fn prim_named(state: &SceneState, name: &str) -> PrimId {
+pub fn prim_named(state: &HsdState, name: &str) -> PrimId {
     state
         .prims()
         .find(|prim| {

@@ -1,10 +1,7 @@
-//! `.hsdz`: a compiled document and everything it references, as one
-//! self-contained blob.
+//! # HSDZ
 //!
-//! A package is entries — no bloom store to reconcile during replication, no
-//! published set to preserve. Documents the root references travel beside it
-//! rather than nested inside its prims, so a reference costs 32 bytes in the
-//! root and the target is stored once however many prims name it.
+//! `.hsdz` self-contained packaged file format.
+//! Uses content-addressed blobs for referenced assets.
 
 use std::collections::{
     BTreeMap,
@@ -48,16 +45,12 @@ pub enum PackageError {
     Dangling(DocId),
 }
 
-/// Entries sorted by key, so an unchanged input compiles to identical bytes
-/// and its hash is stable across rebuilds.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Package {
     pub version:   u16,
     /// The root document.
     pub entries:   Vec<(String, Vec<u8>)>,
-    /// Every document referenced from the root or from another of these, under
-    /// the placeholder id its `ref` entries name. Flat rather than nested, so
-    /// minting is one pass and two prims naming one file share a document.
+    /// Every document referenced within this file, recursively.
     pub documents: Vec<(DocId, Vec<(String, Vec<u8>)>)>,
 }
 
@@ -71,11 +64,10 @@ impl Package {
         }
     }
 
-    /// The placeholder a compiled file's document is carried under.
+    /// Placeholder ID a document is stored under, within packages.
     ///
-    /// Derived from the file's identity rather than minted, so compiling twice
-    /// gives the same package bytes and two prims naming one file resolve to
-    /// one entry.
+    /// Derived from the file's identity, so compiling twice gives the same
+    /// package bytes and two prims naming one file resolve to one entry.
     #[must_use]
     pub fn placeholder(source: &str) -> DocId {
         let mut hasher = blake3::Hasher::new();
@@ -87,8 +79,7 @@ impl Package {
     /// Rewrites every `ref` value in `entries` through `minted`.
     ///
     /// A placeholder is meaningless outside the package that carries it, so a
-    /// reference the map does not answer is an error rather than a value
-    /// written through: it would name a namespace nobody can ever serve.
+    /// reference the map does not answer is an error.
     pub fn rewrite_refs(
         entries: &mut [(String, Vec<u8>)],
         minted: &HashMap<DocId, DocId>,

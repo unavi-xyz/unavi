@@ -15,7 +15,7 @@ use bevy_iroh::store::{
 use hsd::{
     id::DocId,
     key,
-    state::SceneState,
+    state::HsdState,
 };
 use iroh::EndpointAddr;
 use iroh_docs::NamespaceId;
@@ -65,7 +65,7 @@ const PEER_WAIT_TIMEOUT: Duration = Duration::from_secs(5);
 pub struct PendingScene {
     /// Carries the document alongside its state, so the component that lands
     /// on the entity holds the same handle the fetch opened.
-    rx:      Receiver<(Document, SceneState)>,
+    rx:      Receiver<(Document, HsdState)>,
     _cancel: oneshot::Sender<()>,
 }
 

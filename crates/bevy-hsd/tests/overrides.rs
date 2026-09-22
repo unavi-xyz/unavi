@@ -31,7 +31,7 @@ use hsd::{
         Property,
     },
     state::{
-        SceneState,
+        HsdState,
         entry::Entry,
     },
 };
@@ -48,12 +48,12 @@ fn name_property(value: &str) -> Property {
 }
 
 /// A referenced document holding one prim named by its own author.
-fn referenced() -> Arc<Mutex<SceneState>> {
-    let mut state = SceneState::new();
+fn referenced() -> Arc<Mutex<HsdState>> {
+    let mut state = HsdState::new();
     state
         .apply_all(&[
-            Entry::bytes(key::parent(TARGET), Parent::Root.encode(), 1),
-            Entry::bytes(
+            Entry::new(key::parent(TARGET), Parent::Root.encode(), 1),
+            Entry::new(
                 key::prop(TARGET, NameAttr::KEY),
                 name_property("couch").encode(),
                 1,
@@ -64,7 +64,7 @@ fn referenced() -> Arc<Mutex<SceneState>> {
 }
 
 /// Stands a realized reference up under `site`, as the realizer does.
-fn realize(ctx: &mut TestContext, site: Entity, state: &Arc<Mutex<SceneState>>) -> Entity {
+fn realize(ctx: &mut TestContext, site: Entity, state: &Arc<Mutex<HsdState>>) -> Entity {
     ctx.app
         .world_mut()
         .spawn((
@@ -95,7 +95,7 @@ fn an_override_written_after_the_fact_reaches_what_it_speaks_for(mut ctx: TestCo
     ctx.app.update();
     assert_eq!(name_of(&ctx, child, TARGET).as_deref(), Some("couch"));
 
-    ctx.apply(&Entry::bytes(
+    ctx.apply(&Entry::new(
         key::override_key(site, TARGET, NameAttr::KEY),
         name_property("recoloured").encode(),
         2,
@@ -118,7 +118,7 @@ fn a_blocked_override_hides_what_the_prim_says_about_itself(mut ctx: TestContext
 
     let state = referenced();
     let child = realize(&mut ctx, site_ent, &state);
-    ctx.apply(&Entry::bytes(
+    ctx.apply(&Entry::new(
         key::override_key(site, TARGET, NameAttr::KEY),
         name_property("recoloured").encode(),
         2,
@@ -128,7 +128,7 @@ fn a_blocked_override_hides_what_the_prim_says_about_itself(mut ctx: TestContext
 
     // An empty value under the same key: the referencing document states that
     // the property is gone rather than stating one of its own.
-    ctx.apply(&Entry::bytes(
+    ctx.apply(&Entry::new(
         key::override_key(site, TARGET, NameAttr::KEY),
         Vec::new(),
         3,

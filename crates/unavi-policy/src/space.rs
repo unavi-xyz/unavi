@@ -121,7 +121,7 @@ mod tests {
     use bevy_hsd::Prim;
     use hsd::{
         id::PrimId,
-        state::SceneState,
+        state::HsdState,
     };
 
     use super::*;
@@ -153,7 +153,7 @@ mod tests {
         let host_id = DocId(*ns.as_bytes());
         let host = app
             .world_mut()
-            .spawn((Hsd::new(SceneState::new()), HsdDocId(host_id)))
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(host_id)))
             .id();
 
         let prim_id = PrimId::new();
@@ -163,7 +163,7 @@ mod tests {
         let instance = app
             .world_mut()
             .spawn((
-                Hsd::new(SceneState::new()),
+                Hsd::new(HsdState::new()),
                 HsdDocId(instance_id),
                 ChildOf(prim),
             ))
@@ -191,7 +191,7 @@ mod tests {
         let ns = NamespaceId::from(blake3::hash(b"granted").as_bytes());
         let id = DocId(*ns.as_bytes());
         app.world_mut()
-            .spawn((Hsd::new(SceneState::new()), HsdDocId(id), Space(ns)));
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(id), Space(ns)));
         app.update();
 
         assert_eq!(policy.get(id).space, Some(id));
@@ -204,7 +204,7 @@ mod tests {
         let ns = NamespaceId::from(blake3::hash(b"space-doc").as_bytes());
         let space = app
             .world_mut()
-            .spawn((Hsd::new(SceneState::new()), HsdDocId(DocId(*ns.as_bytes()))))
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(DocId(*ns.as_bytes()))))
             .id();
         app.world_mut().entity_mut(space).insert(Space(ns));
 
@@ -224,7 +224,7 @@ mod tests {
 
         let doc = app
             .world_mut()
-            .spawn((Hsd::new(SceneState::new()), HsdDocId(id)))
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(id)))
             .id();
         policy.update(id, |record| record.space = Some(DocId([32; 32])));
 

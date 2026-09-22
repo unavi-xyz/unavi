@@ -13,7 +13,7 @@ use crate::{
 /// One prim as every reader sees it: each key composed from the layer stack,
 /// strongest opinion winning.
 ///
-/// A cache rather than a source — only `SceneState`'s resolve step writes it,
+/// A cache rather than a source — only `HsdState`'s resolve step writes it,
 /// and it holds nothing the layers do not already say.
 #[derive(Debug, Clone, Default)]
 pub struct PrimState {

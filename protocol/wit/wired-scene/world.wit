@@ -32,8 +32,8 @@ interface types {
   use wired:math/types.{vec2, vec3, transform};
   use wired:error/types.{error};
 
-  /// A ULID rendered as 26 characters of Crockford base32. Fixed-length, so no
-  /// id is a prefix of another.
+  /// 128 random bits rendered as 22 characters of unpadded base64url.
+  /// Fixed-length, so no id is a prefix of another.
   type prim-id     = string;
   type record-id   = list<u8>;
   type document-id = record-id;

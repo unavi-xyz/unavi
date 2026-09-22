@@ -23,7 +23,7 @@ use hsd::{
         DocId,
         PrimId,
     },
-    state::SceneState,
+    state::HsdState,
 };
 use smol_str::SmolStr;
 use wds::document::Document;
@@ -121,11 +121,11 @@ impl Plugin for HsdPlugin {
 /// protocol and by an explicit save.
 #[derive(Component, Clone)]
 #[require(HsdChildren, Transform, Visibility)]
-pub struct Hsd(pub Arc<Mutex<SceneState>>);
+pub struct Hsd(pub Arc<Mutex<HsdState>>);
 
 impl Hsd {
     #[must_use]
-    pub fn new(state: SceneState) -> Self {
+    pub fn new(state: HsdState) -> Self {
         Self(Arc::new(Mutex::new(state)))
     }
 }
@@ -137,7 +137,7 @@ impl Hsd {
 /// a just-built document appears where it was put rather than arriving at the
 /// origin and moving.
 #[derive(Component, Clone)]
-pub struct HsdHeld(pub Arc<Mutex<SceneState>>);
+pub struct HsdHeld(pub Arc<Mutex<HsdState>>);
 
 /// A namespace-backed document's id is its namespace; a reference site
 /// derives one.

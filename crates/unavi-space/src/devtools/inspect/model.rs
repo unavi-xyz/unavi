@@ -19,7 +19,7 @@ use hsd::{
         DocId,
         PrimId,
     },
-    state::SceneState,
+    state::HsdState,
 };
 use iroh::EndpointId;
 use iroh_docs::NamespaceId;
@@ -359,7 +359,7 @@ fn doc_session(doc: DocId, snap: &debug::DebugSnapshot) -> Vec<DocCell> {
     cells
 }
 
-fn hsd_tree_text(state: &SceneState) -> String {
+fn hsd_tree_text(state: &HsdState) -> String {
     let mut out = String::new();
     let mut budget = HSD_TREE_MAX_PRIMS;
     for root in state.roots() {
@@ -374,7 +374,7 @@ fn hsd_tree_text(state: &SceneState) -> String {
     out
 }
 
-fn walk_prim(state: &SceneState, id: PrimId, depth: usize, out: &mut String, budget: &mut usize) {
+fn walk_prim(state: &HsdState, id: PrimId, depth: usize, out: &mut String, budget: &mut usize) {
     if *budget == 0 {
         return;
     }
@@ -386,7 +386,7 @@ fn walk_prim(state: &SceneState, id: PrimId, depth: usize, out: &mut String, bud
     }
 }
 
-fn prim_summary(state: &SceneState, id: PrimId) -> (String, String) {
+fn prim_summary(state: &HsdState, id: PrimId) -> (String, String) {
     let mut name = "prim".to_string();
     let mut keys = Vec::new();
     if let Some(prim) = state.get(id) {

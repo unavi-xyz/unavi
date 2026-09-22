@@ -45,7 +45,7 @@ use hsd::{
         xform::XformAttr,
     },
     id::PrimId,
-    state::SceneState,
+    state::HsdState,
 };
 use iroh_blobs::{
     api::blobs::Blobs,
@@ -92,14 +92,14 @@ fn load_hsd(mut commands: Commands) {
     let (store, blobs) = spawn_mem_store();
     commands.spawn(LocalBlobs(blobs));
 
-    let mut state = SceneState::new();
+    let mut state = HsdState::new();
     populate(&mut state);
 
     commands.spawn(Hsd::new(state));
     commands.spawn(BlobStore(store));
 }
 
-fn populate(state: &mut SceneState) {
+fn populate(state: &mut HsdState) {
     let red = material_prim(state, ColorVec(vec![0.9, 0.2, 0.15, 1.0]), 0.1, 0.35);
     let blue = material_prim(state, ColorVec(vec![0.15, 0.4, 0.95, 1.0]), 0.8, 0.2);
 
@@ -159,7 +159,7 @@ fn populate(state: &mut SceneState) {
 }
 
 fn material_prim(
-    state: &mut SceneState,
+    state: &mut HsdState,
     base_color: ColorVec,
     metallic: f64,
     roughness: f64,
@@ -180,7 +180,7 @@ fn material_prim(
 }
 
 fn shader_graph_cube(
-    state: &mut SceneState,
+    state: &mut HsdState,
     buffers: &[(String, Vec<u8>)],
     offset: Vec3,
     graph: ShaderGraph,

@@ -1,9 +1,7 @@
-//! `.hsda`: the authoring tier, and the only hand-written one.
+//! # HSDA
 //!
-//! Human names, and relative paths to script crates, images and referenced
-//! documents.
-//! Compilation replaces every path with content, so this is source, not a
-//! round-trip of the compiled package.
+//! `.hsda` authored source file format.
+//! Uses human names and relative paths to assets.
 
 use std::collections::BTreeMap;
 

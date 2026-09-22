@@ -53,7 +53,7 @@ mod tests {
     };
     use hsd::{
         id::PrimId,
-        state::SceneState,
+        state::HsdState,
     };
 
     use super::*;
@@ -76,14 +76,14 @@ mod tests {
 
         let host = app
             .world_mut()
-            .spawn((Hsd::new(SceneState::new()), HsdDocId(host_id)))
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(host_id)))
             .id();
         let prim_id = PrimId::new();
         let prim = app.world_mut().spawn((Prim(prim_id), HsdChild(host))).id();
 
         let instance_id = DocId::instance(host_id, prim_id);
         app.world_mut().spawn((
-            Hsd::new(SceneState::new()),
+            Hsd::new(HsdState::new()),
             HsdDocId(instance_id),
             ChildOf(prim),
         ));
@@ -104,7 +104,7 @@ mod tests {
 
         policy.update(child, |record| record.host = Some(parent));
         app.world_mut()
-            .spawn((Hsd::new(SceneState::new()), HsdDocId(child)));
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(child)));
 
         assert_eq!(
             policy.get(child).host,
@@ -121,7 +121,7 @@ mod tests {
 
         let entity = app
             .world_mut()
-            .spawn((Hsd::new(SceneState::new()), HsdDocId(id)))
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(id)))
             .id();
         policy.update(id, |record| record.space = Some(id));
 

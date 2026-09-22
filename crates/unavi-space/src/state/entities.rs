@@ -17,7 +17,7 @@ use hsd::{
     key,
     property::Property,
     state::{
-        SceneState,
+        HsdState,
         entry::Entry,
     },
 };
@@ -459,7 +459,7 @@ fn valid_name(name: &str) -> bool {
 
 /// The live state of a document in the world, or `None` for one this node is
 /// not holding open.
-fn doc_state(world: &mut World, doc: DocId) -> Option<Arc<Mutex<SceneState>>> {
+fn doc_state(world: &mut World, doc: DocId) -> Option<Arc<Mutex<HsdState>>> {
     world
         .query::<(&HsdDocId, &Hsd)>()
         .iter(world)
@@ -503,7 +503,7 @@ fn restore_session(world: &mut World, restored: Restored) {
         let bytes = value
             .map(|bytes| Property::Attribute(bytes).encode())
             .unwrap_or_default();
-        if let Err(err) = state.apply_session(&Entry::bytes(
+        if let Err(err) = state.apply_session(&Entry::new(
             key::prop(restored.key.prim, &restored.key.name),
             bytes,
             at,
@@ -540,7 +540,7 @@ fn compose_session(world: &mut World, doc: DocId, writes: &[SessionWrite], at: u
             .map(|bytes| Property::Attribute(bytes.clone()).encode())
             .unwrap_or_default();
         if let Err(err) =
-            state.apply_session(&Entry::bytes(key::prop(write.prim, &write.name), value, at))
+            state.apply_session(&Entry::new(key::prop(write.prim, &write.name), value, at))
         {
             warn!(?err, "session opinion refused by the document");
         }
@@ -732,7 +732,7 @@ mod tests {
         world.init_resource::<Policy>();
         world.insert_resource(Replicas::new());
         world.spawn(Space(NamespaceId::from(&space.0)));
-        let state = Arc::new(Mutex::new(SceneState::new()));
+        let state = Arc::new(Mutex::new(HsdState::new()));
         world.spawn((Hsd(Arc::clone(&state)), HsdDocId(space)));
 
         set_session(&mut world, me, space, space, writes(), 1, true).expect("session set");

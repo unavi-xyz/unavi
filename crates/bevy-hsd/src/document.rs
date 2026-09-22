@@ -1,4 +1,4 @@
-//! The bridge between iroh-docs entries and `SceneState`.
+//! The bridge between iroh-docs entries and `HsdState`.
 //!
 //! Reading is one query per top-level prefix; every entry's value is its byte
 //! content, fetched eagerly because a document must be complete before it
@@ -7,15 +7,15 @@
 use hsd::{
     key,
     state::{
-        SceneState,
+        HsdState,
         entry::Entry,
         save::Change,
     },
 };
 use wds::document::Document;
 
-pub async fn read_state(doc: &Document) -> anyhow::Result<SceneState> {
-    let mut state = SceneState::new();
+pub async fn read_state(doc: &Document) -> anyhow::Result<HsdState> {
+    let mut state = HsdState::new();
     for entry in doc.list(&key::PREFIXES).await? {
         if let Some(entry) = to_entry(doc, &entry).await {
             state.apply(&entry)?;
@@ -24,7 +24,7 @@ pub async fn read_state(doc: &Document) -> anyhow::Result<SceneState> {
     Ok(state)
 }
 
-/// Fetches a stored entry's content so a `SceneState` can apply it.
+/// Fetches a stored entry's content so a `HsdState` can apply it.
 ///
 /// Returns `None` when a value has not been downloaded yet — the `ContentReady`
 /// event brings it back later — or when the key is not UTF-8, which no key this
@@ -47,7 +47,7 @@ pub async fn to_entry(doc: &Document, entry: &iroh_docs::Entry) -> Option<Entry>
     })
 }
 
-/// Applies one `SceneState` change to the document backing it.
+/// Applies one `HsdState` change to the document backing it.
 pub async fn apply_change(doc: &Document, change: Change) -> anyhow::Result<()> {
     match change {
         Change::Set { key, value } => {

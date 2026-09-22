@@ -14,7 +14,7 @@ use bevy_hsd::{
 use bevy_iroh::store::LocalStore;
 use hsd::{
     key,
-    state::SceneState,
+    state::HsdState,
 };
 use iroh_docs::NamespaceId;
 use tokio::sync::oneshot;
@@ -50,7 +50,7 @@ const REFETCH_DELAY: Duration = Duration::from_secs(10);
 pub struct PendingPinnedDoc {
     /// Carries the document alongside its state, so the component that lands
     /// on the entity holds the same handle the fetch opened.
-    rx:      Receiver<(Document, SceneState)>,
+    rx:      Receiver<(Document, HsdState)>,
     _cancel: oneshot::Sender<()>,
 }
 

@@ -25,7 +25,7 @@ use unavi_space::anchor::{
 };
 
 use crate::scene::{
-    SceneState,
+    HsdState,
     respawn::Respawn,
 };
 
@@ -143,19 +143,19 @@ pub fn arm_limbo_arrival(time: Res<Time>, mut arrival: ResMut<LimboArrival>) {
 /// Drops back to limbo whenever the space underfoot is gone or still loading,
 /// so the agent never stands in a space that has no scene to stand on.
 pub fn fall_back_to_limbo(
-    state: Res<State<SceneState>>,
+    state: Res<State<HsdState>>,
     active: Res<ActiveSpace>,
     loaded: Query<(), (With<Space>, With<HsdLoaded>)>,
-    mut next: ResMut<NextState<SceneState>>,
+    mut next: ResMut<NextState<HsdState>>,
 ) {
-    if !matches!(state.get(), SceneState::Space) {
+    if !matches!(state.get(), HsdState::Space) {
         return;
     }
     if active.0.is_some_and(|space| loaded.contains(space)) {
         return;
     }
     info!("No loaded space, returning to limbo");
-    next.set(SceneState::Limbo);
+    next.set(HsdState::Limbo);
 }
 
 /// Leaves limbo once the arrival space reports loaded.
@@ -164,13 +164,13 @@ pub fn fall_back_to_limbo(
 /// space opened earlier through a portal is already loaded when travel to it
 /// begins, so no insertion is coming.
 pub fn drive_limbo_exit(
-    state: Res<State<SceneState>>,
+    state: Res<State<HsdState>>,
     time: Res<Time>,
     spaces: Query<(Entity, &Space, Has<HsdLoaded>)>,
     mut arrival: ResMut<LimboArrival>,
     mut commands: Commands,
 ) {
-    if !matches!(state.get(), SceneState::Limbo) {
+    if !matches!(state.get(), HsdState::Limbo) {
         return;
     }
 
@@ -224,12 +224,12 @@ pub struct EnterSpace {
 pub fn enter_space(
     trigger: On<EnterSpace>,
     mut arrival: ResMut<LimboArrival>,
-    mut next: ResMut<NextState<SceneState>>,
+    mut next: ResMut<NextState<HsdState>>,
     mut commands: Commands,
 ) {
     arrival.target = None;
     arrival.ready = None;
-    next.set(SceneState::Space);
+    next.set(HsdState::Space);
     commands.trigger(Respawn {
         space: trigger.event().space,
     });
@@ -274,10 +274,10 @@ mod tests {
             .init_resource::<PendingTravel>()
             .init_resource::<ActiveSpace>()
             .init_resource::<RespawnedInto>()
-            .init_state::<SceneState>()
+            .init_state::<HsdState>()
             .add_observer(enter_space)
             .add_observer(record_respawn)
-            .add_systems(OnEnter(SceneState::Limbo), arm_limbo_arrival)
+            .add_systems(OnEnter(HsdState::Limbo), arm_limbo_arrival)
             .add_systems(
                 Update,
                 (drive_travel, fall_back_to_limbo, drive_limbo_exit).chain(),
@@ -289,8 +289,8 @@ mod tests {
         app.world_mut().resource_mut::<Time>().advance_by(by);
     }
 
-    fn state(app: &App) -> SceneState {
-        *app.world().resource::<State<SceneState>>().get()
+    fn state(app: &App) -> HsdState {
+        *app.world().resource::<State<HsdState>>().get()
     }
 
     fn respawned_into(app: &App) -> Option<Entity> {
@@ -308,7 +308,7 @@ mod tests {
         advance(app, SPACE_LOAD_DELAY);
         app.update();
         app.update();
-        assert_eq!(state(app), SceneState::Space, "failed to enter start space");
+        assert_eq!(state(app), HsdState::Space, "failed to enter start space");
         space
     }
 
@@ -322,15 +322,15 @@ mod tests {
 
         travel_to(&mut app, target_ns);
         app.update();
-        assert_eq!(state(&app), SceneState::Space);
+        assert_eq!(state(&app), HsdState::Space);
         app.update();
-        assert_eq!(state(&app), SceneState::Limbo);
+        assert_eq!(state(&app), HsdState::Limbo);
         assert!(app.world().get_entity(start).is_err());
 
         advance(&mut app, SPACE_LOAD_DELAY);
         app.update();
         app.update();
-        assert_eq!(state(&app), SceneState::Space);
+        assert_eq!(state(&app), HsdState::Space);
         assert_eq!(respawned_into(&app), Some(target));
     }
 
@@ -346,13 +346,13 @@ mod tests {
         travel_to(&mut app, target_ns);
         app.update();
         app.update();
-        assert_eq!(state(&app), SceneState::Limbo);
+        assert_eq!(state(&app), HsdState::Limbo);
 
         advance(&mut app, SPACE_LOAD_DELAY * 2);
         app.update();
         assert_eq!(
             state(&app),
-            SceneState::Limbo,
+            HsdState::Limbo,
             "a loaded bystander space must not end the wait"
         );
 
@@ -361,7 +361,7 @@ mod tests {
         advance(&mut app, SPACE_LOAD_DELAY);
         app.update();
         app.update();
-        assert_eq!(state(&app), SceneState::Space);
+        assert_eq!(state(&app), HsdState::Space);
 
         assert_eq!(respawned_into(&app), Some(target));
         assert_ne!(respawned_into(&app), Some(bystander));
@@ -376,7 +376,7 @@ mod tests {
         travel_to(&mut app, ns);
         app.update();
         app.update();
-        assert_eq!(state(&app), SceneState::Limbo);
+        assert_eq!(state(&app), HsdState::Limbo);
         assert!(
             app.world().get_entity(start).is_err(),
             "the space must be dropped, not left in place"
@@ -394,7 +394,7 @@ mod tests {
         advance(&mut app, SPACE_LOAD_DELAY);
         app.update();
         app.update();
-        assert_eq!(state(&app), SceneState::Space);
+        assert_eq!(state(&app), HsdState::Space);
         assert_eq!(respawned_into(&app), Some(reloaded));
     }
 
@@ -409,13 +409,13 @@ mod tests {
         travel_to(&mut app, target_ns);
         app.update();
         app.update();
-        assert_eq!(state(&app), SceneState::Limbo);
+        assert_eq!(state(&app), HsdState::Limbo);
 
         app.world_mut().entity_mut(target).despawn();
         advance(&mut app, SPACE_LOAD_DELAY);
         app.update();
         app.update();
-        assert_eq!(state(&app), SceneState::Limbo);
+        assert_eq!(state(&app), HsdState::Limbo);
     }
 
     #[test]
@@ -426,7 +426,7 @@ mod tests {
         app.world_mut().entity_mut(space).despawn();
         app.update();
         app.update();
-        assert_eq!(state(&app), SceneState::Limbo);
+        assert_eq!(state(&app), HsdState::Limbo);
     }
 
     #[test]
@@ -437,14 +437,14 @@ mod tests {
         app.world_mut().entity_mut(space).remove::<HsdLoaded>();
         app.update();
         app.update();
-        assert_eq!(state(&app), SceneState::Limbo);
+        assert_eq!(state(&app), HsdState::Limbo);
 
         app.world_mut().entity_mut(space).insert(HsdLoaded);
         app.update();
         advance(&mut app, SPACE_LOAD_DELAY);
         app.update();
         app.update();
-        assert_eq!(state(&app), SceneState::Space);
+        assert_eq!(state(&app), HsdState::Space);
     }
 
     #[test]
@@ -455,11 +455,11 @@ mod tests {
         travel_to(&mut app, namespace(2));
         app.update();
         app.update();
-        assert_eq!(state(&app), SceneState::Limbo);
+        assert_eq!(state(&app), HsdState::Limbo);
 
         advance(&mut app, SPACE_LOAD_TIMEOUT);
         app.update();
         app.update();
-        assert_eq!(state(&app), SceneState::Space);
+        assert_eq!(state(&app), HsdState::Space);
     }
 }

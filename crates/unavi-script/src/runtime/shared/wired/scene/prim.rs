@@ -68,7 +68,7 @@ use hsd::{
         Parent,
         Property,
     },
-    state::SceneState,
+    state::HsdState,
 };
 use unavi_physics::finite;
 use unavi_policy::quota::Flow;
@@ -89,7 +89,7 @@ use crate::{
 
 #[derive(Clone)]
 pub struct PrimRes {
-    pub state:    Arc<Mutex<SceneState>>,
+    pub state:    Arc<Mutex<HsdState>>,
     pub doc_id:   DocId,
     pub id:       PrimId,
     /// Proxy prims are read-only from scripts.
@@ -248,7 +248,7 @@ async fn get_prim(api: &Api, rep: u32) -> anyhow::Result<PrimRes> {
 impl PrimRes {
     /// Writes are synchronous and land in in-memory state only; nothing here
     /// touches storage.
-    fn with<T>(&self, f: impl FnOnce(&mut SceneState) -> T) -> anyhow::Result<T> {
+    fn with<T>(&self, f: impl FnOnce(&mut HsdState) -> T) -> anyhow::Result<T> {
         let mut state = self
             .state
             .lock()
@@ -1227,7 +1227,7 @@ mod tests {
     use super::*;
 
     fn prim_res() -> PrimRes {
-        let mut state = SceneState::new();
+        let mut state = HsdState::new();
         let id = state.create_prim(None);
         PrimRes {
             state: Arc::new(Mutex::new(state)),

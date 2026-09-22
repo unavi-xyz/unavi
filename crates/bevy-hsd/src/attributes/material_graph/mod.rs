@@ -20,27 +20,24 @@ use bevy::{
         SpecializedMeshPipelineError,
     },
 };
-use hsd::{
-    attributes::{
-        Attribute,
-        material_graph::{
-            MAX_PUBLIC_INPUTS,
-            MAX_TEXTURE_SAMPLES,
-            ShaderGraph,
-            graph::{
-                BlendMode,
-                CullMode,
-            },
-            overrides::{
-                GraphOverridesAttr,
-                validate_overrides,
-            },
-            validate::validate,
-            value::GraphValue,
+use hsd::attributes::{
+    Attribute,
+    material_graph::{
+        MAX_PUBLIC_INPUTS,
+        MAX_TEXTURE_SAMPLES,
+        ShaderGraph,
+        graph::{
+            BlendMode,
+            CullMode,
         },
-        slots,
+        overrides::{
+            GraphOverridesAttr,
+            validate_overrides,
+        },
+        validate::validate,
+        value::GraphValue,
     },
-    id::BlobId,
+    slots,
 };
 
 use crate::{
@@ -226,7 +223,7 @@ pub fn rebuild_material_graph(
             }
         });
 
-        let hash = BlobId(*blake3::hash(&slot.0).as_bytes());
+        let hash = blake3::hash(&slot.0);
         let compile = || {
             let fragment_source = codegen::generate_fragment_shader(&graph, &validated);
             let fragment = shaders.add(Shader::from_wgsl(
@@ -382,13 +379,13 @@ pub const MAX_SHADER_PROGRAMS: usize = 32;
 /// across documents compile once.
 #[derive(Resource, Default)]
 pub struct ShaderGraphCache {
-    programs: HashMap<BlobId, CachedShaders>,
+    programs: HashMap<blake3::Hash, CachedShaders>,
     /// The graphs each document has charged against its cap; also what keeps
     /// a program alive: one is dropped when the last document holding it
     /// goes. A document never gives a graph back, even once no prim renders
     /// it — the cap bounds edit churn, and re-charging on every hash change
     /// would leave it bounding nothing.
-    charged:  HashMap<Entity, HashSet<BlobId>>,
+    charged:  HashMap<Entity, HashSet<blake3::Hash>>,
 }
 
 impl ShaderGraphCache {
@@ -400,7 +397,7 @@ impl ShaderGraphCache {
     fn charge(
         &mut self,
         doc: Entity,
-        hash: BlobId,
+        hash: blake3::Hash,
         compile: impl FnOnce() -> CachedShaders,
     ) -> Option<&CachedShaders> {
         let charged = self.charged.entry(doc).or_default();

@@ -25,12 +25,12 @@ pub struct ScenePlugin;
 
 impl Plugin for ScenePlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<SceneState>()
+        app.init_state::<HsdState>()
             .init_resource::<limbo::LimboArrival>()
             .add_observer(limbo::enter_space)
             .add_observer(respawn::respawn)
             .add_systems(
-                OnEnter(SceneState::Limbo),
+                OnEnter(HsdState::Limbo),
                 (
                     limbo::arm_limbo_arrival,
                     limbo::spawn_limbo,
@@ -38,7 +38,7 @@ impl Plugin for ScenePlugin {
                 ),
             )
             .add_systems(
-                OnExit(SceneState::Limbo),
+                OnExit(HsdState::Limbo),
                 (limbo::despawn_limbo, build_iroh_router),
             )
             .add_systems(
@@ -57,7 +57,7 @@ impl Plugin for ScenePlugin {
                 FixedUpdate,
                 (
                     travel::drive_travel,
-                    limbo::hold_agent_in_limbo.run_if(in_state(SceneState::Limbo)),
+                    limbo::hold_agent_in_limbo.run_if(in_state(HsdState::Limbo)),
                     respawn::teleport_from_void,
                 ),
             );
@@ -65,7 +65,7 @@ impl Plugin for ScenePlugin {
 }
 
 #[derive(Default, Debug, States, Clone, Copy, PartialEq, Eq, Hash)]
-enum SceneState {
+enum HsdState {
     /// Empty "limbo" scene, if not in any spaces.
     /// Acts as a loading screen or fallback on error.
     #[default]

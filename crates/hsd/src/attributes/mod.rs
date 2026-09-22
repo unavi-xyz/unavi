@@ -17,11 +17,6 @@ pub mod spawn;
 pub mod text;
 pub mod xform;
 
-/// A postcard payload under a string key.
-///
-/// The set is open: a new kind is one module that names itself, with no shared
-/// struct to edit, and a payload no client recognizes still stores, syncs and
-/// re-serves untouched.
 pub trait Attribute: Serialize + DeserializeOwned {
     const KEY: &'static str;
 

@@ -140,18 +140,12 @@ impl Layer {
 /// references.
 ///
 /// Durable in the referencing document, where it lives under `o/<site>/`, and
-/// installed into the referenced document's state as its
-/// [`LayerId::Override`] layer, which is where it beats the target's own
-/// opinion.
+/// installed into the referenced document's state as its `LayerId::Override`
+/// layer, which is where it beats the target's own opinion.
 #[derive(Debug, Default, Clone)]
 pub struct Overrides(Layer);
 
 impl Overrides {
-    #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.0.0.is_empty()
-    }
-
     pub(super) const fn layer(&self) -> &Layer {
         &self.0
     }

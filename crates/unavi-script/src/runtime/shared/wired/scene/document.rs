@@ -23,7 +23,7 @@ use hsd::{
     key,
     state::{
         CommitTarget,
-        SceneState,
+        HsdState,
     },
 };
 use smol_str::SmolStr;
@@ -57,12 +57,12 @@ pub struct XformValue {
 
 #[derive(Clone)]
 pub struct DocRes {
-    pub state: Arc<Mutex<SceneState>>,
+    pub state: Arc<Mutex<HsdState>>,
     pub id:    DocId,
 }
 
 impl DocRes {
-    fn with<T>(&self, f: impl FnOnce(&mut SceneState) -> T) -> anyhow::Result<T> {
+    fn with<T>(&self, f: impl FnOnce(&mut HsdState) -> T) -> anyhow::Result<T> {
         let mut state = self
             .state
             .lock()
@@ -354,7 +354,7 @@ enum Landing {
     Override {
         site:      PrimId,
         reference: DocId,
-        state:     Arc<Mutex<SceneState>>,
+        state:     Arc<Mutex<HsdState>>,
     },
     /// It holds neither. The edit is still useful — visible to everyone
     /// present, attributed, and gone when they leave.
@@ -457,7 +457,7 @@ async fn landing(doc: DocId) -> anyhow::Result<Landing> {
 /// belongs in.
 async fn reference_site(
     doc: DocId,
-) -> anyhow::Result<Option<(PrimId, DocId, Arc<Mutex<SceneState>>)>> {
+) -> anyhow::Result<Option<(PrimId, DocId, Arc<Mutex<HsdState>>)>> {
     let (tx, rx) = async_channel::bounded(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
@@ -471,7 +471,7 @@ async fn reference_site(
 fn reference_site_in(
     world: &mut World,
     doc: DocId,
-) -> Option<(PrimId, DocId, Arc<Mutex<SceneState>>)> {
+) -> Option<(PrimId, DocId, Arc<Mutex<HsdState>>)> {
     let prim_ent = world
         .query::<(&HsdDocId, &ChildOf)>()
         .iter(world)
@@ -498,13 +498,13 @@ mod tests {
     fn realized_reference(world: &mut World) -> (PrimId, DocId, DocId) {
         let host = doc(1);
         let host_ent = world
-            .spawn((Hsd::new(SceneState::new()), HsdDocId(host)))
+            .spawn((Hsd::new(HsdState::new()), HsdDocId(host)))
             .id();
         let site = PrimId::new();
         let prim_ent = world.spawn((Prim(site), HsdChild(host_ent))).id();
         let child = DocId::instance(host, site);
         world.spawn((
-            Hsd::new(SceneState::new()),
+            Hsd::new(HsdState::new()),
             HsdDocId(child),
             ChildOf(prim_ent),
         ));
@@ -528,7 +528,7 @@ mod tests {
         let mut world = World::new();
         realized_reference(&mut world);
         let anchored = doc(2);
-        world.spawn((Hsd::new(SceneState::new()), HsdDocId(anchored)));
+        world.spawn((Hsd::new(HsdState::new()), HsdDocId(anchored)));
 
         assert!(
             reference_site_in(&mut world, anchored).is_none(),

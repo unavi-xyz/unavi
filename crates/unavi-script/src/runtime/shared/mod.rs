@@ -6,7 +6,7 @@ use hsd::{
         DocId,
         PrimId,
     },
-    state::SceneState,
+    state::HsdState,
 };
 use iroh_docs::NamespaceId;
 use tokio::sync::Mutex;
@@ -40,7 +40,7 @@ mod slot_map;
 pub mod wired;
 
 pub struct Api {
-    pub state:         Arc<std::sync::Mutex<SceneState>>,
+    pub state:         Arc<std::sync::Mutex<HsdState>>,
     pub doc_id:        DocId,
     pub prim:          PrimId,
     pub view:          SpaceView,
@@ -100,7 +100,7 @@ impl Api {
 
 /// Closes the write boundaries [`Api::open_tick`] opened, including when the
 /// tick trapped or was interrupted rather than returning.
-pub struct TickGuard(Vec<Arc<std::sync::Mutex<SceneState>>>);
+pub struct TickGuard(Vec<Arc<std::sync::Mutex<HsdState>>>);
 
 impl Drop for TickGuard {
     fn drop(&mut self) {

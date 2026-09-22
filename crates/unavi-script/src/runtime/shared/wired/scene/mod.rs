@@ -17,7 +17,7 @@ use hsd::{
     id::DocId,
     key,
     state::{
-        SceneState,
+        HsdState,
         entry::Entry,
         save,
     },
@@ -119,7 +119,7 @@ pub(super) async fn namespace_of(id: DocId) -> anyhow::Result<NamespaceId> {
 /// other.
 pub(super) async fn save_namespace(
     ns: NamespaceId,
-    state: Arc<Mutex<SceneState>>,
+    state: Arc<Mutex<HsdState>>,
 ) -> anyhow::Result<()> {
     let current = state
         .lock()
@@ -164,7 +164,7 @@ pub(super) async fn save_namespace(
 
 async fn spawn_child_doc(
     api: &Api,
-    state: Arc<Mutex<SceneState>>,
+    state: Arc<Mutex<HsdState>>,
     doc: Document,
 ) -> Result<(), ScriptError> {
     let doc_lease = api.quota.lease(Stock::Documents, 1)?;
@@ -239,7 +239,7 @@ pub async fn get_document(api: &Api, id: Vec<u8>) -> anyhow::Result<Option<u32>>
         )?));
     }
 
-    let (tx, rx) = async_channel::bounded::<Option<Arc<Mutex<SceneState>>>>(1);
+    let (tx, rx) = async_channel::bounded::<Option<Arc<Mutex<HsdState>>>>(1);
     AsyncCommands::default()
         .push(move |world: &mut World| {
             let state = world
@@ -368,7 +368,7 @@ pub(super) async fn holds_write_key(id: DocId) -> anyhow::Result<bool> {
 }
 
 pub async fn create_document(api: &Api) -> Result<u32, ScriptError> {
-    mint_document(api, SceneState::new()).await
+    mint_document(api, HsdState::new()).await
 }
 
 /// Mints an independent document holding what `id` has authored.
@@ -387,7 +387,7 @@ pub async fn copy_document(api: &Api, id: Vec<u8>) -> Result<u32, ScriptError> {
         .map_err(|err| ScriptError::other(err.to_string()))?
         .ok_or_else(|| ScriptError::other(format!("no document {id} to copy")))?;
 
-    let mut state = SceneState::new();
+    let mut state = HsdState::new();
     for (key, value) in entries {
         state
             .apply(&Entry {
@@ -431,7 +431,7 @@ async fn source_entries(
     Ok(rx.recv().await?)
 }
 
-async fn mint_document(api: &Api, state: SceneState) -> Result<u32, ScriptError> {
+async fn mint_document(api: &Api, state: HsdState) -> Result<u32, ScriptError> {
     crate::quota::acquire(&api.quota, Flow::CreateDocument, 1.0).await?;
 
     let doc = create_namespace()
